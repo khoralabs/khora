@@ -1,4 +1,5 @@
-import { defineAgentIdentity } from "@cfd/agent-identity";
+import { createRegisteredAgentIdentity, type RegisteredAgentIdentity } from "@cfd/agent-identity";
+import { LIBRARIAN_STATIC_SYSTEM_INSTRUCTIONS } from "./instructions/static";
 import { memoryLibrarianToolkit } from "./toolkit";
 
 /** Stable librarian agent id for registry / fingerprinting. */
@@ -8,19 +9,16 @@ export function buildMemoryLibrarianAgentId(namespace: string): string {
 }
 
 /**
- * Fingerprint the memory librarian toolkit and register identity (same pattern as agent-identity examples).
+ * Static agent identity for the memory librarian (toolkit + {@link LIBRARIAN_STATIC_SYSTEM_INSTRUCTIONS}).
  */
 export async function defineMemoryLibrarianIdentity(namespace: string): Promise<{
   staticHash: string;
-  identity: ReturnType<typeof defineAgentIdentity>;
+  identity: RegisteredAgentIdentity;
 }> {
-  const staticHash = await memoryLibrarianToolkit.computeStaticHash();
-  return {
-    staticHash,
-    identity: defineAgentIdentity({
-      agentId: buildMemoryLibrarianAgentId(namespace),
-      name: "Memory Librarian",
-      staticHash,
-    }),
-  };
+  return createRegisteredAgentIdentity({
+    agentId: buildMemoryLibrarianAgentId(namespace),
+    name: "Memory Librarian",
+    instructions: [LIBRARIAN_STATIC_SYSTEM_INSTRUCTIONS],
+    rootComposable: memoryLibrarianToolkit,
+  });
 }

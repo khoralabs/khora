@@ -12,8 +12,7 @@ export function toolSpecToAiTool(
   return tool({
     description: spec.description,
     inputSchema: spec.inputSchema as Tool<unknown, unknown>["inputSchema"],
-    execute: async (input: unknown, options) =>
-      spec.handler(runtime, input, options),
+    execute: async (input: unknown, options) => spec.handler(runtime, input, options),
   });
 }
 

@@ -21,9 +21,7 @@ export type CreateIdentityLinkArgs = {
   tools: Record<string, ToolSpec>;
 };
 
-export async function createIdentityLink(
-  args: CreateIdentityLinkArgs,
-): Promise<IdentityLink> {
+export async function createIdentityLink(args: CreateIdentityLinkArgs): Promise<IdentityLink> {
   const runtimeHash = await computeRuntimeHash(
     args.enabledToolNames,
     args.nameToStaticHash,

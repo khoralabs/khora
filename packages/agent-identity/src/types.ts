@@ -35,12 +35,8 @@ export type ToolExecutedPayload = {
  * {@code Env} (e.g. {@code {}} vs {@code unknown}) without contravariance on pipeline hooks.
  */
 export type ToolPipelineHooks = {
-  onPolicyEvaluated?: (
-    event: PolicyEvaluatedPayload & { env: unknown },
-  ) => void | Promise<void>;
-  onToolExecuted?: (
-    event: ToolExecutedPayload & { env: unknown },
-  ) => void | Promise<void>;
+  onPolicyEvaluated?: (event: PolicyEvaluatedPayload & { env: unknown }) => void | Promise<void>;
+  onToolExecuted?: (event: ToolExecutedPayload & { env: unknown }) => void | Promise<void>;
 };
 
 export type ToolkitContext<Env = unknown> = {
@@ -86,9 +82,7 @@ export type ToolSpec = {
   ) => Promise<unknown> | AsyncIterable<unknown>;
 };
 
-export type ToolkitResult<
-  TOOLS extends Record<string, ToolSpec> = Record<string, ToolSpec>,
-> = {
+export type ToolkitResult<TOOLS extends Record<string, ToolSpec> = Record<string, ToolSpec>> = {
   tools: TOOLS;
   instructions: string;
 };
@@ -111,9 +105,29 @@ export type Composable<
   ) => Promise<ToolkitResult<TOOLS>>;
 };
 
+/**
+ * Definition-time metadata for a registered agent (parallel to {@link ToolStaticProps}).
+ * Introspect without evaluating; also available from {@link AgentRegistry.get}.
+ */
+export type AgentStaticProps = {
+  kind: "registered-agent";
+  agentId: string;
+  name: string;
+  /** Same lines as {@link RegisteredAgentIdentity.staticInstructions}; kept for display/registry. */
+  instructions: string[];
+  /** Default static context merged first in a session. */
+  context?: Record<string, unknown>;
+};
+
 export type RegisteredAgentIdentity = {
   agentId: string;
   name: string;
   /** Pre-computed from root composable via bottom-up hashing. */
   staticHash: string;
+  staticProps: AgentStaticProps;
+  /** Agent-level static instruction lines; compiled with toolkit evaluation at runtime. */
+  staticInstructions: string[];
+  /** Default session context merged before registry/session context additions. */
+  staticContext: Record<string, unknown>;
+  rootComposable: Composable<{ kind: string; name: string }, Record<string, ToolSpec>, unknown>;
 };

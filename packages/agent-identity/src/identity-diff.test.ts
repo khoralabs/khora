@@ -34,9 +34,7 @@ describe("diffToolRefs", () => {
     const d = diffToolRefs(a, b);
     expect(d.onlyInFirst).toEqual([{ toolKey: "x", toolHash: "01" }]);
     expect(d.onlyInSecond).toEqual([{ toolKey: "z", toolHash: "03" }]);
-    expect(d.hashChanged).toEqual([
-      { toolKey: "y", firstHash: "02", secondHash: "99" },
-    ]);
+    expect(d.hashChanged).toEqual([{ toolKey: "y", firstHash: "02", secondHash: "99" }]);
   });
 });
 
@@ -50,12 +48,7 @@ describe("diffIdentityLinks", () => {
     };
     const d = diffIdentityLinks(x, { ...x });
     expect(d.changed).toEqual([]);
-    const allFields: IdentityLinkField[] = [
-      "agentId",
-      "agentName",
-      "staticHash",
-      "runtimeHash",
-    ];
+    const allFields: IdentityLinkField[] = ["agentId", "agentName", "staticHash", "runtimeHash"];
     expect([...d.unchanged].sort()).toEqual([...allFields].sort());
   });
 
@@ -83,9 +76,7 @@ describe("explainIdentityLinkRelationship", () => {
 
   test("same", () => {
     const x = base();
-    expect(explainIdentityLinkRelationship(x, { ...x })).toBe(
-      "Same identity link.",
-    );
+    expect(explainIdentityLinkRelationship(x, { ...x })).toBe("Same identity link.");
   });
 
   test("different agent id", () => {

@@ -78,7 +78,7 @@ Grouped by role; full exports (including types like `ToolSpec`, `Composable`, `I
 
 ### Agent label + link
 
-- `defineAgentIdentity` / `createIdentityLink`
+- `createRegisteredAgentIdentity` / `createIdentityLink`
 
 ### Dashboard-style helpers
 
@@ -87,6 +87,10 @@ Grouped by role; full exports (including types like `ToolSpec`, `Composable`, `I
 ### Registries (in-memory; tests / examples)
 
 - `createToolRegistry` / `createAgentRegistry` / `hashToolComposableStatic`
+- `createAgentRegistry().register(agent, { hooks, ctx, run })`
+- `createAgentRegistry().createSession(agentId, { hooks, ctx, run })`
+  - `session.onStart(...)` / `session.onAfterIdentity(...)` / `session.onAfterContext(...)` / `session.onBeforeRun(...)` / `session.onAfterRun(...)` / `session.onError(...)`
+  - `session.start(input)` runs with composed hooks and merged context (`session > registry > agent static`)
 
 ### Output
 

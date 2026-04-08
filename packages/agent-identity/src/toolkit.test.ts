@@ -10,10 +10,7 @@ const schema: StandardSchemaV1<{ n: number }> = {
     vendor: "test",
     types: { input: {} as { n: number }, output: {} as { n: number } },
     validate: (v) =>
-      typeof v === "object" &&
-      v !== null &&
-      "n" in v &&
-      typeof (v as { n: unknown }).n === "number"
+      typeof v === "object" && v !== null && "n" in v && typeof (v as { n: unknown }).n === "number"
         ? { value: v as { n: number } }
         : { issues: [{ message: "bad" }] },
   },

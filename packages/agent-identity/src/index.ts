@@ -1,8 +1,16 @@
 export type {
   AgentRegistry,
+  AgentSession,
+  AgentSessionHooks,
+  CreateSessionOptions,
+  RegisterAgentOptions,
   RegisteredAgentEntry,
+  SessionContext,
+  SessionContextInput,
+  SessionRunner,
 } from "./agent-registry.js";
 export { createAgentRegistry } from "./agent-registry.js";
+export { assembleToolkitAgentInstructions } from "./assemble-toolkit-instructions.js";
 export type {
   RuntimeIdentityCanonicalPayload,
   ToolIdentityCanonicalPayload,
@@ -11,8 +19,12 @@ export {
   runtimeIdentityCanonicalPayload,
   toolSpecCanonicalPayload,
 } from "./canonical-payloads.js";
+export {
+  evaluateRegisteredAgentAffordances,
+  type RegisteredAgentAffordances,
+} from "./evaluate-registered-agent-affordances.js";
 export { hashPlainObject, schemaToHashInput } from "./hash.js";
-export { defineAgentIdentity } from "./identity.js";
+export type { AgentStaticProps, RegisteredAgentIdentity } from "./identity.js";
 export type {
   IdentityLinkField,
   IdentityLinkFieldChange,
@@ -42,6 +54,10 @@ export {
   mergeToolPipelineHooks,
 } from "./pipeline-hooks.js";
 export { policy } from "./policy.js";
+export {
+  type CreateRegisteredAgentIdentityArgs,
+  createRegisteredAgentIdentity,
+} from "./registered-agent.js";
 export {
   collectToolStaticHashes,
   computeRuntimeHash,
@@ -80,7 +96,6 @@ export type {
   PolicyEvaluatedPayload,
   PolicyEvaluatedPhase,
   PolicyResultMap,
-  RegisteredAgentIdentity,
   SharedPolicy,
   ToolExecutedPayload,
   ToolkitContext,

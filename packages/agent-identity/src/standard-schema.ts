@@ -64,14 +64,9 @@ export declare namespace StandardSchemaV1 {
     readonly key: PropertyKey;
   }
 
-  export type Types<Input = unknown, Output = Input> = StandardTypedV1.Types<
-    Input,
-    Output
-  >;
+  export type Types<Input = unknown, Output = Input> = StandardTypedV1.Types<Input, Output>;
 
-  export type InferInput<Schema extends StandardTypedV1> =
-    StandardTypedV1.InferInput<Schema>;
+  export type InferInput<Schema extends StandardTypedV1> = StandardTypedV1.InferInput<Schema>;
 
-  export type InferOutput<Schema extends StandardTypedV1> =
-    StandardTypedV1.InferOutput<Schema>;
+  export type InferOutput<Schema extends StandardTypedV1> = StandardTypedV1.InferOutput<Schema>;
 }

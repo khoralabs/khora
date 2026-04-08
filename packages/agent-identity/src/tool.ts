@@ -1,8 +1,5 @@
 import { hashPlainObject, schemaToHashInput } from "./hash.js";
-import {
-  evaluatePolicyWithHooks,
-  mergeToolPipelineHooks,
-} from "./pipeline-hooks.js";
+import { evaluatePolicyWithHooks, mergeToolPipelineHooks } from "./pipeline-hooks.js";
 import type { StandardSchemaV1 } from "./standard-schema.js";
 import type {
   Composable,
@@ -32,13 +29,11 @@ export type ToolStaticProps<
 };
 
 /** Extract {@code Env} from a leaf tool’s {@link ToolStaticProps} (defaults to {@code unknown}). */
-export type ExtractToolStaticEnv<SP> = SP extends ToolStaticProps<string, infer _I, infer Env>
-  ? Env
-  : unknown;
+export type ExtractToolStaticEnv<SP> =
+  SP extends ToolStaticProps<string, infer _I, infer Env> ? Env : unknown;
 
 function monotonicNowMs(): number {
-  return typeof performance !== "undefined" &&
-    typeof performance.now === "function"
+  return typeof performance !== "undefined" && typeof performance.now === "function"
     ? performance.now()
     : Date.now();
 }
@@ -73,9 +68,7 @@ export function tool<
     instructions: args.instructions,
   };
 
-  const policyIds = [...policies.map((p) => p.id)].sort((a, b) =>
-    a.localeCompare(b),
-  );
+  const policyIds = [...policies.map((p) => p.id)].sort((a, b) => a.localeCompare(b));
 
   async function computeStaticHash(): Promise<string> {
     return hashPlainObject({
@@ -83,9 +76,7 @@ export function tool<
       name: args.name,
       description: args.description ?? null,
       schema: schemaToHashInput(args.inputSchema),
-      instructions: [...(args.instructions ?? [])].sort((a, b) =>
-        a.localeCompare(b),
-      ),
+      instructions: [...(args.instructions ?? [])].sort((a, b) => a.localeCompare(b)),
       policies: policyIds,
     });
   }
@@ -95,11 +86,7 @@ export function tool<
     resolvedPolicies?: PolicyResultMap,
   ): Promise<ToolkitResult<Record<NAME, ToolSpec>>> {
     const resolved = resolvedPolicies ?? new Map<SharedPolicy, boolean>();
-    const hooks = mergeToolPipelineHooks(
-      ctx.inheritedPipelineHooks,
-      args.hooks,
-      ctx.pipelineHooks,
-    );
+    const hooks = mergeToolPipelineHooks(ctx.inheritedPipelineHooks, args.hooks, ctx.pipelineHooks);
 
     for (const policy of policies) {
       let ok: boolean;

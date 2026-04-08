@@ -3,12 +3,15 @@ import type { MemoriesClient, SearchHit } from "@cfd/memories";
 import z from "zod";
 import { type EmbeddingModel, embedTextChunks } from "../adapters/embedding-model";
 
+/** Wide ontology maps; session clients use narrower TNode/TEdge at runtime (see {@link toMemoryLibrarianEnv}). */
+export type MemoryLibrarianWideClient = MemoriesClient<
+  Record<string, z.ZodType>,
+  Record<string, z.ZodType>
+>;
+
 /** Runtime env for {@link memoryLibrarianToolkit}: client, namespace, and embedding model (injected; not tool args). */
-export type MemoryLibrarianEnv<
-  TNode extends Record<string, z.ZodType> = Record<string, z.ZodType>,
-  TEdge extends Record<string, z.ZodType> = Record<string, z.ZodType>,
-> = {
-  client: MemoriesClient<TNode, TEdge>;
+export type MemoryLibrarianEnv = {
+  client: MemoryLibrarianWideClient;
   namespace: string;
   /** Used to embed `content.text` for the vector retrieval arm (same model as ingestion). */
   embeddingModel: EmbeddingModel;

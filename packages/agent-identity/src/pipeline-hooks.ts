@@ -16,9 +16,7 @@ export function mergeToolPipelineHooks(
   const onPolicyEvaluated = layers.flatMap((l) =>
     l?.onPolicyEvaluated ? [l.onPolicyEvaluated] : [],
   );
-  const onToolExecuted = layers.flatMap((l) =>
-    l?.onToolExecuted ? [l.onToolExecuted] : [],
-  );
+  const onToolExecuted = layers.flatMap((l) => (l?.onToolExecuted ? [l.onToolExecuted] : []));
   if (onPolicyEvaluated.length === 0 && onToolExecuted.length === 0) {
     return undefined;
   }

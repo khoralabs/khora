@@ -1,7 +1,4 @@
-import {
-  runtimeIdentityCanonicalPayload,
-  toolSpecCanonicalPayload,
-} from "./canonical-payloads.js";
+import { runtimeIdentityCanonicalPayload, toolSpecCanonicalPayload } from "./canonical-payloads.js";
 import { hashPlainObject } from "./hash.js";
 import type { AnyComposable, ComposableWithChildren } from "./toolkit.js";
 import type { Composable, ToolkitContext, ToolSpec } from "./types.js";
@@ -70,11 +67,7 @@ export async function computeRuntimeHash(
   nameToStaticHash: Map<string, string>,
   toolsFallback: Record<string, ToolSpec>,
 ): Promise<string> {
-  const refs = await resolveRuntimeToolRefs(
-    enabledToolNames,
-    nameToStaticHash,
-    toolsFallback,
-  );
+  const refs = await resolveRuntimeToolRefs(enabledToolNames, nameToStaticHash, toolsFallback);
   return hashPlainObject(runtimeIdentityCanonicalPayload(refs));
 }
 
@@ -95,14 +88,8 @@ export async function computeRuntimeIdentityFromEvaluation<
 }> {
   const nameToStaticHash = await collectToolStaticHashes(root);
   const { tools } = await root.evaluate(ctx);
-  const toolRefs = await resolveRuntimeToolRefs(
-    Object.keys(tools),
-    nameToStaticHash,
-    tools,
-  );
-  const runtimeHash = await hashPlainObject(
-    runtimeIdentityCanonicalPayload(toolRefs),
-  );
+  const toolRefs = await resolveRuntimeToolRefs(Object.keys(tools), nameToStaticHash, tools);
+  const runtimeHash = await hashPlainObject(runtimeIdentityCanonicalPayload(toolRefs));
   return { runtimeHash, toolRefs, evaluatedTools: tools };
 }
 

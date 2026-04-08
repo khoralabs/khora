@@ -1,8 +1,5 @@
 import { hashPlainObject } from "./hash.js";
-import {
-  evaluatePolicyWithHooks,
-  mergeToolPipelineHooks,
-} from "./pipeline-hooks.js";
+import { evaluatePolicyWithHooks, mergeToolPipelineHooks } from "./pipeline-hooks.js";
 import type {
   Composable,
   PolicyEvaluatedPayload,
@@ -24,16 +21,13 @@ type Simplify<T> = { [K in keyof T]: T[K] } & {};
 // biome-ignore lint/suspicious/noExplicitAny: required to express "any env" while preserving member inference
 type AnyEnv = any;
 
-type UnionToIntersection<T> = (
-  T extends unknown
-    ? (value: T) => void
-    : never
-) extends (value: infer I) => void
+type UnionToIntersection<T> = (T extends unknown ? (value: T) => void : never) extends (
+  value: infer I,
+) => void
   ? I
   : never;
 
-export type ExtractComposableTools<T> =
-  T extends Composable<infer _, infer TOOLS> ? TOOLS : never;
+export type ExtractComposableTools<T> = T extends Composable<infer _, infer TOOLS> ? TOOLS : never;
 
 export type ExtractComposableEnv<T> =
   T extends Composable<infer _, infer __, infer Env> ? Env : never;
@@ -46,12 +40,13 @@ type MergeToolMaps<T> = [T] extends [never]
   ? Record<never, never>
   : Simplify<ExactToolMap<UnionToIntersection<T>>>;
 
-export type ToolMapFromMembers<
-  MEMBERS extends readonly AnyComposable<AnyEnv>[],
-> = MergeToolMaps<ExtractComposableTools<MEMBERS[number]>>;
+export type ToolMapFromMembers<MEMBERS extends readonly AnyComposable<AnyEnv>[]> = MergeToolMaps<
+  ExtractComposableTools<MEMBERS[number]>
+>;
 
-export type EnvFromMembers<MEMBERS extends readonly AnyComposable<AnyEnv>[]> =
-  ExtractComposableEnv<MEMBERS[number]>;
+export type EnvFromMembers<MEMBERS extends readonly AnyComposable<AnyEnv>[]> = ExtractComposableEnv<
+  MEMBERS[number]
+>;
 
 type KeyedStaticProps<MEMBERS extends readonly AnyComposable<AnyEnv>[]> = {
   [M in MEMBERS[number] as M["staticProps"] extends {
@@ -146,8 +141,7 @@ export function toolkit<
     const childCtx: ToolkitContext<EnvFromMembers<MEMBERS>> = {
       ...ctx,
       inheritedPipelineHooks:
-        mergeToolPipelineHooks(ctx.inheritedPipelineHooks, options.hooks) ??
-        undefined,
+        mergeToolPipelineHooks(ctx.inheritedPipelineHooks, options.hooks) ?? undefined,
     };
 
     await resolvePolicies(policies, ctx, resolved, hooks, {
@@ -155,9 +149,7 @@ export function toolkit<
       composableName: options.name,
     });
 
-    const results = await Promise.all(
-      members.map((m) => m.evaluate(childCtx, resolved)),
-    );
+    const results = await Promise.all(members.map((m) => m.evaluate(childCtx, resolved)));
     const mergedTools = Object.assign(
       {} as ToolMapFromMembers<MEMBERS>,
       ...results.map((r) => r.tools),
@@ -166,10 +158,7 @@ export function toolkit<
     return {
       tools: mergedTools,
       instructions: hasAnyTool
-        ? [
-            ...(options?.instructions ?? []),
-            ...results.map((r) => r.instructions),
-          ]
+        ? [...(options?.instructions ?? []), ...results.map((r) => r.instructions)]
             .filter(Boolean)
             .join("\n\n")
         : "",
@@ -208,9 +197,7 @@ export function dynamicToolkit<const NAME extends string, Env = unknown>({
   Env
 > {
   const policies = policiesConfig ?? [];
-  const policyIds = [...policies.map((p) => p.id)].sort((a, b) =>
-    a.localeCompare(b),
-  );
+  const policyIds = [...policies.map((p) => p.id)].sort((a, b) => a.localeCompare(b));
 
   const staticProps = {
     kind: "dynamicToolkit" as const,
@@ -241,8 +228,7 @@ export function dynamicToolkit<const NAME extends string, Env = unknown>({
     const childCtx: ToolkitContext<Env> = {
       ...ctx,
       inheritedPipelineHooks:
-        mergeToolPipelineHooks(ctx.inheritedPipelineHooks, dynamicHooks) ??
-        undefined,
+        mergeToolPipelineHooks(ctx.inheritedPipelineHooks, dynamicHooks) ?? undefined,
     };
 
     for (const policy of policies) {
@@ -263,9 +249,7 @@ export function dynamicToolkit<const NAME extends string, Env = unknown>({
       composableName: name,
     });
 
-    const results = await Promise.all(
-      members.map((m) => m.evaluate(childCtx, resolved)),
-    );
+    const results = await Promise.all(members.map((m) => m.evaluate(childCtx, resolved)));
     const mergedTools = Object.assign(
       {} as Record<string, ToolSpec>,
       ...results.map((r) => r.tools),
@@ -284,10 +268,7 @@ export function dynamicToolkit<const NAME extends string, Env = unknown>({
   return { staticProps, policies, evaluate, computeStaticHash };
 }
 
-export async function evaluateComposable<
-  Tools extends Record<string, ToolSpec>,
-  Env,
->(
+export async function evaluateComposable<Tools extends Record<string, ToolSpec>, Env>(
   composable: Composable<{ kind: string; name: string }, Tools, Env>,
   ctx: ToolkitContext<Env>,
 ): Promise<ToolkitResult<Tools>> {

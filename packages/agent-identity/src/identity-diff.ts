@@ -13,10 +13,7 @@ export type ToolRefsDiff = {
   }>;
 };
 
-export function diffToolRefs(
-  first: ToolRefRow[],
-  second: ToolRefRow[],
-): ToolRefsDiff {
+export function diffToolRefs(first: ToolRefRow[], second: ToolRefRow[]): ToolRefsDiff {
   const m1 = new Map(first.map((r) => [r.toolKey, r.toolHash] as const));
   const m2 = new Map(second.map((r) => [r.toolKey, r.toolHash] as const));
   const onlyInFirst: ToolRefRow[] = [];
@@ -60,10 +57,7 @@ const IDENTITY_LINK_FIELDS: IdentityLinkField[] = [
   "runtimeHash",
 ];
 
-export function diffIdentityLinks(
-  a: IdentityLink,
-  b: IdentityLink,
-): IdentityLinksDiff {
+export function diffIdentityLinks(a: IdentityLink, b: IdentityLink): IdentityLinksDiff {
   const unchanged: IdentityLinkField[] = [];
   const changed: IdentityLinkFieldChange[] = [];
   for (const field of IDENTITY_LINK_FIELDS) {
@@ -82,10 +76,7 @@ export function diffIdentityLinks(
  * Short human-readable comparison for dashboards (not i18n).
  * Prefer {@link diffIdentityLinks} for structured UI.
  */
-export function explainIdentityLinkRelationship(
-  a: IdentityLink,
-  b: IdentityLink,
-): string {
+export function explainIdentityLinkRelationship(a: IdentityLink, b: IdentityLink): string {
   if (a.agentId !== b.agentId) {
     return "Different agent ids.";
   }

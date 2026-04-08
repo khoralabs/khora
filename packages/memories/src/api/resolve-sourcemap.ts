@@ -19,6 +19,9 @@ export interface Store {
   resolve(sourcemap: SourceMap): Promise<ResolvedSource>;
 }
 
-export async function resolveSourcemap(sourcemap: SourceMap, store: Store): Promise<ResolvedSource> {
+export async function resolveSourcemap(
+  sourcemap: SourceMap,
+  store: Store,
+): Promise<ResolvedSource> {
   return store.resolve(sourcemap);
 }

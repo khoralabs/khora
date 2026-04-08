@@ -5,6 +5,7 @@ import type {
   OntologyDefinition,
   TypedMergeParams,
 } from "@cfd/memories";
+import { Output } from "ai";
 import z from "zod";
 
 const zLabelWire = z.object({
@@ -66,6 +67,17 @@ export const zLibrarianMergePlanWire = z.object({
 });
 
 export type LibrarianMergePlanWire = z.infer<typeof zLibrarianMergePlanWire>;
+
+/** Shared AI SDK structured output for the librarian merge plan (factory + pipeline typing). */
+export const librarianMergePlanOutput = Output.object({
+  name: "LibrarianMergePlan",
+  description:
+    "Labels and edges for the target logical memory. Edge memory_key values must refer to existing memories in this namespace (prefetch list or memory_search results).",
+  schema: zLibrarianMergePlanWire,
+});
+
+/** Type parameter for `GenerateTextResult` / `ToolLoopAgent` when using `librarianMergePlanOutput`. */
+export type LibrarianMergePlanStructuredOutput = typeof librarianMergePlanOutput;
 
 /**
  * Validates wire labels/edges against the ontology and returns merge slice compatible with

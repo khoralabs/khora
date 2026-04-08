@@ -34,12 +34,8 @@ export type ToolIdentityCanonicalPayload = {
  * Canonical object hashed by {@link hashToolSpecIdentity} (before SHA-256).
  * Pairs with {@link runtimeIdentityCanonicalPayload} for “what differed?” UIs.
  */
-export function toolSpecCanonicalPayload(
-  spec: ToolSpec,
-): ToolIdentityCanonicalPayload {
-  const instructionLines = spec.instructions
-    ? spec.instructions.split("\n\n")
-    : [];
+export function toolSpecCanonicalPayload(spec: ToolSpec): ToolIdentityCanonicalPayload {
+  const instructionLines = spec.instructions ? spec.instructions.split("\n\n") : [];
   return {
     kind: "tool",
     name: spec.name,

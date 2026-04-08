@@ -1,8 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-  runtimeIdentityCanonicalPayload,
-  toolSpecCanonicalPayload,
-} from "./canonical-payloads.js";
+import { runtimeIdentityCanonicalPayload, toolSpecCanonicalPayload } from "./canonical-payloads.js";
 import { hashPlainObject } from "./hash.js";
 import {
   collectToolStaticHashes,
@@ -20,10 +17,7 @@ const schema: StandardSchemaV1<{ n: number }> = {
     vendor: "test",
     types: { input: {} as { n: number }, output: {} as { n: number } },
     validate: (v) =>
-      typeof v === "object" &&
-      v !== null &&
-      "n" in v &&
-      typeof (v as { n: unknown }).n === "number"
+      typeof v === "object" && v !== null && "n" in v && typeof (v as { n: unknown }).n === "number"
         ? { value: v as { n: number } }
         : { issues: [{ message: "bad" }] },
   },
@@ -44,9 +38,7 @@ describe("runtimeIdentityCanonicalPayload", () => {
       nameToStaticHash,
       evaluated.tools,
     );
-    const fromCanonical = await hashPlainObject(
-      runtimeIdentityCanonicalPayload(refs),
-    );
+    const fromCanonical = await hashPlainObject(runtimeIdentityCanonicalPayload(refs));
     const fromCompute = await computeRuntimeHash(
       Object.keys(evaluated.tools),
       nameToStaticHash,

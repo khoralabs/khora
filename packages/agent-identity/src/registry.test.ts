@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { createAgentRegistry } from "./agent-registry.js";
-import { defineAgentIdentity } from "./identity.js";
-import { policy } from "./policy.js";
+import { createRegisteredAgentIdentity } from "./registered-agent.js";
 import type { StandardSchemaV1 } from "./standard-schema.js";
 import { tool } from "./tool.js";
 import { hashToolComposableStatic } from "./tool-identity.js";
@@ -14,10 +13,7 @@ const schema: StandardSchemaV1<{ n: number }> = {
     vendor: "test",
     types: { input: {} as { n: number }, output: {} as { n: number } },
     validate: (v) =>
-      typeof v === "object" &&
-      v !== null &&
-      "n" in v &&
-      typeof (v as { n: unknown }).n === "number"
+      typeof v === "object" && v !== null && "n" in v && typeof (v as { n: unknown }).n === "number"
         ? { value: v as { n: number } }
         : { issues: [{ message: "bad" }] },
   },
@@ -53,9 +49,7 @@ describe("createToolRegistry", () => {
       handler: async () => 0,
     });
     await reg.register("t", t2);
-    expect(await reg.get("t")?.composable.computeStaticHash()).toBe(
-      await t2.computeStaticHash(),
-    );
+    expect(await reg.get("t")?.composable.computeStaticHash()).toBe(await t2.computeStaticHash());
   });
 
   test("getByHash last write wins for same hash", async () => {
@@ -79,17 +73,20 @@ describe("createAgentRegistry", () => {
       inputSchema: schema,
       handler: async () => 0,
     });
-    const staticHash = await graph.computeStaticHash();
-    const agent = defineAgentIdentity({
+    const { staticHash, identity } = await createRegisteredAgentIdentity({
       agentId: "a1",
       name: "Agent",
-      staticHash,
+      instructions: ["static line"],
+      rootComposable: graph,
     });
-    const { staticHash: got } = reg.register(agent);
+    const { staticHash: got } = reg.register(identity);
     const entry = reg.get("a1");
     expect(got).toBe(staticHash);
-    expect(entry?.staticHash).toBe(staticHash);
+    expect(entry?.agent.staticHash).toBe(staticHash);
     expect(entry?.agent.agentId).toBe("a1");
+    expect(entry?.agent.staticProps.kind).toBe("registered-agent");
+    expect(entry?.agent.staticProps.instructions).toEqual(["static line"]);
+    expect(entry?.agent.rootComposable).toBe(graph);
   });
 
   test("last register wins for same agentId", async () => {
@@ -97,20 +94,107 @@ describe("createAgentRegistry", () => {
     const g1 = tool({ name: "a", inputSchema: schema, handler: async () => 0 });
     const g2 = tool({ name: "b", inputSchema: schema, handler: async () => 0 });
     await reg.register(
-      defineAgentIdentity({
-        agentId: "same",
-        name: "One",
-        staticHash: await g1.computeStaticHash(),
-      }),
+      (
+        await createRegisteredAgentIdentity({
+          agentId: "same",
+          name: "One",
+          instructions: [],
+          rootComposable: g1,
+        })
+      ).identity,
     );
     await reg.register(
-      defineAgentIdentity({
-        agentId: "same",
-        name: "Two",
-        staticHash: await g2.computeStaticHash(),
-      }),
+      (
+        await createRegisteredAgentIdentity({
+          agentId: "same",
+          name: "Two",
+          instructions: [],
+          rootComposable: g2,
+        })
+      ).identity,
     );
     expect(reg.get("same")?.agent.name).toBe("Two");
+  });
+
+  test("createSession composes hooks in registry-session-builder order", async () => {
+    const reg = createAgentRegistry();
+    const graph = tool({ name: "n", inputSchema: schema, handler: async () => 0 });
+    const { identity } = await createRegisteredAgentIdentity({
+      agentId: "hooks",
+      name: "Hooks",
+      instructions: [],
+      rootComposable: graph,
+    });
+    const seen: string[] = [];
+    reg.register(identity, {
+      hooks: {
+        onStart: () => {
+          seen.push("registry-start");
+        },
+      },
+      run: async () => 7,
+    });
+    const session = reg.createSession("hooks", {
+      hooks: {
+        onStart: () => {
+          seen.push("session-start");
+        },
+      },
+    });
+    session.onStart(() => {
+      seen.push("builder-start");
+    });
+    const out = await session.start<void, number>(undefined);
+    expect(out).toBe(7);
+    expect(seen).toEqual(["registry-start", "session-start", "builder-start"]);
+  });
+
+  test("context precedence is session over registry over agent static", async () => {
+    const reg = createAgentRegistry();
+    const graph = tool({ name: "n", inputSchema: schema, handler: async () => 0 });
+    const { identity } = await createRegisteredAgentIdentity({
+      agentId: "ctx",
+      name: "Ctx",
+      instructions: [],
+      context: { shared: "agent", onlyAgent: true },
+      rootComposable: graph,
+    });
+    reg.register(identity, {
+      ctx: { shared: "registry", onlyRegistry: true },
+      run: async ({ context }) => context,
+    });
+    const out = await reg.createSession("ctx", { ctx: { shared: "session", onlySession: true } }).start<
+      void,
+      Record<string, unknown>
+    >(undefined);
+    expect(out).toEqual({
+      shared: "session",
+      onlyAgent: true,
+      onlyRegistry: true,
+      onlySession: true,
+    });
+  });
+
+  test("context resolver runs at start with merged input", async () => {
+    const reg = createAgentRegistry();
+    const graph = tool({ name: "n", inputSchema: schema, handler: async () => 0 });
+    const { identity } = await createRegisteredAgentIdentity({
+      agentId: "resolver",
+      name: "Resolver",
+      instructions: [],
+      rootComposable: graph,
+    });
+    reg.register(identity, {
+      ctx: ({ input }) => ({ fromRegistryResolver: Number(input) + 1 }),
+      run: async ({ context }) => context,
+    });
+    const out = await reg.createSession("resolver", {
+      ctx: ({ context }) => ({ fromSessionResolver: Number(context.fromRegistryResolver) + 1 }),
+    }).start<number, Record<string, unknown>>(1);
+    expect(out).toEqual({
+      fromRegistryResolver: 2,
+      fromSessionResolver: 3,
+    });
   });
 });
 
@@ -122,8 +206,8 @@ describe("hashToolComposableStatic", () => {
       handler: async () => 0,
     });
     const tk = toolkit([t], { name: "root" });
-    await expect(hashToolComposableStatic(t)).resolves.toBeDefined();
-    await expect(hashToolComposableStatic(tk as never)).rejects.toThrow(
+    expect(hashToolComposableStatic(t)).resolves.toBeDefined();
+    expect(hashToolComposableStatic(tk as never)).rejects.toThrow(
       'expected composable with kind "tool"',
     );
   });

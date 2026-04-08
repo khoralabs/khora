@@ -1,45 +1,40 @@
-import { evaluateComposable, type ToolRuntimeContext } from "@cfd/agent-identity";
+import type { AgentRegistry } from "@cfd/agent-identity";
 import {
   type MemoriesClient,
-  type MergeMemoryContentItem,
   type ResolvedSource,
   resolveSourcemap,
-  type SearchHit,
   type Store,
   type TypedSearchHit,
 } from "@cfd/memories";
-import {
-  type GenerateTextResult,
-  generateText,
-  type ModelMessage,
-  Output,
-  stepCountIs,
-  type ToolSet,
-} from "ai";
+import type { LanguageModel } from "ai";
 import type z from "zod";
-import { type EmbeddingModel, toolMapToAiTools } from "../adapters";
+import type { EmbeddingModel } from "../adapters";
 import {
-  buildLibrarianBaseSystemContent,
-  type MemoryLibrarianEnv,
-  memoryLibrarianToolkit,
+  createAgentRegistry,
+  defineMemoryLibrarianIdentity,
+  memoryLibrarianRegistryRegistration,
+} from "../agent";
+import type {
+  LibrarianPipelineGeneration,
+  MemoryLibrarianSessionInput,
+  MemoryLibrarianSessionOutput,
 } from "../agent";
 import {
   decomposeLogicalMemoryToContent,
   type LogicalMemoryInput,
   type ProcessedLogicalMemory,
 } from "./logical-memory";
-import { mergeLogicalMemoryWithPlan, prefetchRelatedMemories } from "./organize";
-import { type LibrarianMergePlanWire, zLibrarianMergePlanWire } from "./plan";
+import { prefetchRelatedMemories } from "./organize";
+import type { LibrarianMergePlanWire } from "./plan";
 
-/** AI SDK result from the librarian `generateText` call (tools + structured plan). */
-export type LibrarianPipelineGeneration = GenerateTextResult<ToolSet, never>;
+export type { LibrarianPipelineGeneration };
 
 export interface ProcessLogicalMemoryWithLibrarianParams<
   TNode extends Record<string, z.ZodType>,
   TEdge extends Record<string, z.ZodType>,
 > {
   /** AI SDK language model (caller-supplied provider). */
-  model: Parameters<typeof generateText>[0]["model"];
+  model: LanguageModel;
   client: MemoriesClient<TNode, TEdge>;
   /** Same model used for ingestion / `memory_search` vector arm. */
   embeddingModel: EmbeddingModel;
@@ -54,6 +49,8 @@ export interface ProcessLogicalMemoryWithLibrarianParams<
   runMerge?: boolean;
   agentId?: string;
   agentName?: string;
+  /** When set, registers the static librarian identity for this namespace before generation. */
+  agentRegistry?: AgentRegistry;
 }
 
 export interface ProcessLogicalMemoryResult<
@@ -69,66 +66,6 @@ export interface ProcessLogicalMemoryResult<
   plan: LibrarianMergePlanWire;
   /** Full AI SDK result (tool calls, usage, structured output). */
   generation: LibrarianPipelineGeneration;
-}
-
-function buildUserMessageContent(
-  input: LogicalMemoryInput,
-  contentItems: MergeMemoryContentItem[],
-): string {
-  const lines: string[] = [];
-  lines.push(`Target memory key: ${input.key}`);
-  lines.push(`Namespace: ${input.namespace}`);
-  lines.push("");
-  lines.push("## Logical memory (what the user supplied)");
-  if (input.plaintext?.trim()) {
-    lines.push("### Plaintext");
-    lines.push(input.plaintext.trim());
-    lines.push("");
-  }
-  if (input.files?.length) {
-    for (let i = 0; i < input.files.length; i++) {
-      const f = input.files[i];
-      if (!f) continue;
-      lines.push(`### File ${i}: ${f.fileName ?? "unnamed"}`);
-      lines.push(`MIME: ${f.mimeType ?? "(unknown)"}`);
-      if (f.title) lines.push(`Title: ${f.title}`);
-      if (f.fallbackText) lines.push(`Fallback / excerpt: ${f.fallbackText}`);
-      lines.push(
-        "(Binary or long content is embedded into merge chunks; use tools and context below as needed.)",
-      );
-      lines.push("");
-    }
-  }
-  lines.push("## Merge chunk keys (from decomposition)");
-  for (const item of contentItems) {
-    lines.push(`- ${item.key}`);
-  }
-  return lines.join("\n");
-}
-
-async function formatResolvedSourceBlock(hit: SearchHit, source: ResolvedSource): Promise<string> {
-  const header = [
-    `Prefetched candidate: namespace=${hit.memory.namespace}`,
-    `memory.key=${hit.memory.key}`,
-    `source_key=${hit.source_key}`,
-    `score=${String(hit.score)}`,
-    hit.labels.length ? `node_labels=${hit.labels.join(",")}` : "",
-  ]
-    .filter(Boolean)
-    .join(" | ");
-
-  if (source.kind === "string") {
-    return `${header}\n\n---\n${source.string}`;
-  }
-  if (source.kind === "url") {
-    return `${header}\n\nURL: ${source.url}`;
-  }
-  const mime = source.blob.type || "application/octet-stream";
-  if (mime.startsWith("text/") || mime === "application/json" || mime === "application/xml") {
-    const t = await source.blob.text();
-    return `${header}\n\n---\n(${mime})\n${t}`;
-  }
-  return `${header}\n\n(binary blob: ${mime}, ${String(source.blob.size)} bytes — link using keys from this block or memory_search.)`;
 }
 
 /**
@@ -151,6 +88,7 @@ export async function processLogicalMemoryWithLibrarian<
     runMerge = true,
     agentId,
     agentName,
+    agentRegistry,
   } = params;
 
   const content = await decomposeLogicalMemoryToContent(logicalMemory);
@@ -166,78 +104,30 @@ export async function processLogicalMemoryWithLibrarian<
     resolvedSources.push({ hit, source });
   }
 
-  const evaluated = await evaluateComposable(memoryLibrarianToolkit, {
-    env: {
+  const { identity } = await defineMemoryLibrarianIdentity(logicalMemory.namespace);
+  const registry = agentRegistry ?? createAgentRegistry();
+  registry.register(identity, memoryLibrarianRegistryRegistration<TNode, TEdge>());
+  const session = registry.createSession(identity.agentId, {
+    ctx: {
+      model,
       client,
-      namespace: logicalMemory.namespace,
       embeddingModel,
-    } as unknown as MemoryLibrarianEnv,
-    namespace: logicalMemory.namespace,
-    agentId,
-    agentName,
+      agentId,
+      agentName,
+    },
   });
 
-  const runtime: ToolRuntimeContext<MemoryLibrarianEnv> = {
-    env: {
-      client,
-      namespace: logicalMemory.namespace,
-      embeddingModel,
-    } as unknown as MemoryLibrarianEnv,
-    namespace: logicalMemory.namespace,
-    agentId,
-    agentName,
-  };
-
-  const aiTools = toolMapToAiTools(evaluated.tools, runtime);
-
-  const baseSystem = buildLibrarianBaseSystemContent(client.ontology);
-
-  const allowedKeys = [...new Set(prefetchedHits.map((h) => h.memory.key))];
-  const keysSection =
-    allowedKeys.length > 0
-      ? `## Candidate memory keys from prefetch (edges must use existing keys)\n${allowedKeys.map((k) => `- \`${k}\``).join("\n")}\n\nYou may also discover keys via **memory_search**.`
-      : "No prefetch hits; use **memory_search** to find existing memories before choosing edge targets.";
-
-  const toolkitSection = evaluated.instructions.trim()
-    ? `## Toolkit instructions\n${evaluated.instructions}`
-    : "";
-
-  const resolvedSections = await Promise.all(
-    resolvedSources.map(({ hit, source }) => formatResolvedSourceBlock(hit, source)),
-  );
-
-  const messages: ModelMessage[] = [
-    { role: "system", content: baseSystem },
-    { role: "system", content: keysSection },
-    ...(toolkitSection ? [{ role: "system" as const, content: toolkitSection }] : []),
-    ...resolvedSections.map((c) => ({
-      role: "system" as const,
-      content: `## Resolved source\n${c}`,
-    })),
-    {
-      role: "user",
-      content: buildUserMessageContent(logicalMemory, content),
-    },
-  ];
-
-  const generation = (await generateText({
-    model,
-    tools: aiTools,
-    stopWhen: stepCountIs(maxSteps),
-    messages,
-    output: Output.object({
-      name: "LibrarianMergePlan",
-      description:
-        "Labels and edges for the target logical memory. Edge memory_key values must refer to existing memories in this namespace (prefetch list or memory_search results).",
-      schema: zLibrarianMergePlanWire,
-    }),
-  })) as LibrarianPipelineGeneration;
-
-  const plan = zLibrarianMergePlanWire.parse(generation.output);
-
-  if (runMerge) {
-    await mergeLogicalMemoryWithPlan(client, processedLogicalMemory, plan);
-  }
+  const { generation, plan } = await session.start<
+    MemoryLibrarianSessionInput<TNode, TEdge>,
+    MemoryLibrarianSessionOutput
+  >({
+    logicalMemory,
+    processedLogicalMemory,
+    prefetchedHits,
+    resolvedSources,
+    runMerge,
+    maxSteps,
+  });
 
   return {
     processedLogicalMemory,

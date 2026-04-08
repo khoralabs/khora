@@ -14,10 +14,7 @@ const schema: StandardSchemaV1<{ n: number }> = {
     vendor: "test",
     types: { input: {} as { n: number }, output: {} as { n: number } },
     validate: (v) =>
-      typeof v === "object" &&
-      v !== null &&
-      "n" in v &&
-      typeof (v as { n: unknown }).n === "number"
+      typeof v === "object" && v !== null && "n" in v && typeof (v as { n: unknown }).n === "number"
         ? { value: v as { n: number } }
         : { issues: [{ message: "bad" }] },
   },
@@ -32,14 +29,14 @@ describe("computeRuntimeIdentityFromEvaluation", () => {
     });
     const graph = toolkit([t], { name: "root" });
     const ctx = { env: {} };
-    const { runtimeHash, toolRefs, evaluatedTools } =
-      await computeRuntimeIdentityFromEvaluation(graph, ctx);
+    const { runtimeHash, toolRefs, evaluatedTools } = await computeRuntimeIdentityFromEvaluation(
+      graph,
+      ctx,
+    );
 
     const nameToStaticHash = await collectToolStaticHashes(graph);
     const evaluated = await evaluateComposable(graph, ctx);
-    expect(Object.keys(evaluated.tools).sort()).toEqual(
-      Object.keys(evaluatedTools).sort(),
-    );
+    expect(Object.keys(evaluated.tools).sort()).toEqual(Object.keys(evaluatedTools).sort());
 
     const expectedHash = await computeRuntimeHash(
       Object.keys(evaluated.tools),

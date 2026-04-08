@@ -3,16 +3,14 @@ export type ToolErrorOutput = {
   error: string;
 };
 
-export type ToolSuccessOutput<
-  DATA extends Record<string, unknown> | undefined = undefined,
-> = {
+export type ToolSuccessOutput<DATA extends Record<string, unknown> | undefined = undefined> = {
   ok: true;
   data?: DATA;
 };
 
-export type ToolOutput<
-  DATA extends Record<string, unknown> | undefined = undefined,
-> = ToolErrorOutput | ToolSuccessOutput<DATA>;
+export type ToolOutput<DATA extends Record<string, unknown> | undefined = undefined> =
+  | ToolErrorOutput
+  | ToolSuccessOutput<DATA>;
 
 export async function withFormattedResults<
   DATA extends Record<string, unknown> | undefined = undefined,

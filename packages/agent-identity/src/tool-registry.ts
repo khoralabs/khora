@@ -22,10 +22,7 @@ export function createToolRegistry(): ToolRegistry {
   const byKey = new Map<string, RegisteredToolEntry>();
   const byHash = new Map<string, RegisteredToolEntry>();
 
-  async function register(
-    key: string,
-    composable: AnyComposable,
-  ): Promise<string> {
+  async function register(key: string, composable: AnyComposable): Promise<string> {
     const hash = await composable.computeStaticHash();
     const entry: RegisteredToolEntry = { key, hash, composable };
     byKey.set(key, entry);

@@ -6,9 +6,8 @@ import { evaluateComposable, policy, tool, toolkit } from "../src/index.ts";
 import { greetInputSchema } from "./standard-schema-helpers.ts";
 import { toolMapToAiTools } from "./toAiSdk.ts";
 
-const allowGreeting = policy(
-  "allow-greeting",
-  async (env: { allow: boolean }) => Promise.resolve(env.allow),
+const allowGreeting = policy("allow-greeting", async (env: { allow: boolean }) =>
+  Promise.resolve(env.allow),
 );
 
 const greet = tool({
