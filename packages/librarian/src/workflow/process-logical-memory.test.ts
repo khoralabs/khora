@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { zLibrarianMergePlanWire } from "./librarian-plan";
+import { zLibrarianMergePlanWire } from "./plan";
 
 describe("processLogicalMemoryWithLibrarian (schema + prompts)", () => {
   test("zLibrarianMergePlanWire accepts empty labels and edges", () => {

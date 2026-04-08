@@ -1,11 +1,11 @@
 import z from "zod";
-import type { TypedMergeParams } from "../api/client";
 import type {
   EdgeLabelInstance,
   LabelSchemaMap,
   NodeLabelInstance,
   OntologyDefinition,
-} from "../api/ontology";
+  TypedMergeParams,
+} from "@cfd/memories";
 
 const zLabelWire = z.object({
   kind: z

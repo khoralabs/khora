@@ -1,4 +1,4 @@
-import type { SourceMap } from "../db/schema";
+import type { SourceMap } from "@cfd/memories";
 
 /** Resolved payload for a {@link SourceMap} from a {@link Store}. */
 export type ResolvedSource =

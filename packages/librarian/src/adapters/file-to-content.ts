@@ -1,4 +1,4 @@
-import type { MergeMemoryContentItem } from "../api/merge-memory";
+import type { MergeMemoryContentItem } from "@cfd/memories";
 import {
   createEmbeddingModel,
   type EmbeddingModel,

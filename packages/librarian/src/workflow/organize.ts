@@ -1,9 +1,12 @@
+import type {
+  MemoriesClient,
+  MergeMemoryContentItem,
+  SearchContent,
+  TypedSearchHit,
+} from "@cfd/memories";
 import type z from "zod";
-import type { MemoriesClient, TypedSearchHit } from "../api/client";
-import type { MergeMemoryContentItem } from "../api/merge-memory";
-import type { SearchContent } from "../api/search";
-import { type LibrarianMergePlanWire, parseLibrarianMergePlan } from "./librarian-plan";
 import type { ProcessedLogicalMemory } from "./logical-memory";
+import { type LibrarianMergePlanWire, parseLibrarianMergePlan } from "./plan";
 
 /** Strip merge `key` and narrow optional fields to {@link SearchContent}. */
 export function mergeMemoryItemToSearchContent(item: MergeMemoryContentItem): SearchContent {

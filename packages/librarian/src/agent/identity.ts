@@ -1,5 +1,5 @@
 import { defineAgentIdentity } from "@cfd/agent-identity";
-import { memoryLibrarianToolkit } from "./librarian-toolkit";
+import { memoryLibrarianToolkit } from "./toolkit";
 
 /** Stable librarian agent id for registry / fingerprinting. */
 export const MEMORY_LIBRARIAN_AGENT_ID = "memory-librarian";

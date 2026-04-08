@@ -1,22 +1,26 @@
 import { evaluateComposable, type ToolRuntimeContext } from "@cfd/agent-identity";
+import type {
+  MemoriesClient,
+  MergeMemoryContentItem,
+  SearchHit,
+  TypedSearchHit,
+} from "@cfd/memories";
 import type { GenerateTextResult, ModelMessage, ToolSet } from "ai";
 import { generateText, Output, stepCountIs } from "ai";
 import type z from "zod";
 import type { EmbeddingModel } from "../adapters/embedding-model";
 import type { ResolvedSource } from "../adapters/resolve-sourcemap";
 import { resolveSourcemap } from "../adapters/resolve-sourcemap";
-import type { MemoriesClient, TypedSearchHit } from "../api/client";
-import type { SearchHit } from "../api/search";
-import { type LibrarianMergePlanWire, zLibrarianMergePlanWire } from "./librarian-plan";
-import { buildLibrarianBaseSystemContent } from "./librarian-system-prompt";
-import { type MemoryLibrarianEnv, memoryLibrarianToolkit } from "./librarian-toolkit";
+import { toolMapToAiTools } from "../adapters/tool-spec-to-ai-sdk";
+import { buildLibrarianBaseSystemContent } from "../agent/system-prompt";
+import { type MemoryLibrarianEnv, memoryLibrarianToolkit } from "../agent/toolkit";
 import {
   decomposeLogicalMemoryToContent,
   type LogicalMemoryInput,
   type ProcessedLogicalMemory,
 } from "./logical-memory";
 import { mergeLogicalMemoryWithPlan, prefetchRelatedMemories } from "./organize";
-import { toolMapToAiTools } from "./tool-spec-to-ai-sdk";
+import { type LibrarianMergePlanWire, zLibrarianMergePlanWire } from "./plan";
 
 /** AI SDK result from the librarian `generateText` call (tools + structured plan). */
 export type LibrarianPipelineGeneration = GenerateTextResult<ToolSet, never>;
@@ -60,7 +64,7 @@ export interface ProcessLogicalMemoryResult<
 
 function buildUserMessageContent(
   input: LogicalMemoryInput,
-  contentItems: import("../api/merge-memory").MergeMemoryContentItem[],
+  contentItems: MergeMemoryContentItem[],
 ): string {
   const lines: string[] = [];
   lines.push(`Target memory key: ${input.key}`);

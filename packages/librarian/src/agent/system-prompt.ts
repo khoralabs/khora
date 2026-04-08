@@ -1,4 +1,4 @@
-import type { LabelSchemaMap, OntologyDefinition } from "../api/ontology";
+import type { LabelSchemaMap, OntologyDefinition } from "@cfd/memories";
 
 /**
  * High-level system prompt: ontology and role. Per-field rules for the structured output live on

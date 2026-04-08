@@ -5,7 +5,7 @@
     "@types/bun": "latest"
   },
   "peerDependencies": {
-    "typescript": "^6"
+    "typescript": "^5"
   },
   "private": true,
   "scripts": {
