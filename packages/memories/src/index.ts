@@ -15,6 +15,30 @@ export {
   zId,
 } from "./_lib";
 export {
+  type BinaryEmbedInput,
+  createEmbeddingModel,
+  EMBEDDING_MODEL_NAME,
+  type EmbeddingModel,
+  type EmbeddingModelOptions,
+  embedBinaryBlob,
+  embedTextChunks,
+  GOOGLE_EMBED_BATCH_SIZE,
+  MAX_TEXT_CHUNK_CHARS,
+} from "./adapters/embedding-model";
+export {
+  buildRetrievalText,
+  type FileToContentInput,
+  type FileToContentResult,
+  fileToContent,
+  isTextLikeMime,
+} from "./adapters/file-to-content";
+export {
+  splitTextContent,
+  type TextToContentInput,
+  type TextToContentResult,
+  textToContent,
+} from "./adapters/text-to-content";
+export {
   MemoriesClient,
   type TypedMergeParams,
   type TypedSearchHit,
