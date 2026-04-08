@@ -1,6 +1,9 @@
 import type { Database } from "bun:sqlite";
 import type z from "zod";
-import { type DeleteMemoryParams, deleteMemory as deleteMemoryHandler } from "./delete-memory";
+import {
+  type DeleteMemoryParams,
+  deleteMemory as deleteMemoryHandler,
+} from "../models/delete-memory";
 import {
   type MergeMemoryParams,
   type MutationCtx,

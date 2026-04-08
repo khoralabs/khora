@@ -1,7 +1,7 @@
 import { tool, toolkit } from "@cfd/agent-identity";
+import type { MemoriesClient, SearchHit } from "@cfd/memories";
 import z from "zod";
 import { type EmbeddingModel, embedTextChunks } from "../adapters/embedding-model";
-import type { MemoriesClient, SearchHit } from "@cfd/memories";
 
 /** Runtime env for {@link memoryLibrarianToolkit}: client, namespace, and embedding model (injected; not tool args). */
 export type MemoryLibrarianEnv<

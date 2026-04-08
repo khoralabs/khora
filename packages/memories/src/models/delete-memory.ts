@@ -1,6 +1,6 @@
-import { clearMemorySubtree, ids } from "../models";
-import type { DbCtx } from "../models/context";
-import type { MutationCtx } from "./merge-memory";
+import type { MutationCtx } from "../api/merge-memory";
+import { clearMemorySubtree, ids } from ".";
+import type { DbCtx } from "./context";
 
 export interface DeleteMemoryParams {
   namespace: string;

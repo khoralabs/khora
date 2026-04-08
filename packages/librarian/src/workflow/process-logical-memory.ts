@@ -1,19 +1,28 @@
 import { evaluateComposable, type ToolRuntimeContext } from "@cfd/agent-identity";
-import type {
-  MemoriesClient,
-  MergeMemoryContentItem,
-  SearchHit,
-  TypedSearchHit,
+import {
+  type MemoriesClient,
+  type MergeMemoryContentItem,
+  type ResolvedSource,
+  resolveSourcemap,
+  type SearchHit,
+  type Store,
+  type TypedSearchHit,
 } from "@cfd/memories";
-import type { GenerateTextResult, ModelMessage, ToolSet } from "ai";
-import { generateText, Output, stepCountIs } from "ai";
+import {
+  type GenerateTextResult,
+  generateText,
+  type ModelMessage,
+  Output,
+  stepCountIs,
+  type ToolSet,
+} from "ai";
 import type z from "zod";
-import type { EmbeddingModel } from "../adapters/embedding-model";
-import type { ResolvedSource } from "../adapters/resolve-sourcemap";
-import { resolveSourcemap } from "../adapters/resolve-sourcemap";
-import { toolMapToAiTools } from "../adapters/tool-spec-to-ai-sdk";
-import { buildLibrarianBaseSystemContent } from "../agent/system-prompt";
-import { type MemoryLibrarianEnv, memoryLibrarianToolkit } from "../agent/toolkit";
+import { type EmbeddingModel, toolMapToAiTools } from "../adapters";
+import {
+  buildLibrarianBaseSystemContent,
+  type MemoryLibrarianEnv,
+  memoryLibrarianToolkit,
+} from "../agent";
 import {
   decomposeLogicalMemoryToContent,
   type LogicalMemoryInput,
@@ -36,7 +45,7 @@ export interface ProcessLogicalMemoryWithLibrarianParams<
   embeddingModel: EmbeddingModel;
   logicalMemory: LogicalMemoryInput;
   /** Resolves each prefetched hit’s {@link SourceMap} to readable source material. */
-  store: import("../adapters/resolve-sourcemap").Store;
+  store: Store;
   /** Run per-chunk prefetch search before the model turn (default: true). */
   prefetch?: boolean;
   /** Max agent steps for tool calls + structured output (default: 12). */

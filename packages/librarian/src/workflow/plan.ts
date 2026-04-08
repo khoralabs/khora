@@ -1,4 +1,3 @@
-import z from "zod";
 import type {
   EdgeLabelInstance,
   LabelSchemaMap,
@@ -6,6 +5,7 @@ import type {
   OntologyDefinition,
   TypedMergeParams,
 } from "@cfd/memories";
+import z from "zod";
 
 const zLabelWire = z.object({
   kind: z

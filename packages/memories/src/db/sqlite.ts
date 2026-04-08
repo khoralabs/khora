@@ -36,12 +36,12 @@ let didConfigureCustomSqlite = false;
  * Resolution order: `process.env[SQLITE_CUSTOM_LIB_ENV]`, then common Homebrew locations (only when the
  * file exists). Safe to call multiple times.
  */
-export function ensureCustomSqliteForExtensions(): void {
+export function ensureCustomSqliteForExtensions(customLibPath?: string): void {
   if (didConfigureCustomSqlite) return;
   didConfigureCustomSqlite = true;
 
   const fromEnv = process.env[SQLITE_CUSTOM_LIB_ENV]?.trim();
-  const candidates: string[] = [];
+  const candidates: string[] = customLibPath ? [customLibPath] : [];
   if (fromEnv) candidates.push(fromEnv);
 
   if (process.platform === "darwin") {
@@ -53,10 +53,14 @@ export function ensureCustomSqliteForExtensions(): void {
     );
   }
 
+  let matchedCustomSQLite = false;
+
   for (const p of candidates) {
-    if (p.length > 0 && existsSync(p)) {
+    if (p.length > 0 && existsSync(p) && !matchedCustomSQLite) {
       Database.setCustomSQLite(p);
-      return;
+      console.log(`Using SQLite library from: ${p}`);
+      matchedCustomSQLite = true;
+      break;
     }
   }
 }
@@ -64,9 +68,9 @@ export function ensureCustomSqliteForExtensions(): void {
 /** Create (if needed) and open a file-backed DB, load sqlite-vec, then enable FKs + WAL and apply {@link MEMORIES_SCHEMA_SQL}. */
 export function openMemoriesDatabase(
   filename: string,
-  options: OpenMemoriesDatabaseOptions = {},
+  options: OpenMemoriesDatabaseOptions & { customSQLiteLibPath?: string } = {},
 ): Database {
-  ensureCustomSqliteForExtensions();
+  ensureCustomSqliteForExtensions(options.customSQLiteLibPath);
   const db = new Database(filename, { create: true, ...options });
   loadSqliteVec(db);
   initMemoriesSchema(db);
