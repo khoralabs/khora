@@ -60,12 +60,13 @@ export class MemoriesClient<
 
     const labelStrings = params.labels.map((l) => validateNodeLabel(this.ontology, l));
 
-    const edgesMapped = params.edges.map((e) => ({
-      memory_key: e.memory_key,
-      direction: e.direction,
-      label: validateEdgeLabel(this.ontology, e.label),
-      properties: e.properties,
-    }));
+    const edgesMapped =
+      params.edges?.map((e) => ({
+        memory_key: e.memory_key,
+        direction: e.direction,
+        label: validateEdgeLabel(this.ontology, e.label),
+        properties: e.properties,
+      })) ?? [];
 
     const flat: MergeMemoryParams<string, string> = {
       key: params.key,

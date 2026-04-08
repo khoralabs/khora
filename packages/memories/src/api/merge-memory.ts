@@ -41,7 +41,7 @@ export interface MergeMemoryParams<NODE_LABEL = string, EDGE_LABEL = string> {
   content: MergeMemoryContentItem[];
   labels: NODE_LABEL[];
   properties?: Record<string, unknown>;
-  edges: Array<{
+  edges?: Array<{
     memory_key: string;
     direction: "in" | "out";
     label: EDGE_LABEL;
@@ -93,7 +93,7 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams<string, 
       insertNodeLabelAssignment(d, { nodeId, labelId });
     }
 
-    for (const edge of params.edges) {
+    for (const edge of params.edges ?? []) {
       if (findMemoryIdByKey(d, params.namespace, edge.memory_key) === undefined) {
         throw new Error(
           `mergeMemory: unknown edge target memory_key=${edge.memory_key} in namespace=${params.namespace}`,
