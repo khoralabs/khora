@@ -30,6 +30,8 @@ export {
   type FileToContentInput,
   type FileToContentResult,
   fileToContent,
+  GEMINI_EMBEDDING_SUPPORTED_MIME_TYPES,
+  isGeminiMultimodalEmbeddingMime,
   isTextLikeMime,
 } from "./adapters/file-to-content";
 export {
@@ -94,4 +96,5 @@ export {
   SQLITE_CUSTOM_LIB_ENV,
   vectorToBlob,
 } from "./db/sqlite";
+export * from "./librarian";
 export * from "./models";

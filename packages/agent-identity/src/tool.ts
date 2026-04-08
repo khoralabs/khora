@@ -11,24 +11,30 @@ import type {
   ToolkitContext,
   ToolkitResult,
   ToolPipelineHooks,
+  ToolRuntimeContext,
   ToolSpec,
 } from "./types.js";
 
-export type ToolStaticProps<NAME extends string, INPUT, _Env = unknown> = {
+export type ToolStaticProps<
+  NAME extends string,
+  INPUT,
+  /** Session/runtime env shape required in {@link ToolRuntimeContext} when this tool is evaluated. */
+  Env = unknown,
+> = {
   kind: "tool";
   name: NAME;
   description: string | undefined;
   inputSchema: StandardSchemaV1<INPUT>;
   policies: SharedPolicy[];
   instructions: string[] | undefined;
+  /** Not set at runtime; carries {@link Env} for {@link ExtractToolStaticEnv}. */
+  readonly __expectedEnv?: Env;
 };
 
-export type ToolRuntimeContext<Env = unknown> = {
-  env: Env;
-  namespace?: string;
-  agentId?: string;
-  agentName?: string;
-};
+/** Extract {@code Env} from a leaf tool’s {@link ToolStaticProps} (defaults to {@code unknown}). */
+export type ExtractToolStaticEnv<SP> = SP extends ToolStaticProps<string, infer _I, infer Env>
+  ? Env
+  : unknown;
 
 function monotonicNowMs(): number {
   return typeof performance !== "undefined" &&
@@ -41,6 +47,7 @@ export function tool<
   const NAME extends string,
   INPUT,
   OUTPUT,
+  /** Pass explicitly (e.g. `tool<..., MyEnv>(...)`) so `handler`’s `ctx.env` is checked against your session env. */
   Env = unknown,
 >(args: {
   name: NAME;
@@ -127,9 +134,7 @@ export function tool<
       policyIds,
       /** Prefer runtime {@code ctx} when the caller passes one (e.g. action env); else use env from {@code evaluate}. */
       handler: (runtimeCtx, inputUnknown, options) => {
-        const rt = (
-          runtimeCtx != null ? runtimeCtx : toolCtx
-        ) as ToolRuntimeContext<Env>;
+        const rt = (runtimeCtx != null ? runtimeCtx : toolCtx) as ToolRuntimeContext<Env>;
         const start = monotonicNowMs();
         return (async () => {
           try {

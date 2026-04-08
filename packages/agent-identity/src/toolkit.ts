@@ -284,13 +284,12 @@ export function dynamicToolkit<const NAME extends string, Env = unknown>({
   return { staticProps, policies, evaluate, computeStaticHash };
 }
 
-export async function evaluateComposable<Env>(
-  composable: Composable<
-    { kind: string; name: string },
-    Record<string, ToolSpec>,
-    Env
-  >,
+export async function evaluateComposable<
+  Tools extends Record<string, ToolSpec>,
+  Env,
+>(
+  composable: Composable<{ kind: string; name: string }, Tools, Env>,
   ctx: ToolkitContext<Env>,
-): Promise<ToolkitResult<Record<string, ToolSpec>>> {
+): Promise<ToolkitResult<Tools>> {
   return composable.evaluate(ctx);
 }

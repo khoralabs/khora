@@ -10,7 +10,9 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@cfd/agent-identity": "workspace:*",
     "@google/genai": "^1.48.0",
+    "ai": "^6.0.153",
     "sqlite-vec": "^0.1.9",
     "zod": "^4.3.6"
   }

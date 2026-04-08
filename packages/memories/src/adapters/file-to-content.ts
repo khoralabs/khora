@@ -29,6 +29,21 @@ export interface FileToContentResult {
   content: MergeMemoryContentItem[];
 }
 
+/** MIME types commonly supported for multimodal Gemini embedding inputs (non-text path uses raw bytes). */
+export const GEMINI_EMBEDDING_SUPPORTED_MIME_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "application/pdf",
+  "video/mpeg",
+  "video/mp4",
+  "audio/mp3",
+  "audio/wav",
+] as const;
+
+export function isGeminiMultimodalEmbeddingMime(mimeType: string): boolean {
+  return (GEMINI_EMBEDDING_SUPPORTED_MIME_TYPES as readonly string[]).includes(mimeType);
+}
+
 export function isTextLikeMime(mimeType: string): boolean {
   return (
     mimeType.startsWith("text/") ||

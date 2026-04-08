@@ -53,7 +53,7 @@ export type {
   StandardSchemaV1,
   StandardTypedV1,
 } from "./standard-schema.js";
-export type { ToolRuntimeContext, ToolStaticProps } from "./tool.js";
+export type { ExtractToolStaticEnv, ToolStaticProps } from "./tool.js";
 export { tool } from "./tool.js";
 export { hashToolComposableStatic } from "./tool-identity.js";
 export type {
@@ -86,5 +86,6 @@ export type {
   ToolkitContext,
   ToolkitResult,
   ToolPipelineHooks,
+  ToolRuntimeContext,
   ToolSpec,
 } from "./types.js";
