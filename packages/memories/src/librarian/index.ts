@@ -1,4 +1,6 @@
 export { evaluateComposable } from "@cfd/agent-identity";
+export type { ResolvedSource, Store } from "../adapters/resolve-sourcemap";
+export { resolveSourcemap } from "../adapters/resolve-sourcemap";
 export {
   defineMemoryLibrarianIdentity,
   MEMORY_LIBRARIAN_AGENT_ID,
@@ -15,11 +17,18 @@ export {
   zMemorySearchToolInput,
 } from "./librarian-toolkit";
 export {
-  buildLibrarianContextSummary,
   decomposeLogicalMemoryToContent,
   type LogicalMemoryFilePart,
   type LogicalMemoryInput,
+  type ProcessedLogicalMemory,
 } from "./logical-memory";
+export { buildLibrarianBaseSystemContent } from "./librarian-system-prompt";
+export {
+  type LibrarianPipelineGeneration,
+  processLogicalMemoryWithLibrarian,
+  type ProcessLogicalMemoryResult,
+  type ProcessLogicalMemoryWithLibrarianParams,
+} from "./process-logical-memory";
 export {
   mergeLogicalMemoryWithPlan,
   mergeMemoryItemToSearchContent,

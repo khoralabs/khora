@@ -79,25 +79,3 @@ export async function decomposeLogicalMemoryToContent(
 
   return out;
 }
-
-/** Compact summary for the librarian model (before embedding). */
-export function buildLibrarianContextSummary(input: LogicalMemoryInput): string {
-  const lines: string[] = [];
-  lines.push(`Target memory key: ${input.key}`);
-  lines.push(`Namespace: ${input.namespace}`);
-  if (input.plaintext?.trim()) {
-    const t = input.plaintext.trim();
-    const max = 8_000;
-    lines.push(`Plaintext (${t.length} chars): ${t.slice(0, max)}${t.length > max ? "…" : ""}`);
-  }
-  if (input.files?.length) {
-    lines.push(`Files (${input.files.length}):`);
-    for (let i = 0; i < input.files.length; i++) {
-      const f = input.files[i];
-      if (f === undefined) continue;
-      const mime = (f.mimeType ?? f.blob.type) || "application/octet-stream";
-      lines.push(`  [${i}] ${f.fileName ?? "unnamed"} (${mime})`);
-    }
-  }
-  return lines.join("\n");
-}
