@@ -1,6 +1,8 @@
-import { assembleToolkitAgentInstructions } from "./assemble-toolkit-instructions.js";
-import { evaluateComposable } from "./toolkit.js";
-import type { Composable, RegisteredAgentIdentity, ToolkitContext, ToolSpec } from "./types.js";
+import { assembleToolkitAgentInstructions } from "../toolkit/assemble-toolkit-instructions.js";
+import { evaluateComposable } from "../toolkit/toolkit.js";
+import type { RegisteredAgentIdentity } from "./types.js";
+import type { Composable, ToolkitContext } from "../toolkit/types.js";
+import type { ToolSpec } from "../tool/types.js";
 
 export type RegisteredAgentAffordances = {
   tools: Record<string, ToolSpec>;

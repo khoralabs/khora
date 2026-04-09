@@ -1,4 +1,4 @@
-import type { AnyComposable } from "./toolkit.js";
+import type { AnyComposable } from "../toolkit/toolkit.js";
 
 export type RegisteredToolEntry = {
   key: string;

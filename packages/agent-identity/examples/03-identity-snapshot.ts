@@ -7,8 +7,8 @@ import {
   createRegisteredAgentIdentity,
 } from "../src/index.js";
 import type { StandardSchemaV1 } from "../src/standard-schema.js";
-import { tool } from "../src/tool.js";
-import { evaluateComposable, toolkit } from "../src/toolkit.js";
+import { tool } from "../src/tool/tool.js";
+import { evaluateComposable, toolkit } from "../src/toolkit/toolkit.js";
 
 const schema: StandardSchemaV1<{ n: number }> = {
   "~standard": {

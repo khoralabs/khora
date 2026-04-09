@@ -1,4 +1,6 @@
-import type { AgentStaticProps, Composable, RegisteredAgentIdentity, ToolSpec } from "./types.js";
+import type { AgentStaticProps, RegisteredAgentIdentity } from "./types.js";
+import type { Composable } from "../toolkit/types.js";
+import type { ToolSpec } from "../tool/types.js";
 
 export type CreateRegisteredAgentIdentityArgs<Env> = {
   agentId: string;

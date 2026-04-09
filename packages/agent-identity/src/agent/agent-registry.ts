@@ -78,7 +78,10 @@ export type AgentSession = {
 };
 
 export type AgentRegistry = {
-  register: (agent: RegisteredAgentIdentity, options?: RegisterAgentOptions) => { staticHash: string };
+  register: (
+    agent: RegisteredAgentIdentity,
+    options?: RegisterAgentOptions,
+  ) => { staticHash: string };
   createSession: (agentId: string, options?: CreateSessionOptions) => AgentSession;
   get: (agentId: string) => RegisteredAgentEntry | undefined;
   has: (agentId: string) => boolean;
@@ -129,8 +132,18 @@ export function createAgentRegistry(): AgentRegistry {
       args:
         | { agent: RegisteredAgentIdentity; input: unknown }
         | { agent: RegisteredAgentIdentity; input: unknown; context: SessionContext }
-        | { agent: RegisteredAgentIdentity; input: unknown; context: SessionContext; output: unknown }
-        | { agent: RegisteredAgentIdentity; input: unknown; context: SessionContext; error: unknown },
+        | {
+            agent: RegisteredAgentIdentity;
+            input: unknown;
+            context: SessionContext;
+            output: unknown;
+          }
+        | {
+            agent: RegisteredAgentIdentity;
+            input: unknown;
+            context: SessionContext;
+            error: unknown;
+          },
     ): Promise<void> {
       const hooks = [registered.hooks?.[stage], options.hooks?.[stage], sessionHooks[stage]].filter(
         Boolean,

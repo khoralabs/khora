@@ -1,5 +1,5 @@
+import type { ToolSpec } from "../tool/types.js";
 import { schemaToHashInput } from "./hash.js";
-import type { ToolSpec } from "./types.js";
 
 /** Exact JSON-shaped input to {@link hashPlainObject} for a runtime tool snapshot (before SHA-256). */
 export type RuntimeIdentityCanonicalPayload = {

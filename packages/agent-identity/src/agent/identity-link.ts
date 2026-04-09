@@ -1,5 +1,6 @@
-import { computeRuntimeHash } from "./runtime-hashes.js";
-import type { RegisteredAgentIdentity, ToolSpec } from "./types.js";
+import { computeRuntimeHash } from "../hashing/runtime-hashes.js";
+import type { RegisteredAgentIdentity } from "./types.js";
+import type { ToolSpec } from "../tool/types.js";
 
 /**
  * Pure attribution record: links an agent's static capacity to the runtime effective identity.

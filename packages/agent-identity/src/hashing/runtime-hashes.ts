@@ -1,7 +1,8 @@
+import type { AnyComposable, ComposableWithChildren } from "../toolkit/toolkit.js";
+import type { Composable, ToolkitContext } from "../toolkit/types.js";
+import type { ToolSpec } from "../tool/types.js";
 import { runtimeIdentityCanonicalPayload, toolSpecCanonicalPayload } from "./canonical-payloads.js";
 import { hashPlainObject } from "./hash.js";
-import type { AnyComposable, ComposableWithChildren } from "./toolkit.js";
-import type { Composable, ToolkitContext, ToolSpec } from "./types.js";
 
 /**
  * Recursively collects each leaf tool's static hash (name → hash) from a composable tree.

@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
+import { collectToolStaticHashes, computeRuntimeHash } from "../hashing/runtime-hashes.js";
+import type { StandardSchemaV1 } from "../standard-schema.js";
+import { tool } from "../tool/tool.js";
+import { evaluateComposable, toolkit } from "../toolkit/toolkit.js";
 import { createIdentityLink } from "./identity-link.js";
 import { createRegisteredAgentIdentity } from "./registered-agent.js";
-import { collectToolStaticHashes, computeRuntimeHash } from "./runtime-hashes.js";
-import type { StandardSchemaV1 } from "./standard-schema.js";
-import { tool } from "./tool.js";
-import { evaluateComposable, toolkit } from "./toolkit.js";
 
 const schema: StandardSchemaV1<{ n: number }> = {
   "~standard": {

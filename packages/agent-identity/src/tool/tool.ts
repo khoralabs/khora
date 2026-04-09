@@ -1,16 +1,13 @@
-import { hashPlainObject, schemaToHashInput } from "./hash.js";
-import { evaluatePolicyWithHooks, mergeToolPipelineHooks } from "./pipeline-hooks.js";
-import type { StandardSchemaV1 } from "./standard-schema.js";
+import { hashPlainObject, schemaToHashInput } from "../hashing/hash.js";
+import { evaluatePolicyWithHooks, mergeToolPipelineHooks } from "../policy/pipeline-hooks.js";
 import type {
-  Composable,
   PolicyResultMap,
   SharedPolicy,
-  ToolkitContext,
-  ToolkitResult,
   ToolPipelineHooks,
-  ToolRuntimeContext,
-  ToolSpec,
-} from "./types.js";
+} from "../policy/types.js";
+import type { StandardSchemaV1 } from "../standard-schema.js";
+import type { Composable, ToolkitContext, ToolkitResult } from "../toolkit/types.js";
+import type { ToolRuntimeContext, ToolSpec } from "./types.js";
 
 export type ToolStaticProps<
   NAME extends string,

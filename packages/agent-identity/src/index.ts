@@ -8,75 +8,74 @@ export type {
   SessionContext,
   SessionContextInput,
   SessionRunner,
-} from "./agent-registry.js";
-export { createAgentRegistry } from "./agent-registry.js";
-export { assembleToolkitAgentInstructions } from "./assemble-toolkit-instructions.js";
-export type {
-  RuntimeIdentityCanonicalPayload,
-  ToolIdentityCanonicalPayload,
-} from "./canonical-payloads.js";
-export {
-  runtimeIdentityCanonicalPayload,
-  toolSpecCanonicalPayload,
-} from "./canonical-payloads.js";
+} from "./agent/agent-registry.js";
+export { createAgentRegistry } from "./agent/agent-registry.js";
 export {
   evaluateRegisteredAgentAffordances,
   type RegisteredAgentAffordances,
-} from "./evaluate-registered-agent-affordances.js";
-export { hashPlainObject, schemaToHashInput } from "./hash.js";
-export type { AgentStaticProps, RegisteredAgentIdentity } from "./identity.js";
+} from "./agent/evaluate-registered-agent-affordances.js";
 export type {
   IdentityLinkField,
   IdentityLinkFieldChange,
   IdentityLinksDiff,
   ToolRefRow,
   ToolRefsDiff,
-} from "./identity-diff.js";
+} from "./agent/identity-diff.js";
 export {
   diffIdentityLinks,
   diffToolRefs,
   explainIdentityLinkRelationship,
   formatHashShort,
-} from "./identity-diff.js";
+} from "./agent/identity-diff.js";
 export type {
   CreateIdentityLinkArgs,
   IdentityLink,
-} from "./identity-link.js";
-export { createIdentityLink } from "./identity-link.js";
-export type {
-  ToolErrorOutput,
-  ToolOutput,
-  ToolSuccessOutput,
-} from "./output.js";
-export { withFormattedResults } from "./output.js";
-export {
-  evaluatePolicyWithHooks,
-  mergeToolPipelineHooks,
-} from "./pipeline-hooks.js";
-export { policy } from "./policy.js";
+} from "./agent/identity-link.js";
+export { createIdentityLink } from "./agent/identity-link.js";
 export {
   type CreateRegisteredAgentIdentityArgs,
   createRegisteredAgentIdentity,
-} from "./registered-agent.js";
+} from "./agent/registered-agent.js";
+export type {
+  RuntimeIdentityCanonicalPayload,
+  ToolIdentityCanonicalPayload,
+} from "./hashing/canonical-payloads.js";
+export {
+  runtimeIdentityCanonicalPayload,
+  toolSpecCanonicalPayload,
+} from "./hashing/canonical-payloads.js";
+export { hashPlainObject, schemaToHashInput } from "./hashing/hash.js";
 export {
   collectToolStaticHashes,
   computeRuntimeHash,
   computeRuntimeIdentityFromEvaluation,
   hashToolSpecIdentity,
   resolveRuntimeToolRefs,
-} from "./runtime-hashes.js";
+} from "./hashing/runtime-hashes.js";
+export {
+  evaluatePolicyWithHooks,
+  mergeToolPipelineHooks,
+} from "./policy/pipeline-hooks.js";
+export { policy } from "./policy/policy.js";
 export type {
   StandardSchemaV1,
   StandardTypedV1,
 } from "./standard-schema.js";
-export type { ExtractToolStaticEnv, ToolStaticProps } from "./tool.js";
-export { tool } from "./tool.js";
-export { hashToolComposableStatic } from "./tool-identity.js";
+export type {
+  ToolErrorOutput,
+  ToolOutput,
+  ToolSuccessOutput,
+} from "./tool/output.js";
+export { withFormattedResults } from "./tool/output.js";
+export type { ExtractToolStaticEnv, ToolStaticProps } from "./tool/tool.js";
+export { tool } from "./tool/tool.js";
+export { hashToolComposableStatic } from "./tool/tool-identity.js";
 export type {
   RegisteredToolEntry,
   ToolRegistry,
-} from "./tool-registry.js";
-export { createToolRegistry } from "./tool-registry.js";
+} from "./tool/tool-registry.js";
+export { createToolRegistry } from "./tool/tool-registry.js";
+export { assembleToolkitAgentInstructions } from "./toolkit/assemble-toolkit-instructions.js";
 export type {
   AnyComposable,
   ComposableWithChildren,
@@ -85,17 +84,19 @@ export type {
   ExtractComposableTools,
   ToolkitStaticProps,
   ToolMapFromMembers,
-} from "./toolkit.js";
+} from "./toolkit/toolkit.js";
 export {
   dynamicToolkit,
   evaluateComposable,
   toolkit,
-} from "./toolkit.js";
+} from "./toolkit/toolkit.js";
 export type {
+  AgentStaticProps,
   Composable,
   PolicyEvaluatedPayload,
   PolicyEvaluatedPhase,
   PolicyResultMap,
+  RegisteredAgentIdentity,
   SharedPolicy,
   ToolExecutedPayload,
   ToolkitContext,

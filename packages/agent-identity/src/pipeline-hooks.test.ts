@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test";
 import { z } from "zod";
-import { policy } from "./policy.js";
-import { tool } from "./tool.js";
-import { toolkit } from "./toolkit.js";
+import { policy } from "./policy/policy.js";
+import { tool } from "./tool/tool.js";
+import { toolkit } from "./toolkit/toolkit.js";
 
 test("when member policies are resolved at toolkit, hooks run toolkit then runtime (tool hooks apply on tool phase only if policy not pre-resolved)", async () => {
   const order: string[] = [];

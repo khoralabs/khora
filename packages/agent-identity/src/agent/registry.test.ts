@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { createAgentRegistry } from "./agent-registry.js";
+import type { StandardSchemaV1 } from "../standard-schema.js";
+import { tool } from "../tool/tool.js";
+import { hashToolComposableStatic } from "../tool/tool-identity.js";
+import { createToolRegistry } from "../tool/tool-registry.js";
+import { toolkit } from "../toolkit/toolkit.js";
 import { createRegisteredAgentIdentity } from "./registered-agent.js";
-import type { StandardSchemaV1 } from "./standard-schema.js";
-import { tool } from "./tool.js";
-import { hashToolComposableStatic } from "./tool-identity.js";
-import { createToolRegistry } from "./tool-registry.js";
-import { toolkit } from "./toolkit.js";
 
 const schema: StandardSchemaV1<{ n: number }> = {
   "~standard": {
@@ -163,10 +163,9 @@ describe("createAgentRegistry", () => {
       ctx: { shared: "registry", onlyRegistry: true },
       run: async ({ context }) => context,
     });
-    const out = await reg.createSession("ctx", { ctx: { shared: "session", onlySession: true } }).start<
-      void,
-      Record<string, unknown>
-    >(undefined);
+    const out = await reg
+      .createSession("ctx", { ctx: { shared: "session", onlySession: true } })
+      .start<void, Record<string, unknown>>(undefined);
     expect(out).toEqual({
       shared: "session",
       onlyAgent: true,
@@ -188,9 +187,11 @@ describe("createAgentRegistry", () => {
       ctx: ({ input }) => ({ fromRegistryResolver: Number(input) + 1 }),
       run: async ({ context }) => context,
     });
-    const out = await reg.createSession("resolver", {
-      ctx: ({ context }) => ({ fromSessionResolver: Number(context.fromRegistryResolver) + 1 }),
-    }).start<number, Record<string, unknown>>(1);
+    const out = await reg
+      .createSession("resolver", {
+        ctx: ({ context }) => ({ fromSessionResolver: Number(context.fromRegistryResolver) + 1 }),
+      })
+      .start<number, Record<string, unknown>>(1);
     expect(out).toEqual({
       fromRegistryResolver: 2,
       fromSessionResolver: 3,

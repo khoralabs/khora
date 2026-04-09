@@ -2,9 +2,9 @@ import type {
   PolicyEvaluatedPayload,
   PolicyResultMap,
   SharedPolicy,
-  ToolkitContext,
   ToolPipelineHooks,
 } from "./types.js";
+import type { ToolkitContext } from "../toolkit/types.js";
 
 /**
  * Composes hook layers in order: first layer runs first, then second, etc.

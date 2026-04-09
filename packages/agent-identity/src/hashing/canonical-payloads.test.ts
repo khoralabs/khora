@@ -1,4 +1,7 @@
 import { describe, expect, test } from "bun:test";
+import type { StandardSchemaV1 } from "../standard-schema.js";
+import { tool } from "../tool/tool.js";
+import { evaluateComposable, toolkit } from "../toolkit/toolkit.js";
 import { runtimeIdentityCanonicalPayload, toolSpecCanonicalPayload } from "./canonical-payloads.js";
 import { hashPlainObject } from "./hash.js";
 import {
@@ -7,9 +10,6 @@ import {
   hashToolSpecIdentity,
   resolveRuntimeToolRefs,
 } from "./runtime-hashes.js";
-import type { StandardSchemaV1 } from "./standard-schema.js";
-import { tool } from "./tool.js";
-import { evaluateComposable, toolkit } from "./toolkit.js";
 
 const schema: StandardSchemaV1<{ n: number }> = {
   "~standard": {

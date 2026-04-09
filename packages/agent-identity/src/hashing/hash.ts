@@ -1,4 +1,4 @@
-import type { StandardSchemaV1 } from "./standard-schema.js";
+import type { StandardSchemaV1 } from "../standard-schema.js";
 
 async function sha256Hex(value: string): Promise<string> {
   const bytes = new TextEncoder().encode(value);

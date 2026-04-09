@@ -1,4 +1,5 @@
-import type { Composable, ToolSpec } from "./types.js";
+import type { Composable } from "../toolkit/types.js";
+import type { ToolSpec } from "./types.js";
 
 /**
  * Hash a tool composable's static identity (bottom-up).
