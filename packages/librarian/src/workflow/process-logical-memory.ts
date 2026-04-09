@@ -9,6 +9,8 @@ import {
 import type { LanguageModel } from "ai";
 import type z from "zod";
 import type { EmbeddingModel } from "../adapters";
+import { logger } from "../logger.js";
+import { elapsedMs } from "../timing.js";
 import type {
   LibrarianPipelineGeneration,
   MemoryLibrarianSessionInput,
@@ -93,6 +95,9 @@ export async function processLogicalMemoryWithLibrarian<
     agentRegistry,
   } = params;
 
+  const pipelineT0 = performance.now();
+
+  const tDecompose = performance.now();
   const content = await decomposeLogicalMemoryToContent({
     ...logicalMemory,
     embedding: {
@@ -101,22 +106,50 @@ export async function processLogicalMemoryWithLibrarian<
     },
   });
   const processedLogicalMemory: ProcessedLogicalMemory = { ...logicalMemory, content };
+  logger.info({
+    phase: "remember.decompose",
+    durationMs: elapsedMs(tDecompose),
+    mergeChunkCount: content.length,
+    namespace: logicalMemory.namespace,
+  });
 
+  const tPrefetch = performance.now();
   const prefetchedHits = prefetch
     ? prefetchRelatedMemories(client, logicalMemory.namespace, content)
     : [];
+  logger.info({
+    phase: "remember.prefetchSearch",
+    durationMs: elapsedMs(tPrefetch),
+    mergeChunkCount: content.length,
+    prefetchHitCount: prefetchedHits.length,
+    skipped: !prefetch,
+  });
 
+  const tResolve = performance.now();
   const resolvedSources: ProcessLogicalMemoryResult<TNode, TEdge>["resolvedSources"] = [];
   for (const hit of prefetchedHits) {
     const source = await resolveSourcemap(hit, store);
     resolvedSources.push({ hit, source });
   }
+  logger.info({
+    phase: "remember.resolveSources",
+    durationMs: elapsedMs(tResolve),
+    resolvedCount: resolvedSources.length,
+  });
 
+  const tRegister = performance.now();
   const { identity, registration } = await declareMemoryLibrarianAgent<TNode, TEdge>(
     logicalMemory.namespace,
   );
   const registry = agentRegistry ?? createAgentRegistry();
   registry.register(identity, registration);
+  logger.info({
+    phase: "remember.registerAgent",
+    durationMs: elapsedMs(tRegister),
+    agentId: identity.agentId,
+  });
+
+  const tSession = performance.now();
   const session = registry.createSession(identity.agentId, {
     ctx: {
       model,
@@ -137,6 +170,18 @@ export async function processLogicalMemoryWithLibrarian<
     resolvedSources,
     runMerge,
     maxSteps,
+  });
+  logger.info({
+    phase: "remember.sessionStart",
+    durationMs: elapsedMs(tSession),
+    agentId: identity.agentId,
+    maxSteps,
+  });
+
+  logger.info({
+    phase: "remember.pipeline",
+    durationMs: elapsedMs(pipelineT0),
+    namespace: logicalMemory.namespace,
   });
 
   return {

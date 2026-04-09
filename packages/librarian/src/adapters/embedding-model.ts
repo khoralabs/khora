@@ -4,6 +4,8 @@ import {
   type EmbedContentConfig,
   GoogleGenAI,
 } from "@google/genai";
+import { logger } from "../logger.js";
+import { elapsedMs } from "../timing.js";
 
 export const EMBEDDING_MODEL_NAME = "gemini-embedding-2-preview";
 export const GOOGLE_EMBED_BATCH_SIZE = 100;
@@ -84,6 +86,7 @@ export async function embedTextChunks(
 ): Promise<number[][]> {
   if (texts.length === 0) return [];
 
+  const t0 = performance.now();
   const mergedConfig = mergeEmbedConfig(embeddingModel, config);
   const out: number[][] = [];
   for (let batchStart = 0; batchStart < texts.length; batchStart += embeddingModel.textBatchSize) {
@@ -102,6 +105,12 @@ export async function embedTextChunks(
     out.push(...embeddings);
   }
 
+  logger.debug({
+    phase: "embedTextChunks",
+    durationMs: elapsedMs(t0),
+    textCount: texts.length,
+    model: embeddingModel.model,
+  });
   return out;
 }
 
@@ -110,6 +119,7 @@ export async function embedBinaryBlob(
   input: BinaryEmbedInput,
   config: EmbedContentConfig = {},
 ): Promise<number[]> {
+  const t0 = performance.now();
   const mergedConfig = mergeEmbedConfig(embeddingModel, config);
   const fileBase64 = Buffer.from(await input.blob.arrayBuffer()).toString("base64");
   const response = await embeddingModel.client.models.embedContent({
@@ -125,5 +135,10 @@ export async function embedBinaryBlob(
   if (!first) {
     throw new Error("Google did not return any embeddings");
   }
+  logger.debug({
+    phase: "embedBinaryBlob",
+    durationMs: elapsedMs(t0),
+    model: embeddingModel.model,
+  });
   return first;
 }

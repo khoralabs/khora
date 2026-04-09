@@ -18,6 +18,7 @@ import {
 } from "@cfd/memories";
 import { getMemoryIdByNamespaceKey, JsonlStore } from "@cfd/stores";
 import z from "zod";
+import { elapsedMs, logger } from "./logger.js";
 
 /** One Gemini key for @ai-sdk/google and @google/genai embeddings; .env often uses one name only. */
 function resolveGeminiApiKey(): string {
@@ -90,6 +91,10 @@ Options:
 Env:
   GOOGLE_API_KEY | GOOGLE_GENERATIVE_AI_API_KEY | GEMINI_API_KEY
     Same key is used for embeddings (@google/genai) and chat (@ai-sdk/google).
+  LOG_LEVEL=debug|info|warn|error
+    Default info. Use debug for embedTextChunks / fuseRrf detail.
+  LOG_PRETTY=0|1
+    Default: pretty when stdout is a TTY; set 0 for JSON lines.
 `);
   }
   let db = process.env.CFD_MEMORIES_DB ?? "./.cfd/memories.sqlite";
@@ -154,6 +159,7 @@ async function resolveSourcesForMemory(
 }
 
 async function cmdSearch(args: Parsed) {
+  const tPipeline = performance.now();
   ensureParentDirForDb(args.db);
   const db = openMemoriesDatabase(args.db);
   const client = new MemoriesClient(db, cliOntology);
@@ -162,8 +168,15 @@ async function cmdSearch(args: Parsed) {
     apiKey: resolveGeminiApiKey(),
     embedConfig: embedConfigForResolutionPreset(args.resolution),
   });
+  const tEmbed = performance.now();
   const embeddings = await embedTextChunks(embeddingModel, [args.query ?? ""]);
+  logger.info({
+    phase: "cli.search.embedQuery",
+    durationMs: elapsedMs(tEmbed),
+    resolution: args.resolution,
+  });
 
+  const tSearch = performance.now();
   const hits = client.search({
     namespace: args.namespace,
     content: { text: args.query ?? "", vector: embeddings[0] },
@@ -174,6 +187,13 @@ async function cmdSearch(args: Parsed) {
       maxNeighbors: SEARCH_MAX_NEIGHBORS,
     },
   });
+  logger.info({
+    phase: "cli.search.memoriesClient",
+    durationMs: elapsedMs(tSearch),
+    hitCount: hits.length,
+  });
+
+  const tEnrich = performance.now();
   for (const h of hits) {
     let content: ResolvedSource | null = null;
     try {
@@ -208,6 +228,16 @@ async function cmdSearch(args: Parsed) {
       }),
     );
   }
+  logger.info({
+    phase: "cli.search.enrichHits",
+    durationMs: elapsedMs(tEnrich),
+    hitCount: hits.length,
+  });
+  logger.info({
+    phase: "cli.search",
+    durationMs: elapsedMs(tPipeline),
+    namespace: args.namespace,
+  });
 }
 
 async function cmdRemember(args: Parsed) {
@@ -223,6 +253,7 @@ async function cmdRemember(args: Parsed) {
   });
   const google = createGoogleGenerativeAI({ apiKey });
   const model = google("gemini-flash-latest");
+  const tRemember = performance.now();
   const result = await processLogicalMemoryWithLibrarian({
     model,
     client,
@@ -239,6 +270,13 @@ async function cmdRemember(args: Parsed) {
     runMerge: true,
     /** Tool calls + structured merge plan need more than one round; 2 steps often exits before `output`. */
     maxSteps: 6,
+  });
+  logger.info({
+    phase: "cli.remember",
+    durationMs: elapsedMs(tRemember),
+    namespace: args.namespace,
+    key,
+    resolution: args.resolution,
   });
   const memoryId = getMemoryIdByNamespaceKey(db, args.namespace, key);
   if (memoryId) {

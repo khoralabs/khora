@@ -1,3 +1,5 @@
+import { logger } from "../logger.js";
+import { elapsedMs } from "../timing.js";
 import type { RegisteredAgentIdentity } from "./types.js";
 
 type MaybePromise<T> = T | Promise<T>;
@@ -207,7 +209,13 @@ export function createAgentRegistry(): AgentRegistry {
           throw new Error(`no session runner configured for agent: ${agentId}`);
         }
         try {
+          const tRun = performance.now();
           const output = (await runner({ agent, input, context })) as Output;
+          logger.info({
+            phase: "agentSession.runner",
+            durationMs: elapsedMs(tRun),
+            agentId,
+          });
           await runStage("onAfterRun", { agent, input, context, output });
           return output;
         } catch (error) {

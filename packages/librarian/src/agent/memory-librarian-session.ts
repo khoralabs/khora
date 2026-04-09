@@ -24,6 +24,8 @@ import type { LanguageModel, ModelMessage } from "ai";
 import { NoOutputGeneratedError } from "ai";
 import type z from "zod";
 import type { EmbeddingModel } from "../adapters";
+import { logger } from "../logger.js";
+import { elapsedMs } from "../timing.js";
 import type { LogicalMemoryInput, ProcessedLogicalMemory } from "../workflow/logical-memory";
 import { mergeLogicalMemoryWithPlan } from "../workflow/organize";
 import { type LibrarianMergePlanWire, zLibrarianMergePlanWire } from "../workflow/plan";
@@ -155,7 +157,13 @@ export function createMemoryLibrarianSessionRunner<
     if (!toolkitCtx || !runtime) {
       throw new Error("memory librarian session context missing toolkit/runtime");
     }
+    const tAff = performance.now();
     const affordances = await evaluateRegisteredAgentAffordances(agent, toolkitCtx);
+    logger.info({
+      phase: "librarian.evaluateAffordances",
+      durationMs: elapsedMs(tAff),
+      toolCount: Object.keys(affordances.tools).length,
+    });
 
     const librarian = createMemoryLibrarianToolLoopAgent({
       model,
@@ -184,8 +192,15 @@ export function createMemoryLibrarianSessionRunner<
       },
     ];
 
+    const tGen = performance.now();
     const generation = await librarian.generate({
       messages,
+    });
+    logger.info({
+      phase: "librarian.toolLoopGenerate",
+      durationMs: elapsedMs(tGen),
+      stepCount: generation.steps.length,
+      finishReason: generation.finishReason,
     });
     let plan: LibrarianMergePlanWire;
     try {
@@ -200,7 +215,12 @@ export function createMemoryLibrarianSessionRunner<
       throw err;
     }
     if (runMerge) {
+      const tMerge = performance.now();
       await mergeLogicalMemoryWithPlan(client, processedLogicalMemory, plan);
+      logger.info({
+        phase: "librarian.mergeMemory",
+        durationMs: elapsedMs(tMerge),
+      });
     }
     return { generation, plan };
   };

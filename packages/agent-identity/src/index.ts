@@ -1,3 +1,5 @@
+export { logger } from "./logger.js";
+export { elapsedMs } from "./timing.js";
 export type {
   AgentRegistry,
   AgentSession,

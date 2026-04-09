@@ -11,6 +11,12 @@ Memory **librarian** agent: composable tools (`memory_search`), static identity,
 
 End-to-end flow: [`processLogicalMemoryWithLibrarian`](src/workflow/process-logical-memory.ts) (prefetch → resolve → `declareMemoryLibrarianAgent` → `register` → `createSession` → `start`). Pass one [`EmbeddingModel`](src/adapters/embedding-model.ts) with `embedConfig` (e.g. `embedConfigForResolutionPreset("L" | "M" | "H")` for `outputDimensionality`) so decomposition, prefetch, `memory_search`, and merge use the same vector size.
 
+## Logging & telemetry
+
+Structured logs use **pino** (`import { logger } from "@cfd/librarian"`). Set **`LOG_LEVEL`** (`trace`…`fatal`, default `info`). **`debug`** includes `embedTextChunks` / `embedBinaryBlob` timings.
+
+Remember pipeline log phases (when using `processLogicalMemoryWithLibrarian`): `remember.decompose`, `remember.prefetchSearch`, `remember.resolveSources`, `remember.registerAgent`, `remember.sessionStart` (includes agent runner), `remember.pipeline`. Session runner logs: `librarian.evaluateAffordances`, `librarian.toolLoopGenerate`, `librarian.mergeMemory`. **`agentSession.runner`** is logged from `@cfd/agent-identity` for the registry `SessionRunner` duration.
+
 ## Develop
 
 ```bash

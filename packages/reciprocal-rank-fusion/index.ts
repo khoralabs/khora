@@ -1,3 +1,7 @@
+import { logger } from "./logger.ts";
+
+export { logger };
+
 export type ItemId = string;
 
 export type RankedItem<TId extends ItemId = ItemId> = {
@@ -85,6 +89,7 @@ export function fuseRrf<TId extends ItemId = ItemId>(
   arms: readonly RrfArm<TId>[],
   options: RrfOptions<TId> = {},
 ): RrfResult<TId>[] {
+  const t0 = performance.now();
   const k = options.k ?? 60;
   const maxPerArm = options.maxPerArm;
   const byId = new Map<TId, RrfResult<TId>>();
@@ -116,10 +121,17 @@ export function fuseRrf<TId extends ItemId = ItemId>(
     }
   }
 
-  return [...byId.values()].sort((a, b) => {
+  const sorted = [...byId.values()].sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score;
     return a.id.localeCompare(b.id);
   });
+  logger.debug({
+    phase: "fuseRrf",
+    durationMs: Math.round((performance.now() - t0) * 100) / 100,
+    armCount: arms.length,
+    resultCount: sorted.length,
+  });
+  return sorted;
 }
 
 export function rankIds<TId extends ItemId = ItemId>(

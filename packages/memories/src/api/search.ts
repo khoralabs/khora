@@ -1,4 +1,6 @@
 import { fuseRrf, type RrfArm } from "@cfd/reciprocal-rank-fusion";
+import { elapsedMs } from "../timing.js";
+import { logger } from "../logger.js";
 import type { Edge, Memory, SourceMap } from "../db/schema";
 import type { DbCtx, NeighborFilter } from "../models";
 import {
@@ -73,6 +75,7 @@ export function search<NODE_LABELS extends string = string, EDGE_LABELS extends 
   ctx: MutationCtx,
   params: SearchParams<NODE_LABELS, EDGE_LABELS>,
 ): SearchHit<NODE_LABELS, EDGE_LABELS>[] {
+  const t0 = performance.now();
   const d: DbCtx = { db: ctx.db, now: Date.now() };
   const topK = params.options?.topK ?? 10;
   if (topK <= 0) return [];
@@ -131,6 +134,18 @@ export function search<NODE_LABELS extends string = string, EDGE_LABELS extends 
 
   const neighborOpt = params.options?.neighbors;
   if (neighborOpt === undefined || neighborOpt === false) {
+    logger.info({
+      phase: "memories.search",
+      durationMs: elapsedMs(t0),
+      namespace: params.namespace,
+      hitCount: rootHits.length,
+      topK,
+      neighbors: false,
+      vectorDim:
+        "vector" in params.content && params.content.vector.length > 0
+          ? params.content.vector.length
+          : undefined,
+    });
     return rootHits;
   }
 
@@ -138,7 +153,7 @@ export function search<NODE_LABELS extends string = string, EDGE_LABELS extends 
     neighborOpt === true ? undefined : neighborOpt;
   const maxNeighbors = params.options?.maxNeighbors;
 
-  return rootHits.map((hit) => {
+  const withNeighbors = rootHits.map((hit) => {
     let neighbors = listNeighborsForMemory<EDGE_LABELS, NODE_LABELS>(d, {
       namespace: hit.memory.namespace,
       key: hit.memory.key,
@@ -152,4 +167,17 @@ export function search<NODE_LABELS extends string = string, EDGE_LABELS extends 
       neighbors,
     };
   });
+  logger.info({
+    phase: "memories.search",
+    durationMs: elapsedMs(t0),
+    namespace: params.namespace,
+    hitCount: withNeighbors.length,
+    topK,
+    neighbors: true,
+    vectorDim:
+      "vector" in params.content && params.content.vector.length > 0
+        ? params.content.vector.length
+        : undefined,
+  });
+  return withNeighbors;
 }
