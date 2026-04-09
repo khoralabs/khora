@@ -9,12 +9,12 @@ import {
 import type { LanguageModel } from "ai";
 import type z from "zod";
 import type { EmbeddingModel } from "../adapters";
-import { createAgentRegistry, declareMemoryLibrarianAgent } from "../agent";
 import type {
   LibrarianPipelineGeneration,
   MemoryLibrarianSessionInput,
   MemoryLibrarianSessionOutput,
 } from "../agent";
+import { createAgentRegistry, declareMemoryLibrarianAgent } from "../agent";
 import {
   decomposeLogicalMemoryToContent,
   type LogicalMemoryInput,
@@ -32,7 +32,10 @@ export interface ProcessLogicalMemoryWithLibrarianParams<
   /** AI SDK language model (caller-supplied provider). */
   model: LanguageModel;
   client: MemoriesClient<TNode, TEdge>;
-  /** Same model used for ingestion / `memory_search` vector arm. */
+  /**
+   * Same embedding model for decomposition, prefetch search vectors, tool `memory_search`, and merge payloads.
+   * Set {@link EmbeddingModel.embedConfig} (e.g. `outputDimensionality`) for resolution recipes.
+   */
   embeddingModel: EmbeddingModel;
   logicalMemory: LogicalMemoryInput;
   /** Resolves each prefetched hit’s {@link SourceMap} to readable source material. */
@@ -90,7 +93,13 @@ export async function processLogicalMemoryWithLibrarian<
     agentRegistry,
   } = params;
 
-  const content = await decomposeLogicalMemoryToContent(logicalMemory);
+  const content = await decomposeLogicalMemoryToContent({
+    ...logicalMemory,
+    embedding: {
+      ...logicalMemory.embedding,
+      embeddingModel,
+    },
+  });
   const processedLogicalMemory: ProcessedLogicalMemory = { ...logicalMemory, content };
 
   const prefetchedHits = prefetch

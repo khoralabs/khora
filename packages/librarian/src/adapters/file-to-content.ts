@@ -81,6 +81,7 @@ export async function fileToContent(input: FileToContentInput): Promise<FileToCo
       apiKey: input.apiKey,
       model: input.model,
       textBatchSize: input.textBatchSize,
+      embedConfig: input.embedConfig,
     });
 
   if (isTextLikeMime(mimeType)) {

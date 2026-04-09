@@ -22,7 +22,7 @@ export interface LogicalMemoryInput {
   namespace: string;
   plaintext?: string;
   files?: LogicalMemoryFilePart[];
-  /** Passed to {@link createEmbeddingModel} and adapters. */
+  /** Passed to {@link createEmbeddingModel} and adapters (including `embedConfig` / resolution). */
   embedding?: EmbeddingModelOptions & { embeddingModel?: EmbeddingModel };
 }
 
@@ -43,6 +43,7 @@ export async function decomposeLogicalMemoryToContent(
       apiKey: input.embedding?.apiKey,
       model: input.embedding?.model,
       textBatchSize: input.embedding?.textBatchSize,
+      embedConfig: input.embedding?.embedConfig,
     });
 
   const out: MergeMemoryContentItem[] = [];

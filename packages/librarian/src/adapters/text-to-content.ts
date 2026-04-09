@@ -60,6 +60,7 @@ export async function textToContent(input: TextToContentInput): Promise<TextToCo
       apiKey: input.apiKey,
       model: input.model,
       textBatchSize: input.textBatchSize,
+      embedConfig: input.embedConfig,
     });
 
   const embeddingVectors = await embedTextChunks(embeddingModel, chunkTexts);

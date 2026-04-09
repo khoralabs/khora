@@ -21,6 +21,7 @@ import type {
   TypedSearchHit,
 } from "@cfd/memories";
 import type { LanguageModel, ModelMessage } from "ai";
+import { NoOutputGeneratedError } from "ai";
 import type z from "zod";
 import type { EmbeddingModel } from "../adapters";
 import type { LogicalMemoryInput, ProcessedLogicalMemory } from "../workflow/logical-memory";
@@ -186,7 +187,18 @@ export function createMemoryLibrarianSessionRunner<
     const generation = await librarian.generate({
       messages,
     });
-    const plan = zLibrarianMergePlanWire.parse(generation.output);
+    let plan: LibrarianMergePlanWire;
+    try {
+      plan = zLibrarianMergePlanWire.parse(generation.output);
+    } catch (err) {
+      if (NoOutputGeneratedError.isInstance(err)) {
+        throw new Error(
+          `Memory librarian did not produce structured merge output (steps=${generation.steps.length}, finishReason=${JSON.stringify(generation.finishReason)}). Increase maxSteps — tool calls consume steps before the final JSON plan.`,
+          { cause: err },
+        );
+      }
+      throw err;
+    }
     if (runMerge) {
       await mergeLogicalMemoryWithPlan(client, processedLogicalMemory, plan);
     }
