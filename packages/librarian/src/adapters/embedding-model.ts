@@ -23,7 +23,11 @@ export interface BinaryEmbedInput {
 }
 
 export function createEmbeddingModel(options: EmbeddingModelOptions = {}): EmbeddingModel {
-  const apiKey = options.apiKey ?? process.env.GOOGLE_API_KEY;
+  const apiKey =
+    options.apiKey?.trim() ||
+    process.env.GOOGLE_API_KEY?.trim() ||
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim() ||
+    process.env.GEMINI_API_KEY?.trim();
   return {
     client: new GoogleGenAI(apiKey ? { apiKey } : {}),
     model: options.model ?? EMBEDDING_MODEL_NAME,

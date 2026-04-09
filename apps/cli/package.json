@@ -1,0 +1,25 @@
+{
+  "name": "@cfd/cli",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "bun --env-file=.env src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/google": "^2.0.0",
+    "@cfd/librarian": "workspace:*",
+    "@cfd/memories": "workspace:*",
+    "@cfd/stores": "workspace:*",
+    "@google/genai": "^1.48.0",
+    "ai": "^6.0.153",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

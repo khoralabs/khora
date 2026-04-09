@@ -1,5 +1,11 @@
+export type { NeighborConstraint, NeighborFilter, NeighborNodesFilter } from "../models";
 export * from "./client";
 export type { MergeMemoryContentItem, MergeMemoryParams, MutationCtx } from "./merge-memory";
-export type * from "./ontology";
+export * from "./ontology.ts";
 export * from "./resolve-sourcemap";
-export type { SearchContent, SearchHit, SearchParams } from "./search";
+export type {
+  NeighborSearchOption,
+  SearchContent,
+  SearchHit,
+  SearchParams,
+} from "./search";

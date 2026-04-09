@@ -17,6 +17,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@cfd/reciprocal-rank-fusion": "workspace:*",
     "sqlite-vec": "^0.1.9",
     "zod": "^4.3.6"
   }

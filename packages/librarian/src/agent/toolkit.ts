@@ -1,5 +1,5 @@
 import { tool, toolkit } from "@cfd/agent-identity";
-import type { MemoriesClient, SearchHit } from "@cfd/memories";
+import type { MemoriesClient, NeighborSearchOption, SearchContent, SearchHit } from "@cfd/memories";
 import z from "zod";
 import { type EmbeddingModel, embedTextChunks } from "../adapters/embedding-model";
 
@@ -28,6 +28,19 @@ const zSearchContent = z
   })
   .strict();
 
+const zNeighborNodesFilter = z
+  .object({
+    all: z
+      .array(z.string())
+      .optional()
+      .describe("Neighbor memory's node must have every listed node-label kind (AND)."),
+    some: z
+      .array(z.string())
+      .optional()
+      .describe("Neighbor memory's node must have at least one of these node-label kinds (OR)."),
+  })
+  .describe("Filter the adjacent memory by ontology node labels (same semantics as root `labels`).");
+
 const zNeighborConstraint = z.object({
   label: z
     .string()
@@ -40,6 +53,9 @@ const zNeighborConstraint = z.object({
     .describe(
       'Optional: relative to each hit memory — "out" is from that memory toward the neighbor, "in" is the opposite.',
     ),
+  nodes: zNeighborNodesFilter.optional().describe(
+    "Optional: require the neighbor memory's node to match these node-label rules for this edge constraint.",
+  ),
 });
 
 const zMemorySearchOptions = z
@@ -69,24 +85,43 @@ const zMemorySearchOptions = z
       })
       .optional()
       .describe("Filter root hits by ontology node labels on the hit memory's node."),
+    // String sentinels — not booleans: Gemini tool JSON Schema rejects non-string enum values (e.g. true/false).
     neighbors: z
-      .object({
-        all: z
-          .array(zNeighborConstraint)
-          .optional()
+      .union([
+        z
+          .literal("all")
           .describe(
-            "Per incident edge: include the neighbor only if this edge carries every listed constraint (label + optional direction) on the same edge (AND).",
+            "Include all depth-1 neighbors (any edge label, any direction). Same as an empty filter object.",
           ),
-        some: z
-          .array(zNeighborConstraint)
-          .optional()
-          .describe(
-            "Per incident edge: if non-empty, include the neighbor only if at least one constraint matches that edge (OR).",
-          ),
-      })
+        z
+          .literal("off")
+          .describe("Omit neighbor expansion from results (same as omitting `neighbors`)."),
+        z.object({
+          all: z
+            .array(zNeighborConstraint)
+            .optional()
+            .describe(
+              "Per incident edge: include the neighbor only if this edge carries every listed constraint (label + optional direction) on the same edge (AND).",
+            ),
+          some: z
+            .array(zNeighborConstraint)
+            .optional()
+            .describe(
+              "Per incident edge: if non-empty, include the neighbor only if at least one constraint matches that edge (OR).",
+            ),
+        }),
+      ])
       .optional()
       .describe(
-        "Does not filter root hits. When set, each hit's returned `neighbors` list only includes depth-1 adjacent memories along edges that pass these constraints.",
+        "Does not filter root hits. When set, each hit includes depth-1 adjacent memories; use `all` for no filters, `off` to skip expansion, or an object with `all`/`some` arrays of edge constraints (each: edge `label`, optional `direction`, optional `nodes` with `all`/`some` node-label kinds on the neighbor).",
+      ),
+    maxNeighbors: z
+      .number()
+      .int()
+      .nonnegative()
+      .optional()
+      .describe(
+        "When neighbor expansion is enabled, maximum adjacent memories per root hit (each hit row is capped independently; not a total across all hits). Omit for no cap.",
       ),
     arms: z
       .object({
@@ -126,6 +161,15 @@ export const zMemorySearchToolInput = z
 
 export type MemorySearchToolInput = z.infer<typeof zMemorySearchToolInput>;
 
+function neighborOptionForSearch(
+  neighbors: z.infer<typeof zMemorySearchOptions>["neighbors"],
+): NeighborSearchOption | undefined {
+  if (neighbors === undefined) return undefined;
+  if (neighbors === "all") return true;
+  if (neighbors === "off") return false;
+  return neighbors;
+}
+
 const memorySearchTool = tool<
   "memory_search",
   MemorySearchToolInput,
@@ -142,15 +186,34 @@ const memorySearchTool = tool<
   handler: async (ctx, input) => {
     const env = ctx.env;
     const parsed = zMemorySearchToolInput.parse(input);
-    const embeddings = await embedTextChunks(env.embeddingModel, [parsed.content.text]);
-    const vector = embeddings[0];
-    if (!vector) {
-      throw new Error("memory_search: embedding pipeline returned no vector for query text");
+    const opts = parsed.options;
+    const lexicalWeight = opts?.arms?.lexical ?? 1;
+    const vectorWeight = opts?.arms?.vector ?? 1;
+    if (lexicalWeight <= 0 && vectorWeight <= 0) {
+      throw new Error("memory_search: at least one of options.arms.lexical or .vector must be > 0");
     }
+
+    let content: SearchContent;
+    if (vectorWeight > 0) {
+      const embeddings = await embedTextChunks(env.embeddingModel, [parsed.content.text]);
+      const vector = embeddings[0];
+      if (!vector) {
+        throw new Error("memory_search: embedding pipeline returned no vector for query text");
+      }
+      content = lexicalWeight > 0 ? { text: parsed.content.text, vector } : { vector };
+    } else {
+      content = { text: parsed.content.text };
+    }
+
     return env.client.search({
       namespace: env.namespace,
-      content: { text: parsed.content.text, vector },
-      options: parsed.options,
+      content,
+      options: opts
+        ? {
+            ...opts,
+            neighbors: neighborOptionForSearch(opts.neighbors),
+          }
+        : undefined,
     });
   },
 });

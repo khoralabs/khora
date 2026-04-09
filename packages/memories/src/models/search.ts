@@ -3,14 +3,29 @@ import { vectorVecTableName } from "../db/search-indexes";
 import type { DbCtx } from "./context";
 import { ids } from "./ids";
 
-export type NeighborConstraint<EDGE_LABEL extends string = string> = {
-  label: EDGE_LABEL;
-  direction?: "in" | "out";
+/** Same semantics as root hit `labels` filter: `all` = AND, `some` = OR (non-empty). Omitted = any. */
+export type NeighborNodesFilter<NODE_LABEL extends string = string> = {
+  all?: NODE_LABEL[];
+  some?: NODE_LABEL[];
 };
 
-export type NeighborFilter<EDGE_LABEL extends string = string> = {
-  all?: NeighborConstraint<EDGE_LABEL>[];
-  some?: NeighborConstraint<EDGE_LABEL>[];
+/** Omitted `direction` matches both incident orientations (in and out). */
+export type NeighborConstraint<
+  EDGE_LABEL extends string = string,
+  NODE_LABEL extends string = string,
+> = {
+  label: EDGE_LABEL;
+  direction?: "in" | "out";
+  /** If set, the adjacent memory's node must satisfy these node-label rules. */
+  nodes?: NeighborNodesFilter<NODE_LABEL>;
+};
+
+export type NeighborFilter<
+  EDGE_LABEL extends string = string,
+  NODE_LABEL extends string = string,
+> = {
+  all?: NeighborConstraint<EDGE_LABEL, NODE_LABEL>[];
+  some?: NeighborConstraint<EDGE_LABEL, NODE_LABEL>[];
 };
 
 export type HydratedSourceMapHit<NODE_LABEL extends string = string> = SourceMap & {
@@ -18,8 +33,12 @@ export type HydratedSourceMapHit<NODE_LABEL extends string = string> = SourceMap
   labels: NODE_LABEL[];
 };
 
-export type HydratedNeighbor<EDGE_LABEL extends string = string> = Memory & {
-  labels: EDGE_LABEL[];
+export type HydratedNeighbor<
+  EDGE_LABEL extends string = string,
+  NODE_LABEL extends string = string,
+> = Memory & {
+  /** Ontology node labels on the neighbor memory's node (same meaning as root hit `labels`). */
+  labels: NODE_LABEL[];
   edge: Edge & { label: EDGE_LABEL };
 };
 
@@ -40,6 +59,38 @@ function parseProperties(value: unknown): Record<string, unknown> | undefined {
     return value as Record<string, unknown>;
   }
   return undefined;
+}
+
+function matchesNodeLabelFilter<LABEL extends string>(
+  labels: readonly LABEL[],
+  filter: NeighborNodesFilter<LABEL> | undefined,
+): boolean {
+  if (!filter) return true;
+  if (filter.all && !filter.all.every((label) => labels.includes(label))) {
+    return false;
+  }
+  if (
+    filter.some &&
+    filter.some.length > 0 &&
+    !filter.some.some((label) => labels.includes(label))
+  ) {
+    return false;
+  }
+  return true;
+}
+
+function neighborConstraintSatisfied<
+  EDGE_LABEL extends string,
+  NODE_LABEL extends string,
+>(
+  constraint: NeighborConstraint<EDGE_LABEL, NODE_LABEL>,
+  edgeLabels: readonly EDGE_LABEL[],
+  direction: "in" | "out",
+  neighborNodeLabels: readonly NODE_LABEL[],
+): boolean {
+  if (!edgeLabels.includes(constraint.label)) return false;
+  if (constraint.direction !== undefined && constraint.direction !== direction) return false;
+  return matchesNodeLabelFilter(neighborNodeLabels, constraint.nodes);
 }
 
 export function searchLexicalSourceMapIds(
@@ -179,14 +230,17 @@ export function hydrateSourceMapHits<NODE_LABEL extends string = string>(
   });
 }
 
-export function listNeighborsForMemory<EDGE_LABEL extends string = string>(
+export function listNeighborsForMemory<
+  EDGE_LABEL extends string = string,
+  NODE_LABEL extends string = string,
+>(
   ctx: DbCtx,
   input: {
     namespace: string;
     key: string;
-    filters?: NeighborFilter<EDGE_LABEL>;
+    filters?: NeighborFilter<EDGE_LABEL, NODE_LABEL>;
   },
-): HydratedNeighbor<EDGE_LABEL>[] {
+): HydratedNeighbor<EDGE_LABEL, NODE_LABEL>[] {
   const nodeId = ids.node(input.namespace, input.key);
   const rows = ctx.db
     .query<
@@ -234,14 +288,14 @@ export function listNeighborsForMemory<EDGE_LABEL extends string = string>(
       memory: Memory;
       edge: Edge;
       direction: "in" | "out";
-      labels: EDGE_LABEL[];
+      edgeLabels: EDGE_LABEL[];
     }
   >();
 
   for (const row of rows) {
     const existing = grouped.get(row.edgeId);
     if (existing) {
-      existing.labels.push(row.edgeLabel);
+      existing.edgeLabels.push(row.edgeLabel);
       continue;
     }
     grouped.set(row.edgeId, {
@@ -259,19 +313,45 @@ export function listNeighborsForMemory<EDGE_LABEL extends string = string>(
         properties: parseProperties(row.edgeProperties),
       },
       direction: row.fromNodeId === nodeId ? "out" : "in",
-      labels: [row.edgeLabel],
+      edgeLabels: [row.edgeLabel],
     });
   }
 
+  const neighborNodeIds = [
+    ...new Set([...grouped.values()].map((v) => ids.node(v.memory.namespace, v.memory.key))),
+  ];
+  const neighborNodeLabelsById = new Map<string, NODE_LABEL[]>();
+  if (neighborNodeIds.length > 0) {
+    const labelRows = ctx.db
+      .query<{ nodeId: string; label: NODE_LABEL }, string[]>(
+        `SELECT nla.node_id AS nodeId, nl.value AS label
+         FROM node_label_assignments nla
+         JOIN node_labels nl ON nl._id = nla.label_id
+         WHERE nla.node_id IN (${placeholders(neighborNodeIds.length)})
+         ORDER BY nl.value ASC`,
+      )
+      .all(...neighborNodeIds);
+    for (const { nodeId, label } of labelRows) {
+      const ls = neighborNodeLabelsById.get(nodeId) ?? [];
+      ls.push(label);
+      neighborNodeLabelsById.set(nodeId, ls);
+    }
+  }
+
   return [...grouped.values()].flatMap((row) => {
-    const labels = [...new Set(row.labels)];
-    const matches = (constraints: NeighborConstraint<EDGE_LABEL>[] | undefined): EDGE_LABEL[] => {
-      if (!constraints || constraints.length === 0) return labels;
-      return labels.filter((label) =>
+    const edgeLabels = [...new Set(row.edgeLabels)];
+    const neighborNodeLabels =
+      neighborNodeLabelsById.get(ids.node(row.memory.namespace, row.memory.key)) ?? [];
+
+    const matches = (
+      constraints: NeighborConstraint<EDGE_LABEL, NODE_LABEL>[] | undefined,
+    ): EDGE_LABEL[] => {
+      if (!constraints || constraints.length === 0) return edgeLabels;
+      return edgeLabels.filter((label) =>
         constraints.some(
           (constraint) =>
             constraint.label === label &&
-            (constraint.direction === undefined || constraint.direction === row.direction),
+            neighborConstraintSatisfied(constraint, edgeLabels, row.direction, neighborNodeLabels),
         ),
       );
     };
@@ -279,10 +359,8 @@ export function listNeighborsForMemory<EDGE_LABEL extends string = string>(
     const allConstraints = input.filters?.all;
     if (
       allConstraints &&
-      !allConstraints.every(
-        (constraint) =>
-          labels.includes(constraint.label) &&
-          (constraint.direction === undefined || constraint.direction === row.direction),
+      !allConstraints.every((constraint) =>
+        neighborConstraintSatisfied(constraint, edgeLabels, row.direction, neighborNodeLabels),
       )
     ) {
       return [];
@@ -292,22 +370,21 @@ export function listNeighborsForMemory<EDGE_LABEL extends string = string>(
     if (
       someConstraints &&
       someConstraints.length > 0 &&
-      !someConstraints.some(
-        (constraint) =>
-          labels.includes(constraint.label) &&
-          (constraint.direction === undefined || constraint.direction === row.direction),
+      !someConstraints.some((constraint) =>
+        neighborConstraintSatisfied(constraint, edgeLabels, row.direction, neighborNodeLabels),
       )
     ) {
       return [];
     }
 
-    const preferredLabel = matches(allConstraints)[0] ?? matches(someConstraints)[0] ?? labels[0];
+    const preferredLabel =
+      matches(allConstraints)[0] ?? matches(someConstraints)[0] ?? edgeLabels[0];
     if (!preferredLabel) return [];
 
     return [
       {
         ...row.memory,
-        labels,
+        labels: neighborNodeLabels,
         edge: {
           ...row.edge,
           label: preferredLabel,

@@ -15,6 +15,7 @@ export {
   listNeighborsForMemory,
   type NeighborConstraint,
   type NeighborFilter,
+  type NeighborNodesFilter,
   searchLexicalSourceMapIds,
   searchVectorSourceMapIds,
 } from "./search";

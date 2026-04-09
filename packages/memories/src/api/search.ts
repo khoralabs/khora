@@ -1,6 +1,6 @@
-import { fuseRrf, type RrfArm } from "../../../reciprocal-rank-fusion/index.ts";
+import { fuseRrf, type RrfArm } from "@cfd/reciprocal-rank-fusion";
 import type { Edge, Memory, SourceMap } from "../db/schema";
-import type { DbCtx, HydratedNeighbor, NeighborFilter } from "../models";
+import type { DbCtx, NeighborFilter } from "../models";
 import {
   hydrateSourceMapHits,
   listNeighborsForMemory,
@@ -8,6 +8,12 @@ import {
   searchVectorSourceMapIds,
 } from "../models";
 import type { MutationCtx } from "./merge-memory";
+
+/** When `true`, expand with no neighbor edge filters (any label, any direction). `false` omits neighbors. */
+export type NeighborSearchOption<
+  NODE_LABELS extends string = string,
+  EDGE_LABELS extends string = string,
+> = boolean | NeighborFilter<EDGE_LABELS, NODE_LABELS>;
 
 export type SearchContent =
   | { text: string }
@@ -24,7 +30,12 @@ export interface SearchParams<
     topK?: number;
     minScore?: number;
     labels?: { all?: NODE_LABELS[]; some?: NODE_LABELS[] };
-    neighbors?: NeighborFilter<EDGE_LABELS>;
+    neighbors?: NeighborSearchOption<NODE_LABELS, EDGE_LABELS>;
+    /**
+     * When neighbors are included, cap how many adjacent memories **per root hit** (each hit row
+     * independently; not a shared budget across the whole result set). Omit = no cap.
+     */
+    maxNeighbors?: number;
     arms?: {
       vector?: number;
       lexical?: number;
@@ -37,7 +48,7 @@ export interface SearchHit<NODE_LABELS extends string = string, EDGE_LABELS exte
   score: number;
   memory: Memory;
   labels: NODE_LABELS[];
-  neighbors?: Array<Memory & { labels: EDGE_LABELS[]; edge: Edge & { label: EDGE_LABELS } }>;
+  neighbors?: Array<Memory & { labels: NODE_LABELS[]; edge: Edge & { label: EDGE_LABELS } }>;
 }
 
 function matchesLabelFilter<LABEL extends string>(
@@ -118,20 +129,23 @@ export function search<NODE_LABELS extends string = string, EDGE_LABELS extends 
     })
     .slice(0, topK);
 
-  if (!params.options?.neighbors) {
+  const neighborOpt = params.options?.neighbors;
+  if (neighborOpt === undefined || neighborOpt === false) {
     return rootHits;
   }
 
-  const neighborsByMemoryId = new Map<string, HydratedNeighbor<EDGE_LABELS>[]>();
+  const neighborFilters: NeighborFilter<EDGE_LABELS, NODE_LABELS> | undefined =
+    neighborOpt === true ? undefined : neighborOpt;
+  const maxNeighbors = params.options?.maxNeighbors;
+
   return rootHits.map((hit) => {
-    let neighbors = neighborsByMemoryId.get(hit.memory._id);
-    if (!neighbors) {
-      neighbors = listNeighborsForMemory<EDGE_LABELS>(d, {
-        namespace: hit.memory.namespace,
-        key: hit.memory.key,
-        filters: params.options?.neighbors,
-      });
-      neighborsByMemoryId.set(hit.memory._id, neighbors);
+    let neighbors = listNeighborsForMemory<EDGE_LABELS, NODE_LABELS>(d, {
+      namespace: hit.memory.namespace,
+      key: hit.memory.key,
+      filters: neighborFilters,
+    });
+    if (maxNeighbors !== undefined && maxNeighbors >= 0) {
+      neighbors = neighbors.slice(0, maxNeighbors);
     }
     return {
       ...hit,
