@@ -1,5 +1,5 @@
 import { createRegisteredAgentIdentity, type RegisteredAgentIdentity } from "@cfd/agent-identity";
-import { LIBRARIAN_STATIC_SYSTEM_INSTRUCTIONS } from "./instructions/static";
+import { buildLibrarianBaseSystemContent } from "./instructions/system";
 import { memoryLibrarianToolkit } from "./toolkit";
 
 /** Stable librarian agent id for registry / fingerprinting. */
@@ -9,7 +9,7 @@ export function buildMemoryLibrarianAgentId(namespace: string): string {
 }
 
 /**
- * Static agent identity for the memory librarian (toolkit + {@link LIBRARIAN_STATIC_SYSTEM_INSTRUCTIONS}).
+ * Static agent identity for the memory librarian (toolkit + {@link buildLibrarianBaseSystemContent}).
  * For identity plus default `registry.register` options in one step, use `declareMemoryLibrarianAgent` (`./declaration.ts`).
  */
 export async function defineMemoryLibrarianIdentity(namespace: string): Promise<{
@@ -19,7 +19,7 @@ export async function defineMemoryLibrarianIdentity(namespace: string): Promise<
   return createRegisteredAgentIdentity({
     agentId: buildMemoryLibrarianAgentId(namespace),
     name: "Memory Librarian",
-    instructions: [LIBRARIAN_STATIC_SYSTEM_INSTRUCTIONS],
+    instructions: [buildLibrarianBaseSystemContent()],
     rootComposable: memoryLibrarianToolkit,
   });
 }

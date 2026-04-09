@@ -252,7 +252,7 @@ async function cmdRemember(args: Parsed) {
     embedConfig: embedConfigForResolutionPreset(args.resolution),
   });
   const google = createGoogleGenerativeAI({ apiKey });
-  const model = google("gemini-flash-latest");
+  const model = google("gemini-flash-lite-latest");
   const tRemember = performance.now();
   const result = await processLogicalMemoryWithLibrarian({
     model,

@@ -8,7 +8,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ai-sdk/google": "^2.0.0",
+    "@ai-sdk/google": "^3.0.0",
     "@cfd/librarian": "workspace:*",
     "@cfd/memories": "workspace:*",
     "@cfd/stores": "workspace:*",

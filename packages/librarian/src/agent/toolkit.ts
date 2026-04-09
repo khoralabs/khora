@@ -2,6 +2,8 @@ import { tool, toolkit } from "@cfd/agent-identity";
 import type { MemoriesClient, NeighborSearchOption, SearchContent, SearchHit } from "@cfd/memories";
 import z from "zod";
 import { type EmbeddingModel, embedTextChunks } from "../adapters/embedding-model";
+import { logger } from "../logger.js";
+import { elapsedMs } from "../timing.js";
 
 /** Wide ontology maps; session clients use narrower TNode/TEdge at runtime (see {@link toMemoryLibrarianEnv}). */
 export type MemoryLibrarianWideClient = MemoriesClient<
@@ -9,12 +11,67 @@ export type MemoryLibrarianWideClient = MemoriesClient<
   Record<string, z.ZodType>
 >;
 
+/** Per-session embedding cache for identical query strings (see {@link MemoryLibrarianEnv.embeddingCache}). */
+export function embeddingCacheKey(namespace: string, queryText: string): string {
+  return `${namespace}\n${queryText.trim()}`;
+}
+
+/**
+ * Slim tool result for the LLM (keys, scores, labels) — avoids serializing full {@link SearchHit} rows.
+ * Neighbor rows are capped when present.
+ */
+export type MemorySearchHitLibrarian = {
+  memory_key: string;
+  score: number;
+  labels: string[];
+  source_key: string;
+  neighbors?: Array<{ memory_key: string; labels: string[] }>;
+};
+
+const MAX_NEIGHBORS_PER_HIT = 8;
+
+function mapSearchHitToLibrarian(hit: SearchHit): MemorySearchHitLibrarian {
+  const row: MemorySearchHitLibrarian = {
+    memory_key: hit.memory.key,
+    score: hit.score,
+    labels: [...hit.labels],
+    source_key: hit.source_key,
+  };
+  if (hit.neighbors?.length) {
+    row.neighbors = hit.neighbors.slice(0, MAX_NEIGHBORS_PER_HIT).map((n) => ({
+      memory_key: n.key,
+      labels: [...n.labels],
+    }));
+  }
+  return row;
+}
+
+function mapSearchHitsToLibrarian(hits: SearchHit[]): MemorySearchHitLibrarian[] {
+  return hits.map(mapSearchHitToLibrarian);
+}
+
+/** When set, full `content.text` is included in `librarian.toolCall` logs (default: truncated preview only). */
+export function librarianLogToolBodies(): boolean {
+  const v = process.env.LIBRARIAN_LOG_TOOL_BODIES?.trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes";
+}
+
+function truncateForLog(s: string, max: number): string {
+  if (s.length <= max) return s;
+  return `${s.slice(0, max)}…`;
+}
+
 /** Runtime env for {@link memoryLibrarianToolkit}: client, namespace, and embedding model (injected; not tool args). */
 export type MemoryLibrarianEnv = {
   client: MemoryLibrarianWideClient;
   namespace: string;
   /** Used to embed `content.text` for the vector retrieval arm (same model as ingestion). */
   embeddingModel: EmbeddingModel;
+  /**
+   * Optional per-session cache for query embedding vectors (same normalized key as {@link embeddingCacheKey}).
+   * Instantiated in {@link buildMemoryLibrarianToolkitContext}.
+   */
+  embeddingCache?: Map<string, number[]>;
 };
 
 /** Agent passes query text only; the handler embeds it and runs hybrid RRF (lexical + vector). */
@@ -22,140 +79,60 @@ const zSearchContent = z
   .object({
     text: z
       .string()
-      .describe(
-        "Query string: used for FTS and embedded for vector similarity; you cannot pass a raw embedding array.",
-      ),
+      .describe("Query string for FTS + embedding (no raw vector)."),
   })
   .strict();
 
 const zNeighborNodesFilter = z
   .object({
-    all: z
-      .array(z.string())
-      .optional()
-      .describe("Neighbor memory's node must have every listed node-label kind (AND)."),
-    some: z
-      .array(z.string())
-      .optional()
-      .describe("Neighbor memory's node must have at least one of these node-label kinds (OR)."),
+    all: z.array(z.string()).optional().describe("Neighbor node labels: AND."),
+    some: z.array(z.string()).optional().describe("Neighbor node labels: OR."),
   })
-  .describe("Filter the adjacent memory by ontology node labels (same semantics as root `labels`).");
+  .describe("Filter neighbor memory node labels.");
 
 const zNeighborConstraint = z.object({
-  label: z
-    .string()
-    .describe(
-      "Edge label kind/value (ontology) that incident edges must carry when expanding neighbors.",
-    ),
-  direction: z
-    .enum(["in", "out"])
-    .optional()
-    .describe(
-      'Optional: relative to each hit memory — "out" is from that memory toward the neighbor, "in" is the opposite.',
-    ),
-  nodes: zNeighborNodesFilter.optional().describe(
-    "Optional: require the neighbor memory's node to match these node-label rules for this edge constraint.",
-  ),
+  label: z.string().describe("Edge label kind for neighbor expansion."),
+  direction: z.enum(["in", "out"]).optional(),
+  nodes: zNeighborNodesFilter.optional(),
 });
 
 const zMemorySearchOptions = z
   .object({
-    topK: z
-      .number()
-      .int()
-      .positive()
-      .optional()
-      .describe(
-        "Maximum number of source-map hits to return after fusion (default applied by server if omitted).",
-      ),
-    minScore: z
-      .number()
-      .optional()
-      .describe("Drop hits whose fused RRF score is below this threshold."),
+    topK: z.number().int().positive().optional().describe("Max hits after fusion."),
+    minScore: z.number().optional().describe("Min fused score."),
     labels: z
       .object({
-        all: z
-          .array(z.string())
-          .optional()
-          .describe("Hit memory's node must have every listed node-label kind (AND)."),
-        some: z
-          .array(z.string())
-          .optional()
-          .describe("Hit memory's node must have at least one of these node-label kinds (OR)."),
+        all: z.array(z.string()).optional().describe("Root hit: node labels AND."),
+        some: z.array(z.string()).optional().describe("Root hit: node labels OR."),
       })
-      .optional()
-      .describe("Filter root hits by ontology node labels on the hit memory's node."),
-    // String sentinels — not booleans: Gemini tool JSON Schema rejects non-string enum values (e.g. true/false).
+      .optional(),
     neighbors: z
       .union([
+        z.literal("all").describe("All depth-1 neighbors."),
+        z.literal("off").describe("No neighbors."),
         z
-          .literal("all")
-          .describe(
-            "Include all depth-1 neighbors (any edge label, any direction). Same as an empty filter object.",
-          ),
-        z
-          .literal("off")
-          .describe("Omit neighbor expansion from results (same as omitting `neighbors`)."),
-        z.object({
-          all: z
-            .array(zNeighborConstraint)
-            .optional()
-            .describe(
-              "Per incident edge: include the neighbor only if this edge carries every listed constraint (label + optional direction) on the same edge (AND).",
-            ),
-          some: z
-            .array(zNeighborConstraint)
-            .optional()
-            .describe(
-              "Per incident edge: if non-empty, include the neighbor only if at least one constraint matches that edge (OR).",
-            ),
-        }),
+          .object({
+            all: z.array(zNeighborConstraint).optional(),
+            some: z.array(zNeighborConstraint).optional(),
+          })
+          .describe("Filtered neighbor edges."),
       ])
-      .optional()
-      .describe(
-        "Does not filter root hits. When set, each hit includes depth-1 adjacent memories; use `all` for no filters, `off` to skip expansion, or an object with `all`/`some` arrays of edge constraints (each: edge `label`, optional `direction`, optional `nodes` with `all`/`some` node-label kinds on the neighbor).",
-      ),
-    maxNeighbors: z
-      .number()
-      .int()
-      .nonnegative()
-      .optional()
-      .describe(
-        "When neighbor expansion is enabled, maximum adjacent memories per root hit (each hit row is capped independently; not a total across all hits). Omit for no cap.",
-      ),
+      .optional(),
+    maxNeighbors: z.number().int().nonnegative().optional().describe("Cap neighbors per root hit."),
     arms: z
       .object({
-        lexical: z
-          .number()
-          .optional()
-          .describe(
-            "RRF weight for the full-text (BM25) retrieval arm. Higher = keyword/BM25 ranking matters more in the fused results.",
-          ),
-        vector: z
-          .number()
-          .optional()
-          .describe(
-            "RRF weight for the embedding-similarity arm (query text embedded with the session embedding model). Higher = semantic match matters more.",
-          ),
+        lexical: z.number().optional().describe("RRF weight: BM25."),
+        vector: z.number().optional().describe("RRF weight: vector."),
       })
       .optional()
-      .describe(
-        "Tune reciprocal rank fusion: relative influence of lexical vs vector hits. Defaults are equal (1/1). Set a weight to 0 to disable that arm entirely.",
-      ),
+      .describe("Lexical vs vector fusion weights; default 1:1. Set one to 0 to disable that arm."),
   })
-  .strict()
-  .describe(
-    "Optional tuning for hit count, score cutoff, label filters, neighbor edge filters, and RRF arm weights.",
-  );
+  .strict();
 
 export const zMemorySearchToolInput = z
   .object({
-    content: zSearchContent.describe(
-      "Query text only. The tool embeds it and merges lexical + vector results; namespace and embedding model come from the session.",
-    ),
-    options: zMemorySearchOptions
-      .optional()
-      .describe("Fine-grained search behavior; omit for defaults."),
+    content: zSearchContent.describe("Query text; host embeds and hybrid-searches."),
+    options: zMemorySearchOptions.optional().describe("Optional filters and RRF tuning."),
   })
   .strict();
 
@@ -173,16 +150,46 @@ function neighborOptionForSearch(
 const memorySearchTool = tool<
   "memory_search",
   MemorySearchToolInput,
-  SearchHit[],
+  MemorySearchHitLibrarian[],
   MemoryLibrarianEnv
 >({
   name: "memory_search",
   description:
-    "Search memories by query text: full-text plus embedding of the same string, fused with RRF. Use options.arms to emphasize keywords (lexical) vs semantics (vector). Namespace and embedding model are session-provided.",
+    "Hybrid search (FTS + embedding) fused with RRF. Namespace and embed model are session-scoped. Tune options.arms for keyword vs semantic emphasis.",
   inputSchema: zMemorySearchToolInput,
   instructions: [
-    "Pass content.text. The host embeds that string and runs hybrid search (FTS + vector); use options.arms.lexical vs .vector to weight the two retrieval arms in RRF (defaults: equal).",
+    "Set content.text. Host runs FTS + vector; options.arms.lexical vs .vector weight RRF (default equal).",
   ],
+  hooks: {
+    onToolExecuted: async (e) => {
+      if (e.toolName !== "memory_search") return;
+      const input = e.input as MemorySearchToolInput | undefined;
+      const text = input?.content?.text ?? "";
+      const fullBodies = librarianLogToolBodies();
+      const inputForLog =
+        fullBodies || !input
+          ? input
+          : {
+              content: { text: text ? truncateForLog(text, 200) : "" },
+              ...(input.options !== undefined ? { options: input.options } : {}),
+            };
+      logger.info({
+        phase: "librarian.toolCall",
+        toolName: e.toolName,
+        ok: e.ok,
+        durationMs: e.durationMs,
+        input: inputForLog,
+        outputSummary:
+          e.ok && Array.isArray(e.output)
+            ? {
+                hitCount: e.output.length,
+                memoryKeys: (e.output as MemorySearchHitLibrarian[]).slice(0, 20).map((h) => h.memory_key),
+              }
+            : undefined,
+        error: e.ok ? undefined : e.error,
+      });
+    },
+  },
   handler: async (ctx, input) => {
     const env = ctx.env;
     const parsed = zMemorySearchToolInput.parse(input);
@@ -193,19 +200,36 @@ const memorySearchTool = tool<
       throw new Error("memory_search: at least one of options.arms.lexical or .vector must be > 0");
     }
 
+    let embedMs = 0;
+    let searchMs = 0;
+    let embedCacheHit = false;
+
     let content: SearchContent;
     if (vectorWeight > 0) {
-      const embeddings = await embedTextChunks(env.embeddingModel, [parsed.content.text]);
-      const vector = embeddings[0];
-      if (!vector) {
-        throw new Error("memory_search: embedding pipeline returned no vector for query text");
+      const cacheKey = embeddingCacheKey(env.namespace, parsed.content.text);
+      const cache = env.embeddingCache;
+      let vector: number[] | undefined = cache?.get(cacheKey);
+
+      if (vector) {
+        embedCacheHit = true;
+      } else {
+        const tEmb = performance.now();
+        const embeddings = await embedTextChunks(env.embeddingModel, [parsed.content.text]);
+        embedMs = elapsedMs(tEmb);
+        vector = embeddings[0];
+        if (!vector) {
+          throw new Error("memory_search: embedding pipeline returned no vector for query text");
+        }
+        cache?.set(cacheKey, vector);
       }
+
       content = lexicalWeight > 0 ? { text: parsed.content.text, vector } : { vector };
     } else {
       content = { text: parsed.content.text };
     }
 
-    return env.client.search({
+    const tSearch = performance.now();
+    const rawHits = await env.client.search({
       namespace: env.namespace,
       content,
       options: opts
@@ -215,6 +239,19 @@ const memorySearchTool = tool<
           }
         : undefined,
     });
+    searchMs = elapsedMs(tSearch);
+
+    const slim = mapSearchHitsToLibrarian(rawHits);
+
+    logger.info({
+      phase: "librarian.memory_search",
+      embedMs,
+      searchMs,
+      embedCacheHit,
+      hitCount: slim.length,
+    });
+
+    return slim;
   },
 });
 
@@ -225,7 +262,7 @@ const memorySearchTool = tool<
 export const memoryLibrarianToolkit = toolkit([memorySearchTool], {
   name: "memory-librarian-toolkit",
   instructions: [
-    "Tools for discovering existing memories to link before a merge.",
-    "memory_search: pass query text; the session embeds it and combines lexical + vector search (RRF). Adjust options.arms to favor keyword vs semantic matches.",
+    "Discover existing memories to link before merge.",
+    "memory_search: query text → hybrid RRF; options.arms favors keyword vs semantic.",
   ],
 });

@@ -28,13 +28,12 @@ import { logger } from "../logger.js";
 import { elapsedMs } from "../timing.js";
 import type { LogicalMemoryInput, ProcessedLogicalMemory } from "../workflow/logical-memory";
 import { mergeLogicalMemoryWithPlan } from "../workflow/organize";
-import { type LibrarianMergePlanWire, zLibrarianMergePlanWire } from "../workflow/plan";
+import { type LibrarianMergePlanWire, parseLibrarianMergePlanWire } from "../workflow/plan";
 import {
   createMemoryLibrarianToolLoopAgent,
   type LibrarianPipelineGeneration,
 } from "./create-agent";
 import {
-  buildLibrarianOntologyInstructions,
   buildLibrarianPrefetchKeysInstruction,
   wrapResolvedSourceInstruction,
 } from "./instructions";
@@ -171,16 +170,15 @@ export function createMemoryLibrarianSessionRunner<
       affordances,
       runtime,
       maxSteps,
+      ontology: client.ontology,
     });
 
-    const baseSystem = buildLibrarianOntologyInstructions(client.ontology);
     const allowedKeys = [...new Set(prefetchedHits.map((h) => h.memory.key))];
     const keysSection = buildLibrarianPrefetchKeysInstruction(allowedKeys);
     const resolvedSections = await Promise.all(
       resolvedSources.map(({ hit, source }) => formatResolvedSourceBlock(hit, source)),
     );
     const messages: ModelMessage[] = [
-      { role: "system", content: baseSystem },
       { role: "system", content: keysSection },
       ...resolvedSections.map((c) => ({
         role: "system" as const,
@@ -204,7 +202,7 @@ export function createMemoryLibrarianSessionRunner<
     });
     let plan: LibrarianMergePlanWire;
     try {
-      plan = zLibrarianMergePlanWire.parse(generation.output);
+      plan = parseLibrarianMergePlanWire(client.ontology, generation.output);
     } catch (err) {
       if (NoOutputGeneratedError.isInstance(err)) {
         throw new Error(

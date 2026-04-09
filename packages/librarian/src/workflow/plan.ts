@@ -8,76 +8,104 @@ import type {
 import { Output } from "ai";
 import z from "zod";
 
-const zLabelWire = z.object({
-  kind: z
-    .string()
-    .describe(
-      "Node label kind from the ontology; must match a key in the allowed node label kinds.",
-    ),
-  props: z
-    .record(z.string(), z.unknown())
-    .optional()
-    .describe("Props for this label kind, validated against the ontology schema for `kind`."),
-});
+/** Sorted ontology label kind strings (stable for schema + parsing). */
+export function labelKindsFromOntology<TNode extends LabelSchemaMap, TEdge extends LabelSchemaMap>(
+  ontology: OntologyDefinition<TNode, TEdge>,
+): { node: string[]; edge: string[] } {
+  return {
+    node: Object.keys(ontology.nodeLabels).sort(),
+    edge: Object.keys(ontology.edgeLabels).sort(),
+  };
+}
 
-const zEdgeLabelWire = z.object({
-  kind: z
-    .string()
-    .describe(
-      "Edge label kind from the ontology; must match a key in the allowed edge label kinds.",
-    ),
-  props: z
-    .record(z.string(), z.unknown())
-    .optional()
-    .describe("Props for this edge label kind, validated against the ontology schema for `kind`."),
-});
+/** Description for structured output: allowed kinds + merge constraints (replaces a separate ontology system block). */
+export function buildLibrarianMergePlanDescription(nodeKinds: string[], edgeKinds: string[]): string {
+  const n = nodeKinds.length ? nodeKinds.join(", ") : "(none — leave `labels` empty)";
+  const e = edgeKinds.length ? edgeKinds.join(", ") : "(none — leave `edges` empty)";
+  return `Classify and link this memory. Use only these node label kinds: ${n}. For edges to other memories, use only these edge label kinds: ${e}. Every edge \`memory_key\` must already exist (memory_search or prefetch).`;
+}
 
-const zEdgeWire = z.object({
-  memory_key: z
-    .string()
-    .describe(
-      "Target memory `key` in the same namespace. Must refer to an **existing** memory only — use keys from `memory_search` hits or from prefetched context, not invented keys.",
-    ),
-  direction: z
-    .enum(["in", "out"])
-    .describe(
-      "Edge direction relative to **this** (new) memory: `out` = from this memory toward the other memory's node; `in` = the opposite.",
-    ),
-  label: zEdgeLabelWire,
-  properties: z
-    .record(z.string(), z.unknown())
-    .optional()
-    .describe("Optional JSON on the edge row."),
-});
+function zLabelWire(nodeKinds: readonly string[]) {
+  if (nodeKinds.length === 0) {
+    return z.object({
+      kind: z.never(),
+      props: z.record(z.string(), z.unknown()).optional(),
+    });
+  }
+  return z.object({
+    kind: z.enum(nodeKinds as [string, ...string[]]).describe("Node label kind (ontology)."),
+    props: z.record(z.string(), z.unknown()).optional().describe("Props for this kind."),
+  });
+}
 
-/** Wire format for LLM / JSON (kinds + props); validate with {@link parseLibrarianMergePlan}. */
-export const zLibrarianMergePlanWire = z.object({
-  labels: z
-    .array(zLabelWire)
-    .describe("Node labels to assign to **this** memory's node (the logical memory being merged)."),
-  edges: z
-    .array(zEdgeWire)
-    .describe(
-      "Edges from **this** memory to **existing** memories. Every `memory_key` must already exist in the namespace (discover keys via `memory_search` or prefetched hits).",
-    ),
-  properties: z
-    .record(z.string(), z.unknown())
-    .optional()
-    .describe("Optional JSON object on **this** memory / node row."),
-});
+function zEdgeLabelWire(edgeKinds: readonly string[]) {
+  if (edgeKinds.length === 0) {
+    return z.object({
+      kind: z.never(),
+      props: z.record(z.string(), z.unknown()).optional(),
+    });
+  }
+  return z.object({
+    kind: z.enum(edgeKinds as [string, ...string[]]).describe("Edge label kind (ontology)."),
+    props: z.record(z.string(), z.unknown()).optional().describe("Props for this kind."),
+  });
+}
 
-export type LibrarianMergePlanWire = z.infer<typeof zLibrarianMergePlanWire>;
+function zEdgeWire(edgeKinds: readonly string[]) {
+  return z.object({
+    memory_key: z
+      .string()
+      .describe("Existing memory key (memory_search or prefetch; do not invent)."),
+    direction: z.enum(["in", "out"]).describe("Relative to this memory: out = toward the other node."),
+    label: zEdgeLabelWire(edgeKinds),
+    properties: z.record(z.string(), z.unknown()).optional().describe("Optional edge JSON."),
+  });
+}
 
-/** Shared AI SDK structured output for the librarian merge plan (factory + pipeline typing). */
-export const librarianMergePlanOutput = Output.object({
-  name: "LibrarianMergePlan",
-  description:
-    "Labels and edges for the target logical memory. Edge memory_key values must refer to existing memories in this namespace (prefetch list or memory_search results).",
-  schema: zLibrarianMergePlanWire,
-});
+/** Wire format for LLM / JSON; kinds are constrained to the active ontology. */
+export function zLibrarianMergePlanWire(nodeKinds: readonly string[], edgeKinds: readonly string[]) {
+  const labelsSchema =
+    nodeKinds.length === 0
+      ? z.array(z.never()).describe("No node label kinds — must be empty.")
+      : z.array(zLabelWire(nodeKinds)).describe("Node labels for this memory.");
 
-/** Type parameter for `GenerateTextResult` / `ToolLoopAgent` when using `librarianMergePlanOutput`. */
-export type LibrarianMergePlanStructuredOutput = typeof librarianMergePlanOutput;
+  const edgesSchema =
+    edgeKinds.length === 0
+      ? z.array(z.never()).describe("No edge label kinds — must be empty.")
+      : z.array(zEdgeWire(edgeKinds)).describe("Edges to existing memories.");
+
+  return z.object({
+    labels: labelsSchema,
+    edges: edgesSchema,
+    properties: z.record(z.string(), z.unknown()).optional().describe("Optional node/memory JSON."),
+  });
+}
+
+export type LibrarianMergePlanWire = z.infer<ReturnType<typeof zLibrarianMergePlanWire>>;
+
+/** Structured output spec with ontology-driven enums + classification description. */
+export function librarianMergePlanOutputFromOntology<TNode extends LabelSchemaMap, TEdge extends LabelSchemaMap>(
+  ontology: OntologyDefinition<TNode, TEdge>,
+) {
+  const { node, edge } = labelKindsFromOntology(ontology);
+  return Output.object({
+    name: "LibrarianMergePlan",
+    description: buildLibrarianMergePlanDescription(node, edge),
+    schema: zLibrarianMergePlanWire(node, edge),
+  });
+}
+
+/** Parse raw model output with the same ontology as the agent. */
+export function parseLibrarianMergePlanWire<TNode extends LabelSchemaMap, TEdge extends LabelSchemaMap>(
+  ontology: OntologyDefinition<TNode, TEdge>,
+  data: unknown,
+): LibrarianMergePlanWire {
+  const { node, edge } = labelKindsFromOntology(ontology);
+  return zLibrarianMergePlanWire(node, edge).parse(data);
+}
+
+/** Type parameter for `ToolLoopAgent` when using {@link librarianMergePlanOutputFromOntology}. */
+export type LibrarianMergePlanStructuredOutput = ReturnType<typeof librarianMergePlanOutputFromOntology>;
 
 /**
  * Validates wire labels/edges against the ontology and returns merge slice compatible with

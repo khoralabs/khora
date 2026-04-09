@@ -15,7 +15,12 @@ End-to-end flow: [`processLogicalMemoryWithLibrarian`](src/workflow/process-logi
 
 Structured logs use **pino** (`import { logger } from "@cfd/librarian"`). Set **`LOG_LEVEL`** (`trace`…`fatal`, default `info`). **`debug`** includes `embedTextChunks` / `embedBinaryBlob` timings.
 
-Remember pipeline log phases (when using `processLogicalMemoryWithLibrarian`): `remember.decompose`, `remember.prefetchSearch`, `remember.resolveSources`, `remember.registerAgent`, `remember.sessionStart` (includes agent runner), `remember.pipeline`. Session runner logs: `librarian.evaluateAffordances`, `librarian.toolLoopGenerate`, `librarian.mergeMemory`. **`agentSession.runner`** is logged from `@cfd/agent-identity` for the registry `SessionRunner` duration.
+**Tool I/O (memory librarian):**
+
+- **`librarian.toolCall`** — each `memory_search` completion: `input` (query text truncated to 200 chars unless **`LIBRARIAN_LOG_TOOL_BODIES`** is `1`/`true`/`yes`), `outputSummary` (`hitCount`, `memoryKeys`), `durationMs`, `ok`.
+- **`librarian.memory_search`** — handler spans: `embedMs`, `searchMs`, `embedCacheHit`, `hitCount`.
+
+Remember pipeline log phases (when using `processLogicalMemoryWithLibrarian`): `remember.decompose`, `remember.prefetchSearch`, `remember.resolveSources`, `remember.registerAgent`, `remember.sessionStart` (includes agent runner), `remember.pipeline`. Session runner: `librarian.evaluateAffordances`, per-step `librarian.toolLoop.step` and `librarian.toolLoop.finish`, `librarian.toolLoopGenerate`, `librarian.mergeMemory`. **`agentSession.runner`** is logged from `@cfd/agent-identity` for the registry `SessionRunner` duration.
 
 ## Develop
 

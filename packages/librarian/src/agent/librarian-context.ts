@@ -15,11 +15,14 @@ export function toMemoryLibrarianEnv<
   client: MemoriesClient<TNode, TEdge>;
   namespace: string;
   embeddingModel: EmbeddingModel;
+  /** Per session; defaults to a new empty map. */
+  embeddingCache?: Map<string, number[]>;
 }): MemoryLibrarianEnv {
   return {
     client: args.client as unknown as MemoryLibrarianWideClient,
     namespace: args.namespace,
     embeddingModel: args.embeddingModel,
+    embeddingCache: args.embeddingCache ?? new Map(),
   };
 }
 

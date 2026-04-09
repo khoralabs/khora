@@ -9,14 +9,14 @@ import {
 import type { LanguageModel } from "ai";
 import type z from "zod";
 import type { EmbeddingModel } from "../adapters";
-import { logger } from "../logger.js";
-import { elapsedMs } from "../timing.js";
 import type {
   LibrarianPipelineGeneration,
   MemoryLibrarianSessionInput,
   MemoryLibrarianSessionOutput,
 } from "../agent";
-import { createAgentRegistry, declareMemoryLibrarianAgent } from "../agent";
+import { createAgentRegistry, registerMemoryLibrarianAgent } from "../agent";
+import { logger } from "../logger.js";
+import { elapsedMs } from "../timing.js";
 import {
   decomposeLogicalMemoryToContent,
   type LogicalMemoryInput,
@@ -138,11 +138,11 @@ export async function processLogicalMemoryWithLibrarian<
   });
 
   const tRegister = performance.now();
-  const { identity, registration } = await declareMemoryLibrarianAgent<TNode, TEdge>(
+  const registry = agentRegistry ?? createAgentRegistry();
+  const { identity } = await registerMemoryLibrarianAgent<TNode, TEdge>(
+    registry,
     logicalMemory.namespace,
   );
-  const registry = agentRegistry ?? createAgentRegistry();
-  registry.register(identity, registration);
   logger.info({
     phase: "remember.registerAgent",
     durationMs: elapsedMs(tRegister),
