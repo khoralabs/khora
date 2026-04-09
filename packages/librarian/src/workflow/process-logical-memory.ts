@@ -9,11 +9,7 @@ import {
 import type { LanguageModel } from "ai";
 import type z from "zod";
 import type { EmbeddingModel } from "../adapters";
-import {
-  createAgentRegistry,
-  defineMemoryLibrarianIdentity,
-  memoryLibrarianRegistryRegistration,
-} from "../agent";
+import { createAgentRegistry, declareMemoryLibrarianAgent } from "../agent";
 import type {
   LibrarianPipelineGeneration,
   MemoryLibrarianSessionInput,
@@ -70,6 +66,9 @@ export interface ProcessLogicalMemoryResult<
 
 /**
  * End-to-end librarian pipeline: decompose → optional prefetch + resolve sources → AI SDK (tools + structured plan) → merge.
+ *
+ * Uses {@link declareMemoryLibrarianAgent} then `registry.register(identity, registration)` and
+ * `createSession(agentId, { ctx }).start(...)` — session orchestration is the runner (`SessionRunner`); `ctx` supplies model/client/embedding.
  */
 export async function processLogicalMemoryWithLibrarian<
   TNode extends Record<string, z.ZodType>,
@@ -104,9 +103,11 @@ export async function processLogicalMemoryWithLibrarian<
     resolvedSources.push({ hit, source });
   }
 
-  const { identity } = await defineMemoryLibrarianIdentity(logicalMemory.namespace);
+  const { identity, registration } = await declareMemoryLibrarianAgent<TNode, TEdge>(
+    logicalMemory.namespace,
+  );
   const registry = agentRegistry ?? createAgentRegistry();
-  registry.register(identity, memoryLibrarianRegistryRegistration<TNode, TEdge>());
+  registry.register(identity, registration);
   const session = registry.createSession(identity.agentId, {
     ctx: {
       model,

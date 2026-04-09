@@ -1,3 +1,11 @@
+/**
+ * Memory librarian **session runtime**: the {@link SessionRunner} (orchestration) and **session hooks**
+ * that wire `ToolkitContext` / `ToolRuntimeContext` after `SessionContext` is merged (`onAfterContext`).
+ *
+ * **Toolkit pipeline hooks** (`onPolicyEvaluated` / `onToolExecuted` on tools/toolkits or
+ * `ToolkitContext.pipelineHooks`) are a separate layer inside composable evaluation; they are not
+ * defined here. For identity + default `register` options, use `declareMemoryLibrarianAgent` in `./declaration.ts`.
+ */
 import {
   evaluateRegisteredAgentAffordances,
   type RegisteredAgentIdentity,
@@ -126,6 +134,7 @@ async function formatResolvedSourceBlock(hit: SearchHit, source: ResolvedSource)
   return `${header}\n\n(binary blob: ${mime}, ${String(source.blob.size)} bytes — link using keys from this block or memory_search.)`;
 }
 
+/** Product orchestration: evaluate affordances, run the tool-loop agent, parse plan, optional merge. */
 export function createMemoryLibrarianSessionRunner<
   TNode extends Record<string, z.ZodType>,
   TEdge extends Record<string, z.ZodType>,
@@ -185,7 +194,10 @@ export function createMemoryLibrarianSessionRunner<
   };
 }
 
-/** Registry `register` options: reusable runner + `onAfterContext` toolkit/runtime wiring. */
+/**
+ * Default registration options: `run` from {@link createMemoryLibrarianSessionRunner} and session
+ * `onAfterContext` to build `ToolkitContext` / `ToolRuntimeContext` from merged session context.
+ */
 export function memoryLibrarianRegistryRegistration<
   TNode extends Record<string, z.ZodType>,
   TEdge extends Record<string, z.ZodType>,

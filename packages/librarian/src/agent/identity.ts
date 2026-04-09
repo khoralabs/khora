@@ -10,6 +10,7 @@ export function buildMemoryLibrarianAgentId(namespace: string): string {
 
 /**
  * Static agent identity for the memory librarian (toolkit + {@link LIBRARIAN_STATIC_SYSTEM_INSTRUCTIONS}).
+ * For identity plus default `registry.register` options in one step, use `declareMemoryLibrarianAgent` (`./declaration.ts`).
  */
 export async function defineMemoryLibrarianIdentity(namespace: string): Promise<{
   staticHash: string;

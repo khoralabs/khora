@@ -1,4 +1,4 @@
-# @very-coffee/agent-identity
+# @cfd/agent-identity
 
 **Composable toolkits + policies → deterministic SHA-256 fingerprints** for static tool definitions and for the effective tool set at evaluation time—so you can correlate behavior with a **versioned capability snapshot** (logs, evals, storage).
 
@@ -33,7 +33,7 @@ import {
   computeRuntimeIdentityFromEvaluation,
   toolkit,
   tool,
-} from "@very-coffee/agent-identity";
+} from "@cfd/agent-identity";
 
 const search = tool({
   name: "search",
@@ -53,6 +53,22 @@ const { runtimeHash, toolRefs, evaluatedTools } =
 Lower-level pieces: `collectToolStaticHashes(root)` → map of tool name → leaf hash; `evaluateComposable(root, ctx)` → tools; then `computeRuntimeHash(enabledNames, map, tools)` or `resolveRuntimeToolRefs(...)`.
 
 More runnable scripts under `examples/` (see below). `examples/toAiSdk.ts` maps evaluated `ToolSpec` values to Vercel AI SDK `tool()`.
+
+## Declarative agents and sessions for implementors
+
+**Single declaration.** Treat **`RegisteredAgentIdentity`** (from `createRegisteredAgentIdentity`) plus **`register(agent, { hooks, ctx, run })`** as one declaration of (1) *who* the agent is—root composable, static instructions, static context—and (2) *how* sessions are wired: optional **hooks**, **context** layers (`ctx`), and the **`run`** function. Registration is data-shaped; you are not reimplementing evaluation or the session machine.
+
+**One orchestration implementation.** For a product, the only required **orchestration** at the session layer is a **`SessionRunner`**: implement **`run`** as `({ agent, input, context }) => output`. Everything else there is optional: **hooks** for cross-cutting behavior and **`ctx`** for merged static context and async resolvers. Session hooks wrap **one** invocation of `run`; they do not replace it.
+
+**Two hook layers** — bind functions to the right layer so “hooks” does not mean “rewrite the tool loop”:
+
+1. **Toolkit pipeline hooks** — `onPolicyEvaluated` / `onToolExecuted`, merged via `mergeToolPipelineHooks`, on **`toolkit` / `tool`** definitions and optionally **`ToolkitContext.pipelineHooks`**. These run **inside** composable evaluation while policies and tools execute. Use for telemetry or side effects around policy/tool execution, not for substituting your own evaluation loop.
+
+2. **Session hooks** — `onStart`, `onAfterIdentity`, `onAfterContext`, `onBeforeRun`, `onAfterRun`, `onError` on **`register`** / **`createSession`**, or chained on the returned **`AgentSession`**. These run **around** building `SessionContext` and calling **`run`**. Use for session lifecycle, logging, or injecting fields before your runner evaluates affordances (e.g. building a `ToolkitContext` inside `run` or `onBeforeRun`).
+
+**Session API.** Call **`createSession(agentId)`** with the same string **`agentId`** you used at register time, then **`start(input)`**. Optional per-session overrides use the same `{ hooks, ctx, run }` shape.
+
+**Optional “one declarative blob” later.** A small factory or type that bundles **`RegisteredAgentIdentity`** with default **`RegisterAgentOptions`** is only sugar on top of **`register`**; it does not change semantics.
 
 ## API overview
 
@@ -87,10 +103,10 @@ Grouped by role; full exports (including types like `ToolSpec`, `Composable`, `I
 ### Registries (in-memory; tests / examples)
 
 - `createToolRegistry` / `createAgentRegistry` / `hashToolComposableStatic`
-- `createAgentRegistry().register(agent, { hooks, ctx, run })`
-- `createAgentRegistry().createSession(agentId, { hooks, ctx, run })`
+- `createAgentRegistry().register(agent, { hooks, ctx, run })` — see [Declarative agents and sessions for implementors](#declarative-agents-and-sessions-for-implementors)
+- `createAgentRegistry().createSession(agentId, { hooks, ctx, run })` — `agentId` matches `RegisteredAgentIdentity.agentId`
   - `session.onStart(...)` / `session.onAfterIdentity(...)` / `session.onAfterContext(...)` / `session.onBeforeRun(...)` / `session.onAfterRun(...)` / `session.onError(...)`
-  - `session.start(input)` runs with composed hooks and merged context (`session > registry > agent static`)
+  - `session.start(input)` runs with composed hooks and merged context (`session > registry > agent static`), then **`run`**
 
 ### Output
 

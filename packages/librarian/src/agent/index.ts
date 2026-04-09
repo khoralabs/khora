@@ -1,6 +1,7 @@
 export type {
   AgentRegistry,
   AgentStaticProps,
+  RegisterAgentOptions,
   RegisteredAgentAffordances,
   RegisteredAgentEntry,
   RegisteredAgentIdentity,
@@ -13,6 +14,7 @@ export {
   evaluateRegisteredAgentAffordances,
 } from "@cfd/agent-identity";
 export * from "./create-agent";
+export * from "./declaration";
 export * from "./identity";
 export * from "./instructions";
 export * from "./librarian-context";
