@@ -78,6 +78,7 @@ export class MemoriesClient<
       labels: labelStrings,
       properties: params.properties,
       edges: edgesMapped,
+      searchMetaVector: params.searchMetaVector,
     };
 
     mergeMemory(this.mutationCtx, flat);

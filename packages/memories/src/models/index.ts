@@ -4,6 +4,15 @@ export { ensureEdgeLabel } from "./edge-labels";
 export { insertEdge } from "./edges";
 export { ids } from "./ids";
 export { findMemoryIdByKey, upsertMemory } from "./memories";
+export {
+  buildCanonicalMemorySearchMetaText,
+  buildCanonicalMemorySearchMetaTextForMerge,
+  isSystemSearchMetaSourceKey,
+  listNeighborMemoryKeysForNode,
+  MEMORY_SEARCH_META_SOURCE_KEY,
+  removeMemorySearchMeta,
+  syncMemorySearchMeta,
+} from "./memory-search-meta";
 export { clearMemorySubtree } from "./memory-subtree";
 export { insertNodeLabelAssignment } from "./node-label-assignments";
 export { ensureNodeLabel } from "./node-labels";

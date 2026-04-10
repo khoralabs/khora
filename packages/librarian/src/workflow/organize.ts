@@ -1,10 +1,14 @@
-import type {
-  MemoriesClient,
-  MergeMemoryContentItem,
-  SearchContent,
-  TypedSearchHit,
+import {
+  buildCanonicalMemorySearchMetaTextForMerge,
+  type MemoriesClient,
+  type MergeMemoryContentItem,
+  type SearchContent,
+  type TypedSearchHit,
+  validateEdgeLabel,
+  validateNodeLabel,
 } from "@cfd/memories";
 import type z from "zod";
+import { type EmbeddingModel, embedTextChunks } from "../adapters/embedding-model";
 import type { ProcessedLogicalMemory } from "./logical-memory";
 import { type LibrarianMergePlanWire, parseLibrarianMergePlan } from "./plan";
 
@@ -63,8 +67,33 @@ export async function mergeLogicalMemoryWithPlan<
   client: MemoriesClient<TNode, TEdge>,
   processedLogicalMemory: ProcessedLogicalMemory,
   plan: LibrarianMergePlanWire,
+  embeddingModel: EmbeddingModel,
 ): Promise<void> {
   const slice = parseLibrarianMergePlan(client.ontology, plan);
+
+  const metaLabelStrings = slice.labels.map((l) => validateNodeLabel(client.ontology, l));
+  const metaEdges =
+    slice.edges?.map((e) => ({
+      memory_key: e.memory_key,
+      direction: e.direction,
+      label: validateEdgeLabel(client.ontology, e.label),
+    })) ?? [];
+  const metaText = buildCanonicalMemorySearchMetaTextForMerge({
+    labels: metaLabelStrings,
+    edges: metaEdges,
+  });
+
+  let searchMetaVector: number[] | undefined;
+  if (metaText.length > 0) {
+    const embeddings = await embedTextChunks(embeddingModel, [metaText]);
+    const v = embeddings[0];
+    if (v === undefined) {
+      throw new Error(
+        "mergeLogicalMemoryWithPlan: embedding model returned no vector for search meta",
+      );
+    }
+    searchMetaVector = v;
+  }
 
   client.mergeMemory({
     key: processedLogicalMemory.key,
@@ -73,5 +102,6 @@ export async function mergeLogicalMemoryWithPlan<
     labels: slice.labels,
     edges: slice.edges,
     properties: slice.properties,
+    searchMetaVector,
   });
 }

@@ -17,17 +17,34 @@ import {
   upsertNodeForMemoryKey,
 } from "../models";
 import type { DbCtx } from "../models/context";
+import {
+  listNeighborMemoryKeysForNode,
+  MEMORY_SEARCH_META_SOURCE_KEY,
+  syncMemorySearchMeta,
+} from "../models/memory-search-meta";
+
+export {
+  buildCanonicalMemorySearchMetaTextForMerge,
+  MEMORY_SEARCH_META_SOURCE_KEY,
+} from "../models/memory-search-meta";
 
 export interface MutationCtx {
   db: Database;
 }
+
+/** Reject reserved / system `source_key` values (prefix `__` and the search-meta key). */
+export const zUserSourceKey = z
+  .string()
+  .refine((k) => k !== MEMORY_SEARCH_META_SOURCE_KEY && !k.startsWith("__"), {
+    message: "content key is reserved (system prefix __ or search meta key)",
+  });
 
 export type MergeMemoryContentItem = z.infer<typeof zMergeMemoryContentItem>;
 
 /** Validates {@link MergeMemoryContentItem}; exported for callers that mirror merge validation. */
 export const zMergeMemoryContentItem = z
   .object({
-    key: z.string(),
+    key: zUserSourceKey,
     text: z.string().optional(),
     vector: z.array(z.number()).optional(),
   })
@@ -47,6 +64,12 @@ export interface MergeMemoryParams<NODE_LABEL = string, EDGE_LABEL = string> {
     label: EDGE_LABEL;
     properties?: Record<string, unknown>;
   }>;
+  /**
+   * Optional embedding of canonical search-meta text (see `buildCanonicalMemorySearchMetaTextForMerge`)
+   * for this memory only (same model/dim as content). Neighbor meta rows updated in the same txn stay
+   * lexical-only until their own merge.
+   */
+  searchMetaVector?: number[];
 }
 
 /**
@@ -65,6 +88,7 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams<string, 
   }
 
   const run = db.transaction(() => {
+    const oldNeighborKeys = listNeighborMemoryKeysForNode(d, params.namespace, nodeId);
     clearMemorySubtree(d, memoryId, nodeId);
     upsertMemory(d, { namespace: params.namespace, key: params.key });
     upsertNodeForMemoryKey(d, {
@@ -118,6 +142,20 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams<string, 
       });
       const edgeLabelId = ensureEdgeLabel(d, edge.label);
       insertEdgeLabelAssignment(d, { edgeId, labelId: edgeLabelId });
+    }
+
+    const newNeighborKeys = (params.edges ?? []).map((e) => e.memory_key);
+    const syncKeys = new Set([params.key, ...oldNeighborKeys, ...newNeighborKeys]);
+    const primaryMetaVec =
+      params.searchMetaVector !== undefined && params.searchMetaVector.length > 0
+        ? new Float32Array(params.searchMetaVector)
+        : undefined;
+    for (const k of syncKeys) {
+      syncMemorySearchMeta(d, {
+        namespace: params.namespace,
+        memoryKey: k,
+        metaVector: k === params.key ? primaryMetaVec : undefined,
+      });
     }
   });
 

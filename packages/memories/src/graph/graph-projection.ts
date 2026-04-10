@@ -1,6 +1,6 @@
-import { blobToVector } from "../sqlite";
 import type { MutationCtx } from "../api/merge-memory";
 import { ids } from "../models/ids";
+import { blobToVector } from "../sqlite";
 
 export type GraphEdgeLink = {
   edgeId: string;
@@ -18,10 +18,7 @@ export type GraphMemoryEmbedding = {
 /**
  * Undirected edge list for a namespace: structural relatedness between memories.
  */
-export function loadGraphEdgesForNamespace(
-  ctx: MutationCtx,
-  namespace: string,
-): GraphEdgeLink[] {
+export function loadGraphEdgesForNamespace(ctx: MutationCtx, namespace: string): GraphEdgeLink[] {
   const rows = ctx.db
     .query<
       { edgeId: string; fromKey: string; toKey: string; labelsJoined: string | null },
@@ -111,15 +108,14 @@ export function loadMeanEmbeddingsForNamespace(
     .query<{ memory_id: string; key: string; vector: Buffer | Uint8Array }, [string]>(
       `SELECT vf.memory_id AS memory_id, m.key AS key, vf.vector AS vector
        FROM vector_features vf
+       JOIN source_maps sm ON sm._id = vf.source_map_id
        JOIN memories m ON m._id = vf.memory_id
-       WHERE m.namespace = ?`,
+       WHERE m.namespace = ?
+         AND sm.source_key NOT GLOB '__*'`,
     )
     .all(namespace);
 
-  const byMemory = new Map<
-    string,
-    { key: string; sums: number[]; count: number; dim: number }
-  >();
+  const byMemory = new Map<string, { key: string; sums: number[]; count: number; dim: number }>();
 
   for (const r of rows) {
     const floats = blobToVector(r.vector instanceof Buffer ? new Uint8Array(r.vector) : r.vector);
