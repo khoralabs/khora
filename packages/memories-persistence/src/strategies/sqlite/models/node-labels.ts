@@ -1,5 +1,5 @@
+import { ids } from "@cfd/memories";
 import type { DbCtx } from "./context";
-import { ids } from "./ids";
 
 /** Returns `_id` for a `node_labels` row, inserting with empty `description` if missing. */
 export function ensureNodeLabel(ctx: DbCtx, value: string): string {

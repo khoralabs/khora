@@ -1,5 +1,5 @@
+import { ids } from "@cfd/memories";
 import type { DbCtx } from "./context";
-import { ids } from "./ids";
 
 export function insertNodeLabelAssignment(
   ctx: DbCtx,

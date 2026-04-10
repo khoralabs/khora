@@ -24,7 +24,9 @@ export const EMBEDDING_OUTPUT_DIMENSIONALITY = {
 export type EmbeddingResolutionPreset = keyof typeof EMBEDDING_OUTPUT_DIMENSIONALITY;
 
 /** `EmbedContentConfig` with `outputDimensionality` set for a preset (L/M/H). */
-export function embedConfigForResolutionPreset(preset: EmbeddingResolutionPreset): EmbedContentConfig {
+export function embedConfigForResolutionPreset(
+  preset: EmbeddingResolutionPreset,
+): EmbedContentConfig {
   return { outputDimensionality: EMBEDDING_OUTPUT_DIMENSIONALITY[preset] };
 }
 

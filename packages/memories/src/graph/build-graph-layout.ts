@@ -1,11 +1,16 @@
 import type { UMAPParameters } from "umap-js";
-import type { MutationCtx } from "../api/merge-memory";
+import type { MemoriesVisualizationRuntimeCtx } from "../persistence/types";
 import {
   loadGraphEdgesForNamespace,
   loadMeanEmbeddingsForNamespace,
   loadNodeLabelsForNamespace,
 } from "./graph-projection";
-import { fibonacciSphereLayout3D, minMaxNormalize3D, umap3DLayout, type Point3 } from "./umap-layout";
+import {
+  fibonacciSphereLayout3D,
+  minMaxNormalize3D,
+  type Point3,
+  umap3DLayout,
+} from "./umap-layout";
 
 export type GraphLayoutNode = {
   key: string;
@@ -32,7 +37,7 @@ export type NamespaceGraphLayout = {
  * Loads edges + mean embeddings, runs UMAP 3D (or fallback), returns normalized [-1,1]³ positions.
  */
 export function buildNamespaceGraphLayout(
-  ctx: MutationCtx,
+  ctx: MemoriesVisualizationRuntimeCtx,
   namespace: string,
   _umapOptions?: Partial<UMAPParameters>,
 ): NamespaceGraphLayout {

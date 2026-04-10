@@ -8,9 +8,20 @@
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./db/schema": {
+      "types": "./src/db/schema.ts",
+      "import": "./src/db/schema.ts",
+      "default": "./src/db/schema.ts"
+    },
+    "./search-meta-constants": {
+      "types": "./src/search-meta-constants.ts",
+      "import": "./src/search-meta-constants.ts",
+      "default": "./src/search-meta-constants.ts"
     }
   },
   "devDependencies": {
+    "@cfd/memories-persistence": "workspace:*",
     "@types/bun": "latest"
   },
   "peerDependencies": {
@@ -19,7 +30,6 @@
   "dependencies": {
     "@cfd/reciprocal-rank-fusion": "workspace:*",
     "pino": "^10.3.1",
-    "sqlite-vec": "^0.1.9",
     "umap-js": "^1.4.0",
     "zod": "^4.3.6"
   }

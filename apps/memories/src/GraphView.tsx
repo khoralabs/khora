@@ -152,10 +152,7 @@ function EdgeItem({
   }, [a, b]);
 
   const half = visual.len * 0.5;
-  const linePos = useMemo(
-    () => new Float32Array([0, -half, 0, 0, half, 0]),
-    [half],
-  );
+  const linePos = useMemo(() => new Float32Array([0, -half, 0, 0, half, 0]), [half]);
 
   const lineOpacity = hovered ? 1 : searchDimmed ? SEARCH_DIM_LINE : 0.85;
 
@@ -258,13 +255,7 @@ function NodeLabelText({
   );
 }
 
-function NodeLabels({
-  data,
-  nodeLit,
-}: {
-  data: GraphPayload;
-  nodeLit: (key: string) => boolean;
-}) {
+function NodeLabels({ data, nodeLit }: { data: GraphPayload; nodeLit: (key: string) => boolean }) {
   return (
     <>
       {data.nodes.map((n) => {
@@ -472,8 +463,7 @@ function PreviewPanel({
 }) {
   if (!hover) return null;
 
-  const aria =
-    hover.type === "node" ? "Memory source preview" : "Edge properties preview";
+  const aria = hover.type === "node" ? "Memory source preview" : "Edge properties preview";
 
   return (
     <section
@@ -512,8 +502,7 @@ function PreviewPanel({
               <>
                 {edgeDetail.labels.length > 0 ? (
                   <div className="mb-2 text-[10px] text-muted-foreground">
-                    labels:{" "}
-                    <span className="text-foreground">{edgeDetail.labels.join(" · ")}</span>
+                    labels: <span className="text-foreground">{edgeDetail.labels.join(" · ")}</span>
                   </div>
                 ) : null}
                 {edgeDetail.properties !== null && Object.keys(edgeDetail.properties).length > 0 ? (
@@ -638,8 +627,10 @@ export function GraphView({
               toKey: json.toKey,
               labels: Array.isArray(json.labels) ? json.labels : [],
               properties:
-                json.properties !== undefined && json.properties !== null &&
-                typeof json.properties === "object" && !Array.isArray(json.properties)
+                json.properties !== undefined &&
+                json.properties !== null &&
+                typeof json.properties === "object" &&
+                !Array.isArray(json.properties)
                   ? (json.properties as Record<string, unknown>)
                   : null,
             });

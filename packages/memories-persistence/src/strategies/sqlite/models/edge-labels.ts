@@ -1,5 +1,5 @@
+import { ids } from "@cfd/memories";
 import type { DbCtx } from "./context";
-import { ids } from "./ids";
 
 /** Returns `_id` for an `edge_labels` row, inserting with empty `description` if missing. */
 export function ensureEdgeLabel(ctx: DbCtx, value: string): string {

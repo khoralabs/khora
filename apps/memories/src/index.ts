@@ -8,10 +8,14 @@ import {
   buildNamespaceGraphLayout,
   loadEdgePreview,
   loadMemoryTextPreview,
-  openMemoriesDatabaseReadonly,
   type SearchHit,
   search,
 } from "@cfd/memories";
+import {
+  createSqliteMemoriesPersistence,
+  createSqliteMemoriesVisualizationPersistence,
+  openMemoriesDatabaseReadonly,
+} from "@cfd/memories-persistence/sqlite";
 import { serve } from "bun";
 import index from "./index.html";
 
@@ -126,8 +130,9 @@ const server = serve({
           }
         }
 
+        const persistence = createSqliteMemoriesPersistence(db);
         const hits = search(
-          { db },
+          { persistence },
           {
             namespace,
             content,
@@ -182,7 +187,8 @@ const server = serve({
         return jsonResponse({ error: `open database: ${String(err)}` }, 500);
       }
       try {
-        const preview = loadMemoryTextPreview({ db }, namespace, key);
+        const visualization = createSqliteMemoriesVisualizationPersistence(db);
+        const preview = loadMemoryTextPreview({ persistence: visualization }, namespace, key);
         return jsonResponse({ key, preview });
       } catch (err) {
         return jsonResponse({ error: String(err) }, 500);
@@ -213,7 +219,8 @@ const server = serve({
         return jsonResponse({ error: `open database: ${String(err)}` }, 500);
       }
       try {
-        const detail = loadEdgePreview({ db }, namespace, edgeId);
+        const visualization = createSqliteMemoriesVisualizationPersistence(db);
+        const detail = loadEdgePreview({ persistence: visualization }, namespace, edgeId);
         if (!detail) {
           return jsonResponse({ error: "edge not found in namespace" }, 404);
         }
@@ -246,7 +253,8 @@ const server = serve({
         return jsonResponse({ error: `open database: ${String(err)}` }, 500);
       }
       try {
-        const layout = buildNamespaceGraphLayout({ db }, namespace);
+        const visualization = createSqliteMemoriesVisualizationPersistence(db);
+        const layout = buildNamespaceGraphLayout({ persistence: visualization }, namespace);
         return jsonResponse(layout);
       } catch (err) {
         return jsonResponse({ error: String(err) }, 500);

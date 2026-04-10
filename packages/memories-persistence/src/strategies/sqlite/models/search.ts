@@ -1,8 +1,8 @@
 import type { SQLQueryBindings } from "bun:sqlite";
-import type { Edge, Memory, SourceMap } from "../db/schema";
-import { vectorVecTableName } from "../db/search-indexes";
+import { ids } from "@cfd/memories";
+import type { Edge, Memory, SourceMap } from "@cfd/memories/db/schema";
+import { vectorVecTableName } from "../search-indexes";
 import type { DbCtx } from "./context";
-import { ids } from "./ids";
 
 /** Same semantics as root hit `labels` filter: `all` = AND, `some` = OR (non-empty). Omitted = any. */
 export type NeighborNodesFilter<NODE_LABEL extends string = string> = {

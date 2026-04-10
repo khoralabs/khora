@@ -19,10 +19,10 @@ export function minMaxNormalize3D(points: Point3[]): Point3[] {
   const nx = normAxis(xs);
   const ny = normAxis(ys);
   const nz = normAxis(zs);
-  return points.map((_, i) => ({
-    x: nx[i]!,
-    y: ny[i]!,
-    z: nz[i]!,
+  return nx.map((x, i) => ({
+    x,
+    y: ny[i] ?? 0,
+    z: nz[i] ?? 0,
   }));
 }
 

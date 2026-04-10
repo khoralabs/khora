@@ -1,37 +1,19 @@
-import type { Database } from "bun:sqlite";
 import z from "zod";
-import {
-  clearMemorySubtree,
-  ensureEdgeLabel,
-  ensureNodeLabel,
-  findMemoryIdByKey,
-  ids,
-  insertEdge,
-  insertEdgeLabelAssignment,
-  insertNodeLabelAssignment,
-  insertSourceMap,
-  insertTextFeatureWithFts,
-  insertVectorFeatureWithVecIndex,
-  nodeExists,
-  upsertMemory,
-  upsertNodeForMemoryKey,
-} from "../models";
-import type { DbCtx } from "../models/context";
-import {
-  listNeighborMemoryKeysForNode,
-  MEMORY_SEARCH_META_SOURCE_KEY,
-  syncMemorySearchMeta,
-} from "../models/memory-search-meta";
+import { ids } from "../models/ids";
+import { MEMORY_SEARCH_META_SOURCE_KEY } from "../models/memory-search-meta";
+import type { MemoriesPersistence } from "../persistence/types";
 
 export {
-  buildCanonicalMemorySearchMetaText,
   buildCanonicalMemorySearchMetaTextForMerge,
   MEMORY_SEARCH_META_SOURCE_KEY,
-  upsertMemorySearchMetaVector,
 } from "../models/memory-search-meta";
+export {
+  buildCanonicalMemorySearchMetaText,
+  upsertMemorySearchMetaVector,
+} from "../persistence/facade";
 
 export interface MutationCtx {
-  db: Database;
+  persistence: MemoriesPersistence;
 }
 
 /** Reject reserved / system `source_key` values (prefix `__` and the search-meta key). */
@@ -75,13 +57,13 @@ export interface MergeMemoryParams<NODE_LABEL = string, EDGE_LABEL = string> {
 }
 
 /**
- * Orchestrates a memory merge: validates API input, then delegates storage to `models/*`.
+ * Orchestrates a memory merge: validates API input, then delegates storage to the persistence backend.
  * @returns Memory keys whose search-meta lexical row was rebuilt (primary, former neighbors, new edge targets).
  */
 export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams<string, string>): string[] {
-  const { db } = ctx;
+  const { persistence } = ctx;
   const now = Date.now();
-  const d: DbCtx = { db, now };
+  const op = { now };
 
   const memoryId = ids.memory(params.namespace, params.key);
   const nodeId = ids.node(params.namespace, params.key);
@@ -92,11 +74,11 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams<string, 
 
   let metaSyncedMemoryKeys: string[] = [];
 
-  const run = db.transaction(() => {
-    const oldNeighborKeys = listNeighborMemoryKeysForNode(d, params.namespace, nodeId);
-    clearMemorySubtree(d, memoryId, nodeId);
-    upsertMemory(d, { namespace: params.namespace, key: params.key });
-    upsertNodeForMemoryKey(d, {
+  persistence.withTransaction(() => {
+    const oldNeighborKeys = persistence.listNeighborMemoryKeysForNode(op, params.namespace, nodeId);
+    persistence.clearMemorySubtree(op, memoryId, nodeId);
+    persistence.upsertMemory(op, { namespace: params.namespace, key: params.key });
+    persistence.upsertNodeForMemoryKey(op, {
       namespace: params.namespace,
       memoryKey: params.key,
       properties: params.properties,
@@ -104,12 +86,12 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams<string, 
 
     for (const raw of params.content) {
       const item = zMergeMemoryContentItem.parse(raw);
-      const { sourceMapId } = insertSourceMap(d, { memoryId, sourceKey: item.key });
+      const { sourceMapId } = persistence.insertSourceMap(op, { memoryId, sourceKey: item.key });
       if (item.text !== undefined) {
-        insertTextFeatureWithFts(d, { memoryId, sourceMapId, text: item.text });
+        persistence.insertTextFeatureWithFts(op, { memoryId, sourceMapId, text: item.text });
       }
       if (item.vector !== undefined) {
-        insertVectorFeatureWithVecIndex(d, {
+        persistence.insertVectorFeatureWithVecIndex(op, {
           memoryId,
           sourceMapId,
           vector: new Float32Array(item.vector),
@@ -118,24 +100,24 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams<string, 
     }
 
     for (const label of [...new Set(params.labels)]) {
-      const labelId = ensureNodeLabel(d, label);
-      insertNodeLabelAssignment(d, { nodeId, labelId });
+      const labelId = persistence.ensureNodeLabel(op, label);
+      persistence.insertNodeLabelAssignment(op, { nodeId, labelId });
     }
 
     for (const edge of params.edges ?? []) {
-      if (findMemoryIdByKey(d, params.namespace, edge.memory_key) === undefined) {
+      if (persistence.findMemoryIdByKey(params.namespace, edge.memory_key) === undefined) {
         throw new Error(
           `mergeMemory: unknown edge target memory_key=${edge.memory_key} in namespace=${params.namespace}`,
         );
       }
       const otherNodeId = ids.node(params.namespace, edge.memory_key);
-      if (!nodeExists(d, otherNodeId)) {
+      if (!persistence.nodeExists(otherNodeId)) {
         throw new Error(`mergeMemory: target node missing for memory_key=${edge.memory_key}`);
       }
 
       const fromNodeId = edge.direction === "out" ? nodeId : otherNodeId;
       const toNodeId = edge.direction === "out" ? otherNodeId : nodeId;
-      const { edgeId } = insertEdge(d, {
+      const { edgeId } = persistence.insertEdge(op, {
         fromNodeId,
         toNodeId,
         properties: edge.properties,
@@ -145,8 +127,8 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams<string, 
           otherMemoryKey: edge.memory_key,
         },
       });
-      const edgeLabelId = ensureEdgeLabel(d, edge.label);
-      insertEdgeLabelAssignment(d, { edgeId, labelId: edgeLabelId });
+      const edgeLabelId = persistence.ensureEdgeLabel(op, edge.label);
+      persistence.insertEdgeLabelAssignment(op, { edgeId, labelId: edgeLabelId });
     }
 
     const newNeighborKeys = (params.edges ?? []).map((e) => e.memory_key);
@@ -156,7 +138,7 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams<string, 
         ? new Float32Array(params.searchMetaVector)
         : undefined;
     for (const k of syncKeys) {
-      syncMemorySearchMeta(d, {
+      persistence.syncMemorySearchMeta(op, {
         namespace: params.namespace,
         memoryKey: k,
         metaVector: k === params.key ? primaryMetaVec : undefined,
@@ -165,6 +147,5 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams<string, 
     metaSyncedMemoryKeys = Array.from(syncKeys).sort((a, b) => a.localeCompare(b));
   });
 
-  run();
   return metaSyncedMemoryKeys;
 }

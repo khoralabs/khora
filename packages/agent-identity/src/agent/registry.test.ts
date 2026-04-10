@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { createAgentRegistry } from "./agent-registry.js";
 import type { StandardSchemaV1 } from "../standard-schema.js";
 import { tool } from "../tool/tool.js";
 import { hashToolComposableStatic } from "../tool/tool-identity.js";
 import { createToolRegistry } from "../tool/tool-registry.js";
 import { toolkit } from "../toolkit/toolkit.js";
+import { createAgentRegistry } from "./agent-registry.js";
 import { createRegisteredAgentIdentity } from "./registered-agent.js";
 
 const schema: StandardSchemaV1<{ n: number }> = {

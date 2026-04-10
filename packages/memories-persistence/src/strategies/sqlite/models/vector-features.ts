@@ -1,9 +1,9 @@
+import { ids } from "@cfd/memories";
+import { schema } from "@cfd/memories/db/schema";
 import { documentValidator } from "../_lib";
-import { schema } from "../db/schema";
-import { ensureVectorFeaturesVecTable, vectorVecTableName } from "../db/search-indexes";
-import { vectorToBlob } from "../db/sqlite";
+import { vectorToBlob } from "../connection";
+import { ensureVectorFeaturesVecTable, vectorVecTableName } from "../search-indexes";
 import type { DbCtx } from "./context";
-import { ids } from "./ids";
 
 export function insertVectorFeatureWithVecIndex(
   ctx: DbCtx,

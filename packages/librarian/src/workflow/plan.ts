@@ -19,7 +19,10 @@ export function labelKindsFromOntology<TNode extends LabelSchemaMap, TEdge exten
 }
 
 /** Description for structured output: allowed kinds + merge constraints (replaces a separate ontology system block). */
-export function buildLibrarianMergePlanDescription(nodeKinds: string[], edgeKinds: string[]): string {
+export function buildLibrarianMergePlanDescription(
+  nodeKinds: string[],
+  edgeKinds: string[],
+): string {
   const n = nodeKinds.length ? nodeKinds.join(", ") : "(none — leave `labels` empty)";
   const e = edgeKinds.length ? edgeKinds.join(", ") : "(none — leave `edges` empty)";
   return `Classify and link this memory. Use only these node label kinds: ${n}. For edges to other memories, use only these edge label kinds: ${e}. Every edge \`memory_key\` must already exist (memory_search or prefetch).`;
@@ -56,14 +59,19 @@ function zEdgeWire(edgeKinds: readonly string[]) {
     memory_key: z
       .string()
       .describe("Existing memory key (memory_search or prefetch; do not invent)."),
-    direction: z.enum(["in", "out"]).describe("Relative to this memory: out = toward the other node."),
+    direction: z
+      .enum(["in", "out"])
+      .describe("Relative to this memory: out = toward the other node."),
     label: zEdgeLabelWire(edgeKinds),
     properties: z.record(z.string(), z.unknown()).optional().describe("Optional edge JSON."),
   });
 }
 
 /** Wire format for LLM / JSON; kinds are constrained to the active ontology. */
-export function zLibrarianMergePlanWire(nodeKinds: readonly string[], edgeKinds: readonly string[]) {
+export function zLibrarianMergePlanWire(
+  nodeKinds: readonly string[],
+  edgeKinds: readonly string[],
+) {
   const labelsSchema =
     nodeKinds.length === 0
       ? z.array(z.never()).describe("No node label kinds — must be empty.")
@@ -84,9 +92,10 @@ export function zLibrarianMergePlanWire(nodeKinds: readonly string[], edgeKinds:
 export type LibrarianMergePlanWire = z.infer<ReturnType<typeof zLibrarianMergePlanWire>>;
 
 /** Structured output spec with ontology-driven enums + classification description. */
-export function librarianMergePlanOutputFromOntology<TNode extends LabelSchemaMap, TEdge extends LabelSchemaMap>(
-  ontology: OntologyDefinition<TNode, TEdge>,
-) {
+export function librarianMergePlanOutputFromOntology<
+  TNode extends LabelSchemaMap,
+  TEdge extends LabelSchemaMap,
+>(ontology: OntologyDefinition<TNode, TEdge>) {
   const { node, edge } = labelKindsFromOntology(ontology);
   return Output.object({
     name: "LibrarianMergePlan",
@@ -96,16 +105,18 @@ export function librarianMergePlanOutputFromOntology<TNode extends LabelSchemaMa
 }
 
 /** Parse raw model output with the same ontology as the agent. */
-export function parseLibrarianMergePlanWire<TNode extends LabelSchemaMap, TEdge extends LabelSchemaMap>(
-  ontology: OntologyDefinition<TNode, TEdge>,
-  data: unknown,
-): LibrarianMergePlanWire {
+export function parseLibrarianMergePlanWire<
+  TNode extends LabelSchemaMap,
+  TEdge extends LabelSchemaMap,
+>(ontology: OntologyDefinition<TNode, TEdge>, data: unknown): LibrarianMergePlanWire {
   const { node, edge } = labelKindsFromOntology(ontology);
   return zLibrarianMergePlanWire(node, edge).parse(data);
 }
 
 /** Type parameter for `ToolLoopAgent` when using {@link librarianMergePlanOutputFromOntology}. */
-export type LibrarianMergePlanStructuredOutput = ReturnType<typeof librarianMergePlanOutputFromOntology>;
+export type LibrarianMergePlanStructuredOutput = ReturnType<
+  typeof librarianMergePlanOutputFromOntology
+>;
 
 /**
  * Validates wire labels/edges against the ontology and returns merge slice compatible with

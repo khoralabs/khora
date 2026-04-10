@@ -1,16 +1,13 @@
-import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
+import {
+  createSqliteMemoriesPersistence,
+  openMemoriesDatabase,
+} from "@cfd/memories-persistence/sqlite";
 import { mergeMemory } from "./api/merge-memory";
 import { search } from "./api/search";
-import { searchLexicalSourceMapIds, searchVectorSourceMapIds } from "./models/search";
-import { ensureCustomSqliteForExtensions, initMemoriesSchema, loadSqliteVec } from "./sqlite";
 
-function openTestDb(): Database {
-  ensureCustomSqliteForExtensions();
-  const db = new Database(":memory:");
-  loadSqliteVec(db);
-  initMemoriesSchema(db);
-  return db;
+function openTestDb() {
+  return openMemoriesDatabase(":memory:");
 }
 
 const vec512 = (i: number, v = 1): number[] =>
@@ -19,9 +16,9 @@ const vec512 = (i: number, v = 1): number[] =>
 describe("scoped search helpers", () => {
   test("searchLexicalSourceMapIds respects memoryIds allowlist", () => {
     const db = openTestDb();
-    const d = { db, now: Date.now() };
+    const persistence = createSqliteMemoriesPersistence(db);
     mergeMemory(
-      { db },
+      { persistence },
       {
         key: "m1",
         namespace: "ns",
@@ -31,7 +28,7 @@ describe("scoped search helpers", () => {
       },
     );
     mergeMemory(
-      { db },
+      { persistence },
       {
         key: "m2",
         namespace: "ns",
@@ -53,7 +50,7 @@ describe("scoped search helpers", () => {
       .get("ns", "m2");
     if (!mem1?._id || !mem2?._id) throw new Error("expected memories");
 
-    const onlyM1 = searchLexicalSourceMapIds(d, {
+    const onlyM1 = persistence.searchLexicalSourceMapIds({
       namespace: "ns",
       text: "hello",
       limit: 25,
@@ -73,8 +70,8 @@ describe("scoped search helpers", () => {
 
   test("searchLexicalSourceMapIds with empty memoryIds returns []", () => {
     const db = openTestDb();
-    const d = { db, now: Date.now() };
-    const r = searchLexicalSourceMapIds(d, {
+    const persistence = createSqliteMemoriesPersistence(db);
+    const r = persistence.searchLexicalSourceMapIds({
       namespace: "ns",
       text: "x",
       limit: 10,
@@ -85,8 +82,8 @@ describe("scoped search helpers", () => {
 
   test("searchVectorSourceMapIds with empty memoryIds returns []", () => {
     const db = openTestDb();
-    const d = { db, now: Date.now() };
-    const r = searchVectorSourceMapIds(d, {
+    const persistence = createSqliteMemoriesPersistence(db);
+    const r = persistence.searchVectorSourceMapIds({
       namespace: "ns",
       vector: vec512(0),
       limit: 10,
@@ -99,8 +96,9 @@ describe("scoped search helpers", () => {
 describe("neighbor sub-search", () => {
   test("omits graph neighbor when sub-search does not match query (strict)", () => {
     const db = openTestDb();
+    const persistence = createSqliteMemoriesPersistence(db);
     mergeMemory(
-      { db },
+      { persistence },
       {
         key: "nb",
         namespace: "ns",
@@ -110,7 +108,7 @@ describe("neighbor sub-search", () => {
       },
     );
     mergeMemory(
-      { db },
+      { persistence },
       {
         key: "focal",
         namespace: "ns",
@@ -121,7 +119,7 @@ describe("neighbor sub-search", () => {
     );
 
     const noMatch = search(
-      { db },
+      { persistence },
       {
         namespace: "ns",
         content: { text: "marker alpha root" },
@@ -139,8 +137,9 @@ describe("neighbor sub-search", () => {
 
   test("includes graph neighbor when sub-search matches same query", () => {
     const db = openTestDb();
+    const persistence = createSqliteMemoriesPersistence(db);
     mergeMemory(
-      { db },
+      { persistence },
       {
         key: "nb",
         namespace: "ns",
@@ -150,7 +149,7 @@ describe("neighbor sub-search", () => {
       },
     );
     mergeMemory(
-      { db },
+      { persistence },
       {
         key: "focal",
         namespace: "ns",
@@ -161,7 +160,7 @@ describe("neighbor sub-search", () => {
     );
 
     const withMatch = search(
-      { db },
+      { persistence },
       {
         namespace: "ns",
         content: { text: "bananas" },
@@ -178,8 +177,9 @@ describe("neighbor sub-search", () => {
 
   test("maxNeighbors caps after ranking; neighborScore and matchedSourceMapId set", () => {
     const db = openTestDb();
+    const persistence = createSqliteMemoriesPersistence(db);
     mergeMemory(
-      { db },
+      { persistence },
       {
         key: "nb1",
         namespace: "ns",
@@ -189,7 +189,7 @@ describe("neighbor sub-search", () => {
       },
     );
     mergeMemory(
-      { db },
+      { persistence },
       {
         key: "nb2",
         namespace: "ns",
@@ -199,7 +199,7 @@ describe("neighbor sub-search", () => {
       },
     );
     mergeMemory(
-      { db },
+      { persistence },
       {
         key: "focal",
         namespace: "ns",
@@ -213,7 +213,7 @@ describe("neighbor sub-search", () => {
     );
 
     const hits = search(
-      { db },
+      { persistence },
       {
         namespace: "ns",
         content: { text: "rocket ship" },

@@ -1,21 +1,24 @@
-import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
-import { mergeMemory, zMergeMemoryContentItem, zUserSourceKey } from "./api/merge-memory";
+import {
+  createSqliteMemoriesPersistence,
+  createSqliteMemoriesVisualizationPersistence,
+  openMemoriesDatabase,
+} from "@cfd/memories-persistence/sqlite";
+import {
+  buildCanonicalMemorySearchMetaText,
+  mergeMemory,
+  zMergeMemoryContentItem,
+  zUserSourceKey,
+} from "./api/merge-memory";
 import { search } from "./api/search";
 import { loadMeanEmbeddingsForNamespace } from "./graph/graph-projection";
 import {
-  buildCanonicalMemorySearchMetaText,
   buildCanonicalMemorySearchMetaTextForMerge,
   MEMORY_SEARCH_META_SOURCE_KEY,
 } from "./models/memory-search-meta";
-import { ensureCustomSqliteForExtensions, initMemoriesSchema, loadSqliteVec } from "./sqlite";
 
-function openTestDb(): Database {
-  ensureCustomSqliteForExtensions();
-  const db = new Database(":memory:");
-  loadSqliteVec(db);
-  initMemoriesSchema(db);
-  return db;
+function openTestDb() {
+  return openMemoriesDatabase(":memory:");
 }
 
 const vec512 = (): number[] => Array.from({ length: 512 }, (_, i) => (i === 0 ? 1 : 0));
@@ -37,10 +40,11 @@ describe("memory search meta", () => {
 
   test("buildCanonicalMemorySearchMetaTextForMerge matches DB after merge", () => {
     const db = openTestDb();
+    const persistence = createSqliteMemoriesPersistence(db);
     const now = Date.now();
-    const d = { db, now };
+    const op = { now };
     mergeMemory(
-      { db },
+      { persistence },
       {
         key: "a",
         namespace: "ns",
@@ -50,7 +54,7 @@ describe("memory search meta", () => {
       },
     );
     mergeMemory(
-      { db },
+      { persistence },
       {
         key: "b",
         namespace: "ns",
@@ -60,7 +64,7 @@ describe("memory search meta", () => {
       },
     );
     mergeMemory(
-      { db },
+      { persistence },
       {
         key: "a",
         namespace: "ns",
@@ -71,7 +75,7 @@ describe("memory search meta", () => {
       },
     );
 
-    const fromDb = buildCanonicalMemorySearchMetaText(d, "ns", "a");
+    const fromDb = buildCanonicalMemorySearchMetaText(persistence, op, "ns", "a");
     const fromMerge = buildCanonicalMemorySearchMetaTextForMerge({
       labels: ["topic"],
       edges: [{ memory_key: "b", direction: "out", label: "references" }],
@@ -81,8 +85,9 @@ describe("memory search meta", () => {
 
   test("lexical search hits meta source_map for node label", () => {
     const db = openTestDb();
+    const persistence = createSqliteMemoriesPersistence(db);
     mergeMemory(
-      { db },
+      { persistence },
       {
         key: "m1",
         namespace: "ns",
@@ -93,7 +98,7 @@ describe("memory search meta", () => {
     );
 
     const hits = search(
-      { db },
+      { persistence },
       {
         namespace: "ns",
         content: { text: "fact" },
@@ -105,8 +110,9 @@ describe("memory search meta", () => {
 
   test("neighbor meta updates when focal memory adds edge", () => {
     const db = openTestDb();
+    const persistence = createSqliteMemoriesPersistence(db);
     mergeMemory(
-      { db },
+      { persistence },
       {
         key: "nb",
         namespace: "ns",
@@ -116,7 +122,7 @@ describe("memory search meta", () => {
       },
     );
     mergeMemory(
-      { db },
+      { persistence },
       {
         key: "focal",
         namespace: "ns",
@@ -126,15 +132,16 @@ describe("memory search meta", () => {
       },
     );
 
-    const nbMeta = buildCanonicalMemorySearchMetaText({ db, now: Date.now() }, "ns", "nb");
+    const nbMeta = buildCanonicalMemorySearchMetaText(persistence, { now: Date.now() }, "ns", "nb");
     expect(nbMeta).toContain("edge in:focal:");
     expect(nbMeta).toContain("references");
   });
 
   test("neighbor meta clears when focal removes edge", () => {
     const db = openTestDb();
+    const persistence = createSqliteMemoriesPersistence(db);
     mergeMemory(
-      { db },
+      { persistence },
       {
         key: "nb",
         namespace: "ns",
@@ -144,7 +151,7 @@ describe("memory search meta", () => {
       },
     );
     mergeMemory(
-      { db },
+      { persistence },
       {
         key: "focal",
         namespace: "ns",
@@ -154,11 +161,11 @@ describe("memory search meta", () => {
       },
     );
     expect(
-      buildCanonicalMemorySearchMetaText({ db, now: Date.now() }, "ns", "nb").length,
+      buildCanonicalMemorySearchMetaText(persistence, { now: Date.now() }, "ns", "nb").length,
     ).toBeGreaterThan(0);
 
     mergeMemory(
-      { db },
+      { persistence },
       {
         key: "focal",
         namespace: "ns",
@@ -167,14 +174,18 @@ describe("memory search meta", () => {
         edges: [],
       },
     );
-    expect(buildCanonicalMemorySearchMetaText({ db, now: Date.now() }, "ns", "nb")).toBe("");
+    expect(buildCanonicalMemorySearchMetaText(persistence, { now: Date.now() }, "ns", "nb")).toBe(
+      "",
+    );
   });
 
   test("loadMeanEmbeddingsForNamespace excludes system __ source_maps", () => {
     const db = openTestDb();
+    const persistence = createSqliteMemoriesPersistence(db);
+    const visualization = createSqliteMemoriesVisualizationPersistence(db);
     const v = vec512();
     mergeMemory(
-      { db },
+      { persistence },
       {
         key: "m1",
         namespace: "ns",
@@ -185,7 +196,7 @@ describe("memory search meta", () => {
       },
     );
 
-    const means = loadMeanEmbeddingsForNamespace({ db }, "ns");
+    const means = loadMeanEmbeddingsForNamespace({ persistence: visualization }, "ns");
     expect(means).toHaveLength(1);
     expect(means[0]?.embedding[0]).toBe(1);
     expect(means[0]?.embedding[1]).toBe(0);

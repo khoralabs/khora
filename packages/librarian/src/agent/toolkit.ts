@@ -77,9 +77,7 @@ export type MemoryLibrarianEnv = {
 /** Agent passes query text only; the handler embeds it and runs hybrid RRF (lexical + vector). */
 const zSearchContent = z
   .object({
-    text: z
-      .string()
-      .describe("Query string for FTS + embedding (no raw vector)."),
+    text: z.string().describe("Query string for FTS + embedding (no raw vector)."),
   })
   .strict();
 
@@ -183,7 +181,9 @@ const memorySearchTool = tool<
           e.ok && Array.isArray(e.output)
             ? {
                 hitCount: e.output.length,
-                memoryKeys: (e.output as MemorySearchHitLibrarian[]).slice(0, 20).map((h) => h.memory_key),
+                memoryKeys: (e.output as MemorySearchHitLibrarian[])
+                  .slice(0, 20)
+                  .map((h) => h.memory_key),
               }
             : undefined,
         error: e.ok ? undefined : e.error,

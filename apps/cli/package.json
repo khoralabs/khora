@@ -11,6 +11,7 @@
     "@ai-sdk/google": "^3.0.0",
     "@cfd/librarian": "workspace:*",
     "@cfd/memories": "workspace:*",
+    "@cfd/memories-persistence": "workspace:*",
     "@cfd/stores": "workspace:*",
     "@google/genai": "^1.48.0",
     "ai": "^6.0.153",

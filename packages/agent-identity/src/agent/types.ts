@@ -1,5 +1,5 @@
-import type { Composable } from "../toolkit/types.js";
 import type { ToolSpec } from "../tool/types.js";
+import type { Composable } from "../toolkit/types.js";
 
 /**
  * Definition-time metadata for a registered agent (parallel to {@link ToolStaticProps}).

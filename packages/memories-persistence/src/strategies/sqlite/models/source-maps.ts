@@ -1,7 +1,7 @@
+import { ids } from "@cfd/memories";
+import { schema } from "@cfd/memories/db/schema";
 import { documentValidator } from "../_lib";
-import { schema } from "../db/schema";
 import type { DbCtx } from "./context";
-import { ids } from "./ids";
 
 export function insertSourceMap(
   ctx: DbCtx,

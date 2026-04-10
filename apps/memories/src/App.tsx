@@ -1,11 +1,7 @@
 import { Search } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group";
-import { GraphView, type GraphPayload, type GraphSearchState } from "./GraphView";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
+import { type GraphPayload, type GraphSearchState, GraphView } from "./GraphView";
 
 function defaultNamespace(): string {
   if (typeof window === "undefined") return "cli";

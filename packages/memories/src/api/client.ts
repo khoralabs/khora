@@ -1,9 +1,9 @@
-import type { Database } from "bun:sqlite";
 import type z from "zod";
 import {
   type DeleteMemoryParams,
   deleteMemory as deleteMemoryHandler,
 } from "../models/delete-memory";
+import type { MemoriesPersistence } from "../persistence/types";
 import {
   type MergeMemoryParams,
   type MutationCtx,
@@ -32,7 +32,7 @@ export type TypedSearchHit<
 > = SearchHit<LabelKind<TNode>, LabelKind<TEdge>>;
 
 /**
- * SQLite-backed memories API with a **fixed ontology**: node/edge label kinds and per-kind props are
+ * Memories API with a **fixed ontology**: node/edge label kinds and per-kind props are
  * validated via Zod before {@link mergeMemory}.
  */
 export class MemoriesClient<
@@ -40,16 +40,15 @@ export class MemoriesClient<
   TEdge extends Record<string, z.ZodType>,
 > {
   readonly ontology: OntologyDefinition<TNode, TEdge>;
+  readonly persistence: MemoriesPersistence;
 
-  constructor(
-    readonly db: Database,
-    ontology: OntologyDefinition<TNode, TEdge>,
-  ) {
+  constructor(persistence: MemoriesPersistence, ontology: OntologyDefinition<TNode, TEdge>) {
+    this.persistence = persistence;
     this.ontology = ontology;
   }
 
   private get mutationCtx(): MutationCtx {
-    return { db: this.db };
+    return { persistence: this.persistence };
   }
 
   /**
@@ -90,7 +89,7 @@ export class MemoriesClient<
     deleteMemoryHandler(this.mutationCtx, params);
   }
 
-  /** Runs the package `search` function against this database. */
+  /** Runs the package `search` function against this store. */
   search(params: TypedSearchParams<TNode, TEdge>): TypedSearchHit<TNode, TEdge>[] {
     return searchHandler(this.mutationCtx, params);
   }

@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { evaluateRegisteredAgentAffordances } from "./evaluate-registered-agent-affordances.js";
-import { createRegisteredAgentIdentity } from "./registered-agent.js";
 import type { StandardSchemaV1 } from "../standard-schema.js";
 import { tool } from "../tool/tool.js";
 import { toolkit } from "../toolkit/toolkit.js";
+import { evaluateRegisteredAgentAffordances } from "./evaluate-registered-agent-affordances.js";
+import { createRegisteredAgentIdentity } from "./registered-agent.js";
 
 const schema: StandardSchemaV1<{ n: number }> = {
   "~standard": {

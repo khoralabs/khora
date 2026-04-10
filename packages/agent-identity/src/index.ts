@@ -1,5 +1,3 @@
-export { logger } from "./logger.js";
-export { elapsedMs } from "./timing.js";
 export type {
   AgentRegistry,
   AgentSession,
@@ -54,6 +52,7 @@ export {
   hashToolSpecIdentity,
   resolveRuntimeToolRefs,
 } from "./hashing/runtime-hashes.js";
+export { logger } from "./logger.js";
 export {
   evaluatePolicyWithHooks,
   mergeToolPipelineHooks,
@@ -63,6 +62,7 @@ export type {
   StandardSchemaV1,
   StandardTypedV1,
 } from "./standard-schema.js";
+export { elapsedMs } from "./timing.js";
 export type {
   ToolErrorOutput,
   ToolOutput,

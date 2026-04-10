@@ -1,13 +1,10 @@
 import {
   buildCanonicalMemorySearchMetaText,
-  type DbCtx,
   type MemoriesClient,
   type MergeMemoryContentItem,
   type SearchContent,
   type TypedSearchHit,
   upsertMemorySearchMetaVector,
-  validateEdgeLabel,
-  validateNodeLabel,
 } from "@cfd/memories";
 import type z from "zod";
 import { type EmbeddingModel, embedTextChunks } from "../adapters/embedding-model";
@@ -83,11 +80,11 @@ export async function mergeLogicalMemoryWithPlan<
   });
 
   const namespace = processedLogicalMemory.namespace;
-  const readCtx: DbCtx = { db: client.db, now: Date.now() };
+  const readOp = { now: Date.now() };
   const pairs = metaSyncedKeys
     .map((memoryKey) => ({
       memoryKey,
-      text: buildCanonicalMemorySearchMetaText(readCtx, namespace, memoryKey),
+      text: buildCanonicalMemorySearchMetaText(client.persistence, readOp, namespace, memoryKey),
     }))
     .filter((p) => p.text.length > 0);
 
@@ -103,15 +100,15 @@ export async function mergeLogicalMemoryWithPlan<
     );
   }
 
-  client.db.transaction(() => {
-    const d: DbCtx = { db: client.db, now: Date.now() };
+  client.persistence.withTransaction(() => {
+    const op = { now: Date.now() };
     for (let i = 0; i < pairs.length; i++) {
       const pair = pairs[i];
       const vec = embeddings[i];
       if (pair === undefined || vec === undefined || vec.length === 0) {
         throw new Error("mergeLogicalMemoryWithPlan: missing embedding for search-meta batch");
       }
-      upsertMemorySearchMetaVector(d, {
+      upsertMemorySearchMetaVector(client.persistence, op, {
         namespace,
         memoryKey: pair.memoryKey,
         vector: new Float32Array(vec),

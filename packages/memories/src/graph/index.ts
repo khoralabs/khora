@@ -4,13 +4,18 @@ export {
   type GraphLayoutNode,
   type NamespaceGraphLayout,
 } from "./build-graph-layout";
+export { type EdgePreviewPayload, loadEdgePreview } from "./edge-preview";
 export {
+  type GraphEdgeLink,
+  type GraphMemoryEmbedding,
   loadGraphEdgesForNamespace,
   loadMeanEmbeddingsForNamespace,
   loadNodeLabelsForNamespace,
-  type GraphEdgeLink,
-  type GraphMemoryEmbedding,
 } from "./graph-projection";
-export { fibonacciSphereLayout3D, minMaxNormalize3D, umap3DLayout, type Point3 } from "./umap-layout";
 export { loadMemoryTextPreview } from "./memory-preview";
-export { loadEdgePreview, type EdgePreviewPayload } from "./edge-preview";
+export {
+  fibonacciSphereLayout3D,
+  minMaxNormalize3D,
+  type Point3,
+  umap3DLayout,
+} from "./umap-layout";

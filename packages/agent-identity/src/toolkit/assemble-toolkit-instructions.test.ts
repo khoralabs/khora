@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { ToolkitResult } from "./types.js";
 import { assembleToolkitAgentInstructions } from "./assemble-toolkit-instructions.js";
+import type { ToolkitResult } from "./types.js";
 
 function spec(name: string, instructions: string) {
   return {

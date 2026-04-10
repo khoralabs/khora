@@ -142,7 +142,10 @@ export function createMemoryLibrarianSessionRunner<
   TEdge extends Record<string, z.ZodType>,
 >(): SessionRunner<MemoryLibrarianSessionInput<TNode, TEdge>, MemoryLibrarianSessionOutput> {
   return async ({ agent, input, context }) => {
-    const { model, client, embeddingModel } = context as MemoryLibrarianSessionContext<TNode, TEdge>;
+    const { model, client, embeddingModel } = context as MemoryLibrarianSessionContext<
+      TNode,
+      TEdge
+    >;
     const {
       logicalMemory,
       processedLogicalMemory,

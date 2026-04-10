@@ -1,9 +1,15 @@
 export type {
-  DbCtx,
   NeighborConstraint,
   NeighborFilter,
   NeighborNodesFilter,
-} from "../models";
+} from "../models/neighbor-search-types";
+export type {
+  MemoriesPersistence,
+  MemoriesRuntimeCtx,
+  MemoriesVisualizationPersistence,
+  MemoriesVisualizationRuntimeCtx,
+  MemoryOpContext,
+} from "../persistence";
 export * from "./client";
 export type { MergeMemoryContentItem, MergeMemoryParams, MutationCtx } from "./merge-memory";
 export {

@@ -1,6 +1,5 @@
 import type { MutationCtx } from "../api/merge-memory";
-import { clearMemorySubtree, ids } from ".";
-import type { DbCtx } from "./context";
+import { ids } from "./ids";
 
 export interface DeleteMemoryParams {
   namespace: string;
@@ -13,17 +12,14 @@ export interface DeleteMemoryParams {
  * `nodes` rows. Idempotent when the memory was already absent.
  */
 export function deleteMemory(ctx: MutationCtx, params: DeleteMemoryParams): void {
-  const { db } = ctx;
+  const { persistence } = ctx;
   const now = Date.now();
-  const d: DbCtx = { db, now };
+  const op = { now };
   const memoryId = ids.memory(params.namespace, params.key);
   const nodeId = ids.node(params.namespace, params.key);
 
-  const run = db.transaction(() => {
-    clearMemorySubtree(d, memoryId, nodeId);
-    db.run(`DELETE FROM memories WHERE _id = ?`, [memoryId]);
-    db.run(`DELETE FROM nodes WHERE _id = ?`, [nodeId]);
+  persistence.withTransaction(() => {
+    persistence.clearMemorySubtree(op, memoryId, nodeId);
+    persistence.deleteMemoryRootRows(memoryId, nodeId);
   });
-
-  run();
 }

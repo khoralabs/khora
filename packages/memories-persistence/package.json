@@ -1,0 +1,24 @@
+{
+  "name": "@cfd/memories-persistence",
+  "module": "src/strategies/sqlite/index.ts",
+  "type": "module",
+  "private": true,
+  "exports": {
+    "./sqlite": {
+      "types": "./src/strategies/sqlite/index.ts",
+      "import": "./src/strategies/sqlite/index.ts",
+      "default": "./src/strategies/sqlite/index.ts"
+    }
+  },
+  "dependencies": {
+    "@cfd/memories": "workspace:*",
+    "sqlite-vec": "^0.1.9",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

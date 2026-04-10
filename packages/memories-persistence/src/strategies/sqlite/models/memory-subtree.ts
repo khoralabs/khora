@@ -1,4 +1,4 @@
-import { deleteVectorVecRowsForMemory } from "../db/search-indexes";
+import { deleteVectorVecRowsForMemory } from "../search-indexes";
 import type { DbCtx } from "./context";
 
 /** Removes features, FTS, vec index rows, edges, and node-label links for one memory (not the memory/node rows). */

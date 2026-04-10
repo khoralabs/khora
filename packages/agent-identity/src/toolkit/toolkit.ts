@@ -1,6 +1,11 @@
 import { hashPlainObject } from "../hashing/hash.js";
 import { evaluatePolicyWithHooks, mergeToolPipelineHooks } from "../policy/pipeline-hooks.js";
-import type { PolicyEvaluatedPayload, PolicyResultMap, SharedPolicy, ToolPipelineHooks } from "../policy/types.js";
+import type {
+  PolicyEvaluatedPayload,
+  PolicyResultMap,
+  SharedPolicy,
+  ToolPipelineHooks,
+} from "../policy/types.js";
 import type { ToolSpec } from "../tool/types.js";
 import type { Composable, ToolkitContext, ToolkitResult } from "./types.js";
 

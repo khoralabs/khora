@@ -1,13 +1,8 @@
 import { fuseRrf, type RrfArm } from "@cfd/reciprocal-rank-fusion";
 import type { Edge, Memory, SourceMap } from "../db/schema";
 import { logger } from "../logger.js";
-import type { DbCtx, HydratedNeighbor, NeighborFilter } from "../models";
-import {
-  hydrateSourceMapHits,
-  listNeighborsForMemory,
-  searchLexicalSourceMapIds,
-  searchVectorSourceMapIds,
-} from "../models";
+import type { HydratedNeighbor, NeighborFilter } from "../models/neighbor-search-types";
+import type { MemoriesPersistence } from "../persistence/types";
 import { elapsedMs } from "../timing.js";
 import type { MutationCtx } from "./merge-memory";
 
@@ -85,7 +80,7 @@ function matchesLabelFilter<LABEL extends string>(
 
 /** Hybrid lexical + vector retrieval as ordered `{ id: source_map_id, score }[]` (RRF). */
 function rankSourceMapIdsForContent(
-  d: DbCtx,
+  persistence: MemoriesPersistence,
   input: {
     namespace: string;
     content: SearchContent;
@@ -97,7 +92,7 @@ function rankSourceMapIdsForContent(
 ): Array<{ id: string; score: number }> {
   const arms: RrfArm<string>[] = [];
   if ("text" in input.content && input.lexicalWeight > 0) {
-    const ranked = searchLexicalSourceMapIds(d, {
+    const ranked = persistence.searchLexicalSourceMapIds({
       namespace: input.namespace,
       text: input.content.text,
       limit: input.retrievalLimit,
@@ -108,7 +103,7 @@ function rankSourceMapIdsForContent(
     }
   }
   if ("vector" in input.content && input.vectorWeight > 0) {
-    const ranked = searchVectorSourceMapIds(d, {
+    const ranked = persistence.searchVectorSourceMapIds({
       namespace: input.namespace,
       vector: input.content.vector,
       limit: input.retrievalLimit,
@@ -123,7 +118,7 @@ function rankSourceMapIdsForContent(
 }
 
 function expandNeighborsWithSubSearch<NODE_LABELS extends string, EDGE_LABELS extends string>(
-  d: DbCtx,
+  persistence: MemoriesPersistence,
   input: {
     namespace: string;
     rootMemoryKey: string;
@@ -135,7 +130,7 @@ function expandNeighborsWithSubSearch<NODE_LABELS extends string, EDGE_LABELS ex
     maxNeighbors: number | undefined;
   },
 ): SearchNeighborHit<NODE_LABELS, EDGE_LABELS>[] {
-  const graphNeighbors = listNeighborsForMemory<EDGE_LABELS, NODE_LABELS>(d, {
+  const graphNeighbors = persistence.listNeighborsForMemory<EDGE_LABELS, NODE_LABELS>({
     namespace: input.namespace,
     key: input.rootMemoryKey,
     filters: input.neighborFilters,
@@ -158,7 +153,7 @@ function expandNeighborsWithSubSearch<NODE_LABELS extends string, EDGE_LABELS ex
       : Math.max(memoryIds.length, 10);
   const neighborRetrievalLimit = Math.max(capForRetrieval * 5, 25);
 
-  const fused = rankSourceMapIdsForContent(d, {
+  const fused = rankSourceMapIdsForContent(persistence, {
     namespace: input.namespace,
     content: input.content,
     lexicalWeight: input.lexicalWeight,
@@ -169,10 +164,7 @@ function expandNeighborsWithSubSearch<NODE_LABELS extends string, EDGE_LABELS ex
 
   if (fused.length === 0) return [];
 
-  const hydrated = hydrateSourceMapHits<NODE_LABELS>(
-    d,
-    fused.map((r) => r.id),
-  );
+  const hydrated = persistence.hydrateSourceMapHits<NODE_LABELS>(fused.map((r) => r.id));
   const hydratedById = new Map(hydrated.map((h) => [h._id, h]));
 
   const seenMemory = new Set<string>();
@@ -211,7 +203,7 @@ export function search<NODE_LABELS extends string = string, EDGE_LABELS extends 
   params: SearchParams<NODE_LABELS, EDGE_LABELS>,
 ): SearchHit<NODE_LABELS, EDGE_LABELS>[] {
   const t0 = performance.now();
-  const d: DbCtx = { db: ctx.db, now: Date.now() };
+  const { persistence } = ctx;
   const topK = params.options?.topK ?? 10;
   if (topK <= 0) return [];
 
@@ -219,7 +211,7 @@ export function search<NODE_LABELS extends string = string, EDGE_LABELS extends 
   const lexicalWeight = params.options?.arms?.lexical ?? 1;
   const vectorWeight = params.options?.arms?.vector ?? 1;
 
-  const fused = rankSourceMapIdsForContent(d, {
+  const fused = rankSourceMapIdsForContent(persistence, {
     namespace: params.namespace,
     content: params.content,
     lexicalWeight,
@@ -227,10 +219,7 @@ export function search<NODE_LABELS extends string = string, EDGE_LABELS extends 
     retrievalLimit,
   });
   if (fused.length === 0) return [];
-  const hydrated = hydrateSourceMapHits<NODE_LABELS>(
-    d,
-    fused.map((result) => result.id),
-  );
+  const hydrated = persistence.hydrateSourceMapHits<NODE_LABELS>(fused.map((result) => result.id));
   const hydratedById = new Map(hydrated.map((hit) => [hit._id, hit]));
   const minScore = params.options?.minScore ?? Number.NEGATIVE_INFINITY;
 
@@ -272,7 +261,7 @@ export function search<NODE_LABELS extends string = string, EDGE_LABELS extends 
 
   const withNeighbors = rootHits.map((hit) => ({
     ...hit,
-    neighbors: expandNeighborsWithSubSearch<NODE_LABELS, EDGE_LABELS>(d, {
+    neighbors: expandNeighborsWithSubSearch<NODE_LABELS, EDGE_LABELS>(persistence, {
       namespace: hit.memory.namespace,
       rootMemoryKey: hit.memory.key,
       content: params.content,
