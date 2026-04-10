@@ -55,8 +55,9 @@ export class MemoriesClient<
   /**
    * Validates content items and ontology labels, maps labels to stored string identities, then runs
    * {@link mergeMemory} in a transaction.
+   * @returns Memory keys whose search-meta lexical row was rebuilt.
    */
-  mergeMemory(params: TypedMergeParams<TNode, TEdge>): void {
+  mergeMemory(params: TypedMergeParams<TNode, TEdge>): string[] {
     for (const item of params.content) {
       zMergeMemoryContentItem.parse(item);
     }
@@ -81,7 +82,7 @@ export class MemoriesClient<
       searchMetaVector: params.searchMetaVector,
     };
 
-    mergeMemory(this.mutationCtx, flat);
+    return mergeMemory(this.mutationCtx, flat);
   }
 
   /** Deletes the memory and cascaded data; delegates to the package `deleteMemory` function. */

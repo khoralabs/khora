@@ -17,6 +17,9 @@ import index from "./index.html";
 
 const MEMORIES_DB_PATH = process.env.MEMORIES_DB_PATH?.trim();
 
+let didWarnLexicalOnlySearch = false;
+let didWarnEmbedFallback = false;
+
 /** Same env names as CLI / librarian for Gemini embeddings. */
 function resolveGeminiApiKey(): string | undefined {
   return (
@@ -102,13 +105,25 @@ const server = serve({
               content = { text: query };
               arms = { lexical: 1, vector: 0 };
             }
-          } catch {
+          } catch (err) {
             content = { text: query };
             arms = { lexical: 1, vector: 0 };
+            if (!didWarnEmbedFallback) {
+              didWarnEmbedFallback = true;
+              console.warn(
+                `[memories] Query embedding failed; falling back to lexical-only: ${String(err)}`,
+              );
+            }
           }
         } else {
           content = { text: query };
           arms = { lexical: 1, vector: 0 };
+          if (!didWarnLexicalOnlySearch) {
+            didWarnLexicalOnlySearch = true;
+            console.warn(
+              "[memories] No Gemini API key (GOOGLE_GENERATIVE_AI_API_KEY / GOOGLE_API_KEY / GEMINI_API_KEY); search is lexical-only. Set a key for hybrid vector search.",
+            );
+          }
         }
 
         const hits = search(

@@ -213,6 +213,41 @@ export function syncMemorySearchMeta(
   }
 }
 
+/**
+ * Replace vec0 + `vector_features` rows for the search-meta `source_map` only (lexical/meta must exist).
+ * Use after {@link syncMemorySearchMeta} when embeddings are produced out-of-band (e.g. batch for all graph-touched memories).
+ */
+export function upsertMemorySearchMetaVector(
+  ctx: DbCtx,
+  input: {
+    namespace: string;
+    memoryKey: string;
+    vector: Float32Array;
+  },
+): void {
+  const memoryId = ids.memory(input.namespace, input.memoryKey);
+  const sourceMapId = ids.sourceMap(memoryId, MEMORY_SEARCH_META_SOURCE_KEY);
+  const sm = ctx.db
+    .query<{ _id: string }, [string]>(`SELECT _id FROM source_maps WHERE _id = ?`)
+    .get(sourceMapId);
+  if (!sm) return;
+
+  const vfRows = ctx.db
+    .query<{ _id: string; vector: Buffer | Uint8Array }, [string]>(
+      `SELECT _id, vector FROM vector_features WHERE source_map_id = ?`,
+    )
+    .all(sourceMapId);
+  for (const row of vfRows) {
+    deleteVectorRowAndVecIndex(ctx.db, row._id, row.vector);
+  }
+
+  insertVectorFeatureWithVecIndex(ctx, {
+    memoryId,
+    sourceMapId,
+    vector: input.vector,
+  });
+}
+
 /** True if this source key is system-reserved (UMAP exclusion, etc.). */
 export function isSystemSearchMetaSourceKey(sourceKey: string): boolean {
   return sourceKey === MEMORY_SEARCH_META_SOURCE_KEY || sourceKey.startsWith("__");

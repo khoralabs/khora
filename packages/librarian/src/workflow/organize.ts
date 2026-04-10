@@ -1,9 +1,11 @@
 import {
-  buildCanonicalMemorySearchMetaTextForMerge,
+  buildCanonicalMemorySearchMetaText,
+  type DbCtx,
   type MemoriesClient,
   type MergeMemoryContentItem,
   type SearchContent,
   type TypedSearchHit,
+  upsertMemorySearchMetaVector,
   validateEdgeLabel,
   validateNodeLabel,
 } from "@cfd/memories";
@@ -71,37 +73,49 @@ export async function mergeLogicalMemoryWithPlan<
 ): Promise<void> {
   const slice = parseLibrarianMergePlan(client.ontology, plan);
 
-  const metaLabelStrings = slice.labels.map((l) => validateNodeLabel(client.ontology, l));
-  const metaEdges =
-    slice.edges?.map((e) => ({
-      memory_key: e.memory_key,
-      direction: e.direction,
-      label: validateEdgeLabel(client.ontology, e.label),
-    })) ?? [];
-  const metaText = buildCanonicalMemorySearchMetaTextForMerge({
-    labels: metaLabelStrings,
-    edges: metaEdges,
-  });
-
-  let searchMetaVector: number[] | undefined;
-  if (metaText.length > 0) {
-    const embeddings = await embedTextChunks(embeddingModel, [metaText]);
-    const v = embeddings[0];
-    if (v === undefined) {
-      throw new Error(
-        "mergeLogicalMemoryWithPlan: embedding model returned no vector for search meta",
-      );
-    }
-    searchMetaVector = v;
-  }
-
-  client.mergeMemory({
+  const metaSyncedKeys = client.mergeMemory({
     key: processedLogicalMemory.key,
     namespace: processedLogicalMemory.namespace,
     content: processedLogicalMemory.content,
     labels: slice.labels,
     edges: slice.edges,
     properties: slice.properties,
-    searchMetaVector,
+  });
+
+  const namespace = processedLogicalMemory.namespace;
+  const readCtx: DbCtx = { db: client.db, now: Date.now() };
+  const pairs = metaSyncedKeys
+    .map((memoryKey) => ({
+      memoryKey,
+      text: buildCanonicalMemorySearchMetaText(readCtx, namespace, memoryKey),
+    }))
+    .filter((p) => p.text.length > 0);
+
+  if (pairs.length === 0) return;
+
+  const embeddings = await embedTextChunks(
+    embeddingModel,
+    pairs.map((p) => p.text),
+  );
+  if (embeddings.length !== pairs.length) {
+    throw new Error(
+      `mergeLogicalMemoryWithPlan: expected ${pairs.length} search-meta embeddings, got ${embeddings.length}`,
+    );
+  }
+
+  client.db.transaction(() => {
+    const d: DbCtx = { db: client.db, now: Date.now() };
+    for (let i = 0; i < pairs.length; i++) {
+      const pair = pairs[i];
+      const vec = embeddings[i];
+      if (pair === undefined || vec === undefined || vec.length === 0) {
+        throw new Error("mergeLogicalMemoryWithPlan: missing embedding for search-meta batch");
+      }
+      upsertMemorySearchMetaVector(d, {
+        namespace,
+        memoryKey: pair.memoryKey,
+        vector: new Float32Array(vec),
+      });
+    }
   });
 }

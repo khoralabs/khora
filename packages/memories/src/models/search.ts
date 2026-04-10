@@ -1,3 +1,4 @@
+import type { SQLQueryBindings } from "bun:sqlite";
 import type { Edge, Memory, SourceMap } from "../db/schema";
 import { vectorVecTableName } from "../db/search-indexes";
 import type { DbCtx } from "./context";
@@ -79,10 +80,7 @@ function matchesNodeLabelFilter<LABEL extends string>(
   return true;
 }
 
-function neighborConstraintSatisfied<
-  EDGE_LABEL extends string,
-  NODE_LABEL extends string,
->(
+function neighborConstraintSatisfied<EDGE_LABEL extends string, NODE_LABEL extends string>(
   constraint: NeighborConstraint<EDGE_LABEL, NODE_LABEL>,
   edgeLabels: readonly EDGE_LABEL[],
   direction: "in" | "out",
@@ -93,28 +91,60 @@ function neighborConstraintSatisfied<
   return matchesNodeLabelFilter(neighborNodeLabels, constraint.nodes);
 }
 
+/**
+ * FTS5 MATCH string: AND-combines whitespace-separated tokens as phrase terms (quotes escaped).
+ * Stemming/plural alignment comes from the FTS tokenizer (e.g. `porter` in {@link initTextFeaturesFts}), not the query.
+ */
+export function buildFtsMatchFromUserText(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed) return "";
+  const tokens = trimmed.split(/\s+/).filter(Boolean);
+  const clauses = tokens.map((raw) => {
+    const tok = raw.replace(/"/g, '""');
+    return `"${tok}"`;
+  });
+  return clauses.join(" AND ");
+}
+
 export function searchLexicalSourceMapIds(
   ctx: DbCtx,
-  input: { namespace: string; text: string; limit: number },
+  input: { namespace: string; text: string; limit: number; memoryIds?: string[] },
 ): string[] {
   if (input.text.length === 0) return [];
+  if (input.memoryIds !== undefined && input.memoryIds.length === 0) return [];
+
+  const matchExpr = buildFtsMatchFromUserText(input.text);
+  if (matchExpr.length === 0) return [];
+
+  const memFilter =
+    input.memoryIds === undefined
+      ? "memory_id IN (SELECT _id FROM memories WHERE namespace = ?)"
+      : `memory_id IN (SELECT _id FROM memories WHERE namespace = ? AND _id IN (${placeholders(input.memoryIds.length)}))`;
+
+  const params: SQLQueryBindings[] =
+    input.memoryIds === undefined
+      ? [matchExpr, input.namespace, input.limit]
+      : [matchExpr, input.namespace, ...input.memoryIds, input.limit];
+
   const rows = ctx.db
-    .query<{ sourceMapId: string }, [string, string, number]>(
+    .query<{ sourceMapId: string }, SQLQueryBindings[]>(
       `SELECT source_map_id AS sourceMapId
        FROM text_features_fts
        WHERE text_features_fts MATCH ?
-         AND memory_id IN (SELECT _id FROM memories WHERE namespace = ?)
+         AND ${memFilter}
        ORDER BY bm25(text_features_fts)
        LIMIT ?`,
     )
-    .all(input.text, input.namespace, input.limit);
+    .all(...params);
   return rows.map((row) => row.sourceMapId);
 }
 
 export function searchVectorSourceMapIds(
   ctx: DbCtx,
-  input: { namespace: string; vector: number[]; limit: number },
+  input: { namespace: string; vector: number[]; limit: number; memoryIds?: string[] },
 ): string[] {
+  if (input.memoryIds !== undefined && input.memoryIds.length === 0) return [];
+
   const tableName = vectorVecTableName(input.vector.length);
   const exists = ctx.db
     .query<{ name: string }, [string]>(
@@ -123,8 +153,22 @@ export function searchVectorSourceMapIds(
     .get(tableName);
   if (!exists) return [];
 
+  /** Global vec0 top-k may miss a small allowlist; widen k when scoped. */
+  const knnK =
+    input.memoryIds !== undefined ? Math.min(Math.max(input.limit * 40, 100), 2048) : input.limit;
+
+  const memFilter =
+    input.memoryIds === undefined
+      ? ""
+      : `AND vf.memory_id IN (${placeholders(input.memoryIds.length)})`;
+
+  const params: SQLQueryBindings[] =
+    input.memoryIds === undefined
+      ? [JSON.stringify(input.vector), knnK, input.namespace]
+      : [JSON.stringify(input.vector), knnK, input.namespace, ...input.memoryIds];
+
   const rows = ctx.db
-    .query<{ sourceMapId: string }, [string, number, string]>(
+    .query<{ sourceMapId: string }, SQLQueryBindings[]>(
       `WITH knn AS (
          SELECT vector_feature_id, distance
          FROM "${tableName.replaceAll('"', '""')}"
@@ -136,9 +180,10 @@ export function searchVectorSourceMapIds(
        JOIN vector_features vf ON vf._id = knn.vector_feature_id
        JOIN memories m ON m._id = vf.memory_id
        WHERE m.namespace = ?
+       ${memFilter}
        ORDER BY knn.distance ASC`,
     )
-    .all(JSON.stringify(input.vector), input.limit, input.namespace);
+    .all(...params);
   return rows.map((row) => row.sourceMapId);
 }
 

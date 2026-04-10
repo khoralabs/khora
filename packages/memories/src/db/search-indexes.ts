@@ -7,7 +7,7 @@ CREATE VIRTUAL TABLE IF NOT EXISTS text_features_fts USING fts5(
   memory_id UNINDEXED,
   source_map_id UNINDEXED,
   text,
-  tokenize = 'unicode61'
+  tokenize = 'porter unicode61'
 );
 `.trim();
 
@@ -31,9 +31,31 @@ export function ensureVectorFeaturesVecTable(db: Database, dim: number): void {
 )`);
 }
 
-/** Apply FTS DDL (idempotent). Call after base schema + sqlite-vec load. */
+/**
+ * Apply FTS DDL (idempotent). Call after base schema + sqlite-vec load.
+ * Rebuilds `text_features_fts` when an older table used `unicode61` only (no Porter), so `fact`/`facts` align.
+ */
 export function initTextFeaturesFts(db: Database): void {
+  const row = db
+    .query<{ sql: string | null }, []>(
+      `SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'text_features_fts'`,
+    )
+    .get();
+
+  const needsRebuild = row?.sql != null && !/\bporter\b/i.test(row.sql);
+
+  if (needsRebuild) {
+    db.run(`DROP TABLE IF EXISTS text_features_fts`);
+  }
+
   db.run(TEXT_FEATURES_FTS_SQL);
+
+  if (needsRebuild) {
+    db.run(`
+      INSERT INTO text_features_fts (text_feature_id, memory_id, source_map_id, text)
+      SELECT _id, memory_id, source_map_id, text FROM text_features
+    `);
+  }
 }
 
 /** Remove vec index rows for a memory across all dimension tables. */

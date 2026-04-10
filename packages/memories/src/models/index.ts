@@ -12,12 +12,14 @@ export {
   MEMORY_SEARCH_META_SOURCE_KEY,
   removeMemorySearchMeta,
   syncMemorySearchMeta,
+  upsertMemorySearchMetaVector,
 } from "./memory-search-meta";
 export { clearMemorySubtree } from "./memory-subtree";
 export { insertNodeLabelAssignment } from "./node-label-assignments";
 export { ensureNodeLabel } from "./node-labels";
 export { nodeExists, upsertNodeForMemoryKey } from "./nodes";
 export {
+  buildFtsMatchFromUserText,
   type HydratedNeighbor,
   type HydratedSourceMapHit,
   hydrateSourceMapHits,

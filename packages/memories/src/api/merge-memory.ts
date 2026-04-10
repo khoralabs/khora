@@ -24,8 +24,10 @@ import {
 } from "../models/memory-search-meta";
 
 export {
+  buildCanonicalMemorySearchMetaText,
   buildCanonicalMemorySearchMetaTextForMerge,
   MEMORY_SEARCH_META_SOURCE_KEY,
+  upsertMemorySearchMetaVector,
 } from "../models/memory-search-meta";
 
 export interface MutationCtx {
@@ -65,17 +67,18 @@ export interface MergeMemoryParams<NODE_LABEL = string, EDGE_LABEL = string> {
     properties?: Record<string, unknown>;
   }>;
   /**
-   * Optional embedding of canonical search-meta text (see `buildCanonicalMemorySearchMetaTextForMerge`)
-   * for this memory only (same model/dim as content). Neighbor meta rows updated in the same txn stay
-   * lexical-only until their own merge.
+   * Optional in-transaction vector for the **primary** memory’s search-meta row only (same dim as content).
+   * Neighbors touched in the same merge do not get a vector here; use {@link upsertMemorySearchMetaVector}
+   * after merge (see librarian batch) so every meta chunk participates in hybrid search.
    */
   searchMetaVector?: number[];
 }
 
 /**
  * Orchestrates a memory merge: validates API input, then delegates storage to `models/*`.
+ * @returns Memory keys whose search-meta lexical row was rebuilt (primary, former neighbors, new edge targets).
  */
-export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams<string, string>): void {
+export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams<string, string>): string[] {
   const { db } = ctx;
   const now = Date.now();
   const d: DbCtx = { db, now };
@@ -86,6 +89,8 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams<string, 
   for (const item of params.content) {
     zMergeMemoryContentItem.parse(item);
   }
+
+  let metaSyncedMemoryKeys: string[] = [];
 
   const run = db.transaction(() => {
     const oldNeighborKeys = listNeighborMemoryKeysForNode(d, params.namespace, nodeId);
@@ -157,7 +162,9 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams<string, 
         metaVector: k === params.key ? primaryMetaVec : undefined,
       });
     }
+    metaSyncedMemoryKeys = Array.from(syncKeys).sort((a, b) => a.localeCompare(b));
   });
 
   run();
+  return metaSyncedMemoryKeys;
 }
