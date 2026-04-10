@@ -10,6 +10,16 @@ export type GraphPayload = {
   edges: Array<{ edgeId: string; fromKey: string; toKey: string; labels: string[] }>;
 };
 
+/** When set, nodes/edges outside `relevantKeys` (hits ∪ neighbors) are dimmed. */
+export type GraphSearchState = {
+  relevantKeys: ReadonlySet<string>;
+  hitCount: number;
+};
+
+const SEARCH_DIM_NODE = 0.2;
+const SEARCH_DIM_LINE = 0.12;
+const SEARCH_DIM_LABEL = 0.32;
+
 type HoverTarget =
   | { type: "node"; key: string }
   | { type: "edge"; edgeId: string; fromKey: string; toKey: string };
@@ -97,10 +107,12 @@ function EdgeItem({
   a,
   b,
   hovered,
+  searchDimmed,
   onEdgeOver,
   onEdgeOut,
 }: EdgeGeom & {
   hovered: boolean;
+  searchDimmed: boolean;
   onEdgeOver: (edgeId: string, fromKey: string, toKey: string) => void;
   onEdgeOut: () => void;
 }) {
@@ -145,6 +157,8 @@ function EdgeItem({
     [half],
   );
 
+  const lineOpacity = hovered ? 1 : searchDimmed ? SEARCH_DIM_LINE : 0.85;
+
   return (
     <>
       <group position={visual.mid} quaternion={visual.quat}>
@@ -155,7 +169,7 @@ function EdgeItem({
           <lineBasicMaterial
             color={hovered ? "#9ec5ff" : "#666666"}
             transparent
-            opacity={hovered ? 1 : 0.85}
+            opacity={lineOpacity}
           />
         </lineSegments>
       </group>
@@ -184,11 +198,13 @@ function EdgeItem({
 function EdgesInteractive({
   data,
   hoveredEdgeId,
+  edgeLit,
   onEdgeOver,
   onEdgeOut,
 }: {
   data: GraphPayload;
   hoveredEdgeId: string | null;
+  edgeLit: (fromKey: string, toKey: string) => boolean;
   onEdgeOver: (edgeId: string, fromKey: string, toKey: string) => void;
   onEdgeOut: () => void;
 }) {
@@ -200,6 +216,7 @@ function EdgesInteractive({
           key={item.edgeId}
           {...item}
           hovered={hoveredEdgeId === item.edgeId}
+          searchDimmed={!edgeLit(item.fromKey, item.toKey)}
           onEdgeOver={onEdgeOver}
           onEdgeOut={onEdgeOut}
         />
@@ -222,16 +239,32 @@ function ellipsize(s: string, maxChars: number): string {
 }
 
 /** Troika text meshes otherwise capture raycasts and block node hover. */
-function NodeLabelText(props: ComponentProps<typeof Text>) {
+function NodeLabelText({
+  dimmed = false,
+  ...props
+}: ComponentProps<typeof Text> & { dimmed?: boolean }) {
   const ref = useRef<THREE.Mesh>(null);
   useLayoutEffect(() => {
     const m = ref.current;
     if (m) m.raycast = () => {};
   }, []);
-  return <Text ref={ref} {...props} />;
+  return (
+    <Text
+      ref={ref}
+      fillOpacity={dimmed ? SEARCH_DIM_LABEL : 1}
+      outlineOpacity={dimmed ? 0.12 : 1}
+      {...props}
+    />
+  );
 }
 
-function NodeLabels({ data }: { data: GraphPayload }) {
+function NodeLabels({
+  data,
+  nodeLit,
+}: {
+  data: GraphPayload;
+  nodeLit: (key: string) => boolean;
+}) {
   return (
     <>
       {data.nodes.map((n) => {
@@ -241,6 +274,7 @@ function NodeLabels({ data }: { data: GraphPayload }) {
         return (
           <Billboard key={n.key} position={[n.x, n.y + 0.07, n.z]} follow>
             <NodeLabelText
+              dimmed={!nodeLit(n.key)}
               fontSize={NODE_FONT}
               color="#c4c4cc"
               outlineWidth={0.012}
@@ -260,11 +294,19 @@ function NodeLabels({ data }: { data: GraphPayload }) {
   );
 }
 
-function EdgeLabels({ data }: { data: GraphPayload }) {
+function EdgeLabels({
+  data,
+  edgeLit,
+}: {
+  data: GraphPayload;
+  edgeLit: (fromKey: string, toKey: string) => boolean;
+}) {
   const items = useMemo(() => {
     const pos = positionsMap(data);
     const out: Array<{
       edgeId: string;
+      fromKey: string;
+      toKey: string;
       mid: [number, number, number];
       text: string;
     }> = [];
@@ -281,6 +323,8 @@ function EdgeLabels({ data }: { data: GraphPayload }) {
       const mid = va.lerp(vb, 0.5);
       out.push({
         edgeId: e.edgeId,
+        fromKey: e.fromKey,
+        toKey: e.toKey,
         mid: [mid.x, mid.y, mid.z],
         text,
       });
@@ -292,9 +336,11 @@ function EdgeLabels({ data }: { data: GraphPayload }) {
     <>
       {items.map((item) => {
         const text = ellipsize(item.text, 48);
+        const dimmed = !edgeLit(item.fromKey, item.toKey);
         return (
           <Billboard key={item.edgeId} position={item.mid} follow>
             <NodeLabelText
+              dimmed={dimmed}
               fontSize={EDGE_FONT}
               color="#a1a1aa"
               outlineWidth={0.012}
@@ -316,6 +362,7 @@ function EdgeLabels({ data }: { data: GraphPayload }) {
 
 function Scene({
   data,
+  graphSearch,
   hoverNodeKey,
   hoveredEdgeId,
   cursorActive,
@@ -325,6 +372,7 @@ function Scene({
   onEdgeOut,
 }: {
   data: GraphPayload;
+  graphSearch: GraphSearchState | null;
   hoverNodeKey: string | null;
   hoveredEdgeId: string | null;
   cursorActive: boolean;
@@ -334,6 +382,18 @@ function Scene({
   onEdgeOut: () => void;
 }) {
   useCursor(cursorActive);
+
+  const { nodeLit, edgeLit } = useMemo(() => {
+    if (!graphSearch) {
+      const t = () => true;
+      return { nodeLit: t, edgeLit: (_f: string, _t: string) => true };
+    }
+    const keys = graphSearch.relevantKeys;
+    return {
+      nodeLit: (k: string) => keys.has(k),
+      edgeLit: (f: string, t: string) => keys.has(f) && keys.has(t),
+    };
+  }, [graphSearch]);
 
   const positions = useMemo(
     () =>
@@ -353,33 +413,39 @@ function Scene({
       <EdgesInteractive
         data={data}
         hoveredEdgeId={hoveredEdgeId}
+        edgeLit={edgeLit}
         onEdgeOver={onEdgeOver}
         onEdgeOut={onEdgeOut}
       />
-      {positions.map(({ key, p }) => (
-        <mesh
-          key={key}
-          position={p}
-          userData={{ graphHit: GRAPH_HIT_NODE }}
-          onPointerOver={(e) => {
-            e.stopPropagation();
-            onNodeOver(key);
-          }}
-          onPointerOut={(e) => {
-            e.stopPropagation();
-            onNodeOut();
-          }}
-        >
-          <sphereGeometry args={[NODE_SPHERE_RADIUS, 20, 20]} />
-          <meshStandardMaterial
-            color="#6ea8ff"
-            emissive={hoverNodeKey === key ? "#2244aa" : "#000000"}
-            emissiveIntensity={hoverNodeKey === key ? 0.45 : 0}
-          />
-        </mesh>
-      ))}
-      <NodeLabels data={data} />
-      <EdgeLabels data={data} />
+      {positions.map(({ key, p }) => {
+        const nodeDimmed = graphSearch !== null && !nodeLit(key);
+        return (
+          <mesh
+            key={key}
+            position={p}
+            userData={{ graphHit: GRAPH_HIT_NODE }}
+            onPointerOver={(e) => {
+              e.stopPropagation();
+              onNodeOver(key);
+            }}
+            onPointerOut={(e) => {
+              e.stopPropagation();
+              onNodeOut();
+            }}
+          >
+            <sphereGeometry args={[NODE_SPHERE_RADIUS, 20, 20]} />
+            <meshStandardMaterial
+              transparent
+              opacity={hoverNodeKey === key ? 1 : nodeDimmed ? SEARCH_DIM_NODE : 1}
+              color="#6ea8ff"
+              emissive={hoverNodeKey === key ? "#2244aa" : "#000000"}
+              emissiveIntensity={hoverNodeKey === key ? 0.45 : 0}
+            />
+          </mesh>
+        );
+      })}
+      <NodeLabels data={data} nodeLit={nodeLit} />
+      <EdgeLabels data={data} edgeLit={edgeLit} />
       <OrbitControls makeDefault enableDamping dampingFactor={0.05} />
     </>
   );
@@ -468,7 +534,15 @@ function PreviewPanel({
   );
 }
 
-export function GraphView({ data, namespace }: { data: GraphPayload; namespace: string }) {
+export function GraphView({
+  data,
+  namespace,
+  graphSearch = null,
+}: {
+  data: GraphPayload;
+  namespace: string;
+  graphSearch?: GraphSearchState | null;
+}) {
   const [hover, setHover] = useState<HoverTarget | null>(null);
   const [nodePreview, setNodePreview] = useState<string | null>(null);
   const [nodeLoading, setNodeLoading] = useState(false);
@@ -604,6 +678,7 @@ export function GraphView({ data, namespace }: { data: GraphPayload; namespace: 
       >
         <Scene
           data={data}
+          graphSearch={graphSearch}
           hoverNodeKey={hoverNodeKey}
           hoveredEdgeId={hoveredEdgeId}
           cursorActive={hover !== null}

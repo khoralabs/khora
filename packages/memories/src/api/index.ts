@@ -3,6 +3,7 @@ export * from "./client";
 export type { MergeMemoryContentItem, MergeMemoryParams, MutationCtx } from "./merge-memory";
 export * from "./ontology.ts";
 export * from "./resolve-sourcemap";
+export { search } from "./search";
 export type {
   NeighborSearchOption,
   SearchContent,
