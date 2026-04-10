@@ -73,6 +73,16 @@ export function openMemoriesDatabase(
   return db;
 }
 
+/**
+ * Open an existing file-backed DB read-only (e.g. visualization servers). Loads sqlite-vec; does not run DDL.
+ */
+export function openMemoriesDatabaseReadonly(filename: string): Database {
+  ensureCustomSqliteForExtensions();
+  const db = new Database(filename, { readonly: true });
+  loadSqliteVec(db);
+  return db;
+}
+
 /** `PRAGMA foreign_keys`, `journal_mode = WAL`, then create tables/indexes from {@link MEMORIES_SCHEMA_SQL}. */
 export function initMemoriesSchema(db: Database): void {
   db.run("PRAGMA foreign_keys = ON;");
