@@ -16,6 +16,7 @@ export type GraphLayoutNode = {
 };
 
 export type GraphLayoutEdge = {
+  edgeId: string;
   fromKey: string;
   toKey: string;
   labels: string[];
@@ -57,7 +58,12 @@ export function buildNamespaceGraphLayout(
     return {
       namespace,
       nodes: [],
-      edges: edges.map((e) => ({ fromKey: e.fromKey, toKey: e.toKey, labels: e.labels })),
+      edges: edges.map((e) => ({
+        edgeId: e.edgeId,
+        fromKey: e.fromKey,
+        toKey: e.toKey,
+        labels: e.labels,
+      })),
     };
   }
 
@@ -100,6 +106,7 @@ export function buildNamespaceGraphLayout(
   });
 
   const edgeRows: GraphLayoutEdge[] = edges.map((e) => ({
+    edgeId: e.edgeId,
     fromKey: e.fromKey,
     toKey: e.toKey,
     labels: e.labels,

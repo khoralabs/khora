@@ -1,6 +1,7 @@
 import { serve } from "bun";
 import {
   buildNamespaceGraphLayout,
+  loadEdgePreview,
   loadMemoryTextPreview,
   openMemoriesDatabaseReadonly,
 } from "@cfd/memories";
@@ -42,6 +43,40 @@ const server = serve({
       try {
         const preview = loadMemoryTextPreview({ db }, namespace, key);
         return jsonResponse({ key, preview });
+      } catch (err) {
+        return jsonResponse({ error: String(err) }, 500);
+      } finally {
+        db.close();
+      }
+    },
+    "/api/edge-preview": (req) => {
+      if (req.method !== "GET") {
+        return new Response("Method Not Allowed", { status: 405 });
+      }
+      const url = new URL(req.url);
+      const namespace = url.searchParams.get("namespace")?.trim();
+      const edgeId = url.searchParams.get("edgeId")?.trim();
+      if (!namespace || !edgeId) {
+        return jsonResponse({ error: "missing required query namespace and edgeId" }, 400);
+      }
+      if (!MEMORIES_DB_PATH) {
+        return jsonResponse(
+          { error: "set MEMORIES_DB_PATH to your SQLite memories database file" },
+          400,
+        );
+      }
+      let db: ReturnType<typeof openMemoriesDatabaseReadonly>;
+      try {
+        db = openMemoriesDatabaseReadonly(MEMORIES_DB_PATH);
+      } catch (err) {
+        return jsonResponse({ error: `open database: ${String(err)}` }, 500);
+      }
+      try {
+        const detail = loadEdgePreview({ db }, namespace, edgeId);
+        if (!detail) {
+          return jsonResponse({ error: "edge not found in namespace" }, 404);
+        }
+        return jsonResponse(detail);
       } catch (err) {
         return jsonResponse({ error: String(err) }, 500);
       } finally {
