@@ -1,4 +1,4 @@
-import type { LabelSchemaMap, OntologyDefinition } from "@cfd/memories";
+import type { LabelSchemaMap, OntologyDefinition } from "@cfd/memories-core";
 import { buildLibrarianMergePlanDescription, labelKindsFromOntology } from "../../workflow/plan.js";
 
 /**

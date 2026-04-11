@@ -1,4 +1,4 @@
-import { ids } from "@cfd/memories";
+import { ids } from "@cfd/memories-core";
 import { documentValidator, jsonOrNull } from "../_lib";
 import { schema } from "../schema";
 import type { DbCtx } from "./context";

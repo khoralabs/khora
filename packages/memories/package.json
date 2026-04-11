@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/memories",
+  "name": "@cfd/memories-core",
   "module": "index.ts",
   "type": "module",
   "private": true,
@@ -21,7 +21,7 @@
     }
   },
   "devDependencies": {
-    "@cfd/memories-persistence": "workspace:*",
+    "@cfd/memories-core-persistence": "workspace:*",
     "@types/bun": "latest"
   },
   "peerDependencies": {

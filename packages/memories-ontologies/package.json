@@ -1,6 +1,6 @@
 {
-  "name": "@cfd/stores",
-  "module": "src/index.ts",
+  "name": "@cfd/memories-core-ontologies",
+  "module": "index.ts",
   "type": "module",
   "private": true,
   "exports": {
@@ -10,18 +10,14 @@
       "default": "./src/index.ts"
     }
   },
-  "dependencies": {
-    "@cfd/memories-core": "workspace:*",
-    "pino": "^10.3.1"
-  },
   "devDependencies": {
     "@types/bun": "latest"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
-  "scripts": {
-    "test": "bun test",
-    "typecheck": "tsc --noEmit"
+  "dependencies": {
+    "@cfd/memories-core": "workspace:*",
+    "zod": "^4.3.6"
   }
 }

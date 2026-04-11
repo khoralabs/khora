@@ -36,4 +36,4 @@ Ensure `MEMORIES_DB_PATH` is set in the environment for the server process.
 
 - **`GET /api/graph?namespace=<ns>`** — JSON: `{ namespace, nodes: [{ key, x, y, z }], edges: [{ fromKey, toKey }] }`. Coordinates are in **`[-1, 1]`** on each axis after normalization.
 
-Implementation lives in `@cfd/memories` (`buildNamespaceGraphLayout`, graph SQL, UMAP).
+Implementation lives in `@cfd/memories-core` (`buildNamespaceGraphLayout`, graph SQL, UMAP).

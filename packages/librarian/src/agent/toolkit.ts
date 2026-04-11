@@ -5,7 +5,7 @@ import type {
   NeighborSearchOption,
   SearchContent,
   SearchHit,
-} from "@cfd/memories";
+} from "@cfd/memories-core";
 import z from "zod";
 import { type EmbeddingModel, embedTextChunks } from "../adapters/embedding-model";
 import { logger } from "../telemetry/logger.js";

@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
-import type { GraphEdgeLink, GraphMemoryEmbedding } from "@cfd/memories";
-import { ids } from "@cfd/memories";
+import type { GraphEdgeLink, GraphMemoryEmbedding } from "@cfd/memories-core";
+import { ids } from "@cfd/memories-core";
 import { blobToVector } from "../connection";
 
 export function loadGraphEdgesForNamespace(db: Database, namespace: string): GraphEdgeLink[] {

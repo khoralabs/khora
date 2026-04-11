@@ -3,7 +3,7 @@ import type {
   RegisteredAgentIdentity,
   ToolRuntimeContext,
 } from "@cfd/agent-identity";
-import type { LabelSchemaMap, OntologyDefinition } from "@cfd/memories";
+import type { LabelSchemaMap, OntologyDefinition } from "@cfd/memories-core";
 import { type LanguageModel, type OnFinishEvent, stepCountIs, type Tool, ToolLoopAgent } from "ai";
 import { toolMapToAiTools } from "../adapters/tool-spec-to-ai-sdk";
 import { logger } from "../telemetry/logger.js";

@@ -1,4 +1,4 @@
-import type { MergeMemoryContentItem } from "@cfd/memories";
+import type { MergeMemoryContentItem } from "@cfd/memories-core";
 import { type EmbeddingModel, fileToContent, textToContent } from "../adapters";
 
 /** One logical memory: optional plaintext and/or multiple files; embedding decomposes into many merge chunks. */

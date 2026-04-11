@@ -3,7 +3,7 @@ import type {
   ResolvedSource,
   SearchHit,
   TypedSearchHit,
-} from "@cfd/memories";
+} from "@cfd/memories-core";
 import type { ModelMessage } from "ai";
 import type z from "zod";
 import type { LogicalMemoryInput, ProcessedLogicalMemory } from "../workflow/logical-memory";

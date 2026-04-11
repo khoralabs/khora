@@ -3,7 +3,7 @@ import type {
   RegisterAgentOptions,
   RegisteredAgentIdentity,
 } from "@cfd/agent-identity";
-import type { OntologyDefinition } from "@cfd/memories";
+import type { OntologyDefinition } from "@cfd/memories-core";
 import type z from "zod";
 import { defineMemoryLibrarianIdentity } from "./identity.js";
 import {

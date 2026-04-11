@@ -4,7 +4,7 @@ import type {
   NodeLabelInstance,
   OntologyDefinition,
   TypedMergeParams,
-} from "@cfd/memories";
+} from "@cfd/memories-core";
 import { Output } from "ai";
 import z from "zod";
 

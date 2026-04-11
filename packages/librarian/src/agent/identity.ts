@@ -1,5 +1,5 @@
 import { createRegisteredAgentIdentity, type RegisteredAgentIdentity } from "@cfd/agent-identity";
-import type { LabelSchemaMap, OntologyDefinition } from "@cfd/memories";
+import type { LabelSchemaMap, OntologyDefinition } from "@cfd/memories-core";
 import {
   buildLibrarianBaseSystemContent,
   buildLibrarianMergePlanInstruction,

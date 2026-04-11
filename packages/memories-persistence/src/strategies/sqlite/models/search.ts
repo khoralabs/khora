@@ -1,5 +1,5 @@
 import type { SQLQueryBindings } from "bun:sqlite";
-import { ids } from "@cfd/memories";
+import { ids } from "@cfd/memories-core";
 import type { Edge, Memory, SourceMap } from "../schema";
 import { vectorVecTableName } from "../search-indexes";
 import type { DbCtx } from "./context";

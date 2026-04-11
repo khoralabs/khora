@@ -1,6 +1,6 @@
 import type { ProviderOptions } from "@ai-sdk/provider-utils";
 import type { AgentRegistry } from "@cfd/agent-identity";
-import type { MemoriesClient, MemoriesClientAsync, Store } from "@cfd/memories";
+import type { MemoriesClient, MemoriesClientAsync, Store } from "@cfd/memories-core";
 import type { EmbeddingModel as AiSdkEmbeddingModel, LanguageModel } from "ai";
 import type z from "zod";
 import type { EmbeddingResolutionPreset } from "./adapters/embedding-model.js";

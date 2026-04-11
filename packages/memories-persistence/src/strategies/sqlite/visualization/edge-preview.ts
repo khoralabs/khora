@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { EdgePreviewPayload } from "@cfd/memories";
+import type { EdgePreviewPayload } from "@cfd/memories-core";
 
 export function loadEdgePreview(
   db: Database,

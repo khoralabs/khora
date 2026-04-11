@@ -1,6 +1,6 @@
 /**
  * Row shapes produced by the default SQLite persistence strategy.
- * Keep aligned with `schema` in `@cfd/memories-persistence/sqlite` (Zod + DDL).
+ * Keep aligned with `schema` in `@cfd/memories-core-persistence/sqlite` (Zod + DDL).
  */
 
 export type Memory = {

@@ -1,4 +1,4 @@
-import type { MergeMemoryContentItem } from "@cfd/memories";
+import type { MergeMemoryContentItem } from "@cfd/memories-core";
 import { type EmbeddingModel, embedBinaryBlob } from "./embedding-model";
 import { textToContent } from "./text-to-content";
 

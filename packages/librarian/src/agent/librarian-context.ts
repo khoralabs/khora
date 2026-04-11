@@ -1,5 +1,5 @@
 import type { ToolkitContext, ToolRuntimeContext } from "@cfd/agent-identity";
-import type { MemoriesClient, MemoriesClientAsync } from "@cfd/memories";
+import type { MemoriesClient, MemoriesClientAsync } from "@cfd/memories-core";
 import type z from "zod";
 import type { EmbeddingModel } from "../adapters/embedding-model";
 import type {

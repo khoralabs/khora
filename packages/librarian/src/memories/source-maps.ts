@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { SourceMap } from "@cfd/memories";
+import type { SourceMap } from "@cfd/memories-core";
 
 /**
  * Most recently created source maps for a memory (for bounded resolution / display).

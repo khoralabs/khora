@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-persistence/sqlite";
+import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-core-persistence/sqlite";
 import { mergeMemory } from "./api/merge-memory";
 import { search } from "./api/search";
 

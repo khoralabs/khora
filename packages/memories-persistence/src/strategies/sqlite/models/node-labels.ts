@@ -1,4 +1,4 @@
-import { ids } from "@cfd/memories";
+import { ids } from "@cfd/memories-core";
 import type { DbCtx } from "./context";
 
 /** Returns `_id` for a `node_labels` row, inserting with empty `description` if missing. */

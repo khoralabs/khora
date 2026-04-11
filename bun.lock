@@ -17,8 +17,9 @@
       "dependencies": {
         "@ai-sdk/google": "^3.0.0",
         "@cfd/librarian": "workspace:*",
-        "@cfd/memories": "workspace:*",
-        "@cfd/memories-persistence": "workspace:*",
+        "@cfd/memories-core": "workspace:*",
+        "@cfd/memories-core-ontologies": "workspace:*",
+        "@cfd/memories-core-persistence": "workspace:*",
         "@cfd/stores": "workspace:*",
         "@google/genai": "^1.48.0",
         "ai": "^6.0.153",
@@ -38,8 +39,8 @@
       "version": "0.1.0",
       "dependencies": {
         "@ai-sdk/google": "^3.0.0",
-        "@cfd/memories": "workspace:*",
-        "@cfd/memories-persistence": "workspace:*",
+        "@cfd/memories-core": "workspace:*",
+        "@cfd/memories-core-persistence": "workspace:*",
         "@radix-ui/react-label": "^2.1.7",
         "@radix-ui/react-select": "^2.2.6",
         "@radix-ui/react-slot": "^1.2.3",
@@ -84,7 +85,7 @@
       "dependencies": {
         "@ai-sdk/provider-utils": "^4.0.23",
         "@cfd/agent-identity": "workspace:*",
-        "@cfd/memories": "workspace:*",
+        "@cfd/memories-core": "workspace:*",
         "ai": "^6.0.153",
         "pino": "^10.3.1",
         "zod": "^4.3.6",
@@ -97,7 +98,7 @@
       },
     },
     "packages/memories": {
-      "name": "@cfd/memories",
+      "name": "@cfd/memories-core",
       "dependencies": {
         "@cfd/reciprocal-rank-fusion": "workspace:*",
         "pino": "^10.3.1",
@@ -105,7 +106,20 @@
         "zod": "^4.3.6",
       },
       "devDependencies": {
-        "@cfd/memories-persistence": "workspace:*",
+        "@cfd/memories-core-persistence": "workspace:*",
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/memories-ontologies": {
+      "name": "@cfd/memories-core-ontologies",
+      "dependencies": {
+        "@cfd/memories-core": "workspace:*",
+        "zod": "^4.3.6",
+      },
+      "devDependencies": {
         "@types/bun": "latest",
       },
       "peerDependencies": {
@@ -113,9 +127,9 @@
       },
     },
     "packages/memories-persistence": {
-      "name": "@cfd/memories-persistence",
+      "name": "@cfd/memories-core-persistence",
       "dependencies": {
-        "@cfd/memories": "workspace:*",
+        "@cfd/memories-core": "workspace:*",
         "sqlite-vec": "^0.1.9",
         "zod": "^4.3.6",
       },
@@ -141,7 +155,7 @@
     "packages/stores": {
       "name": "@cfd/stores",
       "dependencies": {
-        "@cfd/memories": "workspace:*",
+        "@cfd/memories-core": "workspace:*",
         "pino": "^10.3.1",
       },
       "devDependencies": {
@@ -187,9 +201,11 @@
 
     "@cfd/librarian": ["@cfd/librarian@workspace:packages/librarian"],
 
-    "@cfd/memories": ["@cfd/memories@workspace:packages/memories"],
+    "@cfd/memories-core": ["@cfd/memories-core@workspace:packages/memories"],
 
-    "@cfd/memories-persistence": ["@cfd/memories-persistence@workspace:packages/memories-persistence"],
+    "@cfd/memories-core-ontologies": ["@cfd/memories-core-ontologies@workspace:packages/memories-ontologies"],
+
+    "@cfd/memories-core-persistence": ["@cfd/memories-core-persistence@workspace:packages/memories-persistence"],
 
     "@cfd/reciprocal-rank-fusion": ["@cfd/reciprocal-rank-fusion@workspace:packages/reciprocal-rank-fusion"],
 
@@ -701,9 +717,11 @@
 
     "@cfd/librarian/@types/bun": ["@types/bun@1.3.12", "", { "dependencies": { "bun-types": "1.3.12" } }, "sha512-DBv81elK+/VSwXHDlnH3Qduw+KxkTIWi7TXkAeh24zpi5l0B2kUg9Ga3tb4nJaPcOFswflgi/yAvMVBPrxMB+A=="],
 
-    "@cfd/memories/@types/bun": ["@types/bun@1.3.12", "", { "dependencies": { "bun-types": "1.3.12" } }, "sha512-DBv81elK+/VSwXHDlnH3Qduw+KxkTIWi7TXkAeh24zpi5l0B2kUg9Ga3tb4nJaPcOFswflgi/yAvMVBPrxMB+A=="],
+    "@cfd/memories-core/@types/bun": ["@types/bun@1.3.12", "", { "dependencies": { "bun-types": "1.3.12" } }, "sha512-DBv81elK+/VSwXHDlnH3Qduw+KxkTIWi7TXkAeh24zpi5l0B2kUg9Ga3tb4nJaPcOFswflgi/yAvMVBPrxMB+A=="],
 
-    "@cfd/memories-persistence/@types/bun": ["@types/bun@1.3.12", "", { "dependencies": { "bun-types": "1.3.12" } }, "sha512-DBv81elK+/VSwXHDlnH3Qduw+KxkTIWi7TXkAeh24zpi5l0B2kUg9Ga3tb4nJaPcOFswflgi/yAvMVBPrxMB+A=="],
+    "@cfd/memories-core-ontologies/@types/bun": ["@types/bun@1.3.12", "", { "dependencies": { "bun-types": "1.3.12" } }, "sha512-DBv81elK+/VSwXHDlnH3Qduw+KxkTIWi7TXkAeh24zpi5l0B2kUg9Ga3tb4nJaPcOFswflgi/yAvMVBPrxMB+A=="],
+
+    "@cfd/memories-core-persistence/@types/bun": ["@types/bun@1.3.12", "", { "dependencies": { "bun-types": "1.3.12" } }, "sha512-DBv81elK+/VSwXHDlnH3Qduw+KxkTIWi7TXkAeh24zpi5l0B2kUg9Ga3tb4nJaPcOFswflgi/yAvMVBPrxMB+A=="],
 
     "@cfd/reciprocal-rank-fusion/@types/bun": ["@types/bun@1.3.12", "", { "dependencies": { "bun-types": "1.3.12" } }, "sha512-DBv81elK+/VSwXHDlnH3Qduw+KxkTIWi7TXkAeh24zpi5l0B2kUg9Ga3tb4nJaPcOFswflgi/yAvMVBPrxMB+A=="],
 
@@ -829,9 +847,11 @@
 
     "@cfd/librarian/@types/bun/bun-types": ["bun-types@1.3.12", "", { "dependencies": { "@types/node": "*" } }, "sha512-HqOLj5PoFajAQciOMRiIZGNoKxDJSr6qigAttOX40vJuSp6DN/CxWp9s3C1Xwm4oH7ybueITwiaOcWXoYVoRkA=="],
 
-    "@cfd/memories-persistence/@types/bun/bun-types": ["bun-types@1.3.12", "", { "dependencies": { "@types/node": "*" } }, "sha512-HqOLj5PoFajAQciOMRiIZGNoKxDJSr6qigAttOX40vJuSp6DN/CxWp9s3C1Xwm4oH7ybueITwiaOcWXoYVoRkA=="],
+    "@cfd/memories-core-ontologies/@types/bun/bun-types": ["bun-types@1.3.12", "", { "dependencies": { "@types/node": "*" } }, "sha512-HqOLj5PoFajAQciOMRiIZGNoKxDJSr6qigAttOX40vJuSp6DN/CxWp9s3C1Xwm4oH7ybueITwiaOcWXoYVoRkA=="],
 
-    "@cfd/memories/@types/bun/bun-types": ["bun-types@1.3.12", "", { "dependencies": { "@types/node": "*" } }, "sha512-HqOLj5PoFajAQciOMRiIZGNoKxDJSr6qigAttOX40vJuSp6DN/CxWp9s3C1Xwm4oH7ybueITwiaOcWXoYVoRkA=="],
+    "@cfd/memories-core-persistence/@types/bun/bun-types": ["bun-types@1.3.12", "", { "dependencies": { "@types/node": "*" } }, "sha512-HqOLj5PoFajAQciOMRiIZGNoKxDJSr6qigAttOX40vJuSp6DN/CxWp9s3C1Xwm4oH7ybueITwiaOcWXoYVoRkA=="],
+
+    "@cfd/memories-core/@types/bun/bun-types": ["bun-types@1.3.12", "", { "dependencies": { "@types/node": "*" } }, "sha512-HqOLj5PoFajAQciOMRiIZGNoKxDJSr6qigAttOX40vJuSp6DN/CxWp9s3C1Xwm4oH7ybueITwiaOcWXoYVoRkA=="],
 
     "@cfd/reciprocal-rank-fusion/@types/bun/bun-types": ["bun-types@1.3.12", "", { "dependencies": { "@types/node": "*" } }, "sha512-HqOLj5PoFajAQciOMRiIZGNoKxDJSr6qigAttOX40vJuSp6DN/CxWp9s3C1Xwm4oH7ybueITwiaOcWXoYVoRkA=="],
 

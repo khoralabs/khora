@@ -6,12 +6,12 @@ import {
   type SearchHit,
   searchAsync,
   wrapSyncMemoriesPersistenceAsAsync,
-} from "@cfd/memories";
+} from "@cfd/memories-core";
 import {
   createMemoriesPersistence,
   createMemoriesVisualization,
   openMemoriesDatabaseReadonly,
-} from "@cfd/memories-persistence/sqlite";
+} from "@cfd/memories-core-persistence/sqlite";
 import { embedMany } from "ai";
 import { serve } from "bun";
 import index from "./index.html";

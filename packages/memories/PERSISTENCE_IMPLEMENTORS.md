@@ -1,6 +1,6 @@
 # Memory persistence implementor’s guide
 
-This document describes the **operational contract** for [`MemoriesPersistence`](src/persistence/types.ts). Method names and types live in code; behavior and ordering are specified here. The reference implementation is [`@cfd/memories-persistence/sqlite`](../memories-persistence/src/strategies/sqlite/persistence.ts).
+This document describes the **operational contract** for [`MemoriesPersistence`](src/persistence/types.ts). Method names and types live in code; behavior and ordering are specified here. The reference implementation is [`@cfd/memories-core-persistence/sqlite`](../memories-persistence/src/strategies/sqlite/persistence.ts).
 
 ## ID conventions
 

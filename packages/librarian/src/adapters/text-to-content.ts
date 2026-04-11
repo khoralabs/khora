@@ -1,4 +1,4 @@
-import type { MergeMemoryContentItem } from "@cfd/memories";
+import type { MergeMemoryContentItem } from "@cfd/memories-core";
 import { type EmbeddingModel, embedTextChunks, MAX_TEXT_CHUNK_CHARS } from "./embedding-model";
 
 export interface TextToContentInput {

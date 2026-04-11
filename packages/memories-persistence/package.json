@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/memories-persistence",
+  "name": "@cfd/memories-core-persistence",
   "module": "src/strategies/sqlite/index.ts",
   "type": "module",
   "private": true,
@@ -11,7 +11,7 @@
     }
   },
   "dependencies": {
-    "@cfd/memories": "workspace:*",
+    "@cfd/memories-core": "workspace:*",
     "sqlite-vec": "^0.1.9",
     "zod": "^4.3.6"
   },

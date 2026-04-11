@@ -9,7 +9,7 @@ import {
   type TypedSearchHit,
   upsertMemorySearchMetaVector,
   upsertMemorySearchMetaVectorAsync,
-} from "@cfd/memories";
+} from "@cfd/memories-core";
 import type z from "zod";
 import { type EmbeddingModel, embedTextChunks } from "../adapters/embedding-model";
 import type { ProcessedLogicalMemory } from "./logical-memory";

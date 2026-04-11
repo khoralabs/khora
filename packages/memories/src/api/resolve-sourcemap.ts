@@ -1,4 +1,4 @@
-import type { SourceMap } from "@cfd/memories";
+import type { SourceMap } from "@cfd/memories-core";
 
 /** Resolved payload for a {@link SourceMap} from a {@link Store}. */
 export type ResolvedSource =

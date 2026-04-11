@@ -1,9 +1,9 @@
 import type { Database } from "bun:sqlite";
-import { ids } from "@cfd/memories";
+import { ids } from "@cfd/memories-core";
 import {
   isSystemSearchMetaSourceKey,
   MEMORY_SEARCH_META_SOURCE_KEY,
-} from "@cfd/memories/search-meta-constants";
+} from "@cfd/memories-core/search-meta-constants";
 import { blobToVector } from "../connection";
 import { vectorVecTableName } from "../search-indexes";
 import type { DbCtx } from "./context";

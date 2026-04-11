@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { MemoriesVisualization as IMemoriesVisualization } from "@cfd/memories";
+import type { MemoriesVisualization as IMemoriesVisualization } from "@cfd/memories-core";
 import { loadEdgePreview } from "./visualization/edge-preview";
 import { loadMemoryTextPreview } from "./visualization/memory-preview";
 import {

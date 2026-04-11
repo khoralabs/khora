@@ -4,7 +4,7 @@ import type {
   MemoriesBackendCapabilities,
   MemoryOpContext,
   NeighborFilter,
-} from "@cfd/memories";
+} from "@cfd/memories-core";
 import type { DbCtx } from "./models/context";
 import { insertEdgeLabelAssignment } from "./models/edge-label-assignments";
 import { ensureEdgeLabel } from "./models/edge-labels";

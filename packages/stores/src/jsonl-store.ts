@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { appendFileSync, mkdirSync, readFileSync, statSync } from "node:fs";
 import { dirname } from "node:path";
-import type { ResolvedSource, SourceMap, Store } from "@cfd/memories";
+import type { ResolvedSource, SourceMap, Store } from "@cfd/memories-core";
 
 export type JsonlResolvedLine =
   | {

@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { SourceMap } from "@cfd/memories";
+import type { SourceMap } from "@cfd/memories-core";
 import { JsonlStore } from "./jsonl-store.ts";
 
 function sm(memory_id: string, source_key: string): SourceMap {

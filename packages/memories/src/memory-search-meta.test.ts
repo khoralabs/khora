@@ -3,7 +3,7 @@ import {
   createMemoriesPersistence,
   createMemoriesVisualization,
   openMemoriesDatabase,
-} from "@cfd/memories-persistence/sqlite";
+} from "@cfd/memories-core-persistence/sqlite";
 import {
   buildCanonicalMemorySearchMetaText,
   mergeMemory,

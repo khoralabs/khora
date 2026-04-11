@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { defineOntology } from "@cfd/memories";
+import { defineOntology } from "@cfd/memories-core";
 import z from "zod";
 import { buildLibrarianMergePlanDescription, zLibrarianMergePlanWire } from "./plan";
 

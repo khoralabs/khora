@@ -18,7 +18,7 @@ import type {
   MemoriesClientAsync,
   ResolvedSource,
   TypedSearchHit,
-} from "@cfd/memories";
+} from "@cfd/memories-core";
 import type { LanguageModel } from "ai";
 import { NoOutputGeneratedError } from "ai";
 import type z from "zod";
