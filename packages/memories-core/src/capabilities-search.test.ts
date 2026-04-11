@@ -10,6 +10,8 @@ describe("MemoriesBackendCapabilities", () => {
         lexicalSearch: true,
         vectorSearch: false,
         neighborIndex: true,
+        multiNamespaceSearch: true,
+        unscopedSearch: false,
       },
     } as unknown as MemoriesPersistence;
     expect(() =>
@@ -32,6 +34,8 @@ describe("MemoriesBackendCapabilities", () => {
         lexicalSearch: true,
         vectorSearch: false,
         neighborIndex: false,
+        multiNamespaceSearch: true,
+        unscopedSearch: false,
       },
       searchVectorSourceMapIds() {
         vectorCalls++;

@@ -2,11 +2,17 @@ import { fuseRrf, type RrfArm } from "@cfd/reciprocal-rank-fusion";
 import { logger } from "../logger.js";
 import type { HydratedNeighbor, NeighborFilter } from "../models/neighbor-search-types";
 import type { MemoriesPersistenceAsync } from "../persistence/async-types";
-import type { MemoriesBackendCapabilities } from "../persistence/types";
+import type { MemoriesBackendCapabilities, SearchNamespaceScope } from "../persistence/types";
 import { resolveMemoriesBackendCapabilities } from "../persistence/types";
 import { elapsedMs } from "../timing.js";
 import type { MutationCtxAsync } from "./merge-memory-async";
-import type { SearchContent, SearchHit, SearchNeighborHit, SearchParams } from "./search";
+import {
+  normalizeSearchScopeFromParams,
+  type SearchContent,
+  type SearchHit,
+  type SearchNeighborHit,
+  type SearchParams,
+} from "./search";
 
 export type {
   NeighborSearchOption,
@@ -34,11 +40,28 @@ function matchesLabelFilter<LABEL extends string>(
   return true;
 }
 
+function scopeSingleNamespace(namespace: string): SearchNamespaceScope {
+  return { kind: "union", namespaces: [namespace] };
+}
+
+function warnVectorNoCandidates(namespace: string, vectorDim: number): void {
+  const msg =
+    "Vector search returned no candidates (embedding dimension may not match stored vectors, vector index missing or empty for this namespace, or no indexed content).";
+  logger.warn({
+    phase: "memories.search.vector",
+    msg,
+    namespace,
+    vectorDim,
+  });
+  console.warn(`[memories] ${msg} namespace=${namespace} vectorDim=${vectorDim}`);
+}
+
 async function rankSourceMapIdsForContentAsync(
   persistence: MemoriesPersistenceAsync,
   caps: MemoriesBackendCapabilities,
   input: {
-    namespace: string;
+    scope: SearchNamespaceScope;
+    logNamespace: string;
     content: SearchContent;
     lexicalWeight: number;
     vectorWeight: number;
@@ -46,10 +69,49 @@ async function rankSourceMapIdsForContentAsync(
     memoryIds?: string[];
   },
 ): Promise<Array<{ id: string; score: number }>> {
+  const { scope } = input;
+
+  if (
+    scope.kind === "union" &&
+    scope.namespaces.length > 1 &&
+    !caps.multiNamespaceSearch
+  ) {
+    const arms: RrfArm<string>[] = [];
+    for (const ns of scope.namespaces) {
+      const subScope = scopeSingleNamespace(ns);
+      if (caps.lexicalSearch && "text" in input.content && input.lexicalWeight > 0) {
+        const ranked = await persistence.searchLexicalSourceMapIds({
+          scope: subScope,
+          text: input.content.text,
+          limit: input.retrievalLimit,
+          memoryIds: input.memoryIds,
+        });
+        if (ranked.length > 0) {
+          arms.push({ armId: `lexical:${ns}`, ranked, weight: input.lexicalWeight });
+        }
+      }
+      if (caps.vectorSearch && "vector" in input.content && input.vectorWeight > 0) {
+        const ranked = await persistence.searchVectorSourceMapIds({
+          scope: subScope,
+          vector: input.content.vector,
+          limit: input.retrievalLimit,
+          memoryIds: input.memoryIds,
+        });
+        if (ranked.length > 0) {
+          arms.push({ armId: `vector:${ns}`, ranked, weight: input.vectorWeight });
+        } else {
+          warnVectorNoCandidates(ns, input.content.vector.length);
+        }
+      }
+    }
+    if (arms.length === 0) return [];
+    return fuseRrf(arms, { maxPerArm: input.retrievalLimit });
+  }
+
   const arms: RrfArm<string>[] = [];
   if (caps.lexicalSearch && "text" in input.content && input.lexicalWeight > 0) {
     const ranked = await persistence.searchLexicalSourceMapIds({
-      namespace: input.namespace,
+      scope,
       text: input.content.text,
       limit: input.retrievalLimit,
       memoryIds: input.memoryIds,
@@ -60,7 +122,7 @@ async function rankSourceMapIdsForContentAsync(
   }
   if (caps.vectorSearch && "vector" in input.content && input.vectorWeight > 0) {
     const ranked = await persistence.searchVectorSourceMapIds({
-      namespace: input.namespace,
+      scope,
       vector: input.content.vector,
       limit: input.retrievalLimit,
       memoryIds: input.memoryIds,
@@ -68,17 +130,7 @@ async function rankSourceMapIdsForContentAsync(
     if (ranked.length > 0) {
       arms.push({ armId: "vector", ranked, weight: input.vectorWeight });
     } else {
-      const msg =
-        "Vector search returned no candidates (embedding dimension may not match stored vectors, vector index missing or empty for this namespace, or no indexed content).";
-      logger.warn({
-        phase: "memories.search.vector",
-        msg,
-        namespace: input.namespace,
-        vectorDim: input.content.vector.length,
-      });
-      console.warn(
-        `[memories] ${msg} namespace=${input.namespace} vectorDim=${input.content.vector.length}`,
-      );
+      warnVectorNoCandidates(input.logNamespace, input.content.vector.length);
     }
   }
   if (arms.length === 0) return [];
@@ -127,7 +179,8 @@ async function expandNeighborsWithSubSearchAsync<
   const neighborRetrievalLimit = Math.max(capForRetrieval * 5, 25);
 
   const fused = await rankSourceMapIdsForContentAsync(persistence, caps, {
-    namespace: input.namespace,
+    scope: scopeSingleNamespace(input.namespace),
+    logNamespace: input.namespace,
     content: input.content,
     lexicalWeight: input.lexicalWeight,
     vectorWeight: input.vectorWeight,
@@ -196,12 +249,18 @@ export async function searchAsync<
     return [];
   }
 
+  const { scope, additionalNamespaceCount, unscoped } = normalizeSearchScopeFromParams(
+    params,
+    caps,
+  );
+
   const retrievalLimit = Math.max(topK * 5, 25);
   const lexicalWeight = params.options?.arms?.lexical ?? 1;
   const vectorWeight = params.options?.arms?.vector ?? 1;
 
   const fused = await rankSourceMapIdsForContentAsync(persistence, caps, {
-    namespace: params.namespace,
+    scope,
+    logNamespace: params.namespace,
     content: params.content,
     lexicalWeight,
     vectorWeight,
@@ -235,6 +294,8 @@ export async function searchAsync<
       phase: "memories.search",
       durationMs: elapsedMs(t0),
       namespace: params.namespace,
+      additionalNamespaceCount,
+      unscoped,
       hitCount: rootHits.length,
       topK,
       neighbors: false,
@@ -273,6 +334,8 @@ export async function searchAsync<
     phase: "memories.search",
     durationMs: elapsedMs(t0),
     namespace: params.namespace,
+    additionalNamespaceCount,
+    unscoped,
     hitCount: withNeighbors.length,
     topK,
     neighbors: true,

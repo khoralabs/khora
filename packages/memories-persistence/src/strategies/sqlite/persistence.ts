@@ -4,6 +4,7 @@ import type {
   MemoriesBackendCapabilities,
   MemoryOpContext,
   NeighborFilter,
+  SearchNamespaceScope,
 } from "@cfd/memories-core";
 import type { DbCtx } from "./models/context";
 import { insertEdgeLabelAssignment } from "./models/edge-label-assignments";
@@ -36,6 +37,8 @@ export class MemoriesPersistence implements IMemoriesPersistence {
     lexicalSearch: true,
     vectorSearch: true,
     neighborIndex: true,
+    multiNamespaceSearch: true,
+    unscopedSearch: true,
   };
 
   constructor(private readonly db: Database) {}
@@ -155,7 +158,7 @@ export class MemoriesPersistence implements IMemoriesPersistence {
   }
 
   searchLexicalSourceMapIds(input: {
-    namespace: string;
+    scope: SearchNamespaceScope;
     text: string;
     limit: number;
     memoryIds?: string[];
@@ -164,7 +167,7 @@ export class MemoriesPersistence implements IMemoriesPersistence {
   }
 
   searchVectorSourceMapIds(input: {
-    namespace: string;
+    scope: SearchNamespaceScope;
     vector: number[];
     limit: number;
     memoryIds?: string[];

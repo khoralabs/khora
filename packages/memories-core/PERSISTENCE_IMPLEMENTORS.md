@@ -34,6 +34,9 @@ Implementations must use the same derivation if they need to match the reference
 ## Search arms and ranking
 
 - `searchLexicalSourceMapIds` and `searchVectorSourceMapIds` return **ordered lists of `source_map` ids** (best-first). There is **no separate score contract**: [`fuseRrf`](https://github.com/reciprocal-rank-fusion) uses **rank position** and configured arm weights only.
+- **Namespace scope:** Both methods take a discriminated **`scope: SearchNamespaceScope`** instead of a single `namespace` string:
+  - `{ kind: "union"; namespaces: readonly string[] }` — non-empty, deduped list; implement **one** retrieval pass with `namespace IN (...)` (or equivalent), or return only the first id if you intentionally support single-namespace only (core will use a per-namespace fallback when `multiNamespaceSearch` is `false`).
+  - `{ kind: "unscoped" }` — no namespace predicate on retrieval (entire DB). Only used when the app sets `searchEntireDatabase: true` on [`SearchParams`](src/api/search.ts); reject at the API layer by leaving `unscopedSearch` as `false`.
 - **Hydration:** `hydrateSourceMapHits` expands ids to full [`HydratedSourceMapHit`](src/models/neighbor-search-types.ts) rows aligned with [`db/rows`](src/db/rows.ts).
 
 ## Neighbors
@@ -47,16 +50,20 @@ Implementations must use the same derivation if they need to match the reference
 Optional property on the persistence object:
 
 ```ts
-capabilities?: MemoriesBackendCapabilities;
+capabilities?: Partial<MemoriesBackendCapabilities>;
 ```
 
-If omitted, the logic layer assumes **all features enabled** (backward compatible). Set flags to declare MVP backends:
+[`resolveMemoriesBackendCapabilities`](src/persistence/types.ts) merges with [`DEFAULT_MEMORIES_BACKEND_CAPABILITIES`](src/persistence/types.ts) (lexical, vector, neighbor, and multi-namespace search on; **unscoped** off). Set flags to declare MVP backends:
 
-| Flag            | When `false`, logic layer … |
-| --------------- | ------------------------------------------------------------------------------------------- |
-| `lexicalSearch` | Skips lexical arm; merge with text-only content may still run if you implement FTS no-ops. |
-| `vectorSearch`  | Skips vector arm; **rejects** merge content items with `vector`; vector-only search returns `[]`. |
-| `neighborIndex` | Skips neighbor listing and expansion in search.                                            |
+| Flag | When `false`, logic layer … |
+| ----------------------- | ------------------------------------------------------------------------------------------- |
+| `lexicalSearch`         | Skips lexical arm; merge with text-only content may still run if you implement FTS no-ops. |
+| `vectorSearch`          | Skips vector arm; **rejects** merge content items with `vector`; vector-only search returns `[]`. |
+| `neighborIndex`         | Skips neighbor listing and expansion in search.                                            |
+| `multiNamespaceSearch` | For hybrid search with **multiple** namespaces in `scope`, runs **separate** per-namespace retrieval calls and merges with RRF in core (no need to implement `IN` lists yourself). |
+| `unscopedSearch`        | **`searchEntireDatabase`** on `SearchParams` throws; `scope: { kind: "unscoped" }` is not used. |
+
+Thin adapters that only support one namespace per query should set **`multiNamespaceSearch: false`**; core still works via the fallback path.
 
 ## Search-meta (hybrid chunk)
 

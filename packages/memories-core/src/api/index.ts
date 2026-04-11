@@ -15,6 +15,7 @@ export type {
   MemoriesVisualization,
   MemoriesVisualizationRuntimeCtx,
   MemoryOpContext,
+  SearchNamespaceScope,
 } from "../persistence";
 export {
   buildCanonicalMemorySearchMetaTextAsync,
@@ -44,5 +45,5 @@ export type {
   SearchNeighborHit,
   SearchParams,
 } from "./search";
-export { search } from "./search";
+export { MAX_ADDITIONAL_NAMESPACES, normalizeSearchScopeFromParams, search } from "./search";
 export * from "./search-async";

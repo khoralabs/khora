@@ -32,26 +32,37 @@ export type EdgePreviewPayload = {
 
 /**
  * Features the backend exposes for hybrid search and graph expansion.
- * Omitted on a persistence instance means all flags are treated as `true` (see {@link resolveMemoriesBackendCapabilities}).
+ * Omitted keys default via {@link resolveMemoriesBackendCapabilities} (see {@link DEFAULT_MEMORIES_BACKEND_CAPABILITIES}).
  */
 export type MemoriesBackendCapabilities = {
   lexicalSearch: boolean;
   vectorSearch: boolean;
   neighborIndex: boolean;
+  /** When `true`, retrieval can filter `namespace IN (...)` in one call. When `false`, core merges per-namespace results (RRF). */
+  multiNamespaceSearch: boolean;
+  /** When `true`, retrieval can run without a namespace predicate (entire DB). Required for `searchEntireDatabase` on `SearchParams`. */
+  unscopedSearch: boolean;
 };
+
+/** Namespace filter for {@link MemoriesRetrieval} hybrid search; caller normalizes unions (non-empty, deduped). */
+export type SearchNamespaceScope =
+  | { kind: "union"; namespaces: readonly string[] }
+  | { kind: "unscoped" };
 
 /** Default when {@link MemoriesPersistence.capabilities} is omitted (full-featured backend). */
 export const DEFAULT_MEMORIES_BACKEND_CAPABILITIES: MemoriesBackendCapabilities = {
   lexicalSearch: true,
   vectorSearch: true,
   neighborIndex: true,
+  multiNamespaceSearch: true,
+  unscopedSearch: false,
 };
 
 /** Resolve effective capabilities for merge/search logic. */
 export function resolveMemoriesBackendCapabilities(persistence: {
-  capabilities?: MemoriesBackendCapabilities;
+  capabilities?: Partial<MemoriesBackendCapabilities>;
 }): MemoriesBackendCapabilities {
-  return persistence.capabilities ?? DEFAULT_MEMORIES_BACKEND_CAPABILITIES;
+  return { ...DEFAULT_MEMORIES_BACKEND_CAPABILITIES, ...persistence.capabilities };
 }
 
 /**
@@ -166,14 +177,14 @@ export interface MemoriesMutation {
  */
 export interface MemoriesRetrieval {
   searchLexicalSourceMapIds(input: {
-    namespace: string;
+    scope: SearchNamespaceScope;
     text: string;
     limit: number;
     memoryIds?: string[];
   }): string[];
 
   searchVectorSourceMapIds(input: {
-    namespace: string;
+    scope: SearchNamespaceScope;
     vector: number[];
     limit: number;
     memoryIds?: string[];

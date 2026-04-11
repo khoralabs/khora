@@ -1,5 +1,5 @@
 import type { SQLQueryBindings } from "bun:sqlite";
-import { ids } from "@cfd/memories-core";
+import { ids, type SearchNamespaceScope } from "@cfd/memories-core";
 import type { Edge, Memory, SourceMap } from "../schema";
 import { vectorVecTableName } from "../search-indexes";
 import type { DbCtx } from "./context";
@@ -110,9 +110,39 @@ export function buildFtsMatchFromUserText(text: string): string {
   return clauses.join(" AND ");
 }
 
+function memoryIdSubqueryFromScope(
+  scope: SearchNamespaceScope,
+  memoryIds: string[] | undefined,
+): { sql: string; bindings: SQLQueryBindings[] } {
+  if (scope.kind === "unscoped") {
+    if (memoryIds === undefined) {
+      return { sql: "memory_id IN (SELECT _id FROM memories)", bindings: [] };
+    }
+    return {
+      sql: `memory_id IN (SELECT _id FROM memories WHERE _id IN (${placeholders(memoryIds.length)}))`,
+      bindings: [...memoryIds],
+    };
+  }
+  const ns = scope.namespaces;
+  if (ns.length === 0) {
+    return { sql: "memory_id IN (SELECT _id FROM memories WHERE 1 = 0)", bindings: [] };
+  }
+  const inNs = `namespace IN (${placeholders(ns.length)})`;
+  if (memoryIds === undefined) {
+    return {
+      sql: `memory_id IN (SELECT _id FROM memories WHERE ${inNs})`,
+      bindings: [...ns],
+    };
+  }
+  return {
+    sql: `memory_id IN (SELECT _id FROM memories WHERE ${inNs} AND _id IN (${placeholders(memoryIds.length)}))`,
+    bindings: [...ns, ...memoryIds],
+  };
+}
+
 export function searchLexicalSourceMapIds(
   ctx: DbCtx,
-  input: { namespace: string; text: string; limit: number; memoryIds?: string[] },
+  input: { scope: SearchNamespaceScope; text: string; limit: number; memoryIds?: string[] },
 ): string[] {
   if (input.text.length === 0) return [];
   if (input.memoryIds !== undefined && input.memoryIds.length === 0) return [];
@@ -120,15 +150,12 @@ export function searchLexicalSourceMapIds(
   const matchExpr = buildFtsMatchFromUserText(input.text);
   if (matchExpr.length === 0) return [];
 
-  const memFilter =
-    input.memoryIds === undefined
-      ? "memory_id IN (SELECT _id FROM memories WHERE namespace = ?)"
-      : `memory_id IN (SELECT _id FROM memories WHERE namespace = ? AND _id IN (${placeholders(input.memoryIds.length)}))`;
+  const { sql: memFilter, bindings: memBindings } = memoryIdSubqueryFromScope(
+    input.scope,
+    input.memoryIds,
+  );
 
-  const params: SQLQueryBindings[] =
-    input.memoryIds === undefined
-      ? [matchExpr, input.namespace, input.limit]
-      : [matchExpr, input.namespace, ...input.memoryIds, input.limit];
+  const params: SQLQueryBindings[] = [matchExpr, ...memBindings, input.limit];
 
   const rows = ctx.db
     .query<{ sourceMapId: string }, SQLQueryBindings[]>(
@@ -145,9 +172,10 @@ export function searchLexicalSourceMapIds(
 
 export function searchVectorSourceMapIds(
   ctx: DbCtx,
-  input: { namespace: string; vector: number[]; limit: number; memoryIds?: string[] },
+  input: { scope: SearchNamespaceScope; vector: number[]; limit: number; memoryIds?: string[] },
 ): string[] {
   if (input.memoryIds !== undefined && input.memoryIds.length === 0) return [];
+  if (input.scope.kind === "union" && input.scope.namespaces.length === 0) return [];
 
   const tableName = vectorVecTableName(input.vector.length);
   const exists = ctx.db
@@ -166,10 +194,18 @@ export function searchVectorSourceMapIds(
       ? ""
       : `AND vf.memory_id IN (${placeholders(input.memoryIds.length)})`;
 
+  const nsClause =
+    input.scope.kind === "unscoped"
+      ? ""
+      : `AND m.namespace IN (${placeholders(input.scope.namespaces.length)})`;
+
+  const nsBindings: SQLQueryBindings[] =
+    input.scope.kind === "unscoped" ? [] : [...input.scope.namespaces];
+
   const params: SQLQueryBindings[] =
     input.memoryIds === undefined
-      ? [JSON.stringify(input.vector), knnK, input.namespace]
-      : [JSON.stringify(input.vector), knnK, input.namespace, ...input.memoryIds];
+      ? [JSON.stringify(input.vector), knnK, ...nsBindings]
+      : [JSON.stringify(input.vector), knnK, ...nsBindings, ...input.memoryIds];
 
   const rows = ctx.db
     .query<{ sourceMapId: string }, SQLQueryBindings[]>(
@@ -183,7 +219,8 @@ export function searchVectorSourceMapIds(
        FROM knn
        JOIN vector_features vf ON vf._id = knn.vector_feature_id
        JOIN memories m ON m._id = vf.memory_id
-       WHERE m.namespace = ?
+       WHERE 1 = 1
+       ${nsClause}
        ${memFilter}
        ORDER BY knn.distance ASC`,
     )

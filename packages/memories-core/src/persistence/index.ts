@@ -18,6 +18,7 @@ export type {
   MemoriesVisualization,
   MemoriesVisualizationRuntimeCtx,
   MemoryOpContext,
+  SearchNamespaceScope,
 } from "./types";
 export {
   DEFAULT_MEMORIES_BACKEND_CAPABILITIES,

@@ -48,7 +48,7 @@ describe("scoped search helpers", () => {
     if (!mem1?._id || !mem2?._id) throw new Error("expected memories");
 
     const onlyM1 = persistence.searchLexicalSourceMapIds({
-      namespace: "ns",
+      scope: { kind: "union", namespaces: ["ns"] },
       text: "hello",
       limit: 25,
       memoryIds: [mem1._id],
@@ -69,7 +69,7 @@ describe("scoped search helpers", () => {
     const db = openTestDb();
     const persistence = createMemoriesPersistence(db);
     const r = persistence.searchLexicalSourceMapIds({
-      namespace: "ns",
+      scope: { kind: "union", namespaces: ["ns"] },
       text: "x",
       limit: 10,
       memoryIds: [],
@@ -81,7 +81,7 @@ describe("scoped search helpers", () => {
     const db = openTestDb();
     const persistence = createMemoriesPersistence(db);
     const r = persistence.searchVectorSourceMapIds({
-      namespace: "ns",
+      scope: { kind: "union", namespaces: ["ns"] },
       vector: vec512(0),
       limit: 10,
       memoryIds: [],
