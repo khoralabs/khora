@@ -1,5 +1,5 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { Librarian } from "@cfd/librarian";
+import { Librarian } from "@cfd/memories-librarian";
 import { MemoriesClient } from "@cfd/memories-core";
 import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-core-persistence/sqlite";
 import { getMemoryIdByNamespaceKey, JsonlStore } from "@cfd/stores";

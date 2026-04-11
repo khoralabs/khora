@@ -62,7 +62,7 @@ If omitted, the logic layer assumes **all features enabled** (backward compatibl
 
 - Reserved `source_key`: [`MEMORY_SEARCH_META_SOURCE_KEY`](src/models/memory-search-meta.ts).
 - `syncMemorySearchMeta` rebuilds canonical text for the meta chunk; optional `metaVector` on the primary memory during merge.
-- Librarian batch: [`upsertMemorySearchMetaVector`](src/persistence/facade.ts) updates vectors for multiple keys in a transaction. The `@cfd/librarian` helper `mergeLogicalMemoryWithPlan` **skips** this batch entirely when `vectorSearch` is `false` (no embed RPC). If you need vectors stored without vector retrieval, extend the caller. Reference SQLite expects vector search for meta retrieval.
+- Librarian batch: [`upsertMemorySearchMetaVector`](src/persistence/facade.ts) updates vectors for multiple keys in a transaction. The `@cfd/memories-librarian` helper `mergeLogicalMemoryWithPlan` **skips** this batch entirely when `vectorSearch` is `false` (no embed RPC). If you need vectors stored without vector retrieval, extend the caller. Reference SQLite expects vector search for meta retrieval.
 
 ## Async persistence
 

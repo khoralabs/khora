@@ -50,7 +50,7 @@ function sessionDelta(sessionStartPerf: number): number {
 }
 
 /**
- * Session lifecycle logs (same logger as the rest of `@cfd/librarian`; `LOG_DESTINATION` duplicates to file).
+ * Session lifecycle logs (same logger as the rest of `@cfd/memories-librarian`; `LOG_DESTINATION` duplicates to file).
  */
 export function createMemoryLibrarianSessionAuditHooks<
   TNode extends Record<string, z.ZodType>,

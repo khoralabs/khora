@@ -2,7 +2,7 @@ import type { LanguageModelUsage } from "ai";
 
 export const LOGGER_NAME = "librarian" as const;
 
-/** Discriminated union of all structured log lines for `@cfd/librarian`. */
+/** Discriminated union of all structured log lines for `@cfd/memories-librarian`. */
 export type LibrarianLogPayloadMap = {
   // --- remember (pipeline) ---
   "librarian.remember.decompose": {

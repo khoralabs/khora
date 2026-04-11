@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/librarian",
+  "name": "@cfd/memories-librarian",
   "module": "src/index.ts",
   "type": "module",
   "private": true,

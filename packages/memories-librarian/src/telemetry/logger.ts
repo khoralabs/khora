@@ -45,7 +45,7 @@ export function resetLibrarianLoggerForTests(): void {
 }
 
 /**
- * Structured logs for `@cfd/librarian`. Set **`LOG_LEVEL`**, optional **`LOG_DESTINATION`**
+ * Structured logs for `@cfd/memories-librarian`. Set **`LOG_LEVEL`**, optional **`LOG_DESTINATION`**
  * (file path: duplicate JSON lines to stdout + NDJSON file, `sync: true` on file).
  * Use {@link librarianLog} from `./payloads.js` for typed payloads.
  */

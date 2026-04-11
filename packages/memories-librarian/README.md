@@ -1,4 +1,4 @@
-# @cfd/librarian
+# @cfd/memories-librarian
 
 Memory **librarian** agent: composable tools (`memory_search`), static identity, and session runtime wired the same way as [`@cfd/agent-identity`](../agent-identity/README.md)’s declarative model.
 
@@ -11,7 +11,7 @@ The package root exports a **minimal** surface:
 - **`listSourceMapsForMemory`** — SQLite helper for source-map listing.
 - **Types** — `LibrarianOptions`, `LibrarianEmbeddingConfig`, `LibrarianProcessLogicalMemoryParams`, `EmbeddingResolutionPreset`, `ProcessLogicalMemoryResult`, `LibrarianPipelineGeneration`.
 
-Provider packages (e.g. `@ai-sdk/google`) are **not** dependencies of `@cfd/librarian`; the application supplies the embedding `model`.
+Provider packages (e.g. `@ai-sdk/google`) are **not** dependencies of `@cfd/memories-librarian`; the application supplies the embedding `model`.
 
 Internals (agent, workflow helpers, adapters, telemetry) live under `src/` and are not re-exported from the package root.
 

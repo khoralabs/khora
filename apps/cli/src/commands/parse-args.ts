@@ -1,4 +1,4 @@
-import type { EmbeddingResolutionPreset } from "@cfd/librarian";
+import type { EmbeddingResolutionPreset } from "@cfd/memories-librarian";
 
 export type Parsed = {
   sub: "search" | "remember";

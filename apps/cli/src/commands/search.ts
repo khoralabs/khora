@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { Librarian, listSourceMapsForMemory } from "@cfd/librarian";
+import { Librarian, listSourceMapsForMemory } from "@cfd/memories-librarian";
 import {
   MemoriesClient,
   type ResolvedSource,

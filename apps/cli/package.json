@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.0",
-    "@cfd/librarian": "workspace:*",
+    "@cfd/memories-librarian": "workspace:*",
     "@cfd/memories-core": "workspace:*",
     "@cfd/memories-core-persistence": "workspace:*",
     "@cfd/memories-core-ontologies": "workspace:*",
