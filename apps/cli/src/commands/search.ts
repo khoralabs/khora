@@ -8,7 +8,7 @@ import {
   wrapSyncMemoriesPersistenceAsAsync,
 } from "@cfd/memories-core";
 import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-core-persistence/sqlite";
-import { JsonlStore } from "@cfd/stores";
+import { JsonlStore } from "@cfd/memories-stores";
 import { canonicalOntology } from "@cfd/memories-core-ontologies";
 import { elapsedMs, logger } from "../logger.js";
 import { ensureParentDirForDb, resolveGeminiApiKey } from "../shared.js";

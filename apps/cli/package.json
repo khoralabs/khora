@@ -13,7 +13,7 @@
     "@cfd/memories-core": "workspace:*",
     "@cfd/memories-core-persistence": "workspace:*",
     "@cfd/memories-core-ontologies": "workspace:*",
-    "@cfd/stores": "workspace:*",
+    "@cfd/memories-stores": "workspace:*",
     "@google/genai": "^1.48.0",
     "ai": "^6.0.153",
     "pino": "^10.3.1",

@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/stores",
+  "name": "@cfd/memories-stores",
   "module": "src/index.ts",
   "type": "module",
   "private": true,
