@@ -97,7 +97,7 @@
         "typescript": "^5",
       },
     },
-    "packages/memories": {
+    "packages/memories-core": {
       "name": "@cfd/memories-core",
       "dependencies": {
         "@cfd/reciprocal-rank-fusion": "workspace:*",
@@ -201,7 +201,7 @@
 
     "@cfd/librarian": ["@cfd/librarian@workspace:packages/librarian"],
 
-    "@cfd/memories-core": ["@cfd/memories-core@workspace:packages/memories"],
+    "@cfd/memories-core": ["@cfd/memories-core@workspace:packages/memories-core"],
 
     "@cfd/memories-core-ontologies": ["@cfd/memories-core-ontologies@workspace:packages/memories-ontologies"],
 
