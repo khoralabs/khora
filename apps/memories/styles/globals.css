@@ -125,3 +125,26 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  /**
+   * R3F WebGL + Tailwind/CSS animations share the compositor; without isolation, style
+   * recalc and blur/backdrop-filter on HUD can force extra repaints over the canvas.
+   */
+  .r3f-layer {
+    isolation: isolate;
+    transform: translateZ(0);
+    contain: layout style;
+  }
+
+  .r3f-layer > canvas {
+    display: block;
+    height: 100%;
+    width: 100%;
+  }
+
+  /** Fixed header / overlays: separate stacking context from the WebGL layer. */
+  .app-chrome {
+    isolation: isolate;
+  }
+}

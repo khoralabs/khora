@@ -1,4 +1,11 @@
-import { stableId } from "../_lib";
+import { createHash } from "node:crypto";
+
+function stableId(prefix: string, ...parts: string[]): string {
+  const h = createHash("sha256")
+    .update([prefix, ...parts].join("\0"))
+    .digest("hex");
+  return `${prefix}_${h.slice(0, 24)}`;
+}
 
 /** Deterministic primary keys for merge / upsert flows. */
 export const ids = {

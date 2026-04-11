@@ -1,7 +1,7 @@
 import { ids } from "@cfd/memories";
-import { schema } from "@cfd/memories/db/schema";
 import { documentValidator } from "../_lib";
 import { vectorToBlob } from "../connection";
+import { schema } from "../schema";
 import { ensureVectorFeaturesVecTable, vectorVecTableName } from "../search-indexes";
 import type { DbCtx } from "./context";
 

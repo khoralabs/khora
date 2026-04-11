@@ -1,8 +1,8 @@
 import { Database, type DatabaseOptions } from "bun:sqlite";
 import { existsSync } from "node:fs";
-import { schema } from "@cfd/memories/db/schema";
 import * as sqliteVec from "sqlite-vec";
 import { sqliteDdlFromSchema } from "./_lib";
+import { schema } from "./schema";
 import { initTextFeaturesFts } from "./search-indexes";
 
 export function loadSqliteVec(db: Database): void {

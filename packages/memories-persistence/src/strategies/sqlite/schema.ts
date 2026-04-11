@@ -1,5 +1,5 @@
 import z from "zod";
-import { defineSchema, zId } from "../_lib";
+import { defineSchema, zId } from "./_lib";
 
 /**
  * A memory is a collection of features with tightly shared semantics

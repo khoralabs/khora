@@ -9,10 +9,10 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
-    "./db/schema": {
-      "types": "./src/db/schema.ts",
-      "import": "./src/db/schema.ts",
-      "default": "./src/db/schema.ts"
+    "./db/rows": {
+      "types": "./src/db/rows.ts",
+      "import": "./src/db/rows.ts",
+      "default": "./src/db/rows.ts"
     },
     "./search-meta-constants": {
       "types": "./src/search-meta-constants.ts",

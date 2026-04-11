@@ -1,7 +1,15 @@
-import { Search } from "lucide-react";
+import { FolderSearchIcon, RefreshCcwIcon, ScanSearchIcon, Search } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
-import { type GraphPayload, type GraphSearchState, GraphView } from "./GraphView";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group";
+import { LoaderWithMessage } from "./components/loader-with-message.js";
+import type { GraphPayload, GraphSearchState } from "./graph/projection-types.js";
+import { GraphScene } from "./graph/scene.js";
+import { GraphProjectionProvider } from "./graph/use-projection.js";
 
 function defaultNamespace(): string {
   if (typeof window === "undefined") return "cli";
@@ -106,46 +114,51 @@ export function App() {
         : "…"
       : "";
 
+  const namespaceSummary = data ? `${data.nodes.length} nodes · ${data.edges.length} edges` : "";
+
+  const headerInputClasses = "w-full max-w-sm";
+
   return (
     <div className="fixed inset-0 overflow-hidden bg-background text-foreground">
       <div className="absolute inset-0">
         {data && data.nodes.length > 0 ? (
-          <GraphView
-            data={data}
-            namespace={namespace.trim() || data.namespace}
-            graphSearch={graphSearch}
-          />
+          <GraphProjectionProvider data={data} graphSearch={graphSearch}>
+            <GraphScene />
+          </GraphProjectionProvider>
         ) : (
           <div className="flex h-full items-center justify-center px-4 text-center text-muted-foreground">
-            {data && data.nodes.length === 0
-              ? "No memories in this namespace (or no keys in graph)."
-              : error
-                ? "Fix the error above and reload."
-                : "Loading…"}
+            {data && data.nodes.length === 0 ? (
+              "No memories in this namespace (or no keys in graph)."
+            ) : error ? (
+              "Fix the error above and reload."
+            ) : (
+              <LoaderWithMessage message="Loading…" />
+            )}
           </div>
         )}
       </div>
 
-      <header className="absolute left-0 right-0 top-0 z-10 flex flex-wrap items-center gap-2 border-b border-border/60 bg-background/85 px-3 py-2 shadow-sm backdrop-blur-md sm:gap-3 sm:px-4 sm:py-3">
-        <span className="text-sm font-medium">Memory graph</span>
-        <label className="flex items-center gap-2 text-sm">
-          <span className="text-muted-foreground">namespace</span>
-          <input
-            className="w-36 rounded-md border border-input bg-background/90 px-2 py-1 font-mono text-sm sm:w-48"
+      <header className="app-chrome absolute left-0 right-0 top-0 z-10 flex flex-col gap-4 p-4">
+        <InputGroup className={headerInputClasses}>
+          <InputGroupInput
+            placeholder="Namespace"
             value={namespace}
             onChange={(e) => setNamespace(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && void load()}
+            aria-label="Namespace"
           />
-        </label>
-        <button
-          type="button"
-          className="rounded-md bg-primary px-3 py-1 text-sm text-primary-foreground"
-          disabled={loading}
-          onClick={() => void load()}
-        >
-          {loading ? "Loading…" : "Reload"}
-        </button>
-        <InputGroup className="h-9 max-w-[min(20rem,calc(100vw-2rem))] min-w-[10rem] flex-1 sm:max-w-xs">
+          <InputGroupAddon>
+            <FolderSearchIcon className="text-muted-foreground" aria-hidden />
+          </InputGroupAddon>
+          <InputGroupAddon align="inline-end" className="text-xs font-normal tabular-nums">
+            {namespaceSummary || "\u00a0"}
+          </InputGroupAddon>
+          <InputGroupAddon align="inline-end">
+            <InputGroupButton variant="ghost" disabled={loading} onClick={() => void load()}>
+              <RefreshCcwIcon className="text-muted-foreground" aria-hidden />
+            </InputGroupButton>
+          </InputGroupAddon>
+        </InputGroup>
+        <InputGroup className={headerInputClasses}>
           <InputGroupInput
             placeholder="Search…"
             value={searchQuery}
@@ -153,17 +166,12 @@ export function App() {
             aria-label="Search memories"
           />
           <InputGroupAddon>
-            <Search className="text-muted-foreground" aria-hidden />
+            <ScanSearchIcon className="text-muted-foreground" aria-hidden />
           </InputGroupAddon>
           <InputGroupAddon align="inline-end" className="text-xs font-normal tabular-nums">
             {searchSummary || "\u00a0"}
           </InputGroupAddon>
         </InputGroup>
-        {data ? (
-          <span className="text-xs text-muted-foreground">
-            {data.nodes.length} nodes · {data.edges.length} edges
-          </span>
-        ) : null}
         {error ? <span className="text-sm text-destructive">{error}</span> : null}
       </header>
     </div>

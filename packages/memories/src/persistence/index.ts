@@ -8,7 +8,7 @@ export type {
   GraphMemoryEmbedding,
   MemoriesPersistence,
   MemoriesRuntimeCtx,
-  MemoriesVisualizationPersistence,
+  MemoriesVisualization,
   MemoriesVisualizationRuntimeCtx,
   MemoryOpContext,
 } from "./types";

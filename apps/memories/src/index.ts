@@ -12,8 +12,8 @@ import {
   search,
 } from "@cfd/memories";
 import {
-  createSqliteMemoriesPersistence,
-  createSqliteMemoriesVisualizationPersistence,
+  createMemoriesPersistence,
+  createMemoriesVisualization,
   openMemoriesDatabaseReadonly,
 } from "@cfd/memories-persistence/sqlite";
 import { serve } from "bun";
@@ -22,7 +22,76 @@ import index from "./index.html";
 const MEMORIES_DB_PATH = process.env.MEMORIES_DB_PATH?.trim();
 
 let didWarnLexicalOnlySearch = false;
-let didWarnEmbedFallback = false;
+let didWarnMultiVectorDim = false;
+let didLogInferredSearchPreset = false;
+
+const VEC_TABLE_DIM_RE = /^vector_features_vec_d_(\d+)$/;
+
+function listVectorVecDimensions(db: ReturnType<typeof openMemoriesDatabaseReadonly>): number[] {
+  const rows = db
+    .query<{ name: string }, []>(
+      `SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'vector_features_vec_d_%'`,
+    )
+    .all();
+  const dims = new Set<number>();
+  for (const { name } of rows) {
+    const m = VEC_TABLE_DIM_RE.exec(name);
+    if (m?.[1]) dims.add(Number(m[1]));
+  }
+  return [...dims].sort((a, b) => a - b);
+}
+
+function dimToEmbeddingPreset(dim: number): EmbeddingResolutionPreset | null {
+  if (dim === 768) return "L";
+  if (dim === 1536) return "M";
+  if (dim === 3072) return "H";
+  return null;
+}
+
+function parseExplicitEmbeddingPreset(v: string | undefined): EmbeddingResolutionPreset | null {
+  if (v === undefined || v === null) return null;
+  const u = String(v).trim().toUpperCase();
+  if (u === "L" || u === "M" || u === "H") return u;
+  return null;
+}
+
+/**
+ * Body `resolution` / `MEMORIES_SEARCH_EMBEDDING_PRESET` win; otherwise if the DB has exactly one
+ * vec0 table with a known Gemini dimension (768/1536/3072), use matching L/M/H so the query vector
+ * matches indexed rows (otherwise the vector arm is empty).
+ */
+function resolveSearchEmbeddingPreset(
+  db: ReturnType<typeof openMemoriesDatabaseReadonly>,
+  bodyResolution: string | undefined,
+): EmbeddingResolutionPreset {
+  const fromBody = parseExplicitEmbeddingPreset(bodyResolution);
+  if (fromBody) return fromBody;
+
+  const fromEnv = parseExplicitEmbeddingPreset(process.env.MEMORIES_SEARCH_EMBEDDING_PRESET?.trim());
+  if (fromEnv) return fromEnv;
+
+  const dims = listVectorVecDimensions(db);
+  if (dims.length === 1) {
+    const dim = dims[0];
+    const preset = dim !== undefined ? dimToEmbeddingPreset(dim) : null;
+    if (preset) {
+      if (!didLogInferredSearchPreset) {
+        didLogInferredSearchPreset = true;
+        console.info(
+          `[memories] Search embeddings: preset ${preset} (${dim}d) inferred from the only vector index in the DB.`,
+        );
+      }
+      return preset;
+    }
+  }
+  if (dims.length > 1 && !didWarnMultiVectorDim) {
+    didWarnMultiVectorDim = true;
+    console.warn(
+      `[memories] Multiple vector index dimensions in DB (${dims.join(", ")}d). Using preset M (1536d) unless you pass resolution in the search JSON body or set MEMORIES_SEARCH_EMBEDDING_PRESET=L|M|H.`,
+    );
+  }
+  return "M";
+}
 
 /** Same env names as CLI / librarian for Gemini embeddings. */
 function resolveGeminiApiKey(): string | undefined {
@@ -32,12 +101,6 @@ function resolveGeminiApiKey(): string | undefined {
     process.env.GEMINI_API_KEY?.trim() ||
     undefined
   );
-}
-
-function parseResolution(v: string | undefined): EmbeddingResolutionPreset {
-  const u = (v ?? "M").toString().toUpperCase();
-  if (u === "L" || u === "H") return u;
-  return "M";
 }
 
 function jsonResponse(data: unknown, status = 200): Response {
@@ -58,7 +121,10 @@ const server = serve({
         query?: string;
         topK?: number;
         maxNeighbors?: number;
-        /** Embedding preset L|M|H (768 / 1536 / 3072); default M. Ignored without a Gemini API key. */
+        /**
+         * Embedding preset L|M|H (768 / 1536 / 3072). If omitted, the server infers L/M/H from the DB
+         * when there is a single vector index dimension; otherwise defaults to M.
+         */
         resolution?: string;
       };
       try {
@@ -94,7 +160,7 @@ const server = serve({
         let arms: { lexical: number; vector: number };
 
         if (apiKey) {
-          const resolution = parseResolution(body.resolution);
+          const resolution = resolveSearchEmbeddingPreset(db, body.resolution);
           const embeddingModel = createEmbeddingModel({
             apiKey,
             embedConfig: embedConfigForResolutionPreset(resolution),
@@ -108,16 +174,16 @@ const server = serve({
             } else {
               content = { text: query };
               arms = { lexical: 1, vector: 0 };
+              console.warn(
+                "[memories] embedContent returned no usable vector for the query; search is lexical-only.",
+              );
             }
           } catch (err) {
             content = { text: query };
             arms = { lexical: 1, vector: 0 };
-            if (!didWarnEmbedFallback) {
-              didWarnEmbedFallback = true;
-              console.warn(
-                `[memories] Query embedding failed; falling back to lexical-only: ${String(err)}`,
-              );
-            }
+            console.warn(
+              `[memories] Query embedding failed; falling back to lexical-only: ${String(err)}`,
+            );
           }
         } else {
           content = { text: query };
@@ -130,7 +196,7 @@ const server = serve({
           }
         }
 
-        const persistence = createSqliteMemoriesPersistence(db);
+        const persistence = createMemoriesPersistence(db);
         const hits = search(
           { persistence },
           {
@@ -187,7 +253,7 @@ const server = serve({
         return jsonResponse({ error: `open database: ${String(err)}` }, 500);
       }
       try {
-        const visualization = createSqliteMemoriesVisualizationPersistence(db);
+        const visualization = createMemoriesVisualization(db);
         const preview = loadMemoryTextPreview({ persistence: visualization }, namespace, key);
         return jsonResponse({ key, preview });
       } catch (err) {
@@ -219,7 +285,7 @@ const server = serve({
         return jsonResponse({ error: `open database: ${String(err)}` }, 500);
       }
       try {
-        const visualization = createSqliteMemoriesVisualizationPersistence(db);
+        const visualization = createMemoriesVisualization(db);
         const detail = loadEdgePreview({ persistence: visualization }, namespace, edgeId);
         if (!detail) {
           return jsonResponse({ error: "edge not found in namespace" }, 404);
@@ -253,7 +319,7 @@ const server = serve({
         return jsonResponse({ error: `open database: ${String(err)}` }, 500);
       }
       try {
-        const visualization = createSqliteMemoriesVisualizationPersistence(db);
+        const visualization = createMemoriesVisualization(db);
         const layout = buildNamespaceGraphLayout({ persistence: visualization }, namespace);
         return jsonResponse(layout);
       } catch (err) {

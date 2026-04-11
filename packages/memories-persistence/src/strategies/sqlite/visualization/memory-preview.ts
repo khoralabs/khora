@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 
-export function loadMemoryTextPreviewSqlite(
+export function loadMemoryTextPreview(
   db: Database,
   namespace: string,
   key: string,

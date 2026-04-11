@@ -1,6 +1,6 @@
 import { ids } from "@cfd/memories";
-import { schema } from "@cfd/memories/db/schema";
 import { documentValidator } from "../_lib";
+import { schema } from "../schema";
 import type { DbCtx } from "./context";
 
 export function findMemoryIdByKey(ctx: DbCtx, namespace: string, key: string): string | undefined {

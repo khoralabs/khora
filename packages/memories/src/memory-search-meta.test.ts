@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
-  createSqliteMemoriesPersistence,
-  createSqliteMemoriesVisualizationPersistence,
+  createMemoriesPersistence,
+  createMemoriesVisualization,
   openMemoriesDatabase,
 } from "@cfd/memories-persistence/sqlite";
 import {
@@ -40,7 +40,7 @@ describe("memory search meta", () => {
 
   test("buildCanonicalMemorySearchMetaTextForMerge matches DB after merge", () => {
     const db = openTestDb();
-    const persistence = createSqliteMemoriesPersistence(db);
+    const persistence = createMemoriesPersistence(db);
     const now = Date.now();
     const op = { now };
     mergeMemory(
@@ -85,7 +85,7 @@ describe("memory search meta", () => {
 
   test("lexical search hits meta source_map for node label", () => {
     const db = openTestDb();
-    const persistence = createSqliteMemoriesPersistence(db);
+    const persistence = createMemoriesPersistence(db);
     mergeMemory(
       { persistence },
       {
@@ -110,7 +110,7 @@ describe("memory search meta", () => {
 
   test("neighbor meta updates when focal memory adds edge", () => {
     const db = openTestDb();
-    const persistence = createSqliteMemoriesPersistence(db);
+    const persistence = createMemoriesPersistence(db);
     mergeMemory(
       { persistence },
       {
@@ -139,7 +139,7 @@ describe("memory search meta", () => {
 
   test("neighbor meta clears when focal removes edge", () => {
     const db = openTestDb();
-    const persistence = createSqliteMemoriesPersistence(db);
+    const persistence = createMemoriesPersistence(db);
     mergeMemory(
       { persistence },
       {
@@ -181,8 +181,8 @@ describe("memory search meta", () => {
 
   test("loadMeanEmbeddingsForNamespace excludes system __ source_maps", () => {
     const db = openTestDb();
-    const persistence = createSqliteMemoriesPersistence(db);
-    const visualization = createSqliteMemoriesVisualizationPersistence(db);
+    const persistence = createMemoriesPersistence(db);
+    const visualization = createMemoriesVisualization(db);
     const v = vec512();
     mergeMemory(
       { persistence },

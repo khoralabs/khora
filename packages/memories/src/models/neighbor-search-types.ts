@@ -1,4 +1,4 @@
-import type { Edge, Memory, SourceMap } from "../db/schema";
+import type { Edge, Memory, SourceMap } from "../db/rows";
 
 /** Same semantics as root hit `labels` filter: `all` = AND, `some` = OR (non-empty). Omitted = any. */
 export type NeighborNodesFilter<NODE_LABEL extends string = string> = {

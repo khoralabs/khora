@@ -3,7 +3,7 @@ import type { GraphEdgeLink, GraphMemoryEmbedding } from "@cfd/memories";
 import { ids } from "@cfd/memories";
 import { blobToVector } from "../connection";
 
-export function loadGraphEdgesForNamespaceSqlite(db: Database, namespace: string): GraphEdgeLink[] {
+export function loadGraphEdgesForNamespace(db: Database, namespace: string): GraphEdgeLink[] {
   const rows = db
     .query<
       { edgeId: string; fromKey: string; toKey: string; labelsJoined: string | null },
@@ -44,10 +44,7 @@ export function loadGraphEdgesForNamespaceSqlite(db: Database, namespace: string
   return out;
 }
 
-export function loadNodeLabelsForNamespaceSqlite(
-  db: Database,
-  namespace: string,
-): Map<string, string[]> {
+export function loadNodeLabelsForNamespace(db: Database, namespace: string): Map<string, string[]> {
   const keys = db
     .query<{ key: string }, [string]>(`SELECT key FROM memories WHERE namespace = ?`)
     .all(namespace);
@@ -79,7 +76,7 @@ export function loadNodeLabelsForNamespaceSqlite(
   return map;
 }
 
-export function loadMeanEmbeddingsForNamespaceSqlite(
+export function loadMeanEmbeddingsForNamespace(
   db: Database,
   namespace: string,
 ): GraphMemoryEmbedding[] {

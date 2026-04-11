@@ -1,8 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-  createSqliteMemoriesPersistence,
-  openMemoriesDatabase,
-} from "@cfd/memories-persistence/sqlite";
+import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-persistence/sqlite";
 import { mergeMemory } from "./api/merge-memory";
 import { search } from "./api/search";
 
@@ -16,7 +13,7 @@ const vec512 = (i: number, v = 1): number[] =>
 describe("scoped search helpers", () => {
   test("searchLexicalSourceMapIds respects memoryIds allowlist", () => {
     const db = openTestDb();
-    const persistence = createSqliteMemoriesPersistence(db);
+    const persistence = createMemoriesPersistence(db);
     mergeMemory(
       { persistence },
       {
@@ -70,7 +67,7 @@ describe("scoped search helpers", () => {
 
   test("searchLexicalSourceMapIds with empty memoryIds returns []", () => {
     const db = openTestDb();
-    const persistence = createSqliteMemoriesPersistence(db);
+    const persistence = createMemoriesPersistence(db);
     const r = persistence.searchLexicalSourceMapIds({
       namespace: "ns",
       text: "x",
@@ -82,7 +79,7 @@ describe("scoped search helpers", () => {
 
   test("searchVectorSourceMapIds with empty memoryIds returns []", () => {
     const db = openTestDb();
-    const persistence = createSqliteMemoriesPersistence(db);
+    const persistence = createMemoriesPersistence(db);
     const r = persistence.searchVectorSourceMapIds({
       namespace: "ns",
       vector: vec512(0),
@@ -96,7 +93,7 @@ describe("scoped search helpers", () => {
 describe("neighbor sub-search", () => {
   test("omits graph neighbor when sub-search does not match query (strict)", () => {
     const db = openTestDb();
-    const persistence = createSqliteMemoriesPersistence(db);
+    const persistence = createMemoriesPersistence(db);
     mergeMemory(
       { persistence },
       {
@@ -137,7 +134,7 @@ describe("neighbor sub-search", () => {
 
   test("includes graph neighbor when sub-search matches same query", () => {
     const db = openTestDb();
-    const persistence = createSqliteMemoriesPersistence(db);
+    const persistence = createMemoriesPersistence(db);
     mergeMemory(
       { persistence },
       {
@@ -177,7 +174,7 @@ describe("neighbor sub-search", () => {
 
   test("maxNeighbors caps after ranking; neighborScore and matchedSourceMapId set", () => {
     const db = openTestDb();
-    const persistence = createSqliteMemoriesPersistence(db);
+    const persistence = createMemoriesPersistence(db);
     mergeMemory(
       { persistence },
       {

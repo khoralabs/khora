@@ -1,6 +1,6 @@
 import type { SQLQueryBindings } from "bun:sqlite";
 import { ids } from "@cfd/memories";
-import type { Edge, Memory, SourceMap } from "@cfd/memories/db/schema";
+import type { Edge, Memory, SourceMap } from "../schema";
 import { vectorVecTableName } from "../search-indexes";
 import type { DbCtx } from "./context";
 
@@ -101,6 +101,10 @@ export function buildFtsMatchFromUserText(text: string): string {
   const tokens = trimmed.split(/\s+/).filter(Boolean);
   const clauses = tokens.map((raw) => {
     const tok = raw.replace(/"/g, '""');
+    /** Phrase OR prefix so e.g. `Archer` can match Porter-stemmed `archery` in the index. */
+    if (tok.length >= 3 && /^[\p{L}\p{N}]+$/u.test(raw)) {
+      return `("${tok}" OR ${tok}*)`;
+    }
     return `"${tok}"`;
   });
   return clauses.join(" AND ");

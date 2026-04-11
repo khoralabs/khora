@@ -6,7 +6,7 @@ export type {
 export type {
   MemoriesPersistence,
   MemoriesRuntimeCtx,
-  MemoriesVisualizationPersistence,
+  MemoriesVisualization,
   MemoriesVisualizationRuntimeCtx,
   MemoryOpContext,
 } from "../persistence";

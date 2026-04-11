@@ -1,5 +1,5 @@
 import { fuseRrf, type RrfArm } from "@cfd/reciprocal-rank-fusion";
-import type { Edge, Memory, SourceMap } from "../db/schema";
+import type { Edge, Memory, SourceMap } from "../db/rows";
 import { logger } from "../logger.js";
 import type { HydratedNeighbor, NeighborFilter } from "../models/neighbor-search-types";
 import type { MemoriesPersistence } from "../persistence/types";
@@ -111,6 +111,18 @@ function rankSourceMapIdsForContent(
     });
     if (ranked.length > 0) {
       arms.push({ armId: "vector", ranked, weight: input.vectorWeight });
+    } else {
+      const msg =
+        "Vector arm returned no candidates (wrong query embedding size vs vector_features_vec_d_* table, missing vec index, or no vectors in this namespace).";
+      logger.warn({
+        phase: "memories.search.vector",
+        msg,
+        namespace: input.namespace,
+        vectorDim: input.content.vector.length,
+      });
+      console.warn(
+        `[memories] ${msg} namespace=${input.namespace} vectorDim=${input.content.vector.length}`,
+      );
     }
   }
   if (arms.length === 0) return [];

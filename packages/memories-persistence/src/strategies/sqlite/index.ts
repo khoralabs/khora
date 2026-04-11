@@ -8,10 +8,10 @@ export {
   openMemoriesDatabaseReadonly,
 } from "./connection";
 export {
-  createSqliteMemoriesPersistence,
-  SqliteMemoriesPersistence,
-} from "./sqlite-persistence";
+  createMemoriesPersistence,
+  MemoriesPersistence,
+} from "./persistence";
 export {
-  createSqliteMemoriesVisualizationPersistence,
-  SqliteMemoriesVisualizationPersistence,
-} from "./visualization/sqlite-visualization-persistence";
+  createMemoriesVisualization,
+  MemoriesVisualization,
+} from "./visualization";

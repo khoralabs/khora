@@ -32,7 +32,7 @@ export type EdgePreviewPayload = {
 
 /**
  * Core storage for memories: merge/search/delete, content chunks, graph-backed retrieval for search,
- * and search-meta. Does not include layout or UI preview reads—see {@link MemoriesVisualizationPersistence}.
+ * and search-meta. Does not include layout or UI preview reads—see {@link MemoriesVisualization}.
  */
 export interface MemoriesPersistence {
   withTransaction<T>(fn: () => T): T;
@@ -138,7 +138,7 @@ export interface MemoriesPersistence {
  * Read model for visualization / graph UI: edge lists, layout inputs, and text previews.
  * Distinct from {@link MemoriesPersistence}; a store may expose both via separate adapters.
  */
-export interface MemoriesVisualizationPersistence {
+export interface MemoriesVisualization {
   loadGraphEdgesForNamespace(namespace: string): GraphEdgeLink[];
 
   loadNodeLabelsForNamespace(namespace: string): Map<string, string[]>;
@@ -155,5 +155,5 @@ export type MemoriesRuntimeCtx = { persistence: MemoriesPersistence };
 
 /** Persistence that supports graph layout and preview routes. */
 export type MemoriesVisualizationRuntimeCtx = {
-  persistence: MemoriesVisualizationPersistence;
+  persistence: MemoriesVisualization;
 };

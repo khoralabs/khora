@@ -1,5 +1,9 @@
 import type { Database } from "bun:sqlite";
-import type { MemoriesPersistence, MemoryOpContext, NeighborFilter } from "@cfd/memories";
+import type {
+  MemoriesPersistence as IMemoriesPersistence,
+  MemoryOpContext,
+  NeighborFilter,
+} from "@cfd/memories";
 import type { DbCtx } from "./models/context";
 import { insertEdgeLabelAssignment } from "./models/edge-label-assignments";
 import { ensureEdgeLabel } from "./models/edge-labels";
@@ -26,7 +30,7 @@ import { insertSourceMap } from "./models/source-maps";
 import { insertTextFeatureWithFts } from "./models/text-features";
 import { insertVectorFeatureWithVecIndex } from "./models/vector-features";
 
-export class SqliteMemoriesPersistence implements MemoriesPersistence {
+export class MemoriesPersistence implements IMemoriesPersistence {
   constructor(private readonly db: Database) {}
 
   private ctx(op: MemoryOpContext): DbCtx {
@@ -177,6 +181,6 @@ export class SqliteMemoriesPersistence implements MemoriesPersistence {
   }
 }
 
-export function createSqliteMemoriesPersistence(db: Database): MemoriesPersistence {
-  return new SqliteMemoriesPersistence(db);
+export function createMemoriesPersistence(db: Database): MemoriesPersistence {
+  return new MemoriesPersistence(db);
 }

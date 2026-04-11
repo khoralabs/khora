@@ -11,10 +11,7 @@ import {
   processLogicalMemoryWithLibrarian,
 } from "@cfd/librarian";
 import { defineOntology, MemoriesClient, type ResolvedSource } from "@cfd/memories";
-import {
-  createSqliteMemoriesPersistence,
-  openMemoriesDatabase,
-} from "@cfd/memories-persistence/sqlite";
+import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-persistence/sqlite";
 import { getMemoryIdByNamespaceKey, JsonlStore } from "@cfd/stores";
 import z from "zod";
 import { elapsedMs, logger } from "./logger.js";
@@ -161,7 +158,7 @@ async function cmdSearch(args: Parsed) {
   const tPipeline = performance.now();
   ensureParentDirForDb(args.db);
   const db = openMemoriesDatabase(args.db);
-  const client = new MemoriesClient(createSqliteMemoriesPersistence(db), cliOntology);
+  const client = new MemoriesClient(createMemoriesPersistence(db), cliOntology);
   const store = new JsonlStore(args.store);
   const embeddingModel = createEmbeddingModel({
     apiKey: resolveGeminiApiKey(),
@@ -242,7 +239,7 @@ async function cmdSearch(args: Parsed) {
 async function cmdRemember(args: Parsed) {
   ensureParentDirForDb(args.db);
   const db = openMemoriesDatabase(args.db);
-  const client = new MemoriesClient(createSqliteMemoriesPersistence(db), cliOntology);
+  const client = new MemoriesClient(createMemoriesPersistence(db), cliOntology);
   const store = new JsonlStore(args.store);
   const key = `remember-${Date.now()}`;
   const apiKey = resolveGeminiApiKey();
