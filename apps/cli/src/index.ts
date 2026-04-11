@@ -79,10 +79,10 @@ function parseArgs(argv: string[]): Parsed {
     throw new Error(`Usage: bun run src/index.ts search|remember [options] <query|text...>
 
 Options:
-  --db <path>        SQLite DB (default: $CFD_MEMORIES_DB or ./.cfd/memories.sqlite)
-  --store <path>     JSONL store for resolve-sourcemap (default: $CFD_MEMORIES_STORE or ./.cfd/store.jsonl)
-  --namespace <ns>   Memories namespace (default: cli)
-  --resolution L|M|H Embedding output dimensionality (768 / 1536 / 3072); default M
+  --db <path>   SQLite DB (default: $CFD_MEMORIES_DB or ./.cfd/memories.sqlite)
+  -st <path>     JSONL store for resolve-sourcemap (default: $CFD_MEMORIES_STORE or ./.cfd/store.jsonl)
+  -ns <ns>       Memories namespace (default: cli)
+  -dim L|M|H      Embedding output dimensionality (768 / 1536 / 3072); default M
 
 Env:
   GOOGLE_API_KEY | GOOGLE_GENERATIVE_AI_API_KEY | GEMINI_API_KEY
@@ -101,22 +101,22 @@ Env:
     const flag = rest.shift();
     if (flag === "--db") {
       db = rest.shift() ?? "";
-    } else if (flag === "--store") {
+    } else if (flag === "-s") {
       store = rest.shift() ?? "";
-    } else if (flag === "--namespace") {
+    } else if (flag === "-ns") {
       namespace = rest.shift() ?? "";
-    } else if (flag === "--resolution") {
+    } else if (flag === "-dim") {
       const v = (rest.shift() ?? "").toUpperCase();
       if (v !== "L" && v !== "M" && v !== "H") {
-        throw new Error("--resolution must be L, M, or H");
+        throw new Error("-dim must be L, M, or H");
       }
       resolution = v as EmbeddingResolutionPreset;
     } else {
       throw new Error(`Unknown flag: ${String(flag)}`);
     }
     if (flag === "--db" && !db) throw new Error("Missing value after --db");
-    if (flag === "--store" && !store) throw new Error("Missing value after --store");
-    if (flag === "--namespace" && !namespace) throw new Error("Missing value after --namespace");
+    if (flag === "-s" && !store) throw new Error("Missing value after -s");
+    if (flag === "-ns" && !namespace) throw new Error("Missing value after -ns");
   }
   if (sub === "search") {
     const query = rest.join(" ").trim();

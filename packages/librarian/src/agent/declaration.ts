@@ -3,6 +3,7 @@ import type {
   RegisterAgentOptions,
   RegisteredAgentIdentity,
 } from "@cfd/agent-identity";
+import type { OntologyDefinition } from "@cfd/memories";
 import type z from "zod";
 import { defineMemoryLibrarianIdentity } from "./identity.js";
 import { memoryLibrarianRegistryRegistration } from "./memory-librarian-session.js";
@@ -29,8 +30,11 @@ export type MemoryLibrarianAgentDeclaration = {
 export async function declareMemoryLibrarianAgent<
   TNode extends Record<string, z.ZodType>,
   TEdge extends Record<string, z.ZodType>,
->(namespace: string): Promise<MemoryLibrarianAgentDeclaration> {
-  const { staticHash, identity } = await defineMemoryLibrarianIdentity(namespace);
+>(
+  namespace: string,
+  ontology: OntologyDefinition<TNode, TEdge>,
+): Promise<MemoryLibrarianAgentDeclaration> {
+  const { staticHash, identity } = await defineMemoryLibrarianIdentity(namespace, ontology);
   return {
     staticHash,
     identity,
@@ -45,8 +49,12 @@ export async function declareMemoryLibrarianAgent<
 export async function registerMemoryLibrarianAgent<
   TNode extends Record<string, z.ZodType>,
   TEdge extends Record<string, z.ZodType>,
->(registry: AgentRegistry, namespace: string): Promise<MemoryLibrarianAgentDeclaration> {
-  const declaration = await declareMemoryLibrarianAgent<TNode, TEdge>(namespace);
+>(
+  registry: AgentRegistry,
+  namespace: string,
+  ontology: OntologyDefinition<TNode, TEdge>,
+): Promise<MemoryLibrarianAgentDeclaration> {
+  const declaration = await declareMemoryLibrarianAgent<TNode, TEdge>(namespace, ontology);
   registry.register(declaration.identity, declaration.registration);
   return declaration;
 }

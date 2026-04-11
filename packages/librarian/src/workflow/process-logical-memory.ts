@@ -142,6 +142,7 @@ export async function processLogicalMemoryWithLibrarian<
   const { identity } = await registerMemoryLibrarianAgent<TNode, TEdge>(
     registry,
     logicalMemory.namespace,
+    client.ontology,
   );
   logger.info({
     phase: "remember.registerAgent",

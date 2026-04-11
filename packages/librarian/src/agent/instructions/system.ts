@@ -1,7 +1,7 @@
 import { LIBRARIAN_STATIC_SYSTEM_INSTRUCTIONS } from "./static";
 
 /**
- * Full base system message: {@link LIBRARIAN_STATIC_SYSTEM_INSTRUCTIONS} plus the ontology section.
+ * Base system message after the merge-plan block: {@link LIBRARIAN_STATIC_SYSTEM_INSTRUCTIONS} plus local time.
  */
 export function buildLibrarianBaseSystemContent(): string {
   const now = new Date().toLocaleString();

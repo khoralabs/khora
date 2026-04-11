@@ -1,6 +1,7 @@
+import { hashPlainObject } from "../hashing/hash.js";
 import type { ToolSpec } from "../tool/types.js";
 import type { Composable } from "../toolkit/types.js";
-import type { AgentStaticProps, RegisteredAgentIdentity } from "./types.js";
+import type { AgentStaticProps, RegisteredAgentIdentity } from "./types";
 
 export type CreateRegisteredAgentIdentityArgs<Env> = {
   agentId: string;
@@ -17,7 +18,12 @@ export type CreateRegisteredAgentIdentityArgs<Env> = {
 export async function createRegisteredAgentIdentity<Env>(
   args: CreateRegisteredAgentIdentityArgs<Env>,
 ): Promise<{ staticHash: string; identity: RegisteredAgentIdentity }> {
-  const staticHash = await args.rootComposable.computeStaticHash();
+  const rootComposableHash = await args.rootComposable.computeStaticHash();
+  const agentInstructionLines = [...args.instructions].map((s) => s.trim()).filter(Boolean);
+  const staticHash = await hashPlainObject({
+    rootComposableHash,
+    agentInstructions: agentInstructionLines,
+  });
   const staticProps: AgentStaticProps = {
     kind: "registered-agent",
     agentId: args.agentId,
