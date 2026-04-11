@@ -1,3 +1,12 @@
+import type { Database } from "bun:sqlite";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { Librarian, type EmbeddingResolutionPreset } from "@cfd/memories-librarian";
+import { MemoriesClient } from "@cfd/memories-core";
+import { canonicalOntology } from "@cfd/memories-core-ontologies";
+import {
+  createMemoriesPersistence,
+  openMemoriesDatabase,
+} from "@cfd/memories-core-persistence/sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 
@@ -22,4 +31,69 @@ export function ensureParentDirForDb(filePath: string): void {
   if (dir && dir !== ".") {
     mkdirSync(dir, { recursive: true });
   }
+}
+
+export type MemoriesCliBundle = {
+  db: Database;
+  persistence: ReturnType<typeof createMemoriesPersistence>;
+  client: MemoriesClient<
+    (typeof canonicalOntology)["nodeLabels"],
+    (typeof canonicalOntology)["edgeLabels"]
+  >;
+};
+
+const bundleByDbPath = new Map<string, MemoriesCliBundle>();
+
+/** Singleton per `dbPath`: one open DB, persistence, and {@link MemoriesClient}. */
+export function getMemoriesBundle(dbPath: string): MemoriesCliBundle {
+  let bundle = bundleByDbPath.get(dbPath);
+  if (!bundle) {
+    ensureParentDirForDb(dbPath);
+    const db = openMemoriesDatabase(dbPath);
+    const persistence = createMemoriesPersistence(db);
+    const client = new MemoriesClient(persistence, canonicalOntology);
+    bundle = { db, persistence, client };
+    bundleByDbPath.set(dbPath, bundle);
+  }
+  return bundle;
+}
+
+type CliLibrarian = Librarian<
+  (typeof canonicalOntology)["nodeLabels"],
+  (typeof canonicalOntology)["edgeLabels"]
+>;
+
+const librarianByDbAndResolution = new Map<string, CliLibrarian>();
+
+function librarianCacheKey(dbPath: string, resolution: EmbeddingResolutionPreset): string {
+  return `${dbPath}\0${resolution}`;
+}
+
+/**
+ * Singleton per `(dbPath, resolution)`: same {@link getMemoriesBundle} client, embedding dims match CLI `-dim`.
+ */
+export function getLibrarian(
+  dbPath: string,
+  resolution: EmbeddingResolutionPreset,
+): CliLibrarian {
+  const key = librarianCacheKey(dbPath, resolution);
+  let lib = librarianByDbAndResolution.get(key);
+  if (!lib) {
+    const { client } = getMemoriesBundle(dbPath);
+    const apiKey = resolveGeminiApiKey();
+    const google = createGoogleGenerativeAI({ apiKey });
+    lib = new Librarian({
+      client,
+      embedding: {
+        model: google.embeddingModel("gemini-embedding-2-preview"),
+        resolution,
+      },
+      multimodal: false,
+      agent: {
+        model: google.languageModel("gemini-flash-lite-latest"),
+      },
+    });
+    librarianByDbAndResolution.set(key, lib);
+  }
+  return lib;
 }

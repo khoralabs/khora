@@ -23,6 +23,10 @@ export interface LibrarianEmbeddingConfig {
   providerOptions?: ProviderOptions;
 }
 
+export interface LibrarianAgentConfig {
+  model: LanguageModel;
+}
+
 export interface LibrarianOptions<
   TNode extends Record<string, z.ZodType>,
   TEdge extends Record<string, z.ZodType>,
@@ -30,10 +34,16 @@ export interface LibrarianOptions<
   client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;
   embedding: LibrarianEmbeddingConfig;
   multimodal: boolean;
+  /**
+   * Default AI SDK language model for {@link processLogicalMemory}.
+   * Omit if you only use {@link embedTextChunks}; pass {@link LibrarianProcessLogicalMemoryParams.model} on each call instead.
+   */
+  agent?: LibrarianAgentConfig;
 }
 
 export type LibrarianProcessLogicalMemoryParams = {
-  model: LanguageModel;
+  /** Overrides {@link LibrarianOptions.agentModel} for this run. */
+  model?: LanguageModel;
   logicalMemory: LogicalMemoryInput;
   store: Store;
   prefetch?: boolean;
@@ -50,6 +60,7 @@ export class Librarian<
 > {
   readonly client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;
   readonly multimodal: boolean;
+  readonly #agentModel: LanguageModel | undefined;
   readonly #embeddingModel: EmbeddingModel;
 
   constructor(options: LibrarianOptions<TNode, TEdge>) {
@@ -58,6 +69,7 @@ export class Librarian<
     }
     this.client = options.client;
     this.multimodal = options.multimodal;
+    this.#agentModel = options.agent?.model;
     this.#embeddingModel = createLibrarianEmbeddingModel({
       model: options.embedding.model,
       textBatchSize: options.embedding.textBatchSize,
@@ -81,8 +93,15 @@ export class Librarian<
   processLogicalMemory(
     params: LibrarianProcessLogicalMemoryParams,
   ): Promise<ProcessLogicalMemoryResult<TNode, TEdge>> {
+    const model = params.model ?? this.#agentModel;
+    if (!model) {
+      throw new Error(
+        "Librarian: set agent.model in the constructor or pass model to processLogicalMemory()",
+      );
+    }
     return processLogicalMemoryWithLibrarian({
       ...params,
+      model,
       client: this.client,
       embeddingModel: this.#embeddingModel,
       multimodal: this.multimodal,

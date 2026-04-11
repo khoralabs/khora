@@ -6,7 +6,7 @@ Memory **librarian** agent: composable tools (`memory_search`), static identity,
 
 The package root exports a **minimal** surface:
 
-- **`Librarian`** — construct with a **`MemoriesClient`** (or async variant) from [`@cfd/memories-core`](../memories), an [AI SDK embedding model](https://ai-sdk.dev/docs/ai-sdk-core/embeddings#embedding-providers--models) from your app (e.g. `createGoogleGenerativeAI({ apiKey }).embedding("gemini-embedding-2-preview")`), an **`EmbeddingResolutionPreset`** (`L` | `M` | `H` for Google output dimensionality), and **`multimodal`**. Use **`processLogicalMemory(...)`** for the full remember pipeline and **`embedTextChunks(...)`** for query vectors.
+- **`Librarian`** — construct with a **`MemoriesClient`** (or async variant) from [`@cfd/memories-core`](../memories), an [AI SDK embedding model](https://ai-sdk.dev/docs/ai-sdk-core/embeddings#embedding-providers--models), **`EmbeddingResolutionPreset`**, **`multimodal`**, and optionally **`agent.model`** (default language model for **`processLogicalMemory`**). Omit **`agent.model`** if you only use **`embedTextChunks`**. Pass **`model`** on **`processLogicalMemory`** to override the default for one run.
 - **`multimodal: true`** requires the embedding model **`gemini-embedding-2-preview`** and enables non–text-like file blobs (multimodal embed path). With **`multimodal: false`**, only text and text-like files are embedded; other binaries throw.
 - **`listSourceMapsForMemory`** — SQLite helper for source-map listing.
 - **Types** — `LibrarianOptions`, `LibrarianEmbeddingConfig`, `LibrarianProcessLogicalMemoryParams`, `EmbeddingResolutionPreset`, `ProcessLogicalMemoryResult`, `LibrarianPipelineGeneration`.

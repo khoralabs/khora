@@ -1,33 +1,15 @@
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { Librarian } from "@cfd/memories-librarian";
-import { MemoriesClient } from "@cfd/memories-core";
-import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-core-persistence/sqlite";
 import { getMemoryIdByNamespaceKey, JsonlStore } from "@cfd/memories-stores";
-import { canonicalOntology } from "@cfd/memories-core-ontologies";
 import { elapsedMs, logger } from "../logger.js";
-import { ensureParentDirForDb, resolveGeminiApiKey } from "../shared.js";
+import { getLibrarian, getMemoriesBundle } from "../shared.js";
 import type { Parsed } from "./parse-args.js";
 
 export async function cmdRemember(args: Parsed): Promise<void> {
-  ensureParentDirForDb(args.db);
-  const db = openMemoriesDatabase(args.db);
-  const client = new MemoriesClient(createMemoriesPersistence(db), canonicalOntology);
+  const { db } = getMemoriesBundle(args.db);
   const store = new JsonlStore(args.store);
   const key = `remember-${Date.now()}`;
-  const apiKey = resolveGeminiApiKey();
-  const google = createGoogleGenerativeAI({ apiKey });
-  const librarian = new Librarian({
-    client,
-    embedding: {
-      model: google.embedding("gemini-embedding-2-preview"),
-      resolution: args.resolution,
-    },
-    multimodal: false,
-  });
-  const model = google("gemini-flash-lite-latest");
+  const librarian = getLibrarian(args.db, args.resolution);
   const tRemember = performance.now();
   const result = await librarian.processLogicalMemory({
-    model,
     logicalMemory: {
       key,
       namespace: args.namespace,

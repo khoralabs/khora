@@ -1,17 +1,13 @@
 import type { Database } from "bun:sqlite";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { Librarian, listSourceMapsForMemory } from "@cfd/memories-librarian";
+import { listSourceMapsForMemory } from "@cfd/memories-librarian";
 import {
-  MemoriesClient,
   type ResolvedSource,
   searchAsync,
   wrapSyncMemoriesPersistenceAsAsync,
 } from "@cfd/memories-core";
-import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-core-persistence/sqlite";
 import { JsonlStore } from "@cfd/memories-stores";
-import { canonicalOntology } from "@cfd/memories-core-ontologies";
 import { elapsedMs, logger } from "../logger.js";
-import { ensureParentDirForDb, resolveGeminiApiKey } from "../shared.js";
+import { getLibrarian, getMemoriesBundle } from "../shared.js";
 import type { Parsed } from "./parse-args.js";
 
 const SEARCH_RESOLVE_SOURCE_MAPS_LIMIT = 5;
@@ -39,21 +35,9 @@ async function resolveSourcesForMemory(
 
 export async function cmdSearch(args: Parsed): Promise<void> {
   const tPipeline = performance.now();
-  ensureParentDirForDb(args.db);
-  const db = openMemoriesDatabase(args.db);
-  const persistence = createMemoriesPersistence(db);
+  const { db, persistence } = getMemoriesBundle(args.db);
   const store = new JsonlStore(args.store);
-  const apiKey = resolveGeminiApiKey();
-  const google = createGoogleGenerativeAI({ apiKey });
-  const client = new MemoriesClient(persistence, canonicalOntology);
-  const librarian = new Librarian({
-    client,
-    embedding: {
-      model: google.embedding("gemini-embedding-2-preview"),
-      resolution: args.resolution,
-    },
-    multimodal: false,
-  });
+  const librarian = getLibrarian(args.db, args.resolution);
   const tEmbed = performance.now();
   const embeddings = await librarian.embedTextChunks([args.query ?? ""]);
   logger.info({
