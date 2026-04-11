@@ -37,7 +37,7 @@
       "name": "bun-react-template",
       "version": "0.1.0",
       "dependencies": {
-        "@cfd/librarian": "workspace:*",
+        "@ai-sdk/google": "^3.0.0",
         "@cfd/memories": "workspace:*",
         "@cfd/memories-persistence": "workspace:*",
         "@radix-ui/react-label": "^2.1.7",
@@ -45,6 +45,7 @@
         "@radix-ui/react-slot": "^1.2.3",
         "@react-three/drei": "^10.7.7",
         "@react-three/fiber": "^9.5.0",
+        "ai": "^6.0.153",
         "bun-plugin-tailwind": "^0.1.2",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
@@ -81,9 +82,9 @@
     "packages/librarian": {
       "name": "@cfd/librarian",
       "dependencies": {
+        "@ai-sdk/provider-utils": "^4.0.23",
         "@cfd/agent-identity": "workspace:*",
         "@cfd/memories": "workspace:*",
-        "@google/genai": "^1.48.0",
         "ai": "^6.0.153",
         "pino": "^10.3.1",
         "zod": "^4.3.6",

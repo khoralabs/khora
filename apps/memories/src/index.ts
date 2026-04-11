@@ -1,9 +1,4 @@
-import {
-  createEmbeddingModel,
-  type EmbeddingResolutionPreset,
-  embedConfigForResolutionPreset,
-  embedTextChunks,
-} from "@cfd/librarian";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import {
   buildNamespaceGraphLayout,
   loadEdgePreview,
@@ -17,10 +12,19 @@ import {
   createMemoriesVisualization,
   openMemoriesDatabaseReadonly,
 } from "@cfd/memories-persistence/sqlite";
+import { embedMany } from "ai";
 import { serve } from "bun";
 import index from "./index.html";
 
 const MEMORIES_DB_PATH = process.env.MEMORIES_DB_PATH?.trim();
+
+/** L/M/H output dimensionality for Google `gemini-embedding-2-preview` (aligned with CLI librarian presets). */
+const EMBEDDING_DIM_BY_PRESET = { L: 768, M: 1536, H: 3072 } as const;
+type EmbeddingResolutionPreset = keyof typeof EMBEDDING_DIM_BY_PRESET;
+
+function providerOptionsForSearchPreset(preset: EmbeddingResolutionPreset) {
+  return { google: { outputDimensionality: EMBEDDING_DIM_BY_PRESET[preset] } };
+}
 
 let didWarnLexicalOnlySearch = false;
 let didWarnMultiVectorDim = false;
@@ -164,12 +168,13 @@ const server = serve({
 
         if (apiKey) {
           const resolution = resolveSearchEmbeddingPreset(db, body.resolution);
-          const embeddingModel = createEmbeddingModel({
-            apiKey,
-            embedConfig: embedConfigForResolutionPreset(resolution),
-          });
+          const google = createGoogleGenerativeAI({ apiKey });
           try {
-            const embeddings = await embedTextChunks(embeddingModel, [query]);
+            const { embeddings } = await embedMany({
+              model: google.embedding("gemini-embedding-2-preview"),
+              values: [query],
+              providerOptions: providerOptionsForSearchPreset(resolution),
+            });
             const vector = embeddings[0];
             if (vector && vector.length > 0) {
               content = { text: query, vector };

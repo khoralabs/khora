@@ -1,11 +1,5 @@
 import type { MergeMemoryContentItem } from "@cfd/memories";
-import {
-  createEmbeddingModel,
-  type EmbeddingModel,
-  type EmbeddingModelOptions,
-  fileToContent,
-  textToContent,
-} from "../adapters";
+import { type EmbeddingModel, fileToContent, textToContent } from "../adapters";
 
 /** One logical memory: optional plaintext and/or multiple files; embedding decomposes into many merge chunks. */
 export interface LogicalMemoryFilePart {
@@ -22,8 +16,13 @@ export interface LogicalMemoryInput {
   namespace: string;
   plaintext?: string;
   files?: LogicalMemoryFilePart[];
-  /** Passed to {@link createEmbeddingModel} and adapters (including `embedConfig` / resolution). */
-  embedding?: EmbeddingModelOptions & { embeddingModel?: EmbeddingModel };
+  /**
+   * Injected by the pipeline: {@link embeddingModel} and {@link multimodal} (binary files require multimodal).
+   */
+  embedding?: {
+    embeddingModel: EmbeddingModel;
+    multimodal: boolean;
+  };
 }
 
 export interface ProcessedLogicalMemory extends LogicalMemoryInput {
@@ -37,14 +36,11 @@ export interface ProcessedLogicalMemory extends LogicalMemoryInput {
 export async function decomposeLogicalMemoryToContent(
   input: LogicalMemoryInput,
 ): Promise<MergeMemoryContentItem[]> {
-  const embeddingModel =
-    input.embedding?.embeddingModel ??
-    createEmbeddingModel({
-      apiKey: input.embedding?.apiKey,
-      model: input.embedding?.model,
-      textBatchSize: input.embedding?.textBatchSize,
-      embedConfig: input.embedding?.embedConfig,
-    });
+  const embeddingModel = input.embedding?.embeddingModel;
+  const multimodal = input.embedding?.multimodal ?? false;
+  if (!embeddingModel) {
+    throw new Error("decomposeLogicalMemoryToContent: embedding.embeddingModel is required");
+  }
 
   const out: MergeMemoryContentItem[] = [];
 
@@ -68,6 +64,7 @@ export async function decomposeLogicalMemoryToContent(
         title: f.title,
         fallbackText: f.fallbackText,
         embeddingModel,
+        multimodal,
         keyPrefix: `file:${i}`,
       });
       out.push(...r.content);

@@ -2,14 +2,7 @@ import type { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import {
-  createEmbeddingModel,
-  type EmbeddingResolutionPreset,
-  embedConfigForResolutionPreset,
-  embedTextChunks,
-  listSourceMapsForMemory,
-  processLogicalMemoryWithLibrarian,
-} from "@cfd/librarian";
+import { type EmbeddingResolutionPreset, Librarian, listSourceMapsForMemory } from "@cfd/librarian";
 import {
   defineOntology,
   MemoriesClient,
@@ -22,7 +15,7 @@ import { getMemoryIdByNamespaceKey, JsonlStore } from "@cfd/stores";
 import z from "zod";
 import { elapsedMs, logger } from "./logger.js";
 
-/** One Gemini key for @ai-sdk/google and @google/genai embeddings; .env often uses one name only. */
+/** One Gemini key for @ai-sdk/google; .env often uses one name only. */
 function resolveGeminiApiKey(): string {
   const k =
     process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim() ||
@@ -92,7 +85,7 @@ Options:
 
 Env:
   GOOGLE_API_KEY | GOOGLE_GENERATIVE_AI_API_KEY | GEMINI_API_KEY
-    Same key is used for embeddings (@google/genai) and chat (@ai-sdk/google).
+    Same key is used for embeddings and chat (@ai-sdk/google).
   LOG_LEVEL=debug|info|warn|error
     Default info. Use debug for embedTextChunks / fuseRrf detail.
   LOG_PRETTY=0|1
@@ -166,12 +159,19 @@ async function cmdSearch(args: Parsed) {
   const db = openMemoriesDatabase(args.db);
   const persistence = createMemoriesPersistence(db);
   const store = new JsonlStore(args.store);
-  const embeddingModel = createEmbeddingModel({
-    apiKey: resolveGeminiApiKey(),
-    embedConfig: embedConfigForResolutionPreset(args.resolution),
+  const apiKey = resolveGeminiApiKey();
+  const google = createGoogleGenerativeAI({ apiKey });
+  const client = new MemoriesClient(persistence, cliOntology);
+  const librarian = new Librarian({
+    client,
+    embedding: {
+      model: google.embedding("gemini-embedding-2-preview"),
+      resolution: args.resolution,
+    },
+    multimodal: false,
   });
   const tEmbed = performance.now();
-  const embeddings = await embedTextChunks(embeddingModel, [args.query ?? ""]);
+  const embeddings = await librarian.embedTextChunks([args.query ?? ""]);
   logger.info({
     phase: "cli.search.embedQuery",
     durationMs: elapsedMs(tEmbed),
@@ -252,23 +252,23 @@ async function cmdRemember(args: Parsed) {
   const store = new JsonlStore(args.store);
   const key = `remember-${Date.now()}`;
   const apiKey = resolveGeminiApiKey();
-  const embeddingModel = createEmbeddingModel({
-    apiKey,
-    embedConfig: embedConfigForResolutionPreset(args.resolution),
-  });
   const google = createGoogleGenerativeAI({ apiKey });
+  const librarian = new Librarian({
+    client,
+    embedding: {
+      model: google.embedding("gemini-embedding-2-preview"),
+      resolution: args.resolution,
+    },
+    multimodal: false,
+  });
   const model = google("gemini-flash-lite-latest");
   const tRemember = performance.now();
-  const result = await processLogicalMemoryWithLibrarian({
+  const result = await librarian.processLogicalMemory({
     model,
-    client,
-    embeddingModel,
     logicalMemory: {
       key,
       namespace: args.namespace,
       plaintext: args.text,
-      /** Same client as tools; otherwise decompose creates a new model that only reads `GOOGLE_API_KEY`. */
-      embedding: { embeddingModel },
     },
     store,
     prefetch: true,

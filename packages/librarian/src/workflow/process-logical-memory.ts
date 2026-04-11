@@ -38,9 +38,13 @@ export interface ProcessLogicalMemoryWithLibrarianParams<
   client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;
   /**
    * Same embedding model for decomposition, prefetch search vectors, tool `memory_search`, and merge payloads.
-   * Set {@link EmbeddingModel.embedConfig} (e.g. `outputDimensionality`) for resolution recipes.
    */
   embeddingModel: EmbeddingModel;
+  /**
+   * When true, non-text files are embedded with multimodal (Google) bytes + caption; requires gemini-embedding-2-preview.
+   * @default false
+   */
+  multimodal?: boolean;
   logicalMemory: LogicalMemoryInput;
   /** Resolves each prefetched hit’s {@link SourceMap} to readable source material. */
   store: Store;
@@ -87,6 +91,7 @@ export async function processLogicalMemoryWithLibrarian<
     model,
     client,
     embeddingModel,
+    multimodal = false,
     logicalMemory,
     store,
     prefetch = true,
@@ -103,8 +108,8 @@ export async function processLogicalMemoryWithLibrarian<
   const content = await decomposeLogicalMemoryToContent({
     ...logicalMemory,
     embedding: {
-      ...logicalMemory.embedding,
       embeddingModel,
+      multimodal,
     },
   });
   const processedLogicalMemory: ProcessedLogicalMemory = { ...logicalMemory, content };

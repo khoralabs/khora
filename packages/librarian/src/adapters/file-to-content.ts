@@ -1,20 +1,17 @@
 import type { MergeMemoryContentItem } from "@cfd/memories";
-import {
-  createEmbeddingModel,
-  type EmbeddingModel,
-  type EmbeddingModelOptions,
-  embedBinaryBlob,
-} from "./embedding-model";
+import { type EmbeddingModel, embedBinaryBlob } from "./embedding-model";
 import { textToContent } from "./text-to-content";
 
-export interface FileToContentInput extends EmbeddingModelOptions {
+export interface FileToContentInput {
   blob: Blob;
   mimeType?: string;
   fileName?: string | null;
   title?: string;
   fallbackText?: string;
   keyPrefix?: string;
-  embeddingModel?: EmbeddingModel;
+  embeddingModel: EmbeddingModel;
+  /** When true, non-text blobs use multimodal (Google) embedding; otherwise throws. */
+  multimodal: boolean;
 }
 
 export interface FileToContentResult {
@@ -27,21 +24,6 @@ export interface FileToContentResult {
   lexicalText?: string;
   chunkCount: number;
   content: MergeMemoryContentItem[];
-}
-
-/** MIME types commonly supported for multimodal Gemini embedding inputs (non-text path uses raw bytes). */
-export const GEMINI_EMBEDDING_SUPPORTED_MIME_TYPES = [
-  "image/png",
-  "image/jpeg",
-  "application/pdf",
-  "video/mpeg",
-  "video/mp4",
-  "audio/mp3",
-  "audio/wav",
-] as const;
-
-export function isGeminiMultimodalEmbeddingMime(mimeType: string): boolean {
-  return (GEMINI_EMBEDDING_SUPPORTED_MIME_TYPES as readonly string[]).includes(mimeType);
 }
 
 export function isTextLikeMime(mimeType: string): boolean {
@@ -75,14 +57,7 @@ export function buildRetrievalText(args: {
 
 export async function fileToContent(input: FileToContentInput): Promise<FileToContentResult> {
   const mimeType = (input.mimeType ?? input.blob.type) || "application/octet-stream";
-  const embeddingModel =
-    input.embeddingModel ??
-    createEmbeddingModel({
-      apiKey: input.apiKey,
-      model: input.model,
-      textBatchSize: input.textBatchSize,
-      embedConfig: input.embedConfig,
-    });
+  const { embeddingModel, multimodal } = input;
 
   if (isTextLikeMime(mimeType)) {
     const text = (await input.blob.text()).trim();
@@ -111,6 +86,12 @@ export async function fileToContent(input: FileToContentInput): Promise<FileToCo
       chunkCount: result.chunkCount,
       content: result.content,
     };
+  }
+
+  if (!multimodal) {
+    throw new Error(
+      "Non-text file embedding requires multimodal: set Librarian multimodal to true and use gemini-embedding-2-preview, or supply text-like content only.",
+    );
   }
 
   const retrievalText = buildRetrievalText({

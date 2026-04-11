@@ -1,19 +1,13 @@
 import type { MergeMemoryContentItem } from "@cfd/memories";
-import {
-  createEmbeddingModel,
-  type EmbeddingModel,
-  type EmbeddingModelOptions,
-  embedTextChunks,
-  MAX_TEXT_CHUNK_CHARS,
-} from "./embedding-model";
+import { type EmbeddingModel, embedTextChunks, MAX_TEXT_CHUNK_CHARS } from "./embedding-model";
 
-export interface TextToContentInput extends EmbeddingModelOptions {
+export interface TextToContentInput {
   text: string;
   retrievalText?: string;
   lexicalText?: string;
   keyPrefix?: string;
   maxChunkChars?: number;
-  embeddingModel?: EmbeddingModel;
+  embeddingModel: EmbeddingModel;
 }
 
 export interface TextToContentResult {
@@ -54,16 +48,7 @@ export async function textToContent(input: TextToContentInput): Promise<TextToCo
     throw new Error("No text chunks were produced");
   }
 
-  const embeddingModel =
-    input.embeddingModel ??
-    createEmbeddingModel({
-      apiKey: input.apiKey,
-      model: input.model,
-      textBatchSize: input.textBatchSize,
-      embedConfig: input.embedConfig,
-    });
-
-  const embeddingVectors = await embedTextChunks(embeddingModel, chunkTexts);
+  const embeddingVectors = await embedTextChunks(input.embeddingModel, chunkTexts);
   const keyPrefix = input.keyPrefix ?? "chunk";
   const content = chunkTexts.map<MergeMemoryContentItem>((chunkText, index) => {
     const vector = embeddingVectors[index];

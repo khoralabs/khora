@@ -1,20 +1,23 @@
-import {
-  createPartFromBase64,
-  createPartFromText,
-  type EmbedContentConfig,
-  GoogleGenAI,
-} from "@google/genai";
+import type { ProviderOptions } from "@ai-sdk/provider-utils";
+import { type EmbeddingModel as AiSdkEmbeddingModel, embed, embedMany } from "ai";
 import { logger } from "../telemetry/logger.js";
 import { librarianLog } from "../telemetry/payloads.js";
 import { elapsedMs } from "../timing.js";
 
-export const EMBEDDING_MODEL_NAME = "gemini-embedding-2-preview";
-export const GOOGLE_EMBED_BATCH_SIZE = 100;
+export type { ProviderOptions } from "@ai-sdk/provider-utils";
+export type { EmbeddingModel as AiSdkEmbeddingModel } from "ai";
+
+/** Required embedding model when {@link Librarian} is constructed with `multimodal: true`. */
+export const MULTIMODAL_REQUIRED_EMBEDDING_MODEL_ID = "gemini-embedding-2-preview";
+
+export const DEFAULT_EMBED_TEXT_BATCH_SIZE = 100;
+/** @deprecated Use {@link DEFAULT_EMBED_TEXT_BATCH_SIZE}. */
+export const GOOGLE_EMBED_BATCH_SIZE = DEFAULT_EMBED_TEXT_BATCH_SIZE;
 export const MAX_TEXT_CHUNK_CHARS = 2_000;
 
 /**
- * Common output dimensionalities for Gemini embedding models (`outputDimensionality` in {@link EmbedContentConfig}).
- * Callers can pick a recipe and pass {@link EmbeddingModelOptions.embedConfig}.
+ * Common output dimensionalities for Google Generative AI embedding models
+ * (`providerOptions.google.outputDimensionality`).
  */
 export const EMBEDDING_OUTPUT_DIMENSIONALITY = {
   L: 768,
@@ -24,86 +27,149 @@ export const EMBEDDING_OUTPUT_DIMENSIONALITY = {
 
 export type EmbeddingResolutionPreset = keyof typeof EMBEDDING_OUTPUT_DIMENSIONALITY;
 
-/** `EmbedContentConfig` with `outputDimensionality` set for a preset (L/M/H). */
-export function embedConfigForResolutionPreset(
-  preset: EmbeddingResolutionPreset,
-): EmbedContentConfig {
-  return { outputDimensionality: EMBEDDING_OUTPUT_DIMENSIONALITY[preset] };
+/** Maps a resolution preset to AI SDK `providerOptions` for Google embeddings. */
+export function embedConfigForResolutionPreset(preset: EmbeddingResolutionPreset): ProviderOptions {
+  return { google: { outputDimensionality: EMBEDDING_OUTPUT_DIMENSIONALITY[preset] } };
 }
 
-export interface EmbeddingModelOptions {
-  apiKey?: string;
-  model?: string;
-  textBatchSize?: number;
-  /** Merged into every `embedContent` call (e.g. `outputDimensionality`). */
-  embedConfig?: EmbedContentConfig;
+export function aiSdkEmbeddingModelId(m: AiSdkEmbeddingModel): string {
+  if (typeof m === "string") {
+    const s = m.trim();
+    const slash = s.lastIndexOf("/");
+    return slash >= 0 ? s.slice(slash + 1) : s;
+  }
+  if (
+    typeof m === "object" &&
+    m !== null &&
+    "modelId" in m &&
+    typeof (m as { modelId: unknown }).modelId === "string"
+  ) {
+    return (m as { modelId: string }).modelId;
+  }
+  return "";
+}
+
+export function assertMultimodalEmbeddingModel(m: AiSdkEmbeddingModel): void {
+  const id = aiSdkEmbeddingModelId(m);
+  if (id !== MULTIMODAL_REQUIRED_EMBEDDING_MODEL_ID) {
+    throw new Error(
+      `multimodal embedding requires model "${MULTIMODAL_REQUIRED_EMBEDDING_MODEL_ID}", got "${id || "(unknown)"}"`,
+    );
+  }
+}
+
+function mergeProviderOptions(
+  ...parts: (ProviderOptions | undefined)[]
+): ProviderOptions | undefined {
+  let acc: ProviderOptions | undefined;
+  for (const p of parts) {
+    if (!p) continue;
+    if (!acc) {
+      acc = { ...p };
+      continue;
+    }
+    const out: Record<string, unknown> = { ...acc };
+    for (const [k, v] of Object.entries(p)) {
+      const ak = out[k];
+      if (
+        ak &&
+        v &&
+        typeof ak === "object" &&
+        typeof v === "object" &&
+        !Array.isArray(ak) &&
+        !Array.isArray(v)
+      ) {
+        out[k] = { ...(ak as Record<string, unknown>), ...(v as Record<string, unknown>) };
+      } else {
+        out[k] = v;
+      }
+    }
+    acc = out as ProviderOptions;
+  }
+  return acc;
+}
+
+/** Merge resolution preset with optional extra `providerOptions` for {@link createLibrarianEmbeddingModel}. */
+export function mergeResolutionAndProviderOptions(
+  resolution: EmbeddingResolutionPreset,
+  extra?: ProviderOptions,
+): ProviderOptions | undefined {
+  return mergeProviderOptions(embedConfigForResolutionPreset(resolution), extra);
 }
 
 export interface EmbeddingModel {
-  readonly client: GoogleGenAI;
-  readonly model: string;
+  readonly model: AiSdkEmbeddingModel;
   readonly textBatchSize: number;
-  /** Merged last with per-call overrides in {@link embedTextChunks} / {@link embedBinaryBlob}. */
-  readonly embedConfig?: EmbedContentConfig;
+  readonly maxParallelCalls?: number;
+  readonly providerOptions?: ProviderOptions;
+}
+
+/**
+ * Build an {@link EmbeddingModel} around any [AI SDK embedding model](https://ai-sdk.dev/docs/ai-sdk-core/embeddings#embedding-providers--models).
+ */
+export function createLibrarianEmbeddingModel(options: {
+  model: AiSdkEmbeddingModel;
+  textBatchSize?: number;
+  maxParallelCalls?: number;
+  providerOptions?: ProviderOptions;
+}): EmbeddingModel {
+  return {
+    model: options.model,
+    textBatchSize: options.textBatchSize ?? DEFAULT_EMBED_TEXT_BATCH_SIZE,
+    ...(options.maxParallelCalls !== undefined
+      ? { maxParallelCalls: options.maxParallelCalls }
+      : {}),
+    ...(options.providerOptions !== undefined ? { providerOptions: options.providerOptions } : {}),
+  };
 }
 
 export interface BinaryEmbedInput {
   blob: Blob;
   mimeType: string;
   retrievalText: string;
+  providerOptions?: ProviderOptions;
 }
 
-export function createEmbeddingModel(options: EmbeddingModelOptions = {}): EmbeddingModel {
-  const apiKey =
-    options.apiKey?.trim() ||
-    process.env.GOOGLE_API_KEY?.trim() ||
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim() ||
-    process.env.GEMINI_API_KEY?.trim();
+/**
+ * `providerOptions` fragment for Google multimodal embedding: one file part alongside the text {@link embed} `value`.
+ */
+export function googleGenerativeAiBinaryEmbedContentOptions(input: {
+  mimeType: string;
+  base64: string;
+}): ProviderOptions {
   return {
-    client: new GoogleGenAI(apiKey ? { apiKey } : {}),
-    model: options.model ?? EMBEDDING_MODEL_NAME,
-    textBatchSize: options.textBatchSize ?? GOOGLE_EMBED_BATCH_SIZE,
-    ...(options.embedConfig !== undefined ? { embedConfig: options.embedConfig } : {}),
+    google: {
+      content: [[{ inlineData: { mimeType: input.mimeType, data: input.base64 } }]],
+    },
   };
-}
-
-function mergeEmbedConfig(
-  model: EmbeddingModel,
-  override?: EmbedContentConfig,
-): EmbedContentConfig {
-  return { ...model.embedConfig, ...override };
-}
-
-function normalizeEmbeddingValues(
-  embeddings: Array<{ values?: number[] } | null | undefined> | undefined,
-): number[][] {
-  return (embeddings ?? []).flatMap((embedding) =>
-    embedding?.values?.length ? [embedding.values] : [],
-  );
 }
 
 export async function embedTextChunks(
   embeddingModel: EmbeddingModel,
   texts: readonly string[],
-  config: EmbedContentConfig = {},
+  callOptions?: { providerOptions?: ProviderOptions; abortSignal?: AbortSignal },
 ): Promise<number[][]> {
   if (texts.length === 0) return [];
 
   const t0 = performance.now();
-  const mergedConfig = mergeEmbedConfig(embeddingModel, config);
+  const mergedBase = mergeProviderOptions(
+    embeddingModel.providerOptions,
+    callOptions?.providerOptions,
+  );
   const out: number[][] = [];
-  for (let batchStart = 0; batchStart < texts.length; batchStart += embeddingModel.textBatchSize) {
-    const batch = texts.slice(batchStart, batchStart + embeddingModel.textBatchSize);
-    const response = await embeddingModel.client.models.embedContent({
-      model: embeddingModel.model,
-      contents: [...batch],
-      ...(Object.keys(mergedConfig).length > 0 ? { config: mergedConfig } : {}),
+  const { textBatchSize, maxParallelCalls, model } = embeddingModel;
+
+  for (let batchStart = 0; batchStart < texts.length; batchStart += textBatchSize) {
+    const batch = texts.slice(batchStart, batchStart + textBatchSize);
+    const { embeddings } = await embedMany({
+      model,
+      values: [...batch],
+      maxParallelCalls,
+      providerOptions: mergedBase,
+      abortSignal: callOptions?.abortSignal,
     });
-    const embeddings = normalizeEmbeddingValues(response.embeddings);
     if (embeddings.length !== batch.length) {
-      throw new Error(
-        `Google embedContent: expected ${batch.length} embeddings, got ${embeddings.length}`,
-      );
+      throw new Error(`embedMany: expected ${batch.length} embeddings, got ${embeddings.length}`);
     }
     out.push(...embeddings);
   }
@@ -112,7 +178,7 @@ export async function embedTextChunks(
     librarianLog("librarian.embed.textChunks", {
       processTimeMs: elapsedMs(t0),
       textCount: texts.length,
-      model: embeddingModel.model,
+      model: aiSdkEmbeddingModelId(model),
     }),
   );
   return out;
@@ -121,29 +187,33 @@ export async function embedTextChunks(
 export async function embedBinaryBlob(
   embeddingModel: EmbeddingModel,
   input: BinaryEmbedInput,
-  config: EmbedContentConfig = {},
+  callOptions?: { providerOptions?: ProviderOptions; abortSignal?: AbortSignal },
 ): Promise<number[]> {
   const t0 = performance.now();
-  const mergedConfig = mergeEmbedConfig(embeddingModel, config);
   const fileBase64 = Buffer.from(await input.blob.arrayBuffer()).toString("base64");
-  const response = await embeddingModel.client.models.embedContent({
-    model: embeddingModel.model,
-    contents: [
-      createPartFromBase64(fileBase64, input.mimeType),
-      createPartFromText(input.retrievalText),
-    ],
-    ...(Object.keys(mergedConfig).length > 0 ? { config: mergedConfig } : {}),
+  const multimodal = googleGenerativeAiBinaryEmbedContentOptions({
+    mimeType: input.mimeType,
+    base64: fileBase64,
   });
-  const embeddings = normalizeEmbeddingValues(response.embeddings);
-  const first = embeddings[0];
-  if (!first) {
-    throw new Error("Google did not return any embeddings");
+  const { embedding } = await embed({
+    model: embeddingModel.model,
+    value: input.retrievalText,
+    providerOptions: mergeProviderOptions(
+      embeddingModel.providerOptions,
+      multimodal,
+      input.providerOptions,
+      callOptions?.providerOptions,
+    ),
+    abortSignal: callOptions?.abortSignal,
+  });
+  if (!embedding?.length) {
+    throw new Error("embed: no embedding vector returned");
   }
   logger.debug(
     librarianLog("librarian.embed.binaryBlob", {
       processTimeMs: elapsedMs(t0),
-      model: embeddingModel.model,
+      model: aiSdkEmbeddingModelId(embeddingModel.model),
     }),
   );
-  return first;
+  return embedding;
 }

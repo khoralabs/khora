@@ -9,8 +9,9 @@
     "build": "bun run build.ts"
   },
   "dependencies": {
-    "@cfd/librarian": "workspace:*",
+    "@ai-sdk/google": "^3.0.0",
     "@cfd/memories": "workspace:*",
+    "ai": "^6.0.153",
     "@cfd/memories-persistence": "workspace:*",
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-select": "^2.2.6",

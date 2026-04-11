@@ -1,15 +1,12 @@
-export * from "./adapters/index.ts";
-export * from "./agent/index.ts";
-export * from "./memories/index.ts";
+export type { EmbeddingResolutionPreset } from "./adapters/embedding-model.ts";
 export {
-  logger,
-  resetLibrarianLoggerForTests,
-} from "./telemetry/logger.ts";
-export {
-  type LibrarianLogEntry,
-  type LibrarianLogPayloadMap,
-  type LibrarianLogPhase,
-  librarianLog,
-} from "./telemetry/payloads.ts";
-export { elapsedMs } from "./timing.ts";
-export * from "./workflow/index.ts";
+  Librarian,
+  type LibrarianEmbeddingConfig,
+  type LibrarianOptions,
+  type LibrarianProcessLogicalMemoryParams,
+} from "./librarian.ts";
+export { listSourceMapsForMemory } from "./memories/source-maps.ts";
+export type {
+  LibrarianPipelineGeneration,
+  ProcessLogicalMemoryResult,
+} from "./workflow/process-logical-memory.ts";
