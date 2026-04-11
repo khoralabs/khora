@@ -15,6 +15,7 @@ import {
 } from "@cfd/agent-identity";
 import type {
   MemoriesClient,
+  MemoriesClientAsync,
   MergeMemoryContentItem,
   ResolvedSource,
   SearchHit,
@@ -48,7 +49,7 @@ export type MemoryLibrarianSessionContext<
   TEdge extends Record<string, z.ZodType>,
 > = {
   model: LanguageModel;
-  client: MemoriesClient<TNode, TEdge>;
+  client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;
   embeddingModel: EmbeddingModel;
   agentId?: string;
   agentName?: string;

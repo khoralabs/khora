@@ -1,6 +1,7 @@
 import type { AgentRegistry } from "@cfd/agent-identity";
 import {
   type MemoriesClient,
+  type MemoriesClientAsync,
   type ResolvedSource,
   resolveSourcemap,
   type Store,
@@ -33,7 +34,7 @@ export interface ProcessLogicalMemoryWithLibrarianParams<
 > {
   /** AI SDK language model (caller-supplied provider). */
   model: LanguageModel;
-  client: MemoriesClient<TNode, TEdge>;
+  client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;
   /**
    * Same embedding model for decomposition, prefetch search vectors, tool `memory_search`, and merge payloads.
    * Set {@link EmbeddingModel.embedConfig} (e.g. `outputDimensionality`) for resolution recipes.
@@ -115,7 +116,7 @@ export async function processLogicalMemoryWithLibrarian<
 
   const tPrefetch = performance.now();
   const prefetchedHits = prefetch
-    ? prefetchRelatedMemories(client, logicalMemory.namespace, content)
+    ? await prefetchRelatedMemories(client, logicalMemory.namespace, content)
     : [];
   logger.info({
     phase: "remember.prefetchSearch",

@@ -31,6 +31,11 @@ export {
   zMergeMemoryContentItem,
   zUserSourceKey,
 } from "./merge-memory";
+export {
+  buildCanonicalMemorySearchMetaTextAsync,
+  upsertMemorySearchMetaVectorAsync,
+  wrapSyncMemoriesPersistenceAsAsync,
+} from "../persistence";
 export * from "./merge-memory-async";
 export * from "./ontology.ts";
 export * from "./resolve-sourcemap";

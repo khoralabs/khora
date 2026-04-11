@@ -1,8 +1,11 @@
 export type { MemoriesPersistenceAsync } from "./async-types";
 export {
   buildCanonicalMemorySearchMetaText,
+  buildCanonicalMemorySearchMetaTextAsync,
   upsertMemorySearchMetaVector,
+  upsertMemorySearchMetaVectorAsync,
 } from "./facade.ts";
+export { wrapSyncMemoriesPersistenceAsAsync } from "./wrap-sync-as-async.ts";
 export type {
   EdgePreviewPayload,
   GraphEdgeLink,

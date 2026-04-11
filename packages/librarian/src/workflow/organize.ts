@@ -1,11 +1,14 @@
 import {
   buildCanonicalMemorySearchMetaText,
+  buildCanonicalMemorySearchMetaTextAsync,
+  MemoriesClientAsync,
   type MemoriesClient,
   type MergeMemoryContentItem,
   resolveMemoriesBackendCapabilities,
   type SearchContent,
   type TypedSearchHit,
   upsertMemorySearchMetaVector,
+  upsertMemorySearchMetaVectorAsync,
 } from "@cfd/memories";
 import type z from "zod";
 import { type EmbeddingModel, embedTextChunks } from "../adapters/embedding-model";
@@ -27,25 +30,27 @@ export function mergeMemoryItemToSearchContent(item: MergeMemoryContentItem): Se
   throw new Error("MergeMemoryContentItem must include text and/or vector");
 }
 
-export function prefetchRelatedMemories<
+export async function prefetchRelatedMemories<
   TNode extends Record<string, z.ZodType>,
   TEdge extends Record<string, z.ZodType>,
 >(
-  client: MemoriesClient<TNode, TEdge>,
+  client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>,
   namespace: string,
   contentItems: MergeMemoryContentItem[],
-): TypedSearchHit<TNode, TEdge>[] {
-  const contentSearchHits = [];
+): Promise<TypedSearchHit<TNode, TEdge>[]> {
+  const contentSearchHits: TypedSearchHit<TNode, TEdge>[] = [];
   const seenHits = new Set<string>();
   for (const item of contentItems) {
-    const hits = client.search({
-      namespace,
-      content: mergeMemoryItemToSearchContent(item),
-      options: {
-        topK: 10,
-        minScore: 0.5,
-      },
-    });
+    const hits = await Promise.resolve(
+      client.search({
+        namespace,
+        content: mergeMemoryItemToSearchContent(item),
+        options: {
+          topK: 10,
+          minScore: 0.5,
+        },
+      }),
+    );
     for (const hit of hits) {
       if (seenHits.has(hit.memory._id)) continue;
       seenHits.add(hit.memory._id);
@@ -64,12 +69,70 @@ export async function mergeLogicalMemoryWithPlan<
   TNode extends Record<string, z.ZodType>,
   TEdge extends Record<string, z.ZodType>,
 >(
-  client: MemoriesClient<TNode, TEdge>,
+  client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>,
   processedLogicalMemory: ProcessedLogicalMemory,
   plan: LibrarianMergePlanWire,
   embeddingModel: EmbeddingModel,
 ): Promise<void> {
   const slice = parseLibrarianMergePlan(client.ontology, plan);
+
+  if (client instanceof MemoriesClientAsync) {
+    const metaSyncedKeys = await client.mergeMemory({
+      key: processedLogicalMemory.key,
+      namespace: processedLogicalMemory.namespace,
+      content: processedLogicalMemory.content,
+      labels: slice.labels,
+      edges: slice.edges,
+      properties: slice.properties,
+    });
+
+    const namespace = processedLogicalMemory.namespace;
+    const readOp = { now: Date.now() };
+    const pairs: { memoryKey: string; text: string }[] = [];
+    for (const memoryKey of metaSyncedKeys) {
+      const text = await buildCanonicalMemorySearchMetaTextAsync(
+        client.persistence,
+        readOp,
+        namespace,
+        memoryKey,
+      );
+      if (text.length > 0) pairs.push({ memoryKey, text });
+    }
+
+    if (pairs.length === 0) return;
+
+    const caps = resolveMemoriesBackendCapabilities(client.persistence);
+    if (!caps.vectorSearch) {
+      return;
+    }
+
+    const embeddings = await embedTextChunks(
+      embeddingModel,
+      pairs.map((p) => p.text),
+    );
+    if (embeddings.length !== pairs.length) {
+      throw new Error(
+        `mergeLogicalMemoryWithPlan: expected ${pairs.length} search-meta embeddings, got ${embeddings.length}`,
+      );
+    }
+
+    await client.persistence.withTransaction(async () => {
+      const op = { now: Date.now() };
+      for (let i = 0; i < pairs.length; i++) {
+        const pair = pairs[i];
+        const vec = embeddings[i];
+        if (pair === undefined || vec === undefined || vec.length === 0) {
+          throw new Error("mergeLogicalMemoryWithPlan: missing embedding for search-meta batch");
+        }
+        await upsertMemorySearchMetaVectorAsync(client.persistence, op, {
+          namespace,
+          memoryKey: pair.memoryKey,
+          vector: new Float32Array(vec),
+        });
+      }
+    });
+    return;
+  }
 
   const metaSyncedKeys = client.mergeMemory({
     key: processedLogicalMemory.key,

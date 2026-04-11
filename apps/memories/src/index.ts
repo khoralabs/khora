@@ -9,7 +9,8 @@ import {
   loadEdgePreview,
   loadMemoryTextPreview,
   type SearchHit,
-  search,
+  searchAsync,
+  wrapSyncMemoriesPersistenceAsAsync,
 } from "@cfd/memories";
 import {
   createMemoriesPersistence,
@@ -199,8 +200,8 @@ const server = serve({
         }
 
         const persistence = createMemoriesPersistence(db);
-        const hits = search(
-          { persistence },
+        const hits = await searchAsync(
+          { persistence: wrapSyncMemoriesPersistenceAsAsync(persistence) },
           {
             namespace,
             content,

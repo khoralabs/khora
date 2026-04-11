@@ -10,7 +10,13 @@ import {
   listSourceMapsForMemory,
   processLogicalMemoryWithLibrarian,
 } from "@cfd/librarian";
-import { defineOntology, MemoriesClient, type ResolvedSource } from "@cfd/memories";
+import {
+  defineOntology,
+  MemoriesClient,
+  searchAsync,
+  type ResolvedSource,
+  wrapSyncMemoriesPersistenceAsAsync,
+} from "@cfd/memories";
 import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-persistence/sqlite";
 import { getMemoryIdByNamespaceKey, JsonlStore } from "@cfd/stores";
 import z from "zod";
@@ -158,7 +164,7 @@ async function cmdSearch(args: Parsed) {
   const tPipeline = performance.now();
   ensureParentDirForDb(args.db);
   const db = openMemoriesDatabase(args.db);
-  const client = new MemoriesClient(createMemoriesPersistence(db), cliOntology);
+  const persistence = createMemoriesPersistence(db);
   const store = new JsonlStore(args.store);
   const embeddingModel = createEmbeddingModel({
     apiKey: resolveGeminiApiKey(),
@@ -173,18 +179,21 @@ async function cmdSearch(args: Parsed) {
   });
 
   const tSearch = performance.now();
-  const hits = client.search({
-    namespace: args.namespace,
-    content: { text: args.query ?? "", vector: embeddings[0] },
-    options: {
-      topK: 10,
-      arms: { lexical: 1, vector: 1 },
-      neighbors: true,
-      maxNeighbors: SEARCH_MAX_NEIGHBORS,
+  const hits = await searchAsync(
+    { persistence: wrapSyncMemoriesPersistenceAsAsync(persistence) },
+    {
+      namespace: args.namespace,
+      content: { text: args.query ?? "", vector: embeddings[0] },
+      options: {
+        topK: 10,
+        arms: { lexical: 1, vector: 1 },
+        neighbors: true,
+        maxNeighbors: SEARCH_MAX_NEIGHBORS,
+      },
     },
-  });
+  );
   logger.info({
-    phase: "cli.search.memoriesClient",
+    phase: "cli.search.searchAsync",
     durationMs: elapsedMs(tSearch),
     hitCount: hits.length,
   });

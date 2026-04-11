@@ -1,5 +1,11 @@
 import { tool, toolkit } from "@cfd/agent-identity";
-import type { MemoriesClient, NeighborSearchOption, SearchContent, SearchHit } from "@cfd/memories";
+import type {
+  MemoriesClient,
+  MemoriesClientAsync,
+  NeighborSearchOption,
+  SearchContent,
+  SearchHit,
+} from "@cfd/memories";
 import z from "zod";
 import { type EmbeddingModel, embedTextChunks } from "../adapters/embedding-model";
 import { logger } from "../logger.js";
@@ -7,6 +13,11 @@ import { elapsedMs } from "../timing.js";
 
 /** Wide ontology maps; session clients use narrower TNode/TEdge at runtime (see {@link toMemoryLibrarianEnv}). */
 export type MemoryLibrarianWideClient = MemoriesClient<
+  Record<string, z.ZodType>,
+  Record<string, z.ZodType>
+>;
+
+export type MemoryLibrarianWideClientAsync = MemoriesClientAsync<
   Record<string, z.ZodType>,
   Record<string, z.ZodType>
 >;
@@ -63,7 +74,7 @@ function truncateForLog(s: string, max: number): string {
 
 /** Runtime env for {@link memoryLibrarianToolkit}: client, namespace, and embedding model (injected; not tool args). */
 export type MemoryLibrarianEnv = {
-  client: MemoryLibrarianWideClient;
+  client: MemoryLibrarianWideClient | MemoryLibrarianWideClientAsync;
   namespace: string;
   /** Used to embed `content.text` for the vector retrieval arm (same model as ingestion). */
   embeddingModel: EmbeddingModel;
@@ -229,16 +240,18 @@ const memorySearchTool = tool<
     }
 
     const tSearch = performance.now();
-    const rawHits = await env.client.search({
-      namespace: env.namespace,
-      content,
-      options: opts
-        ? {
-            ...opts,
-            neighbors: neighborOptionForSearch(opts.neighbors),
-          }
-        : undefined,
-    });
+    const rawHits = await Promise.resolve(
+      env.client.search({
+        namespace: env.namespace,
+        content,
+        options: opts
+          ? {
+              ...opts,
+              neighbors: neighborOptionForSearch(opts.neighbors),
+            }
+          : undefined,
+      }),
+    );
     searchMs = elapsedMs(tSearch);
 
     const slim = mapSearchHitsToLibrarian(rawHits);
