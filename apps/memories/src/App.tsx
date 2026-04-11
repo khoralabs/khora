@@ -1,4 +1,4 @@
-import { FolderSearchIcon, RefreshCcwIcon, ScanSearchIcon, Search } from "lucide-react";
+import { FolderSearchIcon, RefreshCcwIcon, ScanSearchIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
   InputGroup,

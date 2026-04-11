@@ -152,12 +152,9 @@ function GraphSceneR3f() {
           activeSubgraphKeys={activeSubgraphKeys}
         />
         {points.map((point) => {
-          const inPinnedEgo =
-            selected !== null && !!activeSubgraphKeys?.has(point.entryId);
+          const inPinnedEgo = selected !== null && !!activeSubgraphKeys?.has(point.entryId);
           const searchDimmed =
-            graphSearch !== null &&
-            !graphSearch.relevantKeys.has(point.entryId) &&
-            !inPinnedEgo;
+            graphSearch !== null && !graphSearch.relevantKeys.has(point.entryId) && !inPinnedEgo;
           const subgraphDimmed =
             activeSubgraphKeys !== null &&
             point.entryId !== focusEntryId &&

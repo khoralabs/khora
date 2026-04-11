@@ -67,7 +67,9 @@ function resolveSearchEmbeddingPreset(
   const fromBody = parseExplicitEmbeddingPreset(bodyResolution);
   if (fromBody) return fromBody;
 
-  const fromEnv = parseExplicitEmbeddingPreset(process.env.MEMORIES_SEARCH_EMBEDDING_PRESET?.trim());
+  const fromEnv = parseExplicitEmbeddingPreset(
+    process.env.MEMORIES_SEARCH_EMBEDDING_PRESET?.trim(),
+  );
   if (fromEnv) return fromEnv;
 
   const dims = listVectorVecDimensions(db);
