@@ -1,6 +1,7 @@
 import type { Database } from "bun:sqlite";
 import type {
   MemoriesPersistence as IMemoriesPersistence,
+  MemoriesBackendCapabilities,
   MemoryOpContext,
   NeighborFilter,
 } from "@cfd/memories";
@@ -31,6 +32,12 @@ import { insertTextFeatureWithFts } from "./models/text-features";
 import { insertVectorFeatureWithVecIndex } from "./models/vector-features";
 
 export class MemoriesPersistence implements IMemoriesPersistence {
+  readonly capabilities: MemoriesBackendCapabilities = {
+    lexicalSearch: true,
+    vectorSearch: true,
+    neighborIndex: true,
+  };
+
   constructor(private readonly db: Database) {}
 
   private ctx(op: MemoryOpContext): DbCtx {

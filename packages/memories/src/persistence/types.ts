@@ -31,49 +31,95 @@ export type EdgePreviewPayload = {
 };
 
 /**
- * Core storage for memories: merge/search/delete, content chunks, graph-backed retrieval for search,
- * and search-meta. Does not include layout or UI preview reads—see {@link MemoriesVisualization}.
+ * Features the backend exposes for hybrid search and graph expansion.
+ * Omitted on a persistence instance means all flags are treated as `true` (see {@link resolveMemoriesBackendCapabilities}).
  */
-export interface MemoriesPersistence {
+export type MemoriesBackendCapabilities = {
+  lexicalSearch: boolean;
+  vectorSearch: boolean;
+  neighborIndex: boolean;
+};
+
+/** Default when {@link MemoriesPersistence.capabilities} is omitted (full-featured backend). */
+export const DEFAULT_MEMORIES_BACKEND_CAPABILITIES: MemoriesBackendCapabilities = {
+  lexicalSearch: true,
+  vectorSearch: true,
+  neighborIndex: true,
+};
+
+/** Resolve effective capabilities for merge/search logic. */
+export function resolveMemoriesBackendCapabilities(persistence: {
+  capabilities?: MemoriesBackendCapabilities;
+}): MemoriesBackendCapabilities {
+  return persistence.capabilities ?? DEFAULT_MEMORIES_BACKEND_CAPABILITIES;
+}
+
+/**
+ * Transactional writes, merge/delete graph, search-meta.
+ * See [PERSISTENCE_IMPLEMENTORS.md](../PERSISTENCE_IMPLEMENTORS.md).
+ */
+export interface MemoriesMutation {
+  /**
+   * Run `fn` inside a single transaction; commit on return, rollback on throw.
+   * **Note:** Prefer one outer transaction per merge/delete; nesting depends on the driver.
+   */
   withTransaction<T>(fn: () => T): T;
 
+  /**
+   * Memory keys for memories connected by edges to the given node (used when syncing search-meta for neighbors).
+   * **Post:** Returns deduped logical keys in namespace for merge side-effects.
+   */
   listNeighborMemoryKeysForNode(op: MemoryOpContext, namespace: string, nodeId: string): string[];
 
+  /**
+   * Delete all dependent rows for this memory subtree (features, maps, edges, labels, meta, etc.).
+   * **Pre:** Typically called at start of merge after resolving `memoryId` / `nodeId`.
+   */
   clearMemorySubtree(op: MemoryOpContext, memoryId: string, nodeId: string): void;
 
+  /** Upsert root memory row; returns stable ids and creation timestamp field used by validators. */
   upsertMemory(
     op: MemoryOpContext,
     input: { namespace: string; key: string },
   ): { memoryId: string; _ts_created: number };
 
+  /** Upsert the primary graph node for a memory key; optional JSON properties on the node. */
   upsertNodeForMemoryKey(
     op: MemoryOpContext,
     input: { namespace: string; memoryKey: string; properties?: Record<string, unknown> },
   ): { nodeId: string };
 
+  /** Insert a source map row for (memoryId, sourceKey); content items are one map each. */
   insertSourceMap(
     op: MemoryOpContext,
     input: { memoryId: string; sourceKey: string },
   ): { sourceMapId: string };
 
+  /** Attach FTS-backed searchable text to a source map. */
   insertTextFeatureWithFts(
     op: MemoryOpContext,
     input: { memoryId: string; sourceMapId: string; text: string },
   ): { textFeatureId: string };
 
+  /** Attach a vector feature and index it for vector search (dimension must match query embeddings). */
   insertVectorFeatureWithVecIndex(
     op: MemoryOpContext,
     input: { memoryId: string; sourceMapId: string; vector: Float32Array },
   ): { vectorFeatureId: string };
 
+  /** Get or create a node-label id for the stored label string (ontology-encoded). */
   ensureNodeLabel(op: MemoryOpContext, value: string): string;
 
+  /** Assign a node label to a node. */
   insertNodeLabelAssignment(op: MemoryOpContext, input: { nodeId: string; labelId: string }): void;
 
+  /** Resolve memory primary key by logical key, or `undefined` if absent. */
   findMemoryIdByKey(namespace: string, key: string): string | undefined;
 
+  /** Whether a node row exists (used to validate edge targets). */
   nodeExists(nodeId: string): boolean;
 
+  /** Insert a directed edge between two nodes; `idParts` encode deduplication identity. */
   insertEdge(
     op: MemoryOpContext,
     input: {
@@ -88,24 +134,37 @@ export interface MemoriesPersistence {
 
   insertEdgeLabelAssignment(op: MemoryOpContext, input: { edgeId: string; labelId: string }): void;
 
+  /**
+   * Rebuild search-meta canonical text (and optional vector) for a memory key.
+   * **Post:** Meta chunk participates in hybrid search when lexical/vector features exist.
+   */
   syncMemorySearchMeta(
     op: MemoryOpContext,
     input: { namespace: string; memoryKey: string; metaVector?: Float32Array },
   ): void;
 
+  /** Build canonical meta text for a memory (read during sync). */
   buildCanonicalMemorySearchMetaText(
     op: MemoryOpContext,
     namespace: string,
     memoryKey: string,
   ): string;
 
+  /** Upsert vector for the search-meta source map only (batch path after merge). */
   upsertMemorySearchMetaVector(
     op: MemoryOpContext,
     input: { namespace: string; memoryKey: string; vector: Float32Array },
   ): void;
 
+  /** Delete root `memories` and `nodes` rows after subtree clear (delete flow). */
   deleteMemoryRootRows(memoryId: string, nodeId: string): void;
+}
 
+/**
+ * Lexical + vector retrieval and hydration for hybrid search.
+ * Return lists are **rank-ordered** `source_map` ids (best first); scores are not supplied—RRF uses rank.
+ */
+export interface MemoriesRetrieval {
   searchLexicalSourceMapIds(input: {
     namespace: string;
     text: string;
@@ -123,7 +182,10 @@ export interface MemoriesPersistence {
   hydrateSourceMapHits<NODE_LABEL extends string = string>(
     sourceMapIds: readonly string[],
   ): HydratedSourceMapHit<NODE_LABEL>[];
+}
 
+/** Graph neighbor listing for search expansion and filters. */
+export interface MemoriesNeighborIndex {
   listNeighborsForMemory<
     EDGE_LABEL extends string = string,
     NODE_LABEL extends string = string,
@@ -133,6 +195,17 @@ export interface MemoriesPersistence {
     filters?: NeighborFilter<EDGE_LABEL, NODE_LABEL>;
   }): HydratedNeighbor<EDGE_LABEL, NODE_LABEL>[];
 }
+
+/**
+ * Core storage: {@link MemoriesMutation} + {@link MemoriesRetrieval} + {@link MemoriesNeighborIndex}.
+ * Optional {@link MemoriesBackendCapabilities} declares MVP subsets.
+ * Visualization reads: {@link MemoriesVisualization}.
+ */
+export type MemoriesPersistence = MemoriesMutation &
+  MemoriesRetrieval &
+  MemoriesNeighborIndex & {
+    capabilities?: MemoriesBackendCapabilities;
+  };
 
 /**
  * Read model for visualization / graph UI: edge lists, layout inputs, and text previews.

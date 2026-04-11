@@ -2,6 +2,7 @@ import {
   buildCanonicalMemorySearchMetaText,
   type MemoriesClient,
   type MergeMemoryContentItem,
+  resolveMemoriesBackendCapabilities,
   type SearchContent,
   type TypedSearchHit,
   upsertMemorySearchMetaVector,
@@ -89,6 +90,11 @@ export async function mergeLogicalMemoryWithPlan<
     .filter((p) => p.text.length > 0);
 
   if (pairs.length === 0) return;
+
+  const caps = resolveMemoriesBackendCapabilities(client.persistence);
+  if (!caps.vectorSearch) {
+    return;
+  }
 
   const embeddings = await embedTextChunks(
     embeddingModel,

@@ -1,7 +1,7 @@
 import z from "zod";
 import { ids } from "../models/ids";
 import { MEMORY_SEARCH_META_SOURCE_KEY } from "../models/memory-search-meta";
-import type { MemoriesPersistence } from "../persistence/types";
+import { type MemoriesPersistence, resolveMemoriesBackendCapabilities } from "../persistence/types";
 
 export {
   buildCanonicalMemorySearchMetaTextForMerge,
@@ -62,6 +62,7 @@ export interface MergeMemoryParams<NODE_LABEL = string, EDGE_LABEL = string> {
  */
 export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams<string, string>): string[] {
   const { persistence } = ctx;
+  const caps = resolveMemoriesBackendCapabilities(persistence);
   const now = Date.now();
   const op = { now };
 
@@ -70,6 +71,21 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams<string, 
 
   for (const item of params.content) {
     zMergeMemoryContentItem.parse(item);
+    if (item.vector !== undefined && !caps.vectorSearch) {
+      throw new Error(
+        "mergeMemory: content item includes vector but persistence.capabilities.vectorSearch is false",
+      );
+    }
+  }
+
+  if (
+    params.searchMetaVector !== undefined &&
+    params.searchMetaVector.length > 0 &&
+    !caps.vectorSearch
+  ) {
+    throw new Error(
+      "mergeMemory: searchMetaVector set but persistence.capabilities.vectorSearch is false",
+    );
   }
 
   let metaSyncedMemoryKeys: string[] = [];
