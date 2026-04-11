@@ -16,56 +16,86 @@ export type SessionContextInput<Input = unknown> =
   | SessionContext
   | ((args: SessionContextResolverArgs<Input>) => MaybePromise<SessionContext | undefined>);
 
-export type AgentSessionHooks<Input = unknown, Output = unknown> = {
+export type AgentSessionHooks<
+  Input = unknown,
+  Output = unknown,
+  Context extends SessionContext = SessionContext,
+> = {
   onStart?: (args: { agent: RegisteredAgentIdentity; input: Input }) => MaybePromise<void>;
   onAfterIdentity?: (args: { agent: RegisteredAgentIdentity; input: Input }) => MaybePromise<void>;
   onAfterContext?: (args: {
     agent: RegisteredAgentIdentity;
     input: Input;
-    context: SessionContext;
+    context: Context;
   }) => MaybePromise<void>;
   onBeforeRun?: (args: {
     agent: RegisteredAgentIdentity;
     input: Input;
-    context: SessionContext;
+    context: Context;
   }) => MaybePromise<void>;
   onAfterRun?: (args: {
     agent: RegisteredAgentIdentity;
     input: Input;
-    context: SessionContext;
+    context: Context;
     output: Output;
   }) => MaybePromise<void>;
   onError?: (args: {
     agent: RegisteredAgentIdentity;
     input: Input;
-    context: SessionContext;
+    context: Context;
     error: unknown;
   }) => MaybePromise<void>;
 };
 
-export type SessionRunner<Input = unknown, Output = unknown> = (args: {
+export type SessionRunner<
+  Input = unknown,
+  Output = unknown,
+  Context extends SessionContext = SessionContext,
+> = (args: {
   agent: RegisteredAgentIdentity;
   input: Input;
-  context: SessionContext;
+  context: Context;
 }) => MaybePromise<Output>;
 
-export type RegisterAgentOptions = {
-  hooks?: AgentSessionHooks;
-  ctx?: SessionContextInput | SessionContextInput[];
-  run?: SessionRunner;
+/**
+ * Runner type for {@link RegisterAgentOptions.run} / {@link RegisteredAgentEntry.run}.
+ * Uses a method-style key so `input` is checked **bivariantly**; then a concrete
+ * `SessionRunner<SpecificInput, SpecificOutput>` assigns without casts while `start()` still passes `unknown` through at runtime.
+ */
+export type RegisteredSessionRunner = {
+  bivarianceHack(args: {
+    agent: RegisteredAgentIdentity;
+    input: unknown;
+    context: SessionContext;
+  }): MaybePromise<unknown>;
+}["bivarianceHack"];
+
+export type RegisterAgentOptions<
+  Input = unknown,
+  Output = unknown,
+  Context extends SessionContext = SessionContext,
+> = {
+  hooks?: AgentSessionHooks<Input, Output, Context>;
+  ctx?: SessionContextInput<Input> | SessionContextInput<Input>[];
+  run?: RegisteredSessionRunner;
 };
 
-export type CreateSessionOptions = {
-  hooks?: AgentSessionHooks;
-  ctx?: SessionContextInput | SessionContextInput[];
-  run?: SessionRunner;
+export type CreateSessionOptions<
+  Input = unknown,
+  Output = unknown,
+  Context extends SessionContext = SessionContext,
+> = {
+  hooks?: AgentSessionHooks<Input, Output, Context>;
+  ctx?: SessionContextInput<Input> | SessionContextInput<Input>[];
+  run?: RegisteredSessionRunner;
 };
 
+/** Hooks are widened for heterogeneous storage; invocation stays `unknown` at runtime (see `runStage`). */
 export type RegisteredAgentEntry = {
   agent: RegisteredAgentIdentity;
-  hooks?: AgentSessionHooks;
+  hooks?: AgentSessionHooks<unknown, unknown, SessionContext>;
   ctx?: SessionContextInput[];
-  run?: SessionRunner;
+  run?: RegisteredSessionRunner;
 };
 
 export type AgentSession = {
@@ -80,11 +110,14 @@ export type AgentSession = {
 };
 
 export type AgentRegistry = {
-  register: (
+  register: <Input = unknown, Output = unknown, Context extends SessionContext = SessionContext>(
     agent: RegisteredAgentIdentity,
-    options?: RegisterAgentOptions,
+    options?: RegisterAgentOptions<Input, Output, Context>,
   ) => { staticHash: string };
-  createSession: (agentId: string, options?: CreateSessionOptions) => AgentSession;
+  createSession: <Input = unknown, Output = unknown, Context extends SessionContext = SessionContext>(
+    agentId: string,
+    options?: CreateSessionOptions<Input, Output, Context>,
+  ) => AgentSession;
   get: (agentId: string) => RegisteredAgentEntry | undefined;
   has: (agentId: string) => boolean;
   listKeys: () => string[];
@@ -106,20 +139,28 @@ function mergeContext(base: SessionContext, extra?: SessionContext): SessionCont
 export function createAgentRegistry(): AgentRegistry {
   const byId = new Map<string, RegisteredAgentEntry>();
 
-  function register(
+  function register<
+    Input = unknown,
+    Output = unknown,
+    Context extends SessionContext = SessionContext,
+  >(
     agent: RegisteredAgentIdentity,
-    options: RegisterAgentOptions = {},
+    options: RegisterAgentOptions<Input, Output, Context> = {},
   ): { staticHash: string } {
     byId.set(agent.agentId, {
       agent,
-      hooks: options.hooks,
-      ctx: toArray(options.ctx),
+      hooks: options.hooks as RegisteredAgentEntry["hooks"],
+      ctx: toArray(options.ctx) as RegisteredAgentEntry["ctx"],
       run: options.run,
     });
     return { staticHash: agent.staticHash };
   }
 
-  function createSession(agentId: string, options: CreateSessionOptions = {}): AgentSession {
+  function createSession<
+    Input = unknown,
+    Output = unknown,
+    Context extends SessionContext = SessionContext,
+  >(agentId: string, options: CreateSessionOptions<Input, Output, Context> = {}): AgentSession {
     const entry = byId.get(agentId);
     if (!entry) {
       throw new Error(`agent not registered: ${agentId}`);
@@ -160,7 +201,15 @@ export function createAgentRegistry(): AgentRegistry {
       const allCtx = [...(registered.ctx ?? []), ...sessionCtx];
       for (const piece of allCtx) {
         if (typeof piece === "function") {
-          const resolved = await piece({ agent: registered.agent, input, context: merged });
+          const resolved = await (
+            piece as (
+              args: SessionContextResolverArgs,
+            ) => MaybePromise<SessionContext | undefined>
+          )({
+            agent: registered.agent,
+            input,
+            context: merged,
+          });
           if (resolved) {
             merged = mergeContext(merged, resolved);
           }

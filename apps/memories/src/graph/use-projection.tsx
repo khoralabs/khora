@@ -36,15 +36,17 @@ type ProjectionValue = {
   setSelected: (p: ProjectionPoint | null) => void;
 
   hoveredEntryId: string | null;
-  /** Pinned selection wins over hover for subgraph highlight / edge labels / tooltips. */
+  /** Center node for subgraph dimming: click pin, else null when search drives the subgraph, else hover. */
   focusEntryId: string | null;
-  /** 1-hop ego of {@link focusEntryId} when hovering or a node is pinned; null when idle. */
+  /** 1-hop ego of click pin, search hits, or hover — priority: click > search > hover. */
   activeSubgraphKeys: ReadonlySet<string> | null;
 
   onHoverStart: (entryId: string) => void;
   onHoverEnd: () => void;
   clearHover: () => void;
   clearPinnedSelection: () => void;
+  /** Clears hover, click pin, and search field/results (parent `onDismissPersistentFocus`). */
+  dismissPersistentGraphFocus: () => void;
   onMemoryPreviewPointerEnter: () => void;
   onMemoryPreviewPointerLeave: () => void;
   hoverData: HoverData | undefined;
@@ -84,6 +86,19 @@ function dedupeUndirectedEdges(edges: GraphPayload["edges"]): SceneEdge[] {
   }));
 }
 
+function expandEgoKeys(
+  keys: ReadonlySet<string>,
+  adjacency: Map<string, Set<string>>,
+): Set<string> {
+  const out = new Set<string>();
+  for (const k of keys) {
+    out.add(k);
+    const nbrs = adjacency.get(k);
+    if (nbrs) for (const n of nbrs) out.add(n);
+  }
+  return out;
+}
+
 function buildAdjacency(data: GraphPayload): Map<string, Set<string>> {
   const m = new Map<string, Set<string>>();
   const link = (a: string, b: string) => {
@@ -105,9 +120,15 @@ export function GraphProjectionProvider({
   children,
   data,
   graphSearch = null,
+  searchQuery = "",
+  onDismissPersistentFocus,
 }: PropsWithChildren<{
   data: GraphPayload;
   graphSearch?: GraphSearchState | null;
+  /** Kept in sync with the search field so click-pin clears while typing or when results update. */
+  searchQuery?: string;
+  /** Clears the search field / results in the parent (e.g. `setSearchQuery("")`). */
+  onDismissPersistentFocus?: () => void;
 }>) {
   const points = useMemo(() => buildPoints(data), [data]);
   const sceneEdges = useMemo(() => dedupeUndirectedEdges(data.edges), [data.edges]);
@@ -156,6 +177,12 @@ export function GraphProjectionProvider({
     setSelected(null);
   }, []);
 
+  const dismissPersistentGraphFocus = useCallback(() => {
+    clearHover();
+    clearPinnedSelection();
+    onDismissPersistentFocus?.();
+  }, [clearHover, clearPinnedSelection, onDismissPersistentFocus]);
+
   const onMemoryPreviewPointerEnter = useCallback(() => {
     cancelScheduledHoverClear();
   }, [cancelScheduledHoverClear]);
@@ -169,14 +196,16 @@ export function GraphProjectionProvider({
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        clearHover();
-        clearPinnedSelection();
-      }
+      if (e.key === "Escape") dismissPersistentGraphFocus();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [clearHover, clearPinnedSelection]);
+  }, [dismissPersistentGraphFocus]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: clear click-pin when search text or fetched results change
+  useEffect(() => {
+    setSelected(null);
+  }, [searchQuery, graphSearch]);
 
   const hoverData = useMemo((): HoverData | undefined => {
     if (!debouncedHoveredId) return undefined;
@@ -189,7 +218,13 @@ export function GraphProjectionProvider({
     };
   }, [adjacency, debouncedHoveredId]);
 
-  const focusEntryId = selected?.entryId ?? debouncedHoveredId ?? null;
+  const searchSubgraphKeys = useMemo((): ReadonlySet<string> | null => {
+    if (!graphSearch || graphSearch.relevantKeys.size === 0) return null;
+    return expandEgoKeys(graphSearch.relevantKeys, adjacency);
+  }, [graphSearch, adjacency]);
+
+  const focusEntryId =
+    selected?.entryId ?? (searchSubgraphKeys ? null : (debouncedHoveredId ?? null));
 
   const activeSubgraphKeys = useMemo((): ReadonlySet<string> | null => {
     if (selected) {
@@ -197,11 +232,12 @@ export function GraphProjectionProvider({
       if (!nbrs) return new Set([selected.entryId]);
       return new Set([selected.entryId, ...nbrs]);
     }
+    if (searchSubgraphKeys) return searchSubgraphKeys;
     if (hoverData?.communityMembers.length) {
       return new Set(hoverData.communityMembers);
     }
     return null;
-  }, [selected, hoverData, adjacency]);
+  }, [selected, searchSubgraphKeys, hoverData, adjacency]);
 
   const value = useMemo(
     (): ProjectionValue => ({
@@ -219,6 +255,7 @@ export function GraphProjectionProvider({
       onHoverEnd,
       clearHover,
       clearPinnedSelection,
+      dismissPersistentGraphFocus,
       onMemoryPreviewPointerEnter,
       onMemoryPreviewPointerLeave,
       hoverData,
@@ -237,6 +274,7 @@ export function GraphProjectionProvider({
       onHoverEnd,
       clearHover,
       clearPinnedSelection,
+      dismissPersistentGraphFocus,
       onMemoryPreviewPointerEnter,
       onMemoryPreviewPointerLeave,
       hoverData,

@@ -5,6 +5,7 @@ export type {
   CreateSessionOptions,
   RegisterAgentOptions,
   RegisteredAgentEntry,
+  RegisteredSessionRunner,
   SessionContext,
   SessionContextInput,
   SessionRunner,

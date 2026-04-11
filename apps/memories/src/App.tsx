@@ -122,7 +122,12 @@ export function App() {
     <div className="fixed inset-0 overflow-hidden bg-background text-foreground">
       <div className="absolute inset-0">
         {data && data.nodes.length > 0 ? (
-          <GraphProjectionProvider data={data} graphSearch={graphSearch}>
+          <GraphProjectionProvider
+            data={data}
+            graphSearch={graphSearch}
+            searchQuery={searchQuery}
+            onDismissPersistentFocus={() => setSearchQuery("")}
+          >
             <GraphScene />
           </GraphProjectionProvider>
         ) : (

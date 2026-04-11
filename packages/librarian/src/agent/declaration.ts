@@ -6,7 +6,12 @@ import type {
 import type { OntologyDefinition } from "@cfd/memories";
 import type z from "zod";
 import { defineMemoryLibrarianIdentity } from "./identity.js";
-import { memoryLibrarianRegistryRegistration } from "./memory-librarian-session.js";
+import {
+  type MemoryLibrarianSessionContext,
+  type MemoryLibrarianSessionInput,
+  type MemoryLibrarianSessionOutput,
+  memoryLibrarianRegistryRegistration,
+} from "./memory-librarian-session.js";
 
 /**
  * Single declarative bundle for the memory librarian: {@link RegisteredAgentIdentity} plus
@@ -15,11 +20,18 @@ import { memoryLibrarianRegistryRegistration } from "./memory-librarian-session.
  * hooks (`onPolicyEvaluated` / `onToolExecuted`) live; those attach to toolkits/tools or `ToolkitContext.pipelineHooks`.
  */
 /** Identity plus default `register` options (session runner + session hooks). */
-export type MemoryLibrarianAgentDeclaration = {
+export type MemoryLibrarianAgentDeclaration<
+  TNode extends Record<string, z.ZodType> = Record<string, z.ZodType>,
+  TEdge extends Record<string, z.ZodType> = Record<string, z.ZodType>,
+> = {
   staticHash: string;
   identity: RegisteredAgentIdentity;
   /** Pass verbatim: {@code registry.register(identity, registration)}. */
-  registration: RegisterAgentOptions;
+  registration: RegisterAgentOptions<
+    MemoryLibrarianSessionInput<TNode, TEdge>,
+    MemoryLibrarianSessionOutput,
+    MemoryLibrarianSessionContext<TNode, TEdge>
+  >;
 };
 
 /**
@@ -33,7 +45,7 @@ export async function declareMemoryLibrarianAgent<
 >(
   namespace: string,
   ontology: OntologyDefinition<TNode, TEdge>,
-): Promise<MemoryLibrarianAgentDeclaration> {
+): Promise<MemoryLibrarianAgentDeclaration<TNode, TEdge>> {
   const { staticHash, identity } = await defineMemoryLibrarianIdentity(namespace, ontology);
   return {
     staticHash,
@@ -53,7 +65,7 @@ export async function registerMemoryLibrarianAgent<
   registry: AgentRegistry,
   namespace: string,
   ontology: OntologyDefinition<TNode, TEdge>,
-): Promise<MemoryLibrarianAgentDeclaration> {
+): Promise<MemoryLibrarianAgentDeclaration<TNode, TEdge>> {
   const declaration = await declareMemoryLibrarianAgent<TNode, TEdge>(namespace, ontology);
   registry.register(declaration.identity, declaration.registration);
   return declaration;

@@ -144,7 +144,9 @@ function GraphSceneR3f() {
           posMap={posMap}
           activeSubgraphKeys={activeSubgraphKeys}
           graphSearch={graphSearch}
-          pinnedSubgraphHighlight={selected !== null}
+          pinnedSubgraphHighlight={
+            selected !== null || (graphSearch !== null && graphSearch.relevantKeys.size > 0)
+          }
         />
         <ActiveSubgraphEdgeLabels
           edges={sceneEdges}
@@ -152,9 +154,11 @@ function GraphSceneR3f() {
           activeSubgraphKeys={activeSubgraphKeys}
         />
         {points.map((point) => {
-          const inPinnedEgo = selected !== null && !!activeSubgraphKeys?.has(point.entryId);
+          const inActiveSubgraph = !!activeSubgraphKeys?.has(point.entryId);
           const searchDimmed =
-            graphSearch !== null && !graphSearch.relevantKeys.has(point.entryId) && !inPinnedEgo;
+            graphSearch !== null &&
+            !graphSearch.relevantKeys.has(point.entryId) &&
+            !inActiveSubgraph;
           const subgraphDimmed =
             activeSubgraphKeys !== null &&
             point.entryId !== focusEntryId &&

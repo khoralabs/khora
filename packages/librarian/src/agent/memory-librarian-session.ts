@@ -8,7 +8,7 @@
  */
 import {
   evaluateRegisteredAgentAffordances,
-  type RegisteredAgentIdentity,
+  type RegisterAgentOptions,
   type SessionRunner,
   type ToolkitContext,
   type ToolRuntimeContext,
@@ -141,12 +141,13 @@ async function formatResolvedSourceBlock(hit: SearchHit, source: ResolvedSource)
 export function createMemoryLibrarianSessionRunner<
   TNode extends Record<string, z.ZodType>,
   TEdge extends Record<string, z.ZodType>,
->(): SessionRunner<MemoryLibrarianSessionInput<TNode, TEdge>, MemoryLibrarianSessionOutput> {
+>(): SessionRunner<
+  MemoryLibrarianSessionInput<TNode, TEdge>,
+  MemoryLibrarianSessionOutput,
+  MemoryLibrarianSessionContext<TNode, TEdge>
+> {
   return async ({ agent, input, context }) => {
-    const { model, client, embeddingModel } = context as MemoryLibrarianSessionContext<
-      TNode,
-      TEdge
-    >;
+    const { model, client, embeddingModel, toolkitCtx, runtime } = context;
     const {
       logicalMemory,
       processedLogicalMemory,
@@ -155,8 +156,6 @@ export function createMemoryLibrarianSessionRunner<
       runMerge,
       maxSteps,
     } = input;
-
-    const { toolkitCtx, runtime } = context as MemoryLibrarianSessionContext<TNode, TEdge>;
     if (!toolkitCtx || !runtime) {
       throw new Error("memory librarian session context missing toolkit/runtime");
     }
@@ -235,22 +234,16 @@ export function createMemoryLibrarianSessionRunner<
 export function memoryLibrarianRegistryRegistration<
   TNode extends Record<string, z.ZodType>,
   TEdge extends Record<string, z.ZodType>,
->(): {
-  run: SessionRunner;
-  hooks: {
-    onAfterContext: (args: {
-      agent: RegisteredAgentIdentity;
-      input: unknown;
-      context: Record<string, unknown>;
-    }) => void;
-  };
-} {
+>(): RegisterAgentOptions<
+  MemoryLibrarianSessionInput<TNode, TEdge>,
+  MemoryLibrarianSessionOutput,
+  MemoryLibrarianSessionContext<TNode, TEdge>
+> {
   return {
-    run: createMemoryLibrarianSessionRunner<TNode, TEdge>() as SessionRunner,
+    run: createMemoryLibrarianSessionRunner<TNode, TEdge>(),
     hooks: {
       onAfterContext(args) {
-        const input = args.input as MemoryLibrarianSessionInput<TNode, TEdge>;
-        const ctx = args.context as MemoryLibrarianSessionContext<TNode, TEdge>;
+        const { input, context: ctx } = args;
         ctx.toolkitCtx = buildMemoryLibrarianToolkitContext({
           client: ctx.client,
           namespace: input.logicalMemory.namespace,
