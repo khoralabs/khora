@@ -1,6 +1,9 @@
 import { createRegisteredAgentIdentity, type RegisteredAgentIdentity } from "@cfd/agent-identity";
 import type { LabelSchemaMap, OntologyDefinition } from "@cfd/memories";
-import { buildLibrarianBaseSystemContent, buildLibrarianMergePlanInstruction } from "./instructions";
+import {
+  buildLibrarianBaseSystemContent,
+  buildLibrarianMergePlanInstruction,
+} from "./instructions";
 import { memoryLibrarianToolkit } from "./toolkit";
 
 /** Stable librarian agent id for registry / fingerprinting. */
@@ -16,17 +19,17 @@ export function buildMemoryLibrarianAgentId(namespace: string): string {
 export async function defineMemoryLibrarianIdentity<
   TNode extends LabelSchemaMap,
   TEdge extends LabelSchemaMap,
->(namespace: string, ontology: OntologyDefinition<TNode, TEdge>): Promise<{
+>(
+  namespace: string,
+  ontology: OntologyDefinition<TNode, TEdge>,
+): Promise<{
   staticHash: string;
   identity: RegisteredAgentIdentity;
 }> {
   return createRegisteredAgentIdentity({
     agentId: buildMemoryLibrarianAgentId(namespace),
     name: "Memory Librarian",
-    instructions: [
-      buildLibrarianMergePlanInstruction(ontology),
-      buildLibrarianBaseSystemContent(),
-    ],
+    instructions: [buildLibrarianMergePlanInstruction(ontology), buildLibrarianBaseSystemContent()],
     rootComposable: memoryLibrarianToolkit,
   });
 }

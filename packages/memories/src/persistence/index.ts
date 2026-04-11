@@ -5,7 +5,6 @@ export {
   upsertMemorySearchMetaVector,
   upsertMemorySearchMetaVectorAsync,
 } from "./facade.ts";
-export { wrapSyncMemoriesPersistenceAsAsync } from "./wrap-sync-as-async.ts";
 export type {
   EdgePreviewPayload,
   GraphEdgeLink,
@@ -24,3 +23,4 @@ export {
   DEFAULT_MEMORIES_BACKEND_CAPABILITIES,
   resolveMemoriesBackendCapabilities,
 } from "./types";
+export { wrapSyncMemoriesPersistenceAsAsync } from "./wrap-sync-as-async.ts";

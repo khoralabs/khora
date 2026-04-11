@@ -114,7 +114,11 @@ export type AgentRegistry = {
     agent: RegisteredAgentIdentity,
     options?: RegisterAgentOptions<Input, Output, Context>,
   ) => { staticHash: string };
-  createSession: <Input = unknown, Output = unknown, Context extends SessionContext = SessionContext>(
+  createSession: <
+    Input = unknown,
+    Output = unknown,
+    Context extends SessionContext = SessionContext,
+  >(
     agentId: string,
     options?: CreateSessionOptions<Input, Output, Context>,
   ) => AgentSession;
@@ -202,9 +206,7 @@ export function createAgentRegistry(): AgentRegistry {
       for (const piece of allCtx) {
         if (typeof piece === "function") {
           const resolved = await (
-            piece as (
-              args: SessionContextResolverArgs,
-            ) => MaybePromise<SessionContext | undefined>
+            piece as (args: SessionContextResolverArgs) => MaybePromise<SessionContext | undefined>
           )({
             agent: registered.agent,
             input,

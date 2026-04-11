@@ -1,8 +1,5 @@
 import type { LabelSchemaMap, OntologyDefinition } from "@cfd/memories";
-import {
-  buildLibrarianMergePlanDescription,
-  labelKindsFromOntology,
-} from "../../workflow/plan.js";
+import { buildLibrarianMergePlanDescription, labelKindsFromOntology } from "../../workflow/plan.js";
 
 /**
  * Merge-plan rules for the librarian (allowed kinds, labels/edges JSON shape). Placed as the first

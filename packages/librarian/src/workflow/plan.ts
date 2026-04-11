@@ -24,7 +24,7 @@ export function buildLibrarianMergePlanDescription(
   edgeKinds: string[],
 ): string {
   const n = nodeKinds.length ? nodeKinds.join(", ") : "(none — leave `labels` empty)";
-  const e = edgeKinds.length ? edgeKinds.join(", ") : '(none — leave the edges array empty)';
+  const e = edgeKinds.length ? edgeKinds.join(", ") : "(none — leave the edges array empty)";
   return `Classify and link this memory.
 
 The "labels" field MUST be an array of objects like {"kind":"<ontology kind>","props":{}} (one object per label). Do NOT output a list of bare strings. Each "kind" MUST be one of: ${n} — not ad-hoc tags or topics.
@@ -53,7 +53,9 @@ function buildKindPropsDiscriminatedUnion(
     return z.object({
       kind: z
         .literal(k)
-        .describe(kindRole === "node" ? "Node label kind (ontology)." : "Edge label kind (ontology)."),
+        .describe(
+          kindRole === "node" ? "Node label kind (ontology)." : "Edge label kind (ontology).",
+        ),
       props: propSchema
         .optional()
         .describe(
@@ -153,7 +155,7 @@ export function librarianMergePlanOutputFromOntology<
   return Output.object({
     name: "LibrarianMergePlan",
     description:
-      "Final JSON must validate as LibrarianMergePlan (see the first system block, \"Merge plan\"). Field types follow the schema; do not substitute string arrays for label objects.",
+      'Final JSON must validate as LibrarianMergePlan (see the first system block, "Merge plan"). Field types follow the schema; do not substitute string arrays for label objects.',
     schema: zLibrarianMergePlanWire(ontology),
   });
 }

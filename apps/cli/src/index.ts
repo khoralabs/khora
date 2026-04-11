@@ -13,8 +13,8 @@ import {
 import {
   defineOntology,
   MemoriesClient,
-  searchAsync,
   type ResolvedSource,
+  searchAsync,
   wrapSyncMemoriesPersistenceAsAsync,
 } from "@cfd/memories";
 import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-persistence/sqlite";

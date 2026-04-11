@@ -34,7 +34,9 @@ test("logger without LOG_DESTINATION: structured info does not throw", () => {
 });
 
 test("LOG_DESTINATION appends NDJSON line", () => {
-  const path = join(tmpDir!, "out.jsonl");
+  if (!tmpDir) throw new Error("tmpDir is not defined");
+
+  const path = join(tmpDir, "out.jsonl");
   process.env.LOG_DESTINATION = path;
   resetLibrarianLoggerForTests();
 

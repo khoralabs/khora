@@ -1,8 +1,8 @@
 import {
   buildCanonicalMemorySearchMetaText,
   buildCanonicalMemorySearchMetaTextAsync,
-  MemoriesClientAsync,
   type MemoriesClient,
+  MemoriesClientAsync,
   type MergeMemoryContentItem,
   resolveMemoriesBackendCapabilities,
   type SearchContent,

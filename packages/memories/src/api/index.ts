@@ -17,8 +17,11 @@ export type {
   MemoryOpContext,
 } from "../persistence";
 export {
+  buildCanonicalMemorySearchMetaTextAsync,
   DEFAULT_MEMORIES_BACKEND_CAPABILITIES,
   resolveMemoriesBackendCapabilities,
+  upsertMemorySearchMetaVectorAsync,
+  wrapSyncMemoriesPersistenceAsAsync,
 } from "../persistence";
 export * from "./client";
 export * from "./client-async";
@@ -31,11 +34,6 @@ export {
   zMergeMemoryContentItem,
   zUserSourceKey,
 } from "./merge-memory";
-export {
-  buildCanonicalMemorySearchMetaTextAsync,
-  upsertMemorySearchMetaVectorAsync,
-  wrapSyncMemoriesPersistenceAsAsync,
-} from "../persistence";
 export * from "./merge-memory-async";
 export * from "./ontology.ts";
 export * from "./resolve-sourcemap";
