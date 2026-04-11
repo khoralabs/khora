@@ -8,7 +8,8 @@ import type {
 } from "@cfd/memories";
 import z from "zod";
 import { type EmbeddingModel, embedTextChunks } from "../adapters/embedding-model";
-import { logger } from "../logger.js";
+import { logger } from "../telemetry/logger.js";
+import { librarianLog } from "../telemetry/payloads.js";
 import { elapsedMs } from "../timing.js";
 
 /** Wide ontology maps; session clients use narrower TNode/TEdge at runtime (see {@link toMemoryLibrarianEnv}). */
@@ -182,26 +183,28 @@ const memorySearchTool = tool<
               content: { text: text ? truncateForLog(text, 200) : "" },
               ...(input.options !== undefined ? { options: input.options } : {}),
             };
-      logger.info({
-        phase: "librarian.toolCall",
-        toolName: e.toolName,
-        ok: e.ok,
-        durationMs: e.durationMs,
-        input: inputForLog,
-        outputSummary:
-          e.ok && Array.isArray(e.output)
-            ? {
-                hitCount: e.output.length,
-                memoryKeys: (e.output as MemorySearchHitLibrarian[])
-                  .slice(0, 20)
-                  .map((h) => h.memory_key),
-              }
-            : undefined,
-        error: e.ok ? undefined : e.error,
-      });
+      logger.info(
+        librarianLog("librarian.toolkit.toolCall", {
+          processTimeMs: e.durationMs ?? 0,
+          toolName: e.toolName,
+          ok: e.ok,
+          input: inputForLog,
+          outputSummary:
+            e.ok && Array.isArray(e.output)
+              ? {
+                  hitCount: e.output.length,
+                  memoryKeys: (e.output as MemorySearchHitLibrarian[])
+                    .slice(0, 20)
+                    .map((h) => h.memory_key),
+                }
+              : undefined,
+          error: e.ok ? undefined : e.error,
+        }),
+      );
     },
   },
   handler: async (ctx, input) => {
+    const tHandler = performance.now();
     const env = ctx.env;
     const parsed = zMemorySearchToolInput.parse(input);
     const opts = parsed.options;
@@ -256,13 +259,15 @@ const memorySearchTool = tool<
 
     const slim = mapSearchHitsToLibrarian(rawHits);
 
-    logger.info({
-      phase: "librarian.memory_search",
-      embedMs,
-      searchMs,
-      embedCacheHit,
-      hitCount: slim.length,
-    });
+    logger.info(
+      librarianLog("librarian.toolkit.memory_search", {
+        processTimeMs: elapsedMs(tHandler),
+        embedMs,
+        searchMs,
+        embedCacheHit,
+        hitCount: slim.length,
+      }),
+    );
 
     return slim;
   },

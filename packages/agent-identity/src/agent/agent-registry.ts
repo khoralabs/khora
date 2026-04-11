@@ -264,6 +264,8 @@ export function createAgentRegistry(): AgentRegistry {
             phase: "agentSession.runner",
             durationMs: elapsedMs(tRun),
             agentId,
+            name: agent.name,
+            staticHash: agent.staticHash,
           });
           await runStage("onAfterRun", { agent, input, context, output });
           return output;

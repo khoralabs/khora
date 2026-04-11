@@ -6,7 +6,8 @@ import type {
 import type { LabelSchemaMap, OntologyDefinition } from "@cfd/memories";
 import { type LanguageModel, type OnFinishEvent, stepCountIs, type Tool, ToolLoopAgent } from "ai";
 import { toolMapToAiTools } from "../adapters/tool-spec-to-ai-sdk";
-import { logger } from "../logger.js";
+import { logger } from "../telemetry/logger.js";
+import { librarianLog } from "../telemetry/payloads.js";
 import { elapsedMs } from "../timing.js";
 import {
   type LibrarianMergePlanStructuredOutput,
@@ -61,27 +62,31 @@ export function createMemoryLibrarianToolLoopAgent<
       return undefined;
     },
     onStepFinish: (step) => {
-      const durationMs = elapsedMs(stepWallStart);
+      const processTimeMs = elapsedMs(stepWallStart);
       stepWallStart = performance.now();
       const toolNames = step.toolCalls.map((c) => c.toolName);
-      logger.info({
-        phase: "librarian.toolLoop.step",
-        stepNumber: step.stepNumber,
-        durationMs,
-        finishReason: step.finishReason,
-        toolCallCount: step.toolCalls.length,
-        toolNames,
-        usage: step.usage,
-        textLength: step.text.length,
-      });
+      logger.info(
+        librarianLog("librarian.toolLoop.step", {
+          processTimeMs,
+          stepNumber: step.stepNumber,
+          finishReason: step.finishReason,
+          toolCallCount: step.toolCalls.length,
+          toolNames,
+          usage: step.usage,
+          textLength: step.text.length,
+        }),
+      );
     },
     onFinish: (event: OnFinishEvent<MemoryLibrarianToolSet>) => {
-      logger.info({
-        phase: "librarian.toolLoop.finish",
-        stepCount: event.steps.length,
-        totalUsage: event.totalUsage,
-        finishReason: event.finishReason,
-      });
+      const t0 = performance.now();
+      logger.info(
+        librarianLog("librarian.toolLoop.finish", {
+          processTimeMs: elapsedMs(t0),
+          stepCount: event.steps.length,
+          totalUsage: event.totalUsage,
+          finishReason: event.finishReason,
+        }),
+      );
     },
   });
 }

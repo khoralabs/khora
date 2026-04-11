@@ -4,7 +4,8 @@ import {
   type EmbedContentConfig,
   GoogleGenAI,
 } from "@google/genai";
-import { logger } from "../logger.js";
+import { logger } from "../telemetry/logger.js";
+import { librarianLog } from "../telemetry/payloads.js";
 import { elapsedMs } from "../timing.js";
 
 export const EMBEDDING_MODEL_NAME = "gemini-embedding-2-preview";
@@ -107,12 +108,13 @@ export async function embedTextChunks(
     out.push(...embeddings);
   }
 
-  logger.debug({
-    phase: "embedTextChunks",
-    durationMs: elapsedMs(t0),
-    textCount: texts.length,
-    model: embeddingModel.model,
-  });
+  logger.debug(
+    librarianLog("librarian.embed.textChunks", {
+      processTimeMs: elapsedMs(t0),
+      textCount: texts.length,
+      model: embeddingModel.model,
+    }),
+  );
   return out;
 }
 
@@ -137,10 +139,11 @@ export async function embedBinaryBlob(
   if (!first) {
     throw new Error("Google did not return any embeddings");
   }
-  logger.debug({
-    phase: "embedBinaryBlob",
-    durationMs: elapsedMs(t0),
-    model: embeddingModel.model,
-  });
+  logger.debug(
+    librarianLog("librarian.embed.binaryBlob", {
+      processTimeMs: elapsedMs(t0),
+      model: embeddingModel.model,
+    }),
+  );
   return first;
 }

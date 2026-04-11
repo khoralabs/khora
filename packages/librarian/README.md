@@ -13,14 +13,24 @@ End-to-end flow: [`processLogicalMemoryWithLibrarian`](src/workflow/process-logi
 
 ## Logging & telemetry
 
-Structured logs use **pino** (`import { logger } from "@cfd/librarian"`). Set **`LOG_LEVEL`** (`trace`…`fatal`, default `info`). **`debug`** includes `embedTextChunks` / `embedBinaryBlob` timings.
+Structured logs use **pino** (`import { logger, librarianLog } from "@cfd/librarian"`). Set **`LOG_LEVEL`** (`trace`…`fatal`, default `info`). **`debug`** includes `librarian.embed.*` timings.
 
-**Tool I/O (memory librarian):**
+**Shape:** every line is built with **`librarianLog(phase, payload)`** from [`src/logs/payloads.ts`](src/logs/payloads.ts). Payloads extend the contract in [`src/logs/logger.ts`](src/logs/logger.ts) (`phase`, **`processTimeMs`**, plus phase-specific fields).
 
-- **`librarian.toolCall`** — each `memory_search` completion: `input` (query text truncated to 200 chars unless **`LIBRARIAN_LOG_TOOL_BODIES`** is `1`/`true`/`yes`), `outputSummary` (`hitCount`, `memoryKeys`), `durationMs`, `ok`.
-- **`librarian.memory_search`** — handler spans: `embedMs`, `searchMs`, `embedCacheHit`, `hitCount`.
+**`LOG_DESTINATION`:** optional file path. When set, the **same** logger **multistreams** to **stdout** and append-only **NDJSON** on disk (`sync: true` on the file). Session lifecycle, pipeline, toolkit, runner, and embed logs all share this behavior.
 
-Remember pipeline log phases (when using `processLogicalMemoryWithLibrarian`): `remember.decompose`, `remember.prefetchSearch`, `remember.resolveSources`, `remember.registerAgent`, `remember.sessionStart` (includes agent runner), `remember.pipeline`. Session runner: `librarian.evaluateAffordances`, per-step `librarian.toolLoop.step` and `librarian.toolLoop.finish`, `librarian.toolLoopGenerate`, `librarian.mergeMemory`. **`agentSession.runner`** is logged from `@cfd/agent-identity` for the registry `SessionRunner` duration.
+**Phases (prefix `librarian.`):**
+
+- **remember.** `decompose`, `prefetchSearch`, `resolveSources`, `registerAgent`, `sessionStart`, `pipeline`
+- **runner.** `evaluateAffordances`, `toolLoopGenerate`, `mergeMemory`
+- **toolLoop.** `step`, `finish`
+- **toolkit.** `toolCall`, `memory_search`
+- **embed.** `textChunks`, `binaryBlob` (debug)
+- **agentSession.** `onStart`, `onAfterIdentity`, `onAfterContext`, `onBeforeRun`, `onAfterRun`, `onError` (identity + safe summaries; no full plaintext/blobs)
+
+**Tool I/O:** **`librarian.toolkit.toolCall`** — each `memory_search` tool execution: `input` (query text truncated to 200 chars unless **`LIBRARIAN_LOG_TOOL_BODIES`** is `1`/`true`/`yes`), `outputSummary`, **`processTimeMs`** (tool span), `ok`. **`librarian.toolkit.memory_search`** — `embedMs`, `searchMs`, `embedCacheHit`, `hitCount`, **`processTimeMs`** (full handler).
+
+**`agentSession.runner`** is still logged from `@cfd/agent-identity` for the registry runner (`durationMs`, `agentId`, `name`, `staticHash`) — separate from `@cfd/librarian` phases.
 
 ## Develop
 

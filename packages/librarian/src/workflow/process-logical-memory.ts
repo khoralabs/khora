@@ -16,7 +16,8 @@ import type {
   MemoryLibrarianSessionOutput,
 } from "../agent";
 import { createAgentRegistry, registerMemoryLibrarianAgent } from "../agent";
-import { logger } from "../logger.js";
+import { logger } from "../telemetry/logger.js";
+import { librarianLog } from "../telemetry/payloads.js";
 import { elapsedMs } from "../timing.js";
 import {
   decomposeLogicalMemoryToContent,
@@ -107,24 +108,26 @@ export async function processLogicalMemoryWithLibrarian<
     },
   });
   const processedLogicalMemory: ProcessedLogicalMemory = { ...logicalMemory, content };
-  logger.info({
-    phase: "remember.decompose",
-    durationMs: elapsedMs(tDecompose),
-    mergeChunkCount: content.length,
-    namespace: logicalMemory.namespace,
-  });
+  logger.info(
+    librarianLog("librarian.remember.decompose", {
+      processTimeMs: elapsedMs(tDecompose),
+      mergeChunkCount: content.length,
+      namespace: logicalMemory.namespace,
+    }),
+  );
 
   const tPrefetch = performance.now();
   const prefetchedHits = prefetch
     ? await prefetchRelatedMemories(client, logicalMemory.namespace, content)
     : [];
-  logger.info({
-    phase: "remember.prefetchSearch",
-    durationMs: elapsedMs(tPrefetch),
-    mergeChunkCount: content.length,
-    prefetchHitCount: prefetchedHits.length,
-    skipped: !prefetch,
-  });
+  logger.info(
+    librarianLog("librarian.remember.prefetchSearch", {
+      processTimeMs: elapsedMs(tPrefetch),
+      mergeChunkCount: content.length,
+      prefetchHitCount: prefetchedHits.length,
+      skipped: !prefetch,
+    }),
+  );
 
   const tResolve = performance.now();
   const resolvedSources: ProcessLogicalMemoryResult<TNode, TEdge>["resolvedSources"] = [];
@@ -132,11 +135,12 @@ export async function processLogicalMemoryWithLibrarian<
     const source = await resolveSourcemap(hit, store);
     resolvedSources.push({ hit, source });
   }
-  logger.info({
-    phase: "remember.resolveSources",
-    durationMs: elapsedMs(tResolve),
-    resolvedCount: resolvedSources.length,
-  });
+  logger.info(
+    librarianLog("librarian.remember.resolveSources", {
+      processTimeMs: elapsedMs(tResolve),
+      resolvedCount: resolvedSources.length,
+    }),
+  );
 
   const tRegister = performance.now();
   const registry = agentRegistry ?? createAgentRegistry();
@@ -145,11 +149,12 @@ export async function processLogicalMemoryWithLibrarian<
     logicalMemory.namespace,
     client.ontology,
   );
-  logger.info({
-    phase: "remember.registerAgent",
-    durationMs: elapsedMs(tRegister),
-    agentId: identity.agentId,
-  });
+  logger.info(
+    librarianLog("librarian.remember.registerAgent", {
+      processTimeMs: elapsedMs(tRegister),
+      agentId: identity.agentId,
+    }),
+  );
 
   const tSession = performance.now();
   const session = registry.createSession(identity.agentId, {
@@ -173,18 +178,20 @@ export async function processLogicalMemoryWithLibrarian<
     runMerge,
     maxSteps,
   });
-  logger.info({
-    phase: "remember.sessionStart",
-    durationMs: elapsedMs(tSession),
-    agentId: identity.agentId,
-    maxSteps,
-  });
+  logger.info(
+    librarianLog("librarian.remember.sessionStart", {
+      processTimeMs: elapsedMs(tSession),
+      agentId: identity.agentId,
+      maxSteps,
+    }),
+  );
 
-  logger.info({
-    phase: "remember.pipeline",
-    durationMs: elapsedMs(pipelineT0),
-    namespace: logicalMemory.namespace,
-  });
+  logger.info(
+    librarianLog("librarian.remember.pipeline", {
+      processTimeMs: elapsedMs(pipelineT0),
+      namespace: logicalMemory.namespace,
+    }),
+  );
 
   return {
     processedLogicalMemory,
