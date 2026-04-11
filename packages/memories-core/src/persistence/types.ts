@@ -154,6 +154,15 @@ export interface MemoriesMutation {
     input: { namespace: string; memoryKey: string; metaVector?: Float32Array },
   ): void;
 
+  /**
+   * Rebuild FTS chunks for ontology label props (node assignments + incident edges).
+   * Optional: backends that only support topology meta may omit; reference SQLite implements.
+   */
+  syncLabelPropsSearchFeatures?(
+    op: MemoryOpContext,
+    input: { namespace: string; memoryKey: string },
+  ): void;
+
   /** Build canonical meta text for a memory (read during sync). */
   buildCanonicalMemorySearchMetaText(
     op: MemoryOpContext,

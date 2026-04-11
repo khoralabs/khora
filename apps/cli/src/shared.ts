@@ -2,7 +2,10 @@ import type { Database } from "bun:sqlite";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { Librarian, type EmbeddingResolutionPreset } from "@cfd/memories-librarian";
 import { MemoriesClient } from "@cfd/memories-core";
-import { canonicalOntology } from "@cfd/memories-core-ontologies";
+import {
+  canonicalLabelPropsSearchFormatter,
+  canonicalOntology,
+} from "@cfd/memories-core-ontologies";
 import {
   createMemoriesPersistence,
   openMemoriesDatabase,
@@ -50,7 +53,9 @@ export function getMemoriesBundle(dbPath: string): MemoriesCliBundle {
   if (!bundle) {
     ensureParentDirForDb(dbPath);
     const db = openMemoriesDatabase(dbPath);
-    const persistence = createMemoriesPersistence(db);
+    const persistence = createMemoriesPersistence(db, {
+      labelPropsSearchFormatter: canonicalLabelPropsSearchFormatter,
+    });
     const client = new MemoriesClient(persistence, canonicalOntology);
     bundle = { db, persistence, client };
     bundleByDbPath.set(dbPath, bundle);

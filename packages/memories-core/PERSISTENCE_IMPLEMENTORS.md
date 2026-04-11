@@ -71,6 +71,14 @@ Thin adapters that only support one namespace per query should set **`multiNames
 - `syncMemorySearchMeta` rebuilds canonical text for the meta chunk; optional `metaVector` on the primary memory during merge.
 - Librarian batch: [`upsertMemorySearchMetaVector`](src/persistence/facade.ts) updates vectors for multiple keys in a transaction. The `@cfd/memories-librarian` helper `mergeLogicalMemoryWithPlan` **skips** this batch entirely when `vectorSearch` is `false` (no embed RPC). If you need vectors stored without vector retrieval, extend the caller. Reference SQLite expects vector search for meta retrieval.
 
+## Label-props search chunks (optional)
+
+- **Purpose:** Lexical index for **ontology `props`** on node and edge labels without stuffing raw JSON into the topology meta line. Topology meta (`node:…` / `edge …`) stays as today.
+- **Reserved keys:** [`memoryNodeLabelPropsSourceKey`](src/search-meta-constants.ts) (`__mem_nl_props__/…`) per `node_label_assignments._id`, and [`memoryEdgeLabelPropsSourceKey`](src/search-meta-constants.ts) (`__mem_edge_props__/…`) per `edges._id` on **each** endpoint memory.
+- **Contract:** [`syncLabelPropsSearchFeatures?`](src/persistence/types.ts) runs after `syncMemorySearchMeta` for each memory key in the merge invalidation set (see `mergeMemory`). It should **remove** prior `__mem_nl_props__*` / `__mem_edge_props__*` `source_map` rows for that memory, then insert fresh `text_features` (+ FTS) from parsed stored label values (`parseOntologyLabelValue`).
+- **Human-readable text:** Use [`formatLabelPropsForSearch`](src/models/label-props-search-text.ts) with an optional per-app [`LabelPropsSearchFormatter`](src/models/label-props-search-text.ts). Reference SQLite passes an optional formatter from [`createMemoriesPersistence`](../memories-persistence/src/strategies/sqlite/persistence.ts) options.
+- **Vectors:** Not indexed on these chunks in v1 (optional follow-up).
+
 ## Async persistence
 
 [`MemoriesPersistenceAsync`](src/persistence/async-types.ts) mirrors the sync interface with `Promise`-returning methods and `withTransaction(fn: () => Promise<T>): Promise<T>`. Use `MemoriesClientAsync` and `mergeMemoryAsync` / `searchAsync` / `deleteMemoryAsync` when implementing remote or non-blocking stores.

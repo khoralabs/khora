@@ -3,11 +3,11 @@
  */
 export function buildLibrarianPrefetchKeysInstruction(allowedKeys: string[]): string {
   if (allowedKeys.length === 0) {
-    return "No prefetch hits. Run **one** broad **memory_search** (usually enough); only search again if results are clearly insufficient.";
+    return "No prefetch hits. Use **memory_search** as needed; avoid duplicate searches for the same intent.";
   }
   const list = allowedKeys.map((k) => `- \`${k}\``).join("\n");
   return `## Prefetch keys (valid edge targets)
 ${list}
 
-Prefer these keys; use **memory_search** only if you still need more candidates — avoid duplicate searches for the same intent.`.trim();
+Prefer these keys for edges; search only if you still need more candidates.`.trim();
 }

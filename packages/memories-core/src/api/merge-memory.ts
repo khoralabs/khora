@@ -159,6 +159,10 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams<string, 
         memoryKey: k,
         metaVector: k === params.key ? primaryMetaVec : undefined,
       });
+      persistence.syncLabelPropsSearchFeatures?.(op, {
+        namespace: params.namespace,
+        memoryKey: k,
+      });
     }
     metaSyncedMemoryKeys = Array.from(syncKeys).sort((a, b) => a.localeCompare(b));
   });

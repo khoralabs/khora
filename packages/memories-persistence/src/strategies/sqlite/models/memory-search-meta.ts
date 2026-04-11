@@ -68,12 +68,13 @@ export function listNeighborMemoryKeysForNode(
   return sortUnique(rows.map((r) => r.key));
 }
 
-function parseEdgeLabelsJoined(s: string | null): string[] {
+export function parseEdgeLabelsJoined(s: string | null): string[] {
   if (!s) return [];
   return sortUnique(s.split(EDGE_LABEL_SEP).filter(Boolean));
 }
 
-function collectEdgesFromDb(
+/** Incident edges for search-meta and label-props sync (same namespace as `memoryKey`). */
+export function collectEdgesFromDb(
   ctx: DbCtx,
   nodeId: string,
   namespace: string,

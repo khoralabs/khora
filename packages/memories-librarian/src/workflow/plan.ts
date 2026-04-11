@@ -18,22 +18,6 @@ export function labelKindsFromOntology<TNode extends LabelSchemaMap, TEdge exten
   };
 }
 
-/** Description for structured output: allowed kinds + merge constraints (replaces a separate ontology system block). */
-export function buildLibrarianMergePlanDescription(
-  nodeKinds: string[],
-  edgeKinds: string[],
-): string {
-  const n = nodeKinds.length ? nodeKinds.join(", ") : "(none — leave `labels` empty)";
-  const e = edgeKinds.length ? edgeKinds.join(", ") : "(none — leave the edges array empty)";
-  return `Classify and link this memory.
-
-The "labels" field MUST be an array of objects like {"kind":"<ontology kind>","props":{}} (one object per label). Do NOT output a list of bare strings. Each "kind" MUST be one of: ${n} — not ad-hoc tags or topics.
-
-For edges, "label" MUST be an object {"kind":"<ontology edge kind>","props":{}}; use only: ${e}.
-
-Every edge "memory_key" must already exist (memory_search or prefetch). When a kind has no property fields, use {} or omit "props".`;
-}
-
 function buildKindPropsDiscriminatedUnion(
   kinds: readonly string[],
   schemas: Record<string, z.ZodType>,
@@ -154,8 +138,7 @@ export function librarianMergePlanOutputFromOntology<
 >(ontology: OntologyDefinition<TNode, TEdge>) {
   return Output.object({
     name: "LibrarianMergePlan",
-    description:
-      'Final JSON must validate as LibrarianMergePlan (see the first system block, "Merge plan"). Field types follow the schema; do not substitute string arrays for label objects.',
+    description: "LibrarianMergePlan structured output; the attached schema is authoritative.",
     schema: zLibrarianMergePlanWire(ontology),
   });
 }

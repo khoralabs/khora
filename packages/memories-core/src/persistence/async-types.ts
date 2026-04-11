@@ -3,7 +3,11 @@ import type {
   HydratedSourceMapHit,
   NeighborFilter,
 } from "../models/neighbor-search-types";
-import type { MemoriesBackendCapabilities, MemoriesPersistence } from "./types";
+import type {
+  MemoriesBackendCapabilities,
+  MemoriesPersistence,
+  MemoryOpContext,
+} from "./types";
 
 type PromisifyMethodMap<T> = {
   [K in keyof T]: T[K] extends (...args: infer A) => infer R
@@ -14,7 +18,11 @@ type PromisifyMethodMap<T> = {
 /** Sync methods whose generics are lost if naively promisified; declared explicitly below. */
 type MemoriesPersistenceAsyncCore = Omit<
   MemoriesPersistence,
-  "withTransaction" | "capabilities" | "hydrateSourceMapHits" | "listNeighborsForMemory"
+  | "withTransaction"
+  | "capabilities"
+  | "hydrateSourceMapHits"
+  | "listNeighborsForMemory"
+  | "syncLabelPropsSearchFeatures"
 >;
 
 /**
@@ -26,6 +34,14 @@ type MemoriesPersistenceAsyncCore = Omit<
 export type MemoriesPersistenceAsync = PromisifyMethodMap<MemoriesPersistenceAsyncCore> & {
   withTransaction<T>(fn: () => Promise<T>): Promise<T>;
   capabilities?: MemoriesBackendCapabilities;
+  /**
+   * Async label-props FTS rebuild (remote / non-blocking stores). Omitted = same as sync backends that skip it.
+   * Declared here so optional chaining does not drop `Promise` typing from promisify inference.
+   */
+  syncLabelPropsSearchFeatures?(
+    op: MemoryOpContext,
+    input: { namespace: string; memoryKey: string },
+  ): Promise<void>;
   hydrateSourceMapHits<NODE_LABEL extends string = string>(
     sourceMapIds: readonly string[],
   ): Promise<HydratedSourceMapHit<NODE_LABEL>[]>;

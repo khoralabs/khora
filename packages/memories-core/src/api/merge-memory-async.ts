@@ -123,6 +123,13 @@ export async function mergeMemoryAsync(
         memoryKey: k,
         metaVector: k === params.key ? primaryMetaVec : undefined,
       });
+      const syncLabelProps = persistence.syncLabelPropsSearchFeatures;
+      if (syncLabelProps !== undefined) {
+        await syncLabelProps(op, {
+          namespace: params.namespace,
+          memoryKey: k,
+        });
+      }
     }
     metaSyncedMemoryKeys = Array.from(syncKeys).sort((a, b) => a.localeCompare(b));
   });

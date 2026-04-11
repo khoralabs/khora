@@ -167,9 +167,6 @@ const memorySearchTool = tool<
   description:
     "Hybrid search (FTS + embedding) fused with RRF. Namespace and embed model are session-scoped. Tune options.arms for keyword vs semantic emphasis.",
   inputSchema: zMemorySearchToolInput,
-  instructions: [
-    "Set content.text. Host runs FTS + vector; options.arms.lexical vs .vector weight RRF (default equal).",
-  ],
   hooks: {
     onToolExecuted: async (e) => {
       if (e.toolName !== "memory_search") return;
@@ -279,8 +276,4 @@ const memorySearchTool = tool<
  */
 export const memoryLibrarianToolkit = toolkit([memorySearchTool], {
   name: "memory-librarian-toolkit",
-  instructions: [
-    "Discover existing memories to link before merge.",
-    "memory_search: query text → hybrid RRF; options.arms favors keyword vs semantic.",
-  ],
 });

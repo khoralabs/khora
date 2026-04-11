@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { defineOntology } from "@cfd/memories-core";
 import z from "zod";
-import { buildLibrarianMergePlanDescription, zLibrarianMergePlanWire } from "./plan";
+import { buildLibrarianMergePlanInstruction } from "../agent/instructions/merge-plan.js";
+import { zLibrarianMergePlanWire } from "./plan";
 
 describe("processLogicalMemoryWithLibrarian (schema + prompts)", () => {
   test("zLibrarianMergePlanWire accepts empty labels and edges", () => {
@@ -31,11 +32,14 @@ describe("processLogicalMemoryWithLibrarian (schema + prompts)", () => {
     expect(String(desc).toLowerCase()).toContain("existing");
   });
 
-  test("merge plan description lists allowed kinds for structured output", () => {
-    const d = buildLibrarianMergePlanDescription(["event", "fact"], ["references"]);
-    expect(d.toLowerCase()).toContain("bare strings");
-    expect(d).toContain("event");
-    expect(d).toContain("references");
+  test("merge plan instruction defers to structured output schema", () => {
+    const ontology = defineOntology({
+      nodeLabels: { event: z.object({}), fact: z.object({}) },
+      edgeLabels: { references: z.object({}) },
+    });
+    const instruction = buildLibrarianMergePlanInstruction(ontology);
+    expect(instruction.toLowerCase()).toContain("structured output");
+    expect(instruction.toLowerCase()).not.toContain("bare strings");
   });
 
   test("node labels accept string shorthand for a valid kind", () => {

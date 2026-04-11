@@ -5,12 +5,14 @@ import type {
   MemoryOpContext,
   NeighborFilter,
   SearchNamespaceScope,
+  LabelPropsSearchFormatter,
 } from "@cfd/memories-core";
 import type { DbCtx } from "./models/context";
 import { insertEdgeLabelAssignment } from "./models/edge-label-assignments";
 import { ensureEdgeLabel } from "./models/edge-labels";
 import { insertEdge } from "./models/edges";
 import { findMemoryIdByKey, upsertMemory } from "./models/memories";
+import { syncLabelPropsSearchFeatures as syncLabelPropsSearchFeaturesImpl } from "./models/label-props-search";
 import {
   buildCanonicalMemorySearchMetaText,
   listNeighborMemoryKeysForNode,
@@ -41,7 +43,10 @@ export class MemoriesPersistence implements IMemoriesPersistence {
     unscopedSearch: true,
   };
 
-  constructor(private readonly db: Database) {}
+  constructor(
+    private readonly db: Database,
+    private readonly labelPropsSearchFormatter?: LabelPropsSearchFormatter,
+  ) {}
 
   private ctx(op: MemoryOpContext): DbCtx {
     return { db: this.db, now: op.now };
@@ -137,6 +142,16 @@ export class MemoriesPersistence implements IMemoriesPersistence {
     syncMemorySearchMeta(this.ctx(op), input);
   }
 
+  syncLabelPropsSearchFeatures(
+    op: MemoryOpContext,
+    input: { namespace: string; memoryKey: string },
+  ): void {
+    syncLabelPropsSearchFeaturesImpl(this.ctx(op), {
+      ...input,
+      formatLabelProps: this.labelPropsSearchFormatter,
+    });
+  }
+
   buildCanonicalMemorySearchMetaText(
     op: MemoryOpContext,
     namespace: string,
@@ -191,6 +206,9 @@ export class MemoriesPersistence implements IMemoriesPersistence {
   }
 }
 
-export function createMemoriesPersistence(db: Database): MemoriesPersistence {
-  return new MemoriesPersistence(db);
+export function createMemoriesPersistence(
+  db: Database,
+  options?: { labelPropsSearchFormatter?: LabelPropsSearchFormatter },
+): MemoriesPersistence {
+  return new MemoriesPersistence(db, options?.labelPropsSearchFormatter);
 }
