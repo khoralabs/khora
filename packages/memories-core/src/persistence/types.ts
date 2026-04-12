@@ -1,3 +1,4 @@
+import type { SourceMap, TextFeatureExportRow } from "../db/rows.js";
 import type {
   HydratedNeighbor,
   HydratedSourceMapHit,
@@ -15,7 +16,7 @@ export type GraphEdgeLink = {
   labels: string[];
   /**
    * When true, visualization keeps `fromKey` → `toKey` (e.g. dash flow, no undirected merge).
-   * SQLite `edges` rows are directed; loaders should set this when exposing merge semantics.
+   * Set when the stored edge is directed (e.g. merge-created links).
    */
   directed?: boolean;
 };
@@ -72,7 +73,6 @@ export function resolveMemoriesBackendCapabilities(persistence: {
 
 /**
  * Transactional writes, merge/delete graph, search-meta.
- * See [PERSISTENCE_IMPLEMENTORS.md](../PERSISTENCE_IMPLEMENTORS.md).
  */
 export interface MemoriesMutation {
   /**
@@ -111,14 +111,14 @@ export interface MemoriesMutation {
     input: { memoryId: string; sourceKey: string },
   ): { sourceMapId: string };
 
-  /** Attach FTS-backed searchable text to a source map. */
-  insertTextFeatureWithFts(
+  /** Attach searchable text for lexical retrieval on a source map. */
+  insertLexicalFeature(
     op: MemoryOpContext,
     input: { memoryId: string; sourceMapId: string; text: string },
   ): { textFeatureId: string };
 
   /** Attach a vector feature and index it for vector search (dimension must match query embeddings). */
-  insertVectorFeatureWithVecIndex(
+  insertVectorFeature(
     op: MemoryOpContext,
     input: { memoryId: string; sourceMapId: string; vector: Float32Array },
   ): { vectorFeatureId: string };
@@ -160,8 +160,8 @@ export interface MemoriesMutation {
   ): void;
 
   /**
-   * Rebuild FTS chunks for ontology label props (node assignments + incident edges).
-   * Optional: backends that only support topology meta may omit; reference SQLite implements.
+   * Rebuild lexical label-property chunks for ontology props (node assignments + incident edges).
+   * Optional: backends that only support topology meta may omit; the reference persistence implements this.
    */
   syncLabelPropsSearchFeatures?(
     op: MemoryOpContext,
@@ -181,7 +181,7 @@ export interface MemoriesMutation {
     input: { namespace: string; memoryKey: string; vector: Float32Array },
   ): void;
 
-  /** Delete root `memories` and `nodes` rows after subtree clear (delete flow). */
+  /** Delete root memory and graph node records after subtree clear (delete flow). */
   deleteMemoryRootRows(memoryId: string, nodeId: string): void;
 }
 
@@ -222,13 +222,32 @@ export interface MemoriesNeighborIndex {
 }
 
 /**
- * Core storage: {@link MemoriesMutation} + {@link MemoriesRetrieval} + {@link MemoriesNeighborIndex}.
+ * Prefetch / export reads (aligned with Smithy persistence ops).
+ * {@link listVectorEmbeddingIndexDimensions} returns `[]` when the store cannot infer dimensions (unknown or not applicable).
+ */
+export interface MemoriesPersistenceReads {
+  /** Source map rows for a memory, newest first, capped at `limit`. */
+  listSourceMapsForMemory(memoryId: string, limit: number): SourceMap[];
+
+  /** Text lines joined with source keys for JSONL sync and similar export paths. */
+  listTextFeatureExportRowsForMemory(memoryId: string): TextFeatureExportRow[];
+
+  /**
+   * Distinct embedding widths present in the store's vector indexes (one entry per width in use).
+   * Return `[]` when there are no indexed vectors or dimension metadata is unavailable.
+   */
+  listVectorEmbeddingIndexDimensions(): number[];
+}
+
+/**
+ * Core storage: {@link MemoriesMutation} + {@link MemoriesRetrieval} + {@link MemoriesNeighborIndex} + {@link MemoriesPersistenceReads}.
  * Optional {@link MemoriesBackendCapabilities} declares MVP subsets.
  * Visualization reads: {@link MemoriesVisualization}.
  */
 export type MemoriesPersistence = MemoriesMutation &
   MemoriesRetrieval &
-  MemoriesNeighborIndex & {
+  MemoriesNeighborIndex &
+  MemoriesPersistenceReads & {
     capabilities?: MemoriesBackendCapabilities;
   };
 
@@ -241,7 +260,7 @@ export interface MemoriesVisualization {
 
   loadNodeLabelsForNamespace(namespace: string): Map<string, string[]>;
 
-  /** Node JSON properties from graph `nodes` rows (null when absent or empty). */
+  /** Node JSON properties from stored graph nodes (null when absent or empty). */
   loadNodePropertiesForNamespace(namespace: string): Map<string, Record<string, unknown> | null>;
 
   loadMeanEmbeddingsForNamespace(namespace: string): GraphMemoryEmbedding[];

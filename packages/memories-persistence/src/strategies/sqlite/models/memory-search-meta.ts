@@ -8,8 +8,8 @@ import { blobToVector } from "../connection";
 import { vectorVecTableName } from "../search-indexes";
 import type { DbCtx } from "./context";
 import { insertSourceMap } from "./source-maps";
-import { insertTextFeatureWithFts } from "./text-features";
-import { insertVectorFeatureWithVecIndex } from "./vector-features";
+import { insertLexicalFeature } from "./text-features";
+import { insertVectorFeature } from "./vector-features";
 
 export { isSystemSearchMetaSourceKey, MEMORY_SEARCH_META_SOURCE_KEY };
 
@@ -207,9 +207,9 @@ export function syncMemorySearchMeta(
     memoryId,
     sourceKey: MEMORY_SEARCH_META_SOURCE_KEY,
   });
-  insertTextFeatureWithFts(ctx, { memoryId, sourceMapId, text });
+  insertLexicalFeature(ctx, { memoryId, sourceMapId, text });
   if (input.metaVector !== undefined && input.metaVector.length > 0) {
-    insertVectorFeatureWithVecIndex(ctx, {
+    insertVectorFeature(ctx, {
       memoryId,
       sourceMapId,
       vector: input.metaVector,
@@ -245,7 +245,7 @@ export function upsertMemorySearchMetaVector(
     deleteVectorRowAndVecIndex(ctx.db, row._id, row.vector);
   }
 
-  insertVectorFeatureWithVecIndex(ctx, {
+  insertVectorFeature(ctx, {
     memoryId,
     sourceMapId,
     vector: input.vector,

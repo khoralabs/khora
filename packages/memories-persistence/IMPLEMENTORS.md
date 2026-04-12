@@ -27,8 +27,8 @@ Implementations must use the same derivation if they need to match the reference
 ## Content: source maps and features
 
 - One **source map** per merge content item `key` (user `source_key`).
-- **Text:** `insertTextFeatureWithFts` ties searchable text to that source map; lexical search returns `source_map` ids.
-- **Vector:** `insertVectorFeatureWithVecIndex` stores a `Float32Array`; **query vectors in search must use the same dimensionality** as stored vectors for the vector arm to return hits.
+- **Text:** `insertLexicalFeature` ties searchable text to that source map; lexical search returns `source_map` ids.
+- **Vector:** `insertVectorFeature` stores a `Float32Array`; **query vectors in search must use the same dimensionality** as stored vectors for the vector arm to return hits.
 - If `MemoriesBackendCapabilities.vectorSearch` is `false`, the logic layer rejects merge items that include `vector` and skips the vector search arm (see capabilities below).
 
 ## Search arms and ranking

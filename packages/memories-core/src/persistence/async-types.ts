@@ -24,14 +24,12 @@ type MemoriesPersistenceAsyncCore = Omit<
 /**
  * Async / remote-friendly persistence: every method returns a `Promise`, and
  * `withTransaction` accepts an async callback.
- *
- * See [PERSISTENCE_IMPLEMENTORS.md](../PERSISTENCE_IMPLEMENTORS.md).
  */
 export type MemoriesPersistenceAsync = PromisifyMethodMap<MemoriesPersistenceAsyncCore> & {
   withTransaction<T>(fn: () => Promise<T>): Promise<T>;
   capabilities?: MemoriesBackendCapabilities;
   /**
-   * Async label-props FTS rebuild (remote / non-blocking stores). Omitted = same as sync backends that skip it.
+   * Async label-props lexical rebuild (remote / non-blocking stores). Omitted = same as sync backends that skip it.
    * Declared here so optional chaining does not drop `Promise` typing from promisify inference.
    */
   syncLabelPropsSearchFeatures?(

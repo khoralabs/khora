@@ -1,0 +1,26 @@
+---
+description: Keep Smithy specs (agent-identity-spec, memories-spec) aligned with TypeScript implementations.
+globs: packages/agent-identity/**/*, packages/agent-identity-spec/**/*, packages/memories-spec/**/*, packages/memories-core/**/*, packages/memories-persistence/**/*
+alwaysApply: false
+---
+
+# Smithy specs and implementations stay in sync
+
+When you change wire shapes, services, or persistence contracts, **update both sides** (or leave an explicit `@documentation` note in Smithy explaining intentional divergence).
+
+## Pairings
+
+| Spec package | Primary implementation(s) |
+|--------------|---------------------------|
+| [`packages/agent-identity-spec`](packages/agent-identity-spec) (`model/*.smithy`) | [`packages/agent-identity`](packages/agent-identity) — snapshot types in `src/snapshot/`, hashing, `ToolSpec`, identity, policy telemetry |
+| [`packages/memories-spec`](packages/memories-spec) (`model/*.smithy`) | [`packages/memories-core`](packages/memories-core), [`packages/memories-persistence`](packages/memories-persistence) — rows, merge/search, adapter surfaces |
+
+## What to do
+
+1. **TS / runtime change** that affects interchange, hashes, or storage rows → update the matching Smithy shapes (namespace `cfd.agent_identity` or `cfd.memories`) and run validation.
+2. **Smithy change** → align TypeScript types, public exports, and any persistence adapters that mirror those shapes.
+3. After edits, run **`smithy validate model && smithy build`** from the relevant spec package (`bun run validate` if `package.json` defines it).
+
+## Naming
+
+- Prefer the same structure names and field names between Smithy and TS where they represent the same concept (`ToolSpecWire`, `IdentityLink`, `MergeMemoryParams`, etc.).

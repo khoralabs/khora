@@ -8,7 +8,6 @@ The package root exports a **minimal** surface:
 
 - **`Librarian`** — construct with a **`MemoriesClient`** (or async variant) from [`@cfd/memories-core`](../memories), an [AI SDK embedding model](https://ai-sdk.dev/docs/ai-sdk-core/embeddings#embedding-providers--models), **`EmbeddingResolutionPreset`**, **`multimodal`**, and optionally **`agent.model`** (default language model for **`processLogicalMemory`**). Omit **`agent.model`** if you only use **`embedTextChunks`**. Pass **`model`** on **`processLogicalMemory`** to override the default for one run.
 - **`multimodal: true`** requires the embedding model **`gemini-embedding-2-preview`** and enables non–text-like file blobs (multimodal embed path). With **`multimodal: false`**, only text and text-like files are embedded; other binaries throw.
-- **`listSourceMapsForMemory`** — SQLite helper for source-map listing.
 - **Types** — `LibrarianOptions`, `LibrarianEmbeddingConfig`, `LibrarianProcessLogicalMemoryParams`, `EmbeddingResolutionPreset`, `ProcessLogicalMemoryResult`, `LibrarianPipelineGeneration`.
 
 Provider packages (e.g. `@ai-sdk/google`) are **not** dependencies of `@cfd/memories-librarian`; the application supplies the embedding `model`.

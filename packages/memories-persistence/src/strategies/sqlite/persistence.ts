@@ -7,11 +7,14 @@ import type {
   NeighborFilter,
   SearchNamespaceScope,
 } from "@cfd/memories-core";
+import type { SourceMap, TextFeatureExportRow } from "@cfd/memories-core/db/rows";
 import type { DbCtx } from "./models/context";
 import { insertEdgeLabelAssignment } from "./models/edge-label-assignments";
 import { ensureEdgeLabel } from "./models/edge-labels";
 import { insertEdge } from "./models/edges";
 import { syncLabelPropsSearchFeatures as syncLabelPropsSearchFeaturesImpl } from "./models/label-props-search";
+import { listSourceMapsForMemory as listSourceMapsForMemoryQuery } from "./models/list-source-maps-for-memory";
+import { listTextFeatureExportRowsForMemory as listTextFeatureExportRowsForMemoryQuery } from "./models/list-text-feature-export-rows";
 import { findMemoryIdByKey, upsertMemory } from "./models/memories";
 import {
   buildCanonicalMemorySearchMetaText,
@@ -31,8 +34,9 @@ import {
   searchVectorSourceMapIds,
 } from "./models/search";
 import { insertSourceMap } from "./models/source-maps";
-import { insertTextFeatureWithFts } from "./models/text-features";
-import { insertVectorFeatureWithVecIndex } from "./models/vector-features";
+import { insertLexicalFeature } from "./models/text-features";
+import { insertVectorFeature } from "./models/vector-features";
+import { listVectorEmbeddingIndexDimensions as listVectorEmbeddingIndexDimensionsQuery } from "./models/vector-index-dimensions";
 
 export class MemoriesPersistence implements IMemoriesPersistence {
   readonly capabilities: MemoriesBackendCapabilities = {
@@ -85,18 +89,18 @@ export class MemoriesPersistence implements IMemoriesPersistence {
     return insertSourceMap(this.ctx(op), input);
   }
 
-  insertTextFeatureWithFts(
+  insertLexicalFeature(
     op: MemoryOpContext,
     input: { memoryId: string; sourceMapId: string; text: string },
   ): { textFeatureId: string } {
-    return insertTextFeatureWithFts(this.ctx(op), input);
+    return insertLexicalFeature(this.ctx(op), input);
   }
 
-  insertVectorFeatureWithVecIndex(
+  insertVectorFeature(
     op: MemoryOpContext,
     input: { memoryId: string; sourceMapId: string; vector: Float32Array },
   ): { vectorFeatureId: string } {
-    return insertVectorFeatureWithVecIndex(this.ctx(op), input);
+    return insertVectorFeature(this.ctx(op), input);
   }
 
   ensureNodeLabel(op: MemoryOpContext, value: string): string {
@@ -203,6 +207,18 @@ export class MemoriesPersistence implements IMemoriesPersistence {
     filters?: NeighborFilter<EDGE_LABEL, NODE_LABEL>;
   }): HydratedNeighbor<EDGE_LABEL, NODE_LABEL>[] {
     return listNeighborsForMemory<EDGE_LABEL, NODE_LABEL>({ db: this.db, now: 0 }, input);
+  }
+
+  listSourceMapsForMemory(memoryId: string, limit: number): SourceMap[] {
+    return listSourceMapsForMemoryQuery({ db: this.db, now: 0 }, memoryId, limit);
+  }
+
+  listTextFeatureExportRowsForMemory(memoryId: string): TextFeatureExportRow[] {
+    return listTextFeatureExportRowsForMemoryQuery({ db: this.db, now: 0 }, memoryId);
+  }
+
+  listVectorEmbeddingIndexDimensions(): number[] {
+    return listVectorEmbeddingIndexDimensionsQuery(this.db);
   }
 }
 

@@ -5,7 +5,6 @@ export {
   type LibrarianOptions,
   type LibrarianProcessLogicalMemoryParams,
 } from "./librarian.ts";
-export { listSourceMapsForMemory } from "./memories/source-maps.ts";
 export type {
   LibrarianPipelineGeneration,
   ProcessLogicalMemoryResult,

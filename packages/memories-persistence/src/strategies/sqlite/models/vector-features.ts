@@ -5,7 +5,7 @@ import { schema } from "../schema";
 import { ensureVectorFeaturesVecTable, vectorVecTableName } from "../search-indexes";
 import type { DbCtx } from "./context";
 
-export function insertVectorFeatureWithVecIndex(
+export function insertVectorFeature(
   ctx: DbCtx,
   input: { memoryId: string; sourceMapId: string; vector: Float32Array },
 ): { vectorFeatureId: string } {

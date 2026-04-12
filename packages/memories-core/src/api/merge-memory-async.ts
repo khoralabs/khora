@@ -68,14 +68,14 @@ export async function mergeMemoryAsync(
         sourceKey: item.key,
       });
       if (item.text !== undefined) {
-        await persistence.insertTextFeatureWithFts(op, {
+        await persistence.insertLexicalFeature(op, {
           memoryId,
           sourceMapId,
           text: item.text,
         });
       }
       if (item.vector !== undefined) {
-        await persistence.insertVectorFeatureWithVecIndex(op, {
+        await persistence.insertVectorFeature(op, {
           memoryId,
           sourceMapId,
           vector: new Float32Array(item.vector),

@@ -15,6 +15,8 @@ Hosts expose optional **MemoriesBackendCapabilities** alongside these operations
 **Label-props chunks (optional):** reserved `__mem_nl_props__*` / `__mem_edge_props__*` keys; **SyncLabelPropsSearchFeatures** runs after meta sync for invalidated keys when implemented.
 
 **Async:** Mirror with Promise/async method signatures in language bindings.
+
+**Read helpers:** **ListSourceMapsForMemory**, **ListTextFeatureExportRowsForMemory** (prefetch / JSONL export). **ListVectorEmbeddingIndexDimensions** returns empty when dimension metadata is unavailable or not applicable; implementations that can infer widths from stored indexes should return them.
 """)
 service MemoriesPersistenceService {
     version: "2026-04-11"
@@ -25,8 +27,8 @@ service MemoriesPersistenceService {
         UpsertMemory
         UpsertNodeForMemoryKey
         InsertSourceMap
-        InsertTextFeatureWithFts
-        InsertVectorFeatureWithVecIndex
+        InsertLexicalFeature
+        InsertVectorFeature
         EnsureNodeLabel
         InsertNodeLabelAssignment
         FindMemoryIdByKey
@@ -43,6 +45,9 @@ service MemoriesPersistenceService {
         SearchVectorSourceMapIds
         HydrateSourceMapHits
         ListNeighborsForMemory
+        ListSourceMapsForMemory
+        ListTextFeatureExportRowsForMemory
+        ListVectorEmbeddingIndexDimensions
     ]
 }
 
@@ -138,35 +143,41 @@ structure InsertSourceMapOutput {
     sourceMapId: String
 }
 
-operation InsertTextFeatureWithFts {
-    input: InsertTextFeatureWithFtsInput
-    output: InsertTextFeatureWithFtsOutput
+@documentation("""
+Attach searchable text for lexical retrieval on the source map.
+""")
+operation InsertLexicalFeature {
+    input: InsertLexicalFeatureInput
+    output: InsertLexicalFeatureOutput
 }
 
-structure InsertTextFeatureWithFtsInput {
+structure InsertLexicalFeatureInput {
     op: MemoryOpContext
     memoryId: String
     sourceMapId: String
     text: String
 }
 
-structure InsertTextFeatureWithFtsOutput {
+structure InsertLexicalFeatureOutput {
     textFeatureId: String
 }
 
-operation InsertVectorFeatureWithVecIndex {
-    input: InsertVectorFeatureWithVecIndexInput
-    output: InsertVectorFeatureWithVecIndexOutput
+@documentation("""
+Attach an embedding vector and index it for similarity search (dimension must match query vectors).
+""")
+operation InsertVectorFeature {
+    input: InsertVectorFeatureInput
+    output: InsertVectorFeatureOutput
 }
 
-structure InsertVectorFeatureWithVecIndexInput {
+structure InsertVectorFeatureInput {
     op: MemoryOpContext
     memoryId: String
     sourceMapId: String
     vector: DoubleList
 }
 
-structure InsertVectorFeatureWithVecIndexOutput {
+structure InsertVectorFeatureOutput {
     vectorFeatureId: String
 }
 
@@ -285,7 +296,7 @@ structure SyncMemorySearchMetaOutput {}
 @documentation("""
 Optional on implementors (omit on backends that only support topology meta).
 
-Remove prior label-props source_map rows for the memory, then insert fresh FTS from ontology props.
+Remove prior label-props source_map rows for the memory, then insert fresh lexical chunks from ontology props.
 """)
 operation SyncLabelPropsSearchFeatures {
     input: SyncLabelPropsSearchFeaturesInput
@@ -401,4 +412,47 @@ structure ListNeighborsForMemoryInput {
 
 structure ListNeighborsForMemoryOutput {
     neighbors: HydratedNeighborList
+}
+
+operation ListSourceMapsForMemory {
+    input: ListSourceMapsForMemoryInput
+    output: ListSourceMapsForMemoryOutput
+}
+
+structure ListSourceMapsForMemoryInput {
+    memoryId: String
+    limit: Integer
+}
+
+structure ListSourceMapsForMemoryOutput {
+    /// Most recent first (`_ts_created DESC`).
+    sourceMaps: SourceMapRowList
+}
+
+operation ListTextFeatureExportRowsForMemory {
+    input: ListTextFeatureExportRowsForMemoryInput
+    output: ListTextFeatureExportRowsForMemoryOutput
+}
+
+structure ListTextFeatureExportRowsForMemoryInput {
+    memoryId: String
+}
+
+structure ListTextFeatureExportRowsForMemoryOutput {
+    rows: TextFeatureExportRowList
+}
+
+@documentation("""
+Distinct embedding widths for vector indexes present in the store.
+Return empty `dimensions` when there are no indexed vectors or the backend cannot report widths.
+""")
+operation ListVectorEmbeddingIndexDimensions {
+    input: ListVectorEmbeddingIndexDimensionsInput
+    output: ListVectorEmbeddingIndexDimensionsOutput
+}
+
+structure ListVectorEmbeddingIndexDimensionsInput {}
+
+structure ListVectorEmbeddingIndexDimensionsOutput {
+    dimensions: IntegerList
 }

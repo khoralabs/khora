@@ -262,6 +262,25 @@ list StringList {
     member: String
 }
 
+list SourceMapRowList {
+    member: SourceMapRow
+}
+
+/// Denormalized text row for export (JSONL prefetch); join of `text_features` and `source_maps`.
+structure TextFeatureExportRow {
+    memory_id: String
+    source_key: String
+    text: String
+}
+
+list TextFeatureExportRowList {
+    member: TextFeatureExportRow
+}
+
+list IntegerList {
+    member: Integer
+}
+
 // --- Persistence: shared op context ---
 
 structure MemoryOpContext {

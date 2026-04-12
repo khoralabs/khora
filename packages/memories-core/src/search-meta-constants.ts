@@ -1,10 +1,10 @@
-/** Reserved `source_key` for the synthetic ontology / topology search chunk (FTS + optional vec). */
+/** Reserved `source_key` for the synthetic ontology / topology search chunk (lexical + optional vector). */
 export const MEMORY_SEARCH_META_SOURCE_KEY = "__mem_search_meta__" as const;
 
-/** Prefix for FTS chunks derived from node label ontology props (per assignment id). */
+/** Prefix for lexical chunks derived from node label ontology props (per assignment id). */
 export const MEMORY_NODE_LABEL_PROPS_KEY_PREFIX = "__mem_nl_props__/" as const;
 
-/** Prefix for FTS chunks derived from edge label ontology props (per edge id, on each endpoint memory). */
+/** Prefix for lexical chunks derived from edge label ontology props (per edge id, on each endpoint memory). */
 export const MEMORY_EDGE_LABEL_PROPS_KEY_PREFIX = "__mem_edge_props__/" as const;
 
 /** `source_key` for a node label props search chunk. */

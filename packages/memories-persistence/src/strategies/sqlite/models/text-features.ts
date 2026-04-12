@@ -3,7 +3,7 @@ import { documentValidator } from "../_lib";
 import { schema } from "../schema";
 import type { DbCtx } from "./context";
 
-export function insertTextFeatureWithFts(
+export function insertLexicalFeature(
   ctx: DbCtx,
   input: { memoryId: string; sourceMapId: string; text: string },
 ): { textFeatureId: string } {

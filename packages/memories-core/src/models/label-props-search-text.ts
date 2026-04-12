@@ -1,5 +1,5 @@
 /**
- * Human-readable lines for indexing ontology label props in FTS (avoid raw JSON).
+ * Human-readable lines for lexical indexing of ontology label props (avoid raw JSON).
  */
 
 export type LabelPropsSearchRole = "node" | "edge";

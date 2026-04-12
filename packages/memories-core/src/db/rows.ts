@@ -1,6 +1,6 @@
 /**
- * Row shapes produced by the default SQLite persistence strategy.
- * Keep aligned with `schema` in `@cfd/memories-core-persistence/sqlite` (Zod + DDL).
+ * Row shapes exchanged with persistence implementations.
+ * Align field names with the canonical schema in the bundled persistence package.
  */
 
 export type Memory = {
@@ -22,6 +22,13 @@ export type TextFeature = {
   _ts_created: number;
   memory_id: string;
   source_map_id: string;
+  text: string;
+};
+
+/** Denormalized row for JSONL export / prefetch (join of text_features + source_maps). */
+export type TextFeatureExportRow = {
+  memory_id: string;
+  source_key: string;
   text: string;
 };
 

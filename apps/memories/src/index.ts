@@ -30,22 +30,6 @@ let didWarnLexicalOnlySearch = false;
 let didWarnMultiVectorDim = false;
 let didLogInferredSearchPreset = false;
 
-const VEC_TABLE_DIM_RE = /^vector_features_vec_d_(\d+)$/;
-
-function listVectorVecDimensions(db: ReturnType<typeof openMemoriesDatabaseReadonly>): number[] {
-  const rows = db
-    .query<{ name: string }, []>(
-      `SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'vector_features_vec_d_%'`,
-    )
-    .all();
-  const dims = new Set<number>();
-  for (const { name } of rows) {
-    const m = VEC_TABLE_DIM_RE.exec(name);
-    if (m?.[1]) dims.add(Number(m[1]));
-  }
-  return [...dims].sort((a, b) => a - b);
-}
-
 function dimToEmbeddingPreset(dim: number): EmbeddingResolutionPreset | null {
   if (dim === 768) return "L";
   if (dim === 1536) return "M";
@@ -66,7 +50,7 @@ function parseExplicitEmbeddingPreset(v: string | undefined): EmbeddingResolutio
  * matches indexed rows (otherwise the vector arm is empty).
  */
 function resolveSearchEmbeddingPreset(
-  db: ReturnType<typeof openMemoriesDatabaseReadonly>,
+  persistence: ReturnType<typeof createMemoriesPersistence>,
   bodyResolution: string | undefined,
 ): EmbeddingResolutionPreset {
   const fromBody = parseExplicitEmbeddingPreset(bodyResolution);
@@ -77,7 +61,7 @@ function resolveSearchEmbeddingPreset(
   );
   if (fromEnv) return fromEnv;
 
-  const dims = listVectorVecDimensions(db);
+  const dims = persistence.listVectorEmbeddingIndexDimensions();
   if (dims.length === 1) {
     const dim = dims[0];
     const preset = dim !== undefined ? dimToEmbeddingPreset(dim) : null;
@@ -162,12 +146,13 @@ const server = serve({
         return jsonResponse({ error: `open database: ${String(err)}` }, 500);
       }
       try {
+        const persistence = createMemoriesPersistence(db);
         const apiKey = resolveGeminiApiKey();
         let content: { text: string; vector?: number[] };
         let arms: { lexical: number; vector: number };
 
         if (apiKey) {
-          const resolution = resolveSearchEmbeddingPreset(db, body.resolution);
+          const resolution = resolveSearchEmbeddingPreset(persistence, body.resolution);
           const google = createGoogleGenerativeAI({ apiKey });
           try {
             const { embeddings } = await embedMany({
@@ -204,7 +189,6 @@ const server = serve({
           }
         }
 
-        const persistence = createMemoriesPersistence(db);
         const hits = await searchAsync(
           { persistence: wrapSyncMemoriesPersistenceAsAsync(persistence) },
           {

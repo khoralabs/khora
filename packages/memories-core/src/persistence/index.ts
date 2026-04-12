@@ -13,6 +13,7 @@ export type {
   MemoriesMutation,
   MemoriesNeighborIndex,
   MemoriesPersistence,
+  MemoriesPersistenceReads,
   MemoriesRetrieval,
   MemoriesRuntimeCtx,
   MemoriesVisualization,

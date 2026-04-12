@@ -17,7 +17,7 @@ import { vectorVecTableName } from "../search-indexes";
 import type { DbCtx } from "./context";
 import { collectEdgesFromDb, parseEdgeLabelsJoined } from "./memory-search-meta";
 import { insertSourceMap } from "./source-maps";
-import { insertTextFeatureWithFts } from "./text-features";
+import { insertLexicalFeature } from "./text-features";
 
 function deleteVectorRowAndVecIndex(
   db: Database,
@@ -113,7 +113,7 @@ export function syncLabelPropsSearchFeatures(
 
     const sourceKey = memoryNodeLabelPropsSourceKey(row.assignmentId);
     const { sourceMapId } = insertSourceMap(ctx, { memoryId, sourceKey });
-    insertTextFeatureWithFts(ctx, { memoryId, sourceMapId, text });
+    insertLexicalFeature(ctx, { memoryId, sourceMapId, text });
   }
 
   const edgeRows = collectEdgesFromDb(ctx, nodeId, namespace);
@@ -132,6 +132,6 @@ export function syncLabelPropsSearchFeatures(
     const text = sections.join("\n\n");
     const sourceKey = memoryEdgeLabelPropsSourceKey(edge.edgeId);
     const { sourceMapId } = insertSourceMap(ctx, { memoryId, sourceKey });
-    insertTextFeatureWithFts(ctx, { memoryId, sourceMapId, text });
+    insertLexicalFeature(ctx, { memoryId, sourceMapId, text });
   }
 }

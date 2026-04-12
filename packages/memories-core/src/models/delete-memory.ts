@@ -7,9 +7,9 @@ export interface DeleteMemoryParams {
 }
 
 /**
- * Removes a memory and all dependent rows: vector index rows, FTS, text/vector features, source maps,
- * edges (and edge label assignments via FK cascade), node label assignments, then the `memories` and
- * `nodes` rows. Idempotent when the memory was already absent.
+ * Removes a memory and all dependent data: vector- and lexical-indexed features, source maps,
+ * edges (and edge label assignments via foreign-key cascade), node label assignments, then root
+ * memory and graph node records. Idempotent when the memory was already absent.
  */
 export function deleteMemory(ctx: MutationCtx, params: DeleteMemoryParams): void {
   const { persistence } = ctx;

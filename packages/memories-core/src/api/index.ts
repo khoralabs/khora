@@ -18,6 +18,7 @@ export type {
   MemoriesNeighborIndex,
   MemoriesPersistence,
   MemoriesPersistenceAsync,
+  MemoriesPersistenceReads,
   MemoriesRetrieval,
   MemoriesRuntimeCtx,
   MemoriesVisualization,

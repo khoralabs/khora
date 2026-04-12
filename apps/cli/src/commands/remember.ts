@@ -1,10 +1,10 @@
-import { getMemoryIdByNamespaceKey, JsonlStore } from "@cfd/memories-stores";
+import { JsonlStore } from "@cfd/memories-stores";
 import { elapsedMs, logger } from "../logger.js";
 import { getLibrarian, getMemoriesBundle } from "../shared.js";
 import type { Parsed } from "./parse-args.js";
 
 export async function cmdRemember(args: Parsed): Promise<void> {
-  const { db } = getMemoriesBundle(args.db);
+  const { persistence } = getMemoriesBundle(args.db);
   const store = new JsonlStore(args.store);
   const key = `remember-${Date.now()}`;
   const librarian = getLibrarian(args.db, args.resolution);
@@ -27,9 +27,9 @@ export async function cmdRemember(args: Parsed): Promise<void> {
     key,
     resolution: args.resolution,
   });
-  const memoryId = getMemoryIdByNamespaceKey(db, args.namespace, key);
+  const memoryId = persistence.findMemoryIdByKey(args.namespace, key);
   if (memoryId) {
-    store.syncFromMemoryDatabase(db, memoryId);
+    store.syncFromTextExportRows(persistence.listTextFeatureExportRowsForMemory(memoryId));
   }
   console.log(
     JSON.stringify({

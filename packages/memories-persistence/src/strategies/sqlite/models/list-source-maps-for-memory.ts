@@ -1,18 +1,14 @@
-import type { Database } from "bun:sqlite";
-import type { SourceMap } from "@cfd/memories-core";
+import type { SourceMap } from "@cfd/memories-core/db/rows";
+import type { DbCtx } from "./context";
 
 /**
- * Most recently created source maps for a memory (for bounded resolution / display).
+ * Most recently created source maps for a memory (bounded).
  */
-export function listSourceMapsForMemory(
-  db: Database,
-  memoryId: string,
-  limit: number,
-): SourceMap[] {
+export function listSourceMapsForMemory(ctx: DbCtx, memoryId: string, limit: number): SourceMap[] {
   if (!Number.isInteger(limit) || limit <= 0) {
     throw new RangeError("limit must be a positive integer");
   }
-  return db
+  return ctx.db
     .prepare(
       `SELECT _id, _ts_created, memory_id, source_key
        FROM source_maps

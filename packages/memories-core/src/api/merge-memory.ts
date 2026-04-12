@@ -116,10 +116,10 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams<string, 
       const item = zMergeMemoryContentItem.parse(raw);
       const { sourceMapId } = persistence.insertSourceMap(op, { memoryId, sourceKey: item.key });
       if (item.text !== undefined) {
-        persistence.insertTextFeatureWithFts(op, { memoryId, sourceMapId, text: item.text });
+        persistence.insertLexicalFeature(op, { memoryId, sourceMapId, text: item.text });
       }
       if (item.vector !== undefined) {
-        persistence.insertVectorFeatureWithVecIndex(op, {
+        persistence.insertVectorFeature(op, {
           memoryId,
           sourceMapId,
           vector: new Float32Array(item.vector),

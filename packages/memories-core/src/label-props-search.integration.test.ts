@@ -13,7 +13,7 @@ function openTestDb() {
   return openMemoriesDatabase(":memory:");
 }
 
-describe("label props search features (SQLite)", () => {
+describe("label props search features", () => {
   test("lexical search finds text only indexed on label props chunk", () => {
     const db = openTestDb();
     const persistence = createMemoriesPersistence(db);

@@ -1,25 +1,23 @@
-import type { Database } from "bun:sqlite";
 import {
   type ResolvedSource,
   searchAsync,
   wrapSyncMemoriesPersistenceAsAsync,
 } from "@cfd/memories-core";
-import { listSourceMapsForMemory } from "@cfd/memories-librarian";
 import { JsonlStore } from "@cfd/memories-stores";
 import { elapsedMs, logger } from "../logger.js";
-import { getLibrarian, getMemoriesBundle } from "../shared.js";
+import { getLibrarian, getMemoriesBundle, type MemoriesCliBundle } from "../shared.js";
 import type { Parsed } from "./parse-args.js";
 
 const SEARCH_RESOLVE_SOURCE_MAPS_LIMIT = 5;
 const SEARCH_MAX_NEIGHBORS = 5;
 
 async function resolveSourcesForMemory(
-  db: Database,
+  persistence: MemoriesCliBundle["persistence"],
   store: JsonlStore,
   memoryId: string,
   limit: number,
 ): Promise<Array<{ sourceKey: string; content: ResolvedSource | null }>> {
-  const maps = listSourceMapsForMemory(db, memoryId, limit);
+  const maps = persistence.listSourceMapsForMemory(memoryId, limit);
   const out: Array<{ sourceKey: string; content: ResolvedSource | null }> = [];
   for (const sm of maps) {
     let content: ResolvedSource | null = null;
@@ -35,7 +33,7 @@ async function resolveSourcesForMemory(
 
 export async function cmdSearch(args: Parsed): Promise<void> {
   const tPipeline = performance.now();
-  const { db, persistence } = getMemoriesBundle(args.db);
+  const { persistence } = getMemoriesBundle(args.db);
   const store = new JsonlStore(args.store);
   const librarian = getLibrarian(args.db, args.resolution);
   const tEmbed = performance.now();
@@ -82,7 +80,7 @@ export async function cmdSearch(args: Parsed): Promise<void> {
           memoryKey: n.key,
           labels: n.labels,
           sources: await resolveSourcesForMemory(
-            db,
+            persistence,
             store,
             n._id,
             SEARCH_RESOLVE_SOURCE_MAPS_LIMIT,

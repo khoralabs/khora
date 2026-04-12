@@ -1,7 +1,7 @@
-import type { Database } from "bun:sqlite";
 import { appendFileSync, mkdirSync, readFileSync, statSync } from "node:fs";
 import { dirname } from "node:path";
 import type { ResolvedSource, SourceMap, Store } from "@cfd/memories-core";
+import type { TextFeatureExportRow } from "@cfd/memories-core/db/rows";
 
 export type JsonlResolvedLine =
   | {
@@ -121,30 +121,10 @@ export class JsonlStore implements Store {
     this.byKey.set(storeKey(memoryId, sourceKey), { kind: "string", string: text });
   }
 
-  /** Write string entries for all text features attached to `memory_id` (for prefetch resolve). */
-  syncFromMemoryDatabase(db: Database, memoryId: string): void {
-    const rows = db
-      .prepare(
-        `SELECT sm.memory_id AS memory_id, sm.source_key AS source_key, tf.text AS text
-         FROM text_features tf
-         INNER JOIN source_maps sm ON tf.source_map_id = sm._id
-         WHERE sm.memory_id = ?`,
-      )
-      .all(memoryId) as Array<{ memory_id: string; source_key: string; text: string }>;
+  /** Append rows from {@link TextFeatureExportRow} (e.g. from persistence `listTextFeatureExportRowsForMemory`). */
+  syncFromTextExportRows(rows: TextFeatureExportRow[]): void {
     for (const row of rows) {
       this.appendStringEntry(row.memory_id, row.source_key, row.text);
     }
   }
-}
-
-/** Look up `memories._id` by namespace + logical key. */
-export function getMemoryIdByNamespaceKey(
-  db: Database,
-  namespace: string,
-  key: string,
-): string | undefined {
-  const row = db
-    .prepare(`SELECT _id FROM memories WHERE namespace = ? AND key = ?`)
-    .get(namespace, key) as { _id: string } | undefined;
-  return row?._id;
 }

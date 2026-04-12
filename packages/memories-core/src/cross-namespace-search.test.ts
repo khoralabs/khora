@@ -12,7 +12,7 @@ function openTestDb() {
   return openMemoriesDatabase(":memory:");
 }
 
-describe("cross-namespace search (SQLite)", () => {
+describe("cross-namespace search", () => {
   test("union scope returns hits from each namespace", () => {
     const db = openTestDb();
     const persistence = createMemoriesPersistence(db);
