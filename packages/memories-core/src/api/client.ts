@@ -10,8 +10,13 @@ import {
   mergeMemory,
   zMergeMemoryContentItem,
 } from "./merge-memory";
-import type { EdgeLabelInstance, NodeLabelInstance, OntologyDefinition } from "./ontology";
-import { validateEdgeLabel, validateNodeLabel } from "./ontology";
+import {
+  type EdgeLabelInstance,
+  type NodeLabelInstance,
+  type OntologyDefinition,
+  validateEdgeLabel,
+  validateNodeLabel,
+} from "./ontology";
 import { type SearchHit, type SearchParams, search as searchHandler } from "./search";
 
 type LabelKind<TLabels extends Record<string, z.ZodType>> = keyof TLabels & string;
