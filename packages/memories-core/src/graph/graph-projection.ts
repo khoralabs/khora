@@ -24,6 +24,14 @@ export function loadNodeLabelsForNamespace(
   return ctx.persistence.loadNodeLabelsForNamespace(namespace);
 }
 
+/** Node JSON properties per memory key (graph `nodes` row). */
+export function loadNodePropertiesForNamespace(
+  ctx: MemoriesVisualizationRuntimeCtx,
+  namespace: string,
+): Map<string, Record<string, unknown> | null> {
+  return ctx.persistence.loadNodePropertiesForNamespace(namespace);
+}
+
 /**
  * Mean-pooled embedding per memory (only memories with at least one vector row).
  * If a memory has vectors of mixed dimensions, only the first dimension seen is kept for that memory

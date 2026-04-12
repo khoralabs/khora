@@ -241,6 +241,9 @@ export interface MemoriesVisualization {
 
   loadNodeLabelsForNamespace(namespace: string): Map<string, string[]>;
 
+  /** Node JSON properties from graph `nodes` rows (null when absent or empty). */
+  loadNodePropertiesForNamespace(namespace: string): Map<string, Record<string, unknown> | null>;
+
   loadMeanEmbeddingsForNamespace(namespace: string): GraphMemoryEmbedding[];
 
   loadMemoryTextPreview(namespace: string, key: string, maxChars?: number): string | null;

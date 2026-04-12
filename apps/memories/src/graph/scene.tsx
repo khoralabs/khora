@@ -1,7 +1,11 @@
 import { Bounds, OrbitControls, useBounds } from "@react-three/drei";
 import { Canvas, useThree } from "@react-three/fiber";
 import { type ElementRef, useCallback, useLayoutEffect, useMemo, useRef } from "react";
-import { ActiveSubgraphEdgeLabels, GraphEdgeLines } from "./edges.js";
+import {
+  ActiveSubgraphEdgeLabels,
+  GraphEdgeLines,
+  type GraphEdgeRenderMode,
+} from "./edges.js";
 import { GraphPinnedEscHint } from "./graph-pinned-esc-hint.js";
 import { GraphPreviewDock } from "./graph-preview-dock.js";
 import { Marker } from "./marker.js";
@@ -91,12 +95,12 @@ function DeferredGraphBoundsRefit({
   return null;
 }
 
-function GraphSceneR3f() {
+export type { GraphEdgeRenderMode };
+
+function GraphSceneR3f({ edgeRenderMode }: { edgeRenderMode: GraphEdgeRenderMode }) {
   const {
     points,
     sceneEdges,
-    selected,
-    pinnedEdge,
     setSelected,
     focusEntryId,
     activeSubgraphKeys,
@@ -163,11 +167,7 @@ function GraphSceneR3f() {
           posMap={posMap}
           activeSubgraphKeys={activeSubgraphKeys}
           graphSearch={graphSearch}
-          pinnedSubgraphHighlight={
-            selected !== null ||
-            pinnedEdge !== null ||
-            (graphSearch !== null && graphSearch.relevantKeys.size > 0)
-          }
+          edgeRenderMode={edgeRenderMode}
         />
         <ActiveSubgraphEdgeLabels
           edges={sceneEdges}
@@ -210,7 +210,11 @@ function GraphSceneR3f() {
   );
 }
 
-export function GraphScene() {
+export function GraphScene({
+  edgeRenderMode = "all",
+}: {
+  edgeRenderMode?: GraphEdgeRenderMode;
+} = {}) {
   return (
     <>
       <GraphPinnedEscHint />
@@ -229,7 +233,7 @@ export function GraphScene() {
             preserveDrawingBuffer: false,
           }}
         >
-          <GraphSceneR3f />
+          <GraphSceneR3f edgeRenderMode={edgeRenderMode} />
         </Canvas>
       </div>
     </>

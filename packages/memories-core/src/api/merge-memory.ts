@@ -57,6 +57,18 @@ export interface MergeMemoryParams<NODE_LABEL = string, EDGE_LABEL = string> {
 }
 
 /**
+ * Edge JSON stored on merge: keeps caller `edge.properties` and sets `directed: true` so graph
+ * export can treat only merge-created directed links as directed (viz dash animation, etc.).
+ */
+export function withDirectedEdgeProperties(
+  properties: Record<string, unknown> | undefined,
+): Record<string, unknown> {
+  const base =
+    properties && typeof properties === "object" && !Array.isArray(properties) ? properties : {};
+  return { ...base, directed: true };
+}
+
+/**
  * Orchestrates a memory merge: validates API input, then delegates storage to the persistence backend.
  * @returns Memory keys whose search-meta lexical row was rebuilt (primary, former neighbors, new edge targets).
  */
@@ -136,7 +148,7 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams<string, 
       const { edgeId } = persistence.insertEdge(op, {
         fromNodeId,
         toNodeId,
-        properties: edge.properties,
+        properties: withDirectedEdgeProperties(edge.properties),
         idParts: {
           label: edge.label,
           selfMemoryKey: params.key,

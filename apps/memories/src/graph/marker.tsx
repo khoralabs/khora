@@ -24,7 +24,7 @@ export function Marker({
 }: {
   point: ProjectionPoint;
   dimmed: boolean;
-  /** When true, tooltip stays open for nodes in the active ego subgraph (hover or pinned). */
+  /** When true, tooltip stays open for nodes in the active ego subgraph (hover, pin, or search). */
   forceTooltipOpen: boolean;
   /** Mean position (scaled world space) for outward tooltip side: subgraph or full graph. */
   tooltipCentroid: readonly [number, number, number];
@@ -98,7 +98,7 @@ export function Marker({
                   <DotIcon />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent key={tooltipSide} side={tooltipSide} className="max-w-xs">
+              <TooltipContent key={tooltipSide} side={tooltipSide} className="max-w-xs opacity-50">
                 <span className="block whitespace-pre-line text-left text-xs">{tooltipText}</span>
               </TooltipContent>
             </Tooltip>

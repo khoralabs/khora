@@ -40,6 +40,7 @@ export {
   buildCanonicalMemorySearchMetaTextForMerge,
   MEMORY_SEARCH_META_SOURCE_KEY,
   upsertMemorySearchMetaVector,
+  withDirectedEdgeProperties,
   zMergeMemoryContentItem,
   zUserSourceKey,
 } from "./merge-memory";

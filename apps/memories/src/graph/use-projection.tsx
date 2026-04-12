@@ -45,6 +45,13 @@ type ProjectionValue = {
   focusEntryId: string | null;
   /** 1-hop ego of click pin, search hits, or hover — priority: click > search > hover. */
   activeSubgraphKeys: ReadonlySet<string> | null;
+  /**
+   * Subgraph edge chrome: pin, search hits, or live pointer on node/edge — drives `activeOnly` edge
+   * visibility and lit subgraph (same path as hover/pin).
+   */
+  hasGraphSubgraphFocus: boolean;
+  /** Pin or search hits — directed-edge dash emphasis; excludes hover-only (matches previous pin rule). */
+  hasGraphSubgraphStrongFocus: boolean;
 
   onHoverStart: (entryId: string) => void;
   onHoverEnd: () => void;
@@ -345,6 +352,17 @@ export function GraphProjectionProvider({
     return null;
   }, [selected, pinnedEdge, searchSubgraphKeys, hoveredEdgeSubgraphKeys, hoverData, adjacency]);
 
+  const searchDrivesSubgraph =
+    graphSearch !== null && graphSearch.relevantKeys.size > 0;
+
+  const hasGraphSubgraphStrongFocus =
+    selected !== null || pinnedEdge !== null || searchDrivesSubgraph;
+
+  const hasGraphSubgraphFocus =
+    hasGraphSubgraphStrongFocus ||
+    rawHoveredId !== null ||
+    rawHoveredEdgeKey !== null;
+
   const graphPreview = useMemo((): ProjectionValue["graphPreview"] => {
     if (rawHoveredEdgeKey) {
       const edge = sceneEdges.find((e) => e.key === rawHoveredEdgeKey);
@@ -374,6 +392,8 @@ export function GraphProjectionProvider({
       hoveredEntryId: debouncedHoveredId,
       focusEntryId,
       activeSubgraphKeys,
+      hasGraphSubgraphFocus,
+      hasGraphSubgraphStrongFocus,
       onHoverStart,
       onHoverEnd,
       onEdgeHoverStart,
@@ -400,6 +420,8 @@ export function GraphProjectionProvider({
       debouncedHoveredId,
       focusEntryId,
       activeSubgraphKeys,
+      hasGraphSubgraphFocus,
+      hasGraphSubgraphStrongFocus,
       onHoverStart,
       onHoverEnd,
       onEdgeHoverStart,

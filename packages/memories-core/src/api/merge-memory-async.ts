@@ -1,7 +1,11 @@
 import { ids } from "../models/ids";
 import type { MemoriesPersistenceAsync } from "../persistence/async-types";
 import { resolveMemoriesBackendCapabilities } from "../persistence/types";
-import { type MergeMemoryParams, zMergeMemoryContentItem } from "./merge-memory";
+import {
+  type MergeMemoryParams,
+  withDirectedEdgeProperties,
+  zMergeMemoryContentItem,
+} from "./merge-memory";
 
 export interface MutationCtxAsync {
   persistence: MemoriesPersistenceAsync;
@@ -100,7 +104,7 @@ export async function mergeMemoryAsync(
       const { edgeId } = await persistence.insertEdge(op, {
         fromNodeId,
         toNodeId,
-        properties: edge.properties,
+        properties: withDirectedEdgeProperties(edge.properties),
         idParts: {
           label: edge.label,
           selfMemoryKey: params.key,

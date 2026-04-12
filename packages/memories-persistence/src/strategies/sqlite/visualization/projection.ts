@@ -3,13 +3,33 @@ import type { GraphEdgeLink, GraphMemoryEmbedding } from "@cfd/memories-core";
 import { ids } from "@cfd/memories-core";
 import { blobToVector } from "../connection";
 
+function directedFromEdgePropertiesJson(json: string | null): boolean {
+  if (!json) return false;
+  try {
+    const p: unknown = JSON.parse(json);
+    if (p && typeof p === "object" && !Array.isArray(p)) {
+      return (p as { directed?: unknown }).directed === true;
+    }
+  } catch {
+    /* ignore */
+  }
+  return false;
+}
+
 export function loadGraphEdgesForNamespace(db: Database, namespace: string): GraphEdgeLink[] {
   const rows = db
     .query<
-      { edgeId: string; fromKey: string; toKey: string; labelsJoined: string | null },
+      {
+        edgeId: string;
+        fromKey: string;
+        toKey: string;
+        labelsJoined: string | null;
+        propertiesJson: string | null;
+      },
       [string, string]
     >(
       `SELECT e._id AS edgeId, nf.value AS fromKey, nt.value AS toKey,
+              e.properties AS propertiesJson,
               GROUP_CONCAT(el.value, char(31)) AS labelsJoined
        FROM edges e
        JOIN nodes nf ON nf._id = e.from_node_id
@@ -28,15 +48,60 @@ export function loadGraphEdgesForNamespace(db: Database, namespace: string): Gra
 
   const out: GraphEdgeLink[] = [];
   for (const r of rows) {
-    out.push({
+    const link: GraphEdgeLink = {
       edgeId: r.edgeId,
       fromKey: r.fromKey,
       toKey: r.toKey,
       labels: parseJoined(r.labelsJoined),
-      directed: true,
-    });
+    };
+    if (directedFromEdgePropertiesJson(r.propertiesJson)) {
+      link.directed = true;
+    }
+    out.push(link);
   }
   return out;
+}
+
+export function loadNodePropertiesForNamespace(
+  db: Database,
+  namespace: string,
+): Map<string, Record<string, unknown> | null> {
+  const keys = db
+    .query<{ key: string }, [string]>(`SELECT key FROM memories WHERE namespace = ?`)
+    .all(namespace);
+  const map = new Map<string, Record<string, unknown> | null>();
+  for (const { key } of keys) {
+    map.set(key, null);
+  }
+  if (keys.length === 0) return map;
+
+  const rows = db
+    .query<{ memoryKey: string; propertiesJson: string | null }, [string]>(
+      `SELECT m.key AS memoryKey, n.properties AS propertiesJson
+       FROM memories m
+       LEFT JOIN nodes n ON n.value = m.key
+       WHERE m.namespace = ?`,
+    )
+    .all(namespace);
+
+  for (const r of rows) {
+    if (!r.propertiesJson) {
+      map.set(r.memoryKey, null);
+      continue;
+    }
+    try {
+      const parsed: unknown = JSON.parse(r.propertiesJson);
+      map.set(
+        r.memoryKey,
+        parsed && typeof parsed === "object" && !Array.isArray(parsed)
+          ? (parsed as Record<string, unknown>)
+          : null,
+      );
+    } catch {
+      map.set(r.memoryKey, null);
+    }
+  }
+  return map;
 }
 
 export function loadNodeLabelsForNamespace(db: Database, namespace: string): Map<string, string[]> {

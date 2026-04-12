@@ -126,7 +126,7 @@ export function App() {
             searchQuery={searchQuery}
             onDismissPersistentFocus={() => setSearchQuery("")}
           >
-            <GraphScene />
+            <GraphScene edgeRenderMode="activeOnly" />
           </GraphProjectionProvider>
         ) : (
           <div className="flex h-full items-center justify-center px-4 text-center text-muted-foreground">

@@ -7,6 +7,13 @@ import { useProjection } from "./use-projection.js";
 
 const EDGE_LABEL_DISTANCE_FACTOR = 5;
 const PICK_RADIUS = 0.028;
+
+/**
+ * `all`: draw inactive edges faintly.
+ * `activeOnly`: no edges until subgraph focus (hover, pin, or search hits); then only edges that
+ * are lit (inside the active subgraph and passing search dimming).
+ */
+export type GraphEdgeRenderMode = "all" | "activeOnly";
 /** Matches drei dashed-line examples (`dashOffset` scroll). */
 const DASH_SCROLL_SPEED = 10;
 
@@ -124,18 +131,20 @@ export function GraphEdgeLines({
   posMap,
   activeSubgraphKeys,
   graphSearch,
-  pinnedSubgraphHighlight,
+  edgeRenderMode = "all",
 }: {
   edges: SceneEdge[];
   posMap: Map<string, [number, number, number]>;
   /** When non-null, only edges with both endpoints in this set are fully lit. */
   activeSubgraphKeys: ReadonlySet<string> | null;
   graphSearch: GraphSearchState | null;
-  /** When a node is clicked (pinned), keep its ego edges bright even if search would dim them. */
-  pinnedSubgraphHighlight: boolean;
+  edgeRenderMode?: GraphEdgeRenderMode;
 }) {
-  const { pinnedEdge, selected } = useProjection();
-  const pinnedSubgraphActive = selected !== null || pinnedEdge !== null;
+  const { hasGraphSubgraphFocus, hasGraphSubgraphStrongFocus } = useProjection();
+
+  if (edgeRenderMode === "activeOnly" && !hasGraphSubgraphFocus) {
+    return null;
+  }
 
   return (
     <>
@@ -146,19 +155,21 @@ export function GraphEdgeLines({
 
         const searchLit =
           graphSearch === null ||
-          pinnedSubgraphHighlight ||
+          hasGraphSubgraphStrongFocus ||
           (graphSearch.relevantKeys.has(e.fromKey) && graphSearch.relevantKeys.has(e.toKey));
         const subgraphLit =
           activeSubgraphKeys === null ||
           (activeSubgraphKeys.has(e.fromKey) && activeSubgraphKeys.has(e.toKey));
         const lit = searchLit && subgraphLit;
 
+        if (edgeRenderMode === "activeOnly" && !lit) return null;
+
         const opacity = lit ? 0.5 : 0.07;
-        const inPinnedSubgraph =
-          pinnedSubgraphActive &&
-          activeSubgraphKeys !== null &&
-          activeSubgraphKeys.has(e.fromKey) &&
-          activeSubgraphKeys.has(e.toKey);
+        const inPinnedSubgraph = !!(
+          hasGraphSubgraphStrongFocus &&
+          activeSubgraphKeys?.has(e.fromKey) &&
+          activeSubgraphKeys.has(e.toKey)
+        );
         const animateDash = inPinnedSubgraph && !!e.directed;
 
         return (

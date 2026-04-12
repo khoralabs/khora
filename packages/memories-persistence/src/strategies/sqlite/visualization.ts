@@ -6,6 +6,7 @@ import {
   loadGraphEdgesForNamespace,
   loadMeanEmbeddingsForNamespace,
   loadNodeLabelsForNamespace,
+  loadNodePropertiesForNamespace,
 } from "./visualization/projection";
 
 export class MemoriesVisualization implements IMemoriesVisualization {
@@ -17,6 +18,10 @@ export class MemoriesVisualization implements IMemoriesVisualization {
 
   loadNodeLabelsForNamespace(namespace: string) {
     return loadNodeLabelsForNamespace(this.db, namespace);
+  }
+
+  loadNodePropertiesForNamespace(namespace: string) {
+    return loadNodePropertiesForNamespace(this.db, namespace);
   }
 
   loadMeanEmbeddingsForNamespace(namespace: string) {
