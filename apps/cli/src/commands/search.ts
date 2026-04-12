@@ -1,10 +1,10 @@
 import type { Database } from "bun:sqlite";
-import { listSourceMapsForMemory } from "@cfd/memories-librarian";
 import {
   type ResolvedSource,
   searchAsync,
   wrapSyncMemoriesPersistenceAsAsync,
 } from "@cfd/memories-core";
+import { listSourceMapsForMemory } from "@cfd/memories-librarian";
 import { JsonlStore } from "@cfd/memories-stores";
 import { elapsedMs, logger } from "../logger.js";
 import { getLibrarian, getMemoriesBundle } from "../shared.js";

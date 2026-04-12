@@ -163,11 +163,7 @@ function rankSourceMapIdsForContent(
 ): Array<{ id: string; score: number }> {
   const { scope } = input;
 
-  if (
-    scope.kind === "union" &&
-    scope.namespaces.length > 1 &&
-    !caps.multiNamespaceSearch
-  ) {
+  if (scope.kind === "union" && scope.namespaces.length > 1 && !caps.multiNamespaceSearch) {
     const arms: RrfArm<string>[] = [];
     for (const ns of scope.namespaces) {
       const subScope = scopeSingleNamespace(ns);

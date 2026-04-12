@@ -1,5 +1,13 @@
 export { deleteMemoryAsync } from "../models/delete-memory-async";
 export type {
+  LabelPropsSearchFormatter,
+  LabelPropsSearchRole,
+} from "../models/label-props-search-text.ts";
+export {
+  formatLabelPropsForSearch,
+  propsToHumanSearchText,
+} from "../models/label-props-search-text.ts";
+export type {
   NeighborConstraint,
   NeighborFilter,
   NeighborNodesFilter,
@@ -37,8 +45,6 @@ export {
 } from "./merge-memory";
 export * from "./merge-memory-async";
 export * from "./ontology.ts";
-export type { LabelPropsSearchFormatter, LabelPropsSearchRole } from "../models/label-props-search-text.ts";
-export { formatLabelPropsForSearch, propsToHumanSearchText } from "../models/label-props-search-text.ts";
 export * from "./resolve-sourcemap";
 export type {
   NeighborSearchOption,

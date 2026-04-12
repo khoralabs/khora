@@ -10,11 +10,10 @@ export const canonicalOntology = defineOntology({
         role: z
           .string()
           .optional()
-          .describe("Job title, relationship (e.g. manager, sibling), or capacity in this context."),
-        organization: z
-          .string()
-          .optional()
-          .describe("Employer, team, or affiliation if known."),
+          .describe(
+            "Job title, relationship (e.g. manager, sibling), or capacity in this context.",
+          ),
+        organization: z.string().optional().describe("Employer, team, or affiliation if known."),
         timezone: z
           .string()
           .optional()
@@ -29,10 +28,7 @@ export const canonicalOntology = defineOntology({
           .enum(["physical", "online", "region", "other"])
           .optional()
           .describe("How this place is encountered."),
-        country: z
-          .string()
-          .optional()
-          .describe("ISO3166-1 alpha-2 or country name when relevant."),
+        country: z.string().optional().describe("ISO3166-1 alpha-2 or country name when relevant."),
       })
       .describe("Somewhere work or life happens: office, city, URL-backed venue."),
 
@@ -44,10 +40,7 @@ export const canonicalOntology = defineOntology({
         stance: z
           .enum(["likes", "dislikes", "neutral", "prefers_when"])
           .describe("Direction of the preference."),
-        detail: z
-          .string()
-          .optional()
-          .describe("One concrete reason or constraint (keep short)."),
+        detail: z.string().optional().describe("One concrete reason or constraint (keep short)."),
       })
       .describe("User taste, default choice, or thing to avoid."),
 
@@ -57,10 +50,7 @@ export const canonicalOntology = defineOntology({
           .string()
           .optional()
           .describe("Human-readable title if distinct from surrounding memory text."),
-        startsAt: z
-          .string()
-          .optional()
-          .describe("Start time in ISO 8601 (UTC or with offset)."),
+        startsAt: z.string().optional().describe("Start time in ISO 8601 (UTC or with offset)."),
         endsAt: z
           .string()
           .optional()
@@ -86,9 +76,7 @@ export const canonicalOntology = defineOntology({
 
     observation: z
       .object({
-        summary: z
-          .string()
-          .describe("What was noticed, past tense, one or two sentences max."),
+        summary: z.string().describe("What was noticed, past tense, one or two sentences max."),
         confidence: z
           .enum(["low", "medium", "high"])
           .optional()
@@ -118,9 +106,7 @@ export const canonicalOntology = defineOntology({
 
     temporal: z
       .object({
-        label: z
-          .string()
-          .describe("Human window: e.g. Q1 2025, sprint42, last Tuesday."),
+        label: z.string().describe("Human window: e.g. Q1 2025, sprint42, last Tuesday."),
         anchor: z
           .string()
           .optional()
@@ -157,10 +143,7 @@ export const canonicalOntology = defineOntology({
 
     causes: z
       .object({
-        mechanism: z
-          .string()
-          .optional()
-          .describe("Short causal chain or mediating factor."),
+        mechanism: z.string().optional().describe("Short causal chain or mediating factor."),
       })
       .describe("Source brought about or strongly explains the target."),
 

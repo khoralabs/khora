@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-core-persistence/sqlite";
+import {
+  createMemoriesPersistence,
+  openMemoriesDatabase,
+} from "@cfd/memories-core-persistence/sqlite";
 import { mergeMemory } from "./api/merge-memory";
 import { MAX_ADDITIONAL_NAMESPACES, search } from "./api/search";
 import type { HydratedSourceMapHit } from "./models/neighbor-search-types";
@@ -136,9 +139,9 @@ describe("cross-namespace search (validation + fallback)", () => {
         return [];
       },
     } as unknown as MemoriesPersistence;
-    expect(() =>
-      search({ persistence }, { namespace: "", content: { text: "x" } }),
-    ).toThrow(/non-empty/);
+    expect(() => search({ persistence }, { namespace: "", content: { text: "x" } })).toThrow(
+      /non-empty/,
+    );
   });
 
   test("too many additional namespaces throws", () => {

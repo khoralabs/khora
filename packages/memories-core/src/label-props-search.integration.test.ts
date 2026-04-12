@@ -1,13 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import { encodeOntologyLabel } from "./api/ontology";
-import { mergeMemory } from "./api/merge-memory";
-import { search } from "./api/search";
 import {
   createMemoriesPersistence,
   openMemoriesDatabase,
 } from "@cfd/memories-core-persistence/sqlite";
-import { MEMORY_NODE_LABEL_PROPS_KEY_PREFIX } from "./search-meta-constants";
+import { mergeMemory } from "./api/merge-memory";
+import { encodeOntologyLabel } from "./api/ontology";
+import { search } from "./api/search";
 import { ids } from "./models/ids";
+import { MEMORY_NODE_LABEL_PROPS_KEY_PREFIX } from "./search-meta-constants";
 
 function openTestDb() {
   return openMemoriesDatabase(":memory:");
@@ -68,11 +68,12 @@ describe("label props search features (SQLite)", () => {
         .query<{ n: number }, [string]>(
           `SELECT COUNT(*) AS n FROM source_maps WHERE memory_id = ? AND source_key LIKE '__mem_nl_props__%'`,
         )
-        .get(memId)!.n;
+        .get(memId)?.n;
 
     expect(countMaps()).toBe(1);
     expect(
-      search({ persistence }, { namespace: "ns", content: { text: v1 }, options: { topK: 3 } }).length,
+      search({ persistence }, { namespace: "ns", content: { text: v1 }, options: { topK: 3 } })
+        .length,
     ).toBeGreaterThanOrEqual(1);
 
     mergeMemory(
@@ -87,11 +88,12 @@ describe("label props search features (SQLite)", () => {
     );
 
     expect(countMaps()).toBe(1);
-    expect(search({ persistence }, { namespace: "ns", content: { text: v1 }, options: { topK: 3 } })).toEqual(
-      [],
-    );
     expect(
-      search({ persistence }, { namespace: "ns", content: { text: v2 }, options: { topK: 3 } }).length,
+      search({ persistence }, { namespace: "ns", content: { text: v1 }, options: { topK: 3 } }),
+    ).toEqual([]);
+    expect(
+      search({ persistence }, { namespace: "ns", content: { text: v2 }, options: { topK: 3 } })
+        .length,
     ).toBeGreaterThanOrEqual(1);
   });
 
@@ -122,7 +124,7 @@ describe("label props search features (SQLite)", () => {
             memory_key: "nb",
             direction: "out",
             label: encodeOntologyLabel("causes", { mechanism: edgeToken }),
- },
+          },
         ],
       },
     );
@@ -132,9 +134,7 @@ describe("label props search features (SQLite)", () => {
       { namespace: "ns", content: { text: edgeToken }, options: { topK: 10 } },
     );
     expect(
-      hits.some(
-        (h) => h.memory.key === "focal" && h.source_key.startsWith("__mem_edge_props__/"),
-      ),
+      hits.some((h) => h.memory.key === "focal" && h.source_key.startsWith("__mem_edge_props__/")),
     ).toBe(true);
   });
 
@@ -175,9 +175,7 @@ describe("label props search features (SQLite)", () => {
       { namespace: "ns", content: { text: edgeToken }, options: { topK: 10 } },
     );
     expect(
-      nbHits.some(
-        (h) => h.memory.key === "nb" && h.source_key.startsWith("__mem_edge_props__/"),
-      ),
+      nbHits.some((h) => h.memory.key === "nb" && h.source_key.startsWith("__mem_edge_props__/")),
     ).toBe(true);
   });
 });

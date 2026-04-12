@@ -7,7 +7,11 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!apps/memories/src/components/ui"]
+    "includes": [
+      "**",
+      "!apps/memories/src/components/ui",
+      "!packages/memories-spec/src/generated/**"
+    ]
   },
   "formatter": {
     "enabled": true,

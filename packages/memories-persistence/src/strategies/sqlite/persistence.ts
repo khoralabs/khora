@@ -1,18 +1,18 @@
 import type { Database } from "bun:sqlite";
 import type {
   MemoriesPersistence as IMemoriesPersistence,
+  LabelPropsSearchFormatter,
   MemoriesBackendCapabilities,
   MemoryOpContext,
   NeighborFilter,
   SearchNamespaceScope,
-  LabelPropsSearchFormatter,
 } from "@cfd/memories-core";
 import type { DbCtx } from "./models/context";
 import { insertEdgeLabelAssignment } from "./models/edge-label-assignments";
 import { ensureEdgeLabel } from "./models/edge-labels";
 import { insertEdge } from "./models/edges";
-import { findMemoryIdByKey, upsertMemory } from "./models/memories";
 import { syncLabelPropsSearchFeatures as syncLabelPropsSearchFeaturesImpl } from "./models/label-props-search";
+import { findMemoryIdByKey, upsertMemory } from "./models/memories";
 import {
   buildCanonicalMemorySearchMetaText,
   listNeighborMemoryKeysForNode,

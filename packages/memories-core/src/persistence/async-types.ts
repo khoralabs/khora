@@ -3,11 +3,7 @@ import type {
   HydratedSourceMapHit,
   NeighborFilter,
 } from "../models/neighbor-search-types";
-import type {
-  MemoriesBackendCapabilities,
-  MemoriesPersistence,
-  MemoryOpContext,
-} from "./types";
+import type { MemoriesBackendCapabilities, MemoriesPersistence, MemoryOpContext } from "./types";
 
 type PromisifyMethodMap<T> = {
   [K in keyof T]: T[K] extends (...args: infer A) => infer R

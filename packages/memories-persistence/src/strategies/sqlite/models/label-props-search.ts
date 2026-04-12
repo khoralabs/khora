@@ -1,3 +1,4 @@
+import type { Database } from "bun:sqlite";
 import {
   formatLabelPropsForSearch,
   ids,
@@ -6,12 +7,11 @@ import {
   parseOntologyLabelValue,
 } from "@cfd/memories-core";
 import {
-  memoryEdgeLabelPropsSourceKey,
-  memoryNodeLabelPropsSourceKey,
   MEMORY_EDGE_LABEL_PROPS_KEY_PREFIX,
   MEMORY_NODE_LABEL_PROPS_KEY_PREFIX,
+  memoryEdgeLabelPropsSourceKey,
+  memoryNodeLabelPropsSourceKey,
 } from "@cfd/memories-core/search-meta-constants";
-import type { Database } from "bun:sqlite";
 import { blobToVector } from "../connection";
 import { vectorVecTableName } from "../search-indexes";
 import type { DbCtx } from "./context";
@@ -125,9 +125,7 @@ export function syncLabelPropsSearchFeatures(
       if (!isNonEmptyProps(props)) continue;
       const body = formatLabelPropsForSearch(kind, "edge", props, formatLabelProps);
       if (body.length === 0) continue;
-      sections.push(
-        `Edge ${kind} ${edge.direction} toward ${edge.neighborKey}:\n${body}`,
-      );
+      sections.push(`Edge ${kind} ${edge.direction} toward ${edge.neighborKey}:\n${body}`);
     }
     if (sections.length === 0) continue;
 

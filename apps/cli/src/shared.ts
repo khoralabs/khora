@@ -1,6 +1,7 @@
 import type { Database } from "bun:sqlite";
+import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { Librarian, type EmbeddingResolutionPreset } from "@cfd/memories-librarian";
 import { MemoriesClient } from "@cfd/memories-core";
 import {
   canonicalLabelPropsSearchFormatter,
@@ -10,8 +11,7 @@ import {
   createMemoriesPersistence,
   openMemoriesDatabase,
 } from "@cfd/memories-core-persistence/sqlite";
-import { mkdirSync } from "node:fs";
-import { dirname } from "node:path";
+import { type EmbeddingResolutionPreset, Librarian } from "@cfd/memories-librarian";
 
 /** One Gemini key for @ai-sdk/google; .env often uses one name only. */
 export function resolveGeminiApiKey(): string {
@@ -77,10 +77,7 @@ function librarianCacheKey(dbPath: string, resolution: EmbeddingResolutionPreset
 /**
  * Singleton per `(dbPath, resolution)`: same {@link getMemoriesBundle} client, embedding dims match CLI `-dim`.
  */
-export function getLibrarian(
-  dbPath: string,
-  resolution: EmbeddingResolutionPreset,
-): CliLibrarian {
+export function getLibrarian(dbPath: string, resolution: EmbeddingResolutionPreset): CliLibrarian {
   const key = librarianCacheKey(dbPath, resolution);
   let lib = librarianByDbAndResolution.get(key);
   if (!lib) {
