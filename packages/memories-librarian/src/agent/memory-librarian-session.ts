@@ -8,7 +8,10 @@
  */
 import {
   evaluateRegisteredAgentAffordances,
+  type HydrateAffordancesBindTool,
+  hydrateAffordances,
   type RegisterAgentOptions,
+  type RegisteredAgentAffordancesWire,
   type SessionRunner,
   type ToolkitContext,
   type ToolRuntimeContext,
@@ -41,6 +44,11 @@ import { buildMemoryLibrarianModelMessages } from "./memory-librarian-messages.j
 import { createMemoryLibrarianSessionAuditHooks } from "./session-audit-hooks.js";
 import type { MemoryLibrarianEnv } from "./toolkit";
 
+export type MemoryLibrarianAffordancesHydration = {
+  wire: RegisteredAgentAffordancesWire;
+  bindTool: HydrateAffordancesBindTool;
+};
+
 export type MemoryLibrarianSessionContext<
   TNode extends Record<string, z.ZodType>,
   TEdge extends Record<string, z.ZodType>,
@@ -52,6 +60,12 @@ export type MemoryLibrarianSessionContext<
   agentName?: string;
   toolkitCtx?: ToolkitContext<MemoryLibrarianEnv>;
   runtime?: ToolRuntimeContext<MemoryLibrarianEnv>;
+  /**
+   * When set, the session uses {@link hydrateAffordances} instead of {@link evaluateRegisteredAgentAffordances}
+   * (e.g. restored snapshot). Requires {@link toolkitCtx} only if something else reads it; hydration does not
+   * re-walk the composable tree.
+   */
+  affordancesHydration?: MemoryLibrarianAffordancesHydration;
 };
 
 export type MemoryLibrarianSessionInput<
@@ -84,7 +98,7 @@ export function createMemoryLibrarianSessionRunner<
   MemoryLibrarianSessionContext<TNode, TEdge>
 > {
   return async ({ agent, input, context }) => {
-    const { model, client, embeddingModel, toolkitCtx, runtime } = context;
+    const { model, client, embeddingModel, toolkitCtx, runtime, affordancesHydration } = context;
     const {
       logicalMemory,
       processedLogicalMemory,
@@ -97,12 +111,19 @@ export function createMemoryLibrarianSessionRunner<
       throw new Error("memory librarian session context missing toolkit/runtime");
     }
     const tAff = performance.now();
-    const affordances = await evaluateRegisteredAgentAffordances(agent, toolkitCtx);
+    const affordances = affordancesHydration
+      ? await hydrateAffordances(affordancesHydration)
+      : await evaluateRegisteredAgentAffordances(agent, toolkitCtx);
     logger.info(
-      librarianLog("librarian.runner.evaluateAffordances", {
-        processTimeMs: elapsedMs(tAff),
-        toolCount: Object.keys(affordances.tools).length,
-      }),
+      librarianLog(
+        affordancesHydration
+          ? "librarian.runner.hydrateAffordances"
+          : "librarian.runner.evaluateAffordances",
+        {
+          processTimeMs: elapsedMs(tAff),
+          toolCount: Object.keys(affordances.tools).length,
+        },
+      ),
     );
 
     const librarian = createMemoryLibrarianToolLoopAgent({

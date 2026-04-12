@@ -4,8 +4,7 @@ import { useProjection } from "./use-projection.js";
 
 /**
  * Fixed bottom-right preview cards (node memory + edge detail) scoped to the graph viewport.
- * Preview target: live hover over node/edge, else the pinned edge or pinned node — same precedence
- * whether the subgraph is locked or hover-driven.
+ * Preview target: debounced hover over node/edge (see `focusDelay` on the provider), else pin.
  */
 export function GraphPreviewDock() {
   const { graphPreview } = useProjection();

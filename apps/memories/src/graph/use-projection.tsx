@@ -15,8 +15,10 @@ import type {
   SceneEdge,
 } from "./projection-types.js";
 
-const HOVER_DEBOUNCE_MS = 120;
-const HOVER_CLEAR_DELAY_MS = 280;
+/** Default delay (ms) before debounced hover state catches up to the pointer. */
+export const DEFAULT_GRAPH_FOCUS_DELAY_MS = 0;
+/** Default delay (ms) after pointer leave before clearing live hover. */
+export const DEFAULT_GRAPH_UNFOCUS_DELAY_MS = 0;
 
 type HoverData = {
   neighbors: Array<{ id: string; score: number }>;
@@ -66,8 +68,7 @@ type ProjectionValue = {
   hoverData: HoverData | undefined;
 
   /**
-   * Bottom-right preview card: same rules for hover vs pin — live pointer target wins, else the
-   * locked pin (edge pin before node pin when deciding fallback order). Edge hover beats node hover.
+   * Bottom-right preview card: debounced hover (after `focusDelay`), else pin — edge before node.
    */
   graphPreview:
     | { kind: "node"; point: ProjectionPoint }
@@ -139,6 +140,26 @@ function expandEgoKeys(
   return out;
 }
 
+function subgraphFromEdgeKey(
+  edgeKey: string | null,
+  sceneEdges: SceneEdge[],
+): ReadonlySet<string> | null {
+  if (!edgeKey) return null;
+  const edge = sceneEdges.find((e) => e.key === edgeKey);
+  if (!edge) return null;
+  return new Set([edge.fromKey, edge.toKey]);
+}
+
+function subgraphFromNodeHover(
+  nodeId: string | null,
+  adjacency: Map<string, Set<string>>,
+): ReadonlySet<string> | null {
+  if (!nodeId) return null;
+  const nbrs = adjacency.get(nodeId);
+  if (!nbrs) return new Set([nodeId]);
+  return new Set([nodeId, ...nbrs]);
+}
+
 function buildAdjacency(data: GraphPayload): Map<string, Set<string>> {
   const m = new Map<string, Set<string>>();
   const link = (a: string, b: string) => {
@@ -156,20 +177,28 @@ function buildAdjacency(data: GraphPayload): Map<string, Set<string>> {
   return m;
 }
 
-export function GraphProjectionProvider({
-  children,
-  data,
-  graphSearch = null,
-  searchQuery = "",
-  onDismissPersistentFocus,
-}: PropsWithChildren<{
+export type GraphProjectionProviderProps = PropsWithChildren<{
   data: GraphPayload;
   graphSearch?: GraphSearchState | null;
   /** Kept in sync with the search field so click-pin clears while typing or when results update. */
   searchQuery?: string;
   /** Clears the search field / results in the parent (e.g. `setSearchQuery("")`). */
   onDismissPersistentFocus?: () => void;
-}>) {
+  /** Ms before debounced hover drives subgraph highlight, markers, and preview card (not raw pointer). */
+  focusDelay?: number;
+  /** Ms after pointer leave before live hover clears. */
+  unFocusDelay?: number;
+}>;
+
+export function GraphProjectionProvider({
+  children,
+  data,
+  graphSearch = null,
+  searchQuery = "",
+  onDismissPersistentFocus,
+  focusDelay = DEFAULT_GRAPH_FOCUS_DELAY_MS,
+  unFocusDelay = DEFAULT_GRAPH_UNFOCUS_DELAY_MS,
+}: GraphProjectionProviderProps) {
   const points = useMemo(() => buildPoints(data), [data]);
   const sceneEdges = useMemo(() => buildSceneEdges(data.edges), [data.edges]);
   const adjacency = useMemo(() => buildAdjacency(data), [data]);
@@ -203,17 +232,17 @@ export function GraphProjectionProvider({
   }, [cancelScheduledHoverClear, cancelScheduledEdgeHoverClear]);
 
   useEffect(() => {
-    const t = window.setTimeout(() => setDebouncedHoveredId(rawHoveredId), HOVER_DEBOUNCE_MS);
+    const t = window.setTimeout(() => setDebouncedHoveredId(rawHoveredId), focusDelay);
     return () => window.clearTimeout(t);
-  }, [rawHoveredId]);
+  }, [rawHoveredId, focusDelay]);
 
   useEffect(() => {
     const t = window.setTimeout(
       () => setDebouncedHoveredEdgeKey(rawHoveredEdgeKey),
-      HOVER_DEBOUNCE_MS,
+      focusDelay,
     );
     return () => window.clearTimeout(t);
-  }, [rawHoveredEdgeKey]);
+  }, [rawHoveredEdgeKey, focusDelay]);
 
   const setSelected = useCallback((p: ProjectionPoint | null) => {
     setPinnedEdgeInternal(null);
@@ -239,9 +268,9 @@ export function GraphProjectionProvider({
     const id = window.setTimeout(() => {
       hoverClearTimerRef.current = null;
       setRawHoveredId(null);
-    }, HOVER_CLEAR_DELAY_MS);
+    }, unFocusDelay);
     hoverClearTimerRef.current = id;
-  }, [cancelScheduledHoverClear]);
+  }, [cancelScheduledHoverClear, unFocusDelay]);
 
   const onEdgeHoverStart = useCallback(
     (edgeKey: string) => {
@@ -257,9 +286,9 @@ export function GraphProjectionProvider({
     const id = window.setTimeout(() => {
       edgeHoverClearTimerRef.current = null;
       setRawHoveredEdgeKey(null);
-    }, HOVER_CLEAR_DELAY_MS);
+    }, unFocusDelay);
     edgeHoverClearTimerRef.current = id;
-  }, [cancelScheduledEdgeHoverClear]);
+  }, [cancelScheduledEdgeHoverClear, unFocusDelay]);
 
   const clearHover = useCallback(() => {
     cancelAllHoverTimers();
@@ -320,20 +349,14 @@ export function GraphProjectionProvider({
     };
   }, [adjacency, debouncedHoveredId]);
 
-  const hoveredEdgeSubgraphKeys = useMemo((): ReadonlySet<string> | null => {
-    if (!debouncedHoveredEdgeKey) return null;
-    const edge = sceneEdges.find((e) => e.key === debouncedHoveredEdgeKey);
-    if (!edge) return null;
-    return new Set([edge.fromKey, edge.toKey]);
-  }, [debouncedHoveredEdgeKey, sceneEdges]);
-
   const searchSubgraphKeys = useMemo((): ReadonlySet<string> | null => {
     if (!graphSearch || graphSearch.relevantKeys.size === 0) return null;
     return expandEgoKeys(graphSearch.relevantKeys, adjacency);
   }, [graphSearch, adjacency]);
 
   const focusEntryId =
-    selected?.entryId ?? (searchSubgraphKeys ? null : (debouncedHoveredId ?? null));
+    selected?.entryId ??
+    (searchSubgraphKeys ? null : (debouncedHoveredId ?? rawHoveredId ?? null));
 
   const activeSubgraphKeys = useMemo((): ReadonlySet<string> | null => {
     if (selected) {
@@ -345,12 +368,12 @@ export function GraphProjectionProvider({
       return new Set([pinnedEdge.fromKey, pinnedEdge.toKey]);
     }
     if (searchSubgraphKeys) return searchSubgraphKeys;
-    if (hoveredEdgeSubgraphKeys) return hoveredEdgeSubgraphKeys;
-    if (hoverData?.communityMembers.length) {
-      return new Set(hoverData.communityMembers);
-    }
-    return null;
-  }, [selected, pinnedEdge, searchSubgraphKeys, hoveredEdgeSubgraphKeys, hoverData, adjacency]);
+    // Hover ego follows debounced ids so `focusDelay` controls subgraph timing (see edge `subgraphLit` when null).
+    return (
+      subgraphFromEdgeKey(debouncedHoveredEdgeKey, sceneEdges) ??
+      subgraphFromNodeHover(debouncedHoveredId, adjacency)
+    );
+  }, [selected, pinnedEdge, searchSubgraphKeys, debouncedHoveredEdgeKey, debouncedHoveredId, sceneEdges, adjacency]);
 
   const searchDrivesSubgraph =
     graphSearch !== null && graphSearch.relevantKeys.size > 0;
@@ -364,18 +387,18 @@ export function GraphProjectionProvider({
     rawHoveredEdgeKey !== null;
 
   const graphPreview = useMemo((): ProjectionValue["graphPreview"] => {
-    if (rawHoveredEdgeKey) {
-      const edge = sceneEdges.find((e) => e.key === rawHoveredEdgeKey);
+    if (debouncedHoveredEdgeKey) {
+      const edge = sceneEdges.find((e) => e.key === debouncedHoveredEdgeKey);
       return edge ? { kind: "edge", edge } : null;
     }
-    if (rawHoveredId) {
-      const point = points.find((p) => p.entryId === rawHoveredId);
+    if (debouncedHoveredId) {
+      const point = points.find((p) => p.entryId === debouncedHoveredId);
       return point ? { kind: "node", point } : null;
     }
     if (pinnedEdge) return { kind: "edge", edge: pinnedEdge };
     if (selected) return { kind: "node", point: selected };
     return null;
-  }, [rawHoveredEdgeKey, rawHoveredId, pinnedEdge, selected, sceneEdges, points]);
+  }, [debouncedHoveredEdgeKey, debouncedHoveredId, pinnedEdge, selected, sceneEdges, points]);
 
   const value = useMemo(
     (): ProjectionValue => ({

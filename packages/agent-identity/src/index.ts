@@ -60,6 +60,24 @@ export {
 } from "./policy/pipeline-hooks.js";
 export { policy } from "./policy/policy.js";
 export type {
+  AgentRuntimeSnapshot,
+  AgentSnapshotEnvelope,
+  HydrateAffordancesBindTool,
+  PolicyEvaluationSnapshot,
+  PolicySnapshotMode,
+  RegisteredAgentAffordancesWire,
+  RegisteredAgentIdentityWire,
+  ToolSpecWire,
+} from "./snapshot/index.js";
+export {
+  affordancesToWire,
+  capturePolicyResults,
+  hashToolSpecWire,
+  hydrateAffordances,
+  toolIdentityPayloadFromWire,
+  toolSpecToWire,
+} from "./snapshot/index.js";
+export type {
   StandardSchemaV1,
   StandardTypedV1,
 } from "./standard-schema.js";

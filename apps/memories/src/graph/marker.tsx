@@ -1,7 +1,7 @@
 import { Html } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { DotIcon } from "lucide-react";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import * as THREE from "three";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -37,6 +37,11 @@ export function Marker({
   const [tooltipSide, setTooltipSide] = useState<"left" | "right">("right");
   const tooltipOpen = forceTooltipOpen || userTooltipOpen;
   const sideRef = useRef<"left" | "right">("right");
+  /** Portal tooltips here so they share the drei Html stacking layer (not `document.body`). */
+  const [tooltipPortalEl, setTooltipPortalEl] = useState<HTMLDivElement | null>(null);
+  const tooltipLayerRef = useCallback((el: HTMLDivElement | null) => {
+    setTooltipPortalEl(el);
+  }, []);
   const { camera } = useThree();
 
   useFrame(() => {
@@ -61,11 +66,10 @@ export function Marker({
       <Html
         center
         distanceFactor={MARKER_DISTANCE_FACTOR}
-        zIndexRange={[100, 2000]}
         className="r3f-html-marker-root"
         style={{ pointerEvents: "none" }}
       >
-        <div className="w-fit" style={{ pointerEvents: "auto" }}>
+        <div ref={tooltipLayerRef} className="relative w-fit" style={{ pointerEvents: "auto" }}>
           <TooltipProvider>
             <Tooltip
               open={tooltipOpen}
@@ -98,7 +102,12 @@ export function Marker({
                   <DotIcon />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent key={tooltipSide} side={tooltipSide} className="max-w-xs opacity-50">
+              <TooltipContent
+                key={tooltipSide}
+                container={tooltipPortalEl}
+                side={tooltipSide}
+                className="max-w-xs opacity-50"
+              >
                 <span className="block whitespace-pre-line text-left text-xs">{tooltipText}</span>
               </TooltipContent>
             </Tooltip>

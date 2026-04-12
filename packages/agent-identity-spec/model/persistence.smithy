@@ -14,6 +14,8 @@ Hypothetical host storage surface for agent identity attribution (sessions, stat
 **Idempotency:** `UpsertRegisteredAgentSnapshot` should be idempotent for the same `(agentId, staticHash)`. `RecordSessionIdentityLink` may append or upsert depending on host policy; duplicate `(sessionId, staticHash, runtimeHash)` rows may be allowed for audit or deduped.
 
 **Async:** Mirror with Promise/async in language bindings where applicable.
+
+**Snapshots:** `RecordAffordanceSnapshotEnvelope` stores a versioned {@link AgentSnapshotEnvelope} blob (`envelope` as `Document`). **Transitions:** `RecordIdentityTransition` links two `IdentityLinkRow` ids for replay / audit graphs.
 """)
 service AgentIdentityPersistenceService {
     version: "2026-04-12"
@@ -23,6 +25,9 @@ service AgentIdentityPersistenceService {
         GetLatestIdentityLinkForSession
         ListIdentityLinksForAgent
         RecordRuntimeToolRefSnapshot
+        RecordAffordanceSnapshotEnvelope
+        GetAffordanceSnapshotEnvelope
+        RecordIdentityTransition
     ]
 }
 
@@ -97,4 +102,65 @@ structure RecordRuntimeToolRefSnapshotInput {
 
 structure RecordRuntimeToolRefSnapshotOutput {
     snapshotId: String
+}
+
+structure AffordanceSnapshotEnvelopeRow {
+    snapshotId: String
+    sessionId: String
+    _ts_created: Long
+    schemaVersion: String
+    /// Full {@link AgentSnapshotEnvelope} as JSON (`Document`).
+    envelope: Document
+    metadata: Document
+}
+
+operation RecordAffordanceSnapshotEnvelope {
+    input: RecordAffordanceSnapshotEnvelopeInput
+    output: RecordAffordanceSnapshotEnvelopeOutput
+}
+
+structure RecordAffordanceSnapshotEnvelopeInput {
+    op: IdentityOpContext
+    row: AffordanceSnapshotEnvelopeRow
+}
+
+structure RecordAffordanceSnapshotEnvelopeOutput {
+    snapshotId: String
+}
+
+operation GetAffordanceSnapshotEnvelope {
+    input: GetAffordanceSnapshotEnvelopeInput
+    output: GetAffordanceSnapshotEnvelopeOutput
+}
+
+structure GetAffordanceSnapshotEnvelopeInput {
+    snapshotId: String
+}
+
+structure GetAffordanceSnapshotEnvelopeOutput {
+    /// Omitted when `snapshotId` is unknown.
+    row: AffordanceSnapshotEnvelopeRow
+}
+
+structure IdentityTransitionRow {
+    transitionId: String
+    sessionId: String
+    fromLinkId: String
+    toLinkId: String
+    _ts_created: Long
+    metadata: Document
+}
+
+operation RecordIdentityTransition {
+    input: RecordIdentityTransitionInput
+    output: RecordIdentityTransitionOutput
+}
+
+structure RecordIdentityTransitionInput {
+    op: IdentityOpContext
+    row: IdentityTransitionRow
+}
+
+structure RecordIdentityTransitionOutput {
+    transitionId: String
 }

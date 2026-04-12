@@ -6,6 +6,7 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group";
+import { Spinner } from "@/components/ui/spinner";
 import { LoaderWithMessage } from "./components/loader-with-message.js";
 import type { GraphPayload, GraphSearchState } from "./graph/projection-types.js";
 import { GraphScene } from "./graph/scene.js";
@@ -30,6 +31,7 @@ export function App() {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [graphSearch, setGraphSearch] = useState<GraphSearchState | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -68,12 +70,14 @@ export function App() {
     const q = searchQuery.trim();
     if (!q) {
       setGraphSearch(null);
+      setSearchLoading(false);
       return;
     }
     const ac = new AbortController();
     const ns = namespace.trim();
     const id = setTimeout(() => {
       void (async () => {
+        setSearchLoading(true);
         try {
           const res = await fetch("/api/search", {
             method: "POST",
@@ -98,6 +102,8 @@ export function App() {
           });
         } catch {
           if (!ac.signal.aborted) setGraphSearch(null);
+        } finally {
+          setSearchLoading(false);
         }
       })();
     }, 320);
@@ -125,6 +131,7 @@ export function App() {
             graphSearch={graphSearch}
             searchQuery={searchQuery}
             onDismissPersistentFocus={() => setSearchQuery("")}
+            focusDelay={200}
           >
             <GraphScene edgeRenderMode="activeOnly" />
           </GraphProjectionProvider>
@@ -171,8 +178,20 @@ export function App() {
           <InputGroupAddon>
             <ScanSearchIcon className="text-muted-foreground" aria-hidden />
           </InputGroupAddon>
-          <InputGroupAddon align="inline-end" className="text-xs font-normal tabular-nums">
-            {searchSummary || "\u00a0"}
+          <InputGroupAddon
+            align="inline-end"
+            className={
+              searchLoading
+                ? "pr-3"
+                : "text-xs font-normal tabular-nums"
+            }
+            aria-live={searchLoading ? "polite" : undefined}
+          >
+            {searchLoading ? (
+              <Spinner className="text-muted-foreground" aria-label="Searching" />
+            ) : (
+              searchSummary || "\u00a0"
+            )}
           </InputGroupAddon>
         </InputGroup>
         {error ? <span className="text-sm text-destructive">{error}</span> : null}

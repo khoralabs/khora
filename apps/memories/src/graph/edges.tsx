@@ -1,6 +1,6 @@
 import { Html, Line } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { type ElementRef, useMemo, useRef } from "react";
+import { type ComponentRef, useMemo, useRef } from "react";
 import * as THREE from "three";
 import type { GraphSearchState, SceneEdge } from "./projection-types.js";
 import { useProjection } from "./use-projection.js";
@@ -51,7 +51,7 @@ function GraphDashedEdgeLineAnimated({
   to: [number, number, number];
   opacity: number;
 }) {
-  const lineRef = useRef<ElementRef<typeof Line>>(null);
+  const lineRef = useRef<ComponentRef<typeof Line>>(null);
   useFrame((_, delta) => {
     const line = lineRef.current;
     if (!line) return;
@@ -158,8 +158,9 @@ export function GraphEdgeLines({
           hasGraphSubgraphStrongFocus ||
           (graphSearch.relevantKeys.has(e.fromKey) && graphSearch.relevantKeys.has(e.toKey));
         const subgraphLit =
-          activeSubgraphKeys === null ||
-          (activeSubgraphKeys.has(e.fromKey) && activeSubgraphKeys.has(e.toKey));
+          activeSubgraphKeys === null
+            ? !hasGraphSubgraphFocus
+            : activeSubgraphKeys.has(e.fromKey) && activeSubgraphKeys.has(e.toKey);
         const lit = searchLit && subgraphLit;
 
         if (edgeRenderMode === "activeOnly" && !lit) return null;
@@ -214,7 +215,6 @@ export function ActiveSubgraphEdgeLabels({
               center
               distanceFactor={EDGE_LABEL_DISTANCE_FACTOR}
               style={{ pointerEvents: "none" }}
-              zIndexRange={[200, 0]}
             >
               <span className="max-w-[12rem] rounded bg-background/90 px-1.5 py-0.5 text-center text-[10px] leading-tight text-foreground shadow-sm ring-1 ring-border/60">
                 {text}
