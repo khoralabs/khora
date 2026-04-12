@@ -13,6 +13,11 @@ export type GraphEdgeLink = {
   fromKey: string;
   toKey: string;
   labels: string[];
+  /**
+   * When true, visualization keeps `fromKey` → `toKey` (e.g. dash flow, no undirected merge).
+   * SQLite `edges` rows are directed; loaders should set this when exposing merge semantics.
+   */
+  directed?: boolean;
 };
 
 /** Mean-pooled embedding per memory for layout (storage-agnostic shape). */

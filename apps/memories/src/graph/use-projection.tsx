@@ -27,6 +27,8 @@ type ProjectionValue = {
   namespace: string;
   /** Immediate hover target (memory key); use for preview fetch. */
   liveHoveredEntryId: string | null;
+  /** Immediate hover target (undirected edge key); use for edge preview fetch. */
+  liveHoveredEdgeKey: string | null;
 
   points: ProjectionPoint[];
   sceneEdges: SceneEdge[];
@@ -34,6 +36,9 @@ type ProjectionValue = {
 
   selected: ProjectionPoint | null;
   setSelected: (p: ProjectionPoint | null) => void;
+
+  pinnedEdge: SceneEdge | null;
+  setPinnedEdge: (e: SceneEdge | null) => void;
 
   hoveredEntryId: string | null;
   /** Center node for subgraph dimming: click pin, else null when search drives the subgraph, else hover. */
@@ -43,6 +48,8 @@ type ProjectionValue = {
 
   onHoverStart: (entryId: string) => void;
   onHoverEnd: () => void;
+  onEdgeHoverStart: (edgeKey: string) => void;
+  onEdgeHoverEnd: () => void;
   clearHover: () => void;
   clearPinnedSelection: () => void;
   /** Clears hover, click pin, and search field/results (parent `onDismissPersistentFocus`). */
@@ -50,6 +57,15 @@ type ProjectionValue = {
   onMemoryPreviewPointerEnter: () => void;
   onMemoryPreviewPointerLeave: () => void;
   hoverData: HoverData | undefined;
+
+  /**
+   * Bottom-right preview card: same rules for hover vs pin — live pointer target wins, else the
+   * locked pin (edge pin before node pin when deciding fallback order). Edge hover beats node hover.
+   */
+  graphPreview:
+    | { kind: "node"; point: ProjectionPoint }
+    | { kind: "edge"; edge: SceneEdge }
+    | null;
 };
 
 const ProjectionContext = createContext<ProjectionValue | null>(null);
@@ -65,9 +81,24 @@ function buildPoints(data: GraphPayload): ProjectionPoint[] {
   }));
 }
 
-function dedupeUndirectedEdges(edges: GraphPayload["edges"]): SceneEdge[] {
-  const seen = new Map<string, { fromKey: string; toKey: string; labels: Set<string> }>();
+function buildSceneEdges(edges: GraphPayload["edges"]): SceneEdge[] {
+  const seen = new Map<
+    string,
+    { fromKey: string; toKey: string; labels: Set<string>; edgeId: string }
+  >();
+  const directed: SceneEdge[] = [];
   for (const e of edges) {
+    if (e.directed) {
+      directed.push({
+        key: `${e.fromKey}\0${e.toKey}\0dir\0${e.edgeId}`,
+        edgeId: e.edgeId,
+        fromKey: e.fromKey,
+        toKey: e.toKey,
+        labels: [...new Set(e.labels)],
+        directed: true,
+      });
+      continue;
+    }
     const a = e.fromKey < e.toKey ? e.fromKey : e.toKey;
     const b = e.fromKey < e.toKey ? e.toKey : e.fromKey;
     const k = `${a}\0${b}`;
@@ -76,14 +107,16 @@ function dedupeUndirectedEdges(edges: GraphPayload["edges"]): SceneEdge[] {
       for (const lb of e.labels) existing.labels.add(lb);
       continue;
     }
-    seen.set(k, { fromKey: a, toKey: b, labels: new Set(e.labels) });
+    seen.set(k, { fromKey: a, toKey: b, labels: new Set(e.labels), edgeId: e.edgeId });
   }
-  return [...seen.entries()].map(([key, v]) => ({
+  const undirected = [...seen.entries()].map(([key, v]) => ({
     key,
+    edgeId: v.edgeId,
     fromKey: v.fromKey,
     toKey: v.toKey,
     labels: [...v.labels],
   }));
+  return [...directed, ...undirected];
 }
 
 function expandEgoKeys(
@@ -131,13 +164,17 @@ export function GraphProjectionProvider({
   onDismissPersistentFocus?: () => void;
 }>) {
   const points = useMemo(() => buildPoints(data), [data]);
-  const sceneEdges = useMemo(() => dedupeUndirectedEdges(data.edges), [data.edges]);
+  const sceneEdges = useMemo(() => buildSceneEdges(data.edges), [data.edges]);
   const adjacency = useMemo(() => buildAdjacency(data), [data]);
 
-  const [selected, setSelected] = useState<ProjectionPoint | null>(null);
+  const [selected, setSelectedInternal] = useState<ProjectionPoint | null>(null);
+  const [pinnedEdge, setPinnedEdgeInternal] = useState<SceneEdge | null>(null);
   const [rawHoveredId, setRawHoveredId] = useState<string | null>(null);
   const [debouncedHoveredId, setDebouncedHoveredId] = useState<string | null>(null);
+  const [rawHoveredEdgeKey, setRawHoveredEdgeKey] = useState<string | null>(null);
+  const [debouncedHoveredEdgeKey, setDebouncedHoveredEdgeKey] = useState<string | null>(null);
   const hoverClearTimerRef = useRef<number | null>(null);
+  const edgeHoverClearTimerRef = useRef<number | null>(null);
 
   const cancelScheduledHoverClear = useCallback(() => {
     if (hoverClearTimerRef.current !== null) {
@@ -146,17 +183,48 @@ export function GraphProjectionProvider({
     }
   }, []);
 
+  const cancelScheduledEdgeHoverClear = useCallback(() => {
+    if (edgeHoverClearTimerRef.current !== null) {
+      window.clearTimeout(edgeHoverClearTimerRef.current);
+      edgeHoverClearTimerRef.current = null;
+    }
+  }, []);
+
+  const cancelAllHoverTimers = useCallback(() => {
+    cancelScheduledHoverClear();
+    cancelScheduledEdgeHoverClear();
+  }, [cancelScheduledHoverClear, cancelScheduledEdgeHoverClear]);
+
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedHoveredId(rawHoveredId), HOVER_DEBOUNCE_MS);
     return () => window.clearTimeout(t);
   }, [rawHoveredId]);
 
+  useEffect(() => {
+    const t = window.setTimeout(
+      () => setDebouncedHoveredEdgeKey(rawHoveredEdgeKey),
+      HOVER_DEBOUNCE_MS,
+    );
+    return () => window.clearTimeout(t);
+  }, [rawHoveredEdgeKey]);
+
+  const setSelected = useCallback((p: ProjectionPoint | null) => {
+    setPinnedEdgeInternal(null);
+    setSelectedInternal(p);
+  }, []);
+
+  const setPinnedEdge = useCallback((e: SceneEdge | null) => {
+    setSelectedInternal(null);
+    setPinnedEdgeInternal(e);
+  }, []);
+
   const onHoverStart = useCallback(
     (entryId: string) => {
-      cancelScheduledHoverClear();
+      cancelAllHoverTimers();
+      setRawHoveredEdgeKey(null);
       setRawHoveredId(entryId);
     },
-    [cancelScheduledHoverClear],
+    [cancelAllHoverTimers],
   );
 
   const onHoverEnd = useCallback(() => {
@@ -168,13 +236,33 @@ export function GraphProjectionProvider({
     hoverClearTimerRef.current = id;
   }, [cancelScheduledHoverClear]);
 
+  const onEdgeHoverStart = useCallback(
+    (edgeKey: string) => {
+      cancelAllHoverTimers();
+      setRawHoveredId(null);
+      setRawHoveredEdgeKey(edgeKey);
+    },
+    [cancelAllHoverTimers],
+  );
+
+  const onEdgeHoverEnd = useCallback(() => {
+    cancelScheduledEdgeHoverClear();
+    const id = window.setTimeout(() => {
+      edgeHoverClearTimerRef.current = null;
+      setRawHoveredEdgeKey(null);
+    }, HOVER_CLEAR_DELAY_MS);
+    edgeHoverClearTimerRef.current = id;
+  }, [cancelScheduledEdgeHoverClear]);
+
   const clearHover = useCallback(() => {
-    cancelScheduledHoverClear();
+    cancelAllHoverTimers();
     setRawHoveredId(null);
-  }, [cancelScheduledHoverClear]);
+    setRawHoveredEdgeKey(null);
+  }, [cancelAllHoverTimers]);
 
   const clearPinnedSelection = useCallback(() => {
-    setSelected(null);
+    setSelectedInternal(null);
+    setPinnedEdgeInternal(null);
   }, []);
 
   const dismissPersistentGraphFocus = useCallback(() => {
@@ -184,15 +272,21 @@ export function GraphProjectionProvider({
   }, [clearHover, clearPinnedSelection, onDismissPersistentFocus]);
 
   const onMemoryPreviewPointerEnter = useCallback(() => {
-    cancelScheduledHoverClear();
-  }, [cancelScheduledHoverClear]);
+    cancelAllHoverTimers();
+  }, [cancelAllHoverTimers]);
 
   const onMemoryPreviewPointerLeave = useCallback(() => {
-    cancelScheduledHoverClear();
+    cancelAllHoverTimers();
     setRawHoveredId(null);
-  }, [cancelScheduledHoverClear]);
+    setRawHoveredEdgeKey(null);
+  }, [cancelAllHoverTimers]);
 
-  useEffect(() => () => cancelScheduledHoverClear(), [cancelScheduledHoverClear]);
+  useEffect(
+    () => () => {
+      cancelAllHoverTimers();
+    },
+    [cancelAllHoverTimers],
+  );
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -204,7 +298,8 @@ export function GraphProjectionProvider({
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: clear click-pin when search text or fetched results change
   useEffect(() => {
-    setSelected(null);
+    setSelectedInternal(null);
+    setPinnedEdgeInternal(null);
   }, [searchQuery, graphSearch]);
 
   const hoverData = useMemo((): HoverData | undefined => {
@@ -217,6 +312,13 @@ export function GraphProjectionProvider({
       communityMembers: [debouncedHoveredId, ...neighbors.map((n) => n.id)],
     };
   }, [adjacency, debouncedHoveredId]);
+
+  const hoveredEdgeSubgraphKeys = useMemo((): ReadonlySet<string> | null => {
+    if (!debouncedHoveredEdgeKey) return null;
+    const edge = sceneEdges.find((e) => e.key === debouncedHoveredEdgeKey);
+    if (!edge) return null;
+    return new Set([edge.fromKey, edge.toKey]);
+  }, [debouncedHoveredEdgeKey, sceneEdges]);
 
   const searchSubgraphKeys = useMemo((): ReadonlySet<string> | null => {
     if (!graphSearch || graphSearch.relevantKeys.size === 0) return null;
@@ -232,52 +334,83 @@ export function GraphProjectionProvider({
       if (!nbrs) return new Set([selected.entryId]);
       return new Set([selected.entryId, ...nbrs]);
     }
+    if (pinnedEdge) {
+      return new Set([pinnedEdge.fromKey, pinnedEdge.toKey]);
+    }
     if (searchSubgraphKeys) return searchSubgraphKeys;
+    if (hoveredEdgeSubgraphKeys) return hoveredEdgeSubgraphKeys;
     if (hoverData?.communityMembers.length) {
       return new Set(hoverData.communityMembers);
     }
     return null;
-  }, [selected, searchSubgraphKeys, hoverData, adjacency]);
+  }, [selected, pinnedEdge, searchSubgraphKeys, hoveredEdgeSubgraphKeys, hoverData, adjacency]);
+
+  const graphPreview = useMemo((): ProjectionValue["graphPreview"] => {
+    if (rawHoveredEdgeKey) {
+      const edge = sceneEdges.find((e) => e.key === rawHoveredEdgeKey);
+      return edge ? { kind: "edge", edge } : null;
+    }
+    if (rawHoveredId) {
+      const point = points.find((p) => p.entryId === rawHoveredId);
+      return point ? { kind: "node", point } : null;
+    }
+    if (pinnedEdge) return { kind: "edge", edge: pinnedEdge };
+    if (selected) return { kind: "node", point: selected };
+    return null;
+  }, [rawHoveredEdgeKey, rawHoveredId, pinnedEdge, selected, sceneEdges, points]);
 
   const value = useMemo(
     (): ProjectionValue => ({
       namespace: data.namespace,
       liveHoveredEntryId: rawHoveredId,
+      liveHoveredEdgeKey: rawHoveredEdgeKey,
       points,
       sceneEdges,
       graphSearch,
       selected,
       setSelected,
+      pinnedEdge,
+      setPinnedEdge,
       hoveredEntryId: debouncedHoveredId,
       focusEntryId,
       activeSubgraphKeys,
       onHoverStart,
       onHoverEnd,
+      onEdgeHoverStart,
+      onEdgeHoverEnd,
       clearHover,
       clearPinnedSelection,
       dismissPersistentGraphFocus,
       onMemoryPreviewPointerEnter,
       onMemoryPreviewPointerLeave,
       hoverData,
+      graphPreview,
     }),
     [
       data.namespace,
       rawHoveredId,
+      rawHoveredEdgeKey,
       points,
       sceneEdges,
       graphSearch,
       selected,
+      setSelected,
+      pinnedEdge,
+      setPinnedEdge,
       debouncedHoveredId,
       focusEntryId,
       activeSubgraphKeys,
       onHoverStart,
       onHoverEnd,
+      onEdgeHoverStart,
+      onEdgeHoverEnd,
       clearHover,
       clearPinnedSelection,
       dismissPersistentGraphFocus,
       onMemoryPreviewPointerEnter,
       onMemoryPreviewPointerLeave,
       hoverData,
+      graphPreview,
     ],
   );
 

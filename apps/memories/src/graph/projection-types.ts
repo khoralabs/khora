@@ -2,7 +2,14 @@
 export type GraphPayload = {
   namespace: string;
   nodes: Array<{ key: string; x: number; y: number; z: number; labels: string[] }>;
-  edges: Array<{ edgeId: string; fromKey: string; toKey: string; labels: string[] }>;
+  edges: Array<{
+    edgeId: string;
+    fromKey: string;
+    toKey: string;
+    labels: string[];
+    /** When true, dashes animate from `fromKey` toward `toKey`; omit/false = undirected (static dashes). */
+    directed?: boolean;
+  }>;
 };
 
 /** When set, nodes outside `relevantKeys` are dimmed (search hits ∪ neighbors). */
@@ -24,5 +31,13 @@ export type ProjectionPoint = {
 /** World-space scale for layout coordinates. */
 export const SCALE = 2;
 
-/** One undirected segment for drawing (parallel DB edges merged). */
-export type SceneEdge = { key: string; fromKey: string; toKey: string; labels: string[] };
+/** Graph segment for drawing; directed edges keep API order, undirected merges use sorted keys. */
+export type SceneEdge = {
+  key: string;
+  edgeId: string;
+  fromKey: string;
+  toKey: string;
+  labels: string[];
+  /** When true, dash scroll follows `fromKey` → `toKey`. */
+  directed?: boolean;
+};

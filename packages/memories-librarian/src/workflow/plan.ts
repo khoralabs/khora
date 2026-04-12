@@ -88,7 +88,9 @@ function zEdgeWireFromOntology<TNode extends LabelSchemaMap, TEdge extends Label
       .describe("Existing memory key (memory_search or prefetch; do not invent)."),
     direction: z
       .enum(["in", "out"])
-      .describe("Relative to this memory: out = toward the other node."),
+      .describe(
+        'Relative to the memory being merged (the focal row): "out" = directed edge from focal → memory_key; "in" = from memory_key → focal. Required for every edge.',
+      ),
     label: zWithStringShorthandLabel(zEdgeLabelWireFromOntology(ontology)),
     properties: z.record(z.string(), z.unknown()).optional().describe("Optional edge JSON."),
   });

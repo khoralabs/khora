@@ -25,6 +25,7 @@ export type GraphLayoutEdge = {
   fromKey: string;
   toKey: string;
   labels: string[];
+  directed?: boolean;
 };
 
 export type NamespaceGraphLayout = {
@@ -68,6 +69,7 @@ export function buildNamespaceGraphLayout(
         fromKey: e.fromKey,
         toKey: e.toKey,
         labels: e.labels,
+        directed: e.directed,
       })),
     };
   }
@@ -115,6 +117,7 @@ export function buildNamespaceGraphLayout(
     fromKey: e.fromKey,
     toKey: e.toKey,
     labels: e.labels,
+    directed: e.directed,
   }));
 
   return {

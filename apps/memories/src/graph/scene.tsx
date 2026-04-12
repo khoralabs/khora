@@ -3,8 +3,8 @@ import { Canvas, useThree } from "@react-three/fiber";
 import { type ElementRef, useCallback, useLayoutEffect, useMemo, useRef } from "react";
 import { ActiveSubgraphEdgeLabels, GraphEdgeLines } from "./edges.js";
 import { GraphPinnedEscHint } from "./graph-pinned-esc-hint.js";
+import { GraphPreviewDock } from "./graph-preview-dock.js";
 import { Marker } from "./marker.js";
-import { MemoryHoverPreview } from "./memory-hover-preview.js";
 import { SCALE } from "./projection-types.js";
 import { useProjection } from "./use-projection.js";
 
@@ -96,6 +96,7 @@ function GraphSceneR3f() {
     points,
     sceneEdges,
     selected,
+    pinnedEdge,
     setSelected,
     focusEntryId,
     activeSubgraphKeys,
@@ -127,6 +128,24 @@ function GraphSceneR3f() {
     return m;
   }, [points]);
 
+  /** Mean position for tooltip “outward” rule: active subgraph if any, else full graph. */
+  const tooltipCentroid = useMemo((): [number, number, number] => {
+    const useSubgraph = activeSubgraphKeys !== null && activeSubgraphKeys.size > 0;
+    const subset = useSubgraph ? points.filter((p) => activeSubgraphKeys.has(p.entryId)) : points;
+    const basis = subset.length > 0 ? subset : points;
+    if (basis.length === 0) return [0, 0, 0];
+    let sx = 0;
+    let sy = 0;
+    let sz = 0;
+    for (const p of basis) {
+      sx += p.x * SCALE;
+      sy += p.y * SCALE;
+      sz += p.z * SCALE;
+    }
+    const n = basis.length;
+    return [sx / n, sy / n, sz / n];
+  }, [points, activeSubgraphKeys]);
+
   return (
     <>
       <color attach="background" args={["var(--card)"]} />
@@ -145,7 +164,9 @@ function GraphSceneR3f() {
           activeSubgraphKeys={activeSubgraphKeys}
           graphSearch={graphSearch}
           pinnedSubgraphHighlight={
-            selected !== null || (graphSearch !== null && graphSearch.relevantKeys.size > 0)
+            selected !== null ||
+            pinnedEdge !== null ||
+            (graphSearch !== null && graphSearch.relevantKeys.size > 0)
           }
         />
         <ActiveSubgraphEdgeLabels
@@ -170,6 +191,7 @@ function GraphSceneR3f() {
               point={point}
               dimmed={searchDimmed || subgraphDimmed}
               forceTooltipOpen={forceTooltipOpen}
+              tooltipCentroid={tooltipCentroid}
               onSelect={setSelected}
               onHoverStart={onHoverStart}
               onHoverEnd={onHoverEnd}
@@ -192,8 +214,8 @@ export function GraphScene() {
   return (
     <>
       <GraphPinnedEscHint />
-      <MemoryHoverPreview />
-      <div className="r3f-layer h-full w-full">
+      <div className="r3f-layer relative h-full w-full">
+        <GraphPreviewDock />
         <Canvas
           className="h-full w-full touch-none"
           camera={{ position: [0, 0, 4.8], fov: 20 }}

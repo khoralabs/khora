@@ -26,19 +26,14 @@ export function loadGraphEdgesForNamespace(db: Database, namespace: string): Gra
   const parseJoined = (s: string | null): string[] =>
     s ? [...new Set(s.split(sep).filter(Boolean))].sort() : [];
 
-  const seen = new Set<string>();
   const out: GraphEdgeLink[] = [];
   for (const r of rows) {
-    const a = r.fromKey < r.toKey ? r.fromKey : r.toKey;
-    const b = r.fromKey < r.toKey ? r.toKey : r.fromKey;
-    const dedupe = `${a}\0${b}`;
-    if (seen.has(dedupe)) continue;
-    seen.add(dedupe);
     out.push({
       edgeId: r.edgeId,
       fromKey: r.fromKey,
       toKey: r.toKey,
       labels: parseJoined(r.labelsJoined),
+      directed: true,
     });
   }
   return out;

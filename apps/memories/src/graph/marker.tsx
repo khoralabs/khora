@@ -1,6 +1,8 @@
 import { Html } from "@react-three/drei";
+import { useFrame, useThree } from "@react-three/fiber";
 import { DotIcon } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import * as THREE from "three";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { type ProjectionPoint, SCALE } from "./projection-types.js";
@@ -8,10 +10,14 @@ import { type ProjectionPoint, SCALE } from "./projection-types.js";
 /** Screen-space scale vs distance; pairs with camera FOV / zoom (see drei `Html`). */
 const MARKER_DISTANCE_FACTOR = 5;
 
+const _nodeNdc = new THREE.Vector3();
+const _centroidNdc = new THREE.Vector3();
+
 export function Marker({
   point,
   dimmed,
   forceTooltipOpen,
+  tooltipCentroid,
   onSelect,
   onHoverStart,
   onHoverEnd,
@@ -20,13 +26,31 @@ export function Marker({
   dimmed: boolean;
   /** When true, tooltip stays open for nodes in the active ego subgraph (hover or pinned). */
   forceTooltipOpen: boolean;
+  /** Mean position (scaled world space) for outward tooltip side: subgraph or full graph. */
+  tooltipCentroid: readonly [number, number, number];
   onSelect: (point: ProjectionPoint) => void;
   onHoverStart: (entryId: string) => void;
   onHoverEnd: () => void;
 }) {
-  const tooltipLines = point.labels.length > 0 ? point.labels : [point.key];
+  const tooltipText = (point.labels.length > 0 ? point.labels : [point.key]).join(" • ");
   const [userTooltipOpen, setUserTooltipOpen] = useState(false);
+  const [tooltipSide, setTooltipSide] = useState<"left" | "right">("right");
   const tooltipOpen = forceTooltipOpen || userTooltipOpen;
+  const sideRef = useRef<"left" | "right">("right");
+  const { camera } = useThree();
+
+  useFrame(() => {
+    _nodeNdc.set(point.x * SCALE, point.y * SCALE, point.z * SCALE);
+    _centroidNdc.set(tooltipCentroid[0], tooltipCentroid[1], tooltipCentroid[2]);
+    _nodeNdc.project(camera);
+    _centroidNdc.project(camera);
+    const dx = _nodeNdc.x - _centroidNdc.x;
+    const next = dx >= 0 ? "right" : "left";
+    if (sideRef.current !== next) {
+      sideRef.current = next;
+      setTooltipSide(next);
+    }
+  });
 
   return (
     <group position={[point.x * SCALE, point.y * SCALE, point.z * SCALE]}>
@@ -74,10 +98,8 @@ export function Marker({
                   <DotIcon />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="right" className="max-w-xs">
-                <span className="block whitespace-pre-line text-left text-xs">
-                  {tooltipLines.join(" • ")}
-                </span>
+              <TooltipContent key={tooltipSide} side={tooltipSide} className="max-w-xs">
+                <span className="block whitespace-pre-line text-left text-xs">{tooltipText}</span>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>

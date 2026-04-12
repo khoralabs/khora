@@ -116,8 +116,6 @@ export function App() {
 
   const namespaceSummary = data ? `${data.nodes.length} nodes · ${data.edges.length} edges` : "";
 
-  const headerInputClasses = "w-full max-w-sm";
-
   return (
     <div className="fixed inset-0 overflow-hidden bg-background text-foreground">
       <div className="absolute inset-0">
@@ -143,8 +141,8 @@ export function App() {
         )}
       </div>
 
-      <header className="app-chrome absolute left-0 right-0 top-0 z-10 flex flex-col gap-4 p-4">
-        <InputGroup className={headerInputClasses}>
+      <header className="app-chrome absolute left-0 right-0 top-0 z-10 flex flex-col gap-4 p-4 w-full max-w-sm">
+        <InputGroup className="w-full">
           <InputGroupInput
             placeholder="Namespace"
             value={namespace}
@@ -163,7 +161,7 @@ export function App() {
             </InputGroupButton>
           </InputGroupAddon>
         </InputGroup>
-        <InputGroup className={headerInputClasses}>
+        <InputGroup className="w-full">
           <InputGroupInput
             placeholder="Search…"
             value={searchQuery}

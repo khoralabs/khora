@@ -3,9 +3,9 @@ import { Kbd } from "@/components/ui/kbd";
 import { useProjection } from "./use-projection.js";
 
 export function GraphPinnedEscHint() {
-  const { selected, graphSearch, dismissPersistentGraphFocus } = useProjection();
+  const { selected, pinnedEdge, graphSearch, dismissPersistentGraphFocus } = useProjection();
   const searchPins = graphSearch !== null && graphSearch.relevantKeys.size > 0;
-  if (!selected && !searchPins) return null;
+  if (!selected && !pinnedEdge && !searchPins) return null;
 
   return (
     <Button
