@@ -9,7 +9,7 @@
   },
   "private": true,
   "scripts": {
-    "check": "biome check . && bun run --filter @cfd/memories-spec validate",
+    "check": "biome check . && bun run --filter @cfd/memories-spec validate && bun run --filter @cfd/agent-identity-spec validate",
     "check:write": "biome check --write ."
   },
   "type": "module",
