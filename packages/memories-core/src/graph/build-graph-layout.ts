@@ -5,7 +5,10 @@ import {
   loadNodeLabelsForNamespace,
   loadNodePropertiesForNamespace,
 } from "./graph-projection";
-import { LABEL_PROPERTY_SYNTH_DIM, labelPropertySyntheticEmbedding } from "./label-property-features";
+import {
+  LABEL_PROPERTY_SYNTH_DIM,
+  labelPropertySyntheticEmbedding,
+} from "./label-property-features";
 import {
   fibonacciSphereLayout3D,
   minMaxNormalize3D,

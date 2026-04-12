@@ -92,7 +92,12 @@ function GraphCameraFit({
     const ctrl = controlsRef.current;
     if (!ctrl || points.length === 0) return;
     if (!(camera instanceof THREE.PerspectiveCamera)) return;
-    fitPerspectiveCameraToGraph(camera, ctrl as unknown as { target: THREE.Vector3; update: () => void }, points, GRAPH_BOUNDS_MARGIN);
+    fitPerspectiveCameraToGraph(
+      camera,
+      ctrl as unknown as { target: THREE.Vector3; update: () => void },
+      points,
+      GRAPH_BOUNDS_MARGIN,
+    );
   }, [camera, controlsRef, points, viewWidth, viewHeight]);
 
   useLayoutEffect(() => {

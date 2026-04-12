@@ -180,11 +180,7 @@ export function App() {
           </InputGroupAddon>
           <InputGroupAddon
             align="inline-end"
-            className={
-              searchLoading
-                ? "pr-3"
-                : "text-xs font-normal tabular-nums"
-            }
+            className={searchLoading ? "pr-3" : "text-xs font-normal tabular-nums"}
             aria-live={searchLoading ? "polite" : undefined}
           >
             {searchLoading ? (

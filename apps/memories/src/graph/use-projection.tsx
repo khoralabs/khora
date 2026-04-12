@@ -70,10 +70,7 @@ type ProjectionValue = {
   /**
    * Bottom-right preview card: debounced hover (after `focusDelay`), else pin — edge before node.
    */
-  graphPreview:
-    | { kind: "node"; point: ProjectionPoint }
-    | { kind: "edge"; edge: SceneEdge }
-    | null;
+  graphPreview: { kind: "node"; point: ProjectionPoint } | { kind: "edge"; edge: SceneEdge } | null;
 };
 
 const ProjectionContext = createContext<ProjectionValue | null>(null);
@@ -237,10 +234,7 @@ export function GraphProjectionProvider({
   }, [rawHoveredId, focusDelay]);
 
   useEffect(() => {
-    const t = window.setTimeout(
-      () => setDebouncedHoveredEdgeKey(rawHoveredEdgeKey),
-      focusDelay,
-    );
+    const t = window.setTimeout(() => setDebouncedHoveredEdgeKey(rawHoveredEdgeKey), focusDelay);
     return () => window.clearTimeout(t);
   }, [rawHoveredEdgeKey, focusDelay]);
 
@@ -355,8 +349,7 @@ export function GraphProjectionProvider({
   }, [graphSearch, adjacency]);
 
   const focusEntryId =
-    selected?.entryId ??
-    (searchSubgraphKeys ? null : (debouncedHoveredId ?? rawHoveredId ?? null));
+    selected?.entryId ?? (searchSubgraphKeys ? null : (debouncedHoveredId ?? rawHoveredId ?? null));
 
   const activeSubgraphKeys = useMemo((): ReadonlySet<string> | null => {
     if (selected) {
@@ -373,18 +366,23 @@ export function GraphProjectionProvider({
       subgraphFromEdgeKey(debouncedHoveredEdgeKey, sceneEdges) ??
       subgraphFromNodeHover(debouncedHoveredId, adjacency)
     );
-  }, [selected, pinnedEdge, searchSubgraphKeys, debouncedHoveredEdgeKey, debouncedHoveredId, sceneEdges, adjacency]);
+  }, [
+    selected,
+    pinnedEdge,
+    searchSubgraphKeys,
+    debouncedHoveredEdgeKey,
+    debouncedHoveredId,
+    sceneEdges,
+    adjacency,
+  ]);
 
-  const searchDrivesSubgraph =
-    graphSearch !== null && graphSearch.relevantKeys.size > 0;
+  const searchDrivesSubgraph = graphSearch !== null && graphSearch.relevantKeys.size > 0;
 
   const hasGraphSubgraphStrongFocus =
     selected !== null || pinnedEdge !== null || searchDrivesSubgraph;
 
   const hasGraphSubgraphFocus =
-    hasGraphSubgraphStrongFocus ||
-    rawHoveredId !== null ||
-    rawHoveredEdgeKey !== null;
+    hasGraphSubgraphStrongFocus || rawHoveredId !== null || rawHoveredEdgeKey !== null;
 
   const graphPreview = useMemo((): ProjectionValue["graphPreview"] => {
     if (debouncedHoveredEdgeKey) {

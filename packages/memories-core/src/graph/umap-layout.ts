@@ -85,8 +85,7 @@ export function umap3DLayout(embeddings: number[][], options?: Umap3DLayoutOptio
   }
 
   const nNeighbors = Math.min(15, Math.max(2, n - 1));
-  const random =
-    options?.random ?? createSeededRandom(options?.seed ?? DEFAULT_UMAP_LAYOUT_SEED);
+  const random = options?.random ?? createSeededRandom(options?.seed ?? DEFAULT_UMAP_LAYOUT_SEED);
   try {
     const umap = new UMAP({
       nComponents: 3,

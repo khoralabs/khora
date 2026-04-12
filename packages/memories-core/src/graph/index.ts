@@ -6,10 +6,6 @@ export {
 } from "./build-graph-layout";
 export { type EdgePreviewPayload, loadEdgePreview } from "./edge-preview";
 export {
-  LABEL_PROPERTY_SYNTH_DIM,
-  labelPropertySyntheticEmbedding,
-} from "./label-property-features";
-export {
   type GraphEdgeLink,
   type GraphMemoryEmbedding,
   loadGraphEdgesForNamespace,
@@ -17,6 +13,10 @@ export {
   loadNodeLabelsForNamespace,
   loadNodePropertiesForNamespace,
 } from "./graph-projection";
+export {
+  LABEL_PROPERTY_SYNTH_DIM,
+  labelPropertySyntheticEmbedding,
+} from "./label-property-features";
 export { loadMemoryTextPreview } from "./memory-preview";
 export {
   createSeededRandom,
