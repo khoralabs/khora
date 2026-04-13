@@ -134,19 +134,6 @@ export function normalizeSearchScopeFromParams(
     unscoped: false,
   };
 }
-
-function warnVectorNoCandidates(namespace: string, vectorDim: number): void {
-  const msg =
-    "Vector search returned no candidates (embedding dimension may not match stored vectors, vector index missing or empty for this namespace, or no indexed content).";
-  logger.warn({
-    phase: "memories.search.vector",
-    msg,
-    namespace,
-    vectorDim,
-  });
-  console.warn(`[memories] ${msg} namespace=${namespace} vectorDim=${vectorDim}`);
-}
-
 /** Hybrid lexical + vector retrieval as ordered `{ id: source_map_id, score }[]` (RRF). */
 function rankSourceMapIdsForContent(
   persistence: MemoriesPersistence,
@@ -187,8 +174,6 @@ function rankSourceMapIdsForContent(
         });
         if (ranked.length > 0) {
           arms.push({ armId: `vector:${ns}`, ranked, weight: input.vectorWeight });
-        } else {
-          warnVectorNoCandidates(ns, input.content.vector.length);
         }
       }
     }
@@ -217,8 +202,6 @@ function rankSourceMapIdsForContent(
     });
     if (ranked.length > 0) {
       arms.push({ armId: "vector", ranked, weight: input.vectorWeight });
-    } else {
-      warnVectorNoCandidates(input.logNamespace, input.content.vector.length);
     }
   }
   if (arms.length === 0) return [];

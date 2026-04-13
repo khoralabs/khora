@@ -101,7 +101,21 @@ function jsonResponse(data: unknown, status = 200): Response {
   });
 }
 
+function parseListenPort(): number {
+  const raw = process.env.PORT?.trim();
+  if (!raw) return 3000;
+  const n = Number.parseInt(raw, 10);
+  if (!Number.isFinite(n) || n < 1 || n > 65535) {
+    console.warn(`[memories] Invalid PORT "${raw}", using 3000`);
+    return 3000;
+  }
+  return n;
+}
+
+const listenPort = parseListenPort();
+
 const server = serve({
+  port: listenPort,
   routes: {
     "/api/search": async (req) => {
       if (req.method !== "POST") {
@@ -330,3 +344,22 @@ const server = serve({
 });
 
 console.log(`🚀 Server running at ${server.url}`);
+
+let isShuttingDown = false;
+function shutdown(signal: string) {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+  console.info(`[memories] ${signal} received, stopping server…`);
+  server
+    .stop()
+    .then(() => {
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error("[memories] server.stop() failed:", err);
+      process.exit(1);
+    });
+}
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
