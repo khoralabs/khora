@@ -4,6 +4,10 @@ This document describes the **operational contract** for [`MemoriesPersistence`]
 
 The reference SQLite implementation is [`./src/strategies/sqlite/persistence.ts`](./src/strategies/sqlite/persistence.ts). The wire model is also described in [`packages/memories-spec`](../memories-spec/model/persistence.smithy) (Smithy).
 
+## Relational row shapes (Zod)
+
+Canonical **table Zod schemas**, the composed document schema (`memoriesPersistenceDocumentSchema`), **row TypeScript types** (via `MemoriesPersistenceSchema` / `@cfd/memories-core/db/rows`), helpers (`zId`, `defineSchema`, `documentValidator`), and **vector payload** rules (`zVectorPayload`, 512–3072 floats) live in **`@cfd/memories-core/persistence`**. The reference SQLite strategy imports that package for DDL (`sqliteDdlFromSchema` in `./src/strategies/sqlite/_lib/sqlite-relational.ts`), insert-time `documentValidator` checks, and type alignment with core. TypeScript backends should use the same module so storage rows and merge-time validation stay aligned with `mergeMemory` / `MemoriesPersistence`.
+
 ## Smithy capability modules
 
 [`persistence.smithy`](../memories-spec/model/persistence.smithy) defines **module** services (subsets of operations) plus a single aggregate **`MemoriesPersistenceService`** with the full operation list. Use modules to see what a minimal backend can omit; use the aggregate for a “full adapter” contract or codegen.

@@ -1,15 +1,15 @@
 import { Database, type DatabaseOptions } from "bun:sqlite";
 import { existsSync } from "node:fs";
+import { memoriesPersistenceDocumentSchema } from "@cfd/memories-core/persistence";
 import * as sqliteVec from "sqlite-vec";
 import { sqliteDdlFromSchema } from "./_lib";
-import { schema } from "./schema";
 import { initTextFeaturesFts } from "./search-indexes";
 
 export function loadSqliteVec(db: Database): void {
   sqliteVec.load(db);
 }
 
-export const MEMORIES_SCHEMA_SQL = sqliteDdlFromSchema(schema);
+export const MEMORIES_SCHEMA_SQL = sqliteDdlFromSchema(memoriesPersistenceDocumentSchema);
 
 /** One assignment per (node|edge, label kind); enables INSERT OR REPLACE upserts. */
 export const MEMORIES_UNIQUE_ASSIGNMENT_INDEXES_SQL = `

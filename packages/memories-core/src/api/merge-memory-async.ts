@@ -1,6 +1,7 @@
 import { ids } from "../models/ids";
 import type { MemoriesPersistenceAsync } from "../persistence/async-types";
 import { resolveMemoriesBackendCapabilities } from "../persistence/types";
+import { zVectorPayload } from "../persistence/row-schemas.ts";
 import {
   catalogSchemaJsonForEdgeKind,
   catalogSchemaJsonForNodeKind,
@@ -30,21 +31,26 @@ export async function mergeMemoryAsync(
 
   for (const item of params.content) {
     zMergeMemoryContentItem.parse(item);
-    if (item.vector !== undefined && !caps.vectorSearch) {
-      throw new Error(
-        "mergeMemoryAsync: content item includes vector but persistence.capabilities.vectorSearch is false",
-      );
+    if (item.vector !== undefined) {
+      if (!caps.vectorSearch) {
+        throw new Error(
+          "mergeMemoryAsync: content item includes vector but persistence.capabilities.vectorSearch is false",
+        );
+      }
+      zVectorPayload.parse(item.vector);
     }
   }
 
   if (
     params.searchMetaVector !== undefined &&
-    params.searchMetaVector.length > 0 &&
-    !caps.vectorSearch
+    params.searchMetaVector.length > 0
   ) {
-    throw new Error(
-      "mergeMemoryAsync: searchMetaVector set but persistence.capabilities.vectorSearch is false",
-    );
+    if (!caps.vectorSearch) {
+      throw new Error(
+        "mergeMemoryAsync: searchMetaVector set but persistence.capabilities.vectorSearch is false",
+      );
+    }
+    zVectorPayload.parse(params.searchMetaVector);
   }
 
   let metaSyncedMemoryKeys: string[] = [];
@@ -92,7 +98,11 @@ export async function mergeMemoryAsync(
         description: "",
         schemaJson: catalogSchemaJsonForNodeKind(params.ontology, l.kind),
       });
-      await persistence.insertNodeLabelAssignment(op, { nodeId, labelId, props: l.props });
+      await persistence.insertNodeLabelAssignment(op, {
+        nodeId,
+        labelId,
+        props: l.props as Record<string, unknown>,
+      });
     }
 
     for (const edge of params.edges ?? []) {
@@ -126,7 +136,7 @@ export async function mergeMemoryAsync(
       await persistence.insertEdgeLabelAssignment(op, {
         edgeId,
         labelId: edgeLabelId,
-        props: edge.label.props,
+        props: edge.label.props as Record<string, unknown>,
       });
     }
 

@@ -1,9 +1,14 @@
 import z from "zod";
 import { ids } from "../models/ids";
 import { MEMORY_SEARCH_META_SOURCE_KEY } from "../models/memory-search-meta";
-import type { OntologyLabelInstance } from "../models/ontology-label";
+import { zVectorPayload } from "../persistence/row-schemas.ts";
 import { type MemoriesPersistence, resolveMemoriesBackendCapabilities } from "../persistence/types";
-import type { OntologyDefinition } from "./ontology";
+import type {
+  EdgeLabelInstance,
+  LabelSchemaMap,
+  NodeLabelInstance,
+  OntologyDefinition,
+} from "./ontology";
 import { zodPropsSchemaToJson } from "./ontology";
 
 export {
@@ -36,16 +41,19 @@ export const zMergeMemoryContentItem = z
     message: "content item must include text and/or vector",
   });
 
-export interface MergeMemoryParams {
+export interface MergeMemoryParams<
+  TNode extends LabelSchemaMap = LabelSchemaMap,
+  TEdge extends LabelSchemaMap = LabelSchemaMap,
+> {
   key: string;
   namespace: string;
   content: MergeMemoryContentItem[];
-  labels: OntologyLabelInstance[];
+  labels: NodeLabelInstance<TNode>[];
   properties?: Record<string, unknown>;
   edges?: Array<{
     memory_key: string;
     direction: "in" | "out";
-    label: OntologyLabelInstance;
+    label: EdgeLabelInstance<TEdge>;
     properties?: Record<string, unknown>;
   }>;
   /**
@@ -57,7 +65,7 @@ export interface MergeMemoryParams {
   /**
    * When set, catalog rows for kinds in this merge receive JSON Schema derived from Zod (`zodPropsSchemaToJson`).
    */
-  ontology?: OntologyDefinition;
+  ontology?: OntologyDefinition<TNode, TEdge>;
 }
 
 /**
@@ -107,21 +115,26 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams): string
 
   for (const item of params.content) {
     zMergeMemoryContentItem.parse(item);
-    if (item.vector !== undefined && !caps.vectorSearch) {
-      throw new Error(
-        "mergeMemory: content item includes vector but persistence.capabilities.vectorSearch is false",
-      );
+    if (item.vector !== undefined) {
+      if (!caps.vectorSearch) {
+        throw new Error(
+          "mergeMemory: content item includes vector but persistence.capabilities.vectorSearch is false",
+        );
+      }
+      zVectorPayload.parse(item.vector);
     }
   }
 
   if (
     params.searchMetaVector !== undefined &&
-    params.searchMetaVector.length > 0 &&
-    !caps.vectorSearch
+    params.searchMetaVector.length > 0
   ) {
-    throw new Error(
-      "mergeMemory: searchMetaVector set but persistence.capabilities.vectorSearch is false",
-    );
+    if (!caps.vectorSearch) {
+      throw new Error(
+        "mergeMemory: searchMetaVector set but persistence.capabilities.vectorSearch is false",
+      );
+    }
+    zVectorPayload.parse(params.searchMetaVector);
   }
 
   let metaSyncedMemoryKeys: string[] = [];
@@ -151,8 +164,10 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams): string
       }
     }
 
-    const labelByKind = new Map<string, OntologyLabelInstance>();
-    for (const l of params.labels) labelByKind.set(l.kind, l);
+    const labelByKind = new Map<string, { kind: string; props: Record<string, unknown> }>();
+    for (const l of params.labels) {
+      labelByKind.set(l.kind, { kind: l.kind, props: l.props as Record<string, unknown> });
+    }
     for (const l of labelByKind.values()) {
       const labelId = persistence.ensureNodeLabel(op, {
         kind: l.kind,
@@ -193,7 +208,7 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams): string
       persistence.insertEdgeLabelAssignment(op, {
         edgeId,
         labelId: edgeLabelId,
-        props: edge.label.props,
+        props: edge.label.props as Record<string, unknown>,
       });
     }
 

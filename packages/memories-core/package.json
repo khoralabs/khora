@@ -9,10 +9,10 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
-    "./db/rows": {
-      "types": "./src/db/rows.ts",
-      "import": "./src/db/rows.ts",
-      "default": "./src/db/rows.ts"
+    "./persistence": {
+      "types": "./src/persistence/index.ts",
+      "import": "./src/persistence/index.ts",
+      "default": "./src/persistence/index.ts"
     },
     "./search-meta-constants": {
       "types": "./src/search-meta-constants.ts",

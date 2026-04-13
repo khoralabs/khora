@@ -1,7 +1,7 @@
 import { appendFileSync, mkdirSync, readFileSync, statSync } from "node:fs";
 import { dirname } from "node:path";
 import type { ResolvedSource, SourceMap, Store } from "@cfd/memories-core";
-import type { TextFeatureExportRow } from "@cfd/memories-core/db/rows";
+import type { TextFeatureExportRow } from "@cfd/memories-core/persistence";
 
 export type JsonlResolvedLine =
   | {

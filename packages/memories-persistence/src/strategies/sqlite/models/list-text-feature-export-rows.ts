@@ -1,4 +1,4 @@
-import type { TextFeatureExportRow } from "@cfd/memories-core/db/rows";
+import type { TextFeatureExportRow } from "@cfd/memories-core/persistence";
 import type { DbCtx } from "./context";
 
 /**

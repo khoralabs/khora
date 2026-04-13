@@ -1,6 +1,6 @@
 import { ids } from "@cfd/memories-core";
 import { documentValidator, jsonOrNull } from "../_lib";
-import { schema } from "../schema";
+import { memoriesPersistenceDocumentSchema } from "@cfd/memories-core/persistence";
 import type { DbCtx } from "./context";
 
 export function insertEdge(
@@ -21,7 +21,7 @@ export function insertEdge(
     input.idParts.selfMemoryKey,
     input.idParts.otherMemoryKey,
   );
-  const doc = documentValidator(schema, "edges");
+  const doc = documentValidator(memoriesPersistenceDocumentSchema, "edges");
   doc.parse({
     _id: edgeId,
     _ts_created: now,

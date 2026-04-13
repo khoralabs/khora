@@ -35,7 +35,7 @@ export type EdgeLabelInstance<TEdge extends LabelSchemaMap> = {
 
 export function validateNodeLabel<TNode extends LabelSchemaMap, TEdge extends LabelSchemaMap>(
   ontology: OntologyDefinition<TNode, TEdge>,
-  label: OntologyLabelInstance,
+  label: { kind: string; props: unknown },
 ): { kind: string; props: Record<string, unknown> } {
   const schema = ontology.nodeLabels[label.kind as keyof TNode];
   if (schema === undefined) {
@@ -47,7 +47,7 @@ export function validateNodeLabel<TNode extends LabelSchemaMap, TEdge extends La
 
 export function validateEdgeLabel<TNode extends LabelSchemaMap, TEdge extends LabelSchemaMap>(
   ontology: OntologyDefinition<TNode, TEdge>,
-  label: OntologyLabelInstance,
+  label: { kind: string; props: unknown },
 ): { kind: string; props: Record<string, unknown> } {
   const schema = ontology.edgeLabels[label.kind as keyof TEdge];
   if (schema === undefined) {

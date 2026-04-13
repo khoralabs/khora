@@ -1,7 +1,7 @@
 import { ids } from "@cfd/memories-core";
 import { documentValidator } from "../_lib";
 import { vectorToBlob } from "../connection";
-import { schema } from "../schema";
+import { memoriesPersistenceDocumentSchema } from "@cfd/memories-core/persistence";
 import { ensureVectorFeaturesVecTable, vectorVecTableName } from "../search-indexes";
 import type { DbCtx } from "./context";
 
@@ -11,7 +11,7 @@ export function insertVectorFeature(
 ): { vectorFeatureId: string } {
   const { db, now } = ctx;
   const vectorFeatureId = ids.vectorFeature(input.sourceMapId);
-  const doc = documentValidator(schema, "vector_features");
+  const doc = documentValidator(memoriesPersistenceDocumentSchema, "vector_features");
   const parsed = doc.safeParse({
     _id: vectorFeatureId,
     _ts_created: now,

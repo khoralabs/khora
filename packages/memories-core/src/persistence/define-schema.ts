@@ -6,14 +6,12 @@ const zMillisTimestamp = z.number().nonnegative();
 /** Runtime metadata for {@link zId} — used to derive SQLite foreign keys. */
 export type ZIdMeta<NAME extends string = string> = { readonly idRef: NAME };
 
+/** String id with `idRef` meta for relational mapping; plain `string` inference (no nominal brand). */
 export const zId = <NAME extends string>(name: NAME) =>
-  z
-    .string()
-    .brand(name)
-    .meta({ idRef: name } as const satisfies ZIdMeta<NAME>);
+  z.string().meta({ idRef: name } as const satisfies ZIdMeta<NAME>);
 
 /**
- * Extends a Zod object with `_id` (string branded with `name`) and `_ts_created` (ms timestamp).
+ * Extends a Zod object with `_id` and `_ts_created` (ms timestamp).
  */
 export function defineTable<const NAME extends string, BASE extends z.ZodObject>(
   name: NAME,
@@ -55,7 +53,6 @@ export function defineSchema<const T extends Record<string, z.ZodObject>>(
 
 /**
  * Document (row) validator for one table: same as `schema.shape[name]`, including `_id` and `_ts_created`.
- * Prefer this over indexing when you want `name` as a literal so the return type is a specific `ZodObject`.
  */
 export function documentValidator<
   S extends z.ZodObject<Record<string, z.ZodObject>>,

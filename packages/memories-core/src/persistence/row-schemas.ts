@@ -1,5 +1,5 @@
 import z from "zod";
-import { defineSchema, zId } from "./_lib";
+import { defineSchema, zId } from "./define-schema.ts";
 
 /**
  * A memory is a collection of features with tightly shared semantics
@@ -29,6 +29,9 @@ export const zTextFeature = z.object({
   text: z.string(),
 });
 
+/** Embedding vector payload: same dimension bounds as `vector_features.vector`. */
+export const zVectorPayload = z.array(z.float32()).min(512).max(3072);
+
 /**
  * Plaintext chunks have one vector feature
  * Text files have n vector features; one for each text chunk
@@ -37,7 +40,7 @@ export const zTextFeature = z.object({
 export const zVectorFeature = z.object({
   memory_id: zId("memories"),
   source_map_id: zId("source_maps"),
-  vector: z.array(z.float32()).min(512).max(3072),
+  vector: zVectorPayload,
 });
 
 /**
@@ -94,7 +97,10 @@ export const zEdge = z.object({
   properties: z.record(z.string(), z.unknown()).optional(),
 });
 
-export const schema = defineSchema({
+/**
+ * Canonical composed document schema for the memories persistence relational model.
+ */
+export const memoriesPersistenceDocumentSchema = defineSchema({
   source_maps: zSourceMap,
   memories: zMemory,
   text_features: zTextFeature,
@@ -107,14 +113,24 @@ export const schema = defineSchema({
   edge_label_assignments: zEdgeLabelAssignment,
 });
 
-export type Schema = z.infer<typeof schema>;
-export type Memory = Schema["memories"];
-export type SourceMap = Schema["source_maps"];
-export type TextFeature = Schema["text_features"];
-export type VectorFeature = Schema["vector_features"];
-export type Node = Schema["nodes"];
-export type Edge = Schema["edges"];
-export type NodeLabel = Schema["node_labels"];
-export type EdgeLabel = Schema["edge_labels"];
-export type NodeLabelAssignment = Schema["node_label_assignments"];
-export type EdgeLabelAssignment = Schema["edge_label_assignments"];
+/** Denormalized row for JSONL export / prefetch (join of text_features + source_maps). */
+export const zTextFeatureExportRow = z.object({
+  memory_id: zId("memories"),
+  source_key: z.string(),
+  text: z.string(),
+});
+
+export type MemoriesPersistenceSchema = z.infer<typeof memoriesPersistenceDocumentSchema>;
+
+export type Memory = MemoriesPersistenceSchema["memories"];
+export type SourceMap = MemoriesPersistenceSchema["source_maps"];
+export type TextFeature = MemoriesPersistenceSchema["text_features"];
+export type VectorFeature = MemoriesPersistenceSchema["vector_features"];
+export type Node = MemoriesPersistenceSchema["nodes"];
+export type Edge = MemoriesPersistenceSchema["edges"];
+export type NodeLabel = MemoriesPersistenceSchema["node_labels"];
+export type EdgeLabel = MemoriesPersistenceSchema["edge_labels"];
+export type NodeLabelAssignment = MemoriesPersistenceSchema["node_label_assignments"];
+export type EdgeLabelAssignment = MemoriesPersistenceSchema["edge_label_assignments"];
+
+export type TextFeatureExportRow = z.infer<typeof zTextFeatureExportRow>;

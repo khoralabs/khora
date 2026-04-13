@@ -1,6 +1,6 @@
 import { ids } from "@cfd/memories-core";
 import { documentValidator } from "../_lib";
-import { schema } from "../schema";
+import { memoriesPersistenceDocumentSchema } from "@cfd/memories-core/persistence";
 import type { DbCtx } from "./context";
 
 export function insertSourceMap(
@@ -11,7 +11,7 @@ export function insertSourceMap(
 } {
   const { db, now } = ctx;
   const sourceMapId = ids.sourceMap(input.memoryId, input.sourceKey);
-  const doc = documentValidator(schema, "source_maps");
+  const doc = documentValidator(memoriesPersistenceDocumentSchema, "source_maps");
   doc.parse({
     _id: sourceMapId,
     _ts_created: now,

@@ -1,6 +1,6 @@
 import { ids } from "@cfd/memories-core";
 import { documentValidator } from "../_lib";
-import { schema } from "../schema";
+import { memoriesPersistenceDocumentSchema } from "@cfd/memories-core/persistence";
 import type { DbCtx } from "./context";
 
 export function insertLexicalFeature(
@@ -9,7 +9,7 @@ export function insertLexicalFeature(
 ): { textFeatureId: string } {
   const { db, now } = ctx;
   const textFeatureId = ids.textFeature(input.sourceMapId);
-  const doc = documentValidator(schema, "text_features");
+  const doc = documentValidator(memoriesPersistenceDocumentSchema, "text_features");
   doc.parse({
     _id: textFeatureId,
     _ts_created: now,

@@ -7,7 +7,7 @@ export {
   documentValidator,
   type ZIdMeta,
   zId,
-} from "./define-schema";
+} from "@cfd/memories-core/persistence";
 /** Runtime checks against `PRAGMA` / manifest parity. */
 export {
   assertRelationalSchemaExtractParity,

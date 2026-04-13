@@ -7,7 +7,7 @@ import {
   type OntologyLabelInstance,
   type SearchNamespaceScope,
 } from "@cfd/memories-core";
-import type { Edge, Memory, SourceMap } from "../schema";
+import type { Edge, Memory, SourceMap } from "@cfd/memories-core/persistence";
 import { vectorVecTableName } from "../search-indexes";
 import type { DbCtx } from "./context";
 

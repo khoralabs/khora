@@ -18,7 +18,7 @@ type LabelKind<TLabels extends Record<string, z.ZodType>> = keyof TLabels & stri
 export type TypedMergeParams<
   TNode extends Record<string, z.ZodType>,
   TEdge extends Record<string, z.ZodType>,
-> = MergeMemoryParams;
+> = MergeMemoryParams<TNode, TEdge>;
 
 export type TypedSearchParams<
   TNode extends Record<string, z.ZodType>,

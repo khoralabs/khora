@@ -1,6 +1,6 @@
 import { ids } from "@cfd/memories-core";
 import { documentValidator } from "../_lib";
-import { schema } from "../schema";
+import { memoriesPersistenceDocumentSchema } from "@cfd/memories-core/persistence";
 import type { DbCtx } from "./context";
 
 export function findMemoryIdByKey(ctx: DbCtx, namespace: string, key: string): string | undefined {
@@ -24,7 +24,7 @@ export function upsertMemory(
 } {
   const { db, now } = ctx;
   const memoryId = ids.memory(input.namespace, input.key);
-  const doc = documentValidator(schema, "memories");
+  const doc = documentValidator(memoriesPersistenceDocumentSchema, "memories");
   doc.parse({
     _id: memoryId,
     _ts_created: now,

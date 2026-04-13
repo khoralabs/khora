@@ -7,7 +7,7 @@ import type {
   NeighborFilter,
   SearchNamespaceScope,
 } from "@cfd/memories-core";
-import type { SourceMap, TextFeatureExportRow } from "@cfd/memories-core/db/rows";
+import type { SourceMap, TextFeatureExportRow } from "@cfd/memories-core/persistence";
 import type { DbCtx } from "./models/context";
 import { insertEdgeLabelAssignment } from "./models/edge-label-assignments";
 import { ensureEdgeLabel } from "./models/edge-labels";

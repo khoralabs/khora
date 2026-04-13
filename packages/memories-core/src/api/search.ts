@@ -1,8 +1,8 @@
 import { fuseRrf, type RrfArm } from "@cfd/reciprocal-rank-fusion";
-import type { Edge, Memory, SourceMap } from "../db/rows";
 import { logger } from "../logger.js";
 import type { HydratedNeighbor, NeighborFilter } from "../models/neighbor-search-types";
 import type { OntologyLabelInstance } from "../models/ontology-label";
+import type { Edge, Memory, SourceMap } from "../persistence/rows.js";
 import type { MemoriesBackendCapabilities, SearchNamespaceScope } from "../persistence/types";
 import { type MemoriesPersistence, resolveMemoriesBackendCapabilities } from "../persistence/types";
 import { elapsedMs } from "../timing.js";

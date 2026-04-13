@@ -1,10 +1,10 @@
-import type { SourceMap, TextFeatureExportRow } from "../db/rows.js";
 import type {
   HydratedNeighbor,
   HydratedSourceMapHit,
   NeighborFilter,
 } from "../models/neighbor-search-types";
 import type { OntologyLabelInstance } from "../models/ontology-label";
+import type { SourceMap, TextFeatureExportRow } from "./row-schemas.ts";
 
 /** Timestamp context for writes and validators that use `_ts_created`. */
 export type MemoryOpContext = { now: number };

@@ -1,4 +1,4 @@
-import type { Edge, Memory, SourceMap } from "../db/rows";
+import type { Edge, Memory, SourceMap } from "../persistence";
 import type { OntologyLabelInstance } from "./ontology-label";
 
 /** Same semantics as root hit `labels` filter: `all` = AND, `some` = OR (non-empty). Omitted = any. */

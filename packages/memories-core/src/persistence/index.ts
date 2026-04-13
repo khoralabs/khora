@@ -1,10 +1,19 @@
 export type { MemoriesPersistenceAsync } from "./async-types";
 export {
+  defineSchema,
+  defineTable,
+  documentValidator,
+  type ZIdMeta,
+  zId,
+} from "./define-schema.ts";
+export {
   buildCanonicalMemorySearchMetaText,
   buildCanonicalMemorySearchMetaTextAsync,
   upsertMemorySearchMetaVector,
   upsertMemorySearchMetaVectorAsync,
 } from "./facade.ts";
+export type { MemoriesPersistenceSchema } from "./row-schemas.ts";
+export * from "./row-schemas.ts";
 export type {
   EdgePreviewPayload,
   GraphEdgeLink,

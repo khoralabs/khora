@@ -1,6 +1,5 @@
 import type z from "zod";
-import type { ZIdMeta } from "./define-schema";
-import { documentValidator } from "./define-schema";
+import { documentValidator, type ZIdMeta } from "@cfd/memories-core/persistence";
 
 function zodDef(t: z.ZodType): { type?: string; format?: string; check?: string } | undefined {
   const zt = t as { _zod?: { def?: object }; def?: object };
