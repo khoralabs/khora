@@ -18,6 +18,11 @@
       "types": "./src/search-meta-constants.ts",
       "import": "./src/search-meta-constants.ts",
       "default": "./src/search-meta-constants.ts"
+    },
+    "./helpers": {
+      "types": "./src/helpers/index.ts",
+      "import": "./src/helpers/index.ts",
+      "default": "./src/helpers/index.ts"
     }
   },
   "devDependencies": {
@@ -28,7 +33,9 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@ai-sdk/provider-utils": "^4.0.23",
     "@cfd/reciprocal-rank-fusion": "workspace:*",
+    "ai": "^6.0.153",
     "pino": "^10.3.1",
     "umap-js": "^1.4.0",
     "zod": "^4.3.6"

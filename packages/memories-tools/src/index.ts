@@ -1,0 +1,24 @@
+export { embedTextChunks } from "./embedding-text.js";
+export type { ProviderOptions } from "./embedding-types.js";
+export {
+  aiSdkEmbeddingModelId,
+  type EmbeddingModel,
+} from "./embedding-types.js";
+export {
+  embeddingCacheKey,
+  type MemorySearchEnv,
+  type MemorySearchHit,
+  type MemorySearchToolInput,
+  type MemorySearchWideClient,
+  type MemorySearchWideClientAsync,
+  memorySearchToolkit,
+  zMemorySearchToolInput,
+} from "./memory-search-toolkit.js";
+export type { MemoriesLogPayloadMap } from "./telemetry.js";
+export { memoriesLog, memoriesLogToolBodies } from "./telemetry.js";
+export { elapsedMs } from "./timing.js";
+export {
+  buildMemorySearchToolkitContext,
+  buildMemorySearchToolRuntimeContext,
+  toMemorySearchEnv,
+} from "./toolkit-context.js";

@@ -3,10 +3,11 @@ import {
   searchAsync,
   wrapSyncMemoriesPersistenceAsAsync,
 } from "@cfd/memories-core";
+import { embedTextChunks } from "@cfd/memories-core/helpers";
 import { JsonlStore } from "@cfd/memories-stores";
 import { elapsedMs, logger } from "../logger.js";
-import { getLibrarian, getMemoriesBundle, type MemoriesCliBundle } from "../shared.js";
-import type { Parsed } from "./parse-args.js";
+import { getCliEmbeddingModel, getMemoriesBundle, type MemoriesCliBundle } from "../shared.js";
+import type { ParsedSearch } from "./parse-args.js";
 
 const SEARCH_RESOLVE_SOURCE_MAPS_LIMIT = 5;
 const SEARCH_MAX_NEIGHBORS = 5;
@@ -31,13 +32,13 @@ async function resolveSourcesForMemory(
   return out;
 }
 
-export async function cmdSearch(args: Parsed): Promise<void> {
+export async function cmdSearch(args: ParsedSearch): Promise<void> {
   const tPipeline = performance.now();
   const { persistence } = getMemoriesBundle(args.db);
   const store = new JsonlStore(args.store);
-  const librarian = getLibrarian(args.db, args.resolution);
+  const embeddingModel = getCliEmbeddingModel(args.db, args.resolution);
   const tEmbed = performance.now();
-  const embeddings = await librarian.embedTextChunks([args.query ?? ""]);
+  const embeddings = await embedTextChunks(embeddingModel, [args.query ?? ""]);
   logger.info({
     phase: "cli.search.embedQuery",
     durationMs: elapsedMs(tEmbed),

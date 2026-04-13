@@ -1,5 +1,5 @@
 import { OrbitControls } from "@react-three/drei";
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
   type ComponentRef,
   type RefObject,
@@ -10,7 +10,11 @@ import {
 } from "react";
 import * as THREE from "three";
 import { ActiveSubgraphEdgeLabels, GraphEdgeLines, type GraphEdgeRenderMode } from "./edges.js";
-import { GraphPinnedEscHint } from "./graph-pinned-esc-hint.js";
+import {
+  GraphCameraChromeProvider,
+  GraphTopRightChrome,
+  useGraphCameraChrome,
+} from "./graph-camera-chrome.js";
 import { GraphPreviewDock } from "./graph-preview-dock.js";
 import { Marker } from "./marker.js";
 import { SCALE } from "./projection-types.js";
@@ -32,6 +36,7 @@ function fitPerspectiveCameraToGraph(
   controls: { target: THREE.Vector3; update: () => void },
   points: readonly { x: number; y: number; z: number }[],
   margin: number,
+  options?: { viewDirection?: THREE.Vector3 },
 ) {
   if (points.length === 0) return;
   _min.set(Infinity, Infinity, Infinity);
@@ -58,11 +63,15 @@ function fitPerspectiveCameraToGraph(
   const distance = margin * Math.max(fitHeightDistance, fitWidthDistance);
 
   _center.set(cx, cy, cz);
-  _dir.subVectors(camera.position, _center);
-  if (_dir.lengthSq() < 1e-10) {
-    _dir.set(1, 0.35, 1).normalize();
+  if (options?.viewDirection) {
+    _dir.copy(options.viewDirection).normalize();
   } else {
-    _dir.normalize();
+    _dir.subVectors(camera.position, _center);
+    if (_dir.lengthSq() < 1e-10) {
+      _dir.set(1, 0.35, 1).normalize();
+    } else {
+      _dir.normalize();
+    }
   }
 
   camera.position.set(cx + _dir.x * distance, cy + _dir.y * distance, cz + _dir.z * distance);
@@ -75,37 +84,97 @@ function fitPerspectiveCameraToGraph(
   controls.update();
 }
 
-function GraphCameraFit({
+const _defaultOrbitView = new THREE.Vector3(1, 0.35, 1).normalize();
+
+function GraphCameraController({
   points,
+  orbitTarget,
   controlsRef,
 }: {
   points: readonly { x: number; y: number; z: number }[];
+  orbitTarget: readonly [number, number, number];
   controlsRef: RefObject<ComponentRef<typeof OrbitControls> | null>;
 }) {
   const camera = useThree((s) => s.camera);
+  const invalidate = useThree((s) => s.invalidate);
   const { width: viewWidth, height: viewHeight } = useThree((s) => s.size);
+  const { setCameraViewDeviated, reframeRef } = useGraphCameraChrome();
 
-  const runFit = useCallback(() => {
-    // Invalidate when the canvas resizes; `camera.aspect` updates before this runs.
-    void viewWidth;
-    void viewHeight;
-    const ctrl = controlsRef.current;
-    if (!ctrl || points.length === 0) return;
+  const homePos = useRef(new THREE.Vector3());
+  const homeTarget = useRef(new THREE.Vector3());
+  const homeReady = useRef(false);
+  const prevDeviated = useRef(false);
+  /** Camera→target direction after the first fit for this `points` snapshot — used when reframing. */
+  const originalOrbitDirRef = useRef<THREE.Vector3 | null>(null);
+  const prevPointsRef = useRef<readonly { x: number; y: number; z: number }[] | null>(null);
+
+  const snapshotHome = useCallback(() => {
     if (!(camera instanceof THREE.PerspectiveCamera)) return;
-    fitPerspectiveCameraToGraph(
+    const ctrl = controlsRef.current;
+    if (!ctrl) return;
+    if (originalOrbitDirRef.current === null && points.length > 0) {
+      originalOrbitDirRef.current = new THREE.Vector3()
+        .subVectors(camera.position, ctrl.target)
+        .normalize();
+    }
+    homePos.current.copy(camera.position);
+    homeTarget.current.copy(ctrl.target);
+    homeReady.current = true;
+    prevDeviated.current = false;
+    setCameraViewDeviated(false);
+  }, [camera, controlsRef, points.length, setCameraViewDeviated]);
+
+  const runFit = useCallback(
+    (resetOrbitToOriginal?: boolean) => {
+      void viewWidth;
+      void viewHeight;
+      if (prevPointsRef.current !== points) {
+        prevPointsRef.current = points;
+        originalOrbitDirRef.current = null;
+      }
+      const ctrl = controlsRef.current;
+      if (!ctrl || !(camera instanceof THREE.PerspectiveCamera)) return;
+      if (points.length === 0) {
+        homeReady.current = false;
+        setCameraViewDeviated(false);
+        return;
+      }
+      const viewDir = resetOrbitToOriginal
+        ? (originalOrbitDirRef.current ?? _defaultOrbitView)
+        : undefined;
+      fitPerspectiveCameraToGraph(
+        camera,
+        ctrl as unknown as { target: THREE.Vector3; update: () => void },
+        points,
+        GRAPH_BOUNDS_MARGIN,
+        viewDir ? { viewDirection: viewDir } : undefined,
+      );
+      ctrl.target.set(orbitTarget[0], orbitTarget[1], orbitTarget[2]);
+      ctrl.update();
+      invalidate();
+      snapshotHome();
+    },
+    [
       camera,
-      ctrl as unknown as { target: THREE.Vector3; update: () => void },
+      controlsRef,
+      invalidate,
+      orbitTarget,
       points,
-      GRAPH_BOUNDS_MARGIN,
-    );
-  }, [camera, controlsRef, points, viewWidth, viewHeight]);
+      snapshotHome,
+      setCameraViewDeviated,
+      viewWidth,
+      viewHeight,
+    ],
+  );
 
   useLayoutEffect(() => {
     runFit();
     const t0 = window.setTimeout(runFit, 0);
     let rafInner = 0;
     const rafOuter = requestAnimationFrame(() => {
-      rafInner = requestAnimationFrame(runFit);
+      rafInner = requestAnimationFrame(() => {
+        runFit();
+      });
     });
     const t1 = window.setTimeout(runFit, 120);
     return () => {
@@ -115,6 +184,29 @@ function GraphCameraFit({
       cancelAnimationFrame(rafInner);
     };
   }, [runFit]);
+
+  useLayoutEffect(() => {
+    reframeRef.current = () => {
+      runFit(true);
+    };
+    return () => {
+      reframeRef.current = null;
+    };
+  }, [reframeRef, runFit]);
+
+  useFrame(() => {
+    if (!homeReady.current || !(camera instanceof THREE.PerspectiveCamera)) return;
+    const ctrl = controlsRef.current;
+    if (!ctrl) return;
+    const eps = 0.035;
+    const posDiff = camera.position.distanceTo(homePos.current);
+    const tgtDiff = ctrl.target.distanceTo(homeTarget.current);
+    const deviated = posDiff > eps || tgtDiff > eps;
+    if (deviated !== prevDeviated.current) {
+      prevDeviated.current = deviated;
+      setCameraViewDeviated(deviated);
+    }
+  });
 
   return null;
 }
@@ -242,7 +334,7 @@ function GraphSceneR3f({ edgeRenderMode }: { edgeRenderMode: GraphEdgeRenderMode
         makeDefault
         onStart={onCameraNavStart}
       />
-      <GraphCameraFit controlsRef={controlsRef} points={points} />
+      <GraphCameraController controlsRef={controlsRef} orbitTarget={orbitTarget} points={points} />
     </>
   );
 }
@@ -257,26 +349,28 @@ export function GraphScene({
   edgeRenderMode?: GraphEdgeRenderMode;
 } = {}) {
   return (
-    <>
-      <GraphPinnedEscHint />
-      <div className="r3f-layer relative h-full w-full">
-        <GraphPreviewDock />
-        <Canvas
-          className="h-full w-full touch-none"
-          camera={{ position: [0, 0, 4.8], fov: 20 }}
-          dpr={[1, 2]}
-          gl={{
-            alpha: false,
-            antialias: true,
-            depth: true,
-            stencil: false,
-            powerPreference: "high-performance",
-            preserveDrawingBuffer: false,
-          }}
-        >
-          <GraphSceneR3f edgeRenderMode={edgeRenderMode} />
-        </Canvas>
+    <GraphCameraChromeProvider>
+      <div className="relative h-full min-h-0 w-full">
+        <GraphTopRightChrome />
+        <div className="r3f-layer relative h-full w-full">
+          <GraphPreviewDock />
+          <Canvas
+            className="h-full w-full touch-none"
+            camera={{ position: [0, 0, 4.8], fov: 20 }}
+            dpr={[1, 2]}
+            gl={{
+              alpha: false,
+              antialias: true,
+              depth: true,
+              stencil: false,
+              powerPreference: "high-performance",
+              preserveDrawingBuffer: false,
+            }}
+          >
+            <GraphSceneR3f edgeRenderMode={edgeRenderMode} />
+          </Canvas>
+        </div>
       </div>
-    </>
+    </GraphCameraChromeProvider>
   );
 }

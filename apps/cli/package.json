@@ -9,7 +9,9 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.0",
-    "@cfd/memories-librarian": "workspace:*",
+    "@cfd/agent-identity": "workspace:*",
+    "@cfd/memories-adapter": "workspace:*",
+    "@cfd/memories-integrator": "workspace:*",
     "@cfd/memories-core": "workspace:*",
     "@cfd/memories-core-persistence": "workspace:*",
     "@cfd/memories-core-ontologies": "workspace:*",

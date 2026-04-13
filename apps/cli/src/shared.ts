@@ -4,6 +4,12 @@ import { dirname } from "node:path";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { MemoriesClient } from "@cfd/memories-core";
 import {
+  createMemoriesEmbeddingModel,
+  type EmbeddingModel,
+  type EmbeddingResolutionPreset,
+  mergeResolutionAndProviderOptions,
+} from "@cfd/memories-core/helpers";
+import {
   canonicalLabelPropsSearchFormatter,
   canonicalOntology,
 } from "@cfd/memories-core-ontologies";
@@ -11,7 +17,7 @@ import {
   createMemoriesPersistence,
   openMemoriesDatabase,
 } from "@cfd/memories-core-persistence/sqlite";
-import { type EmbeddingResolutionPreset, Librarian } from "@cfd/memories-librarian";
+import type { LanguageModel } from "ai";
 
 /** One Gemini key for @ai-sdk/google; .env often uses one name only. */
 export function resolveGeminiApiKey(): string {
@@ -25,6 +31,46 @@ export function resolveGeminiApiKey(): string {
     );
   }
   return k;
+}
+
+/** Singleton Google Generative AI client for CLI chat + embedding model IDs. */
+let cliGoogle: ReturnType<typeof createGoogleGenerativeAI> | undefined;
+
+export function getCliGoogle(): ReturnType<typeof createGoogleGenerativeAI> {
+  if (!cliGoogle) {
+    cliGoogle = createGoogleGenerativeAI({ apiKey: resolveGeminiApiKey() });
+  }
+  return cliGoogle;
+}
+
+/** Default chat model for adapter / integrator CLI runs. */
+export function getCliChatModel(): LanguageModel {
+  return getCliGoogle().languageModel("gemini-flash-lite-latest");
+}
+
+const embeddingModelByDbAndResolution = new Map<string, EmbeddingModel>();
+
+function embeddingModelCacheKey(dbPath: string, resolution: EmbeddingResolutionPreset): string {
+  return `${dbPath}\0${resolution}`;
+}
+
+/**
+ * Singleton {@link EmbeddingModel} per `(dbPath, resolution)` — shared by search, adapter, and integrator.
+ */
+export function getCliEmbeddingModel(
+  dbPath: string,
+  resolution: EmbeddingResolutionPreset,
+): EmbeddingModel {
+  const key = embeddingModelCacheKey(dbPath, resolution);
+  let m = embeddingModelByDbAndResolution.get(key);
+  if (!m) {
+    m = createMemoriesEmbeddingModel({
+      model: getCliGoogle().embeddingModel("gemini-embedding-2-preview"),
+      providerOptions: mergeResolutionAndProviderOptions(resolution),
+    });
+    embeddingModelByDbAndResolution.set(key, m);
+  }
+  return m;
 }
 
 /** SQLite creates the DB file but not parent dirs; mkdir so default `./.cfd/...` works. */
@@ -63,39 +109,4 @@ export function getMemoriesBundle(dbPath: string): MemoriesCliBundle {
   return bundle;
 }
 
-type CliLibrarian = Librarian<
-  (typeof canonicalOntology)["nodeLabels"],
-  (typeof canonicalOntology)["edgeLabels"]
->;
-
-const librarianByDbAndResolution = new Map<string, CliLibrarian>();
-
-function librarianCacheKey(dbPath: string, resolution: EmbeddingResolutionPreset): string {
-  return `${dbPath}\0${resolution}`;
-}
-
-/**
- * Singleton per `(dbPath, resolution)`: same {@link getMemoriesBundle} client, embedding dims match CLI `-dim`.
- */
-export function getLibrarian(dbPath: string, resolution: EmbeddingResolutionPreset): CliLibrarian {
-  const key = librarianCacheKey(dbPath, resolution);
-  let lib = librarianByDbAndResolution.get(key);
-  if (!lib) {
-    const { client } = getMemoriesBundle(dbPath);
-    const apiKey = resolveGeminiApiKey();
-    const google = createGoogleGenerativeAI({ apiKey });
-    lib = new Librarian({
-      client,
-      embedding: {
-        model: google.embeddingModel("gemini-embedding-2-preview"),
-        resolution,
-      },
-      multimodal: false,
-      agent: {
-        model: google.languageModel("gemini-flash-lite-latest"),
-      },
-    });
-    librarianByDbAndResolution.set(key, lib);
-  }
-  return lib;
-}
+export type { EmbeddingResolutionPreset };
