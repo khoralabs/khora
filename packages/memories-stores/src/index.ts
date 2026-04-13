@@ -1,2 +1,2 @@
-export { type JsonlResolvedLine, JsonlStore } from "./jsonl-store.ts";
+export { JsonlStore } from "./jsonl/jsonl-store.ts";
 export { logger } from "./logger.ts";

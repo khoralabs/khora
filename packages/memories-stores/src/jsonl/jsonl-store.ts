@@ -1,35 +1,18 @@
 import { appendFileSync, mkdirSync, readFileSync, statSync } from "node:fs";
 import { dirname } from "node:path";
-import type { ResolvedSource, SourceMap, Store } from "@cfd/memories-core";
+import type {
+  ResolvedSource,
+  ResolvedSourceMapLine,
+  SourceMap,
+  Store,
+} from "@cfd/memories-core";
 import type { TextFeatureExportRow } from "@cfd/memories-core/persistence";
-
-export type JsonlResolvedLine =
-  | {
-      memory_id: string;
-      source_key: string;
-      kind: "string";
-      string: string;
-    }
-  | {
-      memory_id: string;
-      source_key: string;
-      kind: "url";
-      url: string;
-    }
-  | {
-      memory_id: string;
-      source_key: string;
-      kind: "blob";
-      /** Base64-encoded bytes */
-      blob: string;
-      mimeType?: string;
-    };
 
 function storeKey(memoryId: string, sourceKey: string): string {
   return `${memoryId}\n${sourceKey}`;
 }
 
-function lineToResolved(line: JsonlResolvedLine): ResolvedSource {
+function lineToResolved(line: ResolvedSourceMapLine): ResolvedSource {
   if (line.kind === "string") {
     return { kind: "string", string: line.string };
   }
@@ -43,10 +26,10 @@ function lineToResolved(line: JsonlResolvedLine): ResolvedSource {
   };
 }
 
-function parseLine(raw: string): JsonlResolvedLine | undefined {
+function parseLine(raw: string): ResolvedSourceMapLine | undefined {
   const t = raw.trim();
   if (!t || t.startsWith("#")) return undefined;
-  const o = JSON.parse(t) as JsonlResolvedLine;
+  const o = JSON.parse(t) as ResolvedSourceMapLine;
   if (
     !o ||
     typeof o !== "object" ||
@@ -61,7 +44,7 @@ function parseLine(raw: string): JsonlResolvedLine | undefined {
   return undefined;
 }
 
-function stringLine(memoryId: string, sourceKey: string, text: string): JsonlResolvedLine {
+function stringLine(memoryId: string, sourceKey: string, text: string): ResolvedSourceMapLine {
   return { memory_id: memoryId, source_key: sourceKey, kind: "string", string: text };
 }
 
