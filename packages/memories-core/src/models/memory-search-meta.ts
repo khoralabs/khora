@@ -1,3 +1,5 @@
+import type { OntologyLabelInstance } from "./ontology-label";
+
 export {
   isSystemSearchMetaSourceKey,
   MEMORY_SEARCH_META_SOURCE_KEY,
@@ -7,27 +9,28 @@ function sortUnique(xs: string[]): string[] {
   return [...new Set(xs)].sort((a, b) => a.localeCompare(b));
 }
 
-function formatNodeLines(labels: string[]): string[] {
-  return sortUnique(labels).map((l) => `node:${l}`);
+function formatNodeLines(labelKinds: string[]): string[] {
+  return sortUnique(labelKinds).map((l) => `node:${l}`);
 }
 
 function formatEdgeLine(
   direction: "in" | "out",
   neighborKey: string,
-  edgeLabels: string[],
+  edgeLabelKinds: string[],
 ): string {
-  const joined = sortUnique(edgeLabels).join("|");
+  const joined = sortUnique(edgeLabelKinds).join("|");
   return `edge ${direction}:${neighborKey}:${joined}`;
 }
 
 /** Build the same canonical multiline string as DB/search-meta text from merge payload (pre-DB). */
 export function buildCanonicalMemorySearchMetaTextForMerge(input: {
-  labels: string[];
-  edges: Array<{ memory_key: string; direction: "in" | "out"; label: string }>;
+  labels: OntologyLabelInstance[];
+  edges: Array<{ memory_key: string; direction: "in" | "out"; label: OntologyLabelInstance }>;
 }): string {
-  const nodeLines = formatNodeLines(input.labels);
+  const nodeKinds = sortUnique(input.labels.map((l) => l.kind));
+  const nodeLines = formatNodeLines(nodeKinds);
   const edgeLines = sortUnique(
-    input.edges.map((e) => formatEdgeLine(e.direction, e.memory_key, [e.label])),
+    input.edges.map((e) => formatEdgeLine(e.direction, e.memory_key, [e.label.kind])),
   );
   const lines = [...nodeLines, ...edgeLines].sort((a, b) => a.localeCompare(b));
   return lines.join("\n");

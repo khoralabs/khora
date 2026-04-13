@@ -2,6 +2,8 @@ import { ids } from "../models/ids";
 import type { MemoriesPersistenceAsync } from "../persistence/async-types";
 import { resolveMemoriesBackendCapabilities } from "../persistence/types";
 import {
+  catalogSchemaJsonForEdgeKind,
+  catalogSchemaJsonForNodeKind,
   type MergeMemoryParams,
   withDirectedEdgeProperties,
   zMergeMemoryContentItem,
@@ -16,7 +18,7 @@ export interface MutationCtxAsync {
  */
 export async function mergeMemoryAsync(
   ctx: MutationCtxAsync,
-  params: MergeMemoryParams<string, string>,
+  params: MergeMemoryParams,
 ): Promise<string[]> {
   const { persistence } = ctx;
   const caps = resolveMemoriesBackendCapabilities(persistence);
@@ -83,9 +85,14 @@ export async function mergeMemoryAsync(
       }
     }
 
-    for (const label of [...new Set(params.labels)]) {
-      const labelId = await persistence.ensureNodeLabel(op, label);
-      await persistence.insertNodeLabelAssignment(op, { nodeId, labelId });
+    const labelByKind = new Map(params.labels.map((l) => [l.kind, l] as const));
+    for (const l of labelByKind.values()) {
+      const labelId = await persistence.ensureNodeLabel(op, {
+        kind: l.kind,
+        description: "",
+        schemaJson: catalogSchemaJsonForNodeKind(params.ontology, l.kind),
+      });
+      await persistence.insertNodeLabelAssignment(op, { nodeId, labelId, props: l.props });
     }
 
     for (const edge of params.edges ?? []) {
@@ -106,13 +113,21 @@ export async function mergeMemoryAsync(
         toNodeId,
         properties: withDirectedEdgeProperties(edge.properties),
         idParts: {
-          label: edge.label,
+          label: edge.label.kind,
           selfMemoryKey: params.key,
           otherMemoryKey: edge.memory_key,
         },
       });
-      const edgeLabelId = await persistence.ensureEdgeLabel(op, edge.label);
-      await persistence.insertEdgeLabelAssignment(op, { edgeId, labelId: edgeLabelId });
+      const edgeLabelId = await persistence.ensureEdgeLabel(op, {
+        kind: edge.label.kind,
+        description: "",
+        schemaJson: catalogSchemaJsonForEdgeKind(params.ontology, edge.label.kind),
+      });
+      await persistence.insertEdgeLabelAssignment(op, {
+        edgeId,
+        labelId: edgeLabelId,
+        props: edge.label.props,
+      });
     }
 
     const newNeighborKeys = (params.edges ?? []).map((e) => e.memory_key);

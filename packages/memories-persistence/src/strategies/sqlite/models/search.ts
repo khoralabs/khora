@@ -1,46 +1,30 @@
 import type { SQLQueryBindings } from "bun:sqlite";
-import { ids, type SearchNamespaceScope } from "@cfd/memories-core";
+import {
+  ids,
+  type NeighborConstraint,
+  type NeighborFilter,
+  type NeighborNodesFilter,
+  type OntologyLabelInstance,
+  type SearchNamespaceScope,
+} from "@cfd/memories-core";
 import type { Edge, Memory, SourceMap } from "../schema";
 import { vectorVecTableName } from "../search-indexes";
 import type { DbCtx } from "./context";
 
-/** Same semantics as root hit `labels` filter: `all` = AND, `some` = OR (non-empty). Omitted = any. */
-export type NeighborNodesFilter<NODE_LABEL extends string = string> = {
-  all?: NODE_LABEL[];
-  some?: NODE_LABEL[];
-};
+export type {
+  NeighborConstraint,
+  NeighborFilter,
+  NeighborNodesFilter,
+} from "@cfd/memories-core";
 
-/** Omitted `direction` matches both incident orientations (in and out). */
-export type NeighborConstraint<
-  EDGE_LABEL extends string = string,
-  NODE_LABEL extends string = string,
-> = {
-  label: EDGE_LABEL;
-  direction?: "in" | "out";
-  /** If set, the adjacent memory's node must satisfy these node-label rules. */
-  nodes?: NeighborNodesFilter<NODE_LABEL>;
-};
-
-export type NeighborFilter<
-  EDGE_LABEL extends string = string,
-  NODE_LABEL extends string = string,
-> = {
-  all?: NeighborConstraint<EDGE_LABEL, NODE_LABEL>[];
-  some?: NeighborConstraint<EDGE_LABEL, NODE_LABEL>[];
-};
-
-export type HydratedSourceMapHit<NODE_LABEL extends string = string> = SourceMap & {
+export type HydratedSourceMapHit = SourceMap & {
   memory: Memory;
-  labels: NODE_LABEL[];
+  labels: OntologyLabelInstance[];
 };
 
-export type HydratedNeighbor<
-  EDGE_LABEL extends string = string,
-  NODE_LABEL extends string = string,
-> = Memory & {
-  /** Ontology node labels on the neighbor memory's node (same meaning as root hit `labels`). */
-  labels: NODE_LABEL[];
-  edge: Edge & { label: EDGE_LABEL };
+export type HydratedNeighbor = Memory & {
+  labels: OntologyLabelInstance[];
+  edge: Edge & { label: OntologyLabelInstance };
 };
 
 function placeholders(count: number): string {
@@ -62,18 +46,35 @@ function parseProperties(value: unknown): Record<string, unknown> | undefined {
   return undefined;
 }
 
-function matchesNodeLabelFilter<LABEL extends string>(
-  labels: readonly LABEL[],
-  filter: NeighborNodesFilter<LABEL> | undefined,
+function parsePropsColumn(raw: unknown): Record<string, unknown> {
+  if (raw == null || raw === "") return {};
+  if (typeof raw === "string") {
+    try {
+      const o = JSON.parse(raw) as unknown;
+      if (o && typeof o === "object" && !Array.isArray(o)) return o as Record<string, unknown>;
+    } catch {
+      return {};
+    }
+  }
+  if (typeof raw === "object" && raw !== null && !Array.isArray(raw)) {
+    return raw as Record<string, unknown>;
+  }
+  return {};
+}
+
+function matchesNodeLabelFilter(
+  labels: readonly OntologyLabelInstance[],
+  filter: NeighborNodesFilter<string> | undefined,
 ): boolean {
+  const kinds = labels.map((l) => l.kind);
   if (!filter) return true;
-  if (filter.all && !filter.all.every((label) => labels.includes(label))) {
+  if (filter.all && !filter.all.every((label) => kinds.includes(label))) {
     return false;
   }
   if (
     filter.some &&
     filter.some.length > 0 &&
-    !filter.some.some((label) => labels.includes(label))
+    !filter.some.some((label) => kinds.includes(label))
   ) {
     return false;
   }
@@ -82,11 +83,12 @@ function matchesNodeLabelFilter<LABEL extends string>(
 
 function neighborConstraintSatisfied<EDGE_LABEL extends string, NODE_LABEL extends string>(
   constraint: NeighborConstraint<EDGE_LABEL, NODE_LABEL>,
-  edgeLabels: readonly EDGE_LABEL[],
+  edgeLabels: readonly OntologyLabelInstance[],
   direction: "in" | "out",
-  neighborNodeLabels: readonly NODE_LABEL[],
+  neighborNodeLabels: readonly OntologyLabelInstance[],
 ): boolean {
-  if (!edgeLabels.includes(constraint.label)) return false;
+  const kinds = edgeLabels.map((e) => e.kind);
+  if (!kinds.includes(constraint.label as string)) return false;
   if (constraint.direction !== undefined && constraint.direction !== direction) return false;
   return matchesNodeLabelFilter(neighborNodeLabels, constraint.nodes);
 }
@@ -228,10 +230,10 @@ export function searchVectorSourceMapIds(
   return rows.map((row) => row.sourceMapId);
 }
 
-export function hydrateSourceMapHits<NODE_LABEL extends string = string>(
+export function hydrateSourceMapHits(
   ctx: DbCtx,
   sourceMapIds: readonly string[],
-): HydratedSourceMapHit<NODE_LABEL>[] {
+): HydratedSourceMapHit[] {
   if (sourceMapIds.length === 0) return [];
 
   const sourceMapRows = ctx.db
@@ -280,21 +282,21 @@ export function hydrateSourceMapHits<NODE_LABEL extends string = string>(
   );
 
   const nodeIds = [...new Set(sourceMapRows.map((row) => ids.node(row.namespace, row.key)))];
-  const labelsByNodeId = new Map<string, NODE_LABEL[]>();
+  const labelsByNodeId = new Map<string, OntologyLabelInstance[]>();
   if (nodeIds.length > 0) {
     const labelRows = ctx.db
-      .query<{ nodeId: string; label: NODE_LABEL }, string[]>(
-        `SELECT nla.node_id AS nodeId, nl.value AS label
+      .query<{ nodeId: string; kind: string; propsJson: string | null }, string[]>(
+        `SELECT nla.node_id AS nodeId, nl.kind AS kind, nla.props AS propsJson
          FROM node_label_assignments nla
          JOIN node_labels nl ON nl._id = nla.label_id
          WHERE nla.node_id IN (${placeholders(nodeIds.length)})
-         ORDER BY nl.value ASC`,
+         ORDER BY nl.kind ASC`,
       )
       .all(...nodeIds);
 
-    for (const { nodeId, label } of labelRows) {
+    for (const { nodeId, kind, propsJson } of labelRows) {
       const labels = labelsByNodeId.get(nodeId) ?? [];
-      labels.push(label);
+      labels.push({ kind, props: parsePropsColumn(propsJson) });
       labelsByNodeId.set(nodeId, labels);
     }
   }
@@ -326,7 +328,7 @@ export function listNeighborsForMemory<
     key: string;
     filters?: NeighborFilter<EDGE_LABEL, NODE_LABEL>;
   },
-): HydratedNeighbor<EDGE_LABEL, NODE_LABEL>[] {
+): HydratedNeighbor[] {
   const nodeId = ids.node(input.namespace, input.key);
   const rows = ctx.db
     .query<
@@ -336,7 +338,8 @@ export function listNeighborsForMemory<
         fromNodeId: string;
         toNodeId: string;
         edgeProperties: unknown;
-        edgeLabel: EDGE_LABEL;
+        edgeKind: string;
+        edgeLabelPropsJson: string | null;
         memoryId: string;
         memoryCreated: number;
         namespace: string;
@@ -350,7 +353,8 @@ export function listNeighborsForMemory<
          e.from_node_id AS fromNodeId,
          e.to_node_id AS toNodeId,
          e.properties AS edgeProperties,
-         el.value AS edgeLabel,
+         el.kind AS edgeKind,
+         ela.props AS edgeLabelPropsJson,
          m._id AS memoryId,
          m._ts_created AS memoryCreated,
          m.namespace AS namespace,
@@ -364,7 +368,7 @@ export function listNeighborsForMemory<
        END
        JOIN memories m ON m.namespace = ? AND m.key = n.value
        WHERE e.from_node_id = ? OR e.to_node_id = ?
-       ORDER BY e._id ASC, el.value ASC`,
+       ORDER BY e._id ASC, el.kind ASC`,
     )
     .all(nodeId, input.namespace, nodeId, nodeId);
 
@@ -374,14 +378,18 @@ export function listNeighborsForMemory<
       memory: Memory;
       edge: Edge;
       direction: "in" | "out";
-      edgeLabels: EDGE_LABEL[];
+      edgeLabels: OntologyLabelInstance[];
     }
   >();
 
   for (const row of rows) {
+    const inst: OntologyLabelInstance = {
+      kind: row.edgeKind,
+      props: parsePropsColumn(row.edgeLabelPropsJson),
+    };
     const existing = grouped.get(row.edgeId);
     if (existing) {
-      existing.edgeLabels.push(row.edgeLabel);
+      existing.edgeLabels.push(inst);
       continue;
     }
     grouped.set(row.edgeId, {
@@ -399,44 +407,44 @@ export function listNeighborsForMemory<
         properties: parseProperties(row.edgeProperties),
       },
       direction: row.fromNodeId === nodeId ? "out" : "in",
-      edgeLabels: [row.edgeLabel],
+      edgeLabels: [inst],
     });
   }
 
   const neighborNodeIds = [
     ...new Set([...grouped.values()].map((v) => ids.node(v.memory.namespace, v.memory.key))),
   ];
-  const neighborNodeLabelsById = new Map<string, NODE_LABEL[]>();
+  const neighborNodeLabelsById = new Map<string, OntologyLabelInstance[]>();
   if (neighborNodeIds.length > 0) {
     const labelRows = ctx.db
-      .query<{ nodeId: string; label: NODE_LABEL }, string[]>(
-        `SELECT nla.node_id AS nodeId, nl.value AS label
+      .query<{ nodeId: string; kind: string; propsJson: string | null }, string[]>(
+        `SELECT nla.node_id AS nodeId, nl.kind AS kind, nla.props AS propsJson
          FROM node_label_assignments nla
          JOIN node_labels nl ON nl._id = nla.label_id
          WHERE nla.node_id IN (${placeholders(neighborNodeIds.length)})
-         ORDER BY nl.value ASC`,
+         ORDER BY nl.kind ASC`,
       )
       .all(...neighborNodeIds);
-    for (const { nodeId, label } of labelRows) {
+    for (const { nodeId, kind, propsJson } of labelRows) {
       const ls = neighborNodeLabelsById.get(nodeId) ?? [];
-      ls.push(label);
+      ls.push({ kind, props: parsePropsColumn(propsJson) });
       neighborNodeLabelsById.set(nodeId, ls);
     }
   }
 
   return [...grouped.values()].flatMap((row) => {
-    const edgeLabels = [...new Set(row.edgeLabels)];
+    const edgeLabels = row.edgeLabels;
     const neighborNodeLabels =
       neighborNodeLabelsById.get(ids.node(row.memory.namespace, row.memory.key)) ?? [];
 
     const matches = (
       constraints: NeighborConstraint<EDGE_LABEL, NODE_LABEL>[] | undefined,
-    ): EDGE_LABEL[] => {
+    ): OntologyLabelInstance[] => {
       if (!constraints || constraints.length === 0) return edgeLabels;
-      return edgeLabels.filter((label) =>
+      return edgeLabels.filter((inst) =>
         constraints.some(
           (constraint) =>
-            constraint.label === label &&
+            (constraint.label as string) === inst.kind &&
             neighborConstraintSatisfied(constraint, edgeLabels, row.direction, neighborNodeLabels),
         ),
       );

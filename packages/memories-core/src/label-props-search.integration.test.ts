@@ -4,7 +4,6 @@ import {
   openMemoriesDatabase,
 } from "@cfd/memories-core-persistence/sqlite";
 import { mergeMemory } from "./api/merge-memory";
-import { encodeOntologyLabel } from "./api/ontology";
 import { search } from "./api/search";
 import { ids } from "./models/ids";
 import { MEMORY_NODE_LABEL_PROPS_KEY_PREFIX } from "./search-meta-constants";
@@ -25,10 +24,13 @@ describe("label props search features", () => {
         namespace: "ns",
         content: [{ key: "c", text: "boring generic content alpha" }],
         labels: [
-          encodeOntologyLabel("person", {
-            name: "Pat",
-            role: unique,
-          }),
+          {
+            kind: "person",
+            props: {
+              name: "Pat",
+              role: unique,
+            },
+          },
         ],
         edges: [],
       },
@@ -57,7 +59,7 @@ describe("label props search features", () => {
         key: "m1",
         namespace: "ns",
         content: [{ key: "c", text: "body" }],
-        labels: [encodeOntologyLabel("person", { name: "A", role: v1 })],
+        labels: [{ kind: "person", props: { name: "A", role: v1 } }],
         edges: [],
       },
     );
@@ -82,7 +84,7 @@ describe("label props search features", () => {
         key: "m1",
         namespace: "ns",
         content: [{ key: "c", text: "body" }],
-        labels: [encodeOntologyLabel("person", { name: "A", role: v2 })],
+        labels: [{ kind: "person", props: { name: "A", role: v2 } }],
         edges: [],
       },
     );
@@ -123,7 +125,7 @@ describe("label props search features", () => {
           {
             memory_key: "nb",
             direction: "out",
-            label: encodeOntologyLabel("causes", { mechanism: edgeToken }),
+            label: { kind: "causes", props: { mechanism: edgeToken } },
           },
         ],
       },
@@ -164,7 +166,7 @@ describe("label props search features", () => {
           {
             memory_key: "nb",
             direction: "out",
-            label: encodeOntologyLabel("describes", { facet: edgeToken }),
+            label: { kind: "describes", props: { facet: edgeToken } },
           },
         ],
       },

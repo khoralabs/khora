@@ -2,6 +2,7 @@ import { fuseRrf, type RrfArm } from "@cfd/reciprocal-rank-fusion";
 import type { Edge, Memory, SourceMap } from "../db/rows";
 import { logger } from "../logger.js";
 import type { HydratedNeighbor, NeighborFilter } from "../models/neighbor-search-types";
+import type { OntologyLabelInstance } from "../models/ontology-label";
 import type { MemoriesBackendCapabilities, SearchNamespaceScope } from "../persistence/types";
 import { type MemoriesPersistence, resolveMemoriesBackendCapabilities } from "../persistence/types";
 import { elapsedMs } from "../timing.js";
@@ -58,8 +59,8 @@ export type SearchNeighborHit<
   NODE_LABELS extends string = string,
   EDGE_LABELS extends string = string,
 > = Memory & {
-  labels: NODE_LABELS[];
-  edge: Edge & { label: EDGE_LABELS };
+  labels: OntologyLabelInstance[];
+  edge: Edge & { label: OntologyLabelInstance };
   /** Fused RRF score from scoped neighbor sub-search. */
   neighborScore?: number;
   /** Best-matching `source_map` within the neighbor memory. */
@@ -70,22 +71,23 @@ export interface SearchHit<NODE_LABELS extends string = string, EDGE_LABELS exte
   extends SourceMap {
   score: number;
   memory: Memory;
-  labels: NODE_LABELS[];
+  labels: OntologyLabelInstance[];
   neighbors?: Array<SearchNeighborHit<NODE_LABELS, EDGE_LABELS>>;
 }
 
-function matchesLabelFilter<LABEL extends string>(
-  labels: readonly LABEL[],
-  filter: { all?: LABEL[]; some?: LABEL[] } | undefined,
+function matchesLabelFilter(
+  labels: readonly OntologyLabelInstance[],
+  filter: { all?: string[]; some?: string[] } | undefined,
 ): boolean {
+  const kinds = labels.map((l) => l.kind);
   if (!filter) return true;
-  if (filter.all && !filter.all.every((label) => labels.includes(label))) {
+  if (filter.all && !filter.all.every((label) => kinds.includes(label))) {
     return false;
   }
   if (
     filter.some &&
     filter.some.length > 0 &&
-    !filter.some.some((label) => labels.includes(label))
+    !filter.some.some((label) => kinds.includes(label))
   ) {
     return false;
   }
@@ -229,7 +231,7 @@ function expandNeighborsWithSubSearch<NODE_LABELS extends string, EDGE_LABELS ex
     filters: input.neighborFilters,
   });
 
-  const byMemoryId = new Map<string, HydratedNeighbor<EDGE_LABELS, NODE_LABELS>>();
+  const byMemoryId = new Map<string, HydratedNeighbor>();
   for (const n of graphNeighbors) {
     if (!byMemoryId.has(n._id)) {
       byMemoryId.set(n._id, n);
@@ -258,7 +260,7 @@ function expandNeighborsWithSubSearch<NODE_LABELS extends string, EDGE_LABELS ex
 
   if (fused.length === 0) return [];
 
-  const hydrated = persistence.hydrateSourceMapHits<NODE_LABELS>(fused.map((r) => r.id));
+  const hydrated = persistence.hydrateSourceMapHits(fused.map((r) => r.id));
   const hydratedById = new Map(hydrated.map((h) => [h._id, h]));
 
   const seenMemory = new Set<string>();
@@ -332,7 +334,7 @@ export function search<NODE_LABELS extends string = string, EDGE_LABELS extends 
     retrievalLimit,
   });
   if (fused.length === 0) return [];
-  const hydrated = persistence.hydrateSourceMapHits<NODE_LABELS>(fused.map((result) => result.id));
+  const hydrated = persistence.hydrateSourceMapHits(fused.map((result) => result.id));
   const hydratedById = new Map(hydrated.map((hit) => [hit._id, hit]));
   const minScore = params.options?.minScore ?? Number.NEGATIVE_INFINITY;
 

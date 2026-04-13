@@ -36,9 +36,7 @@ export type MemoriesPersistenceAsync = PromisifyMethodMap<MemoriesPersistenceAsy
     op: MemoryOpContext,
     input: { namespace: string; memoryKey: string },
   ): Promise<void>;
-  hydrateSourceMapHits<NODE_LABEL extends string = string>(
-    sourceMapIds: readonly string[],
-  ): Promise<HydratedSourceMapHit<NODE_LABEL>[]>;
+  hydrateSourceMapHits(sourceMapIds: readonly string[]): Promise<HydratedSourceMapHit[]>;
   listNeighborsForMemory<
     EDGE_LABEL extends string = string,
     NODE_LABEL extends string = string,
@@ -46,5 +44,5 @@ export type MemoriesPersistenceAsync = PromisifyMethodMap<MemoriesPersistenceAsy
     namespace: string;
     key: string;
     filters?: NeighborFilter<EDGE_LABEL, NODE_LABEL>;
-  }): Promise<HydratedNeighbor<EDGE_LABEL, NODE_LABEL>[]>;
+  }): Promise<HydratedNeighbor[]>;
 };

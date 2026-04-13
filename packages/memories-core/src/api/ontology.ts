@@ -1,4 +1,7 @@
-import type z from "zod";
+import { z } from "zod";
+import type { OntologyLabelInstance } from "../models/ontology-label";
+
+export type { OntologyLabelInstance };
 
 /**
  * Maps each **label kind** (discriminant) to a Zod schema for that label’s `props`.
@@ -30,74 +33,55 @@ export type EdgeLabelInstance<TEdge extends LabelSchemaMap> = {
   };
 }[keyof TEdge];
 
-/** Stable string stored in `node_labels.value` / used with `ensureEdgeLabel` (includes kind + props). */
-export function encodeOntologyLabel(kind: string, props: unknown): string {
-  if (
-    props === undefined ||
-    (typeof props === "object" &&
-      props !== null &&
-      !Array.isArray(props) &&
-      Object.keys(props).length === 0)
-  ) {
-    return kind;
-  }
-  return JSON.stringify({ kind, props });
-}
-
-export function parseOntologyLabelValue(value: string): { kind: string; props: unknown } {
-  if (!value.startsWith("{")) {
-    return { kind: value, props: {} };
-  }
-  try {
-    const o = JSON.parse(value) as { kind?: string; props?: unknown };
-    if (o && typeof o === "object" && typeof o.kind === "string") {
-      return { kind: o.kind, props: o.props ?? {} };
-    }
-  } catch {
-    /* fall through */
-  }
-  return { kind: value, props: {} };
-}
-
 export function validateNodeLabel<TNode extends LabelSchemaMap, TEdge extends LabelSchemaMap>(
   ontology: OntologyDefinition<TNode, TEdge>,
-  label: NodeLabelInstance<TNode>,
-): string {
+  label: OntologyLabelInstance,
+): { kind: string; props: Record<string, unknown> } {
   const schema = ontology.nodeLabels[label.kind as keyof TNode];
   if (schema === undefined) {
     throw new RangeError(`Unknown node label kind: ${String(label.kind)}`);
   }
-  const props = schema.parse(label.props);
-  return encodeOntologyLabel(label.kind, props);
+  const props = schema.parse(label.props) as Record<string, unknown>;
+  return { kind: label.kind, props };
 }
 
 export function validateEdgeLabel<TNode extends LabelSchemaMap, TEdge extends LabelSchemaMap>(
   ontology: OntologyDefinition<TNode, TEdge>,
-  label: EdgeLabelInstance<TEdge>,
-): string {
+  label: OntologyLabelInstance,
+): { kind: string; props: Record<string, unknown> } {
   const schema = ontology.edgeLabels[label.kind as keyof TEdge];
   if (schema === undefined) {
     throw new RangeError(`Unknown edge label kind: ${String(label.kind)}`);
   }
-  const props = schema.parse(label.props);
-  return encodeOntologyLabel(label.kind, props);
+  const props = schema.parse(label.props) as Record<string, unknown>;
+  return { kind: label.kind, props };
+}
+
+/** JSON Schema (Draft 2020-12) object for a Zod props schema, for catalog persistence. */
+export function zodPropsSchemaToJson(schema: z.ZodType): Record<string, unknown> {
+  return z.toJSONSchema(schema) as Record<string, unknown>;
+}
+
+/** Returns the Zod props schema for a node label kind, or `undefined` if unknown. */
+export function nodeLabelPropsSchema<TNode extends LabelSchemaMap, TEdge extends LabelSchemaMap>(
+  ontology: OntologyDefinition<TNode, TEdge>,
+  kind: string,
+): z.ZodType | undefined {
+  const s = ontology.nodeLabels[kind as keyof TNode];
+  return s === undefined ? undefined : s;
+}
+
+/** Returns the Zod props schema for an edge label kind, or `undefined` if unknown. */
+export function edgeLabelPropsSchema<TNode extends LabelSchemaMap, TEdge extends LabelSchemaMap>(
+  ontology: OntologyDefinition<TNode, TEdge>,
+  kind: string,
+): z.ZodType | undefined {
+  const s = ontology.edgeLabels[kind as keyof TEdge];
+  return s === undefined ? undefined : s;
 }
 
 /**
  * Builds a typed ontology. Pass Zod schemas per kind; empty objects use `z.object({})`.
- *
- * @example
- * ```ts
- * const o = defineOntology({
- *   nodeLabels: {
- *     topic: z.object({ weight: z.number().optional() }),
- *     pinned: z.object({}),
- *   },
- *   edgeLabels: {
- *     relates_to: z.object({ strength: z.number().min(0).max(1) }),
- *   },
- * });
- * ```
  */
 export function defineOntology<TNode extends LabelSchemaMap, TEdge extends LabelSchemaMap>(
   def: OntologyDefinition<TNode, TEdge>,

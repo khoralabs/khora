@@ -77,8 +77,11 @@ export function NodePreviewCard({ point, open }: { point: ProjectionPoint; open:
             {point.labels.length > 0 ? (
               <ul className="list-inside list-disc space-y-1 font-mono text-xs text-foreground">
                 {point.labels.map((lb) => (
-                  <li key={lb} className="break-words">
-                    {lb}
+                  <li key={`${lb.kind}:${JSON.stringify(lb.props)}`} className="break-words">
+                    <span className="font-medium">{lb.kind}</span>
+                    {Object.keys(lb.props).length > 0 ? (
+                      <span className="text-muted-foreground"> {JSON.stringify(lb.props)}</span>
+                    ) : null}
                   </li>
                 ))}
               </ul>

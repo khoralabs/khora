@@ -8,7 +8,7 @@ import {
   mergeMemoryAsync,
   zMergeMemoryContentItem,
 } from "./merge-memory-async";
-import type { EdgeLabelInstance, NodeLabelInstance, OntologyDefinition } from "./ontology";
+import type { OntologyDefinition } from "./ontology";
 import { validateEdgeLabel, validateNodeLabel } from "./ontology";
 import {
   type SearchHit,
@@ -21,7 +21,7 @@ type LabelKind<TLabels extends Record<string, z.ZodType>> = keyof TLabels & stri
 export type TypedMergeParamsAsync<
   TNode extends Record<string, z.ZodType>,
   TEdge extends Record<string, z.ZodType>,
-> = MergeMemoryParams<NodeLabelInstance<TNode>, EdgeLabelInstance<TEdge>>;
+> = MergeMemoryParams;
 
 export type TypedSearchParamsAsync<
   TNode extends Record<string, z.ZodType>,
@@ -57,7 +57,7 @@ export class MemoriesClientAsync<
       zMergeMemoryContentItem.parse(item);
     }
 
-    const labelStrings = params.labels.map((l) => validateNodeLabel(this.ontology, l));
+    const labelInstances = params.labels.map((l) => validateNodeLabel(this.ontology, l));
 
     const edgesMapped =
       params.edges?.map((e) => ({
@@ -67,17 +67,16 @@ export class MemoriesClientAsync<
         properties: e.properties,
       })) ?? [];
 
-    const flat: MergeMemoryParams<string, string> = {
+    return mergeMemoryAsync(this.mutationCtx, {
       key: params.key,
       namespace: params.namespace,
       content: params.content,
-      labels: labelStrings,
+      labels: labelInstances,
       properties: params.properties,
       edges: edgesMapped,
       searchMetaVector: params.searchMetaVector,
-    };
-
-    return mergeMemoryAsync(this.mutationCtx, flat);
+      ontology: this.ontology,
+    });
   }
 
   async deleteMemory(params: DeleteMemoryParams): Promise<void> {

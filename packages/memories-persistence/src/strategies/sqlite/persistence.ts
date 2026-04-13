@@ -103,11 +103,17 @@ export class MemoriesPersistence implements IMemoriesPersistence {
     return insertVectorFeature(this.ctx(op), input);
   }
 
-  ensureNodeLabel(op: MemoryOpContext, value: string): string {
-    return ensureNodeLabel(this.ctx(op), value);
+  ensureNodeLabel(
+    op: MemoryOpContext,
+    input: { kind: string; description?: string; schemaJson?: string | null },
+  ): string {
+    return ensureNodeLabel(this.ctx(op), input);
   }
 
-  insertNodeLabelAssignment(op: MemoryOpContext, input: { nodeId: string; labelId: string }): void {
+  insertNodeLabelAssignment(
+    op: MemoryOpContext,
+    input: { nodeId: string; labelId: string; props: Record<string, unknown> },
+  ): void {
     insertNodeLabelAssignment(this.ctx(op), input);
   }
 
@@ -131,11 +137,17 @@ export class MemoriesPersistence implements IMemoriesPersistence {
     return insertEdge(this.ctx(op), input);
   }
 
-  ensureEdgeLabel(op: MemoryOpContext, value: string): string {
-    return ensureEdgeLabel(this.ctx(op), value);
+  ensureEdgeLabel(
+    op: MemoryOpContext,
+    input: { kind: string; description?: string; schemaJson?: string | null },
+  ): string {
+    return ensureEdgeLabel(this.ctx(op), input);
   }
 
-  insertEdgeLabelAssignment(op: MemoryOpContext, input: { edgeId: string; labelId: string }): void {
+  insertEdgeLabelAssignment(
+    op: MemoryOpContext,
+    input: { edgeId: string; labelId: string; props: Record<string, unknown> },
+  ): void {
     insertEdgeLabelAssignment(this.ctx(op), input);
   }
 
@@ -194,8 +206,8 @@ export class MemoriesPersistence implements IMemoriesPersistence {
     return searchVectorSourceMapIds({ db: this.db, now: 0 }, input);
   }
 
-  hydrateSourceMapHits<NODE_LABEL extends string = string>(sourceMapIds: readonly string[]) {
-    return hydrateSourceMapHits<NODE_LABEL>({ db: this.db, now: 0 }, sourceMapIds);
+  hydrateSourceMapHits(sourceMapIds: readonly string[]) {
+    return hydrateSourceMapHits({ db: this.db, now: 0 }, sourceMapIds);
   }
 
   listNeighborsForMemory<
@@ -205,7 +217,7 @@ export class MemoriesPersistence implements IMemoriesPersistence {
     namespace: string;
     key: string;
     filters?: NeighborFilter<EDGE_LABEL, NODE_LABEL>;
-  }): HydratedNeighbor<EDGE_LABEL, NODE_LABEL>[] {
+  }): HydratedNeighbor[] {
     return listNeighborsForMemory<EDGE_LABEL, NODE_LABEL>({ db: this.db, now: 0 }, input);
   }
 

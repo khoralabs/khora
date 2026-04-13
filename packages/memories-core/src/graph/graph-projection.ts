@@ -20,7 +20,7 @@ export function loadGraphEdgesForNamespace(
 export function loadNodeLabelsForNamespace(
   ctx: MemoriesVisualizationRuntimeCtx,
   namespace: string,
-): Map<string, string[]> {
+) {
   return ctx.persistence.loadNodeLabelsForNamespace(namespace);
 }
 

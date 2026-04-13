@@ -1,3 +1,5 @@
+import type { OntologyLabelInstance } from "../models/ontology-label";
+
 /** Dimension for hashing ontology labels + JSON properties into a dense sketch. */
 export const LABEL_PROPERTY_SYNTH_DIM = 32;
 
@@ -41,13 +43,17 @@ function sortedPropertyStrings(props: Record<string, unknown>): string[] {
  * for use alongside mean-pooled vector embeddings in UMAP.
  */
 export function labelPropertySyntheticEmbedding(
-  labels: readonly string[],
+  labels: readonly OntologyLabelInstance[],
   properties: Record<string, unknown> | null | undefined,
   dim: number = LABEL_PROPERTY_SYNTH_DIM,
 ): number[] {
   const vec = new Array(dim).fill(0);
   for (const lb of labels) {
-    addSketchFeature(vec, dim, `label:${lb}`);
+    const p = lb.props ?? {};
+    addSketchFeature(vec, dim, `label:${lb.kind}`);
+    for (const s of sortedPropertyStrings(p)) {
+      addSketchFeature(vec, dim, `labelProp:${lb.kind}:${s}`);
+    }
   }
   if (properties && typeof properties === "object") {
     for (const s of sortedPropertyStrings(properties)) {

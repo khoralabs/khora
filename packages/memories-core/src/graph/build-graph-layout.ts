@@ -1,3 +1,4 @@
+import type { OntologyLabelInstance } from "../models/ontology-label";
 import type { MemoriesVisualizationRuntimeCtx } from "../persistence/types";
 import {
   loadGraphEdgesForNamespace,
@@ -22,14 +23,14 @@ export type GraphLayoutNode = {
   x: number;
   y: number;
   z: number;
-  labels: string[];
+  labels: OntologyLabelInstance[];
 };
 
 export type GraphLayoutEdge = {
   edgeId: string;
   fromKey: string;
   toKey: string;
-  labels: string[];
+  labels: OntologyLabelInstance[];
   directed?: boolean;
 };
 

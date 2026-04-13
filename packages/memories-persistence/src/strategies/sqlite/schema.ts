@@ -41,35 +41,40 @@ export const zVectorFeature = z.object({
 });
 
 /**
- * Ontological primitives for nodes
+ * Ontological catalog: one row per node label **kind**
  */
 export const zNodeLabel = z.object({
-  value: z.string(),
+  kind: z.string(),
   description: z.string(),
+  /** JSON Schema (Draft 2020-12) text for assignment `props`, or null. */
+  schema: z.string().nullable(),
 });
 
 /**
- * Ontological primitives for edges
+ * Ontological catalog: one row per edge label **kind**
  */
 export const zEdgeLabel = z.object({
-  value: z.string(),
+  kind: z.string(),
   description: z.string(),
+  schema: z.string().nullable(),
 });
 
 /**
- * One edge may have many labels
+ * Instance: at most one row per (edge_id, label_id)
  */
 export const zEdgeLabelAssignment = z.object({
   edge_id: zId("edges"),
   label_id: zId("edge_labels"),
+  props: z.record(z.string(), z.unknown()),
 });
 
 /**
- * One node may have many labels
+ * Instance: at most one row per (node_id, label_id)
  */
 export const zNodeLabelAssignment = z.object({
   node_id: zId("nodes"),
   label_id: zId("node_labels"),
+  props: z.record(z.string(), z.unknown()),
 });
 
 /**

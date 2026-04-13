@@ -1,4 +1,5 @@
 import type { Edge, Memory, SourceMap } from "../db/rows";
+import type { OntologyLabelInstance } from "./ontology-label";
 
 /** Same semantics as root hit `labels` filter: `all` = AND, `some` = OR (non-empty). Omitted = any. */
 export type NeighborNodesFilter<NODE_LABEL extends string = string> = {
@@ -25,16 +26,13 @@ export type NeighborFilter<
   some?: NeighborConstraint<EDGE_LABEL, NODE_LABEL>[];
 };
 
-export type HydratedSourceMapHit<NODE_LABEL extends string = string> = SourceMap & {
+export type HydratedSourceMapHit = SourceMap & {
   memory: Memory;
-  labels: NODE_LABEL[];
+  labels: OntologyLabelInstance[];
 };
 
-export type HydratedNeighbor<
-  EDGE_LABEL extends string = string,
-  NODE_LABEL extends string = string,
-> = Memory & {
+export type HydratedNeighbor = Memory & {
   /** Ontology node labels on the neighbor memory's node (same meaning as root hit `labels`). */
-  labels: NODE_LABEL[];
-  edge: Edge & { label: EDGE_LABEL };
+  labels: OntologyLabelInstance[];
+  edge: Edge & { label: OntologyLabelInstance };
 };

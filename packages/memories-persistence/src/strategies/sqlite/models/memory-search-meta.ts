@@ -32,19 +32,6 @@ function formatEdgeLine(
   return `edge ${direction}:${neighborKey}:${joined}`;
 }
 
-/** Build the same canonical multiline string as DB/search-meta text from merge payload (pre-DB). */
-export function buildCanonicalMemorySearchMetaTextForMerge(input: {
-  labels: string[];
-  edges: Array<{ memory_key: string; direction: "in" | "out"; label: string }>;
-}): string {
-  const nodeLines = formatNodeLines(input.labels);
-  const edgeLines = sortUnique(
-    input.edges.map((e) => formatEdgeLine(e.direction, e.memory_key, [e.label])),
-  );
-  const lines = [...nodeLines, ...edgeLines].sort((a, b) => a.localeCompare(b));
-  return lines.join("\n");
-}
-
 /**
  * Neighbor memory keys linked by an edge to this node (same namespace), for invalidation sets.
  */
@@ -54,17 +41,17 @@ export function listNeighborMemoryKeysForNode(
   nodeId: string,
 ): string[] {
   const rows = ctx.db
-    .query<{ key: string }, [string, string]>(
+    .query<{ key: string }, [string, string, string, string]>(
       `SELECT DISTINCT m.key AS key
        FROM edges e
        JOIN nodes n_other ON n_other._id = CASE
-         WHEN e.from_node_id = ?1 THEN e.to_node_id
+         WHEN e.from_node_id = ? THEN e.to_node_id
          ELSE e.from_node_id
        END
-       JOIN memories m ON m.key = n_other.value AND m.namespace = ?2
-       WHERE e.from_node_id = ?1 OR e.to_node_id = ?1`,
+       JOIN memories m ON m.key = n_other.value AND m.namespace = ?
+       WHERE e.from_node_id = ? OR e.to_node_id = ?`,
     )
-    .all(nodeId, namespace);
+    .all(nodeId, namespace, nodeId, nodeId);
   return sortUnique(rows.map((r) => r.key));
 }
 
@@ -87,26 +74,26 @@ export function collectEdgesFromDb(
   return ctx.db
     .query<
       { edgeId: string; neighborKey: string; direction: string; labelsJoined: string | null },
-      [string, string]
+      [string, string, string, string, string, string]
     >(
       `SELECT
          e._id AS edgeId,
          n_other.value AS neighborKey,
-         CASE WHEN e.from_node_id = ?1 THEN 'out' ELSE 'in' END AS direction,
-         GROUP_CONCAT(el.value, CHAR(31)) AS labelsJoined
+         CASE WHEN e.from_node_id = ? THEN 'out' ELSE 'in' END AS direction,
+         GROUP_CONCAT(el.kind, CHAR(31)) AS labelsJoined
        FROM edges e
        JOIN nodes n_other ON n_other._id = CASE
-         WHEN e.from_node_id = ?1 THEN e.to_node_id
+         WHEN e.from_node_id = ? THEN e.to_node_id
          ELSE e.from_node_id
        END
-       JOIN memories m ON m.key = n_other.value AND m.namespace = ?2
+       JOIN memories m ON m.key = n_other.value AND m.namespace = ?
        LEFT JOIN edge_label_assignments ela ON ela.edge_id = e._id
        LEFT JOIN edge_labels el ON el._id = ela.label_id
-       WHERE e.from_node_id = ?1 OR e.to_node_id = ?1
-       GROUP BY e._id, n_other.value, CASE WHEN e.from_node_id = ?1 THEN 'out' ELSE 'in' END
+       WHERE e.from_node_id = ? OR e.to_node_id = ?
+       GROUP BY e._id, n_other.value, CASE WHEN e.from_node_id = ? THEN 'out' ELSE 'in' END
        ORDER BY e._id ASC`,
     )
-    .all(nodeId, namespace)
+    .all(nodeId, nodeId, namespace, nodeId, nodeId, nodeId)
     .map((r) => ({
       edgeId: r.edgeId,
       neighborKey: r.neighborKey,
@@ -118,11 +105,11 @@ export function collectEdgesFromDb(
 function collectNodeLabelsFromDb(ctx: DbCtx, nodeId: string): string[] {
   const rows = ctx.db
     .query<{ label: string }, [string]>(
-      `SELECT nl.value AS label
+      `SELECT nl.kind AS label
        FROM node_label_assignments nla
        JOIN node_labels nl ON nl._id = nla.label_id
        WHERE nla.node_id = ?
-       ORDER BY nl.value ASC`,
+       ORDER BY nl.kind ASC`,
     )
     .all(nodeId);
   return rows.map((r) => r.label);

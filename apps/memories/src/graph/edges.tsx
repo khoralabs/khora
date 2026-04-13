@@ -204,7 +204,10 @@ export function ActiveSubgraphEdgeLabels({
         if (!from || !to) return null;
         if (!activeSubgraphKeys.has(e.fromKey) || !activeSubgraphKeys.has(e.toKey)) return null;
 
-        const text = e.labels.length > 0 ? e.labels.join(" · ") : `${e.fromKey} ↔ ${e.toKey}`;
+        const text =
+          e.labels.length > 0
+            ? e.labels.map((l) => l.kind).join(" · ")
+            : `${e.fromKey} ↔ ${e.toKey}`;
         const mx = (from[0] + to[0]) / 2;
         const my = (from[1] + to[1]) / 2;
         const mz = (from[2] + to[2]) / 2;

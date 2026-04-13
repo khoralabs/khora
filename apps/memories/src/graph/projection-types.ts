@@ -1,12 +1,18 @@
+/** Wire shape for ontology label instances (matches `@cfd/memories-core` JSON). */
+export type GraphLabelInstance = {
+  kind: string;
+  props: Record<string, unknown>;
+};
+
 /** Response shape from `GET /api/graph`. */
 export type GraphPayload = {
   namespace: string;
-  nodes: Array<{ key: string; x: number; y: number; z: number; labels: string[] }>;
+  nodes: Array<{ key: string; x: number; y: number; z: number; labels: GraphLabelInstance[] }>;
   edges: Array<{
     edgeId: string;
     fromKey: string;
     toKey: string;
-    labels: string[];
+    labels: GraphLabelInstance[];
     /** When true, dashes animate from `fromKey` toward `toKey`; omit/false = undirected (static dashes). */
     directed?: boolean;
   }>;
@@ -25,7 +31,7 @@ export type ProjectionPoint = {
   x: number;
   y: number;
   z: number;
-  labels: string[];
+  labels: GraphLabelInstance[];
 };
 
 /** World-space scale for layout coordinates. */
@@ -37,7 +43,17 @@ export type SceneEdge = {
   edgeId: string;
   fromKey: string;
   toKey: string;
-  labels: string[];
+  labels: GraphLabelInstance[];
   /** When true, dash scroll follows `fromKey` → `toKey`. */
   directed?: boolean;
 };
+
+export function graphLabelFingerprint(l: GraphLabelInstance): string {
+  return `${l.kind}\0${JSON.stringify(l.props)}`;
+}
+
+export function formatGraphLabelShort(l: GraphLabelInstance): string {
+  const keys = Object.keys(l.props);
+  if (keys.length === 0) return l.kind;
+  return `${l.kind} (${keys.length} props)`;
+}

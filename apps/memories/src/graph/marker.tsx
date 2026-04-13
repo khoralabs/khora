@@ -32,7 +32,9 @@ export function Marker({
   onHoverStart: (entryId: string) => void;
   onHoverEnd: () => void;
 }) {
-  const tooltipText = (point.labels.length > 0 ? point.labels : [point.key]).join(" • ");
+  const tooltipText = (
+    point.labels.length > 0 ? point.labels.map((l) => l.kind) : [point.key]
+  ).join(" • ");
   const [userTooltipOpen, setUserTooltipOpen] = useState(false);
   const [tooltipSide, setTooltipSide] = useState<"left" | "right">("right");
   const tooltipOpen = forceTooltipOpen || userTooltipOpen;

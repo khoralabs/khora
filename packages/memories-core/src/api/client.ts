@@ -10,13 +10,7 @@ import {
   mergeMemory,
   zMergeMemoryContentItem,
 } from "./merge-memory";
-import {
-  type EdgeLabelInstance,
-  type NodeLabelInstance,
-  type OntologyDefinition,
-  validateEdgeLabel,
-  validateNodeLabel,
-} from "./ontology";
+import { type OntologyDefinition, validateEdgeLabel, validateNodeLabel } from "./ontology";
 import { type SearchHit, type SearchParams, search as searchHandler } from "./search";
 
 type LabelKind<TLabels extends Record<string, z.ZodType>> = keyof TLabels & string;
@@ -24,7 +18,7 @@ type LabelKind<TLabels extends Record<string, z.ZodType>> = keyof TLabels & stri
 export type TypedMergeParams<
   TNode extends Record<string, z.ZodType>,
   TEdge extends Record<string, z.ZodType>,
-> = MergeMemoryParams<NodeLabelInstance<TNode>, EdgeLabelInstance<TEdge>>;
+> = MergeMemoryParams;
 
 export type TypedSearchParams<
   TNode extends Record<string, z.ZodType>,
@@ -66,7 +60,7 @@ export class MemoriesClient<
       zMergeMemoryContentItem.parse(item);
     }
 
-    const labelStrings = params.labels.map((l) => validateNodeLabel(this.ontology, l));
+    const labelInstances = params.labels.map((l) => validateNodeLabel(this.ontology, l));
 
     const edgesMapped =
       params.edges?.map((e) => ({
@@ -76,17 +70,16 @@ export class MemoriesClient<
         properties: e.properties,
       })) ?? [];
 
-    const flat: MergeMemoryParams<string, string> = {
+    return mergeMemory(this.mutationCtx, {
       key: params.key,
       namespace: params.namespace,
       content: params.content,
-      labels: labelStrings,
+      labels: labelInstances,
       properties: params.properties,
       edges: edgesMapped,
       searchMetaVector: params.searchMetaVector,
-    };
-
-    return mergeMemory(this.mutationCtx, flat);
+      ontology: this.ontology,
+    });
   }
 
   /** Deletes the memory and cascaded data; delegates to the package `deleteMemory` function. */

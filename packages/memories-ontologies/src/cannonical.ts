@@ -46,10 +46,12 @@ export const canonicalOntology = defineOntology({
 
     event: z
       .object({
-        title: z
+        summary: z
           .string()
           .optional()
-          .describe("Human-readable title if distinct from surrounding memory text."),
+          .describe(
+            "Human-readable summary if distinct from surrounding memory text. Keep it short and concise.",
+          ),
         startsAt: z.string().optional().describe("Start time in ISO 8601 (UTC or with offset)."),
         endsAt: z
           .string()

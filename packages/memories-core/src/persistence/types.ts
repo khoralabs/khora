@@ -4,6 +4,7 @@ import type {
   HydratedSourceMapHit,
   NeighborFilter,
 } from "../models/neighbor-search-types";
+import type { OntologyLabelInstance } from "../models/ontology-label";
 
 /** Timestamp context for writes and validators that use `_ts_created`. */
 export type MemoryOpContext = { now: number };
@@ -13,7 +14,7 @@ export type GraphEdgeLink = {
   edgeId: string;
   fromKey: string;
   toKey: string;
-  labels: string[];
+  labels: OntologyLabelInstance[];
   /**
    * When true, visualization keeps `fromKey` → `toKey` (e.g. dash flow, no undirected merge).
    * Set when the stored edge is directed (e.g. merge-created links).
@@ -32,7 +33,7 @@ export type EdgePreviewPayload = {
   edgeId: string;
   fromKey: string;
   toKey: string;
-  labels: string[];
+  labels: OntologyLabelInstance[];
   properties: Record<string, unknown> | null;
 };
 
@@ -123,11 +124,17 @@ export interface MemoriesMutation {
     input: { memoryId: string; sourceMapId: string; vector: Float32Array },
   ): { vectorFeatureId: string };
 
-  /** Get or create a node-label id for the stored label string (ontology-encoded). */
-  ensureNodeLabel(op: MemoryOpContext, value: string): string;
+  /** Get or create a catalog row for a node label **kind**; optional JSON Schema text for assignment props. */
+  ensureNodeLabel(
+    op: MemoryOpContext,
+    input: { kind: string; description?: string; schemaJson?: string | null },
+  ): string;
 
-  /** Assign a node label to a node. */
-  insertNodeLabelAssignment(op: MemoryOpContext, input: { nodeId: string; labelId: string }): void;
+  /** Assign props for one node label kind (upserts the single row per node + kind). */
+  insertNodeLabelAssignment(
+    op: MemoryOpContext,
+    input: { nodeId: string; labelId: string; props: Record<string, unknown> },
+  ): void;
 
   /** Resolve memory primary key by logical key, or `undefined` if absent. */
   findMemoryIdByKey(namespace: string, key: string): string | undefined;
@@ -146,9 +153,15 @@ export interface MemoriesMutation {
     },
   ): { edgeId: string };
 
-  ensureEdgeLabel(op: MemoryOpContext, value: string): string;
+  ensureEdgeLabel(
+    op: MemoryOpContext,
+    input: { kind: string; description?: string; schemaJson?: string | null },
+  ): string;
 
-  insertEdgeLabelAssignment(op: MemoryOpContext, input: { edgeId: string; labelId: string }): void;
+  insertEdgeLabelAssignment(
+    op: MemoryOpContext,
+    input: { edgeId: string; labelId: string; props: Record<string, unknown> },
+  ): void;
 
   /**
    * Rebuild search-meta canonical text (and optional vector) for a memory key.
@@ -204,9 +217,7 @@ export interface MemoriesRetrieval {
     memoryIds?: string[];
   }): string[];
 
-  hydrateSourceMapHits<NODE_LABEL extends string = string>(
-    sourceMapIds: readonly string[],
-  ): HydratedSourceMapHit<NODE_LABEL>[];
+  hydrateSourceMapHits(sourceMapIds: readonly string[]): HydratedSourceMapHit[];
 }
 
 /** Graph neighbor listing for search expansion and filters. */
@@ -218,7 +229,7 @@ export interface MemoriesNeighborIndex {
     namespace: string;
     key: string;
     filters?: NeighborFilter<EDGE_LABEL, NODE_LABEL>;
-  }): HydratedNeighbor<EDGE_LABEL, NODE_LABEL>[];
+  }): HydratedNeighbor[];
 }
 
 /**
@@ -258,7 +269,7 @@ export type MemoriesPersistence = MemoriesMutation &
 export interface MemoriesVisualization {
   loadGraphEdgesForNamespace(namespace: string): GraphEdgeLink[];
 
-  loadNodeLabelsForNamespace(namespace: string): Map<string, string[]>;
+  loadNodeLabelsForNamespace(namespace: string): Map<string, OntologyLabelInstance[]>;
 
   /** Node JSON properties from stored graph nodes (null when absent or empty). */
   loadNodePropertiesForNamespace(namespace: string): Map<string, Record<string, unknown> | null>;

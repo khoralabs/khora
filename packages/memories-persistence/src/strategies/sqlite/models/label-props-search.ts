@@ -1,11 +1,5 @@
 import type { Database } from "bun:sqlite";
-import {
-  formatLabelPropsForSearch,
-  ids,
-  isNonEmptyProps,
-  type LabelPropsSearchFormatter,
-  parseOntologyLabelValue,
-} from "@cfd/memories-core";
+import { formatLabelPropsForSearch, ids, isNonEmptyProps, type LabelPropsSearchFormatter } from "@cfd/memories-core";
 import {
   MEMORY_EDGE_LABEL_PROPS_KEY_PREFIX,
   MEMORY_NODE_LABEL_PROPS_KEY_PREFIX,
@@ -15,9 +9,24 @@ import {
 import { blobToVector } from "../connection";
 import { vectorVecTableName } from "../search-indexes";
 import type { DbCtx } from "./context";
-import { collectEdgesFromDb, parseEdgeLabelsJoined } from "./memory-search-meta";
 import { insertSourceMap } from "./source-maps";
 import { insertLexicalFeature } from "./text-features";
+
+function parsePropsColumn(raw: unknown): Record<string, unknown> {
+  if (raw == null || raw === "") return {};
+  if (typeof raw === "string") {
+    try {
+      const o = JSON.parse(raw) as unknown;
+      if (o && typeof o === "object" && !Array.isArray(o)) return o as Record<string, unknown>;
+    } catch {
+      return {};
+    }
+  }
+  if (typeof raw === "object" && raw !== null && !Array.isArray(raw)) {
+    return raw as Record<string, unknown>;
+  }
+  return {};
+}
 
 function deleteVectorRowAndVecIndex(
   db: Database,
@@ -96,8 +105,8 @@ export function syncLabelPropsSearchFeatures(
   removeLabelPropsSearchMaps(ctx, memoryId);
 
   const assignmentRows = ctx.db
-    .query<{ assignmentId: string; labelValue: string }, [string]>(
-      `SELECT nla._id AS assignmentId, nl.value AS labelValue
+    .query<{ assignmentId: string; kind: string; propsJson: string | null }, [string]>(
+      `SELECT nla._id AS assignmentId, nl.kind AS kind, nla.props AS propsJson
        FROM node_label_assignments nla
        JOIN node_labels nl ON nl._id = nla.label_id
        WHERE nla.node_id = ?
@@ -106,9 +115,9 @@ export function syncLabelPropsSearchFeatures(
     .all(nodeId);
 
   for (const row of assignmentRows) {
-    const { kind, props } = parseOntologyLabelValue(row.labelValue);
+    const props = parsePropsColumn(row.propsJson);
     if (!isNonEmptyProps(props)) continue;
-    const text = formatLabelPropsForSearch(kind, "node", props, formatLabelProps);
+    const text = formatLabelPropsForSearch(row.kind, "node", props, formatLabelProps);
     if (text.length === 0) continue;
 
     const sourceKey = memoryNodeLabelPropsSourceKey(row.assignmentId);
@@ -116,21 +125,44 @@ export function syncLabelPropsSearchFeatures(
     insertLexicalFeature(ctx, { memoryId, sourceMapId, text });
   }
 
-  const edgeRows = collectEdgesFromDb(ctx, nodeId, namespace);
-  for (const edge of edgeRows) {
-    const labels = parseEdgeLabelsJoined(edge.labelsJoined ?? null);
-    const sections: string[] = [];
-    for (const enc of labels) {
-      const { kind, props } = parseOntologyLabelValue(enc);
-      if (!isNonEmptyProps(props)) continue;
-      const body = formatLabelPropsForSearch(kind, "edge", props, formatLabelProps);
-      if (body.length === 0) continue;
-      sections.push(`Edge ${kind} ${edge.direction} toward ${edge.neighborKey}:\n${body}`);
-    }
-    if (sections.length === 0) continue;
+  const edgeRows = ctx.db
+    .query<
+      {
+        assignmentId: string;
+        kind: string;
+        propsJson: string | null;
+        neighborKey: string;
+        direction: string;
+      },
+      [string, string, string, string, string]
+    >(
+      `SELECT
+         ela._id AS assignmentId,
+         el.kind AS kind,
+         ela.props AS propsJson,
+         n_other.value AS neighborKey,
+         CASE WHEN e.from_node_id = ? THEN 'out' ELSE 'in' END AS direction
+       FROM edges e
+       JOIN edge_label_assignments ela ON ela.edge_id = e._id
+       JOIN edge_labels el ON el._id = ela.label_id
+       JOIN nodes n_other ON n_other._id = CASE
+         WHEN e.from_node_id = ? THEN e.to_node_id
+         ELSE e.from_node_id
+       END
+       JOIN memories m ON m.key = n_other.value AND m.namespace = ?
+       WHERE e.from_node_id = ? OR e.to_node_id = ?
+       ORDER BY ela._id ASC`,
+    )
+    .all(nodeId, nodeId, namespace, nodeId, nodeId);
 
-    const text = sections.join("\n\n");
-    const sourceKey = memoryEdgeLabelPropsSourceKey(edge.edgeId);
+  for (const row of edgeRows) {
+    const props = parsePropsColumn(row.propsJson);
+    if (!isNonEmptyProps(props)) continue;
+    const dir = row.direction === "out" ? ("out" as const) : ("in" as const);
+    const body = formatLabelPropsForSearch(row.kind, "edge", props, formatLabelProps);
+    if (body.length === 0) continue;
+    const text = `Edge ${row.kind} ${dir} toward ${row.neighborKey}:\n${body}`;
+    const sourceKey = memoryEdgeLabelPropsSourceKey(row.assignmentId);
     const { sourceMapId } = insertSourceMap(ctx, { memoryId, sourceKey });
     insertLexicalFeature(ctx, { memoryId, sourceMapId, text });
   }

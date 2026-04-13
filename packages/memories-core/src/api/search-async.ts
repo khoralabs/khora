@@ -1,6 +1,7 @@
 import { fuseRrf, type RrfArm } from "@cfd/reciprocal-rank-fusion";
 import { logger } from "../logger.js";
 import type { HydratedNeighbor, NeighborFilter } from "../models/neighbor-search-types";
+import type { OntologyLabelInstance } from "../models/ontology-label";
 import type { MemoriesPersistenceAsync } from "../persistence/async-types";
 import type { MemoriesBackendCapabilities, SearchNamespaceScope } from "../persistence/types";
 import { resolveMemoriesBackendCapabilities } from "../persistence/types";
@@ -22,18 +23,19 @@ export type {
   SearchParams,
 } from "./search";
 
-function matchesLabelFilter<LABEL extends string>(
-  labels: readonly LABEL[],
-  filter: { all?: LABEL[]; some?: LABEL[] } | undefined,
+function matchesLabelFilter(
+  labels: readonly OntologyLabelInstance[],
+  filter: { all?: string[]; some?: string[] } | undefined,
 ): boolean {
+  const kinds = labels.map((l) => l.kind);
   if (!filter) return true;
-  if (filter.all && !filter.all.every((label) => labels.includes(label))) {
+  if (filter.all && !filter.all.every((label) => kinds.includes(label))) {
     return false;
   }
   if (
     filter.some &&
     filter.some.length > 0 &&
-    !filter.some.some((label) => labels.includes(label))
+    !filter.some.some((label) => kinds.includes(label))
   ) {
     return false;
   }
@@ -141,7 +143,7 @@ async function expandNeighborsWithSubSearchAsync<
     filters: input.neighborFilters,
   });
 
-  const byMemoryId = new Map<string, HydratedNeighbor<EDGE_LABELS, NODE_LABELS>>();
+  const byMemoryId = new Map<string, HydratedNeighbor>();
   for (const n of graphNeighbors) {
     if (!byMemoryId.has(n._id)) {
       byMemoryId.set(n._id, n);
@@ -170,7 +172,7 @@ async function expandNeighborsWithSubSearchAsync<
 
   if (fused.length === 0) return [];
 
-  const hydrated = await persistence.hydrateSourceMapHits<NODE_LABELS>(fused.map((r) => r.id));
+  const hydrated = await persistence.hydrateSourceMapHits(fused.map((r) => r.id));
   const hydratedById = new Map(hydrated.map((h) => [h._id, h]));
 
   const seenMemory = new Set<string>();
@@ -247,9 +249,7 @@ export async function searchAsync<
     retrievalLimit,
   });
   if (fused.length === 0) return [];
-  const hydrated = await persistence.hydrateSourceMapHits<NODE_LABELS>(
-    fused.map((result) => result.id),
-  );
+  const hydrated = await persistence.hydrateSourceMapHits(fused.map((result) => result.id));
   const hydratedById = new Map(hydrated.map((hit) => [hit._id, hit]));
   const minScore = params.options?.minScore ?? Number.NEGATIVE_INFINITY;
 

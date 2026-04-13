@@ -43,15 +43,19 @@ export type VectorFeature = {
 export type NodeLabel = {
   _id: string;
   _ts_created: number;
-  value: string;
+  /** Ontological label kind (catalog). */
+  kind: string;
   description: string;
+  /** JSON Schema for `props` on assignments, or null. */
+  schema: string | null;
 };
 
 export type EdgeLabel = {
   _id: string;
   _ts_created: number;
-  value: string;
+  kind: string;
   description: string;
+  schema: string | null;
 };
 
 export type EdgeLabelAssignment = {
@@ -59,6 +63,7 @@ export type EdgeLabelAssignment = {
   _ts_created: number;
   edge_id: string;
   label_id: string;
+  props: Record<string, unknown>;
 };
 
 export type NodeLabelAssignment = {
@@ -66,6 +71,7 @@ export type NodeLabelAssignment = {
   _ts_created: number;
   node_id: string;
   label_id: string;
+  props: Record<string, unknown>;
 };
 
 export type Node = {

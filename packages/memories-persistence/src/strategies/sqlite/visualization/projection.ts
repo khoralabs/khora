@@ -1,7 +1,23 @@
 import type { Database } from "bun:sqlite";
-import type { GraphEdgeLink, GraphMemoryEmbedding } from "@cfd/memories-core";
+import type { GraphEdgeLink, GraphMemoryEmbedding, OntologyLabelInstance } from "@cfd/memories-core";
 import { ids } from "@cfd/memories-core";
 import { blobToVector } from "../connection";
+
+function parsePropsColumn(raw: unknown): Record<string, unknown> {
+  if (raw == null || raw === "") return {};
+  if (typeof raw === "string") {
+    try {
+      const o = JSON.parse(raw) as unknown;
+      if (o && typeof o === "object" && !Array.isArray(o)) return o as Record<string, unknown>;
+    } catch {
+      return {};
+    }
+  }
+  if (typeof raw === "object" && raw !== null && !Array.isArray(raw)) {
+    return raw as Record<string, unknown>;
+  }
+  return {};
+}
 
 function directedFromEdgePropertiesJson(json: string | null): boolean {
   if (!json) return false;
@@ -23,14 +39,16 @@ export function loadGraphEdgesForNamespace(db: Database, namespace: string): Gra
         edgeId: string;
         fromKey: string;
         toKey: string;
-        labelsJoined: string | null;
         propertiesJson: string | null;
+        kind: string | null;
+        propsJson: string | null;
       },
       [string, string]
     >(
       `SELECT e._id AS edgeId, nf.value AS fromKey, nt.value AS toKey,
               e.properties AS propertiesJson,
-              GROUP_CONCAT(el.value, char(31)) AS labelsJoined
+              el.kind AS kind,
+              ela.props AS propsJson
        FROM edges e
        JOIN nodes nf ON nf._id = e.from_node_id
        JOIN nodes nt ON nt._id = e.to_node_id
@@ -38,23 +56,42 @@ export function loadGraphEdgesForNamespace(db: Database, namespace: string): Gra
        JOIN memories mt ON mt.namespace = ? AND mt.key = nt.value
        LEFT JOIN edge_label_assignments ela ON ela.edge_id = e._id
        LEFT JOIN edge_labels el ON el._id = ela.label_id
-       GROUP BY e._id, nf.value, nt.value`,
+       ORDER BY e._id ASC, el.kind ASC`,
     )
     .all(namespace, namespace);
 
-  const sep = String.fromCharCode(31);
-  const parseJoined = (s: string | null): string[] =>
-    s ? [...new Set(s.split(sep).filter(Boolean))].sort() : [];
+  const byEdge = new Map<
+    string,
+    { fromKey: string; toKey: string; propertiesJson: string | null; labels: OntologyLabelInstance[] }
+  >();
 
-  const out: GraphEdgeLink[] = [];
   for (const r of rows) {
-    const link: GraphEdgeLink = {
-      edgeId: r.edgeId,
+    const existing = byEdge.get(r.edgeId);
+    const label =
+      r.kind != null
+        ? ({ kind: r.kind, props: parsePropsColumn(r.propsJson) } satisfies OntologyLabelInstance)
+        : null;
+    if (existing) {
+      if (label) existing.labels.push(label);
+      continue;
+    }
+    byEdge.set(r.edgeId, {
       fromKey: r.fromKey,
       toKey: r.toKey,
-      labels: parseJoined(r.labelsJoined),
+      propertiesJson: r.propertiesJson,
+      labels: label ? [label] : [],
+    });
+  }
+
+  const out: GraphEdgeLink[] = [];
+  for (const [edgeId, v] of byEdge) {
+    const link: GraphEdgeLink = {
+      edgeId,
+      fromKey: v.fromKey,
+      toKey: v.toKey,
+      labels: v.labels,
     };
-    if (directedFromEdgePropertiesJson(r.propertiesJson)) {
+    if (directedFromEdgePropertiesJson(v.propertiesJson)) {
       link.directed = true;
     }
     out.push(link);
@@ -104,7 +141,10 @@ export function loadNodePropertiesForNamespace(
   return map;
 }
 
-export function loadNodeLabelsForNamespace(db: Database, namespace: string): Map<string, string[]> {
+export function loadNodeLabelsForNamespace(
+  db: Database,
+  namespace: string,
+): Map<string, OntologyLabelInstance[]> {
   const keys = db
     .query<{ key: string }, [string]>(`SELECT key FROM memories WHERE namespace = ?`)
     .all(namespace);
@@ -112,8 +152,8 @@ export function loadNodeLabelsForNamespace(db: Database, namespace: string): Map
   const nodeIds = keys.map((k) => ids.node(namespace, k.key));
   const ph = nodeIds.map(() => "?").join(",");
   const rows = db
-    .query<{ memoryKey: string; label: string }, string[]>(
-      `SELECT n.value AS memoryKey, nl.value AS label
+    .query<{ memoryKey: string; kind: string; propsJson: string | null }, string[]>(
+      `SELECT n.value AS memoryKey, nl.kind AS kind, nla.props AS propsJson
        FROM node_label_assignments nla
        JOIN node_labels nl ON nl._id = nla.label_id
        JOIN nodes n ON n._id = nla.node_id
@@ -121,17 +161,21 @@ export function loadNodeLabelsForNamespace(db: Database, namespace: string): Map
     )
     .all(...nodeIds);
 
-  const map = new Map<string, string[]>();
+  const map = new Map<string, OntologyLabelInstance[]>();
   for (const { key } of keys) {
     map.set(key, []);
   }
   for (const r of rows) {
     const arr = map.get(r.memoryKey);
-    if (arr) arr.push(r.label);
+    if (arr) {
+      arr.push({ kind: r.kind, props: parsePropsColumn(r.propsJson) });
+    }
   }
   for (const k of [...map.keys()]) {
     const arr = map.get(k);
-    if (arr) map.set(k, [...new Set(arr)].sort());
+    if (arr && arr.length > 0) {
+      arr.sort((a, b) => a.kind.localeCompare(b.kind));
+    }
   }
   return map;
 }
@@ -181,6 +225,5 @@ export function loadMeanEmbeddingsForNamespace(
       embedding,
     });
   }
-
   return out;
 }

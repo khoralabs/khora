@@ -13,9 +13,9 @@ import { GraphScene } from "./graph/scene.js";
 import { GraphProjectionProvider } from "./graph/use-projection.js";
 
 function defaultNamespace(): string {
-  if (typeof window === "undefined") return "cli";
+  if (typeof window === "undefined") return "_global_";
   const q = new URLSearchParams(window.location.search).get("namespace");
-  return q?.trim() || "cli";
+  return q?.trim() || "_global_";
 }
 
 type SearchApiResponse = {

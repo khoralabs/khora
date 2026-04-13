@@ -11,6 +11,14 @@ export function loadSqliteVec(db: Database): void {
 
 export const MEMORIES_SCHEMA_SQL = sqliteDdlFromSchema(schema);
 
+/** One assignment per (node|edge, label kind); enables INSERT OR REPLACE upserts. */
+export const MEMORIES_UNIQUE_ASSIGNMENT_INDEXES_SQL = `
+CREATE UNIQUE INDEX IF NOT EXISTS idx_node_label_assignments_node_label
+  ON node_label_assignments (node_id, label_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_edge_label_assignments_edge_label
+  ON edge_label_assignments (edge_id, label_id);
+`;
+
 export type OpenMemoriesDatabaseOptions = DatabaseOptions;
 
 export const SQLITE_CUSTOM_LIB_ENV = "SQLITE_CUSTOM_LIB";
@@ -64,6 +72,7 @@ export function initMemoriesSchema(db: Database): void {
   db.run("PRAGMA foreign_keys = ON;");
   db.run("PRAGMA journal_mode = WAL;");
   db.run(MEMORIES_SCHEMA_SQL);
+  db.run(MEMORIES_UNIQUE_ASSIGNMENT_INDEXES_SQL);
   initTextFeaturesFts(db);
 }
 

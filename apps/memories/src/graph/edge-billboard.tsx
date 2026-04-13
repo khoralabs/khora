@@ -8,7 +8,7 @@ type EdgePreviewJson = {
   edgeId?: string;
   fromKey?: string;
   toKey?: string;
-  labels?: string[];
+  labels?: Array<{ kind: string; props: Record<string, unknown> }>;
   properties?: Record<string, unknown> | null;
   error?: string;
 };
@@ -93,7 +93,7 @@ export function EdgePreviewCard({ edge, open }: { edge: SceneEdge; open: boolean
                   <div>
                     <span className="text-muted-foreground">Labels</span>{" "}
                     {edge.labels.length > 0 ? (
-                      <span>{edge.labels.join(" · ")}</span>
+                      <span>{edge.labels.map((l) => l.kind).join(" · ")}</span>
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}
@@ -119,7 +119,12 @@ export function EdgePreviewCard({ edge, open }: { edge: SceneEdge; open: boolean
             ) : detail?.labels && detail.labels.length > 0 ? (
               <ul className="list-inside list-disc space-y-1 font-mono text-xs">
                 {detail.labels.map((lb) => (
-                  <li key={lb}>{lb}</li>
+                  <li key={`${lb.kind}:${JSON.stringify(lb.props)}`}>
+                    <span className="font-medium">{lb.kind}</span>
+                    {Object.keys(lb.props).length > 0 ? (
+                      <span className="text-muted-foreground"> {JSON.stringify(lb.props)}</span>
+                    ) : null}
+                  </li>
                 ))}
               </ul>
             ) : (

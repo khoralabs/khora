@@ -62,7 +62,7 @@ export function initTextFeaturesFts(db: Database): void {
 export function deleteVectorVecRowsForMemory(db: Database, memoryId: string): void {
   const rows = db
     .query<{ name: string }, [string]>(
-      `SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE ?1`,
+      `SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE ?`,
     )
     .all(`${vecTablePrefix}%`);
 

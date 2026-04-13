@@ -1,16 +1,16 @@
 import z from "zod";
 import { ids } from "../models/ids";
 import { MEMORY_SEARCH_META_SOURCE_KEY } from "../models/memory-search-meta";
+import type { OntologyLabelInstance } from "../models/ontology-label";
 import { type MemoriesPersistence, resolveMemoriesBackendCapabilities } from "../persistence/types";
+import type { OntologyDefinition } from "./ontology";
+import { zodPropsSchemaToJson } from "./ontology";
 
 export {
   buildCanonicalMemorySearchMetaTextForMerge,
   MEMORY_SEARCH_META_SOURCE_KEY,
 } from "../models/memory-search-meta";
-export {
-  buildCanonicalMemorySearchMetaText,
-  upsertMemorySearchMetaVector,
-} from "../persistence/facade";
+export { buildCanonicalMemorySearchMetaText, upsertMemorySearchMetaVector } from "../persistence/facade";
 
 export interface MutationCtx {
   persistence: MemoriesPersistence;
@@ -36,16 +36,16 @@ export const zMergeMemoryContentItem = z
     message: "content item must include text and/or vector",
   });
 
-export interface MergeMemoryParams<NODE_LABEL = string, EDGE_LABEL = string> {
+export interface MergeMemoryParams {
   key: string;
   namespace: string;
   content: MergeMemoryContentItem[];
-  labels: NODE_LABEL[];
+  labels: OntologyLabelInstance[];
   properties?: Record<string, unknown>;
   edges?: Array<{
     memory_key: string;
     direction: "in" | "out";
-    label: EDGE_LABEL;
+    label: OntologyLabelInstance;
     properties?: Record<string, unknown>;
   }>;
   /**
@@ -54,6 +54,10 @@ export interface MergeMemoryParams<NODE_LABEL = string, EDGE_LABEL = string> {
    * after merge (see librarian batch) so every meta chunk participates in hybrid search.
    */
   searchMetaVector?: number[];
+  /**
+   * When set, catalog rows for kinds in this merge receive JSON Schema derived from Zod (`zodPropsSchemaToJson`).
+   */
+  ontology?: OntologyDefinition;
 }
 
 /**
@@ -68,11 +72,31 @@ export function withDirectedEdgeProperties(
   return { ...base, directed: true };
 }
 
+export function catalogSchemaJsonForNodeKind(
+  ontology: OntologyDefinition | undefined,
+  kind: string,
+): string {
+  if (!ontology) return "";
+  const sch = ontology.nodeLabels[kind];
+  if (!sch) throw new RangeError(`Unknown node label kind in ontology: ${kind}`);
+  return JSON.stringify(zodPropsSchemaToJson(sch));
+}
+
+export function catalogSchemaJsonForEdgeKind(
+  ontology: OntologyDefinition | undefined,
+  kind: string,
+): string {
+  if (!ontology) return "";
+  const sch = ontology.edgeLabels[kind];
+  if (!sch) throw new RangeError(`Unknown edge label kind in ontology: ${kind}`);
+  return JSON.stringify(zodPropsSchemaToJson(sch));
+}
+
 /**
  * Orchestrates a memory merge: validates API input, then delegates storage to the persistence backend.
  * @returns Memory keys whose search-meta lexical row was rebuilt (primary, former neighbors, new edge targets).
  */
-export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams<string, string>): string[] {
+export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams): string[] {
   const { persistence } = ctx;
   const caps = resolveMemoriesBackendCapabilities(persistence);
   const now = Date.now();
@@ -127,9 +151,15 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams<string, 
       }
     }
 
-    for (const label of [...new Set(params.labels)]) {
-      const labelId = persistence.ensureNodeLabel(op, label);
-      persistence.insertNodeLabelAssignment(op, { nodeId, labelId });
+    const labelByKind = new Map<string, OntologyLabelInstance>();
+    for (const l of params.labels) labelByKind.set(l.kind, l);
+    for (const l of labelByKind.values()) {
+      const labelId = persistence.ensureNodeLabel(op, {
+        kind: l.kind,
+        description: "",
+        schemaJson: catalogSchemaJsonForNodeKind(params.ontology, l.kind),
+      });
+      persistence.insertNodeLabelAssignment(op, { nodeId, labelId, props: l.props });
     }
 
     for (const edge of params.edges ?? []) {
@@ -150,13 +180,21 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams<string, 
         toNodeId,
         properties: withDirectedEdgeProperties(edge.properties),
         idParts: {
-          label: edge.label,
+          label: edge.label.kind,
           selfMemoryKey: params.key,
           otherMemoryKey: edge.memory_key,
         },
       });
-      const edgeLabelId = persistence.ensureEdgeLabel(op, edge.label);
-      persistence.insertEdgeLabelAssignment(op, { edgeId, labelId: edgeLabelId });
+      const edgeLabelId = persistence.ensureEdgeLabel(op, {
+        kind: edge.label.kind,
+        description: "",
+        schemaJson: catalogSchemaJsonForEdgeKind(params.ontology, edge.label.kind),
+      });
+      persistence.insertEdgeLabelAssignment(op, {
+        edgeId,
+        labelId: edgeLabelId,
+        props: edge.label.props,
+      });
     }
 
     const newNeighborKeys = (params.edges ?? []).map((e) => e.memory_key);

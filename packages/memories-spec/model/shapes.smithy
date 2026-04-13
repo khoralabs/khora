@@ -33,14 +33,24 @@ structure NodeRow {
     properties: Document
 }
 
+/// One catalog **kind** plus assignment **props** (JSON object).
+structure OntologyLabelInstance {
+    kind: String
+    props: Document
+}
+
+list OntologyLabelInstanceList {
+    member: OntologyLabelInstance
+}
+
 structure HydratedSourceMapHit {
     _id: String
     _ts_created: Long
     memory_id: String
     source_key: String
     memory: MemoryRow
-    /// Ontology node label kinds on the memory (opaque strings at this layer).
-    labels: StringList
+    /// Node label kinds + props for this memory’s node.
+    labels: OntologyLabelInstanceList
 }
 
 /// Neighbor row from **ListNeighborsForMemory** (no fused neighbor score).
@@ -49,9 +59,10 @@ structure HydratedNeighbor {
     _ts_created: Long
     namespace: String
     key: String
-    labels: StringList
+    labels: OntologyLabelInstanceList
     edge: EdgeRow
-    edgeLabelKind: String
+    /// Incident edge label (kind + props) for this neighbor row.
+    edgeLabel: OntologyLabelInstance
 }
 
 list HydratedNeighborList {
@@ -63,10 +74,9 @@ structure SearchNeighborHit {
     _ts_created: Long
     namespace: String
     key: String
-    labels: StringList
+    labels: OntologyLabelInstanceList
     edge: EdgeRow
-    /// Ontology edge label kind on the incident edge (opaque string).
-    edgeLabelKind: String
+    edgeLabel: OntologyLabelInstance
     neighborScore: Double
     matchedSourceMapId: String
 }
@@ -79,7 +89,7 @@ structure SearchHit {
     source_key: String
     score: Double
     memory: MemoryRow
-    labels: StringList
+    labels: OntologyLabelInstanceList
     neighbors: SearchNeighborHitList
 }
 
@@ -143,8 +153,7 @@ list DoubleList {
 structure MergeMemoryEdge {
     memory_key: String
     direction: EdgeDirection
-    /// Encoded ontology edge label (opaque string on wire).
-    label: String
+    label: OntologyLabelInstance
     properties: Document
 }
 
@@ -160,8 +169,7 @@ structure MergeMemoryParams {
     key: String
     namespace: String
     content: MergeMemoryContentItemList
-    /// Encoded ontology node labels (opaque strings).
-    labels: StringList
+    labels: OntologyLabelInstanceList
     properties: Document
     edges: MergeMemoryEdgeList
     /// Optional primary-memory search-meta vector (same dim as content vectors).
@@ -291,7 +299,7 @@ structure GraphEdgeLink {
     edgeId: String
     fromKey: String
     toKey: String
-    labels: StringList
+    labels: OntologyLabelInstanceList
 }
 
 structure GraphMemoryEmbedding {
@@ -304,7 +312,7 @@ structure EdgePreviewPayload {
     edgeId: String
     fromKey: String
     toKey: String
-    labels: StringList
+    labels: OntologyLabelInstanceList
     properties: Document
 }
 

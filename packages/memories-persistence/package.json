@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@cfd/memories-core": "workspace:*",
+    "ajv": "^8",
     "sqlite-vec": "^0.1.9",
     "zod": "^4.3.6"
   },

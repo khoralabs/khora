@@ -114,7 +114,9 @@ describe("neighbor sub-search", () => {
         namespace: "ns",
         content: [{ key: "b", text: "focal unique marker alpha root" }],
         labels: [],
-        edges: [{ memory_key: "nb", direction: "out", label: "references" }],
+        edges: [
+          { memory_key: "nb", direction: "out", label: { kind: "references", props: {} } },
+        ],
       },
     );
 
@@ -155,7 +157,9 @@ describe("neighbor sub-search", () => {
         namespace: "ns",
         content: [{ key: "b", text: "bananas bananas bananas hub focal" }],
         labels: [],
-        edges: [{ memory_key: "nb", direction: "out", label: "references" }],
+        edges: [
+          { memory_key: "nb", direction: "out", label: { kind: "references", props: {} } },
+        ],
       },
     );
 
@@ -204,10 +208,10 @@ describe("neighbor sub-search", () => {
         key: "focal",
         namespace: "ns",
         content: [{ key: "b", text: "focal hub rocket ship" }],
-        labels: ["rootonly"],
+        labels: [{ kind: "rootonly", props: {} }],
         edges: [
-          { memory_key: "nb1", direction: "out", label: "r1" },
-          { memory_key: "nb2", direction: "out", label: "r2" },
+          { memory_key: "nb1", direction: "out", label: { kind: "r1", props: {} } },
+          { memory_key: "nb2", direction: "out", label: { kind: "r2", props: {} } },
         ],
       },
     );

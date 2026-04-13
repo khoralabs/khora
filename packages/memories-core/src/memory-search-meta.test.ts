@@ -69,16 +69,20 @@ describe("memory search meta", () => {
         key: "a",
         namespace: "ns",
         content: [{ key: "c1", text: "hello world" }],
-        labels: ["topic"],
-        edges: [{ memory_key: "b", direction: "out", label: "references" }],
+        labels: [{ kind: "topic", props: {} }],
+        edges: [
+          { memory_key: "b", direction: "out", label: { kind: "references", props: {} } },
+        ],
         searchMetaVector: vec512(),
       },
     );
 
     const fromDb = buildCanonicalMemorySearchMetaText(persistence, op, "ns", "a");
     const fromMerge = buildCanonicalMemorySearchMetaTextForMerge({
-      labels: ["topic"],
-      edges: [{ memory_key: "b", direction: "out", label: "references" }],
+      labels: [{ kind: "topic", props: {} }],
+      edges: [
+        { memory_key: "b", direction: "out", label: { kind: "references", props: {} } },
+      ],
     });
     expect(fromDb).toBe(fromMerge);
   });
@@ -92,7 +96,7 @@ describe("memory search meta", () => {
         key: "m1",
         namespace: "ns",
         content: [{ key: "body", text: "zzz unrelated body text" }],
-        labels: ["fact"],
+        labels: [{ kind: "fact", props: {} }],
         edges: [],
       },
     );
@@ -128,7 +132,9 @@ describe("memory search meta", () => {
         namespace: "ns",
         content: [{ key: "b", text: "focal body" }],
         labels: [],
-        edges: [{ memory_key: "nb", direction: "out", label: "references" }],
+        edges: [
+          { memory_key: "nb", direction: "out", label: { kind: "references", props: {} } },
+        ],
       },
     );
 
@@ -157,7 +163,9 @@ describe("memory search meta", () => {
         namespace: "ns",
         content: [{ key: "b", text: "focal" }],
         labels: [],
-        edges: [{ memory_key: "nb", direction: "out", label: "references" }],
+        edges: [
+          { memory_key: "nb", direction: "out", label: { kind: "references", props: {} } },
+        ],
       },
     );
     expect(
@@ -190,7 +198,7 @@ describe("memory search meta", () => {
         key: "m1",
         namespace: "ns",
         content: [{ key: "body", text: "x", vector: v }],
-        labels: ["t"],
+        labels: [{ kind: "t", props: {} }],
         edges: [],
         searchMetaVector: v.map((x, i) => (i === 1 ? 99 : x)),
       },

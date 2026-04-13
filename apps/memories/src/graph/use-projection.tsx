@@ -14,6 +14,7 @@ import type {
   ProjectionPoint,
   SceneEdge,
 } from "./projection-types.js";
+import { graphLabelFingerprint } from "./projection-types.js";
 
 /** Default delay (ms) before debounced hover state catches up to the pointer. */
 export const DEFAULT_GRAPH_FOCUS_DELAY_MS = 0;
@@ -89,17 +90,19 @@ function buildPoints(data: GraphPayload): ProjectionPoint[] {
 function buildSceneEdges(edges: GraphPayload["edges"]): SceneEdge[] {
   const seen = new Map<
     string,
-    { fromKey: string; toKey: string; labels: Set<string>; edgeId: string }
+    { fromKey: string; toKey: string; labels: Map<string, (typeof edges)[0]["labels"][0]>; edgeId: string }
   >();
   const directed: SceneEdge[] = [];
   for (const e of edges) {
     if (e.directed) {
+      const labelMap = new Map<string, (typeof e.labels)[0]>();
+      for (const lb of e.labels) labelMap.set(graphLabelFingerprint(lb), lb);
       directed.push({
         key: `${e.fromKey}\0${e.toKey}\0dir\0${e.edgeId}`,
         edgeId: e.edgeId,
         fromKey: e.fromKey,
         toKey: e.toKey,
-        labels: [...new Set(e.labels)],
+        labels: [...labelMap.values()],
         directed: true,
       });
       continue;
@@ -109,17 +112,19 @@ function buildSceneEdges(edges: GraphPayload["edges"]): SceneEdge[] {
     const k = `${a}\0${b}`;
     const existing = seen.get(k);
     if (existing) {
-      for (const lb of e.labels) existing.labels.add(lb);
+      for (const lb of e.labels) existing.labels.set(graphLabelFingerprint(lb), lb);
       continue;
     }
-    seen.set(k, { fromKey: a, toKey: b, labels: new Set(e.labels), edgeId: e.edgeId });
+    const labelMap = new Map<string, (typeof e.labels)[0]>();
+    for (const lb of e.labels) labelMap.set(graphLabelFingerprint(lb), lb);
+    seen.set(k, { fromKey: a, toKey: b, labels: labelMap, edgeId: e.edgeId });
   }
   const undirected = [...seen.entries()].map(([key, v]) => ({
     key,
     edgeId: v.edgeId,
     fromKey: v.fromKey,
     toKey: v.toKey,
-    labels: [...v.labels],
+    labels: [...v.labels.values()],
   }));
   return [...directed, ...undirected];
 }

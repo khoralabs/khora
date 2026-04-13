@@ -3,8 +3,97 @@ $version: "2"
 namespace cfd.memories
 
 @documentation("""
-Storage implementor surface: mutation + hybrid retrieval + neighbor index.
-Hosts expose optional **MemoriesBackendCapabilities** alongside these operations (not modeled as RPC).
+Lexical mutation + catalog + edges + search-meta (text path) + lexical retrieval + hydrate.
+Minimum profile for a lexical-only backend: typically **Core** + **MemoriesPersistenceReads**.
+""")
+service MemoriesPersistenceCore {
+    version: "2026-04-11"
+    operations: [
+        WithTransaction
+        ListNeighborMemoryKeysForNode
+        ClearMemorySubtree
+        UpsertMemory
+        UpsertNodeForMemoryKey
+        InsertSourceMap
+        InsertLexicalFeature
+        EnsureNodeLabel
+        InsertNodeLabelAssignment
+        FindMemoryIdByKey
+        NodeExists
+        InsertEdge
+        EnsureEdgeLabel
+        InsertEdgeLabelAssignment
+        SyncMemorySearchMeta
+        BuildCanonicalMemorySearchMetaText
+        DeleteMemoryRootRows
+        SearchLexicalSourceMapIds
+        HydrateSourceMapHits
+    ]
+}
+
+@documentation("""
+Vector features, hybrid meta vector upsert, vector search, and embedding-dimension introspection.
+Omit entire module when `vectorSearch` is `false`.
+""")
+service MemoriesPersistenceVector {
+    version: "2026-04-11"
+    operations: [
+        InsertVectorFeature
+        UpsertMemorySearchMetaVector
+        SearchVectorSourceMapIds
+        ListVectorEmbeddingIndexDimensions
+    ]
+}
+
+@documentation("""
+Neighbor listing for search expansion and filters. Omit when `neighborIndex` is `false`.
+""")
+service MemoriesPersistenceNeighbors {
+    version: "2026-04-11"
+    operations: [
+        ListNeighborsForMemory
+    ]
+}
+
+@documentation("""
+Label-props lexical chunks for ontology props search. Optional; omit if unsupported.
+""")
+service MemoriesPersistenceLabelProps {
+    version: "2026-04-11"
+    operations: [
+        SyncLabelPropsSearchFeatures
+    ]
+}
+
+@documentation("""
+Prefetch and export reads (not required for minimal in-process stores, but common for tooling).
+""")
+service MemoriesPersistenceReads {
+    version: "2026-04-11"
+    operations: [
+        ListSourceMapsForMemory
+        ListTextFeatureExportRowsForMemory
+    ]
+}
+
+@documentation("""
+**Full persistence surface:** union of **MemoriesPersistenceCore**, **MemoriesPersistenceVector**,
+**MemoriesPersistenceNeighbors**, **MemoriesPersistenceLabelProps**, and **MemoriesPersistenceReads**
+(same operation shapes). Operation order is stable for diff-friendly specs. Use this service id for
+“full adapter” or codegen that expect a single aggregate.
+
+**Capability modules:** Implementors may conform to a subset; see the module services above. Hosts expose
+optional **MemoriesBackendCapabilities** alongside operations (not modeled as RPC). TypeScript interfaces:
+MemoriesMutation, MemoriesRetrieval, MemoriesNeighborIndex, MemoriesPersistenceReads in `@cfd/memories-core`.
+
+**Capability matrix (modules ↔ `MemoriesBackendCapabilities`):**
+- **MemoriesPersistenceCore** — baseline for merge/delete + lexical search + hydrate.
+- **MemoriesPersistenceVector** — omit when `vectorSearch` is `false`.
+- **MemoriesPersistenceNeighbors** — omit when `neighborIndex` is `false`.
+- **MemoriesPersistenceLabelProps** — optional (`syncLabelPropsSearchFeatures?` in TS).
+- **MemoriesPersistenceReads** — prefetch/export; commonly implemented with Core.
+
+`multiNamespaceSearch` and `unscopedSearch` constrain search **behavior**, not operation membership.
 
 **Transactions:** Prefer one outer transaction per merge/delete. Nesting depends on the driver.
 
@@ -188,7 +277,10 @@ operation EnsureNodeLabel {
 
 structure EnsureNodeLabelInput {
     op: MemoryOpContext
-    value: String
+    kind: String
+    description: String
+    /// Serialized JSON Schema (Draft 2020-12) for assignment `props`, or empty when unset.
+    schemaJson: String
 }
 
 structure EnsureNodeLabelOutput {
@@ -204,6 +296,7 @@ structure InsertNodeLabelAssignmentInput {
     op: MemoryOpContext
     nodeId: String
     labelId: String
+    props: Document
 }
 
 structure InsertNodeLabelAssignmentOutput {}
@@ -259,7 +352,9 @@ operation EnsureEdgeLabel {
 
 structure EnsureEdgeLabelInput {
     op: MemoryOpContext
-    value: String
+    kind: String
+    description: String
+    schemaJson: String
 }
 
 structure EnsureEdgeLabelOutput {
@@ -275,6 +370,7 @@ structure InsertEdgeLabelAssignmentInput {
     op: MemoryOpContext
     edgeId: String
     labelId: String
+    props: Document
 }
 
 structure InsertEdgeLabelAssignmentOutput {}
