@@ -15,6 +15,7 @@
   "type": "module",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "packages/memories-persistence/*"
   ]
 }

@@ -13,10 +13,7 @@ import {
   canonicalLabelPropsSearchFormatter,
   canonicalOntology,
 } from "@cfd/memories-core-ontologies";
-import {
-  createMemoriesPersistence,
-  openMemoriesDatabase,
-} from "@cfd/memories-core-persistence/sqlite";
+import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-sqlite/sqlite";
 import type { LanguageModel } from "ai";
 
 /** One Gemini key for @ai-sdk/google; .env often uses one name only. */

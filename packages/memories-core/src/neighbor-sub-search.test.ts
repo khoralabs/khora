@@ -1,8 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-  createMemoriesPersistence,
-  openMemoriesDatabase,
-} from "@cfd/memories-core-persistence/sqlite";
+import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-sqlite/sqlite";
 import { mergeMemory } from "./api/merge-memory";
 import { search } from "./api/search";
 
@@ -114,9 +111,7 @@ describe("neighbor sub-search", () => {
         namespace: "ns",
         content: [{ key: "b", text: "focal unique marker alpha root" }],
         labels: [],
-        edges: [
-          { memory_key: "nb", direction: "out", label: { kind: "references", props: {} } },
-        ],
+        edges: [{ memory_key: "nb", direction: "out", label: { kind: "references", props: {} } }],
       },
     );
 
@@ -157,9 +152,7 @@ describe("neighbor sub-search", () => {
         namespace: "ns",
         content: [{ key: "b", text: "bananas bananas bananas hub focal" }],
         labels: [],
-        edges: [
-          { memory_key: "nb", direction: "out", label: { kind: "references", props: {} } },
-        ],
+        edges: [{ memory_key: "nb", direction: "out", label: { kind: "references", props: {} } }],
       },
     );
 

@@ -11,7 +11,7 @@ import {
   createMemoriesPersistence,
   createMemoriesVisualization,
   openMemoriesDatabaseReadonly,
-} from "@cfd/memories-core-persistence/sqlite";
+} from "@cfd/memories-sqlite/sqlite";
 import { embedMany } from "ai";
 import { serve } from "bun";
 import index from "./index.html";
