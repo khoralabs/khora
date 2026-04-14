@@ -1,5 +1,5 @@
-import type { MergeMemoryContentItem } from "../api/merge-memory.ts";
-import { type EmbeddingModel, embedTextChunks, MAX_TEXT_CHUNK_CHARS } from "./embedding-model.ts";
+import type { MergeMemoryContentItem } from "../api/merge-memory";
+import { type EmbeddingModel, embedTextChunks, MAX_TEXT_CHUNK_CHARS } from "./embedding-model";
 
 export interface TextToContentInput {
   text: string;

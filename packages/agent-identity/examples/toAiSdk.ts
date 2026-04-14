@@ -3,7 +3,7 @@
  * Keeps the core package free of `ai`; this file is example-only.
  */
 import { type Tool, tool } from "ai";
-import type { ToolRuntimeContext, ToolSpec } from "../src/index.ts";
+import type { ToolRuntimeContext, ToolSpec } from "../src/index";
 
 export function toolSpecToAiTool(
   spec: ToolSpec,

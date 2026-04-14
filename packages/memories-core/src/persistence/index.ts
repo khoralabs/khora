@@ -5,15 +5,15 @@ export {
   documentValidator,
   type ZIdMeta,
   zId,
-} from "./define-schema.ts";
+} from "./define-schema";
 export {
   buildCanonicalMemorySearchMetaText,
   buildCanonicalMemorySearchMetaTextAsync,
   upsertMemorySearchMetaVector,
   upsertMemorySearchMetaVectorAsync,
-} from "./facade.ts";
-export type { MemoriesPersistenceSchema } from "./row-schemas.ts";
-export * from "./row-schemas.ts";
+} from "./facade";
+export type { MemoriesPersistenceSchema } from "./row-schemas";
+export * from "./row-schemas";
 export type {
   EdgePreviewPayload,
   GraphEdgeLink,
@@ -34,4 +34,4 @@ export {
   DEFAULT_MEMORIES_BACKEND_CAPABILITIES,
   resolveMemoriesBackendCapabilities,
 } from "./types";
-export { wrapSyncMemoriesPersistenceAsAsync } from "./wrap-sync-as-async.ts";
+export { wrapSyncMemoriesPersistenceAsAsync } from "./wrap-sync-as-async";

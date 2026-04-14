@@ -2,9 +2,9 @@
  * Static toolkit + policies; adapt evaluated tools to Vercel AI SDK.
  * Run: bun run examples/01-static-toolkit.ts
  */
-import { evaluateComposable, policy, tool, toolkit } from "../src/index.ts";
-import { greetInputSchema } from "./standard-schema-helpers.ts";
-import { toolMapToAiTools } from "./toAiSdk.ts";
+import { evaluateComposable, policy, tool, toolkit } from "../src/index";
+import { greetInputSchema } from "./standard-schema-helpers";
+import { toolMapToAiTools } from "./toAiSdk";
 
 const allowGreeting = policy("allow-greeting", async (env: { allow: boolean }) =>
   Promise.resolve(env.allow),

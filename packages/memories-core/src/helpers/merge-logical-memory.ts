@@ -1,18 +1,18 @@
 import type z from "zod";
-import type { MemoriesClient, TypedMergeParams, TypedSearchHit } from "../api/client.ts";
-import { MemoriesClientAsync } from "../api/client-async.ts";
-import type { MergeMemoryContentItem } from "../api/merge-memory.ts";
-import type { SearchContent } from "../api/search.ts";
+import type { MemoriesClient, TypedMergeParams, TypedSearchHit } from "../api/client";
+import { MemoriesClientAsync } from "../api/client-async";
+import type { MergeMemoryContentItem } from "../api/merge-memory";
+import type { SearchContent } from "../api/search";
 import {
   buildCanonicalMemorySearchMetaText,
   buildCanonicalMemorySearchMetaTextAsync,
   resolveMemoriesBackendCapabilities,
   upsertMemorySearchMetaVector,
   upsertMemorySearchMetaVectorAsync,
-} from "../persistence/index.ts";
-import type { EmbeddingModel } from "./embedding-model.ts";
-import { embedTextChunks } from "./embedding-model.ts";
-import type { ProcessedLogicalMemory } from "./logical-memory.ts";
+} from "../persistence/index";
+import type { EmbeddingModel } from "./embedding-model";
+import { embedTextChunks } from "./embedding-model";
+import type { ProcessedLogicalMemory } from "./logical-memory";
 
 /** Strip merge `key` and narrow optional fields to {@link SearchContent}. */
 export function mergeMemoryItemToSearchContent(item: MergeMemoryContentItem): SearchContent {

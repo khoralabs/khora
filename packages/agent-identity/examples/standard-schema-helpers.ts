@@ -1,4 +1,4 @@
-import type { StandardSchemaV1 } from "../src/standard-schema.ts";
+import type { StandardSchemaV1 } from "../src/standard-schema";
 
 /** Minimal Standard Schema v1 object for examples (no external schema lib). */
 export function numberInputSchema(): StandardSchemaV1<number> {

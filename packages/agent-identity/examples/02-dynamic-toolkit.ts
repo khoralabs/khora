@@ -2,9 +2,9 @@
  * dynamicToolkit: members chosen at runtime from context.
  * Run: bun run examples/02-dynamic-toolkit.ts
  */
-import { dynamicToolkit, evaluateComposable, policy, tool } from "../src/index.ts";
-import { numberInputSchema } from "./standard-schema-helpers.ts";
-import { toolMapToAiTools } from "./toAiSdk.ts";
+import { dynamicToolkit, evaluateComposable, policy, tool } from "../src/index";
+import { numberInputSchema } from "./standard-schema-helpers";
+import { toolMapToAiTools } from "./toAiSdk";
 
 const gate = policy("feature-add", async (env: { features: string[] }) =>
   Promise.resolve(env.features.includes("add")),

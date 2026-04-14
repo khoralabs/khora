@@ -1,6 +1,6 @@
-import type { MergeMemoryContentItem } from "../api/merge-memory.ts";
-import { type EmbeddingModel, embedBinaryBlob } from "./embedding-model.ts";
-import { textToContent } from "./text-to-content.ts";
+import type { MergeMemoryContentItem } from "../api/merge-memory";
+import { type EmbeddingModel, embedBinaryBlob } from "./embedding-model";
+import { textToContent } from "./text-to-content";
 
 export interface FileToContentInput {
   blob: Blob;

@@ -1,7 +1,7 @@
 import type { ProviderOptions } from "@ai-sdk/provider-utils";
 import { type EmbeddingModel as AiSdkEmbeddingModel, embed, embedMany } from "ai";
-import { logger } from "../logger.ts";
-import { elapsedMs } from "../timing.ts";
+import { logger } from "../logger";
+import { elapsedMs } from "../timing";
 
 export type { ProviderOptions } from "@ai-sdk/provider-utils";
 export type { EmbeddingModel as AiSdkEmbeddingModel } from "ai";

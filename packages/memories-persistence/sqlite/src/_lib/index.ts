@@ -1,6 +1,6 @@
 /** Zod helpers: {@link zId}, {@link defineTable}, {@link defineSchema}, {@link documentValidator}. */
 
-export { jsonOrNull, stableId } from "./db";
+export { stableId } from "@cfd/memories-core";
 export {
   defineSchema,
   defineTable,
@@ -8,6 +8,7 @@ export {
   type ZIdMeta,
   zId,
 } from "@cfd/memories-core/persistence";
+export { jsonOrNull } from "./db";
 /** Runtime checks against `PRAGMA` / manifest parity. */
 export {
   assertRelationalSchemaExtractParity,

@@ -1,7 +1,7 @@
-import type { MergeMemoryContentItem } from "../api/merge-memory.ts";
-import type { EmbeddingModel } from "./embedding-model.ts";
-import { fileToContent as fileToContentFn } from "./file-to-content.ts";
-import { textToContent as textToContentFn } from "./text-to-content.ts";
+import type { MergeMemoryContentItem } from "../api/merge-memory";
+import type { EmbeddingModel } from "./embedding-model";
+import { fileToContent as fileToContentFn } from "./file-to-content";
+import { textToContent as textToContentFn } from "./text-to-content";
 
 /** One logical memory: optional plaintext and/or multiple files; embedding decomposes into many merge chunks. */
 export interface LogicalMemoryFilePart {
@@ -32,7 +32,7 @@ export interface ProcessedLogicalMemory extends LogicalMemoryInput {
 }
 
 // Re-export EmbeddingModel from embedding-model for convenience
-export type { EmbeddingModel } from "./embedding-model.ts";
+export type { EmbeddingModel } from "./embedding-model";
 
 /**
  * Runs the embedding adapters: plaintext (if any) plus each file, with stable key prefixes

@@ -1,5 +1,5 @@
 import z from "zod";
-import { defineSchema, zId } from "./define-schema.ts";
+import { defineSchema, zId } from "./define-schema";
 
 /**
  * A memory is a collection of features with tightly shared semantics

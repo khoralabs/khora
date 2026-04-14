@@ -4,7 +4,7 @@ import type {
   NeighborFilter,
 } from "../models/neighbor-search-types";
 import type { OntologyLabelInstance } from "../models/ontology-label";
-import type { SourceMap, TextFeatureExportRow } from "./row-schemas.ts";
+import type { SourceMap, TextFeatureExportRow } from "./row-schemas";
 
 /** Timestamp context for writes and validators that use `_ts_created`. */
 export type MemoryOpContext = { now: number };

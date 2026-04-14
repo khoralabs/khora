@@ -1,7 +1,7 @@
 import z from "zod";
 import { ids } from "../models/ids";
 import { MEMORY_SEARCH_META_SOURCE_KEY } from "../models/memory-search-meta";
-import { zVectorPayload } from "../persistence/row-schemas.ts";
+import { zVectorPayload } from "../persistence/row-schemas";
 import { type MemoriesPersistence, resolveMemoriesBackendCapabilities } from "../persistence/types";
 import type {
   EdgeLabelInstance,
@@ -15,7 +15,10 @@ export {
   buildCanonicalMemorySearchMetaTextForMerge,
   MEMORY_SEARCH_META_SOURCE_KEY,
 } from "../models/memory-search-meta";
-export { buildCanonicalMemorySearchMetaText, upsertMemorySearchMetaVector } from "../persistence/facade";
+export {
+  buildCanonicalMemorySearchMetaText,
+  upsertMemorySearchMetaVector,
+} from "../persistence/facade";
 
 export interface MutationCtx {
   persistence: MemoriesPersistence;
@@ -125,10 +128,7 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams): string
     }
   }
 
-  if (
-    params.searchMetaVector !== undefined &&
-    params.searchMetaVector.length > 0
-  ) {
+  if (params.searchMetaVector !== undefined && params.searchMetaVector.length > 0) {
     if (!caps.vectorSearch) {
       throw new Error(
         "mergeMemory: searchMetaVector set but persistence.capabilities.vectorSearch is false",

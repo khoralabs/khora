@@ -15,4 +15,4 @@ export type {
   TextFeature,
   TextFeatureExportRow,
   VectorFeature,
-} from "./row-schemas.ts";
+} from "./row-schemas";

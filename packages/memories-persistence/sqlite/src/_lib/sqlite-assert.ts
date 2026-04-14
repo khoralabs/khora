@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
-import type z from "zod";
 import { documentValidator } from "@cfd/memories-core/persistence";
+import type z from "zod";
 import { extractRelationalSchema, quoteIdent } from "./sqlite-relational";
 
 type PragmaTableInfo = {

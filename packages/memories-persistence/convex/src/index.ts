@@ -1,0 +1,17 @@
+export type {
+  MemoriesPersistenceAsync,
+  TypedMergeParamsAsync as TypedMergeParams,
+  TypedSearchHitAsync as TypedSearchHit,
+  TypedSearchParamsAsync as TypedSearchParams,
+} from "@cfd/memories-core";
+export {
+  deleteMemoryAsync as deleteMemory,
+  MemoriesClientAsync as MemoriesClient,
+  mergeMemoryAsync as mergeMemory,
+  searchAsync as search,
+} from "@cfd/memories-core";
+export { api } from "./_generated/api.js";
+export {
+  type ConvexMemoriesClient,
+  createConvexMemoriesPersistence,
+} from "./createConvexMemoriesPersistence";

@@ -1,7 +1,7 @@
 import { ids } from "../models/ids";
 import type { MemoriesPersistenceAsync } from "../persistence/async-types";
+import { zVectorPayload } from "../persistence/row-schemas";
 import { resolveMemoriesBackendCapabilities } from "../persistence/types";
-import { zVectorPayload } from "../persistence/row-schemas.ts";
 import {
   catalogSchemaJsonForEdgeKind,
   catalogSchemaJsonForNodeKind,
@@ -41,10 +41,7 @@ export async function mergeMemoryAsync(
     }
   }
 
-  if (
-    params.searchMetaVector !== undefined &&
-    params.searchMetaVector.length > 0
-  ) {
+  if (params.searchMetaVector !== undefined && params.searchMetaVector.length > 0) {
     if (!caps.vectorSearch) {
       throw new Error(
         "mergeMemoryAsync: searchMetaVector set but persistence.capabilities.vectorSearch is false",
