@@ -5,7 +5,7 @@ import type { OntologyLabelInstance } from "../models/ontology-label";
 import type { Edge, Memory, SourceMap } from "../persistence/rows.js";
 import type { MemoriesBackendCapabilities, SearchNamespaceScope } from "../persistence/types";
 import { type MemoriesPersistence, resolveMemoriesBackendCapabilities } from "../persistence/types";
-import { elapsedMs } from "../timing.js";
+import { elapsedMs, nowMs } from "../timing.js";
 import type { MutationCtx } from "./merge-memory";
 
 /** When `true`, expand with no neighbor edge filters (any label, any direction). `false` omits neighbors. */
@@ -298,7 +298,7 @@ export function search<NODE_LABELS extends string = string, EDGE_LABELS extends 
   ctx: MutationCtx,
   params: SearchParams<NODE_LABELS, EDGE_LABELS>,
 ): SearchHit<NODE_LABELS, EDGE_LABELS>[] {
-  const t0 = performance.now();
+  const t0 = nowMs();
   const { persistence } = ctx;
   const caps = resolveMemoriesBackendCapabilities(persistence);
   const topK = params.options?.topK ?? 10;

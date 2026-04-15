@@ -1,4 +1,4 @@
-import { fuseRrf, type RrfArm } from "./index.js";
+import { fuseRrf, nowMs, type RrfArm } from "./index.js";
 
 type Suite = "small" | "medium" | "large";
 
@@ -92,9 +92,9 @@ async function runSuite(
 
   for (let run = 1; run <= runs; run++) {
     const { armsOut, uniqueIds } = makeArms(arms, itemsPerArm, overlapFactor);
-    const start = performance.now();
+    const start = nowMs();
     const out = fuseRrf(armsOut, { k: 60 });
-    const ms = performance.now() - start;
+    const ms = nowMs() - start;
 
     records.push({
       ts: new Date().toISOString(),

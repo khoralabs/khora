@@ -1,7 +1,7 @@
 import type { ProviderOptions } from "@ai-sdk/provider-utils";
 import { type EmbeddingModel as AiSdkEmbeddingModel, embed, embedMany } from "ai";
 import { logger } from "../logger";
-import { elapsedMs } from "../timing";
+import { elapsedMs, nowMs } from "../timing";
 
 export type { ProviderOptions } from "@ai-sdk/provider-utils";
 export type { EmbeddingModel as AiSdkEmbeddingModel } from "ai";
@@ -148,7 +148,7 @@ export async function embedTextChunks(
 ): Promise<number[][]> {
   if (texts.length === 0) return [];
 
-  const t0 = performance.now();
+  const t0 = nowMs();
   const mergedBase = mergeProviderOptions(
     embeddingModel.providerOptions,
     callOptions?.providerOptions,
@@ -185,7 +185,7 @@ export async function embedBinaryBlob(
   input: BinaryEmbedInput,
   callOptions?: { providerOptions?: ProviderOptions; abortSignal?: AbortSignal },
 ): Promise<number[]> {
-  const t0 = performance.now();
+  const t0 = nowMs();
   const fileBase64 = Buffer.from(await input.blob.arrayBuffer()).toString("base64");
   const multimodal = googleGenerativeAiBinaryEmbedContentOptions({
     mimeType: input.mimeType,

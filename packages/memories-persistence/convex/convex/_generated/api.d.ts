@@ -8,11 +8,7 @@
  * @module
  */
 
-import type * as createConvexMemoriesPersistence from "../createConvexMemoriesPersistence.js";
-import type * as index from "../index.js";
-import type * as lib_helpers from "../lib/helpers.js";
-import type * as mutations from "../mutations.js";
-import type * as queries from "../queries.js";
+import type * as memories from "../memories.js";
 
 import type {
   ApiFromModules,
@@ -21,11 +17,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  createConvexMemoriesPersistence: typeof createConvexMemoriesPersistence;
-  index: typeof index;
-  "lib/helpers": typeof lib_helpers;
-  mutations: typeof mutations;
-  queries: typeof queries;
+  memories: typeof memories;
 }>;
 
 /**
@@ -54,4 +46,6 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {};
+export declare const components: {
+  memories: import("../../src/component/_generated/component.js").ComponentApi<"memories">;
+};

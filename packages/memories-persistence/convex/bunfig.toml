@@ -1,0 +1,5 @@
+# Inlines `process.env.*` in HTML-bundled client code. Only names matching this
+# glob are replaced; `--env-file` alone does not expose vars to the browser bundle.
+# Use BUN_PUBLIC_* for values that must be available in React (e.g. Convex URL).
+[serve.static]
+env = "BUN_PUBLIC_*"

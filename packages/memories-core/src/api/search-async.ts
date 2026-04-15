@@ -5,7 +5,7 @@ import type { OntologyLabelInstance } from "../models/ontology-label";
 import type { MemoriesPersistenceAsync } from "../persistence/async-types";
 import type { MemoriesBackendCapabilities, SearchNamespaceScope } from "../persistence/types";
 import { resolveMemoriesBackendCapabilities } from "../persistence/types";
-import { elapsedMs } from "../timing.js";
+import { elapsedMs, nowMs } from "../timing.js";
 import type { MutationCtxAsync } from "./merge-memory-async";
 import {
   normalizeSearchScopeFromParams,
@@ -213,7 +213,7 @@ export async function searchAsync<
   ctx: MutationCtxAsync,
   params: SearchParams<NODE_LABELS, EDGE_LABELS>,
 ): Promise<SearchHit<NODE_LABELS, EDGE_LABELS>[]> {
-  const t0 = performance.now();
+  const t0 = nowMs();
   const { persistence } = ctx;
   const caps = resolveMemoriesBackendCapabilities(persistence);
   const topK = params.options?.topK ?? 10;

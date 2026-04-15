@@ -8,10 +8,30 @@
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./convex.config.js": {
+      "types": "./src/component/convex.config.ts",
+      "import": "./src/component/convex.config.ts",
+      "default": "./src/component/convex.config.ts"
+    },
+    "./convex.config": {
+      "types": "./src/component/convex.config.ts",
+      "import": "./src/component/convex.config.ts",
+      "default": "./src/component/convex.config.ts"
+    },
+    "./_generated/component.js": {
+      "types": "./src/component/_generated/component.ts"
+    },
+    "./_generated/component": {
+      "types": "./src/component/_generated/component.ts"
     }
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
   },
   "peerDependencies": {
     "typescript": "^5"
@@ -21,6 +41,12 @@
     "convex": "^1.35.1"
   },
   "scripts": {
+    "codegen": "convex codegen --component-dir ./src/component",
+    "codegen:host": "convex codegen",
+    "codegen:all": "bun run codegen && bun run codegen:host",
+    "dev:convex": "bunx convex dev --typecheck-components",
+    "dev:example": "bun --env-file=.env.local --hot ./example/src/index.ts",
+    "build:example": "bun build ./example/src/index.html --outdir=example/dist --sourcemap --target=browser --minify --define:process.env.NODE_ENV='\"production\"' --env='BUN_PUBLIC_*'",
     "typecheck": "tsc --noEmit",
     "test": "bun test"
   }

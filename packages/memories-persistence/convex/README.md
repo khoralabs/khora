@@ -1,6 +1,6 @@
 # @cfd/memories-convex
 
-Convex **component** and TypeScript client for the Smithy-aligned memories persistence surface (**lexical search first**). It implements `MemoriesPersistenceAsync` via Convex queries/mutations under `convex/`, and re-exports the async-first **memories client API** from `@cfd/memories-core` under primary names (`MemoriesClient`, `mergeMemory`, `search`, `deleteMemory`) so call sites stay readable without an `Async` suffix. **Sync** `MemoriesClient` / `mergeMemory` / `search` from core are not re-exported.
+Convex **component** and TypeScript client for the Smithy-aligned memories persistence surface (**lexical search first**). It implements `MemoriesPersistenceAsync` via Convex queries/mutations under `src/component/`, and re-exports the async-first **memories client API** from `@cfd/memories-core` under primary names (`MemoriesClient`, `mergeMemory`, `search`, `deleteMemory`) so call sites stay readable without an `Async` suffix. **Sync** `MemoriesClient` / `mergeMemory` / `search` from core are not re-exported.
 
 ## Capabilities
 
@@ -23,11 +23,25 @@ In a monorepo workspace:
 bun add @cfd/memories-convex
 ```
 
-Add this folder as a Convex component per [Convex Components](https://docs.convex.dev/components) (see `convex.config.ts` and schema under `src/`). Run `bunx convex codegen` / `bunx convex dev` when functions change so `src/_generated/api` stays aligned; `src/_generated/server` may be hand-maintained for local `tsc`.
+Add this package as a Convex component per [Convex Components](https://docs.convex.dev/components). The component root is `src/component/` (`convex.config.ts`, `schema.ts`, queries/mutations, and `src/component/_generated/`).
+
+**Packaged components** do not get regenerated from a host app’s `convex dev` alone. After changing component functions or schema, run codegen from **this package** (same pattern as [@very-coffee/convex-facts](https://github.com/coffee-fueled-dev/agent/tree/main/packages/convex-facts)):
+
+```bash
+bun run codegen
+```
+
+This runs `convex codegen --component-dir ./src/component`. It needs a Convex deployment context (e.g. `CONVEX_DEPLOYMENT` or a local `convex dev` / backend as required by your Convex CLI version). Commit updated files under `src/component/_generated/`.
+
+Hosts import the component config as:
+
+```ts
+import memories from "@cfd/memories-convex/convex.config.js";
+```
 
 ## Usage
 
-1. Deploy or run Convex with this package’s `convex/` directory available to the backend (component or copied module path as your setup requires).
+1. Deploy or run Convex with this package’s component (`src/component`) available to the backend via `app.use` and the `convex.config` export.
 2. Create an HTTP or React client (`ConvexHttpClient` from `convex/browser`) pointed at your deployment URL.
 3. Wrap the client with `createConvexMemoriesPersistence(client)` and pass the result as `persistence` into `mergeMemory` / `search` / `MemoriesClient` from **this package** (they are aliases of the async core APIs).
 
@@ -45,7 +59,7 @@ const persistence = createConvexMemoriesPersistence(convex);
 await mergeMemory({ persistence }, { /* MergeMemoryParams */ });
 ```
 
-`createConvexMemoriesPersistence` uses **`api`** from `./_generated/api` (`api.mutations.*`, `api.queries.*`). Re-exported as `export { api } from "@cfd/memories-convex"` for host apps that call Convex directly.
+`createConvexMemoriesPersistence` uses **`api`** from `src/component/_generated/api` (`api.mutations.*`, `api.queries.*`). Re-exported as `export { api } from "@cfd/memories-convex"` for in-process typing; host apps use `components.<name>` from their own `_generated/api`.
 
 ## Transactions
 

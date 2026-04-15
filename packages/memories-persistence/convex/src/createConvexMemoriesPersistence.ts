@@ -8,7 +8,8 @@ import type {
 } from "@cfd/memories-core";
 import type { SourceMap, TextFeatureExportRow } from "@cfd/memories-core/persistence";
 import type { FunctionReference } from "convex/server";
-import { api } from "./_generated/api.js";
+import { api } from "./component/_generated/api.js";
+import type { ComponentApi } from "./component/_generated/component.js";
 
 const CAPABILITIES = {
   lexicalSearch: true,
@@ -20,27 +21,37 @@ const CAPABILITIES = {
 
 type QueryClient = {
   query: <Args extends Record<string, unknown>, Ret>(
-    ref: FunctionReference<"query", "public", Args, Ret>,
+    ref: FunctionReference<"query", "public" | "internal", Args, Ret>,
     args: Args,
   ) => Promise<Ret>;
 };
 
 type MutationClient = {
   mutation: <Args extends Record<string, unknown>, Ret>(
-    ref: FunctionReference<"mutation", "public", Args, Ret>,
+    ref: FunctionReference<"mutation", "public" | "internal", Args, Ret>,
     args: Args,
   ) => Promise<Ret>;
 };
 
 export type ConvexMemoriesClient = QueryClient & MutationClient;
 
+/** Function references for this component’s `mutations` / `queries` modules (matches {@link api} or `components.<name>` from a host app). */
+export type MemoriesConvexApiSlice = Pick<ComponentApi, "mutations" | "queries">;
+
 /**
- * Async persistence backed by the Convex functions in this package (`src/mutations`, `src/queries`).
- * Uses {@link api} from `./_generated/api`. `withTransaction` runs the callback only (sequential RPCs); see README for atomicity vs SQLite.
+ * Async persistence backed by the Convex functions in this package (`src/component/mutations`, `src/component/queries`).
+ * Pass `components.memories` (or another mounted instance) as `refs` from a host that wraps this component.
+ * Default `refs` uses the package’s {@link api}. `withTransaction` runs the callback only (sequential RPCs); see README for atomicity vs SQLite.
  */
-export function createConvexMemoriesPersistence(client: ConvexMemoriesClient): MemoriesPersistenceAsync {
-  const m = api.mutations;
-  const q = api.queries;
+export function createConvexMemoriesPersistence(
+  client: ConvexMemoriesClient,
+  refs: MemoriesConvexApiSlice = {
+    mutations: api.mutations,
+    queries: api.queries,
+  } as unknown as MemoriesConvexApiSlice,
+): MemoriesPersistenceAsync {
+  const m = refs.mutations;
+  const q = refs.queries;
 
   return {
     capabilities: CAPABILITIES,
@@ -147,7 +158,8 @@ export function createConvexMemoriesPersistence(client: ConvexMemoriesClient): M
     },
 
     async findMemoryIdByKey(namespace: string, key: string): Promise<string | undefined> {
-      return client.query(q.findMemoryIdByKey, { namespace, key });
+      const id = await client.query(q.findMemoryIdByKey, { namespace, key });
+      return id ?? undefined;
     },
 
     async nodeExists(nodeId: string): Promise<boolean> {
@@ -281,7 +293,7 @@ export function createConvexMemoriesPersistence(client: ConvexMemoriesClient): M
       return client.query(q.listNeighborsForMemory, {
         namespace: input.namespace,
         key: input.key,
-      }) as Promise<HydratedNeighbor[]>;
+      }) as unknown as Promise<HydratedNeighbor[]>;
     },
 
     async listSourceMapsForMemory(memoryId: string, limit: number): Promise<SourceMap[]> {

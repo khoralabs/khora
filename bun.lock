@@ -184,6 +184,8 @@
       },
       "devDependencies": {
         "@types/bun": "latest",
+        "react": "^19.2.5",
+        "react-dom": "^19.2.5",
       },
       "peerDependencies": {
         "typescript": "^5",

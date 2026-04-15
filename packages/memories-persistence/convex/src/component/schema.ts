@@ -10,9 +10,9 @@ export default defineSchema({
     memoryId: v.string(),
     namespace: v.string(),
     key: v.string(),
-    _ts_created: v.number(),
+    tsCreated: v.number(),
   })
-    .index("by_memoryId", ["memoryId"])
+    .index("by_memoryId_tsCreated", ["memoryId", "tsCreated"])
     .index("by_namespace_key", ["namespace", "key"]),
 
   source_maps: defineTable({
@@ -20,10 +20,10 @@ export default defineSchema({
     memoryId: v.string(),
     namespace: v.string(),
     source_key: v.string(),
-    _ts_created: v.number(),
+    tsCreated: v.number(),
   })
     .index("by_sourceMapId", ["sourceMapId"])
-    .index("by_memoryId", ["memoryId"]),
+    .index("by_memoryId_tsCreated", ["memoryId", "tsCreated"]),
 
   text_features: defineTable({
     textFeatureId: v.string(),
@@ -31,10 +31,10 @@ export default defineSchema({
     namespace: v.string(),
     sourceMapId: v.string(),
     text: v.string(),
-    _ts_created: v.number(),
+    tsCreated: v.number(),
   })
     .index("by_textFeatureId", ["textFeatureId"])
-    .index("by_memoryId", ["memoryId"])
+    .index("by_memoryId_tsCreated", ["memoryId", "tsCreated"])
     .index("by_sourceMapId", ["sourceMapId"])
     .searchIndex("search_text", {
       searchField: "text",
@@ -47,26 +47,30 @@ export default defineSchema({
     namespace: v.string(),
     value: v.string(),
     propertiesJson: v.optional(v.string()),
-    _ts_created: v.number(),
+    tsCreated: v.number(),
   })
     .index("by_nodeId", ["nodeId"])
-    .index("by_memoryId", ["memoryId"]),
+    .index("by_memoryId_tsCreated", ["memoryId", "tsCreated"]),
 
   node_labels: defineTable({
     labelId: v.string(),
     kind: v.string(),
     description: v.string(),
     schemaJson: v.union(v.string(), v.null()),
-    _ts_created: v.number(),
-  }).index("by_labelId", ["labelId"]).index("by_kind", ["kind"]),
+    tsCreated: v.number(),
+  })
+    .index("by_labelId", ["labelId"])
+    .index("by_kind", ["kind"]),
 
   edge_labels: defineTable({
     labelId: v.string(),
     kind: v.string(),
     description: v.string(),
     schemaJson: v.union(v.string(), v.null()),
-    _ts_created: v.number(),
-  }).index("by_labelId", ["labelId"]).index("by_kind", ["kind"]),
+    tsCreated: v.number(),
+  })
+    .index("by_labelId", ["labelId"])
+    .index("by_kind", ["kind"]),
 
   edges: defineTable({
     edgeId: v.string(),
@@ -77,7 +81,7 @@ export default defineSchema({
     idPartsSelfKey: v.string(),
     idPartsOtherKey: v.string(),
     idPartsLabel: v.string(),
-    _ts_created: v.number(),
+    tsCreated: v.number(),
   })
     .index("by_edgeId", ["edgeId"])
     .index("by_from", ["fromNodeId"])
@@ -88,7 +92,7 @@ export default defineSchema({
     nodeId: v.string(),
     labelId: v.string(),
     propsJson: v.string(),
-    _ts_created: v.number(),
+    tsCreated: v.number(),
   })
     .index("by_assignmentId", ["assignmentId"])
     .index("by_node_label", ["nodeId", "labelId"]),
@@ -98,7 +102,7 @@ export default defineSchema({
     edgeId: v.string(),
     labelId: v.string(),
     propsJson: v.string(),
-    _ts_created: v.number(),
+    tsCreated: v.number(),
   })
     .index("by_assignmentId", ["assignmentId"])
     .index("by_edge_label", ["edgeId", "labelId"]),

@@ -29,16 +29,17 @@ export const clearMemorySubtree = mutation({
     memoryId: v.string(),
     nodeId: v.string(),
   },
+  returns: v.null(),
   handler: async (ctx, { memoryId, nodeId }) => {
     const tfs = await ctx.db
       .query("text_features")
-      .withIndex("by_memoryId", (q) => q.eq("memoryId", memoryId))
+      .withIndex("by_memoryId_tsCreated", (q) => q.eq("memoryId", memoryId))
       .collect();
     for (const r of tfs) await ctx.db.delete(r._id);
 
     const sms = await ctx.db
       .query("source_maps")
-      .withIndex("by_memoryId", (q) => q.eq("memoryId", memoryId))
+      .withIndex("by_memoryId_tsCreated", (q) => q.eq("memoryId", memoryId))
       .collect();
     for (const r of sms) await ctx.db.delete(r._id);
 
@@ -77,21 +78,25 @@ export const upsertMemory = mutation({
     key: v.string(),
     now: v.number(),
   },
+  returns: v.object({
+    memoryId: v.string(),
+    _ts_created: v.number(),
+  }),
   handler: async (ctx, { namespace, key, now }) => {
     const memoryId = ids.memory(namespace, key);
     const existing = await ctx.db
       .query("memories")
-      .withIndex("by_memoryId", (q) => q.eq("memoryId", memoryId))
+      .withIndex("by_memoryId_tsCreated", (q) => q.eq("memoryId", memoryId))
       .unique();
-    const tsCreated = existing?._ts_created ?? now;
+    const tsCreated = existing?.tsCreated ?? now;
     if (existing) {
-      await ctx.db.patch(existing._id, { namespace, key, _ts_created: tsCreated });
+      await ctx.db.patch(existing._id, { namespace, key, tsCreated });
     } else {
       await ctx.db.insert("memories", {
         memoryId,
         namespace,
         key,
-        _ts_created: now,
+        tsCreated: now,
       });
     }
     return { memoryId, _ts_created: tsCreated };
@@ -105,6 +110,7 @@ export const upsertNodeForMemoryKey = mutation({
     properties: v.optional(v.record(v.string(), v.any())),
     now: v.number(),
   },
+  returns: v.object({ nodeId: v.string() }),
   handler: async (ctx, { namespace, memoryKey, properties, now }) => {
     const nodeId = ids.node(namespace, memoryKey);
     const memoryId = ids.memory(namespace, memoryKey);
@@ -127,7 +133,7 @@ export const upsertNodeForMemoryKey = mutation({
         namespace,
         value: memoryKey,
         propertiesJson: propsJson,
-        _ts_created: now,
+        tsCreated: now,
       });
     }
     return { nodeId };
@@ -140,10 +146,11 @@ export const insertSourceMap = mutation({
     sourceKey: v.string(),
     now: v.number(),
   },
+  returns: v.object({ sourceMapId: v.string() }),
   handler: async (ctx, { memoryId, sourceKey, now }) => {
     const mem = await ctx.db
       .query("memories")
-      .withIndex("by_memoryId", (q) => q.eq("memoryId", memoryId))
+      .withIndex("by_memoryId_tsCreated", (q) => q.eq("memoryId", memoryId))
       .unique();
     if (!mem) throw new Error("insertSourceMap: memory not found");
     const sourceMapId = ids.sourceMap(memoryId, sourceKey);
@@ -152,7 +159,7 @@ export const insertSourceMap = mutation({
       memoryId,
       namespace: mem.namespace,
       source_key: sourceKey,
-      _ts_created: now,
+      tsCreated: now,
     });
     return { sourceMapId };
   },
@@ -165,10 +172,11 @@ export const insertLexicalFeature = mutation({
     text: v.string(),
     now: v.number(),
   },
+  returns: v.object({ textFeatureId: v.string() }),
   handler: async (ctx, { memoryId, sourceMapId, text, now }) => {
     const mem = await ctx.db
       .query("memories")
-      .withIndex("by_memoryId", (q) => q.eq("memoryId", memoryId))
+      .withIndex("by_memoryId_tsCreated", (q) => q.eq("memoryId", memoryId))
       .unique();
     if (!mem) throw new Error("insertLexicalFeature: memory not found");
     const textFeatureId = ids.textFeature(sourceMapId);
@@ -178,7 +186,7 @@ export const insertLexicalFeature = mutation({
       namespace: mem.namespace,
       sourceMapId,
       text,
-      _ts_created: now,
+      tsCreated: now,
     });
     return { textFeatureId };
   },
@@ -190,6 +198,7 @@ export const insertVectorFeature = mutation({
     sourceMapId: v.string(),
     now: v.number(),
   },
+  returns: v.object({ vectorFeatureId: v.string() }),
   handler: async (_ctx, _args) => {
     throw new Error(
       "insertVectorFeature: vector search is not supported for this Convex deployment (lexical-first)",
@@ -204,6 +213,7 @@ export const ensureNodeLabel = mutation({
     schemaJson: v.optional(v.union(v.string(), v.null())),
     now: v.number(),
   },
+  returns: v.string(),
   handler: async (ctx, { kind, description, schemaJson, now }) => {
     const existing = (
       await ctx.db
@@ -228,7 +238,7 @@ export const ensureNodeLabel = mutation({
       kind,
       description: desc,
       schemaJson: schema,
-      _ts_created: now,
+      tsCreated: now,
     });
     return labelId;
   },
@@ -241,6 +251,7 @@ export const insertNodeLabelAssignment = mutation({
     props: v.record(v.string(), v.any()),
     now: v.number(),
   },
+  returns: v.null(),
   handler: async (ctx, { nodeId, labelId, props, now }) => {
     const propsJson = JSON.stringify(props ?? {});
     const existing = await ctx.db
@@ -249,7 +260,7 @@ export const insertNodeLabelAssignment = mutation({
       .filter((q) => q.eq(q.field("labelId"), labelId))
       .unique();
     if (existing) {
-      await ctx.db.patch(existing._id, { propsJson, _ts_created: now });
+      await ctx.db.patch(existing._id, { propsJson, tsCreated: now });
     } else {
       const assignmentId = ids.nodeLabelAssignment(nodeId, labelId);
       await ctx.db.insert("node_label_assignments", {
@@ -257,7 +268,7 @@ export const insertNodeLabelAssignment = mutation({
         nodeId,
         labelId,
         propsJson,
-        _ts_created: now,
+        tsCreated: now,
       });
     }
     return null;
@@ -276,7 +287,13 @@ export const insertEdge = mutation({
     }),
     now: v.number(),
   },
-  handler: async (ctx, { fromNodeId, toNodeId, properties, idParts, now }) => {
+  returns: v.object({
+    edgeId: v.string(),
+  }),
+  handler: async (
+    ctx,
+    { fromNodeId, toNodeId, properties, idParts, now },
+  ): Promise<{ edgeId: string }> => {
     const fromNode = await ctx.db
       .query("nodes")
       .withIndex("by_nodeId", (q) => q.eq("nodeId", fromNodeId))
@@ -299,7 +316,7 @@ export const insertEdge = mutation({
       idPartsSelfKey: idParts.selfMemoryKey,
       idPartsOtherKey: idParts.otherMemoryKey,
       idPartsLabel: idParts.label,
-      _ts_created: now,
+      tsCreated: now,
     });
     return { edgeId };
   },
@@ -312,6 +329,7 @@ export const ensureEdgeLabel = mutation({
     schemaJson: v.optional(v.union(v.string(), v.null())),
     now: v.number(),
   },
+  returns: v.string(),
   handler: async (ctx, { kind, description, schemaJson, now }) => {
     const existing = (
       await ctx.db
@@ -336,7 +354,7 @@ export const ensureEdgeLabel = mutation({
       kind,
       description: desc,
       schemaJson: schema,
-      _ts_created: now,
+      tsCreated: now,
     });
     return labelId;
   },
@@ -349,6 +367,7 @@ export const insertEdgeLabelAssignment = mutation({
     props: v.record(v.string(), v.any()),
     now: v.number(),
   },
+  returns: v.null(),
   handler: async (ctx, { edgeId, labelId, props, now }) => {
     const propsJson = JSON.stringify(props ?? {});
     const existing = await ctx.db
@@ -357,7 +376,7 @@ export const insertEdgeLabelAssignment = mutation({
       .filter((q) => q.eq(q.field("labelId"), labelId))
       .unique();
     if (existing) {
-      await ctx.db.patch(existing._id, { propsJson, _ts_created: now });
+      await ctx.db.patch(existing._id, { propsJson, tsCreated: now });
     } else {
       const assignmentId = ids.edgeLabelAssignment(edgeId, labelId);
       await ctx.db.insert("edge_label_assignments", {
@@ -365,7 +384,7 @@ export const insertEdgeLabelAssignment = mutation({
         edgeId,
         labelId,
         propsJson,
-        _ts_created: now,
+        tsCreated: now,
       });
     }
     return null;
@@ -378,6 +397,7 @@ export const syncMemorySearchMeta = mutation({
     memoryKey: v.string(),
     now: v.number(),
   },
+  returns: v.null(),
   handler: async (ctx, { namespace, memoryKey, now }) => {
     const memoryId = ids.memory(namespace, memoryKey);
     const text = await buildCanonicalMemorySearchMetaText(ctx, namespace, memoryKey);
@@ -385,7 +405,7 @@ export const syncMemorySearchMeta = mutation({
     if (text.length === 0) return null;
     const mem = await ctx.db
       .query("memories")
-      .withIndex("by_memoryId", (q) => q.eq("memoryId", memoryId))
+      .withIndex("by_memoryId_tsCreated", (q) => q.eq("memoryId", memoryId))
       .unique();
     if (!mem) throw new Error("syncMemorySearchMeta: memory not found");
     const sourceMapId = ids.sourceMap(memoryId, MEMORY_SEARCH_META_SOURCE_KEY);
@@ -394,7 +414,7 @@ export const syncMemorySearchMeta = mutation({
       memoryId,
       namespace: mem.namespace,
       source_key: MEMORY_SEARCH_META_SOURCE_KEY,
-      _ts_created: now,
+      tsCreated: now,
     });
     const textFeatureId = ids.textFeature(sourceMapId);
     await ctx.db.insert("text_features", {
@@ -403,7 +423,7 @@ export const syncMemorySearchMeta = mutation({
       namespace: mem.namespace,
       sourceMapId,
       text,
-      _ts_created: now,
+      tsCreated: now,
     });
     return null;
   },
@@ -415,6 +435,7 @@ export const upsertMemorySearchMetaVector = mutation({
     memoryKey: v.string(),
     now: v.number(),
   },
+  returns: v.null(),
   handler: async (_ctx, _args) => {
     throw new Error(
       "upsertMemorySearchMetaVector: vector search is not supported for this Convex deployment (lexical-first)",
@@ -427,10 +448,11 @@ export const deleteMemoryRootRows = mutation({
     memoryId: v.string(),
     nodeId: v.string(),
   },
+  returns: v.null(),
   handler: async (ctx, { memoryId, nodeId }) => {
     const m = await ctx.db
       .query("memories")
-      .withIndex("by_memoryId", (q) => q.eq("memoryId", memoryId))
+      .withIndex("by_memoryId_tsCreated", (q) => q.eq("memoryId", memoryId))
       .unique();
     if (m) await ctx.db.delete(m._id);
     const n = await ctx.db

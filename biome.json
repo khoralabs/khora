@@ -7,7 +7,12 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!apps/memories/src/components/ui", "!packages/memories-spec/src/generated"]
+    "includes": [
+      "**",
+      "!apps/memories/src/components/ui",
+      "!packages/memories-spec/src/generated",
+      "!packages/memories-persistence/convex/**/_generated/**"
+    ]
   },
   "formatter": {
     "enabled": true,

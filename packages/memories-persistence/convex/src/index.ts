@@ -10,7 +10,8 @@ export {
   mergeMemoryAsync as mergeMemory,
   searchAsync as search,
 } from "@cfd/memories-core";
-export { api } from "./_generated/api.js";
+export { api } from "./component/_generated/api.js";
+export { createConvexLexicalTextStore } from "./convexLexicalTextStore.js";
 export {
   type ConvexMemoriesClient,
   createConvexMemoriesPersistence,

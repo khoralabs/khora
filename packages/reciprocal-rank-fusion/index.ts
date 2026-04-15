@@ -2,6 +2,13 @@ import { logger } from "./logger";
 
 export { logger };
 
+/** Monotonic-ish ms; safe in Convex isolates (falls back to `Date.now()`). */
+export function nowMs(): number {
+  const p = globalThis.performance;
+  if (p && typeof p.now === "function") return p.now();
+  return Date.now();
+}
+
 export type ItemId = string;
 
 export type RankedItem<TId extends ItemId = ItemId> = {
@@ -89,7 +96,7 @@ export function fuseRrf<TId extends ItemId = ItemId>(
   arms: readonly RrfArm<TId>[],
   options: RrfOptions<TId> = {},
 ): RrfResult<TId>[] {
-  const t0 = performance.now();
+  const t0 = nowMs();
   const k = options.k ?? 60;
   const maxPerArm = options.maxPerArm;
   const byId = new Map<TId, RrfResult<TId>>();
@@ -127,7 +134,7 @@ export function fuseRrf<TId extends ItemId = ItemId>(
   });
   logger.debug({
     phase: "fuseRrf",
-    durationMs: Math.round((performance.now() - t0) * 100) / 100,
+    durationMs: Math.round((nowMs() - t0) * 100) / 100,
     armCount: arms.length,
     resultCount: sorted.length,
   });

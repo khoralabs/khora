@@ -7,6 +7,23 @@ export type ReadCtx = QueryCtx | MutationCtx;
 
 const EDGE_LABEL_SEP = String.fromCharCode(31);
 
+/**
+ * Lexical `text_features.text` for a `(memoryId, sourceKey)` pair, if a row exists.
+ * Matches how merge stores body text under {@link ids.sourceMap}(memoryId, sourceKey).
+ */
+export async function lexicalTextForMemorySource(
+  ctx: ReadCtx,
+  memoryId: string,
+  sourceKey: string,
+): Promise<string | null> {
+  const sourceMapId = ids.sourceMap(memoryId, sourceKey);
+  const tf = await ctx.db
+    .query("text_features")
+    .withIndex("by_sourceMapId", (q) => q.eq("sourceMapId", sourceMapId))
+    .first();
+  return tf?.text ?? null;
+}
+
 function sortUnique(xs: string[]): string[] {
   return [...new Set(xs)].sort((a, b) => a.localeCompare(b));
 }
@@ -97,7 +114,7 @@ async function collectEdgesFromDb(
 
     const mem = await ctx.db
       .query("memories")
-      .withIndex("by_memoryId", (q) => q.eq("memoryId", otherNode.memoryId))
+      .withIndex("by_memoryId_tsCreated", (q) => q.eq("memoryId", otherNode.memoryId))
       .unique();
     if (!mem || mem.namespace !== namespace) continue;
 
@@ -172,7 +189,7 @@ export async function listNeighborMemoryKeysForNode(
     if (!otherNode) continue;
     const mem = await ctx.db
       .query("memories")
-      .withIndex("by_memoryId", (q) => q.eq("memoryId", otherNode.memoryId))
+      .withIndex("by_memoryId_tsCreated", (q) => q.eq("memoryId", otherNode.memoryId))
       .unique();
     if (mem && mem.namespace === namespace) keys.add(mem.key);
   }
