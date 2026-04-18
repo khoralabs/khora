@@ -3,6 +3,7 @@ import type {
   MemoriesClient,
   MemoriesClientAsync,
   NeighborSearchOption,
+  OntologyLabelInstance,
   SearchContent,
   SearchHit,
 } from "@cfd/memories-core";
@@ -35,9 +36,9 @@ export function embeddingCacheKey(namespace: string, queryText: string): string 
 export type MemorySearchHit = {
   memory_key: string;
   score: number;
-  labels: string[];
+  labels: OntologyLabelInstance[];
   source_key: string;
-  neighbors?: Array<{ memory_key: string; labels: string[] }>;
+  neighbors?: Array<{ memory_key: string; labels: OntologyLabelInstance[] }>;
 };
 
 const MAX_NEIGHBORS_PER_HIT = 8;
