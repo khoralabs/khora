@@ -6,12 +6,16 @@ Convex **component** and TypeScript client for the Smithy-aligned memories persi
 
 | Feature | Supported |
 |--------|-----------|
-| Lexical search | Yes (Convex search indexes on `text_features.text`) |
-| Vector search | No (`vectorSearch: false`; merge rejects vector content when configured accordingly) |
+| Lexical search | Yes (Convex search index on `text_features.text`; subtree filters use `ns_prefix_1`…`ns_prefix_6`) |
+| Vector search | Yes (`vectorSearch: true`; KNN via `ctx.vectorSearch` in component **action** `searchVectorSourceMapIds`; embeddings stored per dimension in `vector_features_768` / `_1024` / `_1536` / `_3072`) |
 | Neighbor index | No (`neighborIndex: false`; `listNeighborsForMemory` returns `[]`) |
 | Multi-namespace search | Yes (`multiNamespaceSearch: true`; per-namespace arms merged round-robin) |
 | Unscoped search | No (`unscopedSearch: false`) |
 | `syncLabelPropsSearchFeatures` | Not exposed (optional in core; omitted here) |
+
+Hierarchical namespaces use **cumulative prefix** columns (`ns_prefix_k` = first *k* segments joined with `/`) on `text_features` and `vector_features_*` so a subtree query is a single `eq` per root (Convex vector filters allow only `eq` + `or`, not chained `and` across fields). See `src/vectorConfig.ts` for supported embedding widths.
+
+**Hybrid / vector retrieval:** Callers must supply a Convex client that implements **`action`** (e.g. `ctx.runAction` from an action, or the client’s action runner). Lexical-only `search()` can use query + mutation only; vector arms use the component action.
 
 `MemoriesPersistenceAsync` is still exported under its **real** name. Do not confuse it with sync `MemoriesPersistence` from core.
 
@@ -54,12 +58,20 @@ import {
 } from "@cfd/memories-convex";
 
 const convex = new ConvexHttpClient(process.env.CONVEX_URL!);
-const persistence = createConvexMemoriesPersistence(convex);
+const persistence = createConvexMemoriesPersistence({
+  query: (ref, args) => convex.query(ref, args),
+  mutation: (ref, args) => convex.mutation(ref, args),
+  action: (ref, args) => convex.action(ref, args),
+});
 
 await mergeMemory({ persistence }, { /* MergeMemoryParams */ });
 ```
 
-`createConvexMemoriesPersistence` uses **`api`** from `src/component/_generated/api` (`api.mutations.*`, `api.queries.*`). Re-exported as `export { api } from "@cfd/memories-convex"` for in-process typing; host apps use `components.<name>` from their own `_generated/api`.
+`createConvexMemoriesPersistence` uses **`api`** from `src/component/_generated/api` (`api.mutations.*`, `api.queries.*`, `api.actions.*`). Re-exported as `export { api } from "@cfd/memories-convex"` for in-process typing; host apps use `components.<name>` from their own `_generated/api`.
+
+**Host Convex functions:** import **`createMemoriesPersistence`** from `@cfd/memories-convex` and call it with `(ctx, components.<name>)`. It adapts `ctx` for query vs mutation vs action and returns `{ persistence, bridge }` (reuse `bridge` for `createConvexLexicalTextStore`, etc.). For custom bridges, use `createConvexMemoriesPersistenceFromHostBridge` or the **`hostComponentBridgeFrom*Ctx`** helpers directly.
+
+**React:** import `MemoriesPersistenceProvider` and `useMemoriesPersistence` from `@cfd/memories-convex/react`. Wrap `ConvexProvider` first, then `MemoriesPersistenceProvider` with `componentApi={components.memories}`.
 
 ## Transactions
 

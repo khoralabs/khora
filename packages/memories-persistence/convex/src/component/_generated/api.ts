@@ -8,7 +8,9 @@
  * @module
  */
 
+import type * as actions from "../actions.js";
 import type * as lib_helpers from "../lib/helpers.js";
+import type * as lib_vectorConfig from "../lib/vectorConfig.js";
 import type * as mutations from "../mutations.js";
 import type * as queries from "../queries.js";
 
@@ -20,7 +22,9 @@ import type {
 import { anyApi, componentsGeneric } from "convex/server";
 
 const fullApi: ApiFromModules<{
+  actions: typeof actions;
   "lib/helpers": typeof lib_helpers;
+  "lib/vectorConfig": typeof lib_vectorConfig;
   mutations: typeof mutations;
   queries: typeof queries;
 }> = anyApi as any;

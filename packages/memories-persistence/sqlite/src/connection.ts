@@ -17,8 +17,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_node_label_assignments_node_label
   ON node_label_assignments (node_id, label_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_edge_label_assignments_edge_label
   ON edge_label_assignments (edge_id, label_id);
-CREATE INDEX IF NOT EXISTS idx_memories_ns_levels
-  ON memories (ns_l0, ns_l1, ns_l2, ns_l3, ns_l4, ns_l5);
+CREATE INDEX IF NOT EXISTS idx_memories_ns_prefixes
+  ON memories (ns_prefix_1, ns_prefix_2, ns_prefix_3, ns_prefix_4, ns_prefix_5, ns_prefix_6);
 `;
 
 export type OpenMemoriesDatabaseOptions = DatabaseOptions;

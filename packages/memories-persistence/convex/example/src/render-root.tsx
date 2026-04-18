@@ -1,6 +1,8 @@
+import { MemoriesPersistenceProvider } from "@cfd/memories-convex/react";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { type ReactNode, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { components } from "../../convex/_generated/api.js";
 
 function Root({ children }: { children: ReactNode }) {
   // Client bundle only inlines names allowed by bunfig `[serve.static] env` (here: BUN_PUBLIC_*).
@@ -10,7 +12,11 @@ function Root({ children }: { children: ReactNode }) {
     throw new Error("Set BUN_PUBLIC_CONVEX_URL (e.g. in .env.local) to your Convex deployment URL");
   }
   const client = new ConvexReactClient(convexUrl);
-  return <ConvexProvider client={client}>{children}</ConvexProvider>;
+  return (
+    <ConvexProvider client={client}>
+      <MemoriesPersistenceProvider componentApi={components.memories}>{children}</MemoriesPersistenceProvider>
+    </ConvexProvider>
+  );
 }
 
 export function renderApp(children: ReactNode) {

@@ -13,7 +13,7 @@ import type { ComponentApi } from "./component/_generated/component.js";
 
 const CAPABILITIES = {
   lexicalSearch: true,
-  vectorSearch: false,
+  vectorSearch: true,
   neighborIndex: false,
   multiNamespaceSearch: true,
   unscopedSearch: false,
@@ -33,10 +33,17 @@ type MutationClient = {
   ) => Promise<Ret>;
 };
 
-export type ConvexMemoriesClient = QueryClient & MutationClient;
+type ActionClient = {
+  action: <Args extends Record<string, unknown>, Ret>(
+    ref: FunctionReference<"action", "public" | "internal", Args, Ret>,
+    args: Args,
+  ) => Promise<Ret>;
+};
 
-/** Function references for this component’s `mutations` / `queries` modules (matches {@link api} or `components.<name>` from a host app). */
-export type MemoriesConvexApiSlice = Pick<ComponentApi, "mutations" | "queries">;
+export type ConvexMemoriesClient = QueryClient & MutationClient & ActionClient;
+
+/** Function references for this component’s `mutations` / `queries` / `actions` modules (matches {@link api} or `components.<name>` from a host app). */
+export type MemoriesConvexApiSlice = Pick<ComponentApi, "mutations" | "queries" | "actions">;
 
 /**
  * Async persistence backed by the Convex functions in this package (`src/component/mutations`, `src/component/queries`).
@@ -48,10 +55,12 @@ export function createConvexMemoriesPersistence(
   refs: MemoriesConvexApiSlice = {
     mutations: api.mutations,
     queries: api.queries,
+    actions: api.actions,
   } as unknown as MemoriesConvexApiSlice,
 ): MemoriesPersistenceAsync {
   const m = refs.mutations;
   const q = refs.queries;
+  const a = refs.actions;
 
   return {
     capabilities: CAPABILITIES,
@@ -129,6 +138,7 @@ export function createConvexMemoriesPersistence(
       return client.mutation(m.insertVectorFeature, {
         memoryId: input.memoryId,
         sourceMapId: input.sourceMapId,
+        vector: Array.from(input.vector),
         now: op.now,
       }) as Promise<{ vectorFeatureId: string }>;
     },
@@ -234,6 +244,7 @@ export function createConvexMemoriesPersistence(
       await client.mutation(m.upsertMemorySearchMetaVector, {
         namespace: input.namespace,
         memoryKey: input.memoryKey,
+        vector: Array.from(input.vector),
         now: op.now,
       });
     },
@@ -270,7 +281,7 @@ export function createConvexMemoriesPersistence(
         input.scope.kind === "unscoped"
           ? { kind: "unscoped" as const }
           : { kind: "union" as const, namespaces: [...input.scope.namespaces] };
-      return client.query(q.searchVectorSourceMapIds, {
+      return client.action(a.searchVectorSourceMapIds, {
         scope,
         vector: input.vector,
         limit: input.limit,

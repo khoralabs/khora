@@ -1,5 +1,46 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import type { ConvexVectorDimension } from "./lib/vectorConfig.js";
+
+const nsPrefixFields = {
+  ns_prefix_1: v.optional(v.string()),
+  ns_prefix_2: v.optional(v.string()),
+  ns_prefix_3: v.optional(v.string()),
+  ns_prefix_4: v.optional(v.string()),
+  ns_prefix_5: v.optional(v.string()),
+  ns_prefix_6: v.optional(v.string()),
+};
+
+const NS_PREFIX_FILTER_FIELDS = [
+  "ns_prefix_1",
+  "ns_prefix_2",
+  "ns_prefix_3",
+  "ns_prefix_4",
+  "ns_prefix_5",
+  "ns_prefix_6",
+] as const;
+
+/** Fresh table per dimension — reusing one `defineTable` chain duplicates vector index definitions. */
+function defineVectorFeaturesTable(dim: ConvexVectorDimension) {
+  return defineTable({
+    vectorFeatureId: v.string(),
+    memoryId: v.string(),
+    /** Full path string (audit / hydration); subtree filters use `ns_prefix_*`. */
+    namespace: v.string(),
+    ...nsPrefixFields,
+    sourceMapId: v.string(),
+    vector: v.array(v.float64()),
+    tsCreated: v.number(),
+  })
+    .index("by_vectorFeatureId", ["vectorFeatureId"])
+    .index("by_memoryId_tsCreated", ["memoryId", "tsCreated"])
+    .index("by_sourceMapId", ["sourceMapId"])
+    .vectorIndex("search_vector", {
+      vectorField: "vector",
+      dimensions: dim,
+      filterFields: [...NS_PREFIX_FILTER_FIELDS, "memoryId"] as const,
+    });
+}
 
 /**
  * Lexical-first Convex schema aligned with @cfd/memories-core row shapes.
@@ -28,14 +69,9 @@ export default defineSchema({
   text_features: defineTable({
     textFeatureId: v.string(),
     memoryId: v.string(),
-    /** Full path string (audit / hydration); not a search filter. */
+    /** Full path string (audit / hydration); subtree filters use `ns_prefix_*`. */
     namespace: v.string(),
-    ns_l0: v.optional(v.string()),
-    ns_l1: v.optional(v.string()),
-    ns_l2: v.optional(v.string()),
-    ns_l3: v.optional(v.string()),
-    ns_l4: v.optional(v.string()),
-    ns_l5: v.optional(v.string()),
+    ...nsPrefixFields,
     sourceMapId: v.string(),
     text: v.string(),
     tsCreated: v.number(),
@@ -45,8 +81,13 @@ export default defineSchema({
     .index("by_sourceMapId", ["sourceMapId"])
     .searchIndex("search_text", {
       searchField: "text",
-      filterFields: ["ns_l0", "ns_l1", "ns_l2", "ns_l3", "ns_l4", "ns_l5"],
+      filterFields: [...NS_PREFIX_FILTER_FIELDS],
     }),
+
+  vector_features_768: defineVectorFeaturesTable(768),
+  vector_features_1024: defineVectorFeaturesTable(1024),
+  vector_features_1536: defineVectorFeaturesTable(1536),
+  vector_features_3072: defineVectorFeaturesTable(3072),
 
   nodes: defineTable({
     nodeId: v.string(),

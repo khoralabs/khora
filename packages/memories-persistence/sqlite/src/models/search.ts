@@ -6,6 +6,7 @@ import {
   type NeighborFilter,
   type NeighborNodesFilter,
   namespacePath,
+  namespacePrefixFieldForDepth,
   namespaceSegments,
   type OntologyLabelInstance,
   type SearchNamespaceScope,
@@ -123,14 +124,14 @@ function namespaceSubtreeOrClauses(
   if (roots.length === 0) {
     return { sql: "1 = 0", bindings: [] };
   }
-  const col = (i: number) => (tableAlias ? `${tableAlias}.ns_l${i}` : `ns_l${i}`);
   const parts: string[] = [];
   const bindings: SQLQueryBindings[] = [];
   for (const root of roots) {
-    const segs = namespaceSegments(root);
-    const conds = segs.map((_, i) => `${col(i)} = ?`).join(" AND ");
-    parts.push(`(${conds})`);
-    bindings.push(...segs);
+    const depth = namespaceSegments(root).length;
+    const key = namespacePrefixFieldForDepth(depth);
+    const col = tableAlias ? `${tableAlias}.${key}` : key;
+    parts.push(`(${col} = ?)`);
+    bindings.push(root);
   }
   return { sql: parts.join(" OR "), bindings };
 }

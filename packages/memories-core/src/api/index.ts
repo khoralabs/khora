@@ -8,9 +8,9 @@ export {
   propsToHumanSearchText,
 } from "../models/label-props-search-text";
 export type {
-  NamespaceLevelKey,
   NamespacePath,
   NamespacePathLiteral,
+  NamespacePrefixKey,
 } from "../models/namespace-path";
 export {
   canonicalizeNamespacePrefixes,
@@ -18,10 +18,12 @@ export {
   NAMESPACE_MAX_DEPTH,
   NAMESPACE_SEGMENT_REGEX,
   NAMESPACE_SEPARATOR,
+  NS_PREFIX_KEYS,
   namespaceFromSegments,
-  namespaceLevelFields,
   namespaceLevels,
   namespacePath,
+  namespacePrefixFieldForDepth,
+  namespacePrefixFields,
   namespaceSegments,
   zNamespacePath,
 } from "../models/namespace-path";

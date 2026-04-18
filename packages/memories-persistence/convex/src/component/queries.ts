@@ -3,17 +3,20 @@ import {
   canonicalizeNamespacePrefixes,
   ids,
   namespacePath,
+  namespacePrefixFieldForDepth,
   namespaceSegments,
 } from "@cfd/memories-core";
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel.js";
 import type { QueryCtx } from "./_generated/server.js";
-import { query } from "./_generated/server.js";
+import { internalQuery, query } from "./_generated/server.js";
 import {
   buildCanonicalMemorySearchMetaText,
   lexicalTextForMemorySource,
   listNeighborMemoryKeysForNode,
   parsePropsJson,
 } from "./lib/helpers.js";
+import { CONVEX_VECTOR_DIMENSIONS, vectorTableNameForDim } from "./lib/vectorConfig.js";
 
 const vHydratedLabel = v.object({
   kind: v.string(),
@@ -116,27 +119,14 @@ export const buildCanonicalMemorySearchMetaTextQuery = query({
   },
 });
 
-const NS_FILTER_FIELDS = ["ns_l0", "ns_l1", "ns_l2", "ns_l3", "ns_l4", "ns_l5"] as const;
-
-/** One search arm: full-text on `text` with equality filters pinned to a namespace prefix (subtree). */
-function searchLexicalOne(
-  ctx: QueryCtx,
-  args: { prefixSegments: readonly string[]; text: string },
-) {
-  const segs = args.prefixSegments;
-  if (segs.length === 0 || segs.length > NS_FILTER_FIELDS.length) {
-    throw new Error("searchLexicalOne: prefix must have 1..6 segments");
-  }
-  return ctx.db.query("text_features").withSearchIndex("search_text", (sq) => {
-    let s = sq.search("text", args.text);
-    for (let i = 0; i < segs.length; i++) {
-      const field = NS_FILTER_FIELDS[i];
-      const seg = segs[i];
-      if (field === undefined || seg === undefined) break;
-      s = s.eq(field, seg);
-    }
-    return s;
-  });
+/** One search arm: full-text on `text` with a single `ns_prefix_k` filter for subtree `rootPath`. */
+function searchLexicalOne(ctx: QueryCtx, args: { rootPath: string; text: string }) {
+  const segs = namespaceSegments(namespacePath(args.rootPath));
+  const depth = segs.length;
+  const field = namespacePrefixFieldForDepth(depth);
+  return ctx.db
+    .query("text_features")
+    .withSearchIndex("search_text", (sq) => sq.search("text", args.text).eq(field, args.rootPath));
 }
 
 const ROUND_ROBIN_SLACK = 4;
@@ -171,15 +161,12 @@ export const searchLexicalSourceMapIds = query({
     if (raw.text.trim().length === 0) return [];
 
     const roots = canonicalizeNamespacePrefixes(namespaces.map((ns) => namespacePath(ns)));
-    const prefixSegsList = roots.map((p) => namespaceSegments(p));
-    const armCount = prefixSegsList.length;
+    const armCount = roots.length;
     const K = Math.max(2, Math.ceil(raw.limit / armCount)) + ROUND_ROBIN_SLACK;
     const memoryIdSet = raw.memoryIds === undefined ? undefined : new Set(raw.memoryIds);
 
     const rowsPerArm = await Promise.all(
-      prefixSegsList.map((prefixSegments) =>
-        searchLexicalOne(ctx, { prefixSegments, text: raw.text }).take(K),
-      ),
+      roots.map((rootPath) => searchLexicalOne(ctx, { rootPath, text: raw.text }).take(K)),
     );
 
     const out: string[] = [];
@@ -206,22 +193,6 @@ export const searchLexicalSourceMapIds = query({
       round++;
     }
     return out;
-  },
-});
-
-export const searchVectorSourceMapIds = query({
-  args: {
-    scope: v.object({
-      kind: v.union(v.literal("union"), v.literal("unscoped")),
-      namespaces: v.optional(v.array(v.string())),
-    }),
-    limit: v.number(),
-    vector: v.array(v.number()),
-    memoryIds: v.optional(v.array(v.string())),
-  },
-  returns: v.array(v.string()),
-  handler: async () => {
-    return [] as string[];
   },
 });
 
@@ -369,5 +340,44 @@ export const listTextFeatureExportRowsForMemory = query({
 export const listVectorEmbeddingIndexDimensions = query({
   args: {},
   returns: v.array(v.number()),
-  handler: async () => [] as number[],
+  handler: async () => [...CONVEX_VECTOR_DIMENSIONS],
+});
+
+/** Load vector feature rows after `ctx.vectorSearch` (actions cannot use `ctx.db` directly). */
+export const getVectorFeatureRowsByIds = internalQuery({
+  args: {
+    dimension: v.union(v.literal(768), v.literal(1024), v.literal(1536), v.literal(3072)),
+    ids: v.array(v.string()),
+  },
+  returns: v.array(
+    v.union(
+      v.null(),
+      v.object({
+        sourceMapId: v.string(),
+        memoryId: v.string(),
+        namespace: v.string(),
+      }),
+    ),
+  ),
+  handler: async (ctx, { dimension, ids }) => {
+    const table = vectorTableNameForDim(dimension);
+    const out: Array<{
+      sourceMapId: string;
+      memoryId: string;
+      namespace: string;
+    } | null> = [];
+    for (const id of ids) {
+      const doc = await ctx.db.get(id as Id<typeof table>);
+      if (!doc) {
+        out.push(null);
+        continue;
+      }
+      out.push({
+        sourceMapId: doc.sourceMapId,
+        memoryId: doc.memoryId,
+        namespace: doc.namespace,
+      });
+    }
+    return out;
+  },
 });

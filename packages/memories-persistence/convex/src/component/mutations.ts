@@ -1,4 +1,4 @@
-import { ids, namespaceLevelFields, namespacePath } from "@cfd/memories-core";
+import { ids, namespacePath, namespacePrefixFields } from "@cfd/memories-core";
 import { v } from "convex/values";
 import type { MutationCtx } from "./_generated/server.js";
 import { mutation } from "./_generated/server.js";
@@ -6,6 +6,26 @@ import {
   buildCanonicalMemorySearchMetaText,
   MEMORY_SEARCH_META_SOURCE_KEY,
 } from "./lib/helpers.js";
+import {
+  CONVEX_VECTOR_DIMENSIONS,
+  type ConvexVectorDimension,
+  isConvexVectorDimension,
+  vectorTableNameForDim,
+} from "./lib/vectorConfig.js";
+
+async function deleteVectorFeaturesBySourceMapId(
+  ctx: MutationCtx,
+  sourceMapId: string,
+): Promise<void> {
+  for (const dim of CONVEX_VECTOR_DIMENSIONS) {
+    const table = vectorTableNameForDim(dim);
+    const row = await ctx.db
+      .query(table)
+      .withIndex("by_sourceMapId", (q) => q.eq("sourceMapId", sourceMapId))
+      .unique();
+    if (row?._id !== undefined) await ctx.db.delete(row._id);
+  }
+}
 
 async function removeMemorySearchMeta(ctx: MutationCtx, memoryId: string): Promise<void> {
   const sourceMapId = ids.sourceMap(memoryId, MEMORY_SEARCH_META_SOURCE_KEY);
@@ -21,6 +41,7 @@ async function removeMemorySearchMeta(ctx: MutationCtx, memoryId: string): Promi
   for (const tf of tfs) {
     if (tf._id !== undefined) await ctx.db.delete(tf._id);
   }
+  await deleteVectorFeaturesBySourceMapId(ctx, sourceMapId);
   if (sm._id !== undefined) await ctx.db.delete(sm._id);
 }
 
@@ -36,6 +57,15 @@ export const clearMemorySubtree = mutation({
       .withIndex("by_memoryId_tsCreated", (q) => q.eq("memoryId", memoryId))
       .collect();
     for (const r of tfs) await ctx.db.delete(r._id);
+
+    for (const dim of CONVEX_VECTOR_DIMENSIONS) {
+      const table = vectorTableNameForDim(dim);
+      const vfs = await ctx.db
+        .query(table)
+        .withIndex("by_memoryId_tsCreated", (q) => q.eq("memoryId", memoryId))
+        .collect();
+      for (const r of vfs) await ctx.db.delete(r._id);
+    }
 
     const sms = await ctx.db
       .query("source_maps")
@@ -185,7 +215,7 @@ export const insertLexicalFeature = mutation({
       textFeatureId,
       memoryId,
       namespace: mem.namespace,
-      ...namespaceLevelFields(ns),
+      ...namespacePrefixFields(ns),
       sourceMapId,
       text,
       tsCreated: now,
@@ -198,13 +228,33 @@ export const insertVectorFeature = mutation({
   args: {
     memoryId: v.string(),
     sourceMapId: v.string(),
+    vector: v.array(v.float64()),
     now: v.number(),
   },
   returns: v.object({ vectorFeatureId: v.string() }),
-  handler: async (_ctx, _args) => {
-    throw new Error(
-      "insertVectorFeature: vector search is not supported for this Convex deployment (lexical-first)",
-    );
+  handler: async (ctx, { memoryId, sourceMapId, vector, now }) => {
+    const dim = vector.length;
+    if (!isConvexVectorDimension(dim)) {
+      throw new Error(`insertVectorFeature: unsupported embedding dimension ${dim}`);
+    }
+    const mem = await ctx.db
+      .query("memories")
+      .withIndex("by_memoryId_tsCreated", (q) => q.eq("memoryId", memoryId))
+      .unique();
+    if (!mem) throw new Error("insertVectorFeature: memory not found");
+    const vectorFeatureId = ids.vectorFeature(sourceMapId);
+    const ns = namespacePath(mem.namespace);
+    const table = vectorTableNameForDim(dim);
+    await ctx.db.insert(table, {
+      vectorFeatureId,
+      memoryId,
+      namespace: mem.namespace,
+      ...namespacePrefixFields(ns),
+      sourceMapId,
+      vector,
+      tsCreated: now,
+    });
+    return { vectorFeatureId };
   },
 });
 
@@ -424,7 +474,7 @@ export const syncMemorySearchMeta = mutation({
       textFeatureId,
       memoryId,
       namespace: mem.namespace,
-      ...namespaceLevelFields(ns),
+      ...namespacePrefixFields(ns),
       sourceMapId,
       text,
       tsCreated: now,
@@ -437,13 +487,36 @@ export const upsertMemorySearchMetaVector = mutation({
   args: {
     namespace: v.string(),
     memoryKey: v.string(),
+    vector: v.array(v.float64()),
     now: v.number(),
   },
   returns: v.null(),
-  handler: async (_ctx, _args) => {
-    throw new Error(
-      "upsertMemorySearchMetaVector: vector search is not supported for this Convex deployment (lexical-first)",
-    );
+  handler: async (ctx, { namespace, memoryKey, vector, now }) => {
+    const dim = vector.length;
+    if (!isConvexVectorDimension(dim)) {
+      throw new Error(`upsertMemorySearchMetaVector: unsupported embedding dimension ${dim}`);
+    }
+    const memoryId = ids.memory(namespace, memoryKey);
+    const sourceMapId = ids.sourceMap(memoryId, MEMORY_SEARCH_META_SOURCE_KEY);
+    await deleteVectorFeaturesBySourceMapId(ctx, sourceMapId);
+    const mem = await ctx.db
+      .query("memories")
+      .withIndex("by_memoryId_tsCreated", (q) => q.eq("memoryId", memoryId))
+      .unique();
+    if (!mem) throw new Error("upsertMemorySearchMetaVector: memory not found");
+    const vectorFeatureId = ids.vectorFeature(sourceMapId);
+    const ns = namespacePath(mem.namespace);
+    const table = vectorTableNameForDim(dim as ConvexVectorDimension);
+    await ctx.db.insert(table, {
+      vectorFeatureId,
+      memoryId,
+      namespace: mem.namespace,
+      ...namespacePrefixFields(ns),
+      sourceMapId,
+      vector,
+      tsCreated: now,
+    });
+    return null;
   },
 });
 

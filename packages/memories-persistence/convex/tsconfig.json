@@ -1,6 +1,7 @@
 {
   "include": [
     "src/**/*.ts",
+    "src/**/*.tsx",
     "convex/**/*.ts",
     "example/**/*.ts",
     "example/**/*.tsx",

@@ -24,6 +24,11 @@
     },
     "./_generated/component": {
       "types": "./src/component/_generated/component.ts"
+    },
+    "./react": {
+      "types": "./src/react/index.ts",
+      "import": "./src/react/index.ts",
+      "default": "./src/react/index.ts"
     }
   },
   "devDependencies": {
@@ -34,6 +39,7 @@
     "react-dom": "^19.2.5"
   },
   "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
     "typescript": "^5"
   },
   "dependencies": {

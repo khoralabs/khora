@@ -3,7 +3,7 @@ import z from "zod";
 /** Canonical segment separator for hierarchical memory namespaces. */
 export const NAMESPACE_SEPARATOR = "/" as const;
 
-/** Max path depth (segments); matches Convex/SQLite `ns_l0`..`ns_l5`. */
+/** Max path depth (segments); matches Convex/SQLite `ns_prefix_1`..`ns_prefix_6`. */
 export const NAMESPACE_MAX_DEPTH = 6;
 
 /** Allowed characters per segment (`[a-z0-9_-]+`). */
@@ -140,24 +140,40 @@ export function namespaceLevels(
   return out;
 }
 
-const NS_LEVEL_KEYS = ["ns_l0", "ns_l1", "ns_l2", "ns_l3", "ns_l4", "ns_l5"] as const;
+/** Cumulative path prefixes for subtree filters (`ns_prefix_k` = first k segments joined). */
+export const NS_PREFIX_KEYS = [
+  "ns_prefix_1",
+  "ns_prefix_2",
+  "ns_prefix_3",
+  "ns_prefix_4",
+  "ns_prefix_5",
+  "ns_prefix_6",
+] as const;
 
-export type NamespaceLevelKey = (typeof NS_LEVEL_KEYS)[number];
+export type NamespacePrefixKey = (typeof NS_PREFIX_KEYS)[number];
 
-/** Spread into Convex `text_features` / SQLite `memories` rows (only defined levels are set). */
-export function namespaceLevelFields(
+/** `depth` is segment count (1..6); maps to `ns_prefix_depth`. */
+export function namespacePrefixFieldForDepth(depth: number): NamespacePrefixKey {
+  if (depth < 1 || depth > NAMESPACE_MAX_DEPTH) {
+    throw new Error(`namespace prefix depth must be 1..${NAMESPACE_MAX_DEPTH}`);
+  }
+  const key = NS_PREFIX_KEYS[depth - 1];
+  if (key === undefined) throw new Error("namespacePrefixFieldForDepth: invalid depth");
+  return key;
+}
+
+/** Spread into Convex `text_features` / vector tables / SQLite `memories` rows (only defined prefixes are set). */
+export function namespacePrefixFields(
   p: NamespacePath,
   cap: number = NAMESPACE_MAX_DEPTH,
-): Partial<Record<NamespaceLevelKey, string>> {
+): Partial<Record<NamespacePrefixKey, string>> {
   const segs = namespaceSegments(p);
   const n = Math.min(segs.length, cap);
-  const out: Partial<Record<NamespaceLevelKey, string>> = {};
-  for (let i = 0; i < n; i++) {
-    const key = NS_LEVEL_KEYS[i];
-    const seg = segs[i];
-    if (key !== undefined && seg !== undefined) {
-      out[key] = seg;
-    }
+  const out: Partial<Record<NamespacePrefixKey, string>> = {};
+  for (let k = 1; k <= n; k++) {
+    const key = NS_PREFIX_KEYS[k - 1];
+    const prefix = segs.slice(0, k).join(NAMESPACE_SEPARATOR);
+    if (key !== undefined) out[key] = prefix;
   }
   return out;
 }

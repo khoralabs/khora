@@ -23,6 +23,20 @@ import type { FunctionReference } from "convex/server";
  */
 export type ComponentApi<Name extends string | undefined = string | undefined> =
   {
+    actions: {
+      searchVectorSourceMapIds: FunctionReference<
+        "action",
+        "internal",
+        {
+          limit: number;
+          memoryIds?: Array<string>;
+          scope: { kind: "union" | "unscoped"; namespaces?: Array<string> };
+          vector: Array<number>;
+        },
+        Array<string>,
+        Name
+      >;
+    };
     mutations: {
       clearMemorySubtree: FunctionReference<
         "mutation",
@@ -120,7 +134,12 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
       insertVectorFeature: FunctionReference<
         "mutation",
         "internal",
-        { memoryId: string; now: number; sourceMapId: string },
+        {
+          memoryId: string;
+          now: number;
+          sourceMapId: string;
+          vector: Array<number>;
+        },
         { vectorFeatureId: string },
         Name
       >;
@@ -141,7 +160,12 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
       upsertMemorySearchMetaVector: FunctionReference<
         "mutation",
         "internal",
-        { memoryKey: string; namespace: string; now: number },
+        {
+          memoryKey: string;
+          namespace: string;
+          now: number;
+          vector: Array<number>;
+        },
         null,
         Name
       >;
@@ -284,18 +308,6 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
           memoryIds?: Array<string>;
           scope: { kind: "union" | "unscoped"; namespaces?: Array<string> };
           text: string;
-        },
-        Array<string>,
-        Name
-      >;
-      searchVectorSourceMapIds: FunctionReference<
-        "query",
-        "internal",
-        {
-          limit: number;
-          memoryIds?: Array<string>;
-          scope: { kind: "union" | "unscoped"; namespaces?: Array<string> };
-          vector: Array<number>;
         },
         Array<string>,
         Name

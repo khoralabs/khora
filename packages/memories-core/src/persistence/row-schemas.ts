@@ -8,13 +8,13 @@ import { defineSchema, zId } from "./define-schema";
 export const zMemory = z.object({
   namespace: z.string().regex(MEMORY_NAMESPACE_PATH_REGEX).max(128),
   key: z.string(),
-  /** Denormalized namespace path segments for subtree filtering (1..6 levels). */
-  ns_l0: z.string().optional(),
-  ns_l1: z.string().optional(),
-  ns_l2: z.string().optional(),
-  ns_l3: z.string().optional(),
-  ns_l4: z.string().optional(),
-  ns_l5: z.string().optional(),
+  /** Denormalized cumulative namespace prefixes for subtree filtering (1..6 segments). */
+  ns_prefix_1: z.string().optional(),
+  ns_prefix_2: z.string().optional(),
+  ns_prefix_3: z.string().optional(),
+  ns_prefix_4: z.string().optional(),
+  ns_prefix_5: z.string().optional(),
+  ns_prefix_6: z.string().optional(),
 });
 
 /**

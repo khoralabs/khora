@@ -1,7 +1,7 @@
 import {
-  type ConvexMemoriesClient,
   createConvexLexicalTextStore,
-  createConvexMemoriesPersistence,
+  createMemoriesPersistence,
+  hostComponentBridgeFromCtx,
   mergeMemory,
   search,
 } from "@cfd/memories-convex";
@@ -10,28 +10,26 @@ import { v } from "convex/values";
 import { components } from "./_generated/api.js";
 import { mutation, query } from "./_generated/server.js";
 
+export type { HostComponentBridge } from "@cfd/memories-convex";
+export {
+  createConvexMemoriesPersistenceFromHostBridge,
+  createMemoriesPersistence,
+  hostComponentBridgeFromActionCtx,
+  hostComponentBridgeFromCtx,
+  hostComponentBridgeFromMutationCtx,
+  hostComponentBridgeFromQueryCtx,
+} from "@cfd/memories-convex";
+
 const DEMO_NS = "demo";
 
 /** Lexical search cap (must match demo UI copy and `searchMemories` below). */
 export const DEMO_SEARCH_TOP_K = 20;
 
-type HostComponentBridge = {
-  runMutation: (ref: unknown, args: unknown) => Promise<unknown>;
-  runQuery: (ref: unknown, args: unknown) => Promise<unknown>;
-};
-
 export const addMemory = mutation({
   args: { text: v.string() },
   returns: v.array(v.string()),
   handler: async (ctx, args) => {
-    const bridge = ctx as unknown as HostComponentBridge;
-    const persistence = createConvexMemoriesPersistence(
-      {
-        mutation: (ref, a) => bridge.runMutation(ref, a),
-        query: (ref, a) => bridge.runQuery(ref, a),
-      } as ConvexMemoriesClient,
-      components.memories,
-    );
+    const { persistence } = createMemoriesPersistence(ctx, components.memories);
     return mergeMemory(
       { persistence },
       {
@@ -50,16 +48,7 @@ export const searchMemories = query({
     const q = args.q.trim();
     if (q === "") return [];
 
-    const bridge = ctx as unknown as HostComponentBridge;
-    const persistence = createConvexMemoriesPersistence(
-      {
-        mutation: async () => {
-          throw new Error("searchMemories: unexpected mutation");
-        },
-        query: (ref, a) => bridge.runQuery(ref, a),
-      } as ConvexMemoriesClient,
-      components.memories,
-    );
+    const { persistence, bridge } = createMemoriesPersistence(ctx, components.memories);
     const hits = await search(
       { persistence },
       {
@@ -93,7 +82,7 @@ export const listDemoMemories = query({
     }),
   ),
   handler: async (ctx) => {
-    const bridge = ctx as unknown as HostComponentBridge;
+    const bridge = hostComponentBridgeFromCtx(ctx);
     return bridge.runQuery(components.memories.queries.listMemoriesInNamespace, {
       namespace: DEMO_NS,
     }) as Promise<
