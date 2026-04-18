@@ -3,21 +3,21 @@ import { v } from "convex/values";
 import type { ConvexVectorDimension } from "./lib/vectorConfig.js";
 
 const nsPrefixFields = {
-  ns_prefix_1: v.optional(v.string()),
-  ns_prefix_2: v.optional(v.string()),
-  ns_prefix_3: v.optional(v.string()),
-  ns_prefix_4: v.optional(v.string()),
-  ns_prefix_5: v.optional(v.string()),
-  ns_prefix_6: v.optional(v.string()),
+  nsPrefix1: v.optional(v.string()),
+  nsPrefix2: v.optional(v.string()),
+  nsPrefix3: v.optional(v.string()),
+  nsPrefix4: v.optional(v.string()),
+  nsPrefix5: v.optional(v.string()),
+  nsPrefix6: v.optional(v.string()),
 };
 
 const NS_PREFIX_FILTER_FIELDS = [
-  "ns_prefix_1",
-  "ns_prefix_2",
-  "ns_prefix_3",
-  "ns_prefix_4",
-  "ns_prefix_5",
-  "ns_prefix_6",
+  "nsPrefix1",
+  "nsPrefix2",
+  "nsPrefix3",
+  "nsPrefix4",
+  "nsPrefix5",
+  "nsPrefix6",
 ] as const;
 
 /** Fresh table per dimension — reusing one `defineTable` chain duplicates vector index definitions. */
@@ -25,7 +25,7 @@ function defineVectorFeaturesTable(dim: ConvexVectorDimension) {
   return defineTable({
     vectorFeatureId: v.string(),
     memoryId: v.string(),
-    /** Full path string (audit / hydration); subtree filters use `ns_prefix_*`. */
+    /** Full path string (audit / hydration); subtree filters use `nsPrefix*`. */
     namespace: v.string(),
     ...nsPrefixFields,
     sourceMapId: v.string(),
@@ -60,7 +60,7 @@ export default defineSchema({
     sourceMapId: v.string(),
     memoryId: v.string(),
     namespace: v.string(),
-    source_key: v.string(),
+    sourceKey: v.string(),
     tsCreated: v.number(),
   })
     .index("by_sourceMapId", ["sourceMapId"])
@@ -69,7 +69,7 @@ export default defineSchema({
   text_features: defineTable({
     textFeatureId: v.string(),
     memoryId: v.string(),
-    /** Full path string (audit / hydration); subtree filters use `ns_prefix_*`. */
+    /** Full path string (audit / hydration); subtree filters use `nsPrefix*`. */
     namespace: v.string(),
     ...nsPrefixFields,
     sourceMapId: v.string(),

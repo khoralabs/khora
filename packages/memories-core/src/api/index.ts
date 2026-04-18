@@ -11,6 +11,7 @@ export type {
   NamespacePath,
   NamespacePathLiteral,
   NamespacePrefixKey,
+  NamespacePrefixKeyCamel,
 } from "../models/namespace-path";
 export {
   canonicalizeNamespacePrefixes,
@@ -19,11 +20,14 @@ export {
   NAMESPACE_SEGMENT_REGEX,
   NAMESPACE_SEPARATOR,
   NS_PREFIX_KEYS,
+  NS_PREFIX_KEYS_CAMEL,
   namespaceFromSegments,
   namespaceLevels,
   namespacePath,
   namespacePrefixFieldForDepth,
+  namespacePrefixFieldForDepthCamel,
   namespacePrefixFields,
+  namespacePrefixFieldsCamel,
   namespaceSegments,
   zNamespacePath,
 } from "../models/namespace-path";

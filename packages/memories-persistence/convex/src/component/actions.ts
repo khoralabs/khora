@@ -3,7 +3,7 @@ import {
   canonicalizeNamespacePrefixes,
   isPrefixOf,
   namespacePath,
-  namespacePrefixFieldForDepth,
+  namespacePrefixFieldForDepthCamel,
   namespaceSegments,
 } from "@cfd/memories-core";
 import { v } from "convex/values";
@@ -55,7 +55,7 @@ export const searchVectorSourceMapIds = action({
       filter: (q) => {
         const nsClauses = roots.map((r) => {
           const depth = namespaceSegments(r).length;
-          const field = namespacePrefixFieldForDepth(depth);
+          const field = namespacePrefixFieldForDepthCamel(depth);
           return q.eq(field, r);
         });
         const idClauses =

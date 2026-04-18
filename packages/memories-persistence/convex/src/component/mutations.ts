@@ -1,4 +1,4 @@
-import { ids, namespacePath, namespacePrefixFields } from "@cfd/memories-core";
+import { ids, namespacePath, namespacePrefixFieldsCamel } from "@cfd/memories-core";
 import { v } from "convex/values";
 import type { MutationCtx } from "./_generated/server.js";
 import { mutation } from "./_generated/server.js";
@@ -188,7 +188,7 @@ export const insertSourceMap = mutation({
       sourceMapId,
       memoryId,
       namespace: mem.namespace,
-      source_key: sourceKey,
+      sourceKey,
       tsCreated: now,
     });
     return { sourceMapId };
@@ -215,7 +215,7 @@ export const insertLexicalFeature = mutation({
       textFeatureId,
       memoryId,
       namespace: mem.namespace,
-      ...namespacePrefixFields(ns),
+      ...namespacePrefixFieldsCamel(ns),
       sourceMapId,
       text,
       tsCreated: now,
@@ -249,7 +249,7 @@ export const insertVectorFeature = mutation({
       vectorFeatureId,
       memoryId,
       namespace: mem.namespace,
-      ...namespacePrefixFields(ns),
+      ...namespacePrefixFieldsCamel(ns),
       sourceMapId,
       vector,
       tsCreated: now,
@@ -465,7 +465,7 @@ export const syncMemorySearchMeta = mutation({
       sourceMapId,
       memoryId,
       namespace: mem.namespace,
-      source_key: MEMORY_SEARCH_META_SOURCE_KEY,
+      sourceKey: MEMORY_SEARCH_META_SOURCE_KEY,
       tsCreated: now,
     });
     const textFeatureId = ids.textFeature(sourceMapId);
@@ -474,7 +474,7 @@ export const syncMemorySearchMeta = mutation({
       textFeatureId,
       memoryId,
       namespace: mem.namespace,
-      ...namespacePrefixFields(ns),
+      ...namespacePrefixFieldsCamel(ns),
       sourceMapId,
       text,
       tsCreated: now,
@@ -511,7 +511,7 @@ export const upsertMemorySearchMetaVector = mutation({
       vectorFeatureId,
       memoryId,
       namespace: mem.namespace,
-      ...namespacePrefixFields(ns),
+      ...namespacePrefixFieldsCamel(ns),
       sourceMapId,
       vector,
       tsCreated: now,

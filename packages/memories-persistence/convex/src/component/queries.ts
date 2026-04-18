@@ -3,7 +3,7 @@ import {
   canonicalizeNamespacePrefixes,
   ids,
   namespacePath,
-  namespacePrefixFieldForDepth,
+  namespacePrefixFieldForDepthCamel,
   namespaceSegments,
 } from "@cfd/memories-core";
 import { v } from "convex/values";
@@ -119,11 +119,11 @@ export const buildCanonicalMemorySearchMetaTextQuery = query({
   },
 });
 
-/** One search arm: full-text on `text` with a single `ns_prefix_k` filter for subtree `rootPath`. */
+/** One search arm: full-text on `text` with a single `nsPrefix_k` filter for subtree `rootPath`. */
 function searchLexicalOne(ctx: QueryCtx, args: { rootPath: string; text: string }) {
   const segs = namespaceSegments(namespacePath(args.rootPath));
   const depth = segs.length;
-  const field = namespacePrefixFieldForDepth(depth);
+  const field = namespacePrefixFieldForDepthCamel(depth);
   return ctx.db
     .query("text_features")
     .withSearchIndex("search_text", (sq) => sq.search("text", args.text).eq(field, args.rootPath));
@@ -233,7 +233,7 @@ export const hydrateSourceMapHits = query({
         _id: sm.sourceMapId,
         _ts_created: sm.tsCreated,
         memory_id: sm.memoryId,
-        source_key: sm.source_key,
+        source_key: sm.sourceKey,
         memory: {
           _id: mem.memoryId,
           _ts_created: mem.tsCreated,
@@ -301,7 +301,7 @@ export const listSourceMapsForMemory = query({
       _id: sm.sourceMapId,
       _ts_created: sm.tsCreated,
       memory_id: sm.memoryId,
-      source_key: sm.source_key,
+      source_key: sm.sourceKey,
     }));
   },
 });
@@ -329,7 +329,7 @@ export const listTextFeatureExportRowsForMemory = query({
       if (!sm) continue;
       out.push({
         memory_id: sm.memoryId,
-        source_key: sm.source_key,
+        source_key: sm.sourceKey,
         text: tf.text,
       });
     }

@@ -6,14 +6,14 @@ Convex **component** and TypeScript client for the Smithy-aligned memories persi
 
 | Feature | Supported |
 |--------|-----------|
-| Lexical search | Yes (Convex search index on `text_features.text`; subtree filters use `ns_prefix_1`…`ns_prefix_6`) |
+| Lexical search | Yes (Convex search index on `text_features.text`; subtree filters use `nsPrefix1`…`nsPrefix6`) |
 | Vector search | Yes (`vectorSearch: true`; KNN via `ctx.vectorSearch` in component **action** `searchVectorSourceMapIds`; embeddings stored per dimension in `vector_features_768` / `_1024` / `_1536` / `_3072`) |
 | Neighbor index | No (`neighborIndex: false`; `listNeighborsForMemory` returns `[]`) |
 | Multi-namespace search | Yes (`multiNamespaceSearch: true`; per-namespace arms merged round-robin) |
 | Unscoped search | No (`unscopedSearch: false`) |
 | `syncLabelPropsSearchFeatures` | Not exposed (optional in core; omitted here) |
 
-Hierarchical namespaces use **cumulative prefix** columns (`ns_prefix_k` = first *k* segments joined with `/`) on `text_features` and `vector_features_*` so a subtree query is a single `eq` per root (Convex vector filters allow only `eq` + `or`, not chained `and` across fields). See `src/vectorConfig.ts` for supported embedding widths.
+Hierarchical namespaces use **cumulative prefix** columns (`nsPrefix_k` = first *k* segments joined with `/`) on `text_features` and `vector_features_*` so a subtree query is a single `eq` per root (Convex vector filters allow only `eq` + `or`, not chained `and` across fields). See `src/vectorConfig.ts` for supported embedding widths.
 
 **Hybrid / vector retrieval:** Callers must supply a Convex client that implements **`action`** (e.g. `ctx.runAction` from an action, or the client’s action runner). Lexical-only `search()` can use query + mutation only; vector arms use the component action.
 
