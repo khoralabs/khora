@@ -1,3 +1,4 @@
+import type { NamespacePath } from "../models/namespace-path";
 import type {
   HydratedNeighbor,
   HydratedSourceMapHit,
@@ -51,9 +52,13 @@ export type MemoriesBackendCapabilities = {
   unscopedSearch: boolean;
 };
 
-/** Namespace filter for {@link MemoriesRetrieval} hybrid search; caller normalizes unions (non-empty, deduped). */
+/**
+ * Namespace filter for {@link MemoriesRetrieval} hybrid search.
+ * Caller normalizes unions (non-empty, deduped). Each path is a **subtree root**:
+ * a memory matches if its namespace equals the path or is a descendant (more segments).
+ */
 export type SearchNamespaceScope =
-  | { kind: "union"; namespaces: readonly string[] }
+  | { kind: "union"; namespaces: readonly NamespacePath[] }
   | { kind: "unscoped" };
 
 /** Default when {@link MemoriesPersistence.capabilities} is omitted (full-featured backend). */
@@ -86,7 +91,11 @@ export interface MemoriesMutation {
    * Memory keys for memories connected by edges to the given node (used when syncing search-meta for neighbors).
    * **Post:** Returns deduped logical keys in namespace for merge side-effects.
    */
-  listNeighborMemoryKeysForNode(op: MemoryOpContext, namespace: string, nodeId: string): string[];
+  listNeighborMemoryKeysForNode(
+    op: MemoryOpContext,
+    namespace: NamespacePath,
+    nodeId: string,
+  ): string[];
 
   /**
    * Delete all dependent rows for this memory subtree (features, maps, edges, labels, meta, etc.).
@@ -97,13 +106,13 @@ export interface MemoriesMutation {
   /** Upsert root memory row; returns stable ids and creation timestamp field used by validators. */
   upsertMemory(
     op: MemoryOpContext,
-    input: { namespace: string; key: string },
+    input: { namespace: NamespacePath; key: string },
   ): { memoryId: string; _ts_created: number };
 
   /** Upsert the primary graph node for a memory key; optional JSON properties on the node. */
   upsertNodeForMemoryKey(
     op: MemoryOpContext,
-    input: { namespace: string; memoryKey: string; properties?: Record<string, unknown> },
+    input: { namespace: NamespacePath; memoryKey: string; properties?: Record<string, unknown> },
   ): { nodeId: string };
 
   /** Insert a source map row for (memoryId, sourceKey); content items are one map each. */
@@ -137,7 +146,7 @@ export interface MemoriesMutation {
   ): void;
 
   /** Resolve memory primary key by logical key, or `undefined` if absent. */
-  findMemoryIdByKey(namespace: string, key: string): string | undefined;
+  findMemoryIdByKey(namespace: NamespacePath, key: string): string | undefined;
 
   /** Whether a node row exists (used to validate edge targets). */
   nodeExists(nodeId: string): boolean;
@@ -169,7 +178,7 @@ export interface MemoriesMutation {
    */
   syncMemorySearchMeta(
     op: MemoryOpContext,
-    input: { namespace: string; memoryKey: string; metaVector?: Float32Array },
+    input: { namespace: NamespacePath; memoryKey: string; metaVector?: Float32Array },
   ): void;
 
   /**
@@ -178,20 +187,20 @@ export interface MemoriesMutation {
    */
   syncLabelPropsSearchFeatures?(
     op: MemoryOpContext,
-    input: { namespace: string; memoryKey: string },
+    input: { namespace: NamespacePath; memoryKey: string },
   ): void;
 
   /** Build canonical meta text for a memory (read during sync). */
   buildCanonicalMemorySearchMetaText(
     op: MemoryOpContext,
-    namespace: string,
+    namespace: NamespacePath,
     memoryKey: string,
   ): string;
 
   /** Upsert vector for the search-meta source map only (batch path after merge). */
   upsertMemorySearchMetaVector(
     op: MemoryOpContext,
-    input: { namespace: string; memoryKey: string; vector: Float32Array },
+    input: { namespace: NamespacePath; memoryKey: string; vector: Float32Array },
   ): void;
 
   /** Delete root memory and graph node records after subtree clear (delete flow). */
@@ -226,7 +235,7 @@ export interface MemoriesNeighborIndex {
     EDGE_LABEL extends string = string,
     NODE_LABEL extends string = string,
   >(input: {
-    namespace: string;
+    namespace: NamespacePath;
     key: string;
     filters?: NeighborFilter<EDGE_LABEL, NODE_LABEL>;
   }): HydratedNeighbor[];
@@ -267,18 +276,20 @@ export type MemoriesPersistence = MemoriesMutation &
  * Distinct from {@link MemoriesPersistence}; a store may expose both via separate adapters.
  */
 export interface MemoriesVisualization {
-  loadGraphEdgesForNamespace(namespace: string): GraphEdgeLink[];
+  loadGraphEdgesForNamespace(namespace: NamespacePath): GraphEdgeLink[];
 
-  loadNodeLabelsForNamespace(namespace: string): Map<string, OntologyLabelInstance[]>;
+  loadNodeLabelsForNamespace(namespace: NamespacePath): Map<string, OntologyLabelInstance[]>;
 
   /** Node JSON properties from stored graph nodes (null when absent or empty). */
-  loadNodePropertiesForNamespace(namespace: string): Map<string, Record<string, unknown> | null>;
+  loadNodePropertiesForNamespace(
+    namespace: NamespacePath,
+  ): Map<string, Record<string, unknown> | null>;
 
-  loadMeanEmbeddingsForNamespace(namespace: string): GraphMemoryEmbedding[];
+  loadMeanEmbeddingsForNamespace(namespace: NamespacePath): GraphMemoryEmbedding[];
 
-  loadMemoryTextPreview(namespace: string, key: string, maxChars?: number): string | null;
+  loadMemoryTextPreview(namespace: NamespacePath, key: string, maxChars?: number): string | null;
 
-  loadEdgePreview(namespace: string, edgeId: string): EdgePreviewPayload | null;
+  loadEdgePreview(namespace: NamespacePath, edgeId: string): EdgePreviewPayload | null;
 }
 
 /** Core persistence passed to merge / search / delete APIs. */

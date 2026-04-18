@@ -1,5 +1,6 @@
 import { fuseRrf, type RrfArm } from "@cfd/reciprocal-rank-fusion";
 import { logger } from "../logger.js";
+import type { NamespacePath } from "../models/namespace-path";
 import type { HydratedNeighbor, NeighborFilter } from "../models/neighbor-search-types";
 import type { OntologyLabelInstance } from "../models/ontology-label";
 import type { MemoriesPersistenceAsync } from "../persistence/async-types";
@@ -42,7 +43,7 @@ function matchesLabelFilter(
   return true;
 }
 
-function scopeSingleNamespace(namespace: string): SearchNamespaceScope {
+function scopeSingleNamespace(namespace: NamespacePath): SearchNamespaceScope {
   return { kind: "union", namespaces: [namespace] };
 }
 
@@ -126,7 +127,7 @@ async function expandNeighborsWithSubSearchAsync<
   persistence: MemoriesPersistenceAsync,
   caps: MemoriesBackendCapabilities,
   input: {
-    namespace: string;
+    namespace: NamespacePath;
     rootMemoryKey: string;
     content: SearchContent;
     lexicalWeight: number;

@@ -18,6 +18,8 @@ export function validatePropsAgainstJsonSchema(
   delete schema.$schema;
   const validate = ajv.compile(schema);
   if (!validate(props)) {
-    throw new Error(`Label props failed JSON Schema validation: ${ajv.errorsText(validate.errors)}`);
+    throw new Error(
+      `Label props failed JSON Schema validation: ${ajv.errorsText(validate.errors)}`,
+    );
   }
 }

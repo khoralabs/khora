@@ -1,6 +1,8 @@
 import z from "zod";
 import { ids } from "../models/ids";
 import { MEMORY_SEARCH_META_SOURCE_KEY } from "../models/memory-search-meta";
+import type { NamespacePath } from "../models/namespace-path";
+import { zNamespacePath } from "../models/namespace-path";
 import { zVectorPayload } from "../persistence/row-schemas";
 import { type MemoriesPersistence, resolveMemoriesBackendCapabilities } from "../persistence/types";
 import type {
@@ -49,7 +51,7 @@ export interface MergeMemoryParams<
   TEdge extends LabelSchemaMap = LabelSchemaMap,
 > {
   key: string;
-  namespace: string;
+  namespace: NamespacePath;
   content: MergeMemoryContentItem[];
   labels: NodeLabelInstance<TNode>[];
   properties?: Record<string, unknown>;
@@ -113,8 +115,9 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams): string
   const now = Date.now();
   const op = { now };
 
-  const memoryId = ids.memory(params.namespace, params.key);
-  const nodeId = ids.node(params.namespace, params.key);
+  const namespace = zNamespacePath.parse(params.namespace);
+  const memoryId = ids.memory(namespace, params.key);
+  const nodeId = ids.node(namespace, params.key);
 
   for (const item of params.content) {
     zMergeMemoryContentItem.parse(item);
@@ -140,11 +143,11 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams): string
   let metaSyncedMemoryKeys: string[] = [];
 
   persistence.withTransaction(() => {
-    const oldNeighborKeys = persistence.listNeighborMemoryKeysForNode(op, params.namespace, nodeId);
+    const oldNeighborKeys = persistence.listNeighborMemoryKeysForNode(op, namespace, nodeId);
     persistence.clearMemorySubtree(op, memoryId, nodeId);
-    persistence.upsertMemory(op, { namespace: params.namespace, key: params.key });
+    persistence.upsertMemory(op, { namespace, key: params.key });
     persistence.upsertNodeForMemoryKey(op, {
-      namespace: params.namespace,
+      namespace,
       memoryKey: params.key,
       properties: params.properties,
     });
@@ -178,12 +181,12 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams): string
     }
 
     for (const edge of params.edges ?? []) {
-      if (persistence.findMemoryIdByKey(params.namespace, edge.memory_key) === undefined) {
+      if (persistence.findMemoryIdByKey(namespace, edge.memory_key) === undefined) {
         throw new Error(
-          `mergeMemory: unknown edge target memory_key=${edge.memory_key} in namespace=${params.namespace}`,
+          `mergeMemory: unknown edge target memory_key=${edge.memory_key} in namespace=${namespace}`,
         );
       }
-      const otherNodeId = ids.node(params.namespace, edge.memory_key);
+      const otherNodeId = ids.node(namespace, edge.memory_key);
       if (!persistence.nodeExists(otherNodeId)) {
         throw new Error(`mergeMemory: target node missing for memory_key=${edge.memory_key}`);
       }
@@ -220,12 +223,12 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams): string
         : undefined;
     for (const k of syncKeys) {
       persistence.syncMemorySearchMeta(op, {
-        namespace: params.namespace,
+        namespace,
         memoryKey: k,
         metaVector: k === params.key ? primaryMetaVec : undefined,
       });
       persistence.syncLabelPropsSearchFeatures?.(op, {
-        namespace: params.namespace,
+        namespace,
         memoryKey: k,
       });
     }

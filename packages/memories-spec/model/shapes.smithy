@@ -2,12 +2,22 @@ $version: "2"
 
 namespace cfd.memories
 
+/// Hierarchical memory namespace: `/`-separated segments matching `[a-z0-9_-]+`, depth 1..6.
+/// In search scopes, each path is a **subtree root** (matches that path and descendant paths).
+@pattern("^[a-z0-9_-]+(/[a-z0-9_-]+){0,5}$")
+@length(min: 1, max: 128)
+string MemoryNamespace
+
+list MemoryNamespaceList {
+    member: MemoryNamespace
+}
+
 // --- Row / hit shapes (storage-agnostic, aligned with @cfd/memories-core db/rows + search) ---
 
 structure MemoryRow {
     _id: String
     _ts_created: Long
-    namespace: String
+    namespace: MemoryNamespace
     key: String
 }
 
@@ -57,7 +67,7 @@ structure HydratedSourceMapHit {
 structure HydratedNeighbor {
     _id: String
     _ts_created: Long
-    namespace: String
+    namespace: MemoryNamespace
     key: String
     labels: OntologyLabelInstanceList
     edge: EdgeRow
@@ -72,7 +82,7 @@ list HydratedNeighborList {
 structure SearchNeighborHit {
     _id: String
     _ts_created: Long
-    namespace: String
+    namespace: MemoryNamespace
     key: String
     labels: OntologyLabelInstanceList
     edge: EdgeRow
@@ -130,8 +140,8 @@ union SearchNamespaceScope {
 }
 
 structure NamespaceUnion {
-    /// Non-empty, deduped namespace list.
-    namespaces: StringList
+    /// Non-empty, deduped subtree roots (see `MemoryNamespace`).
+    namespaces: MemoryNamespaceList
 }
 
 /// Marker member: no namespace predicate (entire DB).
@@ -167,7 +177,7 @@ enum EdgeDirection {
 
 structure MergeMemoryParams {
     key: String
-    namespace: String
+    namespace: MemoryNamespace
     content: MergeMemoryContentItemList
     labels: OntologyLabelInstanceList
     properties: Document
@@ -190,7 +200,7 @@ structure MergeMemoryOutput {
 }
 
 structure DeleteMemoryParams {
-    namespace: String
+    namespace: MemoryNamespace
     key: String
 }
 
@@ -247,8 +257,8 @@ structure SearchOptions {
 }
 
 structure SearchParams {
-    namespace: String
-    additionalNamespaces: StringList
+    namespace: MemoryNamespace
+    additionalNamespaces: MemoryNamespaceList
     searchEntireDatabase: Boolean
     content: SearchContent
     options: SearchOptions

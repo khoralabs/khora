@@ -1,5 +1,10 @@
 import type { HydratedSourceMapHit, SearchNamespaceScope } from "@cfd/memories-core";
-import { ids } from "@cfd/memories-core";
+import {
+  canonicalizeNamespacePrefixes,
+  ids,
+  namespacePath,
+  namespaceSegments,
+} from "@cfd/memories-core";
 import { v } from "convex/values";
 import type { QueryCtx } from "./_generated/server.js";
 import { query } from "./_generated/server.js";
@@ -35,8 +40,7 @@ export const findMemoryIdByKey = query({
   handler: async (ctx, { namespace, key }) => {
     const row = await ctx.db
       .query("memories")
-      .withIndex("by_namespace_key", (q) => q.eq("namespace", namespace))
-      .filter((q) => q.eq(q.field("key"), key))
+      .withIndex("by_namespace_key", (q) => q.eq("namespace", namespace).eq("key", key))
       .unique();
     return row?.memoryId ?? null;
   },
@@ -58,12 +62,7 @@ export const listMemoriesInNamespace = query({
       .query("memories")
       .withIndex("by_namespace_key", (q) => q.eq("namespace", namespace))
       .collect();
-    const out: Array<{
-      memoryId: string;
-      key: string;
-      tsCreated: number;
-      bodyText: string | null;
-    }> = [];
+    const out = [];
     for (const r of rows) {
       const bodyText = await lexicalTextForMemorySource(ctx, r.memoryId, "body");
       out.push({
@@ -117,28 +116,30 @@ export const buildCanonicalMemorySearchMetaTextQuery = query({
   },
 });
 
-async function searchLexicalOne(
+const NS_FILTER_FIELDS = ["ns_l0", "ns_l1", "ns_l2", "ns_l3", "ns_l4", "ns_l5"] as const;
+
+/** One search arm: full-text on `text` with equality filters pinned to a namespace prefix (subtree). */
+function searchLexicalOne(
   ctx: QueryCtx,
-  args: {
-    namespace: string;
-    text: string;
-    limit: number;
-    memoryId?: string;
-  },
-): Promise<string[]> {
-  if (args.text.trim().length === 0) return [];
-  const rows = await ctx.db
-    .query("text_features")
-    .withSearchIndex("search_text", (sq) => {
-      let s = sq.search("text", args.text).eq("namespace", args.namespace);
-      if (args.memoryId !== undefined) {
-        s = s.eq("memoryId", args.memoryId);
-      }
-      return s;
-    })
-    .take(args.limit);
-  return rows.map((row) => row.sourceMapId as string);
+  args: { prefixSegments: readonly string[]; text: string },
+) {
+  const segs = args.prefixSegments;
+  if (segs.length === 0 || segs.length > NS_FILTER_FIELDS.length) {
+    throw new Error("searchLexicalOne: prefix must have 1..6 segments");
+  }
+  return ctx.db.query("text_features").withSearchIndex("search_text", (sq) => {
+    let s = sq.search("text", args.text);
+    for (let i = 0; i < segs.length; i++) {
+      const field = NS_FILTER_FIELDS[i];
+      const seg = segs[i];
+      if (field === undefined || seg === undefined) break;
+      s = s.eq(field, seg);
+    }
+    return s;
+  });
 }
+
+const ROUND_ROBIN_SLACK = 4;
 
 function scopeFromValidator(scope: {
   kind: "union" | "unscoped";
@@ -167,45 +168,36 @@ export const searchLexicalSourceMapIds = query({
 
     const namespaces = scope.namespaces ?? [];
     if (namespaces.length === 0) return [];
+    if (raw.text.trim().length === 0) return [];
 
-    const memoryIds = raw.memoryIds;
+    const roots = canonicalizeNamespacePrefixes(namespaces.map((ns) => namespacePath(ns)));
+    const prefixSegsList = roots.map((p) => namespaceSegments(p));
+    const armCount = prefixSegsList.length;
+    const K = Math.max(2, Math.ceil(raw.limit / armCount)) + ROUND_ROBIN_SLACK;
+    const memoryIdSet = raw.memoryIds === undefined ? undefined : new Set(raw.memoryIds);
 
-    const arms: string[][] = [];
-
-    for (const ns of namespaces) {
-      if (memoryIds === undefined) {
-        const hitIds = await searchLexicalOne(ctx, {
-          namespace: ns,
-          text: raw.text,
-          limit: Math.max(raw.limit * 4, raw.limit),
-        });
-        arms.push(hitIds);
-      } else {
-        for (const mid of memoryIds) {
-          const hitIds = await searchLexicalOne(ctx, {
-            namespace: ns,
-            text: raw.text,
-            limit: Math.max(raw.limit * 4, raw.limit),
-            memoryId: mid,
-          });
-          arms.push(hitIds);
-        }
-      }
-    }
+    const rowsPerArm = await Promise.all(
+      prefixSegsList.map((prefixSegments) =>
+        searchLexicalOne(ctx, { prefixSegments, text: raw.text }).take(K),
+      ),
+    );
 
     const out: string[] = [];
     const seen = new Set<string>();
     let round = 0;
     while (out.length < raw.limit) {
       let anyLeft = false;
-      for (const arm of arms) {
+      for (const arm of rowsPerArm) {
         if (round < arm.length) anyLeft = true;
       }
       if (!anyLeft) break;
 
-      for (const arm of arms) {
-        const sid = arm[round];
-        if (sid !== undefined && !seen.has(sid)) {
+      for (const arm of rowsPerArm) {
+        const row = arm[round];
+        if (row === undefined) continue;
+        if (memoryIdSet !== undefined && !memoryIdSet.has(row.memoryId)) continue;
+        const sid = row.sourceMapId;
+        if (!seen.has(sid)) {
           seen.add(sid);
           out.push(sid);
           if (out.length >= raw.limit) break;

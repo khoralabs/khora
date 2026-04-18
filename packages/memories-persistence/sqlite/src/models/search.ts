@@ -1,9 +1,12 @@
 import type { SQLQueryBindings } from "bun:sqlite";
 import {
+  canonicalizeNamespacePrefixes,
   ids,
   type NeighborConstraint,
   type NeighborFilter,
   type NeighborNodesFilter,
+  namespacePath,
+  namespaceSegments,
   type OntologyLabelInstance,
   type SearchNamespaceScope,
 } from "@cfd/memories-core";
@@ -112,6 +115,26 @@ export function buildFtsMatchFromUserText(text: string): string {
   return clauses.join(" AND ");
 }
 
+function namespaceSubtreeOrClauses(
+  namespaces: readonly string[],
+  tableAlias?: string,
+): { sql: string; bindings: SQLQueryBindings[] } {
+  const roots = canonicalizeNamespacePrefixes(namespaces.map((n) => namespacePath(n)));
+  if (roots.length === 0) {
+    return { sql: "1 = 0", bindings: [] };
+  }
+  const col = (i: number) => (tableAlias ? `${tableAlias}.ns_l${i}` : `ns_l${i}`);
+  const parts: string[] = [];
+  const bindings: SQLQueryBindings[] = [];
+  for (const root of roots) {
+    const segs = namespaceSegments(root);
+    const conds = segs.map((_, i) => `${col(i)} = ?`).join(" AND ");
+    parts.push(`(${conds})`);
+    bindings.push(...segs);
+  }
+  return { sql: parts.join(" OR "), bindings };
+}
+
 function memoryIdSubqueryFromScope(
   scope: SearchNamespaceScope,
   memoryIds: string[] | undefined,
@@ -129,16 +152,16 @@ function memoryIdSubqueryFromScope(
   if (ns.length === 0) {
     return { sql: "memory_id IN (SELECT _id FROM memories WHERE 1 = 0)", bindings: [] };
   }
-  const inNs = `namespace IN (${placeholders(ns.length)})`;
+  const { sql: nsOr, bindings: nsBindings } = namespaceSubtreeOrClauses(ns);
   if (memoryIds === undefined) {
     return {
-      sql: `memory_id IN (SELECT _id FROM memories WHERE ${inNs})`,
-      bindings: [...ns],
+      sql: `memory_id IN (SELECT _id FROM memories WHERE ${nsOr})`,
+      bindings: [...nsBindings],
     };
   }
   return {
-    sql: `memory_id IN (SELECT _id FROM memories WHERE ${inNs} AND _id IN (${placeholders(memoryIds.length)}))`,
-    bindings: [...ns, ...memoryIds],
+    sql: `memory_id IN (SELECT _id FROM memories WHERE (${nsOr}) AND _id IN (${placeholders(memoryIds.length)}))`,
+    bindings: [...nsBindings, ...memoryIds],
   };
 }
 
@@ -196,13 +219,13 @@ export function searchVectorSourceMapIds(
       ? ""
       : `AND vf.memory_id IN (${placeholders(input.memoryIds.length)})`;
 
-  const nsClause =
+  const nsScoped =
     input.scope.kind === "unscoped"
-      ? ""
-      : `AND m.namespace IN (${placeholders(input.scope.namespaces.length)})`;
-
+      ? { sql: "", bindings: [] as SQLQueryBindings[] }
+      : namespaceSubtreeOrClauses(input.scope.namespaces, "m");
+  const nsClause = input.scope.kind === "unscoped" ? "" : `AND (${nsScoped.sql})`;
   const nsBindings: SQLQueryBindings[] =
-    input.scope.kind === "unscoped" ? [] : [...input.scope.namespaces];
+    input.scope.kind === "unscoped" ? [] : [...nsScoped.bindings];
 
   const params: SQLQueryBindings[] =
     input.memoryIds === undefined
@@ -274,7 +297,7 @@ export function hydrateSourceMapHits(
         memory: {
           _id: row.memoryId,
           _ts_created: row.memoryCreated,
-          namespace: row.namespace,
+          namespace: namespacePath(row.namespace),
           key: row.key,
         } satisfies Memory,
       },
@@ -396,7 +419,7 @@ export function listNeighborsForMemory<
       memory: {
         _id: row.memoryId,
         _ts_created: row.memoryCreated,
-        namespace: row.namespace,
+        namespace: namespacePath(row.namespace),
         key: row.key,
       },
       edge: {

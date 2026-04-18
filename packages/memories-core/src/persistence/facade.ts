@@ -1,3 +1,4 @@
+import type { NamespacePath } from "../models/namespace-path";
 import type { MemoriesPersistenceAsync } from "./async-types";
 import type { MemoriesPersistence, MemoryOpContext } from "./types";
 
@@ -5,7 +6,7 @@ import type { MemoriesPersistence, MemoryOpContext } from "./types";
 export function buildCanonicalMemorySearchMetaText(
   persistence: MemoriesPersistence,
   op: MemoryOpContext,
-  namespace: string,
+  namespace: NamespacePath,
   memoryKey: string,
 ): string {
   return persistence.buildCanonicalMemorySearchMetaText(op, namespace, memoryKey);
@@ -15,7 +16,7 @@ export function buildCanonicalMemorySearchMetaText(
 export function buildCanonicalMemorySearchMetaTextAsync(
   persistence: MemoriesPersistenceAsync,
   op: MemoryOpContext,
-  namespace: string,
+  namespace: NamespacePath,
   memoryKey: string,
 ): Promise<string> {
   return persistence.buildCanonicalMemorySearchMetaText(op, namespace, memoryKey);
@@ -25,7 +26,7 @@ export function buildCanonicalMemorySearchMetaTextAsync(
 export function upsertMemorySearchMetaVector(
   persistence: MemoriesPersistence,
   op: MemoryOpContext,
-  input: { namespace: string; memoryKey: string; vector: Float32Array },
+  input: { namespace: NamespacePath; memoryKey: string; vector: Float32Array },
 ): void {
   persistence.upsertMemorySearchMetaVector(op, input);
 }
@@ -34,7 +35,7 @@ export function upsertMemorySearchMetaVector(
 export async function upsertMemorySearchMetaVectorAsync(
   persistence: MemoriesPersistenceAsync,
   op: MemoryOpContext,
-  input: { namespace: string; memoryKey: string; vector: Float32Array },
+  input: { namespace: NamespacePath; memoryKey: string; vector: Float32Array },
 ): Promise<void> {
   await persistence.upsertMemorySearchMetaVector(op, input);
 }

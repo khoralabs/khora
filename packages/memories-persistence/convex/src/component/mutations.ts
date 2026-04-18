@@ -1,4 +1,4 @@
-import { ids } from "@cfd/memories-core";
+import { ids, namespaceLevelFields, namespacePath } from "@cfd/memories-core";
 import { v } from "convex/values";
 import type { MutationCtx } from "./_generated/server.js";
 import { mutation } from "./_generated/server.js";
@@ -180,10 +180,12 @@ export const insertLexicalFeature = mutation({
       .unique();
     if (!mem) throw new Error("insertLexicalFeature: memory not found");
     const textFeatureId = ids.textFeature(sourceMapId);
+    const ns = namespacePath(mem.namespace);
     await ctx.db.insert("text_features", {
       textFeatureId,
       memoryId,
       namespace: mem.namespace,
+      ...namespaceLevelFields(ns),
       sourceMapId,
       text,
       tsCreated: now,
@@ -417,10 +419,12 @@ export const syncMemorySearchMeta = mutation({
       tsCreated: now,
     });
     const textFeatureId = ids.textFeature(sourceMapId);
+    const ns = namespacePath(mem.namespace);
     await ctx.db.insert("text_features", {
       textFeatureId,
       memoryId,
       namespace: mem.namespace,
+      ...namespaceLevelFields(ns),
       sourceMapId,
       text,
       tsCreated: now,

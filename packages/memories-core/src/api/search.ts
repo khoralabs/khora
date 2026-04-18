@@ -1,5 +1,10 @@
 import { fuseRrf, type RrfArm } from "@cfd/reciprocal-rank-fusion";
 import { logger } from "../logger.js";
+import {
+  canonicalizeNamespacePrefixes,
+  type NamespacePath,
+  namespacePath,
+} from "../models/namespace-path";
 import type { HydratedNeighbor, NeighborFilter } from "../models/neighbor-search-types";
 import type { OntologyLabelInstance } from "../models/ontology-label";
 import type { Edge, Memory, SourceMap } from "../persistence/rows.js";
@@ -26,12 +31,14 @@ export interface SearchParams<
   NODE_LABELS extends string = string,
   EDGE_LABELS extends string = string,
 > {
-  namespace: string;
+  /** Primary namespace path (subtree root for retrieval). */
+  namespace: NamespacePath;
   /**
    * Extra namespaces merged with `namespace` for retrieval (deduped union). Ignored when
    * `searchEntireDatabase` is set.
    */
-  additionalNamespaces?: string[];
+  /** Additional subtree roots merged with `namespace` (deduped). */
+  additionalNamespaces?: NamespacePath[];
   /**
    * Search all namespaces in the store. Requires persistence `unscopedSearch`. Ignores
    * `additionalNamespaces`; keep `namespace` for logs / future policy.
@@ -94,7 +101,7 @@ function matchesLabelFilter(
   return true;
 }
 
-function scopeSingleNamespace(namespace: string): SearchNamespaceScope {
+function scopeSingleNamespace(namespace: NamespacePath): SearchNamespaceScope {
   return { kind: "union", namespaces: [namespace] };
 }
 
@@ -113,15 +120,14 @@ export function normalizeSearchScopeFromParams(
     return { scope: { kind: "unscoped" }, additionalNamespaceCount: 0, unscoped: true };
   }
 
-  const ordered: string[] = [];
+  const ordered: NamespacePath[] = [];
   const seen = new Set<string>();
   for (const raw of [params.namespace, ...(params.additionalNamespaces ?? [])]) {
-    if (raw.length === 0) {
-      throw new Error("namespace must be non-empty");
-    }
-    if (seen.has(raw)) continue;
-    seen.add(raw);
-    ordered.push(raw);
+    const p = namespacePath(raw as string);
+    const key = p as string;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    ordered.push(p);
   }
   if (ordered.length === 0) {
     throw new Error("search scope: at least one namespace required");
@@ -130,8 +136,9 @@ export function normalizeSearchScopeFromParams(
   if (additionalCount > MAX_ADDITIONAL_NAMESPACES) {
     throw new Error(`additionalNamespaces exceeds max (${MAX_ADDITIONAL_NAMESPACES})`);
   }
+  const canonical = canonicalizeNamespacePrefixes(ordered);
   return {
-    scope: { kind: "union", namespaces: ordered },
+    scope: { kind: "union", namespaces: canonical },
     additionalNamespaceCount: additionalCount,
     unscoped: false,
   };
@@ -214,7 +221,7 @@ function expandNeighborsWithSubSearch<NODE_LABELS extends string, EDGE_LABELS ex
   persistence: MemoriesPersistence,
   caps: MemoriesBackendCapabilities,
   input: {
-    namespace: string;
+    namespace: NamespacePath;
     rootMemoryKey: string;
     content: SearchContent;
     lexicalWeight: number;

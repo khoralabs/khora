@@ -28,7 +28,14 @@ export default defineSchema({
   text_features: defineTable({
     textFeatureId: v.string(),
     memoryId: v.string(),
+    /** Full path string (audit / hydration); not a search filter. */
     namespace: v.string(),
+    ns_l0: v.optional(v.string()),
+    ns_l1: v.optional(v.string()),
+    ns_l2: v.optional(v.string()),
+    ns_l3: v.optional(v.string()),
+    ns_l4: v.optional(v.string()),
+    ns_l5: v.optional(v.string()),
     sourceMapId: v.string(),
     text: v.string(),
     tsCreated: v.number(),
@@ -38,7 +45,7 @@ export default defineSchema({
     .index("by_sourceMapId", ["sourceMapId"])
     .searchIndex("search_text", {
       searchField: "text",
-      filterFields: ["namespace", "memoryId"],
+      filterFields: ["ns_l0", "ns_l1", "ns_l2", "ns_l3", "ns_l4", "ns_l5"],
     }),
 
   nodes: defineTable({

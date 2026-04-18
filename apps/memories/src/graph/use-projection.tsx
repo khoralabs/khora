@@ -90,7 +90,12 @@ function buildPoints(data: GraphPayload): ProjectionPoint[] {
 function buildSceneEdges(edges: GraphPayload["edges"]): SceneEdge[] {
   const seen = new Map<
     string,
-    { fromKey: string; toKey: string; labels: Map<string, (typeof edges)[0]["labels"][0]>; edgeId: string }
+    {
+      fromKey: string;
+      toKey: string;
+      labels: Map<string, (typeof edges)[0]["labels"][0]>;
+      edgeId: string;
+    }
   >();
   const directed: SceneEdge[] = [];
   for (const e of edges) {

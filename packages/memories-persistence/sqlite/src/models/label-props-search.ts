@@ -1,5 +1,10 @@
 import type { Database } from "bun:sqlite";
-import { formatLabelPropsForSearch, ids, isNonEmptyProps, type LabelPropsSearchFormatter } from "@cfd/memories-core";
+import {
+  formatLabelPropsForSearch,
+  ids,
+  isNonEmptyProps,
+  type LabelPropsSearchFormatter,
+} from "@cfd/memories-core";
 import {
   MEMORY_EDGE_LABEL_PROPS_KEY_PREFIX,
   MEMORY_NODE_LABEL_PROPS_KEY_PREFIX,

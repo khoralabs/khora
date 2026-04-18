@@ -1,12 +1,20 @@
 import z from "zod";
+import { MEMORY_NAMESPACE_PATH_REGEX } from "../models/namespace-path";
 import { defineSchema, zId } from "./define-schema";
 
 /**
  * A memory is a collection of features with tightly shared semantics
  */
 export const zMemory = z.object({
-  namespace: z.string(),
+  namespace: z.string().regex(MEMORY_NAMESPACE_PATH_REGEX).max(128),
   key: z.string(),
+  /** Denormalized namespace path segments for subtree filtering (1..6 levels). */
+  ns_l0: z.string().optional(),
+  ns_l1: z.string().optional(),
+  ns_l2: z.string().optional(),
+  ns_l3: z.string().optional(),
+  ns_l4: z.string().optional(),
+  ns_l5: z.string().optional(),
 });
 
 /**

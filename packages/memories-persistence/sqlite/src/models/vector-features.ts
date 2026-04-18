@@ -1,7 +1,7 @@
 import { ids } from "@cfd/memories-core";
+import { memoriesPersistenceDocumentSchema } from "@cfd/memories-core/persistence";
 import { documentValidator } from "../_lib";
 import { vectorToBlob } from "../connection";
-import { memoriesPersistenceDocumentSchema } from "@cfd/memories-core/persistence";
 import { ensureVectorFeaturesVecTable, vectorVecTableName } from "../search-indexes";
 import type { DbCtx } from "./context";
 

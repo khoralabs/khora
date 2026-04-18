@@ -8,6 +8,24 @@ export {
   propsToHumanSearchText,
 } from "../models/label-props-search-text";
 export type {
+  NamespaceLevelKey,
+  NamespacePath,
+  NamespacePathLiteral,
+} from "../models/namespace-path";
+export {
+  canonicalizeNamespacePrefixes,
+  isPrefixOf,
+  NAMESPACE_MAX_DEPTH,
+  NAMESPACE_SEGMENT_REGEX,
+  NAMESPACE_SEPARATOR,
+  namespaceFromSegments,
+  namespaceLevelFields,
+  namespaceLevels,
+  namespacePath,
+  namespaceSegments,
+  zNamespacePath,
+} from "../models/namespace-path";
+export type {
   HydratedNeighbor,
   HydratedSourceMapHit,
   NeighborConstraint,
@@ -42,6 +60,7 @@ export {
   buildCanonicalMemorySearchMetaText,
   buildCanonicalMemorySearchMetaTextForMerge,
   MEMORY_SEARCH_META_SOURCE_KEY,
+  mergeMemory,
   upsertMemorySearchMetaVector,
   withDirectedEdgeProperties,
   zMergeMemoryContentItem,

@@ -1,5 +1,9 @@
 import type { Database } from "bun:sqlite";
-import type { GraphEdgeLink, GraphMemoryEmbedding, OntologyLabelInstance } from "@cfd/memories-core";
+import type {
+  GraphEdgeLink,
+  GraphMemoryEmbedding,
+  OntologyLabelInstance,
+} from "@cfd/memories-core";
 import { ids } from "@cfd/memories-core";
 import { blobToVector } from "../connection";
 
@@ -62,7 +66,12 @@ export function loadGraphEdgesForNamespace(db: Database, namespace: string): Gra
 
   const byEdge = new Map<
     string,
-    { fromKey: string; toKey: string; propertiesJson: string | null; labels: OntologyLabelInstance[] }
+    {
+      fromKey: string;
+      toKey: string;
+      propertiesJson: string | null;
+      labels: OntologyLabelInstance[];
+    }
   >();
 
   for (const r of rows) {

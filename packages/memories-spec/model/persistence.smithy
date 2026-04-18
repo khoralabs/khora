@@ -164,7 +164,7 @@ operation ListNeighborMemoryKeysForNode {
 
 structure ListNeighborMemoryKeysForNodeInput {
     op: MemoryOpContext
-    namespace: String
+    namespace: MemoryNamespace
     nodeId: String
 }
 
@@ -192,7 +192,7 @@ operation UpsertMemory {
 
 structure UpsertMemoryInput {
     op: MemoryOpContext
-    namespace: String
+    namespace: MemoryNamespace
     key: String
 }
 
@@ -208,7 +208,7 @@ operation UpsertNodeForMemoryKey {
 
 structure UpsertNodeForMemoryKeyInput {
     op: MemoryOpContext
-    namespace: String
+    namespace: MemoryNamespace
     memoryKey: String
     properties: Document
 }
@@ -307,7 +307,7 @@ operation FindMemoryIdByKey {
 }
 
 structure FindMemoryIdByKeyInput {
-    namespace: String
+    namespace: MemoryNamespace
     key: String
 }
 
@@ -382,7 +382,7 @@ operation SyncMemorySearchMeta {
 
 structure SyncMemorySearchMetaInput {
     op: MemoryOpContext
-    namespace: String
+    namespace: MemoryNamespace
     memoryKey: String
     metaVector: DoubleList
 }
@@ -401,7 +401,7 @@ operation SyncLabelPropsSearchFeatures {
 
 structure SyncLabelPropsSearchFeaturesInput {
     op: MemoryOpContext
-    namespace: String
+    namespace: MemoryNamespace
     memoryKey: String
 }
 
@@ -414,7 +414,7 @@ operation BuildCanonicalMemorySearchMetaText {
 
 structure BuildCanonicalMemorySearchMetaTextInput {
     op: MemoryOpContext
-    namespace: String
+    namespace: MemoryNamespace
     memoryKey: String
 }
 
@@ -429,7 +429,7 @@ operation UpsertMemorySearchMetaVector {
 
 structure UpsertMemorySearchMetaVectorInput {
     op: MemoryOpContext
-    namespace: String
+    namespace: MemoryNamespace
     memoryKey: String
     vector: DoubleList
 }
@@ -501,7 +501,7 @@ operation ListNeighborsForMemory {
 }
 
 structure ListNeighborsForMemoryInput {
-    namespace: String
+    namespace: MemoryNamespace
     key: String
     filters: NeighborFilter
 }

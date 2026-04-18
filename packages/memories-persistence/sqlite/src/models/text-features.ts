@@ -1,6 +1,6 @@
 import { ids } from "@cfd/memories-core";
-import { documentValidator } from "../_lib";
 import { memoriesPersistenceDocumentSchema } from "@cfd/memories-core/persistence";
+import { documentValidator } from "../_lib";
 import type { DbCtx } from "./context";
 
 export function insertLexicalFeature(

@@ -11,7 +11,7 @@
       "**",
       "!apps/memories/src/components/ui",
       "!packages/memories-spec/src/generated",
-      "!packages/memories-persistence/convex/**/_generated/**"
+      "!packages/memories-persistence/convex/**/_generated"
     ]
   },
   "formatter": {

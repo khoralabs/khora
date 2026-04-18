@@ -1,3 +1,4 @@
+import type { NamespacePath } from "../models/namespace-path";
 import type {
   HydratedNeighbor,
   HydratedSourceMapHit,
@@ -34,14 +35,14 @@ export type MemoriesPersistenceAsync = PromisifyMethodMap<MemoriesPersistenceAsy
    */
   syncLabelPropsSearchFeatures?(
     op: MemoryOpContext,
-    input: { namespace: string; memoryKey: string },
+    input: { namespace: NamespacePath; memoryKey: string },
   ): Promise<void>;
   hydrateSourceMapHits(sourceMapIds: readonly string[]): Promise<HydratedSourceMapHit[]>;
   listNeighborsForMemory<
     EDGE_LABEL extends string = string,
     NODE_LABEL extends string = string,
   >(input: {
-    namespace: string;
+    namespace: NamespacePath;
     key: string;
     filters?: NeighborFilter<EDGE_LABEL, NODE_LABEL>;
   }): Promise<HydratedNeighbor[]>;

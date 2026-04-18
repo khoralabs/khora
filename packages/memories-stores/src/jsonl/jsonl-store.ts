@@ -1,11 +1,6 @@
 import { appendFileSync, mkdirSync, readFileSync, statSync } from "node:fs";
 import { dirname } from "node:path";
-import type {
-  ResolvedSource,
-  ResolvedSourceMapLine,
-  SourceMap,
-  Store,
-} from "@cfd/memories-core";
+import type { ResolvedSource, ResolvedSourceMapLine, SourceMap, Store } from "@cfd/memories-core";
 import type { TextFeatureExportRow } from "@cfd/memories-core/persistence";
 
 function storeKey(memoryId: string, sourceKey: string): string {
