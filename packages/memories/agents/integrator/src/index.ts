@@ -1,6 +1,6 @@
 export { MemoryIntegratorClient, type MemoryIntegratorClientOptions } from "./client.js";
 export type { IntegratorPipelineGeneration } from "./create-integrator-agent.js";
-export { createMemoryIntegratorToolLoopAgent } from "./create-integrator-agent.js";
+export { createMemoryIntegratorAgent } from "./create-integrator-agent.js";
 export { declareMemoryIntegratorAgent, registerMemoryIntegratorAgent } from "./declaration.js";
 export {
   buildMemoryIntegratorAgentId,

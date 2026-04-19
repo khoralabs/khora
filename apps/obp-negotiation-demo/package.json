@@ -4,10 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "demo": "bun run src/cli.ts",
-    "demo:collab": "bun run src/cli.ts collaborative",
-    "demo:adversarial": "bun run src/cli.ts adversarial",
-    "demo:llm": "bun --env-file=.env run src/cli.ts llm",
+    "demo": "bun --env-file=.env run src/cli.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
@@ -15,10 +12,12 @@
     "@ai-sdk/google": "^3.0.0",
     "@cfd/agent-identity": "workspace:*",
     "@cfd/agent-identity-adapters": "workspace:*",
+    "@cfd/obp-negotiator": "workspace:*",
     "@cfd/obp-core": "workspace:*",
     "@cfd/obp-sqlite": "workspace:*",
     "@cfd/obp-tools": "workspace:*",
     "ai": "^6.0.153",
+    "pino": "^10.3.1",
     "zod": "^4.3.6"
   },
   "devDependencies": {

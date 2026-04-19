@@ -1,4 +1,4 @@
-import type { ToolkitContext, ToolRuntimeContext } from "@cfd/agent-identity";
+import type { ToolPipelineHooks, ToolkitContext, ToolRuntimeContext } from "@cfd/agent-identity";
 import type { ObpToolkitEnv } from "./obp-toolkit-env.ts";
 
 export function buildObpToolkitContext(args: {
@@ -6,12 +6,14 @@ export function buildObpToolkitContext(args: {
   namespace?: string;
   agentId?: string;
   agentName?: string;
+  pipelineHooks?: ToolPipelineHooks;
 }): ToolkitContext<ObpToolkitEnv> {
   return {
     env: args.env,
     namespace: args.namespace,
     agentId: args.agentId,
     agentName: args.agentName,
+    ...(args.pipelineHooks !== undefined ? { pipelineHooks: args.pipelineHooks } : {}),
   };
 }
 

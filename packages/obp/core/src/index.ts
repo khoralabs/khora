@@ -25,4 +25,12 @@ export type {
   RegisterPartyInput,
   SourceMapRef,
 } from "./model/types";
+export {
+  InMemoryNegotiationContext,
+  NegotiationContext,
+  type NegotiationMessage,
+  type NegotiationToolCallRecord,
+  type PostNegotiationMessageInput,
+  type WithNegotiationContextArgs,
+} from "./negotiation/index";
 export type { ObpPersistence } from "./persistence-types";

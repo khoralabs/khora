@@ -16,7 +16,7 @@ import {
 import type { LanguageModel } from "ai";
 import type z from "zod";
 import type { IntegratorPipelineGeneration } from "./create-integrator-agent.js";
-import { createMemoryIntegratorToolLoopAgent } from "./create-integrator-agent.js";
+import { createMemoryIntegratorAgent } from "./create-integrator-agent.js";
 import { type IntegratorPlanWire, parseIntegratorPlanWire } from "./integrator-output.js";
 import { buildMemoryIntegratorUserMessage } from "./messages.js";
 
@@ -64,7 +64,7 @@ export function createMemoryIntegratorSessionRunner<
 
     const affordances = await evaluateRegisteredAgentAffordances(agent, context.toolkitCtx);
 
-    const integratorAgent = createMemoryIntegratorToolLoopAgent({
+    const integratorAgent = createMemoryIntegratorAgent({
       model,
       identity: agent,
       affordances,

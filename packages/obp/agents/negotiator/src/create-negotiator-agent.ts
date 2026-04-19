@@ -1,6 +1,7 @@
 import {
   evaluateRegisteredAgentAffordances,
   type RegisteredAgentIdentity,
+  type ToolPipelineHooks,
 } from "@cfd/agent-identity";
 import { toolMapToAiTools } from "@cfd/agent-identity-adapters";
 import {
@@ -10,28 +11,30 @@ import {
 } from "@cfd/obp-tools";
 import { type LanguageModel, stepCountIs, type Tool, ToolLoopAgent } from "ai";
 
-export type ObpNegotiationToolSet = Record<string, Tool<unknown, unknown>>;
+export type ObpNegotiatorToolSet = Record<string, Tool<unknown, unknown>>;
 
-export type ObpNegotiationToolLoopAgent = ToolLoopAgent<never, ObpNegotiationToolSet, never>;
+export type ObpNegotiatorAgent = ToolLoopAgent<never, ObpNegotiatorToolSet, never>;
 
-export type ObpNegotiationGeneration = Awaited<ReturnType<ObpNegotiationToolLoopAgent["generate"]>>;
+export type ObpNegotiatorGeneration = Awaited<ReturnType<ObpNegotiatorAgent["generate"]>>;
 
 /**
- * Builds a {@link ToolLoopAgent} with OBP tools from evaluated affordances (adapter pattern).
+ * Builds a {@link ToolLoopAgent} with OBP tools from evaluated affordances.
  */
-export async function createObpNegotiationToolLoopAgent(args: {
+export async function createObpNegotiatorAgent(args: {
   model: LanguageModel;
   identity: RegisteredAgentIdentity;
   env: ObpToolkitEnv;
   systemInstructions: string;
   maxSteps?: number;
-}): Promise<ObpNegotiationToolLoopAgent> {
-  const { model, identity, env, systemInstructions, maxSteps = 8 } = args;
+  toolPipelineHooks?: ToolPipelineHooks;
+}): Promise<ObpNegotiatorAgent> {
+  const { model, identity, env, systemInstructions, maxSteps = 8, toolPipelineHooks } = args;
 
   const toolkitCtx = buildObpToolkitContext({
     env,
     agentId: identity.agentId,
     agentName: identity.name,
+    ...(toolPipelineHooks !== undefined ? { pipelineHooks: toolPipelineHooks } : {}),
   });
   const runtime = buildObpToolRuntimeContext({
     env,
@@ -40,10 +43,10 @@ export async function createObpNegotiationToolLoopAgent(args: {
   });
 
   const affordances = await evaluateRegisteredAgentAffordances(identity, toolkitCtx);
-  const tools: ObpNegotiationToolSet = toolMapToAiTools(affordances.tools, runtime);
+  const tools: ObpNegotiatorToolSet = toolMapToAiTools(affordances.tools, runtime);
   const instructions = [systemInstructions, affordances.instructions].filter(Boolean).join("\n\n");
 
-  return new ToolLoopAgent<never, ObpNegotiationToolSet, never>({
+  return new ToolLoopAgent<never, ObpNegotiatorToolSet, never>({
     id: identity.agentId,
     model,
     tools,

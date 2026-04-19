@@ -15,15 +15,15 @@ import {
 /** AI SDK tool map for the memory adapter (search only). */
 export type MemoryAdapterToolSet = Record<string, Tool<unknown, unknown>>;
 
-export type MemoryAdapterToolLoopAgent = ToolLoopAgent<
+export type MemoryAdapterAgent = ToolLoopAgent<
   never,
   MemoryAdapterToolSet,
   MemoryAdapterStructuredOutput
 >;
 
-export type AdapterPipelineGeneration = Awaited<ReturnType<MemoryAdapterToolLoopAgent["generate"]>>;
+export type AdapterPipelineGeneration = Awaited<ReturnType<MemoryAdapterAgent["generate"]>>;
 
-export function createMemoryAdapterToolLoopAgent<
+export function createMemoryAdapterAgent<
   TNode extends LabelSchemaMap,
   TEdge extends LabelSchemaMap,
 >(args: {
@@ -33,7 +33,7 @@ export function createMemoryAdapterToolLoopAgent<
   runtime: ToolRuntimeContext<MemorySearchEnv>;
   ontology: OntologyDefinition<TNode, TEdge>;
   maxSteps?: number;
-}): MemoryAdapterToolLoopAgent {
+}): MemoryAdapterAgent {
   const { model, identity, affordances, runtime, ontology, maxSteps = 12 } = args;
   const tools: MemoryAdapterToolSet = toolMapToAiTools(affordances.tools, runtime);
   const inst = affordances.instructions.trim();

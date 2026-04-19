@@ -14,17 +14,15 @@ import {
 
 export type MemoryIntegratorToolSet = Record<string, Tool<unknown, unknown>>;
 
-export type MemoryIntegratorToolLoopAgent = ToolLoopAgent<
+export type MemoryIntegratorAgent = ToolLoopAgent<
   never,
   MemoryIntegratorToolSet,
   IntegratorPlanStructuredOutput
 >;
 
-export type IntegratorPipelineGeneration = Awaited<
-  ReturnType<MemoryIntegratorToolLoopAgent["generate"]>
->;
+export type IntegratorPipelineGeneration = Awaited<ReturnType<MemoryIntegratorAgent["generate"]>>;
 
-export function createMemoryIntegratorToolLoopAgent<
+export function createMemoryIntegratorAgent<
   TNode extends LabelSchemaMap = LabelSchemaMap,
   TEdge extends LabelSchemaMap = LabelSchemaMap,
 >(args: {
@@ -34,7 +32,7 @@ export function createMemoryIntegratorToolLoopAgent<
   runtime: ToolRuntimeContext<MemorySearchEnv>;
   maxSteps?: number;
   ontology: OntologyDefinition<TNode, TEdge>;
-}): MemoryIntegratorToolLoopAgent {
+}): MemoryIntegratorAgent {
   const { model, identity, affordances, runtime, maxSteps = 12, ontology } = args;
   const tools: MemoryIntegratorToolSet = toolMapToAiTools(affordances.tools, runtime);
   const inst = affordances.instructions.trim();

@@ -1,59 +1,48 @@
-import { buildAgents } from "./agents/buildAgents.ts";
+import { mkdir } from "node:fs/promises";
+import path from "node:path";
 import { runLlmNegotiation } from "./llm/p2pSession.ts";
-import { createDemoStack } from "./obp/demoPersistence.ts";
-import { runAdversarial } from "./scenarios/adversarial.ts";
-import { runCollaborative } from "./scenarios/collaborative.ts";
-import type { TranscriptStep } from "./scenarios/types.ts";
+import { getNegotiationScenario, NEGOTIATION_SCENARIO_IDS } from "./scenarios/index.ts";
 
-function printSteps(title: string, steps: TranscriptStep[]): void {
-  console.log(`\n=== ${title} ===\n`);
-  for (const step of steps) {
-    if (step.kind === "info") {
-      console.group(`[info] ${step.label}`);
-      console.log(step.data);
-      console.groupEnd();
-      continue;
-    }
-    if (step.ok) {
-      console.group(`[obp] ${step.op} ok`);
-      console.log(step.detail);
-      console.groupEnd();
-    } else {
-      console.group(`[obp] ${step.op} FAIL ${step.code}`);
-      console.log(step.message);
-      console.groupEnd();
-    }
-  }
+function printUsage(): void {
+  console.error(
+    `Usage: bun run demo agent <${NEGOTIATION_SCENARIO_IDS.join(" | ")}>`,
+  );
+}
+
+function buildLogFilePath(): string {
+  const argsPart =
+    process.argv.slice(2).join("_").replace(/[^a-zA-Z0-9_-]/g, "_") || "agent";
+  const ts = new Date().toISOString().replace(/[:.]/g, "-");
+  const logDir = path.join(process.cwd(), ".obp-demo-logs");
+  return path.join(logDir, `${argsPart}_${ts}.jsonl`);
 }
 
 async function main(): Promise<void> {
-  const arg = process.argv[2] ?? "collaborative";
-  const agents = await buildAgents();
+  const cmd = process.argv[2];
+  const scenarioId = process.argv[3];
 
-  if (arg === "collaborative" || arg === "collab") {
-    const stack = createDemoStack();
-    const steps = await runCollaborative(agents, stack);
-    printSteps("Collaborative negotiation", steps);
+  if (cmd !== "agent" || scenarioId === undefined) {
+    printUsage();
+    process.exitCode = 1;
     return;
   }
 
-  if (arg === "adversarial" || arg === "adv") {
-    const steps = await runAdversarial(agents);
-    printSteps("Adversarial negotiation (invariant failures)", steps);
-    return;
-  }
+  try {
+    const logFilePath = buildLogFilePath();
+    await mkdir(path.dirname(logFilePath), { recursive: true });
+    console.log("[demo] log file", logFilePath);
 
-  if (arg === "llm" || arg === "negotiate") {
-    const result = await runLlmNegotiation();
+    const scenario = await getNegotiationScenario(scenarioId);
+    const result = await runLlmNegotiation({ scenario, logFilePath });
     console.log("\n[result]", result);
     if (result.status === "error") {
       process.exitCode = 1;
     }
-    return;
+  } catch (e) {
+    console.error(e instanceof Error ? e.message : String(e));
+    printUsage();
+    process.exitCode = 1;
   }
-
-  console.error(`Usage: bun run src/cli.ts [collaborative|adversarial|llm]`);
-  process.exitCode = 1;
 }
 
 await main();

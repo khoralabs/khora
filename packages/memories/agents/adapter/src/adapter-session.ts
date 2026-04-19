@@ -17,7 +17,7 @@ import type { LanguageModel } from "ai";
 import type z from "zod";
 import { type ExpandedMemoryWire, zExpandedMemoryWireFromOntology } from "./adapter-output.js";
 import type { AdapterPipelineGeneration } from "./create-adapter-agent.js";
-import { createMemoryAdapterToolLoopAgent } from "./create-adapter-agent.js";
+import { createMemoryAdapterAgent } from "./create-adapter-agent.js";
 import { buildMemoryAdapterUserMessage } from "./messages.js";
 import type { AdapterIngestContext, ExpandedMemoryDraft } from "./types.js";
 
@@ -67,7 +67,7 @@ export function createMemoryAdapterSessionRunner<
 
     const affordances = await evaluateRegisteredAgentAffordances(agent, context.toolkitCtx);
 
-    const adapterAgent = createMemoryAdapterToolLoopAgent({
+    const adapterAgent = createMemoryAdapterAgent({
       model,
       identity: agent,
       affordances,
