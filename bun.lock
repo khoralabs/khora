@@ -111,6 +111,27 @@
     "packages/agent-identity-spec": {
       "name": "@cfd/agent-identity-spec",
     },
+    "packages/libs/merge-async-iterators": {
+      "name": "merge-async-iterators",
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/libs/reciprocal-rank-fusion": {
+      "name": "@cfd/reciprocal-rank-fusion",
+      "dependencies": {
+        "pino": "^10.3.1",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "packages/memories/agents/adapter": {
       "name": "@cfd/memories-adapter",
       "dependencies": {
@@ -244,16 +265,7 @@
         "typescript": "^5",
       },
     },
-    "packages/merge-async-iterators": {
-      "name": "merge-async-iterators",
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/obp-core": {
+    "packages/obp/core": {
       "name": "@cfd/obp-core",
       "version": "0.0.0",
       "devDependencies": {
@@ -263,7 +275,7 @@
         "typescript": "^5",
       },
     },
-    "packages/obp-persistence/sqlite": {
+    "packages/obp/persistence/sqlite": {
       "name": "@cfd/obp-sqlite",
       "version": "0.0.0",
       "dependencies": {
@@ -276,20 +288,8 @@
         "typescript": "^5",
       },
     },
-    "packages/obp-spec": {
+    "packages/obp/spec": {
       "name": "@cfd/obp-spec",
-    },
-    "packages/reciprocal-rank-fusion": {
-      "name": "@cfd/reciprocal-rank-fusion",
-      "dependencies": {
-        "pino": "^10.3.1",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
     },
   },
   "packages": {
@@ -349,13 +349,13 @@
 
     "@cfd/memories-tools": ["@cfd/memories-tools@workspace:packages/memories/agents/tools"],
 
-    "@cfd/obp-core": ["@cfd/obp-core@workspace:packages/obp-core"],
+    "@cfd/obp-core": ["@cfd/obp-core@workspace:packages/obp/core"],
 
-    "@cfd/obp-spec": ["@cfd/obp-spec@workspace:packages/obp-spec"],
+    "@cfd/obp-spec": ["@cfd/obp-spec@workspace:packages/obp/spec"],
 
-    "@cfd/obp-sqlite": ["@cfd/obp-sqlite@workspace:packages/obp-persistence/sqlite"],
+    "@cfd/obp-sqlite": ["@cfd/obp-sqlite@workspace:packages/obp/persistence/sqlite"],
 
-    "@cfd/reciprocal-rank-fusion": ["@cfd/reciprocal-rank-fusion@workspace:packages/reciprocal-rank-fusion"],
+    "@cfd/reciprocal-rank-fusion": ["@cfd/reciprocal-rank-fusion@workspace:packages/libs/reciprocal-rank-fusion"],
 
     "@dimforge/rapier3d-compat": ["@dimforge/rapier3d-compat@0.12.0", "", {}, "sha512-uekIGetywIgopfD97oDL5PfeezkFpNhwlzlaEYNOA0N6ghdsOvh/HYjSMek5Q2O1PYvRSDFcqFVJl4r4ZBwOow=="],
 
@@ -793,7 +793,7 @@
 
     "maath": ["maath@0.10.8", "", { "peerDependencies": { "@types/three": ">=0.134.0", "three": ">=0.134.0" } }, "sha512-tRvbDF0Pgqz+9XUa4jjfgAQ8/aPKmQdWXilFu2tMy4GWj4NOsx99HlULO4IeREfbO3a0sA145DZYyvXPkybm0g=="],
 
-    "merge-async-iterators": ["merge-async-iterators@workspace:packages/merge-async-iterators"],
+    "merge-async-iterators": ["merge-async-iterators@workspace:packages/libs/merge-async-iterators"],
 
     "meshline": ["meshline@3.3.1", "", { "peerDependencies": { "three": ">=0.137" } }, "sha512-/TQj+JdZkeSUOl5Mk2J7eLcYTLiQm2IDzmlSvYm7ov15anEcDJ92GHqqazxTSreeNgfnYu24kiEvvv0WlbCdFQ=="],
 

@@ -20,6 +20,7 @@
   "workspaces": [
     "apps/*",
     "packages/*",
+    "packages/libs/*",
     "packages/memories/*",
     "packages/memories/persistence/*",
     "packages/memories/agents/*",
