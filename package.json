@@ -2,20 +2,25 @@
   "name": "@cfd/agent-kernel",
   "devDependencies": {
     "@biomejs/biome": "^2.4.10",
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/parse-gitignore": "^1.0.2",
+    "minimatch": "^10.2.5",
+    "parse-gitignore": "^2.0.0"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "private": true,
   "scripts": {
-    "check": "biome check . && bun run --filter @cfd/memories-spec validate && bun run --filter @cfd/agent-identity-spec validate",
-    "check:write": "biome check --write ."
+    "check": "biome check . && bun run --filter @cfd/memories-spec validate && bun run --filter @cfd/agent-identity-spec validate && bun run --filter @cfd/obp-spec validate",
+    "check:write": "biome check --write .",
+    "context": "bun run scripts/context.ts"
   },
   "type": "module",
   "workspaces": [
     "apps/*",
     "packages/*",
-    "packages/memories-persistence/*"
+    "packages/memories-persistence/*",
+    "packages/obp-persistence/*"
   ]
 }
