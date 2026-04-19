@@ -32,6 +32,7 @@ describe("ObpSqlitePersistence", () => {
       },
       bindPortId: "",
     });
+    expect(c.getExtendingPartyId(o1.id)).toBe(party.id);
     const { port } = c.exposePort({
       offerId: o1.id,
       port: {

@@ -25,6 +25,7 @@
     "packages/memories/persistence/*",
     "packages/memories/agents/*",
     "packages/obp/*",
+    "packages/obp/agents/*",
     "packages/obp/persistence/*"
   ]
 }

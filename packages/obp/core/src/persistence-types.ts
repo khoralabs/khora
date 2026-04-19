@@ -41,4 +41,9 @@ export interface ObpPersistence {
 
   /** Snapshot of all ports keyed by id (ref resolution). */
   getPortsSnapshot(): ReadonlyMap<string, Port>;
+
+  /**
+   * Party id on the **EXTENDS** edge for this offer (who created the offer), or `null` if unknown.
+   */
+  getExtendingPartyId(offerId: string): string | null;
 }

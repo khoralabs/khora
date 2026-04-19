@@ -177,6 +177,13 @@ export class ObpSqlitePersistence implements ObpPersistence {
     return { kind: "found", port: rowToPort(row) };
   }
 
+  getExtendingPartyId(offerId: string): string | null {
+    const row = this.db
+      .query<{ party_id: string }, [string]>(`SELECT party_id FROM obp_extends WHERE offer_id = ?`)
+      .get(offerId);
+    return row?.party_id ?? null;
+  }
+
   extendOffer(input: ExtendOfferInput): { offer: Offer } {
     return this.db.transaction(() => {
       const partyExists = this.db

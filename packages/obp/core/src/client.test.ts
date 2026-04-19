@@ -55,6 +55,7 @@ describe("ObpClient + FakeObpPersistence", () => {
       },
       bindPortId: "",
     });
+    expect(c.getExtendingPartyId(created.id)).toBe(party.id);
     const { port } = c.exposePort({
       offerId: created.id,
       port: {

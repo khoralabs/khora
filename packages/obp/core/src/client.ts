@@ -67,6 +67,11 @@ export class ObpClient {
     return this.persistence.getPort(id);
   }
 
+  /** Party that extends (owns) this offer in the graph, if present. */
+  getExtendingPartyId(offerId: string): string | null {
+    return this.persistence.getExtendingPartyId(offerId);
+  }
+
   registerParty(input: RegisterPartyInput): { party: Party } {
     const name = input.name.trim();
     if (name === "") {

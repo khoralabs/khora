@@ -138,6 +138,11 @@ export class FakeObpPersistence implements ObpPersistence {
     return new Map(this.ports);
   }
 
+  getExtendingPartyId(offerId: string): string | null {
+    const row = this.extendsRows.find((r) => r.offerId === offerId);
+    return row?.partyId ?? null;
+  }
+
   /** Test helper: exactly one EXTENDS per offer. */
   getExtendsForOffer(offerId: string): ExtendRow | undefined {
     return this.extendsRows.find((r) => r.offerId === offerId);

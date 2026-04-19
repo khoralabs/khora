@@ -1,0 +1,30 @@
+{
+  "name": "@cfd/obp-tools",
+  "version": "0.0.0",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "dependencies": {
+    "@cfd/agent-identity": "workspace:*",
+    "@cfd/obp-core": "workspace:*",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@cfd/obp-sqlite": "workspace:*",
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  }
+}
