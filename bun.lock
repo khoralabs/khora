@@ -81,7 +81,7 @@
         "typescript": "^5",
       },
     },
-    "packages/agent-identity": {
+    "packages/agent/identity": {
       "name": "@cfd/agent-identity",
       "dependencies": {
         "pino": "^10.3.1",
@@ -95,7 +95,7 @@
         "typescript": "^5",
       },
     },
-    "packages/agent-identity-adapters": {
+    "packages/agent/identity-adapters": {
       "name": "@cfd/agent-identity-adapters",
       "dependencies": {
         "@cfd/agent-identity": "workspace:*",
@@ -108,7 +108,7 @@
         "typescript": "^5",
       },
     },
-    "packages/agent-identity-spec": {
+    "packages/agent/identity-spec": {
       "name": "@cfd/agent-identity-spec",
     },
     "packages/libs/merge-async-iterators": {
@@ -321,11 +321,11 @@
 
     "@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@2.4.11", "", { "os": "win32", "cpu": "x64" }, "sha512-A8D3JM/00C2KQgUV3oj8Ba15EHEYwebAGCy5Sf9GAjr5Y3+kJIYOiESoqRDeuRZueuMdCsbLZIUqmPhpYXJE9A=="],
 
-    "@cfd/agent-identity": ["@cfd/agent-identity@workspace:packages/agent-identity"],
+    "@cfd/agent-identity": ["@cfd/agent-identity@workspace:packages/agent/identity"],
 
-    "@cfd/agent-identity-adapters": ["@cfd/agent-identity-adapters@workspace:packages/agent-identity-adapters"],
+    "@cfd/agent-identity-adapters": ["@cfd/agent-identity-adapters@workspace:packages/agent/identity-adapters"],
 
-    "@cfd/agent-identity-spec": ["@cfd/agent-identity-spec@workspace:packages/agent-identity-spec"],
+    "@cfd/agent-identity-spec": ["@cfd/agent-identity-spec@workspace:packages/agent/identity-spec"],
 
     "@cfd/cli": ["@cfd/cli@workspace:apps/cli"],
 

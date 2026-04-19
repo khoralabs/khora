@@ -19,8 +19,8 @@
   "type": "module",
   "workspaces": [
     "apps/*",
-    "packages/*",
     "packages/libs/*",
+    "packages/agent/*",
     "packages/memories/*",
     "packages/memories/persistence/*",
     "packages/memories/agents/*",
