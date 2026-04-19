@@ -254,7 +254,8 @@
       },
     },
     "packages/obp-core": {
-      "name": "obp-core",
+      "name": "@cfd/obp-core",
+      "version": "0.0.0",
       "devDependencies": {
         "@types/bun": "latest",
       },
@@ -262,8 +263,12 @@
         "typescript": "^5",
       },
     },
-    "packages/obp-persistence/memories": {
-      "name": "memories",
+    "packages/obp-persistence/sqlite": {
+      "name": "@cfd/obp-sqlite",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cfd/obp-core": "workspace:*",
+      },
       "devDependencies": {
         "@types/bun": "latest",
       },
@@ -344,7 +349,11 @@
 
     "@cfd/memories-tools": ["@cfd/memories-tools@workspace:packages/memories-tools"],
 
+    "@cfd/obp-core": ["@cfd/obp-core@workspace:packages/obp-core"],
+
     "@cfd/obp-spec": ["@cfd/obp-spec@workspace:packages/obp-spec"],
+
+    "@cfd/obp-sqlite": ["@cfd/obp-sqlite@workspace:packages/obp-persistence/sqlite"],
 
     "@cfd/reciprocal-rank-fusion": ["@cfd/reciprocal-rank-fusion@workspace:packages/reciprocal-rank-fusion"],
 
@@ -784,8 +793,6 @@
 
     "maath": ["maath@0.10.8", "", { "peerDependencies": { "@types/three": ">=0.134.0", "three": ">=0.134.0" } }, "sha512-tRvbDF0Pgqz+9XUa4jjfgAQ8/aPKmQdWXilFu2tMy4GWj4NOsx99HlULO4IeREfbO3a0sA145DZYyvXPkybm0g=="],
 
-    "memories": ["memories@workspace:packages/obp-persistence/memories"],
-
     "merge-async-iterators": ["merge-async-iterators@workspace:packages/merge-async-iterators"],
 
     "meshline": ["meshline@3.3.1", "", { "peerDependencies": { "three": ">=0.137" } }, "sha512-/TQj+JdZkeSUOl5Mk2J7eLcYTLiQm2IDzmlSvYm7ov15anEcDJ92GHqqazxTSreeNgfnYu24kiEvvv0WlbCdFQ=="],
@@ -811,8 +818,6 @@
     "node-domexception": ["node-domexception@1.0.0", "", {}, "sha512-/jKZoMpw0F8GRwl4/eLROPA3cfcXtLApP0QzLmUT/HuPCZWyB7IY9ZrMeKw2O/nFIqPQB3PVM9aYm0F312AXDQ=="],
 
     "node-fetch": ["node-fetch@3.3.2", "", { "dependencies": { "data-uri-to-buffer": "^4.0.0", "fetch-blob": "^3.1.4", "formdata-polyfill": "^4.0.10" } }, "sha512-dRB78srN/l6gqWulah9SrxeYnxeddIG30+GOqK/9OlLVyLg3HPnr6SqOWTWOXKRwC2eGYCkZ59NNuSgvSrpgOA=="],
-
-    "obp-core": ["obp-core@workspace:packages/obp-core"],
 
     "on-exit-leak-free": ["on-exit-leak-free@2.1.2", "", {}, "sha512-0eJJY6hXLGf1udHwfNftBqH+g73EU4B504nZeKpz1sYRKafAghwxEJunB2O7rDZkL4PGfsMVnTXZ2EjibbqcsA=="],
 
