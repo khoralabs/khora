@@ -1,0 +1,145 @@
+import type {
+  BindPortInput,
+  BindsEdge,
+  ExposePortInput,
+  ExposesEdge,
+  ExtendOfferInput,
+  ExtendsEdge,
+  GetOfferResult,
+  GetPartyResult,
+  GetPortResult,
+  Offer,
+  Party,
+  Port,
+  RegisterPartyInput,
+} from "../model/types";
+import type { ObpPersistence } from "../persistence-types";
+
+type BindRow = { offerId: string; portId: string; edge: BindsEdge };
+type ExposeRow = { offerId: string; portId: string; edge: ExposesEdge };
+type ExtendRow = { partyId: string; offerId: string; edge: ExtendsEdge };
+
+/**
+ * In-memory {@link ObpPersistence} for tests — not a production storage strategy.
+ */
+export class FakeObpPersistence implements ObpPersistence {
+  readonly parties = new Map<string, Party>();
+  readonly offers = new Map<string, Offer>();
+  readonly ports = new Map<string, Port>();
+  private readonly extendsRows: ExtendRow[] = [];
+  private readonly exposesRows: ExposeRow[] = [];
+  private readonly bindRows: BindRow[] = [];
+
+  constructor(private readonly clock: () => number = () => Date.now()) {}
+
+  registerParty(input: RegisterPartyInput): { party: Party } {
+    const now = this.clock();
+    const party: Party = {
+      id: crypto.randomUUID(),
+      ts_created: now,
+      name: input.name,
+      sourcemaps: [...input.sourcemaps],
+    };
+    this.parties.set(party.id, party);
+    return { party };
+  }
+
+  getParty(id: string): GetPartyResult {
+    const party = this.parties.get(id);
+    if (!party) return { kind: "notFound" };
+    return { kind: "found", party };
+  }
+
+  getOffer(id: string): GetOfferResult {
+    const offer = this.offers.get(id);
+    if (!offer) return { kind: "notFound" };
+    return { kind: "found", offer };
+  }
+
+  getPort(id: string): GetPortResult {
+    const port = this.ports.get(id);
+    if (!port) return { kind: "notFound" };
+    return { kind: "found", port };
+  }
+
+  extendOffer(input: ExtendOfferInput): { offer: Offer } {
+    const party = this.parties.get(input.partyId);
+    if (!party) {
+      throw new Error(`FakeObpPersistence: party not found: ${input.partyId}`);
+    }
+    const now = this.clock();
+    const id = input.offer.id.trim() !== "" ? input.offer.id : crypto.randomUUID();
+    const offer: Offer = {
+      ...input.offer,
+      id,
+      ts_created: now,
+    };
+    this.offers.set(id, offer);
+    this.extendsRows.push({
+      partyId: input.partyId,
+      offerId: id,
+      edge: { id: crypto.randomUUID(), ts_created: now, sourcemaps: [] },
+    });
+    const bindPortId = input.bindPortId.trim();
+    if (bindPortId !== "") {
+      this.bindRows.push({
+        offerId: id,
+        portId: bindPortId,
+        edge: { id: crypto.randomUUID(), ts_created: now, sourcemaps: [] },
+      });
+    }
+    return { offer };
+  }
+
+  exposePort(input: ExposePortInput): { port: Port } {
+    if (!this.offers.has(input.offerId)) {
+      throw new Error(`FakeObpPersistence: offer not found: ${input.offerId}`);
+    }
+    const now = this.clock();
+    const id = input.port.id.trim() !== "" ? input.port.id : crypto.randomUUID();
+    const port: Port = {
+      ...input.port,
+      id,
+      ts_created: now,
+    };
+    this.ports.set(id, port);
+    this.exposesRows.push({
+      offerId: input.offerId,
+      portId: id,
+      edge: { id: crypto.randomUUID(), ts_created: now, sourcemaps: [] },
+    });
+    return { port };
+  }
+
+  bindPort(input: BindPortInput): void {
+    if (!this.offers.has(input.offerId)) {
+      throw new Error(`FakeObpPersistence: offer not found: ${input.offerId}`);
+    }
+    if (!this.ports.has(input.portId)) {
+      throw new Error(`FakeObpPersistence: port not found: ${input.portId}`);
+    }
+    const now = this.clock();
+    this.bindRows.push({
+      offerId: input.offerId,
+      portId: input.portId,
+      edge: { id: crypto.randomUUID(), ts_created: now, sourcemaps: [] },
+    });
+  }
+
+  isPortExposed(portId: string): boolean {
+    return this.exposesRows.some((r) => r.portId === portId);
+  }
+
+  listBinds(): ReadonlyArray<{ offerId: string; portId: string }> {
+    return this.bindRows.map((b) => ({ offerId: b.offerId, portId: b.portId }));
+  }
+
+  getPortsSnapshot(): ReadonlyMap<string, Port> {
+    return new Map(this.ports);
+  }
+
+  /** Test helper: exactly one EXTENDS per offer. */
+  getExtendsForOffer(offerId: string): ExtendRow | undefined {
+    return this.extendsRows.find((r) => r.offerId === offerId);
+  }
+}
