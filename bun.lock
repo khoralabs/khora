@@ -111,7 +111,7 @@
     "packages/agent-identity-spec": {
       "name": "@cfd/agent-identity-spec",
     },
-    "packages/memories-adapter": {
+    "packages/memories/agents/adapter": {
       "name": "@cfd/memories-adapter",
       "dependencies": {
         "@ai-sdk/provider-utils": "^4.0.23",
@@ -129,25 +129,7 @@
         "typescript": "^5",
       },
     },
-    "packages/memories-core": {
-      "name": "@cfd/memories-core",
-      "dependencies": {
-        "@ai-sdk/provider-utils": "^4.0.23",
-        "@cfd/reciprocal-rank-fusion": "workspace:*",
-        "ai": "^6.0.153",
-        "js-sha256": "^0.11.0",
-        "pino": "^10.3.1",
-        "zod": "^4.3.6",
-      },
-      "devDependencies": {
-        "@cfd/memories-sqlite": "workspace:*",
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/memories-integrator": {
+    "packages/memories/agents/integrator": {
       "name": "@cfd/memories-integrator",
       "dependencies": {
         "@ai-sdk/provider-utils": "^4.0.23",
@@ -165,7 +147,41 @@
         "typescript": "^5",
       },
     },
-    "packages/memories-ontologies": {
+    "packages/memories/agents/tools": {
+      "name": "@cfd/memories-tools",
+      "dependencies": {
+        "@ai-sdk/provider-utils": "^4.0.23",
+        "@cfd/agent-identity": "workspace:*",
+        "@cfd/memories-core": "workspace:*",
+        "ai": "^6.0.153",
+        "zod": "^4.3.6",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/memories/core": {
+      "name": "@cfd/memories-core",
+      "dependencies": {
+        "@ai-sdk/provider-utils": "^4.0.23",
+        "@cfd/reciprocal-rank-fusion": "workspace:*",
+        "ai": "^6.0.153",
+        "js-sha256": "^0.11.0",
+        "pino": "^10.3.1",
+        "zod": "^4.3.6",
+      },
+      "devDependencies": {
+        "@cfd/memories-sqlite": "workspace:*",
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/memories/memories-ontologies": {
       "name": "@cfd/memories-core-ontologies",
       "dependencies": {
         "@cfd/memories-core": "workspace:*",
@@ -178,7 +194,7 @@
         "typescript": "^5",
       },
     },
-    "packages/memories-persistence/convex": {
+    "packages/memories/persistence/convex": {
       "name": "@cfd/memories-convex",
       "dependencies": {
         "@cfd/memories-core": "workspace:*",
@@ -196,7 +212,7 @@
         "typescript": "^5",
       },
     },
-    "packages/memories-persistence/sqlite": {
+    "packages/memories/persistence/sqlite": {
       "name": "@cfd/memories-sqlite",
       "dependencies": {
         "@cfd/memories-core": "workspace:*",
@@ -212,30 +228,14 @@
         "typescript": "^5",
       },
     },
-    "packages/memories-spec": {
+    "packages/memories/spec": {
       "name": "@cfd/memories-spec",
     },
-    "packages/memories-stores": {
+    "packages/memories/stores": {
       "name": "@cfd/memories-stores",
       "dependencies": {
         "@cfd/memories-core": "workspace:*",
         "pino": "^10.3.1",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/memories-tools": {
-      "name": "@cfd/memories-tools",
-      "dependencies": {
-        "@ai-sdk/provider-utils": "^4.0.23",
-        "@cfd/agent-identity": "workspace:*",
-        "@cfd/memories-core": "workspace:*",
-        "ai": "^6.0.153",
-        "zod": "^4.3.6",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -329,25 +329,25 @@
 
     "@cfd/cli": ["@cfd/cli@workspace:apps/cli"],
 
-    "@cfd/memories-adapter": ["@cfd/memories-adapter@workspace:packages/memories-adapter"],
+    "@cfd/memories-adapter": ["@cfd/memories-adapter@workspace:packages/memories/agents/adapter"],
 
-    "@cfd/memories-convex": ["@cfd/memories-convex@workspace:packages/memories-persistence/convex"],
+    "@cfd/memories-convex": ["@cfd/memories-convex@workspace:packages/memories/persistence/convex"],
 
-    "@cfd/memories-core": ["@cfd/memories-core@workspace:packages/memories-core"],
+    "@cfd/memories-core": ["@cfd/memories-core@workspace:packages/memories/core"],
 
-    "@cfd/memories-core-ontologies": ["@cfd/memories-core-ontologies@workspace:packages/memories-ontologies"],
+    "@cfd/memories-core-ontologies": ["@cfd/memories-core-ontologies@workspace:packages/memories/memories-ontologies"],
 
     "@cfd/memories-desktop": ["@cfd/memories-desktop@workspace:apps/memories-desktop"],
 
-    "@cfd/memories-integrator": ["@cfd/memories-integrator@workspace:packages/memories-integrator"],
+    "@cfd/memories-integrator": ["@cfd/memories-integrator@workspace:packages/memories/agents/integrator"],
 
-    "@cfd/memories-spec": ["@cfd/memories-spec@workspace:packages/memories-spec"],
+    "@cfd/memories-spec": ["@cfd/memories-spec@workspace:packages/memories/spec"],
 
-    "@cfd/memories-sqlite": ["@cfd/memories-sqlite@workspace:packages/memories-persistence/sqlite"],
+    "@cfd/memories-sqlite": ["@cfd/memories-sqlite@workspace:packages/memories/persistence/sqlite"],
 
-    "@cfd/memories-stores": ["@cfd/memories-stores@workspace:packages/memories-stores"],
+    "@cfd/memories-stores": ["@cfd/memories-stores@workspace:packages/memories/stores"],
 
-    "@cfd/memories-tools": ["@cfd/memories-tools@workspace:packages/memories-tools"],
+    "@cfd/memories-tools": ["@cfd/memories-tools@workspace:packages/memories/agents/tools"],
 
     "@cfd/obp-core": ["@cfd/obp-core@workspace:packages/obp-core"],
 

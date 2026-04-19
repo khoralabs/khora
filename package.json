@@ -20,7 +20,9 @@
   "workspaces": [
     "apps/*",
     "packages/*",
-    "packages/memories-persistence/*",
+    "packages/memories/*",
+    "packages/memories/persistence/*",
+    "packages/memories/agents/*",
     "packages/obp-persistence/*"
   ]
 }
