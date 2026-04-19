@@ -18,7 +18,7 @@ OBP is a small typed graph for causal interaction history: **Party** → **Offer
 5. **Port.ref:** resolve before bind rules; detect cycles on the ref chain and reject.
 6. **Port.terminal** is an agent hint only; it does not change bind rules.
 
-**Provenance:** optional **sourcemaps** on entities and edges reference `@cfd/memories` (`memory_id`, `source_key`).
+**Provenance:** optional **sourcemaps** on entities and edges (see `SourceMapRef` in `shapes.smithy`) — store-agnostic; a concrete adapter may map them to an external system (e.g. a document store’s ids).
 
 **Staging:** ports that must not be bindable yet are **not** EXPOSES'd (no separate lifecycle enum on **Port**).
 
@@ -49,7 +49,7 @@ operation RegisterParty {
 
 structure RegisterPartyInput {
     name: String
-    /// Empty list means no memories provenance links.
+    /// Empty list means no source-map provenance links.
     sourcemaps: SourceMapRefList
 }
 

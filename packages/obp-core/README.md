@@ -11,7 +11,7 @@ TypeScript **domain layer** for the Offer Binding Protocol (see [`packages/obp-s
 
 | Area | Role |
 |------|------|
-| **Types** (`model/types.ts`) | `Party`, `Offer`, `Port`, `SourceMapRef`, edge records, operation inputs/results. |
+| **Types** (`model/types.ts`) | `Party`, `Offer`, `Port`, **`SourceMapRef`** (`resource_id`, `source_key` — OBP’s own optional source-map provenance, store-agnostic), edge records, operation inputs/results. |
 | **Invariants** (`invariants/`) | Pure functions: port `ref` resolution (cycles, missing ids), expiry (`now < ts_expired`), **`validateBindPreconditions`** (exposure, `max_bindings` vs canonical port). |
 | **`ObpPersistence`** (`persistence-types.ts`) | Strategy interface: Smithy **ObpPersistence** operations plus **`isPortExposed`**, **`listBinds`**, **`getPortsSnapshot`** so `ObpClient` can run those checks before mutating (helpers are orchestration-only, not separate Smithy RPCs). |
 | **`ObpClient`** (`client.ts`) | Takes `ObpPersistence` and optional `{ now }`; validates then delegates (same idea as `MemoriesClient` + `MemoriesPersistence`). |

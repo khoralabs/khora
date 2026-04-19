@@ -1,7 +1,8 @@
 /** Aligned with `cfd.obp` in `@cfd/obp-spec` / `shapes.smithy`. */
 
+/** Store-agnostic source-map link; aligned with `SourceMapRef` in `obp-spec` / `shapes.smithy`. */
 export type SourceMapRef = {
-  memory_id: string;
+  resource_id: string;
   source_key: string;
 };
 

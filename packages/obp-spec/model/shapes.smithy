@@ -2,9 +2,12 @@ $version: "2"
 
 namespace cfd.obp
 
-/// Reference to a memories row (`text_features` / export joins); same keys as `cfd.memories` SourceMapRow.
+/// Optional provenance link: a **source map** reference within OBP (store-agnostic). Fields are opaque to the protocol;
+/// embedding apps and adapters assign meaning (e.g. a backing store may map `resource_id` / `source_key` to its own rows).
 structure SourceMapRef {
-    memory_id: String
+    /// Opaque resource identifier (e.g. document or corpus id in the embedding application).
+    resource_id: String
+    /// Locator within that resource (slice key, segment id, etc.).
     source_key: String
 }
 
@@ -18,7 +21,7 @@ structure Party {
     id: String
     ts_created: Long
     name: String
-    /// Optional links to memories provenance; empty list means none.
+    /// Optional source-map provenance links; empty list means none.
     sourcemaps: SourceMapRefList
 }
 
