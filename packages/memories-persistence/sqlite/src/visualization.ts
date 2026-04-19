@@ -1,38 +1,25 @@
 import type { Database } from "bun:sqlite";
-import type { MemoriesVisualization as IMemoriesVisualization } from "@cfd/memories-core";
+import type { EdgePreviewPayload, GraphMemoryEmbedding } from "@cfd/memories-core";
 import { loadEdgePreview } from "./visualization/edge-preview";
 import { loadMemoryTextPreview } from "./visualization/memory-preview";
-import {
-  loadGraphEdgesForNamespace,
-  loadMeanEmbeddingsForNamespace,
-  loadNodeLabelsForNamespace,
-  loadNodePropertiesForNamespace,
-} from "./visualization/projection";
+import { loadMeanEmbeddingsForNamespace } from "./visualization/projection";
 
-export class MemoriesVisualization implements IMemoriesVisualization {
+/**
+ * SQLite-only adapter: mean-pooled embeddings and text/edge previews for UI.
+ * Graph topology (edges, labels, properties) is on {@link MemoriesPersistence}.
+ */
+export class MemoriesVisualization {
   constructor(private readonly db: Database) {}
 
-  loadGraphEdgesForNamespace(namespace: string) {
-    return loadGraphEdgesForNamespace(this.db, namespace);
-  }
-
-  loadNodeLabelsForNamespace(namespace: string) {
-    return loadNodeLabelsForNamespace(this.db, namespace);
-  }
-
-  loadNodePropertiesForNamespace(namespace: string) {
-    return loadNodePropertiesForNamespace(this.db, namespace);
-  }
-
-  loadMeanEmbeddingsForNamespace(namespace: string) {
+  loadMeanEmbeddingsForNamespace(namespace: string): GraphMemoryEmbedding[] {
     return loadMeanEmbeddingsForNamespace(this.db, namespace);
   }
 
-  loadMemoryTextPreview(namespace: string, key: string, maxChars?: number) {
+  loadMemoryTextPreview(namespace: string, key: string, maxChars?: number): string | null {
     return loadMemoryTextPreview(this.db, namespace, key, maxChars);
   }
 
-  loadEdgePreview(namespace: string, edgeId: string) {
+  loadEdgePreview(namespace: string, edgeId: string): EdgePreviewPayload | null {
     return loadEdgePreview(this.db, namespace, edgeId);
   }
 }

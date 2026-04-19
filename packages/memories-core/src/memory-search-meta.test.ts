@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
   createMemoriesPersistence,
-  createMemoriesVisualization,
+  loadMeanEmbeddingsForNamespace,
   openMemoriesDatabase,
-} from "@cfd/memories-sqlite/sqlite";
+} from "@cfd/memories-sqlite";
 import {
   buildCanonicalMemorySearchMetaText,
   mergeMemory,
@@ -11,7 +11,6 @@ import {
   zUserSourceKey,
 } from "./api/merge-memory";
 import { search } from "./api/search";
-import { loadMeanEmbeddingsForNamespace } from "./graph/graph-projection";
 import {
   buildCanonicalMemorySearchMetaTextForMerge,
   MEMORY_SEARCH_META_SOURCE_KEY,
@@ -182,7 +181,6 @@ describe("memory search meta", () => {
   test("loadMeanEmbeddingsForNamespace excludes system __ source_maps", () => {
     const db = openTestDb();
     const persistence = createMemoriesPersistence(db);
-    const visualization = createMemoriesVisualization(db);
     const v = vec512();
     mergeMemory(
       { persistence },
@@ -196,7 +194,7 @@ describe("memory search meta", () => {
       },
     );
 
-    const means = loadMeanEmbeddingsForNamespace({ persistence: visualization }, "ns");
+    const means = loadMeanEmbeddingsForNamespace(db, "ns");
     expect(means).toHaveLength(1);
     expect(means[0]?.embedding[0]).toBe(1);
     expect(means[0]?.embedding[1]).toBe(0);

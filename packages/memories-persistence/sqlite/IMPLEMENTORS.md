@@ -19,8 +19,11 @@ Canonical **table Zod schemas**, the composed document schema (`memoriesPersiste
 | `MemoriesPersistenceNeighbors` | Neighbor listing for search | [`MemoriesNeighborIndex`](../memories-core/src/persistence/types.ts) | Omit when `neighborIndex` is `false`. |
 | `MemoriesPersistenceLabelProps` | `SyncLabelPropsSearchFeatures` | Optional `syncLabelPropsSearchFeatures?` on mutation | Omit if label-props search chunks are unsupported. |
 | `MemoriesPersistenceReads` | Prefetch / export reads | [`MemoriesPersistenceReads`](../memories-core/src/persistence/types.ts) except `listVectorEmbeddingIndexDimensions` (that method is grouped under **Vector** in Smithy) | Thin stores may skip; most backends implement with Core. |
+| *(graph topology)* | Namespace edge lists, node labels/properties, incident edges; per-memory labels/properties; load edge by id; load full graph node; node/edge label writes | [`MemoriesGraph`](../memories-core/src/persistence/types.ts) = [`MemoriesGraphIndex`](../memories-core/src/persistence/types.ts) + [`MemoriesGraphMutation`](../memories-core/src/persistence/types.ts) on [`MemoriesPersistence`](../memories-core/src/persistence/types.ts) | Reads return empty when `graphIndex` is `false`. Per-entity reads: `loadNodeLabelsForMemory`, `loadNodePropertiesForMemory`, `loadGraphEdge`, [`loadGraphNode`](../memories-core/src/persistence/types.ts). |
 
-Graph **visualization** routes ([`MemoriesVisualization`](../memories-core/src/persistence/types.ts)) are **not** part of the persistence Smithy model; they are a separate read adapter. See [Visualization (optional)](#visualization-optional) below.
+**`loadGraphNode`** is the preferred single-call read for one memory’s graph node (labels, parsed `nodes.properties`, and stable `nodeId`). The split helpers `loadNodeLabelsForMemory` / `loadNodePropertiesForMemory` remain for narrow call sites that only need one piece.
+
+Graph topology is part of **`MemoriesPersistence`** (not a separate core interface). UMAP layout inputs and text/edge previews are **SQLite-only** helpers; see [Visualization (optional)](#visualization-optional) below.
 
 ## ID conventions
 
@@ -94,6 +97,7 @@ capabilities?: Partial<MemoriesBackendCapabilities>;
 | `lexicalSearch`         | Skips lexical arm; merge with text-only content may still run if you implement FTS no-ops. |
 | `vectorSearch`          | Skips vector arm; **rejects** merge content items with `vector`; vector-only search returns `[]`. |
 | `neighborIndex`         | Skips neighbor listing and expansion in search.                                            |
+| `graphIndex`            | Graph topology reads (`loadGraphEdgesForNamespace`, `loadNodeLabelsForNamespace`, `loadNodePropertiesForNamespace`, `listIncidentGraphEdges`, `loadGraphNode`, …) return **empty** / **null** as documented. |
 | `multiNamespaceSearch` | For hybrid search with **multiple** namespaces in `scope`, runs **separate** per-namespace retrieval calls and merges with RRF in core (no need to implement `IN` lists yourself). |
 | `unscopedSearch`        | **`searchEntireDatabase`** on `SearchParams` throws; `scope: { kind: "unscoped" }` is not used. |
 
@@ -115,7 +119,7 @@ Thin adapters that only support one namespace per query should set **`multiNames
 
 ## Visualization (optional)
 
-Implementors may expose [`MemoriesVisualization`](../memories-core/src/persistence/types.ts): graph edges and previews carry **`labels: { kind, props }[]`** for nodes and edges. The SQLite strategy implements this in [`./src/strategies/sqlite/visualization/`](./src/strategies/sqlite/visualization/).
+**`@cfd/memories-sqlite`** exposes a thin [`MemoriesVisualization`](./src/visualization.ts) class (mean-pooled embeddings per memory, `loadMemoryTextPreview`, `loadEdgePreview`). UMAP graph layout is [`buildNamespaceGraphLayout`](./src/graph/build-namespace-graph-layout.ts), which uses **`MemoriesPersistence`** for topology and projection SQL for embeddings. Previews and projection helpers live under [`./src/visualization/`](./src/visualization/).
 
 ## Async persistence
 

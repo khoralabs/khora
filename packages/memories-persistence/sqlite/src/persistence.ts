@@ -1,5 +1,7 @@
 import type { Database } from "bun:sqlite";
 import type {
+  GraphEdgeLink,
+  GraphNode,
   MemoriesPersistence as IMemoriesPersistence,
   LabelPropsSearchFormatter,
   MemoriesBackendCapabilities,
@@ -37,12 +39,23 @@ import { insertSourceMap } from "./models/source-maps";
 import { insertLexicalFeature } from "./models/text-features";
 import { insertVectorFeature } from "./models/vector-features";
 import { listVectorEmbeddingIndexDimensions as listVectorEmbeddingIndexDimensionsQuery } from "./models/vector-index-dimensions";
+import {
+  listIncidentGraphEdgesForMemory as listIncidentGraphEdgesQuery,
+  loadGraphEdge as loadGraphEdgeQuery,
+  loadGraphEdgesForNamespace as loadGraphEdgesQuery,
+  loadGraphNode as loadGraphNodeQuery,
+  loadNodeLabelsForMemory as loadNodeLabelsForMemoryQuery,
+  loadNodeLabelsForNamespace as loadNodeLabelsQuery,
+  loadNodePropertiesForMemory as loadNodePropertiesForMemoryQuery,
+  loadNodePropertiesForNamespace as loadNodePropertiesQuery,
+} from "./visualization/projection";
 
 export class MemoriesPersistence implements IMemoriesPersistence {
   readonly capabilities: MemoriesBackendCapabilities = {
     lexicalSearch: true,
     vectorSearch: true,
     neighborIndex: true,
+    graphIndex: true,
     multiNamespaceSearch: true,
     unscopedSearch: true,
   };
@@ -231,6 +244,49 @@ export class MemoriesPersistence implements IMemoriesPersistence {
 
   listVectorEmbeddingIndexDimensions(): number[] {
     return listVectorEmbeddingIndexDimensionsQuery(this.db);
+  }
+
+  loadGraphEdgesForNamespace(namespace: string): GraphEdgeLink[] {
+    if (!this.capabilities.graphIndex) return [];
+    return loadGraphEdgesQuery(this.db, namespace);
+  }
+
+  loadNodeLabelsForNamespace(namespace: string) {
+    if (!this.capabilities.graphIndex) return new Map();
+    return loadNodeLabelsQuery(this.db, namespace);
+  }
+
+  loadNodePropertiesForNamespace(namespace: string): Map<string, Record<string, unknown> | null> {
+    if (!this.capabilities.graphIndex) return new Map();
+    return loadNodePropertiesQuery(this.db, namespace);
+  }
+
+  listIncidentGraphEdges(namespace: string, memoryKey: string): GraphEdgeLink[] {
+    if (!this.capabilities.graphIndex) return [];
+    return listIncidentGraphEdgesQuery(this.db, namespace, memoryKey);
+  }
+
+  loadNodeLabelsForMemory(namespace: string, memoryKey: string) {
+    if (!this.capabilities.graphIndex) return [];
+    return loadNodeLabelsForMemoryQuery(this.db, namespace, memoryKey);
+  }
+
+  loadNodePropertiesForMemory(
+    namespace: string,
+    memoryKey: string,
+  ): Record<string, unknown> | null {
+    if (!this.capabilities.graphIndex) return null;
+    return loadNodePropertiesForMemoryQuery(this.db, namespace, memoryKey);
+  }
+
+  loadGraphEdge(namespace: string, edgeId: string): GraphEdgeLink | null {
+    if (!this.capabilities.graphIndex) return null;
+    return loadGraphEdgeQuery(this.db, namespace, edgeId);
+  }
+
+  loadGraphNode(namespace: string, memoryKey: string): GraphNode | null {
+    if (!this.capabilities.graphIndex) return null;
+    return loadGraphNodeQuery(this.db, namespace, memoryKey);
   }
 }
 

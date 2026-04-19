@@ -137,7 +137,6 @@
         "ai": "^6.0.153",
         "js-sha256": "^0.11.0",
         "pino": "^10.3.1",
-        "umap-js": "^1.4.0",
         "zod": "^4.3.6",
       },
       "devDependencies": {
@@ -203,6 +202,7 @@
         "@cfd/memories-core": "workspace:*",
         "ajv": "^8",
         "sqlite-vec": "^0.1.9",
+        "umap-js": "^1.4.0",
         "zod": "^4.3.6",
       },
       "devDependencies": {
@@ -252,6 +252,18 @@
       "peerDependencies": {
         "typescript": "^5",
       },
+    },
+    "packages/obp-persistence/memories": {
+      "name": "memories",
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/obp-spec": {
+      "name": "@cfd/obp-spec",
     },
     "packages/reciprocal-rank-fusion": {
       "name": "@cfd/reciprocal-rank-fusion",
@@ -322,6 +334,8 @@
     "@cfd/memories-stores": ["@cfd/memories-stores@workspace:packages/memories-stores"],
 
     "@cfd/memories-tools": ["@cfd/memories-tools@workspace:packages/memories-tools"],
+
+    "@cfd/obp-spec": ["@cfd/obp-spec@workspace:packages/obp-spec"],
 
     "@cfd/reciprocal-rank-fusion": ["@cfd/reciprocal-rank-fusion@workspace:packages/reciprocal-rank-fusion"],
 
@@ -760,6 +774,8 @@
     "lucide-react": ["lucide-react@0.545.0", "", { "peerDependencies": { "react": "^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-7r1/yUuflQDSt4f1bpn5ZAocyIxcTyVyBBChSVtBKn5M+392cPmI5YJMWOJKk/HUWGm5wg83chlAZtCcGbEZtw=="],
 
     "maath": ["maath@0.10.8", "", { "peerDependencies": { "@types/three": ">=0.134.0", "three": ">=0.134.0" } }, "sha512-tRvbDF0Pgqz+9XUa4jjfgAQ8/aPKmQdWXilFu2tMy4GWj4NOsx99HlULO4IeREfbO3a0sA145DZYyvXPkybm0g=="],
+
+    "memories": ["memories@workspace:packages/obp-persistence/memories"],
 
     "merge-async-iterators": ["merge-async-iterators@workspace:packages/merge-async-iterators"],
 

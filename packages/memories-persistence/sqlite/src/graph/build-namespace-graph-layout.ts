@@ -1,15 +1,11 @@
-import type { OntologyLabelInstance } from "../models/ontology-label";
-import type { MemoriesVisualizationRuntimeCtx } from "../persistence/types";
-import {
-  loadGraphEdgesForNamespace,
-  loadMeanEmbeddingsForNamespace,
-  loadNodeLabelsForNamespace,
-  loadNodePropertiesForNamespace,
-} from "./graph-projection";
+import type { Database } from "bun:sqlite";
+import type { MemoriesPersistence } from "@cfd/memories-core";
+import { loadMeanEmbeddingsForNamespace } from "../visualization/projection";
 import {
   LABEL_PROPERTY_SYNTH_DIM,
   labelPropertySyntheticEmbedding,
 } from "./label-property-features";
+import type { GraphLayoutEdge, GraphLayoutNode, NamespaceGraphLayout } from "./layout-types";
 import {
   fibonacciSphereLayout3D,
   minMaxNormalize3D,
@@ -17,28 +13,6 @@ import {
   type Umap3DLayoutOptions,
   umap3DLayout,
 } from "./umap-layout";
-
-export type GraphLayoutNode = {
-  key: string;
-  x: number;
-  y: number;
-  z: number;
-  labels: OntologyLabelInstance[];
-};
-
-export type GraphLayoutEdge = {
-  edgeId: string;
-  fromKey: string;
-  toKey: string;
-  labels: OntologyLabelInstance[];
-  directed?: boolean;
-};
-
-export type NamespaceGraphLayout = {
-  namespace: string;
-  nodes: GraphLayoutNode[];
-  edges: GraphLayoutEdge[];
-};
 
 /** Scale of L2-normalized label/property sketch relative to content embedding coordinates. */
 const LABEL_PROPERTY_SYNTH_WEIGHT = 0.22;
@@ -48,14 +22,18 @@ const LABEL_PROPERTY_SYNTH_WEIGHT = 0.22;
  * returns normalized [-1,1]³ positions.
  */
 export function buildNamespaceGraphLayout(
-  ctx: MemoriesVisualizationRuntimeCtx,
+  db: Database,
+  persistence: Pick<
+    MemoriesPersistence,
+    "loadGraphEdgesForNamespace" | "loadNodeLabelsForNamespace" | "loadNodePropertiesForNamespace"
+  >,
   namespace: string,
   umapOptions?: Umap3DLayoutOptions,
 ): NamespaceGraphLayout {
-  const edges = loadGraphEdgesForNamespace(ctx, namespace);
-  const withEmb = loadMeanEmbeddingsForNamespace(ctx, namespace);
-  const labelsByKey = loadNodeLabelsForNamespace(ctx, namespace);
-  const propsByKey = loadNodePropertiesForNamespace(ctx, namespace);
+  const edges = persistence.loadGraphEdgesForNamespace(namespace);
+  const withEmb = loadMeanEmbeddingsForNamespace(db, namespace);
+  const labelsByKey = persistence.loadNodeLabelsForNamespace(namespace);
+  const propsByKey = persistence.loadNodePropertiesForNamespace(namespace);
 
   const keySet = new Set<string>();
   for (const e of edges) {

@@ -109,12 +109,13 @@ list SearchNeighborHitList {
 
 @documentation("""
 Optional backend feature flags. Omitted keys default via core `resolveMemoriesBackendCapabilities`
-(lexical, vector, neighbor, multi-namespace on; **unscopedSearch** off).
+(lexical, vector, neighbor, graph index, multi-namespace on; **unscopedSearch** off).
 
 When a flag is false, the logic layer:
 - **lexicalSearch:** skips lexical arm; text-only merge may still run if FTS is a no-op.
 - **vectorSearch:** skips vector arm; rejects merge content items with vector; vector-only search returns [].
 - **neighborIndex:** skips neighbor listing and expansion in search.
+- **graphIndex:** graph topology reads on persistence return empty lists/maps.
 - **multiNamespaceSearch:** core runs separate per-namespace retrieval and merges with RRF (no `IN` list required).
 - **unscopedSearch:** rejects `searchEntireDatabase` on SearchParams; unscoped scope is not used.
 
@@ -127,6 +128,8 @@ structure MemoriesBackendCapabilities {
     vectorSearch: Boolean
     /// When false, search ignores neighbor listing and expansion.
     neighborIndex: Boolean
+    /// When false, graph topology reads return empty structures.
+    graphIndex: Boolean
     /// When false, core runs separate per-namespace retrieval and merges with RRF.
     multiNamespaceSearch: Boolean
     /// When false, `searchEntireDatabase` on SearchParams is rejected.
@@ -310,6 +313,45 @@ structure GraphEdgeLink {
     fromKey: String
     toKey: String
     labels: OntologyLabelInstanceList
+    /// JSON object from the `edges` row (not label-assignment props). Omitted when absent.
+    properties: Document
+    /// When true, the stored link is treated as directed (`fromKey` → `toKey`). Omitted when false/absent.
+    directed: Boolean
+}
+
+list GraphEdgeLinkList {
+    member: GraphEdgeLink
+}
+
+/// Primary graph node for one memory (labels + properties + stable ids).
+structure GraphNode {
+    namespace: MemoryNamespace
+    memoryKey: String
+    nodeId: String
+    labels: OntologyLabelInstanceList
+    /// Parsed `nodes.properties`; use empty object when null in storage.
+    properties: Document
+}
+
+/// One memory key’s node labels (bulk graph read).
+structure MemoryKeyNodeLabelsEntry {
+    memoryKey: String
+    labels: OntologyLabelInstanceList
+}
+
+list MemoryKeyNodeLabelsEntryList {
+    member: MemoryKeyNodeLabelsEntry
+}
+
+/// One memory key’s node JSON properties (bulk graph read).
+structure MemoryKeyNodePropertiesEntry {
+    memoryKey: String
+    /// Parsed `nodes.properties`; use empty object when null in storage.
+    properties: Document
+}
+
+list MemoryKeyNodePropertiesEntryList {
+    member: MemoryKeyNodePropertiesEntry
 }
 
 structure GraphMemoryEmbedding {

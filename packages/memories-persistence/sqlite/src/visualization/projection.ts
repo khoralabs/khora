@@ -2,6 +2,7 @@ import type { Database } from "bun:sqlite";
 import type {
   GraphEdgeLink,
   GraphMemoryEmbedding,
+  GraphNode,
   OntologyLabelInstance,
 } from "@cfd/memories-core";
 import { ids } from "@cfd/memories-core";
@@ -36,34 +37,47 @@ function directedFromEdgePropertiesJson(json: string | null): boolean {
   return false;
 }
 
-export function loadGraphEdgesForNamespace(db: Database, namespace: string): GraphEdgeLink[] {
-  const rows = db
-    .query<
-      {
-        edgeId: string;
-        fromKey: string;
-        toKey: string;
-        propertiesJson: string | null;
-        kind: string | null;
-        propsJson: string | null;
-      },
-      [string, string]
-    >(
-      `SELECT e._id AS edgeId, nf.value AS fromKey, nt.value AS toKey,
-              e.properties AS propertiesJson,
-              el.kind AS kind,
-              ela.props AS propsJson
-       FROM edges e
-       JOIN nodes nf ON nf._id = e.from_node_id
-       JOIN nodes nt ON nt._id = e.to_node_id
-       JOIN memories mf ON mf.namespace = ? AND mf.key = nf.value
-       JOIN memories mt ON mt.namespace = ? AND mt.key = nt.value
-       LEFT JOIN edge_label_assignments ela ON ela.edge_id = e._id
-       LEFT JOIN edge_labels el ON el._id = ela.label_id
-       ORDER BY e._id ASC, el.kind ASC`,
-    )
-    .all(namespace, namespace);
+/** Parsed `edges.properties` JSON; `null` when absent or invalid. */
+function parseEdgeRowProperties(json: string | null): Record<string, unknown> | null {
+  if (json == null || json === "") return null;
+  try {
+    const p: unknown = JSON.parse(json);
+    if (p && typeof p === "object" && !Array.isArray(p)) return p as Record<string, unknown>;
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
 
+function finishGraphEdgeLink(
+  edgeId: string,
+  fromKey: string,
+  toKey: string,
+  labels: OntologyLabelInstance[],
+  propertiesJson: string | null,
+): GraphEdgeLink {
+  const link: GraphEdgeLink = {
+    edgeId,
+    fromKey,
+    toKey,
+    labels,
+  };
+  const props = parseEdgeRowProperties(propertiesJson);
+  if (props !== null) link.properties = props;
+  if (directedFromEdgePropertiesJson(propertiesJson)) link.directed = true;
+  return link;
+}
+
+type GraphEdgeQueryRow = {
+  edgeId: string;
+  fromKey: string;
+  toKey: string;
+  propertiesJson: string | null;
+  kind: string | null;
+  propsJson: string | null;
+};
+
+function graphEdgeLinksFromRows(rows: GraphEdgeQueryRow[]): GraphEdgeLink[] {
   const byEdge = new Map<
     string,
     {
@@ -94,18 +108,146 @@ export function loadGraphEdgesForNamespace(db: Database, namespace: string): Gra
 
   const out: GraphEdgeLink[] = [];
   for (const [edgeId, v] of byEdge) {
-    const link: GraphEdgeLink = {
-      edgeId,
-      fromKey: v.fromKey,
-      toKey: v.toKey,
-      labels: v.labels,
-    };
-    if (directedFromEdgePropertiesJson(v.propertiesJson)) {
-      link.directed = true;
-    }
-    out.push(link);
+    out.push(finishGraphEdgeLink(edgeId, v.fromKey, v.toKey, v.labels, v.propertiesJson));
   }
   return out;
+}
+
+export function loadGraphEdgesForNamespace(db: Database, namespace: string): GraphEdgeLink[] {
+  const rows = db
+    .query<GraphEdgeQueryRow, [string, string]>(
+      `SELECT e._id AS edgeId, nf.value AS fromKey, nt.value AS toKey,
+              e.properties AS propertiesJson,
+              el.kind AS kind,
+              ela.props AS propsJson
+       FROM edges e
+       JOIN nodes nf ON nf._id = e.from_node_id
+       JOIN nodes nt ON nt._id = e.to_node_id
+       JOIN memories mf ON mf.namespace = ? AND mf.key = nf.value
+       JOIN memories mt ON mt.namespace = ? AND mt.key = nt.value
+       LEFT JOIN edge_label_assignments ela ON ela.edge_id = e._id
+       LEFT JOIN edge_labels el ON el._id = ela.label_id
+       ORDER BY e._id ASC, el.kind ASC`,
+    )
+    .all(namespace, namespace);
+
+  return graphEdgeLinksFromRows(rows);
+}
+
+/** Incident edges only (both endpoints in `namespace`, one endpoint matches `memoryKey`). */
+export function listIncidentGraphEdgesForMemory(
+  db: Database,
+  namespace: string,
+  memoryKey: string,
+): GraphEdgeLink[] {
+  const rows = db
+    .query<GraphEdgeQueryRow, [string, string, string, string]>(
+      `SELECT e._id AS edgeId, nf.value AS fromKey, nt.value AS toKey,
+              e.properties AS propertiesJson,
+              el.kind AS kind,
+              ela.props AS propsJson
+       FROM edges e
+       JOIN nodes nf ON nf._id = e.from_node_id
+       JOIN nodes nt ON nt._id = e.to_node_id
+       JOIN memories mf ON mf.namespace = ? AND mf.key = nf.value
+       JOIN memories mt ON mt.namespace = ? AND mt.key = nt.value
+       LEFT JOIN edge_label_assignments ela ON ela.edge_id = e._id
+       LEFT JOIN edge_labels el ON el._id = ela.label_id
+       WHERE nf.value = ? OR nt.value = ?
+       ORDER BY e._id ASC, el.kind ASC`,
+    )
+    .all(namespace, namespace, memoryKey, memoryKey);
+
+  return graphEdgeLinksFromRows(rows);
+}
+
+export function loadNodeLabelsForMemory(
+  db: Database,
+  namespace: string,
+  memoryKey: string,
+): OntologyLabelInstance[] {
+  const nodeId = ids.node(namespace, memoryKey);
+  const rows = db
+    .query<{ kind: string; propsJson: string | null }, [string]>(
+      `SELECT nl.kind AS kind, nla.props AS propsJson
+       FROM node_label_assignments nla
+       JOIN node_labels nl ON nl._id = nla.label_id
+       WHERE nla.node_id = ?
+       ORDER BY nl.kind ASC`,
+    )
+    .all(nodeId);
+  return rows.map((r) => ({ kind: r.kind, props: parsePropsColumn(r.propsJson) }));
+}
+
+export function loadNodePropertiesForMemory(
+  db: Database,
+  namespace: string,
+  memoryKey: string,
+): Record<string, unknown> | null {
+  const row = db
+    .query<{ propertiesJson: string | null }, [string, string]>(
+      `SELECT n.properties AS propertiesJson
+       FROM memories m
+       LEFT JOIN nodes n ON n.value = m.key
+       WHERE m.namespace = ? AND m.key = ?`,
+    )
+    .get(namespace, memoryKey);
+  if (!row) return null;
+  if (!row.propertiesJson) return null;
+  try {
+    const parsed: unknown = JSON.parse(row.propertiesJson);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+/** Full graph node for one memory; `null` when no memory row exists for `memoryKey` in `namespace`. */
+export function loadGraphNode(
+  db: Database,
+  namespace: string,
+  memoryKey: string,
+): GraphNode | null {
+  const mem = db
+    .query<{ one: number }, [string, string]>(
+      `SELECT 1 AS one FROM memories WHERE namespace = ? AND key = ? LIMIT 1`,
+    )
+    .get(namespace, memoryKey);
+  if (!mem) return null;
+  const nodeId = ids.node(namespace, memoryKey);
+  const labels = loadNodeLabelsForMemory(db, namespace, memoryKey);
+  const properties = loadNodePropertiesForMemory(db, namespace, memoryKey);
+  return { namespace, memoryKey, nodeId, labels, properties };
+}
+
+export function loadGraphEdge(
+  db: Database,
+  namespace: string,
+  edgeId: string,
+): GraphEdgeLink | null {
+  const rows = db
+    .query<GraphEdgeQueryRow, [string, string, string]>(
+      `SELECT e._id AS edgeId, nf.value AS fromKey, nt.value AS toKey,
+              e.properties AS propertiesJson,
+              el.kind AS kind,
+              ela.props AS propsJson
+       FROM edges e
+       JOIN nodes nf ON nf._id = e.from_node_id
+       JOIN nodes nt ON nt._id = e.to_node_id
+       JOIN memories mf ON mf.namespace = ? AND mf.key = nf.value
+       JOIN memories mt ON mt.namespace = ? AND mt.key = nt.value
+       LEFT JOIN edge_label_assignments ela ON ela.edge_id = e._id
+       LEFT JOIN edge_labels el ON el._id = ela.label_id
+       WHERE e._id = ?
+       ORDER BY el.kind ASC`,
+    )
+    .all(namespace, namespace, edgeId);
+
+  const links = graphEdgeLinksFromRows(rows);
+  return links[0] ?? null;
 }
 
 export function loadNodePropertiesForNamespace(

@@ -4,7 +4,8 @@ SQLite-backed implementation of the memories **persistence** contract (`Memories
 
 ## Exports
 
-- **`createMemoriesPersistence(db, options?)`** — returns a sync `MemoriesPersistence` bound to a `bun:sqlite` `Database` opened with the memories schema (see `openMemoriesDatabase` in this package).
+- **`createMemoriesPersistence(db, options?)`** — returns a sync `MemoriesPersistence` bound to a `bun:sqlite` `Database` opened with the memories schema (see `openMemoriesDatabase` in this package). Implements **`MemoriesGraph`** (reads + writes; topology reads are gated by `graphIndex`, default `true`).
+- **Visualization / layout** — optional `createMemoriesVisualization` (mean embeddings + text/edge previews), `buildNamespaceGraphLayout` (UMAP + layout types in this package, using persistence + embedding SQL), and low-level `loadEdgePreview` / `loadMemoryTextPreview` / `loadMeanEmbeddingsForNamespace` helpers.
 - **DB helpers** — `openMemoriesDatabase`, schema init, and related utilities for embedding / vec tables.
 
 ## Client usage

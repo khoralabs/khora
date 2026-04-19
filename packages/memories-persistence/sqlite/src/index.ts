@@ -7,6 +7,21 @@ export {
   openMemoriesDatabase,
   openMemoriesDatabaseReadonly,
 } from "./connection";
+export { buildNamespaceGraphLayout } from "./graph/build-namespace-graph-layout";
+export {
+  LABEL_PROPERTY_SYNTH_DIM,
+  labelPropertySyntheticEmbedding,
+} from "./graph/label-property-features";
+export type { GraphLayoutEdge, GraphLayoutNode, NamespaceGraphLayout } from "./graph/layout-types";
+export {
+  createSeededRandom,
+  DEFAULT_UMAP_LAYOUT_SEED,
+  fibonacciSphereLayout3D,
+  minMaxNormalize3D,
+  type Point3,
+  type Umap3DLayoutOptions,
+  umap3DLayout,
+} from "./graph/umap-layout";
 export {
   createMemoriesPersistence,
   MemoriesPersistence,
@@ -15,3 +30,6 @@ export {
   createMemoriesVisualization,
   MemoriesVisualization,
 } from "./visualization";
+export { loadEdgePreview } from "./visualization/edge-preview";
+export { loadMemoryTextPreview } from "./visualization/memory-preview";
+export { loadMeanEmbeddingsForNamespace } from "./visualization/projection";

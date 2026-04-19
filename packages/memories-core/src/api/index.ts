@@ -40,15 +40,17 @@ export type {
 } from "../models/neighbor-search-types";
 export type {
   MemoriesBackendCapabilities,
+  MemoriesGraph,
+  MemoriesGraphIndex,
+  MemoriesGraphMutation,
   MemoriesMutation,
+  MemoriesMutationCore,
   MemoriesNeighborIndex,
   MemoriesPersistence,
   MemoriesPersistenceAsync,
   MemoriesPersistenceReads,
   MemoriesRetrieval,
   MemoriesRuntimeCtx,
-  MemoriesVisualization,
-  MemoriesVisualizationRuntimeCtx,
   MemoryOpContext,
   SearchNamespaceScope,
 } from "../persistence";

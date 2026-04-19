@@ -17,10 +17,26 @@ export type GraphEdgeLink = {
   toKey: string;
   labels: OntologyLabelInstance[];
   /**
+   * JSON from the `edges` row (not label-assignment props; those are under {@link labels}).
+   * Omitted or null when absent or empty.
+   */
+  properties?: Record<string, unknown> | null;
+  /**
    * When true, visualization keeps `fromKey` → `toKey` (e.g. dash flow, no undirected merge).
    * Set when the stored edge is directed (e.g. merge-created links).
    */
   directed?: boolean;
+};
+
+/** Primary graph node for a memory (1:1 with `memories.key` in the reference store). */
+export type GraphNode = {
+  namespace: NamespacePath;
+  memoryKey: string;
+  /** Stable graph id (`ids.node(namespace, memoryKey)` in core). */
+  nodeId: string;
+  labels: OntologyLabelInstance[];
+  /** Parsed `nodes.properties`; `null` when absent or empty. */
+  properties: Record<string, unknown> | null;
 };
 
 /** Mean-pooled embedding per memory for layout (storage-agnostic shape). */
@@ -46,6 +62,11 @@ export type MemoriesBackendCapabilities = {
   lexicalSearch: boolean;
   vectorSearch: boolean;
   neighborIndex: boolean;
+  /**
+   * When `true`, {@link MemoriesGraphIndex} topology reads are available (edges, labels per namespace, incident edges).
+   * When `false`, implementations return empty lists/maps from those methods.
+   */
+  graphIndex: boolean;
   /** When `true`, retrieval can filter `namespace IN (...)` in one call. When `false`, core merges per-namespace results (RRF). */
   multiNamespaceSearch: boolean;
   /** When `true`, retrieval can run without a namespace predicate (entire DB). Required for `searchEntireDatabase` on `SearchParams`. */
@@ -66,6 +87,7 @@ export const DEFAULT_MEMORIES_BACKEND_CAPABILITIES: MemoriesBackendCapabilities 
   lexicalSearch: true,
   vectorSearch: true,
   neighborIndex: true,
+  graphIndex: true,
   multiNamespaceSearch: true,
   unscopedSearch: false,
 };
@@ -78,24 +100,14 @@ export function resolveMemoriesBackendCapabilities(persistence: {
 }
 
 /**
- * Transactional writes, merge/delete graph, search-meta.
+ * Transactional writes excluding the dedicated {@link MemoriesGraphMutation} surface (memory rows, features, search-meta, etc.).
  */
-export interface MemoriesMutation {
+export interface MemoriesMutationCore {
   /**
    * Run `fn` inside a single transaction; commit on return, rollback on throw.
    * **Note:** Prefer one outer transaction per merge/delete; nesting depends on the driver.
    */
   withTransaction<T>(fn: () => T): T;
-
-  /**
-   * Memory keys for memories connected by edges to the given node (used when syncing search-meta for neighbors).
-   * **Post:** Returns deduped logical keys in namespace for merge side-effects.
-   */
-  listNeighborMemoryKeysForNode(
-    op: MemoryOpContext,
-    namespace: NamespacePath,
-    nodeId: string,
-  ): string[];
 
   /**
    * Delete all dependent rows for this memory subtree (features, maps, edges, labels, meta, etc.).
@@ -108,12 +120,6 @@ export interface MemoriesMutation {
     op: MemoryOpContext,
     input: { namespace: NamespacePath; key: string },
   ): { memoryId: string; _ts_created: number };
-
-  /** Upsert the primary graph node for a memory key; optional JSON properties on the node. */
-  upsertNodeForMemoryKey(
-    op: MemoryOpContext,
-    input: { namespace: NamespacePath; memoryKey: string; properties?: Record<string, unknown> },
-  ): { nodeId: string };
 
   /** Insert a source map row for (memoryId, sourceKey); content items are one map each. */
   insertSourceMap(
@@ -133,44 +139,11 @@ export interface MemoriesMutation {
     input: { memoryId: string; sourceMapId: string; vector: Float32Array },
   ): { vectorFeatureId: string };
 
-  /** Get or create a catalog row for a node label **kind**; optional JSON Schema text for assignment props. */
-  ensureNodeLabel(
-    op: MemoryOpContext,
-    input: { kind: string; description?: string; schemaJson?: string | null },
-  ): string;
-
-  /** Assign props for one node label kind (upserts the single row per node + kind). */
-  insertNodeLabelAssignment(
-    op: MemoryOpContext,
-    input: { nodeId: string; labelId: string; props: Record<string, unknown> },
-  ): void;
-
   /** Resolve memory primary key by logical key, or `undefined` if absent. */
   findMemoryIdByKey(namespace: NamespacePath, key: string): string | undefined;
 
   /** Whether a node row exists (used to validate edge targets). */
   nodeExists(nodeId: string): boolean;
-
-  /** Insert a directed edge between two nodes; `idParts` encode deduplication identity. */
-  insertEdge(
-    op: MemoryOpContext,
-    input: {
-      fromNodeId: string;
-      toNodeId: string;
-      properties?: Record<string, unknown>;
-      idParts: { selfMemoryKey: string; otherMemoryKey: string; label: string };
-    },
-  ): { edgeId: string };
-
-  ensureEdgeLabel(
-    op: MemoryOpContext,
-    input: { kind: string; description?: string; schemaJson?: string | null },
-  ): string;
-
-  insertEdgeLabelAssignment(
-    op: MemoryOpContext,
-    input: { edgeId: string; labelId: string; props: Record<string, unknown> },
-  ): void;
 
   /**
    * Rebuild search-meta canonical text (and optional vector) for a memory key.
@@ -206,6 +179,61 @@ export interface MemoriesMutation {
   /** Delete root memory and graph node records after subtree clear (delete flow). */
   deleteMemoryRootRows(memoryId: string, nodeId: string): void;
 }
+
+/** Graph node/edge catalog writes (merge-time). Combined with {@link MemoriesGraphIndex} as {@link MemoriesGraph}. */
+export interface MemoriesGraphMutation {
+  /**
+   * Memory keys for memories connected by edges to the given node (used when syncing search-meta for neighbors).
+   * **Post:** Returns deduped logical keys in namespace for merge side-effects.
+   */
+  listNeighborMemoryKeysForNode(
+    op: MemoryOpContext,
+    namespace: NamespacePath,
+    nodeId: string,
+  ): string[];
+
+  /** Upsert the primary graph node for a memory key; optional JSON properties on the node. */
+  upsertNodeForMemoryKey(
+    op: MemoryOpContext,
+    input: { namespace: NamespacePath; memoryKey: string; properties?: Record<string, unknown> },
+  ): { nodeId: string };
+
+  /** Get or create a catalog row for a node label **kind**; optional JSON Schema text for assignment props. */
+  ensureNodeLabel(
+    op: MemoryOpContext,
+    input: { kind: string; description?: string; schemaJson?: string | null },
+  ): string;
+
+  /** Assign props for one node label kind (upserts the single row per node + kind). */
+  insertNodeLabelAssignment(
+    op: MemoryOpContext,
+    input: { nodeId: string; labelId: string; props: Record<string, unknown> },
+  ): void;
+
+  /** Insert a directed edge between two nodes; `idParts` encode deduplication identity. */
+  insertEdge(
+    op: MemoryOpContext,
+    input: {
+      fromNodeId: string;
+      toNodeId: string;
+      properties?: Record<string, unknown>;
+      idParts: { selfMemoryKey: string; otherMemoryKey: string; label: string };
+    },
+  ): { edgeId: string };
+
+  ensureEdgeLabel(
+    op: MemoryOpContext,
+    input: { kind: string; description?: string; schemaJson?: string | null },
+  ): string;
+
+  insertEdgeLabelAssignment(
+    op: MemoryOpContext,
+    input: { edgeId: string; labelId: string; props: Record<string, unknown> },
+  ): void;
+}
+
+/** Full merge/delete mutation surface: {@link MemoriesMutationCore} plus {@link MemoriesGraphMutation}. */
+export type MemoriesMutation = MemoriesMutationCore & MemoriesGraphMutation;
 
 /**
  * Lexical + vector retrieval and hydration for hybrid search.
@@ -260,22 +288,12 @@ export interface MemoriesPersistenceReads {
 }
 
 /**
- * Core storage: {@link MemoriesMutation} + {@link MemoriesRetrieval} + {@link MemoriesNeighborIndex} + {@link MemoriesPersistenceReads}.
- * Optional {@link MemoriesBackendCapabilities} declares MVP subsets.
- * Visualization reads: {@link MemoriesVisualization}.
+ * Graph topology reads (optional module; gate with {@link MemoriesBackendCapabilities.graphIndex}).
+ * Prefer per-entity methods when querying a single key or edge id; use namespace-wide loaders for bulk.
+ * UMAP / text previews / embedding means for layout live in SQLite-only visualization helpers, not here.
  */
-export type MemoriesPersistence = MemoriesMutation &
-  MemoriesRetrieval &
-  MemoriesNeighborIndex &
-  MemoriesPersistenceReads & {
-    capabilities?: MemoriesBackendCapabilities;
-  };
-
-/**
- * Read model for visualization / graph UI: edge lists, layout inputs, and text previews.
- * Distinct from {@link MemoriesPersistence}; a store may expose both via separate adapters.
- */
-export interface MemoriesVisualization {
+export interface MemoriesGraphIndex {
+  /** All edges whose endpoints are memories in `namespace` (see storage docs for direction semantics). */
   loadGraphEdgesForNamespace(namespace: NamespacePath): GraphEdgeLink[];
 
   loadNodeLabelsForNamespace(namespace: NamespacePath): Map<string, OntologyLabelInstance[]>;
@@ -285,17 +303,44 @@ export interface MemoriesVisualization {
     namespace: NamespacePath,
   ): Map<string, Record<string, unknown> | null>;
 
-  loadMeanEmbeddingsForNamespace(namespace: NamespacePath): GraphMemoryEmbedding[];
+  /** Edges incident to the memory key (either endpoint matches). */
+  listIncidentGraphEdges(namespace: NamespacePath, memoryKey: string): GraphEdgeLink[];
 
-  loadMemoryTextPreview(namespace: NamespacePath, key: string, maxChars?: number): string | null;
+  /** Ontology labels for one memory’s node; `[]` if none or unknown key. */
+  loadNodeLabelsForMemory(namespace: NamespacePath, memoryKey: string): OntologyLabelInstance[];
 
-  loadEdgePreview(namespace: NamespacePath, edgeId: string): EdgePreviewPayload | null;
+  /** Parsed JSON from `nodes.properties`; `null` if absent, empty, or unknown memory key. */
+  loadNodePropertiesForMemory(
+    namespace: NamespacePath,
+    memoryKey: string,
+  ): Record<string, unknown> | null;
+
+  /** One edge by id; `null` if missing or endpoints are not both in `namespace`. */
+  loadGraphEdge(namespace: NamespacePath, edgeId: string): GraphEdgeLink | null;
+
+  /**
+   * Full graph node for one memory (labels + properties + ids). Preferred over separate
+   * `loadNodeLabelsForMemory` / `loadNodePropertiesForMemory` when you need the whole node.
+   * `null` if no memory row exists for `memoryKey` in `namespace`.
+   */
+  loadGraphNode(namespace: NamespacePath, memoryKey: string): GraphNode | null;
 }
+
+/** Graph topology reads + graph writes ({@link MemoriesGraphIndex} & {@link MemoriesGraphMutation}). */
+export type MemoriesGraph = MemoriesGraphIndex & MemoriesGraphMutation;
+
+/**
+ * Core storage: {@link MemoriesMutationCore} + {@link MemoriesRetrieval} + {@link MemoriesNeighborIndex} + {@link MemoriesPersistenceReads} + {@link MemoriesGraph}.
+ * Equivalent to {@link MemoriesMutation} & … & {@link MemoriesGraphIndex} (same flat method set as before).
+ * Optional {@link MemoriesBackendCapabilities} declares MVP subsets.
+ */
+export type MemoriesPersistence = MemoriesMutationCore &
+  MemoriesRetrieval &
+  MemoriesNeighborIndex &
+  MemoriesPersistenceReads &
+  MemoriesGraph & {
+    capabilities?: MemoriesBackendCapabilities;
+  };
 
 /** Core persistence passed to merge / search / delete APIs. */
 export type MemoriesRuntimeCtx = { persistence: MemoriesPersistence };
-
-/** Persistence that supports graph layout and preview routes. */
-export type MemoriesVisualizationRuntimeCtx = {
-  persistence: MemoriesVisualization;
-};

@@ -1,9 +1,12 @@
 import type {
+  GraphEdgeLink,
+  GraphNode,
   HydratedNeighbor,
   HydratedSourceMapHit,
   MemoriesPersistenceAsync,
   MemoryOpContext,
   NeighborFilter,
+  OntologyLabelInstance,
   SearchNamespaceScope,
 } from "@cfd/memories-core";
 import type { SourceMap, TextFeatureExportRow } from "@cfd/memories-core/persistence";
@@ -15,6 +18,7 @@ const CAPABILITIES = {
   lexicalSearch: true,
   vectorSearch: true,
   neighborIndex: false,
+  graphIndex: false,
   multiNamespaceSearch: true,
   unscopedSearch: false,
 } as const;
@@ -317,6 +321,45 @@ export function createConvexMemoriesPersistence(
 
     async listVectorEmbeddingIndexDimensions(): Promise<number[]> {
       return client.query(q.listVectorEmbeddingIndexDimensions, {});
+    },
+
+    async loadGraphEdgesForNamespace(_namespace: string): Promise<GraphEdgeLink[]> {
+      return [];
+    },
+
+    async loadNodeLabelsForNamespace(
+      _namespace: string,
+    ): Promise<Map<string, OntologyLabelInstance[]>> {
+      return new Map();
+    },
+
+    async loadNodePropertiesForNamespace(
+      _namespace: string,
+    ): Promise<Map<string, Record<string, unknown> | null>> {
+      return new Map();
+    },
+
+    async listIncidentGraphEdges(_namespace: string, _memoryKey: string): Promise<GraphEdgeLink[]> {
+      return [];
+    },
+
+    async loadNodeLabelsForMemory(_namespace: string, _memoryKey: string): Promise<OntologyLabelInstance[]> {
+      return [];
+    },
+
+    async loadNodePropertiesForMemory(
+      _namespace: string,
+      _memoryKey: string,
+    ): Promise<Record<string, unknown> | null> {
+      return null;
+    },
+
+    async loadGraphEdge(_namespace: string, _edgeId: string): Promise<GraphEdgeLink | null> {
+      return null;
+    },
+
+    async loadGraphNode(_namespace: string, _memoryKey: string): Promise<GraphNode | null> {
+      return null;
     },
   };
 }

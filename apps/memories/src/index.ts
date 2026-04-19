@@ -1,17 +1,16 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import {
-  buildNamespaceGraphLayout,
-  loadEdgePreview,
-  loadMemoryTextPreview,
   type SearchHit,
   searchAsync,
   wrapSyncMemoriesPersistenceAsAsync,
 } from "@cfd/memories-core";
 import {
+  buildNamespaceGraphLayout,
   createMemoriesPersistence,
-  createMemoriesVisualization,
+  loadEdgePreview,
+  loadMemoryTextPreview,
   openMemoriesDatabaseReadonly,
-} from "@cfd/memories-sqlite/sqlite";
+} from "@cfd/memories-sqlite";
 import { embedMany } from "ai";
 import { serve } from "bun";
 import index from "./index.html";
@@ -259,8 +258,7 @@ const server = serve({
         return jsonResponse({ error: `open database: ${String(err)}` }, 500);
       }
       try {
-        const visualization = createMemoriesVisualization(db);
-        const preview = loadMemoryTextPreview({ persistence: visualization }, namespace, key);
+        const preview = loadMemoryTextPreview(db, namespace, key);
         return jsonResponse({ key, preview });
       } catch (err) {
         return jsonResponse({ error: String(err) }, 500);
@@ -291,8 +289,7 @@ const server = serve({
         return jsonResponse({ error: `open database: ${String(err)}` }, 500);
       }
       try {
-        const visualization = createMemoriesVisualization(db);
-        const detail = loadEdgePreview({ persistence: visualization }, namespace, edgeId);
+        const detail = loadEdgePreview(db, namespace, edgeId);
         if (!detail) {
           return jsonResponse({ error: "edge not found in namespace" }, 404);
         }
@@ -325,8 +322,8 @@ const server = serve({
         return jsonResponse({ error: `open database: ${String(err)}` }, 500);
       }
       try {
-        const visualization = createMemoriesVisualization(db);
-        const layout = buildNamespaceGraphLayout({ persistence: visualization }, namespace);
+        const persistence = createMemoriesPersistence(db);
+        const layout = buildNamespaceGraphLayout(db, persistence, namespace);
         return jsonResponse(layout);
       } catch (err) {
         return jsonResponse({ error: String(err) }, 500);

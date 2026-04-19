@@ -2,6 +2,9 @@ $version: "2"
 
 namespace cfd.memories
 
+use smithy.api#Document
+use smithy.api#Unit
+
 @documentation("""
 Lexical mutation + catalog + edges + search-meta (text path) + lexical retrieval + hydrate.
 Minimum profile for a lexical-only backend: typically **Core** + **MemoriesPersistenceReads**.
@@ -90,6 +93,7 @@ MemoriesMutation, MemoriesRetrieval, MemoriesNeighborIndex, MemoriesPersistenceR
 - **MemoriesPersistenceCore** — baseline for merge/delete + lexical search + hydrate.
 - **MemoriesPersistenceVector** — omit when `vectorSearch` is `false`.
 - **MemoriesPersistenceNeighbors** — omit when `neighborIndex` is `false`.
+- **Graph topology reads** (`MemoriesGraphIndex` in TS on `MemoriesPersistence`) — **LoadGraphEdgesForNamespace**, **LoadNodeLabelsForNamespace**, **LoadNodePropertiesForNamespace**, **ListIncidentGraphEdges**, **LoadNodeLabelsForMemory**, **LoadNodePropertiesForMemory**, **LoadGraphEdge**, **LoadGraphNode** — omit when `graphIndex` is `false`.
 - **MemoriesPersistenceLabelProps** — optional (`syncLabelPropsSearchFeatures?` in TS).
 - **MemoriesPersistenceReads** — prefetch/export; commonly implemented with Core.
 
@@ -137,6 +141,14 @@ service MemoriesPersistenceService {
         ListSourceMapsForMemory
         ListTextFeatureExportRowsForMemory
         ListVectorEmbeddingIndexDimensions
+        LoadGraphEdgesForNamespace
+        LoadNodeLabelsForNamespace
+        LoadNodePropertiesForNamespace
+        ListIncidentGraphEdges
+        LoadNodeLabelsForMemory
+        LoadNodePropertiesForMemory
+        LoadGraphEdge
+        LoadGraphNode
     ]
 }
 
@@ -551,4 +563,138 @@ structure ListVectorEmbeddingIndexDimensionsInput {}
 
 structure ListVectorEmbeddingIndexDimensionsOutput {
     dimensions: IntegerList
+}
+
+// --- Graph topology reads (`MemoriesGraphIndex` in TS); omit when `graphIndex` is false. ---
+
+@documentation("All edges whose endpoint memories lie in `namespace`.")
+operation LoadGraphEdgesForNamespace {
+    input: LoadGraphEdgesForNamespaceInput
+    output: LoadGraphEdgesForNamespaceOutput
+}
+
+structure LoadGraphEdgesForNamespaceInput {
+    namespace: MemoryNamespace
+}
+
+structure LoadGraphEdgesForNamespaceOutput {
+    edges: GraphEdgeLinkList
+}
+
+@documentation("Ontology node labels per memory key in a namespace (bulk).")
+operation LoadNodeLabelsForNamespace {
+    input: LoadNodeLabelsForNamespaceInput
+    output: LoadNodeLabelsForNamespaceOutput
+}
+
+structure LoadNodeLabelsForNamespaceInput {
+    namespace: MemoryNamespace
+}
+
+structure LoadNodeLabelsForNamespaceOutput {
+    entries: MemoryKeyNodeLabelsEntryList
+}
+
+@documentation("Node JSON properties per memory key (bulk).")
+operation LoadNodePropertiesForNamespace {
+    input: LoadNodePropertiesForNamespaceInput
+    output: LoadNodePropertiesForNamespaceOutput
+}
+
+structure LoadNodePropertiesForNamespaceInput {
+    namespace: MemoryNamespace
+}
+
+structure LoadNodePropertiesForNamespaceOutput {
+    entries: MemoryKeyNodePropertiesEntryList
+}
+
+@documentation("Edges incident to `memoryKey` within `namespace`.")
+operation ListIncidentGraphEdges {
+    input: ListIncidentGraphEdgesInput
+    output: ListIncidentGraphEdgesOutput
+}
+
+structure ListIncidentGraphEdgesInput {
+    namespace: MemoryNamespace
+    memoryKey: String
+}
+
+structure ListIncidentGraphEdgesOutput {
+    edges: GraphEdgeLinkList
+}
+
+@documentation("Ontology labels for a single memory’s graph node.")
+operation LoadNodeLabelsForMemory {
+    input: LoadNodeLabelsForMemoryInput
+    output: LoadNodeLabelsForMemoryOutput
+}
+
+structure LoadNodeLabelsForMemoryInput {
+    namespace: MemoryNamespace
+    memoryKey: String
+}
+
+structure LoadNodeLabelsForMemoryOutput {
+    labels: OntologyLabelInstanceList
+}
+
+union LoadNodePropertiesForMemoryResult {
+    notFound: Unit
+    properties: Document
+}
+
+@documentation("Parsed `nodes.properties` for one memory, or notFound when absent/unknown.")
+operation LoadNodePropertiesForMemory {
+    input: LoadNodePropertiesForMemoryInput
+    output: LoadNodePropertiesForMemoryOutput
+}
+
+structure LoadNodePropertiesForMemoryInput {
+    namespace: MemoryNamespace
+    memoryKey: String
+}
+
+structure LoadNodePropertiesForMemoryOutput {
+    result: LoadNodePropertiesForMemoryResult
+}
+
+union LoadGraphEdgeResult {
+    notFound: Unit
+    edge: GraphEdgeLink
+}
+
+@documentation("One edge by id within `namespace`, or notFound.")
+operation LoadGraphEdge {
+    input: LoadGraphEdgeInput
+    output: LoadGraphEdgeOutput
+}
+
+structure LoadGraphEdgeInput {
+    namespace: MemoryNamespace
+    edgeId: String
+}
+
+structure LoadGraphEdgeOutput {
+    result: LoadGraphEdgeResult
+}
+
+union LoadGraphNodeResult {
+    notFound: Unit
+    node: GraphNode
+}
+
+@documentation("Full graph node for one memory (labels + properties + ids), or notFound when no memory row exists.")
+operation LoadGraphNode {
+    input: LoadGraphNodeInput
+    output: LoadGraphNodeOutput
+}
+
+structure LoadGraphNodeInput {
+    namespace: MemoryNamespace
+    memoryKey: String
+}
+
+structure LoadGraphNodeOutput {
+    result: LoadGraphNodeResult
 }

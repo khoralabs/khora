@@ -5,7 +5,8 @@ This document compares backends under `packages/memories-persistence/` for anyon
 ## Shared contract
 
 - **Row model** — Defined in `@cfd/memories-core/persistence` (`memoriesPersistenceDocumentSchema`, row types). Business ids use `ids.*` / `stableId` from `@cfd/memories-core` (`models/ids.ts`), implemented with pure JS (`js-sha256`) so Node, Bun, and Convex bundles share one implementation.
-- **Capabilities** — Backends set `MemoriesBackendCapabilities` (`lexicalSearch`, `vectorSearch`, `neighborIndex`, `multiNamespaceSearch`, `unscopedSearch`). Core merges or rejects features based on `resolveMemoriesBackendCapabilities`.
+- **Capabilities** — Backends set `MemoriesBackendCapabilities` (`lexicalSearch`, `vectorSearch`, `neighborIndex`, `graphIndex`, `multiNamespaceSearch`, `unscopedSearch`). Core merges or rejects features based on `resolveMemoriesBackendCapabilities`.
+- **Graph** — `MemoriesGraph` in core types combines topology **reads** (`MemoriesGraphIndex`) and graph **writes** (`MemoriesGraphMutation`). `MemoriesPersistence` includes the full graph surface alongside `MemoriesMutationCore` (memory rows, features, search-meta). Per-entity reads: `loadNodeLabelsForMemory`, `loadNodePropertiesForMemory`, `loadGraphEdge` (see `@cfd/memories-spec` **MemoriesPersistenceService** graph operations).
 - **Search** — `searchLexicalSourceMapIds` / `searchVectorSourceMapIds` return **rank-ordered** `source_map` ids (best first); hybrid merge uses RRF on ranks, not raw scores.
 
 ## SQLite (`@cfd/memories-sqlite`)
@@ -17,7 +18,7 @@ This document compares backends under `packages/memories-persistence/` for anyon
 ## Convex (`@cfd/memories-convex`)
 
 - **API** — `MemoriesPersistenceAsync` via `createConvexMemoriesPersistence(client)`; public npm API also re-exports async client entry points (`MemoriesClient`, `mergeMemory`, …) without the `Async` suffix.
-- **Milestone** — Lexical-first: `vectorSearch: false`, `neighborIndex: false`, `unscopedSearch: false`. Vector and neighbor methods are stubs or throw as appropriate.
+- **Milestone** — Lexical-first: `vectorSearch: false`, `neighborIndex: false`, `graphIndex: false`, `unscopedSearch: false`. Vector, neighbor, and graph-index methods are stubs or return empty results as appropriate.
 - **Transactions** — Adapter `withTransaction` does **not** batch RPCs; each mutation is atomic on the server, but a full merge is not one transaction unless you add a dedicated batched mutation.
 - **Docs** — [`convex/README.md`](convex/README.md).
 
