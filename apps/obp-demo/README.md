@@ -1,4 +1,4 @@
-# `@cfd/obp-negotiation-demo`
+# `@cfd/obp-demo`
 
 CLI demonstration of two **scripted** agents using [`@cfd/agent-identity`](../../packages/agent/identity) (registered toolkits + static/runtime hashes) and [`@cfd/obp-core`](../../packages/obp/core) [`ObpClient`](../../packages/obp/core/src/client.ts) backed by in-memory [`@cfd/obp-sqlite`](../../packages/obp/persistence/sqlite).
 

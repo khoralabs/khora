@@ -1,10 +1,11 @@
 {
-  "name": "@cfd/obp-negotiation-demo",
+  "name": "@cfd/obp-demo",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "demo": "bun --env-file=.env run src/cli.ts",
+    "demo:negotiation": "bun --env-file=.env run src/negotiation/cli.ts",
+    "demo:handshake": "bun run src/handshake/cli.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
