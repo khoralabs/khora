@@ -10,6 +10,7 @@ export {
   obpExtendOfferTool,
   zObpExtendOfferInput,
 } from "./extend-offer-tool.ts";
+export { obpEndNegotiationTool } from "./end-negotiation-tool.ts";
 export { priceInZone } from "./goals.ts";
 export { DEFAULT_EXPIRY_HOURS, expiresAtFromHours, MAX_EXPIRY_HOURS } from "./obp-tool-defaults.ts";
 export { obpToolkit } from "./obp-toolkit.ts";

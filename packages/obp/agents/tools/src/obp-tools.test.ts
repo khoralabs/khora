@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { ObpClient } from "@cfd/obp-core";
 import { createObpSqlitePersistence, OBP_SCHEMA_SQL } from "@cfd/obp-sqlite";
 import { obpBindPortTool } from "./bind-port-tool.ts";
+import { obpEndNegotiationTool } from "./end-negotiation-tool.ts";
 import { obpExposePortTool } from "./expose-port-tool.ts";
 import { obpExtendOfferTool } from "./extend-offer-tool.ts";
 import { expiresAtFromHours } from "./obp-tool-defaults.ts";
@@ -132,6 +133,25 @@ describe("obp tools", () => {
         portId: port.id,
       }),
     ).rejects.toThrow(/buyer/);
+  });
+
+  test("obp_end_negotiation invokes requestNegotiationEnd", async () => {
+    const db = new Database(":memory:");
+    db.run(OBP_SCHEMA_SQL);
+    const persistence = createObpSqlitePersistence(db, { now: () => 0 });
+    const client = new ObpClient(persistence, { now: () => 0 });
+    const { party } = client.registerParty({ name: "p", sourcemaps: [] });
+    let end: { reason?: string } | undefined;
+    const env = mkEnv(client, {
+      actingPartyId: party.id,
+      requestNegotiationEnd: (args) => {
+        end = args;
+      },
+    });
+    const { tools } = await obpEndNegotiationTool.evaluate(buildObpToolkitContext({ env }));
+    const spec = tools.obp_end_negotiation;
+    await spec.handler(buildObpToolRuntimeContext({ env }), { reason: "done" });
+    expect(end).toEqual({ reason: "done" });
   });
 
   test("getExtendingPartyId returns null for unknown offer", () => {

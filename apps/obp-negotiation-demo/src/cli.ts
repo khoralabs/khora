@@ -1,17 +1,19 @@
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { runLlmNegotiation } from "./llm/p2pSession.ts";
+import { textTranscriptPathFromJsonl } from "./logger.ts";
 import { getNegotiationScenario, NEGOTIATION_SCENARIO_IDS } from "./scenarios/index.ts";
 
 function printUsage(): void {
-  console.error(
-    `Usage: bun run demo agent <${NEGOTIATION_SCENARIO_IDS.join(" | ")}>`,
-  );
+  console.error(`Usage: bun run demo agent <${NEGOTIATION_SCENARIO_IDS.join(" | ")}>`);
 }
 
 function buildLogFilePath(): string {
   const argsPart =
-    process.argv.slice(2).join("_").replace(/[^a-zA-Z0-9_-]/g, "_") || "agent";
+    process.argv
+      .slice(2)
+      .join("_")
+      .replace(/[^a-zA-Z0-9_-]/g, "_") || "agent";
   const ts = new Date().toISOString().replace(/[:.]/g, "-");
   const logDir = path.join(process.cwd(), ".obp-demo-logs");
   return path.join(logDir, `${argsPart}_${ts}.jsonl`);
@@ -31,6 +33,7 @@ async function main(): Promise<void> {
     const logFilePath = buildLogFilePath();
     await mkdir(path.dirname(logFilePath), { recursive: true });
     console.log("[demo] log file", logFilePath);
+    console.log("[demo] text transcript", textTranscriptPathFromJsonl(logFilePath));
 
     const scenario = await getNegotiationScenario(scenarioId);
     const result = await runLlmNegotiation({ scenario, logFilePath });

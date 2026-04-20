@@ -10,9 +10,7 @@ export function logRoundSummary(args: {
   role: string;
   toolCallCount: number;
 }): void {
-  console.log(
-    `[observer] round ${args.round} ${args.role} toolCalls=${args.toolCallCount}`,
-  );
+  console.log(`[observer] round ${args.round} ${args.role} toolCalls=${args.toolCallCount}`);
 }
 
 /** Verbose per-step tool logs; enable with `OBP_DEMO_OBSERVER_CONSOLE=1`. */

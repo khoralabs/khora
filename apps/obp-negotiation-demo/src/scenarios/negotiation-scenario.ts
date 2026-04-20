@@ -7,4 +7,6 @@ export interface NegotiationScenario {
    * index 1 = buyer/guest (may bind).
    */
   parties: RegisteredAgentIdentity[];
+  /** Caps LLM turns; default comes from {@link runLlmNegotiation}. */
+  maxRounds?: number;
 }

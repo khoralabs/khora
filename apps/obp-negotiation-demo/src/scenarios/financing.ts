@@ -21,5 +21,6 @@ You care about affordability, total cost, and flexibility—judge any terminal p
   return {
     title: "Unconstrained financing discussion",
     parties: [seller, buyer],
+    maxRounds: 12,
   };
 }

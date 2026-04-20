@@ -33,4 +33,8 @@ export type ObpToolkitEnv = {
    * If omitted, {@link obp_bind_port} only enforces structural checks (terminal port, then {@link ObpClient.bindPort}).
    */
   validateBind?: (ctx: ObpBindValidationContext) => void | Promise<void>;
+  /**
+   * When set, {@link obpEndNegotiationTool} signals the host to stop the negotiation (demo/session orchestration).
+   */
+  requestNegotiationEnd?: (args: { reason?: string }) => void;
 };

@@ -8,18 +8,20 @@ import {
   InMemoryNegotiationContext,
   type NegotiationMessage,
   type ObpClient,
-  type ObpPersistence,
 } from "@cfd/obp-core";
-import {
-  createObpNegotiatorAgent,
-  type ObpNegotiatorGeneration,
-} from "@cfd/obp-negotiator";
+import { createObpNegotiatorAgent, type ObpNegotiatorGeneration } from "@cfd/obp-negotiator";
 import type { ObpToolkitEnv } from "@cfd/obp-tools";
 import type { LanguageModel } from "ai";
 import type { Logger } from "pino";
-import { createRunLogger } from "../logger.ts";
+import {
+  appendTextTranscriptTurn,
+  createRunLogger,
+  initTextTranscript,
+  textTranscriptPathFromJsonl,
+} from "../logger.ts";
 import { createDemoStack } from "../obp/demoPersistence.ts";
 import { agentSourcemaps } from "../obp/sourcemaps.ts";
+import { resolveCompletedDeal, type CompletedDeal } from "../deal-detection.ts";
 import { buildDefaultNegotiationScenario, type NegotiationScenario } from "../scenarios/index.ts";
 import { getNegotiationModel } from "./env.ts";
 import { buildUserMessage } from "./messages.ts";
@@ -33,6 +35,7 @@ export type LlmNegotiationResult =
       portType: string;
       rounds: number;
     }
+  | { status: "terminated"; reason?: string; rounds: number }
   | { status: "exhausted"; rounds: number }
   | { status: "error"; message: string };
 
@@ -51,29 +54,10 @@ export type NegotiationSessionContext = SessionContext & {
   buyerPartyId: string;
   obpPartyIdByAgentId: Map<string, string>;
   toolPipelineHooks?: ToolPipelineHooks;
+  requestNegotiationEnd?: (args: { reason?: string }) => void;
 };
 
-/** Default demo: parties[0] = provider (seller), parties[1] = buyer. */
-function findCompletedDeal(
-  client: ObpClient,
-  persistence: ObpPersistence,
-  providerPartyId: string,
-): { offerId: string; portId: string; portType: string } | null {
-  for (const b of persistence.listBinds()) {
-    if (client.getExtendingPartyId(b.offerId) !== providerPartyId) {
-      continue;
-    }
-    const pr = client.getPort(b.portId);
-    if (pr.kind === "notFound") {
-      continue;
-    }
-    if (!pr.port.terminal) {
-      continue;
-    }
-    return { offerId: b.offerId, portId: b.portId, portType: pr.port.type };
-  }
-  return null;
-}
+export { resolveCompletedDeal, type CompletedDeal };
 
 function formatThreadForPrompt(
   messages: NegotiationMessage[],
@@ -187,6 +171,9 @@ export async function negotiationTurnRunner(args: {
         throw new Error("obp_bind_port: must bind to the provider's offer");
       }
     },
+    ...(ctx.requestNegotiationEnd !== undefined
+      ? { requestNegotiationEnd: ctx.requestNegotiationEnd }
+      : {}),
   };
 
   const toolLoop = await createObpNegotiatorAgent({
@@ -210,21 +197,37 @@ function summarizeGeneration(generation: ObpNegotiatorGeneration): Record<string
   };
 }
 
+/** Assistant-visible text only (mirrors `mirrorGenerationToThread` text posts, for transcript file). */
+function collectAssistantTextBlocks(generation: ObpNegotiatorGeneration): string[] {
+  const blocks: string[] = [];
+  for (const step of generation.steps) {
+    const text = step.text?.trim();
+    if (text) {
+      blocks.push(text);
+    }
+  }
+  return blocks;
+}
+
 export async function runLlmNegotiation(options?: {
   scenario?: NegotiationScenario;
   maxRounds?: number;
   logFilePath?: string;
 }): Promise<LlmNegotiationResult> {
   const scenario = options?.scenario ?? (await buildDefaultNegotiationScenario());
-  const maxRounds = options?.maxRounds ?? MAX_ROUNDS;
+  const maxRounds = options?.maxRounds ?? scenario.maxRounds ?? MAX_ROUNDS;
 
   let runLog: Logger | undefined;
+  let textTranscriptPath: string | undefined;
   if (options?.logFilePath !== undefined) {
     runLog = createRunLogger(options.logFilePath);
+    textTranscriptPath = textTranscriptPathFromJsonl(options.logFilePath);
+    initTextTranscript(textTranscriptPath, scenario.title);
     runLog.info({
       event: "negotiation.run.start",
       scenarioTitle: scenario.title,
       partyCount: scenario.parties.length,
+      textTranscriptPath,
     });
   }
 
@@ -269,20 +272,25 @@ export async function runLlmNegotiation(options?: {
     return { status: "error", message: "NegotiationScenario must include at least two parties" };
   }
 
-  const toolPipelineHooks: ToolPipelineHooks | undefined =
-    runLog !== undefined
-      ? {
-          onToolExecuted: (ev) => {
-            runLog?.info({
-              event: "obp.tool.executed",
-              ok: ev.ok,
-              toolName: ev.toolName,
-              durationMs: ev.durationMs,
-              error: ev.error !== undefined ? String(ev.error) : undefined,
-            });
-          },
-        }
-      : undefined;
+  let negotiationEndRequested: { reason?: string } | null = null;
+  let pendingDealFromBind: CompletedDeal | null = null;
+
+  const toolPipelineHooks: ToolPipelineHooks = {
+    onToolExecuted: (ev) => {
+      if (runLog !== undefined) {
+        runLog.info({
+          event: "obp.tool.executed",
+          ok: ev.ok,
+          toolName: ev.toolName,
+          durationMs: ev.durationMs,
+          error: ev.error !== undefined ? String(ev.error) : undefined,
+        });
+      }
+      if (ev.ok && ev.toolName === "obp_bind_port") {
+        pendingDealFromBind = resolveCompletedDeal(client, persistence, providerPartyId);
+      }
+    },
+  };
 
   const negotiationCtx: NegotiationSessionContext = {
     model,
@@ -291,7 +299,10 @@ export async function runLlmNegotiation(options?: {
     providerPartyId,
     buyerPartyId,
     obpPartyIdByAgentId,
-    ...(toolPipelineHooks !== undefined ? { toolPipelineHooks } : {}),
+    toolPipelineHooks,
+    requestNegotiationEnd: (args) => {
+      negotiationEndRequested = args;
+    },
   };
 
   const registry = createAgentRegistry();
@@ -313,6 +324,20 @@ export async function runLlmNegotiation(options?: {
 
   try {
     for (let round = 0; round < maxRounds; round++) {
+      const dealAtRoundStart = resolveCompletedDeal(client, persistence, providerPartyId);
+      if (dealAtRoundStart !== null) {
+        runLog?.info({
+          event: "negotiation.run.deal",
+          ...dealAtRoundStart,
+          rounds: round,
+        });
+        return {
+          status: "deal",
+          ...dealAtRoundStart,
+          rounds: round,
+        };
+      }
+
       const idx = round % scenario.parties.length;
       const identity = scenario.parties[idx];
       const actingPartyId = obpPartyIds[idx];
@@ -349,6 +374,14 @@ export async function runLlmNegotiation(options?: {
                 authorPartyId: partyId,
               });
             }
+            if (textTranscriptPath !== undefined) {
+              appendTextTranscriptTurn({
+                destPath: textTranscriptPath,
+                round,
+                agentName: agent.name,
+                textBlocks: collectAssistantTextBlocks(generation),
+              });
+            }
             runLog?.info({
               event: "negotiation.session.afterRun",
               round,
@@ -367,9 +400,7 @@ export async function runLlmNegotiation(options?: {
         },
       });
 
-      const generation = (await session.start(
-        turnInput,
-      )) as ObpNegotiatorGeneration;
+      const generation = (await session.start(turnInput)) as ObpNegotiatorGeneration;
 
       const toolCallCount = countToolCallsInGeneration(generation);
       if (process.env.OBP_DEMO_OBSERVER_CONSOLE === "1") {
@@ -378,7 +409,20 @@ export async function runLlmNegotiation(options?: {
         logRoundSummary({ round, role: roleLabel, toolCallCount });
       }
 
-      const deal = findCompletedDeal(client, persistence, providerPartyId);
+      if (negotiationEndRequested !== null) {
+        const { reason } = negotiationEndRequested;
+        negotiationEndRequested = null;
+        pendingDealFromBind = null;
+        runLog?.info({
+          event: "negotiation.run.terminated",
+          reason,
+          rounds: round + 1,
+        });
+        return { status: "terminated", reason, rounds: round + 1 };
+      }
+
+      const deal = pendingDealFromBind ?? resolveCompletedDeal(client, persistence, providerPartyId);
+      pendingDealFromBind = null;
       if (deal !== null) {
         runLog?.info({ event: "negotiation.run.deal", ...deal, rounds: round + 1 });
         return {
