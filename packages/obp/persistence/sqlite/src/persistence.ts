@@ -184,6 +184,39 @@ export class ObpSqlitePersistence implements ObpPersistence {
     return row?.party_id ?? null;
   }
 
+  listExposedPortEdges(): ReadonlyArray<{ offerId: string; portId: string }> {
+    const rows = this.db
+      .query<{ offer_id: string; port_id: string }, []>(
+        `SELECT offer_id, port_id FROM obp_exposes`,
+      )
+      .all();
+    return rows.map((r) => ({ offerId: r.offer_id, portId: r.port_id }));
+  }
+
+  setPortExpiredNow(portId: string): void {
+    const pr = this.getPort(portId);
+    if (pr.kind === "notFound") {
+      throw new ObpError("NOT_FOUND", `Port not found: ${portId}`);
+    }
+    const ts = this.now();
+    this.db.run(`UPDATE obp_ports SET ts_expired = ? WHERE id = ?`, [ts, portId]);
+  }
+
+  setOfferExpiredNow(offerId: string): void {
+    const or = this.getOffer(offerId);
+    if (or.kind === "notFound") {
+      throw new ObpError("NOT_FOUND", `Offer not found: ${offerId}`);
+    }
+    this.db.transaction(() => {
+      const ts = this.now();
+      this.db.run(`UPDATE obp_offers SET ts_expired = ? WHERE id = ?`, [ts, offerId]);
+      this.db.run(
+        `UPDATE obp_ports SET ts_expired = ? WHERE id IN (SELECT port_id FROM obp_exposes WHERE offer_id = ?)`,
+        [ts, offerId],
+      );
+    })();
+  }
+
   extendOffer(input: ExtendOfferInput): { offer: Offer } {
     return this.db.transaction(() => {
       const partyExists = this.db

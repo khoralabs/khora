@@ -143,6 +143,37 @@ export class FakeObpPersistence implements ObpPersistence {
     return row?.partyId ?? null;
   }
 
+  listExposedPortEdges(): ReadonlyArray<{ offerId: string; portId: string }> {
+    return this.exposesRows.map((r) => ({ offerId: r.offerId, portId: r.portId }));
+  }
+
+  setPortExpiredNow(portId: string): void {
+    const port = this.ports.get(portId);
+    if (port === undefined) {
+      throw new Error(`FakeObpPersistence: port not found: ${portId}`);
+    }
+    const ts = this.clock();
+    this.ports.set(portId, { ...port, ts_expired: ts });
+  }
+
+  setOfferExpiredNow(offerId: string): void {
+    const offer = this.offers.get(offerId);
+    if (offer === undefined) {
+      throw new Error(`FakeObpPersistence: offer not found: ${offerId}`);
+    }
+    const ts = this.clock();
+    this.offers.set(offerId, { ...offer, ts_expired: ts });
+    for (const r of this.exposesRows) {
+      if (r.offerId !== offerId) {
+        continue;
+      }
+      const p = this.ports.get(r.portId);
+      if (p !== undefined) {
+        this.ports.set(r.portId, { ...p, ts_expired: ts });
+      }
+    }
+  }
+
   /** Test helper: exactly one EXTENDS per offer. */
   getExtendsForOffer(offerId: string): ExtendRow | undefined {
     return this.extendsRows.find((r) => r.offerId === offerId);

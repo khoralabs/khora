@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "demo:negotiation": "bun --env-file=.env run src/negotiation/cli.ts",
+    "demo:matchmaking": "bun --env-file=.env run src/matchmaking/cli.ts",
     "demo:handshake": "bun run src/handshake/cli.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit"

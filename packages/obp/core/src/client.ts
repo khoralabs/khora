@@ -143,4 +143,23 @@ export class ObpClient {
 
     this.persistence.bindPort(input);
   }
+
+  /** All EXPOSES edges for orchestration (e.g. dynamic bind tools). */
+  listExposedPortEdges(): ReadonlyArray<{ offerId: string; portId: string }> {
+    return this.persistence.listExposedPortEdges();
+  }
+
+  /**
+   * Expire a port now. **Caller** must ensure the acting party may revoke this port (e.g. issuer of the offer that exposes it).
+   */
+  expirePortNow(portId: string): void {
+    this.persistence.setPortExpiredNow(portId);
+  }
+
+  /**
+   * Expire an offer now (and cascade expiry to ports exposed on that offer). **Caller** must ensure the acting party extends this offer.
+   */
+  expireOfferNow(offerId: string): void {
+    this.persistence.setOfferExpiredNow(offerId);
+  }
 }

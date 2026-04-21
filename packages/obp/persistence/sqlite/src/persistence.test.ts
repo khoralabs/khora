@@ -123,4 +123,89 @@ describe("ObpSqlitePersistence", () => {
       }),
     ).toThrow(ObpError);
   });
+
+  test("listExposedPortEdges and expire port blocks bind", () => {
+    const db = new Database(":memory:");
+    initObpSchema(db);
+    const persistence = createObpSqlitePersistence(db, { now: () => 500 });
+    const c = new ObpClient(persistence, { now: () => 500 });
+    const { party } = c.registerParty({ name: "A", sourcemaps: [] });
+    const { offer } = c.extendOffer({
+      partyId: party.id,
+      bindPortId: "",
+      offer: {
+        id: "",
+        ts_created: 500,
+        ts_expired: 99_999,
+        type: "deal",
+        sourcemaps: [],
+      },
+    });
+    const { port } = c.exposePort({
+      offerId: offer.id,
+      port: {
+        id: "",
+        ts_created: 500,
+        ts_expired: 99_999,
+        type: "slot",
+        max_bindings: 1,
+        terminal: false,
+        ref: "",
+        sourcemaps: [],
+      },
+    });
+    expect(persistence.listExposedPortEdges().some((e) => e.portId === port.id)).toBe(true);
+    persistence.setPortExpiredNow(port.id);
+    const pr = c.getPort(port.id);
+    expect(pr.kind).toBe("found");
+    if (pr.kind === "found") {
+      expect(pr.port.ts_expired).toBe(500);
+    }
+    expect(() =>
+      c.bindPort({ offerId: offer.id, portId: port.id }),
+    ).toThrow(ObpError);
+  });
+
+  test("setOfferExpiredNow cascades port expiry", () => {
+    const db = new Database(":memory:");
+    initObpSchema(db);
+    const persistence = createObpSqlitePersistence(db, { now: () => 700 });
+    const c = new ObpClient(persistence, { now: () => 700 });
+    const { party } = c.registerParty({ name: "P", sourcemaps: [] });
+    const { offer } = c.extendOffer({
+      partyId: party.id,
+      bindPortId: "",
+      offer: {
+        id: "",
+        ts_created: 700,
+        ts_expired: 99_999,
+        type: "o",
+        sourcemaps: [],
+      },
+    });
+    const { port } = c.exposePort({
+      offerId: offer.id,
+      port: {
+        id: "",
+        ts_created: 700,
+        ts_expired: 99_999,
+        type: "p",
+        max_bindings: 1,
+        terminal: true,
+        ref: "",
+        sourcemaps: [],
+      },
+    });
+    persistence.setOfferExpiredNow(offer.id);
+    const or = c.getOffer(offer.id);
+    expect(or.kind).toBe("found");
+    if (or.kind === "found") {
+      expect(or.offer.ts_expired).toBe(700);
+    }
+    const pr = c.getPort(port.id);
+    expect(pr.kind).toBe("found");
+    if (pr.kind === "found") {
+      expect(pr.port.ts_expired).toBe(700);
+    }
+  });
 });

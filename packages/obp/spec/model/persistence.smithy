@@ -22,6 +22,8 @@ OBP is a small typed graph for causal interaction history: **Party** → **Offer
 
 **Staging:** ports that must not be bindable yet are **not** EXPOSES'd (no separate lifecycle enum on **Port**).
 
+**Revocation (soft close):** implementations MAY support setting `ts_expired` to the current clock for **Port** and **Offer** rows so existing expiry checks prevent new binds. **ListExposedPortEdges** supports enumerating EXPOSES for orchestration (e.g. dynamic tools).
+
 **Errors:** Operations model **success** shapes only. Implementations may throw or map failures for: not found, expired, not exposed, max bindings exceeded, ref cycle, invalid graph.
 
 **Transactions:** **ExtendOffer**, **ExposePort**, and **BindPort** SHOULD run atomically where the backend supports transactions.
@@ -38,6 +40,9 @@ service ObpPersistence {
         ExtendOffer
         ExposePort
         BindPort
+        ListExposedPortEdges
+        SetPortExpiredNow
+        SetOfferExpiredNow
     ]
 }
 
@@ -158,3 +163,48 @@ structure BindPortInput {
 }
 
 structure BindPortOutput {}
+
+/// Read all Offer–Port **EXPOSES** edges for enumeration (orchestration helpers; not a separate Smithy RPC in all adapters).
+operation ListExposedPortEdges {
+    input: ListExposedPortEdgesInput
+    output: ListExposedPortEdgesOutput
+}
+
+structure ListExposedPortEdgesInput {}
+
+structure ExposedPortEdge {
+    offerId: String
+    portId: String
+}
+
+structure ListExposedPortEdgesOutput {
+    edges: ExposedPortEdgeList
+}
+
+list ExposedPortEdgeList {
+    member: ExposedPortEdge
+}
+
+/// Set `Port.ts_expired` to now. Caller enforces issuer policy.
+operation SetPortExpiredNow {
+    input: SetPortExpiredNowInput
+    output: SetPortExpiredNowOutput
+}
+
+structure SetPortExpiredNowInput {
+    portId: String
+}
+
+structure SetPortExpiredNowOutput {}
+
+/// Set `Offer.ts_expired` to now and cascade to ports exposed on that offer. Caller enforces issuer policy.
+operation SetOfferExpiredNow {
+    input: SetOfferExpiredNowInput
+    output: SetOfferExpiredNowOutput
+}
+
+structure SetOfferExpiredNowInput {
+    offerId: String
+}
+
+structure SetOfferExpiredNowOutput {}

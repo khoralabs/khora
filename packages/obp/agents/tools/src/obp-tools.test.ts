@@ -1,5 +1,6 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
+import { evaluateComposable } from "@cfd/agent-identity";
 import { ObpClient } from "@cfd/obp-core";
 import { createObpSqlitePersistence, OBP_SCHEMA_SQL } from "@cfd/obp-sqlite";
 import { obpBindPortTool } from "./bind-port-tool.ts";
@@ -7,7 +8,12 @@ import { obpEndNegotiationTool } from "./end-negotiation-tool.ts";
 import { obpExposePortTool } from "./expose-port-tool.ts";
 import { obpExtendOfferTool } from "./extend-offer-tool.ts";
 import { expiresAtFromHours } from "./obp-tool-defaults.ts";
+import {
+  captureNegotiationEndFromToolExecuted,
+  computeNegotiationContext,
+} from "./negotiation-context.ts";
 import type { ObpToolkitEnv } from "./obp-toolkit-env.ts";
+import { obpToolkit } from "./obp-toolkit.ts";
 import { buildObpToolkitContext, buildObpToolRuntimeContext } from "./toolkit-context.ts";
 
 function mkEnv(
@@ -89,6 +95,47 @@ describe("obp tools", () => {
     ).rejects.toThrow(/not owned/);
   });
 
+  test("obp_bind_port allows non-terminal exposed port", async () => {
+    const db = new Database(":memory:");
+    db.run(OBP_SCHEMA_SQL);
+    const persistence = createObpSqlitePersistence(db, { now: () => 0 });
+    const client = new ObpClient(persistence, { now: () => 0 });
+    const { party: seller } = client.registerParty({ name: "s", sourcemaps: [] });
+    const { party: buyer } = client.registerParty({ name: "b", sourcemaps: [] });
+    const { offer } = client.extendOffer({
+      partyId: seller.id,
+      bindPortId: "",
+      offer: {
+        id: "",
+        ts_created: 0,
+        ts_expired: 86_400_000,
+        type: "public_text",
+        sourcemaps: [],
+      },
+    });
+    const { port } = client.exposePort({
+      offerId: offer.id,
+      port: {
+        id: "",
+        ts_created: 0,
+        ts_expired: 86_400_000,
+        type: "branch",
+        max_bindings: 1,
+        terminal: false,
+        ref: "",
+        sourcemaps: [],
+      },
+    });
+    const env = mkEnv(client, { actingPartyId: buyer.id });
+    const { tools } = await obpBindPortTool.evaluate(buildObpToolkitContext({ env }));
+    const spec = tools.obp_bind_port;
+    const out = (await spec.handler(buildObpToolRuntimeContext({ env }), {
+      offerId: offer.id,
+      portId: port.id,
+    })) as { offerId: string; portId: string };
+    expect(out.portId).toBe(port.id);
+  });
+
   test("obp_bind_port rejects when validateBind throws (e.g. wrong actor)", async () => {
     const db = new Database(":memory:");
     db.run(OBP_SCHEMA_SQL);
@@ -152,6 +199,123 @@ describe("obp tools", () => {
     const spec = tools.obp_end_negotiation;
     await spec.handler(buildObpToolRuntimeContext({ env }), { reason: "done" });
     expect(end).toEqual({ reason: "done" });
+  });
+
+  test("obpToolkit exposes dynamic bind and revoke tools from negotiationToolContext", async () => {
+    const db = new Database(":memory:");
+    db.run(OBP_SCHEMA_SQL);
+    const persistence = createObpSqlitePersistence(db, { now: () => 100 });
+    const client = new ObpClient(persistence, { now: () => 100 });
+    const { party: seller } = client.registerParty({ name: "s", sourcemaps: [] });
+    const { party: buyer } = client.registerParty({ name: "b", sourcemaps: [] });
+    const { offer } = client.extendOffer({
+      partyId: seller.id,
+      bindPortId: "",
+      offer: {
+        id: "",
+        ts_created: 100,
+        ts_expired: 86_400_000,
+        type: "intro",
+        sourcemaps: [],
+      },
+    });
+    const { port } = client.exposePort({
+      offerId: offer.id,
+      port: {
+        id: "",
+        ts_created: 100,
+        ts_expired: 86_400_000,
+        type: "accept",
+        max_bindings: 1,
+        terminal: true,
+        ref: "",
+        sourcemaps: [],
+      },
+    });
+
+    const buyerCtx = await computeNegotiationContext({
+      client,
+      persistence,
+      actingPartyId: buyer.id,
+      now: 100,
+      validateBind: undefined,
+    });
+    const buyerEnv = mkEnv(client, {
+      actingPartyId: buyer.id,
+      now: () => 100,
+      negotiationToolContext: buyerCtx,
+    });
+    const buyerEval = await evaluateComposable(obpToolkit, buildObpToolkitContext({ env: buyerEnv }));
+    expect(Object.keys(buyerEval.tools)).toContain(`obp_bind__${port.id}`);
+
+    const sellerCtx = await computeNegotiationContext({
+      client,
+      persistence,
+      actingPartyId: seller.id,
+      now: 100,
+      validateBind: undefined,
+    });
+    const sellerEnv = mkEnv(client, {
+      actingPartyId: seller.id,
+      now: () => 100,
+      negotiationToolContext: sellerCtx,
+    });
+    const sellerEval = await evaluateComposable(obpToolkit, buildObpToolkitContext({ env: sellerEnv }));
+    expect(Object.keys(sellerEval.tools)).toContain(`obp_revoke_port__${port.id}`);
+    expect(Object.keys(sellerEval.tools)).toContain(`obp_revoke_offer__${offer.id}`);
+  });
+
+  test("computeNegotiationContext omits revoke tools when offer or port has a bind", async () => {
+    const db = new Database(":memory:");
+    db.run(OBP_SCHEMA_SQL);
+    const persistence = createObpSqlitePersistence(db, { now: () => 100 });
+    const client = new ObpClient(persistence, { now: () => 100 });
+    const { party: seller } = client.registerParty({ name: "s", sourcemaps: [] });
+    const { offer } = client.extendOffer({
+      partyId: seller.id,
+      bindPortId: "",
+      offer: {
+        id: "",
+        ts_created: 100,
+        ts_expired: 86_400_000,
+        type: "intro",
+        sourcemaps: [],
+      },
+    });
+    const { port } = client.exposePort({
+      offerId: offer.id,
+      port: {
+        id: "",
+        ts_created: 100,
+        ts_expired: 86_400_000,
+        type: "accept",
+        max_bindings: 1,
+        terminal: true,
+        ref: "",
+        sourcemaps: [],
+      },
+    });
+
+    client.bindPort({ offerId: offer.id, portId: port.id });
+
+    const sellerCtx = await computeNegotiationContext({
+      client,
+      persistence,
+      actingPartyId: seller.id,
+      now: 100,
+      validateBind: undefined,
+    });
+    expect(sellerCtx.revokePortChoices.map((c) => c.portId)).not.toContain(port.id);
+    expect(sellerCtx.revokeOfferChoices.map((c) => c.offerId)).not.toContain(offer.id);
+  });
+
+  test("captureNegotiationEndFromToolExecuted records successful obp_end_negotiation", () => {
+    const out = { current: null as { reason?: string } | null };
+    captureNegotiationEndFromToolExecuted(
+      { ok: true, toolName: "obp_end_negotiation", input: { reason: "done" } },
+      out,
+    );
+    expect(out.current).toEqual({ reason: "done" });
   });
 
   test("getExtendingPartyId returns null for unknown offer", () => {

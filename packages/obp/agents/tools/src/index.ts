@@ -1,3 +1,4 @@
+export { executeObpBind } from "./bind-execution.ts";
 export { type ObpBindPortInput, obpBindPortTool, zObpBindPortInput } from "./bind-port-tool.ts";
 export { parsePriceFromType } from "./encoding.ts";
 export {
@@ -13,8 +14,18 @@ export {
 export { obpEndNegotiationTool } from "./end-negotiation-tool.ts";
 export { priceInZone } from "./goals.ts";
 export { DEFAULT_EXPIRY_HOURS, expiresAtFromHours, MAX_EXPIRY_HOURS } from "./obp-tool-defaults.ts";
+export { obpNegotiationDynamicToolkit } from "./obp-negotiation-dynamic.ts";
 export { obpToolkit } from "./obp-toolkit.ts";
+export {
+  captureNegotiationEndFromToolExecuted,
+  computeNegotiationContext,
+  isDynamicBindToolName,
+} from "./negotiation-context.ts";
 export type {
+  ObpNegotiationBindChoice,
+  ObpNegotiationRevokeOfferChoice,
+  ObpNegotiationRevokePortChoice,
+  ObpNegotiationToolContext,
   ObpBindValidationContext,
   ObpToolkitEnv,
   PriceBand,

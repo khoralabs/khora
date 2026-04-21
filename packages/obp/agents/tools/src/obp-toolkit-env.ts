@@ -1,5 +1,38 @@
 import type { ObpClient, Port } from "@cfd/obp-core";
 
+/** One dynamic bind tool entry (host fills each turn). */
+export type ObpNegotiationBindChoice = {
+  toolName: string;
+  description: string;
+  offerId: string;
+  portId: string;
+};
+
+/** Revoke a single exposed port (expiry set to now). */
+export type ObpNegotiationRevokePortChoice = {
+  toolName: string;
+  description: string;
+  offerId: string;
+  portId: string;
+};
+
+/** Revoke a whole offer (expiry + cascade to exposed ports). */
+export type ObpNegotiationRevokeOfferChoice = {
+  toolName: string;
+  description: string;
+  offerId: string;
+};
+
+/**
+ * Host-computed per-turn choices for contextual bind/revoke tools.
+ * Omit or leave empty when only structural tools (extend/expose/end) are needed.
+ */
+export type ObpNegotiationToolContext = {
+  bindChoices: ObpNegotiationBindChoice[];
+  revokePortChoices: ObpNegotiationRevokePortChoice[];
+  revokeOfferChoices: ObpNegotiationRevokeOfferChoice[];
+};
+
 /** Inclusive numeric band for optional price checks (domain-defined semantics). */
 export type PriceBand = {
   min: number;
@@ -30,11 +63,15 @@ export type ObpToolkitEnv = {
   actingPartyId: string;
   /**
    * Domain rules for who may bind to which offer/port and optional price acceptance.
-   * If omitted, {@link obp_bind_port} only enforces structural checks (terminal port, then {@link ObpClient.bindPort}).
+   * If omitted, bind paths only enforce structural checks ({@link ObpClient.bindPort}).
    */
   validateBind?: (ctx: ObpBindValidationContext) => void | Promise<void>;
   /**
    * When set, {@link obpEndNegotiationTool} signals the host to stop the negotiation (demo/session orchestration).
    */
   requestNegotiationEnd?: (args: { reason?: string }) => void;
+  /**
+   * Per-turn bind/revoke tool definitions for the dynamic negotiation toolkit member. Host sets ids and descriptions.
+   */
+  negotiationToolContext?: ObpNegotiationToolContext;
 };

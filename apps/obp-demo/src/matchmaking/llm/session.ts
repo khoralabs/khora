@@ -24,18 +24,22 @@ import {
   createRunLogger,
   initTextTranscript,
   textTranscriptPathFromJsonl,
-} from "../logger.ts";
-import { createDemoStack } from "../obp/demoPersistence.ts";
-import { agentSourcemaps } from "../obp/sourcemaps.ts";
-import { resolveCompletedDeal, type CompletedDeal } from "../deal-detection.ts";
-import { buildDefaultNegotiationScenario, type NegotiationScenario } from "../scenarios/index.ts";
-import { getNegotiationModel } from "./env.ts";
-import { buildUserMessage } from "./messages.ts";
-import { logGeneration, logObserverHeader, logRoundSummary } from "./observer.ts";
+} from "../../negotiation/logger.ts";
+import { createDemoStack } from "../../negotiation/obp/demoPersistence.ts";
+import { agentSourcemaps } from "../../negotiation/obp/sourcemaps.ts";
+import {
+  resolveCompletedDeal,
+  type CompletedDeal,
+} from "../../negotiation/deal-detection.ts";
+import { getNegotiationModel } from "../../negotiation/llm/env.ts";
+import { logGeneration, logObserverHeader, logRoundSummary } from "../../negotiation/llm/observer.ts";
+import { buildIntroRequestScenario } from "../scenarios/intro-request.ts";
+import type { MatchmakingScenario } from "../scenarios/matchmaking-scenario.ts";
+import { buildMatchmakingUserMessage } from "./messages.ts";
 
-export type LlmNegotiationResult =
+export type MatchmakingResult =
   | {
-      status: "deal";
+      status: "connected";
       offerId: string;
       portId: string;
       portType: string;
@@ -45,26 +49,46 @@ export type LlmNegotiationResult =
   | { status: "exhausted"; rounds: number }
   | { status: "error"; message: string };
 
-const MAX_ROUNDS = 16;
+const DEFAULT_MAX_ROUNDS = 12;
 
-export type NegotiationTurnInput = {
+export type MatchmakingTurnInput = {
   prompt: string;
 };
 
-/** Merged into AgentRegistry session context for {@link negotiationTurnRunner}. */
-export type NegotiationSessionContext = SessionContext & {
+export type MatchmakingSessionContext = SessionContext & {
   model: LanguageModel;
   client: ObpClient;
   persistence: ObpPersistence;
   now: () => number;
-  providerPartyId: string;
-  buyerPartyId: string;
+  requesterPartyId: string;
+  requesteePartyId: string;
   obpPartyIdByAgentId: Map<string, string>;
   toolPipelineHooks?: ToolPipelineHooks;
+  /** Shared ref updated by {@code requestNegotiationEnd} and by successful {@code obp_end_negotiation} tool hooks. */
   negotiationEndSignal: { current: { reason?: string } | null };
 };
 
-export { resolveCompletedDeal, type CompletedDeal };
+/** Terminal bind on an offer extended by either party (mutual intro commitment). */
+export function resolveMatchmakingConnectedDeal(
+  client: ObpClient,
+  persistence: ObpPersistence,
+  requesterPartyId: string,
+  requesteePartyId: string,
+): CompletedDeal | null {
+  return (
+    resolveCompletedDeal(client, persistence, requesterPartyId) ??
+    resolveCompletedDeal(client, persistence, requesteePartyId)
+  );
+}
+
+export function assertMatchmakingBindAllowed(args: {
+  actingPartyId: string;
+  offerOwnerPartyId: string | null;
+}): void {
+  if (args.offerOwnerPartyId !== null && args.actingPartyId === args.offerOwnerPartyId) {
+    throw new Error("obp_bind: you may not bind to your own offer");
+  }
+}
 
 function formatThreadForPrompt(
   messages: NegotiationMessage[],
@@ -133,13 +157,13 @@ async function mirrorGenerationToThread(args: {
     ];
     for (const tc of calls) {
       const c = tc as { toolCallId: string; toolName: string; input: unknown };
-      const out = resultById.get(c.toolCallId);
       let summary: string;
       try {
         summary = `${c.toolName}(${JSON.stringify(c.input)})`;
       } catch {
         summary = `${c.toolName}(<unserializable input>)`;
       }
+      const out = resultById.get(c.toolCallId);
       await ctx.postMessage({
         authorPartyId,
         kind: "tool_call",
@@ -166,25 +190,23 @@ function countToolCallsInGeneration(generation: ObpNegotiatorGeneration): number
   return n;
 }
 
-export async function negotiationTurnRunner(args: {
+export async function matchmakingTurnRunner(args: {
   agent: RegisteredAgentIdentity;
   input: unknown;
   context: SessionContext;
 }): Promise<ObpNegotiatorGeneration> {
-  const ctx = args.context as NegotiationSessionContext;
-  const prompt = (args.input as NegotiationTurnInput).prompt;
+  const ctx = args.context as MatchmakingSessionContext;
+  const prompt = (args.input as MatchmakingTurnInput).prompt;
   const actingPartyId = ctx.obpPartyIdByAgentId.get(args.agent.agentId);
   if (actingPartyId === undefined) {
     throw new Error(`no OBP party id for agent ${args.agent.agentId}`);
   }
 
   const validateBind: ObpToolkitEnv["validateBind"] = async (v) => {
-    if (v.actingPartyId !== ctx.buyerPartyId) {
-      throw new Error("obp_bind: only the buyer may bind");
-    }
-    if (v.offerOwnerPartyId !== ctx.providerPartyId) {
-      throw new Error("obp_bind: must bind to the provider's offer");
-    }
+    assertMatchmakingBindAllowed({
+      actingPartyId: v.actingPartyId,
+      offerOwnerPartyId: v.offerOwnerPartyId,
+    });
   };
 
   const negotiationToolContext = await computeNegotiationContext({
@@ -227,7 +249,6 @@ function summarizeGeneration(generation: ObpNegotiatorGeneration): Record<string
   };
 }
 
-/** Assistant-visible text only (mirrors `mirrorGenerationToThread` text posts, for transcript file). */
 function collectAssistantTextBlocks(generation: ObpNegotiatorGeneration): string[] {
   const blocks: string[] = [];
   for (const step of generation.steps) {
@@ -239,13 +260,13 @@ function collectAssistantTextBlocks(generation: ObpNegotiatorGeneration): string
   return blocks;
 }
 
-export async function runLlmNegotiation(options?: {
-  scenario?: NegotiationScenario;
+export async function runMatchmakingSession(options?: {
+  scenario?: MatchmakingScenario;
   maxRounds?: number;
   logFilePath?: string;
-}): Promise<LlmNegotiationResult> {
-  const scenario = options?.scenario ?? (await buildDefaultNegotiationScenario());
-  const maxRounds = options?.maxRounds ?? scenario.maxRounds ?? MAX_ROUNDS;
+}): Promise<MatchmakingResult> {
+  const scenario = options?.scenario ?? (await buildIntroRequestScenario());
+  const maxRounds = options?.maxRounds ?? scenario.maxRounds ?? DEFAULT_MAX_ROUNDS;
 
   let runLog: Logger | undefined;
   let textTranscriptPath: string | undefined;
@@ -254,7 +275,7 @@ export async function runLlmNegotiation(options?: {
     textTranscriptPath = textTranscriptPathFromJsonl(options.logFilePath);
     initTextTranscript(textTranscriptPath, scenario.title);
     runLog.info({
-      event: "negotiation.run.start",
+      event: "matchmaking.run.start",
       scenarioTitle: scenario.title,
       partyCount: scenario.parties.length,
       textTranscriptPath,
@@ -296,14 +317,14 @@ export async function runLlmNegotiation(options?: {
     partyIdToDisplayName.set(pid, p.name);
   }
 
-  const providerPartyId = obpPartyIds[0];
-  const buyerPartyId = obpPartyIds[1];
-  if (providerPartyId === undefined || buyerPartyId === undefined) {
-    return { status: "error", message: "NegotiationScenario must include at least two parties" };
+  const requesterPartyId = obpPartyIds[0];
+  const requesteePartyId = obpPartyIds[1];
+  if (requesterPartyId === undefined || requesteePartyId === undefined) {
+    return { status: "error", message: "MatchmakingScenario must include at least two parties" };
   }
 
   const negotiationEndSignal = { current: null as { reason?: string } | null };
-  let pendingDealFromBind: CompletedDeal | null = null;
+  let pendingConnectedFromBind: CompletedDeal | null = null;
 
   const toolPipelineHooks: ToolPipelineHooks = {
     onToolExecuted: (ev) => {
@@ -318,18 +339,23 @@ export async function runLlmNegotiation(options?: {
       }
       captureNegotiationEndFromToolExecuted(ev, negotiationEndSignal);
       if (ev.ok && (isDynamicBindToolName(ev.toolName) || ev.toolName === "obp_bind_port")) {
-        pendingDealFromBind = resolveCompletedDeal(client, persistence, providerPartyId);
+        pendingConnectedFromBind = resolveMatchmakingConnectedDeal(
+          client,
+          persistence,
+          requesterPartyId,
+          requesteePartyId,
+        );
       }
     },
   };
 
-  const negotiationCtx: NegotiationSessionContext = {
+  const sessionCtx: MatchmakingSessionContext = {
     model,
     client,
     persistence,
     now,
-    providerPartyId,
-    buyerPartyId,
+    requesterPartyId,
+    requesteePartyId,
     obpPartyIdByAgentId,
     toolPipelineHooks,
     negotiationEndSignal,
@@ -338,14 +364,14 @@ export async function runLlmNegotiation(options?: {
   const registry = createAgentRegistry();
   for (const partyIdentity of scenario.parties) {
     registry.register(partyIdentity, {
-      run: negotiationTurnRunner,
-      ctx: [negotiationCtx],
+      run: matchmakingTurnRunner,
+      ctx: [sessionCtx],
     });
   }
 
   const thread = new InMemoryNegotiationContext({ partyIds: obpPartyIds });
 
-  logObserverHeader("LLM OBP negotiation (thread + OBP tools)");
+  logObserverHeader("LLM OBP matchmaking (intro request)");
   console.log("[observer] scenario", scenario.title);
   console.log(
     "[observer] parties",
@@ -354,16 +380,21 @@ export async function runLlmNegotiation(options?: {
 
   try {
     for (let round = 0; round < maxRounds; round++) {
-      const dealAtRoundStart = resolveCompletedDeal(client, persistence, providerPartyId);
-      if (dealAtRoundStart !== null) {
+      const connectedAtStart = resolveMatchmakingConnectedDeal(
+        client,
+        persistence,
+        requesterPartyId,
+        requesteePartyId,
+      );
+      if (connectedAtStart !== null) {
         runLog?.info({
-          event: "negotiation.run.deal",
-          ...dealAtRoundStart,
+          event: "matchmaking.run.connected",
+          ...connectedAtStart,
           rounds: round,
         });
         return {
-          status: "deal",
-          ...dealAtRoundStart,
+          status: "connected",
+          ...connectedAtStart,
           rounds: round,
         };
       }
@@ -378,19 +409,19 @@ export async function runLlmNegotiation(options?: {
 
       const messages = await thread.withContext({ forPartyId: actingPartyId });
       const threadText = formatThreadForPrompt(messages, partyIdToDisplayName);
-      const user = buildUserMessage({ threadText });
+      const user = buildMatchmakingUserMessage({ threadText });
 
-      const turnInput: NegotiationTurnInput = { prompt: user };
+      const turnInput: MatchmakingTurnInput = { prompt: user };
 
       const session = registry.createSession(identity.agentId, {
         hooks: {
           onBeforeRun: async ({ agent, input }) => {
             runLog?.info({
-              event: "negotiation.session.beforeRun",
+              event: "matchmaking.session.beforeRun",
               round,
               agentId: agent.agentId,
               agentName: agent.name,
-              prompt: (input as NegotiationTurnInput).prompt,
+              prompt: (input as MatchmakingTurnInput).prompt,
               threadText,
             });
           },
@@ -413,7 +444,7 @@ export async function runLlmNegotiation(options?: {
               });
             }
             runLog?.info({
-              event: "negotiation.session.afterRun",
+              event: "matchmaking.session.afterRun",
               round,
               agentId: agent.agentId,
               generation: summarizeGeneration(generation),
@@ -421,7 +452,7 @@ export async function runLlmNegotiation(options?: {
           },
           onError: async ({ agent, error }) => {
             runLog?.error({
-              event: "negotiation.session.error",
+              event: "matchmaking.session.error",
               round,
               agentId: agent.agentId,
               err: error instanceof Error ? error.message : String(error),
@@ -442,37 +473,39 @@ export async function runLlmNegotiation(options?: {
       if (negotiationEndSignal.current !== null) {
         const { reason } = negotiationEndSignal.current;
         negotiationEndSignal.current = null;
-        pendingDealFromBind = null;
+        pendingConnectedFromBind = null;
         runLog?.info({
-          event: "negotiation.run.terminated",
+          event: "matchmaking.run.terminated",
           reason,
           rounds: round + 1,
         });
         return { status: "terminated", reason, rounds: round + 1 };
       }
 
-      const deal = pendingDealFromBind ?? resolveCompletedDeal(client, persistence, providerPartyId);
-      pendingDealFromBind = null;
-      if (deal !== null) {
-        runLog?.info({ event: "negotiation.run.deal", ...deal, rounds: round + 1 });
+      const connected =
+        pendingConnectedFromBind ??
+        resolveMatchmakingConnectedDeal(client, persistence, requesterPartyId, requesteePartyId);
+      pendingConnectedFromBind = null;
+      if (connected !== null) {
+        runLog?.info({ event: "matchmaking.run.connected", ...connected, rounds: round + 1 });
         return {
-          status: "deal",
-          offerId: deal.offerId,
-          portId: deal.portId,
-          portType: deal.portType,
+          status: "connected",
+          offerId: connected.offerId,
+          portId: connected.portId,
+          portType: connected.portType,
           rounds: round + 1,
         };
       }
     }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    runLog?.error({ event: "negotiation.run.error", err: msg });
+    runLog?.error({ event: "matchmaking.run.error", err: msg });
     return {
       status: "error",
       message: msg,
     };
   }
 
-  runLog?.info({ event: "negotiation.run.exhausted", rounds: maxRounds });
+  runLog?.info({ event: "matchmaking.run.exhausted", rounds: maxRounds });
   return { status: "exhausted", rounds: maxRounds };
 }
