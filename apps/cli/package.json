@@ -14,7 +14,6 @@
     "@cfd/memories-integrator": "workspace:*",
     "@cfd/memories-core": "workspace:*",
     "@cfd/memories-sqlite": "workspace:*",
-    "@cfd/memories-core-ontologies": "workspace:*",
     "@cfd/memories-stores": "workspace:*",
     "@google/genai": "^1.48.0",
     "ai": "^6.0.153",

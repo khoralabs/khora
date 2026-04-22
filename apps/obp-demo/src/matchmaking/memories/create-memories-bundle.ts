@@ -5,7 +5,7 @@ import { MemoriesClient } from "@cfd/memories-core";
 import {
   canonicalLabelPropsSearchFormatter,
   canonicalOntology,
-} from "@cfd/memories-core-ontologies";
+} from "@cfd/memories-core/ontologies";
 import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-sqlite";
 
 export type MatchmakingMemoriesBundle = {

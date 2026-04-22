@@ -1,4 +1,4 @@
-import type { LabelPropsSearchFormatter, LabelPropsSearchRole } from "@cfd/memories-core";
+import type { LabelPropsSearchFormatter, LabelPropsSearchRole } from "../";
 
 function s(v: unknown): string {
   return v === null || v === undefined ? "" : String(v);

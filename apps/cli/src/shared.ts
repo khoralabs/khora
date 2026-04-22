@@ -12,7 +12,7 @@ import {
 import {
   canonicalLabelPropsSearchFormatter,
   canonicalOntology,
-} from "@cfd/memories-core-ontologies";
+} from "@cfd/memories-core/ontologies";
 import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-sqlite";
 import type { LanguageModel } from "ai";
 

@@ -17,7 +17,6 @@
     "@cfd/agent-identity-adapters": "workspace:*",
     "@cfd/memories-adapter": "workspace:*",
     "@cfd/memories-core": "workspace:*",
-    "@cfd/memories-core-ontologies": "workspace:*",
     "@cfd/memories-integrator": "workspace:*",
     "@cfd/memories-sqlite": "workspace:*",
     "@cfd/memories-stores": "workspace:*",

@@ -22,7 +22,6 @@
         "@cfd/agent-identity": "workspace:*",
         "@cfd/memories-adapter": "workspace:*",
         "@cfd/memories-core": "workspace:*",
-        "@cfd/memories-core-ontologies": "workspace:*",
         "@cfd/memories-integrator": "workspace:*",
         "@cfd/memories-sqlite": "workspace:*",
         "@cfd/memories-stores": "workspace:*",
@@ -90,7 +89,6 @@
         "@cfd/agent-identity-adapters": "workspace:*",
         "@cfd/memories-adapter": "workspace:*",
         "@cfd/memories-core": "workspace:*",
-        "@cfd/memories-core-ontologies": "workspace:*",
         "@cfd/memories-integrator": "workspace:*",
         "@cfd/memories-sqlite": "workspace:*",
         "@cfd/memories-stores": "workspace:*",
@@ -227,19 +225,6 @@
       },
       "devDependencies": {
         "@cfd/memories-sqlite": "workspace:*",
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/memories/memories-ontologies": {
-      "name": "@cfd/memories-core-ontologies",
-      "dependencies": {
-        "@cfd/memories-core": "workspace:*",
-        "zod": "^4.3.6",
-      },
-      "devDependencies": {
         "@types/bun": "latest",
       },
       "peerDependencies": {
@@ -396,8 +381,6 @@
     "@cfd/memories-convex": ["@cfd/memories-convex@workspace:packages/memories/persistence/convex"],
 
     "@cfd/memories-core": ["@cfd/memories-core@workspace:packages/memories/core"],
-
-    "@cfd/memories-core-ontologies": ["@cfd/memories-core-ontologies@workspace:packages/memories/memories-ontologies"],
 
     "@cfd/memories-desktop": ["@cfd/memories-desktop@workspace:apps/memories-desktop"],
 

@@ -23,6 +23,11 @@
       "types": "./src/helpers/index.ts",
       "import": "./src/helpers/index.ts",
       "default": "./src/helpers/index.ts"
+    },
+    "./ontologies": {
+      "types": "./src/ontologies/index.ts",
+      "import": "./src/ontologies/index.ts",
+      "default": "./src/ontologies/index.ts"
     }
   },
   "devDependencies": {
