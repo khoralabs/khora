@@ -1,8 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-  getNegotiationScenario,
-  NEGOTIATION_SCENARIO_IDS,
-} from "./index.ts";
+import { getNegotiationScenario, NEGOTIATION_SCENARIO_IDS } from "./index.ts";
 
 describe("negotiation scenarios registry", () => {
   test("each registered id builds a valid scenario", async () => {

@@ -62,6 +62,8 @@ export function tool<
   };
 
   const policyIds = [...policies.map((p) => p.id)].sort((a, b) => a.localeCompare(b));
+  const policiesSorted =
+    policies.length > 0 ? [...policies].sort((a, b) => a.id.localeCompare(b.id)) : undefined;
 
   async function computeStaticHash(): Promise<string> {
     return hashPlainObject({
@@ -112,6 +114,7 @@ export function tool<
       inputSchema: args.inputSchema,
       instructions: (args.instructions ?? []).join("\n\n"),
       policyIds,
+      policies: policiesSorted,
       /** Prefer runtime {@code ctx} when the caller passes one (e.g. action env); else use env from {@code evaluate}. */
       handler: (runtimeCtx, inputUnknown, options) => {
         const rt = (runtimeCtx != null ? runtimeCtx : toolCtx) as ToolRuntimeContext<Env>;

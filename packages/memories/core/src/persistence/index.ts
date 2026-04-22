@@ -18,8 +18,8 @@ export * from "./row-schemas";
 export type {
   EdgePreviewPayload,
   GraphEdgeLink,
-  GraphNode,
   GraphMemoryEmbedding,
+  GraphNode,
   MemoriesBackendCapabilities,
   MemoriesGraph,
   MemoriesGraphIndex,

@@ -6,11 +6,13 @@ export {
 } from "./embedding-types.js";
 export {
   embeddingCacheKey,
+  MEMORY_SEARCH_BUDGET_POLICY_ID,
   type MemorySearchEnv,
   type MemorySearchHit,
   type MemorySearchToolInput,
   type MemorySearchWideClient,
   type MemorySearchWideClientAsync,
+  memorySearchBudgetPolicy,
   memorySearchToolkit,
   zMemorySearchToolInput,
 } from "./memory-search-toolkit.js";

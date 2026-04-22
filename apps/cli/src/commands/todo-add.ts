@@ -1,7 +1,7 @@
 import { createAgentRegistry } from "@cfd/agent-identity";
 import { expandedDraftToLogicalMemoryInput, MemoryAdapterClient } from "@cfd/memories-adapter";
+import { processLogicalMemoryWithIntegrator } from "@cfd/memories-integrator";
 import { JsonlStore } from "@cfd/memories-stores";
-import { processLogicalMemoryWithIntegrator } from "../integrate-memory.js";
 import { elapsedMs, logger } from "../logger.js";
 import { getCliChatModel, getCliEmbeddingModel, getMemoriesBundle } from "../shared.js";
 import { zTodoDomainPayload } from "../todo-domain-payload.js";
@@ -42,10 +42,10 @@ export async function cmdTodoAdd(args: ParsedTodoAdd): Promise<void> {
   const logicalMemory = expandedDraftToLogicalMemoryInput(draft, ns, key);
 
   const result = await processLogicalMemoryWithIntegrator({
-    bundle,
-    dbPath: args.db,
-    resolution: args.resolution,
+    client: bundle.client,
     logicalMemory,
+    chatModel,
+    embeddingModel,
     maxSteps: 6,
   });
 

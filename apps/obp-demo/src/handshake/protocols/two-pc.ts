@@ -2,8 +2,8 @@
  * Simplified 2PC: coordinator + two participants prepare, then commit or abort via terminal ports.
  */
 import type { ObpClient } from "@cfd/obp-core";
-import { DEMO_EXPIRY_MS, DEMO_TS, type DemoStack } from "../stack.ts";
 import { logStep, shortId } from "../log.ts";
+import { DEMO_EXPIRY_MS, DEMO_TS, type DemoStack } from "../stack.ts";
 
 export type TwoPcOutcome = "commit" | "abort";
 
@@ -79,7 +79,9 @@ export function runTwoPhaseCommit(stack: DemoStack, outcome: TwoPcOutcome): void
       sourcemaps: [],
     },
   });
-  console.log(`   P1 ${shortId(o1.id)} / ${shortId(vote1.id)}  P2 ${shortId(o2.id)} / ${shortId(vote2.id)}`);
+  console.log(
+    `   P1 ${shortId(o1.id)} / ${shortId(vote1.id)}  P2 ${shortId(o2.id)} / ${shortId(vote2.id)}`,
+  );
 
   logStep("3 · Coordinator · bindPort (record prepared on both)");
   client.bindPort({ offerId: o1.id, portId: vote1.id });

@@ -63,8 +63,8 @@ export interface SearchParams<
 }
 
 export type SearchNeighborHit<
-  NODE_LABELS extends string = string,
-  EDGE_LABELS extends string = string,
+  _NODE_LABELS extends string = string,
+  _EDGE_LABELS extends string = string,
 > = Memory & {
   labels: OntologyLabelInstance[];
   edge: Edge & { label: OntologyLabelInstance };

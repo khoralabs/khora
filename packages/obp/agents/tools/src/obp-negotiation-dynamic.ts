@@ -1,19 +1,17 @@
-import { dynamicToolkit, tool } from "@cfd/agent-identity";
 import type { AnyComposable } from "@cfd/agent-identity";
+import { dynamicToolkit, tool } from "@cfd/agent-identity";
 import z from "zod";
 import { executeObpBind } from "./bind-execution.ts";
-import type { ObpToolkitEnv } from "./obp-toolkit-env.ts";
 import type {
   ObpNegotiationBindChoice,
   ObpNegotiationRevokeOfferChoice,
   ObpNegotiationRevokePortChoice,
+  ObpToolkitEnv,
 } from "./obp-toolkit-env.ts";
 
 const zEmpty = z.object({}).strict();
 
-function buildDynamicMembers(
-  env: ObpToolkitEnv,
-): AnyComposable<ObpToolkitEnv>[] {
+function buildDynamicMembers(env: ObpToolkitEnv): AnyComposable<ObpToolkitEnv>[] {
   const nc = env.negotiationToolContext;
   if (nc === undefined) {
     return [];

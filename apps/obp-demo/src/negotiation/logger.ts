@@ -28,6 +28,19 @@ export function initTextTranscript(destPath: string, scenarioTitle: string): voi
 }
 
 /** One turn: optional assistant text blocks (already trimmed per block). */
+/** Bootstrap line from Party A before LLM round 0 (see matchmaking `partyAInvitationMessage`). */
+export function appendTextTranscriptInvitation(args: {
+  destPath: string;
+  agentName: string;
+  text: string;
+}): void {
+  const t = args.text.trim();
+  if (t.length === 0) {
+    return;
+  }
+  appendFileSync(args.destPath, `[Party A bootstrap] ${args.agentName}:\n${t}\n\n`, "utf8");
+}
+
 export function appendTextTranscriptTurn(args: {
   destPath: string;
   round: number;
@@ -39,9 +52,5 @@ export function appendTextTranscriptTurn(args: {
     return;
   }
   const body = blocks.join("\n\n");
-  appendFileSync(
-    args.destPath,
-    `[round ${args.round}] ${args.agentName}:\n${body}\n\n`,
-    "utf8",
-  );
+  appendFileSync(args.destPath, `[round ${args.round}] ${args.agentName}:\n${body}\n\n`, "utf8");
 }

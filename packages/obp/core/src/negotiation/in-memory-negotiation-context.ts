@@ -1,5 +1,9 @@
-import { NegotiationContext, type PostNegotiationMessageInput, type WithNegotiationContextArgs } from "./negotiation-context.ts";
 import type { NegotiationMessage } from "./messages.ts";
+import {
+  NegotiationContext,
+  type PostNegotiationMessageInput,
+  type WithNegotiationContextArgs,
+} from "./negotiation-context.ts";
 
 /**
  * Reference implementation: stores messages in memory and returns full history from {@link withContext}

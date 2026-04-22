@@ -7,13 +7,13 @@ import { obpBindPortTool } from "./bind-port-tool.ts";
 import { obpEndNegotiationTool } from "./end-negotiation-tool.ts";
 import { obpExposePortTool } from "./expose-port-tool.ts";
 import { obpExtendOfferTool } from "./extend-offer-tool.ts";
-import { expiresAtFromHours } from "./obp-tool-defaults.ts";
 import {
   captureNegotiationEndFromToolExecuted,
   computeNegotiationContext,
 } from "./negotiation-context.ts";
-import type { ObpToolkitEnv } from "./obp-toolkit-env.ts";
+import { expiresAtFromHours } from "./obp-tool-defaults.ts";
 import { obpToolkit } from "./obp-toolkit.ts";
+import type { ObpToolkitEnv } from "./obp-toolkit-env.ts";
 import { buildObpToolkitContext, buildObpToolRuntimeContext } from "./toolkit-context.ts";
 
 function mkEnv(
@@ -245,7 +245,10 @@ describe("obp tools", () => {
       now: () => 100,
       negotiationToolContext: buyerCtx,
     });
-    const buyerEval = await evaluateComposable(obpToolkit, buildObpToolkitContext({ env: buyerEnv }));
+    const buyerEval = await evaluateComposable(
+      obpToolkit,
+      buildObpToolkitContext({ env: buyerEnv }),
+    );
     expect(Object.keys(buyerEval.tools)).toContain(`obp_bind__${port.id}`);
 
     const sellerCtx = await computeNegotiationContext({
@@ -260,7 +263,10 @@ describe("obp tools", () => {
       now: () => 100,
       negotiationToolContext: sellerCtx,
     });
-    const sellerEval = await evaluateComposable(obpToolkit, buildObpToolkitContext({ env: sellerEnv }));
+    const sellerEval = await evaluateComposable(
+      obpToolkit,
+      buildObpToolkitContext({ env: sellerEnv }),
+    );
     expect(Object.keys(sellerEval.tools)).toContain(`obp_revoke_port__${port.id}`);
     expect(Object.keys(sellerEval.tools)).toContain(`obp_revoke_offer__${offer.id}`);
   });

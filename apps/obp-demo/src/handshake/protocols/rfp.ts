@@ -2,8 +2,8 @@
  * RFP → bids → award: buyer publishes RFP; sellers expose competing terminal award ports; buyer binds one winner.
  */
 import type { ObpClient } from "@cfd/obp-core";
-import { DEMO_EXPIRY_MS, DEMO_TS, type DemoStack } from "../stack.ts";
 import { logStep, shortId } from "../log.ts";
+import { DEMO_EXPIRY_MS, DEMO_TS, type DemoStack } from "../stack.ts";
 
 export function runRfpAward(stack: DemoStack): void {
   const { client } = stack;

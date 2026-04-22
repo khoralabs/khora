@@ -26,5 +26,6 @@ export {
   type MemoryIntegratorSessionOutput,
   memoryIntegratorRegistryRegistration,
 } from "./integrator-session.js";
+export { processLogicalMemoryWithIntegrator } from "./logical-memory-pipeline.js";
 export { buildMemoryIntegratorUserMessage } from "./messages.js";
 export { integratorWireToMergeSlice } from "./to-merge-slice.js";

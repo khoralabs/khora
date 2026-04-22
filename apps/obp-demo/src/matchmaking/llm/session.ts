@@ -4,6 +4,9 @@ import {
   type SessionContext,
   type ToolPipelineHooks,
 } from "@cfd/agent-identity";
+import type { EmbeddingModel } from "@cfd/memories-core/helpers";
+import type { MemorySearchEnv } from "@cfd/memories-tools";
+import { toMemorySearchEnv } from "@cfd/memories-tools";
 import {
   InMemoryNegotiationContext,
   type NegotiationMessage,
@@ -19,7 +22,16 @@ import {
 } from "@cfd/obp-tools";
 import type { LanguageModel } from "ai";
 import type { Logger } from "pino";
+import { type CompletedDeal, resolveCompletedDeal } from "../../negotiation/deal-detection.ts";
+import { getNegotiationModel } from "../../negotiation/llm/env.ts";
+import { negotiationEndPayloadFromGeneration } from "../../negotiation/llm/negotiation-end-from-generation.ts";
 import {
+  logGeneration,
+  logObserverHeader,
+  logRoundSummary,
+} from "../../negotiation/llm/observer.ts";
+import {
+  appendTextTranscriptInvitation,
   appendTextTranscriptTurn,
   createRunLogger,
   initTextTranscript,
@@ -27,15 +39,23 @@ import {
 } from "../../negotiation/logger.ts";
 import { createDemoStack } from "../../negotiation/obp/demoPersistence.ts";
 import { agentSourcemaps } from "../../negotiation/obp/sourcemaps.ts";
+import { createMatchmakingMemoriesBundle } from "../memories/create-memories-bundle.ts";
+import { getMatchmakingEmbeddingModel } from "../memories/matchmaking-embedding.ts";
 import {
-  resolveCompletedDeal,
-  type CompletedDeal,
-} from "../../negotiation/deal-detection.ts";
-import { getNegotiationModel } from "../../negotiation/llm/env.ts";
-import { logGeneration, logObserverHeader, logRoundSummary } from "../../negotiation/llm/observer.ts";
-import { buildIntroRequestScenario } from "../scenarios/intro-request.ts";
-import type { MatchmakingScenario } from "../scenarios/matchmaking-scenario.ts";
+  countMemoriesInNamespace,
+  jsonlStorePathForNamespace,
+  personaMemoriesAlreadySeeded,
+  resolveObpDemoMemoriesDbPath,
+  resolveObpDemoMemoriesRoot,
+  shouldForceMemoriesReseed,
+  syncMatchmakingScenarioJsonlStores,
+} from "../memories/persisted-memories.ts";
+import { seedMatchmakingPersonas } from "../memories/seed-personas.ts";
+import { buildIntroRequestScenarioPair, type MatchmakingScenario } from "../scenarios";
 import { buildMatchmakingUserMessage } from "./messages.ts";
+
+/** Per negotiator turn; fresh env each {@link matchmakingTurnRunner} call resets {@code used}. */
+const MATCHMAKING_MEMORY_SEARCH_BUDGET_MAX = 6;
 
 export type MatchmakingResult =
   | {
@@ -66,6 +86,10 @@ export type MatchmakingSessionContext = SessionContext & {
   toolPipelineHooks?: ToolPipelineHooks;
   /** Shared ref updated by {@code requestNegotiationEnd} and by successful {@code obp_end_negotiation} tool hooks. */
   negotiationEndSignal: { current: { reason?: string } | null };
+  memoriesClient: ReturnType<typeof createMatchmakingMemoriesBundle>["client"];
+  embeddingModel: EmbeddingModel;
+  memoryNamespaceByAgentId: Map<string, string>;
+  embeddingCache: Map<string, number[]>;
 };
 
 /** Terminal bind on an offer extended by either party (mutual intro commitment). */
@@ -217,7 +241,21 @@ export async function matchmakingTurnRunner(args: {
     validateBind,
   });
 
-  const env: ObpToolkitEnv = {
+  const memoryNs = ctx.memoryNamespaceByAgentId.get(args.agent.agentId);
+  if (memoryNs === undefined) {
+    throw new Error(`no memory namespace for agent ${args.agent.agentId}`);
+  }
+
+  const memorySlice = toMemorySearchEnv({
+    client: ctx.memoriesClient,
+    namespace: memoryNs,
+    embeddingModel: ctx.embeddingModel,
+    embeddingCache: ctx.embeddingCache,
+    memorySearchBudgetMax: MATCHMAKING_MEMORY_SEARCH_BUDGET_MAX,
+  });
+
+  const env: ObpToolkitEnv & MemorySearchEnv = {
+    ...memorySlice,
     client: ctx.client,
     now: ctx.now,
     actingPartyId,
@@ -264,8 +302,14 @@ export async function runMatchmakingSession(options?: {
   scenario?: MatchmakingScenario;
   maxRounds?: number;
   logFilePath?: string;
+  /** Defaults to {@link resolveObpDemoMemoriesRoot} (e.g. {@code .obp-demo-memories} under cwd). */
+  memoriesRoot?: string;
+  /** Defaults to {@link resolveObpDemoMemoriesDbPath} or {@code OBP_DEMO_MEMORIES_DB}. */
+  memoriesDbPath?: string;
+  /** When true, re-runs persona seeding even if the SQLite DB already has enough rows per namespace. */
+  forceReseedMemories?: boolean;
 }): Promise<MatchmakingResult> {
-  const scenario = options?.scenario ?? (await buildIntroRequestScenario());
+  const scenario = options?.scenario ?? (await buildIntroRequestScenarioPair("p1", "p2"));
   const maxRounds = options?.maxRounds ?? scenario.maxRounds ?? DEFAULT_MAX_ROUNDS;
 
   let runLog: Logger | undefined;
@@ -285,6 +329,61 @@ export async function runMatchmakingSession(options?: {
   let model: LanguageModel;
   try {
     model = getNegotiationModel();
+  } catch (e) {
+    return {
+      status: "error",
+      message: e instanceof Error ? e.message : String(e),
+    };
+  }
+
+  const memoriesRoot = options?.memoriesRoot ?? resolveObpDemoMemoriesRoot();
+  const memoriesDbPath = options?.memoriesDbPath ?? resolveObpDemoMemoriesDbPath(memoriesRoot);
+  const memoriesBundle = createMatchmakingMemoriesBundle(memoriesDbPath);
+  const embeddingModel = getMatchmakingEmbeddingModel();
+  const embeddingCache = new Map<string, number[]>();
+
+  const [partyAMemoryNs, partyBMemoryNs] = scenario.partyMemoryNamespaces;
+  const forceReseed = options?.forceReseedMemories === true || shouldForceMemoriesReseed();
+
+  if (runLog !== undefined) {
+    runLog.info({
+      event: "matchmaking.memories.paths",
+      memoriesRoot,
+      memoriesDbPath,
+      partyAJsonl: jsonlStorePathForNamespace(memoriesRoot, partyAMemoryNs),
+      partyBJsonl: jsonlStorePathForNamespace(memoriesRoot, partyBMemoryNs),
+    });
+  }
+
+  const skipPersonaSeed =
+    !forceReseed &&
+    personaMemoriesAlreadySeeded(memoriesBundle, scenario, partyAMemoryNs, partyBMemoryNs);
+
+  try {
+    if (!skipPersonaSeed) {
+      await seedMatchmakingPersonas({
+        bundle: memoriesBundle,
+        chatModel: model,
+        embeddingModel,
+        partyMemoryNamespaces: scenario.partyMemoryNamespaces,
+        personaSeeds: scenario.personaSeeds,
+      });
+    } else if (runLog !== undefined) {
+      runLog.info({
+        event: "matchmaking.memories.seed_skipped",
+        memoriesDbPath,
+        partyACount: countMemoriesInNamespace(memoriesBundle.db, partyAMemoryNs),
+        partyBCount: countMemoriesInNamespace(memoriesBundle.db, partyBMemoryNs),
+        expectedPartyA: scenario.personaSeeds[0].length,
+        expectedPartyB: scenario.personaSeeds[1].length,
+      });
+    }
+
+    syncMatchmakingScenarioJsonlStores({
+      bundle: memoriesBundle,
+      memoriesRoot,
+      partyMemoryNamespaces: scenario.partyMemoryNamespaces,
+    });
   } catch (e) {
     return {
       status: "error",
@@ -323,6 +422,16 @@ export async function runMatchmakingSession(options?: {
     return { status: "error", message: "MatchmakingScenario must include at least two parties" };
   }
 
+  const requesterIdentity = scenario.parties[0];
+  const requesteeIdentity = scenario.parties[1];
+  if (requesterIdentity === undefined || requesteeIdentity === undefined) {
+    return { status: "error", message: "internal: scenario parties missing" };
+  }
+  const memoryNamespaceByAgentId = new Map<string, string>([
+    [requesterIdentity.agentId, scenario.partyMemoryNamespaces[0]],
+    [requesteeIdentity.agentId, scenario.partyMemoryNamespaces[1]],
+  ]);
+
   const negotiationEndSignal = { current: null as { reason?: string } | null };
   let pendingConnectedFromBind: CompletedDeal | null = null;
 
@@ -359,6 +468,10 @@ export async function runMatchmakingSession(options?: {
     obpPartyIdByAgentId,
     toolPipelineHooks,
     negotiationEndSignal,
+    memoriesClient: memoriesBundle.client,
+    embeddingModel,
+    memoryNamespaceByAgentId,
+    embeddingCache,
   };
 
   const registry = createAgentRegistry();
@@ -370,6 +483,26 @@ export async function runMatchmakingSession(options?: {
   }
 
   const thread = new InMemoryNegotiationContext({ partyIds: obpPartyIds });
+
+  const invitation = scenario.partyAInvitationMessage?.trim();
+  if (invitation) {
+    await thread.postMessage({
+      authorPartyId: requesterPartyId,
+      kind: "text",
+      content: invitation,
+    });
+    if (textTranscriptPath !== undefined) {
+      appendTextTranscriptInvitation({
+        destPath: textTranscriptPath,
+        agentName: requesterIdentity.name,
+        text: invitation,
+      });
+    }
+    runLog?.info({
+      event: "matchmaking.run.party_a_bootstrap",
+      length: invitation.length,
+    });
+  }
 
   logObserverHeader("LLM OBP matchmaking (intro request)");
   console.log("[observer] scenario", scenario.title);
@@ -409,7 +542,11 @@ export async function runMatchmakingSession(options?: {
 
       const messages = await thread.withContext({ forPartyId: actingPartyId });
       const threadText = formatThreadForPrompt(messages, partyIdToDisplayName);
-      const user = buildMatchmakingUserMessage({ threadText });
+      const partyLetter = actingPartyId === requesterPartyId ? "A" : "B";
+      const user = buildMatchmakingUserMessage({
+        threadText,
+        orchestrationNote: `Orchestration (this run only): you are Party ${partyLetter} in this two-party intro negotiation (Party A = first registered seat, Party B = second; turns rotate A, B, A…).`,
+      });
 
       const turnInput: MatchmakingTurnInput = { prompt: user };
 
@@ -470,14 +607,18 @@ export async function runMatchmakingSession(options?: {
         logRoundSummary({ round, role: roleLabel, toolCallCount });
       }
 
-      if (negotiationEndSignal.current !== null) {
-        const { reason } = negotiationEndSignal.current;
+      const endFromHooks = negotiationEndSignal.current;
+      const endFromGeneration = negotiationEndPayloadFromGeneration(generation);
+      const endPayload = endFromHooks ?? endFromGeneration;
+      if (endPayload !== null) {
+        const { reason } = endPayload;
         negotiationEndSignal.current = null;
         pendingConnectedFromBind = null;
         runLog?.info({
           event: "matchmaking.run.terminated",
           reason,
           rounds: round + 1,
+          source: endFromHooks !== null ? "hooks" : "generation",
         });
         return { status: "terminated", reason, rounds: round + 1 };
       }

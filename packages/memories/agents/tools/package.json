@@ -17,7 +17,11 @@
     "ai": "^6.0.153",
     "zod": "^4.3.6"
   },
+  "scripts": {
+    "test": "bun test"
+  },
   "devDependencies": {
+    "@cfd/agent-identity-adapters": "workspace:*",
     "@types/bun": "latest"
   },
   "peerDependencies": {

@@ -1,3 +1,4 @@
+import type { SharedPolicy } from "../policy/types.js";
 import type { StandardSchemaV1 } from "../standard-schema.js";
 
 /**
@@ -23,6 +24,11 @@ export type ToolSpec = {
   instructions: string;
   /** Sorted policy ids gating this tool (for runtime hashing parity with static tool hash). */
   policyIds?: string[];
+  /**
+   * Same {@link SharedPolicy} instances as the defining composable; re-evaluated against
+   * {@link ToolRuntimeContext.env} before each AI SDK tool execution (see identity-adapters).
+   */
+  policies?: SharedPolicy[];
   handler: (
     ctx: ToolRuntimeContext<unknown>,
     input: unknown,

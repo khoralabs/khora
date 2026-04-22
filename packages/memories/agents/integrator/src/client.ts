@@ -32,11 +32,21 @@ export class MemoryIntegratorClient {
     embeddingModel: EmbeddingModel;
     content: string;
     maxSteps?: number;
+    memorySearchBudgetMax?: number;
   }): Promise<{
     plan: IntegratorPlanWire;
     generation: IntegratorPipelineGeneration;
   }> {
-    const { registry, namespace, model, client, embeddingModel, content, maxSteps = 12 } = args;
+    const {
+      registry,
+      namespace,
+      model,
+      client,
+      embeddingModel,
+      content,
+      maxSteps = 12,
+      memorySearchBudgetMax,
+    } = args;
 
     const { identity } = await registerMemoryIntegratorAgent(registry, namespace, {
       identityContext: this.identityContext,
@@ -48,6 +58,7 @@ export class MemoryIntegratorClient {
         client,
         embeddingModel,
         namespace,
+        ...(memorySearchBudgetMax !== undefined ? { memorySearchBudgetMax } : {}),
       },
     });
 

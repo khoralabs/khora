@@ -7,7 +7,9 @@ const PROTOCOLS = ["tcp", "two-pc", "rfp"] as const;
 type ProtocolId = (typeof PROTOCOLS)[number];
 
 function printUsage(): void {
-  console.error(`Usage: bun run src/cli.ts <${PROTOCOLS.join(" | ")}> [two-pc-outcome: commit | abort]`);
+  console.error(
+    `Usage: bun run src/cli.ts <${PROTOCOLS.join(" | ")}> [two-pc-outcome: commit | abort]`,
+  );
 }
 
 function parseProtocol(s: string | undefined): ProtocolId | null {

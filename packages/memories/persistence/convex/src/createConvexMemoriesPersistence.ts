@@ -343,7 +343,10 @@ export function createConvexMemoriesPersistence(
       return [];
     },
 
-    async loadNodeLabelsForMemory(_namespace: string, _memoryKey: string): Promise<OntologyLabelInstance[]> {
+    async loadNodeLabelsForMemory(
+      _namespace: string,
+      _memoryKey: string,
+    ): Promise<OntologyLabelInstance[]> {
       return [];
     },
 

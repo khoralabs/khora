@@ -36,6 +36,7 @@ export class MemoryAdapterClient {
     ingest: AdapterIngestContext;
     domainPayload: TDomain;
     maxSteps?: number;
+    memorySearchBudgetMax?: number;
   }): Promise<MemoryAdapterSessionOutput> {
     const {
       registry,
@@ -46,6 +47,7 @@ export class MemoryAdapterClient {
       ingest,
       domainPayload,
       maxSteps = 12,
+      memorySearchBudgetMax,
     } = args;
 
     const { identity } = await registerMemoryAdapterAgent(registry, namespace, {
@@ -58,6 +60,7 @@ export class MemoryAdapterClient {
         client,
         embeddingModel,
         namespace,
+        ...(memorySearchBudgetMax !== undefined ? { memorySearchBudgetMax } : {}),
       },
     });
 

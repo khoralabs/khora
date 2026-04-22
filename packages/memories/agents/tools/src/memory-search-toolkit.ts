@@ -1,4 +1,4 @@
-import { logger, tool, toolkit } from "@cfd/agent-identity";
+import { logger, policy, tool, toolkit } from "@cfd/agent-identity";
 import type {
   MemoriesClient,
   MemoriesClientAsync,
@@ -68,9 +68,10 @@ function truncateForLog(s: string, max: number): string {
   return `${s.slice(0, max)}…`;
 }
 
-/** Runtime env for {@link memorySearchToolkit}: client, namespace, and embedding model (injected; not tool args). */
+/** Runtime env for {@link memorySearchToolkit}: memory store, namespace, and embedding model (injected; not tool args). */
 export type MemorySearchEnv = {
-  client: MemorySearchWideClient | MemorySearchWideClientAsync;
+  /** Name avoids clashing with other composed toolkits that use {@code client} for a domain API. */
+  memoriesClient: MemorySearchWideClient | MemorySearchWideClientAsync;
   namespace: string;
   /** Used to embed `content.text` for the vector retrieval arm (same model as ingestion). */
   embeddingModel: EmbeddingModel;
@@ -79,7 +80,25 @@ export type MemorySearchEnv = {
    * Instantiated in {@link buildMemorySearchToolkitContext}.
    */
   embeddingCache?: Map<string, number[]>;
+  /**
+   * When set (via {@link toMemorySearchEnv} / host), {@link memorySearchBudgetPolicy} gates each call and
+   * {@link memorySearchTool} increments {@code used} after a completed search.
+   */
+  memorySearchBudget?: { max: number; used: number };
 };
+
+/** Policy id for {@link memorySearchBudgetPolicy} (hash-stable). */
+export const MEMORY_SEARCH_BUDGET_POLICY_ID = "memory_search_budget";
+
+/** Gates {@code memory_search} while {@code used < max}; no-op when {@link MemorySearchEnv.memorySearchBudget} is absent. */
+export const memorySearchBudgetPolicy = policy<MemorySearchEnv>(
+  MEMORY_SEARCH_BUDGET_POLICY_ID,
+  async (env) => {
+    const b = env.memorySearchBudget;
+    if (b === undefined) return true;
+    return b.used < b.max;
+  },
+);
 
 /** Agent passes query text only; the handler embeds it and runs hybrid RRF (lexical + vector). */
 const zSearchContent = z
@@ -160,8 +179,9 @@ const memorySearchTool = tool<
 >({
   name: "memory_search",
   description:
-    "Hybrid search (FTS + embedding) fused with RRF. Namespace and embed model are session-scoped. Tune options.arms for keyword vs semantic emphasis.",
+    "Hybrid search (FTS + embedding) fused with RRF. Namespace and embed model are session-scoped. Tune options.arms for keyword vs semantic emphasis. When the host sets a search budget, further calls are denied until the env is reset for a new turn.",
   inputSchema: zMemorySearchToolInput,
+  policies: [memorySearchBudgetPolicy],
   hooks: {
     onToolExecuted: async (e) => {
       if (e.toolName !== "memory_search") return;
@@ -234,7 +254,7 @@ const memorySearchTool = tool<
 
     const tSearch = performance.now();
     const rawHits = await Promise.resolve(
-      env.client.search({
+      env.memoriesClient.search({
         namespace: env.namespace,
         content,
         options: opts
@@ -258,6 +278,11 @@ const memorySearchTool = tool<
         hitCount: slim.length,
       }),
     );
+
+    const budget = env.memorySearchBudget;
+    if (budget !== undefined) {
+      budget.used += 1;
+    }
 
     return slim;
   },

@@ -30,6 +30,8 @@ export type MemoryIntegratorSessionContext<
   namespace: string;
   agentId?: string;
   agentName?: string;
+  /** When set, caps {@code memory_search} calls per session run (fresh counter each {@code onAfterContext}). */
+  memorySearchBudgetMax?: number;
   toolkitCtx?: ToolkitContext<MemorySearchEnv>;
   runtime?: ToolRuntimeContext<MemorySearchEnv>;
 };
@@ -102,6 +104,9 @@ export function memoryIntegratorRegistryRegistration<
           embeddingModel: ctx.embeddingModel,
           agentId: ctx.agentId,
           agentName: ctx.agentName,
+          ...(ctx.memorySearchBudgetMax !== undefined
+            ? { memorySearchBudgetMax: ctx.memorySearchBudgetMax }
+            : {}),
         });
         ctx.runtime = buildMemorySearchToolRuntimeContext({
           client: ctx.client,
@@ -109,6 +114,9 @@ export function memoryIntegratorRegistryRegistration<
           embeddingModel: ctx.embeddingModel,
           agentId: ctx.agentId,
           agentName: ctx.agentName,
+          ...(ctx.memorySearchBudgetMax !== undefined
+            ? { memorySearchBudgetMax: ctx.memorySearchBudgetMax }
+            : {}),
         });
       },
     },

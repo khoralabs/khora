@@ -1,7 +1,7 @@
+import { processLogicalMemoryWithIntegrator } from "@cfd/memories-integrator";
 import { JsonlStore } from "@cfd/memories-stores";
-import { processLogicalMemoryWithIntegrator } from "../integrate-memory.js";
 import { elapsedMs, logger } from "../logger.js";
-import { getMemoriesBundle } from "../shared.js";
+import { getCliChatModel, getCliEmbeddingModel, getMemoriesBundle } from "../shared.js";
 import type { ParsedRemember } from "./parse-args.js";
 
 export async function cmdRemember(args: ParsedRemember): Promise<void> {
@@ -10,15 +10,17 @@ export async function cmdRemember(args: ParsedRemember): Promise<void> {
   const store = new JsonlStore(args.store);
   const key = `remember-${Date.now()}`;
   const tRemember = performance.now();
+  const chatModel = getCliChatModel();
+  const embeddingModel = getCliEmbeddingModel(args.db, args.resolution);
   const result = await processLogicalMemoryWithIntegrator({
-    bundle,
-    dbPath: args.db,
-    resolution: args.resolution,
+    client: bundle.client,
     logicalMemory: {
       key,
       namespace: args.namespace,
       plaintext: args.text,
     },
+    chatModel,
+    embeddingModel,
     maxSteps: 6,
   });
   logger.info({

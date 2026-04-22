@@ -2,9 +2,9 @@ import { buildFinancingNegotiationScenario } from "./financing.ts";
 import { buildMeetingNegotiationScenario } from "./meeting.ts";
 import type { NegotiationScenario } from "./negotiation-scenario.ts";
 
-export type { NegotiationScenario } from "./negotiation-scenario.ts";
 export { buildFinancingNegotiationScenario } from "./financing.ts";
 export { buildMeetingNegotiationScenario } from "./meeting.ts";
+export type { NegotiationScenario } from "./negotiation-scenario.ts";
 
 export const NEGOTIATION_SCENARIO_IDS = ["financing", "meeting"] as const;
 export type NegotiationScenarioId = (typeof NEGOTIATION_SCENARIO_IDS)[number];

@@ -4,8 +4,8 @@
  * B exposes ACK (terminal) on the same offer; A binds → connection established.
  */
 import type { ObpClient } from "@cfd/obp-core";
-import { DEMO_EXPIRY_MS, DEMO_TS, type DemoStack } from "../stack.ts";
 import { logStep, shortId } from "../log.ts";
+import { DEMO_EXPIRY_MS, DEMO_TS, type DemoStack } from "../stack.ts";
 
 export function runThreeWayTcp(stack: DemoStack): void {
   const { client } = stack;

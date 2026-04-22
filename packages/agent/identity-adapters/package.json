@@ -14,8 +14,12 @@
     "@cfd/agent-identity": "workspace:*",
     "ai": "^6.0.153"
   },
+  "scripts": {
+    "test": "bun test"
+  },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "zod": "^4.3.6"
   },
   "peerDependencies": {
     "typescript": "^5"

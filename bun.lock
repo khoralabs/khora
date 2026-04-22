@@ -88,6 +88,13 @@
         "@ai-sdk/google": "^3.0.0",
         "@cfd/agent-identity": "workspace:*",
         "@cfd/agent-identity-adapters": "workspace:*",
+        "@cfd/memories-adapter": "workspace:*",
+        "@cfd/memories-core": "workspace:*",
+        "@cfd/memories-core-ontologies": "workspace:*",
+        "@cfd/memories-integrator": "workspace:*",
+        "@cfd/memories-sqlite": "workspace:*",
+        "@cfd/memories-stores": "workspace:*",
+        "@cfd/memories-tools": "workspace:*",
         "@cfd/obp-core": "workspace:*",
         "@cfd/obp-negotiator": "workspace:*",
         "@cfd/obp-sqlite": "workspace:*",
@@ -125,6 +132,7 @@
       },
       "devDependencies": {
         "@types/bun": "latest",
+        "zod": "^4.3.6",
       },
       "peerDependencies": {
         "typescript": "^5",
@@ -200,6 +208,7 @@
         "zod": "^4.3.6",
       },
       "devDependencies": {
+        "@cfd/agent-identity-adapters": "workspace:*",
         "@types/bun": "latest",
       },
       "peerDependencies": {

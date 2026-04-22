@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { buildObpNegotiatorBaseInstruction } from "./instructions.ts";
 import { defineObpNegotiatorIdentity } from "./identity.ts";
+import { buildObpNegotiatorBaseInstruction } from "./instructions.ts";
 
 describe("@cfd/obp-negotiator", () => {
   test("buildObpNegotiatorBaseInstruction is non-empty", () => {

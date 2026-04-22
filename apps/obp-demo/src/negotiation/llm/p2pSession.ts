@@ -19,6 +19,7 @@ import {
 } from "@cfd/obp-tools";
 import type { LanguageModel } from "ai";
 import type { Logger } from "pino";
+import { type CompletedDeal, resolveCompletedDeal } from "../deal-detection.ts";
 import {
   appendTextTranscriptTurn,
   createRunLogger,
@@ -27,10 +28,10 @@ import {
 } from "../logger.ts";
 import { createDemoStack } from "../obp/demoPersistence.ts";
 import { agentSourcemaps } from "../obp/sourcemaps.ts";
-import { resolveCompletedDeal, type CompletedDeal } from "../deal-detection.ts";
 import { buildDefaultNegotiationScenario, type NegotiationScenario } from "../scenarios/index.ts";
 import { getNegotiationModel } from "./env.ts";
 import { buildUserMessage } from "./messages.ts";
+import { negotiationEndPayloadFromGeneration } from "./negotiation-end-from-generation.ts";
 import { logGeneration, logObserverHeader, logRoundSummary } from "./observer.ts";
 
 export type LlmNegotiationResult =
@@ -64,7 +65,7 @@ export type NegotiationSessionContext = SessionContext & {
   negotiationEndSignal: { current: { reason?: string } | null };
 };
 
-export { resolveCompletedDeal, type CompletedDeal };
+export { type CompletedDeal, resolveCompletedDeal };
 
 function formatThreadForPrompt(
   messages: NegotiationMessage[],
@@ -439,19 +440,24 @@ export async function runLlmNegotiation(options?: {
         logRoundSummary({ round, role: roleLabel, toolCallCount });
       }
 
-      if (negotiationEndSignal.current !== null) {
-        const { reason } = negotiationEndSignal.current;
+      const endFromHooks = negotiationEndSignal.current;
+      const endFromGeneration = negotiationEndPayloadFromGeneration(generation);
+      const endPayload = endFromHooks ?? endFromGeneration;
+      if (endPayload !== null) {
+        const { reason } = endPayload;
         negotiationEndSignal.current = null;
         pendingDealFromBind = null;
         runLog?.info({
           event: "negotiation.run.terminated",
           reason,
           rounds: round + 1,
+          source: endFromHooks !== null ? "hooks" : "generation",
         });
         return { status: "terminated", reason, rounds: round + 1 };
       }
 
-      const deal = pendingDealFromBind ?? resolveCompletedDeal(client, persistence, providerPartyId);
+      const deal =
+        pendingDealFromBind ?? resolveCompletedDeal(client, persistence, providerPartyId);
       pendingDealFromBind = null;
       if (deal !== null) {
         runLog?.info({ event: "negotiation.run.deal", ...deal, rounds: round + 1 });

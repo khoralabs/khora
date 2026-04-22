@@ -21,12 +21,19 @@ export function toMemorySearchEnv<
   embeddingModel: EmbeddingModel;
   /** Per session; defaults to a new empty map. */
   embeddingCache?: Map<string, number[]>;
+  /** When set, initializes {@link MemorySearchEnv.memorySearchBudget} with {@code used: 0}. */
+  memorySearchBudgetMax?: number;
 }): MemorySearchEnv {
+  const memorySearchBudget =
+    args.memorySearchBudgetMax !== undefined
+      ? { max: args.memorySearchBudgetMax, used: 0 }
+      : undefined;
   return {
-    client: args.client as unknown as MemorySearchWideClient | MemorySearchWideClientAsync,
+    memoriesClient: args.client as unknown as MemorySearchWideClient | MemorySearchWideClientAsync,
     namespace: args.namespace,
     embeddingModel: args.embeddingModel,
     embeddingCache: args.embeddingCache ?? new Map(),
+    ...(memorySearchBudget !== undefined ? { memorySearchBudget } : {}),
   };
 }
 
@@ -39,6 +46,7 @@ export function buildMemorySearchToolkitContext<
   embeddingModel: EmbeddingModel;
   agentId?: string;
   agentName?: string;
+  memorySearchBudgetMax?: number;
 }): ToolkitContext<MemorySearchEnv> {
   return {
     env: toMemorySearchEnv(args),
@@ -57,6 +65,7 @@ export function buildMemorySearchToolRuntimeContext<
   embeddingModel: EmbeddingModel;
   agentId?: string;
   agentName?: string;
+  memorySearchBudgetMax?: number;
 }): ToolRuntimeContext<MemorySearchEnv> {
   return {
     env: toMemorySearchEnv(args),

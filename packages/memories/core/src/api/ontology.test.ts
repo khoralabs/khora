@@ -21,7 +21,7 @@ describe("ontology narrow helpers", () => {
   test("nodeLabelPropsSchema returns Zod schema for known kind", () => {
     const s = nodeLabelPropsSchema(ontology, "topic");
     expect(s).toBeDefined();
-    expect(s!.parse({ weight: 0.5 })).toEqual({ weight: 0.5 });
+    expect(s?.parse({ weight: 0.5 })).toEqual({ weight: 0.5 });
   });
 
   test("nodeLabelPropsSchema returns undefined for unknown kind", () => {
@@ -31,7 +31,7 @@ describe("ontology narrow helpers", () => {
   test("edgeLabelPropsSchema returns Zod schema for known kind", () => {
     const s = edgeLabelPropsSchema(ontology, "relates_to");
     expect(s).toBeDefined();
-    expect(s!.parse({ strength: 0.5 })).toEqual({ strength: 0.5 });
+    expect(s?.parse({ strength: 0.5 })).toEqual({ strength: 0.5 });
   });
 
   test("zodPropsSchemaToJson produces an object", () => {

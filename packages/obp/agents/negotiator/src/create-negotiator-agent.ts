@@ -20,10 +20,10 @@ export type ObpNegotiatorGeneration = Awaited<ReturnType<ObpNegotiatorAgent["gen
 /**
  * Builds a {@link ToolLoopAgent} with OBP tools from evaluated affordances.
  */
-export async function createObpNegotiatorAgent(args: {
+export async function createObpNegotiatorAgent<Env extends ObpToolkitEnv>(args: {
   model: LanguageModel;
   identity: RegisteredAgentIdentity;
-  env: ObpToolkitEnv;
+  env: Env;
   systemInstructions: string;
   maxSteps?: number;
   toolPipelineHooks?: ToolPipelineHooks;

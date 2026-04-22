@@ -69,12 +69,12 @@ class GitignoreFilter {
 
     // If pattern doesn't start with / and doesn't contain /, it should match at any level
     if (!normalized.startsWith("/") && !normalized.includes("/")) {
-      normalized = "**/" + normalized;
+      normalized = `**/${normalized}`;
     }
 
     // If pattern ends with /, it matches directories
     if (normalized.endsWith("/")) {
-      normalized = normalized + "**";
+      normalized = `${normalized}**`;
     }
 
     // Remove leading slash (we're working with relative paths)
@@ -189,7 +189,7 @@ class ContextCollector {
     if (filterStack.length > 0) {
       // Apply filters from outermost to innermost; later (more specific) wins.
       let result: MatchResult = "none";
-      const candidate = isDir ? fullPath + "/" : fullPath;
+      const candidate = isDir ? `${fullPath}/` : fullPath;
       for (const { baseDir, filter } of filterStack) {
         const rel = relative(baseDir, candidate).replace(/\\/g, "/");
         // Skip if path is not under this filter's baseDir
@@ -213,7 +213,10 @@ class ContextCollector {
       ".vscode",
     ];
     if (isDir && basicIgnorePatterns.includes(fileName)) return true;
-    if (!isDir && (fileName.endsWith(".log") || fileName === ".DS_Store" || fileName.startsWith(".env"))) {
+    if (
+      !isDir &&
+      (fileName.endsWith(".log") || fileName === ".DS_Store" || fileName.startsWith(".env"))
+    ) {
       return true;
     }
 

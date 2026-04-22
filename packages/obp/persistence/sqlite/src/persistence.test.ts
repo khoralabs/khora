@@ -161,9 +161,7 @@ describe("ObpSqlitePersistence", () => {
     if (pr.kind === "found") {
       expect(pr.port.ts_expired).toBe(500);
     }
-    expect(() =>
-      c.bindPort({ offerId: offer.id, portId: port.id }),
-    ).toThrow(ObpError);
+    expect(() => c.bindPort({ offerId: offer.id, portId: port.id })).toThrow(ObpError);
   });
 
   test("setOfferExpiredNow cascades port expiry", () => {

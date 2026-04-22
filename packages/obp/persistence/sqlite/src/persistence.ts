@@ -186,9 +186,7 @@ export class ObpSqlitePersistence implements ObpPersistence {
 
   listExposedPortEdges(): ReadonlyArray<{ offerId: string; portId: string }> {
     const rows = this.db
-      .query<{ offer_id: string; port_id: string }, []>(
-        `SELECT offer_id, port_id FROM obp_exposes`,
-      )
+      .query<{ offer_id: string; port_id: string }, []>(`SELECT offer_id, port_id FROM obp_exposes`)
       .all();
     return rows.map((r) => ({ offerId: r.offer_id, portId: r.port_id }));
   }
