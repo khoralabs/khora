@@ -2,12 +2,12 @@ import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { textTranscriptPathFromJsonl } from "../negotiation/logger.ts";
 import { runMatchmakingSession } from "./llm/session.ts";
+import { parseMatchmakingCliArgs } from "./matchmaking-cli-args.ts";
 import {
   jsonlStorePathForNamespace,
   resolveObpDemoMemoriesDbPath,
   resolveObpDemoMemoriesRoot,
 } from "./memories/persisted-memories.ts";
-import { parseMatchmakingCliArgs } from "./matchmaking-cli-args.ts";
 import { getMatchmakingScenario, MATCHMAKING_SCENARIO_IDS } from "./scenarios/index.ts";
 
 function printUsage(): void {

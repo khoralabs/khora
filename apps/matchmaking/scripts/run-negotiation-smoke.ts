@@ -1,0 +1,45 @@
+import { mkdir } from "node:fs/promises";
+import path from "node:path";
+import { runMatchmakingSession } from "../src/lib/llm/session.ts";
+import {
+  jsonlStorePathForNamespace,
+  resolveObpDemoMemoriesDbPath,
+  resolveObpDemoMemoriesRoot,
+} from "../src/lib/memories/persisted-memories.ts";
+import { buildIntroRequestScenarioPair } from "../src/lib/scenarios/intro-request.ts";
+import { textTranscriptPathFromJsonl } from "../src/lib/matchmaking-obp/index.ts";
+
+function buildLogFilePath(): string {
+  const ts = new Date().toISOString().replace(/[:.]/g, "-");
+  const logDir = path.join(process.cwd(), ".obp-demo-logs");
+  return path.join(logDir, `negotiation_smoke_${ts}.jsonl`);
+}
+
+async function main(): Promise<void> {
+  const scenario = await buildIntroRequestScenarioPair("p1", "p2", {
+    invitationMessage: "Smoke run: opening line from Party A.",
+  });
+
+  const logFilePath = buildLogFilePath();
+  await mkdir(path.dirname(logFilePath), { recursive: true });
+  const memoriesRoot = resolveObpDemoMemoriesRoot();
+  console.log("[negotiation-smoke] log file", logFilePath);
+  console.log("[negotiation-smoke] text transcript", textTranscriptPathFromJsonl(logFilePath));
+  console.log("[negotiation-smoke] memories SQLite", resolveObpDemoMemoriesDbPath(memoriesRoot));
+  console.log(
+    "[negotiation-smoke] memories JSONL (Party A)",
+    jsonlStorePathForNamespace(memoriesRoot, scenario.partyMemoryNamespaces[0]),
+  );
+  console.log(
+    "[negotiation-smoke] memories JSONL (Party B)",
+    jsonlStorePathForNamespace(memoriesRoot, scenario.partyMemoryNamespaces[1]),
+  );
+
+  const result = await runMatchmakingSession({ scenario, logFilePath });
+  console.log("\n[result]", result);
+  if (result.status === "error") {
+    process.exitCode = 1;
+  }
+}
+
+await main();

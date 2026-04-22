@@ -2,9 +2,8 @@ import { Database } from "bun:sqlite";
 import { expect, test } from "bun:test";
 import { ObpClient } from "@cfd/obp-core";
 import { createObpSqlitePersistence, OBP_SCHEMA_SQL } from "@cfd/obp-sqlite";
-import { resolveCompletedDeal } from "../negotiation/deal-detection.ts";
+import { resolveCompletedDeal } from "./matchmaking-obp/index.ts";
 import { assertMatchmakingBindAllowed, resolveMatchmakingConnectedDeal } from "./llm/session.ts";
-import { parseMatchmakingCliArgs } from "./matchmaking-cli-args.ts";
 
 test("resolveCompletedDeal finds terminal bind on requestee offer", () => {
   const db = new Database(":memory:");
@@ -103,20 +102,4 @@ test("assertMatchmakingBindAllowed allows binding counterparty offer", () => {
   expect(() =>
     assertMatchmakingBindAllowed({ actingPartyId: "p1", offerOwnerPartyId: "p2" }),
   ).not.toThrow();
-});
-
-test("parseMatchmakingCliArgs reads scenario and --invite", () => {
-  const argv = ["bun", "cli.ts", "p1<>p2", "--invite", "Hello from requester"];
-  expect(parseMatchmakingCliArgs(argv)).toEqual({
-    scenarioId: "p1<>p2",
-    scenarioOptions: { invitationMessage: "Hello from requester" },
-  });
-});
-
-test("parseMatchmakingCliArgs supports --invite=value form", () => {
-  const argv = ["bun", "cli.ts", "--invite=Hi", "p2<>p3"];
-  expect(parseMatchmakingCliArgs(argv)).toEqual({
-    scenarioId: "p2<>p3",
-    scenarioOptions: { invitationMessage: "Hi" },
-  });
 });
