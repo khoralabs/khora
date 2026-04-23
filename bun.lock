@@ -122,28 +122,6 @@
         "typescript": "^5",
       },
     },
-    "apps/obp-demo": {
-      "name": "@cfd/obp-demo",
-      "version": "0.0.0",
-      "dependencies": {
-        "@ai-sdk/google": "^3.0.0",
-        "@cfd/agent-identity": "workspace:*",
-        "@cfd/agent-thread": "workspace:*",
-        "@cfd/obp-core": "workspace:*",
-        "@cfd/obp-negotiator": "workspace:*",
-        "@cfd/obp-sqlite": "workspace:*",
-        "@cfd/obp-tools": "workspace:*",
-        "ai": "^6",
-        "pino": "^10.3.1",
-        "zod": "^4.3.6",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
     "packages/agent/identity": {
       "name": "@cfd/agent-identity",
       "dependencies": {
@@ -369,6 +347,28 @@
         "typescript": "^5",
       },
     },
+    "packages/obp/examples": {
+      "name": "@cfd/obp-demo",
+      "version": "0.0.0",
+      "dependencies": {
+        "@ai-sdk/google": "^3.0.0",
+        "@cfd/agent-identity": "workspace:*",
+        "@cfd/agent-thread": "workspace:*",
+        "@cfd/obp-core": "workspace:*",
+        "@cfd/obp-negotiator": "workspace:*",
+        "@cfd/obp-sqlite": "workspace:*",
+        "@cfd/obp-tools": "workspace:*",
+        "ai": "^6",
+        "pino": "^10.3.1",
+        "zod": "^4.3.6",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "packages/obp/persistence/sqlite": {
       "name": "@cfd/obp-sqlite",
       "version": "0.0.0",
@@ -449,7 +449,7 @@
 
     "@cfd/obp-core": ["@cfd/obp-core@workspace:packages/obp/core"],
 
-    "@cfd/obp-demo": ["@cfd/obp-demo@workspace:apps/obp-demo"],
+    "@cfd/obp-demo": ["@cfd/obp-demo@workspace:packages/obp/examples"],
 
     "@cfd/obp-negotiator": ["@cfd/obp-negotiator@workspace:packages/obp/agents/negotiator"],
 

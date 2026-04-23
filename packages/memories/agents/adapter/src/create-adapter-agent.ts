@@ -6,6 +6,7 @@ import type {
 import type { LabelSchemaMap, OntologyDefinition } from "@cfd/memories-core";
 import {
   createMemorySearchToolLoopAgent,
+  DEFAULT_MEMORY_TOOL_LOOP_MAX_STEPS,
   type MemorySearchEnv,
   type MemorySearchToolSet,
 } from "@cfd/memories-tools";
@@ -37,7 +38,14 @@ export function createMemoryAdapterAgent<
   ontology: OntologyDefinition<TNode, TEdge>;
   maxSteps?: number;
 }): MemoryAdapterAgent {
-  const { model, identity, affordances, runtime, ontology, maxSteps = 12 } = args;
+  const {
+    model,
+    identity,
+    affordances,
+    runtime,
+    ontology,
+    maxSteps = DEFAULT_MEMORY_TOOL_LOOP_MAX_STEPS,
+  } = args;
   const output = memoryAdapterExpandedOutput(ontology);
   return createMemorySearchToolLoopAgent<MemoryAdapterStructuredOutput>({
     model,

@@ -14,5 +14,5 @@ This package’s JSON shape is **library-internal** until promoted to a stable i
 ## Usage
 
 - `declareMemoryIntegratorAgent` / `registerMemoryIntegratorAgent` — same registry pattern as `@cfd/memories-adapter`.
-- `MemoryIntegratorClient.integrate()` — one-shot session: `content` → `{ plan, generation }`.
+- `MemoryIntegratorClient.integrate()` — one-shot session: `content` → `{ plan, generation }`. Default `maxSteps` is conservative (`DEFAULT_MEMORY_TOOL_LOOP_MAX_STEPS` from `@cfd/memories-tools`); pass `maxSteps` or set `defaultMaxSteps` on the client for full-quality runs.
 - `integratorWireToMergeSlice(ontology, plan)` — produce `labels` / `edges` / `properties` for `mergeMemory`.

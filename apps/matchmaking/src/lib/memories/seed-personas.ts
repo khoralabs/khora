@@ -22,8 +22,10 @@ export async function seedPersonaMemoryNamespace(args: {
   skipExistingSlots?: boolean;
 }): Promise<void> {
   const { bundle, chatModel, embeddingModel, namespace, seeds, skipExistingSlots } = args;
+  const registry = createAgentRegistry();
   const adapterClient = new MemoryAdapterClient({
     identityContext: { app: "obp-demo", product: "matchmaking-seed" },
+    registry,
     namespace,
     model: chatModel,
     client: bundle.client,
@@ -51,7 +53,6 @@ export async function seedPersonaMemoryNamespace(args: {
       /** Empty KG → adapter often burns steps on memory_search before emitting structured output; keep headroom. */
       maxSteps: 12,
       memorySearchBudgetMax: SEED_MEMORY_SEARCH_BUDGET_MAX,
-      overrides: { registry: createAgentRegistry() },
     });
 
     const logicalMemory = {
@@ -63,6 +64,7 @@ export async function seedPersonaMemoryNamespace(args: {
       logicalMemory,
       chatModel,
       embeddingModel,
+      registry,
       maxSteps: 6,
       memorySearchBudgetMax: SEED_MEMORY_SEARCH_BUDGET_MAX,
       integratorClientOptions: {
@@ -87,16 +89,18 @@ export async function seedAllMatchmakingPersonaMemories(args: {
 }): Promise<void> {
   const personas = args.personas ?? (Object.values(matchmakingPersonas) as MatchmakingPersona[]);
   const { bundle, chatModel, embeddingModel, skipExistingSlots } = args;
-  for (const p of personas) {
-    await seedPersonaMemoryNamespace({
-      bundle,
-      chatModel,
-      embeddingModel,
-      namespace: p.memoryNamespace,
-      seeds: p.memorySeeds,
-      skipExistingSlots,
-    });
-  }
+  await Promise.all(
+    personas.map((p) =>
+      seedPersonaMemoryNamespace({
+        bundle,
+        chatModel,
+        embeddingModel,
+        namespace: p.memoryNamespace,
+        seeds: p.memorySeeds,
+        skipExistingSlots,
+      }),
+    ),
+  );
 }
 
 /**
@@ -120,22 +124,24 @@ export async function seedMatchmakingPersonas(args: {
   } = args;
   const [nsA, nsB] = partyMemoryNamespaces;
   const [seedsA, seedsB] = personaSeeds;
-  await seedPersonaMemoryNamespace({
-    bundle,
-    chatModel,
-    embeddingModel,
-    namespace: nsA,
-    seeds: seedsA,
-    skipExistingSlots,
-  });
-  await seedPersonaMemoryNamespace({
-    bundle,
-    chatModel,
-    embeddingModel,
-    namespace: nsB,
-    seeds: seedsB,
-    skipExistingSlots,
-  });
+  await Promise.all([
+    seedPersonaMemoryNamespace({
+      bundle,
+      chatModel,
+      embeddingModel,
+      namespace: nsA,
+      seeds: seedsA,
+      skipExistingSlots,
+    }),
+    seedPersonaMemoryNamespace({
+      bundle,
+      chatModel,
+      embeddingModel,
+      namespace: nsB,
+      seeds: seedsB,
+      skipExistingSlots,
+    }),
+  ]);
 }
 
 export { matchmakingSeedMemoryKey } from "./persisted-memories.ts";

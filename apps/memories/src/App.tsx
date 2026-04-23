@@ -1,5 +1,6 @@
 import { FolderSearchIcon, RefreshCcwIcon, ScanSearchIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { NamespaceSelector } from "@/components/namespace-selector";
 import {
   InputGroup,
   InputGroupAddon,
@@ -32,6 +33,38 @@ export function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [graphSearch, setGraphSearch] = useState<GraphSearchState | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [knownNamespaces, setKnownNamespaces] = useState<string[]>([]);
+  const [namespacesError, setNamespacesError] = useState<string | null>(null);
+  const [namespacesLoading, setNamespacesLoading] = useState(false);
+
+  const loadNamespaces = useCallback(async () => {
+    setNamespacesLoading(true);
+    setNamespacesError(null);
+    try {
+      const res = await fetch("/api/namespaces");
+      const json = (await res.json()) as { namespaces?: string[]; error?: string };
+      if (!res.ok) {
+        setKnownNamespaces([]);
+        setNamespacesError(json.error ?? res.statusText);
+        return;
+      }
+      if (json.error) {
+        setKnownNamespaces([]);
+        setNamespacesError(json.error);
+        return;
+      }
+      setKnownNamespaces(json.namespaces ?? []);
+    } catch (e) {
+      setKnownNamespaces([]);
+      setNamespacesError(String(e));
+    } finally {
+      setNamespacesLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadNamespaces();
+  }, [loadNamespaces]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -125,7 +158,7 @@ export function App() {
   return (
     <div className="fixed inset-0 overflow-hidden bg-background text-foreground">
       <div className="absolute inset-0">
-        {data && data.nodes.length > 0 ? (
+        {data != null && !error ? (
           <GraphProjectionProvider
             data={data}
             graphSearch={graphSearch}
@@ -137,25 +170,23 @@ export function App() {
           </GraphProjectionProvider>
         ) : (
           <div className="flex h-full items-center justify-center px-4 text-center text-muted-foreground">
-            {data && data.nodes.length === 0 ? (
-              "No memories in this namespace (or no keys in graph)."
-            ) : error ? (
-              "Fix the error above and reload."
-            ) : (
-              <LoaderWithMessage message="Loading…" />
-            )}
+            {error ? "Fix the error above and reload." : <LoaderWithMessage message="Loading…" />}
           </div>
         )}
       </div>
 
       <header className="app-chrome absolute left-0 right-0 top-0 z-10 flex flex-col gap-4 p-4 w-full max-w-sm">
         <InputGroup className="w-full">
-          <InputGroupInput
-            placeholder="Namespace"
-            value={namespace}
-            onChange={(e) => setNamespace(e.target.value)}
-            aria-label="Namespace"
-          />
+          <div className="min-w-0 flex-1 self-stretch">
+            <NamespaceSelector
+              value={namespace}
+              onValueChange={setNamespace}
+              knownNamespaces={knownNamespaces}
+              knownLoading={namespacesLoading}
+              knownError={namespacesError}
+              disabled={loading}
+            />
+          </div>
           <InputGroupAddon>
             <FolderSearchIcon className="text-muted-foreground" aria-hidden />
           </InputGroupAddon>
@@ -163,7 +194,14 @@ export function App() {
             {namespaceSummary || "\u00a0"}
           </InputGroupAddon>
           <InputGroupAddon align="inline-end">
-            <InputGroupButton variant="ghost" disabled={loading} onClick={() => void load()}>
+            <InputGroupButton
+              variant="ghost"
+              disabled={loading}
+              onClick={() => {
+                void load();
+                void loadNamespaces();
+              }}
+            >
               <RefreshCcwIcon className="text-muted-foreground" aria-hidden />
             </InputGroupButton>
           </InputGroupAddon>

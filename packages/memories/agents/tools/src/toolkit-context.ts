@@ -36,10 +36,9 @@ export type MemorySearchSessionContextSlice<
   affordances?: RegisteredAgentAffordances;
 };
 
-function memorySearchContextBuildArgs<
-  TNode extends ZodLabelMap,
-  TEdge extends ZodLabelMap,
->(context: MemorySearchSessionContextSlice<TNode, TEdge>) {
+function memorySearchContextBuildArgs<TNode extends ZodLabelMap, TEdge extends ZodLabelMap>(
+  context: MemorySearchSessionContextSlice<TNode, TEdge>,
+) {
   return {
     client: context.client,
     namespace: context.namespace,
@@ -103,10 +102,7 @@ export async function attachMemorySearchSessionLayer<
  * Narrows a session {@link MemoriesClient} or {@link MemoriesClientAsync} to the wide shape expected by {@link memorySearchToolkit}.
  * Single boundary for assignability (clients are invariant in ontology generics).
  */
-export function toMemorySearchEnv<
-  TNode extends ZodLabelMap,
-  TEdge extends ZodLabelMap,
->(args: {
+export function toMemorySearchEnv<TNode extends ZodLabelMap, TEdge extends ZodLabelMap>(args: {
   client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;
   namespace: string;
   embeddingModel: EmbeddingModel;

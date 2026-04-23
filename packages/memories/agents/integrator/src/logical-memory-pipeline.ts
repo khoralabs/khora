@@ -1,4 +1,4 @@
-import { createAgentRegistry } from "@cfd/agent-identity";
+import { type AgentRegistry, createAgentRegistry } from "@cfd/agent-identity";
 import type { MemoriesClient, MemoriesClientAsync } from "@cfd/memories-core";
 import {
   decomposeLogicalMemoryToContent,
@@ -7,11 +7,12 @@ import {
   mergeLogicalMemoryWithMergeSlice,
   type ProcessedLogicalMemory,
 } from "@cfd/memories-core/helpers";
+import { DEFAULT_MEMORY_TOOL_LOOP_MAX_STEPS } from "@cfd/memories-tools";
 import type { LanguageModel } from "ai";
 import type z from "zod";
 import { MemoryIntegratorClient } from "./client.js";
-import type { DefineMemoryIntegratorIdentityOptions } from "./identity.js";
 import type { IntegratorPipelineGeneration } from "./create-integrator-agent.js";
+import type { DefineMemoryIntegratorIdentityOptions } from "./identity.js";
 import type { IntegratorPlanWire } from "./integrator-output.js";
 import { integratorWireToMergeSlice } from "./to-merge-slice.js";
 
@@ -47,6 +48,10 @@ export async function processLogicalMemoryWithIntegrator<
   /** Defaults to `{ app: "cfd-cli" }` identity when omitted. */
   integratorClient?: MemoryIntegratorClient<TNode, TEdge>;
   integratorClientOptions?: DefineMemoryIntegratorIdentityOptions;
+  /**
+   * When {@link integratorClient} is built internally, use this registry (e.g. shared with adapter).
+   */
+  registry?: AgentRegistry;
   /** Caps {@code memory_search} per integrator run when set. */
   memorySearchBudgetMax?: number;
 }): Promise<{
@@ -59,7 +64,7 @@ export async function processLogicalMemoryWithIntegrator<
     logicalMemory,
     chatModel,
     embeddingModel,
-    maxSteps = 6,
+    maxSteps = DEFAULT_MEMORY_TOOL_LOOP_MAX_STEPS,
     multimodal = DEFAULT_MULTIMODAL,
   } = args;
 
@@ -73,14 +78,13 @@ export async function processLogicalMemoryWithIntegrator<
   };
 
   const content = buildIntegratorContent(processedLogicalMemory);
-  const registry = createAgentRegistry();
 
   const integratorClient =
     args.integratorClient ??
     new MemoryIntegratorClient({
       ...args.integratorClientOptions,
       identityContext: args.integratorClientOptions?.identityContext ?? { app: "cfd-cli" },
-      registry,
+      registry: args.registry ?? createAgentRegistry(),
       namespace: logicalMemory.namespace,
       model: chatModel,
       client,

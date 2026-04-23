@@ -4,6 +4,7 @@ export {
   aiSdkEmbeddingModelId,
   type EmbeddingModel,
 } from "./embedding-types.js";
+export { DEFAULT_MEMORY_TOOL_LOOP_MAX_STEPS } from "./memory-agent-defaults.js";
 export {
   embeddingCacheKey,
   MEMORY_SEARCH_BUDGET_POLICY_ID,

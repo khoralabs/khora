@@ -43,6 +43,17 @@ export function NamespaceSelector({
   const showCustom = customExact.length > 0 && !knownNamespaces.includes(customExact);
   const showNoMatches = filteredNs.length === 0 && !showCustom;
 
+  /** Close popover first, then apply after paint so Radix/cmdk layout and the graph canvas do not ResizeObserver-fight. */
+  const commitNamespace = (raw: string) => {
+    const trimmed = raw.trim();
+    if (!trimmed) return;
+    setOpen(false);
+    setSearch("");
+    requestAnimationFrame(() => {
+      onValueChange(trimmed);
+    });
+  };
+
   return (
     <Popover
       open={open}
@@ -74,6 +85,7 @@ export function NamespaceSelector({
       <PopoverContent
         className="p-0 w-[var(--radix-popover-trigger-width,20rem)] max-w-lg"
         align="start"
+        onCloseAutoFocus={(e) => e.preventDefault()}
       >
         <Command shouldFilter={false}>
           <CommandInput
@@ -84,10 +96,7 @@ export function NamespaceSelector({
               if (e.key === "Enter") {
                 e.preventDefault();
                 const t = search.trim();
-                if (t) {
-                  onValueChange(t);
-                  setOpen(false);
-                }
+                if (t) commitNamespace(t);
               }
             }}
           />
@@ -108,10 +117,7 @@ export function NamespaceSelector({
                   <CommandItem
                     key={ns}
                     value={ns}
-                    onSelect={() => {
-                      onValueChange(ns);
-                      setOpen(false);
-                    }}
+                    onSelect={() => commitNamespace(ns)}
                   >
                     <Check
                       className={cn("mr-2 size-4 shrink-0", value === ns ? "opacity-100" : "opacity-0")}
@@ -126,11 +132,8 @@ export function NamespaceSelector({
             {showCustom && (
               <CommandGroup heading="Custom">
                 <CommandItem
-                  value={`\0custom\0${customExact}`}
-                  onSelect={() => {
-                    onValueChange(customExact);
-                    setOpen(false);
-                  }}
+                  value={`~custom~${customExact}`}
+                  onSelect={() => commitNamespace(customExact)}
                 >
                   Use &quot;{customExact}&quot;
                 </CommandItem>

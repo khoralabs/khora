@@ -164,7 +164,10 @@ type AdapterGenerationLike = {
 /**
  * Validates {@link zExpandedMemoryWireFromOntology} and enforces non-empty plaintext (session runner logic).
  */
-export function parseAdapterGenerationToExpandedMemoryWire<TNode extends LabelSchemaMap, TEdge extends LabelSchemaMap>(
+export function parseAdapterGenerationToExpandedMemoryWire<
+  TNode extends LabelSchemaMap,
+  TEdge extends LabelSchemaMap,
+>(
   ontology: OntologyDefinition<TNode, TEdge>,
   generation: AdapterGenerationLike,
 ): ExpandedMemoryWire {

@@ -1,16 +1,20 @@
 import type { AgentRegistry } from "@cfd/agent-identity";
 import type { MemoriesClient, MemoriesClientAsync } from "@cfd/memories-core";
 import type { EmbeddingModel } from "@cfd/memories-tools";
+import { DEFAULT_MEMORY_TOOL_LOOP_MAX_STEPS } from "@cfd/memories-tools";
 import type { LanguageModel } from "ai";
 import type z from "zod";
+import type { IntegratorPipelineGeneration } from "./create-integrator-agent.js";
+import {
+  buildMemoryIntegratorAgentId,
+  type DefineMemoryIntegratorIdentityOptions,
+} from "./identity.js";
+import type { IntegratorPlanWire } from "./integrator-output.js";
 import {
   ensureMemoryIntegratorAgentRegistered,
   type MemoryIntegratorSessionInput,
   type MemoryIntegratorSessionOutput,
 } from "./integrator-session.js";
-import { buildMemoryIntegratorAgentId, type DefineMemoryIntegratorIdentityOptions } from "./identity.js";
-import type { IntegratorPlanWire } from "./integrator-output.js";
-import type { IntegratorPipelineGeneration } from "./create-integrator-agent.js";
 
 export type MemoryIntegratorClientOptions<
   TNode extends Record<string, z.ZodType>,
@@ -22,6 +26,11 @@ export type MemoryIntegratorClientOptions<
   model: LanguageModel;
   client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;
   embeddingModel: EmbeddingModel;
+  /**
+   * When a given {@link integrate} call does not set {@code maxSteps} or {@code overrides.maxSteps},
+   * this value is used, then the package default ({@link DEFAULT_MEMORY_TOOL_LOOP_MAX_STEPS}).
+   */
+  defaultMaxSteps?: number;
 };
 
 export type MemoryIntegratorIntegrateOverrides<
@@ -50,6 +59,7 @@ export class MemoryIntegratorClient<
   readonly client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;
   readonly embeddingModel: EmbeddingModel;
   readonly identityContext: Record<string, unknown> | undefined;
+  readonly defaultMaxSteps: number | undefined;
 
   constructor(options: MemoryIntegratorClientOptions<TNode, TEdge>) {
     this.registry = options.registry;
@@ -58,6 +68,7 @@ export class MemoryIntegratorClient<
     this.client = options.client;
     this.embeddingModel = options.embeddingModel;
     this.identityContext = options.identityContext;
+    this.defaultMaxSteps = options.defaultMaxSteps;
   }
 
   async integrate(args: {
@@ -71,7 +82,8 @@ export class MemoryIntegratorClient<
     generation: IntegratorPipelineGeneration;
   }> {
     const o = args.overrides ?? {};
-    const maxSteps = o.maxSteps ?? args.maxSteps ?? 12;
+    const maxSteps =
+      o.maxSteps ?? args.maxSteps ?? this.defaultMaxSteps ?? DEFAULT_MEMORY_TOOL_LOOP_MAX_STEPS;
     const memorySearchBudgetMax = o.memorySearchBudgetMax ?? args.memorySearchBudgetMax;
     const registry = o.registry ?? this.registry;
     if (registry === undefined) {

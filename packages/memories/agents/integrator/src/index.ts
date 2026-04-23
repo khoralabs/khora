@@ -24,12 +24,12 @@ export {
 } from "./integrator-output.js";
 export {
   createMemoryIntegratorSessionRunner,
-  registerMemoryIntegratorAgent,
   ensureMemoryIntegratorAgentRegistered,
   getMemoryIntegratorAgentDefinition,
   type MemoryIntegratorSessionContext,
   type MemoryIntegratorSessionInput,
   type MemoryIntegratorSessionOutput,
+  registerMemoryIntegratorAgent,
 } from "./integrator-session.js";
 export { processLogicalMemoryWithIntegrator } from "./logical-memory-pipeline.js";
 export { buildMemoryIntegratorUserMessage } from "./messages.js";

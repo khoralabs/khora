@@ -14,7 +14,7 @@ bun install
 |----------|---------|
 | **`MEMORIES_DB_PATH`** | **Required.** Absolute or relative path to the memories SQLite file (same format as the CLI store, e.g. `apps/cli/.cfd/memories.sqlite` or your chosen path). |
 
-Optional: open `http://localhost:3000/?namespace=cli` (port from Bun) to set the default namespace query; the UI also has a namespace field.
+Optional: open `http://localhost:3000/?namespace=cli` (port from Bun) to set the default namespace query; the UI has a namespace combobox (with known namespaces from the database and free text via Enter or “Use …”).
 
 ## Run
 

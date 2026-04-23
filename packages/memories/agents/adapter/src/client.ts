@@ -1,6 +1,7 @@
 import type { AgentRegistry } from "@cfd/agent-identity";
 import type { MemoriesClient, MemoriesClientAsync } from "@cfd/memories-core";
 import type { EmbeddingModel } from "@cfd/memories-tools";
+import { DEFAULT_MEMORY_TOOL_LOOP_MAX_STEPS } from "@cfd/memories-tools";
 import type { LanguageModel } from "ai";
 import type z from "zod";
 import {
@@ -21,6 +22,11 @@ export type MemoryAdapterClientOptions<
   model: LanguageModel;
   client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;
   embeddingModel: EmbeddingModel;
+  /**
+   * When a given {@link expand} call does not set {@code maxSteps} or {@code overrides.maxSteps},
+   * this value is used, then the package default ({@link DEFAULT_MEMORY_TOOL_LOOP_MAX_STEPS}).
+   */
+  defaultMaxSteps?: number;
 };
 
 /** Optional per-{@link MemoryAdapterClient.expand} values; when set, override the constructor. */
@@ -50,6 +56,7 @@ export class MemoryAdapterClient<
   readonly client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;
   readonly embeddingModel: EmbeddingModel;
   readonly identityContext: Record<string, unknown> | undefined;
+  readonly defaultMaxSteps: number | undefined;
 
   constructor(options: MemoryAdapterClientOptions<TNode, TEdge>) {
     this.registry = options.registry;
@@ -58,6 +65,7 @@ export class MemoryAdapterClient<
     this.client = options.client;
     this.embeddingModel = options.embeddingModel;
     this.identityContext = options.identityContext;
+    this.defaultMaxSteps = options.defaultMaxSteps;
   }
 
   async expand<TDomain = unknown>(args: {
@@ -69,7 +77,8 @@ export class MemoryAdapterClient<
     overrides?: MemoryAdapterExpandOverrides<TNode, TEdge>;
   }): Promise<MemoryAdapterSessionOutput> {
     const o = args.overrides ?? {};
-    const maxSteps = o.maxSteps ?? args.maxSteps ?? 12;
+    const maxSteps =
+      o.maxSteps ?? args.maxSteps ?? this.defaultMaxSteps ?? DEFAULT_MEMORY_TOOL_LOOP_MAX_STEPS;
     const memorySearchBudgetMax = o.memorySearchBudgetMax ?? args.memorySearchBudgetMax;
     const registry = o.registry ?? this.registry;
     if (registry === undefined) {
