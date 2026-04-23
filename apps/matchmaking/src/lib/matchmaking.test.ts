@@ -3,6 +3,10 @@ import { expect, test } from "bun:test";
 import { ObpClient, resolveCompletedDeal } from "@cfd/obp-core";
 import { createObpSqlitePersistence, OBP_SCHEMA_SQL } from "@cfd/obp-sqlite";
 import { assertMatchmakingBindAllowed, resolveMatchmakingConnectedDeal } from "./llm/session.ts";
+import {
+  appUserMemoryNamespace,
+  matchmakingUserNamespaceSegment,
+} from "./memories/app-user-memory-namespace.ts";
 
 test("resolveCompletedDeal finds terminal bind on requestee offer", () => {
   const db = new Database(":memory:");
@@ -101,4 +105,16 @@ test("assertMatchmakingBindAllowed allows binding counterparty offer", () => {
   expect(() =>
     assertMatchmakingBindAllowed({ actingPartyId: "p1", offerOwnerPartyId: "p2" }),
   ).not.toThrow();
+});
+
+test("app user memory path uses _user_ segment by default and matches subjects/{id} shape", () => {
+  const prev = process.env.USER_NAMESPACE;
+  delete process.env.USER_NAMESPACE;
+  try {
+    expect(matchmakingUserNamespaceSegment()).toBe("_user_");
+    expect(appUserMemoryNamespace("sub-1")).toBe("obp_demo/matchmaking/subjects/sub-1/_user_");
+  } finally {
+    if (prev === undefined) delete process.env.USER_NAMESPACE;
+    else process.env.USER_NAMESPACE = prev;
+  }
 });

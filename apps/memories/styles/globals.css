@@ -134,7 +134,15 @@
   .r3f-layer {
     isolation: isolate;
     transform: translateZ(0);
-    contain: layout style;
+    /*
+     * `size` containment means this element's size is independent of its
+     * descendants AND of external layout changes that don't affect its own
+     * CSS dimensions (h-full w-full still resolve from the parent as normal).
+     * This breaks the feedback path where Portal animations (Popover close)
+     * trigger R3F's react-use-measure ResizeObserver, which updates the
+     * renderer, which causes more layout work, causing the "loop" browser error.
+     */
+    contain: layout style size;
   }
 
   .r3f-layer > canvas {

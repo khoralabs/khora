@@ -1,15 +1,11 @@
-import { createAgentRegistry } from "@cfd/agent-identity";
-import { expandedDraftToLogicalMemoryInput, MemoryAdapterClient } from "@cfd/memories-adapter";
 import type { EmbeddingModel } from "@cfd/memories-core/helpers";
-import { processLogicalMemoryWithIntegrator } from "@cfd/memories-integrator";
 import type { LanguageModel } from "ai";
 import { matchmakingPersonas } from "../personas/index.ts";
 import type { MatchmakingPersona } from "../personas/types.ts";
 import type { MatchmakingMemoriesBundle } from "./create-memories-bundle.ts";
+import { mergeMeetingDomainPayloadIntoNamespace } from "./merge-meeting-payload.ts";
 import type { MeetingSeedPayload } from "./meeting-seed-payload.ts";
 import { matchmakingSeedMemoryKey } from "./persisted-memories.ts";
-
-const SEED_MEMORY_SEARCH_BUDGET_MAX = 3;
 
 /** Adapter → integrator pipeline per seed (same as matchmaking session seed path). */
 export async function seedPersonaMemoryNamespace(args: {
@@ -22,15 +18,6 @@ export async function seedPersonaMemoryNamespace(args: {
   skipExistingSlots?: boolean;
 }): Promise<void> {
   const { bundle, chatModel, embeddingModel, namespace, seeds, skipExistingSlots } = args;
-  const registry = createAgentRegistry();
-  const adapterClient = new MemoryAdapterClient({
-    identityContext: { app: "obp-demo", product: "matchmaking-seed" },
-    registry,
-    namespace,
-    model: chatModel,
-    client: bundle.client,
-    embeddingModel,
-  });
 
   for (let index = 0; index < seeds.length; index++) {
     const payload = seeds[index];
@@ -44,32 +31,14 @@ export async function seedPersonaMemoryNamespace(args: {
     ) {
       continue;
     }
-    const { draft } = await adapterClient.expand({
-      ingest: {
-        sourceApp: "obp-demo-matchmaking",
-        correlationId: `seed-${namespace}-${index}`,
-      },
-      domainPayload: payload,
-      /** Empty KG → adapter often burns steps on memory_search before emitting structured output; keep headroom. */
-      maxSteps: 12,
-      memorySearchBudgetMax: SEED_MEMORY_SEARCH_BUDGET_MAX,
-    });
-
-    const logicalMemory = {
-      ...expandedDraftToLogicalMemoryInput(draft, namespace, slotKey),
-      key: slotKey,
-    };
-    await processLogicalMemoryWithIntegrator({
-      client: bundle.client,
-      logicalMemory,
+    await mergeMeetingDomainPayloadIntoNamespace({
+      bundle,
       chatModel,
       embeddingModel,
-      registry,
-      maxSteps: 6,
-      memorySearchBudgetMax: SEED_MEMORY_SEARCH_BUDGET_MAX,
-      integratorClientOptions: {
-        identityContext: { app: "obp-demo", product: "matchmaking-seed" },
-      },
+      namespace,
+      memoryKey: slotKey,
+      domainPayload: payload,
+      correlationId: `seed-${namespace}-${index}`,
     });
   }
 }

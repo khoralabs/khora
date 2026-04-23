@@ -7,7 +7,7 @@ export {
   matchmakingPersonas,
   pairMatchmakingPersonas,
 } from "../personas/index.ts";
-export { buildIntroRequestScenarioPair } from "./intro-request.ts";
+export { buildAppUserIntroRequestScenario, buildIntroRequestScenarioPair } from "./intro-request.ts";
 export type { MatchmakingScenario, NegotiationScenario } from "./matchmaking-scenario.ts";
 
 export const MATCHMAKING_SCENARIO_IDS = ["p1_p2", "p1_p3", "p2_p3"] as const;

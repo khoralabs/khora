@@ -24,6 +24,23 @@ export type RegisteredRun = {
 
 const runs = new Map<string, RegisteredRun>();
 
+/** Per runId, set after a scenario is built; used for post-negotiation KG merges. */
+export type RunMatchmakingContext = {
+  partyMemoryNamespaces: readonly [string, string];
+  requesterSlug: string;
+  requesteeSlug: string;
+};
+
+const runMatchmakingContextById = new Map<string, RunMatchmakingContext>();
+
+export function setRunMatchmakingContext(runId: string, ctx: RunMatchmakingContext): void {
+  runMatchmakingContextById.set(runId, ctx);
+}
+
+export function getRunMatchmakingContext(runId: string): RunMatchmakingContext | undefined {
+  return runMatchmakingContextById.get(runId);
+}
+
 function publish(runId: string, payload: string) {
   serverRef?.publish(runId, payload);
 }

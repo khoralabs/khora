@@ -3,25 +3,27 @@ import client from "./index.html";
 import { inviteRequestSchema } from "./lib/invite-request.ts";
 import { runMatchmakingSession } from "./lib/llm/session.ts";
 import {
+  postMeetingReflectionRequestSchema,
+  postNegotiationReviewRequestSchema,
+} from "./lib/post-negotiation-request.ts";
+import {
+  mergePostMeetingReflectionToPartyKgs,
+  mergePostNegotiationReviewToPartyKgs,
+} from "./lib/post-negotiation-kg.ts";
+import {
   appendDoneEvent,
   createThreadDevLog,
   getRun,
   readThreadJsonl,
   registerRun,
   setNegotiationServerRef,
+  setRunMatchmakingContext,
 } from "./lib/negotiation-run-registry.ts";
 import { listPersonaPublicDtos } from "./lib/persona-public-dtos.ts";
-import type { MatchmakingPersonaSlug } from "./lib/personas/index.ts";
-import { buildIntroRequestScenarioPair } from "./lib/scenarios/intro-request.ts";
+import { buildAppUserIntroRequestScenario } from "./lib/scenarios/intro-request.ts";
 
-function requesterRequesteeForPersonaChoice(
-  slug: MatchmakingPersonaSlug,
-): readonly [MatchmakingPersonaSlug, MatchmakingPersonaSlug] {
-  if (slug === "p1") {
-    return ["p2", "p1"];
-  }
-  return ["p1", slug];
-}
+/** Not a `MatchmakingPersonaSlug`; run context for post-negotiation merges (Party A = experiential user). */
+const APP_USER_REQUESTER_SLUG = "_user_";
 
 const server = Bun.serve({
   routes: {
@@ -63,13 +65,18 @@ const server = Bun.serve({
 
       const runId = crypto.randomUUID();
       registerRun(runId);
-      const [reqS, recS] = requesterRequesteeForPersonaChoice(parsed.data.personaSlug);
+      const invitee = parsed.data.personaSlug;
       const threadDev = createThreadDevLog(runId);
 
       void (async () => {
         try {
-          const scenario = await buildIntroRequestScenarioPair(reqS, recS, {
+          const scenario = await buildAppUserIntroRequestScenario(invitee, {
             invitationMessage: parsed.data.message,
+          });
+          setRunMatchmakingContext(runId, {
+            partyMemoryNamespaces: scenario.partyMemoryNamespaces,
+            requesterSlug: APP_USER_REQUESTER_SLUG,
+            requesteeSlug: invitee,
           });
           const result = await runMatchmakingSession({
             scenario,
@@ -86,6 +93,59 @@ const server = Bun.serve({
       })();
 
       return Response.json({ ok: true as const, runId });
+    }
+
+    if (url.pathname === "/api/post-negotiation/review" && req.method === "POST") {
+      let body: unknown;
+      try {
+        body = await req.json();
+      } catch {
+        return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+      }
+      const parsed = postNegotiationReviewRequestSchema.safeParse(body);
+      if (!parsed.success) {
+        return Response.json({ error: parsed.error.flatten() }, { status: 400 });
+      }
+      if (getRun(parsed.data.runId) === undefined) {
+        return Response.json({ error: "Unknown run" }, { status: 404 });
+      }
+      const runId = parsed.data.runId;
+      const decision = parsed.data.decision;
+      const trimmed = parsed.data.agentFeedback?.trim();
+      const agentFeedback = trimmed !== undefined && trimmed.length > 0 ? trimmed : undefined;
+      void mergePostNegotiationReviewToPartyKgs({
+        runId,
+        decision,
+        ...(agentFeedback !== undefined ? { agentFeedback } : {}),
+      }).catch((e) => {
+        console.error("[post-negotiation/review] background merge failed", e);
+      });
+      return Response.json({ ok: true as const });
+    }
+
+    if (url.pathname === "/api/post-meeting-reflection" && req.method === "POST") {
+      let body: unknown;
+      try {
+        body = await req.json();
+      } catch {
+        return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+      }
+      const parsed = postMeetingReflectionRequestSchema.safeParse(body);
+      if (!parsed.success) {
+        return Response.json({ error: parsed.error.flatten() }, { status: 400 });
+      }
+      if (getRun(parsed.data.runId) === undefined) {
+        return Response.json({ error: "Unknown run" }, { status: 404 });
+      }
+      const text = parsed.data.text.trim();
+      if (text.length === 0) {
+        return Response.json({ error: "Reflection text is empty" }, { status: 400 });
+      }
+      const runId = parsed.data.runId;
+      void mergePostMeetingReflectionToPartyKgs({ runId, text }).catch((e) => {
+        console.error("[post-meeting-reflection] background merge failed", e);
+      });
+      return Response.json({ ok: true as const });
     }
 
     if (url.pathname.startsWith("/api/")) {

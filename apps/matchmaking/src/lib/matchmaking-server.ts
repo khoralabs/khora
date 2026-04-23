@@ -68,5 +68,5 @@ export {
   matchmakingPersonas,
   pairMatchmakingPersonas,
 } from "./scenarios/index.ts";
-export { buildIntroRequestScenarioPair } from "./scenarios/intro-request.ts";
+export { buildAppUserIntroRequestScenario, buildIntroRequestScenarioPair } from "./scenarios/intro-request.ts";
 export type { MatchmakingScenario } from "./scenarios/matchmaking-scenario.ts";

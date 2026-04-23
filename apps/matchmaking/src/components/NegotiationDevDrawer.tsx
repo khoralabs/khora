@@ -26,8 +26,10 @@ export function NegotiationDevDrawer(props: {
   runId: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Fired when the server sends a terminal `t: "done"` with the run result. */
+  onRunFinished?: (result: unknown) => void;
 }) {
-  const { runId, open, onOpenChange } = props;
+  const { runId, open, onOpenChange, onRunFinished } = props;
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [rawJsonl, setRawJsonl] = useState(false);
   const [wsState, setWsState] = useState<"idle" | "connecting" | "open" | "error" | "closed">("idle");
@@ -76,6 +78,7 @@ export function NegotiationDevDrawer(props: {
             ...prev,
             { id: nextId(), kind: "done", result: doneResult },
           ]);
+          onRunFinished?.(doneResult);
         } else {
           setEntries((prev) => [
             ...prev,
@@ -89,7 +92,7 @@ export function NegotiationDevDrawer(props: {
     return () => {
       ws.close();
     };
-  }, [open, runId]);
+  }, [open, runId, onRunFinished]);
 
   const body = useMemo(() => {
     if (runId === null) {

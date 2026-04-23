@@ -49,17 +49,12 @@ import {
   textTranscriptPathFromJsonl,
 } from "../matchmaking-obp/index.ts";
 import { createMatchmakingMemoriesBundle } from "../memories/create-memories-bundle.ts";
+import { mergeMeetingDomainPayloadIntoNamespace } from "../memories/merge-meeting-payload.ts";
 import { getMatchmakingEmbeddingModel } from "../memories/matchmaking-embedding.ts";
-import {
-  resolveMemoriesDbPath,
-  resolveMemoriesRoot,
-  scenarioPersonaSeedSlotsSatisfied,
-  shouldForceMemoriesReseed,
-} from "../memories/persisted-memories.ts";
-import { seedMatchmakingPersonas } from "../memories/seed-personas.ts";
+import { resolveMemoriesDbPath, resolveMemoriesRoot } from "../memories/persisted-memories.ts";
 import type { ThreadDevLog } from "../negotiation-run-registry.ts";
 import { resolveMatchmakingSubjectId } from "../resolve-subject-id.ts";
-import { buildIntroRequestScenarioPair, type MatchmakingScenario } from "../scenarios";
+import { buildAppUserIntroRequestScenario, type MatchmakingScenario } from "../scenarios";
 import { buildMatchmakingUserMessage } from "./messages.ts";
 import { matchmakingValueFirewallInstructions } from "./value-firewall-instructions.ts";
 
@@ -201,8 +196,6 @@ export async function runMatchmakingSession(options?: {
   memoriesRoot?: string;
   /** Defaults to {@link resolveMemoriesDbPath} or {@code MEMORIES_DB}. */
   memoriesDbPath?: string;
-  /** When true, re-runs persona seeding even if the SQLite DB already has enough rows per namespace. */
-  forceReseedMemories?: boolean;
   /** Optional: append events to a per-run JsonlStore file (dev drawer). */
   threadDevLog?: ThreadDevLog;
   /**
@@ -211,7 +204,7 @@ export async function runMatchmakingSession(options?: {
    */
   runId?: string;
 }): Promise<MatchmakingResult> {
-  const scenario = options?.scenario ?? (await buildIntroRequestScenarioPair("p1", "p2"));
+  const scenario = options?.scenario ?? (await buildAppUserIntroRequestScenario("p2"));
   const maxRounds = options?.maxRounds ?? scenario.maxRounds ?? DEFAULT_MAX_ROUNDS;
 
   let textTranscriptPath: string | undefined;
@@ -236,27 +229,31 @@ export async function runMatchmakingSession(options?: {
   const embeddingModel = getMatchmakingEmbeddingModel();
   const embeddingCache = new Map<string, number[]>();
 
-  const forceReseed = options?.forceReseedMemories === true || shouldForceMemoriesReseed();
-
-  const skipPersonaSeed =
-    !forceReseed && scenarioPersonaSeedSlotsSatisfied(memoriesBundle, scenario);
-
-  try {
-    if (!skipPersonaSeed) {
-      await seedMatchmakingPersonas({
-        bundle: memoriesBundle,
-        chatModel: model,
-        embeddingModel,
-        partyMemoryNamespaces: scenario.partyMemoryNamespaces,
-        personaSeeds: scenario.personaSeeds,
-        skipExistingSlots: !forceReseed,
-      });
+  const runIdForInviteMerge = options?.runId?.trim();
+  if (runIdForInviteMerge !== undefined && runIdForInviteMerge.length > 0) {
+    const invText = scenario.partyAInvitationMessage?.trim();
+    if (invText) {
+      try {
+        await Promise.all(
+          scenario.partyMemoryNamespaces.map((namespace) =>
+            mergeMeetingDomainPayloadIntoNamespace({
+              bundle: memoriesBundle,
+              chatModel: model,
+              embeddingModel,
+              namespace,
+              memoryKey: `live/invite/${runIdForInviteMerge}`,
+              domainPayload: { kind: "meeting_invite", text: invText },
+              correlationId: `live-invite-${namespace}-${runIdForInviteMerge}`,
+            }),
+          ),
+        );
+      } catch (e) {
+        return {
+          status: "error",
+          message: e instanceof Error ? e.message : String(e),
+        };
+      }
     }
-  } catch (e) {
-    return {
-      status: "error",
-      message: e instanceof Error ? e.message : String(e),
-    };
   }
 
   const runId = options?.runId?.trim();

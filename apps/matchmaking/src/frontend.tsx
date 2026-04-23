@@ -7,7 +7,9 @@
 
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { ThemeProvider } from "next-themes";
 import { App } from "./App";
+import { Toaster } from "@/components/ui/sonner";
 import "../styles/globals.css";
 
 const elem = document.getElementById("root");
@@ -16,7 +18,10 @@ if (!elem) {
 }
 const app = (
   <StrictMode>
-    <App />
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+      <App />
+      <Toaster />
+    </ThemeProvider>
   </StrictMode>
 );
 

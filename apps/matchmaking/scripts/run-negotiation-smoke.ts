@@ -11,7 +11,7 @@ import {
   resolveMemoriesDbPath,
   resolveMemoriesRoot,
 } from "../src/lib/memories/persisted-memories.ts";
-import { buildIntroRequestScenarioPair } from "../src/lib/scenarios/intro-request.ts";
+import { buildAppUserIntroRequestScenario } from "../src/lib/scenarios/intro-request.ts";
 
 function buildLogFilePath(): string {
   const ts = new Date().toISOString().replace(/[:.]/g, "-");
@@ -20,7 +20,7 @@ function buildLogFilePath(): string {
 }
 
 async function main(): Promise<void> {
-  const scenario = await buildIntroRequestScenarioPair("p1", "p2", {
+  const scenario = await buildAppUserIntroRequestScenario("p2", {
     invitationMessage: "Smoke run: opening line from Party A.",
   });
 

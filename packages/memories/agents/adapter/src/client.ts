@@ -29,7 +29,7 @@ export type MemoryAdapterClientOptions<
   defaultMaxSteps?: number;
 };
 
-/** Optional per-{@link MemoryAdapterClient.expand} values; when set, override the constructor. */
+/** Optional per-{@link MemoryAdapterClient["expand"]} values; when set, override the constructor. */
 export type MemoryAdapterExpandOverrides<
   TNode extends Record<string, z.ZodType>,
   TEdge extends Record<string, z.ZodType>,
