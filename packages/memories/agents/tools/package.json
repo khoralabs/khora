@@ -14,7 +14,7 @@
     "@ai-sdk/provider-utils": "^4.0.23",
     "@cfd/agent-identity": "workspace:*",
     "@cfd/memories-core": "workspace:*",
-    "ai": "^6.0.153",
+    "ai": "^6",
     "zod": "^4.3.6"
   },
   "scripts": {

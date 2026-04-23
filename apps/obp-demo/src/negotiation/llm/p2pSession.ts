@@ -5,11 +5,11 @@ import {
   type ToolPipelineHooks,
 } from "@cfd/agent-identity";
 import {
-  InMemoryNegotiationContext,
-  type NegotiationMessage,
-  type ObpClient,
-  type ObpPersistence,
-} from "@cfd/obp-core";
+  formatThreadForPlaintext,
+  InMemoryThreadContext,
+  mirrorGenerationToThread,
+} from "@cfd/agent-thread";
+import type { ObpClient, ObpPersistence } from "@cfd/obp-core";
 import { createObpNegotiatorAgent, type ObpNegotiatorGeneration } from "@cfd/obp-negotiator";
 import {
   captureNegotiationEndFromToolExecuted,
@@ -66,95 +66,6 @@ export type NegotiationSessionContext = SessionContext & {
 };
 
 export { type CompletedDeal, resolveCompletedDeal };
-
-function formatThreadForPrompt(
-  messages: NegotiationMessage[],
-  partyIdToDisplayName: ReadonlyMap<string, string>,
-): string {
-  if (messages.length === 0) {
-    return "(no messages yet)";
-  }
-  const lines: string[] = [];
-  for (const m of messages) {
-    const who = partyIdToDisplayName.get(m.authorPartyId) ?? m.authorPartyId;
-    const tag = m.kind === "text" ? "text" : "tool";
-    let line = `[${tag}] ${who}: ${m.content}`;
-    if (m.kind === "tool_call" && m.toolCall !== undefined) {
-      if (m.toolCall.result !== undefined) {
-        try {
-          line += ` => ${JSON.stringify(m.toolCall.result)}`;
-        } catch {
-          line += " => <result>";
-        }
-      } else if (m.toolCall.error !== undefined) {
-        line += ` => error: ${m.toolCall.error}`;
-      }
-    }
-    lines.push(line);
-  }
-  return lines.join("\n");
-}
-
-function collectToolResultMap(
-  step: ObpNegotiatorGeneration["steps"][number],
-): Map<string, { output?: unknown; error?: unknown }> {
-  const m = new Map<string, { output?: unknown; error?: unknown }>();
-  const all = [
-    ...(step.toolResults ?? []),
-    ...(step.staticToolResults ?? []),
-    ...(step.dynamicToolResults ?? []),
-  ];
-  for (const tr of all) {
-    const r = tr as { toolCallId: string; type?: string; output?: unknown; error?: unknown };
-    if (r.type === "tool-result") {
-      m.set(r.toolCallId, { output: r.output });
-    } else if (r.type === "tool-error") {
-      m.set(r.toolCallId, { error: r.error });
-    }
-  }
-  return m;
-}
-
-async function mirrorGenerationToThread(args: {
-  generation: ObpNegotiatorGeneration;
-  ctx: InMemoryNegotiationContext;
-  authorPartyId: string;
-}): Promise<void> {
-  const { generation, ctx, authorPartyId } = args;
-  for (const step of generation.steps) {
-    const text = step.text?.trim();
-    if (text) {
-      await ctx.postMessage({ authorPartyId, kind: "text", content: text });
-    }
-    const resultById = collectToolResultMap(step);
-    const calls = [
-      ...(step.toolCalls ?? []),
-      ...(step.staticToolCalls ?? []),
-      ...(step.dynamicToolCalls ?? []),
-    ];
-    for (const tc of calls) {
-      const c = tc as { toolCallId: string; toolName: string; input: unknown };
-      const out = resultById.get(c.toolCallId);
-      let summary: string;
-      try {
-        summary = `${c.toolName}(${JSON.stringify(c.input)})`;
-      } catch {
-        summary = `${c.toolName}(<unserializable input>)`;
-      }
-      await ctx.postMessage({
-        authorPartyId,
-        kind: "tool_call",
-        content: summary,
-        toolCall: {
-          name: c.toolName,
-          input: c.input,
-          result: out?.output,
-          error: out?.error !== undefined ? String(out.error) : undefined,
-        },
-      });
-    }
-  }
-}
 
 function countToolCallsInGeneration(generation: ObpNegotiatorGeneration): number {
   let n = 0;
@@ -228,7 +139,7 @@ function summarizeGeneration(generation: ObpNegotiatorGeneration): Record<string
   };
 }
 
-/** Assistant-visible text only (mirrors `mirrorGenerationToThread` text posts, for transcript file). */
+/** Assistant-visible text only (for transcript file; generation is also mirrored as a UIMessage on the thread). */
 function collectAssistantTextBlocks(generation: ObpNegotiatorGeneration): string[] {
   const blocks: string[] = [];
   for (const step of generation.steps) {
@@ -344,7 +255,7 @@ export async function runLlmNegotiation(options?: {
     });
   }
 
-  const thread = new InMemoryNegotiationContext({ partyIds: obpPartyIds });
+  const thread = new InMemoryThreadContext({ participantIds: obpPartyIds });
 
   logObserverHeader("LLM OBP negotiation (thread + OBP tools)");
   console.log("[observer] scenario", scenario.title);
@@ -377,8 +288,8 @@ export async function runLlmNegotiation(options?: {
       }
       const roleLabel = identity.name;
 
-      const messages = await thread.withContext({ forPartyId: actingPartyId });
-      const threadText = formatThreadForPrompt(messages, partyIdToDisplayName);
+      const messages = await thread.withContext({ forParticipantId: actingPartyId });
+      const threadText = formatThreadForPlaintext(messages, partyIdToDisplayName);
       const user = buildUserMessage({ threadText });
 
       const turnInput: NegotiationTurnInput = { prompt: user };
@@ -402,7 +313,7 @@ export async function runLlmNegotiation(options?: {
               await mirrorGenerationToThread({
                 generation,
                 ctx: thread,
-                authorPartyId: partyId,
+                authorId: partyId,
               });
             }
             if (textTranscriptPath !== undefined) {

@@ -26,7 +26,7 @@
         "@cfd/memories-sqlite": "workspace:*",
         "@cfd/memories-stores": "workspace:*",
         "@google/genai": "^1.48.0",
-        "ai": "^6.0.153",
+        "ai": "^6",
         "pino": "^10.3.1",
         "pino-pretty": "^13.1.3",
         "zod": "^4.3.6",
@@ -45,6 +45,7 @@
         "@ai-sdk/google": "^3.0.0",
         "@cfd/agent-identity": "workspace:*",
         "@cfd/agent-identity-adapters": "workspace:*",
+        "@cfd/agent-thread": "workspace:*",
         "@cfd/memories-adapter": "workspace:*",
         "@cfd/memories-core": "workspace:*",
         "@cfd/memories-integrator": "workspace:*",
@@ -58,7 +59,7 @@
         "@radix-ui/react-label": "^2.1.7",
         "@radix-ui/react-select": "^2.2.6",
         "@radix-ui/react-slot": "^1.2.3",
-        "ai": "^6.0.168",
+        "ai": "^6",
         "bun-plugin-tailwind": "^0.1.2",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
@@ -90,7 +91,7 @@
         "@radix-ui/react-slot": "^1.2.3",
         "@react-three/drei": "^10.7.7",
         "@react-three/fiber": "^9.5.0",
-        "ai": "^6.0.153",
+        "ai": "^6",
         "bun-plugin-tailwind": "^0.1.2",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
@@ -127,6 +128,7 @@
         "@ai-sdk/google": "^3.0.0",
         "@cfd/agent-identity": "workspace:*",
         "@cfd/agent-identity-adapters": "workspace:*",
+        "@cfd/agent-thread": "workspace:*",
         "@cfd/memories-adapter": "workspace:*",
         "@cfd/memories-core": "workspace:*",
         "@cfd/memories-integrator": "workspace:*",
@@ -137,7 +139,7 @@
         "@cfd/obp-negotiator": "workspace:*",
         "@cfd/obp-sqlite": "workspace:*",
         "@cfd/obp-tools": "workspace:*",
-        "ai": "^6.0.153",
+        "ai": "^6",
         "pino": "^10.3.1",
         "zod": "^4.3.6",
       },
@@ -166,7 +168,7 @@
       "name": "@cfd/agent-identity-adapters",
       "dependencies": {
         "@cfd/agent-identity": "workspace:*",
-        "ai": "^6.0.153",
+        "ai": "^6",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -178,6 +180,16 @@
     },
     "packages/agent/identity-spec": {
       "name": "@cfd/agent-identity-spec",
+    },
+    "packages/agent/thread": {
+      "name": "@cfd/agent-thread",
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "ai": "^6",
+        "typescript": "^5",
+      },
     },
     "packages/libs/merge-async-iterators": {
       "name": "merge-async-iterators",
@@ -208,7 +220,7 @@
         "@cfd/agent-identity-adapters": "workspace:*",
         "@cfd/memories-core": "workspace:*",
         "@cfd/memories-tools": "workspace:*",
-        "ai": "^6.0.153",
+        "ai": "^6",
         "zod": "^4.3.6",
       },
       "devDependencies": {
@@ -226,7 +238,7 @@
         "@cfd/agent-identity-adapters": "workspace:*",
         "@cfd/memories-core": "workspace:*",
         "@cfd/memories-tools": "workspace:*",
-        "ai": "^6.0.153",
+        "ai": "^6",
         "zod": "^4.3.6",
       },
       "devDependencies": {
@@ -242,7 +254,7 @@
         "@ai-sdk/provider-utils": "^4.0.23",
         "@cfd/agent-identity": "workspace:*",
         "@cfd/memories-core": "workspace:*",
-        "ai": "^6.0.153",
+        "ai": "^6",
         "zod": "^4.3.6",
       },
       "devDependencies": {
@@ -258,7 +270,7 @@
       "dependencies": {
         "@ai-sdk/provider-utils": "^4.0.23",
         "@cfd/reciprocal-rank-fusion": "workspace:*",
-        "ai": "^6.0.153",
+        "ai": "^6",
         "js-sha256": "^0.11.0",
         "pino": "^10.3.1",
         "zod": "^4.3.6",
@@ -327,7 +339,7 @@
         "@cfd/agent-identity": "workspace:*",
         "@cfd/agent-identity-adapters": "workspace:*",
         "@cfd/obp-tools": "workspace:*",
-        "ai": "^6.0.153",
+        "ai": "^6",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -413,6 +425,8 @@
     "@cfd/agent-identity-adapters": ["@cfd/agent-identity-adapters@workspace:packages/agent/identity-adapters"],
 
     "@cfd/agent-identity-spec": ["@cfd/agent-identity-spec@workspace:packages/agent/identity-spec"],
+
+    "@cfd/agent-thread": ["@cfd/agent-thread@workspace:packages/agent/thread"],
 
     "@cfd/cli": ["@cfd/cli@workspace:apps/cli"],
 
@@ -1060,11 +1074,13 @@
 
     "@cfd/agent-identity-adapters/@types/bun": ["@types/bun@1.3.13", "", { "dependencies": { "bun-types": "1.3.13" } }, "sha512-9fqXWk5YIHGGnUau9TEi+qdlTYDAnOj+xLCmSTwXfAIqXr2x4tytJb43E9uCvt09zJURKXwAtkoH4nLQfzeTXw=="],
 
-    "@cfd/cli/ai": ["ai@6.0.158", "", { "dependencies": { "@ai-sdk/gateway": "3.0.95", "@ai-sdk/provider": "3.0.8", "@ai-sdk/provider-utils": "4.0.23", "@opentelemetry/api": "1.9.0" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-gLTp1UXFtMqKUi3XHs33K7UFglbvojkxF/aq337TxnLGOhHIW9+GyP2jwW4hYX87f1es+wId3VQoPRRu9zEStQ=="],
+    "@cfd/agent-thread/@types/bun": ["@types/bun@1.3.13", "", { "dependencies": { "bun-types": "1.3.13" } }, "sha512-9fqXWk5YIHGGnUau9TEi+qdlTYDAnOj+xLCmSTwXfAIqXr2x4tytJb43E9uCvt09zJURKXwAtkoH4nLQfzeTXw=="],
+
+    "@cfd/cli/@types/bun": ["@types/bun@1.3.13", "", { "dependencies": { "bun-types": "1.3.13" } }, "sha512-9fqXWk5YIHGGnUau9TEi+qdlTYDAnOj+xLCmSTwXfAIqXr2x4tytJb43E9uCvt09zJURKXwAtkoH4nLQfzeTXw=="],
 
     "@cfd/matchmaking/@types/bun": ["@types/bun@1.3.13", "", { "dependencies": { "bun-types": "1.3.13" } }, "sha512-9fqXWk5YIHGGnUau9TEi+qdlTYDAnOj+xLCmSTwXfAIqXr2x4tytJb43E9uCvt09zJURKXwAtkoH4nLQfzeTXw=="],
 
-    "@cfd/memories/ai": ["ai@6.0.158", "", { "dependencies": { "@ai-sdk/gateway": "3.0.95", "@ai-sdk/provider": "3.0.8", "@ai-sdk/provider-utils": "4.0.23", "@opentelemetry/api": "1.9.0" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-gLTp1UXFtMqKUi3XHs33K7UFglbvojkxF/aq337TxnLGOhHIW9+GyP2jwW4hYX87f1es+wId3VQoPRRu9zEStQ=="],
+    "@cfd/memories/@types/bun": ["@types/bun@1.3.13", "", { "dependencies": { "bun-types": "1.3.13" } }, "sha512-9fqXWk5YIHGGnUau9TEi+qdlTYDAnOj+xLCmSTwXfAIqXr2x4tytJb43E9uCvt09zJURKXwAtkoH4nLQfzeTXw=="],
 
     "@cfd/memories-adapter/@types/bun": ["@types/bun@1.3.13", "", { "dependencies": { "bun-types": "1.3.13" } }, "sha512-9fqXWk5YIHGGnUau9TEi+qdlTYDAnOj+xLCmSTwXfAIqXr2x4tytJb43E9uCvt09zJURKXwAtkoH4nLQfzeTXw=="],
 
@@ -1080,7 +1096,7 @@
 
     "@cfd/obp-core/@types/bun": ["@types/bun@1.3.13", "", { "dependencies": { "bun-types": "1.3.13" } }, "sha512-9fqXWk5YIHGGnUau9TEi+qdlTYDAnOj+xLCmSTwXfAIqXr2x4tytJb43E9uCvt09zJURKXwAtkoH4nLQfzeTXw=="],
 
-    "@cfd/obp-demo/ai": ["ai@6.0.158", "", { "dependencies": { "@ai-sdk/gateway": "3.0.95", "@ai-sdk/provider": "3.0.8", "@ai-sdk/provider-utils": "4.0.23", "@opentelemetry/api": "1.9.0" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-gLTp1UXFtMqKUi3XHs33K7UFglbvojkxF/aq337TxnLGOhHIW9+GyP2jwW4hYX87f1es+wId3VQoPRRu9zEStQ=="],
+    "@cfd/obp-demo/@types/bun": ["@types/bun@1.3.13", "", { "dependencies": { "bun-types": "1.3.13" } }, "sha512-9fqXWk5YIHGGnUau9TEi+qdlTYDAnOj+xLCmSTwXfAIqXr2x4tytJb43E9uCvt09zJURKXwAtkoH4nLQfzeTXw=="],
 
     "@cfd/obp-negotiator/@types/bun": ["@types/bun@1.3.13", "", { "dependencies": { "bun-types": "1.3.13" } }, "sha512-9fqXWk5YIHGGnUau9TEi+qdlTYDAnOj+xLCmSTwXfAIqXr2x4tytJb43E9uCvt09zJURKXwAtkoH4nLQfzeTXw=="],
 
@@ -1208,7 +1224,9 @@
 
     "@cfd/agent-identity/@types/bun/bun-types": ["bun-types@1.3.13", "", { "dependencies": { "@types/node": "*" } }, "sha512-QXKeHLlOLqQX9LgYaHJfzdBaV21T63HhFJnvuRCcjZiaUDpbs5ED1MgxbMra71CsryN/1dAoXuJJJwIv/2drVA=="],
 
-    "@cfd/cli/ai/@ai-sdk/gateway": ["@ai-sdk/gateway@3.0.95", "", { "dependencies": { "@ai-sdk/provider": "3.0.8", "@ai-sdk/provider-utils": "4.0.23", "@vercel/oidc": "3.1.0" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-ZmUNNbZl3V42xwQzPaNUi+s8eqR2lnrxf0bvB6YbLXpLjHYv0k2Y78t12cNOfY0bxGeuVVTLyk856uLuQIuXEQ=="],
+    "@cfd/agent-thread/@types/bun/bun-types": ["bun-types@1.3.13", "", { "dependencies": { "@types/node": "*" } }, "sha512-QXKeHLlOLqQX9LgYaHJfzdBaV21T63HhFJnvuRCcjZiaUDpbs5ED1MgxbMra71CsryN/1dAoXuJJJwIv/2drVA=="],
+
+    "@cfd/cli/@types/bun/bun-types": ["bun-types@1.3.13", "", { "dependencies": { "@types/node": "*" } }, "sha512-QXKeHLlOLqQX9LgYaHJfzdBaV21T63HhFJnvuRCcjZiaUDpbs5ED1MgxbMra71CsryN/1dAoXuJJJwIv/2drVA=="],
 
     "@cfd/matchmaking/@types/bun/bun-types": ["bun-types@1.3.13", "", { "dependencies": { "@types/node": "*" } }, "sha512-QXKeHLlOLqQX9LgYaHJfzdBaV21T63HhFJnvuRCcjZiaUDpbs5ED1MgxbMra71CsryN/1dAoXuJJJwIv/2drVA=="],
 
@@ -1224,11 +1242,11 @@
 
     "@cfd/memories-tools/@types/bun/bun-types": ["bun-types@1.3.13", "", { "dependencies": { "@types/node": "*" } }, "sha512-QXKeHLlOLqQX9LgYaHJfzdBaV21T63HhFJnvuRCcjZiaUDpbs5ED1MgxbMra71CsryN/1dAoXuJJJwIv/2drVA=="],
 
-    "@cfd/memories/ai/@ai-sdk/gateway": ["@ai-sdk/gateway@3.0.95", "", { "dependencies": { "@ai-sdk/provider": "3.0.8", "@ai-sdk/provider-utils": "4.0.23", "@vercel/oidc": "3.1.0" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-ZmUNNbZl3V42xwQzPaNUi+s8eqR2lnrxf0bvB6YbLXpLjHYv0k2Y78t12cNOfY0bxGeuVVTLyk856uLuQIuXEQ=="],
+    "@cfd/memories/@types/bun/bun-types": ["bun-types@1.3.13", "", { "dependencies": { "@types/node": "*" } }, "sha512-QXKeHLlOLqQX9LgYaHJfzdBaV21T63HhFJnvuRCcjZiaUDpbs5ED1MgxbMra71CsryN/1dAoXuJJJwIv/2drVA=="],
 
     "@cfd/obp-core/@types/bun/bun-types": ["bun-types@1.3.13", "", { "dependencies": { "@types/node": "*" } }, "sha512-QXKeHLlOLqQX9LgYaHJfzdBaV21T63HhFJnvuRCcjZiaUDpbs5ED1MgxbMra71CsryN/1dAoXuJJJwIv/2drVA=="],
 
-    "@cfd/obp-demo/ai/@ai-sdk/gateway": ["@ai-sdk/gateway@3.0.95", "", { "dependencies": { "@ai-sdk/provider": "3.0.8", "@ai-sdk/provider-utils": "4.0.23", "@vercel/oidc": "3.1.0" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-ZmUNNbZl3V42xwQzPaNUi+s8eqR2lnrxf0bvB6YbLXpLjHYv0k2Y78t12cNOfY0bxGeuVVTLyk856uLuQIuXEQ=="],
+    "@cfd/obp-demo/@types/bun/bun-types": ["bun-types@1.3.13", "", { "dependencies": { "@types/node": "*" } }, "sha512-QXKeHLlOLqQX9LgYaHJfzdBaV21T63HhFJnvuRCcjZiaUDpbs5ED1MgxbMra71CsryN/1dAoXuJJJwIv/2drVA=="],
 
     "@cfd/obp-negotiator/@types/bun/bun-types": ["bun-types@1.3.13", "", { "dependencies": { "@types/node": "*" } }, "sha512-QXKeHLlOLqQX9LgYaHJfzdBaV21T63HhFJnvuRCcjZiaUDpbs5ED1MgxbMra71CsryN/1dAoXuJJJwIv/2drVA=="],
 
@@ -1299,11 +1317,5 @@
     "@radix-ui/react-toolbar/@radix-ui/react-primitive/@radix-ui/react-slot": ["@radix-ui/react-slot@1.2.3", "", { "dependencies": { "@radix-ui/react-compose-refs": "1.1.2" }, "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-aeNmHnBxbi2St0au6VBVC7JXFlhLlOnvIIlePNniyUNAClzmtAUEY8/pBiK3iHjufOlwA+c20/8jngo7xcrg8A=="],
 
     "@radix-ui/react-visually-hidden/@radix-ui/react-primitive/@radix-ui/react-slot": ["@radix-ui/react-slot@1.2.3", "", { "dependencies": { "@radix-ui/react-compose-refs": "1.1.2" }, "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-aeNmHnBxbi2St0au6VBVC7JXFlhLlOnvIIlePNniyUNAClzmtAUEY8/pBiK3iHjufOlwA+c20/8jngo7xcrg8A=="],
-
-    "@cfd/cli/ai/@ai-sdk/gateway/@vercel/oidc": ["@vercel/oidc@3.1.0", "", {}, "sha512-Fw28YZpRnA3cAHHDlkt7xQHiJ0fcL+NRcIqsocZQUSmbzeIKRpwttJjik5ZGanXP+vlA4SbTg+AbA3bP363l+w=="],
-
-    "@cfd/memories/ai/@ai-sdk/gateway/@vercel/oidc": ["@vercel/oidc@3.1.0", "", {}, "sha512-Fw28YZpRnA3cAHHDlkt7xQHiJ0fcL+NRcIqsocZQUSmbzeIKRpwttJjik5ZGanXP+vlA4SbTg+AbA3bP363l+w=="],
-
-    "@cfd/obp-demo/ai/@ai-sdk/gateway/@vercel/oidc": ["@vercel/oidc@3.1.0", "", {}, "sha512-Fw28YZpRnA3cAHHDlkt7xQHiJ0fcL+NRcIqsocZQUSmbzeIKRpwttJjik5ZGanXP+vlA4SbTg+AbA3bP363l+w=="],
   }
 }

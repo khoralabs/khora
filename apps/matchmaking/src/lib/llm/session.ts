@@ -4,14 +4,15 @@ import {
   type SessionContext,
   type ToolPipelineHooks,
 } from "@cfd/agent-identity";
+import {
+  formatThreadForPlaintext,
+  InMemoryThreadContext,
+  mirrorGenerationToThread,
+  postThreadUserText,
+} from "@cfd/agent-thread";
 import type { EmbeddingModel } from "@cfd/memories-core/helpers";
 import { type MemorySearchEnv, toMemorySearchEnv } from "@cfd/memories-tools";
-import {
-  InMemoryNegotiationContext,
-  type NegotiationMessage,
-  type ObpClient,
-  type ObpPersistence,
-} from "@cfd/obp-core";
+import type { ObpClient, ObpPersistence } from "@cfd/obp-core";
 import { createObpNegotiatorAgent, type ObpNegotiatorGeneration } from "@cfd/obp-negotiator";
 import {
   captureNegotiationEndFromToolExecuted,
@@ -24,13 +25,13 @@ import {
   agentSourcemaps,
   appendTextTranscriptInvitation,
   appendTextTranscriptTurn,
+  type CompletedDeal,
   createDemoStack,
   getNegotiationModel,
   initTextTranscript,
   negotiationEndPayloadFromGeneration,
   resolveCompletedDeal,
   textTranscriptPathFromJsonl,
-  type CompletedDeal,
 } from "../matchmaking-obp/index.ts";
 import { createMatchmakingMemoriesBundle } from "../memories/create-memories-bundle.ts";
 import { getMatchmakingEmbeddingModel } from "../memories/matchmaking-embedding.ts";
@@ -105,106 +106,6 @@ export function assertMatchmakingBindAllowed(args: {
   }
 }
 
-function formatThreadForPrompt(
-  messages: NegotiationMessage[],
-  partyIdToDisplayName: ReadonlyMap<string, string>,
-): string {
-  if (messages.length === 0) {
-    return "(no messages yet)";
-  }
-  const lines: string[] = [];
-  for (const m of messages) {
-    const who = partyIdToDisplayName.get(m.authorPartyId) ?? m.authorPartyId;
-    const tag = m.kind === "text" ? "text" : "tool";
-    let line = `[${tag}] ${who}: ${m.content}`;
-    if (m.kind === "tool_call" && m.toolCall !== undefined) {
-      if (m.toolCall.result !== undefined) {
-        try {
-          line += ` => ${JSON.stringify(m.toolCall.result)}`;
-        } catch {
-          line += " => <result>";
-        }
-      } else if (m.toolCall.error !== undefined) {
-        line += ` => error: ${m.toolCall.error}`;
-      }
-    }
-    lines.push(line);
-  }
-  return lines.join("\n");
-}
-
-function collectToolResultMap(
-  step: ObpNegotiatorGeneration["steps"][number],
-): Map<string, { output?: unknown; error?: unknown }> {
-  const m = new Map<string, { output?: unknown; error?: unknown }>();
-  const all = [
-    ...(step.toolResults ?? []),
-    ...(step.staticToolResults ?? []),
-    ...(step.dynamicToolResults ?? []),
-  ];
-  for (const tr of all) {
-    const r = tr as { toolCallId: string; type?: string; output?: unknown; error?: unknown };
-    if (r.type === "tool-result") {
-      m.set(r.toolCallId, { output: r.output });
-    } else if (r.type === "tool-error") {
-      m.set(r.toolCallId, { error: r.error });
-    }
-  }
-  return m;
-}
-
-async function mirrorGenerationToThread(args: {
-  generation: ObpNegotiatorGeneration;
-  ctx: InMemoryNegotiationContext;
-  authorPartyId: string;
-}): Promise<void> {
-  const { generation, ctx, authorPartyId } = args;
-  for (const step of generation.steps) {
-    const text = step.text?.trim();
-    if (text) {
-      await ctx.postMessage({ authorPartyId, kind: "text", content: text });
-    }
-    const resultById = collectToolResultMap(step);
-    const calls = [
-      ...(step.toolCalls ?? []),
-      ...(step.staticToolCalls ?? []),
-      ...(step.dynamicToolCalls ?? []),
-    ];
-    for (const tc of calls) {
-      const c = tc as { toolCallId: string; toolName: string; input: unknown };
-      let summary: string;
-      try {
-        summary = `${c.toolName}(${JSON.stringify(c.input)})`;
-      } catch {
-        summary = `${c.toolName}(<unserializable input>)`;
-      }
-      const out = resultById.get(c.toolCallId);
-      await ctx.postMessage({
-        authorPartyId,
-        kind: "tool_call",
-        content: summary,
-        toolCall: {
-          name: c.toolName,
-          input: c.input,
-          result: out?.output,
-          error: out?.error !== undefined ? String(out.error) : undefined,
-        },
-      });
-    }
-  }
-}
-
-function countToolCallsInGeneration(generation: ObpNegotiatorGeneration): number {
-  let n = 0;
-  for (const step of generation.steps) {
-    n +=
-      (step.toolCalls?.length ?? 0) +
-      (step.staticToolCalls?.length ?? 0) +
-      (step.dynamicToolCalls?.length ?? 0);
-  }
-  return n;
-}
-
 export async function matchmakingTurnRunner(args: {
   agent: RegisteredAgentIdentity;
   input: unknown;
@@ -267,15 +168,6 @@ export async function matchmakingTurnRunner(args: {
   });
 
   return toolLoop.generate({ prompt });
-}
-
-function summarizeGeneration(generation: ObpNegotiatorGeneration): Record<string, unknown> {
-  return {
-    finishReason: generation.finishReason,
-    textLength: generation.text?.length ?? 0,
-    stepCount: generation.steps.length,
-    toolCallCount: countToolCallsInGeneration(generation),
-  };
 }
 
 function collectAssistantTextBlocks(generation: ObpNegotiatorGeneration): string[] {
@@ -437,15 +329,11 @@ export async function runMatchmakingSession(options?: {
     });
   }
 
-  const thread = new InMemoryNegotiationContext({ partyIds: obpPartyIds });
+  const thread = new InMemoryThreadContext({ participantIds: obpPartyIds });
 
   const invitation = scenario.partyAInvitationMessage?.trim();
   if (invitation) {
-    await thread.postMessage({
-      authorPartyId: requesterPartyId,
-      kind: "text",
-      content: invitation,
-    });
+    await thread.postMessage(postThreadUserText(requesterPartyId, invitation));
     if (textTranscriptPath !== undefined) {
       appendTextTranscriptInvitation({
         destPath: textTranscriptPath,
@@ -477,10 +365,8 @@ export async function runMatchmakingSession(options?: {
       if (identity === undefined || actingPartyId === undefined) {
         return { status: "error", message: "internal: party index out of range" };
       }
-      const roleLabel = identity.name;
-
-      const messages = await thread.withContext({ forPartyId: actingPartyId });
-      const threadText = formatThreadForPrompt(messages, partyIdToDisplayName);
+      const messages = await thread.withContext({ forParticipantId: actingPartyId });
+      const threadText = formatThreadForPlaintext(messages, partyIdToDisplayName);
       const partyLetter = actingPartyId === requesterPartyId ? "A" : "B";
       const user = buildMatchmakingUserMessage({
         threadText,
@@ -491,7 +377,7 @@ export async function runMatchmakingSession(options?: {
 
       const session = registry.createSession(identity.agentId, {
         hooks: {
-          onBeforeRun: async ({ agent, input }) => {},
+          onBeforeRun: async () => {},
           onAfterRun: async ({ agent, output }) => {
             const generation = output as ObpNegotiatorGeneration;
             const partyId = obpPartyIdByAgentId.get(agent.agentId);
@@ -499,7 +385,7 @@ export async function runMatchmakingSession(options?: {
               await mirrorGenerationToThread({
                 generation,
                 ctx: thread,
-                authorPartyId: partyId,
+                authorId: partyId,
               });
             }
             if (textTranscriptPath !== undefined) {
@@ -511,7 +397,7 @@ export async function runMatchmakingSession(options?: {
               });
             }
           },
-          onError: async ({ agent, error }) => {},
+          onError: async () => {},
         },
       });
 

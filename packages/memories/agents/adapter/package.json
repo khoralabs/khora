@@ -16,7 +16,7 @@
     "@cfd/agent-identity-adapters": "workspace:*",
     "@cfd/memories-core": "workspace:*",
     "@cfd/memories-tools": "workspace:*",
-    "ai": "^6.0.153",
+    "ai": "^6",
     "zod": "^4.3.6"
   },
   "devDependencies": {

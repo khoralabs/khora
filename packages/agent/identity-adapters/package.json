@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@cfd/agent-identity": "workspace:*",
-    "ai": "^6.0.153"
+    "ai": "^6"
   },
   "scripts": {
     "test": "bun test"
