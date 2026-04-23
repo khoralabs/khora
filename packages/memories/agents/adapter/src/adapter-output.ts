@@ -154,3 +154,32 @@ export type ExpandedMemoryWire = {
   nodeLabelHints?: Record<string, unknown>;
   edgeLabelHints?: Record<string, unknown>[];
 };
+
+type AdapterGenerationLike = {
+  output: unknown;
+  steps: { length: number };
+  finishReason: string | undefined;
+};
+
+/**
+ * Validates {@link zExpandedMemoryWireFromOntology} and enforces non-empty plaintext (session runner logic).
+ */
+export function parseAdapterGenerationToExpandedMemoryWire<TNode extends LabelSchemaMap, TEdge extends LabelSchemaMap>(
+  ontology: OntologyDefinition<TNode, TEdge>,
+  generation: AdapterGenerationLike,
+): ExpandedMemoryWire {
+  const wire = zExpandedMemoryWireFromOntology(ontology);
+  const out = wire.safeParse(generation.output);
+  if (!out.success) {
+    throw new Error(
+      `Memory adapter structured output failed validation (steps=${String(generation.steps.length)}, finishReason=${String(generation.finishReason)}): ${out.error.message}`,
+    );
+  }
+  const v = out.data as ExpandedMemoryWire;
+  if (!v.plaintext?.trim()) {
+    throw new Error(
+      `Memory adapter did not produce usable plaintext (steps=${String(generation.steps.length)}, finishReason=${String(generation.finishReason)})`,
+    );
+  }
+  return { ...v, plaintext: v.plaintext.trim() };
+}

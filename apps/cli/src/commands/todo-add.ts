@@ -24,15 +24,15 @@ export async function cmdTodoAdd(args: ParsedTodoAdd): Promise<void> {
   const registry = createAgentRegistry();
   const adapterClient = new MemoryAdapterClient({
     identityContext: { app: "cfd-cli", product: "todo" },
-  });
-
-  const t0 = performance.now();
-  const { draft } = await adapterClient.expand({
     registry,
     namespace: ns,
     model: chatModel,
     client: bundle.client,
     embeddingModel,
+  });
+
+  const t0 = performance.now();
+  const { draft } = await adapterClient.expand({
     ingest: { sourceApp: "cli-todo", correlationId: `todo-${Date.now()}` },
     domainPayload,
     maxSteps: 12,

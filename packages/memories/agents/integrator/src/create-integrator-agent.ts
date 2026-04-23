@@ -3,16 +3,19 @@ import type {
   RegisteredAgentIdentity,
   ToolRuntimeContext,
 } from "@cfd/agent-identity";
-import { toolMapToAiTools } from "@cfd/agent-identity-adapters";
 import type { LabelSchemaMap, OntologyDefinition } from "@cfd/memories-core";
-import type { MemorySearchEnv } from "@cfd/memories-tools";
-import { type LanguageModel, stepCountIs, type Tool, ToolLoopAgent } from "ai";
+import {
+  createMemorySearchToolLoopAgent,
+  type MemorySearchEnv,
+  type MemorySearchToolSet,
+} from "@cfd/memories-tools";
+import type { LanguageModel, ToolLoopAgent } from "ai";
 import {
   type IntegratorPlanStructuredOutput,
   integratorPlanOutputFromOntology,
 } from "./integrator-output.js";
 
-export type MemoryIntegratorToolSet = Record<string, Tool<unknown, unknown>>;
+export type MemoryIntegratorToolSet = MemorySearchToolSet;
 
 export type MemoryIntegratorAgent = ToolLoopAgent<
   never,
@@ -34,16 +37,13 @@ export function createMemoryIntegratorAgent<
   ontology: OntologyDefinition<TNode, TEdge>;
 }): MemoryIntegratorAgent {
   const { model, identity, affordances, runtime, maxSteps = 12, ontology } = args;
-  const tools: MemoryIntegratorToolSet = toolMapToAiTools(affordances.tools, runtime);
-  const inst = affordances.instructions.trim();
   const output = integratorPlanOutputFromOntology(ontology);
-
-  return new ToolLoopAgent<never, MemoryIntegratorToolSet, IntegratorPlanStructuredOutput>({
-    id: identity.agentId,
+  return createMemorySearchToolLoopAgent<IntegratorPlanStructuredOutput>({
     model,
-    tools,
-    ...(inst ? { instructions: inst } : {}),
-    stopWhen: stepCountIs(maxSteps),
+    identity,
+    affordances,
+    runtime,
+    maxSteps,
     output,
   });
 }

@@ -3,53 +3,89 @@ import type { MemoriesClient, MemoriesClientAsync } from "@cfd/memories-core";
 import type { EmbeddingModel } from "@cfd/memories-tools";
 import type { LanguageModel } from "ai";
 import type z from "zod";
-import type { IntegratorPipelineGeneration } from "./create-integrator-agent.js";
-import { registerMemoryIntegratorAgent } from "./declaration.js";
+import {
+  ensureMemoryIntegratorAgentRegistered,
+  type MemoryIntegratorSessionInput,
+  type MemoryIntegratorSessionOutput,
+} from "./integrator-session.js";
+import { buildMemoryIntegratorAgentId, type DefineMemoryIntegratorIdentityOptions } from "./identity.js";
 import type { IntegratorPlanWire } from "./integrator-output.js";
+import type { IntegratorPipelineGeneration } from "./create-integrator-agent.js";
 
-export type MemoryIntegratorClientOptions = {
-  identityContext?: Record<string, unknown>;
+export type MemoryIntegratorClientOptions<
+  TNode extends Record<string, z.ZodType>,
+  TEdge extends Record<string, z.ZodType>,
+> = DefineMemoryIntegratorIdentityOptions & {
+  /** Omitted if every {@link MemoryIntegratorClient.integrate} supplies {@code overrides.registry} (e.g. fresh registry per run). */
+  registry?: AgentRegistry;
+  namespace: string;
+  model: LanguageModel;
+  client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;
+  embeddingModel: EmbeddingModel;
+};
+
+export type MemoryIntegratorIntegrateOverrides<
+  TNode extends Record<string, z.ZodType>,
+  TEdge extends Record<string, z.ZodType>,
+> = {
+  maxSteps?: number;
+  memorySearchBudgetMax?: number;
+  namespace?: string;
+  model?: LanguageModel;
+  client?: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;
+  embeddingModel?: EmbeddingModel;
+  registry?: AgentRegistry;
 };
 
 /**
- * Host-facing client: register integrator identity and run one session (content → plan).
+ * Host-facing integrator: durable registry/model/client/namespace wiring + {@link integrate} for each run.
  */
-export class MemoryIntegratorClient {
+export class MemoryIntegratorClient<
+  TNode extends Record<string, z.ZodType> = Record<string, z.ZodType>,
+  TEdge extends Record<string, z.ZodType> = Record<string, z.ZodType>,
+> {
+  readonly registry: AgentRegistry | undefined;
+  readonly namespace: string;
+  readonly model: LanguageModel;
+  readonly client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;
+  readonly embeddingModel: EmbeddingModel;
   readonly identityContext: Record<string, unknown> | undefined;
 
-  constructor(options?: MemoryIntegratorClientOptions) {
-    this.identityContext = options?.identityContext;
+  constructor(options: MemoryIntegratorClientOptions<TNode, TEdge>) {
+    this.registry = options.registry;
+    this.namespace = options.namespace;
+    this.model = options.model;
+    this.client = options.client;
+    this.embeddingModel = options.embeddingModel;
+    this.identityContext = options.identityContext;
   }
 
-  async integrate<
-    TNode extends Record<string, z.ZodType>,
-    TEdge extends Record<string, z.ZodType>,
-  >(args: {
-    registry: AgentRegistry;
-    namespace: string;
-    model: LanguageModel;
-    client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;
-    embeddingModel: EmbeddingModel;
+  async integrate(args: {
     content: string;
     maxSteps?: number;
     memorySearchBudgetMax?: number;
+    /** Per-call override of any constructor field (e.g. different registry/namespace in a loop). */
+    overrides?: MemoryIntegratorIntegrateOverrides<TNode, TEdge>;
   }): Promise<{
     plan: IntegratorPlanWire;
     generation: IntegratorPipelineGeneration;
   }> {
-    const {
-      registry,
-      namespace,
-      model,
-      client,
-      embeddingModel,
-      content,
-      maxSteps = 12,
-      memorySearchBudgetMax,
-    } = args;
+    const o = args.overrides ?? {};
+    const maxSteps = o.maxSteps ?? args.maxSteps ?? 12;
+    const memorySearchBudgetMax = o.memorySearchBudgetMax ?? args.memorySearchBudgetMax;
+    const registry = o.registry ?? this.registry;
+    if (registry === undefined) {
+      throw new Error(
+        "MemoryIntegratorClient: pass registry in the constructor or in integrate({ overrides: { registry } })",
+      );
+    }
+    const namespace = o.namespace ?? this.namespace;
+    const model = o.model ?? this.model;
+    const client = o.client ?? this.client;
+    const embeddingModel = o.embeddingModel ?? this.embeddingModel;
 
-    const { identity } = await registerMemoryIntegratorAgent(registry, namespace, {
-      identityContext: this.identityContext,
+    const { identity } = await ensureMemoryIntegratorAgentRegistered(registry, namespace, {
+      ...(this.identityContext !== undefined ? { identityContext: this.identityContext } : {}),
     });
 
     const session = registry.createSession(identity.agentId, {
@@ -62,9 +98,13 @@ export class MemoryIntegratorClient {
       },
     });
 
-    return session.start({
-      content,
+    return session.start<MemoryIntegratorSessionInput, MemoryIntegratorSessionOutput>({
+      content: args.content,
       maxSteps,
     });
+  }
+
+  static integratorAgentId(namespace: string): string {
+    return buildMemoryIntegratorAgentId(namespace);
   }
 }

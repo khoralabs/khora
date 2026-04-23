@@ -1,4 +1,5 @@
 .llm-context
+.memories
 
 # dependencies (bun install)
 node_modules

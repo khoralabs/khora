@@ -1,40 +1,33 @@
-import {
-  evaluateRegisteredAgentAffordances,
-  type RegisterAgentOptions,
-  type SessionContext,
-  type SessionRunner,
-  type ToolkitContext,
-  type ToolRuntimeContext,
+import type {
+  AgentRegistry,
+  RegisterAgentOptions,
+  RegisteredAgentIdentity,
+  SessionContext,
+  SessionRunner,
 } from "@cfd/agent-identity";
-import type { MemoriesClient, MemoriesClientAsync } from "@cfd/memories-core";
 import {
-  buildMemorySearchToolkitContext,
-  buildMemorySearchToolRuntimeContext,
-  type EmbeddingModel,
-  type MemorySearchEnv,
+  attachMemorySearchSessionLayer,
+  type MemorySearchSessionContextSlice,
+  type ZodLabelMap,
 } from "@cfd/memories-tools";
 import type { LanguageModel } from "ai";
-import type z from "zod";
 import type { IntegratorPipelineGeneration } from "./create-integrator-agent.js";
 import { createMemoryIntegratorAgent } from "./create-integrator-agent.js";
+import {
+  buildMemoryIntegratorAgentId,
+  type DefineMemoryIntegratorIdentityOptions,
+  defineMemoryIntegratorIdentity,
+} from "./identity.js";
 import { type IntegratorPlanWire, parseIntegratorPlanWire } from "./integrator-output.js";
 import { buildMemoryIntegratorUserMessage } from "./messages.js";
 
 export type MemoryIntegratorSessionContext<
-  TNode extends Record<string, z.ZodType>,
-  TEdge extends Record<string, z.ZodType>,
-> = SessionContext & {
-  model: LanguageModel;
-  client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;
-  embeddingModel: EmbeddingModel;
-  namespace: string;
-  agentId?: string;
-  agentName?: string;
-  /** When set, caps {@code memory_search} calls per session run (fresh counter each {@code onAfterContext}). */
-  memorySearchBudgetMax?: number;
-  toolkitCtx?: ToolkitContext<MemorySearchEnv>;
-  runtime?: ToolRuntimeContext<MemorySearchEnv>;
-};
+  TNode extends ZodLabelMap,
+  TEdge extends ZodLabelMap,
+> = SessionContext &
+  MemorySearchSessionContextSlice<TNode, TEdge> & {
+    model: LanguageModel;
+  };
 
 export type MemoryIntegratorSessionInput = {
   content: string;
@@ -46,9 +39,70 @@ export type MemoryIntegratorSessionOutput = {
   plan: IntegratorPlanWire;
 };
 
+/**
+ * Full static definition: identity (capabilities hash) + session registration for {@link AgentRegistry.register}.
+ */
+export async function getMemoryIntegratorAgentDefinition(
+  namespace: string,
+  options?: DefineMemoryIntegratorIdentityOptions,
+): Promise<{
+  staticHash: string;
+  identity: RegisteredAgentIdentity;
+  registerOptions: RegisterAgentOptions<
+    MemoryIntegratorSessionInput,
+    MemoryIntegratorSessionOutput,
+    MemoryIntegratorSessionContext<ZodLabelMap, ZodLabelMap>
+  >;
+}> {
+  const { staticHash, identity } = await defineMemoryIntegratorIdentity(namespace, options);
+  return {
+    staticHash,
+    identity,
+    registerOptions: {
+      run: createMemoryIntegratorSessionRunner<ZodLabelMap, ZodLabelMap>(),
+      hooks: {
+        async onAfterContext(args) {
+          const { agent, context, input } = args;
+          await attachMemorySearchSessionLayer({
+            agent,
+            context,
+          });
+          void input;
+        },
+      },
+    },
+  };
+}
+
+/**
+ * Registers the memory integrator on {@code registry} if not already present (same agent id for {@code namespace}).
+ */
+export async function ensureMemoryIntegratorAgentRegistered(
+  registry: AgentRegistry,
+  namespace: string,
+  options?: DefineMemoryIntegratorIdentityOptions,
+): Promise<{ staticHash: string; identity: RegisteredAgentIdentity }> {
+  const id = buildMemoryIntegratorAgentId(namespace);
+  if (registry.has(id)) {
+    const entry = registry.get(id);
+    if (!entry) {
+      throw new Error(`registry inconsistency: has(${id}) but get is undefined`);
+    }
+    return { staticHash: entry.agent.staticHash, identity: entry.agent };
+  }
+  const { staticHash, identity, registerOptions } = await getMemoryIntegratorAgentDefinition(
+    namespace,
+    options,
+  );
+  registry.register(identity, registerOptions);
+  return { staticHash, identity };
+}
+
+export const registerMemoryIntegratorAgent = ensureMemoryIntegratorAgentRegistered;
+
 export function createMemoryIntegratorSessionRunner<
-  TNode extends Record<string, z.ZodType>,
-  TEdge extends Record<string, z.ZodType>,
+  TNode extends ZodLabelMap,
+  TEdge extends ZodLabelMap,
 >(): SessionRunner<
   MemoryIntegratorSessionInput,
   MemoryIntegratorSessionOutput,
@@ -58,18 +112,16 @@ export function createMemoryIntegratorSessionRunner<
     const { model, client } = context;
     const { content, maxSteps } = input;
 
-    if (!context.toolkitCtx || !context.runtime) {
+    if (!context.toolkitCtx || !context.runtime || !context.affordances) {
       throw new Error(
-        "memory integrator session context missing toolkit/runtime (onAfterContext hook)",
+        "memory integrator session context missing toolkit/runtime/affordances (onAfterContext hook)",
       );
     }
-
-    const affordances = await evaluateRegisteredAgentAffordances(agent, context.toolkitCtx);
 
     const integratorAgent = createMemoryIntegratorAgent({
       model,
       identity: agent,
-      affordances,
+      affordances: context.affordances,
       runtime: context.runtime,
       maxSteps,
       ontology: client.ontology,
@@ -82,43 +134,5 @@ export function createMemoryIntegratorSessionRunner<
     const plan = parseIntegratorPlanWire(client.ontology, raw);
 
     return { generation, plan };
-  };
-}
-
-export function memoryIntegratorRegistryRegistration<
-  TNode extends Record<string, z.ZodType>,
-  TEdge extends Record<string, z.ZodType>,
->(): RegisterAgentOptions<
-  MemoryIntegratorSessionInput,
-  MemoryIntegratorSessionOutput,
-  MemoryIntegratorSessionContext<TNode, TEdge>
-> {
-  return {
-    run: createMemoryIntegratorSessionRunner<TNode, TEdge>(),
-    hooks: {
-      async onAfterContext(args) {
-        const { context: ctx } = args;
-        ctx.toolkitCtx = buildMemorySearchToolkitContext({
-          client: ctx.client,
-          namespace: ctx.namespace,
-          embeddingModel: ctx.embeddingModel,
-          agentId: ctx.agentId,
-          agentName: ctx.agentName,
-          ...(ctx.memorySearchBudgetMax !== undefined
-            ? { memorySearchBudgetMax: ctx.memorySearchBudgetMax }
-            : {}),
-        });
-        ctx.runtime = buildMemorySearchToolRuntimeContext({
-          client: ctx.client,
-          namespace: ctx.namespace,
-          embeddingModel: ctx.embeddingModel,
-          agentId: ctx.agentId,
-          agentName: ctx.agentName,
-          ...(ctx.memorySearchBudgetMax !== undefined
-            ? { memorySearchBudgetMax: ctx.memorySearchBudgetMax }
-            : {}),
-        });
-      },
-    },
   };
 }

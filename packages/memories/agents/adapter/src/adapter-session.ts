@@ -1,41 +1,34 @@
-import {
-  evaluateRegisteredAgentAffordances,
-  type RegisterAgentOptions,
-  type SessionContext,
-  type SessionRunner,
-  type ToolkitContext,
-  type ToolRuntimeContext,
+import type {
+  AgentRegistry,
+  RegisterAgentOptions,
+  RegisteredAgentIdentity,
+  SessionContext,
+  SessionRunner,
 } from "@cfd/agent-identity";
-import type { MemoriesClient, MemoriesClientAsync } from "@cfd/memories-core";
 import {
-  buildMemorySearchToolkitContext,
-  buildMemorySearchToolRuntimeContext,
-  type EmbeddingModel,
-  type MemorySearchEnv,
+  attachMemorySearchSessionLayer,
+  type MemorySearchSessionContextSlice,
+  type ZodLabelMap,
 } from "@cfd/memories-tools";
 import type { LanguageModel } from "ai";
-import type z from "zod";
-import { type ExpandedMemoryWire, zExpandedMemoryWireFromOntology } from "./adapter-output.js";
+import { parseAdapterGenerationToExpandedMemoryWire } from "./adapter-output.js";
 import type { AdapterPipelineGeneration } from "./create-adapter-agent.js";
 import { createMemoryAdapterAgent } from "./create-adapter-agent.js";
+import {
+  buildMemoryAdapterAgentId,
+  type DefineMemoryAdapterIdentityOptions,
+  defineMemoryAdapterIdentity,
+} from "./identity.js";
 import { buildMemoryAdapterUserMessage } from "./messages.js";
 import type { AdapterIngestContext, ExpandedMemoryDraft } from "./types.js";
 
 export type MemoryAdapterSessionContext<
-  TNode extends Record<string, z.ZodType>,
-  TEdge extends Record<string, z.ZodType>,
-> = SessionContext & {
-  model: LanguageModel;
-  client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;
-  embeddingModel: EmbeddingModel;
-  namespace: string;
-  agentId?: string;
-  agentName?: string;
-  /** When set, caps {@code memory_search} calls per session run (fresh counter each {@code onAfterContext}). */
-  memorySearchBudgetMax?: number;
-  toolkitCtx?: ToolkitContext<MemorySearchEnv>;
-  runtime?: ToolRuntimeContext<MemorySearchEnv>;
-};
+  TNode extends ZodLabelMap,
+  TEdge extends ZodLabelMap,
+> = SessionContext &
+  MemorySearchSessionContextSlice<TNode, TEdge> & {
+    model: LanguageModel;
+  };
 
 /** Domain payload is app-defined; validate at the host before calling the adapter. */
 export type MemoryAdapterSessionInput<TDomain = unknown> = {
@@ -49,9 +42,70 @@ export type MemoryAdapterSessionOutput = {
   draft: ExpandedMemoryDraft;
 };
 
+/**
+ * Full static definition: identity (capabilities hash) + session registration for {@link AgentRegistry.register}.
+ */
+export async function getMemoryAdapterAgentDefinition(
+  namespace: string,
+  options?: DefineMemoryAdapterIdentityOptions,
+): Promise<{
+  staticHash: string;
+  identity: RegisteredAgentIdentity;
+  registerOptions: RegisterAgentOptions<
+    MemoryAdapterSessionInput<unknown>,
+    MemoryAdapterSessionOutput,
+    MemoryAdapterSessionContext<ZodLabelMap, ZodLabelMap>
+  >;
+}> {
+  const { staticHash, identity } = await defineMemoryAdapterIdentity(namespace, options);
+  return {
+    staticHash,
+    identity,
+    registerOptions: {
+      run: createMemoryAdapterSessionRunner<ZodLabelMap, ZodLabelMap>(),
+      hooks: {
+        async onAfterContext(args) {
+          const { agent, context, input } = args;
+          await attachMemorySearchSessionLayer({
+            agent,
+            context,
+          });
+          void input;
+        },
+      },
+    },
+  };
+}
+
+/**
+ * Registers the memory adapter on {@code registry} if not already present (same agent id for {@code namespace}).
+ */
+export async function ensureMemoryAdapterAgentRegistered(
+  registry: AgentRegistry,
+  namespace: string,
+  options?: DefineMemoryAdapterIdentityOptions,
+): Promise<{ staticHash: string; identity: RegisteredAgentIdentity }> {
+  const id = buildMemoryAdapterAgentId(namespace);
+  if (registry.has(id)) {
+    const entry = registry.get(id);
+    if (!entry) {
+      throw new Error(`registry inconsistency: has(${id}) but get is undefined`);
+    }
+    return { staticHash: entry.agent.staticHash, identity: entry.agent };
+  }
+  const { staticHash, identity, registerOptions } = await getMemoryAdapterAgentDefinition(
+    namespace,
+    options,
+  );
+  registry.register(identity, registerOptions);
+  return { staticHash, identity };
+}
+
+export const registerMemoryAdapterAgent = ensureMemoryAdapterAgentRegistered;
+
 export function createMemoryAdapterSessionRunner<
-  TNode extends Record<string, z.ZodType>,
-  TEdge extends Record<string, z.ZodType>,
+  TNode extends ZodLabelMap,
+  TEdge extends ZodLabelMap,
 >(): SessionRunner<
   MemoryAdapterSessionInput<unknown>,
   MemoryAdapterSessionOutput,
@@ -61,18 +115,16 @@ export function createMemoryAdapterSessionRunner<
     const { model } = context;
     const { ingest, domainPayload, maxSteps } = input;
 
-    if (!context.toolkitCtx || !context.runtime) {
+    if (!context.toolkitCtx || !context.runtime || !context.affordances) {
       throw new Error(
-        "memory adapter session context missing toolkit/runtime (onAfterContext hook)",
+        "memory adapter session context missing toolkit/runtime/affordances (onAfterContext hook)",
       );
     }
-
-    const affordances = await evaluateRegisteredAgentAffordances(agent, context.toolkitCtx);
 
     const adapterAgent = createMemoryAdapterAgent({
       model,
       identity: agent,
-      affordances,
+      affordances: context.affordances,
       runtime: context.runtime,
       ontology: context.client.ontology,
       maxSteps,
@@ -81,66 +133,15 @@ export function createMemoryAdapterSessionRunner<
     const messages = [buildMemoryAdapterUserMessage({ ingest, domainPayload })];
     const generation = await adapterAgent.generate({ messages });
 
-    const wire = zExpandedMemoryWireFromOntology(context.client.ontology);
-    const out = wire.safeParse(generation.output);
-    if (!out.success) {
-      throw new Error(
-        `Memory adapter structured output failed validation (steps=${generation.steps.length}, finishReason=${String(generation.finishReason)}): ${out.error.message}`,
-      );
-    }
-    const v = out.data as ExpandedMemoryWire;
-    if (!v.plaintext?.trim()) {
-      throw new Error(
-        `Memory adapter did not produce usable plaintext (steps=${generation.steps.length}, finishReason=${String(generation.finishReason)})`,
-      );
-    }
+    const v = parseAdapterGenerationToExpandedMemoryWire(context.client.ontology, generation);
 
     const draft: ExpandedMemoryDraft = {
-      plaintext: v.plaintext.trim(),
+      plaintext: v.plaintext,
       memoryKeySuggestion: v.memoryKeySuggestion?.trim(),
       nodeLabelHints: v.nodeLabelHints,
       edgeLabelHints: v.edgeLabelHints,
     };
 
     return { generation, draft };
-  };
-}
-
-export function memoryAdapterRegistryRegistration<
-  TNode extends Record<string, z.ZodType>,
-  TEdge extends Record<string, z.ZodType>,
->(): RegisterAgentOptions<
-  MemoryAdapterSessionInput<unknown>,
-  MemoryAdapterSessionOutput,
-  MemoryAdapterSessionContext<TNode, TEdge>
-> {
-  return {
-    run: createMemoryAdapterSessionRunner<TNode, TEdge>(),
-    hooks: {
-      async onAfterContext(args) {
-        const { context: ctx, input } = args;
-        ctx.toolkitCtx = buildMemorySearchToolkitContext({
-          client: ctx.client,
-          namespace: ctx.namespace,
-          embeddingModel: ctx.embeddingModel,
-          agentId: ctx.agentId,
-          agentName: ctx.agentName,
-          ...(ctx.memorySearchBudgetMax !== undefined
-            ? { memorySearchBudgetMax: ctx.memorySearchBudgetMax }
-            : {}),
-        });
-        ctx.runtime = buildMemorySearchToolRuntimeContext({
-          client: ctx.client,
-          namespace: ctx.namespace,
-          embeddingModel: ctx.embeddingModel,
-          agentId: ctx.agentId,
-          agentName: ctx.agentName,
-          ...(ctx.memorySearchBudgetMax !== undefined
-            ? { memorySearchBudgetMax: ctx.memorySearchBudgetMax }
-            : {}),
-        });
-        void input;
-      },
-    },
   };
 }

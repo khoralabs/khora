@@ -1,0 +1,38 @@
+import type {
+  RegisteredAgentAffordances,
+  RegisteredAgentIdentity,
+  ToolRuntimeContext,
+} from "@cfd/agent-identity";
+import { toolMapToAiTools } from "@cfd/agent-identity-adapters";
+import { type LanguageModel, stepCountIs, type Tool, ToolLoopAgent, type ToolSet } from "ai";
+import type { MemorySearchEnv } from "./memory-search-toolkit.js";
+
+const DEFAULT_MAX_STEPS = 12;
+
+/** Tool map shape used by {@link createMemorySearchToolLoopAgent} (aligns with adapter/integrator {@code *ToolSet} aliases). */
+export type MemorySearchToolSet = Record<string, Tool<unknown, unknown>> & ToolSet;
+type ToolLoopOutputSpec = NonNullable<ConstructorParameters<typeof ToolLoopAgent>[0]["output"]>;
+/**
+ * {@link ToolLoopAgent} for memory-search–backed sessions: same wiring as the memories adapter/integrator agents.
+ * {@code OUTPUT} is an AI SDK output spec (e.g. from {@code Output.object(...)}).
+ */
+export function createMemorySearchToolLoopAgent<OUTPUT extends ToolLoopOutputSpec = ToolLoopOutputSpec>(args: {
+  model: LanguageModel;
+  identity: RegisteredAgentIdentity;
+  affordances: RegisteredAgentAffordances;
+  runtime: ToolRuntimeContext<MemorySearchEnv>;
+  maxSteps?: number;
+  output: OUTPUT;
+}): ToolLoopAgent<never, MemorySearchToolSet, OUTPUT> {
+  const { model, identity, affordances, runtime, maxSteps = DEFAULT_MAX_STEPS, output } = args;
+  const tools = toolMapToAiTools(affordances.tools, runtime) as MemorySearchToolSet;
+  const inst = affordances.instructions.trim();
+  return new ToolLoopAgent<never, MemorySearchToolSet, OUTPUT>({
+    id: identity.agentId,
+    model,
+    tools,
+    ...(inst ? { instructions: inst } : {}),
+    stopWhen: stepCountIs(maxSteps),
+    output,
+  });
+}

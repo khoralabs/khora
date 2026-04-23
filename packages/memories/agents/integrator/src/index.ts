@@ -1,7 +1,10 @@
-export { MemoryIntegratorClient, type MemoryIntegratorClientOptions } from "./client.js";
+export {
+  MemoryIntegratorClient,
+  type MemoryIntegratorClientOptions,
+  type MemoryIntegratorIntegrateOverrides,
+} from "./client.js";
 export type { IntegratorPipelineGeneration } from "./create-integrator-agent.js";
 export { createMemoryIntegratorAgent } from "./create-integrator-agent.js";
-export { declareMemoryIntegratorAgent, registerMemoryIntegratorAgent } from "./declaration.js";
 export {
   buildMemoryIntegratorAgentId,
   type DefineMemoryIntegratorIdentityOptions,
@@ -21,10 +24,12 @@ export {
 } from "./integrator-output.js";
 export {
   createMemoryIntegratorSessionRunner,
+  registerMemoryIntegratorAgent,
+  ensureMemoryIntegratorAgentRegistered,
+  getMemoryIntegratorAgentDefinition,
   type MemoryIntegratorSessionContext,
   type MemoryIntegratorSessionInput,
   type MemoryIntegratorSessionOutput,
-  memoryIntegratorRegistryRegistration,
 } from "./integrator-session.js";
 export { processLogicalMemoryWithIntegrator } from "./logical-memory-pipeline.js";
 export { buildMemoryIntegratorUserMessage } from "./messages.js";

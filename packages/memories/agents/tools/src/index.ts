@@ -20,7 +20,15 @@ export type { MemoriesLogPayloadMap } from "./telemetry.js";
 export { memoriesLog, memoriesLogToolBodies } from "./telemetry.js";
 export { elapsedMs } from "./timing.js";
 export {
+  createMemorySearchToolLoopAgent,
+  type MemorySearchToolSet,
+} from "./tool-loop-from-affordances.js";
+export {
+  attachMemorySearchSessionLayer,
+  buildMemorySearchToolkitAndRuntime,
   buildMemorySearchToolkitContext,
   buildMemorySearchToolRuntimeContext,
+  type MemorySearchSessionContextSlice,
   toMemorySearchEnv,
+  type ZodLabelMap,
 } from "./toolkit-context.js";

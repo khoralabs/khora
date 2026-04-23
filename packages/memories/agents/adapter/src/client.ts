@@ -3,55 +3,87 @@ import type { MemoriesClient, MemoriesClientAsync } from "@cfd/memories-core";
 import type { EmbeddingModel } from "@cfd/memories-tools";
 import type { LanguageModel } from "ai";
 import type z from "zod";
-import type { MemoryAdapterSessionInput, MemoryAdapterSessionOutput } from "./adapter-session.js";
-import { registerMemoryAdapterAgent } from "./declaration.js";
-import { buildMemoryAdapterAgentId } from "./identity.js";
+import {
+  ensureMemoryAdapterAgentRegistered,
+  type MemoryAdapterSessionInput,
+  type MemoryAdapterSessionOutput,
+} from "./adapter-session.js";
+import { buildMemoryAdapterAgentId, type DefineMemoryAdapterIdentityOptions } from "./identity.js";
 import type { AdapterIngestContext } from "./types.js";
 
-export type MemoryAdapterClientOptions = {
-  /** Merged into {@link defineMemoryAdapterIdentity} static context. */
-  identityContext?: Record<string, unknown>;
+export type MemoryAdapterClientOptions<
+  TNode extends Record<string, z.ZodType>,
+  TEdge extends Record<string, z.ZodType>,
+> = DefineMemoryAdapterIdentityOptions & {
+  /** Omitted if every {@link expand} supplies {@code overrides.registry} (e.g. fresh registry per run). */
+  registry?: AgentRegistry;
+  namespace: string;
+  model: LanguageModel;
+  client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;
+  embeddingModel: EmbeddingModel;
+};
+
+/** Optional per-{@link MemoryAdapterClient.expand} values; when set, override the constructor. */
+export type MemoryAdapterExpandOverrides<
+  TNode extends Record<string, z.ZodType>,
+  TEdge extends Record<string, z.ZodType>,
+> = {
+  maxSteps?: number;
+  memorySearchBudgetMax?: number;
+  namespace?: string;
+  model?: LanguageModel;
+  client?: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;
+  embeddingModel?: EmbeddingModel;
+  registry?: AgentRegistry;
 };
 
 /**
- * Host-facing adapter client: injectable identity context + expand session.
+ * Host-facing adapter: durable registry/model/client/namespace wiring + {@link expand} for each ingest run.
  */
-export class MemoryAdapterClient {
+export class MemoryAdapterClient<
+  TNode extends Record<string, z.ZodType> = Record<string, z.ZodType>,
+  TEdge extends Record<string, z.ZodType> = Record<string, z.ZodType>,
+> {
+  readonly registry: AgentRegistry | undefined;
+  readonly namespace: string;
+  readonly model: LanguageModel;
+  readonly client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;
+  readonly embeddingModel: EmbeddingModel;
   readonly identityContext: Record<string, unknown> | undefined;
 
-  constructor(options?: MemoryAdapterClientOptions) {
-    this.identityContext = options?.identityContext;
+  constructor(options: MemoryAdapterClientOptions<TNode, TEdge>) {
+    this.registry = options.registry;
+    this.namespace = options.namespace;
+    this.model = options.model;
+    this.client = options.client;
+    this.embeddingModel = options.embeddingModel;
+    this.identityContext = options.identityContext;
   }
 
-  async expand<
-    TNode extends Record<string, z.ZodType>,
-    TEdge extends Record<string, z.ZodType>,
-    TDomain = unknown,
-  >(args: {
-    registry: AgentRegistry;
-    namespace: string;
-    model: LanguageModel;
-    client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;
-    embeddingModel: EmbeddingModel;
+  async expand<TDomain = unknown>(args: {
     ingest: AdapterIngestContext;
     domainPayload: TDomain;
     maxSteps?: number;
     memorySearchBudgetMax?: number;
+    /** Per-call override of any constructor field (e.g. different registry/namespace in a loop). */
+    overrides?: MemoryAdapterExpandOverrides<TNode, TEdge>;
   }): Promise<MemoryAdapterSessionOutput> {
-    const {
-      registry,
-      namespace,
-      model,
-      client,
-      embeddingModel,
-      ingest,
-      domainPayload,
-      maxSteps = 12,
-      memorySearchBudgetMax,
-    } = args;
+    const o = args.overrides ?? {};
+    const maxSteps = o.maxSteps ?? args.maxSteps ?? 12;
+    const memorySearchBudgetMax = o.memorySearchBudgetMax ?? args.memorySearchBudgetMax;
+    const registry = o.registry ?? this.registry;
+    if (registry === undefined) {
+      throw new Error(
+        "MemoryAdapterClient: pass registry in the constructor or in expand({ overrides: { registry } })",
+      );
+    }
+    const namespace = o.namespace ?? this.namespace;
+    const model = o.model ?? this.model;
+    const client = o.client ?? this.client;
+    const embeddingModel = o.embeddingModel ?? this.embeddingModel;
 
-    const { identity } = await registerMemoryAdapterAgent(registry, namespace, {
-      identityContext: this.identityContext,
+    const { identity } = await ensureMemoryAdapterAgentRegistered(registry, namespace, {
+      ...(this.identityContext !== undefined ? { identityContext: this.identityContext } : {}),
     });
 
     const session = registry.createSession(identity.agentId, {
@@ -64,11 +96,13 @@ export class MemoryAdapterClient {
       },
     });
 
-    const input: MemoryAdapterSessionInput<TDomain> = { ingest, domainPayload, maxSteps };
-    return session.start<MemoryAdapterSessionInput<TDomain>, MemoryAdapterSessionOutput>(input);
+    return session.start<MemoryAdapterSessionInput<TDomain>, MemoryAdapterSessionOutput>({
+      ingest: args.ingest,
+      domainPayload: args.domainPayload,
+      maxSteps,
+    });
   }
 
-  /** Resolved agent id for the adapter in a namespace (after registration). */
   static adapterAgentId(namespace: string): string {
     return buildMemoryAdapterAgentId(namespace);
   }

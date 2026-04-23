@@ -9,7 +9,8 @@ import {
 } from "@cfd/memories-core/helpers";
 import type { LanguageModel } from "ai";
 import type z from "zod";
-import { MemoryIntegratorClient, type MemoryIntegratorClientOptions } from "./client.js";
+import { MemoryIntegratorClient } from "./client.js";
+import type { DefineMemoryIntegratorIdentityOptions } from "./identity.js";
 import type { IntegratorPipelineGeneration } from "./create-integrator-agent.js";
 import type { IntegratorPlanWire } from "./integrator-output.js";
 import { integratorWireToMergeSlice } from "./to-merge-slice.js";
@@ -43,9 +44,9 @@ export async function processLogicalMemoryWithIntegrator<
   embeddingModel: EmbeddingModel;
   maxSteps?: number;
   multimodal?: boolean;
-  /** Defaults to `{ identityContext: { app: "cfd-cli" } }` when omitted. */
-  integratorClient?: MemoryIntegratorClient;
-  integratorClientOptions?: MemoryIntegratorClientOptions;
+  /** Defaults to `{ app: "cfd-cli" }` identity when omitted. */
+  integratorClient?: MemoryIntegratorClient<TNode, TEdge>;
+  integratorClientOptions?: DefineMemoryIntegratorIdentityOptions;
   /** Caps {@code memory_search} per integrator run when set. */
   memorySearchBudgetMax?: number;
 }): Promise<{
@@ -62,12 +63,6 @@ export async function processLogicalMemoryWithIntegrator<
     multimodal = DEFAULT_MULTIMODAL,
   } = args;
 
-  const integratorClient =
-    args.integratorClient ??
-    new MemoryIntegratorClient(
-      args.integratorClientOptions ?? { identityContext: { app: "cfd-cli" } },
-    );
-
   const processedContent = await decomposeLogicalMemoryToContent({
     ...logicalMemory,
     embedding: { embeddingModel, multimodal },
@@ -80,12 +75,19 @@ export async function processLogicalMemoryWithIntegrator<
   const content = buildIntegratorContent(processedLogicalMemory);
   const registry = createAgentRegistry();
 
+  const integratorClient =
+    args.integratorClient ??
+    new MemoryIntegratorClient({
+      ...args.integratorClientOptions,
+      identityContext: args.integratorClientOptions?.identityContext ?? { app: "cfd-cli" },
+      registry,
+      namespace: logicalMemory.namespace,
+      model: chatModel,
+      client,
+      embeddingModel,
+    });
+
   const { plan, generation } = await integratorClient.integrate({
-    registry,
-    namespace: logicalMemory.namespace,
-    model: chatModel,
-    client,
-    embeddingModel,
     content,
     maxSteps,
     ...(args.memorySearchBudgetMax !== undefined

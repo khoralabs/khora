@@ -26,6 +26,10 @@ export async function seedPersonaMemoryNamespace(args: {
   const { bundle, chatModel, embeddingModel, namespace, seeds } = args;
   const adapterClient = new MemoryAdapterClient({
     identityContext: { app: "obp-demo", product: "matchmaking-seed" },
+    namespace,
+    model: chatModel,
+    client: bundle.client,
+    embeddingModel,
   });
 
   for (let index = 0; index < seeds.length; index++) {
@@ -33,13 +37,7 @@ export async function seedPersonaMemoryNamespace(args: {
     if (payload === undefined) {
       continue;
     }
-    const registry = createAgentRegistry();
     const { draft } = await adapterClient.expand({
-      registry,
-      namespace,
-      model: chatModel,
-      client: bundle.client,
-      embeddingModel,
       ingest: {
         sourceApp: "obp-demo-matchmaking",
         correlationId: `seed-${namespace}-${index}`,
@@ -48,6 +46,7 @@ export async function seedPersonaMemoryNamespace(args: {
       /** Empty KG → adapter often burns steps on memory_search before emitting structured output; keep headroom. */
       maxSteps: 12,
       memorySearchBudgetMax: SEED_MEMORY_SEARCH_BUDGET_MAX,
+      overrides: { registry: createAgentRegistry() },
     });
 
     const key = `seed-${index}`;

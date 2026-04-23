@@ -13,6 +13,7 @@
   "dependencies": {
     "@ai-sdk/provider-utils": "^4.0.23",
     "@cfd/agent-identity": "workspace:*",
+    "@cfd/agent-identity-adapters": "workspace:*",
     "@cfd/memories-core": "workspace:*",
     "ai": "^6",
     "zod": "^4.3.6"
@@ -21,7 +22,6 @@
     "test": "bun test"
   },
   "devDependencies": {
-    "@cfd/agent-identity-adapters": "workspace:*",
     "@types/bun": "latest"
   },
   "peerDependencies": {

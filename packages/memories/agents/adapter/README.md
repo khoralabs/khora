@@ -4,8 +4,8 @@ The **Memory Adapter** agent turns **app-defined domain objects** into expanded 
 
 **Dependencies:** `@cfd/agent-identity`, `@cfd/agent-identity-adapters` (AI SDK tool bridge), `@cfd/memories-core`, `@cfd/memories-tools`, `ai`, `zod`.
 
-- **Identity**: `defineMemoryAdapterIdentity` / `registerMemoryAdapterAgent` — optional `identityContext` merges into `createRegisteredAgentIdentity` context.
-- **Client**: `MemoryAdapterClient` — `expand()` runs the adapter session for your namespace and returns `{ draft, generation }`; map with `expandedDraftToLogicalMemoryInput` for the next merge step.
+- **Identity & registration**: `getMemoryAdapterAgentDefinition` (identity + register options) and `ensureMemoryAdapterAgentRegistered` (idempotent `registry.register`); `defineMemoryAdapterIdentity` is the static hash source. Optional `identityContext` merges into `createRegisteredAgentIdentity` context.
+- **Client**: `new MemoryAdapterClient({ namespace, model, client, embeddingModel, registry?, identityContext? })` — `expand({ ingest, domainPayload, maxSteps?, memorySearchBudgetMax?, overrides? })` runs the session and returns `{ draft, generation }`. Use `overrides` for per-call `registry` (e.g. a fresh registry each run) or other fields. Map with `expandedDraftToLogicalMemoryInput` for the next merge step.
 - **Structured output**: `plaintext`, optional `memoryKeySuggestion`, and optional ontology-aware **`nodeLabelHints`** / **`edgeLabelHints`** (built from `MemoriesClient.ontology` via `zExpandedMemoryWireFromOntology`). Edge hint rows allow at most one edge-kind payload per row.
 - **Domain payload**: app-defined (e.g. validate with Zod at the host); `MemoryAdapterClient.expand` is generic over `domainPayload`. The CLI todo command uses its own schema in `apps/cli/src/todo-domain-payload.ts`.
 - **CLI example**: `bun run src/index.ts todo add --title "..."` in `@cfd/cli` uses the adapter with a sample payload (memory namespace `cli/todo`).

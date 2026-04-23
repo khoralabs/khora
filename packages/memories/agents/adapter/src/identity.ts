@@ -1,6 +1,6 @@
 import { createRegisteredAgentIdentity, type RegisteredAgentIdentity } from "@cfd/agent-identity";
 import { memorySearchToolkit } from "@cfd/memories-tools";
-import { buildMemoryAdapterBaseInstruction } from "./instructions.js";
+import { memoryAdapterBaseInstruction } from "./instructions.js";
 
 export const MEMORY_ADAPTER_AGENT_ID = "memory-adapter";
 
@@ -23,7 +23,7 @@ export async function defineMemoryAdapterIdentity(
   return createRegisteredAgentIdentity({
     agentId: buildMemoryAdapterAgentId(namespace),
     name: "Memory Adapter",
-    instructions: [buildMemoryAdapterBaseInstruction()],
+    instructions: [memoryAdapterBaseInstruction],
     context: {
       role: "memory-adapter",
       targetNamespace: namespace,
