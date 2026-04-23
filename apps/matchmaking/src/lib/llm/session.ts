@@ -37,12 +37,13 @@ import { createMatchmakingMemoriesBundle } from "../memories/create-memories-bun
 import { getMatchmakingEmbeddingModel } from "../memories/matchmaking-embedding.ts";
 import {
   personaMemoriesAlreadySeeded,
-  resolveObpDemoMemoriesDbPath,
-  resolveObpDemoMemoriesRoot,
+  resolveMemoriesDbPath,
+  resolveMemoriesRoot,
   shouldForceMemoriesReseed,
   syncMatchmakingScenarioJsonlStores,
 } from "../memories/persisted-memories.ts";
 import { seedMatchmakingPersonas } from "../memories/seed-personas.ts";
+import type { ThreadDevLog } from "../negotiation-run-registry.ts";
 import { buildIntroRequestScenarioPair, type MatchmakingScenario } from "../scenarios";
 import { buildMatchmakingUserMessage } from "./messages.ts";
 
@@ -185,12 +186,14 @@ export async function runMatchmakingSession(options?: {
   scenario?: MatchmakingScenario;
   maxRounds?: number;
   logFilePath?: string;
-  /** Defaults to {@link resolveObpDemoMemoriesRoot} (e.g. {@code .obp-demo-memories} under cwd). */
+  /** Defaults to {@link resolveMemoriesRoot} (e.g. {@code .memories} under cwd). */
   memoriesRoot?: string;
-  /** Defaults to {@link resolveObpDemoMemoriesDbPath} or {@code OBP_DEMO_MEMORIES_DB}. */
+  /** Defaults to {@link resolveMemoriesDbPath} or {@code MEMORIES_DB}. */
   memoriesDbPath?: string;
   /** When true, re-runs persona seeding even if the SQLite DB already has enough rows per namespace. */
   forceReseedMemories?: boolean;
+  /** Optional: append events to a per-run JsonlStore file (dev drawer). */
+  threadDevLog?: ThreadDevLog;
 }): Promise<MatchmakingResult> {
   const scenario = options?.scenario ?? (await buildIntroRequestScenarioPair("p1", "p2"));
   const maxRounds = options?.maxRounds ?? scenario.maxRounds ?? DEFAULT_MAX_ROUNDS;
@@ -211,8 +214,8 @@ export async function runMatchmakingSession(options?: {
     };
   }
 
-  const memoriesRoot = options?.memoriesRoot ?? resolveObpDemoMemoriesRoot();
-  const memoriesDbPath = options?.memoriesDbPath ?? resolveObpDemoMemoriesDbPath(memoriesRoot);
+  const memoriesRoot = options?.memoriesRoot ?? resolveMemoriesRoot();
+  const memoriesDbPath = options?.memoriesDbPath ?? resolveMemoriesDbPath(memoriesRoot);
   const memoriesBundle = createMatchmakingMemoriesBundle(memoriesDbPath);
   const embeddingModel = getMatchmakingEmbeddingModel();
   const embeddingCache = new Map<string, number[]>();
@@ -331,6 +334,7 @@ export async function runMatchmakingSession(options?: {
 
   const thread = new InMemoryThreadContext({ participantIds: obpPartyIds });
 
+  const devLog = options?.threadDevLog;
   const invitation = scenario.partyAInvitationMessage?.trim();
   if (invitation) {
     await thread.postMessage(postThreadUserText(requesterPartyId, invitation));
@@ -340,6 +344,9 @@ export async function runMatchmakingSession(options?: {
         agentName: requesterIdentity.name,
         text: invitation,
       });
+    }
+    if (devLog !== undefined) {
+      devLog.append("Party A invite (user message)", `${requesterIdentity.name}: ${invitation}`);
     }
   }
 
@@ -395,6 +402,12 @@ export async function runMatchmakingSession(options?: {
                 agentName: agent.name,
                 textBlocks: collectAssistantTextBlocks(generation),
               });
+            }
+            if (devLog !== undefined) {
+              const textBlocks = collectAssistantTextBlocks(generation);
+              if (textBlocks.length > 0) {
+                devLog.append(`round ${round} · ${agent.name}`, textBlocks.join("\n\n"));
+              }
             }
           },
           onError: async () => {},

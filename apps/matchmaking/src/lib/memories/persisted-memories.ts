@@ -6,15 +6,15 @@ import type { MatchmakingScenario } from "../scenarios/matchmaking-scenario.ts";
 import type { MatchmakingMemoriesBundle } from "./create-memories-bundle.ts";
 
 /** Root directory for matchmaking memories (SQLite + per-namespace JSONL). */
-export function resolveObpDemoMemoriesRoot(): string {
-  const fromEnv = process.env.OBP_DEMO_MEMORIES_ROOT?.trim();
+export function resolveMemoriesRoot(): string {
+  const fromEnv = process.env.MEMORIES_ROOT?.trim();
   if (fromEnv) return fromEnv;
-  return join(process.cwd(), ".obp-demo-memories");
+  return join(process.cwd(), ".memories");
 }
 
 /** On-disk SQLite path (single DB, multiple namespaces inside). */
-export function resolveObpDemoMemoriesDbPath(memoriesRoot = resolveObpDemoMemoriesRoot()): string {
-  const fromEnv = process.env.OBP_DEMO_MEMORIES_DB?.trim();
+export function resolveMemoriesDbPath(memoriesRoot = resolveMemoriesRoot()): string {
+  const fromEnv = process.env.MEMORIES_DB?.trim();
   if (fromEnv) return fromEnv;
   return join(memoriesRoot, "memories.sqlite");
 }
@@ -86,14 +86,6 @@ export function syncMatchmakingScenarioJsonlStores(args: {
 }): void {
   const { bundle, memoriesRoot, partyMemoryNamespaces } = args;
   const [nsA, nsB] = partyMemoryNamespaces;
-  rewriteNamespaceJsonlFromPersistence(
-    bundle,
-    nsA,
-    jsonlStorePathForNamespace(memoriesRoot, nsA),
-  );
-  rewriteNamespaceJsonlFromPersistence(
-    bundle,
-    nsB,
-    jsonlStorePathForNamespace(memoriesRoot, nsB),
-  );
+  rewriteNamespaceJsonlFromPersistence(bundle, nsA, jsonlStorePathForNamespace(memoriesRoot, nsA));
+  rewriteNamespaceJsonlFromPersistence(bundle, nsB, jsonlStorePathForNamespace(memoriesRoot, nsB));
 }

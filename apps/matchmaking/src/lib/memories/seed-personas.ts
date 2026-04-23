@@ -9,7 +9,7 @@ import type { MatchmakingMemoriesBundle } from "./create-memories-bundle.ts";
 import type { MeetingSeedPayload } from "./meeting-seed-payload.ts";
 import {
   jsonlStorePathForNamespace,
-  resolveObpDemoMemoriesRoot,
+  resolveMemoriesRoot,
   rewriteNamespaceJsonlFromPersistence,
 } from "./persisted-memories.ts";
 
@@ -77,7 +77,7 @@ export async function seedAllMatchmakingPersonaMemories(args: {
   memoriesRoot?: string;
 }): Promise<void> {
   const personas = args.personas ?? (Object.values(matchmakingPersonas) as MatchmakingPersona[]);
-  const memoriesRoot = args.memoriesRoot ?? resolveObpDemoMemoriesRoot();
+  const memoriesRoot = args.memoriesRoot ?? resolveMemoriesRoot();
   const { bundle, chatModel, embeddingModel } = args;
   for (const p of personas) {
     await seedPersonaMemoryNamespace({

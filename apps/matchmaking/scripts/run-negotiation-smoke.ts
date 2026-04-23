@@ -1,13 +1,13 @@
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { runMatchmakingSession } from "../src/lib/llm/session.ts";
+import { textTranscriptPathFromJsonl } from "../src/lib/matchmaking-obp/index.ts";
 import {
   jsonlStorePathForNamespace,
-  resolveObpDemoMemoriesDbPath,
-  resolveObpDemoMemoriesRoot,
+  resolveMemoriesDbPath,
+  resolveMemoriesRoot,
 } from "../src/lib/memories/persisted-memories.ts";
 import { buildIntroRequestScenarioPair } from "../src/lib/scenarios/intro-request.ts";
-import { textTranscriptPathFromJsonl } from "../src/lib/matchmaking-obp/index.ts";
 
 function buildLogFilePath(): string {
   const ts = new Date().toISOString().replace(/[:.]/g, "-");
@@ -22,10 +22,10 @@ async function main(): Promise<void> {
 
   const logFilePath = buildLogFilePath();
   await mkdir(path.dirname(logFilePath), { recursive: true });
-  const memoriesRoot = resolveObpDemoMemoriesRoot();
+  const memoriesRoot = resolveMemoriesRoot();
   console.log("[negotiation-smoke] log file", logFilePath);
   console.log("[negotiation-smoke] text transcript", textTranscriptPathFromJsonl(logFilePath));
-  console.log("[negotiation-smoke] memories SQLite", resolveObpDemoMemoriesDbPath(memoriesRoot));
+  console.log("[negotiation-smoke] memories SQLite", resolveMemoriesDbPath(memoriesRoot));
   console.log(
     "[negotiation-smoke] memories JSONL (Party A)",
     jsonlStorePathForNamespace(memoriesRoot, scenario.partyMemoryNamespaces[0]),

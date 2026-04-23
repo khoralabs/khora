@@ -2,9 +2,6 @@
  * Programmatic surface for the matchmaking Bun server and scripts (not bundled for the browser).
  */
 
-/** OBP stack + Gemini + transcript helpers used by {@link runMatchmakingSession}. */
-export * from "./matchmaking-obp/index.ts";
-
 export { inviteRequestSchema } from "./invite-request.ts";
 export type {
   MatchmakingResult,
@@ -16,12 +13,14 @@ export {
   resolveMatchmakingConnectedDeal,
   runMatchmakingSession,
 } from "./llm/session.ts";
+/** OBP stack + Gemini + transcript helpers used by {@link runMatchmakingSession}. */
+export * from "./matchmaking-obp/index.ts";
 export type { MatchmakingMemoriesBundle } from "./memories/create-memories-bundle.ts";
 export { createMatchmakingMemoriesBundle } from "./memories/create-memories-bundle.ts";
 export {
   jsonlStorePathForNamespace,
-  resolveObpDemoMemoriesDbPath,
-  resolveObpDemoMemoriesRoot,
+  resolveMemoriesDbPath,
+  resolveMemoriesRoot,
 } from "./memories/persisted-memories.ts";
 export {
   seedAllMatchmakingPersonaMemories,

@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
+import { NegotiationDevDrawer } from "@/components/NegotiationDevDrawer";
 
 type PersonaPublicDto = {
   slug: string;
@@ -45,6 +46,8 @@ export function App() {
   const [sendBusy, setSendBusy] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [negotiationRunId, setNegotiationRunId] = useState<string | null>(null);
+  const [devDrawerOpen, setDevDrawerOpen] = useState(false);
 
   const selected = useMemo(
     () => personas?.find((p) => p.slug === selectedSlug) ?? null,
@@ -104,12 +107,15 @@ export function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ personaSlug: selectedSlug, message: inviteMessage }),
       });
-      const body = (await res.json()) as { ok?: boolean; error?: unknown };
+      const body = (await res.json()) as { ok?: boolean; runId?: string; error?: unknown };
       if (!res.ok) {
         setSendError(typeof body.error === "string" ? body.error : "Could not send invite");
         return;
       }
       if (body.ok) {
+        if (typeof body.runId === "string") {
+          setNegotiationRunId(body.runId);
+        }
         setConfirmOpen(true);
       }
     } catch (e) {
@@ -274,10 +280,27 @@ export function App() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction type="button">OK</AlertDialogAction>
+            <AlertDialogAction
+              type="button"
+              onClick={() => {
+                if (negotiationRunId !== null) {
+                  setDevDrawerOpen(true);
+                }
+                setInviteMessage("");
+                setPhase("detail");
+              }}
+            >
+              OK
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <NegotiationDevDrawer
+        runId={negotiationRunId}
+        open={devDrawerOpen}
+        onOpenChange={setDevDrawerOpen}
+      />
     </div>
   );
 }

@@ -1,15 +1,12 @@
 import { getNegotiationModel } from "./matchmaking-obp/index.ts";
 import { createMatchmakingMemoriesBundle } from "./memories/create-memories-bundle.ts";
 import { getMatchmakingEmbeddingModel } from "./memories/matchmaking-embedding.ts";
-import {
-  resolveObpDemoMemoriesDbPath,
-  resolveObpDemoMemoriesRoot,
-} from "./memories/persisted-memories.ts";
+import { resolveMemoriesDbPath, resolveMemoriesRoot } from "./memories/persisted-memories.ts";
 import { seedAllMatchmakingPersonaMemories } from "./memories/seed-personas.ts";
 
 async function main(): Promise<void> {
-  const memoriesRoot = resolveObpDemoMemoriesRoot();
-  const dbPath = resolveObpDemoMemoriesDbPath(memoriesRoot);
+  const memoriesRoot = resolveMemoriesRoot();
+  const dbPath = resolveMemoriesDbPath(memoriesRoot);
   const bundle = createMatchmakingMemoriesBundle(dbPath);
   const chatModel = getNegotiationModel();
   const embeddingModel = getMatchmakingEmbeddingModel();
