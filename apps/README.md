@@ -8,7 +8,7 @@ Early data: 100% of users submit a message of intent with their booking request,
 
 This repo implements a working demo of that loop.
 
----
+
 
 ## The four design principles
 
@@ -28,7 +28,7 @@ Use both parties' history to form an opinion about whether a meeting is a good u
 
 The system should care why someone is looking. Agents read memory before committing, and the prompt stack nudges them to compare the intro to past intents.
 
----
+
 
 ## The personal knowledge graph and virtual twin
 
@@ -36,7 +36,7 @@ Each user has a personal knowledge graph grown from their intents and reflection
 
 The ontology is intentionally domain-light: `person`, `place`, `preference`, `event`, `fact`, `observation`, `belief`, `temporal` as node labels; `references`, `affects`, `causes`, `describes`, `before`, `after`, `during`, `includes` as edge labels. Each label has a Zod props schema so merges stay typed. This is a pragmatic starting point but there's honest tension between a fixed, typed ontology that's good for search quality and a looser, user-relative graph that's better for personal meaning as the platform matures.
 
----
+
 
 ## Demo loop
 
@@ -74,8 +74,8 @@ sequenceDiagram
   App->>Rec: Report opinion on fit and scope
   App->>Req: Outcome summary
   Note over Req,Rec: Simulated meeting
-  App->>Req: Reflection nudge (email in full product; skipped here)
-  App->>Rec: Reflection nudge
+  App->>Req: Reflection nudge (email in full product, skipped here)
+  App->>Rec: Reflection nudge (email in full product, skipped here)
   Req->>App: Reflect with quick notes, goals echoed in prompt
   Rec->>App: Reflect with quick notes
   App->>Tr: Merge reflections into KG
@@ -84,7 +84,7 @@ sequenceDiagram
 
 Explicitly out of scope: Zoom integration, Supabase/Next production stack, post-call email or inbound reply parsing, calendar webhooks. Personas stand in for real users.
 
----
+
 
 ## Technical decisions
 
@@ -112,7 +112,7 @@ Negotiation uses Gemini through the `ai` SDK and `@ai-sdk/google`. Gemini-only k
 
 The React/Radix/Tailwind shell in `apps/matchmaking` is demo chrome. The core packages — OBP, Memories, Agent identity, and `runMatchmakingSession` — don't care about the shell. The same flows could run under Next.js or any other host; only routing and rendering would change.
 
----
+
 
 ## Core packages
 
@@ -134,7 +134,7 @@ Ties who an agent is (instructions, static context, toolkits) to what it can do 
 
 Minimal mental model: UserInvite → `runMatchmakingSession` → RegisteredAgent + ObpClient + MemoriesClient → result and transcript.
 
----
+
 
 ## Tradeoffs
 
@@ -150,7 +150,7 @@ Minimal mental model: UserInvite → `runMatchmakingSession` → RegisteredAgent
 
 - Local SQLite is a convenience. Both persistence interfaces (`ObpPersistence`, `MemoriesPersistence`) exist precisely so storage can go cloud-shaped when ready — managed SQL, search services, object stores — without rewriting negotiation or merge/search logic.
 
----
+
 
 ## If I had more time
 
