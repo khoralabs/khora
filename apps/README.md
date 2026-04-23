@@ -45,12 +45,19 @@ request chat → explain goals → confirm
   → merge invitation into both personal KGs
   → evaluate the intro (both twins, alternating negotiation turns)
   → report fit opinion to requestee
-  → (simulated meeting)
-  → nudge both parties to reflect, original goals echoed in prompt
-  → merge reflections into both KGs
+
+  if requestee accepts:
+    both parties give feedback on how the agent represented them
+    → meeting takes place
+    → nudge both to reflect, original goals echoed in prompt
+    → merge reflections into both KGs
+
+  if requestee declines:
+    both parties still give feedback on agent accuracy
+    → merge feedback into both KGs
 ```
 
-The invitation text is first-class: once the requester confirms, the platform merges it into each party's memory namespace so both twins ground later negotiation and reflection on the same articulated intent, not only on whatever was already in the graph. Reflections close the loop so the next evaluation can lean on richer context.
+The invitation text is first-class: once the requester confirms, the platform merges it into each party's memory namespace so both twins ground later negotiation and reflection on the same articulated intent. On either branch — accept or decline — both parties can correct the agent's read of them. That feedback is signal regardless of outcome: a decline with a correction tells the system more about a user's actual goals than a silent accept would.
 
 In a shipped product, the reflection nudge would arrive as an email with two paths: reply in-thread for quick notes which are ingested as a payload, or a deep link into the app. That email and webhook plumbing is out of scope here; the demo shows the data flow, not the delivery mechanism.
 
@@ -64,22 +71,30 @@ sequenceDiagram
 
   Req->>App: Search or select who to connect with
   Req->>App: Submit invitation message (goals and intent)
-  App->>Req: Confirm or refine understanding
-  Req->>App: Confirm
   App->>Tr: Merge invitation into requester KG
   App->>Te: Merge invitation into requestee KG
   App->>Tr: Evaluate intro using requester memory
   App->>Te: Evaluate intro using requestee memory
-  Note over App,Te: Twins alternate negotiation (memory search + OBP binds)
+  Note over App,Te: Twins alternate matchmaking negotiation (memory search + OBP binds)
   App->>Rec: Report opinion on fit and scope
   App->>Req: Outcome summary
-  Note over Req,Rec: Simulated meeting
-  App->>Req: Reflection nudge (email in full product, skipped here)
-  App->>Rec: Reflection nudge (email in full product, skipped here)
-  Req->>App: Reflect with quick notes, goals echoed in prompt
-  Rec->>App: Reflect with quick notes
-  App->>Tr: Merge reflections into KG
-  App->>Te: Merge reflections into KG
+
+  alt Rec accepts
+    Rec->>App: Accept, describe goals for meeting
+    Req->>App: Feedback on agent accuracy for future matches
+    Rec->>App: Feedback on agent accuracy for future matches
+    Note over Req,Rec: Meeting takes place (skipped in demo)
+    App->>Req: Reflection nudge (email in full product, skipped here)
+    App->>Rec: Reflection nudge (email in full product, skipped here)
+    Req->>App: Reflect in app, goals echoed in prompt
+    Rec->>App: Reflect in app, goals echoed in prompt
+    App->>Tr: Merge reflections into KG
+    App->>Te: Merge reflections into KG
+  else Rec declines
+    Rec->>App: Decline
+    Req->>App: Feedback on agent accuracy for future matches
+    Rec->>App: Feedback on agent accuracy for future matches
+  end
 ```
 
 Explicitly out of scope: Zoom integration, Supabase/Next production stack, post-call email or inbound reply parsing, calendar webhooks. Personas stand in for real users.
