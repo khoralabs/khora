@@ -1,6 +1,14 @@
-import { createRegisteredAgentIdentity, type RegisteredAgentIdentity } from "@cfd/agent-identity";
+import {
+  type AnyComposable,
+  createRegisteredAgentIdentity,
+  type RegisteredAgentIdentity,
+} from "@cfd/agent-identity";
 import { obpToolkit } from "@cfd/obp-tools";
-import { buildObpNegotiatorBaseInstruction } from "./instructions.ts";
+import { obpNegotiatorBaseInstruction } from "./instructions.ts";
+
+/** Accepts {@code obpToolkit} and composed roots (OBP + memory, etc.); identity erases env at registration. */
+// biome-ignore lint/suspicious/noExplicitAny: composable env is host-specific (intersections, unions of toolkit envs)
+type ObpNegotiatorRootComposableInput = AnyComposable<any>;
 
 export const OBP_NEGOTIATOR_AGENT_ID = "obp-negotiator";
 
@@ -15,6 +23,11 @@ export type DefineObpNegotiatorIdentityOptions = {
   identityContext?: Record<string, unknown>;
   /** Additional instructions to merge into the base instruction. */
   instructions?: string[];
+  /**
+   * Root toolkit composable. Defaults to {@code obpToolkit} from {@code @cfd/obp-tools}.
+   * Set to a composed composable (e.g. OBP + memory) when the host needs extra tools.
+   */
+  rootComposable?: ObpNegotiatorRootComposableInput;
 };
 
 /**
@@ -28,12 +41,13 @@ export async function defineObpNegotiatorIdentity(
   return createRegisteredAgentIdentity({
     agentId: buildObpNegotiatorAgentId(namespace),
     name: options?.name ?? "OBP Negotiator",
-    instructions: [...(options?.instructions ?? []), buildObpNegotiatorBaseInstruction()],
+    instructions: [...(options?.instructions ?? []), obpNegotiatorBaseInstruction],
     context: {
       role: "obp-negotiator",
       targetNamespace: namespace,
       ...(options?.identityContext ?? {}),
     },
-    rootComposable: obpToolkit,
+    rootComposable: (options?.rootComposable ??
+      obpToolkit) as RegisteredAgentIdentity["rootComposable"],
   });
 }

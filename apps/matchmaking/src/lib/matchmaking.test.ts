@@ -1,8 +1,7 @@
 import { Database } from "bun:sqlite";
 import { expect, test } from "bun:test";
-import { ObpClient } from "@cfd/obp-core";
+import { ObpClient, resolveCompletedDeal } from "@cfd/obp-core";
 import { createObpSqlitePersistence, OBP_SCHEMA_SQL } from "@cfd/obp-sqlite";
-import { resolveCompletedDeal } from "./matchmaking-obp/index.ts";
 import { assertMatchmakingBindAllowed, resolveMatchmakingConnectedDeal } from "./llm/session.ts";
 
 test("resolveCompletedDeal finds terminal bind on requestee offer", () => {

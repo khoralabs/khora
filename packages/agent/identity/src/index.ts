@@ -32,7 +32,7 @@ export type {
   CreateIdentityLinkArgs,
   IdentityLink,
 } from "./agent/identity-link.js";
-export { createIdentityLink } from "./agent/identity-link.js";
+export { computeFullIdentityLink, createIdentityLink } from "./agent/identity-link.js";
 export {
   type CreateRegisteredAgentIdentityArgs,
   createRegisteredAgentIdentity,
@@ -46,6 +46,15 @@ export {
   toolSpecCanonicalPayload,
 } from "./hashing/canonical-payloads.js";
 export { hashPlainObject, schemaToHashInput } from "./hashing/hash.js";
+export type {
+  InvocationContextCanonicalPayload,
+  NormalizeInvocationContextForHashOptions,
+} from "./hashing/invocation-context.js";
+export {
+  computeInvocationContextHash,
+  invocationContextCanonicalPayload,
+  normalizeInvocationContextForHash,
+} from "./hashing/invocation-context.js";
 export {
   collectToolStaticHashes,
   computeRuntimeHash,

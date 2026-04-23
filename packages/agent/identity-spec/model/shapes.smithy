@@ -84,6 +84,13 @@ structure ToolIdentityCanonicalPayload {
     policies: PolicyIdList
 }
 
+/// Pre-hash body for `computeInvocationContextHash` in TS (kind is always `invocation`).
+structure InvocationContextCanonicalPayload {
+    kind: String
+    /// Normalized JSON-only map (sorted keys at every object level); see `normalizeInvocationContextForHash`.
+    context: Document
+}
+
 // --- Identity link & diffs ---
 
 structure IdentityLink {
@@ -91,6 +98,8 @@ structure IdentityLink {
     agentName: String
     staticHash: String
     runtimeHash: String
+    @documentation("Optional: omit the member in JSON when not computed. Per-run binding slice; not part of staticHash.")
+    invocationHash: String
 }
 
 structure ToolRefRow {
@@ -122,6 +131,9 @@ enum IdentityLinkField {
 
     @enumValue("runtimeHash")
     RUNTIME_HASH
+
+    @enumValue("invocationHash")
+    INVOCATION_HASH
 }
 
 structure IdentityLinkFieldChange {
@@ -220,7 +232,9 @@ structure IdentityLinkRow {
     agentName: String
     staticHash: String
     runtimeHash: String
-    /// Extra host metadata (indices, source, etc.).
+    /// Optional: mirrors TS `IdentityLink.invocationHash`; may be left empty in DB when not used.
+    invocationHash: String
+    /// Extra host metadata (indices, raw `invocationContext` blob, source, etc. — not hashed here).
     metadata: Document
 }
 

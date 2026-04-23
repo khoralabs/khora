@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
+import { existsSync } from "node:fs";
+import { rm } from "node:fs/promises";
+import path from "node:path";
 import plugin from "bun-plugin-tailwind";
-import { existsSync } from "fs";
-import { rm } from "fs/promises";
-import path from "path";
 
 if (process.argv.includes("--help") || process.argv.includes("-h")) {
   console.log(`
@@ -35,7 +35,9 @@ Example:
 
 const toCamelCase = (str: string): string => str.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
 
-const parseValue = (value: string): any => {
+type CliParsedValue = string | number | boolean | string[];
+
+const parseValue = (value: string): CliParsedValue => {
   if (value === "true") return true;
   if (value === "false") return false;
 

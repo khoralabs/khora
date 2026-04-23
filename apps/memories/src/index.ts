@@ -7,6 +7,7 @@ import {
 import {
   buildNamespaceGraphLayout,
   createMemoriesPersistence,
+  listMemoryNamespaces,
   loadEdgePreview,
   loadMemoryTextPreview,
   openMemoriesDatabaseReadonly,
@@ -294,6 +295,31 @@ const server = serve({
           return jsonResponse({ error: "edge not found in namespace" }, 404);
         }
         return jsonResponse(detail);
+      } catch (err) {
+        return jsonResponse({ error: String(err) }, 500);
+      } finally {
+        db.close();
+      }
+    },
+    "/api/namespaces": (req) => {
+      if (req.method !== "GET") {
+        return new Response("Method Not Allowed", { status: 405 });
+      }
+      if (!MEMORIES_DB_PATH) {
+        return jsonResponse(
+          { error: "set MEMORIES_DB_PATH to your SQLite memories database file" },
+          400,
+        );
+      }
+      let db: ReturnType<typeof openMemoriesDatabaseReadonly>;
+      try {
+        db = openMemoriesDatabaseReadonly(MEMORIES_DB_PATH);
+      } catch (err) {
+        return jsonResponse({ error: `open database: ${String(err)}` }, 500);
+      }
+      try {
+        const namespaces = listMemoryNamespaces(db);
+        return jsonResponse({ namespaces });
       } catch (err) {
         return jsonResponse({ error: String(err) }, 500);
       } finally {

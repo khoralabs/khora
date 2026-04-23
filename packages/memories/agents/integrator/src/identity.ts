@@ -1,6 +1,6 @@
 import { createRegisteredAgentIdentity, type RegisteredAgentIdentity } from "@cfd/agent-identity";
 import { memorySearchToolkit } from "@cfd/memories-tools";
-import { buildMemoryIntegratorBaseInstruction } from "./instructions.js";
+import { memoryIntegratorBaseInstruction } from "./instructions.js";
 
 export const MEMORY_INTEGRATOR_AGENT_ID = "memory-integrator";
 
@@ -23,7 +23,7 @@ export async function defineMemoryIntegratorIdentity(
   return createRegisteredAgentIdentity({
     agentId: buildMemoryIntegratorAgentId(namespace),
     name: "Memory Integrator",
-    instructions: [buildMemoryIntegratorBaseInstruction()],
+    instructions: [memoryIntegratorBaseInstruction],
     context: {
       role: "memory-integrator",
       targetNamespace: namespace,

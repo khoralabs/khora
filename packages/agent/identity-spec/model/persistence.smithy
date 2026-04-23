@@ -11,7 +11,7 @@ Hypothetical host storage surface for agent identity attribution (sessions, stat
 
 **Transactions:** Prefer one outer transaction per logical session update; nesting depends on the driver.
 
-**Idempotency:** `UpsertRegisteredAgentSnapshot` should be idempotent for the same `(agentId, staticHash)`. `RecordSessionIdentityLink` may append or upsert depending on host policy; duplicate `(sessionId, staticHash, runtimeHash)` rows may be allowed for audit or deduped.
+**Idempotency:** `UpsertRegisteredAgentSnapshot` should be idempotent for the same `(agentId, staticHash)`. `RecordSessionIdentityLink` may append or upsert depending on host policy; duplicate `(sessionId, staticHash, runtimeHash)` (and optional `invocationHash`) rows may be allowed for audit or deduped. **Changelog (identity lineage):** `IdentityLink` / `IdentityLinkRow` now include optional `invocationHash` for a third fingerprint: per-invocation binding separate from `staticHash` and `runtimeHash` (see `@cfd/agent-identity` `computeInvocationContextHash` / `createIdentityLink`).
 
 **Async:** Mirror with Promise/async in language bindings where applicable.
 

@@ -40,8 +40,8 @@ export type IdentityLinkField = keyof IdentityLink;
 
 export type IdentityLinkFieldChange = {
   field: IdentityLinkField;
-  first: string;
-  second: string;
+  first: string | undefined;
+  second: string | undefined;
 };
 
 /** Which {@link IdentityLink} fields match vs differ. */
@@ -55,14 +55,15 @@ const IDENTITY_LINK_FIELDS: IdentityLinkField[] = [
   "agentName",
   "staticHash",
   "runtimeHash",
+  "invocationHash",
 ];
 
 export function diffIdentityLinks(a: IdentityLink, b: IdentityLink): IdentityLinksDiff {
   const unchanged: IdentityLinkField[] = [];
   const changed: IdentityLinkFieldChange[] = [];
   for (const field of IDENTITY_LINK_FIELDS) {
-    const first = a[field];
-    const second = b[field];
+    const first = a[field] as string | undefined;
+    const second = b[field] as string | undefined;
     if (first === second) {
       unchanged.push(field);
     } else {
@@ -82,7 +83,8 @@ export function explainIdentityLinkRelationship(a: IdentityLink, b: IdentityLink
   }
   const sameStatic = a.staticHash === b.staticHash;
   const sameRuntime = a.runtimeHash === b.runtimeHash;
-  if (sameStatic && sameRuntime && a.agentName === b.agentName) {
+  const sameInvocation = a.invocationHash === b.invocationHash;
+  if (sameStatic && sameRuntime && sameInvocation && a.agentName === b.agentName) {
     return "Same identity link.";
   }
   if (!sameStatic) {
@@ -91,8 +93,11 @@ export function explainIdentityLinkRelationship(a: IdentityLink, b: IdentityLink
   if (!sameRuntime) {
     return "Same static identity; runtime differs (enabled tools or policies changed).";
   }
+  if (!sameInvocation) {
+    return "Same static and runtime; invocation context hash differs (subject, policy, or other binding changed).";
+  }
   if (a.agentName !== b.agentName) {
-    return "Same static and runtime hashes; display name differs only.";
+    return "Same static, runtime, and invocation hashes; display name differs only.";
   }
   return "Differ in ways not covered above.";
 }

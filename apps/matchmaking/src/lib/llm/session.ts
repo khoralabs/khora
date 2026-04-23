@@ -1,4 +1,5 @@
 import {
+  computeInvocationContextHash,
   createAgentRegistry,
   type RegisteredAgentIdentity,
   type SessionContext,
@@ -11,10 +12,22 @@ import {
   postThreadUserText,
 } from "@cfd/agent-thread";
 import type { EmbeddingModel } from "@cfd/memories-core/helpers";
+import { JsonlStore } from "@cfd/memories-stores";
 import { type MemorySearchEnv, toMemorySearchEnv } from "@cfd/memories-tools";
-import type { ObpClient, ObpPersistence } from "@cfd/obp-core";
-import { createObpNegotiatorAgent, type ObpNegotiatorGeneration } from "@cfd/obp-negotiator";
 import {
+  type CompletedDeal,
+  type ObpClient,
+  type ObpPersistence,
+  resolveCompletedDeal,
+} from "@cfd/obp-core";
+import {
+  createObpNegotiatorSessionRunner,
+  negotiationEndPayloadFromGeneration,
+  type ObpNegotiatorGeneration,
+  type ObpNegotiatorSessionOutput,
+} from "@cfd/obp-negotiator";
+import {
+  agentSourcemaps,
   captureNegotiationEndFromToolExecuted,
   computeNegotiationContext,
   isDynamicBindToolName,
@@ -22,30 +35,33 @@ import {
 } from "@cfd/obp-tools";
 import type { LanguageModel } from "ai";
 import {
-  agentSourcemaps,
   appendTextTranscriptInvitation,
   appendTextTranscriptTurn,
-  type CompletedDeal,
   createDemoStack,
+  createLoggingObpPersistence,
+  ensureObpRunDir,
   getNegotiationModel,
   initTextTranscript,
-  negotiationEndPayloadFromGeneration,
-  resolveCompletedDeal,
+  isObpMemoryMode,
+  obpStepLogFromEnv,
+  resolveObpDatabasePath,
+  resolveObpStepsJsonlPath,
   textTranscriptPathFromJsonl,
 } from "../matchmaking-obp/index.ts";
 import { createMatchmakingMemoriesBundle } from "../memories/create-memories-bundle.ts";
 import { getMatchmakingEmbeddingModel } from "../memories/matchmaking-embedding.ts";
 import {
-  personaMemoriesAlreadySeeded,
   resolveMemoriesDbPath,
   resolveMemoriesRoot,
+  scenarioPersonaSeedSlotsSatisfied,
   shouldForceMemoriesReseed,
-  syncMatchmakingScenarioJsonlStores,
 } from "../memories/persisted-memories.ts";
 import { seedMatchmakingPersonas } from "../memories/seed-personas.ts";
 import type { ThreadDevLog } from "../negotiation-run-registry.ts";
+import { resolveMatchmakingSubjectId } from "../resolve-subject-id.ts";
 import { buildIntroRequestScenarioPair, type MatchmakingScenario } from "../scenarios";
 import { buildMatchmakingUserMessage } from "./messages.ts";
+import { matchmakingValueFirewallInstructions } from "./value-firewall-instructions.ts";
 
 /** Per negotiator turn; fresh env each {@link matchmakingTurnRunner} call resets {@code used}. */
 const MATCHMAKING_MEMORY_SEARCH_BUDGET_MAX = 6;
@@ -83,6 +99,12 @@ export type MatchmakingSessionContext = SessionContext & {
   embeddingModel: EmbeddingModel;
   memoryNamespaceByAgentId: Map<string, string>;
   embeddingCache: Map<string, number[]>;
+  /** OBP negotiator session: per-turn {@code ObpToolkitEnv} (+ memory) from this context. */
+  resolveEnv: import("@cfd/obp-negotiator").ObpNegotiatorResolveEnv;
+  systemInstructions?: string;
+  defaultMaxSteps?: number;
+  /** Filled in {@code onBeforeRun}: per-user/persona binding (see `computeInvocationContextHash`). */
+  invocationHashByAgentId: Map<string, string | undefined>;
 };
 
 /** Terminal bind on an offer extended by either party (mutual intro commitment). */
@@ -107,16 +129,16 @@ export function assertMatchmakingBindAllowed(args: {
   }
 }
 
-export async function matchmakingTurnRunner(args: {
-  agent: RegisteredAgentIdentity;
-  input: unknown;
-  context: SessionContext;
-}): Promise<ObpNegotiatorGeneration> {
-  const ctx = args.context as MatchmakingSessionContext;
-  const prompt = (args.input as MatchmakingTurnInput).prompt;
-  const actingPartyId = ctx.obpPartyIdByAgentId.get(args.agent.agentId);
+export const matchmakingTurnRunner = createObpNegotiatorSessionRunner();
+
+async function buildMatchmakingToolkitEnv(
+  args: { agent: RegisteredAgentIdentity; context: SessionContext },
+  ctx: MatchmakingSessionContext,
+): Promise<ObpToolkitEnv & MemorySearchEnv> {
+  const { agent } = args;
+  const actingPartyId = ctx.obpPartyIdByAgentId.get(agent.agentId);
   if (actingPartyId === undefined) {
-    throw new Error(`no OBP party id for agent ${args.agent.agentId}`);
+    throw new Error(`no OBP party id for agent ${agent.agentId}`);
   }
 
   const validateBind: ObpToolkitEnv["validateBind"] = async (v) => {
@@ -134,9 +156,9 @@ export async function matchmakingTurnRunner(args: {
     validateBind,
   });
 
-  const memoryNs = ctx.memoryNamespaceByAgentId.get(args.agent.agentId);
+  const memoryNs = ctx.memoryNamespaceByAgentId.get(agent.agentId);
   if (memoryNs === undefined) {
-    throw new Error(`no memory namespace for agent ${args.agent.agentId}`);
+    throw new Error(`no memory namespace for agent ${agent.agentId}`);
   }
 
   const memorySlice = toMemorySearchEnv({
@@ -147,28 +169,17 @@ export async function matchmakingTurnRunner(args: {
     memorySearchBudgetMax: MATCHMAKING_MEMORY_SEARCH_BUDGET_MAX,
   });
 
-  const env: ObpToolkitEnv & MemorySearchEnv = {
+  return {
     ...memorySlice,
     client: ctx.client,
     now: ctx.now,
     actingPartyId,
     validateBind,
     negotiationToolContext,
-    requestNegotiationEnd: (args) => {
-      ctx.negotiationEndSignal.current = args;
+    requestNegotiationEnd: (a) => {
+      ctx.negotiationEndSignal.current = a;
     },
   };
-
-  const toolLoop = await createObpNegotiatorAgent({
-    model: ctx.model,
-    identity: args.agent,
-    env,
-    systemInstructions: "",
-    maxSteps: 8,
-    toolPipelineHooks: ctx.toolPipelineHooks,
-  });
-
-  return toolLoop.generate({ prompt });
 }
 
 function collectAssistantTextBlocks(generation: ObpNegotiatorGeneration): string[] {
@@ -194,6 +205,11 @@ export async function runMatchmakingSession(options?: {
   forceReseedMemories?: boolean;
   /** Optional: append events to a per-run JsonlStore file (dev drawer). */
   threadDevLog?: ThreadDevLog;
+  /**
+   * Correlates file-backed OBP SQLite + optional `obp-steps.jsonl` under {@code OBP_DIR}/{runId}/.
+   * Omit when {@link isObpMemoryMode} is active or for in-memory-only runs.
+   */
+  runId?: string;
 }): Promise<MatchmakingResult> {
   const scenario = options?.scenario ?? (await buildIntroRequestScenarioPair("p1", "p2"));
   const maxRounds = options?.maxRounds ?? scenario.maxRounds ?? DEFAULT_MAX_ROUNDS;
@@ -216,16 +232,14 @@ export async function runMatchmakingSession(options?: {
 
   const memoriesRoot = options?.memoriesRoot ?? resolveMemoriesRoot();
   const memoriesDbPath = options?.memoriesDbPath ?? resolveMemoriesDbPath(memoriesRoot);
-  const memoriesBundle = createMatchmakingMemoriesBundle(memoriesDbPath);
+  const memoriesBundle = createMatchmakingMemoriesBundle(memoriesDbPath, { memoriesRoot });
   const embeddingModel = getMatchmakingEmbeddingModel();
   const embeddingCache = new Map<string, number[]>();
 
-  const [partyAMemoryNs, partyBMemoryNs] = scenario.partyMemoryNamespaces;
   const forceReseed = options?.forceReseedMemories === true || shouldForceMemoriesReseed();
 
   const skipPersonaSeed =
-    !forceReseed &&
-    personaMemoriesAlreadySeeded(memoriesBundle, scenario, partyAMemoryNs, partyBMemoryNs);
+    !forceReseed && scenarioPersonaSeedSlotsSatisfied(memoriesBundle, scenario);
 
   try {
     if (!skipPersonaSeed) {
@@ -235,14 +249,9 @@ export async function runMatchmakingSession(options?: {
         embeddingModel,
         partyMemoryNamespaces: scenario.partyMemoryNamespaces,
         personaSeeds: scenario.personaSeeds,
+        skipExistingSlots: !forceReseed,
       });
     }
-
-    syncMatchmakingScenarioJsonlStores({
-      bundle: memoriesBundle,
-      memoriesRoot,
-      partyMemoryNamespaces: scenario.partyMemoryNamespaces,
-    });
   } catch (e) {
     return {
       status: "error",
@@ -250,8 +259,33 @@ export async function runMatchmakingSession(options?: {
     };
   }
 
-  const stack = createDemoStack();
-  const { client, persistence } = stack;
+  const runId = options?.runId?.trim();
+  const diskObp = !isObpMemoryMode() && runId !== undefined && runId.length > 0;
+  let databasePath: string | undefined;
+  if (diskObp) {
+    ensureObpRunDir(runId);
+    databasePath = resolveObpDatabasePath(runId);
+  }
+
+  const stack = createDemoStack(databasePath !== undefined ? { databasePath } : undefined);
+  let persistence: ObpPersistence = stack.persistence;
+  const shouldLogObpSteps =
+    diskObp &&
+    runId !== undefined &&
+    runId.length > 0 &&
+    (options?.threadDevLog !== undefined || obpStepLogFromEnv());
+  if (shouldLogObpSteps) {
+    const stepsPath = resolveObpStepsJsonlPath(runId);
+    const store = new JsonlStore(stepsPath);
+    const memoryId = `matchmaking-obp/${runId}`;
+    persistence = createLoggingObpPersistence(stack.persistence, {
+      store,
+      memoryId,
+      nowMs: stack.now,
+    });
+  }
+
+  const { client } = stack;
   const now = stack.now;
 
   const obpPartyIds: string[] = [];
@@ -322,6 +356,13 @@ export async function runMatchmakingSession(options?: {
     embeddingModel,
     memoryNamespaceByAgentId,
     embeddingCache,
+    systemInstructions: matchmakingValueFirewallInstructions,
+    defaultMaxSteps: 8,
+    invocationHashByAgentId: new Map(),
+    async resolveEnv(args) {
+      const c = args.context as MatchmakingSessionContext;
+      return buildMatchmakingToolkitEnv(args, c);
+    },
   };
 
   const registry = createAgentRegistry();
@@ -384,9 +425,32 @@ export async function runMatchmakingSession(options?: {
 
       const session = registry.createSession(identity.agentId, {
         hooks: {
-          onBeforeRun: async () => {},
+          onBeforeRun: async ({ agent }) => {
+            const sc = agent.staticContext as Record<string, unknown>;
+            const subjectId =
+              typeof sc.subjectId === "string" && sc.subjectId.length > 0
+                ? sc.subjectId
+                : resolveMatchmakingSubjectId();
+            const personaSlug = typeof sc.personaSlug === "string" ? sc.personaSlug : "unknown";
+            const memoryNamespace =
+              typeof sc.memoryNamespace === "string" && sc.memoryNamespace.length > 0
+                ? sc.memoryNamespace
+                : typeof sc.targetNamespace === "string"
+                  ? sc.targetNamespace
+                  : "";
+            const ctxVersion = typeof sc.contextVersion === "number" ? sc.contextVersion : 0;
+            const h = await computeInvocationContextHash({
+              subjectId,
+              personaSlug,
+              memoryNamespace,
+              contextVersion: ctxVersion,
+            });
+            if (h !== undefined) {
+              sessionCtx.invocationHashByAgentId.set(agent.agentId, h);
+            }
+          },
           onAfterRun: async ({ agent, output }) => {
-            const generation = output as ObpNegotiatorGeneration;
+            const { generation } = output as ObpNegotiatorSessionOutput;
             const partyId = obpPartyIdByAgentId.get(agent.agentId);
             if (partyId !== undefined) {
               await mirrorGenerationToThread({
@@ -406,7 +470,12 @@ export async function runMatchmakingSession(options?: {
             if (devLog !== undefined) {
               const textBlocks = collectAssistantTextBlocks(generation);
               if (textBlocks.length > 0) {
-                devLog.append(`round ${round} · ${agent.name}`, textBlocks.join("\n\n"));
+                const inv = sessionCtx.invocationHashByAgentId.get(agent.agentId);
+                const line =
+                  inv !== undefined
+                    ? `${textBlocks.join("\n\n")}\n\n[invocationHash: ${inv}]`
+                    : textBlocks.join("\n\n");
+                devLog.append(`round ${round} · ${agent.name}`, line);
               }
             }
           },
@@ -414,7 +483,7 @@ export async function runMatchmakingSession(options?: {
         },
       });
 
-      const generation = (await session.start(turnInput)) as ObpNegotiatorGeneration;
+      const { generation } = (await session.start(turnInput)) as ObpNegotiatorSessionOutput;
 
       const endFromHooks = negotiationEndSignal.current;
       const endFromGeneration = negotiationEndPayloadFromGeneration(generation);

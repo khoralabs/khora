@@ -7,11 +7,7 @@ import { matchmakingPersonas } from "../personas/index.ts";
 import type { MatchmakingPersona } from "../personas/types.ts";
 import type { MatchmakingMemoriesBundle } from "./create-memories-bundle.ts";
 import type { MeetingSeedPayload } from "./meeting-seed-payload.ts";
-import {
-  jsonlStorePathForNamespace,
-  resolveMemoriesRoot,
-  rewriteNamespaceJsonlFromPersistence,
-} from "./persisted-memories.ts";
+import { matchmakingSeedMemoryKey } from "./persisted-memories.ts";
 
 const SEED_MEMORY_SEARCH_BUDGET_MAX = 3;
 
@@ -22,8 +18,10 @@ export async function seedPersonaMemoryNamespace(args: {
   embeddingModel: EmbeddingModel;
   namespace: string;
   seeds: readonly MeetingSeedPayload[];
+  /** When true, skip adapter/integrator for slots that already have a memory at {@link matchmakingSeedMemoryKey}. */
+  skipExistingSlots?: boolean;
 }): Promise<void> {
-  const { bundle, chatModel, embeddingModel, namespace, seeds } = args;
+  const { bundle, chatModel, embeddingModel, namespace, seeds, skipExistingSlots } = args;
   const adapterClient = new MemoryAdapterClient({
     identityContext: { app: "obp-demo", product: "matchmaking-seed" },
     namespace,
@@ -35,6 +33,13 @@ export async function seedPersonaMemoryNamespace(args: {
   for (let index = 0; index < seeds.length; index++) {
     const payload = seeds[index];
     if (payload === undefined) {
+      continue;
+    }
+    const slotKey = matchmakingSeedMemoryKey(index);
+    if (
+      skipExistingSlots === true &&
+      bundle.persistence.findMemoryIdByKey(namespace, slotKey) !== undefined
+    ) {
       continue;
     }
     const { draft } = await adapterClient.expand({
@@ -49,8 +54,10 @@ export async function seedPersonaMemoryNamespace(args: {
       overrides: { registry: createAgentRegistry() },
     });
 
-    const key = `seed-${index}`;
-    const logicalMemory = expandedDraftToLogicalMemoryInput(draft, namespace, key);
+    const logicalMemory = {
+      ...expandedDraftToLogicalMemoryInput(draft, namespace, slotKey),
+      key: slotKey,
+    };
     await processLogicalMemoryWithIntegrator({
       client: bundle.client,
       logicalMemory,
@@ -66,18 +73,20 @@ export async function seedPersonaMemoryNamespace(args: {
 }
 
 /**
- * Seeds every registered persona in {@link matchmakingPersonas} into SQLite and rewrites each namespace JSONL from persistence.
+ * Seeds every registered persona in {@link matchmakingPersonas} into SQLite.
+ * JSONL under the memories root is updated incrementally via {@link MatchmakingMemoriesBundle}
+ * (always created with {@code createMatchmakingMemoriesBundle(dbPath, { memoriesRoot })} so lexical mirror paths exist).
  */
 export async function seedAllMatchmakingPersonaMemories(args: {
   bundle: MatchmakingMemoriesBundle;
   chatModel: LanguageModel;
   embeddingModel: EmbeddingModel;
   personas?: readonly MatchmakingPersona[];
-  memoriesRoot?: string;
+  /** When true, skip LLM work for seed slots that already exist (repair partial runs). */
+  skipExistingSlots?: boolean;
 }): Promise<void> {
   const personas = args.personas ?? (Object.values(matchmakingPersonas) as MatchmakingPersona[]);
-  const memoriesRoot = args.memoriesRoot ?? resolveMemoriesRoot();
-  const { bundle, chatModel, embeddingModel } = args;
+  const { bundle, chatModel, embeddingModel, skipExistingSlots } = args;
   for (const p of personas) {
     await seedPersonaMemoryNamespace({
       bundle,
@@ -85,14 +94,8 @@ export async function seedAllMatchmakingPersonaMemories(args: {
       embeddingModel,
       namespace: p.memoryNamespace,
       seeds: p.memorySeeds,
+      skipExistingSlots,
     });
-  }
-  for (const p of personas) {
-    rewriteNamespaceJsonlFromPersistence(
-      bundle,
-      p.memoryNamespace,
-      jsonlStorePathForNamespace(memoriesRoot, p.memoryNamespace),
-    );
   }
 }
 
@@ -105,8 +108,16 @@ export async function seedMatchmakingPersonas(args: {
   embeddingModel: EmbeddingModel;
   partyMemoryNamespaces: readonly [string, string];
   personaSeeds: readonly [MeetingSeedPayload[], MeetingSeedPayload[]];
+  skipExistingSlots?: boolean;
 }): Promise<void> {
-  const { bundle, chatModel, embeddingModel, partyMemoryNamespaces, personaSeeds } = args;
+  const {
+    bundle,
+    chatModel,
+    embeddingModel,
+    partyMemoryNamespaces,
+    personaSeeds,
+    skipExistingSlots,
+  } = args;
   const [nsA, nsB] = partyMemoryNamespaces;
   const [seedsA, seedsB] = personaSeeds;
   await seedPersonaMemoryNamespace({
@@ -115,6 +126,7 @@ export async function seedMatchmakingPersonas(args: {
     embeddingModel,
     namespace: nsA,
     seeds: seedsA,
+    skipExistingSlots,
   });
   await seedPersonaMemoryNamespace({
     bundle,
@@ -122,5 +134,8 @@ export async function seedMatchmakingPersonas(args: {
     embeddingModel,
     namespace: nsB,
     seeds: seedsB,
+    skipExistingSlots,
   });
 }
+
+export { matchmakingSeedMemoryKey } from "./persisted-memories.ts";

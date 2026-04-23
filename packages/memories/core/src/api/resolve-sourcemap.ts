@@ -1,3 +1,4 @@
+import type { TextFeatureExportRow } from "../persistence/row-schemas.js";
 import type { SourceMap } from "../persistence/rows.js";
 
 /** Subset of {@link SourceMap} sufficient for {@link Store.resolve} and wire interchange. */
@@ -33,6 +34,11 @@ export type ResolvedSourceMapLine = SourceMapRef & ResolvedSourceWire;
 
 export interface Store {
   resolve(sourcemap: SourceMap): Promise<ResolvedSource>;
+  /**
+   * When implemented (e.g. {@code JsonlStore}), called after {@link MemoriesClient.mergeMemory} to mirror
+   * lexical rows keyed like {@link SourceMap} addresses into a file-backed store.
+   */
+  syncFromTextExportRows?(rows: readonly TextFeatureExportRow[]): void;
 }
 
 export async function resolveSourcemap(

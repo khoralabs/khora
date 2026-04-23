@@ -26,3 +26,4 @@ export type {
   SourceMapRef,
 } from "./model/types";
 export type { ObpPersistence } from "./persistence-types";
+export { type CompletedDeal, resolveCompletedDeal } from "./resolve-completed-deal";

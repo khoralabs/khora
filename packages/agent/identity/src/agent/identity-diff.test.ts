@@ -48,7 +48,13 @@ describe("diffIdentityLinks", () => {
     };
     const d = diffIdentityLinks(x, { ...x });
     expect(d.changed).toEqual([]);
-    const allFields: IdentityLinkField[] = ["agentId", "agentName", "staticHash", "runtimeHash"];
+    const allFields: IdentityLinkField[] = [
+      "agentId",
+      "agentName",
+      "staticHash",
+      "runtimeHash",
+      "invocationHash",
+    ];
     expect([...d.unchanged].sort()).toEqual([...allFields].sort());
   });
 
@@ -104,5 +110,14 @@ describe("explainIdentityLinkRelationship", () => {
         staticHash: "s2",
       }),
     ).toContain("static identity");
+  });
+
+  test("same static and runtime but different invocationHash", () => {
+    expect(
+      explainIdentityLinkRelationship(base(), {
+        ...base(),
+        invocationHash: "i2",
+      }),
+    ).toContain("invocation context");
   });
 });

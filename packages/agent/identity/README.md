@@ -7,8 +7,9 @@
 - **Composable graph**: `tool`, `toolkit`, `dynamicToolkit`; evaluate with `ToolkitContext` (`env`, optional `namespace` / `agentId` / `agentName`, optional `pipelineHooks` / `inheritedPipelineHooks`).
 - **Pipeline hooks** (not part of static hashes): `onPolicyEvaluated` / `onToolExecuted` via `mergeToolPipelineHooks`. Three levels — `hooks` on `toolkit` / `tool`, plus `ToolkitContext.pipelineHooks` (runtime). Typical merge order: ancestor toolkit → tool → runtime. Member tool policies are usually evaluated once at the parent toolkit (deduped); leaf `tool` hooks for policy run when that tool evaluates a policy not already in the shared `PolicyResultMap`.
 - **Policies**: async gates that prune tools at runtime; policies dedupe by object identity.
-- **Static hash**: bottom-up hash of “what this toolkit can be” (per-tool semantics + structure).
-- **Runtime hash**: hash of enabled tools only, after policies (sorted by tool name).
+- **Template identity (`staticHash` on a registered agent)**: hash of the **root composable** plus **agent-level instruction lines** from `createRegisteredAgentIdentity` — the agent *definition* you ship. `staticContext` is **not** part of this hash; keep default merged context out of the template fingerprint.
+- **Capability runtime (`runtimeHash`)**: hash of **enabled tools only**, after policies (sorted by tool name). Differs from the template when policy or environment changes which tools are in play.
+- **Invocation binding (optional `invocationHash` on an `IdentityLink`)**: a separate SHA-256 over a **host-normalized** plain object (e.g. `subjectId`, `personaSlug`, policy bundle id) via `computeInvocationContextHash` / `createIdentityLink` — the *run* or *tenant* slice without stuffing those fields into `staticInstructions` just to change hashes. Omit when you do not need binding-level lineage.
 - **Zero runtime dependencies** (`dependencies` is empty). **[Standard Schema](https://standardschema.dev)** `inputSchema`; hashed canonically (e.g. `toJSONSchema()` when present).
 
 This is **not** end-user authentication. `agentId` / `name` on `RegisteredAgentIdentity` are **your** labels for telemetry or storage.
@@ -44,10 +45,14 @@ const search = tool({
 
 const root = toolkit([search], { name: "my-agent-tools" });
 
-const { runtimeHash, toolRefs, evaluatedTools } =
+const { runtimeHash, toolRefs, evaluatedTools, nameToStaticHash } =
   await computeRuntimeIdentityFromEvaluation(root, {
     env: { userTier: "pro" },
   });
+// Build an IdentityLink (optional invocation):
+//   await createIdentityLink({ agent, enabledToolNames: Object.keys(evaluatedTools),
+//     nameToStaticHash, tools: evaluatedTools, invocationContext: { subjectId: "…" } });
+// Or use computeFullIdentityLink({ agent, ctx, invocationContext: { … } }).
 ```
 
 Lower-level pieces: `collectToolStaticHashes(root)` → map of tool name → leaf hash; `evaluateComposable(root, ctx)` → tools; then `computeRuntimeHash(enabledNames, map, tools)` or `resolveRuntimeToolRefs(...)`.
@@ -84,17 +89,22 @@ Grouped by role; full exports (including types like `ToolSpec`, `Composable`, `I
 ### Hashing and runtime snapshot
 
 - `collectToolStaticHashes` / `computeRuntimeHash` / `resolveRuntimeToolRefs`
-- `computeRuntimeIdentityFromEvaluation` — one-shot evaluate + static map + runtime hash + `toolRefs` + `evaluatedTools`
+- `computeRuntimeIdentityFromEvaluation` — one-shot evaluate + `nameToStaticHash` + runtime hash + `toolRefs` + `evaluatedTools`
 - `hashToolSpecIdentity` — dynamic-only / fallback tool identity
 - `hashPlainObject` / `schemaToHashInput`
 
+### Invocation (binding lineage, optional)
+
+- `normalizeInvocationContextForHash` / `invocationContextCanonicalPayload` / `computeInvocationContextHash`
+- `computeFullIdentityLink` — evaluate the agent’s root + `createIdentityLink` in one call (optional `invocationContext`)
+
 ### Canonical payloads (debug / UI)
 
-- `runtimeIdentityCanonicalPayload` / `toolSpecCanonicalPayload`
+- `runtimeIdentityCanonicalPayload` / `toolSpecCanonicalPayload` (invocation: `invocationContextCanonicalPayload`)
 
 ### Agent label + link
 
-- `createRegisteredAgentIdentity` / `createIdentityLink`
+- `createRegisteredAgentIdentity` / `createIdentityLink` (optional `invocationContext` / `invocationContextAllowlist`)
 
 ### Dashboard-style helpers
 
@@ -115,6 +125,8 @@ Grouped by role; full exports (including types like `ToolSpec`, `Composable`, `I
 ## Mapping to persistence
 
 This package only computes hashes and payloads. A database may add its own ids (`registrationId`, `toolVersionId`, etc.). In this repo, see `packages/backend/convex/_components/identity/schema.ts`. Those ids are **not** emitted here.
+
+**What to store:** for correlation, you typically persist `staticHash`, `runtimeHash`, and optionally `invocationHash` from `IdentityLink` together with a JSON-safe snapshot of **tool affordances** and, if you need forensics, the **same** `invocationContext` object you hashed (or a host-defined `metadata` document); see `AgentSnapshotEnvelope` in the snapshot types. The Smithy `identity-spec` model describes optional rows (`IdentityLinkRow`, transitions) for backends — not implemented in this package.
 
 ## Examples
 

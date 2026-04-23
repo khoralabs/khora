@@ -86,12 +86,13 @@ export async function computeRuntimeIdentityFromEvaluation<
   runtimeHash: string;
   toolRefs: Array<{ toolKey: string; toolHash: string }>;
   evaluatedTools: Tools;
+  nameToStaticHash: Map<string, string>;
 }> {
   const nameToStaticHash = await collectToolStaticHashes(root);
   const { tools } = await root.evaluate(ctx);
   const toolRefs = await resolveRuntimeToolRefs(Object.keys(tools), nameToStaticHash, tools);
   const runtimeHash = await hashPlainObject(runtimeIdentityCanonicalPayload(toolRefs));
-  return { runtimeHash, toolRefs, evaluatedTools: tools };
+  return { runtimeHash, toolRefs, evaluatedTools: tools, nameToStaticHash };
 }
 
 /**

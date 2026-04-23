@@ -71,7 +71,11 @@ const server = Bun.serve({
           const scenario = await buildIntroRequestScenarioPair(reqS, recS, {
             invitationMessage: parsed.data.message,
           });
-          const result = await runMatchmakingSession({ scenario, threadDevLog: threadDev });
+          const result = await runMatchmakingSession({
+            scenario,
+            threadDevLog: threadDev,
+            runId,
+          });
           appendDoneEvent(runId, result);
         } catch (e) {
           appendDoneEvent(runId, {

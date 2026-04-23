@@ -7,6 +7,7 @@ export {
   openMemoriesDatabase,
   openMemoriesDatabaseReadonly,
 } from "./connection";
+export { listMemoryNamespaces } from "./models/list-memory-namespaces";
 export { buildNamespaceGraphLayout } from "./graph/build-namespace-graph-layout";
 export {
   LABEL_PROPERTY_SYNTH_DIM,

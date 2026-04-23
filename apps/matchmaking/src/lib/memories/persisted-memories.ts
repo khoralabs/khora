@@ -1,13 +1,17 @@
-import type { Database } from "bun:sqlite";
-import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { JsonlStore } from "@cfd/memories-stores";
+import { join } from "node:path";
 import type { MatchmakingScenario } from "../scenarios/matchmaking-scenario.ts";
 import type { MatchmakingMemoriesBundle } from "./create-memories-bundle.ts";
 
+export { jsonlStorePathForNamespace } from "./jsonl-path.ts";
+
+/** Stable memory key for persona seed slot `index` (must match seed pipeline). */
+export function matchmakingSeedMemoryKey(index: number): string {
+  return `seed-${index}`;
+}
+
 /** Root directory for matchmaking memories (SQLite + per-namespace JSONL). */
 export function resolveMemoriesRoot(): string {
-  const fromEnv = process.env.MEMORIES_ROOT?.trim();
+  const fromEnv = process.env.MEMORIES_DIR?.trim();
   if (fromEnv) return fromEnv;
   return join(process.cwd(), ".memories");
 }
@@ -19,73 +23,38 @@ export function resolveMemoriesDbPath(memoriesRoot = resolveMemoriesRoot()): str
   return join(memoriesRoot, "memories.sqlite");
 }
 
-/**
- * JSONL store path for one namespace (mirrors CLI `-s` file layout; one store per namespace directory).
- * Example: `{root}/namespaces/obp_demo/matchmaking/personas/p1/store.jsonl`
- */
-export function jsonlStorePathForNamespace(memoriesRoot: string, namespace: string): string {
-  return join(memoriesRoot, "namespaces", ...namespace.split("/").filter(Boolean), "store.jsonl");
-}
-
-export function countMemoriesInNamespace(db: Database, namespace: string): number {
-  const row = db
-    .query<{ c: number }, [string]>(`SELECT COUNT(*) AS c FROM memories WHERE namespace = ?`)
-    .get(namespace);
-  return row?.c ?? 0;
-}
-
-function listMemoryIdsInNamespace(db: Database, namespace: string): string[] {
-  return db
-    .query<{ _id: string }, [string]>(`SELECT _id FROM memories WHERE namespace = ?`)
-    .all(namespace)
-    .map((r) => r._id);
-}
-
-/**
- * Rewrites the namespace JSONL file from SQLite (lexical text export rows), same data shape as CLI
- * {@link JsonlStore.syncFromTextExportRows}.
- */
-export function rewriteNamespaceJsonlFromPersistence(
+/** True when every seed slot `seed-0` … `seed-(n-1)` exists in the namespace. */
+export function namespaceSeedSlotsSatisfied(
   bundle: MatchmakingMemoriesBundle,
   namespace: string,
-  storePath: string,
-): void {
-  mkdirSync(dirname(storePath), { recursive: true });
-  writeFileSync(storePath, "", "utf8");
-  const store = new JsonlStore(storePath);
-  for (const memoryId of listMemoryIdsInNamespace(bundle.db, namespace)) {
-    store.syncFromTextExportRows(bundle.persistence.listTextFeatureExportRowsForMemory(memoryId));
+  seedCount: number,
+): boolean {
+  if (seedCount <= 0) {
+    return true;
   }
+  for (let i = 0; i < seedCount; i++) {
+    if (
+      bundle.persistence.findMemoryIdByKey(namespace, matchmakingSeedMemoryKey(i)) === undefined
+    ) {
+      return false;
+    }
+  }
+  return true;
 }
 
-/** True when both namespaces already hold at least the seeded persona counts (cheap reuse across runs). */
-export function personaMemoriesAlreadySeeded(
+/** True when both party namespaces have all persona seed slots present. */
+export function scenarioPersonaSeedSlotsSatisfied(
   bundle: MatchmakingMemoriesBundle,
   scenario: MatchmakingScenario,
-  partyAMemoryNs: string,
-  partyBMemoryNs: string,
 ): boolean {
+  const [nsA, nsB] = scenario.partyMemoryNamespaces;
   const [seedsA, seedsB] = scenario.personaSeeds;
-  const reqN = seedsA.length;
-  const recN = seedsB.length;
-  if (reqN === 0 || recN === 0) return false;
   return (
-    countMemoriesInNamespace(bundle.db, partyAMemoryNs) >= reqN &&
-    countMemoriesInNamespace(bundle.db, partyBMemoryNs) >= recN
+    namespaceSeedSlotsSatisfied(bundle, nsA, seedsA.length) &&
+    namespaceSeedSlotsSatisfied(bundle, nsB, seedsB.length)
   );
 }
 
 export function shouldForceMemoriesReseed(): boolean {
   return process.env.OBP_DEMO_FORCE_MEMORIES_RESEED === "1";
-}
-
-export function syncMatchmakingScenarioJsonlStores(args: {
-  bundle: MatchmakingMemoriesBundle;
-  memoriesRoot: string;
-  partyMemoryNamespaces: readonly [string, string];
-}): void {
-  const { bundle, memoriesRoot, partyMemoryNamespaces } = args;
-  const [nsA, nsB] = partyMemoryNamespaces;
-  rewriteNamespaceJsonlFromPersistence(bundle, nsA, jsonlStorePathForNamespace(memoriesRoot, nsA));
-  rewriteNamespaceJsonlFromPersistence(bundle, nsB, jsonlStorePathForNamespace(memoriesRoot, nsB));
 }

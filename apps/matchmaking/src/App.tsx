@@ -31,6 +31,7 @@ type PersonaPublicDto = {
   slug: string;
   name: string;
   agentId: string;
+  subjectId: string;
   memoryNamespace: string;
   profile: { tagline: string; about: string };
 };
@@ -188,6 +189,7 @@ export function App() {
             </Button>
             <div>
               <h2 className="text-2xl font-semibold">{selected.name}</h2>
+              <p className="text-muted-foreground mt-1 text-xs">Subject id: {selected.subjectId}</p>
               <p className="text-muted-foreground mt-2 text-sm">{selected.profile.tagline}</p>
               <p className="mt-4 text-sm leading-relaxed">{selected.profile.about}</p>
             </div>

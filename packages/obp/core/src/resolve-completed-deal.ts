@@ -1,4 +1,5 @@
-import type { ObpClient, ObpPersistence } from "@cfd/obp-core";
+import type { ObpClient } from "./client";
+import type { ObpPersistence } from "./persistence-types";
 
 export type CompletedDeal = {
   offerId: string;

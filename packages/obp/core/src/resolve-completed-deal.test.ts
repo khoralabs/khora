@@ -1,8 +1,8 @@
 import { Database } from "bun:sqlite";
 import { expect, test } from "bun:test";
-import { ObpClient } from "@cfd/obp-core";
 import { createObpSqlitePersistence, OBP_SCHEMA_SQL } from "@cfd/obp-sqlite";
-import { resolveCompletedDeal } from "./deal-detection.ts";
+import { ObpClient } from "./client";
+import { resolveCompletedDeal } from "./resolve-completed-deal";
 
 test("resolveCompletedDeal finds terminal bind on provider offer", () => {
   const db = new Database(":memory:");

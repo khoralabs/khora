@@ -29,12 +29,15 @@ describe("computeRuntimeIdentityFromEvaluation", () => {
     });
     const graph = toolkit([t], { name: "root" });
     const ctx = { env: {} };
-    const { runtimeHash, toolRefs, evaluatedTools } = await computeRuntimeIdentityFromEvaluation(
-      graph,
-      ctx,
-    );
+    const {
+      runtimeHash,
+      toolRefs,
+      evaluatedTools,
+      nameToStaticHash: fromEval,
+    } = await computeRuntimeIdentityFromEvaluation(graph, ctx);
 
     const nameToStaticHash = await collectToolStaticHashes(graph);
+    expect([...fromEval.entries()].sort()).toEqual([...nameToStaticHash.entries()].sort());
     const evaluated = await evaluateComposable(graph, ctx);
     expect(Object.keys(evaluated.tools).sort()).toEqual(Object.keys(evaluatedTools).sort());
 

@@ -1,4 +1,4 @@
-import type { ObpNegotiatorGeneration } from "@cfd/obp-negotiator";
+import type { ObpNegotiatorGeneration } from "./create-negotiator-agent.ts";
 
 export type NegotiationEndPayload = { reason?: string };
 

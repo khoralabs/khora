@@ -3,7 +3,7 @@ import { collectToolStaticHashes, computeRuntimeHash } from "../hashing/runtime-
 import type { StandardSchemaV1 } from "../standard-schema.js";
 import { tool } from "../tool/tool.js";
 import { evaluateComposable, toolkit } from "../toolkit/toolkit.js";
-import { createIdentityLink } from "./identity-link.js";
+import { computeFullIdentityLink, createIdentityLink } from "./identity-link.js";
 import { createRegisteredAgentIdentity } from "./registered-agent.js";
 
 const schema: StandardSchemaV1<{ n: number }> = {
@@ -48,6 +48,61 @@ describe("createIdentityLink", () => {
     expect(link.staticHash).toMatch(/^[a-f0-9]{64}$/);
     expect(link.runtimeHash).toMatch(/^[a-f0-9]{64}$/);
     expect(link.runtimeHash).toBe(runtimeHash);
+    expect(link.invocationHash).toBeUndefined();
+  });
+
+  test("sets invocationHash when invocationContext is non-empty", async () => {
+    const t = tool({
+      name: "t",
+      inputSchema: schema,
+      handler: async () => 0,
+    });
+    const graph = toolkit([t], { name: "root" });
+    const { identity: agent } = await createRegisteredAgentIdentity({
+      agentId: "a",
+      name: "Agent",
+      instructions: [],
+      rootComposable: graph,
+    });
+    const evaluated = await evaluateComposable(graph, { env: {} });
+    const nameToStaticHash = await collectToolStaticHashes(graph);
+    const link = await createIdentityLink({
+      agent,
+      enabledToolNames: Object.keys(evaluated.tools),
+      nameToStaticHash,
+      tools: evaluated.tools,
+      invocationContext: { subjectId: "s1" },
+    });
+    expect(link.invocationHash).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  test("computeFullIdentityLink returns link with same runtime as computeRuntimeHash", async () => {
+    const t = tool({
+      name: "t",
+      inputSchema: schema,
+      handler: async () => 0,
+    });
+    const graph = toolkit([t], { name: "root" });
+    const { identity: agent } = await createRegisteredAgentIdentity({
+      agentId: "a",
+      name: "Agent",
+      instructions: [],
+      rootComposable: graph,
+    });
+    const { link, runtimeHash, evaluatedTools } = await computeFullIdentityLink({
+      agent,
+      ctx: { env: {} },
+      invocationContext: { n: 1 },
+    });
+    const nameToStaticHash = await collectToolStaticHashes(graph);
+    const expected = await computeRuntimeHash(
+      Object.keys(evaluatedTools),
+      nameToStaticHash,
+      evaluatedTools,
+    );
+    expect(link.runtimeHash).toBe(expected);
+    expect(link.runtimeHash).toBe(runtimeHash);
+    expect(link.invocationHash).toBeDefined();
   });
 
   test("runtime hash differs for empty vs non-empty enabled tools", async () => {

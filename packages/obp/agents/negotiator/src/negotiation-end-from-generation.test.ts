@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import type { ObpNegotiatorGeneration } from "@cfd/obp-negotiator";
+import type { ObpNegotiatorGeneration } from "./create-negotiator-agent.ts";
 import { negotiationEndPayloadFromGeneration } from "./negotiation-end-from-generation.ts";
 
 test("negotiationEndPayloadFromGeneration reads successful obp_end_negotiation", () => {

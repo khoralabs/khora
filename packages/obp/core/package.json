@@ -20,6 +20,7 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@cfd/obp-sqlite": "workspace:*",
     "@types/bun": "latest"
   },
   "peerDependencies": {

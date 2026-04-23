@@ -1,17 +1,23 @@
-import {
-  createAgentRegistry,
-  type RegisteredAgentIdentity,
-  type SessionContext,
-  type ToolPipelineHooks,
-} from "@cfd/agent-identity";
+import { createAgentRegistry, type SessionContext, type ToolPipelineHooks } from "@cfd/agent-identity";
 import {
   formatThreadForPlaintext,
   InMemoryThreadContext,
   mirrorGenerationToThread,
 } from "@cfd/agent-thread";
-import type { ObpClient, ObpPersistence } from "@cfd/obp-core";
-import { createObpNegotiatorAgent, type ObpNegotiatorGeneration } from "@cfd/obp-negotiator";
 import {
+  type CompletedDeal,
+  type ObpClient,
+  type ObpPersistence,
+  resolveCompletedDeal,
+} from "@cfd/obp-core";
+import {
+  createObpNegotiatorSessionRunner,
+  type ObpNegotiatorGeneration,
+  negotiationEndPayloadFromGeneration,
+  type ObpNegotiatorSessionOutput,
+} from "@cfd/obp-negotiator";
+import {
+  agentSourcemaps,
   captureNegotiationEndFromToolExecuted,
   computeNegotiationContext,
   isDynamicBindToolName,
@@ -19,7 +25,6 @@ import {
 } from "@cfd/obp-tools";
 import type { LanguageModel } from "ai";
 import type { Logger } from "pino";
-import { type CompletedDeal, resolveCompletedDeal } from "../deal-detection.ts";
 import {
   appendTextTranscriptTurn,
   createRunLogger,
@@ -27,11 +32,9 @@ import {
   textTranscriptPathFromJsonl,
 } from "../logger.ts";
 import { createDemoStack } from "../obp/demoPersistence.ts";
-import { agentSourcemaps } from "../obp/sourcemaps.ts";
 import { buildDefaultNegotiationScenario, type NegotiationScenario } from "../scenarios/index.ts";
 import { getNegotiationModel } from "./env.ts";
 import { buildUserMessage } from "./messages.ts";
-import { negotiationEndPayloadFromGeneration } from "./negotiation-end-from-generation.ts";
 import { logGeneration, logObserverHeader, logRoundSummary } from "./observer.ts";
 
 export type LlmNegotiationResult =
@@ -63,9 +66,12 @@ export type NegotiationSessionContext = SessionContext & {
   obpPartyIdByAgentId: Map<string, string>;
   toolPipelineHooks?: ToolPipelineHooks;
   negotiationEndSignal: { current: { reason?: string } | null };
+  resolveEnv: import("@cfd/obp-negotiator").ObpNegotiatorResolveEnv;
+  systemInstructions?: string;
+  defaultMaxSteps?: number;
 };
 
-export { type CompletedDeal, resolveCompletedDeal };
+export { type CompletedDeal, resolveCompletedDeal } from "@cfd/obp-core";
 
 function countToolCallsInGeneration(generation: ObpNegotiatorGeneration): number {
   let n = 0;
@@ -78,57 +84,7 @@ function countToolCallsInGeneration(generation: ObpNegotiatorGeneration): number
   return n;
 }
 
-export async function negotiationTurnRunner(args: {
-  agent: RegisteredAgentIdentity;
-  input: unknown;
-  context: SessionContext;
-}): Promise<ObpNegotiatorGeneration> {
-  const ctx = args.context as NegotiationSessionContext;
-  const prompt = (args.input as NegotiationTurnInput).prompt;
-  const actingPartyId = ctx.obpPartyIdByAgentId.get(args.agent.agentId);
-  if (actingPartyId === undefined) {
-    throw new Error(`no OBP party id for agent ${args.agent.agentId}`);
-  }
-
-  const validateBind: ObpToolkitEnv["validateBind"] = async (v) => {
-    if (v.actingPartyId !== ctx.buyerPartyId) {
-      throw new Error("obp_bind: only the buyer may bind");
-    }
-    if (v.offerOwnerPartyId !== ctx.providerPartyId) {
-      throw new Error("obp_bind: must bind to the provider's offer");
-    }
-  };
-
-  const negotiationToolContext = await computeNegotiationContext({
-    client: ctx.client,
-    persistence: ctx.persistence,
-    actingPartyId,
-    now: ctx.now(),
-    validateBind,
-  });
-
-  const env: ObpToolkitEnv = {
-    client: ctx.client,
-    now: ctx.now,
-    actingPartyId,
-    validateBind,
-    negotiationToolContext,
-    requestNegotiationEnd: (args) => {
-      ctx.negotiationEndSignal.current = args;
-    },
-  };
-
-  const toolLoop = await createObpNegotiatorAgent({
-    model: ctx.model,
-    identity: args.agent,
-    env,
-    systemInstructions: "",
-    maxSteps: 8,
-    toolPipelineHooks: ctx.toolPipelineHooks,
-  });
-
-  return toolLoop.generate({ prompt });
-}
+export const negotiationTurnRunner = createObpNegotiatorSessionRunner();
 
 function summarizeGeneration(generation: ObpNegotiatorGeneration): Record<string, unknown> {
   return {
@@ -245,6 +201,43 @@ export async function runLlmNegotiation(options?: {
     obpPartyIdByAgentId,
     toolPipelineHooks,
     negotiationEndSignal,
+    systemInstructions: "",
+    defaultMaxSteps: 8,
+    async resolveEnv({ agent, context: c }) {
+      const ctx = c as NegotiationSessionContext;
+      const actingPartyId = ctx.obpPartyIdByAgentId.get(agent.agentId);
+      if (actingPartyId === undefined) {
+        throw new Error(`no OBP party id for agent ${agent.agentId}`);
+      }
+
+      const validateBind: ObpToolkitEnv["validateBind"] = async (v) => {
+        if (v.actingPartyId !== ctx.buyerPartyId) {
+          throw new Error("obp_bind: only the buyer may bind");
+        }
+        if (v.offerOwnerPartyId !== ctx.providerPartyId) {
+          throw new Error("obp_bind: must bind to the provider's offer");
+        }
+      };
+
+      const negotiationToolContext = await computeNegotiationContext({
+        client: ctx.client,
+        persistence: ctx.persistence,
+        actingPartyId,
+        now: ctx.now(),
+        validateBind,
+      });
+
+      return {
+        client: ctx.client,
+        now: ctx.now,
+        actingPartyId,
+        validateBind,
+        negotiationToolContext,
+        requestNegotiationEnd: (a) => {
+          ctx.negotiationEndSignal.current = a;
+        },
+      };
+    },
   };
 
   const registry = createAgentRegistry();
@@ -307,7 +300,7 @@ export async function runLlmNegotiation(options?: {
             });
           },
           onAfterRun: async ({ agent, output }) => {
-            const generation = output as ObpNegotiatorGeneration;
+            const { generation } = output as ObpNegotiatorSessionOutput;
             const partyId = obpPartyIdByAgentId.get(agent.agentId);
             if (partyId !== undefined) {
               await mirrorGenerationToThread({
@@ -342,7 +335,7 @@ export async function runLlmNegotiation(options?: {
         },
       });
 
-      const generation = (await session.start(turnInput)) as ObpNegotiatorGeneration;
+      const { generation } = (await session.start(turnInput)) as ObpNegotiatorSessionOutput;
 
       const toolCallCount = countToolCallsInGeneration(generation);
       if (process.env.OBP_DEMO_OBSERVER_CONSOLE === "1") {

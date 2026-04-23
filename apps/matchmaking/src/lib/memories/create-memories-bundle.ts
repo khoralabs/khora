@@ -7,6 +7,17 @@ import {
   canonicalOntology,
 } from "@cfd/memories-core/ontologies";
 import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-sqlite";
+import { JsonlStore } from "@cfd/memories-stores";
+
+import { jsonlStorePathForNamespace } from "./jsonl-path.ts";
+
+export type MatchmakingMemoriesBundleOptions = {
+  /**
+   * Root directory for lexical JSONL mirrors (one `store.jsonl` per namespace under
+   * `namespaces/...`). Required: matchmaking always wires {@link JsonlStore} for inspection and replay.
+   */
+  memoriesRoot: string;
+};
 
 export type MatchmakingMemoriesBundle = {
   db: Database;
@@ -27,12 +38,18 @@ function ensureParentDirForDb(filePath: string): void {
   }
 }
 
-export function createMatchmakingMemoriesBundle(dbPath: string): MatchmakingMemoriesBundle {
+export function createMatchmakingMemoriesBundle(
+  dbPath: string,
+  options: MatchmakingMemoriesBundleOptions,
+): MatchmakingMemoriesBundle {
   ensureParentDirForDb(dbPath);
   const db = openMemoriesDatabase(dbPath);
   const persistence = createMemoriesPersistence(db, {
     labelPropsSearchFormatter: canonicalLabelPropsSearchFormatter,
   });
-  const client = new MemoriesClient(persistence, canonicalOntology);
+  const { memoriesRoot } = options;
+  const client = new MemoriesClient(persistence, canonicalOntology, {
+    storeForNamespace: (ns) => new JsonlStore(jsonlStorePathForNamespace(memoriesRoot, ns)),
+  });
   return { db, persistence, client };
 }

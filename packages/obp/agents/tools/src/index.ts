@@ -1,3 +1,4 @@
+export { agentSourcemaps } from "./agent-party-sourcemaps.ts";
 export { executeObpBind } from "./bind-execution.ts";
 export { type ObpBindPortInput, obpBindPortTool, zObpBindPortInput } from "./bind-port-tool.ts";
 export { parsePriceFromType } from "./encoding.ts";

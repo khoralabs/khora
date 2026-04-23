@@ -83,7 +83,7 @@ function buildDynamicMembers(env: ObpToolkitEnv): AnyComposable<ObpToolkitEnv>[]
 /**
  * Per-turn bind/revoke tools from {@link ObpToolkitEnv.negotiationToolContext}.
  */
-export const obpNegotiationDynamicToolkit = dynamicToolkit({
+export const obpNegotiationDynamicToolkit = dynamicToolkit<"obp-negotiation-dynamic", ObpToolkitEnv>({
   name: "obp-negotiation-dynamic",
   instructions: [
     "Contextual tools whose names start with obp_bind__ / obp_revoke_port__ / obp_revoke_offer__: use these for concrete commitments or to expire your own offers/ports. Descriptions identify each option.",

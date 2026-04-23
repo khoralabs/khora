@@ -100,7 +100,7 @@ export class JsonlStore implements Store {
   }
 
   /** Append rows from {@link TextFeatureExportRow} (e.g. from persistence `listTextFeatureExportRowsForMemory`). */
-  syncFromTextExportRows(rows: TextFeatureExportRow[]): void {
+  syncFromTextExportRows(rows: readonly TextFeatureExportRow[]): void {
     for (const row of rows) {
       this.appendStringEntry(row.memory_id, row.source_key, row.text);
     }

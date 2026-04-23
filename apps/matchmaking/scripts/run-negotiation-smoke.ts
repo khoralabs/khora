@@ -1,7 +1,11 @@
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { runMatchmakingSession } from "../src/lib/llm/session.ts";
-import { textTranscriptPathFromJsonl } from "../src/lib/matchmaking-obp/index.ts";
+import {
+  resolveObpDatabasePath,
+  resolveObpStepsJsonlPath,
+  textTranscriptPathFromJsonl,
+} from "../src/lib/matchmaking-obp/index.ts";
 import {
   jsonlStorePathForNamespace,
   resolveMemoriesDbPath,
@@ -35,7 +39,11 @@ async function main(): Promise<void> {
     jsonlStorePathForNamespace(memoriesRoot, scenario.partyMemoryNamespaces[1]),
   );
 
-  const result = await runMatchmakingSession({ scenario, logFilePath });
+  const runId = crypto.randomUUID();
+  console.log("[negotiation-smoke] OBP SQLite", resolveObpDatabasePath(runId));
+  console.log("[negotiation-smoke] OBP steps JSONL", resolveObpStepsJsonlPath(runId));
+
+  const result = await runMatchmakingSession({ scenario, logFilePath, runId });
   console.log("\n[result]", result);
   if (result.status === "error") {
     process.exitCode = 1;

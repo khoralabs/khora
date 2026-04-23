@@ -1,41 +1,24 @@
 import {
+  MemoriesClient,
   type ResolvedSource,
   searchAsync,
   wrapSyncMemoriesPersistenceAsAsync,
 } from "@cfd/memories-core";
 import { embedTextChunks } from "@cfd/memories-core/helpers";
+import { canonicalOntology } from "@cfd/memories-core/ontologies";
 import { JsonlStore } from "@cfd/memories-stores";
 import { elapsedMs, logger } from "../logger.js";
-import { getCliEmbeddingModel, getMemoriesBundle, type MemoriesCliBundle } from "../shared.js";
+import { getCliEmbeddingModel, getMemoriesBundle } from "../shared.js";
 import type { ParsedSearch } from "./parse-args.js";
 
 const SEARCH_RESOLVE_SOURCE_MAPS_LIMIT = 5;
 const SEARCH_MAX_NEIGHBORS = 5;
 
-async function resolveSourcesForMemory(
-  persistence: MemoriesCliBundle["persistence"],
-  store: JsonlStore,
-  memoryId: string,
-  limit: number,
-): Promise<Array<{ sourceKey: string; content: ResolvedSource | null }>> {
-  const maps = persistence.listSourceMapsForMemory(memoryId, limit);
-  const out: Array<{ sourceKey: string; content: ResolvedSource | null }> = [];
-  for (const sm of maps) {
-    let content: ResolvedSource | null = null;
-    try {
-      content = await store.resolve(sm);
-    } catch {
-      content = null;
-    }
-    out.push({ sourceKey: sm.source_key, content });
-  }
-  return out;
-}
-
 export async function cmdSearch(args: ParsedSearch): Promise<void> {
   const tPipeline = performance.now();
   const { persistence } = getMemoriesBundle(args.db);
   const store = new JsonlStore(args.store);
+  const client = new MemoriesClient(persistence, canonicalOntology, { store });
   const embeddingModel = getCliEmbeddingModel(args.db, args.resolution);
   const tEmbed = performance.now();
   const embeddings = await embedTextChunks(embeddingModel, [args.query ?? ""]);
@@ -80,9 +63,8 @@ export async function cmdSearch(args: ParsedSearch): Promise<void> {
         h.neighbors.map(async (n) => ({
           memoryKey: n.key,
           labels: n.labels,
-          sources: await resolveSourcesForMemory(
-            persistence,
-            store,
+          sources: await client.resolveSourcesForMemory(
+            args.namespace,
             n._id,
             SEARCH_RESOLVE_SOURCE_MAPS_LIMIT,
           ),

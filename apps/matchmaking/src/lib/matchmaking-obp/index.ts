@@ -1,15 +1,24 @@
 /**
- * OBP + Gemini helpers used only by the matchmaking intro flow (`runMatchmakingSession`).
- * Keeps the app free of the full obp-demo negotiation tree.
+ * Matchmaking-only helpers: Gemini negotiation model, plaintext transcript, OBP demo stack.
+ * OBP protocol helpers live in `@cfd/obp-core`, `@cfd/obp-negotiator`, and `@cfd/obp-tools`.
  */
-export { agentSourcemaps } from "./agent-sourcemaps.ts";
-export { createDemoStack, DEMO_CLOCK_MS, type DemoStack } from "./demo-stack.ts";
-export { resolveCompletedDeal, type CompletedDeal } from "./deal-detection.ts";
-export { getNegotiationModel, resolveGeminiApiKey } from "./gemini-model.ts";
 export {
-  negotiationEndPayloadFromGeneration,
-  type NegotiationEndPayload,
-} from "./negotiation-end-from-generation.ts";
+  type CreateDemoStackOptions,
+  createDemoStack,
+  DEMO_CLOCK_MS,
+  type DemoStack,
+} from "./demo-stack.ts";
+export { getNegotiationModel, resolveGeminiApiKey } from "./gemini-model.ts";
+export { createLoggingObpPersistence } from "./obp-persistence-jsonl-log.ts";
+export {
+  ensureObpRunDir,
+  isObpMemoryMode,
+  obpStepLogFromEnv,
+  resolveObpDatabasePath,
+  resolveObpDir,
+  resolveObpSqliteFilename,
+  resolveObpStepsJsonlPath,
+} from "./persisted-obp.ts";
 export {
   appendTextTranscriptInvitation,
   appendTextTranscriptTurn,

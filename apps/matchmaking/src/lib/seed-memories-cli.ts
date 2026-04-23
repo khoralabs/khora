@@ -7,12 +7,17 @@ import { seedAllMatchmakingPersonaMemories } from "./memories/seed-personas.ts";
 async function main(): Promise<void> {
   const memoriesRoot = resolveMemoriesRoot();
   const dbPath = resolveMemoriesDbPath(memoriesRoot);
-  const bundle = createMatchmakingMemoriesBundle(dbPath);
+  const bundle = createMatchmakingMemoriesBundle(dbPath, { memoriesRoot });
   const chatModel = getNegotiationModel();
   const embeddingModel = getMatchmakingEmbeddingModel();
 
   console.log("[seed-memories] SQLite", dbPath);
-  await seedAllMatchmakingPersonaMemories({ bundle, chatModel, embeddingModel, memoriesRoot });
+  await seedAllMatchmakingPersonaMemories({
+    bundle,
+    chatModel,
+    embeddingModel,
+    skipExistingSlots: true,
+  });
   console.log("[seed-memories] done (all registered personas)");
 }
 

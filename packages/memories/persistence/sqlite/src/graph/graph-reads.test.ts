@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { ids, mergeMemory } from "@cfd/memories-core";
-import { createMemoriesPersistence, openMemoriesDatabase } from "../index";
+import { createMemoriesPersistence, listMemoryNamespaces, openMemoriesDatabase } from "../index";
 
 describe("MemoriesGraphIndex per-entity reads", () => {
   test("loadGraphNode matches split loaders; loadGraphEdge; listIncidentGraphEdges", () => {
@@ -44,6 +44,8 @@ describe("MemoriesGraphIndex per-entity reads", () => {
 
     expect(persistence.loadNodePropertiesForMemory("ns", "unknown")).toBeNull();
     expect(persistence.loadGraphNode("ns", "unknown")).toBeNull();
+
+    expect(listMemoryNamespaces(db)).toEqual(["ns"]);
 
     const edges = persistence.loadGraphEdgesForNamespace("ns");
     expect(edges).toHaveLength(1);

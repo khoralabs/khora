@@ -11,7 +11,7 @@ export {
   defineMemoryIntegratorIdentity,
   MEMORY_INTEGRATOR_AGENT_ID,
 } from "./identity.js";
-export { buildMemoryIntegratorBaseInstruction } from "./instructions.js";
+export { memoryIntegratorBaseInstruction } from "./instructions.js";
 export {
   type IntegratorEdgeWire,
   type IntegratorNodeLabelsWire,

@@ -1,7 +1,6 @@
-import { createRegisteredAgentIdentity } from "@cfd/agent-identity";
-import { buildObpNegotiatorAgentId, buildObpNegotiatorBaseInstruction } from "@cfd/obp-negotiator";
-import { obpMatchmakingMemoryToolkit } from "../memories/composed-toolkit.ts";
+import { matchmakingPersonaMemoryNamespace } from "../memories/matchmaking-persona-memory-namespace.ts";
 import type { MeetingSeedPayload } from "../memories/meeting-seed-payload.ts";
+import { createGenericMatchmakingNegotiatorIdentity } from "./generic-matchmaking-negotiator-identity.ts";
 import type { MatchmakingPersona } from "./types.ts";
 
 const memorySeeds: MeetingSeedPayload[] = [
@@ -37,31 +36,20 @@ const memorySeeds: MeetingSeedPayload[] = [
 
 export const matchmakingPersonaP1: MatchmakingPersona = {
   slug: "p1",
+  displayName: "Peer (rollout & proof points)",
   profile: {
     tagline: "Enterprise rollout intros with tight scope and proof points.",
     about:
       "Peers on product and rollout: compares notes, sends narrow invites, and uses past meeting reflections to avoid vague syncs. Good fit when you want a time-boxed technical or GTM conversation—not a broad pitch.",
   },
-  memoryNamespace: "obp_demo/matchmaking/personas/p1",
+  get memoryNamespace() {
+    return matchmakingPersonaMemoryNamespace("p1");
+  },
   memorySeeds,
   async buildRegisteredIdentity() {
-    const { identity } = await createRegisteredAgentIdentity({
-      agentId: buildObpNegotiatorAgentId("demo-matchmaking-p1"),
-      name: "RolloutPeerAgent",
-      instructions: [
-        `Starting goal: negotiate enterprise product and rollout intros on your terms—clarity, narrow scope, and credible substance matter more than politeness or volume.`,
-        `Use memory_search before you commit: your archive is mostly outbound peer intros, invites, and what worked vs. wasted time—only treat prior patterns as “fit” when they match the thread’s stated topic and constraints.`,
-        `Whether you opened the thread or are answering one, be explicit about scope, time, and what would make a meeting worthwhile; if memories suggest poor fit, tighten the graph (counter or decline) or end politely.`,
-        `Do not reference personal memories or experiences when talking to your counterparty. Protect your personal information and treat your memories as private facts, not to be shared with a stranger.`,
-        `Use OBP so your acceptance criteria stay legible: concrete offers, terminal accept vs decline vs branchy counter-ports, and readable port names in the graph snapshot.`,
-        buildObpNegotiatorBaseInstruction(),
-      ],
-      context: {
-        role: "obp-negotiator",
-        targetNamespace: "demo-matchmaking-p1",
-      },
-      rootComposable: obpMatchmakingMemoryToolkit,
+    return createGenericMatchmakingNegotiatorIdentity({
+      personaSlug: "p1",
+      displayName: this.displayName,
     });
-    return identity;
   },
 };

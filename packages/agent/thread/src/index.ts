@@ -1,6 +1,6 @@
 export { formatThreadForPlaintext } from "./format-thread-for-prompt.ts";
 export { InMemoryThreadContext } from "./in-memory-thread-context.ts";
-export type { ThreadMessage, ThreadMessageMetadata, PostThreadMessageInput } from "./messages.ts";
+export type { PostThreadMessageInput, ThreadMessage, ThreadMessageMetadata } from "./messages.ts";
 export { postThreadUserText } from "./messages.ts";
 export {
   buildAssistantPartsFromGeneration,
