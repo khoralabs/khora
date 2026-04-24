@@ -1,11 +1,18 @@
 import type { EmbeddingModel } from "@cfd/memories-core/helpers";
 import type { LanguageModel } from "ai";
-import { matchmakingPersonas } from "../personas/index.ts";
+import { type MatchmakingPersonaSlug, matchmakingPersonas } from "../personas/index.ts";
 import type { MatchmakingPersona } from "../personas/types.ts";
 import type { MatchmakingMemoriesBundle } from "./create-memories-bundle.ts";
+import { matchmakingGlobalMemoryNamespace } from "./matchmaking-global-memory-namespace.ts";
 import { mergeMeetingDomainPayloadIntoNamespace } from "./merge-meeting-payload.ts";
 import type { MeetingSeedPayload } from "./meeting-seed-payload.ts";
 import { matchmakingSeedMemoryKey } from "./persisted-memories.ts";
+
+const PUBLIC_PROFILE_SEED_SLUGS: readonly MatchmakingPersonaSlug[] = ["p1", "p2", "p3"];
+
+export function matchmakingPublicProfileSeedKey(slug: string): string {
+  return `seed/public-profile/${slug}`;
+}
 
 /** Adapter → integrator pipeline per seed (same as matchmaking session seed path). */
 export async function seedPersonaMemoryNamespace(args: {
@@ -44,6 +51,46 @@ export async function seedPersonaMemoryNamespace(args: {
 }
 
 /**
+ * Offline seeds: one `public_profile` memory per simulated persona into {@link matchmakingGlobalMemoryNamespace}.
+ */
+export async function seedGlobalPublicProfiles(args: {
+  bundle: MatchmakingMemoriesBundle;
+  chatModel: LanguageModel;
+  embeddingModel: EmbeddingModel;
+  /** When true, skip seeds whose memory key already exists in `_global_`. */
+  skipExistingSlots?: boolean;
+}): Promise<void> {
+  const { bundle, chatModel, embeddingModel, skipExistingSlots } = args;
+  const namespace = matchmakingGlobalMemoryNamespace();
+  for (const slug of PUBLIC_PROFILE_SEED_SLUGS) {
+    const p = matchmakingPersonas[slug];
+    const memoryKey = matchmakingPublicProfileSeedKey(slug);
+    if (
+      skipExistingSlots === true &&
+      bundle.persistence.findMemoryIdByKey(namespace, memoryKey) !== undefined
+    ) {
+      continue;
+    }
+    const domainPayload: MeetingSeedPayload = {
+      kind: "public_profile",
+      slug: p.slug,
+      displayName: p.displayName,
+      tagline: p.profile.tagline,
+      about: p.profile.about,
+    };
+    await mergeMeetingDomainPayloadIntoNamespace({
+      bundle,
+      chatModel,
+      embeddingModel,
+      namespace,
+      memoryKey,
+      domainPayload,
+      correlationId: `seed-global-public-${namespace}-${slug}`,
+    });
+  }
+}
+
+/**
  * Seeds every registered persona in {@link matchmakingPersonas} into SQLite.
  * JSONL under the memories root is updated incrementally via {@link MatchmakingMemoriesBundle}
  * (always created with {@code createMatchmakingMemoriesBundle(dbPath, { memoriesRoot })} so lexical mirror paths exist).
@@ -70,6 +117,12 @@ export async function seedAllMatchmakingPersonaMemories(args: {
       }),
     ),
   );
+  await seedGlobalPublicProfiles({
+    bundle,
+    chatModel,
+    embeddingModel,
+    skipExistingSlots,
+  });
 }
 
 /**

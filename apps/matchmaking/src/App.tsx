@@ -19,8 +19,10 @@ import {
   InputGroupText,
   InputGroupTextarea,
 } from "@/components/ui/input-group";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
+import { Textarea } from "@/components/ui/textarea";
 import { stubPostNegotiationGateContent } from "@/lib/stub-post-negotiation-summary";
 
 type PersonaPublicDto = {
@@ -30,9 +32,10 @@ type PersonaPublicDto = {
   subjectId: string;
   memoryNamespace: string;
   profile: { tagline: string; about: string };
+  role: "self" | "sim";
 };
 
-type Phase = "list" | "detail" | "book" | "post_meeting_reflect";
+type Phase = "list" | "detail" | "book" | "post_meeting_reflect" | "profile";
 
 export function App() {
   const [phase, setPhase] = useState<Phase>("list");
@@ -60,6 +63,12 @@ export function App() {
   const [meetingReflectionText, setMeetingReflectionText] = useState("");
   const [meetingReflectBusy, setMeetingReflectBusy] = useState(false);
   const [meetingReflectError, setMeetingReflectError] = useState<string | null>(null);
+  const [profileDisplayName, setProfileDisplayName] = useState("");
+  const [profileTagline, setProfileTagline] = useState("");
+  const [profileAbout, setProfileAbout] = useState("");
+  const [profileLoadError, setProfileLoadError] = useState<string | null>(null);
+  const [profileSaveBusy, setProfileSaveBusy] = useState(false);
+  const [profileSaveError, setProfileSaveError] = useState<string | null>(null);
   /** One post-negotiation gate per run: first drawer close after `done` only. */
   const postNegotiationGateConsumed = useRef(false);
 
@@ -68,19 +77,21 @@ export function App() {
     [personas, selectedSlug],
   );
 
+  const reloadPersonas = useCallback(async () => {
+    const res = await fetch("/api/personas");
+    if (!res.ok) {
+      throw new Error(`Failed to load personas (${res.status})`);
+    }
+    const data = (await res.json()) as PersonaPublicDto[];
+    setPersonas(data);
+    setLoadError(null);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/personas");
-        if (!res.ok) {
-          throw new Error(`Failed to load personas (${res.status})`);
-        }
-        const data = (await res.json()) as PersonaPublicDto[];
-        if (!cancelled) {
-          setPersonas(data);
-          setLoadError(null);
-        }
+        await reloadPersonas();
       } catch (e) {
         if (!cancelled) {
           setLoadError(e instanceof Error ? e.message : String(e));
@@ -91,7 +102,37 @@ export function App() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadPersonas]);
+
+  useEffect(() => {
+    if (phase !== "profile") {
+      return;
+    }
+    let cancelled = false;
+    setProfileLoadError(null);
+    (async () => {
+      try {
+        const res = await fetch("/api/me/public-profile");
+        if (!res.ok) {
+          throw new Error(`Failed to load profile (${res.status})`);
+        }
+        const data = (await res.json()) as { displayName?: string; tagline?: string; about?: string };
+        if (cancelled) {
+          return;
+        }
+        setProfileDisplayName(typeof data.displayName === "string" ? data.displayName : "");
+        setProfileTagline(typeof data.tagline === "string" ? data.tagline : "");
+        setProfileAbout(typeof data.about === "string" ? data.about : "");
+      } catch (e) {
+        if (!cancelled) {
+          setProfileLoadError(e instanceof Error ? e.message : String(e));
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [phase]);
 
   const openDetail = useCallback((slug: string) => {
     setSelectedSlug(slug);
@@ -103,6 +144,43 @@ export function App() {
     setSendError(null);
     setPhase("book");
   }, []);
+
+  const savePublicProfile = useCallback(async () => {
+    setProfileSaveBusy(true);
+    setProfileSaveError(null);
+    try {
+      const res = await fetch("/api/me/public-profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          displayName: profileDisplayName.trim(),
+          tagline: profileTagline,
+          about: profileAbout,
+        }),
+      });
+      const body = (await res.json()) as { ok?: boolean; error?: unknown };
+      if (!res.ok) {
+        const e = body.error;
+        setProfileSaveError(
+          typeof e === "string"
+            ? e
+            : "Could not save (display name is required; check field limits).",
+        );
+        return;
+      }
+      if (body.ok) {
+        toast.success("Profile saved", {
+          description: "Merged into the global namespace and your memory graph.",
+        });
+        await reloadPersonas();
+        setPhase("list");
+      }
+    } catch (e) {
+      setProfileSaveError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setProfileSaveBusy(false);
+    }
+  }, [profileAbout, profileDisplayName, profileTagline, reloadPersonas]);
 
   const goList = useCallback(() => {
     setSelectedSlug(null);
@@ -284,10 +362,26 @@ export function App() {
   return (
     <div className="bg-background text-foreground min-h-svh">
       <header className="border-b px-6 py-4">
-        <h1 className="text-lg font-semibold tracking-tight">Matchmaking demo</h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Browse seeded personas and send a meeting invite (demo only).
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-lg font-semibold tracking-tight">Matchmaking demo</h1>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Browse profiles, set your public card, and send a meeting invite (demo only).
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="shrink-0"
+            onClick={() => {
+              setProfileSaveError(null);
+              setPhase("profile");
+            }}
+          >
+            My profile
+          </Button>
+        </div>
       </header>
 
       <main className="mx-auto max-w-3xl min-h-[70vh] px-6 py-8">
@@ -374,7 +468,7 @@ export function App() {
 
         {phase !== "post_meeting_reflect" && phase === "list" && (
           <section className="space-y-4">
-            <h2 className="text-sm font-medium text-muted-foreground">Personas</h2>
+            <h2 className="text-sm font-medium text-muted-foreground">Directory</h2>
             <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory scroll-pl-6 [-webkit-overflow-scrolling:touch]">
               {personas.map((p) => (
                 <button
@@ -383,8 +477,17 @@ export function App() {
                   onClick={() => openDetail(p.slug)}
                   className="snap-start shrink-0 text-left focus-visible:ring-ring/50 rounded-xl outline-none focus-visible:ring-[3px]"
                 >
-                  <Card className="hover:bg-accent/40 w-[min(100vw-3rem,320px)] transition-colors">
+                  <Card
+                    className={`hover:bg-accent/40 w-[min(100vw-3rem,320px)] transition-colors ${
+                      p.role === "self" ? "ring-2 ring-primary/60" : ""
+                    }`}
+                  >
                     <CardHeader className="gap-2">
+                      {p.role === "self" && (
+                        <p className="text-primary text-xs font-medium uppercase tracking-wide">
+                          You
+                        </p>
+                      )}
                       <CardTitle className="text-base">{p.name}</CardTitle>
                       <CardDescription className="line-clamp-2">
                         {p.profile.tagline}
@@ -397,13 +500,16 @@ export function App() {
                 </button>
               ))}
             </div>
+            <p className="text-muted-foreground text-sm">
+              Your card appears here after you save it from <strong>My profile</strong>.
+            </p>
           </section>
         )}
 
         {phase !== "post_meeting_reflect" && phase === "detail" && selected !== null && (
           <section className="space-y-6">
             <Button type="button" variant="ghost" className="-ml-2" onClick={goList}>
-              ← All personas
+              ← All profiles
             </Button>
             <div>
               <h2 className="text-2xl font-semibold">{selected.name}</h2>
@@ -411,9 +517,27 @@ export function App() {
               <p className="text-muted-foreground mt-2 text-sm">{selected.profile.tagline}</p>
               <p className="mt-4 text-sm leading-relaxed">{selected.profile.about}</p>
             </div>
-            <Button type="button" onClick={openBook}>
-              Book a meeting
-            </Button>
+            {selected.role === "self" ? (
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setProfileSaveError(null);
+                    setPhase("profile");
+                  }}
+                >
+                  Edit in My profile
+                </Button>
+                <p className="text-muted-foreground w-full text-sm">
+                  This is your public card. Simulated people here can receive invites; your card is
+                  for the directory and your agent’s context.
+                </p>
+              </div>
+            ) : (
+              <Button type="button" onClick={openBook}>
+                Book a meeting
+              </Button>
+            )}
           </section>
         )}
 
@@ -475,6 +599,93 @@ export function App() {
                   {sendError}
                 </p>
               )}
+            </div>
+          </section>
+        )}
+
+        {phase === "profile" && (
+          <section className="mx-auto max-w-lg space-y-6">
+            <Button
+              type="button"
+              variant="ghost"
+              className="-ml-2"
+              onClick={() => {
+                setProfileSaveError(null);
+                setPhase("list");
+              }}
+              disabled={profileSaveBusy}
+            >
+              ← Directory
+            </Button>
+            <div>
+              <h2 className="text-2xl font-semibold">Your public profile</h2>
+              <p className="text-muted-foreground mt-2 text-sm">
+                After you save, this card appears in the directory and is merged into the shared
+                global namespace and your personal memory graph (same fields the simulated profiles
+                use).
+              </p>
+            </div>
+            {profileLoadError !== null && (
+              <p className="text-destructive text-sm" role="alert">
+                {profileLoadError}
+              </p>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="pp-name">Display name</Label>
+              <Input
+                id="pp-name"
+                className="w-full"
+                value={profileDisplayName}
+                onChange={(e) => setProfileDisplayName(e.target.value)}
+                placeholder="How you appear in the list"
+                disabled={profileSaveBusy}
+                maxLength={200}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pp-tagline">Tagline</Label>
+              <Textarea
+                id="pp-tagline"
+                value={profileTagline}
+                onChange={(e) => setProfileTagline(e.target.value)}
+                placeholder="One line under your name"
+                disabled={profileSaveBusy}
+                rows={2}
+                maxLength={500}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pp-about">About</Label>
+              <Textarea
+                id="pp-about"
+                value={profileAbout}
+                onChange={(e) => setProfileAbout(e.target.value)}
+                placeholder="What others should know before connecting"
+                disabled={profileSaveBusy}
+                rows={6}
+                maxLength={8000}
+              />
+            </div>
+            {profileSaveError !== null && (
+              <p className="text-destructive text-sm" role="alert">
+                {profileSaveError}
+              </p>
+            )}
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                disabled={profileSaveBusy || profileDisplayName.trim().length === 0}
+                onClick={() => void savePublicProfile()}
+              >
+                {profileSaveBusy ? (
+                  <>
+                    <Spinner className="size-3.5" />
+                    Saving…
+                  </>
+                ) : (
+                  "Save profile"
+                )}
+              </Button>
             </div>
           </section>
         )}

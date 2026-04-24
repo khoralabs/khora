@@ -14,7 +14,7 @@ This repo implements a working demo of that loop.
 
 ### 1. Personal understanding
 
-Build a picture of each user from their goals and experiences. In the matchmaking demo: the app user builds an experiential graph from interactions, while*simulated other people (p1/p2/p3) are offline-seeded for browse/invite.
+Build a picture of each user from their goals and experiences. In the matchmaking demo: the app user builds an experiential graph from interactions, while simulated other people (p1/p2/p3) are offline-seeded for browse/invite.
 
 ### 2. Reflection as a product
 
@@ -114,6 +114,10 @@ Turns alternate over a shared plaintext thread plus a small orchestration note s
 ### Per-user twin
 
 Each persona gets a memory namespace backed by SQLite via `createMatchmakingMemoriesBundle`. A JSONL lexical mirror is written per namespace alongside SQLite so the graph is inspectable and replayable without a database client.
+
+### Matchmaking: global public directory
+
+Running `bun run seed-memories` in `apps/matchmaking` seeds the usual per-persona meeting rows and, in a shared **`_global_` namespace** under `obp_demo/matchmaking/subjects/{subjectId}/_global_`, one **`public_profile`** memory per simulated persona (name, tagline, about) for directory-style search. The human can use **My profile** in the UI: **`GET` / `PUT` `/api/me/public-profile`** merges the same `public_profile` shape into both `_global_` and the experiential user memory namespace. A `user-public-profile.json` file under the memories root mirrors the form state for reliable loading (implementation detail; the memory merges are the graph source for agents).
 
 ### Structured commitment layer
 

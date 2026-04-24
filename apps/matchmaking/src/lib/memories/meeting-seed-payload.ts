@@ -19,6 +19,13 @@ export const zMeetingSeedPayload = z.discriminatedUnion("kind", [
     /** How well the user’s agent represented them; optional in the product flow. */
     agentFeedback: z.string().optional(),
   }),
+  z.object({
+    kind: z.literal("public_profile"),
+    slug: z.string(),
+    displayName: z.string(),
+    tagline: z.string(),
+    about: z.string(),
+  }),
 ]);
 
 export type MeetingSeedPayload = z.infer<typeof zMeetingSeedPayload>;

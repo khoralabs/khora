@@ -21,6 +21,11 @@ import {
 } from "./lib/negotiation-run-registry.ts";
 import { listPersonaPublicDtos } from "./lib/persona-public-dtos.ts";
 import { buildAppUserIntroRequestScenario } from "./lib/scenarios/intro-request.ts";
+import {
+  getUserPublicProfileForApi,
+  saveUserPublicProfileToMemories,
+  zUserPublicProfileBody,
+} from "./lib/user-public-profile.ts";
 
 /** Not a `MatchmakingPersonaSlug`; run context for post-negotiation merges (Party A = experiential user). */
 const APP_USER_REQUESTER_SLUG = "_user_";
@@ -49,6 +54,33 @@ const server = Bun.serve({
 
     if (url.pathname === "/api/personas" && req.method === "GET") {
       return Response.json(await listPersonaPublicDtos());
+    }
+
+    if (url.pathname === "/api/me/public-profile" && req.method === "GET") {
+      return Response.json(getUserPublicProfileForApi());
+    }
+
+    if (url.pathname === "/api/me/public-profile" && req.method === "PUT") {
+      let body: unknown;
+      try {
+        body = await req.json();
+      } catch {
+        return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+      }
+      const parsed = zUserPublicProfileBody.safeParse(body);
+      if (!parsed.success) {
+        return Response.json({ error: parsed.error.flatten() }, { status: 400 });
+      }
+      try {
+        await saveUserPublicProfileToMemories(parsed.data);
+      } catch (e) {
+        console.error("[me/public-profile] merge failed", e);
+        return Response.json(
+          { error: e instanceof Error ? e.message : "Could not save profile" },
+          { status: 500 },
+        );
+      }
+      return Response.json({ ok: true as const });
     }
 
     if (url.pathname === "/api/invites" && req.method === "POST") {

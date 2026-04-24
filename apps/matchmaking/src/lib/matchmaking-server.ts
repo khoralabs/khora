@@ -49,8 +49,10 @@ export {
   resolveMemoriesDbPath,
   resolveMemoriesRoot,
 } from "./memories/persisted-memories.ts";
+export { matchmakingGlobalMemoryNamespace } from "./memories/matchmaking-global-memory-namespace.ts";
 export {
   seedAllMatchmakingPersonaMemories,
+  seedGlobalPublicProfiles,
   seedMatchmakingPersonas,
   seedPersonaMemoryNamespace,
 } from "./memories/seed-personas.ts";
