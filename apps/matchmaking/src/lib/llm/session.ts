@@ -49,8 +49,8 @@ import {
   textTranscriptPathFromJsonl,
 } from "../matchmaking-obp/index.ts";
 import { createMatchmakingMemoriesBundle } from "../memories/create-memories-bundle.ts";
-import { mergeMeetingDomainPayloadIntoNamespace } from "../memories/merge-meeting-payload.ts";
 import { getMatchmakingEmbeddingModel } from "../memories/matchmaking-embedding.ts";
+import { mergeMeetingDomainPayloadIntoNamespace } from "../memories/merge-meeting-payload.ts";
 import { resolveMemoriesDbPath, resolveMemoriesRoot } from "../memories/persisted-memories.ts";
 import type { ThreadDevLog } from "../negotiation-run-registry.ts";
 import { resolveMatchmakingSubjectId } from "../resolve-subject-id.ts";
@@ -225,7 +225,10 @@ export async function runMatchmakingSession(options?: {
 
   const memoriesRoot = options?.memoriesRoot ?? resolveMemoriesRoot();
   const memoriesDbPath = options?.memoriesDbPath ?? resolveMemoriesDbPath(memoriesRoot);
-  const memoriesBundle = createMatchmakingMemoriesBundle(memoriesDbPath, { memoriesRoot });
+  const memoriesBundle = createMatchmakingMemoriesBundle(memoriesDbPath, {
+    memoriesRoot,
+    domainLexicalStore: true,
+  });
   const embeddingModel = getMatchmakingEmbeddingModel();
   const embeddingCache = new Map<string, number[]>();
 

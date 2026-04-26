@@ -1,6 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+import type { Store } from "@cfd/memories-core";
 import { MemoriesClient } from "@cfd/memories-core";
 import {
   canonicalLabelPropsSearchFormatter,
@@ -8,15 +9,26 @@ import {
 } from "@cfd/memories-core/ontologies";
 import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-sqlite";
 import { JsonlStore } from "@cfd/memories-stores";
+import { getMatchmakingDomainDatabase } from "../domain/persistence/open-domain-db.ts";
+import { SqliteLexicalStore } from "../domain/lexical/sqlite-lexical-store.ts";
 
 import { jsonlStorePathForNamespace } from "./jsonl-path.ts";
 
 export type MatchmakingMemoriesBundleOptions = {
   /**
-   * Root directory for lexical JSONL mirrors (one `store.jsonl` per namespace under
-   * `namespaces/...`). Required: matchmaking always wires {@link JsonlStore} for inspection and replay.
+   * Root directory (used for default {@link JsonlStore} path when neither `storeForNamespace`
+   * nor `domainLexicalStore` is set).
    */
   memoriesRoot: string;
+  /**
+   * When set, per-namespace store factory (e.g. tests). Overrides `domainLexicalStore`.
+   */
+  storeForNamespace?: (namespace: string) => Store;
+  /**
+   * When `true` and `storeForNamespace` is unset, use {@link SqliteLexicalStore} on the matchmaking
+   * domain DB (replaces per-namespace `store.jsonl` under the memories root). App default.
+   */
+  domainLexicalStore?: boolean;
 };
 
 export type MatchmakingMemoriesBundle = {
@@ -47,9 +59,20 @@ export function createMatchmakingMemoriesBundle(
   const persistence = createMemoriesPersistence(db, {
     labelPropsSearchFormatter: canonicalLabelPropsSearchFormatter,
   });
-  const { memoriesRoot } = options;
+  const { memoriesRoot, storeForNamespace, domainLexicalStore } = options;
+
+  let storeFn: (namespace: string) => Store;
+  if (storeForNamespace) {
+    storeFn = storeForNamespace;
+  } else if (domainLexicalStore) {
+    const domainDb = getMatchmakingDomainDatabase();
+    storeFn = (ns) => new SqliteLexicalStore(domainDb, ns);
+  } else {
+    storeFn = (ns) => new JsonlStore(jsonlStorePathForNamespace(memoriesRoot, ns));
+  }
+
   const client = new MemoriesClient(persistence, canonicalOntology, {
-    storeForNamespace: (ns) => new JsonlStore(jsonlStorePathForNamespace(memoriesRoot, ns)),
+    storeForNamespace: storeFn,
   });
   return { db, persistence, client };
 }

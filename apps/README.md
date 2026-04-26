@@ -154,7 +154,6 @@ Ties who an agent is (instructions, static context, toolkits) to what it can do 
 Minimal mental model: UserInvite → `runMatchmakingSession` → RegisteredAgent + ObpClient + MemoriesClient → result and transcript.
 
 
-
 ## Tradeoffs
 
 - OBP on disk per `runId` keeps each invite's graph inspectable without extra tooling. `OBP_MEMORY=1` restores hermetic in-memory behavior for CI. Production would move toward shared tenancy, audit, and a retention policy.

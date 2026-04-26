@@ -93,7 +93,8 @@ export async function seedGlobalPublicProfiles(args: {
 /**
  * Seeds every registered persona in {@link matchmakingPersonas} into SQLite.
  * JSONL under the memories root is updated incrementally via {@link MatchmakingMemoriesBundle}
- * (always created with {@code createMatchmakingMemoriesBundle(dbPath, { memoriesRoot })} so lexical mirror paths exist).
+ * (created with {@code createMatchmakingMemoriesBundle} — app code uses
+ * {@code domainLexicalStore: true}; tests may omit it for per-namespace {@code JsonlStore} paths).
  */
 export async function seedAllMatchmakingPersonaMemories(args: {
   bundle: MatchmakingMemoriesBundle;

@@ -19,8 +19,10 @@ import {
   setNegotiationServerRef,
   setRunMatchmakingContext,
 } from "./lib/negotiation-run-registry.ts";
+import { getMatchmakingDomainRuntime } from "./lib/domain/runtime/index.ts";
 import { listPersonaPublicDtos } from "./lib/persona-public-dtos.ts";
 import { buildAppUserIntroRequestScenario } from "./lib/scenarios/intro-request.ts";
+import { resolveMatchmakingSubjectId } from "./lib/resolve-subject-id.ts";
 import {
   getUserPublicProfileForApi,
   saveUserPublicProfileToMemories,
@@ -99,9 +101,18 @@ const server = Bun.serve({
       registerRun(runId);
       const invitee = parsed.data.personaSlug;
       const threadDev = createThreadDevLog(runId);
+      const subjectId = resolveMatchmakingSubjectId();
+      getMatchmakingDomainRuntime().persistence.createInvite({
+        id: runId,
+        subjectId,
+        inviteePersonaSlug: invitee,
+        message: parsed.data.message,
+      });
 
       void (async () => {
+        const p = getMatchmakingDomainRuntime().persistence;
         try {
+          p.updateInviteStatus(runId, "negotiating");
           const scenario = await buildAppUserIntroRequestScenario(invitee, {
             invitationMessage: parsed.data.message,
           });
@@ -116,11 +127,14 @@ const server = Bun.serve({
             runId,
           });
           appendDoneEvent(runId, result);
+          p.setInviteFinished(runId, result);
         } catch (e) {
-          appendDoneEvent(runId, {
+          const err = {
             status: "error" as const,
             message: e instanceof Error ? e.message : String(e),
-          });
+          };
+          appendDoneEvent(runId, err);
+          p.setInviteFinished(runId, err);
         }
       })();
 

@@ -1,16 +1,17 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { existsSync, readFileSync, unlinkSync } from "node:fs";
+import { join } from "node:path";
 import type { LanguageModel } from "ai";
+import { z } from "zod";
+import { getMatchmakingDomainRuntime } from "./domain/runtime/index.ts";
 import { getNegotiationModel } from "./matchmaking-obp/index.ts";
 import { appUserMemoryNamespace } from "./memories/app-user-memory-namespace.ts";
 import { createMatchmakingMemoriesBundle } from "./memories/create-memories-bundle.ts";
 import { getMatchmakingEmbeddingModel } from "./memories/matchmaking-embedding.ts";
 import { matchmakingGlobalMemoryNamespace } from "./memories/matchmaking-global-memory-namespace.ts";
-import { mergeMeetingDomainPayloadIntoNamespace } from "./memories/merge-meeting-payload.ts";
 import type { MeetingSeedPayload } from "./memories/meeting-seed-payload.ts";
+import { mergeMeetingDomainPayloadIntoNamespace } from "./memories/merge-meeting-payload.ts";
 import { resolveMemoriesDbPath, resolveMemoriesRoot } from "./memories/persisted-memories.ts";
 import { resolveMatchmakingSubjectId } from "./resolve-subject-id.ts";
-import { z } from "zod";
 
 export const APP_USER_PUBLIC_SLUG = "_user_";
 
@@ -30,7 +31,7 @@ export function userPublicProfileMemoryKey(): string {
   return `live/public-profile/${APP_USER_PUBLIC_SLUG}`;
 }
 
-export function readUserPublicProfileState(): UserPublicProfileBody | null {
+function readLegacyUserPublicProfileJson(): UserPublicProfileBody | null {
   const path = userPublicProfileStatePath(resolveMemoriesRoot());
   if (!existsSync(path)) {
     return null;
@@ -44,15 +45,50 @@ export function readUserPublicProfileState(): UserPublicProfileBody | null {
 }
 
 /**
- * Merges `public_profile` into `_global_` and the app user namespace; writes JSON for reliable GET.
+ * Public profile for API / directory: domain DB first, then one-time legacy JSON migration.
+ */
+export function readUserPublicProfileState(): UserPublicProfileBody | null {
+  const subjectId = resolveMatchmakingSubjectId();
+  const fields = getMatchmakingDomainRuntime().persistence.getProfile(subjectId);
+  if (fields !== null) {
+    return {
+      displayName: fields.displayName,
+      tagline: fields.tagline,
+      about: fields.about,
+    };
+  }
+  const legacy = readLegacyUserPublicProfileJson();
+  if (legacy !== null) {
+    getMatchmakingDomainRuntime().persistence.upsertProfile(subjectId, legacy);
+    try {
+      unlinkSync(userPublicProfileStatePath(resolveMemoriesRoot()));
+    } catch {
+      /* ignore */
+    }
+    return legacy;
+  }
+  return null;
+}
+
+/**
+ * Merges `public_profile` into `_global_` and the app user namespace; persists profile in the domain DB.
  */
 export async function saveUserPublicProfileToMemories(
   body: UserPublicProfileBody,
   model?: LanguageModel,
 ): Promise<void> {
+  const subjectId = resolveMatchmakingSubjectId();
+  getMatchmakingDomainRuntime().persistence.upsertProfile(subjectId, {
+    displayName: body.displayName,
+    tagline: body.tagline,
+    about: body.about,
+  });
   const root = resolveMemoriesRoot();
-  const db = resolveMemoriesDbPath(root);
-  const bundle = createMatchmakingMemoriesBundle(db, { memoriesRoot: root });
+  const memDb = resolveMemoriesDbPath(root);
+  const bundle = createMatchmakingMemoriesBundle(memDb, {
+    memoriesRoot: root,
+    domainLexicalStore: true,
+  });
   const chatModel = model ?? getNegotiationModel();
   const embeddingModel = getMatchmakingEmbeddingModel();
   const payload: MeetingSeedPayload = {
@@ -86,9 +122,14 @@ export async function saveUserPublicProfileToMemories(
       correlationId: `${correlation}-user`,
     }),
   ]);
-  const outPath = userPublicProfileStatePath(root);
-  mkdirSync(dirname(outPath), { recursive: true });
-  writeFileSync(outPath, `${JSON.stringify(body, null, 2)}\n`, "utf8");
+  try {
+    const legacyPath = userPublicProfileStatePath(root);
+    if (existsSync(legacyPath)) {
+      unlinkSync(legacyPath);
+    }
+  } catch {
+    /* ignore */
+  }
 }
 
 export function getUserPublicProfileForApi(): UserPublicProfileBody {
