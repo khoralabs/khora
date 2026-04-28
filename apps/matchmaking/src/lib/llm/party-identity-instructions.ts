@@ -49,10 +49,7 @@ export function buildMatchmakingPartySystemInstructions(
   },
 ): string {
   const { selfCard, counterpartyCard, partyLetter, hasUserInvitationLine } = args;
-  const selfBlock = formatPublicCardSection(
-    "### You represent (public directory card)",
-    selfCard,
-  );
+  const selfBlock = formatPublicCardSection("### You represent (public directory card)", selfCard);
   const cpBlock = formatPublicCardSection(
     "### Your counterparty (public directory card)",
     counterpartyCard,
@@ -72,7 +69,15 @@ export function buildMatchmakingPartySystemInstructions(
     ...(inviteNote ? ["", inviteNote] : []),
   ];
 
-  return [valueFirewallBase, "", "## Negotiation identity (fixed)", "", selfBlock, "", cpBlock, "", ...roleLines].join(
-    "\n",
-  );
+  return [
+    valueFirewallBase,
+    "",
+    "## Negotiation identity (fixed)",
+    "",
+    selfBlock,
+    "",
+    cpBlock,
+    "",
+    ...roleLines,
+  ].join("\n");
 }

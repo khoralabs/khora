@@ -236,8 +236,7 @@ export function searchVectorSourceMapIds(
     input.scope.kind === "unscoped" ? [] : [...nsScoped.bindings];
 
   const maxD = input.maxVectorDistance;
-  const distanceClause =
-    maxD !== undefined && Number.isFinite(maxD) ? `AND knn.distance <= ?` : "";
+  const distanceClause = maxD !== undefined && Number.isFinite(maxD) ? `AND knn.distance <= ?` : "";
 
   const params: SQLQueryBindings[] =
     input.memoryIds === undefined

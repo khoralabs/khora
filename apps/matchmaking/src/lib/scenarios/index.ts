@@ -1,6 +1,6 @@
+import type { MatchmakingPersonaSlug } from "../personas/index.ts";
 import { MATCHMAKING_SIM_PERSONA_SLUGS } from "../personas/slugs.ts";
 import { buildIntroRequestScenarioPair } from "./intro-request.ts";
-import type { MatchmakingPersonaSlug } from "../personas/index.ts";
 import type { MatchmakingScenario } from "./matchmaking-scenario.ts";
 
 export type { MatchmakingPersona, MatchmakingPersonaSlug } from "../personas/index.ts";

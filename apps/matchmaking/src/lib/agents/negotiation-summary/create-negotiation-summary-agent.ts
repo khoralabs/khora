@@ -1,8 +1,5 @@
 import { generateObject, type LanguageModel } from "ai";
-import {
-  type NegotiationSummaryOutput,
-  zNegotiationSummaryOutput,
-} from "./output.ts";
+import { type NegotiationSummaryOutput, zNegotiationSummaryOutput } from "./output.ts";
 
 export async function generateNegotiationSummary(args: {
   model: LanguageModel;

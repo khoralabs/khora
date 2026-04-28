@@ -1,14 +1,14 @@
-import type { MatchmakingSimPersonaSlug } from "./slugs.ts";
 import { matchmakingPersonaDevonMack } from "./devon-mack.ts";
 import { matchmakingPersonaElenaVasquez } from "./elena-vasquez.ts";
 import { matchmakingPersonaJamesOrtiz } from "./james-ortiz.ts";
 import { matchmakingPersonaMiraPatel } from "./mira-patel.ts";
 import { matchmakingPersonaSaraKim } from "./sara-kim.ts";
+import type { MatchmakingSimPersonaSlug } from "./slugs.ts";
 import type { MatchmakingPersona } from "./types.ts";
 
-export type { MatchmakingPersona } from "./types.ts";
 export type { MatchmakingSimPersonaSlug } from "./slugs.ts";
 export { MATCHMAKING_SIM_PERSONA_SLUGS, zMatchmakingSimPersonaSlug } from "./slugs.ts";
+export type { MatchmakingPersona } from "./types.ts";
 
 export const matchmakingPersonas = {
   "mira-patel": matchmakingPersonaMiraPatel,

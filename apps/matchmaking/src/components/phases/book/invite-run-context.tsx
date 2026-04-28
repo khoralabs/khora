@@ -12,13 +12,13 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { useMatchmakingNavigation } from "@/components/phases/navigation/matchmaking-navigation-context";
+import { MATCHMAKING_SIM_PERSONA_SLUGS } from "@/lib/personas/slugs.ts";
 import {
   gateContentFromRequesterSummary,
   type PostNegotiationGateContent,
   stubPostNegotiationGateContent,
 } from "@/lib/stub-post-negotiation-summary";
 import type { PartyRunSummary, RunSummariesApiResponse } from "@/lib/summaries/summary-types";
-import { MATCHMAKING_SIM_PERSONA_SLUGS } from "@/lib/personas/slugs.ts";
 
 function formatInviteFailureMessage(body: unknown): string {
   if (body === null || typeof body !== "object") {
@@ -112,9 +112,9 @@ export function InviteRunProvider({ children }: { children: ReactNode }) {
   const [savedInviteText, setSavedInviteText] = useState("");
   const [savedInviteGoals, setSavedInviteGoals] = useState<string[]>([]);
   const [runSummaries, setRunSummaries] = useState<PartyRunSummary[] | null>(null);
-  const [runSummariesState, setRunSummariesState] = useState<"idle" | "loading" | "ready" | "error">(
-    "idle",
-  );
+  const [runSummariesState, setRunSummariesState] = useState<
+    "idle" | "loading" | "ready" | "error"
+  >("idle");
   const postNegotiationGateConsumed = useRef(false);
   const reviewAcceptedPrepRef = useRef<ReviewAcceptedPrep>(() => {});
   const summariesPollGenRef = useRef(0);
@@ -129,7 +129,8 @@ export function InviteRunProvider({ children }: { children: ReactNode }) {
     if (runSummariesState === "loading") {
       return {
         summaryFromAgent: "Generating your summary…",
-        keyPoints: "Your agent is reviewing the negotiation transcript and your memories. This usually takes a few seconds.",
+        keyPoints:
+          "Your agent is reviewing the negotiation transcript and your memories. This usually takes a few seconds.",
         fit: "Loading fit assessment…",
         suggestedNextStep: "—",
       };
@@ -142,7 +143,9 @@ export function InviteRunProvider({ children }: { children: ReactNode }) {
         suggestedNextStep: "You can still accept or decline based on what you observed.",
       };
     }
-    return stubPostNegotiationGateContent(negotiationDoneResult ?? { status: "unknown", rounds: 0 });
+    return stubPostNegotiationGateContent(
+      negotiationDoneResult ?? { status: "unknown", rounds: 0 },
+    );
   }, [negotiationDoneResult, runSummaries, runSummariesState]);
 
   const registerReviewAcceptedPrep = useCallback((fn: ReviewAcceptedPrep) => {

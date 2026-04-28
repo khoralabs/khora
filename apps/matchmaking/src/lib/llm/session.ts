@@ -53,20 +53,20 @@ import { getMatchmakingEmbeddingModel } from "../memories/matchmaking-embedding.
 import { mergeMeetingDomainPayloadIntoNamespace } from "../memories/merge-meeting-payload.ts";
 import { resolveMemoriesDbPath, resolveMemoriesRoot } from "../memories/persisted-memories.ts";
 import type { ThreadDevLog } from "../negotiation-run-registry.ts";
-import { resolveMatchmakingSubjectId } from "../resolve-subject-id.ts";
 import {
-  MATCHMAKING_SIM_PERSONA_SLUGS,
   getMatchmakingPersona,
-  matchmakingPersonas,
+  MATCHMAKING_SIM_PERSONA_SLUGS,
   type MatchmakingPersonaSlug,
+  matchmakingPersonas,
 } from "../personas/index.ts";
+import { resolveMatchmakingSubjectId } from "../resolve-subject-id.ts";
 import { buildAppUserIntroRequestScenario, type MatchmakingScenario } from "../scenarios";
 import { readUserPublicProfileState } from "../user-public-profile.ts";
 import { buildMatchmakingUserMessage } from "./messages.ts";
 import {
   buildMatchmakingPartySystemInstructions,
-  negotiationPublicCardFromUserProfile,
   type NegotiationPublicCard,
+  negotiationPublicCardFromUserProfile,
 } from "./party-identity-instructions.ts";
 import { matchmakingRoundPartyIndex } from "./session-turn-order.ts";
 import { matchmakingValueFirewallInstructions } from "./value-firewall-instructions.ts";
@@ -221,8 +221,7 @@ export async function runMatchmakingSession(options?: {
   if (defaultInvitee === undefined) {
     return { status: "error", message: "internal: default invitee slug missing" };
   }
-  const scenario =
-    options?.scenario ?? (await buildAppUserIntroRequestScenario(defaultInvitee));
+  const scenario = options?.scenario ?? (await buildAppUserIntroRequestScenario(defaultInvitee));
   const maxRounds = options?.maxRounds ?? scenario.maxRounds ?? DEFAULT_MAX_ROUNDS;
 
   let textTranscriptPath: string | undefined;
@@ -358,10 +357,7 @@ export async function runMatchmakingSession(options?: {
   if (partyAIsAppUser) {
     partyACard = negotiationPublicCardFromUserProfile(readUserPublicProfileState());
   } else {
-    if (
-      typeof rawRequesterSlug !== "string" ||
-      !(rawRequesterSlug in matchmakingPersonas)
-    ) {
+    if (typeof rawRequesterSlug !== "string" || !(rawRequesterSlug in matchmakingPersonas)) {
       return { status: "error", message: "internal: requester persona slug missing or invalid" };
     }
     const requesterPersona = getMatchmakingPersona(rawRequesterSlug as MatchmakingPersonaSlug);
@@ -372,10 +368,7 @@ export async function runMatchmakingSession(options?: {
     };
   }
 
-  if (
-    typeof rawRequesteeSlug !== "string" ||
-    !(rawRequesteeSlug in matchmakingPersonas)
-  ) {
+  if (typeof rawRequesteeSlug !== "string" || !(rawRequesteeSlug in matchmakingPersonas)) {
     return { status: "error", message: "internal: requestee persona slug missing or invalid" };
   }
   const requesteePersonaSlug = rawRequesteeSlug as MatchmakingPersonaSlug;

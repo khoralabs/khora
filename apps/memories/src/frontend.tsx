@@ -20,9 +20,9 @@ import "../styles/globals.css";
  * run before other listeners.
  */
 function isBenignResizeObserverError(event: ErrorEvent | Event): boolean {
-  const fromMessage = typeof (event as ErrorEvent).message === "string" && (event as ErrorEvent).message
-    .toLowerCase()
-    .includes("resizeobserver");
+  const fromMessage =
+    typeof (event as ErrorEvent).message === "string" &&
+    (event as ErrorEvent).message.toLowerCase().includes("resizeobserver");
   if (fromMessage) return true;
   const err = (event as ErrorEvent).error;
   return err instanceof Error && err.message.toLowerCase().includes("resizeobserver");
@@ -41,12 +41,7 @@ window.addEventListener(
 
 window.addEventListener("unhandledrejection", (e) => {
   const reason = e.reason;
-  const msg =
-    typeof reason === "string"
-      ? reason
-      : reason instanceof Error
-        ? reason.message
-        : "";
+  const msg = typeof reason === "string" ? reason : reason instanceof Error ? reason.message : "";
   if (msg.toLowerCase().includes("resizeobserver")) {
     e.preventDefault();
     e.stopPropagation();

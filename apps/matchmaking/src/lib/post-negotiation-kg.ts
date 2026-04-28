@@ -2,11 +2,11 @@ import type { LanguageModel } from "ai";
 import { getMatchmakingDomainRuntime } from "./domain/runtime/index.ts";
 import { getNegotiationModel } from "./matchmaking-obp/index.ts";
 import { createMatchmakingMemoriesBundle } from "./memories/create-memories-bundle.ts";
+import { getMatchmakingEmbeddingModel } from "./memories/matchmaking-embedding.ts";
 import {
   matchmakingFeedbackMemoryNamespace,
   matchmakingNamespaceUserKeyFromPartySlug,
 } from "./memories/matchmaking-memory-namespaces.ts";
-import { getMatchmakingEmbeddingModel } from "./memories/matchmaking-embedding.ts";
 import type { MeetingSeedPayload } from "./memories/meeting-seed-payload.ts";
 import { mergeMeetingDomainPayloadIntoNamespace } from "./memories/merge-meeting-payload.ts";
 import { resolveMemoriesDbPath, resolveMemoriesRoot } from "./memories/persisted-memories.ts";

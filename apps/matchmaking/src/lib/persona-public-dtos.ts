@@ -1,8 +1,8 @@
 import { appUserMemoryNamespace } from "./memories/app-user-memory-namespace.ts";
 import { buildAppUserRegisteredIdentity } from "./personas/app-user-negotiator-identity.ts";
 import { matchmakingPersonas } from "./personas/index.ts";
-import { MATCHMAKING_SIM_PERSONA_SLUGS } from "./personas/slugs.ts";
 import { resolveMatchmakingNegotiatorDisplayName } from "./personas/negotiator-display-name.ts";
+import { MATCHMAKING_SIM_PERSONA_SLUGS } from "./personas/slugs.ts";
 import { resolveMatchmakingSubjectId } from "./resolve-subject-id.ts";
 import { readUserPublicProfileState } from "./user-public-profile.ts";
 

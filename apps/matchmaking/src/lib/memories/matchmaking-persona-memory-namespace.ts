@@ -3,9 +3,6 @@ import { matchmakingPersonalMemoryNamespace } from "./matchmaking-memory-namespa
 /**
  * Cross-subject personal namespace for a simulated persona.
  */
-export function matchmakingPersonaMemoryNamespace(
-  slug: string,
-  _subjectId?: string,
-): string {
+export function matchmakingPersonaMemoryNamespace(slug: string, _subjectId?: string): string {
   return matchmakingPersonalMemoryNamespace(slug);
 }

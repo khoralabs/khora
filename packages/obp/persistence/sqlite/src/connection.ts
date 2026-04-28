@@ -1,5 +1,5 @@
-import { ensureCustomSqliteForExtensions } from "@cfd/memories-sqlite";
 import { Database } from "bun:sqlite";
+import { ensureCustomSqliteForExtensions } from "@cfd/memories-sqlite";
 import { OBP_SCHEMA_SQL } from "./schema";
 
 /** Run idempotent DDL (safe to call on every open). */

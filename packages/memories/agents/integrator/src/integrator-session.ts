@@ -10,7 +10,7 @@ import {
   type MemorySearchSessionContextSlice,
   type ZodLabelMap,
 } from "@cfd/memories-tools";
-import { NoObjectGeneratedError, NoOutputGeneratedError, type LanguageModel } from "ai";
+import { type LanguageModel, NoObjectGeneratedError, NoOutputGeneratedError } from "ai";
 import type { IntegratorPipelineGeneration } from "./create-integrator-agent.js";
 import { createMemoryIntegratorAgent } from "./create-integrator-agent.js";
 import {

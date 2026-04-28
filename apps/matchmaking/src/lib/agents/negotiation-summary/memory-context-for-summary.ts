@@ -62,7 +62,8 @@ export async function buildNegotiationSummaryMemoryContext(args: {
   if (lines.length === 0) {
     return "(No memory hits in this namespace for summary queries; rely on the transcript.)";
   }
-  return ["Retrieved memories (evidence for summary; do not invent facts beyond these and the transcript):", ...lines].join(
-    "\n",
-  );
+  return [
+    "Retrieved memories (evidence for summary; do not invent facts beyond these and the transcript):",
+    ...lines,
+  ].join("\n");
 }

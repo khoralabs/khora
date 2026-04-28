@@ -18,9 +18,7 @@ function transcriptFromThreadJsonl(raw: string): string {
         const source = typeof parsed.source_key === "string" ? parsed.source_key : "line";
         lines.push(`[${source}] ${parsed.string}`);
       }
-    } catch {
-      continue;
-    }
+    } catch {}
   }
   return lines.join("\n");
 }

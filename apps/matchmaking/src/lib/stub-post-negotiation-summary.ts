@@ -16,11 +16,14 @@ export function stubPostNegotiationGateContent(result: unknown): PostNegotiation
     summaryFromAgent: `Negotiation result: ${status} (${String(rounds)} round(s) in the dev log). When summary generation finishes, your agent’s recap will appear here.`,
     keyPoints: `1. Review scope and tone in the live transcript (dev drawer).\n2. Compare against your stated values in memory.\n3. Choose accept or decline based on fit.`,
     fit: "Placeholder: no generated fit assessment yet.",
-    suggestedNextStep: "Open the developer drawer to read the full thread, or wait for your summary to finish generating.",
+    suggestedNextStep:
+      "Open the developer drawer to read the full thread, or wait for your summary to finish generating.",
   };
 }
 
-export function gateContentFromRequesterSummary(requesterSummary: PartyRunSummary): PostNegotiationGateContent {
+export function gateContentFromRequesterSummary(
+  requesterSummary: PartyRunSummary,
+): PostNegotiationGateContent {
   const keyPoints =
     requesterSummary.keyEvidence.length > 0
       ? requesterSummary.keyEvidence.map((e, i) => `${i + 1}. ${e}`).join("\n")

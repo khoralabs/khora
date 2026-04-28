@@ -8,7 +8,9 @@ import { matchmakingSharedPublicProfilesNamespace } from "./matchmaking-shared-p
 import { zMeetingSeedPayload } from "./meeting-seed-payload.ts";
 
 test("global namespace path aliases shared public namespace", () => {
-  expect(matchmakingGlobalMemoryNamespace("x-1")).toBe("obp_demo/matchmaking/public_profiles/_global_");
+  expect(matchmakingGlobalMemoryNamespace("x-1")).toBe(
+    "obp_demo/matchmaking/public_profiles/_global_",
+  );
 });
 
 test("shared public profiles namespace path is cross-subject _global_ segment", () => {

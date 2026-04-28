@@ -46,10 +46,14 @@ export class NegotiationSummaryClient {
     counterpartySlug: string;
     maxSteps?: number;
   }): Promise<NegotiationSummaryOutput> {
-    const { identity } = await ensureNegotiationSummaryAgentRegistered(this.registry, this.namespace, {
-      ...(this.identityContext !== undefined ? { identityContext: this.identityContext } : {}),
-      ...(this.instructions !== undefined ? { instructions: this.instructions } : {}),
-    });
+    const { identity } = await ensureNegotiationSummaryAgentRegistered(
+      this.registry,
+      this.namespace,
+      {
+        ...(this.identityContext !== undefined ? { identityContext: this.identityContext } : {}),
+        ...(this.instructions !== undefined ? { instructions: this.instructions } : {}),
+      },
+    );
     const session = this.registry.createSession(identity.agentId, {
       ctx: {
         model: this.model,
@@ -58,7 +62,10 @@ export class NegotiationSummaryClient {
         embeddingModel: this.embeddingModel,
       },
     });
-    const out = await session.start<NegotiationSummarySessionInput, NegotiationSummarySessionOutput>({
+    const out = await session.start<
+      NegotiationSummarySessionInput,
+      NegotiationSummarySessionOutput
+    >({
       transcript: args.transcript,
       partySlug: args.partySlug,
       counterpartySlug: args.counterpartySlug,

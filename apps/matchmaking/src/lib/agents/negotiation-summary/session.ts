@@ -11,12 +11,12 @@ import { buildMemorySearchToolkitContext } from "@cfd/memories-tools";
 import type { LanguageModel } from "ai";
 import type { createMatchmakingMemoriesBundle } from "../../memories/create-memories-bundle.ts";
 import { generateNegotiationSummary } from "./create-negotiation-summary-agent.ts";
-import { buildNegotiationSummaryMemoryContext } from "./memory-context-for-summary.ts";
 import {
   buildNegotiationSummaryAgentId,
-  defineNegotiationSummaryIdentity,
   type DefineNegotiationSummaryIdentityOptions,
+  defineNegotiationSummaryIdentity,
 } from "./identity.ts";
+import { buildNegotiationSummaryMemoryContext } from "./memory-context-for-summary.ts";
 import type { NegotiationSummaryOutput } from "./output.ts";
 
 export type NegotiationSummarySessionContext = SessionContext & {

@@ -308,9 +308,16 @@ export class SqliteMatchmakingDomainPersistence implements MatchmakingDomainPers
     });
     const invite = this.getInvite(input.runId);
     if (invite !== null) {
-      appendEventRow(this.db, "RunSummaryGenerated", invite.subjectId, input.runId, {
-        partySlug: input.partySlug,
-      }, t);
+      appendEventRow(
+        this.db,
+        "RunSummaryGenerated",
+        invite.subjectId,
+        input.runId,
+        {
+          partySlug: input.partySlug,
+        },
+        t,
+      );
     }
     return summary;
   }
