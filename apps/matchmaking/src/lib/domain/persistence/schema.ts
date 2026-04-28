@@ -149,3 +149,22 @@ CREATE TABLE IF NOT EXISTS lexical_lines (
   PRIMARY KEY (namespace, memory_id, source_key)
 );
 `;
+
+export const DOMAIN_SCHEMA_RUN_SUMMARIES = `
+CREATE TABLE IF NOT EXISTS run_summaries (
+  id TEXT NOT NULL PRIMARY KEY,
+  run_id TEXT NOT NULL,
+  party_slug TEXT NOT NULL,
+  counterparty_slug TEXT NOT NULL,
+  summary_text TEXT NOT NULL,
+  fit_assessment TEXT,
+  key_evidence_json TEXT NOT NULL DEFAULT '[]',
+  recommended_next_step TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  UNIQUE (run_id, party_slug),
+  FOREIGN KEY (run_id) REFERENCES invites(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_run_summaries_run_id ON run_summaries(run_id);
+CREATE INDEX IF NOT EXISTS idx_run_summaries_party_slug ON run_summaries(party_slug);
+`;

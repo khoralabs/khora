@@ -1,11 +1,10 @@
 import { appUserMemoryNamespace } from "./memories/app-user-memory-namespace.ts";
 import { buildAppUserRegisteredIdentity } from "./personas/app-user-negotiator-identity.ts";
-import { type MatchmakingPersonaSlug, matchmakingPersonas } from "./personas/index.ts";
+import { matchmakingPersonas } from "./personas/index.ts";
+import { MATCHMAKING_SIM_PERSONA_SLUGS } from "./personas/slugs.ts";
 import { resolveMatchmakingNegotiatorDisplayName } from "./personas/negotiator-display-name.ts";
 import { resolveMatchmakingSubjectId } from "./resolve-subject-id.ts";
 import { readUserPublicProfileState } from "./user-public-profile.ts";
-
-const PERSONA_ORDER: MatchmakingPersonaSlug[] = ["p1", "p2", "p3"];
 
 export type PersonaPublicDto = {
   slug: string;
@@ -35,7 +34,7 @@ export async function listPersonaPublicDtos(): Promise<PersonaPublicDto[]> {
     });
   }
 
-  for (const slug of PERSONA_ORDER) {
+  for (const slug of MATCHMAKING_SIM_PERSONA_SLUGS) {
     const p = matchmakingPersonas[slug];
     const identity = await p.buildRegisteredIdentity();
     out.push({

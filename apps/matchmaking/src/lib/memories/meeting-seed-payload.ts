@@ -15,6 +15,20 @@ export const zMeetingSeedPayload = z.discriminatedUnion("kind", [
     goalsSnapshot: z.array(z.string()).optional(),
   }),
   z.object({
+    kind: z.literal("meeting_goal"),
+    text: z.string(),
+    goalKind: z.string().optional(),
+    priority: z.number().int().optional(),
+  }),
+  z.object({
+    kind: z.literal("meeting_negotiation_summary"),
+    summaryText: z.string(),
+    fitAssessment: z.string().optional(),
+    keyEvidence: z.array(z.string()).optional(),
+    partySlug: z.string().optional(),
+    counterpartySlug: z.string().optional(),
+  }),
+  z.object({
     kind: z.literal("meeting_post_negotiation_review"),
     decision: z.enum(["accept", "decline"]),
     /** How well the user’s agent represented them; optional in the product flow. */

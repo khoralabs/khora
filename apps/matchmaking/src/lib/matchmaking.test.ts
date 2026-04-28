@@ -97,13 +97,13 @@ test("resolveMatchmakingConnectedDeal checks both parties' offers", () => {
 
 test("assertMatchmakingBindAllowed rejects binding own offer", () => {
   expect(() =>
-    assertMatchmakingBindAllowed({ actingPartyId: "p1", offerOwnerPartyId: "p1" }),
+    assertMatchmakingBindAllowed({ actingPartyId: "party-a", offerOwnerPartyId: "party-a" }),
   ).toThrow(/may not bind to your own offer/);
 });
 
 test("assertMatchmakingBindAllowed allows binding counterparty offer", () => {
   expect(() =>
-    assertMatchmakingBindAllowed({ actingPartyId: "p1", offerOwnerPartyId: "p2" }),
+    assertMatchmakingBindAllowed({ actingPartyId: "party-a", offerOwnerPartyId: "party-b" }),
   ).not.toThrow();
 });
 

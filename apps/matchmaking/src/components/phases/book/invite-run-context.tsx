@@ -11,7 +11,11 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { useMatchmakingNavigation } from "@/components/phases/navigation/matchmaking-navigation-context";
-import { stubPostNegotiationGateContent } from "@/lib/stub-post-negotiation-summary";
+import {
+  gateContentFromPartySummaries,
+  stubPostNegotiationGateContent,
+} from "@/lib/stub-post-negotiation-summary";
+import type { PartyRunSummary, RunSummariesApiResponse } from "@/lib/summaries/summary-types";
 
 type ReviewAcceptedPrep = () => void;
 
@@ -77,13 +81,39 @@ export function InviteRunProvider({ children }: { children: ReactNode }) {
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [savedInviteText, setSavedInviteText] = useState("");
   const [savedInviteGoals, setSavedInviteGoals] = useState<string[]>([]);
+  const [runSummaries, setRunSummaries] = useState<PartyRunSummary[] | null>(null);
+  const [runSummariesState, setRunSummariesState] = useState<"idle" | "loading" | "ready" | "error">(
+    "idle",
+  );
   const postNegotiationGateConsumed = useRef(false);
   const reviewAcceptedPrepRef = useRef<ReviewAcceptedPrep>(() => {});
 
-  const gateContent = useMemo(
-    () => stubPostNegotiationGateContent(negotiationDoneResult ?? { status: "unknown", rounds: 0 }),
-    [negotiationDoneResult],
-  );
+  const gateContent = useMemo(() => {
+    if (runSummariesState === "ready" && runSummaries !== null && runSummaries.length === 2) {
+      const requester = runSummaries.find((s) => s.partySlug === "_user_");
+      const requestee = runSummaries.find((s) => s.partySlug !== "_user_");
+      if (requester !== undefined && requestee !== undefined) {
+        return gateContentFromPartySummaries(requester, requestee);
+      }
+    }
+    if (runSummariesState === "loading") {
+      return {
+        fitSummary: "Generating personalized summaries for each party...",
+        agenda: "Please wait a moment while summaries are prepared.",
+        recommendationRequester: "Loading requester summary...",
+        recommendationRequestee: "Loading requestee summary...",
+      };
+    }
+    if (runSummariesState === "error") {
+      return {
+        fitSummary: "Summary generation failed; showing fallback guidance.",
+        agenda: "Proceed with your own judgment from the transcript and known goals.",
+        recommendationRequester: "Fallback summary active due to generation error.",
+        recommendationRequestee: "Fallback summary active due to generation error.",
+      };
+    }
+    return stubPostNegotiationGateContent(negotiationDoneResult ?? { status: "unknown", rounds: 0 });
+  }, [negotiationDoneResult, runSummaries, runSummariesState]);
 
   const registerReviewAcceptedPrep = useCallback((fn: ReviewAcceptedPrep) => {
     reviewAcceptedPrepRef.current = fn;
@@ -93,8 +123,33 @@ export function InviteRunProvider({ children }: { children: ReactNode }) {
     setNegotiationRunId(null);
     setSavedInviteText("");
     setSavedInviteGoals([]);
+    setRunSummaries(null);
+    setRunSummariesState("idle");
     setInviteMessage("");
     setSendError(null);
+  }, []);
+
+  const refreshRunSummaries = useCallback(async (runId: string) => {
+    setRunSummariesState("loading");
+    try {
+      const res = await fetch(`/api/runs/${encodeURIComponent(runId)}/summaries`);
+      const body = (await res.json()) as RunSummariesApiResponse | { error?: unknown };
+      if (!res.ok) {
+        setRunSummariesState("error");
+        return;
+      }
+      if ("status" in body && body.status === "ready") {
+        setRunSummaries(body.summaries);
+        setRunSummariesState("ready");
+        return;
+      }
+      setRunSummariesState("loading");
+      window.setTimeout(() => {
+        void refreshRunSummaries(runId);
+      }, 1200);
+    } catch {
+      setRunSummariesState("error");
+    }
   }, []);
 
   const refreshSavedInviteGoals = useCallback(async () => {
@@ -170,6 +225,8 @@ export function InviteRunProvider({ children }: { children: ReactNode }) {
         }
         setSavedInviteText(inviteMessage.trim());
         setSavedInviteGoals([]);
+        setRunSummaries(null);
+        setRunSummariesState("idle");
         postNegotiationGateConsumed.current = false;
         setNegotiationRunComplete(false);
         setNegotiationDoneResult(null);
@@ -182,10 +239,16 @@ export function InviteRunProvider({ children }: { children: ReactNode }) {
     }
   }, [inviteMessage, selectedSlug]);
 
-  const onNegotiationRunFinished = useCallback((result: unknown) => {
-    setNegotiationRunComplete(true);
-    setNegotiationDoneResult(result);
-  }, []);
+  const onNegotiationRunFinished = useCallback(
+    (result: unknown) => {
+      setNegotiationRunComplete(true);
+      setNegotiationDoneResult(result);
+      if (negotiationRunId !== null) {
+        void refreshRunSummaries(negotiationRunId);
+      }
+    },
+    [negotiationRunId, refreshRunSummaries],
+  );
 
   const onDevDrawerOpenChange = useCallback(
     (open: boolean) => {

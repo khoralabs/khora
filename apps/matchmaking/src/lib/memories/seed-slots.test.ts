@@ -25,7 +25,9 @@ function mockBundle(keysByNs: Map<string, Set<string>>): MatchmakingMemoriesBund
 
 describe("seed slot detection", () => {
   test("public profile key helpers are stable", () => {
-    expect(matchmakingPublicProfileSeedMemoryKey("p1")).toBe("seed/public-profile/p1");
+    expect(matchmakingPublicProfileSeedMemoryKey("mira-patel")).toBe(
+      "seed/public-profile/mira-patel",
+    );
     expect(matchmakingUserPublicProfileMemoryKey()).toBe("live/public-profile/_user_");
   });
 

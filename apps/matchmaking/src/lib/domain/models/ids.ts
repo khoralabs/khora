@@ -1,6 +1,7 @@
 import { z } from "zod";
+import { zMatchmakingSimPersonaSlug } from "../../personas/slugs.ts";
 
-export const zInviteePersonaSlug = z.enum(["p1", "p2", "p3"]);
+export const zInviteePersonaSlug = zMatchmakingSimPersonaSlug;
 export type InviteePersonaSlug = z.infer<typeof zInviteePersonaSlug>;
 
 export const zRunId = z.uuid();

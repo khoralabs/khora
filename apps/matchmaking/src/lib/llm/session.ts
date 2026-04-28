@@ -54,6 +54,7 @@ import { mergeMeetingDomainPayloadIntoNamespace } from "../memories/merge-meetin
 import { resolveMemoriesDbPath, resolveMemoriesRoot } from "../memories/persisted-memories.ts";
 import type { ThreadDevLog } from "../negotiation-run-registry.ts";
 import { resolveMatchmakingSubjectId } from "../resolve-subject-id.ts";
+import { MATCHMAKING_SIM_PERSONA_SLUGS } from "../personas/index.ts";
 import { buildAppUserIntroRequestScenario, type MatchmakingScenario } from "../scenarios";
 import { buildMatchmakingUserMessage } from "./messages.ts";
 import { matchmakingValueFirewallInstructions } from "./value-firewall-instructions.ts";
@@ -204,7 +205,9 @@ export async function runMatchmakingSession(options?: {
    */
   runId?: string;
 }): Promise<MatchmakingResult> {
-  const scenario = options?.scenario ?? (await buildAppUserIntroRequestScenario("p2"));
+  const defaultInvitee = MATCHMAKING_SIM_PERSONA_SLUGS[1]!;
+  const scenario =
+    options?.scenario ?? (await buildAppUserIntroRequestScenario(defaultInvitee));
   const maxRounds = options?.maxRounds ?? scenario.maxRounds ?? DEFAULT_MAX_ROUNDS;
 
   let textTranscriptPath: string | undefined;

@@ -24,6 +24,8 @@ import {
 } from "./lib/post-negotiation-request.ts";
 import { resolveMatchmakingSubjectId } from "./lib/resolve-subject-id.ts";
 import { buildAppUserIntroRequestScenario } from "./lib/scenarios/intro-request.ts";
+import { generateAndPersistRunSummaries } from "./lib/summaries/generate-and-persist-run-summaries.ts";
+import { zRunSummariesApiResponse } from "./lib/summaries/summary-types.ts";
 import {
   getUserPublicProfileForApi,
   saveUserPublicProfileToMemories,
@@ -136,6 +138,9 @@ const server = Bun.serve({
           });
           appendDoneEvent(runId, result);
           p.setInviteFinished(runId, result);
+          void generateAndPersistRunSummaries({ runId }).catch((e) => {
+            console.error("[run-summaries] background generation failed", e);
+          });
         } catch (e) {
           const err = {
             status: "error" as const,
@@ -163,6 +168,36 @@ const server = Bun.serve({
       }
       const goals = getMatchmakingDomainRuntime().persistence.listGoalsByInviteId(runId);
       return Response.json({ goals });
+    }
+
+    if (
+      url.pathname.startsWith("/api/runs/") &&
+      url.pathname.endsWith("/summaries") &&
+      req.method === "GET"
+    ) {
+      const runId = url.pathname
+        .replace("/api/runs/", "")
+        .replace("/summaries", "")
+        .replace(/\/+$/g, "");
+      if (!runId) {
+        return Response.json({ error: "Missing run id" }, { status: 400 });
+      }
+      const summaries = getMatchmakingDomainRuntime()
+        .persistence.listRunSummariesByRunId(runId)
+        .map((s) => ({
+          partySlug: s.partySlug,
+          counterpartySlug: s.counterpartySlug,
+          summaryText: s.summaryText,
+          ...(s.fitAssessment !== undefined ? { fitAssessment: s.fitAssessment } : {}),
+          keyEvidence: s.keyEvidence,
+          ...(s.recommendedNextStep !== undefined
+            ? { recommendedNextStep: s.recommendedNextStep }
+            : {}),
+        }));
+      if (summaries.length < 2) {
+        return Response.json(zRunSummariesApiResponse.parse({ status: "pending" }));
+      }
+      return Response.json(zRunSummariesApiResponse.parse({ status: "ready", summaries }));
     }
 
     if (url.pathname === "/api/post-negotiation/review" && req.method === "POST") {

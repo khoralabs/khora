@@ -1,6 +1,7 @@
 import type { EmbeddingModel } from "@cfd/memories-core/helpers";
 import type { LanguageModel } from "ai";
-import { type MatchmakingPersonaSlug, matchmakingPersonas } from "../personas/index.ts";
+import { matchmakingPersonas } from "../personas/index.ts";
+import { MATCHMAKING_SIM_PERSONA_SLUGS } from "../personas/slugs.ts";
 import type { MatchmakingPersona } from "../personas/types.ts";
 import type { MatchmakingMemoriesBundle } from "./create-memories-bundle.ts";
 import { matchmakingSharedPublicProfilesNamespace } from "./matchmaking-shared-public-profiles-namespace.ts";
@@ -10,8 +11,6 @@ import {
   matchmakingPublicProfileSeedMemoryKey,
   matchmakingSeedMemoryKey,
 } from "./persisted-memories.ts";
-
-const PUBLIC_PROFILE_SEED_SLUGS: readonly MatchmakingPersonaSlug[] = ["p1", "p2", "p3"];
 
 /** Adapter → integrator pipeline per seed (same as matchmaking session seed path). */
 export async function seedPersonaMemoryNamespace(args: {
@@ -61,7 +60,7 @@ export async function seedGlobalPublicProfiles(args: {
 }): Promise<void> {
   const { bundle, chatModel, embeddingModel, skipExistingSlots } = args;
   const namespace = matchmakingSharedPublicProfilesNamespace();
-  for (const slug of PUBLIC_PROFILE_SEED_SLUGS) {
+  for (const slug of MATCHMAKING_SIM_PERSONA_SLUGS) {
     const p = matchmakingPersonas[slug];
     const memoryKey = matchmakingPublicProfileSeedMemoryKey(slug);
     if (

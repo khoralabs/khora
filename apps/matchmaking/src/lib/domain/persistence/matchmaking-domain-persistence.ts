@@ -9,9 +9,19 @@ import type {
   InviteePersonaSlug,
   Profile,
   Reflection,
+  RunSummary,
+  UpsertRunSummaryInput,
   UserPublicProfileFields,
 } from "../models/index.ts";
-import { zBooking, zCalendarHold, zGoal, zInvite, zProfile, zReflection } from "../models/index.ts";
+import {
+  zBooking,
+  zCalendarHold,
+  zGoal,
+  zInvite,
+  zProfile,
+  zReflection,
+  zRunSummary,
+} from "../models/index.ts";
 
 function nowMs(): number {
   return Date.now();
@@ -44,6 +54,8 @@ export type MatchmakingDomainPersistence = {
   }): Invite;
   getInvite(id: string): Invite | null;
   listGoalsByInviteId(inviteId: string): Goal[];
+  listRunSummariesByRunId(runId: string): RunSummary[];
+  upsertRunSummary(input: UpsertRunSummaryInput): RunSummary;
   createGoals(args: { inviteId: string; subjectId: string; goals: CreateGoalInput[] }): Goal[];
   updateInviteStatus(id: string, status: Invite["status"]): void;
   setInviteFinished(id: string, result: unknown): void;
@@ -195,6 +207,112 @@ export class SqliteMatchmakingDomainPersistence implements MatchmakingDomainPers
         createdAt: r.created_at,
       }),
     );
+  }
+
+  listRunSummariesByRunId(runId: string): RunSummary[] {
+    const rows = this.db
+      .query(
+        "SELECT id, run_id, party_slug, counterparty_slug, summary_text, fit_assessment, key_evidence_json, recommended_next_step, created_at, updated_at FROM run_summaries WHERE run_id = ? ORDER BY party_slug, id",
+      )
+      .all(runId) as {
+      id: string;
+      run_id: string;
+      party_slug: string;
+      counterparty_slug: string;
+      summary_text: string;
+      fit_assessment: string | null;
+      key_evidence_json: string;
+      recommended_next_step: string | null;
+      created_at: number;
+      updated_at: number;
+    }[];
+    return rows.map((r) =>
+      zRunSummary.parse({
+        id: r.id,
+        runId: r.run_id,
+        partySlug: r.party_slug,
+        counterpartySlug: r.counterparty_slug,
+        summaryText: r.summary_text,
+        ...(r.fit_assessment !== null ? { fitAssessment: r.fit_assessment } : {}),
+        keyEvidence: JSON.parse(r.key_evidence_json) as string[],
+        ...(r.recommended_next_step !== null
+          ? { recommendedNextStep: r.recommended_next_step }
+          : {}),
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+      }),
+    );
+  }
+
+  upsertRunSummary(input: UpsertRunSummaryInput): RunSummary {
+    const t = nowMs();
+    const id = crypto.randomUUID();
+    this.db.run(
+      `INSERT INTO run_summaries (
+          id, run_id, party_slug, counterparty_slug, summary_text, fit_assessment, key_evidence_json, recommended_next_step, created_at, updated_at
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(run_id, party_slug) DO UPDATE SET
+         counterparty_slug = excluded.counterparty_slug,
+         summary_text = excluded.summary_text,
+         fit_assessment = excluded.fit_assessment,
+         key_evidence_json = excluded.key_evidence_json,
+         recommended_next_step = excluded.recommended_next_step,
+         updated_at = excluded.updated_at`,
+      [
+        id,
+        input.runId,
+        input.partySlug,
+        input.counterpartySlug,
+        input.summaryText,
+        input.fitAssessment ?? null,
+        JSON.stringify(input.keyEvidence ?? []),
+        input.recommendedNextStep ?? null,
+        t,
+        t,
+      ],
+    );
+    const row = this.db
+      .query(
+        "SELECT id, run_id, party_slug, counterparty_slug, summary_text, fit_assessment, key_evidence_json, recommended_next_step, created_at, updated_at FROM run_summaries WHERE run_id = ? AND party_slug = ?",
+      )
+      .get(input.runId, input.partySlug) as
+      | {
+          id: string;
+          run_id: string;
+          party_slug: string;
+          counterparty_slug: string;
+          summary_text: string;
+          fit_assessment: string | null;
+          key_evidence_json: string;
+          recommended_next_step: string | null;
+          created_at: number;
+          updated_at: number;
+        }
+      | undefined;
+    if (row === undefined) {
+      throw new Error("internal: run summary not found after upsert");
+    }
+    const summary = zRunSummary.parse({
+      id: row.id,
+      runId: row.run_id,
+      partySlug: row.party_slug,
+      counterpartySlug: row.counterparty_slug,
+      summaryText: row.summary_text,
+      ...(row.fit_assessment !== null ? { fitAssessment: row.fit_assessment } : {}),
+      keyEvidence: JSON.parse(row.key_evidence_json) as string[],
+      ...(row.recommended_next_step !== null
+        ? { recommendedNextStep: row.recommended_next_step }
+        : {}),
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    });
+    const invite = this.getInvite(input.runId);
+    if (invite !== null) {
+      appendEventRow(this.db, "RunSummaryGenerated", invite.subjectId, input.runId, {
+        partySlug: input.partySlug,
+      }, t);
+    }
+    return summary;
   }
 
   createGoals(args: { inviteId: string; subjectId: string; goals: CreateGoalInput[] }): Goal[] {

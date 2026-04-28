@@ -18,14 +18,18 @@ test("shared public profiles namespace path is cross-subject _global_ segment", 
 });
 
 test("personal and feedback namespaces are cross-subject per-user", () => {
-  expect(matchmakingPersonalMemoryNamespace("p1")).toBe("obp_demo/matchmaking/users/p1/personal");
-  expect(matchmakingFeedbackMemoryNamespace("p1")).toBe("obp_demo/matchmaking/users/p1/feedback");
+  expect(matchmakingPersonalMemoryNamespace("mira-patel")).toBe(
+    "obp_demo/matchmaking/users/mira-patel/personal",
+  );
+  expect(matchmakingFeedbackMemoryNamespace("mira-patel")).toBe(
+    "obp_demo/matchmaking/users/mira-patel/feedback",
+  );
 });
 
 test("zMeetingSeedPayload accepts public_profile", () => {
   const p = zMeetingSeedPayload.parse({
     kind: "public_profile",
-    slug: "p1",
+    slug: "mira-patel",
     displayName: "Name",
     tagline: "Tag",
     about: "About",

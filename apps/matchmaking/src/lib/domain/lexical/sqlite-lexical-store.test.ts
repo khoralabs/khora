@@ -3,7 +3,7 @@ import { afterAll, beforeAll, expect, test } from "bun:test";
 import { migrateMatchmakingDomainDb } from "../persistence/migrate-domain-db.ts";
 import { SqliteLexicalStore } from "./sqlite-lexical-store.ts";
 
-const ns = "obp_demo/matchmaking/subjects/t/sub/personas/p1";
+const ns = "obp_demo/matchmaking/subjects/t/sub/personas/mira-patel";
 
 let db: Database;
 

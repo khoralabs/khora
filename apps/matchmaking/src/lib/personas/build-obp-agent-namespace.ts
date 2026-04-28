@@ -5,7 +5,7 @@ const SAFE = /[^a-zA-Z0-9._-]+/g;
 
 /**
  * OBP negotiator `agentNamespace` for the experiential app user (not a demo persona slug).
- * Distinct from {@link buildMatchmakingObpAgentNamespace} so agent ids never collide with p1/p2/p3.
+ * Distinct from {@link buildMatchmakingObpAgentNamespace} so agent ids never collide with directory personas.
  */
 export function buildMatchmakingAppUserObpAgentNamespace(
   subjectId: string = resolveMatchmakingSubjectId(),

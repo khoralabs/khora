@@ -35,3 +35,9 @@ export {
   zReflection,
   zReflectionKind,
 } from "./reflection.ts";
+export {
+  type RunSummary,
+  type UpsertRunSummaryInput,
+  zRunSummary,
+  zUpsertRunSummaryInput,
+} from "./run-summary.ts";

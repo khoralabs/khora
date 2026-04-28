@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
-import { DOMAIN_SCHEMA_V1, DOMAIN_SCHEMA_V2 } from "./schema.ts";
+import { DOMAIN_SCHEMA_RUN_SUMMARIES, DOMAIN_SCHEMA_V1, DOMAIN_SCHEMA_V2 } from "./schema.ts";
 
-const LATEST = 2;
+const LATEST = 3;
 
 /**
  * Idempotent: creates tables if missing, bumps user_version to {@link LATEST}.
@@ -35,6 +35,9 @@ export function migrateMatchmakingDomainDb(db: Database): void {
   if (current < 2) {
     // Ensure full latest shape exists for fresh and upgraded DBs.
     db.run(DOMAIN_SCHEMA_V2);
+  }
+  if (current < 3) {
+    db.run(DOMAIN_SCHEMA_RUN_SUMMARIES);
   }
   db.run(`PRAGMA user_version = ${LATEST}`);
 }

@@ -14,7 +14,7 @@ This repo implements a working demo of that loop.
 
 ### 1. Personal understanding
 
-Build a picture of each user from their goals and experiences. In the matchmaking demo: the app user builds an experiential graph from interactions, while simulated other people (p1/p2/p3) are offline-seeded for browse/invite.
+Build a picture of each user from their goals and experiences. In the matchmaking demo: the app user builds an experiential graph from interactions, while five simulated directory personas are offline-seeded for browse/invite.
 
 ### 2. Reflection as a product
 

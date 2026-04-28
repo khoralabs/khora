@@ -50,7 +50,7 @@ test("Invite and booking outcome", () => {
   const i = p.createInvite({
     id: RUN_ID,
     subjectId: "s1",
-    inviteePersonaSlug: "p1",
+    inviteePersonaSlug: "mira-patel",
     message: "hi",
   });
   expect(i.status).toBe("pending");
@@ -70,7 +70,7 @@ test("Goals create/list by invite id", () => {
   p.createInvite({
     id: RUN_ID,
     subjectId: "s1",
-    inviteePersonaSlug: "p2",
+    inviteePersonaSlug: "james-ortiz",
     message: "Need advice on API partnerships",
   });
   const created = p.createGoals({
@@ -88,4 +88,35 @@ test("Goals create/list by invite id", () => {
     "Validate partner ICP",
     "Get concrete intro criteria",
   ]);
+});
+
+test("Run summaries upsert/list by run id", () => {
+  const p = new SqliteMatchmakingDomainPersistence(db);
+  p.createInvite({
+    id: RUN_ID,
+    subjectId: "s1",
+    inviteePersonaSlug: "sara-kim",
+    message: "Can we connect?",
+  });
+  const a = p.upsertRunSummary({
+    runId: RUN_ID,
+    partySlug: "_user_",
+    counterpartySlug: "sara-kim",
+    summaryText: "Good fit on scope and timing.",
+    fitAssessment: "Likely worth accepting.",
+    keyEvidence: ["Aligned topic", "Clear next step"],
+    recommendedNextStep: "Accept and share two agenda bullets.",
+  });
+  expect(a.partySlug).toBe("_user_");
+  const b = p.upsertRunSummary({
+    runId: RUN_ID,
+    partySlug: "sara-kim",
+    counterpartySlug: "_user_",
+    summaryText: "Tentative fit; wants clearer artifact.",
+    keyEvidence: ["Asked for concrete artifact"],
+  });
+  expect(b.partySlug).toBe("sara-kim");
+  const listed = p.listRunSummariesByRunId(RUN_ID);
+  expect(listed.length).toBe(2);
+  expect(listed.map((s) => s.partySlug)).toEqual(["_user_", "sara-kim"]);
 });

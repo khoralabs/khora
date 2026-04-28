@@ -1,3 +1,5 @@
+import type { PartyRunSummary } from "./summaries/summary-types.ts";
+
 /**
  * Placeholder until a real post-negotiation agent reads the OBP + plaintext thread
  * and emits a structured agenda and per-twin value recommendations.
@@ -24,3 +26,24 @@ export function stubPostNegotiationGateContent(result: unknown): {
 }
 
 export type PostNegotiationGateContent = ReturnType<typeof stubPostNegotiationGateContent>;
+
+export function gateContentFromPartySummaries(
+  requesterSummary: PartyRunSummary,
+  requesteeSummary: PartyRunSummary,
+): PostNegotiationGateContent {
+  const agenda =
+    requesterSummary.recommendedNextStep ??
+    (requesterSummary.keyEvidence.length > 0
+      ? requesterSummary.keyEvidence.map((e, i) => `${i + 1}. ${e}`).join("\n")
+      : "No clear next step from summary.");
+  return {
+    fitSummary: requesterSummary.summaryText,
+    agenda,
+    recommendationRequester:
+      requesterSummary.fitAssessment ??
+      "No explicit fit assessment available; review key evidence and choose accept/decline.",
+    recommendationRequestee:
+      requesteeSummary.fitAssessment ??
+      requesteeSummary.summaryText,
+  };
+}

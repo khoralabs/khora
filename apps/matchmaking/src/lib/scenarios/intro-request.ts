@@ -57,7 +57,7 @@ export async function buildAppUserIntroRequestScenario(
  * Two simulated personae (both offline-seeded). For the product flow use
  * {@link buildAppUserIntroRequestScenario} (user inviter + one demo invitee).
  *
- * (e.g. `buildIntroRequestScenarioPair("p2", "p1")` to swap sides for compatibility tests).
+ * (e.g. `buildIntroRequestScenarioPair("james-ortiz", "mira-patel")` to swap sides for tests).
  * Pass `options.invitationMessage` to seed the shared thread with Party A–authored text before round 0.
  */
 export async function buildIntroRequestScenarioPair(

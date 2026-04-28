@@ -5,6 +5,7 @@ export const zDomainEventName = z.enum([
   "InviteCreated",
   "InviteCompleted",
   "GoalsExtracted",
+  "RunSummaryGenerated",
   "BookingRecorded",
   "CalendarHoldCreated",
   "CalendarHoldUpdated",

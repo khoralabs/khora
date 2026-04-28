@@ -11,6 +11,7 @@ import {
   resolveMemoriesDbPath,
   resolveMemoriesRoot,
 } from "../src/lib/memories/persisted-memories.ts";
+import { MATCHMAKING_SIM_PERSONA_SLUGS } from "../src/lib/personas/slugs.ts";
 import { buildAppUserIntroRequestScenario } from "../src/lib/scenarios/intro-request.ts";
 
 function buildLogFilePath(): string {
@@ -20,7 +21,7 @@ function buildLogFilePath(): string {
 }
 
 async function main(): Promise<void> {
-  const scenario = await buildAppUserIntroRequestScenario("p2", {
+  const scenario = await buildAppUserIntroRequestScenario(MATCHMAKING_SIM_PERSONA_SLUGS[1]!, {
     invitationMessage: "Smoke run: opening line from Party A.",
   });
 

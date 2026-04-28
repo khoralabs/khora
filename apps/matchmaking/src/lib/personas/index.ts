@@ -1,17 +1,22 @@
-import { matchmakingPersonaP1 } from "./p1.ts";
-import { matchmakingPersonaP2 } from "./p2.ts";
-import { matchmakingPersonaP3 } from "./p3.ts";
+import type { MatchmakingSimPersonaSlug } from "./slugs.ts";
+import { matchmakingPersonaDevonMack } from "./devon-mack.ts";
+import { matchmakingPersonaElenaVasquez } from "./elena-vasquez.ts";
+import { matchmakingPersonaJamesOrtiz } from "./james-ortiz.ts";
+import { matchmakingPersonaMiraPatel } from "./mira-patel.ts";
+import { matchmakingPersonaSaraKim } from "./sara-kim.ts";
 import type { MatchmakingPersona } from "./types.ts";
 
 export type { MatchmakingPersona } from "./types.ts";
-export { matchmakingPersonaP1, matchmakingPersonaP2, matchmakingPersonaP3 };
+export type { MatchmakingSimPersonaSlug } from "./slugs.ts";
+export { MATCHMAKING_SIM_PERSONA_SLUGS, zMatchmakingSimPersonaSlug } from "./slugs.ts";
 
-/** Registered personas for matchmaking demos; add a module + entry here to test new pairs. */
 export const matchmakingPersonas = {
-  p1: matchmakingPersonaP1,
-  p2: matchmakingPersonaP2,
-  p3: matchmakingPersonaP3,
-} as const;
+  "mira-patel": matchmakingPersonaMiraPatel,
+  "james-ortiz": matchmakingPersonaJamesOrtiz,
+  "sara-kim": matchmakingPersonaSaraKim,
+  "devon-mack": matchmakingPersonaDevonMack,
+  "elena-vasquez": matchmakingPersonaElenaVasquez,
+} as const satisfies Record<MatchmakingSimPersonaSlug, MatchmakingPersona>;
 
 export type MatchmakingPersonaSlug = keyof typeof matchmakingPersonas;
 
