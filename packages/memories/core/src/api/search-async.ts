@@ -58,6 +58,7 @@ async function rankSourceMapIdsForContentAsync(
     vectorWeight: number;
     retrievalLimit: number;
     memoryIds?: string[];
+    maxVectorDistance?: number;
   },
 ): Promise<Array<{ id: string; score: number }>> {
   const { scope } = input;
@@ -83,6 +84,9 @@ async function rankSourceMapIdsForContentAsync(
           vector: input.content.vector,
           limit: input.retrievalLimit,
           memoryIds: input.memoryIds,
+          ...(input.maxVectorDistance !== undefined
+            ? { maxVectorDistance: input.maxVectorDistance }
+            : {}),
         });
         if (ranked.length > 0) {
           arms.push({ armId: `vector:${ns}`, ranked, weight: input.vectorWeight });
@@ -111,6 +115,9 @@ async function rankSourceMapIdsForContentAsync(
       vector: input.content.vector,
       limit: input.retrievalLimit,
       memoryIds: input.memoryIds,
+      ...(input.maxVectorDistance !== undefined
+        ? { maxVectorDistance: input.maxVectorDistance }
+        : {}),
     });
     if (ranked.length > 0) {
       arms.push({ armId: "vector", ranked, weight: input.vectorWeight });
@@ -135,6 +142,7 @@ async function expandNeighborsWithSubSearchAsync<
     minScore: number;
     neighborFilters: NeighborFilter<EDGE_LABELS, NODE_LABELS> | undefined;
     maxNeighbors: number | undefined;
+    maxVectorDistance?: number;
   },
 ): Promise<SearchNeighborHit<NODE_LABELS, EDGE_LABELS>[]> {
   if (!caps.neighborIndex) return [];
@@ -169,6 +177,9 @@ async function expandNeighborsWithSubSearchAsync<
     vectorWeight: input.vectorWeight,
     retrievalLimit: neighborRetrievalLimit,
     memoryIds,
+    ...(input.maxVectorDistance !== undefined
+      ? { maxVectorDistance: input.maxVectorDistance }
+      : {}),
   });
 
   if (fused.length === 0) return [];
@@ -240,6 +251,7 @@ export async function searchAsync<
   const retrievalLimit = Math.max(topK * 5, 25);
   const lexicalWeight = params.options?.arms?.lexical ?? 1;
   const vectorWeight = params.options?.arms?.vector ?? 1;
+  const maxVectorDistance = params.options?.maxVectorDistance;
 
   const fused = await rankSourceMapIdsForContentAsync(persistence, caps, {
     scope,
@@ -248,6 +260,7 @@ export async function searchAsync<
     lexicalWeight,
     vectorWeight,
     retrievalLimit,
+    ...(maxVectorDistance !== undefined ? { maxVectorDistance } : {}),
   });
   if (fused.length === 0) return [];
   const hydrated = await persistence.hydrateSourceMapHits(fused.map((result) => result.id));
@@ -307,6 +320,7 @@ export async function searchAsync<
           minScore,
           neighborFilters,
           maxNeighbors,
+          ...(maxVectorDistance !== undefined ? { maxVectorDistance } : {}),
         },
       ),
     })),

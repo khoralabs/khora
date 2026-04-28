@@ -252,6 +252,8 @@ export interface MemoriesRetrieval {
     vector: number[];
     limit: number;
     memoryIds?: string[];
+    /** sqlite‑vec KNN distance upper bound; omit = return top‑k without a distance cutoff. */
+    maxVectorDistance?: number;
   }): string[];
 
   hydrateSourceMapHits(sourceMapIds: readonly string[]): HydratedSourceMapHit[];

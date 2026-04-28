@@ -126,6 +126,8 @@ const server = serve({
         query?: string;
         topK?: number;
         maxNeighbors?: number;
+        /** sqlite‑vec KNN distance upper bound for the vector arm (omit = no cutoff). */
+        maxVectorDistance?: number;
         /**
          * Embedding preset L|M|H (768 / 1536 / 3072). If omitted, the server infers L/M/H from the DB
          * when there is a single vector index dimension; otherwise defaults to M.
@@ -153,6 +155,11 @@ const server = serve({
       }
       const topK = Math.min(50, Math.max(1, Number(body.topK) || 10));
       const maxNeighbors = Math.min(50, Math.max(0, Number(body.maxNeighbors) ?? 5));
+      const rawMaxDist = body.maxVectorDistance;
+      const maxVectorDistance =
+        rawMaxDist !== undefined && Number.isFinite(rawMaxDist) && rawMaxDist > 0
+          ? rawMaxDist
+          : undefined;
       let db: ReturnType<typeof openMemoriesDatabaseReadonly>;
       try {
         db = openMemoriesDatabaseReadonly(MEMORIES_DB_PATH);
@@ -213,6 +220,7 @@ const server = serve({
               neighbors: true,
               maxNeighbors,
               arms,
+              ...(maxVectorDistance !== undefined ? { maxVectorDistance } : {}),
             },
           },
         );

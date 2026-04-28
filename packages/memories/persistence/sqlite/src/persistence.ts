@@ -215,6 +215,7 @@ export class MemoriesPersistence implements IMemoriesPersistence {
     vector: number[];
     limit: number;
     memoryIds?: string[];
+    maxVectorDistance?: number;
   }): string[] {
     return searchVectorSourceMapIds({ db: this.db, now: 0 }, input);
   }

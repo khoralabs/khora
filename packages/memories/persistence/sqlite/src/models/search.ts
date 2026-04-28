@@ -198,7 +198,14 @@ export function searchLexicalSourceMapIds(
 
 export function searchVectorSourceMapIds(
   ctx: DbCtx,
-  input: { scope: SearchNamespaceScope; vector: number[]; limit: number; memoryIds?: string[] },
+  input: {
+    scope: SearchNamespaceScope;
+    vector: number[];
+    limit: number;
+    memoryIds?: string[];
+    /** sqlite‑vec KNN distance; rows with larger distance are excluded. */
+    maxVectorDistance?: number;
+  },
 ): string[] {
   if (input.memoryIds !== undefined && input.memoryIds.length === 0) return [];
   if (input.scope.kind === "union" && input.scope.namespaces.length === 0) return [];
@@ -228,10 +235,17 @@ export function searchVectorSourceMapIds(
   const nsBindings: SQLQueryBindings[] =
     input.scope.kind === "unscoped" ? [] : [...nsScoped.bindings];
 
+  const maxD = input.maxVectorDistance;
+  const distanceClause =
+    maxD !== undefined && Number.isFinite(maxD) ? `AND knn.distance <= ?` : "";
+
   const params: SQLQueryBindings[] =
     input.memoryIds === undefined
       ? [JSON.stringify(input.vector), knnK, ...nsBindings]
       : [JSON.stringify(input.vector), knnK, ...nsBindings, ...input.memoryIds];
+  if (distanceClause) {
+    params.push(maxD as number);
+  }
 
   const rows = ctx.db
     .query<{ sourceMapId: string }, SQLQueryBindings[]>(
@@ -248,6 +262,7 @@ export function searchVectorSourceMapIds(
        WHERE 1 = 1
        ${nsClause}
        ${memFilter}
+       ${distanceClause}
        ORDER BY knn.distance ASC`,
     )
     .all(...params);

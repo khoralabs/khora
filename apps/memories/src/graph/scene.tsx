@@ -306,6 +306,7 @@ function GraphSceneR3f({ edgeRenderMode }: { edgeRenderMode: GraphEdgeRenderMode
           const inActiveSubgraph = !!activeSubgraphKeys?.has(point.entryId);
           const searchDimmed =
             graphSearch !== null &&
+            graphSearch.relevantKeys.size > 0 &&
             !graphSearch.relevantKeys.has(point.entryId) &&
             !inActiveSubgraph;
           const subgraphDimmed =

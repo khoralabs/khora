@@ -30,6 +30,8 @@ export const searchVectorSourceMapIds = action({
     vector: v.array(v.number()),
     limit: v.number(),
     memoryIds: v.optional(v.array(v.string())),
+    /** Approximate cutoff: skip hits whose cosine distance `1 - _score` exceeds this (aligns loosely with SQLite vec distance caps). */
+    maxVectorDistance: v.optional(v.number()),
   },
   returns: v.array(v.string()),
   handler: async (ctx, raw) => {
@@ -80,10 +82,16 @@ export const searchVectorSourceMapIds = action({
       ids: hits.map((h) => String(h._id)),
     });
 
+    const maxDist = raw.maxVectorDistance;
     const out: string[] = [];
     for (let i = 0; i < hits.length; i++) {
+      const hit = hits[i];
       const row = rows[i];
-      if (!row) continue;
+      if (!hit || !row) continue;
+      if (maxDist !== undefined && Number.isFinite(maxDist)) {
+        const score = (hit as { _score?: number })._score;
+        if (score !== undefined && 1 - score > maxDist) continue;
+      }
       const docNs = namespacePath(row.namespace);
       const inNs = roots.some((r) => isPrefixOf(r, docNs));
       if (!inNs) continue;

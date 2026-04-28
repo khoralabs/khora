@@ -19,6 +19,9 @@ function defaultNamespace(): string {
   return q?.trim() || "_global_";
 }
 
+/** sqlite‑vec KNN distance cap for hybrid graph search (tune per embedding index / corpus). */
+const GRAPH_SEARCH_MAX_VECTOR_DISTANCE = 0.65;
+
 type SearchApiResponse = {
   hitCount?: number;
   keys?: string[];
@@ -130,6 +133,7 @@ export function App() {
               query: q,
               topK: 10,
               maxNeighbors: 5,
+              maxVectorDistance: GRAPH_SEARCH_MAX_VECTOR_DISTANCE,
             }),
           });
           const json = (await res.json()) as SearchApiResponse;

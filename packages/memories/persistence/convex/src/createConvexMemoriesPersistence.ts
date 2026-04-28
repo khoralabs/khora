@@ -280,6 +280,7 @@ export function createConvexMemoriesPersistence(
       vector: number[];
       limit: number;
       memoryIds?: string[];
+      maxVectorDistance?: number;
     }): Promise<string[]> {
       const scope =
         input.scope.kind === "unscoped"
@@ -290,6 +291,9 @@ export function createConvexMemoriesPersistence(
         vector: input.vector,
         limit: input.limit,
         memoryIds: input.memoryIds,
+        ...(input.maxVectorDistance !== undefined
+          ? { maxVectorDistance: input.maxVectorDistance }
+          : {}),
       });
     },
 
