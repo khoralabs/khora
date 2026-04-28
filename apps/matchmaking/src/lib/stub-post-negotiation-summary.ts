@@ -22,3 +22,5 @@ export function stubPostNegotiationGateContent(result: unknown): {
       "Placeholder: same for the invited party’s view — the full product reports fit before accept/decline on their side.",
   };
 }
+
+export type PostNegotiationGateContent = ReturnType<typeof stubPostNegotiationGateContent>;
