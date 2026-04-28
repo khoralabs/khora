@@ -11,6 +11,8 @@ export function buildMemoryIntegratorAgentId(namespace: string): string {
 export type DefineMemoryIntegratorIdentityOptions = {
   /** Merged into \`createRegisteredAgentIdentity\` context. */
   identityContext?: Record<string, unknown>;
+  /** Additional static instruction blocks prepended before the integrator base instruction. */
+  instructions?: string[];
 };
 
 /**
@@ -23,7 +25,7 @@ export async function defineMemoryIntegratorIdentity(
   return createRegisteredAgentIdentity({
     agentId: buildMemoryIntegratorAgentId(namespace),
     name: "Memory Integrator",
-    instructions: [memoryIntegratorBaseInstruction],
+    instructions: [...(options?.instructions ?? []), memoryIntegratorBaseInstruction],
     context: {
       role: "memory-integrator",
       targetNamespace: namespace,

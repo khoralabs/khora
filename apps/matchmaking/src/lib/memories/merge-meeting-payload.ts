@@ -4,6 +4,10 @@ import type { EmbeddingModel } from "@cfd/memories-core/helpers";
 import { processLogicalMemoryWithIntegrator } from "@cfd/memories-integrator";
 import type { LanguageModel } from "ai";
 import type { MatchmakingMemoriesBundle } from "./create-memories-bundle.ts";
+import {
+  matchmakingAdapterInstructions,
+  matchmakingIntegratorInstructions,
+} from "./matchmaking-memories-instructions.ts";
 import type { MeetingSeedPayload } from "./meeting-seed-payload.ts";
 
 const MERGE_MEMORY_SEARCH_BUDGET_MAX = 3;
@@ -30,6 +34,8 @@ export async function mergeMeetingDomainPayloadIntoNamespace(args: {
   const registry = createAgentRegistry();
   const adapterClient = new MemoryAdapterClient({
     identityContext: { app: "obp-demo", product: "matchmaking-seed" },
+    identityInstructions: [matchmakingAdapterInstructions],
+    instructions: matchmakingAdapterInstructions,
     registry,
     namespace,
     model: chatModel,
@@ -61,6 +67,8 @@ export async function mergeMeetingDomainPayloadIntoNamespace(args: {
     memorySearchBudgetMax: MERGE_MEMORY_SEARCH_BUDGET_MAX,
     integratorClientOptions: {
       identityContext: { app: "obp-demo", product: "matchmaking-seed" },
+      instructions: [matchmakingIntegratorInstructions],
     },
+    integratorInstructions: matchmakingIntegratorInstructions,
   });
 }

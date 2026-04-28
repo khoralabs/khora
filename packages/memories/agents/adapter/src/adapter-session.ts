@@ -28,6 +28,8 @@ export type MemoryAdapterSessionContext<
 > = SessionContext &
   MemorySearchSessionContextSlice<TNode, TEdge> & {
     model: LanguageModel;
+    /** Runtime instruction block prepended before evaluated identity/toolkit instructions. */
+    instructions?: string;
   };
 
 /** Domain payload is app-defined; validate at the host before calling the adapter. */
@@ -125,6 +127,7 @@ export function createMemoryAdapterSessionRunner<
       model,
       identity: agent,
       affordances: context.affordances,
+      instructions: context.instructions,
       runtime: context.runtime,
       ontology: context.client.ontology,
       maxSteps,

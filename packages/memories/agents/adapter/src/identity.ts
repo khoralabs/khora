@@ -11,6 +11,8 @@ export function buildMemoryAdapterAgentId(namespace: string): string {
 export type DefineMemoryAdapterIdentityOptions = {
   /** Merged into \`createRegisteredAgentIdentity\` context (deployment / tenant / product vocabulary). */
   identityContext?: Record<string, unknown>;
+  /** Additional static instruction blocks prepended before the adapter base instruction. */
+  instructions?: string[];
 };
 
 /**
@@ -23,7 +25,7 @@ export async function defineMemoryAdapterIdentity(
   return createRegisteredAgentIdentity({
     agentId: buildMemoryAdapterAgentId(namespace),
     name: "Memory Adapter",
-    instructions: [memoryAdapterBaseInstruction],
+    instructions: [...(options?.instructions ?? []), memoryAdapterBaseInstruction],
     context: {
       role: "memory-adapter",
       targetNamespace: namespace,

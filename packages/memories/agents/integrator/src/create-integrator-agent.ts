@@ -33,6 +33,8 @@ export function createMemoryIntegratorAgent<
   model: LanguageModel;
   identity: RegisteredAgentIdentity;
   affordances: RegisteredAgentAffordances;
+  /** Runtime/system instruction block prepended before evaluated identity/toolkit instructions. */
+  instructions?: string;
   runtime: ToolRuntimeContext<MemorySearchEnv>;
   maxSteps?: number;
   ontology: OntologyDefinition<TNode, TEdge>;
@@ -41,15 +43,17 @@ export function createMemoryIntegratorAgent<
     model,
     identity,
     affordances,
+    instructions,
     runtime,
     maxSteps = DEFAULT_MEMORY_TOOL_LOOP_MAX_STEPS,
     ontology,
   } = args;
   const output = integratorPlanOutputFromOntology(ontology);
+  const mergedInstructions = [instructions, affordances.instructions].filter(Boolean).join("\n\n");
   return createMemorySearchToolLoopAgent<IntegratorPlanStructuredOutput>({
     model,
     identity,
-    affordances,
+    affordances: { ...affordances, instructions: mergedInstructions },
     runtime,
     maxSteps,
     output,

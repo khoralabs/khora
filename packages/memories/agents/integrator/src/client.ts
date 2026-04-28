@@ -5,10 +5,7 @@ import { DEFAULT_MEMORY_TOOL_LOOP_MAX_STEPS } from "@cfd/memories-tools";
 import type { LanguageModel } from "ai";
 import type z from "zod";
 import type { IntegratorPipelineGeneration } from "./create-integrator-agent.js";
-import {
-  buildMemoryIntegratorAgentId,
-  type DefineMemoryIntegratorIdentityOptions,
-} from "./identity.js";
+import { buildMemoryIntegratorAgentId } from "./identity.js";
 import type { IntegratorPlanWire } from "./integrator-output.js";
 import {
   ensureMemoryIntegratorAgentRegistered,
@@ -19,7 +16,13 @@ import {
 export type MemoryIntegratorClientOptions<
   TNode extends Record<string, z.ZodType>,
   TEdge extends Record<string, z.ZodType>,
-> = DefineMemoryIntegratorIdentityOptions & {
+> = {
+  /** Merged into registered identity context. */
+  identityContext?: Record<string, unknown>;
+  /** Additional static identity instructions (prepended before base). */
+  identityInstructions?: string[];
+  /** Runtime/session instruction block prepended at generation-time. */
+  instructions?: string;
   /** Omitted if every {@link MemoryIntegratorClient.integrate} supplies {@code overrides.registry} (e.g. fresh registry per run). */
   registry?: AgentRegistry;
   namespace: string;
@@ -41,6 +44,8 @@ export type MemoryIntegratorIntegrateOverrides<
   memorySearchBudgetMax?: number;
   namespace?: string;
   model?: LanguageModel;
+  /** Runtime/session instruction block prepended at generation-time. */
+  instructions?: string;
   client?: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;
   embeddingModel?: EmbeddingModel;
   registry?: AgentRegistry;
@@ -59,6 +64,8 @@ export class MemoryIntegratorClient<
   readonly client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;
   readonly embeddingModel: EmbeddingModel;
   readonly identityContext: Record<string, unknown> | undefined;
+  readonly identityInstructions: string[] | undefined;
+  readonly instructions: string | undefined;
   readonly defaultMaxSteps: number | undefined;
 
   constructor(options: MemoryIntegratorClientOptions<TNode, TEdge>) {
@@ -68,6 +75,8 @@ export class MemoryIntegratorClient<
     this.client = options.client;
     this.embeddingModel = options.embeddingModel;
     this.identityContext = options.identityContext;
+    this.identityInstructions = options.identityInstructions;
+    this.instructions = options.instructions;
     this.defaultMaxSteps = options.defaultMaxSteps;
   }
 
@@ -93,16 +102,19 @@ export class MemoryIntegratorClient<
     }
     const namespace = o.namespace ?? this.namespace;
     const model = o.model ?? this.model;
+    const instructions = o.instructions ?? this.instructions;
     const client = o.client ?? this.client;
     const embeddingModel = o.embeddingModel ?? this.embeddingModel;
 
     const { identity } = await ensureMemoryIntegratorAgentRegistered(registry, namespace, {
       ...(this.identityContext !== undefined ? { identityContext: this.identityContext } : {}),
+      ...(this.identityInstructions !== undefined ? { instructions: this.identityInstructions } : {}),
     });
 
     const session = registry.createSession(identity.agentId, {
       ctx: {
         model,
+        ...(instructions !== undefined ? { instructions } : {}),
         client,
         embeddingModel,
         namespace,
