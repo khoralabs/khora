@@ -12,6 +12,7 @@ export const zMeetingSeedPayload = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("meeting_reflection"),
     text: z.string(),
+    goalsSnapshot: z.array(z.string()).optional(),
   }),
   z.object({
     kind: z.literal("meeting_post_negotiation_review"),

@@ -1,9 +1,9 @@
+import { useProfile } from "@/components/phases/profile/profile-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
-import { useProfile } from "@/components/phases/profile/profile-context";
 
 export function ProfilePhase() {
   const {
@@ -22,7 +22,13 @@ export function ProfilePhase() {
 
   return (
     <section className="mx-auto max-w-lg space-y-6">
-      <Button type="button" variant="ghost" className="-ml-2" onClick={goBackToListFromProfile} disabled={profileSaveBusy}>
+      <Button
+        type="button"
+        variant="ghost"
+        className="-ml-2"
+        onClick={goBackToListFromProfile}
+        disabled={profileSaveBusy}
+      >
         ← Directory
       </Button>
       <div>

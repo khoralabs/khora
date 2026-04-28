@@ -12,7 +12,7 @@ import { useInviteRun } from "@/components/phases/book/invite-run-context";
 import { usePostMeetingReflect } from "@/components/phases/post-meeting-reflect/post-meeting-reflect-context";
 
 export function PostMeetingReflectPhase() {
-  const { savedInviteText } = useInviteRun();
+  const { savedInviteText, savedInviteGoals } = useInviteRun();
   const {
     meetingReflectionText,
     setMeetingReflectionText,
@@ -40,6 +40,20 @@ export function PostMeetingReflectPhase() {
             Your original intent
           </p>
           <p className="text-foreground mt-2 leading-relaxed whitespace-pre-wrap">{savedInviteText}</p>
+          {savedInviteGoals.length > 0 && (
+            <div className="mt-3 space-y-1.5">
+              <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                Original goals
+              </p>
+              <ul className="list-disc space-y-1 pl-4">
+                {savedInviteGoals.map((goal) => (
+                  <li key={goal} className="text-foreground">
+                    {goal}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
       <div className="space-y-2">

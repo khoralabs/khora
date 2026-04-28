@@ -6,6 +6,12 @@ export {
   zCalendarHoldStatus,
 } from "./calendar-hold.ts";
 export {
+  type CreateGoalInput,
+  type Goal,
+  zCreateGoalInput,
+  zGoal,
+} from "./goal.ts";
+export {
   type InviteePersonaSlug,
   zInviteePersonaSlug,
   zRunId,

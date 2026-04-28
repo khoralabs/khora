@@ -48,8 +48,6 @@ export async function processLogicalMemoryWithIntegrator<
   /** Defaults to `{ app: "cfd-cli" }` identity when omitted. */
   integratorClient?: MemoryIntegratorClient<TNode, TEdge>;
   integratorClientOptions?: DefineMemoryIntegratorIdentityOptions;
-  /** Runtime instruction block for the internal integrator client when one is constructed here. */
-  integratorInstructions?: string;
   /**
    * When {@link integratorClient} is built internally, use this registry (e.g. shared with adapter).
    */
@@ -85,9 +83,8 @@ export async function processLogicalMemoryWithIntegrator<
     args.integratorClient ??
     new MemoryIntegratorClient({
       identityContext: args.integratorClientOptions?.identityContext ?? { app: "cfd-cli" },
-      identityInstructions: args.integratorClientOptions?.instructions,
-      ...(args.integratorInstructions !== undefined
-        ? { instructions: args.integratorInstructions }
+      ...(args.integratorClientOptions?.instructions !== undefined
+        ? { instructions: args.integratorClientOptions.instructions }
         : {}),
       registry: args.registry ?? createAgentRegistry(),
       namespace: logicalMemory.namespace,

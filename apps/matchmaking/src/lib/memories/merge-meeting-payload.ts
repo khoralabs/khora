@@ -34,8 +34,7 @@ export async function mergeMeetingDomainPayloadIntoNamespace(args: {
   const registry = createAgentRegistry();
   const adapterClient = new MemoryAdapterClient({
     identityContext: { app: "obp-demo", product: "matchmaking-seed" },
-    identityInstructions: [matchmakingAdapterInstructions],
-    instructions: matchmakingAdapterInstructions,
+    instructions: [matchmakingAdapterInstructions],
     registry,
     namespace,
     model: chatModel,
@@ -69,6 +68,5 @@ export async function mergeMeetingDomainPayloadIntoNamespace(args: {
       identityContext: { app: "obp-demo", product: "matchmaking-seed" },
       instructions: [matchmakingIntegratorInstructions],
     },
-    integratorInstructions: matchmakingIntegratorInstructions,
   });
 }

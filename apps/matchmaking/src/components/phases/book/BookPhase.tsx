@@ -1,3 +1,5 @@
+import { useInviteRun } from "@/components/phases/book/invite-run-context";
+import { useMatchmakingNavigation } from "@/components/phases/navigation/matchmaking-navigation-context";
 import { Button } from "@/components/ui/button";
 import {
   InputGroup,
@@ -8,19 +10,11 @@ import {
 } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import { useInviteRun } from "@/components/phases/book/invite-run-context";
-import { useMatchmakingNavigation } from "@/components/phases/navigation/matchmaking-navigation-context";
 
 export function BookPhase() {
   const { selected } = useMatchmakingNavigation();
-  const {
-    inviteMessage,
-    setInviteMessage,
-    sendBusy,
-    sendError,
-    sendInvite,
-    backFromBookToDetail,
-  } = useInviteRun();
+  const { inviteMessage, setInviteMessage, sendBusy, sendError, sendInvite, backFromBookToDetail } =
+    useInviteRun();
 
   if (selected === null) {
     return null;

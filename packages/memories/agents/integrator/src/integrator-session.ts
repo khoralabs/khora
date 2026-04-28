@@ -27,8 +27,6 @@ export type MemoryIntegratorSessionContext<
 > = SessionContext &
   MemorySearchSessionContextSlice<TNode, TEdge> & {
     model: LanguageModel;
-    /** Runtime instruction block prepended before evaluated identity/toolkit instructions. */
-    instructions?: string;
   };
 
 export type MemoryIntegratorSessionInput = {
@@ -124,7 +122,6 @@ export function createMemoryIntegratorSessionRunner<
       model,
       identity: agent,
       affordances: context.affordances,
-      instructions: context.instructions,
       runtime: context.runtime,
       maxSteps,
       ontology: client.ontology,

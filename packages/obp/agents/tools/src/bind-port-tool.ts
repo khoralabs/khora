@@ -5,8 +5,8 @@ import type { ObpToolkitEnv } from "./obp-toolkit-env.ts";
 
 export const zObpBindPortInput = z
   .object({
-    offerId: z.string().uuid(),
-    portId: z.string().uuid(),
+    offerId: z.uuid(),
+    portId: z.uuid(),
   })
   .strict();
 

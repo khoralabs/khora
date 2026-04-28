@@ -1,16 +1,16 @@
 import {
   createContext,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
   useCallback,
   useContext,
   useMemo,
   useState,
-  type ReactNode,
-  type Dispatch,
-  type SetStateAction,
 } from "react";
+import { usePersonaDirectory } from "@/components/phases/list/persona-directory-context";
 import type { Phase } from "@/components/phases/phase-type";
 import type { PersonaPublicDto } from "@/lib/persona-public-dtos";
-import { usePersonaDirectory } from "@/components/phases/list/persona-directory-context";
 
 type MatchmakingNavigationContextValue = {
   phase: Phase;
@@ -51,7 +51,9 @@ export function MatchmakingNavigationProvider({ children }: { children: ReactNod
   );
 
   return (
-    <MatchmakingNavigationContext.Provider value={value}>{children}</MatchmakingNavigationContext.Provider>
+    <MatchmakingNavigationContext.Provider value={value}>
+      {children}
+    </MatchmakingNavigationContext.Provider>
   );
 }
 

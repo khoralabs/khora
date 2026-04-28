@@ -3,13 +3,22 @@ import type { DomainEvent, DomainEventName } from "../events/index.ts";
 import { zDomainEventName } from "../events/index.ts";
 import type {
   CalendarHold,
+  CreateGoalInput,
+  Goal,
   Invite,
   InviteePersonaSlug,
   Profile,
   Reflection,
   UserPublicProfileFields,
 } from "../models/index.ts";
-import { zBooking, zCalendarHold, zInvite, zProfile, zReflection } from "../models/index.ts";
+import {
+  zBooking,
+  zCalendarHold,
+  zGoal,
+  zInvite,
+  zProfile,
+  zReflection,
+} from "../models/index.ts";
 
 function nowMs(): number {
   return Date.now();
@@ -41,6 +50,12 @@ export type MatchmakingDomainPersistence = {
     message: string;
   }): Invite;
   getInvite(id: string): Invite | null;
+  listGoalsByInviteId(inviteId: string): Goal[];
+  createGoals(args: {
+    inviteId: string;
+    subjectId: string;
+    goals: CreateGoalInput[];
+  }): Goal[];
   updateInviteStatus(id: string, status: Invite["status"]): void;
   setInviteFinished(id: string, result: unknown): void;
 
@@ -164,6 +179,66 @@ export class SqliteMatchmakingDomainPersistence implements MatchmakingDomainPers
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     });
+  }
+
+  listGoalsByInviteId(inviteId: string): Goal[] {
+    const rows = this.db
+      .query(
+        "SELECT id, invite_id, subject_id, text, kind, priority, created_at FROM goals WHERE invite_id = ? ORDER BY COALESCE(priority, 2147483647), created_at, id",
+      )
+      .all(inviteId) as {
+      id: string;
+      invite_id: string;
+      subject_id: string;
+      text: string;
+      kind: string | null;
+      priority: number | null;
+      created_at: number;
+    }[];
+    return rows.map((r) =>
+      zGoal.parse({
+        id: r.id,
+        inviteId: r.invite_id,
+        subjectId: r.subject_id,
+        text: r.text,
+        ...(r.kind !== null ? { kind: r.kind } : {}),
+        ...(r.priority !== null ? { priority: r.priority } : {}),
+        createdAt: r.created_at,
+      }),
+    );
+  }
+
+  createGoals(args: { inviteId: string; subjectId: string; goals: CreateGoalInput[] }): Goal[] {
+    const t = nowMs();
+    const rows: Goal[] = [];
+    args.goals.forEach((goal, idx) => {
+      const id = crypto.randomUUID();
+      this.db.run(
+        "INSERT INTO goals (id, invite_id, subject_id, text, kind, priority, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [
+          id,
+          args.inviteId,
+          args.subjectId,
+          goal.text,
+          goal.kind ?? null,
+          goal.priority ?? idx,
+          t,
+        ],
+      );
+      rows.push(
+        zGoal.parse({
+          id,
+          inviteId: args.inviteId,
+          subjectId: args.subjectId,
+          text: goal.text,
+          ...(goal.kind !== undefined ? { kind: goal.kind } : {}),
+          ...(goal.priority !== undefined ? { priority: goal.priority } : { priority: idx }),
+          createdAt: t,
+        }),
+      );
+    });
+    appendEventRow(this.db, "GoalsExtracted", args.subjectId, args.inviteId, { count: rows.length }, t);
+    return rows;
   }
 
   updateInviteStatus(id: string, status: Invite["status"]): void {

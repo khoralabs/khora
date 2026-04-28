@@ -10,6 +10,7 @@ import {
   mergePostMeetingReflectionToPartyKgs,
   mergePostNegotiationReviewToPartyKgs,
 } from "./lib/post-negotiation-kg.ts";
+import { extractAndPersistGoalsForInvite } from "./lib/goals/extract-and-persist-goals.ts";
 import {
   appendDoneEvent,
   createThreadDevLog,
@@ -108,6 +109,13 @@ const server = Bun.serve({
         inviteePersonaSlug: invitee,
         message: parsed.data.message,
       });
+      void extractAndPersistGoalsForInvite({
+        runId,
+        subjectId,
+        message: parsed.data.message,
+      }).catch((e) => {
+        console.error("[invite-goals] background extraction failed", e);
+      });
 
       void (async () => {
         const p = getMatchmakingDomainRuntime().persistence;
@@ -139,6 +147,15 @@ const server = Bun.serve({
       })();
 
       return Response.json({ ok: true as const, runId });
+    }
+
+    if (url.pathname.startsWith("/api/invites/") && url.pathname.endsWith("/goals") && req.method === "GET") {
+      const runId = url.pathname.replace("/api/invites/", "").replace("/goals", "").replace(/\/+$/g, "");
+      if (!runId) {
+        return Response.json({ error: "Missing run id" }, { status: 400 });
+      }
+      const goals = getMatchmakingDomainRuntime().persistence.listGoalsByInviteId(runId);
+      return Response.json({ goals });
     }
 
     if (url.pathname === "/api/post-negotiation/review" && req.method === "POST") {
@@ -188,7 +205,14 @@ const server = Bun.serve({
         return Response.json({ error: "Reflection text is empty" }, { status: 400 });
       }
       const runId = parsed.data.runId;
-      void mergePostMeetingReflectionToPartyKgs({ runId, text }).catch((e) => {
+      const goalsSnapshot = getMatchmakingDomainRuntime()
+        .persistence.listGoalsByInviteId(runId)
+        .map((g) => g.text);
+      void mergePostMeetingReflectionToPartyKgs({
+        runId,
+        text,
+        ...(goalsSnapshot.length > 0 ? { goalsSnapshot } : {}),
+      }).catch((e) => {
         console.error("[post-meeting-reflection] background merge failed", e);
       });
       return Response.json({ ok: true as const });

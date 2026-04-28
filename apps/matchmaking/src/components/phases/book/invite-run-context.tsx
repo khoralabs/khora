@@ -38,6 +38,7 @@ type InviteRunContextValue = {
   reviewBusy: boolean;
   reviewError: string | null;
   savedInviteText: string;
+  savedInviteGoals: string[];
   gateContent: ReturnType<typeof stubPostNegotiationGateContent>;
   registerReviewAcceptedPrep: (fn: ReviewAcceptedPrep) => void;
   openBook: () => void;
@@ -46,6 +47,7 @@ type InviteRunContextValue = {
   onDevDrawerOpenChange: (open: boolean) => void;
   onNegotiationRunFinished: (result: unknown) => void;
   submitPostNegotiationReview: (feedbackTextForSubmit?: string) => Promise<void>;
+  refreshSavedInviteGoals: () => Promise<void>;
   /** Clears run-scoped state after leaving post-meeting flow. */
   resetAfterPostMeetingExit: () => void;
   backFromBookToDetail: () => void;
@@ -74,6 +76,7 @@ export function InviteRunProvider({ children }: { children: ReactNode }) {
   const [reviewBusy, setReviewBusy] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [savedInviteText, setSavedInviteText] = useState("");
+  const [savedInviteGoals, setSavedInviteGoals] = useState<string[]>([]);
   const postNegotiationGateConsumed = useRef(false);
   const reviewAcceptedPrepRef = useRef<ReviewAcceptedPrep>(() => {});
 
@@ -89,9 +92,28 @@ export function InviteRunProvider({ children }: { children: ReactNode }) {
   const resetAfterPostMeetingExit = useCallback(() => {
     setNegotiationRunId(null);
     setSavedInviteText("");
+    setSavedInviteGoals([]);
     setInviteMessage("");
     setSendError(null);
   }, []);
+
+  const refreshSavedInviteGoals = useCallback(async () => {
+    if (negotiationRunId === null) {
+      setSavedInviteGoals([]);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/invites/${encodeURIComponent(negotiationRunId)}/goals`);
+      const body = (await res.json()) as { goals?: Array<{ text?: string }> };
+      if (!res.ok) return;
+      const goals = (body.goals ?? [])
+        .map((g) => g.text?.trim() ?? "")
+        .filter((g): g is string => g.length > 0);
+      setSavedInviteGoals(goals);
+    } catch {
+      /* ignore background hydration errors */
+    }
+  }, [negotiationRunId]);
 
   const openBook = useCallback(() => {
     setInviteMessage("");
@@ -147,6 +169,7 @@ export function InviteRunProvider({ children }: { children: ReactNode }) {
           setNegotiationRunId(body.runId);
         }
         setSavedInviteText(inviteMessage.trim());
+          setSavedInviteGoals([]);
         postNegotiationGateConsumed.current = false;
         setNegotiationRunComplete(false);
         setNegotiationDoneResult(null);
@@ -252,6 +275,7 @@ export function InviteRunProvider({ children }: { children: ReactNode }) {
       reviewBusy,
       reviewError,
       savedInviteText,
+      savedInviteGoals,
       gateContent,
       registerReviewAcceptedPrep,
       openBook,
@@ -260,6 +284,7 @@ export function InviteRunProvider({ children }: { children: ReactNode }) {
       onDevDrawerOpenChange,
       onNegotiationRunFinished,
       submitPostNegotiationReview,
+      refreshSavedInviteGoals,
       resetAfterPostMeetingExit,
       backFromBookToDetail,
       onGateDialogOpenChange,
@@ -280,6 +305,7 @@ export function InviteRunProvider({ children }: { children: ReactNode }) {
       reviewBusy,
       reviewError,
       savedInviteText,
+      savedInviteGoals,
       gateContent,
       registerReviewAcceptedPrep,
       openBook,
@@ -288,6 +314,7 @@ export function InviteRunProvider({ children }: { children: ReactNode }) {
       onDevDrawerOpenChange,
       onNegotiationRunFinished,
       submitPostNegotiationReview,
+      refreshSavedInviteGoals,
       resetAfterPostMeetingExit,
       backFromBookToDetail,
       onGateDialogOpenChange,

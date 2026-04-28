@@ -34,8 +34,6 @@ export function createMemoryAdapterAgent<
   model: LanguageModel;
   identity: RegisteredAgentIdentity;
   affordances: RegisteredAgentAffordances;
-  /** Runtime/system instruction block prepended before evaluated identity/toolkit instructions. */
-  instructions?: string;
   runtime: ToolRuntimeContext<MemorySearchEnv>;
   ontology: OntologyDefinition<TNode, TEdge>;
   maxSteps?: number;
@@ -44,17 +42,15 @@ export function createMemoryAdapterAgent<
     model,
     identity,
     affordances,
-    instructions,
     runtime,
     ontology,
     maxSteps = DEFAULT_MEMORY_TOOL_LOOP_MAX_STEPS,
   } = args;
   const output = memoryAdapterExpandedOutput(ontology);
-  const mergedInstructions = [instructions, affordances.instructions].filter(Boolean).join("\n\n");
   return createMemorySearchToolLoopAgent<MemoryAdapterStructuredOutput>({
     model,
     identity,
-    affordances: { ...affordances, instructions: mergedInstructions },
+    affordances,
     runtime,
     maxSteps,
     output,

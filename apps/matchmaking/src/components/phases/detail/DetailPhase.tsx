@@ -1,7 +1,7 @@
-import { Button } from "@/components/ui/button";
 import { useInviteRun } from "@/components/phases/book/invite-run-context";
 import { useMatchmakingNavigation } from "@/components/phases/navigation/matchmaking-navigation-context";
 import { useProfile } from "@/components/phases/profile/profile-context";
+import { Button } from "@/components/ui/button";
 
 export function DetailPhase() {
   const { selected } = useMatchmakingNavigation();
@@ -29,8 +29,8 @@ export function DetailPhase() {
             Edit in My profile
           </Button>
           <p className="text-muted-foreground w-full text-sm">
-            This is your public card. Simulated people here can receive invites; your card is for the
-            directory and your agent’s context.
+            This is your public card. Simulated people here can receive invites; your card is for
+            the directory and your agent’s context.
           </p>
         </div>
       ) : (

@@ -58,3 +58,28 @@ test("Invite and booking outcome", () => {
   const b = p.getInvite(RUN_ID);
   expect(b?.status).toBe("finished");
 });
+
+test("Goals create/list by invite id", () => {
+  const p = new SqliteMatchmakingDomainPersistence(db);
+  p.createInvite({
+    id: RUN_ID,
+    subjectId: "s1",
+    inviteePersonaSlug: "p2",
+    message: "Need advice on API partnerships",
+  });
+  const created = p.createGoals({
+    inviteId: RUN_ID,
+    subjectId: "s1",
+    goals: [
+      { text: "Validate partner ICP", kind: "strategy" },
+      { text: "Get concrete intro criteria", kind: "execution", priority: 1 },
+    ],
+  });
+  expect(created.length).toBe(2);
+  const listed = p.listGoalsByInviteId(RUN_ID);
+  expect(listed.length).toBe(2);
+  expect(listed.map((g) => g.text)).toEqual([
+    "Validate partner ICP",
+    "Get concrete intro criteria",
+  ]);
+});

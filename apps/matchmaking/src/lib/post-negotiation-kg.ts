@@ -77,10 +77,15 @@ export async function mergePostNegotiationReviewToPartyKgs(args: {
 export async function mergePostMeetingReflectionToPartyKgs(args: {
   runId: string;
   text: string;
+  goalsSnapshot?: string[];
 }): Promise<void> {
-  const { runId, text } = args;
+  const { runId, text, goalsSnapshot } = args;
   const model = getNegotiationModel();
-  const payload: MeetingSeedPayload = { kind: "meeting_reflection", text };
+  const payload: MeetingSeedPayload = {
+    kind: "meeting_reflection",
+    text,
+    ...(goalsSnapshot !== undefined ? { goalsSnapshot } : {}),
+  };
   await mergeToBothPartyNamespaces(runId, model, (namespace) => ({
     payload,
     memoryKey: `live/post-meeting-reflection/${runId}`,

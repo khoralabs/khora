@@ -1,6 +1,6 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useMatchmakingNavigation } from "@/components/phases/navigation/matchmaking-navigation-context";
 import { usePersonaDirectory } from "@/components/phases/list/persona-directory-context";
+import { useMatchmakingNavigation } from "@/components/phases/navigation/matchmaking-navigation-context";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function ListPhase() {
   const { personas } = usePersonaDirectory();
@@ -10,7 +10,7 @@ export function ListPhase() {
   return (
     <section className="space-y-4">
       <h2 className="text-sm font-medium text-muted-foreground">Directory</h2>
-      <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory scroll-pl-6 [-webkit-overflow-scrolling:touch]">
+      <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory scroll-pl-6 [-webkit-overflow-scrolling:touch] p-4">
         {list.map((p) => (
           <button
             key={p.slug}

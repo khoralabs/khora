@@ -7,7 +7,7 @@ import { zOptionalSourcemaps } from "./sourcemaps-schema.ts";
 
 export const zObpExposePortInput = z
   .object({
-    offerId: z.string().uuid(),
+    offerId: z.uuid(),
     portType: z.string().min(1).max(600),
     /** Defaults to 1 (typical single-bind / commitment port). */
     max_bindings: z.number().int().min(0).max(100).optional(),

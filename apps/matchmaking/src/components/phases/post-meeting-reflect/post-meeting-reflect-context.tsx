@@ -26,7 +26,13 @@ const PostMeetingReflectContext = createContext<PostMeetingReflectContextValue |
 
 export function PostMeetingReflectProvider({ children }: { children: ReactNode }) {
   const { setPhase, setSelectedSlug } = useMatchmakingNavigation();
-  const { negotiationRunId, resetAfterPostMeetingExit, registerReviewAcceptedPrep } = useInviteRun();
+  const {
+    negotiationRunId,
+    savedInviteGoals,
+    resetAfterPostMeetingExit,
+    registerReviewAcceptedPrep,
+    refreshSavedInviteGoals,
+  } = useInviteRun();
 
   const [meetingReflectionText, setMeetingReflectionText] = useState("");
   const [meetingReflectBusy, setMeetingReflectBusy] = useState(false);
@@ -36,8 +42,9 @@ export function PostMeetingReflectProvider({ children }: { children: ReactNode }
     registerReviewAcceptedPrep(() => {
       setMeetingReflectionText("");
       setMeetingReflectError(null);
+      void refreshSavedInviteGoals();
     });
-  }, [registerReviewAcceptedPrep]);
+  }, [refreshSavedInviteGoals, registerReviewAcceptedPrep]);
 
   const exitPostMeetingToHome = useCallback(() => {
     setPhase("list");
@@ -57,7 +64,11 @@ export function PostMeetingReflectProvider({ children }: { children: ReactNode }
       const res = await fetch("/api/post-meeting-reflection", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ runId: negotiationRunId, text }),
+        body: JSON.stringify({
+          runId: negotiationRunId,
+          text,
+          ...(savedInviteGoals.length > 0 ? { goalsSnapshot: savedInviteGoals } : {}),
+        }),
       });
       const body = (await res.json()) as { ok?: boolean; error?: unknown };
       if (!res.ok) {
@@ -77,7 +88,7 @@ export function PostMeetingReflectProvider({ children }: { children: ReactNode }
     } finally {
       setMeetingReflectBusy(false);
     }
-  }, [exitPostMeetingToHome, meetingReflectionText, negotiationRunId]);
+  }, [exitPostMeetingToHome, meetingReflectionText, negotiationRunId, savedInviteGoals]);
 
   const value = useMemo(
     () => ({
