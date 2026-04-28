@@ -1,12 +1,29 @@
 import { Database, type DatabaseOptions } from "bun:sqlite";
+import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { memoriesPersistenceDocumentSchema } from "@cfd/memories-core/persistence";
 import * as sqliteVec from "sqlite-vec";
 import { sqliteDdlFromSchema } from "./_lib";
 import { initTextFeaturesFts } from "./search-indexes";
 
 export function loadSqliteVec(db: Database): void {
-  sqliteVec.load(db);
+  try {
+    sqliteVec.load(db);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (/dynamic extension loading|not support.*extension/i.test(msg)) {
+      throw new Error(
+        `${msg}\n\n` +
+          "sqlite-vec requires SQLite built with extension loading. Bun's bundled SQLite often does not support it.\n" +
+          "Install Homebrew SQLite and point Bun at it, e.g.:\n" +
+          "  brew install sqlite\n" +
+          '  export SQLITE_CUSTOM_LIB="$(brew --prefix sqlite)/lib/libsqlite3.dylib"\n' +
+          "(macOS). See SQLITE_CUSTOM_LIB in apps/matchmaking/.env.example.",
+      );
+    }
+    throw e;
+  }
 }
 
 export const MEMORIES_SCHEMA_SQL = sqliteDdlFromSchema(memoriesPersistenceDocumentSchema);
@@ -27,6 +44,22 @@ export const SQLITE_CUSTOM_LIB_ENV = "SQLITE_CUSTOM_LIB";
 
 let didConfigureCustomSqlite = false;
 
+/** Resolve `$(brew --prefix sqlite)/lib/libsqlite3.dylib` when Homebrew sqlite is installed. */
+function tryHomebrewSqliteDylibPath(): string | undefined {
+  if (process.platform !== "darwin") return undefined;
+  try {
+    const prefix = execFileSync("brew", ["--prefix", "sqlite"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    if (prefix.length === 0) return undefined;
+    const p = join(prefix, "lib", "libsqlite3.dylib");
+    return existsSync(p) ? p : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function ensureCustomSqliteForExtensions(): void {
   if (didConfigureCustomSqlite) return;
   didConfigureCustomSqlite = true;
@@ -34,6 +67,9 @@ export function ensureCustomSqliteForExtensions(): void {
   const fromEnv = process.env[SQLITE_CUSTOM_LIB_ENV]?.trim();
   const candidates: string[] = [];
   if (fromEnv) candidates.push(fromEnv);
+
+  const brewSqlite = tryHomebrewSqliteDylibPath();
+  if (brewSqlite !== undefined) candidates.push(brewSqlite);
 
   if (process.platform === "darwin") {
     candidates.push(

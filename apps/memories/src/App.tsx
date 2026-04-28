@@ -75,22 +75,31 @@ export function App() {
       if (!res.ok) {
         setData(null);
         setError(json.error ?? res.statusText);
+        setLoading(false);
         return;
       }
       if ("error" in json && json.error) {
         setData(null);
         setError(json.error);
+        setLoading(false);
         return;
       }
-      setData({
+      const payload: GraphPayload = {
         namespace: json.namespace,
         nodes: json.nodes ?? [],
         edges: json.edges ?? [],
+      };
+      // Break sync ResizeObserver interaction between chrome header reflow and R3F canvas measure.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setData(payload);
+          setLoading(false);
+        });
       });
+      return;
     } catch (e) {
       setData(null);
       setError(String(e));
-    } finally {
       setLoading(false);
     }
   }, [namespace]);

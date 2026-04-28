@@ -10,7 +10,7 @@ import {
   type MemorySearchSessionContextSlice,
   type ZodLabelMap,
 } from "@cfd/memories-tools";
-import type { LanguageModel } from "ai";
+import { NoObjectGeneratedError, NoOutputGeneratedError, type LanguageModel } from "ai";
 import type { IntegratorPipelineGeneration } from "./create-integrator-agent.js";
 import { createMemoryIntegratorAgent } from "./create-integrator-agent.js";
 import {
@@ -128,7 +128,16 @@ export function createMemoryIntegratorSessionRunner<
     });
 
     const messages = [buildMemoryIntegratorUserMessage({ content })];
-    const generation = await integratorAgent.generate({ messages });
+    let generation: IntegratorPipelineGeneration;
+    try {
+      generation = await integratorAgent.generate({ messages });
+    } catch (e) {
+      if (NoOutputGeneratedError.isInstance(e) || NoObjectGeneratedError.isInstance(e)) {
+        generation = await integratorAgent.generate({ messages });
+      } else {
+        throw e;
+      }
+    }
 
     const raw = generation.output as unknown;
     const plan = parseIntegratorPlanWire(client.ontology, raw);

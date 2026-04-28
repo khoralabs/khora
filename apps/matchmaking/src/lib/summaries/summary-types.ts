@@ -17,7 +17,8 @@ export const zRunSummariesApiResponse = z.discriminatedUnion("status", [
   }),
   z.object({
     status: z.literal("ready"),
-    summaries: z.array(zPartyRunSummary).length(2),
+    /** Requester-only in the matchmaking app (one human-facing summary). */
+    summaries: z.array(zPartyRunSummary).min(1),
   }),
 ]);
 

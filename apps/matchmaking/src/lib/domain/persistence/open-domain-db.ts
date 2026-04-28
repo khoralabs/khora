@@ -1,4 +1,5 @@
 import { Database } from "bun:sqlite";
+import { ensureCustomSqliteForExtensions } from "@cfd/memories-sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { migrateMatchmakingDomainDb } from "./migrate-domain-db.ts";
@@ -13,6 +14,8 @@ export function getMatchmakingDomainDatabase(): Database {
   if (singleton !== null) {
     return singleton;
   }
+  /** Must run before any `new Database()` so Bun can swap libsqlite3 for sqlite-vec extension loading. */
+  ensureCustomSqliteForExtensions();
   const path = resolveMatchmakingDomainDbPath();
   const dir = dirname(path);
   if (dir && dir !== ".") {

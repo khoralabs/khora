@@ -5,6 +5,7 @@ import {
   type SetStateAction,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -12,10 +13,39 @@ import {
 import { toast } from "sonner";
 import { useMatchmakingNavigation } from "@/components/phases/navigation/matchmaking-navigation-context";
 import {
-  gateContentFromPartySummaries,
+  gateContentFromRequesterSummary,
+  type PostNegotiationGateContent,
   stubPostNegotiationGateContent,
 } from "@/lib/stub-post-negotiation-summary";
 import type { PartyRunSummary, RunSummariesApiResponse } from "@/lib/summaries/summary-types";
+import { MATCHMAKING_SIM_PERSONA_SLUGS } from "@/lib/personas/slugs.ts";
+
+function formatInviteFailureMessage(body: unknown): string {
+  if (body === null || typeof body !== "object") {
+    return "Could not send invite";
+  }
+  const o = body as Record<string, unknown>;
+  if (typeof o.message === "string" && o.message.length > 0) {
+    return o.message;
+  }
+  if (typeof o.error === "string" && o.error.length > 0) {
+    return o.error;
+  }
+  const details = o.details;
+  if (details !== null && typeof details === "object") {
+    const d = details as { fieldErrors?: Record<string, string[] | undefined> };
+    const fe = d.fieldErrors;
+    if (fe) {
+      for (const key of ["personaSlug", "message"] as const) {
+        const first = fe[key]?.[0];
+        if (typeof first === "string" && first.length > 0) {
+          return first;
+        }
+      }
+    }
+  }
+  return "Could not send invite";
+}
 
 type ReviewAcceptedPrep = () => void;
 
@@ -43,7 +73,7 @@ type InviteRunContextValue = {
   reviewError: string | null;
   savedInviteText: string;
   savedInviteGoals: string[];
-  gateContent: ReturnType<typeof stubPostNegotiationGateContent>;
+  gateContent: PostNegotiationGateContent;
   registerReviewAcceptedPrep: (fn: ReviewAcceptedPrep) => void;
   openBook: () => void;
   goList: () => void;
@@ -87,29 +117,29 @@ export function InviteRunProvider({ children }: { children: ReactNode }) {
   );
   const postNegotiationGateConsumed = useRef(false);
   const reviewAcceptedPrepRef = useRef<ReviewAcceptedPrep>(() => {});
+  const summariesPollGenRef = useRef(0);
 
   const gateContent = useMemo(() => {
-    if (runSummariesState === "ready" && runSummaries !== null && runSummaries.length === 2) {
-      const requester = runSummaries.find((s) => s.partySlug === "_user_");
-      const requestee = runSummaries.find((s) => s.partySlug !== "_user_");
-      if (requester !== undefined && requestee !== undefined) {
-        return gateContentFromPartySummaries(requester, requestee);
+    if (runSummariesState === "ready" && runSummaries !== null && runSummaries.length >= 1) {
+      const requester = runSummaries.find((s) => s.partySlug === "_user_") ?? runSummaries[0];
+      if (requester !== undefined) {
+        return gateContentFromRequesterSummary(requester);
       }
     }
     if (runSummariesState === "loading") {
       return {
-        fitSummary: "Generating personalized summaries for each party...",
-        agenda: "Please wait a moment while summaries are prepared.",
-        recommendationRequester: "Loading requester summary...",
-        recommendationRequestee: "Loading requestee summary...",
+        summaryFromAgent: "Generating your summary…",
+        keyPoints: "Your agent is reviewing the negotiation transcript and your memories. This usually takes a few seconds.",
+        fit: "Loading fit assessment…",
+        suggestedNextStep: "—",
       };
     }
     if (runSummariesState === "error") {
       return {
-        fitSummary: "Summary generation failed; showing fallback guidance.",
-        agenda: "Proceed with your own judgment from the transcript and known goals.",
-        recommendationRequester: "Fallback summary active due to generation error.",
-        recommendationRequestee: "Fallback summary active due to generation error.",
+        summaryFromAgent: "Summary generation failed; use the transcript and your goals to decide.",
+        keyPoints: "Open the developer drawer to read the negotiation thread, or retry the run.",
+        fit: "Unavailable due to an error.",
+        suggestedNextStep: "You can still accept or decline based on what you observed.",
       };
     }
     return stubPostNegotiationGateContent(negotiationDoneResult ?? { status: "unknown", rounds: 0 });
@@ -129,28 +159,50 @@ export function InviteRunProvider({ children }: { children: ReactNode }) {
     setSendError(null);
   }, []);
 
-  const refreshRunSummaries = useCallback(async (runId: string) => {
+  const refreshRunSummaries = useCallback(async (runId: string, expectedGen: number) => {
     setRunSummariesState("loading");
     try {
       const res = await fetch(`/api/runs/${encodeURIComponent(runId)}/summaries`);
       const body = (await res.json()) as RunSummariesApiResponse | { error?: unknown };
       if (!res.ok) {
-        setRunSummariesState("error");
+        if (expectedGen === summariesPollGenRef.current) {
+          setRunSummariesState("error");
+        }
         return;
       }
       if ("status" in body && body.status === "ready") {
+        if (expectedGen !== summariesPollGenRef.current) {
+          return;
+        }
         setRunSummaries(body.summaries);
         setRunSummariesState("ready");
         return;
       }
+      if (expectedGen !== summariesPollGenRef.current) {
+        return;
+      }
       setRunSummariesState("loading");
       window.setTimeout(() => {
-        void refreshRunSummaries(runId);
+        void refreshRunSummaries(runId, expectedGen);
       }, 1200);
     } catch {
-      setRunSummariesState("error");
+      if (expectedGen === summariesPollGenRef.current) {
+        setRunSummariesState("error");
+      }
     }
   }, []);
+
+  useEffect(() => {
+    if (negotiationRunId === null) {
+      return;
+    }
+    summariesPollGenRef.current += 1;
+    const gen = summariesPollGenRef.current;
+    void refreshRunSummaries(negotiationRunId, gen);
+    return () => {
+      summariesPollGenRef.current += 1;
+    };
+  }, [negotiationRunId, refreshRunSummaries]);
 
   const refreshSavedInviteGoals = useCallback(async () => {
     if (negotiationRunId === null) {
@@ -206,6 +258,13 @@ export function InviteRunProvider({ children }: { children: ReactNode }) {
 
   const sendInvite = useCallback(async () => {
     if (selectedSlug === null) return;
+    if (
+      selectedSlug === "_user_" ||
+      !(MATCHMAKING_SIM_PERSONA_SLUGS as readonly string[]).includes(selectedSlug)
+    ) {
+      setSendError("Select a matchmaking profile to invite (not your own card).");
+      return;
+    }
     setSendBusy(true);
     setSendError(null);
     try {
@@ -214,9 +273,14 @@ export function InviteRunProvider({ children }: { children: ReactNode }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ personaSlug: selectedSlug, message: inviteMessage }),
       });
-      const body = (await res.json()) as { ok?: boolean; runId?: string; error?: unknown };
+      const body = (await res.json()) as {
+        ok?: boolean;
+        runId?: string;
+        error?: unknown;
+        message?: string;
+      };
       if (!res.ok) {
-        setSendError(typeof body.error === "string" ? body.error : "Could not send invite");
+        setSendError(formatInviteFailureMessage(body));
         return;
       }
       if (body.ok) {
@@ -244,7 +308,7 @@ export function InviteRunProvider({ children }: { children: ReactNode }) {
       setNegotiationRunComplete(true);
       setNegotiationDoneResult(result);
       if (negotiationRunId !== null) {
-        void refreshRunSummaries(negotiationRunId);
+        void refreshRunSummaries(negotiationRunId, summariesPollGenRef.current);
       }
     },
     [negotiationRunId, refreshRunSummaries],

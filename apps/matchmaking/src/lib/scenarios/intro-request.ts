@@ -6,6 +6,7 @@ import {
   pairMatchmakingPersonas,
 } from "../personas/index.ts";
 import type { MatchmakingPersona } from "../personas/types.ts";
+import { readUserPublicProfileState } from "../user-public-profile.ts";
 import type { MatchmakingScenario } from "./matchmaking-scenario.ts";
 
 async function buildIntroFromPersonas(
@@ -38,8 +39,11 @@ export async function buildAppUserIntroRequestScenario(
   options?: { invitationMessage?: string },
 ): Promise<MatchmakingScenario> {
   const requestee = getMatchmakingPersona(inviteeSlug);
+  const userProfile = readUserPublicProfileState();
   const [requesterIdentity, requesteeIdentity] = await Promise.all([
-    buildAppUserRegisteredIdentity(),
+    buildAppUserRegisteredIdentity({
+      displayName: userProfile?.displayName,
+    }),
     requestee.buildRegisteredIdentity(),
   ]);
   const invitation = options?.invitationMessage?.trim();

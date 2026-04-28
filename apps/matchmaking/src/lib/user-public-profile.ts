@@ -26,6 +26,15 @@ export const zUserPublicProfileBody = z.object({
 
 export type UserPublicProfileBody = z.infer<typeof zUserPublicProfileBody>;
 
+/** In-flight / last result for async KG merge after domain profile upsert (single-process demo server). */
+export type ProfileMemoriesSyncSnapshot = {
+  generation: number;
+  result?: "ok" | "err";
+  error?: string;
+};
+
+const profileMemoriesSyncBySubject = new Map<string, ProfileMemoriesSyncSnapshot>();
+
 export function userPublicProfileStatePath(memoriesRoot: string): string {
   return join(memoriesRoot, "user-public-profile.json");
 }
@@ -73,19 +82,31 @@ export function readUserPublicProfileState(): UserPublicProfileBody | null {
   return null;
 }
 
-/**
- * Merges `public_profile` into shared namespace and app user namespace; persists profile in domain DB.
- */
-export async function saveUserPublicProfileToMemories(
-  body: UserPublicProfileBody,
-  model?: LanguageModel,
-): Promise<void> {
+/** Persist profile to domain DB and drop legacy JSON; safe to call before returning HTTP response. */
+export function persistUserPublicProfileDomain(body: UserPublicProfileBody): void {
   const subjectId = resolveMatchmakingSubjectId();
   getMatchmakingDomainRuntime().persistence.upsertProfile(subjectId, {
     displayName: body.displayName,
     tagline: body.tagline,
     about: body.about,
   });
+  try {
+    const legacyPath = userPublicProfileStatePath(resolveMemoriesRoot());
+    if (existsSync(legacyPath)) {
+      unlinkSync(legacyPath);
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Adapter/integrator merge into shared + user memory namespaces (slow). Domain row must already exist.
+ */
+export async function mergeUserPublicProfileKnowledgeGraph(
+  body: UserPublicProfileBody,
+  model?: LanguageModel,
+): Promise<void> {
   const root = resolveMemoriesRoot();
   const memDb = resolveMemoriesDbPath(root);
   const bundle = createMatchmakingMemoriesBundle(memDb, {
@@ -125,16 +146,68 @@ export async function saveUserPublicProfileToMemories(
       correlationId: `${correlation}-user`,
     }),
   ]);
+}
+
+/**
+ * Domain upsert + background KG merge. Returns monotonic `generation` for polling {@link getProfileMemoriesSyncSnapshot}.
+ */
+export function queueUserPublicProfileMemoriesMerge(body: UserPublicProfileBody): number {
+  const subjectId = resolveMatchmakingSubjectId();
+  persistUserPublicProfileDomain(body);
+
+  const prev = profileMemoriesSyncBySubject.get(subjectId) ?? { generation: 0 };
+  const generation = prev.generation + 1;
+  profileMemoriesSyncBySubject.set(subjectId, { generation, result: undefined, error: undefined });
+
+  void runProfileMemoriesMergeJob(subjectId, generation, body);
+  return generation;
+}
+
+async function runProfileMemoriesMergeJob(
+  subjectId: string,
+  generation: number,
+  body: UserPublicProfileBody,
+): Promise<void> {
   try {
-    const legacyPath = userPublicProfileStatePath(root);
-    if (existsSync(legacyPath)) {
-      unlinkSync(legacyPath);
+    await mergeUserPublicProfileKnowledgeGraph(body);
+    const cur = profileMemoriesSyncBySubject.get(subjectId);
+    if (cur !== undefined && cur.generation === generation) {
+      cur.result = "ok";
+      profileMemoriesSyncBySubject.set(subjectId, cur);
     }
-  } catch {
-    /* ignore */
+  } catch (e) {
+    console.error("[user-public-profile] memories merge job failed", e);
+    const cur = profileMemoriesSyncBySubject.get(subjectId);
+    if (cur !== undefined && cur.generation === generation) {
+      cur.result = "err";
+      cur.error = e instanceof Error ? e.message : String(e);
+      profileMemoriesSyncBySubject.set(subjectId, cur);
+    }
   }
 }
 
-export function getUserPublicProfileForApi(): UserPublicProfileBody {
-  return readUserPublicProfileState() ?? { displayName: "", tagline: "", about: "" };
+export function getProfileMemoriesSyncSnapshot(): ProfileMemoriesSyncSnapshot | undefined {
+  return profileMemoriesSyncBySubject.get(resolveMatchmakingSubjectId());
+}
+
+/**
+ * Merges `public_profile` into shared namespace and app user namespace; persists profile in domain DB.
+ * Prefer {@link queueUserPublicProfileMemoriesMerge} for HTTP handlers to avoid blocking.
+ */
+export async function saveUserPublicProfileToMemories(
+  body: UserPublicProfileBody,
+  model?: LanguageModel,
+): Promise<void> {
+  persistUserPublicProfileDomain(body);
+  await mergeUserPublicProfileKnowledgeGraph(body, model);
+}
+
+export type PublicProfileApiResponse = UserPublicProfileBody & {
+  memoriesSync?: ProfileMemoriesSyncSnapshot;
+};
+
+export function getUserPublicProfileForApi(): PublicProfileApiResponse {
+  const fields = readUserPublicProfileState() ?? { displayName: "", tagline: "", about: "" };
+  const sync = getProfileMemoriesSyncSnapshot();
+  return sync === undefined ? fields : { ...fields, memoriesSync: sync };
 }

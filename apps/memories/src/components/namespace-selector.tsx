@@ -43,14 +43,16 @@ export function NamespaceSelector({
   const showCustom = customExact.length > 0 && !knownNamespaces.includes(customExact);
   const showNoMatches = filteredNs.length === 0 && !showCustom;
 
-  /** Close popover first, then apply after paint so Radix/cmdk layout and the graph canvas do not ResizeObserver-fight. */
+  /** Close popover first, then apply after layout settles so Radix/cmdk + graph canvas ResizeObservers do not loop in one frame. */
   const commitNamespace = (raw: string) => {
     const trimmed = raw.trim();
     if (!trimmed) return;
     setOpen(false);
     setSearch("");
     requestAnimationFrame(() => {
-      onValueChange(trimmed);
+      requestAnimationFrame(() => {
+        onValueChange(trimmed);
+      });
     });
   };
 

@@ -10,7 +10,7 @@ import {
 } from "./matchmaking-memories-instructions.ts";
 import type { MeetingSeedPayload } from "./meeting-seed-payload.ts";
 
-const MERGE_MEMORY_SEARCH_BUDGET_MAX = 3;
+const MERGE_MEMORY_SEARCH_BUDGET_MAX = 1;
 
 const MERGE_MAX_ADAPTER_STEPS = 12;
 const MERGE_MAX_INTEGRATOR_STEPS = 6;

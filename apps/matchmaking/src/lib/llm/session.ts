@@ -54,9 +54,21 @@ import { mergeMeetingDomainPayloadIntoNamespace } from "../memories/merge-meetin
 import { resolveMemoriesDbPath, resolveMemoriesRoot } from "../memories/persisted-memories.ts";
 import type { ThreadDevLog } from "../negotiation-run-registry.ts";
 import { resolveMatchmakingSubjectId } from "../resolve-subject-id.ts";
-import { MATCHMAKING_SIM_PERSONA_SLUGS } from "../personas/index.ts";
+import {
+  MATCHMAKING_SIM_PERSONA_SLUGS,
+  getMatchmakingPersona,
+  matchmakingPersonas,
+  type MatchmakingPersonaSlug,
+} from "../personas/index.ts";
 import { buildAppUserIntroRequestScenario, type MatchmakingScenario } from "../scenarios";
+import { readUserPublicProfileState } from "../user-public-profile.ts";
 import { buildMatchmakingUserMessage } from "./messages.ts";
+import {
+  buildMatchmakingPartySystemInstructions,
+  negotiationPublicCardFromUserProfile,
+  type NegotiationPublicCard,
+} from "./party-identity-instructions.ts";
+import { matchmakingRoundPartyIndex } from "./session-turn-order.ts";
 import { matchmakingValueFirewallInstructions } from "./value-firewall-instructions.ts";
 
 /** Per negotiator turn; fresh env each {@link matchmakingTurnRunner} call resets {@code used}. */
@@ -205,7 +217,10 @@ export async function runMatchmakingSession(options?: {
    */
   runId?: string;
 }): Promise<MatchmakingResult> {
-  const defaultInvitee = MATCHMAKING_SIM_PERSONA_SLUGS[1]!;
+  const defaultInvitee = MATCHMAKING_SIM_PERSONA_SLUGS.at(1);
+  if (defaultInvitee === undefined) {
+    return { status: "error", message: "internal: default invitee slug missing" };
+  }
   const scenario =
     options?.scenario ?? (await buildAppUserIntroRequestScenario(defaultInvitee));
   const maxRounds = options?.maxRounds ?? scenario.maxRounds ?? DEFAULT_MAX_ROUNDS;
@@ -328,6 +343,49 @@ export async function runMatchmakingSession(options?: {
     [requesteeIdentity.agentId, scenario.partyMemoryNamespaces[1]],
   ]);
 
+  const invitation = scenario.partyAInvitationMessage?.trim();
+  const hasInvitation = Boolean(invitation);
+
+  const requesterStatic = requesterIdentity.staticContext as Record<string, unknown> | undefined;
+  const requesteeStatic = requesteeIdentity.staticContext as Record<string, unknown> | undefined;
+  const rawRequesterSlug = requesterStatic?.personaSlug;
+  const rawRequesteeSlug = requesteeStatic?.personaSlug;
+
+  const partyAIsAppUser =
+    typeof rawRequesterSlug === "string" && rawRequesterSlug.startsWith("user:");
+
+  let partyACard: NegotiationPublicCard;
+  if (partyAIsAppUser) {
+    partyACard = negotiationPublicCardFromUserProfile(readUserPublicProfileState());
+  } else {
+    if (
+      typeof rawRequesterSlug !== "string" ||
+      !(rawRequesterSlug in matchmakingPersonas)
+    ) {
+      return { status: "error", message: "internal: requester persona slug missing or invalid" };
+    }
+    const requesterPersona = getMatchmakingPersona(rawRequesterSlug as MatchmakingPersonaSlug);
+    partyACard = {
+      displayName: requesterPersona.displayName,
+      tagline: requesterPersona.profile.tagline,
+      about: requesterPersona.profile.about,
+    };
+  }
+
+  if (
+    typeof rawRequesteeSlug !== "string" ||
+    !(rawRequesteeSlug in matchmakingPersonas)
+  ) {
+    return { status: "error", message: "internal: requestee persona slug missing or invalid" };
+  }
+  const requesteePersonaSlug = rawRequesteeSlug as MatchmakingPersonaSlug;
+  const inviteePersona = getMatchmakingPersona(requesteePersonaSlug);
+  const partyBCard = {
+    displayName: inviteePersona.displayName,
+    tagline: inviteePersona.profile.tagline,
+    about: inviteePersona.profile.about,
+  };
+
   const negotiationEndSignal = { current: null as { reason?: string } | null };
   let pendingConnectedFromBind: CompletedDeal | null = null;
 
@@ -379,7 +437,6 @@ export async function runMatchmakingSession(options?: {
   const thread = new InMemoryThreadContext({ participantIds: obpPartyIds });
 
   const devLog = options?.threadDevLog;
-  const invitation = scenario.partyAInvitationMessage?.trim();
   if (invitation) {
     await thread.postMessage(postThreadUserText(requesterPartyId, invitation));
     if (textTranscriptPath !== undefined) {
@@ -410,7 +467,7 @@ export async function runMatchmakingSession(options?: {
         };
       }
 
-      const idx = round % scenario.parties.length;
+      const idx = matchmakingRoundPartyIndex(round, scenario.parties.length, hasInvitation);
       const identity = scenario.parties[idx];
       const actingPartyId = obpPartyIds[idx];
       if (identity === undefined || actingPartyId === undefined) {
@@ -419,14 +476,28 @@ export async function runMatchmakingSession(options?: {
       const messages = await thread.withContext({ forParticipantId: actingPartyId });
       const threadText = formatThreadForPlaintext(messages, partyIdToDisplayName);
       const partyLetter = actingPartyId === requesterPartyId ? "A" : "B";
+      const orchestrationTail = hasInvitation
+        ? "Party A's user posted the opening invitation; Party B responds first, then turns alternate B, A, B, A…"
+        : "Turns rotate A, B, A, B…";
       const user = buildMatchmakingUserMessage({
         threadText,
-        orchestrationNote: `Orchestration (this run only): you are Party ${partyLetter} in this two-party intro negotiation (Party A = first registered seat, Party B = second; turns rotate A, B, A…).`,
+        orchestrationNote: `Orchestration (this run only): you are Party ${partyLetter} in this two-party intro negotiation (Party A = first registered seat, Party B = second). ${orchestrationTail}`,
       });
 
       const turnInput: MatchmakingTurnInput = { prompt: user };
 
+      const systemInstructions = buildMatchmakingPartySystemInstructions(
+        matchmakingValueFirewallInstructions,
+        {
+          selfCard: partyLetter === "A" ? partyACard : partyBCard,
+          counterpartyCard: partyLetter === "A" ? partyBCard : partyACard,
+          partyLetter,
+          hasUserInvitationLine: hasInvitation,
+        },
+      );
+
       const session = registry.createSession(identity.agentId, {
+        ctx: [{ systemInstructions }],
         hooks: {
           onBeforeRun: async ({ agent }) => {
             const sc = agent.staticContext as Record<string, unknown>;

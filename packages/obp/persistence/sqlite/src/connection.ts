@@ -1,3 +1,4 @@
+import { ensureCustomSqliteForExtensions } from "@cfd/memories-sqlite";
 import { Database } from "bun:sqlite";
 import { OBP_SCHEMA_SQL } from "./schema";
 
@@ -10,6 +11,7 @@ export function initObpSchema(db: Database): void {
 
 /** Open (or create) a SQLite file and initialize OBP tables. */
 export function openObpDatabase(filename: string): Database {
+  ensureCustomSqliteForExtensions();
   const db = new Database(filename, { create: true });
   initObpSchema(db);
   return db;

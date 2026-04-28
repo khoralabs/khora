@@ -8,6 +8,7 @@ import {
   appendDoneEvent,
   createThreadDevLog,
   getRun,
+  getRunMatchmakingContext,
   readThreadJsonl,
   registerRun,
   setNegotiationServerRef,
@@ -28,7 +29,7 @@ import { generateAndPersistRunSummaries } from "./lib/summaries/generate-and-per
 import { zRunSummariesApiResponse } from "./lib/summaries/summary-types.ts";
 import {
   getUserPublicProfileForApi,
-  saveUserPublicProfileToMemories,
+  queueUserPublicProfileMemoriesMerge,
   zUserPublicProfileBody,
 } from "./lib/user-public-profile.ts";
 
@@ -77,15 +78,15 @@ const server = Bun.serve({
         return Response.json({ error: parsed.error.flatten() }, { status: 400 });
       }
       try {
-        await saveUserPublicProfileToMemories(parsed.data);
+        const memoriesSyncGeneration = queueUserPublicProfileMemoriesMerge(parsed.data);
+        return Response.json({ ok: true as const, memoriesSyncGeneration });
       } catch (e) {
-        console.error("[me/public-profile] merge failed", e);
+        console.error("[me/public-profile] domain persist failed", e);
         return Response.json(
           { error: e instanceof Error ? e.message : "Could not save profile" },
           { status: 500 },
         );
       }
-      return Response.json({ ok: true as const });
     }
 
     if (url.pathname === "/api/invites" && req.method === "POST") {
@@ -97,7 +98,21 @@ const server = Bun.serve({
       }
       const parsed = inviteRequestSchema.safeParse(body);
       if (!parsed.success) {
-        return Response.json({ error: parsed.error.flatten() }, { status: 400 });
+        const details = parsed.error.flatten();
+        const message =
+          details.fieldErrors.personaSlug?.[0] ??
+          details.fieldErrors.message?.[0] ??
+          details.formErrors[0] ??
+          "Invalid invite request";
+        return Response.json(
+          {
+            error: "Invalid invitee",
+            code: "invalid_persona_slug" as const,
+            message,
+            details,
+          },
+          { status: 400 },
+        );
       }
 
       const runId = crypto.randomUUID();
@@ -182,8 +197,11 @@ const server = Bun.serve({
       if (!runId) {
         return Response.json({ error: "Missing run id" }, { status: 400 });
       }
+      const mm = getRunMatchmakingContext(runId);
+      const requesterSlug = mm?.requesterSlug ?? APP_USER_REQUESTER_SLUG;
       const summaries = getMatchmakingDomainRuntime()
         .persistence.listRunSummariesByRunId(runId)
+        .filter((s) => s.partySlug === requesterSlug)
         .map((s) => ({
           partySlug: s.partySlug,
           counterpartySlug: s.counterpartySlug,
@@ -194,7 +212,7 @@ const server = Bun.serve({
             ? { recommendedNextStep: s.recommendedNextStep }
             : {}),
         }));
-      if (summaries.length < 2) {
+      if (summaries.length === 0) {
         return Response.json(zRunSummariesApiResponse.parse({ status: "pending" }));
       }
       return Response.json(zRunSummariesApiResponse.parse({ status: "ready", summaries }));

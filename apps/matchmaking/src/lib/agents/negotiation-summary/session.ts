@@ -6,15 +6,12 @@ import type {
   SessionRunner,
 } from "@cfd/agent-identity";
 import { evaluateRegisteredAgentAffordances } from "@cfd/agent-identity";
-import { toolMapToAiTools } from "@cfd/agent-identity-adapters";
 import type { EmbeddingModel } from "@cfd/memories-core/helpers";
-import {
-  buildMemorySearchToolkitContext,
-  buildMemorySearchToolRuntimeContext,
-} from "@cfd/memories-tools";
+import { buildMemorySearchToolkitContext } from "@cfd/memories-tools";
 import type { LanguageModel } from "ai";
-import { generateNegotiationSummary } from "./create-negotiation-summary-agent.ts";
 import type { createMatchmakingMemoriesBundle } from "../../memories/create-memories-bundle.ts";
+import { generateNegotiationSummary } from "./create-negotiation-summary-agent.ts";
+import { buildNegotiationSummaryMemoryContext } from "./memory-context-for-summary.ts";
 import {
   buildNegotiationSummaryAgentId,
   defineNegotiationSummaryIdentity,
@@ -98,22 +95,19 @@ export function createNegotiationSummarySessionRunner(): SessionRunner<
       agentName: agent.name,
       memorySearchBudgetMax: 6,
     });
-    const runtime = buildMemorySearchToolRuntimeContext({
+    const affordances = await evaluateRegisteredAgentAffordances(agent, toolkitCtx);
+    const memoryContextBlock = await buildNegotiationSummaryMemoryContext({
       client: context.client,
       namespace: context.namespace,
       embeddingModel: context.embeddingModel,
-      agentId: agent.agentId,
-      agentName: agent.name,
-      memorySearchBudgetMax: 6,
+      transcript: input.transcript,
+      partySlug: input.partySlug,
+      counterpartySlug: input.counterpartySlug,
     });
-    const affordances = await evaluateRegisteredAgentAffordances(agent, toolkitCtx);
-    const tools = toolMapToAiTools(affordances.tools, runtime);
     return generateNegotiationSummary({
       model: context.model,
-      identity: agent,
-      instructions: affordances.instructions,
-      tools,
-      maxSteps: input.maxSteps,
+      systemInstructions: affordances.instructions,
+      memoryContextBlock,
       transcript: input.transcript,
       partySlug: input.partySlug,
       counterpartySlug: input.counterpartySlug,

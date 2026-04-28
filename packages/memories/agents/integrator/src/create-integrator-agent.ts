@@ -52,6 +52,7 @@ export function createMemoryIntegratorAgent<
     affordances,
     runtime,
     maxSteps,
+    memorySearchBudgetPerStep: true,
     output,
   });
 }

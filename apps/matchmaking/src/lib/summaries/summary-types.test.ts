@@ -11,16 +11,10 @@ test("run summaries API response parses ready payload", () => {
         summaryText: "Likely good fit for a short intro.",
         keyEvidence: ["Shared scope", "Timebox aligned"],
       },
-      {
-        partySlug: "mira-patel",
-        counterpartySlug: "_user_",
-        summaryText: "Potential fit with clear constraints.",
-        keyEvidence: ["Agenda explicit"],
-      },
     ],
   });
   expect(parsed.status).toBe("ready");
   if (parsed.status === "ready") {
-    expect(parsed.summaries.length).toBe(2);
+    expect(parsed.summaries.length).toBe(1);
   }
 });

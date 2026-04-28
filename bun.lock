@@ -342,6 +342,7 @@
       "name": "@cfd/obp-sqlite",
       "version": "0.0.0",
       "dependencies": {
+        "@cfd/memories-sqlite": "workspace:*",
         "@cfd/obp-core": "workspace:*",
       },
       "devDependencies": {

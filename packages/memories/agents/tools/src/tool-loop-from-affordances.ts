@@ -23,6 +23,8 @@ export function createMemorySearchToolLoopAgent<
   affordances: RegisteredAgentAffordances;
   runtime: ToolRuntimeContext<MemorySearchEnv>;
   maxSteps?: number;
+  /** When true and a memory search budget is set on {@code runtime.env}, zero {@code used} before each LLM step. */
+  memorySearchBudgetPerStep?: boolean;
   output: OUTPUT;
 }): ToolLoopAgent<never, MemorySearchToolSet, OUTPUT> {
   const {
@@ -31,16 +33,26 @@ export function createMemorySearchToolLoopAgent<
     affordances,
     runtime,
     maxSteps = DEFAULT_MEMORY_TOOL_LOOP_MAX_STEPS,
+    memorySearchBudgetPerStep = false,
     output,
   } = args;
   const tools = toolMapToAiTools(affordances.tools, runtime) as MemorySearchToolSet;
   const inst = affordances.instructions.trim();
+  const prepareStep =
+    memorySearchBudgetPerStep && runtime.env.memorySearchBudget !== undefined
+      ? () => {
+          const b = runtime.env.memorySearchBudget;
+          if (b !== undefined) b.used = 0;
+          return {};
+        }
+      : undefined;
   return new ToolLoopAgent<never, MemorySearchToolSet, OUTPUT>({
     id: identity.agentId,
     model,
     tools,
     ...(inst ? { instructions: inst } : {}),
     stopWhen: stepCountIs(maxSteps),
+    ...(prepareStep !== undefined ? { prepareStep } : {}),
     output,
   });
 }

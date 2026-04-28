@@ -25,6 +25,7 @@ function transcriptFromThreadJsonl(raw: string): string {
   return lines.join("\n");
 }
 
+/** Persists a post-negotiation summary for the human requester only (product flow). */
 export async function generateAndPersistRunSummaries(args: { runId: string }): Promise<void> {
   const ctx = getRunMatchmakingContext(args.runId);
   if (ctx === undefined) {
@@ -44,52 +45,39 @@ export async function generateAndPersistRunSummaries(args: { runId: string }): P
   const embeddingModel = getMatchmakingEmbeddingModel();
   const registry = createAgentRegistry();
 
-  const pairs: Array<{
-    partySlug: string;
-    counterpartySlug: string;
-    namespace: string;
-  }> = [
-    {
-      partySlug: ctx.requesterSlug,
-      counterpartySlug: ctx.requesteeSlug,
-      namespace: ctx.partyMemoryNamespaces[0],
-    },
-    {
-      partySlug: ctx.requesteeSlug,
-      counterpartySlug: ctx.requesterSlug,
-      namespace: ctx.partyMemoryNamespaces[1],
-    },
-  ];
+  const pair = {
+    partySlug: ctx.requesterSlug,
+    counterpartySlug: ctx.requesteeSlug,
+    namespace: ctx.partyMemoryNamespaces[0],
+  };
 
-  for (const pair of pairs) {
-    const client = new NegotiationSummaryClient({
-      registry,
-      namespace: pair.namespace,
-      model,
-      client: bundle.client,
-      embeddingModel,
-      identityContext: {
-        app: "matchmaking",
-        role: "post-negotiation-summary",
-        partySlug: pair.partySlug,
-        counterpartySlug: pair.counterpartySlug,
-      },
-    });
-    const output = await client.summarize({
-      transcript,
+  const client = new NegotiationSummaryClient({
+    registry,
+    namespace: pair.namespace,
+    model,
+    client: bundle.client,
+    embeddingModel,
+    identityContext: {
+      app: "matchmaking",
+      role: "post-negotiation-summary",
       partySlug: pair.partySlug,
       counterpartySlug: pair.counterpartySlug,
-    });
-    getMatchmakingDomainRuntime().persistence.upsertRunSummary({
-      runId: args.runId,
-      partySlug: pair.partySlug,
-      counterpartySlug: pair.counterpartySlug,
-      summaryText: output.summaryText,
-      ...(output.fitAssessment !== undefined ? { fitAssessment: output.fitAssessment } : {}),
-      keyEvidence: output.keyEvidence,
-      ...(output.recommendedNextStep !== undefined
-        ? { recommendedNextStep: output.recommendedNextStep }
-        : {}),
-    });
-  }
+    },
+  });
+  const output = await client.summarize({
+    transcript,
+    partySlug: pair.partySlug,
+    counterpartySlug: pair.counterpartySlug,
+  });
+  getMatchmakingDomainRuntime().persistence.upsertRunSummary({
+    runId: args.runId,
+    partySlug: pair.partySlug,
+    counterpartySlug: pair.counterpartySlug,
+    summaryText: output.summaryText,
+    ...(output.fitAssessment !== undefined ? { fitAssessment: output.fitAssessment } : {}),
+    keyEvidence: output.keyEvidence,
+    ...(output.recommendedNextStep !== undefined
+      ? { recommendedNextStep: output.recommendedNextStep }
+      : {}),
+  });
 }

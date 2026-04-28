@@ -30,6 +30,33 @@ type ProfileContextValue = {
 
 const ProfileContext = createContext<ProfileContextValue | null>(null);
 
+const PROFILE_MEMORIES_SYNC_TIMEOUT_MS = 120_000;
+const PROFILE_MEMORIES_SYNC_POLL_MS = 400;
+
+async function waitForPublicProfileMemoriesSync(expectedGeneration: number): Promise<void> {
+  const deadline = Date.now() + PROFILE_MEMORIES_SYNC_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    const res = await fetch("/api/me/public-profile");
+    if (!res.ok) {
+      throw new Error(`Sync status request failed (${res.status})`);
+    }
+    const data = (await res.json()) as {
+      memoriesSync?: { generation: number; result?: string; error?: string };
+    };
+    const m = data.memoriesSync;
+    if (m?.generation === expectedGeneration && m.result === "ok") {
+      return;
+    }
+    if (m?.generation === expectedGeneration && m.result === "err") {
+      throw new Error(m.error ?? "Memory graph update failed");
+    }
+    await new Promise((r) => setTimeout(r, PROFILE_MEMORIES_SYNC_POLL_MS));
+  }
+  throw new Error(
+    "Updating your memory graph is taking longer than expected. You can keep using the app; try saving again later.",
+  );
+}
+
 export function ProfileProvider({ children }: { children: ReactNode }) {
   const { phase, setPhase } = useMatchmakingNavigation();
   const { reloadPersonas } = usePersonaDirectory();
@@ -98,7 +125,11 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           about: profileAbout,
         }),
       });
-      const body = (await res.json()) as { ok?: boolean; error?: unknown };
+      const body = (await res.json()) as {
+        ok?: boolean;
+        error?: unknown;
+        memoriesSyncGeneration?: number;
+      };
       if (!res.ok) {
         const e = body.error;
         setProfileSaveError(
@@ -109,11 +140,22 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         return;
       }
       if (body.ok) {
-        toast.success("Profile saved", {
-          description: "Merged into the global namespace and your memory graph.",
-        });
         await reloadPersonas();
         setPhase("list");
+        const gen = body.memoriesSyncGeneration;
+        if (typeof gen === "number") {
+          void waitForPublicProfileMemoriesSync(gen)
+            .then(() => {
+              toast.success("Profile linked in memory graph", {
+                description: "Agent merge and search metadata are up to date.",
+              });
+            })
+            .catch((err) => {
+              toast.error("Profile saved; memory graph update failed", {
+                description: err instanceof Error ? err.message : String(err),
+              });
+            });
+        }
       }
     } catch (e) {
       setProfileSaveError(e instanceof Error ? e.message : String(e));

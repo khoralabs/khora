@@ -43,20 +43,23 @@ export function PostNegotiationReviewDialog() {
           {postReviewStep === 1 ? (
             <AlertDialogDescription asChild>
               <div className="text-left text-sm text-muted-foreground space-y-4 max-w-full">
-                <p className="whitespace-pre-wrap text-foreground/90">{gateContent.fitSummary}</p>
                 <div>
-                  <p className="text-foreground font-medium text-sm">Suggested agenda</p>
-                  <p className="whitespace-pre-wrap mt-1">{gateContent.agenda}</p>
-                </div>
-                <div>
-                  <p className="text-foreground font-medium text-sm">For you (requester)</p>
-                  <p className="whitespace-pre-wrap mt-1">{gateContent.recommendationRequester}</p>
-                </div>
-                <div>
-                  <p className="text-foreground font-medium text-sm">
-                    For the other party (preview)
+                  <p className="text-foreground font-medium text-sm">Summary from your agent</p>
+                  <p className="whitespace-pre-wrap mt-1 text-foreground/90">
+                    {gateContent.summaryFromAgent}
                   </p>
-                  <p className="whitespace-pre-wrap mt-1">{gateContent.recommendationRequestee}</p>
+                </div>
+                <div>
+                  <p className="text-foreground font-medium text-sm">Key points</p>
+                  <p className="whitespace-pre-wrap mt-1">{gateContent.keyPoints}</p>
+                </div>
+                <div>
+                  <p className="text-foreground font-medium text-sm">Fit</p>
+                  <p className="whitespace-pre-wrap mt-1">{gateContent.fit}</p>
+                </div>
+                <div>
+                  <p className="text-foreground font-medium text-sm">Suggested next step</p>
+                  <p className="whitespace-pre-wrap mt-1">{gateContent.suggestedNextStep}</p>
                 </div>
                 <p className="text-xs">
                   Step 1 of 2: choose <span className="font-medium text-foreground">Accept</span> or{" "}

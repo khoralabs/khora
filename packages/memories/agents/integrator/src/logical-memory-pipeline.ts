@@ -1,5 +1,10 @@
 import { type AgentRegistry, createAgentRegistry } from "@cfd/agent-identity";
-import type { MemoriesClient, MemoriesClientAsync } from "@cfd/memories-core";
+import {
+  logger,
+  type MemoriesClient,
+  type MemoriesClientAsync,
+  type TypedMergeParams,
+} from "@cfd/memories-core";
 import {
   decomposeLogicalMemoryToContent,
   type EmbeddingModel,
@@ -30,6 +35,62 @@ function buildIntegratorContent(processed: ProcessedLogicalMemory): string {
 }
 
 const DEFAULT_MULTIMODAL = false;
+
+type PersistenceWithFindKey = {
+  findMemoryIdByKey(
+    namespace: string,
+    key: string,
+  ): string | undefined | Promise<string | undefined>;
+};
+
+async function resolveFindMemoryIdByKey(
+  persistence: PersistenceWithFindKey,
+  namespace: string,
+  key: string,
+): Promise<string | undefined> {
+  const r = persistence.findMemoryIdByKey(namespace, key);
+  return r instanceof Promise ? await r : r;
+}
+
+/**
+ * Drops integrator edges whose `memory_key` is not an existing memory in `namespace`.
+ * Prevents merge failures when the model confuses ontology kinds (e.g. `preference`) with neighbor keys.
+ */
+async function filterMergeSliceEdgesToExistingMemories<
+  TNode extends Record<string, z.ZodType>,
+  TEdge extends Record<string, z.ZodType>,
+>(
+  client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>,
+  namespace: string,
+  slice: Pick<TypedMergeParams<TNode, TEdge>, "labels" | "edges" | "properties">,
+): Promise<Pick<TypedMergeParams<TNode, TEdge>, "labels" | "edges" | "properties">> {
+  if (slice.edges === undefined || slice.edges.length === 0) {
+    return slice;
+  }
+  const kept: NonNullable<TypedMergeParams<TNode, TEdge>["edges"]> = [];
+  for (const e of slice.edges) {
+    const id = await resolveFindMemoryIdByKey(client.persistence, namespace, e.memory_key);
+    if (id !== undefined) {
+      kept.push(e);
+      continue;
+    }
+    logger.warn(
+      {
+        phase: "memories.integrator.merge",
+        namespace,
+        droppedEdgeTargetKey: e.memory_key,
+      },
+      "dropped integrator edge: target memory key does not exist in namespace",
+    );
+  }
+  if (kept.length === slice.edges.length) {
+    return slice;
+  }
+  return {
+    ...slice,
+    edges: kept.length > 0 ? kept : undefined,
+  };
+}
 
 /**
  * Decompose → {@link MemoryIntegratorClient} (search + structured plan) → merge + search-meta vectors.
@@ -102,7 +163,17 @@ export async function processLogicalMemoryWithIntegrator<
   });
 
   const slice = integratorWireToMergeSlice(client.ontology, plan);
-  await mergeLogicalMemoryWithMergeSlice(client, processedLogicalMemory, slice, embeddingModel);
+  const filteredSlice = await filterMergeSliceEdgesToExistingMemories(
+    client,
+    processedLogicalMemory.namespace,
+    slice,
+  );
+  await mergeLogicalMemoryWithMergeSlice(
+    client,
+    processedLogicalMemory,
+    filteredSlice,
+    embeddingModel,
+  );
 
   return { processedLogicalMemory, plan, generation };
 }

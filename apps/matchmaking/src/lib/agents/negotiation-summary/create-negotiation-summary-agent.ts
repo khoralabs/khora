@@ -1,40 +1,36 @@
-import type { RegisteredAgentIdentity } from "@cfd/agent-identity";
-import { generateText, type LanguageModel, Output, type Tool } from "ai";
+import { generateObject, type LanguageModel } from "ai";
 import {
   type NegotiationSummaryOutput,
   zNegotiationSummaryOutput,
 } from "./output.ts";
 
-type NegotiationSummaryToolSet = Record<string, Tool<unknown, unknown>>;
-
 export async function generateNegotiationSummary(args: {
   model: LanguageModel;
-  identity: RegisteredAgentIdentity;
-  instructions: string;
-  tools: NegotiationSummaryToolSet;
-  maxSteps?: number;
+  systemInstructions: string;
+  memoryContextBlock: string;
   transcript: string;
   partySlug: string;
   counterpartySlug: string;
 }): Promise<{ generation: unknown; output: NegotiationSummaryOutput }> {
-  const { model, instructions, tools, maxSteps = 6 } = args;
-  const prompt = `You are summarizing negotiation outcome for party "${args.partySlug}".
-Counterparty slug: "${args.counterpartySlug}".
+  const prompt = [
+    `Summarize the negotiation outcome for party "${args.partySlug}".`,
+    `Counterparty slug: "${args.counterpartySlug}".`,
+    "",
+    args.memoryContextBlock,
+    "",
+    "Negotiation transcript:",
+    args.transcript,
+    "",
+    "Produce a concise summary: main outcome, fit assessment, bullet key evidence (from transcript and memories above), optional recommended next step.",
+  ].join("\n");
 
-Negotiation transcript:
-${args.transcript}`;
-  const generation = await generateText({
-    model,
+  const { object } = await generateObject({
+    model: args.model,
+    schema: zNegotiationSummaryOutput,
+    ...(args.systemInstructions.trim().length > 0 ? { system: args.systemInstructions } : {}),
     prompt,
-    tools,
-    output: Output.object({
-      name: "NegotiationSummary",
-      description: "Party-specific summary grounded in memory search and transcript evidence.",
-      schema: zNegotiationSummaryOutput,
-    }),
-    ...(instructions.trim().length > 0 ? { system: instructions } : {}),
-    maxRetries: maxSteps,
-    maxOutputTokens: 1000,
+    maxOutputTokens: 1500,
   });
-  return { generation, output: generation.output };
+
+  return { generation: null, output: object };
 }

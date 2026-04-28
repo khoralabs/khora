@@ -1,49 +1,38 @@
 import type { PartyRunSummary } from "./summaries/summary-types.ts";
 
-/**
- * Placeholder until a real post-negotiation agent reads the OBP + plaintext thread
- * and emits a structured agenda and per-twin value recommendations.
- */
-export function stubPostNegotiationGateContent(result: unknown): {
-  fitSummary: string;
-  agenda: string;
-  recommendationRequester: string;
-  recommendationRequestee: string;
-} {
+/** Content for the post-negotiation gate: human requester only. */
+export type PostNegotiationGateContent = {
+  summaryFromAgent: string;
+  keyPoints: string;
+  fit: string;
+  suggestedNextStep: string;
+};
+
+export function stubPostNegotiationGateContent(result: unknown): PostNegotiationGateContent {
   const r = result as Record<string, unknown> | null;
   const status = r && typeof r.status === "string" ? r.status : "unknown";
   const rounds = r && typeof r.rounds === "number" ? r.rounds : "?";
   return {
-    fitSummary: `Negotiation result: ${status} (${String(rounds)} round(s) in the dev log). A future summarizer pass will read the OBP + thread; this is a static placeholder for the demo UI.`,
-    agenda: `1. Check alignment on scope and time  
-2. Compare against each party’s stated values (memory)  
-3. Propose a narrow commitment or a clean decline (this demo: see transcript)`,
-    recommendationRequester:
-      "Placeholder: review the drawer transcript. When the summarizer ships, you’ll get a per-twin fit read grounded in your graph.",
-    recommendationRequestee:
-      "Placeholder: same for the invited party’s view — the full product reports fit before accept/decline on their side.",
+    summaryFromAgent: `Negotiation result: ${status} (${String(rounds)} round(s) in the dev log). When summary generation finishes, your agent’s recap will appear here.`,
+    keyPoints: `1. Review scope and tone in the live transcript (dev drawer).\n2. Compare against your stated values in memory.\n3. Choose accept or decline based on fit.`,
+    fit: "Placeholder: no generated fit assessment yet.",
+    suggestedNextStep: "Open the developer drawer to read the full thread, or wait for your summary to finish generating.",
   };
 }
 
-export type PostNegotiationGateContent = ReturnType<typeof stubPostNegotiationGateContent>;
-
-export function gateContentFromPartySummaries(
-  requesterSummary: PartyRunSummary,
-  requesteeSummary: PartyRunSummary,
-): PostNegotiationGateContent {
-  const agenda =
-    requesterSummary.recommendedNextStep ??
-    (requesterSummary.keyEvidence.length > 0
+export function gateContentFromRequesterSummary(requesterSummary: PartyRunSummary): PostNegotiationGateContent {
+  const keyPoints =
+    requesterSummary.keyEvidence.length > 0
       ? requesterSummary.keyEvidence.map((e, i) => `${i + 1}. ${e}`).join("\n")
-      : "No clear next step from summary.");
+      : "No bullet points listed; use the summary above to judge fit.";
   return {
-    fitSummary: requesterSummary.summaryText,
-    agenda,
-    recommendationRequester:
+    summaryFromAgent: requesterSummary.summaryText,
+    keyPoints,
+    fit:
       requesterSummary.fitAssessment ??
-      "No explicit fit assessment available; review key evidence and choose accept/decline.",
-    recommendationRequestee:
-      requesteeSummary.fitAssessment ??
-      requesteeSummary.summaryText,
+      "No explicit fit line from the model; use the summary and key points.",
+    suggestedNextStep:
+      requesterSummary.recommendedNextStep ??
+      "Decide whether to accept or decline the meeting based on the above.",
   };
 }
