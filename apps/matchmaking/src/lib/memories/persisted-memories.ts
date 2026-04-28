@@ -4,9 +4,21 @@ import type { MatchmakingMemoriesBundle } from "./create-memories-bundle.ts";
 
 export { jsonlStorePathForNamespace } from "./jsonl-path.ts";
 
+export const APP_USER_PUBLIC_SLUG = "_user_";
+
 /** Stable memory key for persona seed slot `index` (must match seed pipeline). */
 export function matchmakingSeedMemoryKey(index: number): string {
   return `seed-${index}`;
+}
+
+/** Stable memory key for persona public profile memory in shared namespace. */
+export function matchmakingPublicProfileSeedMemoryKey(slug: string): string {
+  return `seed/public-profile/${slug}`;
+}
+
+/** Stable memory key for app user public profile memory in live flows. */
+export function matchmakingUserPublicProfileMemoryKey(): string {
+  return `live/public-profile/${APP_USER_PUBLIC_SLUG}`;
 }
 
 /** Root directory for matchmaking memories (SQLite + per-namespace JSONL). */

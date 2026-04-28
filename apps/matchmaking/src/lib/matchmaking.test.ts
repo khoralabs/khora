@@ -107,12 +107,12 @@ test("assertMatchmakingBindAllowed allows binding counterparty offer", () => {
   ).not.toThrow();
 });
 
-test("app user memory path uses _user_ segment by default and matches subjects/{id} shape", () => {
+test("app user memory path uses _user_ segment by default and matches cross-subject user shape", () => {
   const prev = process.env.USER_NAMESPACE;
   delete process.env.USER_NAMESPACE;
   try {
     expect(matchmakingUserNamespaceSegment()).toBe("_user_");
-    expect(appUserMemoryNamespace("sub-1")).toBe("obp_demo/matchmaking/subjects/sub-1/_user_");
+    expect(appUserMemoryNamespace("sub-1")).toBe("obp_demo/matchmaking/users/_user_/personal");
   } finally {
     if (prev === undefined) delete process.env.USER_NAMESPACE;
     else process.env.USER_NAMESPACE = prev;

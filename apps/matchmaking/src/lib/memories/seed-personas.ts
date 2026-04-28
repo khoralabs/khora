@@ -3,16 +3,15 @@ import type { LanguageModel } from "ai";
 import { type MatchmakingPersonaSlug, matchmakingPersonas } from "../personas/index.ts";
 import type { MatchmakingPersona } from "../personas/types.ts";
 import type { MatchmakingMemoriesBundle } from "./create-memories-bundle.ts";
-import { matchmakingGlobalMemoryNamespace } from "./matchmaking-global-memory-namespace.ts";
+import { matchmakingSharedPublicProfilesNamespace } from "./matchmaking-shared-public-profiles-namespace.ts";
 import type { MeetingSeedPayload } from "./meeting-seed-payload.ts";
 import { mergeMeetingDomainPayloadIntoNamespace } from "./merge-meeting-payload.ts";
-import { matchmakingSeedMemoryKey } from "./persisted-memories.ts";
+import {
+  matchmakingPublicProfileSeedMemoryKey,
+  matchmakingSeedMemoryKey,
+} from "./persisted-memories.ts";
 
 const PUBLIC_PROFILE_SEED_SLUGS: readonly MatchmakingPersonaSlug[] = ["p1", "p2", "p3"];
-
-export function matchmakingPublicProfileSeedKey(slug: string): string {
-  return `seed/public-profile/${slug}`;
-}
 
 /** Adapter → integrator pipeline per seed (same as matchmaking session seed path). */
 export async function seedPersonaMemoryNamespace(args: {
@@ -51,7 +50,7 @@ export async function seedPersonaMemoryNamespace(args: {
 }
 
 /**
- * Offline seeds: one `public_profile` memory per simulated persona into {@link matchmakingGlobalMemoryNamespace}.
+ * Offline seeds: one `public_profile` memory per simulated persona into shared namespace.
  */
 export async function seedGlobalPublicProfiles(args: {
   bundle: MatchmakingMemoriesBundle;
@@ -61,10 +60,10 @@ export async function seedGlobalPublicProfiles(args: {
   skipExistingSlots?: boolean;
 }): Promise<void> {
   const { bundle, chatModel, embeddingModel, skipExistingSlots } = args;
-  const namespace = matchmakingGlobalMemoryNamespace();
+  const namespace = matchmakingSharedPublicProfilesNamespace();
   for (const slug of PUBLIC_PROFILE_SEED_SLUGS) {
     const p = matchmakingPersonas[slug];
-    const memoryKey = matchmakingPublicProfileSeedKey(slug);
+    const memoryKey = matchmakingPublicProfileSeedMemoryKey(slug);
     if (
       skipExistingSlots === true &&
       bundle.persistence.findMemoryIdByKey(namespace, memoryKey) !== undefined

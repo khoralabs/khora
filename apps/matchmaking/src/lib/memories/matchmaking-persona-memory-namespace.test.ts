@@ -1,8 +1,6 @@
 import { expect, test } from "bun:test";
 import { matchmakingPersonaMemoryNamespace } from "./matchmaking-persona-memory-namespace.ts";
 
-test("subject-scoped path includes slug", () => {
-  expect(matchmakingPersonaMemoryNamespace("p1", "acct-1")).toBe(
-    "obp_demo/matchmaking/subjects/acct-1/personas/p1",
-  );
+test("persona path is cross-subject per-user personal namespace", () => {
+  expect(matchmakingPersonaMemoryNamespace("p1", "acct-1")).toBe("obp_demo/matchmaking/users/p1/personal");
 });

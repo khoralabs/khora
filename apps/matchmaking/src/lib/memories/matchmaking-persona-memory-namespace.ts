@@ -1,12 +1,11 @@
-import { resolveMatchmakingSubjectId } from "../resolve-subject-id.ts";
+import { matchmakingPersonalMemoryNamespace } from "./matchmaking-memory-namespaces.ts";
 
 /**
- * SQLite + JSONL path segment under the memories root, subject-scoped:
- * `obp_demo/matchmaking/subjects/{subjectId}/personas/{slug}`.
+ * Cross-subject personal namespace for a simulated persona.
  */
 export function matchmakingPersonaMemoryNamespace(
   slug: string,
-  subjectId: string = resolveMatchmakingSubjectId(),
+  _subjectId?: string,
 ): string {
-  return `obp_demo/matchmaking/subjects/${subjectId}/personas/${slug}`;
+  return matchmakingPersonalMemoryNamespace(slug);
 }

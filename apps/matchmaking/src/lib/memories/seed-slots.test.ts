@@ -2,7 +2,9 @@ import { describe, expect, test } from "bun:test";
 import type { MatchmakingScenario } from "../scenarios/matchmaking-scenario.ts";
 import type { MatchmakingMemoriesBundle } from "./create-memories-bundle.ts";
 import {
+  matchmakingPublicProfileSeedMemoryKey,
   matchmakingSeedMemoryKey,
+  matchmakingUserPublicProfileMemoryKey,
   namespaceSeedSlotsSatisfied,
   scenarioPersonaSeedSlotsSatisfied,
 } from "./persisted-memories.ts";
@@ -22,6 +24,11 @@ function mockBundle(keysByNs: Map<string, Set<string>>): MatchmakingMemoriesBund
 }
 
 describe("seed slot detection", () => {
+  test("public profile key helpers are stable", () => {
+    expect(matchmakingPublicProfileSeedMemoryKey("p1")).toBe("seed/public-profile/p1");
+    expect(matchmakingUserPublicProfileMemoryKey()).toBe("live/public-profile/_user_");
+  });
+
   test("namespaceSeedSlotsSatisfied requires every seed-N key", () => {
     const keys = new Map<string, Set<string>>([["party_a_ns", new Set()]]);
     let bundle = mockBundle(keys);

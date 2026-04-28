@@ -2,6 +2,10 @@ import type { LanguageModel } from "ai";
 import { getMatchmakingDomainRuntime } from "./domain/runtime/index.ts";
 import { getNegotiationModel } from "./matchmaking-obp/index.ts";
 import { createMatchmakingMemoriesBundle } from "./memories/create-memories-bundle.ts";
+import {
+  matchmakingFeedbackMemoryNamespace,
+  matchmakingNamespaceUserKeyFromPartySlug,
+} from "./memories/matchmaking-memory-namespaces.ts";
 import { getMatchmakingEmbeddingModel } from "./memories/matchmaking-embedding.ts";
 import type { MeetingSeedPayload } from "./memories/meeting-seed-payload.ts";
 import { mergeMeetingDomainPayloadIntoNamespace } from "./memories/merge-meeting-payload.ts";
@@ -42,6 +46,17 @@ async function mergeToBothPartyNamespaces(
   }
 }
 
+function resolveFeedbackNamespaces(runId: string): readonly [string, string] {
+  const ctx = getRunMatchmakingContext(runId);
+  if (ctx === undefined) {
+    throw new Error("Run not found or missing matchmaking context");
+  }
+  return [
+    matchmakingFeedbackMemoryNamespace(matchmakingNamespaceUserKeyFromPartySlug(ctx.requesterSlug)),
+    matchmakingFeedbackMemoryNamespace(matchmakingNamespaceUserKeyFromPartySlug(ctx.requesteeSlug)),
+  ];
+}
+
 /**
  * One adapter→integrator pass per party namespace for the final post-negotiation review
  * (meeting + optional agent-critique in one memory).
@@ -53,16 +68,39 @@ export async function mergePostNegotiationReviewToPartyKgs(args: {
 }): Promise<void> {
   const { runId, decision, agentFeedback } = args;
   const model = getNegotiationModel();
-  const payload: MeetingSeedPayload = {
+  const personalPayload: MeetingSeedPayload = {
     kind: "meeting_post_negotiation_review",
     decision,
-    ...(agentFeedback !== undefined && agentFeedback.length > 0 ? { agentFeedback } : {}),
   };
   await mergeToBothPartyNamespaces(runId, model, (namespace) => ({
-    payload,
+    payload: personalPayload,
     memoryKey: `live/post-negotiation-review/${runId}`,
     correlationId: `post-negotiation-review-${namespace}-${runId}`,
   }));
+  if (agentFeedback !== undefined && agentFeedback.length > 0) {
+    const root = resolveMemoriesRoot();
+    const bundle = createMatchmakingMemoriesBundle(resolveMemoriesDbPath(root), {
+      memoriesRoot: root,
+      domainLexicalStore: true,
+    });
+    const embeddingModel = getMatchmakingEmbeddingModel();
+    const feedbackPayload: MeetingSeedPayload = {
+      kind: "meeting_post_negotiation_review",
+      decision,
+      agentFeedback,
+    };
+    for (const namespace of resolveFeedbackNamespaces(runId)) {
+      await mergeMeetingDomainPayloadIntoNamespace({
+        bundle,
+        chatModel: model,
+        embeddingModel,
+        namespace,
+        memoryKey: `feedback/post-negotiation-review/${runId}`,
+        domainPayload: feedbackPayload,
+        correlationId: `feedback-post-negotiation-review-${namespace}-${runId}`,
+      });
+    }
+  }
   getMatchmakingDomainRuntime().persistence.recordReflection({
     runId,
     kind: "post_negotiation_review",
