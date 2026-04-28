@@ -1,4 +1,8 @@
-import { createAgentRegistry, type SessionContext, type ToolPipelineHooks } from "@cfd/agent-identity";
+import {
+  createAgentRegistry,
+  type SessionContext,
+  type ToolPipelineHooks,
+} from "@cfd/agent-identity";
 import {
   formatThreadForPlaintext,
   InMemoryThreadContext,
@@ -12,8 +16,8 @@ import {
 } from "@cfd/obp-core";
 import {
   createObpNegotiatorSessionRunner,
-  type ObpNegotiatorGeneration,
   negotiationEndPayloadFromGeneration,
+  type ObpNegotiatorGeneration,
   type ObpNegotiatorSessionOutput,
 } from "@cfd/obp-negotiator";
 import {

@@ -1,12 +1,7 @@
 import { z } from "zod";
 import { zInviteePersonaSlug, zRunId } from "./ids.ts";
 
-export const zInviteStatus = z.enum([
-  "pending",
-  "negotiating",
-  "finished",
-  "failed",
-] as const);
+export const zInviteStatus = z.enum(["pending", "negotiating", "finished", "failed"] as const);
 export type InviteStatus = z.infer<typeof zInviteStatus>;
 
 /**

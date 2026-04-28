@@ -114,13 +114,12 @@ export function NamespaceSelector({
             {filteredNs.length > 0 && (
               <CommandGroup heading="In database">
                 {filteredNs.map((ns) => (
-                  <CommandItem
-                    key={ns}
-                    value={ns}
-                    onSelect={() => commitNamespace(ns)}
-                  >
+                  <CommandItem key={ns} value={ns} onSelect={() => commitNamespace(ns)}>
                     <Check
-                      className={cn("mr-2 size-4 shrink-0", value === ns ? "opacity-100" : "opacity-0")}
+                      className={cn(
+                        "mr-2 size-4 shrink-0",
+                        value === ns ? "opacity-100" : "opacity-0",
+                      )}
                       aria-hidden
                     />
                     <span className="min-w-0 break-all">{ns}</span>

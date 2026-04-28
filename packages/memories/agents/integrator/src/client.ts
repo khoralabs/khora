@@ -5,7 +5,10 @@ import { DEFAULT_MEMORY_TOOL_LOOP_MAX_STEPS } from "@cfd/memories-tools";
 import type { LanguageModel } from "ai";
 import type z from "zod";
 import type { IntegratorPipelineGeneration } from "./create-integrator-agent.js";
-import { buildMemoryIntegratorAgentId, type DefineMemoryIntegratorIdentityOptions } from "./identity.js";
+import {
+  buildMemoryIntegratorAgentId,
+  type DefineMemoryIntegratorIdentityOptions,
+} from "./identity.js";
 import type { IntegratorPlanWire } from "./integrator-output.js";
 import {
   ensureMemoryIntegratorAgentRegistered,

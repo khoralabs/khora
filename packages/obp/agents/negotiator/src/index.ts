@@ -17,6 +17,10 @@ export {
 } from "./identity.ts";
 export { obpNegotiatorBaseInstruction } from "./instructions.ts";
 export {
+  type NegotiationEndPayload,
+  negotiationEndPayloadFromGeneration,
+} from "./negotiation-end-from-generation.ts";
+export {
   createObpNegotiatorSessionRunner,
   ensureObpNegotiatorAgentRegistered,
   getObpNegotiatorAgentDefinition,
@@ -26,7 +30,3 @@ export {
   type ObpNegotiatorSessionOutput,
   registerObpNegotiatorAgent,
 } from "./negotiator-session.ts";
-export {
-  negotiationEndPayloadFromGeneration,
-  type NegotiationEndPayload,
-} from "./negotiation-end-from-generation.ts";

@@ -1,13 +1,13 @@
 import {
   createContext,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
   useCallback,
   useContext,
   useMemo,
   useRef,
   useState,
-  type ReactNode,
-  type Dispatch,
-  type SetStateAction,
 } from "react";
 import { toast } from "sonner";
 import { useMatchmakingNavigation } from "@/components/phases/navigation/matchmaking-navigation-context";
@@ -169,7 +169,7 @@ export function InviteRunProvider({ children }: { children: ReactNode }) {
           setNegotiationRunId(body.runId);
         }
         setSavedInviteText(inviteMessage.trim());
-          setSavedInviteGoals([]);
+        setSavedInviteGoals([]);
         postNegotiationGateConsumed.current = false;
         setNegotiationRunComplete(false);
         setNegotiationDoneResult(null);

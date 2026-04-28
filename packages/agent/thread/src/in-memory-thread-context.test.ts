@@ -29,9 +29,7 @@ describe("InMemoryThreadContext", () => {
 
   test("rejects unknown author participant", async () => {
     const ctx = new InMemoryThreadContext({ participantIds: ["a"] });
-    expect(ctx.postMessage(postThreadUserText("z", "nope"))).rejects.toThrow(
-      /unknown participant/,
-    );
+    expect(ctx.postMessage(postThreadUserText("z", "nope"))).rejects.toThrow(/unknown participant/);
   });
 
   test("withContext rejects unknown forParticipantId", async () => {

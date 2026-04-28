@@ -2,13 +2,13 @@ import type z from "zod";
 import type { DeleteMemoryParams } from "../models/delete-memory";
 import { deleteMemoryAsync } from "../models/delete-memory-async";
 import type { MemoriesPersistenceAsync } from "../persistence/async-types";
+import type { MemoriesClientOptions } from "./client";
 import {
   type MergeMemoryParams,
   type MutationCtxAsync,
   mergeMemoryAsync,
   zMergeMemoryContentItem,
 } from "./merge-memory-async";
-import type { MemoriesClientOptions } from "./client";
 import type { OntologyDefinition } from "./ontology";
 import { validateEdgeLabel, validateNodeLabel } from "./ontology";
 import type { ResolvedSource, Store } from "./resolve-sourcemap.js";

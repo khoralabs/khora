@@ -8,7 +8,10 @@ import type {
 } from "@cfd/agent-identity";
 import type { ObpToolkitEnv } from "@cfd/obp-tools";
 import type { LanguageModel } from "ai";
-import { createObpNegotiatorAgent, type ObpNegotiatorGeneration } from "./create-negotiator-agent.ts";
+import {
+  createObpNegotiatorAgent,
+  type ObpNegotiatorGeneration,
+} from "./create-negotiator-agent.ts";
 import {
   buildObpNegotiatorAgentId,
   type DefineObpNegotiatorIdentityOptions,

@@ -1,9 +1,6 @@
 import type { RegisteredAgentIdentity } from "@cfd/agent-identity";
 import { generateText, type LanguageModel, Output } from "ai";
-import {
-  type GoalExtractionOutput,
-  zGoalExtractionOutput,
-} from "./output.ts";
+import { type GoalExtractionOutput, zGoalExtractionOutput } from "./output.ts";
 
 export async function generateGoalExtractorOutput(args: {
   model: LanguageModel;

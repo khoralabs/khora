@@ -5,11 +5,11 @@
  * It is included in `src/index.html`.
  */
 
+import { ThemeProvider } from "next-themes";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { ThemeProvider } from "next-themes";
-import { App } from "./App";
 import { Toaster } from "@/components/ui/sonner";
+import { App } from "./App";
 import "../styles/globals.css";
 
 const elem = document.getElementById("root");

@@ -1,12 +1,12 @@
-import { createAgentRegistry, type AgentRegistry } from "@cfd/agent-identity";
+import { type AgentRegistry, createAgentRegistry } from "@cfd/agent-identity";
 import type { LanguageModel } from "ai";
 import type { DefineGoalExtractorIdentityOptions } from "./identity.ts";
+import type { GoalExtractionOutput } from "./output.ts";
 import {
+  ensureGoalExtractorAgentRegistered,
   type GoalExtractorSessionInput,
   type GoalExtractorSessionOutput,
-  ensureGoalExtractorAgentRegistered,
 } from "./session.ts";
-import type { GoalExtractionOutput } from "./output.ts";
 
 export type GoalExtractorClientOptions = DefineGoalExtractorIdentityOptions & {
   registry?: AgentRegistry;
@@ -32,10 +32,7 @@ export class GoalExtractorClient {
     this.defaultMaxSteps = options.defaultMaxSteps ?? 2;
   }
 
-  async extractGoals(args: {
-    message: string;
-    maxSteps?: number;
-  }): Promise<GoalExtractionOutput> {
+  async extractGoals(args: { message: string; maxSteps?: number }): Promise<GoalExtractionOutput> {
     const { identity } = await ensureGoalExtractorAgentRegistered(this.registry, this.namespace, {
       ...(this.identityContext !== undefined ? { identityContext: this.identityContext } : {}),
       ...(this.instructions !== undefined ? { instructions: this.instructions } : {}),

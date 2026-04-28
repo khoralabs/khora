@@ -9,8 +9,8 @@ import {
 } from "@cfd/memories-core/ontologies";
 import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-sqlite";
 import { JsonlStore } from "@cfd/memories-stores";
-import { getMatchmakingDomainDatabase } from "../domain/persistence/open-domain-db.ts";
 import { SqliteLexicalStore } from "../domain/lexical/sqlite-lexical-store.ts";
+import { getMatchmakingDomainDatabase } from "../domain/persistence/open-domain-db.ts";
 
 import { jsonlStorePathForNamespace } from "./jsonl-path.ts";
 

@@ -1,7 +1,7 @@
 import type { ThreadMessage } from "./messages.ts";
 import {
-  ThreadContext,
   type PostThreadMessageInput,
+  ThreadContext,
   type WithThreadContextArgs,
 } from "./thread-context.ts";
 

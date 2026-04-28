@@ -1,16 +1,9 @@
 import { join } from "node:path";
 import client from "./index.html";
+import { getMatchmakingDomainRuntime } from "./lib/domain/runtime/index.ts";
+import { extractAndPersistGoalsForInvite } from "./lib/goals/extract-and-persist-goals.ts";
 import { inviteRequestSchema } from "./lib/invite-request.ts";
 import { runMatchmakingSession } from "./lib/llm/session.ts";
-import {
-  postMeetingReflectionRequestSchema,
-  postNegotiationReviewRequestSchema,
-} from "./lib/post-negotiation-request.ts";
-import {
-  mergePostMeetingReflectionToPartyKgs,
-  mergePostNegotiationReviewToPartyKgs,
-} from "./lib/post-negotiation-kg.ts";
-import { extractAndPersistGoalsForInvite } from "./lib/goals/extract-and-persist-goals.ts";
 import {
   appendDoneEvent,
   createThreadDevLog,
@@ -20,10 +13,17 @@ import {
   setNegotiationServerRef,
   setRunMatchmakingContext,
 } from "./lib/negotiation-run-registry.ts";
-import { getMatchmakingDomainRuntime } from "./lib/domain/runtime/index.ts";
 import { listPersonaPublicDtos } from "./lib/persona-public-dtos.ts";
-import { buildAppUserIntroRequestScenario } from "./lib/scenarios/intro-request.ts";
+import {
+  mergePostMeetingReflectionToPartyKgs,
+  mergePostNegotiationReviewToPartyKgs,
+} from "./lib/post-negotiation-kg.ts";
+import {
+  postMeetingReflectionRequestSchema,
+  postNegotiationReviewRequestSchema,
+} from "./lib/post-negotiation-request.ts";
 import { resolveMatchmakingSubjectId } from "./lib/resolve-subject-id.ts";
+import { buildAppUserIntroRequestScenario } from "./lib/scenarios/intro-request.ts";
 import {
   getUserPublicProfileForApi,
   saveUserPublicProfileToMemories,
@@ -149,8 +149,15 @@ const server = Bun.serve({
       return Response.json({ ok: true as const, runId });
     }
 
-    if (url.pathname.startsWith("/api/invites/") && url.pathname.endsWith("/goals") && req.method === "GET") {
-      const runId = url.pathname.replace("/api/invites/", "").replace("/goals", "").replace(/\/+$/g, "");
+    if (
+      url.pathname.startsWith("/api/invites/") &&
+      url.pathname.endsWith("/goals") &&
+      req.method === "GET"
+    ) {
+      const runId = url.pathname
+        .replace("/api/invites/", "")
+        .replace("/goals", "")
+        .replace(/\/+$/g, "");
       if (!runId) {
         return Response.json({ error: "Missing run id" }, { status: 400 });
       }

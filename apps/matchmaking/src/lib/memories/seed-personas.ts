@@ -4,8 +4,8 @@ import { type MatchmakingPersonaSlug, matchmakingPersonas } from "../personas/in
 import type { MatchmakingPersona } from "../personas/types.ts";
 import type { MatchmakingMemoriesBundle } from "./create-memories-bundle.ts";
 import { matchmakingGlobalMemoryNamespace } from "./matchmaking-global-memory-namespace.ts";
-import { mergeMeetingDomainPayloadIntoNamespace } from "./merge-meeting-payload.ts";
 import type { MeetingSeedPayload } from "./meeting-seed-payload.ts";
+import { mergeMeetingDomainPayloadIntoNamespace } from "./merge-meeting-payload.ts";
 import { matchmakingSeedMemoryKey } from "./persisted-memories.ts";
 
 const PUBLIC_PROFILE_SEED_SLUGS: readonly MatchmakingPersonaSlug[] = ["p1", "p2", "p3"];

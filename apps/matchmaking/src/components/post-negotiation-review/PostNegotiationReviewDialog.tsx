@@ -1,3 +1,12 @@
+import { useInviteRun } from "@/components/phases/book/invite-run-context";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   InputGroup,
@@ -7,15 +16,6 @@ import {
 } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { useInviteRun } from "@/components/phases/book/invite-run-context";
 
 export function PostNegotiationReviewDialog() {
   const {
@@ -53,7 +53,9 @@ export function PostNegotiationReviewDialog() {
                   <p className="whitespace-pre-wrap mt-1">{gateContent.recommendationRequester}</p>
                 </div>
                 <div>
-                  <p className="text-foreground font-medium text-sm">For the other party (preview)</p>
+                  <p className="text-foreground font-medium text-sm">
+                    For the other party (preview)
+                  </p>
                   <p className="whitespace-pre-wrap mt-1">{gateContent.recommendationRequestee}</p>
                 </div>
                 <p className="text-xs">
@@ -156,7 +158,11 @@ export function PostNegotiationReviewDialog() {
                     "Skip"
                   )}
                 </Button>
-                <Button type="button" disabled={reviewBusy} onClick={() => void submitPostNegotiationReview()}>
+                <Button
+                  type="button"
+                  disabled={reviewBusy}
+                  onClick={() => void submitPostNegotiationReview()}
+                >
                   {reviewBusy ? (
                     <>
                       <Spinner className="size-3.5" />

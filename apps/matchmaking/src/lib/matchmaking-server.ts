@@ -44,12 +44,12 @@ export type {
   MatchmakingMemoriesBundleOptions,
 } from "./memories/create-memories-bundle.ts";
 export { createMatchmakingMemoriesBundle } from "./memories/create-memories-bundle.ts";
+export { matchmakingGlobalMemoryNamespace } from "./memories/matchmaking-global-memory-namespace.ts";
 export {
   jsonlStorePathForNamespace,
   resolveMemoriesDbPath,
   resolveMemoriesRoot,
 } from "./memories/persisted-memories.ts";
-export { matchmakingGlobalMemoryNamespace } from "./memories/matchmaking-global-memory-namespace.ts";
 export {
   seedAllMatchmakingPersonaMemories,
   seedGlobalPublicProfiles,
@@ -70,5 +70,8 @@ export {
   matchmakingPersonas,
   pairMatchmakingPersonas,
 } from "./scenarios/index.ts";
-export { buildAppUserIntroRequestScenario, buildIntroRequestScenarioPair } from "./scenarios/intro-request.ts";
+export {
+  buildAppUserIntroRequestScenario,
+  buildIntroRequestScenarioPair,
+} from "./scenarios/intro-request.ts";
 export type { MatchmakingScenario } from "./scenarios/matchmaking-scenario.ts";

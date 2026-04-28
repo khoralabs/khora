@@ -11,14 +11,7 @@ import type {
   Reflection,
   UserPublicProfileFields,
 } from "../models/index.ts";
-import {
-  zBooking,
-  zCalendarHold,
-  zGoal,
-  zInvite,
-  zProfile,
-  zReflection,
-} from "../models/index.ts";
+import { zBooking, zCalendarHold, zGoal, zInvite, zProfile, zReflection } from "../models/index.ts";
 
 function nowMs(): number {
   return Date.now();
@@ -51,11 +44,7 @@ export type MatchmakingDomainPersistence = {
   }): Invite;
   getInvite(id: string): Invite | null;
   listGoalsByInviteId(inviteId: string): Goal[];
-  createGoals(args: {
-    inviteId: string;
-    subjectId: string;
-    goals: CreateGoalInput[];
-  }): Goal[];
+  createGoals(args: { inviteId: string; subjectId: string; goals: CreateGoalInput[] }): Goal[];
   updateInviteStatus(id: string, status: Invite["status"]): void;
   setInviteFinished(id: string, result: unknown): void;
 
@@ -215,15 +204,7 @@ export class SqliteMatchmakingDomainPersistence implements MatchmakingDomainPers
       const id = crypto.randomUUID();
       this.db.run(
         "INSERT INTO goals (id, invite_id, subject_id, text, kind, priority, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        [
-          id,
-          args.inviteId,
-          args.subjectId,
-          goal.text,
-          goal.kind ?? null,
-          goal.priority ?? idx,
-          t,
-        ],
+        [id, args.inviteId, args.subjectId, goal.text, goal.kind ?? null, goal.priority ?? idx, t],
       );
       rows.push(
         zGoal.parse({
@@ -237,7 +218,14 @@ export class SqliteMatchmakingDomainPersistence implements MatchmakingDomainPers
         }),
       );
     });
-    appendEventRow(this.db, "GoalsExtracted", args.subjectId, args.inviteId, { count: rows.length }, t);
+    appendEventRow(
+      this.db,
+      "GoalsExtracted",
+      args.subjectId,
+      args.inviteId,
+      { count: rows.length },
+      t,
+    );
     return rows;
   }
 

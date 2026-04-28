@@ -7,7 +7,10 @@ import { seedAllMatchmakingPersonaMemories } from "./memories/seed-personas.ts";
 async function main(): Promise<void> {
   const memoriesRoot = resolveMemoriesRoot();
   const dbPath = resolveMemoriesDbPath(memoriesRoot);
-  const bundle = createMatchmakingMemoriesBundle(dbPath, { memoriesRoot, domainLexicalStore: true });
+  const bundle = createMatchmakingMemoriesBundle(dbPath, {
+    memoriesRoot,
+    domainLexicalStore: true,
+  });
   const chatModel = getNegotiationModel();
   const embeddingModel = getMatchmakingEmbeddingModel();
 

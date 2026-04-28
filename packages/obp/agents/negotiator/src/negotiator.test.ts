@@ -1,8 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { createAgentRegistry } from "@cfd/agent-identity";
-import { ensureObpNegotiatorAgentRegistered, getObpNegotiatorAgentDefinition } from "./negotiator-session.ts";
 import { defineObpNegotiatorIdentity } from "./identity.ts";
 import { obpNegotiatorBaseInstruction } from "./instructions.ts";
+import {
+  ensureObpNegotiatorAgentRegistered,
+  getObpNegotiatorAgentDefinition,
+} from "./negotiator-session.ts";
 
 describe("@cfd/obp-negotiator", () => {
   test("obpNegotiatorBaseInstruction is non-empty", () => {

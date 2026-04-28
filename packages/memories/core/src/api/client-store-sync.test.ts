@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-sqlite";
 import { canonicalOntology } from "../ontologies/cannonical";
 import type { TextFeatureExportRow } from "../persistence/row-schemas";
-import type { Store } from "./resolve-sourcemap";
 import { MemoriesClient } from "./client";
+import type { Store } from "./resolve-sourcemap";
 
 function openTestPersistence() {
   const db = openMemoriesDatabase(":memory:");

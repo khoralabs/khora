@@ -1,3 +1,5 @@
+import { useInviteRun } from "@/components/phases/book/invite-run-context";
+import { useMatchmakingNavigation } from "@/components/phases/navigation/matchmaking-navigation-context";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -7,8 +9,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useInviteRun } from "@/components/phases/book/invite-run-context";
-import { useMatchmakingNavigation } from "@/components/phases/navigation/matchmaking-navigation-context";
 
 export function InviteReceivedDialog() {
   const { selected, setPhase } = useMatchmakingNavigation();

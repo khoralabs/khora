@@ -1,11 +1,11 @@
 import {
   createContext,
+  type ReactNode,
   useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
-  type ReactNode,
 } from "react";
 import type { PersonaPublicDto } from "@/lib/persona-public-dtos";
 
@@ -57,7 +57,9 @@ export function PersonaDirectoryProvider({ children }: { children: ReactNode }) 
     [personas, loadError, reloadPersonas],
   );
 
-  return <PersonaDirectoryContext.Provider value={value}>{children}</PersonaDirectoryContext.Provider>;
+  return (
+    <PersonaDirectoryContext.Provider value={value}>{children}</PersonaDirectoryContext.Provider>
+  );
 }
 
 export function usePersonaDirectory(): PersonaDirectoryContextValue {

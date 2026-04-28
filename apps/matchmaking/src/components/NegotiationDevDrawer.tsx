@@ -10,6 +10,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { Label } from "@/components/ui/label";
+
 type JsonlStringLine = {
   memory_id: string;
   source_key: string;
@@ -32,7 +33,9 @@ export function NegotiationDevDrawer(props: {
   const { runId, open, onOpenChange, onRunFinished } = props;
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [rawJsonl, setRawJsonl] = useState(false);
-  const [wsState, setWsState] = useState<"idle" | "connecting" | "open" | "error" | "closed">("idle");
+  const [wsState, setWsState] = useState<"idle" | "connecting" | "open" | "error" | "closed">(
+    "idle",
+  );
   const [errText, setErrText] = useState<string | null>(null);
 
   useEffect(() => {
@@ -74,16 +77,10 @@ export function NegotiationDevDrawer(props: {
           setEntries((prev) => [...prev, { id: nextId(), kind: "line_raw", raw }]);
         } else if (msg.t === "done") {
           const doneResult: unknown = msg.result;
-          setEntries((prev) => [
-            ...prev,
-            { id: nextId(), kind: "done", result: doneResult },
-          ]);
+          setEntries((prev) => [...prev, { id: nextId(), kind: "done", result: doneResult }]);
           onRunFinished?.(doneResult);
         } else {
-          setEntries((prev) => [
-            ...prev,
-            { id: nextId(), kind: "line_raw", raw: text },
-          ]);
+          setEntries((prev) => [...prev, { id: nextId(), kind: "line_raw", raw: text }]);
         }
       } catch {
         setEntries((prev) => [...prev, { id: nextId(), kind: "line_raw", raw: text }]);
@@ -107,11 +104,11 @@ export function NegotiationDevDrawer(props: {
           {entries.map((e) => (
             <li key={e.id}>
               {e.kind === "line" && (
-                <pre className="whitespace-pre-wrap break-words">
-                  {JSON.stringify(e.line)}
-                </pre>
+                <pre className="whitespace-pre-wrap break-words">{JSON.stringify(e.line)}</pre>
               )}
-              {e.kind === "line_raw" && <pre className="whitespace-pre-wrap break-words">{e.raw}</pre>}
+              {e.kind === "line_raw" && (
+                <pre className="whitespace-pre-wrap break-words">{e.raw}</pre>
+              )}
               {e.kind === "done" && (
                 <pre className="whitespace-pre-wrap break-words text-foreground">
                   {JSON.stringify({ t: "done", result: e.result }, null, 2)}

@@ -1,8 +1,8 @@
 import { appUserMemoryNamespace } from "../memories/app-user-memory-namespace.ts";
 import { buildAppUserRegisteredIdentity } from "../personas/app-user-negotiator-identity.ts";
 import {
-  type MatchmakingPersonaSlug,
   getMatchmakingPersona,
+  type MatchmakingPersonaSlug,
   pairMatchmakingPersonas,
 } from "../personas/index.ts";
 import type { MatchmakingPersona } from "../personas/types.ts";

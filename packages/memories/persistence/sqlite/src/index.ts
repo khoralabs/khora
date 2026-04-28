@@ -7,7 +7,6 @@ export {
   openMemoriesDatabase,
   openMemoriesDatabaseReadonly,
 } from "./connection";
-export { listMemoryNamespaces } from "./models/list-memory-namespaces";
 export { buildNamespaceGraphLayout } from "./graph/build-namespace-graph-layout";
 export {
   LABEL_PROPERTY_SYNTH_DIM,
@@ -23,6 +22,7 @@ export {
   type Umap3DLayoutOptions,
   umap3DLayout,
 } from "./graph/umap-layout";
+export { listMemoryNamespaces } from "./models/list-memory-namespaces";
 export {
   createMemoriesPersistence,
   MemoriesPersistence,

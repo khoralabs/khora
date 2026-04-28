@@ -54,7 +54,13 @@ test("Invite and booking outcome", () => {
     message: "hi",
   });
   expect(i.status).toBe("pending");
-  p.setInviteFinished(RUN_ID, { status: "connected", offerId: "o", portId: "p", portType: "t", rounds: 1 });
+  p.setInviteFinished(RUN_ID, {
+    status: "connected",
+    offerId: "o",
+    portId: "p",
+    portType: "t",
+    rounds: 1,
+  });
   const b = p.getInvite(RUN_ID);
   expect(b?.status).toBe("finished");
 });

@@ -1,17 +1,17 @@
 import {
   createContext,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
   useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
-  type Dispatch,
-  type ReactNode,
-  type SetStateAction,
 } from "react";
 import { toast } from "sonner";
-import { useMatchmakingNavigation } from "@/components/phases/navigation/matchmaking-navigation-context";
 import { usePersonaDirectory } from "@/components/phases/list/persona-directory-context";
+import { useMatchmakingNavigation } from "@/components/phases/navigation/matchmaking-navigation-context";
 
 type ProfileContextValue = {
   profileLoadError: string | null;

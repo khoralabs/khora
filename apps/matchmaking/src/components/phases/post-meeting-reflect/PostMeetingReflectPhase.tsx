@@ -1,3 +1,5 @@
+import { useInviteRun } from "@/components/phases/book/invite-run-context";
+import { usePostMeetingReflect } from "@/components/phases/post-meeting-reflect/post-meeting-reflect-context";
 import { Button } from "@/components/ui/button";
 import {
   InputGroup,
@@ -8,8 +10,6 @@ import {
 } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import { useInviteRun } from "@/components/phases/book/invite-run-context";
-import { usePostMeetingReflect } from "@/components/phases/post-meeting-reflect/post-meeting-reflect-context";
 
 export function PostMeetingReflectPhase() {
   const { savedInviteText, savedInviteGoals } = useInviteRun();
@@ -24,7 +24,13 @@ export function PostMeetingReflectPhase() {
 
   return (
     <section className="space-y-8">
-      <Button type="button" variant="ghost" className="-ml-2" onClick={exitPostMeetingToHome} disabled={meetingReflectBusy}>
+      <Button
+        type="button"
+        variant="ghost"
+        className="-ml-2"
+        onClick={exitPostMeetingToHome}
+        disabled={meetingReflectBusy}
+      >
         ← All personas
       </Button>
       <div>
@@ -39,7 +45,9 @@ export function PostMeetingReflectPhase() {
           <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
             Your original intent
           </p>
-          <p className="text-foreground mt-2 leading-relaxed whitespace-pre-wrap">{savedInviteText}</p>
+          <p className="text-foreground mt-2 leading-relaxed whitespace-pre-wrap">
+            {savedInviteText}
+          </p>
           {savedInviteGoals.length > 0 && (
             <div className="mt-3 space-y-1.5">
               <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
@@ -97,7 +105,12 @@ export function PostMeetingReflectPhase() {
         )}
       </div>
       <div className="pt-2">
-        <Button type="button" variant="outline" disabled={meetingReflectBusy} onClick={exitPostMeetingToHome}>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={meetingReflectBusy}
+          onClick={exitPostMeetingToHome}
+        >
           Skip for now
         </Button>
       </div>
