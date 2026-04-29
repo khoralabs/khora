@@ -133,7 +133,8 @@ export default defineSchema({
   })
     .index("by_edgeId", ["edgeId"])
     .index("by_from", ["fromNodeId"])
-    .index("by_to", ["toNodeId"]),
+    .index("by_to", ["toNodeId"])
+    .index("by_namespace", ["namespace"]),
 
   node_label_assignments: defineTable({
     assignmentId: v.string(),

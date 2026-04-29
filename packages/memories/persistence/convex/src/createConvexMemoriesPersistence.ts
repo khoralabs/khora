@@ -5,6 +5,7 @@ import type {
   HydratedSourceMapHit,
   MemoriesPersistenceAsync,
   MemoryOpContext,
+  NamespacePath,
   NeighborFilter,
   OntologyLabelInstance,
   SearchNamespaceScope,
@@ -17,10 +18,10 @@ import type { ComponentApi } from "./component/_generated/component.js";
 const CAPABILITIES = {
   lexicalSearch: true,
   vectorSearch: true,
-  neighborIndex: false,
-  graphIndex: false,
+  neighborIndex: true,
+  graphIndex: true,
   multiNamespaceSearch: true,
-  unscopedSearch: false,
+  unscopedSearch: true,
 } as const;
 
 type QueryClient = {
@@ -53,6 +54,10 @@ export type MemoriesConvexApiSlice = Pick<ComponentApi, "mutations" | "queries" 
  * Async persistence backed by the Convex functions in this package (`src/component/mutations`, `src/component/queries`).
  * Pass `components.memories` (or another mounted instance) as `refs` from a host that wraps this component.
  * Default `refs` uses the package’s {@link api}. `withTransaction` runs the callback only (sequential RPCs); see README for atomicity vs SQLite.
+ *
+ * **Vector embeddings:** Supported widths are exactly those re-exported as `CONVEX_VECTOR_DIMENSIONS` from this package.
+ * `listVectorEmbeddingIndexDimensions` returns that fixed set (not dimensions inferred from stored vectors, unlike SQLite).
+ * Portable code should validate embedding length against `CONVEX_VECTOR_DIMENSIONS` when targeting Convex.
  */
 export function createConvexMemoriesPersistence(
   client: ConvexMemoriesClient,
@@ -230,6 +235,9 @@ export function createConvexMemoriesPersistence(
         namespace: input.namespace,
         memoryKey: input.memoryKey,
         now: op.now,
+        ...(input.metaVector !== undefined && input.metaVector.length > 0
+          ? { metaVector: Array.from(input.metaVector) }
+          : {}),
       });
     },
 
@@ -249,6 +257,17 @@ export function createConvexMemoriesPersistence(
         namespace: input.namespace,
         memoryKey: input.memoryKey,
         vector: Array.from(input.vector),
+        now: op.now,
+      });
+    },
+
+    async syncLabelPropsSearchFeatures(
+      op: MemoryOpContext,
+      input: { namespace: string; memoryKey: string },
+    ): Promise<void> {
+      await client.mutation(m.syncLabelPropsSearchFeatures, {
+        namespace: input.namespace,
+        memoryKey: input.memoryKey,
         now: op.now,
       });
     },
@@ -305,13 +324,14 @@ export function createConvexMemoriesPersistence(
       EDGE_LABEL extends string = string,
       NODE_LABEL extends string = string,
     >(input: {
-      namespace: string;
+      namespace: NamespacePath;
       key: string;
       filters?: NeighborFilter<EDGE_LABEL, NODE_LABEL>;
     }): Promise<HydratedNeighbor[]> {
       return client.query(q.listNeighborsForMemory, {
         namespace: input.namespace,
         key: input.key,
+        ...(input.filters !== undefined ? { filters: input.filters } : {}),
       }) as unknown as Promise<HydratedNeighbor[]>;
     },
 
@@ -327,46 +347,48 @@ export function createConvexMemoriesPersistence(
       return client.query(q.listVectorEmbeddingIndexDimensions, {});
     },
 
-    async loadGraphEdgesForNamespace(_namespace: string): Promise<GraphEdgeLink[]> {
-      return [];
+    async loadGraphEdgesForNamespace(namespace: string): Promise<GraphEdgeLink[]> {
+      return client.query(q.loadGraphEdgesForNamespace, { namespace });
     },
 
     async loadNodeLabelsForNamespace(
-      _namespace: string,
+      namespace: string,
     ): Promise<Map<string, OntologyLabelInstance[]>> {
-      return new Map();
+      const rows = await client.query(q.loadNodeLabelsForNamespace, { namespace });
+      return new Map(rows.map((r) => [r.memoryKey, r.labels]));
     },
 
     async loadNodePropertiesForNamespace(
-      _namespace: string,
+      namespace: string,
     ): Promise<Map<string, Record<string, unknown> | null>> {
-      return new Map();
+      const rows = await client.query(q.loadNodePropertiesForNamespace, { namespace });
+      return new Map(rows.map((r) => [r.memoryKey, r.properties]));
     },
 
-    async listIncidentGraphEdges(_namespace: string, _memoryKey: string): Promise<GraphEdgeLink[]> {
-      return [];
+    async listIncidentGraphEdges(namespace: string, memoryKey: string): Promise<GraphEdgeLink[]> {
+      return client.query(q.listIncidentGraphEdges, { namespace, memoryKey });
     },
 
     async loadNodeLabelsForMemory(
-      _namespace: string,
-      _memoryKey: string,
+      namespace: string,
+      memoryKey: string,
     ): Promise<OntologyLabelInstance[]> {
-      return [];
+      return client.query(q.loadNodeLabelsForMemory, { namespace, memoryKey });
     },
 
     async loadNodePropertiesForMemory(
-      _namespace: string,
-      _memoryKey: string,
+      namespace: string,
+      memoryKey: string,
     ): Promise<Record<string, unknown> | null> {
-      return null;
+      return client.query(q.loadNodePropertiesForMemory, { namespace, memoryKey });
     },
 
-    async loadGraphEdge(_namespace: string, _edgeId: string): Promise<GraphEdgeLink | null> {
-      return null;
+    async loadGraphEdge(namespace: string, edgeId: string): Promise<GraphEdgeLink | null> {
+      return client.query(q.loadGraphEdge, { namespace, edgeId });
     },
 
-    async loadGraphNode(_namespace: string, _memoryKey: string): Promise<GraphNode | null> {
-      return null;
+    async loadGraphNode(namespace: string, memoryKey: string): Promise<GraphNode | null> {
+      return client.query(q.loadGraphNode, { namespace, memoryKey });
     },
   };
 }

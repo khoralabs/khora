@@ -1,8 +1,11 @@
-import { MemoriesPersistenceProvider } from "@cfd/memories-convex/react";
+import {
+  MemoriesPersistenceProvider,
+  memoriesConvexHostRefsFromApi,
+} from "@cfd/memories-convex/react";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { type ReactNode, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { components } from "../../convex/_generated/api.js";
+import { api } from "../../convex/_generated/api.js";
 
 function Root({ children }: { children: ReactNode }) {
   // Client bundle only inlines names allowed by bunfig `[serve.static] env` (here: BUN_PUBLIC_*).
@@ -14,7 +17,7 @@ function Root({ children }: { children: ReactNode }) {
   const client = new ConvexReactClient(convexUrl);
   return (
     <ConvexProvider client={client}>
-      <MemoriesPersistenceProvider componentApi={components.memories}>
+      <MemoriesPersistenceProvider client={client} componentApi={memoriesConvexHostRefsFromApi(api)}>
         {children}
       </MemoriesPersistenceProvider>
     </ConvexProvider>

@@ -1,12 +1,10 @@
 import { fuseRrf, type RrfArm } from "@cfd/reciprocal-rank-fusion";
-import { logger } from "../logger.js";
 import type { NamespacePath } from "../models/namespace-path";
 import type { HydratedNeighbor, NeighborFilter } from "../models/neighbor-search-types";
 import type { OntologyLabelInstance } from "../models/ontology-label";
 import type { MemoriesPersistenceAsync } from "../persistence/async-types";
 import type { MemoriesBackendCapabilities, SearchNamespaceScope } from "../persistence/types";
 import { resolveMemoriesBackendCapabilities } from "../persistence/types";
-import { elapsedMs, nowMs } from "../timing.js";
 import type { MutationCtxAsync } from "./merge-memory-async";
 import {
   normalizeSearchScopeFromParams,
@@ -225,7 +223,6 @@ export async function searchAsync<
   ctx: MutationCtxAsync,
   params: SearchParams<NODE_LABELS, EDGE_LABELS>,
 ): Promise<SearchHit<NODE_LABELS, EDGE_LABELS>[]> {
-  const t0 = nowMs();
   const { persistence } = ctx;
   const caps = resolveMemoriesBackendCapabilities(persistence);
   const topK = params.options?.topK ?? 10;
@@ -284,20 +281,6 @@ export async function searchAsync<
 
   const neighborOpt = !caps.neighborIndex ? false : params.options?.neighbors;
   if (neighborOpt === undefined || neighborOpt === false) {
-    logger.info({
-      phase: "memories.search",
-      durationMs: elapsedMs(t0),
-      namespace: params.namespace,
-      additionalNamespaceCount,
-      unscoped,
-      hitCount: rootHits.length,
-      topK,
-      neighbors: false,
-      vectorDim:
-        "vector" in params.content && params.content.vector.length > 0
-          ? params.content.vector.length
-          : undefined,
-    });
     return rootHits;
   }
 
@@ -325,19 +308,5 @@ export async function searchAsync<
       ),
     })),
   );
-  logger.info({
-    phase: "memories.search",
-    durationMs: elapsedMs(t0),
-    namespace: params.namespace,
-    additionalNamespaceCount,
-    unscoped,
-    hitCount: withNeighbors.length,
-    topK,
-    neighbors: true,
-    vectorDim:
-      "vector" in params.content && params.content.vector.length > 0
-        ? params.content.vector.length
-        : undefined,
-  });
   return withNeighbors;
 }

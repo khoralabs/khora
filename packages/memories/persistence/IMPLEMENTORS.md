@@ -18,11 +18,11 @@ This document compares backends under `packages/memories-persistence/` for anyon
 ## Convex (`@cfd/memories-convex`)
 
 - **API** — `MemoriesPersistenceAsync` via `createConvexMemoriesPersistence(client)`; public npm API also re-exports async client entry points (`MemoriesClient`, `mergeMemory`, …) without the `Async` suffix.
-- **Milestone** — Lexical-first: `vectorSearch: false`, `neighborIndex: false`, `graphIndex: false`, `unscopedSearch: false`. Vector, neighbor, and graph-index methods are stubs or return empty results as appropriate.
-- **Transactions** — Adapter `withTransaction` does **not** batch RPCs; each mutation is atomic on the server, but a full merge is not one transaction unless you add a dedicated batched mutation.
-- **Docs** — [`convex/README.md`](convex/README.md).
+- **Capabilities** — Lexical + vector + graph reads: `vectorSearch: true`, `graphIndex: true`, `multiNamespaceSearch: true`. **`neighborIndex: true`** — `listNeighborsForMemory` mirrors SQLite-style filtering (incident edges → neighbor memories → `HydratedNeighbor` rows). **`unscopedSearch: true`** when lexical unscoped search index paths and vector unscoped search agree on semantics (see Convex README for scan/post-filter trade-offs). **`syncLabelPropsSearchFeatures`** — optional mutation + adapter hook after merge meta sync (same ordering intent as SQLite). **Embeddings** are restricted to widths in `CONVEX_VECTOR_DIMENSIONS`. `listVectorEmbeddingIndexDimensions` returns that **supported** set, not dimensions inferred from stored vectors (unlike SQLite).
+- **Transactions — `mergeMemory` overloads** — **`MutationCtxAsync`** (`{ persistence }`): delegates to core `mergeMemoryAsync` → multiple Convex RPCs; **`withTransaction`** on the adapter is still a no-op for cross-RPC atomicity. **`MergeMemoryConvexAtomicCtx`** (`{ client, refs }`): one **`mergeMemoryAtomic`** component mutation — single DB transaction; **`ontology` on params is rejected** (not serializable through Convex validators). Latency vs atomicity: prefer overload A for parity with generic async callers; prefer overload B inside Convex mutations/actions when you need one transactional merge.
+- **Docs** — [`convex/README.md`](convex/README.md). For SQLite vs Convex behavioral comparison (embeddings, meta vector, neighbors, transactions), see [`.idea/convex_sqlite_parity.md`](../../../.idea/convex_sqlite_parity.md).
 
 ## Choosing a backend
 
-- Prefer **SQLite** for local single-process apps, tests, and full vector + neighbor support.
-- Prefer **Convex** for hosted sync/async clients and serverless deployments when lexical-first is enough for your milestone.
+- Prefer **SQLite** for local single-process apps, tests, and maximum flexibility (continuous embedding widths, simplest local transactions).
+- Prefer **Convex** for hosted sync/async clients and serverless deployments when the Convex capability matrix matches your needs (fixed embedding widths; use atomic `mergeMemory` overload when transactional merge matters).

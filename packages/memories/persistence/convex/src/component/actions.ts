@@ -37,7 +37,6 @@ export const searchVectorSourceMapIds = action({
   handler: async (ctx, raw) => {
     const scope = scopeFromValidator(raw.scope);
     if (raw.memoryIds !== undefined && raw.memoryIds.length === 0) return [];
-    if (scope.kind === "unscoped") return [];
     if (scope.kind === "union" && scope.namespaces.length === 0) return [];
 
     if (!isConvexVectorDimension(raw.vector.length)) {
@@ -46,36 +45,59 @@ export const searchVectorSourceMapIds = action({
     const dim = raw.vector.length;
     const table = vectorTableNameForDim(dim);
 
-    const roots = canonicalizeNamespacePrefixes(scope.namespaces.map((ns) => namespacePath(ns)));
+    const roots =
+      scope.kind === "union"
+        ? canonicalizeNamespacePrefixes(scope.namespaces!.map((ns) => namespacePath(ns)))
+        : [];
     const memoryIdSet = raw.memoryIds === undefined ? undefined : new Set(raw.memoryIds);
 
     const knnLimit = Math.min(256, Math.max(raw.limit * VECTOR_OVERSAMPLE, 50));
 
-    const hits = await ctx.vectorSearch(table, "search_vector", {
-      vector: raw.vector,
-      limit: knnLimit,
-      filter: (q) => {
-        const nsClauses = roots.map((r) => {
-          const depth = namespaceSegments(r).length;
-          const field = namespacePrefixFieldForDepthCamel(depth);
-          return q.eq(field, r);
-        });
-        const idClauses =
-          raw.memoryIds !== undefined && raw.memoryIds.length > 0 && raw.memoryIds.length <= 64
-            ? raw.memoryIds.map((id) => q.eq("memoryId", id))
-            : [];
-        const all = [...nsClauses, ...idClauses];
-        if (all.length === 0) {
-          throw new Error("searchVectorSourceMapIds: empty filter");
-        }
-        const first = all[0];
-        if (first === undefined) {
-          throw new Error("searchVectorSourceMapIds: empty filter");
-        }
-        if (all.length === 1) return first;
-        return q.or(...all);
-      },
-    });
+    const unscopedNoAllowlist =
+      scope.kind === "unscoped" &&
+      (raw.memoryIds === undefined || raw.memoryIds.length === 0);
+
+    const hits = await ctx.vectorSearch(
+      table,
+      "search_vector",
+      unscopedNoAllowlist
+        ? {
+            vector: raw.vector,
+            limit: knnLimit,
+          }
+        : {
+            vector: raw.vector,
+            limit: knnLimit,
+            filter: (q) => {
+              if (scope.kind === "unscoped") {
+                const ids = raw.memoryIds!;
+                const idClauses = ids.map((id) => q.eq("memoryId", id));
+                const first = idClauses[0];
+                if (first === undefined) throw new Error("searchVectorSourceMapIds: empty filter");
+                return idClauses.length === 1 ? first : q.or(...idClauses);
+              }
+              const nsClauses = roots.map((r) => {
+                const depth = namespaceSegments(r).length;
+                const field = namespacePrefixFieldForDepthCamel(depth);
+                return q.eq(field, r);
+              });
+              const idClauses =
+                raw.memoryIds !== undefined && raw.memoryIds.length > 0 && raw.memoryIds.length <= 64
+                  ? raw.memoryIds.map((id) => q.eq("memoryId", id))
+                  : [];
+              const all = [...nsClauses, ...idClauses];
+              if (all.length === 0) {
+                throw new Error("searchVectorSourceMapIds: empty filter");
+              }
+              const first = all[0];
+              if (first === undefined) {
+                throw new Error("searchVectorSourceMapIds: empty filter");
+              }
+              if (all.length === 1) return first;
+              return q.or(...all);
+            },
+          },
+    );
 
     const rows = await ctx.runQuery(internal.queries.getVectorFeatureRowsByIds, {
       dimension: dim,
@@ -93,7 +115,10 @@ export const searchVectorSourceMapIds = action({
         if (score !== undefined && 1 - score > maxDist) continue;
       }
       const docNs = namespacePath(row.namespace);
-      const inNs = roots.some((r) => isPrefixOf(r, docNs));
+      const inNs =
+        scope.kind === "unscoped"
+          ? true
+          : roots.some((r) => isPrefixOf(r, docNs));
       if (!inNs) continue;
       if (memoryIdSet !== undefined && !memoryIdSet.has(row.memoryId)) continue;
       out.push(row.sourceMapId);

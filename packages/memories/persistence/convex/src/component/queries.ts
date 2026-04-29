@@ -16,11 +16,73 @@ import {
   listNeighborMemoryKeysForNode,
   parsePropsJson,
 } from "./lib/helpers.js";
+import {
+  loadGraphEdge as loadGraphEdgeImpl,
+  loadGraphEdgesForNamespace as loadGraphEdgesForNamespaceImpl,
+  loadGraphNode as loadGraphNodeImpl,
+  listIncidentGraphEdges as listIncidentGraphEdgesImpl,
+  loadNodeLabelsForMemory as loadNodeLabelsForMemoryImpl,
+  loadNodeLabelsForNamespaceEntries,
+  loadNodePropertiesForMemory as loadNodePropertiesForMemoryImpl,
+  loadNodePropertiesForNamespaceEntries,
+} from "./lib/graphReads.js";
+import {
+  listNeighborsForMemory as listNeighborsForMemoryImpl,
+} from "./lib/neighborReads.js";
 import { CONVEX_VECTOR_DIMENSIONS, vectorTableNameForDim } from "./lib/vectorConfig.js";
 
 const vHydratedLabel = v.object({
   kind: v.string(),
   props: v.record(v.string(), v.any()),
+});
+
+const vNeighborNodesFilter = v.object({
+  all: v.optional(v.array(v.string())),
+  some: v.optional(v.array(v.string())),
+});
+
+const vNeighborConstraint = v.object({
+  label: v.string(),
+  direction: v.optional(v.union(v.literal("in"), v.literal("out"))),
+  nodes: v.optional(vNeighborNodesFilter),
+});
+
+const vNeighborFilter = v.object({
+  all: v.optional(v.array(vNeighborConstraint)),
+  some: v.optional(v.array(vNeighborConstraint)),
+});
+
+const vHydratedNeighbor = v.object({
+  _id: v.string(),
+  _ts_created: v.number(),
+  namespace: v.string(),
+  key: v.string(),
+  labels: v.array(vHydratedLabel),
+  edge: v.object({
+    _id: v.string(),
+    _ts_created: v.number(),
+    from_node_id: v.string(),
+    to_node_id: v.string(),
+    properties: v.optional(v.record(v.string(), v.any())),
+    label: vHydratedLabel,
+  }),
+});
+
+const vGraphEdgeLink = v.object({
+  edgeId: v.string(),
+  fromKey: v.string(),
+  toKey: v.string(),
+  labels: v.array(vHydratedLabel),
+  properties: v.optional(v.union(v.record(v.string(), v.any()), v.null())),
+  directed: v.optional(v.boolean()),
+});
+
+const vGraphNode = v.object({
+  namespace: v.string(),
+  memoryKey: v.string(),
+  nodeId: v.string(),
+  labels: v.array(vHydratedLabel),
+  properties: v.union(v.record(v.string(), v.any()), v.null()),
 });
 
 const vHydratedSourceMapHit = v.object({
@@ -154,11 +216,33 @@ export const searchLexicalSourceMapIds = query({
     const scope = scopeFromValidator(raw.scope);
     if (raw.text.length === 0) return [];
     if (raw.memoryIds !== undefined && raw.memoryIds.length === 0) return [];
-    if (scope.kind === "unscoped") return [];
+    if (raw.text.trim().length === 0) return [];
+
+    /** DB-wide lexical search: search index without namespace filter; optional memoryIds allowlist. */
+    if (scope.kind === "unscoped") {
+      const K = Math.max(raw.limit * 8, 100);
+      const memoryIdSet =
+        raw.memoryIds === undefined ? undefined : new Set(raw.memoryIds);
+      const rows = await ctx.db
+        .query("text_features")
+        .withSearchIndex("search_text", (sq) => sq.search("text", raw.text))
+        .take(K);
+      const out: string[] = [];
+      const seen = new Set<string>();
+      for (const row of rows) {
+        if (memoryIdSet !== undefined && !memoryIdSet.has(row.memoryId)) continue;
+        const sid = row.sourceMapId;
+        if (!seen.has(sid)) {
+          seen.add(sid);
+          out.push(sid);
+          if (out.length >= raw.limit) break;
+        }
+      }
+      return out;
+    }
 
     const namespaces = scope.namespaces ?? [];
     if (namespaces.length === 0) return [];
-    if (raw.text.trim().length === 0) return [];
 
     const roots = canonicalizeNamespacePrefixes(namespaces.map((ns) => namespacePath(ns)));
     const armCount = roots.length;
@@ -251,31 +335,76 @@ export const listNeighborsForMemory = query({
   args: {
     namespace: v.string(),
     key: v.string(),
+    filters: v.optional(vNeighborFilter),
   },
+  returns: v.array(vHydratedNeighbor),
+  handler: async (ctx, args) =>
+    listNeighborsForMemoryImpl(ctx, {
+      namespace: args.namespace,
+      key: args.key,
+      ...(args.filters !== undefined ? { filters: args.filters } : {}),
+    }),
+});
+
+export const loadGraphEdgesForNamespace = query({
+  args: { namespace: v.string() },
+  returns: v.array(vGraphEdgeLink),
+  handler: async (ctx, { namespace }) => loadGraphEdgesForNamespaceImpl(ctx, namespace),
+});
+
+export const listIncidentGraphEdges = query({
+  args: { namespace: v.string(), memoryKey: v.string() },
+  returns: v.array(vGraphEdgeLink),
+  handler: async (ctx, { namespace, memoryKey }) =>
+    listIncidentGraphEdgesImpl(ctx, namespace, memoryKey),
+});
+
+export const loadGraphEdge = query({
+  args: { namespace: v.string(), edgeId: v.string() },
+  returns: v.union(vGraphEdgeLink, v.null()),
+  handler: async (ctx, { namespace, edgeId }) => loadGraphEdgeImpl(ctx, namespace, edgeId),
+});
+
+export const loadNodeLabelsForMemory = query({
+  args: { namespace: v.string(), memoryKey: v.string() },
+  returns: v.array(vHydratedLabel),
+  handler: async (ctx, { namespace, memoryKey }) =>
+    loadNodeLabelsForMemoryImpl(ctx, namespace, memoryKey),
+});
+
+export const loadNodePropertiesForMemory = query({
+  args: { namespace: v.string(), memoryKey: v.string() },
+  returns: v.union(v.record(v.string(), v.any()), v.null()),
+  handler: async (ctx, { namespace, memoryKey }) =>
+    loadNodePropertiesForMemoryImpl(ctx, namespace, memoryKey),
+});
+
+export const loadGraphNode = query({
+  args: { namespace: v.string(), memoryKey: v.string() },
+  returns: v.union(vGraphNode, v.null()),
+  handler: async (ctx, { namespace, memoryKey }) => loadGraphNodeImpl(ctx, namespace, memoryKey),
+});
+
+export const loadNodeLabelsForNamespace = query({
+  args: { namespace: v.string() },
   returns: v.array(
     v.object({
-      _id: v.string(),
-      _ts_created: v.number(),
-      namespace: v.string(),
-      key: v.string(),
+      memoryKey: v.string(),
       labels: v.array(vHydratedLabel),
-      edge: v.object({
-        _id: v.string(),
-        _ts_created: v.number(),
-        fromNodeId: v.string(),
-        toNodeId: v.string(),
-        namespace: v.string(),
-        propertiesJson: v.optional(v.string()),
-        idPartsSelfKey: v.string(),
-        idPartsOtherKey: v.string(),
-        idPartsLabel: v.string(),
-        label: vHydratedLabel,
-      }),
     }),
   ),
-  handler: async () => {
-    return [];
-  },
+  handler: async (ctx, { namespace }) => loadNodeLabelsForNamespaceEntries(ctx, namespace),
+});
+
+export const loadNodePropertiesForNamespace = query({
+  args: { namespace: v.string() },
+  returns: v.array(
+    v.object({
+      memoryKey: v.string(),
+      properties: v.union(v.record(v.string(), v.any()), v.null()),
+    }),
+  ),
+  handler: async (ctx, { namespace }) => loadNodePropertiesForNamespaceEntries(ctx, namespace),
 });
 
 export const listSourceMapsForMemory = query({
@@ -337,6 +466,7 @@ export const listTextFeatureExportRowsForMemory = query({
   },
 });
 
+/** Returns supported embedding widths for this backend (fixed set), not dimensions inferred from stored vectors. */
 export const listVectorEmbeddingIndexDimensions = query({
   args: {},
   returns: v.array(v.number()),

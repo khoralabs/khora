@@ -1,10 +1,5 @@
 import { type AgentRegistry, createAgentRegistry } from "@cfd/agent-identity";
-import {
-  logger,
-  type MemoriesClient,
-  type MemoriesClientAsync,
-  type TypedMergeParams,
-} from "@cfd/memories-core";
+import type { MemoriesClient, MemoriesClientAsync, TypedMergeParams } from "@cfd/memories-core";
 import {
   decomposeLogicalMemoryToContent,
   type EmbeddingModel,
@@ -72,16 +67,7 @@ async function filterMergeSliceEdgesToExistingMemories<
     const id = await resolveFindMemoryIdByKey(client.persistence, namespace, e.memory_key);
     if (id !== undefined) {
       kept.push(e);
-      continue;
     }
-    logger.warn(
-      {
-        phase: "memories.integrator.merge",
-        namespace,
-        droppedEdgeTargetKey: e.memory_key,
-      },
-      "dropped integrator edge: target memory key does not exist in namespace",
-    );
   }
   if (kept.length === slice.edges.length) {
     return slice;

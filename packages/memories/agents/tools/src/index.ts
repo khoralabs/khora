@@ -18,7 +18,6 @@ export {
   zMemorySearchToolInput,
 } from "./memory-search-toolkit.js";
 export type { MemoriesLogPayloadMap } from "./telemetry.js";
-export { memoriesLog, memoriesLogToolBodies } from "./telemetry.js";
 export { elapsedMs } from "./timing.js";
 export {
   createMemorySearchToolLoopAgent,

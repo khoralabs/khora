@@ -1,4 +1,4 @@
-import { logger, policy, tool, toolkit } from "@cfd/agent-identity";
+import { policy, tool, toolkit } from "@cfd/agent-identity";
 import type {
   MemoriesClient,
   MemoriesClientAsync,
@@ -10,8 +10,6 @@ import type {
 import z from "zod";
 import { embedTextChunks } from "./embedding-text.js";
 import type { EmbeddingModel } from "./embedding-types.js";
-import { memoriesLog, memoriesLogToolBodies } from "./telemetry.js";
-import { elapsedMs } from "./timing.js";
 
 /** Wide ontology maps; session clients use narrower TNode/TEdge at runtime (see {@link toMemorySearchEnv}). */
 export type MemorySearchWideClient = MemoriesClient<
@@ -61,11 +59,6 @@ function mapSearchHit(hit: SearchHit): MemorySearchHit {
 
 function mapSearchHits(hits: SearchHit[]): MemorySearchHit[] {
   return hits.map(mapSearchHit);
-}
-
-function truncateForLog(s: string, max: number): string {
-  if (s.length <= max) return s;
-  return `${s.slice(0, max)}…`;
 }
 
 /** Runtime env for {@link memorySearchToolkit}: memory store, namespace, and embedding model (injected; not tool args). */
@@ -182,39 +175,7 @@ const memorySearchTool = tool<
     "Hybrid search (FTS + embedding) fused with RRF. Namespace and embed model are session-scoped. Tune options.arms for keyword vs semantic emphasis. When the host sets a search budget, further calls are denied until the env is reset for a new turn.",
   inputSchema: zMemorySearchToolInput,
   policies: [memorySearchBudgetPolicy],
-  hooks: {
-    onToolExecuted: async (e) => {
-      if (e.toolName !== "memory_search") return;
-      const input = e.input as MemorySearchToolInput | undefined;
-      const text = input?.content?.text ?? "";
-      const fullBodies = memoriesLogToolBodies();
-      const inputForLog =
-        fullBodies || !input
-          ? input
-          : {
-              content: { text: text ? truncateForLog(text, 200) : "" },
-              ...(input.options !== undefined ? { options: input.options } : {}),
-            };
-      logger.info(
-        memoriesLog("memories.toolkit.toolCall", {
-          processTimeMs: e.durationMs ?? 0,
-          toolName: e.toolName,
-          ok: e.ok,
-          input: inputForLog,
-          outputSummary:
-            e.ok && Array.isArray(e.output)
-              ? {
-                  hitCount: e.output.length,
-                  memoryKeys: (e.output as MemorySearchHit[]).slice(0, 20).map((h) => h.memory_key),
-                }
-              : undefined,
-          error: e.ok ? undefined : e.error,
-        }),
-      );
-    },
-  },
   handler: async (ctx, input) => {
-    const tHandler = performance.now();
     const env = ctx.env;
     const parsed = zMemorySearchToolInput.parse(input);
     const opts = parsed.options;
@@ -224,22 +185,14 @@ const memorySearchTool = tool<
       throw new Error("memory_search: at least one of options.arms.lexical or .vector must be > 0");
     }
 
-    let embedMs = 0;
-    let searchMs = 0;
-    let embedCacheHit = false;
-
     let content: SearchContent;
     if (vectorWeight > 0) {
       const cacheKey = embeddingCacheKey(env.namespace, parsed.content.text);
       const cache = env.embeddingCache;
       let vector: number[] | undefined = cache?.get(cacheKey);
 
-      if (vector) {
-        embedCacheHit = true;
-      } else {
-        const tEmb = performance.now();
+      if (!vector) {
         const embeddings = await embedTextChunks(env.embeddingModel, [parsed.content.text]);
-        embedMs = elapsedMs(tEmb);
         vector = embeddings[0];
         if (!vector) {
           throw new Error("memory_search: embedding pipeline returned no vector for query text");
@@ -252,7 +205,6 @@ const memorySearchTool = tool<
       content = { text: parsed.content.text };
     }
 
-    const tSearch = performance.now();
     const rawHits = await Promise.resolve(
       env.memoriesClient.search({
         namespace: env.namespace,
@@ -265,19 +217,8 @@ const memorySearchTool = tool<
           : undefined,
       }),
     );
-    searchMs = elapsedMs(tSearch);
 
     const slim = mapSearchHits(rawHits);
-
-    logger.info(
-      memoriesLog("memories.toolkit.memory_search", {
-        processTimeMs: elapsedMs(tHandler),
-        embedMs,
-        searchMs,
-        embedCacheHit,
-        hitCount: slim.length,
-      }),
-    );
 
     const budget = env.memorySearchBudget;
     if (budget !== undefined) {

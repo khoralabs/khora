@@ -8,12 +8,15 @@ Convex **component** and TypeScript client for the Smithy-aligned memories persi
 |--------|-----------|
 | Lexical search | Yes (Convex search index on `text_features.text`; subtree filters use `nsPrefix1`…`nsPrefix6`) |
 | Vector search | Yes (`vectorSearch: true`; KNN via `ctx.vectorSearch` in component **action** `searchVectorSourceMapIds`; embeddings stored per dimension in `vector_features_768` / `_1024` / `_1536` / `_3072`) |
-| Neighbor index | No (`neighborIndex: false`; `listNeighborsForMemory` returns `[]`) |
+| Graph index (topology reads) | Yes (`graphIndex: true`; `loadGraphEdgesForNamespace`, incident edges, node labels/properties, `loadGraphEdge`, `loadGraphNode` via component queries) |
+| Neighbor index | Yes (`neighborIndex: true`; `listNeighborsForMemory` with optional Convex `filters`, aligned with core neighbor semantics) |
 | Multi-namespace search | Yes (`multiNamespaceSearch: true`; per-namespace arms merged round-robin) |
-| Unscoped search | No (`unscopedSearch: false`) |
-| `syncLabelPropsSearchFeatures` | Not exposed (optional in core; omitted here) |
+| Unscoped search | Yes (`unscopedSearch: true`; lexical via search index without namespace filter where applicable; vector via unscoped vector search path — consider limits/cost at scale) |
+| `syncLabelPropsSearchFeatures` | Yes (optional adapter hook + component mutation; runs after `syncMemorySearchMeta` for touched keys on merge, matching merge order intent) |
 
-Hierarchical namespaces use **cumulative prefix** columns (`nsPrefix_k` = first *k* segments joined with `/`) on `text_features` and `vector_features_*` so a subtree query is a single `eq` per root (Convex vector filters allow only `eq` + `or`, not chained `and` across fields). See `src/vectorConfig.ts` for supported embedding widths.
+**Embedding widths:** Only the dimensions in `CONVEX_VECTOR_DIMENSIONS` (re-exported from this package) are valid for inserts and search. `listVectorEmbeddingIndexDimensions` returns that **fixed supported list**, not “dimensions currently present in the database” (SQLite’s reference backend infers from materialized vec tables).
+
+Hierarchical namespaces use **cumulative prefix** columns (`nsPrefix_k` = first *k* segments joined with `/`) on `text_features` and `vector_features_*` so a subtree query is a single `eq` per root (Convex vector filters allow only `eq` + `or`, not chained `and` across fields). See [`src/component/lib/vectorConfig.ts`](src/component/lib/vectorConfig.ts) for the canonical width list.
 
 **Hybrid / vector retrieval:** Callers must supply a Convex client that implements **`action`** (e.g. `ctx.runAction` from an action, or the client’s action runner). Lexical-only `search()` can use query + mutation only; vector arms use the component action.
 
@@ -71,11 +74,21 @@ await mergeMemory({ persistence }, { /* MergeMemoryParams */ });
 
 **Host Convex functions:** import **`createMemoriesPersistence`** from `@cfd/memories-convex` and call it with `(ctx, components.<name>)`. It adapts `ctx` for query vs mutation vs action and returns `{ persistence, bridge }` (reuse `bridge` for `createConvexLexicalTextStore`, etc.). For custom bridges, use `createConvexMemoriesPersistenceFromHostBridge` or the **`hostComponentBridgeFrom*Ctx`** helpers directly.
 
-**React:** import `MemoriesPersistenceProvider` and `useMemoriesPersistence` from `@cfd/memories-convex/react`. Wrap `ConvexProvider` first, then `MemoriesPersistenceProvider` with `componentApi={components.memories}`.
+**React:** import `MemoriesPersistenceProvider`, `useMemoriesPersistence`, and `memoriesConvexHostRefsFromApi` from `@cfd/memories-convex/react`. Create one `ConvexReactClient`, pass it to **both** `ConvexProvider` and `MemoriesPersistenceProvider` with `componentApi={memoriesConvexHostRefsFromApi(api)}` (host `api.memoriesHost*` forwards — raw `components.memories` refs fail `ConvexReactClient` query/mutation/action validation in the browser). The provider does not use `useConvex()` so bundlers (including Bun’s HTML dev server) do not pull a second `react` copy through `convex/react` and break hooks.
+
+**Bun example app** (`bun run dev:example` from this package): [`example/src/App.tsx`](example/src/App.tsx) drives **merge** (`mergeMemory` overload A + optional atomic B), **search** (lexical, hybrid with a deterministic 768-dim fake embedding, neighbors, extra namespace, unscoped DB toggle), **graph reads**, and **capability / indexed-dimension** readouts. `convex/memories.ts` only re-exports host bridge helpers; the UI calls component queries and client APIs directly. **Unscoped search** in the demo is opt-in and intended for small toy deployments only.
 
 ## Transactions
 
-`withTransaction` in the adapter **only** runs `await fn()` (no distributed transaction). Merge/delete in core issue many persistence calls; each Convex mutation is its own atomic transaction. This is weaker than SQLite’s single-process transaction until you add a batched or single-mutation merge path.
+`withTransaction` in the adapter **only** runs `await fn()` (no distributed transaction across mutations).
+
+**`mergeMemory` (package export)** has two overloads:
+
+1. **Overload A — `MutationCtxAsync` (`{ persistence }`)** — Calls core `mergeMemoryAsync`, which issues **many** Convex mutations/queries in sequence. Each RPC is atomic on the server; the **full merge is not** one transaction.
+
+2. **Overload B — `MergeMemoryConvexAtomicCtx` (`{ client, refs }`)** — Runs a **single** component mutation `mergeMemoryAtomic` (same merge **order** as `mergeMemoryAsync`: neighbors → clear subtree → upsert → content → labels → edges → search meta + label-props for synced keys). Use this from another Convex mutation/action when you need **one transactional merge**. `ontology` on `MergeMemoryParams` is **not supported** on this path (throw if set); use overload A or omit ontology.
+
+For deletes and other flows that still use `createConvexMemoriesPersistence`, behavior is unchanged: sequential RPCs unless you add dedicated batched mutations.
 
 ## Contract
 

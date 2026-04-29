@@ -1,5 +1,4 @@
 import { fuseRrf, type RrfArm } from "@cfd/reciprocal-rank-fusion";
-import { logger } from "../logger.js";
 import {
   canonicalizeNamespacePrefixes,
   type NamespacePath,
@@ -10,7 +9,6 @@ import type { OntologyLabelInstance } from "../models/ontology-label";
 import type { Edge, Memory, SourceMap } from "../persistence/rows.js";
 import type { MemoriesBackendCapabilities, SearchNamespaceScope } from "../persistence/types";
 import { type MemoriesPersistence, resolveMemoriesBackendCapabilities } from "../persistence/types";
-import { elapsedMs, nowMs } from "../timing.js";
 import type { MutationCtx } from "./merge-memory";
 
 /** When `true`, expand with no neighbor edge filters (any label, any direction). `false` omits neighbors. */
@@ -321,7 +319,6 @@ export function search<NODE_LABELS extends string = string, EDGE_LABELS extends 
   ctx: MutationCtx,
   params: SearchParams<NODE_LABELS, EDGE_LABELS>,
 ): SearchHit<NODE_LABELS, EDGE_LABELS>[] {
-  const t0 = nowMs();
   const { persistence } = ctx;
   const caps = resolveMemoriesBackendCapabilities(persistence);
   const topK = params.options?.topK ?? 10;
@@ -380,20 +377,6 @@ export function search<NODE_LABELS extends string = string, EDGE_LABELS extends 
 
   const neighborOpt = !caps.neighborIndex ? false : params.options?.neighbors;
   if (neighborOpt === undefined || neighborOpt === false) {
-    logger.info({
-      phase: "memories.search",
-      durationMs: elapsedMs(t0),
-      namespace: params.namespace,
-      additionalNamespaceCount,
-      unscoped,
-      hitCount: rootHits.length,
-      topK,
-      neighbors: false,
-      vectorDim:
-        "vector" in params.content && params.content.vector.length > 0
-          ? params.content.vector.length
-          : undefined,
-    });
     return rootHits;
   }
 
@@ -415,19 +398,5 @@ export function search<NODE_LABELS extends string = string, EDGE_LABELS extends 
       ...(maxVectorDistance !== undefined ? { maxVectorDistance } : {}),
     }),
   }));
-  logger.info({
-    phase: "memories.search",
-    durationMs: elapsedMs(t0),
-    namespace: params.namespace,
-    additionalNamespaceCount,
-    unscoped,
-    hitCount: withNeighbors.length,
-    topK,
-    neighbors: true,
-    vectorDim:
-      "vector" in params.content && params.content.vector.length > 0
-        ? params.content.vector.length
-        : undefined,
-  });
   return withNeighbors;
 }

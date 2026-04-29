@@ -1,9 +1,6 @@
 import type { ProviderOptions } from "@ai-sdk/provider-utils";
-import { logger } from "@cfd/agent-identity";
 import { embedMany } from "ai";
-import { aiSdkEmbeddingModelId, type EmbeddingModel } from "./embedding-types.js";
-import { memoriesLog } from "./telemetry.js";
-import { elapsedMs } from "./timing.js";
+import type { EmbeddingModel } from "./embedding-types.js";
 
 function mergeProviderOptions(
   ...parts: (ProviderOptions | undefined)[]
@@ -43,7 +40,6 @@ export async function embedTextChunks(
 ): Promise<number[][]> {
   if (texts.length === 0) return [];
 
-  const t0 = performance.now();
   const mergedBase = mergeProviderOptions(
     embeddingModel.providerOptions,
     callOptions?.providerOptions,
@@ -66,12 +62,5 @@ export async function embedTextChunks(
     out.push(...embeddings);
   }
 
-  logger.debug(
-    memoriesLog("memories.embed.textChunks", {
-      processTimeMs: elapsedMs(t0),
-      textCount: texts.length,
-      model: aiSdkEmbeddingModelId(model),
-    }),
-  );
   return out;
 }

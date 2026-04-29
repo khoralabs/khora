@@ -91,6 +91,46 @@ describe("scoped search helpers", () => {
 });
 
 describe("neighbor sub-search", () => {
+  test("listNeighborsForMemory respects NeighborFilter edge kind", () => {
+    const db = openTestDb();
+    const persistence = createMemoriesPersistence(db);
+    mergeMemory(
+      { persistence },
+      {
+        key: "nb",
+        namespace: "ns",
+        content: [{ key: "b", text: "neighbor body" }],
+        labels: [],
+        edges: [],
+      },
+    );
+    mergeMemory(
+      { persistence },
+      {
+        key: "focal",
+        namespace: "ns",
+        content: [{ key: "b", text: "focal body" }],
+        labels: [],
+        edges: [{ memory_key: "nb", direction: "out", label: { kind: "references", props: {} } }],
+      },
+    );
+
+    const matchesReferences = persistence.listNeighborsForMemory({
+      namespace: "ns",
+      key: "focal",
+      filters: { all: [{ label: "references", direction: "out" }] },
+    });
+    expect(matchesReferences).toHaveLength(1);
+    expect(matchesReferences[0]?.key).toBe("nb");
+
+    const noMentions = persistence.listNeighborsForMemory({
+      namespace: "ns",
+      key: "focal",
+      filters: { all: [{ label: "mentions", direction: "out" }] },
+    });
+    expect(noMentions).toEqual([]);
+  });
+
   test("omits graph neighbor when sub-search does not match query (strict)", () => {
     const db = openTestDb();
     const persistence = createMemoriesPersistence(db);

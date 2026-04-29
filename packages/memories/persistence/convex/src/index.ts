@@ -7,10 +7,11 @@ export type {
 export {
   deleteMemoryAsync as deleteMemory,
   MemoriesClientAsync as MemoriesClient,
-  mergeMemoryAsync as mergeMemory,
   searchAsync as search,
 } from "@cfd/memories-core";
+export { mergeMemory, type MergeMemoryConvexAtomicCtx } from "./merge-memory-convex.js";
 export { api } from "./component/_generated/api.js";
+export { CONVEX_VECTOR_DIMENSIONS } from "./component/lib/vectorConfig.js";
 export { createConvexLexicalTextStore } from "./convexLexicalTextStore.js";
 export { convexReactClientToMemoriesClient } from "./convexReactClientBridge.js";
 export {
