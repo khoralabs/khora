@@ -67,6 +67,8 @@ export type { MergeMemoryContentItem, MergeMemoryParams, MutationCtx } from "./m
 export {
   buildCanonicalMemorySearchMetaText,
   buildCanonicalMemorySearchMetaTextForMerge,
+  catalogSchemaJsonForEdgeKind,
+  catalogSchemaJsonForNodeKind,
   MEMORY_SEARCH_META_SOURCE_KEY,
   mergeMemory,
   upsertMemorySearchMetaVector,

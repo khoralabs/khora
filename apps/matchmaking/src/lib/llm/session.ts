@@ -48,6 +48,7 @@ import {
   resolveObpStepsJsonlPath,
   textTranscriptPathFromJsonl,
 } from "../matchmaking-obp/index.ts";
+import { buildNegotiatorRagContext } from "../memories/build-negotiator-rag-context.ts";
 import { createMatchmakingMemoriesBundle } from "../memories/create-memories-bundle.ts";
 import { getMatchmakingEmbeddingModel } from "../memories/matchmaking-embedding.ts";
 import { mergeMeetingDomainPayloadIntoNamespace } from "../memories/merge-meeting-payload.ts";
@@ -71,8 +72,8 @@ import {
 import { matchmakingRoundPartyIndex } from "./session-turn-order.ts";
 import { matchmakingValueFirewallInstructions } from "./value-firewall-instructions.ts";
 
-/** Per negotiator turn; fresh env each {@link matchmakingTurnRunner} call resets {@code used}. */
-const MATCHMAKING_MEMORY_SEARCH_BUDGET_MAX = 6;
+/** Per negotiator turn; fresh env each {@link matchmakingTurnRunner} call resets {@code used}. RAG prefetch reduces reliance on tool calls. */
+const MATCHMAKING_MEMORY_SEARCH_BUDGET_MAX = 2;
 
 export type MatchmakingResult =
   | {
@@ -472,9 +473,25 @@ export async function runMatchmakingSession(options?: {
       const orchestrationTail = hasInvitation
         ? "Party A's user posted the opening invitation; Party B responds first, then turns alternate B, A, B, A…"
         : "Turns rotate A, B, A, B…";
+
+      let ragBlock: string | null | undefined;
+      const memoryNsForTurn = sessionCtx.memoryNamespaceByAgentId.get(identity.agentId);
+      if (memoryNsForTurn !== undefined && memoryNsForTurn.length > 0) {
+        ragBlock = await buildNegotiatorRagContext({
+          client: sessionCtx.memoriesClient,
+          namespace: memoryNsForTurn,
+          embeddingModel: sessionCtx.embeddingModel,
+          embeddingCache: sessionCtx.embeddingCache,
+          threadText,
+        });
+      }
+
       const user = buildMatchmakingUserMessage({
         threadText,
         orchestrationNote: `Orchestration (this run only): you are Party ${partyLetter} in this two-party intro negotiation (Party A = first registered seat, Party B = second). ${orchestrationTail}`,
+        ...(ragBlock !== undefined && ragBlock !== null
+          ? { retrievedMemoryContext: ragBlock }
+          : {}),
       });
 
       const turnInput: MatchmakingTurnInput = { prompt: user };
