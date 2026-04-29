@@ -15,3 +15,23 @@ The sync **`MemoriesClient`** from `@cfd/memories-core` (not this package) takes
 ## Parity
 
 Behavior is aligned with the shared row model and ops described in [`../IMPLEMENTORS.md`](../IMPLEMENTORS.md). For SQLite-specific merge/search/edge semantics, see [`IMPLEMENTORS.md`](./IMPLEMENTORS.md) in this package.
+
+## Running tests (sqlite-vec / extension loading)
+
+[`openMemoriesDatabase`](./src/connection.ts) loads **sqlite-vec**, which requires a SQLite build that supports **dynamic extension loading**. Bun’s bundled SQLite often does not; [`ensureCustomSqliteForExtensions`](./src/connection.ts) tries `SQLITE_CUSTOM_LIB`, Homebrew paths on macOS, and common distro paths on Linux before falling back to the default.
+
+Root **`bun test`** also loads [`preload-sqlite-for-tests.ts`](../../../../scripts/preload-sqlite-for-tests.ts) via [`bunfig.toml`](../../../../bunfig.toml) so `ensureCustomSqliteForExtensions()` runs **before** any test opens `bun:sqlite`. Other tests use raw `new Database(":memory:")`; without preload, bundled SQLite loads first and later `Database.setCustomSQLite` fails with **SQLite already loaded**.
+
+**If tests fail** with `dynamic extension loading` / `not support.*extension`:
+
+1. **macOS (Homebrew):** `brew install sqlite`, then either export  
+   `SQLITE_CUSTOM_LIB="$(brew --prefix sqlite)/lib/libsqlite3.dylib"`  
+   before `bun test`, or run from the repo root:  
+   `bun run test:with-sqlite`  
+   (see root [`package.json`](../../../package.json)).
+
+2. **Linux / CI:** Install your distro’s SQLite shared library (e.g. `libsqlite3-0` on Debian/Ubuntu), then set `SQLITE_CUSTOM_LIB` to the actual `.so` path if auto-discovery misses it (paths vary by architecture and distro).
+
+3. See also **`SQLITE_CUSTOM_LIB`** in [`apps/matchmaking/.env.example`](../../../apps/matchmaking/.env.example).
+
+Minimal CI images may need an explicit package install plus `SQLITE_CUSTOM_LIB`; sandboxed environments without a suitable `libsqlite3` will not pass tests that open this database.
