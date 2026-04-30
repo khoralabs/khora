@@ -52,6 +52,32 @@ export function graphLabelFingerprint(l: GraphLabelInstance): string {
   return `${l.kind}\0${JSON.stringify(l.props)}`;
 }
 
+/** Sorted endpoints — multiple `SceneEdge` rows can share one geometric segment (see graph midpoint labels). */
+export function sceneEdgePairMergeKey(e: SceneEdge): string {
+  const a = e.fromKey < e.toKey ? e.fromKey : e.toKey;
+  const b = e.fromKey < e.toKey ? e.toKey : e.fromKey;
+  return `${a}\0${b}`;
+}
+
+/**
+ * Union ontology labels from every scene edge on that segment — matches merged labels in the graph view.
+ * Keeps `key`, `edgeId`, endpoints, and `directed` from `primary` (hovered / pinned pick).
+ */
+export function mergeSceneEdgesForPairPreview(primary: SceneEdge, allEdges: SceneEdge[]): SceneEdge {
+  const pairKey = sceneEdgePairMergeKey(primary);
+  const labelMap = new Map<string, GraphLabelInstance>();
+  for (const e of allEdges) {
+    if (sceneEdgePairMergeKey(e) !== pairKey) continue;
+    for (const lb of e.labels) {
+      labelMap.set(graphLabelFingerprint(lb), lb);
+    }
+  }
+  return {
+    ...primary,
+    labels: [...labelMap.values()].sort((a, b) => a.kind.localeCompare(b.kind)),
+  };
+}
+
 export function formatGraphLabelShort(l: GraphLabelInstance): string {
   const keys = Object.keys(l.props);
   if (keys.length === 0) return l.kind;

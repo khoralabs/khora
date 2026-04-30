@@ -14,7 +14,7 @@ import type {
   ProjectionPoint,
   SceneEdge,
 } from "./projection-types.js";
-import { graphLabelFingerprint } from "./projection-types.js";
+import { graphLabelFingerprint, mergeSceneEdgesForPairPreview } from "./projection-types.js";
 
 /** Default delay (ms) before debounced hover state catches up to the pointer. */
 export const DEFAULT_GRAPH_FOCUS_DELAY_MS = 0;
@@ -397,13 +397,20 @@ export function GraphProjectionProvider({
   const graphPreview = useMemo((): ProjectionValue["graphPreview"] => {
     if (debouncedHoveredEdgeKey) {
       const edge = sceneEdges.find((e) => e.key === debouncedHoveredEdgeKey);
-      return edge ? { kind: "edge", edge } : null;
+      return edge
+        ? { kind: "edge", edge: mergeSceneEdgesForPairPreview(edge, sceneEdges) }
+        : null;
     }
     if (debouncedHoveredId) {
       const point = points.find((p) => p.entryId === debouncedHoveredId);
       return point ? { kind: "node", point } : null;
     }
-    if (pinnedEdge) return { kind: "edge", edge: pinnedEdge };
+    if (pinnedEdge) {
+      return {
+        kind: "edge",
+        edge: mergeSceneEdgesForPairPreview(pinnedEdge, sceneEdges),
+      };
+    }
     if (selected) return { kind: "node", point: selected };
     return null;
   }, [debouncedHoveredEdgeKey, debouncedHoveredId, pinnedEdge, selected, sceneEdges, points]);

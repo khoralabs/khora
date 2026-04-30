@@ -3,6 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import { type ComponentRef, useMemo, useRef } from "react";
 import * as THREE from "three";
 import type { GraphSearchState, SceneEdge } from "./projection-types.js";
+import { graphLabelFingerprint, sceneEdgePairMergeKey } from "./projection-types.js";
 import { useProjection } from "./use-projection.js";
 
 const EDGE_LABEL_DISTANCE_FACTOR = 5;
@@ -184,7 +185,16 @@ export function GraphEdgeLines({
   );
 }
 
-/** Edge midpoint labels when an ego subgraph is active (hover or pinned). */
+/** Same delimiter as node label tooltips (`marker.tsx`). */
+const EDGE_LABEL_KINDS_DELIM = " • ";
+
+function edgeLabelText(fromKey: string, toKey: string, labels: SceneEdge["labels"]): string {
+  return labels.length > 0
+    ? labels.map((l) => l.kind).join(EDGE_LABEL_KINDS_DELIM)
+    : `${fromKey} ↔ ${toKey}`;
+}
+
+/** Edge midpoint labels when an ego subgraph is active — one pill per geometric segment; multiple API edges / kinds merged like node tooltips. */
 export function ActiveSubgraphEdgeLabels({
   edges,
   posMap,
@@ -194,32 +204,57 @@ export function ActiveSubgraphEdgeLabels({
   posMap: Map<string, [number, number, number]>;
   activeSubgraphKeys: ReadonlySet<string> | null;
 }) {
+  const mergedSegments = useMemo(() => {
+    if (!activeSubgraphKeys) return [];
+    const groups = new Map<
+      string,
+      { fromKey: string; toKey: string; labels: Map<string, SceneEdge["labels"][number]> }
+    >();
+
+    for (const e of edges) {
+      if (!activeSubgraphKeys.has(e.fromKey) || !activeSubgraphKeys.has(e.toKey)) continue;
+      const ck = sceneEdgePairMergeKey(e);
+      let g = groups.get(ck);
+      if (!g) {
+        const lm = new Map<string, SceneEdge["labels"][number]>();
+        for (const lb of e.labels) lm.set(graphLabelFingerprint(lb), lb);
+        g = { fromKey: e.fromKey, toKey: e.toKey, labels: lm };
+        groups.set(ck, g);
+      } else {
+        for (const lb of e.labels) g.labels.set(graphLabelFingerprint(lb), lb);
+      }
+    }
+
+    return [...groups.entries()].map(([segmentKey, g]) => ({
+      segmentKey,
+      fromKey: g.fromKey,
+      toKey: g.toKey,
+      labels: [...g.labels.values()],
+    }));
+  }, [edges, activeSubgraphKeys]);
+
   if (!activeSubgraphKeys) return null;
 
   return (
     <>
-      {edges.map((e) => {
-        const from = posMap.get(e.fromKey);
-        const to = posMap.get(e.toKey);
+      {mergedSegments.map(({ segmentKey, fromKey, toKey, labels }) => {
+        const from = posMap.get(fromKey);
+        const to = posMap.get(toKey);
         if (!from || !to) return null;
-        if (!activeSubgraphKeys.has(e.fromKey) || !activeSubgraphKeys.has(e.toKey)) return null;
 
-        const text =
-          e.labels.length > 0
-            ? e.labels.map((l) => l.kind).join(" · ")
-            : `${e.fromKey} ↔ ${e.toKey}`;
+        const text = edgeLabelText(fromKey, toKey, labels);
         const mx = (from[0] + to[0]) / 2;
         const my = (from[1] + to[1]) / 2;
         const mz = (from[2] + to[2]) / 2;
 
         return (
-          <group key={`lbl-${e.key}`} position={[mx, my, mz]}>
+          <group key={`lbl-${segmentKey}`} position={[mx, my, mz]}>
             <Html
               center
               distanceFactor={EDGE_LABEL_DISTANCE_FACTOR}
               style={{ pointerEvents: "none" }}
             >
-              <span className="max-w-[12rem] rounded bg-background/90 px-1.5 py-0.5 text-center text-[10px] leading-tight text-foreground shadow-sm ring-1 ring-border/60">
+              <span className="inline-block max-w-[min(22rem,92vw)] whitespace-nowrap rounded bg-background/90 px-1.5 py-0.5 text-center text-[10px] leading-none text-foreground shadow-sm ring-1 ring-border/60">
                 {text}
               </span>
             </Html>
