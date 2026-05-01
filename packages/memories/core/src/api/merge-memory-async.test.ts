@@ -26,7 +26,10 @@ describe("mergeMemoryAsync", () => {
       upsertNodeForMemoryKey: async () => ({ nodeId: "nid" }),
       insertSourceMap: async () => ({ sourceMapId: `sm${++sm}` }),
       insertLexicalFeature: async () => {},
-      syncMemorySearchMeta: async (_op: { now: number }, input: { memoryKey: string; metaVector?: Float32Array }) => {
+      syncMemorySearchMeta: async (
+        _op: { now: number },
+        input: { memoryKey: string; metaVector?: Float32Array },
+      ) => {
         syncMetaCalls.push({
           memoryKey: input.memoryKey,
           metaVector: input.metaVector,

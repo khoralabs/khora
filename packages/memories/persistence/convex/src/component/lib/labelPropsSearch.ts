@@ -12,10 +12,7 @@ import {
   memoryNodeLabelPropsSourceKey,
 } from "@cfd/memories-core/search-meta-constants";
 import type { MutationCtx } from "../_generated/server.js";
-import {
-  CONVEX_VECTOR_DIMENSIONS,
-  vectorTableNameForDim,
-} from "./vectorConfig.js";
+import { CONVEX_VECTOR_DIMENSIONS, vectorTableNameForDim } from "./vectorConfig.js";
 
 async function deleteVectorFeaturesBySourceMapId(
   ctx: MutationCtx,

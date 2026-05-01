@@ -17,7 +17,10 @@ function Root({ children }: { children: ReactNode }) {
   const client = new ConvexReactClient(convexUrl);
   return (
     <ConvexProvider client={client}>
-      <MemoriesPersistenceProvider client={client} componentApi={memoriesConvexHostRefsFromApi(api)}>
+      <MemoriesPersistenceProvider
+        client={client}
+        componentApi={memoriesConvexHostRefsFromApi(api)}
+      >
         {children}
       </MemoriesPersistenceProvider>
     </ConvexProvider>

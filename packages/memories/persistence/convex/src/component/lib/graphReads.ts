@@ -1,8 +1,4 @@
-import type {
-  GraphEdgeLink,
-  GraphNode,
-  OntologyLabelInstance,
-} from "@cfd/memories-core";
+import type { GraphEdgeLink, GraphNode, OntologyLabelInstance } from "@cfd/memories-core";
 import { ids } from "@cfd/memories-core";
 import type { QueryCtx } from "../_generated/server.js";
 import { parsePropsJson } from "./helpers.js";
@@ -92,7 +88,13 @@ async function edgeToGraphEdgeLink(
     if (el) labels.push({ kind: el.kind, props: parsePropsJson(a.propsJson) });
   }
   labels.sort((a, b) => a.kind.localeCompare(b.kind));
-  return finishGraphEdgeLink(e.edgeId, fromNode.value, toNode.value, labels, e.propertiesJson ?? null);
+  return finishGraphEdgeLink(
+    e.edgeId,
+    fromNode.value,
+    toNode.value,
+    labels,
+    e.propertiesJson ?? null,
+  );
 }
 
 export async function loadGraphEdgesForNamespace(

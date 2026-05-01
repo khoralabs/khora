@@ -1,6 +1,9 @@
 import type { MergeMemoryParams, MutationCtxAsync } from "@cfd/memories-core";
 import { mergeMemoryAsync } from "@cfd/memories-core";
-import type { ConvexMemoriesClient, MemoriesConvexApiSlice } from "./createConvexMemoriesPersistence.js";
+import type {
+  ConvexMemoriesClient,
+  MemoriesConvexApiSlice,
+} from "./createConvexMemoriesPersistence.js";
 
 /**
  * Convex-only context for a single-transaction merge via the component
@@ -62,9 +65,7 @@ export async function mergeMemory(
       properties: e.properties,
     })),
     searchMetaVector:
-      params.searchMetaVector !== undefined
-        ? [...params.searchMetaVector]
-        : undefined,
+      params.searchMetaVector !== undefined ? [...params.searchMetaVector] : undefined,
     now,
   });
 }

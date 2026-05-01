@@ -8,6 +8,8 @@
  * @module
  */
 
+import type { ApiFromModules, FilterApi, FunctionReference } from "convex/server";
+import { anyApi, componentsGeneric } from "convex/server";
 import type * as actions from "../actions.js";
 import type * as lib_graphReads from "../lib/graphReads.js";
 import type * as lib_helpers from "../lib/helpers.js";
@@ -18,13 +20,6 @@ import type * as lib_neighborReads from "../lib/neighborReads.js";
 import type * as lib_vectorConfig from "../lib/vectorConfig.js";
 import type * as mutations from "../mutations.js";
 import type * as queries from "../queries.js";
-
-import type {
-  ApiFromModules,
-  FilterApi,
-  FunctionReference,
-} from "convex/server";
-import { anyApi, componentsGeneric } from "convex/server";
 
 const fullApi: ApiFromModules<{
   actions: typeof actions;
@@ -47,10 +42,7 @@ const fullApi: ApiFromModules<{
  * const myFunctionReference = api.myModule.myFunction;
  * ```
  */
-export const api: FilterApi<
-  typeof fullApi,
-  FunctionReference<any, "public">
-> = anyApi as any;
+export const api: FilterApi<typeof fullApi, FunctionReference<any, "public">> = anyApi as any;
 
 /**
  * A utility for referencing Convex functions in your app's internal API.

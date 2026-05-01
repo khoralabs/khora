@@ -32,7 +32,7 @@ export function buildMatchmakingUserMessage(args: {
     "",
     "## Evidence you may use (in this order)",
     "1. **System instructions (fixed)** — Value firewall and **public profile cards** for you and your counterparty (display name, tagline, about). Treat those cards as authoritative for public-facing identity; do not use memory_search to re-derive that surface bio.",
-    "2. **Retrieved KG excerpts** — The \"Retrieved from your memory namespace\" section above (when present), pre-filled for this turn.",
+    '2. **Retrieved KG excerpts** — The "Retrieved from your memory namespace" section above (when present), pre-filled for this turn.',
     "3. **User messages in this thread** — Including any opening invitation; use them for scope and constraints.",
     "4. **Earlier turns in this thread** — Assistant text and OBP tools already said and did.",
     "5. **memory_search (fallback)** — Narrow follow-up queries only when (1)–(4) leave a gap.",

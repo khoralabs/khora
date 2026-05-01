@@ -1,15 +1,12 @@
 import { ids, namespacePath, namespacePrefixFieldsCamel } from "@cfd/memories-core";
-import {
-  buildCanonicalMemorySearchMetaText,
-  MEMORY_SEARCH_META_SOURCE_KEY,
-} from "./helpers.js";
+import type { MutationCtx } from "../_generated/server.js";
+import { buildCanonicalMemorySearchMetaText, MEMORY_SEARCH_META_SOURCE_KEY } from "./helpers.js";
 import {
   CONVEX_VECTOR_DIMENSIONS,
   type ConvexVectorDimension,
   isConvexVectorDimension,
   vectorTableNameForDim,
 } from "./vectorConfig.js";
-import type { MutationCtx } from "../_generated/server.js";
 
 export async function deleteVectorFeaturesBySourceMapId(
   ctx: MutationCtx,

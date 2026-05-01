@@ -63,7 +63,10 @@ export function sceneEdgePairMergeKey(e: SceneEdge): string {
  * Union ontology labels from every scene edge on that segment — matches merged labels in the graph view.
  * Keeps `key`, `edgeId`, endpoints, and `directed` from `primary` (hovered / pinned pick).
  */
-export function mergeSceneEdgesForPairPreview(primary: SceneEdge, allEdges: SceneEdge[]): SceneEdge {
+export function mergeSceneEdgesForPairPreview(
+  primary: SceneEdge,
+  allEdges: SceneEdge[],
+): SceneEdge {
   const pairKey = sceneEdgePairMergeKey(primary);
   const labelMap = new Map<string, GraphLabelInstance>();
   for (const e of allEdges) {

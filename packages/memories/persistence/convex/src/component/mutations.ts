@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation } from "./_generated/server.js";
 import { syncLabelPropsSearchFeaturesImpl } from "./lib/labelPropsSearch.js";
+import { runMergeMemoryAtomic } from "./lib/mergeAtomicRunner.js";
 import {
   clearMemorySubtreeImpl,
   ensureEdgeLabelImpl,
@@ -16,7 +17,6 @@ import {
   upsertMemorySearchMetaVectorImpl,
   upsertNodeForMemoryKeyImpl,
 } from "./lib/mergeWrites.js";
-import { runMergeMemoryAtomic } from "./lib/mergeAtomicRunner.js";
 
 export const clearMemorySubtree = mutation({
   args: {
@@ -169,8 +169,7 @@ export const syncMemorySearchMeta = mutation({
   handler: async (ctx, args) => {
     await syncMemorySearchMetaImpl(ctx, {
       ...args,
-      metaVector:
-        args.metaVector !== undefined ? [...args.metaVector] : undefined,
+      metaVector: args.metaVector !== undefined ? [...args.metaVector] : undefined,
     });
     return null;
   },
@@ -263,9 +262,7 @@ export const mergeMemoryAtomic = mutation({
         properties: e.properties,
       })),
       searchMetaVector:
-        args.searchMetaVector !== undefined
-          ? [...args.searchMetaVector]
-          : undefined,
+        args.searchMetaVector !== undefined ? [...args.searchMetaVector] : undefined,
       now: args.now,
     }),
 });

@@ -47,15 +47,14 @@ export const searchVectorSourceMapIds = action({
 
     const roots =
       scope.kind === "union"
-        ? canonicalizeNamespacePrefixes(scope.namespaces!.map((ns) => namespacePath(ns)))
+        ? canonicalizeNamespacePrefixes(scope.namespaces?.map((ns) => namespacePath(ns)))
         : [];
     const memoryIdSet = raw.memoryIds === undefined ? undefined : new Set(raw.memoryIds);
 
     const knnLimit = Math.min(256, Math.max(raw.limit * VECTOR_OVERSAMPLE, 50));
 
     const unscopedNoAllowlist =
-      scope.kind === "unscoped" &&
-      (raw.memoryIds === undefined || raw.memoryIds.length === 0);
+      scope.kind === "unscoped" && (raw.memoryIds === undefined || raw.memoryIds.length === 0);
 
     const hits = await ctx.vectorSearch(
       table,
@@ -82,7 +81,9 @@ export const searchVectorSourceMapIds = action({
                 return q.eq(field, r);
               });
               const idClauses =
-                raw.memoryIds !== undefined && raw.memoryIds.length > 0 && raw.memoryIds.length <= 64
+                raw.memoryIds !== undefined &&
+                raw.memoryIds.length > 0 &&
+                raw.memoryIds.length <= 64
                   ? raw.memoryIds.map((id) => q.eq("memoryId", id))
                   : [];
               const all = [...nsClauses, ...idClauses];
@@ -115,10 +116,7 @@ export const searchVectorSourceMapIds = action({
         if (score !== undefined && 1 - score > maxDist) continue;
       }
       const docNs = namespacePath(row.namespace);
-      const inNs =
-        scope.kind === "unscoped"
-          ? true
-          : roots.some((r) => isPrefixOf(r, docNs));
+      const inNs = scope.kind === "unscoped" ? true : roots.some((r) => isPrefixOf(r, docNs));
       if (!inNs) continue;
       if (memoryIdSet !== undefined && !memoryIdSet.has(row.memoryId)) continue;
       out.push(row.sourceMapId);

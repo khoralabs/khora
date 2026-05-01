@@ -11,24 +11,22 @@ import type { Id } from "./_generated/dataModel.js";
 import type { QueryCtx } from "./_generated/server.js";
 import { internalQuery, query } from "./_generated/server.js";
 import {
-  buildCanonicalMemorySearchMetaText,
-  lexicalTextForMemorySource,
-  listNeighborMemoryKeysForNode,
-  parsePropsJson,
-} from "./lib/helpers.js";
-import {
+  listIncidentGraphEdges as listIncidentGraphEdgesImpl,
   loadGraphEdge as loadGraphEdgeImpl,
   loadGraphEdgesForNamespace as loadGraphEdgesForNamespaceImpl,
   loadGraphNode as loadGraphNodeImpl,
-  listIncidentGraphEdges as listIncidentGraphEdgesImpl,
   loadNodeLabelsForMemory as loadNodeLabelsForMemoryImpl,
   loadNodeLabelsForNamespaceEntries,
   loadNodePropertiesForMemory as loadNodePropertiesForMemoryImpl,
   loadNodePropertiesForNamespaceEntries,
 } from "./lib/graphReads.js";
 import {
-  listNeighborsForMemory as listNeighborsForMemoryImpl,
-} from "./lib/neighborReads.js";
+  buildCanonicalMemorySearchMetaText,
+  lexicalTextForMemorySource,
+  listNeighborMemoryKeysForNode,
+  parsePropsJson,
+} from "./lib/helpers.js";
+import { listNeighborsForMemory as listNeighborsForMemoryImpl } from "./lib/neighborReads.js";
 import { CONVEX_VECTOR_DIMENSIONS, vectorTableNameForDim } from "./lib/vectorConfig.js";
 
 const vHydratedLabel = v.object({
@@ -221,8 +219,7 @@ export const searchLexicalSourceMapIds = query({
     /** DB-wide lexical search: search index without namespace filter; optional memoryIds allowlist. */
     if (scope.kind === "unscoped") {
       const K = Math.max(raw.limit * 8, 100);
-      const memoryIdSet =
-        raw.memoryIds === undefined ? undefined : new Set(raw.memoryIds);
+      const memoryIdSet = raw.memoryIds === undefined ? undefined : new Set(raw.memoryIds);
       const rows = await ctx.db
         .query("text_features")
         .withSearchIndex("search_text", (sq) => sq.search("text", raw.text))

@@ -397,9 +397,7 @@ export function GraphProjectionProvider({
   const graphPreview = useMemo((): ProjectionValue["graphPreview"] => {
     if (debouncedHoveredEdgeKey) {
       const edge = sceneEdges.find((e) => e.key === debouncedHoveredEdgeKey);
-      return edge
-        ? { kind: "edge", edge: mergeSceneEdgesForPairPreview(edge, sceneEdges) }
-        : null;
+      return edge ? { kind: "edge", edge: mergeSceneEdgesForPairPreview(edge, sceneEdges) } : null;
     }
     if (debouncedHoveredId) {
       const point = points.find((p) => p.entryId === debouncedHoveredId);

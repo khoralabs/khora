@@ -9,7 +9,6 @@ export {
   MemoriesClientAsync as MemoriesClient,
   searchAsync as search,
 } from "@cfd/memories-core";
-export { mergeMemory, type MergeMemoryConvexAtomicCtx } from "./merge-memory-convex.js";
 export { api } from "./component/_generated/api.js";
 export { CONVEX_VECTOR_DIMENSIONS } from "./component/lib/vectorConfig.js";
 export { createConvexLexicalTextStore } from "./convexLexicalTextStore.js";
@@ -31,3 +30,4 @@ export {
   hostComponentBridgeFromMutationCtx,
   hostComponentBridgeFromQueryCtx,
 } from "./hostComponentBridge.js";
+export { type MergeMemoryConvexAtomicCtx, mergeMemory } from "./merge-memory-convex.js";
