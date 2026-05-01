@@ -15,6 +15,24 @@ function migrateObpPortsTtlColumns(db: Database): void {
   if (!names.has("expose_turn_index")) {
     db.run("ALTER TABLE obp_ports ADD COLUMN expose_turn_index INTEGER");
   }
+  if (!names.has("bind_policy_json")) {
+    db.run("ALTER TABLE obp_ports ADD COLUMN bind_policy_json TEXT");
+  }
+  if (!names.has("description")) {
+    db.run("ALTER TABLE obp_ports ADD COLUMN description TEXT NOT NULL DEFAULT ''");
+  }
+}
+
+/** Add counterparty bind answers column when upgrading older DB files. */
+function migrateObpBindsCounterpartyBind(db: Database): void {
+  const cols = db.query<{ name: string }, []>("PRAGMA table_info(obp_binds)").all();
+  const names = new Set(cols.map((c) => c.name));
+  if (!names.has("counterparty_bind_json")) {
+    db.run("ALTER TABLE obp_binds ADD COLUMN counterparty_bind_json TEXT");
+  }
+  if (!names.has("bind_policy_json")) {
+    db.run("ALTER TABLE obp_binds ADD COLUMN bind_policy_json TEXT");
+  }
 }
 
 /** Run idempotent DDL (safe to call on every open). */
@@ -23,6 +41,7 @@ export function initObpSchema(db: Database): void {
   db.run("PRAGMA journal_mode = WAL;");
   db.exec(OBP_SCHEMA_SQL);
   migrateObpPortsTtlColumns(db);
+  migrateObpBindsCounterpartyBind(db);
 }
 
 /** Open (or create) a SQLite file and initialize OBP tables. */

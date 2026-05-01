@@ -23,7 +23,7 @@ export const zTtlSpec = z
     const cap = (max: number, label: string) => {
       if (v.measure > max) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           message: `${label}: measure must be <= ${max}`,
         });
       }

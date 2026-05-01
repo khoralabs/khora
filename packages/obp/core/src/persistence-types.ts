@@ -1,3 +1,4 @@
+import type { PortBindPolicy } from "./bind-policy/types.ts";
 import type {
   BindPortInput,
   ExposePortInput,
@@ -37,7 +38,13 @@ export interface ObpPersistence {
   isPortExposed(portId: string): boolean;
 
   /** All **BINDS** edges for capacity / ref resolution (canonical port) checks. */
-  listBinds(): ReadonlyArray<{ offerId: string; portId: string }>;
+  listBinds(): ReadonlyArray<{
+    offerId: string;
+    portId: string;
+    counterparty_bind?: Record<string, unknown>;
+    /** Snapshot of `port.bind_policy` at bind time (host extension). */
+    bind_policy?: PortBindPolicy;
+  }>;
 
   /** Snapshot of all ports keyed by id (ref resolution). */
   getPortsSnapshot(): ReadonlyMap<string, Port>;

@@ -29,6 +29,7 @@ test("resolveCompletedDeal finds terminal bind on provider offer", () => {
       ts_created: 0,
       ts_expired: 86_400_000,
       type: "terminal",
+      description: "Terminal completion port.",
       max_bindings: 1,
       terminal: true,
       ref: "",

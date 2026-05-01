@@ -1,5 +1,7 @@
 /** Aligned with `cfd.obp` in `@cfd/obp-spec` / `shapes.smithy`. */
 
+import type { PortBindPolicy } from "../bind-policy/types.ts";
+
 /** Host negotiation TTL metadata persisted on ports (optional extension beyond Smithy). */
 export type NegotiationPortTtlBasis = "turns" | "seconds" | "minutes" | "hours" | "days";
 
@@ -29,6 +31,8 @@ export type Port = {
   ts_created: number;
   ts_expired: number;
   type: string;
+  /** Required at expose time: human explanation of this affordance for counterparties (host extension). */
+  description: string;
   max_bindings: number;
   terminal: boolean;
   /** Empty string means this port is canonical for ref resolution (no alias). */
@@ -40,6 +44,8 @@ export type Port = {
   ttl_measure?: number;
   /** Completed negotiation turn index when this port was exposed (`audit.turnIndex`). */
   expose_turn_index?: number;
+  /** Optional meta-schema: counterparty must supply matching data at bind time (host extension). */
+  bind_policy?: PortBindPolicy;
 };
 
 export type ExtendsEdge = {
@@ -71,6 +77,8 @@ export type ExtendOfferInput = {
   partyId: string;
   offer: Offer;
   bindPortId: string;
+  /** When binding, answers validated against target port `bind_policy` when set. */
+  counterparty_bind?: Record<string, unknown>;
 };
 
 export type ExposePortInput = {
@@ -81,6 +89,7 @@ export type ExposePortInput = {
 export type BindPortInput = {
   offerId: string;
   portId: string;
+  counterparty_bind?: Record<string, unknown>;
 };
 
 export type GetPartyResult = { kind: "notFound" } | { kind: "found"; party: Party };

@@ -231,6 +231,10 @@ body {
   color: #111;
 }
 
+.dag-detail-billboard__muted {
+  color: #666;
+}
+
 .dag-detail-billboard__dl {
   margin: 0;
   display: grid;
@@ -252,6 +256,20 @@ body {
 .dag-detail-billboard__wrap {
   word-break: break-all;
   white-space: pre-wrap;
+}
+
+.dag-detail-billboard__pre {
+  margin: 0.25rem 0 0;
+  padding: 0.4rem 0.5rem;
+  max-height: min(12rem, 40vh);
+  overflow: auto;
+  font-size: 0.68rem;
+  line-height: 1.4;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .term {

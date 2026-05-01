@@ -1,3 +1,4 @@
+import { validateCounterpartyBindForPort } from "./bind-policy/validate.ts";
 import { ObpError } from "./errors";
 import { type BindValidationFailure, validateBindPreconditions } from "./invariants/bind";
 import type {
@@ -103,6 +104,23 @@ export class ObpClient {
       if (fail !== null) {
         throwIfBindInvalid(fail);
       }
+      const normalizedBind = validateCounterpartyBindForPort(portRes.port, input.counterparty_bind);
+      return this.persistence.extendOffer({
+        ...input,
+        bindPortId,
+        counterparty_bind: normalizedBind,
+      });
+    }
+
+    const cb = input.counterparty_bind;
+    if (
+      cb !== undefined &&
+      cb !== null &&
+      typeof cb === "object" &&
+      !Array.isArray(cb) &&
+      Object.keys(cb).length > 0
+    ) {
+      throw new ObpError("VALIDATION", "counterparty_bind is only allowed when bindPortId is set");
     }
 
     return this.persistence.extendOffer({ ...input, bindPortId });
@@ -115,6 +133,9 @@ export class ObpClient {
     }
     if (input.port.max_bindings < 0) {
       throw new ObpError("VALIDATION", "max_bindings must be non-negative");
+    }
+    if (input.port.description.trim() === "") {
+      throw new ObpError("VALIDATION", "port.description must be non-empty");
     }
     return this.persistence.exposePort(input);
   }
@@ -141,7 +162,8 @@ export class ObpClient {
       throwIfBindInvalid(fail);
     }
 
-    this.persistence.bindPort(input);
+    const normalizedBind = validateCounterpartyBindForPort(portRes.port, input.counterparty_bind);
+    this.persistence.bindPort({ ...input, counterparty_bind: normalizedBind });
   }
 
   /** All EXPOSES edges for orchestration (e.g. dynamic bind tools). */

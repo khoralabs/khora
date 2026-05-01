@@ -1,4 +1,4 @@
-import type { ObpClient } from "@cfd/obp-core";
+import type { ObpClient, PortBindPolicy } from "@cfd/obp-core";
 import type { FakeObpPersistence } from "@cfd/obp-core/testing";
 import { portExpiredForSnapshot } from "../src/port-turn-ttl.ts";
 
@@ -16,6 +16,7 @@ export type GraphSnapshot = {
   ports: Array<{
     id: string;
     type: string;
+    description: string;
     terminal: boolean;
     maxBindings: number;
     ref: string;
@@ -23,10 +24,16 @@ export type GraphSnapshot = {
     tsExpired: number;
     expired: boolean;
     exposedOnOfferIds: string[];
+    bind_policy?: PortBindPolicy;
   }>;
   extends: Array<{ partyId: string; offerId: string }>;
   exposes: Array<{ offerId: string; portId: string }>;
-  binds: Array<{ offerId: string; portId: string }>;
+  binds: Array<{
+    offerId: string;
+    portId: string;
+    counterparty_bind?: Record<string, unknown>;
+    bind_policy?: PortBindPolicy;
+  }>;
 };
 
 export function buildGraphSnapshot(
@@ -65,6 +72,7 @@ export function buildGraphSnapshot(
   const ports = [...fake.ports.values()].map((p) => ({
     id: p.id,
     type: p.type,
+    description: p.description,
     terminal: p.terminal,
     maxBindings: p.max_bindings,
     ref: p.ref,
@@ -79,6 +87,7 @@ export function buildGraphSnapshot(
       negotiationTurnsCompleted,
     }),
     exposedOnOfferIds: [...(exposedOffersByPort.get(p.id) ?? [])],
+    ...(p.bind_policy !== undefined ? { bind_policy: p.bind_policy } : {}),
   }));
   const extendsEdges = [...fake.offers.values()]
     .map((o) => {
@@ -93,6 +102,8 @@ export function buildGraphSnapshot(
   const binds = fake.listBinds().map((b) => ({
     offerId: b.offerId,
     portId: b.portId,
+    ...(b.counterparty_bind !== undefined ? { counterparty_bind: b.counterparty_bind } : {}),
+    ...(b.bind_policy !== undefined ? { bind_policy: b.bind_policy } : {}),
   }));
 
   return {

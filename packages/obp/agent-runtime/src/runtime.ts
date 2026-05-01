@@ -1,10 +1,19 @@
-import type { ObpClient, ObpPersistence, SourceMapRef } from "@cfd/obp-core";
+import {
+  type BindPolicyField,
+  type ObpClient,
+  type ObpPersistence,
+  type Port,
+  type PortBindPolicy,
+  type SourceMapRef,
+  validateCounterpartyBindForPort,
+} from "@cfd/obp-core";
 import { listBindableCounterpartyPorts, type ObpToolkitEnv } from "@cfd/obp-tools";
 import type z from "zod";
 import {
   isRuntimeNoopPortId,
   isRuntimeWalkAwayPortId,
   noopPortIdForHeadOffer,
+  OBP_NEGOTIATION_BIND_NO_POLICY,
   walkAwayPortIdForHeadOffer,
 } from "./constants.ts";
 import { filterPortIdsByNegotiationTurnTtl, minExposeTurnIndexOnOffer } from "./port-turn-ttl.ts";
@@ -23,14 +32,52 @@ import {
   type NegotiationTurnSchemaOptions,
 } from "./turn-output-schema.ts";
 
+function summarizeBindPolicyField(f: BindPolicyField): string {
+  switch (f.type) {
+    case "text":
+      return `${f.name} (text)`;
+    case "boolean":
+      return `${f.name} (boolean)`;
+    case "int":
+      return `${f.name} (int)`;
+    case "float":
+      return `${f.name} (float)`;
+    case "choice":
+      return `${f.name} (choice)`;
+  }
+}
+
+function summarizeBindPolicy(policy: PortBindPolicy): string {
+  return policy.properties.map(summarizeBindPolicyField).join(", ");
+}
+
+/** Text for Zod `.describe` on each bind-key in structured output. */
+function composeBindAffordanceDescription(port: Port): string {
+  let s = port.description.trim();
+  if (port.terminal) {
+    s +=
+      " Terminal affordance: after binding, omit the `ports` property from your structured response (no further exposes on this line).";
+  }
+  if (port.bind_policy !== undefined && port.bind_policy.properties.length > 0) {
+    s += ` Required bind answers: ${summarizeBindPolicy(port.bind_policy)}.`;
+  }
+  return s;
+}
+
 export type NegotiationBindMenuEntry = {
   portId: string;
   portType: string;
   terminal: boolean;
+  /** From `Port.description` (exposing party’s counterparty-facing explanation). */
+  description: string;
+  /** Full string passed to Zod `.describe` on the bind output key. */
+  affordanceDescription: string;
+  bind_policy?: PortBindPolicy;
 };
 
 export type NegotiationExposedPortSummary = {
   portType: string;
+  description: string;
   terminal: boolean;
 };
 
@@ -58,6 +105,7 @@ export type NegotiationBindTurnAudit = {
   newOfferType: string;
   exposedPortIds: string[];
   exposedPorts: NegotiationExposedPortSummary[];
+  counterpartyBind?: Record<string, unknown>;
 };
 
 export type NegotiationTurnAudit = NegotiationGenesisTurnAudit | NegotiationBindTurnAudit;
@@ -115,12 +163,16 @@ type PreparedGenesis = {
 type LastPrepared = PreparedBind | PreparedGenesis | null;
 
 function summarizeExposedPorts(
-  ports: readonly { portType: string; terminal: boolean }[] | undefined,
+  ports: readonly { portType: string; description: string; terminal: boolean }[] | undefined,
 ): NegotiationExposedPortSummary[] {
   if (ports === undefined) {
     return [];
   }
-  return ports.map((p) => ({ portType: p.portType, terminal: p.terminal }));
+  return ports.map((p) => ({
+    portType: p.portType,
+    description: p.description,
+    terminal: p.terminal,
+  }));
 }
 
 export class NegotiationRuntime {
@@ -154,7 +206,19 @@ export class NegotiationRuntime {
     return this.opts.defaultPortTtl;
   }
 
-  private reconcileSyntheticPortsOnNewHeadOffer(offerId: string, exposeTurnIndex: number): void {
+  /**
+   * Attaches noop/walk synthetic ports to a new head offer after genesis or a non-terminal bind.
+   * Skipped when the acting party just bound a **terminal** counterparty port: that offer must not
+   * expose anything (including synthetics).
+   */
+  private reconcileSyntheticPortsOnNewHeadOffer(
+    offerId: string,
+    exposeTurnIndex: number,
+    opts?: { skipSyntheticPorts?: boolean },
+  ): void {
+    if (opts?.skipSyntheticPorts === true) {
+      return;
+    }
     ensureRuntimeSyntheticPorts({
       client: this.opts.client,
       now: this.opts.now(),
@@ -260,10 +324,14 @@ export class NegotiationRuntime {
     for (const id of r.portIds) {
       const pr = client.getPort(id);
       if (pr.kind === "found") {
+        const port = pr.port;
         bindMenu.push({
           portId: id,
-          portType: pr.port.type,
-          terminal: pr.port.terminal,
+          portType: port.type,
+          terminal: port.terminal,
+          description: port.description,
+          affordanceDescription: composeBindAffordanceDescription(port),
+          ...(port.bind_policy !== undefined ? { bind_policy: port.bind_policy } : {}),
         });
       }
     }
@@ -359,6 +427,7 @@ export class NegotiationRuntime {
       ts_created: now,
       ts_expired: tsExpiredForTtl(now, portTtl),
       type: p.portType,
+      description: p.description,
       max_bindings: p.max_bindings ?? 1,
       terminal: p.terminal,
       ref: p.ref?.trim() ?? "",
@@ -366,6 +435,7 @@ export class NegotiationRuntime {
       ttl_basis: portTtl.basis,
       ttl_measure: portTtl.measure,
       expose_turn_index: exposeTurnIndex,
+      ...(p.bind_policy !== undefined ? { bind_policy: p.bind_policy } : {}),
     };
   }
 
@@ -399,16 +469,19 @@ export class NegotiationRuntime {
     for (const id of r.portIds) {
       const pr = client.getPort(id);
       if (pr.kind === "found") {
+        const port = pr.port;
         bindMenu.push({
           portId: id,
-          portType: pr.port.type,
-          terminal: pr.port.terminal,
+          portType: port.type,
+          terminal: port.terminal,
+          description: port.description,
+          affordanceDescription: composeBindAffordanceDescription(port),
+          ...(port.bind_policy !== undefined ? { bind_policy: port.bind_policy } : {}),
         });
       }
     }
 
-    const terminalFlags = bindMenu.map((b) => b.terminal);
-    const schema = buildNegotiationTurnOutput(r.portIds, terminalFlags, this.schemaOpts());
+    const schema = buildNegotiationTurnOutput(bindMenu, this.schemaOpts());
     this.lastPrepared = {
       kind: "bind",
       schema,
@@ -439,10 +512,31 @@ export class NegotiationRuntime {
     const bindMenu = prep.bindMenu;
     const counterpartyHeadOfferType = prep.counterpartyHeadOfferType;
 
-    const allowed = prep.allowedPortIds;
-    const portId = allowed[output.bindChoiceIndex];
-    if (portId === undefined) {
-      throw new RangeError("NegotiationRuntime.applyTurn: bindChoiceIndex out of range");
+    const outRec = output as Record<string, unknown>;
+    let portId: string | null = null;
+    let counterpartyBindRaw: unknown = undefined;
+    for (const m of bindMenu) {
+      const v = outRec[m.portId];
+      if (v === undefined) {
+        continue;
+      }
+      const hasPol = m.bind_policy !== undefined && m.bind_policy.properties.length > 0;
+      if (hasPol) {
+        if (v !== null && typeof v === "object" && !Array.isArray(v)) {
+          portId = m.portId;
+          counterpartyBindRaw = v;
+          break;
+        }
+      } else if (v === OBP_NEGOTIATION_BIND_NO_POLICY) {
+        portId = m.portId;
+        counterpartyBindRaw = undefined;
+        break;
+      }
+    }
+    if (portId === null) {
+      throw new RangeError(
+        "NegotiationRuntime.applyTurn: structured output must bind exactly one counterparty port (see schema)",
+      );
     }
 
     const client = this.opts.client;
@@ -451,9 +545,19 @@ export class NegotiationRuntime {
     const sourcemaps: SourceMapRef[] = output.sourcemaps ?? [];
     const offerTtl = this.pickOfferTtl(output);
 
+    const chosenPortRes = client.getPort(portId);
+    if (chosenPortRes.kind === "notFound") {
+      throw new RangeError(`NegotiationRuntime.applyTurn: bind port not found: ${portId}`);
+    }
+    const counterparty_bind = validateCounterpartyBindForPort(
+      chosenPortRes.port,
+      counterpartyBindRaw,
+    );
+
     const { offer } = client.extendOffer({
       partyId: actingPartyId,
       bindPortId: portId,
+      counterparty_bind,
       offer: {
         id: "",
         ts_created: now,
@@ -476,7 +580,9 @@ export class NegotiationRuntime {
       exposedPortIds.push(port.id);
     }
 
-    this.reconcileSyntheticPortsOnNewHeadOffer(offer.id, exposeTurnIndex);
+    this.reconcileSyntheticPortsOnNewHeadOffer(offer.id, exposeTurnIndex, {
+      skipSyntheticPorts: skipNewPortExposes,
+    });
 
     let bindKind: NegotiationBindTurnAudit["bindKind"] = "real";
     if (isRuntimeNoopPortId(portId, head)) {
@@ -507,6 +613,7 @@ export class NegotiationRuntime {
       newOfferType: output.offerType,
       exposedPortIds,
       exposedPorts: summarizeExposedPorts(output.ports),
+      ...(Object.keys(counterparty_bind).length > 0 ? { counterpartyBind: counterparty_bind } : {}),
     };
 
     this.lastPrepared = null;

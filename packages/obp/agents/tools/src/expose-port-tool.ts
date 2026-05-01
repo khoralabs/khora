@@ -9,6 +9,8 @@ export const zObpExposePortInput = z
   .object({
     offerId: z.uuid(),
     portType: z.string().min(1).max(600),
+    /** Human-readable explanation for counterparties (required). */
+    description: z.string().min(1).max(2000),
     /** Defaults to 1 (typical single-bind / commitment port). */
     max_bindings: z.number().int().min(0).max(100).optional(),
     terminal: z.boolean(),
@@ -50,6 +52,7 @@ export const obpExposePortTool = tool<
         ts_created: now,
         ts_expired: expiresAtFromHours(now, hours),
         type: parsed.portType,
+        description: parsed.description.trim(),
         max_bindings: parsed.max_bindings ?? 1,
         terminal: parsed.terminal,
         ref: parsed.ref?.trim() ?? "",

@@ -326,6 +326,9 @@
     "packages/obp/core": {
       "name": "@cfd/obp-core",
       "version": "0.0.0",
+      "dependencies": {
+        "zod": "^4.3.6",
+      },
       "devDependencies": {
         "@cfd/obp-sqlite": "workspace:*",
         "@types/bun": "latest",

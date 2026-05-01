@@ -1,3 +1,4 @@
+import type { PortBindPolicy } from "../bind-policy/types.ts";
 import type {
   BindPortInput,
   BindsEdge,
@@ -15,7 +16,13 @@ import type {
 } from "../model/types";
 import type { ObpPersistence } from "../persistence-types";
 
-type BindRow = { offerId: string; portId: string; edge: BindsEdge };
+type BindRow = {
+  offerId: string;
+  portId: string;
+  edge: BindsEdge;
+  counterparty_bind?: Record<string, unknown>;
+  bind_policy?: PortBindPolicy;
+};
 type ExposeRow = { offerId: string; portId: string; edge: ExposesEdge };
 type ExtendRow = { partyId: string; offerId: string; edge: ExtendsEdge };
 
@@ -82,10 +89,18 @@ export class FakeObpPersistence implements ObpPersistence {
     });
     const bindPortId = input.bindPortId.trim();
     if (bindPortId !== "") {
+      const counterparty_bind =
+        input.counterparty_bind !== undefined && Object.keys(input.counterparty_bind).length > 0
+          ? input.counterparty_bind
+          : undefined;
+      const portEntity = this.ports.get(bindPortId);
+      const bind_policy = portEntity?.bind_policy;
       this.bindRows.push({
         offerId: id,
         portId: bindPortId,
         edge: { id: crypto.randomUUID(), ts_created: now, sourcemaps: [] },
+        ...(counterparty_bind !== undefined ? { counterparty_bind } : {}),
+        ...(bind_policy !== undefined ? { bind_policy } : {}),
       });
     }
     return { offer };
@@ -119,10 +134,15 @@ export class FakeObpPersistence implements ObpPersistence {
       throw new Error(`FakeObpPersistence: port not found: ${input.portId}`);
     }
     const now = this.clock();
+    const counterparty_bind =
+      input.counterparty_bind !== undefined && Object.keys(input.counterparty_bind).length > 0
+        ? input.counterparty_bind
+        : undefined;
     this.bindRows.push({
       offerId: input.offerId,
       portId: input.portId,
       edge: { id: crypto.randomUUID(), ts_created: now, sourcemaps: [] },
+      ...(counterparty_bind !== undefined ? { counterparty_bind } : {}),
     });
   }
 
@@ -130,8 +150,18 @@ export class FakeObpPersistence implements ObpPersistence {
     return this.exposesRows.some((r) => r.portId === portId);
   }
 
-  listBinds(): ReadonlyArray<{ offerId: string; portId: string }> {
-    return this.bindRows.map((b) => ({ offerId: b.offerId, portId: b.portId }));
+  listBinds(): ReadonlyArray<{
+    offerId: string;
+    portId: string;
+    counterparty_bind?: Record<string, unknown>;
+    bind_policy?: PortBindPolicy;
+  }> {
+    return this.bindRows.map((b) => ({
+      offerId: b.offerId,
+      portId: b.portId,
+      ...(b.counterparty_bind !== undefined ? { counterparty_bind: b.counterparty_bind } : {}),
+      ...(b.bind_policy !== undefined ? { bind_policy: b.bind_policy } : {}),
+    }));
   }
 
   getPortsSnapshot(): ReadonlyMap<string, Port> {

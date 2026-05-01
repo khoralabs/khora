@@ -1,28 +1,20 @@
 import {
   createRegisteredAgentIdentity,
   type RegisteredAgentIdentity,
-  tool,
+  toolkit,
 } from "@cfd/agent-identity";
-import z from "zod";
+import { OBP_NEGOTIATION_BIND_NO_POLICY } from "../src/constants.ts";
 import { scenarioBlockForIdentity } from "./scenario.ts";
 
-/**
- * Leaf composable so {@link createRegisteredAgentIdentity} has a root toolkit (no OBP graph tools).
- * Structured negotiation uses {@link Output.object} only; this tool is never invoked by the model.
- */
-function unusedPlaceholderTool(name: string) {
-  return tool({
-    name,
-    description: "Unused in structured-output-only negotiation.",
-    inputSchema: z.object({}).strict(),
-    handler: async () => undefined,
-  });
+/** Empty toolkit: negotiation turns use structured {@link Output.object} only. */
+function negotiationRootToolkit(name: string) {
+  return toolkit([], { name });
 }
 
 function staticInstructions(roleName: "Buyer" | "Seller", isBuyer: boolean): string {
   return [
     `You are the **${roleName}** in a bilateral OBP negotiation.`,
-    "You must respond ONLY with the required structured object for this turn (no tools, no prose). On bind turns, choose the counterparty affordance by **`bindChoiceIndex`** (integer index from the numbered list in the user message)—never invent port ids.",
+    `You must respond ONLY with the required structured object for this turn (no tools, no prose). On bind turns, include **exactly one** top-level JSON key that is a **port id** from the user’s bind menu (opaque ids are listed there on purpose). For ports without bind policy, use the literal string **\`${OBP_NEGOTIATION_BIND_NO_POLICY}\`**; otherwise use the policy-shaped object per that port’s schema.`,
     "Advance toward common ground on the joint goal while respecting your private intent.",
     "Expose the **minimal sufficient** set of ports on your new offer so the counterparty can respond; label types so they are self-explanatory.",
     "",
@@ -40,13 +32,13 @@ export async function createNegotiationPartyIdentities(): Promise<NegotiationPar
     agentId: "obp-example-buyer",
     name: "Buyer",
     instructions: [staticInstructions("Buyer", true)],
-    rootComposable: unusedPlaceholderTool("buyer_placeholder"),
+    rootComposable: negotiationRootToolkit("obp-example-buyer-toolkit"),
   });
   const { identity: seller } = await createRegisteredAgentIdentity({
     agentId: "obp-example-seller",
     name: "Seller",
     instructions: [staticInstructions("Seller", false)],
-    rootComposable: unusedPlaceholderTool("seller_placeholder"),
+    rootComposable: negotiationRootToolkit("obp-example-seller-toolkit"),
   });
   return { buyer, seller };
 }

@@ -10,6 +10,24 @@ export {
   validateBindPreconditions,
 } from "./invariants/index";
 export type {
+  BindPolicyBooleanField,
+  BindPolicyChoiceField,
+  BindPolicyField,
+  BindPolicyFloatField,
+  BindPolicyIntField,
+  BindPolicyTextField,
+  PortBindPolicy,
+  PortBindPolicyVersion,
+} from "./bind-policy/types.ts";
+export {
+  bindPolicyPropertiesToZod,
+  bindPolicySlug,
+  bindPolicySlugKeys,
+  formatZodErrorForAgent,
+  validateCounterpartyBindForPort,
+  zPortBindPolicy,
+} from "./bind-policy/index.ts";
+export type {
   BindPortInput,
   BindsEdge,
   ExposePortInput,

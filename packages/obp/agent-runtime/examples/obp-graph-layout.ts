@@ -17,6 +17,11 @@ export type DagPortNodeData = {
   detail: GraphSnapshot["ports"][number];
 };
 
+/** React Flow `data` for BINDS edges (policy snapshot + answers at bind time). */
+export type DagBindEdgeData = {
+  detail: GraphSnapshot["binds"][number];
+};
+
 function shortId(id: string): string {
   return id.length <= 10 ? id : `${id.slice(0, 6)}…`;
 }
@@ -233,6 +238,7 @@ export function graphSnapshotToFlow(g: GraphSnapshot): { nodes: Node[]; edges: E
       source: `port:${e.portId}`,
       target: `offer:${e.offerId}`,
       style: { stroke: "#404040", strokeWidth: 1.25, strokeDasharray: "6 4" },
+      data: { detail: e } satisfies DagBindEdgeData,
     });
   }
 

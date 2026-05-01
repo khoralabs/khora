@@ -6,6 +6,7 @@ export {
   OBP_AGENT_RUNTIME_NOOP_PREFIX,
   OBP_AGENT_RUNTIME_WALK_AWAY_PORT_TYPE,
   OBP_AGENT_RUNTIME_WALK_AWAY_PREFIX,
+  OBP_NEGOTIATION_BIND_NO_POLICY,
   walkAwayPortIdForHeadOffer,
 } from "./constants.ts";
 export {
@@ -38,6 +39,7 @@ export { type TtlBasis, type TtlSpec, zTtlSpec } from "./ttl-spec.ts";
 export {
   buildGenesisNegotiationTurnOutput,
   buildNegotiationTurnOutput,
+  type NegotiationBindSchemaMenuEntry,
   type NegotiationGenesisTurnOutput,
   type NegotiationTurnExposePort,
   type NegotiationTurnOutput,

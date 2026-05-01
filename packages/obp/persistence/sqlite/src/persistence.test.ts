@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
-import { ObpClient, ObpError } from "@cfd/obp-core";
+import { ObpClient, ObpError, type PortBindPolicy } from "@cfd/obp-core";
 import { createObpSqlitePersistence, initObpSchema } from "./index";
 
 describe("ObpSqlitePersistence", () => {
@@ -40,6 +40,7 @@ describe("ObpSqlitePersistence", () => {
         ts_created: 100,
         ts_expired: 10_000,
         type: "t",
+        description: "Test port t.",
         max_bindings: 5,
         terminal: false,
         ref: "",
@@ -115,6 +116,7 @@ describe("ObpSqlitePersistence", () => {
           ts_created: 100,
           ts_expired: 10_000,
           type: "t",
+          description: "Ref target test.",
           max_bindings: 2,
           terminal: false,
           ref: "does_not_exist",
@@ -148,6 +150,7 @@ describe("ObpSqlitePersistence", () => {
         ts_created: 500,
         ts_expired: 99_999,
         type: "slot",
+        description: "Bindable slot.",
         max_bindings: 1,
         terminal: false,
         ref: "",
@@ -188,6 +191,7 @@ describe("ObpSqlitePersistence", () => {
         ts_created: 700,
         ts_expired: 99_999,
         type: "p",
+        description: "Terminal p.",
         max_bindings: 1,
         terminal: true,
         ref: "",
@@ -205,5 +209,64 @@ describe("ObpSqlitePersistence", () => {
     if (pr.kind === "found") {
       expect(pr.port.ts_expired).toBe(700);
     }
+  });
+
+  test("bind_policy on port and counterparty_bind on bind round-trip", () => {
+    const pol: PortBindPolicy = {
+      version: "1",
+      properties: [{ type: "text", name: "Code", prompt: "x", constraints: { minLength: 1 } }],
+    };
+    const db = new Database(":memory:");
+    initObpSchema(db);
+    const persistence = createObpSqlitePersistence(db, { now: () => 100 });
+    const c = new ObpClient(persistence, { now: () => 100 });
+    const { party } = c.registerParty({ name: "P", sourcemaps: [] });
+    const { offer } = c.extendOffer({
+      partyId: party.id,
+      bindPortId: "",
+      offer: {
+        id: "",
+        ts_created: 100,
+        ts_expired: 10_000,
+        type: "root",
+        sourcemaps: [],
+      },
+    });
+    const { port } = c.exposePort({
+      offerId: offer.id,
+      port: {
+        id: "",
+        ts_created: 100,
+        ts_expired: 10_000,
+        type: "gate",
+        description: "Gate with policy.",
+        max_bindings: 1,
+        terminal: false,
+        ref: "",
+        sourcemaps: [],
+        bind_policy: pol,
+      },
+    });
+    const gpr = c.getPort(port.id);
+    expect(gpr.kind).toBe("found");
+    if (gpr.kind === "found") {
+      expect(gpr.port.bind_policy).toEqual(pol);
+    }
+    c.extendOffer({
+      partyId: party.id,
+      bindPortId: port.id,
+      counterparty_bind: { code: "abc" },
+      offer: {
+        id: "",
+        ts_created: 100,
+        ts_expired: 10_000,
+        type: "next",
+        sourcemaps: [],
+      },
+    });
+    const binds = persistence.listBinds();
+    expect(binds.length).toBe(1);
+    expect(binds[0]?.counterparty_bind).toEqual({ code: "abc" });
+    expect(binds[0]?.bind_policy).toEqual(pol);
   });
 });

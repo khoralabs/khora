@@ -61,7 +61,7 @@ export const zNamespacePath = z
       parseSegments(s);
     } catch (e) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: e instanceof Error ? e.message : String(e),
       });
     }

@@ -2,7 +2,9 @@ import type { ObpClient } from "@cfd/obp-core";
 import { type BindableCounterpartyPort, newestOfferIdAmongBindable } from "@cfd/obp-tools";
 import {
   noopPortIdForHeadOffer,
+  OBP_AGENT_RUNTIME_NOOP_PORT_DESCRIPTION,
   OBP_AGENT_RUNTIME_NOOP_PORT_TYPE,
+  OBP_AGENT_RUNTIME_WALK_AWAY_PORT_DESCRIPTION,
   OBP_AGENT_RUNTIME_WALK_AWAY_PORT_TYPE,
   walkAwayPortIdForHeadOffer,
 } from "./constants.ts";
@@ -83,6 +85,7 @@ export function ensureRuntimeSyntheticPorts(args: EnsureRuntimeSyntheticPortsArg
         ts_created: args.now,
         ts_expired: tsExp,
         type: OBP_AGENT_RUNTIME_NOOP_PORT_TYPE,
+        description: OBP_AGENT_RUNTIME_NOOP_PORT_DESCRIPTION,
         max_bindings: 100,
         terminal: false,
         ref: "",
@@ -101,6 +104,7 @@ export function ensureRuntimeSyntheticPorts(args: EnsureRuntimeSyntheticPortsArg
         ts_created: args.now,
         ts_expired: tsExp,
         type: OBP_AGENT_RUNTIME_WALK_AWAY_PORT_TYPE,
+        description: OBP_AGENT_RUNTIME_WALK_AWAY_PORT_DESCRIPTION,
         max_bindings: 100,
         terminal: true,
         ref: "",

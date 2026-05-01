@@ -2,7 +2,11 @@ import { expect, test } from "bun:test";
 import { ObpClient } from "@cfd/obp-core";
 import { FakeObpPersistence } from "@cfd/obp-core/testing";
 import { expiresAtFromHours } from "@cfd/obp-tools";
-import { noopPortIdForHeadOffer, walkAwayPortIdForHeadOffer } from "./constants.ts";
+import {
+  noopPortIdForHeadOffer,
+  OBP_NEGOTIATION_BIND_NO_POLICY,
+  walkAwayPortIdForHeadOffer,
+} from "./constants.ts";
 import { NegotiationRuntime } from "./runtime.ts";
 import { buildNegotiationTurnOutput } from "./turn-output-schema.ts";
 
@@ -41,6 +45,7 @@ function seedSellerListing(): {
       ts_created: now(),
       ts_expired: expiresAtFromHours(now(), 24),
       type: "listing|100",
+      description: "Listing affordance for tests.",
       max_bindings: 1,
       terminal: false,
       ref: "",
@@ -70,14 +75,13 @@ test("happy path: bind counterparty port and expose multiple ports", async () =>
     defaultPortTtl: DEFAULT_PORT_TTL,
   });
   const { allowedPortIds, schema } = await rt.prepareActingTurn(buyerId);
-  const idx = allowedPortIds.indexOf(listingPortId);
-  expect(idx).toBeGreaterThanOrEqual(0);
+  expect(allowedPortIds.includes(listingPortId)).toBe(true);
   const raw = {
-    bindChoiceIndex: idx,
+    [listingPortId]: OBP_NEGOTIATION_BIND_NO_POLICY,
     offerType: "buyer.counter",
     ports: [
-      { portType: "path-a", terminal: false },
-      { portType: "path-b", terminal: false },
+      { portType: "path-a", terminal: false, description: "Path A." },
+      { portType: "path-b", terminal: false, description: "Path B." },
     ],
   };
   const parsed = schema.parse(raw);
@@ -110,12 +114,11 @@ test("walk-away bind calls requestNegotiationEnd", async () => {
   });
   const { schema, allowedPortIds, headOfferId } = await rt.prepareActingTurn(buyerId);
   const walkId = walkAwayPortIdForHeadOffer(headOfferId);
-  const walkIdx = allowedPortIds.indexOf(walkId);
-  expect(walkIdx).toBeGreaterThanOrEqual(0);
+  expect(allowedPortIds.includes(walkId)).toBe(true);
   const audit = rt.applyTurn(
     buyerId,
     schema.parse({
-      bindChoiceIndex: walkIdx,
+      [walkId]: OBP_NEGOTIATION_BIND_NO_POLICY,
       offerType: "buyer.exit",
     }),
   );
@@ -137,14 +140,13 @@ test("noop bind completes extend + bind", async () => {
   });
   const { schema, allowedPortIds, headOfferId } = await rt.prepareActingTurn(buyerId);
   const noopId = noopPortIdForHeadOffer(headOfferId);
-  const noopIdx = allowedPortIds.indexOf(noopId);
-  expect(noopIdx).toBeGreaterThanOrEqual(0);
+  expect(allowedPortIds.includes(noopId)).toBe(true);
   rt.applyTurn(
     buyerId,
     schema.parse({
-      bindChoiceIndex: noopIdx,
+      [noopId]: OBP_NEGOTIATION_BIND_NO_POLICY,
       offerType: "buyer.noop",
-      ports: [{ portType: "keep-alive", terminal: false }],
+      ports: [{ portType: "keep-alive", terminal: false, description: "Keep session alive." }],
     }),
   );
   const binds = persistence.listBinds();
@@ -163,11 +165,10 @@ test("maxTurns blocks further turns", async () => {
     defaultPortTtl: DEFAULT_PORT_TTL,
   });
   const { schema, allowedPortIds } = await rt.prepareActingTurn(buyerId);
-  const idx = allowedPortIds.indexOf(listingPortId);
   rt.applyTurn(
     buyerId,
     schema.parse({
-      bindChoiceIndex: idx,
+      [listingPortId]: OBP_NEGOTIATION_BIND_NO_POLICY,
       offerType: "one",
       ports: [],
     }),
@@ -197,7 +198,13 @@ test("genesis turn then bind turn", async () => {
     seller.id,
     gSchema.parse({
       offerType: "seller.opening",
-      ports: [{ portType: "buyer.may_counter", terminal: false }],
+      ports: [
+        {
+          portType: "buyer.may_counter",
+          terminal: false,
+          description: "Counterparty may respond here.",
+        },
+      ],
     }),
   );
   expect(gAudit.kind).toBe("genesis");
@@ -212,11 +219,10 @@ test("genesis turn then bind turn", async () => {
   if (portId === undefined) {
     throw new Error("expected buyer.may_counter port in allowedPortIds");
   }
-  const bindIdx = allowedPortIds.indexOf(portId);
   const bAudit = rt.applyTurn(
     buyer.id,
     schema.parse({
-      bindChoiceIndex: bindIdx,
+      [portId]: OBP_NEGOTIATION_BIND_NO_POLICY,
       offerType: "buyer.reply",
       ports: [],
     }),
@@ -247,7 +253,13 @@ test("genesis attaches noop/walk-away on new offer before counterparty prepareAc
     seller.id,
     gSchema.parse({
       offerType: "seller.opening",
-      ports: [{ portType: "buyer.may_counter", terminal: false }],
+      ports: [
+        {
+          portType: "buyer.may_counter",
+          terminal: false,
+          description: "Buyer counter affordance.",
+        },
+      ],
     }),
   );
   const head = gAudit.newOfferId;
@@ -256,6 +268,77 @@ test("genesis attaches noop/walk-away on new offer before counterparty prepareAc
   const exposed = client.listExposedPortEdges();
   expect(exposed.some((e) => e.offerId === head && e.portId === noopId)).toBe(true);
   expect(exposed.some((e) => e.offerId === head && e.portId === walkId)).toBe(true);
+});
+
+test("bind turn requires counterparty_bind when listing port has bind_policy", async () => {
+  const t = { v: 1_700_000_000_000 };
+  const now = () => t.v;
+  const persistence = new FakeObpPersistence(now);
+  const client = new ObpClient(persistence, { now });
+  const { party: buyer } = persistence.registerParty({ name: "buyer", sourcemaps: [] });
+  const { party: seller } = persistence.registerParty({ name: "seller", sourcemaps: [] });
+  const { offer: seed } = client.extendOffer({
+    partyId: seller.id,
+    bindPortId: "",
+    offer: {
+      id: "",
+      ts_created: now(),
+      ts_expired: expiresAtFromHours(now(), 24),
+      type: "demo.seed",
+      sourcemaps: [],
+    },
+  });
+  const { port: listing } = client.exposePort({
+    offerId: seed.id,
+    port: {
+      id: "",
+      ts_created: now(),
+      ts_expired: expiresAtFromHours(now(), 24),
+      type: "listing|100",
+      description: "Listing with bind policy.",
+      max_bindings: 1,
+      terminal: false,
+      ref: "",
+      sourcemaps: [],
+      bind_policy: {
+        version: "1",
+        properties: [
+          {
+            type: "text",
+            name: "Reference",
+            prompt: "Your reference id",
+            constraints: { minLength: 1 },
+          },
+        ],
+      },
+    },
+  });
+  const rt = new NegotiationRuntime({
+    client,
+    persistence,
+    now,
+    maxTurns: 5,
+    requireNoop: false,
+    requireWalkAway: false,
+    defaultPortTtl: DEFAULT_PORT_TTL,
+  });
+  const { schema, allowedPortIds } = await rt.prepareActingTurn(buyer.id);
+  expect(allowedPortIds.includes(listing.id)).toBe(true);
+  expect(
+    schema.safeParse({
+      [listing.id]: true,
+      offerType: "buyer.counter",
+      ports: [{ portType: "path-a", terminal: false, description: "Path A." }],
+    }).success,
+  ).toBe(false);
+  const parsed = schema.parse({
+    [listing.id]: { reference: "R1" },
+    offerType: "buyer.counter",
+    ports: [{ portType: "path-a", terminal: false, description: "Path A." }],
+  });
+  const audit = rt.applyTurn(buyer.id, parsed);
+  expect(audit.kind).toBe("bind");
+  expect(audit.counterpartyBind).toEqual({ reference: "R1" });
 });
 
 test("terminal counterparty bind omits ports from validator (.strict rejects ports key)", async () => {
@@ -283,6 +366,7 @@ test("terminal counterparty bind omits ports from validator (.strict rejects por
       ts_created: now(),
       ts_expired: expiresAtFromHours(now(), 24),
       type: "deal.final",
+      description: "Terminal deal port.",
       max_bindings: 1,
       terminal: true,
       ref: "",
@@ -299,19 +383,81 @@ test("terminal counterparty bind omits ports from validator (.strict rejects por
     defaultPortTtl: DEFAULT_PORT_TTL,
   });
   const { schema, allowedPortIds } = await rt.prepareActingTurn(buyer.id);
-  const termIdx = allowedPortIds.indexOf(listing.id);
-  expect(termIdx).toBeGreaterThanOrEqual(0);
-  expect(schema.safeParse({ bindChoiceIndex: termIdx, offerType: "agreed" }).success).toBe(true);
+  expect(allowedPortIds.includes(listing.id)).toBe(true);
   expect(
-    schema.safeParse({ bindChoiceIndex: termIdx, offerType: "agreed", ports: [] }).success,
+    schema.safeParse({
+      [listing.id]: OBP_NEGOTIATION_BIND_NO_POLICY,
+      offerType: "agreed",
+    }).success,
+  ).toBe(true);
+  expect(
+    schema.safeParse({
+      [listing.id]: OBP_NEGOTIATION_BIND_NO_POLICY,
+      offerType: "agreed",
+      ports: [],
+    }).success,
   ).toBe(false);
   expect(
     schema.safeParse({
-      bindChoiceIndex: termIdx,
+      [listing.id]: OBP_NEGOTIATION_BIND_NO_POLICY,
       offerType: "agreed",
-      ports: [{ portType: "extra", terminal: false }],
+      ports: [{ portType: "extra", terminal: false, description: "Extra." }],
     }).success,
   ).toBe(false);
+});
+
+test("terminal bind creates offer with no exposes (no model ports, no noop/walk)", async () => {
+  const t = { v: 1_700_000_000_000 };
+  const now = () => t.v;
+  const persistence = new FakeObpPersistence(now);
+  const client = new ObpClient(persistence, { now });
+  const { party: buyer } = persistence.registerParty({ name: "buyer", sourcemaps: [] });
+  const { party: seller } = persistence.registerParty({ name: "seller", sourcemaps: [] });
+  const { offer: seed } = client.extendOffer({
+    partyId: seller.id,
+    bindPortId: "",
+    offer: {
+      id: "",
+      ts_created: now(),
+      ts_expired: expiresAtFromHours(now(), 24),
+      type: "demo.seed",
+      sourcemaps: [],
+    },
+  });
+  const { port: listing } = client.exposePort({
+    offerId: seed.id,
+    port: {
+      id: "",
+      ts_created: now(),
+      ts_expired: expiresAtFromHours(now(), 24),
+      type: "deal.final",
+      description: "Terminal deal port.",
+      max_bindings: 1,
+      terminal: true,
+      ref: "",
+      sourcemaps: [],
+    },
+  });
+  const rt = new NegotiationRuntime({
+    client,
+    persistence,
+    now,
+    maxTurns: 5,
+    requireNoop: true,
+    requireWalkAway: true,
+    defaultPortTtl: DEFAULT_PORT_TTL,
+  });
+  const { schema } = await rt.prepareActingTurn(buyer.id);
+  const audit = rt.applyTurn(
+    buyer.id,
+    schema.parse({
+      [listing.id]: OBP_NEGOTIATION_BIND_NO_POLICY,
+      offerType: "agreed",
+    }),
+  );
+  expect(audit.exposedPortIds.length).toBe(0);
+  const onNewOffer = client.listExposedPortEdges().filter((e) => e.offerId === audit.newOfferId);
+  expect(onNewOffer.length).toBe(0);
 });
 
 test("getBindSnapshotForParty matches prepareActingTurn allowed ids", async () => {
@@ -335,12 +481,18 @@ test("getBindSnapshotForParty matches prepareActingTurn allowed ids", async () =
   void schema;
 });
 
-test("schema rejects bindChoiceIndex out of range", () => {
-  const schema = buildNegotiationTurnOutput(["only-port"], [false], { allowAgentPortTtl: true });
+test("schema rejects multiple bind keys", () => {
+  const schema = buildNegotiationTurnOutput(
+    [
+      { portId: "port-a", terminal: false, affordanceDescription: "A" },
+      { portId: "port-b", terminal: false, affordanceDescription: "B" },
+    ],
+    { allowAgentPortTtl: true },
+  );
   const r = schema.safeParse({
-    bindChoiceIndex: 1,
     offerType: "x",
-    ports: [],
+    "port-a": OBP_NEGOTIATION_BIND_NO_POLICY,
+    "port-b": OBP_NEGOTIATION_BIND_NO_POLICY,
   });
   expect(r.success).toBe(false);
 });
@@ -360,10 +512,19 @@ test("requireNoop false omits noop from choices", async () => {
   expect(allowedPortIds.length).toBe(1);
   const noopId = noopPortIdForHeadOffer(headOfferId);
   expect(allowedPortIds.includes(noopId)).toBe(false);
+  const listingId = allowedPortIds[0];
+  if (listingId === undefined) {
+    throw new Error("expected listing port");
+  }
   const r = schema.safeParse({
-    bindChoiceIndex: 1,
     offerType: "x",
-    ports: [],
+    "not-a-real-port-in-schema": OBP_NEGOTIATION_BIND_NO_POLICY,
   });
   expect(r.success).toBe(false);
+  expect(
+    schema.safeParse({
+      offerType: "x",
+      [listingId]: OBP_NEGOTIATION_BIND_NO_POLICY,
+    }).success,
+  ).toBe(true);
 });

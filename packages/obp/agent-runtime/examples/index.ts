@@ -13,7 +13,8 @@ import {
   createNegotiationPartyIdentities,
   type NegotiationPartyIdentities,
 } from "./negotiation-agents.ts";
-import { runLlmTurn } from "./run-llm-turn.ts";
+import type { BindOption } from "./negotiation-types.ts";
+import { formatNegotiationProviderError, runLlmTurn } from "./run-llm-turn.ts";
 
 const MAX_TURNS = 12;
 
@@ -145,7 +146,7 @@ async function buildStateResponse(): Promise<object> {
     actingPartyId: string;
     actingRole: "buyer" | "seller";
     counterpartyHeadOfferType: string | null;
-    bindOptions: Array<{ portId: string; portType: string; terminal: boolean }>;
+    bindOptions: BindOption[];
   } | null = null;
 
   if (!negotiationEnded && llm && turnsCompleted < MAX_TURNS && !walkAwayRequested) {
@@ -274,8 +275,10 @@ async function handleNegotiationTurn(actingPartyId: string): Promise<Response> {
 
     return jsonResponse({ ok: true, state: await buildStateResponse() });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return jsonResponse({ ok: false, error: msg }, 500);
+    return jsonResponse(
+      { ok: false, error: formatNegotiationProviderError(e) },
+      500,
+    );
   }
 }
 

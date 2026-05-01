@@ -7,6 +7,7 @@ function port(p: Partial<Port> & Pick<Port, "id" | "ref">): Port {
     ts_created: 0,
     ts_expired: 1e15,
     type: "t",
+    description: "test port",
     max_bindings: 10,
     terminal: false,
     sourcemaps: [],

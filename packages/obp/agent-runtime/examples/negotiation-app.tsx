@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { NegotiationFlow } from "./negotiation-flow.tsx";
 import type { HealthResponse, StateResponse } from "./negotiation-types.ts";
+import { NEGOTIATION_TURN_FETCH_TIMEOUT_MS } from "./negotiation-timeouts.ts";
 
 const TURN_RETRY_MAX = 5;
 const TURN_RETRY_BASE_MS = 1200;
@@ -40,6 +41,13 @@ function ts(): string {
   } catch {
     return "??:??:??";
   }
+}
+
+function isAbortLike(e: unknown): boolean {
+  if (e instanceof DOMException && (e.name === "AbortError" || e.name === "TimeoutError")) {
+    return true;
+  }
+  return e instanceof Error && e.name === "AbortError";
 }
 
 async function fetchHealth(): Promise<HealthResponse> {
@@ -140,13 +148,26 @@ export function NegotiationApp() {
     [appendLog],
   );
 
-  const executeOneTurn = useCallback(async (actingPartyId: string): Promise<TurnPostResult> => {
-    try {
-      const res = await fetch("/api/negotiation/turn", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ actingPartyId }),
-      });
+  type ExecuteTurnOpts = {
+    /** Called every 5s while waiting on the server (elapsed seconds). */
+    onWaitingTick?: (elapsedSec: number) => void;
+  };
+
+  const executeOneTurn = useCallback(
+    async (actingPartyId: string, opts?: ExecuteTurnOpts): Promise<TurnPostResult> => {
+      let tick: ReturnType<typeof setInterval> | undefined;
+      const onWaitingTick = opts?.onWaitingTick;
+      if (onWaitingTick) {
+        const t0 = Date.now();
+        tick = setInterval(() => onWaitingTick(Math.floor((Date.now() - t0) / 1000)), 5000);
+      }
+      try {
+        const res = await fetch("/api/negotiation/turn", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ actingPartyId }),
+          signal: AbortSignal.timeout(NEGOTIATION_TURN_FETCH_TIMEOUT_MS),
+        });
       let body: {
         ok?: boolean;
         error?: string;
@@ -182,16 +203,33 @@ export function NegotiationApp() {
       setServer(s);
       return { ok: true, state: s };
     } catch (e) {
+      if (isAbortLike(e)) {
+        const min = Math.ceil(NEGOTIATION_TURN_FETCH_TIMEOUT_MS / 60_000);
+        return {
+          ok: false,
+          message: `Turn request timed out after ~${min} min (LLM still slow or unreachable — check API key and model)`,
+        };
+      }
       const msg = e instanceof Error ? e.message : String(e);
       return { ok: false, message: msg };
+    } finally {
+      if (tick !== undefined) {
+        clearInterval(tick);
+      }
     }
-  }, []);
+  },
+    [],
+  );
 
   const executeOneTurnWithRetries = useCallback(
-    async (actingPartyId: string, actingRole: "buyer" | "seller"): Promise<TurnPostResult> => {
+    async (
+      actingPartyId: string,
+      actingRole: "buyer" | "seller",
+      executeOpts?: ExecuteTurnOpts,
+    ): Promise<TurnPostResult> => {
       let last: TurnPostResult = { ok: false, message: "no attempt" };
       for (let attempt = 1; attempt <= TURN_RETRY_MAX; attempt++) {
-        last = await executeOneTurn(actingPartyId);
+        last = await executeOneTurn(actingPartyId, executeOpts);
         if (last.ok) {
           return last;
         }
@@ -262,7 +300,13 @@ export function NegotiationApp() {
           setActivity(`Auto-run: ${actingRole} · ${s.turnsCompleted + 1}/${s.maxTurns}…`);
           appendLog(`→ ${actingRole}: LLM turn starting…`);
 
-          const r = await executeOneTurnWithRetries(actingPartyId, actingRole);
+          const r = await executeOneTurnWithRetries(actingPartyId, actingRole, {
+            onWaitingTick: (sec) => {
+              setActivity(
+                `Auto-run: ${actingRole} · ${s.turnsCompleted + 1}/${s.maxTurns} · waiting ${sec}s…`,
+              );
+            },
+          });
           if (stale()) {
             appendLog("Auto-run stopped (session reset).");
             break;

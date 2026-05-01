@@ -14,6 +14,7 @@ const port = (p: Partial<Port> & Pick<Port, "id" | "ref" | "max_bindings">): Por
   ts_created: 0,
   ts_expired: 1000,
   type: "t",
+  description: "test port",
   terminal: false,
   sourcemaps: [],
   ...p,

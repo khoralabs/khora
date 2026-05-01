@@ -1,6 +1,12 @@
 import type { GraphSnapshot } from "./graph-snapshot.ts";
 
-export type BindOption = { portId: string; portType: string; terminal: boolean };
+export type BindOption = {
+  portId: string;
+  portType: string;
+  terminal: boolean;
+  description: string;
+  affordanceDescription: string;
+};
 
 export type Audit =
   | {
@@ -10,7 +16,7 @@ export type Audit =
       newOfferId: string;
       newOfferType: string;
       exposedPortIds: string[];
-      exposedPorts: Array<{ portType: string; terminal: boolean }>;
+      exposedPorts: Array<{ portType: string; description: string; terminal: boolean }>;
     }
   | {
       kind: "bind";
@@ -25,7 +31,8 @@ export type Audit =
       newOfferId: string;
       newOfferType: string;
       exposedPortIds: string[];
-      exposedPorts: Array<{ portType: string; terminal: boolean }>;
+      exposedPorts: Array<{ portType: string; description: string; terminal: boolean }>;
+      counterpartyBind?: Record<string, unknown>;
     };
 
 export type NextTurn = {
