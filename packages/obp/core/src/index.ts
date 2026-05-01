@@ -19,6 +19,7 @@ export type {
   GetOfferResult,
   GetPartyResult,
   GetPortResult,
+  NegotiationPortTtlBasis,
   Offer,
   Party,
   Port,

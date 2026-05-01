@@ -1,0 +1,93 @@
+import type { ObpClient, ObpPersistence } from "@cfd/obp-core";
+import { validateBindPreconditions } from "@cfd/obp-core";
+import { parsePriceFromType } from "./encoding.ts";
+import type { ObpToolkitEnv } from "./obp-toolkit-env.ts";
+
+/** One counterparty-offered port the acting party may bind (structural + optional policy checks). */
+export type BindableCounterpartyPort = {
+  offerId: string;
+  portId: string;
+  offerOwnerPartyId: string;
+};
+
+/**
+ * Lists exposed counterparty ports the acting party may bind, using the same preconditions as
+ * {@link computeNegotiationContext} bind tools (without dynamic tool metadata).
+ */
+export async function listBindableCounterpartyPorts(args: {
+  client: ObpClient;
+  persistence: ObpPersistence;
+  actingPartyId: string;
+  now: number;
+  validateBind?: ObpToolkitEnv["validateBind"];
+}): Promise<BindableCounterpartyPort[]> {
+  const { client, persistence, actingPartyId, now, validateBind } = args;
+  const out: BindableCounterpartyPort[] = [];
+  const edges = client.listExposedPortEdges();
+  const portsById = persistence.getPortsSnapshot();
+  const binds = persistence.listBinds();
+
+  for (const { offerId, portId } of edges) {
+    const owner = client.getExtendingPartyId(offerId);
+    const offerRes = client.getOffer(offerId);
+    const portRes = client.getPort(portId);
+    if (offerRes.kind === "notFound" || portRes.kind === "notFound" || owner === null) {
+      continue;
+    }
+    if (owner === actingPartyId) {
+      continue;
+    }
+    const offer = offerRes.offer;
+    const port = portRes.port;
+
+    const fail = validateBindPreconditions({
+      now,
+      offer,
+      port,
+      portsById,
+      targetPortIsExposed: persistence.isPortExposed(portId),
+      binds,
+    });
+    if (fail !== null) {
+      continue;
+    }
+
+    if (validateBind) {
+      try {
+        await validateBind({
+          actingPartyId,
+          offerId,
+          portId,
+          offerOwnerPartyId: owner,
+          port,
+          price: parsePriceFromType(port.type),
+        });
+      } catch {
+        continue;
+      }
+    }
+
+    out.push({ offerId, portId, offerOwnerPartyId: owner });
+  }
+
+  return out;
+}
+
+/** Pick the newest counterparty offer (by `ts_created`) among the given bindable rows. */
+export function newestOfferIdAmongBindable(
+  client: ObpClient,
+  bindable: ReadonlyArray<Pick<BindableCounterpartyPort, "offerId">>,
+): string | null {
+  let best: { offerId: string; ts: number } | null = null;
+  for (const { offerId } of bindable) {
+    const r = client.getOffer(offerId);
+    if (r.kind === "notFound") {
+      continue;
+    }
+    const ts = r.offer.ts_created;
+    if (best === null || ts > best.ts) {
+      best = { offerId, ts };
+    }
+  }
+  return best?.offerId ?? null;
+}

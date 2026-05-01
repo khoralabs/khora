@@ -1,5 +1,8 @@
 /** Aligned with `cfd.obp` in `@cfd/obp-spec` / `shapes.smithy`. */
 
+/** Host negotiation TTL metadata persisted on ports (optional extension beyond Smithy). */
+export type NegotiationPortTtlBasis = "turns" | "seconds" | "minutes" | "hours" | "days";
+
 /** Store-agnostic source-map link; aligned with `SourceMapRef` in `obp-spec` / `shapes.smithy`. */
 export type SourceMapRef = {
   resource_id: string;
@@ -31,6 +34,12 @@ export type Port = {
   /** Empty string means this port is canonical for ref resolution (no alias). */
   ref: string;
   sourcemaps: SourceMapRef[];
+  /** Effective TTL basis when the negotiating host recorded policy at expose time. */
+  ttl_basis?: NegotiationPortTtlBasis;
+  /** Interpretation depends on `ttl_basis` (e.g. turn count for `"turns"`). */
+  ttl_measure?: number;
+  /** Completed negotiation turn index when this port was exposed (`audit.turnIndex`). */
+  expose_turn_index?: number;
 };
 
 export type ExtendsEdge = {

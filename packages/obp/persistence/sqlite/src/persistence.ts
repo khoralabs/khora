@@ -10,6 +10,7 @@ import {
   ObpError,
   type ObpPersistence,
   type Offer,
+  type NegotiationPortTtlBasis,
   type Party,
   type Port,
   type RegisterPartyInput,
@@ -42,6 +43,9 @@ type PortRow = {
   terminal: number;
   ref: string;
   sourcemaps_json: string;
+  ttl_basis: string | null;
+  ttl_measure: number | null;
+  expose_turn_index: number | null;
 };
 
 function parseSourcemaps(json: string): SourceMapRef[] {
@@ -86,8 +90,22 @@ function rowToOffer(r: OfferRow): Offer {
   };
 }
 
+function parseNegotiationTtlBasis(raw: string | null): NegotiationPortTtlBasis | undefined {
+  if (raw === null || raw === "") return undefined;
+  switch (raw) {
+    case "turns":
+    case "seconds":
+    case "minutes":
+    case "hours":
+    case "days":
+      return raw;
+    default:
+      return undefined;
+  }
+}
+
 function rowToPort(r: PortRow): Port {
-  return {
+  const port: Port = {
     id: r.id,
     ts_created: r.ts_created,
     ts_expired: r.ts_expired,
@@ -97,6 +115,15 @@ function rowToPort(r: PortRow): Port {
     ref: r.ref ?? "",
     sourcemaps: parseSourcemaps(r.sourcemaps_json),
   };
+  const tb = parseNegotiationTtlBasis(r.ttl_basis);
+  if (tb !== undefined && r.ttl_measure !== null && r.ttl_measure !== undefined) {
+    port.ttl_basis = tb;
+    port.ttl_measure = r.ttl_measure;
+  }
+  if (r.expose_turn_index !== null && r.expose_turn_index !== undefined) {
+    port.expose_turn_index = r.expose_turn_index;
+  }
+  return port;
 }
 
 function throwBindFailure(failure: BindValidationFailure): never {
@@ -170,7 +197,7 @@ export class ObpSqlitePersistence implements ObpPersistence {
   getPort(id: string): GetPortResult {
     const row = this.db
       .query<PortRow, [string]>(
-        `SELECT id, ts_created, ts_expired, type, max_bindings, terminal, ref, sourcemaps_json FROM obp_ports WHERE id = ?`,
+        `SELECT id, ts_created, ts_expired, type, max_bindings, terminal, ref, sourcemaps_json, ttl_basis, ttl_measure, expose_turn_index FROM obp_ports WHERE id = ?`,
       )
       .get(id);
     if (!row) return { kind: "notFound" };
@@ -247,7 +274,7 @@ export class ObpSqlitePersistence implements ObpPersistence {
       if (bindPortId !== "") {
         const portRow = this.db
           .query<PortRow, [string]>(
-            `SELECT id, ts_created, ts_expired, type, max_bindings, terminal, ref, sourcemaps_json FROM obp_ports WHERE id = ?`,
+            `SELECT id, ts_created, ts_expired, type, max_bindings, terminal, ref, sourcemaps_json, ttl_basis, ttl_measure, expose_turn_index FROM obp_ports WHERE id = ?`,
           )
           .get(bindPortId);
         if (!portRow) {
@@ -296,6 +323,9 @@ export class ObpSqlitePersistence implements ObpPersistence {
         ts_created: ts,
       };
       const smJson = stringifySourcemaps(port.sourcemaps);
+      const ttlBasis = port.ttl_basis ?? null;
+      const ttlMeasure = port.ttl_measure ?? null;
+      const exposeTurnIndex = port.expose_turn_index ?? null;
 
       const map = this.loadPortsMap();
       map.set(port.id, port);
@@ -313,7 +343,7 @@ export class ObpSqlitePersistence implements ObpPersistence {
       }
 
       this.db.run(
-        `INSERT INTO obp_ports (id, ts_created, ts_expired, type, max_bindings, terminal, ref, sourcemaps_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO obp_ports (id, ts_created, ts_expired, type, max_bindings, terminal, ref, sourcemaps_json, ttl_basis, ttl_measure, expose_turn_index) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           port.id,
           port.ts_created,
@@ -323,6 +353,9 @@ export class ObpSqlitePersistence implements ObpPersistence {
           port.terminal ? 1 : 0,
           port.ref,
           smJson,
+          ttlBasis,
+          ttlMeasure,
+          exposeTurnIndex,
         ],
       );
 
@@ -402,7 +435,7 @@ export class ObpSqlitePersistence implements ObpPersistence {
   private loadPortsMap(): Map<string, Port> {
     const rows = this.db
       .query<PortRow, []>(
-        `SELECT id, ts_created, ts_expired, type, max_bindings, terminal, ref, sourcemaps_json FROM obp_ports`,
+        `SELECT id, ts_created, ts_expired, type, max_bindings, terminal, ref, sourcemaps_json, ttl_basis, ttl_measure, expose_turn_index FROM obp_ports`,
       )
       .all();
     const m = new Map<string, Port>();

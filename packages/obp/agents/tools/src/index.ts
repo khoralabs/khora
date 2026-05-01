@@ -1,6 +1,11 @@
 export { agentSourcemaps } from "./agent-party-sourcemaps.ts";
 export { executeObpBind } from "./bind-execution.ts";
 export { type ObpBindPortInput, obpBindPortTool, zObpBindPortInput } from "./bind-port-tool.ts";
+export {
+  type BindableCounterpartyPort,
+  listBindableCounterpartyPorts,
+  newestOfferIdAmongBindable,
+} from "./bindable-counterparty-ports.ts";
 export { parsePriceFromType } from "./encoding.ts";
 export { obpEndNegotiationTool } from "./end-negotiation-tool.ts";
 export {
@@ -31,4 +36,5 @@ export type {
   ObpToolkitEnv,
   PriceBand,
 } from "./obp-toolkit-env.ts";
+export { zOptionalSourcemaps } from "./sourcemaps-schema.ts";
 export { buildObpToolkitContext, buildObpToolRuntimeContext } from "./toolkit-context.ts";

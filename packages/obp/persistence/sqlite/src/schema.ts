@@ -25,7 +25,10 @@ CREATE TABLE IF NOT EXISTS obp_ports (
   max_bindings INTEGER NOT NULL,
   terminal INTEGER NOT NULL CHECK (terminal IN (0, 1)),
   ref TEXT NOT NULL DEFAULT '',
-  sourcemaps_json TEXT NOT NULL DEFAULT '[]'
+  sourcemaps_json TEXT NOT NULL DEFAULT '[]',
+  ttl_basis TEXT,
+  ttl_measure INTEGER,
+  expose_turn_index INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS obp_extends (

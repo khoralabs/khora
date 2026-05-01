@@ -1,0 +1,39 @@
+{
+  "name": "@cfd/obp-agent-runtime",
+  "version": "0.0.0",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "dependencies": {
+    "@ai-sdk/google": "^3.0.0",
+    "@cfd/agent-identity": "workspace:*",
+    "@cfd/agent-identity-adapters": "workspace:*",
+    "@cfd/obp-core": "workspace:*",
+    "@cfd/obp-tools": "workspace:*",
+    "ai": "^6",
+    "zod": "^4.3.6"
+  },
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "example": "bun --hot examples/index.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@xyflow/react": "^12.10.2",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

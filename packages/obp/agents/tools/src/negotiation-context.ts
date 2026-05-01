@@ -1,6 +1,5 @@
 import type { ObpClient, ObpPersistence } from "@cfd/obp-core";
-import { validateBindPreconditions } from "@cfd/obp-core";
-import { parsePriceFromType } from "./encoding.ts";
+import { listBindableCounterpartyPorts } from "./bindable-counterparty-ports.ts";
 import type { ObpNegotiationToolContext, ObpToolkitEnv } from "./obp-toolkit-env.ts";
 
 export type {
@@ -69,8 +68,30 @@ export async function computeNegotiationContext(args: {
   const revokeOfferIds = new Set<string>();
 
   const edges = client.listExposedPortEdges();
-  const portsById = persistence.getPortsSnapshot();
   const binds = persistence.listBinds();
+
+  const bindable = await listBindableCounterpartyPorts({
+    client,
+    persistence,
+    actingPartyId,
+    now,
+    validateBind,
+  });
+  for (const { offerId, portId } of bindable) {
+    const offerRes = client.getOffer(offerId);
+    const portRes = client.getPort(portId);
+    if (offerRes.kind === "notFound" || portRes.kind === "notFound") {
+      continue;
+    }
+    const offer = offerRes.offer;
+    const port = portRes.port;
+    bindChoices.push({
+      toolName: toolNameBind(portId),
+      description: `Bind to this port on the counterparty's offer. Offer: "${offer.type}"; port: "${port.type}" (terminal=${port.terminal}).`,
+      offerId,
+      portId,
+    });
+  }
 
   for (const { offerId, portId } of edges) {
     const owner = client.getExtendingPartyId(offerId);
@@ -93,42 +114,7 @@ export async function computeNegotiationContext(args: {
         portId,
       });
       revokeOfferIds.add(offerId);
-      continue;
     }
-
-    const fail = validateBindPreconditions({
-      now,
-      offer,
-      port,
-      portsById,
-      targetPortIsExposed: persistence.isPortExposed(portId),
-      binds,
-    });
-    if (fail !== null) {
-      continue;
-    }
-
-    if (validateBind) {
-      try {
-        await validateBind({
-          actingPartyId,
-          offerId,
-          portId,
-          offerOwnerPartyId: owner,
-          port,
-          price: parsePriceFromType(port.type),
-        });
-      } catch {
-        continue;
-      }
-    }
-
-    bindChoices.push({
-      toolName: toolNameBind(portId),
-      description: `Bind to this port on the counterparty's offer. Offer: "${offer.type}"; port: "${port.type}" (terminal=${port.terminal}).`,
-      offerId,
-      portId,
-    });
   }
 
   const revokeOfferChoices: ObpNegotiationToolContext["revokeOfferChoices"] = [];

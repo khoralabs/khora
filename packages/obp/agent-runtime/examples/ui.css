@@ -1,0 +1,260 @@
+html {
+  height: 100%;
+}
+
+body {
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    sans-serif;
+  margin: 0;
+  padding: 0.75rem 0 1rem;
+  line-height: 1.4;
+  color: #1a1a1a;
+  height: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+#root {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.negotiation-shell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Keep readable gutters for chrome only; DAG (`panel--dag`) stays edge-to-edge */
+.negotiation-main.negotiation-main--stack > #llm-banner,
+.negotiation-main.negotiation-main--stack > #err {
+  padding-left: 1rem;
+  padding-right: 1rem;
+  box-sizing: border-box;
+}
+
+.negotiation-main.negotiation-main--stack {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 0;
+}
+
+.negotiation-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem 1rem;
+  padding: 0.15rem 1rem 0.5rem;
+  box-sizing: border-box;
+}
+
+.toolbar-log {
+  margin: 0;
+  flex: 1;
+  min-width: min(100%, 200px);
+  max-width: 52rem;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: #333;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  background: #f4f4f4;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 0.35rem 0.5rem;
+}
+
+.toolbar-log--muted {
+  color: #666;
+  font-style: italic;
+}
+
+.toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.toolbar-actions button {
+  margin-right: 0;
+}
+
+.toolbar-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.toolbar-actions button.btn-next {
+  outline: 2px solid #1565c0;
+  outline-offset: 1px;
+}
+
+.toolbar-actions button.btn-toolbar-reset {
+  color: #444;
+  background: #f8f8f8;
+  border: 1px solid #bbb;
+}
+
+.panel {
+  margin-top: 0.75rem;
+}
+
+.panel.panel--dag {
+  flex: 1;
+  min-height: 0;
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.err {
+  color: #b00020;
+  white-space: pre-wrap;
+  font-size: 0.875rem;
+  margin: 0.5rem 0;
+}
+
+.activity {
+  margin: 0.35rem 0 0;
+  font-size: 0.875rem;
+  color: #1565c0;
+}
+
+.negotiation-main.negotiation-main--stack > .activity {
+  padding-left: 1rem;
+  padding-right: 1rem;
+  box-sizing: border-box;
+}
+
+.activity[hidden] {
+  display: none;
+}
+
+.graph-wrap {
+  overflow: auto;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fafafa;
+}
+
+.graph-wrap--dag-placeholder {
+  flex: 1;
+  min-height: 12rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.graph-wrap svg {
+  display: block;
+}
+
+/*
+ * React Flow must fill a box with non-zero computed height. Percentage heights on nested
+ * flex children are unreliable; use flex growth + absolute fill for `.react-flow`.
+ */
+.negotiation-flow-host {
+  width: 100%;
+  flex: 1 1 0;
+  min-height: 280px;
+  position: relative;
+  border: solid #ccc;
+  border-width: 1px 0;
+  border-radius: 0;
+  background: #fafafa;
+}
+
+.negotiation-flow-host .react-flow {
+  position: absolute;
+  inset: 0;
+  border-radius: 0;
+}
+
+.negotiation-flow-host .react-flow .react-flow__renderer {
+  width: 100%;
+  height: 100%;
+}
+
+/* Controls sit in the pane; keep them above edges/nodes */
+.negotiation-flow-host .react-flow__controls {
+  z-index: 10;
+}
+
+.negotiation-flow-host .react-flow__panel {
+  z-index: 11;
+}
+
+.dag-detail-billboard {
+  max-width: min(22rem, 86vw);
+  max-height: min(70vh, 28rem);
+  overflow: auto;
+  margin: 0.5rem;
+  box-sizing: border-box;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  background: #fff;
+  border: 1px solid #c4c4c4;
+  border-radius: 6px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  text-align: left;
+}
+
+.dag-detail-billboard--hint {
+  max-width: 14rem;
+  color: #555;
+  max-height: none;
+}
+
+.dag-detail-billboard__title {
+  font-weight: 600;
+  font-size: 0.8rem;
+  margin-bottom: 0.4rem;
+  color: #111;
+}
+
+.dag-detail-billboard__dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.65rem;
+}
+
+.dag-detail-billboard__dl dt {
+  margin: 0;
+  color: #666;
+  font-weight: 500;
+}
+
+.dag-detail-billboard__dl dd {
+  margin: 0;
+  word-break: break-word;
+}
+
+.dag-detail-billboard__wrap {
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+.term {
+  color: #c62828;
+  font-weight: 600;
+}
