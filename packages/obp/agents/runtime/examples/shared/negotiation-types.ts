@@ -43,6 +43,11 @@ export type NextTurn = {
   bindOptions: BindOption[];
 };
 
+export type PartyDisplayNames = {
+  buyer: string;
+  seller: string;
+};
+
 export type StateResponse = {
   graph: GraphSnapshot;
   audits: Audit[];
@@ -53,6 +58,8 @@ export type StateResponse = {
   nextTurn: NextTurn | null;
   negotiationFirst: "buyer" | "seller";
   partyIds: { buyer: string; seller: string };
+  /** Human-facing labels aligned with `partyIds` and persistence party names. */
+  partyDisplayNames: PartyDisplayNames;
   walkAwayRequested: boolean;
   llmConfigured: boolean;
   agreementReached: boolean;

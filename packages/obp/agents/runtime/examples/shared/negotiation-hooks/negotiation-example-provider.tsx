@@ -1,124 +1,98 @@
-import { GraphSnapshotFlowDefaultLayout } from "@cfd/obp-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { NEGOTIATION_TURN_FETCH_TIMEOUT_MS } from "./negotiation-timeouts.ts";
-import type { HealthResponse, StateResponse } from "./negotiation-types.ts";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { NEGOTIATION_TURN_FETCH_TIMEOUT_MS } from "../negotiation-timeouts.ts";
+import type { HealthResponse, PartyDisplayNames, StateResponse } from "../negotiation-types.ts";
+import {
+  defaultPartyDisplayNames,
+  delay,
+  derivePartyButtonState,
+  focusFlowNodeIdsForLastTurn,
+  isAbortLike,
+  joinScenarioApi,
+  logTimestamp,
+  roleDisplayName,
+  shouldRetryTurnFailure,
+  TURN_RETRY_BASE_MS,
+  TURN_RETRY_MAX,
+  type TurnPostResult,
+} from "./utils.ts";
 
-const TURN_RETRY_MAX = 5;
-const TURN_RETRY_BASE_MS = 1200;
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-type TurnFailure = {
-  ok: false;
-  message: string;
-  httpStatus?: number;
-  errorCode?: string;
+export type NegotiationExampleContextValue = {
+  apiBase: string;
+  api: { health: string; state: string; turn: string; reset: string };
+  health: HealthResponse | null;
+  server: StateResponse | null;
+  error: string;
+  activity: string | null;
+  lastLogLine: string | null;
+  turnBusy: boolean;
+  resetBusy: boolean;
+  refresh: (opts?: { clearError?: boolean }) => Promise<void>;
+  onReset: () => Promise<void>;
+  onBuyer: () => void;
+  onSeller: () => void;
+  partyButtonState: ReturnType<typeof derivePartyButtonState>;
+  lastTurnFocusNodeIds: string[] | null;
+  displayNames: PartyDisplayNames;
 };
 
-type TurnPostResult = { ok: true; state: StateResponse } | TurnFailure;
+const NegotiationExampleContext = createContext<NegotiationExampleContextValue | null>(null);
 
-function shouldRetryTurnFailure(f: TurnFailure): boolean {
-  if (f.httpStatus === undefined) {
-    return true;
+export function useNegotiationExample(): NegotiationExampleContextValue {
+  const v = useContext(NegotiationExampleContext);
+  if (v === null) {
+    throw new Error("useNegotiationExample must be used within NegotiationExampleProvider");
   }
-  if (f.httpStatus === 422) {
-    return true;
-  }
-  if (f.httpStatus >= 500 && f.httpStatus <= 599) {
-    if (f.httpStatus === 503 && f.errorCode === "llm_not_configured") {
-      return false;
-    }
-    return true;
-  }
-  return false;
+  return v;
 }
 
-function ts(): string {
-  try {
-    return new Date().toISOString().slice(11, 19);
-  } catch {
-    return "??:??:??";
-  }
-}
+type ExecuteTurnOpts = {
+  onWaitingTick?: (elapsedSec: number) => void;
+};
 
-function isAbortLike(e: unknown): boolean {
-  if (e instanceof DOMException && (e.name === "AbortError" || e.name === "TimeoutError")) {
-    return true;
-  }
-  return e instanceof Error && e.name === "AbortError";
-}
+export function NegotiationExampleProvider({
+  apiBase,
+  children,
+}: {
+  apiBase: string;
+  children: ReactNode;
+}) {
+  const api = useMemo(
+    () => ({
+      health: joinScenarioApi(apiBase, "health"),
+      state: joinScenarioApi(apiBase, "state"),
+      turn: joinScenarioApi(apiBase, "negotiation/turn"),
+      reset: joinScenarioApi(apiBase, "negotiation/reset"),
+    }),
+    [apiBase],
+  );
 
-async function fetchHealth(): Promise<HealthResponse> {
-  const res = await fetch("/api/health");
-  if (!res.ok) {
-    throw new Error(`GET /api/health ${res.status}`);
-  }
-  return (await res.json()) as HealthResponse;
-}
-
-async function fetchState(): Promise<StateResponse> {
-  const res = await fetch("/api/state");
-  if (!res.ok) {
-    throw new Error(`GET /api/state ${res.status}`);
-  }
-  return (await res.json()) as StateResponse;
-}
-
-function deriveButtonState(
-  s: StateResponse | null,
-  h: HealthResponse | null,
-  busy: boolean,
-): {
-  buyerDisabled: boolean;
-  sellerDisabled: boolean;
-  buyerNext: boolean;
-  sellerNext: boolean;
-} {
-  if (!s || !h || busy) {
-    return { buyerDisabled: true, sellerDisabled: true, buyerNext: false, sellerNext: false };
-  }
-  const globallyOff =
-    !h.llmReady || !s.llmConfigured || s.negotiationEnded || s.turnsCompleted >= s.maxTurns;
-  if (globallyOff) {
-    return { buyerDisabled: true, sellerDisabled: true, buyerNext: false, sellerNext: false };
-  }
-  const nt = s.nextTurn;
-  if (nt !== null) {
-    const wantBuyer = nt.actingRole === "buyer";
-    return {
-      buyerDisabled: !wantBuyer,
-      sellerDisabled: wantBuyer,
-      buyerNext: wantBuyer,
-      sellerNext: !wantBuyer,
-    };
-  }
-  return { buyerDisabled: false, sellerDisabled: false, buyerNext: false, sellerNext: false };
-}
-
-/** React Flow node ids for the offer + ports introduced on the last completed turn. */
-function focusFlowNodeIdsForLastTurn(s: StateResponse): string[] | null {
-  const last = s.audits.at(-1);
-  if (last === undefined) {
-    return null;
-  }
-  return [`offer:${last.newOfferId}`, ...last.exposedPortIds.map((id) => `port:${id}`)];
-}
-
-export function NegotiationApp() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [server, setServer] = useState<StateResponse | null>(null);
+  const serverRef = useRef<StateResponse | null>(null);
+  useEffect(() => {
+    serverRef.current = server;
+  }, [server]);
+
   const [error, setError] = useState("");
   const [activity, setActivity] = useState<string | null>(null);
   const [lastLogLine, setLastLogLine] = useState<string | null>(null);
   const [turnBusy, setTurnBusy] = useState(false);
   const [resetBusy, setResetBusy] = useState(false);
-  /** Bumped when the user resets the session so in-flight auto-run loops exit cleanly. */
   const sessionGenerationRef = useRef(0);
 
+  const displayNames = server?.partyDisplayNames ?? defaultPartyDisplayNames;
+
   const appendLog = useCallback((message: string) => {
-    setLastLogLine(`${ts()} ${message}`);
+    setLastLogLine(`${logTimestamp()} ${message}`);
   }, []);
 
   const lastTurnFocusNodeIds = useMemo(() => {
@@ -127,6 +101,22 @@ export function NegotiationApp() {
     }
     return focusFlowNodeIdsForLastTurn(server);
   }, [server]);
+
+  const fetchHealth = useCallback(async (): Promise<HealthResponse> => {
+    const res = await fetch(api.health);
+    if (!res.ok) {
+      throw new Error(`GET ${api.health} ${res.status}`);
+    }
+    return (await res.json()) as HealthResponse;
+  }, [api.health]);
+
+  const fetchState = useCallback(async (): Promise<StateResponse> => {
+    const res = await fetch(api.state);
+    if (!res.ok) {
+      throw new Error(`GET ${api.state} ${res.status}`);
+    }
+    return (await res.json()) as StateResponse;
+  }, [api.state]);
 
   const refresh = useCallback(
     async (opts?: { clearError?: boolean }) => {
@@ -145,13 +135,8 @@ export function NegotiationApp() {
         appendLog(`✗ refresh: ${msg}`);
       }
     },
-    [appendLog],
+    [appendLog, fetchHealth, fetchState],
   );
-
-  type ExecuteTurnOpts = {
-    /** Called every 5s while waiting on the server (elapsed seconds). */
-    onWaitingTick?: (elapsedSec: number) => void;
-  };
 
   const executeOneTurn = useCallback(
     async (actingPartyId: string, opts?: ExecuteTurnOpts): Promise<TurnPostResult> => {
@@ -162,7 +147,7 @@ export function NegotiationApp() {
         tick = setInterval(() => onWaitingTick(Math.floor((Date.now() - t0) / 1000)), 5000);
       }
       try {
-        const res = await fetch("/api/negotiation/turn", {
+        const res = await fetch(api.turn, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ actingPartyId }),
@@ -218,7 +203,7 @@ export function NegotiationApp() {
         }
       }
     },
-    [],
+    [api.turn, fetchHealth, fetchState],
   );
 
   const executeOneTurnWithRetries = useCallback(
@@ -227,6 +212,8 @@ export function NegotiationApp() {
       actingRole: "buyer" | "seller",
       executeOpts?: ExecuteTurnOpts,
     ): Promise<TurnPostResult> => {
+      const names = serverRef.current?.partyDisplayNames ?? defaultPartyDisplayNames;
+      const roleLabel = roleDisplayName(names, actingRole);
       let last: TurnPostResult = { ok: false, message: "no attempt" };
       for (let attempt = 1; attempt <= TURN_RETRY_MAX; attempt++) {
         last = await executeOneTurn(actingPartyId, executeOpts);
@@ -239,7 +226,7 @@ export function NegotiationApp() {
         }
         const wait = TURN_RETRY_BASE_MS * 2 ** (attempt - 1);
         appendLog(
-          `⚠ ${actingRole}: attempt ${attempt}/${TURN_RETRY_MAX} failed, retry in ${wait}ms — ${last.message}`,
+          `⚠ ${roleLabel}: attempt ${attempt}/${TURN_RETRY_MAX} failed, retry in ${wait}ms — ${last.message}`,
         );
         setActivity(`Retry ${attempt + 1}/${TURN_RETRY_MAX} after ${wait}ms…`);
         await delay(wait);
@@ -255,7 +242,7 @@ export function NegotiationApp() {
     });
   }, [refresh, appendLog]);
 
-  const btn = deriveButtonState(server, health, turnBusy);
+  const partyButtonState = derivePartyButtonState(server, health, turnBusy);
 
   const runAutoNegotiation = useCallback(
     async (clickedRole: "buyer" | "seller") => {
@@ -271,9 +258,12 @@ export function NegotiationApp() {
         return;
       }
 
+      const names0 = server.partyDisplayNames;
+      const clickedLabel = roleDisplayName(names0, clickedRole);
+
       setTurnBusy(true);
       setError("");
-      appendLog(`→ Auto-run started (${clickedRole} next)…`);
+      appendLog(`→ Auto-run started (${clickedLabel} next)…`);
 
       try {
         let s = server;
@@ -297,13 +287,15 @@ export function NegotiationApp() {
           }
 
           const { actingPartyId, actingRole } = s.nextTurn;
-          setActivity(`Auto-run: ${actingRole} · ${s.turnsCompleted + 1}/${s.maxTurns}…`);
-          appendLog(`→ ${actingRole}: LLM turn starting…`);
+          const names = s.partyDisplayNames;
+          const actingLabel = roleDisplayName(names, actingRole);
+          setActivity(`Auto-run: ${actingLabel} · ${s.turnsCompleted + 1}/${s.maxTurns}…`);
+          appendLog(`→ ${actingLabel}: LLM turn starting…`);
 
           const r = await executeOneTurnWithRetries(actingPartyId, actingRole, {
             onWaitingTick: (sec) => {
               setActivity(
-                `Auto-run: ${actingRole} · ${s.turnsCompleted + 1}/${s.maxTurns} · waiting ${sec}s…`,
+                `Auto-run: ${actingLabel} · ${s.turnsCompleted + 1}/${s.maxTurns} · waiting ${sec}s…`,
               );
             },
           });
@@ -312,14 +304,14 @@ export function NegotiationApp() {
             break;
           }
           if (!r.ok) {
-            appendLog(`✗ ${actingRole}: ${r.message}`);
+            appendLog(`✗ ${actingLabel}: ${r.message}`);
             setError(r.message);
             await refresh({ clearError: false });
             break;
           }
 
           s = r.state;
-          appendLog(`✓ ${actingRole}: ok · turns ${s.turnsCompleted}/${s.maxTurns}`);
+          appendLog(`✓ ${actingLabel}: ok · turns ${s.turnsCompleted}/${s.maxTurns}`);
           if (s.agreementReached) {
             appendLog("✓ Agreement reached (terminal bind).");
           }
@@ -342,13 +334,13 @@ export function NegotiationApp() {
     [turnBusy, server, health, appendLog, executeOneTurnWithRetries, refresh],
   );
 
-  const onBuyer = () => {
+  const onBuyer = useCallback(() => {
     void runAutoNegotiation("buyer");
-  };
+  }, [runAutoNegotiation]);
 
-  const onSeller = () => {
+  const onSeller = useCallback(() => {
     void runAutoNegotiation("seller");
-  };
+  }, [runAutoNegotiation]);
 
   const onReset = useCallback(async () => {
     if (!server) {
@@ -358,7 +350,7 @@ export function NegotiationApp() {
     setResetBusy(true);
     setError("");
     try {
-      const res = await fetch("/api/negotiation/reset", { method: "POST" });
+      const res = await fetch(api.reset, { method: "POST" });
       let body: { ok?: boolean; error?: string; state?: StateResponse };
       try {
         body = (await res.json()) as typeof body;
@@ -385,89 +377,48 @@ export function NegotiationApp() {
     } finally {
       setResetBusy(false);
     }
-  }, [appendLog, refresh, server]);
+  }, [appendLog, refresh, server, api.reset, fetchHealth]);
+
+  const value = useMemo(
+    (): NegotiationExampleContextValue => ({
+      apiBase,
+      api,
+      health,
+      server,
+      error,
+      activity,
+      lastLogLine,
+      turnBusy,
+      resetBusy,
+      refresh,
+      onReset,
+      onBuyer,
+      onSeller,
+      partyButtonState,
+      lastTurnFocusNodeIds,
+      displayNames,
+    }),
+    [
+      apiBase,
+      api,
+      health,
+      server,
+      error,
+      activity,
+      lastLogLine,
+      turnBusy,
+      resetBusy,
+      refresh,
+      onReset,
+      onBuyer,
+      onSeller,
+      partyButtonState,
+      lastTurnFocusNodeIds,
+      displayNames,
+    ],
+  );
 
   return (
-    <div className="negotiation-shell">
-      <div className="negotiation-main negotiation-main--stack">
-        <div className="negotiation-toolbar">
-          <p
-            className={`toolbar-log${lastLogLine === null ? " toolbar-log--muted" : ""}`}
-            role="status"
-            aria-live="polite"
-          >
-            {lastLogLine ?? "Ready — click Buyer or Seller to run the LLM."}
-          </p>
-          <div className="toolbar-actions">
-            <button
-              id="negotiation-reset"
-              type="button"
-              className="btn-toolbar-reset"
-              disabled={!server || resetBusy}
-              onClick={() => void onReset()}
-            >
-              Reset
-            </button>
-            <button
-              id="buyer-turn"
-              type="button"
-              className={btn.buyerNext ? "btn-next" : undefined}
-              disabled={btn.buyerDisabled || !server}
-              onClick={() => void onBuyer()}
-            >
-              Buyer (LLM)
-            </button>
-            <button
-              id="seller-turn"
-              type="button"
-              className={btn.sellerNext ? "btn-next" : undefined}
-              disabled={btn.sellerDisabled || !server}
-              onClick={() => void onSeller()}
-            >
-              Seller (LLM)
-            </button>
-          </div>
-        </div>
-
-        <div id="llm-banner">
-          {health && !health.llmReady ? (
-            <p className="err">
-              <strong>No LLM key.</strong> Set <code>GOOGLE_GENERATIVE_AI_API_KEY</code>,{" "}
-              <code>GOOGLE_API_KEY</code>, or <code>GEMINI_API_KEY</code> for the server.
-            </p>
-          ) : null}
-        </div>
-
-        <p
-          id="activity"
-          className="activity"
-          role="status"
-          aria-live="polite"
-          hidden={activity === null || activity === ""}
-        >
-          {activity ?? ""}
-        </p>
-
-        <div id="err" className="err">
-          {error}
-        </div>
-
-        <section className="panel panel--dag" aria-label="Negotiation graph">
-          {server ? (
-            <GraphSnapshotFlowDefaultLayout
-              key={server.partyIds.buyer}
-              graph={server.graph}
-              focusNodeIds={lastTurnFocusNodeIds}
-            />
-          ) : (
-            <div className="graph-wrap graph-wrap--dag-placeholder">
-              <p className="row">
-                <em>Loading graph…</em>
-              </p>
-            </div>
-          )}
-        </section>
-      </div>
-    </div>
+    <NegotiationExampleContext.Provider value={value}>{children}</NegotiationExampleContext.Provider>
   );
 }

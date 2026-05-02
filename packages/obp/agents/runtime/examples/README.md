@@ -1,6 +1,6 @@
-# OBP agent-runtime negotiation web example (LLM)
+# OBP agent-runtime examples (LLM)
 
-Tiny **Bun** server: in-memory `FakeObpPersistence` (not SQLite), **Gemini** structured turns via [`NegotiationRuntime`](../src/runtime.ts), and a **React** UI with [**React Flow**](https://reactflow.dev/api-reference) for the negotiation DAG (pan/zoom).
+Tiny **Bun** server with multiple **scenarios**, each with its own HTML entry and **namespaced API**. Uses in-memory `FakeObpPersistence` (not SQLite), **Gemini** structured turns via the bilateral coordinator contract, and [**React Flow**](https://reactflow.dev/api-reference) (`@cfd/obp-react`) for the negotiation DAG.
 
 The UI libraries (`react`, `react-dom`, `@xyflow/react`) are **`devDependencies`** of this package—they are **not** imported by the library entrypoint. Run `bun install` without **`--production`** so `bun run example` can bundle the UI.
 
@@ -14,38 +14,54 @@ The UI libraries (`react`, `react-dom`, `@xyflow/react`) are **`devDependencies`
 Optional:
 
 - `OBP_NEGOTIATION_MODEL` (default `gemini-flash-lite-latest`).
-- **`NEGOTIATION_FIRST`** — `buyer` or `seller` (default **`seller`**). That party takes the **opening** structured turn when the graph is empty (`extend` with no bind + `expose`). The other party responds next; turns then alternate.
+- **`NEGOTIATION_FIRST`** — `buyer` or `seller` (default **`seller`**). Applies to **every** scenario session: that party opens when the graph is empty.
 
-Never put the key in the browser; the UI only calls same-origin HTTP APIs.
+Never put the key in the browser; each scenario UI only calls same-origin APIs under its prefix.
 
 ## Run
 
-From [`packages/obp/agent-runtime`](../):
+From [`packages/obp/agents/runtime`](../):
 
 ```sh
 bun run example
 ```
 
-Open the printed URL (default port **3456**; override with `PORT`).
+Open the printed URLs (default port **3456**; override with `PORT`):
 
-## HTTP API
+- **`/`** — home page listing scenarios
+- **`/scenarios/bilateral`** — bilateral pilot delivery (original demo narrative)
+- **`/scenarios/intent-overlap`** — overlapping vs differing intents narrative
+
+## Layout
+
+| Path | Role |
+|------|------|
+| [`routes/index.html`](routes/index.html) / [`routes/main.tsx`](routes/main.tsx) | Home |
+| [`scenarios/<slug>/index.html`](scenarios/bilateral/index.html) | Per-scenario shell |
+| [`scenarios/<slug>/main.tsx`](scenarios/bilateral/main.tsx) | Mounts [`shared/negotiation-app.tsx`](shared/negotiation-app.tsx) with `apiBase` |
+| [`scenarios/<slug>/scenario.ts`](scenarios/bilateral/scenario.ts) | Prompt copy for that scenario |
+| [`shared/negotiation-scenario-session.ts`](shared/negotiation-scenario-session.ts) | Shared server session factory |
+
+## HTTP API (per scenario)
+
+Replace `<slug>` with `bilateral` or `intent-overlap`. Each slug has **isolated** session state (separate parties, ledger, mutex).
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/api/health` | `{ "llmReady": boolean }` |
-| `GET` | `/api/state` | Graph snapshot, `audits` (per-turn bind menu vs choice), `partyIds`, `nextActorHint`, `nextTurn` (genesis vs bind options for the party whose move it is), `negotiationFirst`, `agreementReached`, etc. |
-| `POST` | `/api/negotiation/turn` | Body: `{ "actingPartyId": "<uuid>" }`. Runs one Gemini turn for that party. **`400`** `wrong_turn_party` if it is not that party’s turn; **`503`** if no API key; **`422`** if structured output invalid. |
+| `GET` | `/api/scenarios/<slug>/health` | `{ "llmReady": boolean }` |
+| `GET` | `/api/scenarios/<slug>/state` | Graph snapshot, audits, `partyIds`, `partyDisplayNames`, `nextTurn`, etc. |
+| `POST` | `/api/scenarios/<slug>/negotiation/turn` | Body: `{ "actingPartyId": "<uuid>" }`. Same errors as before (`wrong_turn_party`, `llm_not_configured`, …). |
+| `POST` | `/api/scenarios/<slug>/negotiation/reset` | Resets **only** that slug’s session. |
 
-The UI exposes **Buyer** and **Seller** buttons. Click the **highlighted** party once to **auto-run** every remaining LLM turn until the negotiation ends, hits max turns, or errors—each step still posts that party’s id from server `nextTurn`.
+The UI exposes two party buttons whose labels come from **`partyDisplayNames`** in state (defaults **Buyer** / **Seller**; scenarios may override). Click the **highlighted** party once to **auto-run** remaining turns until completion or error. Turn errors such as `wrong_turn_party` may include an **`expectedParty`** string using that display name.
 
 ## Behaviour
 
-- **Port TTL (demo default):** the example runtime sets **`allowAgentPortTtl: false`** and **`defaultPortTtl: { basis: "turns", measure: 1 }`**, so the host pins a **one completed-turn** bind window per exposed port. The graph snapshot’s **`expired`** flag for ports uses that turn window as well as wall-clock `ts_expired`; the demo clock (`clock.t`) may stay nearly static, so turn-based expiry is what tightens the bind menu as turns advance.
-- **Opening (no seed graph):** the first actor extends with **`bindPortId: ""`** and exposes ports they invent (`prepareGenesisTurn` / `applyGenesisTurn`). Later turns use **`prepareActingTurn`** → bind a counterparty port → extend → expose.
-- **Bind choice:** structured bind turns use **one top-level JSON key per turn**, and that key must be the **`portId`** of the counterparty affordance you bind (the example server lists each id with type and `description`). For ports without bind policy, the value must be the string **`obp:bind`** (Gemini structured output cannot represent boolean literals in schema enums); ports with policy use a **policy-shaped object**. Terminal ports require omitting `ports` from the output.
-- **Scenario:** shared joint goal and peer-authored `offerType` / `portType` strings live in [`scenario.ts`](scenario.ts) and are injected into agent instructions and each turn’s user message.
-- **Common ground:** when the last completed turn is a **real** bind to a **terminal** port, `agreementReached` is true and **`negotiationEnded`** is also true (no further turns are offered; POST returns `negotiation_ended`).
-- **Concurrency:** turns are serialized with an in-memory mutex so parallel POSTs cannot interleave graph updates.
+- **Port TTL:** `allowAgentPortTtl: false`, `defaultPortTtl: { basis: "turns", measure: 1 }` — same as the former single-demo server.
+- **Bind choice:** unchanged structured-output rules (`obp:bind`, policy-shaped objects, terminal binds omit `ports`).
+- **Scenario copy:** lives under each [`scenarios/<slug>/scenario.ts`](scenarios/bilateral/scenario.ts); injected into contract user message and party identities.
+- **Agreement:** terminal **real** bind sets `agreementReached` and ends negotiation for that slug only.
+- **Concurrency:** each slug has its own turn mutex; different scenarios can be used from different tabs without sharing graph state.
 
 ## Policy (not in this demo)
 

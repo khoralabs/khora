@@ -3,7 +3,6 @@ import {
   ensureObpNegotiatorStructuredAgentRegistered,
   type ObpNegotiatorStructuredSessionContext,
 } from "@cfd/obp-negotiator";
-import { scenarioBlockForIdentity } from "./scenario.ts";
 
 export type NegotiationPartyIdentities = {
   registry: ReturnType<typeof createAgentRegistry>;
@@ -11,31 +10,35 @@ export type NegotiationPartyIdentities = {
   seller: RegisteredAgentIdentity;
 };
 
+export type NegotiationScenarioIdentityOptions = {
+  scenarioBlockForIdentity: (isBuyer: boolean) => string;
+  partyDisplayNames: { buyer: string; seller: string };
+};
+
 /**
  * Builds a fresh registry with the buyer + seller negotiator identities. Each
  * party gets the OBP negotiator base instructions plus its private scenario
  * block as additional instructions.
- *
- * The agent identity itself lives in `@cfd/obp-negotiator`; the example only
- * supplies role text and registers the structured-output session runner.
  */
-export async function createNegotiationPartyIdentities(): Promise<NegotiationPartyIdentities> {
+export async function createNegotiationPartyIdentities(
+  opts: NegotiationScenarioIdentityOptions,
+): Promise<NegotiationPartyIdentities> {
   const registry = createAgentRegistry();
 
   const { identity: buyer } = await ensureObpNegotiatorStructuredAgentRegistered(
     registry,
     "demo-buyer",
     {
-      name: "Buyer",
-      instructions: [scenarioBlockForIdentity(true)],
+      name: opts.partyDisplayNames.buyer,
+      instructions: [opts.scenarioBlockForIdentity(true)],
     },
   );
   const { identity: seller } = await ensureObpNegotiatorStructuredAgentRegistered(
     registry,
     "demo-seller",
     {
-      name: "Seller",
-      instructions: [scenarioBlockForIdentity(false)],
+      name: opts.partyDisplayNames.seller,
+      instructions: [opts.scenarioBlockForIdentity(false)],
     },
   );
 

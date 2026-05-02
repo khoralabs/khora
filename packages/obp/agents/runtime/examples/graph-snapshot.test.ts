@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { ObpClient } from "@cfd/obp-core";
 import { FakeObpPersistence } from "@cfd/obp-core/testing";
 import { expiresAtFromHours } from "@cfd/obp-tools";
-import { buildGraphSnapshot } from "./graph-snapshot.ts";
+import { buildGraphSnapshot } from "./shared/graph-snapshot.ts";
 
 test("buildGraphSnapshot returns parties offers ports and edges", () => {
   const now = () => 1_700_000_000_000;

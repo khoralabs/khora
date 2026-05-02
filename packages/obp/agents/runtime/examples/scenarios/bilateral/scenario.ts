@@ -1,6 +1,13 @@
 /**
- * Shared scenario for the OBP negotiation demo: joint goal and encoding rules (not an enumerable glossary).
+ * Bilateral pilot delivery scenario: joint goal and encoding rules (not an enumerable glossary).
  */
+
+import type { PartyDisplayNames } from "../../shared/negotiation-types.ts";
+
+export const partyDisplayNames: PartyDisplayNames = {
+  buyer: "Buyer",
+  seller: "Seller",
+};
 
 /** Hint only for humans/README; the protocol does not validate this prefix. */
 export const AGREEMENT_PORT_TYPE_PREFIX = "agreement.";
