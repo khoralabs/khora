@@ -1,9 +1,10 @@
 import type { Offer, Port } from "../model/types";
-import { isOfferValidAt, isPortValidAt } from "./expiry";
+import { isOfferValidAtLedgerSeq, isPortValidAtLedgerSeq } from "./expiry";
 import { resolveCanonicalPortId } from "./ref";
 
 export type BindValidationInput = {
-  now: number;
+  /** Current ledger sequence for expiry checks. */
+  ledgerSeq: number;
   offer: Offer;
   /** Port referenced by bind (by id). */
   port: Port;
@@ -28,12 +29,12 @@ export type BindValidationFailure =
 export function validateBindPreconditions(
   input: BindValidationInput,
 ): BindValidationFailure | null {
-  const { now, offer, port, portsById, targetPortIsExposed, binds } = input;
+  const { ledgerSeq, offer, port, portsById, targetPortIsExposed, binds } = input;
 
-  if (!isOfferValidAt(offer, now)) {
+  if (!isOfferValidAtLedgerSeq(offer, ledgerSeq)) {
     return { code: "EXPIRED", entity: "offer" };
   }
-  if (!isPortValidAt(port, now)) {
+  if (!isPortValidAtLedgerSeq(port, ledgerSeq)) {
     return { code: "EXPIRED", entity: "port" };
   }
 

@@ -24,23 +24,23 @@ import {
 
 type PartyRow = {
   id: string;
-  ts_created: number;
+  created_seq: number;
   name: string;
   sourcemaps_json: string;
 };
 
 type OfferRow = {
   id: string;
-  ts_created: number;
-  ts_expired: number;
+  created_seq: number;
+  expires_seq: number;
   type: string;
   sourcemaps_json: string;
 };
 
 type PortRow = {
   id: string;
-  ts_created: number;
-  ts_expired: number;
+  created_seq: number;
+  expires_seq: number;
   type: string;
   promise: string | null;
   max_bindings: number;
@@ -49,7 +49,7 @@ type PortRow = {
   sourcemaps_json: string;
   ttl_basis: string | null;
   ttl_measure: number | null;
-  expose_turn_index: number | null;
+  expose_seq: number | null;
   bind_policy_json: string | null;
 };
 
@@ -79,7 +79,7 @@ function stringifySourcemaps(s: SourceMapRef[]): string {
 function rowToParty(r: PartyRow): Party {
   return {
     id: r.id,
-    ts_created: r.ts_created,
+    created_seq: r.created_seq,
     name: r.name,
     sourcemaps: parseSourcemaps(r.sourcemaps_json),
   };
@@ -88,8 +88,8 @@ function rowToParty(r: PartyRow): Party {
 function rowToOffer(r: OfferRow): Offer {
   return {
     id: r.id,
-    ts_created: r.ts_created,
-    ts_expired: r.ts_expired,
+    created_seq: r.created_seq,
+    expires_seq: r.expires_seq,
     type: r.type,
     sourcemaps: parseSourcemaps(r.sourcemaps_json),
   };
@@ -137,10 +137,7 @@ function parseNegotiationTtlBasis(raw: string | null): NegotiationPortTtlBasis |
   if (raw === null || raw === "") return undefined;
   switch (raw) {
     case "turns":
-    case "seconds":
-    case "minutes":
-    case "hours":
-    case "days":
+    case "ledger_seq":
       return raw;
     default:
       return undefined;
@@ -150,8 +147,8 @@ function parseNegotiationTtlBasis(raw: string | null): NegotiationPortTtlBasis |
 function rowToPort(r: PortRow): Port {
   const port: Port = {
     id: r.id,
-    ts_created: r.ts_created,
-    ts_expired: r.ts_expired,
+    created_seq: r.created_seq,
+    expires_seq: r.expires_seq,
     type: r.type,
     promise: r.promise ?? "",
     max_bindings: r.max_bindings,
@@ -164,8 +161,8 @@ function rowToPort(r: PortRow): Port {
     port.ttl_basis = tb;
     port.ttl_measure = r.ttl_measure;
   }
-  if (r.expose_turn_index !== null && r.expose_turn_index !== undefined) {
-    port.expose_turn_index = r.expose_turn_index;
+  if (r.expose_seq !== null && r.expose_seq !== undefined) {
+    port.expose_seq = r.expose_seq;
   }
   const bp = parseBindPolicyJson(r.bind_policy_json);
   if (bp !== undefined) {
@@ -199,22 +196,22 @@ function throwBindFailure(failure: BindValidationFailure): never {
 export class ObpSqlitePersistence implements ObpPersistence {
   constructor(
     private readonly db: Database,
-    private readonly now: () => number = () => Date.now(),
+    private readonly ledgerSeq: () => number,
   ) {}
 
   registerParty(input: RegisterPartyInput): { party: Party } {
     return this.db.transaction(() => {
       const id = crypto.randomUUID();
-      const ts = this.now();
+      const seq = this.ledgerSeq();
       const smJson = stringifySourcemaps(input.sourcemaps);
       this.db.run(
-        `INSERT INTO obp_parties (id, ts_created, name, sourcemaps_json) VALUES (?, ?, ?, ?)`,
-        [id, ts, input.name, smJson],
+        `INSERT INTO obp_parties (id, created_seq, name, sourcemaps_json) VALUES (?, ?, ?, ?)`,
+        [id, seq, input.name, smJson],
       );
       return {
         party: {
           id,
-          ts_created: ts,
+          created_seq: seq,
           name: input.name,
           sourcemaps: parseSourcemaps(smJson),
         },
@@ -225,7 +222,7 @@ export class ObpSqlitePersistence implements ObpPersistence {
   getParty(id: string): GetPartyResult {
     const row = this.db
       .query<PartyRow, [string]>(
-        `SELECT id, ts_created, name, sourcemaps_json FROM obp_parties WHERE id = ?`,
+        `SELECT id, created_seq, name, sourcemaps_json FROM obp_parties WHERE id = ?`,
       )
       .get(id);
     if (!row) return { kind: "notFound" };
@@ -235,7 +232,7 @@ export class ObpSqlitePersistence implements ObpPersistence {
   getOffer(id: string): GetOfferResult {
     const row = this.db
       .query<OfferRow, [string]>(
-        `SELECT id, ts_created, ts_expired, type, sourcemaps_json FROM obp_offers WHERE id = ?`,
+        `SELECT id, created_seq, expires_seq, type, sourcemaps_json FROM obp_offers WHERE id = ?`,
       )
       .get(id);
     if (!row) return { kind: "notFound" };
@@ -245,7 +242,7 @@ export class ObpSqlitePersistence implements ObpPersistence {
   getPort(id: string): GetPortResult {
     const row = this.db
       .query<PortRow, [string]>(
-        `SELECT id, ts_created, ts_expired, type, promise, max_bindings, terminal, ref, sourcemaps_json, ttl_basis, ttl_measure, expose_turn_index, bind_policy_json FROM obp_ports WHERE id = ?`,
+        `SELECT id, created_seq, expires_seq, type, promise, max_bindings, terminal, ref, sourcemaps_json, ttl_basis, ttl_measure, expose_seq, bind_policy_json FROM obp_ports WHERE id = ?`,
       )
       .get(id);
     if (!row) return { kind: "notFound" };
@@ -266,26 +263,24 @@ export class ObpSqlitePersistence implements ObpPersistence {
     return rows.map((r) => ({ offerId: r.offer_id, portId: r.port_id }));
   }
 
-  setPortExpiredNow(portId: string): void {
+  setPortExpiresSeq(portId: string, expiresSeq: number): void {
     const pr = this.getPort(portId);
     if (pr.kind === "notFound") {
       throw new ObpError("NOT_FOUND", `Port not found: ${portId}`);
     }
-    const ts = this.now();
-    this.db.run(`UPDATE obp_ports SET ts_expired = ? WHERE id = ?`, [ts, portId]);
+    this.db.run(`UPDATE obp_ports SET expires_seq = ? WHERE id = ?`, [expiresSeq, portId]);
   }
 
-  setOfferExpiredNow(offerId: string): void {
+  setOfferExpiresSeq(offerId: string, expiresSeq: number): void {
     const or = this.getOffer(offerId);
     if (or.kind === "notFound") {
       throw new ObpError("NOT_FOUND", `Offer not found: ${offerId}`);
     }
     this.db.transaction(() => {
-      const ts = this.now();
-      this.db.run(`UPDATE obp_offers SET ts_expired = ? WHERE id = ?`, [ts, offerId]);
+      this.db.run(`UPDATE obp_offers SET expires_seq = ? WHERE id = ?`, [expiresSeq, offerId]);
       this.db.run(
-        `UPDATE obp_ports SET ts_expired = ? WHERE id IN (SELECT port_id FROM obp_exposes WHERE offer_id = ?)`,
-        [ts, offerId],
+        `UPDATE obp_ports SET expires_seq = ? WHERE id IN (SELECT port_id FROM obp_exposes WHERE offer_id = ?)`,
+        [expiresSeq, offerId],
       );
     })();
   }
@@ -300,29 +295,29 @@ export class ObpSqlitePersistence implements ObpPersistence {
       }
 
       const offerId = input.offer.id.trim() !== "" ? input.offer.id : crypto.randomUUID();
-      const ts = this.now();
+      const seq = this.ledgerSeq();
       const offer: Offer = {
         ...input.offer,
         id: offerId,
-        ts_created: ts,
+        created_seq: seq,
       };
       const smJson = stringifySourcemaps(offer.sourcemaps);
       this.db.run(
-        `INSERT INTO obp_offers (id, ts_created, ts_expired, type, sourcemaps_json) VALUES (?, ?, ?, ?, ?)`,
-        [offer.id, offer.ts_created, offer.ts_expired, offer.type, smJson],
+        `INSERT INTO obp_offers (id, created_seq, expires_seq, type, sourcemaps_json) VALUES (?, ?, ?, ?, ?)`,
+        [offer.id, offer.created_seq, offer.expires_seq, offer.type, smJson],
       );
 
       const extId = crypto.randomUUID();
       this.db.run(
-        `INSERT INTO obp_extends (edge_id, party_id, offer_id, ts_created, sourcemaps_json) VALUES (?, ?, ?, ?, ?)`,
-        [extId, input.partyId, offer.id, ts, "[]"],
+        `INSERT INTO obp_extends (edge_id, party_id, offer_id, created_seq, sourcemaps_json) VALUES (?, ?, ?, ?, ?)`,
+        [extId, input.partyId, offer.id, seq, "[]"],
       );
 
       const bindPortId = input.bindPortId.trim();
       if (bindPortId !== "") {
         const portRow = this.db
           .query<PortRow, [string]>(
-            `SELECT id, ts_created, ts_expired, type, promise, max_bindings, terminal, ref, sourcemaps_json, ttl_basis, ttl_measure, expose_turn_index, bind_policy_json FROM obp_ports WHERE id = ?`,
+            `SELECT id, created_seq, expires_seq, type, promise, max_bindings, terminal, ref, sourcemaps_json, ttl_basis, ttl_measure, expose_seq, bind_policy_json FROM obp_ports WHERE id = ?`,
           )
           .get(bindPortId);
         if (!portRow) {
@@ -330,7 +325,7 @@ export class ObpSqlitePersistence implements ObpPersistence {
         }
         const port = rowToPort(portRow);
         const fail = validateBindPreconditions({
-          now: this.now(),
+          ledgerSeq: this.ledgerSeq(),
           offer,
           port,
           portsById: this.loadPortsMap(),
@@ -345,8 +340,8 @@ export class ObpSqlitePersistence implements ObpPersistence {
         const bindPolicyJson =
           port.bind_policy !== undefined ? JSON.stringify(port.bind_policy) : null;
         this.db.run(
-          `INSERT INTO obp_binds (edge_id, offer_id, port_id, ts_created, sourcemaps_json, counterparty_bind_json, bind_policy_json) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [bindEdge, offer.id, bindPortId, ts, "[]", cbJson, bindPolicyJson],
+          `INSERT INTO obp_binds (edge_id, offer_id, port_id, created_seq, sourcemaps_json, counterparty_bind_json, bind_policy_json) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [bindEdge, offer.id, bindPortId, seq, "[]", cbJson, bindPolicyJson],
         );
       }
 
@@ -367,16 +362,16 @@ export class ObpSqlitePersistence implements ObpPersistence {
       }
 
       const portId = input.port.id.trim() !== "" ? input.port.id : crypto.randomUUID();
-      const ts = this.now();
+      const seq = this.ledgerSeq();
       const port: Port = {
         ...input.port,
         id: portId,
-        ts_created: ts,
+        created_seq: seq,
       };
       const smJson = stringifySourcemaps(port.sourcemaps);
       const ttlBasis = port.ttl_basis ?? null;
       const ttlMeasure = port.ttl_measure ?? null;
-      const exposeTurnIndex = port.expose_turn_index ?? null;
+      const exposeSeq = port.expose_seq ?? null;
       const bindPolicyJson =
         port.bind_policy !== undefined ? JSON.stringify(port.bind_policy) : null;
 
@@ -396,11 +391,11 @@ export class ObpSqlitePersistence implements ObpPersistence {
       }
 
       this.db.run(
-        `INSERT INTO obp_ports (id, ts_created, ts_expired, type, promise, max_bindings, terminal, ref, sourcemaps_json, ttl_basis, ttl_measure, expose_turn_index, bind_policy_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO obp_ports (id, created_seq, expires_seq, type, promise, max_bindings, terminal, ref, sourcemaps_json, ttl_basis, ttl_measure, expose_seq, bind_policy_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           port.id,
-          port.ts_created,
-          port.ts_expired,
+          port.created_seq,
+          port.expires_seq,
           port.type,
           port.promise,
           port.max_bindings,
@@ -409,15 +404,15 @@ export class ObpSqlitePersistence implements ObpPersistence {
           smJson,
           ttlBasis,
           ttlMeasure,
-          exposeTurnIndex,
+          exposeSeq,
           bindPolicyJson,
         ],
       );
 
       const exId = crypto.randomUUID();
       this.db.run(
-        `INSERT INTO obp_exposes (edge_id, offer_id, port_id, ts_created, sourcemaps_json) VALUES (?, ?, ?, ?, ?)`,
-        [exId, input.offerId, port.id, ts, "[]"],
+        `INSERT INTO obp_exposes (edge_id, offer_id, port_id, created_seq, sourcemaps_json) VALUES (?, ?, ?, ?, ?)`,
+        [exId, input.offerId, port.id, seq, "[]"],
       );
 
       return { port };
@@ -436,7 +431,7 @@ export class ObpSqlitePersistence implements ObpPersistence {
       }
 
       const fail = validateBindPreconditions({
-        now: this.now(),
+        ledgerSeq: this.ledgerSeq(),
         offer: offerRes.offer,
         port: portRes.port,
         portsById: this.loadPortsMap(),
@@ -447,15 +442,15 @@ export class ObpSqlitePersistence implements ObpPersistence {
         throwBindFailure(fail);
       }
 
-      const ts = this.now();
+      const seq = this.ledgerSeq();
       const bindEdge = crypto.randomUUID();
       const cbJson = stringifyCounterpartyBind(input.counterparty_bind);
       const bindPolicyJson =
         portRes.port.bind_policy !== undefined ? JSON.stringify(portRes.port.bind_policy) : null;
       try {
         this.db.run(
-          `INSERT INTO obp_binds (edge_id, offer_id, port_id, ts_created, sourcemaps_json, counterparty_bind_json, bind_policy_json) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [bindEdge, input.offerId, input.portId, ts, "[]", cbJson, bindPolicyJson],
+          `INSERT INTO obp_binds (edge_id, offer_id, port_id, created_seq, sourcemaps_json, counterparty_bind_json, bind_policy_json) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [bindEdge, input.offerId, input.portId, seq, "[]", cbJson, bindPolicyJson],
         );
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
@@ -510,7 +505,7 @@ export class ObpSqlitePersistence implements ObpPersistence {
   private loadPortsMap(): Map<string, Port> {
     const rows = this.db
       .query<PortRow, []>(
-        `SELECT id, ts_created, ts_expired, type, promise, max_bindings, terminal, ref, sourcemaps_json, ttl_basis, ttl_measure, expose_turn_index, bind_policy_json FROM obp_ports`,
+        `SELECT id, created_seq, expires_seq, type, promise, max_bindings, terminal, ref, sourcemaps_json, ttl_basis, ttl_measure, expose_seq, bind_policy_json FROM obp_ports`,
       )
       .all();
     const m = new Map<string, Port>();
@@ -523,7 +518,7 @@ export class ObpSqlitePersistence implements ObpPersistence {
 
 export function createObpSqlitePersistence(
   db: Database,
-  options?: { now?: () => number },
+  options: { ledgerSeq: () => number },
 ): ObpPersistence {
-  return new ObpSqlitePersistence(db, options?.now);
+  return new ObpSqlitePersistence(db, options.ledgerSeq);
 }

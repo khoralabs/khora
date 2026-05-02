@@ -1,1 +1,4 @@
-export { FakeObpPersistence } from "./fake-obp-persistence";
+export {
+  FakeObpPersistence,
+  type FakeObpPersistenceSnapshot,
+} from "./fake-obp-persistence";

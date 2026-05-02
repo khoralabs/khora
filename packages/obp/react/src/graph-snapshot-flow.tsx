@@ -117,12 +117,8 @@ const preStyle: CSSProperties = {
   wordBreak: "break-word",
 };
 
-function formatTs(ms: number): string {
-  try {
-    return new Date(ms).toISOString();
-  } catch {
-    return String(ms);
-  }
+function formatExpiresSeq(seq: number): string {
+  return String(seq);
 }
 
 function JsonBlock({ label, value }: { label: string; value: unknown }) {
@@ -172,8 +168,8 @@ export function GraphSnapshotFlowNodeDetails({
           <dd style={ddStyle}>{o.type}</dd>
           <dt style={dtStyle}>Party</dt>
           <dd style={ddStyle}>{o.partyName ?? o.partyId ?? "—"}</dd>
-          <dt style={dtStyle}>Expires (UTC)</dt>
-          <dd style={ddStyle}>{formatTs(o.tsExpired)}</dd>
+          <dt style={dtStyle}>expires_seq</dt>
+          <dd style={ddStyle}>{formatExpiresSeq(o.expiresSeq)}</dd>
           <dt style={dtStyle}>Expired</dt>
           <dd style={ddStyle}>{o.expired ? "yes" : "no"}</dd>
         </dl>
@@ -241,8 +237,8 @@ export function GraphSnapshotFlowNodeDetails({
           <dd style={{ ...ddStyle, wordBreak: "break-all", whiteSpace: "pre-wrap" }}>
             <code>{p.exposedOnOfferIds.join(", ") || "—"}</code>
           </dd>
-          <dt style={dtStyle}>Expires (UTC)</dt>
-          <dd style={ddStyle}>{formatTs(p.tsExpired)}</dd>
+          <dt style={dtStyle}>expires_seq</dt>
+          <dd style={ddStyle}>{formatExpiresSeq(p.expiresSeq)}</dd>
           <dt style={dtStyle}>Expired</dt>
           <dd style={ddStyle}>{p.expired ? "yes" : "no"}</dd>
         </dl>

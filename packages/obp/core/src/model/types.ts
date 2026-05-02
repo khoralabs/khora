@@ -8,8 +8,8 @@
 
 import type { PortBindPolicy } from "../bind-policy/types.ts";
 
-/** Negotiation TTL basis; wire field **`Port.ttl_basis`** (empty string when unset). */
-export type NegotiationPortTtlBasis = "turns" | "seconds" | "minutes" | "hours" | "days";
+/** Negotiation TTL basis; wire field **`Port.ttl_basis`** (empty / unset when no TTL metadata). */
+export type NegotiationPortTtlBasis = "turns" | "ledger_seq";
 
 /** Store-agnostic source-map link (`SourceMapRef` in Smithy). */
 export type SourceMapRef = {
@@ -19,23 +19,28 @@ export type SourceMapRef = {
 
 export type Party = {
   id: string;
-  ts_created: number;
+  /** Ledger sequence when this party was committed (Smithy **`created_seq`**). */
+  created_seq: number;
   name: string;
   sourcemaps: SourceMapRef[];
 };
 
 export type Offer = {
   id: string;
-  ts_created: number;
-  ts_expired: number;
+  /** Ledger sequence when this offer was committed. */
+  created_seq: number;
+  /** Exclusive upper bound: bind invalid when **`ledger_seq >= expires_seq`**. */
+  expires_seq: number;
   type: string;
   sourcemaps: SourceMapRef[];
 };
 
 export type Port = {
   id: string;
-  ts_created: number;
-  ts_expired: number;
+  /** Ledger sequence when this port was committed. */
+  created_seq: number;
+  /** Exclusive upper bound: bind invalid when **`ledger_seq >= expires_seq`**. */
+  expires_seq: number;
   type: string;
   /** Counterparty-facing affordance copy; **`ObpClient.exposePort`** requires non-empty trimmed text. */
   promise: string;
@@ -46,30 +51,30 @@ export type Port = {
   sourcemaps: SourceMapRef[];
   /** Effective TTL basis when the negotiating host recorded policy at expose time. */
   ttl_basis?: NegotiationPortTtlBasis;
-  /** Interpretation depends on `ttl_basis` (e.g. turn count for `"turns"`). */
+  /** Interpretation depends on `ttl_basis` (turns or ledger ticks). */
   ttl_measure?: number;
-  /** Completed negotiation turn index when this port was exposed (`audit.turnIndex`). */
-  expose_turn_index?: number;
+  /** Ledger seq / aligned turn index when this port was exposed. */
+  expose_seq?: number;
   /** When set, **`counterparty_bind`** on **BINDS** must satisfy this policy at bind time or the bind is rejected. */
   bind_policy?: PortBindPolicy;
 };
 
 export type ExtendsEdge = {
   id: string;
-  ts_created: number;
+  created_seq: number;
   sourcemaps: SourceMapRef[];
 };
 
 export type ExposesEdge = {
   id: string;
-  ts_created: number;
+  created_seq: number;
   sourcemaps: SourceMapRef[];
 };
 
 /** **`BindsEdge`** in Smithy; satisfaction payload lives on the edge (`counterparty_bind`, `bind_policy_snapshot`). */
 export type BindsEdge = {
   id: string;
-  ts_created: number;
+  created_seq: number;
   sourcemaps: SourceMapRef[];
   counterparty_bind?: Record<string, unknown>;
   /** Audit copy of **`Port.bind_policy`** at bind time (`BindListingRow.bind_policy_snapshot` / SQLite `bind_policy_json`). */

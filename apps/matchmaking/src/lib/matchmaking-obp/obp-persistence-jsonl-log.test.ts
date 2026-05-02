@@ -14,15 +14,16 @@ test("LoggingObpPersistence appends one JSONL row per mutation", () => {
   try {
     const db = new Database(":memory:");
     initObpSchema(db);
-    const now = () => 99;
-    const inner = createObpSqlitePersistence(db, { now });
+    const ledgerSeq = () => 1;
+    const inner = createObpSqlitePersistence(db, { ledgerSeq });
     const store = new JsonlStore(stepsPath);
+    const logTs = () => 99;
     const persistence = createLoggingObpPersistence(inner, {
       store,
       memoryId: "test/obp",
-      nowMs: now,
+      nowMs: logTs,
     });
-    const client = new ObpClient(persistence, { now });
+    const client = new ObpClient(persistence, { ledgerSeq });
 
     client.registerParty({ name: "Alice", sourcemaps: [] });
 

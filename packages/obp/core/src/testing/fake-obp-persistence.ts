@@ -24,8 +24,19 @@ type BindRow = {
 type ExposeRow = { offerId: string; portId: string; edge: ExposesEdge };
 type ExtendRow = { partyId: string; offerId: string; edge: ExtendsEdge };
 
+/** JSON-roundtrippable snapshot for fork rollback tests (`exportState` / `importState`). */
+export type FakeObpPersistenceSnapshot = {
+  parties: Party[];
+  offers: Offer[];
+  ports: Port[];
+  extendsRows: ExtendRow[];
+  exposesRows: ExposeRow[];
+  bindRows: BindRow[];
+};
+
 /**
  * In-memory {@link ObpPersistence} for tests — not a production storage strategy.
+ * Uses {@link ledgerSeq} for **`created_seq`** on writes and **`expires_seq`** on revoke.
  */
 export class FakeObpPersistence implements ObpPersistence {
   readonly parties = new Map<string, Party>();
@@ -35,13 +46,70 @@ export class FakeObpPersistence implements ObpPersistence {
   private readonly exposesRows: ExposeRow[] = [];
   private readonly bindRows: BindRow[] = [];
 
-  constructor(private readonly clock: () => number = () => Date.now()) {}
+  constructor(private readonly ledgerSeq: () => number) {}
+
+  exportState(): FakeObpPersistenceSnapshot {
+    return {
+      parties: [...this.parties.values()],
+      offers: [...this.offers.values()],
+      ports: [...this.ports.values()],
+      extendsRows: this.extendsRows.map((r) => ({
+        partyId: r.partyId,
+        offerId: r.offerId,
+        edge: { ...r.edge, sourcemaps: [...r.edge.sourcemaps] },
+      })),
+      exposesRows: this.exposesRows.map((r) => ({
+        offerId: r.offerId,
+        portId: r.portId,
+        edge: { ...r.edge, sourcemaps: [...r.edge.sourcemaps] },
+      })),
+      bindRows: this.bindRows.map((b) => ({
+        offerId: b.offerId,
+        portId: b.portId,
+        edge: {
+          ...b.edge,
+          sourcemaps: [...b.edge.sourcemaps],
+          ...(b.edge.counterparty_bind !== undefined
+            ? { counterparty_bind: { ...b.edge.counterparty_bind } }
+            : {}),
+          ...(b.edge.bind_policy_snapshot !== undefined
+            ? { bind_policy_snapshot: b.edge.bind_policy_snapshot }
+            : {}),
+        },
+      })),
+    };
+  }
+
+  importState(snapshot: FakeObpPersistenceSnapshot): void {
+    this.parties.clear();
+    this.offers.clear();
+    this.ports.clear();
+    this.extendsRows.length = 0;
+    this.exposesRows.length = 0;
+    this.bindRows.length = 0;
+    for (const p of snapshot.parties) {
+      this.parties.set(p.id, { ...p, sourcemaps: [...p.sourcemaps] });
+    }
+    for (const o of snapshot.offers) {
+      this.offers.set(o.id, { ...o, sourcemaps: [...o.sourcemaps] });
+    }
+    for (const p of snapshot.ports) {
+      const port = { ...p, sourcemaps: [...p.sourcemaps] };
+      if (port.bind_policy !== undefined) {
+        port.bind_policy = structuredClone(port.bind_policy);
+      }
+      this.ports.set(p.id, port);
+    }
+    this.extendsRows.push(...snapshot.extendsRows);
+    this.exposesRows.push(...snapshot.exposesRows);
+    this.bindRows.push(...snapshot.bindRows);
+  }
 
   registerParty(input: RegisterPartyInput): { party: Party } {
-    const now = this.clock();
+    const seq = this.ledgerSeq();
     const party: Party = {
       id: crypto.randomUUID(),
-      ts_created: now,
+      created_seq: seq,
       name: input.name,
       sourcemaps: [...input.sourcemaps],
     };
@@ -72,18 +140,18 @@ export class FakeObpPersistence implements ObpPersistence {
     if (!party) {
       throw new Error(`FakeObpPersistence: party not found: ${input.partyId}`);
     }
-    const now = this.clock();
+    const seq = this.ledgerSeq();
     const id = input.offer.id.trim() !== "" ? input.offer.id : crypto.randomUUID();
     const offer: Offer = {
       ...input.offer,
       id,
-      ts_created: now,
+      created_seq: seq,
     };
     this.offers.set(id, offer);
     this.extendsRows.push({
       partyId: input.partyId,
       offerId: id,
-      edge: { id: crypto.randomUUID(), ts_created: now, sourcemaps: [] },
+      edge: { id: crypto.randomUUID(), created_seq: seq, sourcemaps: [] },
     });
     const bindPortId = input.bindPortId.trim();
     if (bindPortId !== "") {
@@ -95,7 +163,7 @@ export class FakeObpPersistence implements ObpPersistence {
       const bind_policy_snapshot = portEntity?.bind_policy;
       const edge: BindsEdge = {
         id: crypto.randomUUID(),
-        ts_created: now,
+        created_seq: seq,
         sourcemaps: [],
         ...(counterparty_bind !== undefined ? { counterparty_bind } : {}),
         ...(bind_policy_snapshot !== undefined ? { bind_policy_snapshot } : {}),
@@ -113,18 +181,18 @@ export class FakeObpPersistence implements ObpPersistence {
     if (!this.offers.has(input.offerId)) {
       throw new Error(`FakeObpPersistence: offer not found: ${input.offerId}`);
     }
-    const now = this.clock();
+    const seq = this.ledgerSeq();
     const id = input.port.id.trim() !== "" ? input.port.id : crypto.randomUUID();
     const port: Port = {
       ...input.port,
       id,
-      ts_created: now,
+      created_seq: seq,
     };
     this.ports.set(id, port);
     this.exposesRows.push({
       offerId: input.offerId,
       portId: id,
-      edge: { id: crypto.randomUUID(), ts_created: now, sourcemaps: [] },
+      edge: { id: crypto.randomUUID(), created_seq: seq, sourcemaps: [] },
     });
     return { port };
   }
@@ -136,7 +204,7 @@ export class FakeObpPersistence implements ObpPersistence {
     if (!this.ports.has(input.portId)) {
       throw new Error(`FakeObpPersistence: port not found: ${input.portId}`);
     }
-    const now = this.clock();
+    const seq = this.ledgerSeq();
     const counterparty_bind =
       input.counterparty_bind !== undefined && Object.keys(input.counterparty_bind).length > 0
         ? input.counterparty_bind
@@ -145,7 +213,7 @@ export class FakeObpPersistence implements ObpPersistence {
     const bind_policy_snapshot = portEntity?.bind_policy;
     const edge: BindsEdge = {
       id: crypto.randomUUID(),
-      ts_created: now,
+      created_seq: seq,
       sourcemaps: [],
       ...(counterparty_bind !== undefined ? { counterparty_bind } : {}),
       ...(bind_policy_snapshot !== undefined ? { bind_policy_snapshot } : {}),
@@ -165,7 +233,9 @@ export class FakeObpPersistence implements ObpPersistence {
     return this.bindRows.map((b) => ({
       offerId: b.offerId,
       portId: b.portId,
-      ...(b.edge.counterparty_bind !== undefined ? { counterparty_bind: b.edge.counterparty_bind } : {}),
+      ...(b.edge.counterparty_bind !== undefined
+        ? { counterparty_bind: b.edge.counterparty_bind }
+        : {}),
       ...(b.edge.bind_policy_snapshot !== undefined
         ? { bind_policy_snapshot: b.edge.bind_policy_snapshot }
         : {}),
@@ -185,29 +255,27 @@ export class FakeObpPersistence implements ObpPersistence {
     return this.exposesRows.map((r) => ({ offerId: r.offerId, portId: r.portId }));
   }
 
-  setPortExpiredNow(portId: string): void {
+  setPortExpiresSeq(portId: string, expiresSeq: number): void {
     const port = this.ports.get(portId);
     if (port === undefined) {
       throw new Error(`FakeObpPersistence: port not found: ${portId}`);
     }
-    const ts = this.clock();
-    this.ports.set(portId, { ...port, ts_expired: ts });
+    this.ports.set(portId, { ...port, expires_seq: expiresSeq });
   }
 
-  setOfferExpiredNow(offerId: string): void {
+  setOfferExpiresSeq(offerId: string, expiresSeq: number): void {
     const offer = this.offers.get(offerId);
     if (offer === undefined) {
       throw new Error(`FakeObpPersistence: offer not found: ${offerId}`);
     }
-    const ts = this.clock();
-    this.offers.set(offerId, { ...offer, ts_expired: ts });
+    this.offers.set(offerId, { ...offer, expires_seq: expiresSeq });
     for (const r of this.exposesRows) {
       if (r.offerId !== offerId) {
         continue;
       }
       const p = this.ports.get(r.portId);
       if (p !== undefined) {
-        this.ports.set(r.portId, { ...p, ts_expired: ts });
+        this.ports.set(r.portId, { ...p, expires_seq: expiresSeq });
       }
     }
   }

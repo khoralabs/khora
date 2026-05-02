@@ -11,8 +11,9 @@ import { createObpSqlitePersistence, initObpSchema, openObpDatabase } from "@cfd
 
 const db = new Database(":memory:");
 initObpSchema(db);
-const persistence = createObpSqlitePersistence(db, { now: () => Date.now() });
-const client = new ObpClient(persistence);
+const ledgerSeq = () => 0;
+const persistence = createObpSqlitePersistence(db, { ledgerSeq });
+const client = new ObpClient(persistence, { ledgerSeq });
 
 // Or open a file-backed DB:
 // const db = openObpDatabase("./obp.sqlite");
@@ -24,7 +25,7 @@ const client = new ObpClient(persistence);
 |--------|---------|
 | `initObpSchema(db)` | Idempotent `CREATE TABLE` / indexes; enables `foreign_keys` and `WAL`. |
 | `openObpDatabase(path)` | `new Database(path, { create: true })` + `initObpSchema`. |
-| `createObpSqlitePersistence(db, options?)` | Returns an [`ObpPersistence`](../../obp-core/src/persistence-types.ts). Optional `now` for tests. |
+| `createObpSqlitePersistence(db, options)` | Returns an [`ObpPersistence`](../../obp-core/src/persistence-types.ts). Requires **`ledgerSeq`** for writes and bind expiry checks. |
 | `ObpSqlitePersistence` | Concrete class (usually used via the factory). |
 | `OBP_SCHEMA_SQL` | Raw DDL string for advanced setups. |
 

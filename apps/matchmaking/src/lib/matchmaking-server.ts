@@ -27,6 +27,7 @@ export {
   createDemoStack,
   createLoggingObpPersistence,
   DEMO_CLOCK_MS,
+  DEMO_LEDGER_SEQ,
   ensureObpRunDir,
   getNegotiationModel,
   initTextTranscript,

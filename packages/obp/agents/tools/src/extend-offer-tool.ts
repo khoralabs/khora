@@ -1,7 +1,11 @@
 import { tool } from "@cfd/agent-identity";
 import type { SourceMapRef } from "@cfd/obp-core";
 import z from "zod";
-import { DEFAULT_EXPIRY_HOURS, expiresAtFromHours, MAX_EXPIRY_HOURS } from "./obp-tool-defaults.ts";
+import {
+  DEFAULT_EXPIRY_SEQ_DELTA,
+  expiresSeqAfterDelta,
+  MAX_EXPIRY_SEQ_DELTA,
+} from "./obp-tool-defaults.ts";
 import type { ObpToolkitEnv } from "./obp-toolkit-env.ts";
 import { zOptionalSourcemaps } from "./sourcemaps-schema.ts";
 
@@ -9,10 +13,12 @@ export const zObpExtendOfferInput = z
   .object({
     offerType: z.string().min(1).max(600),
     /**
-     * How long the offer stays valid, in whole hours from now. Defaults to 24.
-     * Prefer this over raw millisecond offsets.
+     * Relative **`expires_seq`**: current ledger sequence plus this delta.
+     * Omit for host default ({@link DEFAULT_EXPIRY_SEQ_DELTA}).
      */
-    expiresAfterHours: z.number().int().min(1).max(MAX_EXPIRY_HOURS).optional(),
+    expires_after_seq: z.number().int().min(1).max(MAX_EXPIRY_SEQ_DELTA).optional(),
+    /** Absolute **`expires_seq`** when set overrides **`expires_after_seq`**. */
+    expires_seq: z.number().int().min(1).optional(),
     sourcemaps: zOptionalSourcemaps,
   })
   .strict();
@@ -27,21 +33,23 @@ export const obpExtendOfferTool = tool<
 >({
   name: "obp_extend_offer",
   description:
-    "EXTEND: create an offer from your party. Provide offerType (e.g. demo.negotiation.v1|...). Offer id and timestamps are assigned by the system; default expiry is 24 hours unless you set expiresAfterHours.",
+    "EXTEND: create an offer from your party. Provide offerType (e.g. demo.negotiation.v1|...). Offer id and ledger sequence fields are assigned by the system; default validity uses a large relative ledger delta unless you set expires_seq / expires_after_seq.",
   inputSchema: zObpExtendOfferInput,
   handler: async (ctx, input) => {
     const parsed = zObpExtendOfferInput.parse(input);
     const env = ctx.env;
-    const hours = parsed.expiresAfterHours ?? DEFAULT_EXPIRY_HOURS;
-    const now = env.now();
+    const at = env.ledgerSeq();
+    const expiresSeq =
+      parsed.expires_seq ??
+      expiresSeqAfterDelta(at, parsed.expires_after_seq ?? DEFAULT_EXPIRY_SEQ_DELTA);
     const sourcemaps: SourceMapRef[] = parsed.sourcemaps ?? [];
     const { offer } = env.client.extendOffer({
       partyId: env.actingPartyId,
       bindPortId: "",
       offer: {
         id: "",
-        ts_created: now,
-        ts_expired: expiresAtFromHours(now, hours),
+        created_seq: at,
+        expires_seq: expiresSeq,
         type: parsed.offerType,
         sourcemaps,
       },

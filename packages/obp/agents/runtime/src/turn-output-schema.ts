@@ -22,9 +22,11 @@ function zExposePortEntry(opts: NegotiationTurnSchemaOptions) {
     max_bindings: z.number().int().min(0).max(100).optional(),
     terminal: z.boolean(),
     ref: z.string().max(200).optional(),
-    bind_policy: zPortBindPolicy.optional().describe(
-      "When set, the peer must submit structured fields satisfying this policy to bind; binds are rejected otherwise.",
-    ),
+    bind_policy: zPortBindPolicy
+      .optional()
+      .describe(
+        "When set, the peer must submit structured fields satisfying this policy to bind; binds are rejected otherwise.",
+      ),
     sourcemaps: zOptionalSourcemaps,
   };
   if (opts.allowAgentPortTtl) {

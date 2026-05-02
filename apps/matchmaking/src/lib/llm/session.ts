@@ -97,7 +97,7 @@ export type MatchmakingSessionContext = SessionContext & {
   model: LanguageModel;
   client: ObpClient;
   persistence: ObpPersistence;
-  now: () => number;
+  ledgerSeq: () => number;
   requesterPartyId: string;
   requesteePartyId: string;
   obpPartyIdByAgentId: Map<string, string>;
@@ -161,7 +161,7 @@ async function buildMatchmakingToolkitEnv(
     client: ctx.client,
     persistence: ctx.persistence,
     actingPartyId,
-    now: ctx.now(),
+    ledgerSeq: ctx.ledgerSeq(),
     validateBind,
   });
 
@@ -181,7 +181,7 @@ async function buildMatchmakingToolkitEnv(
   return {
     ...memorySlice,
     client: ctx.client,
-    now: ctx.now,
+    ledgerSeq: ctx.ledgerSeq,
     actingPartyId,
     validateBind,
     negotiationToolContext,
@@ -299,12 +299,12 @@ export async function runMatchmakingSession(options?: {
     persistence = createLoggingObpPersistence(stack.persistence, {
       store,
       memoryId,
-      nowMs: stack.now,
+      nowMs: stack.demoLogNowMs,
     });
   }
 
   const { client } = stack;
-  const now = stack.now;
+  const ledgerSeq = stack.ledgerSeq;
 
   const obpPartyIds: string[] = [];
   for (const idn of scenario.parties) {
@@ -401,7 +401,7 @@ export async function runMatchmakingSession(options?: {
     model,
     client,
     persistence,
-    now,
+    ledgerSeq,
     requesterPartyId,
     requesteePartyId,
     obpPartyIdByAgentId,

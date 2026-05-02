@@ -4,8 +4,8 @@ import { resolveCanonicalPortId } from "./ref";
 
 function port(p: Partial<Port> & Pick<Port, "id" | "ref">): Port {
   return {
-    ts_created: 0,
-    ts_expired: 1e15,
+    created_seq: 0,
+    expires_seq: 1e15,
     type: "t",
     promise: "test port",
     max_bindings: 10,

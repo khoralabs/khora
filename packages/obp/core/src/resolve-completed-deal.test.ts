@@ -7,8 +7,8 @@ import { resolveCompletedDeal } from "./resolve-completed-deal";
 test("resolveCompletedDeal finds terminal bind on provider offer", () => {
   const db = new Database(":memory:");
   db.run(OBP_SCHEMA_SQL);
-  const persistence = createObpSqlitePersistence(db, { now: () => 0 });
-  const client = new ObpClient(persistence, { now: () => 0 });
+  const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 0 });
+  const client = new ObpClient(persistence, { ledgerSeq: () => 0 });
   const { party: provider } = client.registerParty({ name: "p", sourcemaps: [] });
 
   const { offer } = client.extendOffer({
@@ -16,8 +16,8 @@ test("resolveCompletedDeal finds terminal bind on provider offer", () => {
     bindPortId: "",
     offer: {
       id: "",
-      ts_created: 0,
-      ts_expired: 86_400_000,
+      created_seq: 0,
+      expires_seq: 9_000_000,
       type: "t",
       sourcemaps: [],
     },
@@ -26,8 +26,8 @@ test("resolveCompletedDeal finds terminal bind on provider offer", () => {
     offerId: offer.id,
     port: {
       id: "",
-      ts_created: 0,
-      ts_expired: 86_400_000,
+      created_seq: 0,
+      expires_seq: 9_000_000,
       type: "terminal",
       promise: "Terminal completion port.",
       max_bindings: 1,

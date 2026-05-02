@@ -16,8 +16,8 @@ import type {
 import type { ObpPersistence } from "./persistence-types";
 
 export type ObpClientOptions = {
-  /** Clock for expiry checks; default `Date.now`. */
-  now?: () => number;
+  /** Monotonic ledger sequence for expiry checks and revoke stamping; required (no wall-clock default). */
+  ledgerSeq: () => number;
 };
 
 function throwIfBindInvalid(failure: BindValidationFailure): never {
@@ -49,11 +49,11 @@ function throwIfBindInvalid(failure: BindValidationFailure): never {
 export class ObpClient {
   constructor(
     private readonly persistence: ObpPersistence,
-    private readonly options?: ObpClientOptions,
+    private readonly options: ObpClientOptions,
   ) {}
 
-  private now(): number {
-    return this.options?.now?.() ?? Date.now();
+  private ledgerSeq(): number {
+    return this.options.ledgerSeq();
   }
 
   getParty(id: string): GetPartyResult {
@@ -94,7 +94,7 @@ export class ObpClient {
         throw new ObpError("NOT_FOUND", `Port not found: ${bindPortId}`);
       }
       const fail = validateBindPreconditions({
-        now: this.now(),
+        ledgerSeq: this.ledgerSeq(),
         offer: input.offer,
         port: portRes.port,
         portsById: this.persistence.getPortsSnapshot(),
@@ -151,7 +151,7 @@ export class ObpClient {
     }
 
     const fail = validateBindPreconditions({
-      now: this.now(),
+      ledgerSeq: this.ledgerSeq(),
       offer: offerRes.offer,
       port: portRes.port,
       portsById: this.persistence.getPortsSnapshot(),
@@ -172,16 +172,16 @@ export class ObpClient {
   }
 
   /**
-   * Expire a port now. **Caller** must ensure the acting party may revoke this port (e.g. issuer of the offer that exposes it).
+   * Revoke a port at the current ledger sequence (**`expires_seq`**). **Caller** must ensure the acting party may revoke this port.
    */
   expirePortNow(portId: string): void {
-    this.persistence.setPortExpiredNow(portId);
+    this.persistence.setPortExpiresSeq(portId, this.ledgerSeq());
   }
 
   /**
-   * Expire an offer now (and cascade expiry to ports exposed on that offer). **Caller** must ensure the acting party extends this offer.
+   * Revoke an offer and cascade **`expires_seq`** to ports exposed on that offer. **Caller** must ensure the acting party extends this offer.
    */
   expireOfferNow(offerId: string): void {
-    this.persistence.setOfferExpiredNow(offerId);
+    this.persistence.setOfferExpiresSeq(offerId, this.ledgerSeq());
   }
 }

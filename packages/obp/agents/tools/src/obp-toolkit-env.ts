@@ -8,7 +8,7 @@ export type ObpNegotiationBindChoice = {
   portId: string;
 };
 
-/** Revoke a single exposed port (expiry set to now). */
+/** Revoke a single exposed port (sets **`expires_seq`** to current ledger sequence). */
 export type ObpNegotiationRevokePortChoice = {
   toolName: string;
   description: string;
@@ -54,11 +54,11 @@ export type ObpBindValidationContext = {
 };
 
 /**
- * Session env for OBP coordination tools: {@link ObpClient}, clock, acting party, optional bind policy.
+ * Session env for OBP coordination tools: {@link ObpClient}, ledger sequence, acting party, optional bind policy.
  */
 export type ObpToolkitEnv = {
   client: ObpClient;
-  now: () => number;
+  ledgerSeq: () => number;
   /** Party id for {@link obp_extend_offer} and ownership checks on {@link obp_expose_port}. */
   actingPartyId: string;
   /**

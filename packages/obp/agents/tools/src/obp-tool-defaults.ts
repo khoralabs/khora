@@ -1,11 +1,9 @@
-/** Default lifetime for new offers/ports when the agent omits `expiresAfterHours`. */
-export const DEFAULT_EXPIRY_HOURS = 24;
+/** Default **`expires_seq`** offset from current ledger sequence when the agent omits `expires_after_seq`. */
+export const DEFAULT_EXPIRY_SEQ_DELTA = 1_000_000;
 
-/** Upper bound for `expiresAfterHours` (~1 year). */
-export const MAX_EXPIRY_HOURS = 8760;
+/** Upper bound for **`expires_after_seq`** relative deltas. */
+export const MAX_EXPIRY_SEQ_DELTA = 1_000_000_000;
 
-const MS_PER_HOUR = 3_600_000;
-
-export function expiresAtFromHours(nowMs: number, hours: number): number {
-  return nowMs + hours * MS_PER_HOUR;
+export function expiresSeqAfterDelta(atLedgerSeq: number, delta: number): number {
+  return atLedgerSeq + delta;
 }

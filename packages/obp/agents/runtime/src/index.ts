@@ -1,3 +1,4 @@
+export type { GraphSnapshot } from "@cfd/obp-core";
 export {
   isRuntimeNoopPortId,
   isRuntimeWalkAwayPortId,
@@ -27,11 +28,10 @@ export {
   createNegotiationAgent,
   type NegotiationToolSet,
 } from "./create-agent.ts";
-export type { GraphSnapshot } from "@cfd/obp-core";
 export { ObpLedger, type ObpLedgerOptions } from "./ledger.ts";
 export {
   filterPortIdsByNegotiationTurnTtl,
-  minExposeTurnIndexOnOffer,
+  minExposeSeqOnOffer,
   portEligibleForBindAtTurn,
   portExpiredForSnapshot,
 } from "./port-turn-ttl.ts";
@@ -64,7 +64,7 @@ export {
   newestCounterpartyExposedOfferId,
   resolveHeadOfferIdForSyntheticPorts,
 } from "./system-ports.ts";
-export { tsExpiredForTtl } from "./ttl-resolve.ts";
+export { expiresSeqForOfferTtl, expiresSeqForPortTtl } from "./ttl-resolve.ts";
 export { type TtlBasis, type TtlSpec, zTtlSpec } from "./ttl-spec.ts";
 export type { PreparedTurn, TurnContract } from "./turn-contract.ts";
 export {

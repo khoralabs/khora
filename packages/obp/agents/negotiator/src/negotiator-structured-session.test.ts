@@ -1,8 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type {
-  LanguageModelV3CallOptions,
-  LanguageModelV3GenerateResult,
-} from "@ai-sdk/provider";
+import type { LanguageModelV3CallOptions, LanguageModelV3GenerateResult } from "@ai-sdk/provider";
 import { createAgentRegistry } from "@cfd/agent-identity";
 import { MockLanguageModelV3 } from "ai/test";
 import { z } from "zod";

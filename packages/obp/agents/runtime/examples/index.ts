@@ -1,15 +1,15 @@
+import homeHtml from "./routes/index.html";
+import bilateralHtml from "./scenarios/bilateral/index.html";
 import * as bilateralScenario from "./scenarios/bilateral/scenario.ts";
+import intentOverlapHtml from "./scenarios/intent-overlap/index.html";
 import * as intentOverlapScenario from "./scenarios/intent-overlap/scenario.ts";
+import matchmakingHtml from "./scenarios/matchmaking/index.html";
 import * as matchmakingScenario from "./scenarios/matchmaking/scenario.ts";
 import {
   createNegotiationScenarioSession,
   type NegotiationScenarioSession,
   type ScenarioNegotiationCopy,
 } from "./shared/negotiation-scenario-session.ts";
-import homeHtml from "./routes/index.html";
-import bilateralHtml from "./scenarios/bilateral/index.html";
-import intentOverlapHtml from "./scenarios/intent-overlap/index.html";
-import matchmakingHtml from "./scenarios/matchmaking/index.html";
 
 const SCENARIO_MODULES: Record<string, ScenarioNegotiationCopy> = {
   bilateral: bilateralScenario,
@@ -32,9 +32,9 @@ function getSession(slug: string): NegotiationScenarioSession | null {
   return s;
 }
 
-function parseScenarioApi(pathname: string):
-  | { slug: string; action: "health" | "state" | "turn" | "reset" }
-  | null {
+function parseScenarioApi(
+  pathname: string,
+): { slug: string; action: "health" | "state" | "turn" | "reset" } | null {
   const prefix = "/api/scenarios/";
   if (!pathname.startsWith(prefix)) {
     return null;

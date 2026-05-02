@@ -1,7 +1,7 @@
 import type { ObpClient } from "@cfd/obp-core";
 
-/** Smallest recorded `expose_turn_index` among ports on an offer (for synthetic port alignment). */
-export function minExposeTurnIndexOnOffer(client: ObpClient, offerId: string): number | undefined {
+/** Smallest recorded **`expose_seq`** among ports on an offer (for synthetic port alignment). */
+export function minExposeSeqOnOffer(client: ObpClient, offerId: string): number | undefined {
   let minV: number | undefined;
   for (const e of client.listExposedPortEdges()) {
     if (e.offerId !== offerId) {
@@ -11,7 +11,7 @@ export function minExposeTurnIndexOnOffer(client: ObpClient, offerId: string): n
     if (pr.kind !== "found") {
       continue;
     }
-    const ix = pr.port.expose_turn_index;
+    const ix = pr.port.expose_seq;
     if (typeof ix === "number") {
       minV = minV === undefined ? ix : Math.min(minV, ix);
     }
@@ -42,33 +42,29 @@ export function portEligibleForBindAtTurn(
     return true;
   }
   if (
-    p.expose_turn_index === undefined ||
+    p.expose_seq === undefined ||
     p.ttl_measure === undefined ||
-    p.expose_turn_index === null ||
+    p.expose_seq === null ||
     p.ttl_measure === null
   ) {
     return true;
   }
-  return turnsCompleted <= p.expose_turn_index + p.ttl_measure;
+  return turnsCompleted <= p.expose_seq + p.ttl_measure;
 }
 
-/** DAG `expired` flag: wall-clock or turn-TTL (when metadata present). */
+/** DAG **`expired`** flag: ledger sequence cap and optional turn-TTL (when metadata present). */
 export function portExpiredForSnapshot(args: {
-  nowMs: number;
-  tsExpired: number;
+  ledgerSeq: number;
+  expiresSeq: number;
   ttlBasis?: string;
   ttlMeasure?: number;
-  exposeTurnIndex?: number;
+  exposeSeq?: number;
   negotiationTurnsCompleted: number;
 }): boolean {
-  const clockExpired = args.nowMs >= args.tsExpired;
-  if (
-    args.ttlBasis !== "turns" ||
-    args.exposeTurnIndex === undefined ||
-    args.ttlMeasure === undefined
-  ) {
-    return clockExpired;
+  const seqExpired = args.ledgerSeq >= args.expiresSeq;
+  if (args.ttlBasis !== "turns" || args.exposeSeq === undefined || args.ttlMeasure === undefined) {
+    return seqExpired;
   }
-  const turnExpired = args.negotiationTurnsCompleted > args.exposeTurnIndex + args.ttlMeasure;
-  return clockExpired || turnExpired;
+  const turnExpired = args.negotiationTurnsCompleted > args.exposeSeq + args.ttlMeasure;
+  return seqExpired || turnExpired;
 }

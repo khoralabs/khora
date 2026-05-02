@@ -28,7 +28,7 @@ const MAX_TURNS = 12;
 const firstActor: "buyer" | "seller" =
   process.env.NEGOTIATION_FIRST?.trim().toLowerCase() === "buyer" ? "buyer" : "seller";
 
-const INITIAL_CLOCK_T = 1_700_000_000_000;
+const INITIAL_LEDGER_SEQ = 1_700_000_000_000;
 
 export type ScenarioNegotiationCopy = {
   scenarioForUserMessage: () => string;
@@ -68,8 +68,8 @@ function preparedToNegotiatorTurn(p: PreparedTurn<unknown>): ObpNegotiatorPrepar
 }
 
 export function createNegotiationScenarioSession(scenario: ScenarioNegotiationCopy) {
-  const clock = { t: INITIAL_CLOCK_T };
-  const now = () => clock.t;
+  const clock = { t: INITIAL_LEDGER_SEQ };
+  const ledgerSeq = () => clock.t;
 
   const partyNames = scenario.partyDisplayNames;
 
@@ -114,17 +114,17 @@ export function createNegotiationScenarioSession(scenario: ScenarioNegotiationCo
   }
 
   async function initNegotiationSession(): Promise<void> {
-    persistence = new FakeObpPersistence(now);
-    client = new ObpClient(persistence, { now });
+    persistence = new FakeObpPersistence(ledgerSeq);
+    client = new ObpClient(persistence, { ledgerSeq });
     buyer = persistence.registerParty({ name: partyNames.buyer, sourcemaps: [] }).party;
     seller = persistence.registerParty({ name: partyNames.seller, sourcemaps: [] }).party;
     walkAwayRequested = false;
-    clock.t = INITIAL_CLOCK_T;
+    clock.t = INITIAL_LEDGER_SEQ;
 
     ledger = new ObpLedger<NegotiationTurnAudit>({
       client,
       persistence,
-      now,
+      ledgerSeq,
       maxTurns: MAX_TURNS,
     });
 

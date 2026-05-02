@@ -1,24 +1,29 @@
 import { expect, test } from "bun:test";
 import { ObpClient } from "@cfd/obp-core";
 import { FakeObpPersistence } from "@cfd/obp-core/testing";
-import { expiresAtFromHours } from "@cfd/obp-tools";
 import { buildGraphSnapshot } from "./shared/graph-snapshot.ts";
 
+function far(seq: number): number {
+  return seq + 10_000_000;
+}
+
 test("buildGraphSnapshot returns parties offers ports and edges", () => {
-  const now = () => 1_700_000_000_000;
-  const persistence = new FakeObpPersistence(now);
-  const client = new ObpClient(persistence, { now });
+  const t = { v: 1_700_000_000_000 };
+  const ledgerSeq = () => t.v;
+  const persistence = new FakeObpPersistence(ledgerSeq);
+  const client = new ObpClient(persistence, { ledgerSeq });
   const { party: buyer } = persistence.registerParty({ name: "buyer", sourcemaps: [] });
   const { party: seller } = persistence.registerParty({ name: "seller", sourcemaps: [] });
   expect(buyer.id).toBeDefined();
   expect(seller.id).toBeDefined();
+  const seq = ledgerSeq();
   const { offer } = client.extendOffer({
     partyId: seller.id,
     bindPortId: "",
     offer: {
       id: "",
-      ts_created: now(),
-      ts_expired: expiresAtFromHours(now(), 24),
+      created_seq: seq,
+      expires_seq: far(seq),
       type: "seed",
       sourcemaps: [],
     },
@@ -27,8 +32,8 @@ test("buildGraphSnapshot returns parties offers ports and edges", () => {
     offerId: offer.id,
     port: {
       id: "",
-      ts_created: now(),
-      ts_expired: expiresAtFromHours(now(), 24),
+      created_seq: seq,
+      expires_seq: far(seq),
       type: "listing",
       promise: "Listing for snapshot test.",
       max_bindings: 1,
@@ -38,7 +43,7 @@ test("buildGraphSnapshot returns parties offers ports and edges", () => {
     },
   });
 
-  const snap = buildGraphSnapshot(persistence, client, now(), 0);
+  const snap = buildGraphSnapshot(persistence, client, ledgerSeq(), 0);
   expect(snap.parties.length).toBe(2);
   expect(snap.offers.length).toBe(1);
   expect(snap.ports.length).toBe(1);
@@ -52,18 +57,20 @@ test("buildGraphSnapshot returns parties offers ports and edges", () => {
 });
 
 test("buildGraphSnapshot turn-TTL expired when negotiation turns exceed window", () => {
-  const now = () => 1_700_000_000_000;
-  const persistence = new FakeObpPersistence(now);
-  const client = new ObpClient(persistence, { now });
+  const t = { v: 1_700_000_000_000 };
+  const ledgerSeq = () => t.v;
+  const persistence = new FakeObpPersistence(ledgerSeq);
+  const client = new ObpClient(persistence, { ledgerSeq });
   persistence.registerParty({ name: "buyer", sourcemaps: [] });
   const { party: seller } = persistence.registerParty({ name: "seller", sourcemaps: [] });
+  const seq = ledgerSeq();
   const { offer } = client.extendOffer({
     partyId: seller.id,
     bindPortId: "",
     offer: {
       id: "",
-      ts_created: now(),
-      ts_expired: expiresAtFromHours(now(), 24),
+      created_seq: seq,
+      expires_seq: far(seq),
       type: "seed",
       sourcemaps: [],
     },
@@ -72,8 +79,8 @@ test("buildGraphSnapshot turn-TTL expired when negotiation turns exceed window",
     offerId: offer.id,
     port: {
       id: "",
-      ts_created: now(),
-      ts_expired: expiresAtFromHours(now(), 24),
+      created_seq: seq,
+      expires_seq: far(seq),
       type: "listing",
       promise: "TTL listing.",
       max_bindings: 1,
@@ -82,10 +89,10 @@ test("buildGraphSnapshot turn-TTL expired when negotiation turns exceed window",
       sourcemaps: [],
       ttl_basis: "turns",
       ttl_measure: 1,
-      expose_turn_index: 0,
+      expose_seq: 0,
     },
   });
 
-  expect(buildGraphSnapshot(persistence, client, now(), 1).ports[0]?.expired).toBe(false);
-  expect(buildGraphSnapshot(persistence, client, now(), 2).ports[0]?.expired).toBe(true);
+  expect(buildGraphSnapshot(persistence, client, ledgerSeq(), 1).ports[0]?.expired).toBe(false);
+  expect(buildGraphSnapshot(persistence, client, ledgerSeq(), 2).ports[0]?.expired).toBe(true);
 });

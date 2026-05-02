@@ -1,6 +1,5 @@
-import type { ObpClient } from "@cfd/obp-core";
+import type { GraphSnapshot, ObpClient } from "@cfd/obp-core";
 import type { FakeObpPersistence } from "@cfd/obp-core/testing";
-import type { GraphSnapshot } from "@cfd/obp-core";
 import { portExpiredForSnapshot } from "../../src/port-turn-ttl.ts";
 
 export type { GraphSnapshot };
@@ -8,7 +7,7 @@ export type { GraphSnapshot };
 export function buildGraphSnapshot(
   fake: FakeObpPersistence,
   client: ObpClient,
-  nowMs: number,
+  ledgerSeq: number,
   /** Completed negotiation turns (same as {@link NegotiationRuntime.turns}). */
   negotiationTurnsCompleted: number,
 ): GraphSnapshot {
@@ -34,8 +33,8 @@ export function buildGraphSnapshot(
       type: o.type,
       partyId,
       partyName: partyId === null ? null : (partyById.get(partyId) ?? null),
-      tsExpired: o.ts_expired,
-      expired: nowMs >= o.ts_expired,
+      expiresSeq: o.expires_seq,
+      expired: ledgerSeq >= o.expires_seq,
     };
   });
   const ports = [...fake.ports.values()].map((p) => ({
@@ -46,13 +45,13 @@ export function buildGraphSnapshot(
     maxBindings: p.max_bindings,
     ref: p.ref,
     bindCount: bindCountByPort.get(p.id) ?? 0,
-    tsExpired: p.ts_expired,
+    expiresSeq: p.expires_seq,
     expired: portExpiredForSnapshot({
-      nowMs,
-      tsExpired: p.ts_expired,
+      ledgerSeq,
+      expiresSeq: p.expires_seq,
       ttlBasis: p.ttl_basis,
       ttlMeasure: p.ttl_measure,
-      exposeTurnIndex: p.expose_turn_index,
+      exposeSeq: p.expose_seq,
       negotiationTurnsCompleted,
     }),
     exposedOnOfferIds: [...(exposedOffersByPort.get(p.id) ?? [])],

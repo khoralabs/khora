@@ -18,10 +18,10 @@ export async function listBindableCounterpartyPorts(args: {
   client: ObpClient;
   persistence: ObpPersistence;
   actingPartyId: string;
-  now: number;
+  ledgerSeq: number;
   validateBind?: ObpToolkitEnv["validateBind"];
 }): Promise<BindableCounterpartyPort[]> {
-  const { client, persistence, actingPartyId, now, validateBind } = args;
+  const { client, persistence, actingPartyId, ledgerSeq, validateBind } = args;
   const out: BindableCounterpartyPort[] = [];
   const edges = client.listExposedPortEdges();
   const portsById = persistence.getPortsSnapshot();
@@ -41,7 +41,7 @@ export async function listBindableCounterpartyPorts(args: {
     const port = portRes.port;
 
     const fail = validateBindPreconditions({
-      now,
+      ledgerSeq,
       offer,
       port,
       portsById,
@@ -73,20 +73,20 @@ export async function listBindableCounterpartyPorts(args: {
   return out;
 }
 
-/** Pick the newest counterparty offer (by `ts_created`) among the given bindable rows. */
+/** Pick the newest counterparty offer (by **`created_seq`**) among the given bindable rows. */
 export function newestOfferIdAmongBindable(
   client: ObpClient,
   bindable: ReadonlyArray<Pick<BindableCounterpartyPort, "offerId">>,
 ): string | null {
-  let best: { offerId: string; ts: number } | null = null;
+  let best: { offerId: string; seq: number } | null = null;
   for (const { offerId } of bindable) {
     const r = client.getOffer(offerId);
     if (r.kind === "notFound") {
       continue;
     }
-    const ts = r.offer.ts_created;
-    if (best === null || ts > best.ts) {
-      best = { offerId, ts };
+    const seq = r.offer.created_seq;
+    if (best === null || seq > best.seq) {
+      best = { offerId, seq };
     }
   }
   return best?.offerId ?? null;

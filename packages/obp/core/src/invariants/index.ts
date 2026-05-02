@@ -3,5 +3,5 @@ export {
   type BindValidationInput,
   validateBindPreconditions,
 } from "./bind";
-export { isOfferValidAt, isPortValidAt } from "./expiry";
+export { isOfferValidAtLedgerSeq, isPortValidAtLedgerSeq } from "./expiry";
 export { type ResolvePortRefResult, resolveCanonicalPortId } from "./ref";

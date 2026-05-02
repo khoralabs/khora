@@ -1,11 +1,11 @@
 import type { Offer, Port } from "../model/types";
 
-/** Valid iff `now < ts_expired` (exclusive upper bound). */
-export function isOfferValidAt(offer: Offer, now: number): boolean {
-  return now < offer.ts_expired;
+/** Valid iff **`ledger_seq < expires_seq`** on the offer (exclusive upper bound). */
+export function isOfferValidAtLedgerSeq(offer: Offer, ledgerSeq: number): boolean {
+  return ledgerSeq < offer.expires_seq;
 }
 
-/** Valid iff `now < ts_expired`. */
-export function isPortValidAt(port: Port, now: number): boolean {
-  return now < port.ts_expired;
+/** Valid iff **`ledger_seq < expires_seq`** on the port (exclusive upper bound). */
+export function isPortValidAtLedgerSeq(port: Port, ledgerSeq: number): boolean {
+  return ledgerSeq < port.expires_seq;
 }

@@ -2,7 +2,7 @@ import { Database } from "bun:sqlite";
 import { ensureCustomSqliteForExtensions } from "@cfd/memories-sqlite";
 import { OBP_SCHEMA_SQL } from "./schema";
 
-/** Add negotiation TTL columns to `obp_ports` when upgrading older DB files. */
+/** Add negotiation TTL / bind-policy columns to `obp_ports` when upgrading older DB files. */
 function migrateObpPortsTtlColumns(db: Database): void {
   const cols = db.query<{ name: string }, []>("PRAGMA table_info(obp_ports)").all();
   const names = new Set(cols.map((c) => c.name));
@@ -12,8 +12,8 @@ function migrateObpPortsTtlColumns(db: Database): void {
   if (!names.has("ttl_measure")) {
     db.run("ALTER TABLE obp_ports ADD COLUMN ttl_measure INTEGER");
   }
-  if (!names.has("expose_turn_index")) {
-    db.run("ALTER TABLE obp_ports ADD COLUMN expose_turn_index INTEGER");
+  if (!names.has("expose_seq")) {
+    db.run("ALTER TABLE obp_ports ADD COLUMN expose_seq INTEGER");
   }
   if (!names.has("bind_policy_json")) {
     db.run("ALTER TABLE obp_ports ADD COLUMN bind_policy_json TEXT");

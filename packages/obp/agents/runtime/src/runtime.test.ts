@@ -1,7 +1,6 @@
 import { expect, test } from "bun:test";
 import { ObpClient } from "@cfd/obp-core";
 import { FakeObpPersistence } from "@cfd/obp-core/testing";
-import { expiresAtFromHours } from "@cfd/obp-tools";
 import {
   noopPortIdForHeadOffer,
   OBP_NEGOTIATION_BIND_NO_POLICY,
@@ -10,10 +9,14 @@ import {
 import { NegotiationRuntime } from "./runtime.ts";
 import { buildNegotiationTurnOutput } from "./turn-output-schema.ts";
 
-const DEFAULT_PORT_TTL = { basis: "hours" as const, measure: 24 };
+const DEFAULT_PORT_TTL = { basis: "ledger_seq" as const, measure: 1_000_000 };
+
+function farExpires(seq: number): number {
+  return seq + 10_000_000;
+}
 
 function seedSellerListing(): {
-  now: () => number;
+  ledgerSeq: () => number;
   persistence: FakeObpPersistence;
   client: ObpClient;
   buyerId: string;
@@ -22,18 +25,19 @@ function seedSellerListing(): {
   seedOfferId: string;
 } {
   const t = { v: 1_700_000_000_000 };
-  const now = () => t.v;
-  const persistence = new FakeObpPersistence(now);
-  const client = new ObpClient(persistence, { now });
+  const ledgerSeq = () => t.v;
+  const persistence = new FakeObpPersistence(ledgerSeq);
+  const client = new ObpClient(persistence, { ledgerSeq });
   const { party: buyer } = persistence.registerParty({ name: "buyer", sourcemaps: [] });
   const { party: seller } = persistence.registerParty({ name: "seller", sourcemaps: [] });
+  const seq = ledgerSeq();
   const { offer: seed } = client.extendOffer({
     partyId: seller.id,
     bindPortId: "",
     offer: {
       id: "",
-      ts_created: now(),
-      ts_expired: expiresAtFromHours(now(), 24),
+      created_seq: seq,
+      expires_seq: farExpires(seq),
       type: "demo.seed",
       sourcemaps: [],
     },
@@ -42,8 +46,8 @@ function seedSellerListing(): {
     offerId: seed.id,
     port: {
       id: "",
-      ts_created: now(),
-      ts_expired: expiresAtFromHours(now(), 24),
+      created_seq: seq,
+      expires_seq: farExpires(seq),
       type: "listing|100",
       promise: "Listing affordance for tests.",
       max_bindings: 1,
@@ -53,7 +57,7 @@ function seedSellerListing(): {
     },
   });
   return {
-    now,
+    ledgerSeq,
     persistence,
     client,
     buyerId: buyer.id,
@@ -64,11 +68,11 @@ function seedSellerListing(): {
 }
 
 test("happy path: bind counterparty port and expose multiple ports", async () => {
-  const { now, persistence, client, buyerId, listingPortId } = seedSellerListing();
+  const { ledgerSeq, persistence, client, buyerId, listingPortId } = seedSellerListing();
   const rt = new NegotiationRuntime({
     client,
     persistence,
-    now,
+    ledgerSeq,
     maxTurns: 5,
     requireNoop: false,
     requireWalkAway: false,
@@ -98,12 +102,12 @@ test("happy path: bind counterparty port and expose multiple ports", async () =>
 });
 
 test("walk-away bind calls requestNegotiationEnd", async () => {
-  const { now, persistence, client, buyerId } = seedSellerListing();
+  const { ledgerSeq, persistence, client, buyerId } = seedSellerListing();
   let endReason: string | undefined;
   const rt = new NegotiationRuntime({
     client,
     persistence,
-    now,
+    ledgerSeq,
     maxTurns: 5,
     requireNoop: false,
     requireWalkAway: true,
@@ -128,11 +132,11 @@ test("walk-away bind calls requestNegotiationEnd", async () => {
 });
 
 test("noop bind completes extend + bind", async () => {
-  const { now, persistence, client, buyerId } = seedSellerListing();
+  const { ledgerSeq, persistence, client, buyerId } = seedSellerListing();
   const rt = new NegotiationRuntime({
     client,
     persistence,
-    now,
+    ledgerSeq,
     maxTurns: 5,
     requireNoop: true,
     requireWalkAway: false,
@@ -154,11 +158,11 @@ test("noop bind completes extend + bind", async () => {
 });
 
 test("maxTurns blocks further turns", async () => {
-  const { now, persistence, client, buyerId, listingPortId } = seedSellerListing();
+  const { ledgerSeq, persistence, client, buyerId, listingPortId } = seedSellerListing();
   const rt = new NegotiationRuntime({
     client,
     persistence,
-    now,
+    ledgerSeq,
     maxTurns: 1,
     requireNoop: false,
     requireWalkAway: false,
@@ -178,20 +182,21 @@ test("maxTurns blocks further turns", async () => {
 
 test("genesis turn then bind turn", async () => {
   const t = { v: 1_700_000_000_000 };
-  const now = () => t.v;
-  const persistence = new FakeObpPersistence(now);
-  const client = new ObpClient(persistence, { now });
+  const ledgerSeq = () => t.v;
+  const persistence = new FakeObpPersistence(ledgerSeq);
+  const client = new ObpClient(persistence, { ledgerSeq });
   const { party: buyer } = persistence.registerParty({ name: "buyer", sourcemaps: [] });
   const { party: seller } = persistence.registerParty({ name: "seller", sourcemaps: [] });
   const rt = new NegotiationRuntime({
     client,
     persistence,
-    now,
+    ledgerSeq,
     maxTurns: 5,
     requireNoop: false,
     requireWalkAway: false,
     defaultPortTtl: DEFAULT_PORT_TTL,
   });
+
   expect(await rt.hasNoBindableCounterpartyPorts(seller.id)).toBe(true);
   const { schema: gSchema } = await rt.prepareGenesisTurn(seller.id);
   const gAudit = rt.applyGenesisTurn(
@@ -234,15 +239,15 @@ test("genesis turn then bind turn", async () => {
 
 test("genesis attaches noop/walk-away on new offer before counterparty prepareActingTurn", async () => {
   const t = { v: 1_700_000_000_000 };
-  const now = () => t.v;
-  const persistence = new FakeObpPersistence(now);
-  const client = new ObpClient(persistence, { now });
+  const ledgerSeq = () => t.v;
+  const persistence = new FakeObpPersistence(ledgerSeq);
+  const client = new ObpClient(persistence, { ledgerSeq });
   persistence.registerParty({ name: "buyer", sourcemaps: [] });
   const { party: seller } = persistence.registerParty({ name: "seller", sourcemaps: [] });
   const rt = new NegotiationRuntime({
     client,
     persistence,
-    now,
+    ledgerSeq,
     maxTurns: 5,
     requireNoop: true,
     requireWalkAway: true,
@@ -272,18 +277,19 @@ test("genesis attaches noop/walk-away on new offer before counterparty prepareAc
 
 test("bind turn requires counterparty_bind when listing port has bind_policy", async () => {
   const t = { v: 1_700_000_000_000 };
-  const now = () => t.v;
-  const persistence = new FakeObpPersistence(now);
-  const client = new ObpClient(persistence, { now });
+  const ledgerSeq = () => t.v;
+  const persistence = new FakeObpPersistence(ledgerSeq);
+  const client = new ObpClient(persistence, { ledgerSeq });
   const { party: buyer } = persistence.registerParty({ name: "buyer", sourcemaps: [] });
   const { party: seller } = persistence.registerParty({ name: "seller", sourcemaps: [] });
+  const seq = ledgerSeq();
   const { offer: seed } = client.extendOffer({
     partyId: seller.id,
     bindPortId: "",
     offer: {
       id: "",
-      ts_created: now(),
-      ts_expired: expiresAtFromHours(now(), 24),
+      created_seq: seq,
+      expires_seq: farExpires(seq),
       type: "demo.seed",
       sourcemaps: [],
     },
@@ -292,8 +298,8 @@ test("bind turn requires counterparty_bind when listing port has bind_policy", a
     offerId: seed.id,
     port: {
       id: "",
-      ts_created: now(),
-      ts_expired: expiresAtFromHours(now(), 24),
+      created_seq: seq,
+      expires_seq: farExpires(seq),
       type: "listing|100",
       promise: "Listing with bind policy.",
       max_bindings: 1,
@@ -316,7 +322,7 @@ test("bind turn requires counterparty_bind when listing port has bind_policy", a
   const rt = new NegotiationRuntime({
     client,
     persistence,
-    now,
+    ledgerSeq,
     maxTurns: 5,
     requireNoop: false,
     requireWalkAway: false,
@@ -343,18 +349,19 @@ test("bind turn requires counterparty_bind when listing port has bind_policy", a
 
 test("terminal counterparty bind omits ports from validator (.strict rejects ports key)", async () => {
   const t = { v: 1_700_000_000_000 };
-  const now = () => t.v;
-  const persistence = new FakeObpPersistence(now);
-  const client = new ObpClient(persistence, { now });
+  const ledgerSeq = () => t.v;
+  const persistence = new FakeObpPersistence(ledgerSeq);
+  const client = new ObpClient(persistence, { ledgerSeq });
   const { party: buyer } = persistence.registerParty({ name: "buyer", sourcemaps: [] });
   const { party: seller } = persistence.registerParty({ name: "seller", sourcemaps: [] });
+  const seq = ledgerSeq();
   const { offer: seed } = client.extendOffer({
     partyId: seller.id,
     bindPortId: "",
     offer: {
       id: "",
-      ts_created: now(),
-      ts_expired: expiresAtFromHours(now(), 24),
+      created_seq: seq,
+      expires_seq: farExpires(seq),
       type: "demo.seed",
       sourcemaps: [],
     },
@@ -363,8 +370,8 @@ test("terminal counterparty bind omits ports from validator (.strict rejects por
     offerId: seed.id,
     port: {
       id: "",
-      ts_created: now(),
-      ts_expired: expiresAtFromHours(now(), 24),
+      created_seq: seq,
+      expires_seq: farExpires(seq),
       type: "deal.final",
       promise: "Terminal deal port.",
       max_bindings: 1,
@@ -376,7 +383,7 @@ test("terminal counterparty bind omits ports from validator (.strict rejects por
   const rt = new NegotiationRuntime({
     client,
     persistence,
-    now,
+    ledgerSeq,
     maxTurns: 5,
     requireNoop: false,
     requireWalkAway: false,
@@ -408,18 +415,19 @@ test("terminal counterparty bind omits ports from validator (.strict rejects por
 
 test("terminal bind creates offer with no exposes (no model ports, no noop/walk)", async () => {
   const t = { v: 1_700_000_000_000 };
-  const now = () => t.v;
-  const persistence = new FakeObpPersistence(now);
-  const client = new ObpClient(persistence, { now });
+  const ledgerSeq = () => t.v;
+  const persistence = new FakeObpPersistence(ledgerSeq);
+  const client = new ObpClient(persistence, { ledgerSeq });
   const { party: buyer } = persistence.registerParty({ name: "buyer", sourcemaps: [] });
   const { party: seller } = persistence.registerParty({ name: "seller", sourcemaps: [] });
+  const seq = ledgerSeq();
   const { offer: seed } = client.extendOffer({
     partyId: seller.id,
     bindPortId: "",
     offer: {
       id: "",
-      ts_created: now(),
-      ts_expired: expiresAtFromHours(now(), 24),
+      created_seq: seq,
+      expires_seq: farExpires(seq),
       type: "demo.seed",
       sourcemaps: [],
     },
@@ -428,8 +436,8 @@ test("terminal bind creates offer with no exposes (no model ports, no noop/walk)
     offerId: seed.id,
     port: {
       id: "",
-      ts_created: now(),
-      ts_expired: expiresAtFromHours(now(), 24),
+      created_seq: seq,
+      expires_seq: farExpires(seq),
       type: "deal.final",
       promise: "Terminal deal port.",
       max_bindings: 1,
@@ -441,7 +449,7 @@ test("terminal bind creates offer with no exposes (no model ports, no noop/walk)
   const rt = new NegotiationRuntime({
     client,
     persistence,
-    now,
+    ledgerSeq,
     maxTurns: 5,
     requireNoop: true,
     requireWalkAway: true,
@@ -461,11 +469,11 @@ test("terminal bind creates offer with no exposes (no model ports, no noop/walk)
 });
 
 test("getBindSnapshotForParty matches prepareActingTurn allowed ids", async () => {
-  const { now, persistence, client, buyerId } = seedSellerListing();
+  const { ledgerSeq, persistence, client, buyerId } = seedSellerListing();
   const rt = new NegotiationRuntime({
     client,
     persistence,
-    now,
+    ledgerSeq,
     maxTurns: 5,
     requireNoop: false,
     requireWalkAway: false,
@@ -498,11 +506,11 @@ test("schema rejects multiple bind keys", () => {
 });
 
 test("requireNoop false omits noop from choices", async () => {
-  const { now, persistence, client, buyerId } = seedSellerListing();
+  const { ledgerSeq, persistence, client, buyerId } = seedSellerListing();
   const rt = new NegotiationRuntime({
     client,
     persistence,
-    now,
+    ledgerSeq,
     maxTurns: 5,
     requireNoop: false,
     requireWalkAway: false,

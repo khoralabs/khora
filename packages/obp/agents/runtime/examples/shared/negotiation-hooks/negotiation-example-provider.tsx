@@ -1,12 +1,12 @@
 import {
   createContext,
+  type ReactNode,
   useCallback,
   useContext,
   useEffect,
   useMemo,
   useRef,
   useState,
-  type ReactNode,
 } from "react";
 import { NEGOTIATION_TURN_FETCH_TIMEOUT_MS } from "../negotiation-timeouts.ts";
 import type { HealthResponse, PartyDisplayNames, StateResponse } from "../negotiation-types.ts";
@@ -417,6 +417,8 @@ export function NegotiationExampleProvider({
   );
 
   return (
-    <NegotiationExampleContext.Provider value={value}>{children}</NegotiationExampleContext.Provider>
+    <NegotiationExampleContext.Provider value={value}>
+      {children}
+    </NegotiationExampleContext.Provider>
   );
 }

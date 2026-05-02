@@ -2,24 +2,30 @@ import { Database } from "bun:sqlite";
 import { ObpClient, type ObpPersistence } from "@cfd/obp-core";
 import { createObpSqlitePersistence, initObpSchema, openObpDatabase } from "@cfd/obp-sqlite";
 
-export const DEMO_CLOCK_MS = 1_704_067_200_000;
+/** Default fixed ledger sequence for demos (same value on every read, like the old wall-clock demo). */
+export const DEMO_LEDGER_SEQ = 1_704_067_200_000;
 
 export type DemoStack = {
   db: Database;
   client: ObpClient;
   persistence: ObpPersistence;
-  now: () => number;
+  ledgerSeq: () => number;
+  /** Wall-clock ms for JSONL logging only; OBP validity uses {@link ledgerSeq}. */
+  demoLogNowMs: () => number;
 };
 
 export type CreateDemoStackOptions = {
-  now?: () => number;
+  ledgerSeq?: () => number;
+  /** Log line timestamps when using {@link createLoggingObpPersistence}; defaults to {@link Date.now}. */
+  demoLogNowMs?: () => number;
   /** When set, opens file-backed SQLite at this path (parent dirs must exist). */
   databasePath?: string;
 };
 
 /** OBP client + SQLite persistence for one matchmaking run (`:memory:` or file-backed). */
 export function createDemoStack(options?: CreateDemoStackOptions): DemoStack {
-  const now = options?.now ?? (() => DEMO_CLOCK_MS);
+  const ledgerSeq = options?.ledgerSeq ?? (() => DEMO_LEDGER_SEQ);
+  const demoLogNowMs = options?.demoLogNowMs ?? (() => Date.now());
   const db =
     options?.databasePath !== undefined
       ? openObpDatabase(options.databasePath)
@@ -28,7 +34,7 @@ export function createDemoStack(options?: CreateDemoStackOptions): DemoStack {
           initObpSchema(d);
           return d;
         })();
-  const persistence = createObpSqlitePersistence(db, { now });
-  const client = new ObpClient(persistence, { now });
-  return { db, client, persistence, now };
+  const persistence = createObpSqlitePersistence(db, { ledgerSeq });
+  const client = new ObpClient(persistence, { ledgerSeq });
+  return { db, client, persistence, ledgerSeq, demoLogNowMs };
 }

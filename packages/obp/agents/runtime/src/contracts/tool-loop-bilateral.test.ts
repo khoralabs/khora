@@ -8,19 +8,19 @@ import type { NegotiationTurnAudit } from "../runtime.ts";
 import { createNegotiationStructuredBilateralContract } from "./structured-bilateral.ts";
 import { createNegotiationToolLoopBilateralContract } from "./tool-loop-bilateral.ts";
 
-const DEFAULT_PORT_TTL = { basis: "hours" as const, measure: 24 };
+const DEFAULT_PORT_TTL = { basis: "ledger_seq" as const, measure: 1_000_000 };
 
 function fixture() {
   const t = { v: 1_700_000_000_000 };
-  const now = () => t.v;
-  const persistence = new FakeObpPersistence(now);
-  const client = new ObpClient(persistence, { now });
+  const ledgerSeq = () => t.v;
+  const persistence = new FakeObpPersistence(ledgerSeq);
+  const client = new ObpClient(persistence, { ledgerSeq });
   const { party: buyer } = persistence.registerParty({ name: "Buyer", sourcemaps: [] });
   const { party: seller } = persistence.registerParty({ name: "Seller", sourcemaps: [] });
   const ledger = new ObpLedger<NegotiationTurnAudit>({
     client,
     persistence,
-    now,
+    ledgerSeq,
     maxTurns: 8,
   });
   const emptyGraph: GraphSnapshotForPrompt = {

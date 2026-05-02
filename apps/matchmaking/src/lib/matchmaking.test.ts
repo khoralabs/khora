@@ -11,8 +11,8 @@ import {
 test("resolveCompletedDeal finds terminal bind on requestee offer", () => {
   const db = new Database(":memory:");
   db.run(OBP_SCHEMA_SQL);
-  const persistence = createObpSqlitePersistence(db, { now: () => 0 });
-  const client = new ObpClient(persistence, { now: () => 0 });
+  const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 0 });
+  const client = new ObpClient(persistence, { ledgerSeq: () => 0 });
   const { party: requestee } = client.registerParty({ name: "requestee", sourcemaps: [] });
 
   const { offer } = client.extendOffer({
@@ -20,8 +20,8 @@ test("resolveCompletedDeal finds terminal bind on requestee offer", () => {
     bindPortId: "",
     offer: {
       id: "",
-      ts_created: 0,
-      ts_expired: 86_400_000,
+      created_seq: 0,
+      expires_seq: 86_400_000,
       type: "counter",
       sourcemaps: [],
     },
@@ -30,8 +30,8 @@ test("resolveCompletedDeal finds terminal bind on requestee offer", () => {
     offerId: offer.id,
     port: {
       id: "",
-      ts_created: 0,
-      ts_expired: 86_400_000,
+      created_seq: 0,
+      expires_seq: 86_400_000,
       type: "accept.counter",
       promise: "Accept counter-offer.",
       max_bindings: 1,
@@ -53,8 +53,8 @@ test("resolveCompletedDeal finds terminal bind on requestee offer", () => {
 test("resolveMatchmakingConnectedDeal checks both parties' offers", () => {
   const db = new Database(":memory:");
   db.run(OBP_SCHEMA_SQL);
-  const persistence = createObpSqlitePersistence(db, { now: () => 0 });
-  const client = new ObpClient(persistence, { now: () => 0 });
+  const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 0 });
+  const client = new ObpClient(persistence, { ledgerSeq: () => 0 });
   const { party: requester } = client.registerParty({ name: "requester", sourcemaps: [] });
   const { party: requestee } = client.registerParty({ name: "requestee", sourcemaps: [] });
 
@@ -63,8 +63,8 @@ test("resolveMatchmakingConnectedDeal checks both parties' offers", () => {
     bindPortId: "",
     offer: {
       id: "",
-      ts_created: 0,
-      ts_expired: 86_400_000,
+      created_seq: 0,
+      expires_seq: 86_400_000,
       type: "meeting",
       sourcemaps: [],
     },
@@ -73,8 +73,8 @@ test("resolveMatchmakingConnectedDeal checks both parties' offers", () => {
     offerId: offer.id,
     port: {
       id: "",
-      ts_created: 0,
-      ts_expired: 86_400_000,
+      created_seq: 0,
+      expires_seq: 86_400_000,
       type: "accept",
       promise: "Accept meeting.",
       max_bindings: 1,

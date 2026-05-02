@@ -13,7 +13,7 @@ export const obpToolkit = toolkit(
     name: "obp-coordination",
     instructions: [
       "OBP coordinates parties through a persisted offer/port graph. Infer other parties only from rows in the snapshot you are given—never assume private goals or off-graph facts.",
-      "obp_extend_offer: publish an offer (offerType required). offerType is an arbitrary public string—plain language, ad-hoc key=value, or any convention your scenario uses; the toolkit does not mandate a schema. Expiry defaults to 24 hours (expiresAfterHours); ids and created time are system-assigned.",
+      "obp_extend_offer: publish an offer (offerType required). offerType is an arbitrary public string—plain language, ad-hoc key=value, or any convention your scenario uses; the toolkit does not mandate a schema. Validity is ledger-sequence-based (expires_after_seq / expires_seq); ids and created_seq are system-assigned.",
       "obp_expose_port: attach a port to an offer your party extends. portType is an arbitrary public string. terminal is a semantic hint (commitment vs branch)—it does not change bind rules.",
       "Contextual tools (obp_bind__*, obp_revoke_port__*, obp_revoke_offer__*): appear when the host provides a negotiation context. Use obp_bind__* to commit to a specific counterparty port; use revoke_* to expire your own ports or offers now.",
       "obp_end_negotiation: call once when the negotiation is finished from your perspective (deal done, impasse, or no further graph moves). Prefer this over long closing monologues so the session can end cleanly.",

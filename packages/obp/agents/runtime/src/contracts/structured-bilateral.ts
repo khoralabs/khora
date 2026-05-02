@@ -66,7 +66,7 @@ export function createNegotiationStructuredBilateralContract(
   const runtime = new NegotiationRuntime({
     client: opts.ledger.client,
     persistence: opts.ledger.persistence,
-    now: opts.ledger.now,
+    ledgerSeq: opts.ledger.ledgerSeq,
     maxTurns: opts.ledger.maxTurns,
     ...(opts.requireNoop !== undefined ? { requireNoop: opts.requireNoop } : {}),
     ...(opts.requireWalkAway !== undefined ? { requireWalkAway: opts.requireWalkAway } : {}),

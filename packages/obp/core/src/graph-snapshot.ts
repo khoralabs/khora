@@ -17,7 +17,7 @@ export type GraphSnapshot = {
     type: string;
     partyId: string | null;
     partyName: string | null;
-    tsExpired: number;
+    expiresSeq: number;
     expired: boolean;
   }>;
   ports: Array<{
@@ -28,7 +28,7 @@ export type GraphSnapshot = {
     maxBindings: number;
     ref: string;
     bindCount: number;
-    tsExpired: number;
+    expiresSeq: number;
     expired: boolean;
     exposedOnOfferIds: string[];
     bind_policy?: PortBindPolicy;

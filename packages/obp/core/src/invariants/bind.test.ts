@@ -3,16 +3,16 @@ import type { Offer, Port } from "../model/types";
 import { validateBindPreconditions } from "./bind";
 
 const offer = (o: Partial<Offer> & Pick<Offer, "id">): Offer => ({
-  ts_created: 0,
-  ts_expired: 1000,
+  created_seq: 0,
+  expires_seq: 1000,
   type: "t",
   sourcemaps: [],
   ...o,
 });
 
 const port = (p: Partial<Port> & Pick<Port, "id" | "ref" | "max_bindings">): Port => ({
-  ts_created: 0,
-  ts_expired: 1000,
+  created_seq: 0,
+  expires_seq: 1000,
   type: "t",
   promise: "test port",
   terminal: false,
@@ -25,8 +25,8 @@ describe("validateBindPreconditions", () => {
     const pRow = port({ id: "p", ref: "", max_bindings: 5 });
     const ports = new Map<string, Port>([["p", pRow]]);
     const f = validateBindPreconditions({
-      now: 2000,
-      offer: offer({ id: "o", ts_expired: 1000 }),
+      ledgerSeq: 1000,
+      offer: offer({ id: "o", expires_seq: 1000 }),
       port: pRow,
       portsById: ports,
       targetPortIsExposed: true,
@@ -39,8 +39,8 @@ describe("validateBindPreconditions", () => {
     const pRow = port({ id: "p", ref: "", max_bindings: 5 });
     const ports = new Map<string, Port>([["p", pRow]]);
     const f = validateBindPreconditions({
-      now: 0,
-      offer: offer({ id: "o", ts_expired: 1000 }),
+      ledgerSeq: 0,
+      offer: offer({ id: "o", expires_seq: 1000 }),
       port: pRow,
       portsById: ports,
       targetPortIsExposed: false,
@@ -53,8 +53,8 @@ describe("validateBindPreconditions", () => {
     const pRow = port({ id: "p", ref: "", max_bindings: 1 });
     const ports = new Map<string, Port>([["p", pRow]]);
     const f = validateBindPreconditions({
-      now: 0,
-      offer: offer({ id: "o", ts_expired: 1000 }),
+      ledgerSeq: 0,
+      offer: offer({ id: "o", expires_seq: 1000 }),
       port: pRow,
       portsById: ports,
       targetPortIsExposed: true,
@@ -67,8 +67,8 @@ describe("validateBindPreconditions", () => {
     const pRow = port({ id: "p", ref: "", max_bindings: 2 });
     const ports = new Map<string, Port>([["p", pRow]]);
     const f = validateBindPreconditions({
-      now: 0,
-      offer: offer({ id: "o", ts_expired: 1000 }),
+      ledgerSeq: 0,
+      offer: offer({ id: "o", expires_seq: 1000 }),
       port: pRow,
       portsById: ports,
       targetPortIsExposed: true,

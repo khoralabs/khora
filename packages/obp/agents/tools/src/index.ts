@@ -25,7 +25,11 @@ export {
   isDynamicBindToolName,
 } from "./negotiation-context.ts";
 export { obpNegotiationDynamicToolkit } from "./obp-negotiation-dynamic.ts";
-export { DEFAULT_EXPIRY_HOURS, expiresAtFromHours, MAX_EXPIRY_HOURS } from "./obp-tool-defaults.ts";
+export {
+  DEFAULT_EXPIRY_SEQ_DELTA,
+  expiresSeqAfterDelta,
+  MAX_EXPIRY_SEQ_DELTA,
+} from "./obp-tool-defaults.ts";
 export { obpToolkit } from "./obp-toolkit.ts";
 export type {
   ObpBindValidationContext,

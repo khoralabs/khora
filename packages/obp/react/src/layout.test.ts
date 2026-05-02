@@ -1,5 +1,5 @@
-import type { GraphSnapshot } from "@cfd/obp-core";
 import { expect, test } from "bun:test";
+import type { GraphSnapshot } from "@cfd/obp-core";
 import { graphSnapshotToFlow } from "./layout.ts";
 
 test("flowchart layout places successor offer to the right of bound port", () => {
@@ -14,7 +14,7 @@ test("flowchart layout places successor offer to the right of bound port", () =>
         type: "opening",
         partyId: "buyer",
         partyName: "Buyer",
-        tsExpired: 0,
+        expiresSeq: 0,
         expired: false,
       },
       {
@@ -22,7 +22,7 @@ test("flowchart layout places successor offer to the right of bound port", () =>
         type: "counter",
         partyId: "seller",
         partyName: "Seller",
-        tsExpired: 0,
+        expiresSeq: 0,
         expired: false,
       },
     ],
@@ -35,7 +35,7 @@ test("flowchart layout places successor offer to the right of bound port", () =>
         maxBindings: 1,
         ref: "",
         bindCount: 1,
-        tsExpired: 0,
+        expiresSeq: 0,
         expired: false,
         exposedOnOfferIds: ["offer-genesis"],
       },
@@ -47,7 +47,7 @@ test("flowchart layout places successor offer to the right of bound port", () =>
         maxBindings: 1,
         ref: "",
         bindCount: 0,
-        tsExpired: 0,
+        expiresSeq: 0,
         expired: false,
         exposedOnOfferIds: ["offer-genesis"],
       },
@@ -59,7 +59,7 @@ test("flowchart layout places successor offer to the right of bound port", () =>
         maxBindings: 1,
         ref: "",
         bindCount: 0,
-        tsExpired: 0,
+        expiresSeq: 0,
         expired: false,
         exposedOnOfferIds: ["offer-bind"],
       },
@@ -101,7 +101,7 @@ test("genesis-only snapshot lays offer then ports to the right", () => {
         type: "seed",
         partyId: "p1",
         partyName: "Party",
-        tsExpired: 0,
+        expiresSeq: 0,
         expired: false,
       },
     ],
@@ -114,7 +114,7 @@ test("genesis-only snapshot lays offer then ports to the right", () => {
         maxBindings: 1,
         ref: "",
         bindCount: 0,
-        tsExpired: 0,
+        expiresSeq: 0,
         expired: false,
         exposedOnOfferIds: ["o1"],
       },

@@ -9,10 +9,10 @@ type StubAudit = { partyId: string; index: number };
 
 function stubLedger(maxTurns: number): ObpLedger<StubAudit> {
   const t = { v: 1_700_000_000_000 };
-  const now = () => t.v;
-  const persistence = new FakeObpPersistence(now);
-  const client = new ObpClient(persistence, { now });
-  return new ObpLedger<StubAudit>({ client, persistence, now, maxTurns });
+  const ledgerSeq = () => t.v;
+  const persistence = new FakeObpPersistence(ledgerSeq);
+  const client = new ObpClient(persistence, { ledgerSeq });
+  return new ObpLedger<StubAudit>({ client, persistence, ledgerSeq, maxTurns });
 }
 
 function stubContract(ledger: ObpLedger<StubAudit>): {

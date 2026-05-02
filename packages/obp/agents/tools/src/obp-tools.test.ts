@@ -11,7 +11,6 @@ import {
   captureNegotiationEndFromToolExecuted,
   computeNegotiationContext,
 } from "./negotiation-context.ts";
-import { expiresAtFromHours } from "./obp-tool-defaults.ts";
 import { obpToolkit } from "./obp-toolkit.ts";
 import type { ObpToolkitEnv } from "./obp-toolkit-env.ts";
 import { buildObpToolkitContext, buildObpToolRuntimeContext } from "./toolkit-context.ts";
@@ -21,7 +20,7 @@ function mkEnv(
   overrides: Partial<ObpToolkitEnv> & Pick<ObpToolkitEnv, "actingPartyId">,
 ): ObpToolkitEnv {
   return {
-    now: () => 0,
+    ledgerSeq: () => 0,
     validateBind: undefined,
     ...overrides,
     client,
@@ -32,8 +31,8 @@ describe("obp tools", () => {
   test("obp_extend_offer uses env actingPartyId", async () => {
     const db = new Database(":memory:");
     db.run(OBP_SCHEMA_SQL);
-    const persistence = createObpSqlitePersistence(db, { now: () => 0 });
-    const client = new ObpClient(persistence, { now: () => 0 });
+    const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 0 });
+    const client = new ObpClient(persistence, { ledgerSeq: () => 0 });
     const { party } = client.registerParty({ name: "p1", sourcemaps: [] });
     const env = mkEnv(client, { actingPartyId: party.id });
     const { tools } = await obpExtendOfferTool.evaluate(buildObpToolkitContext({ env }));
@@ -45,31 +44,31 @@ describe("obp tools", () => {
     expect(client.getExtendingPartyId(out.offerId)).toBe(party.id);
   });
 
-  test("obp_extend_offer respects expiresAfterHours", async () => {
+  test("obp_extend_offer respects expires_after_seq", async () => {
     const db = new Database(":memory:");
     db.run(OBP_SCHEMA_SQL);
-    const persistence = createObpSqlitePersistence(db, { now: () => 1_000_000 });
-    const client = new ObpClient(persistence, { now: () => 1_000_000 });
+    const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 1_000_000 });
+    const client = new ObpClient(persistence, { ledgerSeq: () => 1_000_000 });
     const { party } = client.registerParty({ name: "p1", sourcemaps: [] });
-    const env = mkEnv(client, { actingPartyId: party.id, now: () => 1_000_000 });
+    const env = mkEnv(client, { actingPartyId: party.id, ledgerSeq: () => 1_000_000 });
     const { tools } = await obpExtendOfferTool.evaluate(buildObpToolkitContext({ env }));
     const spec = tools.obp_extend_offer;
     const out = (await spec.handler(buildObpToolRuntimeContext({ env }), {
       offerType: "t",
-      expiresAfterHours: 48,
+      expires_after_seq: 48,
     })) as { offerId: string };
     const o = client.getOffer(out.offerId);
     expect(o.kind).toBe("found");
     if (o.kind === "found") {
-      expect(o.offer.ts_expired).toBe(expiresAtFromHours(1_000_000, 48));
+      expect(o.offer.expires_seq).toBe(1_000_000 + 48);
     }
   });
 
   test("obp_expose_port rejects offer not owned by acting party", async () => {
     const db = new Database(":memory:");
     db.run(OBP_SCHEMA_SQL);
-    const persistence = createObpSqlitePersistence(db, { now: () => 0 });
-    const client = new ObpClient(persistence, { now: () => 0 });
+    const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 0 });
+    const client = new ObpClient(persistence, { ledgerSeq: () => 0 });
     const { party: seller } = client.registerParty({ name: "s", sourcemaps: [] });
     const { party: buyer } = client.registerParty({ name: "b", sourcemaps: [] });
     const { offer } = client.extendOffer({
@@ -77,8 +76,8 @@ describe("obp tools", () => {
       bindPortId: "",
       offer: {
         id: "",
-        ts_created: 0,
-        ts_expired: 86_400_000,
+        created_seq: 0,
+        expires_seq: 86_400_000,
         type: "public_text",
         sourcemaps: [],
       },
@@ -99,8 +98,8 @@ describe("obp tools", () => {
   test("obp_bind_port allows non-terminal exposed port", async () => {
     const db = new Database(":memory:");
     db.run(OBP_SCHEMA_SQL);
-    const persistence = createObpSqlitePersistence(db, { now: () => 0 });
-    const client = new ObpClient(persistence, { now: () => 0 });
+    const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 0 });
+    const client = new ObpClient(persistence, { ledgerSeq: () => 0 });
     const { party: seller } = client.registerParty({ name: "s", sourcemaps: [] });
     const { party: buyer } = client.registerParty({ name: "b", sourcemaps: [] });
     const { offer } = client.extendOffer({
@@ -108,8 +107,8 @@ describe("obp tools", () => {
       bindPortId: "",
       offer: {
         id: "",
-        ts_created: 0,
-        ts_expired: 86_400_000,
+        created_seq: 0,
+        expires_seq: 86_400_000,
         type: "public_text",
         sourcemaps: [],
       },
@@ -118,8 +117,8 @@ describe("obp tools", () => {
       offerId: offer.id,
       port: {
         id: "",
-        ts_created: 0,
-        ts_expired: 86_400_000,
+        created_seq: 0,
+        expires_seq: 86_400_000,
         type: "branch",
         promise: "Branch affordance.",
         max_bindings: 1,
@@ -141,16 +140,16 @@ describe("obp tools", () => {
   test("obp_bind_port rejects when validateBind throws (e.g. wrong actor)", async () => {
     const db = new Database(":memory:");
     db.run(OBP_SCHEMA_SQL);
-    const persistence = createObpSqlitePersistence(db, { now: () => 0 });
-    const client = new ObpClient(persistence, { now: () => 0 });
+    const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 0 });
+    const client = new ObpClient(persistence, { ledgerSeq: () => 0 });
     const { party } = client.registerParty({ name: "s", sourcemaps: [] });
     const { offer } = client.extendOffer({
       partyId: party.id,
       bindPortId: "",
       offer: {
         id: "",
-        ts_created: 0,
-        ts_expired: 86_400_000,
+        created_seq: 0,
+        expires_seq: 86_400_000,
         type: "public_text",
         sourcemaps: [],
       },
@@ -159,8 +158,8 @@ describe("obp tools", () => {
       offerId: offer.id,
       port: {
         id: "",
-        ts_created: 0,
-        ts_expired: 86_400_000,
+        created_seq: 0,
+        expires_seq: 86_400_000,
         type: "demo.deal.v1|p=55",
         promise: "Terminal deal port.",
         max_bindings: 1,
@@ -188,8 +187,8 @@ describe("obp tools", () => {
   test("obp_end_negotiation invokes requestNegotiationEnd", async () => {
     const db = new Database(":memory:");
     db.run(OBP_SCHEMA_SQL);
-    const persistence = createObpSqlitePersistence(db, { now: () => 0 });
-    const client = new ObpClient(persistence, { now: () => 0 });
+    const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 0 });
+    const client = new ObpClient(persistence, { ledgerSeq: () => 0 });
     const { party } = client.registerParty({ name: "p", sourcemaps: [] });
     let end: { reason?: string } | undefined;
     const env = mkEnv(client, {
@@ -207,8 +206,8 @@ describe("obp tools", () => {
   test("obpToolkit exposes dynamic bind and revoke tools from negotiationToolContext", async () => {
     const db = new Database(":memory:");
     db.run(OBP_SCHEMA_SQL);
-    const persistence = createObpSqlitePersistence(db, { now: () => 100 });
-    const client = new ObpClient(persistence, { now: () => 100 });
+    const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 100 });
+    const client = new ObpClient(persistence, { ledgerSeq: () => 100 });
     const { party: seller } = client.registerParty({ name: "s", sourcemaps: [] });
     const { party: buyer } = client.registerParty({ name: "b", sourcemaps: [] });
     const { offer } = client.extendOffer({
@@ -216,8 +215,8 @@ describe("obp tools", () => {
       bindPortId: "",
       offer: {
         id: "",
-        ts_created: 100,
-        ts_expired: 86_400_000,
+        created_seq: 100,
+        expires_seq: 86_400_000,
         type: "intro",
         sourcemaps: [],
       },
@@ -226,8 +225,8 @@ describe("obp tools", () => {
       offerId: offer.id,
       port: {
         id: "",
-        ts_created: 100,
-        ts_expired: 86_400_000,
+        created_seq: 100,
+        expires_seq: 86_400_000,
         type: "accept",
         promise: "Accept offer (terminal).",
         max_bindings: 1,
@@ -241,12 +240,12 @@ describe("obp tools", () => {
       client,
       persistence,
       actingPartyId: buyer.id,
-      now: 100,
+      ledgerSeq: 100,
       validateBind: undefined,
     });
     const buyerEnv = mkEnv(client, {
       actingPartyId: buyer.id,
-      now: () => 100,
+      ledgerSeq: () => 100,
       negotiationToolContext: buyerCtx,
     });
     const buyerEval = await evaluateComposable(
@@ -259,12 +258,12 @@ describe("obp tools", () => {
       client,
       persistence,
       actingPartyId: seller.id,
-      now: 100,
+      ledgerSeq: 100,
       validateBind: undefined,
     });
     const sellerEnv = mkEnv(client, {
       actingPartyId: seller.id,
-      now: () => 100,
+      ledgerSeq: () => 100,
       negotiationToolContext: sellerCtx,
     });
     const sellerEval = await evaluateComposable(
@@ -278,16 +277,16 @@ describe("obp tools", () => {
   test("computeNegotiationContext omits revoke tools when offer or port has a bind", async () => {
     const db = new Database(":memory:");
     db.run(OBP_SCHEMA_SQL);
-    const persistence = createObpSqlitePersistence(db, { now: () => 100 });
-    const client = new ObpClient(persistence, { now: () => 100 });
+    const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 100 });
+    const client = new ObpClient(persistence, { ledgerSeq: () => 100 });
     const { party: seller } = client.registerParty({ name: "s", sourcemaps: [] });
     const { offer } = client.extendOffer({
       partyId: seller.id,
       bindPortId: "",
       offer: {
         id: "",
-        ts_created: 100,
-        ts_expired: 86_400_000,
+        created_seq: 100,
+        expires_seq: 86_400_000,
         type: "intro",
         sourcemaps: [],
       },
@@ -296,8 +295,8 @@ describe("obp tools", () => {
       offerId: offer.id,
       port: {
         id: "",
-        ts_created: 100,
-        ts_expired: 86_400_000,
+        created_seq: 100,
+        expires_seq: 86_400_000,
         type: "accept",
         promise: "Accept offer (terminal).",
         max_bindings: 1,
@@ -313,7 +312,7 @@ describe("obp tools", () => {
       client,
       persistence,
       actingPartyId: seller.id,
-      now: 100,
+      ledgerSeq: 100,
       validateBind: undefined,
     });
     expect(sellerCtx.revokePortChoices.map((c) => c.portId)).not.toContain(port.id);
@@ -332,8 +331,8 @@ describe("obp tools", () => {
   test("getExtendingPartyId returns null for unknown offer", () => {
     const db = new Database(":memory:");
     db.run(OBP_SCHEMA_SQL);
-    const persistence = createObpSqlitePersistence(db, { now: () => 0 });
-    const client = new ObpClient(persistence, { now: () => 0 });
+    const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 0 });
+    const client = new ObpClient(persistence, { ledgerSeq: () => 0 });
     expect(client.getExtendingPartyId("00000000-0000-4000-8000-000000000099")).toBeNull();
   });
 });

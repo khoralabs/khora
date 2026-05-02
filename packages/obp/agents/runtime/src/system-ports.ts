@@ -8,7 +8,7 @@ import {
   OBP_AGENT_RUNTIME_WALK_AWAY_PORT_TYPE,
   walkAwayPortIdForHeadOffer,
 } from "./constants.ts";
-import { tsExpiredForTtl } from "./ttl-resolve.ts";
+import { expiresSeqForPortTtl } from "./ttl-resolve.ts";
 import type { TtlSpec } from "./ttl-spec.ts";
 
 export function isPortExposedOnOffer(client: ObpClient, offerId: string, portId: string): boolean {
@@ -20,7 +20,7 @@ export function newestCounterpartyExposedOfferId(args: {
   client: ObpClient;
   actingPartyId: string;
 }): string | null {
-  let best: { offerId: string; ts: number } | null = null;
+  let best: { offerId: string; seq: number } | null = null;
   for (const { offerId } of args.client.listExposedPortEdges()) {
     const owner = args.client.getExtendingPartyId(offerId);
     if (owner === null || owner === args.actingPartyId) {
@@ -30,9 +30,9 @@ export function newestCounterpartyExposedOfferId(args: {
     if (r.kind === "notFound") {
       continue;
     }
-    const ts = r.offer.ts_created;
-    if (best === null || ts > best.ts) {
-      best = { offerId, ts };
+    const seq = r.offer.created_seq;
+    if (best === null || seq > best.seq) {
+      best = { offerId, seq };
     }
   }
   return best?.offerId ?? null;
@@ -55,24 +55,24 @@ export function resolveHeadOfferIdForSyntheticPorts(args: {
 
 export type EnsureRuntimeSyntheticPortsArgs = {
   client: ObpClient;
-  now: number;
+  ledgerSeq: number;
   headOfferId: string;
   requireNoop: boolean;
   requireWalkAway: boolean;
-  /** Negotiation turn index when these ports are logically introduced (audit `turnIndex`). */
-  exposeTurnIndex: number;
+  /** Ledger sequence / turn index when these ports are logically introduced (audit `turnIndex`). */
+  exposeSeq: number;
   portTtl: TtlSpec;
 };
 
 /** Ensures synthetic noop / walk-away ports exist on the given offer (idempotent per offer + port id). */
 export function ensureRuntimeSyntheticPorts(args: EnsureRuntimeSyntheticPortsArgs): string[] {
-  const tsExp = tsExpiredForTtl(args.now, args.portTtl);
+  const expiresSeq = expiresSeqForPortTtl(args.ledgerSeq, args.portTtl);
   const noopId = noopPortIdForHeadOffer(args.headOfferId);
   const walkId = walkAwayPortIdForHeadOffer(args.headOfferId);
   const ttlMeta = {
     ttl_basis: args.portTtl.basis,
     ttl_measure: args.portTtl.measure,
-    expose_turn_index: args.exposeTurnIndex,
+    expose_seq: args.exposeSeq,
   } as const;
 
   const ensured: string[] = [];
@@ -82,8 +82,8 @@ export function ensureRuntimeSyntheticPorts(args: EnsureRuntimeSyntheticPortsArg
       offerId: args.headOfferId,
       port: {
         id: noopId,
-        ts_created: args.now,
-        ts_expired: tsExp,
+        created_seq: args.ledgerSeq,
+        expires_seq: expiresSeq,
         type: OBP_AGENT_RUNTIME_NOOP_PORT_TYPE,
         promise: OBP_AGENT_RUNTIME_NOOP_PORT_DESCRIPTION,
         max_bindings: 100,
@@ -101,8 +101,8 @@ export function ensureRuntimeSyntheticPorts(args: EnsureRuntimeSyntheticPortsArg
       offerId: args.headOfferId,
       port: {
         id: walkId,
-        ts_created: args.now,
-        ts_expired: tsExp,
+        created_seq: args.ledgerSeq,
+        expires_seq: expiresSeq,
         type: OBP_AGENT_RUNTIME_WALK_AWAY_PORT_TYPE,
         promise: OBP_AGENT_RUNTIME_WALK_AWAY_PORT_DESCRIPTION,
         max_bindings: 100,

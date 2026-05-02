@@ -59,10 +59,10 @@ export async function computeNegotiationContext(args: {
   client: ObpClient;
   persistence: ObpPersistence;
   actingPartyId: string;
-  now: number;
+  ledgerSeq: number;
   validateBind?: ObpToolkitEnv["validateBind"];
 }): Promise<ObpNegotiationToolContext> {
-  const { client, persistence, actingPartyId, now, validateBind } = args;
+  const { client, persistence, actingPartyId, ledgerSeq, validateBind } = args;
   const bindChoices: ObpNegotiationToolContext["bindChoices"] = [];
   const revokePortChoices: ObpNegotiationToolContext["revokePortChoices"] = [];
   const revokeOfferIds = new Set<string>();
@@ -74,7 +74,7 @@ export async function computeNegotiationContext(args: {
     client,
     persistence,
     actingPartyId,
-    now,
+    ledgerSeq,
     validateBind,
   });
   for (const { offerId, portId } of bindable) {

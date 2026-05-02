@@ -16,12 +16,12 @@ import {
   OBP_NEGOTIATION_BIND_NO_POLICY,
   walkAwayPortIdForHeadOffer,
 } from "./constants.ts";
-import { filterPortIdsByNegotiationTurnTtl, minExposeTurnIndexOnOffer } from "./port-turn-ttl.ts";
+import { filterPortIdsByNegotiationTurnTtl, minExposeSeqOnOffer } from "./port-turn-ttl.ts";
 import {
   ensureRuntimeSyntheticPorts,
   resolveHeadOfferIdForSyntheticPorts,
 } from "./system-ports.ts";
-import { tsExpiredForTtl } from "./ttl-resolve.ts";
+import { expiresSeqForOfferTtl, expiresSeqForPortTtl } from "./ttl-resolve.ts";
 import type { TtlSpec } from "./ttl-spec.ts";
 import {
   buildGenesisNegotiationTurnOutput,
@@ -120,7 +120,7 @@ export type NegotiationTurnAudit = NegotiationGenesisTurnAudit | NegotiationBind
 export type NegotiationRuntimeOptions = {
   client: ObpClient;
   persistence: ObpPersistence;
-  now: () => number;
+  ledgerSeq: () => number;
   /** When true (default), host exposes the noop synthetic port on the counterparty head offer. */
   requireNoop?: boolean;
   /** When true (default), host exposes the walk-away synthetic port on the counterparty head offer. */
@@ -243,11 +243,11 @@ export class NegotiationRuntime {
     }
     ensureRuntimeSyntheticPorts({
       client: this.opts.client,
-      now: this.opts.now(),
+      ledgerSeq: this.opts.ledgerSeq(),
       headOfferId: offerId,
       requireNoop: this.opts.requireNoop ?? true,
       requireWalkAway: this.opts.requireWalkAway ?? true,
-      exposeTurnIndex,
+      exposeSeq: exposeTurnIndex,
       portTtl: this.opts.defaultPortTtl,
     });
   }
@@ -262,13 +262,13 @@ export class NegotiationRuntime {
     const requireNoop = this.opts.requireNoop ?? true;
     const requireWalkAway = this.opts.requireWalkAway ?? true;
     const client = this.opts.client;
-    const now = this.opts.now();
+    const ledgerSeq = this.opts.ledgerSeq();
 
     let bindable = await listBindableCounterpartyPorts({
       client,
       persistence: this.opts.persistence,
       actingPartyId,
-      now,
+      ledgerSeq,
       validateBind: this.opts.validateBind,
     });
 
@@ -281,14 +281,14 @@ export class NegotiationRuntime {
       return null;
     }
 
-    const synExpose = minExposeTurnIndexOnOffer(client, head) ?? this.turnsCompleted;
+    const synExpose = minExposeSeqOnOffer(client, head) ?? this.turnsCompleted;
     ensureRuntimeSyntheticPorts({
       client,
-      now,
+      ledgerSeq,
       headOfferId: head,
       requireNoop,
       requireWalkAway,
-      exposeTurnIndex: synExpose,
+      exposeSeq: synExpose,
       portTtl: this.opts.defaultPortTtl,
     });
 
@@ -296,7 +296,7 @@ export class NegotiationRuntime {
       client,
       persistence: this.opts.persistence,
       actingPartyId,
-      now,
+      ledgerSeq,
       validateBind: this.opts.validateBind,
     });
 
@@ -394,7 +394,7 @@ export class NegotiationRuntime {
 
     const output = prep.schema.parse(rawOutput) as NegotiationGenesisTurnOutput;
     const client = this.opts.client;
-    const now = this.opts.now();
+    const ledgerSeq = this.opts.ledgerSeq();
     const exposeTurnIndex = this.turnsCompleted;
     const sourcemaps: SourceMapRef[] = output.sourcemaps ?? [];
     const offerTtl = this.pickOfferTtl(output);
@@ -404,8 +404,8 @@ export class NegotiationRuntime {
       bindPortId: "",
       offer: {
         id: "",
-        ts_created: now,
-        ts_expired: tsExpiredForTtl(now, offerTtl),
+        created_seq: ledgerSeq,
+        expires_seq: expiresSeqForOfferTtl(ledgerSeq, offerTtl),
         type: output.offerType,
         sourcemaps,
       },
@@ -416,7 +416,7 @@ export class NegotiationRuntime {
       const portTtl = this.pickPortTtl(p);
       const { port } = client.exposePort({
         offerId: offer.id,
-        port: this.buildExposePortPayload(p, now, exposeTurnIndex, portTtl),
+        port: this.buildExposePortPayload(p, ledgerSeq, exposeTurnIndex, portTtl),
       });
       exposedPortIds.push(port.id);
     }
@@ -440,14 +440,14 @@ export class NegotiationRuntime {
 
   private buildExposePortPayload(
     p: NegotiationTurnExposePort,
-    now: number,
-    exposeTurnIndex: number,
+    ledgerSeq: number,
+    exposeSeq: number,
     portTtl: TtlSpec,
   ) {
     return {
       id: "",
-      ts_created: now,
-      ts_expired: tsExpiredForTtl(now, portTtl),
+      created_seq: ledgerSeq,
+      expires_seq: expiresSeqForPortTtl(ledgerSeq, portTtl),
       type: p.portType,
       promise: p.promise,
       max_bindings: p.max_bindings ?? 1,
@@ -456,7 +456,7 @@ export class NegotiationRuntime {
       sourcemaps: p.sourcemaps ?? [],
       ttl_basis: portTtl.basis,
       ttl_measure: portTtl.measure,
-      expose_turn_index: exposeTurnIndex,
+      expose_seq: exposeSeq,
       ...(p.bind_policy !== undefined ? { bind_policy: p.bind_policy } : {}),
     };
   }
@@ -562,7 +562,7 @@ export class NegotiationRuntime {
     }
 
     const client = this.opts.client;
-    const now = this.opts.now();
+    const ledgerSeq = this.opts.ledgerSeq();
     const exposeTurnIndex = this.turnsCompleted;
     const sourcemaps: SourceMapRef[] = output.sourcemaps ?? [];
     const offerTtl = this.pickOfferTtl(output);
@@ -582,8 +582,8 @@ export class NegotiationRuntime {
       counterparty_bind,
       offer: {
         id: "",
-        ts_created: now,
-        ts_expired: tsExpiredForTtl(now, offerTtl),
+        created_seq: ledgerSeq,
+        expires_seq: expiresSeqForOfferTtl(ledgerSeq, offerTtl),
         type: output.offerType,
         sourcemaps,
       },
@@ -597,7 +597,7 @@ export class NegotiationRuntime {
       const portTtl = this.pickPortTtl(p);
       const { port } = client.exposePort({
         offerId: offer.id,
-        port: this.buildExposePortPayload(p, now, exposeTurnIndex, portTtl),
+        port: this.buildExposePortPayload(p, ledgerSeq, exposeTurnIndex, portTtl),
       });
       exposedPortIds.push(port.id);
     }

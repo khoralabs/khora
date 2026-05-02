@@ -3,8 +3,8 @@ import type { ObpClient, ObpPersistence } from "@cfd/obp-core";
 /**
  * Shared negotiation truth: one ledger per conversation / deal / channel.
  *
- * Owns the {@link ObpClient} + {@link ObpPersistence} pair, the wall clock, the
- * turn counter, and the audit tail. Per-agent {@link TurnContract}s read and
+ * Owns the {@link ObpClient} + {@link ObpPersistence} pair, the ledger sequence callback,
+ * the turn counter, and the audit tail. Per-agent {@link TurnContract}s read and
  * write through this ledger; the {@link BilateralCoordinator} (or any other
  * coordinator) sequences turns against it.
  *
@@ -14,7 +14,7 @@ import type { ObpClient, ObpPersistence } from "@cfd/obp-core";
 export type ObpLedgerOptions<TAudit> = {
   client: ObpClient;
   persistence: ObpPersistence;
-  now: () => number;
+  ledgerSeq: () => number;
   /** Max number of completed turns this ledger will accept; coordinators check before running. */
   maxTurns: number;
   /** Optional pre-seeded audit tail (e.g. for resumed sessions). */
@@ -26,7 +26,7 @@ export type ObpLedgerOptions<TAudit> = {
 export class ObpLedger<TAudit> {
   readonly client: ObpClient;
   readonly persistence: ObpPersistence;
-  readonly now: () => number;
+  readonly ledgerSeq: () => number;
   readonly maxTurns: number;
   private readonly auditList: TAudit[];
   private completed: number;
@@ -34,7 +34,7 @@ export class ObpLedger<TAudit> {
   constructor(opts: ObpLedgerOptions<TAudit>) {
     this.client = opts.client;
     this.persistence = opts.persistence;
-    this.now = opts.now;
+    this.ledgerSeq = opts.ledgerSeq;
     this.maxTurns = opts.maxTurns;
     this.auditList = [...(opts.initialAudits ?? [])];
     this.completed = opts.initialCompletedTurns ?? this.auditList.length;

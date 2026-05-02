@@ -14,7 +14,7 @@ OBP is a small typed graph for causal interaction history: **Party** → **Offer
 **Normative invariants** (implementations MUST enforce; not expressible in Smithy types alone)
 1. Each **Offer** has exactly one **EXTENDS** from its issuing **Party** (created via **ExtendOffer**).
 2. **BindPort** / bind leg of **ExtendOffer** may target only **Ports** that are the target of at least one **EXPOSES** (the port is *exposed* on the graph).
-3. Reject binds when the binding **Offer** or target **Port** is expired (`ts_expired` vs implementor clock).
+3. Reject binds when the binding **Offer** or target **Port** is expired: current **`ledger_seq`** MUST satisfy **`ledger_seq < expires_seq`** on both (see `shapes.smithy` **`Offer`** / **`Port`**). Implementations derive **`ledger_seq`** from session control—not wall-clock `Date.now()`—unless an adapter explicitly maps clock ticks to sequence (discouraged).
 4. **BINDS** count toward a **Port** must not exceed that port's `max_bindings` (after resolving `ref`, count against the resolved exposed port).
 5. **Port.ref:** resolve before bind rules; detect cycles on the ref chain and reject.
 6. **Port.terminal** is an agent hint only; it does not change bind rules.
@@ -25,7 +25,7 @@ OBP is a small typed graph for causal interaction history: **Party** → **Offer
 
 **Staging:** ports that must not be bindable yet are **not** EXPOSES'd (no separate lifecycle enum on **Port**).
 
-**Revocation (soft close):** implementations MAY support setting `ts_expired` to the current clock for **Port** and **Offer** rows so existing expiry checks prevent new binds. **ListExposedPortEdges** supports enumerating EXPOSES for orchestration (e.g. dynamic tools).
+**Revocation (soft close):** implementations MAY support setting **`expires_seq`** on **Port** / **Offer** to the **current ledger sequence** so subsequent binds fail the expiry check. **ListExposedPortEdges** supports enumerating EXPOSES for orchestration (e.g. dynamic tools).
 
 **Orchestration reads:** **IsPortExposed**, **ListBinds**, **GetPortsSnapshot**, and **GetExtendingPartyId** mirror the **`ObpPersistence`** strategy surface in `@cfd/obp-core` (same semantics as TS **`ObpClient`** precondition helpers).
 
@@ -37,7 +37,9 @@ OBP is a small typed graph for causal interaction history: **Party** → **Offer
 
 **Structured bind_policy:** Smithy uses **`Document`**; constrained JSON shape is validated in TS via Zod (`PortBindPolicy`).
 
-Narrative: `packages/obp/README.md`, `packages/obp/documentation/*.obp`.
+Narrative: `packages/obp/README.md`, `packages/obp/documentation/*.md`, `packages/obp/documentation/*.obp`.
+
+**Decentralized session:** `packages/obp/documentation/decentralized-session.md` (Merkle checkpoints, fork rollback, ledger sequence).
 """)
 service ObpPersistence {
     version: "2026-05-01"
@@ -59,7 +61,7 @@ service ObpPersistence {
     ]
 }
 
-/// Create a party; implementation assigns `Party.id` and `Party.ts_created`.
+/// Create a party; implementation assigns `Party.id` and `Party.created_seq`.
 operation RegisterParty {
     input: RegisterPartyInput
     output: RegisterPartyOutput
@@ -131,7 +133,7 @@ union GetPortResult {
 }
 
 /// Create an offer, add Party -[EXTENDS]-> Offer, and optionally Offer -[BINDS]-> Port.
-/// Implementations MUST assign `Offer.id` and `Offer.ts_created` and MAY ignore client-supplied `id`/`ts_created` on the input `offer` if they require placeholders in the wire format.
+/// Implementations MUST assign `Offer.id` and `Offer.created_seq` and MAY ignore client-supplied `id`/`created_seq` on the input `offer` if they require placeholders in the wire format.
 operation ExtendOffer {
     input: ExtendOfferInput
     output: ExtendOfferOutput
@@ -151,7 +153,7 @@ structure ExtendOfferOutput {
     offer: Offer
 }
 
-/// Create a port and Offer -[EXPOSES]-> Port. Implementation assigns `Port.id` and `Port.ts_created`; may ignore placeholders on input `port`.
+/// Create a port and Offer -[EXPOSES]-> Port. Implementation assigns `Port.id` and `Port.created_seq`; may ignore placeholders on input `port`.
 operation ExposePort {
     input: ExposePortInput
     output: ExposePortOutput
@@ -277,7 +279,7 @@ structure GetExtendingPartyIdOutput {
     partyId: String
 }
 
-/// Set `Port.ts_expired` to now. Caller enforces issuer policy.
+/// Set `Port.expires_seq` to the current revoke ledger sequence. Caller enforces issuer policy.
 operation SetPortExpiredNow {
     input: SetPortExpiredNowInput
     output: SetPortExpiredNowOutput
@@ -289,7 +291,7 @@ structure SetPortExpiredNowInput {
 
 structure SetPortExpiredNowOutput {}
 
-/// Set `Offer.ts_expired` to now and cascade to ports exposed on that offer. Caller enforces issuer policy.
+/// Set `Offer.expires_seq` to the current revoke ledger sequence and cascade to ports exposed on that offer. Caller enforces issuer policy.
 operation SetOfferExpiredNow {
     input: SetOfferExpiredNowInput
     output: SetOfferExpiredNowOutput
