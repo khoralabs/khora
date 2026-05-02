@@ -10,9 +10,25 @@ export {
   walkAwayPortIdForHeadOffer,
 } from "./constants.ts";
 export {
-  createStructuredObpNegotiationAgent,
-  type StructuredObpNegotiationToolSet,
+  createNegotiationStructuredBilateralContract,
+  type StructuredBilateralContractOptions,
+} from "./contracts/structured-bilateral.ts";
+export {
+  createNegotiationToolLoopBilateralContract,
+  type ToolLoopBilateralContractOptions,
+} from "./contracts/tool-loop-bilateral.ts";
+export {
+  BilateralCoordinator,
+  type BilateralCoordinatorOptions,
+  type RunAgentTurn,
+  type RunNextTurnResult,
+} from "./coordinator/bilateral.ts";
+export {
+  createNegotiationAgent,
+  type NegotiationToolSet,
 } from "./create-agent.ts";
+export type { GraphSnapshot } from "./graph-snapshot-types.ts";
+export { ObpLedger, type ObpLedgerOptions } from "./ledger.ts";
 export {
   filterPortIdsByNegotiationTurnTtl,
   minExposeTurnIndexOnOffer,
@@ -20,11 +36,25 @@ export {
   portExpiredForSnapshot,
 } from "./port-turn-ttl.ts";
 export {
+  type BuildObpNegotiationUserMessageArgs,
+  buildObpNegotiationUserMessage,
+  formatBindMenuForPrompt,
+  formatGraphSnapshotForPrompt,
+  type GraphSnapshotForPrompt,
+} from "./prompt.ts";
+export { formatNegotiationProviderError } from "./provider-error.ts";
+export {
   type NegotiationBindMenuEntry,
   type NegotiationBindTurnAudit,
   type NegotiationExposedPortSummary,
   type NegotiationGenesisTurnAudit,
+  /**
+   * @deprecated Prefer {@link createNegotiationStructuredBilateralContract} +
+   * {@link BilateralCoordinator} + {@link ObpLedger}. Re-exported for the
+   * low-level escape hatch only; will be hidden in a follow-up release.
+   */
   NegotiationRuntime,
+  /** @deprecated See {@link NegotiationRuntime}. */
   type NegotiationRuntimeOptions,
   type NegotiationTurnAudit,
 } from "./runtime.ts";
@@ -36,6 +66,7 @@ export {
 } from "./system-ports.ts";
 export { tsExpiredForTtl } from "./ttl-resolve.ts";
 export { type TtlBasis, type TtlSpec, zTtlSpec } from "./ttl-spec.ts";
+export type { PreparedTurn, TurnContract } from "./turn-contract.ts";
 export {
   buildGenesisNegotiationTurnOutput,
   buildNegotiationTurnOutput,

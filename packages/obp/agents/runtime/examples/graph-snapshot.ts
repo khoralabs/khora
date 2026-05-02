@@ -1,40 +1,9 @@
-import type { ObpClient, PortBindPolicy } from "@cfd/obp-core";
+import type { ObpClient } from "@cfd/obp-core";
 import type { FakeObpPersistence } from "@cfd/obp-core/testing";
+import type { GraphSnapshot } from "../src/graph-snapshot-types.ts";
 import { portExpiredForSnapshot } from "../src/port-turn-ttl.ts";
 
-/** JSON-safe DAG view for the negotiation demo (in-memory FakeObpPersistence only). */
-export type GraphSnapshot = {
-  parties: Array<{ id: string; name: string }>;
-  offers: Array<{
-    id: string;
-    type: string;
-    partyId: string | null;
-    partyName: string | null;
-    tsExpired: number;
-    expired: boolean;
-  }>;
-  ports: Array<{
-    id: string;
-    type: string;
-    description: string;
-    terminal: boolean;
-    maxBindings: number;
-    ref: string;
-    bindCount: number;
-    tsExpired: number;
-    expired: boolean;
-    exposedOnOfferIds: string[];
-    bind_policy?: PortBindPolicy;
-  }>;
-  extends: Array<{ partyId: string; offerId: string }>;
-  exposes: Array<{ offerId: string; portId: string }>;
-  binds: Array<{
-    offerId: string;
-    portId: string;
-    counterparty_bind?: Record<string, unknown>;
-    bind_policy_snapshot?: PortBindPolicy;
-  }>;
-};
+export type { GraphSnapshot };
 
 export function buildGraphSnapshot(
   fake: FakeObpPersistence,

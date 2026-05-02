@@ -1,11 +1,19 @@
-import type {
-  RegisteredAgentIdentity,
-  ToolkitContext,
-  ToolRuntimeContext,
-} from "@cfd/agent-identity";
 import { ObpClient, type Party } from "@cfd/obp-core";
 import { FakeObpPersistence } from "@cfd/obp-core/testing";
-import { NegotiationRuntime, type NegotiationTurnAudit } from "../src/runtime.ts";
+import type {
+  ObpNegotiatorPreparedTurn,
+  ObpNegotiatorStructuredSessionContext,
+  ObpNegotiatorStructuredSessionInput,
+  ObpNegotiatorStructuredSessionOutput,
+} from "@cfd/obp-negotiator";
+import {
+  BilateralCoordinator,
+  createNegotiationStructuredBilateralContract,
+  formatNegotiationProviderError,
+  type NegotiationTurnAudit,
+  ObpLedger,
+  type PreparedTurn,
+} from "../src/index.ts";
 import { buildGraphSnapshot } from "./graph-snapshot.ts";
 import indexHtml from "./index.html";
 import { getNegotiationModel, isLlmConfigured } from "./llm-env.ts";
@@ -13,8 +21,9 @@ import {
   createNegotiationPartyIdentities,
   type NegotiationPartyIdentities,
 } from "./negotiation-agents.ts";
+import { NEGOTIATION_LLM_TURN_BUDGET_MS } from "./negotiation-timeouts.ts";
 import type { BindOption } from "./negotiation-types.ts";
-import { formatNegotiationProviderError, runLlmTurn } from "./run-llm-turn.ts";
+import { scenarioForUserMessage } from "./scenario.ts";
 
 const MAX_TURNS = 12;
 
@@ -30,22 +39,58 @@ let client: ObpClient;
 let buyer: Party;
 let seller: Party;
 let walkAwayRequested = false;
-const audits: NegotiationTurnAudit[] = [];
-let runtime: NegotiationRuntime;
+let ledger: ObpLedger<NegotiationTurnAudit>;
+let coordinator: BilateralCoordinator<NegotiationTurnAudit>;
+let identitiesPromise: Promise<NegotiationPartyIdentities> | null = null;
 
-function initNegotiationSession(): void {
+function getIdentityBundle(): Promise<NegotiationPartyIdentities> {
+  identitiesPromise ??= createNegotiationPartyIdentities();
+  return identitiesPromise;
+}
+
+function partyRoleLabel(partyId: string): "buyer" | "seller" {
+  return partyId === buyer.id ? "buyer" : "seller";
+}
+
+function partyRoleName(partyId: string): string {
+  return partyId === buyer.id ? "Buyer" : "Seller";
+}
+
+function priorAuditsSummary(): string {
+  if (ledger.audits.length === 0) {
+    return "";
+  }
+  return ledger.audits
+    .map((a) => {
+      if (a.kind === "genesis") {
+        return `- turn ${a.turnIndex} genesis: newOfferType=${a.newOfferType}; exposed=${a.exposedPorts.map((p) => p.portType).join(", ") || "(none)"}`;
+      }
+      return `- turn ${a.turnIndex} bind: bindKind=${a.bindKind}; chose=${a.chosenPortType}; counterpartyState=${a.counterpartyHeadOfferType ?? "?"}; newOfferType=${a.newOfferType}; exposed=${a.exposedPorts.map((p) => p.portType).join(", ") || "(none)"}`;
+    })
+    .join("\n");
+}
+
+async function initNegotiationSession(): Promise<void> {
   persistence = new FakeObpPersistence(now);
   client = new ObpClient(persistence, { now });
   buyer = persistence.registerParty({ name: "Buyer", sourcemaps: [] }).party;
   seller = persistence.registerParty({ name: "Seller", sourcemaps: [] }).party;
   walkAwayRequested = false;
-  audits.length = 0;
   clock.t = INITIAL_CLOCK_T;
-  runtime = new NegotiationRuntime({
+
+  ledger = new ObpLedger<NegotiationTurnAudit>({
     client,
     persistence,
     now,
     maxTurns: MAX_TURNS,
+  });
+
+  const contract = createNegotiationStructuredBilateralContract({
+    ledger,
+    partyRoleName,
+    scenario: scenarioForUserMessage(),
+    getGraphSnapshot: () => buildGraphSnapshot(persistence, client, clock.t, ledger.completedTurns),
+    getPriorAuditsSummary: priorAuditsSummary,
     requireNoop: true,
     requireWalkAway: true,
     allowAgentPortTtl: false,
@@ -54,49 +99,45 @@ function initNegotiationSession(): void {
       walkAwayRequested = true;
     },
   });
+
+  const ids = await getIdentityBundle();
+  const firstPartyId = firstActor === "buyer" ? buyer.id : seller.id;
+
+  coordinator = new BilateralCoordinator<NegotiationTurnAudit>({
+    ledger,
+    parties: [buyer.id, seller.id],
+    contract,
+    firstPartyId,
+    runAgentTurn: async ({ partyId, prepared }) => {
+      const identity = partyId === buyer.id ? ids.buyer : ids.seller;
+      const ctx: Omit<ObpNegotiatorStructuredSessionContext, "agent"> = {
+        model: getNegotiationModel(),
+        prepared: preparedToNegotiatorTurn(prepared),
+        budgetMs: NEGOTIATION_LLM_TURN_BUDGET_MS,
+      };
+      const session = ids.registry.createSession(identity.agentId, { ctx });
+      const out = await session.start<
+        ObpNegotiatorStructuredSessionInput,
+        ObpNegotiatorStructuredSessionOutput
+      >({});
+      return out.output;
+    },
+  });
 }
 
-initNegotiationSession();
-
-function firstPartyId(): string {
-  return firstActor === "buyer" ? buyer.id : seller.id;
-}
-
-function secondPartyId(): string {
-  return firstActor === "buyer" ? seller.id : buyer.id;
-}
-
-/** Party id that may act when `turnsCompleted` turns are already done. */
-function expectedActingPartyId(turnsCompleted: number): string {
-  return turnsCompleted % 2 === 0 ? firstPartyId() : secondPartyId();
-}
-
-function partyRoleLabel(partyId: string): "buyer" | "seller" {
-  return partyId === buyer.id ? "buyer" : "seller";
-}
-
-let identitiesPromise: Promise<NegotiationPartyIdentities> | null = null;
-function getIdentityBundle(): Promise<NegotiationPartyIdentities> {
-  identitiesPromise ??= createNegotiationPartyIdentities();
-  return identitiesPromise;
-}
-
-function toolkitAndRuntime(agentIdentity: RegisteredAgentIdentity): {
-  toolkitCtx: ToolkitContext<Record<string, never>>;
-  toolRuntime: ToolRuntimeContext<Record<string, never>>;
-} {
-  const toolkitCtx: ToolkitContext<Record<string, never>> = {
-    env: {},
-    agentId: agentIdentity.agentId,
-    agentName: agentIdentity.name,
+function preparedToNegotiatorTurn(p: PreparedTurn<unknown>): ObpNegotiatorPreparedTurn {
+  return {
+    ...(p.zodOutputSchema !== undefined ? { zodOutputSchema: p.zodOutputSchema } : {}),
+    ...(p.outputSchema !== undefined ? { outputSchema: p.outputSchema } : {}),
+    systemFragments: p.systemFragments,
+    userMessage: p.userMessage,
+    ...(p.metadata !== undefined
+      ? { metadata: p.metadata as ObpNegotiatorPreparedTurn["metadata"] }
+      : {}),
   };
-  const toolRuntime: ToolRuntimeContext<Record<string, never>> = {
-    env: {},
-    agentId: agentIdentity.agentId,
-    agentName: agentIdentity.name,
-  };
-  return { toolkitCtx, toolRuntime };
 }
+
+await initNegotiationSession();
 
 function jsonResponse(obj: unknown, status = 200): Response {
   return new Response(JSON.stringify(obj), {
@@ -105,7 +146,7 @@ function jsonResponse(obj: unknown, status = 200): Response {
   });
 }
 
-function agreementReachedFromAudits(list: NegotiationTurnAudit[]): boolean {
+function agreementReachedFromAudits(list: ReadonlyArray<NegotiationTurnAudit>): boolean {
   const last = list[list.length - 1];
   if (last === undefined || last.kind !== "bind") {
     return false;
@@ -117,29 +158,15 @@ function agreementReachedFromAudits(list: NegotiationTurnAudit[]): boolean {
   return chosen?.terminal === true;
 }
 
-function priorAuditsSummary(): string {
-  if (audits.length === 0) {
-    return "";
-  }
-  return audits
-    .map((a) => {
-      if (a.kind === "genesis") {
-        return `- turn ${a.turnIndex} genesis: newOfferType=${a.newOfferType}; exposed=${a.exposedPorts.map((p) => p.portType).join(", ") || "(none)"}`;
-      }
-      return `- turn ${a.turnIndex} bind: bindKind=${a.bindKind}; chose=${a.chosenPortType}; counterpartyState=${a.counterpartyHeadOfferType ?? "?"}; newOfferType=${a.newOfferType}; exposed=${a.exposedPorts.map((p) => p.portType).join(", ") || "(none)"}`;
-    })
-    .join("\n");
-}
-
 async function buildStateResponse(): Promise<object> {
-  const turnsCompleted = runtime.turns;
+  const turnsCompleted = ledger.completedTurns;
   const snapshot = buildGraphSnapshot(persistence, client, clock.t, turnsCompleted);
-  const agreementReached = agreementReachedFromAudits(audits);
-  const negotiationEnded = walkAwayRequested || turnsCompleted >= MAX_TURNS || agreementReached;
+  const agreementReached = agreementReachedFromAudits(ledger.audits);
+  const negotiationEnded = walkAwayRequested || ledger.isExhausted() || agreementReached;
   const llm = isLlmConfigured();
 
   const nextActorHint =
-    negotiationEnded || !llm ? null : partyRoleLabel(expectedActingPartyId(turnsCompleted));
+    negotiationEnded || !llm ? null : partyRoleLabel(coordinator.expectedActingPartyId());
 
   let nextTurn: {
     mode: "genesis" | "bind";
@@ -149,14 +176,11 @@ async function buildStateResponse(): Promise<object> {
     bindOptions: BindOption[];
   } | null = null;
 
-  if (!negotiationEnded && llm && turnsCompleted < MAX_TURNS && !walkAwayRequested) {
-    const nextId = expectedActingPartyId(turnsCompleted);
+  if (!negotiationEnded && llm && !ledger.isExhausted() && !walkAwayRequested) {
+    const nextId = coordinator.expectedActingPartyId();
     const actingRole = partyRoleLabel(nextId);
-    if (
-      turnsCompleted === 0 &&
-      nextId === firstPartyId() &&
-      (await runtime.hasNoBindableCounterpartyPorts(nextId))
-    ) {
+    const probe = await coordinator.contract.hasNoBindableCounterpartyPorts?.(nextId);
+    if (probe === true) {
       nextTurn = {
         mode: "genesis",
         actingPartyId: nextId,
@@ -165,22 +189,28 @@ async function buildStateResponse(): Promise<object> {
         bindOptions: [],
       };
     } else {
-      const snap = await runtime.getBindSnapshotForParty(nextId);
-      if (snap !== null) {
+      // Reuse the contract's prepare to produce a stable bind menu for the UI.
+      // (The coordinator will re-prepare on the actual turn; identical state.)
+      try {
+        const prepared = await coordinator.contract.prepare(nextId);
+        const bindOptions = (prepared.metadata?.bindMenu as BindOption[] | undefined) ?? [];
         nextTurn = {
           mode: "bind",
           actingPartyId: nextId,
           actingRole,
-          counterpartyHeadOfferType: snap.counterpartyHeadOfferType,
-          bindOptions: snap.bindMenu,
+          counterpartyHeadOfferType:
+            (prepared.metadata?.counterpartyHeadOfferType as string | null | undefined) ?? null,
+          bindOptions,
         };
+      } catch {
+        nextTurn = null;
       }
     }
   }
 
   return {
     graph: snapshot,
-    audits,
+    audits: ledger.audits,
     turnsCompleted,
     maxTurns: MAX_TURNS,
     negotiationEnded,
@@ -197,7 +227,7 @@ async function buildStateResponse(): Promise<object> {
 let turnMutex = Promise.resolve();
 
 async function handleNegotiationReset(): Promise<Response> {
-  initNegotiationSession();
+  await initNegotiationSession();
   return jsonResponse({ ok: true, state: await buildStateResponse() });
 }
 
@@ -217,68 +247,33 @@ async function handleNegotiationTurn(actingPartyId: string): Promise<Response> {
   if (actingPartyId !== buyer.id && actingPartyId !== seller.id) {
     return jsonResponse({ ok: false, error: "unknown_party" }, 400);
   }
-  if (runtime.turns >= MAX_TURNS) {
+  if (ledger.isExhausted()) {
     return jsonResponse({ ok: false, error: "max_turns" }, 400);
   }
   if (walkAwayRequested) {
     return jsonResponse({ ok: false, error: "negotiation_ended" }, 400);
   }
-  if (agreementReachedFromAudits(audits)) {
+  if (agreementReachedFromAudits(ledger.audits)) {
     return jsonResponse({ ok: false, error: "negotiation_ended" }, 400);
   }
 
-  const expected = expectedActingPartyId(runtime.turns);
+  const expected = coordinator.expectedActingPartyId();
   if (actingPartyId !== expected) {
     return jsonResponse(
-      {
-        ok: false,
-        error: "wrong_turn_party",
-        expectedParty: partyRoleLabel(expected),
-      },
+      { ok: false, error: "wrong_turn_party", expectedParty: partyRoleLabel(expected) },
       400,
     );
   }
 
-  const genesisTurn =
-    runtime.turns === 0 &&
-    actingPartyId === firstPartyId() &&
-    (await runtime.hasNoBindableCounterpartyPorts(actingPartyId));
-
-  const ids = await getIdentityBundle();
-  const identity = actingPartyId === buyer.id ? ids.buyer : ids.seller;
-  const { toolkitCtx, toolRuntime } = toolkitAndRuntime(identity);
-  const partyRoleName = actingPartyId === buyer.id ? "Buyer" : "Seller";
-
-  const graph = buildGraphSnapshot(persistence, client, clock.t, runtime.turns);
-  const model = getNegotiationModel();
-
   try {
-    const result = await runLlmTurn({
-      model,
-      identity,
-      toolkitCtx,
-      toolRuntime,
-      negotiation: runtime,
-      actingPartyId,
-      partyRoleName,
-      graph,
-      priorAuditsSummary: priorAuditsSummary(),
-      genesisTurn,
-    });
-
+    const result = await coordinator.runNextTurn();
     if (!result.ok) {
       return jsonResponse({ ok: false, error: result.error }, 422);
     }
-
-    audits.push(result.audit);
     clock.t += 1;
-
     return jsonResponse({ ok: true, state: await buildStateResponse() });
   } catch (e) {
-    return jsonResponse(
-      { ok: false, error: formatNegotiationProviderError(e) },
-      500,
-    );
+    return jsonResponse({ ok: false, error: formatNegotiationProviderError(e) }, 500);
   }
 }
 

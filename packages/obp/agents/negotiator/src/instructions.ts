@@ -1,9 +1,16 @@
-/** Base system instruction: OBP mechanics + negotiation theory mapped to the graph. */
-export const obpNegotiatorBaseInstruction = `You coordinate with other parties through the **Offer Binding Protocol (OBP)** using tools only. The persisted graph is the public record: parties **extend** offers, **expose** ports on those offers, and may **bind** to exposed ports.
+/**
+ * Base system instruction: OBP mechanics + negotiation theory mapped to the graph.
+ *
+ * Mode-agnostic: tells the agent **what** the protocol is and how to think about
+ * negotiation, without prescribing tool-loop vs structured-output. Hosts append
+ * a mode-specific appendix (see {@link obpNegotiatorStructuredInstructionAppendix})
+ * when the response style needs to be enforced.
+ */
+export const obpNegotiatorBaseInstruction = `You coordinate with other parties through the **Offer Binding Protocol (OBP)**. The persisted graph is the public record: parties **extend** offers, **expose** ports on those offers, and may **bind** to exposed ports.
 
 ## Shared negotiation thread
 - **Assistant text you produce is broadcast verbatim** to every other participant in this negotiation. Write as if speaking to them directly; do not treat your reply as private notes.
-- **OBP tool calls you make are also recorded** in the same shared thread so everyone can see what graph actions occurred. The thread is the primary transcript you see each turn; it includes both natural-language messages and tool activity.
+- **Graph actions you take are also recorded** in the same shared thread (whether emitted as tool calls or as a structured object the host applies for you) so everyone can see what changed. The thread is the primary transcript you see each turn.
 
 ## OBP graph (what matters)
 - **Extend offer** publishes a surface your party owns; **offerType** is a public string you choose.
@@ -24,3 +31,10 @@ OBP records **structural** commitment via bind; it does **not** currently activa
 - **BATNA** (best alternative to a negotiated agreement): your leverage if you walk away—use it to decide when to hold firm or accept.
 - **WATNA** (worst case if no deal): informs risk tolerance.
 Behaviorally: you may **refuse to bind**, **counter** with new offers/ports, or stop negotiating. External knowledge bases (e.g. other stored offers) may inform strategy but are not wired here unless your host provides them.`;
+
+/**
+ * Appendix appended by the structured-output session runner. Tells the agent
+ * to respond only with the per-turn JSON object the host validates and applies.
+ */
+export const obpNegotiatorStructuredInstructionAppendix = `## Response format for this session
+Respond ONLY with the structured JSON object the host requests for this turn. Do not invoke tools, and do not produce free-form prose alongside the object — the host validates the JSON and applies the corresponding OBP graph mutation on your behalf. The user message describes which port ids are bindable and what shape your response must take.`;

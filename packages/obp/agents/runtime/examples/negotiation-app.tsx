@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { NegotiationFlow } from "./negotiation-flow.tsx";
-import type { HealthResponse, StateResponse } from "./negotiation-types.ts";
 import { NEGOTIATION_TURN_FETCH_TIMEOUT_MS } from "./negotiation-timeouts.ts";
+import type { HealthResponse, StateResponse } from "./negotiation-types.ts";
 
 const TURN_RETRY_MAX = 5;
 const TURN_RETRY_BASE_MS = 1200;
@@ -168,56 +168,56 @@ export function NegotiationApp() {
           body: JSON.stringify({ actingPartyId }),
           signal: AbortSignal.timeout(NEGOTIATION_TURN_FETCH_TIMEOUT_MS),
         });
-      let body: {
-        ok?: boolean;
-        error?: string;
-        expectedParty?: string;
-        state?: StateResponse;
-      };
-      try {
-        body = (await res.json()) as typeof body;
-      } catch {
-        return {
-          ok: false,
-          message: `Non-JSON response HTTP ${res.status}`,
-          httpStatus: res.status,
+        let body: {
+          ok?: boolean;
+          error?: string;
+          expectedParty?: string;
+          state?: StateResponse;
         };
+        try {
+          body = (await res.json()) as typeof body;
+        } catch {
+          return {
+            ok: false,
+            message: `Non-JSON response HTTP ${res.status}`,
+            httpStatus: res.status,
+          };
+        }
+        if (!res.ok || body.ok === false) {
+          const extra = body.expectedParty ? ` (expected: ${body.expectedParty})` : "";
+          const msg = `${body.error ?? "error"} HTTP ${res.status}${extra}`;
+          return {
+            ok: false,
+            message: msg,
+            httpStatus: res.status,
+            errorCode: body.error,
+          };
+        }
+        const h = await fetchHealth();
+        setHealth(h);
+        if (body.state) {
+          setServer(body.state);
+          return { ok: true, state: body.state };
+        }
+        const s = await fetchState();
+        setServer(s);
+        return { ok: true, state: s };
+      } catch (e) {
+        if (isAbortLike(e)) {
+          const min = Math.ceil(NEGOTIATION_TURN_FETCH_TIMEOUT_MS / 60_000);
+          return {
+            ok: false,
+            message: `Turn request timed out after ~${min} min (LLM still slow or unreachable — check API key and model)`,
+          };
+        }
+        const msg = e instanceof Error ? e.message : String(e);
+        return { ok: false, message: msg };
+      } finally {
+        if (tick !== undefined) {
+          clearInterval(tick);
+        }
       }
-      if (!res.ok || body.ok === false) {
-        const extra = body.expectedParty ? ` (expected: ${body.expectedParty})` : "";
-        const msg = `${body.error ?? "error"} HTTP ${res.status}${extra}`;
-        return {
-          ok: false,
-          message: msg,
-          httpStatus: res.status,
-          errorCode: body.error,
-        };
-      }
-      const h = await fetchHealth();
-      setHealth(h);
-      if (body.state) {
-        setServer(body.state);
-        return { ok: true, state: body.state };
-      }
-      const s = await fetchState();
-      setServer(s);
-      return { ok: true, state: s };
-    } catch (e) {
-      if (isAbortLike(e)) {
-        const min = Math.ceil(NEGOTIATION_TURN_FETCH_TIMEOUT_MS / 60_000);
-        return {
-          ok: false,
-          message: `Turn request timed out after ~${min} min (LLM still slow or unreachable — check API key and model)`,
-        };
-      }
-      const msg = e instanceof Error ? e.message : String(e);
-      return { ok: false, message: msg };
-    } finally {
-      if (tick !== undefined) {
-        clearInterval(tick);
-      }
-    }
-  },
+    },
     [],
   );
 

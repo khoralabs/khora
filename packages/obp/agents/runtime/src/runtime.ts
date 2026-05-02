@@ -110,6 +110,13 @@ export type NegotiationBindTurnAudit = {
 
 export type NegotiationTurnAudit = NegotiationGenesisTurnAudit | NegotiationBindTurnAudit;
 
+/**
+ * @deprecated Prefer composing the bilateral structured contract via
+ * `createNegotiationStructuredBilateralContract` (see
+ * `src/contracts/structured-bilateral.ts`). Direct use of `NegotiationRuntime`
+ * bypasses the shared `ObpLedger` turn counter / audit tail and will be hidden
+ * in a follow-up release.
+ */
 export type NegotiationRuntimeOptions = {
   client: ObpClient;
   persistence: ObpPersistence;
@@ -175,6 +182,19 @@ function summarizeExposedPorts(
   }));
 }
 
+/**
+ * Low-level negotiation runtime: prepares per-turn structured-output schemas,
+ * applies parsed agent output to the OBP graph, and tracks its own turn counter.
+ *
+ * @deprecated Prefer the higher-level
+ * `createNegotiationStructuredBilateralContract` (see
+ * `src/contracts/structured-bilateral.ts`) wired through `BilateralCoordinator`
+ * + `ObpLedger`. That path keeps the shared turn counter / audit tail in one
+ * place and is the supported entry point for new code. Direct use of this
+ * class bypasses the ledger and will be hidden in a follow-up release; only
+ * reach for it when you genuinely need the lower-level `prepareActingTurn` /
+ * `applyTurn` escape hatches.
+ */
 export class NegotiationRuntime {
   private turnsCompleted = 0;
   private lastPrepared: LastPrepared = null;
@@ -514,7 +534,7 @@ export class NegotiationRuntime {
 
     const outRec = output as Record<string, unknown>;
     let portId: string | null = null;
-    let counterpartyBindRaw: unknown = undefined;
+    let counterpartyBindRaw: unknown;
     for (const m of bindMenu) {
       const v = outRec[m.portId];
       if (v === undefined) {

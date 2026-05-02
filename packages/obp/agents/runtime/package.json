@@ -17,7 +17,9 @@
     "@cfd/agent-identity-adapters": "workspace:*",
     "@cfd/obp-bind-policy-zod": "workspace:*",
     "@cfd/obp-core": "workspace:*",
+    "@cfd/obp-negotiator": "workspace:*",
     "@cfd/obp-tools": "workspace:*",
+    "@standard-schema/spec": "^1.1.0",
     "ai": "^6",
     "zod": "^4.3.6"
   },

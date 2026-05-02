@@ -15,7 +15,10 @@ export {
   defineObpNegotiatorIdentity,
   OBP_NEGOTIATOR_AGENT_ID,
 } from "./identity.ts";
-export { obpNegotiatorBaseInstruction } from "./instructions.ts";
+export {
+  obpNegotiatorBaseInstruction,
+  obpNegotiatorStructuredInstructionAppendix,
+} from "./instructions.ts";
 export {
   type NegotiationEndPayload,
   negotiationEndPayloadFromGeneration,
@@ -30,3 +33,12 @@ export {
   type ObpNegotiatorSessionOutput,
   registerObpNegotiatorAgent,
 } from "./negotiator-session.ts";
+export {
+  createObpNegotiatorStructuredSessionRunner,
+  ensureObpNegotiatorStructuredAgentRegistered,
+  getObpNegotiatorStructuredAgentDefinition,
+  type ObpNegotiatorPreparedTurn,
+  type ObpNegotiatorStructuredSessionContext,
+  type ObpNegotiatorStructuredSessionInput,
+  type ObpNegotiatorStructuredSessionOutput,
+} from "./negotiator-structured-session.ts";

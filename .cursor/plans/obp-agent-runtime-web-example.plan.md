@@ -6,7 +6,7 @@ todos:
     content: Add example deps (@ai-sdk/google, ai, Output + agent identity helpers); document GOOGLE_GENERATIVE_AI_API_KEY / GOOGLE_API_KEY / GEMINI_API_KEY + optional OBP_NEGOTIATION_MODEL; fail closed when key missing
     status: pending
   - id: llm-turn-api
-    content: "POST /api/negotiation/turn: validate API key; prepareActingTurn; Output.object({ schema }); createStructuredObpNegotiationAgent + generate(); parse/validate output; applyTurn; append audit"
+    content: "POST /api/negotiation/turn: validate API key; prepareActingTurn; Output.object({ schema }); createNegotiationAgent + generate(); parse/validate output; applyTurn; append audit"
     status: pending
   - id: state-health-apis
     content: GET /api/state (graph snapshot + audits + whose-turn hints); GET /api/health (llmReady boolean, no secrets)
@@ -53,7 +53,7 @@ isProject: false
 1. **Assert API key** present (throw / 503 if not).
 2. **`await runtime.prepareActingTurn(actingPartyId)`** → `schema`, `headOfferId`, `allowedPortIds`.
 3. Build **`Output.object({ schema })`** from the `ai` package (same pattern as memories adapter output builders).
-4. **`createStructuredObpNegotiationAgent`** from [`packages/obp/agent-runtime/src/create-agent.ts`](packages/obp/agent-runtime/src/create-agent.ts):
+4. **`createNegotiationAgent`** from [`packages/obp/agent-runtime/src/create-agent.ts`](packages/obp/agent-runtime/src/create-agent.ts):
    - **Model**: `createGoogleGenerativeAI({ apiKey }).languageModel(...)` (shared helper mirroring obp examples `env.ts`).
    - **Identity / affordances**: minimal empty toolkit via `evaluateRegisteredAgentAffordances` + `createRegisteredAgentIdentity` + empty composable (equivalent to negotiator wiring but **no OBP tools** in the root composable)—match existing repo patterns from [`packages/agent/identity`](packages/agent/identity) tests or [`packages/obp/agents/negotiator`](packages/obp/agents/negotiator) for how `ToolRuntimeContext` is constructed.
    - **Instructions**: short negotiator system copy + **optional** one-shot summary of bindable ports / head offer (from snapshot or `allowedPortIds`), aligned with [agent-runtime README](packages/obp/agent-runtime/README.md) (noop/walk-away semantics, minimal sufficient ports).
