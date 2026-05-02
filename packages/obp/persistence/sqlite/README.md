@@ -31,7 +31,7 @@ const client = new ObpClient(persistence);
 ## Contracts
 
 - Mutations run in **`db.transaction`** and enforce the same invariants as [`ObpClient`](../../obp-core/src/client.ts) (via `@cfd/obp-core` helpers). Direct use of `ObpPersistence` without `ObpClient` is still safe for basic integrity.
-- Wire shapes follow [`packages/obp-spec`](../../obp-spec).
+- Wire shapes follow [`packages/obp/spec`](../../spec).
 
 ## Verification
 

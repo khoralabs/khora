@@ -4,7 +4,7 @@ import type {
   ToolRuntimeContext,
 } from "@cfd/agent-identity";
 import { evaluateRegisteredAgentAffordances } from "@cfd/agent-identity";
-import { formatZodErrorForAgent } from "@cfd/obp-core";
+import { formatZodErrorForAgent } from "@cfd/obp-bind-policy-zod";
 import type { LanguageModel } from "ai";
 import {
   APICallError,

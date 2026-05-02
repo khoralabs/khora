@@ -71,13 +71,16 @@ function DagDetailBillboard({ node, graph }: { node: Node; graph: GraphSnapshot 
             <div className="dag-detail-billboard__title" style={{ marginTop: "0.45rem" }}>
               Counterparty bind payload
             </div>
-            <p className="dag-detail-billboard__muted" style={{ margin: "0.25rem 0 0", fontSize: 12 }}>
+            <p
+              className="dag-detail-billboard__muted"
+              style={{ margin: "0.25rem 0 0", fontSize: 12 }}
+            >
               No bind on this offer (e.g. genesis extend or bind-only port with no policy answers).
             </p>
           </>
         ) : (
-          bindsFromOffer.map((b, i) => (
-            <div key={`${b.portId}:${i}`}>
+          bindsFromOffer.map((b) => (
+            <div key={`${b.portId}`}>
               <div className="dag-detail-billboard__title" style={{ marginTop: "0.45rem" }}>
                 Bound counterparty port
               </div>
@@ -88,8 +91,8 @@ function DagDetailBillboard({ node, graph }: { node: Node; graph: GraphSnapshot 
                 </dd>
               </dl>
               {jsonBlock("counterparty_bind (submitted)", b.counterparty_bind)}
-              {b.bind_policy !== undefined
-                ? jsonBlock("bind_policy (snapshot at bind)", b.bind_policy)
+              {b.bind_policy_snapshot !== undefined
+                ? jsonBlock("bind_policy_snapshot (at bind)", b.bind_policy_snapshot)
                 : null}
             </div>
           ))
@@ -177,7 +180,7 @@ function DagBindEdgeBillboard({ edge }: { edge: Edge }) {
           <code>{d.portId}</code>
         </dd>
       </dl>
-      {jsonBlock("bind_policy (snapshot at bind)", d.bind_policy)}
+      {jsonBlock("bind_policy_snapshot (at bind)", d.bind_policy_snapshot)}
       {jsonBlock("counterparty_bind", d.counterparty_bind)}
     </section>
   );
@@ -415,9 +418,9 @@ function NegotiationFlowInner({
             className="dag-detail-billboard dag-detail-billboard--hint"
             onPointerDown={(e) => e.stopPropagation()}
           >
-            Click an offer, port, or bind edge (dashed). Ports show <strong>bind_policy</strong>;
-            offers show <strong>counterparty_bind</strong> submitted for that bind; dashed edges show
-            both.
+            Click an offer, port, or bind edge (dashed). Ports show <strong>bind_policy</strong>,
+            offers show <strong>counterparty_bind</strong> submitted for that bind; dashed edges
+            show both.
           </div>
         </Panel>
       )}

@@ -1,7 +1,8 @@
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { ObpError } from "../errors.ts";
 import type { Port } from "../model/types.ts";
-import { bindPolicyPropertiesToZod, zPortBindPolicy } from "./compile.ts";
-import { formatZodErrorForAgent } from "./zod-error-format.ts";
+import { formatStandardSchemaIssuesForAgent } from "./issue-format.ts";
+import { counterpartyBindSchemaForProperties, portBindPolicySchema } from "./standard-schema.ts";
 
 function isPolicyActive(port: Port): boolean {
   const p = port.bind_policy;
@@ -18,10 +19,19 @@ function isEmptyCounterpartyBind(raw: unknown): boolean {
   return Object.keys(raw as object).length === 0;
 }
 
+function expectSync<T>(
+  r: StandardSchemaV1.Result<T> | Promise<StandardSchemaV1.Result<T>>,
+): StandardSchemaV1.Result<T> {
+  if (r instanceof Promise) {
+    throw new TypeError("bind-policy validators must be synchronous");
+  }
+  return r;
+}
+
 /**
  * Validates `counterparty_bind` against `port.bind_policy` when present.
  * Returns normalized plain object for persistence (parsed output).
- * @throws ObpError VALIDATION on mismatch; NOT_FOUND if policy JSON is invalid on port.
+ * @throws ObpError VALIDATION on mismatch.
  */
 export function validateCounterpartyBindForPort(port: Port, raw: unknown): Record<string, unknown> {
   if (!isPolicyActive(port)) {
@@ -34,19 +44,21 @@ export function validateCounterpartyBindForPort(port: Port, raw: unknown): Recor
     return {};
   }
 
-  const policyParse = zPortBindPolicy.safeParse(port.bind_policy);
-  if (!policyParse.success) {
+  const policyResult = expectSync(portBindPolicySchema["~standard"].validate(port.bind_policy));
+  if (policyResult.issues) {
     throw new ObpError(
       "VALIDATION",
-      `Invalid bind_policy on port:\n${formatZodErrorForAgent(policyParse.error)}`,
+      `Invalid bind_policy on port:\n${formatStandardSchemaIssuesForAgent(policyResult.issues)}`,
     );
   }
 
-  const props = policyParse.data.properties;
-  const compiled = bindPolicyPropertiesToZod(props);
-  const out = compiled.safeParse(raw);
-  if (!out.success) {
-    throw new ObpError("VALIDATION", `counterparty_bind:\n${formatZodErrorForAgent(out.error)}`);
+  const compiled = counterpartyBindSchemaForProperties(policyResult.value.properties);
+  const out = expectSync(compiled["~standard"].validate(raw));
+  if (out.issues) {
+    throw new ObpError(
+      "VALIDATION",
+      `counterparty_bind:\n${formatStandardSchemaIssuesForAgent(out.issues)}`,
+    );
   }
-  return out.data as Record<string, unknown>;
+  return out.value;
 }

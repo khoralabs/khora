@@ -1,5 +1,9 @@
-export { bindPolicyPropertiesToZod, zPortBindPolicy } from "./compile.ts";
+export { formatStandardSchemaIssuesForAgent } from "./issue-format.ts";
 export { bindPolicySlug, bindPolicySlugKeys } from "./slug.ts";
+export {
+  counterpartyBindSchemaForProperties,
+  portBindPolicySchema,
+} from "./standard-schema.ts";
 export type {
   BindPolicyBooleanField,
   BindPolicyChoiceField,
@@ -11,4 +15,3 @@ export type {
   PortBindPolicyVersion,
 } from "./types.ts";
 export { validateCounterpartyBindForPort } from "./validate.ts";
-export { formatZodErrorForAgent } from "./zod-error-format.ts";

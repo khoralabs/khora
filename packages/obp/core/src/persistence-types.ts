@@ -1,5 +1,5 @@
-import type { PortBindPolicy } from "./bind-policy/types.ts";
 import type {
+  BindListingRow,
   BindPortInput,
   ExposePortInput,
   ExtendOfferInput,
@@ -13,11 +13,8 @@ import type {
 } from "./model/types";
 
 /**
- * Storage strategy for OBP (Smithy {@code ObpPersistence} operations) plus minimal graph reads
- * so {@link ObpClient} can run pure invariant checks before mutating calls.
- *
- * The three helper methods are **not** separate Smithy RPCs; they expose implementation truth
- * for orchestration. Concrete adapters (e.g. memories-backed) implement them alongside the wire ops.
+ * Storage strategy for OBP: mirrors Smithy service **`ObpPersistence`** (`persistence.smithy`) including orchestration reads
+ * (**`isPortExposed`**, **`listBinds`**, **`getPortsSnapshot`**, **`getExtendingPartyId`**) so {@link ObpClient} can run invariant checks before mutating calls.
  */
 export interface ObpPersistence {
   registerParty(input: RegisterPartyInput): { party: Party };
@@ -37,20 +34,15 @@ export interface ObpPersistence {
   /** True iff some Offer–Port **EXPOSES** edge targets this port id. */
   isPortExposed(portId: string): boolean;
 
-  /** All **BINDS** edges for capacity / ref resolution (canonical port) checks. */
-  listBinds(): ReadonlyArray<{
-    offerId: string;
-    portId: string;
-    counterparty_bind?: Record<string, unknown>;
-    /** Snapshot of `port.bind_policy` at bind time (host extension). */
-    bind_policy?: PortBindPolicy;
-  }>;
+  /** All **BINDS** rows (`BindListingRow` / Smithy **`BindListingRow`**). */
+  listBinds(): ReadonlyArray<BindListingRow>;
 
   /** Snapshot of all ports keyed by id (ref resolution). */
   getPortsSnapshot(): ReadonlyMap<string, Port>;
 
   /**
-   * Party id on the **EXTENDS** edge for this offer (who created the offer), or `null` if unknown.
+   * Party id on the **EXTENDS** edge for this offer (who created the offer), or `null` if unknown
+   * (Smithy **`GetExtendingPartyId`** uses empty string ↔ **`null`**).
    */
   getExtendingPartyId(offerId: string): string | null;
 

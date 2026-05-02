@@ -151,6 +151,6 @@ describe("ObpClient + FakeObpPersistence", () => {
     const binds = fake.listBinds();
     expect(binds.length).toBe(1);
     expect(binds[0]?.counterparty_bind).toEqual({ agree: true });
-    expect(binds[0]?.bind_policy).toEqual(pol);
+    expect(binds[0]?.bind_policy_snapshot).toEqual(pol);
   });
 });

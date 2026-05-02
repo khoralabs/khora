@@ -15,6 +15,7 @@
     "@ai-sdk/google": "^3.0.0",
     "@cfd/agent-identity": "workspace:*",
     "@cfd/agent-identity-adapters": "workspace:*",
+    "@cfd/obp-bind-policy-zod": "workspace:*",
     "@cfd/obp-core": "workspace:*",
     "@cfd/obp-tools": "workspace:*",
     "ai": "^6",

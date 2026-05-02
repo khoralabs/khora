@@ -1,16 +1,14 @@
+import {
+  type BindPolicyField,
+  bindPolicySlugKeys,
+  counterpartyBindSchemaForProperties,
+  type PortBindPolicy,
+  portBindPolicySchema,
+} from "@cfd/obp-core";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 import z from "zod";
-import { bindPolicySlugKeys } from "./slug.ts";
-import type {
-  BindPolicyBooleanField,
-  BindPolicyChoiceField,
-  BindPolicyField,
-  BindPolicyFloatField,
-  BindPolicyIntField,
-  BindPolicyTextField,
-  PortBindPolicy,
-} from "./types.ts";
 
-const zBindPolicyTextField: z.ZodType<BindPolicyTextField> = z
+const zBindPolicyTextField = z
   .object({
     type: z.literal("text"),
     name: z.string().min(1),
@@ -25,7 +23,7 @@ const zBindPolicyTextField: z.ZodType<BindPolicyTextField> = z
   })
   .strict();
 
-const zBindPolicyBooleanField: z.ZodType<BindPolicyBooleanField> = z
+const zBindPolicyBooleanField = z
   .object({
     type: z.literal("boolean"),
     name: z.string().min(1),
@@ -34,7 +32,7 @@ const zBindPolicyBooleanField: z.ZodType<BindPolicyBooleanField> = z
   })
   .strict();
 
-const zBindPolicyIntField: z.ZodType<BindPolicyIntField> = z
+const zBindPolicyIntField = z
   .object({
     type: z.literal("int"),
     name: z.string().min(1),
@@ -49,7 +47,7 @@ const zBindPolicyIntField: z.ZodType<BindPolicyIntField> = z
   })
   .strict();
 
-const zBindPolicyFloatField: z.ZodType<BindPolicyFloatField> = z
+const zBindPolicyFloatField = z
   .object({
     type: z.literal("float"),
     name: z.string().min(1),
@@ -64,7 +62,7 @@ const zBindPolicyFloatField: z.ZodType<BindPolicyFloatField> = z
   })
   .strict();
 
-const zBindPolicyChoiceField: z.ZodType<BindPolicyChoiceField> = z
+const zBindPolicyChoiceField = z
   .object({
     type: z.literal("choice"),
     name: z.string().min(1),
@@ -75,16 +73,7 @@ const zBindPolicyChoiceField: z.ZodType<BindPolicyChoiceField> = z
       maxSelections: z.number().int().positive().optional(),
     }),
   })
-  .strict()
-  .superRefine((val, ctx) => {
-    const maxS = val.constraints.maxSelections ?? 1;
-    if (maxS > val.constraints.choices.length) {
-      ctx.addIssue({
-        code: "custom",
-        message: "choice.constraints.maxSelections must be <= choices.length",
-      });
-    }
-  });
+  .strict();
 
 const zBindPolicyField = z.union([
   zBindPolicyTextField,
@@ -94,13 +83,51 @@ const zBindPolicyField = z.union([
   zBindPolicyChoiceField,
 ]) as z.ZodType<BindPolicyField>;
 
-/** Validates persisted / wire JSON for {@link PortBindPolicy}. */
+function pathToZodPath(
+  p: ReadonlyArray<PropertyKey | StandardSchemaV1.PathSegment> | undefined,
+): (string | number)[] {
+  if (p === undefined) return [];
+  const out: (string | number)[] = [];
+  for (const seg of p) {
+    const k = typeof seg === "object" ? seg.key : seg;
+    if (typeof k === "string" || typeof k === "number") {
+      out.push(k);
+    }
+  }
+  return out;
+}
+
+function bridgeStandardSchemaIssues(
+  result: StandardSchemaV1.Result<unknown> | Promise<StandardSchemaV1.Result<unknown>>,
+  ctx: z.RefinementCtx,
+): void {
+  if (result instanceof Promise) {
+    throw new TypeError("bind-policy validators must be synchronous");
+  }
+  if (!result.issues) return;
+  for (const issue of result.issues) {
+    ctx.addIssue({
+      code: "custom",
+      message: issue.message,
+      path: pathToZodPath(issue.path),
+    });
+  }
+}
+
+/**
+ * Zod schema for the wire/JSON shape of {@link PortBindPolicy}.
+ * Structural Zod composition for JSON Schema fidelity; final pass/fail delegates to
+ * {@link portBindPolicySchema} so rules cannot drift from `@cfd/obp-core`.
+ */
 export const zPortBindPolicy: z.ZodType<PortBindPolicy> = z
   .object({
     version: z.literal("1"),
     properties: z.array(zBindPolicyField),
   })
-  .strict();
+  .strict()
+  .superRefine((val, ctx) => {
+    bridgeStandardSchemaIssues(portBindPolicySchema["~standard"].validate(val), ctx);
+  }) as z.ZodType<PortBindPolicy>;
 
 function leafForField(field: BindPolicyField): z.ZodTypeAny {
   switch (field.type) {
@@ -113,8 +140,8 @@ function leafForField(field: BindPolicyField): z.ZodTypeAny {
       if (c?.maxLength !== undefined) {
         s = s.max(c.maxLength);
       }
-      s = s.describe(field.prompt);
-      return field.optional ? s.optional() : s;
+      const d = s.describe(field.prompt);
+      return field.optional ? d.optional() : d;
     }
     case "boolean": {
       const s = z.boolean().describe(field.prompt);
@@ -129,8 +156,8 @@ function leafForField(field: BindPolicyField): z.ZodTypeAny {
       if (c?.max !== undefined) {
         n = n.max(c.max);
       }
-      n = n.describe(field.prompt);
-      return field.optional ? n.optional() : n;
+      const d = n.describe(field.prompt);
+      return field.optional ? d.optional() : d;
     }
     case "float": {
       let n = z.number();
@@ -141,8 +168,8 @@ function leafForField(field: BindPolicyField): z.ZodTypeAny {
       if (c?.max !== undefined) {
         n = n.max(c.max);
       }
-      n = n.describe(field.prompt);
-      return field.optional ? n.optional() : n;
+      const d = n.describe(field.prompt);
+      return field.optional ? d.optional() : d;
     }
     case "choice": {
       const choices = field.constraints.choices as [string, ...string[]];
@@ -162,12 +189,14 @@ function leafForField(field: BindPolicyField): z.ZodTypeAny {
 }
 
 /**
- * Compiles bind policy properties to a strict Zod object whose keys are slugs of `name`.
- * Use for validating `counterparty_bind` payloads at bind time.
+ * Compiles bind policy properties into a strict Zod object whose keys are slugs of `name`.
+ * Each leaf carries `.describe(field.prompt)` so structured-output JSON Schemas surface the
+ * per-field guidance to LLMs. Final pass/fail delegates to
+ * {@link counterpartyBindSchemaForProperties} via `superRefine` to avoid drift from core.
  */
 export function bindPolicyPropertiesToZod(
   properties: readonly BindPolicyField[],
-): z.ZodObject<Record<string, z.ZodTypeAny>> {
+): z.ZodType<Record<string, unknown>> {
   const keys = bindPolicySlugKeys(properties);
   const shape: Record<string, z.ZodTypeAny> = {};
   for (let i = 0; i < properties.length; i++) {
@@ -178,5 +207,11 @@ export function bindPolicyPropertiesToZod(
     }
     shape[key] = leafForField(field);
   }
-  return z.object(shape).strict();
+  const ssSchema = counterpartyBindSchemaForProperties(properties);
+  return z
+    .object(shape)
+    .strict()
+    .superRefine((val, ctx) => {
+      bridgeStandardSchemaIssues(ssSchema["~standard"].validate(val), ctx);
+    }) as unknown as z.ZodType<Record<string, unknown>>;
 }

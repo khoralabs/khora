@@ -2,6 +2,8 @@ $version: "2"
 
 namespace cfd.obp
 
+use smithy.api#Document
+
 /// Optional provenance link: a **source map** reference within OBP (store-agnostic). Fields are opaque to the protocol;
 /// embedding apps and adapters assign meaning (e.g. a backing store may map `resource_id` / `source_key` to its own rows).
 structure SourceMapRef {
@@ -41,6 +43,9 @@ structure Port {
     ts_created: Long
     ts_expired: Long
     type: String
+    /// Counterparty-facing affordance copy; implementations enforcing UX SHOULD require non-empty on **ExposePort**.
+    @default("")
+    description: String
     max_bindings: Integer
     /// Hint for agents when this affordance represents completion.
     terminal: Boolean
@@ -48,6 +53,15 @@ structure Port {
     @default("")
     ref: String
     sourcemaps: SourceMapRefList
+    /// JSON bind-policy meta-schema (structured encoding is TS/Zod `PortBindPolicy` in `@cfd/obp-core`); null means unconstrained.
+    bind_policy: Document = null
+    /// Negotiation TTL basis when the host recorded policy at expose time (`turns`, `seconds`, `minutes`, `hours`, `days`); empty when unset.
+    @default("")
+    ttl_basis: String
+    /// Interpretation depends on `ttl_basis`; null when unset.
+    ttl_measure: Integer = null
+    /// Completed negotiation turn index when this port was exposed; null when unset.
+    expose_turn_index: Integer = null
 }
 
 /// Edge record: Party -[EXTENDS]-> Offer
@@ -64,9 +78,13 @@ structure ExposesEdge {
     sourcemaps: SourceMapRefList
 }
 
-/// Edge record: Offer -[BINDS]-> Port
+/// Edge record: Offer -[BINDS]-> Port; carries satisfaction payload for bind-policy constraints on the target port.
 structure BindsEdge {
     id: String
     ts_created: Long
     sourcemaps: SourceMapRefList
+    /// Data supplied by the binding offer; MUST satisfy target port `bind_policy` when that policy is present.
+    counterparty_bind: Document = null
+    /// Audit copy of `bind_policy` validated at bind time; informational (TS listing field `bind_policy`).
+    bind_policy_snapshot: Document = null
 }

@@ -1,3 +1,21 @@
+export {
+  bindPolicySlug,
+  bindPolicySlugKeys,
+  counterpartyBindSchemaForProperties,
+  formatStandardSchemaIssuesForAgent,
+  portBindPolicySchema,
+  validateCounterpartyBindForPort,
+} from "./bind-policy/index.ts";
+export type {
+  BindPolicyBooleanField,
+  BindPolicyChoiceField,
+  BindPolicyField,
+  BindPolicyFloatField,
+  BindPolicyIntField,
+  BindPolicyTextField,
+  PortBindPolicy,
+  PortBindPolicyVersion,
+} from "./bind-policy/types.ts";
 export { ObpClient, type ObpClientOptions } from "./client";
 export { ObpError, type ObpErrorCode } from "./errors";
 export {
@@ -10,24 +28,7 @@ export {
   validateBindPreconditions,
 } from "./invariants/index";
 export type {
-  BindPolicyBooleanField,
-  BindPolicyChoiceField,
-  BindPolicyField,
-  BindPolicyFloatField,
-  BindPolicyIntField,
-  BindPolicyTextField,
-  PortBindPolicy,
-  PortBindPolicyVersion,
-} from "./bind-policy/types.ts";
-export {
-  bindPolicyPropertiesToZod,
-  bindPolicySlug,
-  bindPolicySlugKeys,
-  formatZodErrorForAgent,
-  validateCounterpartyBindForPort,
-  zPortBindPolicy,
-} from "./bind-policy/index.ts";
-export type {
+  BindListingRow,
   BindPortInput,
   BindsEdge,
   ExposePortInput,

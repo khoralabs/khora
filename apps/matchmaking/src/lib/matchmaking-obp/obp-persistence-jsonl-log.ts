@@ -1,5 +1,6 @@
 import type { JsonlStore } from "@cfd/memories-stores";
 import type {
+  BindPortInput,
   ExposePortInput,
   ExtendOfferInput,
   GetOfferResult,

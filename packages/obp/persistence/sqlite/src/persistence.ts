@@ -1,5 +1,6 @@
 import type { Database } from "bun:sqlite";
 import {
+  type BindListingRow,
   type BindPortInput,
   type BindValidationFailure,
   type ExposePortInput,
@@ -14,11 +15,11 @@ import {
   type Party,
   type Port,
   type PortBindPolicy,
+  portBindPolicySchema,
   type RegisterPartyInput,
   resolveCanonicalPortId,
   type SourceMapRef,
   validateBindPreconditions,
-  zPortBindPolicy,
 } from "@cfd/obp-core";
 
 type PartyRow = {
@@ -100,8 +101,11 @@ function parseBindPolicyJson(raw: string | null): PortBindPolicy | undefined {
   }
   try {
     const v: unknown = JSON.parse(raw);
-    const r = zPortBindPolicy.safeParse(v);
-    return r.success ? r.data : undefined;
+    const r = portBindPolicySchema["~standard"].validate(v);
+    if (r instanceof Promise) {
+      return undefined;
+    }
+    return r.issues ? undefined : r.value;
   } catch {
     return undefined;
   }
@@ -447,9 +451,7 @@ export class ObpSqlitePersistence implements ObpPersistence {
       const bindEdge = crypto.randomUUID();
       const cbJson = stringifyCounterpartyBind(input.counterparty_bind);
       const bindPolicyJson =
-        portRes.port.bind_policy !== undefined
-          ? JSON.stringify(portRes.port.bind_policy)
-          : null;
+        portRes.port.bind_policy !== undefined ? JSON.stringify(portRes.port.bind_policy) : null;
       try {
         this.db.run(
           `INSERT INTO obp_binds (edge_id, offer_id, port_id, ts_created, sourcemaps_json, counterparty_bind_json, bind_policy_json) VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -477,12 +479,7 @@ export class ObpSqlitePersistence implements ObpPersistence {
     return row !== null;
   }
 
-  listBinds(): ReadonlyArray<{
-    offerId: string;
-    portId: string;
-    counterparty_bind?: Record<string, unknown>;
-    bind_policy?: PortBindPolicy;
-  }> {
+  listBinds(): ReadonlyArray<BindListingRow> {
     const rows = this.db
       .query<
         {
@@ -501,7 +498,7 @@ export class ObpSqlitePersistence implements ObpPersistence {
         offerId: r.offer_id,
         portId: r.port_id,
         ...(cb !== undefined ? { counterparty_bind: cb } : {}),
-        ...(bp !== undefined ? { bind_policy: bp } : {}),
+        ...(bp !== undefined ? { bind_policy_snapshot: bp } : {}),
       };
     });
   }

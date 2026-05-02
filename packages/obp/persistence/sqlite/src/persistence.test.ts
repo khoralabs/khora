@@ -267,6 +267,6 @@ describe("ObpSqlitePersistence", () => {
     const binds = persistence.listBinds();
     expect(binds.length).toBe(1);
     expect(binds[0]?.counterparty_bind).toEqual({ code: "abc" });
-    expect(binds[0]?.bind_policy).toEqual(pol);
+    expect(binds[0]?.bind_policy_snapshot).toEqual(pol);
   });
 });

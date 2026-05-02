@@ -2,6 +2,7 @@ $version: "2"
 
 namespace cfd.obp
 
+use smithy.api#Document
 use smithy.api#Unit
 
 @documentation("""
@@ -17,6 +18,8 @@ OBP is a small typed graph for causal interaction history: **Party** → **Offer
 4. **BINDS** count toward a **Port** must not exceed that port's `max_bindings` (after resolving `ref`, count against the resolved exposed port).
 5. **Port.ref:** resolve before bind rules; detect cycles on the ref chain and reject.
 6. **Port.terminal** is an agent hint only; it does not change bind rules.
+7. **Bind policy:** **Port** may carry **`bind_policy`** (`Document`) declaring constraint metadata. When present and non-empty per implementation rules, **BindPort** / bind leg of **ExtendOffer** MUST supply **`counterparty_bind`** satisfaction data validated against that policy before committing the **BINDS** edge; validated payload is stored on **`BindsEdge.counterparty_bind`** (see `shapes.smithy`). **`bind_policy_snapshot`** on the edge is an optional audit copy of the policy used at bind time.
+8. **Party `name`** on **RegisterParty** MUST be non-empty after trim (TS **`ObpClient`**).
 
 **Provenance:** optional **sourcemaps** on entities and edges (see `SourceMapRef` in `shapes.smithy`) — store-agnostic; a concrete adapter may map them to an external system (e.g. a document store’s ids).
 
@@ -24,14 +27,20 @@ OBP is a small typed graph for causal interaction history: **Party** → **Offer
 
 **Revocation (soft close):** implementations MAY support setting `ts_expired` to the current clock for **Port** and **Offer** rows so existing expiry checks prevent new binds. **ListExposedPortEdges** supports enumerating EXPOSES for orchestration (e.g. dynamic tools).
 
-**Errors:** Operations model **success** shapes only. Implementations may throw or map failures for: not found, expired, not exposed, max bindings exceeded, ref cycle, invalid graph.
+**Orchestration reads:** **IsPortExposed**, **ListBinds**, **GetPortsSnapshot**, and **GetExtendingPartyId** mirror the **`ObpPersistence`** strategy surface in `@cfd/obp-core` (same semantics as TS **`ObpClient`** precondition helpers).
+
+**Errors:** Operations model **success** shapes only. Implementations may throw or map failures for: not found, expired, not exposed, max bindings exceeded, ref cycle, invalid graph, bind-policy validation failure.
 
 **Transactions:** **ExtendOffer**, **ExposePort**, and **BindPort** SHOULD run atomically where the backend supports transactions.
+
+**Smithy ↔ TS unions:** **GetPartyResult** / **GetOfferResult** / **GetPortResult** (`notFound` vs payload) correspond to TS `{ kind: "notFound" } | { kind: "found"; … }` (parity matrix in `@cfd/obp-core` README).
+
+**Structured bind_policy:** Smithy uses **`Document`**; constrained JSON shape is validated in TS via Zod (`PortBindPolicy`).
 
 Narrative: `packages/obp/README.md`, `packages/obp/documentation/*.obp`.
 """)
 service ObpPersistence {
-    version: "2026-04-17"
+    version: "2026-05-01"
     operations: [
         RegisterParty
         GetParty
@@ -41,6 +50,10 @@ service ObpPersistence {
         ExposePort
         BindPort
         ListExposedPortEdges
+        IsPortExposed
+        ListBinds
+        GetPortsSnapshot
+        GetExtendingPartyId
         SetPortExpiredNow
         SetOfferExpiredNow
     ]
@@ -130,6 +143,8 @@ structure ExtendOfferInput {
     /// When empty, no BINDS edge is created.
     @default("")
     bindPortId: String
+    /// Satisfaction payload when binding; MUST satisfy target port `bind_policy` when set; null when absent.
+    counterparty_bind: Document = null
 }
 
 structure ExtendOfferOutput {
@@ -160,11 +175,13 @@ operation BindPort {
 structure BindPortInput {
     offerId: String
     portId: String
+    /// Satisfaction payload; MUST satisfy target port `bind_policy` when set; null when absent.
+    counterparty_bind: Document = null
 }
 
 structure BindPortOutput {}
 
-/// Read all Offer–Port **EXPOSES** edges for enumeration (orchestration helpers; not a separate Smithy RPC in all adapters).
+/// Read all Offer–Port **EXPOSES** edges for enumeration (orchestration helpers).
 operation ListExposedPortEdges {
     input: ListExposedPortEdgesInput
     output: ListExposedPortEdgesOutput
@@ -183,6 +200,81 @@ structure ListExposedPortEdgesOutput {
 
 list ExposedPortEdgeList {
     member: ExposedPortEdge
+}
+
+/// True iff some **EXPOSES** edge targets this port id (`ObpPersistence.isPortExposed`).
+operation IsPortExposed {
+    input: IsPortExposedInput
+    output: IsPortExposedOutput
+}
+
+structure IsPortExposedInput {
+    portId: String
+}
+
+structure IsPortExposedOutput {
+    exposed: Boolean
+}
+
+/// All **BINDS** rows for capacity / ref resolution (`ObpPersistence.listBinds`). **`bind_policy_snapshot`** corresponds to TS **`bind_policy`** on listing rows.
+operation ListBinds {
+    input: ListBindsInput
+    output: ListBindsOutput
+}
+
+structure ListBindsInput {}
+
+structure BindListingRow {
+    offerId: String
+    portId: String
+    counterparty_bind: Document = null
+    /// TS **`bind_policy`** field at bind time (audit).
+    bind_policy_snapshot: Document = null
+}
+
+list BindListingRowList {
+    member: BindListingRow
+}
+
+structure ListBindsOutput {
+    binds: BindListingRowList
+}
+
+/// Snapshot of all ports keyed by id (`ObpPersistence.getPortsSnapshot`).
+operation GetPortsSnapshot {
+    input: GetPortsSnapshotInput
+    output: GetPortsSnapshotOutput
+}
+
+structure GetPortsSnapshotInput {}
+
+structure PortSnapshotEntry {
+    portId: String
+    port: Port
+}
+
+list PortSnapshotEntryList {
+    member: PortSnapshotEntry
+}
+
+structure GetPortsSnapshotOutput {
+    entries: PortSnapshotEntryList
+}
+
+/// Party id on **EXTENDS** for this offer, or empty string when unknown (`ObpPersistence.getExtendingPartyId` uses **null** in TS — map empty ↔ null in adapters).
+operation GetExtendingPartyId {
+    input: GetExtendingPartyIdInput
+    output: GetExtendingPartyIdOutput
+}
+
+structure GetExtendingPartyIdInput {
+    offerId: String
+}
+
+structure GetExtendingPartyIdOutput {
+    /// Empty when no EXTENDS edge exists for this offer (TS **`null`**).
+    @default("")
+    partyId: String
 }
 
 /// Set `Port.ts_expired` to now. Caller enforces issuer policy.

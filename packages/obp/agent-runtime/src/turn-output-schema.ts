@@ -1,5 +1,5 @@
+import { bindPolicyPropertiesToZod, zPortBindPolicy } from "@cfd/obp-bind-policy-zod";
 import type { PortBindPolicy, SourceMapRef } from "@cfd/obp-core";
-import { bindPolicyPropertiesToZod, zPortBindPolicy } from "@cfd/obp-core";
 import { zOptionalSourcemaps } from "@cfd/obp-tools";
 import z from "zod";
 import { OBP_NEGOTIATION_BIND_NO_POLICY } from "./constants.ts";

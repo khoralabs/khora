@@ -32,7 +32,7 @@ export type GraphSnapshot = {
     offerId: string;
     portId: string;
     counterparty_bind?: Record<string, unknown>;
-    bind_policy?: PortBindPolicy;
+    bind_policy_snapshot?: PortBindPolicy;
   }>;
 };
 
@@ -103,7 +103,9 @@ export function buildGraphSnapshot(
     offerId: b.offerId,
     portId: b.portId,
     ...(b.counterparty_bind !== undefined ? { counterparty_bind: b.counterparty_bind } : {}),
-    ...(b.bind_policy !== undefined ? { bind_policy: b.bind_policy } : {}),
+    ...(b.bind_policy_snapshot !== undefined
+      ? { bind_policy_snapshot: b.bind_policy_snapshot }
+      : {}),
   }));
 
   return {
