@@ -1,5 +1,6 @@
 import * as bilateralScenario from "./scenarios/bilateral/scenario.ts";
 import * as intentOverlapScenario from "./scenarios/intent-overlap/scenario.ts";
+import * as matchmakingScenario from "./scenarios/matchmaking/scenario.ts";
 import {
   createNegotiationScenarioSession,
   type NegotiationScenarioSession,
@@ -8,10 +9,12 @@ import {
 import homeHtml from "./routes/index.html";
 import bilateralHtml from "./scenarios/bilateral/index.html";
 import intentOverlapHtml from "./scenarios/intent-overlap/index.html";
+import matchmakingHtml from "./scenarios/matchmaking/index.html";
 
 const SCENARIO_MODULES: Record<string, ScenarioNegotiationCopy> = {
   bilateral: bilateralScenario,
   "intent-overlap": intentOverlapScenario,
+  matchmaking: matchmakingScenario,
 };
 
 const sessions = new Map<string, NegotiationScenarioSession>();
@@ -71,6 +74,7 @@ const server = Bun.serve({
     "/": homeHtml,
     "/scenarios/bilateral": bilateralHtml,
     "/scenarios/intent-overlap": intentOverlapHtml,
+    "/scenarios/matchmaking": matchmakingHtml,
   },
   async fetch(req): Promise<Response> {
     const url = new URL(req.url);
@@ -107,4 +111,5 @@ const origin = `http://localhost:${server.port}`;
 console.log(`OBP examples home: ${origin}/`);
 console.log(`  Bilateral pilot: ${origin}/scenarios/bilateral`);
 console.log(`  Intent overlap:  ${origin}/scenarios/intent-overlap`);
+console.log(`  Matchmaking:     ${origin}/scenarios/matchmaking`);
 console.log(`NEGOTIATION_FIRST=${firstActor}`);

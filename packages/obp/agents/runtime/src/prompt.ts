@@ -45,9 +45,9 @@ export function formatBindMenuForPrompt(menu: ReadonlyArray<NegotiationBindMenuE
   }
   return menu
     .map((b) => {
-      const tag = b.terminal ? " [terminal — omit `ports` in JSON]" : "";
       const sid = shortId(b.portId);
-      return `• **${sid}** \`${b.portType}\`${tag}\n  ${b.description}`;
+      const body = b.affordanceDescription.trim() !== "" ? b.affordanceDescription : b.description;
+      return `• **${sid}** \`${b.portType}\`\n  ${body}`;
     })
     .join("\n\n");
 }

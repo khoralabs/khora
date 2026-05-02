@@ -34,11 +34,12 @@ export type StructuredBilateralContractOptions = {
 
 const GENESIS_BODY_LINES = [
   "**Opening move:** there is no counterparty offer to bind yet. Propose your initial public state (`offerType`) and expose the ports your counterpart may bind next.",
+  "When you need the peer to answer specific questions or provide structured disclosures **before** their bind counts, attach **`bind_policy`** to that port (with the properties your host schema allows). Keep each **`description`** short—what the affordance is—rather than packing mandatory Q&A into prose alone.",
   "",
 ];
 
 const GENESIS_OUTPUT_DESCRIPTION =
-  "Opening move: set your root offerType (public state) and expose one or more ports. Each port requires a non-empty `description` (counterparty-facing copy), `portType`, and `terminal`. Optional `bind_policy` means future binds must supply matching policy-shaped fields on that port’s key. No bind yet.";
+  "Opening move: set your root offerType (public state) and expose one or more ports. Each port requires non-empty `description`, `portType`, and `terminal`. Prefer optional `bind_policy` when you must require structured fields at bind time; do not rely on long descriptions alone for mandatory answers. `bind_policy` means future binds must supply matching policy-shaped fields on that port’s key. No bind yet.";
 
 function bindOutputDescription(): string {
   return `Structured negotiation: set **exactly one** JSON property whose key is a **port id** from the bind menu (see user message). Use value **"${OBP_NEGOTIATION_BIND_NO_POLICY}"** for ports without bind policy, or the **policy-shaped object** when that port has \`bind_policy\`. Set \`offerType\` to your new public state after that bind. If the chosen port is **terminal**, omit \`ports\` entirely. Otherwise you may optionally list new \`ports\` (each with required \`description\`).`;

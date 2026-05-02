@@ -30,6 +30,7 @@ export const encodingConventionsMarkdown = [
   "- Optional terminal prefix `" +
     AGREEMENT_PORT_TYPE_PREFIX +
     "` on closing ports—hint only, not enforced.",
+  "- **`bind_policy`** (when your host allows it on ports you expose): structured fields the peer must supply to bind. Use it when you need concrete answers or disclosures; keep **`description`** concise.",
   "- Infer meaning from unknown strings using prior turns and descriptions.",
 ].join("\n");
 

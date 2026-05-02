@@ -31,6 +31,7 @@ Open the printed URLs (default port **3456**; override with `PORT`):
 - **`/`** — home page listing scenarios
 - **`/scenarios/bilateral`** — bilateral pilot delivery (original demo narrative)
 - **`/scenarios/intent-overlap`** — overlapping vs differing intents narrative
+- **`/scenarios/matchmaking`** — stranger matchmaking; progressive disclosure toward a meet decision
 
 ## Layout
 
@@ -44,7 +45,7 @@ Open the printed URLs (default port **3456**; override with `PORT`):
 
 ## HTTP API (per scenario)
 
-Replace `<slug>` with `bilateral` or `intent-overlap`. Each slug has **isolated** session state (separate parties, ledger, mutex).
+Replace `<slug>` with `bilateral`, `intent-overlap`, or `matchmaking`. Each slug has **isolated** session state (separate parties, ledger, mutex).
 
 | Method | Path | Description |
 |--------|------|-------------|

@@ -31,6 +31,15 @@ function Home() {
             </small>
           </a>
         </li>
+        <li>
+          <a href="/scenarios/matchmaking">
+            Stranger matchmaking
+            <small>
+              Two matched strangers progressively disclose to judge whether a real meeting is worth
+              it.
+            </small>
+          </a>
+        </li>
       </ul>
     </main>
   );

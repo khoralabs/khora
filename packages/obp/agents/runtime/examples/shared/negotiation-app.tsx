@@ -5,12 +5,12 @@ import {
   useNegotiationExample,
 } from "./negotiation-hooks/negotiation-example-provider.tsx";
 
-export { joinScenarioApi } from "./negotiation-hooks/utils.ts";
 export {
+  type NegotiationExampleContextValue,
   NegotiationExampleProvider,
   useNegotiationExample,
-  type NegotiationExampleContextValue,
 } from "./negotiation-hooks/negotiation-example-provider.tsx";
+export { joinScenarioApi } from "./negotiation-hooks/utils.ts";
 
 export type NegotiationAppProps = {
   /** e.g. `/api/scenarios/bilateral` — health/state/turn/reset are under this prefix */

@@ -15,6 +15,7 @@ export const obpNegotiatorBaseInstruction = `You coordinate with other parties t
 ## OBP graph (what matters)
 - **Extend offer** publishes a surface your party owns; **offerType** is a public string you choose.
 - **Expose port** attaches an affordance to an offer you extend; **portType** is a public string. Use **terminal=true** on a port that should represent a final commitment surface for binding.
+- Optional **\`bind_policy\`** on a port you expose defines **structured fields** the counterparty must supply when binding that port. When your host allows \`bind_policy\` on ports you expose, **prefer** it for mandatory questions or required disclosures; keep **\`description\`** concise and human-readable rather than encoding required answers only in long prose.
 - **Bind** consumes a port on an offer (session policy may restrict who may bind). Only what is stored on offers/ports/binds is visible to peers.
 
 ## Integrative vs distributive (“pie” logic)
