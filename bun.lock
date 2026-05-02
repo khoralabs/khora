@@ -268,7 +268,22 @@
         "typescript": "^5",
       },
     },
-    "packages/obp/agent-runtime": {
+    "packages/obp/agents/negotiator": {
+      "name": "@cfd/obp-negotiator",
+      "dependencies": {
+        "@cfd/agent-identity": "workspace:*",
+        "@cfd/agent-identity-adapters": "workspace:*",
+        "@cfd/obp-tools": "workspace:*",
+        "ai": "^6",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/obp/agents/runtime": {
       "name": "@cfd/obp-agent-runtime",
       "version": "0.0.0",
       "dependencies": {
@@ -288,21 +303,6 @@
         "@xyflow/react": "^12.10.2",
         "react": "^19.2.5",
         "react-dom": "^19.2.5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/obp/agents/negotiator": {
-      "name": "@cfd/obp-negotiator",
-      "dependencies": {
-        "@cfd/agent-identity": "workspace:*",
-        "@cfd/agent-identity-adapters": "workspace:*",
-        "@cfd/obp-tools": "workspace:*",
-        "ai": "^6",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
       },
       "peerDependencies": {
         "typescript": "^5",
@@ -451,7 +451,7 @@
 
     "@cfd/memories-tools": ["@cfd/memories-tools@workspace:packages/memories/agents/tools"],
 
-    "@cfd/obp-agent-runtime": ["@cfd/obp-agent-runtime@workspace:packages/obp/agent-runtime"],
+    "@cfd/obp-agent-runtime": ["@cfd/obp-agent-runtime@workspace:packages/obp/agents/runtime"],
 
     "@cfd/obp-bind-policy-zod": ["@cfd/obp-bind-policy-zod@workspace:packages/obp/bind-policy-zod"],
 
