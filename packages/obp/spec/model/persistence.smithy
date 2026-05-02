@@ -39,7 +39,7 @@ OBP is a small typed graph for causal interaction history: **Party** → **Offer
 
 Narrative: `packages/obp/README.md`, `packages/obp/documentation/*.md`, `packages/obp/documentation/*.obp`.
 
-**Decentralized session:** `packages/obp/documentation/decentralized-session.md` (Merkle checkpoints, fork rollback, ledger sequence).
+**Decentralized session sync:** Normative protocol (checkpoints, Merkle tree, hashing, verification, fork semantics) is **`cfd.obp.session#NegotiationSessionProtocol`** in `packages/obp/spec/model/session-protocol.smithy`. Non-normative reader guide: `packages/obp/documentation/decentralized-session.md`.
 """)
 service ObpPersistence {
     version: "2026-05-01"

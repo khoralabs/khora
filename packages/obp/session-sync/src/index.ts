@@ -1,6 +1,14 @@
 export { canonicalJson } from "./canonical.ts";
 export type { SessionEnvelope } from "./envelope.ts";
-export { bytesToHex, hexToBytes, internalHash, leafHash, sha256 } from "./hash.ts";
+export {
+  bytesToHex,
+  hexToBytes,
+  internalHash,
+  leafHash,
+  SESSION_EMPTY_LOG_SENTINEL,
+  SESSION_LEAF_V1_PREFIX,
+  sha256,
+} from "./hash.ts";
 export {
   inclusionProof,
   leafHashForOp,

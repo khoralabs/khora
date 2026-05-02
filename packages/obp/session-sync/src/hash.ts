@@ -2,9 +2,15 @@ import { createHash } from "node:crypto";
 
 const enc = new TextEncoder();
 
-/** Domain-separated leaf hash (`OBP_SESSION_LEAF_v1` + canonical UTF-8). */
+/** ASCII + NUL leaf prefix; normative definition in `packages/obp/spec/model/session-protocol.smithy`. */
+export const SESSION_LEAF_V1_PREFIX = "OBP_SESSION_LEAF_v1\0";
+
+/** UTF-8 body after **`SESSION_LEAF_V1_PREFIX`** when the op log has zero entries (same Smithy model). */
+export const SESSION_EMPTY_LOG_SENTINEL = "__empty_session_op_log__";
+
+/** `SHA-256(SESSION_LEAF_V1_PREFIX || canonicalUtf8)` per **`cfd.obp.session#NegotiationSessionProtocol`**. */
 export function leafHash(canonicalUtf8: string): Uint8Array {
-  const payload = new Uint8Array(enc.encode(`OBP_SESSION_LEAF_v1\0${canonicalUtf8}`));
+  const payload = new Uint8Array(enc.encode(`${SESSION_LEAF_V1_PREFIX}${canonicalUtf8}`));
   return sha256(payload);
 }
 

@@ -1,5 +1,5 @@
 import { canonicalJson } from "./canonical.ts";
-import { internalHash, leafHash } from "./hash.ts";
+import { internalHash, leafHash, SESSION_EMPTY_LOG_SENTINEL } from "./hash.ts";
 
 function pairReduceLevel(level: Uint8Array[]): Uint8Array[] {
   const next: Uint8Array[] = [];
@@ -16,11 +16,11 @@ function pairReduceLevel(level: Uint8Array[]): Uint8Array[] {
 
 /**
  * Binary Merkle root over **`leaves`** (already hashed) using the **duplicate-last** odd rule
- * from [`decentralized-session.md`](../documentation/decentralized-session.md).
+ * defined normatively in **`cfd.obp.session#NegotiationSessionProtocol`** (`session-protocol.smithy`).
  */
 export function merkleRoot(leaves: Uint8Array[]): Uint8Array {
   if (leaves.length === 0) {
-    return leafHash("__empty_session_op_log__");
+    return leafHash(SESSION_EMPTY_LOG_SENTINEL);
   }
   let level = [...leaves];
   while (level.length > 1) {
@@ -28,7 +28,7 @@ export function merkleRoot(leaves: Uint8Array[]): Uint8Array {
   }
   const root = level[0];
   if (root === undefined) {
-    return leafHash("__empty_session_op_log__");
+    return leafHash(SESSION_EMPTY_LOG_SENTINEL);
   }
   return root;
 }
@@ -42,7 +42,7 @@ export type MerkleLevels = Uint8Array[][];
 /** Full reduction levels (for inclusion proofs). */
 export function merkleLevels(leaves: Uint8Array[]): MerkleLevels {
   if (leaves.length === 0) {
-    const root = leafHash("__empty_session_op_log__");
+    const root = leafHash(SESSION_EMPTY_LOG_SENTINEL);
     return [[root]];
   }
   const levels: MerkleLevels = [[...leaves]];
