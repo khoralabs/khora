@@ -27,7 +27,7 @@ export const encodingConventionsMarkdown = [
   "- Prefer short, readable strings (e.g. `scope.narrow|deadline.6w`). For a closing commitment port, you may prefix with `" +
     AGREEMENT_PORT_TYPE_PREFIX +
     "` so peers recognize intent—optional, not enforced.",
-  "- **`bind_policy`** (when your host allows it on ports you expose): defines structured fields the counterparty must supply to bind that port. Use it for mandatory questions or disclosures; keep **`description`** concise—do not rely on long prose alone for required answers.",
+  "- **`bind_policy`** (optional on ports you expose): defines structured fields the counterparty must supply to bind that port; it is **enforced at bind time**. **Do not** phrase mandatory peer answers only as questions inside **`promise`**—without **`bind_policy`**, those asks are not structurally required at bind time.",
   "- Read the compact graph each turn; do not assume unknown `portType` strings mean nothing—infer from text and context.",
 ].join("\n");
 

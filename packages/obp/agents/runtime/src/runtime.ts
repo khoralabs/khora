@@ -53,7 +53,7 @@ function summarizeBindPolicy(policy: PortBindPolicy): string {
 
 /** Text for Zod `.describe` on each bind-key in structured output. */
 function composeBindAffordanceDescription(port: Port): string {
-  let s = port.description.trim();
+  let s = port.promise.trim();
   if (port.terminal) {
     s +=
       " Terminal affordance: after binding, omit the `ports` property from your structured response (no further exposes on this line).";
@@ -68,8 +68,8 @@ export type NegotiationBindMenuEntry = {
   portId: string;
   portType: string;
   terminal: boolean;
-  /** From `Port.description` (exposing party’s counterparty-facing explanation). */
-  description: string;
+  /** From `Port.promise` (exposing party’s counterparty-facing affordance copy). */
+  promise: string;
   /** Full string passed to Zod `.describe` on the bind output key. */
   affordanceDescription: string;
   bind_policy?: PortBindPolicy;
@@ -77,7 +77,7 @@ export type NegotiationBindMenuEntry = {
 
 export type NegotiationExposedPortSummary = {
   portType: string;
-  description: string;
+  promise: string;
   terminal: boolean;
 };
 
@@ -170,14 +170,14 @@ type PreparedGenesis = {
 type LastPrepared = PreparedBind | PreparedGenesis | null;
 
 function summarizeExposedPorts(
-  ports: readonly { portType: string; description: string; terminal: boolean }[] | undefined,
+  ports: readonly { portType: string; promise: string; terminal: boolean }[] | undefined,
 ): NegotiationExposedPortSummary[] {
   if (ports === undefined) {
     return [];
   }
   return ports.map((p) => ({
     portType: p.portType,
-    description: p.description,
+    promise: p.promise,
     terminal: p.terminal,
   }));
 }
@@ -207,7 +207,9 @@ export class NegotiationRuntime {
   }
 
   private schemaOpts(): NegotiationTurnSchemaOptions {
-    return { allowAgentPortTtl: this.opts.allowAgentPortTtl ?? true };
+    return {
+      allowAgentPortTtl: this.opts.allowAgentPortTtl ?? true,
+    };
   }
 
   private pickOfferTtl(output: { ttl?: TtlSpec }): TtlSpec {
@@ -349,7 +351,7 @@ export class NegotiationRuntime {
           portId: id,
           portType: port.type,
           terminal: port.terminal,
-          description: port.description,
+          promise: port.promise,
           affordanceDescription: composeBindAffordanceDescription(port),
           ...(port.bind_policy !== undefined ? { bind_policy: port.bind_policy } : {}),
         });
@@ -447,7 +449,7 @@ export class NegotiationRuntime {
       ts_created: now,
       ts_expired: tsExpiredForTtl(now, portTtl),
       type: p.portType,
-      description: p.description,
+      promise: p.promise,
       max_bindings: p.max_bindings ?? 1,
       terminal: p.terminal,
       ref: p.ref?.trim() ?? "",
@@ -494,7 +496,7 @@ export class NegotiationRuntime {
           portId: id,
           portType: port.type,
           terminal: port.terminal,
-          description: port.description,
+          promise: port.promise,
           affordanceDescription: composeBindAffordanceDescription(port),
           ...(port.bind_policy !== undefined ? { bind_policy: port.bind_policy } : {}),
         });

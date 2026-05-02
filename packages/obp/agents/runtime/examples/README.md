@@ -54,7 +54,7 @@ Replace `<slug>` with `bilateral`, `intent-overlap`, or `matchmaking`. Each slug
 | `POST` | `/api/scenarios/<slug>/negotiation/turn` | Body: `{ "actingPartyId": "<uuid>" }`. Same errors as before (`wrong_turn_party`, `llm_not_configured`, …). |
 | `POST` | `/api/scenarios/<slug>/negotiation/reset` | Resets **only** that slug’s session. |
 
-The UI exposes two party buttons whose labels come from **`partyDisplayNames`** in state (defaults **Buyer** / **Seller**; scenarios may override). Click the **highlighted** party once to **auto-run** remaining turns until completion or error. Turn errors such as `wrong_turn_party` may include an **`expectedParty`** string using that display name.
+The UI uses a **Start** button to **auto-run** remaining turns until completion or error (the server’s **`nextTurn`** decides who opens; **`partyDisplayNames`** still labels parties on the graph). Turn errors such as `wrong_turn_party` may include an **`expectedParty`** string using that display name.
 
 ## Behaviour
 

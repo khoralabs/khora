@@ -22,10 +22,12 @@ import {
   createContext,
   memo,
   type ReactNode,
+  type RefObject,
   useCallback,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
@@ -223,9 +225,9 @@ export function GraphSnapshotFlowNodeDetails({
           </dd>
           <dt style={dtStyle}>Type</dt>
           <dd style={ddStyle}>{p.type}</dd>
-          <dt style={dtStyle}>Description</dt>
+          <dt style={dtStyle}>Promise</dt>
           <dd style={{ ...ddStyle, wordBreak: "break-all", whiteSpace: "pre-wrap" }}>
-            {p.description || "—"}
+            {p.promise || "—"}
           </dd>
           <dt style={dtStyle}>Terminal</dt>
           <dd style={ddStyle}>{p.terminal ? "yes" : "no"}</dd>
@@ -317,6 +319,13 @@ export function GraphSnapshotFlowEmptySelectionHint({
 
 type FlowSelection = { kind: "node"; id: string } | { kind: "edge"; id: string } | null;
 
+/** How the viewport frames the graph after updates when nothing is selected and automation is active. */
+export type GraphSnapshotFlowAfterBindViewport = "focus" | "encapsulate";
+
+function isUserViewportGesture(ev: unknown): boolean {
+  return ev instanceof Event && ev.isTrusted === true;
+}
+
 const OfferNode = memo(function OfferNodeFn(props: NodeProps) {
   const data = props.data as DagOfferNodeData;
   return (
@@ -398,6 +407,7 @@ export const graphSnapshotFlowDefaultNodeTypes = {
 type GraphSnapshotFlowContextValue = {
   graph: GraphSnapshot;
   focusSceneKey: string;
+  afterBindViewport: GraphSnapshotFlowAfterBindViewport;
   nodes: Node[];
   edges: Edge[];
   setNodes: ReturnType<typeof useNodesState<Node>>[1];
@@ -426,18 +436,25 @@ function GraphSnapshotFlowFitEffect({
   edges,
   selection,
   focusSceneKey,
+  afterBindViewport,
+  userAdjustedViewportRef,
 }: {
   nodes: Node[];
   edges: Edge[];
   selection: FlowSelection;
   focusSceneKey: string;
+  afterBindViewport: GraphSnapshotFlowAfterBindViewport;
+  userAdjustedViewportRef: RefObject<boolean>;
 }) {
   const { fitView } = useReactFlow();
+  const lastSelectionFitRef = useRef("");
 
   useEffect(() => {
     if (nodes.length === 0) {
       return;
     }
+    const selectionFitKey = selection === null ? "" : `${selection.kind}:${selection.id}`;
+
     let cancelled = false;
     const id = browserFrame.requestAnimationFrame(() => {
       browserFrame.requestAnimationFrame(() => {
@@ -445,6 +462,9 @@ function GraphSnapshotFlowFitEffect({
           return;
         }
         if (selection?.kind === "edge") {
+          if (lastSelectionFitRef.current === selectionFitKey) {
+            return;
+          }
           const edge = edges.find((e) => e.id === selection.id);
           if (edge !== undefined) {
             const src = nodes.find((n) => n.id === edge.source);
@@ -457,11 +477,15 @@ function GraphSnapshotFlowFitEffect({
                 duration: 260,
                 maxZoom: 2,
               });
+              lastSelectionFitRef.current = selectionFitKey;
             }
           }
           return;
         }
         if (selection?.kind === "node") {
+          if (lastSelectionFitRef.current === selectionFitKey) {
+            return;
+          }
           const picked = nodes.find((n) => n.id === selection.id);
           if (picked !== undefined) {
             fitView({
@@ -470,9 +494,22 @@ function GraphSnapshotFlowFitEffect({
               duration: 260,
               maxZoom: 2,
             });
+            lastSelectionFitRef.current = selectionFitKey;
           }
           return;
         }
+
+        lastSelectionFitRef.current = "";
+
+        if (userAdjustedViewportRef.current) {
+          return;
+        }
+
+        if (afterBindViewport === "encapsulate") {
+          fitView({ padding: 0.15, duration: 200 });
+          return;
+        }
+
         const want =
           focusSceneKey === ""
             ? []
@@ -489,7 +526,7 @@ function GraphSnapshotFlowFitEffect({
       cancelled = true;
       browserFrame.cancelAnimationFrame(id);
     };
-  }, [nodes, edges, fitView, focusSceneKey, selection]);
+  }, [nodes, edges, fitView, focusSceneKey, selection, afterBindViewport, userAdjustedViewportRef]);
 
   return null;
 }
@@ -498,14 +535,21 @@ export type GraphSnapshotFlowRootProps = Omit<ComponentProps<"div">, "children">
   graph: GraphSnapshot;
   /** When set, viewport fits that subgraph when nothing is selected. */
   focusNodeIds?: string[] | null;
+  /**
+   * When automation is active (no manual pan/zoom yet; no selection): how to frame the graph after updates.
+   * - `focus`: fit `focusNodeIds` when non-empty, else full graph.
+   * - `encapsulate`: always fit the full graph (`focusNodeIds` ignored for framing).
+   */
+  afterBindViewport?: GraphSnapshotFlowAfterBindViewport;
   children: ReactNode;
 };
 
 function GraphSnapshotFlowStateProvider({
   graph,
   focusNodeIds,
+  afterBindViewport = "focus",
   children,
-}: Pick<GraphSnapshotFlowRootProps, "graph" | "focusNodeIds" | "children">) {
+}: Pick<GraphSnapshotFlowRootProps, "graph" | "focusNodeIds" | "afterBindViewport" | "children">) {
   const layout = useMemo(() => graphSnapshotToFlow(graph), [graph]);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -554,6 +598,7 @@ function GraphSnapshotFlowStateProvider({
     (): GraphSnapshotFlowContextValue => ({
       graph,
       focusSceneKey,
+      afterBindViewport,
       nodes,
       edges,
       setNodes,
@@ -569,6 +614,7 @@ function GraphSnapshotFlowStateProvider({
     [
       graph,
       focusSceneKey,
+      afterBindViewport,
       nodes,
       edges,
       setNodes,
@@ -591,6 +637,7 @@ function GraphSnapshotFlowStateProvider({
 export function GraphSnapshotFlowRoot({
   graph,
   focusNodeIds = null,
+  afterBindViewport = "focus",
   style,
   children,
   ...rest
@@ -598,7 +645,11 @@ export function GraphSnapshotFlowRoot({
   return (
     <div {...rest} style={{ ...hostStyleDefault, ...style }}>
       <ReactFlowProvider>
-        <GraphSnapshotFlowStateProvider graph={graph} focusNodeIds={focusNodeIds}>
+        <GraphSnapshotFlowStateProvider
+          graph={graph}
+          focusNodeIds={focusNodeIds}
+          afterBindViewport={afterBindViewport}
+        >
           {children}
         </GraphSnapshotFlowStateProvider>
       </ReactFlowProvider>
@@ -621,6 +672,8 @@ export function GraphSnapshotFlowViewport({
   onNodeClick,
   onEdgeClick,
   onPaneClick,
+  onMoveStart,
+  onWheel,
   style,
   children,
   nodes: nodesProp,
@@ -630,6 +683,27 @@ export function GraphSnapshotFlowViewport({
   ...rest
 }: GraphSnapshotFlowViewportProps) {
   const ctx = useGraphSnapshotFlow();
+  const userAdjustedViewportRef = useRef(false);
+
+  const handleMoveStart = useCallback<NonNullable<ComponentProps<typeof ReactFlow>["onMoveStart"]>>(
+    (event, ...args) => {
+      if (isUserViewportGesture(event)) {
+        userAdjustedViewportRef.current = true;
+      }
+      onMoveStart?.(event, ...args);
+    },
+    [onMoveStart],
+  );
+
+  const handleWheel = useCallback<NonNullable<ComponentProps<typeof ReactFlow>["onWheel"]>>(
+    (event) => {
+      if (isUserViewportGesture(event)) {
+        userAdjustedViewportRef.current = true;
+      }
+      onWheel?.(event);
+    },
+    [onWheel],
+  );
 
   const handleNodeClick = useCallback(
     (
@@ -682,6 +756,8 @@ export function GraphSnapshotFlowViewport({
       elementsSelectable={rest.elementsSelectable ?? true}
       colorMode={rest.colorMode ?? "light"}
       minZoom={rest.minZoom ?? 0.001}
+      onMoveStart={handleMoveStart}
+      onWheel={handleWheel}
       onNodeClick={handleNodeClick}
       onEdgeClick={handleEdgeClick}
       onPaneClick={handlePaneClick}
@@ -695,6 +771,8 @@ export function GraphSnapshotFlowViewport({
         edges={ctx.edges}
         selection={ctx.selection}
         focusSceneKey={ctx.focusSceneKey}
+        afterBindViewport={ctx.afterBindViewport}
+        userAdjustedViewportRef={userAdjustedViewportRef}
       />
       {children}
     </ReactFlow>

@@ -30,8 +30,8 @@ export const encodingConventionsMarkdown = [
   "- Optional terminal prefix `" +
     AGREEMENT_PORT_TYPE_PREFIX +
     "` on closing ports—hint only, not enforced.",
-  "- **`bind_policy`** (when your host allows it on ports you expose): structured fields the peer must supply to bind. Use it when you need concrete answers or disclosures; keep **`description`** concise.",
-  "- Infer meaning from unknown strings using prior turns and descriptions.",
+  "- **`bind_policy`** (optional on ports you expose): structured fields the peer must supply to bind; **enforced at bind time** when set. Listing interview questions only in **`promise`** does **not** obligate answers—use policy properties for anything you require before the bind counts.",
+  "- Infer meaning from unknown strings using prior turns and port promises.",
 ].join("\n");
 
 export const buyerPrivateIntentMarkdown = [

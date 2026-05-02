@@ -18,9 +18,6 @@ function migrateObpPortsTtlColumns(db: Database): void {
   if (!names.has("bind_policy_json")) {
     db.run("ALTER TABLE obp_ports ADD COLUMN bind_policy_json TEXT");
   }
-  if (!names.has("description")) {
-    db.run("ALTER TABLE obp_ports ADD COLUMN description TEXT NOT NULL DEFAULT ''");
-  }
 }
 
 /** Add counterparty bind answers column when upgrading older DB files. */

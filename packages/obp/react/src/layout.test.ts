@@ -30,7 +30,7 @@ test("flowchart layout places successor offer to the right of bound port", () =>
       {
         id: "port-a",
         type: "afford-a",
-        description: "Affordance A.",
+        promise: "Affordance A.",
         terminal: false,
         maxBindings: 1,
         ref: "",
@@ -42,7 +42,7 @@ test("flowchart layout places successor offer to the right of bound port", () =>
       {
         id: "port-b",
         type: "afford-b",
-        description: "Affordance B.",
+        promise: "Affordance B.",
         terminal: false,
         maxBindings: 1,
         ref: "",
@@ -54,7 +54,7 @@ test("flowchart layout places successor offer to the right of bound port", () =>
       {
         id: "port-next",
         type: "next",
-        description: "Next-step affordance.",
+        promise: "Next-step affordance.",
         terminal: false,
         maxBindings: 1,
         ref: "",
@@ -109,7 +109,7 @@ test("genesis-only snapshot lays offer then ports to the right", () => {
       {
         id: "pt1",
         type: "listing",
-        description: "Layout test listing.",
+        promise: "Layout test listing.",
         terminal: false,
         maxBindings: 1,
         ref: "",

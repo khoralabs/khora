@@ -28,7 +28,7 @@ export const encodingConventionsMarkdown = [
   "- Optional terminal prefix `" +
     AGREEMENT_PORT_TYPE_PREFIX +
     "` on a closing port—e.g. a concrete meet proposal—hint only, not enforced.",
-  "- **`bind_policy`** (when your host allows it on ports you expose): require structured answers (e.g. availability band, topic focus) at bind time instead of burying mandatory questions only in **`description`**.",
+  "- **`bind_policy`** (optional on ports you expose): require structured answers (e.g. availability band, topic focus) at bind time; **enforced when present**. **Avoid** trust-building or screening questions **only** in **`promise`**—encode what they must disclose as policy fields.",
   "- Infer meaning from unknown strings using prior turns; the graph is your shared transcript.",
 ].join("\n");
 

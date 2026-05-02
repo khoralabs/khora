@@ -43,9 +43,9 @@ structure Port {
     ts_created: Long
     ts_expired: Long
     type: String
-    /// Counterparty-facing affordance copy; implementations enforcing UX SHOULD require non-empty on **ExposePort**.
+    /// Counterparty-facing affordance copy (what this port offers or invites); implementations enforcing UX SHOULD require non-empty on **ExposePort**.
     @default("")
-    description: String
+    promise: String
     max_bindings: Integer
     /// Hint for agents when this affordance represents completion.
     terminal: Boolean
@@ -53,7 +53,7 @@ structure Port {
     @default("")
     ref: String
     sourcemaps: SourceMapRefList
-    /// JSON bind-policy meta-schema (structured encoding is TS/Zod `PortBindPolicy` in `@cfd/obp-core`); null means unconstrained.
+    /// JSON bind-policy meta-schema (structured encoding is TS/Zod `PortBindPolicy` in `@cfd/obp-core`); null means unconstrained. When non-null, **BINDS** payloads MUST satisfy this policy or the bind is rejected.
     bind_policy: Document = null
     /// Negotiation TTL basis when the host recorded policy at expose time (`turns`, `seconds`, `minutes`, `hours`, `days`); empty when unset.
     @default("")

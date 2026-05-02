@@ -45,7 +45,7 @@ function seedSellerListing(): {
       ts_created: now(),
       ts_expired: expiresAtFromHours(now(), 24),
       type: "listing|100",
-      description: "Listing affordance for tests.",
+      promise: "Listing affordance for tests.",
       max_bindings: 1,
       terminal: false,
       ref: "",
@@ -80,8 +80,8 @@ test("happy path: bind counterparty port and expose multiple ports", async () =>
     [listingPortId]: OBP_NEGOTIATION_BIND_NO_POLICY,
     offerType: "buyer.counter",
     ports: [
-      { portType: "path-a", terminal: false, description: "Path A." },
-      { portType: "path-b", terminal: false, description: "Path B." },
+      { portType: "path-a", terminal: false, promise: "Path A." },
+      { portType: "path-b", terminal: false, promise: "Path B." },
     ],
   };
   const parsed = schema.parse(raw);
@@ -146,7 +146,7 @@ test("noop bind completes extend + bind", async () => {
     schema.parse({
       [noopId]: OBP_NEGOTIATION_BIND_NO_POLICY,
       offerType: "buyer.noop",
-      ports: [{ portType: "keep-alive", terminal: false, description: "Keep session alive." }],
+      ports: [{ portType: "keep-alive", terminal: false, promise: "Keep session alive." }],
     }),
   );
   const binds = persistence.listBinds();
@@ -202,7 +202,7 @@ test("genesis turn then bind turn", async () => {
         {
           portType: "buyer.may_counter",
           terminal: false,
-          description: "Counterparty may respond here.",
+          promise: "Counterparty may respond here.",
         },
       ],
     }),
@@ -257,7 +257,7 @@ test("genesis attaches noop/walk-away on new offer before counterparty prepareAc
         {
           portType: "buyer.may_counter",
           terminal: false,
-          description: "Buyer counter affordance.",
+          promise: "Buyer counter affordance.",
         },
       ],
     }),
@@ -295,7 +295,7 @@ test("bind turn requires counterparty_bind when listing port has bind_policy", a
       ts_created: now(),
       ts_expired: expiresAtFromHours(now(), 24),
       type: "listing|100",
-      description: "Listing with bind policy.",
+      promise: "Listing with bind policy.",
       max_bindings: 1,
       terminal: false,
       ref: "",
@@ -328,13 +328,13 @@ test("bind turn requires counterparty_bind when listing port has bind_policy", a
     schema.safeParse({
       [listing.id]: true,
       offerType: "buyer.counter",
-      ports: [{ portType: "path-a", terminal: false, description: "Path A." }],
+      ports: [{ portType: "path-a", terminal: false, promise: "Path A." }],
     }).success,
   ).toBe(false);
   const parsed = schema.parse({
     [listing.id]: { reference: "R1" },
     offerType: "buyer.counter",
-    ports: [{ portType: "path-a", terminal: false, description: "Path A." }],
+    ports: [{ portType: "path-a", terminal: false, promise: "Path A." }],
   });
   const audit = rt.applyTurn(buyer.id, parsed);
   expect(audit.kind).toBe("bind");
@@ -366,7 +366,7 @@ test("terminal counterparty bind omits ports from validator (.strict rejects por
       ts_created: now(),
       ts_expired: expiresAtFromHours(now(), 24),
       type: "deal.final",
-      description: "Terminal deal port.",
+      promise: "Terminal deal port.",
       max_bindings: 1,
       terminal: true,
       ref: "",
@@ -401,7 +401,7 @@ test("terminal counterparty bind omits ports from validator (.strict rejects por
     schema.safeParse({
       [listing.id]: OBP_NEGOTIATION_BIND_NO_POLICY,
       offerType: "agreed",
-      ports: [{ portType: "extra", terminal: false, description: "Extra." }],
+      ports: [{ portType: "extra", terminal: false, promise: "Extra." }],
     }).success,
   ).toBe(false);
 });
@@ -431,7 +431,7 @@ test("terminal bind creates offer with no exposes (no model ports, no noop/walk)
       ts_created: now(),
       ts_expired: expiresAtFromHours(now(), 24),
       type: "deal.final",
-      description: "Terminal deal port.",
+      promise: "Terminal deal port.",
       max_bindings: 1,
       terminal: true,
       ref: "",

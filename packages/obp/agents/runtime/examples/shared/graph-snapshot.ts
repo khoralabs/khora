@@ -41,7 +41,7 @@ export function buildGraphSnapshot(
   const ports = [...fake.ports.values()].map((p) => ({
     id: p.id,
     type: p.type,
-    description: p.description,
+    promise: p.promise,
     terminal: p.terminal,
     maxBindings: p.max_bindings,
     ref: p.ref,

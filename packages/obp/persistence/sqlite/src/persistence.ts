@@ -42,7 +42,7 @@ type PortRow = {
   ts_created: number;
   ts_expired: number;
   type: string;
-  description: string | null;
+  promise: string | null;
   max_bindings: number;
   terminal: number;
   ref: string;
@@ -153,7 +153,7 @@ function rowToPort(r: PortRow): Port {
     ts_created: r.ts_created,
     ts_expired: r.ts_expired,
     type: r.type,
-    description: r.description ?? "",
+    promise: r.promise ?? "",
     max_bindings: r.max_bindings,
     terminal: r.terminal !== 0,
     ref: r.ref ?? "",
@@ -245,7 +245,7 @@ export class ObpSqlitePersistence implements ObpPersistence {
   getPort(id: string): GetPortResult {
     const row = this.db
       .query<PortRow, [string]>(
-        `SELECT id, ts_created, ts_expired, type, description, max_bindings, terminal, ref, sourcemaps_json, ttl_basis, ttl_measure, expose_turn_index, bind_policy_json FROM obp_ports WHERE id = ?`,
+        `SELECT id, ts_created, ts_expired, type, promise, max_bindings, terminal, ref, sourcemaps_json, ttl_basis, ttl_measure, expose_turn_index, bind_policy_json FROM obp_ports WHERE id = ?`,
       )
       .get(id);
     if (!row) return { kind: "notFound" };
@@ -322,7 +322,7 @@ export class ObpSqlitePersistence implements ObpPersistence {
       if (bindPortId !== "") {
         const portRow = this.db
           .query<PortRow, [string]>(
-            `SELECT id, ts_created, ts_expired, type, description, max_bindings, terminal, ref, sourcemaps_json, ttl_basis, ttl_measure, expose_turn_index, bind_policy_json FROM obp_ports WHERE id = ?`,
+            `SELECT id, ts_created, ts_expired, type, promise, max_bindings, terminal, ref, sourcemaps_json, ttl_basis, ttl_measure, expose_turn_index, bind_policy_json FROM obp_ports WHERE id = ?`,
           )
           .get(bindPortId);
         if (!portRow) {
@@ -396,13 +396,13 @@ export class ObpSqlitePersistence implements ObpPersistence {
       }
 
       this.db.run(
-        `INSERT INTO obp_ports (id, ts_created, ts_expired, type, description, max_bindings, terminal, ref, sourcemaps_json, ttl_basis, ttl_measure, expose_turn_index, bind_policy_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO obp_ports (id, ts_created, ts_expired, type, promise, max_bindings, terminal, ref, sourcemaps_json, ttl_basis, ttl_measure, expose_turn_index, bind_policy_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           port.id,
           port.ts_created,
           port.ts_expired,
           port.type,
-          port.description,
+          port.promise,
           port.max_bindings,
           port.terminal ? 1 : 0,
           port.ref,
@@ -510,7 +510,7 @@ export class ObpSqlitePersistence implements ObpPersistence {
   private loadPortsMap(): Map<string, Port> {
     const rows = this.db
       .query<PortRow, []>(
-        `SELECT id, ts_created, ts_expired, type, description, max_bindings, terminal, ref, sourcemaps_json, ttl_basis, ttl_measure, expose_turn_index, bind_policy_json FROM obp_ports`,
+        `SELECT id, ts_created, ts_expired, type, promise, max_bindings, terminal, ref, sourcemaps_json, ttl_basis, ttl_measure, expose_turn_index, bind_policy_json FROM obp_ports`,
       )
       .all();
     const m = new Map<string, Port>();

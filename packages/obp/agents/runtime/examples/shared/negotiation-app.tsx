@@ -4,13 +4,14 @@ import {
   NegotiationExampleProvider,
   useNegotiationExample,
 } from "./negotiation-hooks/negotiation-example-provider.tsx";
+import { roleDisplayName } from "./negotiation-hooks/utils.ts";
 
 export {
   type NegotiationExampleContextValue,
   NegotiationExampleProvider,
   useNegotiationExample,
 } from "./negotiation-hooks/negotiation-example-provider.tsx";
-export { joinScenarioApi } from "./negotiation-hooks/utils.ts";
+export { joinScenarioApi, roleDisplayName } from "./negotiation-hooks/utils.ts";
 
 export type NegotiationAppProps = {
   /** e.g. `/api/scenarios/bilateral` — health/state/turn/reset are under this prefix */
@@ -29,11 +30,13 @@ function NegotiationAppShell() {
     lastTurnFocusNodeIds,
     displayNames,
     onReset,
-    onBuyer,
-    onSeller,
+    onStart,
   } = useNegotiationExample();
 
-  const readyHint = `Ready — click ${displayNames.buyer} or ${displayNames.seller} to run the LLM.`;
+  const readyHint =
+    server?.nextTurn != null
+      ? `Ready — click Start to run the LLM (${roleDisplayName(displayNames, server.nextTurn.actingRole)} opens).`
+      : "Ready — click Start to run the LLM.";
 
   return (
     <div className="negotiation-shell">
@@ -57,24 +60,18 @@ function NegotiationAppShell() {
               Reset
             </button>
             <button
-              id="buyer-turn"
+              id="negotiation-start"
               type="button"
-              className={btn.buyerNext ? "btn-next" : undefined}
-              disabled={btn.buyerDisabled || !server}
-              aria-label={`Run LLM turn for ${displayNames.buyer}`}
-              onClick={() => void onBuyer()}
+              className={btn.buyerNext || btn.sellerNext ? "btn-next" : undefined}
+              disabled={!server || (btn.buyerDisabled && btn.sellerDisabled)}
+              aria-label={
+                server?.nextTurn != null
+                  ? `Start LLM auto-run (${roleDisplayName(displayNames, server.nextTurn.actingRole)} opens)`
+                  : "Start LLM auto-run"
+              }
+              onClick={() => void onStart()}
             >
-              {displayNames.buyer} (LLM)
-            </button>
-            <button
-              id="seller-turn"
-              type="button"
-              className={btn.sellerNext ? "btn-next" : undefined}
-              disabled={btn.sellerDisabled || !server}
-              aria-label={`Run LLM turn for ${displayNames.seller}`}
-              onClick={() => void onSeller()}
-            >
-              {displayNames.seller} (LLM)
+              Start
             </button>
           </div>
         </div>
@@ -104,7 +101,11 @@ function NegotiationAppShell() {
 
         <section className="panel panel--dag" aria-label="Negotiation graph">
           {server ? (
-            <GraphSnapshotFlow.Root graph={server.graph} focusNodeIds={lastTurnFocusNodeIds}>
+            <GraphSnapshotFlow.Root
+              graph={server.graph}
+              focusNodeIds={lastTurnFocusNodeIds}
+              afterBindViewport="encapsulate"
+            >
               <GraphSnapshotFlow.Viewport>
                 <GraphSnapshotFlow.Background />
                 <GraphSnapshotFlow.Controls />

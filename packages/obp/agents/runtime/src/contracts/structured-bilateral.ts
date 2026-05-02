@@ -34,15 +34,20 @@ export type StructuredBilateralContractOptions = {
 
 const GENESIS_BODY_LINES = [
   "**Opening move:** there is no counterparty offer to bind yet. Propose your initial public state (`offerType`) and expose the ports your counterpart may bind next.",
-  "When you need the peer to answer specific questions or provide structured disclosures **before** their bind counts, attach **`bind_policy`** to that port (with the properties your host schema allows). Keep each **`description`** short—what the affordance is—rather than packing mandatory Q&A into prose alone.",
+  "**Information requests:** If you need specific answers, disclosures, or constrained choices from the peer, you **must** express them as **`bind_policy`** properties on that port—not as questions or checklists only inside **`promise`** prose. `promise` is counterparty-facing affordance copy; policy fields are what the peer must submit structurally when binding.",
+  "",
+];
+
+const BIND_PORT_EXPOSE_REMINDER = [
+  "If you include optional **`ports`** after this bind: any port where the peer must submit specific structured answers needs **`bind_policy`**—do **not** bury mandatory questions solely in **`promise`** prose.",
   "",
 ];
 
 const GENESIS_OUTPUT_DESCRIPTION =
-  "Opening move: set your root offerType (public state) and expose one or more ports. Each port requires non-empty `description`, `portType`, and `terminal`. Prefer optional `bind_policy` when you must require structured fields at bind time; do not rely on long descriptions alone for mandatory answers. `bind_policy` means future binds must supply matching policy-shaped fields on that port’s key. No bind yet.";
+  "Opening move: set your root offerType (public state) and expose one or more ports. Each port requires non-empty `promise`, `portType`, and `terminal`. Any mandatory peer answers or disclosures belong in optional `bind_policy`—not only as narrative in `promise`. `bind_policy` is enforced at bind time: binds must supply matching policy-shaped fields on that port’s key. No bind yet.";
 
 function bindOutputDescription(): string {
-  return `Structured negotiation: set **exactly one** JSON property whose key is a **port id** from the bind menu (see user message). Use value **"${OBP_NEGOTIATION_BIND_NO_POLICY}"** for ports without bind policy, or the **policy-shaped object** when that port has \`bind_policy\`. Set \`offerType\` to your new public state after that bind. If the chosen port is **terminal**, omit \`ports\` entirely. Otherwise you may optionally list new \`ports\` (each with required \`description\`).`;
+  return `Structured negotiation: set **exactly one** JSON property whose key is a **port id** from the bind menu (see user message). Use value **"${OBP_NEGOTIATION_BIND_NO_POLICY}"** for ports without bind policy, or the **policy-shaped object** when that port has \`bind_policy\`. Set \`offerType\` to your new public state after that bind. If the chosen port is **terminal**, omit \`ports\` entirely. Otherwise you may optionally list new \`ports\`: use \`bind_policy\` on any new port that requires structured peer submissions—avoid mandatory Q&A encoded only in \`promise\`.`;
 }
 
 /**
@@ -117,9 +122,10 @@ export function createNegotiationStructuredBilateralContract(
       const userMessage = buildObpNegotiationUserMessage({
         ...headerArgs,
         turnBodyLines: [
-          "Choose exactly one counterparty affordance: your JSON must include **one** top-level key equal to a **port id** from the list below (opaque UUIDs are intentional). The schema's `.description` on that key repeats the affordance text.",
+          "Choose exactly one counterparty affordance: your JSON must include **one** top-level key equal to a **port id** from the list below (opaque UUIDs are intentional). Structured-output schema metadata on that key repeats the affordance text.",
           "Ports marked **terminal**: your structured response must **not** include a `ports` field.",
-          "**Bind choices (port id → type → description):**",
+          ...BIND_PORT_EXPOSE_REMINDER,
+          "**Bind choices (port id → type → promise):**",
           formatBindMenuForPrompt(prep.bindMenu),
           "",
         ],

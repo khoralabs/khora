@@ -134,8 +134,8 @@ export class ObpClient {
     if (input.port.max_bindings < 0) {
       throw new ObpError("VALIDATION", "max_bindings must be non-negative");
     }
-    if (input.port.description.trim() === "") {
-      throw new ObpError("VALIDATION", "port.description must be non-empty");
+    if (input.port.promise.trim() === "") {
+      throw new ObpError("VALIDATION", "port.promise must be non-empty");
     }
     return this.persistence.exposePort(input);
   }

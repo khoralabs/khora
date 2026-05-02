@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS obp_ports (
   ts_created INTEGER NOT NULL,
   ts_expired INTEGER NOT NULL,
   type TEXT NOT NULL,
-  description TEXT NOT NULL DEFAULT '',
+  promise TEXT NOT NULL DEFAULT '',
   max_bindings INTEGER NOT NULL,
   terminal INTEGER NOT NULL CHECK (terminal IN (0, 1)),
   ref TEXT NOT NULL DEFAULT '',

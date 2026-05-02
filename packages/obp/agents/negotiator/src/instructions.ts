@@ -15,7 +15,7 @@ export const obpNegotiatorBaseInstruction = `You coordinate with other parties t
 ## OBP graph (what matters)
 - **Extend offer** publishes a surface your party owns; **offerType** is a public string you choose.
 - **Expose port** attaches an affordance to an offer you extend; **portType** is a public string. Use **terminal=true** on a port that should represent a final commitment surface for binding.
-- Optional **\`bind_policy\`** on a port you expose defines **structured fields** the counterparty must supply when binding that port. When your host allows \`bind_policy\` on ports you expose, **prefer** it for mandatory questions or required disclosures; keep **\`description\`** concise and human-readable rather than encoding required answers only in long prose.
+- **\`bind_policy\`** (optional on ports you create): defines **structured fields** the counterparty **must** submit when binding that port (**enforced at bind time** when set). **Do not** rely on **\`promise\`** prose alone for mandatory questions, interviews, or required disclosures—put those requirements in policy properties; keep **\`promise\`** as counterparty-facing affordance copy.
 - **Bind** consumes a port on an offer (session policy may restrict who may bind). Only what is stored on offers/ports/binds is visible to peers.
 
 ## Integrative vs distributive (“pie” logic)
@@ -38,4 +38,4 @@ Behaviorally: you may **refuse to bind**, **counter** with new offers/ports, or 
  * to respond only with the per-turn JSON object the host validates and applies.
  */
 export const obpNegotiatorStructuredInstructionAppendix = `## Response format for this session
-Respond ONLY with the structured JSON object the host requests for this turn. Do not invoke tools, and do not produce free-form prose alongside the object — the host validates the JSON and applies the corresponding OBP graph mutation on your behalf. The user message describes which port ids are bindable and what shape your response must take.`;
+Respond ONLY with structured JSON the host requests for this turn (no tools, no extra prose). Use \`bind_policy\` on ports you expose whenever the peer must supply structured answers—not only narrative in \`promise\`.`;

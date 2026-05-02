@@ -37,8 +37,8 @@ export type Port = {
   ts_created: number;
   ts_expired: number;
   type: string;
-  /** Counterparty-facing copy; **`ObpClient.exposePort`** requires non-empty trimmed text. */
-  description: string;
+  /** Counterparty-facing affordance copy; **`ObpClient.exposePort`** requires non-empty trimmed text. */
+  promise: string;
   max_bindings: number;
   terminal: boolean;
   /** Empty string means this port is canonical for ref resolution (no alias). */
@@ -50,7 +50,7 @@ export type Port = {
   ttl_measure?: number;
   /** Completed negotiation turn index when this port was exposed (`audit.turnIndex`). */
   expose_turn_index?: number;
-  /** Constraint metadata; counterpart must supply **`counterparty_bind`** on **BINDS** that satisfies this when present. */
+  /** When set, **`counterparty_bind`** on **BINDS** must satisfy this policy at bind time or the bind is rejected. */
   bind_policy?: PortBindPolicy;
 };
 

@@ -67,7 +67,7 @@ describe("createNegotiationStructuredBilateralContract", () => {
         {
           portType: "buyer.may_counter",
           terminal: false,
-          description: "Buyer may counter here.",
+          promise: "Buyer may counter here.",
         },
       ],
     });
@@ -91,7 +91,7 @@ describe("createNegotiationStructuredBilateralContract", () => {
           {
             portType: "buyer.may_counter",
             terminal: false,
-            description: "Buyer may counter here.",
+            promise: "Buyer may counter here.",
           },
         ],
       }),

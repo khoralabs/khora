@@ -37,8 +37,8 @@ export type NegotiationExampleContextValue = {
   resetBusy: boolean;
   refresh: (opts?: { clearError?: boolean }) => Promise<void>;
   onReset: () => Promise<void>;
-  onBuyer: () => void;
-  onSeller: () => void;
+  /** Runs LLM auto-run from whoever `nextTurn` names (fallback buyer if none). */
+  onStart: () => void;
   partyButtonState: ReturnType<typeof derivePartyButtonState>;
   lastTurnFocusNodeIds: string[] | null;
   displayNames: PartyDisplayNames;
@@ -238,7 +238,7 @@ export function NegotiationExampleProvider({
 
   useEffect(() => {
     void refresh().then(() => {
-      appendLog("Page loaded · click the highlighted party once to run until completion.");
+      appendLog("Page loaded · click Start once to run the LLM until completion.");
     });
   }, [refresh, appendLog]);
 
@@ -254,7 +254,7 @@ export function NegotiationExampleProvider({
 
       const nt0 = server.nextTurn;
       if (nt0 !== null && nt0.actingRole !== clickedRole) {
-        appendLog("(ignored: use the highlighted party to start)");
+        appendLog("(ignored: Start follows server next turn only)");
         return;
       }
 
@@ -334,13 +334,13 @@ export function NegotiationExampleProvider({
     [turnBusy, server, health, appendLog, executeOneTurnWithRetries, refresh],
   );
 
-  const onBuyer = useCallback(() => {
-    void runAutoNegotiation("buyer");
-  }, [runAutoNegotiation]);
-
-  const onSeller = useCallback(() => {
-    void runAutoNegotiation("seller");
-  }, [runAutoNegotiation]);
+  const onStart = useCallback(() => {
+    if (!server || turnBusy || !health) {
+      return;
+    }
+    const role = server.nextTurn?.actingRole ?? "buyer";
+    void runAutoNegotiation(role);
+  }, [server, turnBusy, health, runAutoNegotiation]);
 
   const onReset = useCallback(async () => {
     if (!server) {
@@ -392,8 +392,7 @@ export function NegotiationExampleProvider({
       resetBusy,
       refresh,
       onReset,
-      onBuyer,
-      onSeller,
+      onStart,
       partyButtonState,
       lastTurnFocusNodeIds,
       displayNames,
@@ -410,8 +409,7 @@ export function NegotiationExampleProvider({
       resetBusy,
       refresh,
       onReset,
-      onBuyer,
-      onSeller,
+      onStart,
       partyButtonState,
       lastTurnFocusNodeIds,
       displayNames,

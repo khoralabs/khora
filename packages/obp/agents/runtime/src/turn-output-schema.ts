@@ -9,24 +9,22 @@ import { zTtlSpec } from "./ttl-spec.ts";
 export type NegotiationTurnSchemaOptions = {
   /** When false, structured output must not include `ttl`; host applies defaults only. */
   allowAgentPortTtl: boolean;
-  /**
-   * When false, each optional `ports[]` entry omits `bind_policy` from the structured-output schema.
-   * Bind turns default to omission so JSON Schema stays small for Gemini; genesis keeps full policy DSL.
-   */
-  exposePortsIncludeBindPolicy?: boolean;
 };
 
-const zPortDescription = z.string().min(1).max(4000);
+const zPortPromise = z.string().min(1).max(4000);
 
 function zExposePortEntry(opts: NegotiationTurnSchemaOptions) {
-  const includePolicy = opts.exposePortsIncludeBindPolicy !== false;
   const base = {
     portType: z.string().min(1).max(600),
-    description: zPortDescription,
+    promise: zPortPromise.describe(
+      "Counterparty-facing affordance: what this port offers or invites. Required structured peer submissions belong in bind_policy, not only in this text.",
+    ),
     max_bindings: z.number().int().min(0).max(100).optional(),
     terminal: z.boolean(),
     ref: z.string().max(200).optional(),
-    ...(includePolicy ? { bind_policy: zPortBindPolicy.optional() } : {}),
+    bind_policy: zPortBindPolicy.optional().describe(
+      "When set, the peer must submit structured fields satisfying this policy to bind; binds are rejected otherwise.",
+    ),
     sourcemaps: zOptionalSourcemaps,
   };
   if (opts.allowAgentPortTtl) {
@@ -70,11 +68,7 @@ export function buildNegotiationTurnOutput(
     }
   }
 
-  const portEl = zExposePortEntry({
-    ...opts,
-    /** Never embed {@link zPortBindPolicy} under `ports[]` on bind turns—see `NegotiationTurnSchemaOptions`. */
-    exposePortsIncludeBindPolicy: false,
-  });
+  const portEl = zExposePortEntry(opts);
   const bindShape: Record<string, z.ZodTypeAny> = {};
   for (const m of menu) {
     const pol = hasBindPolicy(m.bind_policy)
@@ -160,8 +154,8 @@ export function buildNegotiationTurnOutput(
 
 export type NegotiationTurnExposePort = {
   portType: string;
-  /** Required: counterparty-facing explanation of this affordance. */
-  description: string;
+  /** Counterparty-facing affordance copy for this port. */
+  promise: string;
   max_bindings?: number;
   terminal: boolean;
   ref?: string;

@@ -4,7 +4,7 @@ export type BindOption = {
   portId: string;
   portType: string;
   terminal: boolean;
-  description: string;
+  promise: string;
   affordanceDescription: string;
 };
 
@@ -16,7 +16,7 @@ export type Audit =
       newOfferId: string;
       newOfferType: string;
       exposedPortIds: string[];
-      exposedPorts: Array<{ portType: string; description: string; terminal: boolean }>;
+      exposedPorts: Array<{ portType: string; promise: string; terminal: boolean }>;
     }
   | {
       kind: "bind";
@@ -31,7 +31,7 @@ export type Audit =
       newOfferId: string;
       newOfferType: string;
       exposedPortIds: string[];
-      exposedPorts: Array<{ portType: string; description: string; terminal: boolean }>;
+      exposedPorts: Array<{ portType: string; promise: string; terminal: boolean }>;
       counterpartyBind?: Record<string, unknown>;
     };
 

@@ -7,6 +7,8 @@ import type { PortBindPolicy } from "./bind-policy/types.ts";
  * Hosts emit this shape from their persistence + `ObpClient`
  * and pass it to UIs, prompt formatters (often a compact subset), or
  * audit/replay tooling.
+ *
+ * When a port row includes **`bind_policy`**, binds supply **`counterparty_bind`** that must satisfy it for the bind to succeed.
  */
 export type GraphSnapshot = {
   parties: Array<{ id: string; name: string }>;
@@ -21,7 +23,7 @@ export type GraphSnapshot = {
   ports: Array<{
     id: string;
     type: string;
-    description: string;
+    promise: string;
     terminal: boolean;
     maxBindings: number;
     ref: string;
