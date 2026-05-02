@@ -1,6 +1,6 @@
 import type { ObpClient } from "@cfd/obp-core";
 import type { FakeObpPersistence } from "@cfd/obp-core/testing";
-import type { GraphSnapshot } from "../src/graph-snapshot-types.ts";
+import type { GraphSnapshot } from "@cfd/obp-core";
 import { portExpiredForSnapshot } from "../src/port-turn-ttl.ts";
 
 export type { GraphSnapshot };

@@ -17,6 +17,7 @@ export type {
   PortBindPolicyVersion,
 } from "./bind-policy/types.ts";
 export { ObpClient, type ObpClientOptions } from "./client";
+export type { GraphSnapshot } from "./graph-snapshot.ts";
 export { ObpError, type ObpErrorCode } from "./errors";
 export {
   type BindValidationFailure,

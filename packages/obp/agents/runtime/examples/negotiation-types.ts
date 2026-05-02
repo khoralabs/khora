@@ -1,4 +1,4 @@
-import type { GraphSnapshot } from "./graph-snapshot.ts";
+import type { GraphSnapshot } from "@cfd/obp-core";
 
 export type BindOption = {
   portId: string;

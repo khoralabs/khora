@@ -29,10 +29,10 @@
     "example": "bun --hot examples/index.ts"
   },
   "devDependencies": {
+    "@cfd/obp-react": "workspace:*",
     "@types/bun": "latest",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@xyflow/react": "^12.10.2",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
   },

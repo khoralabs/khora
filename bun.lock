@@ -301,10 +301,10 @@
         "zod": "^4.3.6",
       },
       "devDependencies": {
+        "@cfd/obp-react": "workspace:*",
         "@types/bun": "latest",
         "@types/react": "^19.2.14",
         "@types/react-dom": "^19.2.3",
-        "@xyflow/react": "^12.10.2",
         "react": "^19.2.5",
         "react-dom": "^19.2.5",
       },
@@ -358,28 +358,6 @@
         "typescript": "^5",
       },
     },
-    "packages/obp/examples": {
-      "name": "@cfd/obp-demo",
-      "version": "0.0.0",
-      "dependencies": {
-        "@ai-sdk/google": "^3.0.0",
-        "@cfd/agent-identity": "workspace:*",
-        "@cfd/agent-thread": "workspace:*",
-        "@cfd/obp-core": "workspace:*",
-        "@cfd/obp-negotiator": "workspace:*",
-        "@cfd/obp-sqlite": "workspace:*",
-        "@cfd/obp-tools": "workspace:*",
-        "ai": "^6",
-        "pino": "^10.3.1",
-        "zod": "^4.3.6",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
     "packages/obp/persistence/sqlite": {
       "name": "@cfd/obp-sqlite",
       "version": "0.0.0",
@@ -391,6 +369,27 @@
         "@types/bun": "latest",
       },
       "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/obp/react": {
+      "name": "@cfd/obp-react",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cfd/obp-core": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "@types/react": "^19.2.14",
+        "@types/react-dom": "^19.2.3",
+        "@xyflow/react": "^12.10.2",
+        "react": "^19.2.5",
+        "react-dom": "^19.2.5",
+      },
+      "peerDependencies": {
+        "@xyflow/react": "^12",
+        "react": "^19",
+        "react-dom": "^19",
         "typescript": "^5",
       },
     },
@@ -461,9 +460,9 @@
 
     "@cfd/obp-core": ["@cfd/obp-core@workspace:packages/obp/core"],
 
-    "@cfd/obp-demo": ["@cfd/obp-demo@workspace:packages/obp/examples"],
-
     "@cfd/obp-negotiator": ["@cfd/obp-negotiator@workspace:packages/obp/agents/negotiator"],
+
+    "@cfd/obp-react": ["@cfd/obp-react@workspace:packages/obp/react"],
 
     "@cfd/obp-spec": ["@cfd/obp-spec@workspace:packages/obp/spec"],
 
@@ -1021,9 +1020,9 @@
 
     "@cfd/obp-core/@types/bun": ["@types/bun@1.3.13", "", { "dependencies": { "bun-types": "1.3.13" } }, "sha512-9fqXWk5YIHGGnUau9TEi+qdlTYDAnOj+xLCmSTwXfAIqXr2x4tytJb43E9uCvt09zJURKXwAtkoH4nLQfzeTXw=="],
 
-    "@cfd/obp-demo/@types/bun": ["@types/bun@1.3.13", "", { "dependencies": { "bun-types": "1.3.13" } }, "sha512-9fqXWk5YIHGGnUau9TEi+qdlTYDAnOj+xLCmSTwXfAIqXr2x4tytJb43E9uCvt09zJURKXwAtkoH4nLQfzeTXw=="],
-
     "@cfd/obp-negotiator/@types/bun": ["@types/bun@1.3.13", "", { "dependencies": { "bun-types": "1.3.13" } }, "sha512-9fqXWk5YIHGGnUau9TEi+qdlTYDAnOj+xLCmSTwXfAIqXr2x4tytJb43E9uCvt09zJURKXwAtkoH4nLQfzeTXw=="],
+
+    "@cfd/obp-react/@types/bun": ["@types/bun@1.3.13", "", { "dependencies": { "bun-types": "1.3.13" } }, "sha512-9fqXWk5YIHGGnUau9TEi+qdlTYDAnOj+xLCmSTwXfAIqXr2x4tytJb43E9uCvt09zJURKXwAtkoH4nLQfzeTXw=="],
 
     "@cfd/obp-sqlite/@types/bun": ["@types/bun@1.3.13", "", { "dependencies": { "bun-types": "1.3.13" } }, "sha512-9fqXWk5YIHGGnUau9TEi+qdlTYDAnOj+xLCmSTwXfAIqXr2x4tytJb43E9uCvt09zJURKXwAtkoH4nLQfzeTXw=="],
 
@@ -1175,9 +1174,9 @@
 
     "@cfd/obp-core/@types/bun/bun-types": ["bun-types@1.3.13", "", { "dependencies": { "@types/node": "*" } }, "sha512-QXKeHLlOLqQX9LgYaHJfzdBaV21T63HhFJnvuRCcjZiaUDpbs5ED1MgxbMra71CsryN/1dAoXuJJJwIv/2drVA=="],
 
-    "@cfd/obp-demo/@types/bun/bun-types": ["bun-types@1.3.13", "", { "dependencies": { "@types/node": "*" } }, "sha512-QXKeHLlOLqQX9LgYaHJfzdBaV21T63HhFJnvuRCcjZiaUDpbs5ED1MgxbMra71CsryN/1dAoXuJJJwIv/2drVA=="],
-
     "@cfd/obp-negotiator/@types/bun/bun-types": ["bun-types@1.3.13", "", { "dependencies": { "@types/node": "*" } }, "sha512-QXKeHLlOLqQX9LgYaHJfzdBaV21T63HhFJnvuRCcjZiaUDpbs5ED1MgxbMra71CsryN/1dAoXuJJJwIv/2drVA=="],
+
+    "@cfd/obp-react/@types/bun/bun-types": ["bun-types@1.3.13", "", { "dependencies": { "@types/node": "*" } }, "sha512-QXKeHLlOLqQX9LgYaHJfzdBaV21T63HhFJnvuRCcjZiaUDpbs5ED1MgxbMra71CsryN/1dAoXuJJJwIv/2drVA=="],
 
     "@cfd/obp-sqlite/@types/bun/bun-types": ["bun-types@1.3.13", "", { "dependencies": { "@types/node": "*" } }, "sha512-QXKeHLlOLqQX9LgYaHJfzdBaV21T63HhFJnvuRCcjZiaUDpbs5ED1MgxbMra71CsryN/1dAoXuJJJwIv/2drVA=="],
 

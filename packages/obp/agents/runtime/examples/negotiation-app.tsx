@@ -1,5 +1,5 @@
+import { GraphSnapshotFlowDefaultLayout } from "@cfd/obp-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { NegotiationFlow } from "./negotiation-flow.tsx";
 import { NEGOTIATION_TURN_FETCH_TIMEOUT_MS } from "./negotiation-timeouts.ts";
 import type { HealthResponse, StateResponse } from "./negotiation-types.ts";
 
@@ -454,7 +454,7 @@ export function NegotiationApp() {
 
         <section className="panel panel--dag" aria-label="Negotiation graph">
           {server ? (
-            <NegotiationFlow
+            <GraphSnapshotFlowDefaultLayout
               key={server.partyIds.buyer}
               graph={server.graph}
               focusNodeIds={lastTurnFocusNodeIds}

@@ -1,6 +1,6 @@
+import type { GraphSnapshot } from "@cfd/obp-core";
 import { expect, test } from "bun:test";
-import type { GraphSnapshot } from "./graph-snapshot.ts";
-import { graphSnapshotToFlow } from "./obp-graph-layout.ts";
+import { graphSnapshotToFlow } from "./layout.ts";
 
 test("flowchart layout places successor offer to the right of bound port", () => {
   const g: GraphSnapshot = {

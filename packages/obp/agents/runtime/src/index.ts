@@ -27,7 +27,7 @@ export {
   createNegotiationAgent,
   type NegotiationToolSet,
 } from "./create-agent.ts";
-export type { GraphSnapshot } from "./graph-snapshot-types.ts";
+export type { GraphSnapshot } from "@cfd/obp-core";
 export { ObpLedger, type ObpLedgerOptions } from "./ledger.ts";
 export {
   filterPortIdsByNegotiationTurnTtl,

@@ -1,5 +1,5 @@
+import type { GraphSnapshot } from "@cfd/obp-core";
 import type { Edge, Node } from "@xyflow/react";
-import type { GraphSnapshot } from "./graph-snapshot.ts";
 
 /** React Flow `data` for offer nodes (includes full snapshot row for detail panel). */
 export type DagOfferNodeData = {

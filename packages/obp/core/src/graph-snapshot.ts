@@ -1,14 +1,12 @@
-import type { PortBindPolicy } from "@cfd/obp-core";
+import type { PortBindPolicy } from "./bind-policy/types.ts";
 
 /**
- * JSON-safe DAG view of a negotiation: parties, offers, ports, and the
+ * JSON-safe DAG view of an OBP session: parties, offers, ports, and the
  * EXTENDS / EXPOSES / BINDS edges that connect them.
  *
- * Hosts emit this shape from their persistence + {@link import("@cfd/obp-core").ObpClient}
- * and pass it to UIs, prompt formatters ({@link GraphSnapshotForPrompt} is a
- * compact subset), or audit/replay tooling. The runtime itself does not
- * consume it directly — it is provided as a stable type so callers can build
- * snapshots without reinventing the field set.
+ * Hosts emit this shape from their persistence + `ObpClient`
+ * and pass it to UIs, prompt formatters (often a compact subset), or
+ * audit/replay tooling.
  */
 export type GraphSnapshot = {
   parties: Array<{ id: string; name: string }>;
