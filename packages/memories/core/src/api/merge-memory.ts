@@ -176,11 +176,11 @@ function insertContentItems(
         text: item.text,
       });
     }
-    if (item.vector !== undefined) {
+    if (vec !== undefined) {
       persistence.insertVectorFeature(op, {
         memoryId,
         sourceMapId,
-        vector: vec!,
+        vector: vec,
       });
     }
     persistence.updateSourceMapContentHash(op, {
@@ -361,13 +361,7 @@ function mergeMemoryEdge<TNode extends LabelSchemaMap, TEdge extends LabelSchema
     throw new Error(`mergeMemory: node missing for edge.to_key=${toKey}`);
   }
 
-  const edgeId = ids.edge(
-    fromNodeId,
-    toNodeId,
-    params.edge.label.kind,
-    fromKey,
-    toKey,
-  );
+  const edgeId = ids.edge(fromNodeId, toNodeId, params.edge.label.kind, fromKey, toKey);
 
   let metaSyncedMemoryKeys: string[] = [];
 

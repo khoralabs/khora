@@ -75,7 +75,6 @@
         "bun-plugin-tailwind": "^0.1.2",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
-        "cmdk": "^1.1.1",
         "lucide-react": "^0.545.0",
         "radix-ui": "^1.4.3",
         "react": "^19",
@@ -195,6 +194,19 @@
         "@cfd/agent-identity-adapters": "workspace:*",
         "@cfd/memories-core": "workspace:*",
         "ai": "^6",
+        "zod": "^4.3.6",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/memories/autolink": {
+      "name": "@cfd/memories-autolink",
+      "dependencies": {
+        "@cfd/memories-core": "workspace:*",
         "zod": "^4.3.6",
       },
       "devDependencies": {
@@ -480,6 +492,8 @@
     "@cfd/memories": ["@cfd/memories@workspace:apps/memories"],
 
     "@cfd/memories-adapter": ["@cfd/memories-adapter@workspace:packages/memories/agents/adapter"],
+
+    "@cfd/memories-autolink": ["@cfd/memories-autolink@workspace:packages/memories/autolink"],
 
     "@cfd/memories-convex": ["@cfd/memories-convex@workspace:packages/memories/persistence/convex"],
 
@@ -1047,6 +1061,8 @@
 
     "@cfd/memories-adapter/@types/bun": ["@types/bun@1.3.13", "", { "dependencies": { "bun-types": "1.3.13" } }, "sha512-9fqXWk5YIHGGnUau9TEi+qdlTYDAnOj+xLCmSTwXfAIqXr2x4tytJb43E9uCvt09zJURKXwAtkoH4nLQfzeTXw=="],
 
+    "@cfd/memories-autolink/@types/bun": ["@types/bun@1.3.13", "", { "dependencies": { "bun-types": "1.3.13" } }, "sha512-9fqXWk5YIHGGnUau9TEi+qdlTYDAnOj+xLCmSTwXfAIqXr2x4tytJb43E9uCvt09zJURKXwAtkoH4nLQfzeTXw=="],
+
     "@cfd/memories-convex/@types/bun": ["@types/bun@1.3.13", "", { "dependencies": { "bun-types": "1.3.13" } }, "sha512-9fqXWk5YIHGGnUau9TEi+qdlTYDAnOj+xLCmSTwXfAIqXr2x4tytJb43E9uCvt09zJURKXwAtkoH4nLQfzeTXw=="],
 
     "@cfd/memories-core/@types/bun": ["@types/bun@1.3.13", "", { "dependencies": { "bun-types": "1.3.13" } }, "sha512-9fqXWk5YIHGGnUau9TEi+qdlTYDAnOj+xLCmSTwXfAIqXr2x4tytJb43E9uCvt09zJURKXwAtkoH4nLQfzeTXw=="],
@@ -1202,6 +1218,8 @@
     "@cfd/matchmaking/@types/bun/bun-types": ["bun-types@1.3.13", "", { "dependencies": { "@types/node": "*" } }, "sha512-QXKeHLlOLqQX9LgYaHJfzdBaV21T63HhFJnvuRCcjZiaUDpbs5ED1MgxbMra71CsryN/1dAoXuJJJwIv/2drVA=="],
 
     "@cfd/memories-adapter/@types/bun/bun-types": ["bun-types@1.3.13", "", { "dependencies": { "@types/node": "*" } }, "sha512-QXKeHLlOLqQX9LgYaHJfzdBaV21T63HhFJnvuRCcjZiaUDpbs5ED1MgxbMra71CsryN/1dAoXuJJJwIv/2drVA=="],
+
+    "@cfd/memories-autolink/@types/bun/bun-types": ["bun-types@1.3.13", "", { "dependencies": { "@types/node": "*" } }, "sha512-QXKeHLlOLqQX9LgYaHJfzdBaV21T63HhFJnvuRCcjZiaUDpbs5ED1MgxbMra71CsryN/1dAoXuJJJwIv/2drVA=="],
 
     "@cfd/memories-convex/@types/bun/bun-types": ["bun-types@1.3.13", "", { "dependencies": { "@types/node": "*" } }, "sha512-QXKeHLlOLqQX9LgYaHJfzdBaV21T63HhFJnvuRCcjZiaUDpbs5ED1MgxbMra71CsryN/1dAoXuJJJwIv/2drVA=="],
 

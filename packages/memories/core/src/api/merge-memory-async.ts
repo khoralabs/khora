@@ -96,11 +96,11 @@ async function mergeMemoryAsyncNode(
           text: item.text,
         });
       }
-      if (item.vector !== undefined) {
+      if (vec !== undefined) {
         await persistence.insertVectorFeature(op, {
           memoryId,
           sourceMapId,
-          vector: vec!,
+          vector: vec,
         });
       }
       await persistence.updateSourceMapContentHash(op, {
@@ -235,13 +235,7 @@ async function mergeMemoryAsyncEdge(
     throw new Error(`mergeMemoryAsync: node missing for edge.to_key=${toKey}`);
   }
 
-  const edgeId = ids.edge(
-    fromNodeId,
-    toNodeId,
-    params.edge.label.kind,
-    fromKey,
-    toKey,
-  );
+  const edgeId = ids.edge(fromNodeId, toNodeId, params.edge.label.kind, fromKey, toKey);
 
   let metaSyncedMemoryKeys: string[] = [];
 
@@ -284,11 +278,11 @@ async function mergeMemoryAsyncEdge(
           text: item.text,
         });
       }
-      if (item.vector !== undefined) {
+      if (vec !== undefined) {
         await persistence.insertVectorFeature(op, {
           memoryId,
           sourceMapId,
-          vector: vec!,
+          vector: vec,
         });
       }
       await persistence.updateSourceMapContentHash(op, {

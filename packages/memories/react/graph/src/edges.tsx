@@ -2,6 +2,7 @@ import { Html, Line } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { type ComponentRef, useMemo, useRef } from "react";
 import * as THREE from "three";
+import { cn } from "@/lib/utils";
 import type { GraphSearchState, SceneEdge } from "./projection-types.js";
 import { graphLabelFingerprint, sceneEdgePairMergeKey } from "./projection-types.js";
 import { useProjection } from "./use-projection.js";
@@ -194,21 +195,45 @@ function edgeLabelText(fromKey: string, toKey: string, labels: SceneEdge["labels
     : `${fromKey} ↔ ${toKey}`;
 }
 
+/** Snippets for parallel edges on one segment: concatenate distinct texts (search ranks one edge per hit row). */
+function mergedEdgeSearchSnippets(
+  edgeIds: readonly string[],
+  hitSnippetByEdgeId: ReadonlyMap<string, string> | undefined,
+): string | undefined {
+  if (!hitSnippetByEdgeId?.size) return undefined;
+  const parts: string[] = [];
+  for (const id of edgeIds) {
+    const s = hitSnippetByEdgeId.get(id)?.trim();
+    if (s) parts.push(s);
+  }
+  if (parts.length === 0) return undefined;
+  return parts.join("\n—\n");
+}
+
 /** Edge midpoint labels when an ego subgraph is active — one pill per geometric segment; multiple API edges / kinds merged like node tooltips. */
 export function ActiveSubgraphEdgeLabels({
   edges,
   posMap,
   activeSubgraphKeys,
+  edgeSearchHitPreviews = true,
+  hitSnippetByEdgeId,
 }: {
   edges: SceneEdge[];
   posMap: Map<string, [number, number, number]>;
   activeSubgraphKeys: ReadonlySet<string> | null;
+  edgeSearchHitPreviews?: boolean;
+  hitSnippetByEdgeId?: ReadonlyMap<string, string>;
 }) {
   const mergedSegments = useMemo(() => {
     if (!activeSubgraphKeys) return [];
     const groups = new Map<
       string,
-      { fromKey: string; toKey: string; labels: Map<string, SceneEdge["labels"][number]> }
+      {
+        fromKey: string;
+        toKey: string;
+        labels: Map<string, SceneEdge["labels"][number]>;
+        edgeIds: Set<string>;
+      }
     >();
 
     for (const e of edges) {
@@ -218,10 +243,11 @@ export function ActiveSubgraphEdgeLabels({
       if (!g) {
         const lm = new Map<string, SceneEdge["labels"][number]>();
         for (const lb of e.labels) lm.set(graphLabelFingerprint(lb), lb);
-        g = { fromKey: e.fromKey, toKey: e.toKey, labels: lm };
+        g = { fromKey: e.fromKey, toKey: e.toKey, labels: lm, edgeIds: new Set([e.edgeId]) };
         groups.set(ck, g);
       } else {
         for (const lb of e.labels) g.labels.set(graphLabelFingerprint(lb), lb);
+        g.edgeIds.add(e.edgeId);
       }
     }
 
@@ -230,6 +256,7 @@ export function ActiveSubgraphEdgeLabels({
       fromKey: g.fromKey,
       toKey: g.toKey,
       labels: [...g.labels.values()],
+      edgeIds: [...g.edgeIds],
     }));
   }, [edges, activeSubgraphKeys]);
 
@@ -237,12 +264,16 @@ export function ActiveSubgraphEdgeLabels({
 
   return (
     <>
-      {mergedSegments.map(({ segmentKey, fromKey, toKey, labels }) => {
+      {mergedSegments.map(({ segmentKey, fromKey, toKey, labels, edgeIds }) => {
         const from = posMap.get(fromKey);
         const to = posMap.get(toKey);
         if (!from || !to) return null;
 
         const text = edgeLabelText(fromKey, toKey, labels);
+        const snippet =
+          edgeSearchHitPreviews && hitSnippetByEdgeId?.size
+            ? mergedEdgeSearchSnippets(edgeIds, hitSnippetByEdgeId)
+            : undefined;
         const mx = (from[0] + to[0]) / 2;
         const my = (from[1] + to[1]) / 2;
         const mz = (from[2] + to[2]) / 2;
@@ -254,8 +285,18 @@ export function ActiveSubgraphEdgeLabels({
               distanceFactor={EDGE_LABEL_DISTANCE_FACTOR}
               style={{ pointerEvents: "none" }}
             >
-              <span className="inline-block max-w-[min(22rem,92vw)] whitespace-nowrap rounded bg-background/90 px-1.5 py-0.5 text-center text-[10px] leading-none text-foreground shadow-sm ring-1 ring-border/60">
-                {text}
+              <span
+                className={cn(
+                  "inline-block max-w-[min(22rem,92vw)] rounded bg-background/90 px-1.5 py-0.5 text-center text-[10px] text-foreground shadow-sm ring-1 ring-border/60",
+                  snippet ? "leading-snug" : "whitespace-nowrap leading-none",
+                )}
+              >
+                <span className={cn("block", snippet ? "text-left" : "")}>{text}</span>
+                {snippet ? (
+                  <span className="mt-1 block max-h-[min(28vh,220px)] overflow-y-auto whitespace-pre-wrap border-t border-border/50 pt-1 text-left text-[10px] text-muted-foreground">
+                    {snippet}
+                  </span>
+                ) : null}
               </span>
             </Html>
           </group>

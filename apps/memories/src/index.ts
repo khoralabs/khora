@@ -158,6 +158,7 @@ const server = serve({
           neighborKeys: [],
           keys: [],
           hitSnippets: [],
+          edgeHitSnippets: [],
         });
       }
       const topK = Math.min(50, Math.max(1, Number(body.topK) || 10));
@@ -233,13 +234,20 @@ const server = serve({
         );
         const hitKeys = hits.map((h: SearchHit) => h.memory.key);
         const neighborKeys: string[] = [];
+        const edgeEndpointKeys: string[] = [];
+        const SEARCH_HIT_SNIPPET_MAX = 2400;
+
         for (const h of hits) {
           for (const n of h.neighbors ?? []) {
             neighborKeys.push(n.key);
           }
+          if (h.graph.kind === "edge") {
+            edgeEndpointKeys.push(h.graph.edge.fromKey, h.graph.edge.toKey);
+          }
         }
-        const keys = [...new Set([...hitKeys, ...neighborKeys])];
-        const SEARCH_HIT_SNIPPET_MAX = 2400;
+
+        const keys = [...new Set([...hitKeys, ...neighborKeys, ...edgeEndpointKeys])];
+
         const hitSnippets = hits.map((h: SearchHit) => {
           const sourceMapId = (h as SearchHit & { _id: string })._id;
           return {
@@ -248,12 +256,27 @@ const server = serve({
             text: loadSourceMapTextPreview(db, sourceMapId, SEARCH_HIT_SNIPPET_MAX),
           };
         });
+
+        const edgeHitSnippets = hits.flatMap((h: SearchHit) => {
+          if (h.graph.kind !== "edge") return [];
+          const sourceMapId = (h as SearchHit & { _id: string })._id;
+          return [
+            {
+              edgeId: h.graph.edge.edgeId,
+              fromKey: h.graph.edge.fromKey,
+              toKey: h.graph.edge.toKey,
+              text: loadSourceMapTextPreview(db, sourceMapId, SEARCH_HIT_SNIPPET_MAX),
+            },
+          ];
+        });
+
         return jsonResponse({
           hitCount: hits.length,
           hitKeys,
           neighborKeys: [...new Set(neighborKeys)],
           keys,
           hitSnippets,
+          edgeHitSnippets,
         });
       } catch (err) {
         return jsonResponse({ error: String(err) }, 500);

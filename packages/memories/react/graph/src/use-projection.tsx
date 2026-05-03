@@ -675,6 +675,10 @@ export function GraphProjectionProvider({
             hitCount?: number;
             keys?: string[];
             hitSnippets?: Array<{ key?: string; text?: string | null }>;
+            edgeHitSnippets?: Array<{
+              edgeId?: string;
+              text?: string | null;
+            }>;
             error?: string;
           };
           if (ac.signal.aborted) return;
@@ -689,10 +693,18 @@ export function GraphProjectionProvider({
             if (!k || !t || hitSnippetByKey.has(k)) continue;
             hitSnippetByKey.set(k, t);
           }
+          const hitSnippetByEdgeId = new Map<string, string>();
+          for (const row of json.edgeHitSnippets ?? []) {
+            const id = row.edgeId?.trim();
+            const t = row.text?.trim();
+            if (!id || !t || hitSnippetByEdgeId.has(id)) continue;
+            hitSnippetByEdgeId.set(id, t);
+          }
           setGraphSearch({
             relevantKeys: new Set(json.keys ?? []),
             hitCount: json.hitCount ?? 0,
             hitSnippetByKey,
+            hitSnippetByEdgeId,
           });
         } catch {
           if (!ac.signal.aborted) setGraphSearch(null);

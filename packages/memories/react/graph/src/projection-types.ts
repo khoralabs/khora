@@ -27,6 +27,8 @@ export type GraphSearchState = {
    * Best-ranked snippet wins when several hits share the same memory key.
    */
   hitSnippetByKey: ReadonlyMap<string, string>;
+  /** Snippet text for edge-kind root hits, keyed by stable graph `edgeId` from `GET /api/graph`. */
+  hitSnippetByEdgeId: ReadonlyMap<string, string>;
 };
 
 /** 3D marker in the projection scene (`[-1, 1]` per axis from layout). */

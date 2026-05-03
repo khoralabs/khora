@@ -246,6 +246,8 @@ export type { GraphEdgeRenderMode };
 export type GraphSceneOverlayOptions = {
   edgesVisible?: boolean;
   searchHitPreviews?: boolean;
+  /** Edge midpoint search snippets; defaults to {@link searchHitPreviews}. */
+  edgeSearchHitPreviews?: boolean;
   edgeLabelsVisible?: boolean;
   nodeLabelsVisible?: boolean;
 };
@@ -255,9 +257,11 @@ export type GraphSceneResolvedOverlay = Required<GraphSceneOverlayOptions>;
 export function resolveGraphSceneOverlay(
   partial?: GraphSceneOverlayOptions,
 ): GraphSceneResolvedOverlay {
+  const searchHitPreviews = partial?.searchHitPreviews ?? true;
   return {
     edgesVisible: partial?.edgesVisible ?? true,
-    searchHitPreviews: partial?.searchHitPreviews ?? true,
+    searchHitPreviews,
+    edgeSearchHitPreviews: partial?.edgeSearchHitPreviews ?? searchHitPreviews,
     edgeLabelsVisible: partial?.edgeLabelsVisible ?? true,
     nodeLabelsVisible: partial?.nodeLabelsVisible ?? true,
   };
@@ -335,6 +339,8 @@ function GraphSceneR3f({
             edges={sceneEdges}
             posMap={posMap}
             activeSubgraphKeys={activeSubgraphKeys}
+            edgeSearchHitPreviews={overlay.edgeSearchHitPreviews}
+            hitSnippetByEdgeId={graphSearch?.hitSnippetByEdgeId}
           />
         ) : null}
         {points.map((point) => {
