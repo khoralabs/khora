@@ -35,10 +35,22 @@ export type MemorySearchSessionContextSlice<
   agentId?: string;
   agentName?: string;
   memorySearchBudgetMax?: number;
+  /**
+   * When set (including `""` for an empty provenance chain), forwarded into {@link MemorySearchEnv.memoriesSnapshotRootHex}.
+   * {@link attachMemorySearchSessionLayer} sets this from {@link MemoriesPersistence.getProvenanceHeadRootHex}.
+   */
+  memoriesSnapshotRootHex?: string;
   toolkitCtx?: ToolkitContext<MemorySearchEnv>;
   runtime?: ToolRuntimeContext<MemorySearchEnv>;
   affordances?: RegisteredAgentAffordances;
 };
+
+async function getMemoriesProvenanceHeadRootHex(
+  client: MemoriesClient | MemoriesClientAsync,
+): Promise<string | undefined> {
+  const out = client.persistence.getProvenanceHeadRootHex();
+  return out instanceof Promise ? await out : out;
+}
 
 function memorySearchContextBuildArgs<TNode extends ZodLabelMap, TEdge extends ZodLabelMap>(
   context: MemorySearchSessionContextSlice<TNode, TEdge>,
@@ -58,6 +70,9 @@ function memorySearchContextBuildArgs<TNode extends ZodLabelMap, TEdge extends Z
     ...(context.memorySearchExtensions !== undefined
       ? { memorySearchExtensions: context.memorySearchExtensions }
       : {}),
+    ...(context.memoriesSnapshotRootHex !== undefined
+      ? { memoriesSnapshotRootHex: context.memoriesSnapshotRootHex }
+      : {}),
   };
 }
 
@@ -76,6 +91,7 @@ export function buildMemorySearchToolkitAndRuntime<
   agentId?: string;
   agentName?: string;
   memorySearchBudgetMax?: number;
+  memoriesSnapshotRootHex?: string;
 }): { toolkitCtx: ToolkitContext<MemorySearchEnv>; runtime: ToolRuntimeContext<MemorySearchEnv> } {
   return {
     toolkitCtx: buildMemorySearchToolkitContext(args),
@@ -96,6 +112,8 @@ export async function attachMemorySearchSessionLayer<
   context: MemorySearchSessionContextSlice<TNode, TEdge>;
 }): Promise<void> {
   const { agent, context: ctx } = args;
+  ctx.memoriesSnapshotRootHex =
+    ctx.memoriesSnapshotRootHex ?? ((await getMemoriesProvenanceHeadRootHex(ctx.client)) ?? "");
   const shared = memorySearchContextBuildArgs<TNode, TEdge>(ctx);
   const { toolkitCtx, runtime } = buildMemorySearchToolkitAndRuntime(shared);
   ctx.toolkitCtx = toolkitCtx;
@@ -117,6 +135,7 @@ export function toMemorySearchEnv<TNode extends ZodLabelMap, TEdge extends ZodLa
   embeddingCache?: Map<string, number[]>;
   /** When set, initializes {@link MemorySearchEnv.memorySearchBudget} with {@code used: 0}. */
   memorySearchBudgetMax?: number;
+  memoriesSnapshotRootHex?: string;
 }): MemorySearchEnv {
   const memorySearchBudget =
     args.memorySearchBudgetMax !== undefined
@@ -135,6 +154,9 @@ export function toMemorySearchEnv<TNode extends ZodLabelMap, TEdge extends ZodLa
     Object.keys(args.memorySearchExtensions).length > 0
       ? { memorySearchExtensions: { ...args.memorySearchExtensions } }
       : {}),
+    ...(args.memoriesSnapshotRootHex !== undefined
+      ? { memoriesSnapshotRootHex: args.memoriesSnapshotRootHex }
+      : {}),
   };
 }
 
@@ -150,6 +172,7 @@ export function buildMemorySearchToolkitContext<
   agentId?: string;
   agentName?: string;
   memorySearchBudgetMax?: number;
+  memoriesSnapshotRootHex?: string;
 }): ToolkitContext<MemorySearchEnv> {
   return {
     env: toMemorySearchEnv(args),
@@ -171,6 +194,7 @@ export function buildMemorySearchToolRuntimeContext<
   agentId?: string;
   agentName?: string;
   memorySearchBudgetMax?: number;
+  memoriesSnapshotRootHex?: string;
 }): ToolRuntimeContext<MemorySearchEnv> {
   return {
     env: toMemorySearchEnv(args),

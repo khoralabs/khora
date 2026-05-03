@@ -21,6 +21,7 @@ import { listTextFeatureExportRowsForMemory as listTextFeatureExportRowsForMemor
 import { findMemoryAssociation, findMemoryIdByKey, upsertMemory } from "./models/memories";
 import {
   getProvenanceHeadRootHex,
+  getProvenanceTimestampMsForRootHex as getProvenanceTsForRootHexQuery,
   appendProvenanceEvent as insertProvenanceRow,
 } from "./models/memory-provenance";
 import {
@@ -64,6 +65,7 @@ export class MemoriesPersistence implements IMemoriesPersistence {
     graphIndex: true,
     multiNamespaceSearch: true,
     unscopedSearch: true,
+    asOfTimestampMsSearch: true,
   };
 
   constructor(
@@ -130,6 +132,10 @@ export class MemoriesPersistence implements IMemoriesPersistence {
 
   getProvenanceHeadRootHex(): string | undefined {
     return getProvenanceHeadRootHex(this.db);
+  }
+
+  getProvenanceTimestampMsForRootHex(rootHex: string): number | undefined {
+    return getProvenanceTsForRootHexQuery(this.db, rootHex);
   }
 
   appendProvenanceEvent(op: MemoryOpContext, event: MemoryProvenanceEvent): void {
@@ -256,6 +262,7 @@ export class MemoriesPersistence implements IMemoriesPersistence {
     text: string;
     limit: number;
     memoryIds?: string[];
+    asOfTimestampMs?: number;
   }): string[] {
     return searchLexicalSourceMapIds({ db: this.db, now: 0 }, input);
   }
@@ -266,6 +273,7 @@ export class MemoriesPersistence implements IMemoriesPersistence {
     limit: number;
     memoryIds?: string[];
     maxVectorDistance?: number;
+    asOfTimestampMs?: number;
   }): string[] {
     return searchVectorSourceMapIds({ db: this.db, now: 0 }, input);
   }

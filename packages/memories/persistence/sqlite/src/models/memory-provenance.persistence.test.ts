@@ -88,6 +88,30 @@ describe("memory provenance + content_hash (SQLite)", () => {
     expect(n2).toBe(2);
   });
 
+  test("getProvenanceTimestampMsForRootHex matches row timestamp", () => {
+    const db = openMemoriesDatabase(":memory:");
+    const persistence = createMemoriesPersistence(db);
+    mergeMemory(
+      { persistence },
+      {
+        key: "y",
+        namespace: "ns",
+        content: [{ key: "s", text: "z" }],
+        labels: [],
+        edges: [],
+      },
+    );
+    const head = persistence.getProvenanceHeadRootHex();
+    expect(head).toBeDefined();
+    const ts = persistence.getProvenanceTimestampMsForRootHex(head!);
+    const rowTs = db
+      .query<{ t: number }, [string]>(
+        `SELECT _ts_created AS t FROM memory_provenance WHERE root_hex = ?`,
+      )
+      .get(head!);
+    expect(ts).toBe(rowTs?.t);
+  });
+
   test("appendProvenanceEvent rolls back with the transaction on throw", () => {
     const db = openMemoriesDatabase(":memory:");
     const persistence = createMemoriesPersistence(db);

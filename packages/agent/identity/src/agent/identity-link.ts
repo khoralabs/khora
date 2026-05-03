@@ -29,6 +29,11 @@ export type CreateIdentityLinkArgs = {
   /** For dynamic-only tools not in the static map. */
   tools: Record<string, ToolSpec>;
   /**
+   * Optional per-tool runtime bindings (e.g. provenance head hex for `memory_search`), folded into
+   * each tool’s effective {@link computeRuntimeHash} / {@link resolveRuntimeToolRefs} hash.
+   */
+  runtimeToolAugments?: Readonly<Record<string, string>>;
+  /**
    * Per-invocation slice (e.g. subject, persona, `contextVersion`) to fingerprint separately
    * from `staticHash` and `runtimeHash`. Must be a plain object at the root. Optional.
    */
@@ -42,6 +47,7 @@ export async function createIdentityLink(args: CreateIdentityLinkArgs): Promise<
     args.enabledToolNames,
     args.nameToStaticHash,
     args.tools,
+    args.runtimeToolAugments,
   );
   const invocationHash = await computeInvocationContextHash(args.invocationContext, {
     allowlist: args.invocationContextAllowlist,
@@ -65,6 +71,7 @@ export async function createIdentityLink(args: CreateIdentityLinkArgs): Promise<
 export async function computeFullIdentityLink<Env = unknown>(args: {
   agent: RegisteredAgentIdentity;
   ctx: ToolkitContext<Env>;
+  runtimeToolAugments?: Readonly<Record<string, string>>;
   invocationContext?: unknown;
   invocationContextAllowlist?: string[];
 }): Promise<{
@@ -74,6 +81,7 @@ export async function computeFullIdentityLink<Env = unknown>(args: {
   nameToStaticHash: Map<string, string>;
   evaluatedTools: Record<string, ToolSpec>;
 }> {
+  const aug = args.runtimeToolAugments;
   const { runtimeHash, toolRefs, evaluatedTools, nameToStaticHash } =
     await computeRuntimeIdentityFromEvaluation(
       args.agent.rootComposable as Composable<
@@ -82,12 +90,14 @@ export async function computeFullIdentityLink<Env = unknown>(args: {
         Env
       >,
       args.ctx,
+      aug !== undefined ? { runtimeToolAugments: aug } : undefined,
     );
   const link = await createIdentityLink({
     agent: args.agent,
     enabledToolNames: Object.keys(evaluatedTools),
     nameToStaticHash,
     tools: evaluatedTools,
+    runtimeToolAugments: aug,
     invocationContext: args.invocationContext,
     invocationContextAllowlist: args.invocationContextAllowlist,
   });

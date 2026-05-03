@@ -72,6 +72,11 @@ export type MemoriesBackendCapabilities = {
   multiNamespaceSearch: boolean;
   /** When `true`, retrieval can run without a namespace predicate (entire DB). Required for `searchEntireDatabase` on `SearchParams`. */
   unscopedSearch: boolean;
+  /**
+   * When `true`, {@link SearchParams.asOfTimestampMs} is applied to hybrid search (memory `_ts_created` cutoff).
+   * Backends that omit this key are treated as unsupported for as-of search.
+   */
+  asOfTimestampMsSearch?: boolean;
 };
 
 /**
@@ -295,6 +300,8 @@ export interface MemoriesRetrieval {
     text: string;
     limit: number;
     memoryIds?: string[];
+    /** Only memories with `_ts_created <= asOfTimestampMs` participate (backend-dependent). */
+    asOfTimestampMs?: number;
   }): string[];
 
   searchVectorSourceMapIds(input: {
@@ -304,6 +311,8 @@ export interface MemoriesRetrieval {
     memoryIds?: string[];
     /** sqlite‑vec KNN distance upper bound; omit = return top‑k without a distance cutoff. */
     maxVectorDistance?: number;
+    /** Only memories with `_ts_created <= asOfTimestampMs` participate (backend-dependent). */
+    asOfTimestampMs?: number;
   }): string[];
 
   hydrateSourceMapHits(sourceMapIds: readonly string[]): HydratedSourceMapHit[];
@@ -347,6 +356,9 @@ export interface MemoriesPersistenceReads {
    * Return `[]` when there are no indexed vectors or dimension metadata is unavailable.
    */
   listVectorEmbeddingIndexDimensions(): number[];
+
+  /** Timestamp (`memory_provenance._ts_created`) for a chain link `root_hex`, when known. */
+  getProvenanceTimestampMsForRootHex?(rootHex: string): number | undefined;
 }
 
 /**

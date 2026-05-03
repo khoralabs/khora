@@ -112,7 +112,47 @@ export type MemorySearchEnv = {
    * Host-injected bag for co-located domain toolkits (same session {@link ToolkitContext} env).
    */
   memorySearchExtensions?: Record<string, unknown>;
+  /**
+   * Store-wide provenance head (`root_hex`) captured at session attach, or `""` when the chain is empty.
+   * Drives runtime {@code memory_search} tool identity and optional as-of search when the backend supports it.
+   */
+  memoriesSnapshotRootHex?: string;
 };
+
+/** Tool key used with {@link memorySearchRuntimeToolAugments} / runtime identity. */
+export const MEMORY_SEARCH_TOOL_NAME = "memory_search" as const;
+
+/** Fold {@link MemorySearchEnv.memoriesSnapshotRootHex} into runtime tool refs / `runtimeHash` (see `@cfd/agent-identity`). */
+export function memorySearchRuntimeToolAugments(
+  memoriesSnapshotRootHex: string | undefined,
+): Record<string, string> | undefined {
+  if (memoriesSnapshotRootHex === undefined) return undefined;
+  return { [MEMORY_SEARCH_TOOL_NAME]: memoriesSnapshotRootHex };
+}
+
+/** Spread into `computeFullIdentityLink` (`@cfd/agent-identity`) together with session `ToolkitContext`. */
+export function memorySearchIdentityLinkSupplement(env: Pick<MemorySearchEnv, "memoriesSnapshotRootHex">): {
+  runtimeToolAugments?: Record<string, string>;
+  invocationContext?: { memoriesProvenanceRootHex: string };
+  invocationContextAllowlist?: string[];
+} {
+  if (env.memoriesSnapshotRootHex === undefined) return {};
+  const hex = env.memoriesSnapshotRootHex;
+  return {
+    runtimeToolAugments: { [MEMORY_SEARCH_TOOL_NAME]: hex },
+    invocationContext: { memoriesProvenanceRootHex: hex },
+    invocationContextAllowlist: ["memoriesProvenanceRootHex"],
+  };
+}
+
+async function resolveAsOfTimestampMsFromEnv(env: MemorySearchEnv): Promise<number | undefined> {
+  const snap = env.memoriesSnapshotRootHex;
+  if (snap === undefined || snap === "") return undefined;
+  const fn = env.memoriesClient.persistence.getProvenanceTimestampMsForRootHex;
+  if (fn === undefined) return undefined;
+  const out = fn.call(env.memoriesClient.persistence, snap);
+  return out instanceof Promise ? await out : out;
+}
 
 /** Policy id for {@link memorySearchBudgetPolicy} (hash-stable). */
 export const MEMORY_SEARCH_BUDGET_POLICY_ID = "memory_search_budget";
@@ -243,6 +283,8 @@ const memorySearchTool = tool<
       content = { text: parsed.content.text };
     }
 
+    const asOfTs = await resolveAsOfTimestampMsFromEnv(env);
+
     const rawHits = await Promise.resolve(
       env.memoriesClient.search({
         namespace: env.namespace,
@@ -250,6 +292,7 @@ const memorySearchTool = tool<
           ? { additionalNamespaces: [...env.additionalNamespaces] as NamespacePath[] }
           : {}),
         content,
+        ...(asOfTs !== undefined ? { asOfTimestampMs: asOfTs } : {}),
         options: opts
           ? {
               ...opts,

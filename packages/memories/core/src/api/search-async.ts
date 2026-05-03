@@ -57,9 +57,12 @@ async function rankSourceMapIdsForContentAsync(
     retrievalLimit: number;
     memoryIds?: string[];
     maxVectorDistance?: number;
+    asOfTimestampMs?: number;
   },
 ): Promise<Array<{ id: string; score: number }>> {
   const { scope } = input;
+  const asOf = input.asOfTimestampMs;
+  const asOfSpread = asOf !== undefined ? { asOfTimestampMs: asOf } : {};
 
   if (scope.kind === "union" && scope.namespaces.length > 1 && !caps.multiNamespaceSearch) {
     const arms: RrfArm<string>[] = [];
@@ -71,6 +74,7 @@ async function rankSourceMapIdsForContentAsync(
           text: input.content.text,
           limit: input.retrievalLimit,
           memoryIds: input.memoryIds,
+          ...asOfSpread,
         });
         if (ranked.length > 0) {
           arms.push({ armId: `lexical:${ns}`, ranked, weight: input.lexicalWeight });
@@ -85,6 +89,7 @@ async function rankSourceMapIdsForContentAsync(
           ...(input.maxVectorDistance !== undefined
             ? { maxVectorDistance: input.maxVectorDistance }
             : {}),
+          ...asOfSpread,
         });
         if (ranked.length > 0) {
           arms.push({ armId: `vector:${ns}`, ranked, weight: input.vectorWeight });
@@ -102,6 +107,7 @@ async function rankSourceMapIdsForContentAsync(
       text: input.content.text,
       limit: input.retrievalLimit,
       memoryIds: input.memoryIds,
+      ...asOfSpread,
     });
     if (ranked.length > 0) {
       arms.push({ armId: "lexical", ranked, weight: input.lexicalWeight });
@@ -116,6 +122,7 @@ async function rankSourceMapIdsForContentAsync(
       ...(input.maxVectorDistance !== undefined
         ? { maxVectorDistance: input.maxVectorDistance }
         : {}),
+      ...asOfSpread,
     });
     if (ranked.length > 0) {
       arms.push({ armId: "vector", ranked, weight: input.vectorWeight });
@@ -141,6 +148,7 @@ async function expandNeighborsWithSubSearchAsync<
     neighborFilters: NeighborFilter<EDGE_LABELS, NODE_LABELS> | undefined;
     maxNeighbors: number | undefined;
     maxVectorDistance?: number;
+    asOfTimestampMs?: number;
   },
 ): Promise<SearchNeighborHit<NODE_LABELS, EDGE_LABELS>[]> {
   if (!caps.neighborIndex) return [];
@@ -177,6 +185,9 @@ async function expandNeighborsWithSubSearchAsync<
     memoryIds,
     ...(input.maxVectorDistance !== undefined
       ? { maxVectorDistance: input.maxVectorDistance }
+      : {}),
+    ...(input.asOfTimestampMs !== undefined
+      ? { asOfTimestampMs: input.asOfTimestampMs }
       : {}),
   });
 
@@ -245,6 +256,15 @@ export async function searchAsync<
     caps,
   );
 
+  if (
+    params.asOfTimestampMs !== undefined &&
+    caps.asOfTimestampMsSearch !== true
+  ) {
+    throw new Error(
+      "SearchParams.asOfTimestampMs requires a persistence backend that sets capabilities.asOfTimestampMsSearch",
+    );
+  }
+
   const retrievalLimit = Math.max(topK * 5, 25);
   const lexicalWeight = params.options?.arms?.lexical ?? 1;
   const vectorWeight = params.options?.arms?.vector ?? 1;
@@ -258,6 +278,9 @@ export async function searchAsync<
     vectorWeight,
     retrievalLimit,
     ...(maxVectorDistance !== undefined ? { maxVectorDistance } : {}),
+    ...(params.asOfTimestampMs !== undefined
+      ? { asOfTimestampMs: params.asOfTimestampMs }
+      : {}),
   });
   if (fused.length === 0) return [];
   const hydrated = await persistence.hydrateSourceMapHits(fused.map((result) => result.id));
@@ -304,6 +327,9 @@ export async function searchAsync<
           neighborFilters,
           maxNeighbors,
           ...(maxVectorDistance !== undefined ? { maxVectorDistance } : {}),
+          ...(params.asOfTimestampMs !== undefined
+            ? { asOfTimestampMs: params.asOfTimestampMs }
+            : {}),
         },
       ),
     })),

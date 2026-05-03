@@ -330,7 +330,13 @@ export function createConvexMemoriesPersistence(
       text: string;
       limit: number;
       memoryIds?: string[];
+      asOfTimestampMs?: number;
     }): Promise<string[]> {
+      if (input.asOfTimestampMs !== undefined) {
+        throw new Error(
+          "Convex memories persistence does not support SearchParams.asOfTimestampMs (as-of search).",
+        );
+      }
       const scope =
         input.scope.kind === "unscoped"
           ? { kind: "unscoped" as const }
@@ -349,7 +355,13 @@ export function createConvexMemoriesPersistence(
       limit: number;
       memoryIds?: string[];
       maxVectorDistance?: number;
+      asOfTimestampMs?: number;
     }): Promise<string[]> {
+      if (input.asOfTimestampMs !== undefined) {
+        throw new Error(
+          "Convex memories persistence does not support SearchParams.asOfTimestampMs (as-of search).",
+        );
+      }
       const scope =
         input.scope.kind === "unscoped"
           ? { kind: "unscoped" as const }

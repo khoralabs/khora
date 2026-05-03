@@ -21,6 +21,15 @@ export function getProvenanceHeadRootHex(db: Database): string | undefined {
   return row?.root_hex;
 }
 
+export function getProvenanceTimestampMsForRootHex(db: Database, rootHex: string): number | undefined {
+  const row = db
+    .query<{ _ts_created: number }, [string]>(
+      `SELECT _ts_created FROM memory_provenance WHERE root_hex = ? LIMIT 1`,
+    )
+    .get(rootHex);
+  return row?._ts_created;
+}
+
 export function appendProvenanceEvent(ctx: DbCtx, event: MemoryProvenanceEvent): void {
   const { db, now } = ctx;
   const head = getProvenanceHeadRootHex(db);

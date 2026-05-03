@@ -11,12 +11,15 @@ export {
 export {
   embeddingCacheKey,
   MEMORY_SEARCH_BUDGET_POLICY_ID,
+  MEMORY_SEARCH_TOOL_NAME,
   type MemorySearchEnv,
   type MemorySearchHit,
   type MemorySearchToolInput,
   type MemorySearchWideClient,
   type MemorySearchWideClientAsync,
   memorySearchBudgetPolicy,
+  memorySearchIdentityLinkSupplement,
+  memorySearchRuntimeToolAugments,
   memorySearchToolkit,
   zMemorySearchToolInput,
 } from "./memory-search-toolkit.js";

@@ -105,6 +105,38 @@ describe("createIdentityLink", () => {
     expect(link.invocationHash).toBeDefined();
   });
 
+  test("runtimeToolAugments changes runtime hash for bound tool", async () => {
+    const t = tool({
+      name: "memory_search",
+      inputSchema: schema,
+      handler: async () => 0,
+    });
+    const graph = toolkit([t], { name: "root" });
+    const { identity: agent } = await createRegisteredAgentIdentity({
+      agentId: "a",
+      name: "Agent",
+      instructions: [],
+      rootComposable: graph,
+    });
+    const ctx = { env: {} };
+    const first = await computeFullIdentityLink({
+      agent,
+      ctx,
+      runtimeToolAugments: { memory_search: "hex_a" },
+    });
+    const second = await computeFullIdentityLink({
+      agent,
+      ctx,
+      runtimeToolAugments: { memory_search: "hex_b" },
+    });
+    expect(first.runtimeHash).not.toBe(second.runtimeHash);
+    expect(first.link.runtimeHash).toBe(first.runtimeHash);
+    const refA = first.toolRefs.find((r) => r.toolKey === "memory_search")?.toolHash;
+    const refB = second.toolRefs.find((r) => r.toolKey === "memory_search")?.toolHash;
+    expect(refA).toBeDefined();
+    expect(refA).not.toBe(refB);
+  });
+
   test("runtime hash differs for empty vs non-empty enabled tools", async () => {
     const t = tool({
       name: "t",

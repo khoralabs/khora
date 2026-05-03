@@ -142,14 +142,26 @@ function namespaceSubtreeOrClauses(
 function memoryIdSubqueryFromScope(
   scope: SearchNamespaceScope,
   memoryIds: string[] | undefined,
+  asOfTimestampMs?: number,
 ): { sql: string; bindings: SQLQueryBindings[] } {
+  const asOfClause =
+    asOfTimestampMs !== undefined ? " AND _ts_created <= ?" : "";
+  const asOfBind: SQLQueryBindings[] =
+    asOfTimestampMs !== undefined ? [asOfTimestampMs] : [];
+
   if (scope.kind === "unscoped") {
     if (memoryIds === undefined) {
-      return { sql: "memory_id IN (SELECT _id FROM memories)", bindings: [] };
+      if (asOfClause === "") {
+        return { sql: "memory_id IN (SELECT _id FROM memories)", bindings: [] };
+      }
+      return {
+        sql: `memory_id IN (SELECT _id FROM memories WHERE 1 = 1${asOfClause})`,
+        bindings: [...asOfBind],
+      };
     }
     return {
-      sql: `memory_id IN (SELECT _id FROM memories WHERE _id IN (${placeholders(memoryIds.length)}))`,
-      bindings: [...memoryIds],
+      sql: `memory_id IN (SELECT _id FROM memories WHERE _id IN (${placeholders(memoryIds.length)})${asOfClause})`,
+      bindings: [...memoryIds, ...asOfBind],
     };
   }
   const ns = scope.namespaces;
@@ -159,19 +171,25 @@ function memoryIdSubqueryFromScope(
   const { sql: nsOr, bindings: nsBindings } = namespaceSubtreeOrClauses(ns);
   if (memoryIds === undefined) {
     return {
-      sql: `memory_id IN (SELECT _id FROM memories WHERE ${nsOr})`,
-      bindings: [...nsBindings],
+      sql: `memory_id IN (SELECT _id FROM memories WHERE ${nsOr}${asOfClause})`,
+      bindings: [...nsBindings, ...asOfBind],
     };
   }
   return {
-    sql: `memory_id IN (SELECT _id FROM memories WHERE (${nsOr}) AND _id IN (${placeholders(memoryIds.length)}))`,
-    bindings: [...nsBindings, ...memoryIds],
+    sql: `memory_id IN (SELECT _id FROM memories WHERE (${nsOr}) AND _id IN (${placeholders(memoryIds.length)})${asOfClause})`,
+    bindings: [...nsBindings, ...memoryIds, ...asOfBind],
   };
 }
 
 export function searchLexicalSourceMapIds(
   ctx: DbCtx,
-  input: { scope: SearchNamespaceScope; text: string; limit: number; memoryIds?: string[] },
+  input: {
+    scope: SearchNamespaceScope;
+    text: string;
+    limit: number;
+    memoryIds?: string[];
+    asOfTimestampMs?: number;
+  },
 ): string[] {
   if (input.text.length === 0) return [];
   if (input.memoryIds !== undefined && input.memoryIds.length === 0) return [];
@@ -182,6 +200,7 @@ export function searchLexicalSourceMapIds(
   const { sql: memFilter, bindings: memBindings } = memoryIdSubqueryFromScope(
     input.scope,
     input.memoryIds,
+    input.asOfTimestampMs,
   );
 
   const params: SQLQueryBindings[] = [matchExpr, ...memBindings, input.limit];
@@ -208,6 +227,7 @@ export function searchVectorSourceMapIds(
     memoryIds?: string[];
     /** sqlite‑vec KNN distance; rows with larger distance are excluded. */
     maxVectorDistance?: number;
+    asOfTimestampMs?: number;
   },
 ): string[] {
   if (input.memoryIds !== undefined && input.memoryIds.length === 0) return [];
@@ -240,11 +260,21 @@ export function searchVectorSourceMapIds(
 
   const maxD = input.maxVectorDistance;
   const distanceClause = maxD !== undefined && Number.isFinite(maxD) ? `AND knn.distance <= ?` : "";
+  const asOfMs = input.asOfTimestampMs;
+  const asOfClause =
+    asOfMs !== undefined && Number.isFinite(asOfMs) ? `AND m._ts_created <= ?` : "";
 
-  const params: SQLQueryBindings[] =
-    input.memoryIds === undefined
-      ? [JSON.stringify(input.vector), knnK, ...nsBindings]
-      : [JSON.stringify(input.vector), knnK, ...nsBindings, ...input.memoryIds];
+  const params: SQLQueryBindings[] = [
+    JSON.stringify(input.vector),
+    knnK,
+    ...nsBindings,
+  ];
+  if (asOfClause) {
+    params.push(asOfMs as number);
+  }
+  if (input.memoryIds !== undefined) {
+    params.push(...input.memoryIds);
+  }
   if (distanceClause) {
     params.push(maxD as number);
   }
@@ -264,6 +294,7 @@ export function searchVectorSourceMapIds(
        WHERE 1 = 1
        ${nsClause}
        ${memFilter}
+       ${asOfClause}
        ${distanceClause}
        ORDER BY knn.distance ASC`,
     )

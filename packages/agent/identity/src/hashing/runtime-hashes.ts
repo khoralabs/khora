@@ -4,6 +4,18 @@ import type { Composable, ToolkitContext } from "../toolkit/types.js";
 import { runtimeIdentityCanonicalPayload, toolSpecCanonicalPayload } from "./canonical-payloads.js";
 import { hashPlainObject } from "./hash.js";
 
+/** Runtime-only binding (e.g. DB provenance head) layered on top of a tool’s static hash. */
+export async function hashRuntimeToolBinding(
+  baseToolHash: string,
+  runtimeBinding: string,
+): Promise<string> {
+  return hashPlainObject({
+    kind: "runtime_tool_binding",
+    baseToolHash,
+    runtimeBinding,
+  });
+}
+
 /**
  * Recursively collects each leaf tool's static hash (name → hash) from a composable tree.
  */
@@ -40,19 +52,26 @@ export async function resolveRuntimeToolRefs(
   enabledToolNames: string[],
   nameToStaticHash: Map<string, string>,
   toolsFallback: Record<string, ToolSpec>,
+  runtimeToolAugments?: Readonly<Record<string, string>>,
 ): Promise<Array<{ toolKey: string; toolHash: string }>> {
   const sortedNames = [...enabledToolNames].sort((a, b) => a.localeCompare(b));
   const out: Array<{ toolKey: string; toolHash: string }> = [];
   for (const name of sortedNames) {
+    const aug = runtimeToolAugments?.[name];
     const h = nameToStaticHash.get(name);
     if (h) {
-      out.push({ toolKey: name, toolHash: h });
+      const toolHash =
+        aug !== undefined ? await hashRuntimeToolBinding(h, aug) : h;
+      out.push({ toolKey: name, toolHash });
     } else {
       const spec = toolsFallback[name];
       if (spec) {
+        const base = await hashToolSpecIdentity(spec);
+        const toolHash =
+          aug !== undefined ? await hashRuntimeToolBinding(base, aug) : base;
         out.push({
           toolKey: name,
-          toolHash: await hashToolSpecIdentity(spec),
+          toolHash,
         });
       }
     }
@@ -67,8 +86,14 @@ export async function computeRuntimeHash(
   enabledToolNames: string[],
   nameToStaticHash: Map<string, string>,
   toolsFallback: Record<string, ToolSpec>,
+  runtimeToolAugments?: Readonly<Record<string, string>>,
 ): Promise<string> {
-  const refs = await resolveRuntimeToolRefs(enabledToolNames, nameToStaticHash, toolsFallback);
+  const refs = await resolveRuntimeToolRefs(
+    enabledToolNames,
+    nameToStaticHash,
+    toolsFallback,
+    runtimeToolAugments,
+  );
   return hashPlainObject(runtimeIdentityCanonicalPayload(refs));
 }
 
@@ -82,6 +107,7 @@ export async function computeRuntimeIdentityFromEvaluation<
 >(
   root: Composable<SP, Tools, Env>,
   ctx: ToolkitContext<Env>,
+  options?: { runtimeToolAugments?: Readonly<Record<string, string>> },
 ): Promise<{
   runtimeHash: string;
   toolRefs: Array<{ toolKey: string; toolHash: string }>;
@@ -90,7 +116,8 @@ export async function computeRuntimeIdentityFromEvaluation<
 }> {
   const nameToStaticHash = await collectToolStaticHashes(root);
   const { tools } = await root.evaluate(ctx);
-  const toolRefs = await resolveRuntimeToolRefs(Object.keys(tools), nameToStaticHash, tools);
+  const aug = options?.runtimeToolAugments;
+  const toolRefs = await resolveRuntimeToolRefs(Object.keys(tools), nameToStaticHash, tools, aug);
   const runtimeHash = await hashPlainObject(runtimeIdentityCanonicalPayload(toolRefs));
   return { runtimeHash, toolRefs, evaluatedTools: tools, nameToStaticHash };
 }

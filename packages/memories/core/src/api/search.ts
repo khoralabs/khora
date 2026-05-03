@@ -67,6 +67,11 @@ export interface SearchParams<
      */
     maxVectorDistance?: number;
   };
+  /**
+   * When set, only memories with `_ts_created <= asOfTimestampMs` participate in retrieval.
+   * Requires persistence {@link MemoriesBackendCapabilities.asOfTimestampMsSearch}.
+   */
+  asOfTimestampMs?: number;
 }
 
 export type SearchNeighborHit<
@@ -164,9 +169,12 @@ function rankSourceMapIdsForContent(
     retrievalLimit: number;
     memoryIds?: string[];
     maxVectorDistance?: number;
+    asOfTimestampMs?: number;
   },
 ): Array<{ id: string; score: number }> {
   const { scope } = input;
+  const asOf = input.asOfTimestampMs;
+  const asOfSpread = asOf !== undefined ? { asOfTimestampMs: asOf } : {};
 
   if (scope.kind === "union" && scope.namespaces.length > 1 && !caps.multiNamespaceSearch) {
     const arms: RrfArm<string>[] = [];
@@ -178,6 +186,7 @@ function rankSourceMapIdsForContent(
           text: input.content.text,
           limit: input.retrievalLimit,
           memoryIds: input.memoryIds,
+          ...asOfSpread,
         });
         if (ranked.length > 0) {
           arms.push({ armId: `lexical:${ns}`, ranked, weight: input.lexicalWeight });
@@ -192,6 +201,7 @@ function rankSourceMapIdsForContent(
           ...(input.maxVectorDistance !== undefined
             ? { maxVectorDistance: input.maxVectorDistance }
             : {}),
+          ...asOfSpread,
         });
         if (ranked.length > 0) {
           arms.push({ armId: `vector:${ns}`, ranked, weight: input.vectorWeight });
@@ -209,6 +219,7 @@ function rankSourceMapIdsForContent(
       text: input.content.text,
       limit: input.retrievalLimit,
       memoryIds: input.memoryIds,
+      ...asOfSpread,
     });
     if (ranked.length > 0) {
       arms.push({ armId: "lexical", ranked, weight: input.lexicalWeight });
@@ -223,6 +234,7 @@ function rankSourceMapIdsForContent(
       ...(input.maxVectorDistance !== undefined
         ? { maxVectorDistance: input.maxVectorDistance }
         : {}),
+      ...asOfSpread,
     });
     if (ranked.length > 0) {
       arms.push({ armId: "vector", ranked, weight: input.vectorWeight });
@@ -246,6 +258,7 @@ function expandNeighborsWithSubSearch<NODE_LABELS extends string, EDGE_LABELS ex
     neighborFilters: NeighborFilter<EDGE_LABELS, NODE_LABELS> | undefined;
     maxNeighbors: number | undefined;
     maxVectorDistance?: number;
+    asOfTimestampMs?: number;
   },
 ): SearchNeighborHit<NODE_LABELS, EDGE_LABELS>[] {
   if (!caps.neighborIndex) return [];
@@ -289,6 +302,9 @@ function expandNeighborsWithSubSearch<NODE_LABELS extends string, EDGE_LABELS ex
     memoryIds,
     ...(input.maxVectorDistance !== undefined
       ? { maxVectorDistance: input.maxVectorDistance }
+      : {}),
+    ...(input.asOfTimestampMs !== undefined
+      ? { asOfTimestampMs: input.asOfTimestampMs }
       : {}),
   });
 
@@ -354,6 +370,15 @@ export function search<NODE_LABELS extends string = string, EDGE_LABELS extends 
     caps,
   );
 
+  if (
+    params.asOfTimestampMs !== undefined &&
+    caps.asOfTimestampMsSearch !== true
+  ) {
+    throw new Error(
+      "SearchParams.asOfTimestampMs requires a persistence backend that sets capabilities.asOfTimestampMsSearch",
+    );
+  }
+
   const retrievalLimit = Math.max(topK * 5, 25);
   const lexicalWeight = params.options?.arms?.lexical ?? 1;
   const vectorWeight = params.options?.arms?.vector ?? 1;
@@ -367,6 +392,9 @@ export function search<NODE_LABELS extends string = string, EDGE_LABELS extends 
     vectorWeight,
     retrievalLimit,
     ...(maxVectorDistance !== undefined ? { maxVectorDistance } : {}),
+    ...(params.asOfTimestampMs !== undefined
+      ? { asOfTimestampMs: params.asOfTimestampMs }
+      : {}),
   });
   if (fused.length === 0) return [];
   const hydrated = persistence.hydrateSourceMapHits(fused.map((result) => result.id));
@@ -410,6 +438,9 @@ export function search<NODE_LABELS extends string = string, EDGE_LABELS extends 
       neighborFilters,
       maxNeighbors,
       ...(maxVectorDistance !== undefined ? { maxVectorDistance } : {}),
+      ...(params.asOfTimestampMs !== undefined
+        ? { asOfTimestampMs: params.asOfTimestampMs }
+        : {}),
     }),
   }));
   return withNeighbors;

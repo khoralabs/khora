@@ -59,6 +59,7 @@ export {
   collectToolStaticHashes,
   computeRuntimeHash,
   computeRuntimeIdentityFromEvaluation,
+  hashRuntimeToolBinding,
   hashToolSpecIdentity,
   resolveRuntimeToolRefs,
 } from "./hashing/runtime-hashes.js";
