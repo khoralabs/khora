@@ -267,7 +267,9 @@ export const deleteMemoryRootRows = mutation({
   handler: async (ctx, args) => {
     if (args.memoryKind === "node") {
       if (!args.memoryId || !args.nodeId) {
-        throw new Error("deleteMemoryRootRows: memoryId and nodeId required when memoryKind is node");
+        throw new Error(
+          "deleteMemoryRootRows: memoryId and nodeId required when memoryKind is node",
+        );
       }
       return ctx.runMutation(cm.deleteMemoryRootRows, {
         memoryKind: "node",

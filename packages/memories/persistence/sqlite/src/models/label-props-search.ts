@@ -118,10 +118,7 @@ export function syncLabelPropsSearchFeatures(
 
   if (kind === "edge" && memKind?.edge_id) {
     const edgeRows = ctx.db
-      .query<
-        { assignmentId: string; kind: string; propsJson: string | null },
-        [string]
-      >(
+      .query<{ assignmentId: string; kind: string; propsJson: string | null }, [string]>(
         `SELECT ela._id AS assignmentId, el.kind AS kind, ela.props AS propsJson
          FROM edge_label_assignments ela
          JOIN edge_labels el ON el._id = ela.label_id

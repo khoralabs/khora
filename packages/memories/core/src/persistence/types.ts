@@ -1,4 +1,3 @@
-import type { MemoryKind } from "./row-schemas";
 import type { NamespacePath } from "../models/namespace-path";
 import type {
   HydratedNeighbor,
@@ -7,7 +6,7 @@ import type {
 } from "../models/neighbor-search-types";
 import type { OntologyLabelInstance } from "../models/ontology-label";
 import type { MemoryProvenanceEvent, SourceMapBodyParts } from "../provenance/index.ts";
-import type { SourceMap, TextFeatureExportRow } from "./row-schemas";
+import type { MemoryKind, SourceMap, TextFeatureExportRow } from "./row-schemas";
 
 /** Timestamp context for writes and validators that use `_ts_created`. */
 export type MemoryOpContext = { now: number };

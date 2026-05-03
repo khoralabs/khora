@@ -13,8 +13,8 @@ import {
   type SearchNamespaceScope,
 } from "@cfd/memories-core";
 import type { Edge, Memory, SourceMap } from "@cfd/memories-core/persistence";
-import { loadGraphEdge } from "../visualization/projection";
 import { vectorVecTableName } from "../search-indexes";
+import { loadGraphEdge } from "../visualization/projection";
 import type { DbCtx } from "./context";
 
 export type {
@@ -416,9 +416,7 @@ export function hydrateSourceMapHits(
           source_key: row.source_key,
           memory: row.memory,
           labels: edgeLabelsByEdgeId.get(row.memoryEdgeId) ?? [],
-          graph: edgeLink
-            ? { kind: "edge" as const, edge: edgeLink }
-            : { kind: "node" as const },
+          graph: edgeLink ? { kind: "edge" as const, edge: edgeLink } : { kind: "node" as const },
         },
       ];
     }

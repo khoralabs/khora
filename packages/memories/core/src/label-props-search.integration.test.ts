@@ -201,8 +201,7 @@ describe("label props search features", () => {
     expect(
       hits.some(
         (h) =>
-          h.memory.key === "em_desc" &&
-          h.source_key.startsWith(MEMORY_EDGE_LABEL_PROPS_KEY_PREFIX),
+          h.memory.key === "em_desc" && h.source_key.startsWith(MEMORY_EDGE_LABEL_PROPS_KEY_PREFIX),
       ),
     ).toBe(true);
   });

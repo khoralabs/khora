@@ -5,8 +5,8 @@ import {
   MEMORY_SEARCH_META_SOURCE_KEY,
 } from "@cfd/memories-core/search-meta-constants";
 import { blobToVector } from "../connection";
-import { loadGraphEdge } from "../visualization/projection";
 import { vectorVecTableName } from "../search-indexes";
+import { loadGraphEdge } from "../visualization/projection";
 import type { DbCtx } from "./context";
 import { insertSourceMap } from "./source-maps";
 import { insertLexicalFeature } from "./text-features";

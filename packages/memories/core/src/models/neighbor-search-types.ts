@@ -2,9 +2,7 @@ import type { Edge, GraphEdgeLink, Memory, SourceMap } from "../persistence";
 import type { OntologyLabelInstance } from "./ontology-label";
 
 /** Where hybrid search hit content attaches in the graph (primary node vs single edge). */
-export type MemoryGraphAssociation =
-  | { kind: "node" }
-  | { kind: "edge"; edge: GraphEdgeLink };
+export type MemoryGraphAssociation = { kind: "node" } | { kind: "edge"; edge: GraphEdgeLink };
 
 /** Same semantics as root hit `labels` filter: `all` = AND, `some` = OR (non-empty). Omitted = any. */
 export type NeighborNodesFilter<NODE_LABEL extends string = string> = {

@@ -233,13 +233,7 @@ async function runMergeMemoryAtomicEdge(
     throw new Error(`mergeMemoryAtomic: node missing for edge.to_key=${toKey}`);
   }
 
-  const edgeId = ids.edge(
-    fromNodeId,
-    toNodeId,
-    params.edge.label.kind,
-    fromKey,
-    toKey,
-  );
+  const edgeId = ids.edge(fromNodeId, toNodeId, params.edge.label.kind, fromKey, toKey);
 
   await clearMemorySubtreeImpl(ctx, { memoryKind: "edge", memoryId, edgeId });
 

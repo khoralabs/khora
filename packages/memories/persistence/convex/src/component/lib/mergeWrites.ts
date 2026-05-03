@@ -150,7 +150,8 @@ export async function findMemoryAssociationImpl(
   if (!row) return null;
   const kind = row.kind ?? "node";
   if (kind === "edge") {
-    if (!row.edgeId) throw new Error(`findMemoryAssociation: edge memory missing edgeId for ${key}`);
+    if (!row.edgeId)
+      throw new Error(`findMemoryAssociation: edge memory missing edgeId for ${key}`);
     return { memoryId, kind: "edge", edgeId: row.edgeId };
   }
   return { memoryId, kind: "node", nodeId: ids.node(namespace, key) };
