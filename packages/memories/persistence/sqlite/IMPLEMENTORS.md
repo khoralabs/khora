@@ -62,6 +62,18 @@ Merge callers pass structured `{ kind, props }` (see [`MergeMemoryParams`](../me
 - **Vector:** `insertVectorFeature` stores a `Float32Array`; **query vectors in search must use the same dimensionality** as stored vectors for the vector arm to return hits.
 - If `MemoriesBackendCapabilities.vectorSearch` is `false`, the logic layer rejects merge items that include `vector` and skips the vector search arm (see capabilities below).
 
+## Memory provenance chain + `source_maps.content_hash`
+
+- **`memory_provenance`:** Append-only linear chain over **merge** and **delete**. Each row stores `parent_root_hex`, `root_hex`, `event_type`, and canonical **`event_json`**. The head is the latest `root_hex` by `_ts_created` (then `_id`). **Genesis parent** for the first link is the fixed 32-byte zero pattern (`00…00` hex), not SQL `NULL`.
+- **Leaf + link:** Implemented in `@cfd/memories-core/provenance`: event leaf `SHA-256(MEMORIES_EVENT_LEAF_v1 || NUL || UTF-8(canonical_json(event)))`; chain link `SHA-256(parent_32 || leaf_32)` with parent decoded from lowercase hex (or zero bytes at genesis).
+- **`mergeMemory` / `deleteMemory`:** After successful KG mutations in one transaction, **`appendProvenanceEvent`** records **`MERGE_MEMORY`** or **`DELETE_MEMORY`** respectively. **Idempotent delete:** if the memory row is already absent, **do not** append a provenance row (avoids duplicate-delete spam).
+- **`content_hash`:** Nullable column on **`source_maps`**, lowercase 64-char hex. After inserting text and/or vector features for that map, **`updateSourceMapContentHash`** sets `SHA-256(MEMORIES_SOURCE_BODY_v1 || NUL || UTF-8(canonical_json(descriptor)))` where the descriptor references `text_sha256` / `vector_sha256` of the materialized payloads (see `computeSourceMapContentHash` in core). Merge provenance events may include optional **`content_hashes`** keyed by `source_key` for audit without re-reading blobs.
+- **Rollbacks:** Provenance and content-hash writes participate in the same **`withTransaction`** boundary as merge/delete; a failing append rolls back the whole mutation.
+
+### Future (out of scope here)
+
+Verkle trees, sparse Merkle non-membership proofs, and ZK reasoning over the KG are not part of this schema; only the linear mutation log + per-map digests are specified today.
+
 ## Edges
 
 - **`insertEdge`:** `idParts.label` must be the **edge label kind** (string), together with `selfMemoryKey` / `otherMemoryKey`, so `ids.edge(...)` stays stable for the same directed link identity.

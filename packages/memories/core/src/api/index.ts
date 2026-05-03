@@ -1,3 +1,5 @@
+export type { DeleteMemoryParams } from "../models/delete-memory";
+export { deleteMemory } from "../models/delete-memory";
 export { deleteMemoryAsync } from "../models/delete-memory-async";
 export type {
   LabelPropsSearchFormatter,

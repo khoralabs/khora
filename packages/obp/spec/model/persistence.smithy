@@ -229,6 +229,7 @@ structure ListBindsInput {}
 structure BindListingRow {
     offerId: String
     portId: String
+    content_receipts: ContentAddressedSourceRefList
     counterparty_bind: Document = null
     /// TS **`bind_policy`** field at bind time (audit).
     bind_policy_snapshot: Document = null

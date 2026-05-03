@@ -30,6 +30,9 @@ function migrateObpBindsCounterpartyBind(db: Database): void {
   if (!names.has("bind_policy_json")) {
     db.run("ALTER TABLE obp_binds ADD COLUMN bind_policy_json TEXT");
   }
+  if (!names.has("content_receipts_json")) {
+    db.run("ALTER TABLE obp_binds ADD COLUMN content_receipts_json TEXT NOT NULL DEFAULT '[]'");
+  }
 }
 
 /** Run idempotent DDL (safe to call on every open). */

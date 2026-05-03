@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS obp_binds (
   sourcemaps_json TEXT NOT NULL DEFAULT '[]',
   counterparty_bind_json TEXT,
   bind_policy_json TEXT,
+  content_receipts_json TEXT NOT NULL DEFAULT '[]',
   UNIQUE(offer_id, port_id)
 );
 

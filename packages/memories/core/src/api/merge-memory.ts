@@ -5,6 +5,7 @@ import type { NamespacePath } from "../models/namespace-path";
 import { zNamespacePath } from "../models/namespace-path";
 import { zVectorPayload } from "../persistence/row-schemas";
 import { type MemoriesPersistence, resolveMemoriesBackendCapabilities } from "../persistence/types";
+import { computeSourceMapContentHash } from "../provenance/index.ts";
 import type {
   EdgeLabelInstance,
   LabelSchemaMap,
@@ -152,9 +153,11 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams): string
       properties: params.properties,
     });
 
+    const contentHashes: Record<string, string> = {};
     for (const raw of params.content) {
       const item = zMergeMemoryContentItem.parse(raw);
       const { sourceMapId } = persistence.insertSourceMap(op, { memoryId, sourceKey: item.key });
+      const vec = item.vector !== undefined ? new Float32Array(item.vector) : undefined;
       if (item.text !== undefined) {
         persistence.insertLexicalFeature(op, { memoryId, sourceMapId, text: item.text });
       }
@@ -162,9 +165,18 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams): string
         persistence.insertVectorFeature(op, {
           memoryId,
           sourceMapId,
-          vector: new Float32Array(item.vector),
+          vector: vec!,
         });
       }
+      persistence.updateSourceMapContentHash(op, {
+        sourceMapId,
+        text: item.text,
+        vector: vec,
+      });
+      contentHashes[item.key] = computeSourceMapContentHash({
+        text: item.text,
+        vector: vec,
+      });
     }
 
     const labelByKind = new Map<string, { kind: string; props: Record<string, unknown> }>();
@@ -233,6 +245,27 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams): string
       });
     }
     metaSyncedMemoryKeys = Array.from(syncKeys).sort((a, b) => a.localeCompare(b));
+
+    const sourceKeysSorted = params.content
+      .map((raw) => zMergeMemoryContentItem.parse(raw).key)
+      .sort((a, b) => a.localeCompare(b));
+    const sortedHashes =
+      Object.keys(contentHashes).length > 0
+        ? Object.fromEntries(
+            Object.keys(contentHashes)
+              .sort((a, b) => a.localeCompare(b))
+              .map((k) => [k, contentHashes[k]!]),
+          )
+        : undefined;
+    persistence.appendProvenanceEvent(op, {
+      v: 1,
+      kind: "MERGE_MEMORY",
+      namespace,
+      memory_key: params.key,
+      memory_id: memoryId,
+      source_keys: sourceKeysSorted,
+      ...(sortedHashes !== undefined ? { content_hashes: sortedHashes } : {}),
+    });
   });
 
   return metaSyncedMemoryKeys;

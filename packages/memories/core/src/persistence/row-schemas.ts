@@ -2,6 +2,9 @@ import z from "zod";
 import { MEMORY_NAMESPACE_PATH_REGEX } from "../models/namespace-path";
 import { defineSchema, zId } from "./define-schema";
 
+/** Lowercase SHA-256 hex digest (64 chars, no `0x`). */
+export const zSha256HexLower = z.string().regex(/^[0-9a-f]{64}$/);
+
 /**
  * A memory is a collection of features with tightly shared semantics
  */
@@ -24,6 +27,20 @@ export const zMemory = z.object({
 export const zSourceMap = z.object({
   memory_id: zId("memories"),
   source_key: z.string(),
+  /** Content-addressable body digest; see `@cfd/memories-core/provenance`. */
+  content_hash: zSha256HexLower.optional(),
+});
+
+/**
+ * Linear causal chain over merge/delete mutations (hash rules in `@cfd/memories-core/provenance`).
+ */
+export const zMemoryProvenance = z.object({
+  parent_root_hex: zSha256HexLower,
+  root_hex: zSha256HexLower,
+  /** `MERGE_MEMORY` | `DELETE_MEMORY` (validated at insert). */
+  event_type: z.string(),
+  event_json: z.string(),
+  intent_snapshot_id: z.string().optional(),
 });
 
 /**
@@ -109,6 +126,7 @@ export const zEdge = z.object({
  * Canonical composed document schema for the memories persistence relational model.
  */
 export const memoriesPersistenceDocumentSchema = defineSchema({
+  memory_provenance: zMemoryProvenance,
   source_maps: zSourceMap,
   memories: zMemory,
   text_features: zTextFeature,
@@ -131,6 +149,7 @@ export const zTextFeatureExportRow = z.object({
 export type MemoriesPersistenceSchema = z.infer<typeof memoriesPersistenceDocumentSchema>;
 
 export type Memory = MemoriesPersistenceSchema["memories"];
+export type MemoryProvenance = MemoriesPersistenceSchema["memory_provenance"];
 export type SourceMap = MemoriesPersistenceSchema["source_maps"];
 export type TextFeature = MemoriesPersistenceSchema["text_features"];
 export type VectorFeature = MemoriesPersistenceSchema["vector_features"];

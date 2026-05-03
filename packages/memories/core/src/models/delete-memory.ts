@@ -19,7 +19,17 @@ export function deleteMemory(ctx: MutationCtx, params: DeleteMemoryParams): void
   const nodeId = ids.node(params.namespace, params.key);
 
   persistence.withTransaction(() => {
+    if (persistence.findMemoryIdByKey(params.namespace, params.key) === undefined) {
+      return;
+    }
     persistence.clearMemorySubtree(op, memoryId, nodeId);
     persistence.deleteMemoryRootRows(memoryId, nodeId);
+    persistence.appendProvenanceEvent(op, {
+      v: 1,
+      kind: "DELETE_MEMORY",
+      namespace: params.namespace,
+      memory_key: params.key,
+      memory_id: memoryId,
+    });
   });
 }

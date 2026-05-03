@@ -32,6 +32,7 @@ export type {
   BindListingRow,
   BindPortInput,
   BindsEdge,
+  ContentAddressedSourceRef,
   ExposePortInput,
   ExposesEdge,
   ExtendOfferInput,

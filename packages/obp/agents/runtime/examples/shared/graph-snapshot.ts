@@ -70,6 +70,7 @@ export function buildGraphSnapshot(
   const binds = fake.listBinds().map((b) => ({
     offerId: b.offerId,
     portId: b.portId,
+    ...(b.content_receipts !== undefined ? { content_receipts: b.content_receipts } : {}),
     ...(b.counterparty_bind !== undefined ? { counterparty_bind: b.counterparty_bind } : {}),
     ...(b.bind_policy_snapshot !== undefined
       ? { bind_policy_snapshot: b.bind_policy_snapshot }

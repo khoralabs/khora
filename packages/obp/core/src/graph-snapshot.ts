@@ -1,4 +1,5 @@
 import type { PortBindPolicy } from "./bind-policy/types.ts";
+import type { ContentAddressedSourceRef } from "./model/types.ts";
 
 /**
  * JSON-safe DAG view of an OBP session: parties, offers, ports, and the
@@ -38,6 +39,7 @@ export type GraphSnapshot = {
   binds: Array<{
     offerId: string;
     portId: string;
+    content_receipts?: ContentAddressedSourceRef[];
     counterparty_bind?: Record<string, unknown>;
     bind_policy_snapshot?: PortBindPolicy;
   }>;

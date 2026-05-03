@@ -62,9 +62,20 @@ export default defineSchema({
     namespace: v.string(),
     sourceKey: v.string(),
     tsCreated: v.number(),
+    contentHash: v.optional(v.string()),
   })
     .index("by_sourceMapId", ["sourceMapId"])
     .index("by_memoryId_tsCreated", ["memoryId", "tsCreated"]),
+
+  memory_provenance: defineTable({
+    provenanceId: v.string(),
+    parentRootHex: v.string(),
+    rootHex: v.string(),
+    eventType: v.string(),
+    eventJson: v.string(),
+    intentSnapshotId: v.optional(v.string()),
+    tsCreated: v.number(),
+  }).index("by_provenanceId", ["provenanceId"]),
 
   text_features: defineTable({
     textFeatureId: v.string(),

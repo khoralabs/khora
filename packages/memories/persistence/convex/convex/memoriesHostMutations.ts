@@ -41,6 +41,22 @@ export const insertSourceMap = mutation({
   handler: async (ctx, args) => ctx.runMutation(cm.insertSourceMap, args),
 });
 
+export const updateSourceMapContentHash = mutation({
+  args: {
+    sourceMapId: v.string(),
+    contentHash: v.string(),
+  },
+  handler: async (ctx, args) => ctx.runMutation(cm.updateSourceMapContentHash, args),
+});
+
+export const appendProvenanceEvent = mutation({
+  args: {
+    now: v.number(),
+    event: v.any(),
+  },
+  handler: async (ctx, args) => ctx.runMutation(cm.appendProvenanceEvent, args),
+});
+
 export const insertLexicalFeature = mutation({
   args: {
     memoryId: v.string(),

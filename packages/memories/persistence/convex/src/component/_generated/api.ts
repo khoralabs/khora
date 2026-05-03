@@ -17,6 +17,7 @@ import type * as lib_labelPropsSearch from "../lib/labelPropsSearch.js";
 import type * as lib_mergeAtomicRunner from "../lib/mergeAtomicRunner.js";
 import type * as lib_mergeWrites from "../lib/mergeWrites.js";
 import type * as lib_neighborReads from "../lib/neighborReads.js";
+import type * as lib_provenanceConvex from "../lib/provenanceConvex.js";
 import type * as lib_vectorConfig from "../lib/vectorConfig.js";
 import type * as mutations from "../mutations.js";
 import type * as queries from "../queries.js";
@@ -29,6 +30,7 @@ const fullApi: ApiFromModules<{
   "lib/mergeAtomicRunner": typeof lib_mergeAtomicRunner;
   "lib/mergeWrites": typeof lib_mergeWrites;
   "lib/neighborReads": typeof lib_neighborReads;
+  "lib/provenanceConvex": typeof lib_provenanceConvex;
   "lib/vectorConfig": typeof lib_vectorConfig;
   mutations: typeof mutations;
   queries: typeof queries;

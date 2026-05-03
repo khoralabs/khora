@@ -29,6 +29,9 @@ service MemoriesPersistenceCore {
         SyncMemorySearchMeta
         BuildCanonicalMemorySearchMetaText
         DeleteMemoryRootRows
+        GetProvenanceHeadRootHex
+        AppendProvenanceEvent
+        UpdateSourceMapContentHash
         SearchLexicalSourceMapIds
         HydrateSourceMapHits
     ]
@@ -110,6 +113,8 @@ MemoriesMutation, MemoriesRetrieval, MemoriesNeighborIndex, MemoriesPersistenceR
 **Async:** Mirror with Promise/async method signatures in language bindings.
 
 **Read helpers:** **ListSourceMapsForMemory**, **ListTextFeatureExportRowsForMemory** (prefetch / JSONL export). **ListVectorEmbeddingIndexDimensions** returns empty when dimension metadata is unavailable or not applicable; implementations that can infer widths from stored indexes should return them.
+
+**Provenance + source-map digests:** **GetProvenanceHeadRootHex**, **AppendProvenanceEvent**, and **UpdateSourceMapContentHash** back the linear SHA-256 mutation log (`memory_provenance`, merge + delete) and nullable **`source_maps.content_hash`** body commitments. Normative hashing lives in `@cfd/memories-core/provenance` (see SQLite implementors guide).
 """)
 service MemoriesPersistenceService {
     version: "2026-04-11"
@@ -134,6 +139,9 @@ service MemoriesPersistenceService {
         BuildCanonicalMemorySearchMetaText
         UpsertMemorySearchMetaVector
         DeleteMemoryRootRows
+        GetProvenanceHeadRootHex
+        AppendProvenanceEvent
+        UpdateSourceMapContentHash
         SearchLexicalSourceMapIds
         SearchVectorSourceMapIds
         HydrateSourceMapHits
@@ -698,3 +706,49 @@ structure LoadGraphNodeInput {
 structure LoadGraphNodeOutput {
     result: LoadGraphNodeResult
 }
+
+@documentation("""
+Latest committed provenance chain head (`memory_provenance.root_hex`), or absent when the table is empty.
+""")
+operation GetProvenanceHeadRootHex {
+    input: GetProvenanceHeadRootHexInput
+    output: GetProvenanceHeadRootHexOutput
+}
+
+structure GetProvenanceHeadRootHexInput {}
+
+structure GetProvenanceHeadRootHexOutput {
+    rootHex: String
+}
+
+@documentation("""
+Append one row advancing the linear chain. Must run inside **WithTransaction**. `event` is stored as canonical JSON in `memory_provenance.event_json`; implementations derive `root_hex` per `@cfd/memories-core/provenance`.
+""")
+operation AppendProvenanceEvent {
+    input: AppendProvenanceEventInput
+    output: AppendProvenanceEventOutput
+}
+
+structure AppendProvenanceEventInput {
+    op: MemoryOpContext
+    event: Document
+}
+
+structure AppendProvenanceEventOutput {}
+
+@documentation("""
+Persist **content_hash** for one source map after lexical and/or vector features exist (`SHA-256(MEMORIES_SOURCE_BODY_v1 …)` over a canonical descriptor). Merge pipelines call this once per content item in the same transaction.
+""")
+operation UpdateSourceMapContentHash {
+    input: UpdateSourceMapContentHashInput
+    output: UpdateSourceMapContentHashOutput
+}
+
+structure UpdateSourceMapContentHashInput {
+    op: MemoryOpContext
+    sourceMapId: String
+    text: String
+    vector: DoubleList
+}
+
+structure UpdateSourceMapContentHashOutput {}

@@ -17,6 +17,14 @@ export type SourceMapRef = {
   source_key: string;
 };
 
+/** Content-addressable receipt (`ContentAddressedSourceRef` in Smithy). */
+export type ContentAddressedSourceRef = {
+  resource_id: string;
+  source_key: string;
+  /** Lowercase hex SHA-256 of body bytes per embedding conventions. */
+  content_sha256_hex: string;
+};
+
 export type Party = {
   id: string;
   /** Ledger sequence when this party was committed (Smithy **`created_seq`**). */
@@ -76,6 +84,7 @@ export type BindsEdge = {
   id: string;
   created_seq: number;
   sourcemaps: SourceMapRef[];
+  content_receipts: ContentAddressedSourceRef[];
   counterparty_bind?: Record<string, unknown>;
   /** Audit copy of **`Port.bind_policy`** at bind time (`BindListingRow.bind_policy_snapshot` / SQLite `bind_policy_json`). */
   bind_policy_snapshot?: PortBindPolicy;
@@ -85,6 +94,7 @@ export type BindsEdge = {
 export type BindListingRow = {
   offerId: string;
   portId: string;
+  content_receipts?: ContentAddressedSourceRef[];
   counterparty_bind?: Record<string, unknown>;
   bind_policy_snapshot?: PortBindPolicy;
 };
@@ -102,6 +112,8 @@ export type ExtendOfferInput = {
   bindPortId: string;
   /** Satisfaction payload for **`BindsEdge.counterparty_bind`** when binding. */
   counterparty_bind?: Record<string, unknown>;
+  /** Optional **`BindsEdge.content_receipts`** when creating a bind during extend. */
+  content_receipts?: ContentAddressedSourceRef[];
 };
 
 export type ExposePortInput = {
@@ -113,6 +125,7 @@ export type BindPortInput = {
   offerId: string;
   portId: string;
   counterparty_bind?: Record<string, unknown>;
+  content_receipts?: ContentAddressedSourceRef[];
 };
 
 export type GetPartyResult = { kind: "notFound" } | { kind: "found"; party: Party };

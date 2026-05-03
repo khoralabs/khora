@@ -11,6 +11,8 @@ import type {
   SearchNamespaceScope,
 } from "@cfd/memories-core";
 import type { SourceMap, TextFeatureExportRow } from "@cfd/memories-core/persistence";
+import type { MemoryProvenanceEvent } from "@cfd/memories-core/provenance";
+import { computeSourceMapContentHash } from "@cfd/memories-core/provenance";
 import type { FunctionReference } from "convex/server";
 import { api } from "./component/_generated/api.js";
 import type { ComponentApi } from "./component/_generated/component.js";
@@ -274,6 +276,29 @@ export function createConvexMemoriesPersistence(
 
     async deleteMemoryRootRows(memoryId: string, nodeId: string): Promise<void> {
       await client.mutation(m.deleteMemoryRootRows, { memoryId, nodeId });
+    },
+
+    async getProvenanceHeadRootHex(): Promise<string | undefined> {
+      const h = await client.query(q.getProvenanceHeadRootHex, {});
+      return h ?? undefined;
+    },
+
+    async appendProvenanceEvent(op: MemoryOpContext, event: MemoryProvenanceEvent): Promise<void> {
+      await client.mutation(m.appendProvenanceEvent, { now: op.now, event });
+    },
+
+    async updateSourceMapContentHash(
+      op: MemoryOpContext,
+      input: { sourceMapId: string; text?: string; vector?: Float32Array },
+    ): Promise<void> {
+      const hash = computeSourceMapContentHash({
+        text: input.text,
+        vector: input.vector,
+      });
+      await client.mutation(m.updateSourceMapContentHash, {
+        sourceMapId: input.sourceMapId,
+        contentHash: hash,
+      });
     },
 
     async searchLexicalSourceMapIds(input: {

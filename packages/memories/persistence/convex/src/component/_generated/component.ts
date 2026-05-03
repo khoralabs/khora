@@ -38,6 +38,13 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
     >;
   };
   mutations: {
+    appendProvenanceEvent: FunctionReference<
+      "mutation",
+      "internal",
+      { event: any; now: number },
+      null,
+      Name
+    >;
     clearMemorySubtree: FunctionReference<
       "mutation",
       "internal",
@@ -187,6 +194,13 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
       null,
       Name
     >;
+    updateSourceMapContentHash: FunctionReference<
+      "mutation",
+      "internal",
+      { contentHash: string; sourceMapId: string },
+      null,
+      Name
+    >;
     upsertMemory: FunctionReference<
       "mutation",
       "internal",
@@ -241,6 +255,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
       string | null,
       Name
     >;
+    getProvenanceHeadRootHex: FunctionReference<"query", "internal", {}, string | null, Name>;
     hydrateSourceMapHits: FunctionReference<
       "query",
       "internal",
@@ -336,6 +351,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
       Array<{
         _id: string;
         _ts_created: number;
+        content_hash?: string;
         memory_id: string;
         source_key: string;
       }>,

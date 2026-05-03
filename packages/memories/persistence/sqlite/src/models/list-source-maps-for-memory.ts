@@ -10,7 +10,7 @@ export function listSourceMapsForMemory(ctx: DbCtx, memoryId: string, limit: num
   }
   return ctx.db
     .prepare(
-      `SELECT _id, _ts_created, memory_id, source_key
+      `SELECT _id, _ts_created, memory_id, source_key, content_hash
        FROM source_maps
        WHERE memory_id = ?
        ORDER BY _ts_created DESC

@@ -14,7 +14,17 @@ export async function deleteMemoryAsync(
   const nodeId = ids.node(params.namespace, params.key);
 
   await persistence.withTransaction(async () => {
+    if ((await persistence.findMemoryIdByKey(params.namespace, params.key)) === undefined) {
+      return;
+    }
     await persistence.clearMemorySubtree(op, memoryId, nodeId);
     await persistence.deleteMemoryRootRows(memoryId, nodeId);
+    await persistence.appendProvenanceEvent(op, {
+      v: 1,
+      kind: "DELETE_MEMORY",
+      namespace: params.namespace,
+      memory_key: params.key,
+      memory_id: memoryId,
+    });
   });
 }

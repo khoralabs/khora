@@ -3,6 +3,7 @@ import { ObpError } from "./errors";
 import { type BindValidationFailure, validateBindPreconditions } from "./invariants/bind";
 import type {
   BindPortInput,
+  ContentAddressedSourceRef,
   ExposePortInput,
   ExtendOfferInput,
   GetOfferResult,
@@ -19,6 +20,23 @@ export type ObpClientOptions = {
   /** Monotonic ledger sequence for expiry checks and revoke stamping; required (no wall-clock default). */
   ledgerSeq: () => number;
 };
+
+const CONTENT_HASH_HEX64 = /^[0-9a-f]{64}$/;
+
+function assertValidContentReceipts(receipts: ContentAddressedSourceRef[] | undefined): void {
+  if (receipts === undefined || receipts.length === 0) return;
+  for (const r of receipts) {
+    if (typeof r.resource_id !== "string" || typeof r.source_key !== "string") {
+      throw new ObpError(
+        "VALIDATION",
+        "content_receipts require resource_id and source_key strings",
+      );
+    }
+    if (!CONTENT_HASH_HEX64.test(r.content_sha256_hex)) {
+      throw new ObpError("VALIDATION", "content_sha256_hex must be 64 lowercase hex chars");
+    }
+  }
+}
 
 function throwIfBindInvalid(failure: BindValidationFailure): never {
   switch (failure.code) {
@@ -88,6 +106,10 @@ export class ObpClient {
     }
 
     const bindPortId = input.bindPortId.trim();
+    const cr = input.content_receipts;
+    if (bindPortId === "" && cr !== undefined && cr.length > 0) {
+      throw new ObpError("VALIDATION", "content_receipts only allowed when bindPortId is set");
+    }
     if (bindPortId !== "") {
       const portRes = this.persistence.getPort(bindPortId);
       if (portRes.kind === "notFound") {
@@ -105,6 +127,7 @@ export class ObpClient {
         throwIfBindInvalid(fail);
       }
       const normalizedBind = validateCounterpartyBindForPort(portRes.port, input.counterparty_bind);
+      assertValidContentReceipts(cr);
       return this.persistence.extendOffer({
         ...input,
         bindPortId,
@@ -163,6 +186,7 @@ export class ObpClient {
     }
 
     const normalizedBind = validateCounterpartyBindForPort(portRes.port, input.counterparty_bind);
+    assertValidContentReceipts(input.content_receipts);
     this.persistence.bindPort({ ...input, counterparty_bind: normalizedBind });
   }
 

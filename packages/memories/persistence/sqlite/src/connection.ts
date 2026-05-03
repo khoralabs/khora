@@ -36,6 +36,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_node_label_assignments_node_label
   ON node_label_assignments (node_id, label_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_edge_label_assignments_edge_label
   ON edge_label_assignments (edge_id, label_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_memory_provenance_root_hex
+  ON memory_provenance (root_hex);
 CREATE INDEX IF NOT EXISTS idx_memories_ns_prefixes
   ON memories (ns_prefix_1, ns_prefix_2, ns_prefix_3, ns_prefix_4, ns_prefix_5, ns_prefix_6);
 `;
@@ -119,10 +121,20 @@ export function openMemoriesDatabaseReadonly(filename: string): Database {
   return db;
 }
 
+/** Best-effort DDL for DBs created before `content_hash` existed on `source_maps`. */
+export function migrateMemoriesSchemaAdditive(db: Database): void {
+  try {
+    db.run(`ALTER TABLE source_maps ADD COLUMN content_hash TEXT`);
+  } catch {
+    /* column already present */
+  }
+}
+
 export function initMemoriesSchema(db: Database): void {
   db.run("PRAGMA foreign_keys = ON;");
   db.run("PRAGMA journal_mode = WAL;");
   db.run(MEMORIES_SCHEMA_SQL);
+  migrateMemoriesSchemaAdditive(db);
   db.run(MEMORIES_UNIQUE_ASSIGNMENT_INDEXES_SQL);
   initTextFeaturesFts(db);
 }

@@ -8,6 +8,7 @@ import {
   zNamespacePath,
 } from "@cfd/memories-core";
 import { zVectorPayload } from "@cfd/memories-core/persistence";
+import { computeSourceMapContentHash } from "@cfd/memories-core/provenance";
 import type { MutationCtx } from "../_generated/server.js";
 import { listNeighborMemoryKeysForNode } from "./helpers.js";
 import { syncLabelPropsSearchFeaturesImpl } from "./labelPropsSearch.js";
@@ -27,6 +28,7 @@ import {
   upsertMemoryImpl,
   upsertNodeForMemoryKeyImpl,
 } from "./mergeWrites.js";
+import { appendProvenanceEventImpl, updateSourceMapContentHashImpl } from "./provenanceConvex.js";
 
 export type MergeMemoryAtomicInput = Omit<MergeMemoryParams, "namespace"> & {
   namespace: string;
@@ -74,6 +76,7 @@ export async function runMergeMemoryAtomic(
     now,
   });
 
+  const contentHashes: Record<string, string> = {};
   for (const rawItem of params.content) {
     const item = zMergeMemoryContentItem.parse(rawItem);
     const { sourceMapId } = await insertSourceMapImpl(ctx, {
@@ -81,6 +84,7 @@ export async function runMergeMemoryAtomic(
       sourceKey: item.key,
       now,
     });
+    const vec = item.vector !== undefined ? new Float32Array(item.vector) : undefined;
     if (item.text !== undefined) {
       await insertLexicalFeatureImpl(ctx, {
         memoryId,
@@ -97,6 +101,12 @@ export async function runMergeMemoryAtomic(
         now,
       });
     }
+    const hash = computeSourceMapContentHash({
+      text: item.text,
+      vector: vec,
+    });
+    await updateSourceMapContentHashImpl(ctx, { sourceMapId, contentHash: hash });
+    contentHashes[item.key] = hash;
   }
 
   const labelByKind = new Map(params.labels.map((l) => [l.kind, l] as const));
@@ -167,5 +177,30 @@ export async function runMergeMemoryAtomic(
     });
     await syncLabelPropsSearchFeaturesImpl(ctx, { namespace, memoryKey: k, now });
   }
+
+  const sourceKeysSorted = params.content
+    .map((raw) => zMergeMemoryContentItem.parse(raw).key)
+    .sort((a, b) => a.localeCompare(b));
+  const sortedHashes =
+    Object.keys(contentHashes).length > 0
+      ? Object.fromEntries(
+          Object.keys(contentHashes)
+            .sort((a, b) => a.localeCompare(b))
+            .map((k) => [k, contentHashes[k]!]),
+        )
+      : undefined;
+  await appendProvenanceEventImpl(ctx, {
+    now,
+    event: {
+      v: 1,
+      kind: "MERGE_MEMORY",
+      namespace,
+      memory_key: params.key,
+      memory_id: memoryId,
+      source_keys: sourceKeysSorted,
+      ...(sortedHashes !== undefined ? { content_hashes: sortedHashes } : {}),
+    },
+  });
+
   return Array.from(syncKeys).sort((a, b) => a.localeCompare(b));
 }

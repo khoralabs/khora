@@ -5,6 +5,7 @@ import type {
   NeighborFilter,
 } from "../models/neighbor-search-types";
 import type { OntologyLabelInstance } from "../models/ontology-label";
+import type { MemoryProvenanceEvent, SourceMapBodyParts } from "../provenance/index.ts";
 import type { SourceMap, TextFeatureExportRow } from "./row-schemas";
 
 /** Timestamp context for writes and validators that use `_ts_created`. */
@@ -178,6 +179,23 @@ export interface MemoriesMutationCore {
 
   /** Delete root memory and graph node records after subtree clear (delete flow). */
   deleteMemoryRootRows(memoryId: string, nodeId: string): void;
+
+  /** Latest provenance chain head (`root_hex`), or `undefined` if empty. */
+  getProvenanceHeadRootHex(): string | undefined;
+
+  /**
+   * Append one provenance row advancing the linear chain. Must run inside {@link withTransaction}.
+   * Stores canonical JSON of `event` in `memory_provenance.event_json`.
+   */
+  appendProvenanceEvent(op: MemoryOpContext, event: MemoryProvenanceEvent): void;
+
+  /**
+   * Persist {@link computeSourceMapContentHash} for one source map row (merge transaction).
+   */
+  updateSourceMapContentHash(
+    op: MemoryOpContext,
+    input: { sourceMapId: string } & SourceMapBodyParts,
+  ): void;
 }
 
 /** Graph node/edge catalog writes (merge-time). Combined with {@link MemoriesGraphIndex} as {@link MemoriesGraph}. */

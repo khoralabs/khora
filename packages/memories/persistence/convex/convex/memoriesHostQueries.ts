@@ -123,6 +123,11 @@ export const listSourceMapsForMemory = query({
   handler: async (ctx, args) => ctx.runQuery(cq.listSourceMapsForMemory, args),
 });
 
+export const getProvenanceHeadRootHex = query({
+  args: {},
+  handler: async (ctx) => ctx.runQuery(cq.getProvenanceHeadRootHex, {}),
+});
+
 export const listTextFeatureExportRowsForMemory = query({
   args: { memoryId: v.string() },
   handler: async (ctx, args) => ctx.runQuery(cq.listTextFeatureExportRowsForMemory, args),

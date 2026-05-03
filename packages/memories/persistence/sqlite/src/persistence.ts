@@ -10,6 +10,7 @@ import type {
   SearchNamespaceScope,
 } from "@cfd/memories-core";
 import type { SourceMap, TextFeatureExportRow } from "@cfd/memories-core/persistence";
+import type { MemoryProvenanceEvent } from "@cfd/memories-core/provenance";
 import type { DbCtx } from "./models/context";
 import { insertEdgeLabelAssignment } from "./models/edge-label-assignments";
 import { ensureEdgeLabel } from "./models/edge-labels";
@@ -18,6 +19,10 @@ import { syncLabelPropsSearchFeatures as syncLabelPropsSearchFeaturesImpl } from
 import { listSourceMapsForMemory as listSourceMapsForMemoryQuery } from "./models/list-source-maps-for-memory";
 import { listTextFeatureExportRowsForMemory as listTextFeatureExportRowsForMemoryQuery } from "./models/list-text-feature-export-rows";
 import { findMemoryIdByKey, upsertMemory } from "./models/memories";
+import {
+  getProvenanceHeadRootHex,
+  appendProvenanceEvent as insertProvenanceRow,
+} from "./models/memory-provenance";
 import {
   buildCanonicalMemorySearchMetaText,
   listNeighborMemoryKeysForNode,
@@ -35,7 +40,7 @@ import {
   searchLexicalSourceMapIds,
   searchVectorSourceMapIds,
 } from "./models/search";
-import { insertSourceMap } from "./models/source-maps";
+import { insertSourceMap, updateSourceMapContentHash } from "./models/source-maps";
 import { insertLexicalFeature } from "./models/text-features";
 import { insertVectorFeature } from "./models/vector-features";
 import { listVectorEmbeddingIndexDimensions as listVectorEmbeddingIndexDimensionsQuery } from "./models/vector-index-dimensions";
@@ -100,6 +105,21 @@ export class MemoriesPersistence implements IMemoriesPersistence {
     input: { memoryId: string; sourceKey: string },
   ): { sourceMapId: string } {
     return insertSourceMap(this.ctx(op), input);
+  }
+
+  getProvenanceHeadRootHex(): string | undefined {
+    return getProvenanceHeadRootHex(this.db);
+  }
+
+  appendProvenanceEvent(op: MemoryOpContext, event: MemoryProvenanceEvent): void {
+    insertProvenanceRow(this.ctx(op), event);
+  }
+
+  updateSourceMapContentHash(
+    op: MemoryOpContext,
+    input: { sourceMapId: string; text?: string; vector?: Float32Array },
+  ): void {
+    updateSourceMapContentHash(this.ctx(op), input);
   }
 
   insertLexicalFeature(

@@ -69,6 +69,7 @@ export class FakeObpPersistence implements ObpPersistence {
         edge: {
           ...b.edge,
           sourcemaps: [...b.edge.sourcemaps],
+          content_receipts: [...(b.edge.content_receipts ?? [])],
           ...(b.edge.counterparty_bind !== undefined
             ? { counterparty_bind: { ...b.edge.counterparty_bind } }
             : {}),
@@ -165,6 +166,7 @@ export class FakeObpPersistence implements ObpPersistence {
         id: crypto.randomUUID(),
         created_seq: seq,
         sourcemaps: [],
+        content_receipts: input.content_receipts ?? [],
         ...(counterparty_bind !== undefined ? { counterparty_bind } : {}),
         ...(bind_policy_snapshot !== undefined ? { bind_policy_snapshot } : {}),
       };
@@ -215,6 +217,7 @@ export class FakeObpPersistence implements ObpPersistence {
       id: crypto.randomUUID(),
       created_seq: seq,
       sourcemaps: [],
+      content_receipts: input.content_receipts ?? [],
       ...(counterparty_bind !== undefined ? { counterparty_bind } : {}),
       ...(bind_policy_snapshot !== undefined ? { bind_policy_snapshot } : {}),
     };
@@ -233,6 +236,9 @@ export class FakeObpPersistence implements ObpPersistence {
     return this.bindRows.map((b) => ({
       offerId: b.offerId,
       portId: b.portId,
+      ...(b.edge.content_receipts.length > 0
+        ? { content_receipts: [...b.edge.content_receipts] }
+        : {}),
       ...(b.edge.counterparty_bind !== undefined
         ? { counterparty_bind: b.edge.counterparty_bind }
         : {}),

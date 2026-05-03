@@ -17,6 +17,21 @@ list SourceMapRefList {
     member: SourceMapRef
 }
 
+/// Lowercase SHA-256 digest of resolved body bytes (**no** `0x`), length **64**. Embedding defines how **`resource_id`** / **`source_key`** resolve to bytes.
+@pattern("^[0-9a-f]{64}$")
+string Sha256HexLower
+
+/// Abstract **content receipt**: opaque source addressing plus a digest commitment (e.g. memories `content_hash` profile). OBP does not define resolution—only the wire shape.
+structure ContentAddressedSourceRef {
+    resource_id: String
+    source_key: String
+    content_sha256_hex: Sha256HexLower
+}
+
+list ContentAddressedSourceRefList {
+    member: ContentAddressedSourceRef
+}
+
 /// Issuing actor.
 structure Party {
     /// Implementations SHOULD use UUID v7 strings.
@@ -91,6 +106,8 @@ structure BindsEdge {
     /// Ledger sequence when this edge was committed.
     created_seq: Long
     sourcemaps: SourceMapRefList
+    /// Optional digest receipts for named sources (embedding-defined resolution and byte encoding).
+    content_receipts: ContentAddressedSourceRefList
     /// Data supplied by the binding offer; MUST satisfy target port `bind_policy` when that policy is present.
     counterparty_bind: Document = null
     /// Audit copy of `bind_policy` validated at bind time; informational (TS listing field `bind_policy`).

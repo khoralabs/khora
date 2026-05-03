@@ -14,6 +14,11 @@
       "import": "./src/persistence/index.ts",
       "default": "./src/persistence/index.ts"
     },
+    "./provenance": {
+      "types": "./src/provenance/index.ts",
+      "import": "./src/provenance/index.ts",
+      "default": "./src/provenance/index.ts"
+    },
     "./search-meta-constants": {
       "types": "./src/search-meta-constants.ts",
       "import": "./src/search-meta-constants.ts",

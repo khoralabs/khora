@@ -1,5 +1,7 @@
 import { ids } from "@cfd/memories-core";
 import { memoriesPersistenceDocumentSchema } from "@cfd/memories-core/persistence";
+import type { SourceMapBodyParts } from "@cfd/memories-core/provenance";
+import { computeSourceMapContentHash } from "@cfd/memories-core/provenance";
 import { documentValidator } from "../_lib";
 import type { DbCtx } from "./context";
 
@@ -25,4 +27,16 @@ export function insertSourceMap(
     input.sourceKey,
   ]);
   return { sourceMapId };
+}
+
+export function updateSourceMapContentHash(
+  ctx: DbCtx,
+  input: { sourceMapId: string } & SourceMapBodyParts,
+): void {
+  const { db } = ctx;
+  const hash = computeSourceMapContentHash({
+    text: input.text,
+    vector: input.vector,
+  });
+  db.run(`UPDATE source_maps SET content_hash = ? WHERE _id = ?`, [hash, input.sourceMapId]);
 }

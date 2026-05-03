@@ -17,6 +17,10 @@ import {
   upsertMemorySearchMetaVectorImpl,
   upsertNodeForMemoryKeyImpl,
 } from "./lib/mergeWrites.js";
+import {
+  appendProvenanceEventImpl,
+  updateSourceMapContentHashImpl,
+} from "./lib/provenanceConvex.js";
 
 export const clearMemorySubtree = mutation({
   args: {
@@ -62,6 +66,33 @@ export const insertSourceMap = mutation({
   },
   returns: v.object({ sourceMapId: v.string() }),
   handler: async (ctx, args) => insertSourceMapImpl(ctx, args),
+});
+
+export const updateSourceMapContentHash = mutation({
+  args: {
+    sourceMapId: v.string(),
+    contentHash: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await updateSourceMapContentHashImpl(ctx, args);
+    return null;
+  },
+});
+
+export const appendProvenanceEvent = mutation({
+  args: {
+    now: v.number(),
+    event: v.any(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await appendProvenanceEventImpl(ctx, {
+      now: args.now,
+      event: args.event as import("@cfd/memories-core/provenance").MemoryProvenanceEvent,
+    });
+    return null;
+  },
 });
 
 export const insertLexicalFeature = mutation({

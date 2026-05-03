@@ -27,6 +27,7 @@ import {
   parsePropsJson,
 } from "./lib/helpers.js";
 import { listNeighborsForMemory as listNeighborsForMemoryImpl } from "./lib/neighborReads.js";
+import { getProvenanceHeadRootHexImpl } from "./lib/provenanceConvex.js";
 import { CONVEX_VECTOR_DIMENSIONS, vectorTableNameForDim } from "./lib/vectorConfig.js";
 
 const vHydratedLabel = v.object({
@@ -412,6 +413,7 @@ export const listSourceMapsForMemory = query({
       _ts_created: v.number(),
       memory_id: v.string(),
       source_key: v.string(),
+      content_hash: v.optional(v.string()),
     }),
   ),
   handler: async (ctx, { memoryId, limit }) => {
@@ -428,8 +430,15 @@ export const listSourceMapsForMemory = query({
       _ts_created: sm.tsCreated,
       memory_id: sm.memoryId,
       source_key: sm.sourceKey,
+      ...(sm.contentHash !== undefined ? { content_hash: sm.contentHash } : {}),
     }));
   },
+});
+
+export const getProvenanceHeadRootHex = query({
+  args: {},
+  returns: v.union(v.string(), v.null()),
+  handler: async (ctx) => (await getProvenanceHeadRootHexImpl(ctx)) ?? null,
 });
 
 export const listTextFeatureExportRowsForMemory = query({

@@ -1,7 +1,9 @@
 import { ids } from "../models/ids";
+import { zNamespacePath } from "../models/namespace-path";
 import type { MemoriesPersistenceAsync } from "../persistence/async-types";
 import { zVectorPayload } from "../persistence/row-schemas";
 import { resolveMemoriesBackendCapabilities } from "../persistence/types";
+import { computeSourceMapContentHash } from "../provenance/index.ts";
 import {
   catalogSchemaJsonForEdgeKind,
   catalogSchemaJsonForNodeKind,
@@ -26,8 +28,9 @@ export async function mergeMemoryAsync(
   const now = Date.now();
   const op = { now };
 
-  const memoryId = ids.memory(params.namespace, params.key);
-  const nodeId = ids.node(params.namespace, params.key);
+  const namespace = zNamespacePath.parse(params.namespace);
+  const memoryId = ids.memory(namespace, params.key);
+  const nodeId = ids.node(namespace, params.key);
 
   for (const item of params.content) {
     zMergeMemoryContentItem.parse(item);
@@ -53,25 +56,23 @@ export async function mergeMemoryAsync(
   let metaSyncedMemoryKeys: string[] = [];
 
   await persistence.withTransaction(async () => {
-    const oldNeighborKeys = await persistence.listNeighborMemoryKeysForNode(
-      op,
-      params.namespace,
-      nodeId,
-    );
+    const oldNeighborKeys = await persistence.listNeighborMemoryKeysForNode(op, namespace, nodeId);
     await persistence.clearMemorySubtree(op, memoryId, nodeId);
-    await persistence.upsertMemory(op, { namespace: params.namespace, key: params.key });
+    await persistence.upsertMemory(op, { namespace, key: params.key });
     await persistence.upsertNodeForMemoryKey(op, {
-      namespace: params.namespace,
+      namespace,
       memoryKey: params.key,
       properties: params.properties,
     });
 
+    const contentHashes: Record<string, string> = {};
     for (const raw of params.content) {
       const item = zMergeMemoryContentItem.parse(raw);
       const { sourceMapId } = await persistence.insertSourceMap(op, {
         memoryId,
         sourceKey: item.key,
       });
+      const vec = item.vector !== undefined ? new Float32Array(item.vector) : undefined;
       if (item.text !== undefined) {
         await persistence.insertLexicalFeature(op, {
           memoryId,
@@ -83,9 +84,18 @@ export async function mergeMemoryAsync(
         await persistence.insertVectorFeature(op, {
           memoryId,
           sourceMapId,
-          vector: new Float32Array(item.vector),
+          vector: vec!,
         });
       }
+      await persistence.updateSourceMapContentHash(op, {
+        sourceMapId,
+        text: item.text,
+        vector: vec,
+      });
+      contentHashes[item.key] = computeSourceMapContentHash({
+        text: item.text,
+        vector: vec,
+      });
     }
 
     const labelByKind = new Map(params.labels.map((l) => [l.kind, l] as const));
@@ -103,12 +113,12 @@ export async function mergeMemoryAsync(
     }
 
     for (const edge of params.edges ?? []) {
-      if ((await persistence.findMemoryIdByKey(params.namespace, edge.memory_key)) === undefined) {
+      if ((await persistence.findMemoryIdByKey(namespace, edge.memory_key)) === undefined) {
         throw new Error(
-          `mergeMemoryAsync: unknown edge target memory_key=${edge.memory_key} in namespace=${params.namespace}`,
+          `mergeMemoryAsync: unknown edge target memory_key=${edge.memory_key} in namespace=${namespace}`,
         );
       }
-      const otherNodeId = ids.node(params.namespace, edge.memory_key);
+      const otherNodeId = ids.node(namespace, edge.memory_key);
       if (!(await persistence.nodeExists(otherNodeId))) {
         throw new Error(`mergeMemoryAsync: target node missing for memory_key=${edge.memory_key}`);
       }
@@ -145,19 +155,40 @@ export async function mergeMemoryAsync(
         : undefined;
     for (const k of syncKeys) {
       await persistence.syncMemorySearchMeta(op, {
-        namespace: params.namespace,
+        namespace,
         memoryKey: k,
         metaVector: k === params.key ? primaryMetaVec : undefined,
       });
       const syncLabelProps = persistence.syncLabelPropsSearchFeatures;
       if (syncLabelProps !== undefined) {
         await syncLabelProps(op, {
-          namespace: params.namespace,
+          namespace,
           memoryKey: k,
         });
       }
     }
     metaSyncedMemoryKeys = Array.from(syncKeys).sort((a, b) => a.localeCompare(b));
+
+    const sourceKeysSorted = params.content
+      .map((raw) => zMergeMemoryContentItem.parse(raw).key)
+      .sort((a, b) => a.localeCompare(b));
+    const sortedHashes =
+      Object.keys(contentHashes).length > 0
+        ? Object.fromEntries(
+            Object.keys(contentHashes)
+              .sort((a, b) => a.localeCompare(b))
+              .map((k) => [k, contentHashes[k]!]),
+          )
+        : undefined;
+    await persistence.appendProvenanceEvent(op, {
+      v: 1,
+      kind: "MERGE_MEMORY",
+      namespace,
+      memory_key: params.key,
+      memory_id: memoryId,
+      source_keys: sourceKeysSorted,
+      ...(sortedHashes !== undefined ? { content_hashes: sortedHashes } : {}),
+    });
   });
 
   return metaSyncedMemoryKeys;

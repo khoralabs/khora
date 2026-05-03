@@ -3,6 +3,7 @@ import {
   type BindListingRow,
   type BindPortInput,
   type BindValidationFailure,
+  type ContentAddressedSourceRef,
   type ExposePortInput,
   type ExtendOfferInput,
   type GetOfferResult,
@@ -131,6 +132,43 @@ function parseCounterpartyBindJson(raw: string | null): Record<string, unknown> 
     /* ignore */
   }
   return undefined;
+}
+
+function stringifyContentReceipts(receipts: ContentAddressedSourceRef[] | undefined): string {
+  if (receipts === undefined || receipts.length === 0) {
+    return "[]";
+  }
+  return JSON.stringify(receipts);
+}
+
+function parseContentReceipts(raw: string | null): ContentAddressedSourceRef[] | undefined {
+  if (raw === null || raw === "" || raw === "[]") {
+    return undefined;
+  }
+  try {
+    const v: unknown = JSON.parse(raw);
+    if (!Array.isArray(v)) return undefined;
+    const out: ContentAddressedSourceRef[] = [];
+    for (const x of v) {
+      if (x !== null && typeof x === "object" && !Array.isArray(x)) {
+        const r = x as Record<string, unknown>;
+        if (
+          typeof r.resource_id === "string" &&
+          typeof r.source_key === "string" &&
+          typeof r.content_sha256_hex === "string"
+        ) {
+          out.push({
+            resource_id: r.resource_id,
+            source_key: r.source_key,
+            content_sha256_hex: r.content_sha256_hex,
+          });
+        }
+      }
+    }
+    return out.length > 0 ? out : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function parseNegotiationTtlBasis(raw: string | null): NegotiationPortTtlBasis | undefined {
@@ -339,9 +377,10 @@ export class ObpSqlitePersistence implements ObpPersistence {
         const cbJson = stringifyCounterpartyBind(input.counterparty_bind);
         const bindPolicyJson =
           port.bind_policy !== undefined ? JSON.stringify(port.bind_policy) : null;
+        const receiptsJson = stringifyContentReceipts(input.content_receipts);
         this.db.run(
-          `INSERT INTO obp_binds (edge_id, offer_id, port_id, created_seq, sourcemaps_json, counterparty_bind_json, bind_policy_json) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [bindEdge, offer.id, bindPortId, seq, "[]", cbJson, bindPolicyJson],
+          `INSERT INTO obp_binds (edge_id, offer_id, port_id, created_seq, sourcemaps_json, counterparty_bind_json, bind_policy_json, content_receipts_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [bindEdge, offer.id, bindPortId, seq, "[]", cbJson, bindPolicyJson, receiptsJson],
         );
       }
 
@@ -447,10 +486,11 @@ export class ObpSqlitePersistence implements ObpPersistence {
       const cbJson = stringifyCounterpartyBind(input.counterparty_bind);
       const bindPolicyJson =
         portRes.port.bind_policy !== undefined ? JSON.stringify(portRes.port.bind_policy) : null;
+      const receiptsJson = stringifyContentReceipts(input.content_receipts);
       try {
         this.db.run(
-          `INSERT INTO obp_binds (edge_id, offer_id, port_id, created_seq, sourcemaps_json, counterparty_bind_json, bind_policy_json) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [bindEdge, input.offerId, input.portId, seq, "[]", cbJson, bindPolicyJson],
+          `INSERT INTO obp_binds (edge_id, offer_id, port_id, created_seq, sourcemaps_json, counterparty_bind_json, bind_policy_json, content_receipts_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [bindEdge, input.offerId, input.portId, seq, "[]", cbJson, bindPolicyJson, receiptsJson],
         );
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
@@ -482,16 +522,21 @@ export class ObpSqlitePersistence implements ObpPersistence {
           port_id: string;
           counterparty_bind_json: string | null;
           bind_policy_json: string | null;
+          content_receipts_json: string | null;
         },
         []
-      >(`SELECT offer_id, port_id, counterparty_bind_json, bind_policy_json FROM obp_binds`)
+      >(
+        `SELECT offer_id, port_id, counterparty_bind_json, bind_policy_json, content_receipts_json FROM obp_binds`,
+      )
       .all();
     return rows.map((r) => {
       const cb = parseCounterpartyBindJson(r.counterparty_bind_json);
       const bp = parseBindPolicyJson(r.bind_policy_json);
+      const receipts = parseContentReceipts(r.content_receipts_json);
       return {
         offerId: r.offer_id,
         portId: r.port_id,
+        ...(receipts !== undefined ? { content_receipts: receipts } : {}),
         ...(cb !== undefined ? { counterparty_bind: cb } : {}),
         ...(bp !== undefined ? { bind_policy_snapshot: bp } : {}),
       };
