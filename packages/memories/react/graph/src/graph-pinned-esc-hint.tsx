@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button.js";
 import { Kbd } from "@/components/ui/kbd";
-import { useProjection } from "./use-projection.js";
+import { useMemoriesGraphChrome } from "./use-projection.js";
 
+/** Shown when pin/search drives the subgraph; reads {@link useMemoriesGraphChrome}. */
 export function GraphPinnedEscHint() {
-  const { hasGraphSubgraphStrongFocus, dismissPersistentGraphFocus } = useProjection();
+  const { hasGraphSubgraphStrongFocus, dismissPersistentGraphFocus } = useMemoriesGraphChrome();
   if (!hasGraphSubgraphStrongFocus) return null;
 
   return (

@@ -288,7 +288,7 @@ export function createConvexMemoriesPersistence(
     },
 
     async updateSourceMapContentHash(
-      op: MemoryOpContext,
+      _op: MemoryOpContext,
       input: { sourceMapId: string; text?: string; vector?: Float32Array },
     ): Promise<void> {
       const hash = computeSourceMapContentHash({

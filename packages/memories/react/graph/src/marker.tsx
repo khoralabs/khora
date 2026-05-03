@@ -5,6 +5,7 @@ import { useCallback, useRef, useState } from "react";
 import * as THREE from "three";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import { type ProjectionPoint, SCALE } from "./projection-types.js";
 
 /** Screen-space scale vs distance; pairs with camera FOV / zoom (see drei `Html`). */
@@ -18,6 +19,7 @@ export function Marker({
   dimmed,
   forceTooltipOpen,
   tooltipCentroid,
+  searchHitSnippet,
   onSelect,
   onHoverStart,
   onHoverEnd,
@@ -28,6 +30,8 @@ export function Marker({
   forceTooltipOpen: boolean;
   /** Mean position (scaled world space) for outward tooltip side: subgraph or full graph. */
   tooltipCentroid: readonly [number, number, number];
+  /** Matched `text_features` text for this memory's search hit source map (root hits only). */
+  searchHitSnippet?: string;
   onSelect: (point: ProjectionPoint) => void;
   onHoverStart: (entryId: string) => void;
   onHoverEnd: () => void;
@@ -108,9 +112,17 @@ export function Marker({
                 key={tooltipSide}
                 container={tooltipPortalEl}
                 side={tooltipSide}
-                className="max-w-xs opacity-50"
+                className={cn(
+                  "opacity-50",
+                  searchHitSnippet ? "max-w-[min(22rem,92vw)]" : "max-w-xs",
+                )}
               >
                 <span className="block whitespace-pre-line text-left text-xs">{tooltipText}</span>
+                {searchHitSnippet ? (
+                  <span className="mt-2 block max-h-[min(28vh,220px)] overflow-y-auto whitespace-pre-wrap pt-2 text-left text-[10px] leading-snug text-muted-foreground">
+                    {searchHitSnippet}
+                  </span>
+                ) : null}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>

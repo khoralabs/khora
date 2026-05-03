@@ -11,6 +11,7 @@
   "dependencies": {
     "@ai-sdk/google": "^3.0.0",
     "@cfd/memories-core": "workspace:*",
+    "@cfd/memories-react-graph": "workspace:*",
     "@cfd/memories-sqlite": "workspace:*",
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-select": "^2.2.6",
@@ -21,7 +22,6 @@
     "bun-plugin-tailwind": "^0.1.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "cmdk": "^1.1.1",
     "lucide-react": "^0.545.0",
     "radix-ui": "^1.4.3",
     "react": "^19",

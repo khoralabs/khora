@@ -62,7 +62,7 @@ type ProjectionValue = {
   onEdgeHoverEnd: () => void;
   clearHover: () => void;
   clearPinnedSelection: () => void;
-  /** Clears hover, click pin, and search field/results (parent `onDismissPersistentFocus`). */
+  /** Clears hover, click pin, and internal search field/results. */
   dismissPersistentGraphFocus: () => void;
   onMemoryPreviewPointerEnter: () => void;
   onMemoryPreviewPointerLeave: () => void;
@@ -75,6 +75,64 @@ type ProjectionValue = {
 };
 
 const ProjectionContext = createContext<ProjectionValue | null>(null);
+
+const DEFAULT_MEMORIES_NAMESPACE = "_global_";
+
+/** Fetch/search chrome from {@link GraphProjectionProvider} (namespaces, graph load, search). */
+export type MemoriesGraphChromeBaseValue = {
+  namespace: string;
+  setNamespace: (v: string) => void;
+  knownNamespaces: string[];
+  namespacesLoading: boolean;
+  namespacesError: string | null;
+  reloadNamespaces: () => Promise<void>;
+  searchQuery: string;
+  setSearchQuery: (q: string) => void;
+  graphSearch: GraphSearchState | null;
+  searchLoading: boolean;
+  graphLoading: boolean;
+  graphError: string | null;
+  reloadGraph: () => Promise<void>;
+  graphSummary: string;
+  refreshAll: () => void;
+};
+
+/** Full chrome surface for UI controls (base + projection interaction when under the scene inner tree). */
+export type MemoriesGraphChromeValue = MemoriesGraphChromeBaseValue & {
+  hasGraphSubgraphStrongFocus: boolean;
+  dismissPersistentGraphFocus: () => void;
+};
+
+const MemoriesGraphChromeBaseContext = createContext<MemoriesGraphChromeBaseValue | null>(null);
+
+type MemoriesGraphChromeInteractionSlice = Pick<
+  MemoriesGraphChromeValue,
+  "hasGraphSubgraphStrongFocus" | "dismissPersistentGraphFocus"
+>;
+
+const MemoriesGraphChromeInteractionContext =
+  createContext<MemoriesGraphChromeInteractionSlice | null>(null);
+
+const DEFAULT_INTERACTION_SLICE: MemoriesGraphChromeInteractionSlice = {
+  hasGraphSubgraphStrongFocus: false,
+  dismissPersistentGraphFocus: () => {},
+};
+
+export function useMemoriesGraphChrome(): MemoriesGraphChromeValue {
+  const base = useContext(MemoriesGraphChromeBaseContext);
+  const interaction = useContext(MemoriesGraphChromeInteractionContext);
+  if (!base) {
+    throw new Error("useMemoriesGraphChrome must be used within GraphProjectionProvider");
+  }
+  const slice = interaction ?? DEFAULT_INTERACTION_SLICE;
+  return useMemo(
+    (): MemoriesGraphChromeValue => ({
+      ...base,
+      ...slice,
+    }),
+    [base, slice],
+  );
+}
 
 function buildPoints(data: GraphPayload): ProjectionPoint[] {
   return data.nodes.map((n) => ({
@@ -184,28 +242,31 @@ function buildAdjacency(data: GraphPayload): Map<string, Set<string>> {
   return m;
 }
 
-export type GraphProjectionProviderProps = PropsWithChildren<{
+type ProjectionProviderInnerProps = PropsWithChildren<{
   data: GraphPayload;
   graphSearch?: GraphSearchState | null;
-  /** Kept in sync with the search field so click-pin clears while typing or when results update. */
   searchQuery?: string;
-  /** Clears the search field / results in the parent (e.g. `setSearchQuery("")`). */
-  onDismissPersistentFocus?: () => void;
-  /** Ms before debounced hover drives subgraph highlight, markers, and preview card (not raw pointer). */
+  onClearSearch: () => void;
   focusDelay?: number;
-  /** Ms after pointer leave before live hover clears. */
   unFocusDelay?: number;
 }>;
 
-export function GraphProjectionProvider({
+export type GraphProjectionProviderProps = PropsWithChildren<{
+  /** Initial / reset seed; user can override via the namespace selector in chrome. */
+  namespace?: string;
+  focusDelay?: number;
+  unFocusDelay?: number;
+}>;
+
+function ProjectionProviderInner({
   children,
   data,
   graphSearch = null,
   searchQuery = "",
-  onDismissPersistentFocus,
+  onClearSearch,
   focusDelay = DEFAULT_GRAPH_FOCUS_DELAY_MS,
   unFocusDelay = DEFAULT_GRAPH_UNFOCUS_DELAY_MS,
-}: GraphProjectionProviderProps) {
+}: ProjectionProviderInnerProps) {
   const points = useMemo(() => buildPoints(data), [data]);
   const sceneEdges = useMemo(() => buildSceneEdges(data.edges), [data.edges]);
   const adjacency = useMemo(() => buildAdjacency(data), [data]);
@@ -308,8 +369,8 @@ export function GraphProjectionProvider({
   const dismissPersistentGraphFocus = useCallback(() => {
     clearHover();
     clearPinnedSelection();
-    onDismissPersistentFocus?.();
-  }, [clearHover, clearPinnedSelection, onDismissPersistentFocus]);
+    onClearSearch();
+  }, [clearHover, clearPinnedSelection, onClearSearch]);
 
   const onMemoryPreviewPointerEnter = useCallback(() => {
     cancelAllHoverTimers();
@@ -472,7 +533,251 @@ export function GraphProjectionProvider({
     ],
   );
 
-  return <ProjectionContext.Provider value={value}>{children}</ProjectionContext.Provider>;
+  const interactionChrome = useMemo(
+    (): MemoriesGraphChromeInteractionSlice => ({
+      hasGraphSubgraphStrongFocus,
+      dismissPersistentGraphFocus,
+    }),
+    [hasGraphSubgraphStrongFocus, dismissPersistentGraphFocus],
+  );
+
+  return (
+    <MemoriesGraphChromeInteractionContext.Provider value={interactionChrome}>
+      <ProjectionContext.Provider value={value}>{children}</ProjectionContext.Provider>
+    </MemoriesGraphChromeInteractionContext.Provider>
+  );
+}
+
+const NAMESPACES_URL = "/api/namespaces";
+const SEARCH_DEBOUNCE_MS = 320;
+const GRAPH_SEARCH_MAX_VECTOR_DISTANCE = 0.65;
+
+export function GraphProjectionProvider({
+  children,
+  namespace: namespaceProp = DEFAULT_MEMORIES_NAMESPACE,
+  focusDelay = DEFAULT_GRAPH_FOCUS_DELAY_MS,
+  unFocusDelay = DEFAULT_GRAPH_UNFOCUS_DELAY_MS,
+}: GraphProjectionProviderProps) {
+  const seed = namespaceProp.trim() || DEFAULT_MEMORIES_NAMESPACE;
+  const [namespace, setNamespace] = useState(seed);
+  useEffect(() => {
+    setNamespace(namespaceProp.trim() || DEFAULT_MEMORIES_NAMESPACE);
+  }, [namespaceProp]);
+
+  const [fetchedPayload, setFetchedPayload] = useState<GraphPayload | null>(null);
+  const [graphLoading, setGraphLoading] = useState(true);
+  const [graphError, setGraphError] = useState<string | null>(null);
+
+  const [knownNamespaces, setKnownNamespaces] = useState<string[]>([]);
+  const [namespacesLoading, setNamespacesLoading] = useState(false);
+  const [namespacesError, setNamespacesError] = useState<string | null>(null);
+
+  const reloadNamespaces = useCallback(async () => {
+    setNamespacesLoading(true);
+    setNamespacesError(null);
+    try {
+      const res = await fetch(NAMESPACES_URL);
+      const json = (await res.json()) as { namespaces?: string[]; error?: string };
+      if (!res.ok) {
+        setKnownNamespaces([]);
+        setNamespacesError(json.error ?? res.statusText);
+        return;
+      }
+      if (json.error) {
+        setKnownNamespaces([]);
+        setNamespacesError(json.error);
+        return;
+      }
+      setKnownNamespaces(json.namespaces ?? []);
+    } catch (e) {
+      setKnownNamespaces([]);
+      setNamespacesError(String(e));
+    } finally {
+      setNamespacesLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void reloadNamespaces();
+  }, [reloadNamespaces]);
+
+  const loadGraph = useCallback(async () => {
+    setGraphLoading(true);
+    setGraphError(null);
+    const ns = namespace.trim();
+    try {
+      const res = await fetch(`/api/graph?namespace=${encodeURIComponent(ns)}`);
+      const json = (await res.json()) as GraphPayload & { error?: string };
+      if (!res.ok) {
+        setFetchedPayload(null);
+        setGraphError(json.error ?? res.statusText);
+        setGraphLoading(false);
+        return;
+      }
+      if ("error" in json && json.error) {
+        setFetchedPayload(null);
+        setGraphError(json.error);
+        setGraphLoading(false);
+        return;
+      }
+      const payload: GraphPayload = {
+        namespace: json.namespace,
+        nodes: json.nodes ?? [],
+        edges: json.edges ?? [],
+      };
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setFetchedPayload(payload);
+          setGraphLoading(false);
+        });
+      });
+    } catch (e) {
+      setFetchedPayload(null);
+      setGraphError(String(e));
+      setGraphLoading(false);
+    }
+  }, [namespace]);
+
+  useEffect(() => {
+    void loadGraph();
+  }, [loadGraph]);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [graphSearch, setGraphSearch] = useState<GraphSearchState | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (!q) {
+      setGraphSearch(null);
+      setSearchLoading(false);
+      return;
+    }
+    const ac = new AbortController();
+    const ns = namespace.trim();
+    const id = window.setTimeout(() => {
+      void (async () => {
+        setSearchLoading(true);
+        try {
+          const res = await fetch("/api/search", {
+            method: "POST",
+            signal: ac.signal,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              namespace: ns,
+              query: q,
+              topK: 10,
+              maxNeighbors: 5,
+              maxVectorDistance: GRAPH_SEARCH_MAX_VECTOR_DISTANCE,
+            }),
+          });
+          const json = (await res.json()) as {
+            hitCount?: number;
+            keys?: string[];
+            hitSnippets?: Array<{ key?: string; text?: string | null }>;
+            error?: string;
+          };
+          if (ac.signal.aborted) return;
+          if (!res.ok || json.error) {
+            setGraphSearch(null);
+            return;
+          }
+          const hitSnippetByKey = new Map<string, string>();
+          for (const row of json.hitSnippets ?? []) {
+            const k = row.key?.trim();
+            const t = row.text?.trim();
+            if (!k || !t || hitSnippetByKey.has(k)) continue;
+            hitSnippetByKey.set(k, t);
+          }
+          setGraphSearch({
+            relevantKeys: new Set(json.keys ?? []),
+            hitCount: json.hitCount ?? 0,
+            hitSnippetByKey,
+          });
+        } catch {
+          if (!ac.signal.aborted) setGraphSearch(null);
+        } finally {
+          setSearchLoading(false);
+        }
+      })();
+    }, SEARCH_DEBOUNCE_MS);
+    return () => {
+      window.clearTimeout(id);
+      ac.abort();
+    };
+  }, [searchQuery, namespace]);
+
+  const effectiveData = useMemo((): GraphPayload => {
+    return (
+      fetchedPayload ?? {
+        namespace: namespace.trim(),
+        nodes: [],
+        edges: [],
+      }
+    );
+  }, [fetchedPayload, namespace]);
+
+  const graphSummary = useMemo(() => {
+    if (!fetchedPayload) return "";
+    return `${fetchedPayload.nodes.length} nodes · ${fetchedPayload.edges.length} edges`;
+  }, [fetchedPayload]);
+
+  const clearSearch = useCallback(() => setSearchQuery(""), []);
+
+  const refreshAll = useCallback(() => {
+    void loadGraph();
+    void reloadNamespaces();
+  }, [loadGraph, reloadNamespaces]);
+
+  const chromeValue = useMemo(
+    (): MemoriesGraphChromeBaseValue => ({
+      namespace,
+      setNamespace,
+      knownNamespaces,
+      namespacesLoading,
+      namespacesError,
+      reloadNamespaces,
+      searchQuery,
+      setSearchQuery,
+      graphSearch,
+      searchLoading,
+      graphLoading,
+      graphError,
+      reloadGraph: loadGraph,
+      graphSummary,
+      refreshAll,
+    }),
+    [
+      namespace,
+      knownNamespaces,
+      namespacesLoading,
+      namespacesError,
+      reloadNamespaces,
+      searchQuery,
+      graphSearch,
+      searchLoading,
+      graphLoading,
+      graphError,
+      loadGraph,
+      graphSummary,
+      refreshAll,
+    ],
+  );
+
+  return (
+    <MemoriesGraphChromeBaseContext.Provider value={chromeValue}>
+      <ProjectionProviderInner
+        data={effectiveData}
+        graphSearch={graphSearch}
+        searchQuery={searchQuery}
+        focusDelay={focusDelay}
+        unFocusDelay={unFocusDelay}
+        onClearSearch={clearSearch}
+      >
+        {children}
+      </ProjectionProviderInner>
+    </MemoriesGraphChromeBaseContext.Provider>
+  );
 }
 
 export function useProjection(): ProjectionValue {

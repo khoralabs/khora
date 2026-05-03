@@ -22,6 +22,11 @@ export type GraphPayload = {
 export type GraphSearchState = {
   relevantKeys: ReadonlySet<string>;
   hitCount: number;
+  /**
+   * Lexical text for the matched `source_map` on each **root** search hit only (not neighbors).
+   * Best-ranked snippet wins when several hits share the same memory key.
+   */
+  hitSnippetByKey: ReadonlyMap<string, string>;
 };
 
 /** 3D marker in the projection scene (`[-1, 1]` per axis from layout). */

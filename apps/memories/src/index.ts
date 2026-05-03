@@ -10,6 +10,7 @@ import {
   listMemoryNamespaces,
   loadEdgePreview,
   loadMemoryTextPreview,
+  loadSourceMapTextPreview,
   openMemoriesDatabaseReadonly,
 } from "@cfd/memories-sqlite";
 import { embedMany } from "ai";
@@ -151,7 +152,13 @@ const server = serve({
         );
       }
       if (!query) {
-        return jsonResponse({ hitCount: 0, hitKeys: [], neighborKeys: [], keys: [] });
+        return jsonResponse({
+          hitCount: 0,
+          hitKeys: [],
+          neighborKeys: [],
+          keys: [],
+          hitSnippets: [],
+        });
       }
       const topK = Math.min(50, Math.max(1, Number(body.topK) || 10));
       const maxNeighbors = Math.min(50, Math.max(0, Number(body.maxNeighbors) ?? 5));
@@ -232,11 +239,21 @@ const server = serve({
           }
         }
         const keys = [...new Set([...hitKeys, ...neighborKeys])];
+        const SEARCH_HIT_SNIPPET_MAX = 2400;
+        const hitSnippets = hits.map((h: SearchHit) => {
+          const sourceMapId = (h as SearchHit & { _id: string })._id;
+          return {
+            key: h.memory.key,
+            sourceKey: h.source_key,
+            text: loadSourceMapTextPreview(db, sourceMapId, SEARCH_HIT_SNIPPET_MAX),
+          };
+        });
         return jsonResponse({
           hitCount: hits.length,
           hitKeys,
           neighborKeys: [...new Set(neighborKeys)],
           keys,
+          hitSnippets,
         });
       } catch (err) {
         return jsonResponse({ error: String(err) }, 500);

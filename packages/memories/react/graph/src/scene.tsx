@@ -2,6 +2,7 @@ import { OrbitControls } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
   type ComponentRef,
+  type ReactNode,
   type RefObject,
   useCallback,
   useLayoutEffect,
@@ -10,12 +11,15 @@ import {
 } from "react";
 import * as THREE from "three";
 import { ActiveSubgraphEdgeLabels, GraphEdgeLines, type GraphEdgeRenderMode } from "./edges.js";
+import { GraphCameraChromeProvider, useGraphCameraChrome } from "./graph-camera-chrome.js";
 import {
-  GraphCameraChromeProvider,
-  GraphTopRightChrome,
-  useGraphCameraChrome,
-} from "./graph-camera-chrome.js";
-import { GraphPreviewDock } from "./graph-preview-dock.js";
+  GraphSceneBottomLeft,
+  GraphSceneBottomRight,
+  GraphSceneCenter,
+  GraphSceneTopLeft,
+  GraphSceneTopRight,
+  partitionGraphSceneChildren,
+} from "./graph-scene-slots.js";
 import { Marker } from "./marker.js";
 import { SCALE } from "./projection-types.js";
 import { useProjection } from "./use-projection.js";
@@ -314,6 +318,7 @@ function GraphSceneR3f({ edgeRenderMode }: { edgeRenderMode: GraphEdgeRenderMode
             point.entryId !== focusEntryId &&
             !activeSubgraphKeys.has(point.entryId);
           const forceTooltipOpen = !!activeSubgraphKeys?.has(point.entryId);
+          const searchHitSnippet = graphSearch?.hitSnippetByKey.get(point.entryId);
           return (
             <Marker
               key={point.entryId}
@@ -321,6 +326,7 @@ function GraphSceneR3f({ edgeRenderMode }: { edgeRenderMode: GraphEdgeRenderMode
               dimmed={searchDimmed || subgraphDimmed}
               forceTooltipOpen={forceTooltipOpen}
               tooltipCentroid={tooltipCentroid}
+              searchHitSnippet={searchHitSnippet}
               onSelect={setSelected}
               onHoverStart={onHoverStart}
               onHoverEnd={onHoverEnd}
@@ -340,21 +346,44 @@ function GraphSceneR3f({ edgeRenderMode }: { edgeRenderMode: GraphEdgeRenderMode
   );
 }
 
-/**
- * R3F canvas + chrome (preview dock, esc hint). Must be wrapped in {@link GraphProjectionProvider}
- * (or any ancestor that supplies the same projection context).
- */
-export function GraphScene({
+function GraphSceneRoot({
   edgeRenderMode = "all",
+  children,
 }: {
   edgeRenderMode?: GraphEdgeRenderMode;
-} = {}) {
+  children?: ReactNode;
+}) {
+  const slots = partitionGraphSceneChildren(children);
+
   return (
     <GraphCameraChromeProvider>
       <div className="relative h-full min-h-0 w-full">
-        <GraphTopRightChrome />
-        <div className="r3f-layer relative h-full w-full">
-          <GraphPreviewDock />
+        {slots.topLeft != null ? (
+          <div className="pointer-events-auto absolute top-0 left-0 z-20 m-4 flex flex-col gap-4">
+            {slots.topLeft}
+          </div>
+        ) : null}
+        {slots.topRight != null ? (
+          <div className="pointer-events-auto absolute top-0 right-0 z-20 m-4 flex items-center justify-end gap-2">
+            {slots.topRight}
+          </div>
+        ) : null}
+        {slots.bottomLeft != null ? (
+          <div className="pointer-events-auto absolute bottom-0 left-0 z-20 m-4">
+            {slots.bottomLeft}
+          </div>
+        ) : null}
+        {slots.bottomRight != null ? (
+          <div className="pointer-events-none absolute right-0 bottom-0 z-30 flex items-end justify-end p-4">
+            {slots.bottomRight}
+          </div>
+        ) : null}
+        {slots.center != null ? (
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+            {slots.center}
+          </div>
+        ) : null}
+        <div className="absolute inset-0 z-0 min-h-0">
           <Canvas
             className="h-full w-full touch-none"
             camera={{ position: [0, 0, 4.8], fov: 20 }}
@@ -375,3 +404,15 @@ export function GraphScene({
     </GraphCameraChromeProvider>
   );
 }
+
+/**
+ * R3F canvas + composable overlay slots ({@link GraphScene.TopLeft}, {@link GraphScene.TopRight},
+ * {@link GraphScene.BottomLeft}, {@link GraphScene.BottomRight}, {@link GraphScene.Center}). Must be wrapped in {@link GraphProjectionProvider}.
+ */
+export const GraphScene = Object.assign(GraphSceneRoot, {
+  TopLeft: GraphSceneTopLeft,
+  TopRight: GraphSceneTopRight,
+  BottomLeft: GraphSceneBottomLeft,
+  BottomRight: GraphSceneBottomRight,
+  Center: GraphSceneCenter,
+});

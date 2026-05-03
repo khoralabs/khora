@@ -1,19 +1,18 @@
 import { Focus } from "lucide-react";
 import {
   createContext,
-  type MutableRefObject,
   type PropsWithChildren,
+  type RefObject,
   useContext,
   useRef,
   useState,
 } from "react";
 import { Button } from "@/components/ui/button.js";
-import { GraphPinnedEscHint } from "./graph-pinned-esc-hint.js";
 
 type GraphCameraChromeValue = {
   cameraViewDeviated: boolean;
   setCameraViewDeviated: (v: boolean) => void;
-  reframeRef: MutableRefObject<(() => void) | null>;
+  reframeRef: RefObject<(() => void) | null>;
 };
 
 const GraphCameraChromeContext = createContext<GraphCameraChromeValue | null>(null);
@@ -39,7 +38,8 @@ export function useGraphCameraChrome(): GraphCameraChromeValue {
   return ctx;
 }
 
-function GraphReframeHint() {
+/** Reframe-to-fit control when the camera has panned/zoomed; reads {@link useGraphCameraChrome}. */
+export function GraphCameraReframeHint() {
   const { cameraViewDeviated, reframeRef } = useGraphCameraChrome();
 
   if (!cameraViewDeviated) return null;
@@ -56,14 +56,5 @@ function GraphReframeHint() {
     >
       <Focus className="size-4" />
     </Button>
-  );
-}
-
-export function GraphTopRightChrome() {
-  return (
-    <div className="absolute top-0 right-0 z-20 m-4 flex items-center justify-end gap-2">
-      <GraphReframeHint />
-      <GraphPinnedEscHint />
-    </div>
   );
 }

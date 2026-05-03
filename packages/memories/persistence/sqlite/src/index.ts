@@ -33,5 +33,5 @@ export {
   MemoriesVisualization,
 } from "./visualization";
 export { loadEdgePreview } from "./visualization/edge-preview";
-export { loadMemoryTextPreview } from "./visualization/memory-preview";
+export { loadMemoryTextPreview, loadSourceMapTextPreview } from "./visualization/memory-preview";
 export { loadMeanEmbeddingsForNamespace } from "./visualization/projection";

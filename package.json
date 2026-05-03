@@ -26,6 +26,7 @@
     "packages/memories/*",
     "packages/memories/persistence/*",
     "packages/memories/agents/*",
+    "packages/memories/react/*",
     "packages/obp/*",
     "packages/obp/agents/*",
     "packages/obp/persistence/*"

@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 
 function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
   return (
+    // biome-ignore lint/a11y/useSemanticElements: shadcn InputGroup uses role="group" on div
     <div
       data-slot="input-group"
       role="group"
@@ -58,6 +59,8 @@ function InputGroupAddon({
   ...props
 }: React.ComponentProps<"div"> & VariantProps<typeof inputGroupAddonVariants>) {
   return (
+    // biome-ignore lint/a11y/useSemanticElements: shadcn addon shell
+    // biome-ignore lint/a11y/useKeyWithClickEvents: click focuses sibling input only
     <div
       role="group"
       data-slot="input-group-addon"
