@@ -2,6 +2,7 @@ import { policy, tool, toolkit } from "@cfd/agent-identity";
 import type {
   MemoriesClient,
   MemoriesClientAsync,
+  NamespacePath,
   NeighborSearchOption,
   OntologyLabelInstance,
   SearchContent,
@@ -22,9 +23,21 @@ export type MemorySearchWideClientAsync = MemoriesClientAsync<
   Record<string, z.ZodType>
 >;
 
-/** Per-session embedding cache for identical query strings (see {@link MemorySearchEnv.embeddingCache}). */
-export function embeddingCacheKey(namespace: string, queryText: string): string {
-  return `${namespace}\n${queryText.trim()}`;
+/**
+ * Per-session embedding cache key (see {@link MemorySearchEnv.embeddingCache}).
+ * When `additionalNamespaces` is set, it is folded in so vectors are not reused across different search scopes.
+ */
+export function embeddingCacheKey(
+  namespace: string,
+  queryText: string,
+  additionalNamespaces?: readonly string[],
+): string {
+  const q = queryText.trim();
+  if (additionalNamespaces?.length) {
+    const extra = [...additionalNamespaces].sort((a, b) => a.localeCompare(b)).join("\n");
+    return `${namespace}\n${extra}\n${q}`;
+  }
+  return `${namespace}\n${q}`;
 }
 
 /**
@@ -90,6 +103,15 @@ export type MemorySearchEnv = {
    * {@link memorySearchTool} increments {@code used} after a completed search.
    */
   memorySearchBudget?: { max: number; used: number };
+  /**
+   * Extra subtree roots merged with {@link namespace} for retrieval (same semantics as
+   * {@link SearchParams.additionalNamespaces} in `@cfd/memories-core`).
+   */
+  additionalNamespaces?: readonly string[];
+  /**
+   * Host-injected bag for co-located domain toolkits (same session {@link ToolkitContext} env).
+   */
+  memorySearchExtensions?: Record<string, unknown>;
 };
 
 /** Policy id for {@link memorySearchBudgetPolicy} (hash-stable). */
@@ -184,7 +206,7 @@ const memorySearchTool = tool<
 >({
   name: "memory_search",
   description:
-    "Hybrid search (FTS + embedding) fused with RRF. Namespace and embed model are session-scoped. Tune options.arms for keyword vs semantic emphasis. When the host sets a search budget, further calls are denied until the env is reset for a new turn.",
+    "Hybrid search (FTS + embedding) fused with RRF. Primary namespace, optional additional namespace roots, and embed model are session-scoped. Tune options.arms for keyword vs semantic emphasis. When the host sets a search budget, further calls are denied until the env is reset for a new turn.",
   inputSchema: zMemorySearchToolInput,
   policies: [memorySearchBudgetPolicy],
   handler: async (ctx, input) => {
@@ -199,7 +221,11 @@ const memorySearchTool = tool<
 
     let content: SearchContent;
     if (vectorWeight > 0) {
-      const cacheKey = embeddingCacheKey(env.namespace, parsed.content.text);
+      const cacheKey = embeddingCacheKey(
+        env.namespace,
+        parsed.content.text,
+        env.additionalNamespaces,
+      );
       const cache = env.embeddingCache;
       let vector: number[] | undefined = cache?.get(cacheKey);
 
@@ -220,6 +246,9 @@ const memorySearchTool = tool<
     const rawHits = await Promise.resolve(
       env.memoriesClient.search({
         namespace: env.namespace,
+        ...(env.additionalNamespaces?.length
+          ? { additionalNamespaces: [...env.additionalNamespaces] as NamespacePath[] }
+          : {}),
         content,
         options: opts
           ? {

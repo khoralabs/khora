@@ -27,6 +27,10 @@ export type MemorySearchSessionContextSlice<
 > = {
   client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;
   namespace: string;
+  /** Merged with {@link namespace} for `memory_search` (optional). */
+  additionalNamespaces?: readonly string[];
+  /** Passed through to {@link MemorySearchEnv.memorySearchExtensions} for domain tools. */
+  memorySearchExtensions?: Record<string, unknown>;
   embeddingModel: EmbeddingModel;
   agentId?: string;
   agentName?: string;
@@ -48,13 +52,12 @@ function memorySearchContextBuildArgs<TNode extends ZodLabelMap, TEdge extends Z
     ...(context.memorySearchBudgetMax !== undefined
       ? { memorySearchBudgetMax: context.memorySearchBudgetMax }
       : {}),
-  } as {
-    client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;
-    namespace: string;
-    embeddingModel: EmbeddingModel;
-    agentId?: string;
-    agentName?: string;
-    memorySearchBudgetMax?: number;
+    ...(context.additionalNamespaces !== undefined
+      ? { additionalNamespaces: context.additionalNamespaces }
+      : {}),
+    ...(context.memorySearchExtensions !== undefined
+      ? { memorySearchExtensions: context.memorySearchExtensions }
+      : {}),
   };
 }
 
@@ -67,6 +70,8 @@ export function buildMemorySearchToolkitAndRuntime<
 >(args: {
   client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;
   namespace: string;
+  additionalNamespaces?: readonly string[];
+  memorySearchExtensions?: Record<string, unknown>;
   embeddingModel: EmbeddingModel;
   agentId?: string;
   agentName?: string;
@@ -105,6 +110,8 @@ export async function attachMemorySearchSessionLayer<
 export function toMemorySearchEnv<TNode extends ZodLabelMap, TEdge extends ZodLabelMap>(args: {
   client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;
   namespace: string;
+  additionalNamespaces?: readonly string[];
+  memorySearchExtensions?: Record<string, unknown>;
   embeddingModel: EmbeddingModel;
   /** Per session; defaults to a new empty map. */
   embeddingCache?: Map<string, number[]>;
@@ -121,6 +128,13 @@ export function toMemorySearchEnv<TNode extends ZodLabelMap, TEdge extends ZodLa
     embeddingModel: args.embeddingModel,
     embeddingCache: args.embeddingCache ?? new Map(),
     ...(memorySearchBudget !== undefined ? { memorySearchBudget } : {}),
+    ...(args.additionalNamespaces?.length
+      ? { additionalNamespaces: args.additionalNamespaces }
+      : {}),
+    ...(args.memorySearchExtensions !== undefined &&
+    Object.keys(args.memorySearchExtensions).length > 0
+      ? { memorySearchExtensions: { ...args.memorySearchExtensions } }
+      : {}),
   };
 }
 
@@ -130,6 +144,8 @@ export function buildMemorySearchToolkitContext<
 >(args: {
   client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;
   namespace: string;
+  additionalNamespaces?: readonly string[];
+  memorySearchExtensions?: Record<string, unknown>;
   embeddingModel: EmbeddingModel;
   agentId?: string;
   agentName?: string;
@@ -149,6 +165,8 @@ export function buildMemorySearchToolRuntimeContext<
 >(args: {
   client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;
   namespace: string;
+  additionalNamespaces?: readonly string[];
+  memorySearchExtensions?: Record<string, unknown>;
   embeddingModel: EmbeddingModel;
   agentId?: string;
   agentName?: string;
