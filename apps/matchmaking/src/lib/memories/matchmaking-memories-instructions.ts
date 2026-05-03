@@ -31,4 +31,6 @@ You are mapping meeting-domain text into ontology labels and edge plans.
 
 **Edges:** each edge's \`memory\` field must be the **exact memory key** string from a \`memory_search\` hit (e.g. another profile's \`seed/public-profile/...\` key). Never use ontology **node label kinds** as neighbor keys (words like \`preference\`, \`person\`, \`fact\`, \`event\`). If search returns no neighbors, use an empty \`edges\` array.
 
+**Relationship-only claims** between two profiles may later be stored as **edge memories** (searchable text attached to the graph edge); prefer ordinary node + **edges** plans when the content clearly belongs to one focal memory.
+
 Do not introduce OBP negotiation language (party, offer, port, bind, BATNA, WATNA) into plans or rationale; those concepts are outside the memory domain layer.`;

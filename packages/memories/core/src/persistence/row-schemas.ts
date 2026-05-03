@@ -5,12 +5,20 @@ import { defineSchema, zId } from "./define-schema";
 /** Lowercase SHA-256 hex digest (64 chars, no `0x`). */
 export const zSha256HexLower = z.string().regex(/^[0-9a-f]{64}$/);
 
+/** Root memory: indexed content attached to a primary graph node, or to a single graph edge. */
+export const zMemoryKind = z.enum(["node", "edge"]);
+export type MemoryKind = z.infer<typeof zMemoryKind>;
+
 /**
- * A memory is a collection of features with tightly shared semantics
+ * A memory is a collection of features with tightly shared semantics.
+ * `kind: edge` rows reference exactly one `edges` row via `edge_id` (no primary `nodes` row for `key`).
  */
 export const zMemory = z.object({
   namespace: z.string().regex(MEMORY_NAMESPACE_PATH_REGEX).max(128),
   key: z.string(),
+  kind: zMemoryKind,
+  /** Set when `kind` is `edge`; unique per non-null value. */
+  edge_id: zId("edges").optional(),
   /** Denormalized cumulative namespace prefixes for subtree filtering (1..6 segments). */
   ns_prefix_1: z.string().optional(),
   ns_prefix_2: z.string().optional(),

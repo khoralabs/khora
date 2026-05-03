@@ -14,7 +14,8 @@ const doc = documentValidator(memoriesPersistenceDocumentSchema, "memory_provena
 export function getProvenanceHeadRootHex(db: Database): string | undefined {
   const row = db
     .query<{ root_hex: string }, []>(
-      `SELECT root_hex FROM memory_provenance ORDER BY _ts_created DESC, _id DESC LIMIT 1`,
+      // Tie-break with rowid: `_id` sort order is unrelated to chain order; same-ms merges must see latest link.
+      `SELECT root_hex FROM memory_provenance ORDER BY _ts_created DESC, rowid DESC LIMIT 1`,
     )
     .get();
   return row?.root_hex;

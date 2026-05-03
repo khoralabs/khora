@@ -30,7 +30,7 @@ export function insertEdge(
     properties: input.properties,
   });
   db.run(
-    `INSERT INTO edges (_id, _ts_created, from_node_id, to_node_id, properties) VALUES (?, ?, ?, ?, ?)`,
+    `INSERT OR REPLACE INTO edges (_id, _ts_created, from_node_id, to_node_id, properties) VALUES (?, ?, ?, ?, ?)`,
     [edgeId, now, input.fromNodeId, input.toNodeId, jsonOrNull(input.properties)],
   );
   return { edgeId };

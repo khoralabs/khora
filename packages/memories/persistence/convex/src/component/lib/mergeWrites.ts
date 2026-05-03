@@ -40,11 +40,8 @@ export async function removeMemorySearchMeta(ctx: MutationCtx, memoryId: string)
   if (sm._id !== undefined) await ctx.db.delete(sm._id);
 }
 
-export async function clearMemorySubtreeImpl(
-  ctx: MutationCtx,
-  memoryId: string,
-  nodeId: string,
-): Promise<void> {
+/** Deletes indexed features and source maps for one memory (no graph topology). */
+async function deleteIndexedFeaturesForMemory(ctx: MutationCtx, memoryId: string): Promise<void> {
   const tfs = await ctx.db
     .query("text_features")
     .withIndex("by_memoryId_tsCreated", (q) => q.eq("memoryId", memoryId))
@@ -65,7 +62,9 @@ export async function clearMemorySubtreeImpl(
     .withIndex("by_memoryId_tsCreated", (q) => q.eq("memoryId", memoryId))
     .collect();
   for (const r of sms) await ctx.db.delete(r._id);
+}
 
+async function deleteIncidentEdgesForNode(ctx: MutationCtx, nodeId: string): Promise<void> {
   const from = await ctx.db
     .query("edges")
     .withIndex("by_from", (q) => q.eq("fromNodeId", nodeId))
@@ -76,8 +75,17 @@ export async function clearMemorySubtreeImpl(
     .collect();
   const seen = new Set<string>();
   for (const e of [...from, ...to]) {
-    if (seen.has(e.edgeId)) continue;
+    if (e.edgeId === undefined || seen.has(e.edgeId)) continue;
     seen.add(e.edgeId);
+    const linked = await ctx.db
+      .query("memories")
+      .withIndex("by_edgeId", (q) => q.eq("edgeId", e.edgeId))
+      .collect();
+    for (const m of linked) {
+      if (m.memoryId === undefined) continue;
+      await deleteIndexedFeaturesForMemory(ctx, m.memoryId);
+      if (m._id !== undefined) await ctx.db.delete(m._id);
+    }
     const assigns = await ctx.db
       .query("edge_label_assignments")
       .withIndex("by_edge_label", (q) => q.eq("edgeId", e.edgeId))
@@ -85,10 +93,30 @@ export async function clearMemorySubtreeImpl(
     for (const a of assigns) await ctx.db.delete(a._id);
     await ctx.db.delete(e._id);
   }
+}
+
+export async function clearMemorySubtreeImpl(
+  ctx: MutationCtx,
+  input:
+    | { memoryKind: "node"; memoryId: string; nodeId: string }
+    | { memoryKind: "edge"; memoryId: string; edgeId: string },
+): Promise<void> {
+  if (input.memoryKind === "edge") {
+    await deleteIndexedFeaturesForMemory(ctx, input.memoryId);
+    const assigns = await ctx.db
+      .query("edge_label_assignments")
+      .withIndex("by_edge_label", (q) => q.eq("edgeId", input.edgeId))
+      .collect();
+    for (const a of assigns) await ctx.db.delete(a._id);
+    return;
+  }
+
+  await deleteIndexedFeaturesForMemory(ctx, input.memoryId);
+  await deleteIncidentEdgesForNode(ctx, input.nodeId);
 
   const nlas = await ctx.db
     .query("node_label_assignments")
-    .withIndex("by_node_label", (q) => q.eq("nodeId", nodeId))
+    .withIndex("by_node_label", (q) => q.eq("nodeId", input.nodeId))
     .collect();
   for (const r of nlas) await ctx.db.delete(r._id);
 }
@@ -105,6 +133,29 @@ export async function findMemoryIdByKey(
   return mem?.memoryId;
 }
 
+export async function findMemoryAssociationImpl(
+  ctx: MutationCtx,
+  namespace: string,
+  key: string,
+): Promise<
+  | { memoryId: string; kind: "node"; nodeId: string }
+  | { memoryId: string; kind: "edge"; edgeId: string }
+  | null
+> {
+  const memoryId = ids.memory(namespace, key);
+  const row = await ctx.db
+    .query("memories")
+    .withIndex("by_memoryId_tsCreated", (q) => q.eq("memoryId", memoryId))
+    .unique();
+  if (!row) return null;
+  const kind = row.kind ?? "node";
+  if (kind === "edge") {
+    if (!row.edgeId) throw new Error(`findMemoryAssociation: edge memory missing edgeId for ${key}`);
+    return { memoryId, kind: "edge", edgeId: row.edgeId };
+  }
+  return { memoryId, kind: "node", nodeId: ids.node(namespace, key) };
+}
+
 export async function nodeExists(ctx: MutationCtx, nodeId: string): Promise<boolean> {
   const n = await ctx.db
     .query("nodes")
@@ -115,9 +166,17 @@ export async function nodeExists(ctx: MutationCtx, nodeId: string): Promise<bool
 
 export async function upsertMemoryImpl(
   ctx: MutationCtx,
-  args: { namespace: string; key: string; now: number },
+  args: {
+    namespace: string;
+    key: string;
+    now: number;
+    kind?: "node" | "edge";
+    edgeId?: string | null;
+  },
 ): Promise<{ memoryId: string; _ts_created: number }> {
   const { namespace, key, now } = args;
+  const kind = args.kind ?? "node";
+  const edgeId = kind === "edge" ? (args.edgeId ?? undefined) : undefined;
   const memoryId = ids.memory(namespace, key);
   const existing = await ctx.db
     .query("memories")
@@ -125,12 +184,20 @@ export async function upsertMemoryImpl(
     .unique();
   const tsCreated = existing?.tsCreated ?? now;
   if (existing) {
-    await ctx.db.patch(existing._id, { namespace, key, tsCreated });
+    await ctx.db.patch(existing._id, {
+      namespace,
+      key,
+      kind,
+      edgeId,
+      tsCreated,
+    });
   } else {
     await ctx.db.insert("memories", {
       memoryId,
       namespace,
       key,
+      kind,
+      edgeId,
       tsCreated: now,
     });
   }
@@ -335,17 +402,34 @@ export async function insertEdgeImpl(
     idParts.otherMemoryKey,
   );
   const propertiesJson = properties === undefined ? undefined : JSON.stringify(properties ?? {});
-  await ctx.db.insert("edges", {
-    edgeId,
-    fromNodeId,
-    toNodeId,
-    namespace: fromNode.namespace,
-    propertiesJson,
-    idPartsSelfKey: idParts.selfMemoryKey,
-    idPartsOtherKey: idParts.otherMemoryKey,
-    idPartsLabel: idParts.label,
-    tsCreated: now,
-  });
+  const existingEdge = await ctx.db
+    .query("edges")
+    .withIndex("by_edgeId", (q) => q.eq("edgeId", edgeId))
+    .unique();
+  if (existingEdge?._id !== undefined) {
+    await ctx.db.patch(existingEdge._id, {
+      fromNodeId,
+      toNodeId,
+      namespace: fromNode.namespace,
+      propertiesJson,
+      idPartsSelfKey: idParts.selfMemoryKey,
+      idPartsOtherKey: idParts.otherMemoryKey,
+      idPartsLabel: idParts.label,
+      tsCreated: now,
+    });
+  } else {
+    await ctx.db.insert("edges", {
+      edgeId,
+      fromNodeId,
+      toNodeId,
+      namespace: fromNode.namespace,
+      propertiesJson,
+      idPartsSelfKey: idParts.selfMemoryKey,
+      idPartsOtherKey: idParts.otherMemoryKey,
+      idPartsLabel: idParts.label,
+      tsCreated: now,
+    });
+  }
   return { edgeId };
 }
 

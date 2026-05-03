@@ -7,6 +7,7 @@ import type {
 import { ids, namespacePath } from "@cfd/memories-core";
 import type { Edge, Memory } from "@cfd/memories-core/persistence";
 import type { QueryCtx } from "../_generated/server.js";
+import { loadGraphEdge } from "./graphReads.js";
 import { parsePropsJson } from "./helpers.js";
 
 export type HydratedNeighborRow = Memory & {
@@ -193,6 +194,7 @@ export async function listNeighborsForMemory<
         _ts_created: row.memoryCreated,
         namespace: namespacePath(row.namespace),
         key: row.key,
+        kind: "node",
       },
       edge: {
         _id: row.edgeId,
@@ -281,4 +283,34 @@ export async function listNeighborsForMemory<
       },
     ];
   });
+}
+
+/** Endpoint neighbors for one edge id (used when expanding search from an edge memory root). */
+export async function listNeighborsForEdgeMemory<
+  EDGE_LABEL extends string = string,
+  NODE_LABEL extends string = string,
+>(
+  ctx: QueryCtx,
+  input: {
+    namespace: string;
+    edgeId: string;
+    filters?: NeighborFilter<EDGE_LABEL, NODE_LABEL>;
+  },
+): Promise<HydratedNeighborRow[]> {
+  const link = await loadGraphEdge(ctx, input.namespace, input.edgeId);
+  if (!link) return [];
+  const fromN = await listNeighborsForMemory(ctx, {
+    namespace: input.namespace,
+    key: link.fromKey,
+    ...(input.filters !== undefined ? { filters: input.filters } : {}),
+  });
+  const toN = await listNeighborsForMemory(ctx, {
+    namespace: input.namespace,
+    key: link.toKey,
+    ...(input.filters !== undefined ? { filters: input.filters } : {}),
+  });
+  return [
+    ...fromN.filter((n) => n.edge._id === input.edgeId),
+    ...toN.filter((n) => n.edge._id === input.edgeId),
+  ];
 }

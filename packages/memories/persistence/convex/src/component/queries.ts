@@ -26,7 +26,10 @@ import {
   listNeighborMemoryKeysForNode,
   parsePropsJson,
 } from "./lib/helpers.js";
-import { listNeighborsForMemory as listNeighborsForMemoryImpl } from "./lib/neighborReads.js";
+import {
+  listNeighborsForEdgeMemory as listNeighborsForEdgeMemoryImpl,
+  listNeighborsForMemory as listNeighborsForMemoryImpl,
+} from "./lib/neighborReads.js";
 import { getProvenanceHeadRootHexImpl } from "./lib/provenanceConvex.js";
 import { CONVEX_VECTOR_DIMENSIONS, vectorTableNameForDim } from "./lib/vectorConfig.js";
 
@@ -84,6 +87,11 @@ const vGraphNode = v.object({
   properties: v.union(v.record(v.string(), v.any()), v.null()),
 });
 
+const vMemoryGraphAssociation = v.union(
+  v.object({ kind: v.literal("node") }),
+  v.object({ kind: v.literal("edge"), edge: vGraphEdgeLink }),
+);
+
 const vHydratedSourceMapHit = v.object({
   _id: v.string(),
   _ts_created: v.number(),
@@ -94,8 +102,44 @@ const vHydratedSourceMapHit = v.object({
     _ts_created: v.number(),
     namespace: v.string(),
     key: v.string(),
+    kind: v.optional(v.union(v.literal("node"), v.literal("edge"))),
+    edge_id: v.optional(v.string()),
   }),
   labels: v.array(vHydratedLabel),
+  graph: vMemoryGraphAssociation,
+});
+
+export const findMemoryAssociation = query({
+  args: { namespace: v.string(), key: v.string() },
+  returns: v.union(
+    v.null(),
+    v.object({
+      memoryId: v.string(),
+      kind: v.literal("node"),
+      nodeId: v.string(),
+    }),
+    v.object({
+      memoryId: v.string(),
+      kind: v.literal("edge"),
+      edgeId: v.string(),
+    }),
+  ),
+  handler: async (ctx, { namespace, key }) => {
+    const memoryId = ids.memory(namespace, key);
+    const row = await ctx.db
+      .query("memories")
+      .withIndex("by_memoryId_tsCreated", (q) => q.eq("memoryId", memoryId))
+      .unique();
+    if (!row) return null;
+    const kind = row.kind ?? "node";
+    if (kind === "edge") {
+      if (!row.edgeId) {
+        throw new Error(`findMemoryAssociation: edge memory missing edgeId for ${key}`);
+      }
+      return { memoryId, kind: "edge" as const, edgeId: row.edgeId };
+    }
+    return { memoryId, kind: "node" as const, nodeId: ids.node(namespace, key) };
+  },
 });
 
 export const findMemoryIdByKey = query({
@@ -295,6 +339,44 @@ export const hydrateSourceMapHits = query({
         .withIndex("by_memoryId_tsCreated", (q) => q.eq("memoryId", sm.memoryId))
         .unique();
       if (!mem) continue;
+      const mk = mem.kind ?? "node";
+      const memory = {
+        _id: mem.memoryId,
+        _ts_created: mem.tsCreated,
+        namespace: namespacePath(mem.namespace),
+        key: mem.key,
+        kind: mk === "edge" ? ("edge" as const) : ("node" as const),
+        ...(mk === "edge" && mem.edgeId ? { edge_id: mem.edgeId } : {}),
+      };
+
+      if (mk === "edge" && mem.edgeId) {
+        const edgeId = mem.edgeId;
+        const link = await loadGraphEdgeImpl(ctx, mem.namespace, edgeId);
+        const elas = await ctx.db
+          .query("edge_label_assignments")
+          .withIndex("by_edge_label", (q) => q.eq("edgeId", edgeId))
+          .collect();
+        const labels: Array<{ kind: string; props: Record<string, unknown> }> = [];
+        for (const a of elas) {
+          const el = await ctx.db
+            .query("edge_labels")
+            .withIndex("by_labelId", (q) => q.eq("labelId", a.labelId))
+            .unique();
+          if (el) labels.push({ kind: el.kind, props: parsePropsJson(a.propsJson) });
+        }
+        labels.sort((a, b) => a.kind.localeCompare(b.kind));
+        hits.push({
+          _id: sm.sourceMapId,
+          _ts_created: sm.tsCreated,
+          memory_id: sm.memoryId,
+          source_key: sm.sourceKey,
+          memory,
+          labels,
+          graph: link ? { kind: "edge" as const, edge: link } : { kind: "node" as const },
+        });
+        continue;
+      }
+
       const nodeId = ids.node(mem.namespace, mem.key);
       const assignments = await ctx.db
         .query("node_label_assignments")
@@ -316,13 +398,9 @@ export const hydrateSourceMapHits = query({
         _ts_created: sm.tsCreated,
         memory_id: sm.memoryId,
         source_key: sm.sourceKey,
-        memory: {
-          _id: mem.memoryId,
-          _ts_created: mem.tsCreated,
-          namespace: mem.namespace,
-          key: mem.key,
-        },
+        memory,
         labels,
+        graph: { kind: "node" as const },
       });
     }
     return hits;
@@ -340,6 +418,21 @@ export const listNeighborsForMemory = query({
     listNeighborsForMemoryImpl(ctx, {
       namespace: args.namespace,
       key: args.key,
+      ...(args.filters !== undefined ? { filters: args.filters } : {}),
+    }),
+});
+
+export const listNeighborsForEdgeMemory = query({
+  args: {
+    namespace: v.string(),
+    edgeId: v.string(),
+    filters: v.optional(vNeighborFilter),
+  },
+  returns: v.array(vHydratedNeighbor),
+  handler: async (ctx, args) =>
+    listNeighborsForEdgeMemoryImpl(ctx, {
+      namespace: args.namespace,
+      edgeId: args.edgeId,
       ...(args.filters !== undefined ? { filters: args.filters } : {}),
     }),
 });

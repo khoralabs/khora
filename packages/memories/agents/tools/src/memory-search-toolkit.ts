@@ -33,9 +33,13 @@ export function embeddingCacheKey(namespace: string, queryText: string): string 
  */
 export type MemorySearchHit = {
   memory_key: string;
+  /** `node` vs `edge` memory (edge hits carry optional graph edge summary). */
+  kind: "node" | "edge";
   score: number;
   labels: OntologyLabelInstance[];
   source_key: string;
+  /** Present when `kind` is `edge` (endpoint keys + edge label kinds). */
+  edge?: { from_key: string; to_key: string; edge_label_kinds: string[] };
   neighbors?: Array<{ memory_key: string; labels: OntologyLabelInstance[] }>;
 };
 
@@ -44,10 +48,18 @@ const MAX_NEIGHBORS_PER_HIT = 8;
 function mapSearchHit(hit: SearchHit): MemorySearchHit {
   const row: MemorySearchHit = {
     memory_key: hit.memory.key,
+    kind: hit.graph.kind === "edge" ? "edge" : "node",
     score: hit.score,
     labels: [...hit.labels],
     source_key: hit.source_key,
   };
+  if (hit.graph.kind === "edge") {
+    row.edge = {
+      from_key: hit.graph.edge.fromKey,
+      to_key: hit.graph.edge.toKey,
+      edge_label_kinds: hit.graph.edge.labels.map((l) => l.kind),
+    };
+  }
   if (hit.neighbors?.length) {
     row.neighbors = hit.neighbors.slice(0, MAX_NEIGHBORS_PER_HIT).map((n) => ({
       memory_key: n.key,

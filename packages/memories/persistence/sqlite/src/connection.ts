@@ -128,6 +128,23 @@ export function migrateMemoriesSchemaAdditive(db: Database): void {
   } catch {
     /* column already present */
   }
+  try {
+    db.run(`ALTER TABLE memories ADD COLUMN kind TEXT NOT NULL DEFAULT 'node'`);
+  } catch {
+    /* column already present */
+  }
+  try {
+    db.run(`ALTER TABLE memories ADD COLUMN edge_id TEXT`);
+  } catch {
+    /* column already present */
+  }
+  try {
+    db.run(
+      `CREATE UNIQUE INDEX IF NOT EXISTS idx_memories_edge_id_unique ON memories(edge_id) WHERE edge_id IS NOT NULL`,
+    );
+  } catch {
+    /* index exists or legacy schema */
+  }
 }
 
 export function initMemoriesSchema(db: Database): void {

@@ -6,11 +6,32 @@ const cm = components.memories.mutations;
 
 /** Host forwards for browser {@link ConvexReactClient}. */
 export const clearMemorySubtree = mutation({
-  args: {
+  args: v.object({
+    memoryKind: v.union(v.literal("node"), v.literal("edge")),
     memoryId: v.string(),
-    nodeId: v.string(),
+    nodeId: v.optional(v.string()),
+    edgeId: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    if (args.memoryKind === "node") {
+      if (!args.nodeId) {
+        throw new Error("clearMemorySubtree: nodeId required when memoryKind is node");
+      }
+      return ctx.runMutation(cm.clearMemorySubtree, {
+        memoryKind: "node",
+        memoryId: args.memoryId,
+        nodeId: args.nodeId,
+      });
+    }
+    if (!args.edgeId) {
+      throw new Error("clearMemorySubtree: edgeId required when memoryKind is edge");
+    }
+    return ctx.runMutation(cm.clearMemorySubtree, {
+      memoryKind: "edge",
+      memoryId: args.memoryId,
+      edgeId: args.edgeId,
+    });
   },
-  handler: async (ctx, args) => ctx.runMutation(cm.clearMemorySubtree, args),
 });
 
 export const upsertMemory = mutation({
@@ -18,6 +39,8 @@ export const upsertMemory = mutation({
     namespace: v.string(),
     key: v.string(),
     now: v.number(),
+    kind: v.optional(v.union(v.literal("node"), v.literal("edge"))),
+    edgeId: v.optional(v.union(v.string(), v.null())),
   },
   handler: async (ctx, args) => ctx.runMutation(cm.upsertMemory, args),
 });
@@ -182,24 +205,82 @@ const vMergeLabel = v.object({
   props: v.record(v.string(), v.any()),
 });
 
+const vMergeEdgePayload = v.object({
+  from_key: v.string(),
+  to_key: v.string(),
+  label: v.object({
+    kind: v.string(),
+    props: v.record(v.string(), v.any()),
+  }),
+  properties: v.optional(v.record(v.string(), v.any())),
+});
+
 export const mergeMemoryAtomic = mutation({
-  args: {
+  args: v.object({
+    kind: v.optional(v.union(v.literal("node"), v.literal("edge"))),
     namespace: v.string(),
     key: v.string(),
     content: v.array(vMergeContentItem),
-    labels: v.array(vMergeLabel),
+    labels: v.optional(v.array(vMergeLabel)),
     properties: v.optional(v.record(v.string(), v.any())),
     edges: v.optional(v.array(vMergeEdge)),
+    edge: v.optional(vMergeEdgePayload),
     searchMetaVector: v.optional(v.array(v.float64())),
     now: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const branch = args.kind ?? "node";
+    if (branch === "edge") {
+      if (!args.edge) {
+        throw new Error("mergeMemoryAtomic: edge payload required when kind is edge");
+      }
+      return ctx.runMutation(cm.mergeMemoryAtomic, {
+        kind: "edge",
+        namespace: args.namespace,
+        key: args.key,
+        content: args.content,
+        edge: args.edge,
+        searchMetaVector: args.searchMetaVector,
+        now: args.now,
+      });
+    }
+    return ctx.runMutation(cm.mergeMemoryAtomic, {
+      namespace: args.namespace,
+      key: args.key,
+      content: args.content,
+      labels: args.labels ?? [],
+      properties: args.properties,
+      edges: args.edges,
+      searchMetaVector: args.searchMetaVector,
+      now: args.now,
+    });
   },
-  handler: async (ctx, args) => ctx.runMutation(cm.mergeMemoryAtomic, args),
 });
 
 export const deleteMemoryRootRows = mutation({
-  args: {
-    memoryId: v.string(),
-    nodeId: v.string(),
+  args: v.object({
+    memoryKind: v.union(v.literal("node"), v.literal("edge")),
+    memoryId: v.optional(v.string()),
+    nodeId: v.optional(v.string()),
+    edgeId: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    if (args.memoryKind === "node") {
+      if (!args.memoryId || !args.nodeId) {
+        throw new Error("deleteMemoryRootRows: memoryId and nodeId required when memoryKind is node");
+      }
+      return ctx.runMutation(cm.deleteMemoryRootRows, {
+        memoryKind: "node",
+        memoryId: args.memoryId,
+        nodeId: args.nodeId,
+      });
+    }
+    if (!args.edgeId) {
+      throw new Error("deleteMemoryRootRows: edgeId required when memoryKind is edge");
+    }
+    return ctx.runMutation(cm.deleteMemoryRootRows, {
+      memoryKind: "edge",
+      edgeId: args.edgeId,
+    });
   },
-  handler: async (ctx, args) => ctx.runMutation(cm.deleteMemoryRootRows, args),
 });

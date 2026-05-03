@@ -2,6 +2,7 @@ import type { SQLQueryBindings } from "bun:sqlite";
 import {
   canonicalizeNamespacePrefixes,
   ids,
+  type MemoryGraphAssociation,
   type NeighborConstraint,
   type NeighborFilter,
   type NeighborNodesFilter,
@@ -12,6 +13,7 @@ import {
   type SearchNamespaceScope,
 } from "@cfd/memories-core";
 import type { Edge, Memory, SourceMap } from "@cfd/memories-core/persistence";
+import { loadGraphEdge } from "../visualization/projection";
 import { vectorVecTableName } from "../search-indexes";
 import type { DbCtx } from "./context";
 
@@ -24,6 +26,7 @@ export type {
 export type HydratedSourceMapHit = SourceMap & {
   memory: Memory;
   labels: OntologyLabelInstance[];
+  graph: MemoryGraphAssociation;
 };
 
 export type HydratedNeighbor = Memory & {
@@ -284,6 +287,8 @@ export function hydrateSourceMapHits(
         memoryCreated: number;
         namespace: string;
         key: string;
+        memoryKind: string | null;
+        memoryEdgeId: string | null;
       },
       string[]
     >(
@@ -294,32 +299,58 @@ export function hydrateSourceMapHits(
          sm.source_key AS sourceKey,
          m._ts_created AS memoryCreated,
          m.namespace AS namespace,
-         m.key AS key
+         m.key AS key,
+         m.kind AS memoryKind,
+         m.edge_id AS memoryEdgeId
        FROM source_maps sm
        JOIN memories m ON m._id = sm.memory_id
        WHERE sm._id IN (${placeholders(sourceMapIds.length)})`,
     )
     .all(...sourceMapIds);
 
-  const bySourceMapId = new Map(
-    sourceMapRows.map((row) => [
-      row.sourceMapId,
-      {
-        _id: row.sourceMapId,
-        _ts_created: row.sourceMapCreated,
-        memory_id: row.memoryId,
-        source_key: row.sourceKey,
-        memory: {
-          _id: row.memoryId,
-          _ts_created: row.memoryCreated,
-          namespace: namespacePath(row.namespace),
-          key: row.key,
-        } satisfies Memory,
-      },
-    ]),
+  type HitRow = {
+    _id: string;
+    _ts_created: number;
+    memory_id: string;
+    source_key: string;
+    memory: Memory;
+    memoryKind: string;
+    memoryEdgeId: string | null;
+  };
+
+  const bySourceMapId = new Map<string, HitRow>(
+    sourceMapRows.map((row) => {
+      const mk = row.memoryKind ?? "node";
+      const mem: Memory = {
+        _id: row.memoryId,
+        _ts_created: row.memoryCreated,
+        namespace: namespacePath(row.namespace),
+        key: row.key,
+        kind: mk === "edge" ? "edge" : "node",
+        ...(mk === "edge" && row.memoryEdgeId ? { edge_id: row.memoryEdgeId } : {}),
+      };
+      return [
+        row.sourceMapId,
+        {
+          _id: row.sourceMapId,
+          _ts_created: row.sourceMapCreated,
+          memory_id: row.memoryId,
+          source_key: row.sourceKey,
+          memory: mem,
+          memoryKind: mk,
+          memoryEdgeId: row.memoryEdgeId,
+        },
+      ];
+    }),
   );
 
-  const nodeIds = [...new Set(sourceMapRows.map((row) => ids.node(row.namespace, row.key)))];
+  const nodeIds = [
+    ...new Set(
+      sourceMapRows
+        .filter((row) => (row.memoryKind ?? "node") !== "edge")
+        .map((row) => ids.node(row.namespace, row.key)),
+    ),
+  ];
   const labelsByNodeId = new Map<string, OntologyLabelInstance[]>();
   if (nodeIds.length > 0) {
     const labelRows = ctx.db
@@ -339,9 +370,58 @@ export function hydrateSourceMapHits(
     }
   }
 
+  const edgeIds = [
+    ...new Set(
+      sourceMapRows
+        .filter((row) => (row.memoryKind ?? "node") === "edge" && row.memoryEdgeId)
+        .map((row) => row.memoryEdgeId!),
+    ),
+  ];
+  const edgeLabelsByEdgeId = new Map<string, OntologyLabelInstance[]>();
+  if (edgeIds.length > 0) {
+    const elRows = ctx.db
+      .query<{ edgeId: string; kind: string; propsJson: string | null }, string[]>(
+        `SELECT ela.edge_id AS edgeId, el.kind AS kind, ela.props AS propsJson
+         FROM edge_label_assignments ela
+         JOIN edge_labels el ON el._id = ela.label_id
+         WHERE ela.edge_id IN (${placeholders(edgeIds.length)})
+         ORDER BY el.kind ASC`,
+      )
+      .all(...edgeIds);
+    for (const { edgeId, kind, propsJson } of elRows) {
+      const ls = edgeLabelsByEdgeId.get(edgeId) ?? [];
+      ls.push({ kind, props: parsePropsColumn(propsJson) });
+      edgeLabelsByEdgeId.set(edgeId, ls);
+    }
+  }
+
+  const graphEdgeByEdgeId = new Map<string, NonNullable<ReturnType<typeof loadGraphEdge>>>();
+  for (const eid of edgeIds) {
+    const ns = sourceMapRows.find((r) => r.memoryEdgeId === eid)?.namespace ?? "";
+    const link = loadGraphEdge(ctx.db, ns, eid);
+    if (link) graphEdgeByEdgeId.set(eid, link);
+  }
+
   return sourceMapIds.flatMap((sourceMapId) => {
     const row = bySourceMapId.get(sourceMapId);
     if (!row) return [];
+    const mk = row.memoryKind ?? "node";
+    if (mk === "edge" && row.memoryEdgeId) {
+      const edgeLink = graphEdgeByEdgeId.get(row.memoryEdgeId);
+      return [
+        {
+          _id: row._id,
+          _ts_created: row._ts_created,
+          memory_id: row.memory_id,
+          source_key: row.source_key,
+          memory: row.memory,
+          labels: edgeLabelsByEdgeId.get(row.memoryEdgeId) ?? [],
+          graph: edgeLink
+            ? { kind: "edge" as const, edge: edgeLink }
+            : { kind: "node" as const },
+        },
+      ];
+    }
     const nodeId = ids.node(row.memory.namespace, row.memory.key);
     return [
       {
@@ -351,6 +431,7 @@ export function hydrateSourceMapHits(
         source_key: row.source_key,
         memory: row.memory,
         labels: labelsByNodeId.get(nodeId) ?? [],
+        graph: { kind: "node" as const },
       },
     ];
   });
@@ -524,4 +605,34 @@ export function listNeighborsForMemory<
       },
     ];
   });
+}
+
+/** Both endpoint node memories for one graph edge, for neighbor sub-search from an edge memory root. */
+export function listNeighborsForEdgeMemory<
+  EDGE_LABEL extends string = string,
+  NODE_LABEL extends string = string,
+>(
+  ctx: DbCtx,
+  input: {
+    namespace: string;
+    edgeId: string;
+    filters?: NeighborFilter<EDGE_LABEL, NODE_LABEL>;
+  },
+): HydratedNeighbor[] {
+  const link = loadGraphEdge(ctx.db, input.namespace, input.edgeId);
+  if (!link) return [];
+  const fromN = listNeighborsForMemory<EDGE_LABEL, NODE_LABEL>(ctx, {
+    namespace: input.namespace,
+    key: link.fromKey,
+    filters: input.filters,
+  });
+  const toN = listNeighborsForMemory<EDGE_LABEL, NODE_LABEL>(ctx, {
+    namespace: input.namespace,
+    key: link.toKey,
+    filters: input.filters,
+  });
+  return [
+    ...fromN.filter((n) => n.edge._id === input.edgeId),
+    ...toN.filter((n) => n.edge._id === input.edgeId),
+  ];
 }

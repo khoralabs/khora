@@ -4,7 +4,11 @@ import { MEMORY_SEARCH_META_SOURCE_KEY } from "../models/memory-search-meta";
 import type { NamespacePath } from "../models/namespace-path";
 import { zNamespacePath } from "../models/namespace-path";
 import { zVectorPayload } from "../persistence/row-schemas";
-import { type MemoriesPersistence, resolveMemoriesBackendCapabilities } from "../persistence/types";
+import {
+  type MemoriesPersistence,
+  type MemoryOpContext,
+  resolveMemoriesBackendCapabilities,
+} from "../persistence/types";
 import { computeSourceMapContentHash } from "../provenance/index.ts";
 import type {
   EdgeLabelInstance,
@@ -47,10 +51,12 @@ export const zMergeMemoryContentItem = z
     message: "content item must include text and/or vector",
   });
 
-export interface MergeMemoryParams<
+/** Merge into a **node** memory (primary graph node + optional incident edges). */
+export type MergeMemoryParamsNode<
   TNode extends LabelSchemaMap = LabelSchemaMap,
   TEdge extends LabelSchemaMap = LabelSchemaMap,
-> {
+> = {
+  kind?: "node";
   key: string;
   namespace: NamespacePath;
   content: MergeMemoryContentItem[];
@@ -62,17 +68,33 @@ export interface MergeMemoryParams<
     label: EdgeLabelInstance<TEdge>;
     properties?: Record<string, unknown>;
   }>;
-  /**
-   * Optional in-transaction vector for the **primary** memory’s search-meta row only (same dim as content).
-   * Neighbors touched in the same merge do not get a vector here; use {@link upsertMemorySearchMetaVector}
-   * after merge (see librarian batch) so every meta chunk participates in hybrid search.
-   */
   searchMetaVector?: number[];
-  /**
-   * When set, catalog rows for kinds in this merge receive JSON Schema derived from Zod (`zodPropsSchemaToJson`).
-   */
   ontology?: OntologyDefinition<TNode, TEdge>;
-}
+};
+
+/** Merge into an **edge** memory (searchable unit attached to one graph edge). */
+export type MergeMemoryParamsEdge<
+  TNode extends LabelSchemaMap = LabelSchemaMap,
+  TEdge extends LabelSchemaMap = LabelSchemaMap,
+> = {
+  kind: "edge";
+  key: string;
+  namespace: NamespacePath;
+  content: MergeMemoryContentItem[];
+  edge: {
+    from_key: string;
+    to_key: string;
+    label: EdgeLabelInstance<TEdge>;
+    properties?: Record<string, unknown>;
+  };
+  searchMetaVector?: number[];
+  ontology?: OntologyDefinition<TNode, TEdge>;
+};
+
+export type MergeMemoryParams<
+  TNode extends LabelSchemaMap = LabelSchemaMap,
+  TEdge extends LabelSchemaMap = LabelSchemaMap,
+> = MergeMemoryParamsNode<TNode, TEdge> | MergeMemoryParamsEdge<TNode, TEdge>;
 
 /**
  * Edge JSON stored on merge: keeps caller `edge.properties` and sets `directed: true` so graph
@@ -106,21 +128,13 @@ export function catalogSchemaJsonForEdgeKind(
   return JSON.stringify(zodPropsSchemaToJson(sch));
 }
 
-/**
- * Orchestrates a memory merge: validates API input, then delegates storage to the persistence backend.
- * @returns Memory keys whose search-meta lexical row was rebuilt (primary, former neighbors, new edge targets).
- */
-export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams): string[] {
-  const { persistence } = ctx;
+function validateContentAndMetaVector(
+  persistence: MemoriesPersistence,
+  content: MergeMemoryContentItem[],
+  searchMetaVector: number[] | undefined,
+): void {
   const caps = resolveMemoriesBackendCapabilities(persistence);
-  const now = Date.now();
-  const op = { now };
-
-  const namespace = zNamespacePath.parse(params.namespace);
-  const memoryId = ids.memory(namespace, params.key);
-  const nodeId = ids.node(namespace, params.key);
-
-  for (const item of params.content) {
+  for (const item of content) {
     zMergeMemoryContentItem.parse(item);
     if (item.vector !== undefined) {
       if (!caps.vectorSearch) {
@@ -131,53 +145,103 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams): string
       zVectorPayload.parse(item.vector);
     }
   }
-
-  if (params.searchMetaVector !== undefined && params.searchMetaVector.length > 0) {
+  if (searchMetaVector !== undefined && searchMetaVector.length > 0) {
     if (!caps.vectorSearch) {
       throw new Error(
         "mergeMemory: searchMetaVector set but persistence.capabilities.vectorSearch is false",
       );
     }
-    zVectorPayload.parse(params.searchMetaVector);
+    zVectorPayload.parse(searchMetaVector);
   }
+}
+
+function insertContentItems(
+  persistence: MemoriesPersistence,
+  op: MemoryOpContext,
+  memoryId: string,
+  content: MergeMemoryContentItem[],
+): { contentHashes: Record<string, string>; sourceKeysSorted: string[] } {
+  const contentHashes: Record<string, string> = {};
+  for (const raw of content) {
+    const item = zMergeMemoryContentItem.parse(raw);
+    const { sourceMapId } = persistence.insertSourceMap(op, {
+      memoryId,
+      sourceKey: item.key,
+    });
+    const vec = item.vector !== undefined ? new Float32Array(item.vector) : undefined;
+    if (item.text !== undefined) {
+      persistence.insertLexicalFeature(op, {
+        memoryId,
+        sourceMapId,
+        text: item.text,
+      });
+    }
+    if (item.vector !== undefined) {
+      persistence.insertVectorFeature(op, {
+        memoryId,
+        sourceMapId,
+        vector: vec!,
+      });
+    }
+    persistence.updateSourceMapContentHash(op, {
+      sourceMapId,
+      text: item.text,
+      vector: vec,
+    });
+    contentHashes[item.key] = computeSourceMapContentHash({
+      text: item.text,
+      vector: vec,
+    });
+  }
+  const sourceKeysSorted = content
+    .map((raw) => zMergeMemoryContentItem.parse(raw).key)
+    .sort((a, b) => a.localeCompare(b));
+  return { contentHashes, sourceKeysSorted };
+}
+
+/**
+ * Orchestrates a memory merge: validates API input, then delegates storage to the persistence backend.
+ * @returns Memory keys whose search-meta lexical row was rebuilt (primary, former neighbors, new edge targets).
+ */
+export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams): string[] {
+  if (params.kind === "edge") {
+    return mergeMemoryEdge(ctx, params);
+  }
+  return mergeMemoryNode(ctx, params);
+}
+
+function mergeMemoryNode<TNode extends LabelSchemaMap, TEdge extends LabelSchemaMap>(
+  ctx: MutationCtx,
+  params: MergeMemoryParamsNode<TNode, TEdge>,
+): string[] {
+  const { persistence } = ctx;
+  const now = Date.now();
+  const op = { now };
+
+  const namespace = zNamespacePath.parse(params.namespace);
+  const memoryId = ids.memory(namespace, params.key);
+  const nodeId = ids.node(namespace, params.key);
+
+  validateContentAndMetaVector(persistence, params.content, params.searchMetaVector);
 
   let metaSyncedMemoryKeys: string[] = [];
 
   persistence.withTransaction(() => {
     const oldNeighborKeys = persistence.listNeighborMemoryKeysForNode(op, namespace, nodeId);
-    persistence.clearMemorySubtree(op, memoryId, nodeId);
-    persistence.upsertMemory(op, { namespace, key: params.key });
+    persistence.clearMemorySubtree(op, { memoryKind: "node", memoryId, nodeId });
+    persistence.upsertMemory(op, { namespace, key: params.key, kind: "node", edgeId: null });
     persistence.upsertNodeForMemoryKey(op, {
       namespace,
       memoryKey: params.key,
       properties: params.properties,
     });
 
-    const contentHashes: Record<string, string> = {};
-    for (const raw of params.content) {
-      const item = zMergeMemoryContentItem.parse(raw);
-      const { sourceMapId } = persistence.insertSourceMap(op, { memoryId, sourceKey: item.key });
-      const vec = item.vector !== undefined ? new Float32Array(item.vector) : undefined;
-      if (item.text !== undefined) {
-        persistence.insertLexicalFeature(op, { memoryId, sourceMapId, text: item.text });
-      }
-      if (item.vector !== undefined) {
-        persistence.insertVectorFeature(op, {
-          memoryId,
-          sourceMapId,
-          vector: vec!,
-        });
-      }
-      persistence.updateSourceMapContentHash(op, {
-        sourceMapId,
-        text: item.text,
-        vector: vec,
-      });
-      contentHashes[item.key] = computeSourceMapContentHash({
-        text: item.text,
-        vector: vec,
-      });
-    }
+    const { contentHashes, sourceKeysSorted } = insertContentItems(
+      persistence,
+      op,
+      memoryId,
+      params.content,
+    );
 
     const labelByKind = new Map<string, { kind: string; props: Record<string, unknown> }>();
     for (const l of params.labels) {
@@ -246,9 +310,127 @@ export function mergeMemory(ctx: MutationCtx, params: MergeMemoryParams): string
     }
     metaSyncedMemoryKeys = Array.from(syncKeys).sort((a, b) => a.localeCompare(b));
 
-    const sourceKeysSorted = params.content
-      .map((raw) => zMergeMemoryContentItem.parse(raw).key)
-      .sort((a, b) => a.localeCompare(b));
+    const sortedHashes =
+      Object.keys(contentHashes).length > 0
+        ? Object.fromEntries(
+            Object.keys(contentHashes)
+              .sort((a, b) => a.localeCompare(b))
+              .map((k) => [k, contentHashes[k]!]),
+          )
+        : undefined;
+    persistence.appendProvenanceEvent(op, {
+      v: 1,
+      kind: "MERGE_MEMORY",
+      namespace,
+      memory_key: params.key,
+      memory_id: memoryId,
+      source_keys: sourceKeysSorted,
+      ...(sortedHashes !== undefined ? { content_hashes: sortedHashes } : {}),
+    });
+  });
+
+  return metaSyncedMemoryKeys;
+}
+
+function mergeMemoryEdge<TNode extends LabelSchemaMap, TEdge extends LabelSchemaMap>(
+  ctx: MutationCtx,
+  params: MergeMemoryParamsEdge<TNode, TEdge>,
+): string[] {
+  const { persistence } = ctx;
+  const now = Date.now();
+  const op = { now };
+
+  const namespace = zNamespacePath.parse(params.namespace);
+  const memoryId = ids.memory(namespace, params.key);
+
+  validateContentAndMetaVector(persistence, params.content, params.searchMetaVector);
+
+  const { from_key: fromKey, to_key: toKey } = params.edge;
+  if (persistence.findMemoryIdByKey(namespace, fromKey) === undefined) {
+    throw new Error(`mergeMemory: unknown edge.from_key=${fromKey} in namespace=${namespace}`);
+  }
+  if (persistence.findMemoryIdByKey(namespace, toKey) === undefined) {
+    throw new Error(`mergeMemory: unknown edge.to_key=${toKey} in namespace=${namespace}`);
+  }
+  const fromNodeId = ids.node(namespace, fromKey);
+  const toNodeId = ids.node(namespace, toKey);
+  if (!persistence.nodeExists(fromNodeId)) {
+    throw new Error(`mergeMemory: node missing for edge.from_key=${fromKey}`);
+  }
+  if (!persistence.nodeExists(toNodeId)) {
+    throw new Error(`mergeMemory: node missing for edge.to_key=${toKey}`);
+  }
+
+  const edgeId = ids.edge(
+    fromNodeId,
+    toNodeId,
+    params.edge.label.kind,
+    fromKey,
+    toKey,
+  );
+
+  let metaSyncedMemoryKeys: string[] = [];
+
+  persistence.withTransaction(() => {
+    persistence.clearMemorySubtree(op, { memoryKind: "edge", memoryId, edgeId });
+
+    const { edgeId: persistedEdgeId } = persistence.insertEdge(op, {
+      fromNodeId,
+      toNodeId,
+      properties: withDirectedEdgeProperties(params.edge.properties),
+      idParts: {
+        label: params.edge.label.kind,
+        selfMemoryKey: fromKey,
+        otherMemoryKey: toKey,
+      },
+    });
+    if (persistedEdgeId !== edgeId) {
+      throw new Error("mergeMemory: edge id mismatch between preview and insertEdge");
+    }
+
+    persistence.upsertMemory(op, {
+      namespace,
+      key: params.key,
+      kind: "edge",
+      edgeId,
+    });
+
+    const { contentHashes, sourceKeysSorted } = insertContentItems(
+      persistence,
+      op,
+      memoryId,
+      params.content,
+    );
+
+    const edgeLabelId = persistence.ensureEdgeLabel(op, {
+      kind: params.edge.label.kind,
+      description: "",
+      schemaJson: catalogSchemaJsonForEdgeKind(params.ontology, params.edge.label.kind),
+    });
+    persistence.insertEdgeLabelAssignment(op, {
+      edgeId,
+      labelId: edgeLabelId,
+      props: params.edge.label.props as Record<string, unknown>,
+    });
+
+    const syncKeys = new Set([params.key, fromKey, toKey]);
+    const primaryMetaVec =
+      params.searchMetaVector !== undefined && params.searchMetaVector.length > 0
+        ? new Float32Array(params.searchMetaVector)
+        : undefined;
+    for (const k of syncKeys) {
+      persistence.syncMemorySearchMeta(op, {
+        namespace,
+        memoryKey: k,
+        metaVector: k === params.key ? primaryMetaVec : undefined,
+      });
+      persistence.syncLabelPropsSearchFeatures?.(op, {
+        namespace,
+        memoryKey: k,
+      });
+    }
+    metaSyncedMemoryKeys = Array.from(syncKeys).sort((a, b) => a.localeCompare(b));
+
     const sortedHashes =
       Object.keys(contentHashes).length > 0
         ? Object.fromEntries(

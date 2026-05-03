@@ -51,8 +51,8 @@ Merge callers pass structured `{ kind, props }` (see [`MergeMemoryParams`](../me
 
 ## `clearMemorySubtree` vs `deleteMemoryRootRows`
 
-- **`clearMemorySubtree`:** Removes dependent data for a memory (source maps, text/vector features, FTS rows, vector index rows, edges touching the subtree, label assignments, search-meta rows, etc.) while the implementation may still expect `memories` / `nodes` root rows to exist for the next steps in the same transaction. See reference `clearMemorySubtree` in this package.
-- **`deleteMemoryRootRows`:** Deletes the root `memories` and `nodes` rows (used at the end of `deleteMemory`).
+- **`clearMemorySubtree`:** Removes dependent data for a memory (source maps, text/vector features, FTS rows, vector index rows, label assignments, search-meta rows, etc.). **Node** memories also delete incident **edges** (and any **edge-attached** `memories` rows whose `edge_id` references those edges). **Edge** memories clear indexed features and edge label assignments for that edge without deleting neighbor nodes’ topology beyond what edge deletion implies.
+- **`deleteMemoryRootRows`:** For **node** memories, deletes the root `memories` and `nodes` rows. For **edge** memories, deletes the owning memory row and the **`edges`** row (same merge identity).
 - **Idempotency:** `deleteMemory` should be safe if the memory was already absent (reference clears then deletes roots).
 
 ## Content: source maps and features
@@ -85,7 +85,7 @@ Verkle trees, sparse Merkle non-membership proofs, and ZK reasoning over the KG 
 - **Namespace scope:** Both methods take a discriminated **`scope: SearchNamespaceScope`** instead of a single `namespace` string:
   - `{ kind: "union"; namespaces: readonly string[] }` — non-empty, deduped list; implement **one** retrieval pass with `namespace IN (...)` (or equivalent), or return only the first id if you intentionally support single-namespace only (core will use a per-namespace fallback when `multiNamespaceSearch` is `false`).
   - `{ kind: "unscoped" }` — no namespace predicate on retrieval (entire DB). Only used when the app sets `searchEntireDatabase: true` on [`SearchParams`](../memories-core/src/api/search.ts); reject at the API layer by leaving `unscopedSearch` as `false`.
-- **Hydration:** `hydrateSourceMapHits` expands ids to full [`HydratedSourceMapHit`](../memories-core/src/models/neighbor-search-types.ts) rows: each hit includes **`labels: { kind, props }[]`** (ontology instances), aligned with [`db/rows`](../memories-core/src/db/rows.ts) / catalog joins.
+- **Hydration:** `hydrateSourceMapHits` expands ids to full [`HydratedSourceMapHit`](../memories-core/src/models/neighbor-search-types.ts) rows: **`labels`** are node assignments when `graph` is **node**, edge assignments when `graph` is **edge**; **`graph`** discriminates attachment (`MemoryGraphAssociation`).
 
 ## Neighbors
 

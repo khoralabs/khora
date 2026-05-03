@@ -1,3 +1,4 @@
+import type { MemoryKind } from "./row-schemas";
 import type { NamespacePath } from "../models/namespace-path";
 import type {
   HydratedNeighbor,
@@ -112,15 +113,39 @@ export interface MemoriesMutationCore {
 
   /**
    * Delete all dependent rows for this memory subtree (features, maps, edges, labels, meta, etc.).
-   * **Pre:** Typically called at start of merge after resolving `memoryId` / `nodeId`.
+   * **Node:** clears incident graph edges (and thus any edge-attached memories referencing them).
+   * **Edge:** clears indexed features and edge label assignments; keeps the `edges` row for merge replace via {@link insertEdge}.
    */
-  clearMemorySubtree(op: MemoryOpContext, memoryId: string, nodeId: string): void;
+  clearMemorySubtree(
+    op: MemoryOpContext,
+    input:
+      | { memoryKind: "node"; memoryId: string; nodeId: string }
+      | { memoryKind: "edge"; memoryId: string; edgeId: string },
+  ): void;
 
   /** Upsert root memory row; returns stable ids and creation timestamp field used by validators. */
   upsertMemory(
     op: MemoryOpContext,
-    input: { namespace: NamespacePath; key: string },
+    input: {
+      namespace: NamespacePath;
+      key: string;
+      kind?: MemoryKind;
+      /** Required when `kind` is `edge` after the graph edge exists. */
+      edgeId?: string | null;
+    },
   ): { memoryId: string; _ts_created: number };
+
+  /**
+   * Resolve graph association for a logical key (`undefined` if no memory row).
+   * Node memories infer `nodeId`; edge memories require stored `edge_id`.
+   */
+  findMemoryAssociation(
+    namespace: NamespacePath,
+    key: string,
+  ):
+    | { memoryId: string; kind: "node"; nodeId: string }
+    | { memoryId: string; kind: "edge"; edgeId: string }
+    | undefined;
 
   /** Insert a source map row for (memoryId, sourceKey); content items are one map each. */
   insertSourceMap(
@@ -177,8 +202,16 @@ export interface MemoriesMutationCore {
     input: { namespace: NamespacePath; memoryKey: string; vector: Float32Array },
   ): void;
 
-  /** Delete root memory and graph node records after subtree clear (delete flow). */
-  deleteMemoryRootRows(memoryId: string, nodeId: string): void;
+  /**
+   * Delete root rows after subtree clear.
+   * **Node:** memory + primary node.
+   * **Edge:** delete the graph `edges` row (CASCADE removes the memory row and features).
+   */
+  deleteMemoryRootRows(
+    input:
+      | { memoryKind: "node"; memoryId: string; nodeId: string }
+      | { memoryKind: "edge"; edgeId: string },
+  ): void;
 
   /** Latest provenance chain head (`root_hex`), or `undefined` if empty. */
   getProvenanceHeadRootHex(): string | undefined;
@@ -285,6 +318,16 @@ export interface MemoriesNeighborIndex {
   >(input: {
     namespace: NamespacePath;
     key: string;
+    filters?: NeighborFilter<EDGE_LABEL, NODE_LABEL>;
+  }): HydratedNeighbor[];
+
+  /** Endpoint node memories for a graph edge (for neighbor expansion when the search root is an edge memory). */
+  listNeighborsForEdgeMemory<
+    EDGE_LABEL extends string = string,
+    NODE_LABEL extends string = string,
+  >(input: {
+    namespace: NamespacePath;
+    edgeId: string;
     filters?: NeighborFilter<EDGE_LABEL, NODE_LABEL>;
   }): HydratedNeighbor[];
 }

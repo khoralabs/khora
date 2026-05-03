@@ -82,6 +82,9 @@ function resolveColumn(tableName: string, columnName: string, field: z.ZodType):
   }
   const def = zodDef(inner);
   const ty = def?.type;
+  if (ty === "enum") {
+    return { kind: "plain", affinity: "TEXT", notNull: !allowsNull };
+  }
   if (ty === "string") {
     return { kind: "plain", affinity: "TEXT", notNull: !allowsNull };
   }
@@ -127,6 +130,7 @@ function columnShape(
     };
   }
   if (r.kind === "fk") {
+    const { allowsNull } = unwrapOptionalChains(field);
     const fk: ForeignKeySpec = {
       fromTable: tableName,
       fromColumn: columnName,
@@ -137,7 +141,7 @@ function columnShape(
       shape: {
         name: columnName,
         sqliteAffinity: "TEXT",
-        notNull: true,
+        notNull: !allowsNull,
         primaryKey: false,
         foreignKey: fk,
       },

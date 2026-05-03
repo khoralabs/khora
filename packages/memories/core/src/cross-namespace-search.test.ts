@@ -213,8 +213,10 @@ describe("cross-namespace search (validation + fallback)", () => {
               _ts_created: 0,
               namespace: namespacePath(isA ? "a" : "b"),
               key: isA ? "ka" : "kb",
+              kind: "node",
             },
             labels: [],
+            graph: { kind: "node" },
           };
         });
       },

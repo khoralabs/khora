@@ -2,7 +2,8 @@ import {
   catalogSchemaJsonForEdgeKind,
   catalogSchemaJsonForNodeKind,
   ids,
-  type MergeMemoryParams,
+  type MergeMemoryParamsEdge,
+  type MergeMemoryParamsNode,
   withDirectedEdgeProperties,
   zMergeMemoryContentItem,
   zNamespacePath,
@@ -30,14 +31,13 @@ import {
 } from "./mergeWrites.js";
 import { appendProvenanceEventImpl, updateSourceMapContentHashImpl } from "./provenanceConvex.js";
 
-export type MergeMemoryAtomicInput = Omit<MergeMemoryParams, "namespace"> & {
-  namespace: string;
-  now: number;
-};
+export type MergeMemoryAtomicInput =
+  | (MergeMemoryParamsNode & { now: number })
+  | (MergeMemoryParamsEdge & { now: number });
 
 /**
- * Single-transaction merge matching {@link mergeMemoryAsync} order: neighbors → clear → upsert →
- * content → labels → edges → search meta + label-props for each sync key.
+ * Single-transaction merge matching {@link mergeMemoryAsync} order for node merges; edge merges
+ * clear edge-attached subtree → insert/replace edge → upsert memory → content → edge labels → meta sync.
  */
 export async function runMergeMemoryAtomic(
   ctx: MutationCtx,
@@ -45,30 +45,40 @@ export async function runMergeMemoryAtomic(
 ): Promise<string[]> {
   const namespace = zNamespacePath.parse(raw.namespace);
   const now = raw.now;
-  const params: MergeMemoryParams = {
-    key: raw.key,
-    namespace,
-    content: raw.content,
-    labels: raw.labels,
-    properties: raw.properties,
-    edges: raw.edges,
-    searchMetaVector: raw.searchMetaVector,
-  };
 
-  for (const item of params.content) {
+  for (const item of raw.content) {
     zMergeMemoryContentItem.parse(item);
     if (item.vector !== undefined) zVectorPayload.parse(item.vector);
   }
-  if (params.searchMetaVector !== undefined && params.searchMetaVector.length > 0) {
-    zVectorPayload.parse(params.searchMetaVector);
+  if (raw.searchMetaVector !== undefined && raw.searchMetaVector.length > 0) {
+    zVectorPayload.parse(raw.searchMetaVector);
   }
 
+  if (raw.kind === "edge") {
+    return runMergeMemoryAtomicEdge(ctx, raw, namespace, now);
+  }
+  return runMergeMemoryAtomicNode(ctx, raw, namespace, now);
+}
+
+async function runMergeMemoryAtomicNode(
+  ctx: MutationCtx,
+  raw: MergeMemoryParamsNode & { now: number },
+  namespace: string,
+  now: number,
+): Promise<string[]> {
+  const params = raw;
   const memoryId = ids.memory(namespace, params.key);
   const nodeId = ids.node(namespace, params.key);
 
   const oldNeighborKeys = await listNeighborMemoryKeysForNode(ctx, namespace, nodeId);
-  await clearMemorySubtreeImpl(ctx, memoryId, nodeId);
-  await upsertMemoryImpl(ctx, { namespace, key: params.key, now });
+  await clearMemorySubtreeImpl(ctx, { memoryKind: "node", memoryId, nodeId });
+  await upsertMemoryImpl(ctx, {
+    namespace,
+    key: params.key,
+    now,
+    kind: "node",
+    edgeId: null,
+  });
   await upsertNodeForMemoryKeyImpl(ctx, {
     namespace,
     memoryKey: params.key,
@@ -179,7 +189,146 @@ export async function runMergeMemoryAtomic(
   }
 
   const sourceKeysSorted = params.content
-    .map((raw) => zMergeMemoryContentItem.parse(raw).key)
+    .map((rawItem) => zMergeMemoryContentItem.parse(rawItem).key)
+    .sort((a, b) => a.localeCompare(b));
+  const sortedHashes =
+    Object.keys(contentHashes).length > 0
+      ? Object.fromEntries(
+          Object.keys(contentHashes)
+            .sort((a, b) => a.localeCompare(b))
+            .map((k) => [k, contentHashes[k]!]),
+        )
+      : undefined;
+  await appendProvenanceEventImpl(ctx, {
+    now,
+    event: {
+      v: 1,
+      kind: "MERGE_MEMORY",
+      namespace,
+      memory_key: params.key,
+      memory_id: memoryId,
+      source_keys: sourceKeysSorted,
+      ...(sortedHashes !== undefined ? { content_hashes: sortedHashes } : {}),
+    },
+  });
+
+  return Array.from(syncKeys).sort((a, b) => a.localeCompare(b));
+}
+
+async function runMergeMemoryAtomicEdge(
+  ctx: MutationCtx,
+  raw: Extract<MergeMemoryAtomicInput, { kind: "edge" }>,
+  namespace: string,
+  now: number,
+): Promise<string[]> {
+  const params = raw;
+  const memoryId = ids.memory(namespace, params.key);
+  const { from_key: fromKey, to_key: toKey } = params.edge;
+  const fromNodeId = ids.node(namespace, fromKey);
+  const toNodeId = ids.node(namespace, toKey);
+  if (!(await nodeExists(ctx, fromNodeId))) {
+    throw new Error(`mergeMemoryAtomic: node missing for edge.from_key=${fromKey}`);
+  }
+  if (!(await nodeExists(ctx, toNodeId))) {
+    throw new Error(`mergeMemoryAtomic: node missing for edge.to_key=${toKey}`);
+  }
+
+  const edgeId = ids.edge(
+    fromNodeId,
+    toNodeId,
+    params.edge.label.kind,
+    fromKey,
+    toKey,
+  );
+
+  await clearMemorySubtreeImpl(ctx, { memoryKind: "edge", memoryId, edgeId });
+
+  const { edgeId: persistedEdgeId } = await insertEdgeImpl(ctx, {
+    fromNodeId,
+    toNodeId,
+    properties: withDirectedEdgeProperties(params.edge.properties),
+    idParts: {
+      label: params.edge.label.kind,
+      selfMemoryKey: fromKey,
+      otherMemoryKey: toKey,
+    },
+    now,
+  });
+  if (persistedEdgeId !== edgeId) {
+    throw new Error("mergeMemoryAtomic: edge id mismatch between preview and insertEdge");
+  }
+
+  await upsertMemoryImpl(ctx, {
+    namespace,
+    key: params.key,
+    now,
+    kind: "edge",
+    edgeId,
+  });
+
+  const contentHashes: Record<string, string> = {};
+  for (const rawItem of params.content) {
+    const item = zMergeMemoryContentItem.parse(rawItem);
+    const { sourceMapId } = await insertSourceMapImpl(ctx, {
+      memoryId,
+      sourceKey: item.key,
+      now,
+    });
+    const vec = item.vector !== undefined ? new Float32Array(item.vector) : undefined;
+    if (item.text !== undefined) {
+      await insertLexicalFeatureImpl(ctx, {
+        memoryId,
+        sourceMapId,
+        text: item.text,
+        now,
+      });
+    }
+    if (item.vector !== undefined) {
+      await insertVectorFeatureImpl(ctx, {
+        memoryId,
+        sourceMapId,
+        vector: item.vector,
+        now,
+      });
+    }
+    const hash = computeSourceMapContentHash({
+      text: item.text,
+      vector: vec,
+    });
+    await updateSourceMapContentHashImpl(ctx, { sourceMapId, contentHash: hash });
+    contentHashes[item.key] = hash;
+  }
+
+  const edgeLabelId = await ensureEdgeLabelImpl(ctx, {
+    kind: params.edge.label.kind,
+    description: "",
+    schemaJson: catalogSchemaJsonForEdgeKind(params.ontology, params.edge.label.kind) || null,
+    now,
+  });
+  await insertEdgeLabelAssignmentImpl(ctx, {
+    edgeId,
+    labelId: edgeLabelId,
+    props: params.edge.label.props as Record<string, unknown>,
+    now,
+  });
+
+  const syncKeys = new Set([params.key, fromKey, toKey]);
+  const primaryMeta =
+    params.searchMetaVector !== undefined && params.searchMetaVector.length > 0
+      ? params.searchMetaVector
+      : undefined;
+  for (const k of syncKeys) {
+    await syncMemorySearchMetaImpl(ctx, {
+      namespace,
+      memoryKey: k,
+      now,
+      metaVector: k === params.key ? primaryMeta : undefined,
+    });
+    await syncLabelPropsSearchFeaturesImpl(ctx, { namespace, memoryKey: k, now });
+  }
+
+  const sourceKeysSorted = params.content
+    .map((rawItem) => zMergeMemoryContentItem.parse(rawItem).key)
     .sort((a, b) => a.localeCompare(b));
   const sortedHashes =
     Object.keys(contentHashes).length > 0

@@ -95,6 +95,25 @@ export class MemoriesClient<
       zMergeMemoryContentItem.parse(item);
     }
 
+    if (params.kind === "edge") {
+      const mergedKeys = mergeMemory(this.mutationCtx, {
+        kind: "edge",
+        key: params.key,
+        namespace: params.namespace,
+        content: params.content,
+        edge: {
+          from_key: params.edge.from_key,
+          to_key: params.edge.to_key,
+          label: validateEdgeLabel(this.ontology, params.edge.label),
+          properties: params.edge.properties,
+        },
+        searchMetaVector: params.searchMetaVector,
+        ontology: this.ontology,
+      });
+      this.syncLexicalExportToStore(params.namespace, mergedKeys);
+      return mergedKeys;
+    }
+
     const labelInstances = params.labels.map((l) => validateNodeLabel(this.ontology, l));
 
     const edgesMapped =

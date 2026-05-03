@@ -269,4 +269,62 @@ describe("neighbor sub-search", () => {
     expect(n0?.matchedSourceMapId).toBeDefined();
     expect(n0?.key === "nb1" || n0?.key === "nb2").toBe(true);
   });
+
+  test("neighbor expansion from edge-memory root lists endpoint node memories", () => {
+    const db = openTestDb();
+    const persistence = createMemoriesPersistence(db);
+    mergeMemory(
+      { persistence },
+      {
+        key: "a",
+        namespace: "ns",
+        content: [{ key: "b", text: "endpoint alpha edgexpuniq001 rivet" }],
+        labels: [],
+        edges: [],
+      },
+    );
+    mergeMemory(
+      { persistence },
+      {
+        key: "b",
+        namespace: "ns",
+        content: [{ key: "b", text: "endpoint beta edgexpuniq001 rivet" }],
+        labels: [],
+        edges: [],
+      },
+    );
+    mergeMemory(
+      { persistence },
+      {
+        kind: "edge",
+        key: "em_ab",
+        namespace: "ns",
+        content: [{ key: "b", text: "edge bridge edgexpuniq001 rivet" }],
+        edge: {
+          from_key: "a",
+          to_key: "b",
+          label: { kind: "rel", props: {} },
+        },
+      },
+    );
+
+    const hits = search(
+      { persistence },
+      {
+        namespace: "ns",
+        content: { text: "edgexpuniq001 rivet" },
+        options: {
+          topK: 8,
+          neighbors: true,
+          maxNeighbors: 4,
+        },
+      },
+    );
+    const root = hits.find((h) => h.memory.key === "em_ab");
+    expect(root).toBeDefined();
+    expect(root?.graph.kind).toBe("edge");
+    const neighborKeys = new Set((root?.neighbors ?? []).map((n) => n.key));
+    expect(neighborKeys.has("a")).toBe(true);
+    expect(neighborKeys.has("b")).toBe(true);
+  });
 });

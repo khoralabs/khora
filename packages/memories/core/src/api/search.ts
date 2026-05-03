@@ -4,7 +4,11 @@ import {
   type NamespacePath,
   namespacePath,
 } from "../models/namespace-path";
-import type { HydratedNeighbor, NeighborFilter } from "../models/neighbor-search-types";
+import type {
+  HydratedNeighbor,
+  MemoryGraphAssociation,
+  NeighborFilter,
+} from "../models/neighbor-search-types";
 import type { OntologyLabelInstance } from "../models/ontology-label";
 import type { Edge, Memory, SourceMap } from "../persistence/rows.js";
 import type { MemoriesBackendCapabilities, SearchNamespaceScope } from "../persistence/types";
@@ -82,6 +86,7 @@ export interface SearchHit<NODE_LABELS extends string = string, EDGE_LABELS exte
   score: number;
   memory: Memory;
   labels: OntologyLabelInstance[];
+  graph: MemoryGraphAssociation;
   neighbors?: Array<SearchNeighborHit<NODE_LABELS, EDGE_LABELS>>;
 }
 
@@ -233,6 +238,7 @@ function expandNeighborsWithSubSearch<NODE_LABELS extends string, EDGE_LABELS ex
   input: {
     namespace: NamespacePath;
     rootMemoryKey: string;
+    rootGraph: MemoryGraphAssociation;
     content: SearchContent;
     lexicalWeight: number;
     vectorWeight: number;
@@ -243,11 +249,18 @@ function expandNeighborsWithSubSearch<NODE_LABELS extends string, EDGE_LABELS ex
   },
 ): SearchNeighborHit<NODE_LABELS, EDGE_LABELS>[] {
   if (!caps.neighborIndex) return [];
-  const graphNeighbors = persistence.listNeighborsForMemory<EDGE_LABELS, NODE_LABELS>({
-    namespace: input.namespace,
-    key: input.rootMemoryKey,
-    filters: input.neighborFilters,
-  });
+  const graphNeighbors =
+    input.rootGraph.kind === "edge"
+      ? persistence.listNeighborsForEdgeMemory<EDGE_LABELS, NODE_LABELS>({
+          namespace: input.namespace,
+          edgeId: input.rootGraph.edge.edgeId,
+          filters: input.neighborFilters,
+        })
+      : persistence.listNeighborsForMemory<EDGE_LABELS, NODE_LABELS>({
+          namespace: input.namespace,
+          key: input.rootMemoryKey,
+          filters: input.neighborFilters,
+        });
 
   const byMemoryId = new Map<string, HydratedNeighbor>();
   for (const n of graphNeighbors) {
@@ -389,6 +402,7 @@ export function search<NODE_LABELS extends string = string, EDGE_LABELS extends 
     neighbors: expandNeighborsWithSubSearch<NODE_LABELS, EDGE_LABELS>(persistence, caps, {
       namespace: hit.memory.namespace,
       rootMemoryKey: hit.memory.key,
+      rootGraph: hit.graph,
       content: params.content,
       lexicalWeight,
       vectorWeight,

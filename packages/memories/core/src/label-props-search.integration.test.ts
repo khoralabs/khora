@@ -3,7 +3,10 @@ import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-s
 import { mergeMemory } from "./api/merge-memory";
 import { search } from "./api/search";
 import { ids } from "./models/ids";
-import { MEMORY_NODE_LABEL_PROPS_KEY_PREFIX } from "./search-meta-constants";
+import {
+  MEMORY_EDGE_LABEL_PROPS_KEY_PREFIX,
+  MEMORY_NODE_LABEL_PROPS_KEY_PREFIX,
+} from "./search-meta-constants";
 
 function openTestDb() {
   return openMemoriesDatabase(":memory:");
@@ -96,7 +99,7 @@ describe("label props search features", () => {
     ).toBeGreaterThanOrEqual(1);
   });
 
-  test("edge label props chunk is searchable from focal memory", () => {
+  test("edge label props chunk is searchable from edge memory", () => {
     const db = openTestDb();
     const persistence = createMemoriesPersistence(db);
     const edgeToken = "edgeproptok888";
@@ -118,13 +121,21 @@ describe("label props search features", () => {
         namespace: "ns",
         content: [{ key: "c", text: "focal blob" }],
         labels: [],
-        edges: [
-          {
-            memory_key: "nb",
-            direction: "out",
-            label: { kind: "causes", props: { mechanism: edgeToken } },
-          },
-        ],
+        edges: [],
+      },
+    );
+    mergeMemory(
+      { persistence },
+      {
+        kind: "edge",
+        key: "em_focal_nb",
+        namespace: "ns",
+        content: [{ key: "c", text: "edge body" }],
+        edge: {
+          from_key: "focal",
+          to_key: "nb",
+          label: { kind: "causes", props: { mechanism: edgeToken } },
+        },
       },
     );
 
@@ -133,11 +144,15 @@ describe("label props search features", () => {
       { namespace: "ns", content: { text: edgeToken }, options: { topK: 10 } },
     );
     expect(
-      hits.some((h) => h.memory.key === "focal" && h.source_key.startsWith("__mem_edge_props__/")),
+      hits.some(
+        (h) =>
+          h.memory.key === "em_focal_nb" &&
+          h.source_key.startsWith(MEMORY_EDGE_LABEL_PROPS_KEY_PREFIX),
+      ),
     ).toBe(true);
   });
 
-  test("edge label props sync on neighbor memory after focal merge", () => {
+  test("edge label props are not denormalized onto endpoint node memories", () => {
     const db = openTestDb();
     const persistence = createMemoriesPersistence(db);
     const edgeToken = "neighborfind999";
@@ -159,22 +174,36 @@ describe("label props search features", () => {
         namespace: "ns",
         content: [{ key: "c", text: "focal only" }],
         labels: [],
-        edges: [
-          {
-            memory_key: "nb",
-            direction: "out",
-            label: { kind: "describes", props: { facet: edgeToken } },
-          },
-        ],
+        edges: [],
       },
     );
 
-    const nbHits = search(
+    mergeMemory(
+      { persistence },
+      {
+        kind: "edge",
+        key: "em_desc",
+        namespace: "ns",
+        content: [{ key: "c", text: "edge chunk" }],
+        edge: {
+          from_key: "focal",
+          to_key: "nb",
+          label: { kind: "describes", props: { facet: edgeToken } },
+        },
+      },
+    );
+
+    const hits = search(
       { persistence },
       { namespace: "ns", content: { text: edgeToken }, options: { topK: 10 } },
     );
+    expect(hits.some((h) => h.memory.key === "nb" || h.memory.key === "focal")).toBe(false);
     expect(
-      nbHits.some((h) => h.memory.key === "nb" && h.source_key.startsWith("__mem_edge_props__/")),
+      hits.some(
+        (h) =>
+          h.memory.key === "em_desc" &&
+          h.source_key.startsWith(MEMORY_EDGE_LABEL_PROPS_KEY_PREFIX),
+      ),
     ).toBe(true);
   });
 });

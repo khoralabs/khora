@@ -35,13 +35,42 @@ export async function mergeMemory(
   if (isMutationCtxAsync(ctx)) {
     return mergeMemoryAsync(ctx, params);
   }
+  const now = Date.now();
+  const { client, refs } = ctx;
+  if (params.kind === "edge") {
+    if (params.ontology !== undefined) {
+      throw new Error(
+        "mergeMemory (Convex atomic): `ontology` is not supported on mergeMemoryAtomic edge path; use mergeMemoryAsync with MutationCtxAsync or omit ontology.",
+      );
+    }
+    return client.mutation(refs.mutations.mergeMemoryAtomic, {
+      kind: "edge" as const,
+      namespace: params.namespace,
+      key: params.key,
+      content: params.content.map((c) => ({
+        key: c.key,
+        text: c.text,
+        vector: c.vector !== undefined ? [...c.vector] : undefined,
+      })),
+      edge: {
+        from_key: params.edge.from_key,
+        to_key: params.edge.to_key,
+        label: {
+          kind: params.edge.label.kind,
+          props: params.edge.label.props as Record<string, unknown>,
+        },
+        properties: params.edge.properties,
+      },
+      searchMetaVector:
+        params.searchMetaVector !== undefined ? [...params.searchMetaVector] : undefined,
+      now,
+    });
+  }
   if (params.ontology !== undefined) {
     throw new Error(
       "mergeMemory (Convex atomic): `ontology` is not supported on mergeMemoryAtomic; use mergeMemoryAsync with MutationCtxAsync or omit ontology.",
     );
   }
-  const now = Date.now();
-  const { client, refs } = ctx;
   return client.mutation(refs.mutations.mergeMemoryAtomic, {
     namespace: params.namespace,
     key: params.key,

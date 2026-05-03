@@ -90,20 +90,28 @@ export function createConvexMemoriesPersistence(
 
     async clearMemorySubtree(
       _op: MemoryOpContext,
-      memoryId: string,
-      nodeId: string,
+      input:
+        | { memoryKind: "node"; memoryId: string; nodeId: string }
+        | { memoryKind: "edge"; memoryId: string; edgeId: string },
     ): Promise<void> {
-      await client.mutation(m.clearMemorySubtree, { memoryId, nodeId });
+      await client.mutation(m.clearMemorySubtree, input);
     },
 
     async upsertMemory(
       op: MemoryOpContext,
-      input: { namespace: string; key: string },
+      input: {
+        namespace: string;
+        key: string;
+        kind?: "node" | "edge";
+        edgeId?: string | null;
+      },
     ): Promise<{ memoryId: string; _ts_created: number }> {
       return client.mutation(m.upsertMemory, {
         namespace: input.namespace,
         key: input.key,
         now: op.now,
+        ...(input.kind !== undefined ? { kind: input.kind } : {}),
+        ...(input.edgeId !== undefined ? { edgeId: input.edgeId } : {}),
       });
     },
 
@@ -181,6 +189,18 @@ export function createConvexMemoriesPersistence(
     async findMemoryIdByKey(namespace: string, key: string): Promise<string | undefined> {
       const id = await client.query(q.findMemoryIdByKey, { namespace, key });
       return id ?? undefined;
+    },
+
+    async findMemoryAssociation(
+      namespace: NamespacePath,
+      key: string,
+    ): Promise<
+      | { memoryId: string; kind: "node"; nodeId: string }
+      | { memoryId: string; kind: "edge"; edgeId: string }
+      | undefined
+    > {
+      const r = await client.query(q.findMemoryAssociation, { namespace, key });
+      return r ?? undefined;
     },
 
     async nodeExists(nodeId: string): Promise<boolean> {
@@ -274,8 +294,12 @@ export function createConvexMemoriesPersistence(
       });
     },
 
-    async deleteMemoryRootRows(memoryId: string, nodeId: string): Promise<void> {
-      await client.mutation(m.deleteMemoryRootRows, { memoryId, nodeId });
+    async deleteMemoryRootRows(
+      input:
+        | { memoryKind: "node"; memoryId: string; nodeId: string }
+        | { memoryKind: "edge"; edgeId: string },
+    ): Promise<void> {
+      await client.mutation(m.deleteMemoryRootRows, input);
     },
 
     async getProvenanceHeadRootHex(): Promise<string | undefined> {
@@ -342,7 +366,8 @@ export function createConvexMemoriesPersistence(
     },
 
     async hydrateSourceMapHits(sourceMapIds: readonly string[]): Promise<HydratedSourceMapHit[]> {
-      return client.query(q.hydrateSourceMapHits, { sourceMapIds: [...sourceMapIds] });
+      const rows = await client.query(q.hydrateSourceMapHits, { sourceMapIds: [...sourceMapIds] });
+      return rows as HydratedSourceMapHit[];
     },
 
     async listNeighborsForMemory<
@@ -356,6 +381,21 @@ export function createConvexMemoriesPersistence(
       return client.query(q.listNeighborsForMemory, {
         namespace: input.namespace,
         key: input.key,
+        ...(input.filters !== undefined ? { filters: input.filters } : {}),
+      }) as unknown as Promise<HydratedNeighbor[]>;
+    },
+
+    async listNeighborsForEdgeMemory<
+      EDGE_LABEL extends string = string,
+      NODE_LABEL extends string = string,
+    >(input: {
+      namespace: NamespacePath;
+      edgeId: string;
+      filters?: NeighborFilter<EDGE_LABEL, NODE_LABEL>;
+    }): Promise<HydratedNeighbor[]> {
+      return client.query(q.listNeighborsForEdgeMemory, {
+        namespace: input.namespace,
+        edgeId: input.edgeId,
         ...(input.filters !== undefined ? { filters: input.filters } : {}),
       }) as unknown as Promise<HydratedNeighbor[]>;
     },

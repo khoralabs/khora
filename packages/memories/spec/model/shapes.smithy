@@ -19,6 +19,10 @@ structure MemoryRow {
     _ts_created: Long
     namespace: MemoryNamespace
     key: String
+    /// `node` (default in storage migrations) or `edge` (searchable content pinned to one graph edge).
+    kind: String
+    /// Empty unless `kind` is `edge`; stable `edges` row id.
+    edgeId: String
 }
 
 structure SourceMapRow {
@@ -53,14 +57,27 @@ list OntologyLabelInstanceList {
     member: OntologyLabelInstance
 }
 
+/// Whether hybrid hit content is attached to a primary **node** or a single **edge** (see `MemoryRow.kind`).
+union MemoryGraphAssociation {
+    /// Node memory: labels are node ontology assignments.
+    node: MemoryGraphOnNode
+    /// Edge memory: `edge` is the full graph link; `labels` are edge label instances on that edge.
+    edge: GraphEdgeLink
+}
+
+@documentation("Unit member: node-attached memory (no embedded edge payload).")
+structure MemoryGraphOnNode {
+}
+
 structure HydratedSourceMapHit {
     _id: String
     _ts_created: Long
     memory_id: String
     source_key: String
     memory: MemoryRow
-    /// Node label kinds + props for this memory’s node.
+    /// Node label assignments when `graph.node`; edge label assignments when `graph.edge`.
     labels: OntologyLabelInstanceList
+    graph: MemoryGraphAssociation
 }
 
 /// Neighbor row from **ListNeighborsForMemory** (no fused neighbor score).
@@ -100,6 +117,7 @@ structure SearchHit {
     score: Double
     memory: MemoryRow
     labels: OntologyLabelInstanceList
+    graph: MemoryGraphAssociation
     neighbors: SearchNeighborHitList
 }
 
@@ -178,7 +196,13 @@ enum EdgeDirection {
     OUT
 }
 
-structure MergeMemoryParams {
+/// Discriminated merge: **node** (primary graph node + optional incident edges) vs **edge** (content on one graph edge).
+union MergeMemoryParams {
+    node: MergeMemoryParamsNode
+    edge: MergeMemoryParamsEdge
+}
+
+structure MergeMemoryParamsNode {
     key: String
     namespace: MemoryNamespace
     content: MergeMemoryContentItemList
@@ -186,6 +210,23 @@ structure MergeMemoryParams {
     properties: Document
     edges: MergeMemoryEdgeList
     /// Optional primary-memory search-meta vector (same dim as content vectors).
+    searchMetaVector: DoubleList
+}
+
+structure MergeMemoryEdgeAssociation {
+    from_key: String
+    to_key: String
+    label: OntologyLabelInstance
+    properties: Document
+}
+
+structure MergeMemoryParamsEdge {
+    key: String
+    namespace: MemoryNamespace
+    content: MergeMemoryContentItemList
+    /// Endpoints and edge label for the single graph edge this memory owns.
+    edge: MergeMemoryEdgeAssociation
+    /// Optional search-meta vector for this edge memory.
     searchMetaVector: DoubleList
 }
 

@@ -95,6 +95,55 @@ export async function syncLabelPropsSearchFeaturesImpl(
 
   await removeLabelPropsSearchMaps(ctx, memoryId);
 
+  const mem0 = await ctx.db
+    .query("memories")
+    .withIndex("by_memoryId_tsCreated", (q) => q.eq("memoryId", memoryId))
+    .unique();
+  if (!mem0) throw new Error("syncLabelPropsSearchFeatures: memory not found");
+  const memKind = mem0.kind ?? "node";
+
+  if (memKind === "edge" && mem0.edgeId) {
+    const elas = await ctx.db
+      .query("edge_label_assignments")
+      .withIndex("by_edge_label", (q) => q.eq("edgeId", mem0.edgeId!))
+      .collect();
+    const sorted = [...elas].sort((a, b) =>
+      (a.assignmentId ?? "").localeCompare(b.assignmentId ?? ""),
+    );
+    for (const ela of sorted) {
+      const el = await ctx.db
+        .query("edge_labels")
+        .withIndex("by_labelId", (q) => q.eq("labelId", ela.labelId))
+        .unique();
+      if (!el) continue;
+      const props = parsePropsColumn(ela.propsJson);
+      if (!isNonEmptyProps(props)) continue;
+      const text = formatLabelPropsForSearch(el.kind, "edge", props, undefined);
+      if (text.length === 0) continue;
+      const sourceKey = memoryEdgeLabelPropsSourceKey(ela.assignmentId);
+      const sourceMapId = ids.sourceMap(memoryId, sourceKey);
+      await ctx.db.insert("source_maps", {
+        sourceMapId,
+        memoryId,
+        namespace: mem0.namespace,
+        sourceKey,
+        tsCreated: now,
+      });
+      const textFeatureId = ids.textFeature(sourceMapId);
+      const ns = namespacePath(mem0.namespace);
+      await ctx.db.insert("text_features", {
+        textFeatureId,
+        memoryId,
+        namespace: mem0.namespace,
+        ...namespacePrefixFieldsCamel(ns),
+        sourceMapId,
+        text,
+        tsCreated: now,
+      });
+    }
+    return;
+  }
+
   const nlas = await ctx.db
     .query("node_label_assignments")
     .withIndex("by_node_label", (q) => q.eq("nodeId", nodeId))
@@ -115,115 +164,20 @@ export async function syncLabelPropsSearchFeaturesImpl(
     if (text.length === 0) continue;
 
     const sourceKey = memoryNodeLabelPropsSourceKey(nla.assignmentId);
-    const mem = await ctx.db
-      .query("memories")
-      .withIndex("by_memoryId_tsCreated", (q) => q.eq("memoryId", memoryId))
-      .unique();
-    if (!mem) throw new Error("syncLabelPropsSearchFeatures: memory not found");
     const sourceMapId = ids.sourceMap(memoryId, sourceKey);
     await ctx.db.insert("source_maps", {
       sourceMapId,
       memoryId,
-      namespace: mem.namespace,
+      namespace: mem0.namespace,
       sourceKey,
       tsCreated: now,
     });
     const textFeatureId = ids.textFeature(sourceMapId);
-    const ns = namespacePath(mem.namespace);
+    const ns = namespacePath(mem0.namespace);
     await ctx.db.insert("text_features", {
       textFeatureId,
       memoryId,
-      namespace: mem.namespace,
-      ...namespacePrefixFieldsCamel(ns),
-      sourceMapId,
-      text,
-      tsCreated: now,
-    });
-  }
-
-  const fromEdges = await ctx.db
-    .query("edges")
-    .withIndex("by_from", (q) => q.eq("fromNodeId", nodeId))
-    .collect();
-  const toEdges = await ctx.db
-    .query("edges")
-    .withIndex("by_to", (q) => q.eq("toNodeId", nodeId))
-    .collect();
-  const seen = new Set<string>();
-  const edgeRows: Array<{
-    assignmentId: string;
-    kind: string;
-    propsJson: string;
-    neighborKey: string;
-    direction: "in" | "out";
-  }> = [];
-
-  for (const e of [...fromEdges, ...toEdges]) {
-    if (!e.edgeId || e.fromNodeId === undefined || e.toNodeId === undefined) continue;
-    if (seen.has(e.edgeId)) continue;
-    seen.add(e.edgeId);
-    const otherId = e.fromNodeId === nodeId ? e.toNodeId : e.fromNodeId;
-    const direction: "in" | "out" = e.fromNodeId === nodeId ? "out" : "in";
-    const otherNode = await ctx.db
-      .query("nodes")
-      .withIndex("by_nodeId", (q) => q.eq("nodeId", otherId))
-      .unique();
-    if (!otherNode) continue;
-    const memNeighbor = await ctx.db
-      .query("memories")
-      .withIndex("by_memoryId_tsCreated", (q) => q.eq("memoryId", otherNode.memoryId))
-      .unique();
-    if (!memNeighbor || memNeighbor.namespace !== namespace) continue;
-
-    const elas = await ctx.db
-      .query("edge_label_assignments")
-      .withIndex("by_edge_label", (q) => q.eq("edgeId", e.edgeId))
-      .collect();
-    for (const ela of elas) {
-      const el = await ctx.db
-        .query("edge_labels")
-        .withIndex("by_labelId", (q) => q.eq("labelId", ela.labelId))
-        .unique();
-      if (!el) continue;
-      edgeRows.push({
-        assignmentId: ela.assignmentId,
-        kind: el.kind,
-        propsJson: ela.propsJson,
-        neighborKey: memNeighbor.key,
-        direction,
-      });
-    }
-  }
-
-  edgeRows.sort((a, b) => a.assignmentId.localeCompare(b.assignmentId));
-
-  const memRow = await ctx.db
-    .query("memories")
-    .withIndex("by_memoryId_tsCreated", (q) => q.eq("memoryId", memoryId))
-    .unique();
-  if (!memRow) throw new Error("syncLabelPropsSearchFeatures: memory not found");
-
-  for (const row of edgeRows) {
-    const props = parsePropsColumn(row.propsJson);
-    if (!isNonEmptyProps(props)) continue;
-    const body = formatLabelPropsForSearch(row.kind, "edge", props, undefined);
-    if (body.length === 0) continue;
-    const text = `Edge ${row.kind} ${row.direction} toward ${row.neighborKey}:\n${body}`;
-    const sourceKey = memoryEdgeLabelPropsSourceKey(row.assignmentId);
-    const sourceMapId = ids.sourceMap(memoryId, sourceKey);
-    await ctx.db.insert("source_maps", {
-      sourceMapId,
-      memoryId,
-      namespace: memRow.namespace,
-      sourceKey,
-      tsCreated: now,
-    });
-    const textFeatureId = ids.textFeature(sourceMapId);
-    const ns = namespacePath(memRow.namespace);
-    await ctx.db.insert("text_features", {
-      textFeatureId,
-      memoryId,
-      namespace: memRow.namespace,
+      namespace: mem0.namespace,
       ...namespacePrefixFieldsCamel(ns),
       sourceMapId,
       text,

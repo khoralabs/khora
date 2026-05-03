@@ -36,6 +36,7 @@ export {
 export type {
   HydratedNeighbor,
   HydratedSourceMapHit,
+  MemoryGraphAssociation,
   NeighborConstraint,
   NeighborFilter,
   NeighborNodesFilter,
@@ -65,7 +66,13 @@ export {
 } from "../persistence";
 export * from "./client";
 export * from "./client-async";
-export type { MergeMemoryContentItem, MergeMemoryParams, MutationCtx } from "./merge-memory";
+export type {
+  MergeMemoryContentItem,
+  MergeMemoryParams,
+  MergeMemoryParamsEdge,
+  MergeMemoryParamsNode,
+  MutationCtx,
+} from "./merge-memory";
 export {
   buildCanonicalMemorySearchMetaText,
   buildCanonicalMemorySearchMetaTextForMerge,

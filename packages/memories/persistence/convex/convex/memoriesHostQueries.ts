@@ -21,6 +21,11 @@ const vNeighborFilter = v.object({
 const cq = components.memories.queries;
 
 /** Host forwards for browser {@link ConvexReactClient}; same validators as the memories component queries. */
+export const findMemoryAssociation = query({
+  args: { namespace: v.string(), key: v.string() },
+  handler: async (ctx, args) => ctx.runQuery(cq.findMemoryAssociation, args),
+});
+
 export const findMemoryIdByKey = query({
   args: { namespace: v.string(), key: v.string() },
   handler: async (ctx, args) => ctx.runQuery(cq.findMemoryIdByKey, args),
@@ -76,6 +81,15 @@ export const listNeighborsForMemory = query({
     filters: v.optional(vNeighborFilter),
   },
   handler: async (ctx, args) => ctx.runQuery(cq.listNeighborsForMemory, args),
+});
+
+export const listNeighborsForEdgeMemory = query({
+  args: {
+    namespace: v.string(),
+    edgeId: v.string(),
+    filters: v.optional(vNeighborFilter),
+  },
+  handler: async (ctx, args) => ctx.runQuery(cq.listNeighborsForEdgeMemory, args),
 });
 
 export const loadGraphEdgesForNamespace = query({

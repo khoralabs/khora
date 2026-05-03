@@ -154,6 +154,20 @@ export async function buildCanonicalMemorySearchMetaText(
   namespace: string,
   memoryKey: string,
 ): Promise<string> {
+  const memoryId = ids.memory(namespace, memoryKey);
+  const mem = await ctx.db
+    .query("memories")
+    .withIndex("by_memoryId_tsCreated", (q) => q.eq("memoryId", memoryId))
+    .unique();
+  const kind = mem?.kind ?? "node";
+  if (kind === "edge" && mem?.edgeId) {
+    const { loadGraphEdge } = await import("./graphReads.js");
+    const link = await loadGraphEdge(ctx, namespace, mem.edgeId);
+    if (!link) return "";
+    const edgeKinds = link.labels.map((l) => l.kind).sort((a, b) => a.localeCompare(b));
+    const line = `edge_memory:${link.fromKey}<->${link.toKey}:${edgeKinds.join("|")}`;
+    return line;
+  }
   const nodeId = ids.node(namespace, memoryKey);
   const labels = await collectNodeLabelKinds(ctx, nodeId);
   const nodeLines = formatNodeLines(labels);

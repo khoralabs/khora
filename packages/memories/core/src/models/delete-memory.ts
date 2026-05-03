@@ -1,5 +1,4 @@
 import type { MutationCtx } from "../api/merge-memory";
-import { ids } from "./ids";
 
 export interface DeleteMemoryParams {
   namespace: string;
@@ -8,28 +7,47 @@ export interface DeleteMemoryParams {
 
 /**
  * Removes a memory and all dependent data: vector- and lexical-indexed features, source maps,
- * edges (and edge label assignments via foreign-key cascade), node label assignments, then root
- * memory and graph node records. Idempotent when the memory was already absent.
+ * graph edges (node memories) or edge row (edge memories), node label assignments, then root rows.
+ * Idempotent when the memory was already absent.
  */
 export function deleteMemory(ctx: MutationCtx, params: DeleteMemoryParams): void {
   const { persistence } = ctx;
   const now = Date.now();
   const op = { now };
-  const memoryId = ids.memory(params.namespace, params.key);
-  const nodeId = ids.node(params.namespace, params.key);
 
   persistence.withTransaction(() => {
-    if (persistence.findMemoryIdByKey(params.namespace, params.key) === undefined) {
+    const assoc = persistence.findMemoryAssociation(params.namespace, params.key);
+    if (assoc === undefined) {
       return;
     }
-    persistence.clearMemorySubtree(op, memoryId, nodeId);
-    persistence.deleteMemoryRootRows(memoryId, nodeId);
+    if (assoc.kind === "node") {
+      persistence.clearMemorySubtree(op, {
+        memoryKind: "node",
+        memoryId: assoc.memoryId,
+        nodeId: assoc.nodeId,
+      });
+      persistence.deleteMemoryRootRows({
+        memoryKind: "node",
+        memoryId: assoc.memoryId,
+        nodeId: assoc.nodeId,
+      });
+    } else {
+      persistence.clearMemorySubtree(op, {
+        memoryKind: "edge",
+        memoryId: assoc.memoryId,
+        edgeId: assoc.edgeId,
+      });
+      persistence.deleteMemoryRootRows({
+        memoryKind: "edge",
+        edgeId: assoc.edgeId,
+      });
+    }
     persistence.appendProvenanceEvent(op, {
       v: 1,
       kind: "DELETE_MEMORY",
       namespace: params.namespace,
       memory_key: params.key,
-      memory_id: memoryId,
+      memory_id: assoc.memoryId,
     });
   });
 }

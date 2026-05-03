@@ -18,7 +18,7 @@ import { insertEdge } from "./models/edges";
 import { syncLabelPropsSearchFeatures as syncLabelPropsSearchFeaturesImpl } from "./models/label-props-search";
 import { listSourceMapsForMemory as listSourceMapsForMemoryQuery } from "./models/list-source-maps-for-memory";
 import { listTextFeatureExportRowsForMemory as listTextFeatureExportRowsForMemoryQuery } from "./models/list-text-feature-export-rows";
-import { findMemoryIdByKey, upsertMemory } from "./models/memories";
+import { findMemoryAssociation, findMemoryIdByKey, upsertMemory } from "./models/memories";
 import {
   getProvenanceHeadRootHex,
   appendProvenanceEvent as insertProvenanceRow,
@@ -36,6 +36,7 @@ import { nodeExists, upsertNodeForMemoryKey } from "./models/nodes";
 import {
   type HydratedNeighbor,
   hydrateSourceMapHits,
+  listNeighborsForEdgeMemory,
   listNeighborsForMemory,
   searchLexicalSourceMapIds,
   searchVectorSourceMapIds,
@@ -82,13 +83,33 @@ export class MemoriesPersistence implements IMemoriesPersistence {
     return listNeighborMemoryKeysForNode(this.ctx(op), namespace, nodeId);
   }
 
-  clearMemorySubtree(op: MemoryOpContext, memoryId: string, nodeId: string): void {
-    clearMemorySubtree(this.ctx(op), memoryId, nodeId);
+  clearMemorySubtree(
+    op: MemoryOpContext,
+    input:
+      | { memoryKind: "node"; memoryId: string; nodeId: string }
+      | { memoryKind: "edge"; memoryId: string; edgeId: string },
+  ): void {
+    clearMemorySubtree(this.ctx(op), input);
+  }
+
+  findMemoryAssociation(
+    namespace: string,
+    key: string,
+  ):
+    | { memoryId: string; kind: "node"; nodeId: string }
+    | { memoryId: string; kind: "edge"; edgeId: string }
+    | undefined {
+    return findMemoryAssociation({ db: this.db, now: 0 }, namespace, key);
   }
 
   upsertMemory(
     op: MemoryOpContext,
-    input: { namespace: string; key: string },
+    input: {
+      namespace: string;
+      key: string;
+      kind?: "node" | "edge";
+      edgeId?: string | null;
+    },
   ): { memoryId: string; _ts_created: number } {
     return upsertMemory(this.ctx(op), input);
   }
@@ -216,9 +237,18 @@ export class MemoriesPersistence implements IMemoriesPersistence {
     upsertMemorySearchMetaVector(this.ctx(op), input);
   }
 
-  deleteMemoryRootRows(memoryId: string, nodeId: string): void {
-    this.db.run(`DELETE FROM memories WHERE _id = ?`, [memoryId]);
-    this.db.run(`DELETE FROM nodes WHERE _id = ?`, [nodeId]);
+  deleteMemoryRootRows(
+    input:
+      | { memoryKind: "node"; memoryId: string; nodeId: string }
+      | { memoryKind: "edge"; edgeId: string },
+  ): void {
+    if (input.memoryKind === "node") {
+      this.db.run(`DELETE FROM memories WHERE _id = ?`, [input.memoryId]);
+      this.db.run(`DELETE FROM nodes WHERE _id = ?`, [input.nodeId]);
+      return;
+    }
+    /** With `edge_id` FK ON DELETE CASCADE, removing the edge removes the edge-attached memory row. */
+    this.db.run(`DELETE FROM edges WHERE _id = ?`, [input.edgeId]);
   }
 
   searchLexicalSourceMapIds(input: {
@@ -253,6 +283,17 @@ export class MemoriesPersistence implements IMemoriesPersistence {
     filters?: NeighborFilter<EDGE_LABEL, NODE_LABEL>;
   }): HydratedNeighbor[] {
     return listNeighborsForMemory<EDGE_LABEL, NODE_LABEL>({ db: this.db, now: 0 }, input);
+  }
+
+  listNeighborsForEdgeMemory<
+    EDGE_LABEL extends string = string,
+    NODE_LABEL extends string = string,
+  >(input: {
+    namespace: string;
+    edgeId: string;
+    filters?: NeighborFilter<EDGE_LABEL, NODE_LABEL>;
+  }): HydratedNeighbor[] {
+    return listNeighborsForEdgeMemory<EDGE_LABEL, NODE_LABEL>({ db: this.db, now: 0 }, input);
   }
 
   listSourceMapsForMemory(memoryId: string, limit: number): SourceMap[] {

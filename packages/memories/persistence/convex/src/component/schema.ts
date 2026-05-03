@@ -51,10 +51,13 @@ export default defineSchema({
     memoryId: v.string(),
     namespace: v.string(),
     key: v.string(),
+    kind: v.union(v.literal("node"), v.literal("edge")),
+    edgeId: v.optional(v.string()),
     tsCreated: v.number(),
   })
     .index("by_memoryId_tsCreated", ["memoryId", "tsCreated"])
-    .index("by_namespace_key", ["namespace", "key"]),
+    .index("by_namespace_key", ["namespace", "key"])
+    .index("by_edgeId", ["edgeId"]),
 
   source_maps: defineTable({
     sourceMapId: v.string(),

@@ -5,6 +5,7 @@ import {
   MEMORY_SEARCH_META_SOURCE_KEY,
 } from "@cfd/memories-core/search-meta-constants";
 import { blobToVector } from "../connection";
+import { loadGraphEdge } from "../visualization/projection";
 import { vectorVecTableName } from "../search-indexes";
 import type { DbCtx } from "./context";
 import { insertSourceMap } from "./source-maps";
@@ -121,6 +122,19 @@ export function buildCanonicalMemorySearchMetaText(
   namespace: string,
   memoryKey: string,
 ): string {
+  const memoryId = ids.memory(namespace, memoryKey);
+  const mk = ctx.db
+    .query<{ kind: string | null; edge_id: string | null }, [string]>(
+      `SELECT kind, edge_id FROM memories WHERE _id = ?`,
+    )
+    .get(memoryId);
+  const kind = mk?.kind ?? "node";
+  if (kind === "edge" && mk?.edge_id) {
+    const link = loadGraphEdge(ctx.db, namespace, mk.edge_id);
+    if (!link) return "";
+    const edgeKinds = link.labels.map((l) => l.kind).sort((a, b) => a.localeCompare(b));
+    return `edge_memory:${link.fromKey}<->${link.toKey}:${edgeKinds.join("|")}`;
+  }
   const nodeId = ids.node(namespace, memoryKey);
   const labels = collectNodeLabelsFromDb(ctx, nodeId);
   const nodeLines = formatNodeLines(labels);
