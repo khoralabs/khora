@@ -19,6 +19,8 @@ export function Marker({
   dimmed,
   forceTooltipOpen,
   tooltipCentroid,
+  nodeLabelsVisible = true,
+  searchHitPreviews = true,
   searchHitSnippet,
   onSelect,
   onHoverStart,
@@ -26,22 +28,29 @@ export function Marker({
 }: {
   point: ProjectionPoint;
   dimmed: boolean;
-  /** When true, tooltip stays open for nodes in the active ego subgraph (hover, pin, or search). */
+  /** When true, subgraph nodes request tooltip stay-open (only when there is tooltip body content). */
   forceTooltipOpen: boolean;
   /** Mean position (scaled world space) for outward tooltip side: subgraph or full graph. */
   tooltipCentroid: readonly [number, number, number];
+  /** Ontology kinds / key line in tooltip. */
+  nodeLabelsVisible?: boolean;
+  /** Search hit body text in tooltip (per-node when present). */
+  searchHitPreviews?: boolean;
   /** Matched `text_features` text for this memory's search hit source map (root hits only). */
   searchHitSnippet?: string;
   onSelect: (point: ProjectionPoint) => void;
   onHoverStart: (entryId: string) => void;
   onHoverEnd: () => void;
 }) {
-  const tooltipText = (
+  const tooltipLabelsLine = (
     point.labels.length > 0 ? point.labels.map((l) => l.kind) : [point.key]
   ).join(" • ");
+  const snippet = searchHitPreviews ? searchHitSnippet : undefined;
+  const tooltipCategoryAllowed = nodeLabelsVisible || searchHitPreviews;
+  const hasTooltipContent = nodeLabelsVisible || !!snippet;
   const [userTooltipOpen, setUserTooltipOpen] = useState(false);
   const [tooltipSide, setTooltipSide] = useState<"left" | "right">("right");
-  const tooltipOpen = forceTooltipOpen || userTooltipOpen;
+  const tooltipOpen = hasTooltipContent && (forceTooltipOpen || userTooltipOpen);
   const sideRef = useRef<"left" | "right">("right");
   /** Portal tooltips here so they share the drei Html stacking layer (not `document.body`). */
   const [tooltipPortalEl, setTooltipPortalEl] = useState<HTMLDivElement | null>(null);
@@ -63,6 +72,70 @@ export function Marker({
     }
   });
 
+  const buttonEl = (
+    <Button
+      type="button"
+      variant="outline"
+      size="icon-sm"
+      className="rounded-full border border-black"
+      style={{
+        opacity: dimmed ? 0.15 : 1,
+        pointerEvents: "auto",
+      }}
+      onPointerDown={(e) => {
+        if (e.button !== 0) return;
+        e.stopPropagation();
+        onSelect(point);
+      }}
+      onPointerEnter={() => onHoverStart(point.entryId)}
+      onPointerLeave={() => onHoverEnd()}
+    >
+      <DotIcon />
+    </Button>
+  );
+
+  const showTooltipChrome = tooltipCategoryAllowed && hasTooltipContent;
+
+  const wrapped = showTooltipChrome ? (
+    <TooltipProvider>
+      <Tooltip
+        open={tooltipOpen}
+        onOpenChange={(open) => {
+          if (!hasTooltipContent) return;
+          if (forceTooltipOpen) {
+            setUserTooltipOpen(false);
+            return;
+          }
+          setUserTooltipOpen(open);
+        }}
+      >
+        <TooltipTrigger asChild>{buttonEl}</TooltipTrigger>
+        <TooltipContent
+          key={tooltipSide}
+          container={tooltipPortalEl}
+          side={tooltipSide}
+          className={cn("opacity-50 p-3", snippet ? "max-w-[min(22rem,92vw)]" : "max-w-xs")}
+        >
+          {nodeLabelsVisible ? (
+            <span className="block whitespace-pre-line text-left text-xs">{tooltipLabelsLine}</span>
+          ) : null}
+          {snippet ? (
+            <span
+              className={cn(
+                "block max-h-[min(28vh,220px)] overflow-y-auto whitespace-pre-wrap text-left text-[10px] leading-snug text-muted-foreground",
+                nodeLabelsVisible && "mt-2 border-t border-border/50 pt-2",
+              )}
+            >
+              {snippet}
+            </span>
+          ) : null}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  ) : (
+    buttonEl
+  );
+
   return (
     <group position={[point.x * SCALE, point.y * SCALE, point.z * SCALE]}>
       {/*
@@ -76,56 +149,7 @@ export function Marker({
         style={{ pointerEvents: "none" }}
       >
         <div ref={tooltipLayerRef} className="relative w-fit" style={{ pointerEvents: "auto" }}>
-          <TooltipProvider>
-            <Tooltip
-              open={tooltipOpen}
-              onOpenChange={(open) => {
-                if (forceTooltipOpen) {
-                  setUserTooltipOpen(false);
-                  return;
-                }
-                setUserTooltipOpen(open);
-              }}
-            >
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon-sm"
-                  className="rounded-full border border-black"
-                  style={{
-                    opacity: dimmed ? 0.15 : 1,
-                    pointerEvents: "auto",
-                  }}
-                  onPointerDown={(e) => {
-                    if (e.button !== 0) return;
-                    e.stopPropagation();
-                    onSelect(point);
-                  }}
-                  onPointerEnter={() => onHoverStart(point.entryId)}
-                  onPointerLeave={() => onHoverEnd()}
-                >
-                  <DotIcon />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent
-                key={tooltipSide}
-                container={tooltipPortalEl}
-                side={tooltipSide}
-                className={cn(
-                  "opacity-50",
-                  searchHitSnippet ? "max-w-[min(22rem,92vw)]" : "max-w-xs",
-                )}
-              >
-                <span className="block whitespace-pre-line text-left text-xs">{tooltipText}</span>
-                {searchHitSnippet ? (
-                  <span className="mt-2 block max-h-[min(28vh,220px)] overflow-y-auto whitespace-pre-wrap pt-2 text-left text-[10px] leading-snug text-muted-foreground">
-                    {searchHitSnippet}
-                  </span>
-                ) : null}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          {wrapped}
         </div>
       </Html>
     </group>

@@ -27,8 +27,12 @@ export {
 } from "./graph-search.js";
 export * from "./projection-types.js";
 
-export type { GraphEdgeRenderMode } from "./scene.js";
-export { GraphScene } from "./scene.js";
+export type {
+  GraphEdgeRenderMode,
+  GraphSceneOverlayOptions,
+  GraphSceneResolvedOverlay,
+} from "./scene.js";
+export { GraphScene, resolveGraphSceneOverlay } from "./scene.js";
 export type {
   GraphProjectionProviderProps,
   MemoriesGraphChromeValue,

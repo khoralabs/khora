@@ -21,7 +21,10 @@ export function App() {
   return (
     <div className="fixed inset-0 overflow-hidden bg-background text-foreground">
       <GraphProjectionProvider namespace={defaultNamespace()} focusDelay={200}>
-        <GraphScene edgeRenderMode="activeOnly">
+        <GraphScene
+          edgeRenderMode="activeOnly"
+          overlay={{ nodeLabelsVisible: false, edgeLabelsVisible: false }}
+        >
           <GraphScene.TopLeft>
             <GraphOverlayContainer className="w-sm">
               <GraphNamespaceSelector />

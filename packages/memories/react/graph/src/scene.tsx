@@ -242,7 +242,34 @@ function useOrbitTarget(points: { x: number; y: number; z: number }[]): [number,
 
 export type { GraphEdgeRenderMode };
 
-function GraphSceneR3f({ edgeRenderMode }: { edgeRenderMode: GraphEdgeRenderMode }) {
+/** Visual toggles for the 3D graph layer (edges, labels, search snippets). All default to true. */
+export type GraphSceneOverlayOptions = {
+  edgesVisible?: boolean;
+  searchHitPreviews?: boolean;
+  edgeLabelsVisible?: boolean;
+  nodeLabelsVisible?: boolean;
+};
+
+export type GraphSceneResolvedOverlay = Required<GraphSceneOverlayOptions>;
+
+export function resolveGraphSceneOverlay(
+  partial?: GraphSceneOverlayOptions,
+): GraphSceneResolvedOverlay {
+  return {
+    edgesVisible: partial?.edgesVisible ?? true,
+    searchHitPreviews: partial?.searchHitPreviews ?? true,
+    edgeLabelsVisible: partial?.edgeLabelsVisible ?? true,
+    nodeLabelsVisible: partial?.nodeLabelsVisible ?? true,
+  };
+}
+
+function GraphSceneR3f({
+  edgeRenderMode,
+  overlay,
+}: {
+  edgeRenderMode: GraphEdgeRenderMode;
+  overlay: GraphSceneResolvedOverlay;
+}) {
   const {
     points,
     sceneEdges,
@@ -294,18 +321,22 @@ function GraphSceneR3f({ edgeRenderMode }: { edgeRenderMode: GraphEdgeRenderMode
       <pointLight position={[8, 8, 8]} intensity={40} />
       <pointLight position={[-8, -8, -4]} intensity={12} color="#8ab4ff" />
       <group>
-        <GraphEdgeLines
-          edges={sceneEdges}
-          posMap={posMap}
-          activeSubgraphKeys={activeSubgraphKeys}
-          graphSearch={graphSearch}
-          edgeRenderMode={edgeRenderMode}
-        />
-        <ActiveSubgraphEdgeLabels
-          edges={sceneEdges}
-          posMap={posMap}
-          activeSubgraphKeys={activeSubgraphKeys}
-        />
+        {overlay.edgesVisible ? (
+          <GraphEdgeLines
+            edges={sceneEdges}
+            posMap={posMap}
+            activeSubgraphKeys={activeSubgraphKeys}
+            graphSearch={graphSearch}
+            edgeRenderMode={edgeRenderMode}
+          />
+        ) : null}
+        {overlay.edgeLabelsVisible ? (
+          <ActiveSubgraphEdgeLabels
+            edges={sceneEdges}
+            posMap={posMap}
+            activeSubgraphKeys={activeSubgraphKeys}
+          />
+        ) : null}
         {points.map((point) => {
           const inActiveSubgraph = !!activeSubgraphKeys?.has(point.entryId);
           const searchDimmed =
@@ -318,7 +349,9 @@ function GraphSceneR3f({ edgeRenderMode }: { edgeRenderMode: GraphEdgeRenderMode
             point.entryId !== focusEntryId &&
             !activeSubgraphKeys.has(point.entryId);
           const forceTooltipOpen = !!activeSubgraphKeys?.has(point.entryId);
-          const searchHitSnippet = graphSearch?.hitSnippetByKey.get(point.entryId);
+          const searchHitSnippet = overlay.searchHitPreviews
+            ? graphSearch?.hitSnippetByKey.get(point.entryId)
+            : undefined;
           return (
             <Marker
               key={point.entryId}
@@ -326,6 +359,8 @@ function GraphSceneR3f({ edgeRenderMode }: { edgeRenderMode: GraphEdgeRenderMode
               dimmed={searchDimmed || subgraphDimmed}
               forceTooltipOpen={forceTooltipOpen}
               tooltipCentroid={tooltipCentroid}
+              nodeLabelsVisible={overlay.nodeLabelsVisible}
+              searchHitPreviews={overlay.searchHitPreviews}
               searchHitSnippet={searchHitSnippet}
               onSelect={setSelected}
               onHoverStart={onHoverStart}
@@ -348,12 +383,15 @@ function GraphSceneR3f({ edgeRenderMode }: { edgeRenderMode: GraphEdgeRenderMode
 
 function GraphSceneRoot({
   edgeRenderMode = "all",
+  overlay,
   children,
 }: {
   edgeRenderMode?: GraphEdgeRenderMode;
+  overlay?: GraphSceneOverlayOptions;
   children?: ReactNode;
 }) {
   const slots = partitionGraphSceneChildren(children);
+  const overlayResolved = resolveGraphSceneOverlay(overlay);
 
   return (
     <GraphCameraChromeProvider>
@@ -397,7 +435,7 @@ function GraphSceneRoot({
               preserveDrawingBuffer: false,
             }}
           >
-            <GraphSceneR3f edgeRenderMode={edgeRenderMode} />
+            <GraphSceneR3f edgeRenderMode={edgeRenderMode} overlay={overlayResolved} />
           </Canvas>
         </div>
       </div>
@@ -408,6 +446,8 @@ function GraphSceneRoot({
 /**
  * R3F canvas + composable overlay slots ({@link GraphScene.TopLeft}, {@link GraphScene.TopRight},
  * {@link GraphScene.BottomLeft}, {@link GraphScene.BottomRight}, {@link GraphScene.Center}). Must be wrapped in {@link GraphProjectionProvider}.
+ *
+ * Use {@link GraphSceneOverlayOptions} (`overlay` prop) to hide edges, edge/node labels, or search hit snippets in tooltips.
  */
 export const GraphScene = Object.assign(GraphSceneRoot, {
   TopLeft: GraphSceneTopLeft,
