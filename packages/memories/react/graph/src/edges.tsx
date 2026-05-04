@@ -2,7 +2,8 @@ import { Html, Line } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { type ComponentRef, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { cn } from "@/lib/utils";
+import { MeasuredText } from "./components/measured-text.js";
+import { FONT_EDGE_BODY, FONT_EDGE_LABEL } from "./lib/pretext-measure.js";
 import type { GraphSearchState, SceneEdge } from "./projection-types.js";
 import { graphLabelFingerprint, sceneEdgePairMergeKey } from "./projection-types.js";
 import { useProjection } from "./use-projection.js";
@@ -283,18 +284,29 @@ export function ActiveSubgraphEdgeLabels({
             <Html
               center
               distanceFactor={EDGE_LABEL_DISTANCE_FACTOR}
-              style={{ pointerEvents: "none" }}
+              style={{ pointerEvents: snippet ? "auto" : "none" }}
             >
-              <span
-                className={cn(
-                  "inline-block max-w-[min(22rem,92vw)] rounded bg-background/90 px-1.5 py-0.5 text-center text-[10px] text-foreground shadow-sm ring-1 ring-border/60",
-                  snippet ? "leading-snug" : "whitespace-nowrap leading-none",
-                )}
-              >
-                <span className={cn("block", snippet ? "text-left" : "")}>{text}</span>
+              <span className="inline-block rounded bg-background/90 px-1.5 py-0.5 text-foreground shadow-sm ring-1 ring-border/60">
+                <MeasuredText
+                  text={text}
+                  font={FONT_EDGE_LABEL}
+                  lineHeight={12}
+                  maxWidth={280}
+                  maxLines={snippet ? 2 : 1}
+                  whiteSpace="normal"
+                  className={snippet ? "text-left" : "text-center"}
+                />
                 {snippet ? (
-                  <span className="mt-1 block max-h-[min(28vh,220px)] overflow-y-auto whitespace-pre-wrap border-t border-border/50 pt-1 text-left text-[10px] text-muted-foreground">
-                    {snippet}
+                  <span className="mt-1 block border-t border-border/50 pt-1">
+                    <MeasuredText
+                      text={snippet}
+                      font={FONT_EDGE_BODY}
+                      lineHeight={14}
+                      maxWidth={320}
+                      maxLines={4}
+                      whiteSpace="pre-wrap"
+                      className="text-left text-[10px] leading-snug"
+                    />
                   </span>
                 ) : null}
               </span>

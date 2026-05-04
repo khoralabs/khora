@@ -6,6 +6,8 @@ import * as THREE from "three";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { MeasuredText } from "./components/measured-text.js";
+import { FONT_TOOLTIP_BODY, FONT_TOOLTIP_KINDS } from "./lib/pretext-measure.js";
 import { type ProjectionPoint, SCALE } from "./projection-types.js";
 
 /** Screen-space scale vs distance; pairs with camera FOV / zoom (see drei `Html`). */
@@ -114,20 +116,36 @@ export function Marker({
           key={tooltipSide}
           container={tooltipPortalEl}
           side={tooltipSide}
-          className={cn("opacity-50 p-3", snippet ? "max-w-[min(22rem,92vw)]" : "max-w-xs")}
+          className="opacity-50 p-3"
         >
           {nodeLabelsVisible ? (
-            <span className="block whitespace-pre-line text-left text-xs">{tooltipLabelsLine}</span>
+            <MeasuredText
+              text={tooltipLabelsLine}
+              font={FONT_TOOLTIP_KINDS}
+              lineHeight={16}
+              maxWidth={280}
+              maxLines={2}
+              whiteSpace="normal"
+              className="text-left text-xs"
+              tooltipContainer={tooltipPortalEl}
+              tooltipSide={tooltipSide}
+            />
           ) : null}
           {snippet ? (
-            <span
+            <MeasuredText
+              text={snippet}
+              font={FONT_TOOLTIP_BODY}
+              lineHeight={14}
+              maxWidth={320}
+              maxLines={6}
+              whiteSpace="pre-wrap"
               className={cn(
-                "block max-h-[min(28vh,220px)] overflow-y-auto whitespace-pre-wrap text-left text-[10px] leading-snug text-muted-foreground",
+                "text-left text-[10px] leading-snug",
                 nodeLabelsVisible && "mt-2 border-t border-border/50 pt-2",
               )}
-            >
-              {snippet}
-            </span>
+              tooltipContainer={tooltipPortalEl}
+              tooltipSide={tooltipSide}
+            />
           ) : null}
         </TooltipContent>
       </Tooltip>

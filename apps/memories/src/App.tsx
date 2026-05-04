@@ -12,6 +12,10 @@ import {
   GraphScene,
   GraphSearch,
 } from "@cfd/memories-react-graph";
+import { MenuIcon } from "lucide-react";
+import { useState } from "react";
+import { Button } from "./components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./components/ui/collapsible";
 
 function defaultNamespace(): string {
   if (typeof window === "undefined") return "_global_";
@@ -20,6 +24,7 @@ function defaultNamespace(): string {
 }
 
 export function App() {
+  const [open, setOpen] = useState(false);
   return (
     <div className="fixed inset-0 overflow-hidden bg-background text-foreground">
       <GraphProjectionProvider namespace={defaultNamespace()} focusDelay={200}>
@@ -30,11 +35,20 @@ export function App() {
           >
             <GraphScene.TopLeft>
               <div className="flex flex-col gap-4 w-sm">
-                <GraphOverlayContainer>
-                  <GraphNamespaceSelector />
-                  <GraphSearch />
-                  <GraphFetchError />
-                </GraphOverlayContainer>
+                <Collapsible open={open} onOpenChange={setOpen}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      {open ? <MenuIcon /> : <MenuIcon />}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <GraphOverlayContainer>
+                      <GraphNamespaceSelector />
+                      <GraphSearch />
+                      <GraphFetchError />
+                    </GraphOverlayContainer>
+                  </CollapsibleContent>
+                </Collapsible>
                 <GraphInvestigatorAnswerOverlay />
               </div>
             </GraphScene.TopLeft>
