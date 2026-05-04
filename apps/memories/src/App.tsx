@@ -49,7 +49,7 @@ export function App() {
                     </GraphOverlayContainer>
                   </CollapsibleContent>
                 </Collapsible>
-                <GraphInvestigatorAnswerOverlay />
+                <GraphInvestigatorAnswerOverlay className="overflow-y-auto max-h-72" />
               </div>
             </GraphScene.TopLeft>
             <GraphScene.Center>

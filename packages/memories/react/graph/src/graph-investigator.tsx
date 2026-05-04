@@ -10,7 +10,6 @@ import {
 } from "react";
 import { LoaderWithMessage } from "./components/loader-with-message.js";
 import { GraphOverlayContainer } from "./graph-overlay-container.js";
-import { cn } from "./lib/utils.js";
 import type { GraphSearchState } from "./projection-types.js";
 import { unifiedMarkdown } from "./unified-markdown.js";
 import { useMemoriesGraphChrome, useProjection } from "./use-projection.js";
@@ -252,9 +251,7 @@ export function GraphInvestigatorAnswer() {
             {answer.citations.map((c) => {
               const point = pointByKey.get(c.memory_key);
               const code = (
-                <code className="rounded bg-muted px-1 py-0.5 text-foreground">
-                  {c.memory_key}
-                </code>
+                <code className="rounded bg-muted px-1 py-0.5 text-foreground">{c.memory_key}</code>
               );
               return (
                 <li key={c.memory_key} className="text-xs text-muted-foreground">
@@ -301,7 +298,7 @@ export function GraphInvestigatorAnswerOverlay({ className }: { className?: stri
   const { loading, answer, error } = useGraphInvestigator();
   if (!loading && !answer && !error) return null;
   return (
-    <GraphOverlayContainer className={cn("overflow-y-auto max-h-72", className)}>
+    <GraphOverlayContainer className={className}>
       <GraphInvestigatorAnswer />
     </GraphOverlayContainer>
   );
