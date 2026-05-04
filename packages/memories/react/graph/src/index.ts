@@ -13,6 +13,15 @@ export {
   useGraphCameraChrome,
 } from "./graph-camera-chrome.js";
 export { GraphFetchError } from "./graph-fetch-error.js";
+export {
+  GraphInvestigatorAnswer,
+  GraphInvestigatorAnswerOverlay,
+  GraphInvestigatorProvider,
+  type GraphInvestigatorValue,
+  type InvestigatorAnswer,
+  type InvestigatorCitation,
+  useGraphInvestigator,
+} from "./graph-investigator.js";
 export { GraphLoading } from "./graph-loading.js";
 export {
   GraphNamespaceSelector,
@@ -24,6 +33,7 @@ export { GraphPreviewDock } from "./graph-preview-dock.js";
 export {
   GraphSearch,
   graphSearchSummaryLine,
+  type GraphSearchProps,
 } from "./graph-search.js";
 export * from "./projection-types.js";
 

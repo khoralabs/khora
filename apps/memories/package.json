@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.0",
+    "@cfd/agent-identity": "workspace:*",
     "@cfd/memories-core": "workspace:*",
+    "@cfd/memories-investigator": "workspace:*",
     "@cfd/memories-react-graph": "workspace:*",
     "@cfd/memories-sqlite": "workspace:*",
     "@radix-ui/react-label": "^2.1.7",

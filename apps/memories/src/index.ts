@@ -1,9 +1,17 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { type AgentRegistry, createAgentRegistry } from "@cfd/agent-identity";
 import {
+  MemoriesClient,
   type SearchHit,
   searchAsync,
   wrapSyncMemoriesPersistenceAsAsync,
 } from "@cfd/memories-core";
+import {
+  createMemoriesEmbeddingModel,
+  mergeResolutionAndProviderOptions,
+} from "@cfd/memories-core/helpers";
+import { canonicalOntology } from "@cfd/memories-core/ontologies";
+import { MemoryInvestigatorClient } from "@cfd/memories-investigator";
 import {
   buildNamespaceGraphLayout,
   createMemoriesPersistence,
@@ -100,6 +108,13 @@ function jsonResponse(data: unknown, status = 200): Response {
     status,
     headers: { "Content-Type": "application/json" },
   });
+}
+
+/** Process-wide registry; investigator caches its agent identity by namespace + tool config. */
+let investigatorRegistry: AgentRegistry | undefined;
+function getInvestigatorRegistry(): AgentRegistry {
+  if (!investigatorRegistry) investigatorRegistry = createAgentRegistry();
+  return investigatorRegistry;
 }
 
 function parseListenPort(): number {
@@ -278,6 +293,78 @@ const server = serve({
           hitSnippets,
           edgeHitSnippets,
         });
+      } catch (err) {
+        return jsonResponse({ error: String(err) }, 500);
+      } finally {
+        db.close();
+      }
+    },
+    "/api/investigate": async (req) => {
+      if (req.method !== "POST") {
+        return new Response("Method Not Allowed", { status: 405 });
+      }
+      let body: {
+        namespace?: string;
+        question?: string;
+        maxSteps?: number;
+        resolution?: string;
+      };
+      try {
+        body = (await req.json()) as typeof body;
+      } catch {
+        return jsonResponse({ error: "invalid JSON body" }, 400);
+      }
+      const namespace = body.namespace?.trim();
+      const question = body.question?.trim();
+      if (!namespace) return jsonResponse({ error: "missing namespace" }, 400);
+      if (!question) return jsonResponse({ error: "missing question" }, 400);
+      if (!MEMORIES_DB_PATH) {
+        return jsonResponse(
+          { error: "set MEMORIES_DB_PATH to your SQLite memories database file" },
+          400,
+        );
+      }
+      const apiKey = resolveGeminiApiKey();
+      if (!apiKey) {
+        return jsonResponse(
+          {
+            error:
+              "set GOOGLE_GENERATIVE_AI_API_KEY / GOOGLE_API_KEY / GEMINI_API_KEY for the memory investigator",
+          },
+          400,
+        );
+      }
+      const rawSteps = Number(body.maxSteps);
+      const maxSteps =
+        Number.isFinite(rawSteps) && rawSteps > 0 ? Math.min(50, Math.floor(rawSteps)) : 12;
+
+      let db: ReturnType<typeof openMemoriesDatabaseReadonly>;
+      try {
+        db = openMemoriesDatabaseReadonly(MEMORIES_DB_PATH);
+      } catch (err) {
+        return jsonResponse({ error: `open database: ${String(err)}` }, 500);
+      }
+      try {
+        const persistence = createMemoriesPersistence(db);
+        const resolution = resolveSearchEmbeddingPreset(persistence, body.resolution);
+        const google = createGoogleGenerativeAI({ apiKey });
+        const embeddingModel = createMemoriesEmbeddingModel({
+          model: google.embedding("gemini-embedding-2-preview"),
+          providerOptions: mergeResolutionAndProviderOptions(resolution),
+        });
+        const modelId =
+          process.env.MEMORIES_INVESTIGATOR_MODEL?.trim() || "gemini-flash-latest";
+        const model = google.languageModel(modelId);
+        const client = new MemoriesClient(persistence, canonicalOntology);
+        const investigator = new MemoryInvestigatorClient({
+          registry: getInvestigatorRegistry(),
+          namespace,
+          model,
+          client,
+          embeddingModel,
+        });
+        const { answer } = await investigator.investigate({ question, maxSteps });
+        return jsonResponse(answer);
       } catch (err) {
         return jsonResponse({ error: String(err) }, 500);
       } finally {

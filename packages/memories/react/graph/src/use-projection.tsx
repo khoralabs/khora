@@ -89,6 +89,9 @@ export type MemoriesGraphChromeBaseValue = {
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   graphSearch: GraphSearchState | null;
+  /** When set, replaces the debounced `graphSearch` driving subgraph activation and tooltips. */
+  graphSearchOverride: GraphSearchState | null;
+  setGraphSearchOverride: (s: GraphSearchState | null) => void;
   searchLoading: boolean;
   graphLoading: boolean;
   graphError: string | null;
@@ -644,6 +647,7 @@ export function GraphProjectionProvider({
 
   const [searchQuery, setSearchQuery] = useState("");
   const [graphSearch, setGraphSearch] = useState<GraphSearchState | null>(null);
+  const [graphSearchOverride, setGraphSearchOverride] = useState<GraphSearchState | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
 
   useEffect(() => {
@@ -741,6 +745,8 @@ export function GraphProjectionProvider({
     void reloadNamespaces();
   }, [loadGraph, reloadNamespaces]);
 
+  const effectiveGraphSearch = graphSearchOverride ?? graphSearch;
+
   const chromeValue = useMemo(
     (): MemoriesGraphChromeBaseValue => ({
       namespace,
@@ -751,7 +757,9 @@ export function GraphProjectionProvider({
       reloadNamespaces,
       searchQuery,
       setSearchQuery,
-      graphSearch,
+      graphSearch: effectiveGraphSearch,
+      graphSearchOverride,
+      setGraphSearchOverride,
       searchLoading,
       graphLoading,
       graphError,
@@ -766,7 +774,8 @@ export function GraphProjectionProvider({
       namespacesError,
       reloadNamespaces,
       searchQuery,
-      graphSearch,
+      effectiveGraphSearch,
+      graphSearchOverride,
       searchLoading,
       graphLoading,
       graphError,
@@ -780,7 +789,7 @@ export function GraphProjectionProvider({
     <MemoriesGraphChromeBaseContext.Provider value={chromeValue}>
       <ProjectionProviderInner
         data={effectiveData}
-        graphSearch={graphSearch}
+        graphSearch={effectiveGraphSearch}
         searchQuery={searchQuery}
         focusDelay={focusDelay}
         unFocusDelay={unFocusDelay}

@@ -1,6 +1,8 @@
 import {
   GraphCameraReframeHint,
   GraphFetchError,
+  GraphInvestigatorAnswerOverlay,
+  GraphInvestigatorProvider,
   GraphLoading,
   GraphNamespaceSelector,
   GraphOverlayContainer,
@@ -21,30 +23,35 @@ export function App() {
   return (
     <div className="fixed inset-0 overflow-hidden bg-background text-foreground">
       <GraphProjectionProvider namespace={defaultNamespace()} focusDelay={200}>
-        <GraphScene
-          edgeRenderMode="activeOnly"
-          overlay={{ nodeLabelsVisible: false, edgeLabelsVisible: false }}
-        >
-          <GraphScene.TopLeft>
-            <GraphOverlayContainer className="w-sm">
-              <GraphNamespaceSelector />
-              <GraphSearch />
-              <GraphFetchError />
-            </GraphOverlayContainer>
-          </GraphScene.TopLeft>
-          <GraphScene.Center>
-            <GraphLoading />
-          </GraphScene.Center>
-          <GraphScene.TopRight>
-            <div className="flex items-center justify-end gap-2">
-              <GraphCameraReframeHint />
-              <GraphPinnedEscHint />
-            </div>
-          </GraphScene.TopRight>
-          <GraphScene.BottomRight>
-            <GraphPreviewDock />
-          </GraphScene.BottomRight>
-        </GraphScene>
+        <GraphInvestigatorProvider>
+          <GraphScene
+            edgeRenderMode="activeOnly"
+            overlay={{ nodeLabelsVisible: false, edgeLabelsVisible: false }}
+          >
+            <GraphScene.TopLeft>
+              <div className="flex flex-col gap-4 w-sm">
+                <GraphOverlayContainer>
+                  <GraphNamespaceSelector />
+                  <GraphSearch />
+                  <GraphFetchError />
+                </GraphOverlayContainer>
+                <GraphInvestigatorAnswerOverlay />
+              </div>
+            </GraphScene.TopLeft>
+            <GraphScene.Center>
+              <GraphLoading />
+            </GraphScene.Center>
+            <GraphScene.TopRight>
+              <div className="flex items-center justify-end gap-2">
+                <GraphCameraReframeHint />
+                <GraphPinnedEscHint />
+              </div>
+            </GraphScene.TopRight>
+            <GraphScene.BottomRight>
+              <GraphPreviewDock />
+            </GraphScene.BottomRight>
+          </GraphScene>
+        </GraphInvestigatorProvider>
       </GraphProjectionProvider>
     </div>
   );
