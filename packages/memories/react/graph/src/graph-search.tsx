@@ -85,7 +85,7 @@ function GraphSearchRegular({
                   <BrainIcon aria-hidden />
                 </InputGroupButton>
               </TooltipTrigger>
-              <TooltipContent>Enable deep search</TooltipContent>
+              <TooltipContent side="right">Enable deep search</TooltipContent>
             </Tooltip>
           </TooltipProvider>
         </InputGroupAddon>
@@ -152,7 +152,7 @@ function GraphSearchDeep({
                 <ScanSearchIcon className="text-muted-foreground" aria-hidden />
               </InputGroupButton>
             </TooltipTrigger>
-            <TooltipContent>Disable deep search</TooltipContent>
+            <TooltipContent side="right">Disable deep search</TooltipContent>
           </Tooltip>
         </TooltipProvider>
         <InputGroupButton
