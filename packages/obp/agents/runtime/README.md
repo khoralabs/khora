@@ -12,7 +12,7 @@ ObpLedger (shared truth: client + persistence + turn counter + audit tail)
               └── createNegotiationToolLoopBilateralContract    (experimental stub)
 ```
 
-- `ObpLedger` owns the negotiation's `ObpClient`, `ObpPersistence`, wall clock, `maxTurns`, and audit tail.
+- `ObpLedger` owns the negotiation's `OBPPersistenceClient`, `ObpPersistence`, wall clock, `maxTurns`, and audit tail.
 - `TurnContract.prepare(partyId)` returns a `PreparedTurn` (Zod schema **or** allowed-tool whitelist + system fragments + user message + metadata).
 - `TurnContract.apply(partyId, raw)` mutates the graph and records an audit on the ledger.
 - `BilateralCoordinator.runNextTurn()` alternates parties, calls a host-supplied `RunAgentTurn` to produce raw output, then hands it to the contract's `apply`.

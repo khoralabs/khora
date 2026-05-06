@@ -1,5 +1,5 @@
-import type { ObpClient } from "./client";
-import type { ObpPersistence } from "./persistence-types";
+import type { OBPPersistenceClient } from "./obp-persistence-client.ts";
+import type { ObpPersistence } from "./persistence-types.ts";
 
 export type CompletedDeal = {
   offerId: string;
@@ -11,7 +11,7 @@ export type CompletedDeal = {
  * A completed negotiation on the graph: a bind to a terminal port on an offer extended by `providerPartyId`.
  */
 export function resolveCompletedDeal(
-  client: ObpClient,
+  client: OBPPersistenceClient,
   persistence: ObpPersistence,
   providerPartyId: string,
 ): CompletedDeal | null {

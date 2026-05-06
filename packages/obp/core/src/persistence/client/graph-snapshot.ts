@@ -1,11 +1,11 @@
-import type { PortBindPolicy } from "./bind-policy/types.ts";
-import type { ContentAddressedSourceRef } from "./model/types.ts";
+import type { PortBindPolicy } from "../../bind-policy/types.ts";
+import type { ContentAddressedSourceRef } from "../../model/types.ts";
 
 /**
  * JSON-safe DAG view of an OBP session: parties, offers, ports, and the
  * EXTENDS / EXPOSES / BINDS edges that connect them.
  *
- * Hosts emit this shape from their persistence + `ObpClient`
+ * Hosts emit this shape from their persistence + {@link OBPPersistenceClient}
  * and pass it to UIs, prompt formatters (often a compact subset), or
  * audit/replay tooling.
  *

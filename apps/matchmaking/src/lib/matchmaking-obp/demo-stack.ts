@@ -1,5 +1,5 @@
 import { Database } from "bun:sqlite";
-import { ObpClient, type ObpPersistence } from "@cfd/obp-core";
+import { OBPPersistenceClient, type ObpPersistence } from "@cfd/obp-core";
 import { createObpSqlitePersistence, initObpSchema, openObpDatabase } from "@cfd/obp-sqlite";
 
 /** Default fixed ledger sequence for demos (same value on every read, like the old wall-clock demo). */
@@ -7,7 +7,7 @@ export const DEMO_LEDGER_SEQ = 1_704_067_200_000;
 
 export type DemoStack = {
   db: Database;
-  client: ObpClient;
+  client: OBPPersistenceClient;
   persistence: ObpPersistence;
   ledgerSeq: () => number;
   /** Wall-clock ms for JSONL logging only; OBP validity uses {@link ledgerSeq}. */
@@ -35,6 +35,6 @@ export function createDemoStack(options?: CreateDemoStackOptions): DemoStack {
           return d;
         })();
   const persistence = createObpSqlitePersistence(db, { ledgerSeq });
-  const client = new ObpClient(persistence, { ledgerSeq });
+  const client = new OBPPersistenceClient(persistence, { ledgerSeq });
   return { db, client, persistence, ledgerSeq, demoLogNowMs };
 }

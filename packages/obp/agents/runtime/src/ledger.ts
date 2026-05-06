@@ -1,9 +1,9 @@
-import type { ObpClient, ObpPersistence } from "@cfd/obp-core";
+import type { OBPPersistenceClient, ObpPersistence } from "@cfd/obp-core";
 
 /**
  * Shared negotiation truth: one ledger per conversation / deal / channel.
  *
- * Owns the {@link ObpClient} + {@link ObpPersistence} pair, the ledger sequence callback,
+ * Owns the {@link OBPPersistenceClient} + {@link ObpPersistence} pair, the ledger sequence callback,
  * the turn counter, and the audit tail. Per-agent {@link TurnContract}s read and
  * write through this ledger; the {@link BilateralCoordinator} (or any other
  * coordinator) sequences turns against it.
@@ -12,7 +12,7 @@ import type { ObpClient, ObpPersistence } from "@cfd/obp-core";
  * tracks the bookkeeping needed to drive a negotiation forward.
  */
 export type ObpLedgerOptions<TAudit> = {
-  client: ObpClient;
+  client: OBPPersistenceClient;
   persistence: ObpPersistence;
   ledgerSeq: () => number;
   /** Max number of completed turns this ledger will accept; coordinators check before running. */
@@ -24,7 +24,7 @@ export type ObpLedgerOptions<TAudit> = {
 };
 
 export class ObpLedger<TAudit> {
-  readonly client: ObpClient;
+  readonly client: OBPPersistenceClient;
   readonly persistence: ObpPersistence;
   readonly ledgerSeq: () => number;
   readonly maxTurns: number;

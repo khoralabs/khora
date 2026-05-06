@@ -1,4 +1,4 @@
-import type { ObpClient, ObpPersistence } from "@cfd/obp-core";
+import type { OBPPersistenceClient, ObpPersistence } from "@cfd/obp-core";
 import { validateBindPreconditions } from "@cfd/obp-core";
 import { parsePriceFromType } from "./encoding.ts";
 import type { ObpToolkitEnv } from "./obp-toolkit-env.ts";
@@ -15,7 +15,7 @@ export type BindableCounterpartyPort = {
  * {@link computeNegotiationContext} bind tools (without dynamic tool metadata).
  */
 export async function listBindableCounterpartyPorts(args: {
-  client: ObpClient;
+  client: OBPPersistenceClient;
   persistence: ObpPersistence;
   actingPartyId: string;
   ledgerSeq: number;
@@ -75,7 +75,7 @@ export async function listBindableCounterpartyPorts(args: {
 
 /** Pick the newest counterparty offer (by **`created_seq`**) among the given bindable rows. */
 export function newestOfferIdAmongBindable(
-  client: ObpClient,
+  client: OBPPersistenceClient,
   bindable: ReadonlyArray<Pick<BindableCounterpartyPort, "offerId">>,
 ): string | null {
   let best: { offerId: string; seq: number } | null = null;

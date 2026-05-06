@@ -16,9 +16,16 @@ export type {
   PortBindPolicy,
   PortBindPolicyVersion,
 } from "./bind-policy/types.ts";
-export { ObpClient, type ObpClientOptions } from "./client";
-export { ObpError, type ObpErrorCode } from "./errors";
-export type { GraphSnapshot } from "./graph-snapshot.ts";
+export {
+  ObpError,
+  OBPPersistenceClient,
+  resolveCompletedDeal,
+  type GraphSnapshot,
+  type ObpErrorCode,
+  type OBPPersistenceClientOptions,
+  type ObpPersistence,
+  type CompletedDeal,
+} from "./persistence/client/index.ts";
 export {
   type BindValidationFailure,
   type BindValidationInput,
@@ -47,5 +54,39 @@ export type {
   RegisterPartyInput,
   SourceMapRef,
 } from "./model/types";
-export type { ObpPersistence } from "./persistence-types";
-export { type CompletedDeal, resolveCompletedDeal } from "./resolve-completed-deal";
+export { createMemoryFrameChannelPair, type FrameChannel } from "./frames/channel.ts";
+export { canonicalJsonString, canonicalJsonUtf8 } from "./frames/canonical.ts";
+export { FrameDag, sha256HexUtf8, signingPayloadBytes } from "./frames/dag.ts";
+export { createFrameDecoder, encodeFramedJson, encodeLengthPrefixed } from "./frames/framing.ts";
+export {
+  applyProliferate,
+  applyResolve,
+  parseProliferateBody,
+  parseResolveBody,
+} from "./frames/graph-effect.ts";
+export {
+  type FrameSessionHandlers,
+  type RunFrameSessionArgs,
+  runFrameSession,
+} from "./frames/session-pipeline.ts";
+export {
+  createEd25519FrameSigner,
+  createEd25519FrameVerifier,
+  type FrameSigner,
+  type FrameVerifier,
+  generateEd25519KeyPair,
+  importEd25519PublicKeyFromActorHex,
+  publicKeyActorHex,
+} from "./frames/signer.ts";
+export { accumulateSessionOps, frameToSessionOps, type SessionOp } from "./frames/to-session-op.ts";
+export type {
+  Frame,
+  FrameSessionHandle,
+  FrameType,
+  PortSpec,
+  ProliferateBody,
+  ResolveBody,
+  SessionInit,
+  TerminateBody,
+} from "./frames/types.ts";
+

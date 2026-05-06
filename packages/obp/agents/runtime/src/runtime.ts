@@ -1,6 +1,6 @@
 import {
   type BindPolicyField,
-  type ObpClient,
+  type OBPPersistenceClient,
   type ObpPersistence,
   type Port,
   type PortBindPolicy,
@@ -118,7 +118,7 @@ export type NegotiationTurnAudit = NegotiationGenesisTurnAudit | NegotiationBind
  * in a follow-up release.
  */
 export type NegotiationRuntimeOptions = {
-  client: ObpClient;
+  client: OBPPersistenceClient;
   persistence: ObpPersistence;
   ledgerSeq: () => number;
   /** When true (default), host exposes the noop synthetic port on the counterparty head offer. */

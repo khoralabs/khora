@@ -19,7 +19,7 @@ OBP is a small typed graph for causal interaction history: **Party** → **Offer
 5. **Port.ref:** resolve before bind rules; detect cycles on the ref chain and reject.
 6. **Port.terminal** is an agent hint only; it does not change bind rules.
 7. **Bind policy:** **Port** may carry **`bind_policy`** (`Document`) declaring constraint metadata. When present and non-empty per implementation rules, **BindPort** / bind leg of **ExtendOffer** MUST supply **`counterparty_bind`** satisfaction data validated against that policy before committing the **BINDS** edge; validated payload is stored on **`BindsEdge.counterparty_bind`** (see `shapes.smithy`). **`bind_policy_snapshot`** on the edge is an optional audit copy of the policy used at bind time.
-8. **Party `name`** on **RegisterParty** MUST be non-empty after trim (TS **`ObpClient`**).
+8. **Party `name`** on **RegisterParty** MUST be non-empty after trim (TS **`OBPPersistenceClient`**).
 
 **Provenance:** optional **sourcemaps** on entities and edges (see `SourceMapRef` in `shapes.smithy`) — store-agnostic; a concrete adapter may map them to an external system (e.g. a document store’s ids).
 
@@ -27,7 +27,7 @@ OBP is a small typed graph for causal interaction history: **Party** → **Offer
 
 **Revocation (soft close):** implementations MAY support setting **`expires_seq`** on **Port** / **Offer** to the **current ledger sequence** so subsequent binds fail the expiry check. **ListExposedPortEdges** supports enumerating EXPOSES for orchestration (e.g. dynamic tools).
 
-**Orchestration reads:** **IsPortExposed**, **ListBinds**, **GetPortsSnapshot**, and **GetExtendingPartyId** mirror the **`ObpPersistence`** strategy surface in `@cfd/obp-core` (same semantics as TS **`ObpClient`** precondition helpers).
+**Orchestration reads:** **IsPortExposed**, **ListBinds**, **GetPortsSnapshot**, and **GetExtendingPartyId** mirror the **`ObpPersistence`** strategy surface in `@cfd/obp-core` (same semantics as TS **`OBPPersistenceClient`** precondition helpers).
 
 **Errors:** Operations model **success** shapes only. Implementations may throw or map failures for: not found, expired, not exposed, max bindings exceeded, ref cycle, invalid graph, bind-policy validation failure.
 
@@ -40,6 +40,8 @@ OBP is a small typed graph for causal interaction history: **Party** → **Offer
 Narrative: `packages/obp/README.md`, `packages/obp/documentation/*.md`, `packages/obp/documentation/*.obp`.
 
 **Decentralized session sync:** Normative protocol (checkpoints, Merkle tree, hashing, verification, fork semantics) is **`cfd.obp.session#NegotiationSessionProtocol`** in `packages/obp/spec/model/session-protocol.smithy`. Non-normative reader guide: `packages/obp/documentation/decentralized-session.md`.
+
+**Live negotiation frames:** Bilateral signed **Frame** DAG rules (transport-agnostic) are **`cfd.obp.frame#NegotiationFrameProtocol`** in `packages/obp/spec/model/frame-protocol.smithy`. The HTTP/2 reference binding is **`cfd.obp.frame.http2#Http2Binding`** in `packages/obp/spec/model/frame-binding-http2.smithy`.
 """)
 service ObpPersistence {
     version: "2026-05-01"

@@ -1,21 +1,21 @@
 import { describe, expect, test } from "bun:test";
-import type { PortBindPolicy } from "./bind-policy/types.ts";
-import { ObpClient } from "./client";
-import { ObpError } from "./errors";
-import { FakeObpPersistence } from "./testing/fake-obp-persistence";
+import type { PortBindPolicy } from "../../bind-policy/types.ts";
+import { ObpError } from "./errors.ts";
+import { OBPPersistenceClient } from "./obp-persistence-client.ts";
+import { FakeObpPersistence } from "../../testing/fake-obp-persistence.ts";
 
 const seq = () => 100;
 
-describe("ObpClient + FakeObpPersistence", () => {
+describe("OBPPersistenceClient + FakeObpPersistence", () => {
   test("registerParty rejects empty name", () => {
     const p = new FakeObpPersistence(seq);
-    const c = new ObpClient(p, { ledgerSeq: seq });
+    const c = new OBPPersistenceClient(p, { ledgerSeq: seq });
     expect(() => c.registerParty({ name: "  ", sourcemaps: [] })).toThrow(ObpError);
   });
 
   test("extendOffer with bind requires exposed port", () => {
     const p = new FakeObpPersistence(seq);
-    const c = new ObpClient(p, { ledgerSeq: seq });
+    const c = new OBPPersistenceClient(p, { ledgerSeq: seq });
     const { party } = c.registerParty({ name: "P", sourcemaps: [] });
     p.ports.set("port1", {
       id: "port1",
@@ -46,7 +46,7 @@ describe("ObpClient + FakeObpPersistence", () => {
 
   test("happy path: expose then extend with bind", () => {
     const p = new FakeObpPersistence(seq);
-    const c = new ObpClient(p, { ledgerSeq: seq });
+    const c = new OBPPersistenceClient(p, { ledgerSeq: seq });
     const { party } = c.registerParty({ name: "Acme", sourcemaps: [] });
     const { offer: created } = c.extendOffer({
       partyId: party.id,
@@ -94,7 +94,7 @@ describe("ObpClient + FakeObpPersistence", () => {
       properties: [{ type: "boolean", name: "Agree", prompt: "Accept terms" }],
     };
     const fake = new FakeObpPersistence(seq);
-    const c = new ObpClient(fake, { ledgerSeq: seq });
+    const c = new OBPPersistenceClient(fake, { ledgerSeq: seq });
     const { party } = c.registerParty({ name: "P", sourcemaps: [] });
     const { offer: o0 } = c.extendOffer({
       partyId: party.id,

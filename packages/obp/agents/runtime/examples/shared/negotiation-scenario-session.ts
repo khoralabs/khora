@@ -1,4 +1,4 @@
-import { ObpClient, type Party } from "@cfd/obp-core";
+import { OBPPersistenceClient, type Party } from "@cfd/obp-core";
 import { FakeObpPersistence } from "@cfd/obp-core/testing";
 import type {
   ObpNegotiatorPreparedTurn,
@@ -74,7 +74,7 @@ export function createNegotiationScenarioSession(scenario: ScenarioNegotiationCo
   const partyNames = scenario.partyDisplayNames;
 
   let persistence: FakeObpPersistence;
-  let client: ObpClient;
+  let client: OBPPersistenceClient;
   let buyer: Party;
   let seller: Party;
   let walkAwayRequested = false;
@@ -115,7 +115,7 @@ export function createNegotiationScenarioSession(scenario: ScenarioNegotiationCo
 
   async function initNegotiationSession(): Promise<void> {
     persistence = new FakeObpPersistence(ledgerSeq);
-    client = new ObpClient(persistence, { ledgerSeq });
+    client = new OBPPersistenceClient(persistence, { ledgerSeq });
     buyer = persistence.registerParty({ name: partyNames.buyer, sourcemaps: [] }).party;
     seller = persistence.registerParty({ name: partyNames.seller, sourcemaps: [] }).party;
     walkAwayRequested = false;

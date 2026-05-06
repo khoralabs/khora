@@ -1,4 +1,4 @@
-import type { ObpClient, ObpPersistence } from "@cfd/obp-core";
+import type { OBPPersistenceClient, ObpPersistence } from "@cfd/obp-core";
 import { listBindableCounterpartyPorts } from "./bindable-counterparty-ports.ts";
 import type { ObpNegotiationToolContext, ObpToolkitEnv } from "./obp-toolkit-env.ts";
 
@@ -56,7 +56,7 @@ export function captureNegotiationEndFromToolExecuted(
  * runs optional `validateBind` (session policy) and drops choices that throw.
  */
 export async function computeNegotiationContext(args: {
-  client: ObpClient;
+  client: OBPPersistenceClient;
   persistence: ObpPersistence;
   actingPartyId: string;
   ledgerSeq: number;

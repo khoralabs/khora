@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { JsonlStore } from "@cfd/memories-stores";
-import { ObpClient } from "@cfd/obp-core";
+import { OBPPersistenceClient } from "@cfd/obp-core";
 import { createObpSqlitePersistence, initObpSchema } from "@cfd/obp-sqlite";
 import { createLoggingObpPersistence } from "./obp-persistence-jsonl-log.ts";
 
@@ -23,7 +23,7 @@ test("LoggingObpPersistence appends one JSONL row per mutation", () => {
       memoryId: "test/obp",
       nowMs: logTs,
     });
-    const client = new ObpClient(persistence, { ledgerSeq });
+    const client = new OBPPersistenceClient(persistence, { ledgerSeq });
 
     client.registerParty({ name: "Alice", sourcemaps: [] });
 

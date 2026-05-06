@@ -14,7 +14,7 @@ import type {
   Port,
   RegisterPartyInput,
 } from "../model/types";
-import type { ObpPersistence } from "../persistence-types";
+import type { ObpPersistence } from "../persistence/client/persistence-types.ts";
 
 type BindRow = {
   offerId: string;

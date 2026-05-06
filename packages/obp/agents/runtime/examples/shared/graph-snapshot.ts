@@ -1,4 +1,4 @@
-import type { GraphSnapshot, ObpClient } from "@cfd/obp-core";
+import type { GraphSnapshot, OBPPersistenceClient } from "@cfd/obp-core";
 import type { FakeObpPersistence } from "@cfd/obp-core/testing";
 import { portExpiredForSnapshot } from "../../src/port-turn-ttl.ts";
 
@@ -6,7 +6,7 @@ export type { GraphSnapshot };
 
 export function buildGraphSnapshot(
   fake: FakeObpPersistence,
-  client: ObpClient,
+  client: OBPPersistenceClient,
   ledgerSeq: number,
   /** Completed negotiation turns (same as {@link NegotiationRuntime.turns}). */
   negotiationTurnsCompleted: number,

@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { expect, test } from "bun:test";
-import { ObpClient, resolveCompletedDeal } from "@cfd/obp-core";
+import { OBPPersistenceClient, resolveCompletedDeal } from "@cfd/obp-core";
 import { createObpSqlitePersistence, OBP_SCHEMA_SQL } from "@cfd/obp-sqlite";
 import { assertMatchmakingBindAllowed, resolveMatchmakingConnectedDeal } from "./llm/session.ts";
 import {
@@ -12,7 +12,7 @@ test("resolveCompletedDeal finds terminal bind on requestee offer", () => {
   const db = new Database(":memory:");
   db.run(OBP_SCHEMA_SQL);
   const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 0 });
-  const client = new ObpClient(persistence, { ledgerSeq: () => 0 });
+  const client = new OBPPersistenceClient(persistence, { ledgerSeq: () => 0 });
   const { party: requestee } = client.registerParty({ name: "requestee", sourcemaps: [] });
 
   const { offer } = client.extendOffer({
@@ -54,7 +54,7 @@ test("resolveMatchmakingConnectedDeal checks both parties' offers", () => {
   const db = new Database(":memory:");
   db.run(OBP_SCHEMA_SQL);
   const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 0 });
-  const client = new ObpClient(persistence, { ledgerSeq: () => 0 });
+  const client = new OBPPersistenceClient(persistence, { ledgerSeq: () => 0 });
   const { party: requester } = client.registerParty({ name: "requester", sourcemaps: [] });
   const { party: requestee } = client.registerParty({ name: "requestee", sourcemaps: [] });
 

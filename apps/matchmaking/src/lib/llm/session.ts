@@ -16,7 +16,7 @@ import { JsonlStore } from "@cfd/memories-stores";
 import { type MemorySearchEnv, toMemorySearchEnv } from "@cfd/memories-tools";
 import {
   type CompletedDeal,
-  type ObpClient,
+  type OBPPersistenceClient,
   type ObpPersistence,
   resolveCompletedDeal,
 } from "@cfd/obp-core";
@@ -95,7 +95,7 @@ export type MatchmakingTurnInput = {
 
 export type MatchmakingSessionContext = SessionContext & {
   model: LanguageModel;
-  client: ObpClient;
+  client: OBPPersistenceClient;
   persistence: ObpPersistence;
   ledgerSeq: () => number;
   requesterPartyId: string;
@@ -118,7 +118,7 @@ export type MatchmakingSessionContext = SessionContext & {
 
 /** Terminal bind on an offer extended by either party (mutual intro commitment). */
 export function resolveMatchmakingConnectedDeal(
-  client: ObpClient,
+  client: OBPPersistenceClient,
   persistence: ObpPersistence,
   requesterPartyId: string,
   requesteePartyId: string,

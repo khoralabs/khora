@@ -1,0 +1,30 @@
+{
+  "name": "@cfd/obp-client",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "example:client": "bun run examples/simple-client.ts"
+  },
+  "dependencies": {
+    "@cfd/obp-core": "workspace:*",
+    "@cfd/obp-session-sync": "workspace:*"
+  },
+  "devDependencies": {
+    "@cfd/obp-server": "workspace:*",
+    "@types/bun": "latest",
+    "@types/node": "^22"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

@@ -1,6 +1,6 @@
-import { validateCounterpartyBindForPort } from "./bind-policy/validate.ts";
-import { ObpError } from "./errors";
-import { type BindValidationFailure, validateBindPreconditions } from "./invariants/bind";
+import { validateCounterpartyBindForPort } from "../../bind-policy/validate.ts";
+import { ObpError } from "./errors.ts";
+import { type BindValidationFailure, validateBindPreconditions } from "../../invariants/bind.ts";
 import type {
   BindPortInput,
   ContentAddressedSourceRef,
@@ -13,10 +13,10 @@ import type {
   Party,
   Port,
   RegisterPartyInput,
-} from "./model/types";
-import type { ObpPersistence } from "./persistence-types";
+} from "../../model/types.ts";
+import type { ObpPersistence } from "./persistence-types.ts";
 
-export type ObpClientOptions = {
+export type OBPPersistenceClientOptions = {
   /** Monotonic ledger sequence for expiry checks and revoke stamping; required (no wall-clock default). */
   ledgerSeq: () => number;
 };
@@ -64,10 +64,10 @@ function throwIfBindInvalid(failure: BindValidationFailure): never {
  * OBP workflows with **strategy** {@link ObpPersistence}: validates using pure invariants then delegates.
  * Mirrors the pattern of {@code MemoriesClient} + {@code MemoriesPersistence}.
  */
-export class ObpClient {
+export class OBPPersistenceClient {
   constructor(
     private readonly persistence: ObpPersistence,
-    private readonly options: ObpClientOptions,
+    private readonly options: OBPPersistenceClientOptions,
   ) {}
 
   private ledgerSeq(): number {

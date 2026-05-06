@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ObpClient } from "@cfd/obp-core";
+import { OBPPersistenceClient } from "@cfd/obp-core";
 import { FakeObpPersistence } from "@cfd/obp-core/testing";
 import { bytesToHex } from "./hash.ts";
 import { inclusionProof, leafHashForOp, merkleRoot, verifyInclusion } from "./merkle.ts";
@@ -75,7 +75,7 @@ describe("@cfd/obp-session-sync", () => {
   test("rollbackFakePersistence restores exportState snapshot", () => {
     const ledgerSeq = () => 1;
     const p = new FakeObpPersistence(ledgerSeq);
-    const client = new ObpClient(p, { ledgerSeq });
+    const client = new OBPPersistenceClient(p, { ledgerSeq });
     const { party: a } = client.registerParty({ name: "Only", sourcemaps: [] });
     const snap = p.exportState();
     client.registerParty({ name: "Extra", sourcemaps: [] });

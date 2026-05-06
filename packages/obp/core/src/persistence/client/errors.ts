@@ -1,4 +1,4 @@
-/** Domain / validation failures from {@link ObpClient} or persistence. */
+/** Domain / validation failures from {@link OBPPersistenceClient} or persistence. */
 
 export type ObpErrorCode =
   | "NOT_FOUND"
@@ -7,7 +7,11 @@ export type ObpErrorCode =
   | "NOT_EXPOSED"
   | "EXPIRED"
   | "MAX_BINDINGS"
-  | "VALIDATION";
+  | "VALIDATION"
+  | "CAUSAL_MISMATCH"
+  | "BAD_SIG"
+  | "BAD_TURN"
+  | "TERMINATED";
 
 export class ObpError extends Error {
   readonly code: ObpErrorCode;

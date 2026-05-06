@@ -10,11 +10,11 @@ import type {
   Party,
   Port,
   RegisterPartyInput,
-} from "./model/types";
+} from "../../model/types.ts";
 
 /**
  * Storage strategy for OBP: mirrors Smithy service **`ObpPersistence`** (`persistence.smithy`) including orchestration reads
- * (**`isPortExposed`**, **`listBinds`**, **`getPortsSnapshot`**, **`getExtendingPartyId`**) so {@link ObpClient} can run invariant checks before mutating calls.
+ * (**`isPortExposed`**, **`listBinds`**, **`getPortsSnapshot`**, **`getExtendingPartyId`**) so {@link OBPPersistenceClient} can run invariant checks before mutating calls.
  */
 export interface ObpPersistence {
   registerParty(input: RegisterPartyInput): { party: Party };

@@ -1,4 +1,4 @@
-import type { ObpClient } from "@cfd/obp-core";
+import type { OBPPersistenceClient } from "@cfd/obp-core";
 import { type BindableCounterpartyPort, newestOfferIdAmongBindable } from "@cfd/obp-tools";
 import {
   noopPortIdForHeadOffer,
@@ -11,13 +11,13 @@ import {
 import { expiresSeqForPortTtl } from "./ttl-resolve.ts";
 import type { TtlSpec } from "./ttl-spec.ts";
 
-export function isPortExposedOnOffer(client: ObpClient, offerId: string, portId: string): boolean {
+export function isPortExposedOnOffer(client: OBPPersistenceClient, offerId: string, portId: string): boolean {
   return client.listExposedPortEdges().some((e) => e.offerId === offerId && e.portId === portId);
 }
 
 /** Newest counterparty offer that has any exposed port (even if not structurally bindable). */
 export function newestCounterpartyExposedOfferId(args: {
-  client: ObpClient;
+  client: OBPPersistenceClient;
   actingPartyId: string;
 }): string | null {
   let best: { offerId: string; seq: number } | null = null;
@@ -39,7 +39,7 @@ export function newestCounterpartyExposedOfferId(args: {
 }
 
 export function resolveHeadOfferIdForSyntheticPorts(args: {
-  client: ObpClient;
+  client: OBPPersistenceClient;
   actingPartyId: string;
   bindable: ReadonlyArray<BindableCounterpartyPort>;
 }): string | null {
@@ -54,7 +54,7 @@ export function resolveHeadOfferIdForSyntheticPorts(args: {
 }
 
 export type EnsureRuntimeSyntheticPortsArgs = {
-  client: ObpClient;
+  client: OBPPersistenceClient;
   ledgerSeq: number;
   headOfferId: string;
   requireNoop: boolean;

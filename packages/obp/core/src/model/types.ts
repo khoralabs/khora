@@ -50,7 +50,7 @@ export type Port = {
   /** Exclusive upper bound: bind invalid when **`ledger_seq >= expires_seq`**. */
   expires_seq: number;
   type: string;
-  /** Counterparty-facing affordance copy; **`ObpClient.exposePort`** requires non-empty trimmed text. */
+  /** Counterparty-facing affordance copy; **`OBPPersistenceClient.exposePort`** requires non-empty trimmed text. */
   promise: string;
   max_bindings: number;
   terminal: boolean;

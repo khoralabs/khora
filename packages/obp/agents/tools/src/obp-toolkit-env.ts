@@ -1,4 +1,4 @@
-import type { ObpClient, Port } from "@cfd/obp-core";
+import type { OBPPersistenceClient, Port } from "@cfd/obp-core";
 
 /** One dynamic bind tool entry (host fills each turn). */
 export type ObpNegotiationBindChoice = {
@@ -54,16 +54,16 @@ export type ObpBindValidationContext = {
 };
 
 /**
- * Session env for OBP coordination tools: {@link ObpClient}, ledger sequence, acting party, optional bind policy.
+ * Session env for OBP coordination tools: {@link OBPPersistenceClient}, ledger sequence, acting party, optional bind policy.
  */
 export type ObpToolkitEnv = {
-  client: ObpClient;
+  client: OBPPersistenceClient;
   ledgerSeq: () => number;
   /** Party id for {@link obp_extend_offer} and ownership checks on {@link obp_expose_port}. */
   actingPartyId: string;
   /**
    * Domain rules for who may bind to which offer/port and optional price acceptance.
-   * If omitted, bind paths only enforce structural checks ({@link ObpClient.bindPort}).
+   * If omitted, bind paths only enforce structural checks ({@link OBPPersistenceClient.bindPort}).
    */
   validateBind?: (ctx: ObpBindValidationContext) => void | Promise<void>;
   /**
