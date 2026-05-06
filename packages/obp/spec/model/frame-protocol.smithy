@@ -132,6 +132,8 @@ agreed actor order, wrong **offerId** on **RESOLVE**, or unknown **portId** for 
 **Mapping to decentralized session sync:** Each accepted frame yields one or more replayable **`cfd.obp.session#SessionOp`** values
 (extend offer, expose port, bind-via-extend, optional terminal marker) for **`NegotiationSessionProtocol`** checkpoints.
 
+**Concurrent transport sessions:** Servers **MAY** accept **many** open streams at once (one negotiated stream per client session). **How** each logical bilateral session is backed—dedicated **`ObpPersistence`**, a shared store with partitioning, or otherwise—is **implementation-defined**; this protocol **MUST NOT** be read as requiring per-session physical isolation. **RESOLVE** and **PROLIFERATE** projections **MUST** satisfy **`cfd.obp#ObpPersistence`** invariants in `persistence.smithy` on whatever store they use, including **global canonical `max_bindings`** and **atomic** enforcement when concurrent operations mutate the **same** logical graph (see invariant **11** in `persistence.smithy` for shared vs separate store boundaries).
+
 **Explicit non-goals here:** hostnames, ports, TLS, and URLs — see transport bindings (e.g. **`cfd.obp.frame.http2`**).
 """)
 service NegotiationFrameProtocol {

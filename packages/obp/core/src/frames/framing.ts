@@ -1,5 +1,5 @@
 import { canonicalJsonString } from "./canonical.ts";
-import type { Frame } from "./types.ts";
+import type { Frame, SessionCheckpoint, SessionEnvelopeWire } from "./types.ts";
 
 /** Length-prefixed wire bytes (`uint32_be` big-endian, then payload). */
 export function encodeLengthPrefixed(payload: Uint8Array): Uint8Array {
@@ -16,6 +16,7 @@ export function encodeFramedJson(value: unknown): Uint8Array {
 export type FrameDecoderYield =
   | { kind: "init"; value: unknown }
   | { kind: "frame"; value: Frame }
+  | { kind: "session_envelope"; value: SessionEnvelopeWire }
   | { kind: "raw"; value: unknown };
 
 /**
@@ -46,8 +47,7 @@ export function createFrameDecoder(): {
     const len = new DataView(buf.buffer, buf.byteOffset, buf.byteLength).getUint32(0, false);
     if (buf.length < 4 + len) return null;
     const jsonBytes = buf.subarray(4, 4 + len);
-    buf =
-      buf.length > 4 + len ? new Uint8Array(buf.subarray(4 + len)) : new Uint8Array(0);
+    buf = buf.length > 4 + len ? new Uint8Array(buf.subarray(4 + len)) : new Uint8Array(0);
     const text = new TextDecoder().decode(jsonBytes);
     const value = JSON.parse(text) as unknown;
     if (isRecord(value) && "init" in value) {
@@ -55,6 +55,9 @@ export function createFrameDecoder(): {
     }
     if (isFrameLike(value)) {
       return { kind: "frame", value: value as Frame };
+    }
+    if (isSessionEnvelopeMessage(value)) {
+      return { kind: "session_envelope", value: value.session_envelope };
     }
     return { kind: "raw", value };
   };
@@ -90,4 +93,22 @@ function isFrameLike(v: unknown): boolean {
     typeof v.type === "string" &&
     isRecord(v.body)
   );
+}
+
+function isSessionEnvelopeMessage(v: unknown): v is { session_envelope: SessionEnvelopeWire } {
+  if (!isRecord(v) || !("session_envelope" in v)) return false;
+  const e = v.session_envelope;
+  if (!isRecord(e)) return false;
+  if (typeof e.session_id !== "string" || typeof e.from_party !== "string") return false;
+  if (!isCheckpointRecord(e.base_checkpoint) || !isCheckpointRecord(e.new_checkpoint)) return false;
+  return Array.isArray(e.delta_ops);
+}
+
+function isCheckpointRecord(v: unknown): v is SessionCheckpoint {
+  return isRecord(v) && typeof v.seq === "number" && typeof v.root_hex === "string";
+}
+
+/** Length-prefixed `{"session_envelope": …}` for the same stream as frames. */
+export function encodeSessionEnvelopeMessage(envelope: SessionEnvelopeWire): Uint8Array {
+  return encodeFramedJson({ session_envelope: envelope });
 }

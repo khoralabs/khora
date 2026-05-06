@@ -9,7 +9,7 @@ import {
   type SessionInit,
   type SessionOp,
 } from "@cfd/obp-core";
-import { checkpointFromOps, type Checkpoint } from "@cfd/obp-session-sync";
+import { checkpointFromOps, verifyExtends, type Checkpoint } from "@cfd/obp-session-sync";
 import { frameChannelFromClientStream } from "./http2-channel.ts";
 
 export type ObpConnectOptions = {
@@ -23,6 +23,8 @@ export type ObpConnectOptions = {
   ledgerSeq: () => number;
   init: SessionInit;
   handlers?: Pick<FrameSessionHandlers, "onProliferate" | "onTerminate">;
+  /** Multiplex `session_envelope` on the same stream after frames. */
+  sessionEnvelopeSync?: boolean;
 };
 
 /**
@@ -67,6 +69,15 @@ export async function connectObpSession(
       ledgerSeq: options.ledgerSeq,
       init: options.init,
       handlers,
+      ...(options.sessionEnvelopeSync === true
+        ? {
+            sessionEnvelopeSync: {
+              myPartyId: options.init.party_ids[1],
+              checkpointFromOps: (ops) => checkpointFromOps(ops as unknown[]),
+              verifyExtends,
+            },
+          }
+        : {}),
     });
 
     const checkpoint = checkpointFromOps(sessionOps);

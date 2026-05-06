@@ -16,7 +16,8 @@
     "example:server": "bun run examples/simple-server.ts"
   },
   "dependencies": {
-    "@cfd/obp-core": "workspace:*"
+    "@cfd/obp-core": "workspace:*",
+    "@cfd/obp-session-sync": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",

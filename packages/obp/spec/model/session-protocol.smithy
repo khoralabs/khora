@@ -99,6 +99,8 @@ union VerifyError {
 /// **Fork / rollback:** After rejection, implementations SHOULD discard tentative tail state and restore **last mutually agreed**
 /// **`{ seq, root_hex }`**, e.g. via persisted snapshots or replay from an exported **`ObpPersistence`** state.
 ///
+/// **Replay into `ObpPersistence`:** When applying **`delta_ops`** after verification, implementations MUST apply effects in order and MUST enforce the same **`cfd.obp#ObpPersistence`** invariants as live frames (see **`persistence.smithy`**, including **global canonical `max_bindings`** and **atomic** bind enforcement when multiple writers target the same store). **`Checkpoint.seq`** orders the **session op log**; it does **not** by itself define cross-store global ordering across unrelated persistence instances. Choosing shared versus partitioned backends for replay matches deployment choice for live frames and is **implementation-defined** subject to **`persistence.smithy`** invariant **11**.
+///
 /// **Inclusion proofs:** Optional on the wire: standard Merkle sibling hashes from leaf row to root; verifiers walk **`H_internal`**
 /// with the same odd-count pairing rule used to build the tree.
 ///

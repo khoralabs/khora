@@ -1,9 +1,15 @@
 import { ObpError } from "../persistence/client/errors.ts";
 import { OBPPersistenceClient } from "../persistence/client/obp-persistence-client.ts";
 import type { ObpPersistence } from "../persistence/client/persistence-types.ts";
-import { createFrameDecoder, encodeFramedJson, type FrameDecoderYield } from "./framing.ts";
+import { canonicalJsonString } from "./canonical.ts";
 import type { FrameChannel } from "./channel.ts";
 import { FrameDag, sha256HexUtf8 } from "./dag.ts";
+import {
+  createFrameDecoder,
+  encodeFramedJson,
+  encodeSessionEnvelopeMessage,
+  type FrameDecoderYield,
+} from "./framing.ts";
 import {
   applyProliferate,
   applyResolve,
@@ -18,6 +24,8 @@ import type {
   PortSpec,
   ProliferateBody,
   ResolveBody,
+  SessionCheckpoint,
+  SessionEnvelopeWire,
   SessionInit,
 } from "./types.ts";
 
@@ -38,6 +46,17 @@ export type FrameSessionHandlers = {
   onTerminate?: (reason: string, code?: string) => Promise<void>;
 };
 
+/** Injected Merkle helpers (from `@cfd/obp-session-sync` at the app layer; avoids core → session-sync cycle). */
+export type SessionEnvelopeSyncAdapter = {
+  myPartyId: string;
+  checkpointFromOps: (ops: SessionOp[]) => SessionCheckpoint;
+  verifyExtends: (args: {
+    baseOps: unknown[];
+    deltaOps: unknown[];
+    claimed: SessionCheckpoint;
+  }) => { ok: true; checkpoint: SessionCheckpoint } | { ok: false; error: { code: string } };
+};
+
 export type RunFrameSessionArgs = {
   role: "initiator" | "responder";
   channel: FrameChannel;
@@ -47,6 +66,8 @@ export type RunFrameSessionArgs = {
   ledgerSeq: () => number;
   init: SessionInit;
   handlers: FrameSessionHandlers;
+  /** When set, multiplex `session_envelope` on the same stream (after frames); ops must match frame-derived log. */
+  sessionEnvelopeSync?: SessionEnvelopeSyncAdapter;
 };
 
 function partyIdForActor(init: SessionInit, actor: string): string {
@@ -85,16 +106,36 @@ function parseWireInit(v: unknown): SessionInit {
 function ensureActorSignerAligned(init: SessionInit, signer: FrameSigner, role: string): void {
   const expected = role === "responder" ? init.actor_pubkeys[0] : init.actor_pubkeys[1];
   if (signer.actor !== expected) {
-    throw new ObpError("VALIDATION", `signer.actor ${signer.actor} does not match expected ${role}`);
+    throw new ObpError(
+      "VALIDATION",
+      `signer.actor ${signer.actor} does not match expected ${role}`,
+    );
   }
 }
 
 function remoteActorForRole(init: SessionInit, role: "initiator" | "responder"): string {
-  return role === "responder" ? init.actor_pubkeys[1]! : init.actor_pubkeys[0]!;
+  if (role === "responder") {
+    const k = init.actor_pubkeys[1];
+    if (k === undefined) throw new ObpError("VALIDATION", "missing initiator actor pubkey");
+    return k;
+  }
+  const k = init.actor_pubkeys[0];
+  if (k === undefined) throw new ObpError("VALIDATION", "missing responder actor pubkey");
+  return k;
 }
 
 export async function runFrameSession(args: RunFrameSessionArgs): Promise<SessionOp[]> {
-  const { channel, signer, verifier, persistence, ledgerSeq, init, handlers, role } = args;
+  const {
+    channel,
+    signer,
+    verifier,
+    persistence,
+    ledgerSeq,
+    init,
+    handlers,
+    role,
+    sessionEnvelopeSync,
+  } = args;
   ensureActorSignerAligned(init, signer, role === "responder" ? "responder" : "initiator");
 
   const obp = new OBPPersistenceClient(persistence, { ledgerSeq });
@@ -103,6 +144,72 @@ export async function runFrameSession(args: RunFrameSessionArgs): Promise<Sessio
   const appliedFrames = new Set<string>();
   let terminated = false;
   let responderInitDone = role === "initiator";
+  let confirmedSeq = 0;
+  let pendingAck = false;
+
+  const flushSessionEnvelope = async (): Promise<void> => {
+    if (sessionEnvelopeSync === undefined || terminated) return;
+    const deltaRaw = sessionOps.slice(confirmedSeq);
+    if (deltaRaw.length === 0 && !pendingAck) return;
+    pendingAck = false;
+    /** Wire-round-trip each op so Merkle leaves match `JSON.parse`d envelope deltas (session-sync hashing). */
+    const wireSessionOps = sessionOps.map((op) => JSON.parse(canonicalJsonString(op)) as SessionOp);
+    const baseSlice = wireSessionOps.slice(0, confirmedSeq);
+    const deltaSlice = wireSessionOps.slice(confirmedSeq);
+    const envelope: SessionEnvelopeWire = {
+      session_id: init.session_id,
+      from_party: sessionEnvelopeSync.myPartyId,
+      base_checkpoint: sessionEnvelopeSync.checkpointFromOps(baseSlice),
+      delta_ops: [...deltaSlice],
+      new_checkpoint: sessionEnvelopeSync.checkpointFromOps(wireSessionOps),
+    };
+    await channel.write(encodeSessionEnvelopeMessage(envelope));
+  };
+
+  const handleInboundSessionEnvelope = async (envelope: SessionEnvelopeWire): Promise<void> => {
+    if (sessionEnvelopeSync === undefined) {
+      throw new ObpError("VALIDATION", "unexpected session_envelope (sync disabled)");
+    }
+    if (envelope.session_id !== init.session_id) {
+      throw new ObpError("VALIDATION", "session_envelope session_id mismatch");
+    }
+    if (envelope.from_party === sessionEnvelopeSync.myPartyId) {
+      throw new ObpError("VALIDATION", "session_envelope from_party is self");
+    }
+    const baseSeq = envelope.base_checkpoint.seq;
+    const newSeq = envelope.new_checkpoint.seq;
+    if (sessionOps.length < baseSeq) {
+      throw new ObpError("VALIDATION", "local session ops lag session_envelope base");
+    }
+    const baseOps = sessionOps.slice(0, baseSeq) as unknown[];
+    const v = sessionEnvelopeSync.verifyExtends({
+      baseOps,
+      deltaOps: envelope.delta_ops,
+      claimed: envelope.new_checkpoint,
+    });
+    if (!v.ok) {
+      throw new ObpError("VALIDATION", `session_envelope verify failed: ${v.error.code}`);
+    }
+    if (sessionOps.length < newSeq) {
+      throw new ObpError("VALIDATION", "local session ops lag session_envelope (no catch-up)");
+    }
+    const delta = envelope.delta_ops;
+    if (newSeq - baseSeq !== delta.length) {
+      throw new ObpError("VALIDATION", "session_envelope delta length mismatch");
+    }
+    for (let i = 0; i < delta.length; i++) {
+      const local = sessionOps[baseSeq + i];
+      if (local === undefined) {
+        throw new ObpError("VALIDATION", "session_envelope local op missing");
+      }
+      if (canonicalJsonString(local) !== canonicalJsonString(delta[i])) {
+        throw new ObpError("VALIDATION", "session_envelope op mismatch vs frame-derived ops");
+      }
+    }
+    confirmedSeq = newSeq;
+    pendingAck = true;
+    await flushSessionEnvelope();
+  };
 
   const frameDedupeKey = async (frame: Frame): Promise<string> =>
     sha256HexUtf8(`${frame.p_hash}:${frame.sig}`);
@@ -148,15 +255,21 @@ export async function runFrameSession(args: RunFrameSessionArgs): Promise<Sessio
     async expose(input: { offerId: string; ports: PortSpec[] }) {
       const asRecord = { offerId: input.offerId, ports: input.ports } as Record<string, unknown>;
       const parsed = parseProliferateBody(asRecord);
-      const frame = await dag.mintOutbound(signer, "PROLIFERATE", parsed as unknown as Record<string, unknown>);
+      const frame = await dag.mintOutbound(
+        signer,
+        "PROLIFERATE",
+        parsed as unknown as Record<string, unknown>,
+      );
       await recordFrame(frame);
       await sendWire(frame);
+      await flushSessionEnvelope();
     },
     async terminate(reason: string, code?: string) {
       const body: Record<string, unknown> = { reason, ...(code !== undefined ? { code } : {}) };
       const frame = await dag.mintOutbound(signer, "TERMINATE", body);
       await recordFrame(frame);
       await sendWire(frame);
+      await flushSessionEnvelope();
       terminated = true;
       await channel.close();
     },
@@ -166,9 +279,14 @@ export async function runFrameSession(args: RunFrameSessionArgs): Promise<Sessio
         portId: plan.portId,
         payload: plan.payload,
       };
-      const frame = await dag.mintOutbound(signer, "RESOLVE", body as unknown as Record<string, unknown>);
+      const frame = await dag.mintOutbound(
+        signer,
+        "RESOLVE",
+        body as unknown as Record<string, unknown>,
+      );
       await recordFrame(frame);
       await sendWire(frame);
+      await flushSessionEnvelope();
     },
   };
 
@@ -186,6 +304,7 @@ export async function runFrameSession(args: RunFrameSessionArgs): Promise<Sessio
         throw new ObpError("BAD_TURN", "PROLIFERATE must come from responder actor");
       }
       const body = parseProliferateBody(frame.body);
+      let resolved = false;
       if (role === "initiator" && handlers.onProliferate) {
         const plan = await handlers.onProliferate(body, session);
         if (plan !== null) {
@@ -194,7 +313,11 @@ export async function runFrameSession(args: RunFrameSessionArgs): Promise<Sessio
             portId: plan.portId,
             ...(plan.payload !== undefined ? { payload: plan.payload } : {}),
           });
+          resolved = true;
         }
+      }
+      if (!resolved) {
+        await flushSessionEnvelope();
       }
       return;
     }
@@ -206,6 +329,9 @@ export async function runFrameSession(args: RunFrameSessionArgs): Promise<Sessio
       const body = parseResolveBody(frame.body);
       if (role === "responder" && handlers.onBind) {
         await handlers.onBind(body.portId, body.payload, session);
+      }
+      if (!terminated) {
+        await flushSessionEnvelope();
       }
       return;
     }
@@ -240,6 +366,13 @@ export async function runFrameSession(args: RunFrameSessionArgs): Promise<Sessio
       if (handlers.onConnect) {
         await handlers.onConnect(session);
       }
+      return;
+    }
+    if (part.kind === "session_envelope") {
+      if (!responderInitDone && role === "responder") {
+        throw new ObpError("VALIDATION", "expected init before session_envelope");
+      }
+      await handleInboundSessionEnvelope(part.value);
       return;
     }
     if (!responderInitDone && role === "responder") {

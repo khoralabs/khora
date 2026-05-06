@@ -489,6 +489,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@cfd/obp-core": "workspace:*",
+        "@cfd/obp-session-sync": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",

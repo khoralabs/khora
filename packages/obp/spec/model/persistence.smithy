@@ -15,11 +15,14 @@ OBP is a small typed graph for causal interaction history: **Party** → **Offer
 1. Each **Offer** has exactly one **EXTENDS** from its issuing **Party** (created via **ExtendOffer**).
 2. **BindPort** / bind leg of **ExtendOffer** may target only **Ports** that are the target of at least one **EXPOSES** (the port is *exposed* on the graph).
 3. Reject binds when the binding **Offer** or target **Port** is expired: current **`ledger_seq`** MUST satisfy **`ledger_seq < expires_seq`** on both (see `shapes.smithy` **`Offer`** / **`Port`**). Implementations derive **`ledger_seq`** from session control—not wall-clock `Date.now()`—unless an adapter explicitly maps clock ticks to sequence (discouraged).
-4. **BINDS** count toward a **Port** must not exceed that port's `max_bindings` (after resolving `ref`, count against the resolved exposed port).
+4. **BINDS** and **`max_bindings`:** Usage against a **Port** must not exceed that port's **`max_bindings`**. Counting is **global (canonical)** only: after resolving **`Port.ref`**, every **BINDS** row whose **`portId`** resolves to the same **canonical port id** shares **one** usage tally (see invariants **9–11**). This protocol does **not** define a separate bind budget per **EXPOSES** edge.
 5. **Port.ref:** resolve before bind rules; detect cycles on the ref chain and reject.
 6. **Port.terminal** is an agent hint only; it does not change bind rules.
 7. **Bind policy:** **Port** may carry **`bind_policy`** (`Document`) declaring constraint metadata. When present and non-empty per implementation rules, **BindPort** / bind leg of **ExtendOffer** MUST supply **`counterparty_bind`** satisfaction data validated against that policy before committing the **BINDS** edge; validated payload is stored on **`BindsEdge.counterparty_bind`** (see `shapes.smithy`). **`bind_policy_snapshot`** on the edge is an optional audit copy of the policy used at bind time.
 8. **Party `name`** on **RegisterParty** MUST be non-empty after trim (TS **`OBPPersistenceClient`**).
+9. **Multiple EXPOSES, same `portId`:** More than one **EXPOSES** edge MAY reference the same **`portId`** (the same **`Port`** row). Any successful bind against that port consumes **`max_bindings`** capacity **for every** such exposure—the **strictest** reading and the **normative** baseline.
+10. **Concurrent binds:** When two **BindPort** (or bind-via-**ExtendOffer**) operations may commit against the **same** canonical port concurrently, implementations **MUST** enforce **`max_bindings`** **atomically** (transaction or equivalent). If remaining capacity is one, **at most one** operation **MUST** succeed.
+11. **Multiple sessions and store boundaries:** Invariants **1–10** apply **within** each **`ObpPersistence`** implementation instance a deployment attaches to frame/session work. If a deployment uses **separate** instances for unrelated work, caps (for example **`max_bindings`**) do **not** aggregate across them; if it uses **one** shared instance, those invariants apply **on that shared graph**, including **atomic** enforcement under concurrent writers (invariant **10**). **How** implementors map sessions to storage—one database for many sessions, many databases, application-level namespacing, or other patterns—is **implementation-defined**; this specification defines only the **`ObpPersistence`** surface and the normative rules above, not hosting topology.
 
 **Provenance:** optional **sourcemaps** on entities and edges (see `SourceMapRef` in `shapes.smithy`) — store-agnostic; a concrete adapter may map them to an external system (e.g. a document store’s ids).
 
@@ -31,7 +34,7 @@ OBP is a small typed graph for causal interaction history: **Party** → **Offer
 
 **Errors:** Operations model **success** shapes only. Implementations may throw or map failures for: not found, expired, not exposed, max bindings exceeded, ref cycle, invalid graph, bind-policy validation failure.
 
-**Transactions:** **ExtendOffer**, **ExposePort**, and **BindPort** SHOULD run atomically where the backend supports transactions.
+**Transactions:** **ExtendOffer**, **ExposePort**, and **BindPort** SHOULD run atomically where the backend supports transactions. Under concurrent load, **`max_bindings`** enforcement **MUST** remain atomic (see invariant **10**).
 
 **Smithy ↔ TS unions:** **GetPartyResult** / **GetOfferResult** / **GetPortResult** (`notFound` vs payload) correspond to TS `{ kind: "notFound" } | { kind: "found"; … }` (parity matrix in `@cfd/obp-core` README).
 

@@ -9,6 +9,7 @@ import {
   runFrameSession,
   type SessionInit,
 } from "@cfd/obp-core";
+import { checkpointFromOps, verifyExtends } from "@cfd/obp-session-sync";
 import { frameChannelFromHttp2Stream } from "./http2-channel.ts";
 
 export type ObpServeOptions = {
@@ -23,7 +24,10 @@ export type ObpServeOptions = {
     port: number;
     tls?: SecureContextOptions;
   };
-} & Pick<FrameSessionHandlers, "onConnect" | "onBind" | "onProliferate" | "onTerminate">;
+} & Pick<FrameSessionHandlers, "onConnect" | "onBind" | "onProliferate" | "onTerminate"> & {
+  /** Multiplex `session_envelope` on the same `/obp/v1` stream after frames (Merkle sync; ops must match frame-derived log). */
+  sessionEnvelopeSync?: boolean;
+};
 
 export type ObpServerHandle = {
   close(): Promise<void>;
@@ -60,6 +64,15 @@ export function serveObp(options: ObpServeOptions): Promise<ObpServerHandle> {
       ledgerSeq: options.ledgerSeq,
       init: options.init,
       handlers,
+      ...(options.sessionEnvelopeSync === true
+        ? {
+            sessionEnvelopeSync: {
+              myPartyId: options.init.party_ids[0],
+              checkpointFromOps: (ops) => checkpointFromOps(ops as unknown[]),
+              verifyExtends,
+            },
+          }
+        : {}),
     }).catch(() => {
       try {
         stream.destroy();

@@ -57,7 +57,7 @@ export type {
 export { createMemoryFrameChannelPair, type FrameChannel } from "./frames/channel.ts";
 export { canonicalJsonString, canonicalJsonUtf8 } from "./frames/canonical.ts";
 export { FrameDag, sha256HexUtf8, signingPayloadBytes } from "./frames/dag.ts";
-export { createFrameDecoder, encodeFramedJson, encodeLengthPrefixed } from "./frames/framing.ts";
+export { createFrameDecoder, encodeFramedJson, encodeLengthPrefixed, encodeSessionEnvelopeMessage } from "./frames/framing.ts";
 export {
   applyProliferate,
   applyResolve,
@@ -67,6 +67,7 @@ export {
 export {
   type FrameSessionHandlers,
   type RunFrameSessionArgs,
+  type SessionEnvelopeSyncAdapter,
   runFrameSession,
 } from "./frames/session-pipeline.ts";
 export {
@@ -78,6 +79,11 @@ export {
   importEd25519PublicKeyFromActorHex,
   publicKeyActorHex,
 } from "./frames/signer.ts";
+export {
+  applySessionOp,
+  applySessionOps,
+  type ReplaySessionOpsHooks,
+} from "./frames/replay-session-ops.ts";
 export { accumulateSessionOps, frameToSessionOps, type SessionOp } from "./frames/to-session-op.ts";
 export type {
   Frame,
@@ -86,6 +92,8 @@ export type {
   PortSpec,
   ProliferateBody,
   ResolveBody,
+  SessionCheckpoint,
+  SessionEnvelopeWire,
   SessionInit,
   TerminateBody,
 } from "./frames/types.ts";

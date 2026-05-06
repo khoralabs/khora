@@ -55,6 +55,23 @@ export type SessionInit = {
   genesis_hash: string;
 };
 
+/** Merkle checkpoint (`cfd.obp.session`) on the wire in {@link SessionEnvelopeWire}. */
+export type SessionCheckpoint = {
+  seq: number;
+  root_hex: string;
+};
+
+/**
+ * Multiplexed JSON object `session_envelope` on the frame byte stream; aligns with `cfd.obp.session#SessionEnvelope`.
+ */
+export type SessionEnvelopeWire = {
+  session_id: string;
+  from_party: string;
+  base_checkpoint: SessionCheckpoint;
+  delta_ops: unknown[];
+  new_checkpoint: SessionCheckpoint;
+};
+
 export type WireInitEnvelope = {
   init: SessionInit;
 };
