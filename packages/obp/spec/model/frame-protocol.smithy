@@ -30,9 +30,12 @@ list PortSpecList {
 }
 
 /// One exposed affordance on an offer. `bind_policy` / `ttl` use JSON **Document**; **null** means unset (see service docs).
+/// **`max_bindings`** is projected to **`cfd.obp#Port.max_bindings`** (canonical bind tally). Omitted on wire means **1**.
 structure PortSpec {
     id: String
     isTerminal: Boolean
+    /// Maximum successful binds against this port (after **`ref`** resolution to canonical id). Default **1** when omitted.
+    max_bindings: Integer = 1
     bind_policy: Document
     ttl: Document
 }
@@ -125,8 +128,8 @@ agreed actor order, wrong **offerId** on **RESOLVE**, or unknown **portId** for 
 **Hardened constraints (draft §8):**
 1. **Strict ordering:** reject when **`p_hash`** ≠ local tip.
 2. **Identity verification:** reject invalid **`sig`**; session **SHOULD** abort.
-3. **Offer/port expiry:** **`OBPPersistenceClient`** / ledger **`expires_seq`** rejects stale **RESOLVE** per **`cfd.obp`** (optional TTL on ports
-   follows **`Port.ttl_*` fields once projected from **`PortSpec.ttl`**).
+3. **Offer/port expiry / capacity:** **`OBPPersistenceClient`** / ledger **`expires_seq`** rejects stale **RESOLVE** per **`cfd.obp`**. **`PortSpec.max_bindings`**
+   sets **`Port.max_bindings`** on expose (default **1** when omitted). Optional TTL on ports follows **`Port.ttl_*` fields once projected from **`PortSpec.ttl`**.
 4. **No partial binds:** **RESOLVE** either commits a full **BINDS** satisfaction payload or fails.
 
 **Mapping to decentralized session sync:** Each accepted frame yields one or more replayable **`cfd.obp.session#SessionOp`** values

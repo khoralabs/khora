@@ -27,6 +27,8 @@ export type ObpServeOptions = {
 } & Pick<FrameSessionHandlers, "onConnect" | "onBind" | "onProliferate" | "onTerminate"> & {
   /** Multiplex `session_envelope` on the same `/obp/v1` stream after frames (Merkle sync; ops must match frame-derived log). */
   sessionEnvelopeSync?: boolean;
+  /** Apply proliferate/resolve graph effects locally on outbound frames (use when server has its own store). */
+  graphApplyOutbound?: boolean;
 };
 
 export type ObpServerHandle = {
@@ -73,6 +75,7 @@ export function serveObp(options: ObpServeOptions): Promise<ObpServerHandle> {
             },
           }
         : {}),
+      ...(options.graphApplyOutbound === true ? { graphApplyOutbound: true } : {}),
     }).catch(() => {
       try {
         stream.destroy();

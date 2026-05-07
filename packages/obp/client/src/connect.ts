@@ -9,7 +9,7 @@ import {
   type SessionInit,
   type SessionOp,
 } from "@cfd/obp-core";
-import { checkpointFromOps, verifyExtends, type Checkpoint } from "@cfd/obp-session-sync";
+import { type Checkpoint, checkpointFromOps, verifyExtends } from "@cfd/obp-session-sync";
 import { frameChannelFromClientStream } from "./http2-channel.ts";
 
 export type ObpConnectOptions = {
@@ -25,6 +25,8 @@ export type ObpConnectOptions = {
   handlers?: Pick<FrameSessionHandlers, "onProliferate" | "onTerminate">;
   /** Multiplex `session_envelope` on the same stream after frames. */
   sessionEnvelopeSync?: boolean;
+  /** Apply proliferate/resolve graph effects locally on outbound frames (use when client has its own store). */
+  graphApplyOutbound?: boolean;
 };
 
 /**
@@ -44,12 +46,14 @@ export async function connectObpSession(
 
   const client = http2.connect(connectUrl);
   try {
-    const channel = await new Promise<ReturnType<typeof frameChannelFromClientStream>>((resolve, reject) => {
-      client.on("error", reject);
-      const req = client.request({ ":method": "POST", ":path": path });
-      req.on("error", reject);
-      resolve(frameChannelFromClientStream(req, () => client.close()));
-    });
+    const channel = await new Promise<ReturnType<typeof frameChannelFromClientStream>>(
+      (resolve, reject) => {
+        client.on("error", reject);
+        const req = client.request({ ":method": "POST", ":path": path });
+        req.on("error", reject);
+        resolve(frameChannelFromClientStream(req, () => client.close()));
+      },
+    );
 
     const handlers: Pick<FrameSessionHandlers, "onProliferate" | "onTerminate"> = {
       ...(options.handlers?.onProliferate !== undefined
@@ -78,6 +82,7 @@ export async function connectObpSession(
             },
           }
         : {}),
+      ...(options.graphApplyOutbound === true ? { graphApplyOutbound: true } : {}),
     });
 
     const checkpoint = checkpointFromOps(sessionOps);

@@ -1,9 +1,21 @@
 import { portBindPolicySchema } from "../bind-policy/index.ts";
+import { ObpError } from "../persistence/client/errors.ts";
 import type { OBPPersistenceClient } from "../persistence/client/obp-persistence-client.ts";
 import type { Offer, Port } from "../model/types.ts";
 import type { ProliferateBody, PortSpec, ResolveBody } from "./types.ts";
 
 const MAX_EXPIRES = Number.MAX_SAFE_INTEGER;
+
+function parsePortMaxBindings(o: Record<string, unknown>): number {
+  if (!("max_bindings" in o) || o.max_bindings === undefined || o.max_bindings === null) {
+    return 1;
+  }
+  const n = Number(o.max_bindings);
+  if (!Number.isInteger(n) || n < 0) {
+    throw new ObpError("VALIDATION", "port max_bindings must be a non-negative integer");
+  }
+  return n;
+}
 
 function mapPort(spec: PortSpec): Port {
   return {
@@ -12,7 +24,7 @@ function mapPort(spec: PortSpec): Port {
     expires_seq: MAX_EXPIRES,
     type: "obp.frame.port",
     promise: spec.id,
-    max_bindings: 1,
+    max_bindings: spec.max_bindings ?? 1,
     terminal: spec.isTerminal,
     ref: "",
     sourcemaps: [],
@@ -40,6 +52,7 @@ export function parseProliferateBody(body: Record<string, unknown>): Proliferate
     return {
       id: String(o.id ?? ""),
       isTerminal: Boolean(o.isTerminal),
+      max_bindings: parsePortMaxBindings(o),
       bind_policy: bind_policy ?? null,
       ttl: o.ttl,
     };

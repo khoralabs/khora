@@ -68,6 +68,12 @@ export type RunFrameSessionArgs = {
   handlers: FrameSessionHandlers;
   /** When set, multiplex `session_envelope` on the same stream (after frames); ops must match frame-derived log. */
   sessionEnvelopeSync?: SessionEnvelopeSyncAdapter;
+  /**
+   * When each peer has its own {@link ObpPersistence}, set true so outbound PROLIFERATE / RESOLVE also
+   * run {@link applyProliferate} / {@link applyResolve} locally (inbound already does). Default false keeps
+   * shared-persistence setups from double-applying graph effects.
+   */
+  graphApplyOutbound?: boolean;
 };
 
 function partyIdForActor(init: SessionInit, actor: string): string {
@@ -135,6 +141,7 @@ export async function runFrameSession(args: RunFrameSessionArgs): Promise<Sessio
     handlers,
     role,
     sessionEnvelopeSync,
+    graphApplyOutbound,
   } = args;
   ensureActorSignerAligned(init, signer, role === "responder" ? "responder" : "initiator");
 
@@ -166,6 +173,20 @@ export async function runFrameSession(args: RunFrameSessionArgs): Promise<Sessio
     await channel.write(encodeSessionEnvelopeMessage(envelope));
   };
 
+  /** Coalesce flushes in one turn so nested `expose`/`resolve` from handlers does not emit duplicate envelopes before `confirmedSeq` advances. */
+  let envelopeFlushScheduled: Promise<void> | null = null;
+  const requestEnvelopeFlush = (): Promise<void> => {
+    if (sessionEnvelopeSync === undefined || terminated) {
+      return Promise.resolve();
+    }
+    if (envelopeFlushScheduled) return envelopeFlushScheduled;
+    envelopeFlushScheduled = Promise.resolve().then(async () => {
+      envelopeFlushScheduled = null;
+      await flushSessionEnvelope();
+    });
+    return envelopeFlushScheduled;
+  };
+
   const handleInboundSessionEnvelope = async (envelope: SessionEnvelopeWire): Promise<void> => {
     if (sessionEnvelopeSync === undefined) {
       throw new ObpError("VALIDATION", "unexpected session_envelope (sync disabled)");
@@ -181,7 +202,11 @@ export async function runFrameSession(args: RunFrameSessionArgs): Promise<Sessio
     if (sessionOps.length < baseSeq) {
       throw new ObpError("VALIDATION", "local session ops lag session_envelope base");
     }
-    const baseOps = sessionOps.slice(0, baseSeq) as unknown[];
+    /** Match sender `flushSessionEnvelope`: Merkle leaves use wire-round-tripped ops, not raw object refs. */
+    const wireSessionOpsLocal = sessionOps.map(
+      (op) => JSON.parse(canonicalJsonString(op)) as SessionOp,
+    );
+    const baseOps = wireSessionOpsLocal.slice(0, baseSeq) as unknown[];
     const v = sessionEnvelopeSync.verifyExtends({
       baseOps,
       deltaOps: envelope.delta_ops,
@@ -198,7 +223,7 @@ export async function runFrameSession(args: RunFrameSessionArgs): Promise<Sessio
       throw new ObpError("VALIDATION", "session_envelope delta length mismatch");
     }
     for (let i = 0; i < delta.length; i++) {
-      const local = sessionOps[baseSeq + i];
+      const local = wireSessionOpsLocal[baseSeq + i];
       if (local === undefined) {
         throw new ObpError("VALIDATION", "session_envelope local op missing");
       }
@@ -208,7 +233,7 @@ export async function runFrameSession(args: RunFrameSessionArgs): Promise<Sessio
     }
     confirmedSeq = newSeq;
     pendingAck = true;
-    await flushSessionEnvelope();
+    await requestEnvelopeFlush();
   };
 
   const frameDedupeKey = async (frame: Frame): Promise<string> =>
@@ -261,15 +286,18 @@ export async function runFrameSession(args: RunFrameSessionArgs): Promise<Sessio
         parsed as unknown as Record<string, unknown>,
       );
       await recordFrame(frame);
+      if (graphApplyOutbound === true) {
+        applyProliferate(obp, partyIdForActor(init, frame.actor), parsed);
+      }
       await sendWire(frame);
-      await flushSessionEnvelope();
+      await requestEnvelopeFlush();
     },
     async terminate(reason: string, code?: string) {
       const body: Record<string, unknown> = { reason, ...(code !== undefined ? { code } : {}) };
       const frame = await dag.mintOutbound(signer, "TERMINATE", body);
       await recordFrame(frame);
       await sendWire(frame);
-      await flushSessionEnvelope();
+      await requestEnvelopeFlush();
       terminated = true;
       await channel.close();
     },
@@ -285,8 +313,11 @@ export async function runFrameSession(args: RunFrameSessionArgs): Promise<Sessio
         body as unknown as Record<string, unknown>,
       );
       await recordFrame(frame);
+      if (graphApplyOutbound === true) {
+        applyResolve(obp, partyIdForActor(init, frame.actor), body);
+      }
       await sendWire(frame);
-      await flushSessionEnvelope();
+      await requestEnvelopeFlush();
     },
   };
 
@@ -317,7 +348,7 @@ export async function runFrameSession(args: RunFrameSessionArgs): Promise<Sessio
         }
       }
       if (!resolved) {
-        await flushSessionEnvelope();
+        await requestEnvelopeFlush();
       }
       return;
     }
@@ -331,7 +362,7 @@ export async function runFrameSession(args: RunFrameSessionArgs): Promise<Sessio
         await handlers.onBind(body.portId, body.payload, session);
       }
       if (!terminated) {
-        await flushSessionEnvelope();
+        await requestEnvelopeFlush();
       }
       return;
     }

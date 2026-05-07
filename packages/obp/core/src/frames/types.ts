@@ -13,6 +13,8 @@ export type ContentReceipt = ContentAddressedSourceRef;
 export type PortSpec = {
   id: string;
   isTerminal: boolean;
+  /** Canonical bind capacity; default **1** when omitted on wire (matches `cfd.obp.frame#PortSpec.max_bindings`). */
+  max_bindings?: number;
   /** Parsed when non-null; unconstrained ports omit or use null. */
   bind_policy?: PortBindPolicy | null;
   ttl?: unknown;

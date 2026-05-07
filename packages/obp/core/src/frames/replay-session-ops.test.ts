@@ -84,3 +84,39 @@ test("applySessionOps: second resolve exceeds max_bindings (from proliferate def
   ];
   expect(() => applySessionOps(client, init, ops)).toThrow(ObpError);
 });
+
+test("applySessionOps: two resolves allowed when max_bindings is 2", () => {
+  const { persistence, client, init } = setupParties();
+  const ops: SessionOp[] = [
+    {
+      kind: "proliferate",
+      payload: {
+        offerId: "o",
+        ports: [{ id: "p", isTerminal: false, max_bindings: 2 }],
+      },
+    },
+    {
+      kind: "resolve",
+      payload: { offerId: "o", portId: "p", payload: {} },
+    },
+    {
+      kind: "resolve",
+      payload: { offerId: "o", portId: "p", payload: {} },
+    },
+  ];
+  applySessionOps(client, init, ops);
+  expect(persistence.listBinds().length).toBe(2);
+});
+
+test("applySessionOp: invalid max_bindings on proliferate", () => {
+  const { client, init } = setupParties();
+  expect(() =>
+    applySessionOp(client, init, {
+      kind: "proliferate",
+      payload: {
+        offerId: "o",
+        ports: [{ id: "p", isTerminal: false, max_bindings: 1.5 }],
+      },
+    }),
+  ).toThrow(ObpError);
+});

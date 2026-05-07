@@ -107,3 +107,79 @@ test("connectObpSession: proliferate + resolve + checkpoint", async () => {
 test("connectObpSession: sessionEnvelopeSync multiplex on same stream", async () => {
   await runProliferateResolveCheckpoint(true);
 });
+
+test("connectObpSession: sessionEnvelopeSync multi-turn (two proliferates, split persistence)", async () => {
+  let s1 = 0;
+  let s2 = 0;
+  const pSrv = new FakeObpPersistence(() => ++s1);
+  const pCli = new FakeObpPersistence(() => ++s2);
+  const sp = pSrv.registerParty({ name: "srv", sourcemaps: [] }).party;
+  const cp = pSrv.registerParty({ name: "cli", sourcemaps: [] }).party;
+  pCli.importState({
+    parties: [structuredClone(sp), structuredClone(cp)],
+    offers: [],
+    ports: [],
+    extendsRows: [],
+    exposesRows: [],
+    bindRows: [],
+  });
+  const srvKeys = await generateEd25519KeyPair();
+  const cliKeys = await generateEd25519KeyPair();
+  const srvSigner = await createEd25519FrameSigner(srvKeys.privateKey, srvKeys.publicKey);
+  const cliSigner = await createEd25519FrameSigner(cliKeys.privateKey, cliKeys.publicKey);
+  const verifier = createEd25519FrameVerifier();
+  const genesis = await sha256HexUtf8("e2e-obp-client-sync-2t");
+  const init: SessionInit = {
+    session_id: "client-pkg-e2e-sync-2t",
+    party_ids: [sp.id, cp.id],
+    actor_pubkeys: [srvSigner.actor, cliSigner.actor],
+    genesis_hash: genesis,
+  };
+  const handle = await serveObp({
+    signer: srvSigner,
+    verifier,
+    persistence: pSrv,
+    ledgerSeq: () => ++s1,
+    init,
+    listen: { host: "127.0.0.1", port: 0 },
+    sessionEnvelopeSync: true,
+    graphApplyOutbound: true,
+    async onConnect(session) {
+      await session.expose({
+        offerId: "t1",
+        ports: [{ id: "p1", isTerminal: false }],
+      });
+    },
+    async onBind(portId, _p, session) {
+      if (portId === "p1") {
+        await session.expose({
+          offerId: "t2",
+          ports: [{ id: "p2", isTerminal: false }],
+        });
+        return;
+      }
+      await session.terminate("ok");
+    },
+  });
+  const { sessionOps, checkpoint } = await connectObpSession({
+    url: `http://127.0.0.1:${handle.port}`,
+    signer: cliSigner,
+    verifier,
+    persistence: pCli,
+    ledgerSeq: () => ++s2,
+    init,
+    sessionEnvelopeSync: true,
+    graphApplyOutbound: true,
+    handlers: {
+      async onProliferate(body) {
+        if (body.offerId === "t1") return { portId: "p1", payload: {} };
+        if (body.offerId === "t2") return { portId: "p2", payload: {} };
+        throw new Error(`unexpected ${body.offerId}`);
+      },
+    },
+  });
+  await handle.close();
+  expect(sessionOps.length).toBeGreaterThanOrEqual(5);
+  const v = verifyExtends({ baseOps: [], deltaOps: sessionOps, claimed: checkpoint });
+  expect(v.ok).toBe(true);
+});
