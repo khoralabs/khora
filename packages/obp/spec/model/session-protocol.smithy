@@ -15,11 +15,16 @@ list SessionOpList {
 
 /// Abstract operation in the session log. **`kind`** MUST name a replayable effect that implementations
 /// map to **`cfd.obp#ObpPersistence`** operations (or their documented semantics) for the negotiation slice
-/// both peers materialize. Receivers MUST apply **`delta_ops`** in order when verification succeeds.
+/// both peers materialize. Frame-derived kinds include **`turn`** (symmetric negotiation move; payload carries
+/// **`actor`** plus **TurnBody** fields) and **`terminate`**. When multiple **`SessionInit`** chains share one transport,
+/// ops **MAY** carry **`session_id`** (same string as that chain's **`SessionInit.session_id`**) so **`SessionEnvelope`** can
+/// address the correct Merkle prefix. Receivers MUST apply **`delta_ops`** in order when verification succeeds.
 /// **`payload`** is JSON-compatible; canonical hashing rules apply (see **`NegotiationSessionProtocol`** service docs).
 structure SessionOp {
     kind: String
     payload: Document
+    /// Present when ops from several negotiations are multiplexed on one stream; identifies which chain the op belongs to.
+    session_id: String
 }
 
 /// Agreed prefix commitment: **`seq`** is the number of canonical operations covered (**`op_0 … op_{seq-1}`**);

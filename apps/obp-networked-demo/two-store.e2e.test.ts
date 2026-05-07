@@ -50,11 +50,16 @@ test("two-store HTTP/2 frame session (no shared persistence)", async () => {
     listen: { host: "127.0.0.1", port: 0 },
     sessionEnvelopeSync: false,
     graphApplyOutbound: true,
-    async onConnect(session) {
-      await session.expose({ offerId: "greeting", ports: [{ id: "go", isTerminal: false }] });
-    },
-    async onBind(_pid, _p, session) {
-      await session.terminate("ok");
+    async onIncomingOffer(body, session) {
+      if (body.bindPortId === "go") {
+        await session.terminate("ok");
+        return null;
+      }
+      return {
+        offerId: "greeting",
+        offerType: "obp.frame",
+        ports: [{ id: "go", isTerminal: false }],
+      };
     },
   });
 
@@ -67,10 +72,18 @@ test("two-store HTTP/2 frame session (no shared persistence)", async () => {
     init,
     sessionEnvelopeSync: false,
     graphApplyOutbound: true,
+    initialTurn: { offerId: "open", offerType: "obp.frame", ports: [] },
     handlers: {
-      async onProliferate(body) {
-        expect(body.offerId).toBe("greeting");
-        return { portId: "go", payload: {} };
+      async onIncomingOffer(body) {
+        if (body.offerId === "greeting" && body.ports?.some((p) => p.id === "go")) {
+          return {
+            offerId: "",
+            offerType: "obp.frame.bind",
+            bindPortId: "go",
+            counterparty_bind: {},
+          };
+        }
+        return null;
       },
     },
   });

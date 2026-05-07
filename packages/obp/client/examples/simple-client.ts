@@ -10,8 +10,8 @@ import {
   sha256HexUtf8,
 } from "@cfd/obp-core";
 import { FakeObpPersistence } from "@cfd/obp-core/testing";
-import { connectObpSession } from "../src/connect.ts";
 import { serveObp } from "@cfd/obp-server";
+import { connectObpSession } from "../src/connect.ts";
 
 let seq = 0;
 const ledgerSeq = () => ++seq;
@@ -40,15 +40,17 @@ const handle = await serveObp({
   ledgerSeq,
   init,
   listen: { host: "127.0.0.1", port: 0 },
-  async onConnect(session) {
-    await session.expose({
+  async onIncomingOffer(body, session) {
+    if (body.bindPortId === "main") {
+      console.log("server saw bind:", body.bindPortId);
+      await session.terminate("ok");
+      return null;
+    }
+    return {
       offerId: "hello",
+      offerType: "obp.frame",
       ports: [{ id: "main", isTerminal: false }],
-    });
-  },
-  async onBind(portId, _payload, session) {
-    console.log("server saw bind:", portId);
-    await session.terminate("ok");
+    };
   },
   async onTerminate(reason) {
     console.log("server terminate:", reason);
@@ -62,15 +64,28 @@ const { sessionOps, checkpoint } = await connectObpSession({
   persistence,
   ledgerSeq,
   init,
+  initialTurn: { offerId: "open", offerType: "obp.frame", ports: [] },
   handlers: {
-    async onProliferate(body) {
-      console.log("client proliferate:", body.offerId);
-      return { portId: "main", payload: {} };
+    async onIncomingOffer(body) {
+      console.log("client inbound offer:", body.offerId);
+      if (body.offerId === "hello" && body.ports?.some((p) => p.id === "main")) {
+        return {
+          offerId: "",
+          offerType: "obp.frame.bind",
+          bindPortId: "main",
+          counterparty_bind: {},
+        };
+      }
+      return null;
     },
   },
 });
 
 await handle.close();
 
-console.log("sessionOps:", sessionOps.length, sessionOps.map((o) => o.kind));
+console.log(
+  "sessionOps:",
+  sessionOps.length,
+  sessionOps.map((o) => o.kind),
+);
 console.log("checkpoint:", checkpoint);

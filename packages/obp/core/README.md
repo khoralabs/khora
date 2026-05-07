@@ -48,6 +48,6 @@ Root repo: `bun run --filter @cfd/obp-spec validate`.
 
 ## Bilateral frame protocol (`src/frames/`)
 
-Transport-agnostic **Frame** DAG aligned with [`frame-protocol.smithy`](../spec/model/frame-protocol.smithy): signing, `FrameDag` causal tips, length-prefixed canonical JSON framing (`framing.ts`), `FrameChannel`, and `runFrameSession` (responder / initiator). **Graph effects** (`applyProliferate` / `applyResolve`) run on **inbound** frames only so the same logical frame is not applied twice when peers share one `ObpPersistence`; outbound frames only advance the local DAG + wire bytes.
+Transport-agnostic **Frame** DAG aligned with [`frame-protocol.smithy`](../spec/model/frame-protocol.smithy): signing, `FrameDag` causal tips, length-prefixed canonical JSON framing (`framing.ts`), `FrameChannel`, and `runFrameSession` (responder / initiator). **Graph effects** (`applyTurn`) run on **inbound** frames; set **`graphApplyOutbound`** on `runFrameSession` when each peer has its own persistence so outbound `TURN` frames are applied locally too (shared single-store setups leave it false to avoid double-apply).
 
 The HTTP/2 binding lives in [`@cfd/obp-server`](../server).

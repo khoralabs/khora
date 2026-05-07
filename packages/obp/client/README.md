@@ -22,9 +22,18 @@ const { sessionOps, checkpoint } = await connectObpSession({
   persistence,
   ledgerSeq,
   init,
+  initialTurn: { offerId: "open", offerType: "obp.frame", ports: [] },
   handlers: {
-    async onProliferate(body) {
-      return { portId: "main", payload: {} };
+    async onIncomingOffer(body) {
+      if (body.offerId === "greeting") {
+        return {
+          offerId: "",
+          offerType: "obp.frame.bind",
+          bindPortId: "main",
+          counterparty_bind: {},
+        };
+      }
+      return null;
     },
   },
 });

@@ -59,15 +59,14 @@ export { canonicalJsonString, canonicalJsonUtf8 } from "./frames/canonical.ts";
 export { FrameDag, sha256HexUtf8, signingPayloadBytes } from "./frames/dag.ts";
 export { createFrameDecoder, encodeFramedJson, encodeLengthPrefixed, encodeSessionEnvelopeMessage } from "./frames/framing.ts";
 export {
-  applyProliferate,
-  applyResolve,
-  parseProliferateBody,
-  parseResolveBody,
+  applyTurn,
+  parseTurnBody,
 } from "./frames/graph-effect.ts";
 export {
-  type FrameSessionHandlers,
+  type RunFrameMultiplexSessionArgs,
   type RunFrameSessionArgs,
   type SessionEnvelopeSyncAdapter,
+  runFrameMultiplexSession,
   runFrameSession,
 } from "./frames/session-pipeline.ts";
 export {
@@ -82,19 +81,25 @@ export {
 export {
   applySessionOp,
   applySessionOps,
+  applySessionOpsMultiplex,
   type ReplaySessionOpsHooks,
 } from "./frames/replay-session-ops.ts";
-export { accumulateSessionOps, frameToSessionOps, type SessionOp } from "./frames/to-session-op.ts";
+export {
+  accumulateSessionOps,
+  accumulateTaggedSessionOps,
+  frameToSessionOps,
+  type SessionOp,
+} from "./frames/to-session-op.ts";
 export type {
   Frame,
   FrameSessionHandle,
+  FrameSessionHandlers,
   FrameType,
   PortSpec,
-  ProliferateBody,
-  ResolveBody,
   SessionCheckpoint,
   SessionEnvelopeWire,
   SessionInit,
   TerminateBody,
+  TurnBody,
 } from "./frames/types.ts";
 

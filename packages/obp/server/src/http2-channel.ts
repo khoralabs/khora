@@ -1,6 +1,6 @@
-import type { FrameChannel } from "@cfd/obp-core";
 import type { ClientHttp2Stream, ServerHttp2Stream } from "node:http2";
 import type { Duplex } from "node:stream";
+import type { FrameChannel } from "@cfd/obp-core";
 
 /** Duplex HTTP/2 stream → {@link FrameChannel} (one session per stream). */
 export function frameChannelFromHttp2Stream(stream: ServerHttp2Stream): FrameChannel {
@@ -9,14 +9,14 @@ export function frameChannelFromHttp2Stream(stream: ServerHttp2Stream): FrameCha
 
 export function frameChannelFromClientStream(
   stream: ClientHttp2Stream,
-  sessionClose: () => void,
+  sessionClose?: () => void,
 ): FrameChannel {
   const ch = duplexStreamChannel(stream);
   return {
     ...ch,
     async close(reason?: unknown) {
       await ch.close(reason);
-      sessionClose();
+      sessionClose?.();
     },
   };
 }

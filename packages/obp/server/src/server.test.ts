@@ -13,7 +13,7 @@ import { FakeObpPersistence } from "@cfd/obp-core/testing";
 import { frameChannelFromClientStream } from "./http2-channel.ts";
 import { serveObp } from "./serve.ts";
 
-test("HTTP/2 reference server: one proliferate + resolve", async () => {
+test("HTTP/2 reference server: turn session", async () => {
   let seq = 0;
   const ledgerSeq = () => ++seq;
   const persistence = new FakeObpPersistence(ledgerSeq);
@@ -41,15 +41,16 @@ test("HTTP/2 reference server: one proliferate + resolve", async () => {
     ledgerSeq,
     init,
     listen: { host: "127.0.0.1", port: 0 },
-    async onConnect(session) {
-      await session.expose({
+    async onIncomingOffer(body, session) {
+      if (body.bindPortId === "go") {
+        await session.terminate("ok");
+        return null;
+      }
+      return {
         offerId: "greeting",
+        offerType: "obp.frame",
         ports: [{ id: "go", isTerminal: false }],
-      });
-    },
-    async onBind(portId, _p, session) {
-      expect(portId).toBe("go");
-      await session.terminate("ok");
+      };
     },
   });
 
@@ -69,10 +70,18 @@ test("HTTP/2 reference server: one proliferate + resolve", async () => {
     persistence,
     ledgerSeq,
     init,
+    initialTurn: { offerId: "open", offerType: "obp.frame", ports: [] },
     handlers: {
-      async onProliferate(body) {
-        expect(body.offerId).toBe("greeting");
-        return { portId: "go", payload: {} };
+      async onIncomingOffer(body) {
+        if (body.offerId === "greeting" && body.ports?.some((p) => p.id === "go")) {
+          return {
+            offerId: "",
+            offerType: "obp.frame.bind",
+            bindPortId: "go",
+            counterparty_bind: {},
+          };
+        }
+        return null;
       },
     },
   });

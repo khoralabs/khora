@@ -43,15 +43,18 @@ const handle = await serveObp({
   ledgerSeq,
   init,
   listen: { host, port },
-  async onConnect(session) {
-    console.log("session connected");
-    await session.expose({
+  async onIncomingOffer(body, session) {
+    if (body.bindPortId === "main") {
+      console.log("bind", body.bindPortId);
+      await session.terminate("ok");
+      return null;
+    }
+    console.log("session connected (first turn)");
+    return {
       offerId: "hello",
+      offerType: "obp.frame",
       ports: [{ id: "main", isTerminal: false }],
-    });
-  },
-  async onBind(portId) {
-    console.log("bind", portId);
+    };
   },
   async onTerminate(reason) {
     console.log("terminate", reason);

@@ -1,8 +1,8 @@
 import { portBindPolicySchema } from "../bind-policy/index.ts";
+import type { Offer, Port, SourceMapRef } from "../model/types.ts";
 import { ObpError } from "../persistence/client/errors.ts";
 import type { OBPPersistenceClient } from "../persistence/client/obp-persistence-client.ts";
-import type { Offer, Port } from "../model/types.ts";
-import type { ProliferateBody, PortSpec, ResolveBody } from "./types.ts";
+import type { PortSpec, TurnBody } from "./types.ts";
 
 const MAX_EXPIRES = Number.MAX_SAFE_INTEGER;
 
@@ -15,6 +15,17 @@ function parsePortMaxBindings(o: Record<string, unknown>): number {
     throw new ObpError("VALIDATION", "port max_bindings must be a non-negative integer");
   }
   return n;
+}
+
+function parseSourcemaps(raw: unknown): SourceMapRef[] | undefined {
+  if (!Array.isArray(raw) || raw.length === 0) return undefined;
+  return raw.map((s) => {
+    const o = s as Record<string, unknown>;
+    return {
+      resource_id: String(o.resource_id ?? ""),
+      source_key: String(o.source_key ?? ""),
+    };
+  });
 }
 
 function mapPort(spec: PortSpec): Port {
@@ -34,8 +45,7 @@ function mapPort(spec: PortSpec): Port {
   };
 }
 
-export function parseProliferateBody(body: Record<string, unknown>): ProliferateBody {
-  const offerId = String(body.offerId ?? "");
+export function parseTurnBody(body: Record<string, unknown>): TurnBody {
   const rawPorts = Array.isArray(body.ports) ? body.ports : [];
   const ports: PortSpec[] = rawPorts.map((p) => {
     const o = p as Record<string, unknown>;
@@ -57,10 +67,7 @@ export function parseProliferateBody(body: Record<string, unknown>): Proliferate
       ttl: o.ttl,
     };
   });
-  return { offerId, ports };
-}
 
-export function parseResolveBody(body: Record<string, unknown>): ResolveBody {
   const receiptsRaw = Array.isArray(body.content_receipts) ? body.content_receipts : [];
   const content_receipts = receiptsRaw.map((r) => {
     const o = r as Record<string, unknown>;
@@ -70,49 +77,60 @@ export function parseResolveBody(body: Record<string, unknown>): ResolveBody {
       content_sha256_hex: String(o.content_sha256_hex ?? ""),
     };
   });
+
+  let counterparty_bind: Record<string, unknown> | undefined;
+  if (
+    body.counterparty_bind != null &&
+    typeof body.counterparty_bind === "object" &&
+    !Array.isArray(body.counterparty_bind)
+  ) {
+    counterparty_bind = body.counterparty_bind as Record<string, unknown>;
+  }
+
+  let turn_seq: number | undefined;
+  if (body.turn_seq !== undefined && body.turn_seq !== null) {
+    const n = Number(body.turn_seq);
+    if (!Number.isInteger(n) || n < 0) {
+      throw new ObpError("VALIDATION", "turn_seq must be a non-negative integer when present");
+    }
+    turn_seq = n;
+  }
+
   return {
     offerId: String(body.offerId ?? ""),
-    portId: String(body.portId ?? ""),
-    payload:
-      body.payload != null && typeof body.payload === "object" && !Array.isArray(body.payload)
-        ? (body.payload as Record<string, unknown>)
-        : undefined,
-    content_receipts: content_receipts.length > 0 ? content_receipts : undefined,
+    offerType: String(body.offerType ?? ""),
+    ...(turn_seq !== undefined ? { turn_seq } : {}),
+    sourcemaps: parseSourcemaps(body.sourcemaps),
+    ttl: body.ttl,
+    ...(ports.length > 0 ? { ports } : {}),
+    bindPortId: String(body.bindPortId ?? "").trim() || undefined,
+    ...(content_receipts.length > 0 ? { content_receipts } : {}),
+    ...(counterparty_bind !== undefined ? { counterparty_bind } : {}),
   };
 }
 
-export function applyProliferate(
-  client: OBPPersistenceClient,
-  partyId: string,
-  body: ProliferateBody,
-): void {
+export function applyTurn(client: OBPPersistenceClient, partyId: string, body: TurnBody): void {
+  const offerId = body.offerId.trim() === "" ? crypto.randomUUID() : body.offerId;
   const offer: Offer = {
-    id: body.offerId,
+    id: offerId,
     created_seq: 0,
     expires_seq: MAX_EXPIRES,
-    type: "obp.frame",
-    sourcemaps: [],
+    type: body.offerType,
+    sourcemaps: body.sourcemaps ?? [],
   };
-  client.extendOffer({ partyId, offer, bindPortId: "" });
-  for (const spec of body.ports) {
-    client.exposePort({ offerId: body.offerId, port: mapPort(spec) });
-  }
-}
 
-export function applyResolve(client: OBPPersistenceClient, partyId: string, body: ResolveBody): void {
-  const bindOfferId = crypto.randomUUID();
-  const offer: Offer = {
-    id: bindOfferId,
-    created_seq: 0,
-    expires_seq: MAX_EXPIRES,
-    type: "obp.frame.bind",
-    sourcemaps: [],
-  };
+  const bindPortId = body.bindPortId?.trim() ?? "";
   client.extendOffer({
     partyId,
     offer,
-    bindPortId: body.portId,
-    counterparty_bind: body.payload ?? {},
-    content_receipts: body.content_receipts,
+    bindPortId,
+    ...(bindPortId !== "" ? { counterparty_bind: body.counterparty_bind ?? {} } : {}),
+    ...(body.content_receipts !== undefined && body.content_receipts.length > 0
+      ? { content_receipts: body.content_receipts }
+      : {}),
   });
+
+  for (const spec of body.ports ?? []) {
+    client.exposePort({ offerId: offer.id, port: mapPort(spec) });
+  }
 }

@@ -4,9 +4,9 @@
  */
 
 import type { PortBindPolicy } from "../bind-policy/types.ts";
-import type { ContentAddressedSourceRef } from "../model/types.ts";
+import type { ContentAddressedSourceRef, SourceMapRef } from "../model/types.ts";
 
-export type FrameType = "PROLIFERATE" | "RESOLVE" | "TERMINATE";
+export type FrameType = "TURN" | "TERMINATE";
 
 export type ContentReceipt = ContentAddressedSourceRef;
 
@@ -20,15 +20,18 @@ export type PortSpec = {
   ttl?: unknown;
 };
 
-export type ProliferateBody = {
+/** Symmetric frame body: extend + optional exposes + optional bind (mirrors negotiation runtime turn output). */
+export type TurnBody = {
   offerId: string;
-  ports: PortSpec[];
-};
-
-export type ResolveBody = {
-  offerId: string;
-  portId: string;
-  payload?: Record<string, unknown>;
+  offerType: string;
+  /** Optional alternation counter; scoped per chain when multiplexing. */
+  turn_seq?: number;
+  sourcemaps?: SourceMapRef[];
+  ttl?: unknown;
+  ports?: PortSpec[];
+  /** Counterparty-exposed port to bind; omit or empty for a pure extend/expose turn. */
+  bindPortId?: string;
+  counterparty_bind?: Record<string, unknown>;
   content_receipts?: ContentReceipt[];
 };
 
@@ -37,7 +40,7 @@ export type TerminateBody = {
   code?: string;
 };
 
-export type FrameBody = ProliferateBody | ResolveBody | TerminateBody;
+export type FrameBody = TurnBody | TerminateBody;
 
 export type Frame = {
   p_hash: string;
@@ -78,14 +81,23 @@ export type WireInitEnvelope = {
   init: SessionInit;
 };
 
-/** Handle passed to session handlers (expose / terminate / resolve). */
+/** Handle passed to session handlers (terminate only; TURN replies are the return value of {@link FrameSessionHandlers.onIncomingOffer}). */
 export type FrameSessionHandle = {
   readonly sessionId: string;
   readonly init: SessionInit;
   readonly remoteActor: string;
   get tipHash(): string;
-  expose(input: { offerId: string; ports: PortSpec[] }): Promise<void>;
   terminate(reason: string, code?: string): Promise<void>;
-  resolve(plan: { offerId: string; portId: string; payload?: Record<string, unknown> }): Promise<void>;
 };
 
+export type FrameSessionHandlers = {
+  onIncomingOffer?: (
+    body: TurnBody,
+    session: FrameSessionHandle,
+  ) => Promise<TurnBody | null>;
+  /**
+   * Inbound peer TERMINATE. The third argument identifies the chain (`SessionInit.session_id`) in multiplex mode;
+   * in single-chain sessions it equals that session's id.
+   */
+  onTerminate?: (reason: string, code?: string, sessionId?: string) => Promise<void>;
+};

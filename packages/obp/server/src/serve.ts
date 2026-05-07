@@ -6,8 +6,10 @@ import {
   type FrameSigner,
   type FrameVerifier,
   type ObpPersistence,
+  runFrameMultiplexSession,
   runFrameSession,
   type SessionInit,
+  type SessionOp,
 } from "@cfd/obp-core";
 import { checkpointFromOps, verifyExtends } from "@cfd/obp-session-sync";
 import { frameChannelFromHttp2Stream } from "./http2-channel.ts";
@@ -24,10 +26,12 @@ export type ObpServeOptions = {
     port: number;
     tls?: SecureContextOptions;
   };
-} & Pick<FrameSessionHandlers, "onConnect" | "onBind" | "onProliferate" | "onTerminate"> & {
+  /** When true, {@link ObpServeOptions.init} supplies only the `party_ids` / `actor_pubkeys` template; expect repeated `init` on one stream. */
+  multiplex?: boolean;
+} & Pick<FrameSessionHandlers, "onIncomingOffer" | "onTerminate"> & {
   /** Multiplex `session_envelope` on the same `/obp/v1` stream after frames (Merkle sync; ops must match frame-derived log). */
   sessionEnvelopeSync?: boolean;
-  /** Apply proliferate/resolve graph effects locally on outbound frames (use when server has its own store). */
+  /** Apply TURN graph effects locally on outbound frames (use when server has its own store). */
   graphApplyOutbound?: boolean;
 };
 
@@ -43,9 +47,7 @@ export type ObpServerHandle = {
 export function serveObp(options: ObpServeOptions): Promise<ObpServerHandle> {
   const verifier = options.verifier ?? createEd25519FrameVerifier();
   const handlers: FrameSessionHandlers = {
-    ...(options.onConnect !== undefined ? { onConnect: options.onConnect } : {}),
-    ...(options.onBind !== undefined ? { onBind: options.onBind } : {}),
-    ...(options.onProliferate !== undefined ? { onProliferate: options.onProliferate } : {}),
+    ...(options.onIncomingOffer !== undefined ? { onIncomingOffer: options.onIncomingOffer } : {}),
     ...(options.onTerminate !== undefined ? { onTerminate: options.onTerminate } : {}),
   };
 
@@ -57,26 +59,47 @@ export function serveObp(options: ObpServeOptions): Promise<ObpServerHandle> {
     }
     stream.respond({ ":status": 200 });
     const channel = frameChannelFromHttp2Stream(stream);
-    void runFrameSession({
-      role: "responder",
-      channel,
-      signer: options.signer,
-      verifier,
-      persistence: options.persistence,
-      ledgerSeq: options.ledgerSeq,
-      init: options.init,
-      handlers,
-      ...(options.sessionEnvelopeSync === true
+    const sessionEnvelopeSync =
+      options.sessionEnvelopeSync === true
         ? {
-            sessionEnvelopeSync: {
-              myPartyId: options.init.party_ids[0],
-              checkpointFromOps: (ops) => checkpointFromOps(ops as unknown[]),
-              verifyExtends,
-            },
+            myPartyId: options.init.party_ids[0],
+            checkpointFromOps: (ops: SessionOp[]) => checkpointFromOps(ops as unknown[]),
+            verifyExtends,
           }
-        : {}),
-      ...(options.graphApplyOutbound === true ? { graphApplyOutbound: true } : {}),
-    }).catch(() => {
+        : undefined;
+
+    const run =
+      options.multiplex === true
+        ? runFrameMultiplexSession({
+            role: "responder",
+            channel,
+            signer: options.signer,
+            verifier,
+            persistence: options.persistence,
+            ledgerSeq: options.ledgerSeq,
+            sessionTemplate: {
+              party_ids: options.init.party_ids,
+              actor_pubkeys: options.init.actor_pubkeys,
+            },
+            handlers,
+            initiatorChainPlans: [],
+            ...(sessionEnvelopeSync !== undefined ? { sessionEnvelopeSync } : {}),
+            ...(options.graphApplyOutbound === true ? { graphApplyOutbound: true } : {}),
+          })
+        : runFrameSession({
+            role: "responder",
+            channel,
+            signer: options.signer,
+            verifier,
+            persistence: options.persistence,
+            ledgerSeq: options.ledgerSeq,
+            init: options.init,
+            handlers,
+            ...(sessionEnvelopeSync !== undefined ? { sessionEnvelopeSync } : {}),
+            ...(options.graphApplyOutbound === true ? { graphApplyOutbound: true } : {}),
+          });
+
+    void run.catch(() => {
       try {
         stream.destroy();
       } catch {

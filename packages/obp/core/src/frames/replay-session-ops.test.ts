@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test";
-import { FakeObpPersistence } from "../testing/fake-obp-persistence.ts";
 import { ObpError } from "../persistence/client/errors.ts";
 import { OBPPersistenceClient } from "../persistence/client/obp-persistence-client.ts";
-import { applySessionOp, applySessionOps } from "./replay-session-ops.ts";
+import { FakeObpPersistence } from "../testing/fake-obp-persistence.ts";
+import { applySessionOp, applySessionOps, applySessionOpsMultiplex } from "./replay-session-ops.ts";
 import type { SessionOp } from "./to-session-op.ts";
 import type { SessionInit } from "./types.ts";
 
@@ -22,19 +22,27 @@ function setupParties() {
   return { persistence, client, init, ledgerSeq };
 }
 
-test("applySessionOps: proliferate then resolve", () => {
+test("applySessionOps: expose then bind (turn ops)", () => {
   const { persistence, client, init } = setupParties();
   const ops: SessionOp[] = [
     {
-      kind: "proliferate",
+      kind: "turn",
       payload: {
+        actor: "pk0",
         offerId: "greeting",
+        offerType: "obp.frame",
         ports: [{ id: "p1", isTerminal: false }],
       },
     },
     {
-      kind: "resolve",
-      payload: { offerId: "greeting", portId: "p1", payload: {} },
+      kind: "turn",
+      payload: {
+        actor: "pk1",
+        offerId: "",
+        offerType: "obp.frame.bind",
+        bindPortId: "p1",
+        counterparty_bind: {},
+      },
     },
   ];
   applySessionOps(client, init, ops);
@@ -47,74 +55,150 @@ test("applySessionOps: proliferate then resolve", () => {
 test("applySessionOps: terminate invokes hook only", () => {
   const { client, init } = setupParties();
   let terminated: string | undefined;
-  applySessionOps(
-    client,
-    init,
-    [{ kind: "terminate", payload: { reason: "bye", code: "c1" } }],
-    { onTerminate: (r, c) => { terminated = `${r}:${c}`; } },
-  );
+  applySessionOps(client, init, [{ kind: "terminate", payload: { reason: "bye", code: "c1" } }], {
+    onTerminate: (r, c) => {
+      terminated = `${r}:${c}`;
+    },
+  });
   expect(terminated).toBe("bye:c1");
+});
+
+test("applySessionOpsMultiplex: routes ops by session_id", () => {
+  const { persistence, client, init } = setupParties();
+  const initB: SessionInit = {
+    ...init,
+    session_id: "sid-b",
+    genesis_hash: "b".repeat(64),
+  };
+  const ops: SessionOp[] = [
+    {
+      kind: "turn",
+      session_id: init.session_id,
+      payload: {
+        actor: "pk0",
+        offerId: "a1",
+        offerType: "obp.frame",
+        ports: [{ id: "pa", isTerminal: false }],
+      },
+    },
+    {
+      kind: "turn",
+      session_id: initB.session_id,
+      payload: {
+        actor: "pk0",
+        offerId: "b1",
+        offerType: "obp.frame",
+        ports: [{ id: "pb", isTerminal: false }],
+      },
+    },
+  ];
+  const m = new Map<string, SessionInit>([
+    [init.session_id, init],
+    [initB.session_id, initB],
+  ]);
+  applySessionOpsMultiplex(client, m, ops);
+  expect(persistence.isPortExposed("pa")).toBe(true);
+  expect(persistence.isPortExposed("pb")).toBe(true);
+  expect(persistence.getExtendingPartyId("a1")).toBe(init.party_ids[0]);
+  expect(persistence.getExtendingPartyId("b1")).toBe(initB.party_ids[0]);
+});
+
+test("applySessionOpsMultiplex: rejects missing session_id", () => {
+  const { client, init } = setupParties();
+  expect(() =>
+    applySessionOpsMultiplex(client, new Map([[init.session_id, init]]), [
+      { kind: "turn", payload: { actor: "pk0", offerId: "x", offerType: "t" } },
+    ]),
+  ).toThrow(ObpError);
 });
 
 test("applySessionOp rejects unknown kind", () => {
   const { client, init } = setupParties();
-  expect(() =>
-    applySessionOp(client, init, { kind: "nope", payload: {} }),
-  ).toThrow(ObpError);
+  expect(() => applySessionOp(client, init, { kind: "nope", payload: {} })).toThrow(ObpError);
 });
 
-test("applySessionOps: second resolve exceeds max_bindings (from proliferate defaults)", () => {
+test("applySessionOps: second bind exceeds max_bindings (defaults)", () => {
   const { client, init } = setupParties();
   const ops: SessionOp[] = [
     {
-      kind: "proliferate",
+      kind: "turn",
       payload: {
+        actor: "pk0",
         offerId: "o",
+        offerType: "obp.frame",
         ports: [{ id: "one_slot", isTerminal: false }],
       },
     },
     {
-      kind: "resolve",
-      payload: { offerId: "o", portId: "one_slot", payload: { a: 1 } },
+      kind: "turn",
+      payload: {
+        actor: "pk1",
+        offerId: "",
+        offerType: "obp.frame.bind",
+        bindPortId: "one_slot",
+        counterparty_bind: {},
+      },
     },
     {
-      kind: "resolve",
-      payload: { offerId: "o", portId: "one_slot", payload: { b: 2 } },
+      kind: "turn",
+      payload: {
+        actor: "pk1",
+        offerId: "",
+        offerType: "obp.frame.bind",
+        bindPortId: "one_slot",
+        counterparty_bind: {},
+      },
     },
   ];
   expect(() => applySessionOps(client, init, ops)).toThrow(ObpError);
 });
 
-test("applySessionOps: two resolves allowed when max_bindings is 2", () => {
+test("applySessionOps: two binds allowed when max_bindings is 2", () => {
   const { persistence, client, init } = setupParties();
   const ops: SessionOp[] = [
     {
-      kind: "proliferate",
+      kind: "turn",
       payload: {
+        actor: "pk0",
         offerId: "o",
+        offerType: "obp.frame",
         ports: [{ id: "p", isTerminal: false, max_bindings: 2 }],
       },
     },
     {
-      kind: "resolve",
-      payload: { offerId: "o", portId: "p", payload: {} },
+      kind: "turn",
+      payload: {
+        actor: "pk1",
+        offerId: "",
+        offerType: "obp.frame.bind",
+        bindPortId: "p",
+        counterparty_bind: {},
+      },
     },
     {
-      kind: "resolve",
-      payload: { offerId: "o", portId: "p", payload: {} },
+      kind: "turn",
+      payload: {
+        actor: "pk1",
+        offerId: "",
+        offerType: "obp.frame.bind",
+        bindPortId: "p",
+        counterparty_bind: {},
+      },
     },
   ];
   applySessionOps(client, init, ops);
   expect(persistence.listBinds().length).toBe(2);
 });
 
-test("applySessionOp: invalid max_bindings on proliferate", () => {
+test("applySessionOp: invalid max_bindings on turn", () => {
   const { client, init } = setupParties();
   expect(() =>
     applySessionOp(client, init, {
-      kind: "proliferate",
+      kind: "turn",
       payload: {
+        actor: "pk0",
         offerId: "o",
+        offerType: "obp.frame",
         ports: [{ id: "p", isTerminal: false, max_bindings: 1.5 }],
       },
     }),

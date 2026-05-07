@@ -7,7 +7,7 @@ HTTP/2 **reference binding** for [`cfd.obp.frame`](../spec/model/frame-protocol.
 
 ## Prereqs
 
-The **server runs as the frame session responder** ([`runFrameSession`](../../core/src/frames/session-pipeline.ts) with `role: "responder"`). You must supply a [`SessionInit`](../../core/src/frames/types.ts) identical to what the initiator sends (`session_id`, `party_ids`, `actor_pubkeys`, `genesis_hash`). **Graph mutations from received frames** are applied through the shared [`@cfd/obp-core`](../core) client; for **outbound** `PROLIFERATE` / `RESOLVE`, effects are applied on the **receiver** only (so a **shared** `ObpPersistence` across peers matches the in-repo tests). For **separate** databases per peer, treat replication as an application concern or extend the pipeline.
+The **server runs as the frame session responder** ([`runFrameSession`](../../core/src/frames/session-pipeline.ts) with `role: "responder"`). You must supply a [`SessionInit`](../../core/src/frames/types.ts) identical to what the initiator sends (`session_id`, `party_ids`, `actor_pubkeys`, `genesis_hash`). **Graph mutations from received frames** are applied through the shared [`@cfd/obp-core`](../core) client. **Outbound** `TURN` effects are applied on the **receiver** only by default; use **`graphApplyOutbound: true`** when the server has its own store (see `runFrameSession`).
 
 ## Example
 
@@ -29,14 +29,16 @@ await Obp.serve({
   ledgerSeq: () => ++seq,
   init: { session_id, party_ids, actor_pubkeys, genesis_hash: await sha256HexUtf8("seed") },
   listen: { port: 8787 },
-  async onConnect(session) {
-    await session.expose({
+  async onIncomingOffer(body, session) {
+    if (body.bindPortId === "start_order") {
+      await session.terminate("done");
+      return null;
+    }
+    return {
       offerId: "greeting",
+      offerType: "obp.frame",
       ports: [{ id: "start_order", isTerminal: false }],
-    });
-  },
-  async onBind(portId, payload, session) {
-    // ...
+    };
   },
 });
 ```

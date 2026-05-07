@@ -9,8 +9,7 @@ use smithy.api#Document
 string Sha256HexLower
 
 enum FrameType {
-    PROLIFERATE
-    RESOLVE
+    TURN
     TERMINATE
 }
 
@@ -29,6 +28,15 @@ list PortSpecList {
     member: PortSpec
 }
 
+structure FrameSourceMapRef {
+    resource_id: String
+    source_key: String
+}
+
+list FrameSourceMapRefList {
+    member: FrameSourceMapRef
+}
+
 /// One exposed affordance on an offer. `bind_policy` / `ttl` use JSON **Document**; **null** means unset (see service docs).
 /// **`max_bindings`** is projected to **`cfd.obp#Port.max_bindings`** (canonical bind tally). Omitted on wire means **1**.
 structure PortSpec {
@@ -40,17 +48,19 @@ structure PortSpec {
     ttl: Document
 }
 
-/// Phase I — proliferate: create/extend an offer and declare exposed ports (payload for **PROLIFERATE** `Frame.body`).
-structure ProliferateBody {
+/// Symmetric negotiation turn: extend an offer under the actor's party, optionally expose ports, optionally bind a counterparty port (payload for **TURN** `Frame.body`).
+structure TurnBody {
+    /// Optional monotonic index per negotiation (**`SessionInit.session_id`**) for alternation / diagnostics when multiple chains share one byte stream.
+    turn_seq: Integer
+    /// Offer id; empty string means the receiver generates an id when projecting to persistence.
     offerId: String
+    offerType: String
+    sourcemaps: FrameSourceMapRefList
+    ttl: Document
     ports: PortSpecList
-}
-
-/// Phase II — resolve: bind exactly one port on a proliferated offer (payload for **RESOLVE** `Frame.body`).
-structure ResolveBody {
-    offerId: String
-    portId: String
-    payload: Document
+    /// Omit or empty when this turn does not bind; otherwise the canonical id of the counterparty-exposed port.
+    bindPortId: String
+    counterparty_bind: Document
     content_receipts: ContentReceiptList
 }
 
@@ -88,7 +98,7 @@ structure Frame {
     /// Signature over **`signing_bytes`** (see **NegotiationFrameProtocol**); encoding is binding-specific.
     sig: String
     type: FrameType
-    /// Discriminated by **`type`**: embed **`ProliferateBody`**, **`ResolveBody`**, or **`TerminateBody`** as JSON object matching those structures.
+    /// Discriminated by **`type`**: embed **`TurnBody`** or **`TerminateBody`** as JSON object matching those structures.
     body: Document
 }
 
@@ -96,9 +106,9 @@ structure Frame {
 **OBP/1.0 — bilateral frame protocol (transport-agnostic).**
 
 This namespace models the **Frame** DAG from the human-readable draft (`packages/obp/.idea/draft.md`): causal integrity,
-alternating proliferation / resolution, signed actors, and logic-blind structural enforcement.
+signed actors, and logic-blind structural enforcement.
 
-**Relationship to persistence:** Valid **PROLIFERATE** / **RESOLVE** transitions **MUST** be projected to **`cfd.obp#ObpPersistence`**
+**Relationship to persistence:** Valid **TURN** transitions **MUST** be projected to **`cfd.obp#ObpPersistence`**
 via **`OBPPersistenceClient`** (or equivalent) so graph invariants in `persistence.smithy` hold. **TERMINATE** ends the frame session; it does
 not alone mutate **`ObpPersistence`** unless implementations map it to optional revoke ops.
 
@@ -118,24 +128,28 @@ followed by **`length`** bytes of **`UTF-8(canonical_json(frameObject))`**, wher
 (see below) or a **Frame**. Alternative bindings **MAY** substitute an equivalent framing that preserves strict ordering and message
 boundaries; see **`cfd.obp.frame.http2`**.
 
-**Session bootstrap:** The first framed JSON object **SHOULD** be **`{ "init": `<SessionInit JSON>` }`** where **`SessionInit`** carries
-**`party_ids`**, **`actor_pubkeys`** (aligned order), and **`genesis_hash`**. Keys SHOULD be sorted for canonical framing. All subsequent framed objects **MUST** be **Frame** objects **`{ "actor", "body", "p_hash", "sig", "type" }`**.
+**Session bootstrap:** Framed objects **MAY** include multiple **`{ "init": `<SessionInit JSON>` }`** envelopes on the **same** duplex byte stream (long‑lived multiplex): each distinct **`session_id`** / **`genesis_hash`** pair starts a separate causal chain. Implementations **MUST** route each **Frame** to the unique open chain whose current tip or registered **`genesis_hash`** equals **`p_hash`**. Keys SHOULD be sorted for canonical framing. Between **`init`** messages, framed objects **MUST** be **Frame** objects **`{ "actor", "body", "p_hash", "sig", "type" }`** for the active chains’ turns.
 
-**Turn contract (informal):** After **init**, peers alternate **PROLIFERATE** (expose ports on an offer) and **RESOLVE** (bind exactly
-one offered port). **TERMINATE** may be sent when allowed by local policy. Implementations **MUST** reject frames that violate the
-agreed actor order, wrong **offerId** on **RESOLVE**, or unknown **portId** for the open offer.
+**Turn contract (informal):** After **init**, any actor may send a **TURN** frame. A **TURN** extends a new offer for the sender's party,
+optionally exposes ports on that offer, and optionally binds one counterparty-exposed port (**`bindPortId`** plus satisfaction fields). Causal
+order is enforced only by **`p_hash`**: each frame's **`p_hash`** MUST equal the local DAG tip (**`CAUSAL_MISMATCH`** otherwise). The wire
+protocol does **not** imply strict alternation between parties — that is **transport-scoped**. The reference HTTP/2 binding uses
+request/reply at the API layer so only one peer emits at a time at a given tip; purely decentralized transports (gossip, mailboxes, etc.)
+MUST add their own alternation or merge policy (for example an optional future **`expected_actor`** field on **TurnBody**).
+
+**TERMINATE** may be sent when allowed by local policy.
 
 **Hardened constraints (draft §8):**
 1. **Strict ordering:** reject when **`p_hash`** ≠ local tip.
 2. **Identity verification:** reject invalid **`sig`**; session **SHOULD** abort.
-3. **Offer/port expiry / capacity:** **`OBPPersistenceClient`** / ledger **`expires_seq`** rejects stale **RESOLVE** per **`cfd.obp`**. **`PortSpec.max_bindings`**
+3. **Offer/port expiry / capacity:** **`OBPPersistenceClient`** / ledger **`expires_seq`** rejects stale binds per **`cfd.obp`**. **`PortSpec.max_bindings`**
    sets **`Port.max_bindings`** on expose (default **1** when omitted). Optional TTL on ports follows **`Port.ttl_*` fields once projected from **`PortSpec.ttl`**.
-4. **No partial binds:** **RESOLVE** either commits a full **BINDS** satisfaction payload or fails.
+4. **No partial binds:** A **TURN** with **`bindPortId`** set either commits a full **BINDS** satisfaction payload or fails.
 
 **Mapping to decentralized session sync:** Each accepted frame yields one or more replayable **`cfd.obp.session#SessionOp`** values
 (extend offer, expose port, bind-via-extend, optional terminal marker) for **`NegotiationSessionProtocol`** checkpoints.
 
-**Concurrent transport sessions:** Servers **MAY** accept **many** open streams at once (one negotiated stream per client session). **How** each logical bilateral session is backed—dedicated **`ObpPersistence`**, a shared store with partitioning, or otherwise—is **implementation-defined**; this protocol **MUST NOT** be read as requiring per-session physical isolation. **RESOLVE** and **PROLIFERATE** projections **MUST** satisfy **`cfd.obp#ObpPersistence`** invariants in `persistence.smithy` on whatever store they use, including **global canonical `max_bindings`** and **atomic** enforcement when concurrent operations mutate the **same** logical graph (see invariant **11** in `persistence.smithy` for shared vs separate store boundaries).
+**Concurrent transport sessions:** Servers **MAY** accept **many** open streams at once (one negotiated stream per client session). **How** each logical bilateral session is backed—dedicated **`ObpPersistence`**, a shared store with partitioning, or otherwise—is **implementation-defined**; this protocol **MUST NOT** be read as requiring per-session physical isolation. **TURN** projections **MUST** satisfy **`cfd.obp#ObpPersistence`** invariants in `persistence.smithy` on whatever store they use, including **global canonical `max_bindings`** and **atomic** enforcement when concurrent operations mutate the **same** logical graph (see invariant **11** in `persistence.smithy` for shared vs separate store boundaries).
 
 **Explicit non-goals here:** hostnames, ports, TLS, and URLs — see transport bindings (e.g. **`cfd.obp.frame.http2`**).
 """)

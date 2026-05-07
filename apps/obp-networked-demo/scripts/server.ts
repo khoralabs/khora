@@ -4,10 +4,11 @@
  * Prerequisites: `bun run bootstrap`
  * Env: OBP_DEMO_BOOTSTRAP, OBP_HOST (default 127.0.0.1), OBP_PORT (default 8765)
  */
+import type { FrameSessionHandle, TurnBody } from "@cfd/obp-core";
 import { createEd25519FrameVerifier } from "@cfd/obp-core";
 import { FakeObpPersistence } from "@cfd/obp-core/testing";
 import { serveObp } from "@cfd/obp-server";
-import { demoBindPolicy, demoTurn1, demoTurn2 } from "./demo-protocol.ts";
+import { type DemoRoundConfig, demoBindPolicy, demoRound1, demoRound2 } from "./demo-protocol.ts";
 import { loadBootstrapFile, responderSignerFromBootstrap } from "./load-bootstrap.ts";
 
 const host = process.env.OBP_HOST ?? "127.0.0.1";
@@ -29,59 +30,66 @@ persistence.importState({
   bindRows: [],
 });
 
+const portSpec = (id: string) => ({
+  id,
+  isTerminal: false,
+  max_bindings: 8,
+  bind_policy: demoBindPolicy,
+});
+
+async function handleDemoRound(
+  body: TurnBody,
+  session: FrameSessionHandle,
+  round: DemoRoundConfig,
+): Promise<TurnBody | null> {
+  console.log("[demo] inbound turn", session.sessionId, body.offerId, body.bindPortId ?? "");
+  if (body.bindPortId === round.turn2.portId) {
+    await session.terminate("ok");
+    return null;
+  }
+  if (body.bindPortId === round.turn1.portId) {
+    console.log("[demo] exposing second offer", round.turn2.offerId);
+    return {
+      offerId: round.turn2.offerId,
+      offerType: "obp.demo",
+      ports: [portSpec(round.turn2.portId)],
+    };
+  }
+  if (body.offerId === round.clientOffer) {
+    return {
+      offerId: round.turn1.offerId,
+      offerType: "obp.demo",
+      bindPortId: round.clientPort,
+      counterparty_bind: {},
+      ports: [portSpec(round.turn1.portId)],
+    };
+  }
+  await session.terminate(`unexpected turn ${body.offerId}`);
+  return null;
+}
+
 const handle = await serveObp({
   signer,
   verifier,
   persistence,
   ledgerSeq,
   init: bootstrap.init,
+  multiplex: true,
   listen: { host, port },
   sessionEnvelopeSync: true,
   graphApplyOutbound: true,
-  async onConnect(session) {
-    console.log("[demo] session connected");
-    await session.expose({
-      offerId: demoTurn1.offerId,
-      ports: [
-        {
-          id: demoTurn1.portId,
-          isTerminal: false,
-          max_bindings: 8,
-          bind_policy: demoBindPolicy,
-        },
-      ],
-    });
+  async onIncomingOffer(body, session) {
+    const round = session.sessionId.endsWith("-r2") ? demoRound2 : demoRound1;
+    return handleDemoRound(body, session, round);
   },
-  async onBind(portId, _payload, session) {
-    console.log("[demo] client bound:", portId);
-    if (portId === demoTurn1.portId) {
-      console.log("[demo] exposing turn 2");
-      await session.expose({
-        offerId: demoTurn2.offerId,
-        ports: [
-          {
-            id: demoTurn2.portId,
-            isTerminal: false,
-            max_bindings: 8,
-            bind_policy: demoBindPolicy,
-          },
-        ],
-      });
-      return;
-    }
-    if (portId === demoTurn2.portId) {
-      await session.terminate("ok");
-      return;
-    }
-    await session.terminate(`unexpected port ${portId}`);
-  },
-  async onTerminate(reason) {
-    console.log("[demo] terminated:", reason);
+  async onTerminate(reason, _code, sessionId) {
+    console.log("[demo] chain terminated:", sessionId ?? "", reason);
   },
 });
 
 const url = `http://${host}:${handle.port}`;
 console.log(`OBP demo server listening on ${url} (POST /obp/v1)`);
+console.log("Multiplex: two negotiation chains per TCP connection (see client).");
 console.log("Run in another terminal: bun run client");
 console.log(`Or: OBP_URL=${url} bun run client`);
 

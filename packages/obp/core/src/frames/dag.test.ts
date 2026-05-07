@@ -14,8 +14,9 @@ test("FrameDag chain: mint and append agree on tip", async () => {
   const verifier = createEd25519FrameVerifier();
   const genesis = await sha256HexUtf8("__genesis_test__");
   const a = new FrameDag(genesis);
-  const f0 = await a.mintOutbound(signer, "PROLIFERATE", {
+  const f0 = await a.mintOutbound(signer, "TURN", {
     offerId: "o1",
+    offerType: "obp.frame",
     ports: [{ id: "p1", isTerminal: false, bind_policy: null, ttl: null }],
   });
   expect(f0.p_hash).toBe(genesis);

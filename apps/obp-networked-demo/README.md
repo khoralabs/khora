@@ -1,8 +1,8 @@
 # OBP networked demo (two processes)
 
-Separate [`FakeObpPersistence`](../../packages/obp/core/src/testing/fake-obp-persistence.ts) per process: each loads the same **party rows** from a bootstrap file, then runs frames plus **session envelope** sync on the **same** HTTP/2 `/obp/v1` stream (`sessionEnvelopeSync: true`). With split stores, the demo enables `graphApplyOutbound` so each peer applies proliferate/resolve to its own persistence (see `serveObp` / `connectObpSession` options).
+Separate [`FakeObpPersistence`](../../packages/obp/core/src/testing/fake-obp-persistence.ts) per process: each loads the same **party rows** from a bootstrap file, then runs frames plus **session envelope** sync on the **same** HTTP/2 `/obp/v1` stream (`sessionEnvelopeSync: true`). With split stores, the demo enables `graphApplyOutbound` so each peer applies **TURN** graph effects to its own persistence (see `serveObp` / `connectObpSession` options).
 
-**Multi-turn session:** one logical `connectObpSession` runs **two** responder proliferates (`demo-turn-1` → bind → `demo-turn-2` → bind) before **`TERMINATE`**. Shared offer/port ids live in [`scripts/demo-protocol.ts`](scripts/demo-protocol.ts).
+**Multi-turn session:** the client opens with **`initialTurn`** (exposes `to-server`); the server binds that port, exposes **`demo-turn-1`** / `main`, the client binds `main`, the server exposes **`demo-turn-2`** / `follow`, the client binds `follow`, then **`TERMINATE`**. Shared ids live in [`scripts/demo-protocol.ts`](scripts/demo-protocol.ts).
 
 ## One-time: generate secrets
 
@@ -39,7 +39,7 @@ Listens until **SIGINT/SIGTERM** (`Ctrl+C`), then closes cleanly.
 bun run client
 ```
 
-One `connectObpSession` call (two proliferate/resolve rounds inside it), logs checkpoint summary, exits **0**.
+One `connectObpSession` call (several symmetric **TURN** rounds), logs checkpoint summary, exits **0**.
 
 ## Scripts
 
