@@ -63,6 +63,14 @@ export {
   parseTurnBody,
 } from "./frames/graph-effect.ts";
 export {
+  createNegotiationCoordinator,
+  waitForPortOnOffer,
+} from "./frames/negotiation-coordinator.ts";
+export type {
+  NegotiationCoordinatorHooksArgs,
+  WaitForTurnOptions,
+} from "./frames/negotiation-coordinator.ts";
+export {
   type RunFrameMultiplexSessionArgs,
   type RunFrameSessionArgs,
   type SessionEnvelopeSyncAdapter,
@@ -92,14 +100,27 @@ export {
 } from "./frames/to-session-op.ts";
 export type {
   Frame,
+  FrameMultiplexOpenerApi,
   FrameSessionHandle,
   FrameSessionHandlers,
   FrameType,
+  MultiplexChainHooks,
   PortSpec,
   SessionCheckpoint,
   SessionEnvelopeWire,
   SessionInit,
+  SessionParty,
   TerminateBody,
   TurnBody,
 } from "./frames/types.ts";
+export type { SessionInitWire } from "./frames/session-init-wire.ts";
+export {
+  canonicalSessionParties,
+  normalizeSessionInit,
+  partyIdForSigner,
+  sessionInitFromUnknownWireEnvelope,
+  sessionInitFromUnknownWireRecord,
+  sessionInitFromWire,
+  sessionInitToWire,
+} from "./frames/session-init-wire.ts";
 

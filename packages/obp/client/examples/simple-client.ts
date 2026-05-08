@@ -13,33 +13,43 @@ import { FakeObpPersistence } from "@cfd/obp-core/testing";
 import { serveObp } from "@cfd/obp-server";
 import { connectObpSession } from "../src/connect.ts";
 
+const EXAMPLE_AUTH = "Bearer obp-example-session";
+const EXAMPLE_SESSION_ID = "obp-example";
+
 let seq = 0;
 const ledgerSeq = () => ++seq;
 const persistence = new FakeObpPersistence(ledgerSeq);
 const sp = persistence.registerParty({ name: "srv", sourcemaps: [] }).party;
 const cp = persistence.registerParty({ name: "cli", sourcemaps: [] }).party;
-
-const srvKeys = await generateEd25519KeyPair();
-const cliKeys = await generateEd25519KeyPair();
-const srvSigner = await createEd25519FrameSigner(srvKeys.privateKey, srvKeys.publicKey);
-const cliSigner = await createEd25519FrameSigner(cliKeys.privateKey, cliKeys.publicKey);
 const verifier = createEd25519FrameVerifier();
 
-const genesis = await sha256HexUtf8("example-client");
-const init: SessionInit = {
-  session_id: "example-client",
-  party_ids: [sp.id, cp.id],
-  actor_pubkeys: [srvSigner.actor, cliSigner.actor],
-  genesis_hash: genesis,
-};
+const srvKeys = await generateEd25519KeyPair();
+const srvSigner = await createEd25519FrameSigner(srvKeys.privateKey, srvKeys.publicKey);
+const cliKeys = await generateEd25519KeyPair();
+const cliSigner = await createEd25519FrameSigner(cliKeys.privateKey, cliKeys.publicKey);
+
+const listenHost = "127.0.0.1";
 
 const handle = await serveObp({
-  signer: srvSigner,
   verifier,
   persistence,
   ledgerSeq,
-  init,
-  listen: { host: "127.0.0.1", port: 0 },
+  onConnect: async ({ headers, serverHost, serverPort }) => {
+    if (headers.authorization !== EXAMPLE_AUTH) throw new Error("unauthorized");
+    const genesis_hash = await sha256HexUtf8(`obp-example-${serverHost}-${serverPort}`);
+    return {
+      init: {
+        session_id: EXAMPLE_SESSION_ID,
+        parties: [
+          { id: sp.id, pubkey: srvSigner.actor },
+          { id: cp.id, pubkey: cliSigner.actor },
+        ],
+        genesis_hash,
+      },
+      signer: srvSigner,
+    };
+  },
+  listen: { host: listenHost, port: 0 },
   async onIncomingOffer(body, session) {
     if (body.bindPortId === "main") {
       console.log("server saw bind:", body.bindPortId);
@@ -57,29 +67,42 @@ const handle = await serveObp({
   },
 });
 
-const { sessionOps, checkpoint } = await connectObpSession({
-  url: `http://127.0.0.1:${handle.port}`,
-  signer: cliSigner,
-  verifier,
-  persistence,
-  ledgerSeq,
-  init,
-  initialTurn: { offerId: "open", offerType: "obp.frame", ports: [] },
-  handlers: {
-    async onIncomingOffer(body) {
-      console.log("client inbound offer:", body.offerId);
-      if (body.offerId === "hello" && body.ports?.some((p) => p.id === "main")) {
-        return {
-          offerId: "",
-          offerType: "obp.frame.bind",
-          bindPortId: "main",
-          counterparty_bind: {},
-        };
-      }
-      return null;
-    },
+const init: SessionInit = {
+  session_id: EXAMPLE_SESSION_ID,
+  parties: [
+    { id: sp.id, pubkey: srvSigner.actor },
+    { id: cp.id, pubkey: cliSigner.actor },
+  ],
+  genesis_hash: await sha256HexUtf8(`obp-example-${listenHost}-${handle.port}`),
+};
+
+const { sessionOps, checkpoint } = await connectObpSession(
+  {
+    url: `http://${listenHost}:${handle.port}`,
+    requestHeaders: { authorization: EXAMPLE_AUTH },
+    signer: cliSigner,
+    verifier,
+    persistence,
+    ledgerSeq,
   },
-});
+  async (conn) => {
+    const chain = await conn.init(init, {
+      async onIncomingOffer(body) {
+        console.log("client inbound offer:", body.offerId);
+        if (body.offerId === "hello" && body.ports?.some((p) => p.id === "main")) {
+          return {
+            offerId: "",
+            offerType: "obp.frame.bind",
+            bindPortId: "main",
+            counterparty_bind: {},
+          };
+        }
+        return null;
+      },
+    });
+    await chain.sendTurn({ offerId: "open", offerType: "obp.frame", ports: [] });
+  },
+);
 
 await handle.close();
 

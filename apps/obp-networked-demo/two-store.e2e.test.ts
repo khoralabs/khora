@@ -36,20 +36,20 @@ test("two-store HTTP/2 frame session (no shared persistence)", async () => {
   const genesis = await sha256HexUtf8("two-store-e2e");
   const init = {
     session_id: "two-store",
-    party_ids: [sp.id, cp.id] as [string, string],
-    actor_pubkeys: [srvSigner.actor, cliSigner.actor] as [string, string],
+    parties: [
+      { id: sp.id, pubkey: srvSigner.actor },
+      { id: cp.id, pubkey: cliSigner.actor },
+    ] as [{ id: string; pubkey: string }, { id: string; pubkey: string }],
     genesis_hash: genesis,
   };
 
   const handle = await serveObp({
-    signer: srvSigner,
     verifier,
     persistence: p1,
     ledgerSeq: () => ++s1,
-    init,
+    onConnect: async () => ({ init, signer: srvSigner }),
     listen: { host: "127.0.0.1", port: 0 },
     sessionEnvelopeSync: false,
-    graphApplyOutbound: true,
     async onIncomingOffer(body, session) {
       if (body.bindPortId === "go") {
         await session.terminate("ok");
@@ -63,30 +63,32 @@ test("two-store HTTP/2 frame session (no shared persistence)", async () => {
     },
   });
 
-  const { sessionOps } = await connectObpSession({
-    url: `http://127.0.0.1:${handle.port}`,
-    signer: cliSigner,
-    verifier,
-    persistence: p2,
-    ledgerSeq: () => ++s2,
-    init,
-    sessionEnvelopeSync: false,
-    graphApplyOutbound: true,
-    initialTurn: { offerId: "open", offerType: "obp.frame", ports: [] },
-    handlers: {
-      async onIncomingOffer(body) {
-        if (body.offerId === "greeting" && body.ports?.some((p) => p.id === "go")) {
-          return {
-            offerId: "",
-            offerType: "obp.frame.bind",
-            bindPortId: "go",
-            counterparty_bind: {},
-          };
-        }
-        return null;
-      },
+  const { sessionOps } = await connectObpSession(
+    {
+      url: `http://127.0.0.1:${handle.port}`,
+      signer: cliSigner,
+      verifier,
+      persistence: p2,
+      ledgerSeq: () => ++s2,
+      sessionEnvelopeSync: false,
     },
-  });
+    async (conn) => {
+      const chain = await conn.init(init, {
+        async onIncomingOffer(body) {
+          if (body.offerId === "greeting" && body.ports?.some((p) => p.id === "go")) {
+            return {
+              offerId: "",
+              offerType: "obp.frame.bind",
+              bindPortId: "go",
+              counterparty_bind: {},
+            };
+          }
+          return null;
+        },
+      });
+      await chain.sendTurn({ offerId: "open", offerType: "obp.frame", ports: [] });
+    },
+  );
 
   await handle.close();
   expect(sessionOps.length).toBeGreaterThanOrEqual(3);

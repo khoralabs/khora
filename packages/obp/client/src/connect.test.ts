@@ -14,11 +14,22 @@ import { checkpointFromOps, verifyExtends } from "@cfd/obp-session-sync";
 import { connectObpSession } from "./connect.ts";
 
 async function runTurnSessionCheckpoint(sessionEnvelopeSync: boolean) {
-  let seq = 0;
-  const ledgerSeq = () => ++seq;
-  const persistence = new FakeObpPersistence(ledgerSeq);
-  const sp = persistence.registerParty({ name: "srv", sourcemaps: [] }).party;
-  const cp = persistence.registerParty({ name: "cli", sourcemaps: [] }).party;
+  let s1 = 0;
+  let s2 = 0;
+  const ledgerSeqSrv = () => ++s1;
+  const ledgerSeqCli = () => ++s2;
+  const persistenceSrv = new FakeObpPersistence(ledgerSeqSrv);
+  const persistenceCli = new FakeObpPersistence(ledgerSeqCli);
+  const sp = persistenceSrv.registerParty({ name: "srv", sourcemaps: [] }).party;
+  const cp = persistenceSrv.registerParty({ name: "cli", sourcemaps: [] }).party;
+  persistenceCli.importState({
+    parties: [structuredClone(sp), structuredClone(cp)],
+    offers: [],
+    ports: [],
+    extendsRows: [],
+    exposesRows: [],
+    bindRows: [],
+  });
 
   const srvKeys = await generateEd25519KeyPair();
   const cliKeys = await generateEd25519KeyPair();
@@ -31,17 +42,18 @@ async function runTurnSessionCheckpoint(sessionEnvelopeSync: boolean) {
   );
   const init: SessionInit = {
     session_id: sessionEnvelopeSync ? "client-pkg-e2e-sync" : "client-pkg-e2e",
-    party_ids: [sp.id, cp.id],
-    actor_pubkeys: [srvSigner.actor, cliSigner.actor],
+    parties: [
+      { id: sp.id, pubkey: srvSigner.actor },
+      { id: cp.id, pubkey: cliSigner.actor },
+    ],
     genesis_hash: genesis,
   };
 
   const handle = await serveObp({
-    signer: srvSigner,
     verifier,
-    persistence,
-    ledgerSeq,
-    init,
+    persistence: persistenceSrv,
+    ledgerSeq: ledgerSeqSrv,
+    onConnect: async () => ({ init, signer: srvSigner }),
     listen: { host: "127.0.0.1", port: 0 },
     sessionEnvelopeSync,
     async onIncomingOffer(body, session) {
@@ -57,29 +69,32 @@ async function runTurnSessionCheckpoint(sessionEnvelopeSync: boolean) {
     },
   });
 
-  const { sessionOps, checkpoint } = await connectObpSession({
-    url: `http://127.0.0.1:${handle.port}`,
-    signer: cliSigner,
-    verifier,
-    persistence,
-    ledgerSeq,
-    init,
-    sessionEnvelopeSync,
-    initialTurn: { offerId: "open", offerType: "obp.frame", ports: [] },
-    handlers: {
-      async onIncomingOffer(body) {
-        if (body.offerId === "greeting" && body.ports?.some((p) => p.id === "go")) {
-          return {
-            offerId: "",
-            offerType: "obp.frame.bind",
-            bindPortId: "go",
-            counterparty_bind: {},
-          };
-        }
-        return null;
-      },
+  const { sessionOps, checkpoint } = await connectObpSession(
+    {
+      url: `http://127.0.0.1:${handle.port}`,
+      signer: cliSigner,
+      verifier,
+      persistence: persistenceCli,
+      ledgerSeq: ledgerSeqCli,
+      sessionEnvelopeSync,
     },
-  });
+    async (conn) => {
+      const chain = await conn.init(init, {
+        async onIncomingOffer(body) {
+          if (body.offerId === "greeting" && body.ports?.some((p) => p.id === "go")) {
+            return {
+              offerId: "",
+              offerType: "obp.frame.bind",
+              bindPortId: "go",
+              counterparty_bind: {},
+            };
+          }
+          return null;
+        },
+      });
+      await chain.sendTurn({ offerId: "open", offerType: "obp.frame", ports: [] });
+    },
+  );
 
   await handle.close();
 
@@ -91,7 +106,7 @@ async function runTurnSessionCheckpoint(sessionEnvelopeSync: boolean) {
   expect(sessionOps.filter((o) => o.kind === "turn").length).toBeGreaterThanOrEqual(2);
   expect(sessionOps.some((o) => o.kind === "terminate")).toBe(true);
 
-  const liveSnap = persistence.exportState();
+  const liveSnap = persistenceCli.exportState();
   let seq2 = 0;
   const persistenceReplay = new FakeObpPersistence(() => ++seq2);
   persistenceReplay.importState({
@@ -104,7 +119,7 @@ async function runTurnSessionCheckpoint(sessionEnvelopeSync: boolean) {
   });
   const replayClient = new OBPPersistenceClient(persistenceReplay, { ledgerSeq: () => ++seq2 });
   applySessionOps(replayClient, init, sessionOps);
-  expect(persistenceReplay.listBinds().length).toBe(persistence.listBinds().length);
+  expect(persistenceReplay.listBinds().length).toBe(persistenceCli.listBinds().length);
   expect(persistenceReplay.isPortExposed("go")).toBe(true);
 }
 
@@ -139,19 +154,19 @@ test("connectObpSession: sessionEnvelopeSync multi-turn (two offers, split persi
   const genesis = await sha256HexUtf8("e2e-obp-client-sync-2t");
   const init: SessionInit = {
     session_id: "client-pkg-e2e-sync-2t",
-    party_ids: [sp.id, cp.id],
-    actor_pubkeys: [srvSigner.actor, cliSigner.actor],
+    parties: [
+      { id: sp.id, pubkey: srvSigner.actor },
+      { id: cp.id, pubkey: cliSigner.actor },
+    ],
     genesis_hash: genesis,
   };
   const handle = await serveObp({
-    signer: srvSigner,
     verifier,
     persistence: pSrv,
     ledgerSeq: () => ++s1,
-    init,
+    onConnect: async () => ({ init, signer: srvSigner }),
     listen: { host: "127.0.0.1", port: 0 },
     sessionEnvelopeSync: true,
-    graphApplyOutbound: true,
     async onIncomingOffer(body, session) {
       if (body.bindPortId === "p2") {
         await session.terminate("ok");
@@ -171,38 +186,40 @@ test("connectObpSession: sessionEnvelopeSync multi-turn (two offers, split persi
       };
     },
   });
-  const { sessionOps, checkpoint } = await connectObpSession({
-    url: `http://127.0.0.1:${handle.port}`,
-    signer: cliSigner,
-    verifier,
-    persistence: pCli,
-    ledgerSeq: () => ++s2,
-    init,
-    sessionEnvelopeSync: true,
-    graphApplyOutbound: true,
-    initialTurn: { offerId: "open", offerType: "obp.frame", ports: [] },
-    handlers: {
-      async onIncomingOffer(body) {
-        if (body.offerId === "t1" && body.ports?.some((p) => p.id === "p1")) {
-          return {
-            offerId: "",
-            offerType: "obp.frame.bind",
-            bindPortId: "p1",
-            counterparty_bind: {},
-          };
-        }
-        if (body.offerId === "t2" && body.ports?.some((p) => p.id === "p2")) {
-          return {
-            offerId: "",
-            offerType: "obp.frame.bind",
-            bindPortId: "p2",
-            counterparty_bind: {},
-          };
-        }
-        throw new Error(`unexpected offer ${body.offerId}`);
-      },
+  const { sessionOps, checkpoint } = await connectObpSession(
+    {
+      url: `http://127.0.0.1:${handle.port}`,
+      signer: cliSigner,
+      verifier,
+      persistence: pCli,
+      ledgerSeq: () => ++s2,
+      sessionEnvelopeSync: true,
     },
-  });
+    async (conn) => {
+      const chain = await conn.init(init, {
+        async onIncomingOffer(body) {
+          if (body.offerId === "t1" && body.ports?.some((p) => p.id === "p1")) {
+            return {
+              offerId: "",
+              offerType: "obp.frame.bind",
+              bindPortId: "p1",
+              counterparty_bind: {},
+            };
+          }
+          if (body.offerId === "t2" && body.ports?.some((p) => p.id === "p2")) {
+            return {
+              offerId: "",
+              offerType: "obp.frame.bind",
+              bindPortId: "p2",
+              counterparty_bind: {},
+            };
+          }
+          throw new Error(`unexpected offer ${body.offerId}`);
+        },
+      });
+      await chain.sendTurn({ offerId: "open", offerType: "obp.frame", ports: [] });
+    },
+  );
   await handle.close();
   expect(sessionOps.length).toBeGreaterThanOrEqual(5);
   const v = verifyExtends({ baseOps: [], deltaOps: sessionOps, claimed: checkpoint });
@@ -210,11 +227,22 @@ test("connectObpSession: sessionEnvelopeSync multi-turn (two offers, split persi
 });
 
 test("connectObpSession: two frame chains on one HTTP/2 stream (multiplex)", async () => {
-  let seq = 0;
-  const ledgerSeq = () => ++seq;
-  const persistence = new FakeObpPersistence(ledgerSeq);
-  const sp = persistence.registerParty({ name: "srv", sourcemaps: [] }).party;
-  const cp = persistence.registerParty({ name: "cli", sourcemaps: [] }).party;
+  let s1 = 0;
+  let s2 = 0;
+  const ledgerSeqSrv = () => ++s1;
+  const ledgerSeqCli = () => ++s2;
+  const persistenceSrv = new FakeObpPersistence(ledgerSeqSrv);
+  const persistenceCli = new FakeObpPersistence(ledgerSeqCli);
+  const sp = persistenceSrv.registerParty({ name: "srv", sourcemaps: [] }).party;
+  const cp = persistenceSrv.registerParty({ name: "cli", sourcemaps: [] }).party;
+  persistenceCli.importState({
+    parties: [structuredClone(sp), structuredClone(cp)],
+    offers: [],
+    ports: [],
+    extendsRows: [],
+    exposesRows: [],
+    bindRows: [],
+  });
 
   const srvKeys = await generateEd25519KeyPair();
   const cliKeys = await generateEd25519KeyPair();
@@ -225,25 +253,27 @@ test("connectObpSession: two frame chains on one HTTP/2 stream (multiplex)", asy
   const genesis = await sha256HexUtf8("e2e-obp-multiplex-a");
   const init: SessionInit = {
     session_id: "mux-a",
-    party_ids: [sp.id, cp.id],
-    actor_pubkeys: [srvSigner.actor, cliSigner.actor],
+    parties: [
+      { id: sp.id, pubkey: srvSigner.actor },
+      { id: cp.id, pubkey: cliSigner.actor },
+    ],
     genesis_hash: genesis,
   };
   const genesisB = await sha256HexUtf8("e2e-obp-multiplex-b");
   const initB: SessionInit = {
     session_id: "mux-b",
-    party_ids: [sp.id, cp.id],
-    actor_pubkeys: [srvSigner.actor, cliSigner.actor],
+    parties: [
+      { id: sp.id, pubkey: srvSigner.actor },
+      { id: cp.id, pubkey: cliSigner.actor },
+    ],
     genesis_hash: genesisB,
   };
 
   const handle = await serveObp({
-    signer: srvSigner,
     verifier,
-    persistence,
-    ledgerSeq,
-    init,
-    multiplex: true,
+    persistence: persistenceSrv,
+    ledgerSeq: ledgerSeqSrv,
+    onConnect: async () => ({ init, signer: srvSigner }),
     listen: { host: "127.0.0.1", port: 0 },
     async onIncomingOffer(body, session) {
       if (body.offerId === "m-a") {
@@ -258,19 +288,31 @@ test("connectObpSession: two frame chains on one HTTP/2 stream (multiplex)", asy
     },
   });
 
-  const { sessionOps, checkpoint } = await connectObpSession({
-    url: `http://127.0.0.1:${handle.port}`,
-    signer: cliSigner,
-    verifier,
-    persistence,
-    ledgerSeq,
-    init,
-    multiplex: true,
-    initiatorChainPlans: [
-      { init, initialTurn: { offerId: "m-a", offerType: "obp.frame", ports: [] } },
-      { init: initB, initialTurn: { offerId: "m-b", offerType: "obp.frame", ports: [] } },
-    ],
-  });
+  const { sessionOps, checkpoint } = await connectObpSession(
+    {
+      url: `http://127.0.0.1:${handle.port}`,
+      signer: cliSigner,
+      verifier,
+      persistence: persistenceCli,
+      ledgerSeq: ledgerSeqCli,
+    },
+    async (conn) => {
+      let doneA!: () => void;
+      const waitA = new Promise<void>((r) => {
+        doneA = r;
+      });
+      const chA = await conn.init(init, {
+        async onTerminate() {
+          doneA();
+        },
+      });
+      await chA.sendTurn({ offerId: "m-a", offerType: "obp.frame", ports: [] });
+      await waitA;
+
+      const chB = await conn.init(initB, {});
+      await chB.sendTurn({ offerId: "m-b", offerType: "obp.frame", ports: [] });
+    },
+  );
 
   await handle.close();
 

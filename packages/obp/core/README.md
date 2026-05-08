@@ -48,6 +48,10 @@ Root repo: `bun run --filter @cfd/obp-spec validate`.
 
 ## Bilateral frame protocol (`src/frames/`)
 
-Transport-agnostic **Frame** DAG aligned with [`frame-protocol.smithy`](../spec/model/frame-protocol.smithy): signing, `FrameDag` causal tips, length-prefixed canonical JSON framing (`framing.ts`), `FrameChannel`, and `runFrameSession` (responder / initiator). **Graph effects** (`applyTurn`) run on **inbound** frames; set **`graphApplyOutbound`** on `runFrameSession` when each peer has its own persistence so outbound `TURN` frames are applied locally too (shared single-store setups leave it false to avoid double-apply).
+Transport-agnostic **Frame** DAG aligned with [`frame-protocol.smithy`](../spec/model/frame-protocol.smithy): signing, `FrameDag` causal tips, length-prefixed canonical JSON framing (`framing.ts`), `FrameChannel`, and `runFrameSession` / `runFrameMultiplexSession`. **Graph effects** (`applyTurn`) run for **inbound** and **outbound** `TURN` frames so each peer updates its own `ObpPersistence`; tests should give each runner a separate store (see `FakeObpPersistence` + `importState` for party ids).
+
+**Outbound serialization:** for each open chain, `runFrameMultiplexSession` queues outbound work so **`mintOutbound`**, session-op accumulation, tip-map updates, framed writes, and envelope flush scheduling do not interleave across concurrent **`sendTurn`** / **`onIncomingOffer`** replies (peer inbound handling stays sequential on the read loop).
+
+**Negotiation helpers:** optional **`createNegotiationCoordinator`** / **`waitForPortOnOffer`** (`frames/negotiation-coordinator.ts`) wrap **`MultiplexChainHooks`** with **`waitForTurn`** for awaiting matching inbound **`TurnBody`** snapshots (timeouts / **`AbortSignal`**); termination or **`dispose`** rejects pending waiters.
 
 The HTTP/2 binding lives in [`@cfd/obp-server`](../server).

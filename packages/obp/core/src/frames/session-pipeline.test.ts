@@ -11,11 +11,22 @@ import {
 import type { SessionInit } from "./types.ts";
 
 async function setupPair() {
-  let seq = 0;
-  const ledgerSeq = () => ++seq;
-  const persistence = new FakeObpPersistence(ledgerSeq);
-  const sp = persistence.registerParty({ name: "srv", sourcemaps: [] }).party;
-  const cp = persistence.registerParty({ name: "cli", sourcemaps: [] }).party;
+  let s1 = 0;
+  let s2 = 0;
+  const ledgerSeqSrv = () => ++s1;
+  const ledgerSeqCli = () => ++s2;
+  const persistenceSrv = new FakeObpPersistence(ledgerSeqSrv);
+  const persistenceCli = new FakeObpPersistence(ledgerSeqCli);
+  const sp = persistenceSrv.registerParty({ name: "srv", sourcemaps: [] }).party;
+  const cp = persistenceSrv.registerParty({ name: "cli", sourcemaps: [] }).party;
+  persistenceCli.importState({
+    parties: [structuredClone(sp), structuredClone(cp)],
+    offers: [],
+    ports: [],
+    extendsRows: [],
+    exposesRows: [],
+    bindRows: [],
+  });
   const srvKeys = await generateEd25519KeyPair();
   const cliKeys = await generateEd25519KeyPair();
   const srvSigner = await createEd25519FrameSigner(srvKeys.privateKey, srvKeys.publicKey);
@@ -24,13 +35,16 @@ async function setupPair() {
   const genesis = await sha256HexUtf8("session-genesis");
   const init: SessionInit = {
     session_id: "sid",
-    party_ids: [sp.id, cp.id],
-    actor_pubkeys: [srvSigner.actor, cliSigner.actor],
+    parties: [
+      { id: sp.id, pubkey: srvSigner.actor },
+      { id: cp.id, pubkey: cliSigner.actor },
+    ],
     genesis_hash: genesis,
   };
   const [serverCh, clientCh] = createMemoryFrameChannelPair();
   return {
-    persistence,
+    persistenceSrv,
+    persistenceCli,
     srvSigner,
     cliSigner,
     verifier,
@@ -38,7 +52,8 @@ async function setupPair() {
     genesis,
     serverCh,
     clientCh,
-    ledgerSeq,
+    ledgerSeqSrv,
+    ledgerSeqCli,
   };
 }
 
@@ -46,12 +61,11 @@ test("bilateral frame session: symmetric turns (expose then bind)", async () => 
   const ctx = await setupPair();
   let bindCount = 0;
   const serverP = runFrameSession({
-    role: "responder",
     channel: ctx.serverCh,
     signer: ctx.srvSigner,
     verifier: ctx.verifier,
-    persistence: ctx.persistence,
-    ledgerSeq: ctx.ledgerSeq,
+    persistence: ctx.persistenceSrv,
+    ledgerSeq: ctx.ledgerSeqSrv,
     init: ctx.init,
     handlers: {
       async onIncomingOffer(body, session) {
@@ -70,15 +84,17 @@ test("bilateral frame session: symmetric turns (expose then bind)", async () => 
   });
 
   const clientP = runFrameSession({
-    role: "initiator",
+    sendInit: true,
     channel: ctx.clientCh,
     signer: ctx.cliSigner,
     verifier: ctx.verifier,
-    persistence: ctx.persistence,
-    ledgerSeq: ctx.ledgerSeq,
+    persistence: ctx.persistenceCli,
+    ledgerSeq: ctx.ledgerSeqCli,
     init: ctx.init,
-    initialTurn: { offerId: "knock", offerType: "obp.frame", ports: [] },
     handlers: {
+      async onSessionReady(session) {
+        await session.sendTurn({ offerId: "knock", offerType: "obp.frame", ports: [] });
+      },
       async onIncomingOffer(body) {
         if (body.offerId === "greeting" && body.ports?.some((p) => p.id === "start_order")) {
           return {
@@ -101,26 +117,66 @@ test("bilateral frame session: symmetric turns (expose then bind)", async () => 
   await ctx.clientCh.close();
 });
 
+test("multiplex: concurrent sendTurn on one chain serializes tips (no sibling mints)", async () => {
+  const ctx = await setupPair();
+
+  const serverP = runFrameMultiplexSession({
+    channel: ctx.serverCh,
+    signer: ctx.srvSigner,
+    verifier: ctx.verifier,
+    persistence: ctx.persistenceSrv,
+    ledgerSeq: ctx.ledgerSeqSrv,
+    sessionTemplate: { parties: ctx.init.parties },
+    initiatorChainPlans: [],
+    handlers: {
+      async onIncomingOffer() {
+        return null;
+      },
+    },
+  });
+
+  const clientP = runFrameMultiplexSession({
+    channel: ctx.clientCh,
+    signer: ctx.cliSigner,
+    verifier: ctx.verifier,
+    persistence: ctx.persistenceCli,
+    ledgerSeq: ctx.ledgerSeqCli,
+    sessionTemplate: { parties: ctx.init.parties },
+    handlers: {},
+    openerSession: async (api) => {
+      const chain = await api.init(ctx.init, {});
+      await Promise.all([
+        chain.sendTurn({ offerId: "concurrent-a", offerType: "obp.frame", ports: [] }),
+        chain.sendTurn({ offerId: "concurrent-b", offerType: "obp.frame", ports: [] }),
+      ]);
+      await chain.terminate("done");
+      api.close();
+    },
+  });
+
+  const [sOps, cOps] = await Promise.all([serverP, clientP]);
+  expect(cOps.filter((o) => o.kind === "turn").length).toBeGreaterThanOrEqual(2);
+  expect(cOps.some((o) => o.kind === "terminate")).toBe(true);
+  expect(sOps.length).toBeGreaterThan(0);
+});
+
 test("multiplex: two chains on one memory channel (p_hash routing)", async () => {
   const ctx = await setupPair();
   const genesisB = await sha256HexUtf8("session-genesis-b");
   const initB: SessionInit = {
     session_id: "sid-b",
-    party_ids: ctx.init.party_ids,
-    actor_pubkeys: ctx.init.actor_pubkeys,
+    parties: ctx.init.parties,
     genesis_hash: genesisB,
   };
 
   const serverP = runFrameMultiplexSession({
-    role: "responder",
     channel: ctx.serverCh,
     signer: ctx.srvSigner,
     verifier: ctx.verifier,
-    persistence: ctx.persistence,
-    ledgerSeq: ctx.ledgerSeq,
+    persistence: ctx.persistenceSrv,
+    ledgerSeq: ctx.ledgerSeqSrv,
     sessionTemplate: {
-      party_ids: ctx.init.party_ids,
-      actor_pubkeys: ctx.init.actor_pubkeys,
+      parties: ctx.init.parties,
     },
     initiatorChainPlans: [],
     handlers: {
@@ -139,27 +195,24 @@ test("multiplex: two chains on one memory channel (p_hash routing)", async () =>
   });
 
   const clientP = runFrameMultiplexSession({
-    role: "initiator",
     channel: ctx.clientCh,
     signer: ctx.cliSigner,
     verifier: ctx.verifier,
-    persistence: ctx.persistence,
-    ledgerSeq: ctx.ledgerSeq,
+    persistence: ctx.persistenceCli,
+    ledgerSeq: ctx.ledgerSeqCli,
     sessionTemplate: {
-      party_ids: ctx.init.party_ids,
-      actor_pubkeys: ctx.init.actor_pubkeys,
+      parties: ctx.init.parties,
     },
-    initiatorChainPlans: [
-      {
-        init: ctx.init,
-        initialTurn: { offerId: "chain-a", offerType: "obp.frame", ports: [] },
+    initiatorChainPlans: [{ init: ctx.init }, { init: initB }],
+    handlers: {
+      async onSessionReady(session) {
+        if (session.sessionId === ctx.init.session_id) {
+          await session.sendTurn({ offerId: "chain-a", offerType: "obp.frame", ports: [] });
+        } else if (session.sessionId === initB.session_id) {
+          await session.sendTurn({ offerId: "chain-b", offerType: "obp.frame", ports: [] });
+        }
       },
-      {
-        init: initB,
-        initialTurn: { offerId: "chain-b", offerType: "obp.frame", ports: [] },
-      },
-    ],
-    handlers: {},
+    },
   });
 
   const [sOps, cOps] = await Promise.all([serverP, clientP]);

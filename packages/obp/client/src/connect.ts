@@ -1,44 +1,46 @@
+import type { OutgoingHttpHeaders } from "node:http";
 import http2 from "node:http2";
 import {
   createEd25519FrameVerifier,
   type FrameChannel,
-  type FrameSessionHandlers,
+  type FrameMultiplexOpenerApi,
   type FrameSigner,
   type FrameVerifier,
+  normalizeSessionInit,
+  ObpError,
   type ObpPersistence,
+  partyIdForSigner,
   runFrameMultiplexSession,
-  runFrameSession,
   type SessionInit,
   type SessionOp,
-  type TurnBody,
 } from "@cfd/obp-core";
 import { type Checkpoint, checkpointFromOps, verifyExtends } from "@cfd/obp-session-sync";
 import { frameChannelFromClientStream } from "./http2-channel.ts";
 
+/** Re-exported opener surface for a multiplex HTTP/2 connection. */
+export type ObpFrameConnection = FrameMultiplexOpenerApi;
+
+/** HTTP/2 `:path` for POST: pathname + search; `/` alone maps to `/obp/v1` (reference binding default). */
+function postPathFromObpEndpointUrl(u: URL): string {
+  const path = u.pathname === "/" || u.pathname === "" ? "/obp/v1" : u.pathname;
+  return `${path}${u.search}`;
+}
+
 export type ObpConnectOptions = {
-  /** `http://host:port` or `https://host:port` (HTTP/2 reference binding). */
+  /**
+   * Endpoint URL for the HTTP/2 POST stream, e.g. `http://127.0.0.1:8765/obp/v1`.
+   * Host (and port) are used for `http2.connect`; pathname + query become `:path`.
+   * If the pathname is `/` (origin-only URL), `:path` defaults to `/obp/v1`.
+   */
   url: string;
-  /** Default `/obp/v1` — must match the server. */
-  path?: string;
+  /** Sent with POST (e.g. `authorization`); must satisfy the server `onConnect` handler. */
+  requestHeaders?: OutgoingHttpHeaders;
   signer: FrameSigner;
   verifier?: FrameVerifier;
   persistence: ObpPersistence;
   ledgerSeq: () => number;
-  init: SessionInit;
-  /** First TURN after `init` (required unless the server will speak first — not typical on this transport). */
-  initialTurn?: TurnBody;
-  handlers?: Pick<FrameSessionHandlers, "onIncomingOffer" | "onTerminate">;
   /** Multiplex `session_envelope` on the same stream after frames. */
   sessionEnvelopeSync?: boolean;
-  /** Apply TURN graph effects locally on outbound frames (use when client has its own store). */
-  graphApplyOutbound?: boolean;
-  /**
-   * When true, run {@link runFrameMultiplexSession}: several `session_id` / `genesis_hash` chains on one stream.
-   * Use {@link ObpConnectOptions.initiatorChainPlans} or default to a single plan `{ init, initialTurn }`.
-   */
-  multiplex?: boolean;
-  /** Initiator multiplex: ordered chain opens after the first (first plan defaults from `init` / `initialTurn`). */
-  initiatorChainPlans?: Array<{ init: SessionInit; initialTurn?: TurnBody }>;
 };
 
 /**
@@ -46,18 +48,18 @@ export type ObpConnectOptions = {
  * Caller must invoke **`closeHttp2`** when fully done (or rely on process exit).
  */
 export async function openObpHttp2Channel(
-  url: string,
-  path = "/obp/v1",
+  endpointUrl: string,
 ): Promise<{ channel: FrameChannel; closeHttp2: () => void }> {
-  const u = new URL(url);
+  const u = new URL(endpointUrl);
   if (u.protocol !== "http:" && u.protocol !== "https:") {
     throw new Error(`openObpHttp2Channel: url must be http: or https:, got ${u.protocol}`);
   }
   const connectUrl = `${u.protocol}//${u.host}`;
+  const postPath = postPathFromObpEndpointUrl(u);
   const client = http2.connect(connectUrl);
   return await new Promise((resolve, reject) => {
     client.on("error", reject);
-    const req = client.request({ ":method": "POST", ":path": path });
+    const req = client.request({ ":method": "POST", ":path": postPath });
     req.on("error", reject);
     resolve({
       channel: frameChannelFromClientStream(req),
@@ -69,18 +71,20 @@ export async function openObpHttp2Channel(
 }
 
 /**
- * Initiator: open HTTP/2 POST stream to an OBP reference server and run {@link runFrameSession}
- * or {@link runFrameMultiplexSession} when **`multiplex`** is set.
+ * Open an HTTP/2 POST stream to an OBP reference server and run a deferred multiplex opener:
+ * {@link ObpFrameConnection.init} / {@link ObpFrameConnection.close}.
+ *
  * Returns canonical session ops and a Merkle checkpoint (see `cfd.obp.session`).
  */
 export async function connectObpSession(
   options: ObpConnectOptions,
+  runner: (conn: ObpFrameConnection) => Promise<void>,
 ): Promise<{ sessionOps: SessionOp[]; checkpoint: Checkpoint }> {
   const u = new URL(options.url);
   if (u.protocol !== "http:" && u.protocol !== "https:") {
     throw new Error(`connectObpSession: url must be http: or https:, got ${u.protocol}`);
   }
-  const path = options.path ?? "/obp/v1";
+  const postPath = postPathFromObpEndpointUrl(u);
   const verifier = options.verifier ?? createEd25519FrameVerifier();
   const connectUrl = `${u.protocol}//${u.host}`;
 
@@ -88,62 +92,58 @@ export async function connectObpSession(
   try {
     const channel = await new Promise<FrameChannel>((resolve, reject) => {
       client.on("error", reject);
-      const req = client.request({ ":method": "POST", ":path": path });
+      const req = client.request({
+        ":method": "POST",
+        ":path": postPath,
+        ...(options.requestHeaders ?? {}),
+      });
       req.on("error", reject);
       resolve(frameChannelFromClientStream(req));
     });
 
-    const handlers: Pick<FrameSessionHandlers, "onIncomingOffer" | "onTerminate"> = {
-      ...(options.handlers?.onIncomingOffer !== undefined
-        ? { onIncomingOffer: options.handlers.onIncomingOffer }
-        : {}),
-      ...(options.handlers?.onTerminate !== undefined
-        ? { onTerminate: options.handlers.onTerminate }
-        : {}),
-    };
-
+    const firstInitHolder: { v?: SessionInit } = {};
     const sessionEnvelopeSync =
       options.sessionEnvelopeSync === true
         ? {
-            myPartyId: options.init.party_ids[1],
+            getMyPartyId: () => {
+              const init = firstInitHolder.v;
+              if (init === undefined) {
+                throw new ObpError(
+                  "VALIDATION",
+                  "sessionEnvelopeSync party id unavailable before first conn.init",
+                );
+              }
+              return partyIdForSigner(init, options.signer.actor);
+            },
             checkpointFromOps: (ops: SessionOp[]) => checkpointFromOps(ops as unknown[]),
             verifyExtends,
           }
         : undefined;
 
-    const sessionOps =
-      options.multiplex === true
-        ? await runFrameMultiplexSession({
-            role: "initiator",
-            channel,
-            signer: options.signer,
-            verifier,
-            persistence: options.persistence,
-            ledgerSeq: options.ledgerSeq,
-            sessionTemplate: {
-              party_ids: options.init.party_ids,
-              actor_pubkeys: options.init.actor_pubkeys,
-            },
-            handlers,
-            ...(sessionEnvelopeSync !== undefined ? { sessionEnvelopeSync } : {}),
-            ...(options.graphApplyOutbound === true ? { graphApplyOutbound: true } : {}),
-            initiatorChainPlans:
-              options.initiatorChainPlans ??
-              [{ init: options.init, ...(options.initialTurn !== undefined ? { initialTurn: options.initialTurn } : {}) }],
-          })
-        : await runFrameSession({
-            role: "initiator",
-            channel,
-            signer: options.signer,
-            verifier,
-            persistence: options.persistence,
-            ledgerSeq: options.ledgerSeq,
-            init: options.init,
-            handlers,
-            ...(options.initialTurn !== undefined ? { initialTurn: options.initialTurn } : {}),
-            ...(sessionEnvelopeSync !== undefined ? { sessionEnvelopeSync } : {}),
-            ...(options.graphApplyOutbound === true ? { graphApplyOutbound: true } : {}),
-          });
+    const sessionOps = await runFrameMultiplexSession({
+      channel,
+      signer: options.signer,
+      verifier,
+      persistence: options.persistence,
+      ledgerSeq: options.ledgerSeq,
+      handlers: {},
+      ...(sessionEnvelopeSync !== undefined ? { sessionEnvelopeSync } : {}),
+      openerSession: async (api) => {
+        const conn: ObpFrameConnection = {
+          async init(init, hooks) {
+            const norm = normalizeSessionInit(init);
+            if (firstInitHolder.v === undefined) firstInitHolder.v = norm;
+            return api.init(init, hooks);
+          },
+          close: () => api.close(),
+        };
+        try {
+          await runner(conn);
+        } finally {
+          api.close();
+        }
+      },
+    });
 
     const checkpoint = checkpointFromOps(sessionOps);
     return { sessionOps, checkpoint };

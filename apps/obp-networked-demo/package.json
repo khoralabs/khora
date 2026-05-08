@@ -10,6 +10,7 @@
     "test": "bun test"
   },
   "dependencies": {
+    "@cfd/obp-auth": "workspace:*",
     "@cfd/obp-client": "workspace:*",
     "@cfd/obp-core": "workspace:*",
     "@cfd/obp-server": "workspace:*",

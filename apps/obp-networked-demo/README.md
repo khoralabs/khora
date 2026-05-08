@@ -1,51 +1,52 @@
 # OBP networked demo (two processes)
 
-Separate [`FakeObpPersistence`](../../packages/obp/core/src/testing/fake-obp-persistence.ts) per process: each loads the same **party rows** from a bootstrap file, then runs frames plus **session envelope** sync on the **same** HTTP/2 `/obp/v1` stream (`sessionEnvelopeSync: true`). With split stores, the demo enables `graphApplyOutbound` so each peer applies **TURN** graph effects to its own persistence (see `serveObp` / `connectObpSession` options).
+Minimal two-process OBP demo using **invite-based auth**: the server signs a session invite with its own Ed25519 key at bootstrap time; the client presents it as `Authorization: Bearer …`; the server verifies with `verifyInvite(token, signer.actor)` — no shared secret.
 
-**Multi-turn session:** the client opens with **`initialTurn`** (exposes `to-server`); the server binds that port, exposes **`demo-turn-1`** / `main`, the client binds `main`, the server exposes **`demo-turn-2`** / `follow`, the client binds `follow`, then **`TERMINATE`**. Shared ids live in [`scripts/demo-protocol.ts`](scripts/demo-protocol.ts).
+Each process holds its own [`FakeObpPersistence`](../../packages/obp/core/src/testing/fake-obp-persistence.ts). The server hydrates its store from the verified session init on first connect.
 
-## One-time: generate secrets
-
-From this directory:
+## Setup
 
 ```sh
 bun install
 bun run bootstrap
 ```
 
-Equivalent: `bun run scripts/gen-bootstrap.ts`.
+Writes two gitignored files:
 
-Writes `.obp-demo-bootstrap.local.json` (gitignored by default). Set `OBP_DEMO_BOOTSTRAP` to an absolute path if you want a different file; keep custom paths out of version control. **Security: dev-only secrets** — the file holds Ed25519 private keys (JWK).
+- **`.obp-demo-server.local.json`** — responder Ed25519 JWK only. No session params, no client keys.
+- **`.obp-demo-client.local.json`** — initiator JWK, `parties`, `init`, `serverActorHex`, `inviteToken`.
+
+Override paths with `OBP_DEMO_SERVER_BOOTSTRAP` / `OBP_DEMO_CLIENT_BOOTSTRAP`.
+
+## Run
+
+**Terminal A:**
+```sh
+bun run server
+```
+
+**Terminal B:**
+```sh
+bun run client
+```
+
+## Auth flow
+
+```
+bootstrap time:   server signs invite = Ed25519(serverKey, { session, nonce, issuedAt })
+                  invite token written to client bootstrap (no secret on server disk)
+
+connect time:     client → Authorization: Bearer <inviteToken>
+                  server → verifyInvite(token, signer.actor)  ✓  no shared secret
+```
+
+The server's OBP actor hex is the trust anchor. Anyone who pins it can verify future invites.
 
 ## Environment
 
 | Variable | Default | Role |
 |----------|---------|------|
-| `OBP_DEMO_BOOTSTRAP` | `.obp-demo-bootstrap.local.json` (under cwd) | Bootstrap JSON path for server and client |
-| `OBP_HOST` / `OBP_PORT` | `127.0.0.1` / `8765` | Server bind address |
-| `OBP_URL` | `http://127.0.0.1:8765` | Client `connectObpSession` URL |
-
-## Terminal A — keep server running
-
-```sh
-bun run server
-```
-
-Listens until **SIGINT/SIGTERM** (`Ctrl+C`), then closes cleanly.
-
-## Terminal B — one-shot client
-
-```sh
-bun run client
-```
-
-One `connectObpSession` call (several symmetric **TURN** rounds), logs checkpoint summary, exits **0**.
-
-## Scripts
-
-| Script | Command |
-|--------|---------|
-| `bootstrap` | `bun run scripts/gen-bootstrap.ts` |
-| `server` | `bun run scripts/server.ts` |
-| `client` | `bun run scripts/client.ts` |
-| `test` | `bun test` (bootstrap shape + e2e smoke) |
+| `OBP_DEMO_SERVER_BOOTSTRAP` | `.obp-demo-server.local.json` | Responder key (server only) |
+| `OBP_DEMO_CLIENT_BOOTSTRAP` | `.obp-demo-client.local.json` | Initiator key + invite token |
+| `OBP_HOST` / `OBP_PORT` | `127.0.0.1` / `8765` | Server bind |
+| `OBP_URL` | `http://127.0.0.1:8765` | Client URL |

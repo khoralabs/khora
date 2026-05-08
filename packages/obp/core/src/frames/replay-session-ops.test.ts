@@ -15,8 +15,10 @@ function setupParties() {
   const client = new OBPPersistenceClient(persistence, { ledgerSeq });
   const init: SessionInit = {
     session_id: "sid",
-    party_ids: [responder.id, initiator.id],
-    actor_pubkeys: ["pk0", "pk1"],
+    parties: [
+      { id: responder.id, pubkey: "pk0" },
+      { id: initiator.id, pubkey: "pk1" },
+    ],
     genesis_hash: "0".repeat(64),
   };
   return { persistence, client, init, ledgerSeq };
@@ -49,7 +51,7 @@ test("applySessionOps: expose then bind (turn ops)", () => {
   expect(persistence.isPortExposed("p1")).toBe(true);
   expect(persistence.listBinds().length).toBe(1);
   expect(persistence.listBinds()[0]?.portId).toBe("p1");
-  expect(persistence.getExtendingPartyId("greeting")).toBe(init.party_ids[0]);
+  expect(persistence.getExtendingPartyId("greeting")).toBe(init.parties[0].id);
 });
 
 test("applySessionOps: terminate invokes hook only", () => {
@@ -99,8 +101,8 @@ test("applySessionOpsMultiplex: routes ops by session_id", () => {
   applySessionOpsMultiplex(client, m, ops);
   expect(persistence.isPortExposed("pa")).toBe(true);
   expect(persistence.isPortExposed("pb")).toBe(true);
-  expect(persistence.getExtendingPartyId("a1")).toBe(init.party_ids[0]);
-  expect(persistence.getExtendingPartyId("b1")).toBe(initB.party_ids[0]);
+  expect(persistence.getExtendingPartyId("a1")).toBe(init.parties[0].id);
+  expect(persistence.getExtendingPartyId("b1")).toBe(initB.parties[0].id);
 });
 
 test("applySessionOpsMultiplex: rejects missing session_id", () => {

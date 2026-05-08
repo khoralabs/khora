@@ -21,7 +21,7 @@ export type FrameDecoderYield =
 
 /**
  * Incremental decoder for length-prefixed canonical-JSON messages.
- * First message may be `{ "init": SessionInit }` or a `Frame`.
+ * First message may be `{ "init": … }` (wire **`party_ids`** / **`actor_pubkeys`**) or a `Frame`.
  */
 export function createFrameDecoder(): {
   push(chunk: Uint8Array): FrameDecoderYield[];

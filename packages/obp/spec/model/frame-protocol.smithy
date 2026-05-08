@@ -82,9 +82,10 @@ list ActorPubkeyList {
 /// Negotiation partition + bootstrapping hash. The first **Frame** in a session **MUST** use `p_hash == genesis_hash`.
 structure SessionInit {
     session_id: String
-    /// Exactly two opaque party ids (e.g. UUIDs), order is local-to-both-peers agreement.
+    /// Exactly two opaque party ids (e.g. UUIDs). **`party_ids[i]`** corresponds to **`actor_pubkeys[i]`**.
+    /// **`actor_pubkeys`** MUST be sorted in ascending lexicographic order (binary comparison on lowercase hex strings).
     party_ids: PartyIdList
-    /// Two lowercase-hex encoded public keys aligned with **`party_ids`** (`[responder, initiator]` for the HTTP/2 binding).
+    /// Two lowercase-hex encoded public keys aligned index-wise with **`party_ids`** (canonical ascending order).
     actor_pubkeys: ActorPubkeyList
     genesis_hash: Sha256HexLower
 }

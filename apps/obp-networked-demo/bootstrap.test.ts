@@ -1,29 +1,41 @@
 import { expect, test } from "bun:test";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { verifyInvite } from "@cfd/obp-auth";
+import { normalizeSessionInit } from "@cfd/obp-core";
 import { writeDemoBootstrap } from "./scripts/gen-bootstrap.ts";
-import { loadBootstrapFile } from "./scripts/load-bootstrap.ts";
+import { loadClientBootstrapFile, loadServerBootstrapFile } from "./scripts/load-bootstrap.ts";
 
-test("bootstrap file shape and roundtrip", async () => {
+test("bootstrap: invite token verifies with server actor hex", async () => {
   const dir = await mkdtemp(join(tmpdir(), "obp-demo-"));
   try {
-    const p = join(dir, "boot.json");
-    await writeDemoBootstrap(p);
-    const raw = JSON.parse(await readFile(p, "utf-8")) as {
-      parties: unknown[];
-      init: { party_ids: unknown[] };
-      responder: { privateKey: unknown };
-      initiator: { privateKey: unknown };
-    };
-    expect(raw.parties.length).toBe(2);
-    expect(raw.init.party_ids.length).toBe(2);
-    expect(raw.responder.privateKey).toBeDefined();
-    expect(raw.initiator.privateKey).toBeDefined();
+    const serverPath = join(dir, "server.json");
+    const clientPath = join(dir, "client.json");
+    await writeDemoBootstrap(serverPath, clientPath);
 
-    const b = await loadBootstrapFile(p);
-    expect(b.parties.length).toBe(2);
-    expect(b.init.actor_pubkeys.length).toBe(2);
+    const server = await loadServerBootstrapFile(serverPath);
+    const client = await loadClientBootstrapFile(clientPath);
+
+    // Server bootstrap has no shared secret — only responder key.
+    expect(server).not.toHaveProperty("pairingSecretHex");
+    expect(server.responder).toBeDefined();
+
+    // Client carries the server actor hex and invite token.
+    expect(typeof client.serverActorHex).toBe("string");
+    expect(typeof client.inviteToken).toBe("string");
+
+    // verifyInvite succeeds with the correct server actor hex.
+    const verified = await verifyInvite(client.inviteToken, client.serverActorHex);
+    expect(verified).toEqual(normalizeSessionInit(client.init));
+
+    // Tampered token returns null.
+    expect(await verifyInvite(`${client.inviteToken}x`, client.serverActorHex)).toBeNull();
+
+    // Wrong actor hex returns null.
+    expect(await verifyInvite(client.inviteToken, "f".repeat(64))).toBeNull();
+
+    expect(client.parties.length).toBe(2);
   } finally {
     await rm(dir, { recursive: true });
   }

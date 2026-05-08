@@ -1,47 +1,22 @@
-import type { webcrypto } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { createEd25519FrameSigner } from "@cfd/obp-core";
-import type { ObpDemoBootstrapFile } from "./bootstrap-types.ts";
+import type { ObpClientBootstrap, ObpServerBootstrap } from "@cfd/obp-auth";
 
-export async function loadBootstrapFile(path?: string): Promise<ObpDemoBootstrapFile> {
+export async function loadServerBootstrapFile(path?: string): Promise<ObpServerBootstrap> {
   const p = resolve(
     process.cwd(),
-    path ?? process.env.OBP_DEMO_BOOTSTRAP ?? ".obp-demo-bootstrap.local.json",
+    path ?? process.env.OBP_DEMO_SERVER_BOOTSTRAP ?? ".obp-demo-server.local.json",
   );
-  const raw = await readFile(p, "utf-8");
-  return JSON.parse(raw) as ObpDemoBootstrapFile;
+  return JSON.parse(await readFile(p, "utf-8")) as ObpServerBootstrap;
 }
 
-export async function importEd25519Pair(keys: {
-  privateKey: webcrypto.JsonWebKey;
-  publicKey: webcrypto.JsonWebKey;
-}): Promise<CryptoKeyPair> {
-  const privateKey = await crypto.subtle.importKey(
-    "jwk",
-    keys.privateKey,
-    { name: "Ed25519" },
-    true,
-    ["sign"],
+export async function loadClientBootstrapFile(path?: string): Promise<ObpClientBootstrap> {
+  const p = resolve(
+    process.cwd(),
+    path ?? process.env.OBP_DEMO_CLIENT_BOOTSTRAP ?? ".obp-demo-client.local.json",
   );
-  const publicKey = await crypto.subtle.importKey(
-    "jwk",
-    keys.publicKey,
-    { name: "Ed25519" },
-    true,
-    ["verify"],
-  );
-  return { privateKey, publicKey };
+  return JSON.parse(await readFile(p, "utf-8")) as ObpClientBootstrap;
 }
 
-export async function responderSignerFromBootstrap(b: ObpDemoBootstrapFile) {
-  const kp = await importEd25519Pair(b.responder);
-  return createEd25519FrameSigner(kp.privateKey, kp.publicKey);
-}
-
-export async function initiatorSignerFromBootstrap(b: ObpDemoBootstrapFile) {
-  const kp = await importEd25519Pair(b.initiator);
-  return createEd25519FrameSigner(kp.privateKey, kp.publicKey);
-}
-
-export type { ObpDemoBootstrapFile } from "./bootstrap-types.ts";
+export type { ObpClientBootstrap, ObpServerBootstrap } from "@cfd/obp-auth";
+export { initiatorSignerFromBootstrap, responderSignerFromBootstrap } from "@cfd/obp-auth";

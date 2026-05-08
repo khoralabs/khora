@@ -8,9 +8,9 @@ const isRecord = (v: unknown): v is Record<string, unknown> =>
   v !== null && typeof v === "object" && !Array.isArray(v);
 
 function partyIdForActor(init: SessionInit, actor: string): string {
-  if (actor === init.actor_pubkeys[0]) return init.party_ids[0];
-  if (actor === init.actor_pubkeys[1]) return init.party_ids[1];
-  throw new ObpError("VALIDATION", `unknown actor ${actor}`);
+  const p = init.parties.find((x) => x.pubkey === actor);
+  if (p === undefined) throw new ObpError("VALIDATION", `unknown actor ${actor}`);
+  return p.id;
 }
 
 export type ReplaySessionOpsHooks = {

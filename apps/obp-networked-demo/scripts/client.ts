@@ -1,23 +1,21 @@
 /**
- * Demo client: runs two OBP chains on one HTTP/2 POST stream (frame multiplex), then closes.
+ * OBP demo client. Connects to the server, runs one negotiation chain, then exits.
+ * Auth: presents an invite token signed by the server's Ed25519 key.
  *
- * Env: OBP_URL (default http://127.0.0.1:8765), OBP_DEMO_BOOTSTRAP
+ * Env: OBP_URL (default http://127.0.0.1:8765), OBP_DEMO_CLIENT_BOOTSTRAP
  */
 
 import { connectObpSession } from "@cfd/obp-client";
-import { createEd25519FrameVerifier, type SessionInit, sha256HexUtf8 } from "@cfd/obp-core";
+import { createEd25519FrameVerifier } from "@cfd/obp-core";
 import { FakeObpPersistence } from "@cfd/obp-core/testing";
-import { checkpointFromOps, verifyExtends } from "@cfd/obp-session-sync";
-import { demoCounterpartyPayload, demoRound1, demoRound2 } from "./demo-protocol.ts";
-import { initiatorSignerFromBootstrap, loadBootstrapFile } from "./load-bootstrap.ts";
+import { initiatorSignerFromBootstrap, loadClientBootstrapFile } from "./load-bootstrap.ts";
 
-const bootstrap = await loadBootstrapFile();
+const bootstrap = await loadClientBootstrapFile();
 const signer = await initiatorSignerFromBootstrap(bootstrap);
 const verifier = createEd25519FrameVerifier();
 
 let seq = 0;
-const ledgerSeq = () => ++seq;
-const persistence = new FakeObpPersistence(ledgerSeq);
+const persistence = new FakeObpPersistence(() => ++seq);
 persistence.importState({
   parties: bootstrap.parties,
   offers: [],
@@ -29,82 +27,47 @@ persistence.importState({
 
 const url = process.env.OBP_URL ?? "http://127.0.0.1:8765";
 
-const initRound2: SessionInit = {
-  ...bootstrap.init,
-  session_id: `${bootstrap.init.session_id}-r2`,
-  genesis_hash: await sha256HexUtf8(
-    `obp-demo-r2:${bootstrap.init.session_id}:${bootstrap.init.genesis_hash}`,
-  ),
-};
-
-const bindReply = (portId: string) => ({
-  offerId: "",
-  offerType: "obp.frame.bind" as const,
-  bindPortId: portId,
-  counterparty_bind: demoCounterpartyPayload(),
-});
-
-const { sessionOps, checkpoint } = await connectObpSession({
-  url,
-  signer,
-  verifier,
-  persistence,
-  ledgerSeq,
-  init: bootstrap.init,
-  multiplex: true,
-  initiatorChainPlans: [
-    {
-      init: bootstrap.init,
-      initialTurn: {
-        offerId: demoRound1.clientOffer,
-        offerType: "obp.demo",
-        ports: [{ id: demoRound1.clientPort, isTerminal: false, max_bindings: 8 }],
-      },
-    },
-    {
-      init: initRound2,
-      initialTurn: {
-        offerId: demoRound2.clientOffer,
-        offerType: "obp.demo",
-        ports: [{ id: demoRound2.clientPort, isTerminal: false, max_bindings: 8 }],
-      },
-    },
-  ],
-  sessionEnvelopeSync: true,
-  graphApplyOutbound: true,
-  handlers: {
-    async onIncomingOffer(body) {
-      for (const r of [demoRound1, demoRound2]) {
-        if (body.offerId === r.turn1.offerId && body.ports?.some((p) => p.id === r.turn1.portId)) {
-          return bindReply(r.turn1.portId);
-        }
-        if (body.offerId === r.turn2.offerId && body.ports?.some((p) => p.id === r.turn2.portId)) {
-          return bindReply(r.turn2.portId);
-        }
-      }
-      throw new Error(`unexpected offer ${body.offerId}`);
-    },
-    async onTerminate(_reason, _code, sessionId) {
-      console.log("[demo] chain done:", sessionId ?? "");
-    },
+const { sessionOps } = await connectObpSession(
+  {
+    url,
+    // Invite token is signed by the server's OBP key — no shared secret on the wire.
+    requestHeaders: { authorization: `Bearer ${bootstrap.inviteToken}` },
+    signer,
+    verifier,
+    persistence,
+    ledgerSeq: () => ++seq,
   },
-});
-
-const v = verifyExtends({ baseOps: [], deltaOps: sessionOps, claimed: checkpoint });
-if (!v.ok) {
-  throw new Error("checkpoint verify failed after session");
-}
-
-console.log("[demo] both chains complete on one HTTP/2 stream");
-console.log(
-  "ops:",
-  sessionOps.length,
-  "checkpoint seq:",
-  checkpoint.seq,
-  "root:",
-  `${checkpoint.root_hex.slice(0, 16)}…`,
+  async (conn) => {
+    const done = new Promise<void>((resolve) => {
+      conn
+        .init(bootstrap.init, {
+          async onIncomingOffer(body) {
+            console.log("[client] offer:", body.offerId, body.bindPortId ?? "");
+            if (body.ports?.some((p) => p.id === "go")) {
+              return {
+                offerId: "",
+                offerType: "obp.frame.bind",
+                bindPortId: "go",
+                counterparty_bind: {},
+              };
+            }
+            return null;
+          },
+          async onTerminate(_reason, _code, chain) {
+            console.log("[client] chain terminated:", chain.sessionId);
+            resolve();
+          },
+        })
+        .then(async (chain) => {
+          await chain.sendTurn({
+            offerId: "hello",
+            offerType: "obp.demo",
+            ports: [{ id: "to-server", isTerminal: false }],
+          });
+        });
+    });
+    await done;
+  },
 );
-console.log(
-  "local checkpointFromOps match:",
-  checkpointFromOps(sessionOps).root_hex === checkpoint.root_hex,
-);
+
+console.log(`[client] done. ops: ${sessionOps.length}`);

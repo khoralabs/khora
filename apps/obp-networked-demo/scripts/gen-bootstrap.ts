@@ -1,71 +1,80 @@
 /**
- * Writes `.obp-demo-bootstrap.local.json` (or OBP_DEMO_BOOTSTRAP): SessionInit, Party[], Ed25519 JWK key pairs.
- * Run: `bun run bootstrap` from this app directory.
+ * Writes server + client bootstrap artifacts (gitignored).
+ * Server artifact holds only the responder Ed25519 key.
+ * Client artifact holds the initiator key, session params, and a server-signed invite token.
  */
 
-import type { webcrypto } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import {
+  exportJwkPair,
+  type ObpClientBootstrap,
+  type ObpServerBootstrap,
+  signInvite,
+} from "@cfd/obp-auth";
+import {
   createEd25519FrameSigner,
   generateEd25519KeyPair,
-  type SessionInit,
+  normalizeSessionInit,
   sha256HexUtf8,
 } from "@cfd/obp-core";
 import { FakeObpPersistence } from "@cfd/obp-core/testing";
-import type { ObpDemoBootstrapFile } from "./bootstrap-types.ts";
 
-async function exportJwkPair(
-  kp: CryptoKeyPair,
-): Promise<{ privateKey: webcrypto.JsonWebKey; publicKey: webcrypto.JsonWebKey }> {
-  const privateKey = await crypto.subtle.exportKey("jwk", kp.privateKey);
-  const publicKey = await crypto.subtle.exportKey("jwk", kp.publicKey);
-  return { privateKey, publicKey };
-}
-
-async function generateDemoBootstrap(): Promise<ObpDemoBootstrapFile> {
+export async function writeDemoBootstrap(
+  serverOutPath: string,
+  clientOutPath: string,
+): Promise<{ server: ObpServerBootstrap; client: ObpClientBootstrap }> {
   let seq = 0;
-  const ledgerSeq = () => ++seq;
-  const persistence = new FakeObpPersistence(ledgerSeq);
-  const rParty = persistence.registerParty({ name: "demo-responder", sourcemaps: [] }).party;
-  const iParty = persistence.registerParty({ name: "demo-initiator", sourcemaps: [] }).party;
+  const persistence = new FakeObpPersistence(() => ++seq);
+  const rParty = persistence.registerParty({ name: "demo-server", sourcemaps: [] }).party;
+  const iParty = persistence.registerParty({ name: "demo-client", sourcemaps: [] }).party;
 
   const rKeys = await generateEd25519KeyPair();
   const iKeys = await generateEd25519KeyPair();
   const rSigner = await createEd25519FrameSigner(rKeys.privateKey, rKeys.publicKey);
   const iSigner = await createEd25519FrameSigner(iKeys.privateKey, iKeys.publicKey);
 
-  const genesis_hash = await sha256HexUtf8("obp-networked-demo-bootstrap-v1");
-  const init: SessionInit = {
+  const init = normalizeSessionInit({
     session_id: "obp-networked-demo",
-    party_ids: [rParty.id, iParty.id],
-    actor_pubkeys: [rSigner.actor, iSigner.actor],
-    genesis_hash,
-  };
+    parties: [
+      { id: rParty.id, pubkey: rSigner.actor },
+      { id: iParty.id, pubkey: iSigner.actor },
+    ],
+    genesis_hash: await sha256HexUtf8("obp-networked-demo-v1"),
+  });
 
-  return {
-    init,
-    parties: [rParty, iParty],
+  const serverBootstrap: ObpServerBootstrap = {
     responder: await exportJwkPair(rKeys),
-    initiator: await exportJwkPair(iKeys),
   };
+
+  const clientBootstrap: ObpClientBootstrap = {
+    initiator: await exportJwkPair(iKeys),
+    parties: [rParty, iParty],
+    init,
+    serverActorHex: rSigner.actor,
+    inviteToken: await signInvite(init, rSigner),
+  };
+
+  for (const p of [serverOutPath, clientOutPath]) {
+    await mkdir(dirname(p), { recursive: true });
+  }
+  await writeFile(serverOutPath, `${JSON.stringify(serverBootstrap, null, 2)}\n`, "utf-8");
+  await writeFile(clientOutPath, `${JSON.stringify(clientBootstrap, null, 2)}\n`, "utf-8");
+
+  return { server: serverBootstrap, client: clientBootstrap };
 }
 
-export async function writeDemoBootstrap(outPath: string): Promise<ObpDemoBootstrapFile> {
-  const data = await generateDemoBootstrap();
-  const json = `${JSON.stringify(data, null, 2)}\n`;
-  await mkdir(dirname(outPath), { recursive: true });
-  await writeFile(outPath, json, "utf-8");
-  return data;
-}
-
-const defaultPath = resolve(
+const serverPath = resolve(
   process.cwd(),
-  process.env.OBP_DEMO_BOOTSTRAP ?? ".obp-demo-bootstrap.local.json",
+  process.env.OBP_DEMO_SERVER_BOOTSTRAP ?? ".obp-demo-server.local.json",
 );
+const clientPath = resolve(
+  process.cwd(),
+  process.env.OBP_DEMO_CLIENT_BOOTSTRAP ?? ".obp-demo-client.local.json",
+);
+
 if (import.meta.main) {
-  const boot = await writeDemoBootstrap(defaultPath);
-  console.log(`Wrote bootstrap to ${defaultPath}`);
-  console.log("session_id:", boot.init.session_id);
-  console.log("party_ids:", boot.init.party_ids);
+  await writeDemoBootstrap(serverPath, clientPath);
+  console.log(`Wrote server bootstrap  → ${serverPath}`);
+  console.log(`Wrote client bootstrap  → ${clientPath}`);
 }

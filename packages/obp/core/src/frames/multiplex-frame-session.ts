@@ -11,12 +11,20 @@ import {
   type FrameDecoderYield,
 } from "./framing.ts";
 import { applyTurn, parseTurnBody } from "./graph-effect.ts";
+import {
+  canonicalSessionParties,
+  normalizeSessionInit,
+  sessionInitFromUnknownWireEnvelope,
+  sessionInitToWire,
+} from "./session-init-wire.ts";
 import type { FrameSigner, FrameVerifier } from "./signer.ts";
 import { accumulateTaggedSessionOps, type SessionOp } from "./to-session-op.ts";
 import type {
   Frame,
+  FrameMultiplexOpenerApi,
   FrameSessionHandle,
   FrameSessionHandlers,
+  MultiplexChainHooks,
   SessionCheckpoint,
   SessionEnvelopeWire,
   SessionInit,
@@ -24,7 +32,9 @@ import type {
 } from "./types.ts";
 
 export type SessionEnvelopeSyncAdapter = {
-  myPartyId: string;
+  /** Use {@link getMyPartyId} when party id is known only after the first outbound `SessionInit`. */
+  myPartyId?: string;
+  getMyPartyId?: () => string;
   checkpointFromOps: (ops: SessionOp[]) => SessionCheckpoint;
   verifyExtends: (args: {
     baseOps: unknown[];
@@ -34,29 +44,37 @@ export type SessionEnvelopeSyncAdapter = {
 };
 
 export type RunFrameMultiplexSessionArgs = {
-  role: "initiator" | "responder";
   channel: FrameChannel;
   signer: FrameSigner;
   verifier: FrameVerifier;
   persistence: ObpPersistence;
   ledgerSeq: () => number;
-  /** Wire `init` must match these `party_ids` and `actor_pubkeys`; each chain may use its own `session_id` / `genesis_hash`. */
-  sessionTemplate: Pick<SessionInit, "party_ids" | "actor_pubkeys">;
+  /**
+   * Fixed `parties` tuple for every chain on this byte stream.
+   * Omit only when using {@link openerSession} without a prior template (frozen from first {@link FrameMultiplexOpenerApi.init}).
+   */
+  sessionTemplate?: Pick<SessionInit, "parties">;
   handlers: FrameSessionHandlers;
   sessionEnvelopeSync?: SessionEnvelopeSyncAdapter;
-  graphApplyOutbound?: boolean;
   /**
-   * Initiator only: ordered chain opens. First is sent when the session starts; each subsequent plan is sent after
-   * the prior chain ends (TERMINATE processed). Responders omit this or pass `[]`.
+   * Ordered outbound `init`s when {@link openerSession} is omitted: after each chain ends (TERMINATE),
+   * the next plan is written on the wire (the first plan is sent before the read loop starts).
+   * Mutually exclusive with {@link openerSession}.
    */
-  initiatorChainPlans?: Array<{ init: SessionInit; initialTurn?: TurnBody }>;
+  initiatorChainPlans?: Array<{ init: SessionInit }>;
   /** When true, inbound or local TERMINATE calls `channel.close()` after tearing down that chain. Default false. */
   closeChannelOnTerminate?: boolean;
   /**
-   * Initiator: after the last chain is torn down and there are no further plans, call `channel.close()` so this runner
-   * completes. Default true. Responders ignore this.
+   * After the last chain is torn down and the opener has finished ({@link FrameMultiplexOpenerApi.close} for user openers,
+   * or no further sequential plans), call `channel.close()` so this runner completes. Default true.
    */
   closeChannelWhenIdle?: boolean;
+  /**
+   * Imperative outbound chains: runs in parallel with inbound decode; uses the same {@link FrameMultiplexOpenerApi.init}
+   * path as sequential {@link initiatorChainPlans}.
+   * Mutually exclusive with non-empty {@link initiatorChainPlans}.
+   */
+  openerSession?: (api: FrameMultiplexOpenerApi) => Promise<void>;
 };
 
 type ChainState = {
@@ -66,76 +84,36 @@ type ChainState = {
   confirmedSeq: number;
   pendingAck: boolean;
   active: boolean;
+  hooks?: MultiplexChainHooks;
 };
 
 function partyIdForActor(init: SessionInit, actor: string): string {
-  if (actor === init.actor_pubkeys[0]) return init.party_ids[0];
-  if (actor === init.actor_pubkeys[1]) return init.party_ids[1];
-  throw new ObpError("VALIDATION", `unknown actor ${actor}`);
+  const p = init.parties.find((x) => x.pubkey === actor);
+  if (p === undefined) throw new ObpError("VALIDATION", `unknown actor ${actor}`);
+  return p.id;
 }
 
-const isRecord = (v: unknown): v is Record<string, unknown> =>
-  v !== null && typeof v === "object" && !Array.isArray(v);
-
-function parseWireInit(v: unknown): SessionInit {
-  if (!isRecord(v) || !("init" in v)) {
-    throw new ObpError("VALIDATION", "expected init envelope");
-  }
-  const init = v.init as Record<string, unknown>;
-  const session_id = String(init.session_id ?? "");
-  const genesis_hash = String(init.genesis_hash ?? "");
-  const partyIds = Array.isArray(init.party_ids) ? init.party_ids : [];
-  const keys = Array.isArray(init.actor_pubkeys)
-    ? init.actor_pubkeys
-    : Array.isArray(init.actors)
-      ? init.actors
-      : [];
-  if (partyIds.length !== 2 || keys.length !== 2) {
-    throw new ObpError("VALIDATION", "init requires party_ids[2] and actor_pubkeys[2]");
-  }
-  return {
-    session_id,
-    party_ids: [String(partyIds[0]), String(partyIds[1])],
-    actor_pubkeys: [String(keys[0]), String(keys[1])],
-    genesis_hash,
-  };
-}
-
-function templateMatch(
-  wire: SessionInit,
-  t: Pick<SessionInit, "party_ids" | "actor_pubkeys">,
-): boolean {
+function templateMatch(wire: SessionInit, t: Pick<SessionInit, "parties">): boolean {
   return (
-    wire.party_ids[0] === t.party_ids[0] &&
-    wire.party_ids[1] === t.party_ids[1] &&
-    wire.actor_pubkeys[0] === t.actor_pubkeys[0] &&
-    wire.actor_pubkeys[1] === t.actor_pubkeys[1]
+    wire.parties[0].id === t.parties[0].id &&
+    wire.parties[1].id === t.parties[1].id &&
+    wire.parties[0].pubkey === t.parties[0].pubkey &&
+    wire.parties[1].pubkey === t.parties[1].pubkey
   );
 }
 
-function ensureActorSignerAligned(
-  init: SessionInit,
-  signer: FrameSigner,
-  role: "initiator" | "responder",
-): void {
-  const expected = role === "responder" ? init.actor_pubkeys[0] : init.actor_pubkeys[1];
-  if (signer.actor !== expected) {
-    throw new ObpError(
-      "VALIDATION",
-      `signer.actor ${signer.actor} does not match expected ${role}`,
-    );
+function ensureSignerInSession(init: SessionInit, signer: FrameSigner): void {
+  if (!init.parties.some((p) => p.pubkey === signer.actor)) {
+    throw new ObpError("VALIDATION", `signer.actor ${signer.actor} not in session parties`);
   }
 }
 
-function remoteActorForRole(init: SessionInit, role: "initiator" | "responder"): string {
-  if (role === "responder") {
-    const k = init.actor_pubkeys[1];
-    if (k === undefined) throw new ObpError("VALIDATION", "missing initiator actor pubkey");
-    return k;
+function remoteActorForSigner(init: SessionInit, signer: FrameSigner): string {
+  const remote = init.parties.find((p) => p.pubkey !== signer.actor)?.pubkey;
+  if (remote === undefined) {
+    throw new ObpError("VALIDATION", "cannot resolve remote actor");
   }
-  const k = init.actor_pubkeys[0];
-  if (k === undefined) throw new ObpError("VALIDATION", "missing responder actor pubkey");
-  return k;
+  return remote;
 }
 
 function turnBodyToWireRecord(body: TurnBody): Record<string, unknown> {
@@ -161,37 +139,82 @@ function turnBodyToWireRecord(body: TurnBody): Record<string, unknown> {
 export async function runFrameMultiplexSession(
   args: RunFrameMultiplexSessionArgs,
 ): Promise<SessionOp[]> {
-  const {
-    channel,
-    signer,
-    verifier,
-    persistence,
-    ledgerSeq,
-    sessionTemplate,
-    handlers,
-    role,
-    sessionEnvelopeSync,
-    graphApplyOutbound,
-  } = args;
-  const plans = args.initiatorChainPlans ?? [];
+  const { channel, signer, verifier, persistence, ledgerSeq, handlers, sessionEnvelopeSync } = args;
+
+  const userOpener = args.openerSession;
+  const plans = (args.initiatorChainPlans ?? []).map((p) => ({
+    init: normalizeSessionInit(p.init),
+  }));
+
+  if (userOpener !== undefined && plans.length > 0) {
+    throw new ObpError("VALIDATION", "openerSession cannot be combined with initiatorChainPlans");
+  }
+
+  const usesSequentialPlans = plans.length > 0;
+  let lazyTemplate: Pick<SessionInit, "parties"> | undefined =
+    args.sessionTemplate !== undefined
+      ? {
+          parties: canonicalSessionParties([
+            args.sessionTemplate.parties[0],
+            args.sessionTemplate.parties[1],
+          ]),
+        }
+      : undefined;
+
+  if (userOpener === undefined && lazyTemplate === undefined) {
+    throw new ObpError(
+      "VALIDATION",
+      "sessionTemplate is required unless openerSession defers it via first init",
+    );
+  }
+
   const closeChannelOnTerminate = args.closeChannelOnTerminate === true;
   const closeChannelWhenIdle = args.closeChannelWhenIdle !== false;
 
-  const templateInit: SessionInit = {
-    session_id: "__template__",
-    party_ids: sessionTemplate.party_ids,
-    actor_pubkeys: sessionTemplate.actor_pubkeys,
-    genesis_hash: "__template_genesis__",
-  };
-  if (role === "initiator") {
-    const p0 = plans[0];
-    if (p0 === undefined) {
-      throw new ObpError("VALIDATION", "initiatorChainPlans must be non-empty for initiator role");
+  /** Index of the last sequential plan already opened on the wire (`0` after first outbound init). `-1` before any. */
+  let sequentialOpenedThrough = -1;
+
+  let openerFinished = userOpener === undefined;
+
+  if (userOpener === undefined && lazyTemplate !== undefined) {
+    const templateInit: SessionInit = {
+      session_id: "__template__",
+      parties: lazyTemplate.parties,
+      genesis_hash: "__template_genesis__",
+    };
+    if (usesSequentialPlans) {
+      const p0 = plans[0];
+      if (p0 === undefined) {
+        throw new ObpError(
+          "VALIDATION",
+          "initiatorChainPlans must be non-empty when opening chains",
+        );
+      }
+      ensureSignerInSession(p0.init, signer);
+    } else {
+      ensureSignerInSession(templateInit, signer);
     }
-    ensureActorSignerAligned(p0.init, signer, "initiator");
-  } else {
-    ensureActorSignerAligned(templateInit, signer, "responder");
   }
+
+  if (sessionEnvelopeSync !== undefined) {
+    const hasPartyId =
+      (sessionEnvelopeSync.myPartyId !== undefined && sessionEnvelopeSync.myPartyId !== "") ||
+      sessionEnvelopeSync.getMyPartyId !== undefined;
+    if (!hasPartyId) {
+      throw new ObpError("VALIDATION", "sessionEnvelopeSync requires myPartyId or getMyPartyId");
+    }
+  }
+
+  const partyIdForEnvelope = (): string => {
+    if (sessionEnvelopeSync === undefined) {
+      throw new ObpError("VALIDATION", "sessionEnvelopeSync missing");
+    }
+    const g = sessionEnvelopeSync.getMyPartyId?.();
+    if (g !== undefined && g !== "") return g;
+    const id = sessionEnvelopeSync.myPartyId;
+    if (id !== undefined && id !== "") return id;
+    throw new ObpError("VALIDATION", "sessionEnvelopeSync requires myPartyId or getMyPartyId");
+  };
 
   const obp = new OBPPersistenceClient(persistence, { ledgerSeq });
   const chains = new Map<string, ChainState>();
@@ -203,8 +226,30 @@ export async function runFrameMultiplexSession(
   /** Chains fully torn down; ignore late `session_envelope` for these (Merkle sync can trail TER on the wire). */
   const endedSessionIds = new Set<string>();
 
-  const registerChain = (wire: SessionInit): void => {
-    if (!templateMatch(wire, sessionTemplate)) {
+  /** Serialize all outbound bytes vs inbound decoder interleaving. */
+  let writeChain = Promise.resolve();
+  const sendWireBytes = (payload: Uint8Array): Promise<void> => {
+    const p = writeChain.then(async () => {
+      await channel.write(payload);
+    });
+    writeChain = p.catch(() => {});
+    return p;
+  };
+
+  /** Serialize outbound DAG mutations + framed payload per chain (avoids sibling mints at same tip). */
+  const outboundTailBySession = new Map<string, Promise<void>>();
+  const enqueueChainOutbound = (sessionId: string, fn: () => Promise<void>): Promise<void> => {
+    const prev = outboundTailBySession.get(sessionId) ?? Promise.resolve();
+    const next = prev.then(fn);
+    outboundTailBySession.set(sessionId, next.catch(() => {}));
+    return next;
+  };
+
+  const registerChain = (wireRaw: SessionInit, hooks?: MultiplexChainHooks): void => {
+    const wire = normalizeSessionInit(wireRaw);
+    if (lazyTemplate === undefined) {
+      lazyTemplate = { parties: wire.parties };
+    } else if (!templateMatch(wire, lazyTemplate)) {
       throw new ObpError("VALIDATION", "init does not match session template");
     }
     if (chains.has(wire.session_id)) {
@@ -220,6 +265,7 @@ export async function runFrameMultiplexSession(
       confirmedSeq: 0,
       pendingAck: false,
       active: true,
+      ...(hooks !== undefined ? { hooks } : {}),
     });
     tipToSession.set(wire.genesis_hash, wire.session_id);
   };
@@ -263,12 +309,12 @@ export async function runFrameMultiplexSession(
     const deltaSlice = wireSessionOps.slice(confirmedSeq);
     const envelope: SessionEnvelopeWire = {
       session_id: sid,
-      from_party: sessionEnvelopeSync.myPartyId,
+      from_party: partyIdForEnvelope(),
       base_checkpoint: sessionEnvelopeSync.checkpointFromOps(baseSlice),
       delta_ops: [...deltaSlice],
       new_checkpoint: sessionEnvelopeSync.checkpointFromOps(wireSessionOps),
     };
-    await channel.write(encodeSessionEnvelopeMessage(envelope));
+    await sendWireBytes(encodeSessionEnvelopeMessage(envelope));
   };
 
   const envelopeFlushBySid = new Map<string, Promise<void> | null>();
@@ -299,7 +345,7 @@ export async function runFrameMultiplexSession(
     if (!chain.active) {
       throw new ObpError("VALIDATION", "session_envelope for unknown or inactive chain");
     }
-    if (envelope.from_party === sessionEnvelopeSync.myPartyId) {
+    if (envelope.from_party === partyIdForEnvelope()) {
       throw new ObpError("VALIDATION", "session_envelope from_party is self");
     }
     const baseSeq = envelope.base_checkpoint.seq;
@@ -342,58 +388,39 @@ export async function runFrameMultiplexSession(
   };
 
   const sendWire = async (frame: Frame): Promise<void> => {
-    await channel.write(encodeFramedJson(frame));
+    await sendWireBytes(encodeFramedJson(frame));
   };
 
-  let initiatorPlanIdx = 0;
+  const maybeCloseIdle = async (): Promise<void> => {
+    if (!closeChannelWhenIdle || channelDead) return;
+    if (chains.size > 0) return;
+    if (userOpener !== undefined && !openerFinished) return;
+    /** Peer may send another `{ init }` on the same byte stream (multiplex responder). */
+    if (userOpener === undefined && !usesSequentialPlans) return;
+    channelDead = true;
+    await channel.close();
+  };
 
-  const startNextInitiatorChain = async (): Promise<void> => {
-    if (role !== "initiator") return;
-    initiatorPlanIdx += 1;
-    const plan = plans[initiatorPlanIdx];
-    if (plan === undefined) {
-      if (
-        closeChannelWhenIdle &&
-        chains.size === 0 &&
-        !channelDead
-      ) {
-        channelDead = true;
-        await channel.close();
+  const emitOutboundTurn = (sessionId: string, body: TurnBody): Promise<void> =>
+    enqueueChainOutbound(sessionId, async () => {
+      const chain = chains.get(sessionId);
+      if (chain === undefined || !chain.active) {
+        throw new ObpError("VALIDATION", "emitOutboundTurn: unknown or inactive chain");
       }
-      return;
-    }
-    if (!templateMatch(plan.init, sessionTemplate)) {
-      throw new ObpError("VALIDATION", "initiator chain init does not match template");
-    }
-    ensureActorSignerAligned(plan.init, signer, "initiator");
-    await channel.write(encodeFramedJson({ init: plan.init }));
-    registerChain(plan.init);
-    if (plan.initialTurn !== undefined) {
-      await emitOutboundTurn(plan.init.session_id, plan.initialTurn);
-    }
-  };
-
-  const emitOutboundTurn = async (sessionId: string, body: TurnBody): Promise<void> => {
-    const chain = chains.get(sessionId);
-    if (chain === undefined || !chain.active) {
-      throw new ObpError("VALIDATION", "emitOutboundTurn: unknown or inactive chain");
-    }
-    const wire = turnBodyToWireRecord(body);
-    const oldP = chain.dag.tipHash;
-    const frame = await chain.dag.mintOutbound(signer, "TURN", wire);
-    const key = await frameDedupeKey(frame);
-    if (globalDedupe.has(key)) return;
-    globalDedupe.add(key);
-    accumulateTaggedSessionOps(chain.sessionOps, frame, sessionId);
-    accumulateTaggedSessionOps(globalOps, frame, sessionId);
-    tipToSession.delete(oldP);
-    tipToSession.set(chain.dag.tipHash, sessionId);
-    if (graphApplyOutbound === true) {
+      const wire = turnBodyToWireRecord(body);
+      const oldP = chain.dag.tipHash;
+      const frame = await chain.dag.mintOutbound(signer, "TURN", wire);
+      const key = await frameDedupeKey(frame);
+      if (globalDedupe.has(key)) return;
+      globalDedupe.add(key);
+      accumulateTaggedSessionOps(chain.sessionOps, frame, sessionId);
+      accumulateTaggedSessionOps(globalOps, frame, sessionId);
+      tipToSession.delete(oldP);
+      tipToSession.set(chain.dag.tipHash, sessionId);
       applyTurn(obp, partyIdForActor(chain.init, frame.actor), parseTurnBody(frame.body));
-    }
-    await sendWire(frame);
-    await requestEnvelopeFlush(sessionId);
-  };
+      await sendWire(frame);
+      await requestEnvelopeFlush(sessionId);
+    });
 
   const applyInboundGraph = async (c: ChainState, frame: Frame): Promise<void> => {
     const key = await frameDedupeKey(frame);
@@ -407,8 +434,80 @@ export async function runFrameMultiplexSession(
     }
   };
 
+  let destroyChain: (
+    sid: string,
+    reason: string,
+    code: string | undefined,
+    notifyTerminate: boolean,
+  ) => Promise<void>;
+
+  function makeHandle(c: ChainState): FrameSessionHandle {
+    return {
+      sessionId: c.init.session_id,
+      init: c.init,
+      get remoteActor() {
+        return remoteActorForSigner(c.init, signer);
+      },
+      get tipHash() {
+        return c.dag.tipHash;
+      },
+      sendTurn(body: TurnBody) {
+        return emitOutboundTurn(c.init.session_id, body);
+      },
+      async terminate(reason: string, code?: string) {
+        const sid = c.init.session_id;
+        await enqueueChainOutbound(sid, async () => {
+          const chain = chains.get(sid);
+          if (chain === undefined || !chain.active) {
+            throw new ObpError("VALIDATION", "terminate: unknown or inactive chain");
+          }
+          const body: Record<string, unknown> = { reason, ...(code !== undefined ? { code } : {}) };
+          const oldP = chain.dag.tipHash;
+          const frame = await chain.dag.mintOutbound(signer, "TERMINATE", body);
+          const key = await frameDedupeKey(frame);
+          if (!globalDedupe.has(key)) {
+            globalDedupe.add(key);
+            accumulateTaggedSessionOps(chain.sessionOps, frame, sid);
+            accumulateTaggedSessionOps(globalOps, frame, sid);
+            tipToSession.delete(oldP);
+            tipToSession.set(chain.dag.tipHash, sid);
+          }
+          await sendWire(frame);
+          await requestEnvelopeFlush(sid);
+        });
+        await destroyChain(sid, reason, code, false);
+        if (closeChannelOnTerminate) {
+          channelDead = true;
+          await channel.close();
+        }
+      },
+    };
+  }
+
+  const openOutboundSequentialInit = async (wire: SessionInit): Promise<void> => {
+    ensureSignerInSession(wire, signer);
+    await sendWireBytes(encodeFramedJson({ init: sessionInitToWire(wire) }));
+    registerChain(wire);
+    const chOpen = chains.get(wire.session_id);
+    if (chOpen !== undefined) {
+      await handlers.onSessionReady?.(makeHandle(chOpen));
+    }
+  };
+
+  const advanceSequentialAfterChainEnd = async (): Promise<void> => {
+    if (userOpener !== undefined || !usesSequentialPlans) return;
+    sequentialOpenedThrough += 1;
+    if (sequentialOpenedThrough >= plans.length) return;
+    const plan = plans[sequentialOpenedThrough];
+    if (plan === undefined) return;
+    if (lazyTemplate === undefined || !templateMatch(plan.init, lazyTemplate)) {
+      throw new ObpError("VALIDATION", "initiator chain init does not match template");
+    }
+    await openOutboundSequentialInit(plan.init);
+  };
+
   /** @param notifyTerminate fire `onTerminate` (inbound peer TERMINATE only; not local `handle.terminate()`). */
-  const destroyChain = async (
+  destroyChain = async (
     sid: string,
     reason: string,
     code: string | undefined,
@@ -416,48 +515,22 @@ export async function runFrameMultiplexSession(
   ): Promise<void> => {
     const c = chains.get(sid);
     if (c === undefined) return;
+    const sess = makeHandle(c);
     c.active = false;
     removeTipsForSession(sid);
     endedSessionIds.add(sid);
     chains.delete(sid);
+    outboundTailBySession.delete(sid);
     if (notifyTerminate) {
-      await handlers.onTerminate?.(reason, code, sid);
+      if (c.hooks?.onTerminate) {
+        await c.hooks.onTerminate(reason, code, sess);
+      } else {
+        await handlers.onTerminate?.(reason, code, sid);
+      }
     }
-    if (role === "initiator") {
-      await startNextInitiatorChain();
-    }
+    await advanceSequentialAfterChainEnd();
+    await maybeCloseIdle();
   };
-
-  const makeHandle = (c: ChainState): FrameSessionHandle => ({
-    sessionId: c.init.session_id,
-    init: c.init,
-    get remoteActor() {
-      return remoteActorForRole(c.init, role);
-    },
-    get tipHash() {
-      return c.dag.tipHash;
-    },
-    async terminate(reason: string, code?: string) {
-      const body: Record<string, unknown> = { reason, ...(code !== undefined ? { code } : {}) };
-      const oldP = c.dag.tipHash;
-      const frame = await c.dag.mintOutbound(signer, "TERMINATE", body);
-      const key = await frameDedupeKey(frame);
-      if (!globalDedupe.has(key)) {
-        globalDedupe.add(key);
-        accumulateTaggedSessionOps(c.sessionOps, frame, c.init.session_id);
-        accumulateTaggedSessionOps(globalOps, frame, c.init.session_id);
-        tipToSession.delete(oldP);
-        tipToSession.set(c.dag.tipHash, c.init.session_id);
-      }
-      await sendWire(frame);
-      await requestEnvelopeFlush(c.init.session_id);
-      await destroyChain(c.init.session_id, reason, code, false);
-      if (closeChannelOnTerminate) {
-        channelDead = true;
-        await channel.close();
-      }
-    },
-  });
 
   const handleInboundFrame = async (frame: Frame): Promise<void> => {
     const c = resolveChain(frame.p_hash);
@@ -473,8 +546,9 @@ export async function runFrameMultiplexSession(
     if (frame.type === "TURN") {
       const body = parseTurnBody(frame.body);
       let replied = false;
-      if (handlers.onIncomingOffer !== undefined) {
-        const reply = await handlers.onIncomingOffer(body, makeHandle(c));
+      const offerFn = c.hooks?.onIncomingOffer ?? handlers.onIncomingOffer;
+      if (offerFn !== undefined) {
+        const reply = await offerFn(body, makeHandle(c));
         if (reply !== null) {
           await emitOutboundTurn(c.init.session_id, reply);
           replied = true;
@@ -486,8 +560,8 @@ export async function runFrameMultiplexSession(
 
     if (frame.type === "TERMINATE") {
       const reason = String(frame.body.reason ?? "");
-      const code = frame.body.code !== undefined ? String(frame.body.code) : undefined;
-      await destroyChain(c.init.session_id, reason, code, true);
+      const termCode = frame.body.code !== undefined ? String(frame.body.code) : undefined;
+      await destroyChain(c.init.session_id, reason, termCode, true);
       if (closeChannelOnTerminate) {
         channelDead = true;
         await channel.close();
@@ -505,7 +579,12 @@ export async function runFrameMultiplexSession(
       throw new ObpError("VALIDATION", "unexpected wire payload");
     }
     if (part.kind === "init") {
-      registerChain(parseWireInit(part.value));
+      const wire = sessionInitFromUnknownWireEnvelope(part.value);
+      registerChain(wire);
+      const cInit = chains.get(wire.session_id);
+      if (cInit !== undefined) {
+        await handlers.onSessionReady?.(makeHandle(cInit));
+      }
       return;
     }
     if (part.kind === "session_envelope") {
@@ -521,25 +600,49 @@ export async function runFrameMultiplexSession(
     await handleInboundFrame(part.value);
   };
 
-  if (role === "initiator") {
+  const runReadLoop = async (): Promise<void> => {
+    for await (const chunk of channel.read()) {
+      for (const part of decoder.push(chunk)) {
+        await processYield(part);
+        if (channelDead) return;
+      }
+    }
+  };
+
+  if (userOpener !== undefined) {
+    const multiplexOpenerApi: FrameMultiplexOpenerApi = {
+      async init(rawInit, hooks) {
+        const wire = normalizeSessionInit(rawInit);
+        ensureSignerInSession(wire, signer);
+        await sendWireBytes(encodeFramedJson({ init: sessionInitToWire(wire) }));
+        registerChain(wire, hooks);
+        const ch = chains.get(wire.session_id);
+        if (ch === undefined) {
+          throw new ObpError("VALIDATION", "failed to register opened chain");
+        }
+        return makeHandle(ch);
+      },
+      close() {
+        openerFinished = true;
+        void maybeCloseIdle();
+      },
+    };
+    await Promise.all([runReadLoop(), userOpener(multiplexOpenerApi)]);
+    return globalOps;
+  }
+
+  if (usesSequentialPlans) {
     const p0 = plans[0];
-    if (p0 === undefined) throw new ObpError("VALIDATION", "no initiator plans");
-    if (!templateMatch(p0.init, sessionTemplate)) {
-      throw new ObpError("VALIDATION", "first initiator init does not match sessionTemplate");
+    if (p0 === undefined) throw new ObpError("VALIDATION", "no outbound chain plans");
+    if (lazyTemplate === undefined || !templateMatch(p0.init, lazyTemplate)) {
+      throw new ObpError("VALIDATION", "first outbound init does not match sessionTemplate");
     }
-    await channel.write(encodeFramedJson({ init: p0.init }));
-    registerChain(p0.init);
-    if (p0.initialTurn !== undefined) {
-      await emitOutboundTurn(p0.init.session_id, p0.initialTurn);
-    }
+    await openOutboundSequentialInit(p0.init);
+    sequentialOpenedThrough = 0;
+    await runReadLoop();
+    return globalOps;
   }
 
-  for await (const chunk of channel.read()) {
-    for (const part of decoder.push(chunk)) {
-      await processYield(part);
-      if (channelDead) return globalOps;
-    }
-  }
-
+  await runReadLoop();
   return globalOps;
 }

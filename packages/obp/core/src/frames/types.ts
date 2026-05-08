@@ -51,12 +51,19 @@ export type Frame = {
   body: Record<string, unknown>;
 };
 
+/** Bilateral session participant: graph party id and signing actor pubkey. Distinct from the persistence graph **`Party`** type (`registerParty`). */
+export type SessionParty = {
+  id: string;
+  pubkey: string;
+};
+
 export type SessionInit = {
   session_id: string;
-  /** Graph party rows (UUIDs) aligned with {@link actor_pubkeys}. */
-  party_ids: [string, string];
-  /** Public keys (lowercase hex) aligned with {@link party_ids} — `[responder, initiator]` for the reference HTTP/2 server/client. */
-  actor_pubkeys: [string, string];
+  /**
+   * Exactly two participants. **`parties[0].pubkey`** ≤ **`parties[1].pubkey`** (binary string compare on lowercase hex);
+   * wire **`party_ids`** / **`actor_pubkeys`** use the same order (see **`canonicalSessionParties`** / **`normalizeSessionInit`**).
+   */
+  parties: [SessionParty, SessionParty];
   genesis_hash: string;
 };
 
@@ -77,20 +84,45 @@ export type SessionEnvelopeWire = {
   new_checkpoint: SessionCheckpoint;
 };
 
+/** Logical `{ "init": … }` message; on the wire, `init` uses paired **`party_ids`** + **`actor_pubkeys`** arrays per **`cfd.obp.frame`** — decoded into {@link SessionInit}. */
 export type WireInitEnvelope = {
   init: SessionInit;
 };
 
-/** Handle passed to session handlers (terminate only; TURN replies are the return value of {@link FrameSessionHandlers.onIncomingOffer}). */
+/** Handle passed to session handlers and {@link FrameSessionHandlers.onSessionReady}. */
 export type FrameSessionHandle = {
   readonly sessionId: string;
   readonly init: SessionInit;
   readonly remoteActor: string;
   get tipHash(): string;
+  sendTurn(body: TurnBody): Promise<void>;
   terminate(reason: string, code?: string): Promise<void>;
 };
 
+/** Per-chain handlers when multiplexing; falls back to {@link FrameSessionHandlers} on the same runner when absent. */
+export type MultiplexChainHooks = {
+  onIncomingOffer?: (
+    body: TurnBody,
+    session: FrameSessionHandle,
+  ) => Promise<TurnBody | null>;
+  /** Inbound peer TERMINATE for this chain only. */
+  onTerminate?: (
+    reason: string,
+    code: string | undefined,
+    session: FrameSessionHandle,
+  ) => Promise<void>;
+};
+
+export type FrameMultiplexOpenerApi = {
+  /** Write `{ init }`, register chain, return handle for outbound turns. */
+  init(init: SessionInit, hooks?: MultiplexChainHooks): Promise<FrameSessionHandle>;
+  /** No further outbound chains will be opened; channel may close when all chains are torn down (see `closeChannelWhenIdle`). */
+  close(): void;
+};
+
 export type FrameSessionHandlers = {
+  /** Called for both peers after a chain is registered (after inbound `init` or immediately after this side writes `init`). */
+  onSessionReady?: (session: FrameSessionHandle) => Promise<void>;
   onIncomingOffer?: (
     body: TurnBody,
     session: FrameSessionHandle,
