@@ -7,14 +7,21 @@
     "bootstrap": "bun run scripts/gen-bootstrap.ts",
     "server": "bun run scripts/server.ts",
     "client": "bun run scripts/client.ts",
+    "agent-server": "bun run scripts/agent-server.ts",
+    "agent-client": "bun run scripts/agent-client.ts",
     "test": "bun test"
   },
   "dependencies": {
+    "@ai-sdk/google": "^3.0.0",
+    "@cfd/agent-identity": "workspace:*",
+    "@cfd/obp-agent-runtime": "workspace:*",
     "@cfd/obp-auth": "workspace:*",
     "@cfd/obp-client": "workspace:*",
     "@cfd/obp-core": "workspace:*",
+    "@cfd/obp-negotiator": "workspace:*",
     "@cfd/obp-server": "workspace:*",
-    "@cfd/obp-session-sync": "workspace:*"
+    "@cfd/obp-session-sync": "workspace:*",
+    "ai": "^6"
   },
   "peerDependencies": {
     "typescript": "^5"

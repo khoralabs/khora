@@ -1,7 +1,6 @@
 import { OBPPersistenceClient, type Party } from "@cfd/obp-core";
 import { FakeObpPersistence } from "@cfd/obp-core/testing";
 import type {
-  ObpNegotiatorPreparedTurn,
   ObpNegotiatorStructuredSessionContext,
   ObpNegotiatorStructuredSessionInput,
   ObpNegotiatorStructuredSessionOutput,
@@ -12,7 +11,7 @@ import {
   formatNegotiationProviderError,
   type NegotiationTurnAudit,
   ObpLedger,
-  type PreparedTurn,
+  preparedToNegotiatorTurn,
 } from "../../src/index.ts";
 import { buildGraphSnapshot } from "./graph-snapshot.ts";
 import { getNegotiationModel, isLlmConfigured } from "./llm-env.ts";
@@ -53,18 +52,6 @@ function agreementReachedFromAudits(list: ReadonlyArray<NegotiationTurnAudit>): 
   }
   const chosen = last.bindMenu.find((b) => b.portId === last.chosenPortId);
   return chosen?.terminal === true;
-}
-
-function preparedToNegotiatorTurn(p: PreparedTurn<unknown>): ObpNegotiatorPreparedTurn {
-  return {
-    ...(p.zodOutputSchema !== undefined ? { zodOutputSchema: p.zodOutputSchema } : {}),
-    ...(p.outputSchema !== undefined ? { outputSchema: p.outputSchema } : {}),
-    systemFragments: p.systemFragments,
-    userMessage: p.userMessage,
-    ...(p.metadata !== undefined
-      ? { metadata: p.metadata as ObpNegotiatorPreparedTurn["metadata"] }
-      : {}),
-  };
 }
 
 export function createNegotiationScenarioSession(scenario: ScenarioNegotiationCopy) {

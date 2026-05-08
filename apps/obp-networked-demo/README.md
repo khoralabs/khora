@@ -30,6 +30,15 @@ bun run server
 bun run client
 ```
 
+### Agent-driven (Gemini)
+
+Requires `GOOGLE_API_KEY` (or `GOOGLE_GENERATIVE_AI_API_KEY` / `GEMINI_API_KEY`). Uses `@cfd/obp-agent-runtime` structured bilateral contract, **`auditToTurnBody`** for wire turns, and the same **`@cfd/obp-negotiator`** structured session path as [`packages/obp/agents/runtime/examples`](../../packages/obp/agents/runtime/examples): **`createAgentRegistry`** + **`ensureObpNegotiatorStructuredAgentRegistered`** (`scripts/network-negotiator-setup.ts`), then **`registry.createSession`** → **`generateObject`** inside the negotiator runner.
+
+**Terminal A:** `bun run agent-server`  
+**Terminal B:** `bun run agent-client`
+
+Optional: `OBP_NEGOTIATION_MODEL`, `OBP_AGENT_SCENARIO` (joint scenario passed into `createNegotiationStructuredBilateralContract`), `OBP_AGENT_TURN_BUDGET_MS` (wall-clock cap per turn for structured `generateObject`; default **300000** ms, same idea as the runtime example timeouts).
+
 ## Auth flow
 
 ```
@@ -50,3 +59,6 @@ The server's OBP actor hex is the trust anchor. Anyone who pins it can verify fu
 | `OBP_DEMO_CLIENT_BOOTSTRAP` | `.obp-demo-client.local.json` | Initiator key + invite token |
 | `OBP_HOST` / `OBP_PORT` | `127.0.0.1` / `8765` | Server bind |
 | `OBP_URL` | `http://127.0.0.1:8765` | Client URL |
+| `OBP_NEGOTIATION_MODEL` | `gemini-flash-lite-latest` | Agent demo (`agent-server` / `agent-client`) model slug |
+| `OBP_AGENT_SCENARIO` | (built-in strings in scripts) | Joint scenario for `createNegotiationStructuredBilateralContract` |
+| `OBP_AGENT_TURN_BUDGET_MS` | `300000` | Per-turn wall-clock budget for negotiator structured `generateObject` |

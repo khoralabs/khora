@@ -29,6 +29,19 @@ export {
   type NegotiationToolSet,
 } from "./create-agent.ts";
 export { ObpLedger, type ObpLedgerOptions } from "./ledger.ts";
+export { createNegotiationLedgerAndStructuredContract } from "./negotiation-ledger-contract.ts";
+export {
+  type DispatchNegotiatorIncomingOfferOptions,
+  dispatchNegotiatorIncomingOffer,
+  type NegotiationActorBinding,
+  type NegotiationActorResolveHint,
+  type NegotiationActorResolver,
+  type NegotiatorWireSession,
+  negotiationShouldEnd,
+  preparedToNegotiatorTurn,
+  runStructuredNegotiatorTurn,
+  terminalAgreement,
+} from "./negotiator-turn.ts";
 export {
   filterPortIdsByNegotiationTurnTtl,
   minExposeSeqOnOffer,
@@ -76,3 +89,4 @@ export {
   type NegotiationTurnOutput,
   type NegotiationTurnSchemaOptions,
 } from "./turn-output-schema.ts";
+export { auditToTurnBody } from "./wire-bridge.ts";

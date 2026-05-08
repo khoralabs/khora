@@ -97,11 +97,16 @@
       "name": "@cfd/obp-networked-demo",
       "version": "0.0.0",
       "dependencies": {
+        "@ai-sdk/google": "^3.0.0",
+        "@cfd/agent-identity": "workspace:*",
+        "@cfd/obp-agent-runtime": "workspace:*",
         "@cfd/obp-auth": "workspace:*",
         "@cfd/obp-client": "workspace:*",
         "@cfd/obp-core": "workspace:*",
+        "@cfd/obp-negotiator": "workspace:*",
         "@cfd/obp-server": "workspace:*",
         "@cfd/obp-session-sync": "workspace:*",
+        "ai": "^6",
       },
       "devDependencies": {
         "@types/bun": "latest",

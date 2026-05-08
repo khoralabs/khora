@@ -1,3 +1,4 @@
+import { parseBearerToken } from "./parse-bearer.ts";
 import { type ParsedObpUrl, parseObpUrl } from "./parse-url.ts";
 import {
   type ObpOnConnectContext,
@@ -18,4 +19,4 @@ export type {
   ObpServerHandle,
   ParsedObpUrl,
 };
-export { parseObpUrl, serveObp };
+export { parseBearerToken, parseObpUrl, serveObp };
