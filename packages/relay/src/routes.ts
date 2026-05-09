@@ -1,11 +1,10 @@
 import type { Server, ServerWebSocket } from "bun";
 import type { AgentCard, RelayCardStore } from "./card-store.ts";
 import type { IntentFanout, IntentMessage, InviteResponse } from "./intent-fanout.ts";
+import type { RelayWsData } from "./relay-ws-data.ts";
 import type { RelayRoomHub } from "./room.ts";
 
-export type RelayWsData =
-  | { kind: "intent"; topics: string[]; actorHex: string }
-  | { kind: "room"; sessionId: string };
+export type { RelayWsData } from "./relay-ws-data.ts";
 
 export type RelayRouteDeps = {
   cardStore: RelayCardStore;
@@ -30,7 +29,10 @@ async function readJson<T>(req: Request): Promise<T | null> {
 
 /** HTTP + WebSocket routing for the relay. */
 export function createRelayFetchHandler(deps: RelayRouteDeps) {
-  return async function relayFetch(req: Request, server: Server): Promise<Response | undefined> {
+  return async function relayFetch(
+    req: Request,
+    server: Server<RelayWsData>,
+  ): Promise<Response | undefined> {
     const url = new URL(req.url);
 
     if (

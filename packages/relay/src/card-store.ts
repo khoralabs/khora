@@ -1,6 +1,11 @@
 import { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+import {
+  integrateNewMemoryIntoGraph,
+  mergeOntologies,
+  retrievalAutolinkOntology,
+} from "@cfd/memories-autolink";
 import { MemoriesClient } from "@cfd/memories-core";
 import type { EmbeddingModel } from "@cfd/memories-core/helpers";
 import { embedTextChunks } from "@cfd/memories-core/helpers";
@@ -25,6 +30,17 @@ export type RelayCardStore = {
   searchCards(query: string, topK: number): Promise<AgentCard[]>;
 };
 
+/** Tunables for lexical/hybrid autolink when merging a card into the graph. */
+export type RelayCardAutolinkOptions = {
+  /** Max candidates from search before planning links. Default 25. */
+  searchTopK?: number;
+  /** Max `retrieval_autolink` edges emitted per upsert. Default 10. */
+  linkTopK?: number;
+  /** When true and at least one link is created, tag the card with `retrieval_bootstrap`. Default true. */
+  tagSourceNode?: boolean;
+  minSimilarityScore?: number;
+};
+
 function ensureParentDir(path: string): void {
   if (path === ":memory:" || path.startsWith("file:")) {
     return;
@@ -39,13 +55,16 @@ function ensureParentDir(path: string): void {
  * Opens persistence in extension-safe order: memories DB first (sqlite-vec), then relay state.
  * Callers must not open another {@link Database} before this when using file-backed paths.
  */
+const relayCardOntology = mergeOntologies(canonicalOntology, retrievalAutolinkOntology);
+
 export function createRelayCardStore(options: {
   stateDbPath: string;
   memoriesDbPath: string;
   memoriesRoot: string;
   embeddingModel?: EmbeddingModel;
+  autolink?: RelayCardAutolinkOptions;
 }): { cardStore: RelayCardStore; stateDb: Database; memoriesDb: Database } {
-  const { stateDbPath, memoriesDbPath, memoriesRoot, embeddingModel } = options;
+  const { stateDbPath, memoriesDbPath, memoriesRoot, embeddingModel, autolink } = options;
 
   mkdirSync(memoriesRoot, { recursive: true });
   ensureParentDir(memoriesDbPath);
@@ -58,7 +77,7 @@ export function createRelayCardStore(options: {
   const stateDb = new Database(stateDbPath, { create: true });
   ensureRelaySchema(stateDb);
 
-  const client = new MemoriesClient(persistence, canonicalOntology, {
+  const client = new MemoriesClient(persistence, relayCardOntology, {
     storeForNamespace: (namespace: string) =>
       new JsonlStore(jsonlStorePathForNamespace(memoriesRoot, namespace)),
   });
@@ -81,17 +100,24 @@ export function createRelayCardStore(options: {
         [card.actorHex, card.displayName, card.tagline, card.about, card.relayEndpoint, now],
       );
 
+      const text = cardText(card);
       let searchMetaVector: number[] | undefined;
       if (embeddingModel !== undefined) {
-        const text = cardText(card);
         const embeddings = await embedTextChunks(embeddingModel, [text]);
         searchMetaVector = embeddings[0];
       }
 
-      client.mergeMemory({
-        kind: "node",
-        key: card.actorHex,
+      const searchContent =
+        searchMetaVector !== undefined && searchMetaVector.length > 0
+          ? { text, vector: searchMetaVector }
+          : { text };
+
+      const searchTopK = autolink?.searchTopK ?? 25;
+      const linkTopK = autolink?.linkTopK ?? 10;
+
+      await integrateNewMemoryIntoGraph(client, {
         namespace: RELAY_CARD_NAMESPACE,
+        key: card.actorHex,
         labels: [
           {
             kind: "observation",
@@ -100,9 +126,17 @@ export function createRelayCardStore(options: {
             },
           },
         ],
-        content: [{ key: "card", text: cardText(card) }],
+        content: [{ key: "card", text }],
+        searchContent,
         ...(searchMetaVector !== undefined ? { searchMetaVector } : {}),
-        ontology: canonicalOntology,
+        searchOptions: { topK: searchTopK, neighbors: false },
+        linkPlan: {
+          topK: linkTopK,
+          ...(autolink?.minSimilarityScore !== undefined
+            ? { minSimilarityScore: autolink.minSimilarityScore }
+            : {}),
+          tagSourceNode: autolink?.tagSourceNode ?? true,
+        },
       });
     },
 

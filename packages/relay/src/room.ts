@@ -2,14 +2,15 @@ import type { Database } from "bun:sqlite";
 import { generateRoomSecretHex, signRoomTicket, verifyRoomTicket } from "@cfd/frame-channel";
 import type { ServerWebSocket } from "bun";
 import type { RelayFrameQueue } from "./frame-queue.ts";
+import type { RelayWsData } from "./relay-ws-data.ts";
 
 export type RelayRoomHub = {
   createRoom(sessionId: string, ttlMs?: number): Promise<{ ticket: string }>;
   verifyTicket(sessionId: string, ticket: string): Promise<boolean>;
   /** After ticket verified: replay buffered frames and register live relay. */
-  attachPeer(sessionId: string, ws: ServerWebSocket): Promise<void>;
-  detachPeer(sessionId: string, ws: ServerWebSocket): void;
-  relayBytes(sessionId: string, from: ServerWebSocket, bytes: Uint8Array): void;
+  attachPeer(sessionId: string, ws: ServerWebSocket<RelayWsData>): Promise<void>;
+  detachPeer(sessionId: string, ws: ServerWebSocket<RelayWsData>): void;
+  relayBytes(sessionId: string, from: ServerWebSocket<RelayWsData>, bytes: Uint8Array): void;
 };
 
 export function createRelayRoomHub(options: {
@@ -17,9 +18,9 @@ export function createRelayRoomHub(options: {
   frameQueue: RelayFrameQueue;
 }): RelayRoomHub {
   const { db, frameQueue } = options;
-  const peers = new Map<string, Set<ServerWebSocket>>();
+  const peers = new Map<string, Set<ServerWebSocket<RelayWsData>>>();
 
-  const getPeerSet = (sessionId: string): Set<ServerWebSocket> => {
+  const getPeerSet = (sessionId: string): Set<ServerWebSocket<RelayWsData>> => {
     let s = peers.get(sessionId);
     if (s === undefined) {
       s = new Set();
@@ -57,7 +58,7 @@ export function createRelayRoomHub(options: {
       return verifyRoomTicket(sessionId, ticket, row.pairing_secret_hex);
     },
 
-    async attachPeer(sessionId: string, ws: ServerWebSocket): Promise<void> {
+    async attachPeer(sessionId: string, ws: ServerWebSocket<RelayWsData>): Promise<void> {
       const set = getPeerSet(sessionId);
       set.add(ws);
       const replay = frameQueue.drainFrom(sessionId, 0);
@@ -66,7 +67,7 @@ export function createRelayRoomHub(options: {
       }
     },
 
-    detachPeer(sessionId: string, ws: ServerWebSocket): void {
+    detachPeer(sessionId: string, ws: ServerWebSocket<RelayWsData>): void {
       const set = peers.get(sessionId);
       if (set === undefined) {
         return;
@@ -77,7 +78,7 @@ export function createRelayRoomHub(options: {
       }
     },
 
-    relayBytes(sessionId: string, from: ServerWebSocket, bytes: Uint8Array): void {
+    relayBytes(sessionId: string, from: ServerWebSocket<RelayWsData>, bytes: Uint8Array): void {
       frameQueue.enqueue(sessionId, bytes);
       const set = peers.get(sessionId);
       if (set === undefined) {

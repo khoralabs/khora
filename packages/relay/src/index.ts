@@ -2,19 +2,26 @@ import type { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import type { EmbeddingModel } from "@cfd/memories-core/helpers";
-import { createRelayCardStore, type RelayCardStore } from "./card-store.ts";
+import {
+  createRelayCardStore,
+  type RelayCardAutolinkOptions,
+  type RelayCardStore,
+} from "./card-store.ts";
 import { createRelayFrameQueue } from "./frame-queue.ts";
 import { createIntentFanout, type IntentFanout } from "./intent-fanout.ts";
 import { createRelayRoomHub, type RelayRoomHub } from "./room.ts";
 import { createRelayFetchHandler, relayWebSocketHandlers } from "./routes.ts";
 
-export type { AgentCard, RelayCardStore } from "./card-store.ts";
+export type { AgentCard, RelayCardAutolinkOptions, RelayCardStore } from "./card-store.ts";
 export { RELAY_CARD_NAMESPACE } from "./card-store.ts";
 export type { RelayFrameQueue } from "./frame-queue.ts";
 export type { IntentFanout, IntentMessage, InviteResponse } from "./intent-fanout.ts";
 export type { RelayRoomHub } from "./room.ts";
 export type { RelayWsData } from "./routes.ts";
 export { ensureRelaySchema } from "./schema.ts";
+
+const DEFAULT_HOSTNAME = "127.0.0.1";
+const DEFAULT_PORT = 8787;
 
 export type RelayServerOptions = {
   hostname?: string;
@@ -23,6 +30,8 @@ export type RelayServerOptions = {
   dataDir: string;
   /** Optional embedding model for semantic card search; omit for lexical-only. */
   embeddingModel?: EmbeddingModel;
+  /** Retrieval autolink when upserting cards (`integrateNewMemoryIntoGraph`). */
+  autolink?: RelayCardAutolinkOptions;
   /** Interval for pruning expired rooms (ms). Default 3_600_000. Set 0 to disable. */
   pruneIntervalMs?: number;
 };
@@ -65,6 +74,7 @@ export function startRelayServer(options: RelayServerOptions): RelayServer {
     memoriesDbPath: memoriesPath,
     memoriesRoot,
     embeddingModel: options.embeddingModel,
+    autolink: options.autolink,
   });
 
   const frameQueue = createRelayFrameQueue(stateDb);
@@ -96,8 +106,8 @@ export function startRelayServer(options: RelayServerOptions): RelayServer {
   const url = `http://${server.hostname}:${server.port}`;
 
   return {
-    hostname: server.hostname,
-    port: server.port,
+    hostname: server.hostname ?? DEFAULT_HOSTNAME,
+    port: server.port ?? DEFAULT_PORT,
     url,
     cardStore,
     intents,
@@ -122,8 +132,8 @@ export default function main(): void {
   const port = portEnv !== undefined && portEnv.length > 0 ? Number(portEnv) : 8787;
   const server = startRelayServer({
     dataDir,
-    port: Number.isFinite(port) ? port : 8787,
-    hostname: process.env.RELAY_HOST?.trim() || "127.0.0.1",
+    port: Number.isFinite(port) ? port : DEFAULT_PORT,
+    hostname: process.env.RELAY_HOST?.trim() || DEFAULT_HOSTNAME,
   });
   console.error(`[relay-server] listening ${server.url}`);
 }

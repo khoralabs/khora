@@ -1,4 +1,5 @@
 import type { ServerWebSocket } from "bun";
+import type { RelayWsData } from "./relay-ws-data.ts";
 
 export type IntentMessage = {
   type: "intent";
@@ -17,19 +18,19 @@ export type InviteResponse = {
 
 export type IntentFanout = {
   /** Register subscriber topics + actor hex for invite routing. */
-  attachSubscriber(ws: ServerWebSocket, topics: string[], actorHex: string): void;
-  detachSubscriber(ws: ServerWebSocket): void;
+  attachSubscriber(ws: ServerWebSocket<RelayWsData>, topics: string[], actorHex: string): void;
+  detachSubscriber(ws: ServerWebSocket<RelayWsData>): void;
   publishIntent(intent: IntentMessage): void;
   routeInviteResponse(response: InviteResponse): void;
 };
 
 export function createIntentFanout(): IntentFanout {
-  const topicToSockets = new Map<string, Set<ServerWebSocket>>();
-  const actorToSockets = new Map<string, Set<ServerWebSocket>>();
-  const socketTopics = new Map<ServerWebSocket, Set<string>>();
-  const socketActor = new Map<ServerWebSocket, string>();
+  const topicToSockets = new Map<string, Set<ServerWebSocket<RelayWsData>>>();
+  const actorToSockets = new Map<string, Set<ServerWebSocket<RelayWsData>>>();
+  const socketTopics = new Map<ServerWebSocket<RelayWsData>, Set<string>>();
+  const socketActor = new Map<ServerWebSocket<RelayWsData>, string>();
 
-  const addToTopic = (topic: string, ws: ServerWebSocket): void => {
+  const addToTopic = (topic: string, ws: ServerWebSocket<RelayWsData>): void => {
     let set = topicToSockets.get(topic);
     if (set === undefined) {
       set = new Set();
@@ -38,7 +39,7 @@ export function createIntentFanout(): IntentFanout {
     set.add(ws);
   };
 
-  const removeFromTopic = (topic: string, ws: ServerWebSocket): void => {
+  const removeFromTopic = (topic: string, ws: ServerWebSocket<RelayWsData>): void => {
     const set = topicToSockets.get(topic);
     if (set === undefined) {
       return;
@@ -51,7 +52,7 @@ export function createIntentFanout(): IntentFanout {
 
   return {
     attachSubscriber(ws, topics, actorHex) {
-      detachSubscriber(ws);
+      this.detachSubscriber(ws);
       const tset = new Set<string>();
       for (const t of topics) {
         const trimmed = t.trim();

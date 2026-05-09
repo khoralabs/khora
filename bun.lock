@@ -569,6 +569,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@cfd/frame-channel": "workspace:*",
+        "@cfd/memories-autolink": "workspace:*",
         "@cfd/memories-core": "workspace:*",
         "@cfd/memories-sqlite": "workspace:*",
         "@cfd/memories-stores": "workspace:*",
