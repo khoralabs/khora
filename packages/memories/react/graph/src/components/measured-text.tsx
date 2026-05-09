@@ -1,12 +1,7 @@
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "./ui/tooltip.js";
 import { measure, type WhiteSpaceMode } from "../lib/pretext-measure.js";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip.js";
 
 export type MeasuredTextProps = {
   text: string;

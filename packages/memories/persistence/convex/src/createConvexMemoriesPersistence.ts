@@ -29,6 +29,7 @@ function scopePayloadFromCore(scope: SearchNamespaceScope): {
   }
   return { kind: "exactScope", scopes: [...scope.scopes] };
 }
+
 import type { FunctionReference } from "convex/server";
 import { api } from "./component/_generated/api.js";
 import type { ComponentApi } from "./component/_generated/component.js";

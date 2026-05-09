@@ -1,7 +1,10 @@
 import type { OBPPersistenceClient } from "@cfd/obp-core";
 
 /** Smallest recorded **`expose_seq`** among ports on an offer (for synthetic port alignment). */
-export function minExposeSeqOnOffer(client: OBPPersistenceClient, offerId: string): number | undefined {
+export function minExposeSeqOnOffer(
+  client: OBPPersistenceClient,
+  offerId: string,
+): number | undefined {
   let minV: number | undefined;
   for (const e of client.listExposedPortEdges()) {
     if (e.offerId !== offerId) {

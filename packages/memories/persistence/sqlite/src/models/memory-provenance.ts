@@ -21,7 +21,10 @@ export function getProvenanceHeadRootHex(db: Database): string | undefined {
   return row?.root_hex;
 }
 
-export function getProvenanceTimestampMsForRootHex(db: Database, rootHex: string): number | undefined {
+export function getProvenanceTimestampMsForRootHex(
+  db: Database,
+  rootHex: string,
+): number | undefined {
   const row = db
     .query<{ _ts_created: number }, [string]>(
       `SELECT _ts_created FROM memory_provenance WHERE root_hex = ? LIMIT 1`,

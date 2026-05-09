@@ -205,9 +205,7 @@ async function expandNeighborsWithSubSearchAsync<
     ...(input.maxVectorDistance !== undefined
       ? { maxVectorDistance: input.maxVectorDistance }
       : {}),
-    ...(input.asOfTimestampMs !== undefined
-      ? { asOfTimestampMs: input.asOfTimestampMs }
-      : {}),
+    ...(input.asOfTimestampMs !== undefined ? { asOfTimestampMs: input.asOfTimestampMs } : {}),
   });
 
   if (fused.length === 0) return [];
@@ -275,10 +273,7 @@ export async function searchAsync<
     caps,
   );
 
-  if (
-    params.asOfTimestampMs !== undefined &&
-    caps.asOfTimestampMsSearch !== true
-  ) {
+  if (params.asOfTimestampMs !== undefined && caps.asOfTimestampMsSearch !== true) {
     throw new Error(
       "SearchParams.asOfTimestampMs requires a persistence backend that sets capabilities.asOfTimestampMsSearch",
     );
@@ -297,9 +292,7 @@ export async function searchAsync<
     vectorWeight,
     retrievalLimit,
     ...(maxVectorDistance !== undefined ? { maxVectorDistance } : {}),
-    ...(params.asOfTimestampMs !== undefined
-      ? { asOfTimestampMs: params.asOfTimestampMs }
-      : {}),
+    ...(params.asOfTimestampMs !== undefined ? { asOfTimestampMs: params.asOfTimestampMs } : {}),
   });
   if (fused.length === 0) return [];
   const hydrated = await persistence.hydrateSourceMapHits(fused.map((result) => result.id));

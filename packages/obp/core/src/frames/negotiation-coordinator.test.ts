@@ -1,8 +1,5 @@
 import { expect, test } from "bun:test";
-import {
-  createNegotiationCoordinator,
-  waitForPortOnOffer,
-} from "./negotiation-coordinator.ts";
+import { createNegotiationCoordinator, waitForPortOnOffer } from "./negotiation-coordinator.ts";
 import type { FrameSessionHandle, TurnBody } from "./types.ts";
 
 const fakeSession = {} as FrameSessionHandle;

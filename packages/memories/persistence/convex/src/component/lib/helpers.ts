@@ -77,7 +77,7 @@ async function collectNodeLabelKinds(ctx: ReadCtx, nodeId: string): Promise<stri
 async function collectEdgesFromDb(
   ctx: ReadCtx,
   nodeId: string,
-  namespace: string,
+  _namespace: string,
 ): Promise<
   Array<{
     edgeId: string;

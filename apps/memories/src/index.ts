@@ -352,8 +352,7 @@ const server = serve({
           model: google.embedding("gemini-embedding-2-preview"),
           providerOptions: mergeResolutionAndProviderOptions(resolution),
         });
-        const modelId =
-          process.env.MEMORIES_INVESTIGATOR_MODEL?.trim() || "gemini-flash-latest";
+        const modelId = process.env.MEMORIES_INVESTIGATOR_MODEL?.trim() || "gemini-flash-latest";
         const model = google.languageModel(modelId);
         const client = new MemoriesClient(persistence, canonicalOntology);
         const investigator = new MemoryInvestigatorClient({

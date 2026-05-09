@@ -4,7 +4,6 @@ import {
   loadMeanEmbeddingsForNamespace,
   openMemoriesDatabase,
 } from "@cfd/memories-sqlite";
-import { ids } from "./models/ids";
 import {
   buildCanonicalMemorySearchMetaText,
   mergeMemory,
@@ -12,6 +11,7 @@ import {
   zUserSourceKey,
 } from "./api/merge-memory";
 import { search } from "./api/search";
+import { ids } from "./models/ids";
 import {
   buildCanonicalMemorySearchMetaTextForMerge,
   MEMORY_SEARCH_META_SOURCE_KEY,

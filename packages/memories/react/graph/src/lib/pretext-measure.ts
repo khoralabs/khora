@@ -1,8 +1,8 @@
 import {
   clearCache,
   layoutWithLines,
-  prepareWithSegments,
   type PreparedTextWithSegments,
+  prepareWithSegments,
   walkLineRanges,
 } from "@chenglou/pretext";
 

@@ -16,7 +16,9 @@ function cmpPubkeyHex(a: string, b: string): number {
 }
 
 /** Sort two session participants by ascending signing pubkey (hex). Preserves id↔pubkey pairing. */
-export function canonicalSessionParties(pair: [SessionParty, SessionParty]): [SessionParty, SessionParty] {
+export function canonicalSessionParties(
+  pair: [SessionParty, SessionParty],
+): [SessionParty, SessionParty] {
   const [x, y] = pair;
   if (x.pubkey === y.pubkey) {
     throw new ObpError("VALIDATION", "session parties must have distinct pubkeys");

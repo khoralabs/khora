@@ -11,7 +11,11 @@ import {
 import { expiresSeqForPortTtl } from "./ttl-resolve.ts";
 import type { TtlSpec } from "./ttl-spec.ts";
 
-export function isPortExposedOnOffer(client: OBPPersistenceClient, offerId: string, portId: string): boolean {
+export function isPortExposedOnOffer(
+  client: OBPPersistenceClient,
+  offerId: string,
+  portId: string,
+): boolean {
   return client.listExposedPortEdges().some((e) => e.offerId === offerId && e.portId === portId);
 }
 

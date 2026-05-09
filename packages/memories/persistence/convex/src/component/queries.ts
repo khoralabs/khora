@@ -8,7 +8,7 @@ import {
 } from "@cfd/memories-core";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel.js";
-import { internalQuery, query, type QueryCtx } from "./_generated/server.js";
+import { internalQuery, type QueryCtx, query } from "./_generated/server.js";
 import {
   listIncidentGraphEdges as listIncidentGraphEdgesImpl,
   loadGraphEdge as loadGraphEdgeImpl,
@@ -25,13 +25,13 @@ import {
   listNeighborMemoriesForNode,
   parsePropsJson,
 } from "./lib/helpers.js";
-import { intersectMemoryAllowlists, memoryIdsMatchingScope } from "./lib/scopeSearchConvex.js";
 import { loadMemoryNamespaceKeyImpl } from "./lib/mergeWrites.js";
 import {
   listNeighborsForEdgeMemory as listNeighborsForEdgeMemoryImpl,
   listNeighborsForMemory as listNeighborsForMemoryImpl,
 } from "./lib/neighborReads.js";
 import { getProvenanceHeadRootHexImpl } from "./lib/provenanceConvex.js";
+import { intersectMemoryAllowlists, memoryIdsMatchingScope } from "./lib/scopeSearchConvex.js";
 import { CONVEX_VECTOR_DIMENSIONS, vectorTableNameForDim } from "./lib/vectorConfig.js";
 
 const vHydratedLabel = v.object({
@@ -224,10 +224,7 @@ export const listNeighborMemoriesForNodeQuery = query({
 
 export const loadMemoryNamespaceKey = query({
   args: { memoryId: v.string() },
-  returns: v.union(
-    v.null(),
-    v.object({ namespace: v.string(), key: v.string() }),
-  ),
+  returns: v.union(v.null(), v.object({ namespace: v.string(), key: v.string() })),
   handler: async (ctx, { memoryId }) => {
     return (await loadMemoryNamespaceKeyImpl(ctx, memoryId)) ?? null;
   },

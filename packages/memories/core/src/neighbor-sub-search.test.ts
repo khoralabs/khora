@@ -262,8 +262,16 @@ describe("neighbor sub-search", () => {
         content: [{ key: "b", text: "focal hub rocket ship" }],
         labels: [{ kind: "rootonly", props: {} }],
         edges: [
-          { peer_memory_id: ids.memory("ns", "nb1"), direction: "out", label: { kind: "r1", props: {} } },
-          { peer_memory_id: ids.memory("ns", "nb2"), direction: "out", label: { kind: "r2", props: {} } },
+          {
+            peer_memory_id: ids.memory("ns", "nb1"),
+            direction: "out",
+            label: { kind: "r1", props: {} },
+          },
+          {
+            peer_memory_id: ids.memory("ns", "nb2"),
+            direction: "out",
+            label: { kind: "r2", props: {} },
+          },
         ],
       },
     );

@@ -144,15 +144,10 @@ function memoriesWhereClauseFromScope(
   memoryIds: string[] | undefined,
   asOfTimestampMs?: number,
 ): { sql: string; bindings: SQLQueryBindings[] } {
-  const asOfClause =
-    asOfTimestampMs !== undefined ? " AND _ts_created <= ?" : "";
-  const asOfBind: SQLQueryBindings[] =
-    asOfTimestampMs !== undefined ? [asOfTimestampMs] : [];
+  const asOfClause = asOfTimestampMs !== undefined ? " AND _ts_created <= ?" : "";
+  const asOfBind: SQLQueryBindings[] = asOfTimestampMs !== undefined ? [asOfTimestampMs] : [];
 
-  const idClause =
-    memoryIds === undefined
-      ? ""
-      : ` AND _id IN (${placeholders(memoryIds.length)})`;
+  const idClause = memoryIds === undefined ? "" : ` AND _id IN (${placeholders(memoryIds.length)})`;
   const idBindings: SQLQueryBindings[] = memoryIds === undefined ? [] : [...memoryIds];
 
   if (scope.kind === "unscoped") {
@@ -296,11 +291,7 @@ export function searchVectorSourceMapIds(
   const maxD = input.maxVectorDistance;
   const distanceClause = maxD !== undefined && Number.isFinite(maxD) ? `AND knn.distance <= ?` : "";
 
-  const params: SQLQueryBindings[] = [
-    JSON.stringify(input.vector),
-    knnK,
-    ...scopeBindings,
-  ];
+  const params: SQLQueryBindings[] = [JSON.stringify(input.vector), knnK, ...scopeBindings];
   if (distanceClause) {
     params.push(maxD as number);
   }

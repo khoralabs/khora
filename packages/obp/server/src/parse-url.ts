@@ -13,9 +13,9 @@ export function parseObpUrl(url: string): ParsedObpUrl {
   if (!m) {
     throw new Error(`invalid OBP URL: ${url}`);
   }
-  const scheme = m[1]!.toLowerCase() as "obp" | "obps";
+  const scheme = m[1]?.toLowerCase() as "obp" | "obps";
   const host = m[2]!;
   const port = Number(m[3]!);
-  const actor_pubkey_hex = m[4]!.toLowerCase();
+  const actor_pubkey_hex = m[4]?.toLowerCase();
   return { scheme, host, port, actor_pubkey_hex };
 }

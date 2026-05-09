@@ -40,6 +40,13 @@ import { insertNodeLabelAssignment } from "./models/node-label-assignments";
 import { ensureNodeLabel } from "./models/node-labels";
 import { nodeExists, upsertNodeForMemoryKey } from "./models/nodes";
 import {
+  linkScopes as linkScopesRow,
+  listScopesForMemory as listScopesForMemoryRow,
+  replaceMemoryScopes as replaceMemoryScopesRow,
+  unlinkScopeEdge as unlinkScopeEdgeRow,
+  upsertScope as upsertScopeRow,
+} from "./models/scopes";
+import {
   type HydratedNeighbor,
   hydrateSourceMapHits,
   listNeighborsForEdgeMemory,
@@ -47,13 +54,6 @@ import {
   searchLexicalSourceMapIds,
   searchVectorSourceMapIds,
 } from "./models/search";
-import {
-  linkScopes as linkScopesRow,
-  listScopesForMemory as listScopesForMemoryRow,
-  replaceMemoryScopes as replaceMemoryScopesRow,
-  unlinkScopeEdge as unlinkScopeEdgeRow,
-  upsertScope as upsertScopeRow,
-} from "./models/scopes";
 import { insertSourceMap, updateSourceMapContentHash } from "./models/source-maps";
 import { insertLexicalFeature } from "./models/text-features";
 import { insertVectorFeature } from "./models/vector-features";
@@ -109,10 +109,7 @@ export class MemoriesPersistence implements IMemoriesPersistence {
     upsertScopeRow(this.ctx(op), input);
   }
 
-  linkScopes(
-    op: MemoryOpContext,
-    input: { parentScopeId: string; childScopeId: string },
-  ): void {
+  linkScopes(op: MemoryOpContext, input: { parentScopeId: string; childScopeId: string }): void {
     linkScopesRow(this.ctx(op), input);
   }
 

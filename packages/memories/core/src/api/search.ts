@@ -345,9 +345,7 @@ function expandNeighborsWithSubSearch<NODE_LABELS extends string, EDGE_LABELS ex
     ...(input.maxVectorDistance !== undefined
       ? { maxVectorDistance: input.maxVectorDistance }
       : {}),
-    ...(input.asOfTimestampMs !== undefined
-      ? { asOfTimestampMs: input.asOfTimestampMs }
-      : {}),
+    ...(input.asOfTimestampMs !== undefined ? { asOfTimestampMs: input.asOfTimestampMs } : {}),
   });
 
   if (fused.length === 0) return [];
@@ -412,10 +410,7 @@ export function search<NODE_LABELS extends string = string, EDGE_LABELS extends 
     caps,
   );
 
-  if (
-    params.asOfTimestampMs !== undefined &&
-    caps.asOfTimestampMsSearch !== true
-  ) {
+  if (params.asOfTimestampMs !== undefined && caps.asOfTimestampMsSearch !== true) {
     throw new Error(
       "SearchParams.asOfTimestampMs requires a persistence backend that sets capabilities.asOfTimestampMsSearch",
     );
@@ -434,9 +429,7 @@ export function search<NODE_LABELS extends string = string, EDGE_LABELS extends 
     vectorWeight,
     retrievalLimit,
     ...(maxVectorDistance !== undefined ? { maxVectorDistance } : {}),
-    ...(params.asOfTimestampMs !== undefined
-      ? { asOfTimestampMs: params.asOfTimestampMs }
-      : {}),
+    ...(params.asOfTimestampMs !== undefined ? { asOfTimestampMs: params.asOfTimestampMs } : {}),
   });
   if (fused.length === 0) return [];
   const hydrated = persistence.hydrateSourceMapHits(fused.map((result) => result.id));
@@ -480,9 +473,7 @@ export function search<NODE_LABELS extends string = string, EDGE_LABELS extends 
       neighborFilters,
       maxNeighbors,
       ...(maxVectorDistance !== undefined ? { maxVectorDistance } : {}),
-      ...(params.asOfTimestampMs !== undefined
-        ? { asOfTimestampMs: params.asOfTimestampMs }
-        : {}),
+      ...(params.asOfTimestampMs !== undefined ? { asOfTimestampMs: params.asOfTimestampMs } : {}),
     }),
   }));
   return withNeighbors;

@@ -32,8 +32,8 @@ export { GraphPinnedEscHint } from "./graph-pinned-esc-hint.js";
 export { GraphPreviewDock } from "./graph-preview-dock.js";
 export {
   GraphSearch,
-  graphSearchSummaryLine,
   type GraphSearchProps,
+  graphSearchSummaryLine,
 } from "./graph-search.js";
 export * from "./projection-types.js";
 

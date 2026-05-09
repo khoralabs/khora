@@ -49,9 +49,7 @@ function mapPort(spec: PortSpec): Port {
       ? spec.portType.trim()
       : "obp.frame.port";
   const promise =
-    spec.promise !== undefined && spec.promise.trim() !== ""
-      ? spec.promise.trim()
-      : spec.id;
+    spec.promise !== undefined && spec.promise.trim() !== "" ? spec.promise.trim() : spec.id;
 
   const port: Port = {
     id: spec.id,
@@ -98,7 +96,10 @@ export function parseTurnBody(body: Record<string, unknown>): TurnBody {
     if (o.expires_seq !== undefined && o.expires_seq !== null) {
       const n = Number(o.expires_seq);
       if (!Number.isInteger(n) || n < 1) {
-        throw new ObpError("VALIDATION", "port expires_seq must be a positive integer when present");
+        throw new ObpError(
+          "VALIDATION",
+          "port expires_seq must be a positive integer when present",
+        );
       }
       expires_seq = n;
     }
@@ -107,7 +108,10 @@ export function parseTurnBody(body: Record<string, unknown>): TurnBody {
     if (o.expose_seq !== undefined && o.expose_seq !== null) {
       const n = Number(o.expose_seq);
       if (!Number.isInteger(n) || n < 0) {
-        throw new ObpError("VALIDATION", "port expose_seq must be a non-negative integer when present");
+        throw new ObpError(
+          "VALIDATION",
+          "port expose_seq must be a non-negative integer when present",
+        );
       }
       expose_seq = n;
     }
@@ -116,7 +120,10 @@ export function parseTurnBody(body: Record<string, unknown>): TurnBody {
     if (o.ttl_measure !== undefined && o.ttl_measure !== null) {
       const n = Number(o.ttl_measure);
       if (!Number.isInteger(n) || n < 1) {
-        throw new ObpError("VALIDATION", "port ttl_measure must be a positive integer when present");
+        throw new ObpError(
+          "VALIDATION",
+          "port ttl_measure must be a positive integer when present",
+        );
       }
       ttl_measure = n;
     }

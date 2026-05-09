@@ -50,7 +50,14 @@ const handle = await serveObp({
         sourcemaps: [],
         created_seq: ++seq,
       }));
-      persistence.importState({ parties, offers: [], ports: [], extendsRows: [], exposesRows: [], bindRows: [] });
+      persistence.importState({
+        parties,
+        offers: [],
+        ports: [],
+        extendsRows: [],
+        exposesRows: [],
+        bindRows: [],
+      });
       partiesHydrated = true;
     }
     return { init, signer };
@@ -77,10 +84,18 @@ const handle = await serveObp({
 
 const url = `http://${host}:${handle.port}`;
 console.log(`OBP demo server listening on ${url}`);
-console.log(`Auth: verifyInvite (Ed25519, no shared secret). Server actor: ${signer.actor.slice(0, 16)}…`);
+console.log(
+  `Auth: verifyInvite (Ed25519, no shared secret). Server actor: ${signer.actor.slice(0, 16)}…`,
+);
 console.log("Run client: bun run client");
 
-process.on("SIGINT", async () => { await handle.close(); process.exit(0); });
-process.on("SIGTERM", async () => { await handle.close(); process.exit(0); });
+process.on("SIGINT", async () => {
+  await handle.close();
+  process.exit(0);
+});
+process.on("SIGTERM", async () => {
+  await handle.close();
+  process.exit(0);
+});
 
 await new Promise<void>(() => {});

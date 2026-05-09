@@ -48,7 +48,7 @@ function finishGraphEdgeLink(
 
 async function edgeToGraphEdgeLink(
   ctx: QueryCtx,
-  namespace: string,
+  _namespace: string,
   e: {
     edgeId: string;
     fromNodeId: string;

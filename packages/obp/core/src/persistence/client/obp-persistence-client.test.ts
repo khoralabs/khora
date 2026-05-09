@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import type { PortBindPolicy } from "../../bind-policy/types.ts";
+import { FakeObpPersistence } from "../../testing/fake-obp-persistence.ts";
 import { ObpError } from "./errors.ts";
 import { OBPPersistenceClient } from "./obp-persistence-client.ts";
-import { FakeObpPersistence } from "../../testing/fake-obp-persistence.ts";
 
 const seq = () => 100;
 

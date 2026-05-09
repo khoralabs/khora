@@ -60,15 +60,13 @@ export async function resolveRuntimeToolRefs(
     const aug = runtimeToolAugments?.[name];
     const h = nameToStaticHash.get(name);
     if (h) {
-      const toolHash =
-        aug !== undefined ? await hashRuntimeToolBinding(h, aug) : h;
+      const toolHash = aug !== undefined ? await hashRuntimeToolBinding(h, aug) : h;
       out.push({ toolKey: name, toolHash });
     } else {
       const spec = toolsFallback[name];
       if (spec) {
         const base = await hashToolSpecIdentity(spec);
-        const toolHash =
-          aug !== undefined ? await hashRuntimeToolBinding(base, aug) : base;
+        const toolHash = aug !== undefined ? await hashRuntimeToolBinding(base, aug) : base;
         out.push({
           toolKey: name,
           toolHash,

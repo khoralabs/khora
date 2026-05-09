@@ -1,5 +1,4 @@
 import { validateCounterpartyBindForPort } from "../../bind-policy/validate.ts";
-import { ObpError } from "./errors.ts";
 import { type BindValidationFailure, validateBindPreconditions } from "../../invariants/bind.ts";
 import type {
   BindPortInput,
@@ -14,6 +13,7 @@ import type {
   Port,
   RegisterPartyInput,
 } from "../../model/types.ts";
+import { ObpError } from "./errors.ts";
 import type { ObpPersistence } from "./persistence-types.ts";
 
 export type OBPPersistenceClientOptions = {

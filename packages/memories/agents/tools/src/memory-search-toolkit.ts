@@ -131,7 +131,9 @@ export function memorySearchRuntimeToolAugments(
 }
 
 /** Spread into `computeFullIdentityLink` (`@cfd/agent-identity`) together with session `ToolkitContext`. */
-export function memorySearchIdentityLinkSupplement(env: Pick<MemorySearchEnv, "memoriesSnapshotRootHex">): {
+export function memorySearchIdentityLinkSupplement(
+  env: Pick<MemorySearchEnv, "memoriesSnapshotRootHex">,
+): {
   runtimeToolAugments?: Record<string, string>;
   invocationContext?: { memoriesProvenanceRootHex: string };
   invocationContextAllowlist?: string[];

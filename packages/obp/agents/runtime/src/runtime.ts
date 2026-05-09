@@ -1,7 +1,7 @@
 import {
-  applyTurn as graphApplyTurn,
   type ApplyTurnResult,
   type BindPolicyField,
+  applyTurn as graphApplyTurn,
   type OBPPersistenceClient,
   type ObpPersistence,
   type Port,
@@ -564,7 +564,9 @@ export class NegotiationRuntime {
 
     const chosenPortRes = client.getPort(portId);
     if (chosenPortRes.kind === "notFound") {
-      throw new RangeError(`NegotiationRuntime.materializeBindTurn: bind port not found: ${portId}`);
+      throw new RangeError(
+        `NegotiationRuntime.materializeBindTurn: bind port not found: ${portId}`,
+      );
     }
     const counterparty_bind = validateCounterpartyBindForPort(
       chosenPortRes.port,
@@ -671,9 +673,7 @@ export class NegotiationRuntime {
       })();
 
     const counterparty_bind =
-      committedTurnBody.counterparty_bind !== undefined
-        ? committedTurnBody.counterparty_bind
-        : {};
+      committedTurnBody.counterparty_bind !== undefined ? committedTurnBody.counterparty_bind : {};
 
     const audit: NegotiationBindTurnAudit = {
       kind: "bind",

@@ -118,10 +118,7 @@ export type FrameSessionHandle = {
 
 /** Per-chain handlers when multiplexing; falls back to {@link FrameSessionHandlers} on the same runner when absent. */
 export type MultiplexChainHooks = {
-  onIncomingOffer?: (
-    body: TurnBody,
-    session: FrameSessionHandle,
-  ) => Promise<TurnBody | null>;
+  onIncomingOffer?: (body: TurnBody, session: FrameSessionHandle) => Promise<TurnBody | null>;
   /** Inbound peer TERMINATE for this chain only. */
   onTerminate?: (
     reason: string,
@@ -140,10 +137,7 @@ export type FrameMultiplexOpenerApi = {
 export type FrameSessionHandlers = {
   /** Called for both peers after a chain is registered (after inbound `init` or immediately after this side writes `init`). */
   onSessionReady?: (session: FrameSessionHandle) => Promise<void>;
-  onIncomingOffer?: (
-    body: TurnBody,
-    session: FrameSessionHandle,
-  ) => Promise<TurnBody | null>;
+  onIncomingOffer?: (body: TurnBody, session: FrameSessionHandle) => Promise<TurnBody | null>;
   /**
    * Inbound peer TERMINATE. The third argument identifies the chain (`SessionInit.session_id`) in multiplex mode;
    * in single-chain sessions it equals that session's id.

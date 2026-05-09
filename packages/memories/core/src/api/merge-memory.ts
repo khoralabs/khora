@@ -270,7 +270,9 @@ function mergeMemoryNode<TNode extends LabelSchemaMap, TEdge extends LabelSchema
       }
       const otherNodeId = ids.node(peer.namespace, peer.key);
       if (!persistence.nodeExists(otherNodeId)) {
-        throw new Error(`mergeMemory: target node missing for peer_memory_id=${edge.peer_memory_id}`);
+        throw new Error(
+          `mergeMemory: target node missing for peer_memory_id=${edge.peer_memory_id}`,
+        );
       }
 
       const fromNodeId = edge.direction === "out" ? nodeId : otherNodeId;
@@ -385,7 +387,9 @@ function mergeMemoryEdge<TNode extends LabelSchemaMap, TEdge extends LabelSchema
   const fromNodeId = ids.node(fromRef.namespace, fromRef.key);
   const toNodeId = ids.node(toRef.namespace, toRef.key);
   if (!persistence.nodeExists(fromNodeId)) {
-    throw new Error(`mergeMemory: node missing for edge.from_memory_id=${params.edge.from_memory_id}`);
+    throw new Error(
+      `mergeMemory: node missing for edge.from_memory_id=${params.edge.from_memory_id}`,
+    );
   }
   if (!persistence.nodeExists(toNodeId)) {
     throw new Error(`mergeMemory: node missing for edge.to_memory_id=${params.edge.to_memory_id}`);

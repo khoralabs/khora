@@ -26,11 +26,12 @@ export type WaitForTurnOptions = {
  * Waiters are rejected with **`Error("chain terminated")`** on inbound peer {@link MultiplexChainHooks.onTerminate}
  * or {@link dispose}.
  */
-export function createNegotiationCoordinator(
-  inner: NegotiationCoordinatorHooksArgs = {},
-): {
+export function createNegotiationCoordinator(inner: NegotiationCoordinatorHooksArgs = {}): {
   hooks: MultiplexChainHooks;
-  waitForTurn: (pred: (body: TurnBody) => boolean, options?: WaitForTurnOptions) => Promise<TurnBody>;
+  waitForTurn: (
+    pred: (body: TurnBody) => boolean,
+    options?: WaitForTurnOptions,
+  ) => Promise<TurnBody>;
   dispose: () => void;
 } {
   const waiters: Waiter[] = [];
@@ -114,7 +115,10 @@ export function createNegotiationCoordinator(
 /** Convenience {@link createNegotiationCoordinator} **`waitForTurn`**: match **`offerId`** and a **`ports`** entry. */
 export function waitForPortOnOffer(
   coord: {
-    waitForTurn: (pred: (body: TurnBody) => boolean, options?: WaitForTurnOptions) => Promise<TurnBody>;
+    waitForTurn: (
+      pred: (body: TurnBody) => boolean,
+      options?: WaitForTurnOptions,
+    ) => Promise<TurnBody>;
   },
   offerId: string,
   portId: string,

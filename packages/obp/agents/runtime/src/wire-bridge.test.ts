@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import type { NegotiationGenesisTurnAudit, NegotiationBindTurnAudit } from "./runtime.ts";
+import type { NegotiationBindTurnAudit, NegotiationGenesisTurnAudit } from "./runtime.ts";
 import { auditToTurnBody } from "./wire-bridge.ts";
 
 test("auditToTurnBody returns committed genesis TurnBody", () => {

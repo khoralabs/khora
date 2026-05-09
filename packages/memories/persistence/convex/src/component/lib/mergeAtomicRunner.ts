@@ -148,7 +148,9 @@ async function runMergeMemoryAtomicNode(
     }
     const otherNodeId = ids.node(peer.namespace, peer.key);
     if (!(await nodeExists(ctx, otherNodeId))) {
-      throw new Error(`mergeMemoryAtomic: target node missing for peer_memory_id=${edge.peer_memory_id}`);
+      throw new Error(
+        `mergeMemoryAtomic: target node missing for peer_memory_id=${edge.peer_memory_id}`,
+      );
     }
 
     const fromNodeId = edge.direction === "out" ? nodeId : otherNodeId;
@@ -216,7 +218,11 @@ async function runMergeMemoryAtomicNode(
       now,
       metaVector: refMemoryId === memoryId ? primaryMeta : undefined,
     });
-    await syncLabelPropsSearchFeaturesImpl(ctx, { namespace: ref.namespace, memoryKey: ref.key, now });
+    await syncLabelPropsSearchFeaturesImpl(ctx, {
+      namespace: ref.namespace,
+      memoryKey: ref.key,
+      now,
+    });
   }
 
   const sourceKeysSorted = params.content
@@ -266,10 +272,14 @@ async function runMergeMemoryAtomicEdge(
   const fromNodeId = ids.node(fromRef.namespace, fromRef.key);
   const toNodeId = ids.node(toRef.namespace, toRef.key);
   if (!(await nodeExists(ctx, fromNodeId))) {
-    throw new Error(`mergeMemoryAtomic: node missing for edge.from_memory_id=${params.edge.from_memory_id}`);
+    throw new Error(
+      `mergeMemoryAtomic: node missing for edge.from_memory_id=${params.edge.from_memory_id}`,
+    );
   }
   if (!(await nodeExists(ctx, toNodeId))) {
-    throw new Error(`mergeMemoryAtomic: node missing for edge.to_memory_id=${params.edge.to_memory_id}`);
+    throw new Error(
+      `mergeMemoryAtomic: node missing for edge.to_memory_id=${params.edge.to_memory_id}`,
+    );
   }
 
   const edgeId = ids.edge(
@@ -381,7 +391,11 @@ async function runMergeMemoryAtomicEdge(
       now,
       metaVector: refMid === memoryId ? primaryMeta : undefined,
     });
-    await syncLabelPropsSearchFeaturesImpl(ctx, { namespace: ref.namespace, memoryKey: ref.key, now });
+    await syncLabelPropsSearchFeaturesImpl(ctx, {
+      namespace: ref.namespace,
+      memoryKey: ref.key,
+      now,
+    });
   }
 
   const sourceKeysSorted = params.content

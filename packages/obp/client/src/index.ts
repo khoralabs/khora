@@ -1,7 +1,12 @@
 export type { SessionOp } from "@cfd/obp-core";
 export type { Checkpoint, VerifyError } from "@cfd/obp-session-sync";
 export { verifyExtends } from "@cfd/obp-session-sync";
-export { connectObpSession, type ObpConnectOptions, type ObpFrameConnection, openObpHttp2Channel } from "./connect.ts";
+export {
+  connectObpSession,
+  type ObpConnectOptions,
+  type ObpFrameConnection,
+  openObpHttp2Channel,
+} from "./connect.ts";
 export { frameChannelFromClientStream } from "./http2-channel.ts";
 
 import { connectObpSession } from "./connect.ts";

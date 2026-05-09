@@ -1,13 +1,13 @@
 import { ids, namespacePath, namespacePrefixFieldsCamel } from "@cfd/memories-core";
 import type { MutationCtx, QueryCtx } from "../_generated/server.js";
 import { buildCanonicalMemorySearchMetaText, MEMORY_SEARCH_META_SOURCE_KEY } from "./helpers.js";
+import { deleteMemoryScopesForMemoryImpl } from "./scopesConvex.js";
 import {
   CONVEX_VECTOR_DIMENSIONS,
   type ConvexVectorDimension,
   isConvexVectorDimension,
   vectorTableNameForDim,
 } from "./vectorConfig.js";
-import { deleteMemoryScopesForMemoryImpl } from "./scopesConvex.js";
 
 export async function loadMemoryNamespaceKeyImpl(
   ctx: QueryCtx | MutationCtx,

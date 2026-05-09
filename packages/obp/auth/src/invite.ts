@@ -122,7 +122,10 @@ export async function verifyInvite(
   ) {
     return null;
   }
-  if (o.expiresAt !== undefined && (typeof o.expiresAt !== "number" || !Number.isFinite(o.expiresAt))) {
+  if (
+    o.expiresAt !== undefined &&
+    (typeof o.expiresAt !== "number" || !Number.isFinite(o.expiresAt))
+  ) {
     return null;
   }
   const now = opts?.nowMs ?? Date.now();

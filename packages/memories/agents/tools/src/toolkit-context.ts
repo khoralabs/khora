@@ -113,7 +113,7 @@ export async function attachMemorySearchSessionLayer<
 }): Promise<void> {
   const { agent, context: ctx } = args;
   ctx.memoriesSnapshotRootHex =
-    ctx.memoriesSnapshotRootHex ?? ((await getMemoriesProvenanceHeadRootHex(ctx.client)) ?? "");
+    ctx.memoriesSnapshotRootHex ?? (await getMemoriesProvenanceHeadRootHex(ctx.client)) ?? "";
   const shared = memorySearchContextBuildArgs<TNode, TEdge>(ctx);
   const { toolkitCtx, runtime } = buildMemorySearchToolkitAndRuntime(shared);
   ctx.toolkitCtx = toolkitCtx;
