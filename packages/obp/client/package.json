@@ -16,6 +16,7 @@
     "example:client": "bun run examples/simple-client.ts"
   },
   "dependencies": {
+    "@cfd/frame-channel": "workspace:*",
     "@cfd/obp-core": "workspace:*",
     "@cfd/obp-session-sync": "workspace:*"
   },

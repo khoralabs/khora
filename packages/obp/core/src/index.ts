@@ -54,7 +54,6 @@ export type {
   RegisterPartyInput,
   SourceMapRef,
 } from "./model/types";
-export { createMemoryFrameChannelPair, type FrameChannel } from "./frames/channel.ts";
 export { canonicalJsonString, canonicalJsonUtf8 } from "./frames/canonical.ts";
 export { FrameDag, sha256HexUtf8, signingPayloadBytes } from "./frames/dag.ts";
 export { createFrameDecoder, encodeFramedJson, encodeLengthPrefixed, encodeSessionEnvelopeMessage } from "./frames/framing.ts";

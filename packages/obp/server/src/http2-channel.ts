@@ -1,6 +1,6 @@
 import type { ClientHttp2Stream, ServerHttp2Stream } from "node:http2";
 import type { Duplex } from "node:stream";
-import type { FrameChannel } from "@cfd/obp-core";
+import type { FrameChannel } from "@cfd/frame-channel";
 
 /** Duplex HTTP/2 stream → {@link FrameChannel} (one session per stream). */
 export function frameChannelFromHttp2Stream(stream: ServerHttp2Stream): FrameChannel {

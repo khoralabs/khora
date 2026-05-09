@@ -29,6 +29,7 @@
     "packages/memories/react/*",
     "packages/obp/*",
     "packages/obp/agents/*",
-    "packages/obp/persistence/*"
+    "packages/obp/persistence/*",
+    "packages/relay"
   ]
 }

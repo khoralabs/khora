@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/obp-server",
+  "name": "@cfd/relay-server",
   "version": "0.0.0",
   "type": "module",
   "private": true,
@@ -13,16 +13,16 @@
   "scripts": {
     "test": "bun test",
     "typecheck": "tsc --noEmit",
-    "example:server": "bun run examples/simple-server.ts"
+    "start": "bun run src/index.ts"
   },
   "dependencies": {
     "@cfd/frame-channel": "workspace:*",
-    "@cfd/obp-core": "workspace:*",
-    "@cfd/obp-session-sync": "workspace:*"
+    "@cfd/memories-core": "workspace:*",
+    "@cfd/memories-sqlite": "workspace:*",
+    "@cfd/memories-stores": "workspace:*"
   },
   "devDependencies": {
-    "@types/bun": "latest",
-    "@types/node": "^22"
+    "@types/bun": "latest"
   },
   "peerDependencies": {
     "typescript": "^5"

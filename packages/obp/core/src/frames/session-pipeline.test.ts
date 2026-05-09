@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { FakeObpPersistence } from "../testing/fake-obp-persistence.ts";
-import { createMemoryFrameChannelPair } from "./channel.ts";
+import { createMemoryFrameChannelPair } from "@cfd/frame-channel";
 import { sha256HexUtf8 } from "./dag.ts";
 import { runFrameMultiplexSession, runFrameSession } from "./session-pipeline.ts";
 import {

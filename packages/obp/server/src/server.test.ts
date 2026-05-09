@@ -1,9 +1,9 @@
 import { test } from "bun:test";
 import http2 from "node:http2";
+import type { FrameChannel } from "@cfd/frame-channel";
 import {
   createEd25519FrameSigner,
   createEd25519FrameVerifier,
-  type FrameChannel,
   generateEd25519KeyPair,
   runFrameSession,
   type SessionInit,

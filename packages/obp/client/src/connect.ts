@@ -1,8 +1,8 @@
 import type { OutgoingHttpHeaders } from "node:http";
 import http2 from "node:http2";
+import type { FrameChannel } from "@cfd/frame-channel";
 import {
   createEd25519FrameVerifier,
-  type FrameChannel,
   type FrameMultiplexOpenerApi,
   type FrameSigner,
   type FrameVerifier,
