@@ -45,7 +45,7 @@ export function applySessionOp(
       const rest = { ...op.payload };
       delete rest.actor;
       const body = parseTurnBody(rest);
-      applyTurn(client, partyIdForActor(init, actor), body);
+      void applyTurn(client, partyIdForActor(init, actor), body);
       return;
     }
     case "terminate": {

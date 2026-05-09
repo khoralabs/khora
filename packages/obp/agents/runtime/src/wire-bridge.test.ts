@@ -1,9 +1,14 @@
 import { expect, test } from "bun:test";
-import type { NegotiationGenesisTurnAudit } from "./runtime.ts";
+import type { NegotiationGenesisTurnAudit, NegotiationBindTurnAudit } from "./runtime.ts";
 import { auditToTurnBody } from "./wire-bridge.ts";
 
-test("auditToTurnBody genesis wires expose ids and terminal flags", () => {
-  const audit: NegotiationGenesisTurnAudit = {
+test("auditToTurnBody returns committed genesis TurnBody", () => {
+  const committedTurnBody = {
+    offerId: "offer-a",
+    offerType: "seller.open",
+    ports: [{ id: "port-x", isTerminal: false, portType: "t", promise: "hi", max_bindings: 1 }],
+  };
+  const audit = {
     kind: "genesis",
     turnIndex: 0,
     actingPartyId: "p1",
@@ -11,33 +16,33 @@ test("auditToTurnBody genesis wires expose ids and terminal flags", () => {
     newOfferType: "seller.open",
     exposedPortIds: ["port-x"],
     exposedPorts: [{ portType: "t", promise: "hi", terminal: false }],
-  };
-  const body = auditToTurnBody(audit, {
-    ports: [{ terminal: false }],
-  });
-  expect(body.offerType).toBe("seller.open");
-  expect(body.ports?.length).toBe(1);
-  expect(body.ports?.[0]?.id).toBe("port-x");
-  expect(body.bindPortId).toBeUndefined();
+    committedTurnBody,
+  } satisfies NegotiationGenesisTurnAudit;
+  expect(auditToTurnBody(audit)).toEqual(committedTurnBody);
 });
 
-test("auditToTurnBody bind includes bindPortId", () => {
+test("auditToTurnBody returns committed bind TurnBody", () => {
+  const committedTurnBody = {
+    offerId: "offer-b",
+    offerType: "buyer.reply",
+    bindPortId: "target-port",
+    counterparty_bind: {},
+  };
   const audit = {
-    kind: "bind" as const,
+    kind: "bind",
     turnIndex: 1,
     actingPartyId: "p2",
     chosenPortId: "target-port",
     chosenPortType: "listing",
     headOfferId: "o",
     counterpartyHeadOfferType: "seller.open",
-    bindKind: "real" as const,
+    bindKind: "real",
     bindMenu: [],
     newOfferId: "offer-b",
     newOfferType: "buyer.reply",
     exposedPortIds: [],
     exposedPorts: [],
-  };
-  const body = auditToTurnBody(audit, {});
-  expect(body.bindPortId).toBe("target-port");
-  expect(body.counterparty_bind).toEqual({});
+    committedTurnBody,
+  } satisfies NegotiationBindTurnAudit;
+  expect(auditToTurnBody(audit)).toEqual(committedTurnBody);
 });

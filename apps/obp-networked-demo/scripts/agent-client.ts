@@ -11,9 +11,15 @@ import {
   dispatchNegotiatorIncomingOffer,
   negotiationShouldEnd,
   runStructuredNegotiatorTurn,
+  wireStructuredTurnSummary,
 } from "@cfd/obp-agent-runtime";
 import { connectObpSession } from "@cfd/obp-client";
-import { createEd25519FrameVerifier, OBPPersistenceClient, partyIdForSigner } from "@cfd/obp-core";
+import {
+  createEd25519FrameVerifier,
+  OBPPersistenceClient,
+  partyIdForSigner,
+  type TurnBody,
+} from "@cfd/obp-core";
 import { FakeObpPersistence } from "@cfd/obp-core/testing";
 import { buildAgentDemoGraphSnapshot } from "./agent-graph-snapshot.ts";
 import { getNegotiationModel, resolveDemoTurnBudgetMs } from "./agent-llm.ts";
@@ -47,6 +53,8 @@ persistence.importState({
 
 const clientPartyId = partyIdForSigner(bootstrap.init, signer.actor);
 
+const wireSend = { current: null as null | ((body: TurnBody) => Promise<void>) };
+
 const { ledger, contract } = createNegotiationLedgerAndStructuredContract(
   {
     client: obpClient,
@@ -63,6 +71,14 @@ const { ledger, contract } = createNegotiationLedgerAndStructuredContract(
     requireWalkAway: true,
     allowAgentPortTtl: false,
     defaultPortTtl: { basis: "turns", measure: 12 },
+    commitStructuredTurn: async (_, body) => {
+      const send = wireSend.current;
+      if (send === null) {
+        throw new Error("[agent-client] wire send not wired before structured commit");
+      }
+      await send(body);
+      return wireStructuredTurnSummary(body);
+    },
   }),
 );
 
@@ -85,6 +101,7 @@ const { sessionOps } = await connectObpSession(
 
     const chain = await conn.init(bootstrap.init, {
       async onIncomingOffer(_body, sess) {
+        wireSend.current = sess.sendTurn.bind(sess);
         await dispatchNegotiatorIncomingOffer({
           ledger,
           contract,
@@ -105,8 +122,10 @@ const { sessionOps } = await connectObpSession(
       },
     });
 
+    wireSend.current = chain.sendTurn.bind(chain);
+
     try {
-      const { audit, turn } = await runStructuredNegotiatorTurn({
+      const { audit } = await runStructuredNegotiatorTurn({
         registry: negotiatorRegistry,
         identity: negotiatorIdentity,
         contract,
@@ -115,7 +134,6 @@ const { sessionOps } = await connectObpSession(
         budgetMs: resolveDemoTurnBudgetMs(),
       });
       console.log("[agent-client] genesis audit:", audit.kind);
-      await chain.sendTurn(turn);
       if (negotiationShouldEnd(audit) || ledger.isExhausted()) {
         await chain.terminate("done");
         resolveDone();

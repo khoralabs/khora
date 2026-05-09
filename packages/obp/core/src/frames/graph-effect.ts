@@ -1,10 +1,16 @@
 import { portBindPolicySchema } from "../bind-policy/index.ts";
-import type { Offer, Port, SourceMapRef } from "../model/types.ts";
+import type { NegotiationPortTtlBasis, Offer, Port, SourceMapRef } from "../model/types.ts";
 import { ObpError } from "../persistence/client/errors.ts";
 import type { OBPPersistenceClient } from "../persistence/client/obp-persistence-client.ts";
 import type { PortSpec, TurnBody } from "./types.ts";
 
 const MAX_EXPIRES = Number.MAX_SAFE_INTEGER;
+
+/** Summary of ids minted by {@link applyTurn} for audit derivation. */
+export type ApplyTurnResult = {
+  offerId: string;
+  exposedPortIds: string[];
+};
 
 function parsePortMaxBindings(o: Record<string, unknown>): number {
   if (!("max_bindings" in o) || o.max_bindings === undefined || o.max_bindings === null) {
@@ -28,21 +34,49 @@ function parseSourcemaps(raw: unknown): SourceMapRef[] | undefined {
   });
 }
 
+function parseNegotiationPortTtlBasis(raw: unknown): NegotiationPortTtlBasis {
+  if (raw === "turns" || raw === "ledger_seq") return raw;
+  throw new ObpError("VALIDATION", "port ttl_basis must be turns or ledger_seq when present");
+}
+
 function mapPort(spec: PortSpec): Port {
-  return {
+  const expiresSeq =
+    spec.expires_seq !== undefined && Number.isFinite(spec.expires_seq)
+      ? spec.expires_seq
+      : MAX_EXPIRES;
+  const type =
+    spec.portType !== undefined && spec.portType.trim() !== ""
+      ? spec.portType.trim()
+      : "obp.frame.port";
+  const promise =
+    spec.promise !== undefined && spec.promise.trim() !== ""
+      ? spec.promise.trim()
+      : spec.id;
+
+  const port: Port = {
     id: spec.id,
     created_seq: 0,
-    expires_seq: MAX_EXPIRES,
-    type: "obp.frame.port",
-    promise: spec.id,
+    expires_seq: expiresSeq,
+    type,
+    promise,
     max_bindings: spec.max_bindings ?? 1,
     terminal: spec.isTerminal,
-    ref: "",
-    sourcemaps: [],
+    ref: spec.ref?.trim() ?? "",
+    sourcemaps: spec.sourcemaps ?? [],
     ...(spec.bind_policy != null && spec.bind_policy !== undefined
       ? { bind_policy: spec.bind_policy }
       : {}),
   };
+  if (spec.expose_seq !== undefined) {
+    port.expose_seq = spec.expose_seq;
+  }
+  if (spec.ttl_basis !== undefined) {
+    port.ttl_basis = spec.ttl_basis;
+  }
+  if (spec.ttl_measure !== undefined) {
+    port.ttl_measure = spec.ttl_measure;
+  }
+  return port;
 }
 
 export function parseTurnBody(body: Record<string, unknown>): TurnBody {
@@ -59,12 +93,61 @@ export function parseTurnBody(body: Record<string, unknown>): TurnBody {
     } else {
       bind_policy = undefined;
     }
+
+    let expires_seq: number | undefined;
+    if (o.expires_seq !== undefined && o.expires_seq !== null) {
+      const n = Number(o.expires_seq);
+      if (!Number.isInteger(n) || n < 1) {
+        throw new ObpError("VALIDATION", "port expires_seq must be a positive integer when present");
+      }
+      expires_seq = n;
+    }
+
+    let expose_seq: number | undefined;
+    if (o.expose_seq !== undefined && o.expose_seq !== null) {
+      const n = Number(o.expose_seq);
+      if (!Number.isInteger(n) || n < 0) {
+        throw new ObpError("VALIDATION", "port expose_seq must be a non-negative integer when present");
+      }
+      expose_seq = n;
+    }
+
+    let ttl_measure: number | undefined;
+    if (o.ttl_measure !== undefined && o.ttl_measure !== null) {
+      const n = Number(o.ttl_measure);
+      if (!Number.isInteger(n) || n < 1) {
+        throw new ObpError("VALIDATION", "port ttl_measure must be a positive integer when present");
+      }
+      ttl_measure = n;
+    }
+
+    const rawPortType = o.portType ?? o.type;
+    const portType =
+      rawPortType !== undefined && rawPortType !== null ? String(rawPortType) : undefined;
+    const promise = o.promise !== undefined && o.promise !== null ? String(o.promise) : undefined;
+    const ref = o.ref !== undefined && o.ref !== null ? String(o.ref) : undefined;
+
+    let ttl_basis: PortSpec["ttl_basis"];
+    if (o.ttl_basis !== undefined && o.ttl_basis !== null) {
+      ttl_basis = parseNegotiationPortTtlBasis(o.ttl_basis);
+    }
+
+    const portSm = parseSourcemaps(o.sourcemaps);
+
     return {
       id: String(o.id ?? ""),
       isTerminal: Boolean(o.isTerminal),
       max_bindings: parsePortMaxBindings(o),
       bind_policy: bind_policy ?? null,
       ttl: o.ttl,
+      ...(portType !== undefined ? { portType } : {}),
+      ...(promise !== undefined ? { promise } : {}),
+      ...(ref !== undefined ? { ref } : {}),
+      ...(expose_seq !== undefined ? { expose_seq } : {}),
+      ...(ttl_basis !== undefined ? { ttl_basis } : {}),
+      ...(ttl_measure !== undefined ? { ttl_measure } : {}),
+      ...(expires_seq !== undefined ? { expires_seq } : {}),
+      ...(portSm !== undefined ? { sourcemaps: portSm } : {}),
     };
   });
 
@@ -96,9 +179,19 @@ export function parseTurnBody(body: Record<string, unknown>): TurnBody {
     turn_seq = n;
   }
 
+  let offer_expires_seq: number | undefined;
+  if (body.expires_seq !== undefined && body.expires_seq !== null) {
+    const n = Number(body.expires_seq);
+    if (!Number.isInteger(n) || n < 1) {
+      throw new ObpError("VALIDATION", "expires_seq must be a positive integer when present");
+    }
+    offer_expires_seq = n;
+  }
+
   return {
     offerId: String(body.offerId ?? ""),
     offerType: String(body.offerType ?? ""),
+    ...(offer_expires_seq !== undefined ? { expires_seq: offer_expires_seq } : {}),
     ...(turn_seq !== undefined ? { turn_seq } : {}),
     sourcemaps: parseSourcemaps(body.sourcemaps),
     ttl: body.ttl,
@@ -109,18 +202,26 @@ export function parseTurnBody(body: Record<string, unknown>): TurnBody {
   };
 }
 
-export function applyTurn(client: OBPPersistenceClient, partyId: string, body: TurnBody): void {
+export function applyTurn(
+  client: OBPPersistenceClient,
+  partyId: string,
+  body: TurnBody,
+): ApplyTurnResult {
   const offerId = body.offerId.trim() === "" ? crypto.randomUUID() : body.offerId;
+  const offerExpiresSeq =
+    body.expires_seq !== undefined && Number.isFinite(body.expires_seq)
+      ? body.expires_seq
+      : MAX_EXPIRES;
   const offer: Offer = {
     id: offerId,
     created_seq: 0,
-    expires_seq: MAX_EXPIRES,
+    expires_seq: offerExpiresSeq,
     type: body.offerType,
     sourcemaps: body.sourcemaps ?? [],
   };
 
   const bindPortId = body.bindPortId?.trim() ?? "";
-  client.extendOffer({
+  const { offer: persistedOffer } = client.extendOffer({
     partyId,
     offer,
     bindPortId,
@@ -130,7 +231,11 @@ export function applyTurn(client: OBPPersistenceClient, partyId: string, body: T
       : {}),
   });
 
+  const exposedPortIds: string[] = [];
   for (const spec of body.ports ?? []) {
-    client.exposePort({ offerId: offer.id, port: mapPort(spec) });
+    const { port } = client.exposePort({ offerId: persistedOffer.id, port: mapPort(spec) });
+    exposedPortIds.push(port.id);
   }
+
+  return { offerId: persistedOffer.id, exposedPortIds };
 }

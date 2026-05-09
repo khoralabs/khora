@@ -1,9 +1,10 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { ObpError } from "../persistence/client/errors.ts";
 import { OBPPersistenceClient } from "../persistence/client/obp-persistence-client.ts";
 import type { ObpPersistence } from "../persistence/client/persistence-types.ts";
 import { canonicalJsonString } from "./canonical.ts";
 import type { FrameChannel } from "./channel.ts";
-import { FrameDag, sha256HexUtf8 } from "./dag.ts";
+import { FrameDag, sha256HexUtf8, signingPayloadBytes } from "./dag.ts";
 import {
   createFrameDecoder,
   encodeFramedJson,
@@ -126,6 +127,7 @@ function turnBodyToWireRecord(body: TurnBody): Record<string, unknown> {
     o.sourcemaps = body.sourcemaps;
   }
   if (body.ttl !== undefined) o.ttl = body.ttl;
+  if (body.expires_seq !== undefined) o.expires_seq = body.expires_seq;
   if (body.ports !== undefined && body.ports.length > 0) o.ports = body.ports;
   if (body.bindPortId !== undefined && body.bindPortId !== "") o.bindPortId = body.bindPortId;
   if (body.counterparty_bind !== undefined) o.counterparty_bind = body.counterparty_bind;
@@ -236,13 +238,19 @@ export async function runFrameMultiplexSession(
     return p;
   };
 
-  /** Serialize outbound DAG mutations + framed payload per chain (avoids sibling mints at same tip). */
-  const outboundTailBySession = new Map<string, Promise<void>>();
-  const enqueueChainOutbound = (sessionId: string, fn: () => Promise<void>): Promise<void> => {
-    const prev = outboundTailBySession.get(sessionId) ?? Promise.resolve();
-    const next = prev.then(fn);
-    outboundTailBySession.set(sessionId, next.catch(() => {}));
-    return next;
+  /**
+   * One FIFO lane for **every** multiplex DAG mutation (inbound frame handling + outbound mint/send).
+   * Without this, `await sendWire` in one chain yields before tip bookkeeping completes relative to the read loop,
+   * so another inbound frame can run early and hit stale {@link tipToSession} / dag causality.
+   * Nested work (`sendTurn` from inside `onIncomingOffer`) runs inline via {@link AsyncLocalStorage}.
+   */
+  const muxAls = new AsyncLocalStorage<boolean>();
+  let muxTail = Promise.resolve();
+  const enqueueMux = (fn: () => Promise<void>): Promise<void> => {
+    if (muxAls.getStore() === true) return fn();
+    const run = muxTail.then(() => muxAls.run(true, fn));
+    muxTail = run.catch(() => {});
+    return run;
   };
 
   const registerChain = (wireRaw: SessionInit, hooks?: MultiplexChainHooks): void => {
@@ -331,60 +339,62 @@ export async function runFrameMultiplexSession(
   };
 
   const handleInboundSessionEnvelope = async (envelope: SessionEnvelopeWire): Promise<void> => {
-    if (sessionEnvelopeSync === undefined) {
-      throw new ObpError("VALIDATION", "unexpected session_envelope (sync disabled)");
-    }
-    const sid = envelope.session_id;
-    const chain = chains.get(sid);
-    if (chain === undefined) {
-      if (endedSessionIds.has(sid)) {
-        return;
+    await enqueueMux(async () => {
+      if (sessionEnvelopeSync === undefined) {
+        throw new ObpError("VALIDATION", "unexpected session_envelope (sync disabled)");
       }
-      throw new ObpError("VALIDATION", "session_envelope for unknown or inactive chain");
-    }
-    if (!chain.active) {
-      throw new ObpError("VALIDATION", "session_envelope for unknown or inactive chain");
-    }
-    if (envelope.from_party === partyIdForEnvelope()) {
-      throw new ObpError("VALIDATION", "session_envelope from_party is self");
-    }
-    const baseSeq = envelope.base_checkpoint.seq;
-    const newSeq = envelope.new_checkpoint.seq;
-    const sessionOps = chain.sessionOps;
-    if (sessionOps.length < baseSeq) {
-      throw new ObpError("VALIDATION", "local session ops lag session_envelope base");
-    }
-    const wireSessionOpsLocal = sessionOps.map(
-      (op) => JSON.parse(canonicalJsonString(op)) as SessionOp,
-    );
-    const baseOps = wireSessionOpsLocal.slice(0, baseSeq) as unknown[];
-    const v = sessionEnvelopeSync.verifyExtends({
-      baseOps,
-      deltaOps: envelope.delta_ops,
-      claimed: envelope.new_checkpoint,
+      const sid = envelope.session_id;
+      const chain = chains.get(sid);
+      if (chain === undefined) {
+        if (endedSessionIds.has(sid)) {
+          return;
+        }
+        throw new ObpError("VALIDATION", "session_envelope for unknown or inactive chain");
+      }
+      if (!chain.active) {
+        throw new ObpError("VALIDATION", "session_envelope for unknown or inactive chain");
+      }
+      if (envelope.from_party === partyIdForEnvelope()) {
+        throw new ObpError("VALIDATION", "session_envelope from_party is self");
+      }
+      const baseSeq = envelope.base_checkpoint.seq;
+      const newSeq = envelope.new_checkpoint.seq;
+      const sessionOps = chain.sessionOps;
+      if (sessionOps.length < baseSeq) {
+        throw new ObpError("VALIDATION", "local session ops lag session_envelope base");
+      }
+      const wireSessionOpsLocal = sessionOps.map(
+        (op) => JSON.parse(canonicalJsonString(op)) as SessionOp,
+      );
+      const baseOps = wireSessionOpsLocal.slice(0, baseSeq) as unknown[];
+      const v = sessionEnvelopeSync.verifyExtends({
+        baseOps,
+        deltaOps: envelope.delta_ops,
+        claimed: envelope.new_checkpoint,
+      });
+      if (!v.ok) {
+        throw new ObpError("VALIDATION", `session_envelope verify failed: ${v.error.code}`);
+      }
+      if (sessionOps.length < newSeq) {
+        throw new ObpError("VALIDATION", "local session ops lag session_envelope (no catch-up)");
+      }
+      const delta = envelope.delta_ops;
+      if (newSeq - baseSeq !== delta.length) {
+        throw new ObpError("VALIDATION", "session_envelope delta length mismatch");
+      }
+      for (let i = 0; i < delta.length; i++) {
+        const local = wireSessionOpsLocal[baseSeq + i];
+        if (local === undefined) {
+          throw new ObpError("VALIDATION", "session_envelope local op missing");
+        }
+        if (canonicalJsonString(local) !== canonicalJsonString(delta[i])) {
+          throw new ObpError("VALIDATION", "session_envelope op mismatch vs frame-derived ops");
+        }
+      }
+      chain.confirmedSeq = newSeq;
+      chain.pendingAck = true;
+      await requestEnvelopeFlush(sid);
     });
-    if (!v.ok) {
-      throw new ObpError("VALIDATION", `session_envelope verify failed: ${v.error.code}`);
-    }
-    if (sessionOps.length < newSeq) {
-      throw new ObpError("VALIDATION", "local session ops lag session_envelope (no catch-up)");
-    }
-    const delta = envelope.delta_ops;
-    if (newSeq - baseSeq !== delta.length) {
-      throw new ObpError("VALIDATION", "session_envelope delta length mismatch");
-    }
-    for (let i = 0; i < delta.length; i++) {
-      const local = wireSessionOpsLocal[baseSeq + i];
-      if (local === undefined) {
-        throw new ObpError("VALIDATION", "session_envelope local op missing");
-      }
-      if (canonicalJsonString(local) !== canonicalJsonString(delta[i])) {
-        throw new ObpError("VALIDATION", "session_envelope op mismatch vs frame-derived ops");
-      }
-    }
-    chain.confirmedSeq = newSeq;
-    chain.pendingAck = true;
-    await requestEnvelopeFlush(sid);
   };
 
   const sendWire = async (frame: Frame): Promise<void> => {
@@ -402,37 +412,28 @@ export async function runFrameMultiplexSession(
   };
 
   const emitOutboundTurn = (sessionId: string, body: TurnBody): Promise<void> =>
-    enqueueChainOutbound(sessionId, async () => {
+    enqueueMux(async () => {
       const chain = chains.get(sessionId);
       if (chain === undefined || !chain.active) {
         throw new ObpError("VALIDATION", "emitOutboundTurn: unknown or inactive chain");
       }
       const wire = turnBodyToWireRecord(body);
-      const oldP = chain.dag.tipHash;
-      const frame = await chain.dag.mintOutbound(signer, "TURN", wire);
+      const { frame, nextTip } = await chain.dag.signOutboundAtTip(signer, "TURN", wire);
       const key = await frameDedupeKey(frame);
       if (globalDedupe.has(key)) return;
+
+      applyTurn(obp, partyIdForActor(chain.init, frame.actor), parseTurnBody(frame.body));
+
       globalDedupe.add(key);
       accumulateTaggedSessionOps(chain.sessionOps, frame, sessionId);
       accumulateTaggedSessionOps(globalOps, frame, sessionId);
-      tipToSession.delete(oldP);
-      tipToSession.set(chain.dag.tipHash, sessionId);
-      applyTurn(obp, partyIdForActor(chain.init, frame.actor), parseTurnBody(frame.body));
+      tipToSession.set(nextTip, sessionId);
+      chain.dag.commitTip(nextTip);
+
       await sendWire(frame);
+
       await requestEnvelopeFlush(sessionId);
     });
-
-  const applyInboundGraph = async (c: ChainState, frame: Frame): Promise<void> => {
-    const key = await frameDedupeKey(frame);
-    if (globalDedupe.has(key)) return;
-    globalDedupe.add(key);
-    accumulateTaggedSessionOps(c.sessionOps, frame, c.init.session_id);
-    accumulateTaggedSessionOps(globalOps, frame, c.init.session_id);
-    if (frame.type === "TURN") {
-      const body = parseTurnBody(frame.body);
-      applyTurn(obp, partyIdForActor(c.init, frame.actor), body);
-    }
-  };
 
   let destroyChain: (
     sid: string,
@@ -456,24 +457,26 @@ export async function runFrameMultiplexSession(
       },
       async terminate(reason: string, code?: string) {
         const sid = c.init.session_id;
-        await enqueueChainOutbound(sid, async () => {
+        await enqueueMux(async () => {
           const chain = chains.get(sid);
           if (chain === undefined || !chain.active) {
             throw new ObpError("VALIDATION", "terminate: unknown or inactive chain");
           }
           const body: Record<string, unknown> = { reason, ...(code !== undefined ? { code } : {}) };
-          const oldP = chain.dag.tipHash;
-          const frame = await chain.dag.mintOutbound(signer, "TERMINATE", body);
+          const parentTip = chain.dag.tipHash;
+          const { frame, nextTip } = await chain.dag.signOutboundAtTip(signer, "TERMINATE", body);
           const key = await frameDedupeKey(frame);
-          if (!globalDedupe.has(key)) {
-            globalDedupe.add(key);
-            accumulateTaggedSessionOps(chain.sessionOps, frame, sid);
-            accumulateTaggedSessionOps(globalOps, frame, sid);
-            tipToSession.delete(oldP);
-            tipToSession.set(chain.dag.tipHash, sid);
-          }
+          if (globalDedupe.has(key)) return;
+
           await sendWire(frame);
           await requestEnvelopeFlush(sid);
+
+          globalDedupe.add(key);
+          accumulateTaggedSessionOps(chain.sessionOps, frame, sid);
+          accumulateTaggedSessionOps(globalOps, frame, sid);
+          tipToSession.delete(parentTip);
+          tipToSession.set(nextTip, sid);
+          chain.dag.commitTip(nextTip);
         });
         await destroyChain(sid, reason, code, false);
         if (closeChannelOnTerminate) {
@@ -520,7 +523,6 @@ export async function runFrameMultiplexSession(
     removeTipsForSession(sid);
     endedSessionIds.add(sid);
     chains.delete(sid);
-    outboundTailBySession.delete(sid);
     if (notifyTerminate) {
       if (c.hooks?.onTerminate) {
         await c.hooks.onTerminate(reason, code, sess);
@@ -532,44 +534,65 @@ export async function runFrameMultiplexSession(
     await maybeCloseIdle();
   };
 
-  const handleInboundFrame = async (frame: Frame): Promise<void> => {
-    const c = resolveChain(frame.p_hash);
-    const key = await frameDedupeKey(frame);
-    if (globalDedupe.has(key)) {
-      return;
-    }
-    const oldP = frame.p_hash;
-    await c.dag.appendInbound(frame, verifier);
-    await applyInboundGraph(c, frame);
-    advanceTip(c, oldP);
+  const handleInboundFrame = async (frame: Frame, wireUtf8: string): Promise<void> => {
+    await enqueueMux(async () => {
+      const key = await frameDedupeKey(frame);
+      if (globalDedupe.has(key)) {
+        return;
+      }
+      const c = resolveChain(frame.p_hash);
+      const oldP = frame.p_hash;
 
-    if (frame.type === "TURN") {
-      const body = parseTurnBody(frame.body);
-      let replied = false;
-      const offerFn = c.hooks?.onIncomingOffer ?? handlers.onIncomingOffer;
-      if (offerFn !== undefined) {
-        const reply = await offerFn(body, makeHandle(c));
-        if (reply !== null) {
-          await emitOutboundTurn(c.init.session_id, reply);
-          replied = true;
+      if (frame.type === "TERMINATE") {
+        // Peer may send TERMINATE with a stale p_hash when it sends TURN+TERMINATE in the same
+        // round and we already advanced past that tip from inside onIncomingOffer. Verify the
+        // signature only — causal tip ordering is not required for session teardown.
+        const ok = await verifier.verify(frame.actor, signingPayloadBytes(frame), frame.sig);
+        if (!ok) throw new ObpError("BAD_SIG", "invalid frame signature");
+      } else {
+        await c.dag.verifyInboundChild(frame, verifier);
+      }
+
+      if (frame.type === "TURN") {
+        void applyTurn(obp, partyIdForActor(c.init, frame.actor), parseTurnBody(frame.body));
+      } else if (frame.type !== "TERMINATE") {
+        throw new ObpError("VALIDATION", `unknown frame type: ${(frame as Frame).type}`);
+      }
+
+      globalDedupe.add(key);
+      accumulateTaggedSessionOps(c.sessionOps, frame, c.init.session_id);
+      accumulateTaggedSessionOps(globalOps, frame, c.init.session_id);
+
+      if (frame.type === "TURN") {
+        const nextTip = await sha256HexUtf8(wireUtf8);
+        c.dag.commitTip(nextTip);
+        advanceTip(c, oldP);
+
+        const body = parseTurnBody(frame.body);
+        let replied = false;
+        const offerFn = c.hooks?.onIncomingOffer ?? handlers.onIncomingOffer;
+        if (offerFn !== undefined) {
+          const reply = await offerFn(body, makeHandle(c));
+          if (reply !== null) {
+            await emitOutboundTurn(c.init.session_id, reply);
+            replied = true;
+          }
         }
+        if (!replied) await requestEnvelopeFlush(c.init.session_id);
+        return;
       }
-      if (!replied) await requestEnvelopeFlush(c.init.session_id);
-      return;
-    }
 
-    if (frame.type === "TERMINATE") {
-      const reason = String(frame.body.reason ?? "");
-      const termCode = frame.body.code !== undefined ? String(frame.body.code) : undefined;
-      await destroyChain(c.init.session_id, reason, termCode, true);
-      if (closeChannelOnTerminate) {
-        channelDead = true;
-        await channel.close();
+      if (frame.type === "TERMINATE") {
+        const reason = String(frame.body.reason ?? "");
+        const termCode = frame.body.code !== undefined ? String(frame.body.code) : undefined;
+        await destroyChain(c.init.session_id, reason, termCode, true);
+        if (closeChannelOnTerminate) {
+          channelDead = true;
+          await channel.close();
+        }
+        return;
       }
-      return;
-    }
-
-    throw new ObpError("VALIDATION", `unknown frame type: ${(frame as Frame).type}`);
+    });
   };
 
   const decoder = createFrameDecoder();
@@ -597,7 +620,7 @@ export async function runFrameMultiplexSession(
     if (chains.size === 0) {
       throw new ObpError("VALIDATION", "expected init before frames");
     }
-    await handleInboundFrame(part.value);
+    await handleInboundFrame(part.value, part.wireUtf8);
   };
 
   const runReadLoop = async (): Promise<void> => {

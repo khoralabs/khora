@@ -11,6 +11,7 @@ import {
   type NegotiationTurnAudit,
   type ObpLedger,
   type TurnContract,
+  wireStructuredTurnSummary,
 } from "@cfd/obp-agent-runtime";
 import { verifyInvite } from "@cfd/obp-auth";
 import type { FrameSessionHandle, Party, TurnBody } from "@cfd/obp-core";
@@ -46,6 +47,7 @@ type ChainState = {
   ledger: ObpLedger<NegotiationTurnAudit>;
   contract: TurnContract<NegotiationTurnAudit>;
   serverPartyId: string;
+  wireSend: { current: null | ((body: TurnBody) => Promise<void>) };
 };
 
 const chainsBySessionId = new Map<string, ChainState>();
@@ -56,6 +58,8 @@ function ensureChain(session: FrameSessionHandle): ChainState {
   if (existing !== undefined) return existing;
 
   const serverPartyId = partyIdForSigner(session.init, signer.actor);
+
+  const wireSend = { current: null as null | ((body: TurnBody) => Promise<void>) };
 
   const { ledger, contract } = createNegotiationLedgerAndStructuredContract(
     {
@@ -73,10 +77,18 @@ function ensureChain(session: FrameSessionHandle): ChainState {
       requireWalkAway: true,
       allowAgentPortTtl: false,
       defaultPortTtl: { basis: "turns", measure: 12 },
+      commitStructuredTurn: async (_, body) => {
+        const send = wireSend.current;
+        if (send === null) {
+          throw new Error("[agent-server] wire send not wired before structured commit");
+        }
+        await send(body);
+        return wireStructuredTurnSummary(body);
+      },
     }),
   );
 
-  const state: ChainState = { ledger, contract, serverPartyId };
+  const state: ChainState = { ledger, contract, serverPartyId, wireSend };
   chainsBySessionId.set(sid, state);
   return state;
 }
@@ -112,6 +124,7 @@ const handle = await serveObp({
   },
   async onIncomingOffer(_body: TurnBody, session) {
     const state = ensureChain(session);
+    state.wireSend.current = session.sendTurn.bind(session);
     await dispatchNegotiatorIncomingOffer({
       ledger: state.ledger,
       contract: state.contract,

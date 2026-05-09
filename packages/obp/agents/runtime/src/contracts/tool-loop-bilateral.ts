@@ -1,3 +1,4 @@
+import type { TurnBody } from "@cfd/obp-core";
 import type { ObpToolkitEnv } from "@cfd/obp-tools";
 import { noopPortIdForHeadOffer } from "../constants.ts";
 import type { ObpLedger } from "../ledger.ts";
@@ -77,6 +78,7 @@ export function createNegotiationToolLoopBilateralContract(
     persistence: opts.ledger.persistence,
     ledgerSeq: opts.ledger.ledgerSeq,
     maxTurns: opts.ledger.maxTurns,
+    getCompletedTurns: () => opts.ledger.completedTurns,
     ...(opts.requireNoop !== undefined ? { requireNoop: opts.requireNoop } : {}),
     ...(opts.requireWalkAway !== undefined ? { requireWalkAway: opts.requireWalkAway } : {}),
     ...(opts.allowAgentPortTtl !== undefined ? { allowAgentPortTtl: opts.allowAgentPortTtl } : {}),
@@ -159,6 +161,12 @@ export function createNegotiationToolLoopBilateralContract(
       // TODO(plan): derive a richer audit by diffing graph deltas (extend/expose/bind
       // edges added since `auditCountAtPrepare`) instead of always emitting a noop.
       const headOfferId = p?.headOfferId ?? "";
+      const noopBody: TurnBody = {
+        offerId: "",
+        offerType: "",
+        bindPortId: noopPortIdForHeadOffer(headOfferId),
+        counterparty_bind: {},
+      };
       const noop: NegotiationBindTurnAudit = {
         kind: "bind",
         turnIndex: opts.ledger.completedTurns,
@@ -173,6 +181,7 @@ export function createNegotiationToolLoopBilateralContract(
         newOfferType: "",
         exposedPortIds: [],
         exposedPorts: [],
+        committedTurnBody: noopBody,
       };
       opts.ledger.recordAudit(noop);
       return noop;

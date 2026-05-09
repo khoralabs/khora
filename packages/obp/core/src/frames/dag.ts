@@ -29,7 +29,11 @@ export class FrameDag {
     return this.tip;
   }
 
-  async appendInbound(frame: Frame, verifier: FrameVerifier): Promise<void> {
+  /**
+   * Verify inbound causal chain + signature **without** advancing {@link tipHash}.
+   * Caller must {@link commitTip} only after persistence effects succeed (for `TURN`).
+   */
+  async verifyInboundChild(frame: Frame, verifier: FrameVerifier): Promise<void> {
     if (frame.p_hash !== this.tip) {
       throw new ObpError("CAUSAL_MISMATCH", `expected p_hash ${this.tip}, got ${frame.p_hash}`);
     }
@@ -37,15 +41,19 @@ export class FrameDag {
     if (!ok) {
       throw new ObpError("BAD_SIG", "invalid frame signature");
     }
-    this.tip = await sha256HexUtf8(canonicalJsonString(frame));
   }
 
-  /** Create a signed outbound frame advancing the tip. */
-  async mintOutbound(
+  /** Advance tip to `nextTip` (typically `sha256(canonical frame)` after verify + graph commit). */
+  commitTip(nextTip: string): void {
+    this.tip = nextTip;
+  }
+
+  /** Signed outbound frame at current tip; does **not** mutate {@link tipHash}. */
+  async signOutboundAtTip(
     signer: FrameSigner,
     type: FrameType,
     body: Record<string, unknown>,
-  ): Promise<Frame> {
+  ): Promise<{ frame: Frame; nextTip: string }> {
     const unsigned: Frame = {
       p_hash: this.tip,
       actor: signer.actor,
@@ -55,7 +63,23 @@ export class FrameDag {
     };
     const sig = await signer.sign(signingPayloadBytes(unsigned));
     const complete: Frame = { ...unsigned, sig };
-    this.tip = await sha256HexUtf8(canonicalJsonString(complete));
-    return complete;
+    const nextTip = await sha256HexUtf8(canonicalJsonString(complete));
+    return { frame: complete, nextTip };
+  }
+
+  async appendInbound(frame: Frame, verifier: FrameVerifier): Promise<void> {
+    await this.verifyInboundChild(frame, verifier);
+    this.commitTip(await sha256HexUtf8(canonicalJsonString(frame)));
+  }
+
+  /** Create a signed outbound frame advancing the tip (verify-then-commit callers should prefer {@link signOutboundAtTip} + {@link commitTip}). */
+  async mintOutbound(
+    signer: FrameSigner,
+    type: FrameType,
+    body: Record<string, unknown>,
+  ): Promise<Frame> {
+    const { frame, nextTip } = await this.signOutboundAtTip(signer, type, body);
+    this.commitTip(nextTip);
+    return frame;
   }
 }

@@ -1,3 +1,5 @@
+import type { ApplyTurnResult, TurnBody } from "@cfd/obp-core";
+import { applyTurn as graphApplyTurn } from "@cfd/obp-core";
 import type { ObpToolkitEnv } from "@cfd/obp-tools";
 import { OBP_NEGOTIATION_BIND_NO_POLICY } from "../constants.ts";
 import type { ObpLedger } from "../ledger.ts";
@@ -30,6 +32,12 @@ export type StructuredBilateralContractOptions = {
   defaultPortTtl: TtlSpec;
   validateBind?: ObpToolkitEnv["validateBind"];
   requestNegotiationEnd?: ObpToolkitEnv["requestNegotiationEnd"];
+  /**
+   * Persists one structured turn from {@link TurnBody} (single interpreter). Defaults to in-process
+   * {@link graphApplyTurn} on the ledger client. Wire adapters should forward to
+   * `FrameSessionHandle.sendTurn`, then return {@link wireStructuredTurnSummary}(body).
+   */
+  commitStructuredTurn?: (partyId: string, body: TurnBody) => Promise<ApplyTurnResult>;
 };
 
 const GENESIS_BODY_LINES = [
@@ -50,6 +58,14 @@ function bindOutputDescription(): string {
   return `Structured negotiation: set **exactly one** JSON property whose key is a **port id** from the bind menu (see user message). Use value **"${OBP_NEGOTIATION_BIND_NO_POLICY}"** for ports without bind policy, or the **policy-shaped object** when that port has \`bind_policy\`. Set \`offerType\` to your new public state after that bind. If the chosen port is **terminal**, omit \`ports\` entirely. Otherwise you may optionally list new \`ports\`: use \`bind_policy\` on any new port that requires structured peer submissions—avoid mandatory Q&A encoded only in \`promise\`.`;
 }
 
+/** Derive {@link ApplyTurnResult} from a materialized body after wire send (ids pre-assigned). */
+export function wireStructuredTurnSummary(body: TurnBody): ApplyTurnResult {
+  return {
+    offerId: body.offerId,
+    exposedPortIds: body.ports?.map((p) => p.id) ?? [],
+  };
+}
+
 /**
  * Bilateral structured-output contract: agent emits a single JSON object that
  * either opens negotiation (genesis) or binds exactly one counterparty port.
@@ -57,8 +73,9 @@ function bindOutputDescription(): string {
  * Genesis vs bind is decided from graph state — if {@code partyId} has no bindable
  * counterparty ports, this turn is a genesis. Otherwise it is a bind.
  *
- * Wraps {@link NegotiationRuntime} for graph mutation; {@link ObpLedger} owns the
- * shared turn counter and audit tail.
+ * Wraps {@link NegotiationRuntime} for turn materialization; {@link ObpLedger} owns the
+ * shared turn counter and audit tail. Persistence commits exactly once per {@link apply} via
+ * {@link StructuredBilateralContractOptions.commitStructuredTurn}.
  */
 export function createNegotiationStructuredBilateralContract(
   opts: StructuredBilateralContractOptions,
@@ -68,6 +85,7 @@ export function createNegotiationStructuredBilateralContract(
     persistence: opts.ledger.persistence,
     ledgerSeq: opts.ledger.ledgerSeq,
     maxTurns: opts.ledger.maxTurns,
+    getCompletedTurns: () => opts.ledger.completedTurns,
     ...(opts.requireNoop !== undefined ? { requireNoop: opts.requireNoop } : {}),
     ...(opts.requireWalkAway !== undefined ? { requireWalkAway: opts.requireWalkAway } : {}),
     ...(opts.allowAgentPortTtl !== undefined ? { allowAgentPortTtl: opts.allowAgentPortTtl } : {}),
@@ -77,6 +95,11 @@ export function createNegotiationStructuredBilateralContract(
       ? { requestNegotiationEnd: opts.requestNegotiationEnd }
       : {}),
   });
+
+  const commitStructuredTurn =
+    opts.commitStructuredTurn ??
+    ((partyId: string, body: TurnBody) =>
+      Promise.resolve(graphApplyTurn(opts.ledger.client, partyId, body)));
 
   let pendingKind: "genesis" | "bind" | null = null;
 
@@ -156,8 +179,18 @@ export function createNegotiationStructuredBilateralContract(
         );
       }
       pendingKind = null;
-      const audit =
-        k === "genesis" ? runtime.applyGenesisTurn(partyId, raw) : runtime.applyTurn(partyId, raw);
+
+      if (k === "genesis") {
+        const { body, staging } = runtime.materializeGenesisTurn(partyId, raw);
+        const summary = await commitStructuredTurn(partyId, body);
+        const audit = runtime.finalizeGenesisTurn(staging, summary, body);
+        opts.ledger.recordAudit(audit);
+        return audit;
+      }
+
+      const { body, staging } = runtime.materializeBindTurn(partyId, raw);
+      const summary = await commitStructuredTurn(partyId, body);
+      const audit = runtime.finalizeBindTurn(staging, summary, body);
       opts.ledger.recordAudit(audit);
       return audit;
     },

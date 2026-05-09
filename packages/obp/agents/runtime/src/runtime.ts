@@ -1,10 +1,14 @@
 import {
+  applyTurn as graphApplyTurn,
+  type ApplyTurnResult,
   type BindPolicyField,
   type OBPPersistenceClient,
   type ObpPersistence,
   type Port,
   type PortBindPolicy,
+  type PortSpec,
   type SourceMapRef,
+  type TurnBody,
   validateCounterpartyBindForPort,
 } from "@cfd/obp-core";
 import { listBindableCounterpartyPorts, type ObpToolkitEnv } from "@cfd/obp-tools";
@@ -27,7 +31,6 @@ import {
   buildGenesisNegotiationTurnOutput,
   buildNegotiationTurnOutput,
   type NegotiationGenesisTurnOutput,
-  type NegotiationTurnExposePort,
   type NegotiationTurnOutput,
   type NegotiationTurnSchemaOptions,
 } from "./turn-output-schema.ts";
@@ -89,6 +92,8 @@ export type NegotiationGenesisTurnAudit = {
   newOfferType: string;
   exposedPortIds: string[];
   exposedPorts: NegotiationExposedPortSummary[];
+  /** Canonical {@link TurnBody} committed for this turn (wire + persistence interpreter). */
+  committedTurnBody: TurnBody;
 };
 
 export type NegotiationBindTurnAudit = {
@@ -106,6 +111,7 @@ export type NegotiationBindTurnAudit = {
   exposedPortIds: string[];
   exposedPorts: NegotiationExposedPortSummary[];
   counterpartyBind?: Record<string, unknown>;
+  committedTurnBody: TurnBody;
 };
 
 export type NegotiationTurnAudit = NegotiationGenesisTurnAudit | NegotiationBindTurnAudit;
@@ -132,6 +138,33 @@ export type NegotiationRuntimeOptions = {
   allowAgentPortTtl?: boolean;
   /** TTL applied when the agent omits `ttl` or when {@link allowAgentPortTtl} is false. */
   defaultPortTtl: TtlSpec;
+  /**
+   * Completed structured turns (for expose index / TTL / max-turn guards). When wired through
+   * {@link ObpLedger}, pass `() => ledger.completedTurns`. Omit for standalone tests — runtime uses an internal counter bumped only by legacy {@link applyGenesisTurn} / {@link applyTurn}.
+   */
+  getCompletedTurns?: () => number;
+};
+
+/** Staging between {@link NegotiationRuntime.materializeGenesisTurn} and {@link NegotiationRuntime.finalizeGenesisTurn}. */
+export type NegotiationGenesisStaging = {
+  kind: "genesis";
+  actingPartyId: string;
+  turnIndex: number;
+  parsed: NegotiationGenesisTurnOutput;
+};
+
+/** Staging between {@link NegotiationRuntime.materializeBindTurn} and {@link NegotiationRuntime.finalizeBindTurn}. */
+export type NegotiationBindStaging = {
+  kind: "bind";
+  actingPartyId: string;
+  turnIndex: number;
+  headOfferId: string;
+  counterpartyHeadOfferType: string | null;
+  bindMenu: NegotiationBindMenuEntry[];
+  bindPortId: string;
+  bindKind: NegotiationBindTurnAudit["bindKind"];
+  parsed: NegotiationTurnOutput;
+  skipNewPortExposes: boolean;
 };
 
 function filterBindablePortIdsForPolicy(
@@ -196,14 +229,25 @@ function summarizeExposedPorts(
  * `applyTurn` escape hatches.
  */
 export class NegotiationRuntime {
-  private turnsCompleted = 0;
+  /** Internal counter when {@link NegotiationRuntimeOptions.getCompletedTurns} is omitted (legacy tests). */
+  private localCompletedTurns = 0;
   private lastPrepared: LastPrepared = null;
 
   constructor(private readonly opts: NegotiationRuntimeOptions) {}
 
-  /** Completed successful {@link applyTurn} / {@link applyGenesisTurn} calls. */
+  private completedTurnsForPrepare(): number {
+    return this.opts.getCompletedTurns?.() ?? this.localCompletedTurns;
+  }
+
+  private bumpLocalCompletedIfStandalone(): void {
+    if (this.opts.getCompletedTurns === undefined) {
+      this.localCompletedTurns += 1;
+    }
+  }
+
+  /** Completed turns for prompts / TTL (ledger-backed or internal when standalone). */
   get turns(): number {
-    return this.turnsCompleted;
+    return this.completedTurnsForPrepare();
   }
 
   private schemaOpts(): NegotiationTurnSchemaOptions {
@@ -226,30 +270,6 @@ export class NegotiationRuntime {
       return p.ttl;
     }
     return this.opts.defaultPortTtl;
-  }
-
-  /**
-   * Attaches noop/walk synthetic ports to a new head offer after genesis or a non-terminal bind.
-   * Skipped when the acting party just bound a **terminal** counterparty port: that offer must not
-   * expose anything (including synthetics).
-   */
-  private reconcileSyntheticPortsOnNewHeadOffer(
-    offerId: string,
-    exposeTurnIndex: number,
-    opts?: { skipSyntheticPorts?: boolean },
-  ): void {
-    if (opts?.skipSyntheticPorts === true) {
-      return;
-    }
-    ensureRuntimeSyntheticPorts({
-      client: this.opts.client,
-      ledgerSeq: this.opts.ledgerSeq(),
-      headOfferId: offerId,
-      requireNoop: this.opts.requireNoop ?? true,
-      requireWalkAway: this.opts.requireWalkAway ?? true,
-      exposeSeq: exposeTurnIndex,
-      portTtl: this.opts.defaultPortTtl,
-    });
   }
 
   /**
@@ -281,7 +301,7 @@ export class NegotiationRuntime {
       return null;
     }
 
-    const synExpose = minExposeSeqOnOffer(client, head) ?? this.turnsCompleted;
+    const synExpose = minExposeSeqOnOffer(client, head) ?? this.completedTurnsForPrepare();
     ensureRuntimeSyntheticPorts({
       client,
       ledgerSeq,
@@ -306,7 +326,7 @@ export class NegotiationRuntime {
       requireNoop,
       requireWalkAway,
     );
-    portIds = filterPortIdsByNegotiationTurnTtl(client, portIds, this.turnsCompleted);
+    portIds = filterPortIdsByNegotiationTurnTtl(client, portIds, this.completedTurnsForPrepare());
     if (portIds.length === 0) {
       return null;
     }
@@ -367,7 +387,7 @@ export class NegotiationRuntime {
   async prepareGenesisTurn(actingPartyId: string): Promise<{
     schema: z.ZodType<NegotiationGenesisTurnOutput>;
   }> {
-    if (this.turnsCompleted >= this.opts.maxTurns) {
+    if (this.completedTurnsForPrepare() >= this.opts.maxTurns) {
       throw new RangeError("NegotiationRuntime.prepareGenesisTurn: maxTurns already reached");
     }
     const empty = await this.hasNoBindableCounterpartyPorts(actingPartyId);
@@ -381,84 +401,300 @@ export class NegotiationRuntime {
     return { schema };
   }
 
-  applyGenesisTurn(actingPartyId: string, rawOutput: unknown): NegotiationGenesisTurnAudit {
-    if (this.turnsCompleted >= this.opts.maxTurns) {
-      throw new RangeError("NegotiationRuntime.applyGenesisTurn: maxTurns exceeded");
+  /**
+   * Build {@link TurnBody} + staging after structured genesis output validation (no persistence).
+   */
+  materializeGenesisTurn(
+    actingPartyId: string,
+    rawOutput: unknown,
+  ): { body: TurnBody; staging: NegotiationGenesisStaging } {
+    if (this.completedTurnsForPrepare() >= this.opts.maxTurns) {
+      throw new RangeError("NegotiationRuntime.materializeGenesisTurn: maxTurns exceeded");
     }
     const prep = this.lastPrepared;
     if (prep === null || prep.kind !== "genesis") {
       throw new RangeError(
-        "NegotiationRuntime.applyGenesisTurn: call prepareGenesisTurn before applyGenesisTurn",
+        "NegotiationRuntime.materializeGenesisTurn: call prepareGenesisTurn before materializeGenesisTurn",
       );
     }
 
     const output = prep.schema.parse(rawOutput) as NegotiationGenesisTurnOutput;
-    const client = this.opts.client;
     const ledgerSeq = this.opts.ledgerSeq();
-    const exposeTurnIndex = this.turnsCompleted;
-    const sourcemaps: SourceMapRef[] = output.sourcemaps ?? [];
+    const turnIndex = this.completedTurnsForPrepare();
     const offerTtl = this.pickOfferTtl(output);
+    const offerExpiresSeq = expiresSeqForOfferTtl(ledgerSeq, offerTtl);
 
-    const { offer } = client.extendOffer({
-      partyId: actingPartyId,
-      bindPortId: "",
-      offer: {
-        id: "",
-        created_seq: ledgerSeq,
-        expires_seq: expiresSeqForOfferTtl(ledgerSeq, offerTtl),
-        type: output.offerType,
-        sourcemaps,
-      },
-    });
-
-    const exposedPortIds: string[] = [];
+    const offerId = crypto.randomUUID();
+    const ports: PortSpec[] = [];
     for (const p of output.ports ?? []) {
       const portTtl = this.pickPortTtl(p);
-      const { port } = client.exposePort({
-        offerId: offer.id,
-        port: this.buildExposePortPayload(p, ledgerSeq, exposeTurnIndex, portTtl),
+      ports.push({
+        id: crypto.randomUUID(),
+        isTerminal: p.terminal,
+        portType: p.portType,
+        promise: p.promise,
+        max_bindings: p.max_bindings ?? 1,
+        ...(p.bind_policy !== undefined ? { bind_policy: p.bind_policy } : {}),
+        ref: p.ref?.trim() ?? "",
+        expose_seq: turnIndex,
+        ttl_basis: portTtl.basis,
+        ttl_measure: portTtl.measure,
+        expires_seq: expiresSeqForPortTtl(ledgerSeq, portTtl),
+        sourcemaps: p.sourcemaps ?? [],
       });
-      exposedPortIds.push(port.id);
     }
 
-    this.reconcileSyntheticPortsOnNewHeadOffer(offer.id, exposeTurnIndex);
+    const body: TurnBody = {
+      offerId,
+      offerType: output.offerType,
+      expires_seq: offerExpiresSeq,
+      ...(output.sourcemaps !== undefined && output.sourcemaps.length > 0
+        ? { sourcemaps: output.sourcemaps }
+        : {}),
+      ...(ports.length > 0 ? { ports } : {}),
+    };
+
+    const staging: NegotiationGenesisStaging = {
+      kind: "genesis",
+      actingPartyId,
+      turnIndex,
+      parsed: output,
+    };
+
+    return { body, staging };
+  }
+
+  finalizeGenesisTurn(
+    staging: NegotiationGenesisStaging,
+    summary: ApplyTurnResult,
+    committedTurnBody: TurnBody,
+  ): NegotiationGenesisTurnAudit {
+    if (
+      summary.offerId !== committedTurnBody.offerId ||
+      summary.exposedPortIds.length !== (committedTurnBody.ports ?? []).length
+    ) {
+      throw new RangeError(
+        "NegotiationRuntime.finalizeGenesisTurn: commit summary does not match materialized turn body",
+      );
+    }
+
+    ensureRuntimeSyntheticPorts({
+      client: this.opts.client,
+      ledgerSeq: this.opts.ledgerSeq(),
+      headOfferId: summary.offerId,
+      requireNoop: this.opts.requireNoop ?? true,
+      requireWalkAway: this.opts.requireWalkAway ?? true,
+      exposeSeq: staging.turnIndex,
+      portTtl: this.opts.defaultPortTtl,
+    });
 
     const audit: NegotiationGenesisTurnAudit = {
       kind: "genesis",
-      turnIndex: this.turnsCompleted,
-      actingPartyId,
-      newOfferId: offer.id,
-      newOfferType: output.offerType,
-      exposedPortIds,
-      exposedPorts: summarizeExposedPorts(output.ports),
+      turnIndex: staging.turnIndex,
+      actingPartyId: staging.actingPartyId,
+      newOfferId: summary.offerId,
+      newOfferType: staging.parsed.offerType,
+      exposedPortIds: summary.exposedPortIds,
+      exposedPorts: summarizeExposedPorts(staging.parsed.ports),
+      committedTurnBody,
     };
 
     this.lastPrepared = null;
-    this.turnsCompleted += 1;
     return audit;
   }
 
-  private buildExposePortPayload(
-    p: NegotiationTurnExposePort,
-    ledgerSeq: number,
-    exposeSeq: number,
-    portTtl: TtlSpec,
-  ) {
-    return {
-      id: "",
-      created_seq: ledgerSeq,
-      expires_seq: expiresSeqForPortTtl(ledgerSeq, portTtl),
-      type: p.portType,
-      promise: p.promise,
-      max_bindings: p.max_bindings ?? 1,
-      terminal: p.terminal,
-      ref: p.ref?.trim() ?? "",
-      sourcemaps: p.sourcemaps ?? [],
-      ttl_basis: portTtl.basis,
-      ttl_measure: portTtl.measure,
-      expose_seq: exposeSeq,
-      ...(p.bind_policy !== undefined ? { bind_policy: p.bind_policy } : {}),
+  applyGenesisTurn(actingPartyId: string, rawOutput: unknown): NegotiationGenesisTurnAudit {
+    const { body, staging } = this.materializeGenesisTurn(actingPartyId, rawOutput);
+    const summary = graphApplyTurn(this.opts.client, actingPartyId, body);
+    const audit = this.finalizeGenesisTurn(staging, summary, body);
+    this.bumpLocalCompletedIfStandalone();
+    return audit;
+  }
+
+  /** Validates structured bind-turn output and returns wire/commit payload without persistence. */
+  materializeBindTurn(
+    actingPartyId: string,
+    rawOutput: unknown,
+  ): { body: TurnBody; staging: NegotiationBindStaging } {
+    if (this.completedTurnsForPrepare() >= this.opts.maxTurns) {
+      throw new RangeError("NegotiationRuntime.materializeBindTurn: maxTurns exceeded");
+    }
+    const prep = this.lastPrepared;
+    if (prep === null || prep.kind !== "bind") {
+      throw new RangeError(
+        "NegotiationRuntime.materializeBindTurn: call prepareActingTurn before materializeBindTurn",
+      );
+    }
+
+    const output = prep.schema.parse(rawOutput) as NegotiationTurnOutput;
+    const head = prep.headOfferId;
+    const bindMenu = prep.bindMenu;
+    const counterpartyHeadOfferType = prep.counterpartyHeadOfferType;
+
+    const outRec = output as Record<string, unknown>;
+    let portId: string | null = null;
+    let counterpartyBindRaw: unknown;
+    for (const m of bindMenu) {
+      const v = outRec[m.portId];
+      if (v === undefined) {
+        continue;
+      }
+      const hasPol = m.bind_policy !== undefined && m.bind_policy.properties.length > 0;
+      if (hasPol) {
+        if (v !== null && typeof v === "object" && !Array.isArray(v)) {
+          portId = m.portId;
+          counterpartyBindRaw = v;
+          break;
+        }
+      } else if (v === OBP_NEGOTIATION_BIND_NO_POLICY) {
+        portId = m.portId;
+        counterpartyBindRaw = undefined;
+        break;
+      }
+    }
+    if (portId === null) {
+      throw new RangeError(
+        "NegotiationRuntime.materializeBindTurn: structured output must bind exactly one counterparty port (see schema)",
+      );
+    }
+
+    const client = this.opts.client;
+    const ledgerSeq = this.opts.ledgerSeq();
+    const turnIndex = this.completedTurnsForPrepare();
+
+    const chosenPortRes = client.getPort(portId);
+    if (chosenPortRes.kind === "notFound") {
+      throw new RangeError(`NegotiationRuntime.materializeBindTurn: bind port not found: ${portId}`);
+    }
+    const counterparty_bind = validateCounterpartyBindForPort(
+      chosenPortRes.port,
+      counterpartyBindRaw,
+    );
+
+    const menuHit = bindMenu.find((b) => b.portId === portId);
+    const skipNewPortExposes = menuHit?.terminal === true;
+
+    let bindKind: NegotiationBindTurnAudit["bindKind"] = "real";
+    if (isRuntimeNoopPortId(portId, head)) {
+      bindKind = "noop";
+    } else if (isRuntimeWalkAwayPortId(portId, head)) {
+      bindKind = "walkAway";
+    }
+
+    const sourcemaps: SourceMapRef[] = output.sourcemaps ?? [];
+    const offerTtl = this.pickOfferTtl(output);
+    const offerExpiresSeq = expiresSeqForOfferTtl(ledgerSeq, offerTtl);
+    const offerId = crypto.randomUUID();
+
+    const ports: PortSpec[] = [];
+    if (!skipNewPortExposes) {
+      for (const p of output.ports ?? []) {
+        const portTtl = this.pickPortTtl(p);
+        ports.push({
+          id: crypto.randomUUID(),
+          isTerminal: p.terminal,
+          portType: p.portType,
+          promise: p.promise,
+          max_bindings: p.max_bindings ?? 1,
+          ...(p.bind_policy !== undefined ? { bind_policy: p.bind_policy } : {}),
+          ref: p.ref?.trim() ?? "",
+          expose_seq: turnIndex,
+          ttl_basis: portTtl.basis,
+          ttl_measure: portTtl.measure,
+          expires_seq: expiresSeqForPortTtl(ledgerSeq, portTtl),
+          sourcemaps: p.sourcemaps ?? [],
+        });
+      }
+    }
+
+    const body: TurnBody = {
+      offerId,
+      offerType: output.offerType,
+      expires_seq: offerExpiresSeq,
+      ...(sourcemaps.length > 0 ? { sourcemaps } : {}),
+      bindPortId: portId,
+      counterparty_bind,
+      ...(ports.length > 0 ? { ports } : {}),
     };
+
+    const staging: NegotiationBindStaging = {
+      kind: "bind",
+      actingPartyId,
+      turnIndex,
+      headOfferId: head,
+      counterpartyHeadOfferType,
+      bindMenu,
+      bindPortId: portId,
+      bindKind,
+      parsed: output,
+      skipNewPortExposes,
+    };
+
+    return { body, staging };
+  }
+
+  finalizeBindTurn(
+    staging: NegotiationBindStaging,
+    summary: ApplyTurnResult,
+    committedTurnBody: TurnBody,
+  ): NegotiationBindTurnAudit {
+    if (
+      summary.offerId !== committedTurnBody.offerId ||
+      summary.exposedPortIds.length !== (committedTurnBody.ports ?? []).length
+    ) {
+      throw new RangeError(
+        "NegotiationRuntime.finalizeBindTurn: commit summary does not match materialized turn body",
+      );
+    }
+
+    if (!staging.skipNewPortExposes) {
+      ensureRuntimeSyntheticPorts({
+        client: this.opts.client,
+        ledgerSeq: this.opts.ledgerSeq(),
+        headOfferId: summary.offerId,
+        requireNoop: this.opts.requireNoop ?? true,
+        requireWalkAway: this.opts.requireWalkAway ?? true,
+        exposeSeq: staging.turnIndex,
+        portTtl: this.opts.defaultPortTtl,
+      });
+    }
+
+    if (staging.bindKind === "walkAway") {
+      this.opts.requestNegotiationEnd?.({ reason: "walk-away" });
+    }
+
+    const chosenPortType =
+      staging.bindMenu.find((b) => b.portId === staging.bindPortId)?.portType ??
+      (() => {
+        const pr = this.opts.client.getPort(staging.bindPortId);
+        return pr.kind === "found" ? pr.port.type : "";
+      })();
+
+    const counterparty_bind =
+      committedTurnBody.counterparty_bind !== undefined
+        ? committedTurnBody.counterparty_bind
+        : {};
+
+    const audit: NegotiationBindTurnAudit = {
+      kind: "bind",
+      turnIndex: staging.turnIndex,
+      actingPartyId: staging.actingPartyId,
+      chosenPortId: staging.bindPortId,
+      chosenPortType,
+      headOfferId: staging.headOfferId,
+      counterpartyHeadOfferType: staging.counterpartyHeadOfferType,
+      bindKind: staging.bindKind,
+      bindMenu: staging.bindMenu,
+      newOfferId: summary.offerId,
+      newOfferType: staging.parsed.offerType,
+      exposedPortIds: summary.exposedPortIds,
+      exposedPorts: summarizeExposedPorts(staging.parsed.ports),
+      ...(Object.keys(counterparty_bind).length > 0 ? { counterpartyBind: counterparty_bind } : {}),
+      committedTurnBody,
+    };
+
+    this.lastPrepared = null;
+    return audit;
   }
 
   /**
@@ -471,7 +707,7 @@ export class NegotiationRuntime {
     headOfferId: string;
     bindMenu: NegotiationBindMenuEntry[];
   }> {
-    if (this.turnsCompleted >= this.opts.maxTurns) {
+    if (this.completedTurnsForPrepare() >= this.opts.maxTurns) {
       throw new RangeError("NegotiationRuntime.prepareActingTurn: maxTurns already reached");
     }
 
@@ -517,129 +753,14 @@ export class NegotiationRuntime {
   }
 
   /**
-   * Validates structured output, performs extend + bind + expose, increments the turn counter,
-   * and records audit metadata. Call {@link prepareActingTurn} first.
+   * Validates structured output via {@link graphApplyTurn}, then finalizes synthetics + audit.
+   * Call {@link prepareActingTurn} first.
    */
   applyTurn(actingPartyId: string, rawOutput: unknown): NegotiationBindTurnAudit {
-    if (this.turnsCompleted >= this.opts.maxTurns) {
-      throw new RangeError("NegotiationRuntime.applyTurn: maxTurns exceeded");
-    }
-    const prep = this.lastPrepared;
-    if (prep === null || prep.kind !== "bind") {
-      throw new RangeError("NegotiationRuntime.applyTurn: call prepareActingTurn before applyTurn");
-    }
-
-    const output = prep.schema.parse(rawOutput) as NegotiationTurnOutput;
-    const head = prep.headOfferId;
-    const bindMenu = prep.bindMenu;
-    const counterpartyHeadOfferType = prep.counterpartyHeadOfferType;
-
-    const outRec = output as Record<string, unknown>;
-    let portId: string | null = null;
-    let counterpartyBindRaw: unknown;
-    for (const m of bindMenu) {
-      const v = outRec[m.portId];
-      if (v === undefined) {
-        continue;
-      }
-      const hasPol = m.bind_policy !== undefined && m.bind_policy.properties.length > 0;
-      if (hasPol) {
-        if (v !== null && typeof v === "object" && !Array.isArray(v)) {
-          portId = m.portId;
-          counterpartyBindRaw = v;
-          break;
-        }
-      } else if (v === OBP_NEGOTIATION_BIND_NO_POLICY) {
-        portId = m.portId;
-        counterpartyBindRaw = undefined;
-        break;
-      }
-    }
-    if (portId === null) {
-      throw new RangeError(
-        "NegotiationRuntime.applyTurn: structured output must bind exactly one counterparty port (see schema)",
-      );
-    }
-
-    const client = this.opts.client;
-    const ledgerSeq = this.opts.ledgerSeq();
-    const exposeTurnIndex = this.turnsCompleted;
-    const sourcemaps: SourceMapRef[] = output.sourcemaps ?? [];
-    const offerTtl = this.pickOfferTtl(output);
-
-    const chosenPortRes = client.getPort(portId);
-    if (chosenPortRes.kind === "notFound") {
-      throw new RangeError(`NegotiationRuntime.applyTurn: bind port not found: ${portId}`);
-    }
-    const counterparty_bind = validateCounterpartyBindForPort(
-      chosenPortRes.port,
-      counterpartyBindRaw,
-    );
-
-    const { offer } = client.extendOffer({
-      partyId: actingPartyId,
-      bindPortId: portId,
-      counterparty_bind,
-      offer: {
-        id: "",
-        created_seq: ledgerSeq,
-        expires_seq: expiresSeqForOfferTtl(ledgerSeq, offerTtl),
-        type: output.offerType,
-        sourcemaps,
-      },
-    });
-
-    const menuHit = bindMenu.find((b) => b.portId === portId);
-    const skipNewPortExposes = menuHit?.terminal === true;
-
-    const exposedPortIds: string[] = [];
-    for (const p of skipNewPortExposes ? [] : (output.ports ?? [])) {
-      const portTtl = this.pickPortTtl(p);
-      const { port } = client.exposePort({
-        offerId: offer.id,
-        port: this.buildExposePortPayload(p, ledgerSeq, exposeTurnIndex, portTtl),
-      });
-      exposedPortIds.push(port.id);
-    }
-
-    this.reconcileSyntheticPortsOnNewHeadOffer(offer.id, exposeTurnIndex, {
-      skipSyntheticPorts: skipNewPortExposes,
-    });
-
-    let bindKind: NegotiationBindTurnAudit["bindKind"] = "real";
-    if (isRuntimeNoopPortId(portId, head)) {
-      bindKind = "noop";
-    } else if (isRuntimeWalkAwayPortId(portId, head)) {
-      bindKind = "walkAway";
-      this.opts.requestNegotiationEnd?.({ reason: "walk-away" });
-    }
-
-    const chosenPortType =
-      menuHit?.portType ??
-      (() => {
-        const pr = client.getPort(portId);
-        return pr.kind === "found" ? pr.port.type : "";
-      })();
-
-    const audit: NegotiationBindTurnAudit = {
-      kind: "bind",
-      turnIndex: this.turnsCompleted,
-      actingPartyId,
-      chosenPortId: portId,
-      chosenPortType,
-      headOfferId: head,
-      counterpartyHeadOfferType,
-      bindKind,
-      bindMenu,
-      newOfferId: offer.id,
-      newOfferType: output.offerType,
-      exposedPortIds,
-      exposedPorts: summarizeExposedPorts(output.ports),
-      ...(Object.keys(counterparty_bind).length > 0 ? { counterpartyBind: counterparty_bind } : {}),
-    };
-
-    this.lastPrepared = null;
-    this.turnsCompleted += 1;
+    const { body, staging } = this.materializeBindTurn(actingPartyId, rawOutput);
+    const summary = graphApplyTurn(this.opts.client, actingPartyId, body);
+    const audit = this.finalizeBindTurn(staging, summary, body);
+    this.bumpLocalCompletedIfStandalone();
     return audit;
   }
 }

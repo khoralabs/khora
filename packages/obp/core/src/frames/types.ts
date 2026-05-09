@@ -4,7 +4,11 @@
  */
 
 import type { PortBindPolicy } from "../bind-policy/types.ts";
-import type { ContentAddressedSourceRef, SourceMapRef } from "../model/types.ts";
+import type {
+  ContentAddressedSourceRef,
+  NegotiationPortTtlBasis,
+  SourceMapRef,
+} from "../model/types.ts";
 
 export type FrameType = "TURN" | "TERMINATE";
 
@@ -18,12 +22,25 @@ export type PortSpec = {
   /** Parsed when non-null; unconstrained ports omit or use null. */
   bind_policy?: PortBindPolicy | null;
   ttl?: unknown;
+  /** Negotiation / rich exposes: persisted **`Port.type`** (frame demos omit → **`obp.frame.port`**). */
+  portType?: string;
+  /** Negotiation: persisted **`Port.promise`** (frame demos default to **`id`** when omitted). */
+  promise?: string;
+  ref?: string;
+  expose_seq?: number;
+  ttl_basis?: NegotiationPortTtlBasis;
+  ttl_measure?: number;
+  /** Resolved ledger **`expires_seq`** for this port when supplied by the materializer. */
+  expires_seq?: number;
+  sourcemaps?: SourceMapRef[];
 };
 
 /** Symmetric frame body: extend + optional exposes + optional bind (mirrors negotiation runtime turn output). */
 export type TurnBody = {
   offerId: string;
   offerType: string;
+  /** Resolved ledger **`expires_seq`** for the new offer when supplied by the materializer. */
+  expires_seq?: number;
   /** Optional alternation counter; scoped per chain when multiplexing. */
   turn_seq?: number;
   sourcemaps?: SourceMapRef[];

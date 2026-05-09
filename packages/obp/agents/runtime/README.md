@@ -14,15 +14,27 @@ ObpLedger (shared truth: client + persistence + turn counter + audit tail)
 
 - `ObpLedger` owns the negotiation's `OBPPersistenceClient`, `ObpPersistence`, wall clock, `maxTurns`, and audit tail.
 - `TurnContract.prepare(partyId)` returns a `PreparedTurn` (Zod schema **or** allowed-tool whitelist + system fragments + user message + metadata).
-- `TurnContract.apply(partyId, raw)` mutates the graph and records an audit on the ledger.
+- `TurnContract.apply(partyId, raw)` validates output, commits **exactly once** via `TurnBody` → `@cfd/obp-core` `applyTurn` (see `commitStructuredTurn` below), finalizes synthetic noop/walk ports when applicable, and records an audit on the ledger (including `committedTurnBody` for wire parity).
 - `BilateralCoordinator.runNextTurn()` alternates parties, calls a host-supplied `RunAgentTurn` to produce raw output, then hands it to the contract's `apply`.
+
+## Single persistence interpreter (`TurnBody`)
+
+Structured negotiation never calls `extendOffer` / `exposePort` outside the shared graph effect:
+
+1. `NegotiationRuntime.materializeGenesisTurn` / `materializeBindTurn` builds a canonical `TurnBody` with deterministic UUIDs for new offers and exposes (so sender and receiver apply the same ids).
+2. `StructuredBilateralContractOptions.commitStructuredTurn` persists that body once. Default: `applyTurn(ledger.client, partyId, body)`.
+3. Multiplex hosts forward to `chain.sendTurn(body)` and return `wireStructuredTurnSummary(body)` so finalize can build audits without scraping persistence.
+
+Inbound frames and session-op replay keep using the same `applyTurn` path as today.
 
 ## Turn flow (structured-bilateral, recommended)
 
 1. Construct an `ObpLedger<NegotiationTurnAudit>` once per conversation.
 2. Create a contract with `createNegotiationStructuredBilateralContract({ ledger, partyRoleName, getGraphSnapshot, defaultPortTtl, … })`.
 3. Wrap it in a `BilateralCoordinator({ ledger, partyA, partyB, contract, runAgentTurn })`.
-4. The coordinator drives turns: it asks the contract to `prepare(partyId)`, hands the `PreparedTurn` to your `runAgentTurn` (which calls the LLM), and forwards the raw output to `contract.apply(partyId, raw)`. The contract validates, mutates the graph, and writes an audit on the ledger.
+4. The coordinator drives turns: it asks the contract to `prepare(partyId)`, hands the `PreparedTurn` to your `runAgentTurn` (which calls the LLM), and forwards the raw output to `contract.apply(partyId, raw)`. The contract materializes a `TurnBody`, commits via `commitStructuredTurn`, finalizes, and writes an audit on the ledger.
+
+Wire agents (`runStructuredNegotiatorTurn`, `dispatchNegotiatorIncomingOffer`) rely on the contract's built-in commit — **do not** call `sendTurn` again after `apply`.
 
 ## Tool-loop bilateral (experimental)
 
@@ -30,7 +42,7 @@ ObpLedger (shared truth: client + persistence + turn counter + audit tail)
 
 ## Low-level escape hatch (deprecated)
 
-`NegotiationRuntime` / `NegotiationRuntimeOptions` are still exported for callers that need the raw `prepareActingTurn` / `applyTurn` (`prepareGenesisTurn` / `applyGenesisTurn`) interface. They bypass `ObpLedger` and will be hidden in a follow-up release. New code should use the contract + coordinator path above.
+`NegotiationRuntime` / `NegotiationRuntimeOptions` are still exported for callers that need `prepareActingTurn` / `materializeBindTurn` / `finalizeBindTurn` (`prepareGenesisTurn` / `materializeGenesisTurn` / `finalizeGenesisTurn`) or the convenience `applyTurn` / `applyGenesisTurn` wrappers (each wraps `graphApplyTurn` once). Prefer wiring `getCompletedTurns` from `ObpLedger` when sharing a ledger. New integrations should use the structured contract path above.
 
 ## Options (shared by both contracts and the legacy runtime)
 
@@ -55,7 +67,7 @@ Types: `obp.agent-runtime/noop` and `obp.agent-runtime/walk-away`. Binding walk-
 
 - Each turn adds an **EXTENDS** edge from the acting party to a **new** offer, optionally a **BINDS** edge from that offer to the chosen counterparty port, and **EXPOSES** edges for each declared port on the new offer.
 - Successive turns alternate parties; the chain stays connected because each bind targets a port that was **exposed** on a counterparty offer, and new exposes attach only to the acting party's new offer.
-- Audits from `apply` record `chosenPortId`, `newOfferId`, and `exposedPortIds` for host-side visualization or replay checks.
+- Audits from `apply` record `chosenPortId`, `newOfferId`, `exposedPortIds`, and **`committedTurnBody`** (the exact `TurnBody` interpreted by `applyTurn`) for visualization or replay checks.
 
 ## Graph seeding
 

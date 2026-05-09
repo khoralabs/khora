@@ -61,6 +61,7 @@ export { createFrameDecoder, encodeFramedJson, encodeLengthPrefixed, encodeSessi
 export {
   applyTurn,
   parseTurnBody,
+  type ApplyTurnResult,
 } from "./frames/graph-effect.ts";
 export {
   createNegotiationCoordinator,

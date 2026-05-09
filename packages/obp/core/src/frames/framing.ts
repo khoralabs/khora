@@ -15,7 +15,8 @@ export function encodeFramedJson(value: unknown): Uint8Array {
 
 export type FrameDecoderYield =
   | { kind: "init"; value: unknown }
-  | { kind: "frame"; value: Frame }
+  /** {@link wireUtf8} is the exact UTF-8 JSON payload; tip hashes must use it so they match the sender’s SHA-256 over the wire bytes. */
+  | { kind: "frame"; value: Frame; wireUtf8: string }
   | { kind: "session_envelope"; value: SessionEnvelopeWire }
   | { kind: "raw"; value: unknown };
 
@@ -54,7 +55,7 @@ export function createFrameDecoder(): {
       return { kind: "init", value };
     }
     if (isFrameLike(value)) {
-      return { kind: "frame", value: value as Frame };
+      return { kind: "frame", value: value as Frame, wireUtf8: text };
     }
     if (isSessionEnvelopeMessage(value)) {
       return { kind: "session_envelope", value: value.session_envelope };

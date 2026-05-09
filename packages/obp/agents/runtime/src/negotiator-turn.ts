@@ -10,7 +10,6 @@ import type { LanguageModel } from "ai";
 import type { ObpLedger } from "./ledger.ts";
 import type { NegotiationTurnAudit } from "./runtime.ts";
 import type { PreparedTurn, TurnContract } from "./turn-contract.ts";
-import { auditToTurnBody } from "./wire-bridge.ts";
 
 /** Model + identity chosen for one structured negotiator turn (see {@link NegotiationActorResolver}). */
 export type NegotiationActorBinding = {
@@ -87,7 +86,7 @@ export async function runStructuredNegotiatorTurn(args: {
     ObpNegotiatorStructuredSessionOutput
   >({});
   const audit = await args.contract.apply(args.partyId, output);
-  return { audit, raw: output, turn: auditToTurnBody(audit, output) } as const;
+  return { audit, raw: output, turn: audit.committedTurnBody } as const;
 }
 
 /** True when the acting party bound a counterparty terminal port (deal-shaped close). */
@@ -116,7 +115,7 @@ export async function dispatchNegotiatorIncomingOffer(
     return;
   }
   try {
-    const { audit, turn } = await runStructuredNegotiatorTurn({
+    const { audit } = await runStructuredNegotiatorTurn({
       registry: opts.registry,
       identity: opts.identity,
       contract: opts.contract,
@@ -124,7 +123,6 @@ export async function dispatchNegotiatorIncomingOffer(
       model: opts.model,
       budgetMs: opts.budgetMs,
     });
-    await opts.session.sendTurn(turn);
     if (negotiationShouldEnd(audit) || opts.ledger.isExhausted()) {
       await opts.session.terminate("done");
     }

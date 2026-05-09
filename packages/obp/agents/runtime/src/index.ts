@@ -13,6 +13,7 @@ export {
 export {
   createNegotiationStructuredBilateralContract,
   type StructuredBilateralContractOptions,
+  wireStructuredTurnSummary,
 } from "./contracts/structured-bilateral.ts";
 export {
   createNegotiationToolLoopBilateralContract,
@@ -58,8 +59,10 @@ export {
 export { formatNegotiationProviderError } from "./provider-error.ts";
 export {
   type NegotiationBindMenuEntry,
+  type NegotiationBindStaging,
   type NegotiationBindTurnAudit,
   type NegotiationExposedPortSummary,
+  type NegotiationGenesisStaging,
   type NegotiationGenesisTurnAudit,
   /**
    * @deprecated Prefer {@link createNegotiationStructuredBilateralContract} +

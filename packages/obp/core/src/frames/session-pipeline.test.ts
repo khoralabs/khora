@@ -222,3 +222,50 @@ test("multiplex: two chains on one memory channel (p_hash routing)", async () =>
   expect(sOps.length).toBeGreaterThan(0);
   expect(cOps.length).toBeGreaterThan(0);
 });
+
+test("multiplex: outbound sendTurn failure leaves FrameDag tip unchanged", async () => {
+  const ctx = await setupPair();
+
+  const serverP = runFrameMultiplexSession({
+    channel: ctx.serverCh,
+    signer: ctx.srvSigner,
+    verifier: ctx.verifier,
+    persistence: ctx.persistenceSrv,
+    ledgerSeq: ctx.ledgerSeqSrv,
+    sessionTemplate: { parties: ctx.init.parties },
+    initiatorChainPlans: [],
+    handlers: {
+      async onIncomingOffer(_body, session) {
+        const tipBefore = session.tipHash;
+        await expect(
+          session.sendTurn({
+            offerId: "bad-bind",
+            offerType: "obp.frame.bind",
+            bindPortId: "00000000-0000-4000-8000-000000000001",
+            counterparty_bind: {},
+          }),
+        ).rejects.toMatchObject({ code: "NOT_FOUND" });
+        expect(session.tipHash).toBe(tipBefore);
+        await session.terminate("done");
+        return null;
+      },
+    },
+  });
+
+  const clientP = runFrameMultiplexSession({
+    channel: ctx.clientCh,
+    signer: ctx.cliSigner,
+    verifier: ctx.verifier,
+    persistence: ctx.persistenceCli,
+    ledgerSeq: ctx.ledgerSeqCli,
+    sessionTemplate: { parties: ctx.init.parties },
+    handlers: {},
+    openerSession: async (api) => {
+      const chain = await api.init(ctx.init, {});
+      await chain.sendTurn({ offerId: "hello", offerType: "obp.frame", ports: [] });
+      api.close();
+    },
+  });
+
+  await Promise.all([serverP, clientP]);
+});
