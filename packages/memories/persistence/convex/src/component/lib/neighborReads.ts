@@ -135,7 +135,7 @@ export async function listNeighborsForMemory<
       .query("memories")
       .withIndex("by_memoryId_tsCreated", (q) => q.eq("memoryId", otherNode.memoryId))
       .unique();
-    if (!mem || mem.namespace !== input.namespace) continue;
+    if (!mem) continue;
 
     const assigns = await ctx.db
       .query("edge_label_assignments")

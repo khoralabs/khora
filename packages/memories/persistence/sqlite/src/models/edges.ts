@@ -9,8 +9,7 @@ export function insertEdge(
     fromNodeId: string;
     toNodeId: string;
     properties?: Record<string, unknown>;
-    /** Disambiguates stable id (e.g. this memory’s key + other memory key). */
-    idParts: { selfMemoryKey: string; otherMemoryKey: string; label: string };
+    idParts: { label: string; fromMemoryId: string; toMemoryId: string };
   },
 ): { edgeId: string } {
   const { db, now } = ctx;
@@ -18,8 +17,8 @@ export function insertEdge(
     input.fromNodeId,
     input.toNodeId,
     input.idParts.label,
-    input.idParts.selfMemoryKey,
-    input.idParts.otherMemoryKey,
+    input.idParts.fromMemoryId,
+    input.idParts.toMemoryId,
   );
   const doc = documentValidator(memoriesPersistenceDocumentSchema, "edges");
   doc.parse({

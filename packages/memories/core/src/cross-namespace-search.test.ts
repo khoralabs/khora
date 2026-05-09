@@ -188,10 +188,10 @@ describe("cross-namespace search (validation + fallback)", () => {
         limit: number;
       }) {
         lexicalCalls.push({ scope: input.scope });
-        if (input.scope.kind === "union" && input.scope.namespaces?.[0] === "a") {
+        if (input.scope.kind === "pathSubtree" && input.scope.namespaces?.[0] === "a") {
           return ["sm-a"];
         }
-        if (input.scope.kind === "union" && input.scope.namespaces?.[0] === "b") {
+        if (input.scope.kind === "pathSubtree" && input.scope.namespaces?.[0] === "b") {
           return ["sm-b"];
         }
         return [];
@@ -288,7 +288,7 @@ describe("cross-namespace search (subtree scope)", () => {
         unscopedSearch: false,
       },
       searchLexicalSourceMapIds(input: { scope: { kind: string; namespaces?: string[] } }) {
-        if (input.scope.kind === "union" && input.scope.namespaces) {
+        if (input.scope.kind === "pathSubtree" && input.scope.namespaces) {
           calls.push({ namespaces: [...input.scope.namespaces] });
         }
         return [];

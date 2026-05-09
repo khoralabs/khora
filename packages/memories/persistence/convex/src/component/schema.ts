@@ -140,8 +140,8 @@ export default defineSchema({
     toNodeId: v.string(),
     namespace: v.string(),
     propertiesJson: v.optional(v.string()),
-    idPartsSelfKey: v.string(),
-    idPartsOtherKey: v.string(),
+    idPartsFromMemoryId: v.string(),
+    idPartsToMemoryId: v.string(),
     idPartsLabel: v.string(),
     tsCreated: v.number(),
   })
@@ -169,4 +169,35 @@ export default defineSchema({
   })
     .index("by_assignmentId", ["assignmentId"])
     .index("by_edge_label", ["edgeId", "labelId"]),
+
+  scopes: defineTable({
+    scopeId: v.string(),
+    tsCreated: v.number(),
+  }).index("by_scopeId", ["scopeId"]),
+
+  scope_edges: defineTable({
+    edgeKey: v.string(),
+    parentScopeId: v.string(),
+    childScopeId: v.string(),
+    tsCreated: v.number(),
+  })
+    .index("by_parent_child", ["parentScopeId", "childScopeId"])
+    .index("by_child", ["childScopeId"]),
+
+  scope_closure: defineTable({
+    closureKey: v.string(),
+    ancestorScopeId: v.string(),
+    descendantScopeId: v.string(),
+    tsCreated: v.number(),
+  }).index("by_ancestor", ["ancestorScopeId"]),
+
+  memory_scopes: defineTable({
+    attachmentKey: v.string(),
+    memoryId: v.string(),
+    scopeId: v.string(),
+    tsCreated: v.number(),
+  })
+    .index("by_memory", ["memoryId"])
+    .index("by_scope", ["scopeId"])
+    .index("by_memory_scope", ["memoryId", "scopeId"]),
 });

@@ -4,6 +4,7 @@ import {
   ids,
   type MergeMemoryParamsEdge,
   type MergeMemoryParamsNode,
+  type NamespacePath,
   withDirectedEdgeProperties,
   zMergeMemoryContentItem,
   zNamespacePath,
@@ -11,25 +12,26 @@ import {
 import { zVectorPayload } from "@cfd/memories-core/persistence";
 import { computeSourceMapContentHash } from "@cfd/memories-core/provenance";
 import type { MutationCtx } from "../_generated/server.js";
-import { listNeighborMemoryKeysForNode } from "./helpers.js";
+import { listNeighborMemoriesForNode } from "./helpers.js";
 import { syncLabelPropsSearchFeaturesImpl } from "./labelPropsSearch.js";
 import {
   clearMemorySubtreeImpl,
   ensureEdgeLabelImpl,
   ensureNodeLabelImpl,
-  findMemoryIdByKey,
   insertEdgeImpl,
   insertEdgeLabelAssignmentImpl,
   insertLexicalFeatureImpl,
   insertNodeLabelAssignmentImpl,
   insertSourceMapImpl,
   insertVectorFeatureImpl,
+  loadMemoryNamespaceKeyImpl,
   nodeExists,
   syncMemorySearchMetaImpl,
   upsertMemoryImpl,
   upsertNodeForMemoryKeyImpl,
 } from "./mergeWrites.js";
 import { appendProvenanceEventImpl, updateSourceMapContentHashImpl } from "./provenanceConvex.js";
+import { replaceMemoryScopesImpl } from "./scopesConvex.js";
 
 export type MergeMemoryAtomicInput =
   | (MergeMemoryParamsNode & { now: number })
@@ -70,7 +72,7 @@ async function runMergeMemoryAtomicNode(
   const memoryId = ids.memory(namespace, params.key);
   const nodeId = ids.node(namespace, params.key);
 
-  const oldNeighborKeys = await listNeighborMemoryKeysForNode(ctx, namespace, nodeId);
+  const oldNeighbors = await listNeighborMemoriesForNode(ctx, namespace, nodeId);
   await clearMemorySubtreeImpl(ctx, { memoryKind: "node", memoryId, nodeId });
   await upsertMemoryImpl(ctx, {
     namespace,
@@ -82,9 +84,13 @@ async function runMergeMemoryAtomicNode(
   await upsertNodeForMemoryKeyImpl(ctx, {
     namespace,
     memoryKey: params.key,
+    memoryId,
     properties: params.properties,
     now,
   });
+
+  const scopeIds = [...new Set([namespace, ...(params.attachScopes ?? [])])];
+  await replaceMemoryScopesImpl(ctx, { memoryId, scopeIds, now });
 
   const contentHashes: Record<string, string> = {};
   for (const rawItem of params.content) {
@@ -136,25 +142,28 @@ async function runMergeMemoryAtomicNode(
   }
 
   for (const edge of params.edges ?? []) {
-    if ((await findMemoryIdByKey(ctx, namespace, edge.memory_key)) === undefined) {
-      throw new Error(
-        `mergeMemoryAtomic: unknown edge target memory_key=${edge.memory_key} in namespace=${namespace}`,
-      );
+    const peer = await loadMemoryNamespaceKeyImpl(ctx, edge.peer_memory_id);
+    if (peer === undefined) {
+      throw new Error(`mergeMemoryAtomic: unknown peer_memory_id=${edge.peer_memory_id}`);
     }
-    const otherNodeId = ids.node(namespace, edge.memory_key);
+    const otherNodeId = ids.node(peer.namespace, peer.key);
     if (!(await nodeExists(ctx, otherNodeId))) {
-      throw new Error(`mergeMemoryAtomic: target node missing for memory_key=${edge.memory_key}`);
+      throw new Error(`mergeMemoryAtomic: target node missing for peer_memory_id=${edge.peer_memory_id}`);
     }
+
     const fromNodeId = edge.direction === "out" ? nodeId : otherNodeId;
     const toNodeId = edge.direction === "out" ? otherNodeId : nodeId;
+    const fromMemoryId = edge.direction === "out" ? memoryId : edge.peer_memory_id;
+    const toMemoryId = edge.direction === "out" ? edge.peer_memory_id : memoryId;
+
     const { edgeId } = await insertEdgeImpl(ctx, {
       fromNodeId,
       toNodeId,
       properties: withDirectedEdgeProperties(edge.properties),
       idParts: {
         label: edge.label.kind,
-        selfMemoryKey: params.key,
-        otherMemoryKey: edge.memory_key,
+        fromMemoryId,
+        toMemoryId,
       },
       now,
     });
@@ -172,20 +181,42 @@ async function runMergeMemoryAtomicNode(
     });
   }
 
-  const newNeighborKeys = (params.edges ?? []).map((e) => e.memory_key);
-  const syncKeys = new Set([params.key, ...oldNeighborKeys, ...newNeighborKeys]);
+  const syncByMid = new Map<string, { namespace: NamespacePath; key: string }>();
+  syncByMid.set(memoryId, { namespace: namespace as NamespacePath, key: params.key });
+  for (const n of oldNeighbors) {
+    syncByMid.set(ids.memory(n.namespace, n.key), {
+      namespace: n.namespace as NamespacePath,
+      key: n.key,
+    });
+  }
+  for (const e of params.edges ?? []) {
+    const peer = await loadMemoryNamespaceKeyImpl(ctx, e.peer_memory_id);
+    if (peer !== undefined) {
+      syncByMid.set(e.peer_memory_id, {
+        namespace: peer.namespace as NamespacePath,
+        key: peer.key,
+      });
+    }
+  }
+
+  const syncRefs = [...syncByMid.values()].sort((a, b) =>
+    a.namespace !== b.namespace
+      ? (a.namespace as string).localeCompare(b.namespace as string)
+      : a.key.localeCompare(b.key),
+  );
   const primaryMeta =
     params.searchMetaVector !== undefined && params.searchMetaVector.length > 0
       ? params.searchMetaVector
       : undefined;
-  for (const k of syncKeys) {
+  for (const ref of syncRefs) {
+    const refMemoryId = ids.memory(ref.namespace, ref.key);
     await syncMemorySearchMetaImpl(ctx, {
-      namespace,
-      memoryKey: k,
+      namespace: ref.namespace,
+      memoryKey: ref.key,
       now,
-      metaVector: k === params.key ? primaryMeta : undefined,
+      metaVector: refMemoryId === memoryId ? primaryMeta : undefined,
     });
-    await syncLabelPropsSearchFeaturesImpl(ctx, { namespace, memoryKey: k, now });
+    await syncLabelPropsSearchFeaturesImpl(ctx, { namespace: ref.namespace, memoryKey: ref.key, now });
   }
 
   const sourceKeysSorted = params.content
@@ -212,7 +243,7 @@ async function runMergeMemoryAtomicNode(
     },
   });
 
-  return Array.from(syncKeys).sort((a, b) => a.localeCompare(b));
+  return [...syncByMid.keys()].sort((a, b) => a.localeCompare(b));
 }
 
 async function runMergeMemoryAtomicEdge(
@@ -223,17 +254,31 @@ async function runMergeMemoryAtomicEdge(
 ): Promise<string[]> {
   const params = raw;
   const memoryId = ids.memory(namespace, params.key);
-  const { from_key: fromKey, to_key: toKey } = params.edge;
-  const fromNodeId = ids.node(namespace, fromKey);
-  const toNodeId = ids.node(namespace, toKey);
+
+  const fromRef = await loadMemoryNamespaceKeyImpl(ctx, params.edge.from_memory_id);
+  const toRef = await loadMemoryNamespaceKeyImpl(ctx, params.edge.to_memory_id);
+  if (fromRef === undefined) {
+    throw new Error(`mergeMemoryAtomic: unknown edge.from_memory_id=${params.edge.from_memory_id}`);
+  }
+  if (toRef === undefined) {
+    throw new Error(`mergeMemoryAtomic: unknown edge.to_memory_id=${params.edge.to_memory_id}`);
+  }
+  const fromNodeId = ids.node(fromRef.namespace, fromRef.key);
+  const toNodeId = ids.node(toRef.namespace, toRef.key);
   if (!(await nodeExists(ctx, fromNodeId))) {
-    throw new Error(`mergeMemoryAtomic: node missing for edge.from_key=${fromKey}`);
+    throw new Error(`mergeMemoryAtomic: node missing for edge.from_memory_id=${params.edge.from_memory_id}`);
   }
   if (!(await nodeExists(ctx, toNodeId))) {
-    throw new Error(`mergeMemoryAtomic: node missing for edge.to_key=${toKey}`);
+    throw new Error(`mergeMemoryAtomic: node missing for edge.to_memory_id=${params.edge.to_memory_id}`);
   }
 
-  const edgeId = ids.edge(fromNodeId, toNodeId, params.edge.label.kind, fromKey, toKey);
+  const edgeId = ids.edge(
+    fromNodeId,
+    toNodeId,
+    params.edge.label.kind,
+    params.edge.from_memory_id,
+    params.edge.to_memory_id,
+  );
 
   await clearMemorySubtreeImpl(ctx, { memoryKind: "edge", memoryId, edgeId });
 
@@ -243,8 +288,8 @@ async function runMergeMemoryAtomicEdge(
     properties: withDirectedEdgeProperties(params.edge.properties),
     idParts: {
       label: params.edge.label.kind,
-      selfMemoryKey: fromKey,
-      otherMemoryKey: toKey,
+      fromMemoryId: params.edge.from_memory_id,
+      toMemoryId: params.edge.to_memory_id,
     },
     now,
   });
@@ -259,6 +304,9 @@ async function runMergeMemoryAtomicEdge(
     kind: "edge",
     edgeId,
   });
+
+  const scopeIds = [...new Set([namespace, ...(params.attachScopes ?? [])])];
+  await replaceMemoryScopesImpl(ctx, { memoryId, scopeIds, now });
 
   const contentHashes: Record<string, string> = {};
   for (const rawItem of params.content) {
@@ -306,19 +354,34 @@ async function runMergeMemoryAtomicEdge(
     now,
   });
 
-  const syncKeys = new Set([params.key, fromKey, toKey]);
+  const syncByMid = new Map<string, { namespace: NamespacePath; key: string }>();
+  syncByMid.set(memoryId, { namespace: namespace as NamespacePath, key: params.key });
+  syncByMid.set(params.edge.from_memory_id, {
+    namespace: fromRef.namespace as NamespacePath,
+    key: fromRef.key,
+  });
+  syncByMid.set(params.edge.to_memory_id, {
+    namespace: toRef.namespace as NamespacePath,
+    key: toRef.key,
+  });
+
   const primaryMeta =
     params.searchMetaVector !== undefined && params.searchMetaVector.length > 0
       ? params.searchMetaVector
       : undefined;
-  for (const k of syncKeys) {
+  for (const ref of [...syncByMid.values()].sort((a, b) =>
+    a.namespace !== b.namespace
+      ? (a.namespace as string).localeCompare(b.namespace as string)
+      : a.key.localeCompare(b.key),
+  )) {
+    const refMid = ids.memory(ref.namespace, ref.key);
     await syncMemorySearchMetaImpl(ctx, {
-      namespace,
-      memoryKey: k,
+      namespace: ref.namespace,
+      memoryKey: ref.key,
       now,
-      metaVector: k === params.key ? primaryMeta : undefined,
+      metaVector: refMid === memoryId ? primaryMeta : undefined,
     });
-    await syncLabelPropsSearchFeaturesImpl(ctx, { namespace, memoryKey: k, now });
+    await syncLabelPropsSearchFeaturesImpl(ctx, { namespace: ref.namespace, memoryKey: ref.key, now });
   }
 
   const sourceKeysSorted = params.content
@@ -345,5 +408,5 @@ async function runMergeMemoryAtomicEdge(
     },
   });
 
-  return Array.from(syncKeys).sort((a, b) => a.localeCompare(b));
+  return [...syncByMid.keys()].sort((a, b) => a.localeCompare(b));
 }

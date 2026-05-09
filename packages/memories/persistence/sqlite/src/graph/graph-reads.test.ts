@@ -24,7 +24,13 @@ describe("MemoriesGraphIndex per-entity reads", () => {
         namespace: "ns",
         content: [{ key: "b", text: "b" }],
         labels: [],
-        edges: [{ memory_key: "a", direction: "out", label: { kind: "rel", props: {} } }],
+        edges: [
+          {
+            peer_memory_id: ids.memory("ns", "a"),
+            direction: "out",
+            label: { kind: "rel", props: {} },
+          },
+        ],
       },
     );
 

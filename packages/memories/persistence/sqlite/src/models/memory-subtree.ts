@@ -4,6 +4,7 @@ import type { DbCtx } from "./context";
 /** Removes features, FTS, vec index rows, edges, and node-label links for one **node** memory. */
 function clearNodeMemorySubtree(ctx: DbCtx, memoryId: string, nodeId: string): void {
   const { db } = ctx;
+  db.run(`DELETE FROM memory_scopes WHERE memory_id = ?`, [memoryId]);
   deleteVectorVecRowsForMemory(db, memoryId);
   db.run(`DELETE FROM text_features_fts WHERE memory_id = ?`, [memoryId]);
   db.run(`DELETE FROM text_features WHERE memory_id = ?`, [memoryId]);
@@ -29,6 +30,7 @@ function clearNodeMemorySubtree(ctx: DbCtx, memoryId: string, nodeId: string): v
 /** Clears indexed features and edge label assignments for an **edge** memory; keeps the `edges` row for merge re-insert. */
 function clearEdgeMemorySubtree(ctx: DbCtx, memoryId: string, edgeId: string): void {
   const { db } = ctx;
+  db.run(`DELETE FROM memory_scopes WHERE memory_id = ?`, [memoryId]);
   deleteVectorVecRowsForMemory(db, memoryId);
   db.run(`DELETE FROM text_features_fts WHERE memory_id = ?`, [memoryId]);
   db.run(`DELETE FROM text_features WHERE memory_id = ?`, [memoryId]);

@@ -13,6 +13,18 @@ export function findMemoryIdByKey(ctx: DbCtx, namespace: string, key: string): s
   return row?._id;
 }
 
+export function loadMemoryNamespaceKey(
+  ctx: DbCtx,
+  memoryId: string,
+): { namespace: string; key: string } | undefined {
+  const row = ctx.db
+    .query<{ namespace: string; key: string }, [string]>(
+      `SELECT namespace, key FROM memories WHERE _id = ?`,
+    )
+    .get(memoryId);
+  return row ?? undefined;
+}
+
 export function findMemoryAssociation(
   ctx: DbCtx,
   namespace: string,

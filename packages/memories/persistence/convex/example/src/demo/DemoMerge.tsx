@@ -2,6 +2,7 @@ import type { ConvexMemoriesClient } from "@cfd/memories-convex";
 import { convexReactClientToMemoriesClient, mergeMemory } from "@cfd/memories-convex";
 import { memoriesConvexHostRefsFromApi } from "@cfd/memories-convex/react";
 import type { MemoriesPersistenceAsync } from "@cfd/memories-core";
+import { ids } from "@cfd/memories-core";
 import type { ConvexReactClient } from "convex/react";
 import { useMemo, useState } from "react";
 import { api } from "../../convex/_generated/api.js";
@@ -131,7 +132,7 @@ export function DemoMerge({
                   content: [{ key: "body", text: "Neighbor source A" }],
                   edges: [
                     {
-                      memory_key: EDGE_B,
+                      peer_memory_id: ids.memory(DEMO_NS, EDGE_B),
                       direction: "out",
                       label: { kind: "relates", props: { strength: 1 } },
                     },

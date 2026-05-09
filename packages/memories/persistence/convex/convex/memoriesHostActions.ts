@@ -7,8 +7,15 @@ const ca = components.memories.actions;
 export const searchVectorSourceMapIds = action({
   args: {
     scope: v.object({
-      kind: v.union(v.literal("union"), v.literal("unscoped")),
+      kind: v.union(
+        v.literal("unscoped"),
+        v.literal("pathSubtree"),
+        v.literal("scopeDag"),
+        v.literal("exactScope"),
+      ),
       namespaces: v.optional(v.array(v.string())),
+      roots: v.optional(v.array(v.string())),
+      scopes: v.optional(v.array(v.string())),
     }),
     vector: v.array(v.number()),
     limit: v.number(),

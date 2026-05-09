@@ -46,9 +46,19 @@ export const nodeExists = query({
   handler: async (ctx, args) => ctx.runQuery(cq.nodeExists, args),
 });
 
-export const listNeighborMemoryKeysForNodeQuery = query({
+export const listNeighborMemoriesForNodeQuery = query({
   args: { namespace: v.string(), nodeId: v.string() },
-  handler: async (ctx, args) => ctx.runQuery(cq.listNeighborMemoryKeysForNodeQuery, args),
+  handler: async (ctx, args) => ctx.runQuery(cq.listNeighborMemoriesForNodeQuery, args),
+});
+
+export const loadMemoryNamespaceKey = query({
+  args: { memoryId: v.string() },
+  handler: async (ctx, args) => ctx.runQuery(cq.loadMemoryNamespaceKey, args),
+});
+
+export const listScopesForMemory = query({
+  args: { memoryId: v.string() },
+  handler: async (ctx, args) => ctx.runQuery(cq.listScopesForMemory, args),
 });
 
 export const buildCanonicalMemorySearchMetaTextQuery = query({
@@ -59,8 +69,15 @@ export const buildCanonicalMemorySearchMetaTextQuery = query({
 export const searchLexicalSourceMapIds = query({
   args: {
     scope: v.object({
-      kind: v.union(v.literal("union"), v.literal("unscoped")),
+      kind: v.union(
+        v.literal("unscoped"),
+        v.literal("pathSubtree"),
+        v.literal("scopeDag"),
+        v.literal("exactScope"),
+      ),
       namespaces: v.optional(v.array(v.string())),
+      roots: v.optional(v.array(v.string())),
+      scopes: v.optional(v.array(v.string())),
     }),
     text: v.string(),
     limit: v.number(),

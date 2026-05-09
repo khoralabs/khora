@@ -80,13 +80,18 @@ export type MemoriesBackendCapabilities = {
 };
 
 /**
- * Namespace filter for {@link MemoriesRetrieval} hybrid search.
- * Caller normalizes unions (non-empty, deduped). Each path is a **subtree root**:
- * a memory matches if its namespace equals the path or is a descendant (more segments).
+ * Namespace / scope filter for {@link MemoriesRetrieval} hybrid search.
+ *
+ * - **`pathSubtree`:** each path is a prefix root on **primary** `memories.namespace` (equality or descendant path).
+ * - **`scopeDag`:** each root is a **scope id**; a memory matches if it is attached to any scope `S`
+ *   such that some query root `R` satisfies `(R, S)` in the transitive scope closure (ancestor → descendant).
+ * - **`exactScope`:** memory matches only if attached to a scope id **equal** to one of the listed scopes (no DAG descent).
  */
 export type SearchNamespaceScope =
-  | { kind: "union"; namespaces: readonly NamespacePath[] }
-  | { kind: "unscoped" };
+  | { kind: "unscoped" }
+  | { kind: "pathSubtree"; namespaces: readonly NamespacePath[] }
+  | { kind: "scopeDag"; roots: readonly NamespacePath[] }
+  | { kind: "exactScope"; scopes: readonly NamespacePath[] };
 
 /** Default when {@link MemoriesPersistence.capabilities} is omitted (full-featured backend). */
 export const DEFAULT_MEMORIES_BACKEND_CAPABILITIES: MemoriesBackendCapabilities = {
@@ -233,24 +238,56 @@ export interface MemoriesMutationCore {
     op: MemoryOpContext,
     input: { sourceMapId: string } & SourceMapBodyParts,
   ): void;
+
+  /** Primary namespace + logical key for a memory row, if it exists. */
+  loadMemoryNamespaceKey(memoryId: string): { namespace: NamespacePath; key: string } | undefined;
+
+  /** Ensure a scope row exists (scope id = namespace-shaped path string). */
+  upsertScope(op: MemoryOpContext, input: { scopeId: NamespacePath }): void;
+
+  /** Add DAG edge parent → child; rejects cycles. Rebuilds scope closure. */
+  linkScopes(
+    op: MemoryOpContext,
+    input: { parentScopeId: NamespacePath; childScopeId: NamespacePath },
+  ): void;
+
+  /** Remove one scope edge; rebuilds closure. */
+  unlinkScopeEdge(
+    op: MemoryOpContext,
+    input: { parentScopeId: NamespacePath; childScopeId: NamespacePath },
+  ): void;
+
+  /** Replace all scope attachments for a memory (dedupe enforced by storage). */
+  replaceMemoryScopes(
+    op: MemoryOpContext,
+    input: { memoryId: string; scopeIds: readonly NamespacePath[] },
+  ): void;
+
+  /** Distinct scope ids attached to this memory. */
+  listScopesForMemory(memoryId: string): NamespacePath[];
 }
 
 /** Graph node/edge catalog writes (merge-time). Combined with {@link MemoriesGraphIndex} as {@link MemoriesGraph}. */
 export interface MemoriesGraphMutation {
   /**
-   * Memory keys for memories connected by edges to the given node (used when syncing search-meta for neighbors).
-   * **Post:** Returns deduped logical keys in namespace for merge side-effects.
+   * Neighboring memories linked by a graph edge to this node (any primary namespace).
+   * Used when syncing search-meta across endpoints after merge.
    */
-  listNeighborMemoryKeysForNode(
+  listNeighborMemoriesForNode(
     op: MemoryOpContext,
     namespace: NamespacePath,
     nodeId: string,
-  ): string[];
+  ): ReadonlyArray<{ namespace: NamespacePath; key: string }>;
 
   /** Upsert the primary graph node for a memory key; optional JSON properties on the node. */
   upsertNodeForMemoryKey(
     op: MemoryOpContext,
-    input: { namespace: NamespacePath; memoryKey: string; properties?: Record<string, unknown> },
+    input: {
+      namespace: NamespacePath;
+      memoryKey: string;
+      memoryId: string;
+      properties?: Record<string, unknown>;
+    },
   ): { nodeId: string };
 
   /** Get or create a catalog row for a node label **kind**; optional JSON Schema text for assignment props. */
@@ -272,7 +309,7 @@ export interface MemoriesGraphMutation {
       fromNodeId: string;
       toNodeId: string;
       properties?: Record<string, unknown>;
-      idParts: { selfMemoryKey: string; otherMemoryKey: string; label: string };
+      idParts: { label: string; fromMemoryId: string; toMemoryId: string };
     },
   ): { edgeId: string };
 

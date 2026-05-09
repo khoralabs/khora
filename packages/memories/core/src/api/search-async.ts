@@ -41,8 +41,8 @@ function matchesLabelFilter(
   return true;
 }
 
-function scopeSingleNamespace(namespace: NamespacePath): SearchNamespaceScope {
-  return { kind: "union", namespaces: [namespace] };
+function pathSubtreeSingle(namespace: NamespacePath): SearchNamespaceScope {
+  return { kind: "pathSubtree", namespaces: [namespace] };
 }
 
 async function rankSourceMapIdsForContentAsync(
@@ -64,10 +64,29 @@ async function rankSourceMapIdsForContentAsync(
   const asOf = input.asOfTimestampMs;
   const asOfSpread = asOf !== undefined ? { asOfTimestampMs: asOf } : {};
 
-  if (scope.kind === "union" && scope.namespaces.length > 1 && !caps.multiNamespaceSearch) {
+  const multiRoots =
+    scope.kind === "pathSubtree"
+      ? scope.namespaces
+      : scope.kind === "scopeDag"
+        ? scope.roots
+        : scope.kind === "exactScope"
+          ? scope.scopes
+          : [];
+
+  const needsMultiArm =
+    !caps.multiNamespaceSearch &&
+    multiRoots.length > 1 &&
+    (scope.kind === "pathSubtree" || scope.kind === "scopeDag" || scope.kind === "exactScope");
+
+  if (needsMultiArm) {
     const arms: RrfArm<string>[] = [];
-    for (const ns of scope.namespaces) {
-      const subScope = scopeSingleNamespace(ns);
+    for (const ns of multiRoots) {
+      const subScope: SearchNamespaceScope =
+        scope.kind === "pathSubtree"
+          ? pathSubtreeSingle(ns)
+          : scope.kind === "scopeDag"
+            ? { kind: "scopeDag", roots: [ns] }
+            : { kind: "exactScope", scopes: [ns] };
       if (caps.lexicalSearch && "text" in input.content && input.lexicalWeight > 0) {
         const ranked = await persistence.searchLexicalSourceMapIds({
           scope: subScope,
@@ -176,7 +195,7 @@ async function expandNeighborsWithSubSearchAsync<
   const neighborRetrievalLimit = Math.max(capForRetrieval * 5, 25);
 
   const fused = await rankSourceMapIdsForContentAsync(persistence, caps, {
-    scope: scopeSingleNamespace(input.namespace),
+    scope: pathSubtreeSingle(input.namespace),
     logNamespace: input.namespace,
     content: input.content,
     lexicalWeight: input.lexicalWeight,

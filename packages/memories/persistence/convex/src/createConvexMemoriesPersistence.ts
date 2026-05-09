@@ -13,6 +13,22 @@ import type {
 import type { SourceMap, TextFeatureExportRow } from "@cfd/memories-core/persistence";
 import type { MemoryProvenanceEvent } from "@cfd/memories-core/provenance";
 import { computeSourceMapContentHash } from "@cfd/memories-core/provenance";
+
+function scopePayloadFromCore(scope: SearchNamespaceScope): {
+  kind: "unscoped" | "pathSubtree" | "scopeDag" | "exactScope";
+  namespaces?: string[];
+  roots?: string[];
+  scopes?: string[];
+} {
+  if (scope.kind === "unscoped") return { kind: "unscoped" };
+  if (scope.kind === "pathSubtree") {
+    return { kind: "pathSubtree", namespaces: [...scope.namespaces] };
+  }
+  if (scope.kind === "scopeDag") {
+    return { kind: "scopeDag", roots: [...scope.roots] };
+  }
+  return { kind: "exactScope", scopes: [...scope.scopes] };
+}
 import type { FunctionReference } from "convex/server";
 import { api } from "./component/_generated/api.js";
 import type { ComponentApi } from "./component/_generated/component.js";
@@ -80,12 +96,60 @@ export function createConvexMemoriesPersistence(
       return fn();
     },
 
-    async listNeighborMemoryKeysForNode(
+    async listNeighborMemoriesForNode(
       _op: MemoryOpContext,
       namespace: string,
       nodeId: string,
-    ): Promise<string[]> {
-      return client.query(q.listNeighborMemoryKeysForNodeQuery, { namespace, nodeId });
+    ): Promise<ReadonlyArray<{ namespace: NamespacePath; key: string }>> {
+      return client.query(q.listNeighborMemoriesForNodeQuery, { namespace, nodeId });
+    },
+
+    async loadMemoryNamespaceKey(
+      memoryId: string,
+    ): Promise<{ namespace: NamespacePath; key: string } | undefined> {
+      const row = await client.query(q.loadMemoryNamespaceKey, { memoryId });
+      return row ?? undefined;
+    },
+
+    async upsertScope(op: MemoryOpContext, input: { scopeId: NamespacePath }): Promise<void> {
+      await client.mutation(m.upsertScope, { scopeId: input.scopeId, now: op.now });
+    },
+
+    async linkScopes(
+      op: MemoryOpContext,
+      input: { parentScopeId: NamespacePath; childScopeId: NamespacePath },
+    ): Promise<void> {
+      await client.mutation(m.linkScopes, {
+        parentScopeId: input.parentScopeId,
+        childScopeId: input.childScopeId,
+        now: op.now,
+      });
+    },
+
+    async unlinkScopeEdge(
+      op: MemoryOpContext,
+      input: { parentScopeId: NamespacePath; childScopeId: NamespacePath },
+    ): Promise<void> {
+      await client.mutation(m.unlinkScopeEdge, {
+        parentScopeId: input.parentScopeId,
+        childScopeId: input.childScopeId,
+        now: op.now,
+      });
+    },
+
+    async replaceMemoryScopes(
+      op: MemoryOpContext,
+      input: { memoryId: string; scopeIds: readonly NamespacePath[] },
+    ): Promise<void> {
+      await client.mutation(m.replaceMemoryScopes, {
+        memoryId: input.memoryId,
+        scopeIds: [...input.scopeIds],
+        now: op.now,
+      });
+    },
+
+    async listScopesForMemory(memoryId: string): Promise<NamespacePath[]> {
+      return client.query(q.listScopesForMemory, { memoryId });
     },
 
     async clearMemorySubtree(
@@ -117,11 +181,17 @@ export function createConvexMemoriesPersistence(
 
     async upsertNodeForMemoryKey(
       op: MemoryOpContext,
-      input: { namespace: string; memoryKey: string; properties?: Record<string, unknown> },
+      input: {
+        namespace: string;
+        memoryKey: string;
+        memoryId: string;
+        properties?: Record<string, unknown>;
+      },
     ): Promise<{ nodeId: string }> {
       return client.mutation(m.upsertNodeForMemoryKey, {
         namespace: input.namespace,
         memoryKey: input.memoryKey,
+        memoryId: input.memoryId,
         properties: input.properties,
         now: op.now,
       });
@@ -213,7 +283,7 @@ export function createConvexMemoriesPersistence(
         fromNodeId: string;
         toNodeId: string;
         properties?: Record<string, unknown>;
-        idParts: { selfMemoryKey: string; otherMemoryKey: string; label: string };
+        idParts: { label: string; fromMemoryId: string; toMemoryId: string };
       },
     ): Promise<{ edgeId: string }> {
       return client.mutation(m.insertEdge, {
@@ -337,12 +407,8 @@ export function createConvexMemoriesPersistence(
           "Convex memories persistence does not support SearchParams.asOfTimestampMs (as-of search).",
         );
       }
-      const scope =
-        input.scope.kind === "unscoped"
-          ? { kind: "unscoped" as const }
-          : { kind: "union" as const, namespaces: [...input.scope.namespaces] };
       return client.query(q.searchLexicalSourceMapIds, {
-        scope,
+        scope: scopePayloadFromCore(input.scope),
         text: input.text,
         limit: input.limit,
         memoryIds: input.memoryIds,
@@ -362,12 +428,8 @@ export function createConvexMemoriesPersistence(
           "Convex memories persistence does not support SearchParams.asOfTimestampMs (as-of search).",
         );
       }
-      const scope =
-        input.scope.kind === "unscoped"
-          ? { kind: "unscoped" as const }
-          : { kind: "union" as const, namespaces: [...input.scope.namespaces] };
       return client.action(a.searchVectorSourceMapIds, {
-        scope,
+        scope: scopePayloadFromCore(input.scope),
         vector: input.vector,
         limit: input.limit,
         memoryIds: input.memoryIds,

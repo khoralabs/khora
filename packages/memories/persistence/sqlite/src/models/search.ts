@@ -139,7 +139,7 @@ function namespaceSubtreeOrClauses(
   return { sql: parts.join(" OR "), bindings };
 }
 
-function memoryIdSubqueryFromScope(
+function memoriesWhereClauseFromScope(
   scope: SearchNamespaceScope,
   memoryIds: string[] | undefined,
   asOfTimestampMs?: number,
@@ -149,35 +149,74 @@ function memoryIdSubqueryFromScope(
   const asOfBind: SQLQueryBindings[] =
     asOfTimestampMs !== undefined ? [asOfTimestampMs] : [];
 
+  const idClause =
+    memoryIds === undefined
+      ? ""
+      : ` AND _id IN (${placeholders(memoryIds.length)})`;
+  const idBindings: SQLQueryBindings[] = memoryIds === undefined ? [] : [...memoryIds];
+
   if (scope.kind === "unscoped") {
-    if (memoryIds === undefined) {
-      if (asOfClause === "") {
-        return { sql: "memory_id IN (SELECT _id FROM memories)", bindings: [] };
-      }
-      return {
-        sql: `memory_id IN (SELECT _id FROM memories WHERE 1 = 1${asOfClause})`,
-        bindings: [...asOfBind],
-      };
+    return {
+      sql: `1 = 1${idClause}${asOfClause}`,
+      bindings: [...idBindings, ...asOfBind],
+    };
+  }
+
+  if (scope.kind === "pathSubtree") {
+    const ns = scope.namespaces;
+    if (ns.length === 0) {
+      return { sql: "1 = 0", bindings: [] };
+    }
+    const { sql: nsOr, bindings: nsBindings } = namespaceSubtreeOrClauses(ns);
+    return {
+      sql: `(${nsOr})${idClause}${asOfClause}`,
+      bindings: [...nsBindings, ...idBindings, ...asOfBind],
+    };
+  }
+
+  if (scope.kind === "exactScope") {
+    const ss = scope.scopes.map((s) => namespacePath(s));
+    if (ss.length === 0) {
+      return { sql: "1 = 0", bindings: [] };
     }
     return {
-      sql: `memory_id IN (SELECT _id FROM memories WHERE _id IN (${placeholders(memoryIds.length)})${asOfClause})`,
-      bindings: [...memoryIds, ...asOfBind],
+      sql: `_id IN (
+        SELECT memory_id FROM memory_scopes
+        WHERE scope_id IN (${placeholders(ss.length)})
+      )${idClause}${asOfClause}`,
+      bindings: [...ss, ...idBindings, ...asOfBind],
     };
   }
-  const ns = scope.namespaces;
-  if (ns.length === 0) {
-    return { sql: "memory_id IN (SELECT _id FROM memories WHERE 1 = 0)", bindings: [] };
-  }
-  const { sql: nsOr, bindings: nsBindings } = namespaceSubtreeOrClauses(ns);
-  if (memoryIds === undefined) {
-    return {
-      sql: `memory_id IN (SELECT _id FROM memories WHERE ${nsOr}${asOfClause})`,
-      bindings: [...nsBindings, ...asOfBind],
-    };
+
+  /** scopeDag */
+  const roots = scope.roots.map((r) => namespacePath(r));
+  if (roots.length === 0) {
+    return { sql: "1 = 0", bindings: [] };
   }
   return {
-    sql: `memory_id IN (SELECT _id FROM memories WHERE (${nsOr}) AND _id IN (${placeholders(memoryIds.length)})${asOfClause})`,
-    bindings: [...nsBindings, ...memoryIds, ...asOfBind],
+    sql: `_id IN (
+      SELECT DISTINCT ms.memory_id
+      FROM memory_scopes ms
+      INNER JOIN scope_closure c ON c.descendant_scope_id = ms.scope_id
+      WHERE c.ancestor_scope_id IN (${placeholders(roots.length)})
+    )${idClause}${asOfClause}`,
+    bindings: [...roots, ...idBindings, ...asOfBind],
+  };
+}
+
+function memoryIdSubqueryFromScope(
+  scope: SearchNamespaceScope,
+  memoryIds: string[] | undefined,
+  asOfTimestampMs?: number,
+): { sql: string; bindings: SQLQueryBindings[] } {
+  const { sql: innerSql, bindings } = memoriesWhereClauseFromScope(
+    scope,
+    memoryIds,
+    asOfTimestampMs,
+  );
+  return {
+    sql: `memory_id IN (SELECT _id FROM memories WHERE ${innerSql})`,
+    bindings,
   };
 }
 
@@ -231,7 +270,9 @@ export function searchVectorSourceMapIds(
   },
 ): string[] {
   if (input.memoryIds !== undefined && input.memoryIds.length === 0) return [];
-  if (input.scope.kind === "union" && input.scope.namespaces.length === 0) return [];
+  if (input.scope.kind === "pathSubtree" && input.scope.namespaces.length === 0) return [];
+  if (input.scope.kind === "scopeDag" && input.scope.roots.length === 0) return [];
+  if (input.scope.kind === "exactScope" && input.scope.scopes.length === 0) return [];
 
   const tableName = vectorVecTableName(input.vector.length);
   const exists = ctx.db
@@ -245,36 +286,21 @@ export function searchVectorSourceMapIds(
   const knnK =
     input.memoryIds !== undefined ? Math.min(Math.max(input.limit * 40, 100), 2048) : input.limit;
 
-  const memFilter =
-    input.memoryIds === undefined
-      ? ""
-      : `AND vf.memory_id IN (${placeholders(input.memoryIds.length)})`;
-
-  const nsScoped =
-    input.scope.kind === "unscoped"
-      ? { sql: "", bindings: [] as SQLQueryBindings[] }
-      : namespaceSubtreeOrClauses(input.scope.namespaces, "m");
-  const nsClause = input.scope.kind === "unscoped" ? "" : `AND (${nsScoped.sql})`;
-  const nsBindings: SQLQueryBindings[] =
-    input.scope.kind === "unscoped" ? [] : [...nsScoped.bindings];
+  const { sql: innerWhere, bindings: scopeBindings } = memoriesWhereClauseFromScope(
+    input.scope,
+    input.memoryIds,
+    input.asOfTimestampMs,
+  );
+  const scopeClause = `AND m._id IN (SELECT _id FROM memories WHERE ${innerWhere})`;
 
   const maxD = input.maxVectorDistance;
   const distanceClause = maxD !== undefined && Number.isFinite(maxD) ? `AND knn.distance <= ?` : "";
-  const asOfMs = input.asOfTimestampMs;
-  const asOfClause =
-    asOfMs !== undefined && Number.isFinite(asOfMs) ? `AND m._ts_created <= ?` : "";
 
   const params: SQLQueryBindings[] = [
     JSON.stringify(input.vector),
     knnK,
-    ...nsBindings,
+    ...scopeBindings,
   ];
-  if (asOfClause) {
-    params.push(asOfMs as number);
-  }
-  if (input.memoryIds !== undefined) {
-    params.push(...input.memoryIds);
-  }
   if (distanceClause) {
     params.push(maxD as number);
   }
@@ -292,9 +318,7 @@ export function searchVectorSourceMapIds(
        JOIN vector_features vf ON vf._id = knn.vector_feature_id
        JOIN memories m ON m._id = vf.memory_id
        WHERE 1 = 1
-       ${nsClause}
-       ${memFilter}
-       ${asOfClause}
+       ${scopeClause}
        ${distanceClause}
        ORDER BY knn.distance ASC`,
     )
@@ -493,7 +517,7 @@ export function listNeighborsForMemory<
         namespace: string;
         key: string;
       },
-      [string, string, string, string]
+      [string, string, string]
     >(
       `SELECT
          e._id AS edgeId,
@@ -514,11 +538,11 @@ export function listNeighborsForMemory<
          WHEN e.from_node_id = ? THEN e.to_node_id
          ELSE e.from_node_id
        END
-       JOIN memories m ON m.namespace = ? AND m.key = n.value
+       JOIN memories m ON m._id = n.memory_id
        WHERE e.from_node_id = ? OR e.to_node_id = ?
        ORDER BY e._id ASC, el.kind ASC`,
     )
-    .all(nodeId, input.namespace, nodeId, nodeId);
+    .all(nodeId, nodeId, nodeId);
 
   const grouped = new Map<
     string,

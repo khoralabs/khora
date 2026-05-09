@@ -2,7 +2,7 @@
 
 This document describes the **operational contract** for [`MemoriesPersistence`](../memories-core/src/persistence/types.ts). Method names and types live in `@cfd/memories-core`; behavior and ordering are specified here.
 
-The reference SQLite implementation is [`./src/strategies/sqlite/persistence.ts`](./src/strategies/sqlite/persistence.ts). The wire model is also described in [`packages/memories-spec`](../memories-spec/model/persistence.smithy) (Smithy).
+The reference SQLite implementation is [`./src/persistence.ts`](./src/persistence.ts). The wire model is also described in [`packages/memories-spec`](../memories-spec/model/persistence.smithy) (Smithy).
 
 ## Relational row shapes (Zod)
 
@@ -51,7 +51,7 @@ Merge callers pass structured `{ kind, props }` (see [`MergeMemoryParams`](../me
 
 ## `clearMemorySubtree` vs `deleteMemoryRootRows`
 
-- **`clearMemorySubtree`:** Removes dependent data for a memory (source maps, text/vector features, FTS rows, vector index rows, label assignments, search-meta rows, etc.). **Node** memories also delete incident **edges** (and any **edge-attached** `memories` rows whose `edge_id` references those edges). **Edge** memories clear indexed features and edge label assignments for that edge without deleting neighbor nodes’ topology beyond what edge deletion implies.
+- **`clearMemorySubtree`:** Removes dependent data for a memory (source maps, text/vector features, FTS rows, vector index rows, label assignments, search-meta rows, **`memory_scopes`** rows, etc.). **Node** memories also delete incident **edges** (and any **edge-attached** `memories` rows whose `edge_id` references those edges). **Edge** memories clear indexed features and edge label assignments for that edge without deleting neighbor nodes’ topology beyond what edge deletion implies.
 - **`deleteMemoryRootRows`:** For **node** memories, deletes the root `memories` and `nodes` rows. For **edge** memories, deletes the owning memory row and the **`edges`** row (same merge identity).
 - **Idempotency:** `deleteMemory` should be safe if the memory was already absent (reference clears then deletes roots).
 
@@ -76,20 +76,30 @@ Verkle trees, sparse Merkle non-membership proofs, and ZK reasoning over the KG 
 
 ## Edges
 
-- **`insertEdge`:** `idParts.label` must be the **edge label kind** (string), together with `selfMemoryKey` / `otherMemoryKey`, so `ids.edge(...)` stays stable for the same directed link identity.
+- **`insertEdge`:** `idParts.label` is the **edge label kind** (string); **`fromMemoryId`** / **`toMemoryId`** are the endpoint memories’ stable ids (`ids.memory(...)`). `ids.edge(fromNodeId, toNodeId, label, fromMemoryId, toMemoryId)` dedupes the directed link. Endpoints may live in **different primary namespaces**.
 - After inserting an edge, callers **`ensureEdgeLabel`** (catalog) then **`insertEdgeLabelAssignment`** with **`props`** for that kind on that edge.
+
+## DAG scopes (search visibility)
+
+- **Tables:** `scopes`, `scope_edges`, `scope_closure`, `memory_scopes` (see Zod `memoriesPersistenceDocumentSchema`). Scope ids reuse **`MemoryNamespace` path syntax**.
+- **`linkScopes`:** inserts `parent → child`; **rejects cycles**. Reference impl rebuilds **`scope_closure`** (all `(ancestor, descendant)` pairs including self) after each link/unlink.
+- **`replaceMemoryScopes`:** merge replaces attachments for the focal memory; **primary namespace is always included** alongside optional `attachScopes`.
+- **Search:** `SearchNamespaceScope` adds **`scopeDag`** (roots expand through closure → attached memories) and **`exactScope`** (no descent). **`pathSubtree`** keeps prefix semantics on each row’s primary `memories.namespace`.
 
 ## Search arms and ranking
 
 - `searchLexicalSourceMapIds` and `searchVectorSourceMapIds` return **ordered lists of `source_map` ids** (best-first). There is **no separate score contract**: [`fuseRrf`](https://github.com/reciprocal-rank-fusion) uses **rank position** and configured arm weights only.
-- **Namespace scope:** Both methods take a discriminated **`scope: SearchNamespaceScope`** instead of a single `namespace` string:
-  - `{ kind: "union"; namespaces: readonly string[] }` — non-empty, deduped list; implement **one** retrieval pass with `namespace IN (...)` (or equivalent), or return only the first id if you intentionally support single-namespace only (core will use a per-namespace fallback when `multiNamespaceSearch` is `false`).
-  - `{ kind: "unscoped" }` — no namespace predicate on retrieval (entire DB). Only used when the app sets `searchEntireDatabase: true` on [`SearchParams`](../memories-core/src/api/search.ts); reject at the API layer by leaving `unscopedSearch` as `false`.
+- **Namespace scope:** Both methods take **`scope: SearchNamespaceScope`**:
+  - `{ kind: "pathSubtree"; namespaces }` — prefix match on primary **`memories.namespace`** (canonical overlapping roots).
+  - `{ kind: "scopeDag"; roots }` — scope ids; match memories in **`memory_scopes`** whose scope is a **descendant** of some root in **`scope_closure`**.
+  - `{ kind: "exactScope"; scopes }` — match attachments where **`scope_id`** is exactly one of the listed scope ids.
+  - `{ kind: "unscoped" }` — entire DB (requires `unscopedSearch`).
+- Optional **`memoryIds`** allowlist is **intersected** with scope predicates when both apply.
 - **Hydration:** `hydrateSourceMapHits` expands ids to full [`HydratedSourceMapHit`](../memories-core/src/models/neighbor-search-types.ts) rows: **`labels`** are node assignments when `graph` is **node**, edge assignments when `graph` is **edge**; **`graph`** discriminates attachment (`MemoryGraphAssociation`).
 
 ## Neighbors
 
-- `listNeighborsForMemory` returns graph neighbors for a memory `key`, optionally filtered by [`NeighborFilter`](../memories-core/src/models/neighbor-search-types.ts) (edge kinds, directions, node-label kinds on the neighbor).
+- `listNeighborsForMemory` returns graph neighbors for a memory `key`, optionally filtered by [`NeighborFilter`](../memories-core/src/models/neighbor-search-types.ts) (edge kinds, directions, node-label kinds on the neighbor). Neighbors may live in **any primary namespace** (`nodes.memory_id` → `memories`).
 - Each row includes **`labels`** as structured instances and **`edge.label`** as a single `{ kind, props }` for the chosen incident edge label (when multiple kinds exist on one edge, the reference filters/picks per constraint).
 - When `neighborIndex` capability is `false`, search **ignores** neighbor expansion (treats `neighbors` option as off).
 - Neighbor **sub-search** reuses the same lexical/vector arms, scoped to neighbor memory ids.

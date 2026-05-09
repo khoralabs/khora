@@ -25,12 +25,13 @@ function formatEdgeLine(
 /** Build the same canonical multiline string as DB/search-meta text from merge payload (pre-DB). */
 export function buildCanonicalMemorySearchMetaTextForMerge(input: {
   labels: OntologyLabelInstance[];
-  edges: Array<{ memory_key: string; direction: "in" | "out"; label: OntologyLabelInstance }>;
+  /** Neighbor memory **key** (same string stored on `nodes.value`) for meta text lines only. */
+  edges: Array<{ neighbor_key: string; direction: "in" | "out"; label: OntologyLabelInstance }>;
 }): string {
   const nodeKinds = sortUnique(input.labels.map((l) => l.kind));
   const nodeLines = formatNodeLines(nodeKinds);
   const edgeLines = sortUnique(
-    input.edges.map((e) => formatEdgeLine(e.direction, e.memory_key, [e.label.kind])),
+    input.edges.map((e) => formatEdgeLine(e.direction, e.neighbor_key, [e.label.kind])),
   );
   const lines = [...nodeLines, ...edgeLines].sort((a, b) => a.localeCompare(b));
   return lines.join("\n");

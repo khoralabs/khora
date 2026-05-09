@@ -113,12 +113,38 @@ export const zNodeLabelAssignment = z.object({
   props: z.record(z.string(), z.unknown()),
 });
 
+/** Scope identifier for DAG visibility (same path syntax as {@link MEMORY_NAMESPACE_PATH_REGEX}). */
+export const zScopePath = z.string().regex(MEMORY_NAMESPACE_PATH_REGEX).max(128);
+
 /**
- * Each memory has one node
+ * Each primary graph node rows links to exactly one memory row.
  */
+/** `memory_id` matches `memories._id` logically; stored as plain TEXT to avoid FK cycles (`memories` ↔ `nodes` via `edges`). */
 export const zNode = z.object({
+  memory_id: z.string().min(1),
   value: z.string(),
   properties: z.record(z.string(), z.unknown()).optional(),
+});
+
+/** Registered scope node (id = scope path string). */
+export const zScopes = z.object({});
+
+/** Directed scope edge: parent scope strictly above child in the DAG. */
+export const zScopeEdges = z.object({
+  parent_scope_id: zId("scopes"),
+  child_scope_id: zId("scopes"),
+});
+
+/** Transitive closure: ancestor can reach descendant via zero or more scope edges. */
+export const zScopeClosure = z.object({
+  ancestor_scope_id: zId("scopes"),
+  descendant_scope_id: zId("scopes"),
+});
+
+/** Memory visibility under one or more scopes (DAG search expands roots via {@link zScopeClosure}). */
+export const zMemoryScopes = z.object({
+  memory_id: zId("memories"),
+  scope_id: zId("scopes"),
 });
 
 /**
@@ -139,6 +165,10 @@ export const memoriesPersistenceDocumentSchema = defineSchema({
   memories: zMemory,
   text_features: zTextFeature,
   vector_features: zVectorFeature,
+  scopes: zScopes,
+  scope_edges: zScopeEdges,
+  scope_closure: zScopeClosure,
+  memory_scopes: zMemoryScopes,
   nodes: zNode,
   edges: zEdge,
   node_labels: zNodeLabel,
@@ -162,6 +192,8 @@ export type SourceMap = MemoriesPersistenceSchema["source_maps"];
 export type TextFeature = MemoriesPersistenceSchema["text_features"];
 export type VectorFeature = MemoriesPersistenceSchema["vector_features"];
 export type Node = MemoriesPersistenceSchema["nodes"];
+export type ScopeClosureRow = MemoriesPersistenceSchema["scope_closure"];
+export type MemoryScopeRow = MemoriesPersistenceSchema["memory_scopes"];
 export type Edge = MemoriesPersistenceSchema["edges"];
 export type NodeLabel = MemoriesPersistenceSchema["node_labels"];
 export type EdgeLabel = MemoriesPersistenceSchema["edge_labels"];

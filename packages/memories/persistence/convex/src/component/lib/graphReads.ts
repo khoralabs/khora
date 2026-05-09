@@ -73,7 +73,7 @@ async function edgeToGraphEdgeLink(
     .query("memories")
     .withIndex("by_memoryId_tsCreated", (q) => q.eq("memoryId", toNode.memoryId))
     .unique();
-  if (!mf || !mt || mf.namespace !== namespace || mt.namespace !== namespace) return null;
+  if (!mf || !mt) return null;
 
   const assignments = await ctx.db
     .query("edge_label_assignments")
@@ -132,7 +132,7 @@ export async function loadGraphEdge(
     .query("edges")
     .withIndex("by_edgeId", (q) => q.eq("edgeId", edgeId))
     .unique();
-  if (!e || e.namespace !== namespace) return null;
+  if (!e) return null;
   return edgeToGraphEdgeLink(ctx, namespace, e);
 }
 

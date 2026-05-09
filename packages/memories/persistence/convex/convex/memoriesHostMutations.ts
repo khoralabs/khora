@@ -49,6 +49,7 @@ export const upsertNodeForMemoryKey = mutation({
   args: {
     namespace: v.string(),
     memoryKey: v.string(),
+    memoryId: v.string(),
     properties: v.optional(v.record(v.string(), v.any())),
     now: v.number(),
   },
@@ -126,9 +127,9 @@ export const insertEdge = mutation({
     toNodeId: v.string(),
     properties: v.optional(v.record(v.string(), v.any())),
     idParts: v.object({
-      selfMemoryKey: v.string(),
-      otherMemoryKey: v.string(),
       label: v.string(),
+      fromMemoryId: v.string(),
+      toMemoryId: v.string(),
     }),
     now: v.number(),
   },
@@ -185,7 +186,7 @@ export const syncLabelPropsSearchFeatures = mutation({
 });
 
 const vMergeEdge = v.object({
-  memory_key: v.string(),
+  peer_memory_id: v.string(),
   direction: v.union(v.literal("in"), v.literal("out")),
   label: v.object({
     kind: v.string(),
@@ -206,8 +207,8 @@ const vMergeLabel = v.object({
 });
 
 const vMergeEdgePayload = v.object({
-  from_key: v.string(),
-  to_key: v.string(),
+  from_memory_id: v.string(),
+  to_memory_id: v.string(),
   label: v.object({
     kind: v.string(),
     props: v.record(v.string(), v.any()),
@@ -225,6 +226,7 @@ export const mergeMemoryAtomic = mutation({
     properties: v.optional(v.record(v.string(), v.any())),
     edges: v.optional(v.array(vMergeEdge)),
     edge: v.optional(vMergeEdgePayload),
+    attachScopes: v.optional(v.array(v.string())),
     searchMetaVector: v.optional(v.array(v.float64())),
     now: v.number(),
   }),
@@ -240,6 +242,7 @@ export const mergeMemoryAtomic = mutation({
         key: args.key,
         content: args.content,
         edge: args.edge,
+        attachScopes: args.attachScopes,
         searchMetaVector: args.searchMetaVector,
         now: args.now,
       });
@@ -251,10 +254,35 @@ export const mergeMemoryAtomic = mutation({
       labels: args.labels ?? [],
       properties: args.properties,
       edges: args.edges,
+      attachScopes: args.attachScopes,
       searchMetaVector: args.searchMetaVector,
       now: args.now,
     });
   },
+});
+
+export const upsertScope = mutation({
+  args: { scopeId: v.string(), now: v.number() },
+  handler: async (ctx, args) => ctx.runMutation(cm.upsertScope, args),
+});
+
+export const linkScopes = mutation({
+  args: { parentScopeId: v.string(), childScopeId: v.string(), now: v.number() },
+  handler: async (ctx, args) => ctx.runMutation(cm.linkScopes, args),
+});
+
+export const unlinkScopeEdge = mutation({
+  args: { parentScopeId: v.string(), childScopeId: v.string(), now: v.number() },
+  handler: async (ctx, args) => ctx.runMutation(cm.unlinkScopeEdge, args),
+});
+
+export const replaceMemoryScopes = mutation({
+  args: {
+    memoryId: v.string(),
+    scopeIds: v.array(v.string()),
+    now: v.number(),
+  },
+  handler: async (ctx, args) => ctx.runMutation(cm.replaceMemoryScopes, args),
 });
 
 export const deleteMemoryRootRows = mutation({

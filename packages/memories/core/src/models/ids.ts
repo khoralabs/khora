@@ -23,9 +23,9 @@ export const ids = {
     fromNodeId: string,
     toNodeId: string,
     label: string,
-    selfKey: string,
-    otherMemoryKey: string,
-  ) => stableId("edge", fromNodeId, toNodeId, label, selfKey, otherMemoryKey),
+    fromMemoryId: string,
+    toMemoryId: string,
+  ) => stableId("edge", fromNodeId, toNodeId, label, fromMemoryId, toMemoryId),
   edgeLabelAssignment: (edgeId: string, labelId: string) => stableId("ela", edgeId, labelId),
   /** Deterministic provenance row id from chain inputs (stable across retries). */
   provenance: (parentRootHex: string, canonicalEventJson: string) =>

@@ -132,8 +132,8 @@ describe("label props search features", () => {
         namespace: "ns",
         content: [{ key: "c", text: "edge body" }],
         edge: {
-          from_key: "focal",
-          to_key: "nb",
+          from_memory_id: ids.memory("ns", "focal"),
+          to_memory_id: ids.memory("ns", "nb"),
           label: { kind: "causes", props: { mechanism: edgeToken } },
         },
       },
@@ -186,8 +186,8 @@ describe("label props search features", () => {
         namespace: "ns",
         content: [{ key: "c", text: "edge chunk" }],
         edge: {
-          from_key: "focal",
-          to_key: "nb",
+          from_memory_id: ids.memory("ns", "focal"),
+          to_memory_id: ids.memory("ns", "nb"),
           label: { kind: "describes", props: { facet: edgeToken } },
         },
       },

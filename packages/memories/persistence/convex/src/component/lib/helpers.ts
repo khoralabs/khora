@@ -110,13 +110,13 @@ async function collectEdgesFromDb(
       .query("nodes")
       .withIndex("by_nodeId", (q) => q.eq("nodeId", otherId))
       .unique();
-    if (!otherNode || otherNode.namespace !== namespace) continue;
+    if (!otherNode) continue;
 
     const mem = await ctx.db
       .query("memories")
       .withIndex("by_memoryId_tsCreated", (q) => q.eq("memoryId", otherNode.memoryId))
       .unique();
-    if (!mem || mem.namespace !== namespace) continue;
+    if (!mem) continue;
 
     const key = `${e.edgeId}:${direction}`;
     if (seen.has(key)) continue;
@@ -179,11 +179,12 @@ export async function buildCanonicalMemorySearchMetaText(
   return lines.join("\n");
 }
 
-export async function listNeighborMemoryKeysForNode(
+/** Neighboring memories (any primary namespace) linked by an incident edge to `nodeId`. */
+export async function listNeighborMemoriesForNode(
   ctx: ReadCtx,
-  namespace: string,
+  _namespace: string,
   nodeId: string,
-): Promise<string[]> {
+): Promise<{ namespace: string; key: string }[]> {
   const fromEdges = await ctx.db
     .query("edges")
     .withIndex("by_from", (q) => q.eq("fromNodeId", nodeId))
@@ -192,7 +193,7 @@ export async function listNeighborMemoryKeysForNode(
     .query("edges")
     .withIndex("by_to", (q) => q.eq("toNodeId", nodeId))
     .collect();
-  const keys = new Set<string>();
+  const out = new Map<string, { namespace: string; key: string }>();
   for (const e of [...fromEdges, ...toEdges]) {
     if (e.fromNodeId === undefined || e.toNodeId === undefined) continue;
     const otherId = e.fromNodeId === nodeId ? e.toNodeId : e.fromNodeId;
@@ -205,9 +206,14 @@ export async function listNeighborMemoryKeysForNode(
       .query("memories")
       .withIndex("by_memoryId_tsCreated", (q) => q.eq("memoryId", otherNode.memoryId))
       .unique();
-    if (mem && mem.namespace === namespace) keys.add(mem.key);
+    if (!mem) continue;
+    out.set(mem.memoryId, { namespace: mem.namespace, key: mem.key });
   }
-  return sortUnique([...keys]);
+  return [...out.values()].sort((a, b) =>
+    a.namespace !== b.namespace
+      ? a.namespace.localeCompare(b.namespace)
+      : a.key.localeCompare(b.key),
+  );
 }
 
 export { MEMORY_SEARCH_META_SOURCE_KEY, parsePropsJson };

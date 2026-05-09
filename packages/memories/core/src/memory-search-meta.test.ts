@@ -4,6 +4,7 @@ import {
   loadMeanEmbeddingsForNamespace,
   openMemoriesDatabase,
 } from "@cfd/memories-sqlite";
+import { ids } from "./models/ids";
 import {
   buildCanonicalMemorySearchMetaText,
   mergeMemory,
@@ -69,7 +70,13 @@ describe("memory search meta", () => {
         namespace: "ns",
         content: [{ key: "c1", text: "hello world" }],
         labels: [{ kind: "topic", props: {} }],
-        edges: [{ memory_key: "b", direction: "out", label: { kind: "references", props: {} } }],
+        edges: [
+          {
+            peer_memory_id: ids.memory("ns", "b"),
+            direction: "out",
+            label: { kind: "references", props: {} },
+          },
+        ],
         searchMetaVector: vec512(),
       },
     );
@@ -77,7 +84,7 @@ describe("memory search meta", () => {
     const fromDb = buildCanonicalMemorySearchMetaText(persistence, op, "ns", "a");
     const fromMerge = buildCanonicalMemorySearchMetaTextForMerge({
       labels: [{ kind: "topic", props: {} }],
-      edges: [{ memory_key: "b", direction: "out", label: { kind: "references", props: {} } }],
+      edges: [{ neighbor_key: "b", direction: "out", label: { kind: "references", props: {} } }],
     });
     expect(fromDb).toBe(fromMerge);
   });
@@ -127,7 +134,13 @@ describe("memory search meta", () => {
         namespace: "ns",
         content: [{ key: "b", text: "focal body" }],
         labels: [],
-        edges: [{ memory_key: "nb", direction: "out", label: { kind: "references", props: {} } }],
+        edges: [
+          {
+            peer_memory_id: ids.memory("ns", "nb"),
+            direction: "out",
+            label: { kind: "references", props: {} },
+          },
+        ],
       },
     );
 
@@ -156,7 +169,13 @@ describe("memory search meta", () => {
         namespace: "ns",
         content: [{ key: "b", text: "focal" }],
         labels: [],
-        edges: [{ memory_key: "nb", direction: "out", label: { kind: "references", props: {} } }],
+        edges: [
+          {
+            peer_memory_id: ids.memory("ns", "nb"),
+            direction: "out",
+            label: { kind: "references", props: {} },
+          },
+        ],
       },
     );
     expect(

@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-sqlite";
 import { mergeMemory } from "./api/merge-memory";
 import { search } from "./api/search";
+import { ids } from "./models/ids";
 
 function openTestDb() {
   return openMemoriesDatabase(":memory:");
@@ -48,7 +49,7 @@ describe("scoped search helpers", () => {
     if (!mem1?._id || !mem2?._id) throw new Error("expected memories");
 
     const onlyM1 = persistence.searchLexicalSourceMapIds({
-      scope: { kind: "union", namespaces: ["ns"] },
+      scope: { kind: "pathSubtree", namespaces: ["ns"] },
       text: "hello",
       limit: 25,
       memoryIds: [mem1._id],
@@ -69,7 +70,7 @@ describe("scoped search helpers", () => {
     const db = openTestDb();
     const persistence = createMemoriesPersistence(db);
     const r = persistence.searchLexicalSourceMapIds({
-      scope: { kind: "union", namespaces: ["ns"] },
+      scope: { kind: "pathSubtree", namespaces: ["ns"] },
       text: "x",
       limit: 10,
       memoryIds: [],
@@ -81,7 +82,7 @@ describe("scoped search helpers", () => {
     const db = openTestDb();
     const persistence = createMemoriesPersistence(db);
     const r = persistence.searchVectorSourceMapIds({
-      scope: { kind: "union", namespaces: ["ns"] },
+      scope: { kind: "pathSubtree", namespaces: ["ns"] },
       vector: vec512(0),
       limit: 10,
       memoryIds: [],
@@ -111,7 +112,13 @@ describe("neighbor sub-search", () => {
         namespace: "ns",
         content: [{ key: "b", text: "focal body" }],
         labels: [],
-        edges: [{ memory_key: "nb", direction: "out", label: { kind: "references", props: {} } }],
+        edges: [
+          {
+            peer_memory_id: ids.memory("ns", "nb"),
+            direction: "out",
+            label: { kind: "references", props: {} },
+          },
+        ],
       },
     );
 
@@ -151,7 +158,13 @@ describe("neighbor sub-search", () => {
         namespace: "ns",
         content: [{ key: "b", text: "focal unique marker alpha root" }],
         labels: [],
-        edges: [{ memory_key: "nb", direction: "out", label: { kind: "references", props: {} } }],
+        edges: [
+          {
+            peer_memory_id: ids.memory("ns", "nb"),
+            direction: "out",
+            label: { kind: "references", props: {} },
+          },
+        ],
       },
     );
 
@@ -192,7 +205,13 @@ describe("neighbor sub-search", () => {
         namespace: "ns",
         content: [{ key: "b", text: "bananas bananas bananas hub focal" }],
         labels: [],
-        edges: [{ memory_key: "nb", direction: "out", label: { kind: "references", props: {} } }],
+        edges: [
+          {
+            peer_memory_id: ids.memory("ns", "nb"),
+            direction: "out",
+            label: { kind: "references", props: {} },
+          },
+        ],
       },
     );
 
@@ -243,8 +262,8 @@ describe("neighbor sub-search", () => {
         content: [{ key: "b", text: "focal hub rocket ship" }],
         labels: [{ kind: "rootonly", props: {} }],
         edges: [
-          { memory_key: "nb1", direction: "out", label: { kind: "r1", props: {} } },
-          { memory_key: "nb2", direction: "out", label: { kind: "r2", props: {} } },
+          { peer_memory_id: ids.memory("ns", "nb1"), direction: "out", label: { kind: "r1", props: {} } },
+          { peer_memory_id: ids.memory("ns", "nb2"), direction: "out", label: { kind: "r2", props: {} } },
         ],
       },
     );
@@ -301,8 +320,8 @@ describe("neighbor sub-search", () => {
         namespace: "ns",
         content: [{ key: "b", text: "edge bridge edgexpuniq001 rivet" }],
         edge: {
-          from_key: "a",
-          to_key: "b",
+          from_memory_id: ids.memory("ns", "a"),
+          to_memory_id: ids.memory("ns", "b"),
           label: { kind: "rel", props: {} },
         },
       },

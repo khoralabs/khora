@@ -13,10 +13,16 @@ service MemoriesPersistenceCore {
     version: "2026-04-11"
     operations: [
         WithTransaction
-        ListNeighborMemoryKeysForNode
+        ListNeighborMemoriesForNode
         ClearMemorySubtree
         UpsertMemory
         UpsertNodeForMemoryKey
+        LoadMemoryNamespaceKey
+        UpsertScope
+        LinkScopes
+        UnlinkScopeEdge
+        ReplaceMemoryScopes
+        ListScopesForMemory
         InsertSourceMap
         InsertLexicalFeature
         EnsureNodeLabel
@@ -120,10 +126,16 @@ service MemoriesPersistenceService {
     version: "2026-04-11"
     operations: [
         WithTransaction
-        ListNeighborMemoryKeysForNode
+        ListNeighborMemoriesForNode
         ClearMemorySubtree
         UpsertMemory
         UpsertNodeForMemoryKey
+        LoadMemoryNamespaceKey
+        UpsertScope
+        LinkScopes
+        UnlinkScopeEdge
+        ReplaceMemoryScopes
+        ListScopesForMemory
         InsertSourceMap
         InsertLexicalFeature
         InsertVectorFeature
@@ -177,19 +189,28 @@ structure WithTransactionOutput {
     committed: Boolean
 }
 
-operation ListNeighborMemoryKeysForNode {
-    input: ListNeighborMemoryKeysForNodeInput
-    output: ListNeighborMemoryKeysForNodeOutput
+structure NeighborMemoryRef {
+    namespace: MemoryNamespace
+    key: String
 }
 
-structure ListNeighborMemoryKeysForNodeInput {
+list NeighborMemoryRefList {
+    member: NeighborMemoryRef
+}
+
+operation ListNeighborMemoriesForNode {
+    input: ListNeighborMemoriesForNodeInput
+    output: ListNeighborMemoriesForNodeOutput
+}
+
+structure ListNeighborMemoriesForNodeInput {
     op: MemoryOpContext
     namespace: MemoryNamespace
     nodeId: String
 }
 
-structure ListNeighborMemoryKeysForNodeOutput {
-    keys: StringList
+structure ListNeighborMemoriesForNodeOutput {
+    neighbors: NeighborMemoryRefList
 }
 
 operation ClearMemorySubtree {
@@ -230,11 +251,90 @@ structure UpsertNodeForMemoryKeyInput {
     op: MemoryOpContext
     namespace: MemoryNamespace
     memoryKey: String
+    memoryId: String
     properties: Document
 }
 
 structure UpsertNodeForMemoryKeyOutput {
     nodeId: String
+}
+
+operation LoadMemoryNamespaceKey {
+    input: LoadMemoryNamespaceKeyInput
+    output: LoadMemoryNamespaceKeyOutput
+}
+
+structure LoadMemoryNamespaceKeyInput {
+    memoryId: String
+}
+
+structure LoadMemoryNamespaceKeyOutput {
+    namespace: MemoryNamespace
+    key: String
+}
+
+operation UpsertScope {
+    input: UpsertScopeInput
+    output: UpsertScopeOutput
+}
+
+structure UpsertScopeInput {
+    op: MemoryOpContext
+    scopeId: MemoryNamespace
+}
+
+structure UpsertScopeOutput {}
+
+operation LinkScopes {
+    input: LinkScopesInput
+    output: LinkScopesOutput
+}
+
+structure LinkScopesInput {
+    op: MemoryOpContext
+    parentScopeId: MemoryNamespace
+    childScopeId: MemoryNamespace
+}
+
+structure LinkScopesOutput {}
+
+operation UnlinkScopeEdge {
+    input: UnlinkScopeEdgeInput
+    output: UnlinkScopeEdgeOutput
+}
+
+structure UnlinkScopeEdgeInput {
+    op: MemoryOpContext
+    parentScopeId: MemoryNamespace
+    childScopeId: MemoryNamespace
+}
+
+structure UnlinkScopeEdgeOutput {}
+
+operation ReplaceMemoryScopes {
+    input: ReplaceMemoryScopesInput
+    output: ReplaceMemoryScopesOutput
+}
+
+structure ReplaceMemoryScopesInput {
+    op: MemoryOpContext
+    memoryId: String
+    scopeIds: MemoryNamespaceList
+}
+
+structure ReplaceMemoryScopesOutput {}
+
+operation ListScopesForMemory {
+    input: ListScopesForMemoryInput
+    output: ListScopesForMemoryOutput
+}
+
+structure ListScopesForMemoryInput {
+    memoryId: String
+}
+
+structure ListScopesForMemoryOutput {
+    scopes: MemoryNamespaceList
 }
 
 operation InsertSourceMap {

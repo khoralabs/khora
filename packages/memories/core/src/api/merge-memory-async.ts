@@ -1,4 +1,5 @@
 import { ids } from "../models/ids";
+import type { NamespacePath } from "../models/namespace-path";
 import { zNamespacePath } from "../models/namespace-path";
 import type { MemoriesPersistenceAsync } from "../persistence/async-types";
 import { zVectorPayload } from "../persistence/row-schemas";
@@ -72,14 +73,18 @@ async function mergeMemoryAsyncNode(
   let metaSyncedMemoryKeys: string[] = [];
 
   await persistence.withTransaction(async () => {
-    const oldNeighborKeys = await persistence.listNeighborMemoryKeysForNode(op, namespace, nodeId);
+    const oldNeighbors = await persistence.listNeighborMemoriesForNode(op, namespace, nodeId);
     await persistence.clearMemorySubtree(op, { memoryKind: "node", memoryId, nodeId });
     await persistence.upsertMemory(op, { namespace, key: params.key, kind: "node", edgeId: null });
     await persistence.upsertNodeForMemoryKey(op, {
       namespace,
       memoryKey: params.key,
+      memoryId,
       properties: params.properties,
     });
+
+    const scopeIds = [...new Set([namespace, ...(params.attachScopes ?? [])])];
+    await persistence.replaceMemoryScopes(op, { memoryId, scopeIds });
 
     const contentHashes: Record<string, string> = {};
     for (const raw of params.content) {
@@ -129,26 +134,29 @@ async function mergeMemoryAsyncNode(
     }
 
     for (const edge of params.edges ?? []) {
-      if ((await persistence.findMemoryIdByKey(namespace, edge.memory_key)) === undefined) {
-        throw new Error(
-          `mergeMemoryAsync: unknown edge target memory_key=${edge.memory_key} in namespace=${namespace}`,
-        );
+      const peer = await persistence.loadMemoryNamespaceKey(edge.peer_memory_id);
+      if (peer === undefined) {
+        throw new Error(`mergeMemoryAsync: unknown peer_memory_id=${edge.peer_memory_id}`);
       }
-      const otherNodeId = ids.node(namespace, edge.memory_key);
+      const otherNodeId = ids.node(peer.namespace, peer.key);
       if (!(await persistence.nodeExists(otherNodeId))) {
-        throw new Error(`mergeMemoryAsync: target node missing for memory_key=${edge.memory_key}`);
+        throw new Error(
+          `mergeMemoryAsync: target node missing for peer_memory_id=${edge.peer_memory_id}`,
+        );
       }
 
       const fromNodeId = edge.direction === "out" ? nodeId : otherNodeId;
       const toNodeId = edge.direction === "out" ? otherNodeId : nodeId;
+      const fromMemoryId = edge.direction === "out" ? memoryId : edge.peer_memory_id;
+      const toMemoryId = edge.direction === "out" ? edge.peer_memory_id : memoryId;
       const { edgeId } = await persistence.insertEdge(op, {
         fromNodeId,
         toNodeId,
         properties: withDirectedEdgeProperties(edge.properties),
         idParts: {
           label: edge.label.kind,
-          selfMemoryKey: params.key,
-          otherMemoryKey: edge.memory_key,
+          fromMemoryId,
+          toMemoryId,
         },
       });
       const edgeLabelId = await persistence.ensureEdgeLabel(op, {
@@ -163,27 +171,44 @@ async function mergeMemoryAsyncNode(
       });
     }
 
-    const newNeighborKeys = (params.edges ?? []).map((e) => e.memory_key);
-    const syncKeys = new Set([params.key, ...oldNeighborKeys, ...newNeighborKeys]);
+    const syncByMid = new Map<string, { namespace: NamespacePath; key: string }>();
+    syncByMid.set(memoryId, { namespace, key: params.key });
+    for (const n of oldNeighbors) {
+      syncByMid.set(ids.memory(n.namespace, n.key), {
+        namespace: n.namespace as NamespacePath,
+        key: n.key,
+      });
+    }
+    for (const e of params.edges ?? []) {
+      const peer = await persistence.loadMemoryNamespaceKey(e.peer_memory_id);
+      if (peer !== undefined) {
+        syncByMid.set(e.peer_memory_id, {
+          namespace: peer.namespace as NamespacePath,
+          key: peer.key,
+        });
+      }
+    }
+
     const primaryMetaVec =
       params.searchMetaVector !== undefined && params.searchMetaVector.length > 0
         ? new Float32Array(params.searchMetaVector)
         : undefined;
-    for (const k of syncKeys) {
+    for (const ref of syncByMid.values()) {
+      const refMemoryId = ids.memory(ref.namespace, ref.key);
       await persistence.syncMemorySearchMeta(op, {
-        namespace,
-        memoryKey: k,
-        metaVector: k === params.key ? primaryMetaVec : undefined,
+        namespace: ref.namespace,
+        memoryKey: ref.key,
+        metaVector: refMemoryId === memoryId ? primaryMetaVec : undefined,
       });
       const syncLabelProps = persistence.syncLabelPropsSearchFeatures;
       if (syncLabelProps !== undefined) {
         await syncLabelProps(op, {
-          namespace,
-          memoryKey: k,
+          namespace: ref.namespace,
+          memoryKey: ref.key,
         });
       }
     }
-    metaSyncedMemoryKeys = Array.from(syncKeys).sort((a, b) => a.localeCompare(b));
+    metaSyncedMemoryKeys = [...syncByMid.keys()].sort((a, b) => a.localeCompare(b));
 
     const sourceKeysSorted = params.content
       .map((raw) => zMergeMemoryContentItem.parse(raw).key)
@@ -218,24 +243,35 @@ async function mergeMemoryAsyncEdge(
 ): Promise<string[]> {
   const { persistence } = ctx;
   const memoryId = ids.memory(namespace, params.key);
-  const { from_key: fromKey, to_key: toKey } = params.edge;
 
-  if ((await persistence.findMemoryIdByKey(namespace, fromKey)) === undefined) {
-    throw new Error(`mergeMemoryAsync: unknown edge.from_key=${fromKey} in namespace=${namespace}`);
+  const fromRef = await persistence.loadMemoryNamespaceKey(params.edge.from_memory_id);
+  const toRef = await persistence.loadMemoryNamespaceKey(params.edge.to_memory_id);
+  if (fromRef === undefined) {
+    throw new Error(`mergeMemoryAsync: unknown edge.from_memory_id=${params.edge.from_memory_id}`);
   }
-  if ((await persistence.findMemoryIdByKey(namespace, toKey)) === undefined) {
-    throw new Error(`mergeMemoryAsync: unknown edge.to_key=${toKey} in namespace=${namespace}`);
+  if (toRef === undefined) {
+    throw new Error(`mergeMemoryAsync: unknown edge.to_memory_id=${params.edge.to_memory_id}`);
   }
-  const fromNodeId = ids.node(namespace, fromKey);
-  const toNodeId = ids.node(namespace, toKey);
+  const fromNodeId = ids.node(fromRef.namespace, fromRef.key);
+  const toNodeId = ids.node(toRef.namespace, toRef.key);
   if (!(await persistence.nodeExists(fromNodeId))) {
-    throw new Error(`mergeMemoryAsync: node missing for edge.from_key=${fromKey}`);
+    throw new Error(
+      `mergeMemoryAsync: node missing for edge.from_memory_id=${params.edge.from_memory_id}`,
+    );
   }
   if (!(await persistence.nodeExists(toNodeId))) {
-    throw new Error(`mergeMemoryAsync: node missing for edge.to_key=${toKey}`);
+    throw new Error(
+      `mergeMemoryAsync: node missing for edge.to_memory_id=${params.edge.to_memory_id}`,
+    );
   }
 
-  const edgeId = ids.edge(fromNodeId, toNodeId, params.edge.label.kind, fromKey, toKey);
+  const edgeId = ids.edge(
+    fromNodeId,
+    toNodeId,
+    params.edge.label.kind,
+    params.edge.from_memory_id,
+    params.edge.to_memory_id,
+  );
 
   let metaSyncedMemoryKeys: string[] = [];
 
@@ -248,8 +284,8 @@ async function mergeMemoryAsyncEdge(
       properties: withDirectedEdgeProperties(params.edge.properties),
       idParts: {
         label: params.edge.label.kind,
-        selfMemoryKey: fromKey,
-        otherMemoryKey: toKey,
+        fromMemoryId: params.edge.from_memory_id,
+        toMemoryId: params.edge.to_memory_id,
       },
     });
     if (persistedEdgeId !== edgeId) {
@@ -262,6 +298,9 @@ async function mergeMemoryAsyncEdge(
       kind: "edge",
       edgeId,
     });
+
+    const scopeIds = [...new Set([namespace, ...(params.attachScopes ?? [])])];
+    await persistence.replaceMemoryScopes(op, { memoryId, scopeIds });
 
     const contentHashes: Record<string, string> = {};
     for (const raw of params.content) {
@@ -307,26 +346,36 @@ async function mergeMemoryAsyncEdge(
       props: params.edge.label.props as Record<string, unknown>,
     });
 
-    const syncKeys = new Set([params.key, fromKey, toKey]);
+    const syncByMid = new Map<string, { namespace: NamespacePath; key: string }>();
+    syncByMid.set(memoryId, { namespace, key: params.key });
+    syncByMid.set(params.edge.from_memory_id, {
+      namespace: fromRef.namespace as NamespacePath,
+      key: fromRef.key,
+    });
+    syncByMid.set(params.edge.to_memory_id, {
+      namespace: toRef.namespace as NamespacePath,
+      key: toRef.key,
+    });
     const primaryMetaVec =
       params.searchMetaVector !== undefined && params.searchMetaVector.length > 0
         ? new Float32Array(params.searchMetaVector)
         : undefined;
-    for (const k of syncKeys) {
+    for (const ref of syncByMid.values()) {
+      const refMid = ids.memory(ref.namespace, ref.key);
       await persistence.syncMemorySearchMeta(op, {
-        namespace,
-        memoryKey: k,
-        metaVector: k === params.key ? primaryMetaVec : undefined,
+        namespace: ref.namespace,
+        memoryKey: ref.key,
+        metaVector: refMid === memoryId ? primaryMetaVec : undefined,
       });
       const syncLabelProps = persistence.syncLabelPropsSearchFeatures;
       if (syncLabelProps !== undefined) {
         await syncLabelProps(op, {
-          namespace,
-          memoryKey: k,
+          namespace: ref.namespace,
+          memoryKey: ref.key,
         });
       }
     }
-    metaSyncedMemoryKeys = Array.from(syncKeys).sort((a, b) => a.localeCompare(b));
+    metaSyncedMemoryKeys = [...syncByMid.keys()].sort((a, b) => a.localeCompare(b));
 
     const sourceKeysSorted = params.content
       .map((raw) => zMergeMemoryContentItem.parse(raw).key)

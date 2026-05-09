@@ -34,26 +34,34 @@ function formatEdgeLine(
 }
 
 /**
- * Neighbor memory keys linked by an edge to this node (same namespace), for invalidation sets.
+ * Neighboring memories linked by an edge to this node (any namespace), for invalidation sets.
  */
-export function listNeighborMemoryKeysForNode(
+export function listNeighborMemoriesForNode(
   ctx: DbCtx,
-  namespace: string,
+  _namespace: string,
   nodeId: string,
-): string[] {
+): Array<{ namespace: string; key: string }> {
   const rows = ctx.db
-    .query<{ key: string }, [string, string, string, string]>(
-      `SELECT DISTINCT m.key AS key
+    .query<{ namespace: string; key: string }, [string, string, string]>(
+      `SELECT DISTINCT m.namespace AS namespace, m.key AS key
        FROM edges e
        JOIN nodes n_other ON n_other._id = CASE
          WHEN e.from_node_id = ? THEN e.to_node_id
          ELSE e.from_node_id
        END
-       JOIN memories m ON m.key = n_other.value AND m.namespace = ?
+       JOIN memories m ON m._id = n_other.memory_id
        WHERE e.from_node_id = ? OR e.to_node_id = ?`,
     )
-    .all(nodeId, namespace, nodeId, nodeId);
-  return sortUnique(rows.map((r) => r.key));
+    .all(nodeId, nodeId, nodeId);
+  const out = new Map<string, { namespace: string; key: string }>();
+  for (const r of rows) {
+    out.set(`${r.namespace}\0${r.key}`, { namespace: r.namespace, key: r.key });
+  }
+  return [...out.values()].sort((a, b) =>
+    a.namespace !== b.namespace
+      ? a.namespace.localeCompare(b.namespace)
+      : a.key.localeCompare(b.key),
+  );
 }
 
 export function parseEdgeLabelsJoined(s: string | null): string[] {
@@ -61,11 +69,11 @@ export function parseEdgeLabelsJoined(s: string | null): string[] {
   return sortUnique(s.split(EDGE_LABEL_SEP).filter(Boolean));
 }
 
-/** Incident edges for search-meta and label-props sync (same namespace as `memoryKey`). */
+/** Incident edges for search-meta and label-props sync (cross-namespace supported). */
 export function collectEdgesFromDb(
   ctx: DbCtx,
   nodeId: string,
-  namespace: string,
+  _namespace: string,
 ): Array<{
   edgeId: string;
   neighborKey: string;
@@ -75,7 +83,7 @@ export function collectEdgesFromDb(
   return ctx.db
     .query<
       { edgeId: string; neighborKey: string; direction: string; labelsJoined: string | null },
-      [string, string, string, string, string, string]
+      [string, string, string, string, string]
     >(
       `SELECT
          e._id AS edgeId,
@@ -87,14 +95,14 @@ export function collectEdgesFromDb(
          WHEN e.from_node_id = ? THEN e.to_node_id
          ELSE e.from_node_id
        END
-       JOIN memories m ON m.key = n_other.value AND m.namespace = ?
+       JOIN memories m ON m._id = n_other.memory_id
        LEFT JOIN edge_label_assignments ela ON ela.edge_id = e._id
        LEFT JOIN edge_labels el ON el._id = ela.label_id
        WHERE e.from_node_id = ? OR e.to_node_id = ?
        GROUP BY e._id, n_other.value, CASE WHEN e.from_node_id = ? THEN 'out' ELSE 'in' END
        ORDER BY e._id ASC`,
     )
-    .all(nodeId, nodeId, namespace, nodeId, nodeId, nodeId)
+    .all(nodeId, nodeId, nodeId, nodeId, nodeId)
     .map((r) => ({
       edgeId: r.edgeId,
       neighborKey: r.neighborKey,

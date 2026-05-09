@@ -8,8 +8,7 @@ import {
 } from "@cfd/memories-core";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel.js";
-import type { QueryCtx } from "./_generated/server.js";
-import { internalQuery, query } from "./_generated/server.js";
+import { internalQuery, query, type QueryCtx } from "./_generated/server.js";
 import {
   listIncidentGraphEdges as listIncidentGraphEdgesImpl,
   loadGraphEdge as loadGraphEdgeImpl,
@@ -23,9 +22,11 @@ import {
 import {
   buildCanonicalMemorySearchMetaText,
   lexicalTextForMemorySource,
-  listNeighborMemoryKeysForNode,
+  listNeighborMemoriesForNode,
   parsePropsJson,
 } from "./lib/helpers.js";
+import { intersectMemoryAllowlists, memoryIdsMatchingScope } from "./lib/scopeSearchConvex.js";
+import { loadMemoryNamespaceKeyImpl } from "./lib/mergeWrites.js";
 import {
   listNeighborsForEdgeMemory as listNeighborsForEdgeMemoryImpl,
   listNeighborsForMemory as listNeighborsForMemoryImpl,
@@ -208,11 +209,39 @@ export const nodeExists = query({
   },
 });
 
-export const listNeighborMemoryKeysForNodeQuery = query({
+export const listNeighborMemoriesForNodeQuery = query({
   args: { namespace: v.string(), nodeId: v.string() },
-  returns: v.array(v.string()),
+  returns: v.array(
+    v.object({
+      namespace: v.string(),
+      key: v.string(),
+    }),
+  ),
   handler: async (ctx, { namespace, nodeId }) => {
-    return listNeighborMemoryKeysForNode(ctx, namespace, nodeId);
+    return listNeighborMemoriesForNode(ctx, namespace, nodeId);
+  },
+});
+
+export const loadMemoryNamespaceKey = query({
+  args: { memoryId: v.string() },
+  returns: v.union(
+    v.null(),
+    v.object({ namespace: v.string(), key: v.string() }),
+  ),
+  handler: async (ctx, { memoryId }) => {
+    return (await loadMemoryNamespaceKeyImpl(ctx, memoryId)) ?? null;
+  },
+});
+
+export const listScopesForMemory = query({
+  args: { memoryId: v.string() },
+  returns: v.array(v.string()),
+  handler: async (ctx, { memoryId }) => {
+    const rows = await ctx.db
+      .query("memory_scopes")
+      .withIndex("by_memory", (q) => q.eq("memoryId", memoryId))
+      .collect();
+    return [...new Set(rows.map((r) => r.scopeId))].sort((a, b) => a.localeCompare(b));
   },
 });
 
@@ -236,19 +265,50 @@ function searchLexicalOne(ctx: QueryCtx, args: { rootPath: string; text: string 
 
 const ROUND_ROBIN_SLACK = 4;
 
+export const memoryIdsMatchingScopeInternal = internalQuery({
+  args: {
+    kind: v.union(v.literal("scopeDag"), v.literal("exactScope")),
+    roots: v.optional(v.array(v.string())),
+    scopes: v.optional(v.array(v.string())),
+  },
+  returns: v.array(v.string()),
+  handler: async (ctx, args) => {
+    const scope =
+      args.kind === "scopeDag"
+        ? ({ kind: "scopeDag", roots: args.roots ?? [] } as SearchNamespaceScope)
+        : ({ kind: "exactScope", scopes: args.scopes ?? [] } as SearchNamespaceScope);
+    return (await memoryIdsMatchingScope(ctx, scope)) ?? [];
+  },
+});
+
 function scopeFromValidator(scope: {
-  kind: "union" | "unscoped";
+  kind: "unscoped" | "pathSubtree" | "scopeDag" | "exactScope";
   namespaces?: string[];
+  roots?: string[];
+  scopes?: string[];
 }): SearchNamespaceScope {
   if (scope.kind === "unscoped") return { kind: "unscoped" };
-  return { kind: "union", namespaces: scope.namespaces ?? [] };
+  if (scope.kind === "pathSubtree") {
+    return { kind: "pathSubtree", namespaces: scope.namespaces ?? [] };
+  }
+  if (scope.kind === "scopeDag") {
+    return { kind: "scopeDag", roots: scope.roots ?? [] };
+  }
+  return { kind: "exactScope", scopes: scope.scopes ?? [] };
 }
 
 export const searchLexicalSourceMapIds = query({
   args: {
     scope: v.object({
-      kind: v.union(v.literal("union"), v.literal("unscoped")),
+      kind: v.union(
+        v.literal("unscoped"),
+        v.literal("pathSubtree"),
+        v.literal("scopeDag"),
+        v.literal("exactScope"),
+      ),
       namespaces: v.optional(v.array(v.string())),
+      roots: v.optional(v.array(v.string())),
+      scopes: v.optional(v.array(v.string())),
     }),
     text: v.string(),
     limit: v.number(),
@@ -261,10 +321,18 @@ export const searchLexicalSourceMapIds = query({
     if (raw.memoryIds !== undefined && raw.memoryIds.length === 0) return [];
     if (raw.text.trim().length === 0) return [];
 
+    const scopedIds = await memoryIdsMatchingScope(ctx, scope);
+    let memoryFilterIds = raw.memoryIds;
+    if (scopedIds !== undefined) {
+      const merged = intersectMemoryAllowlists(raw.memoryIds, scopedIds);
+      if (merged.length === 0) return [];
+      memoryFilterIds = merged;
+    }
+
     /** DB-wide lexical search: search index without namespace filter; optional memoryIds allowlist. */
     if (scope.kind === "unscoped") {
       const K = Math.max(raw.limit * 8, 100);
-      const memoryIdSet = raw.memoryIds === undefined ? undefined : new Set(raw.memoryIds);
+      const memoryIdSet = memoryFilterIds === undefined ? undefined : new Set(memoryFilterIds);
       const rows = await ctx.db
         .query("text_features")
         .withSearchIndex("search_text", (sq) => sq.search("text", raw.text))
@@ -283,13 +351,34 @@ export const searchLexicalSourceMapIds = query({
       return out;
     }
 
+    if (scope.kind === "scopeDag" || scope.kind === "exactScope") {
+      const K = Math.max(raw.limit * 8, 100);
+      const memoryIdSet = new Set(memoryFilterIds ?? []);
+      const rows = await ctx.db
+        .query("text_features")
+        .withSearchIndex("search_text", (sq) => sq.search("text", raw.text))
+        .take(K);
+      const out: string[] = [];
+      const seen = new Set<string>();
+      for (const row of rows) {
+        if (!memoryIdSet.has(row.memoryId)) continue;
+        const sid = row.sourceMapId;
+        if (!seen.has(sid)) {
+          seen.add(sid);
+          out.push(sid);
+          if (out.length >= raw.limit) break;
+        }
+      }
+      return out;
+    }
+
     const namespaces = scope.namespaces ?? [];
     if (namespaces.length === 0) return [];
 
     const roots = canonicalizeNamespacePrefixes(namespaces.map((ns) => namespacePath(ns)));
     const armCount = roots.length;
     const K = Math.max(2, Math.ceil(raw.limit / armCount)) + ROUND_ROBIN_SLACK;
-    const memoryIdSet = raw.memoryIds === undefined ? undefined : new Set(raw.memoryIds);
+    const memoryIdSet = memoryFilterIds === undefined ? undefined : new Set(memoryFilterIds);
 
     const rowsPerArm = await Promise.all(
       roots.map((rootPath) => searchLexicalOne(ctx, { rootPath, text: raw.text }).take(K)),

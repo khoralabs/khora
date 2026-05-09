@@ -154,15 +154,31 @@ structure MemoriesBackendCapabilities {
     unscopedSearch: Boolean
 }
 
-/// Namespace predicate for hybrid retrieval.
+/// Retrieval scope for hybrid search (`SearchLexicalSourceMapIds` / `SearchVectorSourceMapIds`).
 union SearchNamespaceScope {
-    unionNamespaces: NamespaceUnion
+    /// Prefix roots on each memory row's primary `namespace` column (current subtree behavior).
+    pathSubtree: PathSubtreeScope
+    /// Scope DAG roots: memory matches when attached to any scope reachable as a descendant.
+    scopeDag: ScopeDagScope
+    /// Memories attached to scope ids exactly equal to listed scopes (no DAG descent).
+    exactScope: ExactScopeAttachmentScope
+    /// Marker member: no namespace predicate (entire DB).
     unscoped: UnscopedScope
 }
 
-structure NamespaceUnion {
-    /// Non-empty, deduped subtree roots (see `MemoryNamespace`).
+structure PathSubtreeScope {
+    /// Non-empty, deduped subtree roots on primary namespace paths.
     namespaces: MemoryNamespaceList
+}
+
+structure ScopeDagScope {
+    /// Non-empty scope ids (`MemoryNamespace` syntax); closure expands to descendant scopes.
+    roots: MemoryNamespaceList
+}
+
+structure ExactScopeAttachmentScope {
+    /// Exact scope attachments — ids use `MemoryNamespace` syntax.
+    scopes: MemoryNamespaceList
 }
 
 /// Marker member: no namespace predicate (entire DB).
@@ -182,7 +198,8 @@ list DoubleList {
 }
 
 structure MergeMemoryEdge {
-    memory_key: String
+    /// Peer endpoint memory id (`ids.memory(ns, key)`); primary namespace is implicit on the peer row.
+    peer_memory_id: String
     direction: EdgeDirection
     label: OntologyLabelInstance
     properties: Document
@@ -209,13 +226,13 @@ structure MergeMemoryParamsNode {
     labels: OntologyLabelInstanceList
     properties: Document
     edges: MergeMemoryEdgeList
-    /// Optional primary-memory search-meta vector (same dim as content vectors).
+    /// Optional extra DAG scope attachments (`attachScopes` in TS); primary namespace is always attached by merge.
     searchMetaVector: DoubleList
 }
 
 structure MergeMemoryEdgeAssociation {
-    from_key: String
-    to_key: String
+    from_memory_id: String
+    to_memory_id: String
     label: OntologyLabelInstance
     properties: Document
 }
@@ -226,7 +243,7 @@ structure MergeMemoryParamsEdge {
     content: MergeMemoryContentItemList
     /// Endpoints and edge label for the single graph edge this memory owns.
     edge: MergeMemoryEdgeAssociation
-    /// Optional search-meta vector for this edge memory.
+    /// Optional scope attachments (`attachScopes` in TS), same semantics as node merge.
     searchMetaVector: DoubleList
 }
 
@@ -410,7 +427,7 @@ structure EdgePreviewPayload {
 }
 
 structure InsertEdgeIdParts {
-    selfMemoryKey: String
-    otherMemoryKey: String
     label: String
+    fromMemoryId: String
+    toMemoryId: String
 }

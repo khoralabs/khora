@@ -53,14 +53,15 @@ export async function mergeMemory(
         vector: c.vector !== undefined ? [...c.vector] : undefined,
       })),
       edge: {
-        from_key: params.edge.from_key,
-        to_key: params.edge.to_key,
+        from_memory_id: params.edge.from_memory_id,
+        to_memory_id: params.edge.to_memory_id,
         label: {
           kind: params.edge.label.kind,
           props: params.edge.label.props as Record<string, unknown>,
         },
         properties: params.edge.properties,
       },
+      attachScopes: params.attachScopes,
       searchMetaVector:
         params.searchMetaVector !== undefined ? [...params.searchMetaVector] : undefined,
       now,
@@ -85,7 +86,7 @@ export async function mergeMemory(
     })),
     properties: params.properties,
     edges: params.edges?.map((e) => ({
-      memory_key: e.memory_key,
+      peer_memory_id: e.peer_memory_id,
       direction: e.direction,
       label: {
         kind: e.label.kind,
@@ -93,6 +94,7 @@ export async function mergeMemory(
       },
       properties: e.properties,
     })),
+    attachScopes: params.attachScopes,
     searchMetaVector:
       params.searchMetaVector !== undefined ? [...params.searchMetaVector] : undefined,
     now,

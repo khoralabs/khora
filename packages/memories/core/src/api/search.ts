@@ -46,6 +46,11 @@ export interface SearchParams<
    * `additionalNamespaces`; keep `namespace` for logs / future policy.
    */
   searchEntireDatabase?: true;
+  /**
+   * How `namespace` + `additionalNamespaces` are interpreted when not searching the entire DB.
+   * Default `pathSubtree`: prefix match on the primary namespace column of each memory row.
+   */
+  searchScopeMode?: "pathSubtree" | "scopeDag" | "exactScope";
   content: SearchContent;
   options?: {
     topK?: number;
@@ -114,12 +119,15 @@ function matchesLabelFilter(
   return true;
 }
 
-function scopeSingleNamespace(namespace: NamespacePath): SearchNamespaceScope {
-  return { kind: "union", namespaces: [namespace] };
+function pathSubtreeSingle(namespace: NamespacePath): SearchNamespaceScope {
+  return { kind: "pathSubtree", namespaces: [namespace] };
 }
 
 export function normalizeSearchScopeFromParams(
-  params: Pick<SearchParams, "namespace" | "additionalNamespaces" | "searchEntireDatabase">,
+  params: Pick<
+    SearchParams,
+    "namespace" | "additionalNamespaces" | "searchEntireDatabase" | "searchScopeMode"
+  >,
   caps: MemoriesBackendCapabilities,
 ): {
   scope: SearchNamespaceScope;
@@ -150,8 +158,23 @@ export function normalizeSearchScopeFromParams(
     throw new Error(`additionalNamespaces exceeds max (${MAX_ADDITIONAL_NAMESPACES})`);
   }
   const canonical = canonicalizeNamespacePrefixes(ordered);
+  const mode = params.searchScopeMode ?? "pathSubtree";
+  if (mode === "pathSubtree") {
+    return {
+      scope: { kind: "pathSubtree", namespaces: canonical },
+      additionalNamespaceCount: additionalCount,
+      unscoped: false,
+    };
+  }
+  if (mode === "scopeDag") {
+    return {
+      scope: { kind: "scopeDag", roots: canonical },
+      additionalNamespaceCount: additionalCount,
+      unscoped: false,
+    };
+  }
   return {
-    scope: { kind: "union", namespaces: canonical },
+    scope: { kind: "exactScope", scopes: canonical },
     additionalNamespaceCount: additionalCount,
     unscoped: false,
   };
@@ -176,10 +199,29 @@ function rankSourceMapIdsForContent(
   const asOf = input.asOfTimestampMs;
   const asOfSpread = asOf !== undefined ? { asOfTimestampMs: asOf } : {};
 
-  if (scope.kind === "union" && scope.namespaces.length > 1 && !caps.multiNamespaceSearch) {
+  const multiRoots =
+    scope.kind === "pathSubtree"
+      ? scope.namespaces
+      : scope.kind === "scopeDag"
+        ? scope.roots
+        : scope.kind === "exactScope"
+          ? scope.scopes
+          : [];
+
+  const needsMultiArm =
+    !caps.multiNamespaceSearch &&
+    multiRoots.length > 1 &&
+    (scope.kind === "pathSubtree" || scope.kind === "scopeDag" || scope.kind === "exactScope");
+
+  if (needsMultiArm) {
     const arms: RrfArm<string>[] = [];
-    for (const ns of scope.namespaces) {
-      const subScope = scopeSingleNamespace(ns);
+    for (const ns of multiRoots) {
+      const subScope: SearchNamespaceScope =
+        scope.kind === "pathSubtree"
+          ? pathSubtreeSingle(ns)
+          : scope.kind === "scopeDag"
+            ? { kind: "scopeDag", roots: [ns] }
+            : { kind: "exactScope", scopes: [ns] };
       if (caps.lexicalSearch && "text" in input.content && input.lexicalWeight > 0) {
         const ranked = persistence.searchLexicalSourceMapIds({
           scope: subScope,
@@ -293,7 +335,7 @@ function expandNeighborsWithSubSearch<NODE_LABELS extends string, EDGE_LABELS ex
   const neighborRetrievalLimit = Math.max(capForRetrieval * 5, 25);
 
   const fused = rankSourceMapIdsForContent(persistence, caps, {
-    scope: scopeSingleNamespace(input.namespace),
+    scope: pathSubtreeSingle(input.namespace),
     logNamespace: input.namespace,
     content: input.content,
     lexicalWeight: input.lexicalWeight,

@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { ids } from "../models/ids";
 import type { MemoriesPersistenceAsync } from "../persistence/async-types";
 import { mergeMemoryAsync } from "./merge-memory-async";
 
@@ -20,7 +21,9 @@ describe("mergeMemoryAsync", () => {
         unscopedSearch: true,
       },
       withTransaction: async <T>(fn: () => Promise<T>) => fn(),
-      listNeighborMemoryKeysForNode: async () => [],
+      listNeighborMemoriesForNode: async () => [],
+      loadMemoryNamespaceKey: async () => undefined,
+      replaceMemoryScopes: async () => {},
       clearMemorySubtree: async () => {},
       upsertMemory: async () => ({ memoryId: "mid", _ts_created: 1 }),
       upsertNodeForMemoryKey: async () => ({ nodeId: "nid" }),
@@ -79,7 +82,14 @@ describe("mergeMemoryAsync", () => {
         unscopedSearch: true,
       },
       withTransaction: async <T>(fn: () => Promise<T>) => fn(),
-      listNeighborMemoryKeysForNode: async () => [],
+      listNeighborMemoriesForNode: async () => [],
+      loadMemoryNamespaceKey: async (memoryId: string) => {
+        if (memoryId === ids.memory("ns", "nb")) {
+          return { namespace: "ns", key: "nb" };
+        }
+        return undefined;
+      },
+      replaceMemoryScopes: async () => {},
       clearMemorySubtree: async () => {},
       upsertMemory: async () => ({ memoryId: "mid", _ts_created: 1 }),
       upsertNodeForMemoryKey: async () => ({ nodeId: "nid" }),
@@ -112,7 +122,13 @@ describe("mergeMemoryAsync", () => {
         key: "primary",
         labels: [],
         content: [{ key: "body", text: "hello" }],
-        edges: [{ memory_key: "nb", direction: "out", label: { kind: "relates", props: {} } }],
+        edges: [
+          {
+            peer_memory_id: ids.memory("ns", "nb"),
+            direction: "out",
+            label: { kind: "relates", props: {} },
+          },
+        ],
       },
     );
 

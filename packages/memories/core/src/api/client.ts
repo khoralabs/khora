@@ -70,17 +70,13 @@ export class MemoriesClient<
     return this.storeForNamespace?.(namespace) ?? this.store;
   }
 
-  private syncLexicalExportToStore(namespace: string, mergedMemoryKeys: string[]): void {
-    const store = this.storeForMergeNamespace(namespace);
+  private syncLexicalExportToStore(_namespace: string, mergedMemoryIds: string[]): void {
+    const store = this.storeForMergeNamespace(_namespace);
     const pushRows = store?.syncFromTextExportRows;
     if (pushRows === undefined) {
       return;
     }
-    for (const memoryKey of mergedMemoryKeys) {
-      const memoryId = this.persistence.findMemoryIdByKey(namespace, memoryKey);
-      if (memoryId === undefined) {
-        continue;
-      }
+    for (const memoryId of mergedMemoryIds) {
       pushRows.call(store, this.persistence.listTextFeatureExportRowsForMemory(memoryId));
     }
   }
@@ -88,7 +84,7 @@ export class MemoriesClient<
   /**
    * Validates content items and ontology labels, maps labels to stored string identities, then runs
    * {@link mergeMemory} in a transaction.
-   * @returns Memory keys whose search-meta lexical row was rebuilt.
+   * @returns Sorted memory ids whose search-meta lexical row was rebuilt.
    */
   mergeMemory(params: TypedMergeParams<TNode, TEdge>): string[] {
     for (const item of params.content) {
@@ -102,11 +98,12 @@ export class MemoriesClient<
         namespace: params.namespace,
         content: params.content,
         edge: {
-          from_key: params.edge.from_key,
-          to_key: params.edge.to_key,
+          from_memory_id: params.edge.from_memory_id,
+          to_memory_id: params.edge.to_memory_id,
           label: validateEdgeLabel(this.ontology, params.edge.label),
           properties: params.edge.properties,
         },
+        attachScopes: params.attachScopes,
         searchMetaVector: params.searchMetaVector,
         ontology: this.ontology,
       });
@@ -118,7 +115,7 @@ export class MemoriesClient<
 
     const edgesMapped =
       params.edges?.map((e) => ({
-        memory_key: e.memory_key,
+        peer_memory_id: e.peer_memory_id,
         direction: e.direction,
         label: validateEdgeLabel(this.ontology, e.label),
         properties: e.properties,
@@ -131,6 +128,7 @@ export class MemoriesClient<
       labels: labelInstances,
       properties: params.properties,
       edges: edgesMapped,
+      attachScopes: params.attachScopes,
       searchMetaVector: params.searchMetaVector,
       ontology: this.ontology,
     });

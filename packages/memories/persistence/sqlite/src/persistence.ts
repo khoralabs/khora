@@ -18,7 +18,12 @@ import { insertEdge } from "./models/edges";
 import { syncLabelPropsSearchFeatures as syncLabelPropsSearchFeaturesImpl } from "./models/label-props-search";
 import { listSourceMapsForMemory as listSourceMapsForMemoryQuery } from "./models/list-source-maps-for-memory";
 import { listTextFeatureExportRowsForMemory as listTextFeatureExportRowsForMemoryQuery } from "./models/list-text-feature-export-rows";
-import { findMemoryAssociation, findMemoryIdByKey, upsertMemory } from "./models/memories";
+import {
+  findMemoryAssociation,
+  findMemoryIdByKey,
+  loadMemoryNamespaceKey as loadMemoryNamespaceKeyRow,
+  upsertMemory,
+} from "./models/memories";
 import {
   getProvenanceHeadRootHex,
   getProvenanceTimestampMsForRootHex as getProvenanceTsForRootHexQuery,
@@ -26,7 +31,7 @@ import {
 } from "./models/memory-provenance";
 import {
   buildCanonicalMemorySearchMetaText,
-  listNeighborMemoryKeysForNode,
+  listNeighborMemoriesForNode,
   syncMemorySearchMeta,
   upsertMemorySearchMetaVector,
 } from "./models/memory-search-meta";
@@ -42,6 +47,13 @@ import {
   searchLexicalSourceMapIds,
   searchVectorSourceMapIds,
 } from "./models/search";
+import {
+  linkScopes as linkScopesRow,
+  listScopesForMemory as listScopesForMemoryRow,
+  replaceMemoryScopes as replaceMemoryScopesRow,
+  unlinkScopeEdge as unlinkScopeEdgeRow,
+  upsertScope as upsertScopeRow,
+} from "./models/scopes";
 import { insertSourceMap, updateSourceMapContentHash } from "./models/source-maps";
 import { insertLexicalFeature } from "./models/text-features";
 import { insertVectorFeature } from "./models/vector-features";
@@ -81,8 +93,45 @@ export class MemoriesPersistence implements IMemoriesPersistence {
     return this.db.transaction(fn)();
   }
 
-  listNeighborMemoryKeysForNode(op: MemoryOpContext, namespace: string, nodeId: string): string[] {
-    return listNeighborMemoryKeysForNode(this.ctx(op), namespace, nodeId);
+  listNeighborMemoriesForNode(
+    op: MemoryOpContext,
+    namespace: string,
+    nodeId: string,
+  ): ReadonlyArray<{ namespace: string; key: string }> {
+    return listNeighborMemoriesForNode(this.ctx(op), namespace, nodeId);
+  }
+
+  loadMemoryNamespaceKey(memoryId: string): { namespace: string; key: string } | undefined {
+    return loadMemoryNamespaceKeyRow({ db: this.db, now: 0 }, memoryId);
+  }
+
+  upsertScope(op: MemoryOpContext, input: { scopeId: string }): void {
+    upsertScopeRow(this.ctx(op), input);
+  }
+
+  linkScopes(
+    op: MemoryOpContext,
+    input: { parentScopeId: string; childScopeId: string },
+  ): void {
+    linkScopesRow(this.ctx(op), input);
+  }
+
+  unlinkScopeEdge(
+    op: MemoryOpContext,
+    input: { parentScopeId: string; childScopeId: string },
+  ): void {
+    unlinkScopeEdgeRow(this.ctx(op), input);
+  }
+
+  replaceMemoryScopes(
+    op: MemoryOpContext,
+    input: { memoryId: string; scopeIds: readonly string[] },
+  ): void {
+    replaceMemoryScopesRow(this.ctx(op), input);
+  }
+
+  listScopesForMemory(memoryId: string): string[] {
+    return listScopesForMemoryRow({ db: this.db, now: 0 }, memoryId);
   }
 
   clearMemorySubtree(
@@ -118,7 +167,12 @@ export class MemoriesPersistence implements IMemoriesPersistence {
 
   upsertNodeForMemoryKey(
     op: MemoryOpContext,
-    input: { namespace: string; memoryKey: string; properties?: Record<string, unknown> },
+    input: {
+      namespace: string;
+      memoryKey: string;
+      memoryId: string;
+      properties?: Record<string, unknown>;
+    },
   ): { nodeId: string } {
     return upsertNodeForMemoryKey(this.ctx(op), input);
   }
@@ -191,7 +245,7 @@ export class MemoriesPersistence implements IMemoriesPersistence {
       fromNodeId: string;
       toNodeId: string;
       properties?: Record<string, unknown>;
-      idParts: { selfMemoryKey: string; otherMemoryKey: string; label: string };
+      idParts: { label: string; fromMemoryId: string; toMemoryId: string };
     },
   ): { edgeId: string } {
     return insertEdge(this.ctx(op), input);

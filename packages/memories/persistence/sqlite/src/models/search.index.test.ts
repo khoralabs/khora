@@ -21,7 +21,7 @@ describe("searchLexicalSourceMapIds namespace index", () => {
     const ids = searchLexicalSourceMapIds(
       { db, now: Date.now() },
       {
-        scope: { kind: "union", namespaces: [namespacePath("org/team")] },
+        scope: { kind: "pathSubtree", namespaces: [namespacePath("org/team")] },
         text: "xyzzy123",
         limit: 10,
       },

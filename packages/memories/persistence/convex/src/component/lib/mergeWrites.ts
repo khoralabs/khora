@@ -1,5 +1,5 @@
 import { ids, namespacePath, namespacePrefixFieldsCamel } from "@cfd/memories-core";
-import type { MutationCtx } from "../_generated/server.js";
+import type { MutationCtx, QueryCtx } from "../_generated/server.js";
 import { buildCanonicalMemorySearchMetaText, MEMORY_SEARCH_META_SOURCE_KEY } from "./helpers.js";
 import {
   CONVEX_VECTOR_DIMENSIONS,
@@ -7,6 +7,19 @@ import {
   isConvexVectorDimension,
   vectorTableNameForDim,
 } from "./vectorConfig.js";
+import { deleteMemoryScopesForMemoryImpl } from "./scopesConvex.js";
+
+export async function loadMemoryNamespaceKeyImpl(
+  ctx: QueryCtx | MutationCtx,
+  memoryId: string,
+): Promise<{ namespace: string; key: string } | undefined> {
+  const row = await ctx.db
+    .query("memories")
+    .withIndex("by_memoryId_tsCreated", (q) => q.eq("memoryId", memoryId))
+    .unique();
+  if (!row) return undefined;
+  return { namespace: row.namespace, key: row.key };
+}
 
 export async function deleteVectorFeaturesBySourceMapId(
   ctx: MutationCtx,
@@ -101,6 +114,7 @@ export async function clearMemorySubtreeImpl(
     | { memoryKind: "node"; memoryId: string; nodeId: string }
     | { memoryKind: "edge"; memoryId: string; edgeId: string },
 ): Promise<void> {
+  await deleteMemoryScopesForMemoryImpl(ctx, input.memoryId);
   if (input.memoryKind === "edge") {
     await deleteIndexedFeaturesForMemory(ctx, input.memoryId);
     const assigns = await ctx.db
@@ -210,13 +224,13 @@ export async function upsertNodeForMemoryKeyImpl(
   args: {
     namespace: string;
     memoryKey: string;
+    memoryId: string;
     properties?: Record<string, unknown>;
     now: number;
   },
 ): Promise<{ nodeId: string }> {
-  const { namespace, memoryKey, properties, now } = args;
+  const { namespace, memoryKey, memoryId, properties, now } = args;
   const nodeId = ids.node(namespace, memoryKey);
-  const memoryId = ids.memory(namespace, memoryKey);
   const existing = await ctx.db
     .query("nodes")
     .withIndex("by_nodeId", (q) => q.eq("nodeId", nodeId))
@@ -385,7 +399,7 @@ export async function insertEdgeImpl(
     fromNodeId: string;
     toNodeId: string;
     properties?: Record<string, unknown>;
-    idParts: { selfMemoryKey: string; otherMemoryKey: string; label: string };
+    idParts: { label: string; fromMemoryId: string; toMemoryId: string };
     now: number;
   },
 ): Promise<{ edgeId: string }> {
@@ -399,8 +413,8 @@ export async function insertEdgeImpl(
     fromNodeId,
     toNodeId,
     idParts.label,
-    idParts.selfMemoryKey,
-    idParts.otherMemoryKey,
+    idParts.fromMemoryId,
+    idParts.toMemoryId,
   );
   const propertiesJson = properties === undefined ? undefined : JSON.stringify(properties ?? {});
   const existingEdge = await ctx.db
@@ -413,8 +427,8 @@ export async function insertEdgeImpl(
       toNodeId,
       namespace: fromNode.namespace,
       propertiesJson,
-      idPartsSelfKey: idParts.selfMemoryKey,
-      idPartsOtherKey: idParts.otherMemoryKey,
+      idPartsFromMemoryId: idParts.fromMemoryId,
+      idPartsToMemoryId: idParts.toMemoryId,
       idPartsLabel: idParts.label,
       tsCreated: now,
     });
@@ -425,8 +439,8 @@ export async function insertEdgeImpl(
       toNodeId,
       namespace: fromNode.namespace,
       propertiesJson,
-      idPartsSelfKey: idParts.selfMemoryKey,
-      idPartsOtherKey: idParts.otherMemoryKey,
+      idPartsFromMemoryId: idParts.fromMemoryId,
+      idPartsToMemoryId: idParts.toMemoryId,
       idPartsLabel: idParts.label,
       tsCreated: now,
     });
