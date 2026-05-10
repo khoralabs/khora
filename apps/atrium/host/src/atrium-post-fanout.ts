@@ -1,8 +1,4 @@
-import {
-  type AtriumPost,
-  normalizeTopicSlug,
-  zAtriumPost,
-} from "@cfd/atrium-contracts";
+import { type AtriumPost, normalizeTopicSlug, zAtriumPost } from "@cfd/atrium-contracts";
 import type { DefaultEntityMap } from "@cfd/memories-core";
 import type { EmbeddingModel } from "@cfd/memories-core/helpers";
 import type { SwarmHostEventHandlerCtx } from "@cfd/swarm-host";

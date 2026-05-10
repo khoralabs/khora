@@ -1,4 +1,7 @@
-import type { AgentNotification, AgentNotificationBufferPort } from "../registration/notifications.ts";
+import type {
+  AgentNotification,
+  AgentNotificationBufferPort,
+} from "../registration/notifications.ts";
 import type { AgentDid } from "../registration/types.ts";
 import type { InboxFanoutPort } from "./inbox-fanout-port.ts";
 

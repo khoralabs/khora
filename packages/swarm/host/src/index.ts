@@ -4,7 +4,6 @@ export type {
   HybridMemorySearchOptions,
   MemorySearchHit,
 } from "@cfd/memories-core/helpers";
-export { swarmHostOntology } from "./swarm-host-ontology.ts";
 export {
   createSwarmMemoriesSyncHandler,
   SWARM_EVENT_KIND,
@@ -104,3 +103,4 @@ export {
   type SwarmHostStores,
   searchHitToSourceMapRef,
 } from "./stores.ts";
+export { swarmHostOntology } from "./swarm-host-ontology.ts";

@@ -43,7 +43,9 @@ function lineToResolved(line: ResolvedSourceMapLine): ResolvedSource<DefaultEnti
       blob: new Blob([bin], { type: line.mimeType ?? "application/octet-stream" }),
     };
   }
-  throw new Error(`JsonlStore: unsupported ResolvedSourceMapLine kind ${String((line as { kind?: string }).kind)}`);
+  throw new Error(
+    `JsonlStore: unsupported ResolvedSourceMapLine kind ${String((line as { kind?: string }).kind)}`,
+  );
 }
 
 function parseLine(raw: string): ResolvedSourceMapLine | undefined {

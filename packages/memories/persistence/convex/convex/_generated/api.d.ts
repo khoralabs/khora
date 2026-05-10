@@ -8,12 +8,11 @@
  * @module
  */
 
+import type { ApiFromModules, FilterApi, FunctionReference } from "convex/server";
 import type * as memories from "../memories.js";
 import type * as memoriesHostActions from "../memoriesHostActions.js";
 import type * as memoriesHostMutations from "../memoriesHostMutations.js";
 import type * as memoriesHostQueries from "../memoriesHostQueries.js";
-
-import type { ApiFromModules, FilterApi, FunctionReference } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
   memories: typeof memories;
