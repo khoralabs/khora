@@ -30,10 +30,17 @@ export {
   type SwarmTopicUpdatedEvent,
 } from "./events.ts";
 export {
+  type MemoriesSearchArgs,
+  type MemoriesSearchScope,
+  resolveSwarmHostSearchNamespaces,
   SwarmHost,
   type SwarmHostDeps,
   type SwarmHostEventHandlerCtx,
+  type SwarmHostMemoryEntityKind,
+  type SwarmHostMemoryNamespaces,
+  type SwarmHostSearchArgs,
   type SwarmHostSearchMemoriesArgs,
+  type SwarmHostSearchScope,
 } from "./host.ts";
 export type {
   SourceMapLink,

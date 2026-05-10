@@ -14,6 +14,11 @@ import {
   type SwarmMemoriesSyncHandler,
   type SwarmMemoryOpMapper,
 } from "./events.ts";
+import {
+  resolveSwarmHostSearchNamespaces,
+  type SwarmHostMemoryNamespaces,
+  type SwarmHostSearchScope,
+} from "./memory-search-scope.ts";
 import { SWARM_AGGREGATE_DOMAIN } from "./model/index.ts";
 import type { ObpRoomHubPort } from "./obp-room/port.ts";
 import {
@@ -32,6 +37,27 @@ import {
 import type { DidRegistrationVerifier } from "./registration/verify.ts";
 import { type SwarmHostStores, searchHitToSourceMapRef } from "./stores.ts";
 
+export type {
+  SwarmHostMemoryEntityKind,
+  SwarmHostMemoryNamespaces,
+  SwarmHostSearchScope,
+} from "./memory-search-scope.ts";
+export { resolveSwarmHostSearchNamespaces } from "./memory-search-scope.ts";
+
+/** Scoped hybrid search arguments for {@link SwarmHost.search}. */
+export type SwarmHostSearchArgs = HybridMemorySearchInput & {
+  scope: SwarmHostSearchScope;
+  embeddingCache?: Map<string, number[]>;
+  memoriesSnapshotRootHex?: string;
+  embeddingModel?: EmbeddingModel;
+};
+
+/** Alias for {@link SwarmHostSearchArgs} (Memories search via {@link SwarmHost.search}). */
+export type MemoriesSearchArgs = SwarmHostSearchArgs;
+
+/** Alias for {@link SwarmHostSearchScope}. */
+export type MemoriesSearchScope = SwarmHostSearchScope;
+
 /** Arguments for {@link SwarmHost.searchMemories} (hybrid lexical + vector search). */
 export type SwarmHostSearchMemoriesArgs = HybridMemorySearchInput & {
   namespace: string;
@@ -49,7 +75,7 @@ export type SwarmHostEventHandlerCtx<TNode extends LabelSchemaMap, TEdge extends
   persistenceClient: SwarmHostPersistenceClient;
   /** Same optional model as {@link SwarmHostDeps.embeddingModel} (AI SDK–backed). */
   embeddingModel?: EmbeddingModel;
-  searchMemories: (args: SwarmHostSearchMemoriesArgs) => Promise<MemorySearchHit[]>;
+  search: (args: SwarmHostSearchArgs) => Promise<MemorySearchHit[]>;
 };
 
 export type SwarmHostDeps<
@@ -70,7 +96,11 @@ export type SwarmHostDeps<
   didVerifier?: DidRegistrationVerifier;
   notificationBuffer?: AgentNotificationBufferPort;
   /**
-   * Optional embedding model for {@link SwarmHost.searchMemories} when the vector arm is used.
+   * Maps entity scopes ({@link SwarmHost.search}) to Memories namespace paths. Required for non-`raw` scopes.
+   */
+  memoryNamespaces?: SwarmHostMemoryNamespaces;
+  /**
+   * Optional embedding model for {@link SwarmHost.search} / {@link SwarmHost.searchMemories} when the vector arm is used.
    * Construct with {@link createMemoriesEmbeddingModel} from `@cfd/memories-core/helpers`.
    */
   embeddingModel?: EmbeddingModel;
@@ -100,6 +130,7 @@ export class SwarmHost<
   readonly didVerifier?: DidRegistrationVerifier;
   readonly notificationBuffer?: AgentNotificationBufferPort;
   readonly embeddingModel?: EmbeddingModel;
+  readonly memoryNamespaces?: SwarmHostMemoryNamespaces;
 
   private readonly memoriesSync?: SwarmMemoriesSyncHandler<TProfile, TPost, TTopic, TAppEvent>;
   private readonly onEvent?: SwarmHostDeps<
@@ -120,6 +151,7 @@ export class SwarmHost<
     this.didVerifier = deps.didVerifier;
     this.notificationBuffer = deps.notificationBuffer;
     this.embeddingModel = deps.embeddingModel;
+    this.memoryNamespaces = deps.memoryNamespaces;
     this.onEvent = deps.onEvent;
     if (deps.mapMemoryOps !== undefined) {
       this.memoriesSync = createSwarmMemoriesSyncHandler(
@@ -135,25 +167,20 @@ export class SwarmHost<
       persistence: this.persistence,
       persistenceClient: this.persistenceClient,
       embeddingModel: this.embeddingModel,
-      searchMemories: (args) => this.searchMemories(args),
+      search: (args) => this.search(args),
     };
   }
 
   /**
-   * Hybrid memory search (FTS + optional vector RRF), same pipeline as the agent `memory_search` tool.
-   * Uses {@link SwarmHostDeps.embeddingModel} unless {@link SwarmHostSearchMemoriesArgs.embeddingModel} overrides it.
+   * Hybrid Memories search with a discriminated {@link SwarmHostSearchScope} (profiles, posts, topics, multi, or raw paths).
    */
-  searchMemories(args: SwarmHostSearchMemoriesArgs): Promise<MemorySearchHit[]> {
-    const {
-      namespace,
-      additionalNamespaces,
-      embeddingCache,
-      memoriesSnapshotRootHex,
-      embeddingModel: modelArg,
-      content,
-      options,
-    } = args;
-    const embeddingModel = modelArg ?? this.embeddingModel;
+  search(args: SwarmHostSearchArgs): Promise<MemorySearchHit[]> {
+    const { scope, embeddingCache, memoriesSnapshotRootHex, embeddingModel, content, options } =
+      args;
+    const { namespace, additionalNamespaces } = resolveSwarmHostSearchNamespaces(
+      scope,
+      this.memoryNamespaces,
+    );
     return runHybridMemorySearch(
       this.memories as unknown as HybridMemorySearchClient,
       {

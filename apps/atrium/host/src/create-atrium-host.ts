@@ -84,6 +84,10 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
   const host = new SwarmHost({
     memories: client as unknown as CanonicalMemoriesClient,
     persistence: hostPersistence,
+    memoryNamespaces: {
+      profileNamespace: config.profileNamespace,
+      postNamespace: config.postNamespace,
+    },
     embeddingModel: config.embeddingModel,
     stores: {
       profile: {
