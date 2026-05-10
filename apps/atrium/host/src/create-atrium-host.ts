@@ -2,11 +2,11 @@ import type { Database } from "bun:sqlite";
 import {
   type AtriumPost,
   type AtriumProfile,
-  atriumProfileFromRegistrationRequest,
+  parseAtriumRegistrationMetadata,
   zAtriumPost,
   zAtriumProfile,
 } from "@cfd/atrium-contracts";
-import { ids, MemoriesClient } from "@cfd/memories-core";
+import { ids, MemoriesClient, stableId } from "@cfd/memories-core";
 import type { EmbeddingModel } from "@cfd/memories-core/helpers";
 import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-sqlite";
 import {
@@ -118,7 +118,12 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
 
       if (event.kind === SWARM_EVENT_KIND.REGISTRATION_PROFILE_BUILD) {
         try {
-          const profile = atriumProfileFromRegistrationRequest(event.payload.request);
+          const req = event.payload.request;
+          const meta = parseAtriumRegistrationMetadata(req.metadata);
+          const profile = zAtriumProfile.parse({
+            id: stableId("atrium_profile", req.did),
+            ...meta,
+          });
           event.payload.fulfill(profile);
         } catch (e) {
           event.payload.reject(e);

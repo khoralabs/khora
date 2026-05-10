@@ -1,4 +1,3 @@
-import type { DidRegistrationRequest } from "@cfd/swarm-host";
 import z from "zod";
 
 export const zAtriumProfile = z.object({
@@ -9,28 +8,21 @@ export const zAtriumProfile = z.object({
 
 export type AtriumProfile = z.infer<typeof zAtriumProfile>;
 
-const zRegistrationMetadata = z.object({
-  profileId: z.string().trim().min(1).optional(),
-  id: z.string().trim().min(1).optional(),
+/** Allowed registration body fields; profile `id` is minted by the host. */
+export const zAtriumRegistrationMetadata = z.object({
   displayName: z.string().trim().max(200).optional(),
   bio: z.string().trim().max(8000).optional(),
 });
 
-/** Build {@link AtriumProfile} from {@link DidRegistrationRequest.metadata}; requires `profileId` or `id`. */
-export function atriumProfileFromRegistrationRequest(req: DidRegistrationRequest): AtriumProfile {
-  const meta = zRegistrationMetadata.safeParse(req.metadata ?? {});
-  if (!meta.success) {
-    throw new Error(`Atrium: invalid registration metadata: ${meta.error.message}`);
+export type AtriumRegistrationMetadataFields = z.infer<typeof zAtriumRegistrationMetadata>;
+
+/** Parse `DidRegistrationRequest.metadata` display fields; ignores unknown keys (including legacy `profileId` / `id`). */
+export function parseAtriumRegistrationMetadata(metadata: unknown): AtriumRegistrationMetadataFields {
+  const parsed = zAtriumRegistrationMetadata.safeParse(metadata ?? {});
+  if (!parsed.success) {
+    throw new Error(`Atrium: invalid registration metadata: ${parsed.error.message}`);
   }
-  const rawId = meta.data.profileId ?? meta.data.id;
-  if (rawId === undefined || rawId.length === 0) {
-    throw new Error("Atrium: registration metadata must include `profileId` or `id`");
-  }
-  return zAtriumProfile.parse({
-    id: rawId,
-    displayName: meta.data.displayName,
-    bio: meta.data.bio,
-  });
+  return parsed.data;
 }
 
 export function atriumProfileLexicalText(p: AtriumProfile): string {

@@ -20,24 +20,24 @@ describe("AtriumClient", () => {
       expect(init?.method).toBe("POST");
       expect(JSON.parse(String(init?.body))).toEqual({
         did: "did:key:x",
-        metadata: { profileId: "u1" },
+        metadata: { displayName: "Ada" },
       });
       return Response.json({
         did: "did:key:x",
-        profileId: "u1",
-        profile: { id: "u1", displayName: "Hi" },
+        profileId: "prof_minted",
+        profile: { id: "prof_minted", displayName: "Ada" },
       });
     });
     const c = new AtriumClient({ baseUrl: "http://h", fetch: fetchMock });
     const req = {
       did: "did:key:x",
-      metadata: { profileId: "u1" },
+      metadata: { displayName: "Ada" },
     } satisfies DidRegistrationRequest;
     const out = await c.register(req);
     expect(out).toEqual({
       did: "did:key:x",
-      profileId: "u1",
-      profile: { id: "u1", displayName: "Hi" },
+      profileId: "prof_minted",
+      profile: { id: "prof_minted", displayName: "Ada" },
     });
   });
 

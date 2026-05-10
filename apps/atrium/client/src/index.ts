@@ -7,15 +7,16 @@ export type {
 export {
   atriumPostLexicalText,
   atriumPostObservationSummary,
-  atriumProfileFromRegistrationRequest,
   atriumProfileLexicalText,
   mergeAtriumPostPatch,
   normalizeTopicSlug,
+  parseAtriumRegistrationMetadata,
   zAtriumPost,
   zAtriumPostCreate,
   zAtriumPostKind,
   zAtriumPostPatch,
   zAtriumProfile,
+  zAtriumRegistrationMetadata,
 } from "@cfd/atrium-contracts";
 export type {
   AgentNotification,

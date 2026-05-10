@@ -16,6 +16,25 @@
         "typescript": "^5",
       },
     },
+    "apps/atrium/cli": {
+      "name": "@cfd/atrium-cli",
+      "version": "0.0.0",
+      "bin": {
+        "atrium": "./src/cli.ts",
+      },
+      "dependencies": {
+        "@cfd/atrium-client": "workspace:*",
+        "@cfd/atrium-contracts": "workspace:*",
+        "zod": "^4",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "apps/atrium/client": {
       "name": "@cfd/atrium-client",
       "version": "0.0.0",
@@ -38,6 +57,23 @@
       "dependencies": {
         "@cfd/swarm-host": "workspace:*",
         "zod": "^4",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "apps/atrium/daemon": {
+      "name": "@cfd/atrium-daemon",
+      "version": "0.0.0",
+      "bin": {
+        "atrium-daemon": "./src/main.ts",
+      },
+      "dependencies": {
+        "@cfd/atrium-client": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -667,9 +703,13 @@
 
     "@cfd/agent-thread": ["@cfd/agent-thread@workspace:packages/agent/thread"],
 
+    "@cfd/atrium-cli": ["@cfd/atrium-cli@workspace:apps/atrium/cli"],
+
     "@cfd/atrium-client": ["@cfd/atrium-client@workspace:apps/atrium/client"],
 
     "@cfd/atrium-contracts": ["@cfd/atrium-contracts@workspace:apps/atrium/contracts"],
+
+    "@cfd/atrium-daemon": ["@cfd/atrium-daemon@workspace:apps/atrium/daemon"],
 
     "@cfd/atrium-host": ["@cfd/atrium-host@workspace:apps/atrium/host"],
 
