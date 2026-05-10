@@ -1,7 +1,7 @@
-/** Minimal WebSocket surface for inbox fan-out (Bun-compatible). */
-export type InboxWebSocket = { send(data: string): number };
+import type { InboxFanoutPort, InboxWebSocket } from "./inbox-fanout-port.ts";
 
-export function createInboxWsHub() {
+/** In-memory inbox hub keyed by DID (typical single-node host). */
+export function createInboxWsHub(): InboxFanoutPort {
   const socketsByDid = new Map<string, Set<InboxWebSocket>>();
 
   function add(did: string, ws: InboxWebSocket): void {
@@ -37,5 +37,3 @@ export function createInboxWsHub() {
 
   return { add, remove, broadcast, listenerCount };
 }
-
-export type InboxWsHub = ReturnType<typeof createInboxWsHub>;

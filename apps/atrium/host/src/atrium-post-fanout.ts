@@ -1,10 +1,13 @@
-import type { Database } from "bun:sqlite";
-import { type AtriumPost, normalizeTopicSlug, zAtriumPost } from "@cfd/atrium-contracts";
+import {
+  type AtriumPost,
+  normalizeTopicSlug,
+  zAtriumPost,
+} from "@cfd/atrium-contracts";
 import type { DefaultEntityMap } from "@cfd/memories-core";
 import type { EmbeddingModel } from "@cfd/memories-core/helpers";
-import type { AgentNotificationBufferPort, SwarmHostEventHandlerCtx } from "@cfd/swarm-host";
-import { enqueueAndPush } from "./deliver-notification.ts";
-import type { InboxWsHub } from "./inbox-ws-hub.ts";
+import type { SwarmHostEventHandlerCtx } from "@cfd/swarm-host";
+import { deliverAgentNotification } from "@cfd/swarm-host";
+import type { AtriumHostAppContext } from "./atrium-app-context.ts";
 import {
   didForProfileId,
   subscriberDidsForTopic,
@@ -19,18 +22,35 @@ export type FanoutConfig = {
   embeddingModel?: EmbeddingModel;
 };
 
-export async function fanOutTopicSubscriptions(params: {
-  db: Database;
-  buffer: AgentNotificationBufferPort;
-  hub: InboxWsHub;
+function appCtxOrThrow<TEntityMap extends Record<string, unknown>>(
+  ctx: SwarmHostEventHandlerCtx<TNode, TEdge, TEntityMap>,
+): AtriumHostAppContext {
+  const ac = ctx.appContext as AtriumHostAppContext | undefined;
+  if (ac === undefined) {
+    throw new Error("Atrium: SwarmHostEventHandlerCtx.appContext is required for fan-out");
+  }
+  return ac;
+}
+
+export async function fanOutTopicSubscriptions<
+  TEntityMap extends Record<string, unknown> = DefaultEntityMap,
+>(params: {
+  ctx: SwarmHostEventHandlerCtx<TNode, TEdge, TEntityMap>;
   post: AtriumPost;
 }): Promise<void> {
   const topics = params.post.topics;
   if (topics === undefined || topics.length === 0) return;
 
+  const buffer = params.ctx.notificationBuffer;
+  const hub = params.ctx.inboxHub;
+  if (buffer === undefined || hub === undefined) return;
+
+  const ac = appCtxOrThrow(params.ctx);
+  const db = ac.db;
+
   const authorDid =
     params.post.authorProfileId !== undefined
-      ? didForProfileId(params.db, params.post.authorProfileId)
+      ? didForProfileId(db, params.post.authorProfileId)
       : undefined;
 
   const seen = new Set<string>();
@@ -41,12 +61,12 @@ export async function fanOutTopicSubscriptions(params: {
     } catch {
       continue;
     }
-    const dids = subscriberDidsForTopic(params.db, slug, authorDid);
+    const dids = subscriberDidsForTopic(db, slug, authorDid);
     for (const did of dids) {
       const dedupeKey = `${did}\t${slug}\t${params.post.id}`;
       if (seen.has(dedupeKey)) continue;
       seen.add(dedupeKey);
-      await enqueueAndPush(params.buffer, params.hub, did, {
+      await deliverAgentNotification(buffer, hub, did, {
         kind: "topic_post",
         payload: {
           topicSlug: slug,
@@ -61,15 +81,19 @@ export async function fanOutTopicSubscriptions(params: {
 export async function fanOutProbeHits<
   TEntityMap extends Record<string, unknown> = DefaultEntityMap,
 >(params: {
-  db: Database;
-  buffer: AgentNotificationBufferPort;
-  hub: InboxWsHub;
   ctx: SwarmHostEventHandlerCtx<TNode, TEdge, TEntityMap>;
   config: FanoutConfig;
   incomingPost: AtriumPost;
 }): Promise<void> {
   if (params.incomingPost.kind !== "post") return;
   if (params.config.embeddingModel === undefined) return;
+
+  const buffer = params.ctx.notificationBuffer;
+  const hub = params.ctx.inboxHub;
+  if (buffer === undefined || hub === undefined) return;
+
+  const ac = appCtxOrThrow(params.ctx);
+  const db = ac.db;
 
   const hits = await params.ctx.searchMemories({
     namespace: params.config.probeNamespace,
@@ -107,11 +131,11 @@ export async function fanOutProbeHits<
     const ownerPid = probe.authorProfileId;
     if (ownerPid === undefined || ownerPid.length === 0) continue;
 
-    const ownerDid = didForProfileId(params.db, ownerPid);
+    const ownerDid = didForProfileId(db, ownerPid);
     if (ownerDid === undefined) continue;
 
     notified.add(dedupeKey);
-    await enqueueAndPush(params.buffer, params.hub, ownerDid, {
+    await deliverAgentNotification(buffer, hub, ownerDid, {
       kind: "probe_hit",
       payload: {
         probePostId,

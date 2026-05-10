@@ -31,6 +31,7 @@ export {
   type SwarmTopicUpdatedEvent,
 } from "./events.ts";
 export {
+  composeOnEventWithMemorySync,
   type MemoriesSearchArgs,
   type MemoriesSearchScope,
   resolveSwarmHostSearchNamespaces,
@@ -43,6 +44,12 @@ export {
   type SwarmHostSearchMemoriesArgs,
   type SwarmHostSearchScope,
 } from "./host.ts";
+export {
+  createInboxWsHub,
+  deliverAgentNotification,
+  type InboxFanoutPort,
+  type InboxWebSocket,
+} from "./inbox/index.ts";
 export type {
   SourceMapLink,
   SwarmAggregateDomain,

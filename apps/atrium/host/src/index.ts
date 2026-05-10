@@ -325,11 +325,18 @@ const server = Bun.serve<InboxWsData>({
   websocket: {
     open(ws) {
       const did = ws.data.did;
-      ctx.inboxHub.add(did, ws);
+      const { inboxHub } = ctx.host;
+      if (inboxHub === undefined) {
+        throw new Error("Atrium: SwarmHost missing inboxHub");
+      }
+      inboxHub.add(did, ws);
       void sendInboxSnapshot(ws, did);
     },
     close(ws) {
-      ctx.inboxHub.remove(ws.data.did, ws);
+      const { inboxHub } = ctx.host;
+      if (inboxHub !== undefined) {
+        inboxHub.remove(ws.data.did, ws);
+      }
     },
     message() {},
   },

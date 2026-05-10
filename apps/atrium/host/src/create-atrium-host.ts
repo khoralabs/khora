@@ -2,26 +2,25 @@ import type { Database } from "bun:sqlite";
 import {
   type AtriumPost,
   type AtriumProfile,
-  atriumPostLexicalText,
-  atriumPostObservationSummary,
   atriumProfileFromRegistrationRequest,
-  atriumProfileLexicalText,
   zAtriumPost,
   zAtriumProfile,
 } from "@cfd/atrium-contracts";
 import { ids, MemoriesClient } from "@cfd/memories-core";
 import type { EmbeddingModel } from "@cfd/memories-core/helpers";
-import { embedTextChunks } from "@cfd/memories-core/helpers";
 import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-sqlite";
 import {
   type AgentNotificationBufferPort,
+  composeOnEventWithMemorySync,
+  createInboxWsHub,
   minimalSourceMapForResolve,
   SWARM_EVENT_KIND,
   SwarmHost,
   swarmHostOntology,
 } from "@cfd/swarm-host";
+import type { AtriumHostAppContext } from "./atrium-app-context.ts";
+import { atriumSwarmMemoryOpMapper } from "./atrium-memory-sync.ts";
 import { fanOutProbeHits, fanOutTopicSubscriptions } from "./atrium-post-fanout.ts";
-import { createInboxWsHub, type InboxWsHub } from "./inbox-ws-hub.ts";
 import {
   createSqliteAgentNotificationBuffer,
   createSwarmHostDocumentStore,
@@ -34,36 +33,12 @@ type TEdge = typeof swarmHostOntology.edgeLabels;
 
 type EntityMap = { profile: AtriumProfile; post: AtriumPost };
 
-async function mergeContentWithOptionalVector(
-  embeddingModel: EmbeddingModel | undefined,
-  sourceKey: string,
-  text: string,
-): Promise<Array<{ key: string; text: string; vector?: number[] }>> {
-  const trimmed = text.trim();
-  if (embeddingModel === undefined || trimmed.length === 0) {
-    return [{ key: sourceKey, text }];
-  }
-  const embeddings = await embedTextChunks(embeddingModel, [trimmed]);
-  const vector = embeddings[0];
-  if (vector === undefined || vector.length === 0) {
-    return [{ key: sourceKey, text }];
-  }
-  return [{ key: sourceKey, text, vector }];
-}
-
 export type AtriumHostConfig = {
   dbPath: string;
-  /** Memories namespace for profile nodes (memory key = profile id). */
   profileNamespace: string;
-  /** Memories namespace for post nodes (memory key = post id). */
   postNamespace: string;
-  /** Memories namespace for semantic probe subscription memories. */
   probeNamespace: string;
-  /** Optional Memories subtree for topic entities when using scoped search; subscriptions use SQLite only. */
   topicNamespace?: string;
-  /**
-   * When set, profile/post/probe merges include embedding vectors for hybrid search (same model as probe matching).
-   */
   embeddingModel?: EmbeddingModel;
 };
 
@@ -72,7 +47,6 @@ export type AtriumHostContext = {
   host: SwarmHost<TNode, TEdge, AtriumProfile, AtriumPost, unknown, never, EntityMap>;
   db: Database;
   notificationBuffer: AgentNotificationBufferPort;
-  inboxHub: InboxWsHub;
 };
 
 export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostContext {
@@ -94,10 +68,23 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
   const notificationBuffer = createSqliteAgentNotificationBuffer(db);
   const inboxHub = createInboxWsHub();
 
+  const appContext: AtriumHostAppContext = {
+    db,
+    profileNamespace: config.profileNamespace,
+    postNamespace: config.postNamespace,
+    probeNamespace: config.probeNamespace,
+    ...(config.topicNamespace !== undefined ? { topicNamespace: config.topicNamespace } : {}),
+    embeddingModel: config.embeddingModel,
+  };
+
+  const mapMemoryOps = atriumSwarmMemoryOpMapper(appContext);
+
   const host = new SwarmHost({
     memories,
     persistence: hostPersistence,
     notificationBuffer,
+    inboxHub,
+    appContext,
     memoryNamespaces: {
       profileNamespace: config.profileNamespace,
       postNamespace: config.postNamespace,
@@ -126,97 +113,9 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
       },
     },
 
-    mapMemoryOps: async (event) => {
-      if (event.kind === SWARM_EVENT_KIND.PROFILE_CREATED) {
-        const profile = event.payload.profile;
-        const text = atriumProfileLexicalText(profile);
-        const content = await mergeContentWithOptionalVector(
-          config.embeddingModel,
-          `profile:${profile.id}`,
-          text,
-        );
-        return [
-          {
-            op: "merge" as const,
-            params: {
-              key: profile.id,
-              namespace: config.profileNamespace,
-              content,
-              labels: [
-                {
-                  kind: "person" as const,
-                  props: { name: profile.displayName ?? profile.id },
-                },
-              ],
-            },
-          },
-        ];
-      }
+    onEvent: composeOnEventWithMemorySync(memories, mapMemoryOps, async (ctx, event) => {
+      const ac = ctx.appContext as AtriumHostAppContext;
 
-      if (
-        event.kind === SWARM_EVENT_KIND.POST_CREATED ||
-        event.kind === SWARM_EVENT_KIND.POST_UPDATED
-      ) {
-        const post = event.payload.post;
-        const text = atriumPostLexicalText(post);
-        const content = await mergeContentWithOptionalVector(
-          config.embeddingModel,
-          `${post.kind}:${post.id}`,
-          text,
-        );
-
-        if (post.kind === "probe") {
-          return [
-            {
-              op: "merge" as const,
-              params: {
-                key: post.id,
-                namespace: config.probeNamespace,
-                content,
-                labels: [
-                  {
-                    kind: "probe" as const,
-                    props: {
-                      ownerProfileId: post.authorProfileId as string,
-                      ...(post.matchPostKinds !== undefined && post.matchPostKinds.length > 0
-                        ? { matchPostKinds: post.matchPostKinds }
-                        : {}),
-                    },
-                  },
-                ],
-              },
-            },
-          ];
-        }
-
-        return [
-          {
-            op: "merge" as const,
-            params: {
-              key: post.id,
-              namespace: config.postNamespace,
-              content,
-              labels: [
-                {
-                  kind: "observation" as const,
-                  props: { summary: atriumPostObservationSummary(post) },
-                },
-              ],
-            },
-          },
-        ];
-      }
-
-      if (event.kind === SWARM_EVENT_KIND.POST_DELETED) {
-        const post = event.payload.post;
-        const ns = post.kind === "probe" ? config.probeNamespace : config.postNamespace;
-        return [{ op: "delete" as const, params: { namespace: ns, key: post.id } }];
-      }
-
-      return [];
-    },
-
-    onEvent: async (ctx, event) => {
       if (event.kind === SWARM_EVENT_KIND.REGISTRATION_PROFILE_BUILD) {
         try {
           const profile = atriumProfileFromRegistrationRequest(event.payload.request);
@@ -231,7 +130,7 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
         const profile = event.payload.profile;
         ctx.persistenceClient.upsertProfile({
           id: profile.id,
-          memoryId: ids.memory(config.profileNamespace, profile.id),
+          memoryId: ids.memory(ac.profileNamespace, profile.id),
           bodyJson: JSON.stringify(profile),
         });
         return;
@@ -245,22 +144,19 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
         ctx.persistenceClient.upsertPost({
           id: post.id,
           memoryId: ids.memory(
-            post.kind === "probe" ? config.probeNamespace : config.postNamespace,
+            post.kind === "probe" ? ac.probeNamespace : ac.postNamespace,
             post.id,
           ),
           bodyJson: JSON.stringify(post),
         });
 
         if (event.kind === SWARM_EVENT_KIND.POST_CREATED) {
-          await fanOutTopicSubscriptions({ db, buffer: notificationBuffer, hub: inboxHub, post });
+          await fanOutTopicSubscriptions({ ctx, post });
           await fanOutProbeHits({
-            db,
-            buffer: notificationBuffer,
-            hub: inboxHub,
             ctx,
             config: {
-              probeNamespace: config.probeNamespace,
-              embeddingModel: config.embeddingModel,
+              probeNamespace: ac.probeNamespace,
+              embeddingModel: ac.embeddingModel,
             },
             incomingPost: post,
           });
@@ -271,8 +167,8 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
       if (event.kind === SWARM_EVENT_KIND.POST_DELETED) {
         ctx.persistence.posts.deleteById(event.payload.post.id);
       }
-    },
+    }),
   });
 
-  return { config, host, db, notificationBuffer, inboxHub };
+  return { config, host, db, notificationBuffer };
 }

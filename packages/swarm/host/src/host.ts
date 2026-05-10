@@ -16,9 +16,9 @@ import {
   SWARM_EVENT_KIND,
   type SwarmAppEventConstraint,
   type SwarmHostEventUnion,
-  type SwarmMemoriesSyncHandler,
   type SwarmMemoryOpMapper,
 } from "./events.ts";
+import type { InboxFanoutPort } from "./inbox/inbox-fanout-port.ts";
 import {
   resolveSwarmHostSearchNamespaces,
   type SwarmHostMemoryNamespaces,
@@ -85,6 +85,10 @@ export type SwarmHostEventHandlerCtx<
   /** Same optional model as {@link SwarmHostDeps.embeddingModel} (AI SDK–backed). */
   embeddingModel?: EmbeddingModel;
   notificationBuffer?: AgentNotificationBufferPort;
+  /** When set, agent inbox WebSocket fan-out (see {@link deliverAgentNotification} from inbox module). */
+  inboxHub?: InboxFanoutPort;
+  /** App-owned runtime handle(s); swarm-host does not interpret (e.g. SQLite `Database`). */
+  appContext?: unknown;
   search: (args: SwarmHostSearchArgs) => Promise<MemorySearchHit[]>;
   searchMemories: (args: SwarmHostSearchMemoriesArgs) => Promise<MemorySearchHit[]>;
 };
@@ -100,13 +104,14 @@ export type SwarmHostDeps<
 > = {
   memories: MemoriesClient<TNode, TEdge, TEntityMap>;
   persistence: SwarmHostPersistence;
-  /** When set, runs before {@link SwarmHostDeps.onEvent} for all events except registration profile build. */
-  mapMemoryOps?: SwarmMemoryOpMapper<TNode, TEdge, TProfile, TPost, TTopic, TAppEvent>;
   stores?: SwarmHostStores<TProfile, TPost, TTopic>;
   /** Optional OBP opaque byte relay (HMAC tickets, replay on re-join). */
   obpRoomHub?: ObpRoomHubPort;
   didVerifier?: DidRegistrationVerifier;
   notificationBuffer?: AgentNotificationBufferPort;
+  inboxHub?: InboxFanoutPort;
+  /** Opaque app runtime (passed through to {@link SwarmHostEventHandlerCtx.appContext}). */
+  appContext?: unknown;
   /**
    * Maps entity scopes ({@link SwarmHost.search}) to Memories namespace paths. Required for non-`raw` scopes.
    */
@@ -121,6 +126,38 @@ export type SwarmHostDeps<
     event: SwarmHostEventUnion<TProfile, TPost, TTopic, TAppEvent>,
   ) => void | Promise<void>;
 };
+
+/**
+ * Runs Memories merge/delete projection before each non-registration event, then `handler`.
+ * Compose with {@link SwarmHostDeps.onEvent} when mapping swarm events to Memories outside the host.
+ */
+export function composeOnEventWithMemorySync<
+  TNode extends LabelSchemaMap,
+  TEdge extends LabelSchemaMap,
+  TEntityMap extends Record<string, unknown> = DefaultEntityMap,
+  TProfile = unknown,
+  TPost = unknown,
+  TTopic = unknown,
+  TAppEvent extends SwarmAppEventConstraint = never,
+>(
+  memories: MemoriesClient<TNode, TEdge, TEntityMap>,
+  mapMemoryOps: SwarmMemoryOpMapper<TNode, TEdge, TProfile, TPost, TTopic, TAppEvent>,
+  handler: (
+    ctx: SwarmHostEventHandlerCtx<TNode, TEdge, TEntityMap>,
+    event: SwarmHostEventUnion<TProfile, TPost, TTopic, TAppEvent>,
+  ) => void | Promise<void>,
+): (
+  ctx: SwarmHostEventHandlerCtx<TNode, TEdge, TEntityMap>,
+  event: SwarmHostEventUnion<TProfile, TPost, TTopic, TAppEvent>,
+) => void | Promise<void> {
+  const sync = createSwarmMemoriesSyncHandler(memories, mapMemoryOps);
+  return async (ctx, event) => {
+    if (event.kind !== SWARM_EVENT_KIND.REGISTRATION_PROFILE_BUILD) {
+      await sync(event);
+    }
+    return handler(ctx, event);
+  };
+}
 
 /**
  * Facade for discovery (Memories), optional persistence resolvers, negotiation ports, and DID registration.
@@ -142,10 +179,11 @@ export class SwarmHost<
   readonly obpRoomHub?: ObpRoomHubPort;
   readonly didVerifier?: DidRegistrationVerifier;
   readonly notificationBuffer?: AgentNotificationBufferPort;
+  readonly inboxHub?: InboxFanoutPort;
+  readonly appContext?: unknown;
   readonly embeddingModel?: EmbeddingModel;
   readonly memoryNamespaces?: SwarmHostMemoryNamespaces;
 
-  private readonly memoriesSync?: SwarmMemoriesSyncHandler<TProfile, TPost, TTopic, TAppEvent>;
   private readonly onEvent?: SwarmHostDeps<
     TNode,
     TEdge,
@@ -164,12 +202,11 @@ export class SwarmHost<
     this.obpRoomHub = deps.obpRoomHub;
     this.didVerifier = deps.didVerifier;
     this.notificationBuffer = deps.notificationBuffer;
+    this.inboxHub = deps.inboxHub;
+    this.appContext = deps.appContext;
     this.embeddingModel = deps.embeddingModel;
     this.memoryNamespaces = deps.memoryNamespaces;
     this.onEvent = deps.onEvent;
-    if (deps.mapMemoryOps !== undefined) {
-      this.memoriesSync = createSwarmMemoriesSyncHandler(deps.memories, deps.mapMemoryOps);
-    }
   }
 
   private eventCtx(): SwarmHostEventHandlerCtx<TNode, TEdge, TEntityMap> {
@@ -179,6 +216,8 @@ export class SwarmHost<
       persistenceClient: this.persistenceClient,
       embeddingModel: this.embeddingModel,
       notificationBuffer: this.notificationBuffer,
+      inboxHub: this.inboxHub,
+      appContext: this.appContext,
       search: (args) => this.search(args),
       searchMemories: (args) => this.searchMemories(args),
     };
@@ -235,7 +274,7 @@ export class SwarmHost<
   }
 
   /**
-   * Registration build: only {@link SwarmHostDeps.onEvent}. Other events: optional `mapEvent` sync, then `onEvent`.
+   * Dispatches to {@link SwarmHostDeps.onEvent}. Use {@link composeOnEventWithMemorySync} to prepend Memories sync.
    */
   notify(event: SwarmHostEventUnion<TProfile, TPost, TTopic, TAppEvent>): void | Promise<void> {
     const ctx = this.eventCtx();
@@ -243,11 +282,7 @@ export class SwarmHost<
     if (handler === undefined) {
       return;
     }
-    if (event.kind === SWARM_EVENT_KIND.REGISTRATION_PROFILE_BUILD) {
-      return handler(ctx, event);
-    }
-    const sync = this.memoriesSync?.(event);
-    return Promise.resolve(sync).then(() => handler(ctx, event));
+    return handler(ctx, event);
   }
 
   /**
