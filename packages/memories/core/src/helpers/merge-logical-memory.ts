@@ -1,7 +1,7 @@
 import type z from "zod";
-import type { MemoriesClient, TypedMergeParams, TypedSearchHit } from "../api/client";
+import type { MemoriesClient, TypedSearchHit } from "../api/client";
 import { MemoriesClientAsync } from "../api/client-async";
-import type { MergeMemoryContentItem } from "../api/merge-memory";
+import type { MergeMemoryContentItem, MergeMemoryParamsNode } from "../api/merge-memory";
 import type { SearchContent } from "../api/search";
 import {
   buildCanonicalMemorySearchMetaText,
@@ -70,7 +70,7 @@ export async function mergeLogicalMemoryWithMergeSlice<
 >(
   client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>,
   processedLogicalMemory: ProcessedLogicalMemory,
-  slice: Pick<TypedMergeParams<TNode, TEdge>, "labels" | "edges" | "properties">,
+  slice: Pick<MergeMemoryParamsNode<TNode, TEdge>, "labels" | "edges" | "properties">,
   embeddingModel: EmbeddingModel,
 ): Promise<void> {
   if (client instanceof MemoriesClientAsync) {

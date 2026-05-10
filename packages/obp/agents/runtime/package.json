@@ -21,7 +21,7 @@
     "@cfd/obp-tools": "workspace:*",
     "@standard-schema/spec": "^1.1.0",
     "ai": "^6",
-    "zod": "^4.3.6"
+    "zod": "^4"
   },
   "scripts": {
     "test": "bun test",

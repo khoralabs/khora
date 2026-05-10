@@ -1,6 +1,7 @@
 {
   "name": "@cfd/agent-kernel",
   "devDependencies": {
+    "@tsconfig/node20": "20.1.8",
     "@biomejs/biome": "^2.4.10",
     "@types/bun": "latest",
     "@types/parse-gitignore": "^1.0.2",
@@ -30,6 +31,7 @@
     "packages/obp/*",
     "packages/obp/agents/*",
     "packages/obp/persistence/*",
-    "packages/relay"
+    "packages/relay",
+    "packages/swarm/host"
   ]
 }

@@ -16,7 +16,7 @@
     "@cfd/agent-identity-adapters": "workspace:*",
     "@cfd/memories-core": "workspace:*",
     "ai": "^6",
-    "zod": "^4.3.6"
+    "zod": "^4"
   },
   "scripts": {
     "test": "bun test"

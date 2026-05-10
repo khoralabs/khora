@@ -1,0 +1,167 @@
+import type { LabelSchemaMap, MemoriesClient, SearchHit } from "@cfd/memories-core";
+import {
+  SWARM_EVENT_KIND,
+  type SwarmAppEventConstraint,
+  type SwarmHostEventUnion,
+} from "./events.ts";
+import { SWARM_AGGREGATE_DOMAIN } from "./model/index.ts";
+import type { NegotiationRelayPort } from "./negotiation/port.ts";
+import type { AgentNotificationBufferPort } from "./registration/notifications.ts";
+import {
+  type DidRegistrationRequest,
+  type DidRegistrationResult,
+  isLikelyDidString,
+  profileEntityId,
+} from "./registration/types.ts";
+import type { DidRegistrationVerifier } from "./registration/verify.ts";
+import { type SwarmHostStores, searchHitToSourceMapRef } from "./stores.ts";
+
+export type SwarmHostDeps<
+  TNode extends LabelSchemaMap,
+  TEdge extends LabelSchemaMap,
+  TProfile = unknown,
+  TPost = unknown,
+  TTopic = unknown,
+  TAppEvent extends SwarmAppEventConstraint = never,
+> = {
+  memories: MemoriesClient<TNode, TEdge>;
+  stores?: SwarmHostStores<TProfile, TPost, TTopic>;
+  negotiationRelay?: NegotiationRelayPort;
+  didVerifier?: DidRegistrationVerifier;
+  notificationBuffer?: AgentNotificationBufferPort;
+  onEvent?: (
+    event: SwarmHostEventUnion<TProfile, TPost, TTopic, TAppEvent>,
+  ) => void | Promise<void>;
+};
+
+/**
+ * Facade for discovery (Memories), optional persistence resolvers, negotiation ports, and DID registration.
+ * Domain CRUD will call {@link SwarmHost.notify} in a later iteration.
+ */
+export class SwarmHost<
+  TNode extends LabelSchemaMap,
+  TEdge extends LabelSchemaMap,
+  TProfile = unknown,
+  TPost = unknown,
+  TTopic = unknown,
+  TAppEvent extends SwarmAppEventConstraint = never,
+> {
+  readonly memories: MemoriesClient<TNode, TEdge>;
+  readonly stores?: SwarmHostStores<TProfile, TPost, TTopic>;
+  readonly negotiationRelay?: NegotiationRelayPort;
+  readonly didVerifier?: DidRegistrationVerifier;
+  readonly notificationBuffer?: AgentNotificationBufferPort;
+  private readonly onEvent?: SwarmHostDeps<
+    TNode,
+    TEdge,
+    TProfile,
+    TPost,
+    TTopic,
+    TAppEvent
+  >["onEvent"];
+
+  constructor(deps: SwarmHostDeps<TNode, TEdge, TProfile, TPost, TTopic, TAppEvent>) {
+    this.memories = deps.memories;
+    this.stores = deps.stores;
+    this.negotiationRelay = deps.negotiationRelay;
+    this.didVerifier = deps.didVerifier;
+    this.notificationBuffer = deps.notificationBuffer;
+    this.onEvent = deps.onEvent;
+  }
+
+  /** Notify subscribers (e.g. Memories sync) that a host event occurred. */
+  notify(event: SwarmHostEventUnion<TProfile, TPost, TTopic, TAppEvent>): void | Promise<void> {
+    return this.onEvent?.(event);
+  }
+
+  /**
+   * Verify DID (unless {@link DidRegistrationRequest.skipVerification}), emit
+   * `swarm.registration.profile_build` so {@link SwarmHostDeps.onEvent} can call `payload.fulfill(profile)`,
+   * then emit `swarm.profile.created` and register the DID with the notification buffer.
+   */
+  async registerWithDid(req: DidRegistrationRequest): Promise<DidRegistrationResult<TProfile>> {
+    if (!isLikelyDidString(req.did)) {
+      throw new Error("SwarmHost: registration `did` must match did:<method>:…");
+    }
+    if (req.skipVerification !== true) {
+      if (this.didVerifier === undefined) {
+        throw new Error(
+          "SwarmHost: configure didVerifier or set skipVerification true (dev only) on the request",
+        );
+      }
+      await this.didVerifier.verify(req);
+    }
+    const onEvent = this.onEvent;
+    if (onEvent === undefined) {
+      throw new Error(
+        "SwarmHost: onEvent is required for registerWithDid (handle swarm.registration.profile_build)",
+      );
+    }
+
+    const profile = await new Promise<TProfile>((resolve, reject) => {
+      let settled = false;
+      const fulfill = (p: TProfile) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        resolve(p);
+      };
+      const rej = (reason: unknown) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        reject(reason);
+      };
+
+      const buildEvent: SwarmHostEventUnion<TProfile, TPost, TTopic, TAppEvent> = {
+        kind: SWARM_EVENT_KIND.REGISTRATION_PROFILE_BUILD,
+        occurredAt: Date.now(),
+        aggregate: { domain: SWARM_AGGREGATE_DOMAIN.registration, id: req.did },
+        change: "created",
+        source: "swarm",
+        payload: { request: req, fulfill, reject: rej },
+        correlationId: req.correlationId,
+      };
+
+      void Promise.resolve(onEvent(buildEvent)).then(() => {
+        if (!settled) {
+          rej(
+            new Error(
+              "SwarmHost: onEvent must call fulfill(profile) or reject(reason) for swarm.registration.profile_build",
+            ),
+          );
+        }
+      }, rej);
+    });
+
+    const profileId = profileEntityId(profile);
+    const createdEvent: SwarmHostEventUnion<TProfile, TPost, TTopic, TAppEvent> = {
+      kind: SWARM_EVENT_KIND.PROFILE_CREATED,
+      occurredAt: Date.now(),
+      aggregate: { domain: SWARM_AGGREGATE_DOMAIN.profile, id: profileId },
+      change: "created",
+      source: "swarm",
+      payload: { profile },
+      correlationId: req.correlationId,
+    };
+    await Promise.resolve(this.notify(createdEvent));
+    await this.notificationBuffer?.ensureRegistered(req.did);
+    return { did: req.did, profile, profileId };
+  }
+
+  resolveProfileFromHit(hit: SearchHit): Promise<TProfile | undefined> {
+    return (
+      this.stores?.profile?.resolve(searchHitToSourceMapRef(hit)) ?? Promise.resolve(undefined)
+    );
+  }
+
+  resolvePostFromHit(hit: SearchHit): Promise<TPost | undefined> {
+    return this.stores?.post?.resolve(searchHitToSourceMapRef(hit)) ?? Promise.resolve(undefined);
+  }
+
+  resolveTopicFromHit(hit: SearchHit): Promise<TTopic | undefined> {
+    return this.stores?.topic?.resolve(searchHitToSourceMapRef(hit)) ?? Promise.resolve(undefined);
+  }
+}

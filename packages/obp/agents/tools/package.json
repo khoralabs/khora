@@ -14,7 +14,7 @@
   "dependencies": {
     "@cfd/agent-identity": "workspace:*",
     "@cfd/obp-core": "workspace:*",
-    "zod": "^4.3.6"
+    "zod": "^4"
   },
   "devDependencies": {
     "@cfd/obp-sqlite": "workspace:*",

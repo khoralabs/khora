@@ -561,6 +561,7 @@ export function listNeighborsForMemory<
         _ts_created: row.memoryCreated,
         namespace: namespacePath(row.namespace),
         key: row.key,
+        kind: "node",
       },
       edge: {
         _id: row.edgeId,
