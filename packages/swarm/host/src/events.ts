@@ -140,7 +140,7 @@ export type SwarmMemoryOpMapper<
   TAppEvent extends SwarmAppEventConstraint = never,
 > = (
   event: SwarmHostEventUnion<TProfile, TPost, TTopic, TAppEvent>,
-) => SwarmMemoryOp<TNode, TEdge>[];
+) => SwarmMemoryOp<TNode, TEdge>[] | Promise<SwarmMemoryOp<TNode, TEdge>[]>;
 
 export type SwarmMemoriesSyncHandler<
   TProfile = unknown,
@@ -163,8 +163,9 @@ export function createSwarmMemoriesSyncHandler<
   client: MemoriesClient<TNode, TEdge>,
   mapEvent: SwarmMemoryOpMapper<TNode, TEdge, TProfile, TPost, TTopic, TAppEvent>,
 ): SwarmMemoriesSyncHandler<TProfile, TPost, TTopic, TAppEvent> {
-  return (event) => {
-    for (const step of mapEvent(event)) {
+  return async (event) => {
+    const ops = await Promise.resolve(mapEvent(event));
+    for (const step of ops) {
       if (step.op === "merge") {
         client.mergeMemory(step.params);
       } else {

@@ -6,8 +6,8 @@ import {
   type ToolRuntimeContext,
 } from "@cfd/agent-identity";
 import type { MemoriesClient, MemoriesClientAsync } from "@cfd/memories-core";
+import type { EmbeddingModel } from "@cfd/memories-core/helpers";
 import type z from "zod";
-import type { EmbeddingModel } from "./embedding-types.js";
 import type {
   MemorySearchEnv,
   MemorySearchWideClient,
@@ -45,11 +45,15 @@ export type MemorySearchSessionContextSlice<
   affordances?: RegisteredAgentAffordances;
 };
 
-async function getMemoriesProvenanceHeadRootHex(
-  client: MemoriesClient | MemoriesClientAsync,
-): Promise<string | undefined> {
-  const out = client.persistence.getProvenanceHeadRootHex();
-  return out instanceof Promise ? await out : out;
+async function getMemoriesProvenanceHeadRootHex(client: {
+  persistence: {
+    getProvenanceHeadRootHex?: () => string | undefined | Promise<string | undefined>;
+  };
+}): Promise<string | undefined> {
+  const fn = client.persistence.getProvenanceHeadRootHex;
+  if (fn === undefined) return undefined;
+  const out = fn.call(client.persistence);
+  return (await Promise.resolve(out)) as string | undefined;
 }
 
 function memorySearchContextBuildArgs<TNode extends ZodLabelMap, TEdge extends ZodLabelMap>(

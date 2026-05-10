@@ -255,7 +255,6 @@
     "packages/memories/agents/tools": {
       "name": "@cfd/memories-tools",
       "dependencies": {
-        "@ai-sdk/provider-utils": "^4.0.23",
         "@cfd/agent-identity": "workspace:*",
         "@cfd/agent-identity-adapters": "workspace:*",
         "@cfd/memories-core": "workspace:*",

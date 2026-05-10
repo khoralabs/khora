@@ -1,3 +1,9 @@
+export type {
+  EmbeddingModel,
+  HybridMemorySearchInput,
+  HybridMemorySearchOptions,
+  MemorySearchHit,
+} from "@cfd/memories-core/helpers";
 export {
   createSwarmMemoriesSyncHandler,
   SWARM_EVENT_KIND,
@@ -27,6 +33,7 @@ export {
   SwarmHost,
   type SwarmHostDeps,
   type SwarmHostEventHandlerCtx,
+  type SwarmHostSearchMemoriesArgs,
 } from "./host.ts";
 export type {
   SourceMapLink,

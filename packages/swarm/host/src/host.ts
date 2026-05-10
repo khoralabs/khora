@@ -1,5 +1,12 @@
 import type { LabelSchemaMap, MemoriesClient, SearchHit } from "@cfd/memories-core";
 import {
+  type EmbeddingModel,
+  type HybridMemorySearchClient,
+  type HybridMemorySearchInput,
+  type MemorySearchHit,
+  runHybridMemorySearch,
+} from "@cfd/memories-core/helpers";
+import {
   createSwarmMemoriesSyncHandler,
   SWARM_EVENT_KIND,
   type SwarmAppEventConstraint,
@@ -25,11 +32,24 @@ import {
 import type { DidRegistrationVerifier } from "./registration/verify.ts";
 import { type SwarmHostStores, searchHitToSourceMapRef } from "./stores.ts";
 
+/** Arguments for {@link SwarmHost.searchMemories} (hybrid lexical + vector search). */
+export type SwarmHostSearchMemoriesArgs = HybridMemorySearchInput & {
+  namespace: string;
+  additionalNamespaces?: readonly string[];
+  embeddingCache?: Map<string, number[]>;
+  memoriesSnapshotRootHex?: string;
+  /** Per-call override of {@link SwarmHostDeps.embeddingModel}. */
+  embeddingModel?: EmbeddingModel;
+};
+
 /** Passed to {@link SwarmHostDeps.onEvent} together with each dispatched event. */
 export type SwarmHostEventHandlerCtx<TNode extends LabelSchemaMap, TEdge extends LabelSchemaMap> = {
   memories: MemoriesClient<TNode, TEdge>;
   persistence: SwarmHostPersistence;
   persistenceClient: SwarmHostPersistenceClient;
+  /** Same optional model as {@link SwarmHostDeps.embeddingModel} (AI SDK–backed). */
+  embeddingModel?: EmbeddingModel;
+  searchMemories: (args: SwarmHostSearchMemoriesArgs) => Promise<MemorySearchHit[]>;
 };
 
 export type SwarmHostDeps<
@@ -43,12 +63,17 @@ export type SwarmHostDeps<
   memories: MemoriesClient<TNode, TEdge>;
   persistence: SwarmHostPersistence;
   /** When set, runs before {@link SwarmHostDeps.onEvent} for all events except registration profile build. */
-  mapEvent?: SwarmMemoryOpMapper<TNode, TEdge, TProfile, TPost, TTopic, TAppEvent>;
+  mapMemoryOps?: SwarmMemoryOpMapper<TNode, TEdge, TProfile, TPost, TTopic, TAppEvent>;
   stores?: SwarmHostStores<TProfile, TPost, TTopic>;
   /** Optional OBP opaque byte relay (HMAC tickets, replay on re-join). */
   obpRoomHub?: ObpRoomHubPort;
   didVerifier?: DidRegistrationVerifier;
   notificationBuffer?: AgentNotificationBufferPort;
+  /**
+   * Optional embedding model for {@link SwarmHost.searchMemories} when the vector arm is used.
+   * Construct with {@link createMemoriesEmbeddingModel} from `@cfd/memories-core/helpers`.
+   */
+  embeddingModel?: EmbeddingModel;
   onEvent?: (
     ctx: SwarmHostEventHandlerCtx<TNode, TEdge>,
     event: SwarmHostEventUnion<TProfile, TPost, TTopic, TAppEvent>,
@@ -74,6 +99,7 @@ export class SwarmHost<
   readonly obpRoomHub?: ObpRoomHubPort;
   readonly didVerifier?: DidRegistrationVerifier;
   readonly notificationBuffer?: AgentNotificationBufferPort;
+  readonly embeddingModel?: EmbeddingModel;
 
   private readonly memoriesSync?: SwarmMemoriesSyncHandler<TProfile, TPost, TTopic, TAppEvent>;
   private readonly onEvent?: SwarmHostDeps<
@@ -93,11 +119,12 @@ export class SwarmHost<
     this.obpRoomHub = deps.obpRoomHub;
     this.didVerifier = deps.didVerifier;
     this.notificationBuffer = deps.notificationBuffer;
+    this.embeddingModel = deps.embeddingModel;
     this.onEvent = deps.onEvent;
-    if (deps.mapEvent !== undefined) {
+    if (deps.mapMemoryOps !== undefined) {
       this.memoriesSync = createSwarmMemoriesSyncHandler(
         deps.memories as unknown as MemoriesClient<TNode, TEdge>,
-        deps.mapEvent,
+        deps.mapMemoryOps,
       );
     }
   }
@@ -107,7 +134,37 @@ export class SwarmHost<
       memories: this.memories,
       persistence: this.persistence,
       persistenceClient: this.persistenceClient,
+      embeddingModel: this.embeddingModel,
+      searchMemories: (args) => this.searchMemories(args),
     };
+  }
+
+  /**
+   * Hybrid memory search (FTS + optional vector RRF), same pipeline as the agent `memory_search` tool.
+   * Uses {@link SwarmHostDeps.embeddingModel} unless {@link SwarmHostSearchMemoriesArgs.embeddingModel} overrides it.
+   */
+  searchMemories(args: SwarmHostSearchMemoriesArgs): Promise<MemorySearchHit[]> {
+    const {
+      namespace,
+      additionalNamespaces,
+      embeddingCache,
+      memoriesSnapshotRootHex,
+      embeddingModel: modelArg,
+      content,
+      options,
+    } = args;
+    const embeddingModel = modelArg ?? this.embeddingModel;
+    return runHybridMemorySearch(
+      this.memories as unknown as HybridMemorySearchClient,
+      {
+        namespace,
+        additionalNamespaces,
+        embeddingModel,
+        embeddingCache,
+        memoriesSnapshotRootHex,
+      },
+      { content, options },
+    );
   }
 
   /**

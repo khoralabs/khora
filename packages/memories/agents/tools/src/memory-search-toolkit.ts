@@ -1,98 +1,37 @@
 import { policy, tool, toolkit } from "@cfd/agent-identity";
 import type {
-  MemoriesClient,
-  MemoriesClientAsync,
-  NamespacePath,
-  NeighborSearchOption,
-  OntologyLabelInstance,
-  SearchContent,
-  SearchHit,
-} from "@cfd/memories-core";
+  EmbeddingModel,
+  HybridMemorySearchClient,
+  HybridMemorySearchInput,
+  HybridMemorySearchWideClient,
+  HybridMemorySearchWideClientAsync,
+  MemorySearchHit,
+} from "@cfd/memories-core/helpers";
+import { runHybridMemorySearch } from "@cfd/memories-core/helpers";
 import z from "zod";
-import { embedTextChunks } from "./embedding-text.js";
-import type { EmbeddingModel } from "./embedding-types.js";
 
-/** Wide ontology maps; session clients use narrower TNode/TEdge at runtime (see {@link toMemorySearchEnv}). */
-export type MemorySearchWideClient = MemoriesClient<
-  Record<string, z.ZodType>,
-  Record<string, z.ZodType>
->;
+/** @deprecated Use {@link HybridMemorySearchWideClient} from `@cfd/memories-core/helpers`. */
+export type MemorySearchWideClient = HybridMemorySearchWideClient;
 
-export type MemorySearchWideClientAsync = MemoriesClientAsync<
-  Record<string, z.ZodType>,
-  Record<string, z.ZodType>
->;
+/** @deprecated Use {@link HybridMemorySearchWideClientAsync} from `@cfd/memories-core/helpers`. */
+export type MemorySearchWideClientAsync = HybridMemorySearchWideClientAsync;
 
-/**
- * Per-session embedding cache key (see {@link MemorySearchEnv.embeddingCache}).
- * When `additionalNamespaces` is set, it is folded in so vectors are not reused across different search scopes.
- */
-export function embeddingCacheKey(
-  namespace: string,
-  queryText: string,
-  additionalNamespaces?: readonly string[],
-): string {
-  const q = queryText.trim();
-  if (additionalNamespaces?.length) {
-    const extra = [...additionalNamespaces].sort((a, b) => a.localeCompare(b)).join("\n");
-    return `${namespace}\n${extra}\n${q}`;
-  }
-  return `${namespace}\n${q}`;
-}
+/** Re-exported from `@cfd/memories-core/helpers` for backward compatibility. */
+export type {
+  HybridMemorySearchInput,
+  HybridMemorySearchOptions,
+  MemorySearchHit,
+} from "@cfd/memories-core/helpers";
+/** Re-exported from `@cfd/memories-core/helpers` for backward compatibility. */
+export { embeddingCacheKey } from "@cfd/memories-core/helpers";
 
-/**
- * Slim tool result for the LLM (keys, scores, labels) — avoids serializing full {@link SearchHit} rows.
- * Neighbor rows are capped when present.
- */
-export type MemorySearchHit = {
-  memory_key: string;
-  /** `node` vs `edge` memory (edge hits carry optional graph edge summary). */
-  kind: "node" | "edge";
-  score: number;
-  labels: OntologyLabelInstance[];
-  source_key: string;
-  /** Present when `kind` is `edge` (endpoint keys + edge label kinds). */
-  edge?: { from_key: string; to_key: string; edge_label_kinds: string[] };
-  neighbors?: Array<{ memory_key: string; labels: OntologyLabelInstance[] }>;
-};
-
-const MAX_NEIGHBORS_PER_HIT = 8;
-
-function mapSearchHit(hit: SearchHit): MemorySearchHit {
-  const row: MemorySearchHit = {
-    memory_key: hit.memory.key,
-    kind: hit.graph.kind === "edge" ? "edge" : "node",
-    score: hit.score,
-    labels: [...hit.labels],
-    source_key: hit.source_key,
-  };
-  if (hit.graph.kind === "edge") {
-    row.edge = {
-      from_key: hit.graph.edge.fromKey,
-      to_key: hit.graph.edge.toKey,
-      edge_label_kinds: hit.graph.edge.labels.map((l) => l.kind),
-    };
-  }
-  if (hit.neighbors?.length) {
-    row.neighbors = hit.neighbors.slice(0, MAX_NEIGHBORS_PER_HIT).map((n) => ({
-      memory_key: n.key,
-      labels: [...n.labels],
-    }));
-  }
-  return row;
-}
-
-function mapSearchHits(hits: SearchHit[]): MemorySearchHit[] {
-  return hits.map(mapSearchHit);
-}
-
-/** Runtime env for {@link memorySearchToolkit}: memory store, namespace, and embedding model (injected; not tool args). */
+/** Runtime env for {@link memorySearchToolkit}: memory store, namespace, and optional embedding model (injected; not tool args). */
 export type MemorySearchEnv = {
   /** Name avoids clashing with other composed toolkits that use {@code client} for a domain API. */
   memoriesClient: MemorySearchWideClient | MemorySearchWideClientAsync;
   namespace: string;
-  /** Used to embed `content.text` for the vector retrieval arm (same model as ingestion). */
-  embeddingModel: EmbeddingModel;
+  /** Used to embed query text for the vector retrieval arm when that arm is active. */
+  embeddingModel?: EmbeddingModel;
   /**
    * Optional per-session cache for query embedding vectors (same normalized key as {@link embeddingCacheKey}).
    * Instantiated in {@link buildMemorySearchToolkitContext}.
@@ -147,15 +86,6 @@ export function memorySearchIdentityLinkSupplement(
   };
 }
 
-async function resolveAsOfTimestampMsFromEnv(env: MemorySearchEnv): Promise<number | undefined> {
-  const snap = env.memoriesSnapshotRootHex;
-  if (snap === undefined || snap === "") return undefined;
-  const fn = env.memoriesClient.persistence.getProvenanceTimestampMsForRootHex;
-  if (fn === undefined) return undefined;
-  const out = fn.call(env.memoriesClient.persistence, snap);
-  return out instanceof Promise ? await out : out;
-}
-
 /** Policy id for {@link memorySearchBudgetPolicy} (hash-stable). */
 export const MEMORY_SEARCH_BUDGET_POLICY_ID = "memory_search_budget";
 
@@ -169,7 +99,6 @@ export const memorySearchBudgetPolicy = policy<MemorySearchEnv>(
   },
 );
 
-/** Agent passes query text only; the handler embeds it and runs hybrid RRF (lexical + vector). */
 const zSearchContent = z
   .object({
     text: z.string().describe("Query string for FTS + embedding (no raw vector)."),
@@ -231,15 +160,6 @@ export const zMemorySearchToolInput = z
 
 export type MemorySearchToolInput = z.infer<typeof zMemorySearchToolInput>;
 
-function neighborOptionForSearch(
-  neighbors: z.infer<typeof zMemorySearchOptions>["neighbors"],
-): NeighborSearchOption | undefined {
-  if (neighbors === undefined) return undefined;
-  if (neighbors === "all") return true;
-  if (neighbors === "off") return false;
-  return neighbors;
-}
-
 const memorySearchTool = tool<
   "memory_search",
   MemorySearchToolInput,
@@ -254,57 +174,17 @@ const memorySearchTool = tool<
   handler: async (ctx, input) => {
     const env = ctx.env;
     const parsed = zMemorySearchToolInput.parse(input);
-    const opts = parsed.options;
-    const lexicalWeight = opts?.arms?.lexical ?? 1;
-    const vectorWeight = opts?.arms?.vector ?? 1;
-    if (lexicalWeight <= 0 && vectorWeight <= 0) {
-      throw new Error("memory_search: at least one of options.arms.lexical or .vector must be > 0");
-    }
-
-    let content: SearchContent;
-    if (vectorWeight > 0) {
-      const cacheKey = embeddingCacheKey(
-        env.namespace,
-        parsed.content.text,
-        env.additionalNamespaces,
-      );
-      const cache = env.embeddingCache;
-      let vector: number[] | undefined = cache?.get(cacheKey);
-
-      if (!vector) {
-        const embeddings = await embedTextChunks(env.embeddingModel, [parsed.content.text]);
-        vector = embeddings[0];
-        if (!vector) {
-          throw new Error("memory_search: embedding pipeline returned no vector for query text");
-        }
-        cache?.set(cacheKey, vector);
-      }
-
-      content = lexicalWeight > 0 ? { text: parsed.content.text, vector } : { vector };
-    } else {
-      content = { text: parsed.content.text };
-    }
-
-    const asOfTs = await resolveAsOfTimestampMsFromEnv(env);
-
-    const rawHits = await Promise.resolve(
-      env.memoriesClient.search({
+    const slim = await runHybridMemorySearch(
+      env.memoriesClient as HybridMemorySearchClient,
+      {
         namespace: env.namespace,
-        ...(env.additionalNamespaces?.length
-          ? { additionalNamespaces: [...env.additionalNamespaces] as NamespacePath[] }
-          : {}),
-        content,
-        ...(asOfTs !== undefined ? { asOfTimestampMs: asOfTs } : {}),
-        options: opts
-          ? {
-              ...opts,
-              neighbors: neighborOptionForSearch(opts.neighbors),
-            }
-          : undefined,
-      }),
+        additionalNamespaces: env.additionalNamespaces,
+        embeddingModel: env.embeddingModel,
+        embeddingCache: env.embeddingCache,
+        memoriesSnapshotRootHex: env.memoriesSnapshotRootHex,
+      },
+      parsed as HybridMemorySearchInput,
     );
-
-    const slim = mapSearchHits(rawHits);
 
     const budget = env.memorySearchBudget;
     if (budget !== undefined) {

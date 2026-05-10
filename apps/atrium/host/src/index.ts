@@ -61,7 +61,7 @@ const server = Bun.serve({
         const payload = devSkipDid()
           ? ({ ...body, skipVerification: true as const } satisfies DidRegistrationRequest)
           : body;
-        const result = await ctx.swarm.registerWithDid(payload);
+        const result = await ctx.host.registerWithDid(payload);
         return Response.json(result);
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
@@ -77,7 +77,7 @@ const server = Bun.serve({
       try {
         const raw = (await req.json()) as unknown;
         const post = zAtriumPost.parse(raw);
-        await ctx.swarm.notify({
+        await ctx.host.notify({
           kind: SWARM_EVENT_KIND.POST_CREATED,
           occurredAt: Date.now(),
           aggregate: { domain: SWARM_AGGREGATE_DOMAIN.post, id: post.id },
@@ -97,7 +97,7 @@ const server = Bun.serve({
 
       if (req.method === "PATCH") {
         try {
-          const row = ctx.swarm.persistenceClient.getPostById(id);
+          const row = ctx.host.persistenceClient.getPostById(id);
           if (row === undefined) {
             return jsonError("Post not found", 404);
           }
@@ -108,7 +108,7 @@ const server = Bun.serve({
           const patchRaw = (await req.json()) as unknown;
           const patch = zAtriumPostPatch.parse(patchRaw);
           const post = mergeAtriumPostPatch(previous, patch);
-          await ctx.swarm.notify({
+          await ctx.host.notify({
             kind: SWARM_EVENT_KIND.POST_UPDATED,
             occurredAt: Date.now(),
             aggregate: { domain: SWARM_AGGREGATE_DOMAIN.post, id: post.id },
@@ -125,12 +125,12 @@ const server = Bun.serve({
 
       if (req.method === "DELETE") {
         try {
-          const row = ctx.swarm.persistenceClient.getPostById(id);
+          const row = ctx.host.persistenceClient.getPostById(id);
           if (row === undefined) {
             return jsonError("Post not found", 404);
           }
           const post = zAtriumPost.parse(JSON.parse(row.bodyJson));
-          await ctx.swarm.notify({
+          await ctx.host.notify({
             kind: SWARM_EVENT_KIND.POST_DELETED,
             occurredAt: Date.now(),
             aggregate: { domain: SWARM_AGGREGATE_DOMAIN.post, id: post.id },

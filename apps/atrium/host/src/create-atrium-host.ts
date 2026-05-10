@@ -1,12 +1,9 @@
 import { ids, MemoriesClient, type MemoriesClient as MemoriesClientBare } from "@cfd/memories-core";
+import type { EmbeddingModel } from "@cfd/memories-core/helpers";
+import { embedTextChunks } from "@cfd/memories-core/helpers";
 import { canonicalOntology } from "@cfd/memories-core/ontologies";
 import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-sqlite";
-import {
-  minimalSourceMapForResolve,
-  SWARM_EVENT_KIND,
-  SwarmHost,
-  type SwarmMemoryOpMapper,
-} from "@cfd/swarm-host";
+import { minimalSourceMapForResolve, SWARM_EVENT_KIND, SwarmHost } from "@cfd/swarm-host";
 import {
   type AtriumPost,
   atriumPostLexicalText,
@@ -33,77 +30,39 @@ type EntityMap = { profile: AtriumProfile; post: AtriumPost };
 /** {@link SwarmHost} / sync handler use the default entity-map parameter; cast at the boundary. */
 type CanonicalMemoriesClient = MemoriesClientBare<TNode, TEdge>;
 
+async function mergeContentWithOptionalVector(
+  embeddingModel: EmbeddingModel | undefined,
+  sourceKey: string,
+  text: string,
+): Promise<Array<{ key: string; text: string; vector?: number[] }>> {
+  const trimmed = text.trim();
+  if (embeddingModel === undefined || trimmed.length === 0) {
+    return [{ key: sourceKey, text }];
+  }
+  const embeddings = await embedTextChunks(embeddingModel, [trimmed]);
+  const vector = embeddings[0];
+  if (vector === undefined || vector.length === 0) {
+    return [{ key: sourceKey, text }];
+  }
+  return [{ key: sourceKey, text, vector }];
+}
+
 export type AtriumHostConfig = {
   dbPath: string;
   /** Memories namespace for profile nodes (memory key = profile id). */
   profileNamespace: string;
   /** Memories namespace for post nodes (memory key = post id). */
   postNamespace: string;
+  /**
+   * When set, profile/post merges include embedding vectors for hybrid search (same model as query-time search).
+   */
+  embeddingModel?: EmbeddingModel;
 };
 
 export type AtriumHostContext = {
   config: AtriumHostConfig;
-  swarm: SwarmHost<TNode, TEdge, AtriumProfile, AtriumPost, unknown, never>;
+  host: SwarmHost<TNode, TEdge, AtriumProfile, AtriumPost, unknown, never>;
 };
-
-function createAtriumMemoryOpMapper(
-  profileNamespace: string,
-  postNamespace: string,
-): SwarmMemoryOpMapper<TNode, TEdge, AtriumProfile, AtriumPost> {
-  return (event) => {
-    if (event.kind === SWARM_EVENT_KIND.PROFILE_CREATED) {
-      const profile = event.payload.profile;
-      const text = atriumProfileLexicalText(profile);
-      return [
-        {
-          op: "merge" as const,
-          params: {
-            key: profile.id,
-            namespace: profileNamespace,
-            content: [{ key: `profile:${profile.id}`, text }],
-            labels: [
-              {
-                kind: "person" as const,
-                props: { name: profile.displayName ?? profile.id },
-              },
-            ],
-          },
-        },
-      ];
-    }
-
-    if (
-      event.kind === SWARM_EVENT_KIND.POST_CREATED ||
-      event.kind === SWARM_EVENT_KIND.POST_UPDATED
-    ) {
-      const post = event.payload.post;
-      const text = atriumPostLexicalText(post);
-      return [
-        {
-          op: "merge" as const,
-          params: {
-            key: post.id,
-            namespace: postNamespace,
-            content: [{ key: `post:${post.id}`, text }],
-            labels: [
-              {
-                kind: "observation" as const,
-                props: { summary: atriumPostObservationSummary(post) },
-              },
-            ],
-          },
-        },
-      ];
-    }
-
-    if (event.kind === SWARM_EVENT_KIND.POST_DELETED) {
-      const post = event.payload.post;
-      return [{ op: "delete" as const, params: { namespace: postNamespace, key: post.id } }];
-    }
-
-    return [];
-  };
-}
 
 export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostContext {
   const db = openMemoriesDatabase(config.dbPath);
@@ -122,10 +81,10 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
     storeForNamespace: () => documentStore,
   });
 
-  const swarm = new SwarmHost({
+  const host = new SwarmHost({
     memories: client as unknown as CanonicalMemoriesClient,
     persistence: hostPersistence,
-    mapEvent: createAtriumMemoryOpMapper(config.profileNamespace, config.postNamespace),
+    embeddingModel: config.embeddingModel,
     stores: {
       profile: {
         async resolve(ref) {
@@ -146,6 +105,73 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
         },
       },
     },
+
+    mapMemoryOps: async (event) => {
+      if (event.kind === SWARM_EVENT_KIND.PROFILE_CREATED) {
+        const profile = event.payload.profile;
+        const text = atriumProfileLexicalText(profile);
+        const content = await mergeContentWithOptionalVector(
+          config.embeddingModel,
+          `profile:${profile.id}`,
+          text,
+        );
+        return [
+          {
+            op: "merge" as const,
+            params: {
+              key: profile.id,
+              namespace: config.profileNamespace,
+              content,
+              labels: [
+                {
+                  kind: "person" as const,
+                  props: { name: profile.displayName ?? profile.id },
+                },
+              ],
+            },
+          },
+        ];
+      }
+
+      if (
+        event.kind === SWARM_EVENT_KIND.POST_CREATED ||
+        event.kind === SWARM_EVENT_KIND.POST_UPDATED
+      ) {
+        const post = event.payload.post;
+        const text = atriumPostLexicalText(post);
+        const content = await mergeContentWithOptionalVector(
+          config.embeddingModel,
+          `post:${post.id}`,
+          text,
+        );
+        return [
+          {
+            op: "merge" as const,
+            params: {
+              key: post.id,
+              namespace: config.postNamespace,
+              content,
+              labels: [
+                {
+                  kind: "observation" as const,
+                  props: { summary: atriumPostObservationSummary(post) },
+                },
+              ],
+            },
+          },
+        ];
+      }
+
+      if (event.kind === SWARM_EVENT_KIND.POST_DELETED) {
+        const post = event.payload.post;
+        return [
+          { op: "delete" as const, params: { namespace: config.postNamespace, key: post.id } },
+        ];
+      }
+
+      return [];
+    },
+
     onEvent: async (ctx, event) => {
       if (event.kind === SWARM_EVENT_KIND.REGISTRATION_PROFILE_BUILD) {
         try {
@@ -186,5 +212,5 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
     },
   });
 
-  return { config, swarm };
+  return { config, host };
 }

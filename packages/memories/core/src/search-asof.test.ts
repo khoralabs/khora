@@ -22,7 +22,7 @@ describe("search asOfTimestampMs", () => {
       },
     );
     const rowEarly = db
-      .query<{ t: number }, [string]>(
+      .query<{ t: number }, [string, string]>(
         `SELECT _ts_created AS t FROM memories WHERE namespace = ? AND key = ?`,
       )
       .get("ns", "early");
