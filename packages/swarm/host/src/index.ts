@@ -4,6 +4,7 @@ export type {
   HybridMemorySearchOptions,
   MemorySearchHit,
 } from "@cfd/memories-core/helpers";
+export { swarmHostOntology } from "./swarm-host-ontology.ts";
 export {
   createSwarmMemoriesSyncHandler,
   SWARM_EVENT_KIND,
@@ -77,7 +78,10 @@ export type {
 export type {
   AgentNotification,
   AgentNotificationBufferPort,
+  AgentNotificationRow,
   NegotiationTicketNotificationPayload,
+  ProbeHitNotificationPayload,
+  TopicPostNotificationPayload,
 } from "./registration/notifications.ts";
 export type {
   AgentDid,

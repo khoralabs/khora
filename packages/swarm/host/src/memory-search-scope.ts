@@ -4,9 +4,11 @@ export type SwarmHostMemoryNamespaces = {
   postNamespace: string;
   /** Required when searching topics or multi-scope includes topics. */
   topicNamespace?: string;
+  /** Required for `probes` scope and multi includes probes. */
+  probeNamespace?: string;
 };
 
-export type SwarmHostMemoryEntityKind = "profiles" | "posts" | "topics";
+export type SwarmHostMemoryEntityKind = "profiles" | "posts" | "topics" | "probes";
 
 /**
  * Discriminated search scope: maps to whitelisted namespaces via {@link SwarmHostMemoryNamespaces}.
@@ -16,6 +18,7 @@ export type SwarmHostSearchScope =
   | { kind: "profiles"; withRelatedPosts?: boolean }
   | { kind: "posts" }
   | { kind: "topics" }
+  | { kind: "probes" }
   | { kind: "multi"; includes: readonly SwarmHostMemoryEntityKind[] }
   | { kind: "raw"; namespace: string; additionalNamespaces?: readonly string[] };
 
@@ -36,6 +39,15 @@ function namespaceForEntityKind(
         );
       }
       return t;
+    }
+    case "probes": {
+      const p = ns.probeNamespace?.trim();
+      if (p === undefined || p.length === 0) {
+        throw new Error(
+          "SwarmHost: probeNamespace is required on memoryNamespaces for probes search",
+        );
+      }
+      return p;
     }
     default: {
       const _exhaustive: never = kind;
@@ -96,6 +108,10 @@ export function resolveSwarmHostSearchNamespaces(
 
   if (scope.kind === "topics") {
     return { namespace: namespaceForEntityKind("topics", memoryNamespaces) };
+  }
+
+  if (scope.kind === "probes") {
+    return { namespace: namespaceForEntityKind("probes", memoryNamespaces) };
   }
 
   if (scope.kind === "multi") {

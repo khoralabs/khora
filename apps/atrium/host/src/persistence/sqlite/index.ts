@@ -10,6 +10,7 @@ export {
   createSwarmHostEntitySqlitePersistence,
   upsertSwarmHostEntity,
 } from "./entity-sqlite.ts";
+export { createSqliteAgentNotificationBuffer } from "./notification-buffer-sqlite.ts";
 export { createObpRelaySqlitePersistence } from "./obp-relay-sqlite.ts";
 export { configureSwarmHostSqlitePragmas, ensureSwarmHostSqliteSchema } from "./schema.ts";
 export { createSwarmHostSqlitePersistence } from "./swarm-host-sqlite.ts";

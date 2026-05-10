@@ -8,6 +8,12 @@ import {
 import z from "zod";
 import { mergeAtriumPostPatch, zAtriumPost, zAtriumPostPatch } from "./atrium-post.ts";
 import { createAtriumHostContext } from "./create-atrium-host.ts";
+import {
+  subscribeTopic,
+  unsubscribeTopic,
+  upsertHostRegistration,
+} from "./persistence/sqlite/registrations-topics-sqlite.ts";
+import { normalizeTopicSlug } from "./topic-slug.ts";
 
 function envPort(): number {
   const raw = process.env.PORT ?? process.env.ATRIUM_PORT ?? "8787";
@@ -31,6 +37,17 @@ function envPostNamespace(): string {
   return process.env.ATRIUM_POST_NAMESPACE?.trim() || "atrium/posts";
 }
 
+function envProbeNamespace(): string {
+  return process.env.ATRIUM_PROBE_NAMESPACE?.trim() || "atrium/probes";
+}
+
+function envInboxSnapshotLimit(): number {
+  const raw = process.env.ATRIUM_INBOX_SNAPSHOT_LIMIT?.trim();
+  if (raw === undefined || raw.length === 0) return 50;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? Math.min(Math.floor(n), 500) : 50;
+}
+
 function devSkipDid(): boolean {
   return process.env.ATRIUM_DEV_SKIP_DID_VERIFY === "1";
 }
@@ -39,6 +56,14 @@ function jsonError(msg: string, status: number): Response {
   return Response.json({ error: msg }, { status });
 }
 
+function requiredDid(req: Request): string | undefined {
+  const h = req.headers.get("x-agent-did")?.trim();
+  if (h !== undefined && h.length > 0) return h;
+  return undefined;
+}
+
+type InboxWsData = { did: string };
+
 const dbPath = envDbPath();
 mkdirSync(dirname(dbPath), { recursive: true });
 
@@ -46,15 +71,45 @@ const ctx = createAtriumHostContext({
   dbPath,
   profileNamespace: envProfileNamespace(),
   postNamespace: envPostNamespace(),
+  probeNamespace: envProbeNamespace(),
 });
 
-const server = Bun.serve({
+async function sendInboxSnapshot(
+  ws: { send: (data: string) => unknown },
+  did: string,
+): Promise<void> {
+  const list = ctx.notificationBuffer.listRecent;
+  const markRead = ctx.notificationBuffer.markRead;
+  if (list === undefined) return;
+  const limit = envInboxSnapshotLimit();
+  const rows = await list(did, limit);
+  ws.send(
+    JSON.stringify({
+      type: "snapshot",
+      notifications: rows.map((r) => ({
+        id: r.id,
+        createdAtMs: r.createdAtMs,
+        read: r.readAtMs !== null,
+        notification: r.note,
+      })),
+    }),
+  );
+  if (markRead !== undefined) {
+    const unreadIds = rows.filter((r) => r.readAtMs === null).map((r) => r.id);
+    if (unreadIds.length > 0) {
+      await markRead(did, unreadIds);
+    }
+  }
+}
+
+const server = Bun.serve<InboxWsData>({
   port: envPort(),
-  async fetch(req) {
+  async fetch(req, srv) {
     const url = new URL(req.url);
     if (req.method === "GET" && url.pathname === "/health") {
       return Response.json({ ok: true });
     }
+
     if (req.method === "POST" && url.pathname === "/v1/register") {
       try {
         const body = (await req.json()) as DidRegistrationRequest;
@@ -62,6 +117,7 @@ const server = Bun.serve({
           ? ({ ...body, skipVerification: true as const } satisfies DidRegistrationRequest)
           : body;
         const result = await ctx.host.registerWithDid(payload);
+        upsertHostRegistration(ctx.db, result.did, result.profileId);
         return Response.json(result);
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
@@ -71,12 +127,80 @@ const server = Bun.serve({
       }
     }
 
+    if (req.method === "GET" && url.pathname === "/v1/inbox/ws") {
+      const did = url.searchParams.get("did")?.trim() ?? requiredDid(req) ?? undefined;
+      if (did === undefined || did.length === 0) {
+        return jsonError("did required (query ?did= or X-Agent-Did)", 400);
+      }
+      const ok = srv.upgrade(req, { data: { did } });
+      if (!ok) {
+        return jsonError("WebSocket upgrade failed", 500);
+      }
+      return undefined;
+    }
+
+    if (req.method === "GET" && url.pathname === "/v1/inbox") {
+      const did = url.searchParams.get("did")?.trim() ?? requiredDid(req);
+      if (did === undefined || did.length === 0) {
+        return jsonError("did required", 400);
+      }
+      const list = ctx.notificationBuffer.listRecent;
+      if (list === undefined) {
+        return jsonError("inbox list not available", 501);
+      }
+      const limit = Math.min(Number(url.searchParams.get("limit")) || envInboxSnapshotLimit(), 500);
+      const rows = await list(did, limit);
+      const markRead =
+        url.searchParams.get("markRead") === "1" || url.searchParams.get("markRead") === "true";
+      if (markRead && ctx.notificationBuffer.markRead !== undefined) {
+        const unreadIds = rows.filter((r) => r.readAtMs === null).map((r) => r.id);
+        if (unreadIds.length > 0) {
+          await ctx.notificationBuffer.markRead(did, unreadIds);
+        }
+      }
+      return Response.json({
+        notifications: rows.map((r) => ({
+          id: r.id,
+          createdAtMs: r.createdAtMs,
+          read: r.readAtMs !== null,
+          notification: r.note,
+        })),
+      });
+    }
+
+    const topicSubMatch = /^\/v1\/topics\/([^/]+)\/subscribe$/.exec(url.pathname);
+    if (topicSubMatch !== null && topicSubMatch[1] !== undefined) {
+      const slugRaw = decodeURIComponent(topicSubMatch[1]);
+      let slug: string;
+      try {
+        slug = normalizeTopicSlug(slugRaw);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return jsonError(msg, 400);
+      }
+      const did = requiredDid(req);
+      if (did === undefined) {
+        return jsonError("X-Agent-Did header required", 400);
+      }
+      if (req.method === "POST") {
+        subscribeTopic(ctx.db, did, slug);
+        return Response.json({ ok: true, topicSlug: slug });
+      }
+      if (req.method === "DELETE") {
+        unsubscribeTopic(ctx.db, did, slug);
+        return new Response(null, { status: 204 });
+      }
+    }
+
     const postPathMatch = /^\/v1\/posts\/([^/]+)$/.exec(url.pathname);
 
     if (req.method === "POST" && url.pathname === "/v1/posts") {
       try {
         const raw = (await req.json()) as unknown;
         const post = zAtriumPost.parse(raw);
+        if (post.topics !== undefined) {
+          post.topics = post.topics.map((t) => normalizeTopicSlug(t));
+        }
         await ctx.host.notify({
           kind: SWARM_EVENT_KIND.POST_CREATED,
           occurredAt: Date.now(),
@@ -108,6 +232,9 @@ const server = Bun.serve({
           const patchRaw = (await req.json()) as unknown;
           const patch = zAtriumPostPatch.parse(patchRaw);
           const post = mergeAtriumPostPatch(previous, patch);
+          if (post.topics !== undefined) {
+            post.topics = post.topics.map((t) => normalizeTopicSlug(t));
+          }
           await ctx.host.notify({
             kind: SWARM_EVENT_KIND.POST_UPDATED,
             occurredAt: Date.now(),
@@ -147,6 +274,17 @@ const server = Bun.serve({
     }
 
     return new Response("Not found", { status: 404 });
+  },
+  websocket: {
+    open(ws) {
+      const did = ws.data.did;
+      ctx.inboxHub.add(did, ws);
+      void sendInboxSnapshot(ws, did);
+    },
+    close(ws) {
+      ctx.inboxHub.remove(ws.data.did, ws);
+    },
+    message() {},
   },
 });
 

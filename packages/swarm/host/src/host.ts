@@ -75,7 +75,9 @@ export type SwarmHostEventHandlerCtx<TNode extends LabelSchemaMap, TEdge extends
   persistenceClient: SwarmHostPersistenceClient;
   /** Same optional model as {@link SwarmHostDeps.embeddingModel} (AI SDK–backed). */
   embeddingModel?: EmbeddingModel;
+  notificationBuffer?: AgentNotificationBufferPort;
   search: (args: SwarmHostSearchArgs) => Promise<MemorySearchHit[]>;
+  searchMemories: (args: SwarmHostSearchMemoriesArgs) => Promise<MemorySearchHit[]>;
 };
 
 export type SwarmHostDeps<
@@ -167,8 +169,37 @@ export class SwarmHost<
       persistence: this.persistence,
       persistenceClient: this.persistenceClient,
       embeddingModel: this.embeddingModel,
+      notificationBuffer: this.notificationBuffer,
       search: (args) => this.search(args),
+      searchMemories: (args) => this.searchMemories(args),
     };
+  }
+
+  /**
+   * Hybrid memory search with explicit namespace paths (escape hatch besides {@link SwarmHost.search} scopes).
+   */
+  searchMemories(args: SwarmHostSearchMemoriesArgs): Promise<MemorySearchHit[]> {
+    const {
+      namespace,
+      additionalNamespaces,
+      embeddingCache,
+      memoriesSnapshotRootHex,
+      embeddingModel: modelArg,
+      content,
+      options,
+    } = args;
+    const embeddingModel = modelArg ?? this.embeddingModel;
+    return runHybridMemorySearch(
+      this.memories as unknown as HybridMemorySearchClient,
+      {
+        namespace,
+        additionalNamespaces,
+        embeddingModel,
+        embeddingCache,
+        memoriesSnapshotRootHex,
+      },
+      { content, options },
+    );
   }
 
   /**

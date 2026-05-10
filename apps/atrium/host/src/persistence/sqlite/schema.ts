@@ -44,5 +44,32 @@ CREATE TABLE IF NOT EXISTS host_entities (
 );
 
 CREATE INDEX IF NOT EXISTS idx_host_entities_memory ON host_entities(memory_id);
+
+CREATE TABLE IF NOT EXISTS host_registrations (
+  did TEXT PRIMARY KEY NOT NULL,
+  profile_id TEXT,
+  registered_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS topic_subscriptions (
+  did TEXT NOT NULL,
+  topic_slug TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY (did, topic_slug)
+);
+
+CREATE INDEX IF NOT EXISTS idx_topic_subscriptions_slug ON topic_subscriptions(topic_slug);
+
+CREATE TABLE IF NOT EXISTS agent_notifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  did TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  kind TEXT NOT NULL,
+  payload_json TEXT NOT NULL,
+  read_at_ms INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS idx_agent_notifications_did_created ON agent_notifications(did, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_agent_notifications_unread ON agent_notifications(did, read_at_ms);
 `);
 }
