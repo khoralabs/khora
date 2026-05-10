@@ -16,6 +16,19 @@
         "typescript": "^5",
       },
     },
+    "apps/atrium/host": {
+      "name": "@cfd/atrium-host",
+      "dependencies": {
+        "@cfd/memories-core": "workspace:*",
+        "@cfd/memories-sqlite": "workspace:*",
+        "@cfd/swarm-host": "workspace:*",
+        "zod": "^4",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+    },
     "apps/matchmaking": {
       "name": "@cfd/matchmaking",
       "version": "0.1.0",
@@ -622,6 +635,8 @@
     "@cfd/agent-identity-spec": ["@cfd/agent-identity-spec@workspace:packages/agent/identity-spec"],
 
     "@cfd/agent-thread": ["@cfd/agent-thread@workspace:packages/agent/thread"],
+
+    "@cfd/atrium-host": ["@cfd/atrium-host@workspace:apps/atrium/host"],
 
     "@cfd/frame-channel": ["@cfd/frame-channel@workspace:packages/libs/frame-channel"],
 

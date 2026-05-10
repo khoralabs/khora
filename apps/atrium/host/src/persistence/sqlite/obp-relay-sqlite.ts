@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { ObpRelayFrameRow, ObpRelayPersistence, ObpRelayRoomRecord } from "../types.ts";
+import type { ObpRelayFrameRow, ObpRelayPersistence, ObpRelayRoomRecord } from "@cfd/swarm-host";
 
 export function createObpRelaySqlitePersistence(db: Database): ObpRelayPersistence {
   return {

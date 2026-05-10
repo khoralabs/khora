@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { SwarmHostPersistence } from "../types.ts";
+import type { SwarmHostPersistence } from "@cfd/swarm-host";
 import { createSwarmHostEntitySqlitePersistence } from "./entity-sqlite.ts";
 import { createObpRelaySqlitePersistence } from "./obp-relay-sqlite.ts";
 import { ensureSwarmHostSqliteSchema } from "./schema.ts";

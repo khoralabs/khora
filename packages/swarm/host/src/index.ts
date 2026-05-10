@@ -43,20 +43,9 @@ export {
 export { type CreateObpRoomHubOptions, createObpRoomHub } from "./obp-room/hub.ts";
 export type { ObpRoomHubPort, ObpRoomPeer } from "./obp-room/port.ts";
 export {
-  type CreateSwarmHostDocumentStoreOptions,
-  createSwarmHostDocumentStore,
-  type SwarmHostDocumentStoreParsers,
-  upsertPost,
-  upsertProfile,
-  upsertTopic,
-} from "./persistence/sqlite/document-store.ts";
-export {
-  createSwarmHostEntitySqlitePersistence,
-  upsertSwarmHostEntity,
-} from "./persistence/sqlite/entity-sqlite.ts";
-export { createObpRelaySqlitePersistence } from "./persistence/sqlite/obp-relay-sqlite.ts";
-export { ensureSwarmHostSqliteSchema } from "./persistence/sqlite/schema.ts";
-export { createSwarmHostSqlitePersistence } from "./persistence/sqlite/swarm-host-sqlite.ts";
+  createSwarmHostPersistenceClient,
+  type SwarmHostPersistenceClient,
+} from "./persistence/client.ts";
 export type {
   ObpRelayFrameRow,
   ObpRelayPersistence,

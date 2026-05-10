@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
 import type { DefaultEntityMap, ResolvedSource, SourceMap, Store } from "@cfd/memories-core";
 import type { TextFeatureExportRow } from "@cfd/memories-core/persistence";
-import type { SwarmHostEntityKind, SwarmHostEntityUpsert } from "../types.ts";
+import type { SwarmHostEntityKind, SwarmHostEntityUpsert } from "@cfd/swarm-host";
 import { upsertSwarmHostEntity } from "./entity-sqlite.ts";
 import { ensureSwarmHostSqliteSchema } from "./schema.ts";
 

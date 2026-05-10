@@ -4,7 +4,7 @@ import type {
   SwarmHostEntityPersistence,
   SwarmHostEntityRow,
   SwarmHostEntityUpsert,
-} from "../types.ts";
+} from "@cfd/swarm-host";
 import { ensureSwarmHostSqliteSchema } from "./schema.ts";
 
 export function upsertSwarmHostEntity(
