@@ -13,6 +13,16 @@ export function upsertHostRegistration(db: Database, did: AgentDid, profileId: s
   );
 }
 
+export function profileIdForDid(db: Database, did: AgentDid): string | undefined {
+  ensureSwarmHostSqliteSchema(db);
+  const row = db
+    .query<{ profile_id: string }, [string]>(
+      `SELECT profile_id FROM host_registrations WHERE did = ? LIMIT 1`,
+    )
+    .get(did);
+  return row?.profile_id;
+}
+
 export function didForProfileId(db: Database, profileId: string): AgentDid | undefined {
   ensureSwarmHostSqliteSchema(db);
   const row = db

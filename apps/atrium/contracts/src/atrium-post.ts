@@ -2,18 +2,27 @@ import z from "zod";
 
 export const zAtriumPostKind = z.enum(["post", "probe"]);
 
-export const zAtriumPost = z
-  .object({
+/** Shared fields for create requests and full posts (no id / author). */
+const zAtriumPostContent = z.object({
+  /** Regular posts vs semantic subscription probes. */
+  kind: zAtriumPostKind.default("post"),
+  /** Hashtag topic slugs (normalized externally); publish-time routing only. */
+  topics: z.array(z.string().trim().min(1)).optional(),
+  /** For {@link kind} probe only: which incoming post kinds may trigger a hit (omit = any). */
+  matchPostKinds: z.array(z.literal("post")).optional(),
+  title: z.string().trim().max(500).optional(),
+  body: z.string().max(100_000),
+});
+
+/** Body for `POST /v1/posts`; server fills `id` and `authorProfileId` from DID registration. */
+export const zAtriumPostCreate = zAtriumPostContent;
+/** Wire/input shape; `kind` may be omitted (defaults to `post`). */
+export type AtriumPostCreate = z.input<typeof zAtriumPostCreate>;
+
+export const zAtriumPost = zAtriumPostContent
+  .extend({
     id: z.string().trim().min(1),
     authorProfileId: z.string().trim().min(1).optional(),
-    /** Regular posts vs semantic subscription probes. */
-    kind: zAtriumPostKind.default("post"),
-    /** Hashtag topic slugs (normalized externally); publish-time routing only. */
-    topics: z.array(z.string().trim().min(1)).optional(),
-    /** For {@link kind} probe only: which incoming post kinds may trigger a hit (omit = any). */
-    matchPostKinds: z.array(z.literal("post")).optional(),
-    title: z.string().trim().max(500).optional(),
-    body: z.string().max(100_000),
   })
   .superRefine((val, ctx) => {
     if (
@@ -30,9 +39,8 @@ export const zAtriumPost = z
 
 export type AtriumPost = z.infer<typeof zAtriumPost>;
 
-/** Partial fields allowed on PATCH (id comes from URL). */
+/** Partial fields allowed on PATCH (id comes from URL). Author cannot be changed. */
 export const zAtriumPostPatch = z.object({
-  authorProfileId: z.string().trim().min(1).optional(),
   kind: zAtriumPostKind.optional(),
   topics: z.array(z.string().trim().min(1)).optional(),
   matchPostKinds: z.array(z.literal("post")).optional(),
@@ -59,7 +67,7 @@ export function atriumPostObservationSummary(p: AtriumPost): string {
 export function mergeAtriumPostPatch(previous: AtriumPost, patch: AtriumPostPatch): AtriumPost {
   return zAtriumPost.parse({
     id: previous.id,
-    authorProfileId: patch.authorProfileId ?? previous.authorProfileId,
+    authorProfileId: previous.authorProfileId,
     kind: patch.kind ?? previous.kind,
     topics: patch.topics ?? previous.topics,
     matchPostKinds: patch.matchPostKinds ?? previous.matchPostKinds,

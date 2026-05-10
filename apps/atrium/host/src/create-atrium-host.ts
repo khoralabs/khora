@@ -1,5 +1,15 @@
 import type { Database } from "bun:sqlite";
-import { ids, MemoriesClient, type MemoriesClient as MemoriesClientBare } from "@cfd/memories-core";
+import {
+  type AtriumPost,
+  type AtriumProfile,
+  atriumPostLexicalText,
+  atriumPostObservationSummary,
+  atriumProfileFromRegistrationRequest,
+  atriumProfileLexicalText,
+  zAtriumPost,
+  zAtriumProfile,
+} from "@cfd/atrium-contracts";
+import { ids, MemoriesClient } from "@cfd/memories-core";
 import type { EmbeddingModel } from "@cfd/memories-core/helpers";
 import { embedTextChunks } from "@cfd/memories-core/helpers";
 import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-sqlite";
@@ -10,19 +20,7 @@ import {
   SwarmHost,
   swarmHostOntology,
 } from "@cfd/swarm-host";
-import {
-  type AtriumPost,
-  atriumPostLexicalText,
-  atriumPostObservationSummary,
-  zAtriumPost,
-} from "./atrium-post.ts";
 import { fanOutProbeHits, fanOutTopicSubscriptions } from "./atrium-post-fanout.ts";
-import {
-  type AtriumProfile,
-  atriumProfileFromRegistrationRequest,
-  atriumProfileLexicalText,
-  zAtriumProfile,
-} from "./atrium-profile.ts";
 import { createInboxWsHub, type InboxWsHub } from "./inbox-ws-hub.ts";
 import {
   createSqliteAgentNotificationBuffer,
@@ -35,9 +33,6 @@ type TNode = typeof swarmHostOntology.nodeLabels;
 type TEdge = typeof swarmHostOntology.edgeLabels;
 
 type EntityMap = { profile: AtriumProfile; post: AtriumPost };
-
-/** {@link SwarmHost} / sync handler use the default entity-map parameter; cast at the boundary. */
-type CanonicalMemoriesClient = MemoriesClientBare<TNode, TEdge>;
 
 async function mergeContentWithOptionalVector(
   embeddingModel: EmbeddingModel | undefined,
@@ -74,7 +69,7 @@ export type AtriumHostConfig = {
 
 export type AtriumHostContext = {
   config: AtriumHostConfig;
-  host: SwarmHost<TNode, TEdge, AtriumProfile, AtriumPost, unknown, never>;
+  host: SwarmHost<TNode, TEdge, AtriumProfile, AtriumPost, unknown, never, EntityMap>;
   db: Database;
   notificationBuffer: AgentNotificationBufferPort;
   inboxHub: InboxWsHub;
@@ -84,7 +79,6 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
   const db = openMemoriesDatabase(config.dbPath);
   ensureSwarmHostSqliteSchema(db);
   const hostPersistence = createSwarmHostSqlitePersistence(db);
-
   const persistence = createMemoriesPersistence(db);
   const documentStore = createSwarmHostDocumentStore<EntityMap>(db, {
     parsers: {
@@ -93,7 +87,7 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
     },
   });
 
-  const client = new MemoriesClient(persistence, swarmHostOntology, {
+  const memories = new MemoriesClient(persistence, swarmHostOntology, {
     storeForNamespace: () => documentStore,
   });
 
@@ -101,7 +95,7 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
   const inboxHub = createInboxWsHub();
 
   const host = new SwarmHost({
-    memories: client as unknown as CanonicalMemoriesClient,
+    memories,
     persistence: hostPersistence,
     notificationBuffer,
     memoryNamespaces: {

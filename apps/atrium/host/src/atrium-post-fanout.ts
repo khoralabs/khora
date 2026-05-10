@@ -1,14 +1,14 @@
 import type { Database } from "bun:sqlite";
+import { type AtriumPost, normalizeTopicSlug, zAtriumPost } from "@cfd/atrium-contracts";
+import type { DefaultEntityMap } from "@cfd/memories-core";
 import type { EmbeddingModel } from "@cfd/memories-core/helpers";
 import type { AgentNotificationBufferPort, SwarmHostEventHandlerCtx } from "@cfd/swarm-host";
-import { type AtriumPost, zAtriumPost } from "./atrium-post.ts";
 import { enqueueAndPush } from "./deliver-notification.ts";
 import type { InboxWsHub } from "./inbox-ws-hub.ts";
 import {
   didForProfileId,
   subscriberDidsForTopic,
 } from "./persistence/sqlite/registrations-topics-sqlite.ts";
-import { normalizeTopicSlug } from "./topic-slug.ts";
 
 type SwarmHostOntology = typeof import("@cfd/swarm-host").swarmHostOntology;
 type TNode = SwarmHostOntology["nodeLabels"];
@@ -58,11 +58,13 @@ export async function fanOutTopicSubscriptions(params: {
   }
 }
 
-export async function fanOutProbeHits(params: {
+export async function fanOutProbeHits<
+  TEntityMap extends Record<string, unknown> = DefaultEntityMap,
+>(params: {
   db: Database;
   buffer: AgentNotificationBufferPort;
   hub: InboxWsHub;
-  ctx: SwarmHostEventHandlerCtx<TNode, TEdge>;
+  ctx: SwarmHostEventHandlerCtx<TNode, TEdge, TEntityMap>;
   config: FanoutConfig;
   incomingPost: AtriumPost;
 }): Promise<void> {

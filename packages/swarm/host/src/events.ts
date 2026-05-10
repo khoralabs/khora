@@ -1,4 +1,5 @@
 import type {
+  DefaultEntityMap,
   DeleteMemoryParams,
   LabelSchemaMap,
   MemoriesClient,
@@ -155,12 +156,13 @@ export type SwarmMemoriesSyncHandler<
 export function createSwarmMemoriesSyncHandler<
   TNode extends LabelSchemaMap,
   TEdge extends LabelSchemaMap,
+  TEntityMap extends Record<string, unknown> = DefaultEntityMap,
   TProfile = unknown,
   TPost = unknown,
   TTopic = unknown,
   TAppEvent extends SwarmAppEventConstraint = never,
 >(
-  client: MemoriesClient<TNode, TEdge>,
+  client: MemoriesClient<TNode, TEdge, TEntityMap>,
   mapEvent: SwarmMemoryOpMapper<TNode, TEdge, TProfile, TPost, TTopic, TAppEvent>,
 ): SwarmMemoriesSyncHandler<TProfile, TPost, TTopic, TAppEvent> {
   return async (event) => {

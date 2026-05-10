@@ -1,4 +1,9 @@
-import type { LabelSchemaMap, MemoriesClient, SearchHit } from "@cfd/memories-core";
+import type {
+  DefaultEntityMap,
+  LabelSchemaMap,
+  MemoriesClient,
+  SearchHit,
+} from "@cfd/memories-core";
 import {
   type EmbeddingModel,
   type HybridMemorySearchClient,
@@ -69,8 +74,12 @@ export type SwarmHostSearchMemoriesArgs = HybridMemorySearchInput & {
 };
 
 /** Passed to {@link SwarmHostDeps.onEvent} together with each dispatched event. */
-export type SwarmHostEventHandlerCtx<TNode extends LabelSchemaMap, TEdge extends LabelSchemaMap> = {
-  memories: MemoriesClient<TNode, TEdge>;
+export type SwarmHostEventHandlerCtx<
+  TNode extends LabelSchemaMap,
+  TEdge extends LabelSchemaMap,
+  TEntityMap extends Record<string, unknown> = DefaultEntityMap,
+> = {
+  memories: MemoriesClient<TNode, TEdge, TEntityMap>;
   persistence: SwarmHostPersistence;
   persistenceClient: SwarmHostPersistenceClient;
   /** Same optional model as {@link SwarmHostDeps.embeddingModel} (AI SDK–backed). */
@@ -87,8 +96,9 @@ export type SwarmHostDeps<
   TPost = unknown,
   TTopic = unknown,
   TAppEvent extends SwarmAppEventConstraint = never,
+  TEntityMap extends Record<string, unknown> = DefaultEntityMap,
 > = {
-  memories: MemoriesClient<TNode, TEdge>;
+  memories: MemoriesClient<TNode, TEdge, TEntityMap>;
   persistence: SwarmHostPersistence;
   /** When set, runs before {@link SwarmHostDeps.onEvent} for all events except registration profile build. */
   mapMemoryOps?: SwarmMemoryOpMapper<TNode, TEdge, TProfile, TPost, TTopic, TAppEvent>;
@@ -107,7 +117,7 @@ export type SwarmHostDeps<
    */
   embeddingModel?: EmbeddingModel;
   onEvent?: (
-    ctx: SwarmHostEventHandlerCtx<TNode, TEdge>,
+    ctx: SwarmHostEventHandlerCtx<TNode, TEdge, TEntityMap>,
     event: SwarmHostEventUnion<TProfile, TPost, TTopic, TAppEvent>,
   ) => void | Promise<void>;
 };
@@ -123,8 +133,9 @@ export class SwarmHost<
   TPost = unknown,
   TTopic = unknown,
   TAppEvent extends SwarmAppEventConstraint = never,
+  TEntityMap extends Record<string, unknown> = DefaultEntityMap,
 > {
-  readonly memories: MemoriesClient<TNode, TEdge>;
+  readonly memories: MemoriesClient<TNode, TEdge, TEntityMap>;
   readonly persistence: SwarmHostPersistence;
   readonly persistenceClient: SwarmHostPersistenceClient;
   readonly stores?: SwarmHostStores<TProfile, TPost, TTopic>;
@@ -141,10 +152,11 @@ export class SwarmHost<
     TProfile,
     TPost,
     TTopic,
-    TAppEvent
+    TAppEvent,
+    TEntityMap
   >["onEvent"];
 
-  constructor(deps: SwarmHostDeps<TNode, TEdge, TProfile, TPost, TTopic, TAppEvent>) {
+  constructor(deps: SwarmHostDeps<TNode, TEdge, TProfile, TPost, TTopic, TAppEvent, TEntityMap>) {
     this.memories = deps.memories;
     this.persistence = deps.persistence;
     this.persistenceClient = createSwarmHostPersistenceClient(deps.persistence);
@@ -156,14 +168,11 @@ export class SwarmHost<
     this.memoryNamespaces = deps.memoryNamespaces;
     this.onEvent = deps.onEvent;
     if (deps.mapMemoryOps !== undefined) {
-      this.memoriesSync = createSwarmMemoriesSyncHandler(
-        deps.memories as unknown as MemoriesClient<TNode, TEdge>,
-        deps.mapMemoryOps,
-      );
+      this.memoriesSync = createSwarmMemoriesSyncHandler(deps.memories, deps.mapMemoryOps);
     }
   }
 
-  private eventCtx(): SwarmHostEventHandlerCtx<TNode, TEdge> {
+  private eventCtx(): SwarmHostEventHandlerCtx<TNode, TEdge, TEntityMap> {
     return {
       memories: this.memories,
       persistence: this.persistence,

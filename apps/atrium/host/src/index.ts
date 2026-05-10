@@ -1,19 +1,26 @@
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import {
+  mergeAtriumPostPatch,
+  normalizeTopicSlug,
+  zAtriumPost,
+  zAtriumPostCreate,
+  zAtriumPostPatch,
+} from "@cfd/atrium-contracts";
+import { stableId } from "@cfd/memories-core";
+import {
   type DidRegistrationRequest,
   SWARM_AGGREGATE_DOMAIN,
   SWARM_EVENT_KIND,
 } from "@cfd/swarm-host";
 import z from "zod";
-import { mergeAtriumPostPatch, zAtriumPost, zAtriumPostPatch } from "./atrium-post.ts";
 import { createAtriumHostContext } from "./create-atrium-host.ts";
 import {
+  profileIdForDid,
   subscribeTopic,
   unsubscribeTopic,
   upsertHostRegistration,
 } from "./persistence/sqlite/registrations-topics-sqlite.ts";
-import { normalizeTopicSlug } from "./topic-slug.ts";
 
 function envPort(): number {
   const raw = process.env.PORT ?? process.env.ATRIUM_PORT ?? "8787";
@@ -196,8 +203,21 @@ const server = Bun.serve<InboxWsData>({
 
     if (req.method === "POST" && url.pathname === "/v1/posts") {
       try {
+        const did = requiredDid(req);
+        if (did === undefined) {
+          return jsonError("X-Agent-Did header required", 400);
+        }
+        const profileId = profileIdForDid(ctx.db, did);
+        if (profileId === undefined) {
+          return jsonError("Register before creating posts", 400);
+        }
         const raw = (await req.json()) as unknown;
-        const post = zAtriumPost.parse(raw);
+        const created = zAtriumPostCreate.parse(raw);
+        const post = zAtriumPost.parse({
+          ...created,
+          id: stableId("atrium_post", crypto.randomUUID()),
+          authorProfileId: profileId,
+        });
         if (post.topics !== undefined) {
           post.topics = post.topics.map((t) => normalizeTopicSlug(t));
         }
@@ -221,6 +241,14 @@ const server = Bun.serve<InboxWsData>({
 
       if (req.method === "PATCH") {
         try {
+          const did = requiredDid(req);
+          if (did === undefined) {
+            return jsonError("X-Agent-Did header required", 400);
+          }
+          const agentProfileId = profileIdForDid(ctx.db, did);
+          if (agentProfileId === undefined) {
+            return jsonError("Register before updating posts", 400);
+          }
           const row = ctx.host.persistenceClient.getPostById(id);
           if (row === undefined) {
             return jsonError("Post not found", 404);
@@ -229,7 +257,14 @@ const server = Bun.serve<InboxWsData>({
           if (previous.id !== id) {
             return jsonError("Stored post id mismatch", 500);
           }
+          const authorId = previous.authorProfileId;
+          if (authorId === undefined || authorId.length === 0 || authorId !== agentProfileId) {
+            return jsonError("Forbidden", 403);
+          }
           const patchRaw = (await req.json()) as unknown;
+          if (patchRaw !== null && typeof patchRaw === "object" && "authorProfileId" in patchRaw) {
+            return jsonError("authorProfileId cannot be changed", 400);
+          }
           const patch = zAtriumPostPatch.parse(patchRaw);
           const post = mergeAtriumPostPatch(previous, patch);
           if (post.topics !== undefined) {
@@ -252,11 +287,23 @@ const server = Bun.serve<InboxWsData>({
 
       if (req.method === "DELETE") {
         try {
+          const did = requiredDid(req);
+          if (did === undefined) {
+            return jsonError("X-Agent-Did header required", 400);
+          }
+          const agentProfileId = profileIdForDid(ctx.db, did);
+          if (agentProfileId === undefined) {
+            return jsonError("Register before deleting posts", 400);
+          }
           const row = ctx.host.persistenceClient.getPostById(id);
           if (row === undefined) {
             return jsonError("Post not found", 404);
           }
           const post = zAtriumPost.parse(JSON.parse(row.bodyJson));
+          const authorId = post.authorProfileId;
+          if (authorId === undefined || authorId.length === 0 || authorId !== agentProfileId) {
+            return jsonError("Forbidden", 403);
+          }
           await ctx.host.notify({
             kind: SWARM_EVENT_KIND.POST_DELETED,
             occurredAt: Date.now(),
