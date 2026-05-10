@@ -5,9 +5,10 @@ import {
   type SwarmHostEventUnion,
 } from "./events.ts";
 import { SWARM_AGGREGATE_DOMAIN } from "./model/index.ts";
-import type { NegotiationRelayPort } from "./negotiation/port.ts";
+import type { ObpRoomHubPort } from "./obp-room/port.ts";
 import type { AgentNotificationBufferPort } from "./registration/notifications.ts";
 import {
+  type AgentDid,
   type DidRegistrationRequest,
   type DidRegistrationResult,
   isLikelyDidString,
@@ -26,7 +27,8 @@ export type SwarmHostDeps<
 > = {
   memories: MemoriesClient<TNode, TEdge>;
   stores?: SwarmHostStores<TProfile, TPost, TTopic>;
-  negotiationRelay?: NegotiationRelayPort;
+  /** Optional OBP opaque byte relay (HMAC tickets, replay on re-join). */
+  obpRoomHub?: ObpRoomHubPort;
   didVerifier?: DidRegistrationVerifier;
   notificationBuffer?: AgentNotificationBufferPort;
   onEvent?: (
@@ -48,7 +50,7 @@ export class SwarmHost<
 > {
   readonly memories: MemoriesClient<TNode, TEdge>;
   readonly stores?: SwarmHostStores<TProfile, TPost, TTopic>;
-  readonly negotiationRelay?: NegotiationRelayPort;
+  readonly obpRoomHub?: ObpRoomHubPort;
   readonly didVerifier?: DidRegistrationVerifier;
   readonly notificationBuffer?: AgentNotificationBufferPort;
   private readonly onEvent?: SwarmHostDeps<
@@ -63,7 +65,7 @@ export class SwarmHost<
   constructor(deps: SwarmHostDeps<TNode, TEdge, TProfile, TPost, TTopic, TAppEvent>) {
     this.memories = deps.memories;
     this.stores = deps.stores;
-    this.negotiationRelay = deps.negotiationRelay;
+    this.obpRoomHub = deps.obpRoomHub;
     this.didVerifier = deps.didVerifier;
     this.notificationBuffer = deps.notificationBuffer;
     this.onEvent = deps.onEvent;
@@ -149,6 +151,33 @@ export class SwarmHost<
     await Promise.resolve(this.notify(createdEvent));
     await this.notificationBuffer?.ensureRegistered(req.did);
     return { did: req.did, profile, profileId };
+  }
+
+  /**
+   * Queue a join ticket for another agent (e.g. after {@link ObpRoomHubPort.createRoom}).
+   * Requires {@link SwarmHostDeps.notificationBuffer}.
+   */
+  async offerObpRoomToDid(params: {
+    targetDid: AgentDid;
+    roomId: string;
+    ticket: string;
+    expiresAtMs?: number;
+    fromDid?: AgentDid;
+  }): Promise<void> {
+    const buf = this.notificationBuffer;
+    if (buf === undefined) {
+      throw new Error("SwarmHost: notificationBuffer is required for offerObpRoomToDid");
+    }
+    await buf.enqueue(params.targetDid, {
+      kind: "negotiation_ticket",
+      payload: {
+        roomId: params.roomId,
+        ticket: params.ticket,
+        expiresAtMs: params.expiresAtMs,
+        issuedAtMs: Date.now(),
+        fromDid: params.fromDid,
+      },
+    });
   }
 
   resolveProfileFromHit(hit: SearchHit): Promise<TProfile | undefined> {

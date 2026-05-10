@@ -1,4 +1,11 @@
-import type { ResolvedSource, SearchHit, SourceMapRef, Store } from "@cfd/memories-core";
+import type {
+  DefaultEntityMap,
+  ResolvedSource,
+  SearchHit,
+  SourceMap,
+  SourceMapRef,
+  Store,
+} from "@cfd/memories-core";
 
 /**
  * Maps a memory record address (same as {@link Store.resolve}) to app persistence—typed entity,
@@ -22,29 +29,23 @@ export function searchHitToSourceMapRef(
   return { memory_id: hit.memory_id, source_key: hit.source_key };
 }
 
-export async function resolveFromMemoriesStore(
-  store: Store,
-  ref: SourceMapRef,
-): Promise<ResolvedSource | undefined> {
-  try {
-    return await store.resolve(ref as Parameters<Store["resolve"]>[0]);
-  } catch {
-    return undefined;
-  }
+/**
+ * Minimal {@link SourceMap} for {@link Store.resolve} when only a {@link SourceMapRef} is available.
+ */
+export function minimalSourceMapForResolve(ref: SourceMapRef): SourceMap {
+  return {
+    memory_id: ref.memory_id,
+    source_key: ref.source_key,
+    _id: "",
+    _ts_created: 0,
+  } as SourceMap;
 }
 
-/** Parse JSON from a string or UTF-8 blob body; returns undefined on failure. */
-export async function parseJsonEntity<T>(resolved: ResolvedSource): Promise<T | undefined> {
+export async function resolveFromMemoriesStore<
+  EntityMap extends Record<string, unknown> = DefaultEntityMap,
+>(store: Store<EntityMap>, ref: SourceMapRef): Promise<ResolvedSource<EntityMap> | undefined> {
   try {
-    let raw: string;
-    if (resolved.kind === "string") {
-      raw = resolved.string;
-    } else if (resolved.kind === "blob") {
-      raw = await resolved.blob.text();
-    } else {
-      return undefined;
-    }
-    return JSON.parse(raw) as T;
+    return await store.resolve(minimalSourceMapForResolve(ref));
   } catch {
     return undefined;
   }

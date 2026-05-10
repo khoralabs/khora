@@ -1,0 +1,217 @@
+import type { Database } from "bun:sqlite";
+import type { DefaultEntityMap, ResolvedSource, SourceMap, Store } from "@cfd/memories-core";
+import type { TextFeatureExportRow } from "@cfd/memories-core/persistence";
+import type { SwarmHostEntityKind, SwarmHostEntityUpsert } from "../types.ts";
+import { upsertSwarmHostEntity } from "./entity-sqlite.ts";
+import { ensureSwarmHostSqliteSchema } from "./schema.ts";
+
+export type SwarmHostDocumentStoreParsers<EntityMap extends Record<string, unknown>> = {
+  [K in keyof EntityMap & string]?: (raw: unknown) => EntityMap[K];
+};
+
+export type CreateSwarmHostDocumentStoreOptions<EntityMap extends Record<string, unknown>> = {
+  /** Required for `{domain}:{id}` whole-document resolves; field paths do not use parsers. */
+  parsers?: SwarmHostDocumentStoreParsers<EntityMap>;
+};
+
+type EntityDomain = SwarmHostEntityKind;
+
+function isEntityDomain(d: string): d is EntityDomain {
+  return d === "profile" || d === "post" || d === "topic";
+}
+
+/**
+ * `profile:p1` → whole entity `p1`. `profile:p1:name` → field `name` on entity `p1`.
+ * Field segment may contain `:` (joined remainder).
+ */
+function parseEntitySourceKey(
+  sourceKey: string,
+): { domain: EntityDomain; entityId: string; fieldPath?: string } | undefined {
+  const parts = sourceKey.split(":");
+  const head = parts[0];
+  if (parts.length < 2 || head === undefined || !isEntityDomain(head)) {
+    return undefined;
+  }
+  const domain = head;
+  const entityId = parts[1];
+  if (!entityId) {
+    return undefined;
+  }
+  if (parts.length === 2) {
+    return { domain, entityId };
+  }
+  const fieldPath = parts.slice(2).join(":");
+  return fieldPath.length > 0 ? { domain, entityId, fieldPath } : { domain, entityId };
+}
+
+/** Convenience: full replace via {@link upsertSwarmHostEntity} (same as `persistence.profiles.upsert`). */
+export function upsertProfile(db: Database, row: SwarmHostEntityUpsert): void {
+  upsertSwarmHostEntity(db, "profile", row);
+}
+
+export function upsertPost(db: Database, row: SwarmHostEntityUpsert): void {
+  upsertSwarmHostEntity(db, "post", row);
+}
+
+export function upsertTopic(db: Database, row: SwarmHostEntityUpsert): void {
+  upsertSwarmHostEntity(db, "topic", row);
+}
+
+function getBodyJsonForResolve(
+  db: Database,
+  kind: EntityDomain,
+  entityId: string,
+  memoryId: string,
+): string | undefined {
+  const row = db
+    .query(
+      `SELECT body_json FROM host_entities WHERE kind = ? AND id = ? AND (memory_id IS NULL OR memory_id = ?)`,
+    )
+    .get(kind, entityId, memoryId) as { body_json: string } | null | undefined;
+  return row?.body_json;
+}
+
+function fieldValueToResolvedString(value: unknown): string {
+  if (typeof value === "string") {
+    return value;
+  }
+  if (value === undefined || value === null) {
+    throw new Error("SwarmHostDocumentStore: missing field value");
+  }
+  return JSON.stringify(value);
+}
+
+function mergeEntityFieldFromSync(
+  db: Database,
+  kind: EntityDomain,
+  entityId: string,
+  fieldPath: string,
+  text: string,
+  memoryId: string,
+): void {
+  ensureSwarmHostSqliteSchema(db);
+  const now = Date.now();
+  const existing = db
+    .query(`SELECT body_json, memory_id FROM host_entities WHERE kind = ? AND id = ?`)
+    .get(kind, entityId) as { body_json: string; memory_id: string | null } | null | undefined;
+
+  let body: Record<string, unknown>;
+  if (existing != null) {
+    body = JSON.parse(existing.body_json) as Record<string, unknown>;
+  } else {
+    body = {};
+  }
+  body[fieldPath] = text;
+  const bodyJson = JSON.stringify(body);
+
+  if (existing != null) {
+    db.run(`UPDATE host_entities SET body_json = ?, updated_at = ? WHERE kind = ? AND id = ?`, [
+      bodyJson,
+      now,
+      kind,
+      entityId,
+    ]);
+    if ((existing.memory_id === null || existing.memory_id === "") && memoryId !== "") {
+      db.run(`UPDATE host_entities SET memory_id = ? WHERE kind = ? AND id = ?`, [
+        memoryId,
+        kind,
+        entityId,
+      ]);
+    }
+  } else {
+    db.run(
+      `INSERT INTO host_entities (kind, id, memory_id, body_json, updated_at) VALUES (?, ?, ?, ?, ?)`,
+      [kind, entityId, memoryId, bodyJson, now],
+    );
+  }
+}
+
+/**
+ * {@link Store} backed by host SQLite `host_entities` only.
+ *
+ * `source_key`: `{domain}:{id}` → whole `body_json` as `kind: "record"` (parser).
+ * `{domain}:{id}:{field}` → one field from parsed JSON as `kind: "string"`.
+ */
+export function createSwarmHostDocumentStore<
+  EntityMap extends Record<string, unknown> = DefaultEntityMap,
+>(db: Database, options?: CreateSwarmHostDocumentStoreOptions<EntityMap>): Store<EntityMap> {
+  ensureSwarmHostSqliteSchema(db);
+  const parsers = options?.parsers;
+
+  return {
+    resolve(sourcemap: SourceMap): Promise<ResolvedSource<EntityMap>> {
+      const parsed = parseEntitySourceKey(sourcemap.source_key);
+      if (parsed === undefined) {
+        return Promise.reject(
+          new Error(`SwarmHostDocumentStore: unrecognized source_key=${sourcemap.source_key}`),
+        );
+      }
+
+      const bodyJson = getBodyJsonForResolve(
+        db,
+        parsed.domain,
+        parsed.entityId,
+        sourcemap.memory_id,
+      );
+      if (bodyJson === undefined) {
+        return Promise.reject(
+          new Error(
+            `SwarmHostDocumentStore: no ${parsed.domain} id=${parsed.entityId} for memory_id=${sourcemap.memory_id}`,
+          ),
+        );
+      }
+
+      const rawBody = JSON.parse(bodyJson) as unknown;
+
+      if (parsed.fieldPath !== undefined) {
+        if (typeof rawBody !== "object" || rawBody === null || !(parsed.fieldPath in rawBody)) {
+          return Promise.reject(
+            new Error(
+              `SwarmHostDocumentStore: no field ${parsed.fieldPath} on ${parsed.domain}:${parsed.entityId}`,
+            ),
+          );
+        }
+        const v = (rawBody as Record<string, unknown>)[parsed.fieldPath];
+        return Promise.resolve({
+          kind: "string",
+          string: fieldValueToResolvedString(v),
+        });
+      }
+
+      const parser = (parsers as Record<string, ((raw: unknown) => unknown) | undefined>)[
+        parsed.domain
+      ];
+      if (parser === undefined) {
+        return Promise.reject(
+          new Error(
+            `SwarmHostDocumentStore: missing parser for whole-document resolve (${parsed.domain}:${parsed.entityId})`,
+          ),
+        );
+      }
+      const value = parser(rawBody);
+      return Promise.resolve({
+        kind: "record",
+        domain: parsed.domain,
+        entityId: parsed.entityId,
+        value,
+      } as ResolvedSource<EntityMap>);
+    },
+
+    syncFromTextExportRows(rows: readonly TextFeatureExportRow[]): void {
+      for (const row of rows) {
+        const parsed = parseEntitySourceKey(row.source_key);
+        if (parsed?.fieldPath === undefined) {
+          continue;
+        }
+        mergeEntityFieldFromSync(
+          db,
+          parsed.domain,
+          parsed.entityId,
+          parsed.fieldPath,
+          row.text,
+          row.memory_id,
+        );
+      }
+    },
+  };
+}

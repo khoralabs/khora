@@ -18,33 +18,6 @@ export type RegistrationInviteProof = {
   inviteToken: string;
 };
 
-export type NegotiationRoomCreated = {
-  roomId: string;
-  /** Opaque pairing root for join tickets; semantics depend on the relay adapter. */
-  pairingSecretHex?: string;
-};
-
-export type NegotiationRoomTicket = {
-  roomId: string;
-  ticket: string;
-  expiresAtMs?: number;
-};
-
-/**
- * Transport-agnostic bilateral negotiation room primitive; concrete relays implement this
- * (distinct from `@cfd/relay-server` HTTP routes).
- */
-export interface NegotiationRelayPort {
-  createNegotiationRoom(input?: {
-    ttlMs?: number;
-    metadata?: Record<string, unknown>;
-  }): Promise<NegotiationRoomCreated>;
-
-  issueJoinTicket(input: { roomId: string }): Promise<NegotiationRoomTicket>;
-
-  verifyJoinTicket(input: { roomId: string; ticket: string }): Promise<boolean>;
-}
-
 /** Advertise availability on a topic (relay may fan out to subscribers). */
 export type InviteCarrierIntent = {
   topic: string;

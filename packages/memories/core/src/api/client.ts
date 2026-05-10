@@ -11,8 +11,10 @@ import {
   zMergeMemoryContentItem,
 } from "./merge-memory";
 import { type OntologyDefinition, validateEdgeLabel, validateNodeLabel } from "./ontology";
-import type { ResolvedSource, Store } from "./resolve-sourcemap.js";
+import type { DefaultEntityMap, ResolvedSource, Store } from "./resolve-sourcemap.js";
 import { type SearchHit, type SearchParams, search as searchHandler } from "./search";
+
+export type { DefaultEntityMap } from "./resolve-sourcemap.js";
 
 type LabelKind<TLabels extends Record<string, z.ZodType>> = keyof TLabels & string;
 
@@ -31,11 +33,11 @@ export type TypedSearchHit<
   TEdge extends Record<string, z.ZodType>,
 > = SearchHit<LabelKind<TNode>, LabelKind<TEdge>>;
 
-export type MemoriesClientOptions = {
+export type MemoriesClientOptions<EntityMap extends Record<string, unknown> = DefaultEntityMap> = {
   /** Lexical mirror (e.g. JSONL); {@link Store.resolve} enriches source maps. */
-  store?: Store;
+  store?: Store<EntityMap>;
   /** When set, overrides {@link MemoriesClientOptions.store} per merge/search namespace. */
-  storeForNamespace?: (namespace: string) => Store | undefined;
+  storeForNamespace?: (namespace: string) => Store<EntityMap> | undefined;
 };
 
 /**
@@ -45,16 +47,17 @@ export type MemoriesClientOptions = {
 export class MemoriesClient<
   TNode extends Record<string, z.ZodType>,
   TEdge extends Record<string, z.ZodType>,
+  EntityMap extends Record<string, unknown> = DefaultEntityMap,
 > {
   readonly ontology: OntologyDefinition<TNode, TEdge>;
   readonly persistence: MemoriesPersistence;
-  private readonly store?: Store;
-  private readonly storeForNamespace?: (namespace: string) => Store | undefined;
+  private readonly store?: Store<EntityMap>;
+  private readonly storeForNamespace?: (namespace: string) => Store<EntityMap> | undefined;
 
   constructor(
     persistence: MemoriesPersistence,
     ontology: OntologyDefinition<TNode, TEdge>,
-    options?: MemoriesClientOptions,
+    options?: MemoriesClientOptions<EntityMap>,
   ) {
     this.persistence = persistence;
     this.ontology = ontology;
@@ -66,7 +69,7 @@ export class MemoriesClient<
     return { persistence: this.persistence };
   }
 
-  private storeForMergeNamespace(namespace: string): Store | undefined {
+  private storeForMergeNamespace(namespace: string): Store<EntityMap> | undefined {
     return this.storeForNamespace?.(namespace) ?? this.store;
   }
 
@@ -154,7 +157,7 @@ export class MemoriesClient<
     namespace: string,
     memoryId: string,
     limit: number,
-  ): Promise<Array<{ sourceKey: string; content: ResolvedSource | null }>> {
+  ): Promise<Array<{ sourceKey: string; content: ResolvedSource<EntityMap> | null }>> {
     const store = this.storeForMergeNamespace(namespace);
     if (store === undefined) {
       throw new Error(
@@ -162,9 +165,9 @@ export class MemoriesClient<
       );
     }
     const maps = this.persistence.listSourceMapsForMemory(memoryId, limit);
-    const out: Array<{ sourceKey: string; content: ResolvedSource | null }> = [];
+    const out: Array<{ sourceKey: string; content: ResolvedSource<EntityMap> | null }> = [];
     for (const sm of maps) {
-      let content: ResolvedSource | null = null;
+      let content: ResolvedSource<EntityMap> | null = null;
       try {
         content = await store.resolve(sm);
       } catch {

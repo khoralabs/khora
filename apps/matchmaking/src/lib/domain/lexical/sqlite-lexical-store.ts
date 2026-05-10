@@ -1,5 +1,11 @@
 import type { Database } from "bun:sqlite";
-import type { ResolvedSource, ResolvedSourceMapLine, SourceMap, Store } from "@cfd/memories-core";
+import type {
+  DefaultEntityMap,
+  ResolvedSource,
+  ResolvedSourceMapLine,
+  SourceMap,
+  Store,
+} from "@cfd/memories-core";
 import type { TextFeatureExportRow } from "@cfd/memories-core/persistence";
 
 function storeKey(memoryId: string, sourceKey: string): string {
@@ -7,6 +13,22 @@ function storeKey(memoryId: string, sourceKey: string): string {
 }
 
 function lineToResolved(line: ResolvedSourceMapLine): ResolvedSource {
+  if (line.kind === "json" && typeof line.body === "string") {
+    return { kind: "json", body: line.body };
+  }
+  if (
+    line.kind === "record" &&
+    typeof line.domain === "string" &&
+    typeof line.entityId === "string" &&
+    typeof line.json === "string"
+  ) {
+    return {
+      kind: "record",
+      domain: line.domain,
+      entityId: line.entityId,
+      value: JSON.parse(line.json) as unknown,
+    };
+  }
   if (line.kind === "string") {
     return { kind: "string", string: line.string };
   }
@@ -43,6 +65,17 @@ function parseLineJson(raw: string): ResolvedSourceMapLine | undefined {
   if (o.kind === "blob" && typeof o.blob === "string") {
     return o;
   }
+  if (o.kind === "json" && typeof o.body === "string") {
+    return o;
+  }
+  if (
+    o.kind === "record" &&
+    typeof o.domain === "string" &&
+    typeof o.entityId === "string" &&
+    typeof o.json === "string"
+  ) {
+    return o;
+  }
   return undefined;
 }
 
@@ -50,8 +83,8 @@ function parseLineJson(raw: string): ResolvedSourceMapLine | undefined {
  * {@link Store} for KG lexical mirror: one instance per memory namespace, backed by
  * `lexical_lines` in the matchmaking domain database.
  */
-export class SqliteLexicalStore implements Store {
-  private readonly byKey = new Map<string, ResolvedSource>();
+export class SqliteLexicalStore implements Store<DefaultEntityMap> {
+  private readonly byKey = new Map<string, ResolvedSource<DefaultEntityMap>>();
   private readonly namespace: string;
 
   constructor(
@@ -75,7 +108,7 @@ export class SqliteLexicalStore implements Store {
     }
   }
 
-  resolve(sourcemap: SourceMap): Promise<ResolvedSource> {
+  resolve(sourcemap: SourceMap): Promise<ResolvedSource<DefaultEntityMap>> {
     const key = storeKey(sourcemap.memory_id, sourcemap.source_key);
     const hit = this.byKey.get(key);
     if (hit === undefined) {

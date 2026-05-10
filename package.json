@@ -31,7 +31,6 @@
     "packages/obp/*",
     "packages/obp/agents/*",
     "packages/obp/persistence/*",
-    "packages/relay",
-    "packages/swarm/host"
+    "packages/swarm/*"
   ]
 }

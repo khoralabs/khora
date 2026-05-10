@@ -1,24 +1,49 @@
 import { appendFileSync, mkdirSync, readFileSync, statSync } from "node:fs";
 import { dirname } from "node:path";
-import type { ResolvedSource, ResolvedSourceMapLine, SourceMap, Store } from "@cfd/memories-core";
+import type {
+  DefaultEntityMap,
+  ResolvedSource,
+  ResolvedSourceMapLine,
+  SourceMap,
+  Store,
+} from "@cfd/memories-core";
 import type { TextFeatureExportRow } from "@cfd/memories-core/persistence";
 
 function storeKey(memoryId: string, sourceKey: string): string {
   return `${memoryId}\n${sourceKey}`;
 }
 
-function lineToResolved(line: ResolvedSourceMapLine): ResolvedSource {
+function lineToResolved(line: ResolvedSourceMapLine): ResolvedSource<DefaultEntityMap> {
+  if (line.kind === "json" && typeof line.body === "string") {
+    return { kind: "json", body: line.body };
+  }
+  if (
+    line.kind === "record" &&
+    typeof line.domain === "string" &&
+    typeof line.entityId === "string" &&
+    typeof line.json === "string"
+  ) {
+    return {
+      kind: "record",
+      domain: line.domain,
+      entityId: line.entityId,
+      value: JSON.parse(line.json) as unknown,
+    };
+  }
   if (line.kind === "string") {
     return { kind: "string", string: line.string };
   }
   if (line.kind === "url") {
     return { kind: "url", url: line.url };
   }
-  const bin = Buffer.from(line.blob, "base64");
-  return {
-    kind: "blob",
-    blob: new Blob([bin], { type: line.mimeType ?? "application/octet-stream" }),
-  };
+  if (line.kind === "blob" && typeof line.blob === "string") {
+    const bin = Buffer.from(line.blob, "base64");
+    return {
+      kind: "blob",
+      blob: new Blob([bin], { type: line.mimeType ?? "application/octet-stream" }),
+    };
+  }
+  throw new Error(`JsonlStore: unsupported ResolvedSourceMapLine kind ${String((line as { kind?: string }).kind)}`);
 }
 
 function parseLine(raw: string): ResolvedSourceMapLine | undefined {
@@ -36,6 +61,15 @@ function parseLine(raw: string): ResolvedSourceMapLine | undefined {
   if (o.kind === "string" && typeof o.string === "string") return o;
   if (o.kind === "url" && typeof o.url === "string") return o;
   if (o.kind === "blob" && typeof o.blob === "string") return o;
+  if (o.kind === "json" && typeof o.body === "string") return o;
+  if (
+    o.kind === "record" &&
+    typeof o.domain === "string" &&
+    typeof o.entityId === "string" &&
+    typeof o.json === "string"
+  ) {
+    return o;
+  }
   return undefined;
 }
 
@@ -47,8 +81,8 @@ function stringLine(memoryId: string, sourceKey: string, text: string): Resolved
  * File-backed {@link Store} for tests and CLIs: one JSON object per line (JSONL).
  * Later lines override earlier lines for the same `(memory_id, source_key)`.
  */
-export class JsonlStore implements Store {
-  private readonly byKey = new Map<string, ResolvedSource>();
+export class JsonlStore implements Store<DefaultEntityMap> {
+  private readonly byKey = new Map<string, ResolvedSource<DefaultEntityMap>>();
 
   constructor(readonly path: string) {
     this.reload();
@@ -70,7 +104,7 @@ export class JsonlStore implements Store {
     }
   }
 
-  resolve(sourcemap: SourceMap): Promise<ResolvedSource> {
+  resolve(sourcemap: SourceMap): Promise<ResolvedSource<DefaultEntityMap>> {
     const key = storeKey(sourcemap.memory_id, sourcemap.source_key);
     const hit = this.byKey.get(key);
     if (!hit) {

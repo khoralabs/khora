@@ -24,7 +24,6 @@ export {
   type SwarmTopicUpdatedEvent,
 } from "./events.ts";
 export { SwarmHost, type SwarmHostDeps } from "./host.ts";
-export { jsonlStorePathForNamespace } from "./jsonl-path.ts";
 export type {
   SourceMapLink,
   SwarmAggregateDomain,
@@ -33,15 +32,46 @@ export { SWARM_AGGREGATE_DOMAIN } from "./model/index.ts";
 export type {
   InviteCarrierIntent,
   InviteCarrierResponse,
-  NegotiationRelayPort,
-  NegotiationRoomCreated,
-  NegotiationRoomTicket,
   RegistrationInviteProof,
   RegistrationSessionWire,
 } from "./negotiation/port.ts";
+export {
+  createSwarmObpRoomFetchHandler,
+  type SwarmObpRoomWsData,
+  swarmObpRoomWebSocketHandlers,
+} from "./obp-room/bun-routes.ts";
+export { type CreateObpRoomHubOptions, createObpRoomHub } from "./obp-room/hub.ts";
+export type { ObpRoomHubPort, ObpRoomPeer } from "./obp-room/port.ts";
+export {
+  type CreateSwarmHostDocumentStoreOptions,
+  createSwarmHostDocumentStore,
+  type SwarmHostDocumentStoreParsers,
+  upsertPost,
+  upsertProfile,
+  upsertTopic,
+} from "./persistence/sqlite/document-store.ts";
+export {
+  createSwarmHostEntitySqlitePersistence,
+  upsertSwarmHostEntity,
+} from "./persistence/sqlite/entity-sqlite.ts";
+export { createObpRelaySqlitePersistence } from "./persistence/sqlite/obp-relay-sqlite.ts";
+export { ensureSwarmHostSqliteSchema } from "./persistence/sqlite/schema.ts";
+export { createSwarmHostSqlitePersistence } from "./persistence/sqlite/swarm-host-sqlite.ts";
+export type {
+  ObpRelayFrameRow,
+  ObpRelayPersistence,
+  ObpRelayRoomRecord,
+  SwarmHostEntityDocumentInput,
+  SwarmHostEntityKind,
+  SwarmHostEntityPersistence,
+  SwarmHostEntityRow,
+  SwarmHostEntityUpsert,
+  SwarmHostPersistence,
+} from "./persistence/types.ts";
 export type {
   AgentNotification,
   AgentNotificationBufferPort,
+  NegotiationTicketNotificationPayload,
 } from "./registration/notifications.ts";
 export type {
   AgentDid,
@@ -51,7 +81,7 @@ export type {
 export { isLikelyDidString, profileEntityId } from "./registration/types.ts";
 export type { DidRegistrationVerifier } from "./registration/verify.ts";
 export {
-  parseJsonEntity,
+  minimalSourceMapForResolve,
   resolveFromMemoriesStore,
   type SwarmEntityResolver,
   type SwarmHostStores,

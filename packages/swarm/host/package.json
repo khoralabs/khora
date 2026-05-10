@@ -12,6 +12,7 @@
     }
   },
   "dependencies": {
+    "@cfd/frame-channel": "workspace:*",
     "@cfd/memories-core": "workspace:*",
     "zod": "^4"
   },

@@ -1,4 +1,4 @@
-import type { Store } from "@cfd/memories-core";
+import type { DefaultEntityMap, Store } from "@cfd/memories-core";
 import type { SourceMap } from "@cfd/memories-core/persistence";
 import type { FunctionReference } from "convex/server";
 
@@ -17,7 +17,7 @@ export function createConvexLexicalTextStore(
     { memoryId: string; sourceKey: string },
     string | null
   >,
-): Store {
+): Store<DefaultEntityMap> {
   return {
     async resolve(sourcemap: SourceMap) {
       const text = (await runQuery(getLexicalTextForMemorySource, {

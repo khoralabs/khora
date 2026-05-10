@@ -2,7 +2,7 @@ import type z from "zod";
 import type { DeleteMemoryParams } from "../models/delete-memory";
 import { deleteMemoryAsync } from "../models/delete-memory-async";
 import type { MemoriesPersistenceAsync } from "../persistence/async-types";
-import type { MemoriesClientOptions } from "./client";
+import type { DefaultEntityMap, MemoriesClientOptions } from "./client";
 import {
   type MergeMemoryParams,
   type MutationCtxAsync,
@@ -41,16 +41,17 @@ export type TypedSearchHitAsync<
 export class MemoriesClientAsync<
   TNode extends Record<string, z.ZodType>,
   TEdge extends Record<string, z.ZodType>,
+  EntityMap extends Record<string, unknown> = DefaultEntityMap,
 > {
   readonly ontology: OntologyDefinition<TNode, TEdge>;
   readonly persistence: MemoriesPersistenceAsync;
-  private readonly store?: Store;
-  private readonly storeForNamespace?: (namespace: string) => Store | undefined;
+  private readonly store?: Store<EntityMap>;
+  private readonly storeForNamespace?: (namespace: string) => Store<EntityMap> | undefined;
 
   constructor(
     persistence: MemoriesPersistenceAsync,
     ontology: OntologyDefinition<TNode, TEdge>,
-    options?: MemoriesClientOptions,
+    options?: MemoriesClientOptions<EntityMap>,
   ) {
     this.persistence = persistence;
     this.ontology = ontology;
@@ -62,7 +63,7 @@ export class MemoriesClientAsync<
     return { persistence: this.persistence };
   }
 
-  private storeForMergeNamespace(namespace: string): Store | undefined {
+  private storeForMergeNamespace(namespace: string): Store<EntityMap> | undefined {
     return this.storeForNamespace?.(namespace) ?? this.store;
   }
 
@@ -145,7 +146,7 @@ export class MemoriesClientAsync<
     namespace: string,
     memoryId: string,
     limit: number,
-  ): Promise<Array<{ sourceKey: string; content: ResolvedSource | null }>> {
+  ): Promise<Array<{ sourceKey: string; content: ResolvedSource<EntityMap> | null }>> {
     const store = this.storeForMergeNamespace(namespace);
     if (store === undefined) {
       throw new Error(
@@ -153,9 +154,9 @@ export class MemoriesClientAsync<
       );
     }
     const maps = await this.persistence.listSourceMapsForMemory(memoryId, limit);
-    const out: Array<{ sourceKey: string; content: ResolvedSource | null }> = [];
+    const out: Array<{ sourceKey: string; content: ResolvedSource<EntityMap> | null }> = [];
     for (const sm of maps) {
-      let content: ResolvedSource | null = null;
+      let content: ResolvedSource<EntityMap> | null = null;
       try {
         content = await store.resolve(sm);
       } catch {
