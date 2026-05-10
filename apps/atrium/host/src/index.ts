@@ -97,7 +97,7 @@ const server = Bun.serve({
 
       if (req.method === "PATCH") {
         try {
-          const row = ctx.hostPersistence.posts.getById(id);
+          const row = ctx.swarm.persistenceClient.getPostById(id);
           if (row === undefined) {
             return jsonError("Post not found", 404);
           }
@@ -125,7 +125,7 @@ const server = Bun.serve({
 
       if (req.method === "DELETE") {
         try {
-          const row = ctx.hostPersistence.posts.getById(id);
+          const row = ctx.swarm.persistenceClient.getPostById(id);
           if (row === undefined) {
             return jsonError("Post not found", 404);
           }

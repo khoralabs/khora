@@ -59,6 +59,3 @@ export type SwarmHostPersistence = {
   posts: SwarmHostEntityPersistence;
   topics: SwarmHostEntityPersistence;
 };
-
-/** @deprecated Use {@link SwarmHostEntityUpsert}. */
-export type SwarmHostEntityDocumentInput = SwarmHostEntityUpsert;

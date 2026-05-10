@@ -23,7 +23,11 @@ export {
   type SwarmTopicDeletedEvent,
   type SwarmTopicUpdatedEvent,
 } from "./events.ts";
-export { SwarmHost, type SwarmHostDeps } from "./host.ts";
+export {
+  SwarmHost,
+  type SwarmHostDeps,
+  type SwarmHostEventHandlerCtx,
+} from "./host.ts";
 export type {
   SourceMapLink,
   SwarmAggregateDomain,
@@ -50,7 +54,6 @@ export type {
   ObpRelayFrameRow,
   ObpRelayPersistence,
   ObpRelayRoomRecord,
-  SwarmHostEntityDocumentInput,
   SwarmHostEntityKind,
   SwarmHostEntityPersistence,
   SwarmHostEntityRow,

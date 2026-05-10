@@ -1,16 +1,10 @@
-import type { Database } from "bun:sqlite";
 import { ids, MemoriesClient, type MemoriesClient as MemoriesClientBare } from "@cfd/memories-core";
 import { canonicalOntology } from "@cfd/memories-core/ontologies";
 import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-sqlite";
 import {
-  createSwarmHostPersistenceClient,
-  createSwarmMemoriesSyncHandler,
   minimalSourceMapForResolve,
   SWARM_EVENT_KIND,
   SwarmHost,
-  type SwarmHostEventUnion,
-  type SwarmHostPersistence,
-  type SwarmHostPersistenceClient,
   type SwarmMemoryOpMapper,
 } from "@cfd/swarm-host";
 import {
@@ -48,11 +42,7 @@ export type AtriumHostConfig = {
 };
 
 export type AtriumHostContext = {
-  db: Database;
   config: AtriumHostConfig;
-  hostPersistence: SwarmHostPersistence;
-  persistenceClient: SwarmHostPersistenceClient;
-  client: MemoriesClient<TNode, TEdge, EntityMap>;
   swarm: SwarmHost<TNode, TEdge, AtriumProfile, AtriumPost, unknown, never>;
 };
 
@@ -119,7 +109,6 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
   const db = openMemoriesDatabase(config.dbPath);
   ensureSwarmHostSqliteSchema(db);
   const hostPersistence = createSwarmHostSqlitePersistence(db);
-  const persistenceClient = createSwarmHostPersistenceClient(hostPersistence);
 
   const persistence = createMemoriesPersistence(db);
   const documentStore = createSwarmHostDocumentStore<EntityMap>(db, {
@@ -133,57 +122,10 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
     storeForNamespace: () => documentStore,
   });
 
-  const memoriesSync = createSwarmMemoriesSyncHandler(
-    client as unknown as CanonicalMemoriesClient,
-    createAtriumMemoryOpMapper(config.profileNamespace, config.postNamespace),
-  );
-
-  const onEvent = async (
-    event: SwarmHostEventUnion<AtriumProfile, AtriumPost, unknown, never>,
-  ): Promise<void> => {
-    if (event.kind === SWARM_EVENT_KIND.REGISTRATION_PROFILE_BUILD) {
-      try {
-        const profile = atriumProfileFromRegistrationRequest(event.payload.request);
-        event.payload.fulfill(profile);
-      } catch (e) {
-        event.payload.reject(e);
-      }
-      return;
-    }
-
-    await Promise.resolve(memoriesSync(event));
-
-    if (event.kind === SWARM_EVENT_KIND.PROFILE_CREATED) {
-      const profile = event.payload.profile;
-      persistenceClient.upsertProfile({
-        id: profile.id,
-        memoryId: ids.memory(config.profileNamespace, profile.id),
-        bodyJson: JSON.stringify(profile),
-      });
-      return;
-    }
-
-    if (
-      event.kind === SWARM_EVENT_KIND.POST_CREATED ||
-      event.kind === SWARM_EVENT_KIND.POST_UPDATED
-    ) {
-      const post = event.payload.post;
-      persistenceClient.upsertPost({
-        id: post.id,
-        memoryId: ids.memory(config.postNamespace, post.id),
-        bodyJson: JSON.stringify(post),
-      });
-      return;
-    }
-
-    if (event.kind === SWARM_EVENT_KIND.POST_DELETED) {
-      hostPersistence.posts.deleteById(event.payload.post.id);
-    }
-  };
-
   const swarm = new SwarmHost({
     memories: client as unknown as CanonicalMemoriesClient,
-    onEvent,
+    persistence: hostPersistence,
+    mapEvent: createAtriumMemoryOpMapper(config.profileNamespace, config.postNamespace),
     stores: {
       profile: {
         async resolve(ref) {
@@ -204,7 +146,45 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
         },
       },
     },
+    onEvent: async (ctx, event) => {
+      if (event.kind === SWARM_EVENT_KIND.REGISTRATION_PROFILE_BUILD) {
+        try {
+          const profile = atriumProfileFromRegistrationRequest(event.payload.request);
+          event.payload.fulfill(profile);
+        } catch (e) {
+          event.payload.reject(e);
+        }
+        return;
+      }
+
+      if (event.kind === SWARM_EVENT_KIND.PROFILE_CREATED) {
+        const profile = event.payload.profile;
+        ctx.persistenceClient.upsertProfile({
+          id: profile.id,
+          memoryId: ids.memory(config.profileNamespace, profile.id),
+          bodyJson: JSON.stringify(profile),
+        });
+        return;
+      }
+
+      if (
+        event.kind === SWARM_EVENT_KIND.POST_CREATED ||
+        event.kind === SWARM_EVENT_KIND.POST_UPDATED
+      ) {
+        const post = event.payload.post;
+        ctx.persistenceClient.upsertPost({
+          id: post.id,
+          memoryId: ids.memory(config.postNamespace, post.id),
+          bodyJson: JSON.stringify(post),
+        });
+        return;
+      }
+
+      if (event.kind === SWARM_EVENT_KIND.POST_DELETED) {
+        ctx.persistence.posts.deleteById(event.payload.post.id);
+      }
+    },
   });
 
-  return { db, config, hostPersistence, persistenceClient, client, swarm };
+  return { config, swarm };
 }

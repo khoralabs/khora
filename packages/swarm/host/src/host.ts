@@ -1,11 +1,19 @@
 import type { LabelSchemaMap, MemoriesClient, SearchHit } from "@cfd/memories-core";
 import {
+  createSwarmMemoriesSyncHandler,
   SWARM_EVENT_KIND,
   type SwarmAppEventConstraint,
   type SwarmHostEventUnion,
+  type SwarmMemoriesSyncHandler,
+  type SwarmMemoryOpMapper,
 } from "./events.ts";
 import { SWARM_AGGREGATE_DOMAIN } from "./model/index.ts";
 import type { ObpRoomHubPort } from "./obp-room/port.ts";
+import {
+  createSwarmHostPersistenceClient,
+  type SwarmHostPersistenceClient,
+} from "./persistence/client.ts";
+import type { SwarmHostPersistence } from "./persistence/types.ts";
 import type { AgentNotificationBufferPort } from "./registration/notifications.ts";
 import {
   type AgentDid,
@@ -17,6 +25,13 @@ import {
 import type { DidRegistrationVerifier } from "./registration/verify.ts";
 import { type SwarmHostStores, searchHitToSourceMapRef } from "./stores.ts";
 
+/** Passed to {@link SwarmHostDeps.onEvent} together with each dispatched event. */
+export type SwarmHostEventHandlerCtx<TNode extends LabelSchemaMap, TEdge extends LabelSchemaMap> = {
+  memories: MemoriesClient<TNode, TEdge>;
+  persistence: SwarmHostPersistence;
+  persistenceClient: SwarmHostPersistenceClient;
+};
+
 export type SwarmHostDeps<
   TNode extends LabelSchemaMap,
   TEdge extends LabelSchemaMap,
@@ -26,12 +41,16 @@ export type SwarmHostDeps<
   TAppEvent extends SwarmAppEventConstraint = never,
 > = {
   memories: MemoriesClient<TNode, TEdge>;
+  persistence: SwarmHostPersistence;
+  /** When set, runs before {@link SwarmHostDeps.onEvent} for all events except registration profile build. */
+  mapEvent?: SwarmMemoryOpMapper<TNode, TEdge, TProfile, TPost, TTopic, TAppEvent>;
   stores?: SwarmHostStores<TProfile, TPost, TTopic>;
   /** Optional OBP opaque byte relay (HMAC tickets, replay on re-join). */
   obpRoomHub?: ObpRoomHubPort;
   didVerifier?: DidRegistrationVerifier;
   notificationBuffer?: AgentNotificationBufferPort;
   onEvent?: (
+    ctx: SwarmHostEventHandlerCtx<TNode, TEdge>,
     event: SwarmHostEventUnion<TProfile, TPost, TTopic, TAppEvent>,
   ) => void | Promise<void>;
 };
@@ -49,10 +68,14 @@ export class SwarmHost<
   TAppEvent extends SwarmAppEventConstraint = never,
 > {
   readonly memories: MemoriesClient<TNode, TEdge>;
+  readonly persistence: SwarmHostPersistence;
+  readonly persistenceClient: SwarmHostPersistenceClient;
   readonly stores?: SwarmHostStores<TProfile, TPost, TTopic>;
   readonly obpRoomHub?: ObpRoomHubPort;
   readonly didVerifier?: DidRegistrationVerifier;
   readonly notificationBuffer?: AgentNotificationBufferPort;
+
+  private readonly memoriesSync?: SwarmMemoriesSyncHandler<TProfile, TPost, TTopic, TAppEvent>;
   private readonly onEvent?: SwarmHostDeps<
     TNode,
     TEdge,
@@ -64,16 +87,43 @@ export class SwarmHost<
 
   constructor(deps: SwarmHostDeps<TNode, TEdge, TProfile, TPost, TTopic, TAppEvent>) {
     this.memories = deps.memories;
+    this.persistence = deps.persistence;
+    this.persistenceClient = createSwarmHostPersistenceClient(deps.persistence);
     this.stores = deps.stores;
     this.obpRoomHub = deps.obpRoomHub;
     this.didVerifier = deps.didVerifier;
     this.notificationBuffer = deps.notificationBuffer;
     this.onEvent = deps.onEvent;
+    if (deps.mapEvent !== undefined) {
+      this.memoriesSync = createSwarmMemoriesSyncHandler(
+        deps.memories as unknown as MemoriesClient<TNode, TEdge>,
+        deps.mapEvent,
+      );
+    }
   }
 
-  /** Notify subscribers (e.g. Memories sync) that a host event occurred. */
+  private eventCtx(): SwarmHostEventHandlerCtx<TNode, TEdge> {
+    return {
+      memories: this.memories,
+      persistence: this.persistence,
+      persistenceClient: this.persistenceClient,
+    };
+  }
+
+  /**
+   * Registration build: only {@link SwarmHostDeps.onEvent}. Other events: optional `mapEvent` sync, then `onEvent`.
+   */
   notify(event: SwarmHostEventUnion<TProfile, TPost, TTopic, TAppEvent>): void | Promise<void> {
-    return this.onEvent?.(event);
+    const ctx = this.eventCtx();
+    const handler = this.onEvent;
+    if (handler === undefined) {
+      return;
+    }
+    if (event.kind === SWARM_EVENT_KIND.REGISTRATION_PROFILE_BUILD) {
+      return handler(ctx, event);
+    }
+    const sync = this.memoriesSync?.(event);
+    return Promise.resolve(sync).then(() => handler(ctx, event));
   }
 
   /**
@@ -127,7 +177,7 @@ export class SwarmHost<
         correlationId: req.correlationId,
       };
 
-      void Promise.resolve(onEvent(buildEvent)).then(() => {
+      void Promise.resolve(onEvent(this.eventCtx(), buildEvent)).then(() => {
         if (!settled) {
           rej(
             new Error(
