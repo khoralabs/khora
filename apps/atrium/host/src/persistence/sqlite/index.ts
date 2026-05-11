@@ -9,8 +9,8 @@ export { createObpRelaySqlitePersistence } from "./obp-relay-sqlite.ts";
 export {
   createProbeSubscribersRepo,
   type ProbeSubscriberRow,
-  type ProbeSubscriberUpsert,
   type ProbeSubscribersRepo,
+  type ProbeSubscriberUpsert,
 } from "./probe-subscribers-sqlite.ts";
 export {
   createRegistrationsTopicsRepo,

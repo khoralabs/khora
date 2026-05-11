@@ -1,40 +1,36 @@
-import {
-  type AgentSigner,
-  randomAgentRequestNonce,
-  signAgentRequest,
-  signedInboxUrl,
-} from "@cfd/atrium-auth";
-import {
-  type AtriumInviteListResponse,
-  type AtriumInvitePreviewResponse,
-  type AtriumPost,
-  type AtriumPostCreate,
-  type AtriumPostPatch,
-  type AtriumProfile,
-  type AtriumProfilePatch,
-  type AtriumRegistrationRequestBody,
-  type AtriumRegistrationResult,
-  zAgentStatusResponse,
-  zAtriumInviteListResponse,
-  zAtriumInvitePreviewResponse,
-  zAtriumPost,
-  zAtriumProfile,
-  zAtriumRegisterResult,
-  zAtriumRegistrationRequestBody,
+import type { AgentSigner } from "@cfd/atrium-auth";
+import type {
+  AtriumInviteListResponse,
+  AtriumInvitePreviewResponse,
+  AtriumPost,
+  AtriumPostCreate,
+  AtriumPostPatch,
+  AtriumProfile,
+  AtriumProfilePatch,
+  AtriumRegistrationRequestBody,
+  AtriumRegistrationResult,
 } from "@cfd/atrium-contracts";
-import type { AgentNotification } from "@cfd/swarm-host";
-import z from "zod";
-import { AtriumClientError } from "./atrium-client-error.ts";
 import type { AtriumClientEvent } from "./atrium-events.ts";
 import {
   type AtriumPluginHandle,
   type AtriumPluginInstaller,
   createAtriumResolvePath,
 } from "./atrium-plugins.ts";
-import { type InboxNotificationRow, parseInboxWebSocketMessage } from "./inbox-ws.ts";
+import { type AgentSyncSnapshot, fetchAgentSync, getAgentStatus } from "./http/agent.ts";
+import { health } from "./http/health.ts";
+import { type InboxListResult, type ListInboxParams, listInbox } from "./http/inbox.ts";
+import { listInvites, previewInvite } from "./http/invites.ts";
+import { createPost, deletePost, updatePost } from "./http/posts.ts";
+import { updateProfile } from "./http/profile.ts";
+import { register } from "./http/register.ts";
+import { subscribeTopic, unsubscribeTopic } from "./http/topics.ts";
+import { type AtriumFetch, createHttpTransport, type HttpTransport } from "./http/transport.ts";
+import { connectInbox, type InboxWsHandlers } from "./ws/inbox.ts";
 
-/** Subset of `fetch` used by the client (avoids requiring Bun-specific properties on mocks). */
-export type AtriumFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+export type { AgentStatusSnapshot, AgentSyncSnapshot } from "./http/agent.ts";
+export type { InboxListResult, ListInboxParams } from "./http/inbox.ts";
+export type { AtriumFetch } from "./http/transport.ts";
+export type { InboxWsHandlers } from "./ws/inbox.ts";
 
 export type AtriumClientOptions = {
   baseUrl: string;
@@ -52,79 +48,21 @@ export type AtriumClientOptions = {
   plugins?: readonly AtriumPluginInstaller[];
 };
 
-const zHealth = z.object({ ok: z.literal(true) });
-
-const zInboxListResponse = z.object({
-  notifications: z.array(
-    z.object({
-      id: z.number(),
-      createdAtMs: z.number(),
-      read: z.boolean(),
-      notification: z.unknown(),
-    }),
-  ),
-});
-
-const zSubscribeOk = z.object({
-  ok: z.literal(true),
-  topicSlug: z.string(),
-});
-
-const zAgentSyncSnapshot = z.object({
-  profile: zAtriumProfile,
-  topicSlugs: z.array(z.string()),
-  probes: z.array(zAtriumPost),
-});
-
-export type AgentSyncSnapshot = z.infer<typeof zAgentSyncSnapshot>;
-
-export type AgentStatusSnapshot = z.infer<typeof zAgentStatusResponse>;
-
-async function readErrorMessage(res: Response): Promise<string> {
-  const text = await res.text();
-  try {
-    const j = JSON.parse(text) as { error?: unknown };
-    if (typeof j.error === "string" && j.error.length > 0) return j.error;
-  } catch {
-    /* ignore */
-  }
-  return text.length > 0 ? text : res.statusText;
-}
-
-export type ListInboxParams = {
-  limit?: number;
-  markRead?: boolean;
-};
-
-export type InboxListResult = {
-  notifications: InboxNotificationRow[];
-};
-
-export type InboxWsHandlers = {
-  onSnapshot?: (notifications: InboxNotificationRow[]) => void;
-  onNotification?: (msg: { id: number; notification: AgentNotification }) => void;
-  onOpen?: () => void;
-  onClose?: () => void;
-  onError?: (err: unknown) => void;
-};
-
 export class AtriumClient {
-  private readonly base: string;
-  private readonly fetchFn: AtriumFetch;
+  private readonly transport: HttpTransport;
   private readonly WebSocketCtor: typeof WebSocket;
-  private readonly signer: AgentSigner;
-  private readonly now: () => number;
-  private readonly nonceFactory: () => string;
   private readonly eventListeners: Array<(event: AtriumClientEvent) => void> = [];
   private readonly pluginHandles: AtriumPluginHandle[] = [];
 
   constructor(options: AtriumClientOptions) {
-    this.base = options.baseUrl.trim().replace(/\/$/, "");
-    this.fetchFn = options.fetch ?? globalThis.fetch;
+    this.transport = createHttpTransport({
+      baseUrl: options.baseUrl,
+      signer: options.signer,
+      fetch: options.fetch,
+      nowMs: options.nowMs,
+      nonceFactory: options.nonceFactory,
+    });
     this.WebSocketCtor = options.WebSocket ?? globalThis.WebSocket;
-    this.signer = options.signer;
-    this.now = options.nowMs ?? (() => Date.now());
-    this.nonceFactory = options.nonceFactory ?? randomAgentRequestNonce;
     const resolvePath = createAtriumResolvePath(options.dataDir);
     for (const installer of options.plugins ?? []) {
       this.pluginHandles.push(installer({ client: this, resolvePath }));
@@ -133,7 +71,7 @@ export class AtriumClient {
 
   /** DID resolved from the configured signer. */
   get did(): string {
-    return this.signer.did;
+    return this.transport.did;
   }
 
   /** Stop all plugins (reverse registration order); safe to call multiple times. */
@@ -157,230 +95,79 @@ export class AtriumClient {
     };
   }
 
-  private emit(event: AtriumClientEvent): void {
+  private emit = (event: AtriumClientEvent): void => {
     for (const listener of this.eventListeners) {
       listener(event);
     }
-  }
+  };
 
-  private emitInboxWsNotification(did: string, id: number, notification: AgentNotification): void {
-    this.emit({ type: "inbox:notification", did, id, notification });
-    switch (notification.kind) {
-      case "connection_request":
-        this.emit({ type: "inbox:connection_request", did, id, notification });
-        break;
-      case "host":
-        this.emit({ type: "inbox:host", did, id, notification });
-        break;
-      case "negotiation_ticket":
-        this.emit({ type: "inbox:negotiation_ticket", did, id, notification });
-        break;
-      case "topic_post":
-        this.emit({ type: "inbox:topic_post", did, id, notification });
-        break;
-      case "probe_hit":
-        this.emit({ type: "inbox:probe_hit", did, id, notification });
-        break;
-    }
-  }
-
-  /** Build the four `X-Agent-*` headers for `method path` and a body. */
-  private async signRequest(p: {
-    method: string;
-    path: string;
-    bodyText: string;
-  }): Promise<Record<string, string>> {
-    const signed = await signAgentRequest({
-      method: p.method,
-      path: p.path,
-      bodyText: p.bodyText,
-      signer: this.signer,
-      now: this.now,
-      nonce: this.nonceFactory,
-    });
-    return signed.headers;
-  }
-
-  private async requestJson<T>(
-    method: string,
-    path: string,
-    opts: {
-      body?: unknown;
-      headers?: Record<string, string>;
-      parse: z.ZodType<T>;
-    },
-  ): Promise<T> {
-    let bodyText = "";
-    const baseHeaders: Record<string, string> = {
-      Accept: "application/json",
-      ...(opts?.headers ?? {}),
-    };
-    if (opts?.body !== undefined) {
-      baseHeaders["Content-Type"] = "application/json";
-      bodyText = JSON.stringify(opts.body);
-    }
-    const authHeaders = await this.signRequest({ method, path, bodyText });
-    const headers: HeadersInit = { ...baseHeaders, ...authHeaders };
-    const res = await this.fetchFn(`${this.base}${path}`, {
-      method,
-      headers,
-      body: bodyText.length > 0 ? bodyText : undefined,
-    });
-    if (!res.ok) {
-      const msg = await readErrorMessage(res);
-      throw new AtriumClientError(msg, res.status);
-    }
-    const text = await res.text();
-    let json: unknown;
-    try {
-      json = JSON.parse(text) as unknown;
-    } catch {
-      throw new AtriumClientError("Invalid JSON response", res.status, text);
-    }
-    const parsed = opts.parse.safeParse(json);
-    if (!parsed.success) {
-      throw new AtriumClientError(
-        `Response shape mismatch: ${parsed.error.message}`,
-        res.status,
-        text,
-      );
-    }
-    return parsed.data;
-  }
-
-  async health(): Promise<{ ok: true }> {
-    const res = await this.fetchFn(`${this.base}/health`, { method: "GET" });
-    if (!res.ok) {
-      throw new AtriumClientError(await readErrorMessage(res), res.status);
-    }
-    const json = (await res.json()) as unknown;
-    return zHealth.parse(json);
+  health(): Promise<{ ok: true }> {
+    return health(this.transport);
   }
 
   /** Snapshot of profile, topic subscriptions, and probe posts (requires registration). */
-  async fetchAgentSync(): Promise<AgentSyncSnapshot> {
-    return this.requestJson("GET", "/v1/agent/sync", {
-      parse: zAgentSyncSnapshot,
-    });
+  fetchAgentSync(): Promise<AgentSyncSnapshot> {
+    return fetchAgentSync(this.transport);
   }
 
   /** Current `kind: "status"` post for the agent, if any (`GET /v1/agent/status`). */
-  async getAgentStatus(): Promise<AtriumPost | null> {
-    const out = await this.requestJson("GET", "/v1/agent/status", {
-      parse: zAgentStatusResponse,
-    });
-    return out.status;
+  getAgentStatus(): Promise<AtriumPost | null> {
+    return getAgentStatus(this.transport);
   }
 
   async register(
     body: Omit<AtriumRegistrationRequestBody, "did"> & { did?: string } = {},
   ): Promise<AtriumRegistrationResult> {
-    const finalBody: AtriumRegistrationRequestBody = zAtriumRegistrationRequestBody.parse({
-      ...body,
-      did: this.signer.did,
-    });
-    const result = await this.requestJson("POST", "/v1/register", {
-      body: finalBody,
-      parse: zAtriumRegisterResult,
-    });
-    this.emit({ type: "registration:completed", result, requestDid: finalBody.did });
+    const { result, requestDid } = await register(this.transport, body);
+    this.emit({ type: "registration:completed", result, requestDid });
     return result;
   }
 
-  async listInvites(): Promise<AtriumInviteListResponse> {
-    return this.requestJson("GET", "/v1/invites", {
-      parse: zAtriumInviteListResponse,
-    });
+  listInvites(): Promise<AtriumInviteListResponse> {
+    return listInvites(this.transport);
   }
 
-  async previewInvite(token: string): Promise<AtriumInvitePreviewResponse> {
-    return this.requestJson("POST", "/v1/invite/preview", {
-      body: { token },
-      parse: zAtriumInvitePreviewResponse,
-    });
+  previewInvite(token: string): Promise<AtriumInvitePreviewResponse> {
+    return previewInvite(this.transport, token);
   }
 
   async updateProfile(patch: AtriumProfilePatch): Promise<AtriumProfile> {
-    const profile = await this.requestJson("PATCH", "/v1/profile", {
-      body: patch,
-      parse: zAtriumProfile,
-    });
-    this.emit({ type: "profile:updated", profile, did: this.signer.did });
+    const profile = await updateProfile(this.transport, patch);
+    this.emit({ type: "profile:updated", profile, did: this.did });
     return profile;
   }
 
   async createPost(body: AtriumPostCreate): Promise<AtriumPost> {
-    const post = await this.requestJson("POST", "/v1/posts", {
-      body,
-      parse: zAtriumPost,
-    });
-    this.emit({ type: "post:created", post, did: this.signer.did });
+    const post = await createPost(this.transport, body);
+    this.emit({ type: "post:created", post, did: this.did });
     return post;
   }
 
   async updatePost(id: string, patch: AtriumPostPatch): Promise<AtriumPost> {
-    const enc = encodeURIComponent(id);
-    const post = await this.requestJson("PATCH", `/v1/posts/${enc}`, {
-      body: patch,
-      parse: zAtriumPost,
-    });
-    this.emit({ type: "post:updated", post, did: this.signer.did });
+    const post = await updatePost(this.transport, id, patch);
+    this.emit({ type: "post:updated", post, did: this.did });
     return post;
   }
 
   async deletePost(id: string): Promise<void> {
-    const enc = encodeURIComponent(id);
-    const path = `/v1/posts/${enc}`;
-    const authHeaders = await this.signRequest({ method: "DELETE", path, bodyText: "" });
-    const res = await this.fetchFn(`${this.base}${path}`, {
-      method: "DELETE",
-      headers: { Accept: "application/json", ...authHeaders },
-    });
-    if (!res.ok) {
-      throw new AtriumClientError(await readErrorMessage(res), res.status);
-    }
-    this.emit({ type: "post:deleted", postId: id, did: this.signer.did });
+    await deletePost(this.transport, id);
+    this.emit({ type: "post:deleted", postId: id, did: this.did });
   }
 
   async subscribeTopic(topicSlug: string): Promise<{ ok: true; topicSlug: string }> {
-    const enc = encodeURIComponent(topicSlug);
-    const out = await this.requestJson("POST", `/v1/topics/${enc}/subscribe`, {
-      parse: zSubscribeOk,
-    });
-    this.emit({ type: "topic:subscribed", topicSlug: out.topicSlug, did: this.signer.did });
+    const out = await subscribeTopic(this.transport, topicSlug);
+    this.emit({ type: "topic:subscribed", topicSlug: out.topicSlug, did: this.did });
     return out;
   }
 
   async unsubscribeTopic(topicSlug: string): Promise<void> {
-    const enc = encodeURIComponent(topicSlug);
-    const path = `/v1/topics/${enc}/subscribe`;
-    const authHeaders = await this.signRequest({ method: "DELETE", path, bodyText: "" });
-    const res = await this.fetchFn(`${this.base}${path}`, {
-      method: "DELETE",
-      headers: { Accept: "application/json", ...authHeaders },
-    });
-    if (!res.ok) {
-      throw new AtriumClientError(await readErrorMessage(res), res.status);
-    }
-    this.emit({ type: "topic:unsubscribed", topicSlug, did: this.signer.did });
+    await unsubscribeTopic(this.transport, topicSlug);
+    this.emit({ type: "topic:unsubscribed", topicSlug, did: this.did });
   }
 
   async listInbox(params: ListInboxParams = {}): Promise<InboxListResult> {
-    const q = new URLSearchParams();
-    if (params.limit !== undefined) q.set("limit", String(params.limit));
-    if (params.markRead === true) q.set("markRead", "1");
-    const qs = q.toString();
-    const path = qs.length > 0 ? `/v1/inbox?${qs}` : "/v1/inbox";
-    const data = await this.requestJson("GET", path, {
-      parse: zInboxListResponse,
-    });
-    const result: InboxListResult = {
-      notifications: data.notifications.map((row) => ({
-        ...row,
-        notification: row.notification as AgentNotification,
-      })),
-    };
-    this.emit({ type: "inbox:list", result, did: this.signer.did });
+    const result = await listInbox(this.transport, params);
+    this.emit({ type: "inbox:list", result, did: this.did });
     return result;
   }
 
@@ -391,51 +178,17 @@ export class AtriumClient {
    *
    * Typed `subscribe` events run before legacy `handlers` callbacks for each frame.
    */
-  async connectInbox(handlers: InboxWsHandlers): Promise<{ close(): void }> {
-    const did = this.signer.did;
-    const urlString = await signedInboxUrl({
-      baseUrl: this.base,
-      signer: this.signer,
-      now: this.now,
-      nonce: this.nonceFactory,
-    });
-    let ws: WebSocket;
-    try {
-      ws = new this.WebSocketCtor(urlString);
-    } catch (e) {
-      handlers.onError?.(e);
-      return { close() {} };
-    }
-    ws.addEventListener("open", () => {
-      handlers.onOpen?.();
-    });
-    ws.addEventListener("close", () => {
-      handlers.onClose?.();
-    });
-    ws.addEventListener("error", (ev) => {
-      handlers.onError?.(ev);
-    });
-    ws.addEventListener("message", (ev) => {
-      const text =
-        typeof ev.data === "string"
-          ? ev.data
-          : typeof Buffer !== "undefined" && Buffer.isBuffer(ev.data)
-            ? ev.data.toString("utf8")
-            : String(ev.data);
-      const msg = parseInboxWebSocketMessage(text);
-      if (msg === undefined) return;
-      if (msg.type === "snapshot") {
-        this.emit({ type: "inbox:snapshot", notifications: msg.notifications, did });
-        handlers.onSnapshot?.(msg.notifications);
-      } else {
-        this.emitInboxWsNotification(did, msg.id, msg.notification);
-        handlers.onNotification?.({ id: msg.id, notification: msg.notification });
-      }
-    });
-    return {
-      close() {
-        ws.close();
+  connectInbox(handlers: InboxWsHandlers): Promise<{ close(): void }> {
+    return connectInbox(
+      {
+        base: this.transport.base,
+        signer: this.transport.signer,
+        now: this.transport.now,
+        nonce: this.transport.nonce,
+        WebSocketCtor: this.WebSocketCtor,
+        emit: this.emit,
       },
-    };
+      handlers,
+    );
   }
 }
