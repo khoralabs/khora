@@ -71,7 +71,6 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
   const inboxHub = createInboxWsHub();
 
   const appContext: AtriumHostAppContext = {
-    db,
     profileNamespace: config.profileNamespace,
     postNamespace: config.postNamespace,
     probeNamespace: config.probeNamespace,

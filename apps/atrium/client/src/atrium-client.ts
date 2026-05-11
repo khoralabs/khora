@@ -14,6 +14,7 @@ import type {
 } from "@cfd/swarm-host";
 import z from "zod";
 import { AtriumClientError } from "./atrium-client-error.ts";
+import type { AtriumClientEvent } from "./atrium-events.ts";
 import {
   type InboxNotificationRow,
   inboxWebSocketUrl,
@@ -53,6 +54,14 @@ const zSubscribeOk = z.object({
   topicSlug: z.string(),
 });
 
+const zAgentSyncSnapshot = z.object({
+  profile: zAtriumProfile,
+  topicSlugs: z.array(z.string()),
+  probes: z.array(zAtriumPost),
+});
+
+export type AgentSyncSnapshot = z.infer<typeof zAgentSyncSnapshot>;
+
 async function readErrorMessage(res: Response): Promise<string> {
   const text = await res.text();
   try {
@@ -86,11 +95,51 @@ export class AtriumClient {
   private readonly base: string;
   private readonly fetchFn: AtriumFetch;
   private readonly WebSocketCtor: typeof WebSocket;
+  private readonly eventListeners: Array<(event: AtriumClientEvent) => void> = [];
 
   constructor(options: AtriumClientOptions) {
     this.base = options.baseUrl.trim().replace(/\/$/, "");
     this.fetchFn = options.fetch ?? globalThis.fetch;
     this.WebSocketCtor = options.WebSocket ?? globalThis.WebSocket;
+  }
+
+  /**
+   * Subscribe to successful RPC / inbox outcomes. Listeners run **synchronously** in registration
+   * order; schedule async work yourself (e.g. `queueMicrotask`).
+   */
+  subscribe(listener: (event: AtriumClientEvent) => void): () => void {
+    this.eventListeners.push(listener);
+    return () => {
+      const i = this.eventListeners.indexOf(listener);
+      if (i >= 0) this.eventListeners.splice(i, 1);
+    };
+  }
+
+  private emit(event: AtriumClientEvent): void {
+    for (const listener of this.eventListeners) {
+      listener(event);
+    }
+  }
+
+  private emitInboxWsNotification(did: string, id: number, notification: AgentNotification): void {
+    this.emit({ type: "inbox:notification", did, id, notification });
+    switch (notification.kind) {
+      case "connection_request":
+        this.emit({ type: "inbox:connection_request", did, id, notification });
+        break;
+      case "host":
+        this.emit({ type: "inbox:host", did, id, notification });
+        break;
+      case "negotiation_ticket":
+        this.emit({ type: "inbox:negotiation_ticket", did, id, notification });
+        break;
+      case "topic_post":
+        this.emit({ type: "inbox:topic_post", did, id, notification });
+        break;
+      case "probe_hit":
+        this.emit({ type: "inbox:probe_hit", did, id, notification });
+        break;
+    }
   }
 
   private async requestJson<T>(
@@ -143,36 +192,52 @@ export class AtriumClient {
     return zHealth.parse(json);
   }
 
-  async register(body: DidRegistrationRequest): Promise<DidRegistrationResult<AtriumProfile>> {
-    return this.requestJson("POST", "/v1/register", {
-      body,
-      parse: zRegisterResult,
+  /** Snapshot of profile, topic subscriptions, and probe posts for `did` (requires registration). */
+  async fetchAgentSync(did: string): Promise<AgentSyncSnapshot> {
+    return this.requestJson("GET", "/v1/agent/sync", {
+      headers: { "X-Agent-Did": did },
+      parse: zAgentSyncSnapshot,
     });
   }
 
+  async register(body: DidRegistrationRequest): Promise<DidRegistrationResult<AtriumProfile>> {
+    const result = await this.requestJson("POST", "/v1/register", {
+      body,
+      parse: zRegisterResult,
+    });
+    this.emit({ type: "registration:completed", result, requestDid: body.did });
+    return result;
+  }
+
   async updateProfile(did: string, patch: AtriumProfilePatch): Promise<AtriumProfile> {
-    return this.requestJson("PATCH", "/v1/profile", {
+    const profile = await this.requestJson("PATCH", "/v1/profile", {
       headers: { "X-Agent-Did": did },
       body: patch,
       parse: zAtriumProfile,
     });
+    this.emit({ type: "profile:updated", profile, did });
+    return profile;
   }
 
   async createPost(did: string, body: AtriumPostCreate): Promise<AtriumPost> {
-    return this.requestJson("POST", "/v1/posts", {
+    const post = await this.requestJson("POST", "/v1/posts", {
       headers: { "X-Agent-Did": did },
       body,
       parse: zAtriumPost,
     });
+    this.emit({ type: "post:created", post, did });
+    return post;
   }
 
   async updatePost(did: string, id: string, patch: AtriumPostPatch): Promise<AtriumPost> {
     const enc = encodeURIComponent(id);
-    return this.requestJson("PATCH", `/v1/posts/${enc}`, {
+    const post = await this.requestJson("PATCH", `/v1/posts/${enc}`, {
       headers: { "X-Agent-Did": did },
       body: patch,
       parse: zAtriumPost,
     });
+    this.emit({ type: "post:updated", post, did });
+    return post;
   }
 
   async deletePost(did: string, id: string): Promise<void> {
@@ -184,14 +249,17 @@ export class AtriumClient {
     if (!res.ok) {
       throw new AtriumClientError(await readErrorMessage(res), res.status);
     }
+    this.emit({ type: "post:deleted", postId: id, did });
   }
 
   async subscribeTopic(did: string, topicSlug: string): Promise<{ ok: true; topicSlug: string }> {
     const enc = encodeURIComponent(topicSlug);
-    return this.requestJson("POST", `/v1/topics/${enc}/subscribe`, {
+    const out = await this.requestJson("POST", `/v1/topics/${enc}/subscribe`, {
       headers: { "X-Agent-Did": did },
       parse: zSubscribeOk,
     });
+    this.emit({ type: "topic:subscribed", topicSlug: out.topicSlug, did });
+    return out;
   }
 
   async unsubscribeTopic(did: string, topicSlug: string): Promise<void> {
@@ -203,6 +271,7 @@ export class AtriumClient {
     if (!res.ok) {
       throw new AtriumClientError(await readErrorMessage(res), res.status);
     }
+    this.emit({ type: "topic:unsubscribed", topicSlug, did });
   }
 
   async listInbox(params: ListInboxParams): Promise<InboxListResult> {
@@ -212,17 +281,21 @@ export class AtriumClient {
     const data = await this.requestJson("GET", `/v1/inbox?${q.toString()}`, {
       parse: zInboxListResponse,
     });
-    return {
+    const result: InboxListResult = {
       notifications: data.notifications.map((row) => ({
         ...row,
         notification: row.notification as AgentNotification,
       })),
     };
+    this.emit({ type: "inbox:list", result, did: params.did });
+    return result;
   }
 
   /**
    * Subscribe to inbox WebSocket (`/v1/inbox/ws`). Caller must keep `did` consistent with registration.
    * Returns a handle with `close()`; does not reconnect automatically.
+   *
+   * Typed `subscribe` events run before legacy `handlers` callbacks for each frame.
    */
   connectInbox(did: string, handlers: InboxWsHandlers): { close(): void } {
     const url = inboxWebSocketUrl(this.base, did);
@@ -252,8 +325,10 @@ export class AtriumClient {
       const msg = parseInboxWebSocketMessage(text);
       if (msg === undefined) return;
       if (msg.type === "snapshot") {
+        this.emit({ type: "inbox:snapshot", notifications: msg.notifications, did });
         handlers.onSnapshot?.(msg.notifications);
       } else {
+        this.emitInboxWsNotification(did, msg.id, msg.notification);
         handlers.onNotification?.({ id: msg.id, notification: msg.notification });
       }
     });

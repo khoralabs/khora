@@ -97,6 +97,49 @@
         "typescript": "^5",
       },
     },
+    "apps/atrium/plugins/inbox-buffer": {
+      "name": "@cfd/atrium-plugin-inbox-buffer",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cfd/atrium-client": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "apps/atrium/plugins/profile-sync": {
+      "name": "@cfd/atrium-plugin-profile-sync",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cfd/atrium-client": "workspace:*",
+        "@cfd/atrium-contracts": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "apps/atrium/plugins/telemetry": {
+      "name": "@cfd/atrium-plugin-telemetry",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cfd/atrium-client": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "apps/matchmaking": {
       "name": "@cfd/matchmaking",
       "version": "0.1.0",
@@ -712,6 +755,12 @@
     "@cfd/atrium-daemon": ["@cfd/atrium-daemon@workspace:apps/atrium/daemon"],
 
     "@cfd/atrium-host": ["@cfd/atrium-host@workspace:apps/atrium/host"],
+
+    "@cfd/atrium-plugin-inbox-buffer": ["@cfd/atrium-plugin-inbox-buffer@workspace:apps/atrium/plugins/inbox-buffer"],
+
+    "@cfd/atrium-plugin-profile-sync": ["@cfd/atrium-plugin-profile-sync@workspace:apps/atrium/plugins/profile-sync"],
+
+    "@cfd/atrium-plugin-telemetry": ["@cfd/atrium-plugin-telemetry@workspace:apps/atrium/plugins/telemetry"],
 
     "@cfd/frame-channel": ["@cfd/frame-channel@workspace:packages/libs/frame-channel"],
 

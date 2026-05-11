@@ -1,3 +1,5 @@
+import type { AgentDid } from "../registration/types.ts";
+
 /** Stored OBP relay room (ticket HMAC secret + TTL). */
 export type ObpRelayRoomRecord = {
   roomId: string;
@@ -49,6 +51,31 @@ export interface SwarmHostEntityPersistence {
   deleteById(id: string): void;
 }
 
+/** Persisted DID ↔ profile mapping for agent registration (implementation-defined storage). */
+export interface SwarmHostAgentRegistrations {
+  exists(did: AgentDid): boolean;
+  upsert(did: AgentDid, profileId: string): void;
+  profileIdForDid(did: AgentDid): string | undefined;
+  didForProfileId(profileId: string): AgentDid | undefined;
+}
+
+/** Topic slug subscriptions keyed by agent DID. */
+export interface SwarmHostAgentTopicSubscriptions {
+  listSlugsForDid(did: AgentDid): string[];
+  subscriberDidsForTopic(topicSlug: string, excludeDid?: AgentDid): AgentDid[];
+  subscribe(did: AgentDid, topicSlug: string): void;
+  unsubscribe(did: AgentDid, topicSlug: string): void;
+}
+
+/** Post entity persistence plus filtered listing (e.g. probes by author profile id). */
+export interface SwarmHostPostPersistence extends SwarmHostEntityPersistence {
+  listRowsByAuthorProfileIdAndKind(params: {
+    authorProfileId: string;
+    kind: string;
+    limit: number;
+  }): SwarmHostEntityRow[];
+}
+
 /**
  * Host persistence facade: negotiation relay plus logical entity slices over one `host_entities` table.
  * Add slices (e.g. notifications) without changing call sites that already take this composite.
@@ -56,6 +83,8 @@ export interface SwarmHostEntityPersistence {
 export type SwarmHostPersistence = {
   obpRelay: ObpRelayPersistence;
   profiles: SwarmHostEntityPersistence;
-  posts: SwarmHostEntityPersistence;
+  posts: SwarmHostPostPersistence;
   topics: SwarmHostEntityPersistence;
+  agentRegistrations: SwarmHostAgentRegistrations;
+  agentTopicSubscriptions: SwarmHostAgentTopicSubscriptions;
 };

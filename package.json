@@ -23,6 +23,7 @@
   "workspaces": [
     "apps/*",
     "apps/atrium/*",
+    "apps/atrium/plugins/*",
     "packages/libs/*",
     "packages/agent/*",
     "packages/memories/*",

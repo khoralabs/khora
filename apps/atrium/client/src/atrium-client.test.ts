@@ -2,8 +2,27 @@ import { describe, expect, mock, test } from "bun:test";
 import type { DidRegistrationRequest } from "@cfd/swarm-host";
 import { AtriumClient } from "./atrium-client.ts";
 import { AtriumClientError } from "./atrium-client-error.ts";
+import type { AtriumClientEvent } from "./atrium-events.ts";
 
 describe("AtriumClient", () => {
+  test("fetchAgentSync GET /v1/agent/sync with X-Agent-Did", async () => {
+    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("http://h/v1/agent/sync");
+      expect(init?.method ?? "GET").toBe("GET");
+      expect(new Headers(init?.headers).get("X-Agent-Did")).toBe("did:key:a");
+      return Response.json({
+        profile: { id: "p1", displayName: "A" },
+        topicSlugs: ["rust"],
+        probes: [{ id: "pr1", kind: "probe", authorProfileId: "p1", body: "q" }],
+      });
+    });
+    const c = new AtriumClient({ baseUrl: "http://h", fetch: fetchMock });
+    const snap = await c.fetchAgentSync("did:key:a");
+    expect(snap.profile.displayName).toBe("A");
+    expect(snap.topicSlugs).toEqual(["rust"]);
+    expect(snap.probes[0]?.kind).toBe("probe");
+  });
+
   test("health requests GET /health on normalized base", async () => {
     const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
       expect(String(input)).toBe("http://localhost:8787/health");
@@ -39,6 +58,79 @@ describe("AtriumClient", () => {
       profileId: "prof_minted",
       profile: { id: "prof_minted", displayName: "Ada" },
     });
+  });
+
+  test("subscribe receives registration:completed after register", async () => {
+    const fetchMock = mock(async () =>
+      Response.json({
+        did: "did:key:x",
+        profileId: "prof_minted",
+        profile: { id: "prof_minted", displayName: "Ada" },
+      }),
+    );
+    const c = new AtriumClient({ baseUrl: "http://h", fetch: fetchMock });
+    const events: AtriumClientEvent[] = [];
+    const off = c.subscribe((e) => events.push(e));
+    await c.register({ did: "did:key:x", metadata: { displayName: "Ada" } });
+    off();
+    await c.register({ did: "did:key:y", metadata: { displayName: "Bob" } });
+    expect(events).toEqual([
+      {
+        type: "registration:completed",
+        requestDid: "did:key:x",
+        result: {
+          did: "did:key:x",
+          profileId: "prof_minted",
+          profile: { id: "prof_minted", displayName: "Ada" },
+        },
+      },
+    ]);
+  });
+
+  test("connectInbox emits inbox:notification and derived topic_post before legacy handler", async () => {
+    type EvListener = (ev: { data: string }) => void;
+    let messageHandler: EvListener | undefined;
+    class FakeWebSocket {
+      static readonly CONNECTING = 0;
+      static readonly OPEN = 1;
+      static readonly CLOSING = 2;
+      static readonly CLOSED = 3;
+      constructor(public url: string) {
+        queueMicrotask(() => {
+          messageHandler?.({
+            data: JSON.stringify({
+              type: "notification",
+              id: 42,
+              notification: { kind: "topic_post", payload: { topicSlug: "t", postId: "p" } },
+            }),
+          });
+        });
+      }
+      addEventListener(type: string, fn: EvListener) {
+        if (type === "message") messageHandler = fn;
+      }
+      removeEventListener() {}
+      close() {}
+    }
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      fetch: mock(async () => new Response(null, { status: 500 })),
+      WebSocket: FakeWebSocket as unknown as typeof WebSocket,
+    });
+    const events: AtriumClientEvent[] = [];
+    c.subscribe((e) => events.push(e));
+    let legacyCalled = false;
+    c.connectInbox("did:key:agent", {
+      onNotification: () => {
+        expect(events.some((e) => e.type === "inbox:notification")).toBe(true);
+        expect(events.some((e) => e.type === "inbox:topic_post")).toBe(true);
+        legacyCalled = true;
+      },
+    });
+    await new Promise((r) => queueMicrotask(r));
+    expect(legacyCalled).toBe(true);
+    expect(events.filter((e) => e.type === "inbox:notification")).toHaveLength(1);
+    expect(events.filter((e) => e.type === "inbox:topic_post")).toHaveLength(1);
   });
 
   test("updateProfile PATCH /v1/profile", async () => {

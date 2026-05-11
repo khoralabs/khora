@@ -19,13 +19,6 @@ import {
 import z from "zod";
 import { createAtriumHostContext } from "./create-atrium-host.ts";
 import { createDevDidVerifier } from "./dev-did-verifier.ts";
-import {
-  profileIdForDid,
-  registrationExists,
-  subscribeTopic,
-  unsubscribeTopic,
-  upsertHostRegistration,
-} from "./persistence/sqlite/registrations-topics-sqlite.ts";
 import { clientIpFromRequest, createRateLimiter, envRatePerMinute } from "./rate-limit.ts";
 
 function envPort(): number {
@@ -61,6 +54,13 @@ function envInboxSnapshotLimit(): number {
   return Number.isFinite(n) && n > 0 ? Math.min(Math.floor(n), 500) : 50;
 }
 
+function envAgentSyncProbeLimit(): number {
+  const raw = process.env.ATRIUM_AGENT_SYNC_PROBE_LIMIT?.trim();
+  if (raw === undefined || raw.length === 0) return 500;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? Math.min(Math.floor(n), 500) : 500;
+}
+
 function allowReregister(): boolean {
   return process.env.ATRIUM_ALLOW_REREGISTER === "1";
 }
@@ -79,6 +79,9 @@ const rlTopicsDid = createRateLimiter(
 );
 const rlProfileDid = createRateLimiter(
   envRatePerMinute(process.env.ATRIUM_RL_PROFILE_PATCH_PER_MIN_PER_DID, 60),
+);
+const rlAgentSyncDid = createRateLimiter(
+  envRatePerMinute(process.env.ATRIUM_RL_AGENT_SYNC_PER_MIN_PER_DID, 60),
 );
 const rlInboxDid = createRateLimiter(
   envRatePerMinute(process.env.ATRIUM_RL_INBOX_PER_MIN_PER_DID, 120),
@@ -107,6 +110,12 @@ function rateLimitedResponse(retryAfterSec: number): Response {
 function jsonError(msg: string, status: number): Response {
   return Response.json({ error: msg }, { status });
 }
+
+const zAgentSyncResponse = z.object({
+  profile: zAtriumProfile,
+  topicSlugs: z.array(z.string()),
+  probes: z.array(zAtriumPost),
+});
 
 function requiredDid(req: Request): string | undefined {
   const h = req.headers.get("x-agent-did")?.trim();
@@ -182,7 +191,7 @@ const server = Bun.serve<InboxWsData>({
       const regDid = rlRegisterDid(`did:${body.did}`);
       if (!regDid.ok) return rateLimitedResponse(regDid.retryAfterSec);
 
-      if (!allowReregister() && registrationExists(ctx.db, body.did)) {
+      if (!allowReregister() && ctx.host.persistenceClient.agentRegistrationExists(body.did)) {
         return registrationOpaqueJson(409);
       }
 
@@ -191,7 +200,7 @@ const server = Bun.serve<InboxWsData>({
         const result = await ctx.host.registerWithDid(body, {
           client: { ip, userAgent: ua },
         });
-        upsertHostRegistration(ctx.db, result.did, result.profileId);
+        ctx.host.persistenceClient.upsertAgentRegistration(result.did, result.profileId);
         return Response.json(result);
       } catch (e) {
         console.error("[atrium] registration error", e);
@@ -266,6 +275,55 @@ const server = Bun.serve<InboxWsData>({
       });
     }
 
+    if (req.method === "GET" && url.pathname === "/v1/agent/sync") {
+      const did = requiredDid(req);
+      if (did === undefined) {
+        return jsonError("X-Agent-Did header required", 400);
+      }
+      const syncRl = rlAgentSyncDid(`did:${did}`);
+      if (!syncRl.ok) return rateLimitedResponse(syncRl.retryAfterSec);
+      try {
+        await ctx.host.didVerifier.verifyAuthenticatedAgent({
+          method: req.method,
+          path: url.pathname,
+          headers: req.headers,
+          claimedDid: did,
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return jsonError(msg, 401);
+      }
+      const profileId = ctx.host.persistenceClient.profileIdForAgentDid(did);
+      if (profileId === undefined) {
+        return jsonError("Register before sync", 400);
+      }
+      const profileRow = ctx.host.persistenceClient.getProfileById(profileId);
+      if (profileRow === undefined) {
+        return jsonError("Profile not found", 404);
+      }
+      try {
+        const profile = zAtriumProfile.parse(JSON.parse(profileRow.bodyJson));
+        const topicSlugs = ctx.host.persistenceClient.listTopicSlugsForAgentDid(did);
+        const probeRows = ctx.host.persistenceClient.listPostRowsByAuthorProfileIdAndKind({
+          authorProfileId: profileId,
+          kind: "probe",
+          limit: envAgentSyncProbeLimit(),
+        });
+        const probes = probeRows.flatMap((row) => {
+          try {
+            return [zAtriumPost.parse(JSON.parse(row.bodyJson))];
+          } catch {
+            return [];
+          }
+        });
+        const payload = zAgentSyncResponse.parse({ profile, topicSlugs, probes });
+        return Response.json(payload);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return jsonError(msg, e instanceof z.ZodError ? 400 : 500);
+      }
+    }
+
     const topicSubMatch = /^\/v1\/topics\/([^/]+)\/subscribe$/.exec(url.pathname);
     if (topicSubMatch !== null && topicSubMatch[1] !== undefined) {
       const slugRaw = decodeURIComponent(topicSubMatch[1]);
@@ -294,11 +352,11 @@ const server = Bun.serve<InboxWsData>({
         return jsonError(msg, 401);
       }
       if (req.method === "POST") {
-        subscribeTopic(ctx.db, did, slug);
+        ctx.host.persistenceClient.subscribeAgentTopic(did, slug);
         return Response.json({ ok: true, topicSlug: slug });
       }
       if (req.method === "DELETE") {
-        unsubscribeTopic(ctx.db, did, slug);
+        ctx.host.persistenceClient.unsubscribeAgentTopic(did, slug);
         return new Response(null, { status: 204 });
       }
     }
@@ -321,7 +379,7 @@ const server = Bun.serve<InboxWsData>({
           claimedDid: did,
           bodyText,
         });
-        const profileId = profileIdForDid(ctx.db, did);
+        const profileId = ctx.host.persistenceClient.profileIdForAgentDid(did);
         if (profileId === undefined) {
           return jsonError("Register before updating profile", 400);
         }
@@ -367,7 +425,7 @@ const server = Bun.serve<InboxWsData>({
           claimedDid: did,
           bodyText,
         });
-        const profileId = profileIdForDid(ctx.db, did);
+        const profileId = ctx.host.persistenceClient.profileIdForAgentDid(did);
         if (profileId === undefined) {
           return jsonError("Register before creating posts", 400);
         }
@@ -415,7 +473,7 @@ const server = Bun.serve<InboxWsData>({
             claimedDid: did,
             bodyText,
           });
-          const agentProfileId = profileIdForDid(ctx.db, did);
+          const agentProfileId = ctx.host.persistenceClient.profileIdForAgentDid(did);
           if (agentProfileId === undefined) {
             return jsonError("Register before updating posts", 400);
           }
@@ -469,7 +527,7 @@ const server = Bun.serve<InboxWsData>({
             headers: req.headers,
             claimedDid: did,
           });
-          const agentProfileId = profileIdForDid(ctx.db, did);
+          const agentProfileId = ctx.host.persistenceClient.profileIdForAgentDid(did);
           if (agentProfileId === undefined) {
             return jsonError("Register before deleting posts", 400);
           }

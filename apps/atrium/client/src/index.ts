@@ -28,12 +28,20 @@ export type {
 } from "@cfd/swarm-host";
 export {
   AtriumClient,
+  type AgentSyncSnapshot,
   type AtriumClientOptions,
   type AtriumFetch,
   type InboxListResult,
   type InboxWsHandlers,
   type ListInboxParams,
 } from "./atrium-client.ts";
+export {
+  type AtriumClientEvent,
+  type AtriumDerivedInboxEvent,
+  type AtriumInboxListPayload,
+  isDerivedInboxKindEvent,
+  isInboxNotificationEvent,
+} from "./atrium-events.ts";
 export { AtriumClientError } from "./atrium-client-error.ts";
 export {
   type InboxNotificationRow,

@@ -4,10 +4,6 @@ import type { EmbeddingModel } from "@cfd/memories-core/helpers";
 import type { SwarmHostEventHandlerCtx } from "@cfd/swarm-host";
 import { deliverAgentNotification } from "@cfd/swarm-host";
 import type { AtriumHostAppContext } from "./atrium-app-context.ts";
-import {
-  didForProfileId,
-  subscriberDidsForTopic,
-} from "./persistence/sqlite/registrations-topics-sqlite.ts";
 
 type SwarmHostOntology = typeof import("@cfd/swarm-host").swarmHostOntology;
 type TNode = SwarmHostOntology["nodeLabels"];
@@ -41,12 +37,11 @@ export async function fanOutTopicSubscriptions<
   const hub = params.ctx.inboxHub;
   if (buffer === undefined || hub === undefined) return;
 
-  const ac = appCtxOrThrow(params.ctx);
-  const db = ac.db;
+  appCtxOrThrow(params.ctx);
 
   const authorDid =
     params.post.authorProfileId !== undefined
-      ? didForProfileId(db, params.post.authorProfileId)
+      ? params.ctx.persistence.agentRegistrations.didForProfileId(params.post.authorProfileId)
       : undefined;
 
   const seen = new Set<string>();
@@ -57,7 +52,10 @@ export async function fanOutTopicSubscriptions<
     } catch {
       continue;
     }
-    const dids = subscriberDidsForTopic(db, slug, authorDid);
+    const dids = params.ctx.persistence.agentTopicSubscriptions.subscriberDidsForTopic(
+      slug,
+      authorDid,
+    );
     for (const did of dids) {
       const dedupeKey = `${did}\t${slug}\t${params.post.id}`;
       if (seen.has(dedupeKey)) continue;
@@ -88,8 +86,7 @@ export async function fanOutProbeHits<
   const hub = params.ctx.inboxHub;
   if (buffer === undefined || hub === undefined) return;
 
-  const ac = appCtxOrThrow(params.ctx);
-  const db = ac.db;
+  appCtxOrThrow(params.ctx);
 
   const hits = await params.ctx.searchMemories({
     namespace: params.config.probeNamespace,
@@ -127,7 +124,7 @@ export async function fanOutProbeHits<
     const ownerPid = probe.authorProfileId;
     if (ownerPid === undefined || ownerPid.length === 0) continue;
 
-    const ownerDid = didForProfileId(db, ownerPid);
+    const ownerDid = params.ctx.persistence.agentRegistrations.didForProfileId(ownerPid);
     if (ownerDid === undefined) continue;
 
     notified.add(dedupeKey);

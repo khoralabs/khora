@@ -4,7 +4,9 @@ import type {
   SwarmHostEntityPersistence,
   SwarmHostEntityRow,
   SwarmHostEntityUpsert,
+  SwarmHostPostPersistence,
 } from "@cfd/swarm-host";
+import { listPostRowsByAuthorProfileIdAndKind } from "./probe-posts-sqlite.ts";
 import { ensureSwarmHostSqliteSchema } from "./schema.ts";
 
 export function upsertSwarmHostEntity(
@@ -63,6 +65,21 @@ export function createSwarmHostEntitySqlitePersistence(
 
     deleteById(id: string): void {
       db.run(`DELETE FROM host_entities WHERE kind = ? AND id = ?`, [kind, id]);
+    },
+  };
+}
+
+export function createSwarmHostPostSqlitePersistence(db: Database): SwarmHostPostPersistence {
+  const base = createSwarmHostEntitySqlitePersistence(db, "post");
+  return {
+    ...base,
+    listRowsByAuthorProfileIdAndKind(params) {
+      return listPostRowsByAuthorProfileIdAndKind(
+        db,
+        params.authorProfileId,
+        params.kind,
+        params.limit,
+      );
     },
   };
 }

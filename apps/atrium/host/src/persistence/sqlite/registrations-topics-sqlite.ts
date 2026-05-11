@@ -16,7 +16,9 @@ export function upsertHostRegistration(db: Database, did: AgentDid, profileId: s
 export function registrationExists(db: Database, did: AgentDid): boolean {
   ensureSwarmHostSqliteSchema(db);
   const row = db
-    .query<{ one: number }, [string]>(`SELECT 1 AS one FROM host_registrations WHERE did = ? LIMIT 1`)
+    .query<{ one: number }, [string]>(
+      `SELECT 1 AS one FROM host_registrations WHERE did = ? LIMIT 1`,
+    )
     .get(did);
   return row !== undefined && row !== null;
 }
@@ -56,6 +58,17 @@ export function unsubscribeTopic(db: Database, did: AgentDid, topicSlug: string)
 }
 
 /** Distinct subscriber DIDs for a topic slug (excluding optional authorDid). */
+/** Topic slugs the DID subscribes to, oldest subscription first. */
+export function listTopicSlugsForDid(db: Database, did: AgentDid): string[] {
+  ensureSwarmHostSqliteSchema(db);
+  const rows = db
+    .query<{ topic_slug: string }, [string]>(
+      `SELECT topic_slug FROM topic_subscriptions WHERE did = ? ORDER BY created_at ASC`,
+    )
+    .all(did) as { topic_slug: string }[];
+  return rows.map((r) => r.topic_slug);
+}
+
 export function subscriberDidsForTopic(
   db: Database,
   topicSlug: string,

@@ -75,11 +75,14 @@ export type {
   ObpRelayFrameRow,
   ObpRelayPersistence,
   ObpRelayRoomRecord,
+  SwarmHostAgentRegistrations,
+  SwarmHostAgentTopicSubscriptions,
   SwarmHostEntityKind,
   SwarmHostEntityPersistence,
   SwarmHostEntityRow,
   SwarmHostEntityUpsert,
   SwarmHostPersistence,
+  SwarmHostPostPersistence,
 } from "./persistence/types.ts";
 export type {
   AgentNotification,
