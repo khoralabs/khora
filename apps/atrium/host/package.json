@@ -8,17 +8,15 @@
     "test": "bun test"
   },
   "dependencies": {
+    "@cfd/atrium-auth": "workspace:*",
     "@cfd/atrium-contracts": "workspace:*",
     "@cfd/memories-core": "workspace:*",
     "@cfd/memories-sqlite": "workspace:*",
     "@cfd/swarm-host": "workspace:*",
-    "@noble/ed25519": "^3.1.0",
-    "iso-did": "^2.1.1",
     "zod": "^4"
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "iso-signatures": "^0.5.1",
     "typescript": "^5"
   },
   "module": "src/index.ts"

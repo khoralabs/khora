@@ -1,5 +1,9 @@
-import { EdDSASigner } from "iso-signatures/signers/eddsa.js";
-import { defaultIdentityPath, loadIdentity, saveIdentity } from "../identity.ts";
+import {
+  defaultIdentityPath,
+  generateAgentIdentity,
+  loadIdentity,
+  saveIdentity,
+} from "@cfd/atrium-auth";
 import { boolFlag, strFlag } from "./parse.ts";
 import type { FlagMap } from "./types.ts";
 
@@ -34,7 +38,7 @@ async function runKeyGenerate(flags: FlagMap): Promise<void> {
       process.exit(1);
     }
   }
-  const signer = await EdDSASigner.generate();
+  const signer = await generateAgentIdentity();
   await saveIdentity(out, signer);
   console.log(JSON.stringify({ did: signer.did, path: out }, null, 2));
 }

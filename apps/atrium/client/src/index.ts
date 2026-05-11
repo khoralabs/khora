@@ -36,7 +36,7 @@ export type {
   DidRegistrationRequest,
   DidRegistrationResult,
 } from "@cfd/swarm-host";
-export type { AgentSigner } from "./agent-signer.ts";
+export type { AgentSigner } from "@cfd/atrium-auth";
 export {
   type AgentStatusSnapshot,
   type AgentSyncSnapshot,

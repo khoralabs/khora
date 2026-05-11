@@ -98,18 +98,6 @@ export type {
   DidRegistrationResult,
 } from "./registration/types.ts";
 export { isLikelyDidString, profileEntityId } from "./registration/types.ts";
-export {
-  AGENT_REQUEST_FRESHNESS_WINDOW_MS,
-  AGENT_REQUEST_HEADER,
-  AGENT_REQUEST_SEARCH,
-  type AgentRequestEnvelope,
-  canonicalAgentRequestMessage,
-  envelopeSignatureBytes,
-  parseAgentRequestEnvelopeFromHeaders,
-  parseAgentRequestEnvelopeFromSearch,
-  randomAgentRequestNonce,
-  signatureBytesToB64Url,
-} from "./registration/agent-request.ts";
 export type {
   AuthenticatedAgentVerifyContext,
   DidVerifier,

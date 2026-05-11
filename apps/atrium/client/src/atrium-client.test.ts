@@ -1,12 +1,15 @@
 import { describe, expect, mock, test } from "bun:test";
-import { EdDSASigner } from "iso-signatures/signers/eddsa.js";
-import type { AgentSigner } from "./agent-signer.ts";
+import {
+  type AgentSigner,
+  generateAgentIdentity,
+  type PersistableAgentSigner,
+} from "@cfd/atrium-auth";
 import { AtriumClient } from "./atrium-client.ts";
 import { AtriumClientError } from "./atrium-client-error.ts";
 import type { AtriumClientEvent } from "./atrium-events.ts";
 
-async function makeSigner(): Promise<EdDSASigner> {
-  return EdDSASigner.generate();
+async function makeSigner(): Promise<PersistableAgentSigner> {
+  return generateAgentIdentity();
 }
 
 /** Predictable mock signer for assertions that don't care about real crypto. */

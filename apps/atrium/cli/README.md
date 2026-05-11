@@ -15,7 +15,7 @@ This is the human (and shell-script) entry point. It does not implement protocol
 ```
 cli.ts ──┬─▶ commands/handlers.ts ──▶ commands/<cmd>.ts ──┬─▶ flow (OBP wizard)
          │                                                └─▶ direct AtriumClient call
-         └─▶ identity.ts (load/save EdDSASigner) ──▶ AtriumCliContext
+         └─▶ @cfd/atrium-auth (load/save PersistableAgentSigner) ──▶ AtriumCliContext
 ```
 
 Each command module decides between the wizard path and the flag-only path. The root `cli.ts` is just a router; adding a new command is a new file under `commands/` plus a row in `handlers.ts`.

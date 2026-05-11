@@ -1,4 +1,10 @@
 import {
+  type AgentSigner,
+  randomAgentRequestNonce,
+  signAgentRequest,
+  signedInboxUrl,
+} from "@cfd/atrium-auth";
+import {
   type AtriumInviteListResponse,
   type AtriumInvitePreviewResponse,
   type AtriumPost,
@@ -16,16 +22,8 @@ import {
   zAtriumRegisterResult,
   zAtriumRegistrationRequestBody,
 } from "@cfd/atrium-contracts";
-import {
-  AGENT_REQUEST_HEADER,
-  AGENT_REQUEST_SEARCH,
-  type AgentNotification,
-  canonicalAgentRequestMessage,
-  randomAgentRequestNonce,
-  signatureBytesToB64Url,
-} from "@cfd/swarm-host";
+import type { AgentNotification } from "@cfd/swarm-host";
 import z from "zod";
-import type { AgentSigner } from "./agent-signer.ts";
 import { AtriumClientError } from "./atrium-client-error.ts";
 import type { AtriumClientEvent } from "./atrium-events.ts";
 import {
@@ -33,11 +31,7 @@ import {
   type AtriumPluginInstaller,
   createAtriumResolvePath,
 } from "./atrium-plugins.ts";
-import {
-  type InboxNotificationRow,
-  inboxWebSocketUrl,
-  parseInboxWebSocketMessage,
-} from "./inbox-ws.ts";
+import { type InboxNotificationRow, parseInboxWebSocketMessage } from "./inbox-ws.ts";
 
 /** Subset of `fetch` used by the client (avoids requiring Bun-specific properties on mocks). */
 export type AtriumFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
@@ -196,22 +190,15 @@ export class AtriumClient {
     path: string;
     bodyText: string;
   }): Promise<Record<string, string>> {
-    const timestampMs = this.now();
-    const nonce = this.nonceFactory();
-    const message = await canonicalAgentRequestMessage({
+    const signed = await signAgentRequest({
       method: p.method,
       path: p.path,
-      timestampMs,
-      nonce,
       bodyText: p.bodyText,
+      signer: this.signer,
+      now: this.now,
+      nonce: this.nonceFactory,
     });
-    const sig = await this.signer.sign(message);
-    return {
-      [AGENT_REQUEST_HEADER.did]: this.signer.did,
-      [AGENT_REQUEST_HEADER.ts]: String(timestampMs),
-      [AGENT_REQUEST_HEADER.nonce]: nonce,
-      [AGENT_REQUEST_HEADER.sig]: signatureBytesToB64Url(sig),
-    };
+    return signed.headers;
   }
 
   private async requestJson<T>(
@@ -406,25 +393,15 @@ export class AtriumClient {
    */
   async connectInbox(handlers: InboxWsHandlers): Promise<{ close(): void }> {
     const did = this.signer.did;
-    const path = "/v1/inbox/ws";
-    const timestampMs = this.now();
-    const nonce = this.nonceFactory();
-    const message = await canonicalAgentRequestMessage({
-      method: "GET",
-      path,
-      timestampMs,
-      nonce,
-      bodyText: "",
+    const urlString = await signedInboxUrl({
+      baseUrl: this.base,
+      signer: this.signer,
+      now: this.now,
+      nonce: this.nonceFactory,
     });
-    const sig = signatureBytesToB64Url(await this.signer.sign(message));
-    const baseUrl = inboxWebSocketUrl(this.base, did);
-    const u = new URL(baseUrl);
-    u.searchParams.set(AGENT_REQUEST_SEARCH.ts, String(timestampMs));
-    u.searchParams.set(AGENT_REQUEST_SEARCH.nonce, nonce);
-    u.searchParams.set(AGENT_REQUEST_SEARCH.sig, sig);
     let ws: WebSocket;
     try {
-      ws = new this.WebSocketCtor(u.toString());
+      ws = new this.WebSocketCtor(urlString);
     } catch (e) {
       handlers.onError?.(e);
       return { close() {} };

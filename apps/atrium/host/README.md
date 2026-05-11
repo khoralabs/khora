@@ -11,29 +11,41 @@ The Atrium server. A small **Bun HTTP + WebSocket** app on top of `@cfd/swarm-ho
 
 ## Authentication strategies
 
-Authentication is delegated to a pluggable **`DidVerifier`** (from `@cfd/swarm-host`). Atrium ships two implementations and is happy to host a third.
+Authentication lives in [`@cfd/atrium-auth`](../auth). The host imports it and wires the lifecycle in two lines:
 
-### 1. Production: `createDidKeyDidVerifier` (default)
+```ts
+import { createAtriumDidAuth } from "@cfd/atrium-auth";
 
-Stateless per-request Ed25519 signatures. Every HTTP route (including `POST /v1/register`) and every inbox WebSocket upgrade must carry:
+const ctx = createAtriumHostContext({
+  /* … */
+  auth: (db) => createAtriumDidAuth({ db }),
+});
+```
+
+Route handlers then call `ctx.auth.requireAuthenticatedRequest(req, url, bodyText)` / `ctx.auth.requireInboxAccess(req, url)` — one line each, returning the authenticated DID or throwing `AuthError`.
+
+### Default: did:key Ed25519, stateless per-request signatures
+
+Every HTTP route (including `POST /v1/register`) and every inbox WebSocket upgrade must carry:
 
 | Source | Fields |
 | --- | --- |
 | HTTP headers | `X-Agent-Did`, `X-Agent-Timestamp`, `X-Agent-Nonce`, `X-Agent-Signature` |
 | WS query params | `did`, `ts`, `nonce`, `sig` |
 
-The verifier:
+`AtriumDidAuth` performs five checks per request:
 
-1. Parses the envelope and checks the DID matches the body (registration only).
-2. Rejects requests outside a ±60s freshness window.
-3. Inserts `(did, nonce)` into `agent_request_nonces` and rejects duplicates → replay protection.
-4. Resolves the `did:key` to a public key (via `iso-did`) and runs `@noble/ed25519` `verifyAsync` against the canonical message `METHOD\nPATH\nts\nnonce\nsha256(body) b64url`.
+1. Envelope present and well-formed.
+2. Envelope DID matches the claimed DID (and the body DID for registration).
+3. Timestamp within ±60s of the host clock.
+4. `(did, nonce)` not seen before — recorded in `agent_request_nonces` (default SQLite store).
+5. Strategy verifies the signature over `METHOD\nPATH\nts\nnonce\nsha256(body) b64url`.
 
-Because the signature **is** the credential, there is no session state to manage and no token to leak. Key rotation = a new DID.
+Because the signature **is** the credential there is no session state to manage and no token to leak. Key rotation = a new DID.
 
-### 2. Bring your own verifier
+### Swapping schemes
 
-`AtriumHostConfig.didVerifier` accepts either a `DidVerifier` or a factory `(db) => DidVerifier`. To swap in, for example, OIDC-fronted DID Web verification, mTLS pinning, or HSM-signed challenges, implement `verifyRegistration` / `verifyAuthenticatedAgent` / `verifyInboxAccess` and wire it through `createAtriumHostContext`. The rest of the host doesn't care which scheme is in use.
+Pass a custom `AuthStrategy` (and optionally a custom `NonceStore`) to `createAtriumDidAuth`. The host's route handlers do not change — they only see `ctx.auth.require*` calls. See [`apps/atrium/auth/README.md`](../auth/README.md) for the extension model.
 
 ### Hardening layers (orthogonal to the verifier)
 

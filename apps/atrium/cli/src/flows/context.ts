@@ -1,13 +1,16 @@
+import {
+  defaultIdentityPath,
+  loadIdentity,
+  type PersistableAgentSigner,
+} from "@cfd/atrium-auth";
 import { AtriumClient } from "@cfd/atrium-client";
-import type { EdDSASigner } from "iso-signatures/signers/eddsa.js";
-import { defaultIdentityPath, loadIdentity } from "../identity.ts";
 import { resolveAtriumCliPlugins } from "../resolve-atrium-plugins.ts";
 import type { ReadLineFn } from "./obp/bind-readline.ts";
 import { createReadlineSession } from "./readline-session.ts";
 
 export type AtriumCliContext = {
   client: AtriumClient;
-  signer: EdDSASigner;
+  signer: PersistableAgentSigner;
   baseUrl: string;
   identityPath: string;
   readLine: ReadLineFn;
@@ -37,7 +40,7 @@ export async function createAtriumCliContext(): Promise<AtriumCliContext> {
 }
 
 export function createAtriumCliContextWithSigner(
-  signer: EdDSASigner,
+  signer: PersistableAgentSigner,
   identityPath: string,
 ): AtriumCliContext {
   const pluginsPayload = resolveAtriumCliPlugins();

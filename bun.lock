@@ -16,6 +16,23 @@
         "typescript": "^5",
       },
     },
+    "apps/atrium/auth": {
+      "name": "@cfd/atrium-auth",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cfd/swarm-host": "workspace:*",
+        "@noble/ed25519": "^3.1.0",
+        "iso-did": "^2.1.1",
+        "iso-signatures": "^0.5.1",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "apps/atrium/cli": {
       "name": "@cfd/atrium-cli",
       "version": "0.0.0",
@@ -23,6 +40,7 @@
         "atrium": "./src/cli.ts",
       },
       "dependencies": {
+        "@cfd/atrium-auth": "workspace:*",
         "@cfd/atrium-client": "workspace:*",
         "@cfd/atrium-contracts": "workspace:*",
         "@cfd/atrium-plugin-inbox-buffer": "workspace:*",
@@ -30,8 +48,6 @@
         "@cfd/atrium-plugin-telemetry": "workspace:*",
         "@cfd/obp-bind-policy-zod": "workspace:*",
         "@cfd/obp-core": "workspace:*",
-        "iso-did": "^2.1.1",
-        "iso-signatures": "^0.5.1",
         "zod": "^4",
       },
       "devDependencies": {
@@ -46,11 +62,9 @@
       "name": "@cfd/atrium-client",
       "version": "0.0.0",
       "dependencies": {
+        "@cfd/atrium-auth": "workspace:*",
         "@cfd/atrium-contracts": "workspace:*",
         "@cfd/swarm-host": "workspace:*",
-        "@noble/ed25519": "^3.1.0",
-        "iso-did": "^2.1.1",
-        "iso-signatures": "^0.5.1",
         "zod": "^4",
       },
       "devDependencies": {
@@ -83,11 +97,11 @@
         "atrium-daemon": "./src/main.ts",
       },
       "dependencies": {
+        "@cfd/atrium-auth": "workspace:*",
         "@cfd/atrium-client": "workspace:*",
         "@cfd/atrium-plugin-inbox-buffer": "workspace:*",
         "@cfd/atrium-plugin-profile-sync": "workspace:*",
         "@cfd/atrium-plugin-telemetry": "workspace:*",
-        "iso-signatures": "^0.5.1",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -100,17 +114,15 @@
     "apps/atrium/host": {
       "name": "@cfd/atrium-host",
       "dependencies": {
+        "@cfd/atrium-auth": "workspace:*",
         "@cfd/atrium-contracts": "workspace:*",
         "@cfd/memories-core": "workspace:*",
         "@cfd/memories-sqlite": "workspace:*",
         "@cfd/swarm-host": "workspace:*",
-        "@noble/ed25519": "^3.1.0",
-        "iso-did": "^2.1.1",
         "zod": "^4",
       },
       "devDependencies": {
         "@types/bun": "latest",
-        "iso-signatures": "^0.5.1",
         "typescript": "^5",
       },
     },
@@ -764,6 +776,8 @@
     "@cfd/agent-identity-spec": ["@cfd/agent-identity-spec@workspace:packages/agent/identity-spec"],
 
     "@cfd/agent-thread": ["@cfd/agent-thread@workspace:packages/agent/thread"],
+
+    "@cfd/atrium-auth": ["@cfd/atrium-auth@workspace:apps/atrium/auth"],
 
     "@cfd/atrium-cli": ["@cfd/atrium-cli@workspace:apps/atrium/cli"],
 

@@ -1,12 +1,12 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
+import { EdDSASigner } from "iso-signatures/signers/eddsa.js";
+import { createAtriumDidAuth } from "./auth.ts";
 import {
   AGENT_REQUEST_HEADER,
   canonicalAgentRequestMessage,
   signatureBytesToB64Url,
-} from "@cfd/swarm-host";
-import { EdDSASigner } from "iso-signatures/signers/eddsa.js";
-import { createDidKeyDidVerifier } from "./atrium-did-key-verifier.ts";
+} from "./wire.ts";
 
 function freshDb(): Database {
   return new Database(":memory:");
@@ -36,11 +36,11 @@ async function buildSignedHeaders(p: {
   return h;
 }
 
-describe("createDidKeyDidVerifier", () => {
+describe("AtriumDidAuth.verifier (did:key Ed25519 default)", () => {
   test("accepts fresh + valid signed request", async () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
-    const verifier = createDidKeyDidVerifier({ db, nowMs: () => now });
+    const auth = createAtriumDidAuth({ db, now: () => now });
     const signer = await EdDSASigner.generate();
     const headers = await buildSignedHeaders({
       signer,
@@ -51,7 +51,7 @@ describe("createDidKeyDidVerifier", () => {
       nonce: "nonce-1",
     });
     await expect(
-      verifier.verifyAuthenticatedAgent({
+      auth.verifier.verifyAuthenticatedAgent({
         method: "PATCH",
         path: "/v1/profile",
         headers,
@@ -64,7 +64,7 @@ describe("createDidKeyDidVerifier", () => {
   test("rejects stale timestamp", async () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
-    const verifier = createDidKeyDidVerifier({ db, nowMs: () => now });
+    const auth = createAtriumDidAuth({ db, now: () => now });
     const signer = await EdDSASigner.generate();
     const headers = await buildSignedHeaders({
       signer,
@@ -75,7 +75,7 @@ describe("createDidKeyDidVerifier", () => {
       nonce: "old",
     });
     await expect(
-      verifier.verifyAuthenticatedAgent({
+      auth.verifier.verifyAuthenticatedAgent({
         method: "GET",
         path: "/v1/agent/sync",
         headers,
@@ -87,7 +87,7 @@ describe("createDidKeyDidVerifier", () => {
   test("rejects duplicate nonce", async () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
-    const verifier = createDidKeyDidVerifier({ db, nowMs: () => now });
+    const auth = createAtriumDidAuth({ db, now: () => now });
     const signer = await EdDSASigner.generate();
     const headers = await buildSignedHeaders({
       signer,
@@ -97,14 +97,14 @@ describe("createDidKeyDidVerifier", () => {
       timestampMs: now,
       nonce: "same",
     });
-    await verifier.verifyAuthenticatedAgent({
+    await auth.verifier.verifyAuthenticatedAgent({
       method: "GET",
       path: "/v1/agent/sync",
       headers,
       claimedDid: signer.did,
     });
     await expect(
-      verifier.verifyAuthenticatedAgent({
+      auth.verifier.verifyAuthenticatedAgent({
         method: "GET",
         path: "/v1/agent/sync",
         headers,
@@ -116,7 +116,7 @@ describe("createDidKeyDidVerifier", () => {
   test("rejects DID mismatch", async () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
-    const verifier = createDidKeyDidVerifier({ db, nowMs: () => now });
+    const auth = createAtriumDidAuth({ db, now: () => now });
     const signer = await EdDSASigner.generate();
     const headers = await buildSignedHeaders({
       signer,
@@ -127,7 +127,7 @@ describe("createDidKeyDidVerifier", () => {
       nonce: "n",
     });
     await expect(
-      verifier.verifyAuthenticatedAgent({
+      auth.verifier.verifyAuthenticatedAgent({
         method: "GET",
         path: "/v1/agent/sync",
         headers,
@@ -139,7 +139,7 @@ describe("createDidKeyDidVerifier", () => {
   test("rejects bad signature (tampered body)", async () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
-    const verifier = createDidKeyDidVerifier({ db, nowMs: () => now });
+    const auth = createAtriumDidAuth({ db, now: () => now });
     const signer = await EdDSASigner.generate();
     const headers = await buildSignedHeaders({
       signer,
@@ -150,7 +150,7 @@ describe("createDidKeyDidVerifier", () => {
       nonce: "n-tampered",
     });
     await expect(
-      verifier.verifyAuthenticatedAgent({
+      auth.verifier.verifyAuthenticatedAgent({
         method: "POST",
         path: "/v1/posts",
         headers,
@@ -163,7 +163,7 @@ describe("createDidKeyDidVerifier", () => {
   test("verifyRegistration also checks body DID matches signature DID", async () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
-    const verifier = createDidKeyDidVerifier({ db, nowMs: () => now });
+    const auth = createAtriumDidAuth({ db, now: () => now });
     const signer = await EdDSASigner.generate();
     const bodyText = JSON.stringify({ did: "did:key:zMismatch" });
     const headers = await buildSignedHeaders({
@@ -175,11 +175,37 @@ describe("createDidKeyDidVerifier", () => {
       nonce: "n-reg",
     });
     await expect(
-      verifier.verifyRegistration({
+      auth.verifier.verifyRegistration({
         request: { did: "did:key:zMismatch" },
         headers,
         bodyText,
       }),
     ).rejects.toThrow();
+  });
+});
+
+describe("AtriumDidAuth.requireAuthenticatedRequest", () => {
+  test("returns DID on success and wraps failures in AuthError", async () => {
+    const db = freshDb();
+    const now = 1_700_000_000_000;
+    const auth = createAtriumDidAuth({ db, now: () => now });
+    const signer = await EdDSASigner.generate();
+    const headers = await buildSignedHeaders({
+      signer,
+      method: "GET",
+      path: "/v1/agent/sync",
+      bodyText: "",
+      timestampMs: now,
+      nonce: "n-ok",
+    });
+    const req = new Request("https://h.example/v1/agent/sync", { method: "GET", headers });
+    const url = new URL(req.url);
+    const out = await auth.requireAuthenticatedRequest(req, url);
+    expect(out.did).toBe(signer.did);
+
+    const noDidReq = new Request("https://h.example/v1/agent/sync");
+    await expect(
+      auth.requireAuthenticatedRequest(noDidReq, new URL(noDidReq.url)),
+    ).rejects.toThrow(/header required/);
   });
 });

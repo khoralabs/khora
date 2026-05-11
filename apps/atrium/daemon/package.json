@@ -25,11 +25,11 @@
     "start": "bun run src/main.ts"
   },
   "dependencies": {
+    "@cfd/atrium-auth": "workspace:*",
     "@cfd/atrium-client": "workspace:*",
     "@cfd/atrium-plugin-inbox-buffer": "workspace:*",
     "@cfd/atrium-plugin-profile-sync": "workspace:*",
-    "@cfd/atrium-plugin-telemetry": "workspace:*",
-    "iso-signatures": "^0.5.1"
+    "@cfd/atrium-plugin-telemetry": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",

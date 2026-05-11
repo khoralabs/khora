@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/atrium-client",
+  "name": "@cfd/atrium-auth",
   "version": "0.0.0",
   "type": "module",
   "private": true,
@@ -16,10 +16,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@cfd/atrium-auth": "workspace:*",
-    "@cfd/atrium-contracts": "workspace:*",
     "@cfd/swarm-host": "workspace:*",
-    "zod": "^4"
+    "@noble/ed25519": "^3.1.0",
+    "iso-did": "^2.1.1",
+    "iso-signatures": "^0.5.1"
   },
   "devDependencies": {
     "@types/bun": "latest",

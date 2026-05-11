@@ -1,5 +1,6 @@
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+import { AuthError, createAtriumDidAuth } from "@cfd/atrium-auth";
 import {
   type AtriumProfile,
   mergeAtriumPostPatch,
@@ -22,7 +23,6 @@ import {
   SWARM_EVENT_KIND,
 } from "@cfd/swarm-host";
 import z from "zod";
-import { createDidKeyDidVerifier } from "./atrium-did-key-verifier.ts";
 import { deleteOtherStatusPostsForAuthor } from "./atrium-status-posts.ts";
 import { createAtriumHostContext } from "./create-atrium-host.ts";
 import {
@@ -150,10 +150,9 @@ const zAgentSyncResponse = z.object({
   probes: z.array(zAtriumPost),
 });
 
-function requiredDid(req: Request): string | undefined {
-  const h = req.headers.get("x-agent-did")?.trim();
-  if (h !== undefined && h.length > 0) return h;
-  return undefined;
+function authErrorResponse(e: unknown): Response {
+  if (e instanceof AuthError) return jsonError(e.message, e.status);
+  return jsonError(e instanceof Error ? e.message : String(e), 401);
 }
 
 type InboxWsData = { did: string };
@@ -166,7 +165,7 @@ const ctx = createAtriumHostContext({
   profileNamespace: envProfileNamespace(),
   postNamespace: envPostNamespace(),
   probeNamespace: envProbeNamespace(),
-  didVerifier: (db) => createDidKeyDidVerifier({ db }),
+  auth: (db) => createAtriumDidAuth({ db }),
 });
 
 const seedInviteTokens = parseInviteSeedTokens(process.env.ATRIUM_INVITE_SEED_TOKENS);
@@ -344,23 +343,14 @@ const server = Bun.serve<InboxWsData>({
     }
 
     if (req.method === "GET" && url.pathname === "/v1/invites") {
-      const did = requiredDid(req);
-      if (did === undefined) {
-        return jsonError("X-Agent-Did header required", 400);
+      let did: string;
+      try {
+        ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url));
+      } catch (e) {
+        return authErrorResponse(e);
       }
       const listRl = rlInvitesListDid(`did:${did}`);
       if (!listRl.ok) return rateLimitedResponse(listRl.retryAfterSec);
-      try {
-        await ctx.host.didVerifier.verifyAuthenticatedAgent({
-          method: req.method,
-          path: url.pathname,
-          headers: req.headers,
-          claimedDid: did,
-        });
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        return jsonError(msg, 401);
-      }
       const pepper = readInvitePepper();
       const invites = pepper === undefined ? [] : listInvitesMintedForDid(ctx.db, did);
       const payload = zAtriumInviteListResponse.parse({ invites });
@@ -368,23 +358,14 @@ const server = Bun.serve<InboxWsData>({
     }
 
     if (req.method === "GET" && url.pathname === "/v1/inbox/ws") {
-      const did = url.searchParams.get("did")?.trim() ?? requiredDid(req) ?? undefined;
-      if (did === undefined || did.length === 0) {
-        return jsonError("did required (query ?did= or X-Agent-Did)", 400);
+      let did: string;
+      try {
+        ({ did } = await ctx.auth.requireInboxAccess(req, url));
+      } catch (e) {
+        return authErrorResponse(e);
       }
       const inboxRl = rlInboxDid(`did:${did}`);
       if (!inboxRl.ok) return rateLimitedResponse(inboxRl.retryAfterSec);
-      try {
-        await ctx.host.didVerifier.verifyInboxAccess({
-          claimedDid: did,
-          path: url.pathname,
-          searchParams: url.searchParams,
-          headers: req.headers,
-        });
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        return jsonError(msg, 401);
-      }
       const ok = srv.upgrade(req, { data: { did } });
       if (!ok) {
         return jsonError("WebSocket upgrade failed", 500);
@@ -393,23 +374,14 @@ const server = Bun.serve<InboxWsData>({
     }
 
     if (req.method === "GET" && url.pathname === "/v1/inbox") {
-      const did = url.searchParams.get("did")?.trim() ?? requiredDid(req);
-      if (did === undefined || did.length === 0) {
-        return jsonError("did required", 400);
+      let did: string;
+      try {
+        ({ did } = await ctx.auth.requireInboxAccess(req, url));
+      } catch (e) {
+        return authErrorResponse(e);
       }
       const inboxRl = rlInboxDid(`did:${did}`);
       if (!inboxRl.ok) return rateLimitedResponse(inboxRl.retryAfterSec);
-      try {
-        await ctx.host.didVerifier.verifyInboxAccess({
-          claimedDid: did,
-          path: url.pathname,
-          searchParams: url.searchParams,
-          headers: req.headers,
-        });
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        return jsonError(msg, 401);
-      }
       const list = ctx.notificationBuffer.listRecent;
       if (list === undefined) {
         return jsonError("inbox list not available", 501);
@@ -435,23 +407,14 @@ const server = Bun.serve<InboxWsData>({
     }
 
     if (req.method === "GET" && url.pathname === "/v1/agent/sync") {
-      const did = requiredDid(req);
-      if (did === undefined) {
-        return jsonError("X-Agent-Did header required", 400);
+      let did: string;
+      try {
+        ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url));
+      } catch (e) {
+        return authErrorResponse(e);
       }
       const syncRl = rlAgentSyncDid(`did:${did}`);
       if (!syncRl.ok) return rateLimitedResponse(syncRl.retryAfterSec);
-      try {
-        await ctx.host.didVerifier.verifyAuthenticatedAgent({
-          method: req.method,
-          path: url.pathname,
-          headers: req.headers,
-          claimedDid: did,
-        });
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        return jsonError(msg, 401);
-      }
       const profileId = ctx.host.persistenceClient.profileIdForAgentDid(did);
       if (profileId === undefined) {
         return jsonError("Register before sync", 400);
@@ -484,23 +447,14 @@ const server = Bun.serve<InboxWsData>({
     }
 
     if (req.method === "GET" && url.pathname === "/v1/agent/status") {
-      const did = requiredDid(req);
-      if (did === undefined) {
-        return jsonError("X-Agent-Did header required", 400);
+      let did: string;
+      try {
+        ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url));
+      } catch (e) {
+        return authErrorResponse(e);
       }
       const syncRl = rlAgentSyncDid(`did:${did}`);
       if (!syncRl.ok) return rateLimitedResponse(syncRl.retryAfterSec);
-      try {
-        await ctx.host.didVerifier.verifyAuthenticatedAgent({
-          method: req.method,
-          path: url.pathname,
-          headers: req.headers,
-          claimedDid: did,
-        });
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        return jsonError(msg, 401);
-      }
       const profileId = ctx.host.persistenceClient.profileIdForAgentDid(did);
       if (profileId === undefined) {
         return jsonError("Register before fetching status", 400);
@@ -533,23 +487,14 @@ const server = Bun.serve<InboxWsData>({
         const msg = e instanceof Error ? e.message : String(e);
         return jsonError(msg, 400);
       }
-      const did = requiredDid(req);
-      if (did === undefined) {
-        return jsonError("X-Agent-Did header required", 400);
+      let did: string;
+      try {
+        ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url));
+      } catch (e) {
+        return authErrorResponse(e);
       }
       const tRl = rlTopicsDid(`did:${did}`);
       if (!tRl.ok) return rateLimitedResponse(tRl.retryAfterSec);
-      try {
-        await ctx.host.didVerifier.verifyAuthenticatedAgent({
-          method: req.method,
-          path: url.pathname,
-          headers: req.headers,
-          claimedDid: did,
-        });
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        return jsonError(msg, 401);
-      }
       if (req.method === "POST") {
         ctx.host.persistenceClient.subscribeAgentTopic(did, slug);
         return Response.json({ ok: true, topicSlug: slug });
@@ -563,21 +508,16 @@ const server = Bun.serve<InboxWsData>({
     const postPathMatch = /^\/v1\/posts\/([^/]+)$/.exec(url.pathname);
 
     if (req.method === "PATCH" && url.pathname === "/v1/profile") {
+      const bodyText = await req.text();
+      let did: string;
       try {
-        const did = requiredDid(req);
-        if (did === undefined) {
-          return jsonError("X-Agent-Did header required", 400);
-        }
+        ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url, bodyText));
+      } catch (e) {
+        return authErrorResponse(e);
+      }
+      try {
         const pRl = rlProfileDid(`did:${did}`);
         if (!pRl.ok) return rateLimitedResponse(pRl.retryAfterSec);
-        const bodyText = await req.text();
-        await ctx.host.didVerifier.verifyAuthenticatedAgent({
-          method: req.method,
-          path: url.pathname,
-          headers: req.headers,
-          claimedDid: did,
-          bodyText,
-        });
         const profileId = ctx.host.persistenceClient.profileIdForAgentDid(did);
         if (profileId === undefined) {
           return jsonError("Register before updating profile", 400);
@@ -609,21 +549,16 @@ const server = Bun.serve<InboxWsData>({
     }
 
     if (req.method === "POST" && url.pathname === "/v1/posts") {
+      const bodyText = await req.text();
+      let did: string;
       try {
-        const did = requiredDid(req);
-        if (did === undefined) {
-          return jsonError("X-Agent-Did header required", 400);
-        }
+        ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url, bodyText));
+      } catch (e) {
+        return authErrorResponse(e);
+      }
+      try {
         const pRl = rlPostsDid(`did:${did}`);
         if (!pRl.ok) return rateLimitedResponse(pRl.retryAfterSec);
-        const bodyText = await req.text();
-        await ctx.host.didVerifier.verifyAuthenticatedAgent({
-          method: req.method,
-          path: url.pathname,
-          headers: req.headers,
-          claimedDid: did,
-          bodyText,
-        });
         const profileId = ctx.host.persistenceClient.profileIdForAgentDid(did);
         if (profileId === undefined) {
           return jsonError("Register before creating posts", 400);
@@ -660,21 +595,16 @@ const server = Bun.serve<InboxWsData>({
       const id = postPathMatch[1];
 
       if (req.method === "PATCH") {
+        const bodyText = await req.text();
+        let did: string;
         try {
-          const did = requiredDid(req);
-          if (did === undefined) {
-            return jsonError("X-Agent-Did header required", 400);
-          }
+          ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url, bodyText));
+        } catch (e) {
+          return authErrorResponse(e);
+        }
+        try {
           const pRl = rlPostsDid(`did:${did}`);
           if (!pRl.ok) return rateLimitedResponse(pRl.retryAfterSec);
-          const bodyText = await req.text();
-          await ctx.host.didVerifier.verifyAuthenticatedAgent({
-            method: req.method,
-            path: url.pathname,
-            headers: req.headers,
-            claimedDid: did,
-            bodyText,
-          });
           const agentProfileId = ctx.host.persistenceClient.profileIdForAgentDid(did);
           if (agentProfileId === undefined) {
             return jsonError("Register before updating posts", 400);
@@ -719,19 +649,15 @@ const server = Bun.serve<InboxWsData>({
       }
 
       if (req.method === "DELETE") {
+        let did: string;
         try {
-          const did = requiredDid(req);
-          if (did === undefined) {
-            return jsonError("X-Agent-Did header required", 400);
-          }
+          ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url));
+        } catch (e) {
+          return authErrorResponse(e);
+        }
+        try {
           const pRl = rlPostsDid(`did:${did}`);
           if (!pRl.ok) return rateLimitedResponse(pRl.retryAfterSec);
-          await ctx.host.didVerifier.verifyAuthenticatedAgent({
-            method: req.method,
-            path: url.pathname,
-            headers: req.headers,
-            claimedDid: did,
-          });
           const agentProfileId = ctx.host.persistenceClient.profileIdForAgentDid(did);
           if (agentProfileId === undefined) {
             return jsonError("Register before deleting posts", 400);

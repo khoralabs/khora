@@ -1,4 +1,5 @@
 import type { Database } from "bun:sqlite";
+import type { AtriumDidAuth } from "@cfd/atrium-auth";
 import {
   type AtriumPost,
   type AtriumProfile,
@@ -14,7 +15,6 @@ import {
   type AgentNotificationBufferPort,
   composeOnEventWithMemorySync,
   createInboxWsHub,
-  type DidVerifier,
   minimalSourceMapForResolve,
   SWARM_EVENT_KIND,
   SwarmHost,
@@ -44,8 +44,11 @@ export type AtriumHostConfig = {
   probeNamespace: string;
   topicNamespace?: string;
   embeddingModel?: EmbeddingModel;
-  /** Factory invoked with the opened SQLite database (enables verifiers that need replay storage). */
-  didVerifier: DidVerifier | ((db: Database) => DidVerifier);
+  /**
+   * DID authentication lifecycle. Pass a factory if the auth implementation needs the opened
+   * SQLite database (e.g. the default {@link createAtriumDidAuth} uses it for its nonce store).
+   */
+  auth: AtriumDidAuth | ((db: Database) => AtriumDidAuth);
 };
 
 export type AtriumHostContext = {
@@ -53,6 +56,7 @@ export type AtriumHostContext = {
   host: SwarmHost<TNode, TEdge, AtriumProfile, AtriumPost, unknown, never, EntityMap>;
   db: Database;
   notificationBuffer: AgentNotificationBufferPort;
+  auth: AtriumDidAuth;
 };
 
 export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostContext {
@@ -85,12 +89,11 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
 
   const mapMemoryOps = atriumSwarmMemoryOpMapper(appContext);
 
-  const didVerifier =
-    typeof config.didVerifier === "function" ? config.didVerifier(db) : config.didVerifier;
+  const auth = typeof config.auth === "function" ? config.auth(db) : config.auth;
   const host = new SwarmHost({
     memories,
     persistence: hostPersistence,
-    didVerifier,
+    didVerifier: auth.verifier,
     notificationBuffer,
     inboxHub,
     appContext,
@@ -193,7 +196,7 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
     }),
   });
 
-  return { config, host, db, notificationBuffer };
+  return { config, host, db, notificationBuffer, auth };
 }
 
 function probeLexicalText(p: AtriumPost): string {

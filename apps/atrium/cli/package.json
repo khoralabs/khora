@@ -19,6 +19,7 @@
     "start": "bun run src/cli.ts"
   },
   "dependencies": {
+    "@cfd/atrium-auth": "workspace:*",
     "@cfd/atrium-client": "workspace:*",
     "@cfd/atrium-contracts": "workspace:*",
     "@cfd/atrium-plugin-inbox-buffer": "workspace:*",
@@ -26,8 +27,6 @@
     "@cfd/atrium-plugin-telemetry": "workspace:*",
     "@cfd/obp-bind-policy-zod": "workspace:*",
     "@cfd/obp-core": "workspace:*",
-    "iso-did": "^2.1.1",
-    "iso-signatures": "^0.5.1",
     "zod": "^4"
   },
   "devDependencies": {
