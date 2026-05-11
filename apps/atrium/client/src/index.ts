@@ -27,14 +27,15 @@ export type {
   DidRegistrationResult,
 } from "@cfd/swarm-host";
 export {
-  AtriumClient,
   type AgentSyncSnapshot,
+  AtriumClient,
   type AtriumClientOptions,
   type AtriumFetch,
   type InboxListResult,
   type InboxWsHandlers,
   type ListInboxParams,
 } from "./atrium-client.ts";
+export { AtriumClientError } from "./atrium-client-error.ts";
 export {
   type AtriumClientEvent,
   type AtriumDerivedInboxEvent,
@@ -42,7 +43,16 @@ export {
   isDerivedInboxKindEvent,
   isInboxNotificationEvent,
 } from "./atrium-events.ts";
-export { AtriumClientError } from "./atrium-client-error.ts";
+export {
+  ATRIUM_BUILTIN_PLUGIN_ID,
+  type AtriumPluginContext,
+  type AtriumPluginHandle,
+  type AtriumPluginInstaller,
+  createAtriumResolvePath,
+  type LabeledAtriumPluginInstaller,
+  labelAtriumPlugin,
+  mergeLabeledAtriumPluginLayers,
+} from "./atrium-plugins.ts";
 export {
   type InboxNotificationRow,
   type InboxWsNotificationMessage,

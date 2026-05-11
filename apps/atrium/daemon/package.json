@@ -1,7 +1,7 @@
 {
   "name": "@cfd/atrium-daemon",
   "version": "0.0.0",
-  "description": "Inbox WebSocket listener. Env: ATRIUM_BASE_URL (default http://127.0.0.1:8787), ATRIUM_AGENT_DID (required); JSON lines: ATRIUM_DAEMON_JSON=1 or --json.",
+  "description": "Inbox WebSocket listener. Env: ATRIUM_BASE_URL, ATRIUM_AGENT_DID (required); optional plugins ATRIUM_DATA_DIR, ATRIUM_PROFILE_SYNC_PATH, ATRIUM_TELEMETRY_DIR, ATRIUM_TELEMETRY_MAX_BYTES, ATRIUM_INBOX_BUFFER_DB (same as CLI). JSON lines: ATRIUM_DAEMON_JSON=1 or --json.",
   "type": "module",
   "private": true,
   "module": "src/index.ts",
@@ -13,6 +13,11 @@
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./plugins": {
+      "types": "./src/plugins.ts",
+      "import": "./src/plugins.ts",
+      "default": "./src/plugins.ts"
     }
   },
   "scripts": {
@@ -20,7 +25,10 @@
     "start": "bun run src/main.ts"
   },
   "dependencies": {
-    "@cfd/atrium-client": "workspace:*"
+    "@cfd/atrium-client": "workspace:*",
+    "@cfd/atrium-plugin-inbox-buffer": "workspace:*",
+    "@cfd/atrium-plugin-profile-sync": "workspace:*",
+    "@cfd/atrium-plugin-telemetry": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",

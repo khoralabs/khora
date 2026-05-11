@@ -1,1 +1,1 @@
-export { runInboxDaemon, type RunInboxDaemonOptions } from "./run-inbox-daemon.ts";
+export { type RunInboxDaemonOptions, runInboxDaemon } from "./run-inbox-daemon.ts";

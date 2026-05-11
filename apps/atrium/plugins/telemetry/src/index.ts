@@ -1,6 +1,6 @@
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
-import type { AtriumClient, AtriumClientEvent } from "@cfd/atrium-client";
+import type { AtriumClient, AtriumClientEvent, AtriumPluginInstaller } from "@cfd/atrium-client";
 
 export type TelemetryClient = Pick<AtriumClient, "subscribe">;
 
@@ -51,5 +51,27 @@ export function createTelemetryArchive(options: {
       currentPath = null;
       bytesInFile = 0;
     },
+  };
+}
+
+export type TelemetryPluginOptions = Omit<
+  Parameters<typeof createTelemetryArchive>[0],
+  "client" | "dir"
+> & {
+  dir: string;
+};
+
+export function telemetryPlugin(options: TelemetryPluginOptions): AtriumPluginInstaller {
+  return (ctx) => {
+    const archive = createTelemetryArchive({
+      ...options,
+      client: ctx.client,
+      dir: ctx.resolvePath(options.dir),
+    });
+    return {
+      stop() {
+        archive.close();
+      },
+    };
   };
 }

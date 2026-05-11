@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
-import { dirname } from "node:path";
-import type { AtriumClient, AtriumClientEvent } from "@cfd/atrium-client";
+import { dirname, isAbsolute } from "node:path";
+import type { AtriumClient, AtriumClientEvent, AtriumPluginInstaller } from "@cfd/atrium-client";
 
 export type InboxBufferClient = Pick<AtriumClient, "subscribe">;
 
@@ -165,5 +165,31 @@ export function createInboxBuffer(options: {
         .get();
       return { count: row?.c ?? 0 };
     },
+  };
+}
+
+export type InboxBufferPluginOptions = Omit<
+  Parameters<typeof createInboxBuffer>[0],
+  "client" | "dbPath"
+> & {
+  dbPath: string;
+};
+
+export function inboxBufferPlugin(options: InboxBufferPluginOptions): AtriumPluginInstaller {
+  return (ctx) => {
+    const dbPath =
+      options.dbPath === ":memory:" || isAbsolute(options.dbPath)
+        ? options.dbPath
+        : ctx.resolvePath(options.dbPath);
+    const buf = createInboxBuffer({
+      ...options,
+      client: ctx.client,
+      dbPath,
+    });
+    return {
+      stop() {
+        buf.close();
+      },
+    };
   };
 }

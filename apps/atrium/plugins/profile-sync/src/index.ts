@@ -1,6 +1,6 @@
 import { mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
-import type { AtriumClient, AtriumClientEvent } from "@cfd/atrium-client";
+import type { AtriumClient, AtriumClientEvent, AtriumPluginInstaller } from "@cfd/atrium-client";
 import type { AtriumPost, AtriumProfile } from "@cfd/atrium-contracts";
 
 export type ProfileSyncClient = Pick<AtriumClient, "subscribe" | "fetchAgentSync">;
@@ -100,5 +100,29 @@ export function createProfileSync(options: {
       unsub = undefined;
     },
     flush,
+  };
+}
+
+export type ProfileSyncPluginOptions = Omit<
+  Parameters<typeof createProfileSync>[0],
+  "client" | "filePath"
+> & {
+  filePath: string;
+};
+
+/** Curried installer: paths resolved via {@link AtriumPluginContext.resolvePath}. */
+export function profileSyncPlugin(options: ProfileSyncPluginOptions): AtriumPluginInstaller {
+  return (ctx) => {
+    const sync = createProfileSync({
+      ...options,
+      client: ctx.client,
+      filePath: ctx.resolvePath(options.filePath),
+    });
+    sync.start();
+    return {
+      stop() {
+        sync.stop();
+      },
+    };
   };
 }

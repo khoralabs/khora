@@ -16,6 +16,11 @@ import z from "zod";
 import { AtriumClientError } from "./atrium-client-error.ts";
 import type { AtriumClientEvent } from "./atrium-events.ts";
 import {
+  type AtriumPluginHandle,
+  type AtriumPluginInstaller,
+  createAtriumResolvePath,
+} from "./atrium-plugins.ts";
+import {
   type InboxNotificationRow,
   inboxWebSocketUrl,
   parseInboxWebSocketMessage,
@@ -28,6 +33,10 @@ export type AtriumClientOptions = {
   baseUrl: string;
   fetch?: AtriumFetch;
   WebSocket?: typeof WebSocket;
+  /** Optional root for plugin `resolvePath` (relative paths join here). */
+  dataDir?: string;
+  /** Plugins installed synchronously after construction; stopped by {@link AtriumClient.dispose}. */
+  plugins?: readonly AtriumPluginInstaller[];
 };
 
 const zHealth = z.object({ ok: z.literal(true) });
@@ -96,11 +105,25 @@ export class AtriumClient {
   private readonly fetchFn: AtriumFetch;
   private readonly WebSocketCtor: typeof WebSocket;
   private readonly eventListeners: Array<(event: AtriumClientEvent) => void> = [];
+  private readonly pluginHandles: AtriumPluginHandle[] = [];
 
   constructor(options: AtriumClientOptions) {
     this.base = options.baseUrl.trim().replace(/\/$/, "");
     this.fetchFn = options.fetch ?? globalThis.fetch;
     this.WebSocketCtor = options.WebSocket ?? globalThis.WebSocket;
+    const resolvePath = createAtriumResolvePath(options.dataDir);
+    for (const installer of options.plugins ?? []) {
+      this.pluginHandles.push(installer({ client: this, resolvePath }));
+    }
+  }
+
+  /** Stop all plugins (reverse registration order); safe to call multiple times. */
+  dispose(): void {
+    for (let i = this.pluginHandles.length - 1; i >= 0; i--) {
+      const h = this.pluginHandles[i];
+      if (h !== undefined) h.stop();
+    }
+    this.pluginHandles.length = 0;
   }
 
   /**

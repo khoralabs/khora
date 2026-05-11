@@ -7,6 +7,7 @@ import {
   zAtriumPostPatch,
   zAtriumProfilePatch,
 } from "@cfd/atrium-contracts";
+import { resolveAtriumCliPlugins } from "./resolve-atrium-plugins.ts";
 
 type FlagMap = Record<string, string | boolean>;
 
@@ -92,6 +93,12 @@ function patchFromFlags(flags: FlagMap): AtriumPostPatch {
 function printHelp(): void {
   console.log(`atrium — CLI for Atrium host (env: ATRIUM_BASE_URL, ATRIUM_AGENT_DID)
 
+Plugins (optional; set paths to enable):
+  ATRIUM_DATA_DIR              Root for relative plugin paths
+  ATRIUM_PROFILE_SYNC_PATH     + ATRIUM_AGENT_DID → profile JSON sync
+  ATRIUM_TELEMETRY_DIR         JSONL telemetry (optional ATRIUM_TELEMETRY_MAX_BYTES, default 4194304)
+  ATRIUM_INBOX_BUFFER_DB       SQLite path for client event buffer
+
 Commands:
   health
   register --did <did> [--display-name <name>] [--bio <text>]
@@ -116,7 +123,18 @@ async function main(): Promise<void> {
 
   const { positional, flags } = parseArgv(argv);
   const [a, b, c] = positional;
-  const client = new AtriumClient({ baseUrl: baseUrl() });
+  let pluginsPayload: ReturnType<typeof resolveAtriumCliPlugins>;
+  try {
+    pluginsPayload = resolveAtriumCliPlugins();
+  } catch (e) {
+    console.error(e instanceof Error ? e.message : String(e));
+    process.exit(1);
+  }
+  const client = new AtriumClient({
+    baseUrl: baseUrl(),
+    dataDir: pluginsPayload.dataDir,
+    plugins: pluginsPayload.plugins,
+  });
 
   try {
     if (a === "health") {
@@ -256,6 +274,8 @@ async function main(): Promise<void> {
       process.exit(1);
     }
     throw e;
+  } finally {
+    client.dispose();
   }
 }
 
