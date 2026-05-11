@@ -8,7 +8,7 @@ test("resolveCompletedDeal finds terminal bind on provider offer", () => {
   const db = new Database(":memory:");
   db.run(OBP_SCHEMA_SQL);
   const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 0 });
-  const client = new OBPPersistenceClient(persistence, { ledgerSeq: () => 0 });
+  const client = new OBPPersistenceClient({ persistence, ledgerSeq: () => 0 });
   const { party: provider } = client.registerParty({ name: "p", sourcemaps: [] });
 
   const { offer } = client.extendOffer({

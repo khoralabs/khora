@@ -32,7 +32,7 @@ describe("obp tools", () => {
     const db = new Database(":memory:");
     db.run(OBP_SCHEMA_SQL);
     const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 0 });
-    const client = new OBPPersistenceClient(persistence, { ledgerSeq: () => 0 });
+    const client = new OBPPersistenceClient({ persistence, ledgerSeq: () => 0 });
     const { party } = client.registerParty({ name: "p1", sourcemaps: [] });
     const env = mkEnv(client, { actingPartyId: party.id });
     const { tools } = await obpExtendOfferTool.evaluate(buildObpToolkitContext({ env }));
@@ -48,7 +48,7 @@ describe("obp tools", () => {
     const db = new Database(":memory:");
     db.run(OBP_SCHEMA_SQL);
     const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 1_000_000 });
-    const client = new OBPPersistenceClient(persistence, { ledgerSeq: () => 1_000_000 });
+    const client = new OBPPersistenceClient({ persistence, ledgerSeq: () => 1_000_000 });
     const { party } = client.registerParty({ name: "p1", sourcemaps: [] });
     const env = mkEnv(client, { actingPartyId: party.id, ledgerSeq: () => 1_000_000 });
     const { tools } = await obpExtendOfferTool.evaluate(buildObpToolkitContext({ env }));
@@ -68,7 +68,7 @@ describe("obp tools", () => {
     const db = new Database(":memory:");
     db.run(OBP_SCHEMA_SQL);
     const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 0 });
-    const client = new OBPPersistenceClient(persistence, { ledgerSeq: () => 0 });
+    const client = new OBPPersistenceClient({ persistence, ledgerSeq: () => 0 });
     const { party: seller } = client.registerParty({ name: "s", sourcemaps: [] });
     const { party: buyer } = client.registerParty({ name: "b", sourcemaps: [] });
     const { offer } = client.extendOffer({
@@ -99,7 +99,7 @@ describe("obp tools", () => {
     const db = new Database(":memory:");
     db.run(OBP_SCHEMA_SQL);
     const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 0 });
-    const client = new OBPPersistenceClient(persistence, { ledgerSeq: () => 0 });
+    const client = new OBPPersistenceClient({ persistence, ledgerSeq: () => 0 });
     const { party: seller } = client.registerParty({ name: "s", sourcemaps: [] });
     const { party: buyer } = client.registerParty({ name: "b", sourcemaps: [] });
     const { offer } = client.extendOffer({
@@ -141,7 +141,7 @@ describe("obp tools", () => {
     const db = new Database(":memory:");
     db.run(OBP_SCHEMA_SQL);
     const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 0 });
-    const client = new OBPPersistenceClient(persistence, { ledgerSeq: () => 0 });
+    const client = new OBPPersistenceClient({ persistence, ledgerSeq: () => 0 });
     const { party } = client.registerParty({ name: "s", sourcemaps: [] });
     const { offer } = client.extendOffer({
       partyId: party.id,
@@ -188,7 +188,7 @@ describe("obp tools", () => {
     const db = new Database(":memory:");
     db.run(OBP_SCHEMA_SQL);
     const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 0 });
-    const client = new OBPPersistenceClient(persistence, { ledgerSeq: () => 0 });
+    const client = new OBPPersistenceClient({ persistence, ledgerSeq: () => 0 });
     const { party } = client.registerParty({ name: "p", sourcemaps: [] });
     let end: { reason?: string } | undefined;
     const env = mkEnv(client, {
@@ -207,7 +207,7 @@ describe("obp tools", () => {
     const db = new Database(":memory:");
     db.run(OBP_SCHEMA_SQL);
     const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 100 });
-    const client = new OBPPersistenceClient(persistence, { ledgerSeq: () => 100 });
+    const client = new OBPPersistenceClient({ persistence, ledgerSeq: () => 100 });
     const { party: seller } = client.registerParty({ name: "s", sourcemaps: [] });
     const { party: buyer } = client.registerParty({ name: "b", sourcemaps: [] });
     const { offer } = client.extendOffer({
@@ -278,7 +278,7 @@ describe("obp tools", () => {
     const db = new Database(":memory:");
     db.run(OBP_SCHEMA_SQL);
     const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 100 });
-    const client = new OBPPersistenceClient(persistence, { ledgerSeq: () => 100 });
+    const client = new OBPPersistenceClient({ persistence, ledgerSeq: () => 100 });
     const { party: seller } = client.registerParty({ name: "s", sourcemaps: [] });
     const { offer } = client.extendOffer({
       partyId: seller.id,
@@ -332,7 +332,7 @@ describe("obp tools", () => {
     const db = new Database(":memory:");
     db.run(OBP_SCHEMA_SQL);
     const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 0 });
-    const client = new OBPPersistenceClient(persistence, { ledgerSeq: () => 0 });
+    const client = new OBPPersistenceClient({ persistence, ledgerSeq: () => 0 });
     expect(client.getExtendingPartyId("00000000-0000-4000-8000-000000000099")).toBeNull();
   });
 });

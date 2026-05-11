@@ -15,9 +15,12 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "test": "bun test",
     "start": "bun run src/cli.ts"
   },
   "dependencies": {
+    "@cfd/obp-bind-policy-zod": "workspace:*",
+    "@cfd/obp-core": "workspace:*",
     "@cfd/atrium-client": "workspace:*",
     "@cfd/atrium-contracts": "workspace:*",
     "@cfd/atrium-plugin-inbox-buffer": "workspace:*",

@@ -14,7 +14,7 @@ function fixture() {
   const t = { v: 1_700_000_000_000 };
   const ledgerSeq = () => t.v;
   const persistence = new FakeObpPersistence(ledgerSeq);
-  const client = new OBPPersistenceClient(persistence, { ledgerSeq });
+  const client = new OBPPersistenceClient({ persistence, ledgerSeq });
   const { party: buyer } = persistence.registerParty({ name: "Buyer", sourcemaps: [] });
   const { party: seller } = persistence.registerParty({ name: "Seller", sourcemaps: [] });
   const ledger = new ObpLedger<NegotiationTurnAudit>({

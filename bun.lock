@@ -28,6 +28,8 @@
         "@cfd/atrium-plugin-inbox-buffer": "workspace:*",
         "@cfd/atrium-plugin-profile-sync": "workspace:*",
         "@cfd/atrium-plugin-telemetry": "workspace:*",
+        "@cfd/obp-bind-policy-zod": "workspace:*",
+        "@cfd/obp-core": "workspace:*",
         "zod": "^4",
       },
       "devDependencies": {

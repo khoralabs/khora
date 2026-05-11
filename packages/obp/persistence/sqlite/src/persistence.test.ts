@@ -19,7 +19,7 @@ describe("ObpSqlitePersistence", () => {
     const db = new Database(":memory:");
     initObpSchema(db);
     const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 100 });
-    const c = new OBPPersistenceClient(persistence, { ledgerSeq: () => 100 });
+    const c = new OBPPersistenceClient({ persistence, ledgerSeq: () => 100 });
     const { party } = c.registerParty({ name: "P", sourcemaps: [] });
     const { offer: o1 } = c.extendOffer({
       partyId: party.id,
@@ -65,7 +65,7 @@ describe("ObpSqlitePersistence", () => {
     const db = new Database(":memory:");
     initObpSchema(db);
     const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 100 });
-    const c = new OBPPersistenceClient(persistence, { ledgerSeq: () => 100 });
+    const c = new OBPPersistenceClient({ persistence, ledgerSeq: () => 100 });
     const { party } = c.registerParty({ name: "P", sourcemaps: [] });
     c.extendOffer({
       partyId: party.id,
@@ -129,7 +129,7 @@ describe("ObpSqlitePersistence", () => {
     const db = new Database(":memory:");
     initObpSchema(db);
     const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 500 });
-    const c = new OBPPersistenceClient(persistence, { ledgerSeq: () => 500 });
+    const c = new OBPPersistenceClient({ persistence, ledgerSeq: () => 500 });
     const { party } = c.registerParty({ name: "A", sourcemaps: [] });
     const { offer } = c.extendOffer({
       partyId: party.id,
@@ -170,7 +170,7 @@ describe("ObpSqlitePersistence", () => {
     const db = new Database(":memory:");
     initObpSchema(db);
     const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 700 });
-    const c = new OBPPersistenceClient(persistence, { ledgerSeq: () => 700 });
+    const c = new OBPPersistenceClient({ persistence, ledgerSeq: () => 700 });
     const { party } = c.registerParty({ name: "P", sourcemaps: [] });
     const { offer } = c.extendOffer({
       partyId: party.id,
@@ -218,7 +218,7 @@ describe("ObpSqlitePersistence", () => {
     const db = new Database(":memory:");
     initObpSchema(db);
     const persistence = createObpSqlitePersistence(db, { ledgerSeq: () => 100 });
-    const c = new OBPPersistenceClient(persistence, { ledgerSeq: () => 100 });
+    const c = new OBPPersistenceClient({ persistence, ledgerSeq: () => 100 });
     const { party } = c.registerParty({ name: "P", sourcemaps: [] });
     const { offer } = c.extendOffer({
       partyId: party.id,

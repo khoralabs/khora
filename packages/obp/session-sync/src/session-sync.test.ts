@@ -75,7 +75,7 @@ describe("@cfd/obp-session-sync", () => {
   test("rollbackFakePersistence restores exportState snapshot", () => {
     const ledgerSeq = () => 1;
     const p = new FakeObpPersistence(ledgerSeq);
-    const client = new OBPPersistenceClient(p, { ledgerSeq });
+    const client = new OBPPersistenceClient({ persistence: p, ledgerSeq });
     const { party: a } = client.registerParty({ name: "Only", sourcemaps: [] });
     const snap = p.exportState();
     client.registerParty({ name: "Extra", sourcemaps: [] });

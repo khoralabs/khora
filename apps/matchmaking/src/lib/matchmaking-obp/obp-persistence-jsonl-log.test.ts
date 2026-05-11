@@ -23,7 +23,7 @@ test("LoggingObpPersistence appends one JSONL row per mutation", () => {
       memoryId: "test/obp",
       nowMs: logTs,
     });
-    const client = new OBPPersistenceClient(persistence, { ledgerSeq });
+    const client = new OBPPersistenceClient({ persistence, ledgerSeq });
 
     client.registerParty({ name: "Alice", sourcemaps: [] });
 

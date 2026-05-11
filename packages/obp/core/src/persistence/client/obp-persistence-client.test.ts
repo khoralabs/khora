@@ -9,13 +9,13 @@ const seq = () => 100;
 describe("OBPPersistenceClient + FakeObpPersistence", () => {
   test("registerParty rejects empty name", () => {
     const p = new FakeObpPersistence(seq);
-    const c = new OBPPersistenceClient(p, { ledgerSeq: seq });
+    const c = new OBPPersistenceClient({ persistence: p, ledgerSeq: seq });
     expect(() => c.registerParty({ name: "  ", sourcemaps: [] })).toThrow(ObpError);
   });
 
   test("extendOffer with bind requires exposed port", () => {
     const p = new FakeObpPersistence(seq);
-    const c = new OBPPersistenceClient(p, { ledgerSeq: seq });
+    const c = new OBPPersistenceClient({ persistence: p, ledgerSeq: seq });
     const { party } = c.registerParty({ name: "P", sourcemaps: [] });
     p.ports.set("port1", {
       id: "port1",
@@ -46,7 +46,7 @@ describe("OBPPersistenceClient + FakeObpPersistence", () => {
 
   test("happy path: expose then extend with bind", () => {
     const p = new FakeObpPersistence(seq);
-    const c = new OBPPersistenceClient(p, { ledgerSeq: seq });
+    const c = new OBPPersistenceClient({ persistence: p, ledgerSeq: seq });
     const { party } = c.registerParty({ name: "Acme", sourcemaps: [] });
     const { offer: created } = c.extendOffer({
       partyId: party.id,
@@ -94,7 +94,7 @@ describe("OBPPersistenceClient + FakeObpPersistence", () => {
       properties: [{ type: "boolean", name: "Agree", prompt: "Accept terms" }],
     };
     const fake = new FakeObpPersistence(seq);
-    const c = new OBPPersistenceClient(fake, { ledgerSeq: seq });
+    const c = new OBPPersistenceClient({ persistence: fake, ledgerSeq: seq });
     const { party } = c.registerParty({ name: "P", sourcemaps: [] });
     const { offer: o0 } = c.extendOffer({
       partyId: party.id,
@@ -152,5 +152,24 @@ describe("OBPPersistenceClient + FakeObpPersistence", () => {
     expect(binds.length).toBe(1);
     expect(binds[0]?.counterparty_bind).toEqual({ agree: true });
     expect(binds[0]?.bind_policy_snapshot).toEqual(pol);
+  });
+
+  test("single-arg constructor uses FakeObpPersistence by default", () => {
+    let seq = 100;
+    const c = new OBPPersistenceClient({ ledgerSeq: () => seq });
+    const { party } = c.registerParty({ name: "solo", sourcemaps: [] });
+    expect(party.name).toBe("solo");
+    const { offer } = c.extendOffer({
+      partyId: party.id,
+      bindPortId: "",
+      offer: {
+        id: "",
+        created_seq: seq,
+        expires_seq: 1000,
+        type: "root",
+        sourcemaps: [],
+      },
+    });
+    expect(offer.type).toBe("root");
   });
 });

@@ -35,6 +35,6 @@ export function createDemoStack(options?: CreateDemoStackOptions): DemoStack {
           return d;
         })();
   const persistence = createObpSqlitePersistence(db, { ledgerSeq });
-  const client = new OBPPersistenceClient(persistence, { ledgerSeq });
+  const client = new OBPPersistenceClient({ persistence, ledgerSeq });
   return { db, client, persistence, ledgerSeq, demoLogNowMs };
 }

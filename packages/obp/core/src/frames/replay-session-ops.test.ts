@@ -12,7 +12,7 @@ function setupParties() {
   const persistence = new FakeObpPersistence(ledgerSeq);
   const responder = persistence.registerParty({ name: "srv", sourcemaps: [] }).party;
   const initiator = persistence.registerParty({ name: "cli", sourcemaps: [] }).party;
-  const client = new OBPPersistenceClient(persistence, { ledgerSeq });
+  const client = new OBPPersistenceClient({ persistence, ledgerSeq });
   const init: SessionInit = {
     session_id: "sid",
     parties: [

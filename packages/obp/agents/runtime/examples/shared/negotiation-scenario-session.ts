@@ -102,7 +102,7 @@ export function createNegotiationScenarioSession(scenario: ScenarioNegotiationCo
 
   async function initNegotiationSession(): Promise<void> {
     persistence = new FakeObpPersistence(ledgerSeq);
-    client = new OBPPersistenceClient(persistence, { ledgerSeq });
+    client = new OBPPersistenceClient({ persistence, ledgerSeq });
     buyer = persistence.registerParty({ name: partyNames.buyer, sourcemaps: [] }).party;
     seller = persistence.registerParty({ name: partyNames.seller, sourcemaps: [] }).party;
     walkAwayRequested = false;

@@ -13,7 +13,7 @@ const db = new Database(":memory:");
 initObpSchema(db);
 const ledgerSeq = () => 0;
 const persistence = createObpSqlitePersistence(db, { ledgerSeq });
-const client = new OBPPersistenceClient(persistence, { ledgerSeq });
+const client = new OBPPersistenceClient({ persistence, ledgerSeq });
 
 // Or open a file-backed DB:
 // const db = openObpDatabase("./obp.sqlite");

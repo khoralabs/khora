@@ -11,7 +11,7 @@ function stubLedger(maxTurns: number): ObpLedger<StubAudit> {
   const t = { v: 1_700_000_000_000 };
   const ledgerSeq = () => t.v;
   const persistence = new FakeObpPersistence(ledgerSeq);
-  const client = new OBPPersistenceClient(persistence, { ledgerSeq });
+  const client = new OBPPersistenceClient({ persistence, ledgerSeq });
   return new ObpLedger<StubAudit>({ client, persistence, ledgerSeq, maxTurns });
 }
 

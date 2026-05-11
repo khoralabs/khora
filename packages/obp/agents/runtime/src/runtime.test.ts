@@ -27,7 +27,7 @@ function seedSellerListing(): {
   const t = { v: 1_700_000_000_000 };
   const ledgerSeq = () => t.v;
   const persistence = new FakeObpPersistence(ledgerSeq);
-  const client = new OBPPersistenceClient(persistence, { ledgerSeq });
+  const client = new OBPPersistenceClient({ persistence, ledgerSeq });
   const { party: buyer } = persistence.registerParty({ name: "buyer", sourcemaps: [] });
   const { party: seller } = persistence.registerParty({ name: "seller", sourcemaps: [] });
   const seq = ledgerSeq();
@@ -184,7 +184,7 @@ test("genesis turn then bind turn", async () => {
   const t = { v: 1_700_000_000_000 };
   const ledgerSeq = () => t.v;
   const persistence = new FakeObpPersistence(ledgerSeq);
-  const client = new OBPPersistenceClient(persistence, { ledgerSeq });
+  const client = new OBPPersistenceClient({ persistence, ledgerSeq });
   const { party: buyer } = persistence.registerParty({ name: "buyer", sourcemaps: [] });
   const { party: seller } = persistence.registerParty({ name: "seller", sourcemaps: [] });
   const rt = new NegotiationRuntime({
@@ -241,7 +241,7 @@ test("genesis attaches noop/walk-away on new offer before counterparty prepareAc
   const t = { v: 1_700_000_000_000 };
   const ledgerSeq = () => t.v;
   const persistence = new FakeObpPersistence(ledgerSeq);
-  const client = new OBPPersistenceClient(persistence, { ledgerSeq });
+  const client = new OBPPersistenceClient({ persistence, ledgerSeq });
   persistence.registerParty({ name: "buyer", sourcemaps: [] });
   const { party: seller } = persistence.registerParty({ name: "seller", sourcemaps: [] });
   const rt = new NegotiationRuntime({
@@ -279,7 +279,7 @@ test("bind turn requires counterparty_bind when listing port has bind_policy", a
   const t = { v: 1_700_000_000_000 };
   const ledgerSeq = () => t.v;
   const persistence = new FakeObpPersistence(ledgerSeq);
-  const client = new OBPPersistenceClient(persistence, { ledgerSeq });
+  const client = new OBPPersistenceClient({ persistence, ledgerSeq });
   const { party: buyer } = persistence.registerParty({ name: "buyer", sourcemaps: [] });
   const { party: seller } = persistence.registerParty({ name: "seller", sourcemaps: [] });
   const seq = ledgerSeq();
@@ -351,7 +351,7 @@ test("terminal counterparty bind omits ports from validator (.strict rejects por
   const t = { v: 1_700_000_000_000 };
   const ledgerSeq = () => t.v;
   const persistence = new FakeObpPersistence(ledgerSeq);
-  const client = new OBPPersistenceClient(persistence, { ledgerSeq });
+  const client = new OBPPersistenceClient({ persistence, ledgerSeq });
   const { party: buyer } = persistence.registerParty({ name: "buyer", sourcemaps: [] });
   const { party: seller } = persistence.registerParty({ name: "seller", sourcemaps: [] });
   const seq = ledgerSeq();
@@ -417,7 +417,7 @@ test("terminal bind creates offer with no exposes (no model ports, no noop/walk)
   const t = { v: 1_700_000_000_000 };
   const ledgerSeq = () => t.v;
   const persistence = new FakeObpPersistence(ledgerSeq);
-  const client = new OBPPersistenceClient(persistence, { ledgerSeq });
+  const client = new OBPPersistenceClient({ persistence, ledgerSeq });
   const { party: buyer } = persistence.registerParty({ name: "buyer", sourcemaps: [] });
   const { party: seller } = persistence.registerParty({ name: "seller", sourcemaps: [] });
   const seq = ledgerSeq();

@@ -218,7 +218,7 @@ export async function runFrameMultiplexSession(
     throw new ObpError("VALIDATION", "sessionEnvelopeSync requires myPartyId or getMyPartyId");
   };
 
-  const obp = new OBPPersistenceClient(persistence, { ledgerSeq });
+  const obp = new OBPPersistenceClient({ persistence, ledgerSeq });
   const chains = new Map<string, ChainState>();
   /** Maps current tip hex and each registered genesis → session_id */
   const tipToSession = new Map<string, string>();

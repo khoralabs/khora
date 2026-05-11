@@ -11,7 +11,7 @@ test("buildGraphSnapshot returns parties offers ports and edges", () => {
   const t = { v: 1_700_000_000_000 };
   const ledgerSeq = () => t.v;
   const persistence = new FakeObpPersistence(ledgerSeq);
-  const client = new OBPPersistenceClient(persistence, { ledgerSeq });
+  const client = new OBPPersistenceClient({ persistence, ledgerSeq });
   const { party: buyer } = persistence.registerParty({ name: "buyer", sourcemaps: [] });
   const { party: seller } = persistence.registerParty({ name: "seller", sourcemaps: [] });
   expect(buyer.id).toBeDefined();
@@ -60,7 +60,7 @@ test("buildGraphSnapshot turn-TTL expired when negotiation turns exceed window",
   const t = { v: 1_700_000_000_000 };
   const ledgerSeq = () => t.v;
   const persistence = new FakeObpPersistence(ledgerSeq);
-  const client = new OBPPersistenceClient(persistence, { ledgerSeq });
+  const client = new OBPPersistenceClient({ persistence, ledgerSeq });
   persistence.registerParty({ name: "buyer", sourcemaps: [] });
   const { party: seller } = persistence.registerParty({ name: "seller", sourcemaps: [] });
   const seq = ledgerSeq();

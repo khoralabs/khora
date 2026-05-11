@@ -13,12 +13,15 @@ import type {
   Port,
   RegisterPartyInput,
 } from "../../model/types.ts";
+import { FakeObpPersistence } from "../../testing/fake-obp-persistence.ts";
 import { ObpError } from "./errors.ts";
 import type { ObpPersistence } from "./persistence-types.ts";
 
 export type OBPPersistenceClientOptions = {
   /** Monotonic ledger sequence for expiry checks and revoke stamping; required (no wall-clock default). */
   ledgerSeq: () => number;
+  /** Omit to use in-memory {@link FakeObpPersistence}. */
+  persistence?: ObpPersistence;
 };
 
 const CONTENT_HASH_HEX64 = /^[0-9a-f]{64}$/;
@@ -63,12 +66,20 @@ function throwIfBindInvalid(failure: BindValidationFailure): never {
 /**
  * OBP workflows with **strategy** {@link ObpPersistence}: validates using pure invariants then delegates.
  * Mirrors the pattern of {@code MemoriesClient} + {@code MemoriesPersistence}.
+ *
+ * - **`new OBPPersistenceClient({ ledgerSeq })`** — in-memory {@link FakeObpPersistence}.
+ * - **`new OBPPersistenceClient({ ledgerSeq, persistence })`** — explicit store.
  */
 export class OBPPersistenceClient {
-  constructor(
-    private readonly persistence: ObpPersistence,
-    private readonly options: OBPPersistenceClientOptions,
-  ) {}
+  private readonly persistence: ObpPersistence;
+
+  private readonly options: Pick<OBPPersistenceClientOptions, "ledgerSeq">;
+
+  constructor(options: OBPPersistenceClientOptions) {
+    const { persistence, ledgerSeq } = options;
+    this.options = { ledgerSeq };
+    this.persistence = persistence ?? new FakeObpPersistence(ledgerSeq);
+  }
 
   private ledgerSeq(): number {
     return this.options.ledgerSeq();

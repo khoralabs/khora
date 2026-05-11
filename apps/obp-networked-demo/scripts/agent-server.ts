@@ -40,7 +40,7 @@ const { registry: negotiatorRegistry, identity: negotiatorIdentity } =
 const clock = { seq: 0 };
 const ledgerSeq = () => ++clock.seq;
 const persistence = new FakeObpPersistence(ledgerSeq);
-const obpClient = new OBPPersistenceClient(persistence, { ledgerSeq });
+const obpClient = new OBPPersistenceClient({ persistence, ledgerSeq });
 let partiesHydrated = false;
 
 type ChainState = {
