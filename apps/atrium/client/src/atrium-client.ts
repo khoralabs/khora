@@ -1,17 +1,21 @@
 import {
+  type AtriumInviteListResponse,
+  type AtriumInvitePreviewResponse,
   type AtriumPost,
   type AtriumPostCreate,
   type AtriumPostPatch,
   type AtriumProfile,
   type AtriumProfilePatch,
+  type AtriumRegistrationRequestBody,
+  type AtriumRegistrationResult,
+  zAtriumInviteListResponse,
+  zAtriumInvitePreviewResponse,
   zAtriumPost,
   zAtriumProfile,
+  zAtriumRegisterResult,
+  zAtriumRegistrationRequestBody,
 } from "@cfd/atrium-contracts";
-import type {
-  AgentNotification,
-  DidRegistrationRequest,
-  DidRegistrationResult,
-} from "@cfd/swarm-host";
+import type { AgentNotification } from "@cfd/swarm-host";
 import z from "zod";
 import { AtriumClientError } from "./atrium-client-error.ts";
 import type { AtriumClientEvent } from "./atrium-events.ts";
@@ -40,12 +44,6 @@ export type AtriumClientOptions = {
 };
 
 const zHealth = z.object({ ok: z.literal(true) });
-
-const zRegisterResult = z.object({
-  did: z.string(),
-  profileId: z.string(),
-  profile: zAtriumProfile,
-});
 
 const zInboxListResponse = z.object({
   notifications: z.array(
@@ -223,13 +221,28 @@ export class AtriumClient {
     });
   }
 
-  async register(body: DidRegistrationRequest): Promise<DidRegistrationResult<AtriumProfile>> {
+  async register(body: AtriumRegistrationRequestBody): Promise<AtriumRegistrationResult> {
+    zAtriumRegistrationRequestBody.parse(body);
     const result = await this.requestJson("POST", "/v1/register", {
       body,
-      parse: zRegisterResult,
+      parse: zAtriumRegisterResult,
     });
     this.emit({ type: "registration:completed", result, requestDid: body.did });
     return result;
+  }
+
+  async listInvites(did: string): Promise<AtriumInviteListResponse> {
+    return this.requestJson("GET", "/v1/invites", {
+      headers: { "X-Agent-Did": did },
+      parse: zAtriumInviteListResponse,
+    });
+  }
+
+  async previewInvite(token: string): Promise<AtriumInvitePreviewResponse> {
+    return this.requestJson("POST", "/v1/invite/preview", {
+      body: { token },
+      parse: zAtriumInvitePreviewResponse,
+    });
   }
 
   async updateProfile(did: string, patch: AtriumProfilePatch): Promise<AtriumProfile> {

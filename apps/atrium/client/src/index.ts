@@ -1,9 +1,13 @@
 export type {
+  AtriumInviteListResponse,
+  AtriumInvitePreviewResponse,
   AtriumPost,
   AtriumPostCreate,
   AtriumPostPatch,
   AtriumProfile,
   AtriumProfilePatch,
+  AtriumRegistrationRequestBody,
+  AtriumRegistrationResult,
 } from "@cfd/atrium-contracts";
 export {
   atriumPostLexicalText,
@@ -13,13 +17,17 @@ export {
   mergeAtriumProfilePatch,
   normalizeTopicSlug,
   parseAtriumRegistrationMetadata,
+  zAtriumInviteListResponse,
+  zAtriumInvitePreviewResponse,
   zAtriumPost,
   zAtriumPostCreate,
   zAtriumPostKind,
   zAtriumPostPatch,
   zAtriumProfile,
   zAtriumProfilePatch,
+  zAtriumRegisterResult,
   zAtriumRegistrationMetadata,
+  zAtriumRegistrationRequestBody,
 } from "@cfd/atrium-contracts";
 export type {
   AgentNotification,

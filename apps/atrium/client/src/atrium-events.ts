@@ -1,5 +1,5 @@
-import type { AtriumPost, AtriumProfile } from "@cfd/atrium-contracts";
-import type { AgentNotification, DidRegistrationResult } from "@cfd/swarm-host";
+import type { AtriumPost, AtriumProfile, AtriumRegistrationResult } from "@cfd/atrium-contracts";
+import type { AgentNotification } from "@cfd/swarm-host";
 import type { InboxNotificationRow } from "./inbox-ws.ts";
 
 /** Pull-based inbox list payload (same shape as `AtriumClient.listInbox` resolution value). */
@@ -16,7 +16,7 @@ export type AtriumInboxListPayload = {
  * without branching on `kind`. Derived events are redundant with `inbox:notification`.
  */
 export type AtriumClientEvent =
-  | { type: "registration:completed"; result: DidRegistrationResult<AtriumProfile>; requestDid: string }
+  | { type: "registration:completed"; result: AtriumRegistrationResult; requestDid: string }
   | { type: "profile:updated"; profile: AtriumProfile; did: string }
   | { type: "post:created"; post: AtriumPost; did: string }
   | { type: "post:updated"; post: AtriumPost; did: string }
@@ -32,7 +32,12 @@ export type AtriumClientEvent =
       notification: Extract<AgentNotification, { kind: "connection_request" }>;
       did: string;
     }
-  | { type: "inbox:host"; id: number; notification: Extract<AgentNotification, { kind: "host" }>; did: string }
+  | {
+      type: "inbox:host";
+      id: number;
+      notification: Extract<AgentNotification, { kind: "host" }>;
+      did: string;
+    }
   | {
       type: "inbox:negotiation_ticket";
       id: number;
@@ -54,9 +59,7 @@ export type AtriumClientEvent =
 
 export type AtriumDerivedInboxEvent = Exclude<
   Extract<AtriumClientEvent, { type: `inbox:${string}` }>,
-  | { type: "inbox:list" }
-  | { type: "inbox:snapshot" }
-  | { type: "inbox:notification" }
+  { type: "inbox:list" } | { type: "inbox:snapshot" } | { type: "inbox:notification" }
 >;
 
 export function isInboxNotificationEvent(

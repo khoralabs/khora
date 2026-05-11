@@ -1,14 +1,18 @@
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import {
+  type AtriumProfile,
   mergeAtriumPostPatch,
   mergeAtriumProfilePatch,
   normalizeTopicSlug,
+  zAtriumInviteListResponse,
+  zAtriumInvitePreviewResponse,
   zAtriumPost,
   zAtriumPostCreate,
   zAtriumPostPatch,
   zAtriumProfile,
   zAtriumProfilePatch,
+  zAtriumRegistrationRequestBody,
 } from "@cfd/atrium-contracts";
 import { stableId } from "@cfd/memories-core";
 import {
@@ -19,6 +23,20 @@ import {
 import z from "zod";
 import { createAtriumHostContext } from "./create-atrium-host.ts";
 import { createDevDidVerifier } from "./dev-did-verifier.ts";
+import {
+  ensureRootInviteIfAbsent,
+  insertSeedInviteTokens,
+  inviteRequiredFromEnv,
+  invitesPerRegistrationFromEnv,
+  listInvitesMintedForDid,
+  mintStandardInviteTokens,
+  parseInviteSeedTokens,
+  previewInviteToken,
+  readInvitePepper,
+  rollbackInviteConsumption,
+  tryConsumeInviteToken,
+  validateInviteEnvConfig,
+} from "./invites/index.ts";
 import { clientIpFromRequest, createRateLimiter, envRatePerMinute } from "./rate-limit.ts";
 
 function envPort(): number {
@@ -89,11 +107,24 @@ const rlInboxDid = createRateLimiter(
 const rlDefaultIp = createRateLimiter(
   envRatePerMinute(process.env.ATRIUM_RL_DEFAULT_PER_MIN_PER_IP, 900),
 );
+const rlInvitePreviewIp = createRateLimiter(
+  envRatePerMinute(process.env.ATRIUM_RL_INVITE_PREVIEW_PER_MIN_PER_IP, 30),
+);
+const rlInvitesListDid = createRateLimiter(
+  envRatePerMinute(process.env.ATRIUM_RL_INVITES_LIST_PER_MIN_PER_DID, 60),
+);
 
 function registrationOpaqueJson(status: number): Response {
   return Response.json(
     { error: "Registration could not be completed", code: "registration_failed" },
     { status },
+  );
+}
+
+function inviteOpaqueNotFound(): Response {
+  return Response.json(
+    { error: "Invite could not be found", code: "invite_invalid" },
+    { status: 404 },
   );
 }
 
@@ -135,6 +166,32 @@ const ctx = createAtriumHostContext({
   probeNamespace: envProbeNamespace(),
   didVerifier: createDevDidVerifier(),
 });
+
+const seedInviteTokens = parseInviteSeedTokens(process.env.ATRIUM_INVITE_SEED_TOKENS);
+validateInviteEnvConfig(seedInviteTokens);
+const invitePepper = readInvitePepper();
+if (invitePepper !== undefined) {
+  insertSeedInviteTokens(ctx.db, invitePepper, seedInviteTokens);
+  const rootPlain = ensureRootInviteIfAbsent(ctx.db, invitePepper);
+  if (rootPlain !== undefined) {
+    console.warn(
+      `[atrium] Root invite token (single use; save this; not shown again): ${rootPlain}`,
+    );
+  }
+}
+
+const zInvitePreviewBody = z.object({
+  token: z.string().trim().min(1),
+});
+
+function loadPublicProfileForDid(did: string): AtriumProfile | null {
+  const profileId = ctx.host.persistenceClient.profileIdForAgentDid(did);
+  if (profileId === undefined) return null;
+  const row = ctx.host.persistenceClient.getProfileById(profileId);
+  if (row === undefined) return null;
+  const parsed = zAtriumProfile.safeParse(JSON.parse(row.bodyJson));
+  return parsed.success ? parsed.data : null;
+}
 
 async function sendInboxSnapshot(
   ws: { send: (data: string) => unknown },
@@ -179,33 +236,131 @@ const server = Bun.serve<InboxWsData>({
     }
 
     if (req.method === "POST" && url.pathname === "/v1/register") {
-      let body: DidRegistrationRequest;
+      let raw: unknown;
       try {
-        body = (await req.json()) as DidRegistrationRequest;
+        raw = await req.json();
       } catch {
         return registrationOpaqueJson(400);
       }
+      const parsedBody = zAtriumRegistrationRequestBody.safeParse(raw);
+      if (!parsedBody.success) {
+        return registrationOpaqueJson(400);
+      }
+      const bodyFull = parsedBody.data;
+      const swarmReq: DidRegistrationRequest = {
+        did: bodyFull.did,
+        ...(bodyFull.proof !== undefined ? { proof: bodyFull.proof } : {}),
+        ...(bodyFull.metadata !== undefined ? { metadata: bodyFull.metadata } : {}),
+        ...(bodyFull.correlationId !== undefined ? { correlationId: bodyFull.correlationId } : {}),
+      };
 
       const regIp = rlRegisterIp(`ip:${ip}`);
       if (!regIp.ok) return rateLimitedResponse(regIp.retryAfterSec);
-      const regDid = rlRegisterDid(`did:${body.did}`);
+      const regDid = rlRegisterDid(`did:${swarmReq.did}`);
       if (!regDid.ok) return rateLimitedResponse(regDid.retryAfterSec);
 
-      if (!allowReregister() && ctx.host.persistenceClient.agentRegistrationExists(body.did)) {
+      if (!allowReregister() && ctx.host.persistenceClient.agentRegistrationExists(swarmReq.did)) {
         return registrationOpaqueJson(409);
+      }
+
+      const skipInvites = ctx.host.persistenceClient.agentRegistrationExists(swarmReq.did);
+      const pepper = readInvitePepper();
+      const inviteTokenRaw = bodyFull.inviteToken?.trim();
+      const inviteTokenPresent = inviteTokenRaw !== undefined && inviteTokenRaw.length > 0;
+
+      let consumedInvitePlain: string | undefined;
+      if (!skipInvites) {
+        if (inviteRequiredFromEnv()) {
+          if (!inviteTokenPresent || pepper === undefined) {
+            return registrationOpaqueJson(400);
+          }
+        }
+        if (inviteTokenPresent && pepper === undefined) {
+          return registrationOpaqueJson(400);
+        }
+        if (inviteTokenPresent && pepper !== undefined) {
+          if (!tryConsumeInviteToken(ctx.db, pepper, inviteTokenRaw, swarmReq.did)) {
+            return registrationOpaqueJson(400);
+          }
+          consumedInvitePlain = inviteTokenRaw;
+        }
       }
 
       try {
         const ua = req.headers.get("user-agent") ?? undefined;
-        const result = await ctx.host.registerWithDid(body, {
+        const result = await ctx.host.registerWithDid(swarmReq, {
           client: { ip, userAgent: ua },
         });
         ctx.host.persistenceClient.upsertAgentRegistration(result.did, result.profileId);
-        return Response.json(result);
+        let inviteTokens: string[] | undefined;
+        if (!skipInvites && consumedInvitePlain !== undefined && pepper !== undefined) {
+          inviteTokens = mintStandardInviteTokens(
+            ctx.db,
+            pepper,
+            swarmReq.did,
+            invitesPerRegistrationFromEnv(),
+          );
+        }
+        return Response.json(inviteTokens !== undefined ? { ...result, inviteTokens } : result);
       } catch (e) {
+        if (consumedInvitePlain !== undefined && pepper !== undefined) {
+          rollbackInviteConsumption(ctx.db, pepper, consumedInvitePlain, swarmReq.did);
+        }
         console.error("[atrium] registration error", e);
         return registrationOpaqueJson(400);
       }
+    }
+
+    if (req.method === "POST" && url.pathname === "/v1/invite/preview") {
+      const prevRl = rlInvitePreviewIp(`ip:${ip}`);
+      if (!prevRl.ok) return rateLimitedResponse(prevRl.retryAfterSec);
+      const pepper = readInvitePepper();
+      if (pepper === undefined) {
+        return inviteOpaqueNotFound();
+      }
+      let raw: unknown;
+      try {
+        raw = await req.json();
+      } catch {
+        return inviteOpaqueNotFound();
+      }
+      const parsed = zInvitePreviewBody.safeParse(raw);
+      if (!parsed.success) {
+        return inviteOpaqueNotFound();
+      }
+      const pr = previewInviteToken(ctx.db, pepper, parsed.data.token, loadPublicProfileForDid);
+      if (!pr.ok) {
+        return inviteOpaqueNotFound();
+      }
+      const out = zAtriumInvitePreviewResponse.parse({
+        inviter: pr.inviter,
+        source: pr.source,
+      });
+      return Response.json(out);
+    }
+
+    if (req.method === "GET" && url.pathname === "/v1/invites") {
+      const did = requiredDid(req);
+      if (did === undefined) {
+        return jsonError("X-Agent-Did header required", 400);
+      }
+      const listRl = rlInvitesListDid(`did:${did}`);
+      if (!listRl.ok) return rateLimitedResponse(listRl.retryAfterSec);
+      try {
+        await ctx.host.didVerifier.verifyAuthenticatedAgent({
+          method: req.method,
+          path: url.pathname,
+          headers: req.headers,
+          claimedDid: did,
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return jsonError(msg, 401);
+      }
+      const pepper = readInvitePepper();
+      const invites = pepper === undefined ? [] : listInvitesMintedForDid(ctx.db, did);
+      const payload = zAtriumInviteListResponse.parse({ invites });
+      return Response.json(payload);
     }
 
     if (req.method === "GET" && url.pathname === "/v1/inbox/ws") {

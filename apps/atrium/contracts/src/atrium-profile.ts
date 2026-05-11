@@ -17,7 +17,9 @@ export const zAtriumRegistrationMetadata = z.object({
 export type AtriumRegistrationMetadataFields = z.infer<typeof zAtriumRegistrationMetadata>;
 
 /** Parse `DidRegistrationRequest.metadata` display fields; ignores unknown keys (including legacy `profileId` / `id`). */
-export function parseAtriumRegistrationMetadata(metadata: unknown): AtriumRegistrationMetadataFields {
+export function parseAtriumRegistrationMetadata(
+  metadata: unknown,
+): AtriumRegistrationMetadataFields {
   const parsed = zAtriumRegistrationMetadata.safeParse(metadata ?? {});
   if (!parsed.success) {
     throw new Error(`Atrium: invalid registration metadata: ${parsed.error.message}`);
@@ -32,7 +34,10 @@ export const zAtriumProfilePatch = z.object({
 
 export type AtriumProfilePatch = z.infer<typeof zAtriumProfilePatch>;
 
-export function mergeAtriumProfilePatch(previous: AtriumProfile, patch: AtriumProfilePatch): AtriumProfile {
+export function mergeAtriumProfilePatch(
+  previous: AtriumProfile,
+  patch: AtriumProfilePatch,
+): AtriumProfile {
   return zAtriumProfile.parse({
     id: previous.id,
     displayName: patch.displayName ?? previous.displayName,

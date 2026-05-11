@@ -45,7 +45,10 @@ describe("mergeLabeledAtriumPluginLayers", () => {
     const merged = mergeLabeledAtriumPluginLayers(
       [
         [{ id: "x", install: a }],
-        [{ id: "x", install: c }, { id: "y", install: b }],
+        [
+          { id: "x", install: c },
+          { id: "y", install: b },
+        ],
       ],
       "first-wins",
     );

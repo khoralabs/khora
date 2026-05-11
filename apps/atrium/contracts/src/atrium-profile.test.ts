@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { mergeAtriumProfilePatch, parseAtriumRegistrationMetadata, zAtriumProfile } from "./atrium-profile.ts";
+import {
+  mergeAtriumProfilePatch,
+  parseAtriumRegistrationMetadata,
+  zAtriumProfile,
+} from "./atrium-profile.ts";
 
 describe("parseAtriumRegistrationMetadata", () => {
   test("empty metadata", () => {
@@ -8,21 +12,22 @@ describe("parseAtriumRegistrationMetadata", () => {
   });
 
   test("display fields", () => {
-    expect(
-      parseAtriumRegistrationMetadata({ displayName: " Ada ", bio: " hi " }),
-    ).toEqual({ displayName: "Ada", bio: "hi" });
+    expect(parseAtriumRegistrationMetadata({ displayName: " Ada ", bio: " hi " })).toEqual({
+      displayName: "Ada",
+      bio: "hi",
+    });
   });
 
   test("strips legacy client ids", () => {
-    expect(
-      parseAtriumRegistrationMetadata({ profileId: "u1", id: "x", displayName: "N" }),
-    ).toEqual({ displayName: "N" });
+    expect(parseAtriumRegistrationMetadata({ profileId: "u1", id: "x", displayName: "N" })).toEqual(
+      { displayName: "N" },
+    );
   });
 
   test("rejects invalid bounds", () => {
-    expect(() =>
-      parseAtriumRegistrationMetadata({ displayName: "x".repeat(201) }),
-    ).toThrow(/invalid registration metadata/i);
+    expect(() => parseAtriumRegistrationMetadata({ displayName: "x".repeat(201) })).toThrow(
+      /invalid registration metadata/i,
+    );
   });
 });
 

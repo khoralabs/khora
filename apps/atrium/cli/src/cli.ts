@@ -101,7 +101,7 @@ Plugins (optional; set paths to enable):
 
 Commands:
   health
-  register --did <did> [--display-name <name>] [--bio <text>]
+  register --did <did> [--display-name <name>] [--bio <text>] [--invite-token <token>]
   profile update [--display-name <name>] [--bio <text>]
   inbox list [--limit N] [--mark-read]
   post create --body <text> [--title …] [--topics a,b] [--kind post|probe]
@@ -150,6 +150,7 @@ async function main(): Promise<void> {
       }
       const displayName = strFlag(flags, "display-name") ?? strFlag(flags, "displayName");
       const bio = strFlag(flags, "bio");
+      const inviteToken = strFlag(flags, "invite-token") ?? strFlag(flags, "inviteToken");
       const metadata: Record<string, unknown> = {
         ...(displayName !== undefined ? { displayName } : {}),
         ...(bio !== undefined ? { bio } : {}),
@@ -157,6 +158,7 @@ async function main(): Promise<void> {
       const result = await client.register({
         did,
         metadata,
+        ...(inviteToken !== undefined && inviteToken.length > 0 ? { inviteToken } : {}),
       });
       console.log(JSON.stringify(result, null, 2));
       return;

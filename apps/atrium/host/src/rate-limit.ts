@@ -1,7 +1,10 @@
 export type RateLimitRule = { windowMs: number; max: number };
 
 /** Positive integer = max events per rolling window; 0 or invalid = disabled. */
-export function envRatePerMinute(raw: string | undefined, defaultMax: number): RateLimitRule | null {
+export function envRatePerMinute(
+  raw: string | undefined,
+  defaultMax: number,
+): RateLimitRule | null {
   if (raw === undefined || raw.trim() === "") {
     return { windowMs: 60_000, max: defaultMax };
   }

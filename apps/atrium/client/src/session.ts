@@ -3,8 +3,8 @@ import type {
   AtriumPostCreate,
   AtriumPostPatch,
   AtriumProfile,
+  AtriumRegistrationResult,
 } from "@cfd/atrium-contracts";
-import type { DidRegistrationResult } from "@cfd/swarm-host";
 import type {
   AtriumClient,
   InboxListResult,
@@ -27,7 +27,7 @@ export type AtriumSession = {
 
 export function createAtriumSession(
   client: AtriumClient,
-  registration: DidRegistrationResult<AtriumProfile>,
+  registration: AtriumRegistrationResult,
 ): AtriumSession {
   const { did, profileId, profile } = registration;
   return {

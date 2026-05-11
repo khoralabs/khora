@@ -71,5 +71,20 @@ CREATE TABLE IF NOT EXISTS agent_notifications (
 
 CREATE INDEX IF NOT EXISTS idx_agent_notifications_did_created ON agent_notifications(did, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_agent_notifications_unread ON agent_notifications(did, read_at_ms);
+
+CREATE TABLE IF NOT EXISTS atrium_invite_tokens (
+  token_hash TEXT PRIMARY KEY NOT NULL,
+  created_at_ms INTEGER NOT NULL,
+  consumed_at_ms INTEGER,
+  consumed_by_did TEXT,
+  minted_by_did TEXT,
+  kind TEXT NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_atrium_invite_one_root
+  ON atrium_invite_tokens(kind)
+  WHERE kind = 'root';
+
+CREATE INDEX IF NOT EXISTS idx_atrium_invite_minter ON atrium_invite_tokens(minted_by_did, created_at_ms);
 `);
 }

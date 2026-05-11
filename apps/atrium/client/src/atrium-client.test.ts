@@ -1,5 +1,5 @@
 import { describe, expect, mock, test } from "bun:test";
-import type { DidRegistrationRequest } from "@cfd/swarm-host";
+import type { AtriumRegistrationRequestBody } from "@cfd/atrium-contracts";
 import { AtriumClient } from "./atrium-client.ts";
 import { AtriumClientError } from "./atrium-client-error.ts";
 import type { AtriumClientEvent } from "./atrium-events.ts";
@@ -51,7 +51,7 @@ describe("AtriumClient", () => {
     const req = {
       did: "did:key:x",
       metadata: { displayName: "Ada" },
-    } satisfies DidRegistrationRequest;
+    } satisfies AtriumRegistrationRequestBody;
     const out = await c.register(req);
     expect(out).toEqual({
       did: "did:key:x",
@@ -227,6 +227,26 @@ describe("AtriumClient", () => {
     const r = await c.listInbox({ did: "did:key:a", limit: 10, markRead: true });
     expect(r.notifications).toHaveLength(1);
     expect(r.notifications[0]?.notification.kind).toBe("topic_post");
+  });
+
+  test("listInvites GET /v1/invites", async () => {
+    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("http://h/v1/invites");
+      expect(new Headers(init?.headers).get("X-Agent-Did")).toBe("did:key:a");
+      return Response.json({ invites: [] });
+    });
+    const c = new AtriumClient({ baseUrl: "http://h", fetch: fetchMock });
+    await expect(c.listInvites("did:key:a")).resolves.toEqual({ invites: [] });
+  });
+
+  test("previewInvite POST /v1/invite/preview", async () => {
+    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("http://h/v1/invite/preview");
+      expect(JSON.parse(String(init?.body))).toEqual({ token: "tok" });
+      return Response.json({ inviter: null, source: "seed" });
+    });
+    const c = new AtriumClient({ baseUrl: "http://h", fetch: fetchMock });
+    await expect(c.previewInvite("tok")).resolves.toEqual({ inviter: null, source: "seed" });
   });
 
   test("non-OK throws AtriumClientError with parsed message", async () => {
