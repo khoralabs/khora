@@ -10,8 +10,6 @@ export function isLikelyDidString(s: string): boolean {
 
 export type DidRegistrationRequest = {
   did: AgentDid;
-  /** Proof material for {@link DidVerifier.verifyRegistration}; shape is app-defined. */
-  proof?: unknown;
   metadata?: Record<string, unknown>;
   correlationId?: string;
 };

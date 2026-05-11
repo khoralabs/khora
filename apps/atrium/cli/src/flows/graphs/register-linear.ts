@@ -11,12 +11,6 @@ export const registerLinearTransitions: CliLinearTransition[] = [
       properties: [
         {
           type: "text",
-          name: "DID",
-          prompt: "Agent DID",
-          constraints: { minLength: 1 },
-        },
-        {
-          type: "text",
           name: "Display name",
           prompt: "Display name",
           optional: true,

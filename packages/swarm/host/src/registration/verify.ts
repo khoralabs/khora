@@ -9,6 +9,10 @@ export type RegistrationVerifyClientHints = {
 export type RegistrationVerifyContext = {
   request: DidRegistrationRequest;
   client?: RegistrationVerifyClientHints;
+  /** Raw request headers (carries `X-Agent-*` signature envelope). */
+  headers: Headers;
+  /** Raw POST body as text (canonical body bytes for signature verification). */
+  bodyText: string;
 };
 
 /** Context for mutating HTTP routes that carry `X-Agent-Did`. */

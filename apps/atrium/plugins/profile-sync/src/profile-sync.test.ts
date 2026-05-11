@@ -14,12 +14,12 @@ describe("createProfileSync", () => {
       probes: [],
     };
     const client = {
+      did: "did:key:x",
       fetchAgentSync: mock(async () => snap),
       subscribe: mock(() => () => {}),
     };
     const sync = createProfileSync({
       client,
-      did: "did:key:x",
       filePath,
       debounceMs: 0,
     });
@@ -42,6 +42,7 @@ describe("createProfileSync", () => {
       probes: [],
     }));
     const client = {
+      did: "did:key:x",
       fetchAgentSync,
       subscribe: mock((fn: (e: import("@cfd/atrium-client").AtriumClientEvent) => void) => {
         listener = fn;
@@ -52,7 +53,6 @@ describe("createProfileSync", () => {
     };
     const sync = createProfileSync({
       client,
-      did: "did:key:x",
       filePath,
       debounceMs: 1,
     });

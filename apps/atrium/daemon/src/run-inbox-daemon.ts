@@ -1,11 +1,15 @@
-import type { AtriumPluginInstaller, LabeledAtriumPluginInstaller } from "@cfd/atrium-client";
+import type {
+  AgentSigner,
+  AtriumPluginInstaller,
+  LabeledAtriumPluginInstaller,
+} from "@cfd/atrium-client";
 import { AtriumClient } from "@cfd/atrium-client";
 import { atriumLabeledPluginsFromProcessEnv } from "./plugins-env.ts";
 import { resolveAtriumDaemonPlugins } from "./resolve-atrium-plugins.ts";
 
 export type RunInboxDaemonOptions = {
   baseUrl: string;
-  did: string;
+  signer: AgentSigner;
   /** Log snapshot and live frames as JSON lines (default: human-readable stdout). */
   json?: boolean;
   /** Overrides `ATRIUM_DATA_DIR` when set. */
@@ -51,35 +55,47 @@ export function runInboxDaemon(opts: RunInboxDaemonOptions): { close(): void } {
   }
   const client = new AtriumClient({
     baseUrl: opts.baseUrl,
+    signer: opts.signer,
     dataDir: opts.dataDir ?? resolved.dataDir,
     plugins: resolved.plugins,
   });
   const json = opts.json === true;
+  const did = opts.signer.did;
 
-  const inbox = client.connectInbox(opts.did, {
-    onOpen() {
-      logLine(json, "open", { did: opts.did });
-    },
-    onSnapshot(notifications) {
-      logLine(json, "snapshot", { count: notifications.length, notifications });
-    },
-    onNotification(msg) {
-      logLine(json, "notification", msg);
-    },
-    onClose() {
-      logLine(json, "close", {});
-      process.exit(0);
-    },
-    onError(err) {
+  let inboxClose: () => void = () => {};
+  void client
+    .connectInbox({
+      onOpen() {
+        logLine(json, "open", { did });
+      },
+      onSnapshot(notifications) {
+        logLine(json, "snapshot", { count: notifications.length, notifications });
+      },
+      onNotification(msg) {
+        logLine(json, "notification", msg);
+      },
+      onClose() {
+        logLine(json, "close", {});
+        process.exit(0);
+      },
+      onError(err) {
+        console.error(
+          json ? JSON.stringify({ t: "error", err: String(err) }) : `[error] ${String(err)}`,
+        );
+      },
+    })
+    .then((handle) => {
+      inboxClose = handle.close;
+    })
+    .catch((err) => {
       console.error(
         json ? JSON.stringify({ t: "error", err: String(err) }) : `[error] ${String(err)}`,
       );
-    },
-  });
+    });
 
   return {
     close() {
-      inbox.close();
+      inboxClose();
       client.dispose();
     },
   };

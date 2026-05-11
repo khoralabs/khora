@@ -1,6 +1,7 @@
 import type { AtriumCliContext } from "../flows/context.ts";
 import { runHealthCommand } from "./health.ts";
 import { runInboxListCommand } from "./inbox-list.ts";
+import { runKeyCommand } from "./key.ts";
 import { runPostCreateCommand } from "./post-create.ts";
 import { runPostDeleteCommand } from "./post-delete.ts";
 import { runPostUpdateCommand } from "./post-update.ts";
@@ -11,6 +12,7 @@ import { runTopicUnsubscribeCommand } from "./topic-unsubscribe.ts";
 import type { FlagMap } from "./types.ts";
 
 export interface AtriumCliCommandHandlers {
+  key(sub: string | undefined, flags: FlagMap): Promise<void>;
   health(ctx: AtriumCliContext): Promise<void>;
   register(ctx: AtriumCliContext, flags: FlagMap): Promise<void>;
   profileUpdate(ctx: AtriumCliContext, flags: FlagMap): Promise<void>;
@@ -23,6 +25,7 @@ export interface AtriumCliCommandHandlers {
 }
 
 export const defaultAtriumCliCommandHandlers = {
+  key: runKeyCommand,
   health: runHealthCommand,
   register: runRegisterCommand,
   profileUpdate: runProfileUpdateCommand,

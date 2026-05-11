@@ -3,10 +3,8 @@ import type { AtriumCliContext } from "./context.ts";
 import { INBOX_LIST_ROOT, inboxListLinearTransitions } from "./graphs/inbox-list-linear.ts";
 import { createMonotonicLedgerSeq } from "./obp/ledger-seq.ts";
 import { runLinearObpFlow } from "./obp/linear-runner.ts";
-import { requireAgentDid } from "./require-agent-did.ts";
 
 export async function runInboxListInteractiveFlow(ctx: AtriumCliContext): Promise<void> {
-  const did = requireAgentDid();
   const obp = new OBPPersistenceClient({ ledgerSeq: createMonotonicLedgerSeq() });
   const result = await runLinearObpFlow({
     obp,
@@ -30,7 +28,6 @@ export async function runInboxListInteractiveFlow(ctx: AtriumCliContext): Promis
   const markRead = row["mark-read"] === true;
 
   const out = await ctx.client.listInbox({
-    did,
     ...(limit !== undefined ? { limit } : {}),
     ...(markRead ? { markRead: true } : {}),
   });

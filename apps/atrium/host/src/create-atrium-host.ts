@@ -44,7 +44,8 @@ export type AtriumHostConfig = {
   probeNamespace: string;
   topicNamespace?: string;
   embeddingModel?: EmbeddingModel;
-  didVerifier: DidVerifier;
+  /** Factory invoked with the opened SQLite database (enables verifiers that need replay storage). */
+  didVerifier: DidVerifier | ((db: Database) => DidVerifier);
 };
 
 export type AtriumHostContext = {
@@ -84,10 +85,12 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
 
   const mapMemoryOps = atriumSwarmMemoryOpMapper(appContext);
 
+  const didVerifier =
+    typeof config.didVerifier === "function" ? config.didVerifier(db) : config.didVerifier;
   const host = new SwarmHost({
     memories,
     persistence: hostPersistence,
-    didVerifier: config.didVerifier,
+    didVerifier,
     notificationBuffer,
     inboxHub,
     appContext,

@@ -22,9 +22,19 @@ async function main(
   const { positional, flags } = parseArgv(argv);
   const [a, b, c] = positional;
 
+  if (a === "key") {
+    try {
+      await handlers.key(b, flags);
+    } catch (e) {
+      console.error(e instanceof Error ? e.message : String(e));
+      process.exit(1);
+    }
+    return;
+  }
+
   let ctx: AtriumCliContext;
   try {
-    ctx = createAtriumCliContext();
+    ctx = await createAtriumCliContext();
   } catch (e) {
     console.error(e instanceof Error ? e.message : String(e));
     process.exit(1);

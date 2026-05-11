@@ -1,3 +1,4 @@
+export { insertNonceIfFresh, sweepExpiredNonces } from "./agent-nonces-sqlite.ts";
 export {
   type CreateSwarmHostDocumentStoreOptions,
   createSwarmHostDocumentStore,

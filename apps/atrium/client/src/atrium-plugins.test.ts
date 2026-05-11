@@ -58,11 +58,19 @@ describe("mergeLabeledAtriumPluginLayers", () => {
   });
 });
 
+const stubSigner = {
+  did: "did:key:test",
+  async sign() {
+    return new Uint8Array(64);
+  },
+};
+
 describe("AtriumClient plugins", () => {
   test("dispose stops plugins in reverse order", () => {
     const stops: number[] = [];
     new AtriumClient({
       baseUrl: "http://h",
+      signer: stubSigner,
       plugins: [
         () => ({
           stop: () => {
@@ -83,6 +91,7 @@ describe("AtriumClient plugins", () => {
     let n = 0;
     const c = new AtriumClient({
       baseUrl: "http://h",
+      signer: stubSigner,
       plugins: [
         () => ({
           stop: () => {

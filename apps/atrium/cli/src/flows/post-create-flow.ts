@@ -5,10 +5,8 @@ import { POST_CREATE_ROOT, postCreateLinearTransitions } from "./graphs/post-cre
 import { createMonotonicLedgerSeq } from "./obp/ledger-seq.ts";
 import { runLinearObpFlow } from "./obp/linear-runner.ts";
 import { normalizeMatchKindsInput, parseExpiresAtMsInput } from "./parse-probe-fields.ts";
-import { requireAgentDid } from "./require-agent-did.ts";
 
 export async function runPostCreateInteractiveFlow(ctx: AtriumCliContext): Promise<void> {
-  const did = requireAgentDid();
   const obp = new OBPPersistenceClient({ ledgerSeq: createMonotonicLedgerSeq() });
   const result = await runLinearObpFlow({
     obp,
@@ -49,6 +47,6 @@ export async function runPostCreateInteractiveFlow(ctx: AtriumCliContext): Promi
   };
 
   const createBody = zAtriumPostCreate.parse(raw);
-  const post = await ctx.client.createPost(did, createBody);
+  const post = await ctx.client.createPost(createBody);
   console.log(JSON.stringify(post, null, 2));
 }

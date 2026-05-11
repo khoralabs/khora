@@ -4,14 +4,18 @@ import { strFlag } from "./parse.ts";
 import type { FlagMap } from "./types.ts";
 
 function registerUseLegacy(flags: FlagMap): boolean {
-  const did = strFlag(flags, "did");
-  return did !== undefined && did.trim().length > 0;
+  return (
+    strFlag(flags, "display-name") !== undefined ||
+    strFlag(flags, "displayName") !== undefined ||
+    strFlag(flags, "bio") !== undefined ||
+    strFlag(flags, "invite-token") !== undefined ||
+    strFlag(flags, "inviteToken") !== undefined
+  );
 }
 
 export async function runRegisterCommand(ctx: AtriumCliContext, flags: FlagMap): Promise<void> {
   const { client } = ctx;
   if (registerUseLegacy(flags)) {
-    const did = strFlag(flags, "did")?.trim() ?? "";
     const displayName = strFlag(flags, "display-name") ?? strFlag(flags, "displayName");
     const bio = strFlag(flags, "bio");
     const inviteToken = strFlag(flags, "invite-token") ?? strFlag(flags, "inviteToken");
@@ -20,7 +24,6 @@ export async function runRegisterCommand(ctx: AtriumCliContext, flags: FlagMap):
       ...(bio !== undefined ? { bio } : {}),
     };
     const result = await client.register({
-      did,
       metadata,
       ...(inviteToken !== undefined && inviteToken.length > 0 ? { inviteToken } : {}),
     });

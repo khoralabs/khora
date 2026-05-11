@@ -3,10 +3,8 @@ import type { AtriumCliContext } from "./context.ts";
 import { TOPIC_ROOT, topicLinearTransitions } from "./graphs/topic-linear.ts";
 import { createMonotonicLedgerSeq } from "./obp/ledger-seq.ts";
 import { runLinearObpFlow } from "./obp/linear-runner.ts";
-import { requireAgentDid } from "./require-agent-did.ts";
 
 export async function runTopicSubscribeInteractiveFlow(ctx: AtriumCliContext): Promise<void> {
-  const did = requireAgentDid();
   const obp = new OBPPersistenceClient({ ledgerSeq: createMonotonicLedgerSeq() });
   const result = await runLinearObpFlow({
     obp,
@@ -21,12 +19,11 @@ export async function runTopicSubscribeInteractiveFlow(ctx: AtriumCliContext): P
     throw new Error("Topic slug required.");
   }
 
-  const out = await ctx.client.subscribeTopic(did, slug);
+  const out = await ctx.client.subscribeTopic(slug);
   console.log(JSON.stringify(out, null, 2));
 }
 
 export async function runTopicUnsubscribeInteractiveFlow(ctx: AtriumCliContext): Promise<void> {
-  const did = requireAgentDid();
   const obp = new OBPPersistenceClient({ ledgerSeq: createMonotonicLedgerSeq() });
   const result = await runLinearObpFlow({
     obp,
@@ -41,5 +38,5 @@ export async function runTopicUnsubscribeInteractiveFlow(ctx: AtriumCliContext):
     throw new Error("Topic slug required.");
   }
 
-  await ctx.client.unsubscribeTopic(did, slug);
+  await ctx.client.unsubscribeTopic(slug);
 }

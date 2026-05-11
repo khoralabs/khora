@@ -18,6 +18,9 @@
   "dependencies": {
     "@cfd/atrium-contracts": "workspace:*",
     "@cfd/swarm-host": "workspace:*",
+    "@noble/ed25519": "^3.1.0",
+    "iso-did": "^2.1.1",
+    "iso-signatures": "^0.5.1",
     "zod": "^4"
   },
   "devDependencies": {

@@ -5,13 +5,11 @@ import { POST_UPDATE_ROOT, postUpdateLinearTransitions } from "./graphs/post-upd
 import { createMonotonicLedgerSeq } from "./obp/ledger-seq.ts";
 import { runLinearObpFlow } from "./obp/linear-runner.ts";
 import { normalizeMatchKindsInput, parseExpiresAtMsInput } from "./parse-probe-fields.ts";
-import { requireAgentDid } from "./require-agent-did.ts";
 
 export async function runPostUpdateInteractiveFlow(
   ctx: AtriumCliContext,
   postId: string,
 ): Promise<void> {
-  const did = requireAgentDid();
   const obp = new OBPPersistenceClient({ ledgerSeq: createMonotonicLedgerSeq() });
   const result = await runLinearObpFlow({
     obp,
@@ -65,6 +63,6 @@ export async function runPostUpdateInteractiveFlow(
     throw new Error("Provide at least one field to update.");
   }
 
-  const post = await ctx.client.updatePost(did, postId, patch);
+  const post = await ctx.client.updatePost(postId, patch);
   console.log(JSON.stringify(post, null, 2));
 }

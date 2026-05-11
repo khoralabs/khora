@@ -99,5 +99,14 @@ CREATE TABLE IF NOT EXISTS probe_subscribers (
 );
 
 CREATE INDEX IF NOT EXISTS idx_probe_subscribers_expires ON probe_subscribers(expires_at_ms);
+
+CREATE TABLE IF NOT EXISTS agent_request_nonces (
+  did TEXT NOT NULL,
+  nonce TEXT NOT NULL,
+  expires_at_ms INTEGER NOT NULL,
+  PRIMARY KEY (did, nonce)
+);
+
+CREATE INDEX IF NOT EXISTS idx_agent_nonces_expires ON agent_request_nonces(expires_at_ms);
 `);
 }

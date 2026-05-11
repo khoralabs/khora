@@ -3,7 +3,7 @@ import { dirname } from "node:path";
 import type { AtriumClient, AtriumClientEvent, AtriumPluginInstaller } from "@cfd/atrium-client";
 import type { AtriumPost, AtriumProfile } from "@cfd/atrium-contracts";
 
-export type ProfileSyncClient = Pick<AtriumClient, "subscribe" | "fetchAgentSync">;
+export type ProfileSyncClient = Pick<AtriumClient, "subscribe" | "fetchAgentSync" | "did">;
 
 export type ProfileSyncStateFileV1 = {
   version: 1;
@@ -40,7 +40,6 @@ function atomicWriteJson(path: string, jsonText: string): void {
 
 export function createProfileSync(options: {
   client: ProfileSyncClient;
-  did: string;
   filePath: string;
   pollIntervalMs?: number;
   debounceMs?: number;
@@ -49,14 +48,15 @@ export function createProfileSync(options: {
   stop(): void;
   flush(): Promise<void>;
 } {
-  const { client, did, filePath } = options;
+  const { client, filePath } = options;
+  const did = client.did;
   const debounceMs = options.debounceMs ?? 750;
   let unsub: (() => void) | undefined;
   let pollTimer: ReturnType<typeof setInterval> | undefined;
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
   const flush = async (): Promise<void> => {
-    const snap = await client.fetchAgentSync(did);
+    const snap = await client.fetchAgentSync();
     const state: ProfileSyncStateFileV1 = {
       version: 1,
       syncedAtMs: Date.now(),

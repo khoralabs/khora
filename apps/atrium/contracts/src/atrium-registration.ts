@@ -15,7 +15,6 @@ export type AtriumRegisterResultParsed = z.infer<typeof zAtriumRegisterResult>;
 
 export const zAtriumRegistrationRequestBody = z.object({
   did: z.string().trim().min(1),
-  proof: z.unknown().optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
   correlationId: z.string().optional(),
   inviteToken: z.string().trim().min(1).optional(),

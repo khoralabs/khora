@@ -1,7 +1,6 @@
 import { zAtriumPostCreate } from "@cfd/atrium-contracts";
 import type { AtriumCliContext } from "../flows/context.ts";
 import { runPostCreateInteractiveFlow } from "../flows/post-create-flow.ts";
-import { requireAgentDid } from "../flows/require-agent-did.ts";
 import { splitTopics, strFlag } from "./parse.ts";
 import type { FlagMap } from "./types.ts";
 
@@ -12,7 +11,6 @@ function postCreateUseLegacy(flags: FlagMap): boolean {
 export async function runPostCreateCommand(ctx: AtriumCliContext, flags: FlagMap): Promise<void> {
   const { client } = ctx;
   if (postCreateUseLegacy(flags)) {
-    const did = requireAgentDid();
     const body = strFlag(flags, "body");
     if (body === undefined || body.length === 0) {
       console.error("post create: --body required in legacy mode");
@@ -26,7 +24,7 @@ export async function runPostCreateCommand(ctx: AtriumCliContext, flags: FlagMap
       ...(strFlag(flags, "kind") !== undefined ? { kind: strFlag(flags, "kind") } : {}),
     };
     const createBody = zAtriumPostCreate.parse(raw);
-    const post = await client.createPost(did, createBody);
+    const post = await client.createPost(createBody);
     console.log(JSON.stringify(post, null, 2));
     return;
   }

@@ -24,7 +24,6 @@ export async function runRegisterInteractiveFlow(ctx: AtriumCliContext): Promise
   const inviteRaw = row["invite-token"];
 
   const out = await ctx.client.register({
-    did: String(row.did),
     metadata: {
       ...(displayName !== undefined && String(displayName).length > 0
         ? { displayName: String(displayName) }

@@ -295,7 +295,7 @@ export class SwarmHost<
    */
   async registerWithDid(
     req: DidRegistrationRequest,
-    registrationExtra?: Omit<RegistrationVerifyContext, "request">,
+    registrationExtra: Omit<RegistrationVerifyContext, "request">,
   ): Promise<DidRegistrationResult<TProfile>> {
     if (!isLikelyDidString(req.did)) {
       throw new Error("SwarmHost: registration `did` must match did:<method>:…");

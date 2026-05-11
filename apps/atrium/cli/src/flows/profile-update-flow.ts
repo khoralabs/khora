@@ -7,10 +7,8 @@ import {
 } from "./graphs/profile-update-linear.ts";
 import { createMonotonicLedgerSeq } from "./obp/ledger-seq.ts";
 import { runLinearObpFlow } from "./obp/linear-runner.ts";
-import { requireAgentDid } from "./require-agent-did.ts";
 
 export async function runProfileUpdateInteractiveFlow(ctx: AtriumCliContext): Promise<void> {
-  const did = requireAgentDid();
   const obp = new OBPPersistenceClient({ ledgerSeq: createMonotonicLedgerSeq() });
   const result = await runLinearObpFlow({
     obp,
@@ -38,6 +36,6 @@ export async function runProfileUpdateInteractiveFlow(ctx: AtriumCliContext): Pr
     throw new Error("Provide at least one of display name or bio.");
   }
 
-  const profile = await ctx.client.updateProfile(did, patch);
+  const profile = await ctx.client.updateProfile(patch);
   console.log(JSON.stringify(profile, null, 2));
 }

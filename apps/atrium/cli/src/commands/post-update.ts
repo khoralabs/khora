@@ -1,7 +1,6 @@
 import { type AtriumPostPatch, zAtriumPostKind, zAtriumPostPatch } from "@cfd/atrium-contracts";
 import type { AtriumCliContext } from "../flows/context.ts";
 import { runPostUpdateInteractiveFlow } from "../flows/post-update-flow.ts";
-import { requireAgentDid } from "../flows/require-agent-did.ts";
 import { splitTopics, strFlag } from "./parse.ts";
 import type { FlagMap } from "./types.ts";
 
@@ -38,14 +37,13 @@ export async function runPostUpdateCommand(
     process.exit(1);
   }
   if (postUpdateUseLegacy(flags)) {
-    const did = requireAgentDid();
     const patch = patchFromFlags(flags);
     zAtriumPostPatch.parse(patch);
     if (Object.keys(patch).length === 0) {
       console.error("post update: pass at least one of --body --title --topics --kind");
       process.exit(1);
     }
-    const post = await client.updatePost(did, postId, patch);
+    const post = await client.updatePost(postId, patch);
     console.log(JSON.stringify(post, null, 2));
     return;
   }

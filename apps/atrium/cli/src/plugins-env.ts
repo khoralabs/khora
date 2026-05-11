@@ -21,14 +21,13 @@ export function atriumLabeledPluginsFromProcessEnv(env: NodeJS.ProcessEnv = proc
   const dataDirRaw = env.ATRIUM_DATA_DIR?.trim();
   const dataDir = dataDirRaw !== undefined && dataDirRaw.length > 0 ? dataDirRaw : undefined;
   const labeledPlugins: LabeledAtriumPluginInstaller[] = [];
-  const did = env.ATRIUM_AGENT_DID?.trim();
 
   const profilePath = env.ATRIUM_PROFILE_SYNC_PATH?.trim();
-  if (profilePath !== undefined && profilePath.length > 0 && did !== undefined && did.length > 0) {
+  if (profilePath !== undefined && profilePath.length > 0) {
     labeledPlugins.push(
       labelAtriumPlugin(
         ATRIUM_BUILTIN_PLUGIN_ID.profileSync,
-        profileSyncPlugin({ did, filePath: profilePath }),
+        profileSyncPlugin({ filePath: profilePath }),
       ),
     );
   }

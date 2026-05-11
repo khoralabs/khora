@@ -22,9 +22,9 @@ import {
   SWARM_EVENT_KIND,
 } from "@cfd/swarm-host";
 import z from "zod";
+import { createDidKeyDidVerifier } from "./atrium-did-key-verifier.ts";
 import { deleteOtherStatusPostsForAuthor } from "./atrium-status-posts.ts";
 import { createAtriumHostContext } from "./create-atrium-host.ts";
-import { createDevDidVerifier } from "./dev-did-verifier.ts";
 import {
   ensureRootInviteIfAbsent,
   insertSeedInviteTokens,
@@ -166,7 +166,7 @@ const ctx = createAtriumHostContext({
   profileNamespace: envProfileNamespace(),
   postNamespace: envPostNamespace(),
   probeNamespace: envProbeNamespace(),
-  didVerifier: createDevDidVerifier(),
+  didVerifier: (db) => createDidKeyDidVerifier({ db }),
 });
 
 const seedInviteTokens = parseInviteSeedTokens(process.env.ATRIUM_INVITE_SEED_TOKENS);
@@ -238,9 +238,10 @@ const server = Bun.serve<InboxWsData>({
     }
 
     if (req.method === "POST" && url.pathname === "/v1/register") {
+      const bodyText = await req.text();
       let raw: unknown;
       try {
-        raw = await req.json();
+        raw = JSON.parse(bodyText);
       } catch {
         return registrationOpaqueJson(400);
       }
@@ -251,7 +252,6 @@ const server = Bun.serve<InboxWsData>({
       const bodyFull = parsedBody.data;
       const swarmReq: DidRegistrationRequest = {
         did: bodyFull.did,
-        ...(bodyFull.proof !== undefined ? { proof: bodyFull.proof } : {}),
         ...(bodyFull.metadata !== undefined ? { metadata: bodyFull.metadata } : {}),
         ...(bodyFull.correlationId !== undefined ? { correlationId: bodyFull.correlationId } : {}),
       };
@@ -291,6 +291,8 @@ const server = Bun.serve<InboxWsData>({
       try {
         const ua = req.headers.get("user-agent") ?? undefined;
         const result = await ctx.host.registerWithDid(swarmReq, {
+          headers: req.headers,
+          bodyText,
           client: { ip, userAgent: ua },
         });
         ctx.host.persistenceClient.upsertAgentRegistration(result.did, result.profileId);

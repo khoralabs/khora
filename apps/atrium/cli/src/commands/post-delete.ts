@@ -1,6 +1,5 @@
 import type { AtriumCliContext } from "../flows/context.ts";
 import { runPostDeleteInteractiveFlow } from "../flows/post-delete-flow.ts";
-import { requireAgentDid } from "../flows/require-agent-did.ts";
 import { boolFlag } from "./parse.ts";
 import type { FlagMap } from "./types.ts";
 
@@ -15,8 +14,7 @@ export async function runPostDeleteCommand(
     process.exit(1);
   }
   if (boolFlag(flags, "yes", "y")) {
-    const did = requireAgentDid();
-    await client.deletePost(did, postId);
+    await client.deletePost(postId);
     return;
   }
   await runPostDeleteInteractiveFlow(ctx, postId);

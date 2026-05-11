@@ -19,10 +19,10 @@ export type AtriumSession = {
   createPost(body: AtriumPostCreate): Promise<AtriumPost>;
   updatePost(id: string, patch: AtriumPostPatch): Promise<AtriumPost>;
   deletePost(id: string): Promise<void>;
-  listInbox(opts?: Omit<ListInboxParams, "did">): Promise<InboxListResult>;
+  listInbox(opts?: ListInboxParams): Promise<InboxListResult>;
   subscribeTopic(topicSlug: string): Promise<{ ok: true; topicSlug: string }>;
   unsubscribeTopic(topicSlug: string): Promise<void>;
-  connectInbox(handlers: InboxWsHandlers): { close(): void };
+  connectInbox(handlers: InboxWsHandlers): Promise<{ close(): void }>;
 };
 
 export function createAtriumSession(
@@ -35,25 +35,25 @@ export function createAtriumSession(
     profileId,
     profile,
     createPost(body) {
-      return client.createPost(did, body);
+      return client.createPost(body);
     },
     updatePost(id, patch) {
-      return client.updatePost(did, id, patch);
+      return client.updatePost(id, patch);
     },
     deletePost(id) {
-      return client.deletePost(did, id);
+      return client.deletePost(id);
     },
     listInbox(opts) {
-      return client.listInbox({ did, ...opts });
+      return client.listInbox(opts);
     },
     subscribeTopic(topicSlug) {
-      return client.subscribeTopic(did, topicSlug);
+      return client.subscribeTopic(topicSlug);
     },
     unsubscribeTopic(topicSlug) {
-      return client.unsubscribeTopic(did, topicSlug);
+      return client.unsubscribeTopic(topicSlug);
     },
     connectInbox(handlers) {
-      return client.connectInbox(did, handlers);
+      return client.connectInbox(handlers);
     },
   };
 }

@@ -1,7 +1,6 @@
 import { zAtriumProfilePatch } from "@cfd/atrium-contracts";
 import type { AtriumCliContext } from "../flows/context.ts";
 import { runProfileUpdateInteractiveFlow } from "../flows/profile-update-flow.ts";
-import { requireAgentDid } from "../flows/require-agent-did.ts";
 import { strFlag } from "./parse.ts";
 import type { FlagMap } from "./types.ts";
 
@@ -19,7 +18,6 @@ export async function runProfileUpdateCommand(
 ): Promise<void> {
   const { client } = ctx;
   if (profileUseLegacy(flags)) {
-    const did = requireAgentDid();
     const displayName = strFlag(flags, "display-name") ?? strFlag(flags, "displayName");
     const bio = strFlag(flags, "bio");
     const patch = zAtriumProfilePatch.parse({
@@ -30,7 +28,7 @@ export async function runProfileUpdateCommand(
       console.error("profile update: pass --display-name and/or --bio");
       process.exit(1);
     }
-    const profile = await client.updateProfile(did, patch);
+    const profile = await client.updateProfile(patch);
     console.log(JSON.stringify(profile, null, 2));
     return;
   }
