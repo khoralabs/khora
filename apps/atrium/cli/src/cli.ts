@@ -4,7 +4,7 @@ import {
   type AtriumCliCommandHandlers,
   defaultAtriumCliCommandHandlers,
 } from "./commands/handlers.ts";
-import { printHelp } from "./commands/help.ts";
+import { printHelp, tryPrintCommandHelp } from "./commands/help.ts";
 import { parseArgv } from "./commands/parse.ts";
 import { type AtriumCliContext, createAtriumCliContext } from "./flows/context.ts";
 
@@ -20,6 +20,12 @@ async function main(
   }
 
   const { positional, flags } = parseArgv(argv);
+
+  if (flags.help === true || flags.h === true) {
+    if (!tryPrintCommandHelp(positional)) printHelp();
+    process.exit(0);
+  }
+
   const [a, b, c] = positional;
 
   if (a === "key") {
