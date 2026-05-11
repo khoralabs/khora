@@ -60,4 +60,40 @@ describe("zAtriumPostCreate", () => {
     });
     expect(p.kind).toBe("status");
   });
+
+  test("probe accepts minHitScore and expiresAtMs", () => {
+    const v = zAtriumPost.parse({
+      id: "p1",
+      kind: "probe",
+      body: "watch",
+      authorProfileId: "prof-1",
+      minHitScore: 0.75,
+      expiresAtMs: 1_700_000_000_000,
+    });
+    expect(v.minHitScore).toBe(0.75);
+    expect(v.expiresAtMs).toBe(1_700_000_000_000);
+  });
+
+  test("non-probe rejects minHitScore", () => {
+    expect(() =>
+      zAtriumPost.parse({
+        id: "x",
+        kind: "post",
+        body: "b",
+        minHitScore: 0.5,
+      }),
+    ).toThrow();
+  });
+
+  test("non-probe rejects expiresAtMs", () => {
+    expect(() =>
+      zAtriumPost.parse({
+        id: "x",
+        kind: "status",
+        body: "b",
+        authorProfileId: "prof-1",
+        expiresAtMs: 1_700_000_000_000,
+      }),
+    ).toThrow();
+  });
 });

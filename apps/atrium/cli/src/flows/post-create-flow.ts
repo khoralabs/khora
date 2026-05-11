@@ -4,6 +4,7 @@ import type { AtriumCliContext } from "./context.ts";
 import { POST_CREATE_ROOT, postCreateLinearTransitions } from "./graphs/post-create-linear.ts";
 import { createMonotonicLedgerSeq } from "./obp/ledger-seq.ts";
 import { runLinearObpFlow } from "./obp/linear-runner.ts";
+import { normalizeMatchKindsInput, parseExpiresAtMsInput } from "./parse-probe-fields.ts";
 import { requireAgentDid } from "./require-agent-did.ts";
 
 export async function runPostCreateInteractiveFlow(ctx: AtriumCliContext): Promise<void> {
@@ -30,6 +31,11 @@ export async function runPostCreateInteractiveFlow(ctx: AtriumCliContext): Promi
           .filter((s) => s.length > 0)
       : undefined;
 
+  const matchKinds = normalizeMatchKindsInput(result.bindsByStep.matchKinds?.kinds);
+  const minScoreRaw = result.bindsByStep.minScore?.score;
+  const minHitScore = typeof minScoreRaw === "number" ? minScoreRaw : undefined;
+  const expiresAtMs = parseExpiresAtMsInput(result.bindsByStep.expiresAt?.expires);
+
   const raw = {
     body,
     ...(titleRaw !== undefined && String(titleRaw).trim().length > 0
@@ -37,6 +43,9 @@ export async function runPostCreateInteractiveFlow(ctx: AtriumCliContext): Promi
       : {}),
     ...(topics !== undefined && topics.length > 0 ? { topics } : {}),
     ...(kind.length > 0 ? { kind } : {}),
+    ...(matchKinds !== undefined ? { matchPostKinds: matchKinds } : {}),
+    ...(minHitScore !== undefined ? { minHitScore } : {}),
+    ...(expiresAtMs !== undefined ? { expiresAtMs } : {}),
   };
 
   const createBody = zAtriumPostCreate.parse(raw);

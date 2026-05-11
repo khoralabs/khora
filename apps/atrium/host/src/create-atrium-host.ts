@@ -2,12 +2,13 @@ import type { Database } from "bun:sqlite";
 import {
   type AtriumPost,
   type AtriumProfile,
+  normalizeTopicSlug,
   parseAtriumRegistrationMetadata,
   zAtriumPost,
   zAtriumProfile,
 } from "@cfd/atrium-contracts";
 import { ids, MemoriesClient, stableId } from "@cfd/memories-core";
-import type { EmbeddingModel } from "@cfd/memories-core/helpers";
+import { type EmbeddingModel, embedTextChunks } from "@cfd/memories-core/helpers";
 import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-sqlite";
 import {
   type AgentNotificationBufferPort,
@@ -26,7 +27,9 @@ import {
   createSqliteAgentNotificationBuffer,
   createSwarmHostDocumentStore,
   createSwarmHostSqlitePersistence,
+  deleteProbeSubscriber,
   ensureSwarmHostSqliteSchema,
+  upsertProbeSubscriber,
 } from "./persistence/sqlite/index.ts";
 
 type TNode = typeof swarmHostOntology.nodeLabels;
@@ -71,6 +74,7 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
   const inboxHub = createInboxWsHub();
 
   const appContext: AtriumHostAppContext = {
+    db,
     profileNamespace: config.profileNamespace,
     postNamespace: config.postNamespace,
     probeNamespace: config.probeNamespace,
@@ -160,14 +164,16 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
           bodyJson: JSON.stringify(post),
         });
 
+        if (post.kind === "probe") {
+          await syncProbeSubscriber(ac, post);
+        }
+
         if (event.kind === SWARM_EVENT_KIND.POST_CREATED) {
           await fanOutTopicSubscriptions({ ctx, post });
           await fanOutProbeHits({
             ctx,
-            config: {
-              probeNamespace: ac.probeNamespace,
-              embeddingModel: ac.embeddingModel,
-            },
+            db: ac.db,
+            embeddingModel: ac.embeddingModel,
             incomingPost: post,
           });
         }
@@ -175,10 +181,56 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
       }
 
       if (event.kind === SWARM_EVENT_KIND.POST_DELETED) {
-        ctx.persistence.posts.deleteById(event.payload.post.id);
+        const post = event.payload.post;
+        if (post.kind === "probe") {
+          deleteProbeSubscriber(ac.db, post.id);
+        }
+        ctx.persistence.posts.deleteById(post.id);
       }
     }),
   });
 
   return { config, host, db, notificationBuffer };
+}
+
+function probeLexicalText(p: AtriumPost): string {
+  const parts = [p.title, p.body].filter((s) => s !== undefined && s.length > 0);
+  return parts.join("\n\n");
+}
+
+function normalizedTopicSlugs(topics: readonly string[] | undefined): string[] | null {
+  if (topics === undefined || topics.length === 0) return null;
+  const out: string[] = [];
+  for (const raw of topics) {
+    try {
+      out.push(normalizeTopicSlug(raw));
+    } catch {
+      /* skip invalid slugs */
+    }
+  }
+  return out.length === 0 ? null : out;
+}
+
+async function syncProbeSubscriber(ac: AtriumHostAppContext, post: AtriumPost): Promise<void> {
+  if (post.kind !== "probe") return;
+  if (post.authorProfileId === undefined || post.authorProfileId.length === 0) return;
+
+  let embeddingF32: Float32Array | null = null;
+  const text = probeLexicalText(post).trim();
+  if (ac.embeddingModel !== undefined && text.length > 0) {
+    const [vec] = await embedTextChunks(ac.embeddingModel, [text]);
+    if (vec !== undefined && vec.length > 0) {
+      embeddingF32 = Float32Array.from(vec);
+    }
+  }
+
+  upsertProbeSubscriber(ac.db, {
+    probePostId: post.id,
+    ownerProfileId: post.authorProfileId,
+    embeddingF32,
+    minHitScore: post.minHitScore ?? null,
+    topicSlugs: normalizedTopicSlugs(post.topics),
+    matchPostKinds: post.matchPostKinds ?? null,
+    expiresAtMs: post.expiresAtMs ?? null,
+  });
 }

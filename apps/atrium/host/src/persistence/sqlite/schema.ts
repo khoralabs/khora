@@ -86,5 +86,18 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_atrium_invite_one_root
   WHERE kind = 'root';
 
 CREATE INDEX IF NOT EXISTS idx_atrium_invite_minter ON atrium_invite_tokens(minted_by_did, created_at_ms);
+
+CREATE TABLE IF NOT EXISTS probe_subscribers (
+  probe_post_id TEXT PRIMARY KEY NOT NULL,
+  owner_profile_id TEXT NOT NULL,
+  embedding_blob BLOB,
+  min_hit_score REAL,
+  topic_slugs TEXT,
+  match_post_kinds TEXT,
+  expires_at_ms INTEGER,
+  updated_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_probe_subscribers_expires ON probe_subscribers(expires_at_ms);
 `);
 }

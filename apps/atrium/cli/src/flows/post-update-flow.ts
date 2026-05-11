@@ -4,6 +4,7 @@ import type { AtriumCliContext } from "./context.ts";
 import { POST_UPDATE_ROOT, postUpdateLinearTransitions } from "./graphs/post-update-linear.ts";
 import { createMonotonicLedgerSeq } from "./obp/ledger-seq.ts";
 import { runLinearObpFlow } from "./obp/linear-runner.ts";
+import { normalizeMatchKindsInput, parseExpiresAtMsInput } from "./parse-probe-fields.ts";
 import { requireAgentDid } from "./require-agent-did.ts";
 
 export async function runPostUpdateInteractiveFlow(
@@ -30,6 +31,9 @@ export async function runPostUpdateInteractiveFlow(
   const title = row.title;
   const topicsStr = row.topics;
   const kind = row.kind;
+  const matchKinds = normalizeMatchKindsInput(row.match);
+  const score = row.score;
+  const expiresAtMs = parseExpiresAtMsInput(row.expires);
 
   if (body !== undefined && String(body).trim().length > 0) {
     patchRaw.body = String(body).trim();
@@ -45,6 +49,15 @@ export async function runPostUpdateInteractiveFlow(
   }
   if (kind !== undefined && String(kind).trim().length > 0) {
     patchRaw.kind = zAtriumPostKind.parse(String(kind).trim());
+  }
+  if (matchKinds !== undefined) {
+    patchRaw.matchPostKinds = matchKinds;
+  }
+  if (typeof score === "number") {
+    patchRaw.minHitScore = score;
+  }
+  if (expiresAtMs !== undefined) {
+    patchRaw.expiresAtMs = expiresAtMs;
   }
 
   const patch = zAtriumPostPatch.parse(patchRaw);

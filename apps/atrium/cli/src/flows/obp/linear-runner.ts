@@ -12,6 +12,8 @@ export type CliLinearTransition = {
   bindPolicy: PortBindPolicy;
   /** When true, `Port.terminal` is set (OBP hint only; runner stops after this transition). */
   terminal?: boolean;
+  /** Skip this transition when predicate returns true (gets binds collected so far). */
+  skipIf?: (bindsByStep: Record<string, Record<string, unknown>>) => boolean;
 };
 
 export type RunLinearObpFlowResult = {
@@ -43,6 +45,7 @@ export async function runLinearObpFlow(args: {
   const bindsByStep: Record<string, Record<string, unknown>> = {};
 
   for (const t of args.transitions) {
+    if (t.skipIf?.(bindsByStep) === true) continue;
     const portPayload: Partial<Port> = {
       promise: t.title,
       bind_policy: t.bindPolicy,

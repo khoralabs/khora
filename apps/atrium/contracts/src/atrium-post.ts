@@ -13,6 +13,10 @@ const zAtriumPostContent = z.object({
   topics: z.array(z.string().trim().min(1)).optional(),
   /** For {@link kind} probe only: which incoming post kinds may trigger a hit (omit = any). */
   matchPostKinds: z.array(zAtriumProbeMatchPostKind).optional(),
+  /** For {@link kind} probe only: minimum cosine similarity required for delivery (0..1). */
+  minHitScore: z.number().min(0).max(1).optional(),
+  /** For {@link kind} probe only: Unix ms after which the probe stops delivering hits. */
+  expiresAtMs: z.number().min(0).optional(),
   title: z.string().trim().max(500).optional(),
   body: z.string().max(100_000),
 });
@@ -38,6 +42,22 @@ export const zAtriumPost = zAtriumPostContent
         path: ["authorProfileId"],
       });
     }
+    if (val.kind !== "probe") {
+      if (val.minHitScore !== undefined) {
+        ctx.addIssue({
+          code: "custom",
+          message: "minHitScore is only allowed on probe posts",
+          path: ["minHitScore"],
+        });
+      }
+      if (val.expiresAtMs !== undefined) {
+        ctx.addIssue({
+          code: "custom",
+          message: "expiresAtMs is only allowed on probe posts",
+          path: ["expiresAtMs"],
+        });
+      }
+    }
   });
 
 export type AtriumPost = z.infer<typeof zAtriumPost>;
@@ -47,6 +67,8 @@ export const zAtriumPostPatch = z.object({
   kind: zAtriumPostKind.optional(),
   topics: z.array(z.string().trim().min(1)).optional(),
   matchPostKinds: z.array(zAtriumProbeMatchPostKind).optional(),
+  minHitScore: z.number().min(0).max(1).optional(),
+  expiresAtMs: z.number().min(0).optional(),
   title: z.string().trim().max(500).optional(),
   body: z.string().max(100_000).optional(),
 });
@@ -81,6 +103,8 @@ export function mergeAtriumPostPatch(previous: AtriumPost, patch: AtriumPostPatc
     kind: patch.kind ?? previous.kind,
     topics: patch.topics ?? previous.topics,
     matchPostKinds: patch.matchPostKinds ?? previous.matchPostKinds,
+    minHitScore: patch.minHitScore ?? previous.minHitScore,
+    expiresAtMs: patch.expiresAtMs ?? previous.expiresAtMs,
     title: patch.title ?? previous.title,
     body: patch.body ?? previous.body,
   });

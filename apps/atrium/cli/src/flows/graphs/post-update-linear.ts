@@ -37,6 +37,27 @@ export const postUpdateLinearTransitions: CliLinearTransition[] = [
             maxSelections: 1,
           },
         },
+        {
+          type: "choice",
+          name: "Match",
+          prompt: "Probe match kinds (comma-separated; probes only)",
+          optional: true,
+          constraints: { choices: ["post", "status"], maxSelections: 2 },
+        },
+        {
+          type: "float",
+          name: "Score",
+          prompt:
+            "Probe min hit score 0..1 (probes only). 0.6 = clearly related, 0.75 = strong, 0.85+ = very strong",
+          optional: true,
+          constraints: { min: 0, max: 1 },
+        },
+        {
+          type: "text",
+          name: "Expires",
+          prompt: "Probe expires at (ISO date or epoch ms; probes only)",
+          optional: true,
+        },
       ],
     },
     nextOfferType: "atrium.cli.flow.post_update.complete",
