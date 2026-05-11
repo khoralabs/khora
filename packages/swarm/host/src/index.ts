@@ -95,7 +95,13 @@ export type {
   DidRegistrationResult,
 } from "./registration/types.ts";
 export { isLikelyDidString, profileEntityId } from "./registration/types.ts";
-export type { DidRegistrationVerifier } from "./registration/verify.ts";
+export type {
+  AuthenticatedAgentVerifyContext,
+  DidVerifier,
+  InboxAccessVerifyContext,
+  RegistrationVerifyClientHints,
+  RegistrationVerifyContext,
+} from "./registration/verify.ts";
 export {
   minimalSourceMapForResolve,
   resolveFromMemoriesStore,

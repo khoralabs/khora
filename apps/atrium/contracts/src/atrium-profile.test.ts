@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { parseAtriumRegistrationMetadata } from "./atrium-profile.ts";
+import { mergeAtriumProfilePatch, parseAtriumRegistrationMetadata, zAtriumProfile } from "./atrium-profile.ts";
 
 describe("parseAtriumRegistrationMetadata", () => {
   test("empty metadata", () => {
@@ -23,5 +23,13 @@ describe("parseAtriumRegistrationMetadata", () => {
     expect(() =>
       parseAtriumRegistrationMetadata({ displayName: "x".repeat(201) }),
     ).toThrow(/invalid registration metadata/i);
+  });
+});
+
+describe("mergeAtriumProfilePatch", () => {
+  test("updates display fields", () => {
+    const prev = zAtriumProfile.parse({ id: "p1", displayName: "A", bio: "old" });
+    const next = mergeAtriumProfilePatch(prev, { displayName: "B" });
+    expect(next).toEqual({ id: "p1", displayName: "B", bio: "old" });
   });
 });

@@ -39,7 +39,7 @@ import {
   isLikelyDidString,
   profileEntityId,
 } from "./registration/types.ts";
-import type { DidRegistrationVerifier } from "./registration/verify.ts";
+import type { DidVerifier, RegistrationVerifyContext } from "./registration/verify.ts";
 import { type SwarmHostStores, searchHitToSourceMapRef } from "./stores.ts";
 
 export type {
@@ -107,7 +107,7 @@ export type SwarmHostDeps<
   stores?: SwarmHostStores<TProfile, TPost, TTopic>;
   /** Optional OBP opaque byte relay (HMAC tickets, replay on re-join). */
   obpRoomHub?: ObpRoomHubPort;
-  didVerifier?: DidRegistrationVerifier;
+  didVerifier: DidVerifier;
   notificationBuffer?: AgentNotificationBufferPort;
   inboxHub?: InboxFanoutPort;
   /** Opaque app runtime (passed through to {@link SwarmHostEventHandlerCtx.appContext}). */
@@ -177,7 +177,7 @@ export class SwarmHost<
   readonly persistenceClient: SwarmHostPersistenceClient;
   readonly stores?: SwarmHostStores<TProfile, TPost, TTopic>;
   readonly obpRoomHub?: ObpRoomHubPort;
-  readonly didVerifier?: DidRegistrationVerifier;
+  readonly didVerifier: DidVerifier;
   readonly notificationBuffer?: AgentNotificationBufferPort;
   readonly inboxHub?: InboxFanoutPort;
   readonly appContext?: unknown;
@@ -195,6 +195,9 @@ export class SwarmHost<
   >["onEvent"];
 
   constructor(deps: SwarmHostDeps<TNode, TEdge, TProfile, TPost, TTopic, TAppEvent, TEntityMap>) {
+    if (deps.didVerifier === undefined) {
+      throw new Error("SwarmHost: didVerifier is required");
+    }
     this.memories = deps.memories;
     this.persistence = deps.persistence;
     this.persistenceClient = createSwarmHostPersistenceClient(deps.persistence);
@@ -286,22 +289,18 @@ export class SwarmHost<
   }
 
   /**
-   * Verify DID (unless {@link DidRegistrationRequest.skipVerification}), emit
+   * Verify DID via {@link SwarmHostDeps.didVerifier}, emit
    * `swarm.registration.profile_build` so {@link SwarmHostDeps.onEvent} can call `payload.fulfill(profile)`,
    * then emit `swarm.profile.created` and register the DID with the notification buffer.
    */
-  async registerWithDid(req: DidRegistrationRequest): Promise<DidRegistrationResult<TProfile>> {
+  async registerWithDid(
+    req: DidRegistrationRequest,
+    registrationExtra?: Omit<RegistrationVerifyContext, "request">,
+  ): Promise<DidRegistrationResult<TProfile>> {
     if (!isLikelyDidString(req.did)) {
       throw new Error("SwarmHost: registration `did` must match did:<method>:…");
     }
-    if (req.skipVerification !== true) {
-      if (this.didVerifier === undefined) {
-        throw new Error(
-          "SwarmHost: configure didVerifier or set skipVerification true (dev only) on the request",
-        );
-      }
-      await this.didVerifier.verify(req);
-    }
+    await this.didVerifier.verifyRegistration({ request: req, ...registrationExtra });
     const onEvent = this.onEvent;
     if (onEvent === undefined) {
       throw new Error(

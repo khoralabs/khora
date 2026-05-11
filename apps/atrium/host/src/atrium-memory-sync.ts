@@ -40,7 +40,10 @@ export function atriumSwarmMemoryOpMapper(
   ac: AtriumHostAppContext,
 ): SwarmMemoryOpMapper<TNode, TEdge, AtriumProfile, AtriumPost, unknown, never> {
   return async (event: SwarmHostEventUnion<AtriumProfile, AtriumPost, unknown, never>) => {
-    if (event.kind === SWARM_EVENT_KIND.PROFILE_CREATED) {
+    if (
+      event.kind === SWARM_EVENT_KIND.PROFILE_CREATED ||
+      event.kind === SWARM_EVENT_KIND.PROFILE_UPDATED
+    ) {
       const profile = event.payload.profile;
       const text = atriumProfileLexicalText(profile);
       const content = await mergeContentWithOptionalVector(

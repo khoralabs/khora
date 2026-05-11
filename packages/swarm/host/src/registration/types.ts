@@ -10,15 +10,10 @@ export function isLikelyDidString(s: string): boolean {
 
 export type DidRegistrationRequest = {
   did: AgentDid;
-  /** Proof material for {@link DidRegistrationVerifier}; shape is app-defined. */
+  /** Proof material for {@link DidVerifier.verifyRegistration}; shape is app-defined. */
   proof?: unknown;
   metadata?: Record<string, unknown>;
   correlationId?: string;
-  /**
-   * When true, skips {@link SwarmHostDeps.didVerifier}. Use only in controlled dev/tests;
-   * default verification path rejects registration when a verifier is not configured.
-   */
-  skipVerification?: boolean;
 };
 
 export type DidRegistrationResult<TProfile> = {

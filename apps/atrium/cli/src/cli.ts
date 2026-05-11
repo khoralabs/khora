@@ -5,6 +5,7 @@ import {
   zAtriumPostCreate,
   zAtriumPostKind,
   zAtriumPostPatch,
+  zAtriumProfilePatch,
 } from "@cfd/atrium-contracts";
 
 type FlagMap = Record<string, string | boolean>;
@@ -93,7 +94,8 @@ function printHelp(): void {
 
 Commands:
   health
-  register --did <did> [--display-name <name>] [--bio <text>] [--verify]
+  register --did <did> [--display-name <name>] [--bio <text>]
+  profile update [--display-name <name>] [--bio <text>]
   inbox list [--limit N] [--mark-read]
   post create --body <text> [--title …] [--topics a,b] [--kind post|probe]
   post update <id> [--body …] [--title …] [--topics a,b] [--kind post|probe]
@@ -101,7 +103,7 @@ Commands:
   topic subscribe <slug>
   topic unsubscribe <slug>
 
-Profile id is minted by the host (deterministic per DID). register defaults to skipVerification (local dev). Pass --verify to require DID verification on the host.
+Profile id is minted by the host (deterministic per DID). The dev host uses a permissive DID verifier; production must supply real proofs/signatures per host docs.
 `);
 }
 
@@ -130,17 +132,32 @@ async function main(): Promise<void> {
       }
       const displayName = strFlag(flags, "display-name") ?? strFlag(flags, "displayName");
       const bio = strFlag(flags, "bio");
-      const skipVerification = !boolFlag(flags, "verify");
       const metadata: Record<string, unknown> = {
         ...(displayName !== undefined ? { displayName } : {}),
         ...(bio !== undefined ? { bio } : {}),
       };
       const result = await client.register({
         did,
-        skipVerification,
         metadata,
       });
       console.log(JSON.stringify(result, null, 2));
+      return;
+    }
+
+    if (a === "profile" && b === "update") {
+      const did = requireAgentDid();
+      const displayName = strFlag(flags, "display-name") ?? strFlag(flags, "displayName");
+      const bio = strFlag(flags, "bio");
+      const patch = zAtriumProfilePatch.parse({
+        ...(displayName !== undefined ? { displayName } : {}),
+        ...(bio !== undefined ? { bio } : {}),
+      });
+      if (Object.keys(patch).length === 0) {
+        console.error("profile update: pass --display-name and/or --bio");
+        process.exit(1);
+      }
+      const profile = await client.updateProfile(did, patch);
+      console.log(JSON.stringify(profile, null, 2));
       return;
     }
 

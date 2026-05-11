@@ -13,6 +13,7 @@ import {
   type AgentNotificationBufferPort,
   composeOnEventWithMemorySync,
   createInboxWsHub,
+  type DidVerifier,
   minimalSourceMapForResolve,
   SWARM_EVENT_KIND,
   SwarmHost,
@@ -40,6 +41,7 @@ export type AtriumHostConfig = {
   probeNamespace: string;
   topicNamespace?: string;
   embeddingModel?: EmbeddingModel;
+  didVerifier: DidVerifier;
 };
 
 export type AtriumHostContext = {
@@ -82,6 +84,7 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
   const host = new SwarmHost({
     memories,
     persistence: hostPersistence,
+    didVerifier: config.didVerifier,
     notificationBuffer,
     inboxHub,
     appContext,
@@ -131,7 +134,10 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
         return;
       }
 
-      if (event.kind === SWARM_EVENT_KIND.PROFILE_CREATED) {
+      if (
+        event.kind === SWARM_EVENT_KIND.PROFILE_CREATED ||
+        event.kind === SWARM_EVENT_KIND.PROFILE_UPDATED
+      ) {
         const profile = event.payload.profile;
         ctx.persistenceClient.upsertProfile({
           id: profile.id,

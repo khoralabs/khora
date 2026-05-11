@@ -25,6 +25,21 @@ export function parseAtriumRegistrationMetadata(metadata: unknown): AtriumRegist
   return parsed.data;
 }
 
+export const zAtriumProfilePatch = z.object({
+  displayName: z.string().trim().max(200).optional(),
+  bio: z.string().trim().max(8000).optional(),
+});
+
+export type AtriumProfilePatch = z.infer<typeof zAtriumProfilePatch>;
+
+export function mergeAtriumProfilePatch(previous: AtriumProfile, patch: AtriumProfilePatch): AtriumProfile {
+  return zAtriumProfile.parse({
+    id: previous.id,
+    displayName: patch.displayName ?? previous.displayName,
+    bio: patch.bio ?? previous.bio,
+  });
+}
+
 export function atriumProfileLexicalText(p: AtriumProfile): string {
   const parts = [p.displayName, p.bio].filter((s) => s !== undefined && s.length > 0);
   return parts.length > 0 ? parts.join("\n\n") : p.id;

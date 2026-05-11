@@ -3,12 +3,14 @@ export type {
   AtriumPostCreate,
   AtriumPostPatch,
   AtriumProfile,
+  AtriumProfilePatch,
 } from "@cfd/atrium-contracts";
 export {
   atriumPostLexicalText,
   atriumPostObservationSummary,
   atriumProfileLexicalText,
   mergeAtriumPostPatch,
+  mergeAtriumProfilePatch,
   normalizeTopicSlug,
   parseAtriumRegistrationMetadata,
   zAtriumPost,
@@ -16,6 +18,7 @@ export {
   zAtriumPostKind,
   zAtriumPostPatch,
   zAtriumProfile,
+  zAtriumProfilePatch,
   zAtriumRegistrationMetadata,
 } from "@cfd/atrium-contracts";
 export type {

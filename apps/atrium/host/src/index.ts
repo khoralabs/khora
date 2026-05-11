@@ -2,10 +2,13 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import {
   mergeAtriumPostPatch,
+  mergeAtriumProfilePatch,
   normalizeTopicSlug,
   zAtriumPost,
   zAtriumPostCreate,
   zAtriumPostPatch,
+  zAtriumProfile,
+  zAtriumProfilePatch,
 } from "@cfd/atrium-contracts";
 import { stableId } from "@cfd/memories-core";
 import {
@@ -15,12 +18,15 @@ import {
 } from "@cfd/swarm-host";
 import z from "zod";
 import { createAtriumHostContext } from "./create-atrium-host.ts";
+import { createDevDidVerifier } from "./dev-did-verifier.ts";
 import {
   profileIdForDid,
+  registrationExists,
   subscribeTopic,
   unsubscribeTopic,
   upsertHostRegistration,
 } from "./persistence/sqlite/registrations-topics-sqlite.ts";
+import { clientIpFromRequest, createRateLimiter, envRatePerMinute } from "./rate-limit.ts";
 
 function envPort(): number {
   const raw = process.env.PORT ?? process.env.ATRIUM_PORT ?? "8787";
@@ -55,8 +61,47 @@ function envInboxSnapshotLimit(): number {
   return Number.isFinite(n) && n > 0 ? Math.min(Math.floor(n), 500) : 50;
 }
 
-function devSkipDid(): boolean {
-  return process.env.ATRIUM_DEV_SKIP_DID_VERIFY === "1";
+function allowReregister(): boolean {
+  return process.env.ATRIUM_ALLOW_REREGISTER === "1";
+}
+
+const rlRegisterIp = createRateLimiter(
+  envRatePerMinute(process.env.ATRIUM_RL_REGISTER_PER_MIN_PER_IP, 30),
+);
+const rlRegisterDid = createRateLimiter(
+  envRatePerMinute(process.env.ATRIUM_RL_REGISTER_PER_MIN_PER_DID, 15),
+);
+const rlPostsDid = createRateLimiter(
+  envRatePerMinute(process.env.ATRIUM_RL_POSTS_PER_MIN_PER_DID, 120),
+);
+const rlTopicsDid = createRateLimiter(
+  envRatePerMinute(process.env.ATRIUM_RL_TOPICS_PER_MIN_PER_DID, 120),
+);
+const rlProfileDid = createRateLimiter(
+  envRatePerMinute(process.env.ATRIUM_RL_PROFILE_PATCH_PER_MIN_PER_DID, 60),
+);
+const rlInboxDid = createRateLimiter(
+  envRatePerMinute(process.env.ATRIUM_RL_INBOX_PER_MIN_PER_DID, 120),
+);
+const rlDefaultIp = createRateLimiter(
+  envRatePerMinute(process.env.ATRIUM_RL_DEFAULT_PER_MIN_PER_IP, 900),
+);
+
+function registrationOpaqueJson(status: number): Response {
+  return Response.json(
+    { error: "Registration could not be completed", code: "registration_failed" },
+    { status },
+  );
+}
+
+function rateLimitedResponse(retryAfterSec: number): Response {
+  return Response.json(
+    { error: "Too many requests", code: "rate_limited" },
+    {
+      status: 429,
+      headers: { "Retry-After": String(retryAfterSec) },
+    },
+  );
 }
 
 function jsonError(msg: string, status: number): Response {
@@ -79,6 +124,7 @@ const ctx = createAtriumHostContext({
   profileNamespace: envProfileNamespace(),
   postNamespace: envPostNamespace(),
   probeNamespace: envProbeNamespace(),
+  didVerifier: createDevDidVerifier(),
 });
 
 async function sendInboxSnapshot(
@@ -117,20 +163,39 @@ const server = Bun.serve<InboxWsData>({
       return Response.json({ ok: true });
     }
 
+    const ip = clientIpFromRequest(req);
+    const ipRl = rlDefaultIp(`ip:${ip}`);
+    if (!ipRl.ok) {
+      return rateLimitedResponse(ipRl.retryAfterSec);
+    }
+
     if (req.method === "POST" && url.pathname === "/v1/register") {
+      let body: DidRegistrationRequest;
       try {
-        const body = (await req.json()) as DidRegistrationRequest;
-        const payload = devSkipDid()
-          ? ({ ...body, skipVerification: true as const } satisfies DidRegistrationRequest)
-          : body;
-        const result = await ctx.host.registerWithDid(payload);
+        body = (await req.json()) as DidRegistrationRequest;
+      } catch {
+        return registrationOpaqueJson(400);
+      }
+
+      const regIp = rlRegisterIp(`ip:${ip}`);
+      if (!regIp.ok) return rateLimitedResponse(regIp.retryAfterSec);
+      const regDid = rlRegisterDid(`did:${body.did}`);
+      if (!regDid.ok) return rateLimitedResponse(regDid.retryAfterSec);
+
+      if (!allowReregister() && registrationExists(ctx.db, body.did)) {
+        return registrationOpaqueJson(409);
+      }
+
+      try {
+        const ua = req.headers.get("user-agent") ?? undefined;
+        const result = await ctx.host.registerWithDid(body, {
+          client: { ip, userAgent: ua },
+        });
         upsertHostRegistration(ctx.db, result.did, result.profileId);
         return Response.json(result);
       } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        const status =
-          /^(SwarmHost:|Atrium:)/.test(msg) || msg.includes("did:<method>") ? 400 : 500;
-        return Response.json({ error: msg }, { status });
+        console.error("[atrium] registration error", e);
+        return registrationOpaqueJson(400);
       }
     }
 
@@ -138,6 +203,19 @@ const server = Bun.serve<InboxWsData>({
       const did = url.searchParams.get("did")?.trim() ?? requiredDid(req) ?? undefined;
       if (did === undefined || did.length === 0) {
         return jsonError("did required (query ?did= or X-Agent-Did)", 400);
+      }
+      const inboxRl = rlInboxDid(`did:${did}`);
+      if (!inboxRl.ok) return rateLimitedResponse(inboxRl.retryAfterSec);
+      try {
+        await ctx.host.didVerifier.verifyInboxAccess({
+          claimedDid: did,
+          path: url.pathname,
+          searchParams: url.searchParams,
+          headers: req.headers,
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return jsonError(msg, 401);
       }
       const ok = srv.upgrade(req, { data: { did } });
       if (!ok) {
@@ -150,6 +228,19 @@ const server = Bun.serve<InboxWsData>({
       const did = url.searchParams.get("did")?.trim() ?? requiredDid(req);
       if (did === undefined || did.length === 0) {
         return jsonError("did required", 400);
+      }
+      const inboxRl = rlInboxDid(`did:${did}`);
+      if (!inboxRl.ok) return rateLimitedResponse(inboxRl.retryAfterSec);
+      try {
+        await ctx.host.didVerifier.verifyInboxAccess({
+          claimedDid: did,
+          path: url.pathname,
+          searchParams: url.searchParams,
+          headers: req.headers,
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return jsonError(msg, 401);
       }
       const list = ctx.notificationBuffer.listRecent;
       if (list === undefined) {
@@ -189,6 +280,19 @@ const server = Bun.serve<InboxWsData>({
       if (did === undefined) {
         return jsonError("X-Agent-Did header required", 400);
       }
+      const tRl = rlTopicsDid(`did:${did}`);
+      if (!tRl.ok) return rateLimitedResponse(tRl.retryAfterSec);
+      try {
+        await ctx.host.didVerifier.verifyAuthenticatedAgent({
+          method: req.method,
+          path: url.pathname,
+          headers: req.headers,
+          claimedDid: did,
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return jsonError(msg, 401);
+      }
       if (req.method === "POST") {
         subscribeTopic(ctx.db, did, slug);
         return Response.json({ ok: true, topicSlug: slug });
@@ -201,17 +305,73 @@ const server = Bun.serve<InboxWsData>({
 
     const postPathMatch = /^\/v1\/posts\/([^/]+)$/.exec(url.pathname);
 
+    if (req.method === "PATCH" && url.pathname === "/v1/profile") {
+      try {
+        const did = requiredDid(req);
+        if (did === undefined) {
+          return jsonError("X-Agent-Did header required", 400);
+        }
+        const pRl = rlProfileDid(`did:${did}`);
+        if (!pRl.ok) return rateLimitedResponse(pRl.retryAfterSec);
+        const bodyText = await req.text();
+        await ctx.host.didVerifier.verifyAuthenticatedAgent({
+          method: req.method,
+          path: url.pathname,
+          headers: req.headers,
+          claimedDid: did,
+          bodyText,
+        });
+        const profileId = profileIdForDid(ctx.db, did);
+        if (profileId === undefined) {
+          return jsonError("Register before updating profile", 400);
+        }
+        const row = ctx.host.persistenceClient.getProfileById(profileId);
+        if (row === undefined) {
+          return jsonError("Profile not found", 404);
+        }
+        const previous = zAtriumProfile.parse(JSON.parse(row.bodyJson));
+        const patchRaw = JSON.parse(bodyText) as unknown;
+        const patch = zAtriumProfilePatch.parse(patchRaw);
+        if (Object.keys(patch).length === 0) {
+          return jsonError("Provide at least one of displayName, bio", 400);
+        }
+        const profile = mergeAtriumProfilePatch(previous, patch);
+        await ctx.host.notify({
+          kind: SWARM_EVENT_KIND.PROFILE_UPDATED,
+          occurredAt: Date.now(),
+          aggregate: { domain: SWARM_AGGREGATE_DOMAIN.profile, id: profile.id },
+          change: "updated",
+          source: "app",
+          payload: { profile, previous },
+        });
+        return Response.json(profile);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return jsonError(msg, e instanceof z.ZodError ? 400 : 500);
+      }
+    }
+
     if (req.method === "POST" && url.pathname === "/v1/posts") {
       try {
         const did = requiredDid(req);
         if (did === undefined) {
           return jsonError("X-Agent-Did header required", 400);
         }
+        const pRl = rlPostsDid(`did:${did}`);
+        if (!pRl.ok) return rateLimitedResponse(pRl.retryAfterSec);
+        const bodyText = await req.text();
+        await ctx.host.didVerifier.verifyAuthenticatedAgent({
+          method: req.method,
+          path: url.pathname,
+          headers: req.headers,
+          claimedDid: did,
+          bodyText,
+        });
         const profileId = profileIdForDid(ctx.db, did);
         if (profileId === undefined) {
           return jsonError("Register before creating posts", 400);
         }
-        const raw = (await req.json()) as unknown;
+        const raw = JSON.parse(bodyText) as unknown;
         const created = zAtriumPostCreate.parse(raw);
         const post = zAtriumPost.parse({
           ...created,
@@ -245,6 +405,16 @@ const server = Bun.serve<InboxWsData>({
           if (did === undefined) {
             return jsonError("X-Agent-Did header required", 400);
           }
+          const pRl = rlPostsDid(`did:${did}`);
+          if (!pRl.ok) return rateLimitedResponse(pRl.retryAfterSec);
+          const bodyText = await req.text();
+          await ctx.host.didVerifier.verifyAuthenticatedAgent({
+            method: req.method,
+            path: url.pathname,
+            headers: req.headers,
+            claimedDid: did,
+            bodyText,
+          });
           const agentProfileId = profileIdForDid(ctx.db, did);
           if (agentProfileId === undefined) {
             return jsonError("Register before updating posts", 400);
@@ -261,7 +431,7 @@ const server = Bun.serve<InboxWsData>({
           if (authorId === undefined || authorId.length === 0 || authorId !== agentProfileId) {
             return jsonError("Forbidden", 403);
           }
-          const patchRaw = (await req.json()) as unknown;
+          const patchRaw = JSON.parse(bodyText) as unknown;
           if (patchRaw !== null && typeof patchRaw === "object" && "authorProfileId" in patchRaw) {
             return jsonError("authorProfileId cannot be changed", 400);
           }
@@ -291,6 +461,14 @@ const server = Bun.serve<InboxWsData>({
           if (did === undefined) {
             return jsonError("X-Agent-Did header required", 400);
           }
+          const pRl = rlPostsDid(`did:${did}`);
+          if (!pRl.ok) return rateLimitedResponse(pRl.retryAfterSec);
+          await ctx.host.didVerifier.verifyAuthenticatedAgent({
+            method: req.method,
+            path: url.pathname,
+            headers: req.headers,
+            claimedDid: did,
+          });
           const agentProfileId = profileIdForDid(ctx.db, did);
           if (agentProfileId === undefined) {
             return jsonError("Register before deleting posts", 400);

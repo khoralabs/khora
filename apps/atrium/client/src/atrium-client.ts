@@ -3,6 +3,7 @@ import {
   type AtriumPostCreate,
   type AtriumPostPatch,
   type AtriumProfile,
+  type AtriumProfilePatch,
   zAtriumPost,
   zAtriumProfile,
 } from "@cfd/atrium-contracts";
@@ -146,6 +147,14 @@ export class AtriumClient {
     return this.requestJson("POST", "/v1/register", {
       body,
       parse: zRegisterResult,
+    });
+  }
+
+  async updateProfile(did: string, patch: AtriumProfilePatch): Promise<AtriumProfile> {
+    return this.requestJson("PATCH", "/v1/profile", {
+      headers: { "X-Agent-Did": did },
+      body: patch,
+      parse: zAtriumProfile,
     });
   }
 

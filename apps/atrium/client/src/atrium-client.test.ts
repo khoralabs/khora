@@ -41,6 +41,19 @@ describe("AtriumClient", () => {
     });
   });
 
+  test("updateProfile PATCH /v1/profile", async () => {
+    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("http://h/v1/profile");
+      expect(init?.method).toBe("PATCH");
+      expect(new Headers(init?.headers).get("X-Agent-Did")).toBe("did:key:me");
+      expect(JSON.parse(String(init?.body))).toEqual({ displayName: "N" });
+      return Response.json({ id: "prof1", displayName: "N" });
+    });
+    const c = new AtriumClient({ baseUrl: "http://h", fetch: fetchMock });
+    const out = await c.updateProfile("did:key:me", { displayName: "N" });
+    expect(out.displayName).toBe("N");
+  });
+
   test("subscribeTopic sets X-Agent-Did and encodes slug", async () => {
     const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
       expect(String(input)).toBe("http://h/v1/topics/rust-dev/subscribe");
