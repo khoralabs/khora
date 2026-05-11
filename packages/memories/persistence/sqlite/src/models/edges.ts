@@ -28,12 +28,6 @@ export function insertEdge(
     to_node_id: input.toNodeId,
     properties: input.properties,
   });
-  stmts.insertEdge.run(
-    edgeId,
-    now,
-    input.fromNodeId,
-    input.toNodeId,
-    jsonOrNull(input.properties),
-  );
+  stmts.insertEdge.run(edgeId, now, input.fromNodeId, input.toNodeId, jsonOrNull(input.properties));
   return { edgeId };
 }

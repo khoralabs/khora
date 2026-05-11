@@ -101,9 +101,7 @@ export function prepareMemoriesSqliteStmts(db: Database): MemoriesSqliteStmts {
       `INSERT OR REPLACE INTO edges (_id, _ts_created, from_node_id, to_node_id, properties) VALUES (?, ?, ?, ?, ?)`,
     ),
 
-    updateEdgeLabel: db.prepare(
-      `UPDATE edge_labels SET description = ?, schema = ? WHERE _id = ?`,
-    ),
+    updateEdgeLabel: db.prepare(`UPDATE edge_labels SET description = ?, schema = ? WHERE _id = ?`),
     insertEdgeLabel: db.prepare(
       `INSERT INTO edge_labels (_id, _ts_created, kind, description, schema) VALUES (?, ?, ?, ?, ?)`,
     ),
@@ -142,9 +140,7 @@ export function prepareMemoriesSqliteStmts(db: Database): MemoriesSqliteStmts {
     deleteTextFeaturesBySourceMapId: db.prepare(
       `DELETE FROM text_features WHERE source_map_id = ?`,
     ),
-    deleteVectorFeaturesByFeatureId: db.prepare(
-      `DELETE FROM vector_features WHERE _id = ?`,
-    ),
+    deleteVectorFeaturesByFeatureId: db.prepare(`DELETE FROM vector_features WHERE _id = ?`),
     deleteSourceMapById: db.prepare(`DELETE FROM source_maps WHERE _id = ?`),
 
     deleteMemoryScopesByMemoryId: db.prepare(`DELETE FROM memory_scopes WHERE memory_id = ?`),
@@ -169,9 +165,7 @@ export function prepareMemoriesSqliteStmts(db: Database): MemoriesSqliteStmts {
       `DELETE FROM edge_label_assignments WHERE edge_id = ?`,
     ),
 
-    updateNodeLabel: db.prepare(
-      `UPDATE node_labels SET description = ?, schema = ? WHERE _id = ?`,
-    ),
+    updateNodeLabel: db.prepare(`UPDATE node_labels SET description = ?, schema = ? WHERE _id = ?`),
     insertNodeLabel: db.prepare(
       `INSERT INTO node_labels (_id, _ts_created, kind, description, schema) VALUES (?, ?, ?, ?, ?)`,
     ),
@@ -190,9 +184,7 @@ export function prepareMemoriesSqliteStmts(db: Database): MemoriesSqliteStmts {
       `INSERT OR REPLACE INTO scope_closure (_id, _ts_created, ancestor_scope_id, descendant_scope_id)
        VALUES (?, ?, ?, ?)`,
     ),
-    insertIgnoreScope: db.prepare(
-      `INSERT OR IGNORE INTO scopes (_id, _ts_created) VALUES (?, ?)`,
-    ),
+    insertIgnoreScope: db.prepare(`INSERT OR IGNORE INTO scopes (_id, _ts_created) VALUES (?, ?)`),
     deleteScopeEdge: db.prepare(
       `DELETE FROM scope_edges WHERE parent_scope_id = ? AND child_scope_id = ?`,
     ),
@@ -209,9 +201,7 @@ export function prepareMemoriesSqliteStmts(db: Database): MemoriesSqliteStmts {
     insertSourceMap: db.prepare(
       `INSERT INTO source_maps (_id, _ts_created, memory_id, source_key) VALUES (?, ?, ?, ?)`,
     ),
-    updateSourceMapContentHash: db.prepare(
-      `UPDATE source_maps SET content_hash = ? WHERE _id = ?`,
-    ),
+    updateSourceMapContentHash: db.prepare(`UPDATE source_maps SET content_hash = ? WHERE _id = ?`),
 
     insertTextFeature: db.prepare(
       `INSERT INTO text_features (_id, _ts_created, memory_id, source_map_id, text) VALUES (?, ?, ?, ?, ?)`,

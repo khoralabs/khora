@@ -204,8 +204,8 @@ describe("AtriumDidAuth.requireAuthenticatedRequest", () => {
     expect(out.did).toBe(signer.did);
 
     const noDidReq = new Request("https://h.example/v1/agent/sync");
-    await expect(
-      auth.requireAuthenticatedRequest(noDidReq, new URL(noDidReq.url)),
-    ).rejects.toThrow(/header required/);
+    await expect(auth.requireAuthenticatedRequest(noDidReq, new URL(noDidReq.url))).rejects.toThrow(
+      /header required/,
+    );
   });
 });

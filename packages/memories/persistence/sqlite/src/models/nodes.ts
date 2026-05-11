@@ -22,13 +22,7 @@ export function upsertNodeForMemoryKey(
     value: input.memoryKey,
     properties: input.properties,
   });
-  stmts.upsertNode.run(
-    nodeId,
-    now,
-    input.memoryId,
-    input.memoryKey,
-    jsonOrNull(input.properties),
-  );
+  stmts.upsertNode.run(nodeId, now, input.memoryId, input.memoryKey, jsonOrNull(input.properties));
   return { nodeId };
 }
 

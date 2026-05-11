@@ -80,7 +80,7 @@ export class SqliteMatchmakingDomainPersistence implements MatchmakingDomainPers
   private readonly insertEvent: Statement;
   private readonly selectEventsForSubject: Statement;
 
-  constructor(private readonly db: Database) {
+  constructor(readonly db: Database) {
     this.selectProfile = db.prepare(
       "SELECT display_name, tagline, about, updated_at FROM profiles WHERE subject_id = ?",
     );
@@ -395,13 +395,7 @@ export class SqliteMatchmakingDomainPersistence implements MatchmakingDomainPers
         }),
       );
     });
-    this.appendEventRow(
-      "GoalsExtracted",
-      args.subjectId,
-      args.inviteId,
-      { count: rows.length },
-      t,
-    );
+    this.appendEventRow("GoalsExtracted", args.subjectId, args.inviteId, { count: rows.length }, t);
     return rows;
   }
 

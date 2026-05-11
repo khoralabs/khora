@@ -25,11 +25,11 @@ import { atriumSwarmMemoryOpMapper } from "./atrium-memory-sync.ts";
 import { fanOutProbeHits, fanOutTopicSubscriptions } from "./atrium-post-fanout.ts";
 import {
   createProbeSubscribersRepo,
-  type ProbeSubscribersRepo,
   createSqliteAgentNotificationBuffer,
   createSwarmHostDocumentStore,
   createSwarmHostSqlitePersistence,
   ensureSwarmHostSqliteSchema,
+  type ProbeSubscribersRepo,
 } from "./persistence/sqlite/index.ts";
 
 type TNode = typeof swarmHostOntology.nodeLabels;

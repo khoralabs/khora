@@ -96,7 +96,12 @@ describe("runLinearObpFlow", () => {
           bindPolicy: {
             version: "1",
             properties: [
-              { type: "text", name: "Detail", prompt: "Detail text", constraints: { minLength: 1 } },
+              {
+                type: "text",
+                name: "Detail",
+                prompt: "Detail text",
+                constraints: { minLength: 1 },
+              },
             ],
           },
           nextOfferType: "atrium.test.mid2",

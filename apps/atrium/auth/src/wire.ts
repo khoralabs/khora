@@ -82,31 +82,25 @@ function parseEnvelopeFromGetters(
 export function parseAgentRequestEnvelopeFromHeaders(
   headers: Headers,
 ): AgentRequestEnvelope | undefined {
-  return parseEnvelopeFromGetters(
-    (k) => {
-      switch (k) {
-        case "ts":
-          return headers.get(AGENT_REQUEST_HEADER.ts);
-        case "nonce":
-          return headers.get(AGENT_REQUEST_HEADER.nonce);
-        case "sig":
-          return headers.get(AGENT_REQUEST_HEADER.sig);
-        default:
-          return null;
-      }
-    },
-    headers.get(AGENT_REQUEST_HEADER.did),
-  );
+  return parseEnvelopeFromGetters((k) => {
+    switch (k) {
+      case "ts":
+        return headers.get(AGENT_REQUEST_HEADER.ts);
+      case "nonce":
+        return headers.get(AGENT_REQUEST_HEADER.nonce);
+      case "sig":
+        return headers.get(AGENT_REQUEST_HEADER.sig);
+      default:
+        return null;
+    }
+  }, headers.get(AGENT_REQUEST_HEADER.did));
 }
 
 /** Parse the envelope from URL search params (used for WebSocket upgrade). */
 export function parseAgentRequestEnvelopeFromSearch(
   sp: URLSearchParams,
 ): AgentRequestEnvelope | undefined {
-  return parseEnvelopeFromGetters(
-    (k) => sp.get(k),
-    sp.get(AGENT_REQUEST_SEARCH.did),
-  );
+  return parseEnvelopeFromGetters((k) => sp.get(k), sp.get(AGENT_REQUEST_SEARCH.did));
 }
 
 function b64UrlToBytes(b64url: string): Uint8Array {

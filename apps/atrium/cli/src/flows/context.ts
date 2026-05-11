@@ -1,8 +1,4 @@
-import {
-  defaultIdentityPath,
-  loadIdentity,
-  type PersistableAgentSigner,
-} from "@cfd/atrium-auth";
+import { defaultIdentityPath, loadIdentity, type PersistableAgentSigner } from "@cfd/atrium-auth";
 import { AtriumClient } from "@cfd/atrium-client";
 import { resolveAtriumCliPlugins } from "../resolve-atrium-plugins.ts";
 import type { ReadLineFn } from "./obp/bind-readline.ts";

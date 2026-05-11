@@ -1,8 +1,4 @@
-import {
-  type AgentSigner,
-  randomAgentRequestNonce,
-  signAgentRequest,
-} from "@cfd/atrium-auth";
+import { type AgentSigner, randomAgentRequestNonce, signAgentRequest } from "@cfd/atrium-auth";
 import type z from "zod";
 import { AtriumClientError } from "../atrium-client-error.ts";
 

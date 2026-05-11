@@ -17,13 +17,7 @@ export function insertLexicalFeature(
     source_map_id: input.sourceMapId,
     text: input.text,
   });
-  stmts.insertTextFeature.run(
-    textFeatureId,
-    now,
-    input.memoryId,
-    input.sourceMapId,
-    input.text,
-  );
+  stmts.insertTextFeature.run(textFeatureId, now, input.memoryId, input.sourceMapId, input.text);
   stmts.insertTextFeatureFts.run(textFeatureId, input.memoryId, input.sourceMapId, input.text);
   return { textFeatureId };
 }

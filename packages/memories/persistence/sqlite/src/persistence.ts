@@ -12,7 +12,6 @@ import type {
 import type { SourceMap, TextFeatureExportRow } from "@cfd/memories-core/persistence";
 import type { MemoryProvenanceEvent } from "@cfd/memories-core/provenance";
 import type { DbCtx } from "./models/context";
-import { type MemoriesSqliteStmts, prepareMemoriesSqliteStmts } from "./models/prepared-stmts";
 import { insertEdgeLabelAssignment } from "./models/edge-label-assignments";
 import { ensureEdgeLabel } from "./models/edge-labels";
 import { insertEdge } from "./models/edges";
@@ -40,6 +39,7 @@ import { clearMemorySubtree } from "./models/memory-subtree";
 import { insertNodeLabelAssignment } from "./models/node-label-assignments";
 import { ensureNodeLabel } from "./models/node-labels";
 import { nodeExists, upsertNodeForMemoryKey } from "./models/nodes";
+import { type MemoriesSqliteStmts, prepareMemoriesSqliteStmts } from "./models/prepared-stmts";
 import {
   linkScopes as linkScopesRow,
   listScopesForMemory as listScopesForMemoryRow,

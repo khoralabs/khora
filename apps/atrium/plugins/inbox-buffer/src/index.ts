@@ -83,11 +83,7 @@ function prepareCompactStmts(db: Database): CompactStmts {
   };
 }
 
-function deleteByEventTypes(
-  db: Database,
-  stmts: CompactStmts,
-  types: readonly string[],
-): void {
+function deleteByEventTypes(db: Database, stmts: CompactStmts, types: readonly string[]): void {
   if (types.length === 0) return;
   db.transaction(() => {
     for (const t of types) {

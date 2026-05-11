@@ -117,7 +117,10 @@ async function runTurnSessionCheckpoint(sessionEnvelopeSync: boolean) {
     exposesRows: [],
     bindRows: [],
   });
-  const replayClient = new OBPPersistenceClient({ persistence: persistenceReplay, ledgerSeq: () => ++seq2 });
+  const replayClient = new OBPPersistenceClient({
+    persistence: persistenceReplay,
+    ledgerSeq: () => ++seq2,
+  });
   applySessionOps(replayClient, init, sessionOps);
   expect(persistenceReplay.listBinds().length).toBe(persistenceCli.listBinds().length);
   expect(persistenceReplay.isPortExposed("go")).toBe(true);

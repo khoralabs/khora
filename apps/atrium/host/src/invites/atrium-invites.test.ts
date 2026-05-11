@@ -1,11 +1,7 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
 import { ensureSwarmHostSqliteSchema } from "../persistence/sqlite/schema.ts";
-import {
-  ATRIUM_INVITE_KIND,
-  createAtriumInvitesRepo,
-  hashInviteToken,
-} from "./atrium-invites.ts";
+import { ATRIUM_INVITE_KIND, createAtriumInvitesRepo, hashInviteToken } from "./atrium-invites.ts";
 
 function openTestDb(): Database {
   const db = new Database(":memory:");

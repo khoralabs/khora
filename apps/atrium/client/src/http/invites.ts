@@ -10,7 +10,10 @@ export function listInvites(t: HttpTransport): Promise<AtriumInviteListResponse>
   return t.requestJson("GET", "/v1/invites", { parse: zAtriumInviteListResponse });
 }
 
-export function previewInvite(t: HttpTransport, token: string): Promise<AtriumInvitePreviewResponse> {
+export function previewInvite(
+  t: HttpTransport,
+  token: string,
+): Promise<AtriumInvitePreviewResponse> {
   return t.requestJson("POST", "/v1/invite/preview", {
     body: { token },
     parse: zAtriumInvitePreviewResponse,

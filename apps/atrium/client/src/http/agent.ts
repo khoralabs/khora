@@ -1,4 +1,9 @@
-import { type AtriumPost, zAgentStatusResponse, zAtriumPost, zAtriumProfile } from "@cfd/atrium-contracts";
+import {
+  type AtriumPost,
+  zAgentStatusResponse,
+  zAtriumPost,
+  zAtriumProfile,
+} from "@cfd/atrium-contracts";
 import z from "zod";
 import type { HttpTransport } from "./transport.ts";
 

@@ -1,9 +1,5 @@
 #!/usr/bin/env bun
-import {
-  defaultIdentityPath,
-  loadIdentity,
-  type PersistableAgentSigner,
-} from "@cfd/atrium-auth";
+import { defaultIdentityPath, loadIdentity, type PersistableAgentSigner } from "@cfd/atrium-auth";
 import { runInboxDaemon } from "./run-inbox-daemon.ts";
 
 async function loadSigner(): Promise<PersistableAgentSigner> {

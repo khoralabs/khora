@@ -155,7 +155,7 @@ describe("OBPPersistenceClient + FakeObpPersistence", () => {
   });
 
   test("single-arg constructor uses FakeObpPersistence by default", () => {
-    let seq = 100;
+    const seq = 100;
     const c = new OBPPersistenceClient({ ledgerSeq: () => seq });
     const { party } = c.registerParty({ name: "solo", sourcemaps: [] });
     expect(party.name).toBe("solo");

@@ -23,9 +23,7 @@ export async function generateAgentIdentity(): Promise<PersistableAgentSigner> {
 }
 
 /** Load a signer from disk; returns undefined when the file is missing. */
-export async function loadIdentity(
-  filePath: string,
-): Promise<PersistableAgentSigner | undefined> {
+export async function loadIdentity(filePath: string): Promise<PersistableAgentSigner | undefined> {
   let text: string;
   try {
     text = await readFile(filePath, "utf8");

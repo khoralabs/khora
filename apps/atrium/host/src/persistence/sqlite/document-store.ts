@@ -65,10 +65,7 @@ export function createSwarmHostDocumentStore<
   ensureSwarmHostSqliteSchema(db);
   const parsers = options?.parsers;
 
-  const selectBodyForResolve = db.query<
-    { body_json: string },
-    [string, string, string]
-  >(
+  const selectBodyForResolve = db.query<{ body_json: string }, [string, string, string]>(
     `SELECT body_json FROM host_entities WHERE kind = ? AND id = ? AND (memory_id IS NULL OR memory_id = ?)`,
   );
   const selectExistingForMerge = db.query<

@@ -249,12 +249,8 @@ export class ObpSqlitePersistence implements ObpPersistence {
     this.insertParty = db.prepare(
       `INSERT INTO obp_parties (id, created_seq, name, sourcemaps_json) VALUES (?, ?, ?, ?)`,
     );
-    this.updatePortExpiresSeq = db.prepare(
-      `UPDATE obp_ports SET expires_seq = ? WHERE id = ?`,
-    );
-    this.updateOfferExpiresSeq = db.prepare(
-      `UPDATE obp_offers SET expires_seq = ? WHERE id = ?`,
-    );
+    this.updatePortExpiresSeq = db.prepare(`UPDATE obp_ports SET expires_seq = ? WHERE id = ?`);
+    this.updateOfferExpiresSeq = db.prepare(`UPDATE obp_offers SET expires_seq = ? WHERE id = ?`);
     this.updatePortsExpiresSeqForOffer = db.prepare(
       `UPDATE obp_ports SET expires_seq = ? WHERE id IN (SELECT port_id FROM obp_exposes WHERE offer_id = ?)`,
     );
