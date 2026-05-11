@@ -23,6 +23,21 @@ describe("AtriumClient", () => {
     expect(snap.probes[0]?.kind).toBe("probe");
   });
 
+  test("getAgentStatus GET /v1/agent/status with X-Agent-Did", async () => {
+    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("http://h/v1/agent/status");
+      expect(init?.method ?? "GET").toBe("GET");
+      expect(new Headers(init?.headers).get("X-Agent-Did")).toBe("did:key:a");
+      return Response.json({
+        status: { id: "st1", kind: "status", authorProfileId: "p1", body: "On shift" },
+      });
+    });
+    const c = new AtriumClient({ baseUrl: "http://h", fetch: fetchMock });
+    const st = await c.getAgentStatus("did:key:a");
+    expect(st?.kind).toBe("status");
+    expect(st?.body).toBe("On shift");
+  });
+
   test("health requests GET /health on normalized base", async () => {
     const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
       expect(String(input)).toBe("http://localhost:8787/health");

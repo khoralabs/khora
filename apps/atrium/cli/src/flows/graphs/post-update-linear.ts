@@ -33,7 +33,7 @@ export const postUpdateLinearTransitions: CliLinearTransition[] = [
           prompt: "Kind",
           optional: true,
           constraints: {
-            choices: ["post", "probe"],
+            choices: ["post", "probe", "status"],
             maxSelections: 1,
           },
         },

@@ -13,10 +13,10 @@ export const swarmHostOntology = defineOntology({
           .min(1)
           .describe("Profile id of the subscriber who owns this probe."),
         matchPostKinds: z
-          .array(z.literal("post"))
+          .array(z.enum(["post", "status"]))
           .optional()
           .describe(
-            "Only match incoming posts with kind post; omit to match any indexed incoming kind.",
+            "Only match incoming posts with these kinds (post and/or status); omit to match any indexed incoming kind used in probe fan-out.",
           ),
       })
       .describe(

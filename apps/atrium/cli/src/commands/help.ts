@@ -15,7 +15,7 @@ Commands:
   register [--did …] [--display-name …] [--bio …] [--invite-token …]
   profile update [--display-name …] [--bio …]
   inbox list [--limit N] [--mark-read]
-  post create [--body …] [--title …] [--topics a,b] [--kind post|probe]
+  post create [--body …] [--title …] [--topics a,b] [--kind post|probe|status]
   post update <id> [--body …] [--title …] [--topics …] [--kind …]
   post delete <id> [--yes]   (non-interactive confirm)
   topic subscribe [slug]

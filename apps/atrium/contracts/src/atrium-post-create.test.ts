@@ -26,4 +26,38 @@ describe("zAtriumPostCreate", () => {
       }),
     ).toThrow();
   });
+
+  test("probe may match status incoming kind", () => {
+    const v = zAtriumPostCreate.parse({
+      kind: "probe",
+      body: "watch",
+      matchPostKinds: ["status"],
+    });
+    expect(v.matchPostKinds).toEqual(["status"]);
+  });
+
+  test("status shape without author allowed at create schema", () => {
+    const v = zAtriumPostCreate.parse({ kind: "status", body: "On call" });
+    expect(v.kind).toBe("status");
+  });
+
+  test("full AtriumPost requires author for status", () => {
+    expect(() =>
+      zAtriumPost.parse({
+        id: "s1",
+        kind: "status",
+        body: "b",
+      }),
+    ).toThrow();
+  });
+
+  test("full AtriumPost accepts status with author", () => {
+    const p = zAtriumPost.parse({
+      id: "s1",
+      kind: "status",
+      body: "Working",
+      authorProfileId: "prof-1",
+    });
+    expect(p.kind).toBe("status");
+  });
 });

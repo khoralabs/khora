@@ -79,7 +79,7 @@ export async function fanOutProbeHits<
   config: FanoutConfig;
   incomingPost: AtriumPost;
 }): Promise<void> {
-  if (params.incomingPost.kind !== "post") return;
+  if (params.incomingPost.kind !== "post" && params.incomingPost.kind !== "status") return;
   if (params.config.embeddingModel === undefined) return;
 
   const buffer = params.ctx.notificationBuffer;
@@ -117,7 +117,11 @@ export async function fanOutProbeHits<
     if (probe.kind !== "probe") continue;
 
     const filters = probe.matchPostKinds;
-    if (filters !== undefined && filters.length > 0 && !filters.includes("post")) {
+    if (
+      filters !== undefined &&
+      filters.length > 0 &&
+      !filters.includes(params.incomingPost.kind)
+    ) {
       continue;
     }
 

@@ -1,15 +1,18 @@
 import z from "zod";
 
-export const zAtriumPostKind = z.enum(["post", "probe"]);
+export const zAtriumPostKind = z.enum(["post", "probe", "status"]);
+
+/** Incoming kinds a probe may subscribe to (not `probe` itself). */
+export const zAtriumProbeMatchPostKind = z.enum(["post", "status"]);
 
 /** Shared fields for create requests and full posts (no id / author). */
 const zAtriumPostContent = z.object({
-  /** Regular posts vs semantic subscription probes. */
+  /** Regular posts, probes, or singleton-per-agent status. */
   kind: zAtriumPostKind.default("post"),
   /** Hashtag topic slugs (normalized externally); publish-time routing only. */
   topics: z.array(z.string().trim().min(1)).optional(),
   /** For {@link kind} probe only: which incoming post kinds may trigger a hit (omit = any). */
-  matchPostKinds: z.array(z.literal("post")).optional(),
+  matchPostKinds: z.array(zAtriumProbeMatchPostKind).optional(),
   title: z.string().trim().max(500).optional(),
   body: z.string().max(100_000),
 });
@@ -26,12 +29,12 @@ export const zAtriumPost = zAtriumPostContent
   })
   .superRefine((val, ctx) => {
     if (
-      val.kind === "probe" &&
+      (val.kind === "probe" || val.kind === "status") &&
       (val.authorProfileId === undefined || val.authorProfileId.length === 0)
     ) {
       ctx.addIssue({
         code: "custom",
-        message: "probe posts require authorProfileId",
+        message: `${val.kind} posts require authorProfileId`,
         path: ["authorProfileId"],
       });
     }
@@ -43,12 +46,19 @@ export type AtriumPost = z.infer<typeof zAtriumPost>;
 export const zAtriumPostPatch = z.object({
   kind: zAtriumPostKind.optional(),
   topics: z.array(z.string().trim().min(1)).optional(),
-  matchPostKinds: z.array(z.literal("post")).optional(),
+  matchPostKinds: z.array(zAtriumProbeMatchPostKind).optional(),
   title: z.string().trim().max(500).optional(),
   body: z.string().max(100_000).optional(),
 });
 
 export type AtriumPostPatch = z.infer<typeof zAtriumPostPatch>;
+
+/** Response for `GET /v1/agent/status`. */
+export const zAgentStatusResponse = z.object({
+  status: zAtriumPost.nullable(),
+});
+
+export type AgentStatusResponse = z.infer<typeof zAgentStatusResponse>;
 
 export function atriumPostLexicalText(p: AtriumPost): string {
   const topicLine =

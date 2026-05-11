@@ -14,7 +14,7 @@ export const postCreateLinearTransitions: CliLinearTransition[] = [
           name: "Kind",
           prompt: "Kind",
           constraints: {
-            choices: ["post", "probe"],
+            choices: ["post", "probe", "status"],
             maxSelections: 1,
           },
         },

@@ -30,7 +30,7 @@ describe("runLinearObpFlow", () => {
                 type: "choice",
                 name: "Kind",
                 prompt: "Kind",
-                constraints: { choices: ["post", "probe"], maxSelections: 1 },
+                constraints: { choices: ["post", "probe", "status"], maxSelections: 1 },
               },
             ],
           },

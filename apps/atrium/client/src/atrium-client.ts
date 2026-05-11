@@ -8,6 +8,7 @@ import {
   type AtriumProfilePatch,
   type AtriumRegistrationRequestBody,
   type AtriumRegistrationResult,
+  zAgentStatusResponse,
   zAtriumInviteListResponse,
   zAtriumInvitePreviewResponse,
   zAtriumPost,
@@ -68,6 +69,8 @@ const zAgentSyncSnapshot = z.object({
 });
 
 export type AgentSyncSnapshot = z.infer<typeof zAgentSyncSnapshot>;
+
+export type AgentStatusSnapshot = z.infer<typeof zAgentStatusResponse>;
 
 async function readErrorMessage(res: Response): Promise<string> {
   const text = await res.text();
@@ -219,6 +222,15 @@ export class AtriumClient {
       headers: { "X-Agent-Did": did },
       parse: zAgentSyncSnapshot,
     });
+  }
+
+  /** Current `kind: "status"` post for the agent, if any (`GET /v1/agent/status`). */
+  async getAgentStatus(did: string): Promise<AtriumPost | null> {
+    const out = await this.requestJson("GET", "/v1/agent/status", {
+      headers: { "X-Agent-Did": did },
+      parse: zAgentStatusResponse,
+    });
+    return out.status;
   }
 
   async register(body: AtriumRegistrationRequestBody): Promise<AtriumRegistrationResult> {

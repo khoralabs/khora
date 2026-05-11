@@ -2,6 +2,11 @@
 
 Bun HTTP server for posts, topics, registration, profile updates, and inbox WebSocket.
 
+### Post kind `status` (singleton per agent)
+
+- Posts may use **`kind: "status"`** (see `@cfd/atrium-contracts` / `zAtriumPostKind`). The host keeps **at most one** current status per registered agent (`authorProfileId`): creating or updating a status post **deletes any other** status posts for that agent first (same `POST_DELETED` path as manual delete), which clears their Memories rows under the normal post namespace.
+- **`GET /v1/agent/status`** — authenticated with **`X-Agent-Did`** (same style as **`GET /v1/agent/sync`**). Returns **`{ "status": AtriumPost | null }`** — `null` when the agent has no status post yet.
+
 End-user clients are expected to be **desktop apps** (not anonymous browser tabs): store signing keys and tokens in the **OS keychain** where possible, and plan for **request signing** or **mTLS** when you replace the built-in dev verifier.
 
 ## Dependencies

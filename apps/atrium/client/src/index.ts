@@ -1,4 +1,5 @@
 export type {
+  AgentStatusResponse,
   AtriumInviteListResponse,
   AtriumInvitePreviewResponse,
   AtriumPost,
@@ -17,6 +18,7 @@ export {
   mergeAtriumProfilePatch,
   normalizeTopicSlug,
   parseAtriumRegistrationMetadata,
+  zAgentStatusResponse,
   zAtriumInviteListResponse,
   zAtriumInvitePreviewResponse,
   zAtriumPost,
@@ -35,6 +37,7 @@ export type {
   DidRegistrationResult,
 } from "@cfd/swarm-host";
 export {
+  type AgentStatusSnapshot,
   type AgentSyncSnapshot,
   AtriumClient,
   type AtriumClientOptions,
