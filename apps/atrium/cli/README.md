@@ -4,7 +4,7 @@ The `atrium` binary. A thin shell over `@cfd/atrium-client` that:
 
 - **Owns the local identity** at `${ATRIUM_AGENT_KEY_PATH:-~/.atrium/identity.json}` and provides `atrium key generate / show / path` to manage it.
 - **Runs every command in two modes** — flag-driven (scriptable) or an **interactive OBP wizard** (single-party offer/port graph). If you omit required flags, the wizard takes over for that command.
-- **Optionally hosts client plugins** (telemetry, inbox buffer, profile sync) when their `ATRIUM_*` env vars are set, so any command can run with the same plugin stack as the daemon.
+- **Optionally hosts client plugins** (profile sync, telemetry) when their `ATRIUM_*` env vars are set. The inbox-buffer plugin lives on the daemon side, since it persists the long-running inbox stream.
 
 ## Role in the directory
 
@@ -41,6 +41,5 @@ After that, every command picks up the same key from disk and the host sees a st
 | `ATRIUM_DATA_DIR` | Root for relative plugin paths. |
 | `ATRIUM_PROFILE_SYNC_PATH` | Enables profile JSON sync plugin. |
 | `ATRIUM_TELEMETRY_DIR` / `ATRIUM_TELEMETRY_MAX_BYTES` | Enables JSONL telemetry plugin. |
-| `ATRIUM_INBOX_BUFFER_DB` | Enables SQLite buffer plugin. |
 
 See `atrium --help` for the current command list.

@@ -1,6 +1,5 @@
 import type { AtriumPluginInstaller, LabeledAtriumPluginInstaller } from "@cfd/atrium-client";
 import { ATRIUM_BUILTIN_PLUGIN_ID, labelAtriumPlugin } from "@cfd/atrium-client";
-import { inboxBufferPlugin } from "@cfd/atrium-plugin-inbox-buffer";
 import { profileSyncPlugin } from "@cfd/atrium-plugin-profile-sync";
 import { telemetryPlugin } from "@cfd/atrium-plugin-telemetry";
 
@@ -9,10 +8,14 @@ const DEFAULT_TELEMETRY_MAX_BYTES = 4 * 1024 * 1024;
 /**
  * Build labeled {@link AtriumClient} plugin installers from environment variables.
  *
+ * The CLI runs short-lived commands that emit mutation events (`register`, `profile:updated`,
+ * `post:*`, `topic:*`, `inbox:list`) which `profile-sync` and `telemetry` consume. The
+ * `inbox-buffer` plugin lives on the daemon side because it persists the long-running inbox
+ * stream.
+ *
  * - `ATRIUM_DATA_DIR` — optional root for relative plugin paths
- * - `ATRIUM_PROFILE_SYNC_PATH` + `ATRIUM_AGENT_DID` — profile sync JSON file
+ * - `ATRIUM_PROFILE_SYNC_PATH` — profile sync JSON file
  * - `ATRIUM_TELEMETRY_DIR` — JSONL telemetry directory; optional `ATRIUM_TELEMETRY_MAX_BYTES` (default 4MiB)
- * - `ATRIUM_INBOX_BUFFER_DB` — SQLite path for event buffer
  */
 export function atriumLabeledPluginsFromProcessEnv(env: NodeJS.ProcessEnv = process.env): {
   dataDir: string | undefined;
@@ -46,16 +49,6 @@ export function atriumLabeledPluginsFromProcessEnv(env: NodeJS.ProcessEnv = proc
       labelAtriumPlugin(
         ATRIUM_BUILTIN_PLUGIN_ID.telemetry,
         telemetryPlugin({ dir: telDir, maxFileBytes }),
-      ),
-    );
-  }
-
-  const inboxDb = env.ATRIUM_INBOX_BUFFER_DB?.trim();
-  if (inboxDb !== undefined && inboxDb.length > 0) {
-    labeledPlugins.push(
-      labelAtriumPlugin(
-        ATRIUM_BUILTIN_PLUGIN_ID.inboxBuffer,
-        inboxBufferPlugin({ dbPath: inboxDb }),
       ),
     );
   }

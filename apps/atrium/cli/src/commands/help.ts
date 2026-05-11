@@ -69,7 +69,6 @@ Plugins (optional; set paths to enable):
   ATRIUM_DATA_DIR              Root for relative plugin paths
   ATRIUM_PROFILE_SYNC_PATH     Profile JSON sync (uses identity DID)
   ATRIUM_TELEMETRY_DIR         JSONL telemetry (optional ATRIUM_TELEMETRY_MAX_BYTES, default 4194304)
-  ATRIUM_INBOX_BUFFER_DB       SQLite path for client event buffer
 
 Commands:
   key generate [--out <path>] [--force]

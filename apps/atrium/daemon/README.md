@@ -5,7 +5,7 @@ The `atrium-daemon` binary. A long-lived process that:
 1. Loads the same Ed25519 identity the CLI uses (`${ATRIUM_AGENT_KEY_PATH:-~/.atrium/identity.json}`).
 2. Opens an authenticated **inbox WebSocket** via `AtriumClient.connectInbox`.
 3. Prints each `AtriumClientEvent` to stdout as a human-readable line (or as JSON lines with `--json` / `ATRIUM_DAEMON_JSON=1`).
-4. Installs any client plugins enabled through `ATRIUM_*` env vars so notifications can be buffered, profile-synced, or archived without the daemon doing it itself.
+4. Optionally installs the `inbox-buffer` client plugin when `ATRIUM_INBOX_BUFFER_DB` is set, so notifications are persisted for offline / replay use. Other client plugins (profile-sync, telemetry) live on the CLI side because the daemon never emits the mutation events they react to.
 
 ## Role in the directory
 
@@ -33,4 +33,5 @@ atrium post create --body "hello" --topics demo
 | `ATRIUM_BASE_URL` | Host endpoint (default `http://127.0.0.1:8787`). |
 | `ATRIUM_AGENT_KEY_PATH` | Override the identity file location. |
 | `ATRIUM_DAEMON_JSON` / `--json` | Emit JSON lines instead of pretty-printed events. |
-| `ATRIUM_DATA_DIR`, `ATRIUM_PROFILE_SYNC_PATH`, `ATRIUM_TELEMETRY_DIR`, `ATRIUM_TELEMETRY_MAX_BYTES`, `ATRIUM_INBOX_BUFFER_DB` | Same plugin env vars as the CLI. |
+| `ATRIUM_DATA_DIR` | Root for the inbox-buffer DB path when relative. |
+| `ATRIUM_INBOX_BUFFER_DB` | Enables the SQLite inbox-buffer plugin (absolute path, or relative to `ATRIUM_DATA_DIR`). |
