@@ -1,11 +1,10 @@
-import type { Database } from "bun:sqlite";
 import { type AtriumPost, normalizeTopicSlug } from "@cfd/atrium-contracts";
 import type { DefaultEntityMap } from "@cfd/memories-core";
 import { type EmbeddingModel, embedTextChunks } from "@cfd/memories-core/helpers";
 import type { SwarmHostEventHandlerCtx } from "@cfd/swarm-host";
 import { deliverAgentNotification } from "@cfd/swarm-host";
 import type { AtriumHostAppContext } from "./atrium-app-context.ts";
-import { listActiveProbeSubscribers } from "./persistence/sqlite/index.ts";
+import type { ProbeSubscribersRepo } from "./persistence/sqlite/index.ts";
 
 type SwarmHostOntology = typeof import("@cfd/swarm-host").swarmHostOntology;
 type TNode = SwarmHostOntology["nodeLabels"];
@@ -112,7 +111,7 @@ export async function fanOutProbeHits<
   TEntityMap extends Record<string, unknown> = DefaultEntityMap,
 >(params: {
   ctx: SwarmHostEventHandlerCtx<TNode, TEdge, TEntityMap>;
-  db: Database;
+  probeSubscribers: ProbeSubscribersRepo;
   embeddingModel?: EmbeddingModel;
   incomingPost: AtriumPost;
 }): Promise<void> {
@@ -124,7 +123,7 @@ export async function fanOutProbeHits<
 
   appCtxOrThrow(params.ctx);
 
-  const subscribers = listActiveProbeSubscribers(params.db, Date.now());
+  const subscribers = params.probeSubscribers.listActive(Date.now());
   if (subscribers.length === 0) return;
 
   const text = lexicalTextForProbeSearch(params.incomingPost).trim();

@@ -1,11 +1,9 @@
-import type { Database } from "bun:sqlite";
 import { ids } from "@cfd/memories-core";
 import {
   isSystemSearchMetaSourceKey,
   MEMORY_SEARCH_META_SOURCE_KEY,
 } from "@cfd/memories-core/search-meta-constants";
 import { blobToVector } from "../connection";
-import { vectorVecTableName } from "../search-indexes";
 import { loadGraphEdge } from "../visualization/projection";
 import type { DbCtx } from "./context";
 import { insertSourceMap } from "./source-maps";
@@ -155,7 +153,7 @@ export function buildCanonicalMemorySearchMetaText(
 }
 
 function deleteVectorRowAndVecIndex(
-  db: Database,
+  ctx: DbCtx,
   vectorFeatureId: string,
   vectorBlob: Buffer | Uint8Array,
 ) {
@@ -164,14 +162,13 @@ function deleteVectorRowAndVecIndex(
   );
   const dim = floats.length;
   if (dim < 512 || dim > 3072) return;
-  const vTable = vectorVecTableName(dim).replaceAll('"', '""');
-  db.run(`DELETE FROM "${vTable}" WHERE vector_feature_id = ?`, [vectorFeatureId]);
-  db.run(`DELETE FROM vector_features WHERE _id = ?`, [vectorFeatureId]);
+  ctx.stmts.getDeleteVectorVecByFeatureId(dim).run(vectorFeatureId);
+  ctx.stmts.deleteVectorFeaturesByFeatureId.run(vectorFeatureId);
 }
 
 /** Remove synthetic search-meta chunk for a memory if present. */
 export function removeMemorySearchMeta(ctx: DbCtx, memoryId: string): void {
-  const { db } = ctx;
+  const { db, stmts } = ctx;
   const sourceMapId = ids.sourceMap(memoryId, MEMORY_SEARCH_META_SOURCE_KEY);
   const sm = db
     .query<{ _id: string }, [string]>(`SELECT _id FROM source_maps WHERE _id = ?`)
@@ -179,9 +176,9 @@ export function removeMemorySearchMeta(ctx: DbCtx, memoryId: string): void {
   if (!sm) return;
 
   const textFeatureId = ids.textFeature(sourceMapId);
-  db.run(`DELETE FROM text_features_fts WHERE text_feature_id = ?`, [textFeatureId]);
-  db.run(`DELETE FROM text_features_fts WHERE source_map_id = ?`, [sourceMapId]);
-  db.run(`DELETE FROM text_features WHERE source_map_id = ?`, [sourceMapId]);
+  stmts.deleteTextFeaturesFtsByTextFeatureId.run(textFeatureId);
+  stmts.deleteTextFeaturesFtsBySourceMapId.run(sourceMapId);
+  stmts.deleteTextFeaturesBySourceMapId.run(sourceMapId);
 
   const vfRows = db
     .query<{ _id: string; vector: Buffer | Uint8Array }, [string]>(
@@ -189,10 +186,10 @@ export function removeMemorySearchMeta(ctx: DbCtx, memoryId: string): void {
     )
     .all(sourceMapId);
   for (const row of vfRows) {
-    deleteVectorRowAndVecIndex(db, row._id, row.vector);
+    deleteVectorRowAndVecIndex(ctx, row._id, row.vector);
   }
 
-  db.run(`DELETE FROM source_maps WHERE _id = ?`, [sourceMapId]);
+  stmts.deleteSourceMapById.run(sourceMapId);
 }
 
 /**
@@ -251,7 +248,7 @@ export function upsertMemorySearchMetaVector(
     )
     .all(sourceMapId);
   for (const row of vfRows) {
-    deleteVectorRowAndVecIndex(ctx.db, row._id, row.vector);
+    deleteVectorRowAndVecIndex(ctx, row._id, row.vector);
   }
 
   insertVectorFeature(ctx, {

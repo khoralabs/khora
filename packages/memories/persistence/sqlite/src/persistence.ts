@@ -12,6 +12,7 @@ import type {
 import type { SourceMap, TextFeatureExportRow } from "@cfd/memories-core/persistence";
 import type { MemoryProvenanceEvent } from "@cfd/memories-core/provenance";
 import type { DbCtx } from "./models/context";
+import { type MemoriesSqliteStmts, prepareMemoriesSqliteStmts } from "./models/prepared-stmts";
 import { insertEdgeLabelAssignment } from "./models/edge-label-assignments";
 import { ensureEdgeLabel } from "./models/edge-labels";
 import { insertEdge } from "./models/edges";
@@ -80,13 +81,21 @@ export class MemoriesPersistence implements IMemoriesPersistence {
     asOfTimestampMsSearch: true,
   };
 
+  private readonly stmts: MemoriesSqliteStmts;
+
   constructor(
     private readonly db: Database,
     private readonly labelPropsSearchFormatter?: LabelPropsSearchFormatter,
-  ) {}
+  ) {
+    this.stmts = prepareMemoriesSqliteStmts(db);
+  }
 
   private ctx(op: MemoryOpContext): DbCtx {
-    return { db: this.db, now: op.now };
+    return { db: this.db, now: op.now, stmts: this.stmts };
+  }
+
+  private readCtx(): DbCtx {
+    return { db: this.db, now: 0, stmts: this.stmts };
   }
 
   withTransaction<T>(fn: () => T): T {
@@ -102,7 +111,7 @@ export class MemoriesPersistence implements IMemoriesPersistence {
   }
 
   loadMemoryNamespaceKey(memoryId: string): { namespace: string; key: string } | undefined {
-    return loadMemoryNamespaceKeyRow({ db: this.db, now: 0 }, memoryId);
+    return loadMemoryNamespaceKeyRow(this.readCtx(), memoryId);
   }
 
   upsertScope(op: MemoryOpContext, input: { scopeId: string }): void {
@@ -128,7 +137,7 @@ export class MemoriesPersistence implements IMemoriesPersistence {
   }
 
   listScopesForMemory(memoryId: string): string[] {
-    return listScopesForMemoryRow({ db: this.db, now: 0 }, memoryId);
+    return listScopesForMemoryRow(this.readCtx(), memoryId);
   }
 
   clearMemorySubtree(
@@ -147,7 +156,7 @@ export class MemoriesPersistence implements IMemoriesPersistence {
     | { memoryId: string; kind: "node"; nodeId: string }
     | { memoryId: string; kind: "edge"; edgeId: string }
     | undefined {
-    return findMemoryAssociation({ db: this.db, now: 0 }, namespace, key);
+    return findMemoryAssociation(this.readCtx(), namespace, key);
   }
 
   upsertMemory(
@@ -229,11 +238,11 @@ export class MemoriesPersistence implements IMemoriesPersistence {
   }
 
   findMemoryIdByKey(namespace: string, key: string): string | undefined {
-    return findMemoryIdByKey({ db: this.db, now: 0 }, namespace, key);
+    return findMemoryIdByKey(this.readCtx(), namespace, key);
   }
 
   nodeExists(nodeId: string): boolean {
-    return nodeExists({ db: this.db, now: 0 }, nodeId);
+    return nodeExists(this.readCtx(), nodeId);
   }
 
   insertEdge(
@@ -300,12 +309,12 @@ export class MemoriesPersistence implements IMemoriesPersistence {
       | { memoryKind: "edge"; edgeId: string },
   ): void {
     if (input.memoryKind === "node") {
-      this.db.run(`DELETE FROM memories WHERE _id = ?`, [input.memoryId]);
-      this.db.run(`DELETE FROM nodes WHERE _id = ?`, [input.nodeId]);
+      this.stmts.deleteMemoryById.run(input.memoryId);
+      this.stmts.deleteNodeById.run(input.nodeId);
       return;
     }
     /** With `edge_id` FK ON DELETE CASCADE, removing the edge removes the edge-attached memory row. */
-    this.db.run(`DELETE FROM edges WHERE _id = ?`, [input.edgeId]);
+    this.stmts.deleteEdgeById.run(input.edgeId);
   }
 
   searchLexicalSourceMapIds(input: {
@@ -315,7 +324,7 @@ export class MemoriesPersistence implements IMemoriesPersistence {
     memoryIds?: string[];
     asOfTimestampMs?: number;
   }): string[] {
-    return searchLexicalSourceMapIds({ db: this.db, now: 0 }, input);
+    return searchLexicalSourceMapIds(this.readCtx(), input);
   }
 
   searchVectorSourceMapIds(input: {
@@ -326,11 +335,11 @@ export class MemoriesPersistence implements IMemoriesPersistence {
     maxVectorDistance?: number;
     asOfTimestampMs?: number;
   }): string[] {
-    return searchVectorSourceMapIds({ db: this.db, now: 0 }, input);
+    return searchVectorSourceMapIds(this.readCtx(), input);
   }
 
   hydrateSourceMapHits(sourceMapIds: readonly string[]) {
-    return hydrateSourceMapHits({ db: this.db, now: 0 }, sourceMapIds);
+    return hydrateSourceMapHits(this.readCtx(), sourceMapIds);
   }
 
   listNeighborsForMemory<
@@ -341,7 +350,7 @@ export class MemoriesPersistence implements IMemoriesPersistence {
     key: string;
     filters?: NeighborFilter<EDGE_LABEL, NODE_LABEL>;
   }): HydratedNeighbor[] {
-    return listNeighborsForMemory<EDGE_LABEL, NODE_LABEL>({ db: this.db, now: 0 }, input);
+    return listNeighborsForMemory<EDGE_LABEL, NODE_LABEL>(this.readCtx(), input);
   }
 
   listNeighborsForEdgeMemory<
@@ -352,15 +361,15 @@ export class MemoriesPersistence implements IMemoriesPersistence {
     edgeId: string;
     filters?: NeighborFilter<EDGE_LABEL, NODE_LABEL>;
   }): HydratedNeighbor[] {
-    return listNeighborsForEdgeMemory<EDGE_LABEL, NODE_LABEL>({ db: this.db, now: 0 }, input);
+    return listNeighborsForEdgeMemory<EDGE_LABEL, NODE_LABEL>(this.readCtx(), input);
   }
 
   listSourceMapsForMemory(memoryId: string, limit: number): SourceMap[] {
-    return listSourceMapsForMemoryQuery({ db: this.db, now: 0 }, memoryId, limit);
+    return listSourceMapsForMemoryQuery(this.readCtx(), memoryId, limit);
   }
 
   listTextFeatureExportRowsForMemory(memoryId: string): TextFeatureExportRow[] {
-    return listTextFeatureExportRowsForMemoryQuery({ db: this.db, now: 0 }, memoryId);
+    return listTextFeatureExportRowsForMemoryQuery(this.readCtx(), memoryId);
   }
 
   listVectorEmbeddingIndexDimensions(): number[] {

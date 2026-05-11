@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mergeMemory, namespacePath } from "@cfd/memories-core";
 import { openMemoriesDatabase } from "../connection";
 import { createMemoriesPersistence } from "../persistence";
+import { prepareMemoriesSqliteStmts } from "./prepared-stmts";
 import { searchLexicalSourceMapIds } from "./search";
 
 describe("searchLexicalSourceMapIds namespace index", () => {
@@ -19,7 +20,7 @@ describe("searchLexicalSourceMapIds namespace index", () => {
       },
     );
     const ids = searchLexicalSourceMapIds(
-      { db, now: Date.now() },
+      { db, now: Date.now(), stmts: prepareMemoriesSqliteStmts(db) },
       {
         scope: { kind: "pathSubtree", namespaces: [namespacePath("org/team")] },
         text: "xyzzy123",

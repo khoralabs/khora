@@ -12,7 +12,7 @@ export function upsertNodeForMemoryKey(
     properties?: Record<string, unknown>;
   },
 ): { nodeId: string } {
-  const { db, now } = ctx;
+  const { now, stmts } = ctx;
   const nodeId = ids.node(input.namespace, input.memoryKey);
   const doc = documentValidator(memoriesPersistenceDocumentSchema, "nodes");
   doc.parse({
@@ -22,10 +22,12 @@ export function upsertNodeForMemoryKey(
     value: input.memoryKey,
     properties: input.properties,
   });
-  db.run(
-    `INSERT INTO nodes (_id, _ts_created, memory_id, value, properties) VALUES (?, ?, ?, ?, ?)
-     ON CONFLICT(_id) DO UPDATE SET memory_id = excluded.memory_id, value = excluded.value, properties = excluded.properties`,
-    [nodeId, now, input.memoryId, input.memoryKey, jsonOrNull(input.properties)],
+  stmts.upsertNode.run(
+    nodeId,
+    now,
+    input.memoryId,
+    input.memoryKey,
+    jsonOrNull(input.properties),
   );
   return { nodeId };
 }

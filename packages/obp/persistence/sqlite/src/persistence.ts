@@ -1,4 +1,4 @@
-import type { Database } from "bun:sqlite";
+import type { Database, Statement } from "bun:sqlite";
 import {
   type BindListingRow,
   type BindPortInput,
@@ -232,20 +232,55 @@ function throwBindFailure(failure: BindValidationFailure): never {
 }
 
 export class ObpSqlitePersistence implements ObpPersistence {
+  private readonly insertParty: Statement;
+  private readonly updatePortExpiresSeq: Statement;
+  private readonly updateOfferExpiresSeq: Statement;
+  private readonly updatePortsExpiresSeqForOffer: Statement;
+  private readonly insertOffer: Statement;
+  private readonly insertExtend: Statement;
+  private readonly insertBind: Statement;
+  private readonly insertPort: Statement;
+  private readonly insertExpose: Statement;
+
   constructor(
     private readonly db: Database,
     private readonly ledgerSeq: () => number,
-  ) {}
+  ) {
+    this.insertParty = db.prepare(
+      `INSERT INTO obp_parties (id, created_seq, name, sourcemaps_json) VALUES (?, ?, ?, ?)`,
+    );
+    this.updatePortExpiresSeq = db.prepare(
+      `UPDATE obp_ports SET expires_seq = ? WHERE id = ?`,
+    );
+    this.updateOfferExpiresSeq = db.prepare(
+      `UPDATE obp_offers SET expires_seq = ? WHERE id = ?`,
+    );
+    this.updatePortsExpiresSeqForOffer = db.prepare(
+      `UPDATE obp_ports SET expires_seq = ? WHERE id IN (SELECT port_id FROM obp_exposes WHERE offer_id = ?)`,
+    );
+    this.insertOffer = db.prepare(
+      `INSERT INTO obp_offers (id, created_seq, expires_seq, type, sourcemaps_json) VALUES (?, ?, ?, ?, ?)`,
+    );
+    this.insertExtend = db.prepare(
+      `INSERT INTO obp_extends (edge_id, party_id, offer_id, created_seq, sourcemaps_json) VALUES (?, ?, ?, ?, ?)`,
+    );
+    this.insertBind = db.prepare(
+      `INSERT INTO obp_binds (edge_id, offer_id, port_id, created_seq, sourcemaps_json, counterparty_bind_json, bind_policy_json, content_receipts_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    );
+    this.insertPort = db.prepare(
+      `INSERT INTO obp_ports (id, created_seq, expires_seq, type, promise, max_bindings, terminal, ref, sourcemaps_json, ttl_basis, ttl_measure, expose_seq, bind_policy_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    );
+    this.insertExpose = db.prepare(
+      `INSERT INTO obp_exposes (edge_id, offer_id, port_id, created_seq, sourcemaps_json) VALUES (?, ?, ?, ?, ?)`,
+    );
+  }
 
   registerParty(input: RegisterPartyInput): { party: Party } {
     return this.db.transaction(() => {
       const id = crypto.randomUUID();
       const seq = this.ledgerSeq();
       const smJson = stringifySourcemaps(input.sourcemaps);
-      this.db.run(
-        `INSERT INTO obp_parties (id, created_seq, name, sourcemaps_json) VALUES (?, ?, ?, ?)`,
-        [id, seq, input.name, smJson],
-      );
+      this.insertParty.run(id, seq, input.name, smJson);
       return {
         party: {
           id,
@@ -306,7 +341,7 @@ export class ObpSqlitePersistence implements ObpPersistence {
     if (pr.kind === "notFound") {
       throw new ObpError("NOT_FOUND", `Port not found: ${portId}`);
     }
-    this.db.run(`UPDATE obp_ports SET expires_seq = ? WHERE id = ?`, [expiresSeq, portId]);
+    this.updatePortExpiresSeq.run(expiresSeq, portId);
   }
 
   setOfferExpiresSeq(offerId: string, expiresSeq: number): void {
@@ -315,11 +350,8 @@ export class ObpSqlitePersistence implements ObpPersistence {
       throw new ObpError("NOT_FOUND", `Offer not found: ${offerId}`);
     }
     this.db.transaction(() => {
-      this.db.run(`UPDATE obp_offers SET expires_seq = ? WHERE id = ?`, [expiresSeq, offerId]);
-      this.db.run(
-        `UPDATE obp_ports SET expires_seq = ? WHERE id IN (SELECT port_id FROM obp_exposes WHERE offer_id = ?)`,
-        [expiresSeq, offerId],
-      );
+      this.updateOfferExpiresSeq.run(expiresSeq, offerId);
+      this.updatePortsExpiresSeqForOffer.run(expiresSeq, offerId);
     })();
   }
 
@@ -340,16 +372,10 @@ export class ObpSqlitePersistence implements ObpPersistence {
         created_seq: seq,
       };
       const smJson = stringifySourcemaps(offer.sourcemaps);
-      this.db.run(
-        `INSERT INTO obp_offers (id, created_seq, expires_seq, type, sourcemaps_json) VALUES (?, ?, ?, ?, ?)`,
-        [offer.id, offer.created_seq, offer.expires_seq, offer.type, smJson],
-      );
+      this.insertOffer.run(offer.id, offer.created_seq, offer.expires_seq, offer.type, smJson);
 
       const extId = crypto.randomUUID();
-      this.db.run(
-        `INSERT INTO obp_extends (edge_id, party_id, offer_id, created_seq, sourcemaps_json) VALUES (?, ?, ?, ?, ?)`,
-        [extId, input.partyId, offer.id, seq, "[]"],
-      );
+      this.insertExtend.run(extId, input.partyId, offer.id, seq, "[]");
 
       const bindPortId = input.bindPortId.trim();
       if (bindPortId !== "") {
@@ -378,9 +404,15 @@ export class ObpSqlitePersistence implements ObpPersistence {
         const bindPolicyJson =
           port.bind_policy !== undefined ? JSON.stringify(port.bind_policy) : null;
         const receiptsJson = stringifyContentReceipts(input.content_receipts);
-        this.db.run(
-          `INSERT INTO obp_binds (edge_id, offer_id, port_id, created_seq, sourcemaps_json, counterparty_bind_json, bind_policy_json, content_receipts_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [bindEdge, offer.id, bindPortId, seq, "[]", cbJson, bindPolicyJson, receiptsJson],
+        this.insertBind.run(
+          bindEdge,
+          offer.id,
+          bindPortId,
+          seq,
+          "[]",
+          cbJson,
+          bindPolicyJson,
+          receiptsJson,
         );
       }
 
@@ -429,30 +461,24 @@ export class ObpSqlitePersistence implements ObpPersistence {
         throw new ObpError("REF_MISSING", `Missing port in ref chain: ${resolved.missingId}`);
       }
 
-      this.db.run(
-        `INSERT INTO obp_ports (id, created_seq, expires_seq, type, promise, max_bindings, terminal, ref, sourcemaps_json, ttl_basis, ttl_measure, expose_seq, bind_policy_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          port.id,
-          port.created_seq,
-          port.expires_seq,
-          port.type,
-          port.promise,
-          port.max_bindings,
-          port.terminal ? 1 : 0,
-          port.ref,
-          smJson,
-          ttlBasis,
-          ttlMeasure,
-          exposeSeq,
-          bindPolicyJson,
-        ],
+      this.insertPort.run(
+        port.id,
+        port.created_seq,
+        port.expires_seq,
+        port.type,
+        port.promise,
+        port.max_bindings,
+        port.terminal ? 1 : 0,
+        port.ref,
+        smJson,
+        ttlBasis,
+        ttlMeasure,
+        exposeSeq,
+        bindPolicyJson,
       );
 
       const exId = crypto.randomUUID();
-      this.db.run(
-        `INSERT INTO obp_exposes (edge_id, offer_id, port_id, created_seq, sourcemaps_json) VALUES (?, ?, ?, ?, ?)`,
-        [exId, input.offerId, port.id, seq, "[]"],
-      );
+      this.insertExpose.run(exId, input.offerId, port.id, seq, "[]");
 
       return { port };
     })();
@@ -488,9 +514,15 @@ export class ObpSqlitePersistence implements ObpPersistence {
         portRes.port.bind_policy !== undefined ? JSON.stringify(portRes.port.bind_policy) : null;
       const receiptsJson = stringifyContentReceipts(input.content_receipts);
       try {
-        this.db.run(
-          `INSERT INTO obp_binds (edge_id, offer_id, port_id, created_seq, sourcemaps_json, counterparty_bind_json, bind_policy_json, content_receipts_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [bindEdge, input.offerId, input.portId, seq, "[]", cbJson, bindPolicyJson, receiptsJson],
+        this.insertBind.run(
+          bindEdge,
+          input.offerId,
+          input.portId,
+          seq,
+          "[]",
+          cbJson,
+          bindPolicyJson,
+          receiptsJson,
         );
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);

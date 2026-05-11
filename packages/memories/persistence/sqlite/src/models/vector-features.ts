@@ -2,14 +2,14 @@ import { ids } from "@cfd/memories-core";
 import { memoriesPersistenceDocumentSchema } from "@cfd/memories-core/persistence";
 import { documentValidator } from "../_lib";
 import { vectorToBlob } from "../connection";
-import { ensureVectorFeaturesVecTable, vectorVecTableName } from "../search-indexes";
+import { ensureVectorFeaturesVecTable } from "../search-indexes";
 import type { DbCtx } from "./context";
 
 export function insertVectorFeature(
   ctx: DbCtx,
   input: { memoryId: string; sourceMapId: string; vector: Float32Array },
 ): { vectorFeatureId: string } {
-  const { db, now } = ctx;
+  const { db, now, stmts } = ctx;
   const vectorFeatureId = ids.vectorFeature(input.sourceMapId);
   const doc = documentValidator(memoriesPersistenceDocumentSchema, "vector_features");
   const parsed = doc.safeParse({
@@ -25,16 +25,14 @@ export function insertVectorFeature(
   const vfRow = parsed.data;
   const dim = input.vector.length;
   const blob = vectorToBlob(input.vector);
-  db.run(
-    `INSERT INTO vector_features (_id, _ts_created, memory_id, source_map_id, vector) VALUES (?, ?, ?, ?, ?)`,
-    [vfRow._id, vfRow._ts_created, vfRow.memory_id, vfRow.source_map_id, blob],
+  stmts.insertVectorFeatureRow.run(
+    vfRow._id,
+    vfRow._ts_created,
+    vfRow.memory_id,
+    vfRow.source_map_id,
+    blob,
   );
   ensureVectorFeaturesVecTable(db, dim);
-  const vTable = vectorVecTableName(dim).replaceAll('"', '""');
-  db.run(`INSERT INTO "${vTable}" (vector_feature_id, memory_id, embedding) VALUES (?, ?, ?)`, [
-    vfRow._id,
-    input.memoryId,
-    input.vector,
-  ]);
+  stmts.getInsertVectorVec(dim).run(vfRow._id, input.memoryId, input.vector);
   return { vectorFeatureId };
 }

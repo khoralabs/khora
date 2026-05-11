@@ -24,12 +24,12 @@ import type { AtriumHostAppContext } from "./atrium-app-context.ts";
 import { atriumSwarmMemoryOpMapper } from "./atrium-memory-sync.ts";
 import { fanOutProbeHits, fanOutTopicSubscriptions } from "./atrium-post-fanout.ts";
 import {
+  createProbeSubscribersRepo,
+  type ProbeSubscribersRepo,
   createSqliteAgentNotificationBuffer,
   createSwarmHostDocumentStore,
   createSwarmHostSqlitePersistence,
-  deleteProbeSubscriber,
   ensureSwarmHostSqliteSchema,
-  upsertProbeSubscriber,
 } from "./persistence/sqlite/index.ts";
 
 type TNode = typeof swarmHostOntology.nodeLabels;
@@ -77,6 +77,7 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
 
   const notificationBuffer = createSqliteAgentNotificationBuffer(db);
   const inboxHub = createInboxWsHub();
+  const probeSubscribers = createProbeSubscribersRepo(db);
 
   const appContext: AtriumHostAppContext = {
     db,
@@ -171,14 +172,14 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
         });
 
         if (post.kind === "probe") {
-          await syncProbeSubscriber(ac, post);
+          await syncProbeSubscriber(probeSubscribers, ac, post);
         }
 
         if (event.kind === SWARM_EVENT_KIND.POST_CREATED) {
           await fanOutTopicSubscriptions({ ctx, post });
           await fanOutProbeHits({
             ctx,
-            db: ac.db,
+            probeSubscribers,
             embeddingModel: ac.embeddingModel,
             incomingPost: post,
           });
@@ -189,7 +190,7 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
       if (event.kind === SWARM_EVENT_KIND.POST_DELETED) {
         const post = event.payload.post;
         if (post.kind === "probe") {
-          deleteProbeSubscriber(ac.db, post.id);
+          probeSubscribers.delete(post.id);
         }
         ctx.persistence.posts.deleteById(post.id);
       }
@@ -217,7 +218,11 @@ function normalizedTopicSlugs(topics: readonly string[] | undefined): string[] |
   return out.length === 0 ? null : out;
 }
 
-async function syncProbeSubscriber(ac: AtriumHostAppContext, post: AtriumPost): Promise<void> {
+async function syncProbeSubscriber(
+  repo: ProbeSubscribersRepo,
+  ac: AtriumHostAppContext,
+  post: AtriumPost,
+): Promise<void> {
   if (post.kind !== "probe") return;
   if (post.authorProfileId === undefined || post.authorProfileId.length === 0) return;
 
@@ -230,7 +235,7 @@ async function syncProbeSubscriber(ac: AtriumHostAppContext, post: AtriumPost): 
     }
   }
 
-  upsertProbeSubscriber(ac.db, {
+  repo.upsert({
     probePostId: post.id,
     ownerProfileId: post.authorProfileId,
     embeddingF32,

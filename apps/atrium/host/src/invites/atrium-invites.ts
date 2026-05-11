@@ -58,109 +58,6 @@ export function validateInviteEnvConfig(seedTokens: string[]): void {
   }
 }
 
-export function insertSeedInviteTokens(db: Database, pepper: string, plaintexts: string[]): number {
-  ensureSwarmHostSqliteSchema(db);
-  const now = Date.now();
-  let inserted = 0;
-  const stmt = db.prepare(
-    `INSERT OR IGNORE INTO atrium_invite_tokens (token_hash, created_at_ms, consumed_at_ms, consumed_by_did, minted_by_did, kind)
-     VALUES (?, ?, NULL, NULL, NULL, ?)`,
-  );
-  for (const t of plaintexts) {
-    const hash = hashInviteToken(pepper, t);
-    const r = stmt.run(hash, now, ATRIUM_INVITE_KIND.seed);
-    if (r.changes > 0) inserted++;
-  }
-  return inserted;
-}
-
-/**
- * If no root row exists and pepper is set, mint one root token and return plaintext (caller logs once).
- * If a root row already exists, return undefined.
- */
-export function ensureRootInviteIfAbsent(db: Database, pepper: string): string | undefined {
-  ensureSwarmHostSqliteSchema(db);
-  const exists = db
-    .query(`SELECT COUNT(1) AS c FROM atrium_invite_tokens WHERE kind = ?`)
-    .get(ATRIUM_INVITE_KIND.root) as { c: number } | null;
-  if (exists !== null && exists.c > 0) {
-    return undefined;
-  }
-  const plaintext = generateInvitePlaintext();
-  const hash = hashInviteToken(pepper, plaintext);
-  const now = Date.now();
-  try {
-    db.run(
-      `INSERT INTO atrium_invite_tokens (token_hash, created_at_ms, consumed_at_ms, consumed_by_did, minted_by_did, kind)
-       VALUES (?, ?, NULL, NULL, NULL, ?)`,
-      [hash, now, ATRIUM_INVITE_KIND.root],
-    );
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    if (msg.includes("UNIQUE")) {
-      return undefined;
-    }
-    throw e;
-  }
-  return plaintext;
-}
-
-export function tryConsumeInviteToken(
-  db: Database,
-  pepper: string,
-  plaintext: string,
-  consumerDid: string,
-): boolean {
-  ensureSwarmHostSqliteSchema(db);
-  const tokenHash = hashInviteToken(pepper, plaintext);
-  const now = Date.now();
-  const r = db.run(
-    `UPDATE atrium_invite_tokens SET consumed_at_ms = ?, consumed_by_did = ?
-     WHERE token_hash = ? AND consumed_at_ms IS NULL`,
-    [now, consumerDid, tokenHash],
-  );
-  return r.changes === 1;
-}
-
-export function rollbackInviteConsumption(
-  db: Database,
-  pepper: string,
-  plaintext: string,
-  consumerDid: string,
-): void {
-  ensureSwarmHostSqliteSchema(db);
-  const tokenHash = hashInviteToken(pepper, plaintext);
-  db.run(
-    `UPDATE atrium_invite_tokens SET consumed_at_ms = NULL, consumed_by_did = NULL
-     WHERE token_hash = ? AND consumed_by_did = ?`,
-    [tokenHash, consumerDid],
-  );
-}
-
-export function mintStandardInviteTokens(
-  db: Database,
-  pepper: string,
-  mintedByDid: string,
-  count: number,
-): string[] {
-  ensureSwarmHostSqliteSchema(db);
-  const now = Date.now();
-  const plaintexts: string[] = [];
-  const insert = db.prepare(
-    `INSERT INTO atrium_invite_tokens (token_hash, created_at_ms, consumed_at_ms, consumed_by_did, minted_by_did, kind)
-     VALUES (?, ?, NULL, NULL, ?, ?)`,
-  );
-  db.transaction(() => {
-    for (let i = 0; i < count; i++) {
-      const plaintext = generateInvitePlaintext();
-      const hash = hashInviteToken(pepper, plaintext);
-      insert.run(hash, now, mintedByDid, ATRIUM_INVITE_KIND.standard);
-      plaintexts.push(plaintext);
-    }
-  })();
-  return plaintexts;
-}
-
 export type AtriumInviteListRow = {
   preview: string;
   consumed: boolean;
@@ -168,36 +65,6 @@ export type AtriumInviteListRow = {
   createdAtMs: number;
   kind: string;
 };
-
-function previewFromHash(tokenHash: string): string {
-  if (tokenHash.length <= 12) return `${tokenHash.slice(0, 4)}…`;
-  return `${tokenHash.slice(0, 6)}…${tokenHash.slice(-4)}`;
-}
-
-export function listInvitesMintedForDid(db: Database, minterDid: string): AtriumInviteListRow[] {
-  ensureSwarmHostSqliteSchema(db);
-  const rows = db
-    .query(
-      `SELECT token_hash, created_at_ms, consumed_at_ms, consumed_by_did, kind
-       FROM atrium_invite_tokens
-       WHERE minted_by_did = ?
-       ORDER BY created_at_ms ASC`,
-    )
-    .all(minterDid) as {
-    token_hash: string;
-    created_at_ms: number;
-    consumed_at_ms: number | null;
-    consumed_by_did: string | null;
-    kind: string;
-  }[];
-  return rows.map((r) => ({
-    preview: previewFromHash(r.token_hash),
-    consumed: r.consumed_at_ms !== null,
-    consumedByDid: r.consumed_by_did ?? undefined,
-    createdAtMs: r.created_at_ms,
-    kind: r.kind,
-  }));
-}
 
 export type InvitePreviewResult =
   | {
@@ -207,36 +74,156 @@ export type InvitePreviewResult =
     }
   | { ok: false };
 
-export function previewInviteToken(
-  db: Database,
-  pepper: string,
-  plaintext: string,
-  loadProfileForDid: (did: string) => unknown | null | undefined,
-): InvitePreviewResult {
+function previewFromHash(tokenHash: string): string {
+  if (tokenHash.length <= 12) return `${tokenHash.slice(0, 4)}…`;
+  return `${tokenHash.slice(0, 6)}…${tokenHash.slice(-4)}`;
+}
+
+export type AtriumInvitesRepo = {
+  insertSeedInviteTokens(plaintexts: string[]): number;
+  /** Mint root token iff no root exists yet (returns plaintext on first call only). */
+  ensureRootInviteIfAbsent(): string | undefined;
+  tryConsumeInviteToken(plaintext: string, consumerDid: string): boolean;
+  rollbackInviteConsumption(plaintext: string, consumerDid: string): void;
+  mintStandardInviteTokens(mintedByDid: string, count: number): string[];
+  listInvitesMintedForDid(minterDid: string): AtriumInviteListRow[];
+  previewInviteToken(
+    plaintext: string,
+    loadProfileForDid: (did: string) => unknown | null | undefined,
+  ): InvitePreviewResult;
+};
+
+export function createAtriumInvitesRepo(db: Database, pepper: string): AtriumInvitesRepo {
   ensureSwarmHostSqliteSchema(db);
-  const tokenHash = hashInviteToken(pepper, plaintext);
-  const row = db
-    .query(
-      `SELECT consumed_at_ms, minted_by_did, kind FROM atrium_invite_tokens WHERE token_hash = ?`,
-    )
-    .get(tokenHash) as {
-    consumed_at_ms: number | null;
-    minted_by_did: string | null;
-    kind: string;
-  } | null;
-  if (row === undefined || row === null || row.consumed_at_ms !== null) {
-    return { ok: false };
-  }
-  if (row.minted_by_did !== null && row.minted_by_did.length > 0) {
-    const profile = loadProfileForDid(row.minted_by_did);
-    return {
-      ok: true,
-      inviter: { did: row.minted_by_did, profile: profile ?? null },
-      source: "inviter",
-    };
-  }
-  if (row.kind === ATRIUM_INVITE_KIND.root) {
-    return { ok: true, inviter: null, source: "root" };
-  }
-  return { ok: true, inviter: null, source: "seed" };
+
+  const insertSeed = db.prepare(
+    `INSERT OR IGNORE INTO atrium_invite_tokens (token_hash, created_at_ms, consumed_at_ms, consumed_by_did, minted_by_did, kind)
+     VALUES (?, ?, NULL, NULL, NULL, ?)`,
+  );
+  const countByKind = db.query<{ c: number }, [string]>(
+    `SELECT COUNT(1) AS c FROM atrium_invite_tokens WHERE kind = ?`,
+  );
+  const insertRoot = db.prepare(
+    `INSERT INTO atrium_invite_tokens (token_hash, created_at_ms, consumed_at_ms, consumed_by_did, minted_by_did, kind)
+     VALUES (?, ?, NULL, NULL, NULL, ?)`,
+  );
+  const consumeToken = db.prepare(
+    `UPDATE atrium_invite_tokens SET consumed_at_ms = ?, consumed_by_did = ?
+     WHERE token_hash = ? AND consumed_at_ms IS NULL`,
+  );
+  const rollbackToken = db.prepare(
+    `UPDATE atrium_invite_tokens SET consumed_at_ms = NULL, consumed_by_did = NULL
+     WHERE token_hash = ? AND consumed_by_did = ?`,
+  );
+  const insertStandard = db.prepare(
+    `INSERT INTO atrium_invite_tokens (token_hash, created_at_ms, consumed_at_ms, consumed_by_did, minted_by_did, kind)
+     VALUES (?, ?, NULL, NULL, ?, ?)`,
+  );
+  const selectMintedForDid = db.query<
+    {
+      token_hash: string;
+      created_at_ms: number;
+      consumed_at_ms: number | null;
+      consumed_by_did: string | null;
+      kind: string;
+    },
+    [string]
+  >(
+    `SELECT token_hash, created_at_ms, consumed_at_ms, consumed_by_did, kind
+     FROM atrium_invite_tokens
+     WHERE minted_by_did = ?
+     ORDER BY created_at_ms ASC`,
+  );
+  const selectByHashForPreview = db.query<
+    { consumed_at_ms: number | null; minted_by_did: string | null; kind: string },
+    [string]
+  >(`SELECT consumed_at_ms, minted_by_did, kind FROM atrium_invite_tokens WHERE token_hash = ?`);
+
+  return {
+    insertSeedInviteTokens(plaintexts) {
+      const now = Date.now();
+      let inserted = 0;
+      for (const t of plaintexts) {
+        const hash = hashInviteToken(pepper, t);
+        const r = insertSeed.run(hash, now, ATRIUM_INVITE_KIND.seed);
+        if (r.changes > 0) inserted++;
+      }
+      return inserted;
+    },
+
+    ensureRootInviteIfAbsent() {
+      const exists = countByKind.get(ATRIUM_INVITE_KIND.root);
+      if (exists !== null && exists !== undefined && exists.c > 0) {
+        return undefined;
+      }
+      const plaintext = generateInvitePlaintext();
+      const hash = hashInviteToken(pepper, plaintext);
+      try {
+        insertRoot.run(hash, Date.now(), ATRIUM_INVITE_KIND.root);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (msg.includes("UNIQUE")) {
+          return undefined;
+        }
+        throw e;
+      }
+      return plaintext;
+    },
+
+    tryConsumeInviteToken(plaintext, consumerDid) {
+      const tokenHash = hashInviteToken(pepper, plaintext);
+      const r = consumeToken.run(Date.now(), consumerDid, tokenHash);
+      return r.changes === 1;
+    },
+
+    rollbackInviteConsumption(plaintext, consumerDid) {
+      const tokenHash = hashInviteToken(pepper, plaintext);
+      rollbackToken.run(tokenHash, consumerDid);
+    },
+
+    mintStandardInviteTokens(mintedByDid, count) {
+      const plaintexts: string[] = [];
+      const now = Date.now();
+      db.transaction(() => {
+        for (let i = 0; i < count; i++) {
+          const plaintext = generateInvitePlaintext();
+          const hash = hashInviteToken(pepper, plaintext);
+          insertStandard.run(hash, now, mintedByDid, ATRIUM_INVITE_KIND.standard);
+          plaintexts.push(plaintext);
+        }
+      })();
+      return plaintexts;
+    },
+
+    listInvitesMintedForDid(minterDid) {
+      const rows = selectMintedForDid.all(minterDid);
+      return rows.map((r) => ({
+        preview: previewFromHash(r.token_hash),
+        consumed: r.consumed_at_ms !== null,
+        consumedByDid: r.consumed_by_did ?? undefined,
+        createdAtMs: r.created_at_ms,
+        kind: r.kind,
+      }));
+    },
+
+    previewInviteToken(plaintext, loadProfileForDid) {
+      const tokenHash = hashInviteToken(pepper, plaintext);
+      const row = selectByHashForPreview.get(tokenHash);
+      if (row === undefined || row === null || row.consumed_at_ms !== null) {
+        return { ok: false };
+      }
+      if (row.minted_by_did !== null && row.minted_by_did.length > 0) {
+        const profile = loadProfileForDid(row.minted_by_did);
+        return {
+          ok: true,
+          inviter: { did: row.minted_by_did, profile: profile ?? null },
+          source: "inviter",
+        };
+      }
+      if (row.kind === ATRIUM_INVITE_KIND.root) {
+        return { ok: true, inviter: null, source: "root" };
+      }
+      return { ok: true, inviter: null, source: "seed" };
+    },
+  };
 }

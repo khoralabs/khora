@@ -11,7 +11,7 @@ export function insertSourceMap(
 ): {
   sourceMapId: string;
 } {
-  const { db, now } = ctx;
+  const { now, stmts } = ctx;
   const sourceMapId = ids.sourceMap(input.memoryId, input.sourceKey);
   const doc = documentValidator(memoriesPersistenceDocumentSchema, "source_maps");
   doc.parse({
@@ -20,12 +20,7 @@ export function insertSourceMap(
     memory_id: input.memoryId,
     source_key: input.sourceKey,
   });
-  db.run(`INSERT INTO source_maps (_id, _ts_created, memory_id, source_key) VALUES (?, ?, ?, ?)`, [
-    sourceMapId,
-    now,
-    input.memoryId,
-    input.sourceKey,
-  ]);
+  stmts.insertSourceMap.run(sourceMapId, now, input.memoryId, input.sourceKey);
   return { sourceMapId };
 }
 
@@ -33,10 +28,9 @@ export function updateSourceMapContentHash(
   ctx: DbCtx,
   input: { sourceMapId: string } & SourceMapBodyParts,
 ): void {
-  const { db } = ctx;
   const hash = computeSourceMapContentHash({
     text: input.text,
     vector: input.vector,
   });
-  db.run(`UPDATE source_maps SET content_hash = ? WHERE _id = ?`, [hash, input.sourceMapId]);
+  ctx.stmts.updateSourceMapContentHash.run(hash, input.sourceMapId);
 }

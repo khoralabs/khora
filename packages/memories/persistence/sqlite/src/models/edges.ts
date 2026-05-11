@@ -12,7 +12,7 @@ export function insertEdge(
     idParts: { label: string; fromMemoryId: string; toMemoryId: string };
   },
 ): { edgeId: string } {
-  const { db, now } = ctx;
+  const { now, stmts } = ctx;
   const edgeId = ids.edge(
     input.fromNodeId,
     input.toNodeId,
@@ -28,9 +28,12 @@ export function insertEdge(
     to_node_id: input.toNodeId,
     properties: input.properties,
   });
-  db.run(
-    `INSERT OR REPLACE INTO edges (_id, _ts_created, from_node_id, to_node_id, properties) VALUES (?, ?, ?, ?, ?)`,
-    [edgeId, now, input.fromNodeId, input.toNodeId, jsonOrNull(input.properties)],
+  stmts.insertEdge.run(
+    edgeId,
+    now,
+    input.fromNodeId,
+    input.toNodeId,
+    jsonOrNull(input.properties),
   );
   return { edgeId };
 }

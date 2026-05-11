@@ -15,6 +15,13 @@ export type ProbeSubscriberUpsert = Omit<ProbeSubscriberRow, "embeddingF32"> & {
   embeddingF32: Float32Array | null;
 };
 
+export type ProbeSubscribersRepo = {
+  upsert(row: ProbeSubscriberUpsert): void;
+  delete(probePostId: string): void;
+  /** Returns probe subscribers whose `expires_at_ms` is null or strictly greater than `nowMs`. */
+  listActive(nowMs: number): ProbeSubscriberRow[];
+};
+
 function float32ToBlob(vec: Float32Array): Uint8Array {
   return new Uint8Array(vec.buffer, vec.byteOffset, vec.byteLength);
 }
@@ -22,39 +29,6 @@ function float32ToBlob(vec: Float32Array): Uint8Array {
 function blobToFloat32(blob: Uint8Array): Float32Array {
   const copy = new Uint8Array(blob);
   return new Float32Array(copy.buffer, copy.byteOffset, copy.byteLength / 4);
-}
-
-export function upsertProbeSubscriber(db: Database, row: ProbeSubscriberUpsert): void {
-  ensureSwarmHostSqliteSchema(db);
-  db.run(
-    `INSERT INTO probe_subscribers (
-       probe_post_id, owner_profile_id, embedding_blob,
-       min_hit_score, topic_slugs, match_post_kinds, expires_at_ms, updated_at
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-     ON CONFLICT(probe_post_id) DO UPDATE SET
-       owner_profile_id = excluded.owner_profile_id,
-       embedding_blob = excluded.embedding_blob,
-       min_hit_score = excluded.min_hit_score,
-       topic_slugs = excluded.topic_slugs,
-       match_post_kinds = excluded.match_post_kinds,
-       expires_at_ms = excluded.expires_at_ms,
-       updated_at = excluded.updated_at`,
-    [
-      row.probePostId,
-      row.ownerProfileId,
-      row.embeddingF32 !== null ? float32ToBlob(row.embeddingF32) : null,
-      row.minHitScore,
-      row.topicSlugs !== null ? JSON.stringify(row.topicSlugs) : null,
-      row.matchPostKinds !== null ? JSON.stringify(row.matchPostKinds) : null,
-      row.expiresAtMs,
-      Date.now(),
-    ],
-  );
-}
-
-export function deleteProbeSubscriber(db: Database, probePostId: string): void {
-  ensureSwarmHostSqliteSchema(db);
-  db.run(`DELETE FROM probe_subscribers WHERE probe_post_id = ?`, [probePostId]);
 }
 
 type RawRow = {
@@ -82,27 +56,58 @@ function parseJsonStringArray(raw: string | null): string[] | null {
   }
 }
 
-/** Returns probe subscribers whose `expires_at_ms` is null or strictly greater than `nowMs`. */
-export function listActiveProbeSubscribers(db: Database, nowMs: number): ProbeSubscriberRow[] {
+export function createProbeSubscribersRepo(db: Database): ProbeSubscribersRepo {
   ensureSwarmHostSqliteSchema(db);
-  const rows = db
-    .query<
-      RawRow,
-      [number]
-    >(
-      `SELECT probe_post_id, owner_profile_id, embedding_blob,
-              min_hit_score, topic_slugs, match_post_kinds, expires_at_ms
-       FROM probe_subscribers
-       WHERE expires_at_ms IS NULL OR expires_at_ms > ?`,
-    )
-    .all(nowMs);
-  return rows.map((r) => ({
-    probePostId: r.probe_post_id,
-    ownerProfileId: r.owner_profile_id,
-    embeddingF32: r.embedding_blob !== null ? blobToFloat32(r.embedding_blob) : null,
-    minHitScore: r.min_hit_score,
-    topicSlugs: parseJsonStringArray(r.topic_slugs),
-    matchPostKinds: parseJsonStringArray(r.match_post_kinds),
-    expiresAtMs: r.expires_at_ms,
-  }));
+
+  const upsertStmt = db.prepare(
+    `INSERT INTO probe_subscribers (
+       probe_post_id, owner_profile_id, embedding_blob,
+       min_hit_score, topic_slugs, match_post_kinds, expires_at_ms, updated_at
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(probe_post_id) DO UPDATE SET
+       owner_profile_id = excluded.owner_profile_id,
+       embedding_blob = excluded.embedding_blob,
+       min_hit_score = excluded.min_hit_score,
+       topic_slugs = excluded.topic_slugs,
+       match_post_kinds = excluded.match_post_kinds,
+       expires_at_ms = excluded.expires_at_ms,
+       updated_at = excluded.updated_at`,
+  );
+  const deleteStmt = db.prepare(`DELETE FROM probe_subscribers WHERE probe_post_id = ?`);
+  const listActiveStmt = db.query<RawRow, [number]>(
+    `SELECT probe_post_id, owner_profile_id, embedding_blob,
+            min_hit_score, topic_slugs, match_post_kinds, expires_at_ms
+     FROM probe_subscribers
+     WHERE expires_at_ms IS NULL OR expires_at_ms > ?`,
+  );
+
+  return {
+    upsert(row) {
+      upsertStmt.run(
+        row.probePostId,
+        row.ownerProfileId,
+        row.embeddingF32 !== null ? float32ToBlob(row.embeddingF32) : null,
+        row.minHitScore,
+        row.topicSlugs !== null ? JSON.stringify(row.topicSlugs) : null,
+        row.matchPostKinds !== null ? JSON.stringify(row.matchPostKinds) : null,
+        row.expiresAtMs,
+        Date.now(),
+      );
+    },
+    delete(probePostId) {
+      deleteStmt.run(probePostId);
+    },
+    listActive(nowMs) {
+      const rows = listActiveStmt.all(nowMs);
+      return rows.map((r) => ({
+        probePostId: r.probe_post_id,
+        ownerProfileId: r.owner_profile_id,
+        embeddingF32: r.embedding_blob !== null ? blobToFloat32(r.embedding_blob) : null,
+        minHitScore: r.min_hit_score,
+        topicSlugs: parseJsonStringArray(r.topic_slugs),
+        matchPostKinds: parseJsonStringArray(r.match_post_kinds),
+        expiresAtMs: r.expires_at_ms,
+      }));
+    },
+  };
 }

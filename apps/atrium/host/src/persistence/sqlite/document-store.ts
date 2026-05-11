@@ -1,8 +1,7 @@
 import type { Database } from "bun:sqlite";
 import type { DefaultEntityMap, ResolvedSource, SourceMap, Store } from "@cfd/memories-core";
 import type { TextFeatureExportRow } from "@cfd/memories-core/persistence";
-import type { SwarmHostEntityKind, SwarmHostEntityUpsert } from "@cfd/swarm-host";
-import { upsertSwarmHostEntity } from "./entity-sqlite.ts";
+import type { SwarmHostEntityKind } from "@cfd/swarm-host";
 import { ensureSwarmHostSqliteSchema } from "./schema.ts";
 
 export type SwarmHostDocumentStoreParsers<EntityMap extends Record<string, unknown>> = {
@@ -44,33 +43,6 @@ function parseEntitySourceKey(
   return fieldPath.length > 0 ? { domain, entityId, fieldPath } : { domain, entityId };
 }
 
-/** Convenience: full replace via {@link upsertSwarmHostEntity} (same as `persistence.profiles.upsert`). */
-export function upsertProfile(db: Database, row: SwarmHostEntityUpsert): void {
-  upsertSwarmHostEntity(db, "profile", row);
-}
-
-export function upsertPost(db: Database, row: SwarmHostEntityUpsert): void {
-  upsertSwarmHostEntity(db, "post", row);
-}
-
-export function upsertTopic(db: Database, row: SwarmHostEntityUpsert): void {
-  upsertSwarmHostEntity(db, "topic", row);
-}
-
-function getBodyJsonForResolve(
-  db: Database,
-  kind: EntityDomain,
-  entityId: string,
-  memoryId: string,
-): string | undefined {
-  const row = db
-    .query(
-      `SELECT body_json FROM host_entities WHERE kind = ? AND id = ? AND (memory_id IS NULL OR memory_id = ?)`,
-    )
-    .get(kind, entityId, memoryId) as { body_json: string } | null | undefined;
-  return row?.body_json;
-}
-
 function fieldValueToResolvedString(value: unknown): string {
   if (typeof value === "string") {
     return value;
@@ -79,51 +51,6 @@ function fieldValueToResolvedString(value: unknown): string {
     throw new Error("SwarmHostDocumentStore: missing field value");
   }
   return JSON.stringify(value);
-}
-
-function mergeEntityFieldFromSync(
-  db: Database,
-  kind: EntityDomain,
-  entityId: string,
-  fieldPath: string,
-  text: string,
-  memoryId: string,
-): void {
-  ensureSwarmHostSqliteSchema(db);
-  const now = Date.now();
-  const existing = db
-    .query(`SELECT body_json, memory_id FROM host_entities WHERE kind = ? AND id = ?`)
-    .get(kind, entityId) as { body_json: string; memory_id: string | null } | null | undefined;
-
-  let body: Record<string, unknown>;
-  if (existing != null) {
-    body = JSON.parse(existing.body_json) as Record<string, unknown>;
-  } else {
-    body = {};
-  }
-  body[fieldPath] = text;
-  const bodyJson = JSON.stringify(body);
-
-  if (existing != null) {
-    db.run(`UPDATE host_entities SET body_json = ?, updated_at = ? WHERE kind = ? AND id = ?`, [
-      bodyJson,
-      now,
-      kind,
-      entityId,
-    ]);
-    if ((existing.memory_id === null || existing.memory_id === "") && memoryId !== "") {
-      db.run(`UPDATE host_entities SET memory_id = ? WHERE kind = ? AND id = ?`, [
-        memoryId,
-        kind,
-        entityId,
-      ]);
-    }
-  } else {
-    db.run(
-      `INSERT INTO host_entities (kind, id, memory_id, body_json, updated_at) VALUES (?, ?, ?, ?, ?)`,
-      [kind, entityId, memoryId, bodyJson, now],
-    );
-  }
 }
 
 /**
@@ -138,6 +65,55 @@ export function createSwarmHostDocumentStore<
   ensureSwarmHostSqliteSchema(db);
   const parsers = options?.parsers;
 
+  const selectBodyForResolve = db.query<
+    { body_json: string },
+    [string, string, string]
+  >(
+    `SELECT body_json FROM host_entities WHERE kind = ? AND id = ? AND (memory_id IS NULL OR memory_id = ?)`,
+  );
+  const selectExistingForMerge = db.query<
+    { body_json: string; memory_id: string | null },
+    [string, string]
+  >(`SELECT body_json, memory_id FROM host_entities WHERE kind = ? AND id = ?`);
+  const updateBodyJson = db.prepare(
+    `UPDATE host_entities SET body_json = ?, updated_at = ? WHERE kind = ? AND id = ?`,
+  );
+  const updateMemoryId = db.prepare(
+    `UPDATE host_entities SET memory_id = ? WHERE kind = ? AND id = ?`,
+  );
+  const insertNew = db.prepare(
+    `INSERT INTO host_entities (kind, id, memory_id, body_json, updated_at) VALUES (?, ?, ?, ?, ?)`,
+  );
+
+  function mergeEntityFieldFromSync(
+    kind: EntityDomain,
+    entityId: string,
+    fieldPath: string,
+    text: string,
+    memoryId: string,
+  ): void {
+    const now = Date.now();
+    const existing = selectExistingForMerge.get(kind, entityId);
+
+    let body: Record<string, unknown>;
+    if (existing != null) {
+      body = JSON.parse(existing.body_json) as Record<string, unknown>;
+    } else {
+      body = {};
+    }
+    body[fieldPath] = text;
+    const bodyJson = JSON.stringify(body);
+
+    if (existing != null) {
+      updateBodyJson.run(bodyJson, now, kind, entityId);
+      if ((existing.memory_id === null || existing.memory_id === "") && memoryId !== "") {
+        updateMemoryId.run(memoryId, kind, entityId);
+      }
+    } else {
+      insertNew.run(kind, entityId, memoryId, bodyJson, now);
+    }
+  }
+
   return {
     resolve(sourcemap: SourceMap): Promise<ResolvedSource<EntityMap>> {
       const parsed = parseEntitySourceKey(sourcemap.source_key);
@@ -147,12 +123,8 @@ export function createSwarmHostDocumentStore<
         );
       }
 
-      const bodyJson = getBodyJsonForResolve(
-        db,
-        parsed.domain,
-        parsed.entityId,
-        sourcemap.memory_id,
-      );
+      const row = selectBodyForResolve.get(parsed.domain, parsed.entityId, sourcemap.memory_id);
+      const bodyJson = row?.body_json;
       if (bodyJson === undefined) {
         return Promise.reject(
           new Error(
@@ -204,7 +176,6 @@ export function createSwarmHostDocumentStore<
           continue;
         }
         mergeEntityFieldFromSync(
-          db,
           parsed.domain,
           parsed.entityId,
           parsed.fieldPath,

@@ -26,17 +26,12 @@ import z from "zod";
 import { deleteOtherStatusPostsForAuthor } from "./atrium-status-posts.ts";
 import { createAtriumHostContext } from "./create-atrium-host.ts";
 import {
-  ensureRootInviteIfAbsent,
-  insertSeedInviteTokens,
+  type AtriumInvitesRepo,
+  createAtriumInvitesRepo,
   inviteRequiredFromEnv,
   invitesPerRegistrationFromEnv,
-  listInvitesMintedForDid,
-  mintStandardInviteTokens,
   parseInviteSeedTokens,
-  previewInviteToken,
   readInvitePepper,
-  rollbackInviteConsumption,
-  tryConsumeInviteToken,
   validateInviteEnvConfig,
 } from "./invites/index.ts";
 import { clientIpFromRequest, createRateLimiter, envRatePerMinute } from "./rate-limit.ts";
@@ -171,9 +166,11 @@ const ctx = createAtriumHostContext({
 const seedInviteTokens = parseInviteSeedTokens(process.env.ATRIUM_INVITE_SEED_TOKENS);
 validateInviteEnvConfig(seedInviteTokens);
 const invitePepper = readInvitePepper();
-if (invitePepper !== undefined) {
-  insertSeedInviteTokens(ctx.db, invitePepper, seedInviteTokens);
-  const rootPlain = ensureRootInviteIfAbsent(ctx.db, invitePepper);
+const invitesRepo: AtriumInvitesRepo | undefined =
+  invitePepper !== undefined ? createAtriumInvitesRepo(ctx.db, invitePepper) : undefined;
+if (invitesRepo !== undefined) {
+  invitesRepo.insertSeedInviteTokens(seedInviteTokens);
+  const rootPlain = invitesRepo.ensureRootInviteIfAbsent();
   if (rootPlain !== undefined) {
     console.warn(
       `[atrium] Root invite token (single use; save this; not shown again): ${rootPlain}`,
@@ -265,22 +262,21 @@ const server = Bun.serve<InboxWsData>({
       }
 
       const skipInvites = ctx.host.persistenceClient.agentRegistrationExists(swarmReq.did);
-      const pepper = readInvitePepper();
       const inviteTokenRaw = bodyFull.inviteToken?.trim();
       const inviteTokenPresent = inviteTokenRaw !== undefined && inviteTokenRaw.length > 0;
 
       let consumedInvitePlain: string | undefined;
       if (!skipInvites) {
         if (inviteRequiredFromEnv()) {
-          if (!inviteTokenPresent || pepper === undefined) {
+          if (!inviteTokenPresent || invitesRepo === undefined) {
             return registrationOpaqueJson(400);
           }
         }
-        if (inviteTokenPresent && pepper === undefined) {
+        if (inviteTokenPresent && invitesRepo === undefined) {
           return registrationOpaqueJson(400);
         }
-        if (inviteTokenPresent && pepper !== undefined) {
-          if (!tryConsumeInviteToken(ctx.db, pepper, inviteTokenRaw, swarmReq.did)) {
+        if (inviteTokenPresent && invitesRepo !== undefined) {
+          if (!invitesRepo.tryConsumeInviteToken(inviteTokenRaw, swarmReq.did)) {
             return registrationOpaqueJson(400);
           }
           consumedInvitePlain = inviteTokenRaw;
@@ -296,18 +292,16 @@ const server = Bun.serve<InboxWsData>({
         });
         ctx.host.persistenceClient.upsertAgentRegistration(result.did, result.profileId);
         let inviteTokens: string[] | undefined;
-        if (!skipInvites && consumedInvitePlain !== undefined && pepper !== undefined) {
-          inviteTokens = mintStandardInviteTokens(
-            ctx.db,
-            pepper,
+        if (!skipInvites && consumedInvitePlain !== undefined && invitesRepo !== undefined) {
+          inviteTokens = invitesRepo.mintStandardInviteTokens(
             swarmReq.did,
             invitesPerRegistrationFromEnv(),
           );
         }
         return Response.json(inviteTokens !== undefined ? { ...result, inviteTokens } : result);
       } catch (e) {
-        if (consumedInvitePlain !== undefined && pepper !== undefined) {
-          rollbackInviteConsumption(ctx.db, pepper, consumedInvitePlain, swarmReq.did);
+        if (consumedInvitePlain !== undefined && invitesRepo !== undefined) {
+          invitesRepo.rollbackInviteConsumption(consumedInvitePlain, swarmReq.did);
         }
         console.error("[atrium] registration error", e);
         return registrationOpaqueJson(400);
@@ -317,8 +311,7 @@ const server = Bun.serve<InboxWsData>({
     if (req.method === "POST" && url.pathname === "/v1/invite/preview") {
       const prevRl = rlInvitePreviewIp(`ip:${ip}`);
       if (!prevRl.ok) return rateLimitedResponse(prevRl.retryAfterSec);
-      const pepper = readInvitePepper();
-      if (pepper === undefined) {
+      if (invitesRepo === undefined) {
         return inviteOpaqueNotFound();
       }
       let raw: unknown;
@@ -331,7 +324,7 @@ const server = Bun.serve<InboxWsData>({
       if (!parsed.success) {
         return inviteOpaqueNotFound();
       }
-      const pr = previewInviteToken(ctx.db, pepper, parsed.data.token, loadPublicProfileForDid);
+      const pr = invitesRepo.previewInviteToken(parsed.data.token, loadPublicProfileForDid);
       if (!pr.ok) {
         return inviteOpaqueNotFound();
       }
@@ -351,8 +344,7 @@ const server = Bun.serve<InboxWsData>({
       }
       const listRl = rlInvitesListDid(`did:${did}`);
       if (!listRl.ok) return rateLimitedResponse(listRl.retryAfterSec);
-      const pepper = readInvitePepper();
-      const invites = pepper === undefined ? [] : listInvitesMintedForDid(ctx.db, did);
+      const invites = invitesRepo === undefined ? [] : invitesRepo.listInvitesMintedForDid(did);
       const payload = zAtriumInviteListResponse.parse({ invites });
       return Response.json(payload);
     }

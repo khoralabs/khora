@@ -56,61 +56,84 @@ function ensureSchema(db: Database): void {
   );
 }
 
-function deleteByEventTypes(db: Database, types: readonly string[]): void {
+type CompactStmts = {
+  deleteByEventType: ReturnType<Database["prepare"]>;
+  deleteById: ReturnType<Database["prepare"]>;
+  selectScanBatch: ReturnType<Database["query"]>;
+  selectCount: ReturnType<Database["query"]>;
+  trimOldest: ReturnType<Database["prepare"]>;
+};
+
+function prepareCompactStmts(db: Database): CompactStmts {
+  return {
+    deleteByEventType: db.prepare(`DELETE FROM buffered_client_events WHERE event_type = ?`),
+    deleteById: db.prepare("DELETE FROM buffered_client_events WHERE id = ?"),
+    selectScanBatch: db.query(
+      `SELECT id, payload FROM buffered_client_events
+       WHERE id > ?
+       ORDER BY id ASC
+       LIMIT ?`,
+    ),
+    selectCount: db.query("SELECT COUNT(*) AS c FROM buffered_client_events"),
+    trimOldest: db.prepare(
+      `DELETE FROM buffered_client_events WHERE id IN (
+        SELECT id FROM buffered_client_events ORDER BY id ASC LIMIT ?
+      )`,
+    ),
+  };
+}
+
+function deleteByEventTypes(
+  db: Database,
+  stmts: CompactStmts,
+  types: readonly string[],
+): void {
   if (types.length === 0) return;
-  const placeholders = types.map(() => "?").join(", ");
-  db.run(`DELETE FROM buffered_client_events WHERE event_type IN (${placeholders})`, [...types]);
+  db.transaction(() => {
+    for (const t of types) {
+      stmts.deleteByEventType.run(t);
+    }
+  })();
 }
 
 function deleteMatchingPredicate(
-  db: Database,
+  stmts: CompactStmts,
   dropPredicate: (event: AtriumClientEvent) => boolean,
 ): void {
   let lastId = 0;
   for (;;) {
-    const rows = db
-      .query<{ id: number; payload: string }, [number, number]>(
-        `SELECT id, payload FROM buffered_client_events
-         WHERE id > ?
-         ORDER BY id ASC
-         LIMIT ?`,
-      )
-      .all(lastId, PREDICATE_SCAN_BATCH);
+    const rows = stmts.selectScanBatch.all(lastId, PREDICATE_SCAN_BATCH) as Array<{
+      id: number;
+      payload: string;
+    }>;
     if (rows.length === 0) break;
     for (const row of rows) {
       lastId = row.id;
       try {
         const ev = JSON.parse(row.payload) as AtriumClientEvent;
         if (dropPredicate(ev)) {
-          db.run("DELETE FROM buffered_client_events WHERE id = ?", [row.id]);
+          stmts.deleteById.run(row.id);
         }
       } catch {
-        db.run("DELETE FROM buffered_client_events WHERE id = ?", [row.id]);
+        stmts.deleteById.run(row.id);
       }
     }
   }
 }
 
-function runCompact(db: Database, opts: BufferCompactOpts): void {
+function runCompact(db: Database, stmts: CompactStmts, opts: BufferCompactOpts): void {
   const { maxEntries, dropEventTypes, dropPredicate } = opts;
   if (dropEventTypes !== undefined && dropEventTypes.length > 0) {
-    deleteByEventTypes(db, dropEventTypes);
+    deleteByEventTypes(db, stmts, dropEventTypes);
   }
   if (dropPredicate !== undefined) {
-    deleteMatchingPredicate(db, dropPredicate);
+    deleteMatchingPredicate(stmts, dropPredicate);
   }
-  const countRow = db
-    .query<{ c: number }, []>("SELECT COUNT(*) AS c FROM buffered_client_events")
-    .get();
+  const countRow = stmts.selectCount.get() as { c: number } | undefined;
   const n = countRow?.c ?? 0;
   if (n > maxEntries) {
     const toDrop = n - maxEntries;
-    db.run(
-      `DELETE FROM buffered_client_events WHERE id IN (
-        SELECT id FROM buffered_client_events ORDER BY id ASC LIMIT ?
-      )`,
-      [toDrop],
-    );
+    stmts.trimOldest.run(toDrop);
   }
 }
 
@@ -140,29 +163,28 @@ export function createInboxBuffer(options: {
   const db = new Database(options.dbPath);
   ensureSchema(db);
 
-  const insert = db.query(
+  const insert = db.prepare(
     "INSERT INTO buffered_client_events (ingested_at, event_type, payload) VALUES (?, ?, ?)",
   );
+  const stmts = prepareCompactStmts(db);
 
   const unsub = client.subscribe((event: AtriumClientEvent) => {
     insert.run(Date.now(), eventTypeOf(event), JSON.stringify(event));
     if (compactAfterAppend === true && compactPolicy !== undefined) {
-      runCompact(db, compactPolicy);
+      runCompact(db, stmts, compactPolicy);
     }
   });
 
   return {
     compact(opts: BufferCompactOpts) {
-      runCompact(db, opts);
+      runCompact(db, stmts, opts);
     },
     close() {
       unsub();
       db.close();
     },
     stats() {
-      const row = db
-        .query<{ c: number }, []>("SELECT COUNT(*) AS c FROM buffered_client_events")
-        .get();
+      const row = stmts.selectCount.get() as { c: number } | undefined;
       return { count: row?.c ?? 0 };
     },
   };

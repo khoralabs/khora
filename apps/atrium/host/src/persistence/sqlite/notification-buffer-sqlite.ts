@@ -67,6 +67,13 @@ export function createSqliteAgentNotificationBuffer(db: Database): AgentNotifica
      WHERE did = ? ORDER BY created_at DESC LIMIT ?`,
   );
 
+  const markReadById = db.prepare(
+    `UPDATE agent_notifications SET read_at_ms = ? WHERE did = ? AND id = ? AND read_at_ms IS NULL`,
+  );
+  const markReadCoalesceById = db.prepare(
+    `UPDATE agent_notifications SET read_at_ms = COALESCE(read_at_ms, ?) WHERE did = ? AND id = ?`,
+  );
+
   return {
     async ensureRegistered(did: AgentDid): Promise<void> {
       insertRegistration.run(did, Date.now());
@@ -93,12 +100,11 @@ export function createSqliteAgentNotificationBuffer(db: Database): AgentNotifica
       }>;
       if (rows.length === 0) return [];
       const now = Date.now();
-      const ids = rows.map((r) => r.id);
-      const placeholders = ids.map(() => "?").join(",");
-      db.run(
-        `UPDATE agent_notifications SET read_at_ms = ? WHERE did = ? AND id IN (${placeholders}) AND read_at_ms IS NULL`,
-        [now, did, ...ids],
-      );
+      db.transaction(() => {
+        for (const r of rows) {
+          markReadById.run(now, did, r.id);
+        }
+      })();
       return rows.map((r) => parsePayload(r.kind, r.payload_json));
     },
 
@@ -122,11 +128,11 @@ export function createSqliteAgentNotificationBuffer(db: Database): AgentNotifica
     async markRead(did: AgentDid, ids: readonly number[]): Promise<void> {
       if (ids.length === 0) return;
       const now = Date.now();
-      const placeholders = ids.map(() => "?").join(",");
-      db.run(
-        `UPDATE agent_notifications SET read_at_ms = COALESCE(read_at_ms, ?) WHERE did = ? AND id IN (${placeholders})`,
-        [now, did, ...ids],
-      );
+      db.transaction(() => {
+        for (const id of ids) {
+          markReadCoalesceById.run(now, did, id);
+        }
+      })();
     },
   };
 }

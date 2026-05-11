@@ -1,4 +1,4 @@
-import type { Database } from "bun:sqlite";
+import type { Database, Statement } from "bun:sqlite";
 import type { DomainEvent, DomainEventName } from "../events/index.ts";
 import { zDomainEventName } from "../events/index.ts";
 import type {
@@ -25,21 +25,6 @@ import {
 
 function nowMs(): number {
   return Date.now();
-}
-
-function appendEventRow(
-  db: Database,
-  name: DomainEventName,
-  subjectId: string,
-  aggregateId: string,
-  payload: Record<string, unknown> | undefined,
-  occurredAt: number,
-): void {
-  const payloadJson = payload === undefined ? null : JSON.stringify(payload);
-  db.run(
-    "INSERT INTO domain_events (name, subject_id, aggregate_id, payload_json, occurred_at) VALUES (?, ?, ?, ?, ?)",
-    [name, subjectId, aggregateId, payloadJson, occurredAt],
-  );
 }
 
 export type MatchmakingDomainPersistence = {
@@ -77,12 +62,112 @@ export type MatchmakingDomainPersistence = {
 };
 
 export class SqliteMatchmakingDomainPersistence implements MatchmakingDomainPersistence {
-  constructor(private readonly db: Database) {}
+  private readonly selectProfile: Statement;
+  private readonly upsertProfileStmt: Statement;
+  private readonly insertInvite: Statement;
+  private readonly selectInvite: Statement;
+  private readonly selectGoalsByInviteId: Statement;
+  private readonly selectRunSummariesByRunId: Statement;
+  private readonly upsertRunSummaryStmt: Statement;
+  private readonly selectRunSummaryByRunAndParty: Statement;
+  private readonly insertGoal: Statement;
+  private readonly updateInviteStatusStmt: Statement;
+  private readonly upsertBookingStmt: Statement;
+  private readonly insertCalendarHold: Statement;
+  private readonly selectCalendarHoldById: Statement;
+  private readonly selectCalendarHoldsBySubject: Statement;
+  private readonly insertReflection: Statement;
+  private readonly insertEvent: Statement;
+  private readonly selectEventsForSubject: Statement;
+
+  constructor(private readonly db: Database) {
+    this.selectProfile = db.prepare(
+      "SELECT display_name, tagline, about, updated_at FROM profiles WHERE subject_id = ?",
+    );
+    this.upsertProfileStmt = db.prepare(
+      `INSERT INTO profiles (subject_id, display_name, tagline, about, updated_at)
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT(subject_id) DO UPDATE SET
+         display_name = excluded.display_name,
+         tagline = excluded.tagline,
+         about = excluded.about,
+         updated_at = excluded.updated_at`,
+    );
+    this.insertInvite = db.prepare(
+      `INSERT INTO invites (id, subject_id, invitee_persona_slug, message, status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    );
+    this.selectInvite = db.prepare(
+      "SELECT id, subject_id, invitee_persona_slug, message, status, created_at, updated_at FROM invites WHERE id = ?",
+    );
+    this.selectGoalsByInviteId = db.prepare(
+      "SELECT id, invite_id, subject_id, text, kind, priority, created_at FROM goals WHERE invite_id = ? ORDER BY COALESCE(priority, 2147483647), created_at, id",
+    );
+    this.selectRunSummariesByRunId = db.prepare(
+      "SELECT id, run_id, party_slug, counterparty_slug, summary_text, fit_assessment, key_evidence_json, recommended_next_step, created_at, updated_at FROM run_summaries WHERE run_id = ? ORDER BY party_slug, id",
+    );
+    this.upsertRunSummaryStmt = db.prepare(
+      `INSERT INTO run_summaries (
+          id, run_id, party_slug, counterparty_slug, summary_text, fit_assessment, key_evidence_json, recommended_next_step, created_at, updated_at
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(run_id, party_slug) DO UPDATE SET
+         counterparty_slug = excluded.counterparty_slug,
+         summary_text = excluded.summary_text,
+         fit_assessment = excluded.fit_assessment,
+         key_evidence_json = excluded.key_evidence_json,
+         recommended_next_step = excluded.recommended_next_step,
+         updated_at = excluded.updated_at`,
+    );
+    this.selectRunSummaryByRunAndParty = db.prepare(
+      "SELECT id, run_id, party_slug, counterparty_slug, summary_text, fit_assessment, key_evidence_json, recommended_next_step, created_at, updated_at FROM run_summaries WHERE run_id = ? AND party_slug = ?",
+    );
+    this.insertGoal = db.prepare(
+      "INSERT INTO goals (id, invite_id, subject_id, text, kind, priority, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    );
+    this.updateInviteStatusStmt = db.prepare(
+      "UPDATE invites SET status = ?, updated_at = ? WHERE id = ?",
+    );
+    this.upsertBookingStmt = db.prepare(
+      `INSERT INTO bookings (id, invite_id, result_json, created_at) VALUES (?, ?, ?, ?)
+       ON CONFLICT (invite_id) DO UPDATE SET
+         result_json = excluded.result_json,
+         id = excluded.id,
+         created_at = excluded.created_at`,
+    );
+    this.insertCalendarHold = db.prepare(
+      `INSERT INTO calendar_holds (id, subject_id, invite_id, booking_id, start_at, end_at, time_zone, status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    );
+    this.selectCalendarHoldById = db.prepare(
+      "SELECT id, subject_id, invite_id, booking_id, start_at, end_at, time_zone, status, created_at, updated_at FROM calendar_holds WHERE id = ?",
+    );
+    this.selectCalendarHoldsBySubject = db.prepare(
+      "SELECT id, subject_id, invite_id, booking_id, start_at, end_at, time_zone, status, created_at, updated_at FROM calendar_holds WHERE subject_id = ? ORDER BY start_at",
+    );
+    this.insertReflection = db.prepare(
+      "INSERT INTO reflections (id, run_id, kind, decision, agent_feedback, text, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    );
+    this.insertEvent = db.prepare(
+      "INSERT INTO domain_events (name, subject_id, aggregate_id, payload_json, occurred_at) VALUES (?, ?, ?, ?, ?)",
+    );
+    this.selectEventsForSubject = db.prepare(
+      "SELECT id, name, subject_id, aggregate_id, payload_json, occurred_at FROM domain_events WHERE subject_id = ? ORDER BY id DESC LIMIT ?",
+    );
+  }
+
+  private appendEventRow(
+    name: DomainEventName,
+    subjectId: string,
+    aggregateId: string,
+    payload: Record<string, unknown> | undefined,
+    occurredAt: number,
+  ): void {
+    const payloadJson = payload === undefined ? null : JSON.stringify(payload);
+    this.insertEvent.run(name, subjectId, aggregateId, payloadJson, occurredAt);
+  }
 
   getProfile(subjectId: string): Profile | null {
-    const row = this.db
-      .query("SELECT display_name, tagline, about, updated_at FROM profiles WHERE subject_id = ?")
-      .get(subjectId) as
+    const row = this.selectProfile.get(subjectId) as
       | { display_name: string; tagline: string; about: string; updated_at: number }
       | undefined;
     if (row == null) {
@@ -99,22 +184,12 @@ export class SqliteMatchmakingDomainPersistence implements MatchmakingDomainPers
 
   upsertProfile(subjectId: string, fields: UserPublicProfileFields): Profile {
     const t = nowMs();
-    this.db.run(
-      `INSERT INTO profiles (subject_id, display_name, tagline, about, updated_at)
-       VALUES (?, ?, ?, ?, ?)
-       ON CONFLICT(subject_id) DO UPDATE SET
-         display_name = excluded.display_name,
-         tagline = excluded.tagline,
-         about = excluded.about,
-         updated_at = excluded.updated_at`,
-      [subjectId, fields.displayName, fields.tagline, fields.about, t],
-    );
+    this.upsertProfileStmt.run(subjectId, fields.displayName, fields.tagline, fields.about, t);
     const p = this.getProfile(subjectId);
     if (p === null) {
       throw new Error("internal: profile not found after upsert");
     }
-    appendEventRow(
-      this.db,
+    this.appendEventRow(
       "ProfileUpserted",
       subjectId,
       subjectId,
@@ -132,17 +207,20 @@ export class SqliteMatchmakingDomainPersistence implements MatchmakingDomainPers
   }): Invite {
     const t = nowMs();
     const status = "pending" as const;
-    this.db.run(
-      `INSERT INTO invites (id, subject_id, invitee_persona_slug, message, status, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [args.id, args.subjectId, args.inviteePersonaSlug, args.message, status, t, t],
+    this.insertInvite.run(
+      args.id,
+      args.subjectId,
+      args.inviteePersonaSlug,
+      args.message,
+      status,
+      t,
+      t,
     );
     const inv = this.getInvite(args.id);
     if (inv === null) {
       throw new Error("internal: invite not found after insert");
     }
-    appendEventRow(
-      this.db,
+    this.appendEventRow(
       "InviteCreated",
       args.subjectId,
       args.id,
@@ -153,11 +231,7 @@ export class SqliteMatchmakingDomainPersistence implements MatchmakingDomainPers
   }
 
   getInvite(id: string): Invite | null {
-    const row = this.db
-      .query(
-        "SELECT id, subject_id, invitee_persona_slug, message, status, created_at, updated_at FROM invites WHERE id = ?",
-      )
-      .get(id) as
+    const row = this.selectInvite.get(id) as
       | {
           id: string;
           subject_id: string;
@@ -183,11 +257,7 @@ export class SqliteMatchmakingDomainPersistence implements MatchmakingDomainPers
   }
 
   listGoalsByInviteId(inviteId: string): Goal[] {
-    const rows = this.db
-      .query(
-        "SELECT id, invite_id, subject_id, text, kind, priority, created_at FROM goals WHERE invite_id = ? ORDER BY COALESCE(priority, 2147483647), created_at, id",
-      )
-      .all(inviteId) as {
+    const rows = this.selectGoalsByInviteId.all(inviteId) as {
       id: string;
       invite_id: string;
       subject_id: string;
@@ -210,11 +280,7 @@ export class SqliteMatchmakingDomainPersistence implements MatchmakingDomainPers
   }
 
   listRunSummariesByRunId(runId: string): RunSummary[] {
-    const rows = this.db
-      .query(
-        "SELECT id, run_id, party_slug, counterparty_slug, summary_text, fit_assessment, key_evidence_json, recommended_next_step, created_at, updated_at FROM run_summaries WHERE run_id = ? ORDER BY party_slug, id",
-      )
-      .all(runId) as {
+    const rows = this.selectRunSummariesByRunId.all(runId) as {
       id: string;
       run_id: string;
       party_slug: string;
@@ -247,35 +313,19 @@ export class SqliteMatchmakingDomainPersistence implements MatchmakingDomainPers
   upsertRunSummary(input: UpsertRunSummaryInput): RunSummary {
     const t = nowMs();
     const id = crypto.randomUUID();
-    this.db.run(
-      `INSERT INTO run_summaries (
-          id, run_id, party_slug, counterparty_slug, summary_text, fit_assessment, key_evidence_json, recommended_next_step, created_at, updated_at
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-       ON CONFLICT(run_id, party_slug) DO UPDATE SET
-         counterparty_slug = excluded.counterparty_slug,
-         summary_text = excluded.summary_text,
-         fit_assessment = excluded.fit_assessment,
-         key_evidence_json = excluded.key_evidence_json,
-         recommended_next_step = excluded.recommended_next_step,
-         updated_at = excluded.updated_at`,
-      [
-        id,
-        input.runId,
-        input.partySlug,
-        input.counterpartySlug,
-        input.summaryText,
-        input.fitAssessment ?? null,
-        JSON.stringify(input.keyEvidence ?? []),
-        input.recommendedNextStep ?? null,
-        t,
-        t,
-      ],
+    this.upsertRunSummaryStmt.run(
+      id,
+      input.runId,
+      input.partySlug,
+      input.counterpartySlug,
+      input.summaryText,
+      input.fitAssessment ?? null,
+      JSON.stringify(input.keyEvidence ?? []),
+      input.recommendedNextStep ?? null,
+      t,
+      t,
     );
-    const row = this.db
-      .query(
-        "SELECT id, run_id, party_slug, counterparty_slug, summary_text, fit_assessment, key_evidence_json, recommended_next_step, created_at, updated_at FROM run_summaries WHERE run_id = ? AND party_slug = ?",
-      )
-      .get(input.runId, input.partySlug) as
+    const row = this.selectRunSummaryByRunAndParty.get(input.runId, input.partySlug) as
       | {
           id: string;
           run_id: string;
@@ -308,14 +358,11 @@ export class SqliteMatchmakingDomainPersistence implements MatchmakingDomainPers
     });
     const invite = this.getInvite(input.runId);
     if (invite !== null) {
-      appendEventRow(
-        this.db,
+      this.appendEventRow(
         "RunSummaryGenerated",
         invite.subjectId,
         input.runId,
-        {
-          partySlug: input.partySlug,
-        },
+        { partySlug: input.partySlug },
         t,
       );
     }
@@ -327,9 +374,14 @@ export class SqliteMatchmakingDomainPersistence implements MatchmakingDomainPers
     const rows: Goal[] = [];
     args.goals.forEach((goal, idx) => {
       const id = crypto.randomUUID();
-      this.db.run(
-        "INSERT INTO goals (id, invite_id, subject_id, text, kind, priority, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        [id, args.inviteId, args.subjectId, goal.text, goal.kind ?? null, goal.priority ?? idx, t],
+      this.insertGoal.run(
+        id,
+        args.inviteId,
+        args.subjectId,
+        goal.text,
+        goal.kind ?? null,
+        goal.priority ?? idx,
+        t,
       );
       rows.push(
         zGoal.parse({
@@ -343,8 +395,7 @@ export class SqliteMatchmakingDomainPersistence implements MatchmakingDomainPers
         }),
       );
     });
-    appendEventRow(
-      this.db,
+    this.appendEventRow(
       "GoalsExtracted",
       args.subjectId,
       args.inviteId,
@@ -356,7 +407,7 @@ export class SqliteMatchmakingDomainPersistence implements MatchmakingDomainPers
 
   updateInviteStatus(id: string, status: Invite["status"]): void {
     const t = nowMs();
-    this.db.run("UPDATE invites SET status = ?, updated_at = ? WHERE id = ?", [status, t, id]);
+    this.updateInviteStatusStmt.run(status, t, id);
   }
 
   setInviteFinished(id: string, result: unknown): void {
@@ -367,9 +418,9 @@ export class SqliteMatchmakingDomainPersistence implements MatchmakingDomainPers
     const t = nowMs();
     const r = result as { status?: string };
     const status: Invite["status"] = r?.status === "error" ? "failed" : "finished";
-    this.db.run("UPDATE invites SET status = ?, updated_at = ? WHERE id = ?", [status, t, id]);
+    this.updateInviteStatusStmt.run(status, t, id);
     this.upsertBookingForInvite(id, result);
-    appendEventRow(this.db, "InviteCompleted", inv.subjectId, id, { outcome: result }, t);
+    this.appendEventRow("InviteCompleted", inv.subjectId, id, { outcome: result }, t);
   }
 
   upsertBookingForInvite(
@@ -379,14 +430,7 @@ export class SqliteMatchmakingDomainPersistence implements MatchmakingDomainPers
     const t = nowMs();
     const id = inviteId;
     const resultJson = JSON.stringify(result);
-    this.db.run(
-      `INSERT INTO bookings (id, invite_id, result_json, created_at) VALUES (?, ?, ?, ?)
-       ON CONFLICT (invite_id) DO UPDATE SET
-         result_json = excluded.result_json,
-         id = excluded.id,
-         created_at = excluded.created_at`,
-      [id, inviteId, resultJson, t],
-    );
+    this.upsertBookingStmt.run(id, inviteId, resultJson, t);
     const booking = zBooking.parse({
       id,
       inviteId,
@@ -395,8 +439,7 @@ export class SqliteMatchmakingDomainPersistence implements MatchmakingDomainPers
     });
     const inv = this.getInvite(inviteId);
     if (inv !== null) {
-      appendEventRow(
-        this.db,
+      this.appendEventRow(
         "BookingRecorded",
         inv.subjectId,
         booking.id,
@@ -412,27 +455,19 @@ export class SqliteMatchmakingDomainPersistence implements MatchmakingDomainPers
   ): CalendarHold {
     const id = input.id ?? crypto.randomUUID();
     const t = nowMs();
-    this.db.run(
-      `INSERT INTO calendar_holds (id, subject_id, invite_id, booking_id, start_at, end_at, time_zone, status, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        id,
-        input.subjectId,
-        input.inviteId,
-        input.bookingId,
-        input.startAt,
-        input.endAt,
-        input.timeZone,
-        input.status,
-        t,
-        t,
-      ],
+    this.insertCalendarHold.run(
+      id,
+      input.subjectId,
+      input.inviteId,
+      input.bookingId,
+      input.startAt,
+      input.endAt,
+      input.timeZone,
+      input.status,
+      t,
+      t,
     );
-    const h = this.db
-      .query(
-        "SELECT id, subject_id, invite_id, booking_id, start_at, end_at, time_zone, status, created_at, updated_at FROM calendar_holds WHERE id = ?",
-      )
-      .get(id) as {
+    const h = this.selectCalendarHoldById.get(id) as {
       id: string;
       subject_id: string;
       invite_id: string | null;
@@ -462,11 +497,7 @@ export class SqliteMatchmakingDomainPersistence implements MatchmakingDomainPers
   }
 
   getCalendarHoldsBySubject(subjectId: string): CalendarHold[] {
-    const rows = this.db
-      .query(
-        "SELECT id, subject_id, invite_id, booking_id, start_at, end_at, time_zone, status, created_at, updated_at FROM calendar_holds WHERE subject_id = ? ORDER BY start_at",
-      )
-      .all(subjectId) as {
+    const rows = this.selectCalendarHoldsBySubject.all(subjectId) as {
       id: string;
       subject_id: string;
       invite_id: string | null;
@@ -497,28 +528,18 @@ export class SqliteMatchmakingDomainPersistence implements MatchmakingDomainPers
   recordReflection(input: Omit<Reflection, "id" | "createdAt"> & { id?: string }): Reflection {
     const id = input.id ?? crypto.randomUUID();
     const t = nowMs();
-    this.db.run(
-      "INSERT INTO reflections (id, run_id, kind, decision, agent_feedback, text, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [
-        id,
-        input.runId,
-        input.kind,
-        input.decision ?? null,
-        input.agentFeedback ?? null,
-        input.text ?? null,
-        t,
-      ],
+    this.insertReflection.run(
+      id,
+      input.runId,
+      input.kind,
+      input.decision ?? null,
+      input.agentFeedback ?? null,
+      input.text ?? null,
+      t,
     );
     const inv = this.getInvite(input.runId);
     const sub = inv?.subjectId ?? "unknown";
-    appendEventRow(
-      this.db,
-      "ReflectionRecorded",
-      sub,
-      id,
-      { kind: input.kind, runId: input.runId },
-      t,
-    );
+    this.appendEventRow("ReflectionRecorded", sub, id, { kind: input.kind, runId: input.runId }, t);
     return zReflection.parse({
       id,
       runId: input.runId,
@@ -532,8 +553,7 @@ export class SqliteMatchmakingDomainPersistence implements MatchmakingDomainPers
 
   appendEvent(event: Omit<DomainEvent, "id"> & { name: DomainEventName }): void {
     zDomainEventName.parse(event.name);
-    appendEventRow(
-      this.db,
+    this.appendEventRow(
       event.name,
       event.subjectId,
       event.aggregateId,
@@ -543,11 +563,7 @@ export class SqliteMatchmakingDomainPersistence implements MatchmakingDomainPers
   }
 
   listEventsForSubject(subjectId: string, limit: number): DomainEvent[] {
-    const rows = this.db
-      .query(
-        "SELECT id, name, subject_id, aggregate_id, payload_json, occurred_at FROM domain_events WHERE subject_id = ? ORDER BY id DESC LIMIT ?",
-      )
-      .all(subjectId, limit) as {
+    const rows = this.selectEventsForSubject.all(subjectId, limit) as {
       id: number;
       name: string;
       subject_id: string;

@@ -10,7 +10,7 @@ export function insertNodeLabelAssignment(
   ctx: DbCtx,
   input: { nodeId: string; labelId: string; props: Record<string, unknown> },
 ): void {
-  const { db, now } = ctx;
+  const { db, now, stmts } = ctx;
   const schemaRow = db
     .query<{ schema: string | null }, [string]>(`SELECT schema FROM node_labels WHERE _id = ?`)
     .get(input.labelId);
@@ -18,8 +18,5 @@ export function insertNodeLabelAssignment(
 
   const assignmentId = ids.nodeLabelAssignment(input.nodeId, input.labelId);
   const propsJson = serializeProps(input.props);
-  db.run(
-    `INSERT OR REPLACE INTO node_label_assignments (_id, _ts_created, node_id, label_id, props) VALUES (?, ?, ?, ?, ?)`,
-    [assignmentId, now, input.nodeId, input.labelId, propsJson],
-  );
+  stmts.insertNodeLabelAssignment.run(assignmentId, now, input.nodeId, input.labelId, propsJson);
 }

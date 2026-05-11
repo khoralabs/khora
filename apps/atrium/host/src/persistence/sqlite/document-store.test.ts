@@ -1,7 +1,15 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
 import type { SourceMap } from "@cfd/memories-core";
-import { createSwarmHostDocumentStore, upsertProfile } from "./document-store.ts";
+import { createSwarmHostDocumentStore } from "./document-store.ts";
+import { createSwarmHostEntitySqlitePersistence } from "./entity-sqlite.ts";
+
+function upsertProfile(
+  db: Database,
+  row: { id: string; memoryId: string | null; bodyJson: string },
+): void {
+  createSwarmHostEntitySqlitePersistence(db, "profile").upsert(row);
+}
 
 function sm(memory_id: string, source_key: string): SourceMap {
   return {

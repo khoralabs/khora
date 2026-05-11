@@ -9,37 +9,28 @@ import type {
 import { listPostRowsByAuthorProfileIdAndKind } from "./probe-posts-sqlite.ts";
 import { ensureSwarmHostSqliteSchema } from "./schema.ts";
 
-export function upsertSwarmHostEntity(
-  db: Database,
-  kind: SwarmHostEntityKind,
-  record: SwarmHostEntityUpsert,
-): void {
-  ensureSwarmHostSqliteSchema(db);
-  const now = Date.now();
-  db.run(
-    `INSERT INTO host_entities (kind, id, memory_id, body_json, updated_at)
-     VALUES (?, ?, ?, ?, ?)
-     ON CONFLICT(kind, id) DO UPDATE SET
-       memory_id = excluded.memory_id,
-       body_json = excluded.body_json,
-       updated_at = excluded.updated_at`,
-    [kind, record.id, record.memoryId ?? null, record.bodyJson, now],
-  );
-}
-
 export function createSwarmHostEntitySqlitePersistence(
   db: Database,
   kind: SwarmHostEntityKind,
 ): SwarmHostEntityPersistence {
   ensureSwarmHostSqliteSchema(db);
 
+  const upsertRow = db.prepare(
+    `INSERT INTO host_entities (kind, id, memory_id, body_json, updated_at)
+     VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(kind, id) DO UPDATE SET
+       memory_id = excluded.memory_id,
+       body_json = excluded.body_json,
+       updated_at = excluded.updated_at`,
+  );
   const selectById = db.query(
     `SELECT id, memory_id, body_json, updated_at FROM host_entities WHERE kind = ? AND id = ?`,
   );
+  const deleteByIdStmt = db.prepare(`DELETE FROM host_entities WHERE kind = ? AND id = ?`);
 
   return {
     upsert(record: SwarmHostEntityUpsert): void {
-      upsertSwarmHostEntity(db, kind, record);
+      upsertRow.run(kind, record.id, record.memoryId ?? null, record.bodyJson, Date.now());
     },
 
     getById(id: string): SwarmHostEntityRow | undefined {
@@ -64,7 +55,7 @@ export function createSwarmHostEntitySqlitePersistence(
     },
 
     deleteById(id: string): void {
-      db.run(`DELETE FROM host_entities WHERE kind = ? AND id = ?`, [kind, id]);
+      deleteByIdStmt.run(kind, id);
     },
   };
 }

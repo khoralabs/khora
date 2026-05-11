@@ -34,8 +34,8 @@ function dfsReachable(start: string, adj: Map<string, string[]>): Set<string> {
 
 /** Full rebuild of transitive scope closure (including self pairs). */
 export function rebuildScopeClosure(ctx: DbCtx): void {
-  const { db, now } = ctx;
-  db.run(`DELETE FROM scope_closure`);
+  const { db, now, stmts } = ctx;
+  stmts.deleteAllScopeClosure.run();
 
   const scopeRows = db.query<{ _id: string }, []>(`SELECT _id FROM scopes`).all();
   if (scopeRows.length === 0) return;
@@ -53,24 +53,20 @@ export function rebuildScopeClosure(ctx: DbCtx): void {
         ancestor_scope_id: ancestor,
         descendant_scope_id: descendant,
       });
-      db.run(
-        `INSERT OR REPLACE INTO scope_closure (_id, _ts_created, ancestor_scope_id, descendant_scope_id)
-         VALUES (?, ?, ?, ?)`,
-        [rowId, now, ancestor, descendant],
-      );
+      stmts.insertScopeClosure.run(rowId, now, ancestor, descendant);
     }
   }
 }
 
 export function upsertScope(ctx: DbCtx, input: { scopeId: string }): void {
-  const { db, now } = ctx;
+  const { now, stmts } = ctx;
   const scopeId = namespacePath(input.scopeId);
   const doc = documentValidator(memoriesPersistenceDocumentSchema, "scopes");
   doc.parse({
     _id: scopeId,
     _ts_created: now,
   });
-  db.run(`INSERT OR IGNORE INTO scopes (_id, _ts_created) VALUES (?, ?)`, [scopeId, now]);
+  stmts.insertIgnoreScope.run(scopeId, now);
 }
 
 /** True if adding directed edge parent→child would close a cycle in the existing DAG. */
@@ -84,7 +80,7 @@ export function linkScopes(
   ctx: DbCtx,
   input: { parentScopeId: string; childScopeId: string },
 ): void {
-  const { db, now } = ctx;
+  const { db, now, stmts } = ctx;
   const parent = namespacePath(input.parentScopeId);
   const child = namespacePath(input.childScopeId);
   upsertScope(ctx, { scopeId: parent });
@@ -112,11 +108,7 @@ export function linkScopes(
     parent_scope_id: parent,
     child_scope_id: child,
   });
-  db.run(
-    `INSERT OR REPLACE INTO scope_edges (_id, _ts_created, parent_scope_id, child_scope_id)
-     VALUES (?, ?, ?, ?)`,
-    [edgeId, now, parent, child],
-  );
+  stmts.insertOrReplaceScopeEdge.run(edgeId, now, parent, child);
   rebuildScopeClosure(ctx);
 }
 
@@ -124,13 +116,10 @@ export function unlinkScopeEdge(
   ctx: DbCtx,
   input: { parentScopeId: string; childScopeId: string },
 ): void {
-  const { db } = ctx;
+  const { stmts } = ctx;
   const parent = namespacePath(input.parentScopeId);
   const child = namespacePath(input.childScopeId);
-  db.run(`DELETE FROM scope_edges WHERE parent_scope_id = ? AND child_scope_id = ?`, [
-    parent,
-    child,
-  ]);
+  stmts.deleteScopeEdge.run(parent, child);
   rebuildScopeClosure(ctx);
 }
 
@@ -138,9 +127,9 @@ export function replaceMemoryScopes(
   ctx: DbCtx,
   input: { memoryId: string; scopeIds: readonly string[] },
 ): void {
-  const { db, now } = ctx;
+  const { now, stmts } = ctx;
   const { memoryId } = input;
-  db.run(`DELETE FROM memory_scopes WHERE memory_id = ?`, [memoryId]);
+  stmts.deleteMemoryScopes.run(memoryId);
 
   const msDoc = documentValidator(memoriesPersistenceDocumentSchema, "memory_scopes");
   for (const raw of input.scopeIds) {
@@ -153,11 +142,7 @@ export function replaceMemoryScopes(
       memory_id: memoryId,
       scope_id: scopeId,
     });
-    db.run(
-      `INSERT OR REPLACE INTO memory_scopes (_id, _ts_created, memory_id, scope_id)
-       VALUES (?, ?, ?, ?)`,
-      [rowId, now, memoryId, scopeId],
-    );
+    stmts.insertOrReplaceMemoryScope.run(rowId, now, memoryId, scopeId);
   }
 }
 

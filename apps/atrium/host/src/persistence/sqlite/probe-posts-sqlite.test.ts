@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
-import { upsertSwarmHostEntity } from "./entity-sqlite.ts";
+import { createSwarmHostEntitySqlitePersistence } from "./entity-sqlite.ts";
 import { listProbePostsForProfileId } from "./probe-posts-sqlite.ts";
 import { ensureSwarmHostSqliteSchema } from "./schema.ts";
 
@@ -8,18 +8,19 @@ describe("listProbePostsForProfileId", () => {
   test("returns probes for profile ordered newest first", () => {
     const db = new Database(":memory:");
     ensureSwarmHostSqliteSchema(db);
+    const posts = createSwarmHostEntitySqlitePersistence(db, "post");
     const probe = {
       id: "probe1",
       kind: "probe" as const,
       authorProfileId: "prof-a",
       body: "watch",
     };
-    upsertSwarmHostEntity(db, "post", {
+    posts.upsert({
       id: "probe1",
       memoryId: null,
       bodyJson: JSON.stringify(probe),
     });
-    upsertSwarmHostEntity(db, "post", {
+    posts.upsert({
       id: "post1",
       memoryId: null,
       bodyJson: JSON.stringify({

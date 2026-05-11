@@ -1,4 +1,5 @@
 import type { Database } from "bun:sqlite";
+import type { MemoriesSqliteStmts } from "./models/prepared-stmts";
 
 /** FTS5 mirror of `text_features` for full-text search (caller syncs rows). */
 export const TEXT_FEATURES_FTS_SQL = `
@@ -59,7 +60,11 @@ export function initTextFeaturesFts(db: Database): void {
 }
 
 /** Remove vec index rows for a memory across all dimension tables. */
-export function deleteVectorVecRowsForMemory(db: Database, memoryId: string): void {
+export function deleteVectorVecRowsForMemory(
+  db: Database,
+  stmts: MemoriesSqliteStmts,
+  memoryId: string,
+): void {
   const rows = db
     .query<{ name: string }, [string]>(
       `SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE ?`,
@@ -69,7 +74,6 @@ export function deleteVectorVecRowsForMemory(db: Database, memoryId: string): vo
   const vec0Base = /^vector_features_vec_d_\d+$/;
   for (const { name } of rows) {
     if (!vec0Base.test(name)) continue;
-    const q = `DELETE FROM "${name.replaceAll('"', '""')}" WHERE memory_id = ?`;
-    db.run(q, [memoryId]);
+    stmts.getDeleteVectorVecByMemoryIdForTable(name).run(memoryId);
   }
 }
