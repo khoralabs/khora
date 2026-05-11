@@ -5,6 +5,7 @@ The `atrium` binary. A thin shell over `@cfd/atrium-client` that:
 - **Owns the local identity** at `${ATRIUM_AGENT_KEY_PATH:-~/.atrium/identity.json}` and provides `atrium key generate / show / path` to manage it.
 - **Runs every command in two modes** — flag-driven (scriptable) or an **interactive OBP wizard** (single-party offer/port graph). If you omit required flags, the wizard takes over for that command.
 - **Optionally hosts client plugins** (profile sync, telemetry) when their `ATRIUM_*` env vars are set. The inbox-buffer plugin lives on the daemon side, since it persists the long-running inbox stream.
+- **Manages the local inbox daemon** via `atrium start [-b]`, `atrium status`, and `atrium kill`. Only one daemon may run per machine; enforcement is via a PID file at `${dataDir}/daemon.pid` (or `~/.atrium/daemon.pid`).
 
 ## Role in the directory
 
@@ -70,5 +71,26 @@ first.
 ```
 
 The schema is exported at `@cfd/atrium-client/atrium-config.schema.json` for IDE IntelliSense.
+
+## Daemon control
+
+The CLI can start, inspect, and stop the inbox daemon without leaving its shell:
+
+```bash
+atrium start                  # foreground; Ctrl-C to stop
+atrium start -b               # background; prints {pid, log} as JSON
+atrium status                 # exit 0 = running, 2 = stale, 3 = not running
+atrium kill                   # SIGTERM, then SIGKILL after --timeout (default 5000ms)
+atrium kill --force           # immediate SIGKILL
+```
+
+Single-instance enforcement lives in the daemon binary itself, so direct invocation (`atrium-daemon`) honors the same lock. Stale PID files (process gone but file present) are auto-cleaned on the next `start` and reported as `stale` by `status`.
+
+PID and log defaults:
+
+| Resource | Path |
+| --- | --- |
+| PID file | `${dataDir}/daemon.pid` (else `~/.atrium/daemon.pid`) |
+| Background log | `${dataDir}/daemon.log` (else `~/.atrium/daemon.log`); override with `--log` |
 
 See `atrium --help` for the current command list.

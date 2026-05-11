@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { defaultIdentityPath, loadIdentity, type PersistableAgentSigner } from "@cfd/atrium-auth";
 import { daemonAppConfig, daemonJsonOutput } from "./app-config.ts";
+import { acquireDaemonLock, DaemonAlreadyRunningError } from "./daemon-pid.ts";
 import { runInboxDaemon } from "./run-inbox-daemon.ts";
 
 async function loadSigner(): Promise<PersistableAgentSigner> {
@@ -15,14 +16,25 @@ async function loadSigner(): Promise<PersistableAgentSigner> {
 
 const baseUrl = daemonAppConfig.baseUrl ?? "http://127.0.0.1:8787";
 const signer = await loadSigner();
+
+let lock: ReturnType<typeof acquireDaemonLock>;
+try {
+  lock = acquireDaemonLock(daemonAppConfig);
+} catch (e) {
+  if (e instanceof DaemonAlreadyRunningError) {
+    console.error(`${e.message} — use 'atrium kill' to stop it (pid file: ${e.pidPath})`);
+    process.exit(1);
+  }
+  throw e;
+}
+
 const handle = runInboxDaemon({ baseUrl, signer, json: daemonJsonOutput });
 
-process.on("SIGINT", () => {
+function shutdown(): void {
   handle.close();
+  lock.release();
   process.exit(0);
-});
+}
 
-process.on("SIGTERM", () => {
-  handle.close();
-  process.exit(0);
-});
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);

@@ -43,6 +43,7 @@
         "@cfd/atrium-auth": "workspace:*",
         "@cfd/atrium-client": "workspace:*",
         "@cfd/atrium-contracts": "workspace:*",
+        "@cfd/atrium-daemon": "workspace:*",
         "@cfd/atrium-plugin-profile-sync": "workspace:*",
         "@cfd/atrium-plugin-telemetry": "workspace:*",
         "@cfd/obp-bind-policy-zod": "workspace:*",
@@ -99,7 +100,6 @@
         "@cfd/atrium-auth": "workspace:*",
         "@cfd/atrium-client": "workspace:*",
         "@cfd/atrium-plugin-inbox-buffer": "workspace:*",
-        "zod": "^4",
       },
       "devDependencies": {
         "@types/bun": "latest",

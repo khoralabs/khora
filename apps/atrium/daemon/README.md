@@ -3,9 +3,10 @@
 The `atrium-daemon` binary. A long-lived process that:
 
 1. Loads the same Ed25519 identity the CLI uses (`${ATRIUM_AGENT_KEY_PATH:-~/.atrium/identity.json}`).
-2. Opens an authenticated **inbox WebSocket** via `AtriumClient.connectInbox`.
-3. Prints each `AtriumClientEvent` to stdout as a human-readable line (or as JSON lines with `--json` / `ATRIUM_DAEMON_JSON=1`).
-4. Optionally installs the `inbox-buffer` client plugin when `ATRIUM_INBOX_BUFFER_DB` is set, so notifications are persisted for offline / replay use. Other client plugins (profile-sync, telemetry) live on the CLI side because the daemon never emits the mutation events they react to.
+2. Acquires an exclusive PID lock at `${dataDir}/daemon.pid` (or `~/.atrium/daemon.pid`); a second instance refuses to start.
+3. Opens an authenticated **inbox WebSocket** via `AtriumClient.connectInbox`.
+4. Prints each `AtriumClientEvent` to stdout as a human-readable line (or as JSON lines with `--json` / `ATRIUM_DAEMON_JSON=1`).
+5. Optionally installs the `inbox-buffer` client plugin when `ATRIUM_INBOX_BUFFER_DB` is set, so notifications are persisted for offline / replay use. Other client plugins (profile-sync, telemetry) live on the CLI side because the daemon never emits the mutation events they react to.
 
 ## Role in the directory
 
@@ -20,10 +21,13 @@ The CLI and the daemon share an identity file by design:
 
 ```bash
 # terminal 1: receiver
-atrium-daemon
+atrium-daemon                 # or `atrium start` (foreground)
+                              # or `atrium start -b` (background, log to <dataDir>/daemon.log)
 
 # terminal 2: anything that talks to the host
+atrium status                 # confirm the daemon is up
 atrium post create --body "hello" --topics demo
+atrium kill                   # stop the daemon
 ```
 
 ## Environment

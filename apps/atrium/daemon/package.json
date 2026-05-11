@@ -18,7 +18,8 @@
       "types": "./src/plugins.ts",
       "import": "./src/plugins.ts",
       "default": "./src/plugins.ts"
-    }
+    },
+    "./bin": "./src/main.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

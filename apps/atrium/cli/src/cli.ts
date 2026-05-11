@@ -38,6 +38,18 @@ async function main(
     return;
   }
 
+  if (a === "start" || a === "status" || a === "kill") {
+    try {
+      if (a === "start") await handlers.start(flags);
+      else if (a === "status") handlers.status(flags);
+      else await handlers.kill(flags);
+    } catch (e) {
+      console.error(e instanceof Error ? e.message : String(e));
+      process.exit(1);
+    }
+    return;
+  }
+
   let ctx: AtriumCliContext;
   try {
     ctx = await createAtriumCliContext();

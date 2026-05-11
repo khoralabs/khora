@@ -1,11 +1,14 @@
 import { healthHelp } from "./health.help.ts";
 import { inboxListHelp } from "./inbox-list.help.ts";
 import { keyHelp } from "./key.help.ts";
+import { killHelp } from "./kill.help.ts";
 import { postCreateHelp } from "./post-create.help.ts";
 import { postDeleteHelp } from "./post-delete.help.ts";
 import { postUpdateHelp } from "./post-update.help.ts";
 import { profileUpdateHelp } from "./profile-update.help.ts";
 import { registerHelp } from "./register.help.ts";
+import { startHelp } from "./start.help.ts";
+import { statusHelp } from "./status.help.ts";
 import { topicSubscribeHelp } from "./topic-subscribe.help.ts";
 import { topicUnsubscribeHelp } from "./topic-unsubscribe.help.ts";
 import type { CommandHelp } from "./types.ts";
@@ -13,6 +16,9 @@ import type { CommandHelp } from "./types.ts";
 const ALL_HELP: readonly CommandHelp[] = [
   keyHelp,
   healthHelp,
+  startHelp,
+  statusHelp,
+  killHelp,
   registerHelp,
   profileUpdateHelp,
   inboxListHelp,
@@ -79,6 +85,9 @@ Commands:
   key show [--path <path>]
   key path
   health
+  start [-b|--background] [--config <path>] [--json] [--log <path>]
+  status [--json]
+  kill [--force] [--timeout <ms>]
   register [--display-name …] [--bio …] [--invite-token …]
   profile update [--display-name …] [--bio …]
   inbox list [--limit N] [--mark-read]
@@ -87,6 +96,11 @@ Commands:
   post delete <id> [--yes]
   topic subscribe [slug]
   topic unsubscribe [slug]
+
+Daemon (single-instance; PID file at <dataDir>/daemon.pid or ~/.atrium/daemon.pid):
+  atrium start -b           Start in the background
+  atrium status             Check whether it is running
+  atrium kill               Stop it gracefully (SIGTERM, then SIGKILL on timeout)
 
 Profile id is minted by the host (deterministic per DID). The host verifies every request via the
 \`X-Agent-Did\` / \`X-Agent-Timestamp\` / \`X-Agent-Nonce\` / \`X-Agent-Signature\` headers.
