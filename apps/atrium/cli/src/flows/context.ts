@@ -1,6 +1,6 @@
 import { defaultIdentityPath, loadIdentity, type PersistableAgentSigner } from "@cfd/atrium-auth";
 import { AtriumClient } from "@cfd/atrium-client";
-import { resolveAtriumCliPlugins } from "../resolve-atrium-plugins.ts";
+import { cliAppConfig, cliPluginInstallers } from "../app-config.ts";
 import type { ReadLineFn } from "./obp/bind-readline.ts";
 import { createReadlineSession } from "./readline-session.ts";
 
@@ -14,7 +14,11 @@ export type AtriumCliContext = {
 };
 
 export function baseUrlFromEnv(): string {
-  return process.env.ATRIUM_BASE_URL?.trim() || "http://127.0.0.1:8787";
+  return cliAppConfig.baseUrl ?? "http://127.0.0.1:8787";
+}
+
+export function identityPathFromConfig(): string {
+  return cliAppConfig.agentKeyPath ?? defaultIdentityPath();
 }
 
 /**
@@ -25,7 +29,7 @@ export function baseUrlFromEnv(): string {
  * `key generate` to bypass this requirement.
  */
 export async function createAtriumCliContext(): Promise<AtriumCliContext> {
-  const identityPath = defaultIdentityPath();
+  const identityPath = identityPathFromConfig();
   const signer = await loadIdentity(identityPath);
   if (signer === undefined) {
     throw new Error(
@@ -39,14 +43,13 @@ export function createAtriumCliContextWithSigner(
   signer: PersistableAgentSigner,
   identityPath: string,
 ): AtriumCliContext {
-  const pluginsPayload = resolveAtriumCliPlugins();
   const baseUrl = baseUrlFromEnv();
   const rl = createReadlineSession();
   const client = new AtriumClient({
     baseUrl,
     signer,
-    dataDir: pluginsPayload.dataDir,
-    plugins: pluginsPayload.plugins,
+    dataDir: cliAppConfig.dataDir,
+    plugins: cliPluginInstallers,
   });
   return {
     client,

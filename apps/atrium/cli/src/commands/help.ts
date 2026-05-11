@@ -65,6 +65,10 @@ Run 'atrium <command> --help' to see both forms for a given command.
 Identity: every request is signed with an Ed25519 did:key stored at
 \${ATRIUM_AGENT_KEY_PATH:-~/.atrium/identity.json}. Run 'atrium key generate' on first use.
 
+Config (low → high precedence): defaults < env vars < config file.
+  --config <path>              Use this JSON config file (overrides ATRIUM_CONFIG)
+  ATRIUM_CONFIG                Config file path (auto-discovers ~/.atrium/config.json)
+
 Plugins (optional; set paths to enable):
   ATRIUM_DATA_DIR              Root for relative plugin paths
   ATRIUM_PROFILE_SYNC_PATH     Profile JSON sync (uses identity DID)

@@ -99,6 +99,7 @@
         "@cfd/atrium-auth": "workspace:*",
         "@cfd/atrium-client": "workspace:*",
         "@cfd/atrium-plugin-inbox-buffer": "workspace:*",
+        "zod": "^4",
       },
       "devDependencies": {
         "@types/bun": "latest",

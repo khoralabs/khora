@@ -1,0 +1,73 @@
+import type z from "zod";
+import { AtriumConfigError } from "./errors.ts";
+import { readAtriumConfigFileWithExtends } from "./file.ts";
+import { mergeAtriumAppConfigLayers } from "./merge.ts";
+
+export type LoadAtriumAppConfigOptions<TSchema extends z.ZodTypeAny> = {
+  /** Host's extended schema. Use `extendAtriumAppConfig({...})` or pass `zAtriumAppConfigBase`. */
+  schema: TSchema;
+  /** Lower-priority layers (e.g. env). Merged left-to-right; file (when present) sits on top. */
+  layers?: ReadonlyArray<unknown>;
+  /**
+   * Entry file path:
+   *  - `undefined`: caller is expected to have pre-resolved with `resolveAtriumConfigPath`; pass
+   *    the resolved path (or `null` for none).
+   *  - `null`: file loading is disabled entirely.
+   *  - `string`: read this file (with extends chain).
+   */
+  filePath?: string | null;
+  /**
+   * If `true`, treat ENOENT on `filePath` as fatal. Default `true` (assumes the caller picked the
+   * path explicitly). Pass `false` for auto-discovered default paths.
+   */
+  filePathExplicit?: boolean;
+  fs?: { readFileSync: (p: string) => string };
+};
+
+export type LoadedAtriumAppConfig<TSchema extends z.ZodTypeAny> = {
+  config: z.infer<TSchema>;
+  sourcePath: string | undefined;
+  extendsChain: string[];
+};
+
+/**
+ * Layered, schema-validated config loader.
+ *
+ * Merge order (left = lowest priority):
+ *   `[...layers, fileContents]` → validate via `schema` → return frozen result.
+ *
+ * The validated result has `extends` and `$schema` stripped.
+ */
+export function loadAtriumAppConfig<TSchema extends z.ZodTypeAny>(
+  opts: LoadAtriumAppConfigOptions<TSchema>,
+): LoadedAtriumAppConfig<TSchema> {
+  let fileMerged: Record<string, unknown> | undefined;
+  let sourcePath: string | undefined;
+  let extendsChain: string[] = [];
+  if (typeof opts.filePath === "string") {
+    const fileRead = readAtriumConfigFileWithExtends(opts.filePath, {
+      explicit: opts.filePathExplicit ?? true,
+      fs: opts.fs,
+    });
+    if (fileRead !== undefined) {
+      fileMerged = fileRead.merged;
+      sourcePath = fileRead.chain[fileRead.chain.length - 1];
+      extendsChain = fileRead.chain;
+    }
+  }
+  const allLayers: unknown[] = [...(opts.layers ?? [])];
+  if (fileMerged !== undefined) allLayers.push(fileMerged);
+  const merged = mergeAtriumAppConfigLayers(allLayers);
+  const result = opts.schema.safeParse(merged);
+  if (!result.success) {
+    throw new AtriumConfigError(result.error.issues, sourcePath);
+  }
+  const parsed = result.data as Record<string, unknown>;
+  delete parsed.extends;
+  delete parsed.$schema;
+  return {
+    config: Object.freeze(parsed) as z.infer<TSchema>,
+    sourcePath,
+    extendsChain,
+  };
+}

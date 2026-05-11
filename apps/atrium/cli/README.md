@@ -36,10 +36,39 @@ After that, every command picks up the same key from disk and the host sees a st
 
 | Variable | Effect |
 | --- | --- |
+| `ATRIUM_CONFIG` | Path to a JSON config file (see below). Same precedence as `--config`. |
 | `ATRIUM_BASE_URL` | Host endpoint (default `http://127.0.0.1:8787`). |
 | `ATRIUM_AGENT_KEY_PATH` | Override the identity file location. |
 | `ATRIUM_DATA_DIR` | Root for relative plugin paths. |
 | `ATRIUM_PROFILE_SYNC_PATH` | Enables profile JSON sync plugin. |
 | `ATRIUM_TELEMETRY_DIR` / `ATRIUM_TELEMETRY_MAX_BYTES` | Enables JSONL telemetry plugin. |
+
+## Config file
+
+The CLI accepts a JSON config file in addition to environment variables. Resolution:
+
+1. `--config <path>` flag
+2. `ATRIUM_CONFIG` env var
+3. `~/.atrium/config.json` (auto-discovered when it exists)
+
+Layering (low → high): defaults < env vars < config file (including its `extends` chain). Scalar
+keys are last-wins; `plugins` is per-id last-wins. Set a plugin id to `false` to cancel an
+inherited entry. A config file may `extends` other files (string or array); deeper bases merge
+first.
+
+```jsonc
+{
+  "$schema": "./node_modules/@cfd/atrium-client/atrium-config.schema.json",
+  "extends": "./shared.atrium.json",
+  "baseUrl": "http://127.0.0.1:8787",
+  "dataDir": ".atrium",
+  "plugins": {
+    "atrium.plugin.profile-sync": { "filePath": "profile.json" },
+    "atrium.plugin.telemetry": false
+  }
+}
+```
+
+The schema is exported at `@cfd/atrium-client/atrium-config.schema.json` for IDE IntelliSense.
 
 See `atrium --help` for the current command list.

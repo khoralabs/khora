@@ -30,8 +30,34 @@ atrium post create --body "hello" --topics demo
 
 | Variable | Effect |
 | --- | --- |
+| `ATRIUM_CONFIG` | Path to a JSON config file (see below). |
 | `ATRIUM_BASE_URL` | Host endpoint (default `http://127.0.0.1:8787`). |
 | `ATRIUM_AGENT_KEY_PATH` | Override the identity file location. |
 | `ATRIUM_DAEMON_JSON` / `--json` | Emit JSON lines instead of pretty-printed events. |
 | `ATRIUM_DATA_DIR` | Root for the inbox-buffer DB path when relative. |
 | `ATRIUM_INBOX_BUFFER_DB` | Enables the SQLite inbox-buffer plugin (absolute path, or relative to `ATRIUM_DATA_DIR`). |
+
+## Config file
+
+The daemon accepts the same shared config format as the CLI. Resolution:
+
+1. `--config <path>` flag
+2. `ATRIUM_CONFIG` env var
+3. `~/.atrium/config.json` (auto-discovered when it exists)
+
+Layering (low → high): defaults < env vars < config file (including its `extends` chain). The
+daemon only materializes the `atrium.plugin.inbox-buffer` entry from `plugins`; entries owned by
+other hosts (profile-sync, telemetry) are silently skipped, so a single file can serve both. The
+`--json` argv flag wins over `daemonJson` in the config, which wins over `ATRIUM_DAEMON_JSON`.
+
+```jsonc
+{
+  "$schema": "./node_modules/@cfd/atrium-client/atrium-config.schema.json",
+  "baseUrl": "http://127.0.0.1:8787",
+  "dataDir": ".atrium",
+  "daemonJson": true,
+  "plugins": {
+    "atrium.plugin.inbox-buffer": { "dbPath": "inbox-buffer.sqlite" }
+  }
+}
+```

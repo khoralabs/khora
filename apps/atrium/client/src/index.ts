@@ -49,6 +49,26 @@ export {
 } from "./atrium-client.ts";
 export { AtriumClientError } from "./atrium-client-error.ts";
 export {
+  type AtriumAppConfigBase,
+  type AtriumAppPluginMap,
+  atriumAppConfigFromEnv,
+  AtriumConfigError,
+  type AtriumConfigFileRead,
+  atriumConfigJsonSchema,
+  defaultAtriumConfigPath,
+  extendAtriumAppConfig,
+  type InferAtriumAppConfig,
+  type LoadAtriumAppConfigOptions,
+  type LoadedAtriumAppConfig,
+  loadAtriumAppConfig,
+  mergeAtriumAppConfigLayers,
+  readAtriumConfigFileWithExtends,
+  type ResolvedAtriumConfigPath,
+  resolveAtriumConfigPath,
+  zAtriumAppConfigBase,
+  zAtriumAppPluginMap,
+} from "./config/index.ts";
+export {
   type AtriumClientEvent,
   type AtriumDerivedInboxEvent,
   type AtriumInboxListPayload,

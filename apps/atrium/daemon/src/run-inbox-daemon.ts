@@ -4,7 +4,7 @@ import type {
   LabeledAtriumPluginInstaller,
 } from "@cfd/atrium-client";
 import { AtriumClient } from "@cfd/atrium-client";
-import { atriumLabeledPluginsFromProcessEnv } from "./plugins-env.ts";
+import { daemonAppConfig } from "./app-config.ts";
 import { resolveAtriumDaemonPlugins } from "./resolve-atrium-plugins.ts";
 
 export type RunInboxDaemonOptions = {
@@ -43,7 +43,7 @@ export function runInboxDaemon(opts: RunInboxDaemonOptions): { close(): void } {
     resolved =
       opts.plugins !== undefined
         ? {
-            dataDir: atriumLabeledPluginsFromProcessEnv().dataDir,
+            dataDir: daemonAppConfig.dataDir,
             plugins: [...opts.plugins],
           }
         : resolveAtriumDaemonPlugins({

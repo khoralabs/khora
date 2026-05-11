@@ -42,6 +42,32 @@ There is **no session, no token, and no cookie** — the keypair is the only cre
 - `createAtriumSession()` — convenience wrapper that registers (or rehydrates) an agent and returns a small `AtriumSession` handle.
 - `AtriumClientEvent` / `AtriumClientPlugin*` — the event bus + plugin installer interfaces consumed by `@cfd/atrium-plugin-*`.
 - Inbox helpers (`inboxWebSocketUrl`, `parseInboxWebSocketMessage`) for callers that prefer to drive the socket themselves.
+- **Config loader** (`loadAtriumAppConfig`, `extendAtriumAppConfig`, `zAtriumAppConfigBase`, `atriumConfigJsonSchema`, `resolveAtriumConfigPath`, `readAtriumConfigFileWithExtends`, `mergeAtriumAppConfigLayers`, `atriumAppConfigFromEnv`, `AtriumConfigError`) — a shared base schema with `extends` chaining, per-id plugin maps (`{ [id]: options | false }`), env layering, and JSON Schema generation. Hosts call `extendAtriumAppConfig({ ... })` with their own keys and feed the result into `loadAtriumAppConfig`.
+
+## Config file format
+
+```jsonc
+{
+  "$schema": "./node_modules/@cfd/atrium-client/atrium-config.schema.json",
+  "extends": ["./base.atrium.json"],
+  "baseUrl": "http://127.0.0.1:8787",
+  "dataDir": ".atrium",
+  "plugins": {
+    "atrium.plugin.profile-sync": { "filePath": "profile.json" },
+    "atrium.plugin.telemetry": false
+  }
+}
+```
+
+The top-level schema is **passthrough**, so a single file can serve multiple hosts (CLI, daemon,
+third-party): each host parses with its own extended schema and only materializes the plugin ids
+its registry knows. Merge order across layers is **last-wins** on scalars and **per-id last-wins**
+on `plugins`; setting an id to `false` in a later layer cancels an inherited entry. `extends`
+paths are resolved relative to the referencing file and merged deepest-first; cycles throw.
+
+The JSON Schema artifact is shipped at `@cfd/atrium-client/atrium-config.schema.json` for editor
+IntelliSense. Point your file's `$schema` at the local copy under `node_modules/` or rebuild it via
+`bun run build:schema` in the client package.
 
 ## What this package does **not** do
 
