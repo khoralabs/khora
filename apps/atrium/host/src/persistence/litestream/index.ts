@@ -10,6 +10,18 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { type LitestreamConfigInput, renderLitestreamConfig } from "./config.ts";
+
+/**
+ * Absolute path to the binary vendored by `scripts/install-litestream.ts`.
+ *
+ * Anchored to this source file (not `process.cwd()`) because Render's start
+ * command CDs into `apps/atrium/host` before invoking Bun, which would
+ * otherwise double-prefix any relative default into
+ * `apps/atrium/host/apps/atrium/host/.bin/litestream`. The install script
+ * computes the same path the same way, so build and runtime resolve identically.
+ */
+const VENDORED_BIN_PATH = path.resolve(import.meta.dir, "../../../.bin/litestream");
+
 import {
   type LitestreamReplicateHandle,
   restoreIfReplicaExists,
@@ -46,20 +58,16 @@ function readConfigFromEnv(
 ): { config: LitestreamConfigInput; binPath: string; configPath: string } | undefined {
   if (!isLitestreamConfigured(env)) return undefined;
 
-  const bucket = env.LITESTREAM_S3_BUCKET?.trim();
-  const prefixPath = env.LITESTREAM_S3_PATH?.trim();
-  const accessKeyId = env.LITESTREAM_ACCESS_KEY_ID?.trim();
-  const secretAccessKey = env.LITESTREAM_SECRET_ACCESS_KEY?.trim();
+  const bucket = env.LITESTREAM_S3_BUCKET?.trim() ?? "";
+  const prefixPath = env.LITESTREAM_S3_PATH?.trim() ?? "";
+  const accessKeyId = env.LITESTREAM_ACCESS_KEY_ID?.trim() ?? "";
+  const secretAccessKey = env.LITESTREAM_SECRET_ACCESS_KEY?.trim() ?? "";
 
   const missing: string[] = [];
-  if (bucket === undefined || bucket.length === 0) missing.push("LITESTREAM_S3_BUCKET");
-  if (prefixPath === undefined || prefixPath.length === 0) missing.push("LITESTREAM_S3_PATH");
-  if (accessKeyId === undefined || accessKeyId.length === 0) {
-    missing.push("LITESTREAM_ACCESS_KEY_ID");
-  }
-  if (secretAccessKey === undefined || secretAccessKey.length === 0) {
-    missing.push("LITESTREAM_SECRET_ACCESS_KEY");
-  }
+  if (bucket.length === 0) missing.push("LITESTREAM_S3_BUCKET");
+  if (prefixPath.length === 0) missing.push("LITESTREAM_S3_PATH");
+  if (accessKeyId.length === 0) missing.push("LITESTREAM_ACCESS_KEY_ID");
+  if (secretAccessKey.length === 0) missing.push("LITESTREAM_SECRET_ACCESS_KEY");
   if (missing.length > 0) {
     throw new Error(
       `litestream: LITESTREAM_S3_BUCKET is set but these are missing: ${missing.join(", ")}`,
@@ -68,10 +76,10 @@ function readConfigFromEnv(
 
   const config: LitestreamConfigInput = {
     dbPath,
-    bucket: bucket!,
-    path: prefixPath!,
-    accessKeyId: accessKeyId!,
-    secretAccessKey: secretAccessKey!,
+    bucket,
+    path: prefixPath,
+    accessKeyId,
+    secretAccessKey,
     ...(env.LITESTREAM_S3_ENDPOINT?.trim() ? { endpoint: env.LITESTREAM_S3_ENDPOINT.trim() } : {}),
     ...(env.LITESTREAM_S3_FORCE_PATH_STYLE?.toLowerCase() === "true"
       ? { forcePathStyle: true }
@@ -86,7 +94,7 @@ function readConfigFromEnv(
     ...(env.LITESTREAM_RETENTION?.trim() ? { retention: env.LITESTREAM_RETENTION.trim() } : {}),
   };
 
-  const binPath = env.LITESTREAM_BIN_PATH?.trim() || "apps/atrium/host/.bin/litestream";
+  const binPath = env.LITESTREAM_BIN_PATH?.trim() || VENDORED_BIN_PATH;
 
   const configDir =
     env.LITESTREAM_CONFIG_DIR?.trim() || path.join(path.dirname(dbPath), ".litestream");
