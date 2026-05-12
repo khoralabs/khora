@@ -43,18 +43,54 @@ export async function fetchLatestVersion(
 }
 
 /**
+ * Infer the package manager that installed the currently-running binary by
+ * inspecting its on-disk path. Reliable because each PM uses a distinct
+ * global prefix. Returns `undefined` if no pattern matches.
+ *
+ * Why we need this on top of $PATH detection: an update spawned via the
+ * "first PM on PATH" heuristic ends up writing to a different prefix than
+ * the one that owns the binary actually invoked. The user sees
+ * "install successful" but `atrium --version` is unchanged because PATH
+ * resolution still picks the original copy.
+ */
+export function inferManagerFromBinPath(execPath: string): PackageManager | undefined {
+  const p = execPath.replaceAll("\\", "/").toLowerCase();
+  if (p.includes("/.bun/") || p.includes("/bun/install/")) return "bun";
+  if (p.includes("/.pnpm/") || p.includes("/pnpm/global/") || p.includes("/pnpm-global/")) {
+    return "pnpm";
+  }
+  if (p.includes("/.yarn/") || p.includes("/yarn/global/")) return "yarn";
+  if (
+    p.includes("/.npm/") ||
+    p.includes("/.npm-global/") ||
+    p.includes("/npm-global/") ||
+    p.includes("/lib/node_modules/") ||
+    p.includes("/node_modules/@khoralabs/atrium-cli")
+  ) {
+    return "npm";
+  }
+  return undefined;
+}
+
+/**
  * Decide which global package-manager command to run.
- * Priority: explicit flag > `npm_config_user_agent` > first match on PATH > "npm".
+ * Priority: explicit flag > running-binary path > `npm_config_user_agent` >
+ *           first match on PATH > "npm".
  */
 export function detectPackageManager(opts: {
   flag?: string;
   env?: NodeJS.ProcessEnv;
   which?: (cmd: string) => boolean;
+  execPath?: string;
 }): PackageManager {
   if (opts.flag !== undefined) {
     const f = opts.flag.toLowerCase();
     if (f === "npm" || f === "pnpm" || f === "yarn" || f === "bun") return f;
     throw new Error(`--manager: unknown package manager '${opts.flag}'`);
+  }
+  if (opts.execPath !== undefined) {
+    const fromPath = inferManagerFromBinPath(opts.execPath);
+    if (fromPath !== undefined) return fromPath;
   }
   const ua = opts.env?.npm_config_user_agent ?? "";
   if (ua.startsWith("pnpm")) return "pnpm";
@@ -118,6 +154,8 @@ export type RunUpdateDeps = {
   spawnInstall?: (cmd: string, args: string[]) => Promise<number>;
   stopDaemon?: () => Promise<void>;
   which?: (cmd: string) => boolean;
+  /** Path of the running binary; used to infer the owning package manager. */
+  execPath?: string;
   prompt?: (question: string) => Promise<boolean>;
   isTty?: boolean;
   out?: (line: string) => void;
@@ -215,6 +253,7 @@ export async function runUpdateCommand(flags: FlagMap, deps: RunUpdateDeps = {})
       flag: managerFlag,
       env: process.env,
       which: deps.which ?? defaultWhich,
+      execPath: deps.execPath ?? process.execPath,
     });
   } catch (e) {
     err(e instanceof Error ? e.message : String(e));

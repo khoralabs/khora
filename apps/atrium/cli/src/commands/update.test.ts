@@ -5,6 +5,7 @@ import {
   currentVersion,
   detectPackageManager,
   fetchLatestVersion,
+  inferManagerFromBinPath,
   managerInstallArgs,
   PKG_NAME,
   REGISTRY,
@@ -54,14 +55,75 @@ describe("compareVersions", () => {
   });
 });
 
+describe("inferManagerFromBinPath", () => {
+  test("bun global install path → bun", () => {
+    expect(
+      inferManagerFromBinPath(
+        "/Users/zach/.bun/install/global/node_modules/@khoralabs/atrium-cli-darwin-arm64/atrium",
+      ),
+    ).toBe("bun");
+  });
+  test("pnpm global store path → pnpm", () => {
+    expect(
+      inferManagerFromBinPath(
+        "/Users/zach/Library/pnpm/global/5/node_modules/@khoralabs/atrium-cli-darwin-arm64/atrium",
+      ),
+    ).toBe("pnpm");
+    expect(
+      inferManagerFromBinPath("/root/.local/share/pnpm/store/.pnpm/atrium-cli@0.1.3/atrium"),
+    ).toBe("pnpm");
+  });
+  test("yarn global path → yarn", () => {
+    expect(
+      inferManagerFromBinPath("/Users/zach/.config/yarn/global/node_modules/.bin/atrium"),
+    ).toBe("yarn");
+  });
+  test("npm global prefix paths → npm", () => {
+    expect(
+      inferManagerFromBinPath("/usr/local/lib/node_modules/@khoralabs/atrium-cli/bin/atrium"),
+    ).toBe("npm");
+    expect(
+      inferManagerFromBinPath(
+        "/opt/homebrew/lib/node_modules/@khoralabs/atrium-cli-darwin-arm64/atrium",
+      ),
+    ).toBe("npm");
+    expect(inferManagerFromBinPath("/Users/zach/.npm-global/bin/atrium")).toBe("npm");
+  });
+  test("unrecognized path → undefined (falls through)", () => {
+    expect(inferManagerFromBinPath("/tmp/local-dev/atrium")).toBeUndefined();
+    expect(inferManagerFromBinPath("/Users/zach/.cargo/bin/atrium")).toBeUndefined();
+  });
+});
+
 describe("detectPackageManager", () => {
-  test("explicit flag wins", () => {
-    expect(detectPackageManager({ flag: "pnpm", env: { npm_config_user_agent: "yarn/1" } })).toBe(
-      "pnpm",
-    );
+  test("explicit flag wins over execPath inference and user-agent", () => {
+    expect(
+      detectPackageManager({
+        flag: "pnpm",
+        env: { npm_config_user_agent: "yarn/1" },
+        execPath: "/Users/zach/.bun/install/global/node_modules/atrium-cli/atrium",
+      }),
+    ).toBe("pnpm");
   });
   test("throws on unknown flag value", () => {
     expect(() => detectPackageManager({ flag: "rpm" })).toThrow();
+  });
+  test("execPath inference outranks user-agent and PATH heuristic", () => {
+    expect(
+      detectPackageManager({
+        env: { npm_config_user_agent: "npm/9.6.7" },
+        which: (cmd) => cmd === "npm",
+        execPath: "/Users/zach/.bun/install/global/node_modules/atrium-cli/atrium",
+      }),
+    ).toBe("bun");
+  });
+  test("execPath that doesn't match a PM falls through to user-agent", () => {
+    expect(
+      detectPackageManager({
+        env: { npm_config_user_agent: "pnpm/8.0.0" },
+        execPath: "/tmp/local-build/atrium",
+      }),
+    ).toBe("pnpm");
   });
   test("npm_config_user_agent prefix detected (pnpm)", () => {
     expect(detectPackageManager({ env: { npm_config_user_agent: "pnpm/8.0.0 node/v20" } })).toBe(
