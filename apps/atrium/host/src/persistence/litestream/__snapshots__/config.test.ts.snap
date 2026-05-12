@@ -1,0 +1,20 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`renderLitestreamConfig R2-style: includes endpoint + force-path-style + default intervals 1`] = `
+"access-key-id: "AKIA-FAKE"
+secret-access-key: "secret-fake"
+
+dbs:
+  - path: "/data/atrium.db"
+    replicas:
+      - type: s3
+        bucket: "atrium-db"
+        path: "prod"
+        region: "us-east-1"
+        sync-interval: 1s
+        snapshot-interval: 1h
+        retention: 72h
+        endpoint: "https://acc.r2.cloudflarestorage.com"
+        force-path-style: true
+"
+`;

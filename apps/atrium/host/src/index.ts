@@ -35,6 +35,7 @@ import {
   readInvitePepper,
   validateInviteEnvConfig,
 } from "./invites/index.ts";
+import { type LitestreamHandle, maybeStartLitestream } from "./persistence/litestream/index.ts";
 import { clientIpFromRequest, createRateLimiter, envRatePerMinute } from "./rate-limit.ts";
 
 function envPort(): number {
@@ -163,6 +164,11 @@ type InboxWsData = { did: string };
 
 const dbPath = envDbPath();
 mkdirSync(dirname(dbPath), { recursive: true });
+
+// Restore-from-replica + start the replicator BEFORE opening the SQLite DB so
+// that a fresh disk on a new Render deploy gets repopulated from S3 first.
+// `maybeStartLitestream` is a no-op when LITESTREAM_S3_BUCKET is unset.
+const litestream: LitestreamHandle | undefined = await maybeStartLitestream({ dbPath });
 
 const walIntervalMs = envIntervalMs("ATRIUM_SQLITE_WAL_CHECKPOINT_INTERVAL_MS");
 const analyzeIntervalMs = envIntervalMs("ATRIUM_SQLITE_ANALYZE_INTERVAL_MS");
@@ -773,3 +779,18 @@ const server = Bun.serve<InboxWsData>({
 });
 
 console.log(`Atrium host listening on http://localhost:${server.port}`);
+
+if (litestream !== undefined) {
+  const shutdown = async (signal: NodeJS.Signals): Promise<void> => {
+    console.log(`[atrium-host] received ${signal}; shutting down`);
+    try {
+      server.stop();
+    } catch {
+      /* server may already be down */
+    }
+    await litestream.stop();
+    process.exit(0);
+  };
+  process.once("SIGTERM", () => void shutdown("SIGTERM"));
+  process.once("SIGINT", () => void shutdown("SIGINT"));
+}

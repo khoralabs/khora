@@ -5,7 +5,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "start": "bun run src/index.ts",
-    "test": "bun test"
+    "test": "bun test",
+    "install-litestream": "bun ../../../scripts/install-litestream.ts"
   },
   "dependencies": {
     "@khoralabs/atrium-auth": "workspace:*",

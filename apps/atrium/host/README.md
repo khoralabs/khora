@@ -68,3 +68,46 @@ With `ATRIUM_INVITE_PEPPER` set, watch stderr for the **one-time root invite** o
 - `createAtriumHostContext(config)` — constructs the SwarmHost + persistence + verifier and returns the request handlers.
 - `createDidKeyDidVerifier({ db })` — the default production verifier (see [`src/atrium-did-key-verifier.ts`](src/atrium-did-key-verifier.ts)).
 - SQLite helpers (`insertNonceIfFresh`, `sweepExpiredNonces`, etc.) — re-exported for tests and for any verifier replacement that wants to reuse the replay store.
+
+## SQLite replication (Litestream)
+
+The host supervises a `litestream` child process when a replica is configured via env vars. It restores from S3 on boot (DR), then streams the WAL to S3 for the life of the process. Disable by leaving `LITESTREAM_S3_BUCKET` unset.
+
+### Enable on Render
+
+1. **Build command** — append the binary install so it's on disk at runtime:
+
+   ```bash
+   bun install && bun run --filter @khoralabs/atrium-host install-litestream
+   ```
+
+2. **Env vars** — pick any S3-compatible target. Cloudflare R2 / Backblaze B2 are the cheapest sensible defaults; AWS S3 is the boring choice (drop `LITESTREAM_S3_ENDPOINT` and `LITESTREAM_S3_FORCE_PATH_STYLE` for plain S3).
+
+   ```
+   LITESTREAM_S3_BUCKET=atrium-db
+   LITESTREAM_S3_PATH=prod
+   LITESTREAM_S3_ENDPOINT=https://<account>.r2.cloudflarestorage.com
+   LITESTREAM_S3_FORCE_PATH_STYLE=true
+   LITESTREAM_ACCESS_KEY_ID=...
+   LITESTREAM_SECRET_ACCESS_KEY=...
+   ```
+
+3. **Start command** — unchanged (`bun apps/atrium/host/src/index.ts`).
+
+The host writes the rendered Litestream YAML to `${dirname(ATRIUM_DB_PATH)}/.litestream/config.yml` on each boot (override with `LITESTREAM_CONFIG_DIR`). On `SIGTERM` it stops the HTTP server and waits for the replicator to flush before exiting.
+
+### Manual disaster recovery
+
+After provisioning a new disk you can restore explicitly instead of waiting for boot:
+
+```bash
+./apps/atrium/host/.bin/litestream restore \
+  -config /data/.litestream/config.yml \
+  /data/atrium.db
+```
+
+### Operational notes
+
+- The replicator runs alongside the host's periodic `wal_checkpoint(TRUNCATE)` — both are designed for this exact combination. Litestream tails the WAL between checkpoints; the host's checkpoint reclaims disk.
+- If the child dies the host crashes itself so Render restarts the service; we'd rather drop writes than serve unreplicated ones.
+- See [`scripts/install-litestream.ts`](../../../scripts/install-litestream.ts) for the pinned version.
