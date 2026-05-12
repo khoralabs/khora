@@ -56,12 +56,17 @@ fi
 # Idempotent bucket creation. $MINIO_BUCKETS is comma-separated (e.g. "atr1,atr2").
 # Each entry becomes a top-level MinIO bucket — the convention is one bucket per
 # atrium-host hostname so litestream replicas don't collide.
+#
+# Splitting uses IFS=", " so whitespace-separated entries work too. The MinIO
+# server image is UBI-micro and has no sed/awk/curl, so we trim with shell
+# parameter expansion. Bucket names cannot legally contain whitespace anyway.
 if [ -n "${MINIO_BUCKETS:-}" ]; then
   OLD_IFS=$IFS
-  IFS=','
+  IFS=', '
   for bucket in $MINIO_BUCKETS; do
-    # POSIX trim of leading/trailing whitespace.
-    bucket=$(printf "%s" "$bucket" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+    # Strip leading/trailing literal spaces using only shell builtins.
+    while [ "${bucket# }" != "$bucket" ]; do bucket=${bucket# }; done
+    while [ "${bucket% }" != "$bucket" ]; do bucket=${bucket% }; done
     [ -z "$bucket" ] && continue
     if mc mb --ignore-existing "local/$bucket" >/dev/null 2>&1; then
       echo "minio-init: ensured bucket: $bucket"

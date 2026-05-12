@@ -34,7 +34,7 @@ Initially you'll only have `atr1`. Add `atr2`, `atr3`, … by appending them to 
 
 | Name | Default | Purpose |
 | --- | --- | --- |
-| `MINIO_BUCKETS` | _(empty)_ | Comma-separated list of bucket names to ensure on boot. Whitespace around entries is trimmed. Empty entries are skipped. Empty value disables bootstrap entirely. |
+| `MINIO_BUCKETS` | _(empty)_ | Comma- or whitespace-separated list of bucket names to ensure on boot. Whitespace around entries is trimmed. Empty entries are skipped. Empty value disables bootstrap entirely. Bucket names cannot legally contain whitespace. |
 | `MINIO_HEALTH_RETRY_MAX` | `60` | Seconds the entrypoint will wait for the MinIO API to come up before giving up and exiting. Each retry is a 1-second sleep. |
 | `MINIO_BROWSER_REDIRECT_URL` | _(empty)_ | Passes through to MinIO. Leave empty when running behind a single hostname; set to the public console URL when MinIO is behind a reverse proxy that rewrites paths. See [MinIO docs](https://min.io/docs/minio/linux/reference/minio-server/settings/browser.html). |
 
@@ -61,7 +61,7 @@ Any other `MINIO_*` environment variable is passed through to the underlying `mi
    MINIO_BUCKETS=atr1
    ```
 
-4. **Health check path:** `/minio/health/live` on port 9000 (or let Render rely on the Dockerfile `HEALTHCHECK`).
+4. **Health check path:** Set Render's HTTP health check to `GET /minio/health/live` on port 9000. The image does not ship a Dockerfile `HEALTHCHECK` because the upstream MinIO server image (UBI-micro) has neither `curl` nor `wget`.
 5. After it's up, point each atrium host at it:
 
    ```

@@ -29,7 +29,9 @@ ENV MINIO_BROWSER_REDIRECT_URL="" \
 VOLUME /data
 EXPOSE 9000 9001
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -fsS http://127.0.0.1:9000/minio/health/live || exit 1
+# No Dockerfile HEALTHCHECK: the MinIO server image is UBI-micro and has no
+# curl/wget. Configure Render's HTTP health check to GET
+# `/minio/health/live` on port 9000 instead — that endpoint is the canonical
+# liveness probe MinIO publishes for orchestrators.
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
