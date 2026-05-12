@@ -121,6 +121,20 @@ SQLite file:
   to point at a different bucket/path. The image's `litestream.yml`
   reads everything from env, so no rebuild is needed.
 
+## Gotchas
+
+- **Bun-compiled binaries on Alpine need `libstdc++` + `libgcc`.** The host
+  Dockerfile installs both. Symptom if you forget: `Error loading shared
+  library libstdc++.so.6` on container start.
+- **`minio.internal` only resolves once the MinIO service is deployed.**
+  Apply the full blueprint (all three services) before expecting the host
+  to start cleanly. On a partial apply you'll see `dial tcp: lookup
+  minio.internal: no such host` from Litestream; the host binary won't run
+  because Litestream supervises it and exits.
+- **First boot on a fresh bucket** logs one `cannot fetch generations`
+  error before the first sync. That's normal — Litestream is checking
+  whether a replica already exists.
+
 ## Known limits / out of scope
 
 - **Auth on sql-studio.** None today. Put it behind Render's IP allowlist,

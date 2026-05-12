@@ -21,7 +21,8 @@ RUN mkdir -p /out \
       --outfile /out/atrium-host
 
 FROM alpine:3.20
-RUN apk add --no-cache ca-certificates tzdata
+# libstdc++ + libgcc are required by `bun --compile` output even on musl.
+RUN apk add --no-cache ca-certificates tzdata libstdc++ libgcc
 COPY --from=litestream /usr/local/bin/litestream /usr/local/bin/litestream
 COPY --from=builder /out/atrium-host /usr/local/bin/atrium-host
 COPY apps/atrium/host/docker/host/entrypoint.sh /entrypoint.sh
