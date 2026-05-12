@@ -58,6 +58,16 @@ async function main(
     return;
   }
 
+  if (a === "update") {
+    try {
+      await handlers.update(flags);
+    } catch (e) {
+      console.error(e instanceof Error ? e.message : String(e));
+      process.exit(1);
+    }
+    return;
+  }
+
   if (a === "start" || a === "status" || a === "kill") {
     try {
       if (a === "start") await handlers.start(flags);

@@ -15,10 +15,12 @@ import { runStatusCommand } from "./status.ts";
 import { runTopicSubscribeCommand } from "./topic-subscribe.ts";
 import { runTopicUnsubscribeCommand } from "./topic-unsubscribe.ts";
 import type { FlagMap } from "./types.ts";
+import { runUpdateCommand } from "./update.ts";
 
 export interface AtriumCliCommandHandlers {
   key(sub: string | undefined, flags: FlagMap): Promise<void>;
   setup(flags: FlagMap): Promise<void>;
+  update(flags: FlagMap): Promise<void>;
   config(sub: string | undefined, flags: FlagMap): Promise<void>;
   health(ctx: AtriumCliContext): Promise<void>;
   start(flags: FlagMap): Promise<void>;
@@ -37,6 +39,7 @@ export interface AtriumCliCommandHandlers {
 export const defaultAtriumCliCommandHandlers = {
   key: runKeyCommand,
   setup: runSetupCommand,
+  update: runUpdateCommand,
   config: runConfigCommand,
   health: runHealthCommand,
   start: runStartCommand,

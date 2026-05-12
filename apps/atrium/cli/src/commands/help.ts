@@ -14,10 +14,12 @@ import { statusHelp } from "./status.help.ts";
 import { topicSubscribeHelp } from "./topic-subscribe.help.ts";
 import { topicUnsubscribeHelp } from "./topic-unsubscribe.help.ts";
 import type { CommandHelp } from "./types.ts";
+import { updateHelp } from "./update.help.ts";
 
 const ALL_HELP: readonly CommandHelp[] = [
   keyHelp,
   setupHelp,
+  updateHelp,
   configHelp,
   healthHelp,
   startHelp,
@@ -89,6 +91,7 @@ Commands:
   key show [--path <path>]
   key path
   setup [--force|-f] [--json]
+  update [--check|--apply] [--tag latest|next] [--manager npm|pnpm|yarn|bun] [--json]
   config path | show [--raw|--source] | edit
   health
   start [-b|--background] [--config <path>] [--json] [--log <path>]

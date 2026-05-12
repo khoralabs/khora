@@ -37,6 +37,21 @@ atrium setup --force          # overwrite existing files
 atrium setup --json           # structured summary for scripts
 ```
 
+## Updating
+
+The binary knows its own version (stamped in by the npm launcher) and can query the registry on demand:
+
+```bash
+atrium update                 # check + interactive prompt on a TTY
+atrium update --check         # report only; exit 0=up-to-date, 10=update available, 1=error
+atrium update --apply         # install non-interactively via the detected package manager
+atrium update --tag next      # query the 'next' dist-tag instead of 'latest'
+atrium update --manager pnpm  # force a specific package manager
+atrium update --json          # { current, latest, tag, hasUpdate, applied }
+```
+
+`--apply` stops the daemon first (best-effort), then re-invokes whichever package manager you used to install (auto-detected via `npm_config_user_agent` or `PATH`, override with `--manager`).
+
 ## Identity
 
 On first use:

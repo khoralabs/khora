@@ -40,10 +40,13 @@ if (!supported.has(slug)) {
 const cliBin = require.resolve(\`@khoralabs/atrium-cli-\${slug}/atrium\`);
 const daemonBin = require.resolve(\`@khoralabs/atrium-daemon-\${slug}/atrium-daemon\`);
 const assetsDir = path.resolve(__dirname, "..");
+let metaVersion = "";
+try { metaVersion = String(require(path.resolve(assetsDir, "package.json")).version || ""); } catch (_) {}
 const env = {
   ...process.env,
   ATRIUM_DAEMON_BIN: daemonBin,
   ATRIUM_CLI_ASSETS_DIR: assetsDir,
+  ATRIUM_CLI_VERSION: metaVersion,
 };
 const r = spawnSync(cliBin, process.argv.slice(2), { stdio: "inherit", env });
 process.exit(r.status ?? 1);
