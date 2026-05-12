@@ -1,3 +1,4 @@
+import { spawn as nodeSpawn } from "node:child_process";
 import { openSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
@@ -75,10 +76,15 @@ export async function runStartCommand(flags: FlagMap): Promise<void> {
   const logPath = daemonLogPath(cliAppConfig, strFlag(flags, "log"));
   await mkdir(path.dirname(logPath), { recursive: true });
   const fd = openSync(logPath, "a", 0o644);
-  const proc = Bun.spawn(cmd, {
-    stdin: "ignore",
-    stdout: fd,
-    stderr: fd,
+
+  // Use node:child_process so we get `detached: true` (calls setsid() on
+  // POSIX, putting the daemon in its own process group). Without this, a
+  // SIGINT (Ctrl-C) in the user's shell propagates to the daemon, and the
+  // daemon's stdout can leak back to the terminal under some platforms'
+  // posix_spawn fd handling.
+  const proc = nodeSpawn(cmd[0] as string, cmd.slice(1), {
+    detached: true,
+    stdio: ["ignore", fd, fd],
     env: process.env,
   });
   proc.unref();
@@ -89,4 +95,7 @@ export async function runStartCommand(flags: FlagMap): Promise<void> {
     process.exit(1);
   }
   console.log(JSON.stringify({ pid: status.pid, log: logPath }));
+  // Defensive: explicitly exit so the CLI definitely returns the shell even
+  // if some unref'd handle would otherwise keep the loop alive.
+  process.exit(0);
 }
