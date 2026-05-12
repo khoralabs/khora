@@ -14,12 +14,11 @@
 #   2. Trigger a redeploy of atrium-host so Litestream picks up the bucket.
 
 envVarGroups:
-  - name: atrium-minio-creds
+  # Non-secret shared S3 coordinates. The matching access keys are minted on the
+  # `minio` service below (Render can't generate values inside an env group and
+  # then re-export them under different keys to another service).
+  - name: atrium-minio-s3
     envVars:
-      - key: LITESTREAM_ACCESS_KEY_ID
-        generateValue: true
-      - key: LITESTREAM_SECRET_ACCESS_KEY
-        generateValue: true
       - key: LITESTREAM_S3_ENDPOINT
         value: http://minio.internal:9000
       - key: LITESTREAM_S3_BUCKET
@@ -40,11 +39,9 @@ services:
       sizeGB: 10
     envVars:
       - key: MINIO_ROOT_USER
-        fromGroup: atrium-minio-creds
-        fromKey: LITESTREAM_ACCESS_KEY_ID
+        generateValue: true
       - key: MINIO_ROOT_PASSWORD
-        fromGroup: atrium-minio-creds
-        fromKey: LITESTREAM_SECRET_ACCESS_KEY
+        generateValue: true
 
   - type: web
     name: atrium-host
@@ -57,7 +54,17 @@ services:
       mountPath: /data
       sizeGB: 5
     envVars:
-      - fromGroup: atrium-minio-creds
+      - fromGroup: atrium-minio-s3
+      - key: LITESTREAM_ACCESS_KEY_ID
+        fromService:
+          type: web
+          name: minio
+          envVarKey: MINIO_ROOT_USER
+      - key: LITESTREAM_SECRET_ACCESS_KEY
+        fromService:
+          type: web
+          name: minio
+          envVarKey: MINIO_ROOT_PASSWORD
       - key: ATRIUM_DB_PATH
         value: /data/atrium.db
       - key: LITESTREAM_CONFIG
@@ -78,7 +85,17 @@ services:
       mountPath: /data
       sizeGB: 5
     envVars:
-      - fromGroup: atrium-minio-creds
+      - fromGroup: atrium-minio-s3
+      - key: LITESTREAM_ACCESS_KEY_ID
+        fromService:
+          type: web
+          name: minio
+          envVarKey: MINIO_ROOT_USER
+      - key: LITESTREAM_SECRET_ACCESS_KEY
+        fromService:
+          type: web
+          name: minio
+          envVarKey: MINIO_ROOT_PASSWORD
       - key: DB_PATH
         value: /data/db.sqlite
       - key: LITESTREAM_CONFIG
