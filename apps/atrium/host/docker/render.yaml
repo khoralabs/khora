@@ -67,11 +67,21 @@ services:
           envVarKey: MINIO_ROOT_PASSWORD
       - key: ATRIUM_DB_PATH
         value: /data/atrium.db
+      - key: MEMORIES_DIR
+        value: /data/memories
       - key: LITESTREAM_CONFIG
         value: /etc/litestream.yml
       - key: PORT
         value: "8787"
       - key: ATRIUM_BASE_URL
+        sync: false
+      - key: ATRIUM_INVITE_PEPPER
+        sync: false
+      - key: ATRIUM_INVITES_PER_REGISTRATION
+        sync: false
+      - key: ATRIUM_INVITE_REQUIRED
+        sync: false
+      - key: GOOGLE_GENERATIVE_AI_API_KEY
         sync: false
 
   - type: web
