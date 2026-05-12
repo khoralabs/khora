@@ -10,8 +10,21 @@ const DAEMON_BIN_SPEC = "@khoralabs/atrium-daemon/bin";
 const ACK_TIMEOUT_MS = 1500;
 const ACK_POLL_MS = 50;
 
-function resolveDaemonScript(): string {
-  return Bun.fileURLToPath(import.meta.resolve(DAEMON_BIN_SPEC));
+/**
+ * Resolve the path to the daemon executable.
+ *
+ * Published installs: `ATRIUM_DAEMON_BIN` is exported by the node-shim launcher
+ * (see [apps/atrium/release/cli/bin/atrium.js](apps/atrium/release/cli/bin/atrium.js)),
+ * which `require.resolve`s the matching native binary from the platform package.
+ *
+ * Local dev / monorepo: when the env var is unset we fall back to resolving the
+ * daemon's TypeScript entrypoint via `import.meta.resolve` and run it through Bun.
+ */
+export function resolveDaemonInvocation(env: NodeJS.ProcessEnv = process.env): string[] {
+  const envBin = env.ATRIUM_DAEMON_BIN?.trim();
+  if (envBin !== undefined && envBin.length > 0) return [envBin];
+  const script = Bun.fileURLToPath(import.meta.resolve(DAEMON_BIN_SPEC));
+  return ["bun", "run", script];
 }
 
 function buildPassthroughArgs(flags: FlagMap): string[] {
@@ -44,8 +57,7 @@ export async function runStartCommand(flags: FlagMap): Promise<void> {
 
   const background = boolFlag(flags, "background", "b");
   const passthrough = buildPassthroughArgs(flags);
-  const daemonScript = resolveDaemonScript();
-  const cmd = ["bun", "run", daemonScript, ...passthrough];
+  const cmd = [...resolveDaemonInvocation(), ...passthrough];
 
   if (!background) {
     const proc = Bun.spawn(cmd, {

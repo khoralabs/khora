@@ -1,3 +1,5 @@
+import { homedir } from "node:os";
+import path from "node:path";
 import {
   type AtriumPluginInstaller,
   atriumAppConfigFromEnv,
@@ -7,6 +9,12 @@ import {
   resolveAtriumConfigPath,
 } from "@khoralabs/atrium-client";
 import { buildCliPluginInstallers } from "./plugin-registry.ts";
+
+/** `~/.atrium/cli.config.json` first, then legacy `~/.atrium/config.json`. */
+function cliDefaultConfigPaths(): string[] {
+  const dir = path.join(homedir(), ".atrium");
+  return [path.join(dir, "cli.config.json"), path.join(dir, "config.json")];
+}
 
 export const zCliAppConfig = extendAtriumAppConfig({
   // Reserved for CLI-specific keys. Empty today.
@@ -42,7 +50,11 @@ export function createCliAppConfig(
 ): CliAppConfigBundle {
   const env = opts.env ?? process.env;
   const flagPath = extractConfigFlagFromArgv(opts.argv ?? process.argv);
-  const resolved = resolveAtriumConfigPath({ flag: flagPath, env });
+  const resolved = resolveAtriumConfigPath({
+    flag: flagPath,
+    env,
+    defaultPaths: cliDefaultConfigPaths(),
+  });
   const { config, sourcePath, extendsChain } = loadAtriumAppConfig({
     schema: zCliAppConfig,
     layers: [atriumAppConfigFromEnv(env)],

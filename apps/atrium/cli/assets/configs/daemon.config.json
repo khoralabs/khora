@@ -1,0 +1,7 @@
+{
+  "$schema": "./atrium-config.schema.json",
+  "extends": "./base.config.json",
+  "plugins": {
+    "inbox-buffer": { "dbPath": "inbox-buffer.sqlite" }
+  }
+}

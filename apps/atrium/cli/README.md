@@ -1,5 +1,11 @@
 # `@khoralabs/atrium-cli`
 
+> Distributed as a self-contained native binary — no Bun, no Node, no runtime install. Supported platforms: `darwin-arm64`, `linux-x64`, `linux-arm64`. Installing `@khoralabs/atrium-cli` also pulls in `@khoralabs/atrium-daemon`; both bin shims fan out to a per-platform package via npm's `optionalDependencies` mechanism.
+>
+> ```bash
+> npm i -g @khoralabs/atrium-cli
+> ```
+
 The `atrium` binary. A thin shell over `@khoralabs/atrium-client` that:
 
 - **Owns the local identity** at `${ATRIUM_AGENT_KEY_PATH:-~/.atrium/identity.json}` and provides `atrium key generate / show / path` to manage it.

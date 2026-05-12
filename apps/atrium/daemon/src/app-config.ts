@@ -1,3 +1,5 @@
+import { homedir } from "node:os";
+import path from "node:path";
 import {
   type AtriumPluginInstaller,
   atriumAppConfigFromEnv,
@@ -7,6 +9,12 @@ import {
   resolveAtriumConfigPath,
 } from "@khoralabs/atrium-client";
 import { buildDaemonPluginInstallers } from "./plugin-registry.ts";
+
+/** `~/.atrium/daemon.config.json` first, then legacy `~/.atrium/config.json`. */
+function daemonDefaultConfigPaths(): string[] {
+  const dir = path.join(homedir(), ".atrium");
+  return [path.join(dir, "daemon.config.json"), path.join(dir, "config.json")];
+}
 
 export const zDaemonAppConfig = extendAtriumAppConfig({
   // Reserved for daemon-specific keys. Empty today.
@@ -58,7 +66,11 @@ export function createDaemonAppConfig(
 ): DaemonAppConfigBundle {
   const env = opts.env ?? process.env;
   const flags = parseDaemonArgv(opts.argv ?? process.argv);
-  const resolved = resolveAtriumConfigPath({ flag: flags.configPath, env });
+  const resolved = resolveAtriumConfigPath({
+    flag: flags.configPath,
+    env,
+    defaultPaths: daemonDefaultConfigPaths(),
+  });
   const { config, sourcePath, extendsChain } = loadAtriumAppConfig({
     schema: zDaemonAppConfig,
     layers: [atriumAppConfigFromEnv(env)],

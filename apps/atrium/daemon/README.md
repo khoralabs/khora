@@ -1,5 +1,11 @@
 # `@khoralabs/atrium-daemon`
 
+> Distributed as a self-contained native binary — no Bun, no Node, no runtime install. Supported platforms: `darwin-arm64`, `linux-x64`, `linux-arm64`. Pulled in transitively by `@khoralabs/atrium-cli`, or installable standalone for headless deployments:
+>
+> ```bash
+> npm i -g @khoralabs/atrium-daemon
+> ```
+
 The `atrium-daemon` binary. A long-lived process that:
 
 1. Loads the same Ed25519 identity the CLI uses (`${ATRIUM_AGENT_KEY_PATH:-~/.atrium/identity.json}`).

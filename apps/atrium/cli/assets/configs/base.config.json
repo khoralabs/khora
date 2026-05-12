@@ -1,0 +1,5 @@
+{
+  "$schema": "./atrium-config.schema.json",
+  "baseUrl": "https://atr1.khoralabs.com",
+  "dataDir": "~/.atrium"
+}

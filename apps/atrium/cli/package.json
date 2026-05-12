@@ -3,9 +3,6 @@
   "version": "0.0.0",
   "type": "module",
   "private": true,
-  "bin": {
-    "atrium": "./src/cli.ts"
-  },
   "exports": {
     "./plugins": {
       "types": "./src/plugins.ts",
@@ -16,7 +13,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "bun test",
-    "start": "bun run src/cli.ts"
+    "start": "bun run src/cli.ts",
+    "build": "bun run scripts/build.ts"
   },
   "dependencies": {
     "@khoralabs/atrium-auth": "workspace:*",

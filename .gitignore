@@ -8,6 +8,7 @@ node_modules
 # output
 out
 dist
+apps/atrium/release
 *.tgz
 
 # code coverage
