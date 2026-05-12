@@ -1,0 +1,15 @@
+# Litestream config used by the sql-studio container for `restore` only.
+#
+# Same env var matrix as the host's litestream.yml so a single env group can
+# be shared on Render. $DB_PATH points at the local sqlite file that the
+# sql-studio process serves.
+access-key-id: ${LITESTREAM_ACCESS_KEY_ID}
+secret-access-key: ${LITESTREAM_SECRET_ACCESS_KEY}
+dbs:
+  - path: ${DB_PATH}
+    replicas:
+      - type: s3
+        endpoint: ${LITESTREAM_S3_ENDPOINT}
+        bucket: ${LITESTREAM_S3_BUCKET}
+        path: ${LITESTREAM_S3_PATH:-prod}
+        force-path-style: true

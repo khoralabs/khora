@@ -1,0 +1,87 @@
+# Render blueprint for the Atrium host stack.
+#
+# Three services on Render's private network:
+#   minio        S3-compatible store (private API on minio.internal:9000,
+#                console exposed publicly on :9001)
+#   atrium-host  Bun-compiled host + Litestream sidecar; public on :8787
+#   sql-studio   read-only SQLite viewer; restores from MinIO on boot
+#
+# Render reads this file at the repo root by default. Either move it there,
+# symlink it, or pass --blueprint-path when applying.
+#
+# After first apply:
+#   1. Open the public minio console URL and create the `atrium-db` bucket.
+#   2. Trigger a redeploy of atrium-host so Litestream picks up the bucket.
+
+envVarGroups:
+  - name: atrium-minio-creds
+    envVars:
+      - key: LITESTREAM_ACCESS_KEY_ID
+        generateValue: true
+      - key: LITESTREAM_SECRET_ACCESS_KEY
+        generateValue: true
+      - key: LITESTREAM_S3_ENDPOINT
+        value: http://minio.internal:9000
+      - key: LITESTREAM_S3_BUCKET
+        value: atrium-db
+      - key: LITESTREAM_S3_PATH
+        value: prod
+
+services:
+  - type: web
+    name: minio
+    runtime: docker
+    plan: starter
+    dockerfilePath: apps/atrium/host/docker/minio/Dockerfile
+    dockerContext: .
+    disk:
+      name: minio-data
+      mountPath: /data
+      sizeGB: 10
+    envVars:
+      - key: MINIO_ROOT_USER
+        fromGroup: atrium-minio-creds
+        fromKey: LITESTREAM_ACCESS_KEY_ID
+      - key: MINIO_ROOT_PASSWORD
+        fromGroup: atrium-minio-creds
+        fromKey: LITESTREAM_SECRET_ACCESS_KEY
+
+  - type: web
+    name: atrium-host
+    runtime: docker
+    plan: starter
+    dockerfilePath: apps/atrium/host/docker/host/Dockerfile
+    dockerContext: .
+    disk:
+      name: host-data
+      mountPath: /data
+      sizeGB: 5
+    envVars:
+      - fromGroup: atrium-minio-creds
+      - key: ATRIUM_DB_PATH
+        value: /data/atrium.db
+      - key: LITESTREAM_CONFIG
+        value: /etc/litestream.yml
+      - key: PORT
+        value: "8787"
+      - key: ATRIUM_BASE_URL
+        sync: false
+
+  - type: web
+    name: sql-studio
+    runtime: docker
+    plan: starter
+    dockerfilePath: apps/atrium/host/docker/sql-studio/Dockerfile
+    dockerContext: .
+    disk:
+      name: studio-data
+      mountPath: /data
+      sizeGB: 5
+    envVars:
+      - fromGroup: atrium-minio-creds
+      - key: DB_PATH
+        value: /data/db.sqlite
+      - key: LITESTREAM_CONFIG
+        value: /etc/litestream.yml
+      - key: PORT
+        value: "3030"
