@@ -1,5 +1,19 @@
 import type { FlagMap, ParsedArgv } from "./types.ts";
 
+/**
+ * argv parser that supports:
+ *   - `--flag` / `--flag=value` / `--flag value` — long flags
+ *   - `-x` — single-letter short flags (boolean only)
+ *   - `--` — terminator; remaining tokens are positional
+ *   - everything else — positional
+ *
+ * Short flags are intentionally boolean-only: every short-flag site in the CLI
+ * today (`-b`, `-y`, `-f`) is boolean, and conflating "next token is a value"
+ * vs "next token is a positional" via single-letter prefixes is the kind of
+ * ambiguity that bites later. Use the long form when you need to pass a value.
+ */
+const SHORT_FLAG_RE = /^-[A-Za-z]$/;
+
 export function parseArgv(argv: string[]): ParsedArgv {
   const positional: string[] = [];
   const flags: FlagMap = {};
@@ -24,6 +38,10 @@ export function parseArgv(argv: string[]): ParsedArgv {
       } else {
         flags[key] = true;
       }
+      continue;
+    }
+    if (SHORT_FLAG_RE.test(a)) {
+      flags[a.slice(1)] = true;
       continue;
     }
     positional.push(a);

@@ -1,4 +1,3 @@
-import { spawn as nodeSpawn } from "node:child_process";
 import { openSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
@@ -77,17 +76,22 @@ export async function runStartCommand(flags: FlagMap): Promise<void> {
   await mkdir(path.dirname(logPath), { recursive: true });
   const fd = openSync(logPath, "a", 0o644);
 
-  // Use node:child_process so we get `detached: true` (calls setsid() on
-  // POSIX, putting the daemon in its own process group). Without this, a
-  // SIGINT (Ctrl-C) in the user's shell propagates to the daemon, and the
-  // daemon's stdout can leak back to the terminal under some platforms'
-  // posix_spawn fd handling.
-  const proc = nodeSpawn(cmd[0] as string, cmd.slice(1), {
-    detached: true,
-    stdio: ["ignore", fd, fd],
+  // `detached: true` is functional on Bun.spawn (verified empirically: the
+  // child becomes its own process-group leader, equivalent to setpgid(0)),
+  // but it's missing from bun-types' SpawnOptions surface, hence the cast.
+  // Without it the daemon shares the parent CLI's process group, so a
+  // SIGINT (Ctrl-C) from the user's shell propagates to it. Combined with
+  // `stdout: fd`/`stderr: fd` it produces a fully detached background
+  // process whose stdio writes to the rotated log.
+  type BunSpawnOptions = Parameters<typeof Bun.spawn>[1] & { detached?: boolean };
+  const proc = Bun.spawn(cmd, {
+    stdin: "ignore",
+    stdout: fd,
+    stderr: fd,
     env: process.env,
-  });
-  proc.unref();
+    detached: true,
+  } satisfies BunSpawnOptions as BunSpawnOptions);
+  (proc as { unref?: () => void }).unref?.();
 
   const status = await waitForRunning(() => readDaemonStatus(cliAppConfig), ACK_TIMEOUT_MS);
   if (status.state !== "running") {
