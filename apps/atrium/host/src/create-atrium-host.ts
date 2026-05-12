@@ -30,6 +30,9 @@ import {
   createSwarmHostSqlitePersistence,
   ensureSwarmHostSqliteSchema,
   type ProbeSubscribersRepo,
+  type SqliteMaintenanceHandle,
+  type SqliteMaintenanceOptions,
+  startSqliteMaintenance,
 } from "./persistence/sqlite/index.ts";
 import {
   type AtriumUsernamesRepo,
@@ -53,6 +56,8 @@ export type AtriumHostConfig = {
    * SQLite database (e.g. the default {@link createAtriumDidAuth} uses it for its nonce store).
    */
   auth: AtriumDidAuth | ((db: Database) => AtriumDidAuth);
+  /** Periodic SQLite maintenance (WAL truncation + ANALYZE). Set `false` to disable entirely. */
+  sqliteMaintenance?: SqliteMaintenanceOptions | false;
 };
 
 export type AtriumHostContext = {
@@ -62,6 +67,8 @@ export type AtriumHostContext = {
   notificationBuffer: AgentNotificationBufferPort;
   auth: AtriumDidAuth;
   usernamesRepo: AtriumUsernamesRepo;
+  /** Periodic SQLite maintenance handle. `undefined` when explicitly disabled via config. */
+  sqliteMaintenance?: SqliteMaintenanceHandle;
 };
 
 /** Error thrown from REGISTRATION_PROFILE_BUILD when the requested username is already taken. */
@@ -87,6 +94,11 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
   const inboxHub = createInboxWsHub();
   const probeSubscribers = createProbeSubscribersRepo(db);
   const usernamesRepo = createAtriumUsernamesRepo(db);
+
+  const sqliteMaintenance =
+    config.sqliteMaintenance === false
+      ? undefined
+      : startSqliteMaintenance(db, config.sqliteMaintenance ?? {});
 
   const appContext: AtriumHostAppContext = {
     db,
@@ -221,7 +233,15 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
     }),
   });
 
-  return { config, host, db, notificationBuffer, auth, usernamesRepo };
+  return {
+    config,
+    host,
+    db,
+    notificationBuffer,
+    auth,
+    usernamesRepo,
+    ...(sqliteMaintenance !== undefined ? { sqliteMaintenance } : {}),
+  };
 }
 
 function probeLexicalText(p: AtriumPost): string {

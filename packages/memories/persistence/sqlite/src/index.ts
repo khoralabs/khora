@@ -3,7 +3,9 @@
  * Low-level helpers (vec load, schema SQL, blob helpers) stay internal to this strategy.
  */
 export {
+  configureMemoriesSqlitePragmas,
   ensureCustomSqliteForExtensions,
+  type MemoriesSqlitePragmaOptions,
   type OpenMemoriesDatabaseOptions,
   openMemoriesDatabase,
   openMemoriesDatabaseReadonly,

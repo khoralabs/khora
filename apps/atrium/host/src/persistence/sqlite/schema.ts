@@ -1,9 +1,14 @@
 import type { Database } from "bun:sqlite";
+import { configureMemoriesSqlitePragmas } from "@khoralabs/memories-sqlite";
 
-/** Match memories-sqlite connection defaults: FK enforcement + WAL journaling. */
+/**
+ * Apply the production-tuned pragma set used by `openMemoriesDatabase`. Production
+ * code never calls this directly (the connection helper already runs them), but
+ * tests and tools that hand a raw `new Database(...)` to `ensureSwarmHostSqliteSchema`
+ * still get the same pragmas applied.
+ */
 export function configureSwarmHostSqlitePragmas(db: Database): void {
-  db.run("PRAGMA foreign_keys = ON;");
-  db.run("PRAGMA journal_mode = WAL;");
+  configureMemoriesSqlitePragmas(db);
 }
 
 /**

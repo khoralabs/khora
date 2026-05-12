@@ -103,12 +103,53 @@ export function ensureCustomSqliteForExtensions(): void {
   }
 }
 
+export type MemoriesSqlitePragmaOptions = {
+  /** KiB of page cache, supplied to `PRAGMA cache_size` as a negative value. Default 65536 (~64 MiB). */
+  cacheSizeKiB?: number;
+  /** Bytes for `PRAGMA mmap_size`. Default 268435456 (256 MiB). Set to 0 to disable. */
+  mmapSizeBytes?: number;
+  /** ms for `PRAGMA busy_timeout`. Default 5000. */
+  busyTimeoutMs?: number;
+  /** Pages for `PRAGMA wal_autocheckpoint`. Default 1000 (SQLite default — set explicitly for clarity). */
+  walAutocheckpointPages?: number;
+};
+
+/**
+ * Apply production-tuned SQLite pragmas: WAL + NORMAL sync, busy_timeout, mmap, cache,
+ * temp_store=MEMORY, and an explicit wal_autocheckpoint. Idempotent; safe to call on
+ * connections that already have these set. Foreign keys are enforced (`memories-core`
+ * relies on FK cascades) for parity with previous behavior.
+ *
+ * Notes on `synchronous = NORMAL`: with WAL journaling this is the documented sweet
+ * spot — a crash can lose the most recent committed transaction but cannot corrupt
+ * the database. `FULL` only adds one extra `fsync` per commit and is unnecessary here.
+ */
+export function configureMemoriesSqlitePragmas(
+  db: Database,
+  opts: MemoriesSqlitePragmaOptions = {},
+): void {
+  const cacheSizeKiB = opts.cacheSizeKiB ?? 65536;
+  const mmapSizeBytes = opts.mmapSizeBytes ?? 268435456;
+  const busyTimeoutMs = opts.busyTimeoutMs ?? 5000;
+  const walAutocheckpointPages = opts.walAutocheckpointPages ?? 1000;
+
+  db.run("PRAGMA journal_mode = WAL;");
+  db.run("PRAGMA synchronous = NORMAL;");
+  db.run("PRAGMA foreign_keys = ON;");
+  db.run(`PRAGMA busy_timeout = ${busyTimeoutMs};`);
+  db.run(`PRAGMA cache_size = -${cacheSizeKiB};`);
+  db.run(`PRAGMA mmap_size = ${mmapSizeBytes};`);
+  db.run("PRAGMA temp_store = MEMORY;");
+  db.run(`PRAGMA wal_autocheckpoint = ${walAutocheckpointPages};`);
+}
+
 export function openMemoriesDatabase(
   filename: string,
   options: OpenMemoriesDatabaseOptions = {},
 ): Database {
   ensureCustomSqliteForExtensions();
   const db = new Database(filename, { create: true, ...options });
+  configureMemoriesSqlitePragmas(db);
   loadSqliteVec(db);
   initMemoriesSchema(db);
   return db;
@@ -117,6 +158,10 @@ export function openMemoriesDatabase(
 export function openMemoriesDatabaseReadonly(filename: string): Database {
   ensureCustomSqliteForExtensions();
   const db = new Database(filename, { readonly: true });
+  db.run("PRAGMA busy_timeout = 5000;");
+  db.run("PRAGMA mmap_size = 268435456;");
+  db.run("PRAGMA cache_size = -65536;");
+  db.run("PRAGMA temp_store = MEMORY;");
   loadSqliteVec(db);
   return db;
 }
@@ -148,8 +193,7 @@ export function migrateMemoriesSchemaAdditive(db: Database): void {
 }
 
 export function initMemoriesSchema(db: Database): void {
-  db.run("PRAGMA foreign_keys = ON;");
-  db.run("PRAGMA journal_mode = WAL;");
+  configureMemoriesSqlitePragmas(db);
   db.run(MEMORIES_SCHEMA_SQL);
   migrateMemoriesSchemaAdditive(db);
   db.run(MEMORIES_UNIQUE_ASSIGNMENT_INDEXES_SQL);

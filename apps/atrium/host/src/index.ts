@@ -77,6 +77,14 @@ function envAgentSyncProbeLimit(): number {
   return Number.isFinite(n) && n > 0 ? Math.min(Math.floor(n), 500) : 500;
 }
 
+/** Parse a non-negative integer ms interval from env. Empty/invalid → undefined (use default). */
+function envIntervalMs(name: string): number | undefined {
+  const raw = process.env[name]?.trim();
+  if (raw === undefined || raw.length === 0) return undefined;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : undefined;
+}
+
 function allowReregister(): boolean {
   return process.env.ATRIUM_ALLOW_REREGISTER === "1";
 }
@@ -156,12 +164,19 @@ type InboxWsData = { did: string };
 const dbPath = envDbPath();
 mkdirSync(dirname(dbPath), { recursive: true });
 
+const walIntervalMs = envIntervalMs("ATRIUM_SQLITE_WAL_CHECKPOINT_INTERVAL_MS");
+const analyzeIntervalMs = envIntervalMs("ATRIUM_SQLITE_ANALYZE_INTERVAL_MS");
+
 const ctx = createAtriumHostContext({
   dbPath,
   profileNamespace: envProfileNamespace(),
   postNamespace: envPostNamespace(),
   probeNamespace: envProbeNamespace(),
   auth: (db) => createAtriumDidAuth({ db }),
+  sqliteMaintenance: {
+    ...(walIntervalMs !== undefined ? { walCheckpointIntervalMs: walIntervalMs } : {}),
+    ...(analyzeIntervalMs !== undefined ? { analyzeIntervalMs } : {}),
+  },
 });
 
 const seedInviteTokens = parseInviteSeedTokens(process.env.ATRIUM_INVITE_SEED_TOKENS);

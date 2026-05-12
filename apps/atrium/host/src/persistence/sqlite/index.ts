@@ -4,6 +4,11 @@ export {
   type SwarmHostDocumentStoreParsers,
 } from "./document-store.ts";
 export { createSwarmHostEntitySqlitePersistence } from "./entity-sqlite.ts";
+export {
+  type SqliteMaintenanceHandle,
+  type SqliteMaintenanceOptions,
+  startSqliteMaintenance,
+} from "./maintenance.ts";
 export { createSqliteAgentNotificationBuffer } from "./notification-buffer-sqlite.ts";
 export { createObpRelaySqlitePersistence } from "./obp-relay-sqlite.ts";
 export {
