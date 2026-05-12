@@ -21,7 +21,11 @@ import { health } from "./http/health.ts";
 import { type InboxListResult, type ListInboxParams, listInbox } from "./http/inbox.ts";
 import { listInvites, previewInvite } from "./http/invites.ts";
 import { createPost, deletePost, updatePost } from "./http/posts.ts";
-import { updateProfile } from "./http/profile.ts";
+import {
+  lookupProfileByUsername,
+  type ProfileByUsernameResponse,
+  updateProfile,
+} from "./http/profile.ts";
 import { register } from "./http/register.ts";
 import { subscribeTopic, unsubscribeTopic } from "./http/topics.ts";
 import { type AtriumFetch, createHttpTransport, type HttpTransport } from "./http/transport.ts";
@@ -29,6 +33,7 @@ import { connectInbox, type InboxWsHandlers } from "./ws/inbox.ts";
 
 export type { AgentStatusSnapshot, AgentSyncSnapshot } from "./http/agent.ts";
 export type { InboxListResult, ListInboxParams } from "./http/inbox.ts";
+export type { ProfileByUsernameResponse } from "./http/profile.ts";
 export type { AtriumFetch } from "./http/transport.ts";
 export type { InboxWsHandlers } from "./ws/inbox.ts";
 
@@ -135,6 +140,11 @@ export class AtriumClient {
     const profile = await updateProfile(this.transport, patch);
     this.emit({ type: "profile:updated", profile, did: this.did });
     return profile;
+  }
+
+  /** Resolve a username to its DID + public profile. Returns `null` if the username is unknown. */
+  lookupProfileByUsername(username: string): Promise<ProfileByUsernameResponse | null> {
+    return lookupProfileByUsername(this.transport, username);
   }
 
   async createPost(body: AtriumPostCreate): Promise<AtriumPost> {

@@ -46,7 +46,8 @@ export function resolveAtriumConfigPath(
   if (envVal !== undefined && envVal.length > 0) return { path: envVal, explicit: true };
   const exists = opts.fsExists ?? existsSync;
   const candidates =
-    opts.defaultPaths ?? (opts.defaultPath !== undefined ? [opts.defaultPath] : [defaultAtriumConfigPath()]);
+    opts.defaultPaths ??
+    (opts.defaultPath !== undefined ? [opts.defaultPath] : [defaultAtriumConfigPath()]);
   for (const candidate of candidates) {
     if (exists(candidate)) return { path: candidate, explicit: false };
   }

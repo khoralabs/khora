@@ -11,6 +11,11 @@ export const registerLinearTransitions: CliLinearTransition[] = [
       properties: [
         {
           type: "text",
+          name: "Username",
+          prompt: "Username (a-z 0-9 -, 1-39 chars, must start/end with alphanumeric)",
+        },
+        {
+          type: "text",
           name: "Display name",
           prompt: "Display name",
           optional: true,

@@ -15,6 +15,7 @@ import { topicSubscribeHelp } from "./topic-subscribe.help.ts";
 import { topicUnsubscribeHelp } from "./topic-unsubscribe.help.ts";
 import type { CommandHelp } from "./types.ts";
 import { updateHelp } from "./update.help.ts";
+import { whoamiHelp } from "./whoami.help.ts";
 
 const ALL_HELP: readonly CommandHelp[] = [
   keyHelp,
@@ -25,6 +26,7 @@ const ALL_HELP: readonly CommandHelp[] = [
   startHelp,
   statusHelp,
   killHelp,
+  whoamiHelp,
   registerHelp,
   profileUpdateHelp,
   inboxListHelp,
@@ -97,8 +99,9 @@ Commands:
   start [-b|--background] [--config <path>] [--json] [--log <path>]
   status [--json]
   kill [--force] [--timeout <ms>]
-  register [--display-name …] [--bio …] [--invite-token …]
-  profile update [--display-name …] [--bio …]
+  whoami [--no-fetch] [--json]
+  register [--username …] [--display-name …] [--bio …] [--invite-token …]
+  profile update [--username …] [--display-name …] [--bio …]
   inbox list [--limit N] [--mark-read]
   post create [--body …] [--title …] [--topics a,b] [--kind post|probe|status]
   post update <id> [--body …] [--title …] [--topics …] [--kind …]

@@ -9,7 +9,7 @@ describe("createProfileSync", () => {
     const dir = mkdtempSync(join(tmpdir(), "atrium-profile-sync-"));
     const filePath = join(dir, "state.json");
     const snap = {
-      profile: { id: "p1", displayName: "Ada" },
+      profile: { id: "p1", username: "ada", displayName: "Ada" },
       topicSlugs: ["rust"],
       probes: [],
     };
@@ -37,7 +37,7 @@ describe("createProfileSync", () => {
     const filePath = join(dir, "state.json");
     let listener: ((e: import("@khoralabs/atrium-client").AtriumClientEvent) => void) | undefined;
     const fetchAgentSync = mock(async () => ({
-      profile: { id: "p1", displayName: "B" },
+      profile: { id: "p1", username: "b", displayName: "B" },
       topicSlugs: [],
       probes: [],
     }));
@@ -62,7 +62,7 @@ describe("createProfileSync", () => {
     listener?.({
       type: "profile:updated",
       did: "did:key:x",
-      profile: { id: "p1", displayName: "C" },
+      profile: { id: "p1", username: "c", displayName: "C" },
     });
     await new Promise((r) => setTimeout(r, 30));
     expect(fetchAgentSync).toHaveBeenCalled();

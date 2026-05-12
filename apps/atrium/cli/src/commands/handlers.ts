@@ -16,6 +16,7 @@ import { runTopicSubscribeCommand } from "./topic-subscribe.ts";
 import { runTopicUnsubscribeCommand } from "./topic-unsubscribe.ts";
 import type { FlagMap } from "./types.ts";
 import { runUpdateCommand } from "./update.ts";
+import { runWhoamiCommand } from "./whoami.ts";
 
 export interface AtriumCliCommandHandlers {
   key(sub: string | undefined, flags: FlagMap): Promise<void>;
@@ -26,6 +27,7 @@ export interface AtriumCliCommandHandlers {
   start(flags: FlagMap): Promise<void>;
   status(flags: FlagMap): void;
   kill(flags: FlagMap): Promise<void>;
+  whoami(flags: FlagMap): Promise<void>;
   register(ctx: AtriumCliContext, flags: FlagMap): Promise<void>;
   profileUpdate(ctx: AtriumCliContext, flags: FlagMap): Promise<void>;
   inboxList(ctx: AtriumCliContext, flags: FlagMap): Promise<void>;
@@ -45,6 +47,7 @@ export const defaultAtriumCliCommandHandlers = {
   start: runStartCommand,
   status: runStatusCommand,
   kill: runKillCommand,
+  whoami: runWhoamiCommand,
   register: runRegisterCommand,
   profileUpdate: runProfileUpdateCommand,
   inboxList: runInboxListCommand,

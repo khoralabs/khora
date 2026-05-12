@@ -83,6 +83,16 @@ async function main(
     return;
   }
 
+  if (a === "whoami") {
+    try {
+      await handlers.whoami(flags);
+    } catch (e) {
+      console.error(e instanceof Error ? e.message : String(e));
+      process.exit(1);
+    }
+    return;
+  }
+
   let ctx: AtriumCliContext;
   try {
     ctx = await createAtriumCliContext();

@@ -61,7 +61,7 @@ export function atriumSwarmMemoryOpMapper(
             labels: [
               {
                 kind: "person" as const,
-                props: { name: profile.displayName ?? profile.id },
+                props: { name: profile.displayName ?? profile.username },
               },
             ],
           },

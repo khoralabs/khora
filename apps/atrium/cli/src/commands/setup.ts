@@ -1,9 +1,6 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
-import {
-  type AtriumSetupResult,
-  runAtriumConfigSetup,
-} from "../../scripts/postinstall.ts";
+import { type AtriumSetupResult, runAtriumConfigSetup } from "../../scripts/postinstall.ts";
 import { boolFlag } from "./parse.ts";
 import type { FlagMap } from "./types.ts";
 
@@ -46,13 +43,16 @@ export function resolveSetupAssets(env: NodeJS.ProcessEnv = process.env): SetupA
 export function printSetupSummary(result: AtriumSetupResult): void {
   for (const name of result.copied) console.log(`wrote ${name}`);
   for (const name of result.overwritten) console.log(`overwrote ${name}`);
-  for (const name of result.skipped) console.log(`skipped ${name} (exists; use --force to overwrite)`);
+  for (const name of result.skipped)
+    console.log(`skipped ${name} (exists; use --force to overwrite)`);
   if (result.schema === "copied") console.log(`wrote ${SCHEMA_FILE}`);
   else if (result.schema === "overwritten") console.log(`overwrote ${SCHEMA_FILE}`);
   else if (result.schema === "skipped") {
     console.log(`skipped ${SCHEMA_FILE} (exists; use --force to overwrite)`);
   } else {
-    console.log(`skipped ${SCHEMA_FILE} (source not found; run 'bun run --cwd apps/atrium/client build:schema' in dev)`);
+    console.log(
+      `skipped ${SCHEMA_FILE} (source not found; run 'bun run --cwd apps/atrium/client build:schema' in dev)`,
+    );
   }
   console.log(`at ${result.destDir}`);
 }

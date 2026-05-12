@@ -11,6 +11,12 @@ export const profileUpdateLinearTransitions: CliLinearTransition[] = [
       properties: [
         {
           type: "text",
+          name: "Username",
+          prompt: "Username (optional; leave empty to keep)",
+          optional: true,
+        },
+        {
+          type: "text",
           name: "Display name",
           prompt: "Display name (optional)",
           optional: true,

@@ -66,6 +66,12 @@ export {
   mergeLabeledAtriumPluginLayers,
 } from "./atrium-plugins.ts";
 export {
+  type CachedProfileSnapshot,
+  loadCachedProfile,
+  resolveProfileSyncPath,
+  serializeProfileSyncStateFile,
+} from "./cached-profile.ts";
+export {
   type AtriumAppConfigBase,
   type AtriumAppPluginMap,
   AtriumConfigError,

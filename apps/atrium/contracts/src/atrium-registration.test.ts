@@ -15,13 +15,13 @@ describe("atrium registration contracts", () => {
     const a = zAtriumRegisterResult.parse({
       did: "did:key:x",
       profileId: "p1",
-      profile: { id: "p1" },
+      profile: { id: "p1", username: "alice" },
     });
     expect(a.inviteTokens).toBeUndefined();
     const b = zAtriumRegisterResult.parse({
       did: "did:key:x",
       profileId: "p1",
-      profile: { id: "p1" },
+      profile: { id: "p1", username: "alice" },
       inviteTokens: ["t1", "t2"],
     });
     expect(b.inviteTokens).toEqual(["t1", "t2"]);

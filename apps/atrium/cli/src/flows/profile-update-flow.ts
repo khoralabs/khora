@@ -24,6 +24,9 @@ export async function runProfileUpdateInteractiveFlow(ctx: AtriumCliContext): Pr
   }
 
   const patch = zAtriumProfilePatch.parse({
+    ...(row.username !== undefined && String(row.username).trim().length > 0
+      ? { username: String(row.username).trim() }
+      : {}),
     ...(row["display-name"] !== undefined && String(row["display-name"]).trim().length > 0
       ? { displayName: String(row["display-name"]).trim() }
       : {}),
@@ -33,7 +36,7 @@ export async function runProfileUpdateInteractiveFlow(ctx: AtriumCliContext): Pr
   });
 
   if (Object.keys(patch).length === 0) {
-    throw new Error("Provide at least one of display name or bio.");
+    throw new Error("Provide at least one of username, display name, or bio.");
   }
 
   const profile = await ctx.client.updateProfile(patch);

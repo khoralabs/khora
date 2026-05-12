@@ -88,9 +88,9 @@ describe("printSetupSummary", () => {
     } finally {
       console.log = log;
     }
-    expect(lines.some((l) => l.includes("atrium-config.schema.json") && l.includes("source not found"))).toBe(
-      true,
-    );
+    expect(
+      lines.some((l) => l.includes("atrium-config.schema.json") && l.includes("source not found")),
+    ).toBe(true);
   });
 });
 
@@ -177,7 +177,11 @@ describe("runSetupCommand", () => {
     }
     const parsed = JSON.parse(lines.join("\n"));
     expect(parsed.destDir).toBe(path.join(home, ".atrium"));
-    expect(parsed.copied.sort()).toEqual(["base.config.json", "cli.config.json", "daemon.config.json"]);
+    expect(parsed.copied.sort()).toEqual([
+      "base.config.json",
+      "cli.config.json",
+      "daemon.config.json",
+    ]);
     expect(parsed.schema).toBe("copied");
   });
 
@@ -228,9 +232,8 @@ describe("maybeBootstrapAtriumHome", () => {
 
   test("runs setup silently on first invocation in a packaged install", () => {
     const errors: string[] = [];
-    maybeBootstrapAtriumHome(
-      { ATRIUM_CLI_ASSETS_DIR: assetsDir, HOME: home },
-      (line) => errors.push(line),
+    maybeBootstrapAtriumHome({ ATRIUM_CLI_ASSETS_DIR: assetsDir, HOME: home }, (line) =>
+      errors.push(line),
     );
     expect(existsSync(path.join(home, ".atrium", "cli.config.json"))).toBe(true);
     expect(existsSync(path.join(home, ".atrium", "atrium-config.schema.json"))).toBe(true);
@@ -261,9 +264,8 @@ describe("maybeBootstrapAtriumHome", () => {
   test("no-op when assets configs directory is missing on disk", () => {
     rmSync(assetsDir, { recursive: true, force: true });
     const errors: string[] = [];
-    maybeBootstrapAtriumHome(
-      { ATRIUM_CLI_ASSETS_DIR: assetsDir, HOME: home },
-      (line) => errors.push(line),
+    maybeBootstrapAtriumHome({ ATRIUM_CLI_ASSETS_DIR: assetsDir, HOME: home }, (line) =>
+      errors.push(line),
     );
     expect(existsSync(path.join(home, ".atrium", "cli.config.json"))).toBe(false);
     expect(errors).toEqual([]);
@@ -273,9 +275,8 @@ describe("maybeBootstrapAtriumHome", () => {
     rmSync(path.join(assetsDir, "configs", "base.config.json"));
     const errors: string[] = [];
     expect(() =>
-      maybeBootstrapAtriumHome(
-        { ATRIUM_CLI_ASSETS_DIR: assetsDir, HOME: home },
-        (line) => errors.push(line),
+      maybeBootstrapAtriumHome({ ATRIUM_CLI_ASSETS_DIR: assetsDir, HOME: home }, (line) =>
+        errors.push(line),
       ),
     ).not.toThrow();
     expect(errors[0]).toContain("first-run setup failed");

@@ -6,6 +6,7 @@ import {
   mergeAtriumPostPatch,
   mergeAtriumProfilePatch,
   normalizeTopicSlug,
+  normalizeUsername,
   zAgentStatusResponse,
   zAtriumInviteListResponse,
   zAtriumInvitePreviewResponse,
@@ -283,6 +284,10 @@ const server = Bun.serve<InboxWsData>({
         }
       }
 
+      // Snapshot the pre-existing username (if any) so we can roll back on failure without
+      // stranding a returning DID's reservation under `ATRIUM_ALLOW_REREGISTER=1`.
+      const priorUsername = ctx.usernamesRepo.lookupByDid(swarmReq.did)?.username;
+
       try {
         const ua = req.headers.get("user-agent") ?? undefined;
         const result = await ctx.host.registerWithDid(swarmReq, {
@@ -302,6 +307,24 @@ const server = Bun.serve<InboxWsData>({
       } catch (e) {
         if (consumedInvitePlain !== undefined && invitesRepo !== undefined) {
           invitesRepo.rollbackInviteConsumption(consumedInvitePlain, swarmReq.did);
+        }
+        const msg = e instanceof Error ? e.message : String(e);
+        const usernameTaken = msg.includes("USERNAME_TAKEN");
+        if (!usernameTaken) {
+          // Reservation may have been performed by the build handler before the later failure.
+          // Restore the prior name (re-register path) or release entirely (new registration).
+          const current = ctx.usernamesRepo.lookupByDid(swarmReq.did);
+          if (priorUsername === undefined) {
+            ctx.usernamesRepo.release(swarmReq.did);
+          } else if (current !== undefined && current.username !== priorUsername) {
+            ctx.usernamesRepo.rename(swarmReq.did, priorUsername);
+          }
+        }
+        if (usernameTaken) {
+          return Response.json(
+            { error: "Username is already taken", code: "username_taken" },
+            { status: 409 },
+          );
         }
         console.error("[atrium] registration error", e);
         return registrationOpaqueJson(400);
@@ -497,6 +520,22 @@ const server = Bun.serve<InboxWsData>({
       }
     }
 
+    const byUsernameMatch = /^\/v1\/profile\/by-username\/([^/]+)$/.exec(url.pathname);
+    if (req.method === "GET" && byUsernameMatch !== null) {
+      const rawUsername = decodeURIComponent(byUsernameMatch[1] ?? "");
+      let normalized: string;
+      try {
+        normalized = normalizeUsername(rawUsername);
+      } catch {
+        return jsonError("Username not found", 404);
+      }
+      const lookup = ctx.usernamesRepo.lookupByUsername(normalized);
+      if (lookup === undefined) return jsonError("Username not found", 404);
+      const profile = loadPublicProfileForDid(lookup.did);
+      if (profile === null) return jsonError("Profile not found", 404);
+      return Response.json({ did: lookup.did, profile });
+    }
+
     const postPathMatch = /^\/v1\/posts\/([^/]+)$/.exec(url.pathname);
 
     if (req.method === "PATCH" && url.pathname === "/v1/profile") {
@@ -507,6 +546,7 @@ const server = Bun.serve<InboxWsData>({
       } catch (e) {
         return authErrorResponse(e);
       }
+      let renamed: { from: string; to: string } | undefined;
       try {
         const pRl = rlProfileDid(`did:${did}`);
         if (!pRl.ok) return rateLimitedResponse(pRl.retryAfterSec);
@@ -522,7 +562,20 @@ const server = Bun.serve<InboxWsData>({
         const patchRaw = JSON.parse(bodyText) as unknown;
         const patch = zAtriumProfilePatch.parse(patchRaw);
         if (Object.keys(patch).length === 0) {
-          return jsonError("Provide at least one of displayName, bio", 400);
+          return jsonError("Provide at least one of username, displayName, bio", 400);
+        }
+        if (patch.username !== undefined && patch.username !== previous.username) {
+          const r = ctx.usernamesRepo.rename(did, patch.username);
+          if (!r.ok) {
+            if (r.reason === "taken") {
+              return Response.json(
+                { error: "Username is already taken", code: "username_taken" },
+                { status: 409 },
+              );
+            }
+            return jsonError("Username reservation missing for this DID", 500);
+          }
+          renamed = { from: previous.username, to: patch.username };
         }
         const profile = mergeAtriumProfilePatch(previous, patch);
         await ctx.host.notify({
@@ -535,6 +588,9 @@ const server = Bun.serve<InboxWsData>({
         });
         return Response.json(profile);
       } catch (e) {
+        if (renamed !== undefined) {
+          ctx.usernamesRepo.rename(did, renamed.from);
+        }
         const msg = e instanceof Error ? e.message : String(e);
         return jsonError(msg, e instanceof z.ZodError ? 400 : 500);
       }

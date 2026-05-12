@@ -87,6 +87,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_atrium_invite_one_root
 
 CREATE INDEX IF NOT EXISTS idx_atrium_invite_minter ON atrium_invite_tokens(minted_by_did, created_at_ms);
 
+CREATE TABLE IF NOT EXISTS atrium_usernames (
+  username TEXT PRIMARY KEY NOT NULL,
+  did TEXT NOT NULL UNIQUE,
+  created_at_ms INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS probe_subscribers (
   probe_post_id TEXT PRIMARY KEY NOT NULL,
   owner_profile_id TEXT NOT NULL,

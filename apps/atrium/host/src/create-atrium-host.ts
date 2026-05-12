@@ -31,6 +31,10 @@ import {
   ensureSwarmHostSqliteSchema,
   type ProbeSubscribersRepo,
 } from "./persistence/sqlite/index.ts";
+import {
+  type AtriumUsernamesRepo,
+  createAtriumUsernamesRepo,
+} from "./usernames/atrium-usernames.ts";
 
 type TNode = typeof swarmHostOntology.nodeLabels;
 type TEdge = typeof swarmHostOntology.edgeLabels;
@@ -57,7 +61,11 @@ export type AtriumHostContext = {
   db: Database;
   notificationBuffer: AgentNotificationBufferPort;
   auth: AtriumDidAuth;
+  usernamesRepo: AtriumUsernamesRepo;
 };
+
+/** Error thrown from REGISTRATION_PROFILE_BUILD when the requested username is already taken. */
+export const USERNAME_TAKEN_REASON = "USERNAME_TAKEN" as const;
 
 export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostContext {
   const db = openMemoriesDatabase(config.dbPath);
@@ -78,6 +86,7 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
   const notificationBuffer = createSqliteAgentNotificationBuffer(db);
   const inboxHub = createInboxWsHub();
   const probeSubscribers = createProbeSubscribersRepo(db);
+  const usernamesRepo = createAtriumUsernamesRepo(db);
 
   const appContext: AtriumHostAppContext = {
     db,
@@ -137,6 +146,21 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
             id: stableId("atrium_profile", req.did),
             ...meta,
           });
+          // Reserve username atomically. Handle the re-registration path
+          // (`ATRIUM_ALLOW_REREGISTER=1`) where the DID may already own a row.
+          const current = usernamesRepo.lookupByDid(req.did);
+          if (current === undefined) {
+            if (!usernamesRepo.tryReserve(req.did, profile.username)) {
+              event.payload.reject(new Error(USERNAME_TAKEN_REASON));
+              return;
+            }
+          } else if (current.username !== profile.username) {
+            const r = usernamesRepo.rename(req.did, profile.username);
+            if (!r.ok) {
+              event.payload.reject(new Error(USERNAME_TAKEN_REASON));
+              return;
+            }
+          }
           event.payload.fulfill(profile);
         } catch (e) {
           event.payload.reject(e);
@@ -197,7 +221,7 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
     }),
   });
 
-  return { config, host, db, notificationBuffer, auth };
+  return { config, host, db, notificationBuffer, auth, usernamesRepo };
 }
 
 function probeLexicalText(p: AtriumPost): string {

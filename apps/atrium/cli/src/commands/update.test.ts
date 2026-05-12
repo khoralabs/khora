@@ -128,7 +128,9 @@ describe("fetchLatestVersion", () => {
 
   test("throws on non-2xx", async () => {
     const fetchImpl = (() =>
-      Promise.resolve(jsonResponse({ error: "not found" }, { status: 404 }))) as unknown as typeof fetch;
+      Promise.resolve(
+        jsonResponse({ error: "not found" }, { status: 404 }),
+      )) as unknown as typeof fetch;
     let err: Error | undefined;
     try {
       await fetchLatestVersion({ fetchImpl });

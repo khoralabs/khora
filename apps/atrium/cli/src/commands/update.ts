@@ -25,11 +25,7 @@ export function currentVersion(env: NodeJS.ProcessEnv = process.env): string {
 }
 
 export async function fetchLatestVersion(
-  opts: {
-    tag?: string;
-    timeoutMs?: number;
-    fetchImpl?: typeof fetch;
-  } = {},
+  opts: { tag?: string; timeoutMs?: number; fetchImpl?: typeof fetch } = {},
 ): Promise<string> {
   const tag = opts.tag ?? "latest";
   const f = opts.fetchImpl ?? fetch;
@@ -154,10 +150,7 @@ async function defaultPrompt(question: string): Promise<boolean> {
   }
 }
 
-export async function runUpdateCommand(
-  flags: FlagMap,
-  deps: RunUpdateDeps = {},
-): Promise<void> {
+export async function runUpdateCommand(flags: FlagMap, deps: RunUpdateDeps = {}): Promise<void> {
   const out = deps.out ?? ((line) => console.log(line));
   const err = deps.err ?? ((line) => console.error(line));
   const exit = deps.exit ?? ((code) => process.exit(code));

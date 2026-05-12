@@ -57,13 +57,14 @@ describe("AtriumClient", () => {
       expect(init?.method ?? "GET").toBe("GET");
       expectAuthHeaders(init, "did:key:a");
       return Response.json({
-        profile: { id: "p1", displayName: "A" },
+        profile: { id: "p1", username: "ada", displayName: "A" },
         topicSlugs: ["rust"],
         probes: [{ id: "pr1", kind: "probe", authorProfileId: "p1", body: "q" }],
       });
     });
     const c = new AtriumClient({ baseUrl: "http://h", signer, fetch: fetchMock });
     const snap = await c.fetchAgentSync();
+    expect(snap.profile.username).toBe("ada");
     expect(snap.profile.displayName).toBe("A");
     expect(snap.topicSlugs).toEqual(["rust"]);
     expect(snap.probes[0]?.kind).toBe("probe");
@@ -106,20 +107,20 @@ describe("AtriumClient", () => {
       expectAuthHeaders(init, signer.did);
       expect(JSON.parse(String(init?.body))).toEqual({
         did: signer.did,
-        metadata: { displayName: "Ada" },
+        metadata: { username: "ada", displayName: "Ada" },
       });
       return Response.json({
         did: signer.did,
         profileId: "prof_minted",
-        profile: { id: "prof_minted", displayName: "Ada" },
+        profile: { id: "prof_minted", username: "ada", displayName: "Ada" },
       });
     });
     const c = new AtriumClient({ baseUrl: "http://h", signer, fetch: fetchMock });
-    const out = await c.register({ metadata: { displayName: "Ada" } });
+    const out = await c.register({ metadata: { username: "ada", displayName: "Ada" } });
     expect(out).toEqual({
       did: signer.did,
       profileId: "prof_minted",
-      profile: { id: "prof_minted", displayName: "Ada" },
+      profile: { id: "prof_minted", username: "ada", displayName: "Ada" },
     });
   });
 
@@ -129,15 +130,15 @@ describe("AtriumClient", () => {
       Response.json({
         did: signer.did,
         profileId: "prof_minted",
-        profile: { id: "prof_minted", displayName: "Ada" },
+        profile: { id: "prof_minted", username: "ada", displayName: "Ada" },
       }),
     );
     const c = new AtriumClient({ baseUrl: "http://h", signer, fetch: fetchMock });
     const events: AtriumClientEvent[] = [];
     const off = c.subscribe((e) => events.push(e));
-    await c.register({ metadata: { displayName: "Ada" } });
+    await c.register({ metadata: { username: "ada", displayName: "Ada" } });
     off();
-    await c.register({ metadata: { displayName: "Bob" } });
+    await c.register({ metadata: { username: "ada-99", displayName: "Bob" } });
     expect(events).toHaveLength(1);
     expect(events[0]?.type).toBe("registration:completed");
   });
@@ -202,11 +203,46 @@ describe("AtriumClient", () => {
       expect(init?.method).toBe("PATCH");
       expectAuthHeaders(init, "did:key:me");
       expect(JSON.parse(String(init?.body))).toEqual({ displayName: "N" });
-      return Response.json({ id: "prof1", displayName: "N" });
+      return Response.json({ id: "prof1", username: "ada", displayName: "N" });
     });
     const c = new AtriumClient({ baseUrl: "http://h", signer, fetch: fetchMock });
     const out = await c.updateProfile({ displayName: "N" });
     expect(out.displayName).toBe("N");
+    expect(out.username).toBe("ada");
+  });
+
+  test("updateProfile rename normalizes username via zUsername", async () => {
+    const signer = staticSigner("did:key:me");
+    const fetchMock = mock(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      expect(JSON.parse(String(init?.body))).toEqual({ username: "ada-99" });
+      return Response.json({ id: "prof1", username: "ada-99" });
+    });
+    const c = new AtriumClient({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const out = await c.updateProfile({ username: " Ada-99 " });
+    expect(out.username).toBe("ada-99");
+  });
+
+  test("lookupProfileByUsername GETs encoded path and returns parsed result", async () => {
+    const signer = staticSigner("did:key:a");
+    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("http://h/v1/profile/by-username/ada-99");
+      expect(init?.method ?? "GET").toBe("GET");
+      return Response.json({
+        did: "did:key:other",
+        profile: { id: "p2", username: "ada-99", displayName: "Ada" },
+      });
+    });
+    const c = new AtriumClient({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const out = await c.lookupProfileByUsername(" Ada-99 ");
+    expect(out?.did).toBe("did:key:other");
+    expect(out?.profile.username).toBe("ada-99");
+  });
+
+  test("lookupProfileByUsername returns null on 404", async () => {
+    const signer = staticSigner("did:key:a");
+    const fetchMock = mock(async () => Response.json({ error: "nope" }, { status: 404 }));
+    const c = new AtriumClient({ baseUrl: "http://h", signer, fetch: fetchMock });
+    expect(await c.lookupProfileByUsername("ghost")).toBeNull();
   });
 
   test("subscribeTopic signs request and encodes slug", async () => {
