@@ -22,6 +22,25 @@ function staticSigner(did = "did:key:test"): AgentSigner {
   };
 }
 
+/**
+ * Signer that records the second line of every canonical message it signs. The canonical message
+ * shape is `METHOD\nPATH\nts\nnonce\nbodyHash` (see `canonicalAgentRequestMessage`), so
+ * `recordedPaths` reflects exactly what the transport asked the signer to bind.
+ */
+function pathRecordingSigner(did = "did:key:rec"): AgentSigner & { recordedPaths: string[] } {
+  const recordedPaths: string[] = [];
+  return {
+    did,
+    recordedPaths,
+    async sign(message) {
+      const text = new TextDecoder().decode(message);
+      const path = text.split("\n")[1] ?? "";
+      recordedPaths.push(path);
+      return new Uint8Array(64);
+    },
+  };
+}
+
 function expectAuthHeaders(init: RequestInit | undefined, did: string): void {
   const h = new Headers(init?.headers);
   expect(h.get("X-Agent-Did")).toBe(did);
@@ -275,6 +294,30 @@ describe("AtriumClient", () => {
     const r = await c.listInbox({ limit: 10, markRead: true });
     expect(r.notifications).toHaveLength(1);
     expect(r.notifications[0]?.notification.kind).toBe("topic_post");
+  });
+
+  test("listInbox signs canonical /v1/inbox?limit=10&markRead=1 path", async () => {
+    const signer = pathRecordingSigner("did:key:rec");
+    const fetchMock = mock(async () => Response.json({ notifications: [] }));
+    const c = new AtriumClient({ baseUrl: "http://h", signer, fetch: fetchMock });
+    await c.listInbox({ limit: 10, markRead: true });
+    expect(signer.recordedPaths).toEqual(["/v1/inbox?limit=10&markRead=1"]);
+  });
+
+  test("listInbox signs canonical /v1/inbox (no query) when params are omitted", async () => {
+    const signer = pathRecordingSigner("did:key:rec");
+    const fetchMock = mock(async () => Response.json({ notifications: [] }));
+    const c = new AtriumClient({ baseUrl: "http://h", signer, fetch: fetchMock });
+    await c.listInbox();
+    expect(signer.recordedPaths).toEqual(["/v1/inbox"]);
+  });
+
+  test("non-inbox endpoints still sign pure pathnames", async () => {
+    const signer = pathRecordingSigner("did:key:rec");
+    const fetchMock = mock(async () => Response.json({ invites: [] }));
+    const c = new AtriumClient({ baseUrl: "http://h", signer, fetch: fetchMock });
+    await c.listInvites();
+    expect(signer.recordedPaths).toEqual(["/v1/invites"]);
   });
 
   test("listInvites signs GET /v1/invites", async () => {

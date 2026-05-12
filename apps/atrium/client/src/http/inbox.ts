@@ -27,12 +27,14 @@ export async function listInbox(
   t: HttpTransport,
   params: ListInboxParams = {},
 ): Promise<InboxListResult> {
-  const q = new URLSearchParams();
-  if (params.limit !== undefined) q.set("limit", String(params.limit));
-  if (params.markRead === true) q.set("markRead", "1");
-  const qs = q.toString();
-  const path = qs.length > 0 ? `/v1/inbox?${qs}` : "/v1/inbox";
-  const data = await t.requestJson("GET", path, { parse: zInboxListResponse });
+  const query: Record<string, string> = {};
+  if (params.limit !== undefined) query.limit = String(params.limit);
+  if (params.markRead === true) query.markRead = "1";
+  const data = await t.requestJson("GET", "/v1/inbox", {
+    parse: zInboxListResponse,
+    query,
+    signedQueryKeys: ["limit", "markRead"],
+  });
   return {
     notifications: data.notifications.map((row) => ({
       ...row,

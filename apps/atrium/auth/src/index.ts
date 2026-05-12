@@ -32,6 +32,7 @@ export {
   AGENT_REQUEST_SEARCH,
   type AgentRequestEnvelope,
   canonicalAgentRequestMessage,
+  canonicalAgentRequestPath,
   envelopeSignatureBytes,
   parseAgentRequestEnvelopeFromHeaders,
   parseAgentRequestEnvelopeFromSearch,

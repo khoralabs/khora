@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   AGENT_REQUEST_HEADER,
   canonicalAgentRequestMessage,
+  canonicalAgentRequestPath,
   envelopeSignatureBytes,
   parseAgentRequestEnvelopeFromHeaders,
   parseAgentRequestEnvelopeFromSearch,
@@ -44,6 +45,46 @@ describe("canonicalAgentRequestMessage", () => {
       bodyText: "b",
     });
     expect(new TextDecoder().decode(a)).not.toBe(new TextDecoder().decode(b));
+  });
+});
+
+describe("canonicalAgentRequestPath", () => {
+  test("returns pathname unchanged when allowlist is empty", () => {
+    const sp = new URLSearchParams("limit=10&markRead=1");
+    expect(canonicalAgentRequestPath("/v1/inbox", sp, [])).toBe("/v1/inbox");
+  });
+
+  test("returns pathname unchanged when no allowed keys are present", () => {
+    const sp = new URLSearchParams("foo=bar");
+    expect(canonicalAgentRequestPath("/v1/inbox", sp, ["limit", "markRead"])).toBe("/v1/inbox");
+  });
+
+  test("appends allowlisted keys in allowlist order, not URL order", () => {
+    const sp = new URLSearchParams("markRead=1&limit=10");
+    expect(canonicalAgentRequestPath("/v1/inbox", sp, ["limit", "markRead"])).toBe(
+      "/v1/inbox?limit=10&markRead=1",
+    );
+  });
+
+  test("skips missing keys and preserves the rest", () => {
+    const sp = new URLSearchParams("limit=10");
+    expect(canonicalAgentRequestPath("/v1/inbox", sp, ["limit", "markRead"])).toBe(
+      "/v1/inbox?limit=10",
+    );
+  });
+
+  test("silently ignores stray keys outside the allowlist", () => {
+    const sp = new URLSearchParams("limit=10&hostile=1&markRead=1");
+    expect(canonicalAgentRequestPath("/v1/inbox", sp, ["limit", "markRead"])).toBe(
+      "/v1/inbox?limit=10&markRead=1",
+    );
+  });
+
+  test("preserves multi-value keys in URL order under a single allowlist entry", () => {
+    const sp = new URLSearchParams("topic=a&topic=b");
+    expect(canonicalAgentRequestPath("/v1/feed", sp, ["topic"])).toBe(
+      "/v1/feed?topic=a&topic=b",
+    );
   });
 });
 

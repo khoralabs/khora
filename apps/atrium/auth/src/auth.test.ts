@@ -209,3 +209,69 @@ describe("AtriumDidAuth.requireAuthenticatedRequest", () => {
     );
   });
 });
+
+describe("AtriumDidAuth.requireInboxAccess (signed query allowlist)", () => {
+  test("accepts /v1/inbox?limit=10&markRead=1 when client signs the canonical path", async () => {
+    const db = freshDb();
+    const now = 1_700_000_000_000;
+    const auth = createAtriumDidAuth({ db, now: () => now });
+    const signer = await EdDSASigner.generate();
+    const headers = await buildSignedHeaders({
+      signer,
+      method: "GET",
+      path: "/v1/inbox?limit=10&markRead=1",
+      bodyText: "",
+      timestampMs: now,
+      nonce: "n-inbox-ok",
+    });
+    const req = new Request("https://h.example/v1/inbox?limit=10&markRead=1", {
+      method: "GET",
+      headers,
+    });
+    const url = new URL(req.url);
+    const out = await auth.requireInboxAccess(req, url, ["limit", "markRead"]);
+    expect(out.did).toBe(signer.did);
+  });
+
+  test("rejects when the URL query is tampered after signing", async () => {
+    const db = freshDb();
+    const now = 1_700_000_000_000;
+    const auth = createAtriumDidAuth({ db, now: () => now });
+    const signer = await EdDSASigner.generate();
+    const headers = await buildSignedHeaders({
+      signer,
+      method: "GET",
+      path: "/v1/inbox?limit=10",
+      bodyText: "",
+      timestampMs: now,
+      nonce: "n-inbox-tampered",
+    });
+    const req = new Request("https://h.example/v1/inbox?limit=500", { method: "GET", headers });
+    const url = new URL(req.url);
+    await expect(auth.requireInboxAccess(req, url, ["limit", "markRead"])).rejects.toThrow(
+      /signature/i,
+    );
+  });
+
+  test("allowlist order is canonical regardless of URL order", async () => {
+    const db = freshDb();
+    const now = 1_700_000_000_000;
+    const auth = createAtriumDidAuth({ db, now: () => now });
+    const signer = await EdDSASigner.generate();
+    const headers = await buildSignedHeaders({
+      signer,
+      method: "GET",
+      path: "/v1/inbox?limit=10&markRead=1",
+      bodyText: "",
+      timestampMs: now,
+      nonce: "n-inbox-order",
+    });
+    const req = new Request("https://h.example/v1/inbox?markRead=1&limit=10", {
+      method: "GET",
+      headers,
+    });
+    const url = new URL(req.url);
+    const out = await auth.requireInboxAccess(req, url, ["limit", "markRead"]);
+    expect(out.did).toBe(signer.did);
+  });
+});

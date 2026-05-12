@@ -338,7 +338,7 @@ const server = Bun.serve<InboxWsData>({
     if (req.method === "GET" && url.pathname === "/v1/invites") {
       let did: string;
       try {
-        ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url));
+        ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url, "", []));
       } catch (e) {
         return authErrorResponse(e);
       }
@@ -352,7 +352,7 @@ const server = Bun.serve<InboxWsData>({
     if (req.method === "GET" && url.pathname === "/v1/inbox/ws") {
       let did: string;
       try {
-        ({ did } = await ctx.auth.requireInboxAccess(req, url));
+        ({ did } = await ctx.auth.requireInboxAccess(req, url, []));
       } catch (e) {
         return authErrorResponse(e);
       }
@@ -368,7 +368,7 @@ const server = Bun.serve<InboxWsData>({
     if (req.method === "GET" && url.pathname === "/v1/inbox") {
       let did: string;
       try {
-        ({ did } = await ctx.auth.requireInboxAccess(req, url));
+        ({ did } = await ctx.auth.requireInboxAccess(req, url, ["limit", "markRead"]));
       } catch (e) {
         return authErrorResponse(e);
       }
@@ -401,7 +401,7 @@ const server = Bun.serve<InboxWsData>({
     if (req.method === "GET" && url.pathname === "/v1/agent/sync") {
       let did: string;
       try {
-        ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url));
+        ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url, "", []));
       } catch (e) {
         return authErrorResponse(e);
       }
@@ -441,7 +441,7 @@ const server = Bun.serve<InboxWsData>({
     if (req.method === "GET" && url.pathname === "/v1/agent/status") {
       let did: string;
       try {
-        ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url));
+        ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url, "", []));
       } catch (e) {
         return authErrorResponse(e);
       }
@@ -481,7 +481,7 @@ const server = Bun.serve<InboxWsData>({
       }
       let did: string;
       try {
-        ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url));
+        ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url, "", []));
       } catch (e) {
         return authErrorResponse(e);
       }
@@ -503,7 +503,7 @@ const server = Bun.serve<InboxWsData>({
       const bodyText = await req.text();
       let did: string;
       try {
-        ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url, bodyText));
+        ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url, bodyText, []));
       } catch (e) {
         return authErrorResponse(e);
       }
@@ -544,7 +544,7 @@ const server = Bun.serve<InboxWsData>({
       const bodyText = await req.text();
       let did: string;
       try {
-        ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url, bodyText));
+        ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url, bodyText, []));
       } catch (e) {
         return authErrorResponse(e);
       }
@@ -590,7 +590,7 @@ const server = Bun.serve<InboxWsData>({
         const bodyText = await req.text();
         let did: string;
         try {
-          ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url, bodyText));
+          ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url, bodyText, []));
         } catch (e) {
           return authErrorResponse(e);
         }
@@ -643,7 +643,7 @@ const server = Bun.serve<InboxWsData>({
       if (req.method === "DELETE") {
         let did: string;
         try {
-          ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url));
+          ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url, "", []));
         } catch (e) {
           return authErrorResponse(e);
         }

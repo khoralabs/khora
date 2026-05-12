@@ -3,6 +3,7 @@ import {
   AGENT_REQUEST_SEARCH,
   type AgentRequestEnvelope,
   canonicalAgentRequestMessage,
+  canonicalAgentRequestPath,
   randomAgentRequestNonce,
   signatureBytesToB64Url,
 } from "./wire.ts";
@@ -94,9 +95,10 @@ export async function signedInboxUrl(input: SignedInboxUrlInput): Promise<string
   const root = new URL(input.baseUrl.trim().replace(/\/$/, ""));
   const ws = new URL(path, root);
   ws.protocol = root.protocol === "https:" ? "wss:" : "ws:";
+  const signedPath = canonicalAgentRequestPath(ws.pathname, ws.searchParams, []);
   const signed = await signAgentRequest({
     method: "GET",
-    path,
+    path: signedPath,
     bodyText: "",
     signer: input.signer,
     ...(input.now !== undefined ? { now: input.now } : {}),

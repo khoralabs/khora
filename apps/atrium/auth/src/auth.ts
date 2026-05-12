@@ -14,6 +14,7 @@ import {
   AGENT_REQUEST_FRESHNESS_WINDOW_MS,
   AGENT_REQUEST_HEADER,
   type AgentRequestEnvelope,
+  canonicalAgentRequestPath,
   parseAgentRequestEnvelopeFromHeaders,
   parseAgentRequestEnvelopeFromSearch,
 } from "./wire.ts";
@@ -89,6 +90,7 @@ export class AtriumDidAuth {
     req: Request,
     url: URL,
     bodyText = "",
+    signedQueryKeys: readonly string[] = [],
   ): Promise<{ did: string }> {
     const did = readDidHeader(req);
     if (did === undefined) {
@@ -96,7 +98,7 @@ export class AtriumDidAuth {
     }
     await this.verifyAuthenticatedContext({
       method: req.method,
-      path: url.pathname,
+      path: canonicalAgentRequestPath(url.pathname, url.searchParams, signedQueryKeys),
       headers: req.headers,
       claimedDid: did,
       bodyText,
@@ -111,14 +113,18 @@ export class AtriumDidAuth {
    * accepts the agent DID via `?did=` search param when the `X-Agent-Did` header is absent
    * (WebSocket upgrades cannot carry custom headers in browsers).
    */
-  async requireInboxAccess(req: Request, url: URL): Promise<{ did: string }> {
+  async requireInboxAccess(
+    req: Request,
+    url: URL,
+    signedQueryKeys: readonly string[] = [],
+  ): Promise<{ did: string }> {
     const did = url.searchParams.get("did")?.trim() || readDidHeader(req);
     if (did === undefined || did.length === 0) {
       throw new AuthError(`did required (query ?did= or ${AGENT_REQUEST_HEADER.did})`, 400);
     }
     await this.verifyInboxContext({
       claimedDid: did,
-      path: url.pathname,
+      path: canonicalAgentRequestPath(url.pathname, url.searchParams, signedQueryKeys),
       searchParams: url.searchParams,
       headers: req.headers,
     }).catch((e) => {

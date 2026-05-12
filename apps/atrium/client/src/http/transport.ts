@@ -1,5 +1,6 @@
 import {
   type AgentSigner,
+  canonicalAgentRequestPath,
   randomAgentRequestNonce,
   signAgentRequest,
 } from "@khoralabs/atrium-auth";
@@ -9,6 +10,28 @@ import { AtriumClientError } from "../atrium-client-error.ts";
 /** Subset of `fetch` used by the client (avoids requiring Bun-specific properties on mocks). */
 export type AtriumFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
+/** Structured query input for `requestJson` / `requestVoid`. */
+export type RequestQuery = Record<string, string>;
+
+export type RequestJsonOptions<T> = {
+  body?: unknown;
+  headers?: Record<string, string>;
+  parse: z.ZodType<T>;
+  /** Query params to append to the fetch URL. */
+  query?: RequestQuery;
+  /**
+   * Subset of `query` keys to include in the canonical signed path, in canonical order.
+   * Defaults to `Object.keys(query)`. Pass an explicit ordered list when the server expects a
+   * specific allowlist (currently `/v1/inbox` requires `["limit", "markRead"]`).
+   */
+  signedQueryKeys?: readonly string[];
+};
+
+export type RequestVoidOptions = {
+  query?: RequestQuery;
+  signedQueryKeys?: readonly string[];
+};
+
 export type HttpTransport = {
   readonly base: string;
   readonly did: string;
@@ -16,12 +39,8 @@ export type HttpTransport = {
   readonly now: () => number;
   readonly nonce: () => string;
   fetch(path: string, init?: RequestInit): Promise<Response>;
-  requestJson<T>(
-    method: string,
-    path: string,
-    opts: { body?: unknown; headers?: Record<string, string>; parse: z.ZodType<T> },
-  ): Promise<T>;
-  requestVoid(method: string, path: string): Promise<void>;
+  requestJson<T>(method: string, path: string, opts: RequestJsonOptions<T>): Promise<T>;
+  requestVoid(method: string, path: string, opts?: RequestVoidOptions): Promise<void>;
 };
 
 export type CreateHttpTransportOptions = {
@@ -59,11 +78,33 @@ export function createHttpTransport(opts: CreateHttpTransportOptions): HttpTrans
     return fetchFn(`${base}${path}`, init);
   }
 
+  /**
+   * Build the on-the-wire fetch URL (`path + ?query`) and the canonical signed path (`path +
+   * ?allowlistedQuery`). Both sides agree on the signed path because the server applies the same
+   * allowlist when verifying.
+   */
+  function paths(
+    pathname: string,
+    query: RequestQuery | undefined,
+    signedQueryKeys: readonly string[] | undefined,
+  ): { fetchPath: string; signedPath: string } {
+    const sp = new URLSearchParams();
+    if (query !== undefined) {
+      for (const [k, v] of Object.entries(query)) sp.append(k, v);
+    }
+    const qs = sp.toString();
+    const fetchPath = qs.length > 0 ? `${pathname}?${qs}` : pathname;
+    const allow = signedQueryKeys ?? (query !== undefined ? Object.keys(query) : []);
+    const signedPath = canonicalAgentRequestPath(pathname, sp, allow);
+    return { fetchPath, signedPath };
+  }
+
   async function requestJson<T>(
     method: string,
     path: string,
-    callOpts: { body?: unknown; headers?: Record<string, string>; parse: z.ZodType<T> },
+    callOpts: RequestJsonOptions<T>,
   ): Promise<T> {
+    const { fetchPath, signedPath } = paths(path, callOpts.query, callOpts.signedQueryKeys);
     let bodyText = "";
     const baseHeaders: Record<string, string> = {
       Accept: "application/json",
@@ -73,9 +114,9 @@ export function createHttpTransport(opts: CreateHttpTransportOptions): HttpTrans
       baseHeaders["Content-Type"] = "application/json";
       bodyText = JSON.stringify(callOpts.body);
     }
-    const authHeaders = await signHeaders({ method, path, bodyText });
+    const authHeaders = await signHeaders({ method, path: signedPath, bodyText });
     const headers: HeadersInit = { ...baseHeaders, ...authHeaders };
-    const res = await rawFetch(path, {
+    const res = await rawFetch(fetchPath, {
       method,
       headers,
       body: bodyText.length > 0 ? bodyText : undefined,
@@ -101,9 +142,14 @@ export function createHttpTransport(opts: CreateHttpTransportOptions): HttpTrans
     return parsed.data;
   }
 
-  async function requestVoid(method: string, path: string): Promise<void> {
-    const authHeaders = await signHeaders({ method, path, bodyText: "" });
-    const res = await rawFetch(path, {
+  async function requestVoid(
+    method: string,
+    path: string,
+    callOpts: RequestVoidOptions = {},
+  ): Promise<void> {
+    const { fetchPath, signedPath } = paths(path, callOpts.query, callOpts.signedQueryKeys);
+    const authHeaders = await signHeaders({ method, path: signedPath, bodyText: "" });
+    const res = await rawFetch(fetchPath, {
       method,
       headers: { Accept: "application/json", ...authHeaders },
     });

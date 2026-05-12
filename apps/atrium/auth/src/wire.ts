@@ -55,6 +55,37 @@ export async function canonicalAgentRequestMessage(p: {
   return new TextEncoder().encode(message);
 }
 
+/**
+ * Build the canonical PATH string used inside {@link canonicalAgentRequestMessage}: the URL pathname
+ * plus only the query keys listed in `allowedKeys`, in **allowlist order**.
+ *
+ * Why allowlist-order rather than URL-order: clients and servers serialize query strings with
+ * different conventions; pinning the canonical order to the route's allowlist ensures both sides
+ * produce byte-identical messages regardless of how the URL was emitted on the wire.
+ *
+ * Multi-value keys are preserved (`URLSearchParams.getAll`). Keys not present in `searchParams` are
+ * skipped. Stray query keys (not in the allowlist) are silently ignored — route handlers should
+ * only read allowlisted keys, otherwise their semantics are not signature-bound.
+ *
+ * Reserved envelope keys (`AGENT_REQUEST_SEARCH.{did,ts,nonce,sig}`) must never appear in any
+ * route's allowlist; they ride alongside the signed message as the envelope itself.
+ */
+export function canonicalAgentRequestPath(
+  pathname: string,
+  searchParams: URLSearchParams,
+  allowedKeys: readonly string[],
+): string {
+  const out = new URLSearchParams();
+  for (const key of allowedKeys) {
+    const values = searchParams.getAll(key);
+    for (const v of values) {
+      out.append(key, v);
+    }
+  }
+  const qs = out.toString();
+  return qs.length > 0 ? `${pathname}?${qs}` : pathname;
+}
+
 function parseEnvelopeFromGetters(
   get: (key: string) => string | null,
   did: string | null,
