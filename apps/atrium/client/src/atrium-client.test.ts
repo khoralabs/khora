@@ -245,6 +245,18 @@ describe("AtriumClient", () => {
     expect(await c.lookupProfileByUsername("ghost")).toBeNull();
   });
 
+  test("listTopicSubscriptions signs request and returns slug array", async () => {
+    const signer = staticSigner("did:key:agent");
+    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("http://h/v1/topics");
+      expect(init?.method).toBe("GET");
+      expectAuthHeaders(init, "did:key:agent");
+      return Response.json({ topicSlugs: ["rust-dev", "zig"] });
+    });
+    const c = new AtriumClient({ baseUrl: "http://h", signer, fetch: fetchMock });
+    expect(await c.listTopicSubscriptions()).toEqual(["rust-dev", "zig"]);
+  });
+
   test("subscribeTopic signs request and encodes slug", async () => {
     const signer = staticSigner("did:key:agent");
     const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {

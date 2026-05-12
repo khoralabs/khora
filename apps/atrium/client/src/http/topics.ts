@@ -6,6 +6,15 @@ const zSubscribeOk = z.object({
   topicSlug: z.string(),
 });
 
+const zTopicsList = z.object({
+  topicSlugs: z.array(z.string()),
+});
+
+export async function listTopicSubscriptions(t: HttpTransport): Promise<string[]> {
+  const out = await t.requestJson("GET", "/v1/topics", { parse: zTopicsList });
+  return out.topicSlugs;
+}
+
 export function subscribeTopic(
   t: HttpTransport,
   topicSlug: string,

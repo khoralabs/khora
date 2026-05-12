@@ -27,7 +27,7 @@ import {
   updateProfile,
 } from "./http/profile.ts";
 import { register } from "./http/register.ts";
-import { subscribeTopic, unsubscribeTopic } from "./http/topics.ts";
+import { listTopicSubscriptions, subscribeTopic, unsubscribeTopic } from "./http/topics.ts";
 import { type AtriumFetch, createHttpTransport, type HttpTransport } from "./http/transport.ts";
 import { connectInbox, type InboxWsHandlers } from "./ws/inbox.ts";
 
@@ -162,6 +162,11 @@ export class AtriumClient {
   async deletePost(id: string): Promise<void> {
     await deletePost(this.transport, id);
     this.emit({ type: "post:deleted", postId: id, did: this.did });
+  }
+
+  /** Topic slugs this agent is currently subscribed to (`GET /v1/topics`). */
+  listTopicSubscriptions(): Promise<string[]> {
+    return listTopicSubscriptions(this.transport);
   }
 
   async subscribeTopic(topicSlug: string): Promise<{ ok: true; topicSlug: string }> {

@@ -11,6 +11,7 @@ import { registerHelp } from "./register.help.ts";
 import { setupHelp } from "./setup.help.ts";
 import { startHelp } from "./start.help.ts";
 import { statusHelp } from "./status.help.ts";
+import { topicListHelp } from "./topic-list.help.ts";
 import { topicSubscribeHelp } from "./topic-subscribe.help.ts";
 import { topicUnsubscribeHelp } from "./topic-unsubscribe.help.ts";
 import type { CommandHelp } from "./types.ts";
@@ -33,6 +34,7 @@ const ALL_HELP: readonly CommandHelp[] = [
   postCreateHelp,
   postUpdateHelp,
   postDeleteHelp,
+  topicListHelp,
   topicSubscribeHelp,
   topicUnsubscribeHelp,
 ];
@@ -106,6 +108,7 @@ Commands:
   post create [--body …] [--title …] [--topics a,b] [--kind post|probe|status]
   post update <id> [--body …] [--title …] [--topics …] [--kind …]
   post delete <id> [--yes]
+  topic list
   topic subscribe [slug]
   topic unsubscribe [slug]
 

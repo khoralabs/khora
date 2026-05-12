@@ -513,6 +513,19 @@ const server = Bun.serve<InboxWsData>({
       }
     }
 
+    if (req.method === "GET" && url.pathname === "/v1/topics") {
+      let did: string;
+      try {
+        ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url, "", []));
+      } catch (e) {
+        return authErrorResponse(e);
+      }
+      const tRl = rlTopicsDid(`did:${did}`);
+      if (!tRl.ok) return rateLimitedResponse(tRl.retryAfterSec);
+      const topicSlugs = ctx.host.persistenceClient.listTopicSlugsForAgentDid(did);
+      return Response.json({ topicSlugs });
+    }
+
     const topicSubMatch = /^\/v1\/topics\/([^/]+)\/subscribe$/.exec(url.pathname);
     if (topicSubMatch !== null && topicSubMatch[1] !== undefined) {
       const slugRaw = decodeURIComponent(topicSubMatch[1]);

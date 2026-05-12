@@ -139,6 +139,11 @@ async function main(
       return;
     }
 
+    if (a === "topic" && b === "list") {
+      await handlers.topicList(ctx, flags);
+      return;
+    }
+
     if (a === "topic" && b === "subscribe") {
       await handlers.topicSubscribe(ctx, c, flags);
       return;

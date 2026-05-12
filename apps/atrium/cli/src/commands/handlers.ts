@@ -12,6 +12,7 @@ import { runRegisterCommand } from "./register.ts";
 import { runSetupCommand } from "./setup.ts";
 import { runStartCommand } from "./start.ts";
 import { runStatusCommand } from "./status.ts";
+import { runTopicListCommand } from "./topic-list.ts";
 import { runTopicSubscribeCommand } from "./topic-subscribe.ts";
 import { runTopicUnsubscribeCommand } from "./topic-unsubscribe.ts";
 import type { FlagMap } from "./types.ts";
@@ -34,6 +35,7 @@ export interface AtriumCliCommandHandlers {
   postCreate(ctx: AtriumCliContext, flags: FlagMap): Promise<void>;
   postUpdate(ctx: AtriumCliContext, postId: string, flags: FlagMap): Promise<void>;
   postDelete(ctx: AtriumCliContext, postId: string, flags: FlagMap): Promise<void>;
+  topicList(ctx: AtriumCliContext, flags: FlagMap): Promise<void>;
   topicSubscribe(ctx: AtriumCliContext, slug: string | undefined, flags: FlagMap): Promise<void>;
   topicUnsubscribe(ctx: AtriumCliContext, slug: string | undefined, flags: FlagMap): Promise<void>;
 }
@@ -54,6 +56,7 @@ export const defaultAtriumCliCommandHandlers = {
   postCreate: runPostCreateCommand,
   postUpdate: runPostUpdateCommand,
   postDelete: runPostDeleteCommand,
+  topicList: runTopicListCommand,
   topicSubscribe: runTopicSubscribeCommand,
   topicUnsubscribe: runTopicUnsubscribeCommand,
 } satisfies AtriumCliCommandHandlers;
