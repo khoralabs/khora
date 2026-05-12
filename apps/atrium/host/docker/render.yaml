@@ -28,7 +28,7 @@ envVarGroups:
         value: prod
 
 services:
-  - type: web
+  - type: pserv
     name: minio
     runtime: docker
     plan: starter
