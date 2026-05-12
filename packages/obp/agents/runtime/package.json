@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/obp-agent-runtime",
+  "name": "@khoralabs/obp-agent-runtime",
   "version": "0.0.0",
   "module": "src/index.ts",
   "type": "module",
@@ -13,12 +13,12 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.0",
-    "@cfd/agent-identity": "workspace:*",
-    "@cfd/agent-identity-adapters": "workspace:*",
-    "@cfd/obp-bind-policy-zod": "workspace:*",
-    "@cfd/obp-core": "workspace:*",
-    "@cfd/obp-negotiator": "workspace:*",
-    "@cfd/obp-tools": "workspace:*",
+    "@khoralabs/agent-identity": "workspace:*",
+    "@khoralabs/agent-identity-adapters": "workspace:*",
+    "@khoralabs/obp-bind-policy-zod": "workspace:*",
+    "@khoralabs/obp-core": "workspace:*",
+    "@khoralabs/obp-negotiator": "workspace:*",
+    "@khoralabs/obp-tools": "workspace:*",
     "@standard-schema/spec": "^1.1.0",
     "ai": "^6",
     "zod": "^4"
@@ -29,7 +29,7 @@
     "example": "bun --hot examples/index.ts"
   },
   "devDependencies": {
-    "@cfd/obp-react": "workspace:*",
+    "@khoralabs/obp-react": "workspace:*",
     "@types/bun": "latest",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

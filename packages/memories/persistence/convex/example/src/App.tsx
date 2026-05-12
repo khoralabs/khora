@@ -1,5 +1,5 @@
 import "./index.css";
-import { useMemoriesPersistence } from "@cfd/memories-convex/react";
+import { useMemoriesPersistence } from "@khoralabs/memories-convex/react";
 import { useConvex } from "convex/react";
 import { DEMO_NS, DEMO_NS_B, SEARCH_TOP_K } from "./demo/constants.js";
 import { DemoCapabilities } from "./demo/DemoCapabilities.js";
@@ -18,8 +18,8 @@ export function App() {
       <p style={{ opacity: 0.85, marginBottom: 16, fontSize: "0.9rem" }}>
         <code>MemoriesPersistenceProvider</code> + <code>useMemoriesPersistence()</code> drive
         merges and searches against <code>{DEMO_NS}</code> / <code>{DEMO_NS_B}</code>. Listing uses
-        component queries directly; merge/search use <code>@cfd/memories-convex</code> client APIs
-        (topK = {SEARCH_TOP_K}).
+        component queries directly; merge/search use <code>@khoralabs/memories-convex</code> client
+        APIs (topK = {SEARCH_TOP_K}).
       </p>
 
       <DemoCapabilities persistence={persistence} />

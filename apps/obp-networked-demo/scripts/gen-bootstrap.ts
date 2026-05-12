@@ -11,14 +11,14 @@ import {
   type ObpClientBootstrap,
   type ObpServerBootstrap,
   signInvite,
-} from "@cfd/obp-auth";
+} from "@khoralabs/obp-auth";
 import {
   createEd25519FrameSigner,
   generateEd25519KeyPair,
   normalizeSessionInit,
   sha256HexUtf8,
-} from "@cfd/obp-core";
-import { FakeObpPersistence } from "@cfd/obp-core/testing";
+} from "@khoralabs/obp-core";
+import { FakeObpPersistence } from "@khoralabs/obp-core/testing";
 
 export async function writeDemoBootstrap(
   serverOutPath: string,

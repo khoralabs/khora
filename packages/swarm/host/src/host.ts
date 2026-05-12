@@ -3,14 +3,14 @@ import type {
   LabelSchemaMap,
   MemoriesClient,
   SearchHit,
-} from "@cfd/memories-core";
+} from "@khoralabs/memories-core";
 import {
   type EmbeddingModel,
   type HybridMemorySearchClient,
   type HybridMemorySearchInput,
   type MemorySearchHit,
   runHybridMemorySearch,
-} from "@cfd/memories-core/helpers";
+} from "@khoralabs/memories-core/helpers";
 import {
   createSwarmMemoriesSyncHandler,
   SWARM_EVENT_KIND,
@@ -118,7 +118,7 @@ export type SwarmHostDeps<
   memoryNamespaces?: SwarmHostMemoryNamespaces;
   /**
    * Optional embedding model for {@link SwarmHost.search} / {@link SwarmHost.searchMemories} when the vector arm is used.
-   * Construct with {@link createMemoriesEmbeddingModel} from `@cfd/memories-core/helpers`.
+   * Construct with {@link createMemoriesEmbeddingModel} from `@khoralabs/memories-core/helpers`.
    */
   embeddingModel?: EmbeddingModel;
   onEvent?: (

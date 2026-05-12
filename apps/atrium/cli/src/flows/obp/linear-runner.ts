@@ -1,4 +1,4 @@
-import type { OBPPersistenceClient, Offer, Party, Port, PortBindPolicy } from "@cfd/obp-core";
+import type { OBPPersistenceClient, Offer, Party, Port, PortBindPolicy } from "@khoralabs/obp-core";
 import { type ReadLineFn, readBindPolicyInteractive } from "./bind-readline.ts";
 import { mergePortShell, shellOffer } from "./port-defaults.ts";
 

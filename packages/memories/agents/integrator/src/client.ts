@@ -1,7 +1,7 @@
-import type { AgentRegistry } from "@cfd/agent-identity";
-import type { MemoriesClient, MemoriesClientAsync } from "@cfd/memories-core";
-import type { EmbeddingModel } from "@cfd/memories-tools";
-import { DEFAULT_MEMORY_TOOL_LOOP_MAX_STEPS } from "@cfd/memories-tools";
+import type { AgentRegistry } from "@khoralabs/agent-identity";
+import type { MemoriesClient, MemoriesClientAsync } from "@khoralabs/memories-core";
+import type { EmbeddingModel } from "@khoralabs/memories-tools";
+import { DEFAULT_MEMORY_TOOL_LOOP_MAX_STEPS } from "@khoralabs/memories-tools";
 import type { LanguageModel } from "ai";
 import type z from "zod";
 import type { IntegratorPipelineGeneration } from "./create-integrator-agent.js";

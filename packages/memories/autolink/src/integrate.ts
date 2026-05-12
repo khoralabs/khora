@@ -8,7 +8,7 @@ import type {
   SearchContent,
   SearchHit,
   SearchParams,
-} from "@cfd/memories-core";
+} from "@khoralabs/memories-core";
 import { type ComputeLexicalLinkOptions, computeLexicalLinkMergeSlice } from "./planner.js";
 import { normalizeSearchConfigSnapshot } from "./search-config.js";
 

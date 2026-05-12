@@ -3,7 +3,7 @@ import {
   type SessionInit,
   sessionInitFromWire,
   sessionInitToWire,
-} from "@cfd/obp-core";
+} from "@khoralabs/obp-core";
 
 function bytesToHex(buf: Uint8Array): string {
   return [...buf].map((b) => b.toString(16).padStart(2, "0")).join("");

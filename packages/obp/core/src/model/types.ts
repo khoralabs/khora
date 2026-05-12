@@ -1,9 +1,9 @@
 /**
- * Persisted graph shapes aligned with **`cfd.obp`** in `@cfd/obp-spec`
+ * Persisted graph shapes aligned with **`cfd.obp`** in `@khoralabs/obp-spec`
  * ([`shapes.smithy`](../../spec/model/shapes.smithy)).
  *
- * - **`Port.bind_policy`** / **`BindsEdge.bind_policy_snapshot`**: Smithy models these as **`Document`** (`null` when absent); TS uses structured **`PortBindPolicy`** validated via Zod (`@cfd/obp-core`).
- * - **Get results**: Smithy unions **`notFound` / payload** correspond to TS **`{ kind: "notFound" } | { kind: "found"; … }`** (see parity matrix in `@cfd/obp-core` README).
+ * - **`Port.bind_policy`** / **`BindsEdge.bind_policy_snapshot`**: Smithy models these as **`Document`** (`null` when absent); TS uses structured **`PortBindPolicy`** validated via Zod (`@khoralabs/obp-core`).
+ * - **Get results**: Smithy unions **`notFound` / payload** correspond to TS **`{ kind: "notFound" } | { kind: "found"; … }`** (see parity matrix in `@khoralabs/obp-core` README).
  */
 
 import type { PortBindPolicy } from "../bind-policy/types.ts";

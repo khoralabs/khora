@@ -1,4 +1,4 @@
-import type { JsonlStore } from "@cfd/memories-stores";
+import type { JsonlStore } from "@khoralabs/memories-stores";
 import type {
   BindPortInput,
   ExposePortInput,
@@ -11,7 +11,7 @@ import type {
   Party,
   Port,
   RegisterPartyInput,
-} from "@cfd/obp-core";
+} from "@khoralabs/obp-core";
 
 export type LoggingObpPersistenceOptions = {
   store: JsonlStore;

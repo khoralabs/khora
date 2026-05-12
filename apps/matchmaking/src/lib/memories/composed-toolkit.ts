@@ -1,6 +1,6 @@
-import { toolkit } from "@cfd/agent-identity";
-import { memorySearchToolkit } from "@cfd/memories-tools";
-import { obpToolkit } from "@cfd/obp-tools";
+import { toolkit } from "@khoralabs/agent-identity";
+import { memorySearchToolkit } from "@khoralabs/memories-tools";
+import { obpToolkit } from "@khoralabs/obp-tools";
 
 const obpMatchmakingMemoryToolkitInstructions = [
   `Each user message may include a **Retrieved from your memory namespace** block (RAG). That is your first-line archive. Prefer it before calling tools.`,
@@ -11,7 +11,7 @@ const obpMatchmakingMemoryToolkitInstructions = [
   `Do not treat memories as private facts about the other party unless they said it in this thread or in a published offer.`,
 ];
 
-/** OBP + hybrid memory search; negotiation copy lives here only (not in @cfd/memories-tools). */
+/** OBP + hybrid memory search; negotiation copy lives here only (not in @khoralabs/memories-tools). */
 export const obpMatchmakingMemoryToolkit = toolkit([obpToolkit, memorySearchToolkit], {
   name: "obp-demo-matchmaking-memory",
   instructions: obpMatchmakingMemoryToolkitInstructions,

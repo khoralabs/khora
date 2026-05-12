@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/atrium-auth",
+  "name": "@khoralabs/atrium-auth",
   "version": "0.0.0",
   "type": "module",
   "private": true,
@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@cfd/swarm-host": "workspace:*",
+    "@khoralabs/swarm-host": "workspace:*",
     "@noble/ed25519": "^3.1.0",
     "iso-did": "^2.1.1",
     "iso-signatures": "^0.5.1"

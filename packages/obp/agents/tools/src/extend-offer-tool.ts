@@ -1,5 +1,5 @@
-import { tool } from "@cfd/agent-identity";
-import type { SourceMapRef } from "@cfd/obp-core";
+import { tool } from "@khoralabs/agent-identity";
+import type { SourceMapRef } from "@khoralabs/obp-core";
 import z from "zod";
 import {
   DEFAULT_EXPIRY_SEQ_DELTA,

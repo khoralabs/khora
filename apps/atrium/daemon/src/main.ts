@@ -1,5 +1,9 @@
 #!/usr/bin/env bun
-import { defaultIdentityPath, loadIdentity, type PersistableAgentSigner } from "@cfd/atrium-auth";
+import {
+  defaultIdentityPath,
+  loadIdentity,
+  type PersistableAgentSigner,
+} from "@khoralabs/atrium-auth";
 import { daemonAppConfig, daemonJsonOutput } from "./app-config.ts";
 import { acquireDaemonLock, DaemonAlreadyRunningError } from "./daemon-pid.ts";
 import { runInboxDaemon } from "./run-inbox-daemon.ts";

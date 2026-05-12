@@ -37,4 +37,4 @@ Ensure `MEMORIES_DB_PATH` is set in the environment for the server process.
 - **`GET /api/namespaces`** — JSON: `{ namespaces: string[] }`, distinct `memories.namespace` values in the open database (sorted). Used to populate the namespace combobox; you can still type a namespace that is not listed (empty graph).
 - **`GET /api/graph?namespace=<ns>`** — JSON: `{ namespace, nodes: [{ key, x, y, z }], edges: [{ fromKey, toKey }] }`. Coordinates are in **`[-1, 1]`** on each axis after normalization.
 
-Graph layout and SQLite previews are implemented in `@cfd/memories-sqlite` (`buildNamespaceGraphLayout`, UMAP and layout types in the same package, SQL in the sqlite strategy).
+Graph layout and SQLite previews are implemented in `@khoralabs/memories-sqlite` (`buildNamespaceGraphLayout`, UMAP and layout types in the same package, SQL in the sqlite strategy).

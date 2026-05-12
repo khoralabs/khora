@@ -2,8 +2,8 @@ import {
   type AnyComposable,
   createRegisteredAgentIdentity,
   type RegisteredAgentIdentity,
-} from "@cfd/agent-identity";
-import { obpToolkit } from "@cfd/obp-tools";
+} from "@khoralabs/agent-identity";
+import { obpToolkit } from "@khoralabs/obp-tools";
 import { obpNegotiatorBaseInstruction } from "./instructions.ts";
 
 /** Accepts {@code obpToolkit} and composed roots (OBP + memory, etc.); identity erases env at registration. */
@@ -24,7 +24,7 @@ export type DefineObpNegotiatorIdentityOptions = {
   /** Additional instructions to merge into the base instruction. */
   instructions?: string[];
   /**
-   * Root toolkit composable. Defaults to {@code obpToolkit} from {@code @cfd/obp-tools}.
+   * Root toolkit composable. Defaults to {@code obpToolkit} from {@code @khoralabs/obp-tools}.
    * Set to a composed composable (e.g. OBP + memory) when the host needs extra tools.
    */
   rootComposable?: ObpNegotiatorRootComposableInput;

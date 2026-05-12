@@ -1,4 +1,8 @@
-import { type AtriumPostPatch, zAtriumPostKind, zAtriumPostPatch } from "@cfd/atrium-contracts";
+import {
+  type AtriumPostPatch,
+  zAtriumPostKind,
+  zAtriumPostPatch,
+} from "@khoralabs/atrium-contracts";
 import type { AtriumCliContext } from "../flows/context.ts";
 import { runPostUpdateInteractiveFlow } from "../flows/post-update-flow.ts";
 import { splitTopics, strFlag } from "./parse.ts";

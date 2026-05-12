@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/obp-negotiator",
+  "name": "@khoralabs/obp-negotiator",
   "module": "src/index.ts",
   "type": "module",
   "private": true,
@@ -15,9 +15,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@cfd/agent-identity": "workspace:*",
-    "@cfd/agent-identity-adapters": "workspace:*",
-    "@cfd/obp-tools": "workspace:*",
+    "@khoralabs/agent-identity": "workspace:*",
+    "@khoralabs/agent-identity-adapters": "workspace:*",
+    "@khoralabs/obp-tools": "workspace:*",
     "ai": "^6"
   },
   "devDependencies": {

@@ -1,8 +1,8 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
-import { evaluateComposable } from "@cfd/agent-identity";
-import { OBPPersistenceClient } from "@cfd/obp-core";
-import { createObpSqlitePersistence, OBP_SCHEMA_SQL } from "@cfd/obp-sqlite";
+import { evaluateComposable } from "@khoralabs/agent-identity";
+import { OBPPersistenceClient } from "@khoralabs/obp-core";
+import { createObpSqlitePersistence, OBP_SCHEMA_SQL } from "@khoralabs/obp-sqlite";
 import { obpBindPortTool } from "./bind-port-tool.ts";
 import { obpEndNegotiationTool } from "./end-negotiation-tool.ts";
 import { obpExposePortTool } from "./expose-port-tool.ts";

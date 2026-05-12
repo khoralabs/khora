@@ -1,4 +1,4 @@
-import { policy, tool, toolkit } from "@cfd/agent-identity";
+import { policy, tool, toolkit } from "@khoralabs/agent-identity";
 import type {
   EmbeddingModel,
   HybridMemorySearchClient,
@@ -6,24 +6,24 @@ import type {
   HybridMemorySearchWideClient,
   HybridMemorySearchWideClientAsync,
   MemorySearchHit,
-} from "@cfd/memories-core/helpers";
-import { runHybridMemorySearch } from "@cfd/memories-core/helpers";
+} from "@khoralabs/memories-core/helpers";
+import { runHybridMemorySearch } from "@khoralabs/memories-core/helpers";
 import z from "zod";
 
-/** @deprecated Use {@link HybridMemorySearchWideClient} from `@cfd/memories-core/helpers`. */
+/** @deprecated Use {@link HybridMemorySearchWideClient} from `@khoralabs/memories-core/helpers`. */
 export type MemorySearchWideClient = HybridMemorySearchWideClient;
 
-/** @deprecated Use {@link HybridMemorySearchWideClientAsync} from `@cfd/memories-core/helpers`. */
+/** @deprecated Use {@link HybridMemorySearchWideClientAsync} from `@khoralabs/memories-core/helpers`. */
 export type MemorySearchWideClientAsync = HybridMemorySearchWideClientAsync;
 
-/** Re-exported from `@cfd/memories-core/helpers` for backward compatibility. */
+/** Re-exported from `@khoralabs/memories-core/helpers` for backward compatibility. */
 export type {
   HybridMemorySearchInput,
   HybridMemorySearchOptions,
   MemorySearchHit,
-} from "@cfd/memories-core/helpers";
-/** Re-exported from `@cfd/memories-core/helpers` for backward compatibility. */
-export { embeddingCacheKey } from "@cfd/memories-core/helpers";
+} from "@khoralabs/memories-core/helpers";
+/** Re-exported from `@khoralabs/memories-core/helpers` for backward compatibility. */
+export { embeddingCacheKey } from "@khoralabs/memories-core/helpers";
 
 /** Runtime env for {@link memorySearchToolkit}: memory store, namespace, and optional embedding model (injected; not tool args). */
 export type MemorySearchEnv = {
@@ -44,7 +44,7 @@ export type MemorySearchEnv = {
   memorySearchBudget?: { max: number; used: number };
   /**
    * Extra subtree roots merged with {@link namespace} for retrieval (same semantics as
-   * {@link SearchParams.additionalNamespaces} in `@cfd/memories-core`).
+   * {@link SearchParams.additionalNamespaces} in `@khoralabs/memories-core`).
    */
   additionalNamespaces?: readonly string[];
   /**
@@ -61,7 +61,7 @@ export type MemorySearchEnv = {
 /** Tool key used with {@link memorySearchRuntimeToolAugments} / runtime identity. */
 export const MEMORY_SEARCH_TOOL_NAME = "memory_search" as const;
 
-/** Fold {@link MemorySearchEnv.memoriesSnapshotRootHex} into runtime tool refs / `runtimeHash` (see `@cfd/agent-identity`). */
+/** Fold {@link MemorySearchEnv.memoriesSnapshotRootHex} into runtime tool refs / `runtimeHash` (see `@khoralabs/agent-identity`). */
 export function memorySearchRuntimeToolAugments(
   memoriesSnapshotRootHex: string | undefined,
 ): Record<string, string> | undefined {
@@ -69,7 +69,7 @@ export function memorySearchRuntimeToolAugments(
   return { [MEMORY_SEARCH_TOOL_NAME]: memoriesSnapshotRootHex };
 }
 
-/** Spread into `computeFullIdentityLink` (`@cfd/agent-identity`) together with session `ToolkitContext`. */
+/** Spread into `computeFullIdentityLink` (`@khoralabs/agent-identity`) together with session `ToolkitContext`. */
 export function memorySearchIdentityLinkSupplement(
   env: Pick<MemorySearchEnv, "memoriesSnapshotRootHex">,
 ): {
@@ -197,7 +197,7 @@ const memorySearchTool = tool<
 
 /**
  * Agent-identity composable: hybrid DB search before merge.
- * Evaluate with {@link evaluateComposable} from `@cfd/agent-identity` and {@link MemorySearchEnv}.
+ * Evaluate with {@link evaluateComposable} from `@khoralabs/agent-identity` and {@link MemorySearchEnv}.
  */
 export const memorySearchToolkit = toolkit([memorySearchTool], {
   name: "memory-search-toolkit",

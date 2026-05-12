@@ -1,4 +1,4 @@
-import type { GraphSnapshot } from "@cfd/obp-core";
+import type { GraphSnapshot } from "@khoralabs/obp-core";
 import {
   Background,
   Controls,

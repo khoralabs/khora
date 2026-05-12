@@ -11,7 +11,7 @@ import {
   GraphProjectionProvider,
   GraphScene,
   GraphSearch,
-} from "@cfd/memories-react-graph";
+} from "@khoralabs/memories-react-graph";
 import { MenuIcon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "./components/ui/button";

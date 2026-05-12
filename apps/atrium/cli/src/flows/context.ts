@@ -1,5 +1,9 @@
-import { defaultIdentityPath, loadIdentity, type PersistableAgentSigner } from "@cfd/atrium-auth";
-import { AtriumClient } from "@cfd/atrium-client";
+import {
+  defaultIdentityPath,
+  loadIdentity,
+  type PersistableAgentSigner,
+} from "@khoralabs/atrium-auth";
+import { AtriumClient } from "@khoralabs/atrium-client";
 import { cliAppConfig, cliPluginInstallers } from "../app-config.ts";
 import type { ReadLineFn } from "./obp/bind-readline.ts";
 import { createReadlineSession } from "./readline-session.ts";

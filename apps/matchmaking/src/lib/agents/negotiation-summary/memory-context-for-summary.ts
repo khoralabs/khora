@@ -1,5 +1,5 @@
-import type { EmbeddingModel } from "@cfd/memories-core/helpers";
-import { embedTextChunks } from "@cfd/memories-tools";
+import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
+import { embedTextChunks } from "@khoralabs/memories-tools";
 import type { createMatchmakingMemoriesBundle } from "../../memories/create-memories-bundle.ts";
 
 const TRANSCRIPT_EXCERPT_LEN = 1200;

@@ -1,5 +1,5 @@
-import type { EmbeddingModel } from "@cfd/memories-core/helpers";
-import { embeddingCacheKey, embedTextChunks } from "@cfd/memories-tools";
+import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
+import { embeddingCacheKey, embedTextChunks } from "@khoralabs/memories-tools";
 import type { createMatchmakingMemoriesBundle } from "./create-memories-bundle.ts";
 
 /** Align with post-negotiation summary excerpt sizing. */

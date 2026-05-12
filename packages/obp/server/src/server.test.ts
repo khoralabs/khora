@@ -1,6 +1,6 @@
 import { test } from "bun:test";
 import http2 from "node:http2";
-import type { FrameChannel } from "@cfd/frame-channel";
+import type { FrameChannel } from "@khoralabs/frame-channel";
 import {
   createEd25519FrameSigner,
   createEd25519FrameVerifier,
@@ -8,8 +8,8 @@ import {
   runFrameSession,
   type SessionInit,
   sha256HexUtf8,
-} from "@cfd/obp-core";
-import { FakeObpPersistence } from "@cfd/obp-core/testing";
+} from "@khoralabs/obp-core";
+import { FakeObpPersistence } from "@khoralabs/obp-core/testing";
 import { frameChannelFromClientStream } from "./http2-channel.ts";
 import { serveObp } from "./serve.ts";
 

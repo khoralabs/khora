@@ -1,4 +1,4 @@
-import type { AgentSigner } from "@cfd/atrium-auth";
+import type { AgentSigner } from "@khoralabs/atrium-auth";
 import type {
   AtriumInviteListResponse,
   AtriumInvitePreviewResponse,
@@ -9,7 +9,7 @@ import type {
   AtriumProfilePatch,
   AtriumRegistrationRequestBody,
   AtriumRegistrationResult,
-} from "@cfd/atrium-contracts";
+} from "@khoralabs/atrium-contracts";
 import type { AtriumClientEvent } from "./atrium-events.ts";
 import {
   type AtriumPluginHandle,

@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/frame-channel",
+  "name": "@khoralabs/frame-channel",
   "version": "0.0.0",
   "type": "module",
   "private": true,

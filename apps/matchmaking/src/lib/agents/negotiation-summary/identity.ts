@@ -2,8 +2,8 @@ import {
   createRegisteredAgentIdentity,
   type RegisteredAgentIdentity,
   toolkit,
-} from "@cfd/agent-identity";
-import { memorySearchToolkit } from "@cfd/memories-tools";
+} from "@khoralabs/agent-identity";
+import { memorySearchToolkit } from "@khoralabs/memories-tools";
 
 export const NEGOTIATION_SUMMARY_AGENT_ID = "matchmaking-negotiation-summary";
 

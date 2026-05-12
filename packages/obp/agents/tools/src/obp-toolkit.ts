@@ -1,4 +1,4 @@
-import { toolkit } from "@cfd/agent-identity";
+import { toolkit } from "@khoralabs/agent-identity";
 import { obpEndNegotiationTool } from "./end-negotiation-tool.ts";
 import { obpExposePortTool } from "./expose-port-tool.ts";
 import { obpExtendOfferTool } from "./extend-offer-tool.ts";

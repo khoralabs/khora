@@ -1,5 +1,5 @@
-import type { GraphEdgeLink, GraphNode, OntologyLabelInstance } from "@cfd/memories-core";
-import { ids } from "@cfd/memories-core";
+import type { GraphEdgeLink, GraphNode, OntologyLabelInstance } from "@khoralabs/memories-core";
+import { ids } from "@khoralabs/memories-core";
 import type { QueryCtx } from "../_generated/server.js";
 import { parsePropsJson } from "./helpers.js";
 

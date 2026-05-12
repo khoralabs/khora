@@ -1,6 +1,6 @@
-import { portExpiredForSnapshot } from "@cfd/obp-agent-runtime";
-import type { GraphSnapshot, OBPPersistenceClient } from "@cfd/obp-core";
-import type { FakeObpPersistence } from "@cfd/obp-core/testing";
+import { portExpiredForSnapshot } from "@khoralabs/obp-agent-runtime";
+import type { GraphSnapshot, OBPPersistenceClient } from "@khoralabs/obp-core";
+import type { FakeObpPersistence } from "@khoralabs/obp-core/testing";
 
 export type { GraphSnapshot };
 

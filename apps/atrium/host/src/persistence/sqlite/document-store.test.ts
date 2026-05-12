@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
-import type { SourceMap } from "@cfd/memories-core";
+import type { SourceMap } from "@khoralabs/memories-core";
 import { createSwarmHostDocumentStore } from "./document-store.ts";
 import { createSwarmHostEntitySqlitePersistence } from "./entity-sqlite.ts";
 

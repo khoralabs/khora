@@ -1,5 +1,5 @@
-import type { GraphSnapshot, OBPPersistenceClient } from "@cfd/obp-core";
-import type { FakeObpPersistence } from "@cfd/obp-core/testing";
+import type { GraphSnapshot, OBPPersistenceClient } from "@khoralabs/obp-core";
+import type { FakeObpPersistence } from "@khoralabs/obp-core/testing";
 import { portExpiredForSnapshot } from "../../src/port-turn-ttl.ts";
 
 export type { GraphSnapshot };

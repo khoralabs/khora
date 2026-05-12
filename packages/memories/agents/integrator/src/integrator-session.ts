@@ -4,12 +4,12 @@ import type {
   RegisteredAgentIdentity,
   SessionContext,
   SessionRunner,
-} from "@cfd/agent-identity";
+} from "@khoralabs/agent-identity";
 import {
   attachMemorySearchSessionLayer,
   type MemorySearchSessionContextSlice,
   type ZodLabelMap,
-} from "@cfd/memories-tools";
+} from "@khoralabs/memories-tools";
 import { type LanguageModel, NoObjectGeneratedError, NoOutputGeneratedError } from "ai";
 import type { IntegratorPipelineGeneration } from "./create-integrator-agent.js";
 import { createMemoryIntegratorAgent } from "./create-integrator-agent.js";

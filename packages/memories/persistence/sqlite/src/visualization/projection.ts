@@ -4,8 +4,8 @@ import type {
   GraphMemoryEmbedding,
   GraphNode,
   OntologyLabelInstance,
-} from "@cfd/memories-core";
-import { ids } from "@cfd/memories-core";
+} from "@khoralabs/memories-core";
+import { ids } from "@khoralabs/memories-core";
 import { blobToVector } from "../connection";
 
 function parsePropsColumn(raw: unknown): Record<string, unknown> {

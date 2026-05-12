@@ -35,12 +35,12 @@ export const zMemory = z.object({
 export const zSourceMap = z.object({
   memory_id: zId("memories"),
   source_key: z.string(),
-  /** Content-addressable body digest; see `@cfd/memories-core/provenance`. */
+  /** Content-addressable body digest; see `@khoralabs/memories-core/provenance`. */
   content_hash: zSha256HexLower.optional(),
 });
 
 /**
- * Linear causal chain over merge/delete mutations (hash rules in `@cfd/memories-core/provenance`).
+ * Linear causal chain over merge/delete mutations (hash rules in `@khoralabs/memories-core/provenance`).
  */
 export const zMemoryProvenance = z.object({
   parent_root_hex: zSha256HexLower,

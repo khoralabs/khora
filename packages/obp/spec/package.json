@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/obp-spec",
+  "name": "@khoralabs/obp-spec",
   "private": true,
   "scripts": {
     "validate": "smithy validate model && smithy build"

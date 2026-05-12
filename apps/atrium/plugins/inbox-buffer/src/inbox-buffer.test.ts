@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import type { AtriumClientEvent } from "@cfd/atrium-client";
+import type { AtriumClientEvent } from "@khoralabs/atrium-client";
 import { createInboxBuffer, INBOX_CLIENT_EVENT_TYPES } from "./index.ts";
 
 describe("createInboxBuffer", () => {

@@ -3,7 +3,7 @@ import {
   type AtriumInvitePreviewResponse,
   zAtriumInviteListResponse,
   zAtriumInvitePreviewResponse,
-} from "@cfd/atrium-contracts";
+} from "@khoralabs/atrium-contracts";
 import type { HttpTransport } from "./transport.ts";
 
 export function listInvites(t: HttpTransport): Promise<AtriumInviteListResponse> {

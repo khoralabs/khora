@@ -1,4 +1,4 @@
-import { fuseRrf, type RrfArm } from "@cfd/reciprocal-rank-fusion";
+import { fuseRrf, type RrfArm } from "@khoralabs/reciprocal-rank-fusion";
 import type { NamespacePath } from "../models/namespace-path";
 import type { HydratedNeighbor, NeighborFilter } from "../models/neighbor-search-types";
 import type { OntologyLabelInstance } from "../models/ontology-label";

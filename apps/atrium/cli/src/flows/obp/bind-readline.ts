@@ -1,6 +1,6 @@
-import { bindPolicyPropertiesToZod } from "@cfd/obp-bind-policy-zod";
-import type { BindPolicyField, PortBindPolicy } from "@cfd/obp-core";
-import { bindPolicySlugKeys } from "@cfd/obp-core";
+import { bindPolicyPropertiesToZod } from "@khoralabs/obp-bind-policy-zod";
+import type { BindPolicyField, PortBindPolicy } from "@khoralabs/obp-core";
+import { bindPolicySlugKeys } from "@khoralabs/obp-core";
 
 export type ReadLineFn = (prompt: string) => Promise<string>;
 

@@ -3,7 +3,7 @@ import {
   generateAgentIdentity,
   loadIdentity,
   saveIdentity,
-} from "@cfd/atrium-auth";
+} from "@khoralabs/atrium-auth";
 import { boolFlag, strFlag } from "./parse.ts";
 import type { FlagMap } from "./types.ts";
 

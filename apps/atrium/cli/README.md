@@ -1,6 +1,6 @@
-# `@cfd/atrium-cli`
+# `@khoralabs/atrium-cli`
 
-The `atrium` binary. A thin shell over `@cfd/atrium-client` that:
+The `atrium` binary. A thin shell over `@khoralabs/atrium-client` that:
 
 - **Owns the local identity** at `${ATRIUM_AGENT_KEY_PATH:-~/.atrium/identity.json}` and provides `atrium key generate / show / path` to manage it.
 - **Runs every command in two modes** — flag-driven (scriptable) or an **interactive OBP wizard** (single-party offer/port graph). If you omit required flags, the wizard takes over for that command.
@@ -16,7 +16,7 @@ This is the human (and shell-script) entry point. It does not implement protocol
 ```
 cli.ts ──┬─▶ commands/handlers.ts ──▶ commands/<cmd>.ts ──┬─▶ flow (OBP wizard)
          │                                                └─▶ direct AtriumClient call
-         └─▶ @cfd/atrium-auth (load/save PersistableAgentSigner) ──▶ AtriumCliContext
+         └─▶ @khoralabs/atrium-auth (load/save PersistableAgentSigner) ──▶ AtriumCliContext
 ```
 
 Each command module decides between the wizard path and the flag-only path. The root `cli.ts` is just a router; adding a new command is a new file under `commands/` plus a row in `handlers.ts`.
@@ -59,7 +59,7 @@ first.
 
 ```jsonc
 {
-  "$schema": "./node_modules/@cfd/atrium-client/atrium-config.schema.json",
+  "$schema": "./node_modules/@khoralabs/atrium-client/atrium-config.schema.json",
   "extends": "./shared.atrium.json",
   "baseUrl": "http://127.0.0.1:8787",
   "dataDir": ".atrium",
@@ -70,7 +70,7 @@ first.
 }
 ```
 
-The schema is exported at `@cfd/atrium-client/atrium-config.schema.json` for IDE IntelliSense.
+The schema is exported at `@khoralabs/atrium-client/atrium-config.schema.json` for IDE IntelliSense.
 
 ## Daemon control
 

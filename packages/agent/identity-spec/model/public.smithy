@@ -5,7 +5,7 @@ namespace cfd.agent_identity
 @documentation("""
 Pure data operations: diffs and human-readable comparison for dashboards.
 
-Does not execute composable evaluation or hashing; those live in `@cfd/agent-identity` at runtime.
+Does not execute composable evaluation or hashing; those live in `@khoralabs/agent-identity` at runtime.
 """)
 service AgentIdentityPublic {
     version: "2026-04-12"

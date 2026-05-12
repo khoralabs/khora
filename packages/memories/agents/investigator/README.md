@@ -1,6 +1,6 @@
-# @cfd/memories-investigator
+# @khoralabs/memories-investigator
 
-Memory **investigator** agent: hybrid `memory_search` over one or many namespaces, then a structured **answer** (with optional citations). Same identity and tool-loop patterns as [`@cfd/memories-integrator`](../integrator).
+Memory **investigator** agent: hybrid `memory_search` over one or many namespaces, then a structured **answer** (with optional citations). Same identity and tool-loop patterns as [`@khoralabs/memories-integrator`](../integrator).
 
 ## Namespaces
 
@@ -9,7 +9,7 @@ Memory **investigator** agent: hybrid `memory_search` over one or many namespace
 
 ## Domain tools
 
-Pass **`extraToolMembers`** in `DefineMemoryInvestigatorIdentityOptions` when calling `defineMemoryInvestigatorIdentity` / `MemoryInvestigatorClient` options. They are composed with `memory_search` via `toolkit([memorySearchToolkit, ...], { name: "memory-investigator-toolkit" })` from `@cfd/agent-identity`.
+Pass **`extraToolMembers`** in `DefineMemoryInvestigatorIdentityOptions` when calling `defineMemoryInvestigatorIdentity` / `MemoryInvestigatorClient` options. They are composed with `memory_search` via `toolkit([memorySearchToolkit, ...], { name: "memory-investigator-toolkit" })` from `@khoralabs/agent-identity`.
 
 Extra tools share the same session env as `memory_search`. Use **`memorySearchExtensions`** on the session context (and `MemorySearchEnv.memorySearchExtensions`) for host-owned state your domain tools read.
 
@@ -20,8 +20,8 @@ Extra tools share the same session env as `memory_search`. Use **`memorySearchEx
 ## Example
 
 ```ts
-import { createAgentRegistry } from "@cfd/agent-identity";
-import { MemoryInvestigatorClient } from "@cfd/memories-investigator";
+import { createAgentRegistry } from "@khoralabs/agent-identity";
+import { MemoryInvestigatorClient } from "@khoralabs/memories-investigator";
 
 const registry = createAgentRegistry();
 const inv = new MemoryInvestigatorClient({

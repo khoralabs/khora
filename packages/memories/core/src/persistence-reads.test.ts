@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-sqlite";
+import { createMemoriesPersistence, openMemoriesDatabase } from "@khoralabs/memories-sqlite";
 import { mergeMemory } from "./api/merge-memory";
 
 function vec512(): number[] {

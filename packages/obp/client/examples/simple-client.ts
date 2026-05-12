@@ -8,9 +8,9 @@ import {
   generateEd25519KeyPair,
   type SessionInit,
   sha256HexUtf8,
-} from "@cfd/obp-core";
-import { FakeObpPersistence } from "@cfd/obp-core/testing";
-import { serveObp } from "@cfd/obp-server";
+} from "@khoralabs/obp-core";
+import { FakeObpPersistence } from "@khoralabs/obp-core/testing";
+import { serveObp } from "@khoralabs/obp-server";
 import { connectObpSession } from "../src/connect.ts";
 
 const EXAMPLE_AUTH = "Bearer obp-example-session";

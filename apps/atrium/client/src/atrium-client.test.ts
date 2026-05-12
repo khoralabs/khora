@@ -3,7 +3,7 @@ import {
   type AgentSigner,
   generateAgentIdentity,
   type PersistableAgentSigner,
-} from "@cfd/atrium-auth";
+} from "@khoralabs/atrium-auth";
 import { AtriumClient } from "./atrium-client.ts";
 import { AtriumClientError } from "./atrium-client-error.ts";
 import type { AtriumClientEvent } from "./atrium-events.ts";

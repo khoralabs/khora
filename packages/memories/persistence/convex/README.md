@@ -1,6 +1,6 @@
-# @cfd/memories-convex
+# @khoralabs/memories-convex
 
-Convex **component** and TypeScript client for the Smithy-aligned memories persistence surface (**lexical search first**). It implements `MemoriesPersistenceAsync` via Convex queries/mutations under `src/component/`, and re-exports the async-first **memories client API** from `@cfd/memories-core` under primary names (`MemoriesClient`, `mergeMemory`, `search`, `deleteMemory`) so call sites stay readable without an `Async` suffix. **Sync** `MemoriesClient` / `mergeMemory` / `search` from core are not re-exported.
+Convex **component** and TypeScript client for the Smithy-aligned memories persistence surface (**lexical search first**). It implements `MemoriesPersistenceAsync` via Convex queries/mutations under `src/component/`, and re-exports the async-first **memories client API** from `@khoralabs/memories-core` under primary names (`MemoriesClient`, `mergeMemory`, `search`, `deleteMemory`) so call sites stay readable without an `Async` suffix. **Sync** `MemoriesClient` / `mergeMemory` / `search` from core are not re-exported.
 
 ## Capabilities
 
@@ -27,7 +27,7 @@ Hierarchical namespaces use **cumulative prefix** columns (`nsPrefix_k` = first 
 In a monorepo workspace:
 
 ```bash
-bun add @cfd/memories-convex
+bun add @khoralabs/memories-convex
 ```
 
 Add this package as a Convex component per [Convex Components](https://docs.convex.dev/components). The component root is `src/component/` (`convex.config.ts`, `schema.ts`, queries/mutations, and `src/component/_generated/`).
@@ -43,7 +43,7 @@ This runs `convex codegen --component-dir ./src/component`. It needs a Convex de
 Hosts import the component config as:
 
 ```ts
-import memories from "@cfd/memories-convex/convex.config.js";
+import memories from "@khoralabs/memories-convex/convex.config.js";
 ```
 
 ## Usage
@@ -58,7 +58,7 @@ import {
   createConvexMemoriesPersistence,
   mergeMemory,
   type MemoriesClient,
-} from "@cfd/memories-convex";
+} from "@khoralabs/memories-convex";
 
 const convex = new ConvexHttpClient(process.env.CONVEX_URL!);
 const persistence = createConvexMemoriesPersistence({
@@ -70,11 +70,11 @@ const persistence = createConvexMemoriesPersistence({
 await mergeMemory({ persistence }, { /* MergeMemoryParams */ });
 ```
 
-`createConvexMemoriesPersistence` uses **`api`** from `src/component/_generated/api` (`api.mutations.*`, `api.queries.*`, `api.actions.*`). Re-exported as `export { api } from "@cfd/memories-convex"` for in-process typing; host apps use `components.<name>` from their own `_generated/api`.
+`createConvexMemoriesPersistence` uses **`api`** from `src/component/_generated/api` (`api.mutations.*`, `api.queries.*`, `api.actions.*`). Re-exported as `export { api } from "@khoralabs/memories-convex"` for in-process typing; host apps use `components.<name>` from their own `_generated/api`.
 
-**Host Convex functions:** import **`createMemoriesPersistence`** from `@cfd/memories-convex` and call it with `(ctx, components.<name>)`. It adapts `ctx` for query vs mutation vs action and returns `{ persistence, bridge }` (reuse `bridge` for `createConvexLexicalTextStore`, etc.). For custom bridges, use `createConvexMemoriesPersistenceFromHostBridge` or the **`hostComponentBridgeFrom*Ctx`** helpers directly.
+**Host Convex functions:** import **`createMemoriesPersistence`** from `@khoralabs/memories-convex` and call it with `(ctx, components.<name>)`. It adapts `ctx` for query vs mutation vs action and returns `{ persistence, bridge }` (reuse `bridge` for `createConvexLexicalTextStore`, etc.). For custom bridges, use `createConvexMemoriesPersistenceFromHostBridge` or the **`hostComponentBridgeFrom*Ctx`** helpers directly.
 
-**React:** import `MemoriesPersistenceProvider`, `useMemoriesPersistence`, and `memoriesConvexHostRefsFromApi` from `@cfd/memories-convex/react`. Create one `ConvexReactClient`, pass it to **both** `ConvexProvider` and `MemoriesPersistenceProvider` with `componentApi={memoriesConvexHostRefsFromApi(api)}` (host `api.memoriesHost*` forwards — raw `components.memories` refs fail `ConvexReactClient` query/mutation/action validation in the browser). The provider does not use `useConvex()` so bundlers (including Bun’s HTML dev server) do not pull a second `react` copy through `convex/react` and break hooks.
+**React:** import `MemoriesPersistenceProvider`, `useMemoriesPersistence`, and `memoriesConvexHostRefsFromApi` from `@khoralabs/memories-convex/react`. Create one `ConvexReactClient`, pass it to **both** `ConvexProvider` and `MemoriesPersistenceProvider` with `componentApi={memoriesConvexHostRefsFromApi(api)}` (host `api.memoriesHost*` forwards — raw `components.memories` refs fail `ConvexReactClient` query/mutation/action validation in the browser). The provider does not use `useConvex()` so bundlers (including Bun’s HTML dev server) do not pull a second `react` copy through `convex/react` and break hooks.
 
 **Bun example app** (`bun run dev:example` from this package): [`example/src/App.tsx`](example/src/App.tsx) drives **merge** (`mergeMemory` overload A + optional atomic B), **search** (lexical, hybrid with a deterministic 768-dim fake embedding, neighbors, extra namespace, unscoped DB toggle), **graph reads**, and **capability / indexed-dimension** readouts. `convex/memories.ts` only re-exports host bridge helpers; the UI calls component queries and client APIs directly. **Unscoped search** in the demo is opt-in and intended for small toy deployments only.
 

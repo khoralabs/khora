@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/obp-react",
+  "name": "@khoralabs/obp-react",
   "version": "0.0.0",
   "module": "src/index.ts",
   "type": "module",
@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@cfd/obp-core": "workspace:*"
+    "@khoralabs/obp-core": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",

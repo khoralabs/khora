@@ -2,8 +2,8 @@ import type {
   RegisteredAgentAffordances,
   RegisteredAgentIdentity,
   ToolRuntimeContext,
-} from "@cfd/agent-identity";
-import { toolMapToAiTools } from "@cfd/agent-identity-adapters";
+} from "@khoralabs/agent-identity";
+import { toolMapToAiTools } from "@khoralabs/agent-identity-adapters";
 import { type LanguageModel, stepCountIs, type Tool, ToolLoopAgent, type ToolSet } from "ai";
 
 type ToolLoopOutputSpec = NonNullable<ConstructorParameters<typeof ToolLoopAgent>[0]["output"]>;

@@ -7,11 +7,11 @@
  */
 
 import type { IncomingHttpHeaders } from "node:http2";
-import { verifyInvite } from "@cfd/obp-auth";
-import type { Party } from "@cfd/obp-core";
-import { createEd25519FrameVerifier } from "@cfd/obp-core";
-import { FakeObpPersistence } from "@cfd/obp-core/testing";
-import { serveObp } from "@cfd/obp-server";
+import { verifyInvite } from "@khoralabs/obp-auth";
+import type { Party } from "@khoralabs/obp-core";
+import { createEd25519FrameVerifier } from "@khoralabs/obp-core";
+import { FakeObpPersistence } from "@khoralabs/obp-core/testing";
+import { serveObp } from "@khoralabs/obp-server";
 import { loadServerBootstrapFile, responderSignerFromBootstrap } from "./load-bootstrap.ts";
 
 const host = process.env.OBP_HOST ?? "127.0.0.1";

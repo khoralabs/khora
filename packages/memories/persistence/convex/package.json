@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/memories-convex",
+  "name": "@khoralabs/memories-convex",
   "module": "src/index.ts",
   "type": "module",
   "private": true,
@@ -42,7 +42,7 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "@cfd/memories-core": "workspace:*",
+    "@khoralabs/memories-core": "workspace:*",
     "convex": "^1.35.1"
   },
   "scripts": {

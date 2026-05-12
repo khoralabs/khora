@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ATRIUM_BUILTIN_PLUGIN_ID } from "@cfd/atrium-client";
+import { ATRIUM_BUILTIN_PLUGIN_ID } from "@khoralabs/atrium-client";
 import { createDaemonAppConfig, parseDaemonArgv } from "./app-config.ts";
 
 describe("parseDaemonArgv", () => {

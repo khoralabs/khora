@@ -1,4 +1,4 @@
-import { ObpError } from "@cfd/obp-core";
+import { ObpError } from "@khoralabs/obp-core";
 import { parsePriceFromType } from "./encoding.ts";
 import type { ObpToolkitEnv } from "./obp-toolkit-env.ts";
 

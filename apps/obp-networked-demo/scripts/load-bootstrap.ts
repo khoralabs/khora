@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import type { ObpClientBootstrap, ObpServerBootstrap } from "@cfd/obp-auth";
+import type { ObpClientBootstrap, ObpServerBootstrap } from "@khoralabs/obp-auth";
 
 export async function loadServerBootstrapFile(path?: string): Promise<ObpServerBootstrap> {
   const p = resolve(
@@ -18,5 +18,5 @@ export async function loadClientBootstrapFile(path?: string): Promise<ObpClientB
   return JSON.parse(await readFile(p, "utf-8")) as ObpClientBootstrap;
 }
 
-export type { ObpClientBootstrap, ObpServerBootstrap } from "@cfd/obp-auth";
-export { initiatorSignerFromBootstrap, responderSignerFromBootstrap } from "@cfd/obp-auth";
+export type { ObpClientBootstrap, ObpServerBootstrap } from "@khoralabs/obp-auth";
+export { initiatorSignerFromBootstrap, responderSignerFromBootstrap } from "@khoralabs/obp-auth";

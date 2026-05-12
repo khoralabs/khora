@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/atrium-contracts",
+  "name": "@khoralabs/atrium-contracts",
   "version": "0.0.0",
   "type": "module",
   "private": true,
@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@cfd/swarm-host": "workspace:*",
+    "@khoralabs/swarm-host": "workspace:*",
     "zod": "^4"
   },
   "devDependencies": {

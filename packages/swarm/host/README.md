@@ -1,4 +1,4 @@
-# @cfd/swarm-host
+# @khoralabs/swarm-host
 
 To install dependencies:
 

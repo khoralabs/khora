@@ -2,14 +2,14 @@ import type {
   RegisteredAgentAffordances,
   RegisteredAgentIdentity,
   ToolRuntimeContext,
-} from "@cfd/agent-identity";
-import type { LabelSchemaMap, OntologyDefinition } from "@cfd/memories-core";
+} from "@khoralabs/agent-identity";
+import type { LabelSchemaMap, OntologyDefinition } from "@khoralabs/memories-core";
 import {
   createMemorySearchToolLoopAgent,
   DEFAULT_MEMORY_TOOL_LOOP_MAX_STEPS,
   type MemorySearchEnv,
   type MemorySearchToolSet,
-} from "@cfd/memories-tools";
+} from "@khoralabs/memories-tools";
 import type { LanguageModel, ToolLoopAgent } from "ai";
 import {
   type MemoryAdapterStructuredOutput,

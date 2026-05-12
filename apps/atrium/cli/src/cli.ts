@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { AtriumClientError } from "@cfd/atrium-client";
+import { AtriumClientError } from "@khoralabs/atrium-client";
 import {
   type AtriumCliCommandHandlers,
   defaultAtriumCliCommandHandlers,

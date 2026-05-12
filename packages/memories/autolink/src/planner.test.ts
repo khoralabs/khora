@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { defineOntology, type Memory, type SearchHit } from "@cfd/memories-core";
+import { defineOntology, type Memory, type SearchHit } from "@khoralabs/memories-core";
 import z from "zod";
 import {
   computeLexicalLinkMergeSlice,

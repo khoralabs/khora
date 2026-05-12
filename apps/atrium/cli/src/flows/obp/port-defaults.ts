@@ -1,4 +1,4 @@
-import type { Offer, Port } from "@cfd/obp-core";
+import type { Offer, Port } from "@khoralabs/obp-core";
 
 const FAR_FUTURE_SEQ = 9_007_199_254_740_991;
 

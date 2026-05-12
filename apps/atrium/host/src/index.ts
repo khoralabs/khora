@@ -1,6 +1,6 @@
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import { AuthError, createAtriumDidAuth } from "@cfd/atrium-auth";
+import { AuthError, createAtriumDidAuth } from "@khoralabs/atrium-auth";
 import {
   type AtriumProfile,
   mergeAtriumPostPatch,
@@ -15,13 +15,13 @@ import {
   zAtriumProfile,
   zAtriumProfilePatch,
   zAtriumRegistrationRequestBody,
-} from "@cfd/atrium-contracts";
-import { stableId } from "@cfd/memories-core";
+} from "@khoralabs/atrium-contracts";
+import { stableId } from "@khoralabs/memories-core";
 import {
   type DidRegistrationRequest,
   SWARM_AGGREGATE_DOMAIN,
   SWARM_EVENT_KIND,
-} from "@cfd/swarm-host";
+} from "@khoralabs/swarm-host";
 import z from "zod";
 import { deleteOtherStatusPostsForAuthor } from "./atrium-status-posts.ts";
 import { createAtriumHostContext } from "./create-atrium-host.ts";

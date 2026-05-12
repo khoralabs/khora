@@ -1,7 +1,11 @@
 import { mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
-import type { AtriumClient, AtriumClientEvent, AtriumPluginInstaller } from "@cfd/atrium-client";
-import type { AtriumPost, AtriumProfile } from "@cfd/atrium-contracts";
+import type {
+  AtriumClient,
+  AtriumClientEvent,
+  AtriumPluginInstaller,
+} from "@khoralabs/atrium-client";
+import type { AtriumPost, AtriumProfile } from "@khoralabs/atrium-contracts";
 
 export type ProfileSyncClient = Pick<AtriumClient, "subscribe" | "fetchAgentSync" | "did">;
 

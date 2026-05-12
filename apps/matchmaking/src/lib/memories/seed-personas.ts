@@ -1,4 +1,4 @@
-import type { EmbeddingModel } from "@cfd/memories-core/helpers";
+import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import type { LanguageModel } from "ai";
 import { matchmakingPersonas } from "../personas/index.ts";
 import { MATCHMAKING_SIM_PERSONA_SLUGS } from "../personas/slugs.ts";

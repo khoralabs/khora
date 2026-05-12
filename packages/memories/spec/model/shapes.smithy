@@ -12,7 +12,7 @@ list MemoryNamespaceList {
     member: MemoryNamespace
 }
 
-// --- Row / hit shapes (storage-agnostic, aligned with @cfd/memories-core db/rows + search) ---
+// --- Row / hit shapes (storage-agnostic, aligned with @khoralabs/memories-core db/rows + search) ---
 
 structure MemoryRow {
     _id: String

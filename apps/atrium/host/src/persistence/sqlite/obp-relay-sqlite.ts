@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { ObpRelayFrameRow, ObpRelayPersistence, ObpRelayRoomRecord } from "@cfd/swarm-host";
+import type { ObpRelayFrameRow, ObpRelayPersistence, ObpRelayRoomRecord } from "@khoralabs/swarm-host";
 
 export function createObpRelaySqlitePersistence(db: Database): ObpRelayPersistence {
   const upsertRoomStmt = db.prepare(

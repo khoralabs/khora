@@ -1,4 +1,4 @@
-import { generateRoomSecretHex, signRoomTicket, verifyRoomTicket } from "@cfd/frame-channel";
+import { generateRoomSecretHex, signRoomTicket, verifyRoomTicket } from "@khoralabs/frame-channel";
 import type { ObpRelayPersistence } from "../persistence/types.ts";
 import type { ObpRoomHubPort, ObpRoomPeer } from "./port.ts";
 

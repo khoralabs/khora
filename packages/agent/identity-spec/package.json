@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/agent-identity-spec",
+  "name": "@khoralabs/agent-identity-spec",
   "private": true,
   "scripts": {
     "validate": "smithy validate model && smithy build"

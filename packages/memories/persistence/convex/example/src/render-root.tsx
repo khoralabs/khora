@@ -1,7 +1,7 @@
 import {
   MemoriesPersistenceProvider,
   memoriesConvexHostRefsFromApi,
-} from "@cfd/memories-convex/react";
+} from "@khoralabs/memories-convex/react";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { type ReactNode, StrictMode } from "react";
 import { createRoot } from "react-dom/client";

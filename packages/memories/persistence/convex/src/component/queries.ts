@@ -1,11 +1,11 @@
-import type { HydratedSourceMapHit, SearchNamespaceScope } from "@cfd/memories-core";
+import type { HydratedSourceMapHit, SearchNamespaceScope } from "@khoralabs/memories-core";
 import {
   canonicalizeNamespacePrefixes,
   ids,
   namespacePath,
   namespacePrefixFieldForDepthCamel,
   namespaceSegments,
-} from "@cfd/memories-core";
+} from "@khoralabs/memories-core";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel.js";
 import { internalQuery, type QueryCtx, query } from "./_generated/server.js";
@@ -185,7 +185,7 @@ export const listMemoriesInNamespace = query({
   },
 });
 
-/** Resolve stored lexical text for a source map (cf. {@link Store} / `JsonlStore` in `@cfd/memories-stores`). */
+/** Resolve stored lexical text for a source map (cf. {@link Store} / `JsonlStore` in `@khoralabs/memories-stores`). */
 export const getLexicalTextForMemorySource = query({
   args: {
     memoryId: v.string(),

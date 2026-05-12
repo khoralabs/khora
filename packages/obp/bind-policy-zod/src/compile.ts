@@ -4,7 +4,7 @@ import {
   counterpartyBindSchemaForProperties,
   type PortBindPolicy,
   portBindPolicySchema,
-} from "@cfd/obp-core";
+} from "@khoralabs/obp-core";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import z from "zod";
 
@@ -117,7 +117,7 @@ function bridgeStandardSchemaIssues(
 /**
  * Zod schema for the wire/JSON shape of {@link PortBindPolicy}.
  * Structural Zod composition for JSON Schema fidelity; final pass/fail delegates to
- * {@link portBindPolicySchema} so rules cannot drift from `@cfd/obp-core`.
+ * {@link portBindPolicySchema} so rules cannot drift from `@khoralabs/obp-core`.
  */
 export const zPortBindPolicy: z.ZodType<PortBindPolicy> = z
   .object({

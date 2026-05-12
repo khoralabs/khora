@@ -1,5 +1,5 @@
 import { unlinkSync } from "node:fs";
-import { type DaemonPidPathConfig, readDaemonStatus } from "@cfd/atrium-daemon";
+import { type DaemonPidPathConfig, readDaemonStatus } from "@khoralabs/atrium-daemon";
 import { cliAppConfig } from "../app-config.ts";
 import { boolFlag, strFlag } from "./parse.ts";
 import type { FlagMap } from "./types.ts";

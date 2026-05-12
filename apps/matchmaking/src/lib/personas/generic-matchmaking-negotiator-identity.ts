@@ -1,5 +1,5 @@
-import type { RegisteredAgentIdentity } from "@cfd/agent-identity";
-import { defineObpNegotiatorIdentity } from "@cfd/obp-negotiator";
+import type { RegisteredAgentIdentity } from "@khoralabs/agent-identity";
+import { defineObpNegotiatorIdentity } from "@khoralabs/obp-negotiator";
 import { obpMatchmakingMemoryToolkit } from "../memories/composed-toolkit.ts";
 import { matchmakingPersonaMemoryNamespace } from "../memories/matchmaking-persona-memory-namespace.ts";
 import { resolveMatchmakingSubjectId } from "../resolve-subject-id.ts";

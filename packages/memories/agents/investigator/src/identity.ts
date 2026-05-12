@@ -4,8 +4,8 @@ import {
   createRegisteredAgentIdentity,
   type RegisteredAgentIdentity,
   toolkit,
-} from "@cfd/agent-identity";
-import { memorySearchToolkit } from "@cfd/memories-tools";
+} from "@khoralabs/agent-identity";
+import { memorySearchToolkit } from "@khoralabs/memories-tools";
 import { memoryInvestigatorBaseInstruction } from "./instructions.js";
 
 export const MEMORY_INVESTIGATOR_AGENT_ID = "memory-investigator";

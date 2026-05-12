@@ -2,7 +2,7 @@ import { Database, type DatabaseOptions } from "bun:sqlite";
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { memoriesPersistenceDocumentSchema } from "@cfd/memories-core/persistence";
+import { memoriesPersistenceDocumentSchema } from "@khoralabs/memories-core/persistence";
 import * as sqliteVec from "sqlite-vec";
 import { sqliteDdlFromSchema } from "./_lib";
 import { initTextFeaturesFts } from "./search-indexes";

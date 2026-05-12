@@ -2,13 +2,13 @@ import type {
   RegisteredAgentAffordances,
   RegisteredAgentIdentity,
   ToolRuntimeContext,
-} from "@cfd/agent-identity";
+} from "@khoralabs/agent-identity";
 import {
   createMemorySearchToolLoopAgent,
   DEFAULT_INVESTIGATOR_MAX_STEPS,
   type MemorySearchEnv,
   type MemorySearchToolSet,
-} from "@cfd/memories-tools";
+} from "@khoralabs/memories-tools";
 import type { LanguageModel, ToolLoopAgent } from "ai";
 import {
   type InvestigatorStructuredOutput,

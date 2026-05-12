@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/atrium-cli",
+  "name": "@khoralabs/atrium-cli",
   "version": "0.0.0",
   "type": "module",
   "private": true,
@@ -19,14 +19,14 @@
     "start": "bun run src/cli.ts"
   },
   "dependencies": {
-    "@cfd/atrium-auth": "workspace:*",
-    "@cfd/atrium-client": "workspace:*",
-    "@cfd/atrium-contracts": "workspace:*",
-    "@cfd/atrium-daemon": "workspace:*",
-    "@cfd/atrium-plugin-profile-sync": "workspace:*",
-    "@cfd/atrium-plugin-telemetry": "workspace:*",
-    "@cfd/obp-bind-policy-zod": "workspace:*",
-    "@cfd/obp-core": "workspace:*",
+    "@khoralabs/atrium-auth": "workspace:*",
+    "@khoralabs/atrium-client": "workspace:*",
+    "@khoralabs/atrium-contracts": "workspace:*",
+    "@khoralabs/atrium-daemon": "workspace:*",
+    "@khoralabs/atrium-plugin-profile-sync": "workspace:*",
+    "@khoralabs/atrium-plugin-telemetry": "workspace:*",
+    "@khoralabs/obp-bind-policy-zod": "workspace:*",
+    "@khoralabs/obp-core": "workspace:*",
     "zod": "^4"
   },
   "devDependencies": {

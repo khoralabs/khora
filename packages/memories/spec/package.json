@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/memories-spec",
+  "name": "@khoralabs/memories-spec",
   "private": true,
   "scripts": {
     "validate": "smithy validate model && smithy build"

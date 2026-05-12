@@ -1,4 +1,4 @@
-/** Wire shape for ontology label instances (matches `@cfd/memories-core` JSON). */
+/** Wire shape for ontology label instances (matches `@khoralabs/memories-core` JSON). */
 export type GraphLabelInstance = {
   kind: string;
   props: Record<string, unknown>;

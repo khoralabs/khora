@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { EdgePreviewPayload } from "@cfd/memories-core";
+import type { EdgePreviewPayload } from "@khoralabs/memories-core";
 import { loadGraphEdge } from "./projection";
 
 /**

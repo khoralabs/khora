@@ -1,11 +1,11 @@
 import type { Database } from "bun:sqlite";
-import { ids } from "@cfd/memories-core";
-import { memoriesPersistenceDocumentSchema } from "@cfd/memories-core/persistence";
+import { ids } from "@khoralabs/memories-core";
+import { memoriesPersistenceDocumentSchema } from "@khoralabs/memories-core/persistence";
 import {
   canonicalJson,
   type MemoryProvenanceEvent,
   nextProvenanceRoot,
-} from "@cfd/memories-core/provenance";
+} from "@khoralabs/memories-core/provenance";
 import { documentValidator } from "../_lib";
 import type { DbCtx } from "./context";
 

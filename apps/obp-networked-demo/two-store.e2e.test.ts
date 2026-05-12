@@ -2,15 +2,15 @@
  * Two separate FakeObpPersistence stores (like the networked demo): session must still complete.
  */
 import { expect, test } from "bun:test";
-import { connectObpSession } from "@cfd/obp-client";
+import { connectObpSession } from "@khoralabs/obp-client";
 import {
   createEd25519FrameSigner,
   createEd25519FrameVerifier,
   generateEd25519KeyPair,
   sha256HexUtf8,
-} from "@cfd/obp-core";
-import { FakeObpPersistence } from "@cfd/obp-core/testing";
-import { serveObp } from "@cfd/obp-server";
+} from "@khoralabs/obp-core";
+import { FakeObpPersistence } from "@khoralabs/obp-core/testing";
+import { serveObp } from "@khoralabs/obp-server";
 
 test("two-store HTTP/2 frame session (no shared persistence)", async () => {
   let s1 = 0;

@@ -1,5 +1,5 @@
-import type { TurnBody } from "@cfd/obp-core";
-import type { ObpToolkitEnv } from "@cfd/obp-tools";
+import type { TurnBody } from "@khoralabs/obp-core";
+import type { ObpToolkitEnv } from "@khoralabs/obp-tools";
 import { noopPortIdForHeadOffer } from "../constants.ts";
 import type { ObpLedger } from "../ledger.ts";
 import { buildObpNegotiationUserMessage, type GraphSnapshotForPrompt } from "../prompt.ts";

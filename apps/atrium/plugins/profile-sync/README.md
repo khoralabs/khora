@@ -1,4 +1,4 @@
-# `@cfd/atrium-plugin-profile-sync`
+# `@khoralabs/atrium-plugin-profile-sync`
 
 Keeps a **local JSON snapshot** of the agent's host-side state (`profile`, `topicSlugs`, `probes`) in sync with the host.
 

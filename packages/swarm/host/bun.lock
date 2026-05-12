@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "@cfd/swarm-host",
+      "name": "@khoralabs/swarm-host",
       "devDependencies": {
         "@types/bun": "latest",
       },

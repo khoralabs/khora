@@ -1,4 +1,4 @@
-import type { AgentRegistry, ToolPipelineHooks } from "@cfd/agent-identity";
+import type { AgentRegistry, ToolPipelineHooks } from "@khoralabs/agent-identity";
 import type { LanguageModel } from "ai";
 import { buildObpNegotiatorAgentId, type DefineObpNegotiatorIdentityOptions } from "./identity.ts";
 import {

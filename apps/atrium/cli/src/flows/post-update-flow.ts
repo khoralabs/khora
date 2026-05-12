@@ -1,5 +1,5 @@
-import { normalizeTopicSlug, zAtriumPostKind, zAtriumPostPatch } from "@cfd/atrium-contracts";
-import { OBPPersistenceClient } from "@cfd/obp-core";
+import { normalizeTopicSlug, zAtriumPostKind, zAtriumPostPatch } from "@khoralabs/atrium-contracts";
+import { OBPPersistenceClient } from "@khoralabs/obp-core";
 import type { AtriumCliContext } from "./context.ts";
 import { POST_UPDATE_ROOT, postUpdateLinearTransitions } from "./graphs/post-update-linear.ts";
 import { createMonotonicLedgerSeq } from "./obp/ledger-seq.ts";

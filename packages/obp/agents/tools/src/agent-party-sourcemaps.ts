@@ -1,5 +1,5 @@
-import type { RegisteredAgentIdentity } from "@cfd/agent-identity";
-import type { SourceMapRef } from "@cfd/obp-core";
+import type { RegisteredAgentIdentity } from "@khoralabs/agent-identity";
+import type { SourceMapRef } from "@khoralabs/obp-core";
 
 /** Default {@link SourceMapRef} list when registering an agent as an OBP party. */
 export function agentSourcemaps(agent: RegisteredAgentIdentity): SourceMapRef[] {

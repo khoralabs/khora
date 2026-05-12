@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/atrium-plugin-telemetry",
+  "name": "@khoralabs/atrium-plugin-telemetry",
   "version": "0.0.0",
   "type": "module",
   "private": true,
@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@cfd/atrium-client": "workspace:*"
+    "@khoralabs/atrium-client": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",

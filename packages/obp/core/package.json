@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/obp-core",
+  "name": "@khoralabs/obp-core",
   "version": "0.0.0",
   "type": "module",
   "private": true,
@@ -20,11 +20,11 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@cfd/obp-sqlite": "workspace:*",
+    "@khoralabs/obp-sqlite": "workspace:*",
     "@types/bun": "latest"
   },
   "dependencies": {
-    "@cfd/frame-channel": "workspace:*",
+    "@khoralabs/frame-channel": "workspace:*",
     "@standard-schema/spec": "^1.1.0"
   },
   "peerDependencies": {

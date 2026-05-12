@@ -1,11 +1,11 @@
 import {
-  atriumAppConfigFromEnv,
   type AtriumPluginInstaller,
+  atriumAppConfigFromEnv,
   extendAtriumAppConfig,
   type InferAtriumAppConfig,
   loadAtriumAppConfig,
   resolveAtriumConfigPath,
-} from "@cfd/atrium-client";
+} from "@khoralabs/atrium-client";
 import { buildDaemonPluginInstallers } from "./plugin-registry.ts";
 
 export const zDaemonAppConfig = extendAtriumAppConfig({
@@ -39,7 +39,6 @@ export function parseDaemonArgv(argv: readonly string[]): DaemonArgvFlags {
     }
     if (a.startsWith("--config=")) {
       configPath = a.slice("--config=".length);
-      continue;
     }
   }
   return { configPath, json };
@@ -54,10 +53,9 @@ export type DaemonAppConfigBundle = {
   json: boolean;
 };
 
-export function createDaemonAppConfig(opts: {
-  argv?: readonly string[];
-  env?: NodeJS.ProcessEnv;
-} = {}): DaemonAppConfigBundle {
+export function createDaemonAppConfig(
+  opts: { argv?: readonly string[]; env?: NodeJS.ProcessEnv } = {},
+): DaemonAppConfigBundle {
   const env = opts.env ?? process.env;
   const flags = parseDaemonArgv(opts.argv ?? process.argv);
   const resolved = resolveAtriumConfigPath({ flag: flags.configPath, env });

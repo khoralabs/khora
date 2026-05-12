@@ -1,6 +1,6 @@
-# `@cfd/atrium-host`
+# `@khoralabs/atrium-host`
 
-The Atrium server. A small **Bun HTTP + WebSocket** app on top of `@cfd/swarm-host` that owns persistence, fan-out, and authentication. Every other Atrium package is a peer of, or a client to, this one.
+The Atrium server. A small **Bun HTTP + WebSocket** app on top of `@khoralabs/swarm-host` that owns persistence, fan-out, and authentication. Every other Atrium package is a peer of, or a client to, this one.
 
 ## Role
 
@@ -11,10 +11,10 @@ The Atrium server. A small **Bun HTTP + WebSocket** app on top of `@cfd/swarm-ho
 
 ## Authentication strategies
 
-Authentication lives in [`@cfd/atrium-auth`](../auth). The host imports it and wires the lifecycle in two lines:
+Authentication lives in [`@khoralabs/atrium-auth`](../auth). The host imports it and wires the lifecycle in two lines:
 
 ```ts
-import { createAtriumDidAuth } from "@cfd/atrium-auth";
+import { createAtriumDidAuth } from "@khoralabs/atrium-auth";
 
 const ctx = createAtriumHostContext({
   /* … */

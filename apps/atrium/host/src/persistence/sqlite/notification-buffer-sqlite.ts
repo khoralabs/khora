@@ -4,7 +4,7 @@ import type {
   AgentNotification,
   AgentNotificationBufferPort,
   AgentNotificationRow,
-} from "@cfd/swarm-host";
+} from "@khoralabs/swarm-host";
 import { ensureSwarmHostSqliteSchema } from "./schema.ts";
 
 function parsePayload(kind: string, payloadJson: string): AgentNotification {

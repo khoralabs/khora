@@ -3,7 +3,7 @@ import {
   type AtriumRegistrationResult,
   zAtriumRegisterResult,
   zAtriumRegistrationRequestBody,
-} from "@cfd/atrium-contracts";
+} from "@khoralabs/atrium-contracts";
 import type { HttpTransport } from "./transport.ts";
 
 export type RegisterBody = Omit<AtriumRegistrationRequestBody, "did"> & { did?: string };

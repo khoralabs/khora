@@ -3,9 +3,9 @@ import type {
   NeighborFilter,
   NeighborNodesFilter,
   OntologyLabelInstance,
-} from "@cfd/memories-core";
-import { ids, namespacePath } from "@cfd/memories-core";
-import type { Edge, Memory } from "@cfd/memories-core/persistence";
+} from "@khoralabs/memories-core";
+import { ids, namespacePath } from "@khoralabs/memories-core";
+import type { Edge, Memory } from "@khoralabs/memories-core/persistence";
 import type { QueryCtx } from "../_generated/server.js";
 import { loadGraphEdge } from "./graphReads.js";
 import { parsePropsJson } from "./helpers.js";

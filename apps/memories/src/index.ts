@@ -1,17 +1,17 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { type AgentRegistry, createAgentRegistry } from "@cfd/agent-identity";
+import { type AgentRegistry, createAgentRegistry } from "@khoralabs/agent-identity";
 import {
   MemoriesClient,
   type SearchHit,
   searchAsync,
   wrapSyncMemoriesPersistenceAsAsync,
-} from "@cfd/memories-core";
+} from "@khoralabs/memories-core";
 import {
   createMemoriesEmbeddingModel,
   mergeResolutionAndProviderOptions,
-} from "@cfd/memories-core/helpers";
-import { canonicalOntology } from "@cfd/memories-core/ontologies";
-import { MemoryInvestigatorClient } from "@cfd/memories-investigator";
+} from "@khoralabs/memories-core/helpers";
+import { canonicalOntology } from "@khoralabs/memories-core/ontologies";
+import { MemoryInvestigatorClient } from "@khoralabs/memories-investigator";
 import {
   buildNamespaceGraphLayout,
   createMemoriesPersistence,
@@ -20,7 +20,7 @@ import {
   loadMemoryTextPreview,
   loadSourceMapTextPreview,
   openMemoriesDatabaseReadonly,
-} from "@cfd/memories-sqlite";
+} from "@khoralabs/memories-sqlite";
 import { embedMany } from "ai";
 import { serve } from "bun";
 import index from "./index.html";

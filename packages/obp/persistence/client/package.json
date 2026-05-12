@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/obp-persistence-client",
+  "name": "@khoralabs/obp-persistence-client",
   "module": "src/index.ts",
   "type": "module",
   "devDependencies": {

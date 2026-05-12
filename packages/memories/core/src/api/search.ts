@@ -1,4 +1,4 @@
-import { fuseRrf, type RrfArm } from "@cfd/reciprocal-rank-fusion";
+import { fuseRrf, type RrfArm } from "@khoralabs/reciprocal-rank-fusion";
 import {
   canonicalizeNamespacePrefixes,
   type NamespacePath,

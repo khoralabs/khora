@@ -3,13 +3,13 @@ import {
   ids,
   isNonEmptyProps,
   type LabelPropsSearchFormatter,
-} from "@cfd/memories-core";
+} from "@khoralabs/memories-core";
 import {
   MEMORY_EDGE_LABEL_PROPS_KEY_PREFIX,
   MEMORY_NODE_LABEL_PROPS_KEY_PREFIX,
   memoryEdgeLabelPropsSourceKey,
   memoryNodeLabelPropsSourceKey,
-} from "@cfd/memories-core/search-meta-constants";
+} from "@khoralabs/memories-core/search-meta-constants";
 import { blobToVector } from "../connection";
 import type { DbCtx } from "./context";
 import { insertSourceMap } from "./source-maps";

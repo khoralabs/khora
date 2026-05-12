@@ -1,4 +1,4 @@
-import { formatHashShort } from "@cfd/agent-identity";
+import { formatHashShort } from "@khoralabs/agent-identity";
 
 /**
  * Human label first; then a short `invocationHash` slice (unique per user/persona when

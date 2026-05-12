@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { deleteMemory, ids, type MemoryOpContext, mergeMemory } from "@cfd/memories-core";
+import { deleteMemory, ids, type MemoryOpContext, mergeMemory } from "@khoralabs/memories-core";
 import {
   canonicalJson,
   computeSourceMapContentHash,
   GENESIS_PARENT_HEX,
   nextProvenanceRoot,
-} from "@cfd/memories-core/provenance";
+} from "@khoralabs/memories-core/provenance";
 import { createMemoriesPersistence, openMemoriesDatabase } from "../index";
 
 describe("memory provenance + content_hash (SQLite)", () => {

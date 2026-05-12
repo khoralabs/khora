@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/memories-adapter",
+  "name": "@khoralabs/memories-adapter",
   "module": "src/index.ts",
   "type": "module",
   "private": true,
@@ -12,10 +12,10 @@
   },
   "dependencies": {
     "@ai-sdk/provider-utils": "^4.0.23",
-    "@cfd/agent-identity": "workspace:*",
-    "@cfd/agent-identity-adapters": "workspace:*",
-    "@cfd/memories-core": "workspace:*",
-    "@cfd/memories-tools": "workspace:*",
+    "@khoralabs/agent-identity": "workspace:*",
+    "@khoralabs/agent-identity-adapters": "workspace:*",
+    "@khoralabs/memories-core": "workspace:*",
+    "@khoralabs/memories-tools": "workspace:*",
     "ai": "^6",
     "zod": "^4"
   },

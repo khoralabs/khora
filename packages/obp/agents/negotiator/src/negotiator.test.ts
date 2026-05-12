@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createAgentRegistry } from "@cfd/agent-identity";
+import { createAgentRegistry } from "@khoralabs/agent-identity";
 import { defineObpNegotiatorIdentity } from "./identity.ts";
 import { obpNegotiatorBaseInstruction } from "./instructions.ts";
 import {
@@ -7,7 +7,7 @@ import {
   getObpNegotiatorAgentDefinition,
 } from "./negotiator-session.ts";
 
-describe("@cfd/obp-negotiator", () => {
+describe("@khoralabs/obp-negotiator", () => {
   test("obpNegotiatorBaseInstruction is non-empty", () => {
     expect(obpNegotiatorBaseInstruction.length).toBeGreaterThan(100);
     expect(obpNegotiatorBaseInstruction).toContain("OBP");

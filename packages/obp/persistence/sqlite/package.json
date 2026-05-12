@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/obp-sqlite",
+  "name": "@khoralabs/obp-sqlite",
   "version": "0.0.0",
   "type": "module",
   "private": true,
@@ -14,8 +14,8 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@cfd/memories-sqlite": "workspace:*",
-    "@cfd/obp-core": "workspace:*"
+    "@khoralabs/memories-sqlite": "workspace:*",
+    "@khoralabs/obp-core": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest"

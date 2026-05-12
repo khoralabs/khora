@@ -1,4 +1,4 @@
-import { OBPPersistenceClient } from "@cfd/obp-core";
+import { OBPPersistenceClient } from "@khoralabs/obp-core";
 import type { AtriumCliContext } from "./context.ts";
 import { INBOX_LIST_ROOT, inboxListLinearTransitions } from "./graphs/inbox-list-linear.ts";
 import { createMonotonicLedgerSeq } from "./obp/ledger-seq.ts";

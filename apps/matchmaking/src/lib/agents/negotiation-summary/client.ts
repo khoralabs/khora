@@ -1,5 +1,5 @@
-import { type AgentRegistry, createAgentRegistry } from "@cfd/agent-identity";
-import type { EmbeddingModel } from "@cfd/memories-core/helpers";
+import { type AgentRegistry, createAgentRegistry } from "@khoralabs/agent-identity";
+import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import type { LanguageModel } from "ai";
 import type { createMatchmakingMemoriesBundle } from "../../memories/create-memories-bundle.ts";
 import type { DefineNegotiationSummaryIdentityOptions } from "./identity.ts";

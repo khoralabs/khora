@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
-import { OBPPersistenceClient } from "@cfd/obp-core";
-import { FakeObpPersistence } from "@cfd/obp-core/testing";
+import { OBPPersistenceClient } from "@khoralabs/obp-core";
+import { FakeObpPersistence } from "@khoralabs/obp-core/testing";
 import { buildGraphSnapshot } from "./shared/graph-snapshot.ts";
 
 function far(seq: number): number {

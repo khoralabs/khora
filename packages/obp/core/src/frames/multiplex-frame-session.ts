@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { FrameChannel } from "@cfd/frame-channel";
+import type { FrameChannel } from "@khoralabs/frame-channel";
 import { ObpError } from "../persistence/client/errors.ts";
 import { OBPPersistenceClient } from "../persistence/client/obp-persistence-client.ts";
 import type { ObpPersistence } from "../persistence/client/persistence-types.ts";

@@ -8,9 +8,9 @@ import {
   withDirectedEdgeProperties,
   zMergeMemoryContentItem,
   zNamespacePath,
-} from "@cfd/memories-core";
-import { zVectorPayload } from "@cfd/memories-core/persistence";
-import { computeSourceMapContentHash } from "@cfd/memories-core/provenance";
+} from "@khoralabs/memories-core";
+import { zVectorPayload } from "@khoralabs/memories-core/persistence";
+import { computeSourceMapContentHash } from "@khoralabs/memories-core/provenance";
 import type { MutationCtx } from "../_generated/server.js";
 import { listNeighborMemoriesForNode } from "./helpers.js";
 import { syncLabelPropsSearchFeaturesImpl } from "./labelPropsSearch.js";

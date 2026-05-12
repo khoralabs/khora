@@ -42,10 +42,7 @@ const zInboxBufferOptions = z
       .describe(
         "SQLite file path. Resolved against dataDir when relative. Use ':memory:' for ephemeral runs.",
       ),
-    compactAfterAppend: z
-      .boolean()
-      .optional()
-      .describe("Run compactPolicy after every append."),
+    compactAfterAppend: z.boolean().optional().describe("Run compactPolicy after every append."),
     compactPolicy: z
       .object({
         maxEntries: z
@@ -91,7 +88,7 @@ export const zAtriumAppPluginMap = z
 export type AtriumAppPluginMap = z.infer<typeof zAtriumAppPluginMap>;
 
 /**
- * Reusable base schema for any `@cfd/atrium-client` consumer. Top-level is `passthrough` so a
+ * Reusable base schema for any `@khoralabs/atrium-client` consumer. Top-level is `passthrough` so a
  * single JSON file can serve multiple hosts; each host parses with its own extended schema and
  * receives just the fields it knows.
  */
@@ -128,7 +125,9 @@ export const zAtriumAppConfigBase = z
       .describe("(daemon only) Emit JSON lines instead of pretty-printed events."),
     plugins: zAtriumAppPluginMap
       .optional()
-      .describe("Builtin plugins by id. Merged across layers per-id; set an id to false to cancel."),
+      .describe(
+        "Builtin plugins by id. Merged across layers per-id; set an id to false to cancel.",
+      ),
   })
   .passthrough()
   .describe("Atrium client base configuration.");

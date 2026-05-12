@@ -1,4 +1,4 @@
-import { tool } from "@cfd/agent-identity";
+import { tool } from "@khoralabs/agent-identity";
 import z from "zod";
 import type { ObpToolkitEnv } from "./obp-toolkit-env.ts";
 

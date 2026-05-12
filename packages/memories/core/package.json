@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/memories-core",
+  "name": "@khoralabs/memories-core",
   "module": "index.ts",
   "type": "module",
   "private": true,
@@ -36,7 +36,7 @@
     }
   },
   "devDependencies": {
-    "@cfd/memories-sqlite": "workspace:*",
+    "@khoralabs/memories-sqlite": "workspace:*",
     "@types/bun": "latest"
   },
   "peerDependencies": {
@@ -45,7 +45,7 @@
   "dependencies": {
     "js-sha256": "^0.11.0",
     "@ai-sdk/provider-utils": "^4.0.23",
-    "@cfd/reciprocal-rank-fusion": "workspace:*",
+    "@khoralabs/reciprocal-rank-fusion": "workspace:*",
     "ai": "^6",
     "zod": "^4"
   }

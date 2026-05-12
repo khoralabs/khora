@@ -1,4 +1,4 @@
-import { zAtriumProfilePatch } from "@cfd/atrium-contracts";
+import { zAtriumProfilePatch } from "@khoralabs/atrium-contracts";
 import type { AtriumCliContext } from "../flows/context.ts";
 import { runProfileUpdateInteractiveFlow } from "../flows/profile-update-flow.ts";
 import { strFlag } from "./parse.ts";

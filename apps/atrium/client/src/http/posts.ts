@@ -3,7 +3,7 @@ import {
   type AtriumPostCreate,
   type AtriumPostPatch,
   zAtriumPost,
-} from "@cfd/atrium-contracts";
+} from "@khoralabs/atrium-contracts";
 import type { HttpTransport } from "./transport.ts";
 
 export function createPost(t: HttpTransport, body: AtriumPostCreate): Promise<AtriumPost> {

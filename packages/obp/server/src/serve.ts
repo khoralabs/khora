@@ -10,8 +10,8 @@ import {
   runFrameMultiplexSession,
   type SessionInit,
   type SessionOp,
-} from "@cfd/obp-core";
-import { checkpointFromOps, verifyExtends } from "@cfd/obp-session-sync";
+} from "@khoralabs/obp-core";
+import { checkpointFromOps, verifyExtends } from "@khoralabs/obp-session-sync";
 import { frameChannelFromHttp2Stream } from "./http2-channel.ts";
 
 export type ObpOnConnectContext = {

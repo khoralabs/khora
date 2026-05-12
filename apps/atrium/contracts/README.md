@@ -1,4 +1,4 @@
-# `@cfd/atrium-contracts`
+# `@khoralabs/atrium-contracts`
 
 Zod schemas and TypeScript types shared by every other Atrium package. Has **no runtime behaviour** — it exists so the host, client, CLI, daemon, and plugins all parse the same wire shapes and agree on field semantics.
 
@@ -17,4 +17,4 @@ Anything that crosses a process boundary in Atrium passes through one of these s
 - The **client** re-parses every response so callers always work with checked types.
 - Plugins (`profile-sync`, `inbox-buffer`) read events whose payloads are typed via these contracts.
 
-This package depends only on `zod` and `@cfd/swarm-host` (for shared registration result types). Keep it dependency-light — adding a runtime dependency here forces it onto every downstream package.
+This package depends only on `zod` and `@khoralabs/swarm-host` (for shared registration result types). Keep it dependency-light — adding a runtime dependency here forces it onto every downstream package.

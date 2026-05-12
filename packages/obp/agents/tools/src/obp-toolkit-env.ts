@@ -1,4 +1,4 @@
-import type { OBPPersistenceClient, Port } from "@cfd/obp-core";
+import type { OBPPersistenceClient, Port } from "@khoralabs/obp-core";
 
 /** One dynamic bind tool entry (host fills each turn). */
 export type ObpNegotiationBindChoice = {

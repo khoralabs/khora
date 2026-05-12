@@ -1,4 +1,4 @@
-import type { DidRegistrationResult } from "@cfd/swarm-host";
+import type { DidRegistrationResult } from "@khoralabs/swarm-host";
 import z from "zod";
 import type { AtriumProfile } from "./atrium-profile.ts";
 import { zAtriumProfile } from "./atrium-profile.ts";

@@ -1,4 +1,4 @@
-import type { OBPPersistenceClient } from "@cfd/obp-core";
+import type { OBPPersistenceClient } from "@khoralabs/obp-core";
 
 /** Smallest recorded **`expose_seq`** among ports on an offer (for synthetic port alignment). */
 export function minExposeSeqOnOffer(

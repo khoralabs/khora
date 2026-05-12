@@ -4,7 +4,7 @@ namespace cfd.obp.frame.http2
 
 @documentation("""
 **Non-normative reference binding for `cfd.obp.frame#NegotiationFrameProtocol`.** The core frame rules do not depend on HTTP/2;
-this documents how **`@cfd/obp-server`** carries frames in-repo.
+this documents how **`@khoralabs/obp-server`** carries frames in-repo.
 
 **HTTP/2 reference binding for OBP frames (`obp://` / `obps://`).**
 

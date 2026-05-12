@@ -1,4 +1,4 @@
-import { GraphSnapshotFlow } from "@cfd/obp-react";
+import { GraphSnapshotFlow } from "@khoralabs/obp-react";
 import type { ReactNode } from "react";
 import {
   NegotiationExampleProvider,

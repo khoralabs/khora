@@ -4,7 +4,7 @@ import type {
   AtriumPostPatch,
   AtriumProfile,
   AtriumRegistrationResult,
-} from "@cfd/atrium-contracts";
+} from "@khoralabs/atrium-contracts";
 import type {
   AtriumClient,
   InboxListResult,

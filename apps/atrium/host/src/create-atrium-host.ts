@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { AtriumDidAuth } from "@cfd/atrium-auth";
+import type { AtriumDidAuth } from "@khoralabs/atrium-auth";
 import {
   type AtriumPost,
   type AtriumProfile,
@@ -7,10 +7,10 @@ import {
   parseAtriumRegistrationMetadata,
   zAtriumPost,
   zAtriumProfile,
-} from "@cfd/atrium-contracts";
-import { ids, MemoriesClient, stableId } from "@cfd/memories-core";
-import { type EmbeddingModel, embedTextChunks } from "@cfd/memories-core/helpers";
-import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-sqlite";
+} from "@khoralabs/atrium-contracts";
+import { ids, MemoriesClient, stableId } from "@khoralabs/memories-core";
+import { type EmbeddingModel, embedTextChunks } from "@khoralabs/memories-core/helpers";
+import { createMemoriesPersistence, openMemoriesDatabase } from "@khoralabs/memories-sqlite";
 import {
   type AgentNotificationBufferPort,
   composeOnEventWithMemorySync,
@@ -19,7 +19,7 @@ import {
   SWARM_EVENT_KIND,
   SwarmHost,
   swarmHostOntology,
-} from "@cfd/swarm-host";
+} from "@khoralabs/swarm-host";
 import type { AtriumHostAppContext } from "./atrium-app-context.ts";
 import { atriumSwarmMemoryOpMapper } from "./atrium-memory-sync.ts";
 import { fanOutProbeHits, fanOutTopicSubscriptions } from "./atrium-post-fanout.ts";

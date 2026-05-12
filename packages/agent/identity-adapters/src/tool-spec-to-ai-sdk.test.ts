@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
-import type { ToolRuntimeContext, ToolSpec } from "@cfd/agent-identity";
-import { policy } from "@cfd/agent-identity";
+import type { ToolRuntimeContext, ToolSpec } from "@khoralabs/agent-identity";
+import { policy } from "@khoralabs/agent-identity";
 import z from "zod";
 import { toolSpecToAiTool } from "./tool-spec-to-ai-sdk.js";
 

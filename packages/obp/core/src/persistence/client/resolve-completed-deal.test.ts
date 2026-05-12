@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { expect, test } from "bun:test";
-import { createObpSqlitePersistence, OBP_SCHEMA_SQL } from "@cfd/obp-sqlite";
+import { createObpSqlitePersistence, OBP_SCHEMA_SQL } from "@khoralabs/obp-sqlite";
 import { OBPPersistenceClient } from "./obp-persistence-client.ts";
 import { resolveCompletedDeal } from "./resolve-completed-deal.ts";
 

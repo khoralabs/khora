@@ -1,4 +1,4 @@
-import type { FrameChannel } from "@cfd/frame-channel";
+import type { FrameChannel } from "@khoralabs/frame-channel";
 import type { ObpPersistence } from "../persistence/client/persistence-types.ts";
 import {
   runFrameMultiplexSession,

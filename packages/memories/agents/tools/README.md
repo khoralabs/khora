@@ -1,4 +1,4 @@
-# @cfd/memories-tools
+# @khoralabs/memories-tools
 
 Shared **hybrid memory search** toolkit for agent-identity composables: `memory_search` (FTS + embedding, RRF fusion), query embedding helpers, and `ToolkitContext` / `ToolRuntimeContext` builders.
 
@@ -9,4 +9,4 @@ Shared **hybrid memory search** toolkit for agent-identity composables: `memory_
 
 **Embedding model**
 
-- `EmbeddingModel` is a minimal readonly shape for `embedMany`; callers typically build models via `createMemoriesEmbeddingModel` from `@cfd/memories-core/helpers` — values are structurally compatible with this interface.
+- `EmbeddingModel` is a minimal readonly shape for `embedMany`; callers typically build models via `createMemoriesEmbeddingModel` from `@khoralabs/memories-core/helpers` — values are structurally compatible with this interface.

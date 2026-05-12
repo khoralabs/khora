@@ -4,7 +4,7 @@ import type {
   NodeLabelInstance,
   OntologyDefinition,
   TypedMergeParams,
-} from "@cfd/memories-core";
+} from "@khoralabs/memories-core";
 import type { IntegratorEdgeWire, IntegratorPlanWire } from "./integrator-output.js";
 import { integratorLabelKindsFromOntology } from "./integrator-output.js";
 

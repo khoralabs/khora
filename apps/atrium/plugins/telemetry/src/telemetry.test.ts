@@ -2,7 +2,7 @@ import { describe, expect, mock, test } from "bun:test";
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AtriumClientEvent } from "@cfd/atrium-client";
+import type { AtriumClientEvent } from "@khoralabs/atrium-client";
 import { createTelemetryArchive } from "./index.ts";
 
 describe("createTelemetryArchive", () => {

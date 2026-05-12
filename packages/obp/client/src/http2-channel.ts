@@ -1,8 +1,8 @@
 import type { ClientHttp2Stream } from "node:http2";
 import type { Duplex } from "node:stream";
-import type { FrameChannel } from "@cfd/frame-channel";
+import type { FrameChannel } from "@khoralabs/frame-channel";
 
-/** Client HTTP/2 request stream → {@link FrameChannel} (mirrors `@cfd/obp-server` binding). */
+/** Client HTTP/2 request stream → {@link FrameChannel} (mirrors `@khoralabs/obp-server` binding). */
 export function frameChannelFromClientStream(
   stream: ClientHttp2Stream,
   sessionClose?: () => void,

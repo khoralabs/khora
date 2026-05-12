@@ -1,4 +1,4 @@
-import type { NamespacePath, SearchContent, SearchParams } from "@cfd/memories-core";
+import type { NamespacePath, SearchContent, SearchParams } from "@khoralabs/memories-core";
 
 export type SearchConfigSnapshotInput = {
   namespace: NamespacePath;

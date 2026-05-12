@@ -1,11 +1,11 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import type { AgentRegistry, RegisteredAgentIdentity } from "@cfd/agent-identity";
+import type { AgentRegistry, RegisteredAgentIdentity } from "@khoralabs/agent-identity";
 import {
   type NegotiationTurnAudit,
   runStructuredNegotiatorTurn,
   type TurnContract,
-} from "@cfd/obp-agent-runtime";
-import type { TurnBody } from "@cfd/obp-core";
+} from "@khoralabs/obp-agent-runtime";
+import type { TurnBody } from "@khoralabs/obp-core";
 import type { LanguageModel } from "ai";
 
 /** Matches `packages/obp/agents/runtime/examples/shared/negotiation-timeouts.ts`. */
@@ -45,7 +45,7 @@ export {
   negotiationShouldEnd,
   preparedToNegotiatorTurn,
   terminalAgreement,
-} from "@cfd/obp-agent-runtime";
+} from "@khoralabs/obp-agent-runtime";
 
 /**
  * Demo wrapper: Gemini model + env budget around {@link runStructuredNegotiatorTurn}.

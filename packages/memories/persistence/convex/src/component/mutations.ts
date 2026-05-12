@@ -1,4 +1,4 @@
-import type { NamespacePath } from "@cfd/memories-core";
+import type { NamespacePath } from "@khoralabs/memories-core";
 import { v } from "convex/values";
 import { mutation } from "./_generated/server.js";
 import { syncLabelPropsSearchFeaturesImpl } from "./lib/labelPropsSearch.js";
@@ -119,7 +119,7 @@ export const appendProvenanceEvent = mutation({
   handler: async (ctx, args) => {
     await appendProvenanceEventImpl(ctx, {
       now: args.now,
-      event: args.event as import("@cfd/memories-core/provenance").MemoryProvenanceEvent,
+      event: args.event as import("@khoralabs/memories-core/provenance").MemoryProvenanceEvent,
     });
     return null;
   },

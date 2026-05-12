@@ -2,13 +2,13 @@
  * Programmatic surface for the matchmaking Bun server and scripts (not bundled for the browser).
  */
 
-export { type CompletedDeal, resolveCompletedDeal } from "@cfd/obp-core";
+export { type CompletedDeal, resolveCompletedDeal } from "@khoralabs/obp-core";
 export {
   type NegotiationEndPayload,
   negotiationEndPayloadFromGeneration,
-} from "@cfd/obp-negotiator";
+} from "@khoralabs/obp-negotiator";
 /** OBP stack + Gemini + transcript helpers used by {@link runMatchmakingSession}. */
-export { agentSourcemaps } from "@cfd/obp-tools";
+export { agentSourcemaps } from "@khoralabs/obp-tools";
 export { inviteRequestSchema } from "./invite-request.ts";
 export type {
   MatchmakingResult,

@@ -9,7 +9,7 @@ import type {
   PortBindPolicy,
 } from "./types.ts";
 
-const VENDOR = "@cfd/obp-core";
+const VENDOR = "@khoralabs/obp-core";
 
 type Issue = StandardSchemaV1.Issue;
 type Path = ReadonlyArray<PropertyKey>;

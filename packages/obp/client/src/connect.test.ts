@@ -7,10 +7,10 @@ import {
   OBPPersistenceClient,
   type SessionInit,
   sha256HexUtf8,
-} from "@cfd/obp-core";
-import { FakeObpPersistence } from "@cfd/obp-core/testing";
-import { serveObp } from "@cfd/obp-server";
-import { checkpointFromOps, verifyExtends } from "@cfd/obp-session-sync";
+} from "@khoralabs/obp-core";
+import { FakeObpPersistence } from "@khoralabs/obp-core/testing";
+import { serveObp } from "@khoralabs/obp-server";
+import { checkpointFromOps, verifyExtends } from "@khoralabs/obp-session-sync";
 import { connectObpSession } from "./connect.ts";
 
 async function runTurnSessionCheckpoint(sessionEnvelopeSync: boolean) {

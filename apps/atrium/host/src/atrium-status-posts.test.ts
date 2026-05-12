@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
-import { zAtriumPost } from "@cfd/atrium-contracts";
-import { SWARM_EVENT_KIND } from "@cfd/swarm-host";
+import { zAtriumPost } from "@khoralabs/atrium-contracts";
+import { SWARM_EVENT_KIND } from "@khoralabs/swarm-host";
 import { deleteOtherStatusPostsForAuthor } from "./atrium-status-posts.ts";
 import type { AtriumHostContext } from "./create-atrium-host.ts";
 import { createSwarmHostPostSqlitePersistence } from "./persistence/sqlite/entity-sqlite.ts";

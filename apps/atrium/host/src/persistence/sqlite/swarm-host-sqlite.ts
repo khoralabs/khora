@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { SwarmHostPersistence } from "@cfd/swarm-host";
+import type { SwarmHostPersistence } from "@khoralabs/swarm-host";
 import {
   createSwarmHostEntitySqlitePersistence,
   createSwarmHostPostSqlitePersistence,

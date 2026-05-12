@@ -2,8 +2,8 @@ import type {
   AgentSigner,
   AtriumPluginInstaller,
   LabeledAtriumPluginInstaller,
-} from "@cfd/atrium-client";
-import { AtriumClient } from "@cfd/atrium-client";
+} from "@khoralabs/atrium-client";
+import { AtriumClient } from "@khoralabs/atrium-client";
 import { daemonAppConfig } from "./app-config.ts";
 import { resolveAtriumDaemonPlugins } from "./resolve-atrium-plugins.ts";
 

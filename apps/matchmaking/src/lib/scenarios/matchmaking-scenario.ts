@@ -1,4 +1,4 @@
-import type { RegisteredAgentIdentity } from "@cfd/agent-identity";
+import type { RegisteredAgentIdentity } from "@khoralabs/agent-identity";
 import type { MeetingSeedPayload } from "../memories/meeting-seed-payload.ts";
 
 /** Two-party scenario shape shared with generic OBP demos (minimal copy for this app). */

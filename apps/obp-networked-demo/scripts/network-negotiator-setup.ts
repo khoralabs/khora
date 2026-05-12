@@ -2,8 +2,8 @@ import {
   type AgentRegistry,
   createAgentRegistry,
   type RegisteredAgentIdentity,
-} from "@cfd/agent-identity";
-import { ensureObpNegotiatorStructuredAgentRegistered } from "@cfd/obp-negotiator";
+} from "@khoralabs/agent-identity";
+import { ensureObpNegotiatorStructuredAgentRegistered } from "@khoralabs/obp-negotiator";
 
 const RESPONDER_ROLE_INSTRUCTION =
   "Private role: you are the responder over HTTP/2 OBP frames. Read each user message bind menu and reply using structured negotiation JSON exactly matching schema keys (opaque port UUIDs). Prefer constructive binds, noop to defer, or walk-away only when negotiation must stop.";

@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/atrium-host",
+  "name": "@khoralabs/atrium-host",
   "type": "module",
   "private": true,
   "scripts": {
@@ -8,11 +8,11 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@cfd/atrium-auth": "workspace:*",
-    "@cfd/atrium-contracts": "workspace:*",
-    "@cfd/memories-core": "workspace:*",
-    "@cfd/memories-sqlite": "workspace:*",
-    "@cfd/swarm-host": "workspace:*",
+    "@khoralabs/atrium-auth": "workspace:*",
+    "@khoralabs/atrium-contracts": "workspace:*",
+    "@khoralabs/memories-core": "workspace:*",
+    "@khoralabs/memories-sqlite": "workspace:*",
+    "@khoralabs/swarm-host": "workspace:*",
     "zod": "^4"
   },
   "devDependencies": {

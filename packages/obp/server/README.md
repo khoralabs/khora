@@ -1,4 +1,4 @@
-# `@cfd/obp-server`
+# `@khoralabs/obp-server`
 
 HTTP/2 **reference binding** for [`cfd.obp.frame`](../spec/model/frame-protocol.smithy) (transport-agnostic frames + length-prefixed canonical JSON).
 
@@ -7,15 +7,15 @@ HTTP/2 **reference binding** for [`cfd.obp.frame`](../spec/model/frame-protocol.
 
 ## Prereqs
 
-The server **`serveObp`** runs **`runFrameMultiplexSession`** as responder (**`initiatorChainPlans: []`**): each **`POST /obp/v1`** stream waits for the peer’s inbound **`init`** and stays alive across TERMINATE so the client can open additional chains. The client drives closure via **`conn.close()`** and idle shutdown. For each stream, **`onConnect`** runs with request **headers** before any frames are read: authenticate (e.g. `Authorization`), build a [`SessionInit`](../../core/src/frames/types.ts) and local [`FrameSigner`](../../core/src/frames/signer.ts) aligned with that caller, and return `{ init, signer }`; on throw, the stream responds **401**. The wire **`init`** the peer sends must match **`init`**. **Graph mutations** from frames go through [`@cfd/obp-core`](../core); each peer applies **`TURN`** effects to its own persistence.
+The server **`serveObp`** runs **`runFrameMultiplexSession`** as responder (**`initiatorChainPlans: []`**): each **`POST /obp/v1`** stream waits for the peer’s inbound **`init`** and stays alive across TERMINATE so the client can open additional chains. The client drives closure via **`conn.close()`** and idle shutdown. For each stream, **`onConnect`** runs with request **headers** before any frames are read: authenticate (e.g. `Authorization`), build a [`SessionInit`](../../core/src/frames/types.ts) and local [`FrameSigner`](../../core/src/frames/signer.ts) aligned with that caller, and return `{ init, signer }`; on throw, the stream responds **401**. The wire **`init`** the peer sends must match **`init`**. **Graph mutations** from frames go through [`@khoralabs/obp-core`](../core); each peer applies **`TURN`** effects to its own persistence.
 
-**Negotiation semantics:** peers may send offers out of order; **`onIncomingOffer`** is reactive and **`session.sendTurn`** is proactive. Core serializes outbound DAG advances **per chain** so concurrent **`sendTurn`** and handler replies do not fork the causal tip. Application policies (orphans, floods, bind/expose timeouts, when negotiation is “done”) belong above core—see **`createNegotiationCoordinator`** / **`waitForPortOnOffer`** in [`@cfd/obp-core`](../core) and the client README’s checklist. There is no wire-level “expose complete” unless your app protocol defines it.
+**Negotiation semantics:** peers may send offers out of order; **`onIncomingOffer`** is reactive and **`session.sendTurn`** is proactive. Core serializes outbound DAG advances **per chain** so concurrent **`sendTurn`** and handler replies do not fork the causal tip. Application policies (orphans, floods, bind/expose timeouts, when negotiation is “done”) belong above core—see **`createNegotiationCoordinator`** / **`waitForPortOnOffer`** in [`@khoralabs/obp-core`](../core) and the client README’s checklist. There is no wire-level “expose complete” unless your app protocol defines it.
 
 ## Example
 
 ```typescript
-import { createEd25519FrameSigner, generateEd25519KeyPair } from "@cfd/obp-core";
-import { Obp } from "@cfd/obp-server";
+import { createEd25519FrameSigner, generateEd25519KeyPair } from "@khoralabs/obp-core";
+import { Obp } from "@khoralabs/obp-server";
 
 const keys = await generateEd25519KeyPair();
 const signer = await createEd25519FrameSigner(keys.privateKey, keys.publicKey);
@@ -55,6 +55,6 @@ await Obp.serve({
 ```
 
 ```bash
-bun run --filter @cfd/obp-server typecheck
-bun run --filter @cfd/obp-server test
+bun run --filter @khoralabs/obp-server typecheck
+bun run --filter @khoralabs/obp-server test
 ```

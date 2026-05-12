@@ -2,11 +2,11 @@ import {
   ATRIUM_BUILTIN_PLUGIN_ID,
   type AtriumAppPluginMap,
   type AtriumPluginInstaller,
-  labelAtriumPlugin,
   type LabeledAtriumPluginInstaller,
-} from "@cfd/atrium-client";
-import { profileSyncPlugin } from "@cfd/atrium-plugin-profile-sync";
-import { telemetryPlugin } from "@cfd/atrium-plugin-telemetry";
+  labelAtriumPlugin,
+} from "@khoralabs/atrium-client";
+import { profileSyncPlugin } from "@khoralabs/atrium-plugin-profile-sync";
+import { telemetryPlugin } from "@khoralabs/atrium-plugin-telemetry";
 
 // CLI runs short-lived commands that emit mutation events (profile/post/topic); profile-sync and
 // telemetry consume those. inbox-buffer is owned by the daemon — if a shared config declares it,

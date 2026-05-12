@@ -1,13 +1,13 @@
-# `@cfd/obp-sqlite`
+# `@khoralabs/obp-sqlite`
 
-Native **SQLite** implementation of [`ObpPersistence`](../../obp-core/src/persistence/client/persistence-types.ts) from [`@cfd/obp-core`](../../obp-core) using [`bun:sqlite`](https://bun.sh/docs/api/sqlite). No dependency on memories; optional `sourcemaps` on entities are stored as JSON.
+Native **SQLite** implementation of [`ObpPersistence`](../../obp-core/src/persistence/client/persistence-types.ts) from [`@khoralabs/obp-core`](../../obp-core) using [`bun:sqlite`](https://bun.sh/docs/api/sqlite). No dependency on memories; optional `sourcemaps` on entities are stored as JSON.
 
 ## Usage
 
 ```ts
 import { Database } from "bun:sqlite";
-import { OBPPersistenceClient } from "@cfd/obp-core";
-import { createObpSqlitePersistence, initObpSchema, openObpDatabase } from "@cfd/obp-sqlite";
+import { OBPPersistenceClient } from "@khoralabs/obp-core";
+import { createObpSqlitePersistence, initObpSchema, openObpDatabase } from "@khoralabs/obp-sqlite";
 
 const db = new Database(":memory:");
 initObpSchema(db);
@@ -31,7 +31,7 @@ const client = new OBPPersistenceClient({ persistence, ledgerSeq });
 
 ## Contracts
 
-- Mutations run in **`db.transaction`** and enforce the same invariants as [`OBPPersistenceClient`](../../obp-core/src/persistence/client/obp-persistence-client.ts) (via `@cfd/obp-core` helpers). Direct use of `ObpPersistence` without **`OBPPersistenceClient`** is still safe for basic integrity.
+- Mutations run in **`db.transaction`** and enforce the same invariants as [`OBPPersistenceClient`](../../obp-core/src/persistence/client/obp-persistence-client.ts) (via `@khoralabs/obp-core` helpers). Direct use of `ObpPersistence` without **`OBPPersistenceClient`** is still safe for basic integrity.
 - Wire shapes follow [`packages/obp/spec`](../../spec).
 
 ## Verification

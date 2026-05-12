@@ -8,9 +8,9 @@ import type {
   MemoryOpContext,
   NeighborFilter,
   SearchNamespaceScope,
-} from "@cfd/memories-core";
-import type { SourceMap, TextFeatureExportRow } from "@cfd/memories-core/persistence";
-import type { MemoryProvenanceEvent } from "@cfd/memories-core/provenance";
+} from "@khoralabs/memories-core";
+import type { SourceMap, TextFeatureExportRow } from "@khoralabs/memories-core/persistence";
+import type { MemoryProvenanceEvent } from "@khoralabs/memories-core/provenance";
 import type { DbCtx } from "./models/context";
 import { insertEdgeLabelAssignment } from "./models/edge-label-assignments";
 import { ensureEdgeLabel } from "./models/edge-labels";

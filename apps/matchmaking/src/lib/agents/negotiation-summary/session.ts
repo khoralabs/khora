@@ -4,10 +4,10 @@ import type {
   RegisteredAgentIdentity,
   SessionContext,
   SessionRunner,
-} from "@cfd/agent-identity";
-import { evaluateRegisteredAgentAffordances } from "@cfd/agent-identity";
-import type { EmbeddingModel } from "@cfd/memories-core/helpers";
-import { buildMemorySearchToolkitContext } from "@cfd/memories-tools";
+} from "@khoralabs/agent-identity";
+import { evaluateRegisteredAgentAffordances } from "@khoralabs/agent-identity";
+import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
+import { buildMemorySearchToolkitContext } from "@khoralabs/memories-tools";
 import type { LanguageModel } from "ai";
 import type { createMatchmakingMemoriesBundle } from "../../memories/create-memories-bundle.ts";
 import { generateNegotiationSummary } from "./create-negotiation-summary-agent.ts";

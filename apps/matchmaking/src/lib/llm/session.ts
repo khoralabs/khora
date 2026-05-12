@@ -4,35 +4,35 @@ import {
   type RegisteredAgentIdentity,
   type SessionContext,
   type ToolPipelineHooks,
-} from "@cfd/agent-identity";
+} from "@khoralabs/agent-identity";
 import {
   formatThreadForPlaintext,
   InMemoryThreadContext,
   mirrorGenerationToThread,
   postThreadUserText,
-} from "@cfd/agent-thread";
-import type { EmbeddingModel } from "@cfd/memories-core/helpers";
-import { JsonlStore } from "@cfd/memories-stores";
-import { type MemorySearchEnv, toMemorySearchEnv } from "@cfd/memories-tools";
+} from "@khoralabs/agent-thread";
+import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
+import { JsonlStore } from "@khoralabs/memories-stores";
+import { type MemorySearchEnv, toMemorySearchEnv } from "@khoralabs/memories-tools";
 import {
   type CompletedDeal,
   type OBPPersistenceClient,
   type ObpPersistence,
   resolveCompletedDeal,
-} from "@cfd/obp-core";
+} from "@khoralabs/obp-core";
 import {
   createObpNegotiatorSessionRunner,
   negotiationEndPayloadFromGeneration,
   type ObpNegotiatorGeneration,
   type ObpNegotiatorSessionOutput,
-} from "@cfd/obp-negotiator";
+} from "@khoralabs/obp-negotiator";
 import {
   agentSourcemaps,
   captureNegotiationEndFromToolExecuted,
   computeNegotiationContext,
   isDynamicBindToolName,
   type ObpToolkitEnv,
-} from "@cfd/obp-tools";
+} from "@khoralabs/obp-tools";
 import type { LanguageModel } from "ai";
 import {
   appendTextTranscriptInvitation,
@@ -109,7 +109,7 @@ export type MatchmakingSessionContext = SessionContext & {
   memoryNamespaceByAgentId: Map<string, string>;
   embeddingCache: Map<string, number[]>;
   /** OBP negotiator session: per-turn {@code ObpToolkitEnv} (+ memory) from this context. */
-  resolveEnv: import("@cfd/obp-negotiator").ObpNegotiatorResolveEnv;
+  resolveEnv: import("@khoralabs/obp-negotiator").ObpNegotiatorResolveEnv;
   systemInstructions?: string;
   defaultMaxSteps?: number;
   /** Filled in {@code onBeforeRun}: per-user/persona binding (see `computeInvocationContextHash`). */

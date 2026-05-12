@@ -1,4 +1,4 @@
-import { namespacePath, stableId } from "@cfd/memories-core";
+import { namespacePath, stableId } from "@khoralabs/memories-core";
 import type { MutationCtx } from "../_generated/server.js";
 
 async function parseAdjacency(ctx: MutationCtx): Promise<Map<string, string[]>> {

@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/reciprocal-rank-fusion",
+  "name": "@khoralabs/reciprocal-rank-fusion",
   "description": "A reciprocal rank fusion implementation.",
   "module": "index.ts",
   "type": "module",

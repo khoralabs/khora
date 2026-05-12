@@ -1,5 +1,5 @@
-import type { AnyComposable } from "@cfd/agent-identity";
-import { dynamicToolkit, tool } from "@cfd/agent-identity";
+import type { AnyComposable } from "@khoralabs/agent-identity";
+import { dynamicToolkit, tool } from "@khoralabs/agent-identity";
 import z from "zod";
 import { executeObpBind } from "./bind-execution.ts";
 import type {

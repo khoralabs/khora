@@ -9,10 +9,10 @@ import type {
   NeighborFilter,
   OntologyLabelInstance,
   SearchNamespaceScope,
-} from "@cfd/memories-core";
-import type { SourceMap, TextFeatureExportRow } from "@cfd/memories-core/persistence";
-import type { MemoryProvenanceEvent } from "@cfd/memories-core/provenance";
-import { computeSourceMapContentHash } from "@cfd/memories-core/provenance";
+} from "@khoralabs/memories-core";
+import type { SourceMap, TextFeatureExportRow } from "@khoralabs/memories-core/persistence";
+import type { MemoryProvenanceEvent } from "@khoralabs/memories-core/provenance";
+import { computeSourceMapContentHash } from "@khoralabs/memories-core/provenance";
 
 function scopePayloadFromCore(scope: SearchNamespaceScope): {
   kind: "unscoped" | "pathSubtree" | "scopeDag" | "exactScope";

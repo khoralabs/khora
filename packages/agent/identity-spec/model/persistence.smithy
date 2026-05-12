@@ -5,13 +5,13 @@ namespace cfd.agent_identity
 @documentation("""
 Hypothetical host storage surface for agent identity attribution (sessions, static registration, runtime snapshots).
 
-**Not implemented** in `@cfd/agent-identity` (that package only computes hashes and payloads).
+**Not implemented** in `@khoralabs/agent-identity` (that package only computes hashes and payloads).
 
 **Ids & tenancy:** `linkId`, `sessionId`, `registrationId`, `snapshotId`, `tenantId`, `actorId` are host-defined strings; uniqueness and indexes are up to the backend.
 
 **Transactions:** Prefer one outer transaction per logical session update; nesting depends on the driver.
 
-**Idempotency:** `UpsertRegisteredAgentSnapshot` should be idempotent for the same `(agentId, staticHash)`. `RecordSessionIdentityLink` may append or upsert depending on host policy; duplicate `(sessionId, staticHash, runtimeHash)` (and optional `invocationHash`) rows may be allowed for audit or deduped. **Changelog (identity lineage):** `IdentityLink` / `IdentityLinkRow` now include optional `invocationHash` for a third fingerprint: per-invocation binding separate from `staticHash` and `runtimeHash` (see `@cfd/agent-identity` `computeInvocationContextHash` / `createIdentityLink`).
+**Idempotency:** `UpsertRegisteredAgentSnapshot` should be idempotent for the same `(agentId, staticHash)`. `RecordSessionIdentityLink` may append or upsert depending on host policy; duplicate `(sessionId, staticHash, runtimeHash)` (and optional `invocationHash`) rows may be allowed for audit or deduped. **Changelog (identity lineage):** `IdentityLink` / `IdentityLinkRow` now include optional `invocationHash` for a third fingerprint: per-invocation binding separate from `staticHash` and `runtimeHash` (see `@khoralabs/agent-identity` `computeInvocationContextHash` / `createIdentityLink`).
 
 **Async:** Mirror with Promise/async in language bindings where applicable.
 

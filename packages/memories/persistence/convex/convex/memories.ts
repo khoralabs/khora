@@ -3,7 +3,7 @@
  * The Bun example UI uses client-side `mergeMemory`, `search`, and `memoriesConvexHostRefsFromApi(api)`
  * so `ConvexReactClient` calls use host `api.memoriesHost*` forwards (not raw `components.*` refs).
  */
-export type { HostComponentBridge } from "@cfd/memories-convex";
+export type { HostComponentBridge } from "@khoralabs/memories-convex";
 export {
   createConvexMemoriesPersistenceFromHostBridge,
   createMemoriesPersistence,
@@ -11,4 +11,4 @@ export {
   hostComponentBridgeFromCtx,
   hostComponentBridgeFromMutationCtx,
   hostComponentBridgeFromQueryCtx,
-} from "@cfd/memories-convex";
+} from "@khoralabs/memories-convex";

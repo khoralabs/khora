@@ -35,7 +35,7 @@ describe("createProfileSync", () => {
   test("debounced subscribe triggers fetchAgentSync", async () => {
     const dir = mkdtempSync(join(tmpdir(), "atrium-profile-sync-"));
     const filePath = join(dir, "state.json");
-    let listener: ((e: import("@cfd/atrium-client").AtriumClientEvent) => void) | undefined;
+    let listener: ((e: import("@khoralabs/atrium-client").AtriumClientEvent) => void) | undefined;
     const fetchAgentSync = mock(async () => ({
       profile: { id: "p1", displayName: "B" },
       topicSlugs: [],
@@ -44,7 +44,7 @@ describe("createProfileSync", () => {
     const client = {
       did: "did:key:x",
       fetchAgentSync,
-      subscribe: mock((fn: (e: import("@cfd/atrium-client").AtriumClientEvent) => void) => {
+      subscribe: mock((fn: (e: import("@khoralabs/atrium-client").AtriumClientEvent) => void) => {
         listener = fn;
         return () => {
           listener = undefined;

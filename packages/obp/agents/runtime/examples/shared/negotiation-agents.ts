@@ -1,8 +1,8 @@
-import { createAgentRegistry, type RegisteredAgentIdentity } from "@cfd/agent-identity";
+import { createAgentRegistry, type RegisteredAgentIdentity } from "@khoralabs/agent-identity";
 import {
   ensureObpNegotiatorStructuredAgentRegistered,
   type ObpNegotiatorStructuredSessionContext,
-} from "@cfd/obp-negotiator";
+} from "@khoralabs/obp-negotiator";
 
 export type NegotiationPartyIdentities = {
   registry: ReturnType<typeof createAgentRegistry>;

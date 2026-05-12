@@ -1,10 +1,10 @@
-# `@cfd/obp-core`
+# `@khoralabs/obp-core`
 
 TypeScript **domain layer** for the Offer Binding Protocol (see [`packages/obp/spec`](../spec)). It mirrors the split between **`memories-core`** (types, invariants, persistence client) and concrete persistence backends.
 
 ## Spec relationship
 
-- **Smithy package** **`@cfd/obp-spec`**: [`../spec/model/shapes.smithy`](../spec/model/shapes.smithy), [`../spec/model/persistence.smithy`](../spec/model/persistence.smithy).
+- **Smithy package** **`@khoralabs/obp-spec`**: [`../spec/model/shapes.smithy`](../spec/model/shapes.smithy), [`../spec/model/persistence.smithy`](../spec/model/persistence.smithy).
 - **This package** implements the normative TS contract: types aligned with those models—including structured refinement for `Document` fields via Zod—pure **invariant** helpers, **`ObpPersistence`**, and **`OBPPersistenceClient`** (validated graph mutations over a storage strategy). A separate transport-level negotiation client may be added later; it is not this type.
 
 ## Smithy ↔ TS parity (persisted contract)
@@ -31,7 +31,7 @@ Pure helpers (**`validateBindPreconditions`**, Zod parsers) are TS-only; normati
 
 ## Tests / fakes
 
-- **`FakeObpPersistence`** (`@cfd/obp-core/testing`) — in-memory implementation for unit tests.
+- **`FakeObpPersistence`** (`@khoralabs/obp-core/testing`) — in-memory implementation for unit tests.
 
 ## Normative invariants (spec)
 
@@ -40,18 +40,18 @@ See **`persistence.smithy`**: **EXTENDS** per offer, bind targets **EXPOSES**d, 
 ## Verification
 
 ```bash
-bun run --filter @cfd/obp-core test
-bun run --filter @cfd/obp-core typecheck
+bun run --filter @khoralabs/obp-core test
+bun run --filter @khoralabs/obp-core typecheck
 ```
 
-Root repo: `bun run --filter @cfd/obp-spec validate`.
+Root repo: `bun run --filter @khoralabs/obp-spec validate`.
 
 ## Bilateral frame protocol (`src/frames/`)
 
-Transport-agnostic **Frame** DAG aligned with [`frame-protocol.smithy`](../spec/model/frame-protocol.smithy): signing, `FrameDag` causal tips, length-prefixed canonical JSON framing (`framing.ts`), duplex transport (`FrameChannel` from `@cfd/frame-channel`), and `runFrameSession` / `runFrameMultiplexSession`. **Graph effects** (`applyTurn`) run for **inbound** and **outbound** `TURN` frames so each peer updates its own `ObpPersistence`; tests should give each runner a separate store (see `FakeObpPersistence` + `importState` for party ids).
+Transport-agnostic **Frame** DAG aligned with [`frame-protocol.smithy`](../spec/model/frame-protocol.smithy): signing, `FrameDag` causal tips, length-prefixed canonical JSON framing (`framing.ts`), duplex transport (`FrameChannel` from `@khoralabs/frame-channel`), and `runFrameSession` / `runFrameMultiplexSession`. **Graph effects** (`applyTurn`) run for **inbound** and **outbound** `TURN` frames so each peer updates its own `ObpPersistence`; tests should give each runner a separate store (see `FakeObpPersistence` + `importState` for party ids).
 
 **Outbound serialization:** for each open chain, `runFrameMultiplexSession` queues outbound work so **`mintOutbound`**, session-op accumulation, tip-map updates, framed writes, and envelope flush scheduling do not interleave across concurrent **`sendTurn`** / **`onIncomingOffer`** replies (peer inbound handling stays sequential on the read loop).
 
 **Negotiation helpers:** optional **`createNegotiationCoordinator`** / **`waitForPortOnOffer`** (`frames/negotiation-coordinator.ts`) wrap **`MultiplexChainHooks`** with **`waitForTurn`** for awaiting matching inbound **`TurnBody`** snapshots (timeouts / **`AbortSignal`**); termination or **`dispose`** rejects pending waiters.
 
-The HTTP/2 binding lives in [`@cfd/obp-server`](../server).
+The HTTP/2 binding lives in [`@khoralabs/obp-server`](../server).

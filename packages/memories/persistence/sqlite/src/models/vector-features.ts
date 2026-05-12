@@ -1,5 +1,5 @@
-import { ids } from "@cfd/memories-core";
-import { memoriesPersistenceDocumentSchema } from "@cfd/memories-core/persistence";
+import { ids } from "@khoralabs/memories-core";
+import { memoriesPersistenceDocumentSchema } from "@khoralabs/memories-core/persistence";
 import { documentValidator } from "../_lib";
 import { vectorToBlob } from "../connection";
 import { ensureVectorFeaturesVecTable } from "../search-indexes";

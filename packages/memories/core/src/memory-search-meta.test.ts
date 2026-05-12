@@ -3,7 +3,7 @@ import {
   createMemoriesPersistence,
   loadMeanEmbeddingsForNamespace,
   openMemoriesDatabase,
-} from "@cfd/memories-sqlite";
+} from "@khoralabs/memories-sqlite";
 import {
   buildCanonicalMemorySearchMetaText,
   mergeMemory,

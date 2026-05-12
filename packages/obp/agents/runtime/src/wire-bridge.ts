@@ -1,4 +1,4 @@
-import type { TurnBody } from "@cfd/obp-core";
+import type { TurnBody } from "@khoralabs/obp-core";
 
 import type { NegotiationTurnAudit } from "./runtime.ts";
 

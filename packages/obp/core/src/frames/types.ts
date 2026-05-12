@@ -1,5 +1,5 @@
 /**
- * TS shapes aligned with **`cfd.obp.frame`** in `@cfd/obp-spec`
+ * TS shapes aligned with **`cfd.obp.frame`** in `@khoralabs/obp-spec`
  * ([`frame-protocol.smithy`](../../../spec/model/frame-protocol.smithy)).
  */
 

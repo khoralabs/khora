@@ -1,6 +1,6 @@
-import type { ApplyTurnResult, TurnBody } from "@cfd/obp-core";
-import { applyTurn as graphApplyTurn } from "@cfd/obp-core";
-import type { ObpToolkitEnv } from "@cfd/obp-tools";
+import type { ApplyTurnResult, TurnBody } from "@khoralabs/obp-core";
+import { applyTurn as graphApplyTurn } from "@khoralabs/obp-core";
+import type { ObpToolkitEnv } from "@khoralabs/obp-tools";
 import { OBP_NEGOTIATION_BIND_NO_POLICY } from "../constants.ts";
 import type { ObpLedger } from "../ledger.ts";
 import {

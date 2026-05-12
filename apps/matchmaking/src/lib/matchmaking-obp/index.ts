@@ -1,6 +1,6 @@
 /**
  * Matchmaking-only helpers: Gemini negotiation model, plaintext transcript, OBP demo stack.
- * OBP protocol helpers live in `@cfd/obp-core`, `@cfd/obp-negotiator`, and `@cfd/obp-tools`.
+ * OBP protocol helpers live in `@khoralabs/obp-core`, `@khoralabs/obp-negotiator`, and `@khoralabs/obp-tools`.
  */
 /** @deprecated Renamed {@link DEMO_LEDGER_SEQ}; kept for older imports. */
 export {

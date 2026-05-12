@@ -1,4 +1,4 @@
-# `@cfd/atrium-plugin-telemetry`
+# `@khoralabs/atrium-plugin-telemetry`
 
 Appends every `AtriumClientEvent` to **rotating JSONL files** for archival and offline analysis.
 

@@ -12,15 +12,15 @@ import {
   negotiationShouldEnd,
   runStructuredNegotiatorTurn,
   wireStructuredTurnSummary,
-} from "@cfd/obp-agent-runtime";
-import { connectObpSession } from "@cfd/obp-client";
+} from "@khoralabs/obp-agent-runtime";
+import { connectObpSession } from "@khoralabs/obp-client";
 import {
   createEd25519FrameVerifier,
   OBPPersistenceClient,
   partyIdForSigner,
   type TurnBody,
-} from "@cfd/obp-core";
-import { FakeObpPersistence } from "@cfd/obp-core/testing";
+} from "@khoralabs/obp-core";
+import { FakeObpPersistence } from "@khoralabs/obp-core/testing";
 import { buildAgentDemoGraphSnapshot } from "./agent-graph-snapshot.ts";
 import { getNegotiationModel, resolveDemoTurnBudgetMs } from "./agent-llm.ts";
 import { initiatorSignerFromBootstrap, loadClientBootstrapFile } from "./load-bootstrap.ts";

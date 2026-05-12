@@ -73,7 +73,7 @@ structure Port {
     @default("")
     ref: String
     sourcemaps: SourceMapRefList
-    /// JSON bind-policy meta-schema (structured encoding is TS/Zod `PortBindPolicy` in `@cfd/obp-core`); null means unconstrained. When non-null, **BINDS** payloads MUST satisfy this policy or the bind is rejected.
+    /// JSON bind-policy meta-schema (structured encoding is TS/Zod `PortBindPolicy` in `@khoralabs/obp-core`); null means unconstrained. When non-null, **BINDS** payloads MUST satisfy this policy or the bind is rejected.
     bind_policy: Document = null
     /// Negotiation TTL basis when set: **`turns`** (relative to coordinator turns + `expose_seq`) or **`ledger_seq`** (relative to ledger ticks + `expose_seq`). Empty when unset.
     @default("")

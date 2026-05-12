@@ -5,7 +5,7 @@ import type {
   SwarmHostEntityRow,
   SwarmHostEntityUpsert,
   SwarmHostPostPersistence,
-} from "@cfd/swarm-host";
+} from "@khoralabs/swarm-host";
 import { listPostRowsByAuthorProfileIdAndKind } from "./probe-posts-sqlite.ts";
 import { ensureSwarmHostSqliteSchema } from "./schema.ts";
 

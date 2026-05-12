@@ -1,4 +1,4 @@
-import type { EmbeddingModel } from "@cfd/memories-tools";
+import type { EmbeddingModel } from "@khoralabs/memories-tools";
 
 /** Per-request metadata for domain ingestion (correlation, tenant, etc.). */
 export type AdapterIngestContext = {

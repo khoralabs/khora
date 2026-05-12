@@ -4,12 +4,12 @@ import type {
   RegisteredAgentIdentity,
   SessionContext,
   SessionRunner,
-} from "@cfd/agent-identity";
+} from "@khoralabs/agent-identity";
 import {
   attachMemorySearchSessionLayer,
   type MemorySearchSessionContextSlice,
   type ZodLabelMap,
-} from "@cfd/memories-tools";
+} from "@khoralabs/memories-tools";
 import type { LanguageModel } from "ai";
 import { parseAdapterGenerationToExpandedMemoryWire } from "./adapter-output.js";
 import type { AdapterPipelineGeneration } from "./create-adapter-agent.js";

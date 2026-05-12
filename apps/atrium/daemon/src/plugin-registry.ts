@@ -2,10 +2,10 @@ import {
   ATRIUM_BUILTIN_PLUGIN_ID,
   type AtriumAppPluginMap,
   type AtriumPluginInstaller,
-  labelAtriumPlugin,
   type LabeledAtriumPluginInstaller,
-} from "@cfd/atrium-client";
-import { inboxBufferPlugin } from "@cfd/atrium-plugin-inbox-buffer";
+  labelAtriumPlugin,
+} from "@khoralabs/atrium-client";
+import { inboxBufferPlugin } from "@khoralabs/atrium-plugin-inbox-buffer";
 
 // The daemon only emits `inbox:*` events; inbox-buffer is the one builtin it materializes. Other
 // builtin ids (profile-sync, telemetry) are owned by the CLI and silently skipped here.

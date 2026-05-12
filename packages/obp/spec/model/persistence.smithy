@@ -30,13 +30,13 @@ OBP is a small typed graph for causal interaction history: **Party** → **Offer
 
 **Revocation (soft close):** implementations MAY support setting **`expires_seq`** on **Port** / **Offer** to the **current ledger sequence** so subsequent binds fail the expiry check. **ListExposedPortEdges** supports enumerating EXPOSES for orchestration (e.g. dynamic tools).
 
-**Orchestration reads:** **IsPortExposed**, **ListBinds**, **GetPortsSnapshot**, and **GetExtendingPartyId** mirror the **`ObpPersistence`** strategy surface in `@cfd/obp-core` (same semantics as TS **`OBPPersistenceClient`** precondition helpers).
+**Orchestration reads:** **IsPortExposed**, **ListBinds**, **GetPortsSnapshot**, and **GetExtendingPartyId** mirror the **`ObpPersistence`** strategy surface in `@khoralabs/obp-core` (same semantics as TS **`OBPPersistenceClient`** precondition helpers).
 
 **Errors:** Operations model **success** shapes only. Implementations may throw or map failures for: not found, expired, not exposed, max bindings exceeded, ref cycle, invalid graph, bind-policy validation failure.
 
 **Transactions:** **ExtendOffer**, **ExposePort**, and **BindPort** SHOULD run atomically where the backend supports transactions. Under concurrent load, **`max_bindings`** enforcement **MUST** remain atomic (see invariant **10**).
 
-**Smithy ↔ TS unions:** **GetPartyResult** / **GetOfferResult** / **GetPortResult** (`notFound` vs payload) correspond to TS `{ kind: "notFound" } | { kind: "found"; … }` (parity matrix in `@cfd/obp-core` README).
+**Smithy ↔ TS unions:** **GetPartyResult** / **GetOfferResult** / **GetPortResult** (`notFound` vs payload) correspond to TS `{ kind: "notFound" } | { kind: "found"; … }` (parity matrix in `@khoralabs/obp-core` README).
 
 **Structured bind_policy:** Smithy uses **`Document`**; constrained JSON shape is validated in TS via Zod (`PortBindPolicy`).
 

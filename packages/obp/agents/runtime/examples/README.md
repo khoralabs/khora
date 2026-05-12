@@ -1,6 +1,6 @@
 # OBP agent-runtime examples (LLM)
 
-Tiny **Bun** server with multiple **scenarios**, each with its own HTML entry and **namespaced API**. Uses in-memory `FakeObpPersistence` (not SQLite), **Gemini** structured turns via the bilateral coordinator contract, and [**React Flow**](https://reactflow.dev/api-reference) (`@cfd/obp-react`) for the negotiation DAG.
+Tiny **Bun** server with multiple **scenarios**, each with its own HTML entry and **namespaced API**. Uses in-memory `FakeObpPersistence` (not SQLite), **Gemini** structured turns via the bilateral coordinator contract, and [**React Flow**](https://reactflow.dev/api-reference) (`@khoralabs/obp-react`) for the negotiation DAG.
 
 The UI libraries (`react`, `react-dom`, `@xyflow/react`) are **`devDependencies`** of this package—they are **not** imported by the library entrypoint. Run `bun install` without **`--production`** so `bun run example` can bundle the UI.
 

@@ -17,7 +17,7 @@ export function buildMatchmakingAppUserObpAgentNamespace(
 
 /**
  * OBP negotiator `agentNamespace` segment: subject + slug (separate from memory KG path).
- * Used with {@link import("@cfd/obp-negotiator").buildObpNegotiatorAgentId}.
+ * Used with {@link import("@khoralabs/obp-negotiator").buildObpNegotiatorAgentId}.
  */
 export function buildMatchmakingObpAgentNamespace(
   slug: string,

@@ -5,9 +5,9 @@
  * Env: OBP_URL (default http://127.0.0.1:8765), OBP_DEMO_CLIENT_BOOTSTRAP
  */
 
-import { connectObpSession } from "@cfd/obp-client";
-import { createEd25519FrameVerifier } from "@cfd/obp-core";
-import { FakeObpPersistence } from "@cfd/obp-core/testing";
+import { connectObpSession } from "@khoralabs/obp-client";
+import { createEd25519FrameVerifier } from "@khoralabs/obp-core";
+import { FakeObpPersistence } from "@khoralabs/obp-core/testing";
 import { initiatorSignerFromBootstrap, loadClientBootstrapFile } from "./load-bootstrap.ts";
 
 const bootstrap = await loadClientBootstrapFile();

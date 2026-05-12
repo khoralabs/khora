@@ -4,7 +4,7 @@ import type {
   RegisteredAgentIdentity,
   SessionContext,
   SessionRunner,
-} from "@cfd/agent-identity";
+} from "@khoralabs/agent-identity";
 import { type FlexibleSchema, generateObject, type LanguageModel } from "ai";
 import {
   buildObpNegotiatorAgentId,
@@ -18,9 +18,9 @@ import { obpNegotiatorStructuredInstructionAppendix } from "./instructions.ts";
  * {@link ObpNegotiatorStructuredSessionContext}.
  *
  * Defined here (not imported from any orchestrator package) so the negotiator
- * remains decoupled from `@cfd/obp-agent-runtime`. Any host can produce one of
+ * remains decoupled from `@khoralabs/obp-agent-runtime`. Any host can produce one of
  * these — see `createNegotiationStructuredBilateralContract` in
- * `@cfd/obp-agent-runtime` for the bilateral reference implementation.
+ * `@khoralabs/obp-agent-runtime` for the bilateral reference implementation.
  */
 export type ObpNegotiatorPreparedTurn = {
   /**

@@ -1,4 +1,8 @@
-import { defineOntology, type LabelSchemaMap, type OntologyDefinition } from "@cfd/memories-core";
+import {
+  defineOntology,
+  type LabelSchemaMap,
+  type OntologyDefinition,
+} from "@khoralabs/memories-core";
 import z from "zod";
 
 /** Edge kind for retrieval-only links (lexical / hybrid search grounding). */

@@ -1,6 +1,6 @@
-# @cfd/memories-sqlite
+# @khoralabs/memories-sqlite
 
-SQLite-backed implementation of the memories **persistence** contract (`MemoriesPersistence`): transactional merge/delete, hybrid lexical + vector search (with sqlite-vec), graph neighbors, and optional label-props search text. This is the **reference** store for parity with `@cfd/memories-core` and the Smithy persistence model.
+SQLite-backed implementation of the memories **persistence** contract (`MemoriesPersistence`): transactional merge/delete, hybrid lexical + vector search (with sqlite-vec), graph neighbors, and optional label-props search text. This is the **reference** store for parity with `@khoralabs/memories-core` and the Smithy persistence model.
 
 ## Exports
 
@@ -10,7 +10,7 @@ SQLite-backed implementation of the memories **persistence** contract (`Memories
 
 ## Client usage
 
-The sync **`MemoriesClient`** from `@cfd/memories-core` (not this package) takes `{ persistence }` where `persistence` is the object from `createMemoriesPersistence`. Async call sites that target Convex should use `@cfd/memories-convex` instead, which white-labels async APIs.
+The sync **`MemoriesClient`** from `@khoralabs/memories-core` (not this package) takes `{ persistence }` where `persistence` is the object from `createMemoriesPersistence`. Async call sites that target Convex should use `@khoralabs/memories-convex` instead, which white-labels async APIs.
 
 ## Parity
 

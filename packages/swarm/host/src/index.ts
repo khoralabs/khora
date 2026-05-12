@@ -3,7 +3,7 @@ export type {
   HybridMemorySearchInput,
   HybridMemorySearchOptions,
   MemorySearchHit,
-} from "@cfd/memories-core/helpers";
+} from "@khoralabs/memories-core/helpers";
 export {
   createSwarmMemoriesSyncHandler,
   SWARM_EVENT_KIND,

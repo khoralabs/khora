@@ -6,8 +6,8 @@ import type {
   ResolvedSourceMapLine,
   SourceMap,
   Store,
-} from "@cfd/memories-core";
-import type { TextFeatureExportRow } from "@cfd/memories-core/persistence";
+} from "@khoralabs/memories-core";
+import type { TextFeatureExportRow } from "@khoralabs/memories-core/persistence";
 
 function storeKey(memoryId: string, sourceKey: string): string {
   return `${memoryId}\n${sourceKey}`;

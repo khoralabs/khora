@@ -1,4 +1,4 @@
-import type { NegotiationPortTtlBasis } from "@cfd/obp-core";
+import type { NegotiationPortTtlBasis } from "@khoralabs/obp-core";
 import z from "zod";
 
 export type TtlBasis = NegotiationPortTtlBasis;

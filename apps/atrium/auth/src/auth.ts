@@ -5,7 +5,7 @@ import type {
   DidVerifier,
   InboxAccessVerifyContext,
   RegistrationVerifyContext,
-} from "@cfd/swarm-host";
+} from "@khoralabs/swarm-host";
 import type { NonceStore } from "./nonce-store.ts";
 import { createSqliteNonceStore } from "./sqlite-nonce-store.ts";
 import type { AuthStrategy } from "./strategy.ts";

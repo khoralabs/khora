@@ -2,8 +2,8 @@ import { expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { verifyInvite } from "@cfd/obp-auth";
-import { normalizeSessionInit } from "@cfd/obp-core";
+import { verifyInvite } from "@khoralabs/obp-auth";
+import { normalizeSessionInit } from "@khoralabs/obp-core";
 import { writeDemoBootstrap } from "./scripts/gen-bootstrap.ts";
 import { loadClientBootstrapFile, loadServerBootstrapFile } from "./scripts/load-bootstrap.ts";
 

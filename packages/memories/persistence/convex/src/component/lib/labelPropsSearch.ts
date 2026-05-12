@@ -4,13 +4,13 @@ import {
   isNonEmptyProps,
   namespacePath,
   namespacePrefixFieldsCamel,
-} from "@cfd/memories-core";
+} from "@khoralabs/memories-core";
 import {
   MEMORY_EDGE_LABEL_PROPS_KEY_PREFIX,
   MEMORY_NODE_LABEL_PROPS_KEY_PREFIX,
   memoryEdgeLabelPropsSourceKey,
   memoryNodeLabelPropsSourceKey,
-} from "@cfd/memories-core/search-meta-constants";
+} from "@khoralabs/memories-core/search-meta-constants";
 import type { MutationCtx } from "../_generated/server.js";
 import { CONVEX_VECTOR_DIMENSIONS, vectorTableNameForDim } from "./vectorConfig.js";
 

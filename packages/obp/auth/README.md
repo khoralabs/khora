@@ -1,6 +1,6 @@
-# `@cfd/obp-auth`
+# `@khoralabs/obp-auth`
 
-Optional **transport admission** helpers for OBP HTTP/2 bindings: prove an inbound connection is allowed to use a given **`SessionInit`** before frames flow. Does **not** replace frame-level Ed25519 (**`FrameDag`**) in **`@cfd/obp-core`**.
+Optional **transport admission** helpers for OBP HTTP/2 bindings: prove an inbound connection is allowed to use a given **`SessionInit`** before frames flow. Does **not** replace frame-level Ed25519 (**`FrameDag`**) in **`@khoralabs/obp-core`**.
 
 ## Pairing ticket (shared secret)
 
@@ -28,6 +28,6 @@ Use when clients pin the responder’s OBP pubkey (discovery, config, TLS pubkey
 Apps still own **`onConnect`** policy (e.g. extracting **`Authorization: Bearer …`**) and persistence hydration.
 
 ```bash
-bun run --filter @cfd/obp-auth typecheck
-bun run --filter @cfd/obp-auth test
+bun run --filter @khoralabs/obp-auth typecheck
+bun run --filter @khoralabs/obp-auth test
 ```

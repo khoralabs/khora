@@ -32,7 +32,7 @@ bun run client
 
 ### Agent-driven (Gemini)
 
-Requires `GOOGLE_API_KEY` (or `GOOGLE_GENERATIVE_AI_API_KEY` / `GEMINI_API_KEY`). Uses `@cfd/obp-agent-runtime` structured bilateral contract, **`auditToTurnBody`** for wire turns, and the same **`@cfd/obp-negotiator`** structured session path as [`packages/obp/agents/runtime/examples`](../../packages/obp/agents/runtime/examples): **`createAgentRegistry`** + **`ensureObpNegotiatorStructuredAgentRegistered`** (`scripts/network-negotiator-setup.ts`), then **`registry.createSession`** → **`generateObject`** inside the negotiator runner.
+Requires `GOOGLE_API_KEY` (or `GOOGLE_GENERATIVE_AI_API_KEY` / `GEMINI_API_KEY`). Uses `@khoralabs/obp-agent-runtime` structured bilateral contract, **`auditToTurnBody`** for wire turns, and the same **`@khoralabs/obp-negotiator`** structured session path as [`packages/obp/agents/runtime/examples`](../../packages/obp/agents/runtime/examples): **`createAgentRegistry`** + **`ensureObpNegotiatorStructuredAgentRegistered`** (`scripts/network-negotiator-setup.ts`), then **`registry.createSession`** → **`generateObject`** inside the negotiator runner.
 
 **Terminal A:** `bun run agent-server`  
 **Terminal B:** `bun run agent-client`

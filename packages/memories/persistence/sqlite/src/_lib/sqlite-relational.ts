@@ -1,4 +1,4 @@
-import { documentValidator, type ZIdMeta } from "@cfd/memories-core/persistence";
+import { documentValidator, type ZIdMeta } from "@khoralabs/memories-core/persistence";
 import type z from "zod";
 
 function zodDef(t: z.ZodType): { type?: string; format?: string; check?: string } | undefined {

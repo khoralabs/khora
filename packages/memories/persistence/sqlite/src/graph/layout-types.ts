@@ -1,4 +1,4 @@
-import type { OntologyLabelInstance } from "@cfd/memories-core";
+import type { OntologyLabelInstance } from "@khoralabs/memories-core";
 
 export type GraphLayoutNode = {
   key: string;

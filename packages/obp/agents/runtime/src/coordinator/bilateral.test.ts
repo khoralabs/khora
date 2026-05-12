@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { OBPPersistenceClient } from "@cfd/obp-core";
-import { FakeObpPersistence } from "@cfd/obp-core/testing";
+import { OBPPersistenceClient } from "@khoralabs/obp-core";
+import { FakeObpPersistence } from "@khoralabs/obp-core/testing";
 import { ObpLedger } from "../ledger.ts";
 import type { PreparedTurn, TurnContract } from "../turn-contract.ts";
 import { BilateralCoordinator } from "./bilateral.ts";

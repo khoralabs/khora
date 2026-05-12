@@ -1,4 +1,4 @@
-import type { GraphSnapshot } from "@cfd/obp-core";
+import type { GraphSnapshot } from "@khoralabs/obp-core";
 
 export type BindOption = {
   portId: string;

@@ -1,5 +1,5 @@
 /**
- * Structural match for `@cfd/obp-core` `SessionInitWire` (registration / bearer invites).
+ * Structural match for `@khoralabs/obp-core` `SessionInitWire` (registration / bearer invites).
  * Assign values produced by that package without importing it here (keeps this package’s typecheck isolated).
  */
 export type RegistrationSessionWire = {
@@ -11,7 +11,7 @@ export type RegistrationSessionWire = {
 
 /**
  * Session-bound registration proof aligned with `verifyInvite` and obp-networked-demo bootstrap flows.
- * For the signed invite envelope type, use `ObpSessionInvitePayload` from `@cfd/obp-auth`.
+ * For the signed invite envelope type, use `ObpSessionInvitePayload` from `@khoralabs/obp-auth`.
  */
 export type RegistrationInviteProof = {
   session: RegistrationSessionWire;

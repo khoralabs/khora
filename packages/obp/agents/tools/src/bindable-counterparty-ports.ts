@@ -1,5 +1,5 @@
-import type { OBPPersistenceClient, ObpPersistence } from "@cfd/obp-core";
-import { validateBindPreconditions } from "@cfd/obp-core";
+import type { OBPPersistenceClient, ObpPersistence } from "@khoralabs/obp-core";
+import { validateBindPreconditions } from "@khoralabs/obp-core";
 import { parsePriceFromType } from "./encoding.ts";
 import type { ObpToolkitEnv } from "./obp-toolkit-env.ts";
 

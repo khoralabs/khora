@@ -1,10 +1,10 @@
-export type { ProviderOptions } from "@cfd/memories-core/helpers";
+export type { ProviderOptions } from "@khoralabs/memories-core/helpers";
 export {
   aiSdkEmbeddingModelId,
   createMemoriesEmbeddingModel,
   type EmbeddingModel,
   embedTextChunks,
-} from "@cfd/memories-core/helpers";
+} from "@khoralabs/memories-core/helpers";
 export {
   DEFAULT_INVESTIGATOR_MAX_STEPS,
   DEFAULT_MEMORY_TOOL_LOOP_MAX_STEPS,

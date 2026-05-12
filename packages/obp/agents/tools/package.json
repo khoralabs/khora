@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/obp-tools",
+  "name": "@khoralabs/obp-tools",
   "version": "0.0.0",
   "module": "src/index.ts",
   "type": "module",
@@ -12,12 +12,12 @@
     }
   },
   "dependencies": {
-    "@cfd/agent-identity": "workspace:*",
-    "@cfd/obp-core": "workspace:*",
+    "@khoralabs/agent-identity": "workspace:*",
+    "@khoralabs/obp-core": "workspace:*",
     "zod": "^4"
   },
   "devDependencies": {
-    "@cfd/obp-sqlite": "workspace:*",
+    "@khoralabs/obp-sqlite": "workspace:*",
     "@types/bun": "latest"
   },
   "peerDependencies": {

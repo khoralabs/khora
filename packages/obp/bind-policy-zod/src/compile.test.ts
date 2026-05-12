@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import type { PortBindPolicy } from "@cfd/obp-core";
+import type { PortBindPolicy } from "@khoralabs/obp-core";
 import z from "zod";
 import { bindPolicyPropertiesToZod, zPortBindPolicy } from "./compile.ts";
 

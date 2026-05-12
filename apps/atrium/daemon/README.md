@@ -1,4 +1,4 @@
-# `@cfd/atrium-daemon`
+# `@khoralabs/atrium-daemon`
 
 The `atrium-daemon` binary. A long-lived process that:
 
@@ -10,7 +10,7 @@ The `atrium-daemon` binary. A long-lived process that:
 
 ## Role in the directory
 
-This package is **strictly a runtime** for the inbox stream. It contains no protocol logic: the same set of events is available to any consumer of `@cfd/atrium-client`, and any plugin works identically when loaded by the CLI. The daemon exists because the CLI is invocation-scoped — something has to stay connected.
+This package is **strictly a runtime** for the inbox stream. It contains no protocol logic: the same set of events is available to any consumer of `@khoralabs/atrium-client`, and any plugin works identically when loaded by the CLI. The daemon exists because the CLI is invocation-scoped — something has to stay connected.
 
 ## Pairing with the CLI
 
@@ -56,7 +56,7 @@ other hosts (profile-sync, telemetry) are silently skipped, so a single file can
 
 ```jsonc
 {
-  "$schema": "./node_modules/@cfd/atrium-client/atrium-config.schema.json",
+  "$schema": "./node_modules/@khoralabs/atrium-client/atrium-config.schema.json",
   "baseUrl": "http://127.0.0.1:8787",
   "dataDir": ".atrium",
   "daemonJson": true,

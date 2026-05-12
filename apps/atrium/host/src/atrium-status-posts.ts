@@ -1,5 +1,5 @@
-import { type AtriumPost, zAtriumPost } from "@cfd/atrium-contracts";
-import { SWARM_AGGREGATE_DOMAIN, SWARM_EVENT_KIND } from "@cfd/swarm-host";
+import { type AtriumPost, zAtriumPost } from "@khoralabs/atrium-contracts";
+import { SWARM_AGGREGATE_DOMAIN, SWARM_EVENT_KIND } from "@khoralabs/swarm-host";
 import type { AtriumHostContext } from "./create-atrium-host.ts";
 
 /**

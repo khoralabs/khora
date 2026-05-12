@@ -1,8 +1,8 @@
 /**
- * Maps evaluated `@cfd/agent-identity` {@link ToolSpec} into Vercel AI SDK {@link tool}.
+ * Maps evaluated `@khoralabs/agent-identity` {@link ToolSpec} into Vercel AI SDK {@link tool}.
  */
 
-import type { ToolRuntimeContext, ToolSpec } from "@cfd/agent-identity";
+import type { ToolRuntimeContext, ToolSpec } from "@khoralabs/agent-identity";
 import { type Tool, tool } from "ai";
 
 export function toolSpecToAiTool(

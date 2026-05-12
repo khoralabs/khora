@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/agent-identity-adapters",
+  "name": "@khoralabs/agent-identity-adapters",
   "module": "src/index.ts",
   "type": "module",
   "private": true,
@@ -11,7 +11,7 @@
     }
   },
   "dependencies": {
-    "@cfd/agent-identity": "workspace:*",
+    "@khoralabs/agent-identity": "workspace:*",
     "ai": "^6"
   },
   "scripts": {

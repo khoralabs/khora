@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test";
-import { evaluateComposable } from "@cfd/agent-identity";
-import { toolMapToAiTools } from "@cfd/agent-identity-adapters";
-import type { NamespacePath, SearchParams } from "@cfd/memories-core";
-import type { EmbeddingModel } from "@cfd/memories-core/helpers";
+import { evaluateComposable } from "@khoralabs/agent-identity";
+import { toolMapToAiTools } from "@khoralabs/agent-identity-adapters";
+import type { NamespacePath, SearchParams } from "@khoralabs/memories-core";
+import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import { memorySearchToolkit } from "./memory-search-toolkit.js";
 import { toMemorySearchEnv } from "./toolkit-context.js";
 

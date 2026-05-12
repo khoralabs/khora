@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/swarm-host",
+  "name": "@khoralabs/swarm-host",
   "version": "0.0.0",
   "type": "module",
   "private": true,
@@ -12,20 +12,20 @@
     }
   },
   "dependencies": {
-    "@cfd/frame-channel": "workspace:*",
-    "@cfd/memories-core": "workspace:*",
+    "@khoralabs/frame-channel": "workspace:*",
+    "@khoralabs/memories-core": "workspace:*",
     "zod": "^4"
   },
   "peerDependencies": {
-    "@cfd/obp-auth": "workspace:*",
-    "@cfd/obp-core": "workspace:*",
+    "@khoralabs/obp-auth": "workspace:*",
+    "@khoralabs/obp-core": "workspace:*",
     "typescript": "^5"
   },
   "peerDependenciesMeta": {
-    "@cfd/obp-auth": {
+    "@khoralabs/obp-auth": {
       "optional": true
     },
-    "@cfd/obp-core": {
+    "@khoralabs/obp-core": {
       "optional": true
     }
   },

@@ -4,7 +4,7 @@ import {
   generateEd25519KeyPair,
   normalizeSessionInit,
   sha256HexUtf8,
-} from "@cfd/obp-core";
+} from "@khoralabs/obp-core";
 import { signInvite, verifyInvite } from "./invite.ts";
 
 test("invite roundtrip and expiry", async () => {

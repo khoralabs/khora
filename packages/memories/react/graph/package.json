@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/memories-react-graph",
+  "name": "@khoralabs/memories-react-graph",
   "version": "0.0.0",
   "module": "src/index.ts",
   "type": "module",

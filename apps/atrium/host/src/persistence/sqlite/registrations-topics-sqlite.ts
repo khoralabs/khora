@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { AgentDid } from "@cfd/swarm-host";
+import type { AgentDid } from "@khoralabs/swarm-host";
 import { ensureSwarmHostSqliteSchema } from "./schema.ts";
 
 export type RegistrationsTopicsRepo = {

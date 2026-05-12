@@ -7,7 +7,7 @@ import {
   type SessionInitWire,
   sessionInitFromWire,
   sessionInitToWire,
-} from "@cfd/obp-core";
+} from "@khoralabs/obp-core";
 
 function toB64Url(bytes: Uint8Array): string {
   return Buffer.from(bytes).toString("base64url");

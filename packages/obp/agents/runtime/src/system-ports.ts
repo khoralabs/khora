@@ -1,5 +1,5 @@
-import type { OBPPersistenceClient } from "@cfd/obp-core";
-import { type BindableCounterpartyPort, newestOfferIdAmongBindable } from "@cfd/obp-tools";
+import type { OBPPersistenceClient } from "@khoralabs/obp-core";
+import { type BindableCounterpartyPort, newestOfferIdAmongBindable } from "@khoralabs/obp-tools";
 import {
   noopPortIdForHeadOffer,
   OBP_AGENT_RUNTIME_NOOP_PORT_DESCRIPTION,

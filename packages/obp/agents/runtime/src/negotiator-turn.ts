@@ -1,10 +1,10 @@
-import type { AgentRegistry, RegisteredAgentIdentity } from "@cfd/agent-identity";
-import type { TurnBody } from "@cfd/obp-core";
+import type { AgentRegistry, RegisteredAgentIdentity } from "@khoralabs/agent-identity";
+import type { TurnBody } from "@khoralabs/obp-core";
 import type {
   ObpNegotiatorPreparedTurn,
   ObpNegotiatorStructuredSessionInput,
   ObpNegotiatorStructuredSessionOutput,
-} from "@cfd/obp-negotiator";
+} from "@khoralabs/obp-negotiator";
 import type { LanguageModel } from "ai";
 
 import type { ObpLedger } from "./ledger.ts";

@@ -1,4 +1,4 @@
-import type { RegisteredAgentIdentity } from "@cfd/agent-identity";
+import type { RegisteredAgentIdentity } from "@khoralabs/agent-identity";
 import type { MeetingSeedPayload } from "../memories/meeting-seed-payload.ts";
 
 export type MatchmakingPersonaProfile = {
@@ -12,7 +12,7 @@ export type MatchmakingPersonaProfile = {
  */
 export type MatchmakingPersona = {
   readonly slug: string;
-  /** Shown in UI and in {@link import("@cfd/obp-negotiator").defineObpNegotiatorIdentity} as `name`. */
+  /** Shown in UI and in {@link import("@khoralabs/obp-negotiator").defineObpNegotiatorIdentity} as `name`. */
   readonly displayName: string;
   readonly profile: MatchmakingPersonaProfile;
   /** Seeded memory KG path under the memories root. */

@@ -1,11 +1,11 @@
 import {
-  atriumAppConfigFromEnv,
   type AtriumPluginInstaller,
+  atriumAppConfigFromEnv,
   extendAtriumAppConfig,
   type InferAtriumAppConfig,
   loadAtriumAppConfig,
   resolveAtriumConfigPath,
-} from "@cfd/atrium-client";
+} from "@khoralabs/atrium-client";
 import { buildCliPluginInstallers } from "./plugin-registry.ts";
 
 export const zCliAppConfig = extendAtriumAppConfig({
@@ -37,10 +37,9 @@ export type CliAppConfigBundle = {
   installers: AtriumPluginInstaller[];
 };
 
-export function createCliAppConfig(opts: {
-  argv?: readonly string[];
-  env?: NodeJS.ProcessEnv;
-} = {}): CliAppConfigBundle {
+export function createCliAppConfig(
+  opts: { argv?: readonly string[]; env?: NodeJS.ProcessEnv } = {},
+): CliAppConfigBundle {
   const env = opts.env ?? process.env;
   const flagPath = extractConfigFlagFromArgv(opts.argv ?? process.argv);
   const resolved = resolveAtriumConfigPath({ flag: flagPath, env });

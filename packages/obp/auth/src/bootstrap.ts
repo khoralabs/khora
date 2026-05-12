@@ -1,6 +1,6 @@
 import type { webcrypto } from "node:crypto";
-import type { Party, SessionInit } from "@cfd/obp-core";
-import { createEd25519FrameSigner } from "@cfd/obp-core";
+import type { Party, SessionInit } from "@khoralabs/obp-core";
+import { createEd25519FrameSigner } from "@khoralabs/obp-core";
 
 /** Responder-only runtime config. Holds the responder key; no shared secret required. */
 export type ObpServerBootstrap = {

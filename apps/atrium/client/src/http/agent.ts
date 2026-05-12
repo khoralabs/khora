@@ -3,7 +3,7 @@ import {
   zAgentStatusResponse,
   zAtriumPost,
   zAtriumProfile,
-} from "@cfd/atrium-contracts";
+} from "@khoralabs/atrium-contracts";
 import z from "zod";
 import type { HttpTransport } from "./transport.ts";
 

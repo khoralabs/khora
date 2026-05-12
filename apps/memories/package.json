@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/memories",
+  "name": "@khoralabs/memories",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,11 +10,11 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.0",
-    "@cfd/agent-identity": "workspace:*",
-    "@cfd/memories-core": "workspace:*",
-    "@cfd/memories-investigator": "workspace:*",
-    "@cfd/memories-react-graph": "workspace:*",
-    "@cfd/memories-sqlite": "workspace:*",
+    "@khoralabs/agent-identity": "workspace:*",
+    "@khoralabs/memories-core": "workspace:*",
+    "@khoralabs/memories-investigator": "workspace:*",
+    "@khoralabs/memories-react-graph": "workspace:*",
+    "@khoralabs/memories-sqlite": "workspace:*",
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.2.3",

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ids, mergeMemory } from "@cfd/memories-core";
+import { ids, mergeMemory } from "@khoralabs/memories-core";
 import { createMemoriesPersistence, listMemoryNamespaces, openMemoriesDatabase } from "../index";
 
 describe("MemoriesGraphIndex per-entity reads", () => {

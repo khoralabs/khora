@@ -1,4 +1,4 @@
-import { type AgentRegistry, createAgentRegistry } from "@cfd/agent-identity";
+import { type AgentRegistry, createAgentRegistry } from "@khoralabs/agent-identity";
 import type { LanguageModel } from "ai";
 import type { DefineGoalExtractorIdentityOptions } from "./identity.ts";
 import type { GoalExtractionOutput } from "./output.ts";

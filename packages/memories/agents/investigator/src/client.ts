@@ -1,7 +1,7 @@
-import type { AgentRegistry } from "@cfd/agent-identity";
-import type { MemoriesClient, MemoriesClientAsync } from "@cfd/memories-core";
-import type { EmbeddingModel } from "@cfd/memories-tools";
-import { DEFAULT_INVESTIGATOR_MAX_STEPS } from "@cfd/memories-tools";
+import type { AgentRegistry } from "@khoralabs/agent-identity";
+import type { MemoriesClient, MemoriesClientAsync } from "@khoralabs/memories-core";
+import type { EmbeddingModel } from "@khoralabs/memories-tools";
+import { DEFAULT_INVESTIGATOR_MAX_STEPS } from "@khoralabs/memories-tools";
 import type { LanguageModel } from "ai";
 import type z from "zod";
 import type { InvestigatorPipelineGeneration } from "./create-investigator-agent.js";
@@ -21,7 +21,7 @@ export type MemoryInvestigatorClientOptions<
   TEdge extends Record<string, z.ZodType>,
 > = DefineMemoryInvestigatorIdentityOptions & {
   registry?: AgentRegistry;
-  /** Primary namespace subtree root for search (see `@cfd/memories-core` SearchParams). */
+  /** Primary namespace subtree root for search (see `@khoralabs/memories-core` SearchParams). */
   namespace: string;
   model: LanguageModel;
   client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>;

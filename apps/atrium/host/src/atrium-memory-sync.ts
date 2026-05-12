@@ -4,15 +4,15 @@ import {
   atriumPostLexicalText,
   atriumPostObservationSummary,
   atriumProfileLexicalText,
-} from "@cfd/atrium-contracts";
-import type { EmbeddingModel } from "@cfd/memories-core/helpers";
-import { embedTextChunks } from "@cfd/memories-core/helpers";
+} from "@khoralabs/atrium-contracts";
+import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
+import { embedTextChunks } from "@khoralabs/memories-core/helpers";
 import {
   SWARM_EVENT_KIND,
   type SwarmHostEventUnion,
   type SwarmMemoryOpMapper,
   type swarmHostOntology,
-} from "@cfd/swarm-host";
+} from "@khoralabs/swarm-host";
 import type { AtriumHostAppContext } from "./atrium-app-context.ts";
 
 type TNode = typeof swarmHostOntology.nodeLabels;

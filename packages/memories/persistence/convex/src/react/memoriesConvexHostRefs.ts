@@ -8,7 +8,7 @@ import type { MemoriesConvexApiSlice } from "../createConvexMemoriesPersistence.
  * @example
  * ```tsx
  * import { api } from "../convex/_generated/api";
- * import { memoriesConvexHostRefsFromApi } from "@cfd/memories-convex/react";
+ * import { memoriesConvexHostRefsFromApi } from "@khoralabs/memories-convex/react";
  *
  * <MemoriesPersistenceProvider client={client} componentApi={memoriesConvexHostRefsFromApi(api)} />
  * ```

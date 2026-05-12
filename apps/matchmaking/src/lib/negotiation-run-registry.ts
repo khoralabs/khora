@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { JsonlStore } from "@cfd/memories-stores";
+import { JsonlStore } from "@khoralabs/memories-stores";
 import { resolveMemoriesRoot } from "./memories/persisted-memories.ts";
 
 let serverRef: ReturnType<typeof Bun.serve> | null = null;

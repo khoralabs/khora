@@ -1,6 +1,6 @@
 import type { OutgoingHttpHeaders } from "node:http";
 import http2 from "node:http2";
-import type { FrameChannel } from "@cfd/frame-channel";
+import type { FrameChannel } from "@khoralabs/frame-channel";
 import {
   createEd25519FrameVerifier,
   type FrameMultiplexOpenerApi,
@@ -13,8 +13,8 @@ import {
   runFrameMultiplexSession,
   type SessionInit,
   type SessionOp,
-} from "@cfd/obp-core";
-import { type Checkpoint, checkpointFromOps, verifyExtends } from "@cfd/obp-session-sync";
+} from "@khoralabs/obp-core";
+import { type Checkpoint, checkpointFromOps, verifyExtends } from "@khoralabs/obp-session-sync";
 import { frameChannelFromClientStream } from "./http2-channel.ts";
 
 /** Re-exported opener surface for a multiplex HTTP/2 connection. */

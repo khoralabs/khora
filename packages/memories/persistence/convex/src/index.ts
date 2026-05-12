@@ -3,12 +3,12 @@ export type {
   TypedMergeParamsAsync as TypedMergeParams,
   TypedSearchHitAsync as TypedSearchHit,
   TypedSearchParamsAsync as TypedSearchParams,
-} from "@cfd/memories-core";
+} from "@khoralabs/memories-core";
 export {
   deleteMemoryAsync as deleteMemory,
   MemoriesClientAsync as MemoriesClient,
   searchAsync as search,
-} from "@cfd/memories-core";
+} from "@khoralabs/memories-core";
 export { api } from "./component/_generated/api.js";
 export { CONVEX_VECTOR_DIMENSIONS } from "./component/lib/vectorConfig.js";
 export { createConvexLexicalTextStore } from "./convexLexicalTextStore.js";

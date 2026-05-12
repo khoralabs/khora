@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import { documentValidator } from "@cfd/memories-core/persistence";
+import { documentValidator } from "@khoralabs/memories-core/persistence";
 import type z from "zod";
 import { extractRelationalSchema, quoteIdent } from "./sqlite-relational";
 

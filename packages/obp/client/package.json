@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/obp-client",
+  "name": "@khoralabs/obp-client",
   "version": "0.0.0",
   "type": "module",
   "private": true,
@@ -16,12 +16,12 @@
     "example:client": "bun run examples/simple-client.ts"
   },
   "dependencies": {
-    "@cfd/frame-channel": "workspace:*",
-    "@cfd/obp-core": "workspace:*",
-    "@cfd/obp-session-sync": "workspace:*"
+    "@khoralabs/frame-channel": "workspace:*",
+    "@khoralabs/obp-core": "workspace:*",
+    "@khoralabs/obp-session-sync": "workspace:*"
   },
   "devDependencies": {
-    "@cfd/obp-server": "workspace:*",
+    "@khoralabs/obp-server": "workspace:*",
     "@types/bun": "latest",
     "@types/node": "^22"
   },

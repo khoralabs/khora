@@ -1,5 +1,5 @@
 /**
- * OBP HTTP/2 server driven by @cfd/obp-agent-runtime structured bilateral contract + Gemini.
+ * OBP HTTP/2 server driven by @khoralabs/obp-agent-runtime structured bilateral contract + Gemini.
  *
  * Prerequisites: bun run bootstrap, GOOGLE_API_KEY
  * Env: same as scripts/server.ts plus OBP_NEGOTIATION_MODEL (optional)
@@ -12,12 +12,16 @@ import {
   type ObpLedger,
   type TurnContract,
   wireStructuredTurnSummary,
-} from "@cfd/obp-agent-runtime";
-import { verifyInvite } from "@cfd/obp-auth";
-import type { FrameSessionHandle, Party, TurnBody } from "@cfd/obp-core";
-import { createEd25519FrameVerifier, OBPPersistenceClient, partyIdForSigner } from "@cfd/obp-core";
-import { FakeObpPersistence } from "@cfd/obp-core/testing";
-import { parseBearerToken, serveObp } from "@cfd/obp-server";
+} from "@khoralabs/obp-agent-runtime";
+import { verifyInvite } from "@khoralabs/obp-auth";
+import type { FrameSessionHandle, Party, TurnBody } from "@khoralabs/obp-core";
+import {
+  createEd25519FrameVerifier,
+  OBPPersistenceClient,
+  partyIdForSigner,
+} from "@khoralabs/obp-core";
+import { FakeObpPersistence } from "@khoralabs/obp-core/testing";
+import { parseBearerToken, serveObp } from "@khoralabs/obp-server";
 import { buildAgentDemoGraphSnapshot } from "./agent-graph-snapshot.ts";
 import { getNegotiationModel, resolveDemoTurnBudgetMs } from "./agent-llm.ts";
 import { loadServerBootstrapFile, responderSignerFromBootstrap } from "./load-bootstrap.ts";

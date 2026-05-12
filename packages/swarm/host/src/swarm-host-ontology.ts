@@ -1,5 +1,5 @@
-import { defineOntology } from "@cfd/memories-core";
-import { canonicalOntology } from "@cfd/memories-core/ontologies";
+import { defineOntology } from "@khoralabs/memories-core";
+import { canonicalOntology } from "@khoralabs/memories-core/ontologies";
 import z from "zod";
 
 /** Canonical memories ontology plus Swarm-host labels (e.g. semantic probe subscriptions). */

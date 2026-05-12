@@ -1,4 +1,4 @@
-import type { MemoriesConvexApiSlice } from "@cfd/memories-convex";
+import type { MemoriesConvexApiSlice } from "@khoralabs/memories-convex";
 
 /**
  * Component API slice for `mergeMemory` atomic overload and lexical store wiring.

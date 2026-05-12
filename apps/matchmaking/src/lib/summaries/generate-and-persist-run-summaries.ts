@@ -1,4 +1,4 @@
-import { createAgentRegistry } from "@cfd/agent-identity";
+import { createAgentRegistry } from "@khoralabs/agent-identity";
 import { NegotiationSummaryClient } from "../agents/negotiation-summary/index.ts";
 import { getMatchmakingDomainRuntime } from "../domain/runtime/index.ts";
 import { getNegotiationModel } from "../matchmaking-obp/index.ts";

@@ -1,6 +1,6 @@
-# `@cfd/obp-client`
+# `@khoralabs/obp-client`
 
-HTTP/2 client for the OBP reference frame binding (`POST /obp/v1`), built on **`runFrameMultiplexSession`** (deferred opener) from `@cfd/obp-core`. Pairs with `@cfd/obp-server` (`serveObp`).
+HTTP/2 client for the OBP reference frame binding (`POST /obp/v1`), built on **`runFrameMultiplexSession`** (deferred opener) from `@khoralabs/obp-core`. Pairs with `@khoralabs/obp-server` (`serveObp`).
 
 ## Lifecycle
 
@@ -35,14 +35,14 @@ There is **no generic wire signal** for “no more ports will be exposed” unle
 | How long to wait for a bind | Timer + **`chain.terminate`** or teardown **`conn`** |
 | How long to wait for counterparty exposes | Timer + **`waitForTurn`** / **`waitForPortOnOffer`** (below) or app timeout |
 
-See **`@cfd/obp-core`** invariants and **`TurnBody`** / **`bind_policy`** on ports.
+See **`@khoralabs/obp-core`** invariants and **`TurnBody`** / **`bind_policy`** on ports.
 
 ### Awaiting inbound offers (`createNegotiationCoordinator`)
 
-Use **`createNegotiationCoordinator`** and **`waitForPortOnOffer`** from **`@cfd/obp-core`** to **`await`** the next inbound **`TurnBody`** matching a predicate (with optional **`timeoutMs`** / **`AbortSignal`**) while still wiring **`onIncomingOffer`** for replies. **`waitForTurn`** only matches turns observed **after** the waiter is registered; call **`dispose()`** if abandoning the chain early.
+Use **`createNegotiationCoordinator`** and **`waitForPortOnOffer`** from **`@khoralabs/obp-core`** to **`await`** the next inbound **`TurnBody`** matching a predicate (with optional **`timeoutMs`** / **`AbortSignal`**) while still wiring **`onIncomingOffer`** for replies. **`waitForTurn`** only matches turns observed **after** the waiter is registered; call **`dispose()`** if abandoning the chain early.
 
 ```ts
-import { createNegotiationCoordinator, waitForPortOnOffer } from "@cfd/obp-core";
+import { createNegotiationCoordinator, waitForPortOnOffer } from "@khoralabs/obp-core";
 
 const coord = createNegotiationCoordinator({
   async onIncomingOffer(body, chain) {
@@ -63,12 +63,12 @@ void (async () => {
 Use the same **`SessionInit`** shape as the server (**`parties`**, genesis, session id). Base URL is **`http://host:port`** or **`https://…`** for `http2.connect`.
 
 ```ts
-import { connectObpSession, type ObpConnectOptions } from "@cfd/obp-client";
+import { connectObpSession, type ObpConnectOptions } from "@khoralabs/obp-client";
 import {
   createEd25519FrameSigner,
   createEd25519FrameVerifier,
   generateEd25519KeyPair,
-} from "@cfd/obp-core";
+} from "@khoralabs/obp-core";
 
 const { sessionOps, checkpoint } = await connectObpSession(
   {
@@ -95,7 +95,7 @@ const { sessionOps, checkpoint } = await connectObpSession(
     await chain.sendTurn({ offerId: "open", offerType: "obp.frame", ports: [] });
   },
 );
-// checkpoint.seq === sessionOps.length; use with @cfd/obp-session-sync
+// checkpoint.seq === sessionOps.length; use with @khoralabs/obp-session-sync
 ```
 
 `Obp.connect` is an alias of `connectObpSession`.
@@ -106,11 +106,11 @@ Call **`conn.init`** again after earlier chains end (or overlap if both sides su
 
 ### Future ergonomics
 
-Rich **`Offer` / `Port`** OO wrappers or async iterators over ports remain optional layers above **`TurnBody`** + **`sendTurn`**; **`createNegotiationCoordinator`** is the thin **`waitForTurn`** helper in **`@cfd/obp-core`** today.
+Rich **`Offer` / `Port`** OO wrappers or async iterators over ports remain optional layers above **`TurnBody`** + **`sendTurn`**; **`createNegotiationCoordinator`** is the thin **`waitForTurn`** helper in **`@khoralabs/obp-core`** today.
 
 ## Session sync
 
-`checkpoint.seq` matches op count; pair with **`verifyExtends`** / envelopes per `@cfd/obp-session-sync`.
+`checkpoint.seq` matches op count; pair with **`verifyExtends`** / envelopes per `@khoralabs/obp-session-sync`.
 
 ## Verification
 

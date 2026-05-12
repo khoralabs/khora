@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { createMemoryFrameChannelPair } from "@cfd/frame-channel";
+import { createMemoryFrameChannelPair } from "@khoralabs/frame-channel";
 import { FakeObpPersistence } from "../testing/fake-obp-persistence.ts";
 import { sha256HexUtf8 } from "./dag.ts";
 import { runFrameMultiplexSession, runFrameSession } from "./session-pipeline.ts";

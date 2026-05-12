@@ -1,4 +1,4 @@
-import { ids, namespacePath, namespacePrefixFieldsCamel } from "@cfd/memories-core";
+import { ids, namespacePath, namespacePrefixFieldsCamel } from "@khoralabs/memories-core";
 import type { MutationCtx, QueryCtx } from "../_generated/server.js";
 import { buildCanonicalMemorySearchMetaText, MEMORY_SEARCH_META_SOURCE_KEY } from "./helpers.js";
 import { deleteMemoryScopesForMemoryImpl } from "./scopesConvex.js";

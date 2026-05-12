@@ -36,7 +36,7 @@ list HashChangeList {
     member: ToolRefHashChange
 }
 
-// --- Wire snapshots (no handlers; aligned with @cfd/agent-identity) ---
+// --- Wire snapshots (no handlers; aligned with @khoralabs/agent-identity) ---
 
 /// Serializable tool shape for hashing and interchange (handler omitted).
 structure ToolSpecWire {

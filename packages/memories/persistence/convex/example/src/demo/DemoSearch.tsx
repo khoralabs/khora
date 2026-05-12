@@ -1,11 +1,11 @@
-import type { ConvexMemoriesClient } from "@cfd/memories-convex";
+import type { ConvexMemoriesClient } from "@khoralabs/memories-convex";
 import {
   convexReactClientToMemoriesClient,
   createConvexLexicalTextStore,
   search,
-} from "@cfd/memories-convex";
-import type { MemoriesPersistenceAsync, SearchHit } from "@cfd/memories-core";
-import type { SourceMap } from "@cfd/memories-core/persistence";
+} from "@khoralabs/memories-convex";
+import type { MemoriesPersistenceAsync, SearchHit } from "@khoralabs/memories-core";
+import type { SourceMap } from "@khoralabs/memories-core/persistence";
 import type { ConvexReactClient } from "convex/react";
 import { useCallback, useMemo, useState } from "react";
 import { DEMO_NS, DEMO_NS_B, SEARCH_TOP_K } from "./constants.js";

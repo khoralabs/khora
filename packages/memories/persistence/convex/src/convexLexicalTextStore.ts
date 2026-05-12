@@ -1,12 +1,12 @@
-import type { DefaultEntityMap, Store } from "@cfd/memories-core";
-import type { SourceMap } from "@cfd/memories-core/persistence";
+import type { DefaultEntityMap, Store } from "@khoralabs/memories-core";
+import type { SourceMap } from "@khoralabs/memories-core/persistence";
 import type { FunctionReference } from "convex/server";
 
 type RunQuery = (ref: unknown, args: Record<string, unknown>) => Promise<unknown>;
 
 /**
  * {@link Store} backed by Convex `text_features` (lexical) via the component query
- * `getLexicalTextForMemorySource`. Same role as {@link JsonlStore} from `@cfd/memories-stores`,
+ * `getLexicalTextForMemorySource`. Same role as {@link JsonlStore} from `@khoralabs/memories-stores`,
  * but for data living in the Convex component.
  */
 export function createConvexLexicalTextStore(

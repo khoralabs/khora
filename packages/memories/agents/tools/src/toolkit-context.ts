@@ -4,9 +4,9 @@ import {
   type RegisteredAgentIdentity,
   type ToolkitContext,
   type ToolRuntimeContext,
-} from "@cfd/agent-identity";
-import type { MemoriesClient, MemoriesClientAsync } from "@cfd/memories-core";
-import type { EmbeddingModel } from "@cfd/memories-core/helpers";
+} from "@khoralabs/agent-identity";
+import type { MemoriesClient, MemoriesClientAsync } from "@khoralabs/memories-core";
+import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import type z from "zod";
 import type {
   MemorySearchEnv,
@@ -19,7 +19,7 @@ export type ZodLabelMap = Record<string, z.ZodType>;
 
 /**
  * Shared fields for memory-search session context: toolkit, runtime, and evaluated affordances.
- * Agents extend this with their own {@link @cfd/agent-identity!SessionContext} + model, etc.
+ * Agents extend this with their own {@link @khoralabs/agent-identity!SessionContext} + model, etc.
  */
 export type MemorySearchSessionContextSlice<
   TNode extends ZodLabelMap = ZodLabelMap,

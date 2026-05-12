@@ -1,12 +1,12 @@
-import { type AtriumPost, normalizeTopicSlug } from "@cfd/atrium-contracts";
-import type { DefaultEntityMap } from "@cfd/memories-core";
-import { type EmbeddingModel, embedTextChunks } from "@cfd/memories-core/helpers";
-import type { SwarmHostEventHandlerCtx } from "@cfd/swarm-host";
-import { deliverAgentNotification } from "@cfd/swarm-host";
+import { type AtriumPost, normalizeTopicSlug } from "@khoralabs/atrium-contracts";
+import type { DefaultEntityMap } from "@khoralabs/memories-core";
+import { type EmbeddingModel, embedTextChunks } from "@khoralabs/memories-core/helpers";
+import type { SwarmHostEventHandlerCtx } from "@khoralabs/swarm-host";
+import { deliverAgentNotification } from "@khoralabs/swarm-host";
 import type { AtriumHostAppContext } from "./atrium-app-context.ts";
 import type { ProbeSubscribersRepo } from "./persistence/sqlite/index.ts";
 
-type SwarmHostOntology = typeof import("@cfd/swarm-host").swarmHostOntology;
+type SwarmHostOntology = typeof import("@khoralabs/swarm-host").swarmHostOntology;
 type TNode = SwarmHostOntology["nodeLabels"];
 type TEdge = SwarmHostOntology["edgeLabels"];
 

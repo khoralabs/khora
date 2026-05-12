@@ -2,13 +2,13 @@ import {
   evaluateRegisteredAgentAffordances,
   type RegisteredAgentIdentity,
   type ToolPipelineHooks,
-} from "@cfd/agent-identity";
-import { toolMapToAiTools } from "@cfd/agent-identity-adapters";
+} from "@khoralabs/agent-identity";
+import { toolMapToAiTools } from "@khoralabs/agent-identity-adapters";
 import {
   buildObpToolkitContext,
   buildObpToolRuntimeContext,
   type ObpToolkitEnv,
-} from "@cfd/obp-tools";
+} from "@khoralabs/obp-tools";
 import { type LanguageModel, stepCountIs, type Tool, ToolLoopAgent } from "ai";
 
 export type ObpNegotiatorToolSet = Record<string, Tool<unknown, unknown>>;

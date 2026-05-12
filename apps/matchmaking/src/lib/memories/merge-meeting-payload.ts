@@ -1,7 +1,7 @@
-import { createAgentRegistry } from "@cfd/agent-identity";
-import { expandedDraftToLogicalMemoryInput, MemoryAdapterClient } from "@cfd/memories-adapter";
-import type { EmbeddingModel } from "@cfd/memories-core/helpers";
-import { processLogicalMemoryWithIntegrator } from "@cfd/memories-integrator";
+import { createAgentRegistry } from "@khoralabs/agent-identity";
+import { expandedDraftToLogicalMemoryInput, MemoryAdapterClient } from "@khoralabs/memories-adapter";
+import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
+import { processLogicalMemoryWithIntegrator } from "@khoralabs/memories-integrator";
 import type { LanguageModel } from "ai";
 import type { MatchmakingMemoriesBundle } from "./create-memories-bundle.ts";
 import {

@@ -43,7 +43,7 @@ function defineVectorFeaturesTable(dim: ConvexVectorDimension) {
 }
 
 /**
- * Lexical-first Convex schema aligned with @cfd/memories-core row shapes.
+ * Lexical-first Convex schema aligned with @khoralabs/memories-core row shapes.
  * Business ids (memoryId, etc.) are stored as string fields; Convex `_id` is internal.
  */
 export default defineSchema({

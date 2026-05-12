@@ -1,4 +1,4 @@
-# `@cfd/atrium-auth`
+# `@khoralabs/atrium-auth`
 
 The authentication layer shared by every other Atrium package. Owns:
 
@@ -14,11 +14,11 @@ The point of this package is that **swapping the auth scheme is a one-file chang
 
 ```mermaid
 graph LR
-  cli["@cfd/atrium-cli"] -->|"loadOrCreateIdentity, atrium key …"| auth["@cfd/atrium-auth"]
-  daemon["@cfd/atrium-daemon"] -->|"loadIdentity"| auth
-  client["@cfd/atrium-client"] -->|"AgentSigner, signAgentRequest, signedInboxUrl"| auth
-  host["@cfd/atrium-host"] -->|"createAtriumDidAuth(db)"| auth
-  auth -->|"DidVerifier interface"| swarm["@cfd/swarm-host"]
+  cli["@khoralabs/atrium-cli"] -->|"loadOrCreateIdentity, atrium key …"| auth["@khoralabs/atrium-auth"]
+  daemon["@khoralabs/atrium-daemon"] -->|"loadIdentity"| auth
+  client["@khoralabs/atrium-client"] -->|"AgentSigner, signAgentRequest, signedInboxUrl"| auth
+  host["@khoralabs/atrium-host"] -->|"createAtriumDidAuth(db)"| auth
+  auth -->|"DidVerifier interface"| swarm["@khoralabs/swarm-host"]
 ```
 
 ## Lifecycle
@@ -31,7 +31,7 @@ graph LR
 ### Host side
 
 ```ts
-import { createAtriumDidAuth } from "@cfd/atrium-auth";
+import { createAtriumDidAuth } from "@khoralabs/atrium-auth";
 
 const auth = createAtriumDidAuth({ db }); // SQLite nonce store + did:key Ed25519 default
 // Pass auth.verifier to SwarmHost; use auth.* on the HTTP boundary:

@@ -1,5 +1,5 @@
-import { CONVEX_VECTOR_DIMENSIONS } from "@cfd/memories-convex";
-import type { MemoriesPersistenceAsync } from "@cfd/memories-core";
+import { CONVEX_VECTOR_DIMENSIONS } from "@khoralabs/memories-convex";
+import type { MemoriesPersistenceAsync } from "@khoralabs/memories-core";
 import { useEffect, useState } from "react";
 
 export function DemoCapabilities({ persistence }: { persistence: MemoriesPersistenceAsync }) {

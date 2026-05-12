@@ -1,5 +1,9 @@
-import type { AtriumPost, AtriumProfile, AtriumRegistrationResult } from "@cfd/atrium-contracts";
-import type { AgentNotification } from "@cfd/swarm-host";
+import type {
+  AtriumPost,
+  AtriumProfile,
+  AtriumRegistrationResult,
+} from "@khoralabs/atrium-contracts";
+import type { AgentNotification } from "@khoralabs/swarm-host";
 import type { InboxNotificationRow } from "./inbox-ws.ts";
 
 /** Pull-based inbox list payload (same shape as `AtriumClient.listInbox` resolution value). */

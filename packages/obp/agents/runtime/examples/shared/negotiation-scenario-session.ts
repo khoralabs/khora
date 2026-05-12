@@ -1,10 +1,10 @@
-import { OBPPersistenceClient, type Party } from "@cfd/obp-core";
-import { FakeObpPersistence } from "@cfd/obp-core/testing";
+import { OBPPersistenceClient, type Party } from "@khoralabs/obp-core";
+import { FakeObpPersistence } from "@khoralabs/obp-core/testing";
 import type {
   ObpNegotiatorStructuredSessionContext,
   ObpNegotiatorStructuredSessionInput,
   ObpNegotiatorStructuredSessionOutput,
-} from "@cfd/obp-negotiator";
+} from "@khoralabs/obp-negotiator";
 import {
   BilateralCoordinator,
   createNegotiationStructuredBilateralContract,

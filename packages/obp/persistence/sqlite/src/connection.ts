@@ -1,5 +1,5 @@
 import { Database } from "bun:sqlite";
-import { ensureCustomSqliteForExtensions } from "@cfd/memories-sqlite";
+import { ensureCustomSqliteForExtensions } from "@khoralabs/memories-sqlite";
 import { OBP_SCHEMA_SQL } from "./schema";
 
 /** Add negotiation TTL / bind-policy columns to `obp_ports` when upgrading older DB files. */

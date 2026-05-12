@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createMemoriesPersistence, openMemoriesDatabase } from "@cfd/memories-sqlite";
+import { createMemoriesPersistence, openMemoriesDatabase } from "@khoralabs/memories-sqlite";
 import { canonicalOntology } from "../ontologies/cannonical";
 import type { TextFeatureExportRow } from "../persistence/row-schemas";
 import { MemoriesClient } from "./client";

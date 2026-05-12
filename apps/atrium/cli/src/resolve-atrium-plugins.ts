@@ -1,11 +1,11 @@
 import {
   type AtriumPluginInstaller,
-  labelAtriumPlugin,
   type LabeledAtriumPluginInstaller,
+  labelAtriumPlugin,
   mergeLabeledAtriumPluginLayers,
-} from "@cfd/atrium-client";
-import { buildCliPluginInstallers } from "./plugin-registry.ts";
+} from "@khoralabs/atrium-client";
 import { createCliAppConfig } from "./app-config.ts";
+import { buildCliPluginInstallers } from "./plugin-registry.ts";
 
 export type AtriumPluginCollisionPolicy = "first-wins" | "last-wins";
 

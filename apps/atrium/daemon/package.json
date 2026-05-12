@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/atrium-daemon",
+  "name": "@khoralabs/atrium-daemon",
   "version": "0.0.0",
   "description": "Inbox WebSocket listener. Env: ATRIUM_BASE_URL, ATRIUM_AGENT_KEY_PATH; optional inbox-buffer plugin via ATRIUM_DATA_DIR + ATRIUM_INBOX_BUFFER_DB. JSON lines: ATRIUM_DAEMON_JSON=1 or --json.",
   "type": "module",
@@ -26,9 +26,9 @@
     "start": "bun run src/main.ts"
   },
   "dependencies": {
-    "@cfd/atrium-auth": "workspace:*",
-    "@cfd/atrium-client": "workspace:*",
-    "@cfd/atrium-plugin-inbox-buffer": "workspace:*"
+    "@khoralabs/atrium-auth": "workspace:*",
+    "@khoralabs/atrium-client": "workspace:*",
+    "@khoralabs/atrium-plugin-inbox-buffer": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",

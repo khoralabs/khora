@@ -1,4 +1,4 @@
-import type { AgentNotification } from "@cfd/swarm-host";
+import type { AgentNotification } from "@khoralabs/swarm-host";
 import z from "zod";
 import type { InboxNotificationRow } from "../inbox-ws.ts";
 import type { HttpTransport } from "./transport.ts";

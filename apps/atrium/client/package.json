@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/atrium-client",
+  "name": "@khoralabs/atrium-client",
   "version": "0.0.0",
   "type": "module",
   "private": true,
@@ -18,9 +18,9 @@
     "build:schema": "bun run scripts/build-json-schema.ts"
   },
   "dependencies": {
-    "@cfd/atrium-auth": "workspace:*",
-    "@cfd/atrium-contracts": "workspace:*",
-    "@cfd/swarm-host": "workspace:*",
+    "@khoralabs/atrium-auth": "workspace:*",
+    "@khoralabs/atrium-contracts": "workspace:*",
+    "@khoralabs/swarm-host": "workspace:*",
     "zod": "^4"
   },
   "devDependencies": {

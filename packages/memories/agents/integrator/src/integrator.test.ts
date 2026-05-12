@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { defineOntology } from "@cfd/memories-core";
+import { defineOntology } from "@khoralabs/memories-core";
 import z from "zod";
 import { parseIntegratorPlanWire, zIntegratorPlanWire } from "./integrator-output.js";
 import { integratorWireToMergeSlice } from "./to-merge-slice.js";

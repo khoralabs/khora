@@ -1,4 +1,4 @@
-export type { AgentSigner } from "@cfd/atrium-auth";
+export type { AgentSigner } from "@khoralabs/atrium-auth";
 export type {
   AgentStatusResponse,
   AtriumInviteListResponse,
@@ -10,7 +10,7 @@ export type {
   AtriumProfilePatch,
   AtriumRegistrationRequestBody,
   AtriumRegistrationResult,
-} from "@cfd/atrium-contracts";
+} from "@khoralabs/atrium-contracts";
 export {
   atriumPostLexicalText,
   atriumPostObservationSummary,
@@ -31,12 +31,12 @@ export {
   zAtriumRegisterResult,
   zAtriumRegistrationMetadata,
   zAtriumRegistrationRequestBody,
-} from "@cfd/atrium-contracts";
+} from "@khoralabs/atrium-contracts";
 export type {
   AgentNotification,
   DidRegistrationRequest,
   DidRegistrationResult,
-} from "@cfd/swarm-host";
+} from "@khoralabs/swarm-host";
 export {
   type AgentStatusSnapshot,
   type AgentSyncSnapshot,
@@ -48,26 +48,6 @@ export {
   type ListInboxParams,
 } from "./atrium-client.ts";
 export { AtriumClientError } from "./atrium-client-error.ts";
-export {
-  type AtriumAppConfigBase,
-  type AtriumAppPluginMap,
-  atriumAppConfigFromEnv,
-  AtriumConfigError,
-  type AtriumConfigFileRead,
-  atriumConfigJsonSchema,
-  defaultAtriumConfigPath,
-  extendAtriumAppConfig,
-  type InferAtriumAppConfig,
-  type LoadAtriumAppConfigOptions,
-  type LoadedAtriumAppConfig,
-  loadAtriumAppConfig,
-  mergeAtriumAppConfigLayers,
-  readAtriumConfigFileWithExtends,
-  type ResolvedAtriumConfigPath,
-  resolveAtriumConfigPath,
-  zAtriumAppConfigBase,
-  zAtriumAppPluginMap,
-} from "./config/index.ts";
 export {
   type AtriumClientEvent,
   type AtriumDerivedInboxEvent,
@@ -85,6 +65,26 @@ export {
   labelAtriumPlugin,
   mergeLabeledAtriumPluginLayers,
 } from "./atrium-plugins.ts";
+export {
+  type AtriumAppConfigBase,
+  type AtriumAppPluginMap,
+  AtriumConfigError,
+  type AtriumConfigFileRead,
+  atriumAppConfigFromEnv,
+  atriumConfigJsonSchema,
+  defaultAtriumConfigPath,
+  extendAtriumAppConfig,
+  type InferAtriumAppConfig,
+  type LoadAtriumAppConfigOptions,
+  type LoadedAtriumAppConfig,
+  loadAtriumAppConfig,
+  mergeAtriumAppConfigLayers,
+  type ResolvedAtriumConfigPath,
+  readAtriumConfigFileWithExtends,
+  resolveAtriumConfigPath,
+  zAtriumAppConfigBase,
+  zAtriumAppPluginMap,
+} from "./config/index.ts";
 export {
   type InboxNotificationRow,
   type InboxWsNotificationMessage,

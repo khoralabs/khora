@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/memories-sqlite",
+  "name": "@khoralabs/memories-sqlite",
   "module": "src/index.ts",
   "type": "module",
   "private": true,
@@ -11,7 +11,7 @@
     }
   },
   "dependencies": {
-    "@cfd/memories-core": "workspace:*",
+    "@khoralabs/memories-core": "workspace:*",
     "ajv": "^8",
     "sqlite-vec": "^0.1.9",
     "umap-js": "^1.4.0",

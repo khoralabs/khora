@@ -1,5 +1,5 @@
-import { ids } from "@cfd/memories-core";
-import { MEMORY_SEARCH_META_SOURCE_KEY } from "@cfd/memories-core/search-meta-constants";
+import { ids } from "@khoralabs/memories-core";
+import { MEMORY_SEARCH_META_SOURCE_KEY } from "@khoralabs/memories-core/search-meta-constants";
 import type { MutationCtx, QueryCtx } from "../_generated/server.js";
 
 /** Read-capable Convex context (queries or mutations). */

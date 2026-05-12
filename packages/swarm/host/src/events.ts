@@ -4,7 +4,7 @@ import type {
   LabelSchemaMap,
   MemoriesClient,
   MergeMemoryParams,
-} from "@cfd/memories-core";
+} from "@khoralabs/memories-core";
 import type { DidRegistrationRequest } from "./registration/types.ts";
 
 /** Stable reference to the logical entity an event refers to. */

@@ -1,13 +1,17 @@
-import { type AgentRegistry, createAgentRegistry } from "@cfd/agent-identity";
-import type { MemoriesClient, MemoriesClientAsync, TypedMergeParams } from "@cfd/memories-core";
+import { type AgentRegistry, createAgentRegistry } from "@khoralabs/agent-identity";
+import type {
+  MemoriesClient,
+  MemoriesClientAsync,
+  TypedMergeParams,
+} from "@khoralabs/memories-core";
 import {
   decomposeLogicalMemoryToContent,
   type EmbeddingModel,
   type LogicalMemoryInput,
   mergeLogicalMemoryWithMergeSlice,
   type ProcessedLogicalMemory,
-} from "@cfd/memories-core/helpers";
-import { DEFAULT_MEMORY_TOOL_LOOP_MAX_STEPS } from "@cfd/memories-tools";
+} from "@khoralabs/memories-core/helpers";
+import { DEFAULT_MEMORY_TOOL_LOOP_MAX_STEPS } from "@khoralabs/memories-tools";
 import type { LanguageModel } from "ai";
 import type z from "zod";
 import { MemoryIntegratorClient } from "./client.js";

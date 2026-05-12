@@ -4,7 +4,7 @@ import {
   type EmbeddingModel,
   type EmbeddingResolutionPreset,
   mergeResolutionAndProviderOptions,
-} from "@cfd/memories-core/helpers";
+} from "@khoralabs/memories-core/helpers";
 import { resolveGeminiApiKey } from "../matchmaking-obp/index.ts";
 
 let google: ReturnType<typeof createGoogleGenerativeAI> | undefined;

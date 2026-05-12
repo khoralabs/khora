@@ -6,4 +6,4 @@ Core OBP graph semantics remain in [`shapes.smithy`](../spec/model/shapes.smithy
 
 ## Reference implementation
 
-TypeScript helpers live in **`@cfd/obp-session-sync`** (`packages/obp/session-sync`): canonical JSON, Merkle root/inclusion proofs, envelope verification—**no networking**. Implementations SHOULD match the Smithy text; if they diverge, treat Smithy as authoritative.
+TypeScript helpers live in **`@khoralabs/obp-session-sync`** (`packages/obp/session-sync`): canonical JSON, Merkle root/inclusion proofs, envelope verification—**no networking**. Implementations SHOULD match the Smithy text; if they diverge, treat Smithy as authoritative.

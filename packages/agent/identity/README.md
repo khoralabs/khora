@@ -1,4 +1,4 @@
-# @cfd/agent-identity
+# @khoralabs/agent-identity
 
 **Composable toolkits + policies → deterministic SHA-256 fingerprints** for static tool definitions and for the effective tool set at evaluation time—so you can correlate behavior with a **versioned capability snapshot** (logs, evals, storage).
 
@@ -34,7 +34,7 @@ import {
   computeRuntimeIdentityFromEvaluation,
   toolkit,
   tool,
-} from "@cfd/agent-identity";
+} from "@khoralabs/agent-identity";
 
 const search = tool({
   name: "search",

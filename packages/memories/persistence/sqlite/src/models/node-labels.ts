@@ -1,4 +1,4 @@
-import { ids } from "@cfd/memories-core";
+import { ids } from "@khoralabs/memories-core";
 import type { DbCtx } from "./context";
 
 /** Returns `_id` for a `node_labels` row (catalog kind), inserting when missing. */

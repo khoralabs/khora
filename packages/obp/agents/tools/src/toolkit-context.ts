@@ -1,4 +1,4 @@
-import type { ToolkitContext, ToolPipelineHooks, ToolRuntimeContext } from "@cfd/agent-identity";
+import type { ToolkitContext, ToolPipelineHooks, ToolRuntimeContext } from "@khoralabs/agent-identity";
 import type { ObpToolkitEnv } from "./obp-toolkit-env.ts";
 
 export function buildObpToolkitContext<Env extends ObpToolkitEnv>(args: {

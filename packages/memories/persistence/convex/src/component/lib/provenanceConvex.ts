@@ -1,9 +1,9 @@
-import { ids } from "@cfd/memories-core";
+import { ids } from "@khoralabs/memories-core";
 import {
   canonicalJson,
   type MemoryProvenanceEvent,
   nextProvenanceRoot,
-} from "@cfd/memories-core/provenance";
+} from "@khoralabs/memories-core/provenance";
 import type { MutationCtx, QueryCtx } from "../_generated/server.js";
 
 type DbReader = QueryCtx | MutationCtx;

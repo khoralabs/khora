@@ -5,8 +5,8 @@ import type {
   SessionContext,
   SessionRunner,
   ToolPipelineHooks,
-} from "@cfd/agent-identity";
-import type { ObpToolkitEnv } from "@cfd/obp-tools";
+} from "@khoralabs/agent-identity";
+import type { ObpToolkitEnv } from "@khoralabs/obp-tools";
 import type { LanguageModel } from "ai";
 import {
   createObpNegotiatorAgent,

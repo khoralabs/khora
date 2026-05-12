@@ -1,5 +1,5 @@
-import type { MergeMemoryParams, MutationCtxAsync } from "@cfd/memories-core";
-import { mergeMemoryAsync } from "@cfd/memories-core";
+import type { MergeMemoryParams, MutationCtxAsync } from "@khoralabs/memories-core";
+import { mergeMemoryAsync } from "@khoralabs/memories-core";
 import type {
   ConvexMemoriesClient,
   MemoriesConvexApiSlice,

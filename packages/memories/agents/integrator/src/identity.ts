@@ -1,5 +1,5 @@
-import { createRegisteredAgentIdentity, type RegisteredAgentIdentity } from "@cfd/agent-identity";
-import { memorySearchToolkit } from "@cfd/memories-tools";
+import { createRegisteredAgentIdentity, type RegisteredAgentIdentity } from "@khoralabs/agent-identity";
+import { memorySearchToolkit } from "@khoralabs/memories-tools";
 import { memoryIntegratorBaseInstruction } from "./instructions.js";
 
 export const MEMORY_INTEGRATOR_AGENT_ID = "memory-integrator";

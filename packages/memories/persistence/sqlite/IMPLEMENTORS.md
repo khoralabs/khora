@@ -1,12 +1,12 @@
 # Memory persistence implementor’s guide
 
-This document describes the **operational contract** for [`MemoriesPersistence`](../memories-core/src/persistence/types.ts). Method names and types live in `@cfd/memories-core`; behavior and ordering are specified here.
+This document describes the **operational contract** for [`MemoriesPersistence`](../memories-core/src/persistence/types.ts). Method names and types live in `@khoralabs/memories-core`; behavior and ordering are specified here.
 
 The reference SQLite implementation is [`./src/persistence.ts`](./src/persistence.ts). The wire model is also described in [`packages/memories-spec`](../memories-spec/model/persistence.smithy) (Smithy).
 
 ## Relational row shapes (Zod)
 
-Canonical **table Zod schemas**, the composed document schema (`memoriesPersistenceDocumentSchema`), **row TypeScript types** (via `MemoriesPersistenceSchema` / `@cfd/memories-core/db/rows`), helpers (`zId`, `defineSchema`, `documentValidator`), and **vector payload** rules (`zVectorPayload`, 512–3072 floats) live in **`@cfd/memories-core/persistence`**. The reference SQLite strategy imports that package for DDL (`sqliteDdlFromSchema` in `./src/strategies/sqlite/_lib/sqlite-relational.ts`), insert-time `documentValidator` checks, and type alignment with core. TypeScript backends should use the same module so storage rows and merge-time validation stay aligned with `mergeMemory` / `MemoriesPersistence`.
+Canonical **table Zod schemas**, the composed document schema (`memoriesPersistenceDocumentSchema`), **row TypeScript types** (via `MemoriesPersistenceSchema` / `@khoralabs/memories-core/db/rows`), helpers (`zId`, `defineSchema`, `documentValidator`), and **vector payload** rules (`zVectorPayload`, 512–3072 floats) live in **`@khoralabs/memories-core/persistence`**. The reference SQLite strategy imports that package for DDL (`sqliteDdlFromSchema` in `./src/strategies/sqlite/_lib/sqlite-relational.ts`), insert-time `documentValidator` checks, and type alignment with core. TypeScript backends should use the same module so storage rows and merge-time validation stay aligned with `mergeMemory` / `MemoriesPersistence`.
 
 ## Smithy capability modules
 
@@ -65,7 +65,7 @@ Merge callers pass structured `{ kind, props }` (see [`MergeMemoryParams`](../me
 ## Memory provenance chain + `source_maps.content_hash`
 
 - **`memory_provenance`:** Append-only linear chain over **merge** and **delete**. Each row stores `parent_root_hex`, `root_hex`, `event_type`, and canonical **`event_json`**. The head is the latest `root_hex` by `_ts_created` (then `_id`). **Genesis parent** for the first link is the fixed 32-byte zero pattern (`00…00` hex), not SQL `NULL`.
-- **Leaf + link:** Implemented in `@cfd/memories-core/provenance`: event leaf `SHA-256(MEMORIES_EVENT_LEAF_v1 || NUL || UTF-8(canonical_json(event)))`; chain link `SHA-256(parent_32 || leaf_32)` with parent decoded from lowercase hex (or zero bytes at genesis).
+- **Leaf + link:** Implemented in `@khoralabs/memories-core/provenance`: event leaf `SHA-256(MEMORIES_EVENT_LEAF_v1 || NUL || UTF-8(canonical_json(event)))`; chain link `SHA-256(parent_32 || leaf_32)` with parent decoded from lowercase hex (or zero bytes at genesis).
 - **`mergeMemory` / `deleteMemory`:** After successful KG mutations in one transaction, **`appendProvenanceEvent`** records **`MERGE_MEMORY`** or **`DELETE_MEMORY`** respectively. **Idempotent delete:** if the memory row is already absent, **do not** append a provenance row (avoids duplicate-delete spam).
 - **`content_hash`:** Nullable column on **`source_maps`**, lowercase 64-char hex. After inserting text and/or vector features for that map, **`updateSourceMapContentHash`** sets `SHA-256(MEMORIES_SOURCE_BODY_v1 || NUL || UTF-8(canonical_json(descriptor)))` where the descriptor references `text_sha256` / `vector_sha256` of the materialized payloads (see `computeSourceMapContentHash` in core). Merge provenance events may include optional **`content_hashes`** keyed by `source_key` for audit without re-reading blobs.
 - **Rollbacks:** Provenance and content-hash writes participate in the same **`withTransaction`** boundary as merge/delete; a failing append rolls back the whole mutation.
@@ -129,7 +129,7 @@ Thin adapters that only support one namespace per query should set **`multiNames
 
 - Reserved `source_key`: [`MEMORY_SEARCH_META_SOURCE_KEY`](../memories-core/src/search-meta-constants.ts) (`__mem_search_meta__`).
 - `syncMemorySearchMeta` rebuilds canonical text for the meta chunk from **node label kinds** and **incident edge kinds** (topology line); optional `metaVector` on the primary memory during merge.
-- Merge pipeline: [`upsertMemorySearchMetaVector`](../memories-core/src/persistence/facade.ts) updates vectors for multiple keys in a transaction. The `@cfd/memories-core/helpers` function `mergeLogicalMemoryWithMergeSlice` **skips** this batch entirely when `vectorSearch` is `false` (no embed RPC). If you need vectors stored without vector retrieval, extend the caller. Reference SQLite expects vector search for meta retrieval.
+- Merge pipeline: [`upsertMemorySearchMetaVector`](../memories-core/src/persistence/facade.ts) updates vectors for multiple keys in a transaction. The `@khoralabs/memories-core/helpers` function `mergeLogicalMemoryWithMergeSlice` **skips** this batch entirely when `vectorSearch` is `false` (no embed RPC). If you need vectors stored without vector retrieval, extend the caller. Reference SQLite expects vector search for meta retrieval.
 
 ## Label-props search chunks (optional)
 
@@ -141,7 +141,7 @@ Thin adapters that only support one namespace per query should set **`multiNames
 
 ## Visualization (optional)
 
-**`@cfd/memories-sqlite`** exposes a thin [`MemoriesVisualization`](./src/visualization.ts) class (mean-pooled embeddings per memory, `loadMemoryTextPreview`, `loadEdgePreview`). UMAP graph layout is [`buildNamespaceGraphLayout`](./src/graph/build-namespace-graph-layout.ts), which uses **`MemoriesPersistence`** for topology and projection SQL for embeddings. Previews and projection helpers live under [`./src/visualization/`](./src/visualization/).
+**`@khoralabs/memories-sqlite`** exposes a thin [`MemoriesVisualization`](./src/visualization.ts) class (mean-pooled embeddings per memory, `loadMemoryTextPreview`, `loadEdgePreview`). UMAP graph layout is [`buildNamespaceGraphLayout`](./src/graph/build-namespace-graph-layout.ts), which uses **`MemoriesPersistence`** for topology and projection SQL for embeddings. Previews and projection helpers live under [`./src/visualization/`](./src/visualization/).
 
 ## Async persistence
 

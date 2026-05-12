@@ -1,4 +1,4 @@
-import type { MemoriesPersistenceAsync } from "@cfd/memories-core";
+import type { MemoriesPersistenceAsync } from "@khoralabs/memories-core";
 import type {
   GenericActionCtx,
   GenericDataModel,

@@ -2,7 +2,7 @@ import {
   createRegisteredAgentIdentity,
   type RegisteredAgentIdentity,
   toolkit,
-} from "@cfd/agent-identity";
+} from "@khoralabs/agent-identity";
 
 export const GOAL_EXTRACTOR_AGENT_ID = "matchmaking-goal-extractor";
 

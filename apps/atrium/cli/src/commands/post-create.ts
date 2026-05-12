@@ -1,4 +1,4 @@
-import { zAtriumPostCreate } from "@cfd/atrium-contracts";
+import { zAtriumPostCreate } from "@khoralabs/atrium-contracts";
 import type { AtriumCliContext } from "../flows/context.ts";
 import { runPostCreateInteractiveFlow } from "../flows/post-create-flow.ts";
 import { splitTopics, strFlag } from "./parse.ts";

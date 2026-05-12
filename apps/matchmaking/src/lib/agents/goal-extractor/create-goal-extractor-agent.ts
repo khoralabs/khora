@@ -1,4 +1,4 @@
-import type { RegisteredAgentIdentity } from "@cfd/agent-identity";
+import type { RegisteredAgentIdentity } from "@khoralabs/agent-identity";
 import { generateText, type LanguageModel, Output } from "ai";
 import { type GoalExtractionOutput, zGoalExtractionOutput } from "./output.ts";
 

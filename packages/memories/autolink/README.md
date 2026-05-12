@@ -1,6 +1,6 @@
-# @cfd/memories-autolink
+# @khoralabs/memories-autolink
 
-Host-side lexical / retrieval autolinking for **[@cfd/memories-core](https://github.com/)** graphs. This package does **not** change core merge or search semantics; it composes `search` / `searchAsync` results into `mergeMemory` edge rows under a small **retrieval-link ontology**.
+Host-side lexical / retrieval autolinking for **[@khoralabs/memories-core](https://github.com/)** graphs. This package does **not** change core merge or search semantics; it composes `search` / `searchAsync` results into `mergeMemory` edge rows under a small **retrieval-link ontology**.
 
 ## Ontology composition
 
@@ -8,8 +8,8 @@ Host-side lexical / retrieval autolinking for **[@cfd/memories-core](https://git
 2. Merge in the retrieval fragment:
 
 ```ts
-import { defineOntology, canonicalOntology } from "@cfd/memories-core";
-import { mergeOntologies, retrievalAutolinkOntology } from "@cfd/memories-autolink";
+import { defineOntology, canonicalOntology } from "@khoralabs/memories-core";
+import { mergeOntologies, retrievalAutolinkOntology } from "@khoralabs/memories-autolink";
 
 export const appOntology = mergeOntologies(canonicalOntology, retrievalAutolinkOntology);
 ```

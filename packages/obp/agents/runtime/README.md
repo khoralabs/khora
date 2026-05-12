@@ -1,4 +1,4 @@
-# @cfd/obp-agent-runtime
+# @khoralabs/obp-agent-runtime
 
 Layered runtime for OBP-driven negotiations. The supported entry point is the **bilateral structured contract** wired through a coordinator and a shared ledger; the lower-level `NegotiationRuntime` class remains as a deprecated escape hatch.
 
@@ -14,7 +14,7 @@ ObpLedger (shared truth: client + persistence + turn counter + audit tail)
 
 - `ObpLedger` owns the negotiation's `OBPPersistenceClient`, `ObpPersistence`, wall clock, `maxTurns`, and audit tail.
 - `TurnContract.prepare(partyId)` returns a `PreparedTurn` (Zod schema **or** allowed-tool whitelist + system fragments + user message + metadata).
-- `TurnContract.apply(partyId, raw)` validates output, commits **exactly once** via `TurnBody` → `@cfd/obp-core` `applyTurn` (see `commitStructuredTurn` below), finalizes synthetic noop/walk ports when applicable, and records an audit on the ledger (including `committedTurnBody` for wire parity).
+- `TurnContract.apply(partyId, raw)` validates output, commits **exactly once** via `TurnBody` → `@khoralabs/obp-core` `applyTurn` (see `commitStructuredTurn` below), finalizes synthetic noop/walk ports when applicable, and records an audit on the ledger (including `committedTurnBody` for wire parity).
 - `BilateralCoordinator.runNextTurn()` alternates parties, calls a host-supplied `RunAgentTurn` to produce raw output, then hands it to the contract's `apply`.
 
 ## Single persistence interpreter (`TurnBody`)

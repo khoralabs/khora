@@ -21,7 +21,7 @@ import {
   resolveCanonicalPortId,
   type SourceMapRef,
   validateBindPreconditions,
-} from "@cfd/obp-core";
+} from "@khoralabs/obp-core";
 
 type PartyRow = {
   id: string;

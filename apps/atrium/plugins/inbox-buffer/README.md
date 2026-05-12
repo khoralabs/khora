@@ -1,4 +1,4 @@
-# `@cfd/atrium-plugin-inbox-buffer`
+# `@khoralabs/atrium-plugin-inbox-buffer`
 
 Persists every `AtriumClientEvent` into a SQLite file so the agent retains an inbox history across restarts.
 

@@ -10,8 +10,8 @@ import {
   type SourceMapRef,
   type TurnBody,
   validateCounterpartyBindForPort,
-} from "@cfd/obp-core";
-import { listBindableCounterpartyPorts, type ObpToolkitEnv } from "@cfd/obp-tools";
+} from "@khoralabs/obp-core";
+import { listBindableCounterpartyPorts, type ObpToolkitEnv } from "@khoralabs/obp-tools";
 import type z from "zod";
 import {
   isRuntimeNoopPortId,

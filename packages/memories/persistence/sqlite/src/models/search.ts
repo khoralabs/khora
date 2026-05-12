@@ -11,8 +11,8 @@ import {
   namespaceSegments,
   type OntologyLabelInstance,
   type SearchNamespaceScope,
-} from "@cfd/memories-core";
-import type { Edge, Memory, SourceMap } from "@cfd/memories-core/persistence";
+} from "@khoralabs/memories-core";
+import type { Edge, Memory, SourceMap } from "@khoralabs/memories-core/persistence";
 import { vectorVecTableName } from "../search-indexes";
 import { loadGraphEdge } from "../visualization/projection";
 import type { DbCtx } from "./context";
@@ -21,7 +21,7 @@ export type {
   NeighborConstraint,
   NeighborFilter,
   NeighborNodesFilter,
-} from "@cfd/memories-core";
+} from "@khoralabs/memories-core";
 
 export type HydratedSourceMapHit = SourceMap & {
   memory: Memory;

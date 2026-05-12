@@ -2,8 +2,8 @@ import type {
   RegisteredAgentAffordances,
   RegisteredAgentIdentity,
   ToolRuntimeContext,
-} from "@cfd/agent-identity";
-import { toolMapToAiTools } from "@cfd/agent-identity-adapters";
+} from "@khoralabs/agent-identity";
+import { toolMapToAiTools } from "@khoralabs/agent-identity-adapters";
 import { type LanguageModel, stepCountIs, type Tool, ToolLoopAgent, type ToolSet } from "ai";
 import { DEFAULT_MEMORY_TOOL_LOOP_MAX_STEPS } from "./memory-agent-defaults.js";
 import type { MemorySearchEnv } from "./memory-search-toolkit.js";

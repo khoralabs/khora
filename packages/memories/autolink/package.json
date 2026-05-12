@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/memories-autolink",
+  "name": "@khoralabs/memories-autolink",
   "module": "src/index.ts",
   "type": "module",
   "private": true,
@@ -11,7 +11,7 @@
     }
   },
   "dependencies": {
-    "@cfd/memories-core": "workspace:*",
+    "@khoralabs/memories-core": "workspace:*",
     "zod": "^4"
   },
   "scripts": {

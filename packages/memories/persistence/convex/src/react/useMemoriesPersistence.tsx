@@ -1,4 +1,4 @@
-import type { MemoriesPersistenceAsync } from "@cfd/memories-core";
+import type { MemoriesPersistenceAsync } from "@khoralabs/memories-core";
 import type { ConvexReactClient } from "convex/react";
 import { createContext, type ReactNode, useContext, useMemo } from "react";
 import { convexReactClientToMemoriesClient } from "../convexReactClientBridge.js";

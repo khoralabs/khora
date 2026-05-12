@@ -4,8 +4,8 @@ import type {
   RegisteredAgentIdentity,
   SessionContext,
   SessionRunner,
-} from "@cfd/agent-identity";
-import { evaluateRegisteredAgentAffordances } from "@cfd/agent-identity";
+} from "@khoralabs/agent-identity";
+import { evaluateRegisteredAgentAffordances } from "@khoralabs/agent-identity";
 import type { LanguageModel } from "ai";
 import { generateGoalExtractorOutput } from "./create-goal-extractor-agent.ts";
 import {

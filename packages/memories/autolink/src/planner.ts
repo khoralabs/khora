@@ -1,4 +1,4 @@
-import type { EdgeLabelInstance, NodeLabelInstance, SearchHit } from "@cfd/memories-core";
+import type { EdgeLabelInstance, NodeLabelInstance, SearchHit } from "@khoralabs/memories-core";
 import {
   RETRIEVAL_AUTOLINK_EDGE_KIND,
   RETRIEVAL_BOOTSTRAP_NODE_KIND,

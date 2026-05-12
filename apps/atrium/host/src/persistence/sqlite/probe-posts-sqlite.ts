@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
-import type { AtriumPost } from "@cfd/atrium-contracts";
-import { zAtriumPost } from "@cfd/atrium-contracts";
-import type { SwarmHostEntityRow } from "@cfd/swarm-host";
+import type { AtriumPost } from "@khoralabs/atrium-contracts";
+import { zAtriumPost } from "@khoralabs/atrium-contracts";
+import type { SwarmHostEntityRow } from "@khoralabs/swarm-host";
 import { ensureSwarmHostSqliteSchema } from "./schema.ts";
 
 /** Post rows for `kind` + author `profileId`, newest `updated_at` first (bounded). */

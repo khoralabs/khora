@@ -1,4 +1,4 @@
-import { ids } from "@cfd/memories-core";
+import { ids } from "@khoralabs/memories-core";
 import type { DbCtx } from "./context";
 import { validatePropsAgainstJsonSchema } from "./validate-props";
 

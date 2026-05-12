@@ -1,11 +1,11 @@
-import type { SearchNamespaceScope } from "@cfd/memories-core";
+import type { SearchNamespaceScope } from "@khoralabs/memories-core";
 import {
   canonicalizeNamespacePrefixes,
   isPrefixOf,
   namespacePath,
   namespacePrefixFieldForDepthCamel,
   namespaceSegments,
-} from "@cfd/memories-core";
+} from "@khoralabs/memories-core";
 import { v } from "convex/values";
 import { internal } from "./_generated/api.js";
 import { action } from "./_generated/server.js";

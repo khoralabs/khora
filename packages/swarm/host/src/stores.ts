@@ -5,7 +5,7 @@ import type {
   SourceMap,
   SourceMapRef,
   Store,
-} from "@cfd/memories-core";
+} from "@khoralabs/memories-core";
 
 /**
  * Maps a memory record address (same as {@link Store.resolve}) to app persistence—typed entity,

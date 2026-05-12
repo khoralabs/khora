@@ -1,9 +1,9 @@
 import {
   type AtriumPluginInstaller,
-  labelAtriumPlugin,
   type LabeledAtriumPluginInstaller,
+  labelAtriumPlugin,
   mergeLabeledAtriumPluginLayers,
-} from "@cfd/atrium-client";
+} from "@khoralabs/atrium-client";
 import { createDaemonAppConfig } from "./app-config.ts";
 import { buildDaemonPluginInstallers } from "./plugin-registry.ts";
 

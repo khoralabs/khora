@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/atrium-plugin-profile-sync",
+  "name": "@khoralabs/atrium-plugin-profile-sync",
   "version": "0.0.0",
   "type": "module",
   "private": true,
@@ -16,8 +16,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@cfd/atrium-client": "workspace:*",
-    "@cfd/atrium-contracts": "workspace:*"
+    "@khoralabs/atrium-client": "workspace:*",
+    "@khoralabs/atrium-contracts": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",

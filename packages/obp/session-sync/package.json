@@ -1,5 +1,5 @@
 {
-  "name": "@cfd/obp-session-sync",
+  "name": "@khoralabs/obp-session-sync",
   "version": "0.0.0",
   "type": "module",
   "private": true,
@@ -15,7 +15,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@cfd/obp-core": "workspace:*"
+    "@khoralabs/obp-core": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest"

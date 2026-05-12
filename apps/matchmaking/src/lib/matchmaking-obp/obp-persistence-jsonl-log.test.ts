@@ -3,9 +3,9 @@ import { expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { JsonlStore } from "@cfd/memories-stores";
-import { OBPPersistenceClient } from "@cfd/obp-core";
-import { createObpSqlitePersistence, initObpSchema } from "@cfd/obp-sqlite";
+import { JsonlStore } from "@khoralabs/memories-stores";
+import { OBPPersistenceClient } from "@khoralabs/obp-core";
+import { createObpSqlitePersistence, initObpSchema } from "@khoralabs/obp-sqlite";
 import { createLoggingObpPersistence } from "./obp-persistence-jsonl-log.ts";
 
 test("LoggingObpPersistence appends one JSONL row per mutation", () => {

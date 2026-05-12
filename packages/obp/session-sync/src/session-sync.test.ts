@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { OBPPersistenceClient } from "@cfd/obp-core";
-import { FakeObpPersistence } from "@cfd/obp-core/testing";
+import { OBPPersistenceClient } from "@khoralabs/obp-core";
+import { FakeObpPersistence } from "@khoralabs/obp-core/testing";
 import { bytesToHex } from "./hash.ts";
 import { inclusionProof, leafHashForOp, merkleRoot, verifyInclusion } from "./merkle.ts";
 import { rollbackFakePersistence } from "./rollback.ts";
 import { type Checkpoint, checkpointFromOps, verifyExtends } from "./verify.ts";
 
-describe("@cfd/obp-session-sync", () => {
+describe("@khoralabs/obp-session-sync", () => {
   test("merkle root stable for fixed fixture ops", () => {
     const ops = [
       { kind: "party", id: "p1", name: "A" },

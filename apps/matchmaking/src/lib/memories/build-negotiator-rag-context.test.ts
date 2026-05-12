@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import type { EmbeddingModel } from "@cfd/memories-core/helpers";
+import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import { buildNegotiatorRagContext } from "./build-negotiator-rag-context.ts";
 
 test("buildNegotiatorRagContext whitespace-only thread skips embed and search", async () => {

@@ -1,4 +1,4 @@
-/** UTF-8 bytes of stable JSON (sorted object keys) — mirrors `@cfd/obp-session-sync` without importing it (avoids cycles). */
+/** UTF-8 bytes of stable JSON (sorted object keys) — mirrors `@khoralabs/obp-session-sync` without importing it (avoids cycles). */
 export function canonicalJsonUtf8(value: unknown): Uint8Array {
   return new TextEncoder().encode(stableStringify(value));
 }

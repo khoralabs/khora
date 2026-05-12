@@ -1,5 +1,5 @@
-import type { SearchNamespaceScope } from "@cfd/memories-core";
-import { canonicalizeNamespacePrefixes, namespacePath } from "@cfd/memories-core";
+import type { SearchNamespaceScope } from "@khoralabs/memories-core";
+import { canonicalizeNamespacePrefixes, namespacePath } from "@khoralabs/memories-core";
 import type { QueryCtx } from "../_generated/server.js";
 
 /**

@@ -1,4 +1,8 @@
-import { type AtriumProfile, type AtriumProfilePatch, zAtriumProfile } from "@cfd/atrium-contracts";
+import {
+  type AtriumProfile,
+  type AtriumProfilePatch,
+  zAtriumProfile,
+} from "@khoralabs/atrium-contracts";
 import type { HttpTransport } from "./transport.ts";
 
 export function updateProfile(t: HttpTransport, patch: AtriumProfilePatch): Promise<AtriumProfile> {

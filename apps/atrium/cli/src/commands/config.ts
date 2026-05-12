@@ -1,12 +1,12 @@
 import { existsSync, readFileSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
-import { defaultAtriumConfigPath } from "@cfd/atrium-client";
+import { defaultAtriumConfigPath } from "@khoralabs/atrium-client";
 import { cliAppConfig, cliAppConfigExtends, cliAppConfigSource } from "../app-config.ts";
 import { boolFlag } from "./parse.ts";
 import type { FlagMap } from "./types.ts";
 
-const STUB_SCHEMA_REL = "./node_modules/@cfd/atrium-client/atrium-config.schema.json";
+const STUB_SCHEMA_REL = "./node_modules/@khoralabs/atrium-client/atrium-config.schema.json";
 
 export type ConfigShowMode = "effective" | "raw" | "source";
 
@@ -95,10 +95,7 @@ async function runConfigEdit(): Promise<void> {
   process.exit(await proc.exited);
 }
 
-export async function runConfigCommand(
-  sub: string | undefined,
-  flags: FlagMap,
-): Promise<void> {
+export async function runConfigCommand(sub: string | undefined, flags: FlagMap): Promise<void> {
   switch (sub) {
     case "path":
       runConfigPath();

@@ -1,21 +1,21 @@
 # Memories persistence — implementor notes
 
-This document compares backends under `packages/memories-persistence/` for anyone implementing or consuming `MemoriesPersistence` / `MemoriesPersistenceAsync` from `@cfd/memories-core`.
+This document compares backends under `packages/memories-persistence/` for anyone implementing or consuming `MemoriesPersistence` / `MemoriesPersistenceAsync` from `@khoralabs/memories-core`.
 
 ## Shared contract
 
-- **Row model** — Defined in `@cfd/memories-core/persistence` (`memoriesPersistenceDocumentSchema`, row types). **`memories`** rows carry **`kind`: `node` | `edge`** and optional **`edge_id`** referencing **`edges`** when `kind` is `edge` (at most one edge-attached memory per graph edge). Node merges upsert a **`nodes`** row; edge merges do **not**. Business ids use `ids.*` / `stableId` from `@cfd/memories-core` (`models/ids.ts`), implemented with pure JS (`js-sha256`) so Node, Bun, and Convex bundles share one implementation.
+- **Row model** — Defined in `@khoralabs/memories-core/persistence` (`memoriesPersistenceDocumentSchema`, row types). **`memories`** rows carry **`kind`: `node` | `edge`** and optional **`edge_id`** referencing **`edges`** when `kind` is `edge` (at most one edge-attached memory per graph edge). Node merges upsert a **`nodes`** row; edge merges do **not**. Business ids use `ids.*` / `stableId` from `@khoralabs/memories-core` (`models/ids.ts`), implemented with pure JS (`js-sha256`) so Node, Bun, and Convex bundles share one implementation.
 - **Capabilities** — Backends set `MemoriesBackendCapabilities` (`lexicalSearch`, `vectorSearch`, `neighborIndex`, `graphIndex`, `multiNamespaceSearch`, `unscopedSearch`). Core merges or rejects features based on `resolveMemoriesBackendCapabilities`.
-- **Graph** — `MemoriesGraph` in core types combines topology **reads** (`MemoriesGraphIndex`) and graph **writes** (`MemoriesGraphMutation`). `MemoriesPersistence` includes the full graph surface alongside `MemoriesMutationCore` (memory rows, features, search-meta). Per-entity reads: `loadNodeLabelsForMemory`, `loadNodePropertiesForMemory`, `loadGraphEdge` (see `@cfd/memories-spec` **MemoriesPersistenceService** graph operations).
+- **Graph** — `MemoriesGraph` in core types combines topology **reads** (`MemoriesGraphIndex`) and graph **writes** (`MemoriesGraphMutation`). `MemoriesPersistence` includes the full graph surface alongside `MemoriesMutationCore` (memory rows, features, search-meta). Per-entity reads: `loadNodeLabelsForMemory`, `loadNodePropertiesForMemory`, `loadGraphEdge` (see `@khoralabs/memories-spec` **MemoriesPersistenceService** graph operations).
 - **Search** — `searchLexicalSourceMapIds` / `searchVectorSourceMapIds` return **rank-ordered** `source_map` ids (best first); hybrid merge uses RRF on ranks, not raw scores.
 
-## SQLite (`@cfd/memories-sqlite`)
+## SQLite (`@khoralabs/memories-sqlite`)
 
 - **API** — Sync `MemoriesPersistence`; `withTransaction` maps to `db.transaction`.
 - **Features** — Full lexical (FTS5), vector (sqlite-vec), neighbors, optional label-props search rebuild.
 - **Docs** — [`sqlite/IMPLEMENTORS.md`](sqlite/IMPLEMENTORS.md), [`sqlite/README.md`](sqlite/README.md).
 
-## Convex (`@cfd/memories-convex`)
+## Convex (`@khoralabs/memories-convex`)
 
 - **API** — `MemoriesPersistenceAsync` via `createConvexMemoriesPersistence(client)`; public npm API also re-exports async client entry points (`MemoriesClient`, `mergeMemory`, …) without the `Async` suffix.
 - **Capabilities** — Lexical + vector + graph reads: `vectorSearch: true`, `graphIndex: true`, `multiNamespaceSearch: true`. **`neighborIndex: true`** — `listNeighborsForMemory` mirrors SQLite-style filtering (incident edges → neighbor memories → `HydratedNeighbor` rows). **`unscopedSearch: true`** when lexical unscoped search index paths and vector unscoped search agree on semantics (see Convex README for scan/post-filter trade-offs). **`syncLabelPropsSearchFeatures`** — optional mutation + adapter hook after merge meta sync (same ordering intent as SQLite). **Embeddings** are restricted to widths in `CONVEX_VECTOR_DIMENSIONS`. `listVectorEmbeddingIndexDimensions` returns that **supported** set, not dimensions inferred from stored vectors (unlike SQLite).

@@ -9,7 +9,7 @@ export {
   labelAtriumPlugin,
   loadAtriumAppConfig,
   mergeLabeledAtriumPluginLayers,
-} from "@cfd/atrium-client";
+} from "@khoralabs/atrium-client";
 export {
   createDaemonAppConfig,
   type DaemonAppConfig,
