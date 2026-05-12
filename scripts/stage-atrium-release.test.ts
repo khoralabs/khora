@@ -8,8 +8,8 @@ import {
   daemonLauncherSource,
   daemonMetaPkgJson,
   platformPkgJson,
-  stageAtriumRelease,
   SUPPORTED_TARGETS,
+  stageAtriumRelease,
 } from "./stage-atrium-release.ts";
 
 describe("launcher sources", () => {
@@ -46,15 +46,15 @@ describe("package.json factories", () => {
     const pkg = cliMetaPkgJson({ version: "1.2.3" }) as Record<string, Record<string, string>>;
     expect((pkg as Record<string, unknown>).name).toBe("@khoralabs/atrium-cli");
     expect((pkg as Record<string, unknown>).version).toBe("1.2.3");
-    expect(pkg.dependencies["@khoralabs/atrium-daemon"]).toBe("1.2.3");
-    expect(Object.keys(pkg.optionalDependencies).sort()).toEqual([
+    expect(pkg.dependencies?.["@khoralabs/atrium-daemon"]).toBe("1.2.3");
+    expect(Object.keys(pkg.optionalDependencies ?? {}).sort()).toEqual([
       "@khoralabs/atrium-cli-darwin-arm64",
       "@khoralabs/atrium-cli-linux-arm64",
       "@khoralabs/atrium-cli-linux-x64",
     ]);
-    for (const v of Object.values(pkg.optionalDependencies)) expect(v).toBe("1.2.3");
+    for (const v of Object.values(pkg.optionalDependencies ?? {})) expect(v).toBe("1.2.3");
     expect(((pkg as Record<string, unknown>).bin as Record<string, string>).atrium).toBe(
-      "./bin/atrium.js",
+      "./bin/atrium.cjs",
     );
     expect(((pkg as Record<string, unknown>).scripts as Record<string, string>).postinstall).toBe(
       "node ./postinstall.js",
@@ -64,14 +64,14 @@ describe("package.json factories", () => {
   test("daemon meta lists three platform optionalDependencies + no transitive dep", () => {
     const pkg = daemonMetaPkgJson({ version: "1.2.3" }) as Record<string, Record<string, string>>;
     expect((pkg as Record<string, unknown>).name).toBe("@khoralabs/atrium-daemon");
-    expect(Object.keys(pkg.optionalDependencies).sort()).toEqual([
+    expect(Object.keys(pkg.optionalDependencies ?? {}).sort()).toEqual([
       "@khoralabs/atrium-daemon-darwin-arm64",
       "@khoralabs/atrium-daemon-linux-arm64",
       "@khoralabs/atrium-daemon-linux-x64",
     ]);
     expect((pkg as Record<string, unknown>).dependencies).toBeUndefined();
     expect(((pkg as Record<string, unknown>).bin as Record<string, string>)["atrium-daemon"]).toBe(
-      "./bin/atrium-daemon.js",
+      "./bin/atrium-daemon.cjs",
     );
   });
 
@@ -158,9 +158,9 @@ describe("stageAtriumRelease", () => {
     // Daemon meta
     const daemonMeta = path.join(releaseDir, "daemon");
     expect(existsSync(path.join(daemonMeta, "package.json"))).toBe(true);
-    expect(existsSync(path.join(daemonMeta, "bin", "atrium-daemon.js"))).toBe(true);
+    expect(existsSync(path.join(daemonMeta, "bin", "atrium-daemon.cjs"))).toBe(true);
     expect(
-      readFileSync(path.join(daemonMeta, "bin", "atrium-daemon.js"), "utf8").startsWith(
+      readFileSync(path.join(daemonMeta, "bin", "atrium-daemon.cjs"), "utf8").startsWith(
         "#!/usr/bin/env node",
       ),
     ).toBe(true);
@@ -168,7 +168,7 @@ describe("stageAtriumRelease", () => {
     // Cli meta
     const cliMeta = path.join(releaseDir, "cli");
     expect(existsSync(path.join(cliMeta, "package.json"))).toBe(true);
-    expect(existsSync(path.join(cliMeta, "bin", "atrium.js"))).toBe(true);
+    expect(existsSync(path.join(cliMeta, "bin", "atrium.cjs"))).toBe(true);
     expect(existsSync(path.join(cliMeta, "postinstall.js"))).toBe(true);
     expect(existsSync(path.join(cliMeta, "atrium-config.schema.json"))).toBe(true);
     for (const name of ["base.config.json", "cli.config.json", "daemon.config.json"]) {

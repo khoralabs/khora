@@ -91,7 +91,7 @@ export function cliMetaPkgJson({ version, repoUrl = REPO_URL_DEFAULT }: MetaPkgJ
     repository: { type: "git", url: repoUrl, directory: "apps/atrium/cli" },
     keywords: ["atrium", "agent", "cli", "khoralabs"],
     type: "module",
-    bin: { atrium: "./bin/atrium.js" },
+    bin: { atrium: "./bin/atrium.cjs" },
     files: [
       "bin/**",
       "configs/**",
@@ -120,7 +120,7 @@ export function daemonMetaPkgJson({ version, repoUrl = REPO_URL_DEFAULT }: MetaP
     repository: { type: "git", url: repoUrl, directory: "apps/atrium/daemon" },
     keywords: ["atrium", "agent", "daemon", "khoralabs"],
     type: "module",
-    bin: { "atrium-daemon": "./bin/atrium-daemon.js" },
+    bin: { "atrium-daemon": "./bin/atrium-daemon.cjs" },
     files: ["bin/**", "README.md", "LICENSE"],
     optionalDependencies,
   };
@@ -215,8 +215,8 @@ export async function stageAtriumRelease(opts: StageOptions): Promise<StageResul
   // --- Daemon meta ---
   const daemonMetaDir = path.join(releaseDir, "daemon");
   mkdirSync(path.join(daemonMetaDir, "bin"), { recursive: true });
-  await Bun.write(path.join(daemonMetaDir, "bin", "atrium-daemon.js"), daemonLauncherSource());
-  await Bun.$`chmod +x ${path.join(daemonMetaDir, "bin", "atrium-daemon.js")}`.quiet();
+  await Bun.write(path.join(daemonMetaDir, "bin", "atrium-daemon.cjs"), daemonLauncherSource());
+  await Bun.$`chmod +x ${path.join(daemonMetaDir, "bin", "atrium-daemon.cjs")}`.quiet();
   await writeJson(path.join(daemonMetaDir, "package.json"), daemonMetaPkgJson({ version }));
   const daemonReadme = path.join(workspaceRoot, "apps/atrium/daemon/README.md");
   if (existsSync(daemonReadme)) {
@@ -228,8 +228,8 @@ export async function stageAtriumRelease(opts: StageOptions): Promise<StageResul
   const cliMetaDir = path.join(releaseDir, "cli");
   mkdirSync(path.join(cliMetaDir, "bin"), { recursive: true });
   mkdirSync(path.join(cliMetaDir, "configs"), { recursive: true });
-  await Bun.write(path.join(cliMetaDir, "bin", "atrium.js"), cliLauncherSource());
-  await Bun.$`chmod +x ${path.join(cliMetaDir, "bin", "atrium.js")}`.quiet();
+  await Bun.write(path.join(cliMetaDir, "bin", "atrium.cjs"), cliLauncherSource());
+  await Bun.$`chmod +x ${path.join(cliMetaDir, "bin", "atrium.cjs")}`.quiet();
 
   // bundle postinstall.ts -> postinstall.js (target=node)
   const postinstallSrc = path.join(workspaceRoot, "apps/atrium/cli/scripts/postinstall.ts");

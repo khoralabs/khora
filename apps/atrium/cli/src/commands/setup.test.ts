@@ -2,7 +2,12 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { printSetupSummary, resolveSetupAssets, runSetupCommand } from "./setup.ts";
+import {
+  maybeBootstrapAtriumHome,
+  printSetupSummary,
+  resolveSetupAssets,
+  runSetupCommand,
+} from "./setup.ts";
 
 describe("resolveSetupAssets", () => {
   test("uses ATRIUM_CLI_ASSETS_DIR when set; schema present", () => {
@@ -197,5 +202,83 @@ describe("runSetupCommand", () => {
       err = e as Error;
     }
     expect(err?.message ?? "").toContain("canonical configs directory not found");
+  });
+});
+
+describe("maybeBootstrapAtriumHome", () => {
+  let workspace: string;
+  let home: string;
+  let assetsDir: string;
+
+  beforeEach(() => {
+    workspace = mkdtempSync(path.join(tmpdir(), "atrium-bootstrap-"));
+    home = path.join(workspace, "home");
+    assetsDir = path.join(workspace, "assets");
+    mkdirSync(home, { recursive: true });
+    mkdirSync(path.join(assetsDir, "configs"), { recursive: true });
+    for (const name of ["base.config.json", "cli.config.json", "daemon.config.json"]) {
+      writeFileSync(path.join(assetsDir, "configs", name), "{}\n");
+    }
+    writeFileSync(path.join(assetsDir, "atrium-config.schema.json"), '{"$id":"x"}');
+  });
+
+  afterEach(() => {
+    rmSync(workspace, { recursive: true, force: true });
+  });
+
+  test("runs setup silently on first invocation in a packaged install", () => {
+    const errors: string[] = [];
+    maybeBootstrapAtriumHome(
+      { ATRIUM_CLI_ASSETS_DIR: assetsDir, HOME: home },
+      (line) => errors.push(line),
+    );
+    expect(existsSync(path.join(home, ".atrium", "cli.config.json"))).toBe(true);
+    expect(existsSync(path.join(home, ".atrium", "atrium-config.schema.json"))).toBe(true);
+    expect(errors).toEqual([]);
+  });
+
+  test("short-circuits when the canary file already exists (no overwrite)", () => {
+    mkdirSync(path.join(home, ".atrium"), { recursive: true });
+    writeFileSync(path.join(home, ".atrium", "cli.config.json"), '{"keep":true}');
+    maybeBootstrapAtriumHome({ ATRIUM_CLI_ASSETS_DIR: assetsDir, HOME: home });
+    expect(readFileSync(path.join(home, ".atrium", "cli.config.json"), "utf8")).toBe(
+      '{"keep":true}',
+    );
+    // Other files are still bootstrapped on a re-run — runAtriumConfigSetup is idempotent and
+    // covers the per-file decision. Asserting the canary stayed untouched is the contract.
+  });
+
+  test("no-op when ATRIUM_CLI_ASSETS_DIR is unset (monorepo dev path)", () => {
+    maybeBootstrapAtriumHome({ HOME: home });
+    expect(existsSync(path.join(home, ".atrium", "cli.config.json"))).toBe(false);
+  });
+
+  test("no-op when HOME is unset", () => {
+    maybeBootstrapAtriumHome({ ATRIUM_CLI_ASSETS_DIR: assetsDir });
+    expect(existsSync(path.join(home, ".atrium", "cli.config.json"))).toBe(false);
+  });
+
+  test("no-op when assets configs directory is missing on disk", () => {
+    rmSync(assetsDir, { recursive: true, force: true });
+    const errors: string[] = [];
+    maybeBootstrapAtriumHome(
+      { ATRIUM_CLI_ASSETS_DIR: assetsDir, HOME: home },
+      (line) => errors.push(line),
+    );
+    expect(existsSync(path.join(home, ".atrium", "cli.config.json"))).toBe(false);
+    expect(errors).toEqual([]);
+  });
+
+  test("never throws; surfaces failures as a one-line stderr message", () => {
+    rmSync(path.join(assetsDir, "configs", "base.config.json"));
+    const errors: string[] = [];
+    expect(() =>
+      maybeBootstrapAtriumHome(
+        { ATRIUM_CLI_ASSETS_DIR: assetsDir, HOME: home },
+        (line) => errors.push(line),
+      ),
+    ).not.toThrow();
+    expect(errors[0]).toContain("first-run setup failed");
+    expect(errors[0]).toContain("atrium setup");
   });
 });

@@ -74,3 +74,36 @@ export async function runSetupCommand(flags: FlagMap): Promise<void> {
   if (asJson) console.log(JSON.stringify(result, null, 2));
   else printSetupSummary(result);
 }
+
+/**
+ * Run `atrium setup` automatically the first time the CLI is invoked from a
+ * published install. Lets users who installed via `bun i -g` (postinstall
+ * blocked by default), `pnpm` (build script approval), or `npm --ignore-scripts`
+ * still get their `~/.atrium/` populated without manually running setup.
+ *
+ * Best-effort:
+ *   - Only runs when ATRIUM_CLI_ASSETS_DIR is set (i.e. the launcher gave us a
+ *     packaged install). In monorepo dev users run `atrium setup` explicitly.
+ *   - Short-circuits when the canary file `~/.atrium/cli.config.json` exists.
+ *   - Failures are logged to stderr but never throw or block the command.
+ */
+export function maybeBootstrapAtriumHome(
+  env: NodeJS.ProcessEnv = process.env,
+  err: (line: string) => void = (line) => console.error(line),
+): void {
+  const fromEnv = env[ASSETS_DIR_ENV]?.trim();
+  if (fromEnv === undefined || fromEnv.length === 0) return;
+  const home = env.HOME ?? env.USERPROFILE;
+  if (home === undefined || home.length === 0) return;
+  const canary = path.join(home, ".atrium", "cli.config.json");
+  if (existsSync(canary)) return;
+  try {
+    const assets = resolveSetupAssets(env);
+    if (!existsSync(assets.configsDir)) return;
+    runAtriumConfigSetup({ ...assets, home, force: false });
+  } catch (e) {
+    err(
+      `atrium: first-run setup failed (${e instanceof Error ? e.message : String(e)}); run 'atrium setup' to retry`,
+    );
+  }
+}

@@ -6,6 +6,7 @@ import {
 } from "./commands/handlers.ts";
 import { printHelp, tryPrintCommandHelp } from "./commands/help.ts";
 import { parseArgv } from "./commands/parse.ts";
+import { maybeBootstrapAtriumHome } from "./commands/setup.ts";
 import { type AtriumCliContext, createAtriumCliContext } from "./flows/context.ts";
 
 export { type AtriumCliCommandHandlers, defaultAtriumCliCommandHandlers };
@@ -25,6 +26,8 @@ async function main(
     if (!tryPrintCommandHelp(positional)) printHelp();
     process.exit(0);
   }
+
+  maybeBootstrapAtriumHome();
 
   const [a, b, c] = positional;
 
