@@ -4,33 +4,35 @@
 #
 #   docker build -f apps/atrium/host/docker/host/Dockerfile -t atrium-host .
 #
-# At runtime, Litestream supervises the host binary so SIGTERM from Render
-# triggers a clean shutdown with a final WAL sync to S3 (MinIO).
+# We deliberately do NOT use `bun --compile` for the host:
+#   - `sqlite-vec` resolves its native extension via Node module lookup
+#     (`require.resolve('sqlite-vec-<platform>-<arch>/vec0.so')`). That tree
+#     does not exist inside a compiled bunfs.
+#   - Bun's bundled SQLite frequently omits `load_extension`, which
+#     `sqlite-vec.load(db)` needs. We point SQLITE_CUSTOM_LIB at Alpine's
+#     `libsqlite3.so.0` instead.
+#
+# Litestream supervises the host process so SIGTERM from Render triggers a
+# clean shutdown with a final WAL sync to S3 (MinIO).
 
 FROM litestream/litestream:0.3.13 AS litestream
 
-FROM oven/bun:1.3.4-alpine AS builder
-WORKDIR /workspace
+FROM oven/bun:1.3.4-alpine
+WORKDIR /app
+RUN apk add --no-cache ca-certificates tzdata sqlite-libs
+COPY --from=litestream /usr/local/bin/litestream /usr/local/bin/litestream
 COPY package.json bun.lock bunfig.toml tsconfig.json ./
 COPY apps ./apps
 COPY packages ./packages
 RUN bun install --frozen-lockfile
-RUN mkdir -p /out \
- && bun build --compile --target=bun-linux-x64-baseline \
-      apps/atrium/host/src/index.ts \
-      --outfile /out/atrium-host
-
-FROM alpine:3.20
-# libstdc++ + libgcc are required by `bun --compile` output even on musl.
-RUN apk add --no-cache ca-certificates tzdata libstdc++ libgcc
-COPY --from=litestream /usr/local/bin/litestream /usr/local/bin/litestream
-COPY --from=builder /out/atrium-host /usr/local/bin/atrium-host
 COPY apps/atrium/host/docker/host/entrypoint.sh /entrypoint.sh
 COPY apps/atrium/host/docker/host/litestream.yml /etc/litestream.yml
 RUN chmod +x /entrypoint.sh
 ENV ATRIUM_DB_PATH=/data/atrium.db \
     LITESTREAM_CONFIG=/etc/litestream.yml \
-    PORT=8787
+    PORT=8787 \
+    SQLITE_CUSTOM_LIB=/usr/lib/libsqlite3.so.0 \
+    ATRIUM_HOST_ENTRY=/app/apps/atrium/host/src/index.ts
 VOLUME /data
 EXPOSE 8787
 ENTRYPOINT ["/entrypoint.sh"]

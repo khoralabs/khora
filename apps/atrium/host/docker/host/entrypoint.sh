@@ -5,16 +5,12 @@
 # 2. Idempotent disaster-recovery restore. `-if-replica-exists` makes this a
 #    no-op when the S3 prefix is empty (first deploy). `-if-db-not-exists`
 #    skips when the local disk already has a copy (normal restart).
-# 3. `litestream replicate -exec` becomes PID 1 and supervises `atrium-host`,
-#    forwarding SIGTERM and performing a final WAL sync on shutdown.
+# 3. `litestream replicate -exec` becomes PID 1 and supervises the host
+#    process, forwarding SIGTERM and performing a final WAL sync on
+#    shutdown. We run the host directly under Bun (no `--compile`) so
+#    `sqlite-vec`'s native extension and Bun's SQLITE_CUSTOM_LIB override
+#    keep working.
 set -eu
-
-# Render injects RENDER_EXTERNAL_HOSTNAME for web services. If the operator
-# didn't pin an ATRIUM_BASE_URL via the dashboard, derive one from the service's
-# own public hostname so link generation works out of the box.
-if [ -z "${ATRIUM_BASE_URL:-}" ] && [ -n "${RENDER_EXTERNAL_HOSTNAME:-}" ]; then
-  export ATRIUM_BASE_URL="https://${RENDER_EXTERNAL_HOSTNAME}"
-fi
 
 mkdir -p "$(dirname "$ATRIUM_DB_PATH")"
 
@@ -25,5 +21,5 @@ litestream restore \
   "$ATRIUM_DB_PATH" || true
 
 exec litestream replicate \
-  -exec "atrium-host" \
+  -exec "bun run ${ATRIUM_HOST_ENTRY}" \
   -config "$LITESTREAM_CONFIG"

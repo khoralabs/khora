@@ -123,14 +123,21 @@ SQLite file:
 
 ## Gotchas
 
-- **Bun-compiled binaries on Alpine need `libstdc++` + `libgcc`.** The host
-  Dockerfile installs both. Symptom if you forget: `Error loading shared
-  library libstdc++.so.6` on container start.
+- **The host runs from source under Bun, not as a `bun --compile` binary.**
+  Two reasons: `sqlite-vec` resolves its native extension via Node-style
+  module lookup that doesn't exist in a compiled bunfs, and Bun's bundled
+  SQLite often omits `load_extension` (which `sqlite-vec.load(db)` calls).
+  The image installs Alpine's `sqlite-libs` and sets
+  `SQLITE_CUSTOM_LIB=/usr/lib/libsqlite3.so.0` so extension loading works.
+  Symptom if you bypass that: `Cannot find module
+  'sqlite-vec-linux-x64/vec0.so'` on boot.
 - **`minio.internal` only resolves once the MinIO service is deployed.**
   Apply the full blueprint (all three services) before expecting the host
   to start cleanly. On a partial apply you'll see `dial tcp: lookup
   minio.internal: no such host` from Litestream; the host binary won't run
-  because Litestream supervises it and exits.
+  because Litestream supervises it and exits. sql-studio is more lenient:
+  if the replica is unreachable on first boot it serves an empty DB and
+  you can redeploy once MinIO is up to pull a real snapshot.
 - **First boot on a fresh bucket** logs one `cannot fetch generations`
   error before the first sync. That's normal — Litestream is checking
   whether a replica already exists.

@@ -14,11 +14,18 @@ set -eu
 mkdir -p "$(dirname "$DB_PATH")"
 
 if [ -n "${LITESTREAM_CONFIG:-}" ] && [ ! -f "$DB_PATH" ]; then
+  # Tolerate failure: if MinIO isn't reachable yet (e.g. minio.internal not
+  # provisioned), or the replica is empty, boot anyway against an empty DB.
+  # The user can redeploy this service once the replica is healthy to pull
+  # a real snapshot.
   litestream restore \
     -if-replica-exists \
     -config "$LITESTREAM_CONFIG" \
-    "$DB_PATH"
+    "$DB_PATH" || echo "sql-studio: litestream restore skipped (replica unavailable); serving local DB"
 fi
+
+# Ensure something exists at $DB_PATH so sql-studio can open it.
+[ -f "$DB_PATH" ] || : > "$DB_PATH"
 
 exec sql-studio \
   --no-browser \
