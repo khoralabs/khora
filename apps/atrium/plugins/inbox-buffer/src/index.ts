@@ -17,8 +17,9 @@ export const INBOX_CLIENT_EVENT_TYPES = [
   "inbox:connection_request",
   "inbox:host",
   "inbox:negotiation_ticket",
-  "inbox:topic_post",
-  "inbox:probe_hit",
+  "inbox:post",
+  "author:subscribed",
+  "author:unsubscribed",
 ] as const;
 
 export type BufferCompactOpts = {

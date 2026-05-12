@@ -1,11 +1,11 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
-import { ensureSwarmHostSqliteSchema } from "../persistence/sqlite/schema.ts";
+import { migrateAtriumHostDb } from "../persistence/sqlite/migrate-atrium-host-db.ts";
 import { createAtriumUsernamesRepo } from "./atrium-usernames.ts";
 
 function openTestDb(): Database {
   const db = new Database(":memory:");
-  ensureSwarmHostSqliteSchema(db);
+  migrateAtriumHostDb(db);
   return db;
 }
 

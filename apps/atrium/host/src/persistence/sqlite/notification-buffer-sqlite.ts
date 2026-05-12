@@ -5,17 +5,15 @@ import type {
   AgentNotificationBufferPort,
   AgentNotificationRow,
 } from "@khoralabs/swarm-host";
-import { ensureSwarmHostSqliteSchema } from "./schema.ts";
+import { migrateAtriumHostDb } from "./migrate-atrium-host-db.ts";
 
 function parsePayload(kind: string, payloadJson: string): AgentNotification {
   const payload = JSON.parse(payloadJson) as unknown;
   switch (kind) {
     case "negotiation_ticket":
       return { kind: "negotiation_ticket", payload: payload as never };
-    case "topic_post":
-      return { kind: "topic_post", payload: payload as never };
-    case "probe_hit":
-      return { kind: "probe_hit", payload: payload as never };
+    case "inbox_post":
+      return { kind: "inbox_post", payload: payload as never };
     case "connection_request":
       return { kind: "connection_request", payload };
     case "host":
@@ -29,9 +27,7 @@ function serializeNote(note: AgentNotification): { kind: string; payloadJson: st
   switch (note.kind) {
     case "negotiation_ticket":
       return { kind: note.kind, payloadJson: JSON.stringify(note.payload) };
-    case "topic_post":
-      return { kind: note.kind, payloadJson: JSON.stringify(note.payload) };
-    case "probe_hit":
+    case "inbox_post":
       return { kind: note.kind, payloadJson: JSON.stringify(note.payload) };
     case "connection_request":
       return { kind: note.kind, payloadJson: JSON.stringify(note.payload) };
@@ -46,7 +42,7 @@ function serializeNote(note: AgentNotification): { kind: string; payloadJson: st
 
 /** SQLite-backed {@link AgentNotificationBufferPort} with durable inbox rows and read receipts. */
 export function createSqliteAgentNotificationBuffer(db: Database): AgentNotificationBufferPort {
-  ensureSwarmHostSqliteSchema(db);
+  migrateAtriumHostDb(db);
 
   const insertRegistration = db.prepare(
     `INSERT OR IGNORE INTO host_registrations (did, registered_at) VALUES (?, ?)`,

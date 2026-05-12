@@ -9,6 +9,7 @@ export {
   type SqliteMaintenanceOptions,
   startSqliteMaintenance,
 } from "./maintenance.ts";
+export { migrateAtriumHostDb } from "./migrate-atrium-host-db.ts";
 export { createSqliteAgentNotificationBuffer } from "./notification-buffer-sqlite.ts";
 export { createObpRelaySqlitePersistence } from "./obp-relay-sqlite.ts";
 export {
@@ -18,8 +19,8 @@ export {
   type ProbeSubscriberUpsert,
 } from "./probe-subscribers-sqlite.ts";
 export {
-  createRegistrationsTopicsRepo,
-  type RegistrationsTopicsRepo,
-} from "./registrations-topics-sqlite.ts";
-export { configureSwarmHostSqlitePragmas, ensureSwarmHostSqliteSchema } from "./schema.ts";
+  createRegistrationsSubjectsRepo,
+  type RegistrationsSubjectsRepo,
+} from "./registrations-subjects-sqlite.ts";
+export { configureSwarmHostSqlitePragmas, SWARM_HOST_SCHEMA_STATEMENTS } from "./schema.ts";
 export { createSwarmHostSqlitePersistence } from "./swarm-host-sqlite.ts";

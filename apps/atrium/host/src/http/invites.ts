@@ -1,12 +1,11 @@
-import { zAtriumInviteListResponse, zAtriumInvitePreviewResponse } from "@khoralabs/atrium-contracts";
+import {
+  zAtriumInviteListResponse,
+  zAtriumInvitePreviewResponse,
+} from "@khoralabs/atrium-contracts";
 import z from "zod";
 import { clientIpFromRequest } from "../rate-limit.ts";
 import type { HostRouteDeps } from "./deps.ts";
-import {
-  authErrorResponse,
-  inviteOpaqueNotFound,
-  rateLimitedResponse,
-} from "./responses.ts";
+import { authErrorResponse, inviteOpaqueNotFound, rateLimitedResponse } from "./responses.ts";
 
 const zInvitePreviewBody = z.object({
   token: z.string().trim().min(1),

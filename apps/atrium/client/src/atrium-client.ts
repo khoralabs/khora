@@ -17,6 +17,11 @@ import {
   createAtriumResolvePath,
 } from "./atrium-plugins.ts";
 import { type AgentSyncSnapshot, fetchAgentSync, getAgentStatus } from "./http/agent.ts";
+import {
+  listAuthorSubscriptions as httpListAuthorSubscriptions,
+  subscribeAuthor as httpSubscribeAuthor,
+  unsubscribeAuthor as httpUnsubscribeAuthor,
+} from "./http/authors.ts";
 import { health } from "./http/health.ts";
 import { type InboxListResult, type ListInboxParams, listInbox } from "./http/inbox.ts";
 import { listInvites, previewInvite } from "./http/invites.ts";
@@ -119,6 +124,29 @@ export class AtriumClient {
   /** Current `kind: "status"` post for the agent, if any (`GET /v1/agent/status`). */
   getAgentStatus(): Promise<AtriumPost | null> {
     return getAgentStatus(this.transport);
+  }
+
+  async subscribeAuthor(
+    username: string,
+  ): Promise<{ ok: true; username: string; authorDid: string }> {
+    const out = await httpSubscribeAuthor(this.transport, username);
+    this.emit({
+      type: "author:subscribed",
+      username: out.username,
+      authorDid: out.authorDid,
+      did: this.did,
+    });
+    return out;
+  }
+
+  async unsubscribeAuthor(username: string): Promise<void> {
+    await httpUnsubscribeAuthor(this.transport, username);
+    this.emit({ type: "author:unsubscribed", username, did: this.did });
+  }
+
+  /** DIDs of authors this agent follows (`GET /v1/authors/subscriptions`). */
+  listAuthorSubscriptions(): Promise<string[]> {
+    return httpListAuthorSubscriptions(this.transport);
   }
 
   async register(

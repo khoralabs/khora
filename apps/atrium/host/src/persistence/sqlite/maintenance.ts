@@ -47,7 +47,9 @@ export function startSqliteMaintenance(
     try {
       db.run("PRAGMA wal_checkpoint(TRUNCATE);");
     } catch (e) {
-      log.warn(`[atrium-host] wal_checkpoint failed: ${e instanceof Error ? e.message : String(e)}`);
+      log.warn(
+        `[atrium-host] wal_checkpoint failed: ${e instanceof Error ? e.message : String(e)}`,
+      );
     }
   };
 

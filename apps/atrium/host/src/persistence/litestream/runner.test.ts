@@ -1,7 +1,7 @@
+import { describe, expect, test } from "bun:test";
 import { chmodSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { describe, expect, test } from "bun:test";
 import { restoreIfReplicaExists, startLitestreamReplicate } from "./runner.ts";
 
 function writeFakeBin(contents: string): string {
@@ -41,9 +41,7 @@ describe("restoreIfReplicaExists", () => {
 
 describe("startLitestreamReplicate", () => {
   test("stop() sends SIGTERM and awaits child exit", async () => {
-    const bin = writeFakeBin(
-      "#!/bin/sh\ntrap 'exit 0' TERM\nwhile true; do sleep 0.1; done\n",
-    );
+    const bin = writeFakeBin("#!/bin/sh\ntrap 'exit 0' TERM\nwhile true; do sleep 0.1; done\n");
     const handle = startLitestreamReplicate({
       binPath: bin,
       configPath: "/tmp/x.yml",
@@ -55,9 +53,7 @@ describe("startLitestreamReplicate", () => {
   });
 
   test("stop() is idempotent", async () => {
-    const bin = writeFakeBin(
-      "#!/bin/sh\ntrap 'exit 0' TERM\nwhile true; do sleep 0.1; done\n",
-    );
+    const bin = writeFakeBin("#!/bin/sh\ntrap 'exit 0' TERM\nwhile true; do sleep 0.1; done\n");
     const handle = startLitestreamReplicate({
       binPath: bin,
       configPath: "/tmp/x.yml",
@@ -86,9 +82,7 @@ describe("startLitestreamReplicate", () => {
   });
 
   test("onExit does NOT fire when child is killed via stop()", async () => {
-    const bin = writeFakeBin(
-      "#!/bin/sh\ntrap 'exit 0' TERM\nwhile true; do sleep 0.1; done\n",
-    );
+    const bin = writeFakeBin("#!/bin/sh\ntrap 'exit 0' TERM\nwhile true; do sleep 0.1; done\n");
     let received: number | null | undefined;
     const handle = startLitestreamReplicate({
       binPath: bin,

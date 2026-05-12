@@ -10,27 +10,41 @@ describe("parseInboxWebSocketMessage", () => {
           id: 1,
           createdAtMs: 100,
           read: false,
-          notification: { kind: "probe_hit", payload: { probePostId: "a", matchedPostId: "b" } },
+          notification: {
+            kind: "inbox_post",
+            payload: {
+              postId: "b",
+              postKind: "post",
+              reasons: [{ kind: "probe-hit", probePostId: "a", score: 0.9 }],
+            },
+          },
         },
       ],
     });
     const msg = parseInboxWebSocketMessage(raw);
     expect(msg?.type).toBe("snapshot");
     if (msg?.type !== "snapshot") return;
-    expect(msg.notifications[0]?.notification.kind).toBe("probe_hit");
+    expect(msg.notifications[0]?.notification.kind).toBe("inbox_post");
   });
 
   test("live notification", () => {
     const raw = JSON.stringify({
       type: "notification",
       id: 2,
-      notification: { kind: "topic_post", payload: { topicSlug: "x", postId: "y" } },
+      notification: {
+        kind: "inbox_post",
+        payload: {
+          postId: "y",
+          postKind: "post",
+          reasons: [{ kind: "topic", topic: "x" }],
+        },
+      },
     });
     const msg = parseInboxWebSocketMessage(raw);
     expect(msg?.type).toBe("notification");
     if (msg?.type !== "notification") return;
     expect(msg.id).toBe(2);
-    expect(msg.notification.kind).toBe("topic_post");
+    expect(msg.notification.kind).toBe("inbox_post");
   });
 
   test("invalid json returns undefined", () => {

@@ -159,7 +159,14 @@ describe("AtriumClient", () => {
             data: JSON.stringify({
               type: "notification",
               id: 42,
-              notification: { kind: "topic_post", payload: { topicSlug: "t", postId: "p" } },
+              notification: {
+                kind: "inbox_post",
+                payload: {
+                  postId: "p",
+                  postKind: "post",
+                  reasons: [{ kind: "topic", topic: "t" }],
+                },
+              },
             }),
           });
         });
@@ -183,7 +190,7 @@ describe("AtriumClient", () => {
     await c.connectInbox({
       onNotification: () => {
         expect(events.some((e) => e.type === "inbox:notification")).toBe(true);
-        expect(events.some((e) => e.type === "inbox:topic_post")).toBe(true);
+        expect(events.some((e) => e.type === "inbox:post")).toBe(true);
         legacyCalled = true;
       },
     });
@@ -292,6 +299,43 @@ describe("AtriumClient", () => {
     await c.subscribeTopic("rust-dev");
   });
 
+  test("listAuthorSubscriptions signs GET /v1/authors/subscriptions", async () => {
+    const signer = staticSigner("did:key:agent");
+    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("http://h/v1/authors/subscriptions");
+      expect(init?.method).toBe("GET");
+      expectAuthHeaders(init, "did:key:agent");
+      return Response.json({ authorDids: ["did:key:bob"] });
+    });
+    const c = new AtriumClient({ baseUrl: "http://h", signer, fetch: fetchMock });
+    expect(await c.listAuthorSubscriptions()).toEqual(["did:key:bob"]);
+  });
+
+  test("subscribeAuthor signs POST with encoded username", async () => {
+    const signer = staticSigner("did:key:agent");
+    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("http://h/v1/authors/ada-99/subscribe");
+      expect(init?.method).toBe("POST");
+      expectAuthHeaders(init, "did:key:agent");
+      return Response.json({ ok: true, username: "ada-99", authorDid: "did:key:bob" });
+    });
+    const c = new AtriumClient({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const out = await c.subscribeAuthor("ada-99");
+    expect(out).toEqual({ ok: true, username: "ada-99", authorDid: "did:key:bob" });
+  });
+
+  test("unsubscribeAuthor signs DELETE", async () => {
+    const signer = staticSigner("did:key:agent");
+    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("http://h/v1/authors/ada-99/subscribe");
+      expect(init?.method).toBe("DELETE");
+      expectAuthHeaders(init, "did:key:agent");
+      return new Response(null, { status: 204 });
+    });
+    const c = new AtriumClient({ baseUrl: "http://h", signer, fetch: fetchMock });
+    await c.unsubscribeAuthor("ada-99");
+  });
+
   test("createPost sends creation body and signs", async () => {
     const signer = staticSigner("did:key:writer");
     const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -356,7 +400,14 @@ describe("AtriumClient", () => {
             id: 1,
             createdAtMs: 1,
             read: false,
-            notification: { kind: "topic_post", payload: { topicSlug: "t", postId: "p" } },
+            notification: {
+              kind: "inbox_post",
+              payload: {
+                postId: "p",
+                postKind: "post",
+                reasons: [{ kind: "topic", topic: "t" }],
+              },
+            },
           },
         ],
       });
@@ -364,7 +415,7 @@ describe("AtriumClient", () => {
     const c = new AtriumClient({ baseUrl: "http://h", signer, fetch: fetchMock });
     const r = await c.listInbox({ limit: 10, markRead: true });
     expect(r.notifications).toHaveLength(1);
-    expect(r.notifications[0]?.notification.kind).toBe("topic_post");
+    expect(r.notifications[0]?.notification.kind).toBe("inbox_post");
   });
 
   test("listInbox signs canonical /v1/inbox?limit=10&markRead=1 path", async () => {

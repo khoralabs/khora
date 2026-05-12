@@ -1,8 +1,4 @@
-import {
-  zAgentStatusResponse,
-  zAtriumPost,
-  zAtriumProfile,
-} from "@khoralabs/atrium-contracts";
+import { zAgentStatusResponse, zAtriumPost, zAtriumProfile } from "@khoralabs/atrium-contracts";
 import z from "zod";
 import { envAgentSyncProbeLimit } from "../env.ts";
 import type { HostRouteDeps } from "./deps.ts";

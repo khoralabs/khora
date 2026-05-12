@@ -95,11 +95,8 @@ function emitInboxNotification(
     case "negotiation_ticket":
       emit({ type: "inbox:negotiation_ticket", did, id, notification });
       break;
-    case "topic_post":
-      emit({ type: "inbox:topic_post", did, id, notification });
-      break;
-    case "probe_hit":
-      emit({ type: "inbox:probe_hit", did, id, notification });
+    case "inbox_post":
+      emit({ type: "inbox:post", did, id, notification });
       break;
   }
 }

@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import { ensureSwarmHostSqliteSchema } from "./schema.ts";
+import { migrateAtriumHostDb } from "./migrate-atrium-host-db.ts";
 
 export type ProbeSubscriberRow = {
   probePostId: string;
@@ -57,7 +57,7 @@ function parseJsonStringArray(raw: string | null): string[] | null {
 }
 
 export function createProbeSubscribersRepo(db: Database): ProbeSubscribersRepo {
-  ensureSwarmHostSqliteSchema(db);
+  migrateAtriumHostDb(db);
 
   const upsertStmt = db.prepare(
     `INSERT INTO probe_subscribers (

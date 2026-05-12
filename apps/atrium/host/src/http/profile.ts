@@ -11,10 +11,7 @@ import type { AtriumHostContext } from "../create-atrium-host.ts";
 import type { HostRouteDeps } from "./deps.ts";
 import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses.ts";
 
-export function loadPublicProfileForDid(
-  ctx: AtriumHostContext,
-  did: string,
-): AtriumProfile | null {
+export function loadPublicProfileForDid(ctx: AtriumHostContext, did: string): AtriumProfile | null {
   const profileId = ctx.host.persistenceClient.profileIdForAgentDid(did);
   if (profileId === undefined) return null;
   const row = ctx.host.persistenceClient.getProfileById(profileId);

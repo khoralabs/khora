@@ -23,9 +23,7 @@ export function createHostRateLimiters(): HostRateLimiters {
     registerDid: createRateLimiter(
       envRatePerMinute(process.env.ATRIUM_RL_REGISTER_PER_MIN_PER_DID, 15),
     ),
-    postsDid: createRateLimiter(
-      envRatePerMinute(process.env.ATRIUM_RL_POSTS_PER_MIN_PER_DID, 120),
-    ),
+    postsDid: createRateLimiter(envRatePerMinute(process.env.ATRIUM_RL_POSTS_PER_MIN_PER_DID, 120)),
     topicsDid: createRateLimiter(
       envRatePerMinute(process.env.ATRIUM_RL_TOPICS_PER_MIN_PER_DID, 120),
     ),
@@ -35,9 +33,7 @@ export function createHostRateLimiters(): HostRateLimiters {
     agentSyncDid: createRateLimiter(
       envRatePerMinute(process.env.ATRIUM_RL_AGENT_SYNC_PER_MIN_PER_DID, 60),
     ),
-    inboxDid: createRateLimiter(
-      envRatePerMinute(process.env.ATRIUM_RL_INBOX_PER_MIN_PER_DID, 120),
-    ),
+    inboxDid: createRateLimiter(envRatePerMinute(process.env.ATRIUM_RL_INBOX_PER_MIN_PER_DID, 120)),
     defaultIp: createRateLimiter(
       envRatePerMinute(process.env.ATRIUM_RL_DEFAULT_PER_MIN_PER_IP, 900),
     ),

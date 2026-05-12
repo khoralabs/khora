@@ -76,7 +76,7 @@ export type {
   ObpRelayPersistence,
   ObpRelayRoomRecord,
   SwarmHostAgentRegistrations,
-  SwarmHostAgentTopicSubscriptions,
+  SwarmHostAgentSubjectSubscriptions,
   SwarmHostEntityKind,
   SwarmHostEntityPersistence,
   SwarmHostEntityRow,
@@ -88,9 +88,9 @@ export type {
   AgentNotification,
   AgentNotificationBufferPort,
   AgentNotificationRow,
+  InboxPostNotificationPayload,
+  InboxPostReason,
   NegotiationTicketNotificationPayload,
-  ProbeHitNotificationPayload,
-  TopicPostNotificationPayload,
 } from "./registration/notifications.ts";
 export type {
   AgentDid,

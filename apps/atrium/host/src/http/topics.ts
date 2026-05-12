@@ -1,4 +1,5 @@
 import { normalizeTopicSlug } from "@khoralabs/atrium-contracts";
+import { topicSubscriptionSubject } from "../subject-keys.ts";
 import type { HostRouteDeps } from "./deps.ts";
 import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses.ts";
 
@@ -44,11 +45,11 @@ export async function handleTopicSubMutation(
   const tRl = rateLimiters.topicsDid(`did:${did}`);
   if (!tRl.ok) return rateLimitedResponse(tRl.retryAfterSec);
   if (req.method === "POST") {
-    ctx.host.persistenceClient.subscribeAgentTopic(did, slug);
+    ctx.host.persistenceClient.subscribeAgentSubject(did, topicSubscriptionSubject(slug));
     return Response.json({ ok: true, topicSlug: slug });
   }
   if (req.method === "DELETE") {
-    ctx.host.persistenceClient.unsubscribeAgentTopic(did, slug);
+    ctx.host.persistenceClient.unsubscribeAgentSubject(did, topicSubscriptionSubject(slug));
     return new Response(null, { status: 204 });
   }
   return undefined;

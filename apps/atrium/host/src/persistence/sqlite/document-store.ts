@@ -2,7 +2,7 @@ import type { Database } from "bun:sqlite";
 import type { DefaultEntityMap, ResolvedSource, SourceMap, Store } from "@khoralabs/memories-core";
 import type { TextFeatureExportRow } from "@khoralabs/memories-core/persistence";
 import type { SwarmHostEntityKind } from "@khoralabs/swarm-host";
-import { ensureSwarmHostSqliteSchema } from "./schema.ts";
+import { migrateAtriumHostDb } from "./migrate-atrium-host-db.ts";
 
 export type SwarmHostDocumentStoreParsers<EntityMap extends Record<string, unknown>> = {
   [K in keyof EntityMap & string]?: (raw: unknown) => EntityMap[K];
@@ -62,7 +62,7 @@ function fieldValueToResolvedString(value: unknown): string {
 export function createSwarmHostDocumentStore<
   EntityMap extends Record<string, unknown> = DefaultEntityMap,
 >(db: Database, options?: CreateSwarmHostDocumentStoreOptions<EntityMap>): Store<EntityMap> {
-  ensureSwarmHostSqliteSchema(db);
+  migrateAtriumHostDb(db);
   const parsers = options?.parsers;
 
   const selectBodyForResolve = db.query<{ body_json: string }, [string, string, string]>(

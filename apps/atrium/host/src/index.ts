@@ -4,12 +4,12 @@ import { createAtriumDidAuth } from "@khoralabs/atrium-auth";
 import { createAtriumHostContext } from "./create-atrium-host.ts";
 import {
   envDbPath,
+  envInboxSnapshotLimit,
   envIntervalMs,
   envPort,
   envPostNamespace,
   envProbeNamespace,
   envProfileNamespace,
-  envInboxSnapshotLimit,
 } from "./env.ts";
 import type { HostRouteDeps } from "./http/deps.ts";
 import { loadPublicProfileForDid } from "./http/profile.ts";

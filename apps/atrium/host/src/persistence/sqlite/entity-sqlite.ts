@@ -6,14 +6,14 @@ import type {
   SwarmHostEntityUpsert,
   SwarmHostPostPersistence,
 } from "@khoralabs/swarm-host";
+import { migrateAtriumHostDb } from "./migrate-atrium-host-db.ts";
 import { listPostRowsByAuthorProfileIdAndKind } from "./probe-posts-sqlite.ts";
-import { ensureSwarmHostSqliteSchema } from "./schema.ts";
 
 export function createSwarmHostEntitySqlitePersistence(
   db: Database,
   kind: SwarmHostEntityKind,
 ): SwarmHostEntityPersistence {
-  ensureSwarmHostSqliteSchema(db);
+  migrateAtriumHostDb(db);
 
   const upsertRow = db.prepare(
     `INSERT INTO host_entities (kind, id, memory_id, body_json, updated_at)

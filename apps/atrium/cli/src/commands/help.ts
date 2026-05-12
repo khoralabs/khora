@@ -1,3 +1,6 @@
+import { authorListHelp } from "./author-list.help.ts";
+import { authorSubscribeHelp } from "./author-subscribe.help.ts";
+import { authorUnsubscribeHelp } from "./author-unsubscribe.help.ts";
 import { configHelp } from "./config.help.ts";
 import { healthHelp } from "./health.help.ts";
 import { inboxListHelp } from "./inbox-list.help.ts";
@@ -39,6 +42,9 @@ const ALL_HELP: readonly CommandHelp[] = [
   topicListHelp,
   topicSubscribeHelp,
   topicUnsubscribeHelp,
+  authorListHelp,
+  authorSubscribeHelp,
+  authorUnsubscribeHelp,
 ];
 
 function indent(block: string, pad: string): string {
@@ -114,6 +120,9 @@ Commands:
   topic list
   topic subscribe [slug]
   topic unsubscribe [slug]
+  author list
+  author subscribe <username>
+  author unsubscribe <username>
 
 Daemon (single-instance; PID file at <dataDir>/daemon.pid or ~/.atrium/daemon.pid):
   atrium start -b           Start in the background

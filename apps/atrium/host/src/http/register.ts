@@ -4,10 +4,7 @@ import { allowReregister } from "../env.ts";
 import { inviteRequiredFromEnv, invitesPerRegistrationFromEnv } from "../invites/index.ts";
 import { clientIpFromRequest } from "../rate-limit.ts";
 import type { HostRouteDeps } from "./deps.ts";
-import {
-  rateLimitedResponse,
-  registrationOpaqueJson,
-} from "./responses.ts";
+import { rateLimitedResponse, registrationOpaqueJson } from "./responses.ts";
 
 export async function handleRegister(req: Request, deps: HostRouteDeps): Promise<Response> {
   const { ctx, invitesRepo, rateLimiters } = deps;

@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { createHash, randomBytes } from "node:crypto";
-import { ensureSwarmHostSqliteSchema } from "../persistence/sqlite/schema.ts";
+import { migrateAtriumHostDb } from "../persistence/sqlite/migrate-atrium-host-db.ts";
 
 export const ATRIUM_INVITE_KIND = {
   root: "root",
@@ -94,7 +94,7 @@ export type AtriumInvitesRepo = {
 };
 
 export function createAtriumInvitesRepo(db: Database, pepper: string): AtriumInvitesRepo {
-  ensureSwarmHostSqliteSchema(db);
+  migrateAtriumHostDb(db);
 
   const insertSeed = db.prepare(
     `INSERT OR IGNORE INTO atrium_invite_tokens (token_hash, created_at_ms, consumed_at_ms, consumed_by_did, minted_by_did, kind)

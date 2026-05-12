@@ -144,6 +144,21 @@ async function main(
       return;
     }
 
+    if (a === "author" && b === "list") {
+      await handlers.authorList(ctx, flags);
+      return;
+    }
+
+    if (a === "author" && b === "subscribe") {
+      await handlers.authorSubscribe(ctx, c, flags);
+      return;
+    }
+
+    if (a === "author" && b === "unsubscribe") {
+      await handlers.authorUnsubscribe(ctx, c, flags);
+      return;
+    }
+
     if (a === "topic" && b === "list") {
       await handlers.topicList(ctx, flags);
       return;

@@ -2,10 +2,8 @@ import type { Database } from "bun:sqlite";
 import { configureMemoriesSqlitePragmas } from "@khoralabs/memories-sqlite";
 
 /**
- * Apply the production-tuned pragma set used by `openMemoriesDatabase`. Production
- * code never calls this directly (the connection helper already runs them), but
- * tests and tools that hand a raw `new Database(...)` to `ensureSwarmHostSqliteSchema`
- * still get the same pragmas applied.
+ * Apply the production-tuned pragma set used by `openMemoriesDatabase`. Call before
+ * {@link migrateAtriumHostDb} when opening a raw `new Database(...)` in tests.
  */
 export function configureSwarmHostSqlitePragmas(db: Database): void {
   configureMemoriesSqlitePragmas(db);
@@ -26,7 +24,8 @@ export function configureSwarmHostSqlitePragmas(db: Database): void {
  * "no such table" errors when a later CREATE INDEX references an earlier
  * CREATE TABLE that hasn't yet become visible in the same batch.
  */
-const SWARM_HOST_SCHEMA_STATEMENTS: readonly string[] = [
+/** Baseline schema for migration `0.0.0-0.1.0/001-initial` (legacy `topic_subscriptions` table). */
+export const SWARM_HOST_SCHEMA_STATEMENTS: readonly string[] = [
   `CREATE TABLE IF NOT EXISTS rooms (
      session_id TEXT PRIMARY KEY NOT NULL,
      pairing_secret_hex TEXT NOT NULL,
@@ -100,10 +99,3 @@ const SWARM_HOST_SCHEMA_STATEMENTS: readonly string[] = [
    )`,
   `CREATE INDEX IF NOT EXISTS idx_probe_subscribers_expires ON probe_subscribers(expires_at_ms)`,
 ];
-
-export function ensureSwarmHostSqliteSchema(db: Database): void {
-  configureSwarmHostSqlitePragmas(db);
-  for (const sql of SWARM_HOST_SCHEMA_STATEMENTS) {
-    db.run(sql);
-  }
-}

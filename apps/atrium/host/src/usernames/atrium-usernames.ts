@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import { ensureSwarmHostSqliteSchema } from "../persistence/sqlite/schema.ts";
+import { migrateAtriumHostDb } from "../persistence/sqlite/migrate-atrium-host-db.ts";
 
 export type AtriumUsernameRow = { username: string; did: string; createdAtMs: number };
 
@@ -24,7 +24,7 @@ export type AtriumUsernamesRepo = {
 };
 
 export function createAtriumUsernamesRepo(db: Database): AtriumUsernamesRepo {
-  ensureSwarmHostSqliteSchema(db);
+  migrateAtriumHostDb(db);
 
   const insertUsername = db.prepare(
     `INSERT INTO atrium_usernames (username, did, created_at_ms) VALUES (?, ?, ?)`,

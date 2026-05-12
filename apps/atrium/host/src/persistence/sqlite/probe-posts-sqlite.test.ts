@@ -1,13 +1,13 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
 import { createSwarmHostEntitySqlitePersistence } from "./entity-sqlite.ts";
+import { migrateAtriumHostDb } from "./migrate-atrium-host-db.ts";
 import { listProbePostsForProfileId } from "./probe-posts-sqlite.ts";
-import { ensureSwarmHostSqliteSchema } from "./schema.ts";
 
 describe("listProbePostsForProfileId", () => {
   test("returns probes for profile ordered newest first", () => {
     const db = new Database(":memory:");
-    ensureSwarmHostSqliteSchema(db);
+    migrateAtriumHostDb(db);
     const posts = createSwarmHostEntitySqlitePersistence(db, "post");
     const probe = {
       id: "probe1",

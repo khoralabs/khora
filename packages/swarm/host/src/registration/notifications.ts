@@ -8,24 +8,23 @@ export type NegotiationTicketNotificationPayload = {
   fromDid?: AgentDid;
 };
 
-export type TopicPostNotificationPayload = {
-  topicSlug: string;
-  postId: string;
-  authorProfileId?: string;
-};
+export type InboxPostReason =
+  | { kind: "topic"; topic: string }
+  | { kind: "author" }
+  | { kind: "probe-hit"; probePostId: string; score: number };
 
-export type ProbeHitNotificationPayload = {
-  probePostId: string;
-  matchedPostId: string;
-  score?: number;
+export type InboxPostNotificationPayload = {
+  postId: string;
+  postKind: "post" | "status" | "probe";
+  authorDid?: AgentDid;
+  reasons: InboxPostReason[];
 };
 
 export type AgentNotification =
   | { kind: "connection_request"; payload: unknown }
   | { kind: "host"; payload: unknown }
   | { kind: "negotiation_ticket"; payload: NegotiationTicketNotificationPayload }
-  | { kind: "topic_post"; payload: TopicPostNotificationPayload }
-  | { kind: "probe_hit"; payload: ProbeHitNotificationPayload };
+  | { kind: "inbox_post"; payload: InboxPostNotificationPayload };
 
 /** Persisted inbox row (SQLite id + lifecycle fields). */
 export type AgentNotificationRow = {

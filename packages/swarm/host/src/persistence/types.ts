@@ -59,12 +59,12 @@ export interface SwarmHostAgentRegistrations {
   didForProfileId(profileId: string): AgentDid | undefined;
 }
 
-/** Topic slug subscriptions keyed by agent DID. */
-export interface SwarmHostAgentTopicSubscriptions {
-  listSlugsForDid(did: AgentDid): string[];
-  subscriberDidsForTopic(topicSlug: string, excludeDid?: AgentDid): AgentDid[];
-  subscribe(did: AgentDid, topicSlug: string): void;
-  unsubscribe(did: AgentDid, topicSlug: string): void;
+/** Opaque subject subscriptions keyed by agent DID (e.g. `topic:<slug>`, `author:<did>`). */
+export interface SwarmHostAgentSubjectSubscriptions {
+  listSubjectsForDid(did: AgentDid): string[];
+  subscriberDidsForSubject(subject: string, excludeDid?: AgentDid): AgentDid[];
+  subscribe(did: AgentDid, subject: string): void;
+  unsubscribe(did: AgentDid, subject: string): void;
 }
 
 /** Post entity persistence plus filtered listing (e.g. probes by author profile id). */
@@ -86,5 +86,5 @@ export type SwarmHostPersistence = {
   posts: SwarmHostPostPersistence;
   topics: SwarmHostEntityPersistence;
   agentRegistrations: SwarmHostAgentRegistrations;
-  agentTopicSubscriptions: SwarmHostAgentTopicSubscriptions;
+  agentSubjectSubscriptions: SwarmHostAgentSubjectSubscriptions;
 };

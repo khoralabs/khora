@@ -1,6 +1,8 @@
 import type { AgentDid } from "../registration/types.ts";
 import type { SwarmHostEntityRow, SwarmHostEntityUpsert, SwarmHostPersistence } from "./types.ts";
 
+const TOPIC_SUBJECT_PREFIX = "topic:";
+
 /** Thin facade over {@link SwarmHostPersistence} entity slices (backend-agnostic). */
 export type SwarmHostPersistenceClient = {
   readonly persistence: SwarmHostPersistence;
@@ -14,10 +16,12 @@ export type SwarmHostPersistenceClient = {
   agentRegistrationExists(did: AgentDid): boolean;
   profileIdForAgentDid(did: AgentDid): string | undefined;
   didForAgentProfileId(profileId: string): AgentDid | undefined;
-  subscribeAgentTopic(did: AgentDid, topicSlug: string): void;
-  unsubscribeAgentTopic(did: AgentDid, topicSlug: string): void;
+  subscribeAgentSubject(did: AgentDid, subject: string): void;
+  unsubscribeAgentSubject(did: AgentDid, subject: string): void;
+  listSubjectsForAgentDid(did: AgentDid): string[];
+  subscriberDidsForSubject(subject: string, excludeDid?: AgentDid): AgentDid[];
+  /** Subjects with `topic:` prefix, slug only (for `/v1/topics` and agent sync). */
   listTopicSlugsForAgentDid(did: AgentDid): string[];
-  subscriberDidsForTopicSlug(topicSlug: string, excludeDid?: AgentDid): AgentDid[];
   listPostRowsByAuthorProfileIdAndKind(params: {
     authorProfileId: string;
     kind: string;
@@ -41,13 +45,19 @@ export function createSwarmHostPersistenceClient(
     agentRegistrationExists: (did) => persistence.agentRegistrations.exists(did),
     profileIdForAgentDid: (did) => persistence.agentRegistrations.profileIdForDid(did),
     didForAgentProfileId: (profileId) => persistence.agentRegistrations.didForProfileId(profileId),
-    subscribeAgentTopic: (did, topicSlug) =>
-      persistence.agentTopicSubscriptions.subscribe(did, topicSlug),
-    unsubscribeAgentTopic: (did, topicSlug) =>
-      persistence.agentTopicSubscriptions.unsubscribe(did, topicSlug),
-    listTopicSlugsForAgentDid: (did) => persistence.agentTopicSubscriptions.listSlugsForDid(did),
-    subscriberDidsForTopicSlug: (topicSlug, excludeDid) =>
-      persistence.agentTopicSubscriptions.subscriberDidsForTopic(topicSlug, excludeDid),
+    subscribeAgentSubject: (did, subject) =>
+      persistence.agentSubjectSubscriptions.subscribe(did, subject),
+    unsubscribeAgentSubject: (did, subject) =>
+      persistence.agentSubjectSubscriptions.unsubscribe(did, subject),
+    listSubjectsForAgentDid: (did) => persistence.agentSubjectSubscriptions.listSubjectsForDid(did),
+    subscriberDidsForSubject: (subject, excludeDid) =>
+      persistence.agentSubjectSubscriptions.subscriberDidsForSubject(subject, excludeDid),
+    listTopicSlugsForAgentDid(did) {
+      return persistence.agentSubjectSubscriptions
+        .listSubjectsForDid(did)
+        .filter((s) => s.startsWith(TOPIC_SUBJECT_PREFIX))
+        .map((s) => s.slice(TOPIC_SUBJECT_PREFIX.length));
+    },
     listPostRowsByAuthorProfileIdAndKind: (params) =>
       persistence.posts.listRowsByAuthorProfileIdAndKind(params),
   };

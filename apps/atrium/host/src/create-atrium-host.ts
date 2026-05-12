@@ -22,13 +22,13 @@ import {
 } from "@khoralabs/swarm-host";
 import type { AtriumHostAppContext } from "./atrium-app-context.ts";
 import { atriumSwarmMemoryOpMapper } from "./atrium-memory-sync.ts";
-import { fanOutProbeHits, fanOutTopicSubscriptions } from "./atrium-post-fanout.ts";
+import { fanOutPostMatches } from "./atrium-post-fanout.ts";
 import {
   createProbeSubscribersRepo,
   createSqliteAgentNotificationBuffer,
   createSwarmHostDocumentStore,
   createSwarmHostSqlitePersistence,
-  ensureSwarmHostSqliteSchema,
+  migrateAtriumHostDb,
   type ProbeSubscribersRepo,
   type SqliteMaintenanceHandle,
   type SqliteMaintenanceOptions,
@@ -76,7 +76,7 @@ export const USERNAME_TAKEN_REASON = "USERNAME_TAKEN" as const;
 
 export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostContext {
   const db = openMemoriesDatabase(config.dbPath);
-  ensureSwarmHostSqliteSchema(db);
+  migrateAtriumHostDb(db);
   const hostPersistence = createSwarmHostSqlitePersistence(db);
   const persistence = createMemoriesPersistence(db);
   const documentStore = createSwarmHostDocumentStore<EntityMap>(db, {
@@ -212,12 +212,11 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
         }
 
         if (event.kind === SWARM_EVENT_KIND.POST_CREATED) {
-          await fanOutTopicSubscriptions({ ctx, post });
-          await fanOutProbeHits({
+          await fanOutPostMatches({
             ctx,
             probeSubscribers,
             embeddingModel: ac.embeddingModel,
-            incomingPost: post,
+            post,
           });
         }
         return;

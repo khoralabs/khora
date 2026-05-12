@@ -5,12 +5,12 @@ import { SWARM_EVENT_KIND } from "@khoralabs/swarm-host";
 import { deleteOtherStatusPostsForAuthor } from "./atrium-status-posts.ts";
 import type { AtriumHostContext } from "./create-atrium-host.ts";
 import { createSwarmHostPostSqlitePersistence } from "./persistence/sqlite/entity-sqlite.ts";
-import { ensureSwarmHostSqliteSchema } from "./persistence/sqlite/schema.ts";
+import { migrateAtriumHostDb } from "./persistence/sqlite/migrate-atrium-host-db.ts";
 
 describe("deleteOtherStatusPostsForAuthor", () => {
   test("notifies POST_DELETED for every other status row", async () => {
     const db = new Database(":memory:");
-    ensureSwarmHostSqliteSchema(db);
+    migrateAtriumHostDb(db);
     const posts = createSwarmHostPostSqlitePersistence(db);
     const status1 = zAtriumPost.parse({
       id: "st-1",

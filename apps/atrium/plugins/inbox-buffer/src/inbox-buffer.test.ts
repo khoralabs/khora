@@ -23,7 +23,14 @@ describe("createInboxBuffer", () => {
       type: "inbox:notification",
       did: "did:key:a",
       id: 1,
-      notification: { kind: "topic_post", payload: { topicSlug: "t", postId: "p" } },
+      notification: {
+        kind: "inbox_post",
+        payload: {
+          postId: "p",
+          postKind: "post",
+          reasons: [{ kind: "topic", topic: "t" }],
+        },
+      },
     });
     listener?.({ type: "post:deleted", did: "did:key:a", postId: "p1" });
     expect(buf.stats().count).toBe(3);

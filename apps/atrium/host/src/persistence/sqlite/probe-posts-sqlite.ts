@@ -2,7 +2,7 @@ import type { Database } from "bun:sqlite";
 import type { AtriumPost } from "@khoralabs/atrium-contracts";
 import { zAtriumPost } from "@khoralabs/atrium-contracts";
 import type { SwarmHostEntityRow } from "@khoralabs/swarm-host";
-import { ensureSwarmHostSqliteSchema } from "./schema.ts";
+import { migrateAtriumHostDb } from "./migrate-atrium-host-db.ts";
 
 /** Post rows for `kind` + author `profileId`, newest `updated_at` first (bounded). */
 export function listPostRowsByAuthorProfileIdAndKind(
@@ -11,7 +11,7 @@ export function listPostRowsByAuthorProfileIdAndKind(
   kind: string,
   limit: number,
 ): SwarmHostEntityRow[] {
-  ensureSwarmHostSqliteSchema(db);
+  migrateAtriumHostDb(db);
   const cap = Math.max(0, Math.min(limit, 500));
   if (cap === 0) return [];
   const rows = db
