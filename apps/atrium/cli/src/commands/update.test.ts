@@ -311,6 +311,10 @@ describe("runUpdateCommand", () => {
       await runUpdateCommand({ apply: true } as FlagMap, {
         fetchImpl: fetchReturning("1.6.0"),
         which: (cmd) => cmd === "pnpm",
+        // Neutralize inferManagerFromBinPath so this test exercises the
+        // `which`-based fallback regardless of where bun lives on the runner
+        // (e.g. /home/runner/.bun/bin/bun in CI matches the "bun" heuristic).
+        execPath: "/tmp/atrium-test/atrium",
         stopDaemon: async () => {
           stoppedDaemon = true;
         },
@@ -342,6 +346,7 @@ describe("runUpdateCommand", () => {
       await runUpdateCommand({ apply: true, tag: "next" } as FlagMap, {
         fetchImpl: fetchReturning("2.0.0-next.1"),
         which: (cmd) => cmd === "npm",
+        execPath: "/tmp/atrium-test/atrium",
         stopDaemon: async () => {},
         spawnInstall: async (_cmd, args) => {
           spawnedArgs = args;
@@ -367,6 +372,7 @@ describe("runUpdateCommand", () => {
       await runUpdateCommand({ apply: true } as FlagMap, {
         fetchImpl: fetchReturning("1.5.0"),
         which: () => true,
+        execPath: "/tmp/atrium-test/atrium",
         stopDaemon: async () => {},
         spawnInstall: async () => {
           spawned = true;
