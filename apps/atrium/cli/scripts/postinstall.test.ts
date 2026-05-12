@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { runAtriumPostinstall } from "./postinstall.ts";
+import { runAtriumConfigSetup, runAtriumPostinstall } from "./postinstall.ts";
 
 let workspace: string;
 let pkgDistDir: string;
@@ -112,5 +112,69 @@ describe("runAtriumPostinstall", () => {
     expect(existsSync(path.join(home, ".atrium"))).toBe(false);
     runAtriumPostinstall({ pkgDistDir, home });
     expect(existsSync(path.join(home, ".atrium"))).toBe(true);
+  });
+});
+
+describe("runAtriumConfigSetup", () => {
+  test("force overwrites existing configs and reports them as 'overwritten'", () => {
+    const dest = path.join(home, ".atrium");
+    mkdirSync(dest, { recursive: true });
+    writeFileSync(path.join(dest, "cli.config.json"), '{"old":true}');
+    writeFileSync(path.join(dest, "atrium-config.schema.json"), '{"old":true}');
+    const result = runAtriumConfigSetup({
+      configsDir: path.join(pkgDistDir, "configs"),
+      schemaPath: path.join(pkgDistDir, "atrium-config.schema.json"),
+      home,
+      force: true,
+    });
+    expect(result.copied.sort()).toEqual(["base.config.json", "daemon.config.json"]);
+    expect(result.overwritten).toEqual(["cli.config.json"]);
+    expect(result.skipped).toEqual([]);
+    expect(result.schema).toBe("overwritten");
+    expect(readFileSync(path.join(dest, "cli.config.json"), "utf8")).not.toBe('{"old":true}');
+    expect(readFileSync(path.join(dest, "atrium-config.schema.json"), "utf8")).not.toBe(
+      '{"old":true}',
+    );
+  });
+
+  test("reports schema='missing' when schemaPath is undefined", () => {
+    const result = runAtriumConfigSetup({
+      configsDir: path.join(pkgDistDir, "configs"),
+      schemaPath: undefined,
+      home,
+    });
+    expect(result.copied.length).toBe(3);
+    expect(result.schema).toBe("missing");
+    expect(existsSync(path.join(home, ".atrium", "atrium-config.schema.json"))).toBe(false);
+  });
+
+  test("reports schema='missing' when schemaPath points at a nonexistent file", () => {
+    const result = runAtriumConfigSetup({
+      configsDir: path.join(pkgDistDir, "configs"),
+      schemaPath: path.join(pkgDistDir, "does-not-exist.schema.json"),
+      home,
+    });
+    expect(result.schema).toBe("missing");
+  });
+
+  test("without force, second run on a populated dest yields all-skipped + schema='skipped'", () => {
+    runAtriumConfigSetup({
+      configsDir: path.join(pkgDistDir, "configs"),
+      schemaPath: path.join(pkgDistDir, "atrium-config.schema.json"),
+      home,
+    });
+    const second = runAtriumConfigSetup({
+      configsDir: path.join(pkgDistDir, "configs"),
+      schemaPath: path.join(pkgDistDir, "atrium-config.schema.json"),
+      home,
+    });
+    expect(second.copied).toEqual([]);
+    expect(second.overwritten).toEqual([]);
+    expect(second.skipped.sort()).toEqual([
+      "base.config.json",
+      "cli.config.json",
+      "daemon.config.json",
+    ]);
+    expect(second.schema).toBe("skipped");
   });
 });

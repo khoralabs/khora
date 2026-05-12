@@ -27,6 +27,16 @@ cli.ts ──┬─▶ commands/handlers.ts ──▶ commands/<cmd>.ts ──�
 
 Each command module decides between the wizard path and the flag-only path. The root `cli.ts` is just a router; adding a new command is a new file under `commands/` plus a row in `handlers.ts`.
 
+## Setup
+
+`npm i -g @khoralabs/atrium-cli` runs a postinstall step that drops the canonical config set (`base.config.json`, `cli.config.json`, `daemon.config.json`, and `atrium-config.schema.json`) into `~/.atrium/`. If you installed with `--ignore-scripts`, are working out of a monorepo clone, or deleted one of the files, re-run the same drop on demand:
+
+```bash
+atrium setup                  # idempotent: skip files that exist
+atrium setup --force          # overwrite existing files
+atrium setup --json           # structured summary for scripts
+```
+
 ## Identity
 
 On first use:

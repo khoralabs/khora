@@ -29,6 +29,7 @@ export const SUPPORTED_SLUGS: ReadonlySet<string> = new Set(SUPPORTED_TARGETS.ma
 export function cliLauncherSource(): string {
   const slugList = JSON.stringify(Array.from(SUPPORTED_SLUGS).sort());
   return `#!/usr/bin/env node
+const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 const supported = new Set(${slugList});
 const slug = \`\${process.platform}-\${process.arch}\`;
@@ -38,7 +39,12 @@ if (!supported.has(slug)) {
 }
 const cliBin = require.resolve(\`@khoralabs/atrium-cli-\${slug}/atrium\`);
 const daemonBin = require.resolve(\`@khoralabs/atrium-daemon-\${slug}/atrium-daemon\`);
-const env = { ...process.env, ATRIUM_DAEMON_BIN: daemonBin };
+const assetsDir = path.resolve(__dirname, "..");
+const env = {
+  ...process.env,
+  ATRIUM_DAEMON_BIN: daemonBin,
+  ATRIUM_CLI_ASSETS_DIR: assetsDir,
+};
 const r = spawnSync(cliBin, process.argv.slice(2), { stdio: "inherit", env });
 process.exit(r.status ?? 1);
 `;

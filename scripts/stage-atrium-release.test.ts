@@ -13,16 +13,19 @@ import {
 } from "./stage-atrium-release.ts";
 
 describe("launcher sources", () => {
-  test("cli launcher: node shebang, supports the three slugs, sets ATRIUM_DAEMON_BIN", () => {
+  test("cli launcher: node shebang, supports the three slugs, sets ATRIUM_DAEMON_BIN + ATRIUM_CLI_ASSETS_DIR", () => {
     const src = cliLauncherSource();
     expect(src.startsWith("#!/usr/bin/env node")).toBe(true);
     expect(src).toContain('"darwin-arm64"');
     expect(src).toContain('"linux-x64"');
     expect(src).toContain('"linux-arm64"');
     expect(src).toContain("ATRIUM_DAEMON_BIN");
+    expect(src).toContain("ATRIUM_CLI_ASSETS_DIR");
     expect(src).toContain("@khoralabs/atrium-cli-");
     expect(src).toContain("@khoralabs/atrium-daemon-");
     expect(src).toContain("spawnSync");
+    // Asset dir is the meta-package root (one level up from bin/).
+    expect(src).toContain('path.resolve(__dirname, "..")');
   });
 
   test("daemon launcher: node shebang, supports the three slugs, no ATRIUM_DAEMON_BIN export", () => {

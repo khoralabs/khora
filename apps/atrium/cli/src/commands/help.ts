@@ -8,6 +8,7 @@ import { postDeleteHelp } from "./post-delete.help.ts";
 import { postUpdateHelp } from "./post-update.help.ts";
 import { profileUpdateHelp } from "./profile-update.help.ts";
 import { registerHelp } from "./register.help.ts";
+import { setupHelp } from "./setup.help.ts";
 import { startHelp } from "./start.help.ts";
 import { statusHelp } from "./status.help.ts";
 import { topicSubscribeHelp } from "./topic-subscribe.help.ts";
@@ -16,6 +17,7 @@ import type { CommandHelp } from "./types.ts";
 
 const ALL_HELP: readonly CommandHelp[] = [
   keyHelp,
+  setupHelp,
   configHelp,
   healthHelp,
   startHelp,
@@ -86,6 +88,7 @@ Commands:
   key generate [--out <path>] [--force]
   key show [--path <path>]
   key path
+  setup [--force|-f] [--json]
   config path | show [--raw|--source] | edit
   health
   start [-b|--background] [--config <path>] [--json] [--log <path>]

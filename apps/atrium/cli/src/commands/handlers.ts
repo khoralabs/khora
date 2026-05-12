@@ -9,6 +9,7 @@ import { runPostDeleteCommand } from "./post-delete.ts";
 import { runPostUpdateCommand } from "./post-update.ts";
 import { runProfileUpdateCommand } from "./profile-update.ts";
 import { runRegisterCommand } from "./register.ts";
+import { runSetupCommand } from "./setup.ts";
 import { runStartCommand } from "./start.ts";
 import { runStatusCommand } from "./status.ts";
 import { runTopicSubscribeCommand } from "./topic-subscribe.ts";
@@ -17,6 +18,7 @@ import type { FlagMap } from "./types.ts";
 
 export interface AtriumCliCommandHandlers {
   key(sub: string | undefined, flags: FlagMap): Promise<void>;
+  setup(flags: FlagMap): Promise<void>;
   config(sub: string | undefined, flags: FlagMap): Promise<void>;
   health(ctx: AtriumCliContext): Promise<void>;
   start(flags: FlagMap): Promise<void>;
@@ -34,6 +36,7 @@ export interface AtriumCliCommandHandlers {
 
 export const defaultAtriumCliCommandHandlers = {
   key: runKeyCommand,
+  setup: runSetupCommand,
   config: runConfigCommand,
   health: runHealthCommand,
   start: runStartCommand,
