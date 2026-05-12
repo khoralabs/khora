@@ -10,9 +10,14 @@ import {
 } from "@khoralabs/atrium-client";
 import { buildDaemonPluginInstallers } from "./plugin-registry.ts";
 
-/** `~/.atrium/daemon.config.json` first, then legacy `~/.atrium/config.json`. */
-function daemonDefaultConfigPaths(): string[] {
-  const dir = path.join(homedir(), ".atrium");
+/**
+ * `~/.atrium/daemon.config.json` first, then legacy `~/.atrium/config.json`. Reads HOME /
+ * USERPROFILE from the passed env so tests (and any caller with a sandboxed environment) can
+ * override the developer's real home directory.
+ */
+function daemonDefaultConfigPaths(env: NodeJS.ProcessEnv): string[] {
+  const home = env.HOME ?? env.USERPROFILE ?? homedir();
+  const dir = path.join(home, ".atrium");
   return [path.join(dir, "daemon.config.json"), path.join(dir, "config.json")];
 }
 
@@ -69,7 +74,7 @@ export function createDaemonAppConfig(
   const resolved = resolveAtriumConfigPath({
     flag: flags.configPath,
     env,
-    defaultPaths: daemonDefaultConfigPaths(),
+    defaultPaths: daemonDefaultConfigPaths(env),
   });
   const { config, sourcePath, extendsChain } = loadAtriumAppConfig({
     schema: zDaemonAppConfig,

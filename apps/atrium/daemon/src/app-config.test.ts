@@ -19,6 +19,9 @@ describe("createDaemonAppConfig", () => {
     const bundle = createDaemonAppConfig({
       argv: [],
       env: {
+        // Sandbox HOME so auto-discovery cannot pick up the developer's real ~/.atrium/daemon.config.json.
+        HOME: "/nonexistent-test-home",
+        USERPROFILE: "/nonexistent-test-home",
         ATRIUM_BASE_URL: "http://x",
         ATRIUM_INBOX_BUFFER_DB: ":memory:",
         ATRIUM_PROFILE_SYNC_PATH: "p.json",
@@ -35,13 +38,17 @@ describe("createDaemonAppConfig", () => {
   });
 
   test("daemonJson precedence: --json argv > env=false default", () => {
-    const a = createDaemonAppConfig({ argv: ["--json"], env: {} as NodeJS.ProcessEnv });
+    const sandboxedHome = {
+      HOME: "/nonexistent-test-home",
+      USERPROFILE: "/nonexistent-test-home",
+    } as NodeJS.ProcessEnv;
+    const a = createDaemonAppConfig({ argv: ["--json"], env: { ...sandboxedHome } });
     expect(a.json).toBe(true);
-    const b = createDaemonAppConfig({ argv: [], env: {} as NodeJS.ProcessEnv });
+    const b = createDaemonAppConfig({ argv: [], env: { ...sandboxedHome } });
     expect(b.json).toBe(false);
     const c = createDaemonAppConfig({
       argv: [],
-      env: { ATRIUM_DAEMON_JSON: "1" } as NodeJS.ProcessEnv,
+      env: { ...sandboxedHome, ATRIUM_DAEMON_JSON: "1" } as NodeJS.ProcessEnv,
     });
     expect(c.json).toBe(true);
   });

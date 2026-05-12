@@ -10,9 +10,14 @@ import {
 } from "@khoralabs/atrium-client";
 import { buildCliPluginInstallers } from "./plugin-registry.ts";
 
-/** `~/.atrium/cli.config.json` first, then legacy `~/.atrium/config.json`. */
-function cliDefaultConfigPaths(): string[] {
-  const dir = path.join(homedir(), ".atrium");
+/**
+ * `~/.atrium/cli.config.json` first, then legacy `~/.atrium/config.json`. Reads HOME / USERPROFILE
+ * from the passed env so tests (and any caller with a sandboxed environment) can override the
+ * developer's real home directory.
+ */
+function cliDefaultConfigPaths(env: NodeJS.ProcessEnv): string[] {
+  const home = env.HOME ?? env.USERPROFILE ?? homedir();
+  const dir = path.join(home, ".atrium");
   return [path.join(dir, "cli.config.json"), path.join(dir, "config.json")];
 }
 
@@ -53,7 +58,7 @@ export function createCliAppConfig(
   const resolved = resolveAtriumConfigPath({
     flag: flagPath,
     env,
-    defaultPaths: cliDefaultConfigPaths(),
+    defaultPaths: cliDefaultConfigPaths(env),
   });
   const { config, sourcePath, extendsChain } = loadAtriumAppConfig({
     schema: zCliAppConfig,

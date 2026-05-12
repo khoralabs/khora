@@ -19,6 +19,9 @@ describe("createCliAppConfig", () => {
     const bundle = createCliAppConfig({
       argv: [],
       env: {
+        // Sandbox HOME so auto-discovery cannot pick up the developer's real ~/.atrium/cli.config.json.
+        HOME: "/nonexistent-test-home",
+        USERPROFILE: "/nonexistent-test-home",
         ATRIUM_BASE_URL: "http://x",
         ATRIUM_PROFILE_SYNC_PATH: "p.json",
         ATRIUM_TELEMETRY_DIR: "t",
