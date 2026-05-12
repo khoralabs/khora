@@ -7,6 +7,7 @@ import { runKillCommand } from "./kill.ts";
 import { runPostCreateCommand } from "./post-create.ts";
 import { runPostDeleteCommand } from "./post-delete.ts";
 import { runPostUpdateCommand } from "./post-update.ts";
+import { runProbeListCommand } from "./probe-list.ts";
 import { runProfileUpdateCommand } from "./profile-update.ts";
 import { runRegisterCommand } from "./register.ts";
 import { runSetupCommand } from "./setup.ts";
@@ -35,6 +36,7 @@ export interface AtriumCliCommandHandlers {
   postCreate(ctx: AtriumCliContext, flags: FlagMap): Promise<void>;
   postUpdate(ctx: AtriumCliContext, postId: string, flags: FlagMap): Promise<void>;
   postDelete(ctx: AtriumCliContext, postId: string, flags: FlagMap): Promise<void>;
+  probeList(ctx: AtriumCliContext, flags: FlagMap): Promise<void>;
   topicList(ctx: AtriumCliContext, flags: FlagMap): Promise<void>;
   topicSubscribe(ctx: AtriumCliContext, slug: string | undefined, flags: FlagMap): Promise<void>;
   topicUnsubscribe(ctx: AtriumCliContext, slug: string | undefined, flags: FlagMap): Promise<void>;
@@ -56,6 +58,7 @@ export const defaultAtriumCliCommandHandlers = {
   postCreate: runPostCreateCommand,
   postUpdate: runPostUpdateCommand,
   postDelete: runPostDeleteCommand,
+  probeList: runProbeListCommand,
   topicList: runTopicListCommand,
   topicSubscribe: runTopicSubscribeCommand,
   topicUnsubscribe: runTopicUnsubscribeCommand,

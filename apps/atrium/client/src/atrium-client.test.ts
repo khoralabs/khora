@@ -245,6 +245,29 @@ describe("AtriumClient", () => {
     expect(await c.lookupProfileByUsername("ghost")).toBeNull();
   });
 
+  test("listProbes signs request, no query by default, adds active=1 when requested", async () => {
+    const signer = staticSigner("did:key:agent");
+    const probeRow = {
+      id: "probe-1",
+      authorProfileId: "p-1",
+      kind: "probe" as const,
+      body: "watch for X",
+      expiresAtMs: 9_999_999_999_999,
+    };
+    const seen: string[] = [];
+    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
+      seen.push(String(input));
+      expect(init?.method).toBe("GET");
+      expectAuthHeaders(init, "did:key:agent");
+      return Response.json({ probes: [probeRow] });
+    });
+    const c = new AtriumClient({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const all = await c.listProbes();
+    expect(all).toEqual([probeRow]);
+    await c.listProbes({ active: true });
+    expect(seen).toEqual(["http://h/v1/probes", "http://h/v1/probes?active=1"]);
+  });
+
   test("listTopicSubscriptions signs request and returns slug array", async () => {
     const signer = staticSigner("did:key:agent");
     const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {

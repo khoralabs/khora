@@ -139,6 +139,11 @@ async function main(
       return;
     }
 
+    if (a === "probe" && b === "list") {
+      await handlers.probeList(ctx, flags);
+      return;
+    }
+
     if (a === "topic" && b === "list") {
       await handlers.topicList(ctx, flags);
       return;

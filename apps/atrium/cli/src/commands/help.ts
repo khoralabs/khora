@@ -6,6 +6,7 @@ import { killHelp } from "./kill.help.ts";
 import { postCreateHelp } from "./post-create.help.ts";
 import { postDeleteHelp } from "./post-delete.help.ts";
 import { postUpdateHelp } from "./post-update.help.ts";
+import { probeListHelp } from "./probe-list.help.ts";
 import { profileUpdateHelp } from "./profile-update.help.ts";
 import { registerHelp } from "./register.help.ts";
 import { setupHelp } from "./setup.help.ts";
@@ -34,6 +35,7 @@ const ALL_HELP: readonly CommandHelp[] = [
   postCreateHelp,
   postUpdateHelp,
   postDeleteHelp,
+  probeListHelp,
   topicListHelp,
   topicSubscribeHelp,
   topicUnsubscribeHelp,
@@ -108,6 +110,7 @@ Commands:
   post create [--body …] [--title …] [--topics a,b] [--kind post|probe|status]
   post update <id> [--body …] [--title …] [--topics …] [--kind …]
   post delete <id> [--yes]
+  probe list [--active]
   topic list
   topic subscribe [slug]
   topic unsubscribe [slug]

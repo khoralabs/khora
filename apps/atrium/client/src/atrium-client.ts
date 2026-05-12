@@ -21,6 +21,7 @@ import { health } from "./http/health.ts";
 import { type InboxListResult, type ListInboxParams, listInbox } from "./http/inbox.ts";
 import { listInvites, previewInvite } from "./http/invites.ts";
 import { createPost, deletePost, updatePost } from "./http/posts.ts";
+import { listProbes } from "./http/probes.ts";
 import {
   lookupProfileByUsername,
   type ProfileByUsernameResponse,
@@ -167,6 +168,14 @@ export class AtriumClient {
   /** Topic slugs this agent is currently subscribed to (`GET /v1/topics`). */
   listTopicSubscriptions(): Promise<string[]> {
     return listTopicSubscriptions(this.transport);
+  }
+
+  /**
+   * Probe posts authored by this agent (`GET /v1/probes`). Pass `{ active: true }` to filter
+   * out probes whose `expiresAtMs` is in the past.
+   */
+  listProbes(params: { active?: boolean } = {}): Promise<AtriumPost[]> {
+    return listProbes(this.transport, params);
   }
 
   async subscribeTopic(topicSlug: string): Promise<{ ok: true; topicSlug: string }> {

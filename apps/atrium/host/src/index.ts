@@ -526,6 +526,42 @@ const server = Bun.serve<InboxWsData>({
       return Response.json({ topicSlugs });
     }
 
+    if (req.method === "GET" && url.pathname === "/v1/probes") {
+      let did: string;
+      try {
+        ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url, "", []));
+      } catch (e) {
+        return authErrorResponse(e);
+      }
+      const syncRl = rlAgentSyncDid(`did:${did}`);
+      if (!syncRl.ok) return rateLimitedResponse(syncRl.retryAfterSec);
+      const profileId = ctx.host.persistenceClient.profileIdForAgentDid(did);
+      if (profileId === undefined) {
+        return jsonError("Register before listing probes", 400);
+      }
+      const rows = ctx.host.persistenceClient.listPostRowsByAuthorProfileIdAndKind({
+        authorProfileId: profileId,
+        kind: "probe",
+        limit: envAgentSyncProbeLimit(),
+      });
+      const probes = rows.flatMap((row) => {
+        try {
+          return [zAtriumPost.parse(JSON.parse(row.bodyJson))];
+        } catch {
+          return [];
+        }
+      });
+      const activeOnly = url.searchParams.get("active") === "1";
+      if (activeOnly) {
+        const now = Date.now();
+        const filtered = probes.filter(
+          (p) => p.expiresAtMs === undefined || p.expiresAtMs > now,
+        );
+        return Response.json({ probes: filtered });
+      }
+      return Response.json({ probes });
+    }
+
     const topicSubMatch = /^\/v1\/topics\/([^/]+)\/subscribe$/.exec(url.pathname);
     if (topicSubMatch !== null && topicSubMatch[1] !== undefined) {
       const slugRaw = decodeURIComponent(topicSubMatch[1]);
