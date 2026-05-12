@@ -1,5 +1,5 @@
 {
-  "name": "@khoralabs/obp-sqlite",
+  "name": "@khoralabs/sqlite-migrate",
   "version": "0.0.0",
   "type": "module",
   "private": true,
@@ -11,12 +11,8 @@
     }
   },
   "scripts": {
-    "test": "bun test"
-  },
-  "dependencies": {
-    "@khoralabs/memories-sqlite": "workspace:*",
-    "@khoralabs/obp-core": "workspace:*",
-    "@khoralabs/sqlite-migrate": "workspace:*"
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/bun": "latest"

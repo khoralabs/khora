@@ -2,10 +2,13 @@ import { Database, type DatabaseOptions } from "bun:sqlite";
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { memoriesPersistenceDocumentSchema } from "@khoralabs/memories-core/persistence";
+import { createMigrationRunner } from "@khoralabs/sqlite-migrate";
 import * as sqliteVec from "sqlite-vec";
-import { sqliteDdlFromSchema } from "./_lib";
-import { initTextFeaturesFts } from "./search-indexes";
+import m001Initial from "./migrations/0.0.0-0.1.0/001-initial";
+import m002AdditiveColumns from "./migrations/0.1.0-0.2.0/001-additive-columns";
+import m003FtsPorterRebuild from "./migrations/0.2.0-0.3.0/001-fts-porter-rebuild";
+
+const memoriesMigrations = [m001Initial, m002AdditiveColumns, m003FtsPorterRebuild];
 
 export function loadSqliteVec(db: Database): void {
   try {
@@ -27,20 +30,6 @@ export function loadSqliteVec(db: Database): void {
     throw e;
   }
 }
-
-export const MEMORIES_SCHEMA_SQL = sqliteDdlFromSchema(memoriesPersistenceDocumentSchema);
-
-/** One assignment per (node|edge, label kind); enables INSERT OR REPLACE upserts. */
-export const MEMORIES_UNIQUE_ASSIGNMENT_INDEXES_SQL = `
-CREATE UNIQUE INDEX IF NOT EXISTS idx_node_label_assignments_node_label
-  ON node_label_assignments (node_id, label_id);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_edge_label_assignments_edge_label
-  ON edge_label_assignments (edge_id, label_id);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_memory_provenance_root_hex
-  ON memory_provenance (root_hex);
-CREATE INDEX IF NOT EXISTS idx_memories_ns_prefixes
-  ON memories (ns_prefix_1, ns_prefix_2, ns_prefix_3, ns_prefix_4, ns_prefix_5, ns_prefix_6);
-`;
 
 export type OpenMemoriesDatabaseOptions = DatabaseOptions;
 
@@ -166,38 +155,9 @@ export function openMemoriesDatabaseReadonly(filename: string): Database {
   return db;
 }
 
-/** Best-effort DDL for DBs created before `content_hash` existed on `source_maps`. */
-export function migrateMemoriesSchemaAdditive(db: Database): void {
-  try {
-    db.run(`ALTER TABLE source_maps ADD COLUMN content_hash TEXT`);
-  } catch {
-    /* column already present */
-  }
-  try {
-    db.run(`ALTER TABLE memories ADD COLUMN kind TEXT NOT NULL DEFAULT 'node'`);
-  } catch {
-    /* column already present */
-  }
-  try {
-    db.run(`ALTER TABLE memories ADD COLUMN edge_id TEXT`);
-  } catch {
-    /* column already present */
-  }
-  try {
-    db.run(
-      `CREATE UNIQUE INDEX IF NOT EXISTS idx_memories_edge_id_unique ON memories(edge_id) WHERE edge_id IS NOT NULL`,
-    );
-  } catch {
-    /* index exists or legacy schema */
-  }
-}
-
 export function initMemoriesSchema(db: Database): void {
   configureMemoriesSqlitePragmas(db);
-  db.run(MEMORIES_SCHEMA_SQL);
-  migrateMemoriesSchemaAdditive(db);
-  db.run(MEMORIES_UNIQUE_ASSIGNMENT_INDEXES_SQL);
-  initTextFeaturesFts(db);
+  createMigrationRunner().runSync(db, memoriesMigrations);
 }
 
 export function vectorToBlob(vector: Float32Array): Uint8Array {
