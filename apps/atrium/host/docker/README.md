@@ -131,11 +131,13 @@ SQLite file:
   `SQLITE_CUSTOM_LIB=/usr/lib/x86_64-linux-gnu/libsqlite3.so.0` so
   extension loading works. Symptom if you bypass that: `Cannot find module
   'sqlite-vec-linux-x64/vec0.so'` on boot.
-- **The host image is Debian-based (glibc), not Alpine (musl).** The
-  prebuilt `sqlite-vec-linux-x64/vec0.so` is glibc-linked, so loading it
-  under musl fails with `Error loading shared library .../vec0.so.so`
-  (SQLite retries with a `.so` suffix after dlopen's ABI-mismatch ENOENT).
-  sql-studio's image stays on Alpine because it doesn't load `vec0.so`.
+- **All three images are Debian-based (glibc), not Alpine (musl).** The
+  prebuilt `sqlite-vec-linux-x64/vec0.so` and the upstream `sql-studio` and
+  Litestream binaries are all glibc-linked. Symptoms on musl:
+  - `Error loading shared library .../vec0.so.so` (host) — SQLite retries
+    with an extra `.so` suffix after dlopen's ABI-mismatch ENOENT.
+  - `exec: sql-studio: not found` (sql-studio) — musl can't load the
+    glibc dynamic linker, presents as ENOENT.
 - **`minio.internal` only resolves once the MinIO service is deployed.**
   Apply the full blueprint (all three services) before expecting the host
   to start cleanly. On a partial apply you'll see `dial tcp: lookup
