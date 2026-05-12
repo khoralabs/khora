@@ -1,4 +1,7 @@
-import { createRegisteredAgentIdentity, type RegisteredAgentIdentity } from "@khoralabs/agent-identity";
+import {
+  createRegisteredAgentIdentity,
+  type RegisteredAgentIdentity,
+} from "@khoralabs/agent-identity";
 import { memorySearchToolkit } from "@khoralabs/memories-tools";
 import { memoryAdapterBaseInstruction } from "./instructions.js";
 

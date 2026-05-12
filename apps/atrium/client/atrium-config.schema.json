@@ -64,9 +64,7 @@
                   "maximum": 9007199254740991
                 }
               },
-              "required": [
-                "filePath"
-              ],
+              "required": ["filePath"],
               "additionalProperties": false,
               "description": "Options for the profile-sync plugin."
             },
@@ -93,9 +91,7 @@
                   "maximum": 9007199254740991
                 }
               },
-              "required": [
-                "dir"
-              ],
+              "required": ["dir"],
               "additionalProperties": false,
               "description": "Options for the telemetry plugin."
             },
@@ -137,15 +133,11 @@
                       }
                     }
                   },
-                  "required": [
-                    "maxEntries"
-                  ],
+                  "required": ["maxEntries"],
                   "additionalProperties": false
                 }
               },
-              "required": [
-                "dbPath"
-              ],
+              "required": ["dbPath"],
               "additionalProperties": false,
               "description": "Options for the inbox-buffer plugin."
             },

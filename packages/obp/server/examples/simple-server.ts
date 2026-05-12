@@ -7,7 +7,11 @@
  * `genesis_hash = sha256HexUtf8("obp-example-<listenHost>-<listenPort>")`.
  * Full loop in one repo: `bun run example:client` under `packages/obp/client`.
  */
-import { createEd25519FrameSigner, generateEd25519KeyPair, sha256HexUtf8 } from "@khoralabs/obp-core";
+import {
+  createEd25519FrameSigner,
+  generateEd25519KeyPair,
+  sha256HexUtf8,
+} from "@khoralabs/obp-core";
 import { FakeObpPersistence } from "@khoralabs/obp-core/testing";
 import { serveObp } from "../src/serve.ts";
 

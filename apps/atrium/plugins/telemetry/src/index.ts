@@ -1,6 +1,10 @@
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
-import type { AtriumClient, AtriumClientEvent, AtriumPluginInstaller } from "@khoralabs/atrium-client";
+import type {
+  AtriumClient,
+  AtriumClientEvent,
+  AtriumPluginInstaller,
+} from "@khoralabs/atrium-client";
 
 export type TelemetryClient = Pick<AtriumClient, "subscribe">;
 

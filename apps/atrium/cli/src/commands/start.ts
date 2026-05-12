@@ -38,9 +38,7 @@ async function waitForRunning(
 export async function runStartCommand(flags: FlagMap): Promise<void> {
   const preflight = readDaemonStatus(cliAppConfig);
   if (preflight.state === "running") {
-    console.error(
-      `daemon already running (pid ${preflight.pid}) — use 'atrium kill' to stop it`,
-    );
+    console.error(`daemon already running (pid ${preflight.pid}) — use 'atrium kill' to stop it`);
     process.exit(1);
   }
 

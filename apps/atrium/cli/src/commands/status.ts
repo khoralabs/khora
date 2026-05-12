@@ -27,9 +27,7 @@ export function runStatusWith(flags: FlagMap, cfg: DaemonPidPathConfig, io: Stat
     return;
   }
   if (status.state === "stale") {
-    io.log(
-      `stale pid=${status.pid} (process gone) — run 'atrium kill' to clear ${status.pidPath}`,
-    );
+    io.log(`stale pid=${status.pid} (process gone) — run 'atrium kill' to clear ${status.pidPath}`);
     io.exit(2);
   }
   io.log("not running");

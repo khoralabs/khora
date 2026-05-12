@@ -1,5 +1,8 @@
 import { createAgentRegistry } from "@khoralabs/agent-identity";
-import { expandedDraftToLogicalMemoryInput, MemoryAdapterClient } from "@khoralabs/memories-adapter";
+import {
+  expandedDraftToLogicalMemoryInput,
+  MemoryAdapterClient,
+} from "@khoralabs/memories-adapter";
 import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import { processLogicalMemoryWithIntegrator } from "@khoralabs/memories-integrator";
 import type { LanguageModel } from "ai";

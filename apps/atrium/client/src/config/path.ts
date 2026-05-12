@@ -25,12 +25,14 @@ export type ResolvedAtriumConfigPath = {
  * `undefined` is returned when nothing applies. Callers may treat ENOENT on an explicit path as
  * fatal; non-explicit resolutions are skipped silently when the file is missing.
  */
-export function resolveAtriumConfigPath(opts: {
-  flag?: string;
-  env?: NodeJS.ProcessEnv;
-  defaultPath?: string;
-  fsExists?: (p: string) => boolean;
-} = {}): ResolvedAtriumConfigPath | undefined {
+export function resolveAtriumConfigPath(
+  opts: {
+    flag?: string;
+    env?: NodeJS.ProcessEnv;
+    defaultPath?: string;
+    fsExists?: (p: string) => boolean;
+  } = {},
+): ResolvedAtriumConfigPath | undefined {
   const flag = opts.flag?.trim();
   if (flag !== undefined && flag.length > 0) return { path: flag, explicit: true };
   const envVal = opts.env?.ATRIUM_CONFIG?.trim();

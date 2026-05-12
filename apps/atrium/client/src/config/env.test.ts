@@ -32,9 +32,9 @@ describe("atriumAppConfigFromEnv", () => {
   });
 
   test("daemonJson accepts only '1' or 'true'", () => {
-    expect(atriumAppConfigFromEnv({ ATRIUM_DAEMON_JSON: "1" } as NodeJS.ProcessEnv).daemonJson).toBe(
-      true,
-    );
+    expect(
+      atriumAppConfigFromEnv({ ATRIUM_DAEMON_JSON: "1" } as NodeJS.ProcessEnv).daemonJson,
+    ).toBe(true);
     expect(
       atriumAppConfigFromEnv({ ATRIUM_DAEMON_JSON: "no" } as NodeJS.ProcessEnv).daemonJson,
     ).toBeUndefined();
