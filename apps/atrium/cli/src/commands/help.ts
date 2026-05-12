@@ -1,3 +1,4 @@
+import { configHelp } from "./config.help.ts";
 import { healthHelp } from "./health.help.ts";
 import { inboxListHelp } from "./inbox-list.help.ts";
 import { keyHelp } from "./key.help.ts";
@@ -15,6 +16,7 @@ import type { CommandHelp } from "./types.ts";
 
 const ALL_HELP: readonly CommandHelp[] = [
   keyHelp,
+  configHelp,
   healthHelp,
   startHelp,
   statusHelp,
@@ -84,6 +86,7 @@ Commands:
   key generate [--out <path>] [--force]
   key show [--path <path>]
   key path
+  config path | show [--raw|--source] | edit
   health
   start [-b|--background] [--config <path>] [--json] [--log <path>]
   status [--json]

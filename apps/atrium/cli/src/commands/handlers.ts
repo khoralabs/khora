@@ -1,4 +1,5 @@
 import type { AtriumCliContext } from "../flows/context.ts";
+import { runConfigCommand } from "./config.ts";
 import { runHealthCommand } from "./health.ts";
 import { runInboxListCommand } from "./inbox-list.ts";
 import { runKeyCommand } from "./key.ts";
@@ -16,6 +17,7 @@ import type { FlagMap } from "./types.ts";
 
 export interface AtriumCliCommandHandlers {
   key(sub: string | undefined, flags: FlagMap): Promise<void>;
+  config(sub: string | undefined, flags: FlagMap): Promise<void>;
   health(ctx: AtriumCliContext): Promise<void>;
   start(flags: FlagMap): Promise<void>;
   status(flags: FlagMap): void;
@@ -32,6 +34,7 @@ export interface AtriumCliCommandHandlers {
 
 export const defaultAtriumCliCommandHandlers = {
   key: runKeyCommand,
+  config: runConfigCommand,
   health: runHealthCommand,
   start: runStartCommand,
   status: runStatusCommand,
