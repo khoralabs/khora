@@ -10,7 +10,10 @@
 #
 # Build context = repo root:
 #   docker build -f apps/atrium/host/docker/minio/Dockerfile -t atrium-minio .
-FROM minio/minio:RELEASE.2025-04-22T16-49-23Z
+#
+# Note: docker.io/minio/minio is archived; quay.io is the canonical registry
+# MinIO actively publishes to.
+FROM quay.io/minio/minio:latest
 
 ENV MINIO_BROWSER_REDIRECT_URL=""
 VOLUME /data

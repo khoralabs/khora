@@ -4,7 +4,8 @@
 #   minio        S3-compatible store (private API on minio.internal:9000,
 #                console exposed publicly on :9001)
 #   atrium-host  Bun-compiled host + Litestream sidecar; public on :8787
-#   sql-studio   read-only SQLite viewer; restores from MinIO on boot
+#   sql-studio   read-only SQLite viewer; private only on sql-studio.internal:3030
+#                (restores from MinIO on boot; reach it via `render port-forward`)
 #
 # Render reads this file at the repo root by default. Either move it there,
 # symlink it, or pass --blueprint-path when applying.
@@ -73,8 +74,9 @@ services:
         value: /etc/litestream.yml
       - key: PORT
         value: "8787"
-      - key: ATRIUM_BASE_URL
-        sync: false
+      # ATRIUM_BASE_URL is derived at boot in host/entrypoint.sh from
+      # RENDER_EXTERNAL_HOSTNAME. Override via the dashboard only if you
+      # front the service with a custom domain.
       - key: ATRIUM_INVITE_PEPPER
         sync: false
       - key: ATRIUM_INVITES_PER_REGISTRATION
@@ -84,7 +86,7 @@ services:
       - key: GOOGLE_GENERATIVE_AI_API_KEY
         sync: false
 
-  - type: web
+  - type: pserv
     name: sql-studio
     runtime: docker
     plan: starter

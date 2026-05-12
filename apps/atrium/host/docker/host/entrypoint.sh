@@ -9,6 +9,13 @@
 #    forwarding SIGTERM and performing a final WAL sync on shutdown.
 set -eu
 
+# Render injects RENDER_EXTERNAL_HOSTNAME for web services. If the operator
+# didn't pin an ATRIUM_BASE_URL via the dashboard, derive one from the service's
+# own public hostname so link generation works out of the box.
+if [ -z "${ATRIUM_BASE_URL:-}" ] && [ -n "${RENDER_EXTERNAL_HOSTNAME:-}" ]; then
+  export ATRIUM_BASE_URL="https://${RENDER_EXTERNAL_HOSTNAME}"
+fi
+
 mkdir -p "$(dirname "$ATRIUM_DB_PATH")"
 
 litestream restore \

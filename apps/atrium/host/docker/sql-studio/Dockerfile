@@ -8,7 +8,7 @@
 # Build context = repo root:
 #   docker build -f apps/atrium/host/docker/sql-studio/Dockerfile -t sql-studio .
 
-FROM frectonz/sql-studio:0.1.51 AS studio
+FROM frectonz/sql-studio:latest AS studio
 FROM litestream/litestream:0.3.13 AS litestream
 
 FROM alpine:3.20
