@@ -107,12 +107,19 @@ describe("stageAtriumRelease", () => {
     mkdirSync(path.join(workspace, "apps/atrium/cli/assets/configs"), { recursive: true });
     mkdirSync(path.join(workspace, "apps/atrium/client"), { recursive: true });
 
-    // Minimal postinstall stub that bundles fine with target=node.
+    // Minimal postinstall library + entry stubs that bundle fine with target=node.
     writeFileSync(
       path.join(workspace, "apps/atrium/cli/scripts/postinstall.ts"),
       `import * as fs from "node:fs";
-       export function noop(): boolean { return fs.existsSync("/"); }
-       if (typeof process !== "undefined") console.log("noop");
+       export function runAtriumPostinstall(_: { pkgDistDir: string; home: string }) {
+         return { destDir: "/tmp", copied: [], skipped: [], schemaCopied: fs.existsSync("/") };
+       }
+      `,
+    );
+    writeFileSync(
+      path.join(workspace, "apps/atrium/cli/scripts/postinstall.entry.ts"),
+      `import { runAtriumPostinstall } from "./postinstall.ts";
+       runAtriumPostinstall({ pkgDistDir: ".", home: "/tmp" });
       `,
     );
 

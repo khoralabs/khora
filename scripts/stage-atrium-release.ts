@@ -7,7 +7,7 @@
  *   apps/atrium/daemon/dist/<bun-target>/atrium-daemon        (cross-compiled bin)
  *   apps/atrium/cli/assets/configs/{base,cli,daemon}.config.json
  *   apps/atrium/client/atrium-config.schema.json              (built via build:schema)
- *   apps/atrium/cli/scripts/postinstall.ts                    (bundled to JS here)
+ *   apps/atrium/cli/scripts/postinstall.entry.ts              (bundled to JS here)
  *
  * Output tree: `<releaseDir>/{cli,daemon,cli-<slug>,daemon-<slug>}/...`
  * Publish order: all 6 platform pkgs first → daemon meta → cli meta.
@@ -231,8 +231,8 @@ export async function stageAtriumRelease(opts: StageOptions): Promise<StageResul
   await Bun.write(path.join(cliMetaDir, "bin", "atrium.cjs"), cliLauncherSource());
   await Bun.$`chmod +x ${path.join(cliMetaDir, "bin", "atrium.cjs")}`.quiet();
 
-  // bundle postinstall.ts -> postinstall.js (target=node)
-  const postinstallSrc = path.join(workspaceRoot, "apps/atrium/cli/scripts/postinstall.ts");
+  // bundle postinstall.entry.ts -> postinstall.js (target=node)
+  const postinstallSrc = path.join(workspaceRoot, "apps/atrium/cli/scripts/postinstall.entry.ts");
   const postinstallOut = path.join(cliMetaDir, "postinstall.js");
   const piResult = await Bun.build({
     entrypoints: [postinstallSrc],
@@ -245,7 +245,7 @@ export async function stageAtriumRelease(opts: StageOptions): Promise<StageResul
   });
   if (!piResult.success) {
     for (const log of piResult.logs) console.error(log);
-    throw new Error("failed to bundle postinstall.ts");
+    throw new Error("failed to bundle postinstall.entry.ts");
   }
   // Ensure file was emitted at the expected name (Bun.build with naming above does this).
   if (!existsSync(postinstallOut)) {
