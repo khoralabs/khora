@@ -16,7 +16,7 @@ on:
           - latest
           - next
       dry_run:
-        description: "Run bun publish --dry-run; skip git tag/push"
+        description: "Run npm publish --dry-run; skip git tag/push"
         required: false
         type: boolean
         default: false
@@ -69,6 +69,10 @@ jobs:
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
+          if [ -z "${NPM_TOKEN:-}" ]; then
+            echo "::error::NPM_TOKEN repository secret is empty or unset"
+            exit 1
+          fi
           echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > "$HOME/.npmrc"
 
       - name: publish platform packages
@@ -80,7 +84,7 @@ jobs:
             cli-darwin-arm64 cli-linux-x64 cli-linux-arm64 \
             daemon-darwin-arm64 daemon-linux-x64 daemon-linux-arm64; do
             echo "::group::publish $slug"
-            (cd "apps/atrium/release/$slug" && bun publish --access public --tag "$NPM_TAG" $DRY_FLAG)
+            (cd "apps/atrium/release/$slug" && npm publish --access public --tag "$NPM_TAG" $DRY_FLAG)
             echo "::endgroup::"
           done
 
@@ -88,18 +92,18 @@ jobs:
         working-directory: apps/atrium/release/daemon
         run: |
           if [ "$DRY_RUN" = "true" ]; then
-            bun publish --access public --tag "$NPM_TAG" --dry-run
+            npm publish --access public --tag "$NPM_TAG" --dry-run
           else
-            bun publish --access public --tag "$NPM_TAG"
+            npm publish --access public --tag "$NPM_TAG"
           fi
 
       - name: publish cli meta
         working-directory: apps/atrium/release/cli
         run: |
           if [ "$DRY_RUN" = "true" ]; then
-            bun publish --access public --tag "$NPM_TAG" --dry-run
+            npm publish --access public --tag "$NPM_TAG" --dry-run
           else
-            bun publish --access public --tag "$NPM_TAG"
+            npm publish --access public --tag "$NPM_TAG"
           fi
 
       - name: tag and push
