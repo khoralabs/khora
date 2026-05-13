@@ -6,6 +6,8 @@ export type ObpRoomPeer = {
 /** HMAC-ticket gated byte relay: create room, verify ticket, attach/replay, relay opaque OBP bytes. */
 export interface ObpRoomHubPort {
   createRoom(roomId: string, ttlMs?: number): Promise<{ ticket: string }>;
+  /** New ticket + secret for an existing room without clearing buffered frames (rejoin). */
+  rotateRoomTicket(roomId: string, ttlMs?: number): Promise<{ ticket: string }>;
   verifyTicket(roomId: string, ticket: string): Promise<boolean>;
   attachPeer(roomId: string, peer: ObpRoomPeer): Promise<void>;
   detachPeer(roomId: string, peer: ObpRoomPeer): void;

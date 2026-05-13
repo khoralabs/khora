@@ -2,6 +2,15 @@
 
 HTTP/2 client for the OBP reference frame binding (`POST /obp/v1`), built on **`runFrameMultiplexSession`** (deferred opener) from `@khoralabs/obp-core`. Pairs with `@khoralabs/obp-server` (`serveObp`).
 
+## WebSocket and other `FrameChannel` transports
+
+The OBP **wire** is length-prefixed canonical JSON on a duplex byte stream (same as the HTTP/2 reference binding; see `packages/obp/spec/model/frame-binding-http2.smithy`). Any transport that exposes **`FrameChannel`** can carry the same session:
+
+- **`connectObpFrameChannelSession`** — run the deferred multiplex client over an existing channel (e.g. in-memory pair in tests, or a relay you bridge yourself).
+- **`connectObpWebSocketSession`** — wraps `WebSocket` with **`createWebSocketFrameChannel`** from `@khoralabs/frame-channel`: each **binary message** is one **ordered chunk** of the byte stream (the frame decoder may buffer across chunks).
+
+For Atrium / Swarm room relays, peers connect with a room-scoped ticket; both sides attach to the same relayed room and run **`runFrameMultiplexSession`** (responder) / **`connectObpWebSocketSession`** (initiator) on their respective sockets.
+
 ## Lifecycle
 
 1. **Connection** — One long-lived HTTP/2 POST stream until the multiplex runner finishes and the channel goes idle.

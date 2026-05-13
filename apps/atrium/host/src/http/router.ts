@@ -1,7 +1,15 @@
 import type { Server } from "bun";
 import { clientIpFromRequest } from "../rate-limit.ts";
-import type { InboxWsData } from "../ws/inbox.ts";
+import type { AtriumWsData } from "../ws/inbox.ts";
 import { handleAgentStatus, handleAgentSync } from "./agent.ts";
+import {
+  handleAtriumRoomMintTicket,
+  handleAtriumRoomsCreate,
+  handleAtriumRoomsList,
+  handleAtriumRoomWsUpgrade,
+  isAtriumRoomWsPath,
+  parseAtriumRoomTicketPath,
+} from "./atrium-rooms.ts";
 import {
   handleAuthorSubMutation,
   handleAuthorTopicSubMutation,
@@ -29,7 +37,7 @@ export type { HostRouteDeps } from "./deps.ts";
 export async function route(
   req: Request,
   url: URL,
-  srv: Server<InboxWsData>,
+  srv: Server<AtriumWsData>,
   deps: HostRouteDeps,
 ): Promise<Response | undefined> {
   if (req.method === "GET" && url.pathname === "/health") {
@@ -51,6 +59,23 @@ export async function route(
 
   if (req.method === "GET" && url.pathname === "/v1/invites") {
     return handleListInvites(req, url, deps);
+  }
+
+  if (req.method === "GET" && isAtriumRoomWsPath(url.pathname)) {
+    return handleAtriumRoomWsUpgrade(req, url, srv, deps);
+  }
+
+  if (req.method === "GET" && url.pathname === "/v1/atrium/rooms") {
+    return handleAtriumRoomsList(req, url, deps);
+  }
+
+  const roomTicketPath = parseAtriumRoomTicketPath(url.pathname);
+  if (req.method === "POST" && roomTicketPath !== undefined) {
+    return handleAtriumRoomMintTicket(req, url, deps, roomTicketPath);
+  }
+
+  if (req.method === "POST" && url.pathname === "/v1/atrium/rooms") {
+    return handleAtriumRoomsCreate(req, url, deps);
   }
 
   if (req.method === "GET" && url.pathname === "/v1/inbox/ws") {

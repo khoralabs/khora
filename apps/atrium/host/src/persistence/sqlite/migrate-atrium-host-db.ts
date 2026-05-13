@@ -2,9 +2,11 @@ import type { Database } from "bun:sqlite";
 import { createMigrationRunner } from "@khoralabs/sqlite-migrate";
 import m001Initial from "./migrations/0.0.0-0.1.0/001-initial.ts";
 import m001Subjects from "./migrations/0.1.0-0.2.0/001-subjects.ts";
+import m001AtriumRooms from "./migrations/0.2.0-0.3.0/001-atrium-rooms.ts";
+import m001AtriumRoomsInviteeIndex from "./migrations/0.3.0-0.4.0/001-atrium-rooms-invitee-index.ts";
 import { configureSwarmHostSqlitePragmas } from "./schema.ts";
 
-const migrations = [m001Initial, m001Subjects];
+const migrations = [m001Initial, m001Subjects, m001AtriumRooms, m001AtriumRoomsInviteeIndex];
 
 /**
  * Applies Atrium host DDL migrations. Uses a dedicated tracking table so this never collides with

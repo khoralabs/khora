@@ -1,6 +1,8 @@
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { createAtriumDidAuth } from "@khoralabs/atrium-auth";
+import { type SwarmObpRoomWsData, swarmObpRoomWebSocketHandlers } from "@khoralabs/swarm-host";
+import type { ServerWebSocket } from "bun";
 import { createAtriumHostContext } from "./create-atrium-host.ts";
 import {
   envDbPath,
@@ -23,7 +25,7 @@ import {
 } from "./invites/index.ts";
 import { type LitestreamHandle, maybeStartLitestream } from "./persistence/litestream/index.ts";
 import { createHostRateLimiters } from "./rate-limit-buckets.ts";
-import { createInboxWsHandlers, type InboxWsData } from "./ws/inbox.ts";
+import { type AtriumWsData, createInboxWsHandlers } from "./ws/inbox.ts";
 
 const dbPath = envDbPath();
 mkdirSync(dirname(dbPath), { recursive: true });
@@ -70,14 +72,39 @@ const deps: HostRouteDeps = {
   loadPublicProfileForDid: (did) => loadPublicProfileForDid(ctx, did),
 };
 
-const server = Bun.serve<InboxWsData>({
+const inboxWsHandlers = createInboxWsHandlers({ ctx, snapshotLimit: envInboxSnapshotLimit });
+const obpRoomWsHandlers = swarmObpRoomWebSocketHandlers({ hub: ctx.obpRoomHub });
+
+const server = Bun.serve<AtriumWsData>({
   port: envPort(),
   async fetch(req, srv) {
     const url = new URL(req.url);
     const res = await route(req, url, srv, deps);
     return res ?? new Response("Not found", { status: 404 });
   },
-  websocket: createInboxWsHandlers({ ctx, snapshotLimit: envInboxSnapshotLimit }),
+  websocket: {
+    open(ws) {
+      if (ws.data.kind === "inbox") {
+        inboxWsHandlers.open?.(ws as never);
+      } else {
+        obpRoomWsHandlers.open(ws as never);
+      }
+    },
+    close(ws, code, reason) {
+      if (ws.data.kind === "inbox") {
+        inboxWsHandlers.close?.(ws as never, code, reason);
+      } else {
+        (obpRoomWsHandlers.close as (ws: ServerWebSocket<SwarmObpRoomWsData>) => void)(ws as never);
+      }
+    },
+    message(ws, msg) {
+      if (ws.data.kind === "inbox") {
+        inboxWsHandlers.message(ws as never, msg);
+      } else {
+        obpRoomWsHandlers.message(ws as never, msg);
+      }
+    },
+  },
 });
 
 console.log(`Atrium host listening on http://localhost:${server.port}`);

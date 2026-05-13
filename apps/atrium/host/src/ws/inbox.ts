@@ -1,7 +1,9 @@
+import type { SwarmObpRoomWsData } from "@khoralabs/swarm-host";
 import type { WebSocketHandler } from "bun";
 import type { AtriumHostContext } from "../create-atrium-host.ts";
 
-export type InboxWsData = { did: string };
+/** Discriminated WebSocket `data` for Atrium host (inbox vs OBP room relay). */
+export type AtriumWsData = { kind: "inbox"; did: string } | SwarmObpRoomWsData;
 
 export async function sendInboxSnapshot(
   ws: { send: (data: string) => unknown },
@@ -35,7 +37,7 @@ export async function sendInboxSnapshot(
 export function createInboxWsHandlers(opts: {
   ctx: AtriumHostContext;
   snapshotLimit: () => number;
-}): WebSocketHandler<InboxWsData> {
+}): WebSocketHandler<{ kind: "inbox"; did: string }> {
   return {
     open(ws) {
       const did = ws.data.did;
@@ -46,12 +48,12 @@ export function createInboxWsHandlers(opts: {
       inboxHub.add(did, ws);
       void sendInboxSnapshot(ws, did, opts.ctx, opts.snapshotLimit());
     },
-    close(ws) {
+    close(ws, _code, _reason) {
       const { inboxHub } = opts.ctx.host;
       if (inboxHub !== undefined) {
         inboxHub.remove(ws.data.did, ws);
       }
     },
-    message() {},
+    message(_ws, _message) {},
   };
 }

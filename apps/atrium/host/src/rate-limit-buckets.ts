@@ -14,6 +14,9 @@ export type HostRateLimiters = {
   invitePreviewIp: RateLimiter;
   invitesListDid: RateLimiter;
   memoriesSearchDid: RateLimiter;
+  roomsCreateDid: RateLimiter;
+  roomsListDid: RateLimiter;
+  roomsTicketMintDid: RateLimiter;
 };
 
 export function createHostRateLimiters(): HostRateLimiters {
@@ -46,6 +49,15 @@ export function createHostRateLimiters(): HostRateLimiters {
     ),
     memoriesSearchDid: createRateLimiter(
       envRatePerMinute(process.env.ATRIUM_RL_MEMORIES_SEARCH_PER_MIN_PER_DID, 60),
+    ),
+    roomsCreateDid: createRateLimiter(
+      envRatePerMinute(process.env.ATRIUM_RL_ROOMS_CREATE_PER_MIN_PER_DID, 30),
+    ),
+    roomsListDid: createRateLimiter(
+      envRatePerMinute(process.env.ATRIUM_RL_ROOMS_LIST_PER_MIN_PER_DID, 120),
+    ),
+    roomsTicketMintDid: createRateLimiter(
+      envRatePerMinute(process.env.ATRIUM_RL_ROOMS_TICKET_PER_MIN_PER_DID, 60),
     ),
   };
 }

@@ -1,13 +1,13 @@
 import type { Server } from "bun";
 import { envInboxSnapshotLimit } from "../env.ts";
-import type { InboxWsData } from "../ws/inbox.ts";
+import type { AtriumWsData } from "../ws/inbox.ts";
 import type { HostRouteDeps } from "./deps.ts";
 import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses.ts";
 
 export async function handleInboxWsUpgrade(
   req: Request,
   url: URL,
-  srv: Server<InboxWsData>,
+  srv: Server<AtriumWsData>,
   deps: HostRouteDeps,
 ): Promise<Response | undefined> {
   const { ctx, rateLimiters } = deps;
@@ -19,7 +19,7 @@ export async function handleInboxWsUpgrade(
   }
   const inboxRl = rateLimiters.inboxDid(`did:${did}`);
   if (!inboxRl.ok) return rateLimitedResponse(inboxRl.retryAfterSec);
-  const ok = srv.upgrade(req, { data: { did } });
+  const ok = srv.upgrade(req, { data: { kind: "inbox", did } });
   if (!ok) {
     return jsonError("WebSocket upgrade failed", 500);
   }

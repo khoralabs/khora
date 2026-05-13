@@ -34,6 +34,23 @@ export function createObpRoomHub(options: CreateObpRoomHubOptions): ObpRoomHubPo
       return { ticket };
     },
 
+    async rotateRoomTicket(roomId: string, ttlMs = 86_400_000): Promise<{ ticket: string }> {
+      const prior = obpRelay.getPairingSecretIfActive(roomId, Date.now());
+      if (prior === undefined) {
+        throw new Error(`ObpRoomHub: no active room to rotate ticket for: ${roomId}`);
+      }
+      const secret = generateRoomSecretHex();
+      const ticket = await signRoomTicket(roomId, secret);
+      const now = Date.now();
+      obpRelay.upsertRoom({
+        roomId,
+        pairingSecretHex: secret,
+        createdAtMs: now,
+        expiresAtMs: now + ttlMs,
+      });
+      return { ticket };
+    },
+
     async verifyTicket(roomId: string, ticket: string): Promise<boolean> {
       const secret = obpRelay.getPairingSecretIfActive(roomId, Date.now());
       if (secret === undefined) {

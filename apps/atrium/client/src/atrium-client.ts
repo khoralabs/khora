@@ -9,7 +9,18 @@ import type {
   AtriumProfilePatch,
   AtriumRegistrationRequestBody,
   AtriumRegistrationResult,
+  AtriumRoomCreateBody,
+  AtriumRoomListResponse,
+  AtriumRoomMintTicketBody,
+  AtriumRoomTicketResponse,
 } from "@khoralabs/atrium-contracts";
+import {
+  type Checkpoint,
+  connectObpWebSocketSession,
+  type ObpFrameConnection,
+  type ObpWebSocketConnectOptions,
+  type SessionOp,
+} from "@khoralabs/obp-client";
 import type { AtriumClientEvent } from "./atrium-events.ts";
 import {
   type AtriumPluginHandle,
@@ -17,6 +28,11 @@ import {
   createAtriumResolvePath,
 } from "./atrium-plugins.ts";
 import { type AgentSyncSnapshot, fetchAgentSync, getAgentStatus } from "./http/agent.ts";
+import {
+  createAtriumRoom as httpCreateAtriumRoom,
+  listAtriumRooms as httpListAtriumRooms,
+  mintAtriumRoomTicket as httpMintAtriumRoomTicket,
+} from "./http/atrium-rooms.ts";
 import {
   type AuthorSubscriptionsSnapshot,
   listAuthorSubscriptions as httpListAuthorSubscriptions,
@@ -46,6 +62,16 @@ import { listTopicSubscriptions, subscribeTopic, unsubscribeTopic } from "./http
 import { type AtriumFetch, createHttpTransport, type HttpTransport } from "./http/transport.ts";
 import { connectInbox, type InboxWsHandlers } from "./ws/inbox.ts";
 
+export type {
+  AtriumRoomCreateBody,
+  AtriumRoomCreateResponse,
+  AtriumRoomListResponse,
+  AtriumRoomMintTicketBody,
+  AtriumRoomRole,
+  AtriumRoomSummary,
+  AtriumRoomTicketResponse,
+} from "@khoralabs/atrium-contracts";
+export type { ObpFrameConnection, ObpWebSocketConnectOptions } from "@khoralabs/obp-client";
 export type { SwarmHostSearchScope } from "@khoralabs/swarm-host";
 export type { AgentStatusSnapshot, AgentSyncSnapshot } from "./http/agent.ts";
 export type { AuthorSubscriptionsSnapshot } from "./http/authors.ts";
@@ -243,6 +269,42 @@ export class AtriumClient {
   /** Hybrid search over indexed memories (`POST /v1/memories/search`). Requires registration. */
   search(params: MemoriesSearchParams): Promise<MemorySearchHitWire[]> {
     return httpSearchMemories(this.transport, params);
+  }
+
+  /**
+   * Create an OBP relay room (`POST /v1/atrium/rooms`). The host mints `roomId`. Requires registration.
+   * Optionally invite a peer (`negotiation_ticket` in their inbox).
+   */
+  createAtriumRoom(body: AtriumRoomCreateBody): Promise<AtriumRoomTicketResponse> {
+    return httpCreateAtriumRoom(this.transport, body);
+  }
+
+  /** List rooms this agent created or was invited to (`GET /v1/atrium/rooms`). */
+  listAtriumRooms(): Promise<AtriumRoomListResponse> {
+    return httpListAtriumRooms(this.transport);
+  }
+
+  /**
+   * Mint a fresh WebSocket ticket for an existing room (`POST /v1/atrium/rooms/:roomId/ticket`).
+   * Use for rejoin after expiry; caller must be creator or invitee.
+   */
+  mintAtriumRoomTicket(
+    roomId: string,
+    body?: AtriumRoomMintTicketBody,
+  ): Promise<AtriumRoomTicketResponse> {
+    return httpMintAtriumRoomTicket(this.transport, roomId, body);
+  }
+
+  /**
+   * Run a deferred OBP multiplex client over a room WebSocket URL (from {@link createAtriumRoom},
+   * {@link mintAtriumRoomTicket}, or an inbox `negotiation_ticket`). Pass `persistence`, `signer`, and
+   * `ledgerSeq` per `@khoralabs/obp-client`.
+   */
+  connectAtriumRoomNegotiation(
+    options: Omit<ObpWebSocketConnectOptions, "WebSocketCtor">,
+    runner: (conn: ObpFrameConnection) => Promise<void>,
+  ): Promise<{ sessionOps: SessionOp[]; checkpoint: Checkpoint }> {
+    return connectObpWebSocketSession({ ...options, WebSocketCtor: this.WebSocketCtor }, runner);
   }
 
   /** @deprecated Prefer {@link AtriumClient.search}. */

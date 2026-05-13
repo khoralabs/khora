@@ -31,7 +31,7 @@ describe("migrateAtriumHostDb", () => {
     const tables = listTables(db);
     expect(tables.has("agent_subscriptions")).toBe(true);
     expect(tables.has("topic_subscriptions")).toBe(false);
-    expect(tables.has("atrium_host_schema_migrations")).toBe(true);
+    expect(tables.has("atrium_rooms")).toBe(true);
 
     const sub = db
       .query<{ subject: string }, []>(
@@ -55,6 +55,8 @@ describe("migrateAtriumHostDb", () => {
     expect(rows).toEqual([
       { from_version: "0.0.0", to_version: "0.1.0", name: "001-initial" },
       { from_version: "0.1.0", to_version: "0.2.0", name: "001-subjects" },
+      { from_version: "0.2.0", to_version: "0.3.0", name: "001-atrium-rooms" },
+      { from_version: "0.3.0", to_version: "0.4.0", name: "001-atrium-rooms-invitee-index" },
     ]);
   });
 

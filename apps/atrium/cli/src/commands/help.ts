@@ -8,7 +8,6 @@ import { healthHelp } from "./health.help.ts";
 import { inboxListHelp } from "./inbox-list.help.ts";
 import { keyHelp } from "./key.help.ts";
 import { killHelp } from "./kill.help.ts";
-import { memoriesSearchDeprecatedHelp, searchHelp } from "./search.help.ts";
 import { postCreateHelp } from "./post-create.help.ts";
 import { postDeleteHelp } from "./post-delete.help.ts";
 import { postShowHelp } from "./post-show.help.ts";
@@ -17,6 +16,8 @@ import { probeListHelp } from "./probe-list.help.ts";
 import { profileShowHelp } from "./profile-show.help.ts";
 import { profileUpdateHelp } from "./profile-update.help.ts";
 import { registerHelp } from "./register.help.ts";
+import { roomCreateHelp, roomJoinHelp, roomListHelp } from "./room.help.ts";
+import { memoriesSearchDeprecatedHelp, searchHelp } from "./search.help.ts";
 import { setupHelp } from "./setup.help.ts";
 import { startHelp } from "./start.help.ts";
 import { statusHelp } from "./status.help.ts";
@@ -56,6 +57,9 @@ const ALL_HELP: readonly CommandHelp[] = [
   authorTopicSubscribeHelp,
   authorTopicUnsubscribeHelp,
   authorUnsubscribeHelp,
+  roomCreateHelp,
+  roomListHelp,
+  roomJoinHelp,
 ];
 
 function indent(block: string, pad: string): string {
@@ -127,6 +131,9 @@ Commands:
   profile update [--username …] [--display-name …] [--bio …]
   inbox list [--limit N] [--mark-read]
   search <query…> [--scope …] [--namespace …] [--search-scope-mode …] [--include …] [--limit N] [--json]
+  room create [--target-username …] [--target-did …] [--ttl-ms …] [--json]
+  room list [--json]
+  room join <roomId> [<ticket>] [--json]
   post create [--body …] [--title …] [--topics a,b] [--kind post|probe|status]
   post show <post-id>
   post update <id> [--body …] [--title …] [--topics …] [--kind …]
