@@ -1,4 +1,4 @@
-import type { GraphSnapshot } from "@khoralabs/obp-core";
+import type { GraphSnapshot } from "@khoralabs/obp-persistence-client";
 import type { Edge, Node } from "@xyflow/react";
 
 /** React Flow `data` for offer nodes (includes full snapshot row for detail panel). */

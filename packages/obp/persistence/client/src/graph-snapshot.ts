@@ -1,5 +1,5 @@
-import type { PortBindPolicy } from "../../bind-policy/types.ts";
-import type { ContentAddressedSourceRef } from "../../model/types.ts";
+import type { PortBindPolicy } from "@khoralabs/obp-core/bind-policy";
+import type { ContentAddressedSourceRef } from "@khoralabs/obp-core/model";
 
 /**
  * JSON-safe DAG view of an OBP session: parties, offers, ports, and the

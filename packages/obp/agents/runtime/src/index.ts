@@ -1,4 +1,4 @@
-export type { GraphSnapshot } from "@khoralabs/obp-core";
+export type { GraphSnapshot } from "@khoralabs/obp-persistence-client";
 export {
   isRuntimeNoopPortId,
   isRuntimeWalkAwayPortId,

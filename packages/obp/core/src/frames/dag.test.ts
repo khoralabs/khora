@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { ObpError } from "../persistence/client/errors.ts";
+import { ObpError } from "../obp-error.ts";
 import { canonicalJsonString } from "./canonical.ts";
 import { FrameDag, sha256HexUtf8, signingPayloadBytes } from "./dag.ts";
 import {

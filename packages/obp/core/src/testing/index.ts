@@ -1,4 +1,4 @@
 export {
   FakeObpPersistence,
   type FakeObpPersistenceSnapshot,
-} from "./fake-obp-persistence";
+} from "@khoralabs/obp-persistence-client";

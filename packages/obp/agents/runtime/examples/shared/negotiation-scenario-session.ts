@@ -1,4 +1,5 @@
-import { OBPPersistenceClient, type Party } from "@khoralabs/obp-core";
+import type { Party } from "@khoralabs/obp-core";
+import { OBPPersistenceClient } from "@khoralabs/obp-persistence-client";
 import { FakeObpPersistence } from "@khoralabs/obp-core/testing";
 import type {
   ObpNegotiatorStructuredSessionContext,

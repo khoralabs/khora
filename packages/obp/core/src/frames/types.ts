@@ -1,6 +1,6 @@
 /**
  * TS shapes aligned with **`cfd.obp.frame`** in `@khoralabs/obp-spec`
- * ([`frame-protocol.smithy`](../../../spec/model/frame-protocol.smithy)).
+ * ([`frame-protocol.smithy`](../../../persistence/spec/model/frame-protocol.smithy)).
  */
 
 import type { PortBindPolicy } from "../bind-policy/types.ts";

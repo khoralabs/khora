@@ -16,6 +16,7 @@
   "dependencies": {
     "@khoralabs/memories-sqlite": "workspace:*",
     "@khoralabs/obp-core": "workspace:*",
+    "@khoralabs/obp-persistence-client": "workspace:*",
     "@khoralabs/sqlite-migrate": "workspace:*"
   },
   "devDependencies": {

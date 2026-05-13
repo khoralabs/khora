@@ -1,4 +1,4 @@
-import { OBPPersistenceClient } from "@khoralabs/obp-core";
+import { OBPPersistenceClient } from "@khoralabs/obp-persistence-client";
 import type { AtriumCliContext } from "./context.ts";
 import { POST_DELETE_ROOT, postDeleteLinearTransitions } from "./graphs/post-delete-linear.ts";
 import { createMonotonicLedgerSeq } from "./obp/ledger-seq.ts";

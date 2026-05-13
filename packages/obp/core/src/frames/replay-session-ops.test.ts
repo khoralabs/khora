@@ -1,7 +1,6 @@
 import { expect, test } from "bun:test";
-import { ObpError } from "../persistence/client/errors.ts";
-import { OBPPersistenceClient } from "../persistence/client/obp-persistence-client.ts";
-import { FakeObpPersistence } from "../testing/fake-obp-persistence.ts";
+import { OBPPersistenceClient, ObpError } from "@khoralabs/obp-persistence-client";
+import { FakeObpPersistence } from "../testing/index.ts";
 import { applySessionOp, applySessionOps, applySessionOpsMultiplex } from "./replay-session-ops.ts";
 import type { SessionOp } from "./to-session-op.ts";
 import type { SessionInit } from "./types.ts";

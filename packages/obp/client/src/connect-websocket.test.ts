@@ -4,11 +4,11 @@ import {
   createEd25519FrameSigner,
   createEd25519FrameVerifier,
   generateEd25519KeyPair,
-  type ObpPersistence,
   runFrameMultiplexSession,
   type SessionInit,
   sha256HexUtf8,
 } from "@khoralabs/obp-core";
+import type { ObpPersistence } from "@khoralabs/obp-persistence-client";
 import { FakeObpPersistence } from "@khoralabs/obp-core/testing";
 import { connectObpFrameChannelSession } from "./connect-websocket.ts";
 

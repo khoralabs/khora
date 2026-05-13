@@ -1,8 +1,8 @@
 import { Database } from "bun:sqlite";
 import { expect, test } from "bun:test";
-import { createObpSqlitePersistence, OBP_SCHEMA_SQL } from "@khoralabs/obp-sqlite";
-import { OBPPersistenceClient } from "./obp-persistence-client.ts";
-import { resolveCompletedDeal } from "./resolve-completed-deal.ts";
+import { OBPPersistenceClient, resolveCompletedDeal } from "@khoralabs/obp-persistence-client";
+import { createObpSqlitePersistence } from "./persistence.ts";
+import { OBP_SCHEMA_SQL } from "./schema.ts";
 
 test("resolveCompletedDeal finds terminal bind on provider offer", () => {
   const db = new Database(":memory:");

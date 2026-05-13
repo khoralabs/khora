@@ -4,10 +4,10 @@ import {
   createEd25519FrameSigner,
   createEd25519FrameVerifier,
   generateEd25519KeyPair,
-  OBPPersistenceClient,
   type SessionInit,
   sha256HexUtf8,
 } from "@khoralabs/obp-core";
+import { OBPPersistenceClient } from "@khoralabs/obp-persistence-client";
 import { FakeObpPersistence } from "@khoralabs/obp-core/testing";
 import { serveObp } from "@khoralabs/obp-server";
 import { checkpointFromOps, verifyExtends } from "@khoralabs/obp-session-sync";

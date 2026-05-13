@@ -1,6 +1,6 @@
 /**
  * Persisted graph shapes aligned with **`cfd.obp`** in `@khoralabs/obp-spec`
- * ([`shapes.smithy`](../../spec/model/shapes.smithy)).
+ * ([`shapes.smithy`](../../../persistence/spec/model/shapes.smithy)).
  *
  * - **`Port.bind_policy`** / **`BindsEdge.bind_policy_snapshot`**: Smithy models these as **`Document`** (`null` when absent); TS uses structured **`PortBindPolicy`** validated via Zod (`@khoralabs/obp-core`).
  * - **Get results**: Smithy unions **`notFound` / payload** correspond to TS **`{ kind: "notFound" } | { kind: "found"; … }`** (see parity matrix in `@khoralabs/obp-core` README).
@@ -50,7 +50,7 @@ export type Port = {
   /** Exclusive upper bound: bind invalid when **`ledger_seq >= expires_seq`**. */
   expires_seq: number;
   type: string;
-  /** Counterparty-facing affordance copy; **`OBPPersistenceClient.exposePort`** requires non-empty trimmed text. */
+  /** Counterparty-facing affordance copy; **`OBPPersistenceClient.exposePort`** (see `@khoralabs/obp-persistence-client`) requires non-empty trimmed text. */
   promise: string;
   max_bindings: number;
   terminal: boolean;

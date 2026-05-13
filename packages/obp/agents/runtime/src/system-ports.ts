@@ -1,4 +1,4 @@
-import type { OBPPersistenceClient } from "@khoralabs/obp-core";
+import type { OBPPersistenceClient } from "@khoralabs/obp-persistence-client";
 import { type BindableCounterpartyPort, newestOfferIdAmongBindable } from "@khoralabs/obp-tools";
 import {
   noopPortIdForHeadOffer,

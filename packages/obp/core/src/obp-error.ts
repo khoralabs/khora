@@ -1,4 +1,4 @@
-/** Domain / validation failures from {@link OBPPersistenceClient} or persistence. */
+/** Domain / validation failures from OBP persistence, stores, and frame sessions. */
 
 export type ObpErrorCode =
   | "NOT_FOUND"

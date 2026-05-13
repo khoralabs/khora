@@ -19,7 +19,7 @@ import {
   type OBPPersistenceClient,
   type ObpPersistence,
   resolveCompletedDeal,
-} from "@khoralabs/obp-core";
+} from "@khoralabs/obp-persistence-client";
 import {
   createObpNegotiatorSessionRunner,
   negotiationEndPayloadFromGeneration,

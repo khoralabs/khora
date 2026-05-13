@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 const enc = new TextEncoder();
 
-/** ASCII + NUL leaf prefix; normative definition in `packages/obp/spec/model/session-protocol.smithy`. */
+/** ASCII + NUL leaf prefix; normative definition in `packages/obp/persistence/spec/model/session-protocol.smithy`. */
 export const SESSION_LEAF_V1_PREFIX = "OBP_SESSION_LEAF_v1\0";
 
 /** UTF-8 body after **`SESSION_LEAF_V1_PREFIX`** when the op log has zero entries (same Smithy model). */

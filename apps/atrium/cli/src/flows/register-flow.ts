@@ -1,4 +1,4 @@
-import { OBPPersistenceClient } from "@khoralabs/obp-core";
+import { OBPPersistenceClient } from "@khoralabs/obp-persistence-client";
 import { seedProfileCacheAfterRegister } from "../commands/register.ts";
 import type { AtriumCliContext } from "./context.ts";
 import { REGISTER_ROOT_OFFER, registerLinearTransitions } from "./graphs/register-linear.ts";

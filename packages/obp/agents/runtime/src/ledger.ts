@@ -1,4 +1,4 @@
-import type { OBPPersistenceClient, ObpPersistence } from "@khoralabs/obp-core";
+import type { OBPPersistenceClient, ObpPersistence } from "@khoralabs/obp-persistence-client";
 
 /**
  * Shared negotiation truth: one ledger per conversation / deal / channel.

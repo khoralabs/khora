@@ -1,4 +1,4 @@
-import { ObpError } from "../persistence/client/errors.ts";
+import { ObpError } from "../obp-error.ts";
 import type { SessionInit, SessionParty } from "./types.ts";
 
 /** Wire shape for `init` in canonical JSON (Smithy `cfd.obp.frame`). */

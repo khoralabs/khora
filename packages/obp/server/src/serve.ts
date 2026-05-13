@@ -5,12 +5,12 @@ import {
   type FrameSessionHandlers,
   type FrameSigner,
   type FrameVerifier,
-  type ObpPersistence,
   partyIdForSigner,
   runFrameMultiplexSession,
   type SessionInit,
   type SessionOp,
 } from "@khoralabs/obp-core";
+import type { ObpPersistence } from "@khoralabs/obp-persistence-client";
 import { checkpointFromOps, verifyExtends } from "@khoralabs/obp-session-sync";
 import { frameChannelFromHttp2Stream } from "./http2-channel.ts";
 

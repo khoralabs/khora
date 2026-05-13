@@ -99,6 +99,7 @@ export {
   resolveCanonicalPortId,
   validateBindPreconditions,
 } from "./invariants/index";
+export { ObpError, type ObpErrorCode } from "./obp-error.ts";
 export type {
   BindListingRow,
   BindPortInput,
@@ -118,13 +119,3 @@ export type {
   RegisterPartyInput,
   SourceMapRef,
 } from "./model/types";
-export {
-  type CompletedDeal,
-  type GraphSnapshot,
-  OBPPersistenceClient,
-  type OBPPersistenceClientOptions,
-  ObpError,
-  type ObpErrorCode,
-  type ObpPersistence,
-  resolveCompletedDeal,
-} from "./persistence/client/index.ts";

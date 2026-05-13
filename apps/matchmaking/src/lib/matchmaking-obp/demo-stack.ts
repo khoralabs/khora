@@ -1,5 +1,5 @@
 import { Database } from "bun:sqlite";
-import { OBPPersistenceClient, type ObpPersistence } from "@khoralabs/obp-core";
+import { OBPPersistenceClient, type ObpPersistence } from "@khoralabs/obp-persistence-client";
 import { createObpSqlitePersistence, initObpSchema, openObpDatabase } from "@khoralabs/obp-sqlite";
 
 /** Default fixed ledger sequence for demos (same value on every read, like the old wall-clock demo). */

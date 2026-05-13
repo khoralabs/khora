@@ -23,6 +23,7 @@
     "@khoralabs/memories-stores": "workspace:*",
     "@khoralabs/memories-tools": "workspace:*",
     "@khoralabs/obp-core": "workspace:*",
+    "@khoralabs/obp-persistence-client": "workspace:*",
     "@khoralabs/obp-negotiator": "workspace:*",
     "@khoralabs/obp-sqlite": "workspace:*",
     "@khoralabs/obp-tools": "workspace:*",

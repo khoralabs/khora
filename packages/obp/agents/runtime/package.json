@@ -17,6 +17,7 @@
     "@khoralabs/agent-identity-adapters": "workspace:*",
     "@khoralabs/obp-bind-policy-zod": "workspace:*",
     "@khoralabs/obp-core": "workspace:*",
+    "@khoralabs/obp-persistence-client": "workspace:*",
     "@khoralabs/obp-negotiator": "workspace:*",
     "@khoralabs/obp-tools": "workspace:*",
     "@standard-schema/spec": "^1.1.0",

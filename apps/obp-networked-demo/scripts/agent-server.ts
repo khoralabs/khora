@@ -17,9 +17,9 @@ import { verifyInvite } from "@khoralabs/obp-auth";
 import type { FrameSessionHandle, Party, TurnBody } from "@khoralabs/obp-core";
 import {
   createEd25519FrameVerifier,
-  OBPPersistenceClient,
   partyIdForSigner,
 } from "@khoralabs/obp-core";
+import { OBPPersistenceClient } from "@khoralabs/obp-persistence-client";
 import { FakeObpPersistence } from "@khoralabs/obp-core/testing";
 import { parseBearerToken, serveObp } from "@khoralabs/obp-server";
 import { buildAgentDemoGraphSnapshot } from "./agent-graph-snapshot.ts";

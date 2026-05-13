@@ -1,5 +1,5 @@
 import { zAtriumProfilePatch } from "@khoralabs/atrium-contracts";
-import { OBPPersistenceClient } from "@khoralabs/obp-core";
+import { OBPPersistenceClient } from "@khoralabs/obp-persistence-client";
 import type { AtriumCliContext } from "./context.ts";
 import {
   PROFILE_UPDATE_ROOT,

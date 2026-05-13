@@ -18,6 +18,7 @@
     "@khoralabs/obp-auth": "workspace:*",
     "@khoralabs/obp-client": "workspace:*",
     "@khoralabs/obp-core": "workspace:*",
+    "@khoralabs/obp-persistence-client": "workspace:*",
     "@khoralabs/obp-negotiator": "workspace:*",
     "@khoralabs/obp-server": "workspace:*",
     "@khoralabs/obp-session-sync": "workspace:*",

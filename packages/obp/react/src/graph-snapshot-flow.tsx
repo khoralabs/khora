@@ -1,4 +1,4 @@
-import type { GraphSnapshot } from "@khoralabs/obp-core";
+import type { GraphSnapshot } from "@khoralabs/obp-persistence-client";
 import {
   Background,
   Controls,

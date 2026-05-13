@@ -1,5 +1,5 @@
-import { ObpError } from "../persistence/client/errors.ts";
-import type { OBPPersistenceClient } from "../persistence/client/obp-persistence-client.ts";
+import type { OBPPersistenceClient } from "@khoralabs/obp-persistence-client";
+import { ObpError } from "../obp-error.ts";
 import { applyTurn, parseTurnBody } from "./graph-effect.ts";
 import type { SessionOp } from "./to-session-op.ts";
 import type { SessionInit } from "./types.ts";

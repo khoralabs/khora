@@ -13,6 +13,26 @@
       "types": "./src/testing/index.ts",
       "import": "./src/testing/index.ts",
       "default": "./src/testing/index.ts"
+    },
+    "./obp-error": {
+      "types": "./src/obp-error.ts",
+      "import": "./src/obp-error.ts",
+      "default": "./src/obp-error.ts"
+    },
+    "./invariants": {
+      "types": "./src/invariants/index.ts",
+      "import": "./src/invariants/index.ts",
+      "default": "./src/invariants/index.ts"
+    },
+    "./model": {
+      "types": "./src/model/types.ts",
+      "import": "./src/model/types.ts",
+      "default": "./src/model/types.ts"
+    },
+    "./bind-policy": {
+      "types": "./src/bind-policy/index.ts",
+      "import": "./src/bind-policy/index.ts",
+      "default": "./src/bind-policy/index.ts"
     }
   },
   "scripts": {
@@ -25,6 +45,7 @@
   },
   "dependencies": {
     "@khoralabs/frame-channel": "workspace:*",
+    "@khoralabs/obp-persistence-client": "workspace:*",
     "@standard-schema/spec": "^1.1.0"
   },
   "peerDependencies": {

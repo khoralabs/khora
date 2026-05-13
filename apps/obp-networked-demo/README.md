@@ -2,7 +2,7 @@
 
 Minimal two-process OBP demo using **invite-based auth**: the server signs a session invite with its own Ed25519 key at bootstrap time; the client presents it as `Authorization: Bearer …`; the server verifies with `verifyInvite(token, signer.actor)` — no shared secret.
 
-Each process holds its own [`FakeObpPersistence`](../../packages/obp/core/src/testing/fake-obp-persistence.ts). The server hydrates its store from the verified session init on first connect.
+Each process holds its own [`FakeObpPersistence`](../../packages/obp/persistence/client/src/fake-obp-persistence.ts). The server hydrates its store from the verified session init on first connect.
 
 ## Setup
 

@@ -16,10 +16,10 @@ import {
 import { connectObpSession } from "@khoralabs/obp-client";
 import {
   createEd25519FrameVerifier,
-  OBPPersistenceClient,
   partyIdForSigner,
   type TurnBody,
 } from "@khoralabs/obp-core";
+import { OBPPersistenceClient } from "@khoralabs/obp-persistence-client";
 import { FakeObpPersistence } from "@khoralabs/obp-core/testing";
 import { buildAgentDemoGraphSnapshot } from "./agent-graph-snapshot.ts";
 import { getNegotiationModel, resolveDemoTurnBudgetMs } from "./agent-llm.ts";

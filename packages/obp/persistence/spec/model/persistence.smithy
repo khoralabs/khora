@@ -11,40 +11,37 @@ use smithy.api#Unit
 **Protocol overview**
 OBP is a small typed graph for causal interaction history: **Party** → **Offer** → **Port**, with edges **EXTENDS** (issuer), **EXPOSES** (makes an affordance available), and **BINDS** (consumes an affordance). See `cfd.obp` shapes in `shapes.smithy`.
 
-**Normative invariants** (implementations MUST enforce; not expressible in Smithy types alone)
+**Layering: OBP vs Negotiated Binding Convention (NBC)**
+Some rules that reference implementations historically treated as “OBP persistence” are **not** universal OBP; they belong to the **Negotiated Binding Convention** (`cfd.obp.nbc`, `negotiated-binding-convention.smithy`, `packages/obp/documentation/negotiated-binding-convention.md`). **OBP-conformant** persistence MAY omit NBC bind-admissibility enforcement. **NBC-conformant** deployments MUST satisfy NBC in addition to OBP graph rules.
+
+**OBP normative invariants (graph / projection)** — implementations MUST enforce for any `ObpPersistence` that faithfully projects the negotiation graph (not expressible in Smithy types alone):
 1. Each **Offer** has exactly one **EXTENDS** from its issuing **Party** (created via **ExtendOffer**).
-2. **BindPort** / bind leg of **ExtendOffer** may target only **Ports** that are the target of at least one **EXPOSES** (the port is *exposed* on the graph).
-3. Reject binds when the binding **Offer** or target **Port** is expired: current **`ledger_seq`** MUST satisfy **`ledger_seq < expires_seq`** on both (see `shapes.smithy` **`Offer`** / **`Port`**). Implementations derive **`ledger_seq`** from session control—not wall-clock `Date.now()`—unless an adapter explicitly maps clock ticks to sequence (discouraged).
-4. **BINDS** and **`max_bindings`:** Usage against a **Port** must not exceed that port's **`max_bindings`**. Counting is **global (canonical)** only: after resolving **`Port.ref`**, every **BINDS** row whose **`portId`** resolves to the same **canonical port id** shares **one** usage tally (see invariants **9–11**). This protocol does **not** define a separate bind budget per **EXPOSES** edge.
-5. **Port.ref:** resolve before bind rules; detect cycles on the ref chain and reject.
-6. **Port.terminal** is an agent hint only; it does not change bind rules.
-7. **Bind policy:** **Port** may carry **`bind_policy`** (`Document`) declaring constraint metadata. When present and non-empty per implementation rules, **BindPort** / bind leg of **ExtendOffer** MUST supply **`counterparty_bind`** satisfaction data validated against that policy before committing the **BINDS** edge; validated payload is stored on **`BindsEdge.counterparty_bind`** (see `shapes.smithy`). **`bind_policy_snapshot`** on the edge is an optional audit copy of the policy used at bind time.
-8. **Party `name`** on **RegisterParty** MUST be non-empty after trim (TS **`OBPPersistenceClient`**).
-9. **Multiple EXPOSES, same `portId`:** More than one **EXPOSES** edge MAY reference the same **`portId`** (the same **`Port`** row). Any successful bind against that port consumes **`max_bindings`** capacity **for every** such exposure—the **strictest** reading and the **normative** baseline.
-10. **Concurrent binds:** When two **BindPort** (or bind-via-**ExtendOffer**) operations may commit against the **same** canonical port concurrently, implementations **MUST** enforce **`max_bindings`** **atomically** (transaction or equivalent). If remaining capacity is one, **at most one** operation **MUST** succeed.
-11. **Multiple sessions and store boundaries:** Invariants **1–10** apply **within** each **`ObpPersistence`** implementation instance a deployment attaches to frame/session work. If a deployment uses **separate** instances for unrelated work, caps (for example **`max_bindings`**) do **not** aggregate across them; if it uses **one** shared instance, those invariants apply **on that shared graph**, including **atomic** enforcement under concurrent writers (invariant **10**). **How** implementors map sessions to storage—one database for many sessions, many databases, application-level namespacing, or other patterns—is **implementation-defined**; this specification defines only the **`ObpPersistence`** surface and the normative rules above, not hosting topology.
+2. **BindPort** / bind leg of **ExtendOffer** may target only **Ports** that are the target of at least one **EXPOSES** (the port is *exposed* on the graph). *(Graph reachability only; NBC adds ledger, caps, and policy rules on top.)*
+3. **Port.ref:** resolve for graph integrity; detect cycles on the ref chain and reject invalid projections (see also NBC **N3** when enforcing caps at bind time).
+4. **Port.terminal** is an agent hint only; it does not change OBP graph projection rules.
+5. **Party `name`** on **RegisterParty** MUST be non-empty after trim (TS **`OBPPersistenceClient`**).
+
+**NBC (separate spec)** — bind admissibility, ledger/expiry at bind, canonical **`max_bindings`**, **`bind_policy`** / **`counterparty_bind`**, concurrent cap atomicity, and related orchestration: see **`cfd.obp.nbc#NegotiatedBindingConvention`** and narrative doc above. OBP’s prior numbered items **3–4, 7, 9–11** (ledger/expiry, `max_bindings` tally, bind policy MUST, multi-EXPOSES cap behavior, concurrent atomicity, store-boundary cap rules) are **NBC** normative rules **N1–N7** there.
 
 **Provenance:** optional **sourcemaps** on entities and edges (see `SourceMapRef` in `shapes.smithy`) — store-agnostic; a concrete adapter may map them to an external system (e.g. a document store’s ids).
 
 **Staging:** ports that must not be bindable yet are **not** EXPOSES'd (no separate lifecycle enum on **Port**).
 
-**Revocation (soft close):** implementations MAY support setting **`expires_seq`** on **Port** / **Offer** to the **current ledger sequence** so subsequent binds fail the expiry check. **ListExposedPortEdges** supports enumerating EXPOSES for orchestration (e.g. dynamic tools).
+**Orchestration reads:** **IsPortExposed**, **ListBinds**, **GetPortsSnapshot**, and **GetExtendingPartyId** mirror the **`ObpPersistence`** strategy surface in `@khoralabs/obp-persistence-client` (same semantics as TS **`OBPPersistenceClient`** helpers). NBC drivers use these reads when evaluating NBC preconditions.
 
-**Orchestration reads:** **IsPortExposed**, **ListBinds**, **GetPortsSnapshot**, and **GetExtendingPartyId** mirror the **`ObpPersistence`** strategy surface in `@khoralabs/obp-core` (same semantics as TS **`OBPPersistenceClient`** precondition helpers).
+**Errors:** Operations model **success** shapes only. Implementations may throw or map failures for: not found, not exposed, ref cycle, invalid graph; NBC-specific failures (expired, max bindings exceeded, bind-policy validation) are defined under NBC.
 
-**Errors:** Operations model **success** shapes only. Implementations may throw or map failures for: not found, expired, not exposed, max bindings exceeded, ref cycle, invalid graph, bind-policy validation failure.
-
-**Transactions:** **ExtendOffer**, **ExposePort**, and **BindPort** SHOULD run atomically where the backend supports transactions. Under concurrent load, **`max_bindings`** enforcement **MUST** remain atomic (see invariant **10**).
+**Transactions:** **ExtendOffer**, **ExposePort**, and **BindPort** SHOULD run atomically where the backend supports transactions. NBC **N6** requires atomic **`max_bindings`** enforcement when claiming NBC conformance.
 
 **Smithy ↔ TS unions:** **GetPartyResult** / **GetOfferResult** / **GetPortResult** (`notFound` vs payload) correspond to TS `{ kind: "notFound" } | { kind: "found"; … }` (parity matrix in `@khoralabs/obp-core` README).
 
-**Structured bind_policy:** Smithy uses **`Document`**; constrained JSON shape is validated in TS via Zod (`PortBindPolicy`).
+**Structured bind_policy:** Smithy uses **`Document`** on **Port**; constrained JSON shape for policy fields is described under NBC and validated in reference TS via Zod (`PortBindPolicy`).
 
 Narrative: `packages/obp/README.md`, `packages/obp/documentation/*.md`, `packages/obp/documentation/*.obp`.
 
-**Decentralized session sync:** Normative protocol (checkpoints, Merkle tree, hashing, verification, fork semantics) is **`cfd.obp.session#NegotiationSessionProtocol`** in `packages/obp/spec/model/session-protocol.smithy`. Non-normative reader guide: `packages/obp/documentation/decentralized-session.md`.
+**Decentralized session sync:** Normative protocol (checkpoints, Merkle tree, hashing, verification, fork semantics) is **`cfd.obp.session#NegotiationSessionProtocol`** in `packages/obp/persistence/spec/model/session-protocol.smithy`. Non-normative reader guide: `packages/obp/documentation/decentralized-session.md`.
 
-**Live negotiation frames:** Bilateral signed **Frame** DAG rules (transport-agnostic) are **`cfd.obp.frame#NegotiationFrameProtocol`** in `packages/obp/spec/model/frame-protocol.smithy`. The HTTP/2 reference binding is **`cfd.obp.frame.http2#Http2Binding`** in `packages/obp/spec/model/frame-binding-http2.smithy`.
+**Live negotiation frames:** Bilateral signed **Frame** DAG rules (transport-agnostic) are **`cfd.obp.frame#NegotiationFrameProtocol`** in `packages/obp/persistence/spec/model/frame-protocol.smithy`. The HTTP/2 reference binding is **`cfd.obp.frame.http2#Http2Binding`** in `packages/obp/persistence/spec/model/frame-binding-http2.smithy`.
 """)
 service ObpPersistence {
     version: "2026-05-01"

@@ -1,5 +1,5 @@
 import type { FrameChannel } from "@khoralabs/frame-channel";
-import type { ObpPersistence } from "../persistence/client/persistence-types.ts";
+import type { ObpPersistence } from "@khoralabs/obp-persistence-client";
 import {
   runFrameMultiplexSession,
   type SessionEnvelopeSyncAdapter,

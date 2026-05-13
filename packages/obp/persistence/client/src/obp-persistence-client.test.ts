@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import type { PortBindPolicy } from "../../bind-policy/types.ts";
-import { FakeObpPersistence } from "../../testing/fake-obp-persistence.ts";
-import { ObpError } from "./errors.ts";
+import type { PortBindPolicy } from "@khoralabs/obp-core/bind-policy";
+import { ObpError } from "@khoralabs/obp-core/obp-error";
+import { FakeObpPersistence } from "./fake-obp-persistence.ts";
 import { OBPPersistenceClient } from "./obp-persistence-client.ts";
 
 const seq = () => 100;
@@ -155,8 +155,8 @@ describe("OBPPersistenceClient + FakeObpPersistence", () => {
   });
 
   test("single-arg constructor uses FakeObpPersistence by default", () => {
-    const seq = 100;
-    const c = new OBPPersistenceClient({ ledgerSeq: () => seq });
+    const seqVal = 100;
+    const c = new OBPPersistenceClient({ ledgerSeq: () => seqVal });
     const { party } = c.registerParty({ name: "solo", sourcemaps: [] });
     expect(party.name).toBe("solo");
     const { offer } = c.extendOffer({
@@ -164,7 +164,7 @@ describe("OBPPersistenceClient + FakeObpPersistence", () => {
       bindPortId: "",
       offer: {
         id: "",
-        created_seq: seq,
+        created_seq: seqVal,
         expires_seq: 1000,
         type: "root",
         sourcemaps: [],

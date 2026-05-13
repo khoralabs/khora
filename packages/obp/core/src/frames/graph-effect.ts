@@ -1,7 +1,7 @@
 import { portBindPolicySchema } from "../bind-policy/index.ts";
 import type { NegotiationPortTtlBasis, Offer, Port, SourceMapRef } from "../model/types.ts";
-import { ObpError } from "../persistence/client/errors.ts";
-import type { OBPPersistenceClient } from "../persistence/client/obp-persistence-client.ts";
+import type { OBPPersistenceClient } from "@khoralabs/obp-persistence-client";
+import { ObpError } from "../obp-error.ts";
 import type { PortSpec, TurnBody } from "./types.ts";
 
 const MAX_EXPIRES = Number.MAX_SAFE_INTEGER;

@@ -1,6 +1,6 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type { Port } from "../model/types.ts";
-import { ObpError } from "../persistence/client/errors.ts";
+import { ObpError } from "../obp-error.ts";
 import { formatStandardSchemaIssuesForAgent } from "./issue-format.ts";
 import { counterpartyBindSchemaForProperties, portBindPolicySchema } from "./standard-schema.ts";
 

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import type { GraphSnapshot } from "@khoralabs/obp-core";
+import type { GraphSnapshot } from "@khoralabs/obp-persistence-client";
 import { graphSnapshotToFlow } from "./layout.ts";
 
 test("flowchart layout places successor offer to the right of bound port", () => {

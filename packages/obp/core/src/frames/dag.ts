@@ -1,4 +1,4 @@
-import { ObpError } from "../persistence/client/errors.ts";
+import { ObpError } from "../obp-error.ts";
 import { canonicalJsonString } from "./canonical.ts";
 import type { FrameSigner, FrameVerifier } from "./signer.ts";
 import type { Frame, FrameType } from "./types.ts";

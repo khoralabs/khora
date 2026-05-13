@@ -1,4 +1,4 @@
-import type { GraphSnapshot } from "@khoralabs/obp-core";
+import type { GraphSnapshot } from "@khoralabs/obp-persistence-client";
 
 export type BindOption = {
   portId: string;

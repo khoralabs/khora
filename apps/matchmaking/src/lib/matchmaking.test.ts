@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { expect, test } from "bun:test";
-import { OBPPersistenceClient, resolveCompletedDeal } from "@khoralabs/obp-core";
+import { OBPPersistenceClient, resolveCompletedDeal } from "@khoralabs/obp-persistence-client";
 import { createObpSqlitePersistence, OBP_SCHEMA_SQL } from "@khoralabs/obp-sqlite";
 import { assertMatchmakingBindAllowed, resolveMatchmakingConnectedDeal } from "./llm/session.ts";
 import {

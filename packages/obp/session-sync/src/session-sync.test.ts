@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { OBPPersistenceClient } from "@khoralabs/obp-core";
+import { OBPPersistenceClient } from "@khoralabs/obp-persistence-client";
 import { FakeObpPersistence } from "@khoralabs/obp-core/testing";
 import { bytesToHex } from "./hash.ts";
 import { inclusionProof, leafHashForOp, merkleRoot, verifyInclusion } from "./merkle.ts";

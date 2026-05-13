@@ -4,7 +4,7 @@ HTTP/2 client for the OBP reference frame binding (`POST /obp/v1`), built on **`
 
 ## WebSocket and other `FrameChannel` transports
 
-The OBP **wire** is length-prefixed canonical JSON on a duplex byte stream (same as the HTTP/2 reference binding; see `packages/obp/spec/model/frame-binding-http2.smithy`). Any transport that exposes **`FrameChannel`** can carry the same session:
+The OBP **wire** is length-prefixed canonical JSON on a duplex byte stream (same as the HTTP/2 reference binding; see `packages/obp/persistence/spec/model/frame-binding-http2.smithy`). Any transport that exposes **`FrameChannel`** can carry the same session:
 
 - **`connectObpFrameChannelSession`** — run the deferred multiplex client over an existing channel (e.g. in-memory pair in tests, or a relay you bridge yourself).
 - **`connectObpWebSocketSession`** — wraps `WebSocket` with **`createWebSocketFrameChannel`** from `@khoralabs/frame-channel`: each **binary message** is one **ordered chunk** of the byte stream (the frame decoder may buffer across chunks).

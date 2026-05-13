@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { OBPPersistenceClient } from "@khoralabs/obp-core";
+import { OBPPersistenceClient } from "@khoralabs/obp-persistence-client";
 import { FakeObpPersistence } from "@khoralabs/obp-core/testing";
 import { buildGraphSnapshot } from "./shared/graph-snapshot.ts";
 

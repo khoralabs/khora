@@ -1,6 +1,8 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
-import { OBPPersistenceClient, ObpError, type PortBindPolicy } from "@khoralabs/obp-core";
+import type { PortBindPolicy } from "@khoralabs/obp-core";
+import { ObpError } from "@khoralabs/obp-core/obp-error";
+import { OBPPersistenceClient } from "@khoralabs/obp-persistence-client";
 import { createObpSqlitePersistence, initObpSchema } from "./index";
 
 describe("ObpSqlitePersistence", () => {

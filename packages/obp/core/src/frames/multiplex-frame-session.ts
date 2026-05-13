@@ -1,8 +1,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { FrameChannel } from "@khoralabs/frame-channel";
-import { ObpError } from "../persistence/client/errors.ts";
-import { OBPPersistenceClient } from "../persistence/client/obp-persistence-client.ts";
-import type { ObpPersistence } from "../persistence/client/persistence-types.ts";
+import { OBPPersistenceClient, ObpError } from "@khoralabs/obp-persistence-client";
+import type { ObpPersistence } from "@khoralabs/obp-persistence-client";
 import { canonicalJsonString } from "./canonical.ts";
 import { FrameDag, sha256HexUtf8, signingPayloadBytes } from "./dag.ts";
 import {

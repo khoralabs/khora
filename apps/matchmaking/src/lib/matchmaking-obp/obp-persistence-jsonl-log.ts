@@ -6,12 +6,12 @@ import type {
   GetOfferResult,
   GetPartyResult,
   GetPortResult,
-  ObpPersistence,
   Offer,
   Party,
   Port,
   RegisterPartyInput,
 } from "@khoralabs/obp-core";
+import type { ObpPersistence } from "@khoralabs/obp-persistence-client";
 
 export type LoggingObpPersistenceOptions = {
   store: JsonlStore;

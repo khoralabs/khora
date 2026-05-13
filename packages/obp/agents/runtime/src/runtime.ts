@@ -2,8 +2,6 @@ import {
   type ApplyTurnResult,
   type BindPolicyField,
   applyTurn as graphApplyTurn,
-  type OBPPersistenceClient,
-  type ObpPersistence,
   type Port,
   type PortBindPolicy,
   type PortSpec,
@@ -11,6 +9,7 @@ import {
   type TurnBody,
   validateCounterpartyBindForPort,
 } from "@khoralabs/obp-core";
+import type { OBPPersistenceClient, ObpPersistence } from "@khoralabs/obp-persistence-client";
 import { listBindableCounterpartyPorts, type ObpToolkitEnv } from "@khoralabs/obp-tools";
 import type z from "zod";
 import {

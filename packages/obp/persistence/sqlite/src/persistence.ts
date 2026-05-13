@@ -1,4 +1,5 @@
 import type { Database, Statement } from "bun:sqlite";
+import { ObpError } from "@khoralabs/obp-core/obp-error";
 import {
   type BindListingRow,
   type BindPortInput,
@@ -10,8 +11,6 @@ import {
   type GetPartyResult,
   type GetPortResult,
   type NegotiationPortTtlBasis,
-  ObpError,
-  type ObpPersistence,
   type Offer,
   type Party,
   type Port,
@@ -22,6 +21,7 @@ import {
   type SourceMapRef,
   validateBindPreconditions,
 } from "@khoralabs/obp-core";
+import type { ObpPersistence } from "@khoralabs/obp-persistence-client";
 
 type PartyRow = {
   id: string;

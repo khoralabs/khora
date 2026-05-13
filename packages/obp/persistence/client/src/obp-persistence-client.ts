@@ -1,5 +1,8 @@
-import { validateCounterpartyBindForPort } from "../../bind-policy/validate.ts";
-import { type BindValidationFailure, validateBindPreconditions } from "../../invariants/bind.ts";
+import { validateCounterpartyBindForPort } from "@khoralabs/obp-core/bind-policy";
+import {
+  type BindValidationFailure,
+  validateBindPreconditions,
+} from "@khoralabs/obp-core/invariants";
 import type {
   BindPortInput,
   ContentAddressedSourceRef,
@@ -12,9 +15,9 @@ import type {
   Party,
   Port,
   RegisterPartyInput,
-} from "../../model/types.ts";
-import { FakeObpPersistence } from "../../testing/fake-obp-persistence.ts";
-import { ObpError } from "./errors.ts";
+} from "@khoralabs/obp-core/model";
+import { ObpError } from "@khoralabs/obp-core/obp-error";
+import { FakeObpPersistence } from "./fake-obp-persistence.ts";
 import type { ObpPersistence } from "./persistence-types.ts";
 
 export type OBPPersistenceClientOptions = {

@@ -1,8 +1,8 @@
 # `@khoralabs/obp-server`
 
-HTTP/2 **reference binding** for [`cfd.obp.frame`](../spec/model/frame-protocol.smithy) (transport-agnostic frames + length-prefixed canonical JSON).
+HTTP/2 **reference binding** for [`cfd.obp.frame`](../persistence/spec/model/frame-protocol.smithy) (transport-agnostic frames + length-prefixed canonical JSON).
 
-- **`obp://`** → cleartext **HTTP/2** (`h2c`) — [`frame-binding-http2.smithy`](../spec/model/frame-binding-http2.smithy)
+- **`obp://`** → cleartext **HTTP/2** (`h2c`) — [`frame-binding-http2.smithy`](../persistence/spec/model/frame-binding-http2.smithy)
 - **`obps://`** → **TLS + HTTP/2** — pass `listen.tls` to `serveObp`
 
 ## Prereqs

@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { JsonlStore } from "@khoralabs/memories-stores";
-import { OBPPersistenceClient } from "@khoralabs/obp-core";
+import { OBPPersistenceClient } from "@khoralabs/obp-persistence-client";
 import { createObpSqlitePersistence, initObpSchema } from "@khoralabs/obp-sqlite";
 import { createLoggingObpPersistence } from "./obp-persistence-jsonl-log.ts";
 

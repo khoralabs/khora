@@ -1,5 +1,5 @@
 import { describe, expect, mock, test } from "bun:test";
-import { OBPPersistenceClient } from "@khoralabs/obp-core";
+import { OBPPersistenceClient } from "@khoralabs/obp-persistence-client";
 import { createMonotonicLedgerSeq } from "./ledger-seq.ts";
 import { runLinearObpFlow } from "./linear-runner.ts";
 

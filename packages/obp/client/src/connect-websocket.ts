@@ -7,12 +7,12 @@ import {
   type FrameVerifier,
   normalizeSessionInit,
   ObpError,
-  type ObpPersistence,
   partyIdForSigner,
   runFrameMultiplexSession,
   type SessionInit,
   type SessionOp,
 } from "@khoralabs/obp-core";
+import type { ObpPersistence } from "@khoralabs/obp-persistence-client";
 import { type Checkpoint, checkpointFromOps, verifyExtends } from "@khoralabs/obp-session-sync";
 import type { ObpFrameConnection } from "./connect.ts";
 

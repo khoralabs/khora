@@ -13,8 +13,8 @@ import type {
   Party,
   Port,
   RegisterPartyInput,
-} from "../model/types";
-import type { ObpPersistence } from "../persistence/client/persistence-types.ts";
+} from "@khoralabs/obp-core/model";
+import type { ObpPersistence } from "./persistence-types.ts";
 
 type BindRow = {
   offerId: string;

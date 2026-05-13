@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { OBPPersistenceClient } from "@khoralabs/obp-core";
+import { OBPPersistenceClient } from "@khoralabs/obp-persistence-client";
 import { FakeObpPersistence } from "@khoralabs/obp-core/testing";
 import { OBP_NEGOTIATION_BIND_NO_POLICY } from "../constants.ts";
 import { ObpLedger } from "../ledger.ts";

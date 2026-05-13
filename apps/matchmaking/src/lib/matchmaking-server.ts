@@ -2,7 +2,7 @@
  * Programmatic surface for the matchmaking Bun server and scripts (not bundled for the browser).
  */
 
-export { type CompletedDeal, resolveCompletedDeal } from "@khoralabs/obp-core";
+export { type CompletedDeal, resolveCompletedDeal } from "@khoralabs/obp-persistence-client";
 export {
   type NegotiationEndPayload,
   negotiationEndPayloadFromGeneration,

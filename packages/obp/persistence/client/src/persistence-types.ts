@@ -10,7 +10,7 @@ import type {
   Party,
   Port,
   RegisterPartyInput,
-} from "../../model/types.ts";
+} from "@khoralabs/obp-core/model";
 
 /**
  * Storage strategy for OBP: mirrors Smithy service **`ObpPersistence`** (`persistence.smithy`) including orchestration reads
