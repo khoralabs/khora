@@ -1,8 +1,3 @@
-import { authorListHelp } from "./author-list.help.ts";
-import { authorSubscribeHelp } from "./author-subscribe.help.ts";
-import { authorTopicSubscribeHelp } from "./author-topic-subscribe.help.ts";
-import { authorTopicUnsubscribeHelp } from "./author-topic-unsubscribe.help.ts";
-import { authorUnsubscribeHelp } from "./author-unsubscribe.help.ts";
 import { configHelp } from "./config.help.ts";
 import { healthHelp } from "./health.help.ts";
 import { inboxListHelp } from "./inbox-list.help.ts";
@@ -21,9 +16,11 @@ import { memoriesSearchDeprecatedHelp, searchHelp } from "./search.help.ts";
 import { setupHelp } from "./setup.help.ts";
 import { startHelp } from "./start.help.ts";
 import { statusHelp } from "./status.help.ts";
-import { topicListHelp } from "./topic-list.help.ts";
-import { topicSubscribeHelp } from "./topic-subscribe.help.ts";
-import { topicUnsubscribeHelp } from "./topic-unsubscribe.help.ts";
+import {
+  subscriptionsCreateHelp,
+  subscriptionsDeleteHelp,
+  subscriptionsListHelp,
+} from "./subscriptions.help.ts";
 import type { CommandHelp } from "./types.ts";
 import { updateHelp } from "./update.help.ts";
 import { whoamiHelp } from "./whoami.help.ts";
@@ -49,14 +46,9 @@ const ALL_HELP: readonly CommandHelp[] = [
   postUpdateHelp,
   postDeleteHelp,
   probeListHelp,
-  topicListHelp,
-  topicSubscribeHelp,
-  topicUnsubscribeHelp,
-  authorListHelp,
-  authorSubscribeHelp,
-  authorTopicSubscribeHelp,
-  authorTopicUnsubscribeHelp,
-  authorUnsubscribeHelp,
+  subscriptionsListHelp,
+  subscriptionsCreateHelp,
+  subscriptionsDeleteHelp,
   roomCreateHelp,
   roomListHelp,
   roomJoinHelp,
@@ -139,14 +131,9 @@ Commands:
   post update <id> [--body …] [--title …] [--topics …] [--kind …]
   post delete <id> [--yes]
   probe list [--active]
-  topic list
-  topic subscribe [slug]
-  topic unsubscribe [slug]
-  author list
-  author subscribe <username>
-  author unsubscribe <username>
-  author topic subscribe <username> <topic-slug>
-  author topic unsubscribe <username> <topic-slug>
+  subscriptions list [topic|author|author-topic]
+  subscriptions create <topic|author|author-topic> [args…]
+  subscriptions delete <topic|author|author-topic> [args…]
 
 Daemon (single-instance; PID file at <dataDir>/daemon.pid or ~/.atrium/daemon.pid):
   atrium start -b           Start in the background

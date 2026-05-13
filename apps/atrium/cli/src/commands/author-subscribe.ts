@@ -7,7 +7,7 @@ export async function runAuthorSubscribeCommand(
   _flags: FlagMap,
 ): Promise<void> {
   if (username === undefined || username.trim().length === 0) {
-    throw new Error("usage: atrium author subscribe <username>");
+    throw new Error("usage: atrium subscriptions create author <username>");
   }
   const out = await ctx.client.subscribeAuthor(username.trim());
   console.log(JSON.stringify(out, null, 2));

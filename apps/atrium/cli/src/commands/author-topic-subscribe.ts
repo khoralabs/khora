@@ -13,7 +13,7 @@ export async function runAuthorTopicSubscribeCommand(
     topicSlug === undefined ||
     topicSlug.trim().length === 0
   ) {
-    throw new Error("usage: atrium author topic subscribe <username> <topic-slug>");
+    throw new Error("usage: atrium subscriptions create author-topic <username> <topic-slug>");
   }
   const out = await ctx.client.subscribeAuthorTopic(username.trim(), topicSlug.trim());
   console.log(JSON.stringify(out, null, 2));

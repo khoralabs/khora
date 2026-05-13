@@ -1,9 +1,4 @@
 import type { AtriumCliContext } from "../flows/context.ts";
-import { runAuthorListCommand } from "./author-list.ts";
-import { runAuthorSubscribeCommand } from "./author-subscribe.ts";
-import { runAuthorTopicSubscribeCommand } from "./author-topic-subscribe.ts";
-import { runAuthorTopicUnsubscribeCommand } from "./author-topic-unsubscribe.ts";
-import { runAuthorUnsubscribeCommand } from "./author-unsubscribe.ts";
 import { runConfigCommand } from "./config.ts";
 import { runHealthCommand } from "./health.ts";
 import { runInboxListCommand } from "./inbox-list.ts";
@@ -22,9 +17,11 @@ import { runSearchCommand } from "./search.ts";
 import { runSetupCommand } from "./setup.ts";
 import { runStartCommand } from "./start.ts";
 import { runStatusCommand } from "./status.ts";
-import { runTopicListCommand } from "./topic-list.ts";
-import { runTopicSubscribeCommand } from "./topic-subscribe.ts";
-import { runTopicUnsubscribeCommand } from "./topic-unsubscribe.ts";
+import {
+  runSubscriptionsCreateCommand,
+  runSubscriptionsDeleteCommand,
+  runSubscriptionsListCommand,
+} from "./subscriptions.ts";
 import type { FlagMap } from "./types.ts";
 import { runUpdateCommand } from "./update.ts";
 import { runWhoamiCommand } from "./whoami.ts";
@@ -48,32 +45,9 @@ export interface AtriumCliCommandHandlers {
   postUpdate(ctx: AtriumCliContext, postId: string, flags: FlagMap): Promise<void>;
   postDelete(ctx: AtriumCliContext, postId: string, flags: FlagMap): Promise<void>;
   probeList(ctx: AtriumCliContext, flags: FlagMap): Promise<void>;
-  topicList(ctx: AtriumCliContext, flags: FlagMap): Promise<void>;
-  topicSubscribe(ctx: AtriumCliContext, slug: string | undefined, flags: FlagMap): Promise<void>;
-  topicUnsubscribe(ctx: AtriumCliContext, slug: string | undefined, flags: FlagMap): Promise<void>;
-  authorList(ctx: AtriumCliContext, flags: FlagMap): Promise<void>;
-  authorSubscribe(
-    ctx: AtriumCliContext,
-    username: string | undefined,
-    flags: FlagMap,
-  ): Promise<void>;
-  authorUnsubscribe(
-    ctx: AtriumCliContext,
-    username: string | undefined,
-    flags: FlagMap,
-  ): Promise<void>;
-  authorTopicSubscribe(
-    ctx: AtriumCliContext,
-    username: string | undefined,
-    topicSlug: string | undefined,
-    flags: FlagMap,
-  ): Promise<void>;
-  authorTopicUnsubscribe(
-    ctx: AtriumCliContext,
-    username: string | undefined,
-    topicSlug: string | undefined,
-    flags: FlagMap,
-  ): Promise<void>;
+  subscriptionsList(ctx: AtriumCliContext, positional: string[], flags: FlagMap): Promise<void>;
+  subscriptionsCreate(ctx: AtriumCliContext, positional: string[], flags: FlagMap): Promise<void>;
+  subscriptionsDelete(ctx: AtriumCliContext, positional: string[], flags: FlagMap): Promise<void>;
   search(ctx: AtriumCliContext, positional: string[], flags: FlagMap): Promise<void>;
   roomCreate(ctx: AtriumCliContext, flags: FlagMap): Promise<void>;
   roomList(ctx: AtriumCliContext, flags: FlagMap): Promise<void>;
@@ -99,14 +73,9 @@ export const defaultAtriumCliCommandHandlers = {
   postUpdate: runPostUpdateCommand,
   postDelete: runPostDeleteCommand,
   probeList: runProbeListCommand,
-  topicList: runTopicListCommand,
-  topicSubscribe: runTopicSubscribeCommand,
-  topicUnsubscribe: runTopicUnsubscribeCommand,
-  authorList: runAuthorListCommand,
-  authorSubscribe: runAuthorSubscribeCommand,
-  authorUnsubscribe: runAuthorUnsubscribeCommand,
-  authorTopicSubscribe: runAuthorTopicSubscribeCommand,
-  authorTopicUnsubscribe: runAuthorTopicUnsubscribeCommand,
+  subscriptionsList: runSubscriptionsListCommand,
+  subscriptionsCreate: runSubscriptionsCreateCommand,
+  subscriptionsDelete: runSubscriptionsDeleteCommand,
   search: runSearchCommand,
   roomCreate: runRoomCreateCommand,
   roomList: runRoomListCommand,

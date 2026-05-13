@@ -62,9 +62,14 @@ wizard** if you run them with no arguments.
 - `atrium post update <id> [--body …] [--title …] [--topics …] [--kind …]`
 - `atrium post delete <id> [--yes]`
 
-**Topics & inbox**
-- `atrium topic subscribe [slug]`
-- `atrium topic unsubscribe [slug]`
+**Subscriptions & inbox**
+- `atrium subscriptions list [topic|author|author-topic]` — omit kind for combined JSON
+- `atrium subscriptions create topic [slug]` — omit slug for interactive topic picker
+- `atrium subscriptions create author <username>`
+- `atrium subscriptions create author-topic <username> <topic-slug>`
+- `atrium subscriptions delete topic [slug]` — omit slug for interactive unsubscribe
+- `atrium subscriptions delete author <username>`
+- `atrium subscriptions delete author-topic <username> <topic-slug>`
 - `atrium inbox list [--limit N] [--mark-read]`
 
 **Status**

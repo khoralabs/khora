@@ -180,44 +180,18 @@ async function main(
       return;
     }
 
-    if (a === "author" && b === "list") {
-      await handlers.authorList(ctx, flags);
+    if (a === "subscriptions" && b === "list") {
+      await handlers.subscriptionsList(ctx, positional, flags);
       return;
     }
 
-    if (a === "author" && b === "topic") {
-      if (c === "subscribe") {
-        await handlers.authorTopicSubscribe(ctx, positional[3], positional[4], flags);
-        return;
-      }
-      if (c === "unsubscribe") {
-        await handlers.authorTopicUnsubscribe(ctx, positional[3], positional[4], flags);
-        return;
-      }
-    }
-
-    if (a === "author" && b === "subscribe") {
-      await handlers.authorSubscribe(ctx, c, flags);
+    if (a === "subscriptions" && b === "create") {
+      await handlers.subscriptionsCreate(ctx, positional, flags);
       return;
     }
 
-    if (a === "author" && b === "unsubscribe") {
-      await handlers.authorUnsubscribe(ctx, c, flags);
-      return;
-    }
-
-    if (a === "topic" && b === "list") {
-      await handlers.topicList(ctx, flags);
-      return;
-    }
-
-    if (a === "topic" && b === "subscribe") {
-      await handlers.topicSubscribe(ctx, c, flags);
-      return;
-    }
-
-    if (a === "topic" && b === "unsubscribe") {
-      await handlers.topicUnsubscribe(ctx, c, flags);
+    if (a === "subscriptions" && b === "delete") {
+      await handlers.subscriptionsDelete(ctx, positional, flags);
       return;
     }
 

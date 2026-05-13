@@ -13,7 +13,7 @@ export async function runAuthorTopicUnsubscribeCommand(
     topicSlug === undefined ||
     topicSlug.trim().length === 0
   ) {
-    throw new Error("usage: atrium author topic unsubscribe <username> <topic-slug>");
+    throw new Error("usage: atrium subscriptions delete author-topic <username> <topic-slug>");
   }
   await ctx.client.unsubscribeAuthorTopic(username.trim(), topicSlug.trim());
 }

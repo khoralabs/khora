@@ -7,7 +7,7 @@ export async function runAuthorUnsubscribeCommand(
   _flags: FlagMap,
 ): Promise<void> {
   if (username === undefined || username.trim().length === 0) {
-    throw new Error("usage: atrium author unsubscribe <username>");
+    throw new Error("usage: atrium subscriptions delete author <username>");
   }
   await ctx.client.unsubscribeAuthor(username.trim());
 }
