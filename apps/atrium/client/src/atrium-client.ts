@@ -28,6 +28,11 @@ import {
 import { health } from "./http/health.ts";
 import { type InboxListResult, type ListInboxParams, listInbox } from "./http/inbox.ts";
 import { listInvites, previewInvite } from "./http/invites.ts";
+import {
+  searchMemories as httpSearchMemories,
+  type MemoriesSearchParams,
+  type MemorySearchHitWire,
+} from "./http/memories-search.ts";
 import { createPost, deletePost, getPost as httpGetPost, updatePost } from "./http/posts.ts";
 import { listProbes } from "./http/probes.ts";
 import {
@@ -41,9 +46,11 @@ import { listTopicSubscriptions, subscribeTopic, unsubscribeTopic } from "./http
 import { type AtriumFetch, createHttpTransport, type HttpTransport } from "./http/transport.ts";
 import { connectInbox, type InboxWsHandlers } from "./ws/inbox.ts";
 
+export type { SwarmHostSearchScope } from "@khoralabs/swarm-host";
 export type { AgentStatusSnapshot, AgentSyncSnapshot } from "./http/agent.ts";
 export type { AuthorSubscriptionsSnapshot } from "./http/authors.ts";
 export type { InboxListResult, ListInboxParams } from "./http/inbox.ts";
+export type { MemoriesSearchParams, MemorySearchHitWire } from "./http/memories-search.ts";
 export type { ProfileByUsernameResponse } from "./http/profile.ts";
 export type { AtriumFetch } from "./http/transport.ts";
 export type { InboxWsHandlers } from "./ws/inbox.ts";
@@ -231,6 +238,11 @@ export class AtriumClient {
   /** Fetch a post by id (`GET /v1/posts/:id`). Requires registration. */
   getPost(id: string): Promise<AtriumPost> {
     return httpGetPost(this.transport, id);
+  }
+
+  /** Hybrid Memories search (`POST /v1/memories/search`). Requires registration. */
+  searchMemories(params: MemoriesSearchParams): Promise<MemorySearchHitWire[]> {
+    return httpSearchMemories(this.transport, params);
   }
 
   /** Topic slugs this agent is currently subscribed to (`GET /v1/topics`). */

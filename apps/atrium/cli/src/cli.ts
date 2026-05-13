@@ -129,6 +129,11 @@ async function main(
       return;
     }
 
+    if (a === "memories" && b === "search") {
+      await handlers.memoriesSearch(ctx, positional, flags);
+      return;
+    }
+
     if (a === "post" && b === "show") {
       await handlers.postShow(ctx, c, flags);
       return;

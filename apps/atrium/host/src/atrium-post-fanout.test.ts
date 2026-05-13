@@ -1,9 +1,13 @@
 import { describe, expect, mock, test } from "bun:test";
 import { zAtriumPost } from "@khoralabs/atrium-contracts";
-import type { AgentNotification, InboxPostReason, SwarmHostEventHandlerCtx } from "@khoralabs/swarm-host";
-import { swarmHostOntology } from "@khoralabs/swarm-host";
-import { fanOutPostMatches } from "./atrium-post-fanout.ts";
+import type {
+  AgentNotification,
+  InboxPostReason,
+  SwarmHostEventHandlerCtx,
+} from "@khoralabs/swarm-host";
 import type { AtriumHostAppContext } from "./atrium-app-context.ts";
+import type { atriumMemoriesOntology } from "./atrium-memories-ontology.ts";
+import { fanOutPostMatches } from "./atrium-post-fanout.ts";
 import type { ProbeSubscribersRepo } from "./persistence/sqlite/index.ts";
 import {
   authorSubscriptionSubject,
@@ -11,8 +15,8 @@ import {
   topicSubscriptionSubject,
 } from "./subject-keys.ts";
 
-type TNode = typeof swarmHostOntology.nodeLabels;
-type TEdge = typeof swarmHostOntology.edgeLabels;
+type TNode = typeof atriumMemoriesOntology.nodeLabels;
+type TEdge = typeof atriumMemoriesOntology.edgeLabels;
 type FanoutCtx = SwarmHostEventHandlerCtx<TNode, TEdge> & {
   _enqueued: Array<{ did: string; note: AgentNotification }>;
 };
@@ -65,7 +69,8 @@ function makeCtx(params: {
     _enqueued: enqueued,
     persistence: {
       agentRegistrations: {
-        didForProfileId: (pid: string) => (pid === params.authorProfileId ? params.authorDid : undefined),
+        didForProfileId: (pid: string) =>
+          pid === params.authorProfileId ? params.authorDid : undefined,
       },
       agentSubjectSubscriptions: {
         subscriberDidsForSubject: (subject: string, exclude?: string) =>

@@ -25,6 +25,7 @@
     "@khoralabs/atrium-plugin-telemetry": "workspace:*",
     "@khoralabs/obp-bind-policy-zod": "workspace:*",
     "@khoralabs/obp-core": "workspace:*",
+    "@khoralabs/swarm-host": "workspace:*",
     "zod": "^4"
   },
   "devDependencies": {

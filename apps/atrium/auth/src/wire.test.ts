@@ -82,9 +82,7 @@ describe("canonicalAgentRequestPath", () => {
 
   test("preserves multi-value keys in URL order under a single allowlist entry", () => {
     const sp = new URLSearchParams("topic=a&topic=b");
-    expect(canonicalAgentRequestPath("/v1/feed", sp, ["topic"])).toBe(
-      "/v1/feed?topic=a&topic=b",
-    );
+    expect(canonicalAgentRequestPath("/v1/feed", sp, ["topic"])).toBe("/v1/feed?topic=a&topic=b");
   });
 });
 

@@ -18,9 +18,10 @@ import {
   minimalSourceMapForResolve,
   SWARM_EVENT_KIND,
   SwarmHost,
-  swarmHostOntology,
 } from "@khoralabs/swarm-host";
 import type { AtriumHostAppContext } from "./atrium-app-context.ts";
+import { atriumMemoriesOntology } from "./atrium-memories-ontology.ts";
+import { maybeAtriumMemoryAutolinkAfterSync } from "./atrium-memory-autolink.ts";
 import { atriumSwarmMemoryOpMapper } from "./atrium-memory-sync.ts";
 import { fanOutPostMatches } from "./atrium-post-fanout.ts";
 import {
@@ -39,8 +40,8 @@ import {
   createAtriumUsernamesRepo,
 } from "./usernames/atrium-usernames.ts";
 
-type TNode = typeof swarmHostOntology.nodeLabels;
-type TEdge = typeof swarmHostOntology.edgeLabels;
+type TNode = typeof atriumMemoriesOntology.nodeLabels;
+type TEdge = typeof atriumMemoriesOntology.edgeLabels;
 
 type EntityMap = { profile: AtriumProfile; post: AtriumPost };
 
@@ -86,7 +87,7 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
     },
   });
 
-  const memories = new MemoriesClient(persistence, swarmHostOntology, {
+  const memories = new MemoriesClient(persistence, atriumMemoriesOntology, {
     storeForNamespace: () => documentStore,
   });
 
@@ -149,85 +150,95 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
 
     onEvent: composeOnEventWithMemorySync(memories, mapMemoryOps, async (ctx, event) => {
       const ac = ctx.appContext as AtriumHostAppContext;
-
-      if (event.kind === SWARM_EVENT_KIND.REGISTRATION_PROFILE_BUILD) {
-        try {
-          const req = event.payload.request;
-          const meta = parseAtriumRegistrationMetadata(req.metadata);
-          const profile = zAtriumProfile.parse({
-            id: stableId("atrium_profile", req.did),
-            ...meta,
-          });
-          // Reserve username atomically. Handle the re-registration path
-          // (`ATRIUM_ALLOW_REREGISTER=1`) where the DID may already own a row.
-          const current = usernamesRepo.lookupByDid(req.did);
-          if (current === undefined) {
-            if (!usernamesRepo.tryReserve(req.did, profile.username)) {
-              event.payload.reject(new Error(USERNAME_TAKEN_REASON));
-              return;
+      try {
+        if (event.kind === SWARM_EVENT_KIND.REGISTRATION_PROFILE_BUILD) {
+          try {
+            const req = event.payload.request;
+            const meta = parseAtriumRegistrationMetadata(req.metadata);
+            const profile = zAtriumProfile.parse({
+              id: stableId("atrium_profile", req.did),
+              ...meta,
+            });
+            // Reserve username atomically. Handle the re-registration path
+            // (`ATRIUM_ALLOW_REREGISTER=1`) where the DID may already own a row.
+            const current = usernamesRepo.lookupByDid(req.did);
+            if (current === undefined) {
+              if (!usernamesRepo.tryReserve(req.did, profile.username)) {
+                event.payload.reject(new Error(USERNAME_TAKEN_REASON));
+                return;
+              }
+            } else if (current.username !== profile.username) {
+              const r = usernamesRepo.rename(req.did, profile.username);
+              if (!r.ok) {
+                event.payload.reject(new Error(USERNAME_TAKEN_REASON));
+                return;
+              }
             }
-          } else if (current.username !== profile.username) {
-            const r = usernamesRepo.rename(req.did, profile.username);
-            if (!r.ok) {
-              event.payload.reject(new Error(USERNAME_TAKEN_REASON));
-              return;
-            }
+            event.payload.fulfill(profile);
+          } catch (e) {
+            event.payload.reject(e);
           }
-          event.payload.fulfill(profile);
-        } catch (e) {
-          event.payload.reject(e);
-        }
-        return;
-      }
-
-      if (
-        event.kind === SWARM_EVENT_KIND.PROFILE_CREATED ||
-        event.kind === SWARM_EVENT_KIND.PROFILE_UPDATED
-      ) {
-        const profile = event.payload.profile;
-        ctx.persistenceClient.upsertProfile({
-          id: profile.id,
-          memoryId: ids.memory(ac.profileNamespace, profile.id),
-          bodyJson: JSON.stringify(profile),
-        });
-        return;
-      }
-
-      if (
-        event.kind === SWARM_EVENT_KIND.POST_CREATED ||
-        event.kind === SWARM_EVENT_KIND.POST_UPDATED
-      ) {
-        const post = event.payload.post;
-        ctx.persistenceClient.upsertPost({
-          id: post.id,
-          memoryId: ids.memory(
-            post.kind === "probe" ? ac.probeNamespace : ac.postNamespace,
-            post.id,
-          ),
-          bodyJson: JSON.stringify(post),
-        });
-
-        if (post.kind === "probe") {
-          await syncProbeSubscriber(probeSubscribers, ac, post);
+          return;
         }
 
-        if (event.kind === SWARM_EVENT_KIND.POST_CREATED) {
-          await fanOutPostMatches({
-            ctx,
-            probeSubscribers,
-            embeddingModel: ac.embeddingModel,
-            post,
+        if (
+          event.kind === SWARM_EVENT_KIND.PROFILE_CREATED ||
+          event.kind === SWARM_EVENT_KIND.PROFILE_UPDATED
+        ) {
+          const profile = event.payload.profile;
+          ctx.persistenceClient.upsertProfile({
+            id: profile.id,
+            memoryId: ids.memory(ac.profileNamespace, profile.id),
+            bodyJson: JSON.stringify(profile),
           });
+          return;
         }
-        return;
-      }
 
-      if (event.kind === SWARM_EVENT_KIND.POST_DELETED) {
-        const post = event.payload.post;
-        if (post.kind === "probe") {
-          probeSubscribers.delete(post.id);
+        if (
+          event.kind === SWARM_EVENT_KIND.POST_CREATED ||
+          event.kind === SWARM_EVENT_KIND.POST_UPDATED
+        ) {
+          const post = event.payload.post;
+          ctx.persistenceClient.upsertPost({
+            id: post.id,
+            memoryId: ids.memory(
+              post.kind === "probe" ? ac.probeNamespace : ac.postNamespace,
+              post.id,
+            ),
+            bodyJson: JSON.stringify(post),
+          });
+
+          if (post.kind === "probe") {
+            await syncProbeSubscriber(probeSubscribers, ac, post);
+          }
+
+          if (event.kind === SWARM_EVENT_KIND.POST_CREATED) {
+            await fanOutPostMatches({
+              ctx,
+              probeSubscribers,
+              embeddingModel: ac.embeddingModel,
+              post,
+            });
+          }
+          return;
         }
-        ctx.persistence.posts.deleteById(post.id);
+
+        if (event.kind === SWARM_EVENT_KIND.POST_DELETED) {
+          const post = event.payload.post;
+          if (post.kind === "probe") {
+            probeSubscribers.delete(post.id);
+          }
+          ctx.persistence.posts.deleteById(post.id);
+        }
+      } finally {
+        await maybeAtriumMemoryAutolinkAfterSync(
+          memories,
+          ac.embeddingModel,
+          ac.profileNamespace,
+          ac.postNamespace,
+          ac.probeNamespace,
+          event,
+        );
       }
     }),
   });

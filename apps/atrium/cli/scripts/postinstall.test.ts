@@ -9,7 +9,11 @@ let pkgDistDir: string;
 let home: string;
 
 const BASE_BODY = JSON.stringify(
-  { $schema: "./atrium-config.schema.json", baseUrl: "https://atr1.khoralabs.com", dataDir: "~/.atrium" },
+  {
+    $schema: "./atrium-config.schema.json",
+    baseUrl: "https://atr1.khoralabs.com",
+    dataDir: "~/.atrium",
+  },
   null,
   2,
 );
@@ -54,7 +58,11 @@ describe("runAtriumPostinstall", () => {
     const result = runAtriumPostinstall({ pkgDistDir, home });
     const dest = path.join(home, ".atrium");
     expect(result.destDir).toBe(dest);
-    expect(result.copied.sort()).toEqual(["base.config.json", "cli.config.json", "daemon.config.json"]);
+    expect(result.copied.sort()).toEqual([
+      "base.config.json",
+      "cli.config.json",
+      "daemon.config.json",
+    ]);
     expect(result.skipped).toEqual([]);
     expect(result.schemaCopied).toBe(true);
     expect(existsSync(path.join(dest, "base.config.json"))).toBe(true);

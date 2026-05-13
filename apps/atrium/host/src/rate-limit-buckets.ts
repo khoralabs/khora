@@ -13,6 +13,7 @@ export type HostRateLimiters = {
   defaultIp: RateLimiter;
   invitePreviewIp: RateLimiter;
   invitesListDid: RateLimiter;
+  memoriesSearchDid: RateLimiter;
 };
 
 export function createHostRateLimiters(): HostRateLimiters {
@@ -42,6 +43,9 @@ export function createHostRateLimiters(): HostRateLimiters {
     ),
     invitesListDid: createRateLimiter(
       envRatePerMinute(process.env.ATRIUM_RL_INVITES_LIST_PER_MIN_PER_DID, 60),
+    ),
+    memoriesSearchDid: createRateLimiter(
+      envRatePerMinute(process.env.ATRIUM_RL_MEMORIES_SEARCH_PER_MIN_PER_DID, 60),
     ),
   };
 }

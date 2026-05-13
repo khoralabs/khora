@@ -19,11 +19,7 @@ import path from "node:path";
 
 const LITESTREAM_VERSION = "0.5.11";
 
-const DEFAULT_BIN_PATH = path.resolve(
-  import.meta.dir,
-  "..",
-  "apps/atrium/host/.bin/litestream",
-);
+const DEFAULT_BIN_PATH = path.resolve(import.meta.dir, "..", "apps/atrium/host/.bin/litestream");
 
 type ReleaseTarget = {
   os: "linux" | "darwin";

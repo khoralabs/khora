@@ -11,6 +11,7 @@ import type { HostRouteDeps } from "./deps.ts";
 import { handleHealth } from "./health.ts";
 import { handleInboxList, handleInboxWsUpgrade } from "./inbox.ts";
 import { handleInvitePreview, handleListInvites } from "./invites.ts";
+import { handleMemoriesSearch } from "./memories-search.ts";
 import { handleCreatePost, handleDeletePost, handleGetPost, handleUpdatePost } from "./posts.ts";
 import { handleListProbes } from "./probes.ts";
 import { handleProfileByDid, handleProfileByUsername, handleUpdateProfile } from "./profile.ts";
@@ -66,6 +67,10 @@ export async function route(
 
   if (req.method === "GET" && url.pathname === "/v1/agent/status") {
     return handleAgentStatus(req, url, deps);
+  }
+
+  if (req.method === "POST" && url.pathname === "/v1/memories/search") {
+    return handleMemoriesSearch(req, url, deps);
   }
 
   if (req.method === "GET" && url.pathname === "/v1/topics") {

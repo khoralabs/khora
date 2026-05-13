@@ -40,10 +40,10 @@ export type {
 export {
   type AgentStatusSnapshot,
   type AgentSyncSnapshot,
-  type AuthorSubscriptionsSnapshot,
   AtriumClient,
   type AtriumClientOptions,
   type AtriumFetch,
+  type AuthorSubscriptionsSnapshot,
   type InboxListResult,
   type InboxWsHandlers,
   type ListInboxParams,

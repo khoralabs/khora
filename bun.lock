@@ -36,9 +36,6 @@
     "apps/atrium/cli": {
       "name": "@khoralabs/atrium-cli",
       "version": "0.0.0",
-      "bin": {
-        "atrium": "./src/cli.ts",
-      },
       "dependencies": {
         "@khoralabs/atrium-auth": "workspace:*",
         "@khoralabs/atrium-client": "workspace:*",
@@ -48,6 +45,7 @@
         "@khoralabs/atrium-plugin-telemetry": "workspace:*",
         "@khoralabs/obp-bind-policy-zod": "workspace:*",
         "@khoralabs/obp-core": "workspace:*",
+        "@khoralabs/swarm-host": "workspace:*",
         "zod": "^4",
       },
       "devDependencies": {
@@ -93,9 +91,6 @@
     "apps/atrium/daemon": {
       "name": "@khoralabs/atrium-daemon",
       "version": "0.0.0",
-      "bin": {
-        "atrium-daemon": "./src/main.ts",
-      },
       "dependencies": {
         "@khoralabs/atrium-auth": "workspace:*",
         "@khoralabs/atrium-client": "workspace:*",
@@ -114,6 +109,7 @@
       "dependencies": {
         "@khoralabs/atrium-auth": "workspace:*",
         "@khoralabs/atrium-contracts": "workspace:*",
+        "@khoralabs/memories-autolink": "workspace:*",
         "@khoralabs/memories-core": "workspace:*",
         "@khoralabs/memories-sqlite": "workspace:*",
         "@khoralabs/sqlite-migrate": "workspace:*",

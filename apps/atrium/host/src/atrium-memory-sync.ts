@@ -3,7 +3,6 @@ import {
   type AtriumProfile,
   atriumPostLexicalText,
   atriumPostObservationSummary,
-  atriumProfileLexicalText,
 } from "@khoralabs/atrium-contracts";
 import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import { embedTextChunks } from "@khoralabs/memories-core/helpers";
@@ -11,12 +10,12 @@ import {
   SWARM_EVENT_KIND,
   type SwarmHostEventUnion,
   type SwarmMemoryOpMapper,
-  type swarmHostOntology,
 } from "@khoralabs/swarm-host";
 import type { AtriumHostAppContext } from "./atrium-app-context.ts";
+import type { atriumMemoriesOntology } from "./atrium-memories-ontology.ts";
 
-type TNode = typeof swarmHostOntology.nodeLabels;
-type TEdge = typeof swarmHostOntology.edgeLabels;
+type TNode = typeof atriumMemoriesOntology.nodeLabels;
+type TEdge = typeof atriumMemoriesOntology.edgeLabels;
 
 async function mergeContentWithOptionalVector(
   embeddingModel: EmbeddingModel | undefined,
@@ -35,6 +34,79 @@ async function mergeContentWithOptionalVector(
   return [{ key: sourceKey, text, vector }];
 }
 
+/** Per-field text rows for profile memory (`username` is `@handle` for search UX). */
+export function atriumProfileMemoryFieldTexts(
+  profile: AtriumProfile,
+): Array<{ key: string; text: string }> {
+  const fields: Array<{ key: string; text: string }> = [];
+  if (profile.username.trim().length > 0) {
+    fields.push({ key: "username", text: `@${profile.username}` });
+  }
+  if (profile.displayName !== undefined && profile.displayName.trim().length > 0) {
+    fields.push({ key: "displayName", text: profile.displayName });
+  }
+  if (profile.bio !== undefined && profile.bio.trim().length > 0) {
+    fields.push({ key: "bio", text: profile.bio });
+  }
+  if (fields.length === 0) {
+    fields.push({ key: "id", text: profile.id });
+  }
+  return fields;
+}
+
+/** Per-field text rows for post / probe memory. */
+export function atriumPostMemoryFieldTexts(post: AtriumPost): Array<{ key: string; text: string }> {
+  const fields: Array<{ key: string; text: string }> = [];
+  if (post.title !== undefined && post.title.trim().length > 0) {
+    fields.push({ key: "title", text: post.title });
+  }
+  const topicLine =
+    post.topics !== undefined && post.topics.length > 0
+      ? post.topics.map((t) => `#${t}`).join(" ")
+      : "";
+  if (topicLine.length > 0) {
+    fields.push({ key: "topics", text: topicLine });
+  }
+  if (post.body.trim().length > 0) {
+    fields.push({ key: "body", text: post.body });
+  }
+  if (
+    post.kind === "probe" &&
+    post.matchPostKinds !== undefined &&
+    post.matchPostKinds.length > 0
+  ) {
+    fields.push({ key: "matchKinds", text: post.matchPostKinds.join(" ") });
+  }
+  if (fields.length === 0) {
+    fields.push({ key: "id", text: post.id });
+  }
+  return fields;
+}
+
+/** Summary string for hybrid / autolink retrieval (aligned with indexed profile fields). */
+export function atriumProfileRetrievalSummaryText(profile: AtriumProfile): string {
+  return atriumProfileMemoryFieldTexts(profile)
+    .map((f) => f.text)
+    .join("\n\n");
+}
+
+/** Summary string for hybrid / autolink retrieval on posts (matches legacy lexical join). */
+export function atriumPostRetrievalSummaryText(post: AtriumPost): string {
+  return atriumPostLexicalText(post).trim().length > 0 ? atriumPostLexicalText(post) : post.id;
+}
+
+export async function buildMultiFieldMergeContent(
+  embeddingModel: EmbeddingModel | undefined,
+  fields: Array<{ key: string; text: string }>,
+): Promise<Array<{ key: string; text: string; vector?: number[] }>> {
+  const out: Array<{ key: string; text: string; vector?: number[] }> = [];
+  for (const f of fields) {
+    const items = await mergeContentWithOptionalVector(embeddingModel, f.key, f.text);
+    out.push(...items);
+  }
+  return out;
+}
+
 /** Maps swarm profile/post events to Memories merge/delete ops (uses {@link AtriumHostAppContext} only). */
 export function atriumSwarmMemoryOpMapper(
   ac: AtriumHostAppContext,
@@ -45,12 +117,8 @@ export function atriumSwarmMemoryOpMapper(
       event.kind === SWARM_EVENT_KIND.PROFILE_UPDATED
     ) {
       const profile = event.payload.profile;
-      const text = atriumProfileLexicalText(profile);
-      const content = await mergeContentWithOptionalVector(
-        ac.embeddingModel,
-        `profile:${profile.id}`,
-        text,
-      );
+      const fields = atriumProfileMemoryFieldTexts(profile);
+      const content = await buildMultiFieldMergeContent(ac.embeddingModel, fields);
       return [
         {
           op: "merge" as const,
@@ -74,12 +142,8 @@ export function atriumSwarmMemoryOpMapper(
       event.kind === SWARM_EVENT_KIND.POST_UPDATED
     ) {
       const post = event.payload.post;
-      const text = atriumPostLexicalText(post);
-      const content = await mergeContentWithOptionalVector(
-        ac.embeddingModel,
-        `${post.kind}:${post.id}`,
-        text,
-      );
+      const fields = atriumPostMemoryFieldTexts(post);
+      const content = await buildMultiFieldMergeContent(ac.embeddingModel, fields);
 
       if (post.kind === "probe") {
         return [

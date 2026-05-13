@@ -77,9 +77,13 @@ export type MetaPkgJsonInput = {
 
 const REPO_URL_DEFAULT = "git+https://github.com/khoralabs/agent-kernel.git";
 
-export function cliMetaPkgJson({ version, repoUrl = REPO_URL_DEFAULT }: MetaPkgJsonInput): Record<string, unknown> {
+export function cliMetaPkgJson({
+  version,
+  repoUrl = REPO_URL_DEFAULT,
+}: MetaPkgJsonInput): Record<string, unknown> {
   const optionalDependencies: Record<string, string> = {};
-  for (const t of SUPPORTED_TARGETS) optionalDependencies[`@khoralabs/atrium-cli-${t.slug}`] = version;
+  for (const t of SUPPORTED_TARGETS)
+    optionalDependencies[`@khoralabs/atrium-cli-${t.slug}`] = version;
   return {
     name: "@khoralabs/atrium-cli",
     version,
@@ -106,9 +110,13 @@ export function cliMetaPkgJson({ version, repoUrl = REPO_URL_DEFAULT }: MetaPkgJ
   };
 }
 
-export function daemonMetaPkgJson({ version, repoUrl = REPO_URL_DEFAULT }: MetaPkgJsonInput): Record<string, unknown> {
+export function daemonMetaPkgJson({
+  version,
+  repoUrl = REPO_URL_DEFAULT,
+}: MetaPkgJsonInput): Record<string, unknown> {
   const optionalDependencies: Record<string, string> = {};
-  for (const t of SUPPORTED_TARGETS) optionalDependencies[`@khoralabs/atrium-daemon-${t.slug}`] = version;
+  for (const t of SUPPORTED_TARGETS)
+    optionalDependencies[`@khoralabs/atrium-daemon-${t.slug}`] = version;
   return {
     name: "@khoralabs/atrium-daemon",
     version,
@@ -255,10 +263,7 @@ export async function stageAtriumRelease(opts: StageOptions): Promise<StageResul
   // canonical configs
   const configsSrc = path.join(workspaceRoot, "apps/atrium/cli/assets/configs");
   for (const name of ["base.config.json", "cli.config.json", "daemon.config.json"]) {
-    await Bun.write(
-      path.join(cliMetaDir, "configs", name),
-      Bun.file(path.join(configsSrc, name)),
-    );
+    await Bun.write(path.join(cliMetaDir, "configs", name), Bun.file(path.join(configsSrc, name)));
   }
 
   // json schema (built via build:schema upstream)
@@ -266,10 +271,7 @@ export async function stageAtriumRelease(opts: StageOptions): Promise<StageResul
   if (!existsSync(schemaSrc)) {
     throw new Error(`missing atrium-config.schema.json at ${schemaSrc} — run build:schema first`);
   }
-  await Bun.write(
-    path.join(cliMetaDir, "atrium-config.schema.json"),
-    Bun.file(schemaSrc),
-  );
+  await Bun.write(path.join(cliMetaDir, "atrium-config.schema.json"), Bun.file(schemaSrc));
 
   await writeJson(path.join(cliMetaDir, "package.json"), cliMetaPkgJson({ version }));
   const cliReadme = path.join(workspaceRoot, "apps/atrium/cli/README.md");
@@ -290,5 +292,7 @@ if (import.meta.main) {
   const workspaceRoot = path.resolve(import.meta.dir, "..");
   const releaseDir = path.join(workspaceRoot, "apps/atrium/release");
   const result = await stageAtriumRelease({ workspaceRoot, releaseDir, version });
-  console.log(`staged ${result.packages.length} packages under ${path.relative(process.cwd(), result.releaseDir)}`);
+  console.log(
+    `staged ${result.packages.length} packages under ${path.relative(process.cwd(), result.releaseDir)}`,
+  );
 }

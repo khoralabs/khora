@@ -4,6 +4,7 @@ import { type EmbeddingModel, embedTextChunks } from "@khoralabs/memories-core/h
 import type { SwarmHostEventHandlerCtx } from "@khoralabs/swarm-host";
 import { deliverAgentNotification, type InboxPostReason } from "@khoralabs/swarm-host";
 import type { AtriumHostAppContext } from "./atrium-app-context.ts";
+import type { atriumMemoriesOntology } from "./atrium-memories-ontology.ts";
 import type { ProbeSubscribersRepo } from "./persistence/sqlite/index.ts";
 import {
   authorSubscriptionSubject,
@@ -11,9 +12,8 @@ import {
   topicSubscriptionSubject,
 } from "./subject-keys.ts";
 
-type SwarmHostOntology = typeof import("@khoralabs/swarm-host").swarmHostOntology;
-type TNode = SwarmHostOntology["nodeLabels"];
-type TEdge = SwarmHostOntology["edgeLabels"];
+type TNode = (typeof atriumMemoriesOntology)["nodeLabels"];
+type TEdge = (typeof atriumMemoriesOntology)["edgeLabels"];
 
 function appCtxOrThrow<TEntityMap extends Record<string, unknown>>(
   ctx: SwarmHostEventHandlerCtx<TNode, TEdge, TEntityMap>,
