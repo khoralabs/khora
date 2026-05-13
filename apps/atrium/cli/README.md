@@ -80,10 +80,14 @@ wizard** if you run them with no arguments.
 - `atrium update [--check|--apply] [--tag latest|next] [--manager npm|pnpm|yarn|bun] [--json]` — check for / install a new release
 - `atrium config path | show [--raw|--source] | edit` — inspect or edit the active config
 
+**OBP rooms**
+- `atrium room create …` / `atrium room list` — server-minted relay rooms
+- `atrium room join <roomId> [<ticket>] [-b|--background]` — run a **room handler** daemon in the foreground (attached TTY); `-b` / `--background` detaches and logs under `<dataDir>/daemons/rooms/` (one process per room; see [Daemon](#daemon))
+
 **Daemon control** (see [Daemon](#daemon) below)
-- `atrium start [-b|--background] [--log <path>]`
-- `atrium status [--json]`
-- `atrium kill [--force] [--timeout <ms>]`
+- `atrium start [-b|--background] [--log <path>]` — inbox observer
+- `atrium status [--json]` — inbox + room handlers
+- `atrium kill [--force] [--timeout <ms>] [--all] [--pid <n>]`
 
 Run `atrium <command> --help` for the full surface of any single command, or
 `atrium help` for the top-level summary.
@@ -130,28 +134,37 @@ Set a plugin id to `false` to disable an inherited entry.
 | `ATRIUM_PROFILE_SYNC_PATH` | Enable the profile-sync plugin (writes a profile snapshot to this path) |
 | `ATRIUM_TELEMETRY_DIR` | Enable the telemetry plugin (JSONL events under this directory) |
 | `ATRIUM_TELEMETRY_MAX_BYTES` | Rotation threshold for telemetry (default 4 MB) |
+| `ATRIUM_DAEMON_BIN` | Path to the daemon executable (native release); dev uses Bun on the TS entry |
+| `ATRIUM_OBP_STORE_ROOT` | Optional override for OBP SQLite files (default `<dataDir>/obp`) |
 
 ## Daemon
 
 The CLI is invocation-scoped — each command opens a connection, does its work,
-and exits. For **live inbox notifications**, install the companion daemon and
-keep it running:
+and exits. For **live inbox notifications**, run the **inbox observer**; for an
+**OBP relay room**, run a **room handler** (at most one process per `roomId` on
+this machine):
 
 ```bash
-atrium start -b       # background; prints {pid, log} as JSON
-atrium status         # 0 = running, 2 = stale PID, 3 = not running
-atrium kill           # SIGTERM, then SIGKILL after --timeout (default 5s)
-atrium kill --force   # immediate SIGKILL
+atrium start -b       # inbox observer (background); prints {pid, log} as JSON with --json
+atrium room join <roomId>      # room handler (foreground); stdio attached to this terminal
+atrium room join <roomId> -b   # room handler (background); one PID per room; log under daemons/rooms/
+atrium status         # lists inbox + room handlers; exit 2 if any stale PID file
+atrium kill           # stop inbox observer only (default)
+atrium kill --all     # stop every registered inbox/room PID
+atrium kill --pid N   # stop only if N is a known atrium PID (safe)
+atrium kill --force   # immediate SIGKILL (with default or --all / --pid)
 ```
 
-Only one daemon may run per machine. The lock is a PID file at
-`${ATRIUM_DATA_DIR}/daemon.pid` (or `~/.atrium/daemon.pid`); background logs go
-to the matching `daemon.log` unless you pass `--log <path>`. Stale locks
-(process gone but file present) are auto-cleaned on the next `start`.
+The inbox lock is `${ATRIUM_DATA_DIR}/daemon.pid` with `daemon.log`. Each room
+handler uses `${ATRIUM_DATA_DIR}/daemons/rooms/<encoded-room-id>.{pid,log,meta.json}`.
+OBP chain data for daemons lives under `${ATRIUM_DATA_DIR}/obp/` (or
+`ATRIUM_OBP_STORE_ROOT`), separated by room id (and optional chain-specific files
+later). Stale PID files are cleared by `kill` or the next successful `start` /
+`room join`.
 
-If you'd prefer to run the daemon under your own process supervisor, install
+If you'd prefer to run processes under your own supervisor, install
 [`@khoralabs/atrium-daemon`](https://www.npmjs.com/package/@khoralabs/atrium-daemon)
-directly — it shares the same identity and config file.
+and set `ATRIUM_DAEMON_KIND`, `ATRIUM_ROOM_ID`, and `ATRIUM_ROOM_WS_URL` for room mode.
 
 ## Updating
 
@@ -176,7 +189,9 @@ manager you used to install (auto-detected; override with `--manager`).
 | `~/.atrium/cli.config.json` | CLI overrides + plugin settings |
 | `~/.atrium/daemon.config.json` | Daemon overrides + plugin settings |
 | `~/.atrium/atrium-config.schema.json` | JSON Schema for IDE IntelliSense |
-| `~/.atrium/daemon.{pid,log}` | Daemon lock + log (when running in background) |
+| `~/.atrium/daemon.{pid,log}` | Inbox observer lock + log (background) |
+| `~/.atrium/daemons/rooms/*` | Room handler PID, log, and metadata |
+| `~/.atrium/obp/` | Shared OBP SQLite stores (namespaced per room / inbox) |
 
 `atrium setup` re-creates any of these from the canonical defaults shipped with
 the binary. `atrium setup --force` overwrites existing files (your identity is

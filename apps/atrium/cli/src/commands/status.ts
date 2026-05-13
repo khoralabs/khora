@@ -1,4 +1,4 @@
-import { type DaemonPidPathConfig, readDaemonStatus } from "@khoralabs/atrium-daemon";
+import { type DaemonPidPathConfig, listRegisteredDaemons } from "@khoralabs/atrium-daemon";
 import { cliAppConfig } from "../app-config.ts";
 import { boolFlag } from "./parse.ts";
 import type { FlagMap } from "./types.ts";
@@ -15,23 +15,29 @@ const DEFAULT_IO: StatusCommandIo = {
 
 /** Pure entry point for tests. `cfg` and `io` injected so the singleton is not required. */
 export function runStatusWith(flags: FlagMap, cfg: DaemonPidPathConfig, io: StatusCommandIo): void {
-  const status = readDaemonStatus(cfg);
+  const entries = listRegisteredDaemons(cfg);
+  const hasStale = entries.some((e) => e.state === "stale");
+  const hasRunning = entries.some((e) => e.state === "running");
+
   if (boolFlag(flags, "json")) {
-    io.log(JSON.stringify(status));
-    if (status.state === "stale") io.exit(2);
-    if (status.state === "not-running") io.exit(3);
+    io.log(JSON.stringify({ entries, hasRunning, hasStale }, null, 2));
+    if (hasStale) io.exit(2);
     return;
   }
-  if (status.state === "running") {
-    io.log(`running pid=${status.pid} log=${status.logPath}`);
-    return;
+
+  io.log("kind\tpid\tstate\troomId\tpidPath\tlogPath");
+  for (const e of entries) {
+    const pidCol = e.pid !== undefined ? String(e.pid) : "-";
+    const roomCol = e.kind === "room" ? (e.roomId ?? "-") : "";
+    io.log(`${e.kind}\t${pidCol}\t${e.state}\t${roomCol}\t${e.pidPath}\t${e.logPath}`);
   }
-  if (status.state === "stale") {
-    io.log(`stale pid=${status.pid} (process gone) — run 'atrium kill' to clear ${status.pidPath}`);
+  if (!hasRunning) {
+    io.log("No Atrium daemons running.");
+  }
+  if (hasStale) {
+    io.log("Some PID files are stale — run 'atrium kill --all' or 'atrium kill' per daemon.");
     io.exit(2);
   }
-  io.log("not running");
-  io.exit(3);
 }
 
 export function runStatusCommand(flags: FlagMap): void {

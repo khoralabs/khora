@@ -125,7 +125,7 @@ Commands:
   search <query…> [--scope …] [--namespace …] [--search-scope-mode …] [--include …] [--limit N] [--json]
   room create [--target-username …] [--target-did …] [--ttl-ms …] [--json]
   room list [--json]
-  room join <roomId> [<ticket>] [--json]
+  room join <roomId> [<ticket>] [--json] [-b|--background]
   post create [--body …] [--title …] [--topics a,b] [--kind post|probe|status]
   post show <post-id>
   post update <id> [--body …] [--title …] [--topics …] [--kind …]

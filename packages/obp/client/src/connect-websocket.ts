@@ -26,7 +26,8 @@ export type ObpFrameChannelClientOptions = {
   sessionEnvelopeSync?: boolean;
 };
 
-export type ObpWebSocketConnectOptions = ObpFrameChannelClientOptions & {
+/** Same fields as {@link ObpFrameChannelClientOptions} except `channel` — {@link connectObpWebSocketSession} wires the WebSocket internally. */
+export type ObpWebSocketConnectOptions = Omit<ObpFrameChannelClientOptions, "channel"> & {
   /**
    * Full WebSocket URL including path and `ticket` query param, e.g.
    * `ws://127.0.0.1:3000/v1/atrium/rooms/my-room/ws?ticket=…`

@@ -5,19 +5,19 @@ import type { DaemonAppConfig } from "./app-config.ts";
 
 export type DaemonPidPathConfig = Pick<DaemonAppConfig, "dataDir">;
 
-function daemonStateRoot(cfg: DaemonPidPathConfig): string {
+export function daemonDataRoot(cfg: DaemonPidPathConfig): string {
   const dir = cfg.dataDir?.trim();
   if (dir !== undefined && dir.length > 0) return path.resolve(dir);
   return path.join(homedir(), ".atrium");
 }
 
 export function daemonPidPath(cfg: DaemonPidPathConfig): string {
-  return path.join(daemonStateRoot(cfg), "daemon.pid");
+  return path.join(daemonDataRoot(cfg), "daemon.pid");
 }
 
 export function daemonLogPath(cfg: DaemonPidPathConfig, override?: string): string {
   if (override !== undefined && override.trim().length > 0) return path.resolve(override.trim());
-  return path.join(daemonStateRoot(cfg), "daemon.log");
+  return path.join(daemonDataRoot(cfg), "daemon.log");
 }
 
 /** Thrown when another live daemon already holds the PID lock. */

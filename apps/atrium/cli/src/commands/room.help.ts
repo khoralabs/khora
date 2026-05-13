@@ -15,7 +15,10 @@ export const roomListHelp: CommandHelp = {
 
 export const roomJoinHelp: CommandHelp = {
   command: "room join",
-  summary: "Print WebSocket URL: with a ticket from an invite, or with only roomId to mint a fresh ticket (rejoin).",
-  args: `atrium room join <roomId> [<ticket>] [--json]
-  If <ticket> is omitted, calls POST /v1/atrium/rooms/:roomId/ticket (must be creator or invitee).`,
+  summary:
+    "Run a room-handler daemon (one OS process per room; OBP store under <dataDir>/obp/rooms/…); foreground unless --background.",
+  args: `atrium room join <roomId> [<ticket>] [--json] [--background|-b]
+  If <ticket> is omitted, mints a ticket via POST /v1/atrium/rooms/:roomId/ticket (creator or invitee).
+  Default: run the room daemon attached to this terminal (stdio inherited).
+  --background, -b   Detach; logs to <dataDir>/daemons/rooms/<room>.log.`,
 };

@@ -1,7 +1,7 @@
 {
   "name": "@khoralabs/atrium-daemon",
   "version": "0.0.0",
-  "description": "Inbox WebSocket listener. Env: ATRIUM_BASE_URL, ATRIUM_AGENT_KEY_PATH; optional inbox-buffer plugin via ATRIUM_DATA_DIR + ATRIUM_INBOX_BUFFER_DB. JSON lines: ATRIUM_DAEMON_JSON=1 or --json.",
+  "description": "Atrium long-lived processes: inbox observer (default) and per-room OBP handlers (ATRIUM_DAEMON_KIND=room + ATRIUM_ROOM_ID, ATRIUM_ROOM_WS_URL). Shared OBP store: ATRIUM_OBP_STORE_ROOT or <dataDir>/obp. JSON logs: ATRIUM_DAEMON_JSON=1 or --json.",
   "type": "module",
   "private": true,
   "module": "src/index.ts",
@@ -20,13 +20,20 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "test": "bun test",
     "start": "bun run src/main.ts",
     "build": "bun run scripts/build.ts"
   },
   "dependencies": {
     "@khoralabs/atrium-auth": "workspace:*",
     "@khoralabs/atrium-client": "workspace:*",
-    "@khoralabs/atrium-plugin-inbox-buffer": "workspace:*"
+    "@khoralabs/atrium-plugin-inbox-buffer": "workspace:*",
+    "@khoralabs/obp-client": "workspace:*",
+    "@khoralabs/obp-core": "workspace:*",
+    "@khoralabs/obp-sqlite": "workspace:*",
+    "@noble/ed25519": "^3.1.0",
+    "iso-base": "^4.2.1",
+    "iso-signatures": "^0.5.1"
   },
   "devDependencies": {
     "@types/bun": "latest",

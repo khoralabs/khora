@@ -27,7 +27,8 @@ export function resolveDaemonInvocation(env: NodeJS.ProcessEnv = process.env): s
   return ["bun", "run", script];
 }
 
-function buildPassthroughArgs(flags: FlagMap): string[] {
+/** Args forwarded to the atrium-daemon binary (`--config`, `--json`). */
+export function buildDaemonPassthroughArgs(flags: FlagMap): string[] {
   const out: string[] = [];
   const cfg = strFlag(flags, "config");
   if (cfg !== undefined) out.push("--config", cfg);
@@ -56,7 +57,7 @@ export async function runStartCommand(flags: FlagMap): Promise<void> {
   }
 
   const background = boolFlag(flags, "background", "b");
-  const passthrough = buildPassthroughArgs(flags);
+  const passthrough = buildDaemonPassthroughArgs(flags);
   const cmd = [...resolveDaemonInvocation(), ...passthrough];
 
   if (!background) {
