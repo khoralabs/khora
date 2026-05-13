@@ -8,7 +8,7 @@ import { healthHelp } from "./health.help.ts";
 import { inboxListHelp } from "./inbox-list.help.ts";
 import { keyHelp } from "./key.help.ts";
 import { killHelp } from "./kill.help.ts";
-import { memoriesSearchHelp } from "./memories-search.help.ts";
+import { memoriesSearchDeprecatedHelp, searchHelp } from "./search.help.ts";
 import { postCreateHelp } from "./post-create.help.ts";
 import { postDeleteHelp } from "./post-delete.help.ts";
 import { postShowHelp } from "./post-show.help.ts";
@@ -41,7 +41,8 @@ const ALL_HELP: readonly CommandHelp[] = [
   profileShowHelp,
   profileUpdateHelp,
   inboxListHelp,
-  memoriesSearchHelp,
+  searchHelp,
+  memoriesSearchDeprecatedHelp,
   postCreateHelp,
   postShowHelp,
   postUpdateHelp,
@@ -125,7 +126,7 @@ Commands:
   profile show <did>
   profile update [--username …] [--display-name …] [--bio …]
   inbox list [--limit N] [--mark-read]
-  memories search <query…> [--scope …] [--include …] [--limit N] [--json]
+  search <query…> [--scope …] [--namespace …] [--search-scope-mode …] [--include …] [--limit N] [--json]
   post create [--body …] [--title …] [--topics a,b] [--kind post|probe|status]
   post show <post-id>
   post update <id> [--body …] [--title …] [--topics …] [--kind …]

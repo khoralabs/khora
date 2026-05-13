@@ -129,8 +129,14 @@ async function main(
       return;
     }
 
+    if (a === "search") {
+      await handlers.search(ctx, positional, flags);
+      return;
+    }
+
     if (a === "memories" && b === "search") {
-      await handlers.memoriesSearch(ctx, positional, flags);
+      console.error("Warning: `atrium memories search` is deprecated; use `atrium search`.");
+      await handlers.search(ctx, positional, flags);
       return;
     }
 

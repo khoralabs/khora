@@ -25,11 +25,14 @@ const zSwarmHostSearchScope: z.ZodType<SwarmHostSearchScope> = z.discriminatedUn
   }),
 ]);
 
+const zSearchScopeMode = z.enum(["pathSubtree", "scopeDag", "exactScope"]);
+
 const zMemoriesSearchBody = z.object({
   query: z.string().trim().min(1),
   scope: zSwarmHostSearchScope,
   limit: z.number().int().min(1).max(100).optional(),
   minScore: z.number().min(0).max(1).optional(),
+  searchScopeMode: zSearchScopeMode.optional(),
 });
 
 function scopeReferencesTopics(scope: SwarmHostSearchScope): boolean {
@@ -40,6 +43,15 @@ function scopeReferencesTopics(scope: SwarmHostSearchScope): boolean {
   return false;
 }
 
+/**
+ * Hybrid memory search (`POST /v1/memories/search`).
+ *
+ * **Scope DAG reads:** primary rows stay in `atrium/profiles`, `atrium/posts`, etc. For buckets like
+ * `atrium/<profileId>` or `atrium/<topicSlug>`, merges attach DAG scopes and the host links the scope graph.
+ * Search with `{ "scope": { "kind": "raw", "namespace": "atrium/<profileId>" }, "searchScopeMode": "scopeDag" }`
+ * (default mode is `pathSubtree`, which only prefixes the primary `namespace` column).
+ * Re-touch: run a profile/post update (or reindex) so merges refresh `attachScopes` on existing rows.
+ */
 export async function handleMemoriesSearch(
   req: Request,
   url: URL,
@@ -89,6 +101,7 @@ export async function handleMemoriesSearch(
         ...(body.minScore !== undefined ? { minScore: body.minScore } : {}),
         ...(!hasEmbedding ? { arms: { lexical: 1, vector: 0 } } : {}),
       },
+      ...(body.searchScopeMode !== undefined ? { searchScopeMode: body.searchScopeMode } : {}),
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

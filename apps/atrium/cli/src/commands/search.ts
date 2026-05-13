@@ -3,6 +3,9 @@ import type { AtriumCliContext } from "../flows/context.ts";
 import { boolFlag, strFlag } from "./parse.ts";
 import type { FlagMap } from "./types.ts";
 
+const SEARCH_SCOPE_MODES = ["pathSubtree", "scopeDag", "exactScope"] as const;
+type SearchScopeMode = (typeof SEARCH_SCOPE_MODES)[number];
+
 function parseEntityKinds(raw: string | undefined): SwarmHostMemoryEntityKind[] {
   if (raw === undefined || raw.trim().length === 0) {
     return ["profiles", "posts", "probes"];
@@ -28,13 +31,20 @@ function parseEntityKinds(raw: string | undefined): SwarmHostMemoryEntityKind[] 
     if (!out.includes(k)) out.push(k);
   }
   if (out.length === 0) {
-    throw new Error("atrium memories search: --include produced an empty list");
+    throw new Error("atrium search: --include produced an empty list");
   }
   return out;
 }
 
 function parseScope(flags: FlagMap): SwarmHostSearchScope {
   const sk = strFlag(flags, "scope")?.toLowerCase();
+  if (sk === "raw") {
+    const ns = strFlag(flags, "namespace");
+    if (ns === undefined || ns.trim().length === 0) {
+      throw new Error("atrium search: --scope raw requires --namespace <path>");
+    }
+    return { kind: "raw", namespace: ns.trim() };
+  }
   if (sk === undefined || sk === "multi") {
     return { kind: "multi", includes: parseEntityKinds(strFlag(flags, "include")) };
   }
@@ -42,37 +52,58 @@ function parseScope(flags: FlagMap): SwarmHostSearchScope {
   if (sk === "posts") return { kind: "posts" };
   if (sk === "topics") return { kind: "topics" };
   if (sk === "probes") return { kind: "probes" };
-  throw new Error(`Unknown --scope "${sk}" (use multi, profiles, posts, topics, probes)`);
+  throw new Error(`Unknown --scope "${sk}" (use multi, profiles, posts, topics, probes, raw)`);
 }
 
-export async function runMemoriesSearchCommand(
+function parseSearchScopeMode(flags: FlagMap): SearchScopeMode | undefined {
+  const raw = strFlag(flags, "search-scope-mode") ?? strFlag(flags, "searchScopeMode");
+  if (raw === undefined || raw.trim().length === 0) return undefined;
+  const m = raw.trim() as SearchScopeMode;
+  if (!SEARCH_SCOPE_MODES.includes(m)) {
+    throw new Error(
+      `Unknown --search-scope-mode "${raw}" (use pathSubtree, scopeDag, exactScope)`,
+    );
+  }
+  return m;
+}
+
+function queryStartIndex(positional: string[]): number {
+  if (positional[0] === "search") return 1;
+  if (positional[0] === "memories" && positional[1] === "search") return 2;
+  return 1;
+}
+
+export async function runSearchCommand(
   ctx: AtriumCliContext,
   positional: string[],
   flags: FlagMap,
 ): Promise<void> {
-  const query = positional.slice(2).join(" ").trim();
+  const start = queryStartIndex(positional);
+  const query = positional.slice(start).join(" ").trim();
   if (query.length === 0) {
-    throw new Error("usage: atrium memories search <query…>");
+    throw new Error("usage: atrium search <query…>");
   }
   const limitRaw = strFlag(flags, "limit");
   const limit =
     limitRaw !== undefined && limitRaw.length > 0 ? Number.parseInt(limitRaw, 10) : undefined;
   if (limit !== undefined && (Number.isNaN(limit) || limit < 1)) {
-    throw new Error("atrium memories search: --limit must be a positive integer");
+    throw new Error("atrium search: --limit must be a positive integer");
   }
   const minRaw = strFlag(flags, "min-score") ?? strFlag(flags, "minScore");
   const minScore =
     minRaw !== undefined && minRaw.length > 0 ? Number.parseFloat(minRaw) : undefined;
   if (minScore !== undefined && (Number.isNaN(minScore) || minScore < 0 || minScore > 1)) {
-    throw new Error("atrium memories search: min score must be between 0 and 1");
+    throw new Error("atrium search: min score must be between 0 and 1");
   }
 
   const scope = parseScope(flags);
-  const hits = await ctx.client.searchMemories({
+  const searchScopeMode = parseSearchScopeMode(flags);
+  const hits = await ctx.client.search({
     query,
     scope,
     ...(limit !== undefined ? { limit } : {}),
     ...(minScore !== undefined ? { minScore } : {}),
+    ...(searchScopeMode !== undefined ? { searchScopeMode } : {}),
   });
 
   if (boolFlag(flags, "json")) {

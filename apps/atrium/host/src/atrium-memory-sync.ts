@@ -12,6 +12,10 @@ import {
   type SwarmMemoryOpMapper,
 } from "@khoralabs/swarm-host";
 import type { AtriumHostAppContext } from "./atrium-app-context.ts";
+import {
+  computePostAttachScopes,
+  computeProfileAttachScopes,
+} from "./atrium-memory-scopes.ts";
 import type { atriumMemoriesOntology } from "./atrium-memories-ontology.ts";
 
 type TNode = typeof atriumMemoriesOntology.nodeLabels;
@@ -119,6 +123,7 @@ export function atriumSwarmMemoryOpMapper(
       const profile = event.payload.profile;
       const fields = atriumProfileMemoryFieldTexts(profile);
       const content = await buildMultiFieldMergeContent(ac.embeddingModel, fields);
+      const attachScopes = computeProfileAttachScopes(profile.id);
       return [
         {
           op: "merge" as const,
@@ -126,6 +131,7 @@ export function atriumSwarmMemoryOpMapper(
             key: profile.id,
             namespace: ac.profileNamespace,
             content,
+            attachScopes,
             labels: [
               {
                 kind: "person" as const,
@@ -144,6 +150,7 @@ export function atriumSwarmMemoryOpMapper(
       const post = event.payload.post;
       const fields = atriumPostMemoryFieldTexts(post);
       const content = await buildMultiFieldMergeContent(ac.embeddingModel, fields);
+      const attachScopes = computePostAttachScopes(post.authorProfileId, post.topics);
 
       if (post.kind === "probe") {
         return [
@@ -153,6 +160,7 @@ export function atriumSwarmMemoryOpMapper(
               key: post.id,
               namespace: ac.probeNamespace,
               content,
+              attachScopes,
               labels: [
                 {
                   kind: "probe" as const,
@@ -176,6 +184,7 @@ export function atriumSwarmMemoryOpMapper(
             key: post.id,
             namespace: ac.postNamespace,
             content,
+            attachScopes,
             labels: [
               {
                 kind: "observation" as const,

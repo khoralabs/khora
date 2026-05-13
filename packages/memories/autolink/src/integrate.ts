@@ -17,7 +17,12 @@ export type IntegrateNewMemoryArgs<
   TEdge extends LabelSchemaMap,
 > = Pick<
   MergeMemoryParamsNode<TNode, TEdge>,
-  "namespace" | "key" | "content" | "properties" | "searchMetaVector"
+  | "namespace"
+  | "key"
+  | "content"
+  | "properties"
+  | "searchMetaVector"
+  | "attachScopes"
 > & {
   labels?: NodeLabelInstance<TNode>[];
   edges?: NonNullable<MergeMemoryParamsNode<TNode, TEdge>["edges"]>;
@@ -98,6 +103,9 @@ export async function integrateNewMemoryIntoGraph<
       ...(mergedEdges.length > 0 ? { edges: mergedEdges } : {}),
       ...(args.properties !== undefined ? { properties: args.properties } : {}),
       ...(args.searchMetaVector !== undefined ? { searchMetaVector: args.searchMetaVector } : {}),
+      ...(args.attachScopes !== undefined && args.attachScopes.length > 0
+        ? { attachScopes: args.attachScopes }
+        : {}),
     } as Parameters<MemoriesClient<TNode, TEdge>["mergeMemory"]>[0]),
   );
 }

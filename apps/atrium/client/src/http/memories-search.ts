@@ -36,6 +36,7 @@ export type MemoriesSearchParams = {
   scope: SwarmHostSearchScope;
   limit?: number;
   minScore?: number;
+  searchScopeMode?: "pathSubtree" | "scopeDag" | "exactScope";
 };
 
 export function searchMemories(
@@ -48,6 +49,7 @@ export function searchMemories(
       scope: params.scope,
       ...(params.limit !== undefined ? { limit: params.limit } : {}),
       ...(params.minScore !== undefined ? { minScore: params.minScore } : {}),
+      ...(params.searchScopeMode !== undefined ? { searchScopeMode: params.searchScopeMode } : {}),
     },
     parse: zMemoriesSearchResponse,
   });

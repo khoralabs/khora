@@ -88,4 +88,42 @@ describe("handleMemoriesSearch", () => {
     expect(res.status).toBe(400);
     expect(search).toHaveBeenCalledTimes(0);
   });
+
+  test("forwards searchScopeMode to SwarmHost.search", async () => {
+    let searchArg: unknown;
+    const search = mock(async (arg: unknown) => {
+      searchArg = arg;
+      return [];
+    });
+    const deps = {
+      ctx: {
+        auth: {
+          requireAuthenticatedRequest: async () => ({ did: "did:key:agent" }),
+        },
+        host: {
+          search,
+          persistenceClient: { profileIdForAgentDid: () => "p1" },
+        },
+        config: { embeddingModel: undefined, topicNamespace: undefined },
+      },
+      invitesRepo: undefined,
+      rateLimiters: {
+        memoriesSearchDid: () => ({ ok: true, retryAfterSec: 0 }),
+      },
+      loadPublicProfileForDid: () => null,
+    } as unknown as HostRouteDeps;
+
+    const req = new Request("http://localhost/v1/memories/search", {
+      method: "POST",
+      body: JSON.stringify({
+        query: "x",
+        scope: { kind: "raw", namespace: "atrium/p1" },
+        searchScopeMode: "scopeDag",
+      }),
+    });
+    const res = await handleMemoriesSearch(req, new URL(req.url), deps);
+    expect(res.status).toBe(200);
+    expect(search).toHaveBeenCalledTimes(1);
+    expect((searchArg as { searchScopeMode?: string }).searchScopeMode).toBe("scopeDag");
+  });
 });

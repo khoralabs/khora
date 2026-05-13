@@ -16,6 +16,10 @@ import {
   atriumProfileRetrievalSummaryText,
   buildMultiFieldMergeContent,
 } from "./atrium-memory-sync.ts";
+import {
+  computePostAttachScopes,
+  computeProfileAttachScopes,
+} from "./atrium-memory-scopes.ts";
 
 type TNode = AtriumMemoriesTNode;
 type TEdge = AtriumMemoriesTEdge;
@@ -46,6 +50,7 @@ export async function maybeAtriumMemoryAutolinkAfterSync<E extends Record<string
     const profile = event.payload.profile;
     const fields = atriumProfileMemoryFieldTexts(profile);
     const content = await buildMultiFieldMergeContent(embeddingModel, fields);
+    const attachScopes = computeProfileAttachScopes(profile.id);
     const retrievalText = atriumProfileRetrievalSummaryText(profile).trim();
     const baseText = retrievalText.length > 0 ? retrievalText : profile.id;
     let searchContent: { text: string; vector?: number[] } = { text: baseText };
@@ -59,6 +64,7 @@ export async function maybeAtriumMemoryAutolinkAfterSync<E extends Record<string
       namespace: profileNamespace,
       key: profile.id,
       content,
+      attachScopes,
       labels: [
         {
           kind: "person",
@@ -80,6 +86,7 @@ export async function maybeAtriumMemoryAutolinkAfterSync<E extends Record<string
     const post = event.payload.post;
     const fields = atriumPostMemoryFieldTexts(post);
     const content = await buildMultiFieldMergeContent(embeddingModel, fields);
+    const attachScopes = computePostAttachScopes(post.authorProfileId, post.topics);
     const retrievalText = atriumPostRetrievalSummaryText(post).trim();
     const baseText = retrievalText.length > 0 ? retrievalText : post.id;
     let searchContent: { text: string; vector?: number[] } = { text: baseText };
@@ -95,6 +102,7 @@ export async function maybeAtriumMemoryAutolinkAfterSync<E extends Record<string
         namespace: probeNamespace,
         key: post.id,
         content,
+        attachScopes,
         labels: [
           {
             kind: "probe",
@@ -118,6 +126,7 @@ export async function maybeAtriumMemoryAutolinkAfterSync<E extends Record<string
       namespace: postNamespace,
       key: post.id,
       content,
+      attachScopes,
       labels: [{ kind: "observation", props: { summary: atriumPostObservationSummary(post) } }],
       searchContent,
       searchEntireDatabase: true,

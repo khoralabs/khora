@@ -9,7 +9,7 @@ import { runHealthCommand } from "./health.ts";
 import { runInboxListCommand } from "./inbox-list.ts";
 import { runKeyCommand } from "./key.ts";
 import { runKillCommand } from "./kill.ts";
-import { runMemoriesSearchCommand } from "./memories-search.ts";
+import { runSearchCommand } from "./search.ts";
 import { runPostCreateCommand } from "./post-create.ts";
 import { runPostDeleteCommand } from "./post-delete.ts";
 import { runPostShowCommand } from "./post-show.ts";
@@ -73,7 +73,7 @@ export interface AtriumCliCommandHandlers {
     topicSlug: string | undefined,
     flags: FlagMap,
   ): Promise<void>;
-  memoriesSearch(ctx: AtriumCliContext, positional: string[], flags: FlagMap): Promise<void>;
+  search(ctx: AtriumCliContext, positional: string[], flags: FlagMap): Promise<void>;
 }
 
 export const defaultAtriumCliCommandHandlers = {
@@ -103,5 +103,5 @@ export const defaultAtriumCliCommandHandlers = {
   authorUnsubscribe: runAuthorUnsubscribeCommand,
   authorTopicSubscribe: runAuthorTopicSubscribeCommand,
   authorTopicUnsubscribe: runAuthorTopicUnsubscribeCommand,
-  memoriesSearch: runMemoriesSearchCommand,
+  search: runSearchCommand,
 } satisfies AtriumCliCommandHandlers;

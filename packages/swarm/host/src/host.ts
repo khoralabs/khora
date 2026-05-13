@@ -238,6 +238,7 @@ export class SwarmHost<
       embeddingModel: modelArg,
       content,
       options,
+      searchScopeMode,
     } = args;
     const embeddingModel = modelArg ?? this.embeddingModel;
     return runHybridMemorySearch(
@@ -249,7 +250,7 @@ export class SwarmHost<
         embeddingCache,
         memoriesSnapshotRootHex,
       },
-      { content, options },
+      { content, options, ...(searchScopeMode !== undefined ? { searchScopeMode } : {}) },
     );
   }
 
@@ -257,8 +258,16 @@ export class SwarmHost<
    * Hybrid Memories search with a discriminated {@link SwarmHostSearchScope} (profiles, posts, topics, multi, or raw paths).
    */
   search(args: SwarmHostSearchArgs): Promise<MemorySearchHit[]> {
-    const { scope, embeddingCache, memoriesSnapshotRootHex, embeddingModel, content, options } =
-      args;
+    const {
+      scope,
+      embeddingCache,
+      memoriesSnapshotRootHex,
+      embeddingModel: modelArg,
+      content,
+      options,
+      searchScopeMode,
+    } = args;
+    const embeddingModel = modelArg ?? this.embeddingModel;
     const { namespace, additionalNamespaces } = resolveSwarmHostSearchNamespaces(
       scope,
       this.memoryNamespaces,
@@ -272,7 +281,7 @@ export class SwarmHost<
         embeddingCache,
         memoriesSnapshotRootHex,
       },
-      { content, options },
+      { content, options, ...(searchScopeMode !== undefined ? { searchScopeMode } : {}) },
     );
   }
 

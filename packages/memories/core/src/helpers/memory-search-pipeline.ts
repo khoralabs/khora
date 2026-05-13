@@ -37,13 +37,14 @@ export function embeddingCacheKey(
   namespace: string,
   queryText: string,
   additionalNamespaces?: readonly string[],
+  searchScopeMode: "pathSubtree" | "scopeDag" | "exactScope" = "pathSubtree",
 ): string {
   const q = queryText.trim();
   if (additionalNamespaces?.length) {
     const extra = [...additionalNamespaces].sort((a, b) => a.localeCompare(b)).join("\n");
-    return `${namespace}\n${extra}\n${q}`;
+    return `${namespace}\n${extra}\n${searchScopeMode}\n${q}`;
   }
-  return `${namespace}\n${q}`;
+  return `${namespace}\n${searchScopeMode}\n${q}`;
 }
 
 export type HybridNeighborNodesFilter = {
@@ -80,6 +81,11 @@ export type HybridMemorySearchOptions = {
 export type HybridMemorySearchInput = {
   content: { text: string };
   options?: HybridMemorySearchOptions;
+  /**
+   * How to interpret `namespace` / `additionalNamespaces` for retrieval (default `pathSubtree`).
+   * Use `scopeDag` when searching from DAG scope roots (e.g. `atrium/<profileId>` with `attachScopes`).
+   */
+  searchScopeMode?: "pathSubtree" | "scopeDag" | "exactScope";
 };
 
 /**
@@ -181,6 +187,8 @@ export async function runHybridMemorySearch(
 
   const queryText = input.content.text;
 
+  const searchScopeMode = input.searchScopeMode ?? "pathSubtree";
+
   let content: SearchContent;
   if (vectorWeight > 0) {
     const model = context.embeddingModel;
@@ -189,7 +197,12 @@ export async function runHybridMemorySearch(
         "runHybridMemorySearch: embeddingModel is required when options.arms.vector is > 0",
       );
     }
-    const cacheKey = embeddingCacheKey(context.namespace, queryText, context.additionalNamespaces);
+    const cacheKey = embeddingCacheKey(
+      context.namespace,
+      queryText,
+      context.additionalNamespaces,
+      searchScopeMode,
+    );
     const cache = context.embeddingCache;
     let vector: number[] | undefined = cache?.get(cacheKey);
 
@@ -220,6 +233,7 @@ export async function runHybridMemorySearch(
       ? { additionalNamespaces: [...context.additionalNamespaces] as NamespacePath[] }
       : {}),
     content,
+    searchScopeMode,
     ...(asOfTs !== undefined ? { asOfTimestampMs: asOfTs } : {}),
     options: opts
       ? {

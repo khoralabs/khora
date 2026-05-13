@@ -240,9 +240,14 @@ export class AtriumClient {
     return httpGetPost(this.transport, id);
   }
 
-  /** Hybrid Memories search (`POST /v1/memories/search`). Requires registration. */
-  searchMemories(params: MemoriesSearchParams): Promise<MemorySearchHitWire[]> {
+  /** Hybrid search over indexed memories (`POST /v1/memories/search`). Requires registration. */
+  search(params: MemoriesSearchParams): Promise<MemorySearchHitWire[]> {
     return httpSearchMemories(this.transport, params);
+  }
+
+  /** @deprecated Prefer {@link AtriumClient.search}. */
+  searchMemories(params: MemoriesSearchParams): Promise<MemorySearchHitWire[]> {
+    return this.search(params);
   }
 
   /** Topic slugs this agent is currently subscribed to (`GET /v1/topics`). */

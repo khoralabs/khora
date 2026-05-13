@@ -6,7 +6,7 @@ async function makeSigner(): Promise<PersistableAgentSigner> {
   return generateAgentIdentity();
 }
 
-describe("searchMemories HTTP", () => {
+describe("AtriumClient.search HTTP", () => {
   test("POST /v1/memories/search with JSON body", async () => {
     const signer = await makeSigner();
     const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -27,7 +27,7 @@ describe("searchMemories HTTP", () => {
       ]);
     });
     const c = new AtriumClient({ baseUrl: "http://h", signer, fetch: fetchMock });
-    const hits = await c.searchMemories({
+    const hits = await c.search({
       query: "hello",
       scope: { kind: "multi", includes: ["profiles", "posts"] },
       limit: 10,
@@ -35,5 +35,21 @@ describe("searchMemories HTTP", () => {
     expect(hits).toHaveLength(1);
     expect(hits[0]?.memory_key).toBe("mk");
     expect(hits[0]?.source_key).toBe("bio");
+  });
+
+  test("POST body includes searchScopeMode when set", async () => {
+    const signer = await makeSigner();
+    const fetchMock = mock(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      const parsed = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+      expect(parsed.searchScopeMode).toBe("scopeDag");
+      return Response.json([]);
+    });
+    const c = new AtriumClient({ baseUrl: "http://h", signer, fetch: fetchMock });
+    await c.search({
+      query: "q",
+      scope: { kind: "raw", namespace: "atrium/atrium_profile_abc" },
+      searchScopeMode: "scopeDag",
+    });
+    expect(fetchMock).toHaveBeenCalled();
   });
 });

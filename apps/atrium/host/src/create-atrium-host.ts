@@ -25,6 +25,10 @@ import { maybeAtriumMemoryAutolinkAfterSync } from "./atrium-memory-autolink.ts"
 import { atriumSwarmMemoryOpMapper } from "./atrium-memory-sync.ts";
 import { fanOutPostMatches } from "./atrium-post-fanout.ts";
 import {
+  ensureAtriumScopeLinksForPost,
+  ensureAtriumScopeLinksForProfile,
+} from "./atrium-scope-links.ts";
+import {
   createProbeSubscribersRepo,
   createSqliteAgentNotificationBuffer,
   createSwarmHostDocumentStore,
@@ -191,6 +195,9 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
             memoryId: ids.memory(ac.profileNamespace, profile.id),
             bodyJson: JSON.stringify(profile),
           });
+          memories.persistence.withTransaction(() => {
+            ensureAtriumScopeLinksForProfile(memories.persistence, profile.id);
+          });
           return;
         }
 
@@ -220,6 +227,9 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
               post,
             });
           }
+          memories.persistence.withTransaction(() => {
+            ensureAtriumScopeLinksForPost(memories.persistence, post.authorProfileId, post.topics);
+          });
           return;
         }
 
