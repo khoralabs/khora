@@ -28,10 +28,11 @@ import {
 import { health } from "./http/health.ts";
 import { type InboxListResult, type ListInboxParams, listInbox } from "./http/inbox.ts";
 import { listInvites, previewInvite } from "./http/invites.ts";
-import { createPost, deletePost, updatePost } from "./http/posts.ts";
+import { createPost, deletePost, getPost as httpGetPost, updatePost } from "./http/posts.ts";
 import { listProbes } from "./http/probes.ts";
 import {
-  lookupProfileByUsername,
+  lookupProfileByDid as httpLookupProfileByDid,
+  lookupProfileByUsername as httpLookupProfileByUsername,
   type ProfileByUsernameResponse,
   updateProfile,
 } from "./http/profile.ts";
@@ -202,7 +203,12 @@ export class AtriumClient {
 
   /** Resolve a username to its DID + public profile. Returns `null` if the username is unknown. */
   lookupProfileByUsername(username: string): Promise<ProfileByUsernameResponse | null> {
-    return lookupProfileByUsername(this.transport, username);
+    return httpLookupProfileByUsername(this.transport, username);
+  }
+
+  /** Resolve a DID to its public profile (`GET /v1/profile/by-did/...`). Returns `null` if unknown. */
+  lookupProfileByDid(did: string): Promise<ProfileByUsernameResponse | null> {
+    return httpLookupProfileByDid(this.transport, did);
   }
 
   async createPost(body: AtriumPostCreate): Promise<AtriumPost> {
@@ -220,6 +226,11 @@ export class AtriumClient {
   async deletePost(id: string): Promise<void> {
     await deletePost(this.transport, id);
     this.emit({ type: "post:deleted", postId: id, did: this.did });
+  }
+
+  /** Fetch a post by id (`GET /v1/posts/:id`). Requires registration. */
+  getPost(id: string): Promise<AtriumPost> {
+    return httpGetPost(this.transport, id);
   }
 
   /** Topic slugs this agent is currently subscribed to (`GET /v1/topics`). */

@@ -11,8 +11,10 @@ import { runKeyCommand } from "./key.ts";
 import { runKillCommand } from "./kill.ts";
 import { runPostCreateCommand } from "./post-create.ts";
 import { runPostDeleteCommand } from "./post-delete.ts";
+import { runPostShowCommand } from "./post-show.ts";
 import { runPostUpdateCommand } from "./post-update.ts";
 import { runProbeListCommand } from "./probe-list.ts";
+import { runProfileShowCommand } from "./profile-show.ts";
 import { runProfileUpdateCommand } from "./profile-update.ts";
 import { runRegisterCommand } from "./register.ts";
 import { runSetupCommand } from "./setup.ts";
@@ -36,9 +38,11 @@ export interface AtriumCliCommandHandlers {
   kill(flags: FlagMap): Promise<void>;
   whoami(flags: FlagMap): Promise<void>;
   register(ctx: AtriumCliContext, flags: FlagMap): Promise<void>;
+  profileShow(ctx: AtriumCliContext, did: string | undefined, flags: FlagMap): Promise<void>;
   profileUpdate(ctx: AtriumCliContext, flags: FlagMap): Promise<void>;
   inboxList(ctx: AtriumCliContext, flags: FlagMap): Promise<void>;
   postCreate(ctx: AtriumCliContext, flags: FlagMap): Promise<void>;
+  postShow(ctx: AtriumCliContext, postId: string | undefined, flags: FlagMap): Promise<void>;
   postUpdate(ctx: AtriumCliContext, postId: string, flags: FlagMap): Promise<void>;
   postDelete(ctx: AtriumCliContext, postId: string, flags: FlagMap): Promise<void>;
   probeList(ctx: AtriumCliContext, flags: FlagMap): Promise<void>;
@@ -81,9 +85,11 @@ export const defaultAtriumCliCommandHandlers = {
   kill: runKillCommand,
   whoami: runWhoamiCommand,
   register: runRegisterCommand,
+  profileShow: runProfileShowCommand,
   profileUpdate: runProfileUpdateCommand,
   inboxList: runInboxListCommand,
   postCreate: runPostCreateCommand,
+  postShow: runPostShowCommand,
   postUpdate: runPostUpdateCommand,
   postDelete: runPostDeleteCommand,
   probeList: runProbeListCommand,

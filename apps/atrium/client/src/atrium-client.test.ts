@@ -427,6 +427,41 @@ describe("AtriumClient", () => {
     await c.deletePost("p1");
   });
 
+  test("getPost signs GET with encoded post id", async () => {
+    const signer = staticSigner("did:key:w");
+    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("http://h/v1/posts/atrium_post_abc");
+      expect(init?.method).toBe("GET");
+      expectAuthHeaders(init, "did:key:w");
+      return Response.json({
+        id: "atrium_post_abc",
+        authorProfileId: "u1",
+        kind: "post",
+        body: "hello",
+      });
+    });
+    const c = new AtriumClient({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const out = await c.getPost("atrium_post_abc");
+    expect(out.id).toBe("atrium_post_abc");
+  });
+
+  test("lookupProfileByDid signs GET with encoded did", async () => {
+    const signer = staticSigner("did:key:agent");
+    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("http://h/v1/profile/by-did/did%3Akey%3Abob");
+      expect(init?.method).toBe("GET");
+      expectAuthHeaders(init, "did:key:agent");
+      return Response.json({
+        did: "did:key:bob",
+        profile: { id: "p1", username: "bob", displayName: "Bob" },
+      });
+    });
+    const c = new AtriumClient({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const out = await c.lookupProfileByDid("did:key:bob");
+    expect(out?.did).toBe("did:key:bob");
+    expect(out?.profile.username).toBe("bob");
+  });
+
   test("listInbox builds query string from non-did params", async () => {
     const signer = staticSigner("did:key:a");
     const fetchMock = mock(async (input: RequestInfo | URL) => {

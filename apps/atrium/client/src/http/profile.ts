@@ -38,3 +38,18 @@ export async function lookupProfileByUsername(
     throw e;
   }
 }
+
+/** Resolve a DID to its public profile (same shape as by-username). Returns `null` on 404. */
+export async function lookupProfileByDid(
+  t: HttpTransport,
+  did: string,
+): Promise<ProfileByUsernameResponse | null> {
+  try {
+    return await t.requestJson("GET", `/v1/profile/by-did/${encodeURIComponent(did)}`, {
+      parse: zProfileByUsernameResponse,
+    });
+  } catch (e) {
+    if (e instanceof AtriumClientError && e.status === 404) return null;
+    throw e;
+  }
+}

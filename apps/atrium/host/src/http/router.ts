@@ -11,9 +11,9 @@ import type { HostRouteDeps } from "./deps.ts";
 import { handleHealth } from "./health.ts";
 import { handleInboxList, handleInboxWsUpgrade } from "./inbox.ts";
 import { handleInvitePreview, handleListInvites } from "./invites.ts";
-import { handleCreatePost, handleDeletePost, handleUpdatePost } from "./posts.ts";
+import { handleCreatePost, handleDeletePost, handleGetPost, handleUpdatePost } from "./posts.ts";
 import { handleListProbes } from "./probes.ts";
-import { handleProfileByUsername, handleUpdateProfile } from "./profile.ts";
+import { handleProfileByDid, handleProfileByUsername, handleUpdateProfile } from "./profile.ts";
 import { handleRegister } from "./register.ts";
 import { rateLimitedResponse } from "./responses.ts";
 import { handleListTopics, handleTopicSubMutation } from "./topics.ts";
@@ -113,6 +113,11 @@ export async function route(
     return handleProfileByUsername(deps, decodeURIComponent(byUsernameMatch[1] ?? ""));
   }
 
+  const byDidMatch = /^\/v1\/profile\/by-did\/(.+)$/.exec(url.pathname);
+  if (req.method === "GET" && byDidMatch !== null && byDidMatch[1] !== undefined) {
+    return handleProfileByDid(req, url, deps, decodeURIComponent(byDidMatch[1]));
+  }
+
   const postPathMatch = /^\/v1\/posts\/([^/]+)$/.exec(url.pathname);
 
   if (req.method === "PATCH" && url.pathname === "/v1/profile") {
@@ -124,7 +129,10 @@ export async function route(
   }
 
   if (postPathMatch !== null && postPathMatch[1] !== undefined) {
-    const id = postPathMatch[1];
+    const id = decodeURIComponent(postPathMatch[1]);
+    if (req.method === "GET") {
+      return handleGetPost(req, url, deps, id);
+    }
     if (req.method === "PATCH") {
       return handleUpdatePost(req, url, deps, id);
     }

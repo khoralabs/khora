@@ -10,6 +10,10 @@ export function createPost(t: HttpTransport, body: AtriumPostCreate): Promise<At
   return t.requestJson("POST", "/v1/posts", { body, parse: zAtriumPost });
 }
 
+export function getPost(t: HttpTransport, id: string): Promise<AtriumPost> {
+  return t.requestJson("GET", `/v1/posts/${encodeURIComponent(id)}`, { parse: zAtriumPost });
+}
+
 export function updatePost(
   t: HttpTransport,
   id: string,

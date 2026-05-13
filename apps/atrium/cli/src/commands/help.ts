@@ -10,8 +10,10 @@ import { keyHelp } from "./key.help.ts";
 import { killHelp } from "./kill.help.ts";
 import { postCreateHelp } from "./post-create.help.ts";
 import { postDeleteHelp } from "./post-delete.help.ts";
+import { postShowHelp } from "./post-show.help.ts";
 import { postUpdateHelp } from "./post-update.help.ts";
 import { probeListHelp } from "./probe-list.help.ts";
+import { profileShowHelp } from "./profile-show.help.ts";
 import { profileUpdateHelp } from "./profile-update.help.ts";
 import { registerHelp } from "./register.help.ts";
 import { setupHelp } from "./setup.help.ts";
@@ -35,9 +37,11 @@ const ALL_HELP: readonly CommandHelp[] = [
   killHelp,
   whoamiHelp,
   registerHelp,
+  profileShowHelp,
   profileUpdateHelp,
   inboxListHelp,
   postCreateHelp,
+  postShowHelp,
   postUpdateHelp,
   postDeleteHelp,
   probeListHelp,
@@ -116,9 +120,11 @@ Commands:
   kill [--force] [--timeout <ms>]
   whoami [--no-fetch] [--json]
   register [--username …] [--display-name …] [--bio …] [--invite-token …]
+  profile show <did>
   profile update [--username …] [--display-name …] [--bio …]
   inbox list [--limit N] [--mark-read]
   post create [--body …] [--title …] [--topics a,b] [--kind post|probe|status]
+  post show <post-id>
   post update <id> [--body …] [--title …] [--topics …] [--kind …]
   post delete <id> [--yes]
   probe list [--active]

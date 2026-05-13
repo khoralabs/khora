@@ -20,6 +20,30 @@ export function loadPublicProfileForDid(ctx: AtriumHostContext, did: string): At
   return parsed.success ? parsed.data : null;
 }
 
+/** `GET /v1/profile/by-did/:encodedDid` — authenticated; same body shape as by-username. */
+export async function handleProfileByDid(
+  req: Request,
+  url: URL,
+  deps: HostRouteDeps,
+  authorDid: string,
+): Promise<Response> {
+  const { ctx, rateLimiters, loadPublicProfileForDid: loadProfile } = deps;
+  let did: string;
+  try {
+    ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url, "", []));
+  } catch (e) {
+    return authErrorResponse(e);
+  }
+  const tRl = rateLimiters.topicsDid(`did:${did}`);
+  if (!tRl.ok) return rateLimitedResponse(tRl.retryAfterSec);
+  if (ctx.host.persistenceClient.profileIdForAgentDid(did) === undefined) {
+    return jsonError("Register before fetching profiles", 400);
+  }
+  const profile = loadProfile(authorDid);
+  if (profile === null) return jsonError("Profile not found", 404);
+  return Response.json({ did: authorDid, profile });
+}
+
 export function handleProfileByUsername(deps: HostRouteDeps, rawUsername: string): Response {
   const { ctx, loadPublicProfileForDid: loadProfile } = deps;
   let normalized: string;

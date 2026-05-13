@@ -114,6 +114,11 @@ async function main(
       return;
     }
 
+    if (a === "profile" && b === "show") {
+      await handlers.profileShow(ctx, c, flags);
+      return;
+    }
+
     if (a === "profile" && b === "update") {
       await handlers.profileUpdate(ctx, flags);
       return;
@@ -121,6 +126,11 @@ async function main(
 
     if (a === "inbox" && b === "list") {
       await handlers.inboxList(ctx, flags);
+      return;
+    }
+
+    if (a === "post" && b === "show") {
+      await handlers.postShow(ctx, c, flags);
       return;
     }
 

@@ -12,6 +12,38 @@ import { deleteOtherStatusPostsForAuthor } from "../atrium-status-posts.ts";
 import type { HostRouteDeps } from "./deps.ts";
 import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses.ts";
 
+/** `GET /v1/posts/:id` — authenticated; returns canonical `AtriumPost` for any existing post. */
+export async function handleGetPost(
+  req: Request,
+  url: URL,
+  deps: HostRouteDeps,
+  id: string,
+): Promise<Response> {
+  const { ctx, rateLimiters } = deps;
+  let did: string;
+  try {
+    ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url, "", []));
+  } catch (e) {
+    return authErrorResponse(e);
+  }
+  try {
+    const pRl = rateLimiters.postsDid(`did:${did}`);
+    if (!pRl.ok) return rateLimitedResponse(pRl.retryAfterSec);
+    if (ctx.host.persistenceClient.profileIdForAgentDid(did) === undefined) {
+      return jsonError("Register before fetching posts", 400);
+    }
+    const row = ctx.host.persistenceClient.getPostById(id);
+    if (row === undefined) {
+      return jsonError("Post not found", 404);
+    }
+    const post = zAtriumPost.parse(JSON.parse(row.bodyJson));
+    return Response.json(post);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return jsonError(msg, e instanceof z.ZodError ? 400 : 500);
+  }
+}
+
 export async function handleCreatePost(
   req: Request,
   url: URL,
