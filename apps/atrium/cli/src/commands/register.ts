@@ -38,6 +38,7 @@ export function seedProfileCacheAfterRegister(did: string, profile: AtriumProfil
         did,
         profile,
         topicSlugs: [],
+        authorTopics: [],
         probes: [],
         syncedAtMs: Date.now(),
       }),

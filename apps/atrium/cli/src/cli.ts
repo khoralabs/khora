@@ -149,6 +149,17 @@ async function main(
       return;
     }
 
+    if (a === "author" && b === "topic") {
+      if (c === "subscribe") {
+        await handlers.authorTopicSubscribe(ctx, positional[3], positional[4], flags);
+        return;
+      }
+      if (c === "unsubscribe") {
+        await handlers.authorTopicUnsubscribe(ctx, positional[3], positional[4], flags);
+        return;
+      }
+    }
+
     if (a === "author" && b === "subscribe") {
       await handlers.authorSubscribe(ctx, c, flags);
       return;

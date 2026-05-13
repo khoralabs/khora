@@ -2,6 +2,8 @@ import { describe, expect, test } from "bun:test";
 import {
   authorDidFromSubscriptionSubject,
   authorSubscriptionSubject,
+  authorTopicSubscriptionSubject,
+  parseAuthorTopicSubscriptionSubject,
   topicSlugFromSubscriptionSubject,
   topicSubscriptionSubject,
 } from "./subject-keys.ts";
@@ -19,5 +21,16 @@ describe("subject-keys", () => {
     expect(s).toBe("author:did:key:bob");
     expect(authorDidFromSubscriptionSubject(s)).toBe("did:key:bob");
     expect(authorDidFromSubscriptionSubject("topic:x")).toBeUndefined();
+  });
+
+  test("author_topic round-trip", () => {
+    const s = authorTopicSubscriptionSubject("did:key:bob", "rust-dev");
+    expect(s).toBe("author_topic:did:key:bob\trust-dev");
+    expect(parseAuthorTopicSubscriptionSubject(s)).toEqual({
+      authorDid: "did:key:bob",
+      topicSlug: "rust-dev",
+    });
+    expect(parseAuthorTopicSubscriptionSubject("topic:x")).toBeUndefined();
+    expect(parseAuthorTopicSubscriptionSubject("author_topic:nosep")).toBeUndefined();
   });
 });

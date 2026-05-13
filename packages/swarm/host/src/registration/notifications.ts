@@ -11,6 +11,7 @@ export type NegotiationTicketNotificationPayload = {
 export type InboxPostReason =
   | { kind: "topic"; topic: string }
   | { kind: "author" }
+  | { kind: "author_topic"; authorDid: AgentDid; topic: string }
   | { kind: "probe-hit"; probePostId: string; score: number };
 
 export type InboxPostNotificationPayload = {

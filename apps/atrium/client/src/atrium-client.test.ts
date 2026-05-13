@@ -59,6 +59,7 @@ describe("AtriumClient", () => {
       return Response.json({
         profile: { id: "p1", username: "ada", displayName: "A" },
         topicSlugs: ["rust"],
+        authorTopics: [],
         probes: [{ id: "pr1", kind: "probe", authorProfileId: "p1", body: "q" }],
       });
     });
@@ -67,6 +68,7 @@ describe("AtriumClient", () => {
     expect(snap.profile.username).toBe("ada");
     expect(snap.profile.displayName).toBe("A");
     expect(snap.topicSlugs).toEqual(["rust"]);
+    expect(snap.authorTopics).toEqual([]);
     expect(snap.probes[0]?.kind).toBe("probe");
   });
 
@@ -305,10 +307,13 @@ describe("AtriumClient", () => {
       expect(String(input)).toBe("http://h/v1/authors/subscriptions");
       expect(init?.method).toBe("GET");
       expectAuthHeaders(init, "did:key:agent");
-      return Response.json({ authorDids: ["did:key:bob"] });
+      return Response.json({ authorDids: ["did:key:bob"], authorTopics: [] });
     });
     const c = new AtriumClient({ baseUrl: "http://h", signer, fetch: fetchMock });
-    expect(await c.listAuthorSubscriptions()).toEqual(["did:key:bob"]);
+    expect(await c.listAuthorSubscriptions()).toEqual({
+      authorDids: ["did:key:bob"],
+      authorTopics: [],
+    });
   });
 
   test("subscribeAuthor signs POST with encoded username", async () => {
@@ -334,6 +339,41 @@ describe("AtriumClient", () => {
     });
     const c = new AtriumClient({ baseUrl: "http://h", signer, fetch: fetchMock });
     await c.unsubscribeAuthor("ada-99");
+  });
+
+  test("subscribeAuthorTopic signs POST with encoded username and slug", async () => {
+    const signer = staticSigner("did:key:agent");
+    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("http://h/v1/authors/ada-99/topics/rust-dev/subscribe");
+      expect(init?.method).toBe("POST");
+      expectAuthHeaders(init, "did:key:agent");
+      return Response.json({
+        ok: true,
+        username: "ada-99",
+        authorDid: "did:key:bob",
+        topicSlug: "rust-dev",
+      });
+    });
+    const c = new AtriumClient({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const out = await c.subscribeAuthorTopic("ada-99", "rust-dev");
+    expect(out).toEqual({
+      ok: true,
+      username: "ada-99",
+      authorDid: "did:key:bob",
+      topicSlug: "rust-dev",
+    });
+  });
+
+  test("unsubscribeAuthorTopic signs DELETE", async () => {
+    const signer = staticSigner("did:key:agent");
+    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("http://h/v1/authors/ada-99/topics/zig/subscribe");
+      expect(init?.method).toBe("DELETE");
+      expectAuthHeaders(init, "did:key:agent");
+      return new Response(null, { status: 204 });
+    });
+    const c = new AtriumClient({ baseUrl: "http://h", signer, fetch: fetchMock });
+    await c.unsubscribeAuthorTopic("ada-99", "zig");
   });
 
   test("createPost sends creation body and signs", async () => {

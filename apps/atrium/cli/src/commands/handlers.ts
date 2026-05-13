@@ -1,6 +1,8 @@
 import type { AtriumCliContext } from "../flows/context.ts";
 import { runAuthorListCommand } from "./author-list.ts";
 import { runAuthorSubscribeCommand } from "./author-subscribe.ts";
+import { runAuthorTopicSubscribeCommand } from "./author-topic-subscribe.ts";
+import { runAuthorTopicUnsubscribeCommand } from "./author-topic-unsubscribe.ts";
 import { runAuthorUnsubscribeCommand } from "./author-unsubscribe.ts";
 import { runConfigCommand } from "./config.ts";
 import { runHealthCommand } from "./health.ts";
@@ -54,6 +56,18 @@ export interface AtriumCliCommandHandlers {
     username: string | undefined,
     flags: FlagMap,
   ): Promise<void>;
+  authorTopicSubscribe(
+    ctx: AtriumCliContext,
+    username: string | undefined,
+    topicSlug: string | undefined,
+    flags: FlagMap,
+  ): Promise<void>;
+  authorTopicUnsubscribe(
+    ctx: AtriumCliContext,
+    username: string | undefined,
+    topicSlug: string | undefined,
+    flags: FlagMap,
+  ): Promise<void>;
 }
 
 export const defaultAtriumCliCommandHandlers = {
@@ -79,4 +93,6 @@ export const defaultAtriumCliCommandHandlers = {
   authorList: runAuthorListCommand,
   authorSubscribe: runAuthorSubscribeCommand,
   authorUnsubscribe: runAuthorUnsubscribeCommand,
+  authorTopicSubscribe: runAuthorTopicSubscribeCommand,
+  authorTopicUnsubscribe: runAuthorTopicUnsubscribeCommand,
 } satisfies AtriumCliCommandHandlers;

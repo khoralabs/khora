@@ -1,12 +1,19 @@
 import { zAgentStatusResponse, zAtriumPost, zAtriumProfile } from "@khoralabs/atrium-contracts";
 import z from "zod";
 import { envAgentSyncProbeLimit } from "../env.ts";
+import { parseAuthorTopicSubscriptionSubject } from "../subject-keys.ts";
 import type { HostRouteDeps } from "./deps.ts";
 import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses.ts";
 
 const zAgentSyncResponse = z.object({
   profile: zAtriumProfile,
   topicSlugs: z.array(z.string()),
+  authorTopics: z.array(
+    z.object({
+      authorDid: z.string(),
+      topicSlug: z.string(),
+    }),
+  ),
   probes: z.array(zAtriumPost),
 });
 
@@ -35,6 +42,11 @@ export async function handleAgentSync(
   try {
     const profile = zAtriumProfile.parse(JSON.parse(profileRow.bodyJson));
     const topicSlugs = ctx.host.persistenceClient.listTopicSlugsForAgentDid(did);
+    const subjects = ctx.host.persistenceClient.listSubjectsForAgentDid(did);
+    const authorTopics = subjects
+      .map((s) => parseAuthorTopicSubscriptionSubject(s))
+      .filter((row): row is NonNullable<typeof row> => row !== undefined)
+      .map(({ authorDid, topicSlug }) => ({ authorDid, topicSlug }));
     const probeRows = ctx.host.persistenceClient.listPostRowsByAuthorProfileIdAndKind({
       authorProfileId: profileId,
       kind: "probe",
@@ -47,7 +59,7 @@ export async function handleAgentSync(
         return [];
       }
     });
-    const payload = zAgentSyncResponse.parse({ profile, topicSlugs, probes });
+    const payload = zAgentSyncResponse.parse({ profile, topicSlugs, authorTopics, probes });
     return Response.json(payload);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

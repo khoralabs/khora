@@ -2,7 +2,11 @@ import type { Server } from "bun";
 import { clientIpFromRequest } from "../rate-limit.ts";
 import type { InboxWsData } from "../ws/inbox.ts";
 import { handleAgentStatus, handleAgentSync } from "./agent.ts";
-import { handleAuthorSubMutation, handleListAuthorSubscriptions } from "./authors.ts";
+import {
+  handleAuthorSubMutation,
+  handleAuthorTopicSubMutation,
+  handleListAuthorSubscriptions,
+} from "./authors.ts";
 import type { HostRouteDeps } from "./deps.ts";
 import { handleHealth } from "./health.ts";
 import { handleInboxList, handleInboxWsUpgrade } from "./inbox.ts";
@@ -80,6 +84,20 @@ export async function route(
   if (topicSubMatch !== null && topicSubMatch[1] !== undefined) {
     const slugRaw = decodeURIComponent(topicSubMatch[1]);
     const r = await handleTopicSubMutation(req, url, deps, slugRaw);
+    if (r !== undefined) return r;
+  }
+
+  const authorTopicSubMatch = /^\/v1\/authors\/([^/]+)\/topics\/([^/]+)\/subscribe$/.exec(
+    url.pathname,
+  );
+  if (
+    authorTopicSubMatch !== null &&
+    authorTopicSubMatch[1] !== undefined &&
+    authorTopicSubMatch[2] !== undefined
+  ) {
+    const usernameRaw = decodeURIComponent(authorTopicSubMatch[1]);
+    const slugRaw = decodeURIComponent(authorTopicSubMatch[2]);
+    const r = await handleAuthorTopicSubMutation(req, url, deps, usernameRaw, slugRaw);
     if (r !== undefined) return r;
   }
 

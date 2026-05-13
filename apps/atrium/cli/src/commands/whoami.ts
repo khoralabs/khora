@@ -162,6 +162,7 @@ export async function runWhoamiCommand(
             did: signer.did,
             profile: snap.profile,
             topicSlugs: snap.topicSlugs,
+            authorTopics: snap.authorTopics,
             probes: snap.probes,
             syncedAtMs: Date.now(),
           };

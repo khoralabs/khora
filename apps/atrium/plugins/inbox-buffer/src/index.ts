@@ -20,6 +20,8 @@ export const INBOX_CLIENT_EVENT_TYPES = [
   "inbox:post",
   "author:subscribed",
   "author:unsubscribed",
+  "author_topic:subscribed",
+  "author_topic:unsubscribed",
 ] as const;
 
 export type BufferCompactOpts = {

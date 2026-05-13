@@ -15,6 +15,7 @@ export type ProfileSyncStateFileV1 = {
   did: string;
   profile: AtriumProfile;
   topicSlugs: string[];
+  authorTopics: { authorDid: string; topicSlug: string }[];
   probes: AtriumPost[];
 };
 
@@ -24,6 +25,9 @@ function syncRelatedEvent(event: AtriumClientEvent, did: string): boolean {
       return event.did === did;
     case "topic:subscribed":
     case "topic:unsubscribed":
+      return event.did === did;
+    case "author_topic:subscribed":
+    case "author_topic:unsubscribed":
       return event.did === did;
     case "post:created":
     case "post:updated":
@@ -67,6 +71,7 @@ export function createProfileSync(options: {
       did,
       profile: snap.profile,
       topicSlugs: snap.topicSlugs,
+      authorTopics: snap.authorTopics,
       probes: snap.probes,
     };
     atomicWriteJson(filePath, `${JSON.stringify(state, null, 2)}\n`);

@@ -28,6 +28,7 @@ function cached(): CachedProfileSnapshot {
     did: "did:key:a",
     profile: { id: "p1", username: "ada", displayName: "Ada" },
     topicSlugs: [],
+    authorTopics: [],
     probes: [],
     syncedAtMs: 1_000,
   };
@@ -72,6 +73,7 @@ describe("runWhoamiWith", () => {
           did: "did:key:a",
           profile: { id: "p1", username: "alice", displayName: "Alice" },
           topicSlugs: ["rust"],
+          authorTopics: [],
           probes: [],
           syncedAtMs: 5_000,
         }),
@@ -196,6 +198,7 @@ describe("runWhoamiWith", () => {
           did: "did:key:b",
           profile: { id: "p2", username: "bob" },
           topicSlugs: [],
+          authorTopics: [],
           probes: [],
           syncedAtMs: 5_000,
         }),

@@ -23,6 +23,10 @@ const zProfileSyncStateFileV1 = z.object({
   did: z.string().min(1),
   profile: zAtriumProfile,
   topicSlugs: z.array(z.string()),
+  authorTopics: z
+    .array(z.object({ authorDid: z.string(), topicSlug: z.string() }))
+    .optional()
+    .default([]),
   probes: z.array(zAtriumPost),
 });
 
@@ -30,6 +34,7 @@ export type CachedProfileSnapshot = {
   did: string;
   profile: AtriumProfile;
   topicSlugs: string[];
+  authorTopics: { authorDid: string; topicSlug: string }[];
   probes: AtriumPost[];
   syncedAtMs: number;
 };
@@ -55,6 +60,7 @@ export function loadCachedProfile(filePath: string): CachedProfileSnapshot | und
     did: parsed.data.did,
     profile: parsed.data.profile,
     topicSlugs: parsed.data.topicSlugs,
+    authorTopics: parsed.data.authorTopics,
     probes: parsed.data.probes,
     syncedAtMs: parsed.data.syncedAtMs,
   };
@@ -83,6 +89,7 @@ export function serializeProfileSyncStateFile(snap: CachedProfileSnapshot): stri
     did: snap.did,
     profile: snap.profile,
     topicSlugs: snap.topicSlugs,
+    authorTopics: snap.authorTopics,
     probes: snap.probes,
   };
   return `${JSON.stringify(envelope, null, 2)}\n`;

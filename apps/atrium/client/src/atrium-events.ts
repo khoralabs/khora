@@ -29,6 +29,14 @@ export type AtriumClientEvent =
   | { type: "topic:unsubscribed"; topicSlug: string; did: string }
   | { type: "author:subscribed"; username: string; authorDid: string; did: string }
   | { type: "author:unsubscribed"; username: string; did: string }
+  | {
+      type: "author_topic:subscribed";
+      username: string;
+      authorDid: string;
+      topicSlug: string;
+      did: string;
+    }
+  | { type: "author_topic:unsubscribed"; username: string; topicSlug: string; did: string }
   | { type: "inbox:list"; result: AtriumInboxListPayload; did: string }
   | { type: "inbox:snapshot"; notifications: InboxNotificationRow[]; did: string }
   | { type: "inbox:notification"; id: number; notification: AgentNotification; did: string }

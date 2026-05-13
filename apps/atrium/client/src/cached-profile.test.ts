@@ -35,6 +35,7 @@ describe("loadCachedProfile", () => {
     expect(snap?.profile.username).toBe("ada");
     expect(snap?.syncedAtMs).toBe(123);
     expect(snap?.topicSlugs).toEqual(["rust"]);
+    expect(snap?.authorTopics).toEqual([]);
   });
 
   test("missing file returns undefined", () => {
@@ -107,6 +108,7 @@ describe("serializeProfileSyncStateFile round-trip", () => {
       did: "did:key:a",
       profile: { id: "p1", username: "ada", displayName: "Ada" },
       topicSlugs: ["rust"],
+      authorTopics: [],
       probes: [],
       syncedAtMs: 9999,
     };

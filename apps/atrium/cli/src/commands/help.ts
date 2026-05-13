@@ -1,5 +1,7 @@
 import { authorListHelp } from "./author-list.help.ts";
 import { authorSubscribeHelp } from "./author-subscribe.help.ts";
+import { authorTopicSubscribeHelp } from "./author-topic-subscribe.help.ts";
+import { authorTopicUnsubscribeHelp } from "./author-topic-unsubscribe.help.ts";
 import { authorUnsubscribeHelp } from "./author-unsubscribe.help.ts";
 import { configHelp } from "./config.help.ts";
 import { healthHelp } from "./health.help.ts";
@@ -44,6 +46,8 @@ const ALL_HELP: readonly CommandHelp[] = [
   topicUnsubscribeHelp,
   authorListHelp,
   authorSubscribeHelp,
+  authorTopicSubscribeHelp,
+  authorTopicUnsubscribeHelp,
   authorUnsubscribeHelp,
 ];
 
@@ -70,9 +74,10 @@ const COMMAND_HELP: Record<string, string> = Object.fromEntries(
 );
 
 export function tryPrintCommandHelp(positional: string[]): boolean {
+  const three = positional.slice(0, 3).join(" ");
   const two = positional.slice(0, 2).join(" ");
   const one = positional[0] ?? "";
-  const text = COMMAND_HELP[two] ?? COMMAND_HELP[one];
+  const text = COMMAND_HELP[three] ?? COMMAND_HELP[two] ?? COMMAND_HELP[one];
   if (text === undefined) return false;
   console.log(text);
   return true;
@@ -123,6 +128,8 @@ Commands:
   author list
   author subscribe <username>
   author unsubscribe <username>
+  author topic subscribe <username> <topic-slug>
+  author topic unsubscribe <username> <topic-slug>
 
 Daemon (single-instance; PID file at <dataDir>/daemon.pid or ~/.atrium/daemon.pid):
   atrium start -b           Start in the background

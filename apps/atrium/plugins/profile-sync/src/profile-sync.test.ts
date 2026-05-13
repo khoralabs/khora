@@ -11,6 +11,7 @@ describe("createProfileSync", () => {
     const snap = {
       profile: { id: "p1", username: "ada", displayName: "Ada" },
       topicSlugs: ["rust"],
+      authorTopics: [],
       probes: [],
     };
     const client = {
@@ -29,6 +30,7 @@ describe("createProfileSync", () => {
     expect(raw.did).toBe("did:key:x");
     expect(raw.profile.displayName).toBe("Ada");
     expect(raw.topicSlugs).toEqual(["rust"]);
+    expect(raw.authorTopics).toEqual([]);
     rmSync(dir, { recursive: true });
   });
 
@@ -39,6 +41,7 @@ describe("createProfileSync", () => {
     const fetchAgentSync = mock(async () => ({
       profile: { id: "p1", username: "b", displayName: "B" },
       topicSlugs: [],
+      authorTopics: [],
       probes: [],
     }));
     const client = {

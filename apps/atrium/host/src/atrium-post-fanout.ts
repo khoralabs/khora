@@ -5,7 +5,11 @@ import type { SwarmHostEventHandlerCtx } from "@khoralabs/swarm-host";
 import { deliverAgentNotification, type InboxPostReason } from "@khoralabs/swarm-host";
 import type { AtriumHostAppContext } from "./atrium-app-context.ts";
 import type { ProbeSubscribersRepo } from "./persistence/sqlite/index.ts";
-import { authorSubscriptionSubject, topicSubscriptionSubject } from "./subject-keys.ts";
+import {
+  authorSubscriptionSubject,
+  authorTopicSubscriptionSubject,
+  topicSubscriptionSubject,
+} from "./subject-keys.ts";
 
 type SwarmHostOntology = typeof import("@khoralabs/swarm-host").swarmHostOntology;
 type TNode = SwarmHostOntology["nodeLabels"];
@@ -105,6 +109,13 @@ export async function fanOutPostMatches<
       const dids = subs.subscriberDidsForSubject(subject, authorDid);
       for (const did of dids) {
         addReason(did, { kind: "topic", topic: slug });
+      }
+      if (authorDid !== undefined) {
+        const tupleSubject = authorTopicSubscriptionSubject(authorDid, slug);
+        const tupleDids = subs.subscriberDidsForSubject(tupleSubject, authorDid);
+        for (const did of tupleDids) {
+          addReason(did, { kind: "author_topic", authorDid, topic: slug });
+        }
       }
     }
   }
