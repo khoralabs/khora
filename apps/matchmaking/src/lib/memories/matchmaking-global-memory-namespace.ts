@@ -1,8 +1,0 @@
-import { matchmakingPublicMemoryNamespace } from "./matchmaking-memory-namespaces.ts";
-
-/**
- * Backward-compatible alias for the shared public namespace.
- */
-export function matchmakingGlobalMemoryNamespace(_subjectId?: string): string {
-  return matchmakingPublicMemoryNamespace();
-}
