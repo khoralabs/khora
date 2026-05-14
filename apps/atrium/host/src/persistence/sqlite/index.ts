@@ -1,9 +1,10 @@
+export { createAgentRelaySqlitePersistence } from "./agent-relay-sqlite.ts";
 export {
-  type CreateSwarmHostDocumentStoreOptions,
-  createSwarmHostDocumentStore,
-  type SwarmHostDocumentStoreParsers,
+  type AgentRelayDocumentStoreParsers,
+  type CreateAgentRelayDocumentStoreOptions,
+  createAgentRelayDocumentStore,
 } from "./document-store.ts";
-export { createSwarmHostEntitySqlitePersistence } from "./entity-sqlite.ts";
+export { createAgentRelayEntitySqlitePersistence } from "./entity-sqlite.ts";
 export { createFrameChannelHubPersistenceSqlite } from "./frame-channel-hub-persistence-sqlite.ts";
 export {
   type SqliteMaintenanceHandle,
@@ -22,5 +23,4 @@ export {
   createRegistrationsSubjectsRepo,
   type RegistrationsSubjectsRepo,
 } from "./registrations-subjects-sqlite.ts";
-export { configureSwarmHostSqlitePragmas, SWARM_HOST_SCHEMA_STATEMENTS } from "./schema.ts";
-export { createSwarmHostSqlitePersistence } from "./swarm-host-sqlite.ts";
+export { AGENT_RELAY_SCHEMA_STATEMENTS, configureAgentRelaySqlitePragmas } from "./schema.ts";

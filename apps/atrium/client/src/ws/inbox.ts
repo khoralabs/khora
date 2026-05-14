@@ -1,5 +1,5 @@
+import type { AgentNotification } from "@khoralabs/agent-relay";
 import { type AgentSigner, signedInboxUrl } from "@khoralabs/atrium-auth";
-import type { AgentNotification } from "@khoralabs/swarm-host";
 import type { AtriumClientEvent } from "../atrium-events.ts";
 import { type InboxNotificationRow, parseInboxWebSocketMessage } from "../inbox-ws.ts";
 

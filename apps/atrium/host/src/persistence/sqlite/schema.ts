@@ -5,7 +5,7 @@ import { configureMemoriesSqlitePragmas } from "@khoralabs/memories-sqlite";
  * Apply the production-tuned pragma set used by `openMemoriesDatabase`. Call before
  * {@link migrateAtriumHostDb} when opening a raw `new Database(...)` in tests.
  */
-export function configureSwarmHostSqlitePragmas(db: Database): void {
+export function configureAgentRelaySqlitePragmas(db: Database): void {
   configureMemoriesSqlitePragmas(db);
 }
 
@@ -25,7 +25,7 @@ export function configureSwarmHostSqlitePragmas(db: Database): void {
  * CREATE TABLE that hasn't yet become visible in the same batch.
  */
 /** Baseline schema for migration `0.0.0-0.1.0/001-initial` (legacy `topic_subscriptions` table). */
-export const SWARM_HOST_SCHEMA_STATEMENTS: readonly string[] = [
+export const AGENT_RELAY_SCHEMA_STATEMENTS: readonly string[] = [
   `CREATE TABLE IF NOT EXISTS rooms (
      session_id TEXT PRIMARY KEY NOT NULL,
      pairing_secret_hex TEXT NOT NULL,

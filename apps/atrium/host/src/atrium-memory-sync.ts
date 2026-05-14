@@ -1,3 +1,4 @@
+import { AGENT_RELAY_EVENT_KIND, type AgentRelayEventUnion } from "@khoralabs/agent-relay";
 import {
   type AtriumPost,
   type AtriumProfile,
@@ -6,11 +7,10 @@ import {
 } from "@khoralabs/atrium-contracts";
 import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import { embedTextChunks } from "@khoralabs/memories-core/helpers";
-import { SWARM_EVENT_KIND, type SwarmHostEventUnion } from "@khoralabs/swarm-host";
-import type { SwarmMemoryOpMapper } from "./atrium-swarm-memory-ops.ts";
 import type { AtriumHostAppContext } from "./atrium-app-context.ts";
 import type { atriumMemoriesOntology } from "./atrium-memories-ontology.ts";
 import { computePostAttachScopes, computeProfileAttachScopes } from "./atrium-memory-scopes.ts";
+import type { SwarmMemoryOpMapper } from "./atrium-swarm-memory-ops.ts";
 
 type TNode = typeof atriumMemoriesOntology.nodeLabels;
 type TEdge = typeof atriumMemoriesOntology.edgeLabels;
@@ -109,10 +109,10 @@ export async function buildMultiFieldMergeContent(
 export function atriumSwarmMemoryOpMapper(
   ac: AtriumHostAppContext,
 ): SwarmMemoryOpMapper<TNode, TEdge, AtriumProfile, AtriumPost, unknown, never> {
-  return async (event: SwarmHostEventUnion<AtriumProfile, AtriumPost, unknown, never>) => {
+  return async (event: AgentRelayEventUnion<AtriumProfile, AtriumPost, unknown, never>) => {
     if (
-      event.kind === SWARM_EVENT_KIND.PROFILE_CREATED ||
-      event.kind === SWARM_EVENT_KIND.PROFILE_UPDATED
+      event.kind === AGENT_RELAY_EVENT_KIND.PROFILE_CREATED ||
+      event.kind === AGENT_RELAY_EVENT_KIND.PROFILE_UPDATED
     ) {
       const profile = event.payload.profile;
       const fields = atriumProfileMemoryFieldTexts(profile);
@@ -138,8 +138,8 @@ export function atriumSwarmMemoryOpMapper(
     }
 
     if (
-      event.kind === SWARM_EVENT_KIND.POST_CREATED ||
-      event.kind === SWARM_EVENT_KIND.POST_UPDATED
+      event.kind === AGENT_RELAY_EVENT_KIND.POST_CREATED ||
+      event.kind === AGENT_RELAY_EVENT_KIND.POST_UPDATED
     ) {
       const post = event.payload.post;
       const fields = atriumPostMemoryFieldTexts(post);
@@ -190,7 +190,7 @@ export function atriumSwarmMemoryOpMapper(
       ];
     }
 
-    if (event.kind === SWARM_EVENT_KIND.POST_DELETED) {
+    if (event.kind === AGENT_RELAY_EVENT_KIND.POST_DELETED) {
       const post = event.payload.post;
       const ns = post.kind === "probe" ? ac.probeNamespace : ac.postNamespace;
       return [{ op: "delete" as const, params: { namespace: ns, key: post.id } }];

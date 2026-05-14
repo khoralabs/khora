@@ -1,4 +1,4 @@
-import type { PrincipalRegistrationResult } from "@khoralabs/swarm-host";
+import type { PrincipalRegistrationResult } from "@khoralabs/agent-relay";
 import z from "zod";
 import type { AtriumProfile } from "./atrium-profile.ts";
 import { zAtriumProfile } from "./atrium-profile.ts";
@@ -49,7 +49,7 @@ export const zAtriumInvitePreviewResponse = z.object({
 
 export type AtriumInvitePreviewResponse = z.infer<typeof zAtriumInvitePreviewResponse>;
 
-/** HTTP uses `did`; swarm-host uses opaque `principalId` (same string at runtime). */
+/** HTTP uses `did`; agent-relay uses opaque `principalId` (same string at runtime). */
 export type AtriumRegistrationResult = Omit<
   PrincipalRegistrationResult<AtriumProfile>,
   "principalId"

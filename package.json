@@ -40,7 +40,6 @@
     "packages/obp/v2/session/impl/ts",
     "packages/obp/v2/nbc/impl/ts",
     "packages/obp/v2/transport-http2/impl/ts",
-    "packages/obp/v2/transport-ws/impl/ts",
-    "packages/swarm/*"
+    "packages/obp/v2/transport-ws/impl/ts"
   ]
 }

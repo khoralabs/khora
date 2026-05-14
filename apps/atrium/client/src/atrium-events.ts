@@ -1,9 +1,9 @@
+import type { AgentNotification } from "@khoralabs/agent-relay";
 import type {
   AtriumPost,
   AtriumProfile,
   AtriumRegistrationResult,
 } from "@khoralabs/atrium-contracts";
-import type { AgentNotification } from "@khoralabs/swarm-host";
 import type { InboxNotificationRow } from "./inbox-ws.ts";
 
 /** Pull-based inbox list payload (same shape as `AtriumClient.listInbox` resolution value). */

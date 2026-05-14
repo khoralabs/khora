@@ -1,4 +1,12 @@
 import type { Database } from "bun:sqlite";
+import {
+  AGENT_RELAY_EVENT_KIND,
+  type AgentNotificationBufferPort,
+  AgentRelay,
+  createFrameChannelHub,
+  createInboxWsHub,
+  type FrameChannelHubPort,
+} from "@khoralabs/agent-relay";
 import type { AtriumDidAuth } from "@khoralabs/atrium-auth";
 import {
   type AtriumPost,
@@ -11,30 +19,21 @@ import {
 import { ids, MemoriesClient, stableId } from "@khoralabs/memories-core";
 import { type EmbeddingModel, embedTextChunks } from "@khoralabs/memories-core/helpers";
 import { createMemoriesPersistence, openMemoriesDatabase } from "@khoralabs/memories-sqlite";
-import {
-  type AgentNotificationBufferPort,
-  createFrameChannelHub,
-  createInboxWsHub,
-  type FrameChannelHubPort,
-  SWARM_EVENT_KIND,
-  SwarmHost,
-} from "@khoralabs/swarm-host";
 import type { AtriumHostAppContext } from "./atrium-app-context.ts";
-import { minimalSourceMapForResolve } from "./atrium-memories-store-bridge.ts";
 import { atriumMemoriesOntology } from "./atrium-memories-ontology.ts";
 import { maybeAtriumMemoryAutolinkAfterSync } from "./atrium-memory-autolink.ts";
 import { atriumSwarmMemoryOpMapper } from "./atrium-memory-sync.ts";
-import { composeOnEventWithMemorySync } from "./atrium-swarm-memory-sync.ts";
 import { fanOutPostMatches } from "./atrium-post-fanout.ts";
 import {
   ensureAtriumScopeLinksForPost,
   ensureAtriumScopeLinksForProfile,
 } from "./atrium-scope-links.ts";
+import { composeOnEventWithMemorySync } from "./atrium-swarm-memory-sync.ts";
 import {
+  createAgentRelayDocumentStore,
+  createAgentRelaySqlitePersistence,
   createProbeSubscribersRepo,
   createSqliteAgentNotificationBuffer,
-  createSwarmHostDocumentStore,
-  createSwarmHostSqlitePersistence,
   migrateAtriumHostDb,
   type ProbeSubscribersRepo,
   type SqliteMaintenanceHandle,
@@ -69,13 +68,13 @@ export type AtriumHostConfig = {
 
 export type AtriumHostContext = {
   config: AtriumHostConfig;
-  host: SwarmHost<AtriumProfile, AtriumPost, unknown, never>;
+  host: AgentRelay<AtriumProfile, AtriumPost, unknown, never>;
   memories: MemoriesClient<TNode, TEdge, EntityMap>;
   db: Database;
   notificationBuffer: AgentNotificationBufferPort;
   auth: AtriumDidAuth;
   usernamesRepo: AtriumUsernamesRepo;
-  /** Atrium rooms: ticket-gated WebSockets backed by {@link SwarmHost.frameChannelHub}. */
+  /** Atrium rooms: ticket-gated WebSockets backed by {@link AgentRelay.frameChannelHub}. */
   roomHub: FrameChannelHubPort;
   /** Periodic SQLite maintenance handle. `undefined` when explicitly disabled via config. */
   sqliteMaintenance?: SqliteMaintenanceHandle;
@@ -87,9 +86,9 @@ export const USERNAME_TAKEN_REASON = "USERNAME_TAKEN" as const;
 export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostContext {
   const db = openMemoriesDatabase(config.dbPath);
   migrateAtriumHostDb(db);
-  const hostPersistence = createSwarmHostSqlitePersistence(db);
+  const hostPersistence = createAgentRelaySqlitePersistence(db);
   const persistence = createMemoriesPersistence(db);
-  const documentStore = createSwarmHostDocumentStore<EntityMap>(db, {
+  const documentStore = createAgentRelayDocumentStore<EntityMap>(db, {
     parsers: {
       profile: (raw) => zAtriumProfile.parse(raw),
       post: (raw) => zAtriumPost.parse(raw),
@@ -125,7 +124,7 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
   const mapMemoryOps = atriumSwarmMemoryOpMapper(appContext);
 
   const auth = typeof config.auth === "function" ? config.auth(db) : config.auth;
-  const host = new SwarmHost<AtriumProfile, AtriumPost, unknown, never>({
+  const host = new AgentRelay<AtriumProfile, AtriumPost, unknown, never>({
     persistence: hostPersistence,
     authPreflight: auth.preflight,
     notificationBuffer,
@@ -135,7 +134,7 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
     onEvent: composeOnEventWithMemorySync(memories, mapMemoryOps, async (ctx, event) => {
       const ac = ctx.appContext as AtriumHostAppContext;
       try {
-        if (event.kind === SWARM_EVENT_KIND.REGISTRATION_PROFILE_BUILD) {
+        if (event.kind === AGENT_RELAY_EVENT_KIND.REGISTRATION_PROFILE_BUILD) {
           try {
             const req = event.payload.request;
             const meta = parseAtriumRegistrationMetadata(req.metadata);
@@ -166,8 +165,8 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
         }
 
         if (
-          event.kind === SWARM_EVENT_KIND.PROFILE_CREATED ||
-          event.kind === SWARM_EVENT_KIND.PROFILE_UPDATED
+          event.kind === AGENT_RELAY_EVENT_KIND.PROFILE_CREATED ||
+          event.kind === AGENT_RELAY_EVENT_KIND.PROFILE_UPDATED
         ) {
           const profile = event.payload.profile;
           ctx.persistenceClient.upsertProfile({
@@ -182,8 +181,8 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
         }
 
         if (
-          event.kind === SWARM_EVENT_KIND.POST_CREATED ||
-          event.kind === SWARM_EVENT_KIND.POST_UPDATED
+          event.kind === AGENT_RELAY_EVENT_KIND.POST_CREATED ||
+          event.kind === AGENT_RELAY_EVENT_KIND.POST_UPDATED
         ) {
           const post = event.payload.post;
           ctx.persistenceClient.upsertPost({
@@ -199,7 +198,7 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
             await syncProbeSubscriber(probeSubscribers, ac, post);
           }
 
-          if (event.kind === SWARM_EVENT_KIND.POST_CREATED) {
+          if (event.kind === AGENT_RELAY_EVENT_KIND.POST_CREATED) {
             await fanOutPostMatches({
               ctx,
               probeSubscribers,
@@ -213,7 +212,7 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
           return;
         }
 
-        if (event.kind === SWARM_EVENT_KIND.POST_DELETED) {
+        if (event.kind === AGENT_RELAY_EVENT_KIND.POST_DELETED) {
           const post = event.payload.post;
           if (post.kind === "probe") {
             probeSubscribers.delete(post.id);

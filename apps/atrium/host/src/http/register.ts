@@ -1,5 +1,5 @@
+import type { PrincipalRegistrationRequest } from "@khoralabs/agent-relay";
 import { zAtriumRegistrationRequestBody } from "@khoralabs/atrium-contracts";
-import type { PrincipalRegistrationRequest } from "@khoralabs/swarm-host";
 import { allowReregister } from "../env.ts";
 import { inviteRequiredFromEnv, invitesPerRegistrationFromEnv } from "../invites/index.ts";
 import { clientIpFromRequest } from "../rate-limit.ts";

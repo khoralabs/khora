@@ -1,5 +1,5 @@
-import type { MemorySearchHit } from "@khoralabs/memories-core/helpers";
 import type { AtriumMemoriesSearchScope } from "@khoralabs/atrium-contracts";
+import type { MemorySearchHit } from "@khoralabs/memories-core/helpers";
 import z from "zod";
 import { atriumMemoriesHybridSearch } from "../atrium-memories-search.ts";
 import type { HostRouteDeps } from "./deps.ts";
@@ -7,24 +7,27 @@ import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses.t
 
 const zAtriumMemoriesEntityKind = z.enum(["profiles", "posts", "topics", "probes"]);
 
-const zAtriumMemoriesSearchScope: z.ZodType<AtriumMemoriesSearchScope> = z.discriminatedUnion("kind", [
-  z.object({
-    kind: z.literal("profiles"),
-    withRelatedPosts: z.boolean().optional(),
-  }),
-  z.object({ kind: z.literal("posts") }),
-  z.object({ kind: z.literal("topics") }),
-  z.object({ kind: z.literal("probes") }),
-  z.object({
-    kind: z.literal("multi"),
-    includes: z.array(zAtriumMemoriesEntityKind).min(1),
-  }),
-  z.object({
-    kind: z.literal("raw"),
-    namespace: z.string().trim().min(1),
-    additionalNamespaces: z.array(z.string().trim().min(1)).optional(),
-  }),
-]);
+const zAtriumMemoriesSearchScope: z.ZodType<AtriumMemoriesSearchScope> = z.discriminatedUnion(
+  "kind",
+  [
+    z.object({
+      kind: z.literal("profiles"),
+      withRelatedPosts: z.boolean().optional(),
+    }),
+    z.object({ kind: z.literal("posts") }),
+    z.object({ kind: z.literal("topics") }),
+    z.object({ kind: z.literal("probes") }),
+    z.object({
+      kind: z.literal("multi"),
+      includes: z.array(zAtriumMemoriesEntityKind).min(1),
+    }),
+    z.object({
+      kind: z.literal("raw"),
+      namespace: z.string().trim().min(1),
+      additionalNamespaces: z.array(z.string().trim().min(1)).optional(),
+    }),
+  ],
+);
 
 const zSearchScopeMode = z.enum(["pathSubtree", "scopeDag", "exactScope"]);
 
@@ -95,27 +98,30 @@ export async function handleMemoriesSearch(
   let hits: MemorySearchHit[];
   const runHybrid = deps.memoriesHybridSearchImpl ?? atriumMemoriesHybridSearch;
   try {
-    hits = await runHybrid(ctx.memories, {
-      memoryNamespaces: {
-        profileNamespace: ctx.config.profileNamespace,
-        postNamespace: ctx.config.postNamespace,
-        probeNamespace: ctx.config.probeNamespace,
-        ...(ctx.config.topicNamespace !== undefined
-          ? { topicNamespace: ctx.config.topicNamespace }
-          : {}),
+    hits = await runHybrid(
+      ctx.memories,
+      {
+        memoryNamespaces: {
+          profileNamespace: ctx.config.profileNamespace,
+          postNamespace: ctx.config.postNamespace,
+          probeNamespace: ctx.config.probeNamespace,
+          ...(ctx.config.topicNamespace !== undefined
+            ? { topicNamespace: ctx.config.topicNamespace }
+            : {}),
+        },
+        defaultEmbeddingModel: ctx.config.embeddingModel,
       },
-      defaultEmbeddingModel: ctx.config.embeddingModel,
-    },
-    {
-      scope: body.scope,
-      content: { text: body.query },
-      options: {
-        topK: body.limit ?? 20,
-        ...(body.minScore !== undefined ? { minScore: body.minScore } : {}),
-        ...(!hasEmbedding ? { arms: { lexical: 1, vector: 0 } } : {}),
+      {
+        scope: body.scope,
+        content: { text: body.query },
+        options: {
+          topK: body.limit ?? 20,
+          ...(body.minScore !== undefined ? { minScore: body.minScore } : {}),
+          ...(!hasEmbedding ? { arms: { lexical: 1, vector: 0 } } : {}),
+        },
+        ...(body.searchScopeMode !== undefined ? { searchScopeMode: body.searchScopeMode } : {}),
       },
-      ...(body.searchScopeMode !== undefined ? { searchScopeMode: body.searchScopeMode } : {}),
-    });
+    );
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (msg.includes("topicNamespace")) {

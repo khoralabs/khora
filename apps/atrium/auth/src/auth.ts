@@ -5,7 +5,7 @@ import type {
   InboxAccessVerifyContext,
   PrincipalRegistrationRequest,
   RegistrationVerifyContext,
-} from "@khoralabs/swarm-host";
+} from "@khoralabs/agent-relay";
 import type { NonceStore } from "./nonce-store.ts";
 import { createSqliteNonceStore } from "./sqlite-nonce-store.ts";
 import type { AuthStrategy } from "./strategy.ts";
@@ -55,7 +55,7 @@ export type CreateAtriumDidAuthOptions = Omit<AtriumDidAuthOptions, "nonceStore"
 
 /**
  * Lifecycle owner for Atrium DID authentication. Construct one per host process, hand
- * {@link AtriumDidAuth.preflight} to `SwarmHost`, and use `requireAuthenticatedRequest` /
+ * {@link AtriumDidAuth.preflight} to `AgentRelay`, and use `requireAuthenticatedRequest` /
  * `requireInboxAccess` / `verifyRegistration` to guard HTTP routes.
  *
  * Swapping the auth scheme = passing a different {@link AuthStrategy}; route code is unaffected.
@@ -136,7 +136,7 @@ export class AtriumDidAuth {
   /**
    * Registration-time verification: the signed body DID must match the claimed registration DID,
    * and the signature must verify over the raw POST body bytes. Designed to be called once before
-   * `SwarmHost.registerPrincipal` (which calls the same preflight internally via the registration
+   * `AgentRelay.registerPrincipal` (which calls the same preflight internally via the registration
    * context — see {@link AtriumDidAuth.preflight}).
    */
   async verifyRegistration(

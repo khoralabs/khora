@@ -1,23 +1,24 @@
 export type { SessionInit } from "@khoralabs/obp-v2-frames-impl";
 export {
-  SWARM_EVENT_KIND,
-  type SwarmAppEventConstraint,
-  type SwarmHostEventUnion,
-  type SwarmPostCreatedEvent,
-  type SwarmPostDeletedEvent,
-  type SwarmPostUpdatedEvent,
-  type SwarmProfileCreatedEvent,
-  type SwarmProfileDeletedEvent,
-  type SwarmProfileUpdatedEvent,
-  type SwarmRegistrationProfileBuildEvent,
-  type SwarmRegistrationProfileBuildPayload,
-  type SwarmTopicCreatedEvent,
-  type SwarmTopicDeletedEvent,
-  type SwarmTopicUpdatedEvent,
+  AGENT_RELAY_EVENT_KIND,
+  type AgentRelayAppEventConstraint,
+  type AgentRelayBuiltInEvent,
+  type AgentRelayEventUnion,
+  type AgentRelayPostCreatedEvent,
+  type AgentRelayPostDeletedEvent,
+  type AgentRelayPostUpdatedEvent,
+  type AgentRelayProfileCreatedEvent,
+  type AgentRelayProfileDeletedEvent,
+  type AgentRelayProfileUpdatedEvent,
+  type AgentRelayRegistrationProfileBuildEvent,
+  type AgentRelayRegistrationProfileBuildPayload,
+  type AgentRelayTopicCreatedEvent,
+  type AgentRelayTopicDeletedEvent,
+  type AgentRelayTopicUpdatedEvent,
 } from "./events.ts";
 export {
-  type SwarmFrameChannelWsData,
-  swarmFrameChannelWebSocketHandlers,
+  type AgentRelayFrameChannelWsData,
+  agentRelayFrameChannelWebSocketHandlers,
 } from "./frame-channel/bun-routes.ts";
 export {
   type CreateFrameChannelHubOptions,
@@ -25,31 +26,31 @@ export {
 } from "./frame-channel/hub.ts";
 export type { FrameChannelHubPort, FrameChannelPeer } from "./frame-channel/port.ts";
 export {
-  SwarmHost,
-  type SwarmHostDeps,
-  type SwarmHostEventHandlerCtx,
+  AgentRelay,
+  type AgentRelayDeps,
+  type AgentRelayEventHandlerCtx,
 } from "./host.ts";
 export {
   createInboxWsHub,
   deliverAgentNotification,
 } from "./inbox/index.ts";
-export { SWARM_AGGREGATE_DOMAIN } from "./model/index.ts";
+export { AGENT_RELAY_AGGREGATE_DOMAIN } from "./model/index.ts";
 export {
-  createSwarmHostPersistenceClient,
-  type SwarmHostPersistenceClient,
+  type AgentRelayPersistenceClient,
+  createAgentRelayPersistenceClient,
 } from "./persistence/client.ts";
 export type {
+  AgentRelayEntityKind,
+  AgentRelayEntityPersistence,
+  AgentRelayEntityRow,
+  AgentRelayEntityUpsert,
+  AgentRelayPersistence,
+  AgentRelayPostPersistence,
+  AgentRelayRegistrations,
+  AgentRelaySubjectSubscriptions,
   FrameChannelHubPersistence,
   FrameChannelRoomRecord,
   FrameChannelStoredFrame,
-  SwarmHostAgentRegistrations,
-  SwarmHostAgentSubjectSubscriptions,
-  SwarmHostEntityKind,
-  SwarmHostEntityPersistence,
-  SwarmHostEntityRow,
-  SwarmHostEntityUpsert,
-  SwarmHostPersistence,
-  SwarmHostPostPersistence,
 } from "./persistence/types.ts";
 export type {
   AgentNotification,

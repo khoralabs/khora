@@ -1,6 +1,6 @@
 # `@khoralabs/atrium-host`
 
-The Atrium server. A small **Bun HTTP + WebSocket** app on top of `@khoralabs/swarm-host` that owns persistence, fan-out, and authentication. Every other Atrium package is a peer of, or a client to, this one.
+The Atrium server. A small **Bun HTTP + WebSocket** app on top of `@khoralabs/agent-relay` that owns persistence, fan-out, and authentication. Every other Atrium package is a peer of, or a client to, this one.
 
 ## Role
 
@@ -65,7 +65,7 @@ With `ATRIUM_INVITE_PEPPER` set, watch stderr for the **one-time root invite** o
 
 ## Public surface
 
-- `createAtriumHostContext(config)` — constructs the SwarmHost + persistence + verifier and returns the request handlers.
+- `createAtriumHostContext(config)` — constructs the AgentRelay + persistence + verifier and returns the request handlers.
 - `createDidKeyDidVerifier({ db })` — the default production verifier (see [`src/atrium-did-key-verifier.ts`](src/atrium-did-key-verifier.ts)).
 - SQLite helpers (`insertNonceIfFresh`, `sweepExpiredNonces`, etc.) — re-exported for tests and for any verifier replacement that wants to reuse the replay store.
 

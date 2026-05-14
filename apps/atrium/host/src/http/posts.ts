@@ -1,3 +1,4 @@
+import { AGENT_RELAY_AGGREGATE_DOMAIN, AGENT_RELAY_EVENT_KIND } from "@khoralabs/agent-relay";
 import {
   mergeAtriumPostPatch,
   normalizeTopicSlug,
@@ -6,7 +7,6 @@ import {
   zAtriumPostPatch,
 } from "@khoralabs/atrium-contracts";
 import { stableId } from "@khoralabs/memories-core";
-import { SWARM_AGGREGATE_DOMAIN, SWARM_EVENT_KIND } from "@khoralabs/swarm-host";
 import z from "zod";
 import { deleteOtherStatusPostsForAuthor } from "../atrium-status-posts.ts";
 import type { HostRouteDeps } from "./deps.ts";
@@ -78,9 +78,9 @@ export async function handleCreatePost(
       await deleteOtherStatusPostsForAuthor(ctx, profileId, post.id);
     }
     await ctx.host.notify({
-      kind: SWARM_EVENT_KIND.POST_CREATED,
+      kind: AGENT_RELAY_EVENT_KIND.POST_CREATED,
       occurredAt: Date.now(),
-      aggregate: { domain: SWARM_AGGREGATE_DOMAIN.post, id: post.id },
+      aggregate: { domain: AGENT_RELAY_AGGREGATE_DOMAIN.post, id: post.id },
       change: "created",
       source: "app",
       payload: { post },
@@ -138,9 +138,9 @@ export async function handleUpdatePost(
       await deleteOtherStatusPostsForAuthor(ctx, agentProfileId, post.id);
     }
     await ctx.host.notify({
-      kind: SWARM_EVENT_KIND.POST_UPDATED,
+      kind: AGENT_RELAY_EVENT_KIND.POST_UPDATED,
       occurredAt: Date.now(),
-      aggregate: { domain: SWARM_AGGREGATE_DOMAIN.post, id: post.id },
+      aggregate: { domain: AGENT_RELAY_AGGREGATE_DOMAIN.post, id: post.id },
       change: "updated",
       source: "app",
       payload: { post, previous },
@@ -182,9 +182,9 @@ export async function handleDeletePost(
       return jsonError("Forbidden", 403);
     }
     await ctx.host.notify({
-      kind: SWARM_EVENT_KIND.POST_DELETED,
+      kind: AGENT_RELAY_EVENT_KIND.POST_DELETED,
       occurredAt: Date.now(),
-      aggregate: { domain: SWARM_AGGREGATE_DOMAIN.post, id: post.id },
+      aggregate: { domain: AGENT_RELAY_AGGREGATE_DOMAIN.post, id: post.id },
       change: "deleted",
       source: "app",
       payload: { post },

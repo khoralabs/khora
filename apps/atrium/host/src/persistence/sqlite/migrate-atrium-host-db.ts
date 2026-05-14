@@ -4,7 +4,7 @@ import m001Initial from "./migrations/0.0.0-0.1.0/001-initial.ts";
 import m001Subjects from "./migrations/0.1.0-0.2.0/001-subjects.ts";
 import m001AtriumRooms from "./migrations/0.2.0-0.3.0/001-atrium-rooms.ts";
 import m001AtriumRoomsInviteeIndex from "./migrations/0.3.0-0.4.0/001-atrium-rooms-invitee-index.ts";
-import { configureSwarmHostSqlitePragmas } from "./schema.ts";
+import { configureAgentRelaySqlitePragmas } from "./schema.ts";
 
 const migrations = [m001Initial, m001Subjects, m001AtriumRooms, m001AtriumRoomsInviteeIndex];
 
@@ -14,6 +14,6 @@ const migrations = [m001Initial, m001Subjects, m001AtriumRooms, m001AtriumRoomsI
  * rows in the default `_schema_migrations` table on the same file.
  */
 export function migrateAtriumHostDb(db: Database): void {
-  configureSwarmHostSqlitePragmas(db);
+  configureAgentRelaySqlitePragmas(db);
   createMigrationRunner({ tableName: "atrium_host_schema_migrations" }).runSync(db, migrations);
 }

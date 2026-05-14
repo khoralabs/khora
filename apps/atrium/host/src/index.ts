@@ -1,10 +1,10 @@
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import { createAtriumDidAuth } from "@khoralabs/atrium-auth";
 import {
-  type SwarmFrameChannelWsData,
-  swarmFrameChannelWebSocketHandlers,
-} from "@khoralabs/swarm-host";
+  type AgentRelayFrameChannelWsData,
+  agentRelayFrameChannelWebSocketHandlers,
+} from "@khoralabs/agent-relay";
+import { createAtriumDidAuth } from "@khoralabs/atrium-auth";
 import type { ServerWebSocket } from "bun";
 import { createAtriumHostContext } from "./create-atrium-host.ts";
 import {
@@ -76,7 +76,7 @@ const deps: HostRouteDeps = {
 };
 
 const inboxWsHandlers = createInboxWsHandlers({ ctx, snapshotLimit: envInboxSnapshotLimit });
-const roomWsHandlers = swarmFrameChannelWebSocketHandlers({
+const roomWsHandlers = agentRelayFrameChannelWebSocketHandlers({
   hub: ctx.roomHub,
 });
 
@@ -99,7 +99,7 @@ const server = Bun.serve<AtriumWsData>({
       if (ws.data.kind === "inbox") {
         inboxWsHandlers.close?.(ws as never, code, reason);
       } else {
-        (roomWsHandlers.close as (ws: ServerWebSocket<SwarmFrameChannelWsData>) => void)(
+        (roomWsHandlers.close as (ws: ServerWebSocket<AgentRelayFrameChannelWsData>) => void)(
           ws as never,
         );
       }

@@ -1,19 +1,19 @@
 import type { Database } from "bun:sqlite";
+import type { AgentRelayEntityKind } from "@khoralabs/agent-relay";
 import type { DefaultEntityMap, ResolvedSource, SourceMap, Store } from "@khoralabs/memories-core";
 import type { TextFeatureExportRow } from "@khoralabs/memories-core/persistence";
-import type { SwarmHostEntityKind } from "@khoralabs/swarm-host";
 import { migrateAtriumHostDb } from "./migrate-atrium-host-db.ts";
 
-export type SwarmHostDocumentStoreParsers<EntityMap extends Record<string, unknown>> = {
+export type AgentRelayDocumentStoreParsers<EntityMap extends Record<string, unknown>> = {
   [K in keyof EntityMap & string]?: (raw: unknown) => EntityMap[K];
 };
 
-export type CreateSwarmHostDocumentStoreOptions<EntityMap extends Record<string, unknown>> = {
+export type CreateAgentRelayDocumentStoreOptions<EntityMap extends Record<string, unknown>> = {
   /** Required for `{domain}:{id}` whole-document resolves; field paths do not use parsers. */
-  parsers?: SwarmHostDocumentStoreParsers<EntityMap>;
+  parsers?: AgentRelayDocumentStoreParsers<EntityMap>;
 };
 
-type EntityDomain = SwarmHostEntityKind;
+type EntityDomain = AgentRelayEntityKind;
 
 function isEntityDomain(d: string): d is EntityDomain {
   return d === "profile" || d === "post" || d === "topic";
@@ -48,7 +48,7 @@ function fieldValueToResolvedString(value: unknown): string {
     return value;
   }
   if (value === undefined || value === null) {
-    throw new Error("SwarmHostDocumentStore: missing field value");
+    throw new Error("AgentRelayDocumentStore: missing field value");
   }
   return JSON.stringify(value);
 }
@@ -59,9 +59,9 @@ function fieldValueToResolvedString(value: unknown): string {
  * `source_key`: `{domain}:{id}` → whole `body_json` as `kind: "record"` (parser).
  * `{domain}:{id}:{field}` → one field from parsed JSON as `kind: "string"`.
  */
-export function createSwarmHostDocumentStore<
+export function createAgentRelayDocumentStore<
   EntityMap extends Record<string, unknown> = DefaultEntityMap,
->(db: Database, options?: CreateSwarmHostDocumentStoreOptions<EntityMap>): Store<EntityMap> {
+>(db: Database, options?: CreateAgentRelayDocumentStoreOptions<EntityMap>): Store<EntityMap> {
   migrateAtriumHostDb(db);
   const parsers = options?.parsers;
 
@@ -116,7 +116,7 @@ export function createSwarmHostDocumentStore<
       const parsed = parseEntitySourceKey(sourcemap.source_key);
       if (parsed === undefined) {
         return Promise.reject(
-          new Error(`SwarmHostDocumentStore: unrecognized source_key=${sourcemap.source_key}`),
+          new Error(`AgentRelayDocumentStore: unrecognized source_key=${sourcemap.source_key}`),
         );
       }
 
@@ -125,7 +125,7 @@ export function createSwarmHostDocumentStore<
       if (bodyJson === undefined) {
         return Promise.reject(
           new Error(
-            `SwarmHostDocumentStore: no ${parsed.domain} id=${parsed.entityId} for memory_id=${sourcemap.memory_id}`,
+            `AgentRelayDocumentStore: no ${parsed.domain} id=${parsed.entityId} for memory_id=${sourcemap.memory_id}`,
           ),
         );
       }
@@ -136,7 +136,7 @@ export function createSwarmHostDocumentStore<
         if (typeof rawBody !== "object" || rawBody === null || !(parsed.fieldPath in rawBody)) {
           return Promise.reject(
             new Error(
-              `SwarmHostDocumentStore: no field ${parsed.fieldPath} on ${parsed.domain}:${parsed.entityId}`,
+              `AgentRelayDocumentStore: no field ${parsed.fieldPath} on ${parsed.domain}:${parsed.entityId}`,
             ),
           );
         }
@@ -153,7 +153,7 @@ export function createSwarmHostDocumentStore<
       if (parser === undefined) {
         return Promise.reject(
           new Error(
-            `SwarmHostDocumentStore: missing parser for whole-document resolve (${parsed.domain}:${parsed.entityId})`,
+            `AgentRelayDocumentStore: missing parser for whole-document resolve (${parsed.domain}:${parsed.entityId})`,
           ),
         );
       }

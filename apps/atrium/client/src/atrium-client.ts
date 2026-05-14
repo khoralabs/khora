@@ -62,6 +62,8 @@ import { type AtriumFetch, createHttpTransport, type HttpTransport } from "./htt
 import { connectInbox, type InboxWsHandlers } from "./ws/inbox.ts";
 
 export type {
+  AgentRelaySearchScope,
+  AtriumMemoriesSearchScope,
   AtriumRoomCreateBody,
   AtriumRoomCreateResponse,
   AtriumRoomListResponse,
@@ -69,16 +71,12 @@ export type {
   AtriumRoomRole,
   AtriumRoomSummary,
   AtriumRoomTicketResponse,
+  MemoriesSearchScope,
 } from "@khoralabs/atrium-contracts";
 export type {
   ObpFrameConnection,
   ObpWebSocketConnectOptions,
 } from "@khoralabs/obp-v2-transport-ws";
-export type {
-  AtriumMemoriesSearchScope,
-  MemoriesSearchScope,
-  SwarmHostSearchScope,
-} from "@khoralabs/atrium-contracts";
 export type { AgentStatusSnapshot, AgentSyncSnapshot } from "./http/agent.ts";
 export type { AuthorSubscriptionsSnapshot } from "./http/authors.ts";
 export type { InboxListResult, ListInboxParams } from "./http/inbox.ts";

@@ -1,3 +1,4 @@
+import { AGENT_RELAY_EVENT_KIND, type AgentRelayEventUnion } from "@khoralabs/agent-relay";
 import {
   type AtriumPost,
   type AtriumProfile,
@@ -7,7 +8,6 @@ import { integrateNewMemoryIntoGraph } from "@khoralabs/memories-autolink";
 import type { DefaultEntityMap, MemoriesClient } from "@khoralabs/memories-core";
 import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import { embedTextChunks } from "@khoralabs/memories-core/helpers";
-import { SWARM_EVENT_KIND, type SwarmHostEventUnion } from "@khoralabs/swarm-host";
 import type { AtriumMemoriesTEdge, AtriumMemoriesTNode } from "./atrium-memories-ontology.ts";
 import { computePostAttachScopes, computeProfileAttachScopes } from "./atrium-memory-scopes.ts";
 import {
@@ -31,7 +31,7 @@ export async function maybeAtriumMemoryAutolinkAfterSync<E extends Record<string
   profileNamespace: string,
   postNamespace: string,
   probeNamespace: string,
-  event: SwarmHostEventUnion<AtriumProfile, AtriumPost, unknown, never>,
+  event: AgentRelayEventUnion<AtriumProfile, AtriumPost, unknown, never>,
 ): Promise<void> {
   if (process.env.ATRIUM_MEMORY_AUTOLINK !== "1") return;
 
@@ -41,8 +41,8 @@ export async function maybeAtriumMemoryAutolinkAfterSync<E extends Record<string
   const searchOptions = { topK: 25, minScore: 0.2 } as const;
 
   if (
-    event.kind === SWARM_EVENT_KIND.PROFILE_CREATED ||
-    event.kind === SWARM_EVENT_KIND.PROFILE_UPDATED
+    event.kind === AGENT_RELAY_EVENT_KIND.PROFILE_CREATED ||
+    event.kind === AGENT_RELAY_EVENT_KIND.PROFILE_UPDATED
   ) {
     const profile = event.payload.profile;
     const fields = atriumProfileMemoryFieldTexts(profile);
@@ -77,8 +77,8 @@ export async function maybeAtriumMemoryAutolinkAfterSync<E extends Record<string
   }
 
   if (
-    event.kind === SWARM_EVENT_KIND.POST_CREATED ||
-    event.kind === SWARM_EVENT_KIND.POST_UPDATED
+    event.kind === AGENT_RELAY_EVENT_KIND.POST_CREATED ||
+    event.kind === AGENT_RELAY_EVENT_KIND.POST_UPDATED
   ) {
     const post = event.payload.post;
     const fields = atriumPostMemoryFieldTexts(post);

@@ -1,3 +1,4 @@
+import type { AgentRelayAppEventConstraint, AgentRelayEventUnion } from "@khoralabs/agent-relay";
 import type {
   DefaultEntityMap,
   DeleteMemoryParams,
@@ -5,7 +6,6 @@ import type {
   MemoriesClient,
   MergeMemoryParams,
 } from "@khoralabs/memories-core";
-import type { SwarmAppEventConstraint, SwarmHostEventUnion } from "@khoralabs/swarm-host";
 
 /** Single merge or delete applied by a Memories sync loop. */
 export type SwarmMemoryOp<
@@ -22,17 +22,17 @@ export type SwarmMemoryOpMapper<
   TProfile = unknown,
   TPost = unknown,
   TTopic = unknown,
-  TAppEvent extends SwarmAppEventConstraint = never,
+  TAppEvent extends AgentRelayAppEventConstraint = never,
 > = (
-  event: SwarmHostEventUnion<TProfile, TPost, TTopic, TAppEvent>,
+  event: AgentRelayEventUnion<TProfile, TPost, TTopic, TAppEvent>,
 ) => SwarmMemoryOp<TNode, TEdge>[] | Promise<SwarmMemoryOp<TNode, TEdge>[]>;
 
 export type SwarmMemoriesSyncHandler<
   TProfile = unknown,
   TPost = unknown,
   TTopic = unknown,
-  TAppEvent extends SwarmAppEventConstraint = never,
-> = (event: SwarmHostEventUnion<TProfile, TPost, TTopic, TAppEvent>) => void | Promise<void>;
+  TAppEvent extends AgentRelayAppEventConstraint = never,
+> = (event: AgentRelayEventUnion<TProfile, TPost, TTopic, TAppEvent>) => void | Promise<void>;
 
 /**
  * Compose a {@link SwarmMemoriesSyncHandler} from a mapper; builders typically supply only `mapEvent`.
@@ -44,7 +44,7 @@ export function createSwarmMemoriesSyncHandler<
   TProfile = unknown,
   TPost = unknown,
   TTopic = unknown,
-  TAppEvent extends SwarmAppEventConstraint = never,
+  TAppEvent extends AgentRelayAppEventConstraint = never,
 >(
   client: MemoriesClient<TNode, TEdge, TEntityMap>,
   mapEvent: SwarmMemoryOpMapper<TNode, TEdge, TProfile, TPost, TTopic, TAppEvent>,

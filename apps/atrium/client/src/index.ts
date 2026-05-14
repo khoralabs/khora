@@ -1,3 +1,8 @@
+export type {
+  AgentNotification,
+  PrincipalRegistrationRequest,
+  PrincipalRegistrationResult,
+} from "@khoralabs/agent-relay";
 export type { AgentSigner } from "@khoralabs/atrium-auth";
 export type {
   AgentStatusResponse,
@@ -32,11 +37,6 @@ export {
   zAtriumRegistrationMetadata,
   zAtriumRegistrationRequestBody,
 } from "@khoralabs/atrium-contracts";
-export type {
-  AgentNotification,
-  PrincipalRegistrationRequest,
-  PrincipalRegistrationResult,
-} from "@khoralabs/swarm-host";
 export {
   type AgentStatusSnapshot,
   type AgentSyncSnapshot,

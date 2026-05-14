@@ -1,3 +1,4 @@
+import { AGENT_RELAY_AGGREGATE_DOMAIN, AGENT_RELAY_EVENT_KIND } from "@khoralabs/agent-relay";
 import {
   type AtriumProfile,
   mergeAtriumProfilePatch,
@@ -5,7 +6,6 @@ import {
   zAtriumProfile,
   zAtriumProfilePatch,
 } from "@khoralabs/atrium-contracts";
-import { SWARM_AGGREGATE_DOMAIN, SWARM_EVENT_KIND } from "@khoralabs/swarm-host";
 import z from "zod";
 import type { AtriumHostContext } from "../create-atrium-host.ts";
 import type { HostRouteDeps } from "./deps.ts";
@@ -105,9 +105,9 @@ export async function handleUpdateProfile(
     }
     const profile = mergeAtriumProfilePatch(previous, patch);
     await ctx.host.notify({
-      kind: SWARM_EVENT_KIND.PROFILE_UPDATED,
+      kind: AGENT_RELAY_EVENT_KIND.PROFILE_UPDATED,
       occurredAt: Date.now(),
-      aggregate: { domain: SWARM_AGGREGATE_DOMAIN.profile, id: profile.id },
+      aggregate: { domain: AGENT_RELAY_AGGREGATE_DOMAIN.profile, id: profile.id },
       change: "updated",
       source: "app",
       payload: { profile, previous },

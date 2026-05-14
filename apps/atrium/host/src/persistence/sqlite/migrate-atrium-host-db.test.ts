@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
 import { migrateAtriumHostDb } from "./migrate-atrium-host-db.ts";
-import { SWARM_HOST_SCHEMA_STATEMENTS } from "./schema.ts";
+import { AGENT_RELAY_SCHEMA_STATEMENTS } from "./schema.ts";
 
 function listTables(db: Database): Set<string> {
   return new Set(
@@ -15,7 +15,7 @@ function listTables(db: Database): Set<string> {
 describe("migrateAtriumHostDb", () => {
   test("legacy DB with topic_subscriptions is upgraded and tracking rows recorded", () => {
     const db = new Database(":memory:");
-    for (const sql of SWARM_HOST_SCHEMA_STATEMENTS) {
+    for (const sql of AGENT_RELAY_SCHEMA_STATEMENTS) {
       db.run(sql);
     }
     db.run(

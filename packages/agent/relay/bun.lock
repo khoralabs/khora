@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "@khoralabs/swarm-host",
+      "name": "@khoralabs/agent-relay",
       "devDependencies": {
         "@types/bun": "latest",
       },

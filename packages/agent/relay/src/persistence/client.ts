@@ -1,17 +1,21 @@
 import type { PrincipalId } from "../registration/types.ts";
-import type { SwarmHostEntityRow, SwarmHostEntityUpsert, SwarmHostPersistence } from "./types.ts";
+import type {
+  AgentRelayEntityRow,
+  AgentRelayEntityUpsert,
+  AgentRelayPersistence,
+} from "./types.ts";
 
 const TOPIC_SUBJECT_PREFIX = "topic:";
 
-/** Thin facade over {@link SwarmHostPersistence} entity slices (backend-agnostic). */
-export type SwarmHostPersistenceClient = {
-  readonly persistence: SwarmHostPersistence;
-  upsertProfile(record: SwarmHostEntityUpsert): void;
-  upsertPost(record: SwarmHostEntityUpsert): void;
-  upsertTopic(record: SwarmHostEntityUpsert): void;
-  getProfileById(id: string): SwarmHostEntityRow | undefined;
-  getPostById(id: string): SwarmHostEntityRow | undefined;
-  getTopicById(id: string): SwarmHostEntityRow | undefined;
+/** Thin facade over {@link AgentRelayPersistence} entity slices (backend-agnostic). */
+export type AgentRelayPersistenceClient = {
+  readonly persistence: AgentRelayPersistence;
+  upsertProfile(record: AgentRelayEntityUpsert): void;
+  upsertPost(record: AgentRelayEntityUpsert): void;
+  upsertTopic(record: AgentRelayEntityUpsert): void;
+  getProfileById(id: string): AgentRelayEntityRow | undefined;
+  getPostById(id: string): AgentRelayEntityRow | undefined;
+  getTopicById(id: string): AgentRelayEntityRow | undefined;
   upsertAgentRegistration(principalId: PrincipalId, profileId: string): void;
   agentRegistrationExists(principalId: PrincipalId): boolean;
   profileIdForPrincipal(principalId: PrincipalId): string | undefined;
@@ -26,12 +30,12 @@ export type SwarmHostPersistenceClient = {
     authorProfileId: string;
     kind: string;
     limit: number;
-  }): SwarmHostEntityRow[];
+  }): AgentRelayEntityRow[];
 };
 
-export function createSwarmHostPersistenceClient(
-  persistence: SwarmHostPersistence,
-): SwarmHostPersistenceClient {
+export function createAgentRelayPersistenceClient(
+  persistence: AgentRelayPersistence,
+): AgentRelayPersistenceClient {
   return {
     persistence,
     upsertProfile: (record) => persistence.profiles.upsert(record),

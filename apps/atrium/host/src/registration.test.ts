@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { AGENT_RELAY_AGGREGATE_DOMAIN, AGENT_RELAY_EVENT_KIND } from "@khoralabs/agent-relay";
 import {
   AGENT_REQUEST_HEADER,
   canonicalAgentRequestMessage,
@@ -9,7 +10,6 @@ import {
   signatureBytesToB64Url,
 } from "@khoralabs/atrium-auth";
 import { mergeAtriumProfilePatch, zAtriumProfile } from "@khoralabs/atrium-contracts";
-import { SWARM_AGGREGATE_DOMAIN, SWARM_EVENT_KIND } from "@khoralabs/swarm-host";
 import { EdDSASigner } from "iso-signatures/signers/eddsa.js";
 import { createAtriumHostContext } from "./create-atrium-host.ts";
 
@@ -143,9 +143,9 @@ describe("PATCH /v1/profile rename via PROFILE_UPDATED event path", () => {
     const previousProfile = zAtriumProfile.parse((aResult as { profile: unknown }).profile);
     const next = mergeAtriumProfilePatch(previousProfile, { username: "alice-99" });
     await ctx.host.notify({
-      kind: SWARM_EVENT_KIND.PROFILE_UPDATED,
+      kind: AGENT_RELAY_EVENT_KIND.PROFILE_UPDATED,
       occurredAt: Date.now(),
-      aggregate: { domain: SWARM_AGGREGATE_DOMAIN.profile, id: next.id },
+      aggregate: { domain: AGENT_RELAY_AGGREGATE_DOMAIN.profile, id: next.id },
       change: "updated",
       source: "app",
       payload: { profile: next, previous: previousProfile },

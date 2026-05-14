@@ -1,9 +1,9 @@
-import type { SwarmFrameChannelWsData } from "@khoralabs/swarm-host";
+import type { AgentRelayFrameChannelWsData } from "@khoralabs/agent-relay";
 import type { WebSocketHandler } from "bun";
 import type { AtriumHostContext } from "../create-atrium-host.ts";
 
 /** Discriminated WebSocket `data` for Atrium host (inbox vs OBP room relay). */
-export type AtriumWsData = { kind: "inbox"; did: string } | SwarmFrameChannelWsData;
+export type AtriumWsData = { kind: "inbox"; did: string } | AgentRelayFrameChannelWsData;
 
 export async function sendInboxSnapshot(
   ws: { send: (data: string) => unknown },
@@ -43,7 +43,7 @@ export function createInboxWsHandlers(opts: {
       const did = ws.data.did;
       const { inboxHub } = opts.ctx.host;
       if (inboxHub === undefined) {
-        throw new Error("Atrium: SwarmHost missing inboxHub");
+        throw new Error("Atrium: AgentRelay missing inboxHub");
       }
       inboxHub.add(did, ws);
       void sendInboxSnapshot(ws, did, opts.ctx, opts.snapshotLimit());

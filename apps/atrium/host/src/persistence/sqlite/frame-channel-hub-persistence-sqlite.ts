@@ -3,7 +3,7 @@ import type {
   FrameChannelHubPersistence,
   FrameChannelRoomRecord,
   FrameChannelStoredFrame,
-} from "@khoralabs/swarm-host";
+} from "@khoralabs/agent-relay";
 
 export function createFrameChannelHubPersistenceSqlite(db: Database): FrameChannelHubPersistence {
   const upsertRoomStmt = db.prepare(

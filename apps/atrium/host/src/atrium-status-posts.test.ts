@@ -1,17 +1,17 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
+import { AGENT_RELAY_EVENT_KIND } from "@khoralabs/agent-relay";
 import { zAtriumPost } from "@khoralabs/atrium-contracts";
-import { SWARM_EVENT_KIND } from "@khoralabs/swarm-host";
 import { deleteOtherStatusPostsForAuthor } from "./atrium-status-posts.ts";
 import type { AtriumHostContext } from "./create-atrium-host.ts";
-import { createSwarmHostPostSqlitePersistence } from "./persistence/sqlite/entity-sqlite.ts";
+import { createAgentRelayPostSqlitePersistence } from "./persistence/sqlite/entity-sqlite.ts";
 import { migrateAtriumHostDb } from "./persistence/sqlite/migrate-atrium-host-db.ts";
 
 describe("deleteOtherStatusPostsForAuthor", () => {
   test("notifies POST_DELETED for every other status row", async () => {
     const db = new Database(":memory:");
     migrateAtriumHostDb(db);
-    const posts = createSwarmHostPostSqlitePersistence(db);
+    const posts = createAgentRelayPostSqlitePersistence(db);
     const status1 = zAtriumPost.parse({
       id: "st-1",
       kind: "status",
@@ -50,7 +50,7 @@ describe("deleteOtherStatusPostsForAuthor", () => {
     await deleteOtherStatusPostsForAuthor(ctx, "prof-a", "st-2");
 
     expect(notified).toHaveLength(1);
-    expect(notified[0]?.kind).toBe(SWARM_EVENT_KIND.POST_DELETED);
+    expect(notified[0]?.kind).toBe(AGENT_RELAY_EVENT_KIND.POST_DELETED);
     expect((notified[0]?.payload.post as { id: string }).id).toBe("st-1");
   });
 });

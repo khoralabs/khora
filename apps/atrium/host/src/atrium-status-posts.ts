@@ -1,5 +1,5 @@
+import { AGENT_RELAY_AGGREGATE_DOMAIN, AGENT_RELAY_EVENT_KIND } from "@khoralabs/agent-relay";
 import { type AtriumPost, zAtriumPost } from "@khoralabs/atrium-contracts";
-import { SWARM_AGGREGATE_DOMAIN, SWARM_EVENT_KIND } from "@khoralabs/swarm-host";
 import type { AtriumHostContext } from "./create-atrium-host.ts";
 
 /**
@@ -26,9 +26,9 @@ export async function deleteOtherStatusPostsForAuthor(
     }
     if (post.kind !== "status") continue;
     await ctx.host.notify({
-      kind: SWARM_EVENT_KIND.POST_DELETED,
+      kind: AGENT_RELAY_EVENT_KIND.POST_DELETED,
       occurredAt: Date.now(),
-      aggregate: { domain: SWARM_AGGREGATE_DOMAIN.post, id: post.id },
+      aggregate: { domain: AGENT_RELAY_AGGREGATE_DOMAIN.post, id: post.id },
       change: "deleted",
       source: "app",
       payload: { post },

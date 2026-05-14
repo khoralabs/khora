@@ -15,7 +15,7 @@
     "@khoralabs/memories-core": "workspace:*",
     "@khoralabs/memories-sqlite": "workspace:*",
     "@khoralabs/sqlite-migrate": "workspace:*",
-    "@khoralabs/swarm-host": "workspace:*",
+    "@khoralabs/agent-relay": "workspace:*",
     "zod": "^4"
   },
   "devDependencies": {

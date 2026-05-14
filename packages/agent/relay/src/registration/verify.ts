@@ -34,7 +34,7 @@ export type InboxAccessVerifyContext = {
 };
 
 /**
- * Optional preflight: verify registration payloads and inbound agent routes before swarm-host proceeds.
+ * Optional preflight: verify registration payloads and inbound agent routes before agent-relay proceeds.
  * Omitted when the embedder trusts another layer or disables verification (e.g. tests).
  */
 export interface AuthPreflight {

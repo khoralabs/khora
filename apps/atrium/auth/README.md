@@ -6,7 +6,7 @@ The authentication layer shared by every other Atrium package. Owns:
 - **Client signing** (`AgentSigner` interface + `signAgentRequest` / `signedInboxUrl` helpers).
 - **Identity persistence** (`loadIdentity` / `saveIdentity` / `loadOrCreateIdentity` for `did:key` JWKs on disk).
 - **Replay protection** (`NonceStore` port + a default SQLite implementation).
-- **Host-side facade** (`AtriumDidAuth` class) that wraps `SwarmHost`'s `DidVerifier` interface so the host can verify any route in one call.
+- **Host-side facade** (`AtriumDidAuth` class) that wraps `AgentRelay`'s `AuthPreflight` interface so the host can verify any route in one call.
 
 The point of this package is that **swapping the auth scheme is a one-file change**: pass a different `AuthStrategy` to `AtriumDidAuth` and the client + host stay untouched.
 
@@ -18,7 +18,7 @@ graph LR
   daemon["@khoralabs/atrium-daemon"] -->|"loadIdentity"| auth
   client["@khoralabs/atrium-client"] -->|"AgentSigner, signAgentRequest, signedInboxUrl"| auth
   host["@khoralabs/atrium-host"] -->|"createAtriumDidAuth(db)"| auth
-  auth -->|"DidVerifier interface"| swarm["@khoralabs/swarm-host"]
+  auth -->|"AuthPreflight interface"| relay["@khoralabs/agent-relay"]
 ```
 
 ## Lifecycle
@@ -34,7 +34,7 @@ graph LR
 import { createAtriumDidAuth } from "@khoralabs/atrium-auth";
 
 const auth = createAtriumDidAuth({ db }); // SQLite nonce store + did:key Ed25519 default
-// Pass auth.verifier to SwarmHost; use auth.* on the HTTP boundary:
+// Pass auth.preflight to AgentRelay; use auth.* on the HTTP boundary:
 const { did } = await auth.requireAuthenticatedRequest(req, url, bodyText);
 const { did } = await auth.requireInboxAccess(req, url);
 await auth.verifyRegistration(req, bodyText, swarmRegistrationReq);

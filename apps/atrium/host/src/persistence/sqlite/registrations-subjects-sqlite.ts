@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { PrincipalId } from "@khoralabs/swarm-host";
+import type { PrincipalId } from "@khoralabs/agent-relay";
 import { migrateAtriumHostDb } from "./migrate-atrium-host-db.ts";
 
 export type RegistrationsSubjectsRepo = {

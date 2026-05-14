@@ -1,7 +1,7 @@
+import type { AgentRelayEventHandlerCtx } from "@khoralabs/agent-relay";
+import { deliverAgentNotification, type InboxPostReason } from "@khoralabs/agent-relay";
 import { type AtriumPost, normalizeTopicSlug } from "@khoralabs/atrium-contracts";
 import { type EmbeddingModel, embedTextChunks } from "@khoralabs/memories-core/helpers";
-import type { SwarmHostEventHandlerCtx } from "@khoralabs/swarm-host";
-import { deliverAgentNotification, type InboxPostReason } from "@khoralabs/swarm-host";
 import type { AtriumHostAppContext } from "./atrium-app-context.ts";
 import type { ProbeSubscribersRepo } from "./persistence/sqlite/index.ts";
 import {
@@ -9,12 +9,11 @@ import {
   authorTopicSubscriptionSubject,
   topicSubscriptionSubject,
 } from "./subject-keys.ts";
-function appCtxOrThrow(
-  ctx: SwarmHostEventHandlerCtx,
-): AtriumHostAppContext {
+
+function appCtxOrThrow(ctx: AgentRelayEventHandlerCtx): AtriumHostAppContext {
   const ac = ctx.appContext as AtriumHostAppContext | undefined;
   if (ac === undefined) {
-    throw new Error("Atrium: SwarmHostEventHandlerCtx.appContext is required for fan-out");
+    throw new Error("Atrium: AgentRelayEventHandlerCtx.appContext is required for fan-out");
   }
   return ac;
 }
@@ -59,7 +58,7 @@ function lexicalTextForProbeSearch(p: AtriumPost): string {
  * `inbox_post` notification per recipient principal (merged `reasons[]`).
  */
 export async function fanOutPostMatches(params: {
-  ctx: SwarmHostEventHandlerCtx;
+  ctx: AgentRelayEventHandlerCtx;
   probeSubscribers: ProbeSubscribersRepo;
   embeddingModel?: EmbeddingModel;
   post: AtriumPost;

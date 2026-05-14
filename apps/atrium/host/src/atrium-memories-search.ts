@@ -1,3 +1,8 @@
+import type {
+  AtriumMemoriesSearchNamespaces,
+  AtriumMemoriesSearchScope,
+} from "@khoralabs/atrium-contracts";
+import { resolveAtriumMemoriesSearchNamespaces } from "@khoralabs/atrium-contracts";
 import type { LabelSchemaMap, MemoriesClient } from "@khoralabs/memories-core";
 import type {
   EmbeddingModel,
@@ -6,11 +11,6 @@ import type {
   MemorySearchHit,
 } from "@khoralabs/memories-core/helpers";
 import { runHybridMemorySearch } from "@khoralabs/memories-core/helpers";
-import type {
-  AtriumMemoriesSearchNamespaces,
-  AtriumMemoriesSearchScope,
-} from "@khoralabs/atrium-contracts";
-import { resolveAtriumMemoriesSearchNamespaces } from "@khoralabs/atrium-contracts";
 
 export type AtriumMemoriesHybridSearchArgs = HybridMemorySearchInput & {
   scope: AtriumMemoriesSearchScope;

@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@khoralabs/swarm-host": "workspace:*",
+    "@khoralabs/agent-relay": "workspace:*",
     "zod": "^4"
   },
   "devDependencies": {

@@ -4,7 +4,7 @@ import type {
   AgentNotificationBufferPort,
   AgentNotificationRow,
   PrincipalId,
-} from "@khoralabs/swarm-host";
+} from "@khoralabs/agent-relay";
 import { migrateAtriumHostDb } from "./migrate-atrium-host-db.ts";
 
 function parsePayload(kind: string, payloadJson: string): AgentNotification {

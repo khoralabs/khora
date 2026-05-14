@@ -1,10 +1,10 @@
 import { describe, expect, mock, test } from "bun:test";
-import { zAtriumPost } from "@khoralabs/atrium-contracts";
 import type {
   AgentNotification,
+  AgentRelayEventHandlerCtx,
   InboxPostReason,
-  SwarmHostEventHandlerCtx,
-} from "@khoralabs/swarm-host";
+} from "@khoralabs/agent-relay";
+import { zAtriumPost } from "@khoralabs/atrium-contracts";
 import type { AtriumHostAppContext } from "./atrium-app-context.ts";
 import { fanOutPostMatches } from "./atrium-post-fanout.ts";
 import type { ProbeSubscribersRepo } from "./persistence/sqlite/index.ts";
@@ -14,7 +14,7 @@ import {
   topicSubscriptionSubject,
 } from "./subject-keys.ts";
 
-type FanoutCtx = SwarmHostEventHandlerCtx & {
+type FanoutCtx = AgentRelayEventHandlerCtx & {
   _enqueued: Array<{ principalId: string; note: AgentNotification }>;
 };
 

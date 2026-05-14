@@ -1,18 +1,18 @@
 import type { Database } from "bun:sqlite";
 import type {
-  SwarmHostEntityKind,
-  SwarmHostEntityPersistence,
-  SwarmHostEntityRow,
-  SwarmHostEntityUpsert,
-  SwarmHostPostPersistence,
-} from "@khoralabs/swarm-host";
+  AgentRelayEntityKind,
+  AgentRelayEntityPersistence,
+  AgentRelayEntityRow,
+  AgentRelayEntityUpsert,
+  AgentRelayPostPersistence,
+} from "@khoralabs/agent-relay";
 import { migrateAtriumHostDb } from "./migrate-atrium-host-db.ts";
 import { listPostRowsByAuthorProfileIdAndKind } from "./probe-posts-sqlite.ts";
 
-export function createSwarmHostEntitySqlitePersistence(
+export function createAgentRelayEntitySqlitePersistence(
   db: Database,
-  kind: SwarmHostEntityKind,
-): SwarmHostEntityPersistence {
+  kind: AgentRelayEntityKind,
+): AgentRelayEntityPersistence {
   migrateAtriumHostDb(db);
 
   const upsertRow = db.prepare(
@@ -29,11 +29,11 @@ export function createSwarmHostEntitySqlitePersistence(
   const deleteByIdStmt = db.prepare(`DELETE FROM host_entities WHERE kind = ? AND id = ?`);
 
   return {
-    upsert(record: SwarmHostEntityUpsert): void {
+    upsert(record: AgentRelayEntityUpsert): void {
       upsertRow.run(kind, record.id, record.memoryId ?? null, record.bodyJson, Date.now());
     },
 
-    getById(id: string): SwarmHostEntityRow | undefined {
+    getById(id: string): AgentRelayEntityRow | undefined {
       const row = selectById.get(kind, id) as
         | {
             id: string;
@@ -60,8 +60,8 @@ export function createSwarmHostEntitySqlitePersistence(
   };
 }
 
-export function createSwarmHostPostSqlitePersistence(db: Database): SwarmHostPostPersistence {
-  const base = createSwarmHostEntitySqlitePersistence(db, "post");
+export function createAgentRelayPostSqlitePersistence(db: Database): AgentRelayPostPersistence {
+  const base = createAgentRelayEntitySqlitePersistence(db, "post");
   return {
     ...base,
     listRowsByAuthorProfileIdAndKind(params) {

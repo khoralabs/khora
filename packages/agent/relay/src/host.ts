@@ -1,16 +1,16 @@
 import {
-  SWARM_EVENT_KIND,
-  type SwarmAppEventConstraint,
-  type SwarmHostEventUnion,
+  AGENT_RELAY_EVENT_KIND,
+  type AgentRelayAppEventConstraint,
+  type AgentRelayEventUnion,
 } from "./events.ts";
 import type { FrameChannelHubPort } from "./frame-channel/port.ts";
 import type { InboxFanoutPort } from "./inbox/inbox-fanout-port.ts";
-import { SWARM_AGGREGATE_DOMAIN } from "./model/index.ts";
+import { AGENT_RELAY_AGGREGATE_DOMAIN } from "./model/index.ts";
 import {
-  createSwarmHostPersistenceClient,
-  type SwarmHostPersistenceClient,
+  type AgentRelayPersistenceClient,
+  createAgentRelayPersistenceClient,
 } from "./persistence/client.ts";
-import type { SwarmHostPersistence } from "./persistence/types.ts";
+import type { AgentRelayPersistence } from "./persistence/types.ts";
 import type { AgentNotificationBufferPort } from "./registration/notifications.ts";
 import {
   type PrincipalId,
@@ -20,35 +20,35 @@ import {
 } from "./registration/types.ts";
 import type { AuthPreflight, RegistrationVerifyContext } from "./registration/verify.ts";
 
-/** Passed to {@link SwarmHostDeps.onEvent} together with each dispatched event. */
-export type SwarmHostEventHandlerCtx = {
-  persistence: SwarmHostPersistence;
-  persistenceClient: SwarmHostPersistenceClient;
+/** Passed to {@link AgentRelayDeps.onEvent} together with each dispatched event. */
+export type AgentRelayEventHandlerCtx = {
+  persistence: AgentRelayPersistence;
+  persistenceClient: AgentRelayPersistenceClient;
   notificationBuffer?: AgentNotificationBufferPort;
   /** When set, agent inbox WebSocket fan-out (see {@link deliverAgentNotification} from inbox module). */
   inboxHub?: InboxFanoutPort;
-  /** App-owned runtime handle(s); swarm-host does not interpret (e.g. SQLite `Database`). */
+  /** App-owned runtime handle(s); agent-relay does not interpret (e.g. SQLite `Database`). */
   appContext?: unknown;
 };
 
-export type SwarmHostDeps<
+export type AgentRelayDeps<
   TProfile = unknown,
   TPost = unknown,
   TTopic = unknown,
-  TAppEvent extends SwarmAppEventConstraint = never,
+  TAppEvent extends AgentRelayAppEventConstraint = never,
 > = {
-  persistence: SwarmHostPersistence;
+  persistence: AgentRelayPersistence;
   /** Optional ticket-gated frame-channel hub (HMAC tickets, replay on re-join). */
   frameChannelHub?: FrameChannelHubPort;
   /** Optional inbound verification (registration / authenticated routes / inbox upgrade). */
   authPreflight?: AuthPreflight;
   notificationBuffer?: AgentNotificationBufferPort;
   inboxHub?: InboxFanoutPort;
-  /** Opaque app runtime (passed through to {@link SwarmHostEventHandlerCtx.appContext}). */
+  /** Opaque app runtime (passed through to {@link AgentRelayEventHandlerCtx.appContext}). */
   appContext?: unknown;
   onEvent?: (
-    ctx: SwarmHostEventHandlerCtx,
-    event: SwarmHostEventUnion<TProfile, TPost, TTopic, TAppEvent>,
+    ctx: AgentRelayEventHandlerCtx,
+    event: AgentRelayEventUnion<TProfile, TPost, TTopic, TAppEvent>,
   ) => void | Promise<void>;
 };
 
@@ -56,25 +56,25 @@ export type SwarmHostDeps<
  * Facade for persistence, optional frame-channel hub, inbox fan-out, and principal registration.
  * App layers (e.g. Atrium) compose Memories and hybrid search outside this package.
  */
-export class SwarmHost<
+export class AgentRelay<
   TProfile = unknown,
   TPost = unknown,
   TTopic = unknown,
-  TAppEvent extends SwarmAppEventConstraint = never,
+  TAppEvent extends AgentRelayAppEventConstraint = never,
 > {
-  readonly persistence: SwarmHostPersistence;
-  readonly persistenceClient: SwarmHostPersistenceClient;
+  readonly persistence: AgentRelayPersistence;
+  readonly persistenceClient: AgentRelayPersistenceClient;
   readonly frameChannelHub?: FrameChannelHubPort;
   readonly authPreflight?: AuthPreflight;
   readonly notificationBuffer?: AgentNotificationBufferPort;
   readonly inboxHub?: InboxFanoutPort;
   readonly appContext?: unknown;
 
-  private readonly onEvent?: SwarmHostDeps<TProfile, TPost, TTopic, TAppEvent>["onEvent"];
+  private readonly onEvent?: AgentRelayDeps<TProfile, TPost, TTopic, TAppEvent>["onEvent"];
 
-  constructor(deps: SwarmHostDeps<TProfile, TPost, TTopic, TAppEvent>) {
+  constructor(deps: AgentRelayDeps<TProfile, TPost, TTopic, TAppEvent>) {
     this.persistence = deps.persistence;
-    this.persistenceClient = createSwarmHostPersistenceClient(deps.persistence);
+    this.persistenceClient = createAgentRelayPersistenceClient(deps.persistence);
     this.frameChannelHub = deps.frameChannelHub;
     this.authPreflight = deps.authPreflight;
     this.notificationBuffer = deps.notificationBuffer;
@@ -83,7 +83,7 @@ export class SwarmHost<
     this.onEvent = deps.onEvent;
   }
 
-  private eventCtx(): SwarmHostEventHandlerCtx {
+  private eventCtx(): AgentRelayEventHandlerCtx {
     return {
       persistence: this.persistence,
       persistenceClient: this.persistenceClient,
@@ -94,9 +94,9 @@ export class SwarmHost<
   }
 
   /**
-   * Dispatches to {@link SwarmHostDeps.onEvent}.
+   * Dispatches to {@link AgentRelayDeps.onEvent}.
    */
-  notify(event: SwarmHostEventUnion<TProfile, TPost, TTopic, TAppEvent>): void | Promise<void> {
+  notify(event: AgentRelayEventUnion<TProfile, TPost, TTopic, TAppEvent>): void | Promise<void> {
     const ctx = this.eventCtx();
     const handler = this.onEvent;
     if (handler === undefined) {
@@ -106,8 +106,8 @@ export class SwarmHost<
   }
 
   /**
-   * Run optional {@link SwarmHostDeps.authPreflight}, emit
-   * `swarm.registration.profile_build` so {@link SwarmHostDeps.onEvent} can call `payload.fulfill(profile)`,
+   * Run optional {@link AgentRelayDeps.authPreflight}, emit
+   * `swarm.registration.profile_build` so {@link AgentRelayDeps.onEvent} can call `payload.fulfill(profile)`,
    * then emit `swarm.profile.created` and ensure the principal is registered with the notification buffer.
    */
   async registerPrincipal(
@@ -120,7 +120,7 @@ export class SwarmHost<
     const onEvent = this.onEvent;
     if (onEvent === undefined) {
       throw new Error(
-        "SwarmHost: onEvent is required for registerPrincipal (handle swarm.registration.profile_build)",
+        "AgentRelay: onEvent is required for registerPrincipal (handle swarm.registration.profile_build)",
       );
     }
 
@@ -141,10 +141,10 @@ export class SwarmHost<
         reject(reason);
       };
 
-      const buildEvent: SwarmHostEventUnion<TProfile, TPost, TTopic, TAppEvent> = {
-        kind: SWARM_EVENT_KIND.REGISTRATION_PROFILE_BUILD,
+      const buildEvent: AgentRelayEventUnion<TProfile, TPost, TTopic, TAppEvent> = {
+        kind: AGENT_RELAY_EVENT_KIND.REGISTRATION_PROFILE_BUILD,
         occurredAt: Date.now(),
-        aggregate: { domain: SWARM_AGGREGATE_DOMAIN.registration, id: req.principalId },
+        aggregate: { domain: AGENT_RELAY_AGGREGATE_DOMAIN.registration, id: req.principalId },
         change: "created",
         source: "swarm",
         payload: { request: req, fulfill, reject: rej },
@@ -155,7 +155,7 @@ export class SwarmHost<
         if (!settled) {
           rej(
             new Error(
-              "SwarmHost: onEvent must call fulfill(profile) or reject(reason) for swarm.registration.profile_build",
+              "AgentRelay: onEvent must call fulfill(profile) or reject(reason) for swarm.registration.profile_build",
             ),
           );
         }
@@ -163,10 +163,10 @@ export class SwarmHost<
     });
 
     const profileId = profileEntityId(profile);
-    const createdEvent: SwarmHostEventUnion<TProfile, TPost, TTopic, TAppEvent> = {
-      kind: SWARM_EVENT_KIND.PROFILE_CREATED,
+    const createdEvent: AgentRelayEventUnion<TProfile, TPost, TTopic, TAppEvent> = {
+      kind: AGENT_RELAY_EVENT_KIND.PROFILE_CREATED,
       occurredAt: Date.now(),
-      aggregate: { domain: SWARM_AGGREGATE_DOMAIN.profile, id: profileId },
+      aggregate: { domain: AGENT_RELAY_AGGREGATE_DOMAIN.profile, id: profileId },
       change: "created",
       source: "swarm",
       payload: { profile },
@@ -179,7 +179,7 @@ export class SwarmHost<
 
   /**
    * Queue a join ticket for another agent (e.g. after {@link FrameChannelHubPort.createChannel}).
-   * Requires {@link SwarmHostDeps.notificationBuffer}.
+   * Requires {@link AgentRelayDeps.notificationBuffer}.
    */
   async offerFrameChannelToPrincipal(params: {
     targetPrincipalId: PrincipalId;
@@ -190,7 +190,9 @@ export class SwarmHost<
   }): Promise<void> {
     const buf = this.notificationBuffer;
     if (buf === undefined) {
-      throw new Error("SwarmHost: notificationBuffer is required for offerFrameChannelToPrincipal");
+      throw new Error(
+        "AgentRelay: notificationBuffer is required for offerFrameChannelToPrincipal",
+      );
     }
     await buf.enqueue(params.targetPrincipalId, {
       kind: "negotiation_ticket",

@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
-import { createFrameChannelHub, createSwarmHostPersistenceClient } from "@khoralabs/swarm-host";
-import { createSwarmHostSqlitePersistence } from "../persistence/sqlite/swarm-host-sqlite.ts";
+import { createAgentRelayPersistenceClient, createFrameChannelHub } from "@khoralabs/agent-relay";
+import { createAgentRelaySqlitePersistence } from "../persistence/sqlite/agent-relay-sqlite.ts";
 import { createHostRateLimiters } from "../rate-limit-buckets.ts";
 import {
   handleAtriumRoomMintTicket,
@@ -14,9 +14,9 @@ import type { HostRouteDeps } from "./deps.ts";
 function depsFor(
   db: Database,
   did: string,
-  persistence: ReturnType<typeof createSwarmHostSqlitePersistence>,
+  persistence: ReturnType<typeof createAgentRelaySqlitePersistence>,
 ): HostRouteDeps {
-  const persistenceClient = createSwarmHostPersistenceClient(persistence);
+  const persistenceClient = createAgentRelayPersistenceClient(persistence);
   const roomHub = createFrameChannelHub({
     hubPersistence: persistence.frameChannelHubPersistence,
   });
@@ -47,7 +47,7 @@ describe("atrium-rooms HTTP", () => {
 
   test("handleAtriumRoomsList maps creator and peer", async () => {
     const db = new Database(":memory:");
-    const persistence = createSwarmHostSqlitePersistence(db);
+    const persistence = createAgentRelaySqlitePersistence(db);
     persistence.agentRegistrations.upsert("did:key:alice", "prof-a");
     persistence.agentRegistrations.upsert("did:key:bob", "prof-b");
     await createFrameChannelHub({
@@ -85,7 +85,7 @@ describe("atrium-rooms HTTP", () => {
 
   test("handleAtriumRoomMintTicket forbids non-member", async () => {
     const db = new Database(":memory:");
-    const persistence = createSwarmHostSqlitePersistence(db);
+    const persistence = createAgentRelaySqlitePersistence(db);
     persistence.agentRegistrations.upsert("did:key:alice", "prof-a");
     persistence.agentRegistrations.upsert("did:key:bob", "prof-b");
     persistence.agentRegistrations.upsert("did:key:carol", "prof-c");
@@ -106,7 +106,7 @@ describe("atrium-rooms HTTP", () => {
 
   test("handleAtriumRoomMintTicket succeeds for invitee", async () => {
     const db = new Database(":memory:");
-    const persistence = createSwarmHostSqlitePersistence(db);
+    const persistence = createAgentRelaySqlitePersistence(db);
     persistence.agentRegistrations.upsert("did:key:alice", "prof-a");
     persistence.agentRegistrations.upsert("did:key:bob", "prof-b");
     const hub = createFrameChannelHub({ hubPersistence: persistence.frameChannelHubPersistence });
@@ -129,7 +129,7 @@ describe("atrium-rooms HTTP", () => {
 
   test("handleAtriumRoomsCreate rejects self-invite", async () => {
     const db = new Database(":memory:");
-    const persistence = createSwarmHostSqlitePersistence(db);
+    const persistence = createAgentRelaySqlitePersistence(db);
     persistence.agentRegistrations.upsert("did:key:alice", "prof-a");
     const deps = depsFor(db, "did:key:alice", persistence);
     (
@@ -146,7 +146,7 @@ describe("atrium-rooms HTTP", () => {
         };
       }
     ).host = {
-      persistenceClient: createSwarmHostPersistenceClient(persistence),
+      persistenceClient: createAgentRelayPersistenceClient(persistence),
       offerFrameChannelToPrincipal: async () => {},
     };
     const res = await handleAtriumRoomsCreate(
@@ -162,7 +162,7 @@ describe("atrium-rooms HTTP", () => {
 
   test("handleAtriumRoomsCreate rejects client roomId in body", async () => {
     const db = new Database(":memory:");
-    const persistence = createSwarmHostSqlitePersistence(db);
+    const persistence = createAgentRelaySqlitePersistence(db);
     persistence.agentRegistrations.upsert("did:key:alice", "prof-a");
     const deps = depsFor(db, "did:key:alice", persistence);
     (
@@ -179,7 +179,7 @@ describe("atrium-rooms HTTP", () => {
         };
       }
     ).host = {
-      persistenceClient: createSwarmHostPersistenceClient(persistence),
+      persistenceClient: createAgentRelayPersistenceClient(persistence),
       offerFrameChannelToPrincipal: async () => {},
     };
     const res = await handleAtriumRoomsCreate(

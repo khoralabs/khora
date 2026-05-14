@@ -1,14 +1,14 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
 import type { SourceMap } from "@khoralabs/memories-core";
-import { createSwarmHostDocumentStore } from "./document-store.ts";
-import { createSwarmHostEntitySqlitePersistence } from "./entity-sqlite.ts";
+import { createAgentRelayDocumentStore } from "./document-store.ts";
+import { createAgentRelayEntitySqlitePersistence } from "./entity-sqlite.ts";
 
 function upsertProfile(
   db: Database,
   row: { id: string; memoryId: string | null; bodyJson: string },
 ): void {
-  createSwarmHostEntitySqlitePersistence(db, "profile").upsert(row);
+  createAgentRelayEntitySqlitePersistence(db, "profile").upsert(row);
 }
 
 function sm(memory_id: string, source_key: string): SourceMap {
@@ -22,7 +22,7 @@ function sm(memory_id: string, source_key: string): SourceMap {
 
 type ProfileBody = { name: string; bio: string };
 
-describe("createSwarmHostDocumentStore", () => {
+describe("createAgentRelayDocumentStore", () => {
   test("profile:id resolves whole document as record", async () => {
     type EM = { profile: ProfileBody };
     const db = new Database(":memory:");
@@ -31,7 +31,7 @@ describe("createSwarmHostDocumentStore", () => {
       memoryId: "m1",
       bodyJson: JSON.stringify({ name: "Ada", bio: "Builder" }),
     });
-    const store = createSwarmHostDocumentStore<EM>(db, {
+    const store = createAgentRelayDocumentStore<EM>(db, {
       parsers: {
         profile: (raw) => raw as EM["profile"],
       },
@@ -52,7 +52,7 @@ describe("createSwarmHostDocumentStore", () => {
       memoryId: "m1",
       bodyJson: JSON.stringify({ name: "Ada", bio: "Builder" }),
     });
-    const store = createSwarmHostDocumentStore<EM>(db, {
+    const store = createAgentRelayDocumentStore<EM>(db, {
       parsers: {
         profile: (raw) => raw as EM["profile"],
       },
@@ -72,7 +72,7 @@ describe("createSwarmHostDocumentStore", () => {
   test("syncFromTextExportRows merges field paths into profile body_json", async () => {
     type EM = { profile: ProfileBody };
     const db = new Database(":memory:");
-    const store = createSwarmHostDocumentStore<EM>(db, {
+    const store = createAgentRelayDocumentStore<EM>(db, {
       parsers: {
         profile: (raw) => raw as EM["profile"],
       },
@@ -90,7 +90,7 @@ describe("createSwarmHostDocumentStore", () => {
 
   test("rejects unknown source_key shape", async () => {
     const db = new Database(":memory:");
-    const store = createSwarmHostDocumentStore(db);
+    const store = createAgentRelayDocumentStore(db);
     await expect(store.resolve(sm("m1", "chunk:a"))).rejects.toThrow(/unrecognized/);
   });
 
@@ -102,7 +102,7 @@ describe("createSwarmHostDocumentStore", () => {
       memoryId: "m1",
       bodyJson: JSON.stringify({ name: "Ada", bio: "x" }),
     });
-    const store = createSwarmHostDocumentStore<EM>(db, {
+    const store = createAgentRelayDocumentStore<EM>(db, {
       parsers: { profile: (raw) => raw as EM["profile"] },
     });
     await expect(store.resolve(sm("other-memory", "profile:p1"))).rejects.toThrow(/no profile/);

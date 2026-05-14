@@ -1,4 +1,4 @@
-/** Opaque globally unique principal key (routing id for registrations, inbox, subscriptions). Format is adapter-defined; swarm-host does not validate shape. */
+/** Opaque globally unique principal key (routing id for registrations, inbox, subscriptions). Format is adapter-defined; agent-relay does not validate shape. */
 export type PrincipalId = string;
 
 export type PrincipalRegistrationRequest = {
@@ -24,5 +24,5 @@ export function profileEntityId(profile: unknown): string {
   ) {
     return (profile as { id: string }).id;
   }
-  throw new Error("SwarmHost: profile must have a non-empty string `id` for registration");
+  throw new Error("AgentRelay: profile must have a non-empty string `id` for registration");
 }
