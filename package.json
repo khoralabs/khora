@@ -35,6 +35,8 @@
     "packages/obp/persistence/*",
     "packages/obp/v2/errors/impl/ts",
     "packages/obp/v2/frames/impl/ts",
+    "packages/obp/v2/model/impl/ts",
+    "packages/obp/v2/persistence/impl/ts",
     "packages/obp/v2/session/impl/ts",
     "packages/swarm/*"
   ]

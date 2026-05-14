@@ -1,0 +1,179 @@
+/**
+ * Input / output shapes and result unions for `ObpPersistence` — see
+ * `packages/obp/v2/persistence/spec/model/persistence.smithy`.
+ */
+
+import type {
+  ContentAddressedSourceRefList,
+  JsonDocument,
+  Offer,
+  Party,
+  Port,
+  SourceMapRefList,
+} from "@khoralabs/obp-v2-model";
+
+// ---------------------------------------------------------------------------
+// Result unions (Smithy `union GetXResult`)
+// ---------------------------------------------------------------------------
+
+export type GetPartyResult =
+  | { readonly kind: "notFound" }
+  | { readonly kind: "party"; party: Party };
+export type GetOfferResult =
+  | { readonly kind: "notFound" }
+  | { readonly kind: "offer"; offer: Offer };
+export type GetPortResult = { readonly kind: "notFound" } | { readonly kind: "port"; port: Port };
+
+// ---------------------------------------------------------------------------
+// RegisterParty
+// ---------------------------------------------------------------------------
+
+export type RegisterPartyInput = {
+  name: string;
+  sourcemaps: SourceMapRefList;
+};
+
+export type RegisterPartyOutput = {
+  party: Party;
+};
+
+// ---------------------------------------------------------------------------
+// GetParty / GetOffer / GetPort
+// ---------------------------------------------------------------------------
+
+export type GetPartyInput = { id: string };
+export type GetPartyOutput = { result: GetPartyResult };
+
+export type GetOfferInput = { id: string };
+export type GetOfferOutput = { result: GetOfferResult };
+
+export type GetPortInput = { id: string };
+export type GetPortOutput = { result: GetPortResult };
+
+// ---------------------------------------------------------------------------
+// ExtendOffer
+// ---------------------------------------------------------------------------
+
+export type ExtendOfferInput = {
+  partyId: string;
+  offer: Offer;
+  /** When empty string, no BINDS edge is created. */
+  bindPortId: string;
+  /** Policy-shaped; NBC validates (`NbcBindSatisfaction`). `null` when not provided. */
+  counterparty_bind: JsonDocument;
+};
+
+export type ExtendOfferOutput = {
+  offer: Offer;
+};
+
+// ---------------------------------------------------------------------------
+// ExposePort
+// ---------------------------------------------------------------------------
+
+export type ExposePortInput = {
+  offerId: string;
+  port: Port;
+};
+
+export type ExposePortOutput = {
+  port: Port;
+};
+
+// ---------------------------------------------------------------------------
+// BindPort
+// ---------------------------------------------------------------------------
+
+export type BindPortInput = {
+  offerId: string;
+  portId: string;
+  /** Policy-shaped; NBC validates. `null` when not provided. */
+  counterparty_bind: JsonDocument;
+};
+
+/** Empty output shape — success is signalled by resolution (no error thrown). */
+export type BindPortOutput = Record<string, never>;
+
+// ---------------------------------------------------------------------------
+// ListExposedPortEdges
+// ---------------------------------------------------------------------------
+
+export type ListExposedPortEdgesInput = Record<string, never>;
+
+export type ExposedPortEdge = {
+  offerId: string;
+  portId: string;
+};
+
+export type ExposedPortEdgeList = readonly ExposedPortEdge[];
+
+export type ListExposedPortEdgesOutput = {
+  edges: ExposedPortEdgeList;
+};
+
+// ---------------------------------------------------------------------------
+// IsPortExposed
+// ---------------------------------------------------------------------------
+
+export type IsPortExposedInput = { portId: string };
+export type IsPortExposedOutput = { exposed: boolean };
+
+// ---------------------------------------------------------------------------
+// ListBinds
+// ---------------------------------------------------------------------------
+
+export type ListBindsInput = Record<string, never>;
+
+export type BindListingRow = {
+  offerId: string;
+  portId: string;
+  content_receipts: ContentAddressedSourceRefList;
+  /** Persistence projection field; not on `cfd.obp#BindsEdge`. */
+  counterparty_bind: JsonDocument;
+  /** Audit snapshot; not on `cfd.obp#BindsEdge`. */
+  bind_policy_snapshot: JsonDocument;
+};
+
+export type BindListingRowList = readonly BindListingRow[];
+
+export type ListBindsOutput = {
+  binds: BindListingRowList;
+};
+
+// ---------------------------------------------------------------------------
+// GetPortsSnapshot
+// ---------------------------------------------------------------------------
+
+export type GetPortsSnapshotInput = Record<string, never>;
+
+export type PortSnapshotEntry = {
+  portId: string;
+  port: Port;
+};
+
+export type PortSnapshotEntryList = readonly PortSnapshotEntry[];
+
+export type GetPortsSnapshotOutput = {
+  entries: PortSnapshotEntryList;
+};
+
+// ---------------------------------------------------------------------------
+// GetExtendingPartyId
+// ---------------------------------------------------------------------------
+
+export type GetExtendingPartyIdInput = { offerId: string };
+
+export type GetExtendingPartyIdOutput = {
+  /** Empty string when no EXTENDS edge exists (Smithy `@default("")`). */
+  partyId: string;
+};
+
+// ---------------------------------------------------------------------------
+// SetPortExpiredNow / SetOfferExpiredNow
+// ---------------------------------------------------------------------------
+
+export type SetPortExpiredNowInput = { portId: string };
+export type SetPortExpiredNowOutput = Record<string, never>;
+
+export type SetOfferExpiredNowInput = { offerId: string };
+export type SetOfferExpiredNowOutput = Record<string, never>;
