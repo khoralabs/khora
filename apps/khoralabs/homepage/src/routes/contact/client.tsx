@@ -1,6 +1,15 @@
 import { useState } from "react";
 
 import { SiteLayout } from "@/components/site-layout";
+import {
+  fieldTypographyMuted,
+  inputControlClass,
+  labelTypography,
+  outlineSubmitButtonClass,
+  pageTitleClass,
+  statusTypography,
+} from "@/lib/ui-styles";
+import { cn } from "@/lib/utils";
 import { renderRoute } from "../../render-route";
 import "../../../styles/globals.css";
 
@@ -14,13 +23,13 @@ function ContactPage() {
         <SiteLayout.Header />
         <SiteLayout.Main className="justify-start md:justify-center">
           <div className="mx-auto w-full max-w-lg">
-            <h1 className="text-balance text-2xl font-normal leading-tight md:text-3xl">Contact</h1>
-            <p className="mt-4 text-pretty text-sm leading-relaxed text-[#F4F4EF]/90 md:text-[15px] md:leading-[1.55]">
+            <h1 className={pageTitleClass}>Contact</h1>
+            <p className={`mt-4 ${fieldTypographyMuted}`}>
               Send a note with your email and we&apos;ll get back to you.
             </p>
 
             {submitted ? (
-              <p className="mt-10 text-sm text-[#F4F4EF]/85 md:text-[15px]" role="status">
+              <p className={`mt-10 ${statusTypography}`} role="status">
                 Thanks for your message.
               </p>
             ) : (
@@ -32,7 +41,7 @@ function ContactPage() {
                 }}
               >
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="email" className="text-sm md:text-[15px]">
+                  <label htmlFor="email" className={labelTypography}>
                     Email
                   </label>
                   <input
@@ -41,12 +50,12 @@ function ContactPage() {
                     type="email"
                     required
                     autoComplete="email"
-                    className="w-full rounded border border-[#F4F4EF]/35 bg-[#3F3F3F]/80 px-3 py-2.5 text-sm text-[#F4F4EF] outline-none ring-[#F4F4EF]/40 placeholder:text-[#F4F4EF]/40 focus:border-[#F4F4EF]/60 focus:ring-2 md:text-[15px]"
+                    className={inputControlClass}
                     placeholder="you@example.com"
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="message" className="text-sm md:text-[15px]">
+                  <label htmlFor="message" className={labelTypography}>
                     Message
                   </label>
                   <textarea
@@ -54,14 +63,11 @@ function ContactPage() {
                     name="message"
                     required
                     rows={6}
-                    className="w-full resize-y rounded border border-[#F4F4EF]/35 bg-[#3F3F3F]/80 px-3 py-2.5 text-sm text-[#F4F4EF] outline-none ring-[#F4F4EF]/40 placeholder:text-[#F4F4EF]/40 focus:border-[#F4F4EF]/60 focus:ring-2 md:text-[15px]"
+                    className={cn(inputControlClass, "resize-y")}
                     placeholder="How can we help?"
                   />
                 </div>
-                <button
-                  type="submit"
-                  className="self-start rounded border border-[#F4F4EF]/50 bg-transparent px-5 py-2.5 text-sm transition-colors hover:bg-[#F4F4EF]/10 md:text-[15px]"
-                >
+                <button type="submit" className={outlineSubmitButtonClass}>
                   Send
                 </button>
               </form>

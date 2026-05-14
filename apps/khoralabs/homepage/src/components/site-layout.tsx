@@ -1,23 +1,18 @@
 import type { ComponentProps } from "react";
 
 import { NoiseOverlay } from "@/components/noise-overlay";
+import {
+  footerDefaultClass,
+  footerLegalLinkClass,
+  headerDefaultClass,
+  mainDefaultClass,
+  navLinkClass,
+  shellClass,
+} from "@/lib/ui-styles";
 import { cn } from "@/lib/utils";
 
 import handsBg from "../assets/hands.png";
 import logoUrl from "../assets/khora_logo_text_w.svg";
-
-const shellClass =
-  "relative min-h-dvh bg-[#3F3F3F] font-[Helvetica_Neue,Helvetica,Arial,sans-serif] tracking-[-0.01em] text-[#F4F4EF] antialiased";
-
-const mainDefaultClass = "flex flex-1 flex-col px-6 py-16 md:px-10 md:py-20";
-
-const headerDefaultClass = "flex shrink-0 items-start justify-between px-6 pt-8 md:px-10 md:pt-10";
-
-const footerDefaultClass =
-  "flex shrink-0 flex-wrap items-end justify-between gap-6 px-6 pb-8 pt-4 text-[11px] text-[#F4F4EF]/85 md:px-10 md:pb-10 md:text-xs";
-
-const navLinkClass =
-  "text-sm text-[#F4F4EF] no-underline transition-opacity hover:opacity-75 md:text-[15px]";
 
 function Root({ className, ...props }: ComponentProps<"div">) {
   return <div {...props} className={cn(shellClass, className)} />;
@@ -82,18 +77,12 @@ function Footer({ className, children, ...props }: ComponentProps<"footer">) {
           <p className="m-0">© 2026 khora labs</p>
           <ul className="m-0 flex list-none gap-6 p-0 md:gap-8">
             <li>
-              <a
-                href="/terms"
-                className="text-inherit no-underline transition-opacity hover:opacity-75"
-              >
+              <a href="/terms" className={footerLegalLinkClass}>
                 Terms of Service
               </a>
             </li>
             <li>
-              <a
-                href="/privacy"
-                className="text-inherit no-underline transition-opacity hover:opacity-75"
-              >
+              <a href="/privacy" className={footerLegalLinkClass}>
                 Privacy Policy
               </a>
             </li>
