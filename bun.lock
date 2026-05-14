@@ -779,6 +779,21 @@
         "typescript": "^5",
       },
     },
+    "packages/obp/v2/nbc/impl/ts": {
+      "name": "@khoralabs/obp-v2-nbc",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/obp-v2-errors": "workspace:*",
+        "@khoralabs/obp-v2-model": "workspace:*",
+        "@khoralabs/obp-v2-persistence": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "packages/obp/v2/persistence/impl/ts": {
       "name": "@khoralabs/obp-v2-persistence",
       "version": "0.0.0",
@@ -1011,6 +1026,8 @@
     "@khoralabs/obp-v2-frames-impl": ["@khoralabs/obp-v2-frames-impl@workspace:packages/obp/v2/frames/impl/ts"],
 
     "@khoralabs/obp-v2-model": ["@khoralabs/obp-v2-model@workspace:packages/obp/v2/model/impl/ts"],
+
+    "@khoralabs/obp-v2-nbc": ["@khoralabs/obp-v2-nbc@workspace:packages/obp/v2/nbc/impl/ts"],
 
     "@khoralabs/obp-v2-persistence": ["@khoralabs/obp-v2-persistence@workspace:packages/obp/v2/persistence/impl/ts"],
 
@@ -1804,6 +1821,8 @@
 
     "@khoralabs/obp-v2-model/@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
 
+    "@khoralabs/obp-v2-nbc/@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
+
     "@khoralabs/obp-v2-persistence/@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
 
     "@khoralabs/obp-v2-session-impl/@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
@@ -2007,6 +2026,8 @@
     "@khoralabs/obp-v2-frames-impl/@types/bun/bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
 
     "@khoralabs/obp-v2-model/@types/bun/bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
+
+    "@khoralabs/obp-v2-nbc/@types/bun/bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
 
     "@khoralabs/obp-v2-persistence/@types/bun/bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
 

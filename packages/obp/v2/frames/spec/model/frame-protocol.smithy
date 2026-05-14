@@ -10,6 +10,9 @@ string Sha256HexLower
 
 enum FrameType {
     TURN
+    /// Actor commits to **no further TURN frames** that extend new offers on this chain; **`body`** remains opaque at this layer.
+    /// Unlike **TERMINATE**, this frame **participates in the DAG** (`p_hash` chain and signing rules identical to **TURN**). Implementations **MUST** advance the local tip after acceptance. It does **not** by itself close the byte stream or require persistence mutation unless a higher layer maps it (e.g. NBC “no more offers” bookkeeping).
+    END_OFFERS
     TERMINATE
 }
 
@@ -41,8 +44,8 @@ structure Frame {
     /// Signature over **`signing_bytes`** (see **NegotiationFrameProtocol**); encoding is binding-specific.
     sig: String
     type: FrameType
-    /// Opaque JSON payload for this frame type. **`cfd.obp`** does not normatively define keys or nested shapes for **TURN** / **TERMINATE** bodies.
-    /// NBC-conformant deployments interpret **TURN** bodies per **`cfd.obp.nbc`** and project to **`cfd.obp#ObpPersistence`**; OBP-only implementations MAY use a private wire profile.
+    /// Opaque JSON payload for this frame type. **`cfd.obp`** does not normatively define keys or nested shapes for **TURN** / **END_OFFERS** / **TERMINATE** bodies.
+    /// NBC-conformant deployments interpret **TURN** bodies per **`cfd.obp.nbc`** and project to **`cfd.obp#ObpPersistence`**; **END_OFFERS** carries no required persistence projection here. OBP-only implementations MAY use a private wire profile.
     body: Document
 }
 
@@ -54,7 +57,7 @@ This namespace models the **Frame** DAG: causal integrity, signed actors, and **
 **Layering:** Verify **`Frame`** signatures and **`p_hash`** chain first. Then (**NBC path**) validate opaque **`body`** against NBC rules and **`NbcPortExposePolicy`**. Finally project accepted effects to **`cfd.obp#ObpPersistence`**. OBP-only stacks MAY skip NBC and use a documented private mapping from **`body`** to persistence ops.
 
 **Relationship to persistence:** Accepted **TURN** effects **MUST** be projected to **`cfd.obp#ObpPersistence`**
-via **`OBPPersistenceClient`** (or equivalent) so graph invariants in `packages/obp/v2/persistence/spec/model/persistence.smithy` hold. **TERMINATE** ends the frame session; it does
+via **`OBPPersistenceClient`** (or equivalent) so graph invariants in `packages/obp/v2/persistence/spec/model/persistence.smithy` hold. **END_OFFERS** is a signed DAG step with **no** normative **`ObpPersistence`** projection in **`cfd.obp`** — peers use it to record mutual visibility that an actor will not issue further offer-extending **TURN**s on this chain (bilateral coordination); optional local policy may still allow **TERMINATE** or stream teardown later. **TERMINATE** ends the frame session; it does
 not alone mutate **`ObpPersistence`** unless implementations map it to optional revoke ops.
 
 **Canonical JSON:** For any value **`v`**, implementations compute UTF-8 bytes of JSON with **recursively sorted object keys**;
@@ -77,6 +80,8 @@ boundaries; see **`cfd.obp.frame.http2`**.
 
 **Turn contract (informal):** After **init**, any actor may send a **TURN** frame. Semantics of **`body`** (extend offer, expose ports, bind) are **not** defined here — see **`cfd.obp.nbc`** and **`cfd.obp#ObpPersistence`**. Causal order is enforced only by **`p_hash`**: each frame's **`p_hash`** MUST equal the local DAG tip (**`CAUSAL_MISMATCH`** otherwise). The wire protocol does **not** imply strict alternation between parties — that is **transport-scoped**. Purely decentralized transports **MAY** embed alternation hints inside the opaque **`body`**.
 
+**END_OFFERS:** Either party **MAY** send **`END_OFFERS`** instead of **TURN** on their move to advance the tip while signaling they will send **no further offers** (no further offer-extending **TURN**s) to the counterparty on this chain. Verifiers apply the same **`p_hash`** and signature rules as **TURN**. **`body`** is opaque; empty object is permitted.
+
 **TERMINATE** may be sent when allowed by local policy; **`body`** remains opaque at this layer.
 
 **Hardened constraints (draft §8):**
@@ -86,13 +91,13 @@ boundaries; see **`cfd.obp.frame.http2`**.
 4. **No partial binds:** NBC and persistence layers **MUST** reject partial bind projections; opaque **`body`** must not commit a half-applied **BINDS** edge.
 
 **Mapping to decentralized session sync:** Each accepted frame yields one or more replayable **`cfd.obp.session#SessionOp`** values
-for **`NegotiationSessionProtocol`** checkpoints; **`SessionOp.payload`** carries opaque replay material aligned with this **`body`** contract.
+for **`NegotiationSessionProtocol`** checkpoints; **`SessionOp.payload`** carries opaque replay material aligned with this **`body`** contract (**`kind`** **`turn`**, **`end_offers`**, **`terminate`**, …).
 
 **Concurrent transport sessions:** Servers **MAY** accept **many** open streams at once (one negotiated stream per client session). **How** each logical bilateral session is backed—dedicated **`ObpPersistence`**, a shared store with partitioning, or otherwise—is **implementation-defined**; this protocol **MUST NOT** be read as requiring per-session physical isolation. Projections **MUST** satisfy **`cfd.obp#ObpPersistence`** invariants in `packages/obp/v2/persistence/spec/model/persistence.smithy` on whatever store they use, including NBC **global canonical `NbcPortExposePolicy.max_bindings`** and **atomic** enforcement when concurrent operations mutate the **same** logical graph (see invariant **11** in `packages/obp/v2/persistence/spec/model/persistence.smithy` for shared vs separate store boundaries).
 
 **Explicit non-goals here:** hostnames, ports, TLS, and URLs — see transport bindings (e.g. **`cfd.obp.frame.http2`**).
 """)
 service NegotiationFrameProtocol {
-    version: "2026-05-05"
+    version: "2026-05-15"
     operations: []
 }

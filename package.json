@@ -38,6 +38,7 @@
     "packages/obp/v2/model/impl/ts",
     "packages/obp/v2/persistence/impl/ts",
     "packages/obp/v2/session/impl/ts",
+    "packages/obp/v2/nbc/impl/ts",
     "packages/swarm/*"
   ]
 }

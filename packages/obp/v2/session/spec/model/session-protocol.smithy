@@ -16,7 +16,7 @@ list SessionOpList {
 /// Abstract operation in the session log. **`kind`** MUST name a replayable effect that implementations
 /// map to **`cfd.obp#ObpPersistence`** operations (or their documented semantics) for the negotiation slice
 /// both peers materialize. Frame-derived kinds include **`turn`** (symmetric negotiation move; payload typically carries
-/// **`actor`** plus opaque **TURN** **`Frame.body`** per **`cfd.obp.frame`**) and **`terminate`**. When multiple **`SessionInit`** chains share one transport,
+/// **`actor`** plus opaque **TURN** **`Frame.body`** per **`cfd.obp.frame`**), **`end_offers`** (**`END_OFFERS`** frame: actor signals no further offer-extending **TURN**s; payload typically carries **`actor`** plus opaque **`Frame.body`**; **no** normative **`ObpPersistence`** projection in **`cfd.obp`** unless a host profile extends it), and **`terminate`**. When multiple **`SessionInit`** chains share one transport,
 /// ops **MAY** carry **`session_id`** (same string as that chain's **`SessionInit.session_id`**) so **`SessionEnvelope`** can
 /// address the correct Merkle prefix. Receivers MUST apply **`delta_ops`** in order when verification succeeds.
 /// **`payload`** is JSON-compatible; canonical hashing rules apply (see **`NegotiationSessionProtocol`** service docs).
@@ -111,6 +111,6 @@ union VerifyError {
 ///
 /// **Wire shapes in this model:** **`Checkpoint`**, **`SessionEnvelope`**, **`SessionOp`**, **`VerifyError`**.
 service NegotiationSessionProtocol {
-    version: "2026-05-02"
+    version: "2026-05-15"
     operations: []
 }

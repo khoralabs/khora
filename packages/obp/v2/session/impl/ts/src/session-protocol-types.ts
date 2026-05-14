@@ -2,7 +2,7 @@
  * TypeScript models for **`cfd.obp.session`** — see
  * `packages/obp/v2/session/spec/model/session-protocol.smithy`.
  *
- * `SessionInit` / `SessionParty` live in {@link "./session-types.ts"} (**`cfd.obp.frame`** init wire).
+ * `SessionInit` / `SessionParty` wire helpers live in **`@khoralabs/obp-v2-frames-impl`** (`cfd.obp.frame`).
  */
 
 /** Smithy `Document`: JSON-compatible value (RFC 8259 subset for interchange). */
@@ -30,7 +30,10 @@ export function toSha256HexLower(s: string): Sha256HexLower {
   return s as Sha256HexLower;
 }
 
-/** `SessionOp` — ordered session log entry (Smithy `structure SessionOp`). */
+/**
+ * `SessionOp` — ordered session log entry (Smithy `structure SessionOp`).
+ * Frame-derived **`kind`** values include **`turn`**, **`end_offers`** (from **`END_OFFERS`** frames), **`terminate`**, …
+ */
 export type SessionOp = {
   kind: string;
   payload: JsonDocument;
@@ -74,4 +77,4 @@ export type VerifyError =
   | { readonly rootMismatch: RootMismatchError };
 
 /** Service version string from `NegotiationSessionProtocol` in Smithy. */
-export const NEGOTIATION_SESSION_PROTOCOL_VERSION = "2026-05-02" as const;
+export const NEGOTIATION_SESSION_PROTOCOL_VERSION = "2026-05-15" as const;

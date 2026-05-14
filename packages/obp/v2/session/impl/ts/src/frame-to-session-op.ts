@@ -2,9 +2,9 @@ import type { JsonDocument, SessionOp } from "./session-protocol-types.ts";
 
 const UNTAGGED_SESSION_ID = "";
 
-/** Minimal frame shape for deriving session ops (TURN / TERMINATE only). */
+/** Minimal frame shape for deriving session ops (`FrameType` wire strings). */
 export type FrameLikeForSessionOp = {
-  type: "TURN" | "TERMINATE";
+  type: "TURN" | "END_OFFERS" | "TERMINATE";
   actor: string;
   body: Record<string, unknown>;
 };
@@ -19,6 +19,14 @@ export function frameToSessionOps(frame: FrameLikeForSessionOp): SessionOp[] {
       return [
         {
           kind: "turn",
+          payload: bodyToDocument({ actor: frame.actor, ...frame.body }),
+          session_id: UNTAGGED_SESSION_ID,
+        },
+      ];
+    case "END_OFFERS":
+      return [
+        {
+          kind: "end_offers",
           payload: bodyToDocument({ actor: frame.actor, ...frame.body }),
           session_id: UNTAGGED_SESSION_ID,
         },

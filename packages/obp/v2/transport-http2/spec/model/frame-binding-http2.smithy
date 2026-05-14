@@ -28,7 +28,7 @@ expected peer key established at handshake.
 **Security:** use **`obps://`** on untrusted networks. **`obp://`** / h2c is for local/dev only unless otherwise threat‑modeled.
 """)
 service Http2Binding {
-    version: "2026-05-05"
+    version: "2026-05-15"
     operations: []
 }
 

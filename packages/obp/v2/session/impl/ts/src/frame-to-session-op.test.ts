@@ -23,6 +23,21 @@ describe("frameToSessionOps", () => {
     ]);
   });
 
+  test("END_OFFERS", () => {
+    const ops = frameToSessionOps({
+      type: "END_OFFERS",
+      actor: "0xcc",
+      body: {},
+    });
+    expect(ops).toEqual([
+      {
+        kind: "end_offers",
+        payload: { actor: "0xcc" },
+        session_id: "",
+      },
+    ]);
+  });
+
   test("TERMINATE", () => {
     const ops = frameToSessionOps({
       type: "TERMINATE",

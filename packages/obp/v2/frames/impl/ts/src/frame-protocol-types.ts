@@ -31,6 +31,8 @@ export function toSha256HexLower(s: string): Sha256HexLower {
 /** Smithy `FrameType` enum. */
 export const FrameType = {
   TURN: "TURN",
+  /** Actor will send no further offer-extending **TURN**s on this chain; still advances the DAG tip (unlike **TERMINATE**). */
+  END_OFFERS: "END_OFFERS",
   TERMINATE: "TERMINATE",
 } as const;
 
@@ -84,4 +86,4 @@ export type Frame = {
 export type FramedWireObject = InitEnvelopeWire | Frame;
 
 /** Service version from `NegotiationFrameProtocol` in Smithy. */
-export const NEGOTIATION_FRAME_PROTOCOL_VERSION = "2026-05-05" as const;
+export const NEGOTIATION_FRAME_PROTOCOL_VERSION = "2026-05-15" as const;
