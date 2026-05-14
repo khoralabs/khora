@@ -82,6 +82,23 @@ export type Frame = {
   body: JsonDocument;
 };
 
+/** Merkle checkpoint inside **`session_envelope`** wire JSON (`seq` is JSON **`number`**). */
+export type SessionEnvelopeCheckpointWire = {
+  seq: number;
+  root_hex: string;
+};
+
+/**
+ * Multiplexed **`session_envelope`** object on the frame byte stream (`cfd.obp.session` payload).
+ */
+export type SessionEnvelopeWire = {
+  session_id: string;
+  from_party: string;
+  base_checkpoint: SessionEnvelopeCheckpointWire;
+  delta_ops: unknown[];
+  new_checkpoint: SessionEnvelopeCheckpointWire;
+};
+
 /** Normative on-wire JSON objects in this namespace: **init** envelope or a **Frame**. */
 export type FramedWireObject = InitEnvelopeWire | Frame;
 

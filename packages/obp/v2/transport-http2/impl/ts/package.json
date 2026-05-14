@@ -1,5 +1,5 @@
 {
-  "name": "@khoralabs/obp-v2-frames-impl",
+  "name": "@khoralabs/obp-v2-transport-http2",
   "version": "0.0.0",
   "type": "module",
   "private": true,
@@ -17,7 +17,7 @@
   "dependencies": {
     "@khoralabs/frame-channel": "workspace:*",
     "@khoralabs/obp-v2-errors": "workspace:*",
-    "@khoralabs/obp-v2-nbc": "workspace:*",
+    "@khoralabs/obp-v2-frames-impl": "workspace:*",
     "@khoralabs/obp-v2-persistence": "workspace:*",
     "@khoralabs/obp-v2-session-impl": "workspace:*"
   },

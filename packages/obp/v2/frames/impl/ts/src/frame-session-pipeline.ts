@@ -1,0 +1,61 @@
+import type { FrameChannel } from "@khoralabs/frame-channel";
+import type { ObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
+import type { SessionOp } from "@khoralabs/obp-v2-session-impl";
+import { canonicalSessionParties } from "./frame-init-wire.ts";
+import {
+  runFrameMultiplexSession,
+  type SessionEnvelopeSyncAdapter,
+} from "./frame-multiplex-session.ts";
+import type { FrameSessionHandlers } from "./frame-mux-types.ts";
+import type { SessionInitNormalized } from "./frame-protocol-types.ts";
+import type { FrameSigner, FrameVerifier } from "./frame-signer.ts";
+
+export type { SessionEnvelopeSyncAdapter } from "./frame-multiplex-session.ts";
+
+export type RunFrameSessionArgs = {
+  sendInit?: boolean;
+  channel: FrameChannel;
+  signer: FrameSigner;
+  verifier: FrameVerifier;
+  client: ObpPersistenceClient;
+  ledgerSeq: () => number;
+  init: SessionInitNormalized;
+  handlers: FrameSessionHandlers;
+  sessionEnvelopeSync?: SessionEnvelopeSyncAdapter;
+};
+
+/** Single-chain bilateral session (one {@link SessionInitNormalized}); stream closes after TERMINATE when configured. */
+export async function runFrameSession(args: RunFrameSessionArgs): Promise<SessionOp[]> {
+  const {
+    sendInit = false,
+    channel,
+    signer,
+    verifier,
+    client,
+    ledgerSeq,
+    init,
+    handlers,
+    sessionEnvelopeSync,
+  } = args;
+
+  return runFrameMultiplexSession({
+    channel,
+    signer,
+    verifier,
+    client,
+    ledgerSeq,
+    sessionTemplate: {
+      parties: canonicalSessionParties([init.parties[0], init.parties[1]]),
+    },
+    handlers,
+    ...(sessionEnvelopeSync !== undefined ? { sessionEnvelopeSync } : {}),
+    initiatorChainPlans: sendInit ? [{ init }] : [],
+    closeChannelOnTerminate: true,
+    closeChannelWhenIdle: true,
+  });
+}
+
+export {
+  type RunFrameMultiplexSessionArgs,
+  runFrameMultiplexSession,
+} from "./frame-multiplex-session.ts";

@@ -11,6 +11,11 @@ export {
   merkleRootHexFromLeafDigests,
   sessionOpLeafDigest,
 } from "./session-merkle.ts";
+export {
+  checkpointWireFromSessionOps,
+  type SessionCheckpointWire,
+  verifySessionOpsExtends,
+} from "./session-ops-extends.ts";
 export type {
   Checkpoint,
   JsonDocument,

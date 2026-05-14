@@ -16,6 +16,12 @@ export type {
 } from "./nbc-bind-policy-types.ts";
 export { validateBindPayloadForPort } from "./nbc-bind-policy-validate.ts";
 export {
+  type ApplyNbcFrameTurnResult,
+  applyNbcFrameTurn,
+  nbcTurnBodyToWireRecord,
+  parseNbcFrameTurnBody,
+} from "./nbc-graph-effect.ts";
+export {
   isActiveBindPolicy,
   isValidAtLedgerSeq,
   type NbcBindFailure,

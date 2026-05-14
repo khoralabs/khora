@@ -6,6 +6,16 @@ export {
   isSessionInitPartyStructure,
 } from "./frame-bootstrap.ts";
 export {
+  FrameDag,
+  sha256HexLowerFromUtf8String,
+  signingPayloadBytes,
+} from "./frame-dag.ts";
+export {
+  createFrameDecoder,
+  encodeSessionEnvelopeMessage,
+  type FrameDecoderYield,
+} from "./frame-decoder.ts";
+export {
   canonicalSessionParties,
   normalizeSessionInit,
   partyIdForSigner,
@@ -14,6 +24,24 @@ export {
   sessionInitFromWire,
   sessionInitToWire,
 } from "./frame-init-wire.ts";
+export {
+  defaultSessionEnvelopeSyncAdapter,
+  type RunFrameMultiplexSessionArgs,
+  runFrameMultiplexSession,
+  type SessionEnvelopeSyncAdapter,
+} from "./frame-multiplex-session.ts";
+export type {
+  FrameMultiplexOpenerApi,
+  FrameSessionHandle,
+  FrameSessionHandlers,
+  MultiplexChainHooks,
+} from "./frame-mux-types.ts";
+export {
+  createNegotiationCoordinator,
+  type NegotiationCoordinatorHooksArgs,
+  type WaitForTurnOptions,
+  waitForPortOnOffer,
+} from "./frame-negotiation-coordinator.ts";
 export type {
   ActorPubkeyList,
   Frame,
@@ -21,6 +49,8 @@ export type {
   InitEnvelopeWire,
   JsonDocument,
   PartyIdList,
+  SessionEnvelopeCheckpointWire,
+  SessionEnvelopeWire,
   SessionInit,
   SessionInitNormalized,
   SessionParty,
@@ -32,6 +62,19 @@ export {
   NEGOTIATION_FRAME_PROTOCOL_VERSION,
   toSha256HexLower,
 } from "./frame-protocol-types.ts";
+export {
+  type RunFrameSessionArgs,
+  runFrameSession,
+} from "./frame-session-pipeline.ts";
+export {
+  createEd25519FrameSigner,
+  createEd25519FrameVerifier,
+  type FrameSigner,
+  type FrameVerifier,
+  generateEd25519KeyPair,
+  importEd25519PublicKeyFromActorHex,
+  publicKeyActorHex,
+} from "./frame-signer.ts";
 export {
   type FrameSigningPayload,
   frameSigningPayload,
