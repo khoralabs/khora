@@ -82,12 +82,18 @@ function Footer({ className, children, ...props }: ComponentProps<"footer">) {
           <p className="m-0">© 2026 khora labs</p>
           <ul className="m-0 flex list-none gap-6 p-0 md:gap-8">
             <li>
-              <a href="/" className="text-inherit no-underline transition-opacity hover:opacity-75">
-                Terms of Services
+              <a
+                href="/terms"
+                className="text-inherit no-underline transition-opacity hover:opacity-75"
+              >
+                Terms of Service
               </a>
             </li>
             <li>
-              <a href="/" className="text-inherit no-underline transition-opacity hover:opacity-75">
+              <a
+                href="/privacy"
+                className="text-inherit no-underline transition-opacity hover:opacity-75"
+              >
                 Privacy Policy
               </a>
             </li>
