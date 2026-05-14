@@ -9,7 +9,8 @@ Host-side lexical / retrieval autolinking for **[@khoralabs/memories-core](https
 
 ```ts
 import { defineOntology, canonicalOntology } from "@khoralabs/memories-core";
-import { mergeOntologies, retrievalAutolinkOntology } from "@khoralabs/memories-autolink";
+import { mergeOntologies } from "@khoralabs/memories-core/helpers";
+import { retrievalAutolinkOntology } from "@khoralabs/memories-autolink";
 
 export const appOntology = mergeOntologies(canonicalOntology, retrievalAutolinkOntology);
 ```
@@ -23,7 +24,7 @@ defineOntology({
 });
 ```
 
-On **kind collision**, the second argument to `mergeOntologies` wins.
+On **kind collision**, the **last** argument to `mergeOntologies` from `@khoralabs/memories-core/helpers` wins (arguments are merged left to right).
 
 ## Pure planner
 

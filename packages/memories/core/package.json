@@ -36,6 +36,7 @@
     }
   },
   "devDependencies": {
+    "@khoralabs/memories-autolink": "workspace:*",
     "@khoralabs/memories-sqlite": "workspace:*",
     "@types/bun": "latest"
   },

@@ -1,5 +1,5 @@
-/** Configured Memories subtree roots for scoped host search. */
-export type SwarmHostMemoryNamespaces = {
+/** Configured Memories subtree roots for scoped HTTP search (`POST /v1/memories/search`). */
+export type AtriumMemoriesSearchNamespaces = {
   profileNamespace: string;
   postNamespace: string;
   /** Required when searching topics or multi-scope includes topics. */
@@ -8,23 +8,35 @@ export type SwarmHostMemoryNamespaces = {
   probeNamespace?: string;
 };
 
-export type SwarmHostMemoryEntityKind = "profiles" | "posts" | "topics" | "probes";
+export type AtriumMemoriesEntityKind = "profiles" | "posts" | "topics" | "probes";
 
 /**
- * Discriminated search scope: maps to whitelisted namespaces via {@link SwarmHostMemoryNamespaces}.
+ * Discriminated search scope: maps to whitelisted namespaces via {@link AtriumMemoriesSearchNamespaces}.
  * Use {@link kind} `"raw"` only when callers already have concrete namespace paths.
  */
-export type SwarmHostSearchScope =
+export type AtriumMemoriesSearchScope =
   | { kind: "profiles"; withRelatedPosts?: boolean }
   | { kind: "posts" }
   | { kind: "topics" }
   | { kind: "probes" }
-  | { kind: "multi"; includes: readonly SwarmHostMemoryEntityKind[] }
+  | { kind: "multi"; includes: readonly AtriumMemoriesEntityKind[] }
   | { kind: "raw"; namespace: string; additionalNamespaces?: readonly string[] };
 
+/** @deprecated Prefer {@link AtriumMemoriesSearchScope}. */
+export type SwarmHostSearchScope = AtriumMemoriesSearchScope;
+
+/** @deprecated Prefer {@link AtriumMemoriesSearchNamespaces}. */
+export type SwarmHostMemoryNamespaces = AtriumMemoriesSearchNamespaces;
+
+/** @deprecated Prefer {@link AtriumMemoriesEntityKind}. */
+export type SwarmHostMemoryEntityKind = AtriumMemoriesEntityKind;
+
+/** Wire/API alias for {@link AtriumMemoriesSearchScope}. */
+export type MemoriesSearchScope = AtriumMemoriesSearchScope;
+
 function namespaceForEntityKind(
-  kind: SwarmHostMemoryEntityKind,
-  ns: SwarmHostMemoryNamespaces,
+  kind: AtriumMemoriesEntityKind,
+  ns: AtriumMemoriesSearchNamespaces,
 ): string {
   switch (kind) {
     case "profiles":
@@ -35,7 +47,7 @@ function namespaceForEntityKind(
       const t = ns.topicNamespace?.trim();
       if (t === undefined || t.length === 0) {
         throw new Error(
-          "SwarmHost: topicNamespace is required on memoryNamespaces for topics search",
+          "Atrium: topicNamespace is required on memory namespaces for topics search",
         );
       }
       return t;
@@ -44,7 +56,7 @@ function namespaceForEntityKind(
       const p = ns.probeNamespace?.trim();
       if (p === undefined || p.length === 0) {
         throw new Error(
-          "SwarmHost: probeNamespace is required on memoryNamespaces for probes search",
+          "Atrium: probeNamespace is required on memory namespaces for probes search",
         );
       }
       return p;
@@ -68,11 +80,12 @@ function dedupePathsPreserveOrder(paths: readonly string[]): string[] {
 }
 
 /**
- * Resolves a {@link SwarmHostSearchScope} to primary {@code namespace} + optional {@code additionalNamespaces}.
+ * Resolves an {@link AtriumMemoriesSearchScope} to primary `namespace` + optional `additionalNamespaces`
+ * for hybrid Memories search.
  */
-export function resolveSwarmHostSearchNamespaces(
-  scope: SwarmHostSearchScope,
-  memoryNamespaces: SwarmHostMemoryNamespaces | undefined,
+export function resolveAtriumMemoriesSearchNamespaces(
+  scope: AtriumMemoriesSearchScope,
+  memoryNamespaces: AtriumMemoriesSearchNamespaces | undefined,
 ): { namespace: string; additionalNamespaces?: readonly string[] } {
   if (scope.kind === "raw") {
     return {
@@ -85,7 +98,7 @@ export function resolveSwarmHostSearchNamespaces(
 
   if (memoryNamespaces === undefined) {
     throw new Error(
-      "SwarmHost: pass memoryNamespaces on SwarmHostDeps to use scoped search (non-raw scopes)",
+      "Atrium: pass namespace configuration (profile/post/topic/probe roots) for scoped search (non-raw scopes)",
     );
   }
 
@@ -116,14 +129,14 @@ export function resolveSwarmHostSearchNamespaces(
 
   if (scope.kind === "multi") {
     if (scope.includes.length === 0) {
-      throw new Error('SwarmHost: scope.kind "multi" requires a non-empty includes array');
+      throw new Error('Atrium: scope.kind "multi" requires a non-empty includes array');
     }
     const paths = dedupePathsPreserveOrder(
       scope.includes.map((k) => namespaceForEntityKind(k, memoryNamespaces)),
     );
     const [primary, ...rest] = paths;
     if (primary === undefined) {
-      throw new Error("SwarmHost: multi scope produced no namespaces");
+      throw new Error("Atrium: multi scope produced no namespaces");
     }
     return {
       namespace: primary,
@@ -134,3 +147,6 @@ export function resolveSwarmHostSearchNamespaces(
   const _never: never = scope;
   return _never;
 }
+
+/** @deprecated Prefer {@link resolveAtriumMemoriesSearchNamespaces}. */
+export const resolveSwarmHostSearchNamespaces = resolveAtriumMemoriesSearchNamespaces;

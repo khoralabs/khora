@@ -6,11 +6,8 @@ import {
 } from "@khoralabs/atrium-contracts";
 import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import { embedTextChunks } from "@khoralabs/memories-core/helpers";
-import {
-  SWARM_EVENT_KIND,
-  type SwarmHostEventUnion,
-  type SwarmMemoryOpMapper,
-} from "@khoralabs/swarm-host";
+import { SWARM_EVENT_KIND, type SwarmHostEventUnion } from "@khoralabs/swarm-host";
+import type { SwarmMemoryOpMapper } from "./atrium-swarm-memory-ops.ts";
 import type { AtriumHostAppContext } from "./atrium-app-context.ts";
 import type { atriumMemoriesOntology } from "./atrium-memories-ontology.ts";
 import { computePostAttachScopes, computeProfileAttachScopes } from "./atrium-memory-scopes.ts";

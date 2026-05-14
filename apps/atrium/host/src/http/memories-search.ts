@@ -1,12 +1,13 @@
 import type { MemorySearchHit } from "@khoralabs/memories-core/helpers";
-import type { SwarmHostSearchScope } from "@khoralabs/swarm-host";
+import type { AtriumMemoriesSearchScope } from "@khoralabs/atrium-contracts";
 import z from "zod";
+import { atriumMemoriesHybridSearch } from "../atrium-memories-search.ts";
 import type { HostRouteDeps } from "./deps.ts";
 import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses.ts";
 
-const zSwarmHostMemoryEntityKind = z.enum(["profiles", "posts", "topics", "probes"]);
+const zAtriumMemoriesEntityKind = z.enum(["profiles", "posts", "topics", "probes"]);
 
-const zSwarmHostSearchScope: z.ZodType<SwarmHostSearchScope> = z.discriminatedUnion("kind", [
+const zAtriumMemoriesSearchScope: z.ZodType<AtriumMemoriesSearchScope> = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("profiles"),
     withRelatedPosts: z.boolean().optional(),
@@ -16,7 +17,7 @@ const zSwarmHostSearchScope: z.ZodType<SwarmHostSearchScope> = z.discriminatedUn
   z.object({ kind: z.literal("probes") }),
   z.object({
     kind: z.literal("multi"),
-    includes: z.array(zSwarmHostMemoryEntityKind).min(1),
+    includes: z.array(zAtriumMemoriesEntityKind).min(1),
   }),
   z.object({
     kind: z.literal("raw"),
@@ -29,13 +30,13 @@ const zSearchScopeMode = z.enum(["pathSubtree", "scopeDag", "exactScope"]);
 
 const zMemoriesSearchBody = z.object({
   query: z.string().trim().min(1),
-  scope: zSwarmHostSearchScope,
+  scope: zAtriumMemoriesSearchScope,
   limit: z.number().int().min(1).max(100).optional(),
   minScore: z.number().min(0).max(1).optional(),
   searchScopeMode: zSearchScopeMode.optional(),
 });
 
-function scopeReferencesTopics(scope: SwarmHostSearchScope): boolean {
+function scopeReferencesTopics(scope: AtriumMemoriesSearchScope): boolean {
   if (scope.kind === "topics") return true;
   if (scope.kind === "multi") {
     return scope.includes.includes("topics");
@@ -92,8 +93,20 @@ export async function handleMemoriesSearch(
 
   const hasEmbedding = ctx.config.embeddingModel !== undefined;
   let hits: MemorySearchHit[];
+  const runHybrid = deps.memoriesHybridSearchImpl ?? atriumMemoriesHybridSearch;
   try {
-    hits = await ctx.host.search({
+    hits = await runHybrid(ctx.memories, {
+      memoryNamespaces: {
+        profileNamespace: ctx.config.profileNamespace,
+        postNamespace: ctx.config.postNamespace,
+        probeNamespace: ctx.config.probeNamespace,
+        ...(ctx.config.topicNamespace !== undefined
+          ? { topicNamespace: ctx.config.topicNamespace }
+          : {}),
+      },
+      defaultEmbeddingModel: ctx.config.embeddingModel,
+    },
+    {
       scope: body.scope,
       content: { text: body.query },
       options: {

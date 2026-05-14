@@ -1,4 +1,4 @@
-import type { SwarmHostMemoryEntityKind, SwarmHostSearchScope } from "@khoralabs/swarm-host";
+import type { AtriumMemoriesEntityKind, AtriumMemoriesSearchScope } from "@khoralabs/atrium-contracts";
 import type { AtriumCliContext } from "../flows/context.ts";
 import { boolFlag, strFlag } from "./parse.ts";
 import type { FlagMap } from "./types.ts";
@@ -6,11 +6,11 @@ import type { FlagMap } from "./types.ts";
 const SEARCH_SCOPE_MODES = ["pathSubtree", "scopeDag", "exactScope"] as const;
 type SearchScopeMode = (typeof SEARCH_SCOPE_MODES)[number];
 
-function parseEntityKinds(raw: string | undefined): SwarmHostMemoryEntityKind[] {
+function parseEntityKinds(raw: string | undefined): AtriumMemoriesEntityKind[] {
   if (raw === undefined || raw.trim().length === 0) {
     return ["profiles", "posts", "probes"];
   }
-  const map: Record<string, SwarmHostMemoryEntityKind> = {
+  const map: Record<string, AtriumMemoriesEntityKind> = {
     profiles: "profiles",
     profile: "profiles",
     posts: "posts",
@@ -20,7 +20,7 @@ function parseEntityKinds(raw: string | undefined): SwarmHostMemoryEntityKind[] 
     probes: "probes",
     probe: "probes",
   };
-  const out: SwarmHostMemoryEntityKind[] = [];
+  const out: AtriumMemoriesEntityKind[] = [];
   for (const p of raw.split(",")) {
     const k = map[p.trim().toLowerCase()];
     if (k === undefined) {
@@ -36,7 +36,7 @@ function parseEntityKinds(raw: string | undefined): SwarmHostMemoryEntityKind[] 
   return out;
 }
 
-function parseScope(flags: FlagMap): SwarmHostSearchScope {
+function parseScope(flags: FlagMap): AtriumMemoriesSearchScope {
   const sk = strFlag(flags, "scope")?.toLowerCase();
   if (sk === "raw") {
     const ns = strFlag(flags, "namespace");

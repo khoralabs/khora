@@ -11,15 +11,15 @@ import type {
  * Maps a memory record address (same as {@link Store.resolve}) to app persistence—typed entity,
  * raw {@link ResolvedSource}, or any handle the app defines.
  */
-export type SwarmEntityResolver<TPersistence> = {
+export type AtriumMemoriesEntityResolver<TPersistence> = {
   resolve(ref: SourceMapRef): Promise<TPersistence | undefined>;
 };
 
 /** Per-aggregate resolvers; each may target different persistence shapes. */
-export type SwarmHostStores<TProfile, TPost, TTopic> = {
-  profile?: SwarmEntityResolver<TProfile>;
-  post?: SwarmEntityResolver<TPost>;
-  topic?: SwarmEntityResolver<TTopic>;
+export type AtriumMemoriesStoreBridges<TProfile, TPost, TTopic> = {
+  profile?: AtriumMemoriesEntityResolver<TProfile>;
+  post?: AtriumMemoriesEntityResolver<TPost>;
+  topic?: AtriumMemoriesEntityResolver<TTopic>;
 };
 
 /** Narrow a lexical search hit to the source-map address used by {@link Store.resolve}. */

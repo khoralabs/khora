@@ -13,18 +13,18 @@ import { type EmbeddingModel, embedTextChunks } from "@khoralabs/memories-core/h
 import { createMemoriesPersistence, openMemoriesDatabase } from "@khoralabs/memories-sqlite";
 import {
   type AgentNotificationBufferPort,
-  composeOnEventWithMemorySync,
   createFrameChannelHub,
   createInboxWsHub,
   type FrameChannelHubPort,
-  minimalSourceMapForResolve,
   SWARM_EVENT_KIND,
   SwarmHost,
 } from "@khoralabs/swarm-host";
 import type { AtriumHostAppContext } from "./atrium-app-context.ts";
+import { minimalSourceMapForResolve } from "./atrium-memories-store-bridge.ts";
 import { atriumMemoriesOntology } from "./atrium-memories-ontology.ts";
 import { maybeAtriumMemoryAutolinkAfterSync } from "./atrium-memory-autolink.ts";
 import { atriumSwarmMemoryOpMapper } from "./atrium-memory-sync.ts";
+import { composeOnEventWithMemorySync } from "./atrium-swarm-memory-sync.ts";
 import { fanOutPostMatches } from "./atrium-post-fanout.ts";
 import {
   ensureAtriumScopeLinksForPost,
@@ -69,7 +69,8 @@ export type AtriumHostConfig = {
 
 export type AtriumHostContext = {
   config: AtriumHostConfig;
-  host: SwarmHost<TNode, TEdge, AtriumProfile, AtriumPost, unknown, never, EntityMap>;
+  host: SwarmHost<AtriumProfile, AtriumPost, unknown, never>;
+  memories: MemoriesClient<TNode, TEdge, EntityMap>;
   db: Database;
   notificationBuffer: AgentNotificationBufferPort;
   auth: AtriumDidAuth;
@@ -124,42 +125,13 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
   const mapMemoryOps = atriumSwarmMemoryOpMapper(appContext);
 
   const auth = typeof config.auth === "function" ? config.auth(db) : config.auth;
-  const host = new SwarmHost({
-    memories,
+  const host = new SwarmHost<AtriumProfile, AtriumPost, unknown, never>({
     persistence: hostPersistence,
     authPreflight: auth.preflight,
     notificationBuffer,
     inboxHub,
     frameChannelHub: roomHub,
     appContext,
-    memoryNamespaces: {
-      profileNamespace: config.profileNamespace,
-      postNamespace: config.postNamespace,
-      ...(config.topicNamespace !== undefined ? { topicNamespace: config.topicNamespace } : {}),
-      probeNamespace: config.probeNamespace,
-    },
-    embeddingModel: config.embeddingModel,
-    stores: {
-      profile: {
-        async resolve(ref) {
-          const r = await documentStore.resolve(minimalSourceMapForResolve(ref));
-          if (r.kind === "record" && r.domain === "profile") {
-            return r.value;
-          }
-          return undefined;
-        },
-      },
-      post: {
-        async resolve(ref) {
-          const r = await documentStore.resolve(minimalSourceMapForResolve(ref));
-          if (r.kind === "record" && r.domain === "post") {
-            return r.value;
-          }
-          return undefined;
-        },
-      },
-    },
-
     onEvent: composeOnEventWithMemorySync(memories, mapMemoryOps, async (ctx, event) => {
       const ac = ctx.appContext as AtriumHostAppContext;
       try {
@@ -264,6 +236,7 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
   return {
     config,
     host,
+    memories,
     db,
     notificationBuffer,
     auth,

@@ -5,7 +5,7 @@ import { handleMemoriesSearch } from "./memories-search.ts";
 describe("handleMemoriesSearch", () => {
   test("uses lexical-only search when host has no embedding model", async () => {
     let searchArg: unknown;
-    const search = mock(async (arg: unknown) => {
+    const hybrid = mock(async (_mem: unknown, _params: unknown, arg: unknown) => {
       searchArg = arg;
       return [
         {
@@ -22,8 +22,8 @@ describe("handleMemoriesSearch", () => {
         auth: {
           requireAuthenticatedRequest: async () => ({ did: "did:key:agent" }),
         },
+        memories: {},
         host: {
-          search,
           persistenceClient: {
             profileIdForPrincipal: () => "profile-row-id",
           },
@@ -31,8 +31,12 @@ describe("handleMemoriesSearch", () => {
         config: {
           embeddingModel: undefined,
           topicNamespace: undefined,
+          profileNamespace: "atrium/profiles",
+          postNamespace: "atrium/posts",
+          probeNamespace: "atrium/probes",
         },
       },
+      memoriesHybridSearchImpl: hybrid,
       invitesRepo: undefined,
       rateLimiters: {
         memoriesSearchDid: () => ({ ok: true, retryAfterSec: 0 }),
@@ -51,7 +55,7 @@ describe("handleMemoriesSearch", () => {
     });
     const res = await handleMemoriesSearch(req, new URL(req.url), deps);
     expect(res.status).toBe(200);
-    expect(search).toHaveBeenCalledTimes(1);
+    expect(hybrid).toHaveBeenCalledTimes(1);
     const arg = searchArg as {
       scope: { kind: string };
       options?: { arms?: { lexical?: number; vector?: number } };
@@ -64,15 +68,23 @@ describe("handleMemoriesSearch", () => {
   });
 
   test("rejects topic scope when topicNamespace unset", async () => {
-    const search = mock(() => Promise.resolve([]));
+    const hybrid = mock(() => Promise.resolve([]));
     const deps = {
       ctx: {
         auth: {
           requireAuthenticatedRequest: async () => ({ did: "did:key:agent" }),
         },
-        host: { search, persistenceClient: { profileIdForPrincipal: () => "p1" } },
-        config: { embeddingModel: undefined, topicNamespace: undefined },
+        memories: {},
+        host: { persistenceClient: { profileIdForPrincipal: () => "p1" } },
+        config: {
+          embeddingModel: undefined,
+          topicNamespace: undefined,
+          profileNamespace: "a",
+          postNamespace: "b",
+          probeNamespace: "c",
+        },
       },
+      memoriesHybridSearchImpl: hybrid,
       invitesRepo: undefined,
       rateLimiters: {
         memoriesSearchDid: () => ({ ok: true, retryAfterSec: 0 }),
@@ -86,12 +98,12 @@ describe("handleMemoriesSearch", () => {
     });
     const res = await handleMemoriesSearch(req, new URL(req.url), deps);
     expect(res.status).toBe(400);
-    expect(search).toHaveBeenCalledTimes(0);
+    expect(hybrid).toHaveBeenCalledTimes(0);
   });
 
-  test("forwards searchScopeMode to SwarmHost.search", async () => {
+  test("forwards searchScopeMode to hybrid search", async () => {
     let searchArg: unknown;
-    const search = mock(async (arg: unknown) => {
+    const hybrid = mock(async (_mem: unknown, _params: unknown, arg: unknown) => {
       searchArg = arg;
       return [];
     });
@@ -100,12 +112,19 @@ describe("handleMemoriesSearch", () => {
         auth: {
           requireAuthenticatedRequest: async () => ({ did: "did:key:agent" }),
         },
+        memories: {},
         host: {
-          search,
           persistenceClient: { profileIdForPrincipal: () => "p1" },
         },
-        config: { embeddingModel: undefined, topicNamespace: undefined },
+        config: {
+          embeddingModel: undefined,
+          topicNamespace: undefined,
+          profileNamespace: "a",
+          postNamespace: "b",
+          probeNamespace: "c",
+        },
       },
+      memoriesHybridSearchImpl: hybrid,
       invitesRepo: undefined,
       rateLimiters: {
         memoriesSearchDid: () => ({ ok: true, retryAfterSec: 0 }),
@@ -123,7 +142,7 @@ describe("handleMemoriesSearch", () => {
     });
     const res = await handleMemoriesSearch(req, new URL(req.url), deps);
     expect(res.status).toBe(200);
-    expect(search).toHaveBeenCalledTimes(1);
+    expect(hybrid).toHaveBeenCalledTimes(1);
     expect((searchArg as { searchScopeMode?: string }).searchScopeMode).toBe("scopeDag");
   });
 });

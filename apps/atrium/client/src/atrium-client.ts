@@ -74,7 +74,11 @@ export type {
   ObpFrameConnection,
   ObpWebSocketConnectOptions,
 } from "@khoralabs/obp-v2-transport-ws";
-export type { SwarmHostSearchScope } from "@khoralabs/swarm-host";
+export type {
+  AtriumMemoriesSearchScope,
+  MemoriesSearchScope,
+  SwarmHostSearchScope,
+} from "@khoralabs/atrium-contracts";
 export type { AgentStatusSnapshot, AgentSyncSnapshot } from "./http/agent.ts";
 export type { AuthorSubscriptionsSnapshot } from "./http/authors.ts";
 export type { InboxListResult, ListInboxParams } from "./http/inbox.ts";

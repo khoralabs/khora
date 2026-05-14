@@ -6,7 +6,6 @@ import type {
   SwarmHostEventHandlerCtx,
 } from "@khoralabs/swarm-host";
 import type { AtriumHostAppContext } from "./atrium-app-context.ts";
-import type { atriumMemoriesOntology } from "./atrium-memories-ontology.ts";
 import { fanOutPostMatches } from "./atrium-post-fanout.ts";
 import type { ProbeSubscribersRepo } from "./persistence/sqlite/index.ts";
 import {
@@ -15,9 +14,7 @@ import {
   topicSubscriptionSubject,
 } from "./subject-keys.ts";
 
-type TNode = typeof atriumMemoriesOntology.nodeLabels;
-type TEdge = typeof atriumMemoriesOntology.edgeLabels;
-type FanoutCtx = SwarmHostEventHandlerCtx<TNode, TEdge> & {
+type FanoutCtx = SwarmHostEventHandlerCtx & {
   _enqueued: Array<{ principalId: string; note: AgentNotification }>;
 };
 
@@ -78,10 +75,7 @@ function makeCtx(params: {
       },
     },
     appContext: {} as AtriumHostAppContext,
-    memories: {} as never,
     persistenceClient: {} as never,
-    search: async () => [],
-    searchMemories: async () => [],
   } as unknown as FanoutCtx;
 }
 

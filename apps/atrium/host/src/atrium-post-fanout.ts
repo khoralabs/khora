@@ -1,22 +1,16 @@
 import { type AtriumPost, normalizeTopicSlug } from "@khoralabs/atrium-contracts";
-import type { DefaultEntityMap } from "@khoralabs/memories-core";
 import { type EmbeddingModel, embedTextChunks } from "@khoralabs/memories-core/helpers";
 import type { SwarmHostEventHandlerCtx } from "@khoralabs/swarm-host";
 import { deliverAgentNotification, type InboxPostReason } from "@khoralabs/swarm-host";
 import type { AtriumHostAppContext } from "./atrium-app-context.ts";
-import type { atriumMemoriesOntology } from "./atrium-memories-ontology.ts";
 import type { ProbeSubscribersRepo } from "./persistence/sqlite/index.ts";
 import {
   authorSubscriptionSubject,
   authorTopicSubscriptionSubject,
   topicSubscriptionSubject,
 } from "./subject-keys.ts";
-
-type TNode = (typeof atriumMemoriesOntology)["nodeLabels"];
-type TEdge = (typeof atriumMemoriesOntology)["edgeLabels"];
-
-function appCtxOrThrow<TEntityMap extends Record<string, unknown>>(
-  ctx: SwarmHostEventHandlerCtx<TNode, TEdge, TEntityMap>,
+function appCtxOrThrow(
+  ctx: SwarmHostEventHandlerCtx,
 ): AtriumHostAppContext {
   const ac = ctx.appContext as AtriumHostAppContext | undefined;
   if (ac === undefined) {
@@ -64,10 +58,8 @@ function lexicalTextForProbeSearch(p: AtriumPost): string {
  * Fan-out topic subscribers, author followers, and probe hits for a new post into a single
  * `inbox_post` notification per recipient principal (merged `reasons[]`).
  */
-export async function fanOutPostMatches<
-  TEntityMap extends Record<string, unknown> = DefaultEntityMap,
->(params: {
-  ctx: SwarmHostEventHandlerCtx<TNode, TEdge, TEntityMap>;
+export async function fanOutPostMatches(params: {
+  ctx: SwarmHostEventHandlerCtx;
   probeSubscribers: ProbeSubscribersRepo;
   embeddingModel?: EmbeddingModel;
   post: AtriumPost;

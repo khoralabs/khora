@@ -1,4 +1,4 @@
-import type { SwarmHostSearchScope } from "@khoralabs/swarm-host";
+import type { AtriumMemoriesSearchScope } from "@khoralabs/atrium-contracts";
 import z from "zod";
 import type { HttpTransport } from "./transport.ts";
 
@@ -33,7 +33,7 @@ export type MemorySearchHitWire = z.infer<typeof zMemorySearchHit>;
 
 export type MemoriesSearchParams = {
   query: string;
-  scope: SwarmHostSearchScope;
+  scope: AtriumMemoriesSearchScope;
   limit?: number;
   minScore?: number;
   searchScopeMode?: "pathSubtree" | "scopeDag" | "exactScope";

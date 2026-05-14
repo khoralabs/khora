@@ -19,7 +19,7 @@ export type SwarmAggregateDomain =
  * - `topic:${topicId}`
  *
  * Bookkeeping record shapes (`TProfile`, `TPost`, `TTopic`) live in the app; resolve them via
- * `SwarmHostStores` from search hits or source maps.
+ * app-owned stores (e.g. Atrium’s document store + {@link Store.resolve}).
  */
 export type SourceMapLink = {
   memoryNamespace: string;

@@ -26,7 +26,6 @@
     "@khoralabs/obp-v2-model": "workspace:*",
     "@khoralabs/obp-v2-nbc": "workspace:*",
     "@khoralabs/obp-v2-persistence": "workspace:*",
-    "@khoralabs/swarm-host": "workspace:*",
     "zod": "^4"
   },
   "devDependencies": {

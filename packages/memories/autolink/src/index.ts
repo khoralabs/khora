@@ -1,6 +1,5 @@
 export { type IntegrateNewMemoryArgs, integrateNewMemoryIntoGraph } from "./integrate.js";
 export {
-  mergeOntologies,
   RETRIEVAL_AUTOLINK_EDGE_KIND,
   RETRIEVAL_BOOTSTRAP_NODE_KIND,
   type RetrievalAutolinkOntology,

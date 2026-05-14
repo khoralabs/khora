@@ -3,25 +3,9 @@ import { defineOntology, type Memory, type SearchHit } from "@khoralabs/memories
 import z from "zod";
 import {
   computeLexicalLinkMergeSlice,
-  mergeOntologies,
   RETRIEVAL_AUTOLINK_EDGE_KIND,
   RETRIEVAL_BOOTSTRAP_NODE_KIND,
-  retrievalAutolinkOntology,
 } from "./index.js";
-
-describe("mergeOntologies", () => {
-  test("layers retrieval kinds over base", () => {
-    const base = defineOntology({
-      nodeLabels: { fact: z.object({ text: z.string() }) },
-      edgeLabels: { relates: z.object({}) },
-    });
-    const merged = mergeOntologies(base, retrievalAutolinkOntology);
-    expect(merged.nodeLabels).toHaveProperty("fact");
-    expect(merged.nodeLabels).toHaveProperty(RETRIEVAL_BOOTSTRAP_NODE_KIND);
-    expect(merged.edgeLabels).toHaveProperty("relates");
-    expect(merged.edgeLabels).toHaveProperty(RETRIEVAL_AUTOLINK_EDGE_KIND);
-  });
-});
 
 function nodeMemory(key: string): Memory {
   return {

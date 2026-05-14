@@ -1,8 +1,4 @@
-import {
-  defineOntology,
-  type LabelSchemaMap,
-  type OntologyDefinition,
-} from "@khoralabs/memories-core";
+import { defineOntology } from "@khoralabs/memories-core";
 import z from "zod";
 
 /** Edge kind for retrieval-only links (lexical / hybrid search grounding). */
@@ -28,7 +24,7 @@ export const zRetrievalBootstrapNodeProps = z.object({
 
 /**
  * Small ontology fragment for lexical / retrieval autolinking.
- * Compose with your primary ontology via {@link mergeOntologies} or object spread.
+ * Compose with your primary ontology via `mergeOntologies` from `@khoralabs/memories-core/helpers` or object spread.
  */
 export const retrievalAutolinkOntology = defineOntology({
   nodeLabels: {
@@ -43,22 +39,3 @@ export type RetrievalAutolinkOntology = typeof retrievalAutolinkOntology;
 
 export type RetrievalAutolinkNodeLabels = (typeof retrievalAutolinkOntology)["nodeLabels"];
 export type RetrievalAutolinkEdgeLabels = (typeof retrievalAutolinkOntology)["edgeLabels"];
-
-/**
- * Merge two ontologies by spreading `nodeLabels` and `edgeLabels`.
- * On key collision, **extension** keys overwrite **base** keys.
- */
-export function mergeOntologies<
-  TN1 extends LabelSchemaMap,
-  TE1 extends LabelSchemaMap,
-  TN2 extends LabelSchemaMap,
-  TE2 extends LabelSchemaMap,
->(
-  base: OntologyDefinition<TN1, TE1>,
-  extension: OntologyDefinition<TN2, TE2>,
-): OntologyDefinition<TN1 & TN2, TE1 & TE2> {
-  return defineOntology({
-    nodeLabels: { ...base.nodeLabels, ...extension.nodeLabels } as TN1 & TN2,
-    edgeLabels: { ...base.edgeLabels, ...extension.edgeLabels } as TE1 & TE2,
-  });
-}
