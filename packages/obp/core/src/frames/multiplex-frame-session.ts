@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { FrameChannel } from "@khoralabs/frame-channel";
+import type { DuplexByteStream } from "@khoralabs/duplex-byte-stream";
 import { OBPPersistenceClient, ObpError } from "@khoralabs/obp-persistence-client";
 import type { ObpPersistence } from "@khoralabs/obp-persistence-client";
 import { canonicalJsonString } from "./canonical.ts";
@@ -44,7 +44,7 @@ export type SessionEnvelopeSyncAdapter = {
 };
 
 export type RunFrameMultiplexSessionArgs = {
-  channel: FrameChannel;
+  channel: DuplexByteStream;
   signer: FrameSigner;
   verifier: FrameVerifier;
   persistence: ObpPersistence;
@@ -136,7 +136,7 @@ function turnBodyToWireRecord(body: TurnBody): Record<string, unknown> {
   return o;
 }
 
-/** Run multiple {@link SessionInit} chains on one {@link FrameChannel}; route frames by `p_hash` → registered tip / genesis. */
+/** Run multiple {@link SessionInit} chains on one {@link DuplexByteStream}; route frames by `p_hash` → registered tip / genesis. */
 export async function runFrameMultiplexSession(
   args: RunFrameMultiplexSessionArgs,
 ): Promise<SessionOp[]> {

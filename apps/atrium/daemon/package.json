@@ -1,7 +1,7 @@
 {
   "name": "@khoralabs/atrium-daemon",
   "version": "0.0.0",
-  "description": "Atrium long-lived processes: inbox observer (default) and per-room negotiation WebSocket holders (ATRIUM_DAEMON_KIND=room + ATRIUM_ROOM_ID, ATRIUM_ROOM_WS_URL). Ledger SQLite path: ATRIUM_OBP_STORE_ROOT or <dataDir>/obp (reused for durable ledger_seq). JSON logs: ATRIUM_DAEMON_JSON=1 or --json.",
+  "description": "Atrium long-lived processes: inbox observer (default) and per-room WebSocket holders for Atrium rooms / OBP v2 frame sessions (ATRIUM_DAEMON_KIND=room + ATRIUM_ROOM_ID, ATRIUM_ROOM_WS_URL). Ledger SQLite path: ATRIUM_OBP_STORE_ROOT or <dataDir>/obp (reused for durable ledger_seq). JSON logs: ATRIUM_DAEMON_JSON=1 or --json.",
   "type": "module",
   "private": true,
   "module": "src/index.ts",

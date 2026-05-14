@@ -4,13 +4,13 @@ export {
   type SwarmHostDocumentStoreParsers,
 } from "./document-store.ts";
 export { createSwarmHostEntitySqlitePersistence } from "./entity-sqlite.ts";
+export { createFrameChannelHubPersistenceSqlite } from "./frame-channel-hub-persistence-sqlite.ts";
 export {
   type SqliteMaintenanceHandle,
   type SqliteMaintenanceOptions,
   startSqliteMaintenance,
 } from "./maintenance.ts";
 export { migrateAtriumHostDb } from "./migrate-atrium-host-db.ts";
-export { createNegotiationRelaySqlitePersistence } from "./negotiation-relay-sqlite.ts";
 export { createSqliteAgentNotificationBuffer } from "./notification-buffer-sqlite.ts";
 export {
   createProbeSubscribersRepo,

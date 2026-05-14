@@ -91,7 +91,7 @@ export async function handleAtriumRoomsCreate(
   const expiresAtMs = now + ttlMs;
   const roomId = stableId("atrium_room", profileId, `${now}`, crypto.randomUUID());
 
-  const { ticket } = await ctx.negotiationRoomHub.createRoom(roomId, ttlMs);
+  const { ticket } = await ctx.roomHub.createChannel(roomId, ttlMs);
 
   try {
     ctx.db.run(
@@ -108,9 +108,9 @@ export async function handleAtriumRoomsCreate(
   }
 
   if (targetDidResolved !== undefined) {
-    await ctx.host.offerNegotiationRoomToDid({
+    await ctx.host.offerFrameChannelToDid({
       targetDid: targetDidResolved,
-      roomId,
+      channelId: roomId,
       ticket,
       expiresAtMs,
       fromDid: did,
@@ -187,8 +187,8 @@ export async function handleAtriumRoomsList(
 }
 
 /**
- * `POST /v1/atrium/rooms/:roomId/ticket` — mint a fresh join ticket (rejoin) without clearing relay
- * frames. Caller must be room creator or `invite_target_did`.
+ * `POST /v1/atrium/rooms/:roomId/ticket` — mint a fresh join ticket (rejoin) without clearing buffered
+ * hub frames. Caller must be room creator or `invite_target_did`.
  */
 export async function handleAtriumRoomMintTicket(
   req: Request,
@@ -239,9 +239,9 @@ export async function handleAtriumRoomMintTicket(
     return jsonError("Forbidden", 403);
   }
 
-  const relay = ctx.host.persistenceClient.persistence.negotiationRelay;
-  if (relay.getPairingSecretIfActive(roomId, Date.now()) === undefined) {
-    return jsonError("Room relay expired or inactive", 410);
+  const hubPersistence = ctx.host.persistenceClient.persistence.frameChannelHubPersistence;
+  if (hubPersistence.getPairingSecretIfActive(roomId, Date.now()) === undefined) {
+    return jsonError("Room inactive or ticket secret expired", 410);
   }
 
   const ttlMs = mintBody.ttlMs ?? 86_400_000;
@@ -249,11 +249,11 @@ export async function handleAtriumRoomMintTicket(
   const expiresAtMs = now + ttlMs;
   let ticket: string;
   try {
-    ({ ticket } = await ctx.negotiationRoomHub.rotateRoomTicket(roomId, ttlMs));
+    ({ ticket } = await ctx.roomHub.rotateChannelTicket(roomId, ttlMs));
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (msg.includes("no active room")) {
-      return jsonError("Room relay expired or inactive", 410);
+      return jsonError("Room inactive or ticket secret expired", 410);
     }
     return jsonError(msg, 500);
   }
@@ -298,7 +298,7 @@ export async function handleAtriumRoomWsUpgrade(
   if (ticket.length === 0) {
     return jsonError("Missing ticket", 400);
   }
-  const ok = await deps.ctx.negotiationRoomHub.verifyTicket(roomId, ticket);
+  const ok = await deps.ctx.roomHub.verifyTicket(roomId, ticket);
   if (!ok) {
     return jsonError("Invalid or expired ticket", 401);
   }

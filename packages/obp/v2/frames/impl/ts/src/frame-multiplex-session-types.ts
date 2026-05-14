@@ -1,4 +1,4 @@
-import type { FrameChannel } from "@khoralabs/frame-channel";
+import type { DuplexByteStream } from "@khoralabs/duplex-byte-stream";
 import type { ObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
 import type { SessionOp } from "@khoralabs/obp-v2-session-impl";
 
@@ -25,7 +25,7 @@ export type SessionEnvelopeSyncAdapter = {
 };
 
 export type RunFrameMultiplexSessionArgs = {
-  channel: FrameChannel;
+  channel: DuplexByteStream;
   signer: FrameSigner;
   verifier: FrameVerifier;
   client: ObpPersistenceClient;

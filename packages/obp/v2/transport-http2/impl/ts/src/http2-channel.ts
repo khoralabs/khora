@@ -1,8 +1,8 @@
 import type { ClientHttp2Stream, ServerHttp2Stream } from "node:http2";
 import type { Duplex } from "node:stream";
-import type { FrameChannel } from "@khoralabs/frame-channel";
+import type { DuplexByteStream } from "@khoralabs/duplex-byte-stream";
 
-function duplexStreamChannel(stream: Duplex): FrameChannel {
+function duplexStreamChannel(stream: Duplex): DuplexByteStream {
   return {
     async *read() {
       for await (const chunk of stream) {
@@ -24,16 +24,16 @@ function duplexStreamChannel(stream: Duplex): FrameChannel {
   };
 }
 
-/** Server HTTP/2 stream → {@link FrameChannel} (one session per stream). */
-export function frameChannelFromHttp2Stream(stream: ServerHttp2Stream): FrameChannel {
+/** Server HTTP/2 stream → {@link DuplexByteStream} (one session per stream). */
+export function frameChannelFromHttp2Stream(stream: ServerHttp2Stream): DuplexByteStream {
   return duplexStreamChannel(stream);
 }
 
-/** Client HTTP/2 request stream → {@link FrameChannel}. */
+/** Client HTTP/2 request stream → {@link DuplexByteStream}. */
 export function frameChannelFromClientStream(
   stream: ClientHttp2Stream,
   sessionClose?: () => void,
-): FrameChannel {
+): DuplexByteStream {
   const ch = duplexStreamChannel(stream);
   return {
     ...ch,

@@ -1,11 +1,11 @@
 import type { Database } from "bun:sqlite";
 import type {
-  NegotiationRelayFrameRow,
-  NegotiationRelayPersistence,
-  NegotiationRelayRoomRecord,
+  FrameChannelHubPersistence,
+  FrameChannelRoomRecord,
+  FrameChannelStoredFrame,
 } from "@khoralabs/swarm-host";
 
-export function createNegotiationRelaySqlitePersistence(db: Database): NegotiationRelayPersistence {
+export function createFrameChannelHubPersistenceSqlite(db: Database): FrameChannelHubPersistence {
   const upsertRoomStmt = db.prepare(
     `INSERT INTO rooms (session_id, pairing_secret_hex, created_at, expires_at)
      VALUES (?, ?, ?, ?)
@@ -26,9 +26,9 @@ export function createNegotiationRelaySqlitePersistence(db: Database): Negotiati
   const deleteFramesForRoomStmt = db.prepare(`DELETE FROM room_messages WHERE session_id = ?`);
 
   return {
-    upsertRoom(record: NegotiationRelayRoomRecord): void {
+    upsertRoom(record: FrameChannelRoomRecord): void {
       upsertRoomStmt.run(
-        record.roomId,
+        record.channelId,
         record.pairingSecretHex,
         record.createdAtMs,
         record.expiresAtMs,
@@ -47,7 +47,7 @@ export function createNegotiationRelaySqlitePersistence(db: Database): Negotiati
       return row.id;
     },
 
-    drainFramesAfter(roomId: string, afterId: number): NegotiationRelayFrameRow[] {
+    drainFramesAfter(roomId: string, afterId: number): FrameChannelStoredFrame[] {
       const rows = selectFramesAfter.all(roomId, afterId) as Array<{
         id: number;
         bytes: Uint8Array;

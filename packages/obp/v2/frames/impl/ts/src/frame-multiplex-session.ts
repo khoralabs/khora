@@ -75,7 +75,7 @@ function validateRunFrameMultiplexSessionArgs(args: RunFrameMultiplexSessionArgs
   }
 }
 
-/** Run multiple {@link SessionInitNormalized} chains on one {@link FrameChannel}; route frames by `p_hash` → registered tip / genesis. */
+/** Run multiple {@link SessionInitNormalized} chains on one {@link DuplexByteStream}; route frames by `p_hash` → registered tip / genesis. */
 export async function runFrameMultiplexSession(
   args: RunFrameMultiplexSessionArgs,
 ): Promise<SessionOp[]> {

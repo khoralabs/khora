@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createMemoryFrameChannelPair } from "@khoralabs/frame-channel";
+import { createMemoryDuplexByteStreamPair } from "@khoralabs/duplex-byte-stream";
 import {
   createEd25519FrameSigner,
   createEd25519FrameVerifier,
@@ -67,7 +67,7 @@ async function setupPersistencePair(): Promise<{
 describe("connectObpFrameChannelSession", () => {
   test("multiplex over paired FrameChannels (same semantics as WebSocket relay)", async () => {
     const ctx = await setupPersistencePair();
-    const [serverCh, clientCh] = createMemoryFrameChannelPair();
+    const [serverCh, clientCh] = createMemoryDuplexByteStreamPair();
 
     const serverP = runFrameMultiplexSession({
       channel: serverCh,

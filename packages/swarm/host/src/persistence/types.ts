@@ -1,29 +1,29 @@
 import type { AgentDid } from "../registration/types.ts";
 
-/** Stored negotiation byte-relay room (ticket HMAC secret + TTL). */
-export type NegotiationRelayRoomRecord = {
-  roomId: string;
+/** Stored frame-channel hub session row (ticket HMAC secret + TTL). Maps to `rooms.session_id`. */
+export type FrameChannelRoomRecord = {
+  channelId: string;
   pairingSecretHex: string;
   createdAtMs: number;
   expiresAtMs: number;
 };
 
-/** One persisted opaque frame for replay / buffering. */
-export type NegotiationRelayFrameRow = {
+/** One persisted opaque frame for replay / buffering in the hub store. */
+export type FrameChannelStoredFrame = {
   id: number;
   bytes: Uint8Array;
 };
 
 /**
- * Persistence slice for negotiation byte-relay rooms (`rooms` + `room_messages` parity).
- * Implementations may use SQLite, in-memory maps, etc.
+ * Persistence slice for {@link FrameChannelHubPort}: secrets + queued opaque bytes (`rooms` +
+ * `room_messages` in typical SQLite backends).
  */
-export interface NegotiationRelayPersistence {
-  upsertRoom(record: NegotiationRelayRoomRecord): void;
-  getPairingSecretIfActive(roomId: string, nowMs: number): string | undefined;
-  enqueueFrame(roomId: string, bytes: Uint8Array): number;
-  drainFramesAfter(roomId: string, afterId: number): NegotiationRelayFrameRow[];
-  deleteFramesForRoom(roomId: string): void;
+export interface FrameChannelHubPersistence {
+  upsertRoom(record: FrameChannelRoomRecord): void;
+  getPairingSecretIfActive(channelId: string, nowMs: number): string | undefined;
+  enqueueFrame(channelId: string, bytes: Uint8Array): number;
+  drainFramesAfter(channelId: string, afterId: number): FrameChannelStoredFrame[];
+  deleteFramesForRoom(channelId: string): void;
 }
 
 /** Discriminator for rows in the shared `host_entities` table (matches `source_key` domain prefix). */
@@ -77,11 +77,11 @@ export interface SwarmHostPostPersistence extends SwarmHostEntityPersistence {
 }
 
 /**
- * Host persistence facade: negotiation byte relay plus logical entity slices over one `host_entities` table.
+ * Host persistence facade: frame-channel hub store plus logical entity slices over one `host_entities` table.
  * Add slices (e.g. notifications) without changing call sites that already take this composite.
  */
 export type SwarmHostPersistence = {
-  negotiationRelay: NegotiationRelayPersistence;
+  frameChannelHubPersistence: FrameChannelHubPersistence;
   profiles: SwarmHostEntityPersistence;
   posts: SwarmHostPostPersistence;
   topics: SwarmHostEntityPersistence;

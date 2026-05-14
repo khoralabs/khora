@@ -28,8 +28,8 @@ function logLine(json: boolean, label: string, payload: unknown): void {
 }
 
 /**
- * Hold an Atrium negotiation-room WebSocket with durable `ledgerSeq` in SQLite (same path as the
- * legacy OBP store) and in-memory graph state for the v2 wire session.
+ * Hold an Atrium room WebSocket with durable `ledgerSeq` in SQLite (same path as the legacy OBP store)
+ * and in-memory graph state for the v2 wire session.
  */
 export function runRoomDaemon(opts: RunRoomDaemonOptions): { close(): void } {
   const json = opts.json === true;
@@ -62,7 +62,7 @@ export function runRoomDaemon(opts: RunRoomDaemonOptions): { close(): void } {
     });
     try {
       logLine(json, "room_open", { roomId: opts.roomId, ledgerSqlite: sqlitePath });
-      await client.connectAtriumRoomNegotiation(
+      await client.connectAtriumRoom(
         {
           webSocketUrl: opts.webSocketUrl,
           signer: frameSigner,

@@ -1,5 +1,5 @@
 {
-  "name": "@khoralabs/frame-channel",
+  "name": "@khoralabs/duplex-byte-stream",
   "version": "0.0.0",
   "type": "module",
   "private": true,

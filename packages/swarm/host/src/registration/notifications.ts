@@ -1,7 +1,7 @@
 import type { AgentDid } from "./types.ts";
 
 export type NegotiationTicketNotificationPayload = {
-  roomId: string;
+  channelId: string;
   ticket: string;
   expiresAtMs?: number;
   issuedAtMs?: number;

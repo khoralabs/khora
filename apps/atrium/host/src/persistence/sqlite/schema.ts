@@ -10,7 +10,7 @@ export function configureSwarmHostSqlitePragmas(db: Database): void {
 }
 
 /**
- * Swarm host SQLite DDL: OBP relay plus unified `host_entities` for profile/post/topic documents.
+ * Swarm host SQLite DDL: frame-channel hub `rooms` / `room_messages` plus unified `host_entities` for profile/post/topic documents.
  *
  * Each row holds canonical JSON in `body_json`. {@link Store.resolve} uses `source_key` shapes:
  * - `{domain}:{id}` — whole document (e.g. `profile:p1`) → typed `kind: "record"` via parser.

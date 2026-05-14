@@ -14,10 +14,10 @@ import { createMemoriesPersistence, openMemoriesDatabase } from "@khoralabs/memo
 import {
   type AgentNotificationBufferPort,
   composeOnEventWithMemorySync,
+  createFrameChannelHub,
   createInboxWsHub,
-  createNegotiationRoomHub,
+  type FrameChannelHubPort,
   minimalSourceMapForResolve,
-  type NegotiationRoomHubPort,
   SWARM_EVENT_KIND,
   SwarmHost,
 } from "@khoralabs/swarm-host";
@@ -74,8 +74,8 @@ export type AtriumHostContext = {
   notificationBuffer: AgentNotificationBufferPort;
   auth: AtriumDidAuth;
   usernamesRepo: AtriumUsernamesRepo;
-  /** Negotiation byte-relay rooms (paired with {@link SwarmHost.negotiationRoomHub}). */
-  negotiationRoomHub: NegotiationRoomHubPort;
+  /** Atrium rooms: ticket-gated WebSockets backed by {@link SwarmHost.frameChannelHub}. */
+  roomHub: FrameChannelHubPort;
   /** Periodic SQLite maintenance handle. `undefined` when explicitly disabled via config. */
   sqliteMaintenance?: SqliteMaintenanceHandle;
 };
@@ -101,8 +101,8 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
 
   const notificationBuffer = createSqliteAgentNotificationBuffer(db);
   const inboxHub = createInboxWsHub();
-  const negotiationRoomHub = createNegotiationRoomHub({
-    negotiationRelay: hostPersistence.negotiationRelay,
+  const roomHub = createFrameChannelHub({
+    hubPersistence: hostPersistence.frameChannelHubPersistence,
   });
   const probeSubscribers = createProbeSubscribersRepo(db);
   const usernamesRepo = createAtriumUsernamesRepo(db);
@@ -130,7 +130,7 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
     didVerifier: auth.verifier,
     notificationBuffer,
     inboxHub,
-    negotiationRoomHub,
+    frameChannelHub: roomHub,
     appContext,
     memoryNamespaces: {
       profileNamespace: config.profileNamespace,
@@ -268,7 +268,7 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
     notificationBuffer,
     auth,
     usernamesRepo,
-    negotiationRoomHub,
+    roomHub,
     ...(sqliteMaintenance !== undefined ? { sqliteMaintenance } : {}),
   };
 }

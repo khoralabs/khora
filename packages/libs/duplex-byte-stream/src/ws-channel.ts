@@ -1,17 +1,17 @@
-import type { FrameChannel } from "./channel.ts";
+import type { DuplexByteStream } from "./duplex-byte-stream.ts";
 
-export type WebSocketFrameSend = (bytes: Uint8Array) => void | Promise<void>;
+export type WebSocketDuplexByteSend = (bytes: Uint8Array) => void | Promise<void>;
 
 function toUint8Array(data: Uint8Array | ArrayBuffer): Uint8Array {
   return data instanceof Uint8Array ? data : new Uint8Array(data);
 }
 
 /**
- * Bridge Bun/WebSocket-style callbacks to {@link FrameChannel}.
+ * Bridge Bun/WebSocket-style callbacks to {@link DuplexByteStream}.
  * Pass the same `send` your socket uses for outgoing binary frames.
  */
-export function createWebSocketFrameChannel(send: WebSocketFrameSend): {
-  channel: FrameChannel;
+export function createWebSocketDuplexByteStream(send: WebSocketDuplexByteSend): {
+  channel: DuplexByteStream;
   onMessage(data: Uint8Array | ArrayBuffer): void;
   onClose(): void;
 } {
@@ -25,7 +25,7 @@ export function createWebSocketFrameChannel(send: WebSocketFrameSend): {
     }
   };
 
-  const channel: FrameChannel = {
+  const channel: DuplexByteStream = {
     async *read() {
       for (;;) {
         if (done && incoming.q.length === 0) {

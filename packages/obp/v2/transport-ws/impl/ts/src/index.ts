@@ -1,4 +1,4 @@
-export { createWebSocketFrameChannel } from "./ws-channel.ts";
+export { createWebSocketDuplexByteStream } from "./ws-channel.ts";
 export {
   connectObpFrameChannelSession,
   connectObpWebSocketSession,

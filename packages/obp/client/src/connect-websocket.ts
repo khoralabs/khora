@@ -1,6 +1,6 @@
 import { Buffer } from "node:buffer";
-import type { FrameChannel } from "@khoralabs/frame-channel";
-import { createWebSocketFrameChannel } from "@khoralabs/frame-channel";
+import type { DuplexByteStream } from "@khoralabs/duplex-byte-stream";
+import { createWebSocketDuplexByteStream } from "@khoralabs/duplex-byte-stream";
 import {
   createEd25519FrameVerifier,
   type FrameSigner,
@@ -16,9 +16,9 @@ import type { ObpPersistence } from "@khoralabs/obp-persistence-client";
 import { type Checkpoint, checkpointFromOps, verifyExtends } from "@khoralabs/obp-session-sync";
 import type { ObpFrameConnection } from "./connect.ts";
 
-/** Client-side multiplex over an existing duplex {@link FrameChannel} (same wire as HTTP/2 OBP). */
+/** Client-side multiplex over an existing duplex {@link DuplexByteStream} (same wire as HTTP/2 OBP). */
 export type ObpFrameChannelClientOptions = {
-  channel: FrameChannel;
+  channel: DuplexByteStream;
   signer: FrameSigner;
   verifier?: FrameVerifier;
   persistence: ObpPersistence;
@@ -38,7 +38,7 @@ export type ObpWebSocketConnectOptions = Omit<ObpFrameChannelClientOptions, "cha
 };
 
 /**
- * Same multiplex session as {@link connectObpSession} over any {@link FrameChannel} (WebSocket relay,
+ * Same multiplex session as {@link connectObpSession} over any {@link DuplexByteStream} (WebSocket relay,
  * in-memory pair, etc.). Use {@link connectObpWebSocketSession} for Bun/Web `WebSocket` wiring.
  */
 export async function connectObpFrameChannelSession(
@@ -96,7 +96,7 @@ export async function connectObpFrameChannelSession(
 
 /**
  * Same as {@link connectObpFrameChannelSession} but wraps a `WebSocket` with
- * {@link createWebSocketFrameChannel}. Carries the reference **length-prefixed JSON** byte stream;
+ * {@link createWebSocketDuplexByteStream}. Carries the reference **length-prefixed JSON** byte stream;
  * each binary message is one ordered chunk (the core decoder may buffer partial frames).
  */
 export async function connectObpWebSocketSession(
@@ -128,7 +128,7 @@ export async function connectObpWebSocketSession(
     ws.addEventListener("error", onErr, { once: true });
   });
 
-  const bridge = createWebSocketFrameChannel((bytes) => {
+  const bridge = createWebSocketDuplexByteStream((bytes) => {
     ws.send(bytes);
   });
 

@@ -15,7 +15,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@khoralabs/frame-channel": "workspace:*",
+    "@khoralabs/duplex-byte-stream": "workspace:*",
     "@khoralabs/obp-v2-errors": "workspace:*",
     "@khoralabs/obp-v2-frames-impl": "workspace:*",
     "@khoralabs/obp-v2-persistence": "workspace:*",

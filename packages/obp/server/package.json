@@ -16,7 +16,7 @@
     "example:server": "bun run examples/simple-server.ts"
   },
   "dependencies": {
-    "@khoralabs/frame-channel": "workspace:*",
+    "@khoralabs/duplex-byte-stream": "workspace:*",
     "@khoralabs/obp-core": "workspace:*",
     "@khoralabs/obp-persistence-client": "workspace:*",
     "@khoralabs/obp-session-sync": "workspace:*"

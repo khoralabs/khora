@@ -44,7 +44,7 @@
     "@types/bun": "latest"
   },
   "dependencies": {
-    "@khoralabs/frame-channel": "workspace:*",
+    "@khoralabs/duplex-byte-stream": "workspace:*",
     "@khoralabs/obp-persistence-client": "workspace:*",
     "@standard-schema/spec": "^1.1.0"
   },

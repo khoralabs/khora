@@ -1,6 +1,6 @@
 import { Buffer } from "node:buffer";
-import type { FrameChannel } from "@khoralabs/frame-channel";
-import { createWebSocketFrameChannel } from "@khoralabs/frame-channel";
+import type { DuplexByteStream } from "@khoralabs/duplex-byte-stream";
+import { createWebSocketDuplexByteStream } from "@khoralabs/duplex-byte-stream";
 import { ObpError } from "@khoralabs/obp-v2-errors";
 import {
   createEd25519FrameVerifier,
@@ -23,7 +23,7 @@ import {
 export type ObpFrameConnection = FrameMultiplexOpenerApi;
 
 export type ObpFrameChannelClientOptions = {
-  channel: FrameChannel;
+  channel: DuplexByteStream;
   signer: FrameSigner;
   verifier?: FrameVerifier;
   client: ObpPersistenceClient;
@@ -117,7 +117,7 @@ export async function connectObpWebSocketSession(
     ws.addEventListener("error", onErr, { once: true });
   });
 
-  const bridge = createWebSocketFrameChannel((bytes) => {
+  const bridge = createWebSocketDuplexByteStream((bytes) => {
     ws.send(bytes);
   });
 

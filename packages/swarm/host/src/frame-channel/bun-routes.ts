@@ -1,10 +1,10 @@
 import type { ServerWebSocket } from "bun";
-import type { NegotiationRoomHubPort, NegotiationRoomPeer } from "./port.ts";
+import type { FrameChannelHubPort, FrameChannelPeer } from "./port.ts";
 
-/** WebSocket `data` after upgrade for negotiation byte-relay rooms. */
-export type SwarmNegotiationRoomWsData = { kind: "room"; sessionId: string };
+/** WebSocket `data` after upgrade for frame-channel hub sessions (product routes map `sessionId` to room id). */
+export type SwarmFrameChannelWsData = { kind: "room"; sessionId: string };
 
-function peerFromWebSocket(ws: ServerWebSocket<SwarmNegotiationRoomWsData>): NegotiationRoomPeer {
+function peerFromWebSocket(ws: ServerWebSocket<SwarmFrameChannelWsData>): FrameChannelPeer {
   return {
     send(bytes: Uint8Array) {
       ws.send(bytes);
@@ -12,12 +12,12 @@ function peerFromWebSocket(ws: ServerWebSocket<SwarmNegotiationRoomWsData>): Neg
   };
 }
 
-export function swarmNegotiationRoomWebSocketHandlers(deps: { hub: NegotiationRoomHubPort }): {
-  open(ws: ServerWebSocket<SwarmNegotiationRoomWsData>): void;
-  close(ws: ServerWebSocket<SwarmNegotiationRoomWsData>): void;
-  message(ws: ServerWebSocket<SwarmNegotiationRoomWsData>, message: string | Buffer): void;
+export function swarmFrameChannelWebSocketHandlers(deps: { hub: FrameChannelHubPort }): {
+  open(ws: ServerWebSocket<SwarmFrameChannelWsData>): void;
+  close(ws: ServerWebSocket<SwarmFrameChannelWsData>): void;
+  message(ws: ServerWebSocket<SwarmFrameChannelWsData>, message: string | Buffer): void;
 } {
-  const peerByWs = new WeakMap<ServerWebSocket<SwarmNegotiationRoomWsData>, NegotiationRoomPeer>();
+  const peerByWs = new WeakMap<ServerWebSocket<SwarmFrameChannelWsData>, FrameChannelPeer>();
 
   return {
     open(ws) {

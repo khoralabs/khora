@@ -1,6 +1,6 @@
 import type { OutgoingHttpHeaders } from "node:http";
 import http2 from "node:http2";
-import type { FrameChannel } from "@khoralabs/frame-channel";
+import type { DuplexByteStream } from "@khoralabs/duplex-byte-stream";
 import { ObpError } from "@khoralabs/obp-v2-errors";
 import {
   createEd25519FrameVerifier,
@@ -31,7 +31,7 @@ function postPathFromObpEndpointUrl(u: URL): string {
 
 export async function openObpHttp2Channel(
   endpointUrl: string,
-): Promise<{ channel: FrameChannel; closeHttp2: () => void }> {
+): Promise<{ channel: DuplexByteStream; closeHttp2: () => void }> {
   const u = new URL(endpointUrl);
   if (u.protocol !== "http:" && u.protocol !== "https:") {
     throw new Error(`openObpHttp2Channel: url must be http: or https:, got ${u.protocol}`);
@@ -78,7 +78,7 @@ export async function connectObpSession(
 
   const http2Client = http2.connect(connectUrl);
   try {
-    const channel = await new Promise<FrameChannel>((resolve, reject) => {
+    const channel = await new Promise<DuplexByteStream>((resolve, reject) => {
       http2Client.on("error", reject);
       const req = http2Client.request({
         ":method": "POST",

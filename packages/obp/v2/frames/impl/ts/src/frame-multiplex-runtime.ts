@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { FrameChannel } from "@khoralabs/frame-channel";
+import type { DuplexByteStream } from "@khoralabs/duplex-byte-stream";
 import { ObpError } from "@khoralabs/obp-v2-errors";
 import {
   applyNbcFrameTurn,
@@ -47,7 +47,7 @@ import type { Frame, SessionEnvelopeWire, SessionInitNormalized } from "./frame-
 import type { FrameSigner, FrameVerifier } from "./frame-signer.ts";
 
 export class MultiplexSessionRuntime {
-  private readonly channel: FrameChannel;
+  private readonly channel: DuplexByteStream;
   private readonly signer: FrameSigner;
   private readonly verifier: FrameVerifier;
   private readonly client: ObpPersistenceClient;

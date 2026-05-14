@@ -1,1 +1,1 @@
-export { createWebSocketFrameChannel } from "@khoralabs/frame-channel";
+export { createWebSocketDuplexByteStream } from "@khoralabs/duplex-byte-stream";

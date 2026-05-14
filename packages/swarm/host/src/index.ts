@@ -18,6 +18,15 @@ export {
   type SwarmTopicUpdatedEvent,
 } from "./events.ts";
 export {
+  type SwarmFrameChannelWsData,
+  swarmFrameChannelWebSocketHandlers,
+} from "./frame-channel/bun-routes.ts";
+export {
+  type CreateFrameChannelHubOptions,
+  createFrameChannelHub,
+} from "./frame-channel/hub.ts";
+export type { FrameChannelHubPort, FrameChannelPeer } from "./frame-channel/port.ts";
+export {
   composeOnEventWithMemorySync,
   type MemoriesSearchArgs,
   SwarmHost,
@@ -38,22 +47,13 @@ export type {
 export { resolveSwarmHostSearchNamespaces } from "./memory-search-scope.ts";
 export { SWARM_AGGREGATE_DOMAIN } from "./model/index.ts";
 export {
-  type SwarmNegotiationRoomWsData,
-  swarmNegotiationRoomWebSocketHandlers,
-} from "./negotiation-room/bun-routes.ts";
-export {
-  type CreateNegotiationRoomHubOptions,
-  createNegotiationRoomHub,
-} from "./negotiation-room/hub.ts";
-export type { NegotiationRoomHubPort, NegotiationRoomPeer } from "./negotiation-room/port.ts";
-export {
   createSwarmHostPersistenceClient,
   type SwarmHostPersistenceClient,
 } from "./persistence/client.ts";
 export type {
-  NegotiationRelayFrameRow,
-  NegotiationRelayPersistence,
-  NegotiationRelayRoomRecord,
+  FrameChannelHubPersistence,
+  FrameChannelRoomRecord,
+  FrameChannelStoredFrame,
   SwarmHostAgentRegistrations,
   SwarmHostAgentSubjectSubscriptions,
   SwarmHostEntityKind,

@@ -1,5 +1,5 @@
 /** Duplex byte stream abstraction (transport-agnostic). */
-export interface FrameChannel {
+export interface DuplexByteStream {
   read(): AsyncIterable<Uint8Array>;
   write(bytes: Uint8Array): Promise<void>;
   close(reason?: unknown): Promise<void>;
@@ -13,13 +13,13 @@ const wakeAll = (s: Side): void => {
   }
 };
 
-/** Pair of connected in-memory channels for tests. Calling `close()` on either ends both readers. */
-export function createMemoryFrameChannelPair(): [FrameChannel, FrameChannel] {
+/** Pair of connected in-memory streams for tests. Calling `close()` on either ends both readers. */
+export function createMemoryDuplexByteStreamPair(): [DuplexByteStream, DuplexByteStream] {
   const a: Side = { q: [], w: [] };
   const b: Side = { q: [], w: [] };
   let done = false;
 
-  const make = (incoming: Side, outgoing: Side): FrameChannel => ({
+  const make = (incoming: Side, outgoing: Side): DuplexByteStream => ({
     async *read() {
       for (;;) {
         if (done && incoming.q.length === 0) {

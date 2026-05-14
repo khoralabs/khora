@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
-import { createNegotiationRoomHub, createSwarmHostPersistenceClient } from "@khoralabs/swarm-host";
+import { createFrameChannelHub, createSwarmHostPersistenceClient } from "@khoralabs/swarm-host";
 import { createSwarmHostSqlitePersistence } from "../persistence/sqlite/swarm-host-sqlite.ts";
 import { createHostRateLimiters } from "../rate-limit-buckets.ts";
 import {
@@ -17,8 +17,8 @@ function depsFor(
   persistence: ReturnType<typeof createSwarmHostSqlitePersistence>,
 ): HostRouteDeps {
   const persistenceClient = createSwarmHostPersistenceClient(persistence);
-  const negotiationRoomHub = createNegotiationRoomHub({
-    negotiationRelay: persistence.negotiationRelay,
+  const roomHub = createFrameChannelHub({
+    hubPersistence: persistence.frameChannelHubPersistence,
   });
   return {
     ctx: {
@@ -27,7 +27,7 @@ function depsFor(
         requireAuthenticatedRequest: async () => ({ did }),
       },
       host: { persistenceClient },
-      negotiationRoomHub,
+      roomHub,
       usernamesRepo: {
         lookupByUsername: () => undefined,
         lookupByDid: (d: string) => (d === "did:key:bob" ? { username: "bob" } : undefined),
@@ -50,9 +50,9 @@ describe("atrium-rooms HTTP", () => {
     const persistence = createSwarmHostSqlitePersistence(db);
     persistence.agentRegistrations.upsert("did:key:alice", "prof-a");
     persistence.agentRegistrations.upsert("did:key:bob", "prof-b");
-    await createNegotiationRoomHub({
-      negotiationRelay: persistence.negotiationRelay,
-    }).createRoom("room-1", 86_400_000);
+    await createFrameChannelHub({
+      hubPersistence: persistence.frameChannelHubPersistence,
+    }).createChannel("room-1", 86_400_000);
     db.run(
       `INSERT INTO atrium_rooms (room_id, created_by_profile_id, created_at_ms, invite_target_did, expires_at_ms)
        VALUES ('room-1', 'prof-a', 1000, 'did:key:bob', 2000)`,
@@ -89,8 +89,8 @@ describe("atrium-rooms HTTP", () => {
     persistence.agentRegistrations.upsert("did:key:alice", "prof-a");
     persistence.agentRegistrations.upsert("did:key:bob", "prof-b");
     persistence.agentRegistrations.upsert("did:key:carol", "prof-c");
-    const hub = createNegotiationRoomHub({ negotiationRelay: persistence.negotiationRelay });
-    await hub.createRoom("room-x", 86_400_000);
+    const hub = createFrameChannelHub({ hubPersistence: persistence.frameChannelHubPersistence });
+    await hub.createChannel("room-x", 86_400_000);
     db.run(
       `INSERT INTO atrium_rooms (room_id, created_by_profile_id, created_at_ms, invite_target_did, expires_at_ms)
        VALUES ('room-x', 'prof-a', 1, 'did:key:bob', 9999999999999)`,
@@ -109,8 +109,8 @@ describe("atrium-rooms HTTP", () => {
     const persistence = createSwarmHostSqlitePersistence(db);
     persistence.agentRegistrations.upsert("did:key:alice", "prof-a");
     persistence.agentRegistrations.upsert("did:key:bob", "prof-b");
-    const hub = createNegotiationRoomHub({ negotiationRelay: persistence.negotiationRelay });
-    await hub.createRoom("room-y", 86_400_000);
+    const hub = createFrameChannelHub({ hubPersistence: persistence.frameChannelHubPersistence });
+    await hub.createChannel("room-y", 86_400_000);
     db.run(
       `INSERT INTO atrium_rooms (room_id, created_by_profile_id, created_at_ms, invite_target_did, expires_at_ms)
        VALUES ('room-y', 'prof-a', 1, 'did:key:bob', 9999999999999)`,
@@ -136,7 +136,7 @@ describe("atrium-rooms HTTP", () => {
       deps.ctx as unknown as {
         host: {
           persistenceClient: unknown;
-          offerNegotiationRoomToDid: (p: {
+          offerFrameChannelToDid: (p: {
             targetDid: string;
             roomId: string;
             ticket: string;
@@ -147,7 +147,7 @@ describe("atrium-rooms HTTP", () => {
       }
     ).host = {
       persistenceClient: createSwarmHostPersistenceClient(persistence),
-      offerNegotiationRoomToDid: async () => {},
+      offerFrameChannelToDid: async () => {},
     };
     const res = await handleAtriumRoomsCreate(
       new Request("http://h/v1/atrium/rooms", {
@@ -169,7 +169,7 @@ describe("atrium-rooms HTTP", () => {
       deps.ctx as unknown as {
         host: {
           persistenceClient: unknown;
-          offerNegotiationRoomToDid: (p: {
+          offerFrameChannelToDid: (p: {
             targetDid: string;
             roomId: string;
             ticket: string;
@@ -180,7 +180,7 @@ describe("atrium-rooms HTTP", () => {
       }
     ).host = {
       persistenceClient: createSwarmHostPersistenceClient(persistence),
-      offerNegotiationRoomToDid: async () => {},
+      offerFrameChannelToDid: async () => {},
     };
     const res = await handleAtriumRoomsCreate(
       new Request("http://h/v1/atrium/rooms", {

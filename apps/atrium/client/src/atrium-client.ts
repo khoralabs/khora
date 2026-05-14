@@ -274,7 +274,7 @@ export class AtriumClient {
   }
 
   /**
-   * Create a negotiation relay room (`POST /v1/atrium/rooms`). The host mints `roomId`. Requires registration.
+   * Create an Atrium room (`POST /v1/atrium/rooms`). The host mints `roomId`. Requires registration.
    * Optionally invite a peer (`negotiation_ticket` in their inbox).
    */
   createAtriumRoom(body: AtriumRoomCreateBody): Promise<AtriumRoomTicketResponse> {
@@ -298,15 +298,25 @@ export class AtriumClient {
   }
 
   /**
-   * Run a deferred OBP v2 multiplex client over a room WebSocket URL (from {@link createAtriumRoom},
+   * Run a deferred OBP v2 multiplex client over an Atrium room WebSocket URL (from {@link createAtriumRoom},
    * {@link mintAtriumRoomTicket}, or an inbox `negotiation_ticket`). Pass `client` (`ObpPersistenceClient` from
    * `@khoralabs/obp-v2-persistence`), `signer`, and `ledgerSeq` per `@khoralabs/obp-v2-transport-ws`.
+   */
+  connectAtriumRoom(
+    options: Omit<ObpWebSocketConnectOptions, "WebSocketCtor">,
+    runner: (conn: ObpFrameConnection) => Promise<void>,
+  ): Promise<{ sessionOps: SessionOp[]; checkpoint: Checkpoint }> {
+    return connectObpWebSocketSession({ ...options, WebSocketCtor: this.WebSocketCtor }, runner);
+  }
+
+  /**
+   * @deprecated Use {@link connectAtriumRoom}.
    */
   connectAtriumRoomNegotiation(
     options: Omit<ObpWebSocketConnectOptions, "WebSocketCtor">,
     runner: (conn: ObpFrameConnection) => Promise<void>,
   ): Promise<{ sessionOps: SessionOp[]; checkpoint: Checkpoint }> {
-    return connectObpWebSocketSession({ ...options, WebSocketCtor: this.WebSocketCtor }, runner);
+    return this.connectAtriumRoom(options, runner);
   }
 
   /** @deprecated Prefer {@link AtriumClient.search}. */

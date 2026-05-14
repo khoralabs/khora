@@ -49,7 +49,7 @@ Root repo: `bun run --filter @khoralabs/obp-spec validate`.
 
 ## Bilateral frame protocol (`src/frames/`)
 
-Transport-agnostic **Frame** DAG aligned with [`frame-protocol.smithy`](../persistence/spec/model/frame-protocol.smithy): signing, `FrameDag` causal tips, length-prefixed canonical JSON framing (`framing.ts`), duplex transport (`FrameChannel` from `@khoralabs/frame-channel`), and `runFrameSession` / `runFrameMultiplexSession`. **Graph effects** (`applyTurn`) run for **inbound** and **outbound** `TURN` frames so each peer updates its own `ObpPersistence`; tests should give each runner a separate store (see `FakeObpPersistence` + `importState` for party ids).
+Transport-agnostic **Frame** DAG aligned with [`frame-protocol.smithy`](../persistence/spec/model/frame-protocol.smithy): signing, `FrameDag` causal tips, length-prefixed canonical JSON framing (`framing.ts`), duplex transport (`DuplexByteStream` from `@khoralabs/duplex-byte-stream`), and `runFrameSession` / `runFrameMultiplexSession`. **Graph effects** (`applyTurn`) run for **inbound** and **outbound** `TURN` frames so each peer updates its own `ObpPersistence`; tests should give each runner a separate store (see `FakeObpPersistence` + `importState` for party ids).
 
 **Outbound serialization:** for each open chain, `runFrameMultiplexSession` queues outbound work so **`mintOutbound`**, session-op accumulation, tip-map updates, framed writes, and envelope flush scheduling do not interleave across concurrent **`sendTurn`** / **`onIncomingOffer`** replies (peer inbound handling stays sequential on the read loop).
 

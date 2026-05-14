@@ -2,8 +2,8 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { createAtriumDidAuth } from "@khoralabs/atrium-auth";
 import {
-  type SwarmNegotiationRoomWsData,
-  swarmNegotiationRoomWebSocketHandlers,
+  type SwarmFrameChannelWsData,
+  swarmFrameChannelWebSocketHandlers,
 } from "@khoralabs/swarm-host";
 import type { ServerWebSocket } from "bun";
 import { createAtriumHostContext } from "./create-atrium-host.ts";
@@ -76,8 +76,8 @@ const deps: HostRouteDeps = {
 };
 
 const inboxWsHandlers = createInboxWsHandlers({ ctx, snapshotLimit: envInboxSnapshotLimit });
-const negotiationRoomWsHandlers = swarmNegotiationRoomWebSocketHandlers({
-  hub: ctx.negotiationRoomHub,
+const roomWsHandlers = swarmFrameChannelWebSocketHandlers({
+  hub: ctx.roomHub,
 });
 
 const server = Bun.serve<AtriumWsData>({
@@ -92,25 +92,23 @@ const server = Bun.serve<AtriumWsData>({
       if (ws.data.kind === "inbox") {
         inboxWsHandlers.open?.(ws as never);
       } else {
-        negotiationRoomWsHandlers.open(ws as never);
+        roomWsHandlers.open(ws as never);
       }
     },
     close(ws, code, reason) {
       if (ws.data.kind === "inbox") {
         inboxWsHandlers.close?.(ws as never, code, reason);
       } else {
-        (
-          negotiationRoomWsHandlers.close as (
-            ws: ServerWebSocket<SwarmNegotiationRoomWsData>,
-          ) => void
-        )(ws as never);
+        (roomWsHandlers.close as (ws: ServerWebSocket<SwarmFrameChannelWsData>) => void)(
+          ws as never,
+        );
       }
     },
     message(ws, msg) {
       if (ws.data.kind === "inbox") {
         inboxWsHandlers.message(ws as never, msg);
       } else {
-        negotiationRoomWsHandlers.message(ws as never, msg);
+        roomWsHandlers.message(ws as never, msg);
       }
     },
   },

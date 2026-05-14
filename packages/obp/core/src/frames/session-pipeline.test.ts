@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { createMemoryFrameChannelPair } from "@khoralabs/frame-channel";
+import { createMemoryDuplexByteStreamPair } from "@khoralabs/duplex-byte-stream";
 import { FakeObpPersistence } from "../testing/index.ts";
 import { sha256HexUtf8 } from "./dag.ts";
 import { runFrameMultiplexSession, runFrameSession } from "./session-pipeline.ts";
@@ -41,7 +41,7 @@ async function setupPair() {
     ],
     genesis_hash: genesis,
   };
-  const [serverCh, clientCh] = createMemoryFrameChannelPair();
+  const [serverCh, clientCh] = createMemoryDuplexByteStreamPair();
   return {
     persistenceSrv,
     persistenceCli,

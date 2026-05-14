@@ -1,6 +1,6 @@
 import { test } from "bun:test";
 import http2 from "node:http2";
-import type { FrameChannel } from "@khoralabs/frame-channel";
+import type { DuplexByteStream } from "@khoralabs/duplex-byte-stream";
 import {
   createEd25519FrameSigner,
   createEd25519FrameVerifier,
@@ -66,7 +66,7 @@ test("HTTP/2 reference server: turn session", async () => {
     },
   });
 
-  const clientChannel: FrameChannel = await new Promise((resolve, reject) => {
+  const clientChannel: DuplexByteStream = await new Promise((resolve, reject) => {
     const client = http2.connect(`http://127.0.0.1:${handle.port}`);
     client.on("error", reject);
     const req = client.request({ ":method": "POST", ":path": "/obp/v1" });
@@ -167,7 +167,7 @@ test("HTTP/2 reference server: bootstrap genesis uses assigned port", async () =
     genesis_hash: await sha256HexUtf8(`e2e-bootstrap-${handle.port}`),
   };
 
-  const clientChannel: FrameChannel = await new Promise((resolve, reject) => {
+  const clientChannel: DuplexByteStream = await new Promise((resolve, reject) => {
     const client = http2.connect(`http://127.0.0.1:${handle.port}`);
     client.on("error", reject);
     const req = client.request({ ":method": "POST", ":path": "/obp/v1" });
