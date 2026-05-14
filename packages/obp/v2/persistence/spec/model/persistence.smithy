@@ -28,7 +28,7 @@ Some rules that reference implementations historically treated as “OBP persist
 
 **Orchestration reads:** **IsPortExposed**, **ListBinds**, **GetPortsSnapshot**, and **GetExtendingPartyId** mirror the **`ObpPersistence`** strategy surface in `@khoralabs/obp-persistence-client` (same semantics as TS **`OBPPersistenceClient`** helpers). NBC drivers use these reads when evaluating NBC preconditions.
 
-**Policy payloads:** **`cfd.obp#BindsEdge`** carries only graph identity and **`content_receipts`**. **`counterparty_bind`** / **`bind_policy_snapshot`** on **BindPort** / **ExtendOffer** inputs and **ListBinds** rows are **`Document`** on the **persistence** surface (storage projection), not part of the core graph shape; NBC defines **`NbcBindSatisfaction`** / **`NbcBindPolicyAuditSnapshot`** and validation rules (`packages/obp/v2/nbc/spec/model/nbc-policy.smithy`). **`max_bindings`**, **`terminal`**, bind-policy JSON, and TTL/expose context for ports live under **`cfd.obp.nbc#NbcPortExposePolicy`**.
+**Policy payloads:** **`cfd.obp#BindsEdge`** carries only graph identity and **`content_receipts`**. **`bind_payload`** / **`bind_policy_snapshot`** on **BindPort** / **ExtendOffer** inputs and **ListBinds** rows are **`Document`** on the **persistence** surface (storage projection), not part of the core graph shape; NBC defines **`NbcBindSatisfaction`** / **`NbcBindPolicyAuditSnapshot`** and validation rules (`packages/obp/v2/nbc/spec/model/nbc-policy.smithy`). **`max_bindings`**, **`terminal`**, bind-policy JSON, and TTL/expose context for ports live under **`cfd.obp.nbc#NbcPortExposePolicy`**.
 
 **Errors:** Operations model **success** shapes only. Implementations may throw or map failures for: not found, not exposed, ref cycle, invalid graph; NBC-specific failures (expired, max bindings exceeded, bind-policy validation) are defined under NBC.
 
@@ -147,7 +147,7 @@ structure ExtendOfferInput {
     @default("")
     bindPortId: String
     /// Policy-shaped; NBC validates (**`cfd.obp.nbc#NbcBindSatisfaction`**); persisted on bind row, not on **`cfd.obp#BindsEdge`**.
-    counterparty_bind: Document = null
+    bind_payload: Document = null
 }
 
 structure ExtendOfferOutput {
@@ -179,7 +179,7 @@ structure BindPortInput {
     offerId: String
     portId: String
     /// Policy-shaped; NBC validates (**`cfd.obp.nbc#NbcBindSatisfaction`**); persisted on bind row, not on **`cfd.obp#BindsEdge`**.
-    counterparty_bind: Document = null
+    bind_payload: Document = null
 }
 
 structure BindPortOutput {}
@@ -219,7 +219,7 @@ structure IsPortExposedOutput {
     exposed: Boolean
 }
 
-/// All **BINDS** rows for capacity / ref resolution (`ObpPersistence.listBinds`). **`counterparty_bind`** / **`bind_policy_snapshot`** are listing projection fields (see **`BindListingRow`**), not **`cfd.obp#BindsEdge`** members.
+/// All **BINDS** rows for capacity / ref resolution (`ObpPersistence.listBinds`). **`bind_payload`** / **`bind_policy_snapshot`** are listing projection fields (see **`BindListingRow`**), not **`cfd.obp#BindsEdge`** members.
 operation ListBinds {
     input: ListBindsInput
     output: ListBindsOutput
@@ -232,7 +232,7 @@ structure BindListingRow {
     portId: String
     content_receipts: ContentAddressedSourceRefList
     /// Policy-shaped satisfaction persisted with bind listing; not on **`cfd.obp#BindsEdge`**.
-    counterparty_bind: Document = null
+    bind_payload: Document = null
     /// Policy-shaped audit (**`cfd.obp.nbc#NbcBindPolicyAuditSnapshot`**); not on **`cfd.obp#BindsEdge`**.
     bind_policy_snapshot: Document = null
 }

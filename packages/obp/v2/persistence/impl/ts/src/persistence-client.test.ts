@@ -82,7 +82,7 @@ class InMemoryStrategy implements ObpPersistenceStrategy {
         offerId: offer.id,
         portId: input.bindPortId,
         content_receipts: [],
-        counterparty_bind: input.counterparty_bind,
+        bind_payload: input.bind_payload,
         bind_policy_snapshot: null,
       });
     }
@@ -101,7 +101,7 @@ class InMemoryStrategy implements ObpPersistenceStrategy {
       offerId: input.offerId,
       portId: input.portId,
       content_receipts: [],
-      counterparty_bind: input.counterparty_bind,
+      bind_payload: input.bind_payload,
       bind_policy_snapshot: null,
     });
     return {};
@@ -184,7 +184,7 @@ describe("extendOffer + getExtendingPartyId", () => {
       partyId: party.id,
       offer: { id: "", expires_seq: 9999n, type: "step", sourcemaps: [] },
       bindPortId: "",
-      counterparty_bind: null,
+      bind_payload: null,
     });
     expect(await client.getExtendingPartyId(offer.id)).toBe(party.id);
     expect(await client.getExtendingPartyId("unknown")).toBeNull();
@@ -199,7 +199,7 @@ describe("exposePort + isPortExposed", () => {
       partyId: party.id,
       offer: { id: "", expires_seq: 9999n, type: "step", sourcemaps: [] },
       bindPortId: "",
-      counterparty_bind: null,
+      bind_payload: null,
     });
     const { port } = await client.exposePort({
       offerId: offer.id,
@@ -225,13 +225,13 @@ describe("bindPort + listBinds", () => {
       partyId: party.id,
       offer: { id: "", expires_seq: 9999n, type: "step", sourcemaps: [] },
       bindPortId: "",
-      counterparty_bind: null,
+      bind_payload: null,
     });
     const { port } = await client.exposePort({
       offerId: offer.id,
       port: { id: "", expires_seq: 9999n, type: "slot", promise: "p", ref: "", sourcemaps: [] },
     });
-    await client.bindPort({ offerId: offer.id, portId: port.id, counterparty_bind: null });
+    await client.bindPort({ offerId: offer.id, portId: port.id, bind_payload: null });
     const { binds } = await client.listBinds();
     expect(binds.some((b) => b.portId === port.id)).toBe(true);
   });
@@ -245,7 +245,7 @@ describe("getPortsSnapshot", () => {
       partyId: party.id,
       offer: { id: "", expires_seq: 9999n, type: "step", sourcemaps: [] },
       bindPortId: "",
-      counterparty_bind: null,
+      bind_payload: null,
     });
     await client.exposePort({
       offerId: offer.id,

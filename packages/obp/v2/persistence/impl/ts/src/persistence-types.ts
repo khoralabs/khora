@@ -60,7 +60,7 @@ export type ExtendOfferInput = {
   /** When empty string, no BINDS edge is created. */
   bindPortId: string;
   /** Policy-shaped; NBC validates (`NbcBindSatisfaction`). `null` when not provided. */
-  counterparty_bind: JsonDocument;
+  bind_payload: JsonDocument;
 };
 
 export type ExtendOfferOutput = {
@@ -88,7 +88,7 @@ export type BindPortInput = {
   offerId: string;
   portId: string;
   /** Policy-shaped; NBC validates. `null` when not provided. */
-  counterparty_bind: JsonDocument;
+  bind_payload: JsonDocument;
 };
 
 /** Empty output shape — success is signalled by resolution (no error thrown). */
@@ -129,7 +129,7 @@ export type BindListingRow = {
   portId: string;
   content_receipts: ContentAddressedSourceRefList;
   /** Persistence projection field; not on `cfd.obp#BindsEdge`. */
-  counterparty_bind: JsonDocument;
+  bind_payload: JsonDocument;
   /** Audit snapshot; not on `cfd.obp#BindsEdge`. */
   bind_policy_snapshot: JsonDocument;
 };

@@ -23,7 +23,7 @@ export type NbcTurnBody = {
   offer: Offer;
   ports: readonly NbcPortSpec[];
   bind_port_id: string;
-  counterparty_bind: JsonDocument | null;
+  bind_payload: JsonDocument | null;
 };
 
 function isRecord(x: unknown): x is Record<string, unknown> {
@@ -90,13 +90,13 @@ export function parseNbcTurnBody(v: unknown): NbcTurnBody {
   if (!Array.isArray(portsRaw)) throw new TypeError("ports: expected array");
   const ports = portsRaw.map(parseNbcPortSpec);
   const bind_port_id = typeof v.bind_port_id === "string" ? v.bind_port_id : "";
-  let counterparty_bind: JsonDocument | null = null;
-  if ("counterparty_bind" in v) {
-    const cb = v.counterparty_bind;
-    if (cb === undefined || cb === null) counterparty_bind = null;
-    else counterparty_bind = cb as JsonDocument;
+  let bind_payload: JsonDocument | null = null;
+  if ("bind_payload" in v) {
+    const bp = v.bind_payload;
+    if (bp === undefined || bp === null) bind_payload = null;
+    else bind_payload = bp as JsonDocument;
   }
-  return { offer, ports, bind_port_id, counterparty_bind };
+  return { offer, ports, bind_port_id, bind_payload };
 }
 
 export function isNbcTurnBody(v: unknown): v is NbcTurnBody {

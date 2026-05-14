@@ -105,7 +105,7 @@ export type ExposesEdge = {
 /**
  * Offer -[BINDS]-> Port — graph identity and provenance only.
  * Policy-shaped payloads (`NbcBindSatisfaction`, `NbcBindPolicyAuditSnapshot`) and
- * `counterparty_bind` / `bind_policy_snapshot` live on the persistence listing row, not here.
+ * `bind_payload` / `bind_policy_snapshot` live on the persistence listing row, not here.
  */
 export type BindsEdge = {
   id: string;

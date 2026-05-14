@@ -22,7 +22,7 @@ structure NbcPortExposePolicy {
     expose_seq: Integer = null
 }
 
-/// Counterparty satisfaction data for a **BINDS** commit; persists with the bind via **`ObpPersistence`** (**`counterparty_bind`** **`Document`**), not on **`cfd.obp#BindsEdge`**. NBC validates **`payload`** against **`NbcPortExposePolicy.bind_policy`** when claiming NBC conformance.
+/// Counterparty satisfaction data for a **BINDS** commit; persists with the bind via **`ObpPersistence`** (**`bind_payload`** **`Document`**), not on **`cfd.obp#BindsEdge`**. NBC validates **`payload`** against **`NbcPortExposePolicy.bind_policy`** when claiming NBC conformance.
 structure NbcBindSatisfaction {
     payload: Document
 }

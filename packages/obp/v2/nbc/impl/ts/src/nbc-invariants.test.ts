@@ -3,6 +3,18 @@ import type { Offer, Port } from "@khoralabs/obp-v2-model";
 import { validateNbcBind } from "./nbc-invariants.ts";
 import { resolveCanonicalPortId } from "./nbc-ref.ts";
 
+const textBindPolicy = {
+  version: "1" as const,
+  properties: [
+    {
+      type: "text" as const,
+      name: "Greeting",
+      prompt: "A short hello",
+      constraints: { minLength: 1 },
+    },
+  ],
+};
+
 describe("resolveCanonicalPortId", () => {
   test("resolves empty ref", () => {
     const p: Port = {
@@ -50,7 +62,7 @@ describe("validateNbcBind", () => {
       portsById: ports,
       targetPortIsExposed: true,
       bindPolicy: null,
-      counterpartyBind: null,
+      bindPayload: null,
     });
     expect(f).toEqual({ code: "EXPIRED", entity: "offer" });
   });
@@ -63,7 +75,7 @@ describe("validateNbcBind", () => {
       portsById: ports,
       targetPortIsExposed: true,
       bindPolicy: null,
-      counterpartyBind: null,
+      bindPayload: null,
     });
     expect(f).toBeNull();
   });
@@ -76,25 +88,25 @@ describe("validateNbcBind", () => {
       portsById: ports,
       targetPortIsExposed: false,
       bindPolicy: null,
-      counterpartyBind: null,
+      bindPayload: null,
     });
     expect(f).toEqual({ code: "NOT_EXPOSED" });
   });
 
-  test("N4 requires validatePolicy when policy active", async () => {
+  test("N4 rejects bind_payload when no policy", async () => {
     const f = await validateNbcBind({
       ledgerSeq: 0n,
       offer,
       port,
       portsById: ports,
       targetPortIsExposed: true,
-      bindPolicy: { required: true },
-      counterpartyBind: { ok: true },
+      bindPolicy: null,
+      bindPayload: { x: 1 },
     });
     expect(f?.code).toBe("POLICY_REJECTED");
   });
 
-  test("N4 success with hook", async () => {
+  test("N4 rejects invalid policy document", async () => {
     const f = await validateNbcBind({
       ledgerSeq: 0n,
       offer,
@@ -102,9 +114,34 @@ describe("validateNbcBind", () => {
       portsById: ports,
       targetPortIsExposed: true,
       bindPolicy: { required: true },
-      counterpartyBind: { ok: true },
-      validatePolicy: () => true,
+      bindPayload: { ok: true },
+    });
+    expect(f?.code).toBe("POLICY_REJECTED");
+  });
+
+  test("N4 success with schema bind_payload", async () => {
+    const f = await validateNbcBind({
+      ledgerSeq: 0n,
+      offer,
+      port,
+      portsById: ports,
+      targetPortIsExposed: true,
+      bindPolicy: textBindPolicy,
+      bindPayload: { greeting: "yo" },
     });
     expect(f).toBeNull();
+  });
+
+  test("N4 rejects missing required field", async () => {
+    const f = await validateNbcBind({
+      ledgerSeq: 0n,
+      offer,
+      port,
+      portsById: ports,
+      targetPortIsExposed: true,
+      bindPolicy: textBindPolicy,
+      bindPayload: {},
+    });
+    expect(f?.code).toBe("POLICY_REJECTED");
   });
 });

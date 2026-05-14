@@ -5,12 +5,7 @@
 import { ObpError } from "@khoralabs/obp-v2-errors";
 import type { JsonDocument, Offer } from "@khoralabs/obp-v2-model";
 import type { ObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
-import {
-  isActiveBindPolicy,
-  type NbcBindFailure,
-  type ValidateNbcBindInput,
-  validateNbcBind,
-} from "./nbc-invariants.ts";
+import { isActiveBindPolicy, type NbcBindFailure, validateNbcBind } from "./nbc-invariants.ts";
 import { type NbcTurnBody, nbcPortSpecToPort } from "./nbc-types.ts";
 
 export type ApplyNbcTurnParams = {
@@ -21,7 +16,6 @@ export type ApplyNbcTurnParams = {
   ledgerSeq: bigint;
   /** Resolve expose-time **`bind_policy`** for a port id (e.g. counterparty ports). */
   getBindPolicyForPort?: (portId: string) => JsonDocument | null | Promise<JsonDocument | null>;
-  validatePolicy?: ValidateNbcBindInput["validatePolicy"];
 };
 
 export type ApplyNbcTurnResult = {
@@ -54,13 +48,13 @@ export function obpErrorFromBindFailure(f: NbcBindFailure): ObpError {
  * @throws {ObpError} on bind validation failure; @throws {TypeError} from invalid **`body`** shape upstream if caller skipped parse.
  */
 export async function applyNbcTurn(params: ApplyNbcTurnParams): Promise<ApplyNbcTurnResult> {
-  const { partyId, body, client, ledgerSeq, getBindPolicyForPort, validatePolicy } = params;
+  const { partyId, body, client, ledgerSeq, getBindPolicyForPort } = params;
 
   const { offer } = await client.extendOffer({
     partyId,
     offer: body.offer,
     bindPortId: "",
-    counterparty_bind: null,
+    bind_payload: null,
   });
   const offerId = offer.id;
   const exposedPortIds: string[] = [];
@@ -105,8 +99,7 @@ export async function applyNbcTurn(params: ApplyNbcTurnParams): Promise<ApplyNbc
       portsById,
       targetPortIsExposed: exposed,
       bindPolicy,
-      counterpartyBind: body.counterparty_bind,
-      validatePolicy,
+      bindPayload: body.bind_payload,
     });
     if (failure) {
       throw obpErrorFromBindFailure(failure);
@@ -115,7 +108,7 @@ export async function applyNbcTurn(params: ApplyNbcTurnParams): Promise<ApplyNbc
     await client.bindPort({
       offerId,
       portId: body.bind_port_id,
-      counterparty_bind: body.counterparty_bind,
+      bind_payload: body.bind_payload,
     });
   }
 

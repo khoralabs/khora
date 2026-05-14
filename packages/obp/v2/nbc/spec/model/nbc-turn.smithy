@@ -21,7 +21,7 @@ structure NbcPortSpec {
     promise: String
     /// Minimum ledger sequence at which this port is no longer bindable. **`0`** means unset (NBC layer skips N1 expiry for this port).
     expires_seq: Long
-    /// When non-empty object, **`counterparty_bind`** on bind MUST satisfy this policy (N4); host-defined validation.
+    /// When non-empty object, **`bind_payload`** on bind MUST satisfy this policy (N4); validated by NBC bind-policy schema.
     bind_policy: Document = null
     /// When non-empty, aliases another port id for bind resolution (maps to **`cfd.obp#Port.ref`**); implementations MUST detect cycles.
     @default("")
@@ -44,7 +44,7 @@ structure NbcTurnBody {
     @default("")
     bind_port_id: String
     /// Counterparty satisfaction payload when **`bind_port_id`** is set.
-    counterparty_bind: Document = null
+    bind_payload: Document = null
 }
 
 @documentation("""

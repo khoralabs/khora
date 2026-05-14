@@ -75,7 +75,7 @@ class InMemoryStrategy implements ObpPersistenceStrategy {
         offerId: offer.id,
         portId: input.bindPortId,
         content_receipts: [],
-        counterparty_bind: input.counterparty_bind,
+        bind_payload: input.bind_payload,
         bind_policy_snapshot: null,
       });
     }
@@ -94,7 +94,7 @@ class InMemoryStrategy implements ObpPersistenceStrategy {
       offerId: input.offerId,
       portId: input.portId,
       content_receipts: [],
-      counterparty_bind: input.counterparty_bind,
+      bind_payload: input.bind_payload,
       bind_policy_snapshot: null,
     });
     return {};
@@ -157,7 +157,7 @@ describe("applyNbcTurn", () => {
         },
       ],
       bind_port_id: "",
-      counterparty_bind: null,
+      bind_payload: null,
     });
     const r1 = await applyNbcTurn({ partyId: a.id, body: bodyA, client, ledgerSeq: 0n });
     expect(r1.exposedPortIds.length).toBe(1);
@@ -168,7 +168,7 @@ describe("applyNbcTurn", () => {
       offer: { id: "", expires_seq: 100n, type: "reply", sourcemaps: [] },
       ports: [],
       bind_port_id: counterpartyPortId,
-      counterparty_bind: { agreed: true },
+      bind_payload: {},
     });
     await applyNbcTurn({ partyId: b.id, body: bodyB, client, ledgerSeq: 0n });
     const binds = await client.listBinds();
@@ -186,7 +186,7 @@ describe("nbc session reads", () => {
       offer: { id: "", expires_seq: 100n, type: "step", sourcemaps: [] },
       ports: [{ id: "", type: "x", promise: "", expires_seq: 100n, bind_policy: null, ref: "" }],
       bind_port_id: "",
-      counterparty_bind: null,
+      bind_payload: null,
     });
     const { exposedPortIds } = await applyNbcTurn({
       partyId: alice.id,
@@ -210,7 +210,7 @@ describe("nbc session reads", () => {
       offer: { id: "", expires_seq: 100n, type: "step", sourcemaps: [] },
       ports: [],
       bind_port_id: "",
-      counterparty_bind: null,
+      bind_payload: null,
     });
     await applyNbcTurn({ partyId: party.id, body, client, ledgerSeq: 0n });
     expect(await isSessionAdvanceable(client, 0n)).toBe(false);
