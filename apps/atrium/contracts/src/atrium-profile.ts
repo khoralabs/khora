@@ -19,7 +19,7 @@ export const zAtriumRegistrationMetadata = z.object({
 
 export type AtriumRegistrationMetadataFields = z.infer<typeof zAtriumRegistrationMetadata>;
 
-/** Parse `DidRegistrationRequest.metadata`; ignores unknown keys (including legacy `profileId` / `id`). */
+/** Parse `PrincipalRegistrationRequest.metadata`; ignores unknown keys (including legacy `profileId` / `id`). */
 export function parseAtriumRegistrationMetadata(
   metadata: unknown,
 ): AtriumRegistrationMetadataFields {

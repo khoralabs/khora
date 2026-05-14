@@ -17,7 +17,7 @@ export async function handleListProbes(
   }
   const syncRl = rateLimiters.agentSyncDid(`did:${did}`);
   if (!syncRl.ok) return rateLimitedResponse(syncRl.retryAfterSec);
-  const profileId = ctx.host.persistenceClient.profileIdForAgentDid(did);
+  const profileId = ctx.host.persistenceClient.profileIdForPrincipal(did);
   if (profileId === undefined) {
     return jsonError("Register before listing probes", 400);
   }

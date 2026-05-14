@@ -136,18 +136,18 @@ describe("atrium-rooms HTTP", () => {
       deps.ctx as unknown as {
         host: {
           persistenceClient: unknown;
-          offerFrameChannelToDid: (p: {
-            targetDid: string;
-            roomId: string;
+          offerFrameChannelToPrincipal: (p: {
+            targetPrincipalId: string;
+            channelId: string;
             ticket: string;
             expiresAtMs?: number;
-            fromDid?: string;
+            fromPrincipalId?: string;
           }) => Promise<void>;
         };
       }
     ).host = {
       persistenceClient: createSwarmHostPersistenceClient(persistence),
-      offerFrameChannelToDid: async () => {},
+      offerFrameChannelToPrincipal: async () => {},
     };
     const res = await handleAtriumRoomsCreate(
       new Request("http://h/v1/atrium/rooms", {
@@ -169,18 +169,18 @@ describe("atrium-rooms HTTP", () => {
       deps.ctx as unknown as {
         host: {
           persistenceClient: unknown;
-          offerFrameChannelToDid: (p: {
-            targetDid: string;
-            roomId: string;
+          offerFrameChannelToPrincipal: (p: {
+            targetPrincipalId: string;
+            channelId: string;
             ticket: string;
             expiresAtMs?: number;
-            fromDid?: string;
+            fromPrincipalId?: string;
           }) => Promise<void>;
         };
       }
     ).host = {
       persistenceClient: createSwarmHostPersistenceClient(persistence),
-      offerFrameChannelToDid: async () => {},
+      offerFrameChannelToPrincipal: async () => {},
     };
     const res = await handleAtriumRoomsCreate(
       new Request("http://h/v1/atrium/rooms", {

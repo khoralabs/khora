@@ -1,21 +1,14 @@
-/** W3C DID string used as the agent routing key (e.g. `did:key:…`). Not a full grammar check. */
-export type AgentDid = string;
+/** Opaque globally unique principal key (routing id for registrations, inbox, subscriptions). Format is adapter-defined; swarm-host does not validate shape. */
+export type PrincipalId = string;
 
-const DID_PREFIX = /^did:[a-z0-9]+:/i;
-
-/** Loose predicate for `did:<method>:…` shape only. */
-export function isLikelyDidString(s: string): boolean {
-  return DID_PREFIX.test(s);
-}
-
-export type DidRegistrationRequest = {
-  did: AgentDid;
+export type PrincipalRegistrationRequest = {
+  principalId: PrincipalId;
   metadata?: Record<string, unknown>;
   correlationId?: string;
 };
 
-export type DidRegistrationResult<TProfile> = {
-  did: AgentDid;
+export type PrincipalRegistrationResult<TProfile> = {
+  principalId: PrincipalId;
   profile: TProfile;
   profileId: string;
 };

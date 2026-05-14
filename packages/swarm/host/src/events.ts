@@ -5,7 +5,7 @@ import type {
   MemoriesClient,
   MergeMemoryParams,
 } from "@khoralabs/memories-core";
-import type { DidRegistrationRequest } from "./registration/types.ts";
+import type { PrincipalRegistrationRequest } from "./registration/types.ts";
 
 /** Stable reference to the logical entity an event refers to. */
 export type SwarmAggregateRef = {
@@ -47,9 +47,9 @@ export const SWARM_EVENT_KIND = {
   TOPIC_DELETED: "swarm.topic.deleted",
 } as const;
 
-/** Emitted during {@link SwarmHost.registerWithDid}; listener must call `fulfill` or `reject` exactly once. */
+/** Emitted during {@link SwarmHost.registerPrincipal}; listener must call `fulfill` or `reject` exactly once. */
 export type SwarmRegistrationProfileBuildPayload<TProfile> = {
-  request: DidRegistrationRequest;
+  request: PrincipalRegistrationRequest;
   fulfill: (profile: TProfile) => void;
   reject: (reason: unknown) => void;
 };

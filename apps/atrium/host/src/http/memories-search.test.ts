@@ -25,7 +25,7 @@ describe("handleMemoriesSearch", () => {
         host: {
           search,
           persistenceClient: {
-            profileIdForAgentDid: () => "profile-row-id",
+            profileIdForPrincipal: () => "profile-row-id",
           },
         },
         config: {
@@ -70,7 +70,7 @@ describe("handleMemoriesSearch", () => {
         auth: {
           requireAuthenticatedRequest: async () => ({ did: "did:key:agent" }),
         },
-        host: { search, persistenceClient: { profileIdForAgentDid: () => "p1" } },
+        host: { search, persistenceClient: { profileIdForPrincipal: () => "p1" } },
         config: { embeddingModel: undefined, topicNamespace: undefined },
       },
       invitesRepo: undefined,
@@ -102,7 +102,7 @@ describe("handleMemoriesSearch", () => {
         },
         host: {
           search,
-          persistenceClient: { profileIdForAgentDid: () => "p1" },
+          persistenceClient: { profileIdForPrincipal: () => "p1" },
         },
         config: { embeddingModel: undefined, topicNamespace: undefined },
       },

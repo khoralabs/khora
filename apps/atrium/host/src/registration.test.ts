@@ -59,8 +59,8 @@ async function registerOne(
   const body = { did: signer.did, metadata };
   const bodyText = JSON.stringify(body);
   const headers = await signedRegister({ signer, bodyText });
-  return ctx.host.registerWithDid(
-    { did: signer.did, metadata },
+  return ctx.host.registerPrincipal(
+    { principalId: signer.did, metadata },
     { headers, bodyText, client: { ip: "127.0.0.1" } },
   );
 }

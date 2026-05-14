@@ -17,7 +17,7 @@ export async function handleListTopics(
   }
   const tRl = rateLimiters.topicsDid(`did:${did}`);
   if (!tRl.ok) return rateLimitedResponse(tRl.retryAfterSec);
-  const topicSlugs = ctx.host.persistenceClient.listTopicSlugsForAgentDid(did);
+  const topicSlugs = ctx.host.persistenceClient.listTopicSlugsForPrincipal(did);
   return Response.json({ topicSlugs });
 }
 

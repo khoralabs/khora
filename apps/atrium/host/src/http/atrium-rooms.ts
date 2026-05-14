@@ -32,7 +32,7 @@ type AtriumRoomRow = {
 /**
  * `POST /v1/atrium/rooms` — authenticated. Server mints `roomId`. Optionally enqueues inbox
  * **`negotiation_ticket`** for the invitee (`notification.kind === "negotiation_ticket"`, `payload`:
- * `{ roomId, ticket, expiresAtMs?, issuedAtMs?, fromDid? }`).
+ * `{ roomId, ticket, expiresAtMs?, issuedAtMs?, fromPrincipalId? }`).
  */
 export async function handleAtriumRoomsCreate(
   req: Request,
@@ -50,7 +50,7 @@ export async function handleAtriumRoomsCreate(
   const rl = rateLimiters.roomsCreateDid(`did:${did}`);
   if (!rl.ok) return rateLimitedResponse(rl.retryAfterSec);
 
-  const profileId = ctx.host.persistenceClient.profileIdForAgentDid(did);
+  const profileId = ctx.host.persistenceClient.profileIdForPrincipal(did);
   if (profileId === undefined) {
     return jsonError("Register before creating rooms", 400);
   }
@@ -108,12 +108,12 @@ export async function handleAtriumRoomsCreate(
   }
 
   if (targetDidResolved !== undefined) {
-    await ctx.host.offerFrameChannelToDid({
-      targetDid: targetDidResolved,
+    await ctx.host.offerFrameChannelToPrincipal({
+      targetPrincipalId: targetDidResolved,
       channelId: roomId,
       ticket,
       expiresAtMs,
-      fromDid: did,
+      fromPrincipalId: did,
     });
   }
 
@@ -144,7 +144,7 @@ export async function handleAtriumRoomsList(
   const rl = rateLimiters.roomsListDid(`did:${did}`);
   if (!rl.ok) return rateLimitedResponse(rl.retryAfterSec);
 
-  const profileId = ctx.host.persistenceClient.profileIdForAgentDid(did);
+  const profileId = ctx.host.persistenceClient.profileIdForPrincipal(did);
   if (profileId === undefined) {
     return jsonError("Register before listing rooms", 400);
   }
@@ -167,7 +167,7 @@ export async function handleAtriumRoomsList(
       counterpartDid = row.invite_target_did;
     } else {
       counterpartDid =
-        ctx.host.persistenceClient.didForAgentProfileId(row.created_by_profile_id) ?? null;
+        ctx.host.persistenceClient.principalForAgentProfileId(row.created_by_profile_id) ?? null;
     }
     const counterpartUsername =
       counterpartDid !== null ? ctx.usernamesRepo.lookupByDid(counterpartDid)?.username : undefined;
@@ -207,7 +207,7 @@ export async function handleAtriumRoomMintTicket(
   const rl = rateLimiters.roomsTicketMintDid(`did:${did}`);
   if (!rl.ok) return rateLimitedResponse(rl.retryAfterSec);
 
-  const profileId = ctx.host.persistenceClient.profileIdForAgentDid(did);
+  const profileId = ctx.host.persistenceClient.profileIdForPrincipal(did);
   if (profileId === undefined) {
     return jsonError("Register before minting room tickets", 400);
   }

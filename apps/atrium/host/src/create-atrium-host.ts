@@ -127,7 +127,7 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
   const host = new SwarmHost({
     memories,
     persistence: hostPersistence,
-    didVerifier: auth.verifier,
+    authPreflight: auth.preflight,
     notificationBuffer,
     inboxHub,
     frameChannelHub: roomHub,
@@ -168,19 +168,19 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
             const req = event.payload.request;
             const meta = parseAtriumRegistrationMetadata(req.metadata);
             const profile = zAtriumProfile.parse({
-              id: stableId("atrium_profile", req.did),
+              id: stableId("atrium_profile", req.principalId),
               ...meta,
             });
             // Reserve username atomically. Handle the re-registration path
             // (`ATRIUM_ALLOW_REREGISTER=1`) where the DID may already own a row.
-            const current = usernamesRepo.lookupByDid(req.did);
+            const current = usernamesRepo.lookupByDid(req.principalId);
             if (current === undefined) {
-              if (!usernamesRepo.tryReserve(req.did, profile.username)) {
+              if (!usernamesRepo.tryReserve(req.principalId, profile.username)) {
                 event.payload.reject(new Error(USERNAME_TAKEN_REASON));
                 return;
               }
             } else if (current.username !== profile.username) {
-              const r = usernamesRepo.rename(req.did, profile.username);
+              const r = usernamesRepo.rename(req.principalId, profile.username);
               if (!r.ok) {
                 event.payload.reject(new Error(USERNAME_TAKEN_REASON));
                 return;

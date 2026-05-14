@@ -18,7 +18,7 @@ import {
 type TNode = typeof atriumMemoriesOntology.nodeLabels;
 type TEdge = typeof atriumMemoriesOntology.edgeLabels;
 type FanoutCtx = SwarmHostEventHandlerCtx<TNode, TEdge> & {
-  _enqueued: Array<{ did: string; note: AgentNotification }>;
+  _enqueued: Array<{ principalId: string; note: AgentNotification }>;
 };
 
 const emptyProbeRepo: ProbeSubscribersRepo = {
@@ -30,15 +30,15 @@ const emptyProbeRepo: ProbeSubscribersRepo = {
 function makeSubjectRepo() {
   const subjectSubscriptions = new Map<string, Set<string>>();
   return {
-    subscribe(did: string, subject: string) {
+    subscribe(principalId: string, subject: string) {
       let set = subjectSubscriptions.get(subject);
       if (set === undefined) {
         set = new Set();
         subjectSubscriptions.set(subject, set);
       }
-      set.add(did);
+      set.add(principalId);
     },
-    subscriberDidsForSubject(subject: string, exclude?: string) {
+    subscriberPrincipalsForSubject(subject: string, exclude?: string) {
       const set = subjectSubscriptions.get(subject);
       if (set === undefined) return [];
       return [...set].filter((d) => d !== exclude);
@@ -48,13 +48,13 @@ function makeSubjectRepo() {
 
 function makeCtx(params: {
   repo: ReturnType<typeof makeSubjectRepo>;
-  authorDid: string;
+  authorPrincipalId: string;
   authorProfileId: string;
 }): FanoutCtx {
-  const enqueued: Array<{ did: string; note: AgentNotification }> = [];
+  const enqueued: Array<{ principalId: string; note: AgentNotification }> = [];
   const buffer = {
-    enqueue: mock(async (did: string, note: AgentNotification) => {
-      enqueued.push({ did, note });
+    enqueue: mock(async (principalId: string, note: AgentNotification) => {
+      enqueued.push({ principalId, note });
       return enqueued.length;
     }),
     markRead: mock(async () => {}),
@@ -69,12 +69,12 @@ function makeCtx(params: {
     _enqueued: enqueued,
     persistence: {
       agentRegistrations: {
-        didForProfileId: (pid: string) =>
-          pid === params.authorProfileId ? params.authorDid : undefined,
+        principalForProfileId: (pid: string) =>
+          pid === params.authorProfileId ? params.authorPrincipalId : undefined,
       },
       agentSubjectSubscriptions: {
-        subscriberDidsForSubject: (subject: string, exclude?: string) =>
-          params.repo.subscriberDidsForSubject(subject, exclude),
+        subscriberPrincipalsForSubject: (subject: string, exclude?: string) =>
+          params.repo.subscriberPrincipalsForSubject(subject, exclude),
       },
     },
     appContext: {} as AtriumHostAppContext,
@@ -87,13 +87,16 @@ function makeCtx(params: {
 
 describe("fanOutPostMatches", () => {
   test("author_topic subscription yields one inbox_post with author_topic reason", async () => {
-    const authorDid = "did:key:author";
-    const subscriberDid = "did:key:sub";
+    const authorPrincipalId = "did:key:author";
+    const subscriberPrincipalId = "did:key:sub";
     const repo = makeSubjectRepo();
-    repo.subscribe(subscriberDid, authorTopicSubscriptionSubject(authorDid, "rust-dev"));
+    repo.subscribe(
+      subscriberPrincipalId,
+      authorTopicSubscriptionSubject(authorPrincipalId, "rust-dev"),
+    );
     const ctx = makeCtx({
       repo,
-      authorDid,
+      authorPrincipalId,
       authorProfileId: "prof-1",
     });
     const post = zAtriumPost.parse({
@@ -110,23 +113,23 @@ describe("fanOutPostMatches", () => {
       post,
     });
     expect(ctx._enqueued).toHaveLength(1);
-    expect(ctx._enqueued[0]?.did).toBe(subscriberDid);
+    expect(ctx._enqueued[0]?.principalId).toBe(subscriberPrincipalId);
     expect(ctx._enqueued[0]?.note).toEqual({
       kind: "inbox_post",
       payload: {
         postId: "p1",
         postKind: "post",
-        authorDid,
-        reasons: [{ kind: "author_topic", authorDid, topic: "rust-dev" }],
+        authorPrincipalId,
+        reasons: [{ kind: "author_topic", authorPrincipalId, topic: "rust-dev" }],
       },
     });
   });
 
   test("author_topic without matching topic on post does not notify", async () => {
-    const authorDid = "did:key:author";
+    const authorPrincipalId = "did:key:author";
     const repo = makeSubjectRepo();
-    repo.subscribe("did:key:sub", authorTopicSubscriptionSubject(authorDid, "rust-dev"));
-    const ctx = makeCtx({ repo, authorDid, authorProfileId: "prof-1" });
+    repo.subscribe("did:key:sub", authorTopicSubscriptionSubject(authorPrincipalId, "rust-dev"));
+    const ctx = makeCtx({ repo, authorPrincipalId, authorProfileId: "prof-1" });
     const post = zAtriumPost.parse({
       id: "p2",
       kind: "post",
@@ -144,13 +147,16 @@ describe("fanOutPostMatches", () => {
   });
 
   test("author + topic + author_topic merge to one notification with three reasons", async () => {
-    const authorDid = "did:key:author";
-    const subscriberDid = "did:key:sub";
+    const authorPrincipalId = "did:key:author";
+    const subscriberPrincipalId = "did:key:sub";
     const repo = makeSubjectRepo();
-    repo.subscribe(subscriberDid, topicSubscriptionSubject("rust-dev"));
-    repo.subscribe(subscriberDid, authorSubscriptionSubject(authorDid));
-    repo.subscribe(subscriberDid, authorTopicSubscriptionSubject(authorDid, "rust-dev"));
-    const ctx = makeCtx({ repo, authorDid, authorProfileId: "prof-1" });
+    repo.subscribe(subscriberPrincipalId, topicSubscriptionSubject("rust-dev"));
+    repo.subscribe(subscriberPrincipalId, authorSubscriptionSubject(authorPrincipalId));
+    repo.subscribe(
+      subscriberPrincipalId,
+      authorTopicSubscriptionSubject(authorPrincipalId, "rust-dev"),
+    );
+    const ctx = makeCtx({ repo, authorPrincipalId, authorProfileId: "prof-1" });
     const post = zAtriumPost.parse({
       id: "p3",
       kind: "post",

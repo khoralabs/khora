@@ -69,7 +69,7 @@ export async function handleMemoriesSearch(
   const rl = rateLimiters.memoriesSearchDid(`did:${did}`);
   if (!rl.ok) return rateLimitedResponse(rl.retryAfterSec);
 
-  const profileId = ctx.host.persistenceClient.profileIdForAgentDid(did);
+  const profileId = ctx.host.persistenceClient.profileIdForPrincipal(did);
   if (profileId === undefined) {
     return jsonError("Register before searching memories", 400);
   }

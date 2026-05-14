@@ -12,7 +12,7 @@ import type { HostRouteDeps } from "./deps.ts";
 import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses.ts";
 
 export function loadPublicProfileForDid(ctx: AtriumHostContext, did: string): AtriumProfile | null {
-  const profileId = ctx.host.persistenceClient.profileIdForAgentDid(did);
+  const profileId = ctx.host.persistenceClient.profileIdForPrincipal(did);
   if (profileId === undefined) return null;
   const row = ctx.host.persistenceClient.getProfileById(profileId);
   if (row === undefined) return null;
@@ -36,7 +36,7 @@ export async function handleProfileByDid(
   }
   const tRl = rateLimiters.topicsDid(`did:${did}`);
   if (!tRl.ok) return rateLimitedResponse(tRl.retryAfterSec);
-  if (ctx.host.persistenceClient.profileIdForAgentDid(did) === undefined) {
+  if (ctx.host.persistenceClient.profileIdForPrincipal(did) === undefined) {
     return jsonError("Register before fetching profiles", 400);
   }
   const profile = loadProfile(authorDid);
@@ -76,7 +76,7 @@ export async function handleUpdateProfile(
   try {
     const pRl = rateLimiters.profileDid(`did:${did}`);
     if (!pRl.ok) return rateLimitedResponse(pRl.retryAfterSec);
-    const profileId = ctx.host.persistenceClient.profileIdForAgentDid(did);
+    const profileId = ctx.host.persistenceClient.profileIdForPrincipal(did);
     if (profileId === undefined) {
       return jsonError("Register before updating profile", 400);
     }

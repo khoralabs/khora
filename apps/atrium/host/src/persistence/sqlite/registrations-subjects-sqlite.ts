@@ -1,16 +1,16 @@
 import type { Database } from "bun:sqlite";
-import type { AgentDid } from "@khoralabs/swarm-host";
+import type { PrincipalId } from "@khoralabs/swarm-host";
 import { migrateAtriumHostDb } from "./migrate-atrium-host-db.ts";
 
 export type RegistrationsSubjectsRepo = {
-  upsertRegistration(did: AgentDid, profileId: string): void;
-  registrationExists(did: AgentDid): boolean;
-  profileIdForDid(did: AgentDid): string | undefined;
-  didForProfileId(profileId: string): AgentDid | undefined;
-  subscribeSubject(did: AgentDid, subject: string): void;
-  unsubscribeSubject(did: AgentDid, subject: string): void;
-  listSubjectsForDid(did: AgentDid): string[];
-  subscriberDidsForSubject(subject: string, excludeDid?: AgentDid): AgentDid[];
+  upsertRegistration(principalId: PrincipalId, profileId: string): void;
+  registrationExists(principalId: PrincipalId): boolean;
+  profileIdForPrincipal(principalId: PrincipalId): string | undefined;
+  principalForProfileId(profileId: string): PrincipalId | undefined;
+  subscribeSubject(principalId: PrincipalId, subject: string): void;
+  unsubscribeSubject(principalId: PrincipalId, subject: string): void;
+  listSubjectsForPrincipal(principalId: PrincipalId): string[];
+  subscriberPrincipalsForSubject(subject: string, excludePrincipalId?: PrincipalId): PrincipalId[];
 };
 
 export function createRegistrationsSubjectsRepo(db: Database): RegistrationsSubjectsRepo {
@@ -47,35 +47,35 @@ export function createRegistrationsSubjectsRepo(db: Database): RegistrationsSubj
   );
 
   return {
-    upsertRegistration(did, profileId) {
-      upsertRegistrationStmt.run(did, profileId, Date.now());
+    upsertRegistration(principalId, profileId) {
+      upsertRegistrationStmt.run(principalId, profileId, Date.now());
     },
-    registrationExists(did) {
-      const row = selectRegistrationExists.get(did);
+    registrationExists(principalId) {
+      const row = selectRegistrationExists.get(principalId);
       return row !== undefined && row !== null;
     },
-    profileIdForDid(did) {
-      return selectProfileIdForDid.get(did)?.profile_id;
+    profileIdForPrincipal(principalId) {
+      return selectProfileIdForDid.get(principalId)?.profile_id;
     },
-    didForProfileId(profileId) {
+    principalForProfileId(profileId) {
       const row = selectDidForProfileId.get(profileId);
-      return row?.did as AgentDid | undefined;
+      return row?.did as PrincipalId | undefined;
     },
-    subscribeSubject(did, subject) {
-      subscribeStmt.run(did, subject, Date.now());
+    subscribeSubject(principalId, subject) {
+      subscribeStmt.run(principalId, subject, Date.now());
     },
-    unsubscribeSubject(did, subject) {
-      unsubscribeStmt.run(did, subject);
+    unsubscribeSubject(principalId, subject) {
+      unsubscribeStmt.run(principalId, subject);
     },
-    listSubjectsForDid(did) {
-      const rows = selectSubjectsForDid.all(did);
+    listSubjectsForPrincipal(principalId) {
+      const rows = selectSubjectsForDid.all(principalId);
       return rows.map((r) => r.subject);
     },
-    subscriberDidsForSubject(subject, excludeDid) {
-      const rows = excludeDid
-        ? selectSubscriberDidsExclude.all(subject, excludeDid)
+    subscriberPrincipalsForSubject(subject, excludePrincipalId) {
+      const rows = excludePrincipalId
+        ? selectSubscriberDidsExclude.all(subject, excludePrincipalId)
         : selectSubscriberDidsAll.all(subject);
-      return rows.map((r) => r.did as AgentDid);
+      return rows.map((r) => r.did as PrincipalId);
     },
   };
 }

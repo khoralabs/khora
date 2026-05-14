@@ -67,18 +67,18 @@ export type {
   AgentNotification,
   AgentNotificationBufferPort,
   AgentNotificationRow,
+  FrameChannelInvitePayload,
   InboxPostNotificationPayload,
   InboxPostReason,
-  NegotiationTicketNotificationPayload,
 } from "./registration/notifications.ts";
 export type {
-  AgentDid,
-  DidRegistrationRequest,
-  DidRegistrationResult,
+  PrincipalId,
+  PrincipalRegistrationRequest,
+  PrincipalRegistrationResult,
 } from "./registration/types.ts";
 export type {
   AuthenticatedAgentVerifyContext,
-  DidVerifier,
+  AuthPreflight,
   InboxAccessVerifyContext,
   RegistrationVerifyContext,
 } from "./registration/verify.ts";

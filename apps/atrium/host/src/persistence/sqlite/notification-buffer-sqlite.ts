@@ -1,9 +1,9 @@
 import type { Database } from "bun:sqlite";
 import type {
-  AgentDid,
   AgentNotification,
   AgentNotificationBufferPort,
   AgentNotificationRow,
+  PrincipalId,
 } from "@khoralabs/swarm-host";
 import { migrateAtriumHostDb } from "./migrate-atrium-host-db.ts";
 
@@ -71,13 +71,13 @@ export function createSqliteAgentNotificationBuffer(db: Database): AgentNotifica
   );
 
   return {
-    async ensureRegistered(did: AgentDid): Promise<void> {
-      insertRegistration.run(did, Date.now());
+    async ensureRegistered(principalId: PrincipalId): Promise<void> {
+      insertRegistration.run(principalId, Date.now());
     },
 
-    async enqueue(did: AgentDid, note: AgentNotification): Promise<number> {
+    async enqueue(principalId: PrincipalId, note: AgentNotification): Promise<number> {
       const { kind, payloadJson } = serializeNote(note);
-      insertNote.run(did, Date.now(), kind, payloadJson);
+      insertNote.run(principalId, Date.now(), kind, payloadJson);
       const row = db.query<{ id: number }, []>("SELECT last_insert_rowid() AS id").get();
       if (row?.id === undefined) {
         throw new Error("notification insert: last_insert_rowid missing");
@@ -85,9 +85,9 @@ export function createSqliteAgentNotificationBuffer(db: Database): AgentNotifica
       return row.id;
     },
 
-    async dequeueBatch(did: AgentDid, limit = 32): Promise<AgentNotification[]> {
+    async dequeueBatch(principalId: PrincipalId, limit = 32): Promise<AgentNotification[]> {
       const lim = Math.min(Math.max(limit, 1), 256);
-      const rows = selectUnread.all(did, lim) as Array<{
+      const rows = selectUnread.all(principalId, lim) as Array<{
         id: number;
         created_at: number;
         kind: string;
@@ -98,15 +98,15 @@ export function createSqliteAgentNotificationBuffer(db: Database): AgentNotifica
       const now = Date.now();
       db.transaction(() => {
         for (const r of rows) {
-          markReadById.run(now, did, r.id);
+          markReadById.run(now, principalId, r.id);
         }
       })();
       return rows.map((r) => parsePayload(r.kind, r.payload_json));
     },
 
-    async listRecent(did: AgentDid, limit = 50): Promise<AgentNotificationRow[]> {
+    async listRecent(principalId: PrincipalId, limit = 50): Promise<AgentNotificationRow[]> {
       const lim = Math.min(Math.max(limit, 1), 500);
-      const rows = selectRecent.all(did, lim) as Array<{
+      const rows = selectRecent.all(principalId, lim) as Array<{
         id: number;
         created_at: number;
         kind: string;
@@ -121,12 +121,12 @@ export function createSqliteAgentNotificationBuffer(db: Database): AgentNotifica
       }));
     },
 
-    async markRead(did: AgentDid, ids: readonly number[]): Promise<void> {
+    async markRead(principalId: PrincipalId, ids: readonly number[]): Promise<void> {
       if (ids.length === 0) return;
       const now = Date.now();
       db.transaction(() => {
         for (const id of ids) {
-          markReadCoalesceById.run(now, did, id);
+          markReadCoalesceById.run(now, principalId, id);
         }
       })();
     },

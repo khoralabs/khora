@@ -18,17 +18,22 @@ export function createSwarmHostSqlitePersistence(db: Database): SwarmHostPersist
     posts: createSwarmHostPostSqlitePersistence(db),
     topics: createSwarmHostEntitySqlitePersistence(db, "topic"),
     agentRegistrations: {
-      exists: (did) => registrationsSubjects.registrationExists(did),
-      upsert: (did, profileId) => registrationsSubjects.upsertRegistration(did, profileId),
-      profileIdForDid: (did) => registrationsSubjects.profileIdForDid(did),
-      didForProfileId: (profileId) => registrationsSubjects.didForProfileId(profileId),
+      exists: (principalId) => registrationsSubjects.registrationExists(principalId),
+      upsert: (principalId, profileId) =>
+        registrationsSubjects.upsertRegistration(principalId, profileId),
+      profileIdForPrincipal: (principalId) =>
+        registrationsSubjects.profileIdForPrincipal(principalId),
+      principalForProfileId: (profileId) => registrationsSubjects.principalForProfileId(profileId),
     },
     agentSubjectSubscriptions: {
-      listSubjectsForDid: (did) => registrationsSubjects.listSubjectsForDid(did),
-      subscriberDidsForSubject: (subject, excludeDid) =>
-        registrationsSubjects.subscriberDidsForSubject(subject, excludeDid),
-      subscribe: (did, subject) => registrationsSubjects.subscribeSubject(did, subject),
-      unsubscribe: (did, subject) => registrationsSubjects.unsubscribeSubject(did, subject),
+      listSubjectsForPrincipal: (principalId) =>
+        registrationsSubjects.listSubjectsForPrincipal(principalId),
+      subscriberPrincipalsForSubject: (subject, excludePrincipalId) =>
+        registrationsSubjects.subscriberPrincipalsForSubject(subject, excludePrincipalId),
+      subscribe: (principalId, subject) =>
+        registrationsSubjects.subscribeSubject(principalId, subject),
+      unsubscribe: (principalId, subject) =>
+        registrationsSubjects.unsubscribeSubject(principalId, subject),
     },
   };
 }

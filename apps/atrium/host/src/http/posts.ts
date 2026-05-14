@@ -29,7 +29,7 @@ export async function handleGetPost(
   try {
     const pRl = rateLimiters.postsDid(`did:${did}`);
     if (!pRl.ok) return rateLimitedResponse(pRl.retryAfterSec);
-    if (ctx.host.persistenceClient.profileIdForAgentDid(did) === undefined) {
+    if (ctx.host.persistenceClient.profileIdForPrincipal(did) === undefined) {
       return jsonError("Register before fetching posts", 400);
     }
     const row = ctx.host.persistenceClient.getPostById(id);
@@ -60,7 +60,7 @@ export async function handleCreatePost(
   try {
     const pRl = rateLimiters.postsDid(`did:${did}`);
     if (!pRl.ok) return rateLimitedResponse(pRl.retryAfterSec);
-    const profileId = ctx.host.persistenceClient.profileIdForAgentDid(did);
+    const profileId = ctx.host.persistenceClient.profileIdForPrincipal(did);
     if (profileId === undefined) {
       return jsonError("Register before creating posts", 400);
     }
@@ -109,7 +109,7 @@ export async function handleUpdatePost(
   try {
     const pRl = rateLimiters.postsDid(`did:${did}`);
     if (!pRl.ok) return rateLimitedResponse(pRl.retryAfterSec);
-    const agentProfileId = ctx.host.persistenceClient.profileIdForAgentDid(did);
+    const agentProfileId = ctx.host.persistenceClient.profileIdForPrincipal(did);
     if (agentProfileId === undefined) {
       return jsonError("Register before updating posts", 400);
     }
@@ -168,7 +168,7 @@ export async function handleDeletePost(
   try {
     const pRl = rateLimiters.postsDid(`did:${did}`);
     if (!pRl.ok) return rateLimitedResponse(pRl.retryAfterSec);
-    const agentProfileId = ctx.host.persistenceClient.profileIdForAgentDid(did);
+    const agentProfileId = ctx.host.persistenceClient.profileIdForPrincipal(did);
     if (agentProfileId === undefined) {
       return jsonError("Register before deleting posts", 400);
     }

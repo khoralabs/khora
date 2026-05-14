@@ -34,8 +34,8 @@ export {
 } from "@khoralabs/atrium-contracts";
 export type {
   AgentNotification,
-  DidRegistrationRequest,
-  DidRegistrationResult,
+  PrincipalRegistrationRequest,
+  PrincipalRegistrationResult,
 } from "@khoralabs/swarm-host";
 export {
   type AgentStatusSnapshot,

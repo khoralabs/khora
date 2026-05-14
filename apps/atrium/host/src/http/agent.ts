@@ -31,7 +31,7 @@ export async function handleAgentSync(
   }
   const syncRl = rateLimiters.agentSyncDid(`did:${did}`);
   if (!syncRl.ok) return rateLimitedResponse(syncRl.retryAfterSec);
-  const profileId = ctx.host.persistenceClient.profileIdForAgentDid(did);
+  const profileId = ctx.host.persistenceClient.profileIdForPrincipal(did);
   if (profileId === undefined) {
     return jsonError("Register before sync", 400);
   }
@@ -41,8 +41,8 @@ export async function handleAgentSync(
   }
   try {
     const profile = zAtriumProfile.parse(JSON.parse(profileRow.bodyJson));
-    const topicSlugs = ctx.host.persistenceClient.listTopicSlugsForAgentDid(did);
-    const subjects = ctx.host.persistenceClient.listSubjectsForAgentDid(did);
+    const topicSlugs = ctx.host.persistenceClient.listTopicSlugsForPrincipal(did);
+    const subjects = ctx.host.persistenceClient.listSubjectsForPrincipal(did);
     const authorTopics = subjects
       .map((s) => parseAuthorTopicSubscriptionSubject(s))
       .filter((row): row is NonNullable<typeof row> => row !== undefined)
@@ -81,7 +81,7 @@ export async function handleAgentStatus(
   }
   const syncRl = rateLimiters.agentSyncDid(`did:${did}`);
   if (!syncRl.ok) return rateLimitedResponse(syncRl.retryAfterSec);
-  const profileId = ctx.host.persistenceClient.profileIdForAgentDid(did);
+  const profileId = ctx.host.persistenceClient.profileIdForPrincipal(did);
   if (profileId === undefined) {
     return jsonError("Register before fetching status", 400);
   }

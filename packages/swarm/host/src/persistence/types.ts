@@ -1,4 +1,4 @@
-import type { AgentDid } from "../registration/types.ts";
+import type { PrincipalId } from "../registration/types.ts";
 
 /** Stored frame-channel hub session row (ticket HMAC secret + TTL). Maps to `rooms.session_id`. */
 export type FrameChannelRoomRecord = {
@@ -51,20 +51,20 @@ export interface SwarmHostEntityPersistence {
   deleteById(id: string): void;
 }
 
-/** Persisted DID ↔ profile mapping for agent registration (implementation-defined storage). */
+/** Persisted principal ↔ profile mapping (implementation-defined storage; SQL column names may say `did`). */
 export interface SwarmHostAgentRegistrations {
-  exists(did: AgentDid): boolean;
-  upsert(did: AgentDid, profileId: string): void;
-  profileIdForDid(did: AgentDid): string | undefined;
-  didForProfileId(profileId: string): AgentDid | undefined;
+  exists(principalId: PrincipalId): boolean;
+  upsert(principalId: PrincipalId, profileId: string): void;
+  profileIdForPrincipal(principalId: PrincipalId): string | undefined;
+  principalForProfileId(profileId: string): PrincipalId | undefined;
 }
 
-/** Opaque subject subscriptions keyed by agent DID (e.g. `topic:<slug>`, `author:<did>`). */
+/** Opaque subject subscriptions keyed by principal (e.g. `topic:<slug>`, `author:<principalId>`). */
 export interface SwarmHostAgentSubjectSubscriptions {
-  listSubjectsForDid(did: AgentDid): string[];
-  subscriberDidsForSubject(subject: string, excludeDid?: AgentDid): AgentDid[];
-  subscribe(did: AgentDid, subject: string): void;
-  unsubscribe(did: AgentDid, subject: string): void;
+  listSubjectsForPrincipal(principalId: PrincipalId): string[];
+  subscriberPrincipalsForSubject(subject: string, excludePrincipalId?: PrincipalId): PrincipalId[];
+  subscribe(principalId: PrincipalId, subject: string): void;
+  unsubscribe(principalId: PrincipalId, subject: string): void;
 }
 
 /** Post entity persistence plus filtered listing (e.g. probes by author profile id). */

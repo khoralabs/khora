@@ -33,13 +33,12 @@ import {
 import type { SwarmHostPersistence } from "./persistence/types.ts";
 import type { AgentNotificationBufferPort } from "./registration/notifications.ts";
 import {
-  type AgentDid,
-  type DidRegistrationRequest,
-  type DidRegistrationResult,
-  isLikelyDidString,
+  type PrincipalId,
+  type PrincipalRegistrationRequest,
+  type PrincipalRegistrationResult,
   profileEntityId,
 } from "./registration/types.ts";
-import type { DidVerifier, RegistrationVerifyContext } from "./registration/verify.ts";
+import type { AuthPreflight, RegistrationVerifyContext } from "./registration/verify.ts";
 import { type SwarmHostStores, searchHitToSourceMapRef } from "./stores.ts";
 
 export type {
@@ -107,7 +106,8 @@ export type SwarmHostDeps<
   stores?: SwarmHostStores<TProfile, TPost, TTopic>;
   /** Optional ticket-gated frame-channel hub (HMAC tickets, replay on re-join). */
   frameChannelHub?: FrameChannelHubPort;
-  didVerifier: DidVerifier;
+  /** Optional inbound verification (registration / authenticated routes / inbox upgrade). */
+  authPreflight?: AuthPreflight;
   notificationBuffer?: AgentNotificationBufferPort;
   inboxHub?: InboxFanoutPort;
   /** Opaque app runtime (passed through to {@link SwarmHostEventHandlerCtx.appContext}). */
@@ -160,7 +160,7 @@ export function composeOnEventWithMemorySync<
 }
 
 /**
- * Facade for discovery (Memories), optional persistence resolvers, optional frame-channel hub, and DID registration.
+ * Facade for discovery (Memories), optional persistence resolvers, optional frame-channel hub, and principal registration.
  * Domain CRUD will call {@link SwarmHost.notify} in a later iteration.
  */
 export class SwarmHost<
@@ -177,7 +177,7 @@ export class SwarmHost<
   readonly persistenceClient: SwarmHostPersistenceClient;
   readonly stores?: SwarmHostStores<TProfile, TPost, TTopic>;
   readonly frameChannelHub?: FrameChannelHubPort;
-  readonly didVerifier: DidVerifier;
+  readonly authPreflight?: AuthPreflight;
   readonly notificationBuffer?: AgentNotificationBufferPort;
   readonly inboxHub?: InboxFanoutPort;
   readonly appContext?: unknown;
@@ -195,15 +195,12 @@ export class SwarmHost<
   >["onEvent"];
 
   constructor(deps: SwarmHostDeps<TNode, TEdge, TProfile, TPost, TTopic, TAppEvent, TEntityMap>) {
-    if (deps.didVerifier === undefined) {
-      throw new Error("SwarmHost: didVerifier is required");
-    }
     this.memories = deps.memories;
     this.persistence = deps.persistence;
     this.persistenceClient = createSwarmHostPersistenceClient(deps.persistence);
     this.stores = deps.stores;
     this.frameChannelHub = deps.frameChannelHub;
-    this.didVerifier = deps.didVerifier;
+    this.authPreflight = deps.authPreflight;
     this.notificationBuffer = deps.notificationBuffer;
     this.inboxHub = deps.inboxHub;
     this.appContext = deps.appContext;
@@ -298,22 +295,21 @@ export class SwarmHost<
   }
 
   /**
-   * Verify DID via {@link SwarmHostDeps.didVerifier}, emit
+   * Run optional {@link SwarmHostDeps.authPreflight}, emit
    * `swarm.registration.profile_build` so {@link SwarmHostDeps.onEvent} can call `payload.fulfill(profile)`,
-   * then emit `swarm.profile.created` and register the DID with the notification buffer.
+   * then emit `swarm.profile.created` and ensure the principal is registered with the notification buffer.
    */
-  async registerWithDid(
-    req: DidRegistrationRequest,
+  async registerPrincipal(
+    req: PrincipalRegistrationRequest,
     registrationExtra: Omit<RegistrationVerifyContext, "request">,
-  ): Promise<DidRegistrationResult<TProfile>> {
-    if (!isLikelyDidString(req.did)) {
-      throw new Error("SwarmHost: registration `did` must match did:<method>:…");
+  ): Promise<PrincipalRegistrationResult<TProfile>> {
+    if (this.authPreflight !== undefined) {
+      await this.authPreflight.verifyRegistration({ request: req, ...registrationExtra });
     }
-    await this.didVerifier.verifyRegistration({ request: req, ...registrationExtra });
     const onEvent = this.onEvent;
     if (onEvent === undefined) {
       throw new Error(
-        "SwarmHost: onEvent is required for registerWithDid (handle swarm.registration.profile_build)",
+        "SwarmHost: onEvent is required for registerPrincipal (handle swarm.registration.profile_build)",
       );
     }
 
@@ -337,7 +333,7 @@ export class SwarmHost<
       const buildEvent: SwarmHostEventUnion<TProfile, TPost, TTopic, TAppEvent> = {
         kind: SWARM_EVENT_KIND.REGISTRATION_PROFILE_BUILD,
         occurredAt: Date.now(),
-        aggregate: { domain: SWARM_AGGREGATE_DOMAIN.registration, id: req.did },
+        aggregate: { domain: SWARM_AGGREGATE_DOMAIN.registration, id: req.principalId },
         change: "created",
         source: "swarm",
         payload: { request: req, fulfill, reject: rej },
@@ -366,33 +362,33 @@ export class SwarmHost<
       correlationId: req.correlationId,
     };
     await Promise.resolve(this.notify(createdEvent));
-    await this.notificationBuffer?.ensureRegistered(req.did);
-    return { did: req.did, profile, profileId };
+    await this.notificationBuffer?.ensureRegistered(req.principalId);
+    return { principalId: req.principalId, profile, profileId };
   }
 
   /**
    * Queue a join ticket for another agent (e.g. after {@link FrameChannelHubPort.createChannel}).
    * Requires {@link SwarmHostDeps.notificationBuffer}.
    */
-  async offerFrameChannelToDid(params: {
-    targetDid: AgentDid;
+  async offerFrameChannelToPrincipal(params: {
+    targetPrincipalId: PrincipalId;
     channelId: string;
     ticket: string;
     expiresAtMs?: number;
-    fromDid?: AgentDid;
+    fromPrincipalId?: PrincipalId;
   }): Promise<void> {
     const buf = this.notificationBuffer;
     if (buf === undefined) {
-      throw new Error("SwarmHost: notificationBuffer is required for offerFrameChannelToDid");
+      throw new Error("SwarmHost: notificationBuffer is required for offerFrameChannelToPrincipal");
     }
-    await buf.enqueue(params.targetDid, {
+    await buf.enqueue(params.targetPrincipalId, {
       kind: "negotiation_ticket",
       payload: {
         channelId: params.channelId,
         ticket: params.ticket,
         expiresAtMs: params.expiresAtMs,
         issuedAtMs: Date.now(),
-        fromDid: params.fromDid,
+        fromPrincipalId: params.fromPrincipalId,
       },
     });
   }

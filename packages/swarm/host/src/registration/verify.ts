@@ -1,4 +1,4 @@
-import type { DidRegistrationRequest } from "./types.ts";
+import type { PrincipalRegistrationRequest } from "./types.ts";
 
 /** Optional HTTP hints supplied by the adapter. */
 export type RegistrationVerifyClientHints = {
@@ -7,37 +7,37 @@ export type RegistrationVerifyClientHints = {
 };
 
 export type RegistrationVerifyContext = {
-  request: DidRegistrationRequest;
+  request: PrincipalRegistrationRequest;
   client?: RegistrationVerifyClientHints;
-  /** Raw request headers (carries `X-Agent-*` signature envelope). */
+  /** Raw request headers (e.g. signature envelope); interpretation is adapter-defined. */
   headers: Headers;
   /** Raw POST body as text (canonical body bytes for signature verification). */
   bodyText: string;
 };
 
-/** Context for mutating HTTP routes that carry `X-Agent-Did`. */
+/** Context for mutating HTTP routes carrying an authenticated principal claim. */
 export type AuthenticatedAgentVerifyContext = {
   method: string;
   path: string;
   headers: Headers;
-  claimedDid: string;
+  claimedPrincipalId: PrincipalRegistrationRequest["principalId"];
   /** Raw body when the route has one (e.g. JSON POST/PATCH). */
   bodyText?: string;
 };
 
 /** Context for inbox HTTP + WebSocket upgrade. */
 export type InboxAccessVerifyContext = {
-  claimedDid: string;
+  claimedPrincipalId: PrincipalRegistrationRequest["principalId"];
   path: string;
   searchParams: URLSearchParams;
   headers: Headers;
 };
 
 /**
- * App-supplied DID / agent verification. SwarmHost calls {@link verifyRegistration} only;
- * HTTP adapters call {@link verifyAuthenticatedAgent} and {@link verifyInboxAccess}.
+ * Optional preflight: verify registration payloads and inbound agent routes before swarm-host proceeds.
+ * Omitted when the embedder trusts another layer or disables verification (e.g. tests).
  */
-export interface DidVerifier {
+export interface AuthPreflight {
   verifyRegistration(ctx: RegistrationVerifyContext): Promise<void>;
   verifyAuthenticatedAgent(ctx: AuthenticatedAgentVerifyContext): Promise<void>;
   verifyInboxAccess(ctx: InboxAccessVerifyContext): Promise<void>;

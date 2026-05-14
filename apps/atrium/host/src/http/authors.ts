@@ -22,7 +22,7 @@ export async function handleListAuthorSubscriptions(
   }
   const tRl = rateLimiters.topicsDid(`did:${did}`);
   if (!tRl.ok) return rateLimitedResponse(tRl.retryAfterSec);
-  const subjects = ctx.host.persistenceClient.listSubjectsForAgentDid(did);
+  const subjects = ctx.host.persistenceClient.listSubjectsForPrincipal(did);
   const authorDids = subjects
     .map((s) => authorDidFromSubscriptionSubject(s))
     .filter((d): d is string => d !== undefined);

@@ -1,9 +1,9 @@
 import type { Database } from "bun:sqlite";
 import type {
   AuthenticatedAgentVerifyContext,
-  DidRegistrationRequest,
-  DidVerifier,
+  AuthPreflight,
   InboxAccessVerifyContext,
+  PrincipalRegistrationRequest,
   RegistrationVerifyContext,
 } from "@khoralabs/swarm-host";
 import type { NonceStore } from "./nonce-store.ts";
@@ -55,13 +55,13 @@ export type CreateAtriumDidAuthOptions = Omit<AtriumDidAuthOptions, "nonceStore"
 
 /**
  * Lifecycle owner for Atrium DID authentication. Construct one per host process, hand
- * {@link AtriumDidAuth.verifier} to `SwarmHost`, and use `requireAuthenticatedRequest` /
+ * {@link AtriumDidAuth.preflight} to `SwarmHost`, and use `requireAuthenticatedRequest` /
  * `requireInboxAccess` / `verifyRegistration` to guard HTTP routes.
  *
  * Swapping the auth scheme = passing a different {@link AuthStrategy}; route code is unaffected.
  */
 export class AtriumDidAuth {
-  readonly verifier: DidVerifier;
+  readonly preflight: AuthPreflight;
   private readonly strategy: AuthStrategy;
   private readonly nonceStore: NonceStore;
   private readonly now: () => number;
@@ -75,7 +75,7 @@ export class AtriumDidAuth {
     this.now = opts.now ?? (() => Date.now());
     this.freshnessWindowMs = opts.freshnessWindowMs ?? AGENT_REQUEST_FRESHNESS_WINDOW_MS;
     this.sweepIntervalMs = opts.sweepIntervalMs ?? DEFAULT_SWEEP_INTERVAL_MS;
-    this.verifier = {
+    this.preflight = {
       verifyRegistration: (ctx) => this.verifyRegistrationContext(ctx),
       verifyAuthenticatedAgent: (ctx) => this.verifyAuthenticatedContext(ctx),
       verifyInboxAccess: (ctx) => this.verifyInboxContext(ctx),
@@ -100,7 +100,7 @@ export class AtriumDidAuth {
       method: req.method,
       path: canonicalAgentRequestPath(url.pathname, url.searchParams, signedQueryKeys),
       headers: req.headers,
-      claimedDid: did,
+      claimedPrincipalId: did,
       bodyText,
     }).catch((e) => {
       throw new AuthError(messageOf(e), 401);
@@ -123,7 +123,7 @@ export class AtriumDidAuth {
       throw new AuthError(`did required (query ?did= or ${AGENT_REQUEST_HEADER.did})`, 400);
     }
     await this.verifyInboxContext({
-      claimedDid: did,
+      claimedPrincipalId: did,
       path: canonicalAgentRequestPath(url.pathname, url.searchParams, signedQueryKeys),
       searchParams: url.searchParams,
       headers: req.headers,
@@ -136,13 +136,13 @@ export class AtriumDidAuth {
   /**
    * Registration-time verification: the signed body DID must match the claimed registration DID,
    * and the signature must verify over the raw POST body bytes. Designed to be called once before
-   * `SwarmHost.registerWithDid` (which calls the same verifier internally via the registration
-   * context — see {@link AtriumDidAuth.verifier}).
+   * `SwarmHost.registerPrincipal` (which calls the same preflight internally via the registration
+   * context — see {@link AtriumDidAuth.preflight}).
    */
   async verifyRegistration(
     req: Request,
     bodyText: string,
-    swarmReq: DidRegistrationRequest,
+    swarmReq: PrincipalRegistrationRequest,
   ): Promise<void> {
     await this.verifyRegistrationContext({
       request: swarmReq,
@@ -155,12 +155,12 @@ export class AtriumDidAuth {
 
   private async verifyRegistrationContext(ctx: RegistrationVerifyContext): Promise<void> {
     const envelope = parseAgentRequestEnvelopeFromHeaders(ctx.headers);
-    if (envelope !== undefined && envelope.did !== ctx.request.did) {
+    if (envelope !== undefined && envelope.did !== ctx.request.principalId) {
       throw new Error("registration body DID does not match signature DID");
     }
     await this.verifyEnvelope({
       envelope,
-      claimedDid: ctx.request.did,
+      claimedDid: ctx.request.principalId,
       method: "POST",
       path: "/v1/register",
       bodyText: ctx.bodyText,
@@ -171,7 +171,7 @@ export class AtriumDidAuth {
     const envelope = parseAgentRequestEnvelopeFromHeaders(ctx.headers);
     await this.verifyEnvelope({
       envelope,
-      claimedDid: ctx.claimedDid,
+      claimedDid: ctx.claimedPrincipalId,
       method: ctx.method,
       path: ctx.path,
       bodyText: ctx.bodyText ?? "",
@@ -184,7 +184,7 @@ export class AtriumDidAuth {
       parseAgentRequestEnvelopeFromHeaders(ctx.headers);
     await this.verifyEnvelope({
       envelope,
-      claimedDid: ctx.claimedDid,
+      claimedDid: ctx.claimedPrincipalId,
       method: "GET",
       path: ctx.path,
       bodyText: "",

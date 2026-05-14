@@ -36,7 +36,7 @@ async function buildSignedHeaders(p: {
   return h;
 }
 
-describe("AtriumDidAuth.verifier (did:key Ed25519 default)", () => {
+describe("AtriumDidAuth.preflight (did:key Ed25519 default)", () => {
   test("accepts fresh + valid signed request", async () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
@@ -51,11 +51,11 @@ describe("AtriumDidAuth.verifier (did:key Ed25519 default)", () => {
       nonce: "nonce-1",
     });
     await expect(
-      auth.verifier.verifyAuthenticatedAgent({
+      auth.preflight.verifyAuthenticatedAgent({
         method: "PATCH",
         path: "/v1/profile",
         headers,
-        claimedDid: signer.did,
+        claimedPrincipalId: signer.did,
         bodyText: '{"displayName":"A"}',
       }),
     ).resolves.toBeUndefined();
@@ -75,11 +75,11 @@ describe("AtriumDidAuth.verifier (did:key Ed25519 default)", () => {
       nonce: "old",
     });
     await expect(
-      auth.verifier.verifyAuthenticatedAgent({
+      auth.preflight.verifyAuthenticatedAgent({
         method: "GET",
         path: "/v1/agent/sync",
         headers,
-        claimedDid: signer.did,
+        claimedPrincipalId: signer.did,
       }),
     ).rejects.toThrow(/window/);
   });
@@ -97,18 +97,18 @@ describe("AtriumDidAuth.verifier (did:key Ed25519 default)", () => {
       timestampMs: now,
       nonce: "same",
     });
-    await auth.verifier.verifyAuthenticatedAgent({
+    await auth.preflight.verifyAuthenticatedAgent({
       method: "GET",
       path: "/v1/agent/sync",
       headers,
-      claimedDid: signer.did,
+      claimedPrincipalId: signer.did,
     });
     await expect(
-      auth.verifier.verifyAuthenticatedAgent({
+      auth.preflight.verifyAuthenticatedAgent({
         method: "GET",
         path: "/v1/agent/sync",
         headers,
-        claimedDid: signer.did,
+        claimedPrincipalId: signer.did,
       }),
     ).rejects.toThrow(/nonce/);
   });
@@ -127,11 +127,11 @@ describe("AtriumDidAuth.verifier (did:key Ed25519 default)", () => {
       nonce: "n",
     });
     await expect(
-      auth.verifier.verifyAuthenticatedAgent({
+      auth.preflight.verifyAuthenticatedAgent({
         method: "GET",
         path: "/v1/agent/sync",
         headers,
-        claimedDid: "did:key:zSomethingElse",
+        claimedPrincipalId: "did:key:zSomethingElse",
       }),
     ).rejects.toThrow(/mismatch/);
   });
@@ -150,11 +150,11 @@ describe("AtriumDidAuth.verifier (did:key Ed25519 default)", () => {
       nonce: "n-tampered",
     });
     await expect(
-      auth.verifier.verifyAuthenticatedAgent({
+      auth.preflight.verifyAuthenticatedAgent({
         method: "POST",
         path: "/v1/posts",
         headers,
-        claimedDid: signer.did,
+        claimedPrincipalId: signer.did,
         bodyText: '{"body":"b"}',
       }),
     ).rejects.toThrow(/signature/);
@@ -175,8 +175,8 @@ describe("AtriumDidAuth.verifier (did:key Ed25519 default)", () => {
       nonce: "n-reg",
     });
     await expect(
-      auth.verifier.verifyRegistration({
-        request: { did: "did:key:zMismatch" },
+      auth.preflight.verifyRegistration({
+        request: { principalId: "did:key:zMismatch" },
         headers,
         bodyText,
       }),

@@ -62,7 +62,7 @@ function lexicalTextForProbeSearch(p: AtriumPost): string {
 
 /**
  * Fan-out topic subscribers, author followers, and probe hits for a new post into a single
- * `inbox_post` notification per recipient DID (merged `reasons[]`).
+ * `inbox_post` notification per recipient principal (merged `reasons[]`).
  */
 export async function fanOutPostMatches<
   TEntityMap extends Record<string, unknown> = DefaultEntityMap,
@@ -78,19 +78,19 @@ export async function fanOutPostMatches<
 
   appCtxOrThrow(params.ctx);
 
-  const authorDid =
+  const authorPrincipalId =
     params.post.authorProfileId !== undefined
-      ? params.ctx.persistence.agentRegistrations.didForProfileId(params.post.authorProfileId)
+      ? params.ctx.persistence.agentRegistrations.principalForProfileId(params.post.authorProfileId)
       : undefined;
 
   const subs = params.ctx.persistence.agentSubjectSubscriptions;
-  const byDid = new Map<string, InboxPostReason[]>();
+  const byRecipient = new Map<string, InboxPostReason[]>();
 
-  const addReason = (did: string, reason: InboxPostReason): void => {
-    if (authorDid !== undefined && did === authorDid) return;
-    const cur = byDid.get(did);
+  const addReason = (recipientId: string, reason: InboxPostReason): void => {
+    if (authorPrincipalId !== undefined && recipientId === authorPrincipalId) return;
+    const cur = byRecipient.get(recipientId);
     if (cur === undefined) {
-      byDid.set(did, [reason]);
+      byRecipient.set(recipientId, [reason]);
     } else {
       cur.push(reason);
     }
@@ -106,25 +106,28 @@ export async function fanOutPostMatches<
         continue;
       }
       const subject = topicSubscriptionSubject(slug);
-      const dids = subs.subscriberDidsForSubject(subject, authorDid);
-      for (const did of dids) {
-        addReason(did, { kind: "topic", topic: slug });
+      const principals = subs.subscriberPrincipalsForSubject(subject, authorPrincipalId);
+      for (const pid of principals) {
+        addReason(pid, { kind: "topic", topic: slug });
       }
-      if (authorDid !== undefined) {
-        const tupleSubject = authorTopicSubscriptionSubject(authorDid, slug);
-        const tupleDids = subs.subscriberDidsForSubject(tupleSubject, authorDid);
-        for (const did of tupleDids) {
-          addReason(did, { kind: "author_topic", authorDid, topic: slug });
+      if (authorPrincipalId !== undefined) {
+        const tupleSubject = authorTopicSubscriptionSubject(authorPrincipalId, slug);
+        const tuplePrincipals = subs.subscriberPrincipalsForSubject(
+          tupleSubject,
+          authorPrincipalId,
+        );
+        for (const pid of tuplePrincipals) {
+          addReason(pid, { kind: "author_topic", authorPrincipalId, topic: slug });
         }
       }
     }
   }
 
-  if (authorDid !== undefined) {
-    const authorSub = authorSubscriptionSubject(authorDid);
-    const followers = subs.subscriberDidsForSubject(authorSub, authorDid);
-    for (const did of followers) {
-      addReason(did, { kind: "author" });
+  if (authorPrincipalId !== undefined) {
+    const authorSub = authorSubscriptionSubject(authorPrincipalId);
+    const followers = subs.subscriberPrincipalsForSubject(authorSub, authorPrincipalId);
+    for (const pid of followers) {
+      addReason(pid, { kind: "author" });
     }
   }
 
@@ -166,24 +169,24 @@ export async function fanOutPostMatches<
 
         if (sub.minHitScore !== null && score < sub.minHitScore) continue;
 
-        const ownerDid = params.ctx.persistence.agentRegistrations.didForProfileId(
+        const ownerPrincipalId = params.ctx.persistence.agentRegistrations.principalForProfileId(
           sub.ownerProfileId,
         );
-        if (ownerDid === undefined) continue;
+        if (ownerPrincipalId === undefined) continue;
 
-        addReason(ownerDid, { kind: "probe-hit", probePostId: sub.probePostId, score });
+        addReason(ownerPrincipalId, { kind: "probe-hit", probePostId: sub.probePostId, score });
       }
     }
   }
 
-  for (const [did, reasons] of byDid) {
+  for (const [principalId, reasons] of byRecipient) {
     if (reasons.length === 0) continue;
-    await deliverAgentNotification(buffer, hub, did, {
+    await deliverAgentNotification(buffer, hub, principalId, {
       kind: "inbox_post",
       payload: {
         postId: params.post.id,
         postKind: params.post.kind,
-        ...(authorDid !== undefined ? { authorDid } : {}),
+        ...(authorPrincipalId !== undefined ? { authorPrincipalId } : {}),
         reasons,
       },
     });
