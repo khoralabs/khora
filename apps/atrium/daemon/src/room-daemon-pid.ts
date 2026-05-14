@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import {
-  type DaemonLockHandle,
   DaemonAlreadyRunningError,
+  type DaemonLockHandle,
   type DaemonPidPathConfig,
   daemonDataRoot,
 } from "./daemon-pid.ts";
@@ -65,10 +65,7 @@ export type RoomDaemonStatus =
   | { state: "stale"; pid: number; pidPath: string; logPath: string; roomId: string }
   | { state: "not-running"; pidPath: string; logPath: string; roomId: string };
 
-export function readRoomDaemonStatus(
-  cfg: DaemonPidPathConfig,
-  roomId: string,
-): RoomDaemonStatus {
+export function readRoomDaemonStatus(cfg: DaemonPidPathConfig, roomId: string): RoomDaemonStatus {
   const pidPath = roomDaemonPidPath(cfg, roomId);
   const logPath = roomDaemonLogPath(cfg, roomId);
   const pid = readPidFile(pidPath);
@@ -156,7 +153,10 @@ export function acquireRoomDaemonLock(cfg: DaemonPidPathConfig, roomId: string):
         fs.closeSync(fd);
       }
       try {
-        fs.writeFileSync(metaPath, `${JSON.stringify({ kind: "room", roomId } satisfies RoomDaemonMeta)}\n`);
+        fs.writeFileSync(
+          metaPath,
+          `${JSON.stringify({ kind: "room", roomId } satisfies RoomDaemonMeta)}\n`,
+        );
       } catch {
         try {
           fs.unlinkSync(pidPath);
@@ -185,7 +185,9 @@ export function acquireRoomDaemonLock(cfg: DaemonPidPathConfig, roomId: string):
       }
       attempt++;
       if (attempt >= MAX_STALE_RETRIES) {
-        throw new Error(`failed to acquire room daemon lock at ${pidPath} after ${attempt} retries`);
+        throw new Error(
+          `failed to acquire room daemon lock at ${pidPath} after ${attempt} retries`,
+        );
       }
     }
   }

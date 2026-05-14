@@ -12,11 +12,8 @@ import {
   type SwarmMemoryOpMapper,
 } from "@khoralabs/swarm-host";
 import type { AtriumHostAppContext } from "./atrium-app-context.ts";
-import {
-  computePostAttachScopes,
-  computeProfileAttachScopes,
-} from "./atrium-memory-scopes.ts";
 import type { atriumMemoriesOntology } from "./atrium-memories-ontology.ts";
+import { computePostAttachScopes, computeProfileAttachScopes } from "./atrium-memory-scopes.ts";
 
 type TNode = typeof atriumMemoriesOntology.nodeLabels;
 type TEdge = typeof atriumMemoriesOntology.edgeLabels;

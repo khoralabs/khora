@@ -14,20 +14,11 @@
   "dependencies": {
     "@khoralabs/frame-channel": "workspace:*",
     "@khoralabs/memories-core": "workspace:*",
+    "@khoralabs/obp-v2-frames-impl": "workspace:*",
     "zod": "^4"
   },
   "peerDependencies": {
-    "@khoralabs/obp-auth": "workspace:*",
-    "@khoralabs/obp-core": "workspace:*",
     "typescript": "^5"
-  },
-  "peerDependenciesMeta": {
-    "@khoralabs/obp-auth": {
-      "optional": true
-    },
-    "@khoralabs/obp-core": {
-      "optional": true
-    }
   },
   "devDependencies": {
     "@types/bun": "latest"

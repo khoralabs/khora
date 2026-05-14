@@ -1,11 +1,11 @@
 import type { Database } from "bun:sqlite";
 import type {
-  ObpRelayFrameRow,
-  ObpRelayPersistence,
-  ObpRelayRoomRecord,
+  NegotiationRelayFrameRow,
+  NegotiationRelayPersistence,
+  NegotiationRelayRoomRecord,
 } from "@khoralabs/swarm-host";
 
-export function createObpRelaySqlitePersistence(db: Database): ObpRelayPersistence {
+export function createNegotiationRelaySqlitePersistence(db: Database): NegotiationRelayPersistence {
   const upsertRoomStmt = db.prepare(
     `INSERT INTO rooms (session_id, pairing_secret_hex, created_at, expires_at)
      VALUES (?, ?, ?, ?)
@@ -26,7 +26,7 @@ export function createObpRelaySqlitePersistence(db: Database): ObpRelayPersisten
   const deleteFramesForRoomStmt = db.prepare(`DELETE FROM room_messages WHERE session_id = ?`);
 
   return {
-    upsertRoom(record: ObpRelayRoomRecord): void {
+    upsertRoom(record: NegotiationRelayRoomRecord): void {
       upsertRoomStmt.run(
         record.roomId,
         record.pairingSecretHex,
@@ -47,7 +47,7 @@ export function createObpRelaySqlitePersistence(db: Database): ObpRelayPersisten
       return row.id;
     },
 
-    drainFramesAfter(roomId: string, afterId: number): ObpRelayFrameRow[] {
+    drainFramesAfter(roomId: string, afterId: number): NegotiationRelayFrameRow[] {
       const rows = selectFramesAfter.all(roomId, afterId) as Array<{
         id: number;
         bytes: Uint8Array;

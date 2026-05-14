@@ -1,11 +1,10 @@
-import { OBPPersistenceClient } from "@khoralabs/obp-persistence-client";
+import { createInMemoryObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
 import type { AtriumCliContext } from "./context.ts";
 import { INBOX_LIST_ROOT, inboxListLinearTransitions } from "./graphs/inbox-list-linear.ts";
-import { createMonotonicLedgerSeq } from "./obp/ledger-seq.ts";
 import { runLinearObpFlow } from "./obp/linear-runner.ts";
 
 export async function runInboxListInteractiveFlow(ctx: AtriumCliContext): Promise<void> {
-  const obp = new OBPPersistenceClient({ ledgerSeq: createMonotonicLedgerSeq() });
+  const obp = createInMemoryObpPersistenceClient();
   const result = await runLinearObpFlow({
     obp,
     partyName: "atrium-cli",

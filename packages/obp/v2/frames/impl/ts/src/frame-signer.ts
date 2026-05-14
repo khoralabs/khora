@@ -11,9 +11,24 @@ export type FrameVerifier = {
   verify(actor: string, bytes: Uint8Array, sigHex: string): Promise<boolean>;
 };
 
+function isCryptoKeyPair(v: CryptoKeyPair | CryptoKey): v is CryptoKeyPair {
+  return (
+    typeof v === "object" &&
+    v !== null &&
+    "privateKey" in v &&
+    "publicKey" in v &&
+    v.privateKey instanceof CryptoKey &&
+    v.publicKey instanceof CryptoKey
+  );
+}
+
+/** Ed25519 `generateKey` always yields a pair in Web Crypto; TS types it as a union. */
 export async function generateEd25519KeyPair(): Promise<CryptoKeyPair> {
   const kp = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
-  return kp as CryptoKeyPair;
+  if (!isCryptoKeyPair(kp)) {
+    throw new Error("generateEd25519KeyPair: expected CryptoKeyPair from subtle.generateKey(Ed25519)");
+  }
+  return kp;
 }
 
 export async function publicKeyActorHex(publicKey: CryptoKey): Promise<string> {

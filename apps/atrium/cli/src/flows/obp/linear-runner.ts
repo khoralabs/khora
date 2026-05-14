@@ -1,5 +1,6 @@
-import type { Offer, Party, Port, PortBindPolicy } from "@khoralabs/obp-core";
-import type { OBPPersistenceClient } from "@khoralabs/obp-persistence-client";
+import type { JsonDocument, Offer, Party, Port } from "@khoralabs/obp-v2-model";
+import type { PortBindPolicy } from "@khoralabs/obp-v2-nbc";
+import type { ObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
 import { type ReadLineFn, readBindPolicyInteractive } from "./bind-readline.ts";
 import { mergePortShell, shellOffer } from "./port-defaults.ts";
 
@@ -11,36 +12,37 @@ export type CliLinearTransition = {
   /** Shown before prompts; also `Port.promise` */
   title: string;
   bindPolicy: PortBindPolicy;
-  /** When true, `Port.terminal` is set (OBP hint only; runner stops after this transition). */
+  /** When true, runner treats this as a terminal transition (last step semantics for callers). */
   terminal?: boolean;
   /** Skip this transition when predicate returns true (gets binds collected so far). */
   skipIf?: (bindsByStep: Record<string, Record<string, unknown>>) => boolean;
 };
 
 export type RunLinearObpFlowResult = {
-  client: OBPPersistenceClient;
+  client: ObpPersistenceClient;
   party: Party;
   bindsByStep: Record<string, Record<string, unknown>>;
   finalOffer: Offer;
 };
 
 /**
- * Single-party linear DAG: root offer, then each transition is exposePort → bind → extendOffer.
+ * Single-party linear DAG: root offer, then each transition is exposePort → extendOffer with bind_payload.
  */
 export async function runLinearObpFlow(args: {
-  obp: OBPPersistenceClient;
+  obp: ObpPersistenceClient;
   partyName: string;
   rootOfferType: string;
   transitions: CliLinearTransition[];
   readLine: ReadLineFn;
 }): Promise<RunLinearObpFlowResult> {
   const client = args.obp;
-  const { party } = client.registerParty({ name: args.partyName, sourcemaps: [] });
+  const { party } = await client.registerParty({ name: args.partyName, sourcemaps: [] });
 
-  let { offer } = client.extendOffer({
+  let { offer } = await client.extendOffer({
     partyId: party.id,
     offer: shellOffer(args.rootOfferType),
     bindPortId: "",
+    bind_payload: null,
   });
 
   const bindsByStep: Record<string, Record<string, unknown>> = {};
@@ -49,27 +51,20 @@ export async function runLinearObpFlow(args: {
     if (t.skipIf?.(bindsByStep) === true) continue;
     const portPayload: Partial<Port> = {
       promise: t.title,
-      bind_policy: t.bindPolicy,
-      max_bindings: 1,
-      terminal: t.terminal ?? false,
     };
-    const { port } = client.exposePort({
+    const { port } = await client.exposePort({
       offerId: offer.id,
       port: mergePortShell(portPayload),
     });
 
     console.log(`\n── ${t.title} ──`);
-    const bindPolicy = port.bind_policy;
-    if (bindPolicy === undefined) {
-      throw new Error(`exposePort missing bind_policy for transition "${t.stepId}"`);
-    }
-    const cb = await readBindPolicyInteractive(bindPolicy, args.readLine);
+    const cb = await readBindPolicyInteractive(t.bindPolicy, args.readLine);
     bindsByStep[t.stepId] = cb;
 
-    const next = client.extendOffer({
+    const next = await client.extendOffer({
       partyId: party.id,
       bindPortId: port.id,
-      counterparty_bind: cb,
+      bind_payload: cb as JsonDocument,
       offer: shellOffer(t.nextOfferType),
     });
     offer = next.offer;

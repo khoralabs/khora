@@ -1,9 +1,9 @@
-import type { SwarmObpRoomWsData } from "@khoralabs/swarm-host";
+import type { SwarmNegotiationRoomWsData } from "@khoralabs/swarm-host";
 import type { WebSocketHandler } from "bun";
 import type { AtriumHostContext } from "../create-atrium-host.ts";
 
 /** Discriminated WebSocket `data` for Atrium host (inbox vs OBP room relay). */
-export type AtriumWsData = { kind: "inbox"; did: string } | SwarmObpRoomWsData;
+export type AtriumWsData = { kind: "inbox"; did: string } | SwarmNegotiationRoomWsData;
 
 export async function sendInboxSnapshot(
   ws: { send: (data: string) => unknown },

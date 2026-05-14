@@ -1,8 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-  computePostAttachScopes,
-  computeProfileAttachScopes,
-} from "./atrium-memory-scopes.ts";
+import { computePostAttachScopes, computeProfileAttachScopes } from "./atrium-memory-scopes.ts";
 
 describe("atrium-memory-scopes", () => {
   test("computeProfileAttachScopes", () => {

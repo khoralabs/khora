@@ -1,6 +1,5 @@
 import { describe, expect, mock, test } from "bun:test";
-import { OBPPersistenceClient } from "@khoralabs/obp-persistence-client";
-import { createMonotonicLedgerSeq } from "./ledger-seq.ts";
+import { createInMemoryObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
 import { runLinearObpFlow } from "./linear-runner.ts";
 
 describe("runLinearObpFlow", () => {
@@ -13,7 +12,7 @@ describe("runLinearObpFlow", () => {
       return "";
     });
 
-    const obp = new OBPPersistenceClient({ ledgerSeq: createMonotonicLedgerSeq() });
+    const obp = createInMemoryObpPersistenceClient();
 
     const result = await runLinearObpFlow({
       obp,
@@ -54,7 +53,8 @@ describe("runLinearObpFlow", () => {
 
     expect(result.bindsByStep.kind?.kind).toBe("post");
     expect(result.bindsByStep.body?.body).toBe("hello world");
-    expect(obp.listExposedPortEdges().length).toBeGreaterThan(0);
+    const { edges } = await obp.listExposedPortEdges();
+    expect(edges.length).toBeGreaterThan(0);
   });
 
   test("skipIf transitions are not prompted and produce no binds", async () => {
@@ -66,7 +66,7 @@ describe("runLinearObpFlow", () => {
       return "";
     });
 
-    const obp = new OBPPersistenceClient({ ledgerSeq: createMonotonicLedgerSeq() });
+    const obp = createInMemoryObpPersistenceClient();
 
     const result = await runLinearObpFlow({
       obp,

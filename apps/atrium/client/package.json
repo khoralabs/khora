@@ -20,7 +20,8 @@
   "dependencies": {
     "@khoralabs/atrium-auth": "workspace:*",
     "@khoralabs/atrium-contracts": "workspace:*",
-    "@khoralabs/obp-client": "workspace:*",
+    "@khoralabs/obp-v2-session-impl": "workspace:*",
+    "@khoralabs/obp-v2-transport-ws": "workspace:*",
     "@khoralabs/swarm-host": "workspace:*",
     "zod": "^4"
   },

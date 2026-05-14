@@ -91,7 +91,7 @@ export async function handleAtriumRoomsCreate(
   const expiresAtMs = now + ttlMs;
   const roomId = stableId("atrium_room", profileId, `${now}`, crypto.randomUUID());
 
-  const { ticket } = await ctx.obpRoomHub.createRoom(roomId, ttlMs);
+  const { ticket } = await ctx.negotiationRoomHub.createRoom(roomId, ttlMs);
 
   try {
     ctx.db.run(
@@ -108,7 +108,7 @@ export async function handleAtriumRoomsCreate(
   }
 
   if (targetDidResolved !== undefined) {
-    await ctx.host.offerObpRoomToDid({
+    await ctx.host.offerNegotiationRoomToDid({
       targetDid: targetDidResolved,
       roomId,
       ticket,
@@ -166,7 +166,8 @@ export async function handleAtriumRoomsList(
     if (isCreator) {
       counterpartDid = row.invite_target_did;
     } else {
-      counterpartDid = ctx.host.persistenceClient.didForAgentProfileId(row.created_by_profile_id) ?? null;
+      counterpartDid =
+        ctx.host.persistenceClient.didForAgentProfileId(row.created_by_profile_id) ?? null;
     }
     const counterpartUsername =
       counterpartDid !== null ? ctx.usernamesRepo.lookupByDid(counterpartDid)?.username : undefined;
@@ -238,7 +239,7 @@ export async function handleAtriumRoomMintTicket(
     return jsonError("Forbidden", 403);
   }
 
-  const relay = ctx.host.persistenceClient.persistence.obpRelay;
+  const relay = ctx.host.persistenceClient.persistence.negotiationRelay;
   if (relay.getPairingSecretIfActive(roomId, Date.now()) === undefined) {
     return jsonError("Room relay expired or inactive", 410);
   }
@@ -248,7 +249,7 @@ export async function handleAtriumRoomMintTicket(
   const expiresAtMs = now + ttlMs;
   let ticket: string;
   try {
-    ({ ticket } = await ctx.obpRoomHub.rotateRoomTicket(roomId, ttlMs));
+    ({ ticket } = await ctx.negotiationRoomHub.rotateRoomTicket(roomId, ttlMs));
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (msg.includes("no active room")) {
@@ -297,7 +298,7 @@ export async function handleAtriumRoomWsUpgrade(
   if (ticket.length === 0) {
     return jsonError("Missing ticket", 400);
   }
-  const ok = await deps.ctx.obpRoomHub.verifyTicket(roomId, ticket);
+  const ok = await deps.ctx.negotiationRoomHub.verifyTicket(roomId, ticket);
   if (!ok) {
     return jsonError("Invalid or expired ticket", 401);
   }

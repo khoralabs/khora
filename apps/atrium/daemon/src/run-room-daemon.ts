@@ -1,8 +1,9 @@
+import { Database } from "bun:sqlite";
 import fs from "node:fs";
 import path from "node:path";
 import type { PersistableAgentSigner } from "@khoralabs/atrium-auth";
 import { AtriumClient } from "@khoralabs/atrium-client";
-import { createObpSqlitePersistence, openObpDatabase } from "@khoralabs/obp-sqlite";
+import { createInMemoryObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
 import { createFrameSignerFromPersistableAgent } from "./agent-frame-signer.ts";
 import { daemonAppConfig } from "./app-config.ts";
 import { createDurableLedgerSeq } from "./obp-ledger-seq.ts";
@@ -27,8 +28,8 @@ function logLine(json: boolean, label: string, payload: unknown): void {
 }
 
 /**
- * Hold an Atrium OBP room WebSocket with SQLite-backed persistence under {@link roomObpSqlitePath}.
- * Runner is intentionally idle (waits until {@link close}) so the relay stays open for future agents.
+ * Hold an Atrium negotiation-room WebSocket with durable `ledgerSeq` in SQLite (same path as the
+ * legacy OBP store) and in-memory graph state for the v2 wire session.
  */
 export function runRoomDaemon(opts: RunRoomDaemonOptions): { close(): void } {
   const json = opts.json === true;
@@ -36,9 +37,9 @@ export function runRoomDaemon(opts: RunRoomDaemonOptions): { close(): void } {
   const cfg = { dataDir };
   const sqlitePath = roomObpSqlitePath(cfg, opts.roomId);
   fs.mkdirSync(path.dirname(sqlitePath), { recursive: true });
-  const db = openObpDatabase(sqlitePath);
+  const db = new Database(sqlitePath, { create: true });
   const ledgerSeq = createDurableLedgerSeq(db);
-  const persistence = createObpSqlitePersistence(db, { ledgerSeq });
+  const obpPersistence = createInMemoryObpPersistenceClient();
 
   const ac = new AbortController();
   let disposed = false;
@@ -60,12 +61,12 @@ export function runRoomDaemon(opts: RunRoomDaemonOptions): { close(): void } {
       ...(dataDir !== undefined ? { dataDir } : {}),
     });
     try {
-      logLine(json, "room_open", { roomId: opts.roomId, obpSqlite: sqlitePath });
+      logLine(json, "room_open", { roomId: opts.roomId, ledgerSqlite: sqlitePath });
       await client.connectAtriumRoomNegotiation(
         {
           webSocketUrl: opts.webSocketUrl,
           signer: frameSigner,
-          persistence,
+          client: obpPersistence,
           ledgerSeq,
         },
         async () => {

@@ -1,5 +1,5 @@
 import type { PersistableAgentSigner } from "@khoralabs/atrium-auth";
-import { createEd25519FrameSigner, type FrameSigner } from "@khoralabs/obp-core";
+import { createEd25519FrameSigner, type FrameSigner } from "@khoralabs/obp-v2-frames-impl";
 import { getPublicKeyAsync } from "@noble/ed25519";
 import { base64pad } from "iso-base/rfc4648";
 import { untag } from "iso-base/varint";

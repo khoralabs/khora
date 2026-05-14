@@ -1,11 +1,10 @@
-import { OBPPersistenceClient } from "@khoralabs/obp-persistence-client";
+import { createInMemoryObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
 import type { AtriumCliContext } from "./context.ts";
 import { TOPIC_ROOT, topicLinearTransitions } from "./graphs/topic-linear.ts";
-import { createMonotonicLedgerSeq } from "./obp/ledger-seq.ts";
 import { runLinearObpFlow } from "./obp/linear-runner.ts";
 
 export async function runTopicSubscribeInteractiveFlow(ctx: AtriumCliContext): Promise<void> {
-  const obp = new OBPPersistenceClient({ ledgerSeq: createMonotonicLedgerSeq() });
+  const obp = createInMemoryObpPersistenceClient();
   const result = await runLinearObpFlow({
     obp,
     partyName: "atrium-cli",
@@ -24,7 +23,7 @@ export async function runTopicSubscribeInteractiveFlow(ctx: AtriumCliContext): P
 }
 
 export async function runTopicUnsubscribeInteractiveFlow(ctx: AtriumCliContext): Promise<void> {
-  const obp = new OBPPersistenceClient({ ledgerSeq: createMonotonicLedgerSeq() });
+  const obp = createInMemoryObpPersistenceClient();
   const result = await runLinearObpFlow({
     obp,
     partyName: "atrium-cli",

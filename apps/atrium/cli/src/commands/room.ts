@@ -19,8 +19,7 @@ export async function runRoomCreateCommand(ctx: AtriumCliContext, flags: FlagMap
   const targetUsername = strFlag(flags, "target-username") ?? strFlag(flags, "targetUsername");
   const targetDid = strFlag(flags, "target-did") ?? strFlag(flags, "targetDid");
   const ttlRaw = strFlag(flags, "ttl-ms") ?? strFlag(flags, "ttlMs");
-  const ttlMs =
-    ttlRaw !== undefined && ttlRaw.length > 0 ? Number.parseInt(ttlRaw, 10) : undefined;
+  const ttlMs = ttlRaw !== undefined && ttlRaw.length > 0 ? Number.parseInt(ttlRaw, 10) : undefined;
   if (ttlMs !== undefined && (Number.isNaN(ttlMs) || ttlMs < 60_000)) {
     throw new Error("atrium room create: --ttl-ms must be an integer >= 60000");
   }
@@ -67,7 +66,9 @@ export async function runRoomListCommand(ctx: AtriumCliContext, flags: FlagMap):
 const ROOM_ACK_TIMEOUT_MS = 1500;
 const ROOM_ACK_POLL_MS = 50;
 
-async function waitForRoomDaemonRunning(roomId: string): Promise<ReturnType<typeof readRoomDaemonStatus>> {
+async function waitForRoomDaemonRunning(
+  roomId: string,
+): Promise<ReturnType<typeof readRoomDaemonStatus>> {
   const deadline = Date.now() + ROOM_ACK_TIMEOUT_MS;
   while (Date.now() < deadline) {
     const s = readRoomDaemonStatus(cliAppConfig, roomId);

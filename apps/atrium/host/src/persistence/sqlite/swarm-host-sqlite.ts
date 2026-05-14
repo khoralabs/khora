@@ -5,15 +5,15 @@ import {
   createSwarmHostPostSqlitePersistence,
 } from "./entity-sqlite.ts";
 import { migrateAtriumHostDb } from "./migrate-atrium-host-db.ts";
-import { createObpRelaySqlitePersistence } from "./obp-relay-sqlite.ts";
+import { createNegotiationRelaySqlitePersistence } from "./negotiation-relay-sqlite.ts";
 import { createRegistrationsSubjectsRepo } from "./registrations-subjects-sqlite.ts";
 
-/** SQLite-backed {@link SwarmHostPersistence} (OBP relay + `host_entities` logical slices). */
+/** SQLite-backed {@link SwarmHostPersistence} (negotiation relay + `host_entities` logical slices). */
 export function createSwarmHostSqlitePersistence(db: Database): SwarmHostPersistence {
   migrateAtriumHostDb(db);
   const registrationsSubjects = createRegistrationsSubjectsRepo(db);
   return {
-    obpRelay: createObpRelaySqlitePersistence(db),
+    negotiationRelay: createNegotiationRelaySqlitePersistence(db),
     profiles: createSwarmHostEntitySqlitePersistence(db, "profile"),
     posts: createSwarmHostPostSqlitePersistence(db),
     topics: createSwarmHostEntitySqlitePersistence(db, "topic"),

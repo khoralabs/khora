@@ -23,9 +23,9 @@
     "@khoralabs/atrium-daemon": "workspace:*",
     "@khoralabs/atrium-plugin-profile-sync": "workspace:*",
     "@khoralabs/atrium-plugin-telemetry": "workspace:*",
-    "@khoralabs/obp-bind-policy-zod": "workspace:*",
-    "@khoralabs/obp-core": "workspace:*",
-    "@khoralabs/obp-persistence-client": "workspace:*",
+    "@khoralabs/obp-v2-model": "workspace:*",
+    "@khoralabs/obp-v2-nbc": "workspace:*",
+    "@khoralabs/obp-v2-persistence": "workspace:*",
     "@khoralabs/swarm-host": "workspace:*",
     "zod": "^4"
   },

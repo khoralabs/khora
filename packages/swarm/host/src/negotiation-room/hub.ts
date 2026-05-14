@@ -1,16 +1,18 @@
 import { generateRoomSecretHex, signRoomTicket, verifyRoomTicket } from "@khoralabs/frame-channel";
-import type { ObpRelayPersistence } from "../persistence/types.ts";
-import type { ObpRoomHubPort, ObpRoomPeer } from "./port.ts";
+import type { NegotiationRelayPersistence } from "../persistence/types.ts";
+import type { NegotiationRoomHubPort, NegotiationRoomPeer } from "./port.ts";
 
-export type CreateObpRoomHubOptions = {
-  obpRelay: ObpRelayPersistence;
+export type CreateNegotiationRoomHubOptions = {
+  negotiationRelay: NegotiationRelayPersistence;
 };
 
-export function createObpRoomHub(options: CreateObpRoomHubOptions): ObpRoomHubPort {
-  const { obpRelay } = options;
-  const peers = new Map<string, Set<ObpRoomPeer>>();
+export function createNegotiationRoomHub(
+  options: CreateNegotiationRoomHubOptions,
+): NegotiationRoomHubPort {
+  const { negotiationRelay } = options;
+  const peers = new Map<string, Set<NegotiationRoomPeer>>();
 
-  const getPeerSet = (roomId: string): Set<ObpRoomPeer> => {
+  const getPeerSet = (roomId: string): Set<NegotiationRoomPeer> => {
     let s = peers.get(roomId);
     if (s === undefined) {
       s = new Set();
@@ -24,25 +26,25 @@ export function createObpRoomHub(options: CreateObpRoomHubOptions): ObpRoomHubPo
       const secret = generateRoomSecretHex();
       const ticket = await signRoomTicket(roomId, secret);
       const now = Date.now();
-      obpRelay.upsertRoom({
+      negotiationRelay.upsertRoom({
         roomId,
         pairingSecretHex: secret,
         createdAtMs: now,
         expiresAtMs: now + ttlMs,
       });
-      obpRelay.deleteFramesForRoom(roomId);
+      negotiationRelay.deleteFramesForRoom(roomId);
       return { ticket };
     },
 
     async rotateRoomTicket(roomId: string, ttlMs = 86_400_000): Promise<{ ticket: string }> {
-      const prior = obpRelay.getPairingSecretIfActive(roomId, Date.now());
+      const prior = negotiationRelay.getPairingSecretIfActive(roomId, Date.now());
       if (prior === undefined) {
-        throw new Error(`ObpRoomHub: no active room to rotate ticket for: ${roomId}`);
+        throw new Error(`NegotiationRoomHub: no active room to rotate ticket for: ${roomId}`);
       }
       const secret = generateRoomSecretHex();
       const ticket = await signRoomTicket(roomId, secret);
       const now = Date.now();
-      obpRelay.upsertRoom({
+      negotiationRelay.upsertRoom({
         roomId,
         pairingSecretHex: secret,
         createdAtMs: now,
@@ -52,23 +54,23 @@ export function createObpRoomHub(options: CreateObpRoomHubOptions): ObpRoomHubPo
     },
 
     async verifyTicket(roomId: string, ticket: string): Promise<boolean> {
-      const secret = obpRelay.getPairingSecretIfActive(roomId, Date.now());
+      const secret = negotiationRelay.getPairingSecretIfActive(roomId, Date.now());
       if (secret === undefined) {
         return false;
       }
       return verifyRoomTicket(roomId, ticket, secret);
     },
 
-    async attachPeer(roomId: string, peer: ObpRoomPeer): Promise<void> {
+    async attachPeer(roomId: string, peer: NegotiationRoomPeer): Promise<void> {
       const set = getPeerSet(roomId);
       set.add(peer);
-      const replay = obpRelay.drainFramesAfter(roomId, 0);
+      const replay = negotiationRelay.drainFramesAfter(roomId, 0);
       for (const row of replay) {
         peer.send(row.bytes);
       }
     },
 
-    detachPeer(roomId: string, peer: ObpRoomPeer): void {
+    detachPeer(roomId: string, peer: NegotiationRoomPeer): void {
       const set = peers.get(roomId);
       if (set === undefined) {
         return;
@@ -79,8 +81,8 @@ export function createObpRoomHub(options: CreateObpRoomHubOptions): ObpRoomHubPo
       }
     },
 
-    relayBytes(roomId: string, from: ObpRoomPeer, bytes: Uint8Array): void {
-      obpRelay.enqueueFrame(roomId, bytes);
+    relayBytes(roomId: string, from: NegotiationRoomPeer, bytes: Uint8Array): void {
+      negotiationRelay.enqueueFrame(roomId, bytes);
       const set = peers.get(roomId);
       if (set === undefined) {
         return;

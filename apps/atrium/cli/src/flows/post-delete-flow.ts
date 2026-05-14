@@ -1,14 +1,13 @@
-import { OBPPersistenceClient } from "@khoralabs/obp-persistence-client";
+import { createInMemoryObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
 import type { AtriumCliContext } from "./context.ts";
 import { POST_DELETE_ROOT, postDeleteLinearTransitions } from "./graphs/post-delete-linear.ts";
-import { createMonotonicLedgerSeq } from "./obp/ledger-seq.ts";
 import { runLinearObpFlow } from "./obp/linear-runner.ts";
 
 export async function runPostDeleteInteractiveFlow(
   ctx: AtriumCliContext,
   postId: string,
 ): Promise<void> {
-  const obp = new OBPPersistenceClient({ ledgerSeq: createMonotonicLedgerSeq() });
+  const obp = createInMemoryObpPersistenceClient();
   const result = await runLinearObpFlow({
     obp,
     partyName: "atrium-cli",

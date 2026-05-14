@@ -1,7 +1,7 @@
 import type { AgentDid } from "../registration/types.ts";
 
-/** Stored OBP relay room (ticket HMAC secret + TTL). */
-export type ObpRelayRoomRecord = {
+/** Stored negotiation byte-relay room (ticket HMAC secret + TTL). */
+export type NegotiationRelayRoomRecord = {
   roomId: string;
   pairingSecretHex: string;
   createdAtMs: number;
@@ -9,20 +9,20 @@ export type ObpRelayRoomRecord = {
 };
 
 /** One persisted opaque frame for replay / buffering. */
-export type ObpRelayFrameRow = {
+export type NegotiationRelayFrameRow = {
   id: number;
   bytes: Uint8Array;
 };
 
 /**
- * Persistence slice for OBP byte relay rooms (parity with relay `rooms` + `room_messages`).
+ * Persistence slice for negotiation byte-relay rooms (`rooms` + `room_messages` parity).
  * Implementations may use SQLite, in-memory maps, etc.
  */
-export interface ObpRelayPersistence {
-  upsertRoom(record: ObpRelayRoomRecord): void;
+export interface NegotiationRelayPersistence {
+  upsertRoom(record: NegotiationRelayRoomRecord): void;
   getPairingSecretIfActive(roomId: string, nowMs: number): string | undefined;
   enqueueFrame(roomId: string, bytes: Uint8Array): number;
-  drainFramesAfter(roomId: string, afterId: number): ObpRelayFrameRow[];
+  drainFramesAfter(roomId: string, afterId: number): NegotiationRelayFrameRow[];
   deleteFramesForRoom(roomId: string): void;
 }
 
@@ -77,11 +77,11 @@ export interface SwarmHostPostPersistence extends SwarmHostEntityPersistence {
 }
 
 /**
- * Host persistence facade: negotiation relay plus logical entity slices over one `host_entities` table.
+ * Host persistence facade: negotiation byte relay plus logical entity slices over one `host_entities` table.
  * Add slices (e.g. notifications) without changing call sites that already take this composite.
  */
 export type SwarmHostPersistence = {
-  obpRelay: ObpRelayPersistence;
+  negotiationRelay: NegotiationRelayPersistence;
   profiles: SwarmHostEntityPersistence;
   posts: SwarmHostPostPersistence;
   topics: SwarmHostEntityPersistence;

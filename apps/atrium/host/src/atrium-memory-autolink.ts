@@ -9,6 +9,7 @@ import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import { embedTextChunks } from "@khoralabs/memories-core/helpers";
 import { SWARM_EVENT_KIND, type SwarmHostEventUnion } from "@khoralabs/swarm-host";
 import type { AtriumMemoriesTEdge, AtriumMemoriesTNode } from "./atrium-memories-ontology.ts";
+import { computePostAttachScopes, computeProfileAttachScopes } from "./atrium-memory-scopes.ts";
 import {
   atriumPostMemoryFieldTexts,
   atriumPostRetrievalSummaryText,
@@ -16,10 +17,6 @@ import {
   atriumProfileRetrievalSummaryText,
   buildMultiFieldMergeContent,
 } from "./atrium-memory-sync.ts";
-import {
-  computePostAttachScopes,
-  computeProfileAttachScopes,
-} from "./atrium-memory-scopes.ts";
 
 type TNode = AtriumMemoriesTNode;
 type TEdge = AtriumMemoriesTEdge;

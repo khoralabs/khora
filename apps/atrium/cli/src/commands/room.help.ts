@@ -2,7 +2,8 @@ import type { CommandHelp } from "./types.ts";
 
 export const roomCreateHelp: CommandHelp = {
   command: "room create",
-  summary: "Create an OBP relay room (server-minted id) and optionally invite another agent (inbox negotiation_ticket).",
+  summary:
+    "Create an OBP relay room (server-minted id) and optionally invite another agent (inbox negotiation_ticket).",
   args: `atrium room create [--target-username <u>] [--target-did <did>] [--ttl-ms N] [--json]
   Requires registration. Returns roomId + WebSocket URL (with ticket).`,
 };

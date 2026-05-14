@@ -1,21 +1,9 @@
-export type {
-  EmbeddingModel,
-  HybridMemorySearchInput,
-  HybridMemorySearchOptions,
-  MemorySearchHit,
-} from "@khoralabs/memories-core/helpers";
+export type { SessionInit } from "@khoralabs/obp-v2-frames-impl";
 export {
   createSwarmMemoriesSyncHandler,
   SWARM_EVENT_KIND,
-  type SwarmAggregateRef,
   type SwarmAppEventConstraint,
-  type SwarmBuiltInEvent,
-  type SwarmHostChange,
-  type SwarmHostEventBase,
-  type SwarmHostEventSource,
   type SwarmHostEventUnion,
-  type SwarmMemoriesSyncHandler,
-  type SwarmMemoryOp,
   type SwarmMemoryOpMapper,
   type SwarmPostCreatedEvent,
   type SwarmPostDeletedEvent,
@@ -32,13 +20,9 @@ export {
 export {
   composeOnEventWithMemorySync,
   type MemoriesSearchArgs,
-  type MemoriesSearchScope,
-  resolveSwarmHostSearchNamespaces,
   SwarmHost,
   type SwarmHostDeps,
   type SwarmHostEventHandlerCtx,
-  type SwarmHostMemoryEntityKind,
-  type SwarmHostMemoryNamespaces,
   type SwarmHostSearchArgs,
   type SwarmHostSearchMemoriesArgs,
   type SwarmHostSearchScope,
@@ -46,35 +30,30 @@ export {
 export {
   createInboxWsHub,
   deliverAgentNotification,
-  type InboxFanoutPort,
-  type InboxWebSocket,
 } from "./inbox/index.ts";
 export type {
-  SourceMapLink,
-  SwarmAggregateDomain,
-} from "./model/index.ts";
+  SwarmHostMemoryEntityKind,
+  SwarmHostMemoryNamespaces,
+} from "./memory-search-scope.ts";
+export { resolveSwarmHostSearchNamespaces } from "./memory-search-scope.ts";
 export { SWARM_AGGREGATE_DOMAIN } from "./model/index.ts";
-export type {
-  InviteCarrierIntent,
-  InviteCarrierResponse,
-  RegistrationInviteProof,
-  RegistrationSessionWire,
-} from "./negotiation/port.ts";
 export {
-  createSwarmObpRoomFetchHandler,
-  type SwarmObpRoomWsData,
-  swarmObpRoomWebSocketHandlers,
-} from "./obp-room/bun-routes.ts";
-export { type CreateObpRoomHubOptions, createObpRoomHub } from "./obp-room/hub.ts";
-export type { ObpRoomHubPort, ObpRoomPeer } from "./obp-room/port.ts";
+  type SwarmNegotiationRoomWsData,
+  swarmNegotiationRoomWebSocketHandlers,
+} from "./negotiation-room/bun-routes.ts";
+export {
+  type CreateNegotiationRoomHubOptions,
+  createNegotiationRoomHub,
+} from "./negotiation-room/hub.ts";
+export type { NegotiationRoomHubPort, NegotiationRoomPeer } from "./negotiation-room/port.ts";
 export {
   createSwarmHostPersistenceClient,
   type SwarmHostPersistenceClient,
 } from "./persistence/client.ts";
 export type {
-  ObpRelayFrameRow,
-  ObpRelayPersistence,
-  ObpRelayRoomRecord,
+  NegotiationRelayFrameRow,
+  NegotiationRelayPersistence,
+  NegotiationRelayRoomRecord,
   SwarmHostAgentRegistrations,
   SwarmHostAgentSubjectSubscriptions,
   SwarmHostEntityKind,
@@ -97,19 +76,11 @@ export type {
   DidRegistrationRequest,
   DidRegistrationResult,
 } from "./registration/types.ts";
-export { isLikelyDidString, profileEntityId } from "./registration/types.ts";
 export type {
   AuthenticatedAgentVerifyContext,
   DidVerifier,
   InboxAccessVerifyContext,
-  RegistrationVerifyClientHints,
   RegistrationVerifyContext,
 } from "./registration/verify.ts";
-export {
-  minimalSourceMapForResolve,
-  resolveFromMemoriesStore,
-  type SwarmEntityResolver,
-  type SwarmHostStores,
-  searchHitToSourceMapRef,
-} from "./stores.ts";
+export { minimalSourceMapForResolve } from "./stores.ts";
 export { swarmHostOntology } from "./swarm-host-ontology.ts";

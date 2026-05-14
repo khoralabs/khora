@@ -10,8 +10,8 @@ export {
   startSqliteMaintenance,
 } from "./maintenance.ts";
 export { migrateAtriumHostDb } from "./migrate-atrium-host-db.ts";
+export { createNegotiationRelaySqlitePersistence } from "./negotiation-relay-sqlite.ts";
 export { createSqliteAgentNotificationBuffer } from "./notification-buffer-sqlite.ts";
-export { createObpRelaySqlitePersistence } from "./obp-relay-sqlite.ts";
 export {
   createProbeSubscribersRepo,
   type ProbeSubscriberRow,

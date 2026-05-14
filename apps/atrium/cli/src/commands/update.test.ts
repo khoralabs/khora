@@ -308,7 +308,7 @@ describe("runUpdateCommand", () => {
     let spawnedCmd = "";
     let spawnedArgs: string[] = [];
     try {
-      await runUpdateCommand({ apply: true } as FlagMap, {
+      await runUpdateCommand({ apply: true, manager: "pnpm" } as FlagMap, {
         fetchImpl: fetchReturning("1.6.0"),
         which: (cmd) => cmd === "pnpm",
         // Neutralize inferManagerFromBinPath so this test exercises the

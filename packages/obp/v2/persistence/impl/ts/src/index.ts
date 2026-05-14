@@ -1,3 +1,7 @@
+export {
+  createInMemoryObpPersistenceClient,
+  InMemoryObpPersistenceStrategy,
+} from "./in-memory-strategy.ts";
 export { ObpPersistenceClient } from "./persistence-client.ts";
 export type { ObpPersistenceStrategy } from "./persistence-strategy.ts";
 export type {

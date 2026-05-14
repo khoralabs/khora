@@ -1,8 +1,7 @@
 import { normalizeTopicSlug, zAtriumPostKind, zAtriumPostPatch } from "@khoralabs/atrium-contracts";
-import { OBPPersistenceClient } from "@khoralabs/obp-persistence-client";
+import { createInMemoryObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
 import type { AtriumCliContext } from "./context.ts";
 import { POST_UPDATE_ROOT, postUpdateLinearTransitions } from "./graphs/post-update-linear.ts";
-import { createMonotonicLedgerSeq } from "./obp/ledger-seq.ts";
 import { runLinearObpFlow } from "./obp/linear-runner.ts";
 import { normalizeMatchKindsInput, parseExpiresAtMsInput } from "./parse-probe-fields.ts";
 
@@ -10,7 +9,7 @@ export async function runPostUpdateInteractiveFlow(
   ctx: AtriumCliContext,
   postId: string,
 ): Promise<void> {
-  const obp = new OBPPersistenceClient({ ledgerSeq: createMonotonicLedgerSeq() });
+  const obp = createInMemoryObpPersistenceClient();
   const result = await runLinearObpFlow({
     obp,
     partyName: "atrium-cli",

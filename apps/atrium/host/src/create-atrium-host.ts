@@ -15,9 +15,9 @@ import {
   type AgentNotificationBufferPort,
   composeOnEventWithMemorySync,
   createInboxWsHub,
-  createObpRoomHub,
+  createNegotiationRoomHub,
   minimalSourceMapForResolve,
-  type ObpRoomHubPort,
+  type NegotiationRoomHubPort,
   SWARM_EVENT_KIND,
   SwarmHost,
 } from "@khoralabs/swarm-host";
@@ -74,8 +74,8 @@ export type AtriumHostContext = {
   notificationBuffer: AgentNotificationBufferPort;
   auth: AtriumDidAuth;
   usernamesRepo: AtriumUsernamesRepo;
-  /** OBP byte relay rooms (paired with {@link SwarmHost.obpRoomHub}). */
-  obpRoomHub: ObpRoomHubPort;
+  /** Negotiation byte-relay rooms (paired with {@link SwarmHost.negotiationRoomHub}). */
+  negotiationRoomHub: NegotiationRoomHubPort;
   /** Periodic SQLite maintenance handle. `undefined` when explicitly disabled via config. */
   sqliteMaintenance?: SqliteMaintenanceHandle;
 };
@@ -101,7 +101,9 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
 
   const notificationBuffer = createSqliteAgentNotificationBuffer(db);
   const inboxHub = createInboxWsHub();
-  const obpRoomHub = createObpRoomHub({ obpRelay: hostPersistence.obpRelay });
+  const negotiationRoomHub = createNegotiationRoomHub({
+    negotiationRelay: hostPersistence.negotiationRelay,
+  });
   const probeSubscribers = createProbeSubscribersRepo(db);
   const usernamesRepo = createAtriumUsernamesRepo(db);
 
@@ -128,7 +130,7 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
     didVerifier: auth.verifier,
     notificationBuffer,
     inboxHub,
-    obpRoomHub,
+    negotiationRoomHub,
     appContext,
     memoryNamespaces: {
       profileNamespace: config.profileNamespace,
@@ -266,7 +268,7 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
     notificationBuffer,
     auth,
     usernamesRepo,
-    obpRoomHub,
+    negotiationRoomHub,
     ...(sqliteMaintenance !== undefined ? { sqliteMaintenance } : {}),
   };
 }

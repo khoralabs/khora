@@ -60,9 +60,7 @@ function parseSearchScopeMode(flags: FlagMap): SearchScopeMode | undefined {
   if (raw === undefined || raw.trim().length === 0) return undefined;
   const m = raw.trim() as SearchScopeMode;
   if (!SEARCH_SCOPE_MODES.includes(m)) {
-    throw new Error(
-      `Unknown --search-scope-mode "${raw}" (use pathSubtree, scopeDag, exactScope)`,
-    );
+    throw new Error(`Unknown --search-scope-mode "${raw}" (use pathSubtree, scopeDag, exactScope)`);
   }
   return m;
 }

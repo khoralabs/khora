@@ -1,33 +1,27 @@
-import type { Offer, Port } from "@khoralabs/obp-core";
+import type { Offer, Port } from "@khoralabs/obp-v2-model";
 
-const FAR_FUTURE_SEQ = 9_007_199_254_740_991;
+const FAR_FUTURE_SEQ = 9_007_199_254_740_991n;
 
-/** Minimal shell for `extendOffer`; persistence assigns ids and stamps seq. */
+/** Minimal shell for `extendOffer`; persistence assigns ids. */
 export function shellOffer(type: string): Offer {
   return {
     id: "",
-    created_seq: 0,
     expires_seq: FAR_FUTURE_SEQ,
     type,
     sourcemaps: [],
   };
 }
 
-/** Merge user port fields with OBP defaults for `exposePort`. */
-export function mergePortShell(port: Partial<Port>): Port {
-  const base: Port = {
+/** Merge user port fields with defaults for `exposePort` (thin `cfd.obp#Port`). */
+export function mergePortShell(
+  port: Partial<Pick<Port, "promise" | "type" | "ref" | "sourcemaps">>,
+): Port {
+  return {
     id: "",
-    created_seq: 0,
     expires_seq: FAR_FUTURE_SEQ,
     type: port.type ?? "atrium.cli.transition",
     promise: port.promise ?? "(transition)",
-    max_bindings: port.max_bindings ?? 1,
-    terminal: port.terminal ?? false,
     ref: port.ref ?? "",
     sourcemaps: port.sourcemaps ?? [],
-    ...(port.bind_policy !== undefined ? { bind_policy: port.bind_policy } : {}),
-    ...(port.ttl_basis !== undefined ? { ttl_basis: port.ttl_basis } : {}),
-    ...(port.ttl_measure !== undefined ? { ttl_measure: port.ttl_measure } : {}),
   };
-  return base;
 }

@@ -14,13 +14,12 @@ import type {
   AtriumRoomMintTicketBody,
   AtriumRoomTicketResponse,
 } from "@khoralabs/atrium-contracts";
+import type { Checkpoint, SessionOp } from "@khoralabs/obp-v2-session-impl";
 import {
-  type Checkpoint,
   connectObpWebSocketSession,
   type ObpFrameConnection,
   type ObpWebSocketConnectOptions,
-  type SessionOp,
-} from "@khoralabs/obp-client";
+} from "@khoralabs/obp-v2-transport-ws";
 import type { AtriumClientEvent } from "./atrium-events.ts";
 import {
   type AtriumPluginHandle,
@@ -71,7 +70,10 @@ export type {
   AtriumRoomSummary,
   AtriumRoomTicketResponse,
 } from "@khoralabs/atrium-contracts";
-export type { ObpFrameConnection, ObpWebSocketConnectOptions } from "@khoralabs/obp-client";
+export type {
+  ObpFrameConnection,
+  ObpWebSocketConnectOptions,
+} from "@khoralabs/obp-v2-transport-ws";
 export type { SwarmHostSearchScope } from "@khoralabs/swarm-host";
 export type { AgentStatusSnapshot, AgentSyncSnapshot } from "./http/agent.ts";
 export type { AuthorSubscriptionsSnapshot } from "./http/authors.ts";
@@ -272,7 +274,7 @@ export class AtriumClient {
   }
 
   /**
-   * Create an OBP relay room (`POST /v1/atrium/rooms`). The host mints `roomId`. Requires registration.
+   * Create a negotiation relay room (`POST /v1/atrium/rooms`). The host mints `roomId`. Requires registration.
    * Optionally invite a peer (`negotiation_ticket` in their inbox).
    */
   createAtriumRoom(body: AtriumRoomCreateBody): Promise<AtriumRoomTicketResponse> {
@@ -296,9 +298,9 @@ export class AtriumClient {
   }
 
   /**
-   * Run a deferred OBP multiplex client over a room WebSocket URL (from {@link createAtriumRoom},
-   * {@link mintAtriumRoomTicket}, or an inbox `negotiation_ticket`). Pass `persistence`, `signer`, and
-   * `ledgerSeq` per `@khoralabs/obp-client`.
+   * Run a deferred OBP v2 multiplex client over a room WebSocket URL (from {@link createAtriumRoom},
+   * {@link mintAtriumRoomTicket}, or an inbox `negotiation_ticket`). Pass `client` (`ObpPersistenceClient` from
+   * `@khoralabs/obp-v2-persistence`), `signer`, and `ledgerSeq` per `@khoralabs/obp-v2-transport-ws`.
    */
   connectAtriumRoomNegotiation(
     options: Omit<ObpWebSocketConnectOptions, "WebSocketCtor">,

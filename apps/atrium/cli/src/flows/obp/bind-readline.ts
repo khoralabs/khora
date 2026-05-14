@@ -1,6 +1,10 @@
-import { bindPolicyPropertiesToZod } from "@khoralabs/obp-bind-policy-zod";
-import type { BindPolicyField, PortBindPolicy } from "@khoralabs/obp-core";
-import { bindPolicySlugKeys } from "@khoralabs/obp-core";
+import {
+  type BindPolicyField,
+  bindPayloadSchemaForProperties,
+  bindPolicySlugKeys,
+  formatStandardSchemaIssuesForAgent,
+  type PortBindPolicy,
+} from "@khoralabs/obp-v2-nbc";
 
 export type ReadLineFn = (prompt: string) => Promise<string>;
 
@@ -13,14 +17,13 @@ function parseBool(raw: string): boolean | undefined {
 }
 
 /**
- * Prompt for each bind-policy property in order; validate with OBP Zod (same as hosts/agents).
+ * Prompt for each bind-policy property in order; validate with NBC Standard Schema (same rules as hosts).
  */
 export async function readBindPolicyInteractive(
   bindPolicy: PortBindPolicy,
   readLine: ReadLineFn,
 ): Promise<Record<string, unknown>> {
   const keys = bindPolicySlugKeys(bindPolicy.properties);
-  const schema = bindPolicyPropertiesToZod(bindPolicy.properties);
   const record: Record<string, unknown> = {};
 
   for (let i = 0; i < bindPolicy.properties.length; i++) {
@@ -109,7 +112,18 @@ export async function readBindPolicyInteractive(
     }
   }
 
-  return schema.parse(record) as Record<string, unknown>;
+  const schema = bindPayloadSchemaForProperties(bindPolicy.properties);
+  const out = schema["~standard"].validate(record);
+  if (out instanceof Promise) {
+    throw new TypeError("expected synchronous bind_payload validation");
+  }
+  if ("issues" in out && out.issues !== undefined && out.issues.length > 0) {
+    throw new Error(formatStandardSchemaIssuesForAgent(out.issues));
+  }
+  if (!("value" in out) || out.value === undefined) {
+    throw new Error("bind_payload validation produced no value");
+  }
+  return out.value;
 }
 
 function formatFieldHint(field: BindPolicyField): string {
