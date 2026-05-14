@@ -483,169 +483,12 @@
         "typescript": "^5",
       },
     },
-    "packages/obp/agents/negotiator": {
-      "name": "@khoralabs/obp-negotiator",
-      "dependencies": {
-        "@khoralabs/agent-identity": "workspace:*",
-        "@khoralabs/agent-identity-adapters": "workspace:*",
-        "@khoralabs/obp-tools": "workspace:*",
-        "ai": "^6",
-      },
-      "devDependencies": {
-        "@ai-sdk/provider": "^3",
-        "@types/bun": "latest",
-        "zod": "^4",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/obp/agents/runtime": {
-      "name": "@khoralabs/obp-agent-runtime",
-      "version": "0.0.0",
-      "dependencies": {
-        "@ai-sdk/google": "^3.0.0",
-        "@khoralabs/agent-identity": "workspace:*",
-        "@khoralabs/agent-identity-adapters": "workspace:*",
-        "@khoralabs/obp-bind-policy-zod": "workspace:*",
-        "@khoralabs/obp-core": "workspace:*",
-        "@khoralabs/obp-negotiator": "workspace:*",
-        "@khoralabs/obp-persistence-client": "workspace:*",
-        "@khoralabs/obp-tools": "workspace:*",
-        "@standard-schema/spec": "^1.1.0",
-        "ai": "^6",
-        "zod": "^4",
-      },
-      "devDependencies": {
-        "@khoralabs/obp-react": "workspace:*",
-        "@types/bun": "latest",
-        "@types/react": "^19.2.14",
-        "@types/react-dom": "^19.2.3",
-        "react": "^19.2.5",
-        "react-dom": "^19.2.5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/obp/agents/tools": {
-      "name": "@khoralabs/obp-tools",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/agent-identity": "workspace:*",
-        "@khoralabs/obp-core": "workspace:*",
-        "@khoralabs/obp-persistence-client": "workspace:*",
-        "zod": "^4",
-      },
-      "devDependencies": {
-        "@khoralabs/obp-sqlite": "workspace:*",
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/obp/auth": {
-      "name": "@khoralabs/obp-auth",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/obp-core": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "@types/node": "^22",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/obp/bind-policy-zod": {
-      "name": "@khoralabs/obp-bind-policy-zod",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/obp-core": "workspace:*",
-        "@standard-schema/spec": "^1.1.0",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "zod": "^4",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/obp/client": {
-      "name": "@khoralabs/obp-client",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/duplex-byte-stream": "workspace:*",
-        "@khoralabs/obp-core": "workspace:*",
-        "@khoralabs/obp-persistence-client": "workspace:*",
-        "@khoralabs/obp-session-sync": "workspace:*",
-      },
-      "devDependencies": {
-        "@khoralabs/obp-server": "workspace:*",
-        "@types/bun": "latest",
-        "@types/node": "^22",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/obp/core": {
-      "name": "@khoralabs/obp-core",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/duplex-byte-stream": "workspace:*",
-        "@khoralabs/obp-persistence-client": "workspace:*",
-        "@standard-schema/spec": "^1.1.0",
-      },
-      "devDependencies": {
-        "@khoralabs/obp-sqlite": "workspace:*",
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/obp/persistence/client": {
-      "name": "@khoralabs/obp-persistence-client",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/obp-core": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/obp/persistence/spec": {
-      "name": "@khoralabs/obp-spec",
-    },
-    "packages/obp/persistence/sqlite": {
-      "name": "@khoralabs/obp-sqlite",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/memories-sqlite": "workspace:*",
-        "@khoralabs/obp-core": "workspace:*",
-        "@khoralabs/obp-persistence-client": "workspace:*",
-        "@khoralabs/sqlite-migrate": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
     "packages/obp/react": {
       "name": "@khoralabs/obp-react",
       "version": "0.0.0",
       "dependencies": {
-        "@khoralabs/obp-core": "workspace:*",
-        "@khoralabs/obp-persistence-client": "workspace:*",
+        "@khoralabs/obp-v2-nbc": "workspace:*",
+        "@khoralabs/obp-v2-persistence": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -662,35 +505,21 @@
         "typescript": "^5",
       },
     },
-    "packages/obp/server": {
-      "name": "@khoralabs/obp-server",
-      "version": "0.0.0",
+    "packages/obp/react/examples": {
+      "name": "bun-react-template",
+      "version": "0.1.0",
       "dependencies": {
-        "@khoralabs/duplex-byte-stream": "workspace:*",
-        "@khoralabs/obp-core": "workspace:*",
-        "@khoralabs/obp-persistence-client": "workspace:*",
-        "@khoralabs/obp-session-sync": "workspace:*",
+        "@khoralabs/obp-react": "workspace:*",
+        "@xyflow/react": "^12.10.2",
+        "bun-plugin-tailwind": "^0.1.2",
+        "react": "^19",
+        "react-dom": "^19",
+        "tailwindcss": "^4.1.11",
       },
       "devDependencies": {
         "@types/bun": "latest",
-        "@types/node": "^22",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/obp/session-sync": {
-      "name": "@khoralabs/obp-session-sync",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/obp-core": "workspace:*",
-        "@khoralabs/obp-persistence-client": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
       },
     },
     "packages/obp/v2/errors/impl/ts": {
@@ -974,31 +803,7 @@
 
     "@khoralabs/memories-tools": ["@khoralabs/memories-tools@workspace:packages/memories/agents/tools"],
 
-    "@khoralabs/obp-agent-runtime": ["@khoralabs/obp-agent-runtime@workspace:packages/obp/agents/runtime"],
-
-    "@khoralabs/obp-auth": ["@khoralabs/obp-auth@workspace:packages/obp/auth"],
-
-    "@khoralabs/obp-bind-policy-zod": ["@khoralabs/obp-bind-policy-zod@workspace:packages/obp/bind-policy-zod"],
-
-    "@khoralabs/obp-client": ["@khoralabs/obp-client@workspace:packages/obp/client"],
-
-    "@khoralabs/obp-core": ["@khoralabs/obp-core@workspace:packages/obp/core"],
-
-    "@khoralabs/obp-negotiator": ["@khoralabs/obp-negotiator@workspace:packages/obp/agents/negotiator"],
-
-    "@khoralabs/obp-persistence-client": ["@khoralabs/obp-persistence-client@workspace:packages/obp/persistence/client"],
-
     "@khoralabs/obp-react": ["@khoralabs/obp-react@workspace:packages/obp/react"],
-
-    "@khoralabs/obp-server": ["@khoralabs/obp-server@workspace:packages/obp/server"],
-
-    "@khoralabs/obp-session-sync": ["@khoralabs/obp-session-sync@workspace:packages/obp/session-sync"],
-
-    "@khoralabs/obp-spec": ["@khoralabs/obp-spec@workspace:packages/obp/persistence/spec"],
-
-    "@khoralabs/obp-sqlite": ["@khoralabs/obp-sqlite@workspace:packages/obp/persistence/sqlite"],
-
-    "@khoralabs/obp-tools": ["@khoralabs/obp-tools@workspace:packages/obp/agents/tools"],
 
     "@khoralabs/obp-v2-errors": ["@khoralabs/obp-v2-errors@workspace:packages/obp/v2/errors/impl/ts"],
 
@@ -1293,6 +1098,8 @@
     "bun": ["bun@1.3.13", "", { "optionalDependencies": { "@oven/bun-darwin-aarch64": "1.3.13", "@oven/bun-darwin-x64": "1.3.13", "@oven/bun-darwin-x64-baseline": "1.3.13", "@oven/bun-linux-aarch64": "1.3.13", "@oven/bun-linux-aarch64-musl": "1.3.13", "@oven/bun-linux-x64": "1.3.13", "@oven/bun-linux-x64-baseline": "1.3.13", "@oven/bun-linux-x64-musl": "1.3.13", "@oven/bun-linux-x64-musl-baseline": "1.3.13", "@oven/bun-windows-aarch64": "1.3.13", "@oven/bun-windows-x64": "1.3.13", "@oven/bun-windows-x64-baseline": "1.3.13" }, "os": [ "linux", "win32", "darwin", ], "cpu": [ "x64", "arm64", ], "bin": { "bun": "bin/bun.exe", "bunx": "bin/bunx.exe" } }, "sha512-b9T4xZ8KqCHs4+TkHJv540LG1B8OD7noKu0Qaizusx3jFtMDHY6osNqgbaOlwW2B8RB2AKzz+sjzlGKIGxIjZw=="],
 
     "bun-plugin-tailwind": ["bun-plugin-tailwind@0.1.2", "", { "peerDependencies": { "bun": ">=1.0.0" } }, "sha512-41jNC1tZRSK3s1o7pTNrLuQG8kL/0vR/JgiTmZAJ1eHwe0w5j6HFPKeqEk0WAD13jfrUC7+ULuewFBBCoADPpg=="],
+
+    "bun-react-template": ["bun-react-template@workspace:packages/obp/react/examples"],
 
     "bun-types": ["bun-types@1.3.13", "", { "dependencies": { "@types/node": "*" } }, "sha512-QXKeHLlOLqQX9LgYaHJfzdBaV21T63HhFJnvuRCcjZiaUDpbs5ED1MgxbMra71CsryN/1dAoXuJJJwIv/2drVA=="],
 
@@ -1770,29 +1577,7 @@
 
     "@khoralabs/memories-tools/@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
 
-    "@khoralabs/obp-agent-runtime/@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
-
-    "@khoralabs/obp-auth/@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
-
-    "@khoralabs/obp-bind-policy-zod/@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
-
-    "@khoralabs/obp-client/@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
-
-    "@khoralabs/obp-core/@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
-
-    "@khoralabs/obp-negotiator/@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
-
-    "@khoralabs/obp-persistence-client/@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
-
     "@khoralabs/obp-react/@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
-
-    "@khoralabs/obp-server/@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
-
-    "@khoralabs/obp-session-sync/@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
-
-    "@khoralabs/obp-sqlite/@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
-
-    "@khoralabs/obp-tools/@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
 
     "@khoralabs/obp-v2-errors/@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
 
@@ -1916,6 +1701,8 @@
 
     "@xyflow/react/zustand": ["zustand@4.5.7", "", { "dependencies": { "use-sync-external-store": "^1.2.2" }, "peerDependencies": { "@types/react": ">=16.8", "immer": ">=9.0.6", "react": ">=16.8" }, "optionalPeers": ["@types/react", "immer", "react"] }, "sha512-CHOUy7mu3lbD6o6LJLfllpjkzhHXSBlX8B9+qPddUsIfeF5S/UZ5q0kmCsnRqT1UHFQZchNFDDzMbQsuesHWlw=="],
 
+    "bun-react-template/@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
+
     "ml-array-max/is-any-array": ["is-any-array@3.0.0", "", {}, "sha512-o4h+tylWykC4BD1vaejp6gDxoM13bwW8FGuNs4yIKpj8xbBJcRxJx8vZpq0dCr7ZDEfeKjmsi/euolKhX6f/ww=="],
 
     "ml-array-min/is-any-array": ["is-any-array@3.0.0", "", {}, "sha512-o4h+tylWykC4BD1vaejp6gDxoM13bwW8FGuNs4yIKpj8xbBJcRxJx8vZpq0dCr7ZDEfeKjmsi/euolKhX6f/ww=="],
@@ -1982,29 +1769,7 @@
 
     "@khoralabs/memories-tools/@types/bun/bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
 
-    "@khoralabs/obp-agent-runtime/@types/bun/bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
-
-    "@khoralabs/obp-auth/@types/bun/bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
-
-    "@khoralabs/obp-bind-policy-zod/@types/bun/bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
-
-    "@khoralabs/obp-client/@types/bun/bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
-
-    "@khoralabs/obp-core/@types/bun/bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
-
-    "@khoralabs/obp-negotiator/@types/bun/bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
-
-    "@khoralabs/obp-persistence-client/@types/bun/bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
-
     "@khoralabs/obp-react/@types/bun/bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
-
-    "@khoralabs/obp-server/@types/bun/bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
-
-    "@khoralabs/obp-session-sync/@types/bun/bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
-
-    "@khoralabs/obp-sqlite/@types/bun/bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
-
-    "@khoralabs/obp-tools/@types/bun/bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
 
     "@khoralabs/obp-v2-errors/@types/bun/bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
 
@@ -2089,5 +1854,7 @@
     "@radix-ui/react-toolbar/@radix-ui/react-primitive/@radix-ui/react-slot": ["@radix-ui/react-slot@1.2.3", "", { "dependencies": { "@radix-ui/react-compose-refs": "1.1.2" }, "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-aeNmHnBxbi2St0au6VBVC7JXFlhLlOnvIIlePNniyUNAClzmtAUEY8/pBiK3iHjufOlwA+c20/8jngo7xcrg8A=="],
 
     "@radix-ui/react-visually-hidden/@radix-ui/react-primitive/@radix-ui/react-slot": ["@radix-ui/react-slot@1.2.3", "", { "dependencies": { "@radix-ui/react-compose-refs": "1.1.2" }, "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-aeNmHnBxbi2St0au6VBVC7JXFlhLlOnvIIlePNniyUNAClzmtAUEY8/pBiK3iHjufOlwA+c20/8jngo7xcrg8A=="],
+
+    "bun-react-template/@types/bun/bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
   }
 }

@@ -16,6 +16,18 @@ export type {
 } from "./nbc-bind-policy-types.ts";
 export { validateBindPayloadForPort } from "./nbc-bind-policy-validate.ts";
 export {
+  type CollectNbcChainGraphOptions,
+  collectNbcChainGraph,
+} from "./nbc-chain-graph.ts";
+export type {
+  NbcChainExposeEdge,
+  NbcChainExtendEdge,
+  NbcChainGraph,
+  NbcChainOfferRow,
+  NbcChainPartyRow,
+  NbcChainPortRow,
+} from "./nbc-chain-graph-types.ts";
+export {
   type ApplyNbcFrameTurnResult,
   applyNbcFrameTurn,
   nbcTurnBodyToWireRecord,

@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+/* Headless package: edge strokes live in app CSS */
+.nbc-chain-edge-exposes {
+  stroke: #404040;
+  stroke-width: 1.25;
+}
+
+.nbc-chain-edge-binds {
+  stroke: #525252;
+  stroke-width: 1.25;
+  stroke-dasharray: 6 4;
+}
+
+[data-slot="nbc-chain-node-details"],
+[data-slot="nbc-chain-edge-details"],
+[data-slot="nbc-chain-empty-selection-hint"] {
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: #171717;
+}
+
+[data-slot="nbc-chain-details-heading"] {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+[data-slot="nbc-chain-details-dl"] {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 0.75rem;
+  margin: 0;
+}
+
+[data-slot="nbc-chain-details-dt"] {
+  font-weight: 500;
+  color: #525252;
+}
+
+[data-slot="nbc-chain-details-dd"] {
+  margin: 0;
+}
+
+[data-slot="nbc-chain-json-pre"] {
+  margin: 0.25rem 0 0;
+  padding: 0.5rem;
+  overflow: auto;
+  font-size: 0.75rem;
+  background: #f5f5f5;
+  border-radius: 0.25rem;
+}

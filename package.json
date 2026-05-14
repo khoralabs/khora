@@ -31,6 +31,7 @@
     "packages/memories/agents/*",
     "packages/memories/react/*",
     "packages/obp/*",
+    "packages/obp/react/examples",
     "packages/obp/agents/*",
     "packages/obp/persistence/*",
     "packages/obp/v2/errors/impl/ts",

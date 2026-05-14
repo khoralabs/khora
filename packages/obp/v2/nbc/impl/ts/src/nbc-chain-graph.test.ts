@@ -1,0 +1,39 @@
+import { describe, expect, test } from "bun:test";
+import { createInMemoryObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
+import { collectNbcChainGraph } from "./nbc-chain-graph.ts";
+
+describe("collectNbcChainGraph", () => {
+  test("collects offers, ports, exposes from persistence client", async () => {
+    const client = createInMemoryObpPersistenceClient();
+    const { party } = await client.registerParty({ name: "Issuer", sourcemaps: [] });
+    const { offer } = await client.extendOffer({
+      partyId: party.id,
+      offer: { id: "", expires_seq: 99n, type: "opening", sourcemaps: [] },
+      bindPortId: "",
+      bind_payload: null,
+    });
+    const { port } = await client.exposePort({
+      offerId: offer.id,
+      port: {
+        id: "",
+        expires_seq: 99n,
+        type: "slot",
+        promise: "Do thing",
+        ref: "",
+        sourcemaps: [],
+      },
+    });
+
+    const g = await collectNbcChainGraph(client, { ledgerSeq: 1n });
+
+    expect(g.parties.some((p) => p.id === party.id)).toBe(true);
+    expect(g.offers.some((o) => o.id === offer.id)).toBe(true);
+    expect(g.ports.some((p) => p.id === port.id)).toBe(true);
+    expect(g.exposes.some((e) => e.offerId === offer.id && e.portId === port.id)).toBe(true);
+    expect(g.binds).toEqual([]);
+    const pr = g.ports.find((p) => p.id === port.id);
+    expect(pr?.bindCount).toBe(0);
+    expect(pr?.exposedOnOfferIds).toEqual([offer.id]);
+    expect(pr?.expired).toBe(false);
+  });
+});

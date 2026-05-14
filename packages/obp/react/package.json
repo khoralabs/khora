@@ -16,8 +16,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@khoralabs/obp-core": "workspace:*",
-    "@khoralabs/obp-persistence-client": "workspace:*"
+    "@khoralabs/obp-v2-nbc": "workspace:*",
+    "@khoralabs/obp-v2-persistence": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",
