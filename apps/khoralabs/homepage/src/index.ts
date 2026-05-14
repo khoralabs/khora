@@ -1,9 +1,11 @@
 import { serve } from "bun";
+import blog from "./routes/blog/index.html";
 import contact from "./routes/contact/index.html";
 import index from "./routes/index.html";
 
 const server = serve({
   routes: {
+    "/blog": blog,
     "/contact": contact,
     // Serve index.html for all unmatched routes.
     "/*": index,

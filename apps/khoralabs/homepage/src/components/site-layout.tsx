@@ -53,7 +53,7 @@ function Header({ className, children, ...props }: ComponentProps<"header">) {
           <nav aria-label="Primary">
             <ul className="flex gap-8 md:gap-10">
               <li>
-                <a href="/" className={navLinkClass}>
+                <a href="/blog" className={navLinkClass}>
                   Blog
                 </a>
               </li>
