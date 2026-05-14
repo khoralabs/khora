@@ -22,15 +22,6 @@ export type AtriumMemoriesSearchScope =
   | { kind: "multi"; includes: readonly AtriumMemoriesEntityKind[] }
   | { kind: "raw"; namespace: string; additionalNamespaces?: readonly string[] };
 
-/** @deprecated Prefer {@link AtriumMemoriesSearchScope}. */
-export type AgentRelaySearchScope = AtriumMemoriesSearchScope;
-
-/** @deprecated Prefer {@link AtriumMemoriesSearchNamespaces}. */
-export type AgentRelayMemoryNamespaces = AtriumMemoriesSearchNamespaces;
-
-/** @deprecated Prefer {@link AtriumMemoriesEntityKind}. */
-export type AgentRelayMemoryEntityKind = AtriumMemoriesEntityKind;
-
 /** Wire/API alias for {@link AtriumMemoriesSearchScope}. */
 export type MemoriesSearchScope = AtriumMemoriesSearchScope;
 
@@ -148,5 +139,3 @@ export function resolveAtriumMemoriesSearchNamespaces(
   return _never;
 }
 
-/** @deprecated Prefer {@link resolveAtriumMemoriesSearchNamespaces}. */
-export const resolveAgentRelaySearchNamespaces = resolveAtriumMemoriesSearchNamespaces;

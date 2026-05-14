@@ -5,7 +5,6 @@ import type {
   AtriumRoomTicketResponse,
 } from "@khoralabs/atrium-contracts";
 import {
-  zAtriumRoomCreateResponse,
   zAtriumRoomListResponse,
   zAtriumRoomTicketResponse,
 } from "@khoralabs/atrium-contracts";
@@ -17,7 +16,7 @@ export function createAtriumRoom(
 ): Promise<AtriumRoomTicketResponse> {
   return t.requestJson("POST", "/v1/atrium/rooms", {
     body,
-    parse: zAtriumRoomCreateResponse,
+    parse: zAtriumRoomTicketResponse,
   });
 }
 

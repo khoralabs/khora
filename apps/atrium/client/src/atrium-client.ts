@@ -62,10 +62,8 @@ import { type AtriumFetch, createHttpTransport, type HttpTransport } from "./htt
 import { connectInbox, type InboxWsHandlers } from "./ws/inbox.ts";
 
 export type {
-  AgentRelaySearchScope,
   AtriumMemoriesSearchScope,
   AtriumRoomCreateBody,
-  AtriumRoomCreateResponse,
   AtriumRoomListResponse,
   AtriumRoomMintTicketBody,
   AtriumRoomRole,
@@ -309,21 +307,6 @@ export class AtriumClient {
     runner: (conn: ObpFrameConnection) => Promise<void>,
   ): Promise<{ sessionOps: SessionOp[]; checkpoint: Checkpoint }> {
     return connectObpWebSocketSession({ ...options, WebSocketCtor: this.WebSocketCtor }, runner);
-  }
-
-  /**
-   * @deprecated Use {@link connectAtriumRoom}.
-   */
-  connectAtriumRoomNegotiation(
-    options: Omit<ObpWebSocketConnectOptions, "WebSocketCtor">,
-    runner: (conn: ObpFrameConnection) => Promise<void>,
-  ): Promise<{ sessionOps: SessionOp[]; checkpoint: Checkpoint }> {
-    return this.connectAtriumRoom(options, runner);
-  }
-
-  /** @deprecated Prefer {@link AtriumClient.search}. */
-  searchMemories(params: MemoriesSearchParams): Promise<MemorySearchHitWire[]> {
-    return this.search(params);
   }
 
   /** Topic slugs this agent is currently subscribed to (`GET /v1/topics`). */

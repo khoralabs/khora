@@ -29,10 +29,6 @@ export const zAtriumRoomTicketResponse = z.object({
 
 export type AtriumRoomTicketResponse = z.infer<typeof zAtriumRoomTicketResponse>;
 
-/** @deprecated Alias for {@link zAtriumRoomTicketResponse}; create returns the same shape. */
-export const zAtriumRoomCreateResponse = zAtriumRoomTicketResponse;
-export type AtriumRoomCreateResponse = AtriumRoomTicketResponse;
-
 export const zAtriumRoomRole = z.enum(["creator", "peer"]);
 
 export type AtriumRoomRole = z.infer<typeof zAtriumRoomRole>;
