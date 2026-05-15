@@ -163,7 +163,7 @@ async function killKnownPid(
 ): Promise<void> {
   const matches = findRegistryEntriesByPid(cfg, pid);
   if (matches.length === 0) {
-    throw new Error(`pid ${pid} is not a registered atrium inbox or room daemon`);
+    throw new Error(`pid ${pid} is not a registered atrium inbox daemon`);
   }
   const timeoutMs = parseTimeout(flags);
   const force = boolFlag(flags, "force", "f");

@@ -9,7 +9,7 @@ export const zAtriumRoomCreateBody = z
       .min(60_000)
       .max(86400_000 * 7)
       .optional(),
-    /** Invite this DID to join (inbox `negotiation_ticket`). */
+    /** Invite this DID to join (inbox `room_ticket`). */
     targetDid: z.string().trim().min(1).optional(),
     /** Alternative to `targetDid`: resolve registered username on this host. */
     targetUsername: z.string().trim().min(1).optional(),

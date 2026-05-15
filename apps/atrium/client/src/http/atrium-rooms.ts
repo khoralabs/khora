@@ -4,10 +4,7 @@ import type {
   AtriumRoomMintTicketBody,
   AtriumRoomTicketResponse,
 } from "@khoralabs/atrium-contracts";
-import {
-  zAtriumRoomListResponse,
-  zAtriumRoomTicketResponse,
-} from "@khoralabs/atrium-contracts";
+import { zAtriumRoomListResponse, zAtriumRoomTicketResponse } from "@khoralabs/atrium-contracts";
 import type { HttpTransport } from "./transport.ts";
 
 export function createAtriumRoom(

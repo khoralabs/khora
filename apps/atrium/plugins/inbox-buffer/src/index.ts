@@ -16,7 +16,7 @@ export const INBOX_CLIENT_EVENT_TYPES = [
   "inbox:notification",
   "inbox:connection_request",
   "inbox:host",
-  "inbox:negotiation_ticket",
+  "inbox:room_ticket",
   "inbox:post",
   "author:subscribed",
   "author:unsubscribed",

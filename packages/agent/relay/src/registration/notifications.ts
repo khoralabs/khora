@@ -24,7 +24,7 @@ export type InboxPostNotificationPayload = {
 export type AgentNotification =
   | { kind: "connection_request"; payload: unknown }
   | { kind: "host"; payload: unknown }
-  | { kind: "negotiation_ticket"; payload: FrameChannelInvitePayload }
+  | { kind: "room_ticket"; payload: FrameChannelInvitePayload }
   | { kind: "inbox_post"; payload: InboxPostNotificationPayload };
 
 /** Persisted inbox row (SQLite id + lifecycle fields). */

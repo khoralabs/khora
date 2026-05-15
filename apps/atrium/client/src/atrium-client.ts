@@ -275,7 +275,7 @@ export class AtriumClient {
 
   /**
    * Create an Atrium room (`POST /v1/atrium/rooms`). The host mints `roomId`. Requires registration.
-   * Optionally invite a peer (`negotiation_ticket` in their inbox).
+   * Optionally invite a peer (`room_ticket` in their inbox).
    */
   createAtriumRoom(body: AtriumRoomCreateBody): Promise<AtriumRoomTicketResponse> {
     return httpCreateAtriumRoom(this.transport, body);
@@ -299,7 +299,7 @@ export class AtriumClient {
 
   /**
    * Run a deferred OBP v2 multiplex client over an Atrium room WebSocket URL (from {@link createAtriumRoom},
-   * {@link mintAtriumRoomTicket}, or an inbox `negotiation_ticket`). Pass `client` (`ObpPersistenceClient` from
+   * {@link mintAtriumRoomTicket}, or an inbox `room_ticket`). Pass `client` (`ObpPersistenceClient` from
    * `@khoralabs/obp-v2-persistence`), and `signer` per `@khoralabs/obp-v2-transport-ws`.
    */
   connectAtriumRoom(

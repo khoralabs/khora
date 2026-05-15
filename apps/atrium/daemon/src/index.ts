@@ -15,19 +15,5 @@ export {
   type RegisteredDaemonEntry,
   type RegisteredDaemonKind,
 } from "./daemon-registry.ts";
-export { inboxObpSqlitePath, obpStoreRoot, roomObpSqlitePath } from "./obp-store.ts";
-export {
-  acquireRoomDaemonLock,
-  decodeRoomIdFromPathSegment,
-  encodeRoomIdForPath,
-  type RoomDaemonMeta,
-  type RoomDaemonStatus,
-  readRoomDaemonStatus,
-  roomDaemonLogPath,
-  roomDaemonMetaPath,
-  roomDaemonPidPath,
-  roomDaemonsDir,
-  roomIdFromRoomPidBasename,
-} from "./room-daemon-pid.ts";
+export { inboxObpSqlitePath, obpStoreRoot } from "./obp-store.ts";
 export { type RunInboxDaemonOptions, runInboxDaemon } from "./run-inbox-daemon.ts";
-export { type RunRoomDaemonOptions, runRoomDaemon } from "./run-room-daemon.ts";

@@ -2,7 +2,7 @@
 import fs from "node:fs";
 
 import { parseNbcTurnBody } from "@khoralabs/obp-v2-nbc";
-import { VellumClient } from "@khoralabs/vellum-client";
+import { listLocalVellumRows, VellumClient } from "@khoralabs/vellum-client";
 
 function getFlag(
   flags: Record<string, string | boolean>,
@@ -75,6 +75,7 @@ async function main(): Promise<void> {
     console.error(`vellum — NBC over Atrium rooms
 
 Usage:
+  vellum list [--data-dir=…] [--json]
   vellum connect <roomId>|--room=<id> [--base-url=http://...]
   vellum [--room=id] chain create --peer-party=<uuid> --peer-key=<hex> [--session][--genesis][--my-party]
   vellum [--room=id] chain list
@@ -94,6 +95,27 @@ Usage:
   const a = positional[0];
 
   try {
+    if (a === "list") {
+      const dataDir =
+        getFlag(flags, "data-dir", "dataDir") ?? process.env.ATRIUM_DATA_DIR ?? undefined;
+      const rows = listLocalVellumRows({ dataDir });
+      if (flags["--json"] === true) {
+        console.log(JSON.stringify(rows, null, 2));
+        return;
+      }
+      if (rows.length === 0) {
+        console.log("(no rooms under obp/rooms)");
+        return;
+      }
+      console.log("roomId\tpid\tcontrolPort\tstatus");
+      for (const r of rows) {
+        const pidCol = r.pid !== undefined ? String(r.pid) : "-";
+        const portCol = r.controlPort !== undefined ? String(r.controlPort) : "-";
+        console.log(`${r.roomId}\t${pidCol}\t${portCol}\t${r.status}`);
+      }
+      return;
+    }
+
     if (a === "connect") {
       const roomArg = positional[1]?.trim();
       const client = baseCliArgs({

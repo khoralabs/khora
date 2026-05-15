@@ -1,4 +1,7 @@
-import type { AtriumMemoriesEntityKind, AtriumMemoriesSearchScope } from "@khoralabs/atrium-contracts";
+import type {
+  AtriumMemoriesEntityKind,
+  AtriumMemoriesSearchScope,
+} from "@khoralabs/atrium-contracts";
 import type { AtriumCliContext } from "../flows/context.ts";
 import { boolFlag, strFlag } from "./parse.ts";
 import type { FlagMap } from "./types.ts";

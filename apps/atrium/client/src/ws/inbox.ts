@@ -92,8 +92,8 @@ function emitInboxNotification(
     case "host":
       emit({ type: "inbox:host", did, id, notification });
       break;
-    case "negotiation_ticket":
-      emit({ type: "inbox:negotiation_ticket", did, id, notification });
+    case "room_ticket":
+      emit({ type: "inbox:room_ticket", did, id, notification });
       break;
     case "inbox_post":
       emit({ type: "inbox:post", did, id, notification });

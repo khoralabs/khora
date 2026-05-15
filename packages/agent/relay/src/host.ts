@@ -195,7 +195,7 @@ export class AgentRelay<
       );
     }
     await buf.enqueue(params.targetPrincipalId, {
-      kind: "negotiation_ticket",
+      kind: "room_ticket",
       payload: {
         channelId: params.channelId,
         ticket: params.ticket,

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { type KillCommandIo, runKillWith } from "./kill.ts";
@@ -92,17 +92,13 @@ describe("runKillWith", () => {
     expect(signals).toEqual([]);
   });
 
-  test("--all clears stale room + inbox pid files", async () => {
+  test("--all clears stale inbox pid files", async () => {
     writeFileSync(path.join(tmpDir, "daemon.pid"), "999111\n");
-    const roomDir = path.join(tmpDir, "daemons", "rooms");
-    mkdirSync(roomDir, { recursive: true });
-    writeFileSync(path.join(roomDir, "x.pid"), "999222\n");
     const { lines, signals, io } = makeIo();
     await runKillWith({ all: true }, { dataDir: tmpDir }, io);
     expect(signals).toEqual([]);
     expect(lines.some((l) => l.includes("cleared stale"))).toBe(true);
     expect(existsSync(path.join(tmpDir, "daemon.pid"))).toBe(false);
-    expect(existsSync(path.join(roomDir, "x.pid"))).toBe(false);
   });
 
   test("--pid rejects unknown pid", async () => {

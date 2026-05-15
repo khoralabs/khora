@@ -1,12 +1,9 @@
 import {
-  encodeFramedJson,
-  isNegotiationFrameObject,
-} from "@khoralabs/obp-v2-frames-impl";
-import {
   generateRoomSecretHex,
   signRoomTicket,
   verifyRoomTicket,
 } from "@khoralabs/duplex-byte-stream";
+import { encodeFramedJson, isNegotiationFrameObject } from "@khoralabs/obp-v2-frames-impl";
 import type { FrameChannelHubPersistence } from "../persistence/types.ts";
 import type { FrameChannelHubPort, FrameChannelPeer } from "./port.ts";
 

@@ -1,8 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { encodeRoomIdForPath } from "@khoralabs/atrium-daemon";
 import { runStatusWith, type StatusCommandIo } from "./status.ts";
 
 let tmpDir: string;
@@ -51,6 +50,7 @@ describe("runStatusWith", () => {
     const row = lines.find((l) => l.startsWith("inbox\t"));
     expect(row?.split("\t")[1]).toBe(String(process.ppid));
     expect(row?.split("\t")[2]).toBe("running");
+    expect(row?.split("\t")).toHaveLength(5);
     expect(exitCodes).toEqual([]);
   });
 
@@ -60,22 +60,6 @@ describe("runStatusWith", () => {
     expect(() => runStatusWith({}, { dataDir: tmpDir }, io)).toThrow(TestExit);
     expect(lines.some((l) => l.includes("stale"))).toBe(true);
     expect(exitCodes).toEqual([2]);
-  });
-
-  test("room row appears when pid file present", () => {
-    const roomDir = path.join(tmpDir, "daemons", "rooms");
-    mkdirSync(roomDir, { recursive: true });
-    const rid = "room-abc";
-    const enc = encodeRoomIdForPath(rid);
-    writeFileSync(path.join(roomDir, `${enc}.pid`), `${process.ppid}\n`);
-    writeFileSync(
-      path.join(roomDir, `${enc}.meta.json`),
-      `${JSON.stringify({ kind: "room", roomId: rid })}\n`,
-    );
-    const { lines, io, exitCodes } = makeIo();
-    runStatusWith({}, { dataDir: tmpDir }, io);
-    expect(lines.some((l) => l.includes("room") && l.includes("room-abc"))).toBe(true);
-    expect(exitCodes).toEqual([]);
   });
 
   test("--json mode emits aggregate object", () => {

@@ -11,7 +11,7 @@ import { probeListHelp } from "./probe-list.help.ts";
 import { profileShowHelp } from "./profile-show.help.ts";
 import { profileUpdateHelp } from "./profile-update.help.ts";
 import { registerHelp } from "./register.help.ts";
-import { roomCreateHelp, roomJoinHelp, roomListHelp } from "./room.help.ts";
+import { roomCreateHelp, roomListHelp } from "./room.help.ts";
 import { memoriesSearchDeprecatedHelp, searchHelp } from "./search.help.ts";
 import { setupHelp } from "./setup.help.ts";
 import { startHelp } from "./start.help.ts";
@@ -51,7 +51,6 @@ const ALL_HELP: readonly CommandHelp[] = [
   subscriptionsDeleteHelp,
   roomCreateHelp,
   roomListHelp,
-  roomJoinHelp,
 ];
 
 function indent(block: string, pad: string): string {
@@ -125,7 +124,6 @@ Commands:
   search <query…> [--scope …] [--namespace …] [--search-scope-mode …] [--include …] [--limit N] [--json]
   room create [--target-username …] [--target-did …] [--ttl-ms …] [--json]
   room list [--json]
-  room join <roomId> [<ticket>] [--json] [-b|--background]
   post create [--body …] [--title …] [--topics a,b] [--kind post|probe|status]
   post show <post-id>
   post update <id> [--body …] [--title …] [--topics …] [--kind …]

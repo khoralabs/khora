@@ -10,8 +10,8 @@ import { migrateAtriumHostDb } from "./migrate-atrium-host-db.ts";
 function parsePayload(kind: string, payloadJson: string): AgentNotification {
   const payload = JSON.parse(payloadJson) as unknown;
   switch (kind) {
-    case "negotiation_ticket":
-      return { kind: "negotiation_ticket", payload: payload as never };
+    case "room_ticket":
+      return { kind: "room_ticket", payload: payload as never };
     case "inbox_post":
       return { kind: "inbox_post", payload: payload as never };
     case "connection_request":
@@ -25,7 +25,7 @@ function parsePayload(kind: string, payloadJson: string): AgentNotification {
 
 function serializeNote(note: AgentNotification): { kind: string; payloadJson: string } {
   switch (note.kind) {
-    case "negotiation_ticket":
+    case "room_ticket":
       return { kind: note.kind, payloadJson: JSON.stringify(note.payload) };
     case "inbox_post":
       return { kind: note.kind, payloadJson: JSON.stringify(note.payload) };

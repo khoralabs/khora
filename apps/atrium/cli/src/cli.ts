@@ -150,11 +150,6 @@ async function main(
       return;
     }
 
-    if (a === "room" && b === "join") {
-      await handlers.roomJoin(ctx, positional, flags);
-      return;
-    }
-
     if (a === "post" && b === "show") {
       await handlers.postShow(ctx, c, flags);
       return;

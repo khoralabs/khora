@@ -12,7 +12,7 @@ import { runProbeListCommand } from "./probe-list.ts";
 import { runProfileShowCommand } from "./profile-show.ts";
 import { runProfileUpdateCommand } from "./profile-update.ts";
 import { runRegisterCommand } from "./register.ts";
-import { runRoomCreateCommand, runRoomJoinCommand, runRoomListCommand } from "./room.ts";
+import { runRoomCreateCommand, runRoomListCommand } from "./room.ts";
 import { runSearchCommand } from "./search.ts";
 import { runSetupCommand } from "./setup.ts";
 import { runStartCommand } from "./start.ts";
@@ -51,7 +51,6 @@ export interface AtriumCliCommandHandlers {
   search(ctx: AtriumCliContext, positional: string[], flags: FlagMap): Promise<void>;
   roomCreate(ctx: AtriumCliContext, flags: FlagMap): Promise<void>;
   roomList(ctx: AtriumCliContext, flags: FlagMap): Promise<void>;
-  roomJoin(ctx: AtriumCliContext, positional: string[], flags: FlagMap): Promise<void>;
 }
 
 export const defaultAtriumCliCommandHandlers = {
@@ -79,5 +78,4 @@ export const defaultAtriumCliCommandHandlers = {
   search: runSearchCommand,
   roomCreate: runRoomCreateCommand,
   roomList: runRoomListCommand,
-  roomJoin: runRoomJoinCommand,
 } satisfies AtriumCliCommandHandlers;

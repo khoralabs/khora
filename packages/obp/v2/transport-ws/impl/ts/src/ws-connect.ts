@@ -6,6 +6,7 @@ import {
   createEd25519FrameVerifier,
   defaultSessionEnvelopeSyncAdapter,
   type FrameMultiplexOpenerApi,
+  type FrameSessionHandlers,
   type FrameSigner,
   type FrameVerifier,
   normalizeSessionInit,
@@ -28,6 +29,8 @@ export type ObpFrameChannelClientOptions = {
   verifier?: FrameVerifier;
   client: ObpPersistenceClient;
   sessionEnvelopeSync?: boolean;
+  /** Multiplex lifecycle hooks (e.g. {@link FrameSessionHandlers.onSessionReady} for inbound SessionInit). */
+  handlers?: FrameSessionHandlers;
 };
 
 export type ObpWebSocketConnectOptions = Omit<ObpFrameChannelClientOptions, "channel"> & {
@@ -58,12 +61,14 @@ export async function connectObpFrameChannelSession(
         }
       : undefined;
 
+  const handlers: FrameSessionHandlers = options.handlers ?? {};
+
   const sessionOps = await runFrameMultiplexSession({
     channel: options.channel,
     signer: options.signer,
     verifier,
     client: options.client,
-    handlers: {},
+    handlers,
     ...(sessionEnvelopeSync !== undefined ? { sessionEnvelopeSync } : {}),
     openerSession: async (api) => {
       const conn: ObpFrameConnection = {

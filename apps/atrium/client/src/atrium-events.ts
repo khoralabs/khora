@@ -53,9 +53,9 @@ export type AtriumClientEvent =
       did: string;
     }
   | {
-      type: "inbox:negotiation_ticket";
+      type: "inbox:room_ticket";
       id: number;
-      notification: Extract<AgentNotification, { kind: "negotiation_ticket" }>;
+      notification: Extract<AgentNotification, { kind: "room_ticket" }>;
       did: string;
     }
   | {
@@ -80,7 +80,7 @@ export function isDerivedInboxKindEvent(e: AtriumClientEvent): e is AtriumDerive
   switch (e.type) {
     case "inbox:connection_request":
     case "inbox:host":
-    case "inbox:negotiation_ticket":
+    case "inbox:room_ticket":
     case "inbox:post":
       return true;
     default:

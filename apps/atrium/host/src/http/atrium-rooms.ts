@@ -31,8 +31,8 @@ type AtriumRoomRow = {
 
 /**
  * `POST /v1/atrium/rooms` — authenticated. Server mints `roomId`. Optionally enqueues inbox
- * **`negotiation_ticket`** for the invitee (`notification.kind === "negotiation_ticket"`, `payload`:
- * `{ roomId, ticket, expiresAtMs?, issuedAtMs?, fromPrincipalId? }`).
+ * **`room_ticket`** for the invitee (`notification.kind === "room_ticket"`, `payload`:
+ * `{ channelId, ticket, expiresAtMs?, issuedAtMs?, fromPrincipalId? }`).
  */
 export async function handleAtriumRoomsCreate(
   req: Request,

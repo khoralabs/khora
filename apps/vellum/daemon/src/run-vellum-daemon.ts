@@ -12,7 +12,7 @@ import { cfgDataDir, roomObpSqlitePath, type VellumPathConfig } from "@khoralabs
 import { removeVellumControlFile, writeVellumControlFile } from "./control-pid.ts";
 import { startVellumControlServer, type VellumControlServerState } from "./control-server.ts";
 import { createFrameSignerFromPersistableAgent } from "./frame-signer.ts";
-import { ensureVellumMetaSchema } from "./vellum-sqlite-meta.ts";
+import { ensureVellumMetaSchema, upsertChainRow } from "./vellum-sqlite-meta.ts";
 
 export type RunVellumDaemonOptions = {
   baseUrl: string;
@@ -70,6 +70,13 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): { close(): void }
           webSocketUrl: opts.webSocketUrl,
           signer: frameSigner,
           client: persistence,
+          handlers: {
+            onSessionReady: async (handle) => {
+              state.handles.set(handle.sessionId, handle);
+              upsertChainRow(db, handle.sessionId, handle.init.genesis_hash, Date.now());
+              logLine(json, "vellum_chain_ready", { sessionId: handle.sessionId });
+            },
+          },
         },
         async (conn) => {
           state.conn = conn;

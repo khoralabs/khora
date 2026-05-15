@@ -25,11 +25,10 @@ export function runStatusWith(flags: FlagMap, cfg: DaemonPidPathConfig, io: Stat
     return;
   }
 
-  io.log("kind\tpid\tstate\troomId\tpidPath\tlogPath");
+  io.log("kind\tpid\tstate\tpidPath\tlogPath");
   for (const e of entries) {
     const pidCol = e.pid !== undefined ? String(e.pid) : "-";
-    const roomCol = e.kind === "room" ? (e.roomId ?? "-") : "";
-    io.log(`${e.kind}\t${pidCol}\t${e.state}\t${roomCol}\t${e.pidPath}\t${e.logPath}`);
+    io.log(`${e.kind}\t${pidCol}\t${e.state}\t${e.pidPath}\t${e.logPath}`);
   }
   if (!hasRunning) {
     io.log("No Atrium daemons running.");
