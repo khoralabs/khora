@@ -1,15 +1,12 @@
-# @khoralabs/vellum-cli
+# `@khoralabs/vellum-contracts`
 
-To install dependencies:
+Zod-backed types and helpers shared by the Vellum **CLI**, **daemon**, and **`@khoralabs/vellum-client`**. Covers control-plane response shapes, domain rows (chains, offers, ports), path conventions (`cfgDataDir`, SQLite filenames), and constants such as default genesis turn wire.
 
-```bash
-bun install
-```
+Dependency-light: **`zod`** only. No Bun-specific APIs — safe to import anywhere in the workspace.
 
-To run:
+## Scripts
 
-```bash
-bun run src/index.ts
-```
+- `bun test` — schema/unit tests
+- `bun run typecheck` — `tsc --noEmit`
 
-This project was created using `bun init` in bun v1.3.4. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+Barrel: [`src/index.ts`](src/index.ts) re-exports [`control-wire.ts`](src/control-wire.ts), [`domain.ts`](src/domain.ts), [`paths.ts`](src/paths.ts).

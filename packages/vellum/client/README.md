@@ -1,15 +1,11 @@
-# @khoralabs/vellum-cli
+# `@khoralabs/vellum-client`
 
-To install dependencies:
+Library API used by **`apps/vellum/cli`**: load agent identity, attach to an Atrium **room** (`AtriumClient`), call the local **Vellum daemon** control plane over `@khoralabs/vellum-transport`, and read NBC graph state from room-scoped SQLite (`SqliteVellumReadModel` / `VellumReadModel`).
 
-```bash
-bun install
-```
+Validates bind payloads via **`@khoralabs/vellum-bind-policy`** before sending turns that reference ports.
 
-To run:
+## Scripts
 
-```bash
-bun run src/index.ts
-```
+- `bun run typecheck` — `tsc --noEmit`
 
-This project was created using `bun init` in bun v1.3.4. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+Entry: [`src/index.ts`](src/index.ts) exports `VellumClient`, control transport re-exports, SQLite read model, and `listLocalVellumRows`.
