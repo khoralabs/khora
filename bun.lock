@@ -16,23 +16,6 @@
         "typescript": "^5",
       },
     },
-    "apps/atrium/auth": {
-      "name": "@khoralabs/atrium-auth",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/agent-persisted-signer": "workspace:*",
-        "@khoralabs/agent-relay": "workspace:*",
-        "@noble/ed25519": "^3.1.0",
-        "iso-did": "^2.1.1",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
     "apps/atrium/cli": {
       "name": "@khoralabs/atrium-cli",
       "version": "0.0.0",
@@ -46,41 +29,6 @@
         "@khoralabs/obp-v2-model": "workspace:*",
         "@khoralabs/obp-v2-persistence": "workspace:*",
         "@khoralabs/vellum-bind-policy": "workspace:*",
-        "zod": "^4",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "apps/atrium/client": {
-      "name": "@khoralabs/atrium-client",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/agent-relay": "workspace:*",
-        "@khoralabs/atrium-auth": "workspace:*",
-        "@khoralabs/atrium-contracts": "workspace:*",
-        "@khoralabs/atrium-transport": "workspace:*",
-        "@khoralabs/obp-v2-session-impl": "workspace:*",
-        "@khoralabs/obp-v2-transport-ws": "workspace:*",
-        "zod": "^4",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "apps/atrium/contracts": {
-      "name": "@khoralabs/atrium-contracts",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/agent-relay": "workspace:*",
         "zod": "^4",
       },
       "devDependencies": {
@@ -252,22 +200,6 @@
         "tw-animate-css": "^1.4.0",
       },
     },
-    "apps/vellum/bind-policy": {
-      "name": "@khoralabs/vellum-bind-policy",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/obp-v2-errors": "workspace:*",
-        "@khoralabs/obp-v2-model": "workspace:*",
-        "ajv": "^8.17.1",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
     "apps/vellum/cli": {
       "name": "@khoralabs/vellum-cli",
       "version": "0.0.0",
@@ -278,44 +210,6 @@
         "@khoralabs/obp-v2-nbc": "workspace:*",
         "@khoralabs/vellum-client": "workspace:*",
         "@khoralabs/vellum-contracts": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "apps/vellum/client": {
-      "name": "@khoralabs/vellum-client",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/agent-persisted-signer": "workspace:*",
-        "@khoralabs/atrium-client": "workspace:*",
-        "@khoralabs/obp-v2-frames-impl": "workspace:*",
-        "@khoralabs/obp-v2-model": "workspace:*",
-        "@khoralabs/obp-v2-nbc": "workspace:*",
-        "@khoralabs/vellum-bind-policy": "workspace:*",
-        "@khoralabs/vellum-contracts": "workspace:*",
-        "@khoralabs/vellum-transport": "workspace:*",
-        "@noble/ed25519": "^3.1.0",
-        "iso-base": "^4.2.1",
-        "iso-signatures": "^0.5.1",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "apps/vellum/contracts": {
-      "name": "@khoralabs/vellum-contracts",
-      "version": "0.0.0",
-      "dependencies": {
-        "zod": "^4",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -418,6 +312,58 @@
       },
       "peerDependencies": {
         "ai": "^6",
+        "typescript": "^5",
+      },
+    },
+    "packages/atrium/auth": {
+      "name": "@khoralabs/atrium-auth",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/agent-persisted-signer": "workspace:*",
+        "@khoralabs/agent-relay": "workspace:*",
+        "@noble/ed25519": "^3.1.0",
+        "iso-did": "^2.1.1",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/atrium/client": {
+      "name": "@khoralabs/atrium-client",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/agent-relay": "workspace:*",
+        "@khoralabs/atrium-auth": "workspace:*",
+        "@khoralabs/atrium-contracts": "workspace:*",
+        "@khoralabs/atrium-transport": "workspace:*",
+        "@khoralabs/obp-v2-session-impl": "workspace:*",
+        "@khoralabs/obp-v2-transport-ws": "workspace:*",
+        "zod": "^4",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/atrium/contracts": {
+      "name": "@khoralabs/atrium-contracts",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/agent-relay": "workspace:*",
+        "zod": "^4",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
         "typescript": "^5",
       },
     },
@@ -844,6 +790,60 @@
         "typescript": "^5",
       },
     },
+    "packages/vellum/bind-policy": {
+      "name": "@khoralabs/vellum-bind-policy",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/obp-v2-errors": "workspace:*",
+        "@khoralabs/obp-v2-model": "workspace:*",
+        "ajv": "^8.17.1",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/vellum/client": {
+      "name": "@khoralabs/vellum-client",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/agent-persisted-signer": "workspace:*",
+        "@khoralabs/atrium-client": "workspace:*",
+        "@khoralabs/obp-v2-frames-impl": "workspace:*",
+        "@khoralabs/obp-v2-model": "workspace:*",
+        "@khoralabs/obp-v2-nbc": "workspace:*",
+        "@khoralabs/vellum-bind-policy": "workspace:*",
+        "@khoralabs/vellum-contracts": "workspace:*",
+        "@khoralabs/vellum-transport": "workspace:*",
+        "@noble/ed25519": "^3.1.0",
+        "iso-base": "^4.2.1",
+        "iso-signatures": "^0.5.1",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/vellum/contracts": {
+      "name": "@khoralabs/vellum-contracts",
+      "version": "0.0.0",
+      "dependencies": {
+        "zod": "^4",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "packages/vellum/transport": {
       "name": "@khoralabs/vellum-transport",
       "version": "0.0.0",
@@ -965,13 +965,13 @@
 
     "@khoralabs/agent-thread": ["@khoralabs/agent-thread@workspace:packages/agent/thread"],
 
-    "@khoralabs/atrium-auth": ["@khoralabs/atrium-auth@workspace:apps/atrium/auth"],
+    "@khoralabs/atrium-auth": ["@khoralabs/atrium-auth@workspace:packages/atrium/auth"],
 
     "@khoralabs/atrium-cli": ["@khoralabs/atrium-cli@workspace:apps/atrium/cli"],
 
-    "@khoralabs/atrium-client": ["@khoralabs/atrium-client@workspace:apps/atrium/client"],
+    "@khoralabs/atrium-client": ["@khoralabs/atrium-client@workspace:packages/atrium/client"],
 
-    "@khoralabs/atrium-contracts": ["@khoralabs/atrium-contracts@workspace:apps/atrium/contracts"],
+    "@khoralabs/atrium-contracts": ["@khoralabs/atrium-contracts@workspace:packages/atrium/contracts"],
 
     "@khoralabs/atrium-daemon": ["@khoralabs/atrium-daemon@workspace:apps/atrium/daemon"],
 
@@ -1039,13 +1039,13 @@
 
     "@khoralabs/sqlite-migrate": ["@khoralabs/sqlite-migrate@workspace:packages/libs/sqlite-migrate"],
 
-    "@khoralabs/vellum-bind-policy": ["@khoralabs/vellum-bind-policy@workspace:apps/vellum/bind-policy"],
+    "@khoralabs/vellum-bind-policy": ["@khoralabs/vellum-bind-policy@workspace:packages/vellum/bind-policy"],
 
     "@khoralabs/vellum-cli": ["@khoralabs/vellum-cli@workspace:apps/vellum/cli"],
 
-    "@khoralabs/vellum-client": ["@khoralabs/vellum-client@workspace:apps/vellum/client"],
+    "@khoralabs/vellum-client": ["@khoralabs/vellum-client@workspace:packages/vellum/client"],
 
-    "@khoralabs/vellum-contracts": ["@khoralabs/vellum-contracts@workspace:apps/vellum/contracts"],
+    "@khoralabs/vellum-contracts": ["@khoralabs/vellum-contracts@workspace:packages/vellum/contracts"],
 
     "@khoralabs/vellum-daemon": ["@khoralabs/vellum-daemon@workspace:apps/vellum/daemon"],
 
