@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# Local demo: register, topics, posts, room, vellum multiplex, NBC extend+expose (alice),
+# Local demo: register, topics, posts, room, vellum multiplex, NBC genesis turn at chain init (alice),
 # NBC bind (bob), then inspect offers / ports / bind policy.
 set -eu
 
@@ -129,24 +129,22 @@ sleep 2
 
 if test "${AGENT_USERNAME}" = alice; then
   PEER_HEX=$(tr -d '\r\n ' <"${SYNC}/${AGENT_PEER_USERNAME}.pub.hex")
-  echo "[alice] chain create"
+  echo "[alice] chain create (genesis_turn from nbc-first-turn.json → demo-offer + demo-port)"
   vellum --room="${ROOM_ID}" chain create \
     --peer-party=00000000-0000-4000-8000-0000000000b2 \
     --peer-key="${PEER_HEX}" \
-    --my-party=00000000-0000-4000-8000-0000000000a1
+    --my-party=00000000-0000-4000-8000-0000000000a1 \
+    --genesis-json="@${ROOT}/demo/scripts/nbc-first-turn.json"
   sleep 4
   CHAINS=$(vellum --room="${ROOM_ID}" chain list)
   echo "${CHAINS}" | jq -e '.[0].session_id' >/dev/null
   SID=$(echo "${CHAINS}" | jq -r '.[0].session_id')
-  echo "[alice] offer send-turn (extend demo-offer + expose demo-port) session=${SID}"
-  vellum --room="${ROOM_ID}" offer send-turn \
-    --session="${SID}" \
-    --json="@${ROOT}/demo/scripts/nbc-first-turn.json"
+  echo "[alice] genesis committed session=${SID}"
   : >"${SYNC}/alice-nbc-first-turn.done"
 fi
 
 if test "${AGENT_USERNAME}" = bob; then
-  echo "[bob] wait alice first NBC turn"
+  echo "[bob] wait alice chain init + genesis NBC turn"
   i=0
   until test -f "${SYNC}/alice-nbc-first-turn.done"; do
     i=$((i + 1))

@@ -77,7 +77,7 @@ async function main(): Promise<void> {
 Usage:
   vellum list [--data-dir=…] [--json]
   vellum connect <roomId>|--room=<id> [--base-url=http://...]
-  vellum [--room=id] chain create --peer-party=<uuid> --peer-key=<hex> [--session][--genesis][--my-party]
+  vellum [--room=id] chain create --peer-party=<uuid> --peer-key=<hex> [--genesis-json='<JSON>'|@path] [--session][--genesis][--my-party]
   vellum [--room=id] chain list
   vellum [--room=id] chain snapshot
   vellum [--room=id] offer list
@@ -138,12 +138,22 @@ Usage:
       if (peerParty === undefined || peerKey === undefined) {
         throw new Error("chain create requires --peer-party and --peer-key");
       }
+      const genesisJson = getFlag(flags, "genesis-json", "genesisJson");
+      let genesisTurn: Record<string, unknown> | undefined;
+      if (genesisJson !== undefined && genesisJson.length > 0) {
+        const parsed = readJsonArg(genesisJson);
+        if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+          throw new Error("chain create --genesis-json must be a JSON object");
+        }
+        genesisTurn = parsed as Record<string, unknown>;
+      }
       const out = await client.chainCreate({
         peerPartyId: peerParty,
         peerActorPubkeyHex: peerKey,
         sessionId: getFlag(flags, "session"),
         genesisHash: getFlag(flags, "genesis"),
         myPartyId: getFlag(flags, "my-party", "myParty"),
+        ...(genesisTurn !== undefined ? { genesisTurn } : {}),
       });
       console.log(JSON.stringify(out, null, 2));
       return;

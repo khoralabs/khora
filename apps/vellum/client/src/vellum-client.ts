@@ -16,6 +16,7 @@ import {
   type ChainStateResponse,
   ChainStateResponseSchema,
   cfgDataDir,
+  DEFAULT_GENESIS_TURN_WIRE,
   roomObpSqlitePath,
   roomVellumControlPath,
   type VellumChainRow,
@@ -153,6 +154,8 @@ export class VellumClient {
     myPartyId?: string;
     peerPartyId: string;
     peerActorPubkeyHex: string;
+    /** NBC genesis body (extend + ≥1 port, no bind); defaults to {@link DEFAULT_GENESIS_TURN_WIRE}. */
+    genesisTurn?: Record<string, unknown>;
   }): Promise<ChainInitResponse> {
     const idPath = process.env.ATRIUM_AGENT_KEY_PATH?.trim() ?? defaultIdentityPath();
     const signer = await loadIdentity(idPath);
@@ -172,7 +175,10 @@ export class VellumClient {
       genesis_hash: genesis,
       parties,
     });
-    const payload = { init: sessionInitToWire(norm) };
+    const payload = {
+      init: sessionInitToWire(norm),
+      genesis_turn: input.genesisTurn ?? DEFAULT_GENESIS_TURN_WIRE,
+    };
     const res = await fetch(`${this.controlBaseUrl()}/chain/init`, {
       method: "POST",
       headers: { "content-type": "application/json" },

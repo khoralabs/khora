@@ -5,7 +5,7 @@ import {
   normalizeSessionInit,
   sessionInitFromWire,
 } from "@khoralabs/obp-v2-frames-impl";
-import { parseNbcTurnBody } from "@khoralabs/obp-v2-nbc";
+import { type NbcTurnBody, parseNbcTurnBody } from "@khoralabs/obp-v2-nbc";
 import {
   ChainInitRequestSchema,
   type ChainInitResponse,
@@ -14,6 +14,17 @@ import {
 } from "@khoralabs/vellum-contracts";
 
 import { upsertChainRow } from "./vellum-sqlite-meta.ts";
+
+function parseGenesisTurnOrThrow(raw: Record<string, unknown>) {
+  const nb = parseNbcTurnBody(raw);
+  if (nb.ports.length < 1) {
+    throw new TypeError("genesis_turn requires at least one exposed port");
+  }
+  if (nb.bind_port_id !== "") {
+    throw new TypeError("genesis_turn must not include bind_port_id / bindPortId");
+  }
+  return nb;
+}
 
 export type VellumControlServerState = {
   /** Set when multiplex connection is ready — `conn.init` / `sendTurn` require this. */
@@ -92,6 +103,13 @@ export function startVellumControlServer(opts: { state: VellumControlServerState
             );
           }
           const wi = parsed.data.init;
+          let genesisNb: NbcTurnBody;
+          try {
+            genesisNb = parseGenesisTurnOrThrow(parsed.data.genesis_turn);
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            return Response.json({ error: msg }, { status: 400 });
+          }
           const wire = sessionInitFromWire({
             session_id: wi.session_id,
             genesis_hash: wi.genesis_hash,
@@ -103,6 +121,7 @@ export function startVellumControlServer(opts: { state: VellumControlServerState
             const handle = await state.conn.init(norm, {});
             state.handles.set(norm.session_id, handle);
             upsertChainRow(db, norm.session_id, norm.genesis_hash, Date.now());
+            await handle.sendTurn(genesisNb);
             const out: ChainInitResponse = { ok: true, session_id: norm.session_id };
             return Response.json(out);
           } catch (e) {

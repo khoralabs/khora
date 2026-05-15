@@ -12,8 +12,13 @@ export const ChainInitWireSchema = z.object({
 
 export type ChainInitWire = z.infer<typeof ChainInitWireSchema>;
 
+/** NBC **`bind_payload`** shape validated downstream by daemon (`parseNbcTurnBody`). */
+export const GenesisTurnWireSchema = z.record(z.string(), z.unknown());
+
 export const ChainInitRequestSchema = z.object({
   init: ChainInitWireSchema,
+  /** Opening multiplex initiator MUST supply genesis extend-offer + ≥1 port (no bind). */
+  genesis_turn: GenesisTurnWireSchema,
 });
 
 export type ChainInitRequest = z.infer<typeof ChainInitRequestSchema>;
@@ -31,6 +36,29 @@ export const ChainInitResponseSchema = z.object({
 });
 
 export type ChainInitResponse = z.infer<typeof ChainInitResponseSchema>;
+
+/** Minimal genesis NBC body for CLI defaults / smoke tests (`expires_turn` values are placeholders). */
+export const DEFAULT_GENESIS_TURN_WIRE: Record<string, unknown> = {
+  offer: {
+    id: "",
+    expires_turn: 100,
+    expires_at_relay_ms: 0,
+    type: "step",
+    sourcemaps: [],
+  },
+  ports: [
+    {
+      id: "",
+      type: "slot",
+      promise: "vellum-genesis",
+      expires_turn: 100,
+      expires_at_relay_ms: 0,
+      bind_policy: null,
+      ref: "",
+    },
+  ],
+  bind_port_id: "",
+};
 
 export const ChainStateResponseSchema = z.object({
   chains: z.array(
