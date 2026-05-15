@@ -1,0 +1,22 @@
+---
+description: Use shadcn/ui components in the atrium and khoralabs homepages
+globs: "apps/atrium/homepage/**/*.tsx, apps/khoralabs/homepage/**/*.tsx"
+alwaysApply: false
+---
+
+# shadcn/ui Components
+
+Both homepages have shadcn/ui pre-installed (new-york style, neutral base color, CSS variables).
+
+Available components in `@/components/ui/`: `button`, `card`, `input`, `label`, `select`, `textarea`.
+
+- Import from `@/components/ui/<component>`, not from `shadcn/ui` or `@radix-ui` directly.
+- Add new components with `bunx shadcn@latest add <component>` from the app root.
+- Use `cn()` from `@/lib/utils` for conditional class merging.
+
+```tsx
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+```

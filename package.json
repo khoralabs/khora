@@ -24,6 +24,7 @@
     "apps/*",
     "apps/atrium/*",
     "apps/atrium/plugins/*",
+    "apps/khoralabs/*",
     "packages/libs/*",
     "packages/agent/*",
     "packages/memories/*",
