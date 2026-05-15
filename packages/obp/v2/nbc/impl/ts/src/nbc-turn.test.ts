@@ -11,16 +11,23 @@ import type {
   ExtendOfferOutput,
   GetExtendingPartyIdInput,
   GetExtendingPartyIdOutput,
+  GetNbcBindWindowForOfferInput,
+  GetNbcBindWindowForOfferOutput,
+  GetNbcBindWindowForPortInput,
+  GetNbcBindWindowForPortOutput,
   GetOfferInput,
   GetOfferOutput,
   GetPartyInput,
   GetPartyOutput,
   GetPortInput,
   GetPortOutput,
+  GetPortsSnapshotInput,
   GetPortsSnapshotOutput,
   IsPortExposedInput,
   IsPortExposedOutput,
+  ListBindsInput,
   ListBindsOutput,
+  ListExposedPortEdgesInput,
   ListExposedPortEdgesOutput,
   ObpPersistenceStrategy,
   RegisterPartyInput,
@@ -37,6 +44,8 @@ class InMemoryStrategy implements ObpPersistenceStrategy {
   private parties = new Map<string, Party>();
   private offers = new Map<string, Offer>();
   private ports = new Map<string, Port>();
+  private offerNbc = new Map<string, { nbc_expires_turn: number; nbc_expires_at_relay_ms: number }>();
+  private portNbc = new Map<string, { nbc_expires_turn: number; nbc_expires_at_relay_ms: number }>();
   private extends = new Map<string, string>();
   private exposes = new Map<string, string>();
   private binds: BindListingRow[] = [];
@@ -70,6 +79,10 @@ class InMemoryStrategy implements ObpPersistenceStrategy {
     const offer: Offer = { ...input.offer, id: this.nextId() };
     this.offers.set(offer.id, offer);
     this.extends.set(offer.id, input.partyId);
+    this.offerNbc.set(offer.id, {
+      nbc_expires_turn: input.nbc_expires_turn ?? 0,
+      nbc_expires_at_relay_ms: input.nbc_expires_at_relay_ms ?? 0,
+    });
     if (input.bindPortId) {
       this.binds.push({
         offerId: offer.id,
@@ -86,6 +99,10 @@ class InMemoryStrategy implements ObpPersistenceStrategy {
     const port: Port = { ...input.port, id: this.nextId() };
     this.ports.set(port.id, port);
     this.exposes.set(port.id, input.offerId);
+    this.portNbc.set(port.id, {
+      nbc_expires_turn: input.nbc_expires_turn ?? 0,
+      nbc_expires_at_relay_ms: input.nbc_expires_at_relay_ms ?? 0,
+    });
     return { port };
   }
 
@@ -100,7 +117,7 @@ class InMemoryStrategy implements ObpPersistenceStrategy {
     return {};
   }
 
-  async listExposedPortEdges(): Promise<ListExposedPortEdgesOutput> {
+  async listExposedPortEdges(_input: ListExposedPortEdgesInput): Promise<ListExposedPortEdgesOutput> {
     const edges: ExposedPortEdge[] = [];
     for (const [portId, offerId] of this.exposes) {
       edges.push({ offerId, portId });
@@ -112,11 +129,11 @@ class InMemoryStrategy implements ObpPersistenceStrategy {
     return { exposed: this.exposes.has(input.portId) };
   }
 
-  async listBinds(): Promise<ListBindsOutput> {
+  async listBinds(_input: ListBindsInput): Promise<ListBindsOutput> {
     return { binds: [...this.binds] };
   }
 
-  async getPortsSnapshot(): Promise<GetPortsSnapshotOutput> {
+  async getPortsSnapshot(_input: GetPortsSnapshotInput): Promise<GetPortsSnapshotOutput> {
     const entries = [...this.ports.entries()].map(([portId, port]) => ({ portId, port }));
     return { entries };
   }
@@ -125,18 +142,50 @@ class InMemoryStrategy implements ObpPersistenceStrategy {
     return { partyId: this.extends.get(input.offerId) ?? "" };
   }
 
+  async getNbcBindWindowForOffer(
+    input: GetNbcBindWindowForOfferInput,
+  ): Promise<GetNbcBindWindowForOfferOutput> {
+    if (!this.offers.has(input.offerId)) return { result: { kind: "notFound" } };
+    const w = this.offerNbc.get(input.offerId) ?? {
+      nbc_expires_turn: 0,
+      nbc_expires_at_relay_ms: 0,
+    };
+    return { result: { kind: "window", window: w } };
+  }
+
+  async getNbcBindWindowForPort(
+    input: GetNbcBindWindowForPortInput,
+  ): Promise<GetNbcBindWindowForPortOutput> {
+    if (!this.ports.has(input.portId)) return { result: { kind: "notFound" } };
+    const w = this.portNbc.get(input.portId) ?? {
+      nbc_expires_turn: 0,
+      nbc_expires_at_relay_ms: 0,
+    };
+    return { result: { kind: "window", window: w } };
+  }
+
   async setPortExpiredNow(input: { portId: string }): Promise<SetPortExpiredNowOutput> {
-    const port = this.ports.get(input.portId);
-    if (port) this.ports.set(port.id, { ...port, expires_seq: 0n });
+    if (this.ports.has(input.portId)) {
+      this.portNbc.set(input.portId, { nbc_expires_turn: 0, nbc_expires_at_relay_ms: 1 });
+    }
     return {};
   }
 
   async setOfferExpiredNow(input: { offerId: string }): Promise<SetOfferExpiredNowOutput> {
-    const offer = this.offers.get(input.offerId);
-    if (offer) this.offers.set(offer.id, { ...offer, expires_seq: 0n });
+    if (this.offers.has(input.offerId)) {
+      this.offerNbc.set(input.offerId, { nbc_expires_turn: 0, nbc_expires_at_relay_ms: 1 });
+    }
+    for (const [portId, offerId] of this.exposes) {
+      if (offerId !== input.offerId) continue;
+      if (this.ports.has(portId)) {
+        this.portNbc.set(portId, { nbc_expires_turn: 0, nbc_expires_at_relay_ms: 1 });
+      }
+    }
     return {};
   }
 }
+
+const timing0 = { turnSeq: 0, relayTsMs: 1 } as const;
 
 describe("applyNbcTurn", () => {
   test("extend + expose + bind", async () => {
@@ -145,13 +194,14 @@ describe("applyNbcTurn", () => {
     const { party: b } = await client.registerParty({ name: "B", sourcemaps: [] });
 
     const bodyA = parseNbcTurnBody({
-      offer: { id: "", expires_seq: 100n, type: "step", sourcemaps: [] },
+      offer: { id: "", expires_turn: 100, expires_at_relay_ms: 0, type: "step", sourcemaps: [] },
       ports: [
         {
           id: "",
           type: "slot",
           promise: "pick",
-          expires_seq: 100n,
+          expires_turn: 100,
+          expires_at_relay_ms: 0,
           bind_policy: null,
           ref: "",
         },
@@ -159,18 +209,18 @@ describe("applyNbcTurn", () => {
       bind_port_id: "",
       bind_payload: null,
     });
-    const r1 = await applyNbcTurn({ partyId: a.id, body: bodyA, client, ledgerSeq: 0n });
+    const r1 = await applyNbcTurn({ partyId: a.id, body: bodyA, client, timing: timing0 });
     expect(r1.exposedPortIds.length).toBe(1);
     const counterpartyPortId = r1.exposedPortIds[0];
     if (counterpartyPortId === undefined) throw new Error("expected port");
 
     const bodyB = parseNbcTurnBody({
-      offer: { id: "", expires_seq: 100n, type: "reply", sourcemaps: [] },
+      offer: { id: "", expires_turn: 100, expires_at_relay_ms: 0, type: "reply", sourcemaps: [] },
       ports: [],
       bind_port_id: counterpartyPortId,
       bind_payload: {},
     });
-    await applyNbcTurn({ partyId: b.id, body: bodyB, client, ledgerSeq: 0n });
+    await applyNbcTurn({ partyId: b.id, body: bodyB, client, timing: timing0 });
     const binds = await client.listBinds();
     expect(binds.binds.some((x) => x.portId === counterpartyPortId)).toBe(true);
   });
@@ -183,8 +233,10 @@ describe("nbc session reads", () => {
     const { party: bob } = await client.registerParty({ name: "Bob", sourcemaps: [] });
 
     const body = parseNbcTurnBody({
-      offer: { id: "", expires_seq: 100n, type: "step", sourcemaps: [] },
-      ports: [{ id: "", type: "x", promise: "", expires_seq: 100n, bind_policy: null, ref: "" }],
+      offer: { id: "", expires_turn: 100, expires_at_relay_ms: 0, type: "step", sourcemaps: [] },
+      ports: [
+        { id: "", type: "x", promise: "", expires_turn: 100, expires_at_relay_ms: 0, bind_policy: null, ref: "" },
+      ],
       bind_port_id: "",
       bind_payload: null,
     });
@@ -192,14 +244,14 @@ describe("nbc session reads", () => {
       partyId: alice.id,
       body,
       client,
-      ledgerSeq: 0n,
+      timing: timing0,
     });
     const pid = exposedPortIds[0];
     if (pid === undefined) throw new Error("port");
 
-    const forBob = await getBindablePortsForParty(alice.id, client, 0n);
+    const forBob = await getBindablePortsForParty(alice.id, client, timing0);
     expect(forBob.some((e) => e.portId === pid)).toBe(true);
-    const forAlice = await getBindablePortsForParty(bob.id, client, 0n);
+    const forAlice = await getBindablePortsForParty(bob.id, client, timing0);
     expect(forAlice.some((e) => e.portId === pid)).toBe(false);
   });
 
@@ -207,13 +259,13 @@ describe("nbc session reads", () => {
     const client = new ObpPersistenceClient(new InMemoryStrategy());
     const { party } = await client.registerParty({ name: "Solo", sourcemaps: [] });
     const body = parseNbcTurnBody({
-      offer: { id: "", expires_seq: 100n, type: "step", sourcemaps: [] },
+      offer: { id: "", expires_turn: 100, expires_at_relay_ms: 0, type: "step", sourcemaps: [] },
       ports: [],
       bind_port_id: "",
       bind_payload: null,
     });
-    await applyNbcTurn({ partyId: party.id, body, client, ledgerSeq: 0n });
-    expect(await isSessionAdvanceable(client, 0n)).toBe(false);
-    expect(await nbcNaturalStop(0, client, 0n)).toBe(true);
+    await applyNbcTurn({ partyId: party.id, body, client, timing: timing0 });
+    expect(await isSessionAdvanceable(client, timing0)).toBe(false);
+    expect(await nbcNaturalStop(0, client, timing0)).toBe(true);
   });
 });

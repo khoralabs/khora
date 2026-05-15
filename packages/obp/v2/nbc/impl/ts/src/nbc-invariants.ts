@@ -5,6 +5,7 @@
 
 import { ObpError } from "@khoralabs/obp-v2-errors";
 import type { JsonDocument, Offer, Port } from "@khoralabs/obp-v2-model";
+import type { ObpNbcBindWindow } from "@khoralabs/obp-v2-persistence";
 import { validateBindPayloadForPort } from "./nbc-bind-policy-validate.ts";
 import { resolveCanonicalPortId } from "./nbc-ref.ts";
 
@@ -15,10 +16,19 @@ export type NbcBindFailure =
   | { code: "REF_MISSING"; missingId: string }
   | { code: "POLICY_REJECTED"; reason: string };
 
+export type NbcBindTiming = {
+  /** DAG-committed frame count on this chain before applying the binding TURN. */
+  turnSeq: number;
+  /** `relay_ts_ms` from `cfd.agent.relay#RelayEnvelope` when hub relay is in use; `0` when unset (direct / tests). */
+  relayTsMs: number;
+};
+
 export type ValidateNbcBindInput = {
-  ledgerSeq: bigint;
+  timing: NbcBindTiming;
   offer: Offer;
   port: Port;
+  offerBindWindow: ObpNbcBindWindow;
+  portBindWindow: ObpNbcBindWindow;
   portsById: ReadonlyMap<string, Port>;
   targetPortIsExposed: boolean;
   /** Policy in effect for this port at expose time; `null` / empty object skips N4 schema. */
@@ -26,10 +36,17 @@ export type ValidateNbcBindInput = {
   bindPayload: JsonDocument | null;
 };
 
-/** N1: valid when **`expires_seq === 0n`** (unset) or **`ledgerSeq < expires_seq`**. */
-export function isValidAtLedgerSeq(expires_seq: bigint, ledgerSeq: bigint): boolean {
-  if (expires_seq === 0n) return true;
-  return ledgerSeq < expires_seq;
+/** N1 turn mode: bindable when **`expires_turn === 0`** or **`turnSeq < expires_turn`**. */
+export function isTurnExpiryOk(expires_turn: number, turnSeq: number): boolean {
+  if (expires_turn === 0) return true;
+  return turnSeq < expires_turn;
+}
+
+/** N1 relay mode: bindable when **`expires_at_relay_ms === 0`** or **`relayTsMs < expires_at_relay_ms`**. */
+export function isRelayExpiryOk(expires_at_relay_ms: number, relayTsMs: number): boolean {
+  if (expires_at_relay_ms === 0) return true;
+  if (relayTsMs === 0) return false;
+  return relayTsMs < expires_at_relay_ms;
 }
 
 /** True when **`bind_policy`** is a non-empty object (N4 applies). */
@@ -43,12 +60,20 @@ export function isActiveBindPolicy(policy: JsonDocument | null): policy is JsonD
  * Pure bind validation for bilateral NBC. Returns **`null`** when allowed.
  */
 export async function validateNbcBind(input: ValidateNbcBindInput): Promise<NbcBindFailure | null> {
-  const { ledgerSeq, offer, port, portsById, targetPortIsExposed, bindPolicy, bindPayload } = input;
+  const { timing, offerBindWindow, portBindWindow, port, portsById, targetPortIsExposed, bindPolicy, bindPayload } =
+    input;
+  const { turnSeq, relayTsMs } = timing;
 
-  if (!isValidAtLedgerSeq(offer.expires_seq, ledgerSeq)) {
+  if (!isTurnExpiryOk(offerBindWindow.nbc_expires_turn, turnSeq)) {
     return { code: "EXPIRED", entity: "offer" };
   }
-  if (!isValidAtLedgerSeq(port.expires_seq, ledgerSeq)) {
+  if (!isRelayExpiryOk(offerBindWindow.nbc_expires_at_relay_ms, relayTsMs)) {
+    return { code: "EXPIRED", entity: "offer" };
+  }
+  if (!isTurnExpiryOk(portBindWindow.nbc_expires_turn, turnSeq)) {
+    return { code: "EXPIRED", entity: "port" };
+  }
+  if (!isRelayExpiryOk(portBindWindow.nbc_expires_at_relay_ms, relayTsMs)) {
     return { code: "EXPIRED", entity: "port" };
   }
 

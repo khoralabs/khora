@@ -76,7 +76,9 @@ followed by **`length`** bytes of **`UTF-8(canonical_json(frameObject))`**, wher
 (see below) or a **Frame**. Alternative bindings **MAY** substitute an equivalent framing that preserves strict ordering and message
 boundaries; see **`cfd.obp.frame.http2`**.
 
-**Session bootstrap:** Framed objects **MAY** include multiple **`{ "init": `<SessionInit JSON>` }`** envelopes on the **same** duplex byte stream (long‑lived multiplex): each distinct **`session_id`** / **`genesis_hash`** pair starts a separate causal chain. Implementations **MUST** route each **Frame** to the unique open chain whose current tip or registered **`genesis_hash`** equals **`p_hash`**. Keys SHOULD be sorted for canonical framing. Between **`init`** messages, framed objects **MUST** be **Frame** objects **`{ "actor", "body", "p_hash", "sig", "type" }`** for the active chains’ turns.
+**Session bootstrap:** Framed objects **MAY** include multiple **`{ "init": `<SessionInit JSON>` }`** envelopes on the **same** duplex byte stream (long‑lived multiplex): each distinct **`session_id`** / **`genesis_hash`** pair starts a separate causal chain. Implementations **MUST** route each **Frame** to the unique open chain whose current tip or registered **`genesis_hash`** equals **`p_hash`**. Keys SHOULD be sorted for canonical framing. Between **`init`** messages, **hub-mediated** deployments that adopt the **agent relay policy** **MUST** frame payloads as **`cfd.agent.relay#RelayEnvelope`** (`frame` + `relay_ts_ms`); that policy is **not** part of core **`cfd.obp.frame`** — see `packages/agent/relay/spec/model/frame-relay-binding.smithy`. Direct streams **without** a relay **MAY** send bare **`Frame`** objects.
+
+**Relay echo (when relay policy applies):** Originators MUST apply **`Frame`** effects only from **`cfd.agent.relay#RelayEnvelope`** bytes received back from the relay (including self-echo), not from the pre-relay send path, so **`relay_ts_ms`** and DAG advance stay consistent with the counterparty.
 
 **Turn contract (informal):** After **init**, any actor may send a **TURN** frame. Semantics of **`body`** (extend offer, expose ports, bind) are **not** defined here — see **`cfd.obp.nbc`** and **`cfd.obp#ObpPersistence`**. Causal order is enforced only by **`p_hash`**: each frame's **`p_hash`** MUST equal the local DAG tip (**`CAUSAL_MISMATCH`** otherwise). The wire protocol does **not** imply strict alternation between parties — that is **transport-scoped**. Purely decentralized transports **MAY** embed alternation hints inside the opaque **`body`**.
 
@@ -87,7 +89,7 @@ boundaries; see **`cfd.obp.frame.http2`**.
 **Hardened constraints (draft §8):**
 1. **Strict ordering:** reject when **`p_hash`** ≠ local tip.
 2. **Identity verification:** reject invalid **`sig`**; session **SHOULD** abort.
-3. **Offer/port expiry / capacity:** after NBC (if any) admits a bind, **`OBPPersistenceClient`** / ledger **`expires_seq`** on **`cfd.obp#Offer`** / **`cfd.obp#Port`** and NBC **`NbcPortExposePolicy.max_bindings`** (see **`cfd.obp.nbc`**) constrain the projected **`ObpPersistence`** store.
+3. **NBC bind-window / capacity:** after NBC (if any) admits a bind, the **`ObpPersistence`** NBC projection (**`nbc_expires_*`** columns / **`getNbcBindWindowFor*`** reads — not fields on thin **`cfd.obp#Offer`** / **`cfd.obp#Port`**) evaluated against **`turn_seq`** and **`relay_ts_ms`** from **`cfd.agent.relay#RelayEnvelope`** when hub relay policy is in use on the binding **TURN**, plus **`NbcPortExposePolicy.max_bindings`** (see **`cfd.obp.nbc`**), constrain the store.
 4. **No partial binds:** NBC and persistence layers **MUST** reject partial bind projections; opaque **`body`** must not commit a half-applied **BINDS** edge.
 
 **Mapping to decentralized session sync:** Each accepted frame yields one or more replayable **`cfd.obp.session#SessionOp`** values

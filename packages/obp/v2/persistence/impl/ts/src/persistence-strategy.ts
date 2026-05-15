@@ -17,6 +17,10 @@ import type {
   ExtendOfferOutput,
   GetExtendingPartyIdInput,
   GetExtendingPartyIdOutput,
+  GetNbcBindWindowForOfferInput,
+  GetNbcBindWindowForOfferOutput,
+  GetNbcBindWindowForPortInput,
+  GetNbcBindWindowForPortOutput,
   GetOfferInput,
   GetOfferOutput,
   GetPartyInput,
@@ -52,6 +56,8 @@ export interface ObpPersistenceStrategy {
   listBinds(input: ListBindsInput): Promise<ListBindsOutput>;
   getPortsSnapshot(input: GetPortsSnapshotInput): Promise<GetPortsSnapshotOutput>;
   getExtendingPartyId(input: GetExtendingPartyIdInput): Promise<GetExtendingPartyIdOutput>;
+  getNbcBindWindowForOffer(input: GetNbcBindWindowForOfferInput): Promise<GetNbcBindWindowForOfferOutput>;
+  getNbcBindWindowForPort(input: GetNbcBindWindowForPortInput): Promise<GetNbcBindWindowForPortOutput>;
   setPortExpiredNow(input: SetPortExpiredNowInput): Promise<SetPortExpiredNowOutput>;
   setOfferExpiredNow(input: SetOfferExpiredNowInput): Promise<SetOfferExpiredNowOutput>;
 }

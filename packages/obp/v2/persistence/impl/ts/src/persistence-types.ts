@@ -57,6 +57,9 @@ export type GetPortOutput = { result: GetPortResult };
 export type ExtendOfferInput = {
   partyId: string;
   offer: Offer;
+  /** NBC N1 bind-window projection for this offer row — not on thin `Offer`. Default `0` when omitted. */
+  nbc_expires_turn?: number;
+  nbc_expires_at_relay_ms?: number;
   /** When empty string, no BINDS edge is created. */
   bindPortId: string;
   /** Policy-shaped; NBC validates (`NbcBindSatisfaction`). `null` when not provided. */
@@ -74,6 +77,9 @@ export type ExtendOfferOutput = {
 export type ExposePortInput = {
   offerId: string;
   port: Port;
+  /** NBC N1 bind-window projection — not on thin `Port`. Default `0` when omitted. */
+  nbc_expires_turn?: number;
+  nbc_expires_at_relay_ms?: number;
 };
 
 export type ExposePortOutput = {
@@ -167,6 +173,26 @@ export type GetExtendingPartyIdOutput = {
   /** Empty string when no EXTENDS edge exists (Smithy `@default("")`). */
   partyId: string;
 };
+
+// ---------------------------------------------------------------------------
+// GetNbcBindWindowForOffer / GetNbcBindWindowForPort
+// ---------------------------------------------------------------------------
+
+/** NBC N1 bind-window projection for an offer/port row — not on thin `Offer`/`Port`. */
+export type ObpNbcBindWindow = {
+  nbc_expires_turn: number;
+  nbc_expires_at_relay_ms: number;
+};
+
+export type GetNbcBindWindowResult =
+  | { readonly kind: "notFound" }
+  | { readonly kind: "window"; window: ObpNbcBindWindow };
+
+export type GetNbcBindWindowForOfferInput = { offerId: string };
+export type GetNbcBindWindowForOfferOutput = { result: GetNbcBindWindowResult };
+
+export type GetNbcBindWindowForPortInput = { portId: string };
+export type GetNbcBindWindowForPortOutput = { result: GetNbcBindWindowResult };
 
 // ---------------------------------------------------------------------------
 // SetPortExpiredNow / SetOfferExpiredNow

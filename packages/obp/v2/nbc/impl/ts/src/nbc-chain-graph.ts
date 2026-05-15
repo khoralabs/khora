@@ -1,5 +1,6 @@
 import type { JsonDocument } from "@khoralabs/obp-v2-model";
 import type { ObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
+import { type NbcBindTiming, isRelayExpiryOk, isTurnExpiryOk } from "./nbc-invariants.ts";
 import type {
   NbcChainExposeEdge,
   NbcChainExtendEdge,
@@ -10,8 +11,8 @@ import type {
 } from "./nbc-chain-graph-types.ts";
 
 export type CollectNbcChainGraphOptions = {
-  /** When set, **`expired`** flags compare **`expires_seq`** to this ledger sequence. */
-  ledgerSeq?: bigint;
+  /** When set, **`expired`** flags use NBC N1 against this timing. */
+  timing?: NbcBindTiming;
   /**
    * NBC expose/bind policy document per port (e.g. session-local policy), merged into **`bind_policy`** on port rows.
    * Terminal / caps may be supplied by the host via **`terminal`** / **`max_bindings`** on returned documents if encoded there;
@@ -20,16 +21,20 @@ export type CollectNbcChainGraphOptions = {
   getBindPolicyForPort?: (portId: string) => JsonDocument | null | Promise<JsonDocument | null>;
 };
 
-function isExpired(expires_seq: bigint, ledgerSeq: bigint | undefined): boolean | undefined {
-  if (ledgerSeq === undefined) return undefined;
-  return expires_seq <= ledgerSeq;
+function isNbcExpiryViewExpired(
+  node: { readonly expires_turn: number; readonly expires_at_relay_ms: number },
+  t: NbcBindTiming,
+): boolean {
+  return !(
+    isTurnExpiryOk(node.expires_turn, t.turnSeq) && isRelayExpiryOk(node.expires_at_relay_ms, t.relayTsMs)
+  );
 }
 
 export async function collectNbcChainGraph(
   client: ObpPersistenceClient,
   options: CollectNbcChainGraphOptions = {},
 ): Promise<NbcChainGraph> {
-  const { ledgerSeq, getBindPolicyForPort } = options;
+  const { timing, getBindPolicyForPort } = options;
 
   const [{ edges: exposedEdges }, { binds }, snapOut] = await Promise.all([
     client.listExposedPortEdges(),
@@ -74,17 +79,22 @@ export async function collectNbcChainGraph(
       const { result } = await client.getOffer({ id: offerId });
       if (result.kind !== "offer") return null;
       const o = result.offer;
+      const win = await client.getNbcBindWindowForOfferOrNull(offerId);
+      const expires_turn = win?.nbc_expires_turn ?? 0;
+      const expires_at_relay_ms = win?.nbc_expires_at_relay_ms ?? 0;
       const ext = extendsEdges.find((e) => e.offerId === offerId);
       const partyId = ext?.partyId ?? "";
       const partyName = partyId ? partyNameById.get(partyId) : undefined;
+      const expiryView = { expires_turn, expires_at_relay_ms };
       return {
         id: o.id,
         type: o.type,
-        expires_seq: o.expires_seq,
+        expires_turn,
+        expires_at_relay_ms,
         sourcemaps: o.sourcemaps,
         partyId,
         partyName,
-        expired: isExpired(o.expires_seq, ledgerSeq),
+        ...(timing !== undefined ? { expired: isNbcExpiryViewExpired(expiryView, timing) } : {}),
       } satisfies NbcChainOfferRow;
     }),
   );
@@ -115,16 +125,21 @@ export async function collectNbcChainGraph(
           bind_policy = raw;
         }
       }
+      const win = await client.getNbcBindWindowForPortOrNull(portId);
+      const expires_turn = win?.nbc_expires_turn ?? 0;
+      const expires_at_relay_ms = win?.nbc_expires_at_relay_ms ?? 0;
+      const expiryView = { expires_turn, expires_at_relay_ms };
       const row: NbcChainPortRow = {
         id: port.id,
         type: port.type,
         promise: port.promise,
         ref: port.ref,
         sourcemaps: port.sourcemaps,
-        expires_seq: port.expires_seq,
+        expires_turn,
+        expires_at_relay_ms,
         exposedOnOfferIds: Object.freeze([...(exposedByPort.get(portId) ?? [])]),
         bindCount: bindCountByPort.get(portId) ?? 0,
-        expired: isExpired(port.expires_seq, ledgerSeq),
+        ...(timing !== undefined ? { expired: isNbcExpiryViewExpired(expiryView, timing) } : {}),
         bind_policy,
       };
       return row;

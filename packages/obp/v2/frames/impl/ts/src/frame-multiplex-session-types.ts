@@ -29,7 +29,6 @@ export type RunFrameMultiplexSessionArgs = {
   signer: FrameSigner;
   verifier: FrameVerifier;
   client: ObpPersistenceClient;
-  ledgerSeq: () => number;
   sessionTemplate?: Pick<SessionInitNormalized, "parties">;
   handlers: FrameSessionHandlers;
   sessionEnvelopeSync?: SessionEnvelopeSyncAdapter;

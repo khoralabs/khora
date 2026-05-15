@@ -14,6 +14,7 @@ export {
   createFrameDecoder,
   encodeSessionEnvelopeMessage,
   type FrameDecoderYield,
+  isNegotiationFrameObject,
 } from "./frame-decoder.ts";
 export {
   canonicalSessionParties,

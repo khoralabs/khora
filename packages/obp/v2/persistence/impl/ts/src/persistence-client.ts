@@ -22,6 +22,8 @@ import type {
   GetPartyOutput,
   GetPortInput,
   GetPortOutput,
+  GetNbcBindWindowForOfferOutput,
+  GetNbcBindWindowForPortOutput,
   GetPortsSnapshotOutput,
   IsPortExposedOutput,
   ListBindsOutput,
@@ -120,6 +122,24 @@ export class ObpPersistenceClient {
   async getExtendingPartyId(offerId: string): Promise<string | null> {
     const { partyId } = await this.strategy.getExtendingPartyId({ offerId });
     return partyId === "" ? null : partyId;
+  }
+
+  getNbcBindWindowForOffer(offerId: string): Promise<GetNbcBindWindowForOfferOutput> {
+    return this.strategy.getNbcBindWindowForOffer({ offerId });
+  }
+
+  getNbcBindWindowForPort(portId: string): Promise<GetNbcBindWindowForPortOutput> {
+    return this.strategy.getNbcBindWindowForPort({ portId });
+  }
+
+  async getNbcBindWindowForOfferOrNull(offerId: string) {
+    const { result } = await this.getNbcBindWindowForOffer(offerId);
+    return result.kind === "window" ? result.window : null;
+  }
+
+  async getNbcBindWindowForPortOrNull(portId: string) {
+    const { result } = await this.getNbcBindWindowForPort(portId);
+    return result.kind === "window" ? result.window : null;
   }
 
   // -------------------------------------------------------------------------

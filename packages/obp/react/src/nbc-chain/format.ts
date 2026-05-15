@@ -1,3 +1,7 @@
-export function formatExpiresSeq(seq: bigint): string {
-  return seq.toString();
+export function formatExpiresTurn(n: number): string {
+  return n === 0 ? "0 (off)" : String(n);
+}
+
+export function formatRelayMs(n: number): string {
+  return n === 0 ? "0 (off)" : String(n);
 }

@@ -39,21 +39,17 @@ structure Party {
     sourcemaps: SourceMapRefList
 }
 
-/// Proposal or workflow step; bindability requires **`ledger_seq < expires_seq`** (exclusive upper bound on ledger sequence). Row **`created_seq`** is NBC / persistence (**`cfd.obp.nbc#NbcRowCommitMeta`**), not on this shape.
+/// Proposal or workflow step — **identity** and open **`type`** plus **`sourcemaps`**. NBC bind-window (**`expires_turn`** / **`expires_at_relay_ms`**) is **not** a core graph field: it lives on **`cfd.obp.nbc`** TURN wire (`NbcOfferSpec`) and on the **`ObpPersistence`** NBC projection columns (**`nbc_expires_*`**, see **`cfd.obp#ExtendOfferInput`**). Row **`created_seq`** is NBC / persistence (**`cfd.obp.nbc#NbcRowCommitMeta`**), not on this shape.
 structure Offer {
     id: String
-    /// Minimum ledger sequence at which this offer is no longer bindable / extendable per expiry checks.
-    expires_seq: Long
     /// Open discriminator (domain-specific step name, e.g. workflow id).
     type: String
     sourcemaps: SourceMapRefList
 }
 
-/// Affordance: a continuation point. **`expires_seq`** / **`ref`** are graph-level bindability; **how many** binds and **terminal UX context** are **`cfd.obp.nbc#NbcPortExposePolicy`** when NBC applies. Row commit ordering (**`created_seq`**) is NBC / persistence, not on this shape.
+/// Affordance: a continuation point — **identity**, **`type`**, **`promise`**, **`ref`**, **`sourcemaps`**. NBC bind-window timing is **not** on this core shape; see **`cfd.obp.nbc#NbcPortSpec`** and **`cfd.obp#ExposePortInput`** projection fields. **How many** binds and **terminal UX context** are **`cfd.obp.nbc#NbcPortExposePolicy`** when NBC applies. Row commit ordering (**`created_seq`**) is NBC / persistence, not on this shape.
 structure Port {
     id: String
-    /// Minimum ledger sequence at which this port is no longer bindable per expiry checks.
-    expires_seq: Long
     type: String
     /// Counterparty-facing affordance copy (what this port offers or invites); implementations enforcing UX SHOULD require non-empty on **ExposePort**.
     @default("")

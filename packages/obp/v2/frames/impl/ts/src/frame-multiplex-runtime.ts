@@ -51,7 +51,6 @@ export class MultiplexSessionRuntime {
   private readonly signer: FrameSigner;
   private readonly verifier: FrameVerifier;
   private readonly client: ObpPersistenceClient;
-  private readonly ledgerSeq: () => number;
   private readonly handlers: FrameSessionHandlers;
   private readonly sessionEnvelopeSync: SessionEnvelopeSyncAdapter | undefined;
   private readonly userOpener: RunFrameMultiplexSessionArgs["openerSession"];
@@ -83,7 +82,6 @@ export class MultiplexSessionRuntime {
     this.signer = args.signer;
     this.verifier = args.verifier;
     this.client = args.client;
-    this.ledgerSeq = args.ledgerSeq;
     this.handlers = args.handlers;
     this.sessionEnvelopeSync = args.sessionEnvelopeSync;
     this.userOpener = args.openerSession;
@@ -335,26 +333,11 @@ export class MultiplexSessionRuntime {
         throw new ObpError("VALIDATION", "emitOutboundTurn: unknown or inactive chain");
       }
       const wire = nbcTurnBodyToWireRecord(body);
-      const { frame, nextTip } = await chain.dag.signOutboundAtTip(this.signer, "TURN", wire);
+      const { frame } = await chain.dag.signOutboundAtTip(this.signer, "TURN", wire);
       const key = frameDedupeKeyHex(frame);
       if (this.globalDedupe.has(key)) return;
 
-      await applyNbcFrameTurn(
-        this.client,
-        partyIdForActor(chain.init, frame.actor),
-        parseNbcFrameTurnBody(frame.body as Record<string, unknown>),
-        BigInt(this.ledgerSeq()),
-      );
-
-      this.globalDedupe.add(key);
-      accumulateTaggedSessionOps(chain.sessionOps, frameAsOpLike(frame), sessionId);
-      accumulateTaggedSessionOps(this.globalOps, frameAsOpLike(frame), sessionId);
-      this.tipToSession.set(nextTip, sessionId);
-      chain.dag.commitTip(nextTip);
-
       await this.sendWire(frame);
-
-      await this.requestEnvelopeFlush(sessionId);
     });
   }
 
@@ -452,7 +435,7 @@ export class MultiplexSessionRuntime {
     await this.maybeCloseIdle();
   };
 
-  private async handleInboundFrame(frame: Frame, wireUtf8: string): Promise<void> {
+  private async handleInboundFrame(frame: Frame, wireUtf8: string, relayTsMs?: number): Promise<void> {
     await this.enqueueMux(async () => {
       const key = frameDedupeKeyHex(frame);
       if (this.globalDedupe.has(key)) {
@@ -473,7 +456,10 @@ export class MultiplexSessionRuntime {
           this.client,
           partyIdForActor(c.init, frame.actor),
           parseNbcFrameTurnBody(frame.body as Record<string, unknown>),
-          BigInt(this.ledgerSeq()),
+          {
+            turnSeq: c.sessionOps.length,
+            relayTsMs: relayTsMs ?? 0,
+          },
         );
       } else if (frame.type === "END_OFFERS") {
         // No persistence graph step; advances DAG only.
@@ -545,7 +531,7 @@ export class MultiplexSessionRuntime {
     if (this.chains.size === 0) {
       throw new ObpError("VALIDATION", "expected init before frames");
     }
-    await this.handleInboundFrame(part.value, part.wireUtf8);
+    await this.handleInboundFrame(part.value, part.wireUtf8, part.relayTsMs);
   }
 
   private async runReadLoop(): Promise<void> {

@@ -3,18 +3,25 @@
  */
 
 import type { Port } from "@khoralabs/obp-v2-model";
-import type { ObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
-import { isValidAtLedgerSeq } from "./nbc-invariants.ts";
+import type { ObpPersistenceClient, ObpNbcBindWindow } from "@khoralabs/obp-v2-persistence";
+import { type NbcBindTiming, isRelayExpiryOk, isTurnExpiryOk } from "./nbc-invariants.ts";
 
 export type BindablePortEntry = { portId: string; port: Port };
 
+function isNbcWindowBindableAt(w: ObpNbcBindWindow, t: NbcBindTiming): boolean {
+  return (
+    isTurnExpiryOk(w.nbc_expires_turn, t.turnSeq) &&
+    isRelayExpiryOk(w.nbc_expires_at_relay_ms, t.relayTsMs)
+  );
+}
+
 /**
- * Ports exposed on offers extended by **`counterpartyPartyId`**, valid at **`ledgerSeq`** (N1 on offer + port).
+ * Ports exposed on offers extended by **`counterpartyPartyId`**, valid at **`timing`** (N1 on offer + port bind windows).
  */
 export async function getBindablePortsForParty(
   counterpartyPartyId: string,
   client: ObpPersistenceClient,
-  ledgerSeq: bigint,
+  timing: NbcBindTiming,
 ): Promise<BindablePortEntry[]> {
   const { edges } = await client.listExposedPortEdges();
   const out: BindablePortEntry[] = [];
@@ -25,19 +32,21 @@ export async function getBindablePortsForParty(
     if (!exposed) continue;
     const port = await client.getPortOrNull(e.portId);
     if (!port) continue;
-    if (!isValidAtLedgerSeq(port.expires_seq, ledgerSeq)) continue;
-    const offer = await client.getOfferOrNull(e.offerId);
-    if (!offer) continue;
-    if (!isValidAtLedgerSeq(offer.expires_seq, ledgerSeq)) continue;
+    const portWin = await client.getNbcBindWindowForPortOrNull(e.portId);
+    if (!portWin) continue;
+    if (!isNbcWindowBindableAt(portWin, timing)) continue;
+    const offerWin = await client.getNbcBindWindowForOfferOrNull(e.offerId);
+    if (!offerWin) continue;
+    if (!isNbcWindowBindableAt(offerWin, timing)) continue;
     out.push({ portId: e.portId, port });
   }
   return out;
 }
 
-/** `true` when any exposed port (with valid offer) is bindable at **`ledgerSeq`**. */
+/** `true` when any exposed port (with valid offer bind window) is bindable at **`timing`**. */
 export async function isSessionAdvanceable(
   client: ObpPersistenceClient,
-  ledgerSeq: bigint,
+  timing: NbcBindTiming,
 ): Promise<boolean> {
   const { edges } = await client.listExposedPortEdges();
   for (const e of edges) {
@@ -45,10 +54,12 @@ export async function isSessionAdvanceable(
     if (!exposed) continue;
     const port = await client.getPortOrNull(e.portId);
     if (!port) continue;
-    if (!isValidAtLedgerSeq(port.expires_seq, ledgerSeq)) continue;
-    const offer = await client.getOfferOrNull(e.offerId);
-    if (!offer) continue;
-    if (!isValidAtLedgerSeq(offer.expires_seq, ledgerSeq)) continue;
+    const portWin = await client.getNbcBindWindowForPortOrNull(e.portId);
+    if (!portWin) continue;
+    if (!isNbcWindowBindableAt(portWin, timing)) continue;
+    const offerWin = await client.getNbcBindWindowForOfferOrNull(e.offerId);
+    if (!offerWin) continue;
+    if (!isNbcWindowBindableAt(offerWin, timing)) continue;
     return true;
   }
   return false;
@@ -62,8 +73,8 @@ export async function isSessionAdvanceable(
 export async function nbcNaturalStop(
   currentTurnExposedPortCount: number,
   client: ObpPersistenceClient,
-  ledgerSeq: bigint,
+  timing: NbcBindTiming,
 ): Promise<boolean> {
   if (currentTurnExposedPortCount !== 0) return false;
-  return !(await isSessionAdvanceable(client, ledgerSeq));
+  return !(await isSessionAdvanceable(client, timing));
 }

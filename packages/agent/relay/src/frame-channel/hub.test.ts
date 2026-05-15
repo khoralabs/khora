@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { encodeFramedJson } from "@khoralabs/obp-v2-frames-impl";
 import type { FrameChannelHubPersistence, FrameChannelRoomRecord } from "../persistence/types.ts";
 import { createFrameChannelHub } from "./hub.ts";
 
@@ -48,24 +49,45 @@ describe("createFrameChannelHub", () => {
     expect(persistence.deleteCalls).toContain("room-a");
   });
 
-  test("relayBytes fans out to other peers", async () => {
+  test("relayBytes echoes wrapped frame to every peer including sender", async () => {
     const persistence = createFakeHubPersistence();
     const hub = createFrameChannelHub({ hubPersistence: persistence });
     await hub.createChannel("room-a");
 
-    const sent: Uint8Array[] = [];
+    const received: Uint8Array[] = [];
     const p1: import("./port.ts").FrameChannelPeer = {
-      send(_b) {},
+      send(b) {
+        received.push(b);
+      },
     };
     const p2: import("./port.ts").FrameChannelPeer = {
       send(b) {
-        sent.push(b);
+        received.push(b);
       },
     };
     await hub.attachPeer("room-a", p1);
     await hub.attachPeer("room-a", p2);
-    hub.relayBytes("room-a", p1, new Uint8Array([9]));
-    expect(sent.length).toBe(1);
-    expect(sent[0]?.[0]).toBe(9);
+
+    const frame = {
+      p_hash: "a".repeat(64),
+      actor: "00",
+      sig: "s",
+      type: "TURN",
+      body: {},
+    };
+    const raw = encodeFramedJson(frame);
+    hub.relayBytes("room-a", p1, raw);
+
+    expect(received.length).toBe(2);
+    for (const b of received) {
+      const len = new DataView(b.buffer, b.byteOffset, b.byteLength).getUint32(0, false);
+      expect(4 + len).toBe(b.length);
+      const json = JSON.parse(new TextDecoder().decode(b.subarray(4, 4 + len))) as {
+        frame: unknown;
+        relay_ts_ms: number;
+      };
+      expect(json.relay_ts_ms).toEqual(expect.any(Number));
+      expect((json.frame as { type: string }).type).toBe("TURN");
+    }
   });
 });

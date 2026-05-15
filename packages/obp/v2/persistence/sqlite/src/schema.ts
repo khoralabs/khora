@@ -1,4 +1,7 @@
-/** Frozen DDL for OBP v2 relational store — collapsed from legacy migrations (`bun:sqlite`). */
+/**
+ * Frozen DDL for OBP v2 relational store — collapsed from legacy migrations (`bun:sqlite`).
+ * **`nbc_expires_*`** on offers/ports are NBC N1 bind-window projection columns, not `cfd.obp#Offer`/`Port` fields.
+ */
 export const OBP_V2_SCHEMA_SQL = `
 PRAGMA foreign_keys = ON;
 
@@ -12,7 +15,8 @@ CREATE TABLE IF NOT EXISTS obp_parties (
 CREATE TABLE IF NOT EXISTS obp_offers (
   id TEXT PRIMARY KEY NOT NULL,
   created_seq INTEGER NOT NULL,
-  expires_seq INTEGER NOT NULL,
+  nbc_expires_turn INTEGER NOT NULL,
+  nbc_expires_at_relay_ms INTEGER NOT NULL,
   type TEXT NOT NULL,
   sourcemaps_json TEXT NOT NULL DEFAULT '[]'
 );
@@ -20,7 +24,8 @@ CREATE TABLE IF NOT EXISTS obp_offers (
 CREATE TABLE IF NOT EXISTS obp_ports (
   id TEXT PRIMARY KEY NOT NULL,
   created_seq INTEGER NOT NULL,
-  expires_seq INTEGER NOT NULL,
+  nbc_expires_turn INTEGER NOT NULL,
+  nbc_expires_at_relay_ms INTEGER NOT NULL,
   type TEXT NOT NULL,
   promise TEXT NOT NULL DEFAULT '',
   max_bindings INTEGER NOT NULL,

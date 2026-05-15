@@ -72,8 +72,7 @@ union VerifyError {
 /// as authoritative for this negotiation—not every entity in a global store. Implementations SHOULD restrict hashed ops to
 /// in-session mutations when forming leaves.
 ///
-/// **Ledger alignment:** Bind/expose validity continues to use **`ledger_seq < expires_seq`** on **`Offer`** / **`Port`**
-/// from **`cfd.obp`** (see **`packages/obp/v2/persistence/spec/model/persistence.smithy`**). **`ledger_seq`** is advanced by the session driver on commit—not wall clock.
+/// **Expiry alignment (NBC):** Bind/expose validity uses NBC bind windows (TURN **`NbcOfferSpec`** / **`NbcPortSpec`**, **`ObpPersistence`** **`nbc_expires_*`** / **`GetNbcBindWindowFor*`**) against session **`turn_seq`** and **`relay_ts_ms`** from **`cfd.agent.relay#RelayEnvelope`** when hub relay policy applies (see **`cfd.obp.nbc`**). Thin **`cfd.obp#Offer`** / **`cfd.obp#Port`** carry **no** expiry fields.
 ///
 /// **Canonical JSON (leaf input):** For each operation value **`op`**, implementations compute UTF-8 JSON with **recursively sorted object keys**;
 /// arrays preserve element order; **`null`**, booleans, numbers, and strings use normal JSON encoding (**`JSON.stringify`** rules).

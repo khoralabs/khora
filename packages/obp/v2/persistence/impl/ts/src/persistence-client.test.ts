@@ -44,7 +44,7 @@ describe("extendOffer + getExtendingPartyId", () => {
     const { party } = await client.registerParty({ name: "Bob", sourcemaps: [] });
     const { offer } = await client.extendOffer({
       partyId: party.id,
-      offer: { id: "", expires_seq: 9999n, type: "step", sourcemaps: [] },
+      offer: { id: "", type: "step", sourcemaps: [] },
       bindPortId: "",
       bind_payload: null,
     });
@@ -59,7 +59,7 @@ describe("exposePort + isPortExposed", () => {
     const { party } = await client.registerParty({ name: "Carol", sourcemaps: [] });
     const { offer } = await client.extendOffer({
       partyId: party.id,
-      offer: { id: "", expires_seq: 9999n, type: "step", sourcemaps: [] },
+      offer: { id: "", type: "step", sourcemaps: [] },
       bindPortId: "",
       bind_payload: null,
     });
@@ -67,7 +67,6 @@ describe("exposePort + isPortExposed", () => {
       offerId: offer.id,
       port: {
         id: "",
-        expires_seq: 9999n,
         type: "slot",
         promise: "fill me",
         ref: "",
@@ -85,13 +84,13 @@ describe("bindPort + listBinds", () => {
     const { party } = await client.registerParty({ name: "Dave", sourcemaps: [] });
     const { offer } = await client.extendOffer({
       partyId: party.id,
-      offer: { id: "", expires_seq: 9999n, type: "step", sourcemaps: [] },
+      offer: { id: "", type: "step", sourcemaps: [] },
       bindPortId: "",
       bind_payload: null,
     });
     const { port } = await client.exposePort({
       offerId: offer.id,
-      port: { id: "", expires_seq: 9999n, type: "slot", promise: "p", ref: "", sourcemaps: [] },
+      port: { id: "", type: "slot", promise: "p", ref: "", sourcemaps: [] },
     });
     await client.bindPort({ offerId: offer.id, portId: port.id, bind_payload: null });
     const { binds } = await client.listBinds();
@@ -105,13 +104,13 @@ describe("getPortsSnapshot", () => {
     const { party } = await client.registerParty({ name: "Eve", sourcemaps: [] });
     const { offer } = await client.extendOffer({
       partyId: party.id,
-      offer: { id: "", expires_seq: 9999n, type: "step", sourcemaps: [] },
+      offer: { id: "", type: "step", sourcemaps: [] },
       bindPortId: "",
       bind_payload: null,
     });
     await client.exposePort({
       offerId: offer.id,
-      port: { id: "", expires_seq: 9999n, type: "slot", promise: "p", ref: "", sourcemaps: [] },
+      port: { id: "", type: "slot", promise: "p", ref: "", sourcemaps: [] },
     });
     const snap = await client.getPortsSnapshot();
     expect(snap.entries.length).toBeGreaterThan(0);

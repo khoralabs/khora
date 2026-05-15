@@ -18,7 +18,6 @@ export type RunFrameSessionArgs = {
   signer: FrameSigner;
   verifier: FrameVerifier;
   client: ObpPersistenceClient;
-  ledgerSeq: () => number;
   init: SessionInitNormalized;
   handlers: FrameSessionHandlers;
   sessionEnvelopeSync?: SessionEnvelopeSyncAdapter;
@@ -32,7 +31,6 @@ export async function runFrameSession(args: RunFrameSessionArgs): Promise<Sessio
     signer,
     verifier,
     client,
-    ledgerSeq,
     init,
     handlers,
     sessionEnvelopeSync,
@@ -43,7 +41,6 @@ export async function runFrameSession(args: RunFrameSessionArgs): Promise<Sessio
     signer,
     verifier,
     client,
-    ledgerSeq,
     sessionTemplate: {
       parties: canonicalSessionParties([init.parties[0], init.parties[1]]),
     },

@@ -1,13 +1,8 @@
-import { Database } from "bun:sqlite";
-import fs from "node:fs";
-import path from "node:path";
 import type { PersistableAgentSigner } from "@khoralabs/atrium-auth";
 import { AtriumClient } from "@khoralabs/atrium-client";
 import { createInMemoryObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
 import { createFrameSignerFromPersistableAgent } from "./agent-frame-signer.ts";
 import { daemonAppConfig } from "./app-config.ts";
-import { createDurableLedgerSeq } from "./obp-ledger-seq.ts";
-import { roomObpSqlitePath } from "./obp-store.ts";
 
 export type RunRoomDaemonOptions = {
   baseUrl: string;
@@ -28,17 +23,12 @@ function logLine(json: boolean, label: string, payload: unknown): void {
 }
 
 /**
- * Hold an Atrium room WebSocket with durable `ledgerSeq` in SQLite (same path as the legacy OBP store)
- * and in-memory graph state for the v2 wire session.
+ * Hold an Atrium room WebSocket with in-memory OBP graph state for the v2 wire session
+ * (relay envelopes supply NBC timing; no client-side ledger counter).
  */
 export function runRoomDaemon(opts: RunRoomDaemonOptions): { close(): void } {
   const json = opts.json === true;
   const dataDir = opts.dataDir ?? daemonAppConfig.dataDir;
-  const cfg = { dataDir };
-  const sqlitePath = roomObpSqlitePath(cfg, opts.roomId);
-  fs.mkdirSync(path.dirname(sqlitePath), { recursive: true });
-  const db = new Database(sqlitePath, { create: true });
-  const ledgerSeq = createDurableLedgerSeq(db);
   const obpPersistence = createInMemoryObpPersistenceClient();
 
   const ac = new AbortController();
@@ -61,13 +51,12 @@ export function runRoomDaemon(opts: RunRoomDaemonOptions): { close(): void } {
       ...(dataDir !== undefined ? { dataDir } : {}),
     });
     try {
-      logLine(json, "room_open", { roomId: opts.roomId, ledgerSqlite: sqlitePath });
+      logLine(json, "room_open", { roomId: opts.roomId });
       await client.connectAtriumRoom(
         {
           webSocketUrl: opts.webSocketUrl,
           signer: frameSigner,
           client: obpPersistence,
-          ledgerSeq,
         },
         async () => {
           await hold;
@@ -83,11 +72,6 @@ export function runRoomDaemon(opts: RunRoomDaemonOptions): { close(): void } {
       }
     } finally {
       client.dispose();
-      try {
-        db.close();
-      } catch {
-        // ignore
-      }
     }
   })();
 

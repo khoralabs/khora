@@ -15,23 +15,35 @@ const textBindPolicy = {
   ],
 };
 
+const basePortFields = { type: "t" as const, promise: "", sourcemaps: [] as const };
+
+const win = (turn: number, relay: number) => ({
+  nbc_expires_turn: turn,
+  nbc_expires_at_relay_ms: relay,
+});
+
 describe("resolveCanonicalPortId", () => {
   test("resolves empty ref", () => {
     const p: Port = {
       id: "a",
-      expires_seq: 10n,
-      type: "t",
-      promise: "",
+      ...basePortFields,
       ref: "",
-      sourcemaps: [],
     };
     const m = new Map<string, Port>([["a", p]]);
     expect(resolveCanonicalPortId(m, "a")).toEqual({ ok: true, canonicalId: "a", path: ["a"] });
   });
 
   test("detects cycle", () => {
-    const a: Port = { id: "a", expires_seq: 10n, type: "t", promise: "", ref: "b", sourcemaps: [] };
-    const b: Port = { id: "b", expires_seq: 10n, type: "t", promise: "", ref: "a", sourcemaps: [] };
+    const a: Port = {
+      id: "a",
+      ...basePortFields,
+      ref: "b",
+    };
+    const b: Port = {
+      id: "b",
+      ...basePortFields,
+      ref: "a",
+    };
     const m = new Map<string, Port>([
       ["a", a],
       ["b", b],
@@ -43,10 +55,13 @@ describe("resolveCanonicalPortId", () => {
 });
 
 describe("validateNbcBind", () => {
-  const offer: Offer = { id: "o1", expires_seq: 100n, type: "step", sourcemaps: [] };
+  const offer: Offer = {
+    id: "o1",
+    type: "step",
+    sourcemaps: [],
+  };
   const port: Port = {
     id: "p1",
-    expires_seq: 100n,
     type: "slot",
     promise: "x",
     ref: "",
@@ -54,11 +69,13 @@ describe("validateNbcBind", () => {
   };
   const ports = new Map<string, Port>([["p1", port]]);
 
-  test("N1 rejects expired offer", async () => {
+  test("N1 rejects expired offer (turn)", async () => {
     const f = await validateNbcBind({
-      ledgerSeq: 100n,
-      offer: { ...offer, expires_seq: 50n },
+      timing: { turnSeq: 50, relayTsMs: 1 },
+      offer,
       port,
+      offerBindWindow: win(50, 0),
+      portBindWindow: win(100, 0),
       portsById: ports,
       targetPortIsExposed: true,
       bindPolicy: null,
@@ -67,11 +84,13 @@ describe("validateNbcBind", () => {
     expect(f).toEqual({ code: "EXPIRED", entity: "offer" });
   });
 
-  test("N1 skips when expires_seq is 0", async () => {
+  test("N1 skips when both expiry modes off", async () => {
     const f = await validateNbcBind({
-      ledgerSeq: 999n,
-      offer: { ...offer, expires_seq: 0n },
-      port: { ...port, expires_seq: 0n },
+      timing: { turnSeq: 999, relayTsMs: 999 },
+      offer,
+      port,
+      offerBindWindow: win(0, 0),
+      portBindWindow: win(0, 0),
       portsById: ports,
       targetPortIsExposed: true,
       bindPolicy: null,
@@ -80,11 +99,28 @@ describe("validateNbcBind", () => {
     expect(f).toBeNull();
   });
 
-  test("NOT_EXPOSED", async () => {
+  test("N1 rejects relay expiry without relay ts", async () => {
     const f = await validateNbcBind({
-      ledgerSeq: 0n,
+      timing: { turnSeq: 0, relayTsMs: 0 },
       offer,
       port,
+      offerBindWindow: win(0, 100),
+      portBindWindow: win(0, 0),
+      portsById: ports,
+      targetPortIsExposed: true,
+      bindPolicy: null,
+      bindPayload: null,
+    });
+    expect(f).toEqual({ code: "EXPIRED", entity: "offer" });
+  });
+
+  test("NOT_EXPOSED", async () => {
+    const f = await validateNbcBind({
+      timing: { turnSeq: 0, relayTsMs: 1 },
+      offer,
+      port,
+      offerBindWindow: win(100, 0),
+      portBindWindow: win(100, 0),
       portsById: ports,
       targetPortIsExposed: false,
       bindPolicy: null,
@@ -95,9 +131,11 @@ describe("validateNbcBind", () => {
 
   test("N4 rejects bind_payload when no policy", async () => {
     const f = await validateNbcBind({
-      ledgerSeq: 0n,
+      timing: { turnSeq: 0, relayTsMs: 1 },
       offer,
       port,
+      offerBindWindow: win(100, 0),
+      portBindWindow: win(100, 0),
       portsById: ports,
       targetPortIsExposed: true,
       bindPolicy: null,
@@ -108,9 +146,11 @@ describe("validateNbcBind", () => {
 
   test("N4 rejects invalid policy document", async () => {
     const f = await validateNbcBind({
-      ledgerSeq: 0n,
+      timing: { turnSeq: 0, relayTsMs: 1 },
       offer,
       port,
+      offerBindWindow: win(100, 0),
+      portBindWindow: win(100, 0),
       portsById: ports,
       targetPortIsExposed: true,
       bindPolicy: { required: true },
@@ -121,9 +161,11 @@ describe("validateNbcBind", () => {
 
   test("N4 success with schema bind_payload", async () => {
     const f = await validateNbcBind({
-      ledgerSeq: 0n,
+      timing: { turnSeq: 0, relayTsMs: 1 },
       offer,
       port,
+      offerBindWindow: win(100, 0),
+      portBindWindow: win(100, 0),
       portsById: ports,
       targetPortIsExposed: true,
       bindPolicy: textBindPolicy,
@@ -134,9 +176,11 @@ describe("validateNbcBind", () => {
 
   test("N4 rejects missing required field", async () => {
     const f = await validateNbcBind({
-      ledgerSeq: 0n,
+      timing: { turnSeq: 0, relayTsMs: 1 },
       offer,
       port,
+      offerBindWindow: win(100, 0),
+      portBindWindow: win(100, 0),
       portsById: ports,
       targetPortIsExposed: true,
       bindPolicy: textBindPolicy,

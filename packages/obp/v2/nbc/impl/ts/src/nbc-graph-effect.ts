@@ -5,6 +5,7 @@
 
 import type { ObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
 import { type ApplyNbcTurnParams, type ApplyNbcTurnResult, applyNbcTurn } from "./nbc-turn.ts";
+import { type NbcBindTiming } from "./nbc-invariants.ts";
 import { type NbcTurnBody, parseNbcTurnBody } from "./nbc-types.ts";
 
 export type ApplyNbcFrameTurnResult = ApplyNbcTurnResult;
@@ -18,33 +19,34 @@ export async function applyNbcFrameTurn(
   client: ObpPersistenceClient,
   partyId: string,
   body: NbcTurnBody,
-  ledgerSeq: bigint,
+  timing: NbcBindTiming,
   getBindPolicyForPort?: ApplyNbcTurnParams["getBindPolicyForPort"],
 ): Promise<ApplyNbcFrameTurnResult> {
-  return applyNbcTurn({ partyId, body, client, ledgerSeq, getBindPolicyForPort });
+  return applyNbcTurn({ partyId, body, client, timing, getBindPolicyForPort });
 }
 
 /** Map **`NbcTurnBody`** to legacy flat wire keys expected by older frame materializers. */
 export function nbcTurnBodyToWireRecord(body: NbcTurnBody): Record<string, unknown> {
-  const exp = body.offer.expires_seq;
-  const expiresWire =
-    exp <= BigInt(Number.MAX_SAFE_INTEGER) && exp >= BigInt(Number.MIN_SAFE_INTEGER)
-      ? Number(exp)
-      : String(exp);
   const o: Record<string, unknown> = {
     offerId: body.offer.id,
     offerType: body.offer.type,
-    expires_seq: expiresWire,
+    expires_turn: body.offer.expires_turn,
+    expires_at_relay_ms:
+      body.offer.expires_at_relay_ms <= Number.MAX_SAFE_INTEGER &&
+      body.offer.expires_at_relay_ms >= Number.MIN_SAFE_INTEGER
+        ? Number(body.offer.expires_at_relay_ms)
+        : String(body.offer.expires_at_relay_ms),
     sourcemaps: body.offer.sourcemaps,
     ports: body.ports.map((p) => ({
       id: p.id,
       type: p.type,
       promise: p.promise,
-      expires_seq:
-        p.expires_seq <= BigInt(Number.MAX_SAFE_INTEGER) &&
-        p.expires_seq >= BigInt(Number.MIN_SAFE_INTEGER)
-          ? Number(p.expires_seq)
-          : String(p.expires_seq),
+      expires_turn: p.expires_turn,
+      expires_at_relay_ms:
+        p.expires_at_relay_ms <= Number.MAX_SAFE_INTEGER &&
+        p.expires_at_relay_ms >= Number.MIN_SAFE_INTEGER
+          ? Number(p.expires_at_relay_ms)
+          : String(p.expires_at_relay_ms),
       bind_policy: p.bind_policy,
       ref: p.ref,
     })),

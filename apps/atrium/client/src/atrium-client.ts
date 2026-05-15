@@ -300,7 +300,7 @@ export class AtriumClient {
   /**
    * Run a deferred OBP v2 multiplex client over an Atrium room WebSocket URL (from {@link createAtriumRoom},
    * {@link mintAtriumRoomTicket}, or an inbox `negotiation_ticket`). Pass `client` (`ObpPersistenceClient` from
-   * `@khoralabs/obp-v2-persistence`), `signer`, and `ledgerSeq` per `@khoralabs/obp-v2-transport-ws`.
+   * `@khoralabs/obp-v2-persistence`), and `signer` per `@khoralabs/obp-v2-transport-ws`.
    */
   connectAtriumRoom(
     options: Omit<ObpWebSocketConnectOptions, "WebSocketCtor">,

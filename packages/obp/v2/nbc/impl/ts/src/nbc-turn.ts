@@ -5,7 +5,7 @@
 import { ObpError } from "@khoralabs/obp-v2-errors";
 import type { JsonDocument, Offer } from "@khoralabs/obp-v2-model";
 import type { ObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
-import { isActiveBindPolicy, type NbcBindFailure, validateNbcBind } from "./nbc-invariants.ts";
+import { type NbcBindFailure, type NbcBindTiming, isActiveBindPolicy, validateNbcBind } from "./nbc-invariants.ts";
 import { type NbcTurnBody, nbcPortSpecToPort } from "./nbc-types.ts";
 
 export type ApplyNbcTurnParams = {
@@ -13,7 +13,7 @@ export type ApplyNbcTurnParams = {
   partyId: string;
   body: NbcTurnBody;
   client: ObpPersistenceClient;
-  ledgerSeq: bigint;
+  timing: NbcBindTiming;
   /** Resolve expose-time **`bind_policy`** for a port id (e.g. counterparty ports). */
   getBindPolicyForPort?: (portId: string) => JsonDocument | null | Promise<JsonDocument | null>;
 };
@@ -27,7 +27,7 @@ export type ApplyNbcTurnResult = {
 export function obpErrorFromBindFailure(f: NbcBindFailure): ObpError {
   switch (f.code) {
     case "EXPIRED":
-      return new ObpError("EXPIRED", `${f.entity} expired at ledger (NBC N1)`);
+      return new ObpError("EXPIRED", `${f.entity} expired (NBC N1)`);
     case "NOT_EXPOSED":
       return new ObpError("NOT_EXPOSED", "bind target port is not exposed");
     case "REF_CYCLE":
@@ -48,11 +48,17 @@ export function obpErrorFromBindFailure(f: NbcBindFailure): ObpError {
  * @throws {ObpError} on bind validation failure; @throws {TypeError} from invalid **`body`** shape upstream if caller skipped parse.
  */
 export async function applyNbcTurn(params: ApplyNbcTurnParams): Promise<ApplyNbcTurnResult> {
-  const { partyId, body, client, ledgerSeq, getBindPolicyForPort } = params;
+  const { partyId, body, client, timing, getBindPolicyForPort } = params;
 
   const { offer } = await client.extendOffer({
     partyId,
-    offer: body.offer,
+    offer: {
+      id: body.offer.id,
+      type: body.offer.type,
+      sourcemaps: body.offer.sourcemaps,
+    },
+    nbc_expires_turn: body.offer.expires_turn,
+    nbc_expires_at_relay_ms: body.offer.expires_at_relay_ms,
     bindPortId: "",
     bind_payload: null,
   });
@@ -64,6 +70,8 @@ export async function applyNbcTurn(params: ApplyNbcTurnParams): Promise<ApplyNbc
     const { port } = await client.exposePort({
       offerId,
       port: nbcPortSpecToPort(spec),
+      nbc_expires_turn: spec.expires_turn,
+      nbc_expires_at_relay_ms: spec.expires_at_relay_ms,
     });
     exposedPortIds.push(port.id);
     if (isActiveBindPolicy(spec.bind_policy)) {
@@ -86,6 +94,15 @@ export async function applyNbcTurn(params: ApplyNbcTurnParams): Promise<ApplyNbc
     }
     const offerNow = offerRes.result.offer;
 
+    const offerWinRes = await client.getNbcBindWindowForOffer(offerId);
+    const portWinRes = await client.getNbcBindWindowForPort(body.bind_port_id);
+    if (offerWinRes.result.kind !== "window") {
+      throw new ObpError("NOT_FOUND", `NBC bind window missing for offer: ${offerId}`);
+    }
+    if (portWinRes.result.kind !== "window") {
+      throw new ObpError("NOT_FOUND", `NBC bind window missing for port: ${body.bind_port_id}`);
+    }
+
     const fromLocal = localPolicy.get(body.bind_port_id);
     const bindPolicy =
       fromLocal ??
@@ -93,9 +110,11 @@ export async function applyNbcTurn(params: ApplyNbcTurnParams): Promise<ApplyNbc
       null;
 
     const failure = await validateNbcBind({
-      ledgerSeq,
+      timing,
       offer: offerNow,
       port,
+      offerBindWindow: offerWinRes.result.window,
+      portBindWindow: portWinRes.result.window,
       portsById,
       targetPortIsExposed: exposed,
       bindPolicy,

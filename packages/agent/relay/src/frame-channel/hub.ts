@@ -1,4 +1,8 @@
 import {
+  encodeFramedJson,
+  isNegotiationFrameObject,
+} from "@khoralabs/obp-v2-frames-impl";
+import {
   generateRoomSecretHex,
   signRoomTicket,
   verifyRoomTicket,
@@ -9,6 +13,37 @@ import type { FrameChannelHubPort, FrameChannelPeer } from "./port.ts";
 export type CreateFrameChannelHubOptions = {
   hubPersistence: FrameChannelHubPersistence;
 };
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return v !== null && typeof v === "object" && !Array.isArray(v);
+}
+
+function isRelayEnvelopeShape(v: unknown): boolean {
+  if (!isRecord(v)) return false;
+  return "frame" in v && "relay_ts_ms" in v;
+}
+
+function relayOutBytesForMessage(bytes: Uint8Array): Uint8Array {
+  if (bytes.length < 4) return bytes;
+  try {
+    const len = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(0, false);
+    if (4 + len !== bytes.length) return bytes;
+    const text = new TextDecoder().decode(bytes.subarray(4, 4 + len));
+    const value = JSON.parse(text) as unknown;
+    if (!isRecord(value)) return bytes;
+    if ("init" in value || "session_envelope" in value) return bytes;
+    if (isRelayEnvelopeShape(value)) return bytes;
+    if (isNegotiationFrameObject(value)) {
+      return encodeFramedJson({
+        frame: value,
+        relay_ts_ms: Date.now(),
+      });
+    }
+  } catch {
+    return bytes;
+  }
+  return bytes;
+}
 
 export function createFrameChannelHub(options: CreateFrameChannelHubOptions): FrameChannelHubPort {
   const { hubPersistence } = options;
@@ -83,16 +118,15 @@ export function createFrameChannelHub(options: CreateFrameChannelHubOptions): Fr
       }
     },
 
-    relayBytes(channelId: string, from: FrameChannelPeer, bytes: Uint8Array): void {
-      hubPersistence.enqueueFrame(channelId, bytes);
+    relayBytes(channelId: string, _from: FrameChannelPeer, bytes: Uint8Array): void {
+      const out = relayOutBytesForMessage(bytes);
+      hubPersistence.enqueueFrame(channelId, out);
       const set = peers.get(channelId);
       if (set === undefined) {
         return;
       }
       for (const p of set) {
-        if (p !== from) {
-          p.send(bytes);
-        }
+        p.send(out);
       }
     },
   };

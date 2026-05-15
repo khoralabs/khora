@@ -60,7 +60,6 @@ export type ObpConnectOptions = {
   signer: FrameSigner;
   verifier?: FrameVerifier;
   client: ObpPersistenceClient;
-  ledgerSeq: () => number;
   sessionEnvelopeSync?: boolean;
 };
 
@@ -116,7 +115,6 @@ export async function connectObpSession(
       signer: options.signer,
       verifier,
       client: options.client,
-      ledgerSeq: options.ledgerSeq,
       handlers: {},
       ...(sessionEnvelopeSync !== undefined ? { sessionEnvelopeSync } : {}),
       openerSession: async (api) => {

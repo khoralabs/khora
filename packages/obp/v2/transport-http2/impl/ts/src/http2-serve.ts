@@ -34,7 +34,6 @@ type ObpServeListen = {
 
 export type ObpServeOptions = {
   client: ObpPersistenceClient;
-  ledgerSeq: () => number;
   listen: ObpServeListen;
   verifier?: FrameVerifier;
   onConnect: (ctx: ObpOnConnectContext) => ObpResolvedSession | Promise<ObpResolvedSession>;
@@ -113,7 +112,6 @@ export function serveObp(options: ObpServeOptions): Promise<ObpServerHandle> {
             signer: ctx.signer,
             verifier,
             client: options.client,
-            ledgerSeq: options.ledgerSeq,
             sessionTemplate: {
               parties: canonicalSessionParties([ctx.init.parties[0], ctx.init.parties[1]]),
             },

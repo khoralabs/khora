@@ -57,6 +57,8 @@ service ObpPersistence {
         ListBinds
         GetPortsSnapshot
         GetExtendingPartyId
+        GetNbcBindWindowForOffer
+        GetNbcBindWindowForPort
         SetPortExpiredNow
         SetOfferExpiredNow
     ]
@@ -143,6 +145,12 @@ operation ExtendOffer {
 structure ExtendOfferInput {
     partyId: String
     offer: Offer
+    /// NBC N1 bind-window projection for this offer row — **not** part of **`cfd.obp#Offer`**. Persisted alongside the thin offer; **`0`** disables the corresponding mode.
+    @default(0)
+    nbc_expires_turn: Integer
+    /// NBC N1 relay-time bind ceiling for this offer row — **not** part of **`cfd.obp#Offer`**. **`0`** disables relay mode.
+    @default(0)
+    nbc_expires_at_relay_ms: Long
     /// When empty, no BINDS edge is created.
     @default("")
     bindPortId: String
@@ -163,6 +171,12 @@ operation ExposePort {
 structure ExposePortInput {
     offerId: String
     port: Port
+    /// NBC N1 bind-window projection for this new port row — **not** part of **`cfd.obp#Port`**. **`0`** disables the corresponding mode.
+    @default(0)
+    nbc_expires_turn: Integer
+    /// NBC N1 relay-time bind ceiling — **not** on **`cfd.obp#Port`**. **`0`** disables relay mode.
+    @default(0)
+    nbc_expires_at_relay_ms: Long
 }
 
 structure ExposePortOutput {
@@ -282,7 +296,45 @@ structure GetExtendingPartyIdOutput {
     partyId: String
 }
 
-/// Set `Port.expires_seq` to the current revoke ledger sequence. Caller enforces issuer policy.
+/// Read NBC N1 bind-window projection for an offer row (**`nbc_expires_*`**), not part of thin **`cfd.obp#Offer`**.
+operation GetNbcBindWindowForOffer {
+    input: GetNbcBindWindowForOfferInput
+    output: GetNbcBindWindowForOfferOutput
+}
+
+structure GetNbcBindWindowForOfferInput {
+    offerId: String
+}
+
+structure NbcBindWindowProjection {
+    nbc_expires_turn: Integer
+    nbc_expires_at_relay_ms: Long
+}
+
+union GetNbcBindWindowResult {
+    notFound: Unit
+    window: NbcBindWindowProjection
+}
+
+structure GetNbcBindWindowForOfferOutput {
+    result: GetNbcBindWindowResult
+}
+
+/// Read NBC N1 bind-window projection for a port row (**`nbc_expires_*`**), not part of thin **`cfd.obp#Port`**.
+operation GetNbcBindWindowForPort {
+    input: GetNbcBindWindowForPortInput
+    output: GetNbcBindWindowForPortOutput
+}
+
+structure GetNbcBindWindowForPortInput {
+    portId: String
+}
+
+structure GetNbcBindWindowForPortOutput {
+    result: GetNbcBindWindowResult
+}
+
+/// Set NBC bind-window projection columns on the port row (**`nbc_expires_*`**) so N1 rejects new binds. Caller enforces issuer policy. Does **not** mutate thin **`cfd.obp#Port`** shape fields (none carry expiry).
 operation SetPortExpiredNow {
     input: SetPortExpiredNowInput
     output: SetPortExpiredNowOutput
@@ -294,7 +346,7 @@ structure SetPortExpiredNowInput {
 
 structure SetPortExpiredNowOutput {}
 
-/// Set `Offer.expires_seq` to the current revoke ledger sequence and cascade to ports exposed on that offer. Caller enforces issuer policy.
+/// Set NBC bind-window projection columns on the offer row and on ports exposed from that offer so N1 rejects new binds. Caller enforces issuer policy. Does **not** mutate **`cfd.obp#Offer`** / **`cfd.obp#Port`** core shapes.
 operation SetOfferExpiredNow {
     input: SetOfferExpiredNowInput
     output: SetOfferExpiredNowOutput

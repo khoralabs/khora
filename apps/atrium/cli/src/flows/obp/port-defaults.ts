@@ -1,12 +1,9 @@
 import type { Offer, Port } from "@khoralabs/obp-v2-model";
 
-const FAR_FUTURE_SEQ = 9_007_199_254_740_991n;
-
 /** Minimal shell for `extendOffer`; persistence assigns ids. */
 export function shellOffer(type: string): Offer {
   return {
     id: "",
-    expires_seq: FAR_FUTURE_SEQ,
     type,
     sourcemaps: [],
   };
@@ -18,7 +15,6 @@ export function mergePortShell(
 ): Port {
   return {
     id: "",
-    expires_seq: FAR_FUTURE_SEQ,
     type: port.type ?? "atrium.cli.transition",
     promise: port.promise ?? "(transition)",
     ref: port.ref ?? "",

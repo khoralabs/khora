@@ -61,13 +61,11 @@ export type Party = {
 };
 
 /**
- * Proposal or workflow step.
- * `expires_seq` — minimum ledger sequence at which this offer is no longer bindable.
- * Row `created_seq` is NBC/persistence (`NbcRowCommitMeta`), not on this shape.
+ * Proposal or workflow step — identity, `type`, `sourcemaps` only.
+ * NBC bind windows live on TURN wire (`NbcOfferSpec`) and `ObpPersistence` `nbc_expires_*` projection.
  */
 export type Offer = {
   id: string;
-  expires_seq: bigint;
   type: string;
   sourcemaps: SourceMapRefList;
 };
@@ -76,10 +74,10 @@ export type Offer = {
  * Affordance / continuation point.
  * `promise` defaults to `""` (empty when not specified on wire).
  * `ref` defaults to `""` (non-empty aliases another port; implementations MUST detect cycles).
+ * NBC bind windows: `NbcPortSpec` + persistence projection, not on this shape.
  */
 export type Port = {
   id: string;
-  expires_seq: bigint;
   type: string;
   promise: string;
   ref: string;

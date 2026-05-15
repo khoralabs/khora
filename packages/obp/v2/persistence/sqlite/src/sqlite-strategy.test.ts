@@ -6,8 +6,7 @@ import { createObpV2SqlitePersistenceClient } from "./index.ts";
 function makeClient() {
   const db = new Database(":memory:");
   initObpV2Schema(db);
-  let seq = 0;
-  return createObpV2SqlitePersistenceClient(db, { ledgerSeq: () => ++seq });
+  return createObpV2SqlitePersistenceClient(db);
 }
 
 describe("SqliteObpPersistenceStrategy", () => {
@@ -24,7 +23,7 @@ describe("SqliteObpPersistenceStrategy", () => {
     const { party } = await client.registerParty({ name: "Bob", sourcemaps: [] });
     const { offer } = await client.extendOffer({
       partyId: party.id,
-      offer: { id: "", expires_seq: 9999n, type: "step", sourcemaps: [] },
+      offer: { id: "", type: "step", sourcemaps: [] },
       bindPortId: "",
       bind_payload: null,
     });
@@ -32,7 +31,6 @@ describe("SqliteObpPersistenceStrategy", () => {
       offerId: offer.id,
       port: {
         id: "",
-        expires_seq: 9999n,
         type: "slot",
         promise: "p",
         ref: "",
@@ -50,7 +48,7 @@ describe("SqliteObpPersistenceStrategy", () => {
     const { party } = await client.registerParty({ name: "Carol", sourcemaps: [] });
     const { offer } = await client.extendOffer({
       partyId: party.id,
-      offer: { id: "", expires_seq: 9999n, type: "step", sourcemaps: [] },
+      offer: { id: "", type: "step", sourcemaps: [] },
       bindPortId: "",
       bind_payload: null,
     });
@@ -58,7 +56,6 @@ describe("SqliteObpPersistenceStrategy", () => {
       offerId: offer.id,
       port: {
         id: "",
-        expires_seq: 9999n,
         type: "slot",
         promise: "",
         ref: "",
@@ -66,10 +63,11 @@ describe("SqliteObpPersistenceStrategy", () => {
       },
     });
     await client.setOfferExpiredNow(offer.id);
-    const po = await client.getPort({ id: port.id });
-    expect(po.result.kind).toBe("port");
-    if (po.result.kind === "port") {
-      expect(po.result.port.expires_seq).toBe(0n);
+    const pw = await client.getNbcBindWindowForPort(port.id);
+    expect(pw.result.kind).toBe("window");
+    if (pw.result.kind === "window") {
+      expect(pw.result.window.nbc_expires_turn).toBe(0);
+      expect(pw.result.window.nbc_expires_at_relay_ms).toBe(1);
     }
   });
 });

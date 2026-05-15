@@ -2,7 +2,7 @@
  * View-model graph for NBC chain visualization — derived from {@link ObpPersistenceClient} reads.
  */
 
-import type { JsonDocument, Offer, Port } from "@khoralabs/obp-v2-model";
+import type { JsonDocument, SourceMapRefList } from "@khoralabs/obp-v2-model";
 import type { BindListingRow } from "@khoralabs/obp-v2-persistence";
 
 export type NbcChainPartyRow = {
@@ -20,18 +20,27 @@ export type NbcChainExposeEdge = {
   readonly portId: string;
 };
 
-/** Offer row: thin graph shape plus issuer linkage for UI labels. */
-export type NbcChainOfferRow = Pick<Offer, "id" | "type" | "expires_seq" | "sourcemaps"> & {
+/** Offer row: thin graph shape + NBC bind-window fields for UI (from `getNbcBindWindowForOffer`). */
+export type NbcChainOfferRow = {
+  readonly id: string;
+  readonly type: string;
+  readonly sourcemaps: SourceMapRefList;
+  readonly expires_turn: number;
+  readonly expires_at_relay_ms: number;
   readonly partyId: string;
   readonly partyName?: string;
   readonly expired?: boolean;
 };
 
-/** Port row: thin **`cfd.obp#Port`** plus layout joins and optional NBC overlay for panels. */
-export type NbcChainPortRow = Pick<
-  Port,
-  "id" | "type" | "promise" | "ref" | "sourcemaps" | "expires_seq"
-> & {
+/** Port row: thin `cfd.obp#Port` + NBC expiry projection + layout joins. */
+export type NbcChainPortRow = {
+  readonly id: string;
+  readonly type: string;
+  readonly promise: string;
+  readonly ref: string;
+  readonly sourcemaps: SourceMapRefList;
+  readonly expires_turn: number;
+  readonly expires_at_relay_ms: number;
   readonly exposedOnOfferIds: readonly string[];
   readonly bindCount: number;
   readonly expired?: boolean;

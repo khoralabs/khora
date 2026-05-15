@@ -18,6 +18,10 @@ import type {
   GetPartyOutput,
   GetPortInput,
   GetPortOutput,
+  GetNbcBindWindowForOfferInput,
+  GetNbcBindWindowForOfferOutput,
+  GetNbcBindWindowForPortInput,
+  GetNbcBindWindowForPortOutput,
   GetPortsSnapshotInput,
   GetPortsSnapshotOutput,
   IsPortExposedInput,
@@ -39,6 +43,8 @@ export class InMemoryObpPersistenceStrategy implements ObpPersistenceStrategy {
   private parties = new Map<string, Party>();
   private offers = new Map<string, Offer>();
   private ports = new Map<string, Port>();
+  private offerNbc = new Map<string, { nbc_expires_turn: number; nbc_expires_at_relay_ms: number }>();
+  private portNbc = new Map<string, { nbc_expires_turn: number; nbc_expires_at_relay_ms: number }>();
   private extends = new Map<string, string>();
   private exposes = new Map<string, string>();
   private binds: BindListingRow[] = [];
@@ -72,6 +78,9 @@ export class InMemoryObpPersistenceStrategy implements ObpPersistenceStrategy {
     const offer: Offer = { ...input.offer, id: this.nextId() };
     this.offers.set(offer.id, offer);
     this.extends.set(offer.id, input.partyId);
+    const nt = input.nbc_expires_turn ?? 0;
+    const nm = input.nbc_expires_at_relay_ms ?? 0;
+    this.offerNbc.set(offer.id, { nbc_expires_turn: nt, nbc_expires_at_relay_ms: nm });
     if (input.bindPortId) {
       this.binds.push({
         offerId: offer.id,
@@ -88,6 +97,9 @@ export class InMemoryObpPersistenceStrategy implements ObpPersistenceStrategy {
     const port: Port = { ...input.port, id: this.nextId() };
     this.ports.set(port.id, port);
     this.exposes.set(port.id, input.offerId);
+    const nt = input.nbc_expires_turn ?? 0;
+    const nm = input.nbc_expires_at_relay_ms ?? 0;
+    this.portNbc.set(port.id, { nbc_expires_turn: nt, nbc_expires_at_relay_ms: nm });
     return { port };
   }
 
@@ -129,15 +141,46 @@ export class InMemoryObpPersistenceStrategy implements ObpPersistenceStrategy {
     return { partyId: this.extends.get(input.offerId) ?? "" };
   }
 
+  async getNbcBindWindowForOffer(
+    input: GetNbcBindWindowForOfferInput,
+  ): Promise<GetNbcBindWindowForOfferOutput> {
+    if (!this.offers.has(input.offerId)) return { result: { kind: "notFound" } };
+    const w = this.offerNbc.get(input.offerId) ?? {
+      nbc_expires_turn: 0,
+      nbc_expires_at_relay_ms: 0,
+    };
+    return { result: { kind: "window", window: w } };
+  }
+
+  async getNbcBindWindowForPort(
+    input: GetNbcBindWindowForPortInput,
+  ): Promise<GetNbcBindWindowForPortOutput> {
+    if (!this.ports.has(input.portId)) return { result: { kind: "notFound" } };
+    const w = this.portNbc.get(input.portId) ?? {
+      nbc_expires_turn: 0,
+      nbc_expires_at_relay_ms: 0,
+    };
+    return { result: { kind: "window", window: w } };
+  }
+
   async setPortExpiredNow(input: SetPortExpiredNowInput): Promise<SetPortExpiredNowOutput> {
     const port = this.ports.get(input.portId);
-    if (port) this.ports.set(port.id, { ...port, expires_seq: 0n });
+    if (!port) return {};
+    this.portNbc.set(input.portId, { nbc_expires_turn: 0, nbc_expires_at_relay_ms: 1 });
     return {};
   }
 
   async setOfferExpiredNow(input: SetOfferExpiredNowInput): Promise<SetOfferExpiredNowOutput> {
     const offer = this.offers.get(input.offerId);
-    if (offer) this.offers.set(offer.id, { ...offer, expires_seq: 0n });
+    if (offer) {
+      this.offerNbc.set(input.offerId, { nbc_expires_turn: 0, nbc_expires_at_relay_ms: 1 });
+    }
+    for (const [portId, offerId] of this.exposes) {
+      if (offerId !== input.offerId) continue;
+      if (this.ports.has(portId)) {
+        this.portNbc.set(portId, { nbc_expires_turn: 0, nbc_expires_at_relay_ms: 1 });
+      }
+    }
     return {};
   }
 }

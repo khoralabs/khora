@@ -35,8 +35,10 @@ export {
 } from "./nbc-graph-effect.ts";
 export {
   isActiveBindPolicy,
-  isValidAtLedgerSeq,
+  isRelayExpiryOk,
+  isTurnExpiryOk,
   type NbcBindFailure,
+  type NbcBindTiming,
   type ValidateNbcBindInput,
   validateNbcBind,
 } from "./nbc-invariants.ts";
@@ -56,6 +58,7 @@ export {
 export {
   isNbcTurnBody,
   NBC_NEGOTIATION_PROTOCOL_VERSION,
+  type NbcOfferSpec,
   type NbcPortSpec,
   type NbcTurnBody,
   nbcPortSpecToPort,

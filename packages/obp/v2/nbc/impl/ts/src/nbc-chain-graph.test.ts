@@ -8,7 +8,9 @@ describe("collectNbcChainGraph", () => {
     const { party } = await client.registerParty({ name: "Issuer", sourcemaps: [] });
     const { offer } = await client.extendOffer({
       partyId: party.id,
-      offer: { id: "", expires_seq: 99n, type: "opening", sourcemaps: [] },
+      offer: { id: "", type: "opening", sourcemaps: [] },
+      nbc_expires_turn: 99,
+      nbc_expires_at_relay_ms: 0,
       bindPortId: "",
       bind_payload: null,
     });
@@ -16,15 +18,16 @@ describe("collectNbcChainGraph", () => {
       offerId: offer.id,
       port: {
         id: "",
-        expires_seq: 99n,
         type: "slot",
         promise: "Do thing",
         ref: "",
         sourcemaps: [],
       },
+      nbc_expires_turn: 99,
+      nbc_expires_at_relay_ms: 0,
     });
 
-    const g = await collectNbcChainGraph(client, { ledgerSeq: 1n });
+    const g = await collectNbcChainGraph(client, { timing: { turnSeq: 1, relayTsMs: 1 } });
 
     expect(g.parties.some((p) => p.id === party.id)).toBe(true);
     expect(g.offers.some((o) => o.id === offer.id)).toBe(true);

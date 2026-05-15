@@ -1,9 +1,10 @@
+import { canonicalJsonString } from "./canonical-json.ts";
 import { encodeFramedJson } from "./encode-framed-json.ts";
 import type { Frame, SessionEnvelopeWire } from "./frame-protocol-types.ts";
 
 export type FrameDecoderYield =
   | { kind: "init"; value: unknown }
-  | { kind: "frame"; value: Frame; wireUtf8: string }
+  | { kind: "frame"; value: Frame; wireUtf8: string; relayTsMs?: number }
   | { kind: "session_envelope"; value: SessionEnvelopeWire }
   | { kind: "raw"; value: unknown };
 
@@ -37,8 +38,24 @@ export function createFrameDecoder(): {
     if (isRecord(value) && "init" in value) {
       return { kind: "init", value };
     }
-    if (isFrameLike(value)) {
-      return { kind: "frame", value: value as Frame, wireUtf8: text };
+    if (isRelayEnvelopeWire(value) && isNegotiationFrameObject(value.frame)) {
+      const frame = value.frame;
+      const relayRaw = value.relay_ts_ms;
+      const relayTsMs =
+        typeof relayRaw === "number" && Number.isFinite(relayRaw)
+          ? relayRaw
+          : typeof relayRaw === "string" && /^-?\d+$/.test(relayRaw.trim())
+            ? Number(relayRaw.trim())
+            : NaN;
+      return {
+        kind: "frame",
+        value: frame,
+        wireUtf8: canonicalJsonString(frame),
+        ...(Number.isFinite(relayTsMs) ? { relayTsMs } : {}),
+      };
+    }
+    if (isNegotiationFrameObject(value)) {
+      return { kind: "frame", value: value as Frame, wireUtf8: canonicalJsonString(value) };
     }
     if (isSessionEnvelopeMessage(value)) {
       return { kind: "session_envelope", value: value.session_envelope };
@@ -68,7 +85,8 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return v !== null && typeof v === "object" && !Array.isArray(v);
 }
 
-function isFrameLike(v: unknown): boolean {
+/** True when **`v`** matches normative **`Frame`** JSON keys (for relay wrap / decode). */
+export function isNegotiationFrameObject(v: unknown): v is Frame {
   if (!isRecord(v)) return false;
   return (
     typeof v.p_hash === "string" &&
@@ -79,6 +97,12 @@ function isFrameLike(v: unknown): boolean {
     v.body !== null &&
     !Array.isArray(v.body)
   );
+}
+
+function isRelayEnvelopeWire(v: unknown): v is { frame: unknown; relay_ts_ms: unknown } {
+  if (!isRecord(v)) return false;
+  if (!("frame" in v) || !("relay_ts_ms" in v)) return false;
+  return true;
 }
 
 function isCheckpointRecord(v: unknown): v is SessionEnvelopeWire["base_checkpoint"] {
