@@ -1,4 +1,4 @@
-import type { Offer, Party, Port } from "@khoralabs/obp-v2-model";
+import type { JsonDocument, Offer, Party, Port } from "@khoralabs/obp-v2-model";
 import { ObpPersistenceClient } from "./persistence-client.ts";
 import type { ObpPersistenceStrategy } from "./persistence-strategy.ts";
 import type {
@@ -12,16 +12,18 @@ import type {
   ExtendOfferOutput,
   GetExtendingPartyIdInput,
   GetExtendingPartyIdOutput,
-  GetOfferInput,
-  GetOfferOutput,
-  GetPartyInput,
-  GetPartyOutput,
-  GetPortInput,
-  GetPortOutput,
   GetNbcBindWindowForOfferInput,
   GetNbcBindWindowForOfferOutput,
   GetNbcBindWindowForPortInput,
   GetNbcBindWindowForPortOutput,
+  GetOfferInput,
+  GetOfferOutput,
+  GetPartyInput,
+  GetPartyOutput,
+  GetPortBindPolicyInput,
+  GetPortBindPolicyOutput,
+  GetPortInput,
+  GetPortOutput,
   GetPortsSnapshotInput,
   GetPortsSnapshotOutput,
   IsPortExposedInput,
@@ -43,10 +45,18 @@ export class InMemoryObpPersistenceStrategy implements ObpPersistenceStrategy {
   private parties = new Map<string, Party>();
   private offers = new Map<string, Offer>();
   private ports = new Map<string, Port>();
-  private offerNbc = new Map<string, { nbc_expires_turn: number; nbc_expires_at_relay_ms: number }>();
-  private portNbc = new Map<string, { nbc_expires_turn: number; nbc_expires_at_relay_ms: number }>();
+  private offerNbc = new Map<
+    string,
+    { nbc_expires_turn: number; nbc_expires_at_relay_ms: number }
+  >();
+  private portNbc = new Map<
+    string,
+    { nbc_expires_turn: number; nbc_expires_at_relay_ms: number }
+  >();
   private extends = new Map<string, string>();
   private exposes = new Map<string, string>();
+  /** NBC expose-time bind_policy snapshot per port id (`null` when inactive). */
+  private portBindPolicies = new Map<string, JsonDocument>();
   private binds: BindListingRow[] = [];
   private seq = 0n;
   private nextId(): string {
@@ -74,6 +84,16 @@ export class InMemoryObpPersistenceStrategy implements ObpPersistenceStrategy {
     return { result: port ? { kind: "port", port } : { kind: "notFound" } };
   }
 
+  async getPortBindPolicy(input: GetPortBindPolicyInput): Promise<GetPortBindPolicyOutput> {
+    if (!this.ports.has(input.portId)) return { result: { kind: "notFound" } };
+    return {
+      result: {
+        kind: "found",
+        bind_policy: this.portBindPolicies.get(input.portId) ?? null,
+      },
+    };
+  }
+
   async extendOffer(input: ExtendOfferInput): Promise<ExtendOfferOutput> {
     const offer: Offer = { ...input.offer, id: this.nextId() };
     this.offers.set(offer.id, offer);
@@ -81,7 +101,7 @@ export class InMemoryObpPersistenceStrategy implements ObpPersistenceStrategy {
     const nt = input.nbc_expires_turn ?? 0;
     const nm = input.nbc_expires_at_relay_ms ?? 0;
     this.offerNbc.set(offer.id, { nbc_expires_turn: nt, nbc_expires_at_relay_ms: nm });
-    if (input.bindPortId) {
+    if (input.bindPortId.trim() !== "") {
       this.binds.push({
         offerId: offer.id,
         portId: input.bindPortId,
@@ -96,6 +116,7 @@ export class InMemoryObpPersistenceStrategy implements ObpPersistenceStrategy {
   async exposePort(input: ExposePortInput): Promise<ExposePortOutput> {
     const port: Port = { ...input.port, id: this.nextId() };
     this.ports.set(port.id, port);
+    this.portBindPolicies.set(port.id, input.bind_policy ?? null);
     this.exposes.set(port.id, input.offerId);
     const nt = input.nbc_expires_turn ?? 0;
     const nm = input.nbc_expires_at_relay_ms ?? 0;

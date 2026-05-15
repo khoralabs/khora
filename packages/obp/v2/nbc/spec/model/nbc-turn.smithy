@@ -35,7 +35,7 @@ structure NbcPortSpec {
     expires_turn: Integer = 0
     /// Relay time bind window in ms since epoch (N1). **`0`** disables this mode. Persisted as **`nbc_expires_at_relay_ms`** — **not** on **`cfd.obp#Port`**.
     expires_at_relay_ms: Long = 0
-    /// When non-empty object, **`bind_payload`** on bind MUST satisfy this policy (N4); validated by NBC bind-policy schema.
+    /// When non-empty object, **`bind_payload`** on bind MUST satisfy this policy (N4); validated by the deployment **host/product** bind-policy validator before **BINDS** commits.
     bind_policy: Document = null
     /// When non-empty, aliases another port id for bind resolution (maps to **`cfd.obp#Port.ref`**); implementations MUST detect cycles.
     @default("")

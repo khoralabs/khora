@@ -1,4 +1,5 @@
 import type { DuplexByteStream } from "@khoralabs/duplex-byte-stream";
+import type { NbcBindPolicyValidateFn } from "@khoralabs/obp-v2-nbc";
 import type { ObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
 import type { SessionOp } from "@khoralabs/obp-v2-session-impl";
 
@@ -36,6 +37,8 @@ export type RunFrameMultiplexSessionArgs = {
   closeChannelOnTerminate?: boolean;
   closeChannelWhenIdle?: boolean;
   openerSession?: (api: FrameMultiplexOpenerApi) => Promise<void>;
+  /** NBC N4 bind payload validation when inbound TURN carries an active **`bind_policy`**. */
+  validateBindPayload?: NbcBindPolicyValidateFn | undefined;
 };
 
 /** Per-chain mutable state inside {@link MultiplexSessionRuntime}. */

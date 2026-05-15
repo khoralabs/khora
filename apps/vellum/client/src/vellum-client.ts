@@ -9,7 +9,7 @@ import {
   sessionInitToWire,
 } from "@khoralabs/obp-v2-frames-impl";
 import type { JsonDocument } from "@khoralabs/obp-v2-model";
-import { validateBindPayloadForPort } from "@khoralabs/obp-v2-nbc";
+import { validateVellumBindPayloadForPort } from "@khoralabs/vellum-bind-policy";
 import {
   type ChainInitResponse,
   ChainInitResponseSchema,
@@ -235,6 +235,9 @@ export class VellumClient {
     if (port === undefined) {
       throw new Error(`port not found: ${portId}`);
     }
-    return validateBindPayloadForPort(port.bind_policy_snapshot as JsonDocument | null, payload);
+    return validateVellumBindPayloadForPort(
+      port.bind_policy_snapshot as JsonDocument | null,
+      payload,
+    );
   }
 }

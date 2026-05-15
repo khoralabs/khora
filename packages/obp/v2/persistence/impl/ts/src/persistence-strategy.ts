@@ -25,6 +25,8 @@ import type {
   GetOfferOutput,
   GetPartyInput,
   GetPartyOutput,
+  GetPortBindPolicyInput,
+  GetPortBindPolicyOutput,
   GetPortInput,
   GetPortOutput,
   GetPortsSnapshotInput,
@@ -48,6 +50,7 @@ export interface ObpPersistenceStrategy {
   getParty(input: GetPartyInput): Promise<GetPartyOutput>;
   getOffer(input: GetOfferInput): Promise<GetOfferOutput>;
   getPort(input: GetPortInput): Promise<GetPortOutput>;
+  getPortBindPolicy(input: GetPortBindPolicyInput): Promise<GetPortBindPolicyOutput>;
   extendOffer(input: ExtendOfferInput): Promise<ExtendOfferOutput>;
   exposePort(input: ExposePortInput): Promise<ExposePortOutput>;
   bindPort(input: BindPortInput): Promise<BindPortOutput>;

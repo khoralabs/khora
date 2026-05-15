@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { Offer, Party, Port } from "@khoralabs/obp-v2-model";
+import type { JsonDocument, Offer, Party, Port } from "@khoralabs/obp-v2-model";
 import type {
   BindListingRow,
   BindPortInput,
@@ -19,6 +19,8 @@ import type {
   GetOfferOutput,
   GetPartyInput,
   GetPartyOutput,
+  GetPortBindPolicyInput,
+  GetPortBindPolicyOutput,
   GetPortInput,
   GetPortOutput,
   GetPortsSnapshotInput,
@@ -36,6 +38,7 @@ import type {
   SetPortExpiredNowOutput,
 } from "@khoralabs/obp-v2-persistence";
 import { ObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
+import { validateVellumBindPayloadForPort } from "@khoralabs/vellum-bind-policy";
 import { getBindablePortsForParty, isSessionAdvanceable, nbcNaturalStop } from "./nbc-session.ts";
 import { applyNbcTurn } from "./nbc-turn.ts";
 import { parseNbcTurnBody } from "./nbc-types.ts";
@@ -48,6 +51,7 @@ class InMemoryStrategy implements ObpPersistenceStrategy {
   private portNbc = new Map<string, { nbc_expires_turn: number; nbc_expires_at_relay_ms: number }>();
   private extends = new Map<string, string>();
   private exposes = new Map<string, string>();
+  private portBindPolicies = new Map<string, JsonDocument>();
   private binds: BindListingRow[] = [];
   private seq = 0n;
   private nextId() {
@@ -75,6 +79,16 @@ class InMemoryStrategy implements ObpPersistenceStrategy {
     return { result: port ? { kind: "port", port } : { kind: "notFound" } };
   }
 
+  async getPortBindPolicy(input: GetPortBindPolicyInput): Promise<GetPortBindPolicyOutput> {
+    if (!this.ports.has(input.portId)) return { result: { kind: "notFound" } };
+    return {
+      result: {
+        kind: "found",
+        bind_policy: this.portBindPolicies.get(input.portId) ?? null,
+      },
+    };
+  }
+
   async extendOffer(input: ExtendOfferInput): Promise<ExtendOfferOutput> {
     const offer: Offer = { ...input.offer, id: this.nextId() };
     this.offers.set(offer.id, offer);
@@ -83,7 +97,7 @@ class InMemoryStrategy implements ObpPersistenceStrategy {
       nbc_expires_turn: input.nbc_expires_turn ?? 0,
       nbc_expires_at_relay_ms: input.nbc_expires_at_relay_ms ?? 0,
     });
-    if (input.bindPortId) {
+    if (input.bindPortId.trim() !== "") {
       this.binds.push({
         offerId: offer.id,
         portId: input.bindPortId,
@@ -98,6 +112,7 @@ class InMemoryStrategy implements ObpPersistenceStrategy {
   async exposePort(input: ExposePortInput): Promise<ExposePortOutput> {
     const port: Port = { ...input.port, id: this.nextId() };
     this.ports.set(port.id, port);
+    this.portBindPolicies.set(port.id, input.bind_policy ?? null);
     this.exposes.set(port.id, input.offerId);
     this.portNbc.set(port.id, {
       nbc_expires_turn: input.nbc_expires_turn ?? 0,
@@ -187,6 +202,18 @@ class InMemoryStrategy implements ObpPersistenceStrategy {
 
 const timing0 = { turnSeq: 0, relayTsMs: 1 } as const;
 
+const textBindPolicy = {
+  version: "1" as const,
+  properties: [
+    {
+      type: "text" as const,
+      name: "Greeting",
+      prompt: "A short hello",
+      constraints: { minLength: 1 },
+    },
+  ],
+};
+
 describe("applyNbcTurn", () => {
   test("extend + expose + bind", async () => {
     const client = new ObpPersistenceClient(new InMemoryStrategy());
@@ -223,6 +250,49 @@ describe("applyNbcTurn", () => {
     await applyNbcTurn({ partyId: b.id, body: bodyB, client, timing: timing0 });
     const binds = await client.listBinds();
     expect(binds.binds.some((x) => x.portId === counterpartyPortId)).toBe(true);
+  });
+
+  test("persisted bind_policy enables later-turn bind with normalized payload", async () => {
+    const client = new ObpPersistenceClient(new InMemoryStrategy());
+    const { party: a } = await client.registerParty({ name: "A", sourcemaps: [] });
+    const { party: b } = await client.registerParty({ name: "B", sourcemaps: [] });
+
+    const bodyA = parseNbcTurnBody({
+      offer: { id: "", expires_turn: 100, expires_at_relay_ms: 0, type: "step", sourcemaps: [] },
+      ports: [
+        {
+          id: "",
+          type: "slot",
+          promise: "pick",
+          expires_turn: 100,
+          expires_at_relay_ms: 0,
+          bind_policy: textBindPolicy,
+          ref: "",
+        },
+      ],
+      bind_port_id: "",
+      bind_payload: null,
+    });
+    const r1 = await applyNbcTurn({ partyId: a.id, body: bodyA, client, timing: timing0 });
+    const pid = r1.exposedPortIds[0];
+    if (pid === undefined) throw new Error("expected port");
+
+    const bodyB = parseNbcTurnBody({
+      offer: { id: "", expires_turn: 100, expires_at_relay_ms: 0, type: "reply", sourcemaps: [] },
+      ports: [],
+      bind_port_id: pid,
+      bind_payload: { greeting: "yo" },
+    });
+    await applyNbcTurn({
+      partyId: b.id,
+      body: bodyB,
+      client,
+      timing: timing0,
+      validateBindPayload: (bp, pl) => validateVellumBindPayloadForPort(bp, pl) as JsonDocument,
+    });
+    const { binds } = await client.listBinds();
+    const row = binds.find((x) => x.portId === pid);
+    expect(row?.bind_payload).toEqual({ greeting: "yo" });
   });
 });
 

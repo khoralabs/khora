@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
-import { bindPayloadSchemaForProperties, portBindPolicySchema } from "./nbc-bind-policy-schema.ts";
-import type { PortBindPolicy } from "./nbc-bind-policy-types.ts";
+import { bindPayloadSchemaForProperties, portBindPolicySchema } from "./bind-policy-schema.ts";
+import type { PortBindPolicy } from "./bind-policy-types.ts";
 
 const textPolicy: PortBindPolicy = {
   version: "1",

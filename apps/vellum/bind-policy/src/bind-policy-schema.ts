@@ -1,5 +1,5 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
-import { bindPolicySlugKeys } from "./nbc-bind-policy-slug.ts";
+import { bindPolicySlugKeys } from "./bind-policy-slug.ts";
 import type {
   BindPolicyChoiceField,
   BindPolicyField,
@@ -7,9 +7,9 @@ import type {
   BindPolicyIntField,
   BindPolicyTextField,
   PortBindPolicy,
-} from "./nbc-bind-policy-types.ts";
+} from "./bind-policy-types.ts";
 
-const VENDOR = "@khoralabs/obp-v2-nbc";
+const VENDOR = "@khoralabs/vellum-bind-policy";
 
 type Issue = StandardSchemaV1.Issue;
 type Path = ReadonlyArray<PropertyKey>;

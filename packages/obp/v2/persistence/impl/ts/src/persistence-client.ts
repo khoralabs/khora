@@ -20,6 +20,8 @@ import type {
   GetOfferOutput,
   GetPartyInput,
   GetPartyOutput,
+  GetPortBindPolicyInput,
+  GetPortBindPolicyOutput,
   GetPortInput,
   GetPortOutput,
   GetNbcBindWindowForOfferOutput,
@@ -62,6 +64,10 @@ export class ObpPersistenceClient {
 
   getPort(input: GetPortInput): Promise<GetPortOutput> {
     return this.strategy.getPort(input);
+  }
+
+  getPortBindPolicy(input: GetPortBindPolicyInput): Promise<GetPortBindPolicyOutput> {
+    return this.strategy.getPortBindPolicy(input);
   }
 
   // -------------------------------------------------------------------------

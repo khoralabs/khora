@@ -3,10 +3,12 @@ import path from "node:path";
 
 import type { PersistableAgentSigner } from "@khoralabs/atrium-auth";
 import { AtriumClient } from "@khoralabs/atrium-client";
+import type { JsonDocument } from "@khoralabs/obp-v2-model";
 import {
   createObpV2SqlitePersistenceClient,
   openObpV2Database,
 } from "@khoralabs/obp-v2-sqlite-persistence";
+import { validateVellumBindPayloadForPort } from "@khoralabs/vellum-bind-policy";
 import { cfgDataDir, roomObpSqlitePath, type VellumPathConfig } from "@khoralabs/vellum-contracts";
 
 import { removeVellumControlFile, writeVellumControlFile } from "./control-pid.ts";
@@ -70,6 +72,8 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): { close(): void }
           webSocketUrl: opts.webSocketUrl,
           signer: frameSigner,
           client: persistence,
+          validateBindPayload: (bindPolicy, bindPayload) =>
+            validateVellumBindPayloadForPort(bindPolicy, bindPayload) as JsonDocument,
           handlers: {
             onSessionReady: async (handle) => {
               state.handles.set(handle.sessionId, handle);

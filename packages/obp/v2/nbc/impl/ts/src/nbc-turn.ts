@@ -5,7 +5,13 @@
 import { ObpError } from "@khoralabs/obp-v2-errors";
 import type { JsonDocument, Offer } from "@khoralabs/obp-v2-model";
 import type { ObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
-import { type NbcBindFailure, type NbcBindTiming, isActiveBindPolicy, validateNbcBind } from "./nbc-invariants.ts";
+import {
+  isActiveBindPolicy,
+  type NbcBindFailure,
+  type NbcBindPolicyValidateFn,
+  type NbcBindTiming,
+  validateNbcBind,
+} from "./nbc-invariants.ts";
 import { type NbcTurnBody, nbcPortSpecToPort } from "./nbc-types.ts";
 
 export type ApplyNbcTurnParams = {
@@ -14,8 +20,8 @@ export type ApplyNbcTurnParams = {
   body: NbcTurnBody;
   client: ObpPersistenceClient;
   timing: NbcBindTiming;
-  /** Resolve expose-time **`bind_policy`** for a port id (e.g. counterparty ports). */
-  getBindPolicyForPort?: (portId: string) => JsonDocument | null | Promise<JsonDocument | null>;
+  /** NBC N4: host validation when **`bind_policy`** is active on the bind target port. */
+  validateBindPayload?: NbcBindPolicyValidateFn | undefined;
 };
 
 export type ApplyNbcTurnResult = {
@@ -48,7 +54,7 @@ export function obpErrorFromBindFailure(f: NbcBindFailure): ObpError {
  * @throws {ObpError} on bind validation failure; @throws {TypeError} from invalid **`body`** shape upstream if caller skipped parse.
  */
 export async function applyNbcTurn(params: ApplyNbcTurnParams): Promise<ApplyNbcTurnResult> {
-  const { partyId, body, client, timing, getBindPolicyForPort } = params;
+  const { partyId, body, client, timing, validateBindPayload } = params;
 
   const { offer } = await client.extendOffer({
     partyId,
@@ -72,6 +78,7 @@ export async function applyNbcTurn(params: ApplyNbcTurnParams): Promise<ApplyNbc
       port: nbcPortSpecToPort(spec),
       nbc_expires_turn: spec.expires_turn,
       nbc_expires_at_relay_ms: spec.expires_at_relay_ms,
+      bind_policy: spec.bind_policy ?? null,
     });
     exposedPortIds.push(port.id);
     if (isActiveBindPolicy(spec.bind_policy)) {
@@ -104,12 +111,21 @@ export async function applyNbcTurn(params: ApplyNbcTurnParams): Promise<ApplyNbc
     }
 
     const fromLocal = localPolicy.get(body.bind_port_id);
-    const bindPolicy =
-      fromLocal ??
-      (getBindPolicyForPort ? await getBindPolicyForPort(body.bind_port_id) : null) ??
-      null;
+    let bindPolicy: JsonDocument | null;
+    if (fromLocal !== undefined) {
+      bindPolicy = fromLocal;
+    } else {
+      const pr = await client.getPortBindPolicy({ portId: body.bind_port_id });
+      if (pr.result.kind === "notFound") {
+        throw new ObpError(
+          "NOT_FOUND",
+          `bind_policy snapshot missing for port: ${body.bind_port_id}`,
+        );
+      }
+      bindPolicy = pr.result.bind_policy;
+    }
 
-    const failure = await validateNbcBind({
+    const bindResult = await validateNbcBind({
       timing,
       offer: offerNow,
       port,
@@ -119,15 +135,16 @@ export async function applyNbcTurn(params: ApplyNbcTurnParams): Promise<ApplyNbc
       targetPortIsExposed: exposed,
       bindPolicy,
       bindPayload: body.bind_payload,
+      validateBindPayload,
     });
-    if (failure) {
-      throw obpErrorFromBindFailure(failure);
+    if (!bindResult.ok) {
+      throw obpErrorFromBindFailure(bindResult.failure);
     }
 
     await client.bindPort({
       offerId,
       portId: body.bind_port_id,
-      bind_payload: body.bind_payload,
+      bind_payload: bindResult.normalizedBindPayload,
     });
   }
 

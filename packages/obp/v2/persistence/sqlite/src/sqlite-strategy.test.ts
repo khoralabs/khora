@@ -43,6 +43,28 @@ describe("SqliteObpPersistenceStrategy", () => {
     expect(row?.bind_payload).toEqual({ x: 1 });
   });
 
+  test("exposePort persists bind_policy and getPortBindPolicy reads it", async () => {
+    const client = makeClient();
+    const { party } = await client.registerParty({ name: "Dana", sourcemaps: [] });
+    const { offer } = await client.extendOffer({
+      partyId: party.id,
+      offer: { id: "", type: "step", sourcemaps: [] },
+      bindPortId: "",
+      bind_payload: null,
+    });
+    const policy = { version: "1", properties: [] as unknown[] };
+    const { port } = await client.exposePort({
+      offerId: offer.id,
+      port: { id: "", type: "slot", promise: "p", ref: "", sourcemaps: [] },
+      bind_policy: policy,
+    });
+    const pr = await client.getPortBindPolicy({ portId: port.id });
+    expect(pr.result.kind).toBe("found");
+    if (pr.result.kind === "found") {
+      expect(pr.result.bind_policy).toEqual(policy);
+    }
+  });
+
   test("setOfferExpiredNow cascades to exposed ports", async () => {
     const client = makeClient();
     const { party } = await client.registerParty({ name: "Carol", sourcemaps: [] });

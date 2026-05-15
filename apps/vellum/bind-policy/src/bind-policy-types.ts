@@ -1,4 +1,4 @@
-/** `{ version: "1", properties: [...] }` JSON on **`NbcPortSpec.bind_policy`** / expose-time policy documents. */
+/** `{ version: "1", properties: [...] }` JSON on **`NbcPortSpec.bind_policy`** / expose-time policy documents (Vellum wire profile). */
 
 export type PortBindPolicyVersion = "1";
 

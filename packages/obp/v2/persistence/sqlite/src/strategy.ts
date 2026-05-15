@@ -26,6 +26,8 @@ import type {
   GetOfferOutput,
   GetPartyInput,
   GetPartyOutput,
+  GetPortBindPolicyInput,
+  GetPortBindPolicyOutput,
   GetPortInput,
   GetPortOutput,
   GetPortsSnapshotInput,
@@ -294,6 +296,18 @@ export class SqliteObpPersistenceStrategy implements ObpPersistenceStrategy {
     return { result: { kind: "port", port: rowToPortV2(row) } };
   }
 
+  async getPortBindPolicy(input: GetPortBindPolicyInput): Promise<GetPortBindPolicyOutput> {
+    const row = this.db
+      .query<{ bind_policy_json: string | null }, [string]>(
+        `SELECT bind_policy_json FROM obp_ports WHERE id = ?`,
+      )
+      .get(input.portId);
+    if (!row) return { result: { kind: "notFound" } };
+    return {
+      result: { kind: "found", bind_policy: parseJsonDocument(row.bind_policy_json) },
+    };
+  }
+
   async extendOffer(input: ExtendOfferInput): Promise<ExtendOfferOutput> {
     return this.db.transaction(() => {
       const partyExists = this.db
@@ -381,6 +395,7 @@ export class SqliteObpPersistenceStrategy implements ObpPersistenceStrategy {
 
       const nbcT = input.nbc_expires_turn ?? 0;
       const nbcM = input.nbc_expires_at_relay_ms ?? 0;
+      const bindPolicyJson = stringifyCounterpartyBind(input.bind_policy ?? null);
       this.insertPort.run(
         port.id,
         seq,
@@ -395,7 +410,7 @@ export class SqliteObpPersistenceStrategy implements ObpPersistenceStrategy {
         null,
         null,
         null,
-        null,
+        bindPolicyJson,
       );
 
       const exId = crypto.randomUUID();

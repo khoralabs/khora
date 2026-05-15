@@ -50,6 +50,13 @@ export type GetOfferOutput = { result: GetOfferResult };
 export type GetPortInput = { id: string };
 export type GetPortOutput = { result: GetPortResult };
 
+export type GetPortBindPolicyResult =
+  | { readonly kind: "notFound" }
+  | { readonly kind: "found"; bind_policy: JsonDocument };
+
+export type GetPortBindPolicyInput = { portId: string };
+export type GetPortBindPolicyOutput = { result: GetPortBindPolicyResult };
+
 // ---------------------------------------------------------------------------
 // ExtendOffer
 // ---------------------------------------------------------------------------
@@ -80,6 +87,8 @@ export type ExposePortInput = {
   /** NBC N1 bind-window projection — not on thin `Port`. Default `0` when omitted. */
   nbc_expires_turn?: number;
   nbc_expires_at_relay_ms?: number;
+  /** NBC expose-time bind policy persisted on port row; `null` when inactive. */
+  bind_policy?: JsonDocument;
 };
 
 export type ExposePortOutput = {

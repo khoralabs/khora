@@ -28,7 +28,7 @@ Some rules that reference implementations historically treated as “OBP persist
 
 **Orchestration reads:** **IsPortExposed**, **ListBinds**, **GetPortsSnapshot**, and **GetExtendingPartyId** mirror the **`ObpPersistence`** strategy surface in `@khoralabs/obp-persistence-client` (same semantics as TS **`OBPPersistenceClient`** helpers). NBC drivers use these reads when evaluating NBC preconditions.
 
-**Policy payloads:** **`cfd.obp#BindsEdge`** carries only graph identity and **`content_receipts`**. **`bind_payload`** / **`bind_policy_snapshot`** on **BindPort** / **ExtendOffer** inputs and **ListBinds** rows are **`Document`** on the **persistence** surface (storage projection), not part of the core graph shape; NBC defines **`NbcBindSatisfaction`** / **`NbcBindPolicyAuditSnapshot`** and validation rules (`packages/obp/v2/nbc/spec/model/nbc-policy.smithy`). **`max_bindings`**, **`terminal`**, bind-policy JSON, and TTL/expose context for ports live under **`cfd.obp.nbc#NbcPortExposePolicy`**.
+**Policy payloads:** **`cfd.obp#BindsEdge`** carries only graph identity and **`content_receipts`**. **`bind_payload`** / **`bind_policy_snapshot`** on **BindPort** / **ExtendOffer** inputs and **ListBinds** rows are **`Document`** on the **persistence** surface (storage projection), not part of the core graph shape; NBC defines **`NbcBindSatisfaction`** / **`NbcBindPolicyAuditSnapshot`** and **when** bind-policy validation runs (`packages/obp/v2/nbc/spec/model/nbc-policy.smithy`); concrete **`bind_policy`** JSON shapes are **product/host-defined**. **`max_bindings`**, **`terminal`**, bind-policy JSON, and TTL/expose context for ports live under **`cfd.obp.nbc#NbcPortExposePolicy`**.
 
 **Errors:** Operations model **success** shapes only. Implementations may throw or map failures for: not found, not exposed, ref cycle, invalid graph; NBC-specific failures (expired, max bindings exceeded, bind-policy validation) are defined under NBC.
 
@@ -49,6 +49,7 @@ service ObpPersistence {
         GetParty
         GetOffer
         GetPort
+        GetPortBindPolicy
         ExtendOffer
         ExposePort
         BindPort
@@ -135,6 +136,30 @@ union GetPortResult {
     port: Port
 }
 
+/// Read NBC expose-time **`bind_policy`** snapshot persisted on the port row (`bind_policy_json` in SQLite). **`found.bind_policy`** may be **`null`** when the port was exposed without an active policy.
+operation GetPortBindPolicy {
+    input: GetPortBindPolicyInput
+    output: GetPortBindPolicyOutput
+}
+
+structure GetPortBindPolicyInput {
+    portId: String
+}
+
+structure PortBindPolicyFound {
+    /// Expose-time snapshot; **`null`** when inactive / omitted at expose.
+    bind_policy: Document = null
+}
+
+union GetPortBindPolicyResult {
+    notFound: Unit
+    found: PortBindPolicyFound
+}
+
+structure GetPortBindPolicyOutput {
+    result: GetPortBindPolicyResult
+}
+
 /// Create an offer, add Party -[EXTENDS]-> Offer, and optionally Offer -[BINDS]-> Port.
 /// Implementations MUST assign **`Offer.id`** and MAY ignore client-supplied **`id`** on the input **`offer`** if they require placeholders in the wire format. Row **`created_seq`** for persisted rows follows **`cfd.obp.nbc#NbcRowCommitMeta`** when tracked.
 operation ExtendOffer {
@@ -177,6 +202,8 @@ structure ExposePortInput {
     /// NBC N1 relay-time bind ceiling — **not** on **`cfd.obp#Port`**. **`0`** disables relay mode.
     @default(0)
     nbc_expires_at_relay_ms: Long
+    /// NBC expose-time bind policy snapshot persisted on the port row (ledger-visible). **`null`** when inactive.
+    bind_policy: Document = null
 }
 
 structure ExposePortOutput {

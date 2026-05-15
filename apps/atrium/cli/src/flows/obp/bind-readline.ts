@@ -4,7 +4,7 @@ import {
   bindPolicySlugKeys,
   formatStandardSchemaIssuesForAgent,
   type PortBindPolicy,
-} from "@khoralabs/obp-v2-nbc";
+} from "@khoralabs/vellum-bind-policy";
 
 export type ReadLineFn = (prompt: string) => Promise<string>;
 
@@ -17,7 +17,7 @@ function parseBool(raw: string): boolean | undefined {
 }
 
 /**
- * Prompt for each bind-policy property in order; validate with NBC Standard Schema (same rules as hosts).
+ * Prompt for each bind-policy property in order; validate with Vellum Standard Schema (same rules as hosts).
  */
 export async function readBindPolicyInteractive(
   bindPolicy: PortBindPolicy,

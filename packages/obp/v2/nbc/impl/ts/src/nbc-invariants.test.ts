@@ -1,7 +1,15 @@
 import { describe, expect, test } from "bun:test";
-import type { Offer, Port } from "@khoralabs/obp-v2-model";
+import type { JsonDocument, Offer, Port } from "@khoralabs/obp-v2-model";
+import { validateVellumBindPayloadForPort } from "@khoralabs/vellum-bind-policy";
 import { validateNbcBind } from "./nbc-invariants.ts";
 import { resolveCanonicalPortId } from "./nbc-ref.ts";
+
+function vellumBindValidate(
+  bindPolicy: JsonDocument | null,
+  bindPayload: JsonDocument | null,
+): JsonDocument {
+  return validateVellumBindPayloadForPort(bindPolicy, bindPayload) as JsonDocument;
+}
 
 const textBindPolicy = {
   version: "1" as const,
@@ -70,7 +78,7 @@ describe("validateNbcBind", () => {
   const ports = new Map<string, Port>([["p1", port]]);
 
   test("N1 rejects expired offer (turn)", async () => {
-    const f = await validateNbcBind({
+    const r = await validateNbcBind({
       timing: { turnSeq: 50, relayTsMs: 1 },
       offer,
       port,
@@ -81,11 +89,12 @@ describe("validateNbcBind", () => {
       bindPolicy: null,
       bindPayload: null,
     });
-    expect(f).toEqual({ code: "EXPIRED", entity: "offer" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.failure).toEqual({ code: "EXPIRED", entity: "offer" });
   });
 
   test("N1 skips when both expiry modes off", async () => {
-    const f = await validateNbcBind({
+    const r = await validateNbcBind({
       timing: { turnSeq: 999, relayTsMs: 999 },
       offer,
       port,
@@ -96,11 +105,12 @@ describe("validateNbcBind", () => {
       bindPolicy: null,
       bindPayload: null,
     });
-    expect(f).toBeNull();
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.normalizedBindPayload).toBeNull();
   });
 
   test("N1 rejects relay expiry without relay ts", async () => {
-    const f = await validateNbcBind({
+    const r = await validateNbcBind({
       timing: { turnSeq: 0, relayTsMs: 0 },
       offer,
       port,
@@ -111,11 +121,12 @@ describe("validateNbcBind", () => {
       bindPolicy: null,
       bindPayload: null,
     });
-    expect(f).toEqual({ code: "EXPIRED", entity: "offer" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.failure).toEqual({ code: "EXPIRED", entity: "offer" });
   });
 
   test("NOT_EXPOSED", async () => {
-    const f = await validateNbcBind({
+    const r = await validateNbcBind({
       timing: { turnSeq: 0, relayTsMs: 1 },
       offer,
       port,
@@ -126,11 +137,12 @@ describe("validateNbcBind", () => {
       bindPolicy: null,
       bindPayload: null,
     });
-    expect(f).toEqual({ code: "NOT_EXPOSED" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.failure).toEqual({ code: "NOT_EXPOSED" });
   });
 
   test("N4 rejects bind_payload when no policy", async () => {
-    const f = await validateNbcBind({
+    const r = await validateNbcBind({
       timing: { turnSeq: 0, relayTsMs: 1 },
       offer,
       port,
@@ -141,11 +153,12 @@ describe("validateNbcBind", () => {
       bindPolicy: null,
       bindPayload: { x: 1 },
     });
-    expect(f?.code).toBe("POLICY_REJECTED");
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.failure.code).toBe("POLICY_REJECTED");
   });
 
-  test("N4 rejects invalid policy document", async () => {
-    const f = await validateNbcBind({
+  test("N4 rejects invalid policy document (host validator)", async () => {
+    const r = await validateNbcBind({
       timing: { turnSeq: 0, relayTsMs: 1 },
       offer,
       port,
@@ -155,12 +168,14 @@ describe("validateNbcBind", () => {
       targetPortIsExposed: true,
       bindPolicy: { required: true },
       bindPayload: { ok: true },
+      validateBindPayload: vellumBindValidate,
     });
-    expect(f?.code).toBe("POLICY_REJECTED");
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.failure.code).toBe("POLICY_REJECTED");
   });
 
-  test("N4 success with schema bind_payload", async () => {
-    const f = await validateNbcBind({
+  test("N4 rejects active bind_policy without host validator", async () => {
+    const r = await validateNbcBind({
       timing: { turnSeq: 0, relayTsMs: 1 },
       offer,
       port,
@@ -171,11 +186,32 @@ describe("validateNbcBind", () => {
       bindPolicy: textBindPolicy,
       bindPayload: { greeting: "yo" },
     });
-    expect(f).toBeNull();
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.failure.code).toBe("POLICY_REJECTED");
+      expect(String("reason" in r.failure ? r.failure.reason : "")).toContain("validateBindPayload");
+    }
+  });
+
+  test("N4 success with schema bind_payload", async () => {
+    const r = await validateNbcBind({
+      timing: { turnSeq: 0, relayTsMs: 1 },
+      offer,
+      port,
+      offerBindWindow: win(100, 0),
+      portBindWindow: win(100, 0),
+      portsById: ports,
+      targetPortIsExposed: true,
+      bindPolicy: textBindPolicy,
+      bindPayload: { greeting: "yo" },
+      validateBindPayload: vellumBindValidate,
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.normalizedBindPayload).toEqual({ greeting: "yo" });
   });
 
   test("N4 rejects missing required field", async () => {
-    const f = await validateNbcBind({
+    const r = await validateNbcBind({
       timing: { turnSeq: 0, relayTsMs: 1 },
       offer,
       port,
@@ -185,7 +221,9 @@ describe("validateNbcBind", () => {
       targetPortIsExposed: true,
       bindPolicy: textBindPolicy,
       bindPayload: {},
+      validateBindPayload: vellumBindValidate,
     });
-    expect(f?.code).toBe("POLICY_REJECTED");
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.failure.code).toBe("POLICY_REJECTED");
   });
 });

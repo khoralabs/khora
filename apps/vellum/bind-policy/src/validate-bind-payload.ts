@@ -1,8 +1,8 @@
 import { ObpError } from "@khoralabs/obp-v2-errors";
 import type { JsonDocument } from "@khoralabs/obp-v2-model";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
-import { formatStandardSchemaIssuesForAgent } from "./nbc-bind-policy-issue-format.ts";
-import { bindPayloadSchemaForProperties, portBindPolicySchema } from "./nbc-bind-policy-schema.ts";
+import { formatStandardSchemaIssuesForAgent } from "./bind-policy-issue-format.ts";
+import { bindPayloadSchemaForProperties, portBindPolicySchema } from "./bind-policy-schema.ts";
 
 function policyIsActive(bindPolicy: JsonDocument | null): boolean {
   return (
@@ -33,11 +33,11 @@ function expectSync<T>(
 }
 
 /**
- * Validates **`bind_payload`** against **`bindPolicy`** when the policy is present and non-empty.
+ * Vellum Standard Schema profile: validates **`bind_payload`** against **`bindPolicy`** when the policy is present and non-empty.
  * Returns normalized plain object for persistence (parsed output).
  * @throws {ObpError} **`VALIDATION`** on mismatch.
  */
-export function validateBindPayloadForPort(
+export function validateVellumBindPayloadForPort(
   bindPolicy: JsonDocument | null,
   raw: unknown,
 ): Record<string, unknown> {
@@ -69,3 +69,6 @@ export function validateBindPayloadForPort(
   }
   return out.value;
 }
+
+/** @deprecated Prefer {@link validateVellumBindPayloadForPort}; kept for incremental migration. */
+export const validateBindPayloadForPort = validateVellumBindPayloadForPort;

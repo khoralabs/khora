@@ -11,6 +11,7 @@ import {
   type FrameVerifier,
   normalizeSessionInit,
   partyIdForSigner,
+  type RunFrameMultiplexSessionArgs,
   runFrameMultiplexSession,
   type SessionInitNormalized,
 } from "@khoralabs/obp-v2-frames-impl";
@@ -31,6 +32,7 @@ export type ObpFrameChannelClientOptions = {
   sessionEnvelopeSync?: boolean;
   /** Multiplex lifecycle hooks (e.g. {@link FrameSessionHandlers.onSessionReady} for inbound SessionInit). */
   handlers?: FrameSessionHandlers;
+  validateBindPayload?: RunFrameMultiplexSessionArgs["validateBindPayload"];
 };
 
 export type ObpWebSocketConnectOptions = Omit<ObpFrameChannelClientOptions, "channel"> & {
@@ -70,6 +72,9 @@ export async function connectObpFrameChannelSession(
     client: options.client,
     handlers,
     ...(sessionEnvelopeSync !== undefined ? { sessionEnvelopeSync } : {}),
+    ...(options.validateBindPayload !== undefined
+      ? { validateBindPayload: options.validateBindPayload }
+      : {}),
     openerSession: async (api) => {
       const conn: ObpFrameConnection = {
         async init(init, hooks) {

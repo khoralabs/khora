@@ -20,6 +20,7 @@
     "@khoralabs/obp-v2-frames-impl": "workspace:*",
     "@khoralabs/obp-v2-model": "workspace:*",
     "@khoralabs/obp-v2-nbc": "workspace:*",
+    "@khoralabs/vellum-bind-policy": "workspace:*",
     "@khoralabs/vellum-contracts": "workspace:*",
     "@noble/ed25519": "^3.1.0",
     "iso-base": "^4.2.1",

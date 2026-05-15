@@ -58,6 +58,7 @@ export class MultiplexSessionRuntime {
   private readonly usesSequentialPlans: boolean;
   private readonly closeChannelOnTerminate: boolean;
   private readonly closeChannelWhenIdle: boolean;
+  private readonly validateBindPayload: RunFrameMultiplexSessionArgs["validateBindPayload"];
 
   private lazyTemplate: Pick<SessionInitNormalized, "parties"> | undefined;
   private sequentialOpenedThrough = -1;
@@ -91,6 +92,8 @@ export class MultiplexSessionRuntime {
     this.usesSequentialPlans = this.plans.length > 0;
     this.closeChannelOnTerminate = args.closeChannelOnTerminate === true;
     this.closeChannelWhenIdle = args.closeChannelWhenIdle !== false;
+
+    this.validateBindPayload = args.validateBindPayload;
 
     this.lazyTemplate =
       args.sessionTemplate !== undefined
@@ -435,7 +438,11 @@ export class MultiplexSessionRuntime {
     await this.maybeCloseIdle();
   };
 
-  private async handleInboundFrame(frame: Frame, wireUtf8: string, relayTsMs?: number): Promise<void> {
+  private async handleInboundFrame(
+    frame: Frame,
+    wireUtf8: string,
+    relayTsMs?: number,
+  ): Promise<void> {
     await this.enqueueMux(async () => {
       const key = frameDedupeKeyHex(frame);
       if (this.globalDedupe.has(key)) {
@@ -460,6 +467,7 @@ export class MultiplexSessionRuntime {
             turnSeq: c.sessionOps.length,
             relayTsMs: relayTsMs ?? 0,
           },
+          this.validateBindPayload,
         );
       } else if (frame.type === "END_OFFERS") {
         // No persistence graph step; advances DAG only.

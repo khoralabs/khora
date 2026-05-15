@@ -1,6 +1,6 @@
 import type { JsonDocument, Offer, Party, Port } from "@khoralabs/obp-v2-model";
-import type { PortBindPolicy } from "@khoralabs/obp-v2-nbc";
 import type { ObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
+import type { PortBindPolicy } from "@khoralabs/vellum-bind-policy";
 import { type ReadLineFn, readBindPolicyInteractive } from "./bind-readline.ts";
 import { mergePortShell, shellOffer } from "./port-defaults.ts";
 

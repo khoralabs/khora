@@ -1,6 +1,7 @@
 {
-  "name": "@khoralabs/obp-v2-nbc",
+  "name": "@khoralabs/vellum-bind-policy",
   "version": "0.0.0",
+  "description": "Vellum bind-policy wire shape + Standard Schema validators (product-layer NBC bind payloads).",
   "type": "module",
   "private": true,
   "exports": {
@@ -17,11 +18,11 @@
   "dependencies": {
     "@khoralabs/obp-v2-errors": "workspace:*",
     "@khoralabs/obp-v2-model": "workspace:*",
-    "@khoralabs/obp-v2-persistence": "workspace:*"
+    "@standard-schema/spec": "^1.1.0"
   },
   "devDependencies": {
-    "@khoralabs/vellum-bind-policy": "workspace:*",
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "typescript": "^5"
   },
   "peerDependencies": {
     "typescript": "^5"

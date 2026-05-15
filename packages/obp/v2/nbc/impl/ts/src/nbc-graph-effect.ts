@@ -4,8 +4,8 @@
  */
 
 import type { ObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
+import type { NbcBindTiming } from "./nbc-invariants.ts";
 import { type ApplyNbcTurnParams, type ApplyNbcTurnResult, applyNbcTurn } from "./nbc-turn.ts";
-import { type NbcBindTiming } from "./nbc-invariants.ts";
 import { type NbcTurnBody, parseNbcTurnBody } from "./nbc-types.ts";
 
 export type ApplyNbcFrameTurnResult = ApplyNbcTurnResult;
@@ -20,9 +20,9 @@ export async function applyNbcFrameTurn(
   partyId: string,
   body: NbcTurnBody,
   timing: NbcBindTiming,
-  getBindPolicyForPort?: ApplyNbcTurnParams["getBindPolicyForPort"],
+  validateBindPayload?: ApplyNbcTurnParams["validateBindPayload"],
 ): Promise<ApplyNbcFrameTurnResult> {
-  return applyNbcTurn({ partyId, body, client, timing, getBindPolicyForPort });
+  return applyNbcTurn({ partyId, body, client, timing, validateBindPayload });
 }
 
 /** Map **`NbcTurnBody`** to legacy flat wire keys expected by older frame materializers. */

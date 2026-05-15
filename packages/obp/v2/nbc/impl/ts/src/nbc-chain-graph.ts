@@ -1,6 +1,5 @@
 import type { JsonDocument } from "@khoralabs/obp-v2-model";
 import type { ObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
-import { type NbcBindTiming, isRelayExpiryOk, isTurnExpiryOk } from "./nbc-invariants.ts";
 import type {
   NbcChainExposeEdge,
   NbcChainExtendEdge,
@@ -9,16 +8,16 @@ import type {
   NbcChainPartyRow,
   NbcChainPortRow,
 } from "./nbc-chain-graph-types.ts";
+import {
+  isActiveBindPolicy,
+  isRelayExpiryOk,
+  isTurnExpiryOk,
+  type NbcBindTiming,
+} from "./nbc-invariants.ts";
 
 export type CollectNbcChainGraphOptions = {
   /** When set, **`expired`** flags use NBC N1 against this timing. */
   timing?: NbcBindTiming;
-  /**
-   * NBC expose/bind policy document per port (e.g. session-local policy), merged into **`bind_policy`** on port rows.
-   * Terminal / caps may be supplied by the host via **`terminal`** / **`max_bindings`** on returned documents if encoded there;
-   * otherwise leave overlays unset.
-   */
-  getBindPolicyForPort?: (portId: string) => JsonDocument | null | Promise<JsonDocument | null>;
 };
 
 function isNbcExpiryViewExpired(
@@ -26,7 +25,8 @@ function isNbcExpiryViewExpired(
   t: NbcBindTiming,
 ): boolean {
   return !(
-    isTurnExpiryOk(node.expires_turn, t.turnSeq) && isRelayExpiryOk(node.expires_at_relay_ms, t.relayTsMs)
+    isTurnExpiryOk(node.expires_turn, t.turnSeq) &&
+    isRelayExpiryOk(node.expires_at_relay_ms, t.relayTsMs)
   );
 }
 
@@ -34,7 +34,7 @@ export async function collectNbcChainGraph(
   client: ObpPersistenceClient,
   options: CollectNbcChainGraphOptions = {},
 ): Promise<NbcChainGraph> {
-  const { timing, getBindPolicyForPort } = options;
+  const { timing } = options;
 
   const [{ edges: exposedEdges }, { binds }, snapOut] = await Promise.all([
     client.listExposedPortEdges(),
@@ -119,11 +119,9 @@ export async function collectNbcChainGraph(
   const ports: NbcChainPortRow[] = await Promise.all(
     snapOut.entries.map(async ({ portId, port }) => {
       let bind_policy: JsonDocument | undefined;
-      if (getBindPolicyForPort !== undefined) {
-        const raw = await getBindPolicyForPort(portId);
-        if (raw !== null && raw !== undefined) {
-          bind_policy = raw;
-        }
+      const pr = await client.getPortBindPolicy({ portId });
+      if (pr.result.kind === "found" && isActiveBindPolicy(pr.result.bind_policy)) {
+        bind_policy = pr.result.bind_policy;
       }
       const win = await client.getNbcBindWindowForPortOrNull(portId);
       const expires_turn = win?.nbc_expires_turn ?? 0;
