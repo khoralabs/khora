@@ -5,10 +5,10 @@ import type {
   AtriumRoomTicketResponse,
 } from "@khoralabs/atrium-contracts";
 import { zAtriumRoomListResponse, zAtriumRoomTicketResponse } from "@khoralabs/atrium-contracts";
-import type { HttpTransport } from "./transport.ts";
+import type { AtriumUnaryTransport } from "@khoralabs/atrium-transport";
 
 export function createAtriumRoom(
-  t: HttpTransport,
+  t: AtriumUnaryTransport,
   body: AtriumRoomCreateBody,
 ): Promise<AtriumRoomTicketResponse> {
   return t.requestJson("POST", "/v1/atrium/rooms", {
@@ -17,14 +17,14 @@ export function createAtriumRoom(
   });
 }
 
-export function listAtriumRooms(t: HttpTransport): Promise<AtriumRoomListResponse> {
+export function listAtriumRooms(t: AtriumUnaryTransport): Promise<AtriumRoomListResponse> {
   return t.requestJson("GET", "/v1/atrium/rooms", {
     parse: zAtriumRoomListResponse,
   });
 }
 
 export function mintAtriumRoomTicket(
-  t: HttpTransport,
+  t: AtriumUnaryTransport,
   roomId: string,
   body?: AtriumRoomMintTicketBody,
 ): Promise<AtriumRoomTicketResponse> {

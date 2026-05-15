@@ -44,6 +44,8 @@
     "packages/obp/v2/nbc/impl/ts",
     "packages/obp/v2/transport-http2/impl/ts",
     "packages/obp/v2/transport-ws/impl/ts",
+    "packages/atrium/*",
+    "packages/vellum/*",
     "apps/vellum/*"
   ]
 }

@@ -63,6 +63,7 @@
         "@khoralabs/agent-relay": "workspace:*",
         "@khoralabs/atrium-auth": "workspace:*",
         "@khoralabs/atrium-contracts": "workspace:*",
+        "@khoralabs/atrium-transport": "workspace:*",
         "@khoralabs/obp-v2-session-impl": "workspace:*",
         "@khoralabs/obp-v2-transport-ws": "workspace:*",
         "zod": "^4",
@@ -296,6 +297,7 @@
         "@khoralabs/obp-v2-nbc": "workspace:*",
         "@khoralabs/vellum-bind-policy": "workspace:*",
         "@khoralabs/vellum-contracts": "workspace:*",
+        "@khoralabs/vellum-transport": "workspace:*",
         "@noble/ed25519": "^3.1.0",
         "iso-base": "^4.2.1",
         "iso-signatures": "^0.5.1",
@@ -415,6 +417,38 @@
       },
       "peerDependencies": {
         "ai": "^6",
+        "typescript": "^5",
+      },
+    },
+    "packages/atrium/transport": {
+      "name": "@khoralabs/atrium-transport",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/agent-io": "workspace:*",
+        "@khoralabs/agent-relay": "workspace:*",
+        "@khoralabs/atrium-auth": "workspace:*",
+        "@khoralabs/atrium-contracts": "workspace:*",
+        "zod": "^4",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/libs/agent-io": {
+      "name": "@khoralabs/agent-io",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/duplex-byte-stream": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
         "typescript": "^5",
       },
     },
@@ -809,6 +843,17 @@
         "typescript": "^5",
       },
     },
+    "packages/vellum/transport": {
+      "name": "@khoralabs/vellum-transport",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
   },
   "packages": {
     "@adraffy/ens-normalize": ["@adraffy/ens-normalize@1.11.1", "", {}, "sha512-nhCBV3quEgesuf7c7KYfperqSS14T8bYuvJ8PcLJp6znkZpFc0AuW4qBtr8eKVyPPe/8RSr7sglCWPU5eaxwKQ=="],
@@ -911,6 +956,8 @@
 
     "@khoralabs/agent-identity-spec": ["@khoralabs/agent-identity-spec@workspace:packages/agent/identity-spec"],
 
+    "@khoralabs/agent-io": ["@khoralabs/agent-io@workspace:packages/libs/agent-io"],
+
     "@khoralabs/agent-persisted-signer": ["@khoralabs/agent-persisted-signer@workspace:packages/agent/persisted-signer"],
 
     "@khoralabs/agent-relay": ["@khoralabs/agent-relay@workspace:packages/agent/relay"],
@@ -936,6 +983,8 @@
     "@khoralabs/atrium-plugin-profile-sync": ["@khoralabs/atrium-plugin-profile-sync@workspace:apps/atrium/plugins/profile-sync"],
 
     "@khoralabs/atrium-plugin-telemetry": ["@khoralabs/atrium-plugin-telemetry@workspace:apps/atrium/plugins/telemetry"],
+
+    "@khoralabs/atrium-transport": ["@khoralabs/atrium-transport@workspace:packages/atrium/transport"],
 
     "@khoralabs/duplex-byte-stream": ["@khoralabs/duplex-byte-stream@workspace:packages/libs/duplex-byte-stream"],
 
@@ -998,6 +1047,8 @@
     "@khoralabs/vellum-contracts": ["@khoralabs/vellum-contracts@workspace:apps/vellum/contracts"],
 
     "@khoralabs/vellum-daemon": ["@khoralabs/vellum-daemon@workspace:apps/vellum/daemon"],
+
+    "@khoralabs/vellum-transport": ["@khoralabs/vellum-transport@workspace:packages/vellum/transport"],
 
     "@mdx-js/mdx": ["@mdx-js/mdx@3.1.1", "", { "dependencies": { "@types/estree": "^1.0.0", "@types/estree-jsx": "^1.0.0", "@types/hast": "^3.0.0", "@types/mdx": "^2.0.0", "acorn": "^8.0.0", "collapse-white-space": "^2.0.0", "devlop": "^1.0.0", "estree-util-is-identifier-name": "^3.0.0", "estree-util-scope": "^1.0.0", "estree-walker": "^3.0.0", "hast-util-to-jsx-runtime": "^2.0.0", "markdown-extensions": "^2.0.0", "recma-build-jsx": "^1.0.0", "recma-jsx": "^1.0.0", "recma-stringify": "^1.0.0", "rehype-recma": "^1.0.0", "remark-mdx": "^3.0.0", "remark-parse": "^11.0.0", "remark-rehype": "^11.0.0", "source-map": "^0.7.0", "unified": "^11.0.0", "unist-util-position-from-estree": "^2.0.0", "unist-util-stringify-position": "^4.0.0", "unist-util-visit": "^5.0.0", "vfile": "^6.0.0" } }, "sha512-f6ZO2ifpwAQIpzGWaBQT2TXxPv6z3RBzQKpVftEWN78Vl/YweF1uwussDx8ECAXVtr3Rs89fKyG9YlzUs9DyGQ=="],
 

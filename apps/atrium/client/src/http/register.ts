@@ -4,12 +4,12 @@ import {
   zAtriumRegisterResult,
   zAtriumRegistrationRequestBody,
 } from "@khoralabs/atrium-contracts";
-import type { HttpTransport } from "./transport.ts";
+import type { AtriumUnaryTransport } from "@khoralabs/atrium-transport";
 
 export type RegisterBody = Omit<AtriumRegistrationRequestBody, "did"> & { did?: string };
 
 export async function register(
-  t: HttpTransport,
+  t: AtriumUnaryTransport,
   body: RegisterBody = {},
 ): Promise<{ result: AtriumRegistrationResult; requestDid: string }> {
   const finalBody: AtriumRegistrationRequestBody = zAtriumRegistrationRequestBody.parse({

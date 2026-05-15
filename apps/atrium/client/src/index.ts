@@ -38,24 +38,32 @@ export {
   zAtriumRegistrationRequestBody,
 } from "@khoralabs/atrium-contracts";
 export {
+  AtriumClientError,
+  type AtriumClientEvent,
+  type AtriumDerivedInboxEvent,
+  type AtriumInboxListPayload,
+  createAtriumTransportBundleFromEnv,
+  createHttpAtriumTransportBundle,
+  type InboxNotificationRow,
+  type InboxWsNotificationMessage,
+  type InboxWsSnapshotMessage,
+  inboxWebSocketUrl,
+  isDerivedInboxKindEvent,
+  isInboxNotificationEvent,
+  parseInboxWebSocketMessage,
+} from "@khoralabs/atrium-transport";
+export {
   type AgentStatusSnapshot,
   type AgentSyncSnapshot,
   AtriumClient,
   type AtriumClientOptions,
   type AtriumFetch,
+  type AtriumTransportBundle,
   type AuthorSubscriptionsSnapshot,
   type InboxListResult,
   type InboxWsHandlers,
   type ListInboxParams,
 } from "./atrium-client.ts";
-export { AtriumClientError } from "./atrium-client-error.ts";
-export {
-  type AtriumClientEvent,
-  type AtriumDerivedInboxEvent,
-  type AtriumInboxListPayload,
-  isDerivedInboxKindEvent,
-  isInboxNotificationEvent,
-} from "./atrium-events.ts";
 export {
   ATRIUM_BUILTIN_PLUGIN_ID,
   type AtriumPluginContext,
@@ -92,11 +100,4 @@ export {
   zAtriumAppConfigBase,
   zAtriumAppPluginMap,
 } from "./config/index.ts";
-export {
-  type InboxNotificationRow,
-  type InboxWsNotificationMessage,
-  type InboxWsSnapshotMessage,
-  inboxWebSocketUrl,
-  parseInboxWebSocketMessage,
-} from "./inbox-ws.ts";
 export { type AtriumSession, createAtriumSession } from "./session.ts";

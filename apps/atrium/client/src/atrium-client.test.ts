@@ -4,9 +4,8 @@ import {
   generateAgentIdentity,
   type PersistableAgentSigner,
 } from "@khoralabs/atrium-auth";
+import { AtriumClientError, type AtriumClientEvent } from "@khoralabs/atrium-transport";
 import { AtriumClient } from "./atrium-client.ts";
-import { AtriumClientError } from "./atrium-client-error.ts";
-import type { AtriumClientEvent } from "./atrium-events.ts";
 
 async function makeSigner(): Promise<PersistableAgentSigner> {
   return generateAgentIdentity();

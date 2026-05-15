@@ -14,13 +14,21 @@ import type {
   AtriumRoomMintTicketBody,
   AtriumRoomTicketResponse,
 } from "@khoralabs/atrium-contracts";
+import {
+  type AtriumClientEvent,
+  type AtriumDuplexTransport,
+  type AtriumFetch,
+  type AtriumTransportBundle,
+  type AtriumUnaryTransport,
+  createAtriumTransportBundleFromEnv,
+  type InboxWsHandlers,
+} from "@khoralabs/atrium-transport";
 import type { Checkpoint, SessionOp } from "@khoralabs/obp-v2-session-impl";
 import {
-  connectObpWebSocketSession,
+  connectObpFrameChannelSession,
   type ObpFrameConnection,
   type ObpWebSocketConnectOptions,
 } from "@khoralabs/obp-v2-transport-ws";
-import type { AtriumClientEvent } from "./atrium-events.ts";
 import {
   type AtriumPluginHandle,
   type AtriumPluginInstaller,
@@ -58,8 +66,6 @@ import {
 } from "./http/profile.ts";
 import { register } from "./http/register.ts";
 import { listTopicSubscriptions, subscribeTopic, unsubscribeTopic } from "./http/topics.ts";
-import { type AtriumFetch, createHttpTransport, type HttpTransport } from "./http/transport.ts";
-import { connectInbox, type InboxWsHandlers } from "./ws/inbox.ts";
 
 export type {
   AtriumMemoriesSearchScope,
@@ -72,6 +78,11 @@ export type {
   MemoriesSearchScope,
 } from "@khoralabs/atrium-contracts";
 export type {
+  AtriumFetch,
+  AtriumTransportBundle,
+  InboxWsHandlers,
+} from "@khoralabs/atrium-transport";
+export type {
   ObpFrameConnection,
   ObpWebSocketConnectOptions,
 } from "@khoralabs/obp-v2-transport-ws";
@@ -80,13 +91,14 @@ export type { AuthorSubscriptionsSnapshot } from "./http/authors.ts";
 export type { InboxListResult, ListInboxParams } from "./http/inbox.ts";
 export type { MemoriesSearchParams, MemorySearchHitWire } from "./http/memories-search.ts";
 export type { ProfileByUsernameResponse } from "./http/profile.ts";
-export type { AtriumFetch } from "./http/transport.ts";
-export type { InboxWsHandlers } from "./ws/inbox.ts";
 
 export type AtriumClientOptions = {
-  baseUrl: string;
+  /** Required unless {@link transportBundle} supplies unary+duplex (defaults derive HTTP base URL here). */
+  baseUrl?: string;
   /** Agent identity used to sign every request including `/v1/register`. */
   signer: AgentSigner;
+  /** When set, {@link baseUrl} is optional — deploy-selected transports (`ATRIUM_TRANSPORT`, …). */
+  transportBundle?: AtriumTransportBundle;
   fetch?: AtriumFetch;
   WebSocket?: typeof WebSocket;
   /** Override clock (ms) for tests. */
@@ -100,19 +112,31 @@ export type AtriumClientOptions = {
 };
 
 export class AtriumClient {
-  private readonly transport: HttpTransport;
+  private readonly transport: AtriumUnaryTransport;
+  private readonly duplex: AtriumDuplexTransport;
   private readonly WebSocketCtor: typeof WebSocket;
   private readonly eventListeners: Array<(event: AtriumClientEvent) => void> = [];
   private readonly pluginHandles: AtriumPluginHandle[] = [];
 
   constructor(options: AtriumClientOptions) {
-    this.transport = createHttpTransport({
-      baseUrl: options.baseUrl,
-      signer: options.signer,
-      fetch: options.fetch,
-      nowMs: options.nowMs,
-      nonceFactory: options.nonceFactory,
-    });
+    let bundle: AtriumTransportBundle;
+    if (options.transportBundle !== undefined) {
+      bundle = options.transportBundle;
+    } else {
+      const bu = options.baseUrl?.trim() ?? "";
+      if (bu === "") {
+        throw new Error("AtriumClient: pass baseUrl or transportBundle");
+      }
+      bundle = createAtriumTransportBundleFromEnv({
+        baseUrl: bu,
+        signer: options.signer,
+        fetch: options.fetch,
+        nowMs: options.nowMs,
+        nonceFactory: options.nonceFactory,
+      });
+    }
+    this.transport = bundle.unary;
+    this.duplex = bundle.duplex;
     this.WebSocketCtor = options.WebSocket ?? globalThis.WebSocket;
     const resolvePath = createAtriumResolvePath(options.dataDir);
     for (const installer of options.plugins ?? []) {
@@ -302,11 +326,20 @@ export class AtriumClient {
    * {@link mintAtriumRoomTicket}, or an inbox `room_ticket`). Pass `client` (`ObpPersistenceClient` from
    * `@khoralabs/obp-v2-persistence`), and `signer` per `@khoralabs/obp-v2-transport-ws`.
    */
-  connectAtriumRoom(
+  async connectAtriumRoom(
     options: Omit<ObpWebSocketConnectOptions, "WebSocketCtor">,
     runner: (conn: ObpFrameConnection) => Promise<void>,
   ): Promise<{ sessionOps: SessionOp[]; checkpoint: Checkpoint }> {
-    return connectObpWebSocketSession({ ...options, WebSocketCtor: this.WebSocketCtor }, runner);
+    const { webSocketUrl, ...rest } = options;
+    const handle = await this.duplex.openNegotiationDuplex({
+      webSocketUrl,
+      WebSocketCtor: this.WebSocketCtor,
+    });
+    try {
+      return await connectObpFrameChannelSession({ ...rest, channel: handle.channel }, runner);
+    } finally {
+      handle.dispose();
+    }
   }
 
   /** Topic slugs this agent is currently subscribed to (`GET /v1/topics`). */
@@ -347,7 +380,7 @@ export class AtriumClient {
    * Typed `subscribe` events run before legacy `handlers` callbacks for each frame.
    */
   connectInbox(handlers: InboxWsHandlers): Promise<{ close(): void }> {
-    return connectInbox(
+    return this.duplex.connectInbox(
       {
         base: this.transport.base,
         signer: this.transport.signer,

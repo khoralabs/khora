@@ -52,6 +52,3 @@ export function validateVellumBindPayloadForPort(
 
   return JSON.parse(JSON.stringify(raw)) as Record<string, unknown>;
 }
-
-/** @deprecated Prefer {@link validateVellumBindPayloadForPort}. */
-export const validateBindPayloadForPort = validateVellumBindPayloadForPort;

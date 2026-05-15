@@ -1,7 +1,6 @@
 import type { AgentNotification } from "@khoralabs/agent-relay";
+import type { AtriumUnaryTransport, InboxNotificationRow } from "@khoralabs/atrium-transport";
 import z from "zod";
-import type { InboxNotificationRow } from "../inbox-ws.ts";
-import type { HttpTransport } from "./transport.ts";
 
 const zInboxListResponse = z.object({
   notifications: z.array(
@@ -24,7 +23,7 @@ export type InboxListResult = {
 };
 
 export async function listInbox(
-  t: HttpTransport,
+  t: AtriumUnaryTransport,
   params: ListInboxParams = {},
 ): Promise<InboxListResult> {
   const query: Record<string, string> = {};

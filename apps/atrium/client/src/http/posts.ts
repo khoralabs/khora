@@ -4,18 +4,18 @@ import {
   type AtriumPostPatch,
   zAtriumPost,
 } from "@khoralabs/atrium-contracts";
-import type { HttpTransport } from "./transport.ts";
+import type { AtriumUnaryTransport } from "@khoralabs/atrium-transport";
 
-export function createPost(t: HttpTransport, body: AtriumPostCreate): Promise<AtriumPost> {
+export function createPost(t: AtriumUnaryTransport, body: AtriumPostCreate): Promise<AtriumPost> {
   return t.requestJson("POST", "/v1/posts", { body, parse: zAtriumPost });
 }
 
-export function getPost(t: HttpTransport, id: string): Promise<AtriumPost> {
+export function getPost(t: AtriumUnaryTransport, id: string): Promise<AtriumPost> {
   return t.requestJson("GET", `/v1/posts/${encodeURIComponent(id)}`, { parse: zAtriumPost });
 }
 
 export function updatePost(
-  t: HttpTransport,
+  t: AtriumUnaryTransport,
   id: string,
   patch: AtriumPostPatch,
 ): Promise<AtriumPost> {
@@ -25,6 +25,6 @@ export function updatePost(
   });
 }
 
-export function deletePost(t: HttpTransport, id: string): Promise<void> {
+export function deletePost(t: AtriumUnaryTransport, id: string): Promise<void> {
   return t.requestVoid("DELETE", `/v1/posts/${encodeURIComponent(id)}`);
 }

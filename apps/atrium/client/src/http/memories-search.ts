@@ -1,6 +1,6 @@
 import type { AtriumMemoriesSearchScope } from "@khoralabs/atrium-contracts";
+import type { AtriumUnaryTransport } from "@khoralabs/atrium-transport";
 import z from "zod";
-import type { HttpTransport } from "./transport.ts";
 
 const zOntologyLabel = z.object({ kind: z.string() }).passthrough();
 
@@ -40,7 +40,7 @@ export type MemoriesSearchParams = {
 };
 
 export function searchMemories(
-  t: HttpTransport,
+  t: AtriumUnaryTransport,
   params: MemoriesSearchParams,
 ): Promise<MemorySearchHitWire[]> {
   return t.requestJson("POST", "/v1/memories/search", {

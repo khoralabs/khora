@@ -5,7 +5,7 @@ import {
   signAgentRequest,
 } from "@khoralabs/atrium-auth";
 import type z from "zod";
-import { AtriumClientError } from "../atrium-client-error.ts";
+import { AtriumClientError } from "./errors.ts";
 
 /** Subset of `fetch` used by the client (avoids requiring Bun-specific properties on mocks). */
 export type AtriumFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
@@ -32,7 +32,8 @@ export type RequestVoidOptions = {
   signedQueryKeys?: readonly string[];
 };
 
-export type HttpTransport = {
+/** Unary host RPC surface (default binding: signed HTTP). */
+export type AtriumUnaryTransport = {
   readonly base: string;
   readonly did: string;
   readonly signer: AgentSigner;
@@ -51,7 +52,10 @@ export type CreateHttpTransportOptions = {
   nonceFactory?: () => string;
 };
 
-export function createHttpTransport(opts: CreateHttpTransportOptions): HttpTransport {
+/** Creates the default HTTP unary transport with DID-signed requests. */
+export function createHttpAtriumUnaryTransport(
+  opts: CreateHttpTransportOptions,
+): AtriumUnaryTransport {
   const base = opts.baseUrl.trim().replace(/\/$/, "");
   const fetchFn: AtriumFetch = opts.fetch ?? globalThis.fetch;
   const signer = opts.signer;
@@ -78,11 +82,6 @@ export function createHttpTransport(opts: CreateHttpTransportOptions): HttpTrans
     return fetchFn(`${base}${path}`, init);
   }
 
-  /**
-   * Build the on-the-wire fetch URL (`path + ?query`) and the canonical signed path (`path +
-   * ?allowlistedQuery`). Both sides agree on the signed path because the server applies the same
-   * allowlist when verifying.
-   */
   function paths(
     pathname: string,
     query: RequestQuery | undefined,

@@ -10,12 +10,6 @@ import type {
 import { runHybridMemorySearch } from "@khoralabs/memories-core/helpers";
 import z from "zod";
 
-/** @deprecated Use {@link HybridMemorySearchWideClient} from `@khoralabs/memories-core/helpers`. */
-export type MemorySearchWideClient = HybridMemorySearchWideClient;
-
-/** @deprecated Use {@link HybridMemorySearchWideClientAsync} from `@khoralabs/memories-core/helpers`. */
-export type MemorySearchWideClientAsync = HybridMemorySearchWideClientAsync;
-
 /** Re-exported from `@khoralabs/memories-core/helpers` for backward compatibility. */
 export type {
   HybridMemorySearchInput,
@@ -28,7 +22,7 @@ export { embeddingCacheKey } from "@khoralabs/memories-core/helpers";
 /** Runtime env for {@link memorySearchToolkit}: memory store, namespace, and optional embedding model (injected; not tool args). */
 export type MemorySearchEnv = {
   /** Name avoids clashing with other composed toolkits that use {@code client} for a domain API. */
-  memoriesClient: MemorySearchWideClient | MemorySearchWideClientAsync;
+  memoriesClient: HybridMemorySearchWideClient | HybridMemorySearchWideClientAsync;
   namespace: string;
   /** Used to embed query text for the vector retrieval arm when that arm is active. */
   embeddingModel?: EmbeddingModel;

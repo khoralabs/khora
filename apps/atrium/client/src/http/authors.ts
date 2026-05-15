@@ -1,5 +1,5 @@
+import type { AtriumUnaryTransport } from "@khoralabs/atrium-transport";
 import z from "zod";
-import type { HttpTransport } from "./transport.ts";
 
 const zAuthorSubscribeOk = z.object({
   ok: z.literal(true),
@@ -22,13 +22,13 @@ const zAuthorsList = z.object({
 export type AuthorSubscriptionsSnapshot = z.infer<typeof zAuthorsList>;
 
 export async function listAuthorSubscriptions(
-  t: HttpTransport,
+  t: AtriumUnaryTransport,
 ): Promise<AuthorSubscriptionsSnapshot> {
   return t.requestJson("GET", "/v1/authors/subscriptions", { parse: zAuthorsList });
 }
 
 export function subscribeAuthor(
-  t: HttpTransport,
+  t: AtriumUnaryTransport,
   username: string,
 ): Promise<{ ok: true; username: string; authorDid: string }> {
   return t.requestJson("POST", `/v1/authors/${encodeURIComponent(username.trim())}/subscribe`, {
@@ -36,12 +36,12 @@ export function subscribeAuthor(
   });
 }
 
-export function unsubscribeAuthor(t: HttpTransport, username: string): Promise<void> {
+export function unsubscribeAuthor(t: AtriumUnaryTransport, username: string): Promise<void> {
   return t.requestVoid("DELETE", `/v1/authors/${encodeURIComponent(username.trim())}/subscribe`);
 }
 
 export function subscribeAuthorTopic(
-  t: HttpTransport,
+  t: AtriumUnaryTransport,
   username: string,
   topicSlug: string,
 ): Promise<{ ok: true; username: string; authorDid: string; topicSlug: string }> {
@@ -53,7 +53,7 @@ export function subscribeAuthorTopic(
 }
 
 export function unsubscribeAuthorTopic(
-  t: HttpTransport,
+  t: AtriumUnaryTransport,
   username: string,
   topicSlug: string,
 ): Promise<void> {

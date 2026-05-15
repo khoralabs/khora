@@ -5,11 +5,13 @@ import {
   zAtriumProfile,
   zAtriumProfilePatch,
 } from "@khoralabs/atrium-contracts";
+import { AtriumClientError, type AtriumUnaryTransport } from "@khoralabs/atrium-transport";
 import z from "zod";
-import { AtriumClientError } from "../atrium-client-error.ts";
-import type { HttpTransport } from "./transport.ts";
 
-export function updateProfile(t: HttpTransport, patch: AtriumProfilePatch): Promise<AtriumProfile> {
+export function updateProfile(
+  t: AtriumUnaryTransport,
+  patch: AtriumProfilePatch,
+): Promise<AtriumProfile> {
   // Parse first so client-side validation (incl. username normalization) runs before the network
   // call. The host re-validates with the same schema.
   const normalized = zAtriumProfilePatch.parse(patch);
@@ -25,7 +27,7 @@ export type ProfileByUsernameResponse = z.infer<typeof zProfileByUsernameRespons
 
 /** Resolve a username to its DID + public profile. Returns `null` on 404. */
 export async function lookupProfileByUsername(
-  t: HttpTransport,
+  t: AtriumUnaryTransport,
   username: string,
 ): Promise<ProfileByUsernameResponse | null> {
   const normalized = normalizeUsername(username);
@@ -41,7 +43,7 @@ export async function lookupProfileByUsername(
 
 /** Resolve a DID to its public profile (same shape as by-username). Returns `null` on 404. */
 export async function lookupProfileByDid(
-  t: HttpTransport,
+  t: AtriumUnaryTransport,
   did: string,
 ): Promise<ProfileByUsernameResponse | null> {
   try {

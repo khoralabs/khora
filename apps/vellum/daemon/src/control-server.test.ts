@@ -1,14 +1,11 @@
-import { describe, expect, test } from "bun:test";
 import { Database } from "bun:sqlite";
+import { describe, expect, test } from "bun:test";
 import type {
   FrameMultiplexOpenerApi,
   FrameSessionHandle,
   SessionInitNormalized,
 } from "@khoralabs/obp-v2-frames-impl";
-import {
-  DEFAULT_GENESIS_TURN_WIRE,
-  ChainInitWireSchema,
-} from "@khoralabs/vellum-contracts";
+import { ChainInitWireSchema, DEFAULT_GENESIS_TURN_WIRE } from "@khoralabs/vellum-contracts";
 
 import { startVellumControlServer } from "./control-server.ts";
 import { ensureVellumMetaSchema } from "./vellum-sqlite-meta.ts";

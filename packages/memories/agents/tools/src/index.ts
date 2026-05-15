@@ -1,4 +1,8 @@
-export type { ProviderOptions } from "@khoralabs/memories-core/helpers";
+export type {
+  HybridMemorySearchWideClient,
+  HybridMemorySearchWideClientAsync,
+  ProviderOptions,
+} from "@khoralabs/memories-core/helpers";
 export {
   aiSdkEmbeddingModelId,
   createMemoriesEmbeddingModel,
@@ -18,8 +22,6 @@ export {
   type MemorySearchEnv,
   type MemorySearchHit,
   type MemorySearchToolInput,
-  type MemorySearchWideClient,
-  type MemorySearchWideClientAsync,
   memorySearchBudgetPolicy,
   memorySearchIdentityLinkSupplement,
   memorySearchRuntimeToolAugments,

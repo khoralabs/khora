@@ -24,6 +24,10 @@ import {
   type VellumPathConfig,
   type VellumPortRow,
 } from "@khoralabs/vellum-contracts";
+import {
+  createVellumControlTransportFromEnv,
+  type VellumControlTransport,
+} from "@khoralabs/vellum-transport";
 
 import { createFrameSignerFromPersistableAgent } from "./frame-signer.ts";
 import { SqliteVellumReadModel } from "./persistence/sqlite-vellum-read-persistence.ts";
@@ -36,6 +40,8 @@ export type VellumClientOptions = {
   dataDir?: string | undefined;
   /** Override how room metadata is read (defaults to SQLite under the configured data dir). */
   readPersistence?: VellumReadModel | undefined;
+  /** Defaults to env-selected HTTP (`VELLUM_CONTROL_TRANSPORT`, default `http`). */
+  controlTransport?: VellumControlTransport | undefined;
 };
 
 function readControlPlane(
@@ -91,6 +97,7 @@ export class VellumClient {
   readonly pathConfig: VellumPathConfig;
 
   private readonly reads: VellumReadModel;
+  private cachedControlTransport: VellumControlTransport | undefined;
 
   constructor(public readonly opts: VellumClientOptions) {
     const d = opts.dataDir?.trim();
@@ -106,6 +113,16 @@ export class VellumClient {
       throw new Error("Vellum daemon control not available (run `vellum connect` first)");
     }
     return `http://127.0.0.1:${cp.controlPort}`;
+  }
+
+  private control(): VellumControlTransport {
+    if (this.opts.controlTransport !== undefined) return this.opts.controlTransport;
+    if (this.cachedControlTransport === undefined) {
+      this.cachedControlTransport = createVellumControlTransportFromEnv({
+        resolveBaseUrl: () => this.controlBaseUrl(),
+      });
+    }
+    return this.cachedControlTransport;
   }
 
   /** Ensure room daemon is running with a fresh ticket and local control server. */
@@ -179,7 +196,7 @@ export class VellumClient {
       init: sessionInitToWire(norm),
       genesis_turn: input.genesisTurn ?? DEFAULT_GENESIS_TURN_WIRE,
     };
-    const res = await fetch(`${this.controlBaseUrl()}/chain/init`, {
+    const res = await this.control().fetch("/chain/init", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(payload),
@@ -192,7 +209,7 @@ export class VellumClient {
   }
 
   async sendTurn(sessionId: string, body: Record<string, unknown>): Promise<void> {
-    const res = await fetch(`${this.controlBaseUrl()}/turn`, {
+    const res = await this.control().fetch("/turn", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ sessionId, body }),
@@ -204,7 +221,7 @@ export class VellumClient {
   }
 
   async getChainSnapshot(): Promise<ChainStateResponse> {
-    const res = await fetch(`${this.controlBaseUrl()}/chain`);
+    const res = await this.control().fetch("/chain");
     const j: unknown = await res.json().catch(() => null);
     if (!res.ok) {
       throw new Error(httpFailMessage(res.statusText, j));

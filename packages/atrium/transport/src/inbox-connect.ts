@@ -1,7 +1,8 @@
+import { Buffer } from "node:buffer";
 import type { AgentNotification } from "@khoralabs/agent-relay";
 import { type AgentSigner, signedInboxUrl } from "@khoralabs/atrium-auth";
-import type { AtriumClientEvent } from "../atrium-events.ts";
-import { type InboxNotificationRow, parseInboxWebSocketMessage } from "../inbox-ws.ts";
+import type { AtriumClientEvent } from "./atrium-events.ts";
+import { type InboxNotificationRow, parseInboxWebSocketMessage } from "./inbox-ws.ts";
 
 export type InboxWsHandlers = {
   onSnapshot?: (notifications: InboxNotificationRow[]) => void;
@@ -58,7 +59,7 @@ export async function connectInbox(
     const text =
       typeof ev.data === "string"
         ? ev.data
-        : typeof Buffer !== "undefined" && Buffer.isBuffer(ev.data)
+        : Buffer?.isBuffer(ev.data)
           ? ev.data.toString("utf8")
           : String(ev.data);
     const msg = parseInboxWebSocketMessage(text);

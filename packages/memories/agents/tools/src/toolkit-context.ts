@@ -6,13 +6,13 @@ import {
   type ToolRuntimeContext,
 } from "@khoralabs/agent-identity";
 import type { MemoriesClient, MemoriesClientAsync } from "@khoralabs/memories-core";
-import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
-import type z from "zod";
 import type {
-  MemorySearchEnv,
-  MemorySearchWideClient,
-  MemorySearchWideClientAsync,
-} from "./memory-search-toolkit.js";
+  EmbeddingModel,
+  HybridMemorySearchWideClient,
+  HybridMemorySearchWideClientAsync,
+} from "@khoralabs/memories-core/helpers";
+import type z from "zod";
+import type { MemorySearchEnv } from "./memory-search-toolkit.js";
 
 /** Zod object shape for a label map (node or edge) in session typing. */
 export type ZodLabelMap = Record<string, z.ZodType>;
@@ -146,7 +146,9 @@ export function toMemorySearchEnv<TNode extends ZodLabelMap, TEdge extends ZodLa
       ? { max: args.memorySearchBudgetMax, used: 0 }
       : undefined;
   return {
-    memoriesClient: args.client as unknown as MemorySearchWideClient | MemorySearchWideClientAsync,
+    memoriesClient: args.client as unknown as
+      | HybridMemorySearchWideClient
+      | HybridMemorySearchWideClientAsync,
     namespace: args.namespace,
     embeddingModel: args.embeddingModel,
     embeddingCache: args.embeddingCache ?? new Map(),
