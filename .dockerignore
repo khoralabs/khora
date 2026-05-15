@@ -1,0 +1,41 @@
+# Demo / CI Docker builds (`demo/Dockerfile.agent` context = repo root).
+# `bun install --frozen-lockfile` recreates `node_modules` inside the image.
+
+# Dependencies
+**/node_modules
+
+# VCS — not needed to run bun install
+.git
+.gitignore
+.gitattributes
+
+# Build / cache / tooling outputs
+**/dist
+**/out
+**/coverage
+**/.cache
+**/*.tsbuildinfo
+**/.eslintcache
+apps/atrium/release
+*.tgz
+*.lcov
+logs
+**/.DS_Store
+
+# Local secrets (never copy into images)
+.env
+.env.*
+!.env.example
+
+# IDE / local tooling
+.idea
+.vscode
+.cursor
+
+# Repo-specific large / generated (see root .gitignore)
+.llm-context
+.memories
+.obp
+
+# Logs and temp
+**/*.log

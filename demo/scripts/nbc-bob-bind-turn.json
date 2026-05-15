@@ -1,0 +1,12 @@
+{
+  "offer": {
+    "id": "demo-offer-bob",
+    "type": "demo-reply",
+    "sourcemaps": [],
+    "expires_turn": 100,
+    "expires_at_relay_ms": 0
+  },
+  "ports": [],
+  "bind_port_id": "demo-port",
+  "bind_payload": null
+}

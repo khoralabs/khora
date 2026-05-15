@@ -1,0 +1,22 @@
+{
+  "offer": {
+    "id": "demo-offer",
+    "type": "demo",
+    "sourcemaps": [],
+    "expires_turn": 100,
+    "expires_at_relay_ms": 0
+  },
+  "ports": [
+    {
+      "id": "demo-port",
+      "type": "demo",
+      "promise": "",
+      "expires_turn": 100,
+      "expires_at_relay_ms": 0,
+      "bind_policy": null,
+      "ref": ""
+    }
+  ],
+  "bind_port_id": "",
+  "bind_payload": null
+}

@@ -76,7 +76,7 @@ function randomGenesisSha256(): string {
 }
 
 function daemonEntryPath(): string {
-  return fileURLToPath(new URL("../daemon/src/index.ts", import.meta.url));
+  return fileURLToPath(new URL("../../daemon/src/index.ts", import.meta.url));
 }
 
 function httpFailMessage(statusText: string, j: unknown): string {
