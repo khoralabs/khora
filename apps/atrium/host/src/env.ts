@@ -49,3 +49,48 @@ export function envIntervalMs(name: string): number | undefined {
 export function allowReregister(): boolean {
   return process.env.ATRIUM_ALLOW_REREGISTER === "1";
 }
+
+/** Default HTTP ingress via Bun only (no parallel unary listener). */
+export type AtriumHostUnaryIngressMode = "off" | "stdio";
+
+/**
+ * Parallel unary ingress for mirrors-of-HTTP (IPC twins).
+ * - unset / empty / `http`: Bun HTTP only (default).
+ * - `stdio`: NDJSON stdin/out unary framing alongside Bun HTTP (see `startStdioUnaryIngress`).
+ */
+export function envHostUnaryIngress(): AtriumHostUnaryIngressMode {
+  const v = process.env.ATRIUM_HOST_UNARY_TRANSPORT?.trim().toLowerCase();
+  if (v === undefined || v === "" || v === "http") return "off";
+  if (v === "stdio") return "stdio";
+  if (v === "unix") {
+    throw new Error(
+      "ATRIUM_HOST_UNARY_TRANSPORT=unix is not implemented yet; use stdio or omit for HTTP-only.",
+    );
+  }
+  throw new Error(
+    `ATRIUM_HOST_UNARY_TRANSPORT=${v} is not supported; use http (default) or stdio.`,
+  );
+}
+
+/** Parallel duplex ingress (opaque binary after JSON handshake line). Default off. */
+export type AtriumHostDuplexIngressMode = "off" | "unix";
+
+/** unset / empty / `off` → no duplex listener (default). `unix` → bind Unix socket at {@link envHostDuplexUnixPath}. */
+export function envHostDuplexIngress(): AtriumHostDuplexIngressMode {
+  const v = process.env.ATRIUM_HOST_DUPLEX_INGRESS?.trim().toLowerCase();
+  if (v === undefined || v === "" || v === "off") return "off";
+  if (v === "unix") return "unix";
+  throw new Error(
+    `ATRIUM_HOST_DUPLEX_INGRESS=${v} is not supported; use off (default) or unix.`,
+  );
+}
+
+export function envHostDuplexUnixPath(): string {
+  const p = process.env.ATRIUM_HOST_DUPLEX_UNIX_PATH?.trim();
+  if (p === undefined || p.length === 0) {
+    throw new Error(
+      "Set ATRIUM_HOST_DUPLEX_UNIX_PATH when ATRIUM_HOST_DUPLEX_INGRESS=unix (filesystem path for the socket).",
+    );
+  }
+  return p;
+}

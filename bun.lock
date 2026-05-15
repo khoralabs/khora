@@ -136,6 +136,7 @@
         "@khoralabs/agent-relay": "workspace:*",
         "@khoralabs/atrium-auth": "workspace:*",
         "@khoralabs/atrium-contracts": "workspace:*",
+        "@khoralabs/duplex-byte-stream": "workspace:*",
         "@khoralabs/memories-autolink": "workspace:*",
         "@khoralabs/memories-core": "workspace:*",
         "@khoralabs/memories-sqlite": "workspace:*",

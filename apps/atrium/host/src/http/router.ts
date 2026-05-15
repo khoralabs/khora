@@ -24,20 +24,23 @@ import { handleCreatePost, handleDeletePost, handleGetPost, handleUpdatePost } f
 import { handleListProbes } from "./probes.ts";
 import { handleProfileByDid, handleProfileByUsername, handleUpdateProfile } from "./profile.ts";
 import { handleRegister } from "./register.ts";
-import { rateLimitedResponse } from "./responses.ts";
+import { jsonError, rateLimitedResponse } from "./responses.ts";
 import { handleListTopics, handleTopicSubMutation } from "./topics.ts";
 
 export type { HostRouteDeps } from "./deps.ts";
 
 /**
  * Match `req` + `url` against the host's HTTP routes and invoke the right handler.
+ * Pass **`srv`** only for Bun HTTP (WebSocket upgrade); omit/`undefined` for unary IPC ingress —
+ * WebSocket routes respond **501** instead of upgrading.
+ *
  * Returns `undefined` when no route matched (or after a successful WebSocket upgrade),
  * letting the caller emit a 404.
  */
 export async function route(
   req: Request,
   url: URL,
-  srv: Server<AtriumWsData>,
+  srv: Server<AtriumWsData> | undefined,
   deps: HostRouteDeps,
 ): Promise<Response | undefined> {
   if (req.method === "GET" && url.pathname === "/health") {
@@ -62,6 +65,9 @@ export async function route(
   }
 
   if (req.method === "GET" && isAtriumRoomWsPath(url.pathname)) {
+    if (srv === undefined) {
+      return jsonError("WebSocket upgrade requires HTTP transport", 501);
+    }
     return handleAtriumRoomWsUpgrade(req, url, srv, deps);
   }
 
@@ -79,6 +85,9 @@ export async function route(
   }
 
   if (req.method === "GET" && url.pathname === "/v1/inbox/ws") {
+    if (srv === undefined) {
+      return jsonError("WebSocket upgrade requires HTTP transport", 501);
+    }
     return handleInboxWsUpgrade(req, url, srv, deps);
   }
 
@@ -172,4 +181,13 @@ export async function route(
   }
 
   return undefined;
+}
+
+/** Unary ingress only (`srv` omitted): inbox and room NBC routes cannot upgrade and return 501. */
+export async function routeUnary(
+  req: Request,
+  url: URL,
+  deps: HostRouteDeps,
+): Promise<Response | undefined> {
+  return route(req, url, undefined, deps);
 }

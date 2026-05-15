@@ -16,6 +16,7 @@
     "@khoralabs/memories-sqlite": "workspace:*",
     "@khoralabs/sqlite-migrate": "workspace:*",
     "@khoralabs/agent-relay": "workspace:*",
+    "@khoralabs/duplex-byte-stream": "workspace:*",
     "zod": "^4"
   },
   "devDependencies": {

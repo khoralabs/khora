@@ -1,4 +1,4 @@
-import { mkdirSync } from "node:fs";
+import { mkdirSync, unlinkSync } from "node:fs";
 import { dirname } from "node:path";
 import {
   type AgentRelayFrameChannelWsData,
@@ -9,6 +9,9 @@ import type { ServerWebSocket } from "bun";
 import { createAtriumHostContext } from "./create-atrium-host.ts";
 import {
   envDbPath,
+  envHostDuplexIngress,
+  envHostDuplexUnixPath,
+  envHostUnaryIngress,
   envInboxSnapshotLimit,
   envIntervalMs,
   envPort,
@@ -28,6 +31,8 @@ import {
 } from "./invites/index.ts";
 import { type LitestreamHandle, maybeStartLitestream } from "./persistence/litestream/index.ts";
 import { createHostRateLimiters } from "./rate-limit-buckets.ts";
+import { startDuplexUnixIngress } from "./server/duplex-unix-listener.ts";
+import { startStdioUnaryIngress } from "./server/stdio-unary-listener.ts";
 import { type AtriumWsData, createInboxWsHandlers } from "./ws/inbox.ts";
 
 const dbPath = envDbPath();
@@ -80,6 +85,25 @@ const roomWsHandlers = agentRelayFrameChannelWebSocketHandlers({
   hub: ctx.roomHub,
 });
 
+const unaryIngress = envHostUnaryIngress();
+
+let duplexIngress: ReturnType<typeof startDuplexUnixIngress> | undefined;
+const duplexMode = envHostDuplexIngress();
+if (duplexMode === "unix") {
+  const duplexUnixPath = envHostDuplexUnixPath();
+  mkdirSync(dirname(duplexUnixPath), { recursive: true });
+  try {
+    unlinkSync(duplexUnixPath);
+  } catch {
+    /* stale socket may not exist */
+  }
+  duplexIngress = startDuplexUnixIngress({
+    deps,
+    unixPath: duplexUnixPath,
+    snapshotLimit: envInboxSnapshotLimit(),
+  });
+}
+
 const server = Bun.serve<AtriumWsData>({
   port: envPort(),
   async fetch(req, srv) {
@@ -116,17 +140,29 @@ const server = Bun.serve<AtriumWsData>({
 
 console.log(`Atrium host listening on http://localhost:${server.port}`);
 
-if (litestream !== undefined) {
-  const shutdown = async (signal: NodeJS.Signals): Promise<void> => {
-    console.log(`[atrium-host] received ${signal}; shutting down`);
-    try {
-      server.stop();
-    } catch {
-      /* server may already be down */
-    }
-    await litestream.stop();
-    process.exit(0);
-  };
-  process.once("SIGTERM", () => void shutdown("SIGTERM"));
-  process.once("SIGINT", () => void shutdown("SIGINT"));
+if (unaryIngress === "stdio") {
+  console.warn("[atrium-host] Unary ingress: stdio (NDJSON lines); parallel to HTTP.");
+  void startStdioUnaryIngress(deps).catch((e) => {
+    console.error("[atrium-host] stdio unary ingress failed", e);
+    process.exit(1);
+  });
 }
+
+async function shutdownHost(signal: NodeJS.Signals): Promise<void> {
+  console.log(`[atrium-host] received ${signal}; shutting down`);
+  try {
+    server.stop();
+  } catch {
+    /* server may already be down */
+  }
+  try {
+    duplexIngress?.stop(true);
+  } catch {
+    /* ignore */
+  }
+  if (litestream !== undefined) await litestream.stop();
+  process.exit(0);
+}
+
+process.once("SIGTERM", () => void shutdownHost("SIGTERM"));
+process.once("SIGINT", () => void shutdownHost("SIGINT"));
