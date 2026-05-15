@@ -1,0 +1,157 @@
+import type { Database } from "bun:sqlite";
+import {
+  type FrameMultiplexOpenerApi,
+  type FrameSessionHandle,
+  normalizeSessionInit,
+  sessionInitFromWire,
+} from "@khoralabs/obp-v2-frames-impl";
+import { parseNbcTurnBody } from "@khoralabs/obp-v2-nbc";
+import {
+  ChainInitRequestSchema,
+  type ChainInitResponse,
+  type ChainStateResponse,
+  TurnRequestSchema,
+} from "@khoralabs/vellum-contracts";
+
+import { upsertChainRow } from "./vellum-sqlite-meta.ts";
+
+export type VellumControlServerState = {
+  /** Set when multiplex connection is ready — `conn.init` / `sendTurn` require this. */
+  conn: FrameMultiplexOpenerApi | undefined;
+  /** Per `session_id`, `FrameSessionHandle.sendTurn` bridge. */
+  handles: Map<string, FrameSessionHandle>;
+};
+
+function serialize<T>(mut: { tail: Promise<void> }, run: () => Promise<T>): Promise<T> {
+  const p = mut.tail.then(run);
+  mut.tail = p.then(
+    () => {},
+    () => {},
+  );
+  return p;
+}
+
+function obpTableCount(db: Database, table: string): number {
+  const row = db.query<{ c: number }, []>(`SELECT COUNT(*) AS c FROM ${table}`).get();
+  return row?.c ?? 0;
+}
+
+export function startVellumControlServer(opts: { state: VellumControlServerState; db: Database }): {
+  hostname: string;
+  port: number;
+  stop(): void;
+} {
+  const mux = { tail: Promise.resolve() };
+  const { state, db } = opts;
+
+  const server = Bun.serve({
+    port: 0,
+    hostname: "127.0.0.1",
+    fetch: async (req) => {
+      const url = new URL(req.url);
+      if (req.method === "GET" && url.pathname === "/health") {
+        return new Response(null, { status: 204 });
+      }
+
+      if (req.method === "GET" && url.pathname === "/chain") {
+        const rows = db
+          .query<{ session_id: string; genesis_hash: string; created_ms: number }, []>(
+            `SELECT session_id, genesis_hash, created_ms FROM vellum_chains ORDER BY created_ms ASC`,
+          )
+          .all();
+        const chains = rows.map((r) => ({
+          session_id: r.session_id,
+          genesis_hash: r.genesis_hash,
+        }));
+        const summary = {
+          parties: obpTableCount(db, "obp_parties"),
+          offers: obpTableCount(db, "obp_offers"),
+          exposes: obpTableCount(db, "obp_exposes"),
+          binds: obpTableCount(db, "obp_binds"),
+        };
+        const payload: ChainStateResponse = { chains, graphSummary: summary };
+        return Response.json(payload);
+      }
+
+      if (req.method === "POST" && url.pathname === "/chain/init") {
+        return serialize(mux, async () => {
+          if (state.conn === undefined) {
+            return Response.json({ error: "multiplex not ready" }, { status: 503 });
+          }
+          let body: unknown;
+          try {
+            body = await req.json();
+          } catch {
+            return Response.json({ error: "invalid json" }, { status: 400 });
+          }
+          const parsed = ChainInitRequestSchema.safeParse(body);
+          if (!parsed.success) {
+            return Response.json(
+              { error: "bad request", detail: parsed.error.flatten() },
+              { status: 400 },
+            );
+          }
+          const wi = parsed.data.init;
+          const wire = sessionInitFromWire({
+            session_id: wi.session_id,
+            genesis_hash: wi.genesis_hash,
+            party_ids: [wi.party_ids[0], wi.party_ids[1]],
+            actor_pubkeys: [wi.actor_pubkeys[0], wi.actor_pubkeys[1]],
+          });
+          const norm = normalizeSessionInit(wire);
+          try {
+            const handle = await state.conn.init(norm, {});
+            state.handles.set(norm.session_id, handle);
+            upsertChainRow(db, norm.session_id, norm.genesis_hash, Date.now());
+            const out: ChainInitResponse = { ok: true, session_id: norm.session_id };
+            return Response.json(out);
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            return Response.json({ error: msg }, { status: 400 });
+          }
+        });
+      }
+
+      if (req.method === "POST" && url.pathname === "/turn") {
+        return serialize(mux, async () => {
+          let body: unknown;
+          try {
+            body = await req.json();
+          } catch {
+            return Response.json({ error: "invalid json" }, { status: 400 });
+          }
+          const parsed = TurnRequestSchema.safeParse(body);
+          if (!parsed.success) {
+            return Response.json(
+              { error: "bad request", detail: parsed.error.flatten() },
+              { status: 400 },
+            );
+          }
+          const { sessionId, body: turnBody } = parsed.data;
+          const handle = state.handles.get(sessionId);
+          if (handle === undefined) {
+            return Response.json({ error: `unknown session: ${sessionId}` }, { status: 404 });
+          }
+          try {
+            const nb = parseNbcTurnBody(turnBody);
+            await handle.sendTurn(nb);
+            return Response.json({ ok: true as const });
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            return Response.json({ error: msg }, { status: 400 });
+          }
+        });
+      }
+
+      return Response.json({ error: "not found" }, { status: 404 });
+    },
+  });
+
+  return {
+    hostname: server.hostname ?? "127.0.0.1",
+    port: Number(server.port ?? 0),
+    stop: () => {
+      server.stop();
+    },
+  };
+}

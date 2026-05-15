@@ -1,9 +1,37 @@
 {
   "name": "@khoralabs/vellum-daemon",
-  "module": "src/index.ts",
+  "version": "0.0.0",
+  "description": "Vellum NBC room daemon: WebSocket multiplex, SQLite graph, HTTP control.",
   "type": "module",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./src/run-vellum-daemon.ts",
+      "import": "./src/run-vellum-daemon.ts",
+      "default": "./src/run-vellum-daemon.ts"
+    }
+  },
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@khoralabs/atrium-auth": "workspace:*",
+    "@khoralabs/atrium-client": "workspace:*",
+    "@khoralabs/obp-v2-frames-impl": "workspace:*",
+    "@khoralabs/obp-v2-nbc": "workspace:*",
+    "@khoralabs/obp-v2-persistence": "workspace:*",
+    "@khoralabs/obp-v2-sqlite-persistence": "workspace:*",
+    "@khoralabs/obp-v2-transport-ws": "workspace:*",
+    "@khoralabs/vellum-contracts": "workspace:*",
+    "@noble/ed25519": "^3.1.0",
+    "iso-base": "^4.2.1",
+    "iso-signatures": "^0.5.1"
+  },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "typescript": "^5"
   },
   "peerDependencies": {
     "typescript": "^5"
