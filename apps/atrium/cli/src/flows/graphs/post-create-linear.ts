@@ -10,18 +10,16 @@ export const postCreateLinearTransitions: CliLinearTransition[] = [
     stepId: "kind",
     title: "Post type",
     bindPolicy: {
-      version: "1",
-      properties: [
-        {
-          type: "choice",
-          name: "Kind",
-          prompt: "Kind",
-          constraints: {
-            choices: ["post", "probe", "status"],
-            maxSelections: 1,
-          },
+      type: "object",
+      additionalProperties: false,
+      required: ["kind"],
+      properties: {
+        kind: {
+          type: "string",
+          enum: ["post", "probe", "status"],
+          description: "Kind",
         },
-      ],
+      },
     },
     nextOfferType: "atrium.cli.flow.post.after_kind",
   },
@@ -29,15 +27,16 @@ export const postCreateLinearTransitions: CliLinearTransition[] = [
     stepId: "body",
     title: "Post body",
     bindPolicy: {
-      version: "1",
-      properties: [
-        {
-          type: "text",
-          name: "Body",
-          prompt: "Body text",
-          constraints: { minLength: 1 },
+      type: "object",
+      additionalProperties: false,
+      required: ["body"],
+      properties: {
+        body: {
+          type: "string",
+          minLength: 1,
+          description: "Body text",
         },
-      ],
+      },
     },
     nextOfferType: "atrium.cli.flow.post.after_body",
   },
@@ -45,15 +44,14 @@ export const postCreateLinearTransitions: CliLinearTransition[] = [
     stepId: "topics",
     title: "Topics",
     bindPolicy: {
-      version: "1",
-      properties: [
-        {
-          type: "text",
-          name: "Topics",
-          prompt: "Topics (comma-separated, optional)",
-          optional: true,
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        topics: {
+          type: "string",
+          description: "Topics (comma-separated, optional)",
         },
-      ],
+      },
     },
     nextOfferType: "atrium.cli.flow.post.after_topics",
   },
@@ -62,16 +60,16 @@ export const postCreateLinearTransitions: CliLinearTransition[] = [
     title: "Probe match kinds (probe only)",
     skipIf: (b) => !isProbeKind(b),
     bindPolicy: {
-      version: "1",
-      properties: [
-        {
-          type: "choice",
-          name: "Kinds",
-          prompt: "Match incoming post kinds (comma-separated, blank to match any)",
-          optional: true,
-          constraints: { choices: ["post", "status"], maxSelections: 2 },
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        kinds: {
+          type: "array",
+          items: { type: "string", enum: ["post", "status"] },
+          maxItems: 2,
+          description: "Match incoming post kinds (comma-separated, blank to match any)",
         },
-      ],
+      },
     },
     nextOfferType: "atrium.cli.flow.post.after_match_kinds",
   },
@@ -80,17 +78,17 @@ export const postCreateLinearTransitions: CliLinearTransition[] = [
     title: "Probe minimum hit score (probe only)",
     skipIf: (b) => !isProbeKind(b),
     bindPolicy: {
-      version: "1",
-      properties: [
-        {
-          type: "float",
-          name: "Score",
-          prompt:
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        score: {
+          type: "number",
+          minimum: 0,
+          maximum: 1,
+          description:
             "Minimum cosine similarity 0..1 (blank = no threshold). Rule of thumb: 0.6 = clearly related, 0.75 = strong match, 0.85+ = very strong",
-          optional: true,
-          constraints: { min: 0, max: 1 },
         },
-      ],
+      },
     },
     nextOfferType: "atrium.cli.flow.post.after_min_score",
   },
@@ -99,15 +97,15 @@ export const postCreateLinearTransitions: CliLinearTransition[] = [
     title: "Probe expiry (probe only)",
     skipIf: (b) => !isProbeKind(b),
     bindPolicy: {
-      version: "1",
-      properties: [
-        {
-          type: "text",
-          name: "Expires",
-          prompt: "Expires at (ISO date, e.g. 2026-12-31T00:00:00Z, or epoch ms; blank = never)",
-          optional: true,
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        expires: {
+          type: "string",
+          description:
+            "Expires at (ISO date, e.g. 2026-12-31T00:00:00Z, or epoch ms; blank = never)",
         },
-      ],
+      },
     },
     nextOfferType: "atrium.cli.flow.post.after_expires_at",
   },
@@ -115,15 +113,14 @@ export const postCreateLinearTransitions: CliLinearTransition[] = [
     stepId: "title",
     title: "Title",
     bindPolicy: {
-      version: "1",
-      properties: [
-        {
-          type: "text",
-          name: "Title",
-          prompt: "Title (optional)",
-          optional: true,
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        title: {
+          type: "string",
+          description: "Title (optional)",
         },
-      ],
+      },
     },
     nextOfferType: "atrium.cli.flow.post.complete",
     terminal: true,

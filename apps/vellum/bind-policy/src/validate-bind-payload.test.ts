@@ -1,16 +1,17 @@
 import { describe, expect, test } from "bun:test";
 import { validateVellumBindPayloadForPort } from "./validate-bind-payload.ts";
 
-const textPolicy = {
-  version: "1" as const,
-  properties: [
-    {
-      type: "text" as const,
-      name: "Greeting",
-      prompt: "A short hello",
-      constraints: { minLength: 1 },
+const greetingSchema = {
+  type: "object" as const,
+  additionalProperties: false,
+  required: ["greeting"],
+  properties: {
+    greeting: {
+      type: "string" as const,
+      minLength: 1,
+      description: "A short hello",
     },
-  ],
+  },
 };
 
 describe("validateVellumBindPayloadForPort", () => {
@@ -19,10 +20,10 @@ describe("validateVellumBindPayloadForPort", () => {
     expect(() => validateVellumBindPayloadForPort(null, { x: 1 })).toThrow();
   });
 
-  test("validates against bind_policy", () => {
-    expect(validateVellumBindPayloadForPort(textPolicy, { greeting: "yo" })).toEqual({
+  test("validates against bind_policy JSON Schema", () => {
+    expect(validateVellumBindPayloadForPort(greetingSchema, { greeting: "yo" })).toEqual({
       greeting: "yo",
     });
-    expect(() => validateVellumBindPayloadForPort(textPolicy, {})).toThrow();
+    expect(() => validateVellumBindPayloadForPort(greetingSchema, {})).toThrow();
   });
 });

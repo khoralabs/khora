@@ -25,7 +25,14 @@ describe("collectNbcChainGraph", () => {
       },
       nbc_expires_turn: 99,
       nbc_expires_at_relay_ms: 0,
-      bind_policy: { k: "v" },
+      bind_policy: {
+        type: "object",
+        additionalProperties: false,
+        required: ["slot"],
+        properties: {
+          slot: { type: "string", const: "v" },
+        },
+      },
     });
 
     const g = await collectNbcChainGraph(client, { timing: { turnSeq: 1, relayTsMs: 1 } });
@@ -39,6 +46,13 @@ describe("collectNbcChainGraph", () => {
     expect(pr?.bindCount).toBe(0);
     expect(pr?.exposedOnOfferIds).toEqual([offer.id]);
     expect(pr?.expired).toBe(false);
-    expect(pr?.bind_policy).toEqual({ k: "v" });
+    expect(pr?.bind_policy).toEqual({
+      type: "object",
+      additionalProperties: false,
+      required: ["slot"],
+      properties: {
+        slot: { type: "string", const: "v" },
+      },
+    });
   });
 });

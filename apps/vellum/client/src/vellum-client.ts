@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
-import { defaultIdentityPath, loadIdentity } from "@khoralabs/atrium-auth";
+import { defaultIdentityPath, loadIdentity } from "@khoralabs/agent-persisted-signer";
 import { AtriumClient } from "@khoralabs/atrium-client";
 import {
   canonicalSessionParties,

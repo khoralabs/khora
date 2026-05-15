@@ -6,7 +6,7 @@ import { loadIdentity, loadOrCreateIdentity, saveIdentity } from "./identity.ts"
 
 describe("identity persistence", () => {
   test("loadOrCreateIdentity creates and reloads the same DID", async () => {
-    const dir = mkdtempSync(join(tmpdir(), "atrium-id-"));
+    const dir = mkdtempSync(join(tmpdir(), "persisted-id-"));
     const path = join(dir, "identity.json");
     try {
       const first = await loadOrCreateIdentity(path);
@@ -22,7 +22,7 @@ describe("identity persistence", () => {
   });
 
   test("saveIdentity / loadIdentity round-trip preserves DID", async () => {
-    const dir = mkdtempSync(join(tmpdir(), "atrium-id-"));
+    const dir = mkdtempSync(join(tmpdir(), "persisted-id-"));
     const path = join(dir, "identity.json");
     try {
       const generated = await loadOrCreateIdentity(path);
@@ -35,7 +35,7 @@ describe("identity persistence", () => {
   });
 
   test("loadIdentity returns undefined when file is missing", async () => {
-    const dir = mkdtempSync(join(tmpdir(), "atrium-id-"));
+    const dir = mkdtempSync(join(tmpdir(), "persisted-id-"));
     try {
       const result = await loadIdentity(join(dir, "missing.json"));
       expect(result).toBeUndefined();

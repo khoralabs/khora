@@ -20,10 +20,10 @@
       "name": "@khoralabs/atrium-auth",
       "version": "0.0.0",
       "dependencies": {
+        "@khoralabs/agent-persisted-signer": "workspace:*",
         "@khoralabs/agent-relay": "workspace:*",
         "@noble/ed25519": "^3.1.0",
         "iso-did": "^2.1.1",
-        "iso-signatures": "^0.5.1",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -256,7 +256,7 @@
       "dependencies": {
         "@khoralabs/obp-v2-errors": "workspace:*",
         "@khoralabs/obp-v2-model": "workspace:*",
-        "@standard-schema/spec": "^1.1.0",
+        "ajv": "^8.17.1",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -289,7 +289,7 @@
       "name": "@khoralabs/vellum-client",
       "version": "0.0.0",
       "dependencies": {
-        "@khoralabs/atrium-auth": "workspace:*",
+        "@khoralabs/agent-persisted-signer": "workspace:*",
         "@khoralabs/atrium-client": "workspace:*",
         "@khoralabs/obp-v2-frames-impl": "workspace:*",
         "@khoralabs/obp-v2-model": "workspace:*",
@@ -326,7 +326,7 @@
       "name": "@khoralabs/vellum-daemon",
       "version": "0.0.0",
       "dependencies": {
-        "@khoralabs/atrium-auth": "workspace:*",
+        "@khoralabs/agent-persisted-signer": "workspace:*",
         "@khoralabs/atrium-client": "workspace:*",
         "@khoralabs/obp-v2-frames-impl": "workspace:*",
         "@khoralabs/obp-v2-model": "workspace:*",
@@ -378,6 +378,20 @@
     },
     "packages/agent/identity-spec": {
       "name": "@khoralabs/agent-identity-spec",
+    },
+    "packages/agent/persisted-signer": {
+      "name": "@khoralabs/agent-persisted-signer",
+      "version": "0.0.0",
+      "dependencies": {
+        "iso-signatures": "^0.5.1",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
     },
     "packages/agent/relay": {
       "name": "@khoralabs/agent-relay",
@@ -896,6 +910,8 @@
     "@khoralabs/agent-identity-adapters": ["@khoralabs/agent-identity-adapters@workspace:packages/agent/identity-adapters"],
 
     "@khoralabs/agent-identity-spec": ["@khoralabs/agent-identity-spec@workspace:packages/agent/identity-spec"],
+
+    "@khoralabs/agent-persisted-signer": ["@khoralabs/agent-persisted-signer@workspace:packages/agent/persisted-signer"],
 
     "@khoralabs/agent-relay": ["@khoralabs/agent-relay@workspace:packages/agent/relay"],
 

@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
-import { EdDSASigner } from "iso-signatures/signers/eddsa.js";
+import { type AgentSigner, generateAgentIdentity } from "@khoralabs/agent-persisted-signer";
 import { createAtriumDidAuth } from "./auth.ts";
 import {
   AGENT_REQUEST_HEADER,
@@ -13,7 +13,7 @@ function freshDb(): Database {
 }
 
 async function buildSignedHeaders(p: {
-  signer: EdDSASigner;
+  signer: AgentSigner;
   method: string;
   path: string;
   bodyText: string;
@@ -41,7 +41,7 @@ describe("AtriumDidAuth.preflight (did:key Ed25519 default)", () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
     const auth = createAtriumDidAuth({ db, now: () => now });
-    const signer = await EdDSASigner.generate();
+    const signer = await generateAgentIdentity();
     const headers = await buildSignedHeaders({
       signer,
       method: "PATCH",
@@ -65,7 +65,7 @@ describe("AtriumDidAuth.preflight (did:key Ed25519 default)", () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
     const auth = createAtriumDidAuth({ db, now: () => now });
-    const signer = await EdDSASigner.generate();
+    const signer = await generateAgentIdentity();
     const headers = await buildSignedHeaders({
       signer,
       method: "GET",
@@ -88,7 +88,7 @@ describe("AtriumDidAuth.preflight (did:key Ed25519 default)", () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
     const auth = createAtriumDidAuth({ db, now: () => now });
-    const signer = await EdDSASigner.generate();
+    const signer = await generateAgentIdentity();
     const headers = await buildSignedHeaders({
       signer,
       method: "GET",
@@ -117,7 +117,7 @@ describe("AtriumDidAuth.preflight (did:key Ed25519 default)", () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
     const auth = createAtriumDidAuth({ db, now: () => now });
-    const signer = await EdDSASigner.generate();
+    const signer = await generateAgentIdentity();
     const headers = await buildSignedHeaders({
       signer,
       method: "GET",
@@ -140,7 +140,7 @@ describe("AtriumDidAuth.preflight (did:key Ed25519 default)", () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
     const auth = createAtriumDidAuth({ db, now: () => now });
-    const signer = await EdDSASigner.generate();
+    const signer = await generateAgentIdentity();
     const headers = await buildSignedHeaders({
       signer,
       method: "POST",
@@ -164,7 +164,7 @@ describe("AtriumDidAuth.preflight (did:key Ed25519 default)", () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
     const auth = createAtriumDidAuth({ db, now: () => now });
-    const signer = await EdDSASigner.generate();
+    const signer = await generateAgentIdentity();
     const bodyText = JSON.stringify({ did: "did:key:zMismatch" });
     const headers = await buildSignedHeaders({
       signer,
@@ -189,7 +189,7 @@ describe("AtriumDidAuth.requireAuthenticatedRequest", () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
     const auth = createAtriumDidAuth({ db, now: () => now });
-    const signer = await EdDSASigner.generate();
+    const signer = await generateAgentIdentity();
     const headers = await buildSignedHeaders({
       signer,
       method: "GET",
@@ -215,7 +215,7 @@ describe("AtriumDidAuth.requireInboxAccess (signed query allowlist)", () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
     const auth = createAtriumDidAuth({ db, now: () => now });
-    const signer = await EdDSASigner.generate();
+    const signer = await generateAgentIdentity();
     const headers = await buildSignedHeaders({
       signer,
       method: "GET",
@@ -237,7 +237,7 @@ describe("AtriumDidAuth.requireInboxAccess (signed query allowlist)", () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
     const auth = createAtriumDidAuth({ db, now: () => now });
-    const signer = await EdDSASigner.generate();
+    const signer = await generateAgentIdentity();
     const headers = await buildSignedHeaders({
       signer,
       method: "GET",
@@ -257,7 +257,7 @@ describe("AtriumDidAuth.requireInboxAccess (signed query allowlist)", () => {
     const db = freshDb();
     const now = 1_700_000_000_000;
     const auth = createAtriumDidAuth({ db, now: () => now });
-    const signer = await EdDSASigner.generate();
+    const signer = await generateAgentIdentity();
     const headers = await buildSignedHeaders({
       signer,
       method: "GET",

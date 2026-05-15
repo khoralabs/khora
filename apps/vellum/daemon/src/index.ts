@@ -3,7 +3,7 @@ import {
   defaultIdentityPath,
   loadIdentity,
   type PersistableAgentSigner,
-} from "@khoralabs/atrium-auth";
+} from "@khoralabs/agent-persisted-signer";
 
 import type { VellumPathConfig } from "@khoralabs/vellum-contracts";
 

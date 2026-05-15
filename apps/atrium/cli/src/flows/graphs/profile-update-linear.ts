@@ -7,27 +7,22 @@ export const profileUpdateLinearTransitions: CliLinearTransition[] = [
     stepId: "profile",
     title: "Update profile",
     bindPolicy: {
-      version: "1",
-      properties: [
-        {
-          type: "text",
-          name: "Username",
-          prompt: "Username (optional; leave empty to keep)",
-          optional: true,
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        username: {
+          type: "string",
+          description: "Username (optional; leave empty to keep)",
         },
-        {
-          type: "text",
-          name: "Display name",
-          prompt: "Display name (optional)",
-          optional: true,
+        "display-name": {
+          type: "string",
+          description: "Display name (optional)",
         },
-        {
-          type: "text",
-          name: "Bio",
-          prompt: "Bio (optional)",
-          optional: true,
+        bio: {
+          type: "string",
+          description: "Bio (optional)",
         },
-      ],
+      },
     },
     nextOfferType: "atrium.cli.flow.profile.complete",
     terminal: true,

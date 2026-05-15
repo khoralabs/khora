@@ -3,8 +3,8 @@
  */
 
 import type { Port } from "@khoralabs/obp-v2-model";
-import type { ObpPersistenceClient, ObpNbcBindWindow } from "@khoralabs/obp-v2-persistence";
-import { type NbcBindTiming, isRelayExpiryOk, isTurnExpiryOk } from "./nbc-invariants.ts";
+import type { ObpNbcBindWindow, ObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
+import { isRelayExpiryOk, isTurnExpiryOk, type NbcBindTiming } from "./nbc-invariants.ts";
 
 export type BindablePortEntry = { portId: string; port: Port };
 

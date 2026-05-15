@@ -8,15 +8,16 @@ export function topicLinearTransitions(mode: "subscribe" | "unsubscribe"): CliLi
       stepId: "topic",
       title: mode === "subscribe" ? "Subscribe to topic" : "Unsubscribe from topic",
       bindPolicy: {
-        version: "1",
-        properties: [
-          {
-            type: "text",
-            name: "Topic slug",
-            prompt: "Topic slug",
-            constraints: { minLength: 1 },
+        type: "object",
+        additionalProperties: false,
+        required: ["topic-slug"],
+        properties: {
+          "topic-slug": {
+            type: "string",
+            minLength: 1,
+            description: "Topic slug",
           },
-        ],
+        },
       },
       nextOfferType: `atrium.cli.flow.topic.${mode}.done`,
       terminal: true,

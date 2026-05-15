@@ -17,7 +17,7 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@khoralabs/atrium-auth": "workspace:*",
+    "@khoralabs/agent-persisted-signer": "workspace:*",
     "@khoralabs/atrium-client": "workspace:*",
     "@khoralabs/obp-v2-frames-impl": "workspace:*",
     "@khoralabs/obp-v2-model": "workspace:*",

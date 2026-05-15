@@ -7,22 +7,20 @@ export const inboxListLinearTransitions: CliLinearTransition[] = [
     stepId: "inbox",
     title: "Inbox list options",
     bindPolicy: {
-      version: "1",
-      properties: [
-        {
-          type: "int",
-          name: "Limit",
-          prompt: "Limit (optional, default from server)",
-          optional: true,
-          constraints: { min: 1, max: 500 },
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        limit: {
+          type: "integer",
+          minimum: 1,
+          maximum: 500,
+          description: "Limit (optional, default from server)",
         },
-        {
+        "mark-read": {
           type: "boolean",
-          name: "Mark read",
-          prompt: "Mark fetched notifications as read?",
-          optional: true,
+          description: "Mark fetched notifications as read?",
         },
-      ],
+      },
     },
     nextOfferType: "atrium.cli.flow.inbox.complete",
     terminal: true,

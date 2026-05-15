@@ -1,6 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { defineOntology, type Memory, type SearchHit } from "@khoralabs/memories-core";
-import z from "zod";
+import type { Memory, SearchHit } from "@khoralabs/memories-core";
 import {
   computeLexicalLinkMergeSlice,
   RETRIEVAL_AUTOLINK_EDGE_KIND,

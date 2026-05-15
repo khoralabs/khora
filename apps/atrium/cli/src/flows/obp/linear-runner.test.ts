@@ -2,6 +2,24 @@ import { describe, expect, mock, test } from "bun:test";
 import { createInMemoryObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
 import { runLinearObpFlow } from "./linear-runner.ts";
 
+const kindSchema = {
+  type: "object" as const,
+  additionalProperties: false,
+  required: ["kind"],
+  properties: {
+    kind: { type: "string" as const, enum: ["post", "probe", "status"], description: "Kind" },
+  },
+};
+
+const bodySchema = {
+  type: "object" as const,
+  additionalProperties: false,
+  required: ["body"],
+  properties: {
+    body: { type: "string" as const, minLength: 1, description: "Body text" },
+  },
+};
+
 describe("runLinearObpFlow", () => {
   test("two-step linear records binds per step", async () => {
     const readBinding: string[] = [];
@@ -22,28 +40,13 @@ describe("runLinearObpFlow", () => {
         {
           stepId: "kind",
           title: "Pick kind",
-          bindPolicy: {
-            version: "1",
-            properties: [
-              {
-                type: "choice",
-                name: "Kind",
-                prompt: "Kind",
-                constraints: { choices: ["post", "probe", "status"], maxSelections: 1 },
-              },
-            ],
-          },
+          bindPolicy: kindSchema,
           nextOfferType: "atrium.test.mid",
         },
         {
           stepId: "body",
           title: "Body",
-          bindPolicy: {
-            version: "1",
-            properties: [
-              { type: "text", name: "Body", prompt: "Body text", constraints: { minLength: 1 } },
-            ],
-          },
+          bindPolicy: bodySchema,
           nextOfferType: "atrium.test.done",
           terminal: true,
         },
@@ -76,17 +79,7 @@ describe("runLinearObpFlow", () => {
         {
           stepId: "kind",
           title: "Pick kind",
-          bindPolicy: {
-            version: "1",
-            properties: [
-              {
-                type: "choice",
-                name: "Kind",
-                prompt: "Kind",
-                constraints: { choices: ["post", "probe", "status"], maxSelections: 1 },
-              },
-            ],
-          },
+          bindPolicy: kindSchema,
           nextOfferType: "atrium.test.mid1",
         },
         {
@@ -94,27 +87,23 @@ describe("runLinearObpFlow", () => {
           title: "Probe only",
           skipIf: (b) => b.kind?.kind !== "probe",
           bindPolicy: {
-            version: "1",
-            properties: [
-              {
-                type: "text",
-                name: "Detail",
-                prompt: "Detail text",
-                constraints: { minLength: 1 },
+            type: "object",
+            additionalProperties: false,
+            required: ["detail"],
+            properties: {
+              detail: {
+                type: "string",
+                minLength: 1,
+                description: "Detail text",
               },
-            ],
+            },
           },
           nextOfferType: "atrium.test.mid2",
         },
         {
           stepId: "body",
           title: "Body",
-          bindPolicy: {
-            version: "1",
-            properties: [
-              { type: "text", name: "Body", prompt: "Body text", constraints: { minLength: 1 } },
-            ],
-          },
+          bindPolicy: bodySchema,
           nextOfferType: "atrium.test.done",
           terminal: true,
         },

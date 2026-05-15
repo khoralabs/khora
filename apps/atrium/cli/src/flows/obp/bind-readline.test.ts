@@ -13,13 +13,15 @@ describe("readBindPolicyInteractive", () => {
 
     const out = await readBindPolicyInteractive(
       {
-        version: "1",
-        properties: [
-          { type: "text", name: "DID", prompt: "did", constraints: { minLength: 1 } },
-          { type: "text", name: "Display name", prompt: "name", optional: true },
-          { type: "text", name: "Bio", prompt: "bio", optional: true },
-          { type: "text", name: "Invite token", prompt: "invite", optional: true },
-        ],
+        type: "object",
+        additionalProperties: false,
+        required: ["did"],
+        properties: {
+          did: { type: "string", minLength: 1, description: "did" },
+          "display-name": { type: "string", description: "name" },
+          bio: { type: "string", description: "bio" },
+          "invite-token": { type: "string", description: "invite" },
+        },
       },
       readLine,
     );

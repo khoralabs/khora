@@ -7,15 +7,16 @@ export const postDeleteLinearTransitions: CliLinearTransition[] = [
     stepId: "confirm",
     title: "Confirm delete",
     bindPolicy: {
-      version: "1",
-      properties: [
-        {
-          type: "text",
-          name: "Confirmation",
-          prompt: "Type DELETE exactly to confirm",
-          constraints: { minLength: 6 },
+      type: "object",
+      additionalProperties: false,
+      required: ["confirmation"],
+      properties: {
+        confirmation: {
+          type: "string",
+          minLength: 6,
+          description: "Type DELETE exactly to confirm",
         },
-      ],
+      },
     },
     nextOfferType: "atrium.cli.flow.post_delete.done",
     terminal: true,

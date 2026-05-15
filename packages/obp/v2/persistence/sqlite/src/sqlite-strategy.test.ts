@@ -52,7 +52,13 @@ describe("SqliteObpPersistenceStrategy", () => {
       bindPortId: "",
       bind_payload: null,
     });
-    const policy = { version: "1", properties: [] as unknown[] };
+    const policy = {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        x: { type: "string" },
+      },
+    };
     const { port } = await client.exposePort({
       offerId: offer.id,
       port: { id: "", type: "slot", promise: "p", ref: "", sourcemaps: [] },

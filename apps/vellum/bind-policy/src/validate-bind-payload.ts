@@ -1,8 +1,8 @@
 import { ObpError } from "@khoralabs/obp-v2-errors";
 import type { JsonDocument } from "@khoralabs/obp-v2-model";
-import type { StandardSchemaV1 } from "@standard-schema/spec";
-import { formatStandardSchemaIssuesForAgent } from "./bind-policy-issue-format.ts";
-import { bindPayloadSchemaForProperties, portBindPolicySchema } from "./bind-policy-schema.ts";
+
+import { assertBindPolicyJsonSchema, getBindPayloadValidator } from "./ajv-compile-bind-schema.ts";
+import { formatAjvErrorsForAgent } from "./format-ajv-errors.ts";
 
 function policyIsActive(bindPolicy: JsonDocument | null): boolean {
   return (
@@ -23,19 +23,11 @@ function isEmptyBindPayload(raw: unknown): boolean {
   return Object.keys(raw as object).length === 0;
 }
 
-function expectSync<T>(
-  r: StandardSchemaV1.Result<T> | Promise<StandardSchemaV1.Result<T>>,
-): StandardSchemaV1.Result<T> {
-  if (r instanceof Promise) {
-    throw new TypeError("bind-policy validators must be synchronous");
-  }
-  return r;
-}
-
 /**
- * Vellum Standard Schema profile: validates **`bind_payload`** against **`bindPolicy`** when the policy is present and non-empty.
- * Returns normalized plain object for persistence (parsed output).
- * @throws {ObpError} **`VALIDATION`** on mismatch.
+ * Validates **`bind_payload`** against **`bind_policy`** when the policy is present and non-empty.
+ * **`bind_policy`** MUST be a JSON Schema (draft 2020-12) with root **`type`: `"object"`**.
+ * Returns a normalized plain JSON object for persistence.
+ * @throws {ObpError} **`VALIDATION`** on mismatch or invalid schema.
  */
 export function validateVellumBindPayloadForPort(
   bindPolicy: JsonDocument | null,
@@ -51,24 +43,15 @@ export function validateVellumBindPayloadForPort(
     return {};
   }
 
-  const policyResult = expectSync(portBindPolicySchema["~standard"].validate(bindPolicy));
-  if (policyResult.issues) {
-    throw new ObpError(
-      "VALIDATION",
-      `Invalid bind_policy on port:\n${formatStandardSchemaIssuesForAgent(policyResult.issues)}`,
-    );
+  assertBindPolicyJsonSchema(bindPolicy);
+  const validate = getBindPayloadValidator(bindPolicy);
+
+  if (!validate(raw)) {
+    throw new ObpError("VALIDATION", `bind_payload:\n${formatAjvErrorsForAgent(validate.errors)}`);
   }
 
-  const compiled = bindPayloadSchemaForProperties(policyResult.value.properties);
-  const out = expectSync(compiled["~standard"].validate(raw));
-  if (out.issues) {
-    throw new ObpError(
-      "VALIDATION",
-      `bind_payload:\n${formatStandardSchemaIssuesForAgent(out.issues)}`,
-    );
-  }
-  return out.value;
+  return JSON.parse(JSON.stringify(raw)) as Record<string, unknown>;
 }
 
-/** @deprecated Prefer {@link validateVellumBindPayloadForPort}; kept for incremental migration. */
+/** @deprecated Prefer {@link validateVellumBindPayloadForPort}. */
 export const validateBindPayloadForPort = validateVellumBindPayloadForPort;

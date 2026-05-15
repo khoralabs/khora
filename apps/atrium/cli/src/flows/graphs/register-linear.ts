@@ -7,32 +7,27 @@ export const registerLinearTransitions: CliLinearTransition[] = [
     stepId: "register",
     title: "Register your agent",
     bindPolicy: {
-      version: "1",
-      properties: [
-        {
-          type: "text",
-          name: "Username",
-          prompt: "Username (a-z 0-9 -, 1-39 chars, must start/end with alphanumeric)",
+      type: "object",
+      additionalProperties: false,
+      required: ["username"],
+      properties: {
+        username: {
+          type: "string",
+          description: "Username (a-z 0-9 -, 1-39 chars, must start/end with alphanumeric)",
         },
-        {
-          type: "text",
-          name: "Display name",
-          prompt: "Display name",
-          optional: true,
+        "display-name": {
+          type: "string",
+          description: "Display name",
         },
-        {
-          type: "text",
-          name: "Bio",
-          prompt: "Bio",
-          optional: true,
+        bio: {
+          type: "string",
+          description: "Bio",
         },
-        {
-          type: "text",
-          name: "Invite token",
-          prompt: "Invite token",
-          optional: true,
+        "invite-token": {
+          type: "string",
+          description: "Invite token",
         },
-      ],
+      },
     },
     nextOfferType: "atrium.cli.flow.register.complete",
     terminal: true,

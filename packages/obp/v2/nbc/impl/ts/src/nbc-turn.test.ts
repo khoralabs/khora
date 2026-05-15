@@ -47,8 +47,14 @@ class InMemoryStrategy implements ObpPersistenceStrategy {
   private parties = new Map<string, Party>();
   private offers = new Map<string, Offer>();
   private ports = new Map<string, Port>();
-  private offerNbc = new Map<string, { nbc_expires_turn: number; nbc_expires_at_relay_ms: number }>();
-  private portNbc = new Map<string, { nbc_expires_turn: number; nbc_expires_at_relay_ms: number }>();
+  private offerNbc = new Map<
+    string,
+    { nbc_expires_turn: number; nbc_expires_at_relay_ms: number }
+  >();
+  private portNbc = new Map<
+    string,
+    { nbc_expires_turn: number; nbc_expires_at_relay_ms: number }
+  >();
   private extends = new Map<string, string>();
   private exposes = new Map<string, string>();
   private portBindPolicies = new Map<string, JsonDocument>();
@@ -132,7 +138,9 @@ class InMemoryStrategy implements ObpPersistenceStrategy {
     return {};
   }
 
-  async listExposedPortEdges(_input: ListExposedPortEdgesInput): Promise<ListExposedPortEdgesOutput> {
+  async listExposedPortEdges(
+    _input: ListExposedPortEdgesInput,
+  ): Promise<ListExposedPortEdgesOutput> {
     const edges: ExposedPortEdge[] = [];
     for (const [portId, offerId] of this.exposes) {
       edges.push({ offerId, portId });
@@ -202,16 +210,17 @@ class InMemoryStrategy implements ObpPersistenceStrategy {
 
 const timing0 = { turnSeq: 0, relayTsMs: 1 } as const;
 
-const textBindPolicy = {
-  version: "1" as const,
-  properties: [
-    {
-      type: "text" as const,
-      name: "Greeting",
-      prompt: "A short hello",
-      constraints: { minLength: 1 },
+const textBindSchema = {
+  type: "object" as const,
+  additionalProperties: false,
+  required: ["greeting"],
+  properties: {
+    greeting: {
+      type: "string" as const,
+      minLength: 1,
+      description: "A short hello",
     },
-  ],
+  },
 };
 
 describe("applyNbcTurn", () => {
@@ -266,7 +275,7 @@ describe("applyNbcTurn", () => {
           promise: "pick",
           expires_turn: 100,
           expires_at_relay_ms: 0,
-          bind_policy: textBindPolicy,
+          bind_policy: textBindSchema,
           ref: "",
         },
       ],
@@ -305,7 +314,15 @@ describe("nbc session reads", () => {
     const body = parseNbcTurnBody({
       offer: { id: "", expires_turn: 100, expires_at_relay_ms: 0, type: "step", sourcemaps: [] },
       ports: [
-        { id: "", type: "x", promise: "", expires_turn: 100, expires_at_relay_ms: 0, bind_policy: null, ref: "" },
+        {
+          id: "",
+          type: "x",
+          promise: "",
+          expires_turn: 100,
+          expires_at_relay_ms: 0,
+          bind_policy: null,
+          ref: "",
+        },
       ],
       bind_port_id: "",
       bind_payload: null,

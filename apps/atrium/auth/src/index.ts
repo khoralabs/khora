@@ -1,10 +1,4 @@
-export {
-  AtriumDidAuth,
-  type AtriumDidAuthOptions,
-  AuthError,
-  type CreateAtriumDidAuthOptions,
-  createAtriumDidAuth,
-} from "./auth.ts";
+export type { AgentSigner, PersistableAgentSigner } from "@khoralabs/agent-persisted-signer";
 export {
   type AgentIdentityFile,
   defaultIdentityPath,
@@ -12,11 +6,16 @@ export {
   loadIdentity,
   loadOrCreateIdentity,
   saveIdentity,
-} from "./identity.ts";
+} from "@khoralabs/agent-persisted-signer";
+export {
+  AtriumDidAuth,
+  type AtriumDidAuthOptions,
+  AuthError,
+  type CreateAtriumDidAuthOptions,
+  createAtriumDidAuth,
+} from "./auth.ts";
 export type { NonceStore } from "./nonce-store.ts";
 export {
-  type AgentSigner,
-  type PersistableAgentSigner,
   type SignAgentRequestInput,
   type SignedAgentRequest,
   type SignedInboxUrlInput,

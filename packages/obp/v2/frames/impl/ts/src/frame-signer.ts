@@ -26,7 +26,9 @@ function isCryptoKeyPair(v: CryptoKeyPair | CryptoKey): v is CryptoKeyPair {
 export async function generateEd25519KeyPair(): Promise<CryptoKeyPair> {
   const kp = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
   if (!isCryptoKeyPair(kp)) {
-    throw new Error("generateEd25519KeyPair: expected CryptoKeyPair from subtle.generateKey(Ed25519)");
+    throw new Error(
+      "generateEd25519KeyPair: expected CryptoKeyPair from subtle.generateKey(Ed25519)",
+    );
   }
   return kp;
 }

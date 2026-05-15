@@ -16,10 +16,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@khoralabs/agent-persisted-signer": "workspace:*",
     "@khoralabs/agent-relay": "workspace:*",
     "@noble/ed25519": "^3.1.0",
-    "iso-did": "^2.1.1",
-    "iso-signatures": "^0.5.1"
+    "iso-did": "^2.1.1"
   },
   "devDependencies": {
     "@types/bun": "latest",

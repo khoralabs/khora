@@ -11,7 +11,7 @@ structure NbcPortExposePolicy {
     max_bindings: Integer = 1
     /// Hint for agents when this affordance represents completion; does not change OBP graph topology—NBC uses it for orchestration and UX policy.
     terminal: Boolean = false
-    /// Application-defined JSON profile for required counterparty fields at bind time; null or empty object means no extra NBC bind form beyond OBP graph rules.
+    /// JSON Schema (draft 2020-12) for the **`bind_payload`** root object at bind time, or another host-defined document validated by that deployment's bind validator; null or empty object means no extra NBC bind form beyond OBP graph rules.
     bind_policy: Document = null
     /// When set: **`turns`** (relative to coordinator + `expose_seq`) or **`ledger_seq`** (relative to ledger + `expose_seq`). Empty when unset.
     @default("")
@@ -22,7 +22,7 @@ structure NbcPortExposePolicy {
     expose_seq: Integer = null
 }
 
-/// Counterparty satisfaction data for a **BINDS** commit; persists with the bind via **`ObpPersistence`** (**`bind_payload`** **`Document`**), not on **`cfd.obp#BindsEdge`**. NBC-conformant deployments validate **`payload`** against **`NbcPortExposePolicy.bind_policy`** using the host/product validator for that **`bind_policy`** wire profile.
+/// Counterparty satisfaction data for a **BINDS** commit; persists with the bind via **`ObpPersistence`** (**`bind_payload`** **`Document`**), not on **`cfd.obp#BindsEdge`**. NBC-conformant deployments validate **`payload`** against **`NbcPortExposePolicy.bind_policy`** when non-empty; **Vellum** treats **`bind_policy`** as a JSON Schema (draft 2020-12) for the **`bind_payload`** root object and validates with **AJV** (host adapters MAY use other validators for other products).
 structure NbcBindSatisfaction {
     payload: Document
 }

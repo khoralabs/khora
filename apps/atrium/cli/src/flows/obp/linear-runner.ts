@@ -1,6 +1,6 @@
 import type { JsonDocument, Offer, Party, Port } from "@khoralabs/obp-v2-model";
 import type { ObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
-import type { PortBindPolicy } from "@khoralabs/vellum-bind-policy";
+import type { BindPolicyJsonSchema } from "@khoralabs/vellum-bind-policy";
 import { type ReadLineFn, readBindPolicyInteractive } from "./bind-readline.ts";
 import { mergePortShell, shellOffer } from "./port-defaults.ts";
 
@@ -11,7 +11,7 @@ export type CliLinearTransition = {
   nextOfferType: string;
   /** Shown before prompts; also `Port.promise` */
   title: string;
-  bindPolicy: PortBindPolicy;
+  bindPolicy: BindPolicyJsonSchema;
   /** When true, runner treats this as a terminal transition (last step semantics for callers). */
   terminal?: boolean;
   /** Skip this transition when predicate returns true (gets binds collected so far). */
@@ -55,6 +55,7 @@ export async function runLinearObpFlow(args: {
     const { port } = await client.exposePort({
       offerId: offer.id,
       port: mergePortShell(portPayload),
+      bind_policy: t.bindPolicy,
     });
 
     console.log(`\n── ${t.title} ──`);

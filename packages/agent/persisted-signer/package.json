@@ -1,9 +1,9 @@
 {
-  "name": "@khoralabs/vellum-bind-policy",
+  "name": "@khoralabs/agent-persisted-signer",
   "version": "0.0.0",
-  "description": "Vellum bind policies as JSON Schema (draft 2020-12) + AJV validation for NBC bind payloads.",
   "type": "module",
   "private": true,
+  "module": "src/index.ts",
   "exports": {
     ".": {
       "types": "./src/index.ts",
@@ -16,9 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@khoralabs/obp-v2-errors": "workspace:*",
-    "@khoralabs/obp-v2-model": "workspace:*",
-    "ajv": "^8.17.1"
+    "iso-signatures": "^0.5.1"
   },
   "devDependencies": {
     "@types/bun": "latest",

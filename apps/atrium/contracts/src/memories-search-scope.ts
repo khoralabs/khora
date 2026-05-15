@@ -138,4 +138,3 @@ export function resolveAtriumMemoriesSearchNamespaces(
   const _never: never = scope;
   return _never;
 }
-

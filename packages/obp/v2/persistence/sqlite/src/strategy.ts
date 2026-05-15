@@ -530,10 +530,9 @@ export class SqliteObpPersistenceStrategy implements ObpPersistenceStrategy {
     input: GetNbcBindWindowForOfferInput,
   ): Promise<GetNbcBindWindowForOfferOutput> {
     const row = this.db
-      .query<
-        { nbc_expires_turn: number; nbc_expires_at_relay_ms: number },
-        [string]
-      >(`SELECT nbc_expires_turn, nbc_expires_at_relay_ms FROM obp_offers WHERE id = ?`)
+      .query<{ nbc_expires_turn: number; nbc_expires_at_relay_ms: number }, [string]>(
+        `SELECT nbc_expires_turn, nbc_expires_at_relay_ms FROM obp_offers WHERE id = ?`,
+      )
       .get(input.offerId);
     if (!row) return { result: { kind: "notFound" } };
     return {
@@ -551,10 +550,9 @@ export class SqliteObpPersistenceStrategy implements ObpPersistenceStrategy {
     input: GetNbcBindWindowForPortInput,
   ): Promise<GetNbcBindWindowForPortOutput> {
     const row = this.db
-      .query<
-        { nbc_expires_turn: number; nbc_expires_at_relay_ms: number },
-        [string]
-      >(`SELECT nbc_expires_turn, nbc_expires_at_relay_ms FROM obp_ports WHERE id = ?`)
+      .query<{ nbc_expires_turn: number; nbc_expires_at_relay_ms: number }, [string]>(
+        `SELECT nbc_expires_turn, nbc_expires_at_relay_ms FROM obp_ports WHERE id = ?`,
+      )
       .get(input.portId);
     if (!row) return { result: { kind: "notFound" } };
     return {

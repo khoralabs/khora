@@ -11,16 +11,17 @@ function vellumBindValidate(
   return validateVellumBindPayloadForPort(bindPolicy, bindPayload) as JsonDocument;
 }
 
-const textBindPolicy = {
-  version: "1" as const,
-  properties: [
-    {
-      type: "text" as const,
-      name: "Greeting",
-      prompt: "A short hello",
-      constraints: { minLength: 1 },
+const textBindSchema = {
+  type: "object" as const,
+  additionalProperties: false,
+  required: ["greeting"],
+  properties: {
+    greeting: {
+      type: "string" as const,
+      minLength: 1,
+      description: "A short hello",
     },
-  ],
+  },
 };
 
 const basePortFields = { type: "t" as const, promise: "", sourcemaps: [] as const };
@@ -183,13 +184,15 @@ describe("validateNbcBind", () => {
       portBindWindow: win(100, 0),
       portsById: ports,
       targetPortIsExposed: true,
-      bindPolicy: textBindPolicy,
+      bindPolicy: textBindSchema,
       bindPayload: { greeting: "yo" },
     });
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.failure.code).toBe("POLICY_REJECTED");
-      expect(String("reason" in r.failure ? r.failure.reason : "")).toContain("validateBindPayload");
+      expect(String("reason" in r.failure ? r.failure.reason : "")).toContain(
+        "validateBindPayload",
+      );
     }
   });
 
@@ -202,7 +205,7 @@ describe("validateNbcBind", () => {
       portBindWindow: win(100, 0),
       portsById: ports,
       targetPortIsExposed: true,
-      bindPolicy: textBindPolicy,
+      bindPolicy: textBindSchema,
       bindPayload: { greeting: "yo" },
       validateBindPayload: vellumBindValidate,
     });
@@ -219,7 +222,7 @@ describe("validateNbcBind", () => {
       portBindWindow: win(100, 0),
       portsById: ports,
       targetPortIsExposed: true,
-      bindPolicy: textBindPolicy,
+      bindPolicy: textBindSchema,
       bindPayload: {},
       validateBindPayload: vellumBindValidate,
     });
