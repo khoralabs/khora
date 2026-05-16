@@ -385,6 +385,17 @@
         "typescript": "^5",
       },
     },
+    "packages/colonnade/impl/ts": {
+      "name": "@khoralabs/colonnade-persistence",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "packages/libs/agent-io": {
       "name": "@khoralabs/agent-io",
       "version": "0.0.0",
@@ -986,6 +997,8 @@
     "@khoralabs/atrium-plugin-telemetry": ["@khoralabs/atrium-plugin-telemetry@workspace:apps/atrium/plugins/telemetry"],
 
     "@khoralabs/atrium-transport": ["@khoralabs/atrium-transport@workspace:packages/atrium/transport"],
+
+    "@khoralabs/colonnade-persistence": ["@khoralabs/colonnade-persistence@workspace:packages/colonnade/impl/ts"],
 
     "@khoralabs/duplex-byte-stream": ["@khoralabs/duplex-byte-stream@workspace:packages/libs/duplex-byte-stream"],
 

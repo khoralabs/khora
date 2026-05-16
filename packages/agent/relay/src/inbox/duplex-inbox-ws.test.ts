@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { createMemoryDuplexByteStreamPair } from "@khoralabs/duplex-byte-stream";
-import { createInboxWsHub } from "./inbox-ws-hub.ts";
 import { runInboxDuplexAttachment } from "./duplex-inbox-ws.ts";
+import { createInboxWsHub } from "./inbox-ws-hub.ts";
 
 describe("runInboxDuplexAttachment", () => {
   test("broadcast reaches duplex client as UTF-8 JSON line", async () => {

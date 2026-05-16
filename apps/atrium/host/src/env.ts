@@ -80,9 +80,7 @@ export function envHostDuplexIngress(): AtriumHostDuplexIngressMode {
   const v = process.env.ATRIUM_HOST_DUPLEX_INGRESS?.trim().toLowerCase();
   if (v === undefined || v === "" || v === "off") return "off";
   if (v === "unix") return "unix";
-  throw new Error(
-    `ATRIUM_HOST_DUPLEX_INGRESS=${v} is not supported; use off (default) or unix.`,
-  );
+  throw new Error(`ATRIUM_HOST_DUPLEX_INGRESS=${v} is not supported; use off (default) or unix.`);
 }
 
 export function envHostDuplexUnixPath(): string {

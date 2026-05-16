@@ -3,9 +3,11 @@ import { parseDuplexUnixHandshakeJson } from "./duplex-unix-handshake.ts";
 
 describe("parseDuplexUnixHandshakeJson", () => {
   test("accepts room envelope", () => {
-    expect(
-      parseDuplexUnixHandshakeJson({ kind: "room", roomId: "r1", ticket: "t1" }),
-    ).toEqual({ kind: "room", roomId: "r1", ticket: "t1" });
+    expect(parseDuplexUnixHandshakeJson({ kind: "room", roomId: "r1", ticket: "t1" })).toEqual({
+      kind: "room",
+      roomId: "r1",
+      ticket: "t1",
+    });
   });
 
   test("accepts inbox envelope", () => {

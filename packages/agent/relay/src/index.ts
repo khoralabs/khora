@@ -21,8 +21,8 @@ export {
   agentRelayFrameChannelWebSocketHandlers,
 } from "./frame-channel/bun-routes.ts";
 export {
-  attachDuplexAsFrameChannelPeer,
   type AttachDuplexFrameChannelPeerResult,
+  attachDuplexAsFrameChannelPeer,
 } from "./frame-channel/duplex-peer.ts";
 export {
   type CreateFrameChannelHubOptions,
@@ -38,8 +38,8 @@ export {
   createInboxWsHub,
   deliverAgentNotification,
   inboxWebSocketFromDuplexUtf8,
-  runInboxDuplexAttachment,
   type RunInboxDuplexAttachmentResult,
+  runInboxDuplexAttachment,
 } from "./inbox/index.ts";
 export { AGENT_RELAY_AGGREGATE_DOMAIN } from "./model/index.ts";
 export {

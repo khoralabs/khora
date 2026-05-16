@@ -1,9 +1,6 @@
-import {
-  attachDuplexAsFrameChannelPeer,
-  runInboxDuplexAttachment,
-} from "@khoralabs/agent-relay";
-import type { DuplexByteStream } from "@khoralabs/duplex-byte-stream";
+import { attachDuplexAsFrameChannelPeer, runInboxDuplexAttachment } from "@khoralabs/agent-relay";
 import { AuthError } from "@khoralabs/atrium-auth";
+import type { DuplexByteStream } from "@khoralabs/duplex-byte-stream";
 import type { AtriumHostContext } from "../create-atrium-host.ts";
 import type { HostRouteDeps } from "../http/deps.ts";
 import { sendInboxSnapshot } from "../ws/inbox.ts";

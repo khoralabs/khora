@@ -1,15 +1,9 @@
+import { AuthError } from "@khoralabs/atrium-auth";
 import type { DuplexByteStream } from "@khoralabs/duplex-byte-stream";
 import type { Socket } from "bun";
-import { AuthError } from "@khoralabs/atrium-auth";
 import type { HostRouteDeps } from "../http/deps.ts";
-import {
-  attachInboxDuplexAfterAuth,
-  attachRoomDuplexAfterTicket,
-} from "./duplex-attach.ts";
-import {
-  parseDuplexUnixHandshakeJson,
-  type DuplexUnixHandshake,
-} from "./duplex-unix-handshake.ts";
+import { attachInboxDuplexAfterAuth, attachRoomDuplexAfterTicket } from "./duplex-attach.ts";
+import { type DuplexUnixHandshake, parseDuplexUnixHandshakeJson } from "./duplex-unix-handshake.ts";
 
 export type DuplexUnixIngressHandle = {
   /** @param closeActive forwarded to {@link Bun.listen} stop (default true). */
@@ -54,7 +48,10 @@ function concatChunks(chunks: Uint8Array[]): Uint8Array {
   return out;
 }
 
-async function socketWriteAll(socket: Socket<DuplexUnixSocketData>, bytes: Uint8Array): Promise<void> {
+async function socketWriteAll(
+  socket: Socket<DuplexUnixSocketData>,
+  bytes: Uint8Array,
+): Promise<void> {
   let offset = 0;
   while (offset < bytes.byteLength) {
     const slice = bytes.subarray(offset);
@@ -120,7 +117,11 @@ function createUnixDuplexBridge(socket: Socket<DuplexUnixSocketData>): UnixDuple
   return { duplex, pushInbound };
 }
 
-function writeRejectLine(socket: Socket<DuplexUnixSocketData>, message: string, status: number): void {
+function writeRejectLine(
+  socket: Socket<DuplexUnixSocketData>,
+  message: string,
+  status: number,
+): void {
   try {
     socket.write(`${JSON.stringify({ error: message, status })}\n`);
   } catch {
