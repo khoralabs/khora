@@ -25,6 +25,7 @@ export type { ConnectInboxOptions, InboxWsHandlers } from "./inbox-connect.ts";
 export { connectInbox } from "./inbox-connect.ts";
 export type {
   InboxNotificationRow,
+  InboxWsDrainMessage,
   InboxWsNotificationMessage,
   InboxWsSnapshotMessage,
 } from "./inbox-ws.ts";

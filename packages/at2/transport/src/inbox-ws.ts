@@ -26,7 +26,18 @@ const zLive = z.object({
   notification: z.unknown(),
 });
 
-const zInboxWsPayload = z.discriminatedUnion("type", [zSnapshot, zLive]);
+const zDrain = z.object({
+  type: z.literal("drain"),
+  items: z.array(
+    z.object({
+      entryKey: z.string(),
+      pointer: z.unknown(),
+      projection: z.unknown(),
+    }),
+  ),
+});
+
+const zInboxWsPayload = z.discriminatedUnion("type", [zSnapshot, zLive, zDrain]);
 
 export type InboxWsSnapshotMessage = {
   type: "snapshot";
@@ -39,10 +50,15 @@ export type InboxWsNotificationMessage = {
   notification: AgentNotification;
 };
 
+export type InboxWsDrainMessage = {
+  type: "drain";
+  items: { entryKey: string; pointer: unknown; projection: unknown }[];
+};
+
 /** Parse a WebSocket text frame from `/v1/inbox/ws`; returns `undefined` if shape is unknown. */
 export function parseInboxWebSocketMessage(
   raw: string,
-): InboxWsSnapshotMessage | InboxWsNotificationMessage | undefined {
+): InboxWsSnapshotMessage | InboxWsNotificationMessage | InboxWsDrainMessage | undefined {
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw) as unknown;
@@ -60,11 +76,14 @@ export function parseInboxWebSocketMessage(
       })),
     };
   }
-  return {
-    type: "notification",
-    id: r.data.id,
-    notification: r.data.notification as AgentNotification,
-  };
+  if (r.data.type === "notification") {
+    return {
+      type: "notification",
+      id: r.data.id,
+      notification: r.data.notification as AgentNotification,
+    };
+  }
+  return { type: "drain", items: r.data.items };
 }
 
 /** Build inbox WebSocket URL with `did` query (matches Atrium host). */

@@ -4,7 +4,7 @@ import type {
   AtriumProfile,
   AtriumRegistrationResult,
 } from "@khoralabs/at2-contracts";
-import type { InboxNotificationRow } from "./inbox-ws.ts";
+import type { InboxNotificationRow, InboxWsDrainMessage } from "./inbox-ws.ts";
 
 /** Pull-based inbox list payload (same shape as `AtriumClient.listInbox` resolution value). */
 export type AtriumInboxListPayload = {
@@ -39,6 +39,11 @@ export type AtriumClientEvent =
   | { type: "author_topic:unsubscribed"; username: string; topicSlug: string; did: string }
   | { type: "inbox:list"; result: AtriumInboxListPayload; did: string }
   | { type: "inbox:snapshot"; notifications: InboxNotificationRow[]; did: string }
+  | {
+      type: "inbox:drain";
+      did: string;
+      items: InboxWsDrainMessage["items"];
+    }
   | { type: "inbox:notification"; id: number; notification: AgentNotification; did: string }
   | {
       type: "inbox:connection_request";

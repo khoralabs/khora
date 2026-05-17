@@ -47,6 +47,24 @@ describe("parseInboxWebSocketMessage", () => {
     expect(msg.notification.kind).toBe("inbox_post");
   });
 
+  test("drain batch", () => {
+    const raw = JSON.stringify({
+      type: "drain",
+      items: [
+        {
+          entryKey: "did:key:a/p1",
+          pointer: { source_cell_id: "relay", source_record_key: "p1", content_hash: "ab" },
+          projection: { postId: "p1" },
+        },
+      ],
+    });
+    const msg = parseInboxWebSocketMessage(raw);
+    expect(msg?.type).toBe("drain");
+    if (msg?.type !== "drain") return;
+    expect(msg.items).toHaveLength(1);
+    expect(msg.items[0]?.entryKey).toBe("did:key:a/p1");
+  });
+
   test("invalid json returns undefined", () => {
     expect(parseInboxWebSocketMessage("not json")).toBeUndefined();
   });

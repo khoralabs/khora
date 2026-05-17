@@ -51,6 +51,7 @@
     "packages/at2/contracts",
     "packages/at2/relay-colonnade",
     "packages/at2/relay-colonnade-social",
+    "packages/at2/host",
     "packages/vellum/*",
     "apps/vellum/*"
   ]

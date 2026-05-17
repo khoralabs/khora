@@ -1,5 +1,11 @@
 export type { AgentRelayPersistence } from "@khoralabs/agent-relay";
-export { RelayCatalogSourceMapStore, relaySyntheticPointer } from "./catalog-source-map-store.ts";
+export { RELAY_CATALOG_SOURCE_POST } from "./catalog-post-adapter.ts";
+export {
+  type CatalogSourceMapListedRow,
+  escapeSqlLikeLiteral,
+  RelayCatalogSourceMapStore,
+  relaySyntheticPointer,
+} from "./catalog-source-map-store.ts";
 export { createFrameChannelHubPersistenceSqlite } from "./frame-channel-sqlite.ts";
 export {
   createRelayColonnadePersistence,

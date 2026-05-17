@@ -15,9 +15,23 @@ export function relaySyntheticPointer(
   };
 }
 
+/** Escape `%`, `_`, and `\\` for use in `LIKE ... ESCAPE '\\'`. */
+export function escapeSqlLikeLiteral(s: string): string {
+  return s.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+}
+
+/** Row returned from {@link RelayCatalogSourceMapStore.listBySourceMap}. */
+export type CatalogSourceMapListedRow = {
+  entry_key: string;
+  pointer: PointerRef;
+  projection: unknown;
+};
+
 export class RelayCatalogSourceMapStore {
   private readonly upsertStmt;
   private readonly lookupStmt;
+  private readonly listByPrefixStmt;
+  private readonly deleteStmt;
 
   constructor(db: Database) {
     this.upsertStmt = db.prepare(
@@ -32,6 +46,15 @@ export class RelayCatalogSourceMapStore {
     );
     this.lookupStmt = db.query(
       `SELECT projection FROM source_map_rows WHERE tenant_key = ? AND source_map_id = ? AND entry_key = ?`,
+    );
+    this.listByPrefixStmt = db.query(
+      `SELECT entry_key, pointer_source_cell_id, pointer_source_record_key, pointer_content_hash, projection
+       FROM source_map_rows
+       WHERE tenant_key = ? AND source_map_id = ? AND entry_key LIKE ? ESCAPE '\\'
+       ORDER BY rowid ASC`,
+    );
+    this.deleteStmt = db.prepare(
+      `DELETE FROM source_map_rows WHERE tenant_key = ? AND source_map_id = ? AND entry_key = ?`,
     );
   }
 
@@ -78,5 +101,51 @@ export class RelayCatalogSourceMapStore {
     } catch {
       return { found: true, projection: {} };
     }
+  }
+
+  /**
+   * All rows for `(tenant_key, source_map_id)` whose `entry_key` starts with `entryKeyPrefix`
+   * (prefix match via `LIKE` with escapes for `_` and `%` in the prefix).
+   */
+  listBySourceMap(
+    tenant_key: string,
+    source_map_id: string,
+    entryKeyPrefix: string,
+  ): CatalogSourceMapListedRow[] {
+    const pattern = `${escapeSqlLikeLiteral(entryKeyPrefix)}%`;
+    const rows = this.listByPrefixStmt.all(
+      tenant_key,
+      source_map_id,
+      pattern,
+    ) as {
+      entry_key: string;
+      pointer_source_cell_id: string;
+      pointer_source_record_key: string;
+      pointer_content_hash: string;
+      projection: string;
+    }[];
+    const out: CatalogSourceMapListedRow[] = [];
+    for (const r of rows) {
+      let projection: unknown = {};
+      try {
+        projection = JSON.parse(r.projection) as unknown;
+      } catch {
+        /* keep {} */
+      }
+      out.push({
+        entry_key: r.entry_key,
+        pointer: {
+          source_cell_id: r.pointer_source_cell_id,
+          source_record_key: r.pointer_source_record_key,
+          content_hash: r.pointer_content_hash,
+        },
+        projection,
+      });
+    }
+    return out;
+  }
+
+  deleteRow(tenant_key: string, source_map_id: string, entry_key: string): void {
+    this.deleteStmt.run(tenant_key, source_map_id, entry_key);
   }
 }

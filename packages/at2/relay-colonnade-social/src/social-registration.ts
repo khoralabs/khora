@@ -4,8 +4,8 @@ import { type RelayCatalogSourceMapStore, relaySyntheticPointer } from "@khorala
 import { normalizeUsername } from "@khoralabs/at2-contracts";
 import type { SocialAgentIdentity, SocialRegisterAgentInput } from "./social-types.ts";
 
-const SOURCE_USERNAME_TO_PRINCIPAL = "relay:social:username-to-principal";
-const SOURCE_PRINCIPAL_TO_USERNAME = "relay:social:principal-to-username";
+export const SOURCE_USERNAME_TO_PRINCIPAL = "relay:social:username-to-principal";
+export const SOURCE_PRINCIPAL_TO_USERNAME = "relay:social:principal-to-username";
 
 /** Fixed `tenant_key` for username indexes so handles are unique across every relay `tenantKey`. */
 export const USERNAME_INDEX_TENANT_KEY = "relay:username-index-global";

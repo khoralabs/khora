@@ -10,7 +10,9 @@ import {
   relaySyntheticPointer,
 } from "./catalog-source-map-store.ts";
 
-const SOURCE_POST = "relay:entity:post";
+/** `source_map_id` for post entities in the relay catalog (use with {@link relaySyntheticPointer}). */
+export const RELAY_CATALOG_SOURCE_POST = "relay:entity:post";
+const SOURCE_POST = RELAY_CATALOG_SOURCE_POST;
 const SOURCE_POST_INDEX = "relay:post-index";
 
 function postIndexEntryKey(authorProfileId: string, kind: string): string {
