@@ -315,6 +315,34 @@
         "typescript": "^5",
       },
     },
+    "packages/at2/relay-colonnade": {
+      "name": "@khoralabs/relay-colonnade",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/agent-relay": "workspace:*",
+        "@khoralabs/colonnade-persistence": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/at2/relay-colonnade-social": {
+      "name": "@khoralabs/relay-colonnade-social",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/agent-relay": "workspace:*",
+        "@khoralabs/relay-colonnade": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "packages/atrium/auth": {
       "name": "@khoralabs/atrium-auth",
       "version": "0.0.0",
@@ -801,34 +829,6 @@
         "typescript": "^5",
       },
     },
-    "packages/relay-colonnade": {
-      "name": "@khoralabs/relay-colonnade",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/agent-relay": "workspace:*",
-        "@khoralabs/colonnade-persistence": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/relay-colonnade-social": {
-      "name": "@khoralabs/relay-colonnade-social",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/agent-relay": "workspace:*",
-        "@khoralabs/relay-colonnade": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
     "packages/vellum/bind-policy": {
       "name": "@khoralabs/vellum-bind-policy",
       "version": "0.0.0",
@@ -1078,9 +1078,9 @@
 
     "@khoralabs/reciprocal-rank-fusion": ["@khoralabs/reciprocal-rank-fusion@workspace:packages/libs/reciprocal-rank-fusion"],
 
-    "@khoralabs/relay-colonnade": ["@khoralabs/relay-colonnade@workspace:packages/relay-colonnade"],
+    "@khoralabs/relay-colonnade": ["@khoralabs/relay-colonnade@workspace:packages/at2/relay-colonnade"],
 
-    "@khoralabs/relay-colonnade-social": ["@khoralabs/relay-colonnade-social@workspace:packages/relay-colonnade-social"],
+    "@khoralabs/relay-colonnade-social": ["@khoralabs/relay-colonnade-social@workspace:packages/at2/relay-colonnade-social"],
 
     "@khoralabs/sqlite-migrate": ["@khoralabs/sqlite-migrate@workspace:packages/libs/sqlite-migrate"],
 
