@@ -1,0 +1,29 @@
+{
+  "name": "@khoralabs/cli-flow-nbc",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@khoralabs/cli-kit": "workspace:*",
+    "@khoralabs/obp-v2-model": "workspace:*",
+    "@khoralabs/obp-v2-nbc": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

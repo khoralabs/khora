@@ -227,6 +227,8 @@
       "dependencies": {
         "@khoralabs/agent-persisted-signer": "workspace:*",
         "@khoralabs/at2-client": "workspace:*",
+        "@khoralabs/cli-flow-nbc": "workspace:*",
+        "@khoralabs/cli-kit": "workspace:*",
         "@khoralabs/obp-v2-nbc": "workspace:*",
         "@khoralabs/vellum-client": "workspace:*",
         "@khoralabs/vellum-contracts": "workspace:*",
@@ -501,6 +503,33 @@
         "@khoralabs/atrium-contracts": "workspace:*",
         "zod": "^4",
       },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/cli-flow-nbc": {
+      "name": "@khoralabs/cli-flow-nbc",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/cli-kit": "workspace:*",
+        "@khoralabs/obp-v2-model": "workspace:*",
+        "@khoralabs/obp-v2-nbc": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/cli-kit": {
+      "name": "@khoralabs/cli-kit",
+      "version": "0.0.0",
       "devDependencies": {
         "@types/bun": "latest",
         "typescript": "^5",
@@ -1134,6 +1163,10 @@
     "@khoralabs/atrium-transport": ["@khoralabs/atrium-transport@workspace:packages/atrium/transport"],
 
     "@khoralabs/atrium-v2-server": ["@khoralabs/atrium-v2-server@workspace:apps/atrium/v2/server"],
+
+    "@khoralabs/cli-flow-nbc": ["@khoralabs/cli-flow-nbc@workspace:packages/cli-flow-nbc"],
+
+    "@khoralabs/cli-kit": ["@khoralabs/cli-kit@workspace:packages/cli-kit"],
 
     "@khoralabs/colonnade-persistence": ["@khoralabs/colonnade-persistence@workspace:packages/colonnade/impl/ts"],
 

@@ -54,6 +54,8 @@
     "packages/at2/relay-colonnade",
     "packages/at2/host",
     "packages/vellum/*",
+    "packages/cli-kit",
+    "packages/cli-flow-nbc",
     "apps/vellum/*"
   ]
 }
