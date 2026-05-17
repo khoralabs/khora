@@ -5,10 +5,10 @@ import {
   signAgentRequest,
 } from "@khoralabs/at2-auth";
 import type z from "zod";
-import { AtriumClientError } from "./errors.ts";
+import { At2ClientError } from "./errors.ts";
 
 /** Subset of `fetch` used by the client (avoids requiring Bun-specific properties on mocks). */
-export type AtriumFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+export type At2Fetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
 /** Structured query input for `requestJson` / `requestVoid`. */
 export type RequestQuery = Record<string, string>;
@@ -33,7 +33,7 @@ export type RequestVoidOptions = {
 };
 
 /** Unary host RPC surface (default binding: signed HTTP). */
-export type AtriumUnaryTransport = {
+export type At2UnaryTransport = {
   readonly base: string;
   readonly did: string;
   readonly signer: AgentSigner;
@@ -47,17 +47,17 @@ export type AtriumUnaryTransport = {
 export type CreateHttpTransportOptions = {
   baseUrl: string;
   signer: AgentSigner;
-  fetch?: AtriumFetch;
+  fetch?: At2Fetch;
   nowMs?: () => number;
   nonceFactory?: () => string;
 };
 
 /** Creates the default HTTP unary transport with DID-signed requests. */
-export function createHttpAtriumUnaryTransport(
+export function createHttpAt2UnaryTransport(
   opts: CreateHttpTransportOptions,
-): AtriumUnaryTransport {
+): At2UnaryTransport {
   const base = opts.baseUrl.trim().replace(/\/$/, "");
-  const fetchFn: AtriumFetch = opts.fetch ?? globalThis.fetch;
+  const fetchFn: At2Fetch = opts.fetch ?? globalThis.fetch;
   const signer = opts.signer;
   const now = opts.nowMs ?? (() => Date.now());
   const nonce = opts.nonceFactory ?? randomAgentRequestNonce;
@@ -121,18 +121,18 @@ export function createHttpAtriumUnaryTransport(
       body: bodyText.length > 0 ? bodyText : undefined,
     });
     if (!res.ok) {
-      throw new AtriumClientError(await readErrorMessage(res), res.status);
+      throw new At2ClientError(await readErrorMessage(res), res.status);
     }
     const text = await res.text();
     let json: unknown;
     try {
       json = JSON.parse(text) as unknown;
     } catch {
-      throw new AtriumClientError("Invalid JSON response", res.status, text);
+      throw new At2ClientError("Invalid JSON response", res.status, text);
     }
     const parsed = callOpts.parse.safeParse(json);
     if (!parsed.success) {
-      throw new AtriumClientError(
+      throw new At2ClientError(
         `Response shape mismatch: ${parsed.error.message}`,
         res.status,
         text,
@@ -153,7 +153,7 @@ export function createHttpAtriumUnaryTransport(
       headers: { Accept: "application/json", ...authHeaders },
     });
     if (!res.ok) {
-      throw new AtriumClientError(await readErrorMessage(res), res.status);
+      throw new At2ClientError(await readErrorMessage(res), res.status);
     }
   }
 

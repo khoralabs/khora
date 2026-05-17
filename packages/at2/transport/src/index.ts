@@ -1,27 +1,26 @@
 export type { At2WsData, At2WsUpgradePort } from "./at2-host-ws-transport.ts";
 export {
-  type AtriumClientEvent,
-  type AtriumDerivedInboxEvent,
-  type AtriumInboxListPayload,
+  type At2ClientEvent,
+  type At2DerivedInboxEvent,
   isDerivedInboxKindEvent,
   isInboxNotificationEvent,
-} from "./atrium-events.ts";
+} from "./client-events.ts";
 export type {
-  AtriumTransportBundle,
-  CreateAtriumTransportBundleFromEnvOptions,
-  CreateHttpAtriumTransportBundleOptions,
+  At2TransportBundle,
+  CreateAt2TransportBundleFromEnvOptions,
+  CreateHttpAt2TransportBundleOptions,
 } from "./bundle.ts";
 export {
-  createAtriumTransportBundleFromEnv,
-  createHttpAtriumTransportBundle,
+  createAt2TransportBundleFromEnv,
+  createHttpAt2TransportBundle,
 } from "./bundle.ts";
 export type {
-  AtriumDuplexTransport,
+  At2DuplexTransport,
   NegotiationDuplexArgs,
   NegotiationDuplexHandle,
 } from "./duplex-ws.ts";
-export { openWebSocketNegotiationDuplex, WsAtriumDuplexTransport } from "./duplex-ws.ts";
-export { AtriumClientError } from "./errors.ts";
+export { openWebSocketNegotiationDuplex, WsAt2DuplexTransport } from "./duplex-ws.ts";
+export { At2ClientError } from "./errors.ts";
 export type { ConnectInboxOptions, InboxWsHandlers } from "./inbox-connect.ts";
 export { connectInbox } from "./inbox-connect.ts";
 export type {
@@ -32,11 +31,11 @@ export type {
 } from "./inbox-ws.ts";
 export { inboxWebSocketUrl, parseInboxWebSocketMessage } from "./inbox-ws.ts";
 export type {
-  AtriumFetch,
-  AtriumUnaryTransport,
+  At2Fetch,
+  At2UnaryTransport,
   CreateHttpTransportOptions,
   RequestJsonOptions,
   RequestQuery,
   RequestVoidOptions,
 } from "./unary-http.ts";
-export { createHttpAtriumUnaryTransport, readErrorMessage } from "./unary-http.ts";
+export { createHttpAt2UnaryTransport, readErrorMessage } from "./unary-http.ts";

@@ -48,6 +48,7 @@
     "packages/atrium/*",
     "packages/colonnade/impl/ts",
     "packages/at2/auth",
+    "packages/at2/client",
     "packages/at2/transport",
     "packages/at2/contracts",
     "packages/at2/relay-colonnade",

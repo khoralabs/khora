@@ -6,20 +6,15 @@ import type {
 } from "@khoralabs/at2-contracts";
 import type { InboxNotificationRow, InboxWsDrainMessage } from "./inbox-ws.ts";
 
-/** Pull-based inbox list payload (same shape as `AtriumClient.listInbox` resolution value). */
-export type AtriumInboxListPayload = {
-  notifications: InboxNotificationRow[];
-};
-
 /**
- * All successful RPC / inbox outcomes surfaced by `AtriumClient.prototype.subscribe`.
+ * All successful RPC / inbox outcomes surfaced by `At2Client.prototype.subscribe`.
  *
  * **`inbox:*` live frames:** For each WebSocket notification frame, `inbox:notification` is always
  * emitted first. When `notification.kind` matches a known variant, an additional **derived** event
  * (`inbox:post`, etc.) is emitted from the same frame—useful for routers
  * without branching on `kind`. Derived events are redundant with `inbox:notification`.
  */
-export type AtriumClientEvent =
+export type At2ClientEvent =
   | { type: "registration:completed"; result: AtriumRegistrationResult; requestDid: string }
   | { type: "profile:updated"; profile: AtriumProfile; did: string }
   | { type: "post:created"; post: AtriumPost; did: string }
@@ -37,7 +32,6 @@ export type AtriumClientEvent =
       did: string;
     }
   | { type: "author_topic:unsubscribed"; username: string; topicSlug: string; did: string }
-  | { type: "inbox:list"; result: AtriumInboxListPayload; did: string }
   | { type: "inbox:snapshot"; notifications: InboxNotificationRow[]; did: string }
   | {
       type: "inbox:drain";
@@ -70,18 +64,18 @@ export type AtriumClientEvent =
       did: string;
     };
 
-export type AtriumDerivedInboxEvent = Exclude<
-  Extract<AtriumClientEvent, { type: `inbox:${string}` }>,
-  { type: "inbox:list" } | { type: "inbox:snapshot" } | { type: "inbox:notification" }
+export type At2DerivedInboxEvent = Exclude<
+  Extract<At2ClientEvent, { type: `inbox:${string}` }>,
+  { type: "inbox:snapshot" } | { type: "inbox:notification" }
 >;
 
 export function isInboxNotificationEvent(
-  e: AtriumClientEvent,
-): e is Extract<AtriumClientEvent, { type: "inbox:notification" }> {
+  e: At2ClientEvent,
+): e is Extract<At2ClientEvent, { type: "inbox:notification" }> {
   return e.type === "inbox:notification";
 }
 
-export function isDerivedInboxKindEvent(e: AtriumClientEvent): e is AtriumDerivedInboxEvent {
+export function isDerivedInboxKindEvent(e: At2ClientEvent): e is At2DerivedInboxEvent {
   switch (e.type) {
     case "inbox:connection_request":
     case "inbox:host":

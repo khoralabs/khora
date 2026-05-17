@@ -74,13 +74,13 @@ export async function openWebSocketNegotiationDuplex(
   };
 }
 
-export interface AtriumDuplexTransport {
+export interface At2DuplexTransport {
   openNegotiationDuplex(args: NegotiationDuplexArgs): Promise<NegotiationDuplexHandle>;
   connectInbox(opts: ConnectInboxOptions, handlers: InboxWsHandlers): Promise<{ close(): void }>;
 }
 
 /** Default duplex binding: WebSocket for NBC negotiation + inbox subscription. */
-export class WsAtriumDuplexTransport implements AtriumDuplexTransport {
+export class WsAt2DuplexTransport implements At2DuplexTransport {
   async openNegotiationDuplex(args: NegotiationDuplexArgs): Promise<NegotiationDuplexHandle> {
     return openWebSocketNegotiationDuplex(args);
   }

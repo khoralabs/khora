@@ -1,24 +1,24 @@
 import { describe, expect, test } from "bun:test";
-import { createAtriumTransportBundleFromEnv } from "./bundle.ts";
+import { createAt2TransportBundleFromEnv } from "./bundle.ts";
 
-describe("createAtriumTransportBundleFromEnv", () => {
-  test("http default bundles unary + duplex", () => {
-    const b = createAtriumTransportBundleFromEnv({
-      baseUrl: "http://h/",
-      signer: { did: "did:key:x", sign: async () => new Uint8Array(64) },
+describe("createAt2TransportBundleFromEnv", () => {
+  test("defaults to http bundle", () => {
+    const b = createAt2TransportBundleFromEnv({
+      baseUrl: "http://localhost:1",
+      signer: { did: "did:web:example" } as never,
       env: {},
     });
     expect(b.unary).toBeDefined();
     expect(b.duplex).toBeDefined();
   });
 
-  test("unsupported mode throws", () => {
+  test("rejects unknown mode", () => {
     expect(() =>
-      createAtriumTransportBundleFromEnv({
-        baseUrl: "http://h/",
-        signer: { did: "did:key:x", sign: async () => new Uint8Array(64) },
-        env: { ATRIUM_TRANSPORT: "ipc" },
+      createAt2TransportBundleFromEnv({
+        baseUrl: "http://localhost:1",
+        signer: { did: "did:web:example" } as never,
+        env: { AT2_TRANSPORT: "ipc" },
       }),
-    ).toThrow(/ATRIUM_TRANSPORT=ipc/);
+    ).toThrow(/AT2_TRANSPORT=ipc/);
   });
 });

@@ -1,0 +1,36 @@
+{
+  "name": "@khoralabs/at2-client",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "module": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./at2-config.schema.json": "./at2-config.schema.json"
+  },
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "build:schema": "bun run scripts/build-json-schema.ts"
+  },
+  "dependencies": {
+    "@khoralabs/at2-auth": "workspace:*",
+    "@khoralabs/at2-contracts": "workspace:*",
+    "@khoralabs/at2-transport": "workspace:*",
+    "@khoralabs/obp-v2-session-impl": "workspace:*",
+    "@khoralabs/obp-v2-transport-ws": "workspace:*",
+    "@khoralabs/agent-relay": "workspace:*",
+    "zod": "^4"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

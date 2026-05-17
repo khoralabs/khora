@@ -1,35 +1,35 @@
 import type { AgentSigner } from "@khoralabs/at2-auth";
-import type { AtriumDuplexTransport } from "./duplex-ws.ts";
-import { WsAtriumDuplexTransport } from "./duplex-ws.ts";
+import type { At2DuplexTransport } from "./duplex-ws.ts";
+import { WsAt2DuplexTransport } from "./duplex-ws.ts";
 import {
-  type AtriumFetch,
-  type AtriumUnaryTransport,
+  type At2Fetch,
+  type At2UnaryTransport,
   type CreateHttpTransportOptions,
-  createHttpAtriumUnaryTransport,
+  createHttpAt2UnaryTransport,
 } from "./unary-http.ts";
 
-export type AtriumTransportBundle = {
-  unary: AtriumUnaryTransport;
-  duplex: AtriumDuplexTransport;
+export type At2TransportBundle = {
+  unary: At2UnaryTransport;
+  duplex: At2DuplexTransport;
 };
 
-export type CreateHttpAtriumTransportBundleOptions = CreateHttpTransportOptions;
+export type CreateHttpAt2TransportBundleOptions = CreateHttpTransportOptions;
 
 /** HTTP unary + WebSocket duplex — production default. */
-export function createHttpAtriumTransportBundle(
-  opts: CreateHttpAtriumTransportBundleOptions,
-): AtriumTransportBundle {
+export function createHttpAt2TransportBundle(
+  opts: CreateHttpAt2TransportBundleOptions,
+): At2TransportBundle {
   return {
-    unary: createHttpAtriumUnaryTransport(opts),
-    duplex: new WsAtriumDuplexTransport(),
+    unary: createHttpAt2UnaryTransport(opts),
+    duplex: new WsAt2DuplexTransport(),
   };
 }
 
-export type CreateAtriumTransportBundleFromEnvOptions = {
-  /** HTTP origin when `ATRIUM_TRANSPORT` is `http` (default). */
+export type CreateAt2TransportBundleFromEnvOptions = {
+  /** HTTP origin when `AT2_TRANSPORT` is `http` (default). */
   baseUrl: string;
   signer: AgentSigner;
-  fetch?: AtriumFetch;
+  fetch?: At2Fetch;
   nowMs?: () => number;
   nonceFactory?: () => string;
   env?: NodeJS.ProcessEnv;
@@ -37,15 +37,15 @@ export type CreateAtriumTransportBundleFromEnvOptions = {
 
 /**
  * Deployment-time transport selection. Today only `http` is implemented (WebSocket duplex for NBC/inbox).
- * Future: `ipc`, `inproc` — extend without changing `AtriumClient` call sites.
+ * Future: `ipc`, `inproc` — extend without changing `At2Client` call sites.
  */
-export function createAtriumTransportBundleFromEnv(
-  opts: CreateAtriumTransportBundleFromEnvOptions,
-): AtriumTransportBundle {
+export function createAt2TransportBundleFromEnv(
+  opts: CreateAt2TransportBundleFromEnvOptions,
+): At2TransportBundle {
   const env = opts.env ?? process.env;
-  const mode = (env.ATRIUM_TRANSPORT ?? "http").trim().toLowerCase();
+  const mode = (env.AT2_TRANSPORT ?? "http").trim().toLowerCase();
   if (mode === "http" || mode === "") {
-    return createHttpAtriumTransportBundle({
+    return createHttpAt2TransportBundle({
       baseUrl: opts.baseUrl,
       signer: opts.signer,
       fetch: opts.fetch,
@@ -54,6 +54,6 @@ export function createAtriumTransportBundleFromEnv(
     });
   }
   throw new Error(
-    `ATRIUM_TRANSPORT=${mode} is not implemented; supported: http (omit or set explicitly).`,
+    `AT2_TRANSPORT=${mode} is not implemented; supported: http (omit or set explicitly).`,
   );
 }
