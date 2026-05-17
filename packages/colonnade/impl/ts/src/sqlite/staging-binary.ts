@@ -61,7 +61,8 @@ export function inboxStagingFromBlob(buf: Uint8Array): InboxStagingPayload {
   }
   const kind = buf[1];
   if (kind === KIND_INLINE) {
-    if (buf.byteLength < 2 + 4 + 32) throw new Error("SqliteColonnade: truncated inline staging blob");
+    if (buf.byteLength < 2 + 4 + 32)
+      throw new Error("SqliteColonnade: truncated inline staging blob");
     const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
     const pl = dv.getUint32(2, true);
     const end = 6 + pl + 32;
@@ -73,7 +74,8 @@ export function inboxStagingFromBlob(buf: Uint8Array): InboxStagingPayload {
     return { kind: "inline", inline: { bytes, content_hash } };
   }
   if (kind === KIND_POINTER) {
-    if (buf.byteLength < 2 + 2 + 2 + 32) throw new Error("SqliteColonnade: truncated pointer staging blob");
+    if (buf.byteLength < 2 + 2 + 2 + 32)
+      throw new Error("SqliteColonnade: truncated pointer staging blob");
     const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
     let o = 2;
     const cellLen = dv.getUint16(o, true);
@@ -103,7 +105,9 @@ export function writeOpToBlob(op: WriteOp): Uint8Array {
     const metaJson = utf8(JSON.stringify(a.metadata));
     const pb = a.payload_bytes;
     const pl = pb.byteLength;
-    const out = new Uint8Array(2 + 2 + pid.byteLength + 2 + rk.byteLength + 4 + pl + 4 + metaJson.byteLength);
+    const out = new Uint8Array(
+      2 + 2 + pid.byteLength + 2 + rk.byteLength + 4 + pl + 4 + metaJson.byteLength,
+    );
     const dv = new DataView(out.buffer);
     let o = 0;
     out[o++] = MAGIC_WRITE_OP;
@@ -173,12 +177,14 @@ export function writeOpFromBlob(buf: Uint8Array): WriteOp {
     o = o3;
     const pl = dv.getUint32(o, true);
     o += 4;
-    if (buf.byteLength < o + pl + 4) throw new Error("SqliteColonnade: truncated append_outbox blob");
+    if (buf.byteLength < o + pl + 4)
+      throw new Error("SqliteColonnade: truncated append_outbox blob");
     const payload_bytes = buf.slice(o, o + pl);
     o += pl;
     const ml = dv.getUint32(o, true);
     o += 4;
-    if (buf.byteLength < o + ml) throw new Error("SqliteColonnade: truncated append_outbox metadata");
+    if (buf.byteLength < o + ml)
+      throw new Error("SqliteColonnade: truncated append_outbox metadata");
     const { s: metaStr } = readUtf8(buf, o, ml);
     let metadata: unknown = {};
     try {
@@ -208,12 +214,14 @@ export function writeOpFromBlob(buf: Uint8Array): WriteOp {
     o = o3;
     const sl = dv.getUint32(o, true);
     o += 4;
-    if (buf.byteLength < o + sl + 2) throw new Error("SqliteColonnade: truncated enqueue_inbox blob");
+    if (buf.byteLength < o + sl + 2)
+      throw new Error("SqliteColonnade: truncated enqueue_inbox blob");
     const staging = inboxStagingFromBlob(buf.subarray(o, o + sl));
     o += sl;
     const cl = dv.getUint16(o, true);
     o += 2;
-    if (buf.byteLength < o + cl) throw new Error("SqliteColonnade: truncated enqueue_inbox correlation");
+    if (buf.byteLength < o + cl)
+      throw new Error("SqliteColonnade: truncated enqueue_inbox correlation");
     const { s: correlation_id } = readUtf8(buf, o, cl);
     return {
       kind: "enqueue_inbox",

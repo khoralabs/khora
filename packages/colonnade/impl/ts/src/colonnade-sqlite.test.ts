@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
-import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import { ColonnadePublicationClient } from "./colonnade-publication-client.ts";
 import { parseCatalogPointerShardIndex } from "./sqlite/catalog-pointer-id.ts";
@@ -115,7 +115,9 @@ describe("SQLite Colonnade cluster", () => {
         routing: {
           replicate_to_catalog: true,
           catalog_envelope: { title: "x" },
-          fan_out_targets: [{ recipient_cell_id: recipientCell, recipient_principal_id: "recipient" }],
+          fan_out_targets: [
+            { recipient_cell_id: recipientCell, recipient_principal_id: "recipient" },
+          ],
         },
       });
       const shardIdx = parseCatalogPointerShardIndex(res.catalog_pointer_id);
@@ -125,9 +127,9 @@ describe("SQLite Colonnade cluster", () => {
       const countOnShard = (si: number) =>
         Number(
           (
-            cluster.catalogDatabases[si]!.prepare(
-              "SELECT COUNT(*) AS c FROM catalog_pointers WHERE catalog_pointer_id = ?",
-            ).get(res.catalog_pointer_id) as { c: number }
+            cluster.catalogDatabases[si]
+              ?.prepare("SELECT COUNT(*) AS c FROM catalog_pointers WHERE catalog_pointer_id = ?")
+              .get(res.catalog_pointer_id) as { c: number }
           ).c,
         );
 

@@ -143,7 +143,9 @@ export class WorkerBackedCellStrategy implements CellPersistenceStrategy, Sqlite
 }
 
 /** Lazy-init worker façade so **`ResolveCellStrategy`** stays synchronous. */
-export class LazyWorkerBackedCellStrategy implements CellPersistenceStrategy, SqliteCellBatchCapable {
+export class LazyWorkerBackedCellStrategy
+  implements CellPersistenceStrategy, SqliteCellBatchCapable
+{
   private inner?: WorkerBackedCellStrategy;
   private readonly boot: Promise<WorkerBackedCellStrategy>;
 

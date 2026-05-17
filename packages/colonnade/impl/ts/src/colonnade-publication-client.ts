@@ -35,8 +35,7 @@ export class ColonnadePublicationClient {
 
     if (input.routing.replicate_to_catalog) {
       const discoveryKey = `colonnade:publication:${input.tenant_key}:${appendOut.content_hash}`;
-      catalogPointerId =
-        this.catalog.nextCatalogPointerId?.(input.tenant_key) ?? randomId("cptr");
+      catalogPointerId = this.catalog.nextCatalogPointerId?.(input.tenant_key) ?? randomId("cptr");
 
       const replicate = async () => {
         await this.catalog.upsertDiscoveryDocument({
@@ -106,7 +105,13 @@ export class ColonnadePublicationClient {
           cell_id: target.recipient_cell_id,
           tenant_key: tenantKey,
           recipient_principal_id: target.recipient_principal_id,
-          staging: stagingForFanOut(target, authorCellId, authorRecordKey, contentHash, payloadBytes),
+          staging: stagingForFanOut(
+            target,
+            authorCellId,
+            authorRecordKey,
+            contentHash,
+            payloadBytes,
+          ),
           correlation_id: randomId("fan"),
         }));
 
@@ -146,7 +151,9 @@ export class ColonnadePublicationClient {
       const ids = inboxIdsByCell.get(target.recipient_cell_id);
       const inbox_entry_id = ids?.shift();
       if (inbox_entry_id === undefined) {
-        throw new Error("ColonnadePublicationClient: missing inbox enqueue result for fan-out target");
+        throw new Error(
+          "ColonnadePublicationClient: missing inbox enqueue result for fan-out target",
+        );
       }
       refs.push({
         inbox_entry_id,

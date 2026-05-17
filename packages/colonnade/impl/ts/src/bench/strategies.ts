@@ -2,7 +2,10 @@ import type { CatalogPersistenceStrategy } from "../catalog-persistence-strategy
 import type { CellPersistenceStrategy, ResolveCellStrategy } from "../cell-persistence-strategy.ts";
 import { InMemoryCatalogPersistenceStrategy } from "../in-memory-catalog-strategy.ts";
 import { InMemoryCellPersistenceStrategy } from "../in-memory-cell-strategy.ts";
-import { createSqliteBenchmarkStrategies, type SqliteBenchmarkStrategiesOptions } from "./sqlite-strategies.ts";
+import {
+  createSqliteBenchmarkStrategies,
+  type SqliteBenchmarkStrategiesOptions,
+} from "./sqlite-strategies.ts";
 
 /**
  * Factories for comparing persistence backends under the same workloads.
@@ -34,9 +37,14 @@ export function createDefaultBenchmarkStrategies(): BenchmarkStrategies {
   };
 }
 
-const registry = new Map<string, () => BenchmarkStrategies>([["default", createDefaultBenchmarkStrategies]]);
+const registry = new Map<string, () => BenchmarkStrategies>([
+  ["default", createDefaultBenchmarkStrategies],
+]);
 
-export function registerBenchmarkStrategies(name: string, factory: () => BenchmarkStrategies): void {
+export function registerBenchmarkStrategies(
+  name: string,
+  factory: () => BenchmarkStrategies,
+): void {
   registry.set(name, factory);
 }
 
@@ -44,7 +52,10 @@ export type GetBenchmarkStrategiesOptions = {
   readonly sqlite?: SqliteBenchmarkStrategiesOptions;
 };
 
-export function getBenchmarkStrategies(name: string, opts?: GetBenchmarkStrategiesOptions): BenchmarkStrategies {
+export function getBenchmarkStrategies(
+  name: string,
+  opts?: GetBenchmarkStrategiesOptions,
+): BenchmarkStrategies {
   if (name === "sqlite") {
     return createSqliteBenchmarkStrategies(opts?.sqlite);
   }

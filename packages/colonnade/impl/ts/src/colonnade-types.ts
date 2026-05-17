@@ -39,7 +39,6 @@ export type PointerRef = {
   readonly content_hash: ContentHash;
 };
 
-
 export type InlinePayload = {
   readonly bytes: Uint8Array;
   readonly content_hash: ContentHash;
@@ -223,7 +222,6 @@ export type UpsertDiscoveryDocumentOutput = {
   readonly revision_token: string;
 };
 
-
 export type UpsertCatalogPointerInput = {
   readonly catalog_pointer_id: CatalogPointerId;
   readonly locator: OutboxLocator;
@@ -265,7 +263,6 @@ export type UpsertSourceMapPointerRowInput = {
 export type UpsertSourceMapPointerRowOutput = {
   readonly source_row_content_hash: ContentHash;
 };
-
 
 export type LookupSourceMapPointerInput = {
   readonly tenant_key: TenantKey;

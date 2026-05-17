@@ -75,7 +75,10 @@ Known scenarios: ${BENCH_SCENARIO_IDS.join(", ")}
 }
 
 function parseCommaInts(s: string, flag: string): number[] {
-  const parts = s.split(",").map((x) => x.trim()).filter((x) => x.length > 0);
+  const parts = s
+    .split(",")
+    .map((x) => x.trim())
+    .filter((x) => x.length > 0);
   if (parts.length === 0) {
     throw new Error(`${flag} must list at least one integer`);
   }
@@ -91,7 +94,10 @@ function parseCommaInts(s: string, flag: string): number[] {
 }
 
 function parseScenarios(s: string): ScenarioId[] {
-  const parts = s.split(",").map((x) => x.trim()).filter((x) => x.length > 0);
+  const parts = s
+    .split(",")
+    .map((x) => x.trim())
+    .filter((x) => x.length > 0);
   const out: ScenarioId[] = [];
   for (const p of parts) {
     if (!BENCH_SCENARIO_IDS.includes(p as ScenarioId)) {

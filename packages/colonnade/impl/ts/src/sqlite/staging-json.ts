@@ -44,7 +44,11 @@ export function inboxStagingFromJson(text: string): InboxStagingPayload {
       };
     };
   };
-  if (v.kind === "inline" && v.inline?.bytes_b64 !== undefined && v.inline.content_hash !== undefined) {
+  if (
+    v.kind === "inline" &&
+    v.inline?.bytes_b64 !== undefined &&
+    v.inline.content_hash !== undefined
+  ) {
     return {
       kind: "inline",
       inline: {

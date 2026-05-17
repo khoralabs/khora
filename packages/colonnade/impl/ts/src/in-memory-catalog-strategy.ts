@@ -20,10 +20,7 @@ import type {
   UpsertSourceMapPointerRowInput,
   UpsertSourceMapPointerRowOutput,
 } from "./colonnade-types.ts";
-import {
-  canonicalSourceMapRowBytes,
-  sha256HexLower,
-} from "./hash.ts";
+import { canonicalSourceMapRowBytes, sha256HexLower } from "./hash.ts";
 import { encodeCatalogPointerId } from "./sqlite/catalog-pointer-id.ts";
 
 const ZERO_HASH = "0".repeat(64);

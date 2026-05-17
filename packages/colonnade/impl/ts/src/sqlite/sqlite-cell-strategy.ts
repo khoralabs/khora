@@ -25,9 +25,14 @@ import type {
 } from "../colonnade-types.ts";
 import { assertContentHash, randomId, sha256HexLower } from "../hash.ts";
 import { ensureCellSchema } from "./schema-cell.ts";
-import { inboxStagingFromBlob, inboxStagingToBlob, writeOpFromBlob, writeOpToBlob } from "./staging-binary.ts";
-import { applySqlitePerfPragmas } from "./sqlite-pragmas.ts";
 import { runSerializedSqliteImmediateTransaction } from "./sqlite-immediate-txn.ts";
+import { applySqlitePerfPragmas } from "./sqlite-pragmas.ts";
+import {
+  inboxStagingFromBlob,
+  inboxStagingToBlob,
+  writeOpFromBlob,
+  writeOpToBlob,
+} from "./staging-binary.ts";
 
 export type SqliteCellBatchCapable = {
   enqueueInboxDeliveriesBatch(
@@ -86,12 +91,16 @@ export class SqliteCellPersistenceStrategy implements CellPersistenceStrategy {
     this.stmtCountInbox = this.db.prepare(
       `SELECT COUNT(*) AS c FROM inbox WHERE tenant_key = ? AND recipient_principal_id = ?`,
     );
-    this.stmtFetchOutbox = this.db.prepare(`SELECT payload, content_hash FROM outbox WHERE record_key = ?`);
+    this.stmtFetchOutbox = this.db.prepare(
+      `SELECT payload, content_hash FROM outbox WHERE record_key = ?`,
+    );
     this.stmtSelectInboxDrain = this.db.prepare(
       `SELECT recipient_principal_id, tenant_key, staging FROM inbox WHERE inbox_entry_id = ?`,
     );
     this.stmtDeleteInbox = this.db.prepare(`DELETE FROM inbox WHERE inbox_entry_id = ?`);
-    this.stmtAppendWriteLog = this.db.prepare(`INSERT INTO write_log(correlation_id, op) VALUES (?, ?)`);
+    this.stmtAppendWriteLog = this.db.prepare(
+      `INSERT INTO write_log(correlation_id, op) VALUES (?, ?)`,
+    );
     this.stmtLastInsertRowid = this.db.prepare(`SELECT last_insert_rowid() AS id`);
     this.stmtFetchWriteLog = this.db.prepare(
       `SELECT log_sequence, correlation_id, op FROM write_log WHERE log_sequence > ? ORDER BY log_sequence ASC LIMIT ?`,
@@ -141,7 +150,9 @@ export class SqliteCellPersistenceStrategy implements CellPersistenceStrategy {
   enqueueInboxDeliveriesBatch(
     inputs: readonly EnqueueInboxDeliveryInput[],
   ): Promise<readonly EnqueueInboxDeliveryOutput[]> {
-    return this.runImmediateTransaction(async () => inputs.map((i) => this.enqueueInboxDeliverySync(i)));
+    return this.runImmediateTransaction(async () =>
+      inputs.map((i) => this.enqueueInboxDeliverySync(i)),
+    );
   }
 
   private enqueueInboxDeliverySync(input: EnqueueInboxDeliveryInput): EnqueueInboxDeliveryOutput {
@@ -165,14 +176,21 @@ export class SqliteCellPersistenceStrategy implements CellPersistenceStrategy {
   ): Promise<ListPendingInboxEntriesOutput> {
     this.assertCell(input.cell_id);
     const offset = parseCursor(input.cursor);
-    const rows = this.stmtListInbox.all(input.tenant_key, input.principal_id, input.limit, offset) as {
+    const rows = this.stmtListInbox.all(
+      input.tenant_key,
+      input.principal_id,
+      input.limit,
+      offset,
+    ) as {
       inbox_entry_id: string;
       recipient_principal_id: string;
       staging: Uint8Array | Buffer;
       enqueued_at_ms: number;
     }[];
 
-    const total = Number((this.stmtCountInbox.get(input.tenant_key, input.principal_id) as { c: number }).c);
+    const total = Number(
+      (this.stmtCountInbox.get(input.tenant_key, input.principal_id) as { c: number }).c,
+    );
     const nextOffset = offset + rows.length;
     const next_cursor = nextOffset < total ? String(nextOffset) : "";
 
@@ -255,7 +273,9 @@ export class SqliteCellPersistenceStrategy implements CellPersistenceStrategy {
   appendWriteLogEntriesBatch(
     inputs: readonly AppendWriteLogEntryInput[],
   ): Promise<readonly AppendWriteLogEntryOutput[]> {
-    return this.runImmediateTransaction(async () => inputs.map((i) => this.appendWriteLogEntrySync(i)));
+    return this.runImmediateTransaction(async () =>
+      inputs.map((i) => this.appendWriteLogEntrySync(i)),
+    );
   }
 
   private appendWriteLogEntrySync(input: AppendWriteLogEntryInput): AppendWriteLogEntryOutput {
@@ -285,8 +305,7 @@ export class SqliteCellPersistenceStrategy implements CellPersistenceStrategy {
       op: writeOpFromBlob(asUint8(r.op)) as WriteOp,
     }));
 
-    const lastSeq =
-      rows.length > 0 ? String(rows[rows.length - 1]?.log_sequence ?? afterSafe) : "";
+    const lastSeq = rows.length > 0 ? String(rows[rows.length - 1]?.log_sequence ?? afterSafe) : "";
 
     return Promise.resolve({ records, next_cursor: lastSeq });
   }
@@ -310,7 +329,10 @@ function parseCursor(cursor: string): number {
   return Number.isFinite(n) && n >= 0 ? n : 0;
 }
 
-function verifyStaging(staging: InboxStagingPayload, resolved: ResolvedPayload | undefined): boolean {
+function verifyStaging(
+  staging: InboxStagingPayload,
+  resolved: ResolvedPayload | undefined,
+): boolean {
   if (staging.kind === "inline") {
     const h = sha256HexLower(staging.inline.bytes);
     return h === staging.inline.content_hash;

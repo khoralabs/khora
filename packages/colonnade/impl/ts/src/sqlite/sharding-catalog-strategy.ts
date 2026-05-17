@@ -26,7 +26,10 @@ import { catalogShardIndexForTenant } from "./tenant-catalog-shard.ts";
  */
 export class ShardingCatalogPersistenceStrategy implements CatalogPersistenceStrategy {
   readonly nextCatalogPointerId: (tenantKey: string) => string;
-  readonly runImmediateTransactionForTenant: <T>(tenantKey: string, fn: () => Promise<T>) => Promise<T>;
+  readonly runImmediateTransactionForTenant: <T>(
+    tenantKey: string,
+    fn: () => Promise<T>,
+  ) => Promise<T>;
 
   constructor(private readonly shards: readonly CatalogPersistenceStrategy[]) {
     if (shards.length < 1) {
@@ -41,7 +44,10 @@ export class ShardingCatalogPersistenceStrategy implements CatalogPersistenceStr
       }
       return gen.call(leaf, tenantKey);
     };
-    this.runImmediateTransactionForTenant = async <T>(tenantKey: string, fn: () => Promise<T>): Promise<T> => {
+    this.runImmediateTransactionForTenant = async <T>(
+      tenantKey: string,
+      fn: () => Promise<T>,
+    ): Promise<T> => {
       const i = catalogShardIndexForTenant(tenantKey, shards.length);
       const leaf = shards[i]!;
       const run = leaf.runImmediateTransactionForTenant;
@@ -92,7 +98,9 @@ export class ShardingCatalogPersistenceStrategy implements CatalogPersistenceStr
     return head.upsertCatalogPointer(input);
   }
 
-  async resolveCatalogPointer(input: ResolveCatalogPointerInput): Promise<ResolveCatalogPointerOutput> {
+  async resolveCatalogPointer(
+    input: ResolveCatalogPointerInput,
+  ): Promise<ResolveCatalogPointerOutput> {
     const idx = parseCatalogPointerShardIndex(input.catalog_pointer_id);
     if (idx !== null) {
       const s = this.shards[idx];
@@ -104,11 +112,11 @@ export class ShardingCatalogPersistenceStrategy implements CatalogPersistenceStr
     for (const s of this.shards) {
       try {
         return await s.resolveCatalogPointer(input);
-      } catch {
-        continue;
-      }
+      } catch {}
     }
-    throw new Error(`ShardingCatalogPersistenceStrategy: unknown catalog_pointer_id ${input.catalog_pointer_id}`);
+    throw new Error(
+      `ShardingCatalogPersistenceStrategy: unknown catalog_pointer_id ${input.catalog_pointer_id}`,
+    );
   }
 
   upsertSourceMapPointerRow(
@@ -117,7 +125,9 @@ export class ShardingCatalogPersistenceStrategy implements CatalogPersistenceStr
     return this.shardForTenantKey(input.tenant_key).upsertSourceMapPointerRow(input);
   }
 
-  lookupSourceMapPointer(input: LookupSourceMapPointerInput): Promise<LookupSourceMapPointerOutput> {
+  lookupSourceMapPointer(
+    input: LookupSourceMapPointerInput,
+  ): Promise<LookupSourceMapPointerOutput> {
     return this.shardForTenantKey(input.tenant_key).lookupSourceMapPointer(input);
   }
 

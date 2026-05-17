@@ -1,5 +1,9 @@
 import type { ResolveCellStrategy } from "./cell-persistence-strategy.ts";
-import type { RoutedWrite, SubmitRoutedWritesInput, SubmitRoutedWritesOutput } from "./colonnade-types.ts";
+import type {
+  RoutedWrite,
+  SubmitRoutedWritesInput,
+  SubmitRoutedWritesOutput,
+} from "./colonnade-types.ts";
 import { supportsSqliteCellBatch } from "./sqlite/sqlite-cell-strategy.ts";
 
 /**

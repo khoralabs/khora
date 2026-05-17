@@ -22,14 +22,18 @@ import { assertContentHash } from "./hash.ts";
 /** Thin facade over {@link CatalogPersistenceStrategy}; room for shared validation later. */
 export class CatalogPersistenceClient implements CatalogPersistenceStrategy {
   readonly nextCatalogPointerId?: (tenantKey: string) => string;
-  readonly runImmediateTransactionForTenant?: <T>(tenantKey: string, fn: () => Promise<T>) => Promise<T>;
+  readonly runImmediateTransactionForTenant?: <T>(
+    tenantKey: string,
+    fn: () => Promise<T>,
+  ) => Promise<T>;
 
   constructor(private readonly strategy: CatalogPersistenceStrategy) {
     if (strategy.nextCatalogPointerId !== undefined) {
       this.nextCatalogPointerId = strategy.nextCatalogPointerId.bind(strategy);
     }
     if (strategy.runImmediateTransactionForTenant !== undefined) {
-      this.runImmediateTransactionForTenant = strategy.runImmediateTransactionForTenant.bind(strategy);
+      this.runImmediateTransactionForTenant =
+        strategy.runImmediateTransactionForTenant.bind(strategy);
     }
   }
 
@@ -43,7 +47,9 @@ export class CatalogPersistenceClient implements CatalogPersistenceStrategy {
     return this.strategy.upsertCatalogPointer(input);
   }
 
-  async resolveCatalogPointer(input: ResolveCatalogPointerInput): Promise<ResolveCatalogPointerOutput> {
+  async resolveCatalogPointer(
+    input: ResolveCatalogPointerInput,
+  ): Promise<ResolveCatalogPointerOutput> {
     const out = await this.strategy.resolveCatalogPointer(input);
     assertContentHash(out.content_hash);
     return out;
@@ -57,7 +63,9 @@ export class CatalogPersistenceClient implements CatalogPersistenceStrategy {
     return out;
   }
 
-  async lookupSourceMapPointer(input: LookupSourceMapPointerInput): Promise<LookupSourceMapPointerOutput> {
+  async lookupSourceMapPointer(
+    input: LookupSourceMapPointerInput,
+  ): Promise<LookupSourceMapPointerOutput> {
     const out = await this.strategy.lookupSourceMapPointer(input);
     if (out.found) {
       assertContentHash(out.pointer.content_hash);
