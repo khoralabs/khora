@@ -15,6 +15,8 @@ export type {
   AtriumProfilePatch,
   AtriumRegistrationRequestBody,
   AtriumRegistrationResult,
+  AtriumRelationshipItem,
+  AtriumRelationshipListResponse,
 } from "@khoralabs/at2-contracts";
 export {
   atriumPostLexicalText,
@@ -36,6 +38,7 @@ export {
   zAtriumRegisterResult,
   zAtriumRegistrationMetadata,
   zAtriumRegistrationRequestBody,
+  zAtriumRelationshipListResponse,
 } from "@khoralabs/at2-contracts";
 /** Transport helpers live in `@khoralabs/at2-transport`; these are commonly paired with the client. */
 export {
@@ -50,11 +53,15 @@ export {
   isInboxNotificationEvent,
   parseInboxWebSocketMessage,
 } from "@khoralabs/at2-transport";
-export type { At2Fetch, At2TransportBundle, At2UnaryTransport, InboxWsHandlers } from "@khoralabs/at2-transport";
+export type { At2Fetch, At2RoomLifecycleHostEvent, At2TransportBundle, At2UnaryTransport, InboxWsHandlers } from "@khoralabs/at2-transport";
 export {
   At2Client,
   type At2ClientOptions,
   type AtriumRoomCreateBody,
+  type AtriumRoomCreateResponse,
+  type AtriumRoomJoinRequestBody,
+  type AtriumRoomJoinTicketResponse,
+  type AtriumRoomMintTicketBody,
   type AtriumRoomTicketResponse,
   type AuthorSubscriptionsSnapshot,
   type ObpFrameConnection,

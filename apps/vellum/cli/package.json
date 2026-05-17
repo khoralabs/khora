@@ -11,6 +11,8 @@
     "start": "bun run ./src/cli.ts"
   },
   "dependencies": {
+    "@khoralabs/agent-persisted-signer": "workspace:*",
+    "@khoralabs/at2-client": "workspace:*",
     "@khoralabs/obp-v2-nbc": "workspace:*",
     "@khoralabs/vellum-client": "workspace:*",
     "@khoralabs/vellum-contracts": "workspace:*"

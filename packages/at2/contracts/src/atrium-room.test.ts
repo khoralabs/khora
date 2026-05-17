@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   zAtriumRoomCreateBody,
+  zAtriumRoomJoinTicketResponse,
   zAtriumRoomListResponse,
   zAtriumRoomTicketResponse,
 } from "./atrium-room.ts";
@@ -22,6 +23,16 @@ describe("atrium-room contracts", () => {
       webSocketUrl: "ws://localhost/v1/atrium/rooms/r1/ws?ticket=t",
     });
     expect(r.roomId).toBe("r1");
+  });
+
+  test("zAtriumRoomJoinTicketResponse requires creatorDid", () => {
+    const r = zAtriumRoomJoinTicketResponse.parse({
+      roomId: "r1",
+      ticket: "t",
+      webSocketUrl: "ws://localhost/ws?ticket=t",
+      creatorDid: "did:key:creator",
+    });
+    expect(r.creatorDid).toBe("did:key:creator");
   });
 
   test("zAtriumRoomListResponse", () => {

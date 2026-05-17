@@ -18,18 +18,20 @@ function daemonJsonOutput(): boolean {
 }
 
 function daemonPathConfig(): VellumPathConfig {
-  const dataDir = process.env.ATRIUM_DATA_DIR?.trim();
+  const dataDir =
+    process.env.AT2_DATA_DIR?.trim() ?? process.env.ATRIUM_DATA_DIR?.trim();
   return { dataDir: dataDir !== undefined && dataDir.length > 0 ? dataDir : undefined };
 }
 
 async function loadSigner(): Promise<PersistableAgentSigner> {
   const p =
+    process.env.AT2_AGENT_KEY_PATH?.trim() ??
     process.env.ATRIUM_AGENT_KEY_PATH?.trim() ??
     process.env.VELLUM_AGENT_KEY_PATH?.trim() ??
     defaultIdentityPath();
   const signer = await loadIdentity(p);
   if (signer === undefined) {
-    console.error(`No agent identity at ${p}. Run 'atrium key generate' first.`);
+    console.error(`No agent identity at ${p}. Generate an Ed25519 identity first.`);
     process.exit(1);
   }
   return signer;

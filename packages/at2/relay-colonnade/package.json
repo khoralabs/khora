@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@khoralabs/agent-relay": "workspace:*",
+    "@khoralabs/at2-contracts": "workspace:*",
     "@khoralabs/colonnade-persistence": "workspace:*"
   },
   "peerDependencies": {

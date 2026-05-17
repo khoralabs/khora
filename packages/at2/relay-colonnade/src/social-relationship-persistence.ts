@@ -164,6 +164,22 @@ export function createSocialRelationshipPersistence(deps: {
       })();
     },
 
+    refreshRelationshipTicketExpiry(params: { channelId: string; expiresAtMs: number }): void {
+      catalogDb.transaction(() => {
+        const current = getRelationshipImpl(params.channelId);
+        if (current === undefined) return;
+        const next: SocialRelationshipRow = { ...current, expiresAtMs: params.expiresAtMs };
+        const pointer = relaySyntheticPointer(tenantKey, SOURCE_RELATIONSHIP, params.channelId);
+        store.upsertRow({
+          tenant_key: tenantKey,
+          source_map_id: SOURCE_RELATIONSHIP,
+          entry_key: params.channelId,
+          pointer,
+          projection: next,
+        });
+      })();
+    },
+
     listRelationshipsForPrincipal(principalId: PrincipalId): SocialRelationshipRow[] {
       const { found, projection } = store.lookupProjection(
         tenantKey,

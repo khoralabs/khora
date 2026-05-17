@@ -1,3 +1,4 @@
+import type { At2RoomLifecycleHostEvent } from "@khoralabs/at2-transport";
 import { AgentRelay, createFrameChannelHub, createInboxWsHub } from "@khoralabs/agent-relay";
 import { createAtriumDidAuth } from "@khoralabs/at2-auth";
 import type { AtriumPost, AtriumProfile } from "@khoralabs/at2-contracts";
@@ -15,8 +16,9 @@ export async function createAt2Host(opts: {
   catalogPath: string;
   framesDbPath: string;
   tenantKey?: string;
+  roomLifecycle?: (event: At2RoomLifecycleHostEvent) => void;
 }): Promise<At2HostContext> {
-  const { persistence, catalogDb, store, tenantKey } = await createRelayColonnadeSocial(opts);
+  const { persistence, social, catalogDb, store, tenantKey } = await createRelayColonnadeSocial(opts);
   const seedTokens = parseInviteSeedTokens(process.env.AT2_INVITE_SEED_TOKENS);
   validateInviteEnvConfig(seedTokens);
   const pepper = readInvitePepper();
@@ -41,5 +43,15 @@ export async function createAt2Host(opts: {
     frameChannelHub: roomHub,
     onEvent: createAt2RelayOnEvent({ store, tenantKey, catalogDb }),
   });
-  return { host, auth, store, tenantKey, catalogDb, roomHub, invitesRepo };
+  return {
+    host,
+    auth,
+    store,
+    tenantKey,
+    catalogDb,
+    roomHub,
+    social,
+    invitesRepo,
+    ...(opts.roomLifecycle !== undefined ? { roomLifecycle: opts.roomLifecycle } : {}),
+  };
 }

@@ -2,7 +2,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { defaultIdentityPath, loadIdentity } from "@khoralabs/agent-persisted-signer";
-import { AtriumClient } from "@khoralabs/atrium-client";
+import { At2Client } from "@khoralabs/at2-client";
 import {
   canonicalSessionParties,
   normalizeSessionInit,
@@ -34,7 +34,7 @@ import { SqliteVellumReadModel } from "./persistence/sqlite-vellum-read-persiste
 import type { VellumReadModel } from "./persistence/vellum-read-persistence.ts";
 
 export type VellumClientOptions = {
-  /** Atrium HTTP origin (e.g. from `atrium` config). */
+  /** AT2 HTTP origin (e.g. v2 host). */
   baseUrl: string;
   roomId: string;
   dataDir?: string | undefined;
@@ -127,25 +127,32 @@ export class VellumClient {
 
   /** Ensure room daemon is running with a fresh ticket and local control server. */
   async connect(options?: { webSocketUrl?: string }): Promise<void> {
-    const idPath = process.env.ATRIUM_AGENT_KEY_PATH?.trim() ?? defaultIdentityPath();
+    const idPath =
+      process.env.AT2_AGENT_KEY_PATH?.trim() ??
+      process.env.ATRIUM_AGENT_KEY_PATH?.trim() ??
+      defaultIdentityPath();
     const signer = await loadIdentity(idPath);
     if (signer === undefined) {
       throw new Error(`identity not found at ${idPath}`);
     }
-    let webSocketUrl = options?.webSocketUrl;
-    const ac = new AtriumClient({
+    let webSocketUrl = options?.webSocketUrl ?? process.env.VELLUM_ROOM_WS_URL?.trim();
+    const ac = new At2Client({
       baseUrl: this.opts.baseUrl,
       signer,
     });
     try {
       if (webSocketUrl === undefined || webSocketUrl.length === 0) {
-        const out = await ac.mintAtriumRoomTicket(this.opts.roomId);
+        const out = await ac.mintRoomTicket(this.opts.roomId);
         webSocketUrl = out.webSocketUrl;
       }
     } finally {
       ac.dispose();
     }
 
+    const dataDir =
+      this.opts.dataDir !== undefined && this.opts.dataDir.length > 0
+        ? this.opts.dataDir
+        : undefined;
     Bun.spawn({
       cmd: ["bun", "run", daemonEntryPath()],
       env: {
@@ -153,9 +160,7 @@ export class VellumClient {
         VELLUM_ROOM_ID: this.opts.roomId,
         VELLUM_ROOM_WS_URL: webSocketUrl,
         VELLUM_BASE_URL: this.opts.baseUrl,
-        ...(this.opts.dataDir !== undefined && this.opts.dataDir.length > 0
-          ? { ATRIUM_DATA_DIR: this.opts.dataDir }
-          : {}),
+        ...(dataDir !== undefined ? { AT2_DATA_DIR: dataDir, ATRIUM_DATA_DIR: dataDir } : {}),
       },
       stdout: "inherit",
       stderr: "inherit",
@@ -174,7 +179,10 @@ export class VellumClient {
     /** NBC genesis body (extend + ≥1 port, no bind); defaults to {@link DEFAULT_GENESIS_TURN_WIRE}. */
     genesisTurn?: Record<string, unknown>;
   }): Promise<ChainInitResponse> {
-    const idPath = process.env.ATRIUM_AGENT_KEY_PATH?.trim() ?? defaultIdentityPath();
+    const idPath =
+      process.env.AT2_AGENT_KEY_PATH?.trim() ??
+      process.env.ATRIUM_AGENT_KEY_PATH?.trim() ??
+      defaultIdentityPath();
     const signer = await loadIdentity(idPath);
     if (signer === undefined) {
       throw new Error(`identity not found at ${idPath}`);

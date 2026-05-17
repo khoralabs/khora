@@ -225,6 +225,8 @@
         "vellum": "./src/cli.ts",
       },
       "dependencies": {
+        "@khoralabs/agent-persisted-signer": "workspace:*",
+        "@khoralabs/at2-client": "workspace:*",
         "@khoralabs/obp-v2-nbc": "workspace:*",
         "@khoralabs/vellum-client": "workspace:*",
         "@khoralabs/vellum-contracts": "workspace:*",
@@ -242,7 +244,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/agent-persisted-signer": "workspace:*",
-        "@khoralabs/atrium-client": "workspace:*",
+        "@khoralabs/at2-client": "workspace:*",
         "@khoralabs/obp-v2-frames-impl": "workspace:*",
         "@khoralabs/obp-v2-model": "workspace:*",
         "@khoralabs/obp-v2-nbc": "workspace:*",
@@ -392,6 +394,7 @@
         "@khoralabs/agent-relay": "workspace:*",
         "@khoralabs/at2-auth": "workspace:*",
         "@khoralabs/at2-contracts": "workspace:*",
+        "@khoralabs/at2-transport": "workspace:*",
         "@khoralabs/relay-colonnade": "workspace:*",
         "zod": "^4",
       },
@@ -408,6 +411,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/agent-relay": "workspace:*",
+        "@khoralabs/at2-contracts": "workspace:*",
         "@khoralabs/colonnade-persistence": "workspace:*",
       },
       "devDependencies": {
@@ -942,7 +946,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/agent-persisted-signer": "workspace:*",
-        "@khoralabs/atrium-client": "workspace:*",
+        "@khoralabs/at2-client": "workspace:*",
         "@khoralabs/obp-v2-frames-impl": "workspace:*",
         "@khoralabs/obp-v2-model": "workspace:*",
         "@khoralabs/obp-v2-nbc": "workspace:*",

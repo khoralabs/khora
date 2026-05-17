@@ -21,8 +21,16 @@ import {
   handleListAuthorSubscriptions,
 } from "./authors.ts";
 import { handleInvitePreview, handleListInvites } from "./invites.ts";
+import { handleListRelationships } from "./relationships.ts";
 import { handleRegister } from "./register.ts";
-import { handleRoomWsUpgrade, handleRoomsCreate, isRoomWsPath } from "./rooms.ts";
+import {
+  handleRoomWsUpgrade,
+  handleRoomsCreate,
+  handleRoomsJoin,
+  handleRoomsMintTicket,
+  isRoomWsPath,
+  parseRoomsMintTicketRoomId,
+} from "./rooms.ts";
 import { jsonError, rateLimitedResponse } from "./responses.ts";
 import { handleTopicSubscribe, handleTopicUnsubscribe } from "./topics.ts";
 import { handleInboxWsUpgrade } from "../ws/inbox.ts";
@@ -58,6 +66,10 @@ export async function route(
 
   if (req.method === "GET" && url.pathname === "/v1/invites") {
     return handleListInvites(req, url, deps);
+  }
+
+  if (req.method === "GET" && url.pathname === "/v1/relationships") {
+    return handleListRelationships(req, url, deps);
   }
 
   if (req.method === "GET" && url.pathname === "/v1/authors/subscriptions") {
@@ -97,6 +109,17 @@ export async function route(
 
   if (req.method === "POST" && url.pathname === "/v1/rooms") {
     return handleRoomsCreate(req, url, deps);
+  }
+
+  if (req.method === "POST" && url.pathname === "/v1/rooms/join") {
+    return handleRoomsJoin(req, url, deps);
+  }
+
+  if (req.method === "POST") {
+    const roomIdForTicket = parseRoomsMintTicketRoomId(url.pathname);
+    if (roomIdForTicket !== undefined) {
+      return handleRoomsMintTicket(req, url, deps, roomIdForTicket);
+    }
   }
 
   if (req.method === "GET" && url.pathname === "/v1/inbox/ws") {

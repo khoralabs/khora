@@ -32,5 +32,10 @@ export type SocialRelationshipPersistence = {
   }): void;
   getRelationship(channelId: string): SocialRelationshipRow | undefined;
   bindPeer(params: { channelId: string; peerPrincipalId: PrincipalId }): void;
+  /**
+   * Align stored `expiresAtMs` with registry after `rotateChannelTicket` (mint/rejoin ticket TTL end).
+   * No-op if no relationship row exists for the channel.
+   */
+  refreshRelationshipTicketExpiry(params: { channelId: string; expiresAtMs: number }): void;
   listRelationshipsForPrincipal(principalId: PrincipalId): SocialRelationshipRow[];
 };

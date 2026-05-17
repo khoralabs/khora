@@ -2,6 +2,7 @@ export type { At2WsData, At2WsUpgradePort } from "./at2-host-ws-transport.ts";
 export {
   type At2ClientEvent,
   type At2DerivedInboxEvent,
+  type At2RoomLifecycleHostEvent,
   isDerivedInboxKindEvent,
   isInboxNotificationEvent,
 } from "./client-events.ts";

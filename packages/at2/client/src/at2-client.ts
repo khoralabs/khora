@@ -9,7 +9,12 @@ import type {
   AtriumProfilePatch,
   AtriumRegistrationRequestBody,
   AtriumRegistrationResult,
+  AtriumRelationshipListResponse,
   AtriumRoomCreateBody,
+  AtriumRoomCreateResponse,
+  AtriumRoomJoinRequestBody,
+  AtriumRoomJoinTicketResponse,
+  AtriumRoomMintTicketBody,
   AtriumRoomTicketResponse,
 } from "@khoralabs/at2-contracts";
 import {
@@ -43,6 +48,7 @@ import {
 } from "./http/authors.ts";
 import { health } from "./http/health.ts";
 import { listInvites, previewInvite } from "./http/invites.ts";
+import { listRelationships as httpListRelationships } from "./http/relationships.ts";
 import { createPost, deletePost, getPost as httpGetPost, updatePost } from "./http/posts.ts";
 import {
   lookupProfileByDid as httpLookupProfileByDid,
@@ -51,11 +57,20 @@ import {
   updateProfile,
 } from "./http/profile.ts";
 import { register } from "./http/register.ts";
-import { createRoom as httpCreateRoom } from "./http/rooms.ts";
+import {
+  createRoom as httpCreateRoom,
+  mintRoomTicket as httpMintRoomTicket,
+  redeemRoomInvite as httpRedeemRoomInvite,
+} from "./http/rooms.ts";
 import { subscribeTopic, unsubscribeTopic } from "./http/topics.ts";
 
 export type {
+  AtriumRelationshipListResponse,
   AtriumRoomCreateBody,
+  AtriumRoomCreateResponse,
+  AtriumRoomJoinRequestBody,
+  AtriumRoomJoinTicketResponse,
+  AtriumRoomMintTicketBody,
   AtriumRoomTicketResponse,
 } from "@khoralabs/at2-contracts";
 export type {
@@ -205,6 +220,10 @@ export class At2Client {
     return listInvites(this.transport);
   }
 
+  listRelationships(): Promise<AtriumRelationshipListResponse> {
+    return httpListRelationships(this.transport);
+  }
+
   previewInvite(token: string): Promise<AtriumInvitePreviewResponse> {
     return previewInvite(this.transport, token);
   }
@@ -244,8 +263,44 @@ export class At2Client {
     return httpGetPost(this.transport, id);
   }
 
-  createRoom(body: AtriumRoomCreateBody): Promise<AtriumRoomTicketResponse> {
-    return httpCreateRoom(this.transport, body);
+  async createRoom(body: AtriumRoomCreateBody): Promise<AtriumRoomCreateResponse> {
+    const out = await httpCreateRoom(this.transport, body);
+    this.emit({
+      type: "room:created",
+      did: this.did,
+      roomId: out.roomId,
+      hasOpenInvite: out.joinToken !== undefined,
+      ...(out.expiresAtMs !== undefined ? { expiresAtMs: out.expiresAtMs } : {}),
+      ...(body.targetDid !== undefined ? { targetDid: body.targetDid } : {}),
+      ...(body.targetUsername !== undefined ? { targetUsername: body.targetUsername } : {}),
+    });
+    return out;
+  }
+
+  async redeemRoomInvite(body: AtriumRoomJoinRequestBody): Promise<AtriumRoomJoinTicketResponse> {
+    const out = await httpRedeemRoomInvite(this.transport, body);
+    this.emit({
+      type: "room:invite_redeemed",
+      did: this.did,
+      roomId: out.roomId,
+      creatorDid: out.creatorDid,
+      ...(out.expiresAtMs !== undefined ? { expiresAtMs: out.expiresAtMs } : {}),
+    });
+    return out;
+  }
+
+  async mintRoomTicket(
+    roomId: string,
+    body?: AtriumRoomMintTicketBody,
+  ): Promise<AtriumRoomTicketResponse> {
+    const out = await httpMintRoomTicket(this.transport, roomId, body);
+    this.emit({
+      type: "room:ticket_minted",
+      did: this.did,
+      roomId: out.roomId,
+      ...(out.expiresAtMs !== undefined ? { expiresAtMs: out.expiresAtMs } : {}),
+    });
+    return out;
   }
 
   async connectRoom(

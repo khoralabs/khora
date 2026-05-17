@@ -17,3 +17,5 @@ export {
   inviteRequiredFromEnv,
   invitesPerRegistrationFromEnv,
 } from "./invites/at2-invites.ts";
+export { AT2_ROOM_INVITE_SOURCE_MAP_ID } from "./room-invite.ts";
+export { AT2_ROOM_REGISTRY_SOURCE_MAP_ID } from "./room-registry.ts";

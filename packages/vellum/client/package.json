@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@khoralabs/agent-persisted-signer": "workspace:*",
-    "@khoralabs/atrium-client": "workspace:*",
+    "@khoralabs/at2-client": "workspace:*",
     "@khoralabs/obp-v2-frames-impl": "workspace:*",
     "@khoralabs/obp-v2-model": "workspace:*",
     "@khoralabs/obp-v2-nbc": "workspace:*",

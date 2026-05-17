@@ -6,6 +6,38 @@ import type {
 } from "@khoralabs/at2-contracts";
 import type { InboxNotificationRow, InboxWsDrainMessage } from "./inbox-ws.ts";
 
+// ---------------------------------------------------------------------------
+// Host/embedder callbacks (server-side, no secrets)
+// Fired by the atrium server; consumed by At2Host via `ctx.roomLifecycle`.
+// ---------------------------------------------------------------------------
+
+export type At2RoomLifecycleHostEvent =
+  | {
+      kind: "room_created";
+      roomId: string;
+      creatorDid: string;
+      inviteTargetDid: string | null;
+      hasOpenInvite: boolean;
+      expiresAtMs: number;
+    }
+  | {
+      kind: "room_ticket_minted";
+      roomId: string;
+      principalDid: string;
+      expiresAtMs: number;
+    }
+  | {
+      kind: "room_invite_redeemed";
+      roomId: string;
+      creatorDid: string;
+      peerDid: string;
+      expiresAtMs: number;
+    };
+
+// ---------------------------------------------------------------------------
+// Client-side events (end-user SDK, surfaced by At2Client.prototype.subscribe)
+// ---------------------------------------------------------------------------
+
 /**
  * All successful RPC / inbox outcomes surfaced by `At2Client.prototype.subscribe`.
  *
@@ -62,6 +94,23 @@ export type At2ClientEvent =
       id: number;
       notification: Extract<AgentNotification, { kind: "inbox_post" }>;
       did: string;
+    }
+  | {
+      type: "room:created";
+      did: string;
+      roomId: string;
+      expiresAtMs?: number;
+      hasOpenInvite: boolean;
+      targetDid?: string;
+      targetUsername?: string;
+    }
+  | { type: "room:ticket_minted"; did: string; roomId: string; expiresAtMs?: number }
+  | {
+      type: "room:invite_redeemed";
+      did: string;
+      roomId: string;
+      creatorDid: string;
+      expiresAtMs?: number;
     };
 
 export type At2DerivedInboxEvent = Exclude<

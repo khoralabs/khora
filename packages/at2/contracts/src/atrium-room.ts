@@ -29,6 +29,32 @@ export const zAtriumRoomTicketResponse = z.object({
 
 export type AtriumRoomTicketResponse = z.infer<typeof zAtriumRoomTicketResponse>;
 
+/** Response from `POST /v1/rooms/join` — ticket plus room owner DID (no host hook required). */
+export const zAtriumRoomJoinTicketResponse = zAtriumRoomTicketResponse.extend({
+  creatorDid: z.string().min(1),
+});
+
+export type AtriumRoomJoinTicketResponse = z.infer<typeof zAtriumRoomJoinTicketResponse>;
+
+/**
+ * Response from `POST /v1/rooms`. When the room is created without `targetDid`/`targetUsername`,
+ * `joinToken` is present for one-time OOB sharing; the peer redeems via `POST /v1/rooms/join`.
+ */
+export const zAtriumRoomCreateResponse = zAtriumRoomTicketResponse.extend({
+  joinToken: z.string().min(1).optional(),
+});
+
+export type AtriumRoomCreateResponse = z.infer<typeof zAtriumRoomCreateResponse>;
+
+/** Body for `POST /v1/rooms/join` (authenticated). */
+export const zAtriumRoomJoinRequestBody = z
+  .object({
+    joinToken: z.string().trim().min(1),
+  })
+  .strict();
+
+export type AtriumRoomJoinRequestBody = z.infer<typeof zAtriumRoomJoinRequestBody>;
+
 export const zAtriumRoomRole = z.enum(["creator", "peer"]);
 
 export type AtriumRoomRole = z.infer<typeof zAtriumRoomRole>;
