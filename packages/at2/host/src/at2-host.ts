@@ -2,7 +2,7 @@ import { AgentRelay, createFrameChannelHub, createInboxWsHub } from "@khoralabs/
 import { createAtriumDidAuth } from "@khoralabs/at2-auth";
 import type { AtriumPost, AtriumProfile } from "@khoralabs/at2-contracts";
 import { createRelayColonnadeSocial } from "@khoralabs/relay-colonnade-social";
-import type { At2HostContext } from "./http/deps.ts";
+import type { At2HostContext } from "./context.ts";
 import {
   createAt2InvitesRepo,
   parseInviteSeedTokens,

@@ -1,6 +1,7 @@
-import type { Server } from "bun";
 import { agentRelayFrameChannelWebSocketHandlers } from "@khoralabs/agent-relay";
-import type { At2HostContext, At2WsData, HostRouteDeps } from "./deps.ts";
+import type { At2HostContext } from "@khoralabs/at2-host";
+import type { At2WsUpgradePort } from "@khoralabs/at2-transport";
+import { clientIpFromRequest } from "../rate-limit.ts";
 import { handleHealth } from "./health.ts";
 import {
   handleAgentStatus,
@@ -22,23 +23,29 @@ import {
 import { handleInvitePreview, handleListInvites } from "./invites.ts";
 import { handleRegister } from "./register.ts";
 import { handleRoomWsUpgrade, handleRoomsCreate, isRoomWsPath } from "./rooms.ts";
-import { jsonError } from "./responses.ts";
+import { jsonError, rateLimitedResponse } from "./responses.ts";
 import { handleTopicSubscribe, handleTopicUnsubscribe } from "./topics.ts";
 import { handleInboxWsUpgrade } from "../ws/inbox.ts";
+import type { HostRouteDeps } from "./deps.ts";
 
 const topicSubscribeRe = /^\/v1\/topics\/([^/]+)\/subscribe$/;
 
 /**
- * Match `req` + `url` against at2 HTTP routes. Pass **`srv`** for WebSocket upgrade; omit for unary-only ingress.
+ * Match `req` + `url` against at2 HTTP routes. Pass **`upgradePort`** for WebSocket upgrade; omit for unary-only ingress.
  */
 export async function route(
   req: Request,
   url: URL,
-  srv: Server<At2WsData> | undefined,
+  upgradePort: At2WsUpgradePort | undefined,
   deps: HostRouteDeps,
 ): Promise<Response | undefined> {
   if (req.method === "GET" && url.pathname === "/health") {
     return handleHealth();
+  }
+
+  const ipRl = deps.rateLimiters.defaultIp(`ip:${clientIpFromRequest(req)}`);
+  if (!ipRl.ok) {
+    return rateLimitedResponse(ipRl.retryAfterSec);
   }
 
   if (req.method === "POST" && url.pathname === "/v1/register") {
@@ -79,13 +86,13 @@ export async function route(
   }
 
   if (isRoomWsPath(url.pathname)) {
-    if (srv === undefined) {
+    if (upgradePort === undefined) {
       return jsonError("WebSocket upgrade requires HTTP transport", 501);
     }
     if (req.method !== "GET") {
       return undefined;
     }
-    return handleRoomWsUpgrade(req, url, srv, deps);
+    return handleRoomWsUpgrade(req, url, upgradePort, deps);
   }
 
   if (req.method === "POST" && url.pathname === "/v1/rooms") {
@@ -93,10 +100,10 @@ export async function route(
   }
 
   if (req.method === "GET" && url.pathname === "/v1/inbox/ws") {
-    if (srv === undefined) {
+    if (upgradePort === undefined) {
       return jsonError("WebSocket upgrade requires HTTP transport", 501);
     }
-    return handleInboxWsUpgrade(req, url, srv, deps);
+    return handleInboxWsUpgrade(req, url, upgradePort, deps);
   }
 
   if (req.method === "PATCH" && url.pathname === "/v1/profile") {

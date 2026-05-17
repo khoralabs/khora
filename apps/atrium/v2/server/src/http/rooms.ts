@@ -1,14 +1,14 @@
+import { RELAY_INBOX_SOURCE_MAP_ID } from "@khoralabs/at2-host";
+import type { At2WsUpgradePort } from "@khoralabs/at2-transport";
 import { normalizeUsername, zAtriumRoomCreateBody, zAtriumRoomTicketResponse } from "@khoralabs/at2-contracts";
-import type { Server } from "bun";
 import { relaySyntheticPointer } from "@khoralabs/relay-colonnade";
 import {
   SOURCE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
 } from "@khoralabs/relay-colonnade-social";
 import z from "zod";
-import { RELAY_INBOX_SOURCE_MAP_ID } from "../relay-inbox.ts";
-import type { At2WsData, HostRouteDeps } from "./deps.ts";
-import { authErrorResponse, jsonError } from "./responses.ts";
+import type { HostRouteDeps } from "./deps.ts";
+import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses.ts";
 
 function webSocketBaseFromRequest(req: Request): string {
   const u = new URL(req.url);
@@ -19,7 +19,7 @@ function webSocketBaseFromRequest(req: Request): string {
 const roomWsPathRe = /^\/v1\/rooms\/([^/]+)\/ws$/;
 
 export async function handleRoomsCreate(req: Request, url: URL, deps: HostRouteDeps): Promise<Response> {
-  const { ctx } = deps;
+  const { ctx, rateLimiters } = deps;
   const bodyText = await req.text();
   let did: string;
   try {
@@ -27,6 +27,8 @@ export async function handleRoomsCreate(req: Request, url: URL, deps: HostRouteD
   } catch (e) {
     return authErrorResponse(e);
   }
+  const rl = rateLimiters.roomsCreateDid(`did:${did}`);
+  if (!rl.ok) return rateLimitedResponse(rl.retryAfterSec);
   const profileId = ctx.host.persistenceClient.profileIdForPrincipal(did);
   if (profileId === undefined) {
     return jsonError("Register before creating rooms", 400);
@@ -122,7 +124,7 @@ export async function handleRoomsCreate(req: Request, url: URL, deps: HostRouteD
 export async function handleRoomWsUpgrade(
   req: Request,
   url: URL,
-  srv: Server<At2WsData>,
+  srv: At2WsUpgradePort,
   deps: HostRouteDeps,
 ): Promise<Response | undefined> {
   if (req.headers.get("upgrade")?.toLowerCase() !== "websocket") {

@@ -1,6 +1,5 @@
 import type { Database } from "bun:sqlite";
 import {
-  AGENT_RELAY_AGGREGATE_DOMAIN,
   AGENT_RELAY_EVENT_KIND,
   type AgentRelayEventHandlerCtx,
   type AgentRelayEventUnion,
@@ -9,10 +8,8 @@ import {
 import {
   type AtriumPost,
   type AtriumProfile,
-  mergeAtriumProfilePatch,
   parseAtriumRegistrationMetadata,
   zAtriumProfile,
-  zAtriumProfilePatch,
 } from "@khoralabs/at2-contracts";
 import {
   type RelayCatalogSourceMapStore,

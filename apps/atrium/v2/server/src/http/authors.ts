@@ -1,16 +1,16 @@
-import { normalizeTopicSlug, normalizeUsername } from "@khoralabs/at2-contracts";
-import {
-  SOURCE_USERNAME_TO_PRINCIPAL,
-  USERNAME_INDEX_TENANT_KEY,
-} from "@khoralabs/relay-colonnade-social";
 import {
   authorDidFromSubscriptionSubject,
   authorSubscriptionSubject,
   authorTopicSubscriptionSubject,
   parseAuthorTopicSubscriptionSubject,
-} from "../subject-keys.ts";
+} from "@khoralabs/at2-host";
+import { normalizeTopicSlug, normalizeUsername } from "@khoralabs/at2-contracts";
+import {
+  SOURCE_USERNAME_TO_PRINCIPAL,
+  USERNAME_INDEX_TENANT_KEY,
+} from "@khoralabs/relay-colonnade-social";
 import type { HostRouteDeps } from "./deps.ts";
-import { authErrorResponse, jsonError } from "./responses.ts";
+import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses.ts";
 
 function resolveAuthorDidFromUsernameInput(
   ctx: HostRouteDeps["ctx"],
@@ -46,13 +46,15 @@ export async function handleListAuthorSubscriptions(
   url: URL,
   deps: HostRouteDeps,
 ): Promise<Response> {
-  const { ctx } = deps;
+  const { ctx, rateLimiters } = deps;
   let did: string;
   try {
     ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url, "", []));
   } catch (e) {
     return authErrorResponse(e);
   }
+  const tRl = rateLimiters.topicsDid(`did:${did}`);
+  if (!tRl.ok) return rateLimitedResponse(tRl.retryAfterSec);
   const subjects = ctx.host.persistenceClient.listSubjectsForPrincipal(did);
   const authorDids = subjects
     .map((s) => authorDidFromSubscriptionSubject(s))
@@ -81,6 +83,8 @@ export async function handleAuthorSubMutation(
   } catch (e) {
     return authErrorResponse(e);
   }
+  const tRl = deps.rateLimiters.topicsDid(`did:${did}`);
+  if (!tRl.ok) return rateLimitedResponse(tRl.retryAfterSec);
   if (resolved.authorDid === did) {
     return jsonError("cannot subscribe to yourself", 400);
   }
@@ -121,6 +125,8 @@ export async function handleAuthorTopicSubMutation(
   } catch (e) {
     return authErrorResponse(e);
   }
+  const tRl = deps.rateLimiters.topicsDid(`did:${did}`);
+  if (!tRl.ok) return rateLimitedResponse(tRl.retryAfterSec);
   if (resolved.authorDid === did) {
     return jsonError("cannot subscribe to yourself", 400);
   }

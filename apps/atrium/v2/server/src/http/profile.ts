@@ -15,7 +15,7 @@ import {
 } from "@khoralabs/relay-colonnade-social";
 import z from "zod";
 import type { HostRouteDeps } from "./deps.ts";
-import { authErrorResponse, jsonError } from "./responses.ts";
+import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses.ts";
 
 export async function handleProfileByDid(
   req: Request,
@@ -23,12 +23,15 @@ export async function handleProfileByDid(
   deps: HostRouteDeps,
   did: string,
 ): Promise<Response> {
-  const { ctx } = deps;
+  const { ctx, rateLimiters } = deps;
+  let authedDid: string;
   try {
-    await ctx.auth.requireAuthenticatedRequest(req, url, "", []);
+    ({ did: authedDid } = await ctx.auth.requireAuthenticatedRequest(req, url, "", []));
   } catch (e) {
     return authErrorResponse(e);
   }
+  const tRl = rateLimiters.topicsDid(`did:${authedDid}`);
+  if (!tRl.ok) return rateLimitedResponse(tRl.retryAfterSec);
   const profileId = ctx.host.persistenceClient.profileIdForPrincipal(did);
   if (profileId === undefined) {
     return jsonError("Not found", 404);
@@ -88,7 +91,7 @@ export async function handleProfilePatch(
   url: URL,
   deps: HostRouteDeps,
 ): Promise<Response> {
-  const { ctx } = deps;
+  const { ctx, rateLimiters } = deps;
   const bodyText = await req.text();
   let did: string;
   try {
@@ -96,6 +99,8 @@ export async function handleProfilePatch(
   } catch (e) {
     return authErrorResponse(e);
   }
+  const pRl = rateLimiters.profileDid(`did:${did}`);
+  if (!pRl.ok) return rateLimitedResponse(pRl.retryAfterSec);
   const profileId = ctx.host.persistenceClient.profileIdForPrincipal(did);
   if (profileId === undefined) {
     return jsonError("Register first", 400);

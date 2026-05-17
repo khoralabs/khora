@@ -1,22 +1,28 @@
 import type { PrincipalRegistrationRequest } from "@khoralabs/agent-relay";
 import {
+  inviteRequiredFromEnv,
+  invitesPerRegistrationFromEnv,
+} from "@khoralabs/at2-host";
+import {
   normalizeUsername,
   zAtriumRegisterResult,
   zAtriumRegistrationRequestBody,
 } from "@khoralabs/at2-contracts";
-import { relaySyntheticPointer } from "@khoralabs/relay-colonnade";
+import type { RelayCatalogSourceMapStore } from "@khoralabs/relay-colonnade";
 import {
   SOURCE_PRINCIPAL_TO_USERNAME,
   SOURCE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
 } from "@khoralabs/relay-colonnade-social";
-import type { RelayCatalogSourceMapStore } from "@khoralabs/relay-colonnade";
-import {
-  inviteRequiredFromEnv,
-  invitesPerRegistrationFromEnv,
-} from "../invites/at2-invites.ts";
+import { relaySyntheticPointer } from "@khoralabs/relay-colonnade";
+import { clientIpFromRequest } from "../rate-limit.ts";
 import type { HostRouteDeps } from "./deps.ts";
-import { authErrorResponse, jsonError, registrationOpaqueJson } from "./responses.ts";
+import {
+  authErrorResponse,
+  jsonError,
+  rateLimitedResponse,
+  registrationOpaqueJson,
+} from "./responses.ts";
 
 function lookupNormalizedUsernameForDid(
   store: RelayCatalogSourceMapStore,
@@ -70,7 +76,8 @@ function rollbackUsernameMapsAfterRegisterFailure(
 }
 
 export async function handleRegister(req: Request, deps: HostRouteDeps): Promise<Response> {
-  const { ctx } = deps;
+  const { ctx, rateLimiters } = deps;
+  const ip = clientIpFromRequest(req);
   const bodyText = await req.text();
   let raw: unknown;
   try {
@@ -83,6 +90,10 @@ export async function handleRegister(req: Request, deps: HostRouteDeps): Promise
     return registrationOpaqueJson(400);
   }
   const body = parsed.data;
+  const regIp = rateLimiters.registerIp(`ip:${ip}`);
+  if (!regIp.ok) return rateLimitedResponse(regIp.retryAfterSec);
+  const regDid = rateLimiters.registerDid(`did:${body.did}`);
+  if (!regDid.ok) return rateLimitedResponse(regDid.retryAfterSec);
   if (ctx.host.persistenceClient.agentRegistrationExists(body.did)) {
     return jsonError("Already registered", 409);
   }
@@ -117,7 +128,7 @@ export async function handleRegister(req: Request, deps: HostRouteDeps): Promise
     const result = await ctx.host.registerPrincipal(swarmReq, {
       headers: req.headers,
       bodyText,
-      client: { userAgent: ua },
+      client: { ip, userAgent: ua },
     });
     ctx.host.persistenceClient.upsertAgentRegistration(result.principalId, result.profileId);
     let inviteTokens: string[] | undefined;

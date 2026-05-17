@@ -1,0 +1,9 @@
+import type { AgentRelayFrameChannelWsData } from "@khoralabs/agent-relay";
+
+/** WebSocket `data` attached after upgrade for at2 Bun `Bun.serve` (inbox vs frame-channel room). */
+export type At2WsData = { kind: "inbox"; did: string } | AgentRelayFrameChannelWsData;
+
+/** Minimal surface required to perform WebSocket upgrade for at2 host routes. */
+export type At2WsUpgradePort = {
+  upgrade(request: Request, options: { data: At2WsData }): boolean;
+};

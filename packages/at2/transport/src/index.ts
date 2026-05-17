@@ -1,3 +1,4 @@
+export type { At2WsData, At2WsUpgradePort } from "./at2-host-ws-transport.ts";
 export {
   type AtriumClientEvent,
   type AtriumDerivedInboxEvent,

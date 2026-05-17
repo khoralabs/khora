@@ -23,6 +23,7 @@
   "workspaces": [
     "apps/*",
     "apps/atrium/*",
+    "apps/atrium/v2/*",
     "apps/atrium/plugins/*",
     "apps/khoralabs/*",
     "packages/libs/*",

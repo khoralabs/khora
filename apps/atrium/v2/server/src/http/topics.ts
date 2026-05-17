@@ -1,6 +1,6 @@
 import { normalizeTopicSlug } from "@khoralabs/at2-contracts";
 import type { HostRouteDeps } from "./deps.ts";
-import { authErrorResponse, jsonError } from "./responses.ts";
+import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses.ts";
 
 export async function handleTopicSubscribe(
   req: Request,
@@ -8,7 +8,7 @@ export async function handleTopicSubscribe(
   deps: HostRouteDeps,
   slugRaw: string,
 ): Promise<Response> {
-  const { ctx } = deps;
+  const { ctx, rateLimiters } = deps;
   if (req.method !== "POST") {
     return jsonError("Method not allowed", 405);
   }
@@ -18,6 +18,8 @@ export async function handleTopicSubscribe(
   } catch (e) {
     return authErrorResponse(e);
   }
+  const tRl = rateLimiters.topicsDid(`did:${did}`);
+  if (!tRl.ok) return rateLimitedResponse(tRl.retryAfterSec);
   if (ctx.host.persistenceClient.profileIdForPrincipal(did) === undefined) {
     return jsonError("Register first", 400);
   }
@@ -38,7 +40,7 @@ export async function handleTopicUnsubscribe(
   deps: HostRouteDeps,
   slugRaw: string,
 ): Promise<Response> {
-  const { ctx } = deps;
+  const { ctx, rateLimiters } = deps;
   if (req.method !== "DELETE") {
     return jsonError("Method not allowed", 405);
   }
@@ -48,6 +50,8 @@ export async function handleTopicUnsubscribe(
   } catch (e) {
     return authErrorResponse(e);
   }
+  const tRl = rateLimiters.topicsDid(`did:${did}`);
+  if (!tRl.ok) return rateLimitedResponse(tRl.retryAfterSec);
   let slug: string;
   try {
     slug = normalizeTopicSlug(decodeURIComponent(slugRaw));

@@ -1,7 +1,8 @@
 import { zAtriumInviteListResponse, zAtriumInvitePreviewResponse } from "@khoralabs/at2-contracts";
 import z from "zod";
+import { clientIpFromRequest } from "../rate-limit.ts";
 import type { HostRouteDeps } from "./deps.ts";
-import { authErrorResponse, inviteOpaqueNotFound } from "./responses.ts";
+import { authErrorResponse, inviteOpaqueNotFound, rateLimitedResponse } from "./responses.ts";
 
 const zInvitePreviewBody = z.object({
   token: z.string().trim().min(1),
@@ -21,6 +22,9 @@ function loadPublicProfileForDid(deps: HostRouteDeps, did: string): unknown | nu
 
 export async function handleInvitePreview(req: Request, deps: HostRouteDeps): Promise<Response> {
   const { invitesRepo } = deps.ctx;
+  const ip = clientIpFromRequest(req);
+  const prevRl = deps.rateLimiters.invitePreviewIp(`ip:${ip}`);
+  if (!prevRl.ok) return rateLimitedResponse(prevRl.retryAfterSec);
   if (invitesRepo === undefined) {
     return inviteOpaqueNotFound();
   }
@@ -48,13 +52,15 @@ export async function handleInvitePreview(req: Request, deps: HostRouteDeps): Pr
 }
 
 export async function handleListInvites(req: Request, url: URL, deps: HostRouteDeps): Promise<Response> {
-  const { ctx } = deps;
+  const { ctx, rateLimiters } = deps;
   let did: string;
   try {
     ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url, "", []));
   } catch (e) {
     return authErrorResponse(e);
   }
+  const listRl = rateLimiters.invitesListDid(`did:${did}`);
+  if (!listRl.ok) return rateLimitedResponse(listRl.retryAfterSec);
   const invites =
     ctx.invitesRepo === undefined ? [] : ctx.invitesRepo.listInvitesMintedForDid(did);
   const payload = zAtriumInviteListResponse.parse({ invites });

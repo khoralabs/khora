@@ -9,7 +9,7 @@ import {
 } from "@khoralabs/at2-contracts";
 import z from "zod";
 import type { HostRouteDeps } from "./deps.ts";
-import { authErrorResponse, jsonError } from "./responses.ts";
+import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses.ts";
 
 export async function handleGetPost(
   req: Request,
@@ -17,13 +17,16 @@ export async function handleGetPost(
   deps: HostRouteDeps,
   id: string,
 ): Promise<Response> {
-  const { ctx } = deps;
+  const { ctx, rateLimiters } = deps;
+  let did: string;
   try {
-    await ctx.auth.requireAuthenticatedRequest(req, url, "", []);
+    ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url, "", []));
   } catch (e) {
     return authErrorResponse(e);
   }
   try {
+    const pRl = rateLimiters.postsDid(`did:${did}`);
+    if (!pRl.ok) return rateLimitedResponse(pRl.retryAfterSec);
     const row = ctx.host.persistenceClient.getPostById(id);
     if (row === undefined) {
       return jsonError("Post not found", 404);
@@ -41,7 +44,7 @@ export async function handleCreatePost(
   url: URL,
   deps: HostRouteDeps,
 ): Promise<Response> {
-  const { ctx } = deps;
+  const { ctx, rateLimiters } = deps;
   const bodyText = await req.text();
   let did: string;
   try {
@@ -49,6 +52,8 @@ export async function handleCreatePost(
   } catch (e) {
     return authErrorResponse(e);
   }
+  const pRl = rateLimiters.postsDid(`did:${did}`);
+  if (!pRl.ok) return rateLimitedResponse(pRl.retryAfterSec);
   const profileId = ctx.host.persistenceClient.profileIdForPrincipal(did);
   if (profileId === undefined) {
     return jsonError("Register before creating posts", 400);
@@ -85,7 +90,7 @@ export async function handleUpdatePost(
   deps: HostRouteDeps,
   id: string,
 ): Promise<Response> {
-  const { ctx } = deps;
+  const { ctx, rateLimiters } = deps;
   const bodyText = await req.text();
   let did: string;
   try {
@@ -93,6 +98,8 @@ export async function handleUpdatePost(
   } catch (e) {
     return authErrorResponse(e);
   }
+  const pRl = rateLimiters.postsDid(`did:${did}`);
+  if (!pRl.ok) return rateLimitedResponse(pRl.retryAfterSec);
   const agentProfileId = ctx.host.persistenceClient.profileIdForPrincipal(did);
   if (agentProfileId === undefined) {
     return jsonError("Register before updating posts", 400);
@@ -140,13 +147,15 @@ export async function handleDeletePost(
   deps: HostRouteDeps,
   id: string,
 ): Promise<Response> {
-  const { ctx } = deps;
+  const { ctx, rateLimiters } = deps;
   let did: string;
   try {
     ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url, "", []));
   } catch (e) {
     return authErrorResponse(e);
   }
+  const pRl = rateLimiters.postsDid(`did:${did}`);
+  if (!pRl.ok) return rateLimitedResponse(pRl.retryAfterSec);
   const agentProfileId = ctx.host.persistenceClient.profileIdForPrincipal(did);
   if (agentProfileId === undefined) {
     return jsonError("Register before deleting posts", 400);
@@ -176,13 +185,15 @@ export async function handleAgentStatus(
   url: URL,
   deps: HostRouteDeps,
 ): Promise<Response> {
-  const { ctx } = deps;
+  const { ctx, rateLimiters } = deps;
   let did: string;
   try {
     ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url, "", []));
   } catch (e) {
     return authErrorResponse(e);
   }
+  const pRl = rateLimiters.postsDid(`did:${did}`);
+  if (!pRl.ok) return rateLimitedResponse(pRl.retryAfterSec);
   const profileId = ctx.host.persistenceClient.profileIdForPrincipal(did);
   if (profileId === undefined) {
     return jsonError("Register first", 400);
