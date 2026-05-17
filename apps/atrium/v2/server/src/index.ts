@@ -2,6 +2,8 @@ import { mkdirSync, unlinkSync } from "node:fs";
 import { dirname } from "node:path";
 import { createAt2Host, type At2HostContext } from "@khoralabs/at2-host";
 import type { At2WsData } from "@khoralabs/at2-transport";
+import { startPrincipalTeardownWorker } from "@khoralabs/relay-colonnade";
+import { RELAY_INBOX_SOURCE_MAP_ID } from "@khoralabs/at2-host";
 import { route, at2FrameChannelWsHandlers } from "./http/router.ts";
 import { createInboxDrainWebSocketHandlers } from "./ws/inbox.ts";
 import type { HostRouteDeps } from "./http/deps.ts";
@@ -28,6 +30,15 @@ const ctx: At2HostContext = await createAt2Host({
   catalogPath,
   framesDbPath,
   ...(tenantKey !== undefined ? { tenantKey } : {}),
+});
+
+const teardownWorker = startPrincipalTeardownWorker({
+  catalogDb: ctx.catalogDb,
+  framesDb: ctx.framesDb,
+  store: ctx.store,
+  persistence: ctx.host.persistence,
+  tenantKey: ctx.tenantKey,
+  relayInboxSourceMapId: RELAY_INBOX_SOURCE_MAP_ID,
 });
 
 const deps: HostRouteDeps = { ctx, rateLimiters: createV2HostRateLimiters() };
@@ -92,6 +103,11 @@ if (duplexMode === "unix") {
 
 function shutdown(signal: NodeJS.Signals): void {
   console.error(`[atrium-v2-server] received ${signal}; shutting down`);
+  try {
+    teardownWorker.stop();
+  } catch {
+    /* ignore */
+  }
   try {
     server.stop();
   } catch {

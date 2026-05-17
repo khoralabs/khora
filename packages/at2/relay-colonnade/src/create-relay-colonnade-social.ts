@@ -2,10 +2,9 @@ import type { Database } from "bun:sqlite";
 import type { AgentRelayPersistence } from "@khoralabs/agent-relay";
 import {
   createRelayColonnadePersistenceFromDatabases,
-  openRelayCatalogDb,
-  openRelayFramesDb,
-  RelayCatalogSourceMapStore,
-} from "@khoralabs/relay-colonnade";
+} from "./relay-colonnade-persistence.ts";
+import { openRelayCatalogDb, openRelayFramesDb } from "./sqlite-setup.ts";
+import { RelayCatalogSourceMapStore } from "./catalog-source-map-store.ts";
 import { createSocialRelationshipPersistence } from "./social-relationship-persistence.ts";
 import type { SocialRelationshipPersistence } from "./social-types.ts";
 

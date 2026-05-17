@@ -22,6 +22,14 @@ export const zAtriumRegistrationRequestBody = z.object({
 
 export type AtriumRegistrationRequestBody = z.infer<typeof zAtriumRegistrationRequestBody>;
 
+/** Signed body for `POST /v1/unregister` (same DID field as registration). */
+export const zAtriumUnregisterRequestBody = z.object({
+  did: z.string().trim().min(1),
+  correlationId: z.string().optional(),
+});
+
+export type AtriumUnregisterRequestBody = z.infer<typeof zAtriumUnregisterRequestBody>;
+
 export const zAtriumInviteListItem = z.object({
   preview: z.string(),
   consumed: z.boolean(),

@@ -153,6 +153,38 @@ export class AtriumDidAuth {
     });
   }
 
+  /**
+   * Same trust model as registration: signature covers `POST /v1/unregister` and the raw JSON body;
+   * body DID must match the signing DID.
+   */
+  async verifyUnregister(
+    req: Request,
+    bodyText: string,
+    swarmReq: PrincipalRegistrationRequest,
+  ): Promise<void> {
+    await this.verifyUnregisterContext({
+      request: swarmReq,
+      headers: req.headers,
+      bodyText,
+    }).catch((e) => {
+      throw new AuthError(messageOf(e), 401);
+    });
+  }
+
+  private async verifyUnregisterContext(ctx: RegistrationVerifyContext): Promise<void> {
+    const envelope = parseAgentRequestEnvelopeFromHeaders(ctx.headers);
+    if (envelope !== undefined && envelope.did !== ctx.request.principalId) {
+      throw new Error("unregister body DID does not match signature DID");
+    }
+    await this.verifyEnvelope({
+      envelope,
+      claimedDid: ctx.request.principalId,
+      method: "POST",
+      path: "/v1/unregister",
+      bodyText: ctx.bodyText,
+    });
+  }
+
   private async verifyRegistrationContext(ctx: RegistrationVerifyContext): Promise<void> {
     const envelope = parseAgentRequestEnvelopeFromHeaders(ctx.headers);
     if (envelope !== undefined && envelope.did !== ctx.request.principalId) {

@@ -1,4 +1,4 @@
-import type { PrincipalRegistrationRequest } from "./registration/types.ts";
+import type { PrincipalId, PrincipalRegistrationRequest } from "./registration/types.ts";
 
 /** Stable reference to the logical entity an event refers to. */
 export type AgentRelayAggregateRef = {
@@ -64,7 +64,7 @@ export type AgentRelayProfileUpdatedEvent<TProfile> = AgentRelayEventBase<
 
 export type AgentRelayProfileDeletedEvent<TProfile> = AgentRelayEventBase<
   typeof AGENT_RELAY_EVENT_KIND.PROFILE_DELETED,
-  { profile: TProfile }
+  { profile: TProfile; principalId: PrincipalId }
 >;
 
 export type AgentRelayPostCreatedEvent<TPost> = AgentRelayEventBase<

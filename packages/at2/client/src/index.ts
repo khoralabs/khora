@@ -39,6 +39,7 @@ export {
   zAtriumRegistrationMetadata,
   zAtriumRegistrationRequestBody,
   zAtriumRelationshipListResponse,
+  zAtriumUnregisterRequestBody,
 } from "@khoralabs/at2-contracts";
 /** Transport helpers live in `@khoralabs/at2-transport`; these are commonly paired with the client. */
 export {

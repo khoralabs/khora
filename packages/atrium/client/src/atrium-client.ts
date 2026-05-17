@@ -65,6 +65,7 @@ import {
   updateProfile,
 } from "./http/profile.ts";
 import { register } from "./http/register.ts";
+import { type UnregisterBody, unregister as httpUnregister } from "./http/unregister.ts";
 import { listTopicSubscriptions, subscribeTopic, unsubscribeTopic } from "./http/topics.ts";
 
 export type {
@@ -244,6 +245,10 @@ export class AtriumClient {
     const { result, requestDid } = await register(this.transport, body);
     this.emit({ type: "registration:completed", result, requestDid });
     return result;
+  }
+
+  async unregister(body: UnregisterBody = {}): Promise<void> {
+    await httpUnregister(this.transport, body);
   }
 
   listInvites(): Promise<AtriumInviteListResponse> {

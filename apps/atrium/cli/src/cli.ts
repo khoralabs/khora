@@ -114,6 +114,11 @@ async function main(
       return;
     }
 
+    if (a === "unregister") {
+      await handlers.unregister(ctx, flags);
+      return;
+    }
+
     if (a === "profile" && b === "show") {
       await handlers.profileShow(ctx, c, flags);
       return;

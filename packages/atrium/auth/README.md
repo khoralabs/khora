@@ -38,12 +38,13 @@ const auth = createAtriumDidAuth({ db }); // SQLite nonce store + did:key Ed2551
 const { did } = await auth.requireAuthenticatedRequest(req, url, bodyText);
 const { did } = await auth.requireInboxAccess(req, url);
 await auth.verifyRegistration(req, bodyText, swarmRegistrationReq);
+await auth.verifyUnregister(req, bodyText, swarmUnregisterReq);
 ```
 
 `AtriumDidAuth` performs the same five checks on every request:
 
 1. Envelope present and well-formed (`X-Agent-*` headers, or `?did/ts/nonce/sig` for WS).
-2. Envelope DID matches the claimed DID (and the body DID for registration).
+2. Envelope DID matches the claimed DID (and the body DID for registration **or** unregister).
 3. Timestamp within `±60s` of the host clock.
 4. `(did, nonce)` not seen before (stored in `NonceStore`).
 5. `AuthStrategy.verifyEnvelope` succeeds (default: Ed25519 verify against `did:key`).

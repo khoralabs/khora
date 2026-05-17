@@ -30,6 +30,7 @@ export type RequestJsonOptions<T> = {
 export type RequestVoidOptions = {
   query?: RequestQuery;
   signedQueryKeys?: readonly string[];
+  body?: unknown;
 };
 
 /** Unary host RPC surface (default binding: signed HTTP). */
@@ -147,10 +148,17 @@ export function createHttpAtriumUnaryTransport(
     callOpts: RequestVoidOptions = {},
   ): Promise<void> {
     const { fetchPath, signedPath } = paths(path, callOpts.query, callOpts.signedQueryKeys);
-    const authHeaders = await signHeaders({ method, path: signedPath, bodyText: "" });
+    let bodyText = "";
+    const baseHeaders: Record<string, string> = { Accept: "application/json" };
+    if (callOpts.body !== undefined) {
+      baseHeaders["Content-Type"] = "application/json";
+      bodyText = JSON.stringify(callOpts.body);
+    }
+    const authHeaders = await signHeaders({ method, path: signedPath, bodyText });
     const res = await rawFetch(fetchPath, {
       method,
-      headers: { Accept: "application/json", ...authHeaders },
+      headers: { ...baseHeaders, ...authHeaders },
+      body: bodyText.length > 0 ? bodyText : undefined,
     });
     if (!res.ok) {
       throw new AtriumClientError(await readErrorMessage(res), res.status);

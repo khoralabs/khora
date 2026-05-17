@@ -12,6 +12,7 @@ import { runProbeListCommand } from "./probe-list.ts";
 import { runProfileShowCommand } from "./profile-show.ts";
 import { runProfileUpdateCommand } from "./profile-update.ts";
 import { runRegisterCommand } from "./register.ts";
+import { runUnregisterCommand } from "./unregister.ts";
 import { runRoomCreateCommand, runRoomListCommand } from "./room.ts";
 import { runSearchCommand } from "./search.ts";
 import { runSetupCommand } from "./setup.ts";
@@ -37,6 +38,7 @@ export interface AtriumCliCommandHandlers {
   kill(flags: FlagMap): Promise<void>;
   whoami(flags: FlagMap): Promise<void>;
   register(ctx: AtriumCliContext, flags: FlagMap): Promise<void>;
+  unregister(ctx: AtriumCliContext, flags: FlagMap): Promise<void>;
   profileShow(ctx: AtriumCliContext, did: string | undefined, flags: FlagMap): Promise<void>;
   profileUpdate(ctx: AtriumCliContext, flags: FlagMap): Promise<void>;
   inboxList(ctx: AtriumCliContext, flags: FlagMap): Promise<void>;
@@ -64,6 +66,7 @@ export const defaultAtriumCliCommandHandlers = {
   kill: runKillCommand,
   whoami: runWhoamiCommand,
   register: runRegisterCommand,
+  unregister: runUnregisterCommand,
   profileShow: runProfileShowCommand,
   profileUpdate: runProfileUpdateCommand,
   inboxList: runInboxListCommand,

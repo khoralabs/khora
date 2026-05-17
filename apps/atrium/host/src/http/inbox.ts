@@ -1,5 +1,6 @@
 import type { Server } from "bun";
 import { envInboxSnapshotLimit } from "../env.ts";
+import { pruneOrphanInboxPostNotifications } from "../inbox-notification-prune.ts";
 import type { AtriumWsData } from "../ws/inbox.ts";
 import type { HostRouteDeps } from "./deps.ts";
 import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses.ts";
@@ -45,7 +46,10 @@ export async function handleInboxList(
     return jsonError("inbox list not available", 501);
   }
   const limit = Math.min(Number(url.searchParams.get("limit")) || envInboxSnapshotLimit(), 500);
-  const rows = await list(did, limit);
+  let rows = await list(did, limit);
+  rows = pruneOrphanInboxPostNotifications(ctx.db, did, rows, (id) =>
+    ctx.host.persistenceClient.getPostById(id),
+  );
   const markRead =
     url.searchParams.get("markRead") === "1" || url.searchParams.get("markRead") === "true";
   if (markRead && ctx.notificationBuffer.markRead !== undefined) {

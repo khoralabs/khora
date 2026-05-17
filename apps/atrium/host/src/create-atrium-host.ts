@@ -212,6 +212,43 @@ export function createAtriumHostContext(config: AtriumHostConfig): AtriumHostCon
           return;
         }
 
+        if (event.kind === AGENT_RELAY_EVENT_KIND.PROFILE_DELETED) {
+          const { profile, principalId } = event.payload;
+          const db = ac.db;
+          const authorSub = `author:${principalId}`;
+          db.run(`DELETE FROM agent_notifications WHERE did = ?`, [principalId]);
+          db.run(`DELETE FROM agent_subscriptions WHERE did = ?`, [principalId]);
+          db.run(`DELETE FROM agent_subscriptions WHERE subject = ?`, [authorSub]);
+          db.run(
+            `DELETE FROM agent_subscriptions WHERE subject GLOB 'author_topic:' || ? || CHAR(9) || '*'`,
+            [principalId],
+          );
+          db.run(`DELETE FROM probe_subscribers WHERE owner_profile_id = ?`, [profile.id]);
+          db.run(`DELETE FROM host_registrations WHERE did = ?`, [principalId]);
+          try {
+            db.run(
+              `DELETE FROM atrium_invite_tokens WHERE minted_by_did = ? OR consumed_by_did = ?`,
+              [principalId, principalId],
+            );
+          } catch {
+            /* optional table */
+          }
+          const roomRows = db
+            .query<{ room_id: string }, [string, string]>(
+              `SELECT room_id FROM atrium_rooms WHERE created_by_profile_id = ? OR invite_target_did = ?`,
+            )
+            .all(profile.id, principalId) as { room_id: string }[];
+          const hub = ctx.persistence.frameChannelHubPersistence;
+          for (const rr of roomRows) {
+            hub.deleteFramesForRoom(rr.room_id);
+            db.run(`DELETE FROM rooms WHERE session_id = ?`, [rr.room_id]);
+            db.run(`DELETE FROM atrium_rooms WHERE room_id = ?`, [rr.room_id]);
+          }
+          ctx.persistence.profiles.deleteById(profile.id);
+          usernamesRepo.release(principalId);
+          return;
+        }
+
         if (event.kind === AGENT_RELAY_EVENT_KIND.POST_DELETED) {
           const post = event.payload.post;
           if (post.kind === "probe") {

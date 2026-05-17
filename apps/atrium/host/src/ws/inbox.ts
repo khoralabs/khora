@@ -1,6 +1,7 @@
 import type { AgentRelayFrameChannelWsData } from "@khoralabs/agent-relay";
 import type { WebSocketHandler } from "bun";
 import type { AtriumHostContext } from "../create-atrium-host.ts";
+import { pruneOrphanInboxPostNotifications } from "../inbox-notification-prune.ts";
 
 /** Discriminated WebSocket `data` for Atrium host (inbox vs OBP room relay). */
 export type AtriumWsData = { kind: "inbox"; did: string } | AgentRelayFrameChannelWsData;
@@ -14,7 +15,10 @@ export async function sendInboxSnapshot(
   const list = ctx.notificationBuffer.listRecent;
   const markRead = ctx.notificationBuffer.markRead;
   if (list === undefined) return;
-  const rows = await list(did, snapshotLimit);
+  let rows = await list(did, snapshotLimit);
+  rows = pruneOrphanInboxPostNotifications(ctx.db, did, rows, (id) =>
+    ctx.host.persistenceClient.getPostById(id),
+  );
   ws.send(
     JSON.stringify({
       type: "snapshot",

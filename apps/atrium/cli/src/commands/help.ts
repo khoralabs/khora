@@ -11,6 +11,7 @@ import { probeListHelp } from "./probe-list.help.ts";
 import { profileShowHelp } from "./profile-show.help.ts";
 import { profileUpdateHelp } from "./profile-update.help.ts";
 import { registerHelp } from "./register.help.ts";
+import { unregisterHelp } from "./unregister.help.ts";
 import { roomCreateHelp, roomListHelp } from "./room.help.ts";
 import { memoriesSearchDeprecatedHelp, searchHelp } from "./search.help.ts";
 import { setupHelp } from "./setup.help.ts";
@@ -36,6 +37,7 @@ const ALL_HELP: readonly CommandHelp[] = [
   killHelp,
   whoamiHelp,
   registerHelp,
+  unregisterHelp,
   profileShowHelp,
   profileUpdateHelp,
   inboxListHelp,
@@ -118,6 +120,7 @@ Commands:
   kill [--force] [--timeout <ms>]
   whoami [--no-fetch] [--json]
   register [--username …] [--display-name …] [--bio …] [--invite-token …]
+  unregister --yes
   profile show <did>
   profile update [--username …] [--display-name …] [--bio …]
   inbox list [--limit N] [--mark-read]

@@ -13,6 +13,7 @@ export type At2HostContext = {
   store: RelayCatalogSourceMapStore;
   tenantKey: string;
   catalogDb: Database;
+  framesDb: Database;
   roomHub: FrameChannelHubPort;
   /** Pairwise room/channel links (creator + peer DIDs) in Colonnade. */
   social: SocialRelationshipPersistence;

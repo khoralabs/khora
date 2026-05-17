@@ -5,8 +5,11 @@ import {
   relaySyntheticPointer,
 } from "./catalog-source-map-store.ts";
 
-const SOURCE_BY_PRINCIPAL = "relay:subs:by-principal";
-const SOURCE_BY_SUBJECT = "relay:subs:by-subject";
+export const RELAY_CATALOG_SUBS_BY_PRINCIPAL = "relay:subs:by-principal";
+export const RELAY_CATALOG_SUBS_BY_SUBJECT = "relay:subs:by-subject";
+
+const SOURCE_BY_PRINCIPAL = RELAY_CATALOG_SUBS_BY_PRINCIPAL;
+const SOURCE_BY_SUBJECT = RELAY_CATALOG_SUBS_BY_SUBJECT;
 
 function readStringSet(projection: unknown, key: "subjects" | "principals"): string[] {
   if (projection === null || typeof projection !== "object" || Array.isArray(projection)) {

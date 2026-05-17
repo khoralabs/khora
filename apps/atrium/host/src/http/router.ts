@@ -24,6 +24,7 @@ import { handleCreatePost, handleDeletePost, handleGetPost, handleUpdatePost } f
 import { handleListProbes } from "./probes.ts";
 import { handleProfileByDid, handleProfileByUsername, handleUpdateProfile } from "./profile.ts";
 import { handleRegister } from "./register.ts";
+import { handleUnregister } from "./unregister.ts";
 import { jsonError, rateLimitedResponse } from "./responses.ts";
 import { handleListTopics, handleTopicSubMutation } from "./topics.ts";
 
@@ -54,6 +55,10 @@ export async function route(
 
   if (req.method === "POST" && url.pathname === "/v1/register") {
     return handleRegister(req, deps);
+  }
+
+  if (req.method === "POST" && url.pathname === "/v1/unregister") {
+    return handleUnregister(req, deps);
   }
 
   if (req.method === "POST" && url.pathname === "/v1/invite/preview") {

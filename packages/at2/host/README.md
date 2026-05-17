@@ -49,6 +49,7 @@ Served by **`@khoralabs/atrium-v2-server`**, not this package:
 |--------|------|
 | GET | `/health` |
 | POST | `/v1/register` |
+| POST | `/v1/unregister` |
 | POST | `/v1/invite/preview` |
 | GET | `/v1/invites` |
 | GET | `/v1/authors/subscriptions` |

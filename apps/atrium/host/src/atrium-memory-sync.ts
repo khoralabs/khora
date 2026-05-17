@@ -196,6 +196,11 @@ export function atriumSwarmMemoryOpMapper(
       return [{ op: "delete" as const, params: { namespace: ns, key: post.id } }];
     }
 
+    if (event.kind === AGENT_RELAY_EVENT_KIND.PROFILE_DELETED) {
+      const profile = event.payload.profile;
+      return [{ op: "delete" as const, params: { namespace: ac.profileNamespace, key: profile.id } }];
+    }
+
     return [];
   };
 }

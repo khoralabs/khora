@@ -45,6 +45,45 @@ export function listPostRowsByAuthorProfileIdAndKind(
   }));
 }
 
+/** Every post row for `authorProfileId` (all `kind` values), newest `updated_at` first (bounded). */
+export function listAllPostRowsByAuthorProfileId(
+  db: Database,
+  authorProfileId: string,
+  limit: number,
+): AgentRelayEntityRow[] {
+  migrateAtriumHostDb(db);
+  const cap = Math.max(0, Math.min(limit, 2000));
+  if (cap === 0) return [];
+  const rows = db
+    .query<
+      {
+        id: string;
+        memory_id: string | null;
+        body_json: string;
+        updated_at: number;
+      },
+      [string, number]
+    >(
+      `SELECT id, memory_id, body_json, updated_at FROM host_entities
+       WHERE kind = 'post'
+         AND json_extract(body_json, '$.authorProfileId') = ?
+       ORDER BY updated_at DESC
+       LIMIT ?`,
+    )
+    .all(authorProfileId, cap) as {
+    id: string;
+    memory_id: string | null;
+    body_json: string;
+    updated_at: number;
+  }[];
+  return rows.map((r) => ({
+    id: r.id,
+    memoryId: r.memory_id,
+    bodyJson: r.body_json,
+    updatedAtMs: r.updated_at,
+  }));
+}
+
 /** Probe posts authored by `profileId`, newest `updated_at` first (bounded). */
 export function listProbePostsForProfileId(
   db: Database,

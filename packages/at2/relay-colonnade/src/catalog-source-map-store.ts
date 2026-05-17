@@ -145,6 +145,47 @@ export class RelayCatalogSourceMapStore {
     return out;
   }
 
+  /**
+   * Rows matching `entry_key LIKE pattern ESCAPE '\\'` (caller supplies full pattern, e.g.
+   * `'%/' || escapeSqlLikeLiteral(postId)` for inbox keys shaped `recipientId/postId`).
+   */
+  listBySourceMapEntryKeyLike(
+    tenant_key: string,
+    source_map_id: string,
+    entryKeyLikePattern: string,
+  ): CatalogSourceMapListedRow[] {
+    const rows = this.listByPrefixStmt.all(
+      tenant_key,
+      source_map_id,
+      entryKeyLikePattern,
+    ) as {
+      entry_key: string;
+      pointer_source_cell_id: string;
+      pointer_source_record_key: string;
+      pointer_content_hash: string;
+      projection: string;
+    }[];
+    const out: CatalogSourceMapListedRow[] = [];
+    for (const r of rows) {
+      let projection: unknown = {};
+      try {
+        projection = JSON.parse(r.projection) as unknown;
+      } catch {
+        /* keep {} */
+      }
+      out.push({
+        entry_key: r.entry_key,
+        pointer: {
+          source_cell_id: r.pointer_source_cell_id,
+          source_record_key: r.pointer_source_record_key,
+          content_hash: r.pointer_content_hash,
+        },
+        projection,
+      });
+    }
+    return out;
+  }
+
   deleteRow(tenant_key: string, source_map_id: string, entry_key: string): void {
     this.deleteStmt.run(tenant_key, source_map_id, entry_key);
   }

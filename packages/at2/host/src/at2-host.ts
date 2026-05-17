@@ -18,7 +18,7 @@ export async function createAt2Host(opts: {
   tenantKey?: string;
   roomLifecycle?: (event: At2RoomLifecycleHostEvent) => void;
 }): Promise<At2HostContext> {
-  const { persistence, social, catalogDb, store, tenantKey } = await createRelayColonnadeSocial(opts);
+  const { persistence, social, catalogDb, framesDb, store, tenantKey } = await createRelayColonnadeSocial(opts);
   const seedTokens = parseInviteSeedTokens(process.env.AT2_INVITE_SEED_TOKENS);
   validateInviteEnvConfig(seedTokens);
   const pepper = readInvitePepper();
@@ -49,6 +49,7 @@ export async function createAt2Host(opts: {
     store,
     tenantKey,
     catalogDb,
+    framesDb,
     roomHub,
     social,
     invitesRepo,

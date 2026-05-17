@@ -5,8 +5,11 @@ import {
   relaySyntheticPointer,
 } from "./catalog-source-map-store.ts";
 
-const SOURCE_BY_PRINCIPAL = "relay:reg:by-principal";
-const SOURCE_BY_PROFILE = "relay:reg:by-profile";
+export const RELAY_CATALOG_REG_BY_PRINCIPAL = "relay:reg:by-principal";
+export const RELAY_CATALOG_REG_BY_PROFILE = "relay:reg:by-profile";
+
+const SOURCE_BY_PRINCIPAL = RELAY_CATALOG_REG_BY_PRINCIPAL;
+const SOURCE_BY_PROFILE = RELAY_CATALOG_REG_BY_PROFILE;
 
 function readProfileId(projection: unknown): string | undefined {
   if (projection === null || typeof projection !== "object" || Array.isArray(projection)) {

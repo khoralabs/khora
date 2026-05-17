@@ -8,8 +8,11 @@ import { createCatalogSubscriptionAdapter } from "./catalog-subscription-adapter
 import { createFrameChannelHubPersistenceSqlite } from "./frame-channel-sqlite.ts";
 import { openRelayCatalogDb, openRelayFramesDb } from "./sqlite-setup.ts";
 
-const SOURCE_PROFILE = "relay:entity:profile";
-const SOURCE_TOPIC = "relay:entity:topic";
+export const RELAY_CATALOG_SOURCE_PROFILE = "relay:entity:profile";
+export const RELAY_CATALOG_SOURCE_TOPIC = "relay:entity:topic";
+
+const SOURCE_PROFILE = RELAY_CATALOG_SOURCE_PROFILE;
+const SOURCE_TOPIC = RELAY_CATALOG_SOURCE_TOPIC;
 
 /** Compose relay persistence from already-open catalog + frames DBs (same catalog file as social rows). */
 export function createRelayColonnadePersistenceFromDatabases(

@@ -1,5 +1,6 @@
 import { Database } from "bun:sqlite";
 import { SqliteCatalogPersistenceStrategy } from "@khoralabs/colonnade-persistence";
+import { ensurePrincipalTeardownJobsSchema } from "./principal-teardown-jobs.ts";
 
 /** WAL + defaults aligned with colonnade SQLite workloads. */
 export function applyRelaySqlitePragmas(db: Database): void {
@@ -17,6 +18,7 @@ export function applyRelaySqlitePragmas(db: Database): void {
 export function openRelayCatalogDb(path: string): Database {
   const db = new Database(path, { create: true });
   new SqliteCatalogPersistenceStrategy(db);
+  ensurePrincipalTeardownJobsSchema(db);
   return db;
 }
 

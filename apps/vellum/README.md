@@ -27,4 +27,6 @@ bun run src/cli.ts --help
 
 Point **`ATRIUM_BASE_URL`** (and any daemon control URL your setup uses) at a running Atrium host. The CLI uses [`@khoralabs/vellum-client`](../../packages/vellum/client) and [`@khoralabs/atrium-client`](../../packages/atrium/client) under the hood.
 
+**Account deletion:** If your deployment exposes Atrium’s `POST /v1/unregister`, you can remove server-side account data from the Atrium client the CLI uses (`atrium unregister --yes`). That does not erase local Vellum daemon state or keys; see `apps/atrium/README.md` for the full deletion story.
+
 See **`cli/README.md`** and **`daemon/README.md`** in each folder for flags, env vars, and architecture notes.

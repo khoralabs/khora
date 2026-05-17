@@ -1,5 +1,9 @@
 export type { AgentRelayPersistence } from "@khoralabs/agent-relay";
-export { RELAY_CATALOG_SOURCE_POST } from "./catalog-post-adapter.ts";
+export {
+  deleteRelayInboxRowsForPostId,
+  purgeRelayCatalogPostEntity,
+  RELAY_CATALOG_SOURCE_POST,
+} from "./catalog-post-adapter.ts";
 export {
   type CatalogSourceMapListedRow,
   escapeSqlLikeLiteral,
@@ -13,6 +17,24 @@ export {
 } from "./relay-colonnade-persistence.ts";
 export { applyRelaySqlitePragmas, openRelayCatalogDb, openRelayFramesDb } from "./sqlite-setup.ts";
 export { createRelayColonnadeSocial } from "./create-relay-colonnade-social.ts";
+export {
+  cascadeUnregisterColonnadePrincipal,
+  cascadeUnregisterColonnadePrincipalWithProfile,
+  phase1UnregisterColonnadePrincipal,
+} from "./social-unregister.ts";
+export {
+  deletePrincipalTeardownJob,
+  ensurePrincipalTeardownJobsSchema,
+  insertPendingPrincipalTeardownJob,
+  principalHasActiveTeardownJob,
+  relayInboxAuthorPointerDeliverable,
+  tryClaimNextPendingPrincipalTeardownJob,
+  type ClaimedPrincipalTeardownJob,
+} from "./principal-teardown-jobs.ts";
+export {
+  startPrincipalTeardownWorker,
+  type PrincipalTeardownWorkerHandle,
+} from "./principal-teardown-worker.ts";
 export {
   registerAgentOnColonnadePersistence,
   SOURCE_PRINCIPAL_TO_USERNAME,

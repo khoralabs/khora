@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import type { PrincipalId } from "@khoralabs/agent-relay";
-import { type RelayCatalogSourceMapStore, relaySyntheticPointer } from "@khoralabs/relay-colonnade";
+import { type RelayCatalogSourceMapStore, relaySyntheticPointer } from "./catalog-source-map-store.ts";
 import type { SocialRelationshipPersistence, SocialRelationshipRow } from "./social-types.ts";
 
 const SOURCE_RELATIONSHIP = "relay:social:relationship";
@@ -204,4 +204,48 @@ export function createSocialRelationshipPersistence(deps: {
       return out;
     },
   };
+}
+
+function stripChannelFromPrincipalSocialIndex(
+  store: RelayCatalogSourceMapStore,
+  tenantKey: string,
+  principalId: PrincipalId,
+  channelId: string,
+): void {
+  const { found, projection } = store.lookupProjection(tenantKey, SOURCE_BY_PRINCIPAL, principalId);
+  if (!found) {
+    return;
+  }
+  const ids = readChannelIds(projection).filter((id) => id !== channelId);
+  if (ids.length === 0) {
+    store.deleteRow(tenantKey, SOURCE_BY_PRINCIPAL, principalId);
+    return;
+  }
+  upsertPrincipalIndex(store, tenantKey, principalId, ids);
+}
+
+/** Tear down frame-channel rows + catalog relationship entries for every room this principal participates in. */
+export function purgeSocialRelationshipsForPrincipal(params: {
+  store: RelayCatalogSourceMapStore;
+  catalogDb: Database;
+  framesDb: Database;
+  tenantKey: string;
+  principalId: PrincipalId;
+}): void {
+  const { store, catalogDb, framesDb, tenantKey, principalId } = params;
+  const social = createSocialRelationshipPersistence({ store, catalogDb, tenantKey });
+  const rels = social.listRelationshipsForPrincipal(principalId);
+  const delFrames = framesDb.prepare(`DELETE FROM room_frames WHERE channel_id = ?`);
+  const delRoom = framesDb.prepare(`DELETE FROM rooms WHERE channel_id = ?`);
+  for (const r of rels) {
+    catalogDb.transaction(() => {
+      store.deleteRow(tenantKey, SOURCE_RELATIONSHIP, r.channelId);
+      stripChannelFromPrincipalSocialIndex(store, tenantKey, r.creatorPrincipalId, r.channelId);
+      if (r.peerPrincipalId !== null) {
+        stripChannelFromPrincipalSocialIndex(store, tenantKey, r.peerPrincipalId, r.channelId);
+      }
+    })();
+    delFrames.run(r.channelId);
+    delRoom.run(r.channelId);
+  }
 }

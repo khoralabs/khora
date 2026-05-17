@@ -182,6 +182,27 @@ describe("AtriumDidAuth.preflight (did:key Ed25519 default)", () => {
       }),
     ).rejects.toThrow();
   });
+
+  test("verifyUnregister signs POST /v1/unregister", async () => {
+    const db = freshDb();
+    const now = 1_700_000_000_000;
+    const auth = createAtriumDidAuth({ db, now: () => now });
+    const signer = await generateAgentIdentity();
+    const bodyText = JSON.stringify({ did: signer.did });
+    const headers = await buildSignedHeaders({
+      signer,
+      method: "POST",
+      path: "/v1/unregister",
+      bodyText,
+      timestampMs: now,
+      nonce: "n-unreg",
+    });
+    await auth.verifyUnregister(
+      new Request("http://local/unregister", { method: "POST", headers, body: bodyText }),
+      bodyText,
+      { principalId: signer.did },
+    );
+  });
 });
 
 describe("AtriumDidAuth.requireAuthenticatedRequest", () => {

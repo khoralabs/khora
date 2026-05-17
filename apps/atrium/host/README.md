@@ -43,6 +43,8 @@ Every HTTP route (including `POST /v1/register`) and every inbox WebSocket upgra
 
 Because the signature **is** the credential there is no session state to manage and no token to leak. Key rotation = a new DID.
 
+**Unregister:** `POST /v1/unregister` uses the same signing model (`verifyUnregister`). The host removes that principal’s server-side rows (profile, posts, subscriptions, notifications, probes, username, rooms, invites) and runs the Memories delete path via swarm events. See `apps/atrium/README.md` (account deletion) for what cannot be removed remotely (other users’ clients, lazy cross-principal pointers, future search indexes).
+
 ### Swapping schemes
 
 Pass a custom `AuthStrategy` (and optionally a custom `NonceStore`) to `createAtriumDidAuth`. The host's route handlers do not change — they only see `ctx.auth.require*` calls. See [`apps/atrium/auth/README.md`](../auth/README.md) for the extension model.

@@ -13,10 +13,11 @@ import {
 } from "@khoralabs/at2-contracts";
 import {
   type RelayCatalogSourceMapStore,
+  purgeRelayCatalogPostEntity,
+  registerAgentOnColonnadePersistence,
   RELAY_CATALOG_SOURCE_POST,
   relaySyntheticPointer,
 } from "@khoralabs/relay-colonnade";
-import { registerAgentOnColonnadePersistence } from "@khoralabs/relay-colonnade";
 import { RELAY_INBOX_SOURCE_MAP_ID } from "./relay-inbox.ts";
 import {
   authorSubscriptionSubject,
@@ -153,7 +154,9 @@ export function createAt2RelayOnEvent(deps: {
 
     if (event.kind === AGENT_RELAY_EVENT_KIND.POST_DELETED) {
       const post = event.payload.post;
-      ctx.persistence.posts.deleteById(post.id);
+      purgeRelayCatalogPostEntity(store, catalogDb, tenantKey, post.id, {
+        sourceMapId: RELAY_INBOX_SOURCE_MAP_ID,
+      });
     }
   };
 }
