@@ -106,29 +106,6 @@ describe("ColonnadeRouter", () => {
 });
 
 describe("CatalogRead model (in-memory)", () => {
-  test("ResolvePostFanOutTargets is empty (durable fan-out targets live in inbox rows, not catalog)", async () => {
-    const catalog = new InMemoryCatalogPersistenceStrategy();
-    const content_hash = sha256HexLower(new Uint8Array([9, 9]));
-    await catalog.upsertDiscoveryDocument({
-      document_key: `colonnade:fanout:tenant-x:${content_hash}`,
-      body: {
-        fan_out_targets: [
-          { recipient_cell_id: "cell-b", recipient_principal_id: "bob" },
-          { recipient_cell_id: "cell-c", recipient_principal_id: "carol" },
-        ],
-      },
-    });
-    const resolved = await catalog.resolvePostFanOutTargets({
-      tenant_key: "tenant-x",
-      author_principal_id: "alice",
-      author_cell_id: "cell-a",
-      content_hash,
-      catalog_envelope: { topics: ["x"] },
-      payload_metadata: {},
-    });
-    expect(resolved.fan_out_targets).toEqual([]);
-  });
-
   test("source map upsert, lookup, batch, and canonical row hash", async () => {
     const catalog = new InMemoryCatalogPersistenceStrategy();
     const pointer = {

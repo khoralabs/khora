@@ -1,15 +1,20 @@
 import type { Database } from "bun:sqlite";
-
-import { inboxStagingFromJson, writeOpFromJson } from "./staging-json.ts";
 import { inboxStagingToBlob, writeOpToBlob } from "./staging-binary.ts";
+import { inboxStagingFromJson, writeOpFromJson } from "./staging-json.ts";
 
-type TableInfoRow = { cid: number; name: string; type: string; notnull: number; dflt_value: unknown; pk: number };
+type TableInfoRow = {
+  cid: number;
+  name: string;
+  type: string;
+  notnull: number;
+  dflt_value: unknown;
+  pk: number;
+};
 
 function tableExists(db: Database, name: string): boolean {
-  const row = db.query("SELECT 1 AS x FROM sqlite_master WHERE type = 'table' AND name = ?").get(name) as
-    | { x: number }
-    | null
-    | undefined;
+  const row = db
+    .query("SELECT 1 AS x FROM sqlite_master WHERE type = 'table' AND name = ?")
+    .get(name) as { x: number } | null | undefined;
   return row != null;
 }
 
@@ -48,8 +53,8 @@ function migrateInboxStagingToBlob(db: Database): void {
     enqueued_at_ms: number;
     correlation_id: string;
   }[];
-  db.exec("DROP TABLE inbox");
-  db.exec(`
+  db.run("DROP TABLE inbox");
+  db.run(`
     CREATE TABLE inbox (
       inbox_entry_id TEXT PRIMARY KEY NOT NULL,
       tenant_key TEXT NOT NULL,
@@ -81,15 +86,17 @@ function migrateWriteLogOpToBlob(db: Database): void {
     correlation_id: string;
     op: unknown;
   }[];
-  db.exec("DROP TABLE write_log");
-  db.exec(`
+  db.run("DROP TABLE write_log");
+  db.run(`
     CREATE TABLE write_log (
       log_sequence INTEGER PRIMARY KEY AUTOINCREMENT,
       correlation_id TEXT NOT NULL,
       op BLOB NOT NULL
     );
   `);
-  const ins = db.prepare(`INSERT INTO write_log(log_sequence, correlation_id, op) VALUES (?, ?, ?)`);
+  const ins = db.prepare(
+    `INSERT INTO write_log(log_sequence, correlation_id, op) VALUES (?, ?, ?)`,
+  );
   for (const r of rows) {
     ins.run(r.log_sequence, r.correlation_id, writeOpFromLegacy(r.op));
   }

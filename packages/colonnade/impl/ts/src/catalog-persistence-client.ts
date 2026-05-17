@@ -8,14 +8,8 @@ import type {
   IssueConnectionTokenOutput,
   LookupSourceMapPointerInput,
   LookupSourceMapPointerOutput,
-  RegisterPercolationPredicateInput,
-  RegisterPercolationPredicateOutput,
   ResolveCatalogPointerInput,
   ResolveCatalogPointerOutput,
-  ResolvePostFanOutTargetsInput,
-  ResolvePostFanOutTargetsOutput,
-  RevokePercolationPredicateInput,
-  RevokePercolationPredicateOutput,
   UpsertCatalogPointerInput,
   UpsertCatalogPointerOutput,
   UpsertDiscoveryDocumentInput,
@@ -45,18 +39,6 @@ export class CatalogPersistenceClient implements CatalogPersistenceStrategy {
     return this.strategy.upsertDiscoveryDocument(input);
   }
 
-  registerPercolationPredicate(
-    input: RegisterPercolationPredicateInput,
-  ): Promise<RegisterPercolationPredicateOutput> {
-    return this.strategy.registerPercolationPredicate(input);
-  }
-
-  revokePercolationPredicate(
-    input: RevokePercolationPredicateInput,
-  ): Promise<RevokePercolationPredicateOutput> {
-    return this.strategy.revokePercolationPredicate(input);
-  }
-
   upsertCatalogPointer(input: UpsertCatalogPointerInput): Promise<UpsertCatalogPointerOutput> {
     return this.strategy.upsertCatalogPointer(input);
   }
@@ -73,12 +55,6 @@ export class CatalogPersistenceClient implements CatalogPersistenceStrategy {
     const out = await this.strategy.upsertSourceMapPointerRow(input);
     assertContentHash(out.source_row_content_hash);
     return out;
-  }
-
-  resolvePostFanOutTargets(
-    input: ResolvePostFanOutTargetsInput,
-  ): Promise<ResolvePostFanOutTargetsOutput> {
-    return this.strategy.resolvePostFanOutTargets(input);
   }
 
   async lookupSourceMapPointer(input: LookupSourceMapPointerInput): Promise<LookupSourceMapPointerOutput> {

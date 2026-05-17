@@ -1,5 +1,5 @@
-import { randomBytes } from "node:crypto";
 import type { Database, Statement } from "bun:sqlite";
+import { randomBytes } from "node:crypto";
 
 import type { CatalogPersistenceStrategy } from "../catalog-persistence-strategy.ts";
 import type {
@@ -12,14 +12,8 @@ import type {
   LookupSourceMapPointerInput,
   LookupSourceMapPointerOutput,
   PointerRef,
-  RegisterPercolationPredicateInput,
-  RegisterPercolationPredicateOutput,
   ResolveCatalogPointerInput,
   ResolveCatalogPointerOutput,
-  ResolvePostFanOutTargetsInput,
-  ResolvePostFanOutTargetsOutput,
-  RevokePercolationPredicateInput,
-  RevokePercolationPredicateOutput,
   UpsertCatalogPointerInput,
   UpsertCatalogPointerOutput,
   UpsertDiscoveryDocumentInput,
@@ -27,14 +21,11 @@ import type {
   UpsertSourceMapPointerRowInput,
   UpsertSourceMapPointerRowOutput,
 } from "../colonnade-types.ts";
-import {
-  canonicalSourceMapRowBytes,
-  sha256HexLower,
-} from "../hash.ts";
+import { canonicalSourceMapRowBytes, sha256HexLower } from "../hash.ts";
 import { encodeCatalogPointerId } from "./catalog-pointer-id.ts";
 import { ensureCatalogSchema } from "./schema-catalog.ts";
-import { applySqlitePerfPragmas } from "./sqlite-pragmas.ts";
 import { runSerializedSqliteImmediateTransaction } from "./sqlite-immediate-txn.ts";
+import { applySqlitePerfPragmas } from "./sqlite-pragmas.ts";
 
 const ZERO_HASH = "0".repeat(64);
 
@@ -53,8 +44,6 @@ export class SqliteCatalogPersistenceStrategy implements CatalogPersistenceStrat
   private readonly shardIndex: number;
   private readonly stmtSelectDiscoveryRevision: Statement;
   private readonly stmtUpsertDiscovery: Statement;
-  private readonly stmtUpsertPredicate: Statement;
-  private readonly stmtDeletePredicate: Statement;
   private readonly stmtUpsertCatalogPointer: Statement;
   private readonly stmtResolveCatalogPointer: Statement;
   private readonly stmtUpsertSourceMapRow: Statement;
@@ -81,10 +70,6 @@ export class SqliteCatalogPersistenceStrategy implements CatalogPersistenceStrat
       `INSERT INTO discovery_documents(document_key, body, revision) VALUES (?, ?, ?)
        ON CONFLICT(document_key) DO UPDATE SET body = excluded.body, revision = excluded.revision`,
     );
-    this.stmtUpsertPredicate = db.prepare(
-      `INSERT OR REPLACE INTO predicates(predicate_id, definition) VALUES (?, ?)`,
-    );
-    this.stmtDeletePredicate = db.prepare(`DELETE FROM predicates WHERE predicate_id = ?`);
     this.stmtUpsertCatalogPointer = db.prepare(
       `INSERT OR REPLACE INTO catalog_pointers(catalog_pointer_id, locator_cell_id, locator_record_key, content_hash, projection)
        VALUES (?, ?, ?, ?, ?)`,
@@ -147,26 +132,6 @@ export class SqliteCatalogPersistenceStrategy implements CatalogPersistenceStrat
     return Promise.resolve({ revision_token: String(revision) });
   }
 
-  registerPercolationPredicate(
-    input: RegisterPercolationPredicateInput,
-  ): Promise<RegisterPercolationPredicateOutput> {
-    this.stmtUpsertPredicate.run(
-      input.predicate.predicate_id,
-      JSON.stringify({
-        predicate_id: input.predicate.predicate_id,
-        definition: input.predicate.definition,
-      }),
-    );
-    return Promise.resolve({ registered: true });
-  }
-
-  revokePercolationPredicate(
-    input: RevokePercolationPredicateInput,
-  ): Promise<RevokePercolationPredicateOutput> {
-    const r = this.stmtDeletePredicate.run(input.predicate_id);
-    return Promise.resolve({ revoked: r.changes > 0 });
-  }
-
   upsertCatalogPointer(input: UpsertCatalogPointerInput): Promise<UpsertCatalogPointerOutput> {
     this.stmtUpsertCatalogPointer.run(
       input.catalog_pointer_id,
@@ -188,7 +153,9 @@ export class SqliteCatalogPersistenceStrategy implements CatalogPersistenceStrat
       | null
       | undefined;
     if (row == null) {
-      throw new Error(`SqliteCatalogPersistenceStrategy: unknown catalog_pointer_id ${input.catalog_pointer_id}`);
+      throw new Error(
+        `SqliteCatalogPersistenceStrategy: unknown catalog_pointer_id ${input.catalog_pointer_id}`,
+      );
     }
     return Promise.resolve({
       locator: {
@@ -224,14 +191,9 @@ export class SqliteCatalogPersistenceStrategy implements CatalogPersistenceStrat
     return Promise.resolve({ source_row_content_hash });
   }
 
-  resolvePostFanOutTargets(
-    _input: ResolvePostFanOutTargetsInput,
-  ): Promise<ResolvePostFanOutTargetsOutput> {
-    void _input;
-    return Promise.resolve({ fan_out_targets: [] });
-  }
-
-  lookupSourceMapPointer(input: LookupSourceMapPointerInput): Promise<LookupSourceMapPointerOutput> {
+  lookupSourceMapPointer(
+    input: LookupSourceMapPointerInput,
+  ): Promise<LookupSourceMapPointerOutput> {
     const row = this.stmtLookupSourceMapRow.get(
       input.tenant_key,
       input.source_map_id,
@@ -318,7 +280,12 @@ export class SqliteCatalogPersistenceStrategy implements CatalogPersistenceStrat
   issueConnectionToken(input: IssueConnectionTokenInput): Promise<IssueConnectionTokenOutput> {
     const token = `tok_${randomBytes(24).toString("hex")}`;
     const expires_at_ms = Date.now() + input.ttl_seconds * 1000;
-    this.stmtInsertConnectionToken.run(token, input.principal_id, input.intended_audience, expires_at_ms);
+    this.stmtInsertConnectionToken.run(
+      token,
+      input.principal_id,
+      input.intended_audience,
+      expires_at_ms,
+    );
     return Promise.resolve({ token, expires_at_ms });
   }
 }

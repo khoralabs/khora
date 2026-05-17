@@ -14,22 +14,6 @@ structure UpsertDiscoveryDocumentOutput {
     revision_token: String
 }
 
-structure RegisterPercolationPredicateInput {
-    predicate: SubscriptionPredicate
-}
-
-structure RegisterPercolationPredicateOutput {
-    registered: Boolean
-}
-
-structure RevokePercolationPredicateInput {
-    predicate_id: String
-}
-
-structure RevokePercolationPredicateOutput {
-    revoked: Boolean
-}
-
 structure UpsertCatalogPointerInput {
     catalog_pointer_id: CatalogPointerId
     /// Target authoritative payload location (**subset** of global pointers — inbox pointers often exist **only** on recipient cells).
@@ -81,12 +65,10 @@ structure UpsertSourceMapPointerRowOutput {
 **Catalog** — cross-cell discovery / indexing engine.
 
 **Normative:**
-- Stores **public metadata** (profiles, post stubs, embedding ids, predicates) as opaque **`Document`** rows keyed by **`document_key`** — Colonnade does not validate domain schemas.
+- Stores **public metadata** (profiles, post stubs, embedding ids) as opaque **`Document`** rows keyed by **`document_key`** — Colonnade does not validate domain schemas.
 - Retains **only some** **`UpsertCatalogPointer`** rows for global resolution; **fan-out inbox pointer rows** primarily live on recipient cells.
 - **`UpsertSourceMapPointerRow`** retains **source-map** rows for **`CatalogRead`** pointer lookups with content-addressable **`source_row_content_hash`**.
 - **`ResolveCatalogPointer`** MUST return enough location information to open **`FetchOutboxPayload`** on the correct cell when bytes still exist.
-
-**Percolation:** **`RegisterPercolationPredicate`** / **`RevokePercolationPredicate`** name subscription/probe predicates evaluated against published metadata; exact matcher semantics are implementation-defined.
 
 **Security:** Content-addressing applies to outbox bytes (see **`ContentHash`**). If bytes are erased at source, catalog MAY retain **ghost** projection rows — **`FetchOutboxPayload`** reports **`bytes_available = false`**.
 
@@ -98,8 +80,6 @@ service CatalogIndex {
     version: "2026-05-15"
     operations: [
         UpsertDiscoveryDocument
-        RegisterPercolationPredicate
-        RevokePercolationPredicate
         UpsertCatalogPointer
         ResolveCatalogPointer
         UpsertSourceMapPointerRow
@@ -110,16 +90,6 @@ service CatalogIndex {
 operation UpsertDiscoveryDocument {
     input: UpsertDiscoveryDocumentInput
     output: UpsertDiscoveryDocumentOutput
-}
-
-operation RegisterPercolationPredicate {
-    input: RegisterPercolationPredicateInput
-    output: RegisterPercolationPredicateOutput
-}
-
-operation RevokePercolationPredicate {
-    input: RevokePercolationPredicateInput
-    output: RevokePercolationPredicateOutput
 }
 
 operation UpsertCatalogPointer {

@@ -39,10 +39,6 @@ export type PointerRef = {
   readonly content_hash: ContentHash;
 };
 
-export type SubscriptionPredicate = {
-  readonly predicate_id: string;
-  readonly definition: JsonDocument;
-};
 
 export type InlinePayload = {
   readonly bytes: Uint8Array;
@@ -227,21 +223,6 @@ export type UpsertDiscoveryDocumentOutput = {
   readonly revision_token: string;
 };
 
-export type RegisterPercolationPredicateInput = {
-  readonly predicate: SubscriptionPredicate;
-};
-
-export type RegisterPercolationPredicateOutput = {
-  readonly registered: boolean;
-};
-
-export type RevokePercolationPredicateInput = {
-  readonly predicate_id: string;
-};
-
-export type RevokePercolationPredicateOutput = {
-  readonly revoked: boolean;
-};
 
 export type UpsertCatalogPointerInput = {
   readonly catalog_pointer_id: CatalogPointerId;
@@ -285,19 +266,6 @@ export type UpsertSourceMapPointerRowOutput = {
   readonly source_row_content_hash: ContentHash;
 };
 
-/** Catalog read model — fan-out resolution before publication routing. */
-export type ResolvePostFanOutTargetsInput = {
-  readonly tenant_key: TenantKey;
-  readonly author_principal_id: PrincipalId;
-  readonly author_cell_id: CellId;
-  readonly content_hash: ContentHash;
-  readonly catalog_envelope: JsonDocument;
-  readonly payload_metadata: JsonDocument;
-};
-
-export type ResolvePostFanOutTargetsOutput = {
-  readonly fan_out_targets: readonly FanOutTarget[];
-};
 
 export type LookupSourceMapPointerInput = {
   readonly tenant_key: TenantKey;

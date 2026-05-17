@@ -7,14 +7,8 @@ import type {
   IssueConnectionTokenOutput,
   LookupSourceMapPointerInput,
   LookupSourceMapPointerOutput,
-  RegisterPercolationPredicateInput,
-  RegisterPercolationPredicateOutput,
   ResolveCatalogPointerInput,
   ResolveCatalogPointerOutput,
-  ResolvePostFanOutTargetsInput,
-  ResolvePostFanOutTargetsOutput,
-  RevokePercolationPredicateInput,
-  RevokePercolationPredicateOutput,
   UpsertCatalogPointerInput,
   UpsertCatalogPointerOutput,
   UpsertDiscoveryDocumentInput,
@@ -40,21 +34,12 @@ export interface CatalogPersistenceStrategy {
   upsertDiscoveryDocument(
     input: UpsertDiscoveryDocumentInput,
   ): Promise<UpsertDiscoveryDocumentOutput>;
-  registerPercolationPredicate(
-    input: RegisterPercolationPredicateInput,
-  ): Promise<RegisterPercolationPredicateOutput>;
-  revokePercolationPredicate(
-    input: RevokePercolationPredicateInput,
-  ): Promise<RevokePercolationPredicateOutput>;
   upsertCatalogPointer(input: UpsertCatalogPointerInput): Promise<UpsertCatalogPointerOutput>;
   resolveCatalogPointer(input: ResolveCatalogPointerInput): Promise<ResolveCatalogPointerOutput>;
   upsertSourceMapPointerRow(
     input: UpsertSourceMapPointerRowInput,
   ): Promise<UpsertSourceMapPointerRowOutput>;
 
-  resolvePostFanOutTargets(
-    input: ResolvePostFanOutTargetsInput,
-  ): Promise<ResolvePostFanOutTargetsOutput>;
   lookupSourceMapPointer(input: LookupSourceMapPointerInput): Promise<LookupSourceMapPointerOutput>;
   batchLookupSourceMapPointers(
     input: BatchLookupSourceMapPointersInput,

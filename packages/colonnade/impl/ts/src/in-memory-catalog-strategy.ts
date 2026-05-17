@@ -11,15 +11,8 @@ import type {
   LookupSourceMapPointerOutput,
   OutboxLocator,
   PointerRef,
-  RegisterPercolationPredicateInput,
-  RegisterPercolationPredicateOutput,
   ResolveCatalogPointerInput,
   ResolveCatalogPointerOutput,
-  ResolvePostFanOutTargetsInput,
-  ResolvePostFanOutTargetsOutput,
-  RevokePercolationPredicateInput,
-  RevokePercolationPredicateOutput,
-  SubscriptionPredicate,
   UpsertCatalogPointerInput,
   UpsertCatalogPointerOutput,
   UpsertDiscoveryDocumentInput,
@@ -59,7 +52,6 @@ export class InMemoryCatalogPersistenceStrategy implements CatalogPersistenceStr
   }
 
   private readonly discovery = new Map<string, { body: unknown; revision: number }>();
-  private readonly predicates = new Map<string, SubscriptionPredicate>();
   private readonly pointers = new Map<
     string,
     {
@@ -83,20 +75,6 @@ export class InMemoryCatalogPersistenceStrategy implements CatalogPersistenceStr
     const revision = (prev?.revision ?? 0) + 1;
     this.discovery.set(input.document_key, { body: input.body, revision });
     return { revision_token: String(revision) };
-  }
-
-  async registerPercolationPredicate(
-    input: RegisterPercolationPredicateInput,
-  ): Promise<RegisterPercolationPredicateOutput> {
-    this.predicates.set(input.predicate.predicate_id, input.predicate);
-    return { registered: true };
-  }
-
-  async revokePercolationPredicate(
-    input: RevokePercolationPredicateInput,
-  ): Promise<RevokePercolationPredicateOutput> {
-    const ok = this.predicates.delete(input.predicate_id);
-    return { revoked: ok };
   }
 
   async upsertCatalogPointer(
@@ -153,13 +131,6 @@ export class InMemoryCatalogPersistenceStrategy implements CatalogPersistenceStr
       source_row_content_hash,
     });
     return { source_row_content_hash };
-  }
-
-  async resolvePostFanOutTargets(
-    _input: ResolvePostFanOutTargetsInput,
-  ): Promise<ResolvePostFanOutTargetsOutput> {
-    void _input;
-    return { fan_out_targets: [] };
   }
 
   async lookupSourceMapPointer(

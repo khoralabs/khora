@@ -5,23 +5,6 @@ namespace cfd.colonnade
 use smithy.api#Blob
 use smithy.api#Document
 
-/// Input for catalog-side **fan-out target resolution** before building **`PublicationRouting.fan_out_targets`**.
-structure ResolvePostFanOutTargetsInput {
-    tenant_key: TenantKey
-    author_principal_id: PrincipalId
-    author_cell_id: CellId
-    /// Payload digest after author outbox commit (matches **`PostOperationOutput.content_hash`**).
-    content_hash: ContentHash
-    /// Same opaque envelope intended for catalog replication / percolation (**`PublicationRouting.catalog_envelope`**).
-    catalog_envelope: Document
-    payload_metadata: Document
-}
-
-structure ResolvePostFanOutTargetsOutput {
-    /// Recipients to enqueue via **`EnqueueInboxDelivery`** / **`FanOutTarget`** (order not normative).
-    fan_out_targets: FanOutTargetList
-}
-
 structure LookupSourceMapPointerInput {
     tenant_key: TenantKey
     source_map_id: SourceMapId
@@ -60,8 +43,6 @@ structure ComputeSourceRowContentHashOutput {
 @documentation("""
 **Catalog read model** — projections used while assembling publications and resolving pointer **source maps**.
 
-**Fan-out:** **`ResolvePostFanOutTargets`** is optional / legacy. Prefer resolving recipients in application code and passing **`PublicationRouting.fan_out_targets`** before **`PostOperation`**. Durable fan-out is modeled by **inbox staging rows** on recipient cells, not catalog discovery manifests.
-
 **Source maps:** **`LookupSourceMapPointer`** / **`BatchLookupSourceMapPointers`** resolve **`entry_key`** → **`PointerRef`** plus a stable **`source_row_content_hash`**
 for cache validation and ghost detection. Rows are written via **`CatalogIndex.UpsertSourceMapPointerRow`**.
 
@@ -72,16 +53,10 @@ for cache validation and ghost detection. Rows are written via **`CatalogIndex.U
 service CatalogRead {
     version: "2026-05-15"
     operations: [
-        ResolvePostFanOutTargets
         LookupSourceMapPointer
         BatchLookupSourceMapPointers
         ComputeSourceRowContentHash
     ]
-}
-
-operation ResolvePostFanOutTargets {
-    input: ResolvePostFanOutTargetsInput
-    output: ResolvePostFanOutTargetsOutput
 }
 
 operation LookupSourceMapPointer {

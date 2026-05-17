@@ -71,17 +71,6 @@ structure PointerRef {
     content_hash: ContentHash
 }
 
-/// Opaque subscription / probe predicate evaluated by the catalog (**percolation**).
-/// Colonnade does not fix the predicate language — embeddings map domain predicates here.
-structure SubscriptionPredicate {
-    predicate_id: String
-    definition: Document
-}
-
-list SubscriptionPredicateList {
-    member: SubscriptionPredicate
-}
-
 /// Small payloads MAY be **inlined** in the recipient inbox (e.g. under ~2KB) to reduce scatter-gather on drain.
 structure InlinePayload {
     bytes: Blob

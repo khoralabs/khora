@@ -10,10 +10,6 @@ export function ensureCatalogSchema(db: Database): void {
       body TEXT NOT NULL,
       revision INTEGER NOT NULL
     );
-    CREATE TABLE IF NOT EXISTS predicates (
-      predicate_id TEXT PRIMARY KEY NOT NULL,
-      definition TEXT NOT NULL
-    );
     CREATE TABLE IF NOT EXISTS catalog_pointers (
       catalog_pointer_id TEXT PRIMARY KEY NOT NULL,
       locator_cell_id TEXT NOT NULL,

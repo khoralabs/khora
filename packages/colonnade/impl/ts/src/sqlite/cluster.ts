@@ -1,6 +1,6 @@
+import { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { Database } from "bun:sqlite";
 
 import type { CatalogPersistenceStrategy } from "../catalog-persistence-strategy.ts";
 import type { CellPersistenceStrategy, ResolveCellStrategy } from "../cell-persistence-strategy.ts";
@@ -44,13 +44,17 @@ function openCatalogDatabasePaths(catalogPath: string, shardCount: number): stri
     return [catalogPath];
   }
   mkdirSync(catalogPath, { recursive: true });
-  return Array.from({ length: shardCount }, (_, i) => join(catalogPath, `catalog-shard-${i}.sqlite`));
+  return Array.from({ length: shardCount }, (_, i) =>
+    join(catalogPath, `catalog-shard-${i}.sqlite`),
+  );
 }
 
 /**
  * SQLite-backed catalog shard(s) + lazy-open cell DBs (`cellsDirectory/<stem>.sqlite`).
  */
-export function createSqliteColonnadeCluster(opts: SqliteColonnadeClusterOptions): SqliteColonnadeCluster {
+export function createSqliteColonnadeCluster(
+  opts: SqliteColonnadeClusterOptions,
+): SqliteColonnadeCluster {
   mkdirSync(opts.cellsDirectory, { recursive: true });
   const shardCount = opts.catalogShardCount ?? 1;
   const catalogPaths = openCatalogDatabasePaths(opts.catalogPath, shardCount);
@@ -59,7 +63,9 @@ export function createSqliteColonnadeCluster(opts: SqliteColonnadeClusterOptions
     (db, i) => new SqliteCatalogPersistenceStrategy(db, { shardIndex: i }),
   );
   const catalog: CatalogPersistenceStrategy =
-    shardCount === 1 ? leafCatalogStrategies[0]! : new ShardingCatalogPersistenceStrategy(leafCatalogStrategies);
+    shardCount === 1
+      ? leafCatalogStrategies[0]!
+      : new ShardingCatalogPersistenceStrategy(leafCatalogStrategies);
 
   const cellDbById = new Map<string, Database>();
   const cellStrategyById = new Map<string, SqliteCellPersistenceStrategy>();

@@ -8,14 +8,8 @@ import type {
   IssueConnectionTokenOutput,
   LookupSourceMapPointerInput,
   LookupSourceMapPointerOutput,
-  RegisterPercolationPredicateInput,
-  RegisterPercolationPredicateOutput,
   ResolveCatalogPointerInput,
   ResolveCatalogPointerOutput,
-  ResolvePostFanOutTargetsInput,
-  ResolvePostFanOutTargetsOutput,
-  RevokePercolationPredicateInput,
-  RevokePercolationPredicateOutput,
   UpsertCatalogPointerInput,
   UpsertCatalogPointerOutput,
   UpsertDiscoveryDocumentInput,
@@ -82,26 +76,6 @@ export class ShardingCatalogPersistenceStrategy implements CatalogPersistenceStr
     return this.shardForDiscoveryKey(input.document_key).upsertDiscoveryDocument(input);
   }
 
-  async registerPercolationPredicate(
-    input: RegisterPercolationPredicateInput,
-  ): Promise<RegisterPercolationPredicateOutput> {
-    for (const s of this.shards) {
-      await s.registerPercolationPredicate(input);
-    }
-    return { registered: true };
-  }
-
-  async revokePercolationPredicate(
-    input: RevokePercolationPredicateInput,
-  ): Promise<RevokePercolationPredicateOutput> {
-    let revoked = false;
-    for (const s of this.shards) {
-      const r = await s.revokePercolationPredicate(input);
-      revoked ||= r.revoked;
-    }
-    return { revoked };
-  }
-
   upsertCatalogPointer(input: UpsertCatalogPointerInput): Promise<UpsertCatalogPointerOutput> {
     const idx = parseCatalogPointerShardIndex(input.catalog_pointer_id);
     if (idx !== null) {
@@ -141,13 +115,6 @@ export class ShardingCatalogPersistenceStrategy implements CatalogPersistenceStr
     input: UpsertSourceMapPointerRowInput,
   ): Promise<UpsertSourceMapPointerRowOutput> {
     return this.shardForTenantKey(input.tenant_key).upsertSourceMapPointerRow(input);
-  }
-
-  resolvePostFanOutTargets(
-    input: ResolvePostFanOutTargetsInput,
-  ): Promise<ResolvePostFanOutTargetsOutput> {
-    void input;
-    return Promise.resolve({ fan_out_targets: [] });
   }
 
   lookupSourceMapPointer(input: LookupSourceMapPointerInput): Promise<LookupSourceMapPointerOutput> {
