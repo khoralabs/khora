@@ -19,7 +19,8 @@
     "@khoralabs/obp-v2-errors": "workspace:*",
     "@khoralabs/obp-v2-nbc": "workspace:*",
     "@khoralabs/obp-v2-persistence": "workspace:*",
-    "@khoralabs/obp-v2-session-impl": "workspace:*"
+    "@khoralabs/obp-v2-session-impl": "workspace:*",
+    "@noble/curves": "^2.2.0"
   },
   "devDependencies": {
     "@types/bun": "latest"

@@ -39,6 +39,16 @@ export type RunFrameMultiplexSessionArgs = {
   openerSession?: (api: FrameMultiplexOpenerApi) => Promise<void>;
   /** NBC N4 bind payload validation when inbound TURN carries an active **`bind_policy`**. */
   validateBindPayload?: NbcBindPolicyValidateFn | undefined;
+  /**
+   * When true, negotiation frame bodies use X25519 + AES-GCM (frame channel baseline).
+   * Direct transports (e.g. HTTP/2) omit this so peers exchange bare NBC bodies.
+   */
+  frameChannelBodyE2ee?: boolean;
+  /**
+   * HKDF domain separation for frame-body E2EE (e.g. room id). Never use the host room pairing secret.
+   * @see docs/FRAME_CHANNEL_E2EE.md
+   */
+  e2eeChannelBinding?: string;
 };
 
 /** Per-chain mutable state inside {@link MultiplexSessionRuntime}. */

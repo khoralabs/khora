@@ -303,6 +303,10 @@ export class At2Client {
     return out;
   }
 
+  /**
+   * Opens the room negotiation WebSocket and runs OBP with **frame-body E2EE** (always on for this path).
+   * Pass **`e2eeChannelBinding`** (e.g. room id) for stronger HKDF domain separation; never derived from the ticket secret.
+   */
   async connectRoom(
     options: Omit<ObpWebSocketConnectOptions, "WebSocketCtor">,
     runner: (conn: ObpFrameConnection) => Promise<void>,

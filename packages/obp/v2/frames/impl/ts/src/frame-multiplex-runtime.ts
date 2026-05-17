@@ -11,6 +11,19 @@ import type { ObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
 import { accumulateTaggedSessionOps, type SessionOp } from "@khoralabs/obp-v2-session-impl";
 
 import { canonicalJsonString } from "./canonical-json.ts";
+import {
+  decryptWireFrameBody,
+  deriveFrameBodyAesKey,
+  encryptLogicalFrameBody,
+  ephemeralX25519Keygen,
+  handshakeBodyFromEphemeralPub,
+  hexToBytes32,
+  isE2eeHandshakeBody,
+  minActorPubkeyFromInit,
+  parseHandshakeEphemeralPub,
+  x25519SharedSecret,
+  bytesToHexLower,
+} from "./frame-channel-e2ee.ts";
 import { encodeFramedJson } from "./encode-framed-json.ts";
 import { FrameDag, sha256HexLowerFromUtf8String, signingPayloadBytes } from "./frame-dag.ts";
 import {
@@ -46,6 +59,15 @@ import type {
 import type { Frame, SessionEnvelopeWire, SessionInitNormalized } from "./frame-protocol-types.ts";
 import type { FrameSigner, FrameVerifier } from "./frame-signer.ts";
 
+type MultiplexE2eeState = {
+  localSk: Uint8Array;
+  localPk: Uint8Array;
+  remotePubHex: string | null;
+  aesKey: CryptoKey | null;
+  ready: boolean;
+  hsSeen: number;
+};
+
 export class MultiplexSessionRuntime {
   private readonly channel: DuplexByteStream;
   private readonly signer: FrameSigner;
@@ -77,6 +99,9 @@ export class MultiplexSessionRuntime {
 
   private readonly envelopeFlushBySid = new Map<string, Promise<void> | null>();
   private readonly decoder = createFrameDecoder();
+  private readonly e2eeChannelBinding: string;
+  private readonly frameChannelBodyE2ee: boolean;
+  private readonly e2eeByChain = new WeakMap<ChainState, MultiplexE2eeState>();
 
   constructor(args: RunFrameMultiplexSessionArgs) {
     this.channel = args.channel;
@@ -94,6 +119,9 @@ export class MultiplexSessionRuntime {
     this.closeChannelWhenIdle = args.closeChannelWhenIdle !== false;
 
     this.validateBindPayload = args.validateBindPayload;
+
+    this.e2eeChannelBinding = args.e2eeChannelBinding ?? "";
+    this.frameChannelBodyE2ee = args.frameChannelBodyE2ee === true;
 
     this.lazyTemplate =
       args.sessionTemplate !== undefined
@@ -187,7 +215,7 @@ export class MultiplexSessionRuntime {
     if (this.tipToSession.has(wire.genesis_hash)) {
       throw new ObpError("VALIDATION", "duplicate genesis_hash for open multiplex chain");
     }
-    this.chains.set(wire.session_id, {
+    const chainState: ChainState = {
       init: wire,
       dag: new FrameDag(wire.genesis_hash),
       sessionOps: [],
@@ -195,8 +223,10 @@ export class MultiplexSessionRuntime {
       pendingAck: false,
       active: true,
       ...(hooks !== undefined ? { hooks } : {}),
-    });
+    };
+    this.chains.set(wire.session_id, chainState);
     this.tipToSession.set(wire.genesis_hash, wire.session_id);
+    this.initFrameE2eeForChain(chainState);
   }
 
   private removeTipsForSession(sessionId: string): void {
@@ -329,13 +359,89 @@ export class MultiplexSessionRuntime {
     await this.channel.close();
   }
 
+  private initFrameE2eeForChain(c: ChainState): void {
+    if (!this.frameChannelBodyE2ee) return;
+    const { sk, pk } = ephemeralX25519Keygen();
+    this.e2eeByChain.set(c, {
+      localSk: sk,
+      localPk: pk,
+      remotePubHex: null,
+      aesKey: null,
+      ready: false,
+      hsSeen: 0,
+    });
+    const minPub = minActorPubkeyFromInit(c.init.parties);
+    if (this.signer.actor === minPub) {
+      void this.enqueueMux(async () => {
+        await this.sendLeaderE2eeHandshake(c);
+      });
+    }
+  }
+
+  private async sendLeaderE2eeHandshake(c: ChainState): Promise<void> {
+    if (this.channelDead) return;
+    const st = this.e2eeByChain.get(c);
+    if (st === undefined) return;
+    const body = handshakeBodyFromEphemeralPub(st.localPk);
+    const { frame } = await c.dag.signOutboundAtTip(this.signer, "END_OFFERS", body);
+    await this.sendWire(frame);
+  }
+
+  private assertValidE2eeHandshakeOrder(c: ChainState, frame: Frame, st: MultiplexE2eeState): void {
+    if (frame.type !== "END_OFFERS") {
+      throw new ObpError("VALIDATION", "E2EE: handshake must use END_OFFERS");
+    }
+    parseHandshakeEphemeralPub(frame.body as Record<string, unknown>);
+    const minPub = minActorPubkeyFromInit(c.init.parties);
+    const idx = st.hsSeen;
+    if (idx === 0) {
+      if (frame.actor !== minPub) {
+        throw new ObpError("VALIDATION", "E2EE: first handshake must be from lex-min actor");
+      }
+      if (frame.p_hash !== c.init.genesis_hash) {
+        throw new ObpError("VALIDATION", "E2EE: first handshake p_hash must be genesis_hash");
+      }
+    } else if (idx === 1) {
+      if (frame.actor === minPub) {
+        throw new ObpError("VALIDATION", "E2EE: second handshake must be from lex-max actor");
+      }
+      if (frame.p_hash === c.init.genesis_hash) {
+        throw new ObpError("VALIDATION", "E2EE: second handshake must extend first");
+      }
+    } else {
+      throw new ObpError("VALIDATION", "E2EE: unexpected handshake frame");
+    }
+  }
+
+  private async finalizeE2eeKeys(c: ChainState, st: MultiplexE2eeState): Promise<void> {
+    if (st.hsSeen < 2 || st.ready) return;
+    if (st.remotePubHex === null) {
+      throw new ObpError("VALIDATION", "E2EE: missing remote ephemeral pubkey");
+    }
+    const remotePk = hexToBytes32(st.remotePubHex, "remote_ephemeral");
+    const shared = x25519SharedSecret(st.localSk, remotePk);
+    st.aesKey = await deriveFrameBodyAesKey({
+      sharedSecret: shared,
+      sessionId: c.init.session_id,
+      channelBinding: this.e2eeChannelBinding,
+    });
+    st.ready = true;
+  }
+
   private emitOutboundTurn(sessionId: string, body: NbcTurnBody): Promise<void> {
     return this.enqueueMux(async () => {
       const chain = this.chains.get(sessionId);
       if (chain === undefined || !chain.active) {
         throw new ObpError("VALIDATION", "emitOutboundTurn: unknown or inactive chain");
       }
-      const wire = nbcTurnBodyToWireRecord(body);
+      const st = this.e2eeByChain.get(chain);
+      let wire = nbcTurnBodyToWireRecord(body);
+      if (this.frameChannelBodyE2ee) {
+        if (st === undefined || !st.ready || st.aesKey === null) {
+          throw new ObpError("VALIDATION", "E2EE: cannot send TURN before handshake completes");
+        }
+        wire = await encryptLogicalFrameBody(st.aesKey, wire);
+      }
       const { frame } = await chain.dag.signOutboundAtTip(this.signer, "TURN", wire);
       const key = frameDedupeKeyHex(frame);
       if (this.globalDedupe.has(key)) return;
@@ -363,7 +469,11 @@ export class MultiplexSessionRuntime {
           if (chain === undefined || !chain.active) {
             throw new ObpError("VALIDATION", "terminate: unknown or inactive chain");
           }
-          const body: Record<string, unknown> = { reason, ...(code !== undefined ? { code } : {}) };
+          let body: Record<string, unknown> = { reason, ...(code !== undefined ? { code } : {}) };
+          const st = this.e2eeByChain.get(chain);
+          if (this.frameChannelBodyE2ee && st?.ready === true && st.aesKey !== null) {
+            body = await encryptLogicalFrameBody(st.aesKey, body);
+          }
           const parentTip = chain.dag.tipHash;
           const { frame, nextTip } = await chain.dag.signOutboundAtTip(
             this.signer,
@@ -450,6 +560,13 @@ export class MultiplexSessionRuntime {
       }
       const c = this.resolveChain(frame.p_hash);
       const oldP = frame.p_hash;
+      const e2eeSt = this.e2eeByChain.get(c);
+
+      if (frame.type === "TURN") {
+        if (e2eeSt !== undefined && !e2eeSt.ready) {
+          throw new ObpError("VALIDATION", "E2EE: TURN before handshake completes");
+        }
+      }
 
       if (frame.type === "TERMINATE") {
         const ok = await this.verifier.verify(frame.actor, signingPayloadBytes(frame), frame.sig);
@@ -458,11 +575,41 @@ export class MultiplexSessionRuntime {
         await c.dag.verifyInboundChild(frame, this.verifier);
       }
 
+      let workFrame = frame;
+
+      if (frame.type === "END_OFFERS" && isE2eeHandshakeBody(frame.body)) {
+        if (e2eeSt === undefined) {
+          throw new ObpError("VALIDATION", "unexpected E2EE handshake on this transport");
+        }
+        this.assertValidE2eeHandshakeOrder(c, frame, e2eeSt);
+        if (frame.actor !== this.signer.actor) {
+          e2eeSt.remotePubHex = bytesToHexLower(
+            parseHandshakeEphemeralPub(frame.body as Record<string, unknown>),
+          );
+        }
+        e2eeSt.hsSeen += 1;
+        await this.finalizeE2eeKeys(c, e2eeSt);
+      } else if (e2eeSt !== undefined && !e2eeSt.ready && frame.type !== "TERMINATE") {
+        throw new ObpError("VALIDATION", "E2EE: frame before handshake completes");
+      } else if (
+        e2eeSt?.ready === true &&
+        e2eeSt.aesKey !== null &&
+        !isE2eeHandshakeBody(frame.body)
+      ) {
+        workFrame = {
+          ...frame,
+          body: (await decryptWireFrameBody(
+            e2eeSt.aesKey,
+            frame.body as Record<string, unknown>,
+          )) as Frame["body"],
+        };
+      }
+
       if (frame.type === "TURN") {
         await applyNbcFrameTurn(
           this.client,
-          partyIdForActor(c.init, frame.actor),
-          parseNbcFrameTurnBody(frame.body as Record<string, unknown>),
+          partyIdForActor(c.init, workFrame.actor),
+          parseNbcFrameTurnBody(workFrame.body as Record<string, unknown>),
           {
             turnSeq: c.sessionOps.length,
             relayTsMs: relayTsMs ?? 0,
@@ -484,8 +631,17 @@ export class MultiplexSessionRuntime {
         c.dag.commitTip(nextTip);
         this.advanceTip(c, oldP);
 
+        if (
+          frame.type === "END_OFFERS" &&
+          isE2eeHandshakeBody(frame.body) &&
+          frame.actor === minActorPubkeyFromInit(c.init.parties) &&
+          this.signer.actor !== minActorPubkeyFromInit(c.init.parties)
+        ) {
+          await this.sendLeaderE2eeHandshake(c);
+        }
+
         if (frame.type === "TURN") {
-          const body = parseNbcFrameTurnBody(frame.body as Record<string, unknown>);
+          const body = parseNbcFrameTurnBody(workFrame.body as Record<string, unknown>);
           let replied = false;
           const offerFn = c.hooks?.onIncomingOffer ?? this.handlers.onIncomingOffer;
           if (offerFn !== undefined) {
@@ -503,7 +659,7 @@ export class MultiplexSessionRuntime {
       }
 
       if (frame.type === "TERMINATE") {
-        const tb = frame.body as Record<string, unknown>;
+        const tb = workFrame.body as Record<string, unknown>;
         const reason = String(tb.reason ?? "");
         const termCode = tb.code !== undefined ? String(tb.code) : undefined;
         await this.destroyChain(c.init.session_id, reason, termCode, true);

@@ -86,6 +86,8 @@ boundaries; see **`cfd.obp.frame.http2`**.
 
 **TERMINATE** may be sent when allowed by local policy; **`body`** remains opaque at this layer.
 
+**Frame-channel body confidentiality:** In **hub-mediated WebSocket frame channels**, implementations **SHOULD** encrypt logical **TURN**, non-handshake **END_OFFERS**, and **TERMINATE** **`body`** values using a documented **`e2ee`** JSON wrapper (`v`, `alg`, `iv`, `ct`) over canonical JSON plaintext, after an **`e2ee_hs`** handshake carried as plaintext on two **`END_OFFERS`** frames. **Ed25519 signatures** are computed over the **ciphertext** **`body`**. **`init`** envelopes and DAG fields (`type`, `p_hash`, `actor`, `sig`) remain visible to the relay. Host-held room ticket / pairing secrets **MUST NOT** be the sole input to these message keys. Normative notes: `packages/obp/v2/frames/impl/ts/docs/FRAME_CHANNEL_E2EE.md`.
+
 **Hardened constraints (draft §8):**
 1. **Strict ordering:** reject when **`p_hash`** ≠ local tip.
 2. **Identity verification:** reject invalid **`sig`**; session **SHOULD** abort.
@@ -100,6 +102,6 @@ for **`NegotiationSessionProtocol`** checkpoints; **`SessionOp.payload`** carrie
 **Explicit non-goals here:** hostnames, ports, TLS, and URLs — see transport bindings (e.g. **`cfd.obp.frame.http2`**).
 """)
 service NegotiationFrameProtocol {
-    version: "2026-05-15"
+    version: "2026-05-17"
     operations: []
 }

@@ -33,6 +33,11 @@ export type ObpFrameChannelClientOptions = {
   /** Multiplex lifecycle hooks (e.g. {@link FrameSessionHandlers.onSessionReady} for inbound SessionInit). */
   handlers?: FrameSessionHandlers;
   validateBindPayload?: RunFrameMultiplexSessionArgs["validateBindPayload"];
+  /**
+   * Optional HKDF binding (e.g. room id). Never derived from the host room ticket secret.
+   * Frame bodies are always E2EE on this WebSocket entrypoint.
+   */
+  e2eeChannelBinding?: string;
 };
 
 export type ObpWebSocketConnectOptions = Omit<ObpFrameChannelClientOptions, "channel"> & {
@@ -71,6 +76,8 @@ export async function connectObpFrameChannelSession(
     verifier,
     client: options.client,
     handlers,
+    frameChannelBodyE2ee: true,
+    ...(options.e2eeChannelBinding !== undefined ? { e2eeChannelBinding: options.e2eeChannelBinding } : {}),
     ...(sessionEnvelopeSync !== undefined ? { sessionEnvelopeSync } : {}),
     ...(options.validateBindPayload !== undefined
       ? { validateBindPayload: options.validateBindPayload }

@@ -90,4 +90,36 @@ describe("createFrameChannelHub", () => {
       expect((json.frame as { type: string }).type).toBe("TURN");
     }
   });
+
+  test("relayBytes wraps TURN with E2EE ciphertext body", async () => {
+    const persistence = createFakeHubPersistence();
+    const hub = createFrameChannelHub({ hubPersistence: persistence });
+    await hub.createChannel("room-a");
+
+    const received: Uint8Array[] = [];
+    const p1: import("./port.ts").FrameChannelPeer = {
+      send(b) {
+        received.push(b);
+      },
+    };
+    await hub.attachPeer("room-a", p1);
+
+    const frame = {
+      p_hash: "a".repeat(64),
+      actor: "00",
+      sig: "s",
+      type: "TURN",
+      body: {
+        e2ee: { v: 1, alg: "A256GCM", iv: "AAAA", ct: "BBBB" },
+      },
+    };
+    const raw = encodeFramedJson(frame);
+    hub.relayBytes("room-a", p1, raw);
+
+    expect(received.length).toBe(1);
+    const json = JSON.parse(
+      new TextDecoder().decode(received[0]!.subarray(4, 4 + received[0]!.length - 4)),
+    ) as { frame: { body: { e2ee: { ct: string } } } };
+    expect(json.frame.body.e2ee.ct).toBe("BBBB");
+  });
 });
