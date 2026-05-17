@@ -17,6 +17,7 @@ import {
 } from "./room-commands.ts";
 import { handleRegister } from "./register.ts";
 import { handleRoomCreate, handleRoomJoin } from "./room.ts";
+import { handleWhoami } from "./whoami.ts";
 
 export async function dispatch(
   ctx: VellumCliContext,
@@ -24,6 +25,11 @@ export async function dispatch(
   flags: FlagMap,
 ): Promise<void> {
   const [a, b] = positional;
+
+  if (a === "whoami") {
+    await handleWhoami(flags);
+    return;
+  }
 
   if (a === "register") {
     await handleRegister(ctx, flags);

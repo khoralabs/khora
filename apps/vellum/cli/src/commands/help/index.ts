@@ -12,9 +12,11 @@ import { portListHelp, portReadHelp } from "./port.help.ts";
 import { policyReadHelp, policyValidateHelp } from "./policy.help.ts";
 import { registerHelp } from "./register.help.ts";
 import { roomCreateHelp, roomJoinHelp } from "./room.help.ts";
+import { whoamiHelp } from "./whoami.help.ts";
 
 export const allCommandHelp: readonly CommandHelp[] = [
   registerHelp,
+  whoamiHelp,
   roomCreateHelp,
   roomJoinHelp,
   listHelp,
