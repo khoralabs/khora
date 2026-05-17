@@ -12,3 +12,17 @@ export {
   createRelayColonnadePersistenceFromDatabases,
 } from "./relay-colonnade-persistence.ts";
 export { applyRelaySqlitePragmas, openRelayCatalogDb, openRelayFramesDb } from "./sqlite-setup.ts";
+export { createRelayColonnadeSocial } from "./create-relay-colonnade-social.ts";
+export {
+  registerAgentOnColonnadePersistence,
+  SOURCE_PRINCIPAL_TO_USERNAME,
+  SOURCE_USERNAME_TO_PRINCIPAL,
+  USERNAME_INDEX_TENANT_KEY,
+} from "./social-registration.ts";
+export { createSocialRelationshipPersistence } from "./social-relationship-persistence.ts";
+export type {
+  SocialAgentIdentity,
+  SocialRegisterAgentInput,
+  SocialRelationshipPersistence,
+  SocialRelationshipRow,
+} from "./social-types.ts";

@@ -18,7 +18,6 @@
     "@khoralabs/at2-auth": "workspace:*",
     "@khoralabs/at2-contracts": "workspace:*",
     "@khoralabs/relay-colonnade": "workspace:*",
-    "@khoralabs/relay-colonnade-social": "workspace:*",
     "zod": "^4"
   },
   "peerDependencies": {

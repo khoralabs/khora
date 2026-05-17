@@ -13,7 +13,7 @@ import {
   SOURCE_PRINCIPAL_TO_USERNAME,
   SOURCE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
-} from "@khoralabs/relay-colonnade-social";
+} from "@khoralabs/relay-colonnade";
 import { relaySyntheticPointer } from "@khoralabs/relay-colonnade";
 import { clientIpFromRequest } from "../rate-limit.ts";
 import type { HostRouteDeps } from "./deps.ts";

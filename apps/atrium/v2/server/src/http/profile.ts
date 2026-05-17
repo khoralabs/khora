@@ -12,7 +12,7 @@ import {
   registerAgentOnColonnadePersistence,
   SOURCE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
-} from "@khoralabs/relay-colonnade-social";
+} from "@khoralabs/relay-colonnade";
 import z from "zod";
 import type { HostRouteDeps } from "./deps.ts";
 import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses.ts";

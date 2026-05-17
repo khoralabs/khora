@@ -8,7 +8,7 @@ import { normalizeTopicSlug, normalizeUsername } from "@khoralabs/at2-contracts"
 import {
   SOURCE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
-} from "@khoralabs/relay-colonnade-social";
+} from "@khoralabs/relay-colonnade";
 import type { HostRouteDeps } from "./deps.ts";
 import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses.ts";
 

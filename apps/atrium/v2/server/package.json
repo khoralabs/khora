@@ -15,7 +15,6 @@
     "@khoralabs/at2-transport": "workspace:*",
     "@khoralabs/duplex-byte-stream": "workspace:*",
     "@khoralabs/relay-colonnade": "workspace:*",
-    "@khoralabs/relay-colonnade-social": "workspace:*",
     "zod": "^4"
   },
   "devDependencies": {

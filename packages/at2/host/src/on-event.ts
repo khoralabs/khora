@@ -16,7 +16,7 @@ import {
   RELAY_CATALOG_SOURCE_POST,
   relaySyntheticPointer,
 } from "@khoralabs/relay-colonnade";
-import { registerAgentOnColonnadePersistence } from "@khoralabs/relay-colonnade-social";
+import { registerAgentOnColonnadePersistence } from "@khoralabs/relay-colonnade";
 import { RELAY_INBOX_SOURCE_MAP_ID } from "./relay-inbox.ts";
 import {
   authorSubscriptionSubject,
