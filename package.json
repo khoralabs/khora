@@ -46,6 +46,8 @@
     "packages/obp/v2/transport-ws/impl/ts",
     "packages/atrium/*",
     "packages/colonnade/impl/ts",
+    "packages/relay-colonnade",
+    "packages/relay-colonnade-social",
     "packages/vellum/*",
     "apps/vellum/*"
   ]
