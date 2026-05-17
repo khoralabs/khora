@@ -315,6 +315,38 @@
         "typescript": "^5",
       },
     },
+    "packages/at2/auth": {
+      "name": "@khoralabs/at2-auth",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/agent-persisted-signer": "workspace:*",
+        "@khoralabs/agent-relay": "workspace:*",
+        "@noble/ed25519": "^3.1.0",
+        "iso-did": "^2.1.1",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/at2/contracts": {
+      "name": "@khoralabs/at2-contracts",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/agent-relay": "workspace:*",
+        "zod": "^4",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "packages/at2/relay-colonnade": {
       "name": "@khoralabs/relay-colonnade",
       "version": "0.0.0",
@@ -334,10 +366,29 @@
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/agent-relay": "workspace:*",
+        "@khoralabs/at2-contracts": "workspace:*",
         "@khoralabs/relay-colonnade": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/at2/transport": {
+      "name": "@khoralabs/at2-transport",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/agent-io": "workspace:*",
+        "@khoralabs/agent-relay": "workspace:*",
+        "@khoralabs/at2-auth": "workspace:*",
+        "@khoralabs/at2-contracts": "workspace:*",
+        "zod": "^4",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
       },
       "peerDependencies": {
         "typescript": "^5",
@@ -1003,6 +1054,12 @@
     "@khoralabs/agent-relay": ["@khoralabs/agent-relay@workspace:packages/agent/relay"],
 
     "@khoralabs/agent-thread": ["@khoralabs/agent-thread@workspace:packages/agent/thread"],
+
+    "@khoralabs/at2-auth": ["@khoralabs/at2-auth@workspace:packages/at2/auth"],
+
+    "@khoralabs/at2-contracts": ["@khoralabs/at2-contracts@workspace:packages/at2/contracts"],
+
+    "@khoralabs/at2-transport": ["@khoralabs/at2-transport@workspace:packages/at2/transport"],
 
     "@khoralabs/atrium-auth": ["@khoralabs/atrium-auth@workspace:packages/atrium/auth"],
 

@@ -13,11 +13,14 @@ export type SocialRelationshipRow = {
 export type SocialAgentIdentity = {
   principalId: PrincipalId;
   profileId: string;
+  username: string;
 };
 
 export type SocialRegisterAgentInput = {
   principalId: PrincipalId;
   profileUpsert: AgentRelayEntityUpsert;
+  /** Human-facing handle; stored as `normalizeUsername()` from `@khoralabs/at2-contracts` (trim + lowercase) for stable URL paths. */
+  username: string;
 };
 
 export type SocialRelationshipPersistence = {

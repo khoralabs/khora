@@ -18,6 +18,8 @@ export async function createRelayColonnadeSocial(opts: {
   social: SocialRelationshipPersistence;
   catalogDb: Database;
   framesDb: Database;
+  store: RelayCatalogSourceMapStore;
+  tenantKey: string;
 }> {
   const tenantKey = opts.tenantKey ?? "relay";
   const catalogDb = openRelayCatalogDb(opts.catalogPath);
@@ -25,5 +27,5 @@ export async function createRelayColonnadeSocial(opts: {
   const store = new RelayCatalogSourceMapStore(catalogDb);
   const persistence = createRelayColonnadePersistenceFromDatabases(catalogDb, framesDb, tenantKey);
   const social = createSocialRelationshipPersistence({ store, catalogDb, tenantKey });
-  return { persistence, social, catalogDb, framesDb };
+  return { persistence, social, catalogDb, framesDb, store, tenantKey };
 }
