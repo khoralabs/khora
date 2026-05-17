@@ -1,5 +1,6 @@
-import type { CellPersistenceStrategy, ResolveCellStrategy } from "./cell-persistence-strategy.ts";
-import type { SubmitRoutedWritesInput, SubmitRoutedWritesOutput } from "./colonnade-types.ts";
+import type { ResolveCellStrategy } from "./cell-persistence-strategy.ts";
+import type { RoutedWrite, SubmitRoutedWritesInput, SubmitRoutedWritesOutput } from "./colonnade-types.ts";
+import { supportsSqliteCellBatch } from "./sqlite/sqlite-cell-strategy.ts";
 
 /**
  * Enqueues **`RoutedWrite`** units onto each target cell's durable write log via
@@ -9,16 +10,40 @@ export class ColonnadeRouter {
   constructor(private readonly resolveCell: ResolveCellStrategy) {}
 
   async submitRoutedWrites(input: SubmitRoutedWritesInput): Promise<SubmitRoutedWritesOutput> {
-    const accepted: string[] = [];
+    const byCell = new Map<string, RoutedWrite[]>();
     for (const w of input.writes) {
-      const cell = this.resolveCell(w.target_cell_id);
-      await cell.appendWriteLogEntry({
-        cell_id: w.target_cell_id,
-        correlation_id: w.correlation_id,
-        op: w.op,
-      });
-      accepted.push(w.correlation_id);
+      const list = byCell.get(w.target_cell_id);
+      if (list === undefined) {
+        byCell.set(w.target_cell_id, [w]);
+      } else {
+        list.push(w);
+      }
     }
-    return { accepted_correlation_ids: accepted };
+
+    await Promise.all(
+      [...byCell.entries()].map(async ([targetCellId, writes]) => {
+        const cell = this.resolveCell(targetCellId);
+        const ops = writes.map((w) => ({
+          cell_id: w.target_cell_id,
+          correlation_id: w.correlation_id,
+          op: w.op,
+        }));
+
+        if (supportsSqliteCellBatch(cell) && ops.length > 1) {
+          await cell.appendWriteLogEntriesBatch(ops);
+          return;
+        }
+
+        for (const w of writes) {
+          await cell.appendWriteLogEntry({
+            cell_id: w.target_cell_id,
+            correlation_id: w.correlation_id,
+            op: w.op,
+          });
+        }
+      }),
+    );
+
+    return { accepted_correlation_ids: input.writes.map((w) => w.correlation_id) };
   }
 }

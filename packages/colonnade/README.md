@@ -8,13 +8,17 @@ This package holds the **Smithy model** (`spec/model/`) and a **TypeScript persi
 
 [`impl/ts`](impl/ts) defines **`@khoralabs/colonnade-persistence`**: `CatalogPersistenceStrategy`, `CellPersistenceStrategy`, `ColonnadeRouter`, `ColonnadePublicationClient`, plus in-memory strategies for tests.
 
+**Durable roles:** the **catalog** holds indexing / read-model rows (pointers, discovery metadata keyed per tenant, source-map projections). Each **cell** owns the authoritative **outbox** (payload bytes) and **inbox** staging. Fan-out recipient lists are **not** stored as catalog manifests—**`PublicationRouting.fan_out_targets`** is filled by application code; proof of delivery is **inbox rows** across cells.
+
+**SQLite topology:** `createSqliteColonnadeCluster` opens **`catalogShardCount`** catalog shard files (when **`catalogShardCount > 1`**, **`catalogPath`** is a directory containing **`catalog-shard-{i}.sqlite`**). Pool routing uses **`derivePoolHomeCell(principal_id, cellCount)`** (deterministic hash; no catalog assignment rows). Optional **`useCellWorkers: true`** runs each cell SQLite connection inside a Bun **`Worker`** (`LazyWorkerBackedCellStrategy`).
+
 ```bash
 cd packages/colonnade/impl/ts && bun test && bun run typecheck
 ```
 
 ### Benchmarks
 
-Micro-benchmarks exercise publication, routing, and inbox drain paths against injectable persistence factories (`BenchmarkStrategies` in [`impl/ts/src/bench/strategies.ts`](impl/ts/src/bench/strategies.ts)). Built-ins: **`default`** (in-memory) and **`sqlite`** (temp catalog + cell DBs per run). Use **`registerBenchmarkStrategies`** for custom backends.
+Micro-benchmarks exercise publication, routing, and inbox drain paths against injectable persistence factories (`BenchmarkStrategies` in [`impl/ts/src/bench/strategies.ts`](impl/ts/src/bench/strategies.ts)). Built-ins: **`default`** (in-memory) and **`sqlite`** (temp catalog + cell DBs per run). For SQLite concurrency experiments, pass **`--cell-workers`** so each cell DB runs in a Bun **`Worker`** (same as cluster **`useCellWorkers`**). Use **`registerBenchmarkStrategies`** for custom backends.
 
 Canonical defaults (SQLite, **`post_catalog_fanout`**, 3000 iterations / 200 warmup, etc.) live in [`impl/ts/src/bench/bench-defaults.ts`](impl/ts/src/bench/bench-defaults.ts). With no flags, **`bun run bench`** uses those defaults.
 

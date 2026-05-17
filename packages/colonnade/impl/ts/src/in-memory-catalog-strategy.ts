@@ -5,7 +5,6 @@ import type {
   CellRef,
   ComputeSourceRowContentHashInput,
   ComputeSourceRowContentHashOutput,
-  FanOutTarget,
   IssueConnectionTokenInput,
   IssueConnectionTokenOutput,
   LookupSourceMapPointerInput,
@@ -32,6 +31,7 @@ import {
   canonicalSourceMapRowBytes,
   sha256HexLower,
 } from "./hash.ts";
+import { encodeCatalogPointerId } from "./sqlite/catalog-pointer-id.ts";
 
 const ZERO_HASH = "0".repeat(64);
 
@@ -48,6 +48,16 @@ function sourceMapStoreKey(tenant_key: string, source_map_id: string): string {
 
 /** Mutable **catalog** index for tests. */
 export class InMemoryCatalogPersistenceStrategy implements CatalogPersistenceStrategy {
+  nextCatalogPointerId(_tenantKey: string): string {
+    void _tenantKey;
+    return encodeCatalogPointerId(0);
+  }
+
+  async runImmediateTransactionForTenant<T>(_tenantKey: string, fn: () => Promise<T>): Promise<T> {
+    void _tenantKey;
+    return fn();
+  }
+
   private readonly discovery = new Map<string, { body: unknown; revision: number }>();
   private readonly predicates = new Map<string, SubscriptionPredicate>();
   private readonly pointers = new Map<
@@ -146,31 +156,10 @@ export class InMemoryCatalogPersistenceStrategy implements CatalogPersistenceStr
   }
 
   async resolvePostFanOutTargets(
-    input: ResolvePostFanOutTargetsInput,
+    _input: ResolvePostFanOutTargetsInput,
   ): Promise<ResolvePostFanOutTargetsOutput> {
-    const docKey = `colonnade:fanout:${input.tenant_key}:${input.content_hash}`;
-    const row = this.discovery.get(docKey);
-    const body = row?.body as { fan_out_targets?: unknown } | undefined;
-    const raw = body?.fan_out_targets;
-    if (!Array.isArray(raw)) {
-      return { fan_out_targets: [] };
-    }
-    const fan_out_targets: FanOutTarget[] = [];
-    for (const item of raw) {
-      if (
-        item !== null &&
-        typeof item === "object" &&
-        "recipient_cell_id" in item &&
-        "recipient_principal_id" in item
-      ) {
-        const o = item as Record<string, unknown>;
-        fan_out_targets.push({
-          recipient_cell_id: String(o.recipient_cell_id),
-          recipient_principal_id: String(o.recipient_principal_id),
-        });
-      }
-    }
-    return { fan_out_targets };
+    void _input;
+    return { fan_out_targets: [] };
   }
 
   async lookupSourceMapPointer(

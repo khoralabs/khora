@@ -14,6 +14,20 @@ export {
   type SqliteColonnadeClusterMode,
   type SqliteColonnadeClusterOptions,
 } from "./sqlite/cluster.ts";
-export { cellDbFilenameStem, perPrincipalCellId, poolShardCellId } from "./sqlite/principal-cell-id.ts";
+export {
+  cellDbFilenameStem,
+  derivePoolHomeCell,
+  perPrincipalCellId,
+  poolShardCellId,
+  stablePrincipalShardIndex,
+} from "./sqlite/principal-cell-id.ts";
+export { encodeCatalogPointerId, parseCatalogPointerShardIndex } from "./sqlite/catalog-pointer-id.ts";
+export { catalogShardIndexForTenant } from "./sqlite/tenant-catalog-shard.ts";
+export { ShardingCatalogPersistenceStrategy } from "./sqlite/sharding-catalog-strategy.ts";
+export {
+  LazyWorkerBackedCellStrategy,
+  WorkerBackedCellStrategy,
+} from "./sqlite/worker-backed-cell-strategy.ts";
+export { supportsSqliteCellBatch } from "./sqlite/sqlite-cell-strategy.ts";
 export { SqliteCatalogPersistenceStrategy } from "./sqlite/sqlite-catalog-strategy.ts";
 export { SqliteCellPersistenceStrategy } from "./sqlite/sqlite-cell-strategy.ts";

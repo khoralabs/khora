@@ -27,7 +27,17 @@ import { assertContentHash } from "./hash.ts";
 
 /** Thin facade over {@link CatalogPersistenceStrategy}; room for shared validation later. */
 export class CatalogPersistenceClient implements CatalogPersistenceStrategy {
-  constructor(private readonly strategy: CatalogPersistenceStrategy) {}
+  readonly nextCatalogPointerId?: (tenantKey: string) => string;
+  readonly runImmediateTransactionForTenant?: <T>(tenantKey: string, fn: () => Promise<T>) => Promise<T>;
+
+  constructor(private readonly strategy: CatalogPersistenceStrategy) {
+    if (strategy.nextCatalogPointerId !== undefined) {
+      this.nextCatalogPointerId = strategy.nextCatalogPointerId.bind(strategy);
+    }
+    if (strategy.runImmediateTransactionForTenant !== undefined) {
+      this.runImmediateTransactionForTenant = strategy.runImmediateTransactionForTenant.bind(strategy);
+    }
+  }
 
   upsertDiscoveryDocument(
     input: UpsertDiscoveryDocumentInput,

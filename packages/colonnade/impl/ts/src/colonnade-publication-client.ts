@@ -8,6 +8,7 @@ import type {
   PublicationRouting,
 } from "./colonnade-types.ts";
 import { randomId } from "./hash.ts";
+import { supportsSqliteCellBatch } from "./sqlite/sqlite-cell-strategy.ts";
 
 const INLINE_MAX_BYTES = 2048;
 
@@ -33,20 +34,32 @@ export class ColonnadePublicationClient {
     let catalogPointerId = "";
 
     if (input.routing.replicate_to_catalog) {
-      await this.catalog.upsertDiscoveryDocument({
-        document_key: `colonnade:publication:${appendOut.content_hash}`,
-        body: input.routing.catalog_envelope,
-      });
-      catalogPointerId = randomId("cptr");
-      await this.catalog.upsertCatalogPointer({
-        catalog_pointer_id: catalogPointerId,
-        locator: {
-          cell_id: input.author_cell_id,
-          record_key: appendOut.record_key,
-        },
-        content_hash: appendOut.content_hash,
-        public_projection: input.routing.catalog_envelope,
-      });
+      const discoveryKey = `colonnade:publication:${input.tenant_key}:${appendOut.content_hash}`;
+      catalogPointerId =
+        this.catalog.nextCatalogPointerId?.(input.tenant_key) ?? randomId("cptr");
+
+      const replicate = async () => {
+        await this.catalog.upsertDiscoveryDocument({
+          document_key: discoveryKey,
+          body: input.routing.catalog_envelope,
+        });
+        await this.catalog.upsertCatalogPointer({
+          catalog_pointer_id: catalogPointerId,
+          locator: {
+            cell_id: input.author_cell_id,
+            record_key: appendOut.record_key,
+          },
+          content_hash: appendOut.content_hash,
+          public_projection: input.routing.catalog_envelope,
+        });
+      };
+
+      const txn = this.catalog.runImmediateTransactionForTenant;
+      if (txn !== undefined) {
+        await txn.call(this.catalog, input.tenant_key, replicate);
+      } else {
+        await replicate();
+      }
     }
 
     const fanRefs = await this.fanOutInboxDeliveries(
@@ -74,25 +87,69 @@ export class ColonnadePublicationClient {
     tenantKey: string,
     payloadBytes: Uint8Array,
   ): Promise<readonly GeneratedInboxRef[]> {
+    const byCell = new Map<string, FanOutTarget[]>();
+    for (const target of routing.fan_out_targets) {
+      const list = byCell.get(target.recipient_cell_id);
+      if (list === undefined) {
+        byCell.set(target.recipient_cell_id, [target]);
+      } else {
+        list.push(target);
+      }
+    }
+
+    const inboxIdsByCell = new Map<string, string[]>();
+
+    await Promise.all(
+      [...byCell.entries()].map(async ([recipientCellId, targets]) => {
+        const cell = this.resolveCell(recipientCellId);
+        const deliveries = targets.map((target) => ({
+          cell_id: target.recipient_cell_id,
+          tenant_key: tenantKey,
+          recipient_principal_id: target.recipient_principal_id,
+          staging: stagingForFanOut(target, authorCellId, authorRecordKey, contentHash, payloadBytes),
+          correlation_id: randomId("fan"),
+        }));
+
+        if (supportsSqliteCellBatch(cell) && deliveries.length > 1) {
+          const outs = await cell.enqueueInboxDeliveriesBatch(deliveries);
+          inboxIdsByCell.set(
+            recipientCellId,
+            outs.map((o) => o.inbox_entry_id),
+          );
+          return;
+        }
+
+        const ids: string[] = [];
+        for (const target of targets) {
+          const staging = stagingForFanOut(
+            target,
+            authorCellId,
+            authorRecordKey,
+            contentHash,
+            payloadBytes,
+          );
+          const out = await cell.enqueueInboxDelivery({
+            cell_id: target.recipient_cell_id,
+            tenant_key: tenantKey,
+            recipient_principal_id: target.recipient_principal_id,
+            staging,
+            correlation_id: randomId("fan"),
+          });
+          ids.push(out.inbox_entry_id);
+        }
+        inboxIdsByCell.set(recipientCellId, ids);
+      }),
+    );
+
     const refs: GeneratedInboxRef[] = [];
     for (const target of routing.fan_out_targets) {
-      const staging = stagingForFanOut(
-        target,
-        authorCellId,
-        authorRecordKey,
-        contentHash,
-        payloadBytes,
-      );
-      const cell = this.resolveCell(target.recipient_cell_id);
-      const out = await cell.enqueueInboxDelivery({
-        cell_id: target.recipient_cell_id,
-        tenant_key: tenantKey,
-        recipient_principal_id: target.recipient_principal_id,
-        staging,
-        correlation_id: randomId("fan"),
-      });
+      const ids = inboxIdsByCell.get(target.recipient_cell_id);
+      const inbox_entry_id = ids?.shift();
+      if (inbox_entry_id === undefined) {
+        throw new Error("ColonnadePublicationClient: missing inbox enqueue result for fan-out target");
+      }
       refs.push({
-        inbox_entry_id: out.inbox_entry_id,
+        inbox_entry_id,
         recipient_cell_id: target.recipient_cell_id,
         recipient_principal_id: target.recipient_principal_id,
       });

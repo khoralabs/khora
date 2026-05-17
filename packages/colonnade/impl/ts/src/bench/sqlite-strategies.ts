@@ -8,6 +8,12 @@ import type { CellPersistenceStrategy, ResolveCellStrategy } from "../cell-persi
 import { cellDbFilenameStem } from "../sqlite/principal-cell-id.ts";
 import { SqliteCatalogPersistenceStrategy } from "../sqlite/sqlite-catalog-strategy.ts";
 import { SqliteCellPersistenceStrategy } from "../sqlite/sqlite-cell-strategy.ts";
+import { LazyWorkerBackedCellStrategy } from "../sqlite/worker-backed-cell-strategy.ts";
+
+export type SqliteBenchmarkStrategiesOptions = {
+  /** Bun **`Worker`** per cell (SQLite off main thread); meaningful with **`--concurrency`** > 1. */
+  readonly useCellWorkers?: boolean;
+};
 
 type SqliteBenchBundle = {
   readonly root: string;
@@ -15,6 +21,7 @@ type SqliteBenchBundle = {
   readonly catalog: CatalogPersistenceStrategy;
   readonly cellsDir: string;
   cellDatabases: Database[];
+  lazyWorkers: LazyWorkerBackedCellStrategy[];
 };
 
 function openSqliteBenchBundle(): SqliteBenchBundle {
@@ -23,10 +30,14 @@ function openSqliteBenchBundle(): SqliteBenchBundle {
   mkdirSync(cellsDir, { recursive: true });
   const catalogDb = new Database(join(root, "catalog.sqlite"), { create: true });
   const catalog = new SqliteCatalogPersistenceStrategy(catalogDb);
-  return { root, catalogDb, catalog, cellsDir, cellDatabases: [] };
+  return { root, catalogDb, catalog, cellsDir, cellDatabases: [], lazyWorkers: [] };
 }
 
 function closeSqliteBenchBundle(b: SqliteBenchBundle): void {
+  for (const w of b.lazyWorkers) {
+    w.terminate();
+  }
+  b.lazyWorkers.length = 0;
   b.catalogDb.close();
   for (const db of b.cellDatabases) {
     db.close();
@@ -37,7 +48,8 @@ function closeSqliteBenchBundle(b: SqliteBenchBundle): void {
 /**
  * One catalog file + one cell DB per bench cell id under a temp directory (cleaned in **`teardown`**).
  */
-export function createSqliteBenchmarkStrategies() {
+export function createSqliteBenchmarkStrategies(opts: SqliteBenchmarkStrategiesOptions = {}) {
+  const useCellWorkers = opts.useCellWorkers === true;
   let bundle: SqliteBenchBundle | undefined;
 
   function ensureBundle(): SqliteBenchBundle {
@@ -54,9 +66,15 @@ export function createSqliteBenchmarkStrategies() {
       const map = new Map<string, CellPersistenceStrategy>();
       for (const id of cellIds) {
         const path = join(b.cellsDir, `${cellDbFilenameStem(id)}.sqlite`);
-        const db = new Database(path, { create: true });
-        b.cellDatabases.push(db);
-        map.set(id, new SqliteCellPersistenceStrategy(db, id));
+        if (useCellWorkers) {
+          const w = new LazyWorkerBackedCellStrategy(id, path);
+          b.lazyWorkers.push(w);
+          map.set(id, w);
+        } else {
+          const db = new Database(path, { create: true });
+          b.cellDatabases.push(db);
+          map.set(id, new SqliteCellPersistenceStrategy(db, id));
+        }
       }
       return ((cellId: string) => {
         const s = map.get(cellId);

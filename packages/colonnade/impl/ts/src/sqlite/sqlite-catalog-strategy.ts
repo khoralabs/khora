@@ -7,7 +7,6 @@ import type {
   BatchLookupSourceMapPointersOutput,
   ComputeSourceRowContentHashInput,
   ComputeSourceRowContentHashOutput,
-  FanOutTarget,
   IssueConnectionTokenInput,
   IssueConnectionTokenOutput,
   LookupSourceMapPointerInput,
@@ -32,9 +31,10 @@ import {
   canonicalSourceMapRowBytes,
   sha256HexLower,
 } from "../hash.ts";
-import { poolShardCellId, perPrincipalCellId } from "./principal-cell-id.ts";
+import { encodeCatalogPointerId } from "./catalog-pointer-id.ts";
 import { ensureCatalogSchema } from "./schema-catalog.ts";
 import { applySqlitePerfPragmas } from "./sqlite-pragmas.ts";
+import { runSerializedSqliteImmediateTransaction } from "./sqlite-immediate-txn.ts";
 
 const ZERO_HASH = "0".repeat(64);
 
@@ -44,12 +44,13 @@ const MISS_POINTER: PointerRef = {
   content_hash: ZERO_HASH,
 };
 
+export type SqliteCatalogPersistenceOptions = {
+  /** Catalog shard index encoded into **`nextCatalogPointerId`** (0..65535). */
+  readonly shardIndex?: number;
+};
+
 export class SqliteCatalogPersistenceStrategy implements CatalogPersistenceStrategy {
-  private readonly stmtSelectHomeCell: Statement;
-  private readonly stmtSelectRrSeq: Statement;
-  private readonly stmtInsertHomeCell: Statement;
-  private readonly stmtUpdateRrSeq: Statement;
-  private readonly stmtInsertHomeCellIgnore: Statement;
+  private readonly shardIndex: number;
   private readonly stmtSelectDiscoveryRevision: Statement;
   private readonly stmtUpsertDiscovery: Statement;
   private readonly stmtUpsertPredicate: Statement;
@@ -57,25 +58,22 @@ export class SqliteCatalogPersistenceStrategy implements CatalogPersistenceStrat
   private readonly stmtUpsertCatalogPointer: Statement;
   private readonly stmtResolveCatalogPointer: Statement;
   private readonly stmtUpsertSourceMapRow: Statement;
-  private readonly stmtSelectDiscoveryBody: Statement;
   private readonly stmtLookupSourceMapRow: Statement;
   private readonly stmtInsertConnectionToken: Statement;
   private readonly batchLookupBySize = new Map<number, Statement>();
 
-  constructor(private readonly db: Database) {
+  constructor(
+    private readonly db: Database,
+    opts: SqliteCatalogPersistenceOptions = {},
+  ) {
+    const si = opts.shardIndex ?? 0;
+    if (!Number.isInteger(si) || si < 0 || si > 65535) {
+      throw new Error(`SqliteCatalogPersistenceStrategy: shardIndex must be 0..65535, got ${si}`);
+    }
+    this.shardIndex = si;
     ensureCatalogSchema(db);
     applySqlitePerfPragmas(db);
-    this.db.run(`INSERT OR IGNORE INTO catalog_meta(key, value) VALUES ('rr_seq', '0')`);
 
-    this.stmtSelectHomeCell = db.prepare("SELECT cell_id FROM principal_home_cell WHERE principal_id = ?");
-    this.stmtSelectRrSeq = db.prepare("SELECT value FROM catalog_meta WHERE key = 'rr_seq'");
-    this.stmtInsertHomeCell = db.prepare(
-      "INSERT INTO principal_home_cell(principal_id, cell_id) VALUES (?, ?)",
-    );
-    this.stmtUpdateRrSeq = db.prepare("UPDATE catalog_meta SET value = ? WHERE key = 'rr_seq'");
-    this.stmtInsertHomeCellIgnore = db.prepare(
-      "INSERT OR IGNORE INTO principal_home_cell(principal_id, cell_id) VALUES (?, ?)",
-    );
     this.stmtSelectDiscoveryRevision = db.prepare(
       "SELECT revision FROM discovery_documents WHERE document_key = ?",
     );
@@ -104,9 +102,6 @@ export class SqliteCatalogPersistenceStrategy implements CatalogPersistenceStrat
          projection = excluded.projection,
          source_row_content_hash = excluded.source_row_content_hash`,
     );
-    this.stmtSelectDiscoveryBody = db.prepare(
-      "SELECT body FROM discovery_documents WHERE document_key = ?",
-    );
     this.stmtLookupSourceMapRow = db.prepare(
       `SELECT pointer_source_cell_id, pointer_source_record_key, pointer_content_hash, projection, source_row_content_hash
        FROM source_map_rows WHERE tenant_key = ? AND source_map_id = ? AND entry_key = ?`,
@@ -114,6 +109,16 @@ export class SqliteCatalogPersistenceStrategy implements CatalogPersistenceStrat
     this.stmtInsertConnectionToken = db.prepare(
       `INSERT INTO connection_tokens(token, principal_id, intended_audience, expires_at_ms) VALUES (?, ?, ?, ?)`,
     );
+  }
+
+  nextCatalogPointerId(_tenantKey: string): string {
+    void _tenantKey;
+    return encodeCatalogPointerId(this.shardIndex);
+  }
+
+  runImmediateTransactionForTenant<T>(_tenantKey: string, fn: () => Promise<T>): Promise<T> {
+    void _tenantKey;
+    return runSerializedSqliteImmediateTransaction(this.db, fn);
   }
 
   private batchLookupStmt(n: number): Statement {
@@ -127,44 +132,6 @@ export class SqliteCatalogPersistenceStrategy implements CatalogPersistenceStrat
       this.batchLookupBySize.set(n, s);
     }
     return s;
-  }
-
-  /** Pool mode: persisted round-robin assignment into `principal_home_cell`. */
-  assignPrincipalToCellPool(principalId: string, cellCount: number): string {
-    if (cellCount < 1) {
-      throw new Error("SqliteCatalogPersistenceStrategy: cellCount must be >= 1");
-    }
-    this.db.exec("BEGIN IMMEDIATE");
-    try {
-      const existing = this.stmtSelectHomeCell.get(principalId) as { cell_id: string } | null | undefined;
-      if (existing != null) {
-        this.db.exec("COMMIT");
-        return existing.cell_id;
-      }
-
-    const metaRow = this.stmtSelectRrSeq.get() as { value: string } | null | undefined;
-      const seq = Number.parseInt(metaRow?.value ?? "0", 10) || 0;
-      const idx = seq % cellCount;
-      const cellId = poolShardCellId(idx);
-      this.stmtInsertHomeCell.run(principalId, cellId);
-      this.stmtUpdateRrSeq.run(String(seq + 1));
-      this.db.exec("COMMIT");
-      return cellId;
-    } catch (e) {
-      try {
-        this.db.exec("ROLLBACK");
-      } catch {
-        /* ignore double-rollback */
-      }
-      throw e;
-    }
-  }
-
-  /** Per-principal isolation: deterministic cell id + mapping row. */
-  assignPrincipalToCellDedicated(principalId: string): string {
-    const cellId = perPrincipalCellId(principalId);
-    this.stmtInsertHomeCellIgnore.run(principalId, cellId);
-    return cellId;
   }
 
   upsertDiscoveryDocument(
@@ -258,39 +225,10 @@ export class SqliteCatalogPersistenceStrategy implements CatalogPersistenceStrat
   }
 
   resolvePostFanOutTargets(
-    input: ResolvePostFanOutTargetsInput,
+    _input: ResolvePostFanOutTargetsInput,
   ): Promise<ResolvePostFanOutTargetsOutput> {
-    const docKey = `colonnade:fanout:${input.tenant_key}:${input.content_hash}`;
-    const row = this.stmtSelectDiscoveryBody.get(docKey) as { body: string } | null | undefined;
-    if (row == null) {
-      return Promise.resolve({ fan_out_targets: [] });
-    }
-    let body: unknown;
-    try {
-      body = JSON.parse(row.body) as unknown;
-    } catch {
-      return Promise.resolve({ fan_out_targets: [] });
-    }
-    const raw = (body as { fan_out_targets?: unknown }).fan_out_targets;
-    if (!Array.isArray(raw)) {
-      return Promise.resolve({ fan_out_targets: [] });
-    }
-    const fan_out_targets: FanOutTarget[] = [];
-    for (const item of raw) {
-      if (
-        item !== null &&
-        typeof item === "object" &&
-        "recipient_cell_id" in item &&
-        "recipient_principal_id" in item
-      ) {
-        const o = item as Record<string, unknown>;
-        fan_out_targets.push({
-          recipient_cell_id: String(o.recipient_cell_id),
-          recipient_principal_id: String(o.recipient_principal_id),
-        });
-      }
-    }
-    return Promise.resolve({ fan_out_targets });
+    void _input;
+    return Promise.resolve({ fan_out_targets: [] });
   }
 
   lookupSourceMapPointer(input: LookupSourceMapPointerInput): Promise<LookupSourceMapPointerOutput> {

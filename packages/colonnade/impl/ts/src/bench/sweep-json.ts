@@ -23,6 +23,7 @@ type SweepCliArgs = {
   cells: number;
   fanout: number;
   payloadBytes: number;
+  cellWorkers: boolean;
   help: boolean;
 };
 
@@ -37,6 +38,7 @@ type SweepReport = {
     readonly payload_bytes: number;
     readonly concurrency_levels: readonly number[];
     readonly scenarios: readonly ScenarioId[];
+    readonly cell_workers: boolean;
   };
   readonly strategy: string;
   readonly iterations: number;
@@ -46,6 +48,7 @@ type SweepReport = {
   readonly payload_bytes: number;
   readonly concurrency_levels: readonly number[];
   readonly scenarios: readonly ScenarioId[];
+  readonly cell_workers: boolean;
   readonly runs: readonly BenchResult[];
 };
 
@@ -64,6 +67,7 @@ Options:
   --cells <n>             default ${CANONICAL_BENCH_DEFAULTS.cells}
   --fanout <n>            default ${CANONICAL_BENCH_DEFAULTS.fanout}
   --payload-bytes <n>     default ${CANONICAL_BENCH_DEFAULTS.payloadBytes}
+  --cell-workers          sqlite only: cell SQLite runs in Bun Workers (off main thread)
   --help, -h              this message
 
 Known scenarios: ${BENCH_SCENARIO_IDS.join(", ")}
@@ -109,6 +113,7 @@ function parseArgs(argv: string[]): SweepCliArgs {
     cells: CANONICAL_BENCH_DEFAULTS.cells,
     fanout: CANONICAL_BENCH_DEFAULTS.fanout,
     payloadBytes: CANONICAL_BENCH_DEFAULTS.payloadBytes,
+    cellWorkers: false,
     help: false,
   };
 
@@ -161,6 +166,10 @@ function parseArgs(argv: string[]): SweepCliArgs {
       out.payloadBytes = Number.parseInt(next(), 10);
       continue;
     }
+    if (a === "--cell-workers") {
+      out.cellWorkers = true;
+      continue;
+    }
     throw new Error(`Unknown argument: ${a}`);
   }
 
@@ -173,6 +182,9 @@ function validateArgs(args: SweepCliArgs): void {
   if (args.cells < 1) throw new Error("--cells must be >= 1");
   if (args.fanout < 1) throw new Error("--fanout must be >= 1");
   if (args.payloadBytes < 1) throw new Error("--payload-bytes must be >= 1");
+  if (args.cellWorkers && args.strategy !== "sqlite") {
+    throw new Error("--cell-workers requires --strategy sqlite");
+  }
 }
 
 async function main(): Promise<void> {
@@ -206,7 +218,9 @@ async function main(): Promise<void> {
   for (const scenario of args.scenarios) {
     for (const concurrency of args.concurrencyLevels) {
       console.error(`bench sweep: ${scenario} concurrency=${concurrency}`);
-      const strategies = getBenchmarkStrategies(args.strategy);
+      const strategies = getBenchmarkStrategies(args.strategy, {
+        sqlite: args.strategy === "sqlite" ? { useCellWorkers: args.cellWorkers } : undefined,
+      });
       try {
         const r = await runScenario(scenario, {
           strategies,
@@ -234,6 +248,7 @@ async function main(): Promise<void> {
     payload_bytes: args.payloadBytes,
     concurrency_levels: args.concurrencyLevels,
     scenarios: args.scenarios,
+    cell_workers: args.cellWorkers,
   } as const;
 
   const report: SweepReport = {

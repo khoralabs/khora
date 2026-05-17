@@ -60,13 +60,14 @@ structure ComputeSourceRowContentHashOutput {
 @documentation("""
 **Catalog read model** — projections used while assembling publications and resolving pointer **source maps**.
 
-**Fan-out:** **`ResolvePostFanOutTargets`** returns subscriber routing derived from percolation projections, stored hints, or both.
-Implementations SHOULD treat **`catalog_envelope`** + **`payload_metadata`** as opaque **`Document`** probes keyed by tenant policy.
+**Fan-out:** **`ResolvePostFanOutTargets`** is optional / legacy. Prefer resolving recipients in application code and passing **`PublicationRouting.fan_out_targets`** before **`PostOperation`**. Durable fan-out is modeled by **inbox staging rows** on recipient cells, not catalog discovery manifests.
 
 **Source maps:** **`LookupSourceMapPointer`** / **`BatchLookupSourceMapPointers`** resolve **`entry_key`** → **`PointerRef`** plus a stable **`source_row_content_hash`**
 for cache validation and ghost detection. Rows are written via **`CatalogIndex.UpsertSourceMapPointerRow`**.
 
 **Hashing:** **`ComputeSourceRowContentHash`** is the normative SHA-256 binding over **`canonical_row_bytes`** so callers can verify catalog rows without fetching payloads.
+
+**Catalog pointers:** Deployments MAY tenant-key shard catalog SQLite files; **`catalog_pointer_id`** MAY encode a shard index (`cptr_HHHH_suffix`) so **`ResolveCatalogPointer`** routes without a meta catalog.
 """)
 service CatalogRead {
     version: "2026-05-15"

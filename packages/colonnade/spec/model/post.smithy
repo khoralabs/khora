@@ -7,7 +7,7 @@ use smithy.api#Document
 
 structure PublicationRouting {
     /// When **`true`**, implementations MUST upsert discovery metadata / catalog pointers per **`catalog_envelope`** after outbox commit.
-    /// **`fan_out_targets`** MAY be populated from **`CatalogRead.ResolvePostFanOutTargets`** using the committed **`content_hash`**.
+    /// **`fan_out_targets`** MUST be supplied by product/adapters before **`PostOperation`** (typically using deterministic cell routing such as **`derivePoolHomeCell`**); durable delivery proof is per-recipient inbox rows, not catalog documents.
     replicate_to_catalog: Boolean
     /// Opaque catalog projection (author ref, topics, probe hooks, embedding pointers, etc.).
     catalog_envelope: Document

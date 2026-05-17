@@ -27,6 +27,27 @@ import { assertContentHash, randomId, sha256HexLower } from "../hash.ts";
 import { ensureCellSchema } from "./schema-cell.ts";
 import { inboxStagingFromBlob, inboxStagingToBlob, writeOpFromBlob, writeOpToBlob } from "./staging-binary.ts";
 import { applySqlitePerfPragmas } from "./sqlite-pragmas.ts";
+import { runSerializedSqliteImmediateTransaction } from "./sqlite-immediate-txn.ts";
+
+export type SqliteCellBatchCapable = {
+  enqueueInboxDeliveriesBatch(
+    inputs: readonly EnqueueInboxDeliveryInput[],
+  ): Promise<readonly EnqueueInboxDeliveryOutput[]>;
+  appendWriteLogEntriesBatch(
+    inputs: readonly AppendWriteLogEntryInput[],
+  ): Promise<readonly AppendWriteLogEntryOutput[]>;
+};
+
+export function supportsSqliteCellBatch(cell: unknown): cell is SqliteCellBatchCapable {
+  return (
+    typeof cell === "object" &&
+    cell !== null &&
+    "enqueueInboxDeliveriesBatch" in cell &&
+    "appendWriteLogEntriesBatch" in cell &&
+    typeof (cell as SqliteCellBatchCapable).enqueueInboxDeliveriesBatch === "function" &&
+    typeof (cell as SqliteCellBatchCapable).appendWriteLogEntriesBatch === "function"
+  );
+}
 
 export class SqliteCellPersistenceStrategy implements CellPersistenceStrategy {
   private readonly db: Database;
@@ -91,6 +112,10 @@ export class SqliteCellPersistenceStrategy implements CellPersistenceStrategy {
     this.stmtSetMeta.run(key, value);
   }
 
+  runImmediateTransaction<T>(fn: () => Promise<T>): Promise<T> {
+    return runSerializedSqliteImmediateTransaction(this.db, fn);
+  }
+
   appendOutboxRecord(input: AppendOutboxRecordInput): Promise<AppendOutboxRecordOutput> {
     this.assertCell(input.cell_id);
     const recordKey = input.record_key.trim().length > 0 ? input.record_key : randomId("ob");
@@ -110,6 +135,16 @@ export class SqliteCellPersistenceStrategy implements CellPersistenceStrategy {
   }
 
   enqueueInboxDelivery(input: EnqueueInboxDeliveryInput): Promise<EnqueueInboxDeliveryOutput> {
+    return Promise.resolve(this.enqueueInboxDeliverySync(input));
+  }
+
+  enqueueInboxDeliveriesBatch(
+    inputs: readonly EnqueueInboxDeliveryInput[],
+  ): Promise<readonly EnqueueInboxDeliveryOutput[]> {
+    return this.runImmediateTransaction(async () => inputs.map((i) => this.enqueueInboxDeliverySync(i)));
+  }
+
+  private enqueueInboxDeliverySync(input: EnqueueInboxDeliveryInput): EnqueueInboxDeliveryOutput {
     this.assertCell(input.cell_id);
     const inbox_entry_id = randomId("ib");
     const enqueued_at_ms = Date.now();
@@ -122,7 +157,7 @@ export class SqliteCellPersistenceStrategy implements CellPersistenceStrategy {
       enqueued_at_ms,
       input.correlation_id,
     );
-    return Promise.resolve({ inbox_entry_id });
+    return { inbox_entry_id };
   }
 
   listPendingInboxEntries(
@@ -214,12 +249,22 @@ export class SqliteCellPersistenceStrategy implements CellPersistenceStrategy {
   }
 
   appendWriteLogEntry(input: AppendWriteLogEntryInput): Promise<AppendWriteLogEntryOutput> {
+    return Promise.resolve(this.appendWriteLogEntrySync(input));
+  }
+
+  appendWriteLogEntriesBatch(
+    inputs: readonly AppendWriteLogEntryInput[],
+  ): Promise<readonly AppendWriteLogEntryOutput[]> {
+    return this.runImmediateTransaction(async () => inputs.map((i) => this.appendWriteLogEntrySync(i)));
+  }
+
+  private appendWriteLogEntrySync(input: AppendWriteLogEntryInput): AppendWriteLogEntryOutput {
     this.assertCell(input.cell_id);
     const opBlob = writeOpToBlob(input.op);
     this.stmtAppendWriteLog.run(input.correlation_id, opBlob);
     const seqRow = this.stmtLastInsertRowid.get() as { id: number };
     const log_sequence = String(seqRow.id);
-    return Promise.resolve({ log_sequence });
+    return { log_sequence };
   }
 
   fetchWriteLogBatch(input: FetchWriteLogBatchInput): Promise<FetchWriteLogBatchOutput> {

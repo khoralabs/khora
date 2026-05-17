@@ -1,6 +1,9 @@
 import type { Database } from "bun:sqlite";
 
 export function ensureCatalogSchema(db: Database): void {
+  db.exec(`DROP TABLE IF EXISTS principal_home_cell`);
+  db.exec(`DROP TABLE IF EXISTS catalog_meta`);
+
   db.run(`
     CREATE TABLE IF NOT EXISTS discovery_documents (
       document_key TEXT PRIMARY KEY NOT NULL,
@@ -28,14 +31,6 @@ export function ensureCatalogSchema(db: Database): void {
       projection TEXT NOT NULL,
       source_row_content_hash TEXT NOT NULL,
       PRIMARY KEY (tenant_key, source_map_id, entry_key)
-    );
-    CREATE TABLE IF NOT EXISTS principal_home_cell (
-      principal_id TEXT PRIMARY KEY NOT NULL,
-      cell_id TEXT NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS catalog_meta (
-      key TEXT PRIMARY KEY NOT NULL,
-      value TEXT NOT NULL
     );
     CREATE TABLE IF NOT EXISTS connection_tokens (
       token TEXT PRIMARY KEY NOT NULL,

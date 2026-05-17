@@ -7,6 +7,8 @@
  * - Cell ids are deterministic (`bench-cell-0`, …) so runs are comparable.
  * - `--concurrency` controls parallel in-flight operations per wave; samples remain per-operation latency.
  * - **`--strategy sqlite`** uses a temp catalog plus one SQLite file per bench cell; temp data is deleted after the run.
+ * - **`--cell-workers`** (sqlite only) opens each cell SQLite in a Bun **`Worker`** so concurrent waves stress IPC + worker threads instead of main-thread SQLite mutex contention.
+ * - SQLite publication/replicate paths batch **`BEGIN IMMEDIATE`** commits per catalog shard and per recipient cell where adapters support it (compare runs before/after when tuning batch sizes).
  * - In-memory (`default`) mostly reflects JS overhead; compare with **`sqlite`** for adapter + fs cost.
  *
  * Usage:
@@ -37,6 +39,7 @@ type CliArgs = {
   fanout: number;
   payloadBytes: number;
   concurrency: number;
+  cellWorkers: boolean;
   json: boolean;
   help: boolean;
 };
@@ -53,6 +56,7 @@ Options:
   --fanout <n>        recipients / router targets where applicable (default: ${CANONICAL_BENCH_DEFAULTS.fanout})
   --payload-bytes <n> publication/drain payload size (default: ${CANONICAL_BENCH_DEFAULTS.payloadBytes})
   --concurrency <n>   max parallel ops per wave (default: ${CANONICAL_BENCH_DEFAULTS.concurrency})
+  --cell-workers      sqlite only: run each cell DB in a Bun Worker (off main thread)
   --json              print one JSON object on stdout
   --help              this message
 `;
@@ -68,6 +72,7 @@ function parseArgs(argv: string[]): CliArgs {
     fanout: CANONICAL_BENCH_DEFAULTS.fanout,
     payloadBytes: CANONICAL_BENCH_DEFAULTS.payloadBytes,
     concurrency: CANONICAL_BENCH_DEFAULTS.concurrency,
+    cellWorkers: false,
     json: false,
     help: false,
   };
@@ -80,6 +85,10 @@ function parseArgs(argv: string[]): CliArgs {
     }
     if (a === "--json") {
       out.json = true;
+      continue;
+    }
+    if (a === "--cell-workers") {
+      out.cellWorkers = true;
       continue;
     }
     const next = (): string => {
@@ -140,6 +149,9 @@ function validateArgs(args: CliArgs): void {
   if (args.fanout < 1) throw new Error("--fanout must be >= 1");
   if (args.payloadBytes < 1) throw new Error("--payload-bytes must be >= 1");
   if (args.concurrency < 1) throw new Error("--concurrency must be >= 1");
+  if (args.cellWorkers && args.strategy !== "sqlite") {
+    throw new Error("--cell-workers requires --strategy sqlite");
+  }
 }
 
 function printTable(r: BenchResult): void {
@@ -187,7 +199,9 @@ async function main(): Promise<void> {
     return;
   }
 
-  const strategies = getBenchmarkStrategies(args.strategy);
+  const strategies = getBenchmarkStrategies(args.strategy, {
+    sqlite: args.strategy === "sqlite" ? { useCellWorkers: args.cellWorkers } : undefined,
+  });
   const cellIds = benchCellIds(args.cells);
 
   let result: BenchResult;
@@ -217,6 +231,7 @@ async function main(): Promise<void> {
         fanout: args.fanout,
         payload_bytes: args.payloadBytes,
         concurrency: args.concurrency,
+        cell_workers: args.cellWorkers,
       },
       ...result,
     };

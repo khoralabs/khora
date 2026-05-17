@@ -28,6 +28,15 @@ import type {
  * Swap implementations (in-memory, SQLite, remote service) without changing clients.
  */
 export interface CatalogPersistenceStrategy {
+  /** When set, allocates **`catalog_pointer_id`** values routable under tenant-key catalog sharding (`cptr_HHHH_…`). */
+  nextCatalogPointerId?(tenantKey: string): string;
+
+  /**
+   * **`BEGIN IMMEDIATE` … `COMMIT`** on the catalog shard that owns **`tenant_key`** (SQLite).
+   * Implementations omit this when they do not use SQLite or do not shard by tenant.
+   */
+  runImmediateTransactionForTenant?<T>(tenantKey: string, fn: () => Promise<T>): Promise<T>;
+
   upsertDiscoveryDocument(
     input: UpsertDiscoveryDocumentInput,
   ): Promise<UpsertDiscoveryDocumentOutput>;
