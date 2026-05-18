@@ -1,6 +1,7 @@
 .llm-context
 .memories
 .obp
+.atrium
 
 # dependencies (bun install)
 node_modules
