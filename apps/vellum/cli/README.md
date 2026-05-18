@@ -31,7 +31,7 @@ bun run --cwd packages/vellum/client build:schema
 
 Configuration is loaded with **`@khoralabs/vellum-client`**: layers merge in order **built-in defaults** → **environment variables** → **resolved JSON file** (including any `extends` chain). Later layers override earlier ones for the same key. Command-line flags override loaded settings when a command supports them.
 
-The default `baseUrl` when nothing else sets it is **`https://atr1.khoralabs.com`**. The default `dataDir` is **`~/.vellum/data`** (room database and `vellum.json` under `…/obp/rooms/…`). See `VELLUM_CANONICAL_BASE_URL`, `vellumDefaultDataDir()`, and `vellumAppConfigBuiltinDefaults()` in `@khoralabs/vellum-client`.
+The default `baseUrl` when nothing else sets it is **`https://atr2.khoralabs.com`**. The default `dataDir` is **`~/.vellum/data`** (room database and `vellum.json` under `…/obp/rooms/…`). See `VELLUM_CANONICAL_BASE_URL`, `vellumDefaultDataDir()`, and `vellumAppConfigBuiltinDefaults()` in `@khoralabs/vellum-client`.
 
 Discovery order for the CLI config file:
 
