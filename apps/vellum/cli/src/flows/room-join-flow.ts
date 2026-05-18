@@ -1,6 +1,6 @@
+import { requireFlowString, runOfferFlow } from "@khoralabs/cli-flow-nbc";
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { strFlag } from "@khoralabs/cli-kit";
-import { requireFlowString, runOfferFlow } from "@khoralabs/cli-flow-nbc";
 
 import type { VellumCliContext } from "./context.ts";
 import { roomJoinFlowDefinition } from "./definitions.ts";
@@ -14,8 +14,7 @@ export async function promptJoinTokenIfMissing(
   flags: FlagMap,
 ): Promise<string> {
   const fromFlag = strFlag(flags, "join-token") ?? strFlag(flags, "joinToken");
-  const seed =
-    fromFlag !== undefined && fromFlag.trim().length > 0 ? fromFlag.trim() : undefined;
+  const seed = fromFlag !== undefined && fromFlag.trim().length > 0 ? fromFlag.trim() : undefined;
   const row = await runOfferFlow({
     readLine: ctx.readLine,
     chain: createVellumFlowChainView(),

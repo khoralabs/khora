@@ -1,5 +1,5 @@
-import { type At2HostContext, popRelayInboxDrainItemsForDid } from "@khoralabs/at2-host";
-import type { At2WsUpgradePort } from "@khoralabs/at2-transport";
+import { type AtriumHostContext, popRelayInboxDrainItemsForDid } from "@khoralabs/at2-host";
+import type { AtriumWsUpgradePort } from "@khoralabs/at2-transport";
 import type { WebSocketHandler } from "bun";
 import type { HostRouteDeps } from "../http/deps.ts";
 import { authErrorResponse, jsonError, rateLimitedResponse } from "../http/responses.ts";
@@ -7,7 +7,7 @@ import { authErrorResponse, jsonError, rateLimitedResponse } from "../http/respo
 export async function handleInboxWsUpgrade(
   req: Request,
   url: URL,
-  upgradePort: At2WsUpgradePort,
+  upgradePort: AtriumWsUpgradePort,
   deps: HostRouteDeps,
 ): Promise<Response | undefined> {
   let did: string;
@@ -26,7 +26,7 @@ export async function handleInboxWsUpgrade(
 }
 
 export function createInboxDrainWebSocketHandlers(opts: {
-  ctx: At2HostContext;
+  ctx: AtriumHostContext;
 }): WebSocketHandler<{ kind: "inbox"; did: string }> {
   return {
     open(ws) {

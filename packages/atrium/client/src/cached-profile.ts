@@ -6,8 +6,8 @@ import {
   zAtriumProfile,
 } from "@khoralabs/at2-contracts";
 import z from "zod";
-import { AT2_BUILTIN_PLUGIN_ID, createAt2ResolvePath } from "./at2-plugins.ts";
-import type { At2AppConfigBase } from "./config/schema.ts";
+import { ATRIUM_BUILTIN_PLUGIN_ID, createAtriumResolvePath } from "./at2-plugins.ts";
+import type { AtriumAppConfigBase } from "./config/schema.ts";
 
 /**
  * Persistence envelope written by the profile-sync plugin. Re-declared here (rather than imported
@@ -67,12 +67,12 @@ export function loadCachedProfile(filePath: string): CachedProfileSnapshot | und
  * Compute the absolute path of the profile-sync cache file from a loaded config. Returns
  * `undefined` when the plugin is disabled or unconfigured.
  */
-export function resolveProfileSyncPath(cfg: At2AppConfigBase): string | undefined {
-  const entry = cfg.plugins?.[AT2_BUILTIN_PLUGIN_ID.profileSync];
+export function resolveProfileSyncPath(cfg: AtriumAppConfigBase): string | undefined {
+  const entry = cfg.plugins?.[ATRIUM_BUILTIN_PLUGIN_ID.profileSync];
   if (entry === undefined || entry === false) return undefined;
   const rel = (entry as { filePath?: unknown }).filePath;
   if (typeof rel !== "string" || rel.length === 0) return undefined;
-  return createAt2ResolvePath(cfg.dataDir)(rel);
+  return createAtriumResolvePath(cfg.dataDir)(rel);
 }
 
 /**

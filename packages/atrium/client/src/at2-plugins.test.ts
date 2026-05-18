@@ -1,32 +1,32 @@
 import { describe, expect, test } from "bun:test";
 import { resolve } from "node:path";
-import { At2Client } from "./at2-client.ts";
-import { createAt2ResolvePath, mergeLabeledAt2PluginLayers } from "./at2-plugins.ts";
+import { AtriumClient } from "./at2-client.ts";
+import { createAtriumResolvePath, mergeLabeledAtriumPluginLayers } from "./at2-plugins.ts";
 
-describe("createAt2ResolvePath", () => {
+describe("createAtriumResolvePath", () => {
   test("joins relative paths under dataDir", () => {
-    const r = createAt2ResolvePath("/data");
+    const r = createAtriumResolvePath("/data");
     expect(r("telemetry")).toBe(resolve("/data", "telemetry"));
   });
 
   test("passes through absolute paths", () => {
-    const r = createAt2ResolvePath("/data");
+    const r = createAtriumResolvePath("/data");
     expect(r("/tmp/x")).toBe(resolve("/tmp/x"));
   });
 
   test("passes through :memory:", () => {
-    const r = createAt2ResolvePath("/data");
+    const r = createAtriumResolvePath("/data");
     expect(r(":memory:")).toBe(":memory:");
   });
 });
 
-describe("mergeLabeledAt2PluginLayers", () => {
+describe("mergeLabeledAtriumPluginLayers", () => {
   const a = () => ({ stop: () => {} });
   const b = () => ({ stop: () => {} });
   const c = () => ({ stop: () => {} });
 
   test("last-wins: later layer replaces same id", () => {
-    const merged = mergeLabeledAt2PluginLayers(
+    const merged = mergeLabeledAtriumPluginLayers(
       [
         [
           { id: "x", install: a },
@@ -42,7 +42,7 @@ describe("mergeLabeledAt2PluginLayers", () => {
   });
 
   test("first-wins: keeps first install per id", () => {
-    const merged = mergeLabeledAt2PluginLayers(
+    const merged = mergeLabeledAtriumPluginLayers(
       [
         [{ id: "x", install: a }],
         [
@@ -65,10 +65,10 @@ const stubSigner = {
   },
 };
 
-describe("At2Client plugins", () => {
+describe("AtriumClient plugins", () => {
   test("dispose stops plugins in reverse order", () => {
     const stops: number[] = [];
-    new At2Client({
+    new AtriumClient({
       baseUrl: "http://h",
       signer: stubSigner,
       plugins: [
@@ -89,7 +89,7 @@ describe("At2Client plugins", () => {
 
   test("dispose is idempotent", () => {
     let n = 0;
-    const c = new At2Client({
+    const c = new AtriumClient({
       baseUrl: "http://h",
       signer: stubSigner,
       plugins: [

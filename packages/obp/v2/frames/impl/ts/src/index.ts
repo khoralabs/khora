@@ -1,18 +1,3 @@
-export {
-  decryptWireFrameBody,
-  deriveFrameBodyAesKey,
-  encryptLogicalFrameBody,
-  ephemeralX25519Keygen,
-  handshakeBodyFromEphemeralPub,
-  isE2eeHandshakeBody,
-  minActorPubkeyFromInit,
-  parseHandshakeEphemeralPub,
-  x25519SharedSecret,
-  E2EE_HS_BODY_KEY,
-  E2EE_WIRE_BODY_KEY,
-  FRAME_E2EE_A256GCM,
-  FRAME_E2EE_PROFILE_V1,
-} from "./frame-channel-e2ee.ts";
 export { canonicalJsonString, canonicalJsonUtf8 } from "./canonical-json.ts";
 export { encodeFramedJson, encodeFramedWire } from "./encode-framed-json.ts";
 export {
@@ -20,6 +5,21 @@ export {
   isActorPubkeysAscending,
   isSessionInitPartyStructure,
 } from "./frame-bootstrap.ts";
+export {
+  decryptWireFrameBody,
+  deriveFrameBodyAesKey,
+  E2EE_HS_BODY_KEY,
+  E2EE_WIRE_BODY_KEY,
+  encryptLogicalFrameBody,
+  ephemeralX25519Keygen,
+  FRAME_E2EE_A256GCM,
+  FRAME_E2EE_PROFILE_V1,
+  handshakeBodyFromEphemeralPub,
+  isE2eeHandshakeBody,
+  minActorPubkeyFromInit,
+  parseHandshakeEphemeralPub,
+  x25519SharedSecret,
+} from "./frame-channel-e2ee.ts";
 export {
   FrameDag,
   sha256HexLowerFromUtf8String,

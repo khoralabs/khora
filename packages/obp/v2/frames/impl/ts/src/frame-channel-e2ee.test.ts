@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
 import {
+  decryptWireFrameBody,
   deriveFrameBodyAesKey,
   encryptLogicalFrameBody,
-  decryptWireFrameBody,
   ephemeralX25519Keygen,
   minActorPubkeyFromInit,
   x25519SharedSecret,
@@ -40,8 +40,16 @@ describe("frame-channel-e2ee", () => {
     const kp1 = ephemeralX25519Keygen();
     const kp2 = ephemeralX25519Keygen();
     const shared = x25519SharedSecret(kp1.sk, kp2.pk);
-    const k1 = await deriveFrameBodyAesKey({ sharedSecret: shared, sessionId: "s", channelBinding: "a" });
-    const k2 = await deriveFrameBodyAesKey({ sharedSecret: shared, sessionId: "s", channelBinding: "b" });
+    const k1 = await deriveFrameBodyAesKey({
+      sharedSecret: shared,
+      sessionId: "s",
+      channelBinding: "a",
+    });
+    const k2 = await deriveFrameBodyAesKey({
+      sharedSecret: shared,
+      sessionId: "s",
+      channelBinding: "b",
+    });
     const w = await encryptLogicalFrameBody(k1, { x: 1 });
     await expect(decryptWireFrameBody(k2, w)).rejects.toThrow();
   });

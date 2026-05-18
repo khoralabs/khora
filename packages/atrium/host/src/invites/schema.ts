@@ -1,13 +1,13 @@
 /** Invite token kinds stored in `at2_invite_tokens`. */
-export const AT2_INVITE_KIND = {
+export const ATRIUM_INVITE_KIND = {
   root: "root",
   seed: "seed",
   standard: "standard",
 } as const;
 
-export type At2InviteKind = (typeof AT2_INVITE_KIND)[keyof typeof AT2_INVITE_KIND];
+export type AtriumInviteKind = (typeof ATRIUM_INVITE_KIND)[keyof typeof ATRIUM_INVITE_KIND];
 
-export function ensureAt2InviteSchema(db: import("bun:sqlite").Database): void {
+export function ensureAtriumInviteSchema(db: import("bun:sqlite").Database): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS at2_invite_tokens (
       token_hash TEXT PRIMARY KEY NOT NULL,

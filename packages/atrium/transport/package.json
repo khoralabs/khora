@@ -1,7 +1,7 @@
 {
-  "name": "@khoralabs/at2-transport",
+  "name": "@khoralabs/atrium-transport",
   "version": "0.0.0",
-  "description": "Transport traits and HTTP/WebSocket bindings for at2 clients.",
+  "description": "Transport traits and HTTP/WebSocket bindings for atrium clients.",
   "type": "module",
   "private": true,
   "exports": {
@@ -18,8 +18,8 @@
   "dependencies": {
     "@khoralabs/agent-io": "workspace:*",
     "@khoralabs/agent-relay": "workspace:*",
-    "@khoralabs/at2-auth": "workspace:*",
-    "@khoralabs/at2-contracts": "workspace:*",
+    "@khoralabs/atrium-auth": "workspace:*",
+    "@khoralabs/atrium-contracts": "workspace:*",
     "zod": "^4"
   },
   "devDependencies": {

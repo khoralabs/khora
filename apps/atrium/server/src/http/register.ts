@@ -1,20 +1,17 @@
 import type { PrincipalRegistrationRequest } from "@khoralabs/agent-relay";
 import {
-  inviteRequiredFromEnv,
-  invitesPerRegistrationFromEnv,
-} from "@khoralabs/at2-host";
-import {
   normalizeUsername,
   zAtriumRegisterResult,
   zAtriumRegistrationRequestBody,
 } from "@khoralabs/at2-contracts";
+import { inviteRequiredFromEnv, invitesPerRegistrationFromEnv } from "@khoralabs/at2-host";
 import type { RelayCatalogSourceMapStore } from "@khoralabs/relay-colonnade";
 import {
+  relaySyntheticPointer,
   SOURCE_PRINCIPAL_TO_USERNAME,
   SOURCE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
 } from "@khoralabs/relay-colonnade";
-import { relaySyntheticPointer } from "@khoralabs/relay-colonnade";
 import { clientIpFromRequest } from "../rate-limit.ts";
 import type { HostRouteDeps } from "./deps.ts";
 import {

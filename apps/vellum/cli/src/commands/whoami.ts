@@ -1,5 +1,5 @@
-import { At2Client } from "@khoralabs/at2-client";
 import type { PersistableAgentSigner } from "@khoralabs/agent-persisted-signer";
+import { AtriumClient } from "@khoralabs/at2-client";
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { boolFlag } from "@khoralabs/cli-kit";
 
@@ -30,7 +30,7 @@ export async function handleWhoami(flags: FlagMap): Promise<void> {
     return;
   }
 
-  const ac = new At2Client({ baseUrl: cliBaseUrl(flags), signer });
+  const ac = new AtriumClient({ baseUrl: cliBaseUrl(flags), signer });
   try {
     const result = await ac.lookupProfileByDid(signer.did);
     if (result === null) {

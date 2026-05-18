@@ -1,4 +1,4 @@
-import type { At2UnaryTransport } from "@khoralabs/at2-transport";
+import type { AtriumUnaryTransport } from "@khoralabs/at2-transport";
 import z from "zod";
 
 const zAuthorSubscribeOk = z.object({
@@ -22,13 +22,15 @@ const zAuthorsList = z.object({
 export type AuthorSubscriptionsSnapshot = z.infer<typeof zAuthorsList>;
 
 export async function listAuthorSubscriptions(
-  t: At2UnaryTransport,
+  t: AtriumUnaryTransport,
 ): Promise<AuthorSubscriptionsSnapshot> {
-  return t.requestJson("GET", "/v1/authors/subscriptions", { parse: zAuthorsList });
+  return t.requestJson("GET", "/v1/authors/subscriptions", {
+    parse: zAuthorsList,
+  });
 }
 
 export function subscribeAuthor(
-  t: At2UnaryTransport,
+  t: AtriumUnaryTransport,
   username: string,
 ): Promise<{ ok: true; username: string; authorDid: string }> {
   return t.requestJson("POST", `/v1/authors/${encodeURIComponent(username.trim())}/subscribe`, {
@@ -36,15 +38,20 @@ export function subscribeAuthor(
   });
 }
 
-export function unsubscribeAuthor(t: At2UnaryTransport, username: string): Promise<void> {
+export function unsubscribeAuthor(t: AtriumUnaryTransport, username: string): Promise<void> {
   return t.requestVoid("DELETE", `/v1/authors/${encodeURIComponent(username.trim())}/subscribe`);
 }
 
 export function subscribeAuthorTopic(
-  t: At2UnaryTransport,
+  t: AtriumUnaryTransport,
   username: string,
   topicSlug: string,
-): Promise<{ ok: true; username: string; authorDid: string; topicSlug: string }> {
+): Promise<{
+  ok: true;
+  username: string;
+  authorDid: string;
+  topicSlug: string;
+}> {
   const u = encodeURIComponent(username.trim());
   const s = encodeURIComponent(topicSlug.trim());
   return t.requestJson("POST", `/v1/authors/${u}/topics/${s}/subscribe`, {
@@ -53,7 +60,7 @@ export function subscribeAuthorTopic(
 }
 
 export function unsubscribeAuthorTopic(
-  t: At2UnaryTransport,
+  t: AtriumUnaryTransport,
   username: string,
   topicSlug: string,
 ): Promise<void> {

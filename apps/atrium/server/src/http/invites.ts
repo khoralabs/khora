@@ -51,7 +51,11 @@ export async function handleInvitePreview(req: Request, deps: HostRouteDeps): Pr
   return Response.json(out);
 }
 
-export async function handleListInvites(req: Request, url: URL, deps: HostRouteDeps): Promise<Response> {
+export async function handleListInvites(
+  req: Request,
+  url: URL,
+  deps: HostRouteDeps,
+): Promise<Response> {
   const { ctx, rateLimiters } = deps;
   let did: string;
   try {
@@ -61,8 +65,7 @@ export async function handleListInvites(req: Request, url: URL, deps: HostRouteD
   }
   const listRl = rateLimiters.invitesListDid(`did:${did}`);
   if (!listRl.ok) return rateLimitedResponse(listRl.retryAfterSec);
-  const invites =
-    ctx.invitesRepo === undefined ? [] : ctx.invitesRepo.listInvitesMintedForDid(did);
+  const invites = ctx.invitesRepo === undefined ? [] : ctx.invitesRepo.listInvitesMintedForDid(did);
   const payload = zAtriumInviteListResponse.parse({ invites });
   return Response.json(payload);
 }

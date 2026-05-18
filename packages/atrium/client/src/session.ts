@@ -6,9 +6,9 @@ import type {
   AtriumRegistrationResult,
 } from "@khoralabs/at2-contracts";
 import type { InboxWsHandlers } from "@khoralabs/at2-transport";
-import type { At2Client } from "./at2-client.ts";
+import type { AtriumClient } from "./at2-client.ts";
 
-export type At2Session = {
+export type AtriumSession = {
   readonly did: string;
   readonly profileId: string;
   readonly profile: AtriumProfile;
@@ -20,7 +20,10 @@ export type At2Session = {
   connectInbox(handlers: InboxWsHandlers): Promise<{ close(): void }>;
 };
 
-export function createAt2Session(client: At2Client, registration: AtriumRegistrationResult): At2Session {
+export function createAtriumSession(
+  client: AtriumClient,
+  registration: AtriumRegistrationResult,
+): AtriumSession {
   const { did, profileId, profile } = registration;
   return {
     did,

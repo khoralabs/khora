@@ -1,6 +1,6 @@
-import type { At2HostContext } from "./context.ts";
-import { RELAY_INBOX_SOURCE_MAP_ID } from "./relay-inbox.ts";
 import { relayInboxAuthorPointerDeliverable } from "@khoralabs/relay-colonnade";
+import type { AtriumHostContext } from "./context.ts";
+import { RELAY_INBOX_SOURCE_MAP_ID } from "./relay-inbox.ts";
 
 export type RelayInboxDrainItem = {
   entryKey: string;
@@ -30,7 +30,10 @@ function postIdFromRelayInboxProjection(projection: unknown): string | undefined
  * Rows whose post no longer exist are dropped without being delivered (lazy pointer reconcile).
  * Rows whose author is unregistered or in an active teardown job are dropped the same way.
  */
-export function popRelayInboxDrainItemsForDid(ctx: At2HostContext, did: string): RelayInboxDrainItem[] {
+export function popRelayInboxDrainItemsForDid(
+  ctx: AtriumHostContext,
+  did: string,
+): RelayInboxDrainItem[] {
   const { store, tenantKey, catalogDb, host } = ctx;
   const prefix = `${did}/`;
   const rows = store.listBySourceMap(tenantKey, RELAY_INBOX_SOURCE_MAP_ID, prefix);

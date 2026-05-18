@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@khoralabs/agent-persisted-signer": "workspace:*",
-    "@khoralabs/at2-client": "workspace:*",
+    "@khoralabs/atrium-client": "workspace:*",
     "@khoralabs/cli-flow-nbc": "workspace:*",
     "@khoralabs/cli-kit": "workspace:*",
     "@khoralabs/obp-v2-nbc": "workspace:*",

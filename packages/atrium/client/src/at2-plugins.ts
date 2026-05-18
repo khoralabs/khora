@@ -1,36 +1,39 @@
 import { isAbsolute, resolve } from "node:path";
 
 /** Per-plugin teardown (idempotent). */
-export type At2PluginHandle = {
+export type AtriumPluginHandle = {
   stop(): void;
 };
 
 /**
- * Runs after `At2Client` construction; receives the client and path resolver based on optional
- * {@link At2ClientOptions.dataDir}. Absolute paths pass through `resolvePath`.
+ * Runs after `AtriumClient` construction; receives the client and path resolver based on optional
+ * {@link AtriumClientOptions.dataDir}. Absolute paths pass through `resolvePath`.
  */
-export type At2PluginContext = {
-  readonly client: import("./at2-client.js").At2Client;
+export type AtriumPluginContext = {
+  readonly client: import("./at2-client.js").AtriumClient;
   resolvePath(rel: string): string;
 };
 
-/** Factory invoked synchronously by `At2Client` for each configured plugin. */
-export type At2PluginInstaller = (ctx: At2PluginContext) => At2PluginHandle;
+/** Factory invoked synchronously by `AtriumClient` for each configured plugin. */
+export type AtriumPluginInstaller = (ctx: AtriumPluginContext) => AtriumPluginHandle;
 
 /** Built-in ids for env-loaded plugins (use for deduplication / user overrides). */
-export const AT2_BUILTIN_PLUGIN_ID = {
+export const ATRIUM_BUILTIN_PLUGIN_ID = {
   profileSync: "at2.plugin.profile-sync",
   telemetry: "at2.plugin.telemetry",
   inboxBuffer: "at2.plugin.inbox-buffer",
 } as const;
 
 /** Installer with stable {@link id} for merging layers (CLI/daemon/user loaders). */
-export type LabeledAt2PluginInstaller = {
+export type LabeledAtriumPluginInstaller = {
   id: string;
-  install: At2PluginInstaller;
+  install: AtriumPluginInstaller;
 };
 
-export function labelAt2Plugin(id: string, install: At2PluginInstaller): LabeledAt2PluginInstaller {
+export function labelAtriumPlugin(
+  id: string,
+  install: AtriumPluginInstaller,
+): LabeledAtriumPluginInstaller {
   return { id, install };
 }
 
@@ -40,16 +43,16 @@ export function labelAt2Plugin(id: string, install: At2PluginInstaller): Labeled
  * - **last-wins**: later entries with the same `id` replace earlier installs (typical: extras override env).
  * - **first-wins**: first registration for an `id` wins.
  */
-export function mergeLabeledAt2PluginLayers(
-  layers: readonly (readonly LabeledAt2PluginInstaller[])[],
+export function mergeLabeledAtriumPluginLayers(
+  layers: readonly (readonly LabeledAtriumPluginInstaller[])[],
   collision: "first-wins" | "last-wins",
-): At2PluginInstaller[] {
-  const flat: LabeledAt2PluginInstaller[] = [];
+): AtriumPluginInstaller[] {
+  const flat: LabeledAtriumPluginInstaller[] = [];
   for (const layer of layers) {
     for (const entry of layer) flat.push(entry);
   }
   if (collision === "first-wins") {
-    const installById = new Map<string, At2PluginInstaller>();
+    const installById = new Map<string, AtriumPluginInstaller>();
     const order: string[] = [];
     for (const { id, install } of flat) {
       if (installById.has(id)) continue;
@@ -62,7 +65,7 @@ export function mergeLabeledAt2PluginLayers(
       return inst;
     });
   }
-  const installById = new Map<string, At2PluginInstaller>();
+  const installById = new Map<string, AtriumPluginInstaller>();
   for (const { id, install } of flat) {
     installById.set(id, install);
   }
@@ -81,7 +84,7 @@ export function mergeLabeledAt2PluginLayers(
 }
 
 /** Join `rel` to `dataDir` when `dataDir` is set and `rel` is not absolute (and not `:memory:`). */
-export function createAt2ResolvePath(dataDir: string | undefined): (rel: string) => string {
+export function createAtriumResolvePath(dataDir: string | undefined): (rel: string) => string {
   return (rel: string) => {
     if (rel === ":memory:") return rel;
     if (isAbsolute(rel)) return rel;

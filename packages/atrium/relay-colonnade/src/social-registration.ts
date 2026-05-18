@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
 import type { AgentRelayPersistence } from "@khoralabs/agent-relay";
-import { type RelayCatalogSourceMapStore, relaySyntheticPointer } from "@khoralabs/relay-colonnade";
 import { normalizeUsername } from "@khoralabs/at2-contracts";
+import { type RelayCatalogSourceMapStore, relaySyntheticPointer } from "@khoralabs/relay-colonnade";
 import type { SocialAgentIdentity, SocialRegisterAgentInput } from "./social-types.ts";
 
 export const SOURCE_USERNAME_TO_PRINCIPAL = "relay:social:username-to-principal";
@@ -36,7 +36,11 @@ export function registerAgentOnColonnadePersistence(
       SOURCE_USERNAME_TO_PRINCIPAL,
       username,
     );
-    if (usernameHit.found && usernameHit.projection !== null && typeof usernameHit.projection === "object") {
+    if (
+      usernameHit.found &&
+      usernameHit.projection !== null &&
+      typeof usernameHit.projection === "object"
+    ) {
       const existing = (usernameHit.projection as Record<string, unknown>).principalId;
       if (typeof existing === "string" && existing !== input.principalId) {
         throw new Error(`username '${username}' is unavailable`);
@@ -63,7 +67,11 @@ export function registerAgentOnColonnadePersistence(
       tenant_key: USERNAME_INDEX_TENANT_KEY,
       source_map_id: SOURCE_USERNAME_TO_PRINCIPAL,
       entry_key: username,
-      pointer: relaySyntheticPointer(USERNAME_INDEX_TENANT_KEY, SOURCE_USERNAME_TO_PRINCIPAL, username),
+      pointer: relaySyntheticPointer(
+        USERNAME_INDEX_TENANT_KEY,
+        SOURCE_USERNAME_TO_PRINCIPAL,
+        username,
+      ),
       projection: { principalId: input.principalId },
     });
     store.upsertRow({

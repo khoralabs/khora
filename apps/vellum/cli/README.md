@@ -47,11 +47,11 @@ Editor IntelliSense: point `"$schema": "./vellum-config.schema.json"` at the fil
 
 | Variable | Used for |
 | --- | --- |
-| `VELLUM_BASE_URL`, `VELLUM_ATRIUM_BASE_URL`, `AT2_BASE_URL` | Host HTTP URL |
+| `VELLUM_BASE_URL`, `VELLUM_ATRIUM_BASE_URL`, `ATRIUM_BASE_URL` | Host HTTP URL |
 | `VELLUM_DATA_DIR` | Room data root (layout `…/obp/rooms/<room>/…`; preferred) |
-| `AT2_DATA_DIR`, `ATRIUM_DATA_DIR` | Same as `VELLUM_DATA_DIR` (legacy names) |
+| `ATRIUM_DATA_DIR`, `ATRIUM_DATA_DIR` | Same as `VELLUM_DATA_DIR` (legacy names) |
 | `VELLUM_OBP_STORE_ROOT` | Override the `…/obp` directory (rare; legacy: `ATRIUM_OBP_STORE_ROOT`) |
-| `VELLUM_AGENT_KEY_PATH`, `ATRIUM_AGENT_KEY_PATH`, `AT2_AGENT_KEY_PATH` | Identity JSON path |
+| `VELLUM_AGENT_KEY_PATH`, `ATRIUM_AGENT_KEY_PATH`, `ATRIUM_AGENT_KEY_PATH` | Identity JSON path |
 | `VELLUM_ROOM_ID`, `ATRIUM_ROOM_ID` | Default room id |
 | `VELLUM_ROOM_WS_URL` | Default room WebSocket URL |
 | `VELLUM_CONFIG` | Explicit config file path |

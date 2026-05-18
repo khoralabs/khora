@@ -118,7 +118,7 @@ describe("createFrameChannelHub", () => {
 
     expect(received.length).toBe(1);
     const json = JSON.parse(
-      new TextDecoder().decode(received[0]!.subarray(4, 4 + received[0]!.length - 4)),
+      new TextDecoder().decode(received[0]?.subarray(4, 4 + received[0]?.length - 4)),
     ) as { frame: { body: { e2ee: { ct: string } } } };
     expect(json.frame.body.e2ee.ct).toBe("BBBB");
   });

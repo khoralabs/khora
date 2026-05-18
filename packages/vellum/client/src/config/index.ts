@@ -5,7 +5,7 @@ export {
 } from "./defaults.ts";
 export { vellumAppConfigFromEnv } from "./env.ts";
 export { VellumConfigError } from "./errors.ts";
-export { type VellumConfigFileRead, readVellumConfigFileWithExtends } from "./file.ts";
+export { readVellumConfigFileWithExtends, type VellumConfigFileRead } from "./file.ts";
 export { vellumConfigJsonSchema } from "./json-schema.ts";
 export {
   type LoadedVellumAppConfig,

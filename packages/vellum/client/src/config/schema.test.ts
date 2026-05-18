@@ -1,8 +1,7 @@
+import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import path from "node:path";
-
-import { afterEach, describe, expect, test } from "bun:test";
 
 import {
   loadVellumAppConfig,
@@ -51,7 +50,10 @@ describe("loadVellumAppConfig", () => {
   test("env-only layer validates", () => {
     const { config } = loadVellumAppConfig({
       schema: zVellumAppConfigBase,
-      layers: [vellumAppConfigBuiltinDefaults(), vellumAppConfigFromEnv({ VELLUM_BASE_URL: "http://env" })],
+      layers: [
+        vellumAppConfigBuiltinDefaults(),
+        vellumAppConfigFromEnv({ VELLUM_BASE_URL: "http://env" }),
+      ],
       filePath: null,
     });
     expect(config.baseUrl).toBe("http://env");
@@ -66,10 +68,7 @@ describe("readVellumConfigFileWithExtends", () => {
 
   test("resolves extends chain", () => {
     dir = mkdtempSync(path.join(tmpdir(), "vellum-cfg-"));
-    writeFileSync(
-      path.join(dir, "base.json"),
-      JSON.stringify({ dataDir: "/from-base" }),
-    );
+    writeFileSync(path.join(dir, "base.json"), JSON.stringify({ dataDir: "/from-base" }));
     writeFileSync(
       path.join(dir, "child.json"),
       JSON.stringify({ extends: "./base.json", baseUrl: "http://child" }),

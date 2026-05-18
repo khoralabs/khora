@@ -12,10 +12,10 @@ import {
   zAtriumProfile,
 } from "@khoralabs/at2-contracts";
 import {
-  type RelayCatalogSourceMapStore,
   purgeRelayCatalogPostEntity,
-  registerAgentOnColonnadePersistence,
   RELAY_CATALOG_SOURCE_POST,
+  type RelayCatalogSourceMapStore,
+  registerAgentOnColonnadePersistence,
   relaySyntheticPointer,
 } from "@khoralabs/relay-colonnade";
 import { RELAY_INBOX_SOURCE_MAP_ID } from "./relay-inbox.ts";
@@ -58,7 +58,11 @@ function fanOutPostToInbox(params: {
       if (authorPrincipalId !== undefined) {
         const tupleSubject = authorTopicSubscriptionSubject(authorPrincipalId, slug);
         for (const pid of subs.subscriberPrincipalsForSubject(tupleSubject, authorPrincipalId)) {
-          addReason(pid, { kind: "author_topic", authorPrincipalId, topic: slug });
+          addReason(pid, {
+            kind: "author_topic",
+            authorPrincipalId,
+            topic: slug,
+          });
         }
       }
     }
@@ -90,7 +94,7 @@ function fanOutPostToInbox(params: {
   }
 }
 
-export function createAt2RelayOnEvent(deps: {
+export function createAtriumRelayOnEvent(deps: {
   store: RelayCatalogSourceMapStore;
   tenantKey: string;
   catalogDb: Database;

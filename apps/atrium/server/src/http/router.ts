@@ -1,8 +1,16 @@
 import { agentRelayFrameChannelWebSocketHandlers } from "@khoralabs/agent-relay";
-import type { At2HostContext } from "@khoralabs/at2-host";
-import type { At2WsUpgradePort } from "@khoralabs/at2-transport";
+import type { AtriumHostContext } from "@khoralabs/at2-host";
+import type { AtriumWsUpgradePort } from "@khoralabs/at2-transport";
 import { clientIpFromRequest } from "../rate-limit.ts";
+import { handleInboxWsUpgrade } from "../ws/inbox.ts";
+import {
+  handleAuthorSubMutation,
+  handleAuthorTopicSubMutation,
+  handleListAuthorSubscriptions,
+} from "./authors.ts";
+import type { HostRouteDeps } from "./deps.ts";
 import { handleHealth } from "./health.ts";
+import { handleInvitePreview, handleListInvites } from "./invites.ts";
 import {
   handleAgentStatus,
   handleCreatePost,
@@ -10,32 +18,20 @@ import {
   handleGetPost,
   handleUpdatePost,
 } from "./posts.ts";
-import {
-  handleProfileByDid,
-  handleProfileByUsername,
-  handleProfilePatch,
-} from "./profile.ts";
-import {
-  handleAuthorSubMutation,
-  handleAuthorTopicSubMutation,
-  handleListAuthorSubscriptions,
-} from "./authors.ts";
-import { handleInvitePreview, handleListInvites } from "./invites.ts";
-import { handleListRelationships } from "./relationships.ts";
+import { handleProfileByDid, handleProfileByUsername, handleProfilePatch } from "./profile.ts";
 import { handleRegister } from "./register.ts";
-import { handleUnregister } from "./unregister.ts";
+import { handleListRelationships } from "./relationships.ts";
+import { jsonError, rateLimitedResponse } from "./responses.ts";
 import {
-  handleRoomWsUpgrade,
   handleRoomsCreate,
   handleRoomsJoin,
   handleRoomsMintTicket,
+  handleRoomWsUpgrade,
   isRoomWsPath,
   parseRoomsMintTicketRoomId,
 } from "./rooms.ts";
-import { jsonError, rateLimitedResponse } from "./responses.ts";
 import { handleTopicSubscribe, handleTopicUnsubscribe } from "./topics.ts";
-import { handleInboxWsUpgrade } from "../ws/inbox.ts";
-import type { HostRouteDeps } from "./deps.ts";
+import { handleUnregister } from "./unregister.ts";
 
 const topicSubscribeRe = /^\/v1\/topics\/([^/]+)\/subscribe$/;
 
@@ -45,7 +41,7 @@ const topicSubscribeRe = /^\/v1\/topics\/([^/]+)\/subscribe$/;
 export async function route(
   req: Request,
   url: URL,
-  upgradePort: At2WsUpgradePort | undefined,
+  upgradePort: AtriumWsUpgradePort | undefined,
   deps: HostRouteDeps,
 ): Promise<Response | undefined> {
   if (req.method === "GET" && url.pathname === "/health") {
@@ -193,8 +189,8 @@ export async function routeUnary(
 }
 
 /** Build frame-channel WebSocket handlers for `Bun.serve` from an at2 host context. */
-export function at2FrameChannelWsHandlers(ctx: At2HostContext): ReturnType<
-  typeof agentRelayFrameChannelWebSocketHandlers
-> {
+export function at2FrameChannelWsHandlers(
+  ctx: AtriumHostContext,
+): ReturnType<typeof agentRelayFrameChannelWebSocketHandlers> {
   return agentRelayFrameChannelWebSocketHandlers({ hub: ctx.roomHub });
 }

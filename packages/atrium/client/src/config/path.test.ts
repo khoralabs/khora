@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import path from "node:path";
-import { defaultAt2ConfigPath, resolveAt2ConfigPath } from "./path.ts";
+import { defaultAtriumConfigPath, resolveAtriumConfigPath } from "./path.ts";
 
-describe("resolveAt2ConfigPath", () => {
+describe("resolveAtriumConfigPath", () => {
   test("flag wins over env and default", () => {
-    const r = resolveAt2ConfigPath({
+    const r = resolveAtriumConfigPath({
       flag: "/a.json",
-      env: { AT2_CONFIG: "/b.json" },
+      env: { ATRIUM_CONFIG: "/b.json" },
       defaultPath: "/c.json",
       fsExists: () => true,
     });
@@ -14,8 +14,8 @@ describe("resolveAt2ConfigPath", () => {
   });
 
   test("env wins over default when no flag", () => {
-    const r = resolveAt2ConfigPath({
-      env: { AT2_CONFIG: "/b.json" },
+    const r = resolveAtriumConfigPath({
+      env: { ATRIUM_CONFIG: "/b.json" },
       defaultPath: "/c.json",
       fsExists: () => true,
     });
@@ -23,28 +23,34 @@ describe("resolveAt2ConfigPath", () => {
   });
 
   test("default returned only when file exists", () => {
-    const ok = resolveAt2ConfigPath({ defaultPath: "/c.json", fsExists: () => true });
+    const ok = resolveAtriumConfigPath({
+      defaultPath: "/c.json",
+      fsExists: () => true,
+    });
     expect(ok).toEqual({ path: "/c.json", explicit: false });
-    const missing = resolveAt2ConfigPath({ defaultPath: "/c.json", fsExists: () => false });
+    const missing = resolveAtriumConfigPath({
+      defaultPath: "/c.json",
+      fsExists: () => false,
+    });
     expect(missing).toBeUndefined();
   });
 
   test("empty flag is ignored", () => {
-    const r = resolveAt2ConfigPath({
+    const r = resolveAtriumConfigPath({
       flag: "  ",
-      env: { AT2_CONFIG: "/b.json" },
+      env: { ATRIUM_CONFIG: "/b.json" },
       fsExists: () => false,
     });
     expect(r).toEqual({ path: "/b.json", explicit: true });
   });
 
   test("default path uses HOME", () => {
-    const def = defaultAt2ConfigPath();
+    const def = defaultAtriumConfigPath();
     expect(def.endsWith(path.join(".at2", "config.json"))).toBe(true);
   });
 
   test("defaultPaths returns first existing entry", () => {
-    const r = resolveAt2ConfigPath({
+    const r = resolveAtriumConfigPath({
       defaultPaths: ["/a.json", "/b.json", "/c.json"],
       fsExists: (p) => p === "/b.json" || p === "/c.json",
     });
@@ -52,7 +58,7 @@ describe("resolveAt2ConfigPath", () => {
   });
 
   test("defaultPaths returns undefined when none exist", () => {
-    const r = resolveAt2ConfigPath({
+    const r = resolveAtriumConfigPath({
       defaultPaths: ["/a.json", "/b.json"],
       fsExists: () => false,
     });
@@ -60,7 +66,7 @@ describe("resolveAt2ConfigPath", () => {
   });
 
   test("defaultPaths wins over defaultPath when both supplied", () => {
-    const r = resolveAt2ConfigPath({
+    const r = resolveAtriumConfigPath({
       defaultPath: "/legacy.json",
       defaultPaths: ["/new.json"],
       fsExists: () => true,
@@ -69,7 +75,7 @@ describe("resolveAt2ConfigPath", () => {
   });
 
   test("defaultPaths walks past missing entries to find the next existing one", () => {
-    const r = resolveAt2ConfigPath({
+    const r = resolveAtriumConfigPath({
       defaultPaths: ["/missing-a.json", "/missing-b.json", "/found.json"],
       fsExists: (p) => p === "/found.json",
     });

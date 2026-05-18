@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import {
@@ -192,9 +200,8 @@ describe("maybeBootstrapVellumHome", () => {
     unlinkSync(path.join(assetsDir, "configs", "base.config.json"));
     const errors: string[] = [];
     expect(() =>
-      maybeBootstrapVellumHome(
-        { VELLUM_CLI_ASSETS_DIR: assetsDir, HOME: home },
-        (line) => errors.push(line),
+      maybeBootstrapVellumHome({ VELLUM_CLI_ASSETS_DIR: assetsDir, HOME: home }, (line) =>
+        errors.push(line),
       ),
     ).not.toThrow();
     expect(errors.length).toBeGreaterThan(0);

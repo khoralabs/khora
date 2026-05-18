@@ -3,14 +3,14 @@ import { homedir } from "node:os";
 import path from "node:path";
 
 /** `${HOME}/.at2/config.json` — the auto-discovered default. */
-export function defaultAt2ConfigPath(): string {
+export function defaultAtriumConfigPath(): string {
   return path.join(homedir(), ".at2", "config.json");
 }
 
-export type ResolvedAt2ConfigPath = {
+export type ResolvedAtriumConfigPath = {
   /** Absolute (or as-supplied) path to the entry config file. */
   path: string;
-  /** `true` when the path came from `--config` or `AT2_CONFIG`; `false` for auto-discovery. */
+  /** `true` when the path came from `--config` or `ATRIUM_CONFIG`; `false` for auto-discovery. */
   explicit: boolean;
 };
 
@@ -19,17 +19,17 @@ export type ResolvedAt2ConfigPath = {
  *
  * Priority (first hit wins):
  *   1. `flag` (e.g. `--config <path>`) — explicit
- *   2. `env.AT2_CONFIG` — explicit
+ *   2. `env.ATRIUM_CONFIG` — explicit
  *   3. First entry of `defaultPaths` that exists on disk — non-explicit
  *
- * `defaultPaths` defaults to `[defaultAt2ConfigPath()]`. The legacy `defaultPath` option is
+ * `defaultPaths` defaults to `[defaultAtriumConfigPath()]`. The legacy `defaultPath` option is
  * kept as a thin alias (single-element array) for backward compatibility; if both are supplied,
  * `defaultPaths` wins.
  *
  * `undefined` is returned when nothing applies. Callers may treat ENOENT on an explicit path as
  * fatal; non-explicit resolutions are skipped silently when the file is missing.
  */
-export function resolveAt2ConfigPath(
+export function resolveAtriumConfigPath(
   opts: {
     flag?: string;
     env?: NodeJS.ProcessEnv;
@@ -39,15 +39,15 @@ export function resolveAt2ConfigPath(
     defaultPaths?: readonly string[];
     fsExists?: (p: string) => boolean;
   } = {},
-): ResolvedAt2ConfigPath | undefined {
+): ResolvedAtriumConfigPath | undefined {
   const flag = opts.flag?.trim();
   if (flag !== undefined && flag.length > 0) return { path: flag, explicit: true };
-  const envVal = opts.env?.AT2_CONFIG?.trim();
+  const envVal = opts.env?.ATRIUM_CONFIG?.trim();
   if (envVal !== undefined && envVal.length > 0) return { path: envVal, explicit: true };
   const exists = opts.fsExists ?? existsSync;
   const candidates =
     opts.defaultPaths ??
-    (opts.defaultPath !== undefined ? [opts.defaultPath] : [defaultAt2ConfigPath()]);
+    (opts.defaultPath !== undefined ? [opts.defaultPath] : [defaultAtriumConfigPath()]);
   for (const candidate of candidates) {
     if (exists(candidate)) return { path: candidate, explicit: false };
   }

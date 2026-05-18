@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { At2ConfigError } from "./errors.ts";
-import { mergeAt2AppConfigLayers } from "./merge.ts";
+import { AtriumConfigError } from "./errors.ts";
+import { mergeAtriumAppConfigLayers } from "./merge.ts";
 
-export type At2ConfigFileRead = {
+export type AtriumConfigFileRead = {
   /** Plain (unvalidated) merged object — extends chain already folded in. */
   merged: Record<string, unknown>;
   /** Absolute paths of every file read, deepest base first, entry file last. */
@@ -24,7 +24,7 @@ function parseExtends(value: unknown, sourcePath: string): string[] {
   if (value === undefined) return [];
   if (typeof value === "string") return [value];
   if (Array.isArray(value) && value.every((v) => typeof v === "string")) return value;
-  throw new At2ConfigError(
+  throw new AtriumConfigError(
     [
       {
         code: "custom",
@@ -37,9 +37,9 @@ function parseExtends(value: unknown, sourcePath: string): string[] {
   );
 }
 
-function readOne(absPath: string, opts: ReadOptions): At2ConfigFileRead | undefined {
+function readOne(absPath: string, opts: ReadOptions): AtriumConfigFileRead | undefined {
   if (opts.visited.has(absPath)) {
-    throw new At2ConfigError(
+    throw new AtriumConfigError(
       [
         {
           code: "custom",
@@ -58,7 +58,7 @@ function readOne(absPath: string, opts: ReadOptions): At2ConfigFileRead | undefi
     const err = e as NodeJS.ErrnoException;
     if (err.code === "ENOENT") {
       if (opts.explicit) {
-        throw new At2ConfigError(
+        throw new AtriumConfigError(
           [
             {
               code: "custom",
@@ -78,7 +78,7 @@ function readOne(absPath: string, opts: ReadOptions): At2ConfigFileRead | undefi
   try {
     parsed = JSON.parse(text);
   } catch (e) {
-    throw new At2ConfigError(
+    throw new AtriumConfigError(
       [
         {
           code: "custom",
@@ -91,7 +91,7 @@ function readOne(absPath: string, opts: ReadOptions): At2ConfigFileRead | undefi
     );
   }
   if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new At2ConfigError(
+    throw new AtriumConfigError(
       [
         {
           code: "custom",
@@ -124,7 +124,7 @@ function readOne(absPath: string, opts: ReadOptions): At2ConfigFileRead | undefi
   }
   const ownLayer: Record<string, unknown> = { ...own };
   delete ownLayer.extends;
-  const merged = mergeAt2AppConfigLayers([...baseLayers, ownLayer]);
+  const merged = mergeAtriumAppConfigLayers([...baseLayers, ownLayer]);
   chain.push(absPath);
   return { merged, chain };
 }
@@ -139,13 +139,13 @@ function readOne(absPath: string, opts: ReadOptions): At2ConfigFileRead | undefi
  *
  * The `extends` field itself is stripped from the merged output.
  */
-export function readAt2ConfigFileWithExtends(
+export function readAtriumConfigFileWithExtends(
   entryPath: string,
   options: {
     explicit?: boolean;
     fs?: { readFileSync: (p: string) => string };
   } = {},
-): At2ConfigFileRead | undefined {
+): AtriumConfigFileRead | undefined {
   const abs = path.resolve(entryPath);
   return readOne(abs, {
     explicit: options.explicit ?? true,

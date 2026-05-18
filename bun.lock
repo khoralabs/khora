@@ -44,10 +44,10 @@
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/agent-relay": "workspace:*",
-        "@khoralabs/at2-auth": "workspace:*",
-        "@khoralabs/at2-contracts": "workspace:*",
-        "@khoralabs/at2-host": "workspace:*",
-        "@khoralabs/at2-transport": "workspace:*",
+        "@khoralabs/atrium-auth": "workspace:*",
+        "@khoralabs/atrium-contracts": "workspace:*",
+        "@khoralabs/atrium-host": "workspace:*",
+        "@khoralabs/atrium-transport": "workspace:*",
         "@khoralabs/duplex-byte-stream": "workspace:*",
         "@khoralabs/relay-colonnade": "workspace:*",
         "zod": "^4",
@@ -126,7 +126,7 @@
       },
       "dependencies": {
         "@khoralabs/agent-persisted-signer": "workspace:*",
-        "@khoralabs/at2-client": "workspace:*",
+        "@khoralabs/atrium-client": "workspace:*",
         "@khoralabs/cli-flow-nbc": "workspace:*",
         "@khoralabs/cli-kit": "workspace:*",
         "@khoralabs/obp-v2-nbc": "workspace:*",
@@ -146,7 +146,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/agent-persisted-signer": "workspace:*",
-        "@khoralabs/at2-client": "workspace:*",
+        "@khoralabs/atrium-client": "workspace:*",
         "@khoralabs/obp-v2-frames-impl": "workspace:*",
         "@khoralabs/obp-v2-model": "workspace:*",
         "@khoralabs/obp-v2-nbc": "workspace:*",
@@ -239,7 +239,7 @@
       },
     },
     "packages/atrium/auth": {
-      "name": "@khoralabs/at2-auth",
+      "name": "@khoralabs/atrium-auth",
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/agent-persisted-signer": "workspace:*",
@@ -256,13 +256,13 @@
       },
     },
     "packages/atrium/client": {
-      "name": "@khoralabs/at2-client",
+      "name": "@khoralabs/atrium-client",
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/agent-relay": "workspace:*",
-        "@khoralabs/at2-auth": "workspace:*",
-        "@khoralabs/at2-contracts": "workspace:*",
-        "@khoralabs/at2-transport": "workspace:*",
+        "@khoralabs/atrium-auth": "workspace:*",
+        "@khoralabs/atrium-contracts": "workspace:*",
+        "@khoralabs/atrium-transport": "workspace:*",
         "@khoralabs/obp-v2-session-impl": "workspace:*",
         "@khoralabs/obp-v2-transport-ws": "workspace:*",
         "zod": "^4",
@@ -276,7 +276,7 @@
       },
     },
     "packages/atrium/contracts": {
-      "name": "@khoralabs/at2-contracts",
+      "name": "@khoralabs/atrium-contracts",
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/agent-relay": "workspace:*",
@@ -291,13 +291,13 @@
       },
     },
     "packages/atrium/host": {
-      "name": "@khoralabs/at2-host",
+      "name": "@khoralabs/atrium-host",
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/agent-relay": "workspace:*",
-        "@khoralabs/at2-auth": "workspace:*",
-        "@khoralabs/at2-contracts": "workspace:*",
-        "@khoralabs/at2-transport": "workspace:*",
+        "@khoralabs/atrium-auth": "workspace:*",
+        "@khoralabs/atrium-contracts": "workspace:*",
+        "@khoralabs/atrium-transport": "workspace:*",
         "@khoralabs/relay-colonnade": "workspace:*",
         "zod": "^4",
       },
@@ -314,7 +314,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/agent-relay": "workspace:*",
-        "@khoralabs/at2-contracts": "workspace:*",
+        "@khoralabs/atrium-contracts": "workspace:*",
         "@khoralabs/colonnade-persistence": "workspace:*",
       },
       "devDependencies": {
@@ -325,13 +325,13 @@
       },
     },
     "packages/atrium/transport": {
-      "name": "@khoralabs/at2-transport",
+      "name": "@khoralabs/atrium-transport",
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/agent-io": "workspace:*",
         "@khoralabs/agent-relay": "workspace:*",
-        "@khoralabs/at2-auth": "workspace:*",
-        "@khoralabs/at2-contracts": "workspace:*",
+        "@khoralabs/atrium-auth": "workspace:*",
+        "@khoralabs/atrium-contracts": "workspace:*",
         "zod": "^4",
       },
       "devDependencies": {
@@ -807,7 +807,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/agent-persisted-signer": "workspace:*",
-        "@khoralabs/at2-client": "workspace:*",
+        "@khoralabs/atrium-client": "workspace:*",
         "@khoralabs/obp-v2-frames-impl": "workspace:*",
         "@khoralabs/obp-v2-model": "workspace:*",
         "@khoralabs/obp-v2-nbc": "workspace:*",
@@ -962,17 +962,17 @@
 
     "@khoralabs/agent-thread": ["@khoralabs/agent-thread@workspace:packages/agent/thread"],
 
-    "@khoralabs/at2-auth": ["@khoralabs/at2-auth@workspace:packages/atrium/auth"],
+    "@khoralabs/atrium-auth": ["@khoralabs/atrium-auth@workspace:packages/atrium/auth"],
 
-    "@khoralabs/at2-client": ["@khoralabs/at2-client@workspace:packages/atrium/client"],
+    "@khoralabs/atrium-client": ["@khoralabs/atrium-client@workspace:packages/atrium/client"],
 
-    "@khoralabs/at2-contracts": ["@khoralabs/at2-contracts@workspace:packages/atrium/contracts"],
-
-    "@khoralabs/at2-host": ["@khoralabs/at2-host@workspace:packages/atrium/host"],
-
-    "@khoralabs/at2-transport": ["@khoralabs/at2-transport@workspace:packages/atrium/transport"],
+    "@khoralabs/atrium-contracts": ["@khoralabs/atrium-contracts@workspace:packages/atrium/contracts"],
 
     "@khoralabs/atrium-homepage": ["@khoralabs/atrium-homepage@workspace:apps/atrium/homepage"],
+
+    "@khoralabs/atrium-host": ["@khoralabs/atrium-host@workspace:packages/atrium/host"],
+
+    "@khoralabs/atrium-transport": ["@khoralabs/atrium-transport@workspace:packages/atrium/transport"],
 
     "@khoralabs/atrium-v2-server": ["@khoralabs/atrium-v2-server@workspace:apps/atrium/server"],
 
@@ -1964,8 +1964,6 @@
 
     "@xyflow/react/zustand": ["zustand@4.5.7", "", { "dependencies": { "use-sync-external-store": "^1.2.2" }, "peerDependencies": { "@types/react": ">=16.8", "immer": ">=9.0.6", "react": ">=16.8" }, "optionalPeers": ["@types/react", "immer", "react"] }, "sha512-CHOUy7mu3lbD6o6LJLfllpjkzhHXSBlX8B9+qPddUsIfeF5S/UZ5q0kmCsnRqT1UHFQZchNFDDzMbQsuesHWlw=="],
 
-    "cmdk/@radix-ui/react-primitive": ["@radix-ui/react-primitive@2.1.3", "", { "dependencies": { "@radix-ui/react-slot": "1.2.3" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-m9gTwRkhy2lvCPe6QJp4d3G1TYEUHn/FzJUtq9MjH46an1wJU+GdoGC5VLof8RX8Ft/DlpshApkhswDLZzHIcQ=="],
-
     "ml-array-max/is-any-array": ["is-any-array@3.0.0", "", {}, "sha512-o4h+tylWykC4BD1vaejp6gDxoM13bwW8FGuNs4yIKpj8xbBJcRxJx8vZpq0dCr7ZDEfeKjmsi/euolKhX6f/ww=="],
 
     "ml-array-min/is-any-array": ["is-any-array@3.0.0", "", {}, "sha512-o4h+tylWykC4BD1vaejp6gDxoM13bwW8FGuNs4yIKpj8xbBJcRxJx8vZpq0dCr7ZDEfeKjmsi/euolKhX6f/ww=="],
@@ -2055,7 +2053,5 @@
     "@radix-ui/react-toolbar/@radix-ui/react-primitive/@radix-ui/react-slot": ["@radix-ui/react-slot@1.2.3", "", { "dependencies": { "@radix-ui/react-compose-refs": "1.1.2" }, "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-aeNmHnBxbi2St0au6VBVC7JXFlhLlOnvIIlePNniyUNAClzmtAUEY8/pBiK3iHjufOlwA+c20/8jngo7xcrg8A=="],
 
     "@radix-ui/react-visually-hidden/@radix-ui/react-primitive/@radix-ui/react-slot": ["@radix-ui/react-slot@1.2.3", "", { "dependencies": { "@radix-ui/react-compose-refs": "1.1.2" }, "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-aeNmHnBxbi2St0au6VBVC7JXFlhLlOnvIIlePNniyUNAClzmtAUEY8/pBiK3iHjufOlwA+c20/8jngo7xcrg8A=="],
-
-    "cmdk/@radix-ui/react-primitive/@radix-ui/react-slot": ["@radix-ui/react-slot@1.2.3", "", { "dependencies": { "@radix-ui/react-compose-refs": "1.1.2" }, "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-aeNmHnBxbi2St0au6VBVC7JXFlhLlOnvIIlePNniyUNAClzmtAUEY8/pBiK3iHjufOlwA+c20/8jngo7xcrg8A=="],
   }
 }

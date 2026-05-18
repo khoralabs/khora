@@ -1,4 +1,4 @@
-import { At2Client, type AtriumRoomCreateBody } from "@khoralabs/at2-client";
+import { AtriumClient, type AtriumRoomCreateBody } from "@khoralabs/at2-client";
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { strFlag } from "@khoralabs/cli-kit";
 
@@ -8,7 +8,8 @@ import { promptJoinTokenIfMissing } from "../flows/room-join-flow.ts";
 export async function handleRoomCreate(flags: FlagMap): Promise<void> {
   const baseUrl = cliBaseUrl(flags);
   const targetDid = strFlag(flags, "target-did") ?? strFlag(flags, "targetDid") ?? "";
-  const targetUsername = strFlag(flags, "target-username") ?? strFlag(flags, "targetUsername") ?? "";
+  const targetUsername =
+    strFlag(flags, "target-username") ?? strFlag(flags, "targetUsername") ?? "";
   const ttlRaw = strFlag(flags, "ttl-ms") ?? strFlag(flags, "ttlMs") ?? "";
 
   const signer = await loadSigner(flags);
@@ -21,7 +22,7 @@ export async function handleRoomCreate(flags: FlagMap): Promise<void> {
   if (targetDid.length > 0) body.targetDid = targetDid;
   if (targetUsername.length > 0) body.targetUsername = targetUsername;
 
-  const ac = new At2Client({ baseUrl, signer });
+  const ac = new AtriumClient({ baseUrl, signer });
   try {
     const out = await ac.createRoom(body);
     console.log(JSON.stringify(out, null, 2));
@@ -35,7 +36,7 @@ export async function handleRoomJoin(ctx: VellumCliContext, flags: FlagMap): Pro
   const joinToken = await promptJoinTokenIfMissing(ctx, flags);
 
   const signer = await loadSigner(flags);
-  const ac = new At2Client({ baseUrl, signer });
+  const ac = new AtriumClient({ baseUrl, signer });
   try {
     const out = await ac.redeemRoomInvite({ joinToken });
     console.log(JSON.stringify(out, null, 2));

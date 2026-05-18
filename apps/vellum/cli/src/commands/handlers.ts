@@ -3,6 +3,8 @@ import type { FlagMap } from "@khoralabs/cli-kit";
 import type { VellumCliContext } from "../flows/context.ts";
 import { handleConnect } from "./connect.ts";
 import { handleList } from "./list.ts";
+import { handleRegister } from "./register.ts";
+import { handleRoomCreate, handleRoomJoin } from "./room.ts";
 import {
   handleChainCreate,
   handleChainList,
@@ -15,8 +17,6 @@ import {
   handlePortList,
   handlePortRead,
 } from "./room-commands.ts";
-import { handleRegister } from "./register.ts";
-import { handleRoomCreate, handleRoomJoin } from "./room.ts";
 import { runSetupCommand } from "./setup.ts";
 import { handleWhoami } from "./whoami.ts";
 

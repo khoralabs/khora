@@ -4,7 +4,7 @@ Library that composes **relay-colonnade** persistence, **at2-auth**, and **`Agen
 
 ## Wiring
 
-1. `createAt2Host({ catalogPath, framesDbPath, tenantKey? })` opens the catalog + frames DBs, constructs auth, inbox hub, frame-channel hub, and `AgentRelay`.
+1. `createAtriumHost({ catalogPath, framesDbPath, tenantKey? })` opens the catalog + frames DBs, constructs auth, inbox hub, frame-channel hub, and `AgentRelay`.
 2. **Ingress** (HTTP routes, `Bun.serve`, WebSocket upgrade + drain) lives in **`apps/atrium/v2/server`** (`@khoralabs/atrium-v2-server`).
 
 ```mermaid
@@ -33,7 +33,7 @@ See [`@khoralabs/at2-transport`](../transport) `parseInboxWebSocketMessage` for 
 ## Invites
 
 - **Storage:** Pepper-hashed rows in `at2_invite_tokens` (`inviteToken` on registration, preview/list when wired by v2).
-- **Environment:** `AT2_INVITE_PEPPER`, `AT2_INVITE_REQUIRED`, `AT2_INVITES_PER_REGISTRATION`, `AT2_INVITE_SEED_TOKENS` (see `createAt2Host` and `invites/at2-invites.ts`).
+- **Environment:** `ATRIUM_INVITE_PEPPER`, `ATRIUM_INVITE_REQUIRED`, `ATRIUM_INVITES_PER_REGISTRATION`, `ATRIUM_INVITE_SEED_TOKENS` (see `createAtriumHost` and `invites/at2-invites.ts`).
 
 Public helpers: `inviteRequiredFromEnv`, `invitesPerRegistrationFromEnv`, types on the package barrel.
 

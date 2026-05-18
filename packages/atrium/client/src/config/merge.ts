@@ -36,7 +36,7 @@ function mergePluginMaps(
  *
  * Operates on `unknown` so it can run before validation (during `extends` chaining) and after.
  */
-export function mergeAt2AppConfigLayers(
+export function mergeAtriumAppConfigLayers(
   layers: ReadonlyArray<unknown>,
 ): Record<string, unknown> {
   const objs: Array<Record<string, unknown>> = [];

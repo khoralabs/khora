@@ -1,11 +1,5 @@
 import { createHash } from "node:crypto";
 import {
-  AT2_ROOM_INVITE_SOURCE_MAP_ID,
-  AT2_ROOM_REGISTRY_SOURCE_MAP_ID,
-  RELAY_INBOX_SOURCE_MAP_ID,
-} from "@khoralabs/at2-host";
-import type { At2RoomLifecycleHostEvent, At2WsUpgradePort } from "@khoralabs/at2-transport";
-import {
   normalizeUsername,
   zAtriumRoomCreateBody,
   zAtriumRoomCreateResponse,
@@ -14,8 +8,14 @@ import {
   zAtriumRoomMintTicketBody,
   zAtriumRoomTicketResponse,
 } from "@khoralabs/at2-contracts";
-import { relaySyntheticPointer } from "@khoralabs/relay-colonnade";
 import {
+  ATRIUM_ROOM_INVITE_SOURCE_MAP_ID,
+  ATRIUM_ROOM_REGISTRY_SOURCE_MAP_ID,
+  RELAY_INBOX_SOURCE_MAP_ID,
+} from "@khoralabs/at2-host";
+import type { AtriumRoomLifecycleHostEvent, AtriumWsUpgradePort } from "@khoralabs/at2-transport";
+import {
+  relaySyntheticPointer,
   SOURCE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
 } from "@khoralabs/relay-colonnade";
@@ -23,7 +23,7 @@ import z from "zod";
 import type { HostRouteDeps } from "./deps.ts";
 import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses.ts";
 
-function safeRoomLifecycle(ctx: HostRouteDeps["ctx"], event: At2RoomLifecycleHostEvent): void {
+function safeRoomLifecycle(ctx: HostRouteDeps["ctx"], event: AtriumRoomLifecycleHostEvent): void {
   try {
     ctx.roomLifecycle?.(event);
   } catch {
@@ -47,9 +47,7 @@ function randomJoinToken(): string {
   return Buffer.from(bytes).toString("base64url");
 }
 
-function parseRoomInviteProjection(
-  projection: unknown,
-):
+function parseRoomInviteProjection(projection: unknown):
   | {
       roomId: string;
       creatorDid: string;
@@ -63,16 +61,28 @@ function parseRoomInviteProjection(
   const roomId = o.roomId;
   const creatorDid = o.creatorDid;
   const inviteExpiresAtMs = o.inviteExpiresAtMs;
-  if (typeof roomId !== "string" || typeof creatorDid !== "string" || typeof inviteExpiresAtMs !== "number") {
+  if (
+    typeof roomId !== "string" ||
+    typeof creatorDid !== "string" ||
+    typeof inviteExpiresAtMs !== "number"
+  ) {
     return undefined;
   }
   const c = o.consumedByDid;
-  const consumedByDid = c === null || c === undefined ? null : typeof c === "string" ? c : undefined;
+  const consumedByDid =
+    c === null || c === undefined ? null : typeof c === "string" ? c : undefined;
   if (consumedByDid === undefined && c !== null && c !== undefined) return undefined;
   const at = o.consumedAtMs;
-  const consumedAtMs = at === null || at === undefined ? null : typeof at === "number" ? at : undefined;
+  const consumedAtMs =
+    at === null || at === undefined ? null : typeof at === "number" ? at : undefined;
   if (consumedAtMs === undefined && at !== null && at !== undefined) return undefined;
-  return { roomId, creatorDid, inviteExpiresAtMs, consumedByDid: consumedByDid ?? null, consumedAtMs: consumedAtMs ?? null };
+  return {
+    roomId,
+    creatorDid,
+    inviteExpiresAtMs,
+    consumedByDid: consumedByDid ?? null,
+    consumedAtMs: consumedAtMs ?? null,
+  };
 }
 
 const roomWsPathRe = /^\/v1\/rooms\/([^/]+)\/ws$/;
@@ -93,7 +103,11 @@ function parseRoomRegistryProjection(
   return { creatorDid, inviteTargetDid: inviteTargetDid ?? null, expiresAtMs };
 }
 
-export async function handleRoomsCreate(req: Request, url: URL, deps: HostRouteDeps): Promise<Response> {
+export async function handleRoomsCreate(
+  req: Request,
+  url: URL,
+  deps: HostRouteDeps,
+): Promise<Response> {
   const { ctx, rateLimiters } = deps;
   const bodyText = await req.text();
   let did: string;
@@ -160,7 +174,7 @@ export async function handleRoomsCreate(req: Request, url: URL, deps: HostRouteD
   };
   ctx.store.upsertRow({
     tenant_key: ctx.tenantKey,
-    source_map_id: AT2_ROOM_REGISTRY_SOURCE_MAP_ID,
+    source_map_id: ATRIUM_ROOM_REGISTRY_SOURCE_MAP_ID,
     entry_key: roomId,
     pointer: relaySyntheticPointer(ctx.tenantKey, "at2:room-registry", roomId),
     projection: {
@@ -170,9 +184,16 @@ export async function handleRoomsCreate(req: Request, url: URL, deps: HostRouteD
     },
   });
   try {
-    ctx.social.createRelationship({ channelId: roomId, creatorPrincipalId: did, expiresAtMs });
+    ctx.social.createRelationship({
+      channelId: roomId,
+      creatorPrincipalId: did,
+      expiresAtMs,
+    });
     if (targetDidResolved !== undefined) {
-      ctx.social.bindPeer({ channelId: roomId, peerPrincipalId: targetDidResolved });
+      ctx.social.bindPeer({
+        channelId: roomId,
+        peerPrincipalId: targetDidResolved,
+      });
     }
   } catch {
     return jsonError("Room setup failed", 500);
@@ -225,7 +246,7 @@ export async function handleRoomsCreate(req: Request, url: URL, deps: HostRouteD
     const hashKey = sha256Hex(joinToken);
     ctx.store.upsertRow({
       tenant_key: ctx.tenantKey,
-      source_map_id: AT2_ROOM_INVITE_SOURCE_MAP_ID,
+      source_map_id: ATRIUM_ROOM_INVITE_SOURCE_MAP_ID,
       entry_key: hashKey,
       pointer: relaySyntheticPointer(ctx.tenantKey, "at2:room-invite", hashKey),
       projection: {
@@ -244,7 +265,11 @@ export async function handleRoomsCreate(req: Request, url: URL, deps: HostRouteD
 /**
  * `POST /v1/rooms/join` — redeem a link invite; binds invitee DID, returns a fresh WebSocket ticket.
  */
-export async function handleRoomsJoin(req: Request, url: URL, deps: HostRouteDeps): Promise<Response> {
+export async function handleRoomsJoin(
+  req: Request,
+  url: URL,
+  deps: HostRouteDeps,
+): Promise<Response> {
   const { ctx, rateLimiters } = deps;
   const bodyText = await req.text();
   let did: string;
@@ -269,7 +294,7 @@ export async function handleRoomsJoin(req: Request, url: URL, deps: HostRouteDep
   const hashKey = sha256Hex(joinBody.joinToken);
   const invHit = ctx.store.lookupProjection(
     ctx.tenantKey,
-    AT2_ROOM_INVITE_SOURCE_MAP_ID,
+    ATRIUM_ROOM_INVITE_SOURCE_MAP_ID,
     hashKey,
   );
   if (!invHit.found || invHit.projection === null) {
@@ -290,7 +315,7 @@ export async function handleRoomsJoin(req: Request, url: URL, deps: HostRouteDep
   }
   const roomHit = ctx.store.lookupProjection(
     ctx.tenantKey,
-    AT2_ROOM_REGISTRY_SOURCE_MAP_ID,
+    ATRIUM_ROOM_REGISTRY_SOURCE_MAP_ID,
     inv.roomId,
   );
   if (!roomHit.found || roomHit.projection === null) {
@@ -314,7 +339,7 @@ export async function handleRoomsJoin(req: Request, url: URL, deps: HostRouteDep
   const now = Date.now();
   ctx.store.upsertRow({
     tenant_key: ctx.tenantKey,
-    source_map_id: AT2_ROOM_REGISTRY_SOURCE_MAP_ID,
+    source_map_id: ATRIUM_ROOM_REGISTRY_SOURCE_MAP_ID,
     entry_key: inv.roomId,
     pointer: relaySyntheticPointer(ctx.tenantKey, "at2:room-registry", inv.roomId),
     projection: {
@@ -330,7 +355,7 @@ export async function handleRoomsJoin(req: Request, url: URL, deps: HostRouteDep
   }
   ctx.store.upsertRow({
     tenant_key: ctx.tenantKey,
-    source_map_id: AT2_ROOM_INVITE_SOURCE_MAP_ID,
+    source_map_id: ATRIUM_ROOM_INVITE_SOURCE_MAP_ID,
     entry_key: hashKey,
     pointer: relaySyntheticPointer(ctx.tenantKey, "at2:room-invite", hashKey),
     projection: {
@@ -356,7 +381,7 @@ export async function handleRoomsJoin(req: Request, url: URL, deps: HostRouteDep
   const webSocketUrl = `${base}/v1/rooms/${encodeURIComponent(inv.roomId)}/ws?ticket=${encodeURIComponent(ticket)}`;
   ctx.store.upsertRow({
     tenant_key: ctx.tenantKey,
-    source_map_id: AT2_ROOM_REGISTRY_SOURCE_MAP_ID,
+    source_map_id: ATRIUM_ROOM_REGISTRY_SOURCE_MAP_ID,
     entry_key: inv.roomId,
     pointer: relaySyntheticPointer(ctx.tenantKey, "at2:room-registry", inv.roomId),
     projection: {
@@ -365,7 +390,10 @@ export async function handleRoomsJoin(req: Request, url: URL, deps: HostRouteDep
       expiresAtMs,
     },
   });
-  ctx.social.refreshRelationshipTicketExpiry({ channelId: inv.roomId, expiresAtMs });
+  ctx.social.refreshRelationshipTicketExpiry({
+    channelId: inv.roomId,
+    expiresAtMs,
+  });
   const payload = zAtriumRoomJoinTicketResponse.parse({
     roomId: inv.roomId,
     creatorDid: meta.creatorDid,
@@ -416,11 +444,7 @@ export async function handleRoomsMintTicket(
     }
   }
   const roomId = decodeURIComponent(roomIdRaw);
-  const hit = ctx.store.lookupProjection(
-    ctx.tenantKey,
-    AT2_ROOM_REGISTRY_SOURCE_MAP_ID,
-    roomId,
-  );
+  const hit = ctx.store.lookupProjection(ctx.tenantKey, ATRIUM_ROOM_REGISTRY_SOURCE_MAP_ID, roomId);
   if (!hit.found || hit.projection === null) {
     return jsonError("Room not found", 404);
   }
@@ -458,7 +482,7 @@ export async function handleRoomsMintTicket(
   const webSocketUrl = `${base}/v1/rooms/${encodeURIComponent(roomId)}/ws?ticket=${encodeURIComponent(ticket)}`;
   ctx.store.upsertRow({
     tenant_key: ctx.tenantKey,
-    source_map_id: AT2_ROOM_REGISTRY_SOURCE_MAP_ID,
+    source_map_id: ATRIUM_ROOM_REGISTRY_SOURCE_MAP_ID,
     entry_key: roomId,
     pointer: relaySyntheticPointer(ctx.tenantKey, "at2:room-registry", roomId),
     projection: {
@@ -467,7 +491,10 @@ export async function handleRoomsMintTicket(
       expiresAtMs,
     },
   });
-  ctx.social.refreshRelationshipTicketExpiry({ channelId: roomId, expiresAtMs });
+  ctx.social.refreshRelationshipTicketExpiry({
+    channelId: roomId,
+    expiresAtMs,
+  });
   const payload = zAtriumRoomTicketResponse.parse({
     roomId,
     ticket,
@@ -492,7 +519,7 @@ export function parseRoomsMintTicketRoomId(pathname: string): string | undefined
 export async function handleRoomWsUpgrade(
   req: Request,
   url: URL,
-  srv: At2WsUpgradePort,
+  srv: AtriumWsUpgradePort,
   deps: HostRouteDeps,
 ): Promise<Response | undefined> {
   if (req.headers.get("upgrade")?.toLowerCase() !== "websocket") {

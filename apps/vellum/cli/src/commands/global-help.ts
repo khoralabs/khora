@@ -7,7 +7,7 @@ const PROGRAM = "vellum";
 export const commandHelpTextMap = buildCommandHelpTextMap(allCommandHelp, PROGRAM);
 
 export function printHelp(): void {
-  console.error(`${PROGRAM} — NBC tools for AT2-backed rooms
+  console.error(`${PROGRAM} — NBC tools for ATRIUM-backed rooms
 
 Register on the host before rooms or connect (host may require invite token).
 

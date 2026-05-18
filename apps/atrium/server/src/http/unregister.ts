@@ -1,13 +1,9 @@
 import type { PrincipalRegistrationRequest } from "@khoralabs/agent-relay";
-import { phase1UnregisterColonnadePrincipal } from "@khoralabs/relay-colonnade";
 import { zAtriumUnregisterRequestBody } from "@khoralabs/at2-contracts";
+import { phase1UnregisterColonnadePrincipal } from "@khoralabs/relay-colonnade";
 import { clientIpFromRequest } from "../rate-limit.ts";
 import type { HostRouteDeps } from "./deps.ts";
-import {
-  authErrorResponse,
-  rateLimitedResponse,
-  registrationOpaqueJson,
-} from "./responses.ts";
+import { authErrorResponse, rateLimitedResponse, registrationOpaqueJson } from "./responses.ts";
 
 export async function handleUnregister(req: Request, deps: HostRouteDeps): Promise<Response> {
   const { ctx, rateLimiters } = deps;

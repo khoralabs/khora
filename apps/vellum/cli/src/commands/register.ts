@@ -1,12 +1,8 @@
-import { At2Client } from "@khoralabs/at2-client";
+import { AtriumClient } from "@khoralabs/at2-client";
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { strFlag } from "@khoralabs/cli-kit";
 
-import {
-  cliBaseUrl,
-  loadSigner,
-  type VellumCliContext,
-} from "../flows/context.ts";
+import { cliBaseUrl, loadSigner, type VellumCliContext } from "../flows/context.ts";
 import { runRegisterInteractiveFlow } from "../flows/register-flow.ts";
 
 export async function handleRegister(ctx: VellumCliContext, flags: FlagMap): Promise<void> {
@@ -18,9 +14,8 @@ export async function handleRegister(ctx: VellumCliContext, flags: FlagMap): Pro
   let displayName = d;
   let inviteToken = strFlag(flags, "invite-token") ?? strFlag(flags, "inviteToken");
 
-  const hasUsernameFlag = flags["username"] !== undefined;
-  const hasDisplayFlag =
-    flags["display-name"] !== undefined || flags["displayName"] !== undefined;
+  const hasUsernameFlag = flags.username !== undefined;
+  const hasDisplayFlag = flags["display-name"] !== undefined || flags.displayName !== undefined;
   const nonInteractiveOk =
     hasUsernameFlag && hasDisplayFlag && username.length > 0 && displayName.length > 0;
 
@@ -37,7 +32,7 @@ export async function handleRegister(ctx: VellumCliContext, flags: FlagMap): Pro
   }
 
   const signer = await loadSigner(flags);
-  const ac = new At2Client({ baseUrl, signer });
+  const ac = new AtriumClient({ baseUrl, signer });
   try {
     const out = await ac.register({
       metadata: { username, displayName },

@@ -1,7 +1,7 @@
 import { Buffer } from "node:buffer";
 import type { AgentNotification } from "@khoralabs/agent-relay";
 import { type AgentSigner, signedInboxUrl } from "@khoralabs/at2-auth";
-import type { At2ClientEvent } from "./client-events.ts";
+import type { AtriumClientEvent } from "./client-events.ts";
 import { type InboxNotificationRow, parseInboxWebSocketMessage } from "./inbox-ws.ts";
 
 export type InboxWsHandlers = {
@@ -19,7 +19,7 @@ export type ConnectInboxOptions = {
   now: () => number;
   nonce: () => string;
   WebSocketCtor: typeof WebSocket;
-  emit: (event: At2ClientEvent) => void;
+  emit: (event: AtriumClientEvent) => void;
 };
 
 /**
@@ -66,7 +66,11 @@ export async function connectInbox(
     const msg = parseInboxWebSocketMessage(text);
     if (msg === undefined) return;
     if (msg.type === "snapshot") {
-      opts.emit({ type: "inbox:snapshot", notifications: msg.notifications, did });
+      opts.emit({
+        type: "inbox:snapshot",
+        notifications: msg.notifications,
+        did,
+      });
       handlers.onSnapshot?.(msg.notifications);
     } else if (msg.type === "drain") {
       opts.emit({ type: "inbox:drain", did, items: msg.items });
@@ -84,7 +88,7 @@ export async function connectInbox(
 }
 
 function emitInboxNotification(
-  emit: (event: At2ClientEvent) => void,
+  emit: (event: AtriumClientEvent) => void,
   did: string,
   id: number,
   notification: AgentNotification,

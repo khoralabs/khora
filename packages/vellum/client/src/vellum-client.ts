@@ -2,7 +2,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { defaultIdentityPath, loadIdentity } from "@khoralabs/agent-persisted-signer";
-import { At2Client } from "@khoralabs/at2-client";
+import { AtriumClient } from "@khoralabs/at2-client";
 import {
   canonicalSessionParties,
   normalizeSessionInit,
@@ -34,7 +34,7 @@ import { SqliteVellumReadModel } from "./persistence/sqlite-vellum-read-persiste
 import type { VellumReadModel } from "./persistence/vellum-read-persistence.ts";
 
 export type VellumClientOptions = {
-  /** AT2 HTTP origin (e.g. v2 host). */
+  /** ATRIUM HTTP origin (e.g. v2 host). */
   baseUrl: string;
   roomId: string;
   dataDir?: string | undefined;
@@ -101,7 +101,9 @@ export class VellumClient {
 
   constructor(public readonly opts: VellumClientOptions) {
     const d = opts.dataDir?.trim();
-    this.pathConfig = { dataDir: d !== undefined && d.length > 0 ? d : undefined };
+    this.pathConfig = {
+      dataDir: d !== undefined && d.length > 0 ? d : undefined,
+    };
     this.reads =
       opts.readPersistence ??
       new SqliteVellumReadModel(roomObpSqlitePath(cfgDataDir(this.pathConfig), opts.roomId));
@@ -128,7 +130,7 @@ export class VellumClient {
   /** Ensure room daemon is running with a fresh ticket and local control server. */
   async connect(options?: { webSocketUrl?: string }): Promise<void> {
     const idPath =
-      process.env.AT2_AGENT_KEY_PATH?.trim() ??
+      process.env.ATRIUM_AGENT_KEY_PATH?.trim() ??
       process.env.ATRIUM_AGENT_KEY_PATH?.trim() ??
       defaultIdentityPath();
     const signer = await loadIdentity(idPath);
@@ -136,7 +138,7 @@ export class VellumClient {
       throw new Error(`identity not found at ${idPath}`);
     }
     let webSocketUrl = options?.webSocketUrl ?? process.env.VELLUM_ROOM_WS_URL?.trim();
-    const ac = new At2Client({
+    const ac = new AtriumClient({
       baseUrl: this.opts.baseUrl,
       signer,
     });
@@ -163,7 +165,6 @@ export class VellumClient {
         ...(dataDir !== undefined
           ? {
               VELLUM_DATA_DIR: dataDir,
-              AT2_DATA_DIR: dataDir,
               ATRIUM_DATA_DIR: dataDir,
             }
           : {}),
@@ -186,7 +187,7 @@ export class VellumClient {
     genesisTurn?: Record<string, unknown>;
   }): Promise<ChainInitResponse> {
     const idPath =
-      process.env.AT2_AGENT_KEY_PATH?.trim() ??
+      process.env.ATRIUM_AGENT_KEY_PATH?.trim() ??
       process.env.ATRIUM_AGENT_KEY_PATH?.trim() ??
       defaultIdentityPath();
     const signer = await loadIdentity(idPath);

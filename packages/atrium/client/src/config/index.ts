@@ -1,23 +1,26 @@
 export { at2AppConfigFromEnv } from "./env.ts";
-export { At2ConfigError } from "./errors.ts";
-export { type At2ConfigFileRead, readAt2ConfigFileWithExtends } from "./file.ts";
+export { AtriumConfigError } from "./errors.ts";
+export {
+  type AtriumConfigFileRead,
+  readAtriumConfigFileWithExtends,
+} from "./file.ts";
 export { at2ConfigJsonSchema } from "./json-schema.ts";
 export {
-  type LoadAt2AppConfigOptions,
-  type LoadedAt2AppConfig,
-  loadAt2AppConfig,
+  type LoadAtriumAppConfigOptions,
+  type LoadedAtriumAppConfig,
+  loadAtriumAppConfig,
 } from "./load.ts";
-export { mergeAt2AppConfigLayers } from "./merge.ts";
+export { mergeAtriumAppConfigLayers } from "./merge.ts";
 export {
-  defaultAt2ConfigPath,
-  type ResolvedAt2ConfigPath,
-  resolveAt2ConfigPath,
+  defaultAtriumConfigPath,
+  type ResolvedAtriumConfigPath,
+  resolveAtriumConfigPath,
 } from "./path.ts";
 export {
-  type At2AppConfigBase,
-  type At2AppPluginMap,
-  extendAt2AppConfig,
-  type InferAt2AppConfig,
-  zAt2AppConfigBase,
-  zAt2AppPluginMap,
+  type AtriumAppConfigBase,
+  type AtriumAppPluginMap,
+  extendAtriumAppConfig,
+  type InferAtriumAppConfig,
+  zAtriumAppConfigBase,
+  zAtriumAppPluginMap,
 } from "./schema.ts";

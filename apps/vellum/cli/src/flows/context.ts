@@ -5,12 +5,7 @@ import {
   loadIdentity,
   type PersistableAgentSigner,
 } from "@khoralabs/agent-persisted-signer";
-import {
-  createReadlineSession,
-  type FlagMap,
-  type ReadLineFn,
-  strFlag,
-} from "@khoralabs/cli-kit";
+import { createReadlineSession, type FlagMap, type ReadLineFn, strFlag } from "@khoralabs/cli-kit";
 import { VELLUM_CANONICAL_BASE_URL, VellumClient } from "@khoralabs/vellum-client";
 
 import { vellumCliResolvedConfig } from "../vellum-app-config.ts";

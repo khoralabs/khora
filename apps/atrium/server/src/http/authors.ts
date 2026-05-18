@@ -1,10 +1,10 @@
+import { normalizeTopicSlug, normalizeUsername } from "@khoralabs/at2-contracts";
 import {
   authorDidFromSubscriptionSubject,
   authorSubscriptionSubject,
   authorTopicSubscriptionSubject,
   parseAuthorTopicSubscriptionSubject,
 } from "@khoralabs/at2-host";
-import { normalizeTopicSlug, normalizeUsername } from "@khoralabs/at2-contracts";
 import {
   SOURCE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,

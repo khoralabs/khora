@@ -1,8 +1,8 @@
-import { afterAll, expect, test } from "bun:test";
 import { Database } from "bun:sqlite";
+import { afterAll, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
-import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { AgentRelayPersistence } from "@khoralabs/agent-relay";
 import { createRelayColonnadeSocial } from "./create-relay-colonnade-social.ts";
 import {
@@ -25,9 +25,9 @@ test("tryClaimNextPendingPrincipalTeardownJob claims one pending row", () => {
   insertPendingPrincipalTeardownJob(db, { did: "did:a", profileId: "prof-a", nowMs: 10 });
   const claimed = tryClaimNextPendingPrincipalTeardownJob(db, 20);
   expect(claimed).toEqual({ did: "did:a", profileId: "prof-a" });
-  const row = db
-    .prepare(`SELECT state FROM principal_teardown_jobs WHERE did = 'did:a'`)
-    .get() as { state: string };
+  const row = db.prepare(`SELECT state FROM principal_teardown_jobs WHERE did = 'did:a'`).get() as {
+    state: string;
+  };
   expect(row.state).toBe("running");
 });
 

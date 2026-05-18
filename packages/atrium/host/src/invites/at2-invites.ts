@@ -1,6 +1,6 @@
-import { createHash, randomBytes } from "node:crypto";
 import type { Database } from "bun:sqlite";
-import { AT2_INVITE_KIND, ensureAt2InviteSchema } from "./schema.ts";
+import { createHash, randomBytes } from "node:crypto";
+import { ATRIUM_INVITE_KIND, ensureAtriumInviteSchema } from "./schema.ts";
 
 export function hashInviteToken(pepper: string, plaintext: string): string {
   return createHash("sha256")
@@ -23,16 +23,16 @@ export function parseInviteSeedTokens(raw: string | undefined): string[] {
 }
 
 export function readInvitePepper(): string | undefined {
-  const p = process.env.AT2_INVITE_PEPPER?.trim();
+  const p = process.env.ATRIUM_INVITE_PEPPER?.trim();
   return p !== undefined && p.length > 0 ? p : undefined;
 }
 
 export function inviteRequiredFromEnv(): boolean {
-  return process.env.AT2_INVITE_REQUIRED?.trim() === "1";
+  return process.env.ATRIUM_INVITE_REQUIRED?.trim() === "1";
 }
 
 export function invitesPerRegistrationFromEnv(): number {
-  const raw = process.env.AT2_INVITES_PER_REGISTRATION?.trim();
+  const raw = process.env.ATRIUM_INVITES_PER_REGISTRATION?.trim();
   if (raw === undefined || raw.length === 0) return 10;
   const n = Number.parseInt(raw, 10);
   return Number.isFinite(n) && n > 0 ? Math.min(Math.floor(n), 500) : 10;
@@ -43,13 +43,13 @@ export function validateInviteEnvConfig(seedTokens: string[]): void {
     const pepper = readInvitePepper();
     if (pepper === undefined || pepper.length === 0) {
       throw new Error(
-        "Set AT2_INVITE_PEPPER when AT2_INVITE_REQUIRED=1 or AT2_INVITE_SEED_TOKENS is non-empty.",
+        "Set ATRIUM_INVITE_PEPPER when ATRIUM_INVITE_REQUIRED=1 or ATRIUM_INVITE_SEED_TOKENS is non-empty.",
       );
     }
   }
 }
 
-export type At2InviteListRow = {
+export type AtriumInviteListRow = {
   preview: string;
   consumed: boolean;
   consumedByDid: string | undefined;
@@ -70,21 +70,21 @@ function previewFromHash(tokenHash: string): string {
   return `${tokenHash.slice(0, 6)}…${tokenHash.slice(-4)}`;
 }
 
-export type At2InvitesRepo = {
+export type AtriumInvitesRepo = {
   insertSeedInviteTokens(plaintexts: string[]): number;
   ensureRootInviteIfAbsent(): string | undefined;
   tryConsumeInviteToken(plaintext: string, consumerDid: string): boolean;
   rollbackInviteConsumption(plaintext: string, consumerDid: string): void;
   mintStandardInviteTokens(mintedByDid: string, count: number): string[];
-  listInvitesMintedForDid(minterDid: string): At2InviteListRow[];
+  listInvitesMintedForDid(minterDid: string): AtriumInviteListRow[];
   previewInviteToken(
     plaintext: string,
     loadProfileForDid: (did: string) => unknown | null | undefined,
   ): InvitePreviewResult;
 };
 
-export function createAt2InvitesRepo(db: Database, pepper: string): At2InvitesRepo {
-  ensureAt2InviteSchema(db);
+export function createAtriumInvitesRepo(db: Database, pepper: string): AtriumInvitesRepo {
+  ensureAtriumInviteSchema(db);
 
   const insertSeed = db.prepare(
     `INSERT OR IGNORE INTO at2_invite_tokens (token_hash, created_at_ms, consumed_at_ms, consumed_by_did, minted_by_did, kind)
@@ -125,7 +125,11 @@ export function createAt2InvitesRepo(db: Database, pepper: string): At2InvitesRe
      ORDER BY created_at_ms ASC`,
   );
   const selectByHashForPreview = db.query<
-    { consumed_at_ms: number | null; minted_by_did: string | null; kind: string },
+    {
+      consumed_at_ms: number | null;
+      minted_by_did: string | null;
+      kind: string;
+    },
     [string]
   >(`SELECT consumed_at_ms, minted_by_did, kind FROM at2_invite_tokens WHERE token_hash = ?`);
 
@@ -135,21 +139,21 @@ export function createAt2InvitesRepo(db: Database, pepper: string): At2InvitesRe
       let inserted = 0;
       for (const t of plaintexts) {
         const hash = hashInviteToken(pepper, t);
-        const r = insertSeed.run(hash, now, AT2_INVITE_KIND.seed);
+        const r = insertSeed.run(hash, now, ATRIUM_INVITE_KIND.seed);
         if (r.changes > 0) inserted++;
       }
       return inserted;
     },
 
     ensureRootInviteIfAbsent() {
-      const exists = countByKind.get(AT2_INVITE_KIND.root);
+      const exists = countByKind.get(ATRIUM_INVITE_KIND.root);
       if (exists !== null && exists !== undefined && exists.c > 0) {
         return undefined;
       }
       const plaintext = generateInvitePlaintext();
       const hash = hashInviteToken(pepper, plaintext);
       try {
-        insertRoot.run(hash, Date.now(), AT2_INVITE_KIND.root);
+        insertRoot.run(hash, Date.now(), ATRIUM_INVITE_KIND.root);
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         if (msg.includes("UNIQUE")) {
@@ -178,7 +182,7 @@ export function createAt2InvitesRepo(db: Database, pepper: string): At2InvitesRe
         for (let i = 0; i < count; i++) {
           const plaintext = generateInvitePlaintext();
           const hash = hashInviteToken(pepper, plaintext);
-          insertStandard.run(hash, now, mintedByDid, AT2_INVITE_KIND.standard);
+          insertStandard.run(hash, now, mintedByDid, ATRIUM_INVITE_KIND.standard);
           plaintexts.push(plaintext);
         }
       })();
@@ -210,7 +214,7 @@ export function createAt2InvitesRepo(db: Database, pepper: string): At2InvitesRe
           source: "inviter",
         };
       }
-      if (row.kind === AT2_INVITE_KIND.root) {
+      if (row.kind === ATRIUM_INVITE_KIND.root) {
         return { ok: true, inviter: null, source: "root" };
       }
       return { ok: true, inviter: null, source: "seed" };

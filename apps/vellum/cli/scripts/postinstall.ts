@@ -78,7 +78,10 @@ export function runVellumConfigSetup(opts: {
   return { destDir: dest, copied, overwritten, skipped, schema };
 }
 
-export function runVellumPostinstall(opts: { pkgDistDir: string; home: string }): PostinstallResult {
+export function runVellumPostinstall(opts: {
+  pkgDistDir: string;
+  home: string;
+}): PostinstallResult {
   const setup = runVellumConfigSetup({
     configsDir: path.join(opts.pkgDistDir, "configs"),
     schemaPath: path.join(opts.pkgDistDir, SCHEMA_FILE),

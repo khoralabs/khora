@@ -6,11 +6,15 @@ import type {
   AtriumRoomMintTicketBody,
   AtriumRoomTicketResponse,
 } from "@khoralabs/at2-contracts";
-import { zAtriumRoomCreateResponse, zAtriumRoomJoinTicketResponse, zAtriumRoomTicketResponse } from "@khoralabs/at2-contracts";
-import type { At2UnaryTransport } from "@khoralabs/at2-transport";
+import {
+  zAtriumRoomCreateResponse,
+  zAtriumRoomJoinTicketResponse,
+  zAtriumRoomTicketResponse,
+} from "@khoralabs/at2-contracts";
+import type { AtriumUnaryTransport } from "@khoralabs/at2-transport";
 
 export function createRoom(
-  t: At2UnaryTransport,
+  t: AtriumUnaryTransport,
   body: AtriumRoomCreateBody,
 ): Promise<AtriumRoomCreateResponse> {
   return t.requestJson("POST", "/v1/rooms", {
@@ -20,7 +24,7 @@ export function createRoom(
 }
 
 export function redeemRoomInvite(
-  t: At2UnaryTransport,
+  t: AtriumUnaryTransport,
   body: AtriumRoomJoinRequestBody,
 ): Promise<AtriumRoomJoinTicketResponse> {
   return t.requestJson("POST", "/v1/rooms/join", {
@@ -30,7 +34,7 @@ export function redeemRoomInvite(
 }
 
 export function mintRoomTicket(
-  t: At2UnaryTransport,
+  t: AtriumUnaryTransport,
   roomId: string,
   body?: AtriumRoomMintTicketBody,
 ): Promise<AtriumRoomTicketResponse> {

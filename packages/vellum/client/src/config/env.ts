@@ -15,17 +15,15 @@ export function vellumAppConfigFromEnv(
   const baseUrl =
     trimmed(env.VELLUM_BASE_URL) ??
     trimmed(env.VELLUM_ATRIUM_BASE_URL) ??
-    trimmed(env.AT2_BASE_URL);
+    trimmed(env.ATRIUM_BASE_URL);
   if (baseUrl !== undefined) out.baseUrl = baseUrl;
 
   const dataDir =
-    trimmed(env.VELLUM_DATA_DIR) ??
-    trimmed(env.AT2_DATA_DIR) ??
-    trimmed(env.ATRIUM_DATA_DIR);
+    trimmed(env.VELLUM_DATA_DIR) ?? trimmed(env.ATRIUM_DATA_DIR) ?? trimmed(env.ATRIUM_DATA_DIR);
   if (dataDir !== undefined) out.dataDir = dataDir;
 
   const agentKeyPath =
-    trimmed(env.AT2_AGENT_KEY_PATH) ??
+    trimmed(env.ATRIUM_AGENT_KEY_PATH) ??
     trimmed(env.ATRIUM_AGENT_KEY_PATH) ??
     trimmed(env.VELLUM_AGENT_KEY_PATH);
   if (agentKeyPath !== undefined) out.agentKeyPath = agentKeyPath;

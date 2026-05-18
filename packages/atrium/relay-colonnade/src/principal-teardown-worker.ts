@@ -2,13 +2,11 @@ import type { Database } from "bun:sqlite";
 import type { AgentRelayPersistence } from "@khoralabs/agent-relay";
 import type { RelayCatalogSourceMapStore } from "./catalog-source-map-store.ts";
 import {
-  cascadeUnregisterColonnadePrincipalWithProfile,
-} from "./social-unregister.ts";
-import {
   deletePrincipalTeardownJob,
   markPrincipalTeardownJobPendingAfterFailure,
   tryClaimNextPendingPrincipalTeardownJob,
 } from "./principal-teardown-jobs.ts";
+import { cascadeUnregisterColonnadePrincipalWithProfile } from "./social-unregister.ts";
 
 export type PrincipalTeardownWorkerHandle = { stop(): void };
 

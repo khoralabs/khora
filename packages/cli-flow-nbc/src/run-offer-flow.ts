@@ -21,13 +21,7 @@ export type RunOfferFlowOptions = {
 export async function runOfferFlow(
   options: RunOfferFlowOptions,
 ): Promise<Record<string, string | undefined>> {
-  const {
-    readLine,
-    def,
-    offerId,
-    partialSeeds,
-    chain = createInMemoryFlowChainView(),
-  } = options;
+  const { readLine, def, offerId, partialSeeds, chain = createInMemoryFlowChainView() } = options;
   const seedStringValues = seedMapFromOffer(offerId, partialSeeds ?? {});
   const result = await runFlow(def, {
     readLine,

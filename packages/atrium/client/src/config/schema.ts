@@ -1,5 +1,5 @@
 import z from "zod";
-import { AT2_BUILTIN_PLUGIN_ID } from "../at2-plugins.ts";
+import { ATRIUM_BUILTIN_PLUGIN_ID } from "../at2-plugins.ts";
 
 const zProfileSyncOptions = z
   .object({
@@ -67,32 +67,32 @@ const zInboxBufferOptions = z
  * The known builtin ids are statically typed; passthrough lets hosts add third-party ids that
  * their own plugin registry can interpret.
  */
-export const zAt2AppPluginMap = z
+export const zAtriumAppPluginMap = z
   .object({
-    [AT2_BUILTIN_PLUGIN_ID.profileSync]: z
+    [ATRIUM_BUILTIN_PLUGIN_ID.profileSync]: z
       .union([zProfileSyncOptions, z.literal(false)])
       .optional()
       .describe("profile-sync plugin options, or false to disable an inherited entry."),
-    [AT2_BUILTIN_PLUGIN_ID.telemetry]: z
+    [ATRIUM_BUILTIN_PLUGIN_ID.telemetry]: z
       .union([zTelemetryOptions, z.literal(false)])
       .optional()
       .describe("telemetry plugin options, or false to disable an inherited entry."),
-    [AT2_BUILTIN_PLUGIN_ID.inboxBuffer]: z
+    [ATRIUM_BUILTIN_PLUGIN_ID.inboxBuffer]: z
       .union([zInboxBufferOptions, z.literal(false)])
       .optional()
       .describe("inbox-buffer plugin options, or false to disable an inherited entry."),
   })
   .passthrough()
-  .describe("Builtin AT2 plugins keyed by id.");
+  .describe("Builtin ATRIUM plugins keyed by id.");
 
-export type At2AppPluginMap = z.infer<typeof zAt2AppPluginMap>;
+export type AtriumAppPluginMap = z.infer<typeof zAtriumAppPluginMap>;
 
 /**
  * Reusable base schema for any `@khoralabs/at2-client` consumer. Top-level is `passthrough` so a
  * single JSON file can serve multiple hosts; each host parses with its own extended schema and
  * receives just the fields it knows.
  */
-export const zAt2AppConfigBase = z
+export const zAtriumAppConfigBase = z
   .object({
     $schema: z
       .string()
@@ -110,7 +110,7 @@ export const zAt2AppConfigBase = z
       .string()
       .url({ message: "baseUrl must be a valid URL" })
       .optional()
-      .describe("AT2 host base URL. Default: http://127.0.0.1:8787"),
+      .describe("ATRIUM host base URL. Default: http://127.0.0.1:8787"),
     agentKeyPath: z
       .string()
       .optional()
@@ -123,25 +123,25 @@ export const zAt2AppConfigBase = z
       .boolean()
       .optional()
       .describe("(daemon only) Emit JSON lines instead of pretty-printed events."),
-    plugins: zAt2AppPluginMap
+    plugins: zAtriumAppPluginMap
       .optional()
       .describe(
         "Builtin plugins by id. Merged across layers per-id; set an id to false to cancel.",
       ),
   })
   .passthrough()
-  .describe("AT2 client base configuration.");
+  .describe("ATRIUM client base configuration.");
 
-export type At2AppConfigBase = z.infer<typeof zAt2AppConfigBase>;
+export type AtriumAppConfigBase = z.infer<typeof zAtriumAppConfigBase>;
 
 /**
  * Canonical extension entry point so every host extends the same way. The returned schema is
  * passthrough (matching the base), so foreign top-level keys remain available for the host that
  * understands them.
  */
-export function extendAt2AppConfig<TExt extends z.ZodRawShape>(extension: TExt) {
-  return zAt2AppConfigBase.extend(extension);
+export function extendAtriumAppConfig<TExt extends z.ZodRawShape>(extension: TExt) {
+  return zAtriumAppConfigBase.extend(extension);
 }
 
 /** Shorthand for `z.infer<typeof Schema>` so hosts don't need a direct zod dependency. */
-export type InferAt2AppConfig<TSchema extends z.ZodTypeAny> = z.infer<TSchema>;
+export type InferAtriumAppConfig<TSchema extends z.ZodTypeAny> = z.infer<TSchema>;

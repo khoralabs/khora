@@ -18,12 +18,12 @@ import type {
   AtriumRoomTicketResponse,
 } from "@khoralabs/at2-contracts";
 import {
-  type At2ClientEvent,
-  type At2DuplexTransport,
-  type At2Fetch,
-  type At2TransportBundle,
-  type At2UnaryTransport,
-  createAt2TransportBundleFromEnv,
+  type AtriumClientEvent,
+  type AtriumDuplexTransport,
+  type AtriumFetch,
+  type AtriumTransportBundle,
+  type AtriumUnaryTransport,
+  createAtriumTransportBundleFromEnv,
   type InboxWsHandlers,
 } from "@khoralabs/at2-transport";
 import type { Checkpoint, SessionOp } from "@khoralabs/obp-v2-session-impl";
@@ -33,9 +33,9 @@ import {
   type ObpWebSocketConnectOptions,
 } from "@khoralabs/obp-v2-transport-ws";
 import {
-  type At2PluginHandle,
-  type At2PluginInstaller,
-  createAt2ResolvePath,
+  type AtriumPluginHandle,
+  type AtriumPluginInstaller,
+  createAtriumResolvePath,
 } from "./at2-plugins.ts";
 import { getAgentStatus } from "./http/agent.ts";
 import {
@@ -48,7 +48,6 @@ import {
 } from "./http/authors.ts";
 import { health } from "./http/health.ts";
 import { listInvites, previewInvite } from "./http/invites.ts";
-import { listRelationships as httpListRelationships } from "./http/relationships.ts";
 import { createPost, deletePost, getPost as httpGetPost, updatePost } from "./http/posts.ts";
 import {
   lookupProfileByDid as httpLookupProfileByDid,
@@ -57,13 +56,14 @@ import {
   updateProfile,
 } from "./http/profile.ts";
 import { register } from "./http/register.ts";
-import { type UnregisterBody, unregister as httpUnregister } from "./http/unregister.ts";
+import { listRelationships as httpListRelationships } from "./http/relationships.ts";
 import {
   createRoom as httpCreateRoom,
   mintRoomTicket as httpMintRoomTicket,
   redeemRoomInvite as httpRedeemRoomInvite,
 } from "./http/rooms.ts";
 import { subscribeTopic, unsubscribeTopic } from "./http/topics.ts";
+import { unregister as httpUnregister, type UnregisterBody } from "./http/unregister.ts";
 
 export type {
   AtriumRelationshipListResponse,
@@ -81,37 +81,37 @@ export type {
 export type { AuthorSubscriptionsSnapshot } from "./http/authors.ts";
 export type { PublicProfileResult } from "./http/profile.ts";
 
-export type At2ClientOptions = {
+export type AtriumClientOptions = {
   /** Required unless {@link transportBundle} supplies unary+duplex. */
   baseUrl?: string;
   signer: AgentSigner;
-  /** When set, {@link baseUrl} is optional — deploy-selected transports (`AT2_TRANSPORT`, …). */
-  transportBundle?: At2TransportBundle;
-  fetch?: At2Fetch;
+  /** When set, {@link baseUrl} is optional — deploy-selected transports (`ATRIUM_TRANSPORT`, …). */
+  transportBundle?: AtriumTransportBundle;
+  fetch?: AtriumFetch;
   WebSocket?: typeof WebSocket;
   nowMs?: () => number;
   nonceFactory?: () => string;
   dataDir?: string;
-  plugins?: readonly At2PluginInstaller[];
+  plugins?: readonly AtriumPluginInstaller[];
 };
 
-export class At2Client {
-  private readonly transport: At2UnaryTransport;
-  private readonly duplex: At2DuplexTransport;
+export class AtriumClient {
+  private readonly transport: AtriumUnaryTransport;
+  private readonly duplex: AtriumDuplexTransport;
   private readonly WebSocketCtor: typeof WebSocket;
-  private readonly eventListeners: Array<(event: At2ClientEvent) => void> = [];
-  private readonly pluginHandles: At2PluginHandle[] = [];
+  private readonly eventListeners: Array<(event: AtriumClientEvent) => void> = [];
+  private readonly pluginHandles: AtriumPluginHandle[] = [];
 
-  constructor(options: At2ClientOptions) {
-    let bundle: At2TransportBundle;
+  constructor(options: AtriumClientOptions) {
+    let bundle: AtriumTransportBundle;
     if (options.transportBundle !== undefined) {
       bundle = options.transportBundle;
     } else {
       const bu = options.baseUrl?.trim() ?? "";
       if (bu === "") {
-        throw new Error("At2Client: pass baseUrl or transportBundle");
+        throw new Error("AtriumClient: pass baseUrl or transportBundle");
       }
-      bundle = createAt2TransportBundleFromEnv({
+      bundle = createAtriumTransportBundleFromEnv({
         baseUrl: bu,
         signer: options.signer,
         fetch: options.fetch,
@@ -122,7 +122,7 @@ export class At2Client {
     this.transport = bundle.unary;
     this.duplex = bundle.duplex;
     this.WebSocketCtor = options.WebSocket ?? globalThis.WebSocket;
-    const resolvePath = createAt2ResolvePath(options.dataDir);
+    const resolvePath = createAtriumResolvePath(options.dataDir);
     for (const installer of options.plugins ?? []) {
       this.pluginHandles.push(installer({ client: this, resolvePath }));
     }
@@ -140,7 +140,7 @@ export class At2Client {
     this.pluginHandles.length = 0;
   }
 
-  subscribe(listener: (event: At2ClientEvent) => void): () => void {
+  subscribe(listener: (event: AtriumClientEvent) => void): () => void {
     this.eventListeners.push(listener);
     return () => {
       const i = this.eventListeners.indexOf(listener);
@@ -148,7 +148,7 @@ export class At2Client {
     };
   }
 
-  private emit = (event: At2ClientEvent): void => {
+  private emit = (event: AtriumClientEvent): void => {
     for (const listener of this.eventListeners) {
       listener(event);
     }
@@ -187,7 +187,12 @@ export class At2Client {
   async subscribeAuthorTopic(
     username: string,
     topicSlug: string,
-  ): Promise<{ ok: true; username: string; authorDid: string; topicSlug: string }> {
+  ): Promise<{
+    ok: true;
+    username: string;
+    authorDid: string;
+    topicSlug: string;
+  }> {
     const out = await httpSubscribeAuthorTopic(this.transport, username, topicSlug);
     this.emit({
       type: "author_topic:subscribed",
@@ -330,7 +335,11 @@ export class At2Client {
 
   async subscribeTopic(topicSlug: string): Promise<{ ok: true; topicSlug: string }> {
     const out = await subscribeTopic(this.transport, topicSlug);
-    this.emit({ type: "topic:subscribed", topicSlug: out.topicSlug, did: this.did });
+    this.emit({
+      type: "topic:subscribed",
+      topicSlug: out.topicSlug,
+      did: this.did,
+    });
     return out;
   }
 

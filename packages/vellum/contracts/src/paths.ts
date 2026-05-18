@@ -20,8 +20,7 @@ export function obpStoreRoot(
   dataDir: string | undefined,
   env: NodeJS.ProcessEnv = process.env,
 ): string {
-  const storeOverride =
-    env.VELLUM_OBP_STORE_ROOT?.trim() ?? env.ATRIUM_OBP_STORE_ROOT?.trim();
+  const storeOverride = env.VELLUM_OBP_STORE_ROOT?.trim() ?? env.ATRIUM_OBP_STORE_ROOT?.trim();
   if (storeOverride !== undefined && storeOverride.length > 0) return path.resolve(storeOverride);
   const home = env.HOME ?? env.USERPROFILE ?? "";
   const root =

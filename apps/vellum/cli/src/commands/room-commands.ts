@@ -1,10 +1,10 @@
-import { parseNbcTurnBody } from "@khoralabs/obp-v2-nbc";
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { strFlag } from "@khoralabs/cli-kit";
+import { parseNbcTurnBody } from "@khoralabs/obp-v2-nbc";
 
-import { VellumClient } from "@khoralabs/vellum-client";
+import type { VellumClient } from "@khoralabs/vellum-client";
 
-import { readJsonArg, makeVellumClient, resolveRoomId } from "../flows/context.ts";
+import { makeVellumClient, readJsonArg, resolveRoomId } from "../flows/context.ts";
 
 function clientForRoomCommands(flags: FlagMap): VellumClient {
   const roomId = resolveRoomId(flags);

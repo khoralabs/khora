@@ -4,13 +4,13 @@ import {
   runInboxDuplexAttachment,
 } from "@khoralabs/agent-relay";
 import { AuthError } from "@khoralabs/at2-auth";
-import { type At2HostContext, popRelayInboxDrainItemsForDid } from "@khoralabs/at2-host";
+import { type AtriumHostContext, popRelayInboxDrainItemsForDid } from "@khoralabs/at2-host";
 import type { DuplexByteStream } from "@khoralabs/duplex-byte-stream";
 import type { HostRouteDeps } from "../http/deps.ts";
-import { AT2_UNARY_INGRESS_ORIGIN } from "./unary-dispatch.ts";
+import { ATRIUM_UNARY_INGRESS_ORIGIN } from "./unary-dispatch.ts";
 
 export async function attachRoomDuplexAfterTicket(opts: {
-  ctx: At2HostContext;
+  ctx: AtriumHostContext;
   roomId: string;
   ticket: string;
   duplex: DuplexByteStream;
@@ -35,7 +35,7 @@ export async function attachInboxDuplexAfterAuth(opts: {
   nonce: string;
   sig: string;
 }): Promise<{ dispose(): Promise<void> }> {
-  const url = new URL(`${AT2_UNARY_INGRESS_ORIGIN}/v1/inbox/ws`);
+  const url = new URL(`${ATRIUM_UNARY_INGRESS_ORIGIN}/v1/inbox/ws`);
   url.searchParams.set("did", opts.did);
   url.searchParams.set("ts", opts.ts);
   url.searchParams.set("nonce", opts.nonce);

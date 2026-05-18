@@ -2,7 +2,7 @@ import type { CommandHelp } from "@khoralabs/cli-kit";
 
 export const roomCreateHelp: CommandHelp = {
   command: "room create",
-  summary: "Create an AT2 room (after register)",
+  summary: "Create an ATRIUM room (after register)",
   args: `vellum room create [--target-did=<did>] [--target-username=<u>] [--ttl-ms=<n>] [--base-url=…] [--data-dir=…]`,
 };
 

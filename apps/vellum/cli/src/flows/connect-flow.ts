@@ -1,5 +1,5 @@
-import type { FlagMap } from "@khoralabs/cli-kit";
 import { requireFlowString, runOfferFlow } from "@khoralabs/cli-flow-nbc";
+import type { FlagMap } from "@khoralabs/cli-kit";
 
 import { resolveRoomId, type VellumCliContext } from "./context.ts";
 import { connectFlowDefinition } from "./definitions.ts";

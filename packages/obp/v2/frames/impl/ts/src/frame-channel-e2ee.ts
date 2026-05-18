@@ -3,8 +3,8 @@
  * @see ../docs/FRAME_CHANNEL_E2EE.md
  */
 
-import { x25519 } from "@noble/curves/ed25519.js";
 import { ObpError } from "@khoralabs/obp-v2-errors";
+import { x25519 } from "@noble/curves/ed25519.js";
 
 import { canonicalJsonString } from "./canonical-json.ts";
 
@@ -137,7 +137,10 @@ export async function deriveFrameBodyAesKey(args: {
     ikmKey,
     256,
   );
-  return crypto.subtle.importKey("raw", raw, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+  return crypto.subtle.importKey("raw", raw, { name: "AES-GCM", length: 256 }, false, [
+    "encrypt",
+    "decrypt",
+  ]);
 }
 
 function b64Encode(u: Uint8Array): string {
@@ -165,7 +168,11 @@ export async function encryptLogicalFrameBody(
   const iv = new Uint8Array(12);
   crypto.getRandomValues(iv);
   const ct = new Uint8Array(
-    await crypto.subtle.encrypt({ name: "AES-GCM", iv: u8ToArrayBuffer(iv) }, aesKey, u8ToArrayBuffer(pt)),
+    await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv: u8ToArrayBuffer(iv) },
+      aesKey,
+      u8ToArrayBuffer(pt),
+    ),
   );
   return {
     [E2EE_WIRE_BODY_KEY]: {
@@ -206,7 +213,11 @@ export async function decryptWireFrameBody(
   }
   let pt: ArrayBuffer;
   try {
-    pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: u8ToArrayBuffer(iv) }, aesKey, u8ToArrayBuffer(ct));
+    pt = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: u8ToArrayBuffer(iv) },
+      aesKey,
+      u8ToArrayBuffer(ct),
+    );
   } catch {
     throw new ObpError("VALIDATION", "E2EE: decrypt failed (bad key or ciphertext)");
   }

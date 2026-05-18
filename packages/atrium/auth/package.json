@@ -1,5 +1,5 @@
 {
-  "name": "@khoralabs/at2-auth",
+  "name": "@khoralabs/atrium-auth",
   "version": "0.0.0",
   "type": "module",
   "private": true,

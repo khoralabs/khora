@@ -5,10 +5,10 @@ import {
   signAgentRequest,
 } from "@khoralabs/at2-auth";
 import type z from "zod";
-import { At2ClientError } from "./errors.ts";
+import { AtriumClientError } from "./errors.ts";
 
 /** Subset of `fetch` used by the client (avoids requiring Bun-specific properties on mocks). */
-export type At2Fetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+export type AtriumFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
 /** Structured query input for `requestJson` / `requestVoid`. */
 export type RequestQuery = Record<string, string>;
@@ -35,7 +35,7 @@ export type RequestVoidOptions = {
 };
 
 /** Unary host RPC surface (default binding: signed HTTP). */
-export type At2UnaryTransport = {
+export type AtriumUnaryTransport = {
   readonly base: string;
   readonly did: string;
   readonly signer: AgentSigner;
@@ -49,17 +49,17 @@ export type At2UnaryTransport = {
 export type CreateHttpTransportOptions = {
   baseUrl: string;
   signer: AgentSigner;
-  fetch?: At2Fetch;
+  fetch?: AtriumFetch;
   nowMs?: () => number;
   nonceFactory?: () => string;
 };
 
 /** Creates the default HTTP unary transport with DID-signed requests. */
-export function createHttpAt2UnaryTransport(
+export function createHttpAtriumUnaryTransport(
   opts: CreateHttpTransportOptions,
-): At2UnaryTransport {
+): AtriumUnaryTransport {
   const base = opts.baseUrl.trim().replace(/\/$/, "");
-  const fetchFn: At2Fetch = opts.fetch ?? globalThis.fetch;
+  const fetchFn: AtriumFetch = opts.fetch ?? globalThis.fetch;
   const signer = opts.signer;
   const now = opts.nowMs ?? (() => Date.now());
   const nonce = opts.nonceFactory ?? randomAgentRequestNonce;
@@ -115,7 +115,11 @@ export function createHttpAt2UnaryTransport(
       baseHeaders["Content-Type"] = "application/json";
       bodyText = JSON.stringify(callOpts.body);
     }
-    const authHeaders = await signHeaders({ method, path: signedPath, bodyText });
+    const authHeaders = await signHeaders({
+      method,
+      path: signedPath,
+      bodyText,
+    });
     const headers: HeadersInit = { ...baseHeaders, ...authHeaders };
     const res = await rawFetch(fetchPath, {
       method,
@@ -123,18 +127,18 @@ export function createHttpAt2UnaryTransport(
       body: bodyText.length > 0 ? bodyText : undefined,
     });
     if (!res.ok) {
-      throw new At2ClientError(await readErrorMessage(res), res.status);
+      throw new AtriumClientError(await readErrorMessage(res), res.status);
     }
     const text = await res.text();
     let json: unknown;
     try {
       json = JSON.parse(text) as unknown;
     } catch {
-      throw new At2ClientError("Invalid JSON response", res.status, text);
+      throw new AtriumClientError("Invalid JSON response", res.status, text);
     }
     const parsed = callOpts.parse.safeParse(json);
     if (!parsed.success) {
-      throw new At2ClientError(
+      throw new AtriumClientError(
         `Response shape mismatch: ${parsed.error.message}`,
         res.status,
         text,
@@ -155,14 +159,18 @@ export function createHttpAt2UnaryTransport(
       baseHeaders["Content-Type"] = "application/json";
       bodyText = JSON.stringify(callOpts.body);
     }
-    const authHeaders = await signHeaders({ method, path: signedPath, bodyText });
+    const authHeaders = await signHeaders({
+      method,
+      path: signedPath,
+      bodyText,
+    });
     const res = await rawFetch(fetchPath, {
       method,
       headers: { ...baseHeaders, ...authHeaders },
       body: bodyText.length > 0 ? bodyText : undefined,
     });
     if (!res.ok) {
-      throw new At2ClientError(await readErrorMessage(res), res.status);
+      throw new AtriumClientError(await readErrorMessage(res), res.status);
     }
   }
 

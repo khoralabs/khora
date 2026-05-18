@@ -86,8 +86,7 @@ export function cliMetaPkgJson({
   return {
     name: "@khoralabs/vellum-cli",
     version,
-    description:
-      "CLI for Vellum NBC rooms. Native binaries; no runtime required.",
+    description: "CLI for Vellum NBC rooms. Native binaries; no runtime required.",
     license: "MIT",
     author: "Khora Labs",
     homepage: "https://github.com/khoralabs/agent-kernel/tree/main/apps/vellum/cli",
@@ -196,7 +195,14 @@ export async function stageVellumRelease(opts: StageOptions): Promise<StageResul
       mkdirSync(pkgDir, { recursive: true });
       const binName = kind === "cli" ? "vellum" : "vellum-daemon";
       if (copyBinaries) {
-        const src = path.join(workspaceRoot, "apps/vellum", kind, "dist", target.bunTarget, binName);
+        const src = path.join(
+          workspaceRoot,
+          "apps/vellum",
+          kind,
+          "dist",
+          target.bunTarget,
+          binName,
+        );
         if (!existsSync(src)) {
           throw new Error(`missing compiled binary: ${src}`);
         }

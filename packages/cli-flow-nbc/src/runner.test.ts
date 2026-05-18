@@ -2,8 +2,8 @@ import { expect, test } from "bun:test";
 
 import type { FlowDefinition } from "./flow-types.ts";
 import { createInMemoryFlowChainView } from "./in-memory-chain.ts";
-import { runFlow } from "./runner.ts";
 import { runOfferFlow } from "./run-offer-flow.ts";
+import { runFlow } from "./runner.ts";
 import { getOfferRow, seedMapFromOffer } from "./seed-helpers.ts";
 
 const def: FlowDefinition = {

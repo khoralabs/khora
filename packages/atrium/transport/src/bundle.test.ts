@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { createAt2TransportBundleFromEnv } from "./bundle.ts";
+import { createAtriumTransportBundleFromEnv } from "./bundle.ts";
 
-describe("createAt2TransportBundleFromEnv", () => {
+describe("createAtriumTransportBundleFromEnv", () => {
   test("defaults to http bundle", () => {
-    const b = createAt2TransportBundleFromEnv({
+    const b = createAtriumTransportBundleFromEnv({
       baseUrl: "http://localhost:1",
       signer: { did: "did:web:example" } as never,
       env: {},
@@ -14,11 +14,11 @@ describe("createAt2TransportBundleFromEnv", () => {
 
   test("rejects unknown mode", () => {
     expect(() =>
-      createAt2TransportBundleFromEnv({
+      createAtriumTransportBundleFromEnv({
         baseUrl: "http://localhost:1",
         signer: { did: "did:web:example" } as never,
-        env: { AT2_TRANSPORT: "ipc" },
+        env: { ATRIUM_TRANSPORT: "ipc" },
       }),
-    ).toThrow(/AT2_TRANSPORT=ipc/);
+    ).toThrow(/ATRIUM_TRANSPORT=ipc/);
   });
 });

@@ -2,7 +2,7 @@ import type { HostRouteDeps } from "../http/deps.ts";
 import { routeUnary } from "../http/router.ts";
 
 /** Canonical synthetic origin for IPC unary ingress (`req.url` / signing visibility only). */
-export const AT2_UNARY_INGRESS_ORIGIN = "http://at2.ipc";
+export const ATRIUM_UNARY_INGRESS_ORIGIN = "http://at2.ipc";
 
 export type HttpLikeUnaryCall = {
   method: string;
@@ -48,7 +48,7 @@ export async function dispatchHttpLikeUnary(
 ): Promise<Response> {
   const pathname = normalizePathname(call.pathname);
   const qs = normalizeSearch(call.search);
-  const url = new URL(`${AT2_UNARY_INGRESS_ORIGIN}${pathname}${qs}`);
+  const url = new URL(`${ATRIUM_UNARY_INGRESS_ORIGIN}${pathname}${qs}`);
   const hdrs = mergeUnaryPeerIp(new Headers(call.headers ?? {}), call.peerIp);
   const method = call.method.trim().toUpperCase() || "GET";
   const init: RequestInit = { method, headers: hdrs };

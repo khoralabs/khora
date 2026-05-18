@@ -30,10 +30,12 @@ function daemonJsonOutput(vcfg: { daemonJson?: boolean }): boolean {
 function daemonPathConfig(vcfg: { dataDir?: string }): VellumPathConfig {
   const dataDir =
     process.env.VELLUM_DATA_DIR?.trim() ??
-    process.env.AT2_DATA_DIR?.trim() ??
+    process.env.ATRIUM_DATA_DIR?.trim() ??
     process.env.ATRIUM_DATA_DIR?.trim() ??
     vcfg.dataDir?.trim();
-  return { dataDir: dataDir !== undefined && dataDir.length > 0 ? dataDir : undefined };
+  return {
+    dataDir: dataDir !== undefined && dataDir.length > 0 ? dataDir : undefined,
+  };
 }
 
 function loadDaemonLayeredConfig() {
@@ -48,7 +50,7 @@ function loadDaemonLayeredConfig() {
 
 async function loadSigner(vcfg: { agentKeyPath?: string }): Promise<PersistableAgentSigner> {
   const p =
-    process.env.AT2_AGENT_KEY_PATH?.trim() ??
+    process.env.ATRIUM_AGENT_KEY_PATH?.trim() ??
     process.env.ATRIUM_AGENT_KEY_PATH?.trim() ??
     process.env.VELLUM_AGENT_KEY_PATH?.trim() ??
     vcfg.agentKeyPath?.trim() ??
@@ -64,14 +66,15 @@ async function loadSigner(vcfg: { agentKeyPath?: string }): Promise<PersistableA
 const vcfg = loadDaemonLayeredConfig();
 
 const json = daemonJsonOutput(vcfg);
-const roomId =
-  process.env.VELLUM_ROOM_ID?.trim() ?? vcfg.defaultRoomId?.trim() ?? "";
+const roomId = process.env.VELLUM_ROOM_ID?.trim() ?? vcfg.defaultRoomId?.trim() ?? "";
 const webSocketUrl =
   process.env.VELLUM_ROOM_WS_URL?.trim() ?? vcfg.defaultRoomWebSocketUrl?.trim() ?? "";
 const baseUrl = vcfg.baseUrl?.trim() ?? VELLUM_CANONICAL_BASE_URL;
 
 if (roomId.length === 0) {
-  console.error("VELLUM_ROOM_ID is required (or set defaultRoomId in ~/.vellum/daemon.config.json)");
+  console.error(
+    "VELLUM_ROOM_ID is required (or set defaultRoomId in ~/.vellum/daemon.config.json)",
+  );
   process.exit(1);
 }
 if (webSocketUrl.length === 0) {

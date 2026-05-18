@@ -41,11 +41,18 @@ export {
   zAtriumRelationshipListResponse,
   zAtriumUnregisterRequestBody,
 } from "@khoralabs/at2-contracts";
+export type {
+  AtriumFetch,
+  AtriumRoomLifecycleHostEvent,
+  AtriumTransportBundle,
+  AtriumUnaryTransport,
+  InboxWsHandlers,
+} from "@khoralabs/at2-transport";
 /** Transport helpers live in `@khoralabs/at2-transport`; these are commonly paired with the client. */
 export {
-  At2ClientError,
-  type At2ClientEvent,
-  type At2DerivedInboxEvent,
+  AtriumClientError,
+  type AtriumClientEvent,
+  type AtriumDerivedInboxEvent,
   type InboxNotificationRow,
   type InboxWsNotificationMessage,
   type InboxWsSnapshotMessage,
@@ -54,10 +61,9 @@ export {
   isInboxNotificationEvent,
   parseInboxWebSocketMessage,
 } from "@khoralabs/at2-transport";
-export type { At2Fetch, At2RoomLifecycleHostEvent, At2TransportBundle, At2UnaryTransport, InboxWsHandlers } from "@khoralabs/at2-transport";
 export {
-  At2Client,
-  type At2ClientOptions,
+  AtriumClient,
+  type AtriumClientOptions,
   type AtriumRoomCreateBody,
   type AtriumRoomCreateResponse,
   type AtriumRoomJoinRequestBody,
@@ -70,14 +76,14 @@ export {
   type PublicProfileResult,
 } from "./at2-client.ts";
 export {
-  AT2_BUILTIN_PLUGIN_ID,
-  type At2PluginContext,
-  type At2PluginHandle,
-  type At2PluginInstaller,
-  createAt2ResolvePath,
-  type LabeledAt2PluginInstaller,
-  labelAt2Plugin,
-  mergeLabeledAt2PluginLayers,
+  ATRIUM_BUILTIN_PLUGIN_ID,
+  type AtriumPluginContext,
+  type AtriumPluginHandle,
+  type AtriumPluginInstaller,
+  createAtriumResolvePath,
+  type LabeledAtriumPluginInstaller,
+  labelAtriumPlugin,
+  mergeLabeledAtriumPluginLayers,
 } from "./at2-plugins.ts";
 export {
   type CachedProfileSnapshot,
@@ -86,23 +92,23 @@ export {
   serializeProfileSyncStateFile,
 } from "./cached-profile.ts";
 export {
-  type At2AppConfigBase,
-  type At2AppPluginMap,
-  At2ConfigError,
-  type At2ConfigFileRead,
+  type AtriumAppConfigBase,
+  type AtriumAppPluginMap,
+  AtriumConfigError,
+  type AtriumConfigFileRead,
   at2AppConfigFromEnv,
   at2ConfigJsonSchema,
-  defaultAt2ConfigPath,
-  extendAt2AppConfig,
-  type InferAt2AppConfig,
-  type LoadAt2AppConfigOptions,
-  type LoadedAt2AppConfig,
-  loadAt2AppConfig,
-  mergeAt2AppConfigLayers,
-  type ResolvedAt2ConfigPath,
-  readAt2ConfigFileWithExtends,
-  resolveAt2ConfigPath,
-  zAt2AppConfigBase,
-  zAt2AppPluginMap,
+  defaultAtriumConfigPath,
+  extendAtriumAppConfig,
+  type InferAtriumAppConfig,
+  type LoadAtriumAppConfigOptions,
+  type LoadedAtriumAppConfig,
+  loadAtriumAppConfig,
+  mergeAtriumAppConfigLayers,
+  type ResolvedAtriumConfigPath,
+  readAtriumConfigFileWithExtends,
+  resolveAtriumConfigPath,
+  zAtriumAppConfigBase,
+  zAtriumAppPluginMap,
 } from "./config/index.ts";
-export { type At2Session, createAt2Session } from "./session.ts";
+export { type AtriumSession, createAtriumSession } from "./session.ts";

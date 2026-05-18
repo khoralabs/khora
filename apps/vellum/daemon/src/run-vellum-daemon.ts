@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import type { PersistableAgentSigner } from "@khoralabs/agent-persisted-signer";
-import { At2Client } from "@khoralabs/at2-client";
+import { AtriumClient } from "@khoralabs/at2-client";
 import type { JsonDocument } from "@khoralabs/obp-v2-model";
 import {
   createObpV2SqlitePersistenceClient,
@@ -36,7 +36,9 @@ function logLine(json: boolean, label: string, payload: unknown): void {
 /**
  * Hold an Atrium room WebSocket with durable OBP v2 graph in SQLite and a local HTTP control plane.
  */
-export function runVellumDaemon(opts: RunVellumDaemonOptions): { close(): void } {
+export function runVellumDaemon(opts: RunVellumDaemonOptions): {
+  close(): void;
+} {
   const json = opts.json === true;
   const ac = new AbortController();
   let disposed = false;
@@ -60,7 +62,7 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): { close(): void }
     };
 
     const frameSigner = await createFrameSignerFromPersistableAgent(opts.signer);
-    const client = new At2Client({
+    const client = new AtriumClient({
       baseUrl: opts.baseUrl,
       signer: opts.signer,
     });
@@ -78,7 +80,9 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): { close(): void }
             onSessionReady: async (handle) => {
               state.handles.set(handle.sessionId, handle);
               upsertChainRow(db, handle.sessionId, handle.init.genesis_hash, Date.now());
-              logLine(json, "vellum_chain_ready", { sessionId: handle.sessionId });
+              logLine(json, "vellum_chain_ready", {
+                sessionId: handle.sessionId,
+              });
             },
           },
         },
@@ -91,7 +95,10 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): { close(): void }
             controlPort: server.port,
             roomId: opts.roomId,
           });
-          logLine(json, "vellum_control", { hostname: server.hostname, port: server.port });
+          logLine(json, "vellum_control", {
+            hostname: server.hostname,
+            port: server.port,
+          });
           await hold;
         },
       );

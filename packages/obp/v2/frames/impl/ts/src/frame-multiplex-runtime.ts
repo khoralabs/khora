@@ -11,7 +11,9 @@ import type { ObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
 import { accumulateTaggedSessionOps, type SessionOp } from "@khoralabs/obp-v2-session-impl";
 
 import { canonicalJsonString } from "./canonical-json.ts";
+import { encodeFramedJson } from "./encode-framed-json.ts";
 import {
+  bytesToHexLower,
   decryptWireFrameBody,
   deriveFrameBodyAesKey,
   encryptLogicalFrameBody,
@@ -22,9 +24,7 @@ import {
   minActorPubkeyFromInit,
   parseHandshakeEphemeralPub,
   x25519SharedSecret,
-  bytesToHexLower,
 } from "./frame-channel-e2ee.ts";
-import { encodeFramedJson } from "./encode-framed-json.ts";
 import { FrameDag, sha256HexLowerFromUtf8String, signingPayloadBytes } from "./frame-dag.ts";
 import {
   createFrameDecoder,

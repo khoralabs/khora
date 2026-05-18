@@ -1,10 +1,17 @@
-export { createAt2Host } from "./at2-host.ts";
-export type { At2HostContext } from "./context.ts";
+export { createAtriumHost } from "./at2-host.ts";
+export type { AtriumHostContext } from "./context.ts";
+export {
+  type AtriumInvitesRepo,
+  inviteRequiredFromEnv,
+  invitesPerRegistrationFromEnv,
+} from "./invites/at2-invites.ts";
 export { RELAY_INBOX_SOURCE_MAP_ID } from "./relay-inbox.ts";
 export {
   popRelayInboxDrainItemsForDid,
   type RelayInboxDrainItem,
 } from "./relay-inbox-drain.ts";
+export { ATRIUM_ROOM_INVITE_SOURCE_MAP_ID } from "./room-invite.ts";
+export { ATRIUM_ROOM_REGISTRY_SOURCE_MAP_ID } from "./room-registry.ts";
 export {
   authorDidFromSubscriptionSubject,
   authorSubscriptionSubject,
@@ -12,10 +19,3 @@ export {
   parseAuthorTopicSubscriptionSubject,
   topicSubscriptionSubject,
 } from "./subject-keys.ts";
-export {
-  type At2InvitesRepo,
-  inviteRequiredFromEnv,
-  invitesPerRegistrationFromEnv,
-} from "./invites/at2-invites.ts";
-export { AT2_ROOM_INVITE_SOURCE_MAP_ID } from "./room-invite.ts";
-export { AT2_ROOM_REGISTRY_SOURCE_MAP_ID } from "./room-registry.ts";

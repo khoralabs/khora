@@ -1,12 +1,12 @@
 import { mkdirSync, unlinkSync } from "node:fs";
 import { dirname } from "node:path";
-import { createAt2Host, type At2HostContext } from "@khoralabs/at2-host";
-import type { At2WsData } from "@khoralabs/at2-transport";
+import {
+  type AtriumHostContext,
+  createAtriumHost,
+  RELAY_INBOX_SOURCE_MAP_ID,
+} from "@khoralabs/at2-host";
+import type { AtriumWsData } from "@khoralabs/at2-transport";
 import { startPrincipalTeardownWorker } from "@khoralabs/relay-colonnade";
-import { RELAY_INBOX_SOURCE_MAP_ID } from "@khoralabs/at2-host";
-import { route, at2FrameChannelWsHandlers } from "./http/router.ts";
-import { createInboxDrainWebSocketHandlers } from "./ws/inbox.ts";
-import type { HostRouteDeps } from "./http/deps.ts";
 import {
   envCatalogPath,
   envFramesDbPath,
@@ -16,9 +16,12 @@ import {
   envPort,
   envTenantKey,
 } from "./env.ts";
+import type { HostRouteDeps } from "./http/deps.ts";
+import { at2FrameChannelWsHandlers, route } from "./http/router.ts";
 import { createV2HostRateLimiters } from "./rate-limit-buckets.ts";
 import { startDuplexUnixIngress } from "./server/duplex-unix-listener.ts";
 import { startStdioUnaryIngress } from "./server/stdio-unary-listener.ts";
+import { createInboxDrainWebSocketHandlers } from "./ws/inbox.ts";
 
 const catalogPath = envCatalogPath();
 const framesDbPath = envFramesDbPath();
@@ -26,7 +29,7 @@ mkdirSync(dirname(catalogPath), { recursive: true });
 mkdirSync(dirname(framesDbPath), { recursive: true });
 
 const tenantKey = envTenantKey();
-const ctx: At2HostContext = await createAt2Host({
+const ctx: AtriumHostContext = await createAtriumHost({
   catalogPath,
   framesDbPath,
   ...(tenantKey !== undefined ? { tenantKey } : {}),
@@ -45,7 +48,7 @@ const deps: HostRouteDeps = { ctx, rateLimiters: createV2HostRateLimiters() };
 const inboxWsHandlers = createInboxDrainWebSocketHandlers({ ctx });
 const roomWsHandlers = at2FrameChannelWsHandlers(ctx);
 
-const server = Bun.serve<At2WsData>({
+const server = Bun.serve<AtriumWsData>({
   port: envPort(),
   async fetch(req) {
     const url = new URL(req.url);

@@ -6,9 +6,9 @@ import type {
 } from "@khoralabs/agent-relay";
 import { createCatalogEntityAdapter, parseEntityRow } from "./catalog-entity-adapter.ts";
 import {
+  escapeSqlLikeLiteral,
   type RelayCatalogSourceMapStore,
   relaySyntheticPointer,
-  escapeSqlLikeLiteral,
 } from "./catalog-source-map-store.ts";
 
 /** `source_map_id` for post entities in the relay catalog (use with {@link relaySyntheticPointer}). */

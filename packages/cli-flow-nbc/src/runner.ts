@@ -1,5 +1,5 @@
-import type { JsonDocument } from "@khoralabs/obp-v2-model";
 import type { ReadLineFn } from "@khoralabs/cli-kit";
+import type { JsonDocument } from "@khoralabs/obp-v2-model";
 
 import type { FlowChainView } from "./chain-view.ts";
 import type { FlowDefinition, FlowPort } from "./flow-types.ts";
@@ -77,8 +77,7 @@ export async function runFlow(
     for (const port of offer.ports) {
       const policy = chain.resolveBindPolicy(offer.id, port);
       const key = bindKey(offer.id, port.id);
-      let candidate =
-        seedStringValues?.get(key) ?? chain.existingStringValue(offer.id, port.id);
+      let candidate = seedStringValues?.get(key) ?? chain.existingStringValue(offer.id, port.id);
 
       let settled = false;
       let resolved: string | undefined;

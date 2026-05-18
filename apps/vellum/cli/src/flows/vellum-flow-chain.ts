@@ -13,9 +13,7 @@ export type VellumFlowChainViewOptions = {
 /**
  * {@link FlowChainView} for vellum: in-memory or room-backed (stub until persistence is wired).
  */
-export function createVellumFlowChainView(
-  options: VellumFlowChainViewOptions = {},
-): FlowChainView {
+export function createVellumFlowChainView(options: VellumFlowChainViewOptions = {}): FlowChainView {
   const inner = createInMemoryFlowChainView(options.seedBinds);
   const { client, roomId } = options;
 

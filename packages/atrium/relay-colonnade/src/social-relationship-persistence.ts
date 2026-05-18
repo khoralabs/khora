@@ -1,6 +1,9 @@
 import type { Database } from "bun:sqlite";
 import type { PrincipalId } from "@khoralabs/agent-relay";
-import { type RelayCatalogSourceMapStore, relaySyntheticPointer } from "./catalog-source-map-store.ts";
+import {
+  type RelayCatalogSourceMapStore,
+  relaySyntheticPointer,
+} from "./catalog-source-map-store.ts";
 import type { SocialRelationshipPersistence, SocialRelationshipRow } from "./social-types.ts";
 
 const SOURCE_RELATIONSHIP = "relay:social:relationship";

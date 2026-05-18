@@ -113,11 +113,7 @@ export class RelayCatalogSourceMapStore {
     entryKeyPrefix: string,
   ): CatalogSourceMapListedRow[] {
     const pattern = `${escapeSqlLikeLiteral(entryKeyPrefix)}%`;
-    const rows = this.listByPrefixStmt.all(
-      tenant_key,
-      source_map_id,
-      pattern,
-    ) as {
+    const rows = this.listByPrefixStmt.all(tenant_key, source_map_id, pattern) as {
       entry_key: string;
       pointer_source_cell_id: string;
       pointer_source_record_key: string;
@@ -154,11 +150,7 @@ export class RelayCatalogSourceMapStore {
     source_map_id: string,
     entryKeyLikePattern: string,
   ): CatalogSourceMapListedRow[] {
-    const rows = this.listByPrefixStmt.all(
-      tenant_key,
-      source_map_id,
-      entryKeyLikePattern,
-    ) as {
+    const rows = this.listByPrefixStmt.all(tenant_key, source_map_id, entryKeyLikePattern) as {
       entry_key: string;
       pointer_source_cell_id: string;
       pointer_source_record_key: string;

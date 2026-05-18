@@ -77,7 +77,9 @@ export async function connectObpFrameChannelSession(
     client: options.client,
     handlers,
     frameChannelBodyE2ee: true,
-    ...(options.e2eeChannelBinding !== undefined ? { e2eeChannelBinding: options.e2eeChannelBinding } : {}),
+    ...(options.e2eeChannelBinding !== undefined
+      ? { e2eeChannelBinding: options.e2eeChannelBinding }
+      : {}),
     ...(sessionEnvelopeSync !== undefined ? { sessionEnvelopeSync } : {}),
     ...(options.validateBindPayload !== undefined
       ? { validateBindPayload: options.validateBindPayload }

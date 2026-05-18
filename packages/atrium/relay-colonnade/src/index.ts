@@ -10,31 +10,25 @@ export {
   RelayCatalogSourceMapStore,
   relaySyntheticPointer,
 } from "./catalog-source-map-store.ts";
+export { createRelayColonnadeSocial } from "./create-relay-colonnade-social.ts";
 export { createFrameChannelHubPersistenceSqlite } from "./frame-channel-sqlite.ts";
 export {
-  createRelayColonnadePersistence,
-  createRelayColonnadePersistenceFromDatabases,
-} from "./relay-colonnade-persistence.ts";
-export { applyRelaySqlitePragmas, openRelayCatalogDb, openRelayFramesDb } from "./sqlite-setup.ts";
-export { createRelayColonnadeSocial } from "./create-relay-colonnade-social.ts";
-export {
-  cascadeUnregisterColonnadePrincipal,
-  cascadeUnregisterColonnadePrincipalWithProfile,
-  phase1UnregisterColonnadePrincipal,
-} from "./social-unregister.ts";
-export {
+  type ClaimedPrincipalTeardownJob,
   deletePrincipalTeardownJob,
   ensurePrincipalTeardownJobsSchema,
   insertPendingPrincipalTeardownJob,
   principalHasActiveTeardownJob,
   relayInboxAuthorPointerDeliverable,
   tryClaimNextPendingPrincipalTeardownJob,
-  type ClaimedPrincipalTeardownJob,
 } from "./principal-teardown-jobs.ts";
 export {
-  startPrincipalTeardownWorker,
   type PrincipalTeardownWorkerHandle,
+  startPrincipalTeardownWorker,
 } from "./principal-teardown-worker.ts";
+export {
+  createRelayColonnadePersistence,
+  createRelayColonnadePersistenceFromDatabases,
+} from "./relay-colonnade-persistence.ts";
 export {
   registerAgentOnColonnadePersistence,
   SOURCE_PRINCIPAL_TO_USERNAME,
@@ -48,3 +42,9 @@ export type {
   SocialRelationshipPersistence,
   SocialRelationshipRow,
 } from "./social-types.ts";
+export {
+  cascadeUnregisterColonnadePrincipal,
+  cascadeUnregisterColonnadePrincipalWithProfile,
+  phase1UnregisterColonnadePrincipal,
+} from "./social-unregister.ts";
+export { applyRelaySqlitePragmas, openRelayCatalogDb, openRelayFramesDb } from "./sqlite-setup.ts";

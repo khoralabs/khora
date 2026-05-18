@@ -1,5 +1,5 @@
 {
-  "name": "@khoralabs/at2-host",
+  "name": "@khoralabs/atrium-host",
   "version": "0.0.0",
   "type": "module",
   "private": true,
@@ -15,9 +15,9 @@
   },
   "dependencies": {
     "@khoralabs/agent-relay": "workspace:*",
-    "@khoralabs/at2-auth": "workspace:*",
-    "@khoralabs/at2-contracts": "workspace:*",
-    "@khoralabs/at2-transport": "workspace:*",
+    "@khoralabs/atrium-auth": "workspace:*",
+    "@khoralabs/atrium-contracts": "workspace:*",
+    "@khoralabs/atrium-transport": "workspace:*",
     "@khoralabs/relay-colonnade": "workspace:*",
     "zod": "^4"
   },

@@ -5,15 +5,15 @@ import {
   RELAY_CATALOG_REG_BY_PRINCIPAL,
   RELAY_CATALOG_REG_BY_PROFILE,
 } from "./catalog-registration-adapter.ts";
-import { RELAY_CATALOG_SUBS_BY_SUBJECT } from "./catalog-subscription-adapter.ts";
-import { RELAY_CATALOG_SOURCE_PROFILE } from "./relay-colonnade-persistence.ts";
 import type { RelayCatalogSourceMapStore } from "./catalog-source-map-store.ts";
+import { RELAY_CATALOG_SUBS_BY_SUBJECT } from "./catalog-subscription-adapter.ts";
+import { insertPendingPrincipalTeardownJob } from "./principal-teardown-jobs.ts";
+import { RELAY_CATALOG_SOURCE_PROFILE } from "./relay-colonnade-persistence.ts";
 import {
   SOURCE_PRINCIPAL_TO_USERNAME,
   SOURCE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
 } from "./social-registration.ts";
-import { insertPendingPrincipalTeardownJob } from "./principal-teardown-jobs.ts";
 import { purgeSocialRelationshipsForPrincipal } from "./social-relationship-persistence.ts";
 
 const POST_KINDS = ["post", "probe", "status"] as const;
@@ -127,7 +127,11 @@ export function cascadeUnregisterColonnadePrincipalWithProfile(p: {
     }
   }
 
-  const ownInbox = p.store.listBySourceMap(p.tenantKey, p.relayInboxSourceMapId, `${p.principalId}/`);
+  const ownInbox = p.store.listBySourceMap(
+    p.tenantKey,
+    p.relayInboxSourceMapId,
+    `${p.principalId}/`,
+  );
   p.catalogDb.transaction(() => {
     for (const r of ownInbox) {
       p.store.deleteRow(p.tenantKey, p.relayInboxSourceMapId, r.entry_key);

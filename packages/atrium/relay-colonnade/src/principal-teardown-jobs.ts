@@ -1,5 +1,9 @@
 import type { Database } from "bun:sqlite";
-import type { AgentRelayEntityRow, AgentRelayPersistence, PrincipalId } from "@khoralabs/agent-relay";
+import type {
+  AgentRelayEntityRow,
+  AgentRelayPersistence,
+  PrincipalId,
+} from "@khoralabs/agent-relay";
 
 export type PrincipalTeardownJobState = "pending" | "running" | "completed" | "failed";
 

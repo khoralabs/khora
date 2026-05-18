@@ -1,14 +1,14 @@
 # `@khoralabs/at2-client`
 
-TypeScript client for AT2 / Colonnade-style HTTP + WebSocket hosts (`/v1/*`, inbox WS, OBP rooms).
+TypeScript client for ATRIUM / Colonnade-style HTTP + WebSocket hosts (`/v1/*`, inbox WS, OBP rooms).
 
 ## Transport
 
-Wiring (`createHttpAt2TransportBundle`, `createAt2TransportBundleFromEnv`, `AT2_TRANSPORT`) lives in **`@khoralabs/at2-transport`**. Pass a bundle into `new At2Client({ transportBundle, signer })`, or pass `baseUrl` + `signer` for an ergonomic default bundle.
+Wiring (`createHttpAtriumTransportBundle`, `createAtriumTransportBundleFromEnv`, `ATRIUM_TRANSPORT`) lives in **`@khoralabs/at2-transport`**. Pass a bundle into `new AtriumClient({ transportBundle, signer })`, or pass `baseUrl` + `signer` for an ergonomic default bundle.
 
 ## Config
 
-- **`loadAt2AppConfig`**, **`extendAt2AppConfig`**, **`zAt2AppConfigBase`**, **`at2ConfigJsonSchema`**, **`resolveAt2ConfigPath`**, **`readAt2ConfigFileWithExtends`**, **`mergeAt2AppConfigLayers`**, **`at2AppConfigFromEnv`**, **`At2ConfigError`** — shared base schema with `extends` chaining, per-id plugin maps (`{ [id]: options | false }`), env layering (`AT2_*`), and JSON Schema generation.
+- **`loadAtriumAppConfig`**, **`extendAtriumAppConfig`**, **`zAtriumAppConfigBase`**, **`at2ConfigJsonSchema`**, **`resolveAtriumConfigPath`**, **`readAtriumConfigFileWithExtends`**, **`mergeAtriumAppConfigLayers`**, **`at2AppConfigFromEnv`**, **`AtriumConfigError`** — shared base schema with `extends` chaining, per-id plugin maps (`{ [id]: options | false }`), env layering (`ATRIUM_*`), and JSON Schema generation.
 
 Example snippet:
 

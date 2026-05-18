@@ -6,9 +6,9 @@ import { strFlag } from "@khoralabs/cli-kit";
 import {
   loadVellumAppConfig,
   resolveVellumConfigPath,
+  type VellumAppConfigBase,
   vellumAppConfigBuiltinDefaults,
   vellumAppConfigFromEnv,
-  type VellumAppConfigBase,
   zVellumAppConfigBase,
 } from "@khoralabs/vellum-client";
 

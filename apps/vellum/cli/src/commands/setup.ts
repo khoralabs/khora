@@ -1,8 +1,7 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
-
-import { boolFlag } from "@khoralabs/cli-kit";
 import type { FlagMap } from "@khoralabs/cli-kit";
+import { boolFlag } from "@khoralabs/cli-kit";
 
 import {
   POSTINSTALL_SCHEMA_FILE,
@@ -37,7 +36,16 @@ export function resolveSetupAssets(env: NodeJS.ProcessEnv = process.env): SetupA
     };
   }
   const pkgRoot = path.resolve(import.meta.dir, "../..");
-  const schema = path.resolve(pkgRoot, "..", "..", "..", "packages", "vellum", "client", SCHEMA_FILE);
+  const schema = path.resolve(
+    pkgRoot,
+    "..",
+    "..",
+    "..",
+    "packages",
+    "vellum",
+    "client",
+    SCHEMA_FILE,
+  );
   const schemaPath = existsSync(schema) ? schema : undefined;
   return {
     configsDir: path.join(pkgRoot, "assets", "configs"),

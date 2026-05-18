@@ -4,8 +4,8 @@ import {
   generateAgentIdentity,
   type PersistableAgentSigner,
 } from "@khoralabs/at2-auth";
-import { At2ClientError, type At2ClientEvent } from "@khoralabs/at2-transport";
-import { At2Client } from "./at2-client.ts";
+import { AtriumClientError, type AtriumClientEvent } from "@khoralabs/at2-transport";
+import { AtriumClient } from "./at2-client.ts";
 
 async function makeSigner(): Promise<PersistableAgentSigner> {
   return generateAgentIdentity();
@@ -48,7 +48,7 @@ function expectAuthHeaders(init: RequestInit | undefined, did: string): void {
   expect(h.get("X-Agent-Signature")).not.toBeNull();
 }
 
-describe("At2Client", () => {
+describe("AtriumClient", () => {
   test("getAgentStatus GET /v1/agent/status returns parsed status", async () => {
     const signer = staticSigner("did:key:a");
     const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -56,10 +56,19 @@ describe("At2Client", () => {
       expect(init?.method ?? "GET").toBe("GET");
       expectAuthHeaders(init, "did:key:a");
       return Response.json({
-        status: { id: "st1", kind: "status", authorProfileId: "p1", body: "On shift" },
+        status: {
+          id: "st1",
+          kind: "status",
+          authorProfileId: "p1",
+          body: "On shift",
+        },
       });
     });
-    const c = new At2Client({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
     const st = await c.getAgentStatus();
     expect(st?.kind).toBe("status");
     expect(st?.body).toBe("On shift");
@@ -74,7 +83,11 @@ describe("At2Client", () => {
       expect(h.get("X-Agent-Did")).toBeNull();
       return Response.json({ ok: true });
     });
-    const c = new At2Client({ baseUrl: "http://localhost:8787/", signer, fetch: fetchMock });
+    const c = new AtriumClient({
+      baseUrl: "http://localhost:8787/",
+      signer,
+      fetch: fetchMock,
+    });
     await expect(c.health()).resolves.toEqual({ ok: true });
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
@@ -94,8 +107,14 @@ describe("At2Client", () => {
         profile: { id: "prof_minted", username: "ada", displayName: "Ada" },
       });
     });
-    const c = new At2Client({ baseUrl: "http://h", signer, fetch: fetchMock });
-    const out = await c.register({ metadata: { username: "ada", displayName: "Ada" } });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
+    const out = await c.register({
+      metadata: { username: "ada", displayName: "Ada" },
+    });
     expect(out).toEqual({
       did: signer.did,
       profileId: "prof_minted",
@@ -112,8 +131,12 @@ describe("At2Client", () => {
         profile: { id: "prof_minted", username: "ada", displayName: "Ada" },
       }),
     );
-    const c = new At2Client({ baseUrl: "http://h", signer, fetch: fetchMock });
-    const events: At2ClientEvent[] = [];
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
+    const events: AtriumClientEvent[] = [];
     const off = c.subscribe((e) => events.push(e));
     await c.register({ metadata: { username: "ada", displayName: "Ada" } });
     off();
@@ -157,13 +180,13 @@ describe("At2Client", () => {
       close() {}
     }
     const signer = staticSigner("did:key:agent");
-    const c = new At2Client({
+    const c = new AtriumClient({
       baseUrl: "http://h",
       signer,
       fetch: mock(async () => new Response(null, { status: 500 })),
       WebSocket: FakeWebSocket as unknown as typeof WebSocket,
     });
-    const events: At2ClientEvent[] = [];
+    const events: AtriumClientEvent[] = [];
     c.subscribe((e) => events.push(e));
     let legacyCalled = false;
     await c.connectInbox({
@@ -189,9 +212,17 @@ describe("At2Client", () => {
       expect(init?.method).toBe("PATCH");
       expectAuthHeaders(init, "did:key:me");
       expect(JSON.parse(String(init?.body))).toEqual({ displayName: "N" });
-      return Response.json({ id: "prof1", username: "ada", displayName: "N" });
+      return Response.json({
+        id: "prof1",
+        username: "ada",
+        displayName: "N",
+      });
     });
-    const c = new At2Client({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
     const out = await c.updateProfile({ displayName: "N" });
     expect(out.displayName).toBe("N");
     expect(out.username).toBe("ada");
@@ -203,7 +234,11 @@ describe("At2Client", () => {
       expect(JSON.parse(String(init?.body))).toEqual({ username: "ada-99" });
       return Response.json({ id: "prof1", username: "ada-99" });
     });
-    const c = new At2Client({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
     const out = await c.updateProfile({ username: " Ada-99 " });
     expect(out.username).toBe("ada-99");
   });
@@ -213,9 +248,17 @@ describe("At2Client", () => {
     const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
       expect(String(input)).toBe("http://h/v1/profile/by-username/ada-99");
       expect(init?.method ?? "GET").toBe("GET");
-      return Response.json({ id: "p2", username: "ada-99", displayName: "Ada" });
+      return Response.json({
+        id: "p2",
+        username: "ada-99",
+        displayName: "Ada",
+      });
     });
-    const c = new At2Client({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
     const out = await c.lookupProfileByUsername(" Ada-99 ");
     expect(out?.did).toBeUndefined();
     expect(out?.profile.username).toBe("ada-99");
@@ -224,7 +267,11 @@ describe("At2Client", () => {
   test("lookupProfileByUsername returns null on 404", async () => {
     const signer = staticSigner("did:key:a");
     const fetchMock = mock(async () => Response.json({ error: "nope" }, { status: 404 }));
-    const c = new At2Client({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
     expect(await c.lookupProfileByUsername("ghost")).toBeNull();
   });
 
@@ -236,7 +283,11 @@ describe("At2Client", () => {
       expectAuthHeaders(init, "did:key:agent");
       return Response.json({ ok: true, topicSlug: "rust-dev" });
     });
-    const c = new At2Client({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
     await c.subscribeTopic("rust-dev");
   });
 
@@ -248,7 +299,11 @@ describe("At2Client", () => {
       expectAuthHeaders(init, "did:key:agent");
       return Response.json({ authorDids: ["did:key:bob"], authorTopics: [] });
     });
-    const c = new At2Client({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
     expect(await c.listAuthorSubscriptions()).toEqual({
       authorDids: ["did:key:bob"],
       authorTopics: [],
@@ -261,11 +316,23 @@ describe("At2Client", () => {
       expect(String(input)).toBe("http://h/v1/authors/ada-99/subscribe");
       expect(init?.method).toBe("POST");
       expectAuthHeaders(init, "did:key:agent");
-      return Response.json({ ok: true, username: "ada-99", authorDid: "did:key:bob" });
+      return Response.json({
+        ok: true,
+        username: "ada-99",
+        authorDid: "did:key:bob",
+      });
     });
-    const c = new At2Client({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
     const out = await c.subscribeAuthor("ada-99");
-    expect(out).toEqual({ ok: true, username: "ada-99", authorDid: "did:key:bob" });
+    expect(out).toEqual({
+      ok: true,
+      username: "ada-99",
+      authorDid: "did:key:bob",
+    });
   });
 
   test("unsubscribeAuthor signs DELETE", async () => {
@@ -276,7 +343,11 @@ describe("At2Client", () => {
       expectAuthHeaders(init, "did:key:agent");
       return new Response(null, { status: 204 });
     });
-    const c = new At2Client({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
     await c.unsubscribeAuthor("ada-99");
   });
 
@@ -293,7 +364,11 @@ describe("At2Client", () => {
         topicSlug: "rust-dev",
       });
     });
-    const c = new At2Client({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
     const out = await c.subscribeAuthorTopic("ada-99", "rust-dev");
     expect(out).toEqual({
       ok: true,
@@ -311,7 +386,11 @@ describe("At2Client", () => {
       expectAuthHeaders(init, "did:key:agent");
       return new Response(null, { status: 204 });
     });
-    const c = new At2Client({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
     await c.unsubscribeAuthorTopic("ada-99", "zig");
   });
 
@@ -321,7 +400,10 @@ describe("At2Client", () => {
       expect(String(input)).toBe("http://h/v1/posts");
       expect(init?.method).toBe("POST");
       expectAuthHeaders(init, "did:key:writer");
-      expect(JSON.parse(String(init?.body))).toEqual({ body: "hello", title: "Hi" });
+      expect(JSON.parse(String(init?.body))).toEqual({
+        body: "hello",
+        title: "Hi",
+      });
       return Response.json({
         id: "atrium_post_abc",
         authorProfileId: "u1",
@@ -330,7 +412,11 @@ describe("At2Client", () => {
         body: "hello",
       });
     });
-    const c = new At2Client({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
     const out = await c.createPost({ body: "hello", title: "Hi" });
     expect(out.id).toBe("atrium_post_abc");
     expect(out.authorProfileId).toBe("u1");
@@ -350,7 +436,11 @@ describe("At2Client", () => {
         body: "x",
       });
     });
-    const c = new At2Client({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
     await c.updatePost("p1", { body: "x" });
   });
 
@@ -362,7 +452,11 @@ describe("At2Client", () => {
       expectAuthHeaders(init, "did:key:w");
       return new Response(null, { status: 204 });
     });
-    const c = new At2Client({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
     await c.deletePost("p1");
   });
 
@@ -379,7 +473,11 @@ describe("At2Client", () => {
         body: "hello",
       });
     });
-    const c = new At2Client({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
     const out = await c.getPost("atrium_post_abc");
     expect(out.id).toBe("atrium_post_abc");
   });
@@ -396,7 +494,11 @@ describe("At2Client", () => {
         displayName: "Bob",
       });
     });
-    const c = new At2Client({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
     const out = await c.lookupProfileByDid("did:key:bob");
     expect(out?.did).toBe("did:key:bob");
     expect(out?.profile.username).toBe("bob");
@@ -415,7 +517,11 @@ describe("At2Client", () => {
         expiresAtMs: 999,
       });
     });
-    const c = new At2Client({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
     const out = await c.mintRoomTicket("room-uuid", { ttlMs: 120_000 });
     expect(out.ticket).toBe("t2");
     expect(out.webSocketUrl).toContain("ticket=t2");
@@ -437,7 +543,11 @@ describe("At2Client", () => {
         expiresAtMs: 1000,
       });
     });
-    const c = new At2Client({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
     const out = await c.redeemRoomInvite({ joinToken: "opaque-invite" });
     expect(out.roomId).toBe("room-uuid");
     expect(out.creatorDid).toBe("did:key:creator");
@@ -447,7 +557,7 @@ describe("At2Client", () => {
   test("room lifecycle subscribe events emit without secrets", async () => {
     const signer = staticSigner("did:key:peer");
     let step = 0;
-    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const fetchMock = mock(async (input: RequestInfo | URL, _init?: RequestInit) => {
       const url = String(input);
       if (step === 0) {
         expect(url).toBe("http://h/v1/rooms");
@@ -480,7 +590,11 @@ describe("At2Client", () => {
         expiresAtMs: 333,
       });
     });
-    const c = new At2Client({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
     const events: string[] = [];
     c.subscribe((e) => {
       if (
@@ -504,7 +618,11 @@ describe("At2Client", () => {
   test("non-inbox endpoints still sign pure pathnames", async () => {
     const signer = pathRecordingSigner("did:key:rec");
     const fetchMock = mock(async () => Response.json({ invites: [] }));
-    const c = new At2Client({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
     await c.listInvites();
     expect(signer.recordedPaths).toEqual(["/v1/invites"]);
   });
@@ -516,7 +634,11 @@ describe("At2Client", () => {
       expectAuthHeaders(init, "did:key:a");
       return Response.json({ invites: [] });
     });
-    const c = new At2Client({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
     await expect(c.listInvites()).resolves.toEqual({ invites: [] });
   });
 
@@ -537,7 +659,11 @@ describe("At2Client", () => {
         ],
       });
     });
-    const c = new At2Client({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
     const out = await c.listRelationships();
     expect(out.relationships).toHaveLength(1);
     expect(out.relationships[0]?.roomId).toBe("r1");
@@ -550,21 +676,32 @@ describe("At2Client", () => {
       expect(JSON.parse(String(init?.body))).toEqual({ token: "tok" });
       return Response.json({ inviter: null, source: "seed" });
     });
-    const c = new At2Client({ baseUrl: "http://h", signer, fetch: fetchMock });
-    await expect(c.previewInvite("tok")).resolves.toEqual({ inviter: null, source: "seed" });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
+    await expect(c.previewInvite("tok")).resolves.toEqual({
+      inviter: null,
+      source: "seed",
+    });
   });
 
-  test("non-OK throws At2ClientError with parsed message", async () => {
+  test("non-OK throws AtriumClientError with parsed message", async () => {
     const signer = staticSigner();
     const fetchMock = mock(async () => Response.json({ error: "bad did" }, { status: 400 }));
-    const c = new At2Client({ baseUrl: "http://h", signer, fetch: fetchMock });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
     try {
       await c.health();
       expect.unreachable();
     } catch (e) {
-      expect(e).toBeInstanceOf(At2ClientError);
-      expect((e as At2ClientError).message).toBe("bad did");
-      expect((e as At2ClientError).status).toBe(400);
+      expect(e).toBeInstanceOf(AtriumClientError);
+      expect((e as AtriumClientError).message).toBe("bad did");
+      expect((e as AtriumClientError).status).toBe(400);
     }
   });
 });
