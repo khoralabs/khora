@@ -6,7 +6,8 @@ FROM minio/mc:RELEASE.2025-07-21T05-28-08Z AS mc
 FROM minio/minio:RELEASE.2025-07-23T15-54-02Z
 
 COPY --from=mc /usr/bin/mc /usr/bin/mc
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+# Build context must be the repository root (COPY paths are relative to context; Render/CI use root).
+COPY apps/s3/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh /usr/bin/mc
 
 EXPOSE 9000 9001

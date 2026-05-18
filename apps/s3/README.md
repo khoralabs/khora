@@ -4,8 +4,10 @@ Run an S3-compatible bucket Litestream can replicate to.
 
 ## Build
 
+Use the **repository root** as the build context so `COPY apps/s3/entrypoint.sh` resolves (local, Render, and most monorepo CI).
+
 ```sh
-docker build -t khora-atrium-minio -f apps/s3/Dockerfile apps/s3
+docker build -t khora-atrium-minio -f apps/s3/Dockerfile .
 ```
 
 ## Run
