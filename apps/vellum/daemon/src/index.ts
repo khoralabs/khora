@@ -29,6 +29,7 @@ function daemonJsonOutput(vcfg: { daemonJson?: boolean }): boolean {
 
 function daemonPathConfig(vcfg: { dataDir?: string }): VellumPathConfig {
   const dataDir =
+    process.env.VELLUM_DATA_DIR?.trim() ??
     process.env.AT2_DATA_DIR?.trim() ??
     process.env.ATRIUM_DATA_DIR?.trim() ??
     vcfg.dataDir?.trim();

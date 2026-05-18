@@ -12,7 +12,7 @@ export function handleList(flags: FlagMap): void {
     return;
   }
   if (rows.length === 0) {
-    console.log("(no rooms under obp/rooms)");
+    console.log("(no local rooms under data dir)");
     return;
   }
   console.log("roomId\tpid\tcontrolPort\tstatus");

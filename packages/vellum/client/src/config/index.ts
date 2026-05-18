@@ -1,6 +1,7 @@
 export {
   VELLUM_CANONICAL_BASE_URL,
   vellumAppConfigBuiltinDefaults,
+  vellumDefaultDataDir,
 } from "./defaults.ts";
 export { vellumAppConfigFromEnv } from "./env.ts";
 export { VellumConfigError } from "./errors.ts";

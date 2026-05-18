@@ -12,7 +12,7 @@ const BASE_BODY = JSON.stringify(
   {
     $schema: "./vellum-config.schema.json",
     baseUrl: "https://atr1.khoralabs.com",
-    dataDir: "~/.atrium",
+    dataDir: "~/.vellum/data",
   },
   null,
   2,
@@ -57,7 +57,7 @@ describe("runVellumPostinstall", () => {
     const written = readFileSync(path.join(dest, "base.config.json"), "utf8");
     expect(written.includes("~/.vellum")).toBe(false);
     expect(written.includes("~/.atrium")).toBe(false);
-    expect(written.includes(path.join(home, ".atrium"))).toBe(true);
+    expect(written.includes(path.join(home, ".vellum", "data"))).toBe(true);
   });
 
   test("idempotent on repeat invocations", () => {

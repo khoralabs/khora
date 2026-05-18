@@ -11,7 +11,7 @@ export const zVellumAppConfigBase = z
       .string()
       .min(1)
       .optional()
-      .describe("Root for OBP data (default ~/.atrium without overrides)"),
+      .describe("Vellum room data root (SQLite + vellum.json under …/obp/rooms/…)"),
     agentKeyPath: z
       .string()
       .min(1)

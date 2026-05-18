@@ -20,7 +20,7 @@ function isPidAlive(pid: number): boolean {
 }
 
 /**
- * Inspect `vellum.json` under each `{obpRoot}/rooms/*` dir (aligned with daemon layout).
+ * Inspect `vellum.json` under each `{obpStoreRoot}/rooms/*` directory (aligned with the daemon).
  */
 export function listLocalVellumRows(
   cfg: VellumPathConfig,

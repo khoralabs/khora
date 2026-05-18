@@ -8,7 +8,7 @@
       "minLength": 1
     },
     "dataDir": {
-      "description": "Root for OBP data (default ~/.atrium without overrides)",
+      "description": "Vellum room data root (SQLite + vellum.json under …/obp/rooms/…)",
       "type": "string",
       "minLength": 1
     },

@@ -160,7 +160,13 @@ export class VellumClient {
         VELLUM_ROOM_ID: this.opts.roomId,
         VELLUM_ROOM_WS_URL: webSocketUrl,
         VELLUM_BASE_URL: this.opts.baseUrl,
-        ...(dataDir !== undefined ? { AT2_DATA_DIR: dataDir, ATRIUM_DATA_DIR: dataDir } : {}),
+        ...(dataDir !== undefined
+          ? {
+              VELLUM_DATA_DIR: dataDir,
+              AT2_DATA_DIR: dataDir,
+              ATRIUM_DATA_DIR: dataDir,
+            }
+          : {}),
       },
       stdout: "inherit",
       stderr: "inherit",

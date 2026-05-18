@@ -1,6 +1,6 @@
 import path from "node:path";
 
-/** Same semantics as `@khoralabs/atrium-daemon` `DaemonPidPathConfig` (`dataDir`, `ATRIUM_OBP_STORE_ROOT`, `~/.atrium`). */
+/** Room storage layout: `${dataDir}/obp/...` unless `VELLUM_OBP_STORE_ROOT` / legacy `ATRIUM_OBP_STORE_ROOT` overrides. */
 export type VellumPathConfig = {
   dataDir?: string | undefined;
 };
@@ -15,15 +15,19 @@ export function encodeRoomIdForPath(roomId: string): string {
   return encodeURIComponent(roomId);
 }
 
-/** `~/<data>/obp` or `ATRIUM_OBP_STORE_ROOT`. */
+/** `<dataDir>/obp` (default data dir `~/.vellum/data`) or `VELLUM_OBP_STORE_ROOT` / `ATRIUM_OBP_STORE_ROOT`. */
 export function obpStoreRoot(
   dataDir: string | undefined,
   env: NodeJS.ProcessEnv = process.env,
 ): string {
-  const o = env.ATRIUM_OBP_STORE_ROOT?.trim();
-  if (o !== undefined && o.length > 0) return path.resolve(o);
+  const storeOverride =
+    env.VELLUM_OBP_STORE_ROOT?.trim() ?? env.ATRIUM_OBP_STORE_ROOT?.trim();
+  if (storeOverride !== undefined && storeOverride.length > 0) return path.resolve(storeOverride);
   const home = env.HOME ?? env.USERPROFILE ?? "";
-  const root = home.length > 0 ? path.join(home, ".atrium") : path.join(process.cwd(), ".atrium");
+  const root =
+    home.length > 0
+      ? path.join(home, ".vellum", "data")
+      : path.join(process.cwd(), ".vellum", "data");
   const base = dataDir?.trim()?.length ? path.resolve(dataDir.trim()) : root;
   return path.join(base, "obp");
 }

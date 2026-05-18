@@ -1,7 +1,7 @@
 {
   "$schema": "./vellum-config.schema.json",
   "baseUrl": "https://atr1.khoralabs.com",
-  "dataDir": "~/.atrium",
+  "dataDir": "~/.vellum/data",
   "agentKeyPath": "~/.atrium/identity.json",
   "defaultRoomId": "replace-with-your-room-id",
   "defaultRoomWebSocketUrl": "wss://atr1.khoralabs.com/ws/replace-with-your-room-id",

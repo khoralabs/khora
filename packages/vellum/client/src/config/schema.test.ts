@@ -1,7 +1,8 @@
-import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import path from "node:path";
+
+import { afterEach, describe, expect, test } from "bun:test";
 
 import {
   loadVellumAppConfig,
@@ -37,13 +38,14 @@ describe("zVellumAppConfigBase", () => {
 });
 
 describe("loadVellumAppConfig", () => {
-  test("builtin default baseUrl applies when no file and no env", () => {
+  test("builtin defaults apply when no file and no env", () => {
     const { config } = loadVellumAppConfig({
       schema: zVellumAppConfigBase,
       layers: [vellumAppConfigBuiltinDefaults(), vellumAppConfigFromEnv({})],
       filePath: null,
     });
     expect(config.baseUrl).toBe(VELLUM_CANONICAL_BASE_URL);
+    expect(config.dataDir).toBe(path.join(homedir(), ".vellum", "data"));
   });
 
   test("env-only layer validates", () => {

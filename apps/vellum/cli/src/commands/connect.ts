@@ -15,6 +15,6 @@ export async function handleConnect(
   const ws = strFlag(flags, "ws-url") ?? strFlag(flags, "wsUrl");
   await client.connect(ws !== undefined && ws.length > 0 ? { webSocketUrl: ws } : undefined);
   console.log(
-    "connected — vellum daemon started; control port under room obp directory (vellum.json)",
+    "connected — vellum daemon started; control port in room data dir (vellum.json)",
   );
 }

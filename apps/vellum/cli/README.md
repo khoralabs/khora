@@ -1,6 +1,6 @@
 # @khoralabs/vellum-cli
 
-NBC room CLI: connect, chain/offer/port commands, and local daemon control over OBP v2 + SQLite.
+NBC room CLI: connect, chain/offer/port commands, and local daemon control with on-disk room storage (SQLite).
 
 ## Install (npm release)
 
@@ -31,7 +31,7 @@ bun run --cwd packages/vellum/client build:schema
 
 Configuration is loaded with **`@khoralabs/vellum-client`**: layers merge in order **built-in defaults** → **environment variables** → **resolved JSON file** (including any `extends` chain). Later layers override earlier ones for the same key. Command-line flags override loaded settings when a command supports them.
 
-The default `baseUrl` when nothing else sets it is **`https://atr1.khoralabs.com`** (see `VELLUM_CANONICAL_BASE_URL` / `vellumAppConfigBuiltinDefaults()` in `@khoralabs/vellum-client`).
+The default `baseUrl` when nothing else sets it is **`https://atr1.khoralabs.com`**. The default `dataDir` is **`~/.vellum/data`** (room database and `vellum.json` under `…/obp/rooms/…`). See `VELLUM_CANONICAL_BASE_URL`, `vellumDefaultDataDir()`, and `vellumAppConfigBuiltinDefaults()` in `@khoralabs/vellum-client`.
 
 Discovery order for the CLI config file:
 
@@ -48,8 +48,10 @@ Editor IntelliSense: point `"$schema": "./vellum-config.schema.json"` at the fil
 | Variable | Used for |
 | --- | --- |
 | `VELLUM_BASE_URL`, `VELLUM_ATRIUM_BASE_URL`, `AT2_BASE_URL` | Host HTTP URL |
-| `AT2_DATA_DIR`, `ATRIUM_DATA_DIR` | OBP / room data root (default layout under `~/.atrium`) |
-| `AT2_AGENT_KEY_PATH`, `ATRIUM_AGENT_KEY_PATH`, `VELLUM_AGENT_KEY_PATH` | Identity JSON path |
+| `VELLUM_DATA_DIR` | Room data root (layout `…/obp/rooms/<room>/…`; preferred) |
+| `AT2_DATA_DIR`, `ATRIUM_DATA_DIR` | Same as `VELLUM_DATA_DIR` (legacy names) |
+| `VELLUM_OBP_STORE_ROOT` | Override the `…/obp` directory (rare; legacy: `ATRIUM_OBP_STORE_ROOT`) |
+| `VELLUM_AGENT_KEY_PATH`, `ATRIUM_AGENT_KEY_PATH`, `AT2_AGENT_KEY_PATH` | Identity JSON path |
 | `VELLUM_ROOM_ID`, `ATRIUM_ROOM_ID` | Default room id |
 | `VELLUM_ROOM_WS_URL` | Default room WebSocket URL |
 | `VELLUM_CONFIG` | Explicit config file path |
@@ -62,7 +64,8 @@ Editor IntelliSense: point `"$schema": "./vellum-config.schema.json"` at the fil
 | --- | --- |
 | `~/.vellum/*.config.json` | Layered JSON config |
 | `~/.vellum/vellum-config.schema.json` | JSON Schema for editors |
-| `~/.atrium/obp/rooms/…` | Default OBP SQLite + `vellum.json` control (unless `dataDir` / env overrides) |
+| `~/.vellum/data/obp/rooms/…` | Default per-room SQLite + `vellum.json` (unless `dataDir` / env overrides) |
+| `~/.atrium/identity.json` | Default agent identity path (see `VELLUM_AGENT_KEY_PATH` / Atrium env vars) |
 
 Account removal on the Atrium host (when supported) is via the Atrium CLI (`atrium unregister --yes`); see `apps/atrium/README.md` and `apps/vellum/README.md`.
 
