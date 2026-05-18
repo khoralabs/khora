@@ -72,3 +72,18 @@ export function envTenantKey(): string | undefined {
   const p = process.env.ATRIUM_RELAY_TENANT_KEY?.trim();
   return p !== undefined && p.length > 0 ? p : undefined;
 }
+
+/**
+ * Eagerly validates all required env vars at startup.
+ * Throws a descriptive error on the first missing/invalid value.
+ */
+export function validateEnv(): void {
+  envCatalogPath();
+  envFramesDbPath();
+  envPort();
+  envHostUnaryIngress();
+  const duplexMode = envHostDuplexIngress();
+  if (duplexMode === "unix") {
+    envHostDuplexUnixPath();
+  }
+}

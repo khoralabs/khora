@@ -5,7 +5,7 @@ Library that composes **relay-colonnade** persistence, **at2-auth**, and **`Agen
 ## Wiring
 
 1. `createAtriumHost({ catalogPath, framesDbPath, tenantKey? })` opens the catalog + frames DBs, constructs auth, inbox hub, frame-channel hub, and `AgentRelay`.
-2. **Ingress** (HTTP routes, `Bun.serve`, WebSocket upgrade + drain) lives in **`apps/atrium/v2/server`** (`@khoralabs/atrium-v2-server`).
+2. **Ingress** (HTTP routes, `Bun.serve`, WebSocket upgrade + drain) lives in **`apps/atrium/v2/server`** (`@khoralabs/atrium-server`).
 
 ```mermaid
 flowchart LR
@@ -43,7 +43,7 @@ Export `topicSubscriptionSubject`, `authorSubscriptionSubject`, `authorTopicSubs
 
 ## HTTP routes (reference)
 
-Served by **`@khoralabs/atrium-v2-server`**, not this package:
+Served by **`@khoralabs/atrium-server`**, not this package:
 
 | Method | Path |
 |--------|------|

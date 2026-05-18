@@ -99,7 +99,7 @@ function createUnixDuplexBridge(socket: Socket<DuplexUnixSocketData>): UnixDuple
       try {
         await socketWriteAll(socket, bytes);
       } catch (err) {
-        console.error("[atrium-v2-server] duplex unix socket write failed", err);
+        console.error("[atrium-server] duplex unix socket write failed", err);
       }
     },
     async close() {
@@ -240,12 +240,12 @@ export function startDuplexUnixIngress(opts: {
         }
       },
       error(_socket, err) {
-        console.error("[atrium-v2-server] duplex unix socket error", err);
+        console.error("[atrium-server] duplex unix socket error", err);
       },
     },
   });
 
-  console.warn(`[atrium-v2-server] Duplex unix ingress listening on ${opts.unixPath}`);
+  console.warn(`[atrium-server] Duplex unix ingress listening on ${opts.unixPath}`);
   return {
     stop: (closeActive = true) => {
       listener.stop(closeActive);

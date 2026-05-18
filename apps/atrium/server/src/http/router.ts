@@ -9,7 +9,7 @@ import {
   handleListAuthorSubscriptions,
 } from "./authors.ts";
 import type { HostRouteDeps } from "./deps.ts";
-import { handleHealth } from "./health.ts";
+import { handleHealth, handleReady } from "./health.ts";
 import { handleInvitePreview, handleListInvites } from "./invites.ts";
 import {
   handleAgentStatus,
@@ -46,6 +46,10 @@ export async function route(
 ): Promise<Response | undefined> {
   if (req.method === "GET" && url.pathname === "/health") {
     return handleHealth();
+  }
+
+  if (req.method === "GET" && url.pathname === "/ready") {
+    return handleReady(deps);
   }
 
   const ipRl = deps.rateLimiters.defaultIp(`ip:${clientIpFromRequest(req)}`);

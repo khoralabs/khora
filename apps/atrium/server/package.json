@@ -1,5 +1,5 @@
 {
-  "name": "@khoralabs/atrium-v2-server",
+  "name": "@khoralabs/atrium-server",
   "version": "0.0.0",
   "type": "module",
   "private": true,

@@ -15,6 +15,7 @@ import {
   envHostUnaryIngress,
   envPort,
   envTenantKey,
+  validateEnv,
 } from "./env.ts";
 import type { HostRouteDeps } from "./http/deps.ts";
 import { at2FrameChannelWsHandlers, route } from "./http/router.ts";
@@ -22,6 +23,8 @@ import { createV2HostRateLimiters } from "./rate-limit-buckets.ts";
 import { startDuplexUnixIngress } from "./server/duplex-unix-listener.ts";
 import { startStdioUnaryIngress } from "./server/stdio-unary-listener.ts";
 import { createInboxDrainWebSocketHandlers } from "./ws/inbox.ts";
+
+validateEnv();
 
 const catalogPath = envCatalogPath();
 const framesDbPath = envFramesDbPath();
@@ -52,8 +55,13 @@ const server = Bun.serve<AtriumWsData>({
   port: envPort(),
   async fetch(req) {
     const url = new URL(req.url);
-    const res = await route(req, url, server, deps);
-    return res ?? new Response("Not found", { status: 404 });
+    try {
+      const res = await route(req, url, server, deps);
+      return res ?? new Response("Not found", { status: 404 });
+    } catch (err) {
+      console.error("[atrium-server] unhandled fetch error", err);
+      return new Response("Internal server error", { status: 500 });
+    }
   },
   websocket: {
     open(ws) {
@@ -80,13 +88,13 @@ const server = Bun.serve<AtriumWsData>({
   },
 });
 
-console.error(`[atrium-v2-server] listening on http://localhost:${server.port}`);
+console.error(`[atrium-server] listening on http://localhost:${server.port}`);
 
 const unaryIngress = envHostUnaryIngress();
 if (unaryIngress === "stdio") {
-  console.warn("[atrium-v2-server] Unary ingress: stdio (NDJSON lines); parallel to HTTP.");
+  console.warn("[atrium-server] Unary ingress: stdio (NDJSON lines); parallel to HTTP.");
   void startStdioUnaryIngress(deps).catch((e) => {
-    console.error("[atrium-v2-server] stdio unary ingress failed", e);
+    console.error("[atrium-server] stdio unary ingress failed", e);
     process.exit(1);
   });
 }
@@ -105,14 +113,22 @@ if (duplexMode === "unix") {
 }
 
 function shutdown(signal: NodeJS.Signals): void {
-  console.error(`[atrium-v2-server] received ${signal}; shutting down`);
+  console.error(`[atrium-server] received ${signal}; draining and shutting down`);
+
+  // Force-exit if graceful drain takes too long.
+  setTimeout(() => {
+    console.error("[atrium-server] shutdown timeout; forcing exit");
+    process.exit(1);
+  }, 10_000).unref();
+
   try {
     teardownWorker.stop();
   } catch {
     /* ignore */
   }
   try {
-    server.stop();
+    // false = finish in-flight requests before closing
+    server.stop(false);
   } catch {
     /* already stopped */
   }
@@ -126,3 +142,13 @@ function shutdown(signal: NodeJS.Signals): void {
 
 process.once("SIGTERM", () => shutdown("SIGTERM"));
 process.once("SIGINT", () => shutdown("SIGINT"));
+
+process.on("uncaughtException", (err) => {
+  console.error("[atrium-server] uncaughtException", err);
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("[atrium-server] unhandledRejection", reason);
+  process.exit(1);
+});
