@@ -17,7 +17,8 @@
     "clean": "find . -name node_modules -type d -prune -exec rm -rf {} +",
     "check": "biome check . && bun run --filter @khoralabs/memories-spec validate && bun run --filter @khoralabs/agent-identity-spec validate && bun run --filter @khoralabs/obp-spec validate",
     "check:write": "biome check --write .",
-    "context": "bun run scripts/context.ts"
+    "context": "bun run scripts/context.ts",
+    "start:atrium:server": "bun run --filter @khoralabs/atrium-server start"
   },
   "type": "module",
   "workspaces": [
