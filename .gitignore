@@ -9,6 +9,7 @@ node_modules
 out
 dist
 apps/atrium/release
+apps/vellum/release
 *.tgz
 
 # code coverage
