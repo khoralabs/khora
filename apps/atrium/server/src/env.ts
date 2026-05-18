@@ -6,6 +6,7 @@
  * - ATRIUM_HOST_UNARY_TRANSPORT: unset / `http` → HTTP only; `stdio` → NDJSON stdin/out parallel to HTTP.
  * - ATRIUM_HOST_DUPLEX_INGRESS: `off` (default) or `unix`.
  * - ATRIUM_HOST_DUPLEX_UNIX_PATH: required when `ATRIUM_HOST_DUPLEX_INGRESS=unix`.
+ * - LOG_LEVEL: pino log level (default `info`, e.g. `debug`, `warn`, `error`).
  */
 
 /** Default HTTP ingress via Bun only (no parallel unary listener). */

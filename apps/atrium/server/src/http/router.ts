@@ -1,6 +1,7 @@
 import { agentRelayFrameChannelWebSocketHandlers } from "@khoralabs/agent-relay";
 import type { AtriumHostContext } from "@khoralabs/at2-host";
 import type { AtriumWsUpgradePort } from "@khoralabs/at2-transport";
+import { logger } from "../logger.ts";
 import { clientIpFromRequest } from "../rate-limit.ts";
 import { handleInboxWsUpgrade } from "../ws/inbox.ts";
 import {
@@ -52,8 +53,10 @@ export async function route(
     return handleReady(deps);
   }
 
-  const ipRl = deps.rateLimiters.defaultIp(`ip:${clientIpFromRequest(req)}`);
+  const ip = clientIpFromRequest(req);
+  const ipRl = deps.rateLimiters.defaultIp(`ip:${ip}`);
   if (!ipRl.ok) {
+    logger.warn({ ip }, "default ip rate limit exceeded");
     return rateLimitedResponse(ipRl.retryAfterSec);
   }
 

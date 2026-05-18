@@ -20,6 +20,7 @@ import {
   USERNAME_INDEX_TENANT_KEY,
 } from "@khoralabs/relay-colonnade";
 import z from "zod";
+import { logger } from "../logger.ts";
 import type { HostRouteDeps } from "./deps.ts";
 import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses.ts";
 
@@ -206,6 +207,10 @@ export async function handleRoomsCreate(
     hasOpenInvite: targetDidResolved === undefined,
     expiresAtMs,
   });
+  logger.info(
+    { roomId, creatorDid: did, inviteTargetDid: targetDidResolved ?? null },
+    "room_created",
+  );
   if (targetDidResolved !== undefined) {
     const entryKey = `${targetDidResolved}/${roomId}`;
     ctx.store.upsertRow({
@@ -408,6 +413,10 @@ export async function handleRoomsJoin(
     peerDid: did,
     expiresAtMs,
   });
+  logger.info(
+    { roomId: inv.roomId, creatorDid: meta.creatorDid, peerDid: did },
+    "room_invite_redeemed",
+  );
   return Response.json(payload);
 }
 
@@ -507,6 +516,7 @@ export async function handleRoomsMintTicket(
     principalDid: did,
     expiresAtMs,
   });
+  logger.debug({ roomId, did }, "room_ticket_minted");
   return Response.json(payload);
 }
 

@@ -18,6 +18,7 @@ import {
   validateEnv,
 } from "./env.ts";
 import type { HostRouteDeps } from "./http/deps.ts";
+import { logger } from "./logger.ts";
 import { at2FrameChannelWsHandlers, route } from "./http/router.ts";
 import { createV2HostRateLimiters } from "./rate-limit-buckets.ts";
 import { startDuplexUnixIngress } from "./server/duplex-unix-listener.ts";
@@ -59,7 +60,7 @@ const server = Bun.serve<AtriumWsData>({
       const res = await route(req, url, server, deps);
       return res ?? new Response("Not found", { status: 404 });
     } catch (err) {
-      console.error("[atrium-server] unhandled fetch error", err);
+      logger.error({ err }, "unhandled fetch error");
       return new Response("Internal server error", { status: 500 });
     }
   },
@@ -88,13 +89,13 @@ const server = Bun.serve<AtriumWsData>({
   },
 });
 
-console.error(`[atrium-server] listening on http://localhost:${server.port}`);
+logger.info({ port: server.port }, "listening");
 
 const unaryIngress = envHostUnaryIngress();
 if (unaryIngress === "stdio") {
-  console.warn("[atrium-server] Unary ingress: stdio (NDJSON lines); parallel to HTTP.");
+  logger.info("Unary ingress: stdio (NDJSON lines); parallel to HTTP.");
   void startStdioUnaryIngress(deps).catch((e) => {
-    console.error("[atrium-server] stdio unary ingress failed", e);
+    logger.fatal({ err: e }, "stdio unary ingress failed");
     process.exit(1);
   });
 }
@@ -113,11 +114,11 @@ if (duplexMode === "unix") {
 }
 
 function shutdown(signal: NodeJS.Signals): void {
-  console.error(`[atrium-server] received ${signal}; draining and shutting down`);
+  logger.info({ signal }, "draining and shutting down");
 
   // Force-exit if graceful drain takes too long.
   setTimeout(() => {
-    console.error("[atrium-server] shutdown timeout; forcing exit");
+    logger.error("shutdown timeout; forcing exit");
     process.exit(1);
   }, 10_000).unref();
 
@@ -144,11 +145,11 @@ process.once("SIGTERM", () => shutdown("SIGTERM"));
 process.once("SIGINT", () => shutdown("SIGINT"));
 
 process.on("uncaughtException", (err) => {
-  console.error("[atrium-server] uncaughtException", err);
+  logger.fatal({ err }, "uncaughtException");
   process.exit(1);
 });
 
 process.on("unhandledRejection", (reason) => {
-  console.error("[atrium-server] unhandledRejection", reason);
+  logger.fatal({ reason }, "unhandledRejection");
   process.exit(1);
 });

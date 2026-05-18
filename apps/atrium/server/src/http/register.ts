@@ -12,6 +12,7 @@ import {
   SOURCE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
 } from "@khoralabs/relay-colonnade";
+import { logger } from "../logger.ts";
 import { clientIpFromRequest } from "../rate-limit.ts";
 import type { HostRouteDeps } from "./deps.ts";
 import {
@@ -88,9 +89,15 @@ export async function handleRegister(req: Request, deps: HostRouteDeps): Promise
   }
   const body = parsed.data;
   const regIp = rateLimiters.registerIp(`ip:${ip}`);
-  if (!regIp.ok) return rateLimitedResponse(regIp.retryAfterSec);
+  if (!regIp.ok) {
+    logger.warn({ ip, bucket: "register_ip" }, "register rate limit exceeded");
+    return rateLimitedResponse(regIp.retryAfterSec);
+  }
   const regDid = rateLimiters.registerDid(`did:${body.did}`);
-  if (!regDid.ok) return rateLimitedResponse(regDid.retryAfterSec);
+  if (!regDid.ok) {
+    logger.warn({ did: body.did, bucket: "register_did" }, "register rate limit exceeded");
+    return rateLimitedResponse(regDid.retryAfterSec);
+  }
   if (ctx.host.persistenceClient.agentRegistrationExists(body.did)) {
     return jsonError("Already registered", 409);
   }
@@ -141,6 +148,7 @@ export async function handleRegister(req: Request, deps: HostRouteDeps): Promise
       profile: result.profile,
       ...(inviteTokens !== undefined ? { inviteTokens } : {}),
     });
+    logger.info({ did: result.principalId, profileId: result.profileId }, "principal registered");
     return Response.json(payload);
   } catch (e) {
     if (consumedInvitePlain !== undefined && ctx.invitesRepo !== undefined) {

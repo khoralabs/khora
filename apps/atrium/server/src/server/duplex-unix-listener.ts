@@ -2,6 +2,7 @@ import { AuthError } from "@khoralabs/at2-auth";
 import type { DuplexByteStream } from "@khoralabs/duplex-byte-stream";
 import type { Socket } from "bun";
 import type { HostRouteDeps } from "../http/deps.ts";
+import { logger } from "../logger.ts";
 import { attachInboxDuplexAfterAuth, attachRoomDuplexAfterTicket } from "./duplex-attach.ts";
 import { type DuplexUnixHandshake, parseDuplexUnixHandshakeJson } from "./duplex-unix-handshake.ts";
 
@@ -99,7 +100,7 @@ function createUnixDuplexBridge(socket: Socket<DuplexUnixSocketData>): UnixDuple
       try {
         await socketWriteAll(socket, bytes);
       } catch (err) {
-        console.error("[atrium-server] duplex unix socket write failed", err);
+        logger.error({ err }, "duplex unix socket write failed");
       }
     },
     async close() {
@@ -240,12 +241,12 @@ export function startDuplexUnixIngress(opts: {
         }
       },
       error(_socket, err) {
-        console.error("[atrium-server] duplex unix socket error", err);
+        logger.error({ err }, "duplex unix socket error");
       },
     },
   });
 
-  console.warn(`[atrium-server] Duplex unix ingress listening on ${opts.unixPath}`);
+  logger.info({ unixPath: opts.unixPath }, "duplex unix ingress listening");
   return {
     stop: (closeActive = true) => {
       listener.stop(closeActive);
