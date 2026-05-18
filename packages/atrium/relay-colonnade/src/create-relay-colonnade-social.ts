@@ -23,6 +23,6 @@ export async function createRelayColonnadeSocial(opts: {
   const framesDb = openRelayFramesDb(opts.framesDbPath);
   const store = new RelayCatalogSourceMapStore(catalogDb);
   const persistence = createRelayColonnadePersistenceFromDatabases(catalogDb, framesDb, tenantKey);
-  const social = createSocialRelationshipPersistence({ store, catalogDb, tenantKey });
+  const social = createSocialRelationshipPersistence({ store, catalogDb, framesDb, tenantKey });
   return { persistence, social, catalogDb, framesDb, store, tenantKey };
 }

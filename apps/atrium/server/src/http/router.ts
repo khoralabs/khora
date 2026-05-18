@@ -25,11 +25,14 @@ import { handleListRelationships } from "./relationships.ts";
 import { jsonError, rateLimitedResponse } from "./responses.ts";
 import {
   handleRoomsCreate,
+  handleRoomsGet,
   handleRoomsJoin,
   handleRoomsMintTicket,
+  handleRoomsRemove,
   handleRoomWsUpgrade,
   isRoomWsPath,
   parseRoomsMintTicketRoomId,
+  parseRoomsUnaryRoomId,
 } from "./rooms.ts";
 import { handleTopicSubscribe, handleTopicUnsubscribe } from "./topics.ts";
 import { handleUnregister } from "./unregister.ts";
@@ -121,6 +124,16 @@ export async function route(
 
   if (req.method === "POST" && url.pathname === "/v1/rooms/join") {
     return handleRoomsJoin(req, url, deps);
+  }
+
+  const unaryRoomSeg = parseRoomsUnaryRoomId(url.pathname);
+  if (unaryRoomSeg !== undefined && unaryRoomSeg !== "join") {
+    if (req.method === "GET") {
+      return handleRoomsGet(req, url, deps, unaryRoomSeg);
+    }
+    if (req.method === "DELETE") {
+      return handleRoomsRemove(req, url, deps, unaryRoomSeg);
+    }
   }
 
   if (req.method === "POST") {

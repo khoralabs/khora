@@ -15,6 +15,8 @@ export type V2HostRateLimiters = {
   roomsCreateDid: RateLimiter;
   roomsTicketMintDid: RateLimiter;
   roomsJoinDid: RateLimiter;
+  roomsReadDid: RateLimiter;
+  roomsRemoveDid: RateLimiter;
   relationshipsListDid: RateLimiter;
 };
 
@@ -51,6 +53,12 @@ export function createV2HostRateLimiters(): V2HostRateLimiters {
     ),
     roomsJoinDid: createRateLimiter(
       envRatePerMinute(process.env.ATRIUM_RL_ROOMS_JOIN_PER_MIN_PER_DID, 30),
+    ),
+    roomsReadDid: createRateLimiter(
+      envRatePerMinute(process.env.ATRIUM_RL_ROOMS_READ_PER_MIN_PER_DID, 120),
+    ),
+    roomsRemoveDid: createRateLimiter(
+      envRatePerMinute(process.env.ATRIUM_RL_ROOMS_REMOVE_PER_MIN_PER_DID, 30),
     ),
     relationshipsListDid: createRateLimiter(
       envRatePerMinute(process.env.ATRIUM_RL_RELATIONSHIPS_LIST_PER_MIN_PER_DID, 60),

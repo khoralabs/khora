@@ -669,6 +669,46 @@ describe("AtriumClient", () => {
     expect(out.relationships[0]?.roomId).toBe("r1");
   });
 
+  test("getRoom signs GET /v1/rooms/:roomId", async () => {
+    const signer = staticSigner("did:key:a");
+    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("http://h/v1/rooms/r1");
+      expectAuthHeaders(init, "did:key:a");
+      expect(init?.method ?? "GET").toBe("GET");
+      return Response.json({
+        roomId: "r1",
+        role: "creator",
+        creatorDid: "did:key:a",
+        peerDid: null,
+        createdAtMs: 1,
+      });
+    });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
+    const out = await c.getRoom("r1");
+    expect(out.roomId).toBe("r1");
+    expect(out.role).toBe("creator");
+  });
+
+  test("leaveRoom signs DELETE /v1/rooms/:roomId", async () => {
+    const signer = staticSigner("did:key:a");
+    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("http://h/v1/rooms/r1");
+      expectAuthHeaders(init, "did:key:a");
+      expect(init?.method).toBe("DELETE");
+      return new Response(null, { status: 204 });
+    });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
+    await expect(c.leaveRoom("r1")).resolves.toBeUndefined();
+  });
+
   test("previewInvite POST /v1/invite/preview", async () => {
     const signer = staticSigner();
     const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {

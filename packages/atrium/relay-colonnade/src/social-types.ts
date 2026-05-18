@@ -38,4 +38,9 @@ export type SocialRelationshipPersistence = {
    */
   refreshRelationshipTicketExpiry(params: { channelId: string; expiresAtMs: number }): void;
   listRelationshipsForPrincipal(principalId: PrincipalId): SocialRelationshipRow[];
+  /**
+   * Tear down one channel: catalog relationship + principal indexes + frames DB `rooms` / `room_frames`.
+   * Returns the removed row, or undefined if the channel was unknown.
+   */
+  deleteRelationship(channelId: string): SocialRelationshipRow | undefined;
 };

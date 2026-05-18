@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import {
   normalizeUsername,
+  zAtriumRelationshipItem,
   zAtriumRoomCreateBody,
   zAtriumRoomCreateResponse,
   zAtriumRoomJoinRequestBody,
@@ -81,6 +82,7 @@ function parseRoomInviteProjection(projection: unknown):
 
 const roomWsPathRe = /^\/v1\/rooms\/([^/]+)\/ws$/;
 const roomMintTicketPathRe = /^\/v1\/rooms\/([^/]+)\/ticket$/;
+const roomUnaryPathRe = /^\/v1\/rooms\/([^/]+)$/;
 
 function parseRoomRegistryProjection(
   projection: unknown,
@@ -95,6 +97,27 @@ function parseRoomRegistryProjection(
     inv === null || inv === undefined ? null : typeof inv === "string" ? inv : undefined;
   if (inviteTargetDid === undefined && inv !== null && inv !== undefined) return undefined;
   return { creatorDid, inviteTargetDid: inviteTargetDid ?? null, expiresAtMs };
+}
+
+function relationshipRowToApiItem(
+  viewerDid: string,
+  row: {
+    channelId: string;
+    creatorPrincipalId: string;
+    peerPrincipalId: string | null;
+    createdAtMs: number;
+    expiresAtMs?: number;
+  },
+) {
+  const role = row.creatorPrincipalId === viewerDid ? "creator" : "peer";
+  return zAtriumRelationshipItem.parse({
+    roomId: row.channelId,
+    role,
+    creatorDid: row.creatorPrincipalId,
+    peerDid: row.peerPrincipalId,
+    createdAtMs: row.createdAtMs,
+    ...(row.expiresAtMs !== undefined ? { expiresAtMs: row.expiresAtMs } : {}),
+  });
 }
 
 export async function handleRoomsCreate(
@@ -455,8 +478,106 @@ export async function handleRoomsMintTicket(
   return Response.json(payload);
 }
 
+export async function handleRoomsGet(
+  req: Request,
+  url: URL,
+  deps: HostRouteDeps,
+  roomIdRaw: string,
+): Promise<Response> {
+  const { ctx, rateLimiters } = deps;
+  let did: string;
+  try {
+    ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url, "", []));
+  } catch (e) {
+    return authErrorResponse(e);
+  }
+  const rl = rateLimiters.roomsReadDid(`did:${did}`);
+  if (!rl.ok) return rateLimitedResponse(rl.retryAfterSec);
+  const profileId = ctx.host.persistenceClient.profileIdForPrincipal(did);
+  if (profileId === undefined) {
+    return jsonError("Register before reading rooms", 400);
+  }
+  const roomId = decodeURIComponent(roomIdRaw);
+  if (roomId === "join") {
+    return jsonError("Not found", 404);
+  }
+  const row = ctx.social.getRelationship(roomId);
+  if (row === undefined) {
+    return jsonError("Room not found", 404);
+  }
+  const isCreator = row.creatorPrincipalId === did;
+  const isPeer = row.peerPrincipalId !== null && row.peerPrincipalId === did;
+  if (!isCreator && !isPeer) {
+    return jsonError("Forbidden", 403);
+  }
+  return Response.json(relationshipRowToApiItem(did, row));
+}
+
+export async function handleRoomsRemove(
+  req: Request,
+  url: URL,
+  deps: HostRouteDeps,
+  roomIdRaw: string,
+): Promise<Response> {
+  const { ctx, rateLimiters } = deps;
+  let did: string;
+  try {
+    ({ did } = await ctx.auth.requireAuthenticatedRequest(req, url, "", []));
+  } catch (e) {
+    return authErrorResponse(e);
+  }
+  const rl = rateLimiters.roomsRemoveDid(`did:${did}`);
+  if (!rl.ok) return rateLimitedResponse(rl.retryAfterSec);
+  const profileId = ctx.host.persistenceClient.profileIdForPrincipal(did);
+  if (profileId === undefined) {
+    return jsonError("Register before removing rooms", 400);
+  }
+  const roomId = decodeURIComponent(roomIdRaw);
+  if (roomId === "join") {
+    return jsonError("Not found", 404);
+  }
+  const row = ctx.social.getRelationship(roomId);
+  if (row === undefined) {
+    return jsonError("Room not found", 404);
+  }
+  const isCreator = row.creatorPrincipalId === did;
+  const isPeer = row.peerPrincipalId !== null && row.peerPrincipalId === did;
+  if (!isCreator && !isPeer) {
+    return jsonError("Forbidden", 403);
+  }
+
+  const regHit = ctx.lookupRoomRegistryRow(roomId);
+  let inviteTargetDid: string | null = null;
+  if (regHit.found && regHit.projection !== null) {
+    const meta = parseRoomRegistryProjection(regHit.projection);
+    if (meta !== undefined) {
+      inviteTargetDid = meta.inviteTargetDid;
+    }
+  }
+
+  const removed = ctx.social.deleteRelationship(roomId);
+  if (removed === undefined) {
+    return jsonError("Room not found", 404);
+  }
+
+  ctx.deleteRoomRegistryRow(roomId);
+  if (inviteTargetDid !== null && inviteTargetDid.length > 0) {
+    ctx.deleteRelayInboxRoomTicketRow(`${inviteTargetDid}/${roomId}`);
+  }
+
+  logger.info({ roomId, did }, "room_left");
+  return new Response(null, { status: 204 });
+}
+
 export function parseRoomsMintTicketRoomId(pathname: string): string | undefined {
   const m = roomMintTicketPathRe.exec(pathname);
+  if (m == null || m[1] === undefined) return undefined;
+  return m[1];
+}
+
+/** Segments `join` and paths with extra segments (e.g. `/ws`) must not use this matcher. */
+export function parseRoomsUnaryRoomId(pathname: string): string | undefined {
+  const m = roomUnaryPathRe.exec(pathname);
   if (m == null || m[1] === undefined) return undefined;
   return m[1];
 }

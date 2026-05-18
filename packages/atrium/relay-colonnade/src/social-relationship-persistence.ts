@@ -86,9 +86,10 @@ function appendChannelForPrincipal(
 export function createSocialRelationshipPersistence(deps: {
   store: RelayCatalogSourceMapStore;
   catalogDb: Database;
+  framesDb: Database;
   tenantKey: string;
 }): SocialRelationshipPersistence {
-  const { store, catalogDb, tenantKey } = deps;
+  const { store, catalogDb, framesDb, tenantKey } = deps;
 
   function getRelationshipImpl(channelId: string): SocialRelationshipRow | undefined {
     const { found, projection } = store.lookupProjection(tenantKey, SOURCE_RELATIONSHIP, channelId);
@@ -206,6 +207,23 @@ export function createSocialRelationshipPersistence(deps: {
       }
       return out;
     },
+
+    deleteRelationship(channelId: string): SocialRelationshipRow | undefined {
+      const r = getRelationshipImpl(channelId);
+      if (r === undefined) {
+        return undefined;
+      }
+      catalogDb.transaction(() => {
+        store.deleteRow(tenantKey, SOURCE_RELATIONSHIP, channelId);
+        stripChannelFromPrincipalSocialIndex(store, tenantKey, r.creatorPrincipalId, channelId);
+        if (r.peerPrincipalId !== null) {
+          stripChannelFromPrincipalSocialIndex(store, tenantKey, r.peerPrincipalId, channelId);
+        }
+      })();
+      framesDb.prepare(`DELETE FROM room_frames WHERE channel_id = ?`).run(channelId);
+      framesDb.prepare(`DELETE FROM rooms WHERE channel_id = ?`).run(channelId);
+      return r;
+    },
   };
 }
 
@@ -236,19 +254,9 @@ export function purgeSocialRelationshipsForPrincipal(params: {
   principalId: PrincipalId;
 }): void {
   const { store, catalogDb, framesDb, tenantKey, principalId } = params;
-  const social = createSocialRelationshipPersistence({ store, catalogDb, tenantKey });
+  const social = createSocialRelationshipPersistence({ store, catalogDb, framesDb, tenantKey });
   const rels = social.listRelationshipsForPrincipal(principalId);
-  const delFrames = framesDb.prepare(`DELETE FROM room_frames WHERE channel_id = ?`);
-  const delRoom = framesDb.prepare(`DELETE FROM rooms WHERE channel_id = ?`);
   for (const r of rels) {
-    catalogDb.transaction(() => {
-      store.deleteRow(tenantKey, SOURCE_RELATIONSHIP, r.channelId);
-      stripChannelFromPrincipalSocialIndex(store, tenantKey, r.creatorPrincipalId, r.channelId);
-      if (r.peerPrincipalId !== null) {
-        stripChannelFromPrincipalSocialIndex(store, tenantKey, r.peerPrincipalId, r.channelId);
-      }
-    })();
-    delFrames.run(r.channelId);
-    delRoom.run(r.channelId);
+    social.deleteRelationship(r.channelId);
   }
 }

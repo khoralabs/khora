@@ -1,4 +1,5 @@
 import type {
+  AtriumRelationshipItem,
   AtriumRoomCreateBody,
   AtriumRoomCreateResponse,
   AtriumRoomJoinRequestBody,
@@ -7,6 +8,7 @@ import type {
   AtriumRoomTicketResponse,
 } from "@khoralabs/atrium-contracts";
 import {
+  zAtriumRelationshipItem,
   zAtriumRoomCreateResponse,
   zAtriumRoomJoinTicketResponse,
   zAtriumRoomTicketResponse,
@@ -43,4 +45,16 @@ export function mintRoomTicket(
     body: body ?? {},
     parse: zAtriumRoomTicketResponse,
   });
+}
+
+export function getRoom(t: AtriumUnaryTransport, roomId: string): Promise<AtriumRelationshipItem> {
+  const path = `/v1/rooms/${encodeURIComponent(roomId)}`;
+  return t.requestJson("GET", path, {
+    parse: zAtriumRelationshipItem,
+  });
+}
+
+export function leaveRoom(t: AtriumUnaryTransport, roomId: string): Promise<void> {
+  const path = `/v1/rooms/${encodeURIComponent(roomId)}`;
+  return t.requestVoid("DELETE", path);
 }

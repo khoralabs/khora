@@ -2,10 +2,11 @@ import type { FlagMap } from "@khoralabs/cli-kit";
 
 import type { VellumCliContext } from "../flows/context.ts";
 import { handleConnect } from "./connect.ts";
+import { handleDisconnect } from "./disconnect.ts";
 import { handleKeygen } from "./keygen.ts";
 import { handleList } from "./list.ts";
 import { handleRegister } from "./register.ts";
-import { handleRoomCreate, handleRoomJoin } from "./room.ts";
+import { handleRoomCreate, handleRoomJoin, handleRoomLeave, handleRoomRead } from "./room.ts";
 import {
   handleChainCreate,
   handleChainList,
@@ -58,8 +59,28 @@ export async function dispatch(
     return;
   }
 
+  if (a === "room" && b === "read") {
+    await handleRoomRead(positional, flags);
+    return;
+  }
+
+  if (a === "room" && b === "leave") {
+    await handleRoomLeave(ctx, positional, flags);
+    return;
+  }
+
+  if (a === "room" && b === "connect") {
+    await handleConnect(ctx, positional, flags, { roomPositionalIndex: 2 });
+    return;
+  }
+
   if (a === "list") {
-    handleList(flags);
+    await handleList(flags);
+    return;
+  }
+
+  if (a === "disconnect") {
+    handleDisconnect(positional, flags);
     return;
   }
 

@@ -9,6 +9,7 @@ import type {
   AtriumProfilePatch,
   AtriumRegistrationRequestBody,
   AtriumRegistrationResult,
+  AtriumRelationshipItem,
   AtriumRelationshipListResponse,
   AtriumRoomCreateBody,
   AtriumRoomCreateResponse,
@@ -59,13 +60,16 @@ import { register } from "./http/register.ts";
 import { listRelationships as httpListRelationships } from "./http/relationships.ts";
 import {
   createRoom as httpCreateRoom,
+  getRoom as httpGetRoom,
   mintRoomTicket as httpMintRoomTicket,
   redeemRoomInvite as httpRedeemRoomInvite,
+  leaveRoom as httpLeaveRoom,
 } from "./http/rooms.ts";
 import { subscribeTopic, unsubscribeTopic } from "./http/topics.ts";
 import { unregister as httpUnregister, type UnregisterBody } from "./http/unregister.ts";
 
 export type {
+  AtriumRelationshipItem,
   AtriumRelationshipListResponse,
   AtriumRoomCreateBody,
   AtriumRoomCreateResponse,
@@ -234,6 +238,10 @@ export class AtriumClient {
     return httpListRelationships(this.transport);
   }
 
+  getRoom(roomId: string): Promise<AtriumRelationshipItem> {
+    return httpGetRoom(this.transport, roomId);
+  }
+
   previewInvite(token: string): Promise<AtriumInvitePreviewResponse> {
     return previewInvite(this.transport, token);
   }
@@ -311,6 +319,10 @@ export class AtriumClient {
       ...(out.expiresAtMs !== undefined ? { expiresAtMs: out.expiresAtMs } : {}),
     });
     return out;
+  }
+
+  async leaveRoom(roomId: string): Promise<void> {
+    await httpLeaveRoom(this.transport, roomId);
   }
 
   /**

@@ -36,6 +36,8 @@ export type AtriumHostCatalogApi = {
   upsertRoomInviteRow(inviteHashKey: string, projection: unknown): void;
   lookupRoomInviteRow(joinTokenHashKey: string): { found: boolean; projection: unknown };
   lookupRoomRegistryRow(roomId: string): { found: boolean; projection: unknown };
+  deleteRoomRegistryRow(roomId: string): void;
+  deleteRelayInboxRoomTicketRow(entryKey: string): void;
 };
 
 const RELAY_ROOM_TICKET_SOURCE_MAP_ID = "relay:room-ticket";
@@ -160,6 +162,12 @@ export function createAtriumCatalogApi(deps: {
     },
     lookupRoomRegistryRow(roomId) {
       return store.lookupProjection(tenantKey, ATRIUM_ROOM_REGISTRY_SOURCE_MAP_ID, roomId);
+    },
+    deleteRoomRegistryRow(roomId) {
+      store.deleteRow(tenantKey, ATRIUM_ROOM_REGISTRY_SOURCE_MAP_ID, roomId);
+    },
+    deleteRelayInboxRoomTicketRow(entryKey) {
+      store.deleteRow(tenantKey, RELAY_INBOX_SOURCE_MAP_ID, entryKey);
     },
   };
 }

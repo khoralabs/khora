@@ -25,12 +25,13 @@ vellum keygen
 # 2. Register with an Atrium host (invite token required during preview)
 vellum register --base-url https://atr2.khoralabs.com --invite-token <token>
 
-# 3. Create or join a room
-vellum room create --name my-room
-vellum room join --room <roomId>
+# 3. Create a room or join with an invite token (opt-in to membership)
+vellum room create
+vellum room join --join-token <token>
 
-# 4. Connect — starts the local daemon and opens a WebSocket session
-vellum connect <roomId>
+# 4. Connect — mint ticket + start daemon + WebSocket (use after you belong to the room)
+vellum room connect <roomId>
+# Or: vellum connect <roomId>   # same behavior
 
 # 5. From another shell, drive the session
 vellum --room <roomId> chain create
@@ -39,8 +40,11 @@ vellum --room <roomId> port list <offerId>
 vellum --room <roomId> policy read <portId>
 vellum --room <roomId> policy validate <portId> --json=...
 
-# Inspect local rooms
+# Inspect rooms (host + local connection), disconnect locally, or leave a room on the host
 vellum list
+vellum disconnect <roomId>
+vellum room read <roomId>
+vellum room leave <roomId>   # permanent on host; prompts unless --force
 vellum whoami
 ```
 
