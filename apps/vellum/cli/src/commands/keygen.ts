@@ -4,7 +4,7 @@ import {
   saveIdentity,
 } from "@khoralabs/agent-persisted-signer";
 import type { FlagMap } from "@khoralabs/cli-kit";
-import { boolFlag } from "@khoralabs/cli-kit";
+import { boolFlag, style } from "@khoralabs/cli-kit";
 
 import { agentIdentityPath } from "../flows/context.ts";
 
@@ -16,7 +16,7 @@ export async function handleKeygen(flags: FlagMap): Promise<void> {
   if (!force) {
     const existing = await loadIdentity(keyPath);
     if (existing !== undefined) {
-      console.error(`Identity already exists at ${keyPath}. Use --force to overwrite.`);
+      console.error(style.error(`Identity already exists at ${keyPath}. Use --force to overwrite.`));
       process.exit(1);
     }
   }

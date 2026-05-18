@@ -62,7 +62,7 @@ describe("printSetupSummary", () => {
     } finally {
       console.log = log;
     }
-    expect(lines.at(-1)).toBe("at /home/me/.vellum");
+    expect(lines.at(-1)).toContain("at /home/me/.vellum");
   });
 
   test("prints wrote/overwrote/skipped lines when files are present", () => {
@@ -82,10 +82,11 @@ describe("printSetupSummary", () => {
     } finally {
       console.log = log;
     }
-    expect(lines[0]).toBe("wrote a.json");
-    expect(lines[1]).toBe("overwrote b.json");
-    expect(lines[3]).toBe("wrote vellum-config.schema.json");
-    expect(lines.at(-1)).toBe("at /home/me/.vellum");
+    expect(lines[0]).toContain("wrote a.json");
+    expect(lines[1]).toContain("overwrote b.json");
+    expect(lines[2]).toContain("skipped c.json");
+    expect(lines[3]).toContain("vellum-config.schema.json");
+    expect(lines.at(-1)).toContain("at /home/me/.vellum");
   });
 });
 

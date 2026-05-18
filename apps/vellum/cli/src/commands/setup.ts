@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import type { FlagMap } from "@khoralabs/cli-kit";
-import { boolFlag } from "@khoralabs/cli-kit";
+import { boolFlag, style, symbols } from "@khoralabs/cli-kit";
 
 import {
   POSTINSTALL_SCHEMA_FILE,
@@ -54,20 +54,31 @@ export function resolveSetupAssets(env: NodeJS.ProcessEnv = process.env): SetupA
 }
 
 export function printSetupSummary(result: VellumSetupResult): void {
-  for (const name of result.copied) console.log(`wrote ${name}`);
-  for (const name of result.overwritten) console.log(`overwrote ${name}`);
-  for (const name of result.skipped)
-    console.log(`skipped ${name} (exists; use --force to overwrite)`);
-  if (result.schema === "copied") console.log(`wrote ${SCHEMA_FILE}`);
-  else if (result.schema === "overwritten") console.log(`overwrote ${SCHEMA_FILE}`);
-  else if (result.schema === "skipped") {
-    console.log(`skipped ${SCHEMA_FILE} (exists; use --force to overwrite)`);
-  } else {
+  for (const name of result.copied) {
+    console.log(`${symbols.success} wrote ${style.muted(name)}`);
+  }
+  for (const name of result.overwritten) {
+    console.log(`${symbols.success} overwrote ${style.muted(name)}`);
+  }
+  for (const name of result.skipped) {
     console.log(
-      `skipped ${SCHEMA_FILE} (source not found; run 'bun run --cwd packages/vellum/client build:schema' in dev)`,
+      `${symbols.warning} ${style.warn(`skipped ${name} (exists; use --force to overwrite)`)}`,
     );
   }
-  console.log(`at ${result.destDir}`);
+  if (result.schema === "copied") {
+    console.log(`${symbols.success} wrote ${style.muted(SCHEMA_FILE)}`);
+  } else if (result.schema === "overwritten") {
+    console.log(`${symbols.success} overwrote ${style.muted(SCHEMA_FILE)}`);
+  } else if (result.schema === "skipped") {
+    console.log(
+      `${symbols.warning} ${style.warn(`skipped ${SCHEMA_FILE} (exists; use --force to overwrite)`)}`,
+    );
+  } else {
+    console.log(
+      `${symbols.info} ${style.muted(`skipped ${SCHEMA_FILE} (source not found; run 'bun run --cwd packages/vellum/client build:schema' in dev)`)}`,
+    );
+  }
+  console.log(`${symbols.info} ${style.muted(`at ${result.destDir}`)}`);
 }
 
 export async function runSetupCommand(flags: FlagMap): Promise<void> {
@@ -114,7 +125,9 @@ export function maybeBootstrapVellumHome(
     });
   } catch (e) {
     err(
-      `vellum: first-run setup failed (${e instanceof Error ? e.message : String(e)}); run 'vellum setup' to retry`,
+      style.error(
+        `vellum: first-run setup failed (${e instanceof Error ? e.message : String(e)}); run 'vellum setup' to retry`,
+      ),
     );
   }
 }

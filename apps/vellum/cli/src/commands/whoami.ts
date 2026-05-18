@@ -1,7 +1,7 @@
 import type { PersistableAgentSigner } from "@khoralabs/agent-persisted-signer";
 import { AtriumClient } from "@khoralabs/atrium-client";
 import type { FlagMap } from "@khoralabs/cli-kit";
-import { boolFlag } from "@khoralabs/cli-kit";
+import { boolFlag, style } from "@khoralabs/cli-kit";
 
 import { agentIdentityPath, cliBaseUrl, loadSigner } from "../flows/context.ts";
 
@@ -15,8 +15,10 @@ export async function handleWhoami(flags: FlagMap): Promise<void> {
   } catch (e) {
     const idPath = agentIdentityPath(flags);
     const msg = e instanceof Error ? e.message : String(e);
-    console.error(msg);
-    console.error(`No agent identity at ${idPath}. Generate or import a key first.`);
+    console.error(style.error(msg));
+    console.error(
+      style.error(`No agent identity at ${idPath}. Generate or import a key first.`),
+    );
     process.exit(1);
   }
 
@@ -34,7 +36,7 @@ export async function handleWhoami(flags: FlagMap): Promise<void> {
   try {
     const result = await ac.lookupProfileByDid(signer.did);
     if (result === null) {
-      console.error("Not registered on this host. Run 'vellum register'.");
+      console.error(style.error("Not registered on this host. Run 'vellum register'."));
       process.exit(3);
       return;
     }

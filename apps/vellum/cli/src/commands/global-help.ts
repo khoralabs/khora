@@ -1,4 +1,4 @@
-import { buildCommandHelpTextMap } from "@khoralabs/cli-kit";
+import { buildCommandHelpTextMap, style } from "@khoralabs/cli-kit";
 
 import { allCommandHelp } from "./help/index.ts";
 
@@ -7,7 +7,7 @@ const PROGRAM = "vellum";
 export const commandHelpTextMap = buildCommandHelpTextMap(allCommandHelp, PROGRAM);
 
 export function printHelp(): void {
-  console.error(`${PROGRAM} — NBC tools for ATRIUM-backed rooms
+  console.error(`${style.bold(`${PROGRAM} — NBC tools for ATRIUM-backed rooms`)}
 
 Register on the host before rooms or connect (host may require invite token).
 
