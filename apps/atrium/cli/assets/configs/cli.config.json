@@ -1,8 +1,0 @@
-{
-  "$schema": "./atrium-config.schema.json",
-  "extends": "./base.config.json",
-  "plugins": {
-    "profile-sync": { "filePath": "profile.json" },
-    "telemetry": { "dir": "telemetry" }
-  }
-}
