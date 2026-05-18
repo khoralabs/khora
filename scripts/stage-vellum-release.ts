@@ -93,7 +93,8 @@ export function cliMetaPkgJson({
     keywords: ["vellum", "obp", "cli", "khoralabs"],
     type: "module",
     bin: { vellum: "./bin/vellum.cjs" },
-    files: ["bin/**", "README.md", "LICENSE"],
+    files: ["bin/**", "postinstall.js", "README.md", "LICENSE"],
+    scripts: { postinstall: "node ./postinstall.js" },
     dependencies: { "@khoralabs/vellum-daemon": version },
     optionalDependencies,
   };
@@ -216,6 +217,26 @@ export async function stageVellumRelease(opts: StageOptions): Promise<StageResul
   mkdirSync(path.join(cliMetaDir, "bin"), { recursive: true });
   await Bun.write(path.join(cliMetaDir, "bin", "vellum.cjs"), cliLauncherSource());
   await Bun.$`chmod +x ${path.join(cliMetaDir, "bin", "vellum.cjs")}`.quiet();
+
+  // bundle postinstall.entry.ts -> postinstall.js (target=node)
+  const postinstallSrc = path.join(workspaceRoot, "apps/vellum/cli/scripts/postinstall.entry.ts");
+  const postinstallOut = path.join(cliMetaDir, "postinstall.js");
+  const piResult = await Bun.build({
+    entrypoints: [postinstallSrc],
+    target: "node",
+    format: "esm",
+    packages: "bundle",
+    outdir: cliMetaDir,
+    naming: { entry: "postinstall.js" },
+    minify: false,
+  });
+  if (!piResult.success) {
+    for (const log of piResult.logs) console.error(log);
+    throw new Error("failed to bundle postinstall.entry.ts");
+  }
+  if (!existsSync(postinstallOut)) {
+    throw new Error(`postinstall bundle missing at ${postinstallOut}`);
+  }
 
   await writeJson(path.join(cliMetaDir, "package.json"), cliMetaPkgJson({ version }));
   const cliReadme = path.join(workspaceRoot, "apps/vellum/cli/README.md");

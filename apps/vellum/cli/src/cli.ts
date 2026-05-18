@@ -3,6 +3,7 @@ import { boolFlag, parseArgv, tryPrintCommandHelp } from "@khoralabs/cli-kit";
 
 import { commandHelpTextMap, printHelp } from "./commands/global-help.ts";
 import { dispatch } from "./commands/handlers.ts";
+import { maybeBootstrapVellumHome } from "./commands/setup.ts";
 import { createVellumCliContext } from "./flows/context.ts";
 
 async function main(): Promise<void> {
@@ -47,6 +48,8 @@ async function main(): Promise<void> {
     process.exit(0);
     return;
   }
+
+  maybeBootstrapVellumHome();
 
   const ctx = createVellumCliContext();
   try {

@@ -24,6 +24,7 @@ Usage:
   ${PROGRAM} [--room=id] offer list | offer read <id> | offer send-turn ...
   ${PROGRAM} [--room=id] port list <offerId> | port read <portId>
   ${PROGRAM} [--room=id] policy read <portId> | policy validate <portId> --json=...
+  ${PROGRAM} setup [--force] [--json]
 
 Run \`${PROGRAM} <command> --help\` for per-command interactive vs flag usage.`);
 }
