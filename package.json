@@ -47,8 +47,7 @@
     "packages/atrium/*",
     "packages/colonnade/impl/ts",
     "packages/vellum/*",
-    "packages/cli-kit",
-    "packages/cli-flow-nbc",
+    "packages/cli/*",
     "apps/vellum/*"
   ]
 }

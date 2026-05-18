@@ -343,7 +343,7 @@
         "typescript": "^5",
       },
     },
-    "packages/cli-flow-nbc": {
+    "packages/cli/cli-flow-nbc": {
       "name": "@khoralabs/cli-flow-nbc",
       "version": "0.0.0",
       "dependencies": {
@@ -359,7 +359,7 @@
         "typescript": "^5",
       },
     },
-    "packages/cli-kit": {
+    "packages/cli/cli-kit": {
       "name": "@khoralabs/cli-kit",
       "version": "0.0.0",
       "dependencies": {
@@ -981,9 +981,9 @@
 
     "@khoralabs/atrium-transport": ["@khoralabs/atrium-transport@workspace:packages/atrium/transport"],
 
-    "@khoralabs/cli-flow-nbc": ["@khoralabs/cli-flow-nbc@workspace:packages/cli-flow-nbc"],
+    "@khoralabs/cli-flow-nbc": ["@khoralabs/cli-flow-nbc@workspace:packages/cli/cli-flow-nbc"],
 
-    "@khoralabs/cli-kit": ["@khoralabs/cli-kit@workspace:packages/cli-kit"],
+    "@khoralabs/cli-kit": ["@khoralabs/cli-kit@workspace:packages/cli/cli-kit"],
 
     "@khoralabs/colonnade-persistence": ["@khoralabs/colonnade-persistence@workspace:packages/colonnade/impl/ts"],
 
