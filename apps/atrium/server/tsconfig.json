@@ -4,5 +4,5 @@
     "lib": ["ESNext", "DOM"],
     "types": ["bun"]
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "scripts/**/*.ts"]
 }

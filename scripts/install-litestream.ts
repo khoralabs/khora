@@ -1,25 +1,60 @@
 #!/usr/bin/env bun
 /**
- * Download the pinned Litestream binary into `apps/atrium/host/.bin/litestream`.
+ * Download the pinned Litestream binary into `apps/atrium/server/.bin/litestream` by default.
  *
- * Run from the Render build hook (and locally if you want a vendored copy):
+ *     bun run ../../../scripts/install-litestream.ts
+ *     bun run ../../../scripts/install-litestream.ts --output ./.bin/litestream
  *
- *     bun run --filter @khoralabs/atrium-host install-litestream
+ * From the Atrium server package (preinstall):
+ *
+ *     bun run --filter @khoralabs/atrium-server preinstall
  *
  * Idempotent: re-running is a no-op when the existing binary reports the same
- * version. Override the install path with `LITESTREAM_BIN_PATH` if you want
- * the binary somewhere else.
+ * version. Override with `LITESTREAM_BIN_PATH` or `--output <path>` (`--output`
+ * is resolved relative to `process.cwd()` when relative).
  *
- * Asset naming: v0.5.x publishes `litestream-<version>-<os>-<arch>.tar.gz` with
- * `x86_64` (not `amd64`) and `arm64`. See
- * https://github.com/benbjohnson/litestream/releases/latest.
+ * https://github.com/benbjohnson/litestream/releases/latest
  */
 import { chmodSync, existsSync, mkdirSync } from "node:fs";
 import path from "node:path";
 
 const LITESTREAM_VERSION = "0.5.11";
 
-const DEFAULT_BIN_PATH = path.resolve(import.meta.dir, "..", "apps/atrium/host/.bin/litestream");
+const DEFAULT_BIN_PATH = path.resolve(
+  import.meta.dir,
+  "..",
+  "apps",
+  "atrium",
+  "server",
+  ".bin",
+  "litestream",
+);
+
+function parseOutputArg(): string | undefined {
+  const argv = process.argv.slice(2);
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === "--output" || argv[i] === "-o") {
+      const v = argv[++i];
+      if (v === undefined || v.startsWith("-")) {
+        throw new Error("install-litestream: missing value after --output");
+      }
+      return v;
+    }
+  }
+  return undefined;
+}
+
+function resolvedBinPath(): string {
+  const out = parseOutputArg();
+  if (out !== undefined) {
+    return path.isAbsolute(out) ? out : path.resolve(process.cwd(), out);
+  }
+  const env = process.env.LITESTREAM_BIN_PATH?.trim();
+  if (env !== undefined && env.length > 0) {
+    return path.isAbsolute(env) ? env : path.resolve(process.cwd(), env);
+  }
+  return DEFAULT_BIN_PATH;
+}
 
 type ReleaseTarget = {
   os: "linux" | "darwin";
@@ -79,7 +114,7 @@ async function extractTarball(buf: ArrayBuffer, destDir: string): Promise<string
 }
 
 async function main(): Promise<void> {
-  const binPath = process.env.LITESTREAM_BIN_PATH?.trim() || DEFAULT_BIN_PATH;
+  const binPath = resolvedBinPath();
   const existing = await currentBinaryVersion(binPath);
   if (existing?.includes(LITESTREAM_VERSION)) {
     console.log(`install-litestream: ${binPath} already at v${LITESTREAM_VERSION}`);

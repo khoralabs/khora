@@ -4,7 +4,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "start": "bun run src/index.ts",
+    "preinstall": "bun ../../../scripts/install-litestream.ts --output .bin/litestream",
+    "start": "bun run scripts/start-atrium.ts",
+    "start:server": "bun run src/index.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
