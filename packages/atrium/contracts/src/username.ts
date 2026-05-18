@@ -10,6 +10,32 @@ const RESERVED_USERNAMES: ReadonlySet<string> = new Set([
   "me",
   "root",
   "system",
+  "a",
+  "b",
+  "c",
+  "d",
+  "e",
+  "f",
+  // "g", G's username
+  "h",
+  "i",
+  "j",
+  "k",
+  "l",
+  "m",
+  "n",
+  "o",
+  "p",
+  "q",
+  "r",
+  "s",
+  "t",
+  "u",
+  "v",
+  "w",
+  "x",
+  "y",
+  // "z", Zach's username
 ]);
 
 /**
@@ -44,7 +70,7 @@ export const zUsername = z.string().transform((s, ctx) => {
     return normalizeUsername(s);
   } catch (e) {
     ctx.addIssue({
-      code: z.ZodIssueCode.custom,
+      code: "custom",
       message: e instanceof Error ? e.message : String(e),
     });
     return z.NEVER;
