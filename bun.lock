@@ -16,45 +16,6 @@
         "typescript": "^5",
       },
     },
-    "apps/atrium/cli": {
-      "name": "@khoralabs/atrium-cli",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/atrium-auth": "workspace:*",
-        "@khoralabs/atrium-client": "workspace:*",
-        "@khoralabs/atrium-contracts": "workspace:*",
-        "@khoralabs/atrium-daemon": "workspace:*",
-        "@khoralabs/atrium-plugin-profile-sync": "workspace:*",
-        "@khoralabs/atrium-plugin-telemetry": "workspace:*",
-        "@khoralabs/obp-v2-model": "workspace:*",
-        "@khoralabs/obp-v2-persistence": "workspace:*",
-        "@khoralabs/vellum-bind-policy": "workspace:*",
-        "zod": "^4",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "apps/atrium/daemon": {
-      "name": "@khoralabs/atrium-daemon",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/atrium-auth": "workspace:*",
-        "@khoralabs/atrium-client": "workspace:*",
-        "@khoralabs/atrium-plugin-inbox-buffer": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
     "apps/atrium/homepage": {
       "name": "@khoralabs/atrium-homepage",
       "version": "0.1.0",
@@ -78,68 +39,7 @@
         "tw-animate-css": "^1.4.0",
       },
     },
-    "apps/atrium/host": {
-      "name": "@khoralabs/atrium-host",
-      "dependencies": {
-        "@khoralabs/agent-relay": "workspace:*",
-        "@khoralabs/atrium-auth": "workspace:*",
-        "@khoralabs/atrium-contracts": "workspace:*",
-        "@khoralabs/duplex-byte-stream": "workspace:*",
-        "@khoralabs/memories-autolink": "workspace:*",
-        "@khoralabs/memories-core": "workspace:*",
-        "@khoralabs/memories-sqlite": "workspace:*",
-        "@khoralabs/sqlite-migrate": "workspace:*",
-        "zod": "^4",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-    },
-    "apps/atrium/plugins/inbox-buffer": {
-      "name": "@khoralabs/atrium-plugin-inbox-buffer",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/atrium-client": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "apps/atrium/plugins/profile-sync": {
-      "name": "@khoralabs/atrium-plugin-profile-sync",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/atrium-client": "workspace:*",
-        "@khoralabs/atrium-contracts": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "apps/atrium/plugins/telemetry": {
-      "name": "@khoralabs/atrium-plugin-telemetry",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/atrium-client": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "apps/atrium/v2/server": {
+    "apps/atrium/server": {
       "name": "@khoralabs/atrium-v2-server",
       "version": "0.0.0",
       "dependencies": {
@@ -338,7 +238,7 @@
         "typescript": "^5",
       },
     },
-    "packages/at2/auth": {
+    "packages/atrium/auth": {
       "name": "@khoralabs/at2-auth",
       "version": "0.0.0",
       "dependencies": {
@@ -355,7 +255,7 @@
         "typescript": "^5",
       },
     },
-    "packages/at2/client": {
+    "packages/atrium/client": {
       "name": "@khoralabs/at2-client",
       "version": "0.0.0",
       "dependencies": {
@@ -375,7 +275,7 @@
         "typescript": "^5",
       },
     },
-    "packages/at2/contracts": {
+    "packages/atrium/contracts": {
       "name": "@khoralabs/at2-contracts",
       "version": "0.0.0",
       "dependencies": {
@@ -390,7 +290,7 @@
         "typescript": "^5",
       },
     },
-    "packages/at2/host": {
+    "packages/atrium/host": {
       "name": "@khoralabs/at2-host",
       "version": "0.0.0",
       "dependencies": {
@@ -409,7 +309,7 @@
         "typescript": "^5",
       },
     },
-    "packages/at2/relay-colonnade": {
+    "packages/atrium/relay-colonnade": {
       "name": "@khoralabs/relay-colonnade",
       "version": "0.0.0",
       "dependencies": {
@@ -424,7 +324,7 @@
         "typescript": "^5",
       },
     },
-    "packages/at2/transport": {
+    "packages/atrium/transport": {
       "name": "@khoralabs/at2-transport",
       "version": "0.0.0",
       "dependencies": {
@@ -432,76 +332,6 @@
         "@khoralabs/agent-relay": "workspace:*",
         "@khoralabs/at2-auth": "workspace:*",
         "@khoralabs/at2-contracts": "workspace:*",
-        "zod": "^4",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/atrium/auth": {
-      "name": "@khoralabs/atrium-auth",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/agent-persisted-signer": "workspace:*",
-        "@khoralabs/agent-relay": "workspace:*",
-        "@noble/ed25519": "^3.1.0",
-        "iso-did": "^2.1.1",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/atrium/client": {
-      "name": "@khoralabs/atrium-client",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/agent-relay": "workspace:*",
-        "@khoralabs/atrium-auth": "workspace:*",
-        "@khoralabs/atrium-contracts": "workspace:*",
-        "@khoralabs/atrium-transport": "workspace:*",
-        "@khoralabs/obp-v2-session-impl": "workspace:*",
-        "@khoralabs/obp-v2-transport-ws": "workspace:*",
-        "zod": "^4",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/atrium/contracts": {
-      "name": "@khoralabs/atrium-contracts",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/agent-relay": "workspace:*",
-        "zod": "^4",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/atrium/transport": {
-      "name": "@khoralabs/atrium-transport",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/agent-io": "workspace:*",
-        "@khoralabs/agent-relay": "workspace:*",
-        "@khoralabs/atrium-auth": "workspace:*",
-        "@khoralabs/atrium-contracts": "workspace:*",
         "zod": "^4",
       },
       "devDependencies": {
@@ -1132,39 +962,19 @@
 
     "@khoralabs/agent-thread": ["@khoralabs/agent-thread@workspace:packages/agent/thread"],
 
-    "@khoralabs/at2-auth": ["@khoralabs/at2-auth@workspace:packages/at2/auth"],
+    "@khoralabs/at2-auth": ["@khoralabs/at2-auth@workspace:packages/atrium/auth"],
 
-    "@khoralabs/at2-client": ["@khoralabs/at2-client@workspace:packages/at2/client"],
+    "@khoralabs/at2-client": ["@khoralabs/at2-client@workspace:packages/atrium/client"],
 
-    "@khoralabs/at2-contracts": ["@khoralabs/at2-contracts@workspace:packages/at2/contracts"],
+    "@khoralabs/at2-contracts": ["@khoralabs/at2-contracts@workspace:packages/atrium/contracts"],
 
-    "@khoralabs/at2-host": ["@khoralabs/at2-host@workspace:packages/at2/host"],
+    "@khoralabs/at2-host": ["@khoralabs/at2-host@workspace:packages/atrium/host"],
 
-    "@khoralabs/at2-transport": ["@khoralabs/at2-transport@workspace:packages/at2/transport"],
-
-    "@khoralabs/atrium-auth": ["@khoralabs/atrium-auth@workspace:packages/atrium/auth"],
-
-    "@khoralabs/atrium-cli": ["@khoralabs/atrium-cli@workspace:apps/atrium/cli"],
-
-    "@khoralabs/atrium-client": ["@khoralabs/atrium-client@workspace:packages/atrium/client"],
-
-    "@khoralabs/atrium-contracts": ["@khoralabs/atrium-contracts@workspace:packages/atrium/contracts"],
-
-    "@khoralabs/atrium-daemon": ["@khoralabs/atrium-daemon@workspace:apps/atrium/daemon"],
+    "@khoralabs/at2-transport": ["@khoralabs/at2-transport@workspace:packages/atrium/transport"],
 
     "@khoralabs/atrium-homepage": ["@khoralabs/atrium-homepage@workspace:apps/atrium/homepage"],
 
-    "@khoralabs/atrium-host": ["@khoralabs/atrium-host@workspace:apps/atrium/host"],
-
-    "@khoralabs/atrium-plugin-inbox-buffer": ["@khoralabs/atrium-plugin-inbox-buffer@workspace:apps/atrium/plugins/inbox-buffer"],
-
-    "@khoralabs/atrium-plugin-profile-sync": ["@khoralabs/atrium-plugin-profile-sync@workspace:apps/atrium/plugins/profile-sync"],
-
-    "@khoralabs/atrium-plugin-telemetry": ["@khoralabs/atrium-plugin-telemetry@workspace:apps/atrium/plugins/telemetry"],
-
-    "@khoralabs/atrium-transport": ["@khoralabs/atrium-transport@workspace:packages/atrium/transport"],
-
-    "@khoralabs/atrium-v2-server": ["@khoralabs/atrium-v2-server@workspace:apps/atrium/v2/server"],
+    "@khoralabs/atrium-v2-server": ["@khoralabs/atrium-v2-server@workspace:apps/atrium/server"],
 
     "@khoralabs/cli-flow-nbc": ["@khoralabs/cli-flow-nbc@workspace:packages/cli-flow-nbc"],
 
@@ -1222,7 +1032,7 @@
 
     "@khoralabs/reciprocal-rank-fusion": ["@khoralabs/reciprocal-rank-fusion@workspace:packages/libs/reciprocal-rank-fusion"],
 
-    "@khoralabs/relay-colonnade": ["@khoralabs/relay-colonnade@workspace:packages/at2/relay-colonnade"],
+    "@khoralabs/relay-colonnade": ["@khoralabs/relay-colonnade@workspace:packages/atrium/relay-colonnade"],
 
     "@khoralabs/sqlite-migrate": ["@khoralabs/sqlite-migrate@workspace:packages/libs/sqlite-migrate"],
 
