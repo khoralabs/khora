@@ -1,6 +1,6 @@
 # Vellum apps
 
-Vellum provides NBC (negotiated-by-construction) session tooling on top of Atrium **rooms**: a long-running **daemon** per agent multiplexes frame channels over WebSocket to the Atrium host, and a **CLI** drives chains, offers, ports, and bind policy.
+Vellum provides NBC (negotiated-binding-convention) session tooling on top of Atrium **rooms**: a long-running **daemon** per agent multiplexes frame channels over WebSocket to the Atrium host, and a **CLI** drives chains, offers, ports, and bind policy.
 
 Shared TypeScript libraries (`@khoralabs/vellum-*`) live under [`packages/vellum`](../../packages/vellum).
 
