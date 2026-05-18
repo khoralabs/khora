@@ -1,13 +1,19 @@
 import fs from "node:fs";
 
-import { defaultIdentityPath, loadIdentity } from "@khoralabs/agent-persisted-signer";
+import {
+  defaultIdentityPath,
+  loadIdentity,
+  type PersistableAgentSigner,
+} from "@khoralabs/agent-persisted-signer";
 import {
   createReadlineSession,
   type FlagMap,
   type ReadLineFn,
   strFlag,
 } from "@khoralabs/cli-kit";
-import { VellumClient } from "@khoralabs/vellum-client";
+import { VELLUM_CANONICAL_BASE_URL, VellumClient } from "@khoralabs/vellum-client";
+
+import { vellumCliResolvedConfig } from "../vellum-app-config.ts";
 
 export type VellumCliContext = {
   readLine: ReadLineFn;
@@ -29,46 +35,38 @@ export function readJsonArg(pathOrInline: string): unknown {
 }
 
 export function cliBaseUrl(flags: FlagMap): string {
+  const cfg = vellumCliResolvedConfig(flags);
   return (
     strFlag(flags, "base-url") ??
     strFlag(flags, "baseUrl") ??
-    process.env.VELLUM_BASE_URL ??
-    process.env.VELLUM_ATRIUM_BASE_URL ??
-    process.env.AT2_BASE_URL ??
-    "http://127.0.0.1:8787"
+    cfg.baseUrl ??
+    VELLUM_CANONICAL_BASE_URL
   );
 }
 
-export function agentIdentityPath(): string {
-  return (
-    process.env.AT2_AGENT_KEY_PATH?.trim() ??
-    process.env.ATRIUM_AGENT_KEY_PATH?.trim() ??
-    defaultIdentityPath()
-  );
+export function agentIdentityPath(flags: FlagMap): string {
+  const cfg = vellumCliResolvedConfig(flags);
+  const p = cfg.agentKeyPath?.trim();
+  return p !== undefined && p.length > 0 ? p : defaultIdentityPath();
 }
 
 export function dataDirForEnv(flags: FlagMap): string | undefined {
-  const d =
-    strFlag(flags, "data-dir") ??
-    strFlag(flags, "dataDir") ??
-    process.env.AT2_DATA_DIR ??
-    process.env.ATRIUM_DATA_DIR ??
-    undefined;
+  const cfg = vellumCliResolvedConfig(flags);
+  const d = strFlag(flags, "data-dir") ?? strFlag(flags, "dataDir") ?? cfg.dataDir;
   const t = d?.trim();
   return t !== undefined && t.length > 0 ? t : undefined;
 }
 
-/** Room from flag, env vars, or optional positional (caller passes connect’s second arg). */
+/** Room from flag, config, env (via merged config), or optional positional. */
 export function resolveRoomId(flags: FlagMap, roomPositional?: string | undefined): string {
+  const cfg = vellumCliResolvedConfig(flags);
   const fromArg = roomPositional?.trim();
   if (fromArg !== undefined && fromArg.length > 0) return fromArg;
   const fromFlag = strFlag(flags, "room")?.trim();
   if (fromFlag !== undefined && fromFlag.length > 0) return fromFlag;
-  return (
-    process.env.VELLUM_ROOM_ID?.trim() ??
-    process.env.ATRIUM_ROOM_ID?.trim() ??
-    ""
-  );
+  const fromCfg = cfg.defaultRoomId?.trim();
+  if (fromCfg !== undefined && fromCfg.length > 0) return fromCfg;
+  return "";
 }
 
 export function makeVellumClient(flags: FlagMap, roomId: string): VellumClient {
@@ -79,8 +77,8 @@ export function makeVellumClient(flags: FlagMap, roomId: string): VellumClient {
   });
 }
 
-export async function loadSigner() {
-  const idPath = agentIdentityPath();
+export async function loadSigner(flags: FlagMap): Promise<PersistableAgentSigner> {
+  const idPath = agentIdentityPath(flags);
   const signer = await loadIdentity(idPath);
   if (signer === undefined) {
     throw new Error(`identity not found at ${idPath}`);

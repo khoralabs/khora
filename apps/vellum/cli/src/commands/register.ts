@@ -36,7 +36,7 @@ export async function handleRegister(ctx: VellumCliContext, flags: FlagMap): Pro
     }
   }
 
-  const signer = await loadSigner();
+  const signer = await loadSigner(flags);
   const ac = new At2Client({ baseUrl, signer });
   try {
     const out = await ac.register({

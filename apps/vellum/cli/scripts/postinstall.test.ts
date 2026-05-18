@@ -1,16 +1,34 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { runVellumConfigSetup, runVellumPostinstall } from "./postinstall.ts";
 
 let workspace: string;
+let pkgDistDir: string;
 let home: string;
+
+const BASE_BODY = JSON.stringify(
+  {
+    $schema: "./vellum-config.schema.json",
+    baseUrl: "https://atr1.khoralabs.com",
+    dataDir: "~/.atrium",
+  },
+  null,
+  2,
+);
+const SCHEMA_BODY = JSON.stringify({ $id: "vellum-config", type: "object" });
 
 beforeEach(() => {
   workspace = mkdtempSync(path.join(tmpdir(), "vellum-postinstall-"));
+  pkgDistDir = path.join(workspace, "dist");
   home = path.join(workspace, "home");
+  mkdirSync(path.join(pkgDistDir, "configs"), { recursive: true });
   mkdirSync(home, { recursive: true });
+  writeFileSync(path.join(pkgDistDir, "configs", "base.config.json"), `${BASE_BODY}\n`);
+  writeFileSync(path.join(pkgDistDir, "configs", "cli.config.json"), `{}\n`);
+  writeFileSync(path.join(pkgDistDir, "configs", "daemon.config.json"), `{}\n`);
+  writeFileSync(path.join(pkgDistDir, "vellum-config.schema.json"), SCHEMA_BODY);
 });
 
 afterEach(() => {
@@ -18,52 +36,59 @@ afterEach(() => {
 });
 
 describe("runVellumPostinstall", () => {
-  test("creates ~/.vellum on a clean home", () => {
-    const result = runVellumPostinstall({ home });
+  test("copies all configs and schema on a clean home", () => {
+    const result = runVellumPostinstall({ pkgDistDir, home });
     const dest = path.join(home, ".vellum");
     expect(result.destDir).toBe(dest);
-    expect(result.copied).toEqual([]);
+    expect(result.copied.sort()).toEqual([
+      "base.config.json",
+      "cli.config.json",
+      "daemon.config.json",
+    ]);
     expect(result.skipped).toEqual([]);
-    expect(existsSync(dest)).toBe(true);
+    expect(result.schemaCopied).toBe(true);
+    expect(existsSync(path.join(dest, "base.config.json"))).toBe(true);
+    expect(existsSync(path.join(dest, "vellum-config.schema.json"))).toBe(true);
+  });
+
+  test("expands path placeholders in copied base.config.json", () => {
+    runVellumPostinstall({ pkgDistDir, home });
+    const dest = path.join(home, ".vellum");
+    const written = readFileSync(path.join(dest, "base.config.json"), "utf8");
+    expect(written.includes("~/.vellum")).toBe(false);
+    expect(written.includes("~/.atrium")).toBe(false);
+    expect(written.includes(path.join(home, ".atrium"))).toBe(true);
   });
 
   test("idempotent on repeat invocations", () => {
-    const first = runVellumPostinstall({ home });
-    expect(existsSync(first.destDir)).toBe(true);
-    const second = runVellumPostinstall({ home });
-    expect(second.destDir).toBe(first.destDir);
-    expect(existsSync(second.destDir)).toBe(true);
-  });
-
-  test("creates ~/.vellum when home dir exists but .vellum does not", () => {
-    expect(existsSync(path.join(home, ".vellum"))).toBe(false);
-    runVellumPostinstall({ home });
-    expect(existsSync(path.join(home, ".vellum"))).toBe(true);
+    const first = runVellumPostinstall({ pkgDistDir, home });
+    expect(first.copied.length).toBe(3);
+    expect(first.schemaCopied).toBe(true);
+    const second = runVellumPostinstall({ pkgDistDir, home });
+    expect(second.copied).toEqual([]);
+    expect(second.schemaCopied).toBe(false);
+    expect(second.skipped.sort()).toEqual([
+      "base.config.json",
+      "cli.config.json",
+      "daemon.config.json",
+    ]);
   });
 });
 
 describe("runVellumConfigSetup", () => {
-  test("creates ~/.vellum and returns empty arrays", () => {
-    const result = runVellumConfigSetup({ home });
+  test("force overwrites existing cli.config.json", () => {
     const dest = path.join(home, ".vellum");
-    expect(result.destDir).toBe(dest);
-    expect(result.copied).toEqual([]);
-    expect(result.overwritten).toEqual([]);
-    expect(result.skipped).toEqual([]);
-    expect(existsSync(dest)).toBe(true);
-  });
-
-  test("force=true is a no-op in Phase 2 (no config files)", () => {
-    const result = runVellumConfigSetup({ home, force: true });
-    expect(result.copied).toEqual([]);
-    expect(result.overwritten).toEqual([]);
-    expect(result.skipped).toEqual([]);
-    expect(existsSync(path.join(home, ".vellum"))).toBe(true);
-  });
-
-  test("idempotent: second call with existing dir still succeeds", () => {
-    runVellumConfigSetup({ home });
-    const second = runVellumConfigSetup({ home });
-    expect(existsSync(second.destDir)).toBe(true);
+    mkdirSync(dest, { recursive: true });
+    writeFileSync(path.join(dest, "cli.config.json"), '{"old":true}');
+    writeFileSync(path.join(dest, "vellum-config.schema.json"), '{"old":true}');
+    const result = runVellumConfigSetup({
+      configsDir: path.join(pkgDistDir, "configs"),
+      schemaPath: path.join(pkgDistDir, "vellum-config.schema.json"),
+      home,
+      force: true,
+    });
+    expect(result.overwritten).toContain("cli.config.json");
+    expect(result.schema).toBe("overwritten");
+    expect(readFileSync(path.join(dest, "cli.config.json"), "utf8")).not.toBe('{"old":true}');
   });
 });

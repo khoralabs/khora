@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import {
@@ -13,9 +13,11 @@ describe("resolveSetupAssets", () => {
   test("uses VELLUM_CLI_ASSETS_DIR when set", () => {
     const ws = mkdtempSync(path.join(tmpdir(), "vellum-assets-"));
     try {
+      mkdirSync(path.join(ws, "configs"), { recursive: true });
+      writeFileSync(path.join(ws, "vellum-config.schema.json"), "{}");
       const out = resolveSetupAssets({ VELLUM_CLI_ASSETS_DIR: ws });
       expect(out.configsDir).toBe(path.join(ws, "configs"));
-      expect(out.schemaPath).toBeUndefined();
+      expect(out.schemaPath).toBe(path.join(ws, "vellum-config.schema.json"));
     } finally {
       rmSync(ws, { recursive: true, force: true });
     }
@@ -24,13 +26,13 @@ describe("resolveSetupAssets", () => {
   test("treats empty / whitespace VELLUM_CLI_ASSETS_DIR as unset (monorepo fallback)", () => {
     const out = resolveSetupAssets({ VELLUM_CLI_ASSETS_DIR: "   " });
     expect(out.configsDir.endsWith(path.join("cli", "assets", "configs"))).toBe(true);
-    expect(out.schemaPath).toBeUndefined();
+    expect(out.schemaPath?.endsWith("vellum-config.schema.json")).toBe(true);
   });
 
   test("falls back to monorepo paths when env unset", () => {
     const out = resolveSetupAssets({});
     expect(out.configsDir.endsWith(path.join("cli", "assets", "configs"))).toBe(true);
-    expect(out.schemaPath).toBeUndefined();
+    expect(out.schemaPath?.endsWith("vellum-config.schema.json")).toBe(true);
   });
 });
 
@@ -47,6 +49,7 @@ describe("printSetupSummary", () => {
         copied: [],
         overwritten: [],
         skipped: [],
+        schema: "missing",
       });
     } finally {
       console.log = log;
@@ -66,13 +69,14 @@ describe("printSetupSummary", () => {
         copied: ["a.json"],
         overwritten: ["b.json"],
         skipped: ["c.json"],
+        schema: "copied",
       });
     } finally {
       console.log = log;
     }
     expect(lines[0]).toBe("wrote a.json");
     expect(lines[1]).toBe("overwrote b.json");
-    expect(lines[2]).toBe("skipped c.json (exists; use --force to overwrite)");
+    expect(lines[3]).toBe("wrote vellum-config.schema.json");
     expect(lines.at(-1)).toBe("at /home/me/.vellum");
   });
 });
@@ -145,6 +149,11 @@ describe("maybeBootstrapVellumHome", () => {
     home = path.join(workspace, "home");
     assetsDir = path.join(workspace, "assets");
     mkdirSync(home, { recursive: true });
+    mkdirSync(path.join(assetsDir, "configs"), { recursive: true });
+    for (const name of ["base.config.json", "cli.config.json", "daemon.config.json"]) {
+      writeFileSync(path.join(assetsDir, "configs", name), "{}\n");
+    }
+    writeFileSync(path.join(assetsDir, "vellum-config.schema.json"), '{"$id":"x"}');
   });
 
   afterEach(() => {
@@ -156,18 +165,17 @@ describe("maybeBootstrapVellumHome", () => {
     maybeBootstrapVellumHome({ VELLUM_CLI_ASSETS_DIR: assetsDir, HOME: home }, (line) =>
       errors.push(line),
     );
-    expect(existsSync(path.join(home, ".vellum"))).toBe(true);
+    expect(existsSync(path.join(home, ".vellum", "cli.config.json"))).toBe(true);
     expect(errors).toEqual([]);
   });
 
-  test("short-circuits when ~/.vellum already exists", () => {
+  test("short-circuits when canary cli.config.json already exists (no overwrite)", () => {
     mkdirSync(path.join(home, ".vellum"), { recursive: true });
-    const errors: string[] = [];
-    maybeBootstrapVellumHome({ VELLUM_CLI_ASSETS_DIR: assetsDir, HOME: home }, (line) =>
-      errors.push(line),
+    writeFileSync(path.join(home, ".vellum", "cli.config.json"), '{"keep":true}');
+    maybeBootstrapVellumHome({ VELLUM_CLI_ASSETS_DIR: assetsDir, HOME: home });
+    expect(readFileSync(path.join(home, ".vellum", "cli.config.json"), "utf8")).toBe(
+      '{"keep":true}',
     );
-    expect(existsSync(path.join(home, ".vellum"))).toBe(true);
-    expect(errors).toEqual([]);
   });
 
   test("no-op when VELLUM_CLI_ASSETS_DIR is unset (monorepo dev path)", () => {
@@ -181,19 +189,16 @@ describe("maybeBootstrapVellumHome", () => {
   });
 
   test("never throws; surfaces failures as a one-line stderr message", () => {
+    unlinkSync(path.join(assetsDir, "configs", "base.config.json"));
     const errors: string[] = [];
-    // Place a regular file at the parent path so mkdirSync inside cannot create subdirs
-    const blockedFile = path.join(workspace, "blocked");
-    writeFileSync(blockedFile, "x");
-    // home is inside a regular file → existsSync(.vellum) is false, mkdirSync fails
-    const fakeHome = path.join(blockedFile, "home");
     expect(() =>
       maybeBootstrapVellumHome(
-        { VELLUM_CLI_ASSETS_DIR: assetsDir, HOME: fakeHome },
+        { VELLUM_CLI_ASSETS_DIR: assetsDir, HOME: home },
         (line) => errors.push(line),
       ),
     ).not.toThrow();
-    expect(errors[0]).toContain("first-run setup failed");
-    expect(errors[0]).toContain("vellum setup");
+    expect(errors.length).toBeGreaterThan(0);
+    expect(String(errors[0])).toContain("first-run setup failed");
+    expect(String(errors[0])).toContain("vellum setup");
   });
 });

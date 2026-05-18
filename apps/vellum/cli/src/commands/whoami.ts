@@ -1,4 +1,5 @@
 import { At2Client } from "@khoralabs/at2-client";
+import type { PersistableAgentSigner } from "@khoralabs/agent-persisted-signer";
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { boolFlag } from "@khoralabs/cli-kit";
 
@@ -8,11 +9,11 @@ export async function handleWhoami(flags: FlagMap): Promise<void> {
   const json = boolFlag(flags, "json");
   const noFetch = boolFlag(flags, "no-fetch") || boolFlag(flags, "noFetch");
 
-  let signer;
+  let signer: PersistableAgentSigner;
   try {
-    signer = await loadSigner();
+    signer = await loadSigner(flags);
   } catch (e) {
-    const idPath = agentIdentityPath();
+    const idPath = agentIdentityPath(flags);
     const msg = e instanceof Error ? e.message : String(e);
     console.error(msg);
     console.error(`No agent identity at ${idPath}. Generate or import a key first.`);

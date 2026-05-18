@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "baseUrl": {
+      "description": "AT2 / Atrium-compatible HTTP host",
+      "type": "string",
+      "minLength": 1
+    },
+    "dataDir": {
+      "description": "Root for OBP data (default ~/.atrium without overrides)",
+      "type": "string",
+      "minLength": 1
+    },
+    "agentKeyPath": {
+      "description": "Path to Ed25519 identity JSON (see agent-persisted-signer)",
+      "type": "string",
+      "minLength": 1
+    },
+    "defaultRoomId": {
+      "description": "Default room id when --room / env not set",
+      "type": "string",
+      "minLength": 1
+    },
+    "defaultRoomWebSocketUrl": {
+      "description": "Default room WebSocket URL when env not set",
+      "type": "string",
+      "minLength": 1
+    },
+    "daemonJson": {
+      "description": "JSON log lines from vellum-daemon",
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}

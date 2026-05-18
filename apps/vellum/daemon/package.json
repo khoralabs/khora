@@ -26,6 +26,7 @@
     "@khoralabs/obp-v2-sqlite-persistence": "workspace:*",
     "@khoralabs/obp-v2-transport-ws": "workspace:*",
     "@khoralabs/vellum-bind-policy": "workspace:*",
+    "@khoralabs/vellum-client": "workspace:*",
     "@khoralabs/vellum-contracts": "workspace:*",
     "@noble/ed25519": "^3.1.0",
     "iso-base": "^4.2.1",

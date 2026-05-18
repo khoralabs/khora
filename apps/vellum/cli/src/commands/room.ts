@@ -11,7 +11,7 @@ export async function handleRoomCreate(flags: FlagMap): Promise<void> {
   const targetUsername = strFlag(flags, "target-username") ?? strFlag(flags, "targetUsername") ?? "";
   const ttlRaw = strFlag(flags, "ttl-ms") ?? strFlag(flags, "ttlMs") ?? "";
 
-  const signer = await loadSigner();
+  const signer = await loadSigner(flags);
   const body: AtriumRoomCreateBody = {};
   if (ttlRaw.length > 0) {
     const n = Number.parseInt(ttlRaw, 10);
@@ -34,7 +34,7 @@ export async function handleRoomJoin(ctx: VellumCliContext, flags: FlagMap): Pro
   const baseUrl = cliBaseUrl(flags);
   const joinToken = await promptJoinTokenIfMissing(ctx, flags);
 
-  const signer = await loadSigner();
+  const signer = await loadSigner(flags);
   const ac = new At2Client({ baseUrl, signer });
   try {
     const out = await ac.redeemRoomInvite({ joinToken });

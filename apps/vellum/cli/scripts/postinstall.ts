@@ -2,65 +2,95 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 /**
- * Pure library for the canonical home-dir setup for `~/.vellum/`.
+ * Pure library for the canonical-config drop into `~/.vellum/`.
  *
  * Imported by the compiled `vellum` binary (`commands/setup.ts`,
  * `maybeBootstrapVellumHome`) and bundled into the npm postinstall script
  * (`postinstall.entry.ts`). Must remain free of top-level side effects.
- *
- * Phase 2: CONFIG_FILES is empty — `runVellumConfigSetup` only ensures
- * `~/.vellum/` exists. Phase 3 will populate config files and schema.
  */
 
-// Phase 2: no config files yet — populated in Phase 3.
-const CONFIG_FILES: readonly string[] = [];
+const CONFIG_FILES = ["base.config.json", "cli.config.json", "daemon.config.json"] as const;
+const SCHEMA_FILE = "vellum-config.schema.json";
+
+export type VellumSetupSchemaStatus = "copied" | "overwritten" | "skipped" | "missing";
 
 export type VellumSetupResult = {
   destDir: string;
   copied: string[];
   overwritten: string[];
   skipped: string[];
+  schema: VellumSetupSchemaStatus;
 };
 
 export type PostinstallResult = {
   destDir: string;
   copied: string[];
   skipped: string[];
+  schemaCopied: boolean;
 };
 
-/**
- * Ensures `~/.vellum/` exists and (in Phase 3) copies canonical config files.
- *
- * Idempotent by default — skips any file that already exists. With `force: true`
- * existing files are rewritten (Phase 3 behavior; no-op in Phase 2).
- */
+function expandHomePlaceholders(body: string, vellumHome: string, posixHome: string): string {
+  return body.replaceAll("~/.vellum", vellumHome).replaceAll("~/.atrium", posixHome);
+}
+
 export function runVellumConfigSetup(opts: {
+  configsDir: string;
+  schemaPath: string | undefined;
   home: string;
   force?: boolean;
 }): VellumSetupResult {
+  const force = opts.force ?? false;
   const dest = path.join(opts.home, ".vellum");
   fs.mkdirSync(dest, { recursive: true });
+  const atriumHome = path.join(opts.home, ".atrium");
 
   const copied: string[] = [];
   const overwritten: string[] = [];
   const skipped: string[] = [];
 
-  // CONFIG_FILES is empty in Phase 2; Phase 3 will populate it.
-  for (const _name of CONFIG_FILES) {
-    void _name;
+  for (const name of CONFIG_FILES) {
+    const target = path.join(dest, name);
+    const exists = fs.existsSync(target);
+    if (exists && !force) {
+      skipped.push(name);
+      continue;
+    }
+    const src = path.join(opts.configsDir, name);
+    let body = fs.readFileSync(src, "utf8");
+    body = expandHomePlaceholders(body, dest, atriumHome);
+    fs.writeFileSync(target, body);
+    if (exists) overwritten.push(name);
+    else copied.push(name);
   }
 
-  return { destDir: dest, copied, overwritten, skipped };
+  let schema: VellumSetupSchemaStatus = "missing";
+  if (opts.schemaPath !== undefined && fs.existsSync(opts.schemaPath)) {
+    const schemaTarget = path.join(dest, SCHEMA_FILE);
+    const exists = fs.existsSync(schemaTarget);
+    if (exists && !force) {
+      schema = "skipped";
+    } else {
+      fs.copyFileSync(opts.schemaPath, schemaTarget);
+      schema = exists ? "overwritten" : "copied";
+    }
+  }
+
+  return { destDir: dest, copied, overwritten, skipped, schema };
 }
 
-/**
- * Idempotent postinstall helper. Never overwrites existing files.
- */
-export function runVellumPostinstall(opts: { home: string }): PostinstallResult {
-  const setup = runVellumConfigSetup({ home: opts.home, force: false });
+export function runVellumPostinstall(opts: { pkgDistDir: string; home: string }): PostinstallResult {
+  const setup = runVellumConfigSetup({
+    configsDir: path.join(opts.pkgDistDir, "configs"),
+    schemaPath: path.join(opts.pkgDistDir, SCHEMA_FILE),
+    home: opts.home,
+    force: false,
+  });
   return {
     destDir: setup.destDir,
     copied: setup.copied,
     skipped: setup.skipped,
+    schemaCopied: setup.schema === "copied",
   };
 }
+
+export const POSTINSTALL_SCHEMA_FILE = SCHEMA_FILE;

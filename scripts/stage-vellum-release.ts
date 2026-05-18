@@ -5,6 +5,8 @@
  * Inputs (in `workspaceRoot`):
  *   apps/vellum/cli/dist/<bun-target>/vellum
  *   apps/vellum/daemon/dist/<bun-target>/vellum-daemon
+ *   apps/vellum/cli/assets/configs/*.json (base/cli/daemon templates + config.example.json)
+ *   packages/vellum/client/vellum-config.schema.json (built via build:schema)
  *
  * Output tree: `<releaseDir>/{cli,daemon,cli-<slug>,daemon-<slug>}/...`
  * Publish order: all 6 platform pkgs first → daemon meta → cli meta.
@@ -93,7 +95,14 @@ export function cliMetaPkgJson({
     keywords: ["vellum", "obp", "cli", "khoralabs"],
     type: "module",
     bin: { vellum: "./bin/vellum.cjs" },
-    files: ["bin/**", "postinstall.js", "README.md", "LICENSE"],
+    files: [
+      "bin/**",
+      "configs/**",
+      "postinstall.js",
+      "vellum-config.schema.json",
+      "README.md",
+      "LICENSE",
+    ],
     scripts: { postinstall: "node ./postinstall.js" },
     dependencies: { "@khoralabs/vellum-daemon": version },
     optionalDependencies,
@@ -237,6 +246,22 @@ export async function stageVellumRelease(opts: StageOptions): Promise<StageResul
   if (!existsSync(postinstallOut)) {
     throw new Error(`postinstall bundle missing at ${postinstallOut}`);
   }
+
+  mkdirSync(path.join(cliMetaDir, "configs"), { recursive: true });
+  const configsSrc = path.join(workspaceRoot, "apps/vellum/cli/assets/configs");
+  for (const name of [
+    "base.config.json",
+    "cli.config.json",
+    "daemon.config.json",
+    "config.example.json",
+  ]) {
+    await Bun.write(path.join(cliMetaDir, "configs", name), Bun.file(path.join(configsSrc, name)));
+  }
+  const schemaSrc = path.join(workspaceRoot, "packages/vellum/client/vellum-config.schema.json");
+  if (!existsSync(schemaSrc)) {
+    throw new Error(`missing vellum-config.schema.json at ${schemaSrc} — run build:schema first`);
+  }
+  await Bun.write(path.join(cliMetaDir, "vellum-config.schema.json"), Bun.file(schemaSrc));
 
   await writeJson(path.join(cliMetaDir, "package.json"), cliMetaPkgJson({ version }));
   const cliReadme = path.join(workspaceRoot, "apps/vellum/cli/README.md");

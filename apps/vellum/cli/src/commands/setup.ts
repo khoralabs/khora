@@ -4,7 +4,11 @@ import path from "node:path";
 import { boolFlag } from "@khoralabs/cli-kit";
 import type { FlagMap } from "@khoralabs/cli-kit";
 
-import { runVellumConfigSetup, type VellumSetupResult } from "../../scripts/postinstall.ts";
+import {
+  POSTINSTALL_SCHEMA_FILE,
+  runVellumConfigSetup,
+  type VellumSetupResult,
+} from "../../scripts/postinstall.ts";
 
 const ASSETS_DIR_ENV = "VELLUM_CLI_ASSETS_DIR";
 
@@ -13,27 +17,31 @@ export type SetupAssets = {
   schemaPath: string | undefined;
 };
 
+const SCHEMA_FILE = POSTINSTALL_SCHEMA_FILE;
+
 /**
- * Locate setup assets.
+ * Locate canonical configs + schema for `vellum setup`.
  *
- * Published install: the node-shim launcher exports `VELLUM_CLI_ASSETS_DIR`
- * pointing at the meta-package root.
+ * Published install: `VELLUM_CLI_ASSETS_DIR` points at the meta-package root (contains
+ * `configs/` and `vellum-config.schema.json`).
  *
- * Monorepo dev: walks relative to this source file. Phase 2: schemaPath is
- * always `undefined` (added in Phase 3).
+ * Monorepo: `apps/vellum/cli/assets/configs` and `packages/vellum/client/vellum-config.schema.json`.
  */
 export function resolveSetupAssets(env: NodeJS.ProcessEnv = process.env): SetupAssets {
   const fromEnv = env[ASSETS_DIR_ENV]?.trim();
   if (fromEnv !== undefined && fromEnv.length > 0) {
+    const schema = path.join(fromEnv, SCHEMA_FILE);
     return {
       configsDir: path.join(fromEnv, "configs"),
-      schemaPath: undefined,
+      schemaPath: existsSync(schema) ? schema : undefined,
     };
   }
   const pkgRoot = path.resolve(import.meta.dir, "../..");
+  const schema = path.resolve(pkgRoot, "..", "..", "..", "packages", "vellum", "client", SCHEMA_FILE);
+  const schemaPath = existsSync(schema) ? schema : undefined;
   return {
     configsDir: path.join(pkgRoot, "assets", "configs"),
-    schemaPath: undefined,
+    schemaPath,
   };
 }
 
@@ -42,28 +50,41 @@ export function printSetupSummary(result: VellumSetupResult): void {
   for (const name of result.overwritten) console.log(`overwrote ${name}`);
   for (const name of result.skipped)
     console.log(`skipped ${name} (exists; use --force to overwrite)`);
+  if (result.schema === "copied") console.log(`wrote ${SCHEMA_FILE}`);
+  else if (result.schema === "overwritten") console.log(`overwrote ${SCHEMA_FILE}`);
+  else if (result.schema === "skipped") {
+    console.log(`skipped ${SCHEMA_FILE} (exists; use --force to overwrite)`);
+  } else {
+    console.log(
+      `skipped ${SCHEMA_FILE} (source not found; run 'bun run --cwd packages/vellum/client build:schema' in dev)`,
+    );
+  }
   console.log(`at ${result.destDir}`);
 }
 
 export async function runSetupCommand(flags: FlagMap): Promise<void> {
   const force = boolFlag(flags, "force", "f");
   const asJson = boolFlag(flags, "json");
+  const assets = resolveSetupAssets();
   const home = process.env.HOME ?? process.env.USERPROFILE;
   if (home === undefined || home.length === 0) {
     throw new Error("HOME / USERPROFILE not set; cannot determine ~/.vellum location");
   }
-  const result = runVellumConfigSetup({ home, force });
+  if (!existsSync(assets.configsDir)) {
+    throw new Error(
+      `setup: canonical configs directory not found at ${assets.configsDir} (set ${ASSETS_DIR_ENV} or run from a packaged install)`,
+    );
+  }
+  const result = runVellumConfigSetup({
+    configsDir: assets.configsDir,
+    schemaPath: assets.schemaPath,
+    home,
+    force,
+  });
   if (asJson) console.log(JSON.stringify(result, null, 2));
   else printSetupSummary(result);
 }
 
-/**
- * Run `vellum setup` automatically the first time the CLI is invoked from a
- * published install. Canary: existence of `~/.vellum/`.
- *
- * Best-effort: only runs when `VELLUM_CLI_ASSETS_DIR` is set (packaged install).
- * Failures are logged to stderr but never throw or block the command.
- */
 export function maybeBootstrapVellumHome(
   env: NodeJS.ProcessEnv = process.env,
   err: (line: string) => void = (line) => console.error(line),
@@ -72,10 +93,17 @@ export function maybeBootstrapVellumHome(
   if (fromEnv === undefined || fromEnv.length === 0) return;
   const home = env.HOME ?? env.USERPROFILE;
   if (home === undefined || home.length === 0) return;
-  const canary = path.join(home, ".vellum");
+  const canary = path.join(home, ".vellum", "cli.config.json");
   if (existsSync(canary)) return;
   try {
-    runVellumConfigSetup({ home, force: false });
+    const assets = resolveSetupAssets(env);
+    if (!existsSync(assets.configsDir)) return;
+    runVellumConfigSetup({
+      configsDir: assets.configsDir,
+      schemaPath: assets.schemaPath,
+      home,
+      force: false,
+    });
   } catch (e) {
     err(
       `vellum: first-run setup failed (${e instanceof Error ? e.message : String(e)}); run 'vellum setup' to retry`,
