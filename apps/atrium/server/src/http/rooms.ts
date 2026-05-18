@@ -8,20 +8,10 @@ import {
   zAtriumRoomMintTicketBody,
   zAtriumRoomTicketResponse,
 } from "@khoralabs/atrium-contracts";
-import {
-  ATRIUM_ROOM_INVITE_SOURCE_MAP_ID,
-  ATRIUM_ROOM_REGISTRY_SOURCE_MAP_ID,
-  RELAY_INBOX_SOURCE_MAP_ID,
-} from "@khoralabs/atrium-host";
 import type {
   AtriumRoomLifecycleHostEvent,
   AtriumWsUpgradePort,
 } from "@khoralabs/atrium-transport";
-import {
-  relaySyntheticPointer,
-  SOURCE_USERNAME_TO_PRINCIPAL,
-  USERNAME_INDEX_TENANT_KEY,
-} from "@khoralabs/relay-colonnade";
 import z from "zod";
 import { logger } from "../logger.ts";
 import type { HostRouteDeps } from "./deps.ts";
@@ -144,16 +134,8 @@ export async function handleRoomsCreate(
     } catch {
       return jsonError("Username not found", 404);
     }
-    const hit = ctx.store.lookupProjection(
-      USERNAME_INDEX_TENANT_KEY,
-      SOURCE_USERNAME_TO_PRINCIPAL,
-      normalized,
-    );
-    if (!hit.found || hit.projection === null || typeof hit.projection !== "object") {
-      return jsonError("Username not found", 404);
-    }
-    const pid = (hit.projection as Record<string, unknown>).principalId;
-    if (typeof pid !== "string") {
+    const pid = ctx.lookupPrincipalIdByNormalizedUsername(normalized);
+    if (pid === undefined) {
       return jsonError("Username not found", 404);
     }
     targetDidResolved = pid;
@@ -176,16 +158,10 @@ export async function handleRoomsCreate(
     webSocketUrl,
     expiresAtMs,
   };
-  ctx.store.upsertRow({
-    tenant_key: ctx.tenantKey,
-    source_map_id: ATRIUM_ROOM_REGISTRY_SOURCE_MAP_ID,
-    entry_key: roomId,
-    pointer: relaySyntheticPointer(ctx.tenantKey, "at2:room-registry", roomId),
-    projection: {
-      creatorDid: did,
-      inviteTargetDid: targetDidResolved ?? null,
-      expiresAtMs,
-    },
+  ctx.upsertRoomRegistryRow(roomId, {
+    creatorDid: did,
+    inviteTargetDid: targetDidResolved ?? null,
+    expiresAtMs,
   });
   try {
     ctx.social.createRelationship({
@@ -216,20 +192,14 @@ export async function handleRoomsCreate(
   );
   if (targetDidResolved !== undefined) {
     const entryKey = `${targetDidResolved}/${roomId}`;
-    ctx.store.upsertRow({
-      tenant_key: ctx.tenantKey,
-      source_map_id: RELAY_INBOX_SOURCE_MAP_ID,
-      entry_key: entryKey,
-      pointer: relaySyntheticPointer(ctx.tenantKey, "relay:room-ticket", roomId),
-      projection: {
-        kind: "room_ticket",
-        channelId: roomId,
-        ticket,
-        webSocketUrl,
-        expiresAtMs,
-        issuedAtMs: now,
-        fromPrincipalId: did,
-      },
+    ctx.upsertRelayInboxRoomTicketRow(entryKey, roomId, {
+      kind: "room_ticket",
+      channelId: roomId,
+      ticket,
+      webSocketUrl,
+      expiresAtMs,
+      issuedAtMs: now,
+      fromPrincipalId: did,
     });
     const hub = ctx.host.inboxHub;
     if (hub !== undefined && hub.listenerCount(targetDidResolved) > 0) {
@@ -252,18 +222,12 @@ export async function handleRoomsCreate(
   if (targetDidResolved === undefined) {
     const joinToken = randomJoinToken();
     const hashKey = sha256Hex(joinToken);
-    ctx.store.upsertRow({
-      tenant_key: ctx.tenantKey,
-      source_map_id: ATRIUM_ROOM_INVITE_SOURCE_MAP_ID,
-      entry_key: hashKey,
-      pointer: relaySyntheticPointer(ctx.tenantKey, "at2:room-invite", hashKey),
-      projection: {
-        roomId,
-        creatorDid: did,
-        inviteExpiresAtMs: expiresAtMs,
-        consumedByDid: null,
-        consumedAtMs: null,
-      },
+    ctx.upsertRoomInviteRow(hashKey, {
+      roomId,
+      creatorDid: did,
+      inviteExpiresAtMs: expiresAtMs,
+      consumedByDid: null,
+      consumedAtMs: null,
     });
     return Response.json(zAtriumRoomCreateResponse.parse({ ...ticketPayload, joinToken }));
   }
@@ -300,11 +264,7 @@ export async function handleRoomsJoin(
     return jsonError(msg, 400);
   }
   const hashKey = sha256Hex(joinBody.joinToken);
-  const invHit = ctx.store.lookupProjection(
-    ctx.tenantKey,
-    ATRIUM_ROOM_INVITE_SOURCE_MAP_ID,
-    hashKey,
-  );
+  const invHit = ctx.lookupRoomInviteRow(hashKey);
   if (!invHit.found || invHit.projection === null) {
     return jsonError("Invite not found", 404);
   }
@@ -321,11 +281,7 @@ export async function handleRoomsJoin(
   if (inv.creatorDid === did) {
     return jsonError("Cannot redeem your own room invite", 400);
   }
-  const roomHit = ctx.store.lookupProjection(
-    ctx.tenantKey,
-    ATRIUM_ROOM_REGISTRY_SOURCE_MAP_ID,
-    inv.roomId,
-  );
+  const roomHit = ctx.lookupRoomRegistryRow(inv.roomId);
   if (!roomHit.found || roomHit.projection === null) {
     return jsonError("Room not found", 404);
   }
@@ -345,34 +301,22 @@ export async function handleRoomsJoin(
   }
   const ttlMs = 86_400_000;
   const now = Date.now();
-  ctx.store.upsertRow({
-    tenant_key: ctx.tenantKey,
-    source_map_id: ATRIUM_ROOM_REGISTRY_SOURCE_MAP_ID,
-    entry_key: inv.roomId,
-    pointer: relaySyntheticPointer(ctx.tenantKey, "at2:room-registry", inv.roomId),
-    projection: {
-      creatorDid: meta.creatorDid,
-      inviteTargetDid: did,
-      expiresAtMs: meta.expiresAtMs,
-    },
+  ctx.upsertRoomRegistryRow(inv.roomId, {
+    creatorDid: meta.creatorDid,
+    inviteTargetDid: did,
+    expiresAtMs: meta.expiresAtMs,
   });
   try {
     ctx.social.bindPeer({ channelId: inv.roomId, peerPrincipalId: did });
   } catch {
     return jsonError("Room setup failed", 500);
   }
-  ctx.store.upsertRow({
-    tenant_key: ctx.tenantKey,
-    source_map_id: ATRIUM_ROOM_INVITE_SOURCE_MAP_ID,
-    entry_key: hashKey,
-    pointer: relaySyntheticPointer(ctx.tenantKey, "at2:room-invite", hashKey),
-    projection: {
-      roomId: inv.roomId,
-      creatorDid: inv.creatorDid,
-      inviteExpiresAtMs: inv.inviteExpiresAtMs,
-      consumedByDid: did,
-      consumedAtMs: now,
-    },
+  ctx.upsertRoomInviteRow(hashKey, {
+    roomId: inv.roomId,
+    creatorDid: inv.creatorDid,
+    inviteExpiresAtMs: inv.inviteExpiresAtMs,
+    consumedByDid: did,
+    consumedAtMs: now,
   });
   let ticket: string;
   try {
@@ -387,16 +331,10 @@ export async function handleRoomsJoin(
   const expiresAtMs = now + ttlMs;
   const base = webSocketBaseFromRequest(req);
   const webSocketUrl = `${base}/v1/rooms/${encodeURIComponent(inv.roomId)}/ws?ticket=${encodeURIComponent(ticket)}`;
-  ctx.store.upsertRow({
-    tenant_key: ctx.tenantKey,
-    source_map_id: ATRIUM_ROOM_REGISTRY_SOURCE_MAP_ID,
-    entry_key: inv.roomId,
-    pointer: relaySyntheticPointer(ctx.tenantKey, "at2:room-registry", inv.roomId),
-    projection: {
-      creatorDid: meta.creatorDid,
-      inviteTargetDid: did,
-      expiresAtMs,
-    },
+  ctx.upsertRoomRegistryRow(inv.roomId, {
+    creatorDid: meta.creatorDid,
+    inviteTargetDid: did,
+    expiresAtMs,
   });
   ctx.social.refreshRelationshipTicketExpiry({
     channelId: inv.roomId,
@@ -456,7 +394,7 @@ export async function handleRoomsMintTicket(
     }
   }
   const roomId = decodeURIComponent(roomIdRaw);
-  const hit = ctx.store.lookupProjection(ctx.tenantKey, ATRIUM_ROOM_REGISTRY_SOURCE_MAP_ID, roomId);
+  const hit = ctx.lookupRoomRegistryRow(roomId);
   if (!hit.found || hit.projection === null) {
     return jsonError("Room not found", 404);
   }
@@ -492,16 +430,10 @@ export async function handleRoomsMintTicket(
   }
   const base = webSocketBaseFromRequest(req);
   const webSocketUrl = `${base}/v1/rooms/${encodeURIComponent(roomId)}/ws?ticket=${encodeURIComponent(ticket)}`;
-  ctx.store.upsertRow({
-    tenant_key: ctx.tenantKey,
-    source_map_id: ATRIUM_ROOM_REGISTRY_SOURCE_MAP_ID,
-    entry_key: roomId,
-    pointer: relaySyntheticPointer(ctx.tenantKey, "at2:room-registry", roomId),
-    projection: {
-      creatorDid: meta.creatorDid,
-      inviteTargetDid: meta.inviteTargetDid,
-      expiresAtMs,
-    },
+  ctx.upsertRoomRegistryRow(roomId, {
+    creatorDid: meta.creatorDid,
+    inviteTargetDid: meta.inviteTargetDid,
+    expiresAtMs,
   });
   ctx.social.refreshRelationshipTicketExpiry({
     channelId: roomId,

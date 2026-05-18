@@ -49,7 +49,6 @@
         "@khoralabs/atrium-host": "workspace:*",
         "@khoralabs/atrium-transport": "workspace:*",
         "@khoralabs/duplex-byte-stream": "workspace:*",
-        "@khoralabs/relay-colonnade": "workspace:*",
         "pino": "^10.3.1",
         "zod": "^4",
       },

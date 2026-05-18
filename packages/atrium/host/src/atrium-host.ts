@@ -6,7 +6,11 @@ import {
   ColonnadePublicationClient,
   createSqliteColonnadeCluster,
 } from "@khoralabs/colonnade-persistence";
-import { createRelayColonnadeSocial } from "@khoralabs/relay-colonnade";
+import {
+  createRelayColonnadeSocial,
+  startPrincipalTeardownWorker,
+} from "@khoralabs/relay-colonnade";
+import { createAtriumCatalogApi } from "./catalog-facade.ts";
 import type { AtriumHostContext } from "./context.ts";
 import {
   createAtriumInvitesRepo,
@@ -26,6 +30,11 @@ export async function createAtriumHost(opts: {
    * Set false for main-thread `bun:sqlite` (comparable to bench `--strategy sqlite` without `--cell-workers`).
    */
   useCellWorkers?: boolean;
+  /**
+   * When true (default), runs the async principal teardown job worker (relay catalog + cell purge).
+   * Set false in tests to avoid a background interval.
+   */
+  startPrincipalTeardownWorker?: boolean;
   tenantKey?: string;
   roomLifecycle?: (event: AtriumRoomLifecycleHostEvent) => void;
 }): Promise<AtriumHostContext> {
@@ -72,6 +81,18 @@ export async function createAtriumHost(opts: {
       publicationClient,
     }),
   });
+  const catalogApi = createAtriumCatalogApi({ persistence, store, catalogDb, tenantKey });
+  const runTeardownWorker = opts.startPrincipalTeardownWorker ?? true;
+  const principalTeardownWorker = runTeardownWorker
+    ? startPrincipalTeardownWorker({
+        catalogDb,
+        framesDb,
+        store,
+        persistence,
+        tenantKey,
+        cluster,
+      })
+    : { stop(): void {} };
   return {
     host,
     auth,
@@ -85,6 +106,8 @@ export async function createAtriumHost(opts: {
     cluster,
     publicationClient,
     cellPoolCount,
+    ...catalogApi,
+    principalTeardownWorker,
     ...(opts.roomLifecycle !== undefined ? { roomLifecycle: opts.roomLifecycle } : {}),
   };
 }

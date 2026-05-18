@@ -5,13 +5,6 @@ import {
   zAtriumRegistrationRequestBody,
 } from "@khoralabs/atrium-contracts";
 import { inviteRequiredFromEnv, invitesPerRegistrationFromEnv } from "@khoralabs/atrium-host";
-import type { RelayCatalogSourceMapStore } from "@khoralabs/relay-colonnade";
-import {
-  relaySyntheticPointer,
-  SOURCE_PRINCIPAL_TO_USERNAME,
-  SOURCE_USERNAME_TO_PRINCIPAL,
-  USERNAME_INDEX_TENANT_KEY,
-} from "@khoralabs/relay-colonnade";
 import { logger } from "../logger.ts";
 import { clientIpFromRequest } from "../rate-limit.ts";
 import type { HostRouteDeps } from "./deps.ts";
@@ -21,57 +14,6 @@ import {
   rateLimitedResponse,
   registrationOpaqueJson,
 } from "./responses.ts";
-
-function lookupNormalizedUsernameForDid(
-  store: RelayCatalogSourceMapStore,
-  principalId: string,
-): string | undefined {
-  const hit = store.lookupProjection(
-    USERNAME_INDEX_TENANT_KEY,
-    SOURCE_PRINCIPAL_TO_USERNAME,
-    principalId,
-  );
-  if (!hit.found || hit.projection === null || typeof hit.projection !== "object") {
-    return undefined;
-  }
-  const u = (hit.projection as Record<string, unknown>).username;
-  return typeof u === "string" ? u : undefined;
-}
-
-function rollbackUsernameMapsAfterRegisterFailure(
-  store: RelayCatalogSourceMapStore,
-  principalId: string,
-  priorNormalizedUsername: string | undefined,
-): void {
-  const current = lookupNormalizedUsernameForDid(store, principalId);
-  if (current === undefined) return;
-  store.deleteRow(USERNAME_INDEX_TENANT_KEY, SOURCE_PRINCIPAL_TO_USERNAME, principalId);
-  store.deleteRow(USERNAME_INDEX_TENANT_KEY, SOURCE_USERNAME_TO_PRINCIPAL, current);
-  if (priorNormalizedUsername === undefined) return;
-  const username = normalizeUsername(priorNormalizedUsername);
-  store.upsertRow({
-    tenant_key: USERNAME_INDEX_TENANT_KEY,
-    source_map_id: SOURCE_USERNAME_TO_PRINCIPAL,
-    entry_key: username,
-    pointer: relaySyntheticPointer(
-      USERNAME_INDEX_TENANT_KEY,
-      SOURCE_USERNAME_TO_PRINCIPAL,
-      username,
-    ),
-    projection: { principalId },
-  });
-  store.upsertRow({
-    tenant_key: USERNAME_INDEX_TENANT_KEY,
-    source_map_id: SOURCE_PRINCIPAL_TO_USERNAME,
-    entry_key: principalId,
-    pointer: relaySyntheticPointer(
-      USERNAME_INDEX_TENANT_KEY,
-      SOURCE_PRINCIPAL_TO_USERNAME,
-      principalId,
-    ),
-    projection: { username },
-  });
-}
 
 export async function handleRegister(req: Request, deps: HostRouteDeps): Promise<Response> {
   const { ctx, rateLimiters } = deps;
@@ -120,7 +62,7 @@ export async function handleRegister(req: Request, deps: HostRouteDeps): Promise
     consumedInvitePlain = inviteTokenRaw;
   }
 
-  const priorUsername = lookupNormalizedUsernameForDid(ctx.store, body.did);
+  const priorUsername = ctx.lookupNormalizedUsernameForPrincipal(body.did);
 
   const swarmReq: PrincipalRegistrationRequest = {
     principalId: body.did,
@@ -157,7 +99,7 @@ export async function handleRegister(req: Request, deps: HostRouteDeps): Promise
     const msg = e instanceof Error ? e.message : String(e);
     const usernameTaken = msg.includes("unavailable");
     if (!usernameTaken) {
-      rollbackUsernameMapsAfterRegisterFailure(ctx.store, swarmReq.principalId, priorUsername);
+      ctx.rollbackUsernameMapsAfterFailedRegistration(swarmReq.principalId, priorUsername);
     }
     if (usernameTaken) {
       return Response.json(

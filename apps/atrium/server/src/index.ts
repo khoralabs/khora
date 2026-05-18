@@ -2,7 +2,6 @@ import { mkdirSync, unlinkSync } from "node:fs";
 import { dirname } from "node:path";
 import { type AtriumHostContext, createAtriumHost } from "@khoralabs/atrium-host";
 import type { AtriumWsData } from "@khoralabs/atrium-transport";
-import { startPrincipalTeardownWorker } from "@khoralabs/relay-colonnade";
 import {
   envCatalogPath,
   envCellPoolCount,
@@ -42,15 +41,6 @@ const ctx: AtriumHostContext = await createAtriumHost({
   cellPoolCount,
   useCellWorkers: envColonnadeUseCellWorkers(),
   ...(tenantKey !== undefined ? { tenantKey } : {}),
-});
-
-const teardownWorker = startPrincipalTeardownWorker({
-  catalogDb: ctx.catalogDb,
-  framesDb: ctx.framesDb,
-  store: ctx.store,
-  persistence: ctx.host.persistence,
-  tenantKey: ctx.tenantKey,
-  cluster: ctx.cluster,
 });
 
 const deps: HostRouteDeps = { ctx, rateLimiters: createV2HostRateLimiters() };
@@ -128,7 +118,7 @@ function shutdown(signal: NodeJS.Signals): void {
   }, 10_000).unref();
 
   try {
-    teardownWorker.stop();
+    ctx.principalTeardownWorker.stop();
   } catch {
     /* ignore */
   }

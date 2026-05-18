@@ -5,11 +5,6 @@ import {
   zAtriumProfile,
   zAtriumProfilePatch,
 } from "@khoralabs/atrium-contracts";
-import {
-  registerAgentOnColonnadePersistence,
-  SOURCE_USERNAME_TO_PRINCIPAL,
-  USERNAME_INDEX_TENANT_KEY,
-} from "@khoralabs/relay-colonnade";
 import z from "zod";
 import type { HostRouteDeps } from "./deps.ts";
 import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses.ts";
@@ -59,16 +54,8 @@ export async function handleProfileByUsername(
   } catch {
     return jsonError("Not found", 404);
   }
-  const hit = ctx.store.lookupProjection(
-    USERNAME_INDEX_TENANT_KEY,
-    SOURCE_USERNAME_TO_PRINCIPAL,
-    normalized,
-  );
-  if (!hit.found || hit.projection === null || typeof hit.projection !== "object") {
-    return jsonError("Not found", 404);
-  }
-  const principalId = (hit.projection as Record<string, unknown>).principalId;
-  if (typeof principalId !== "string") {
+  const principalId = ctx.lookupPrincipalIdByNormalizedUsername(normalized);
+  if (principalId === undefined) {
     return jsonError("Not found", 404);
   }
   const profileId = ctx.host.persistenceClient.profileIdForPrincipal(principalId);
@@ -112,7 +99,7 @@ export async function handleProfilePatch(
     const merged = mergeAtriumProfilePatch(previous, patch);
     if (merged.username !== previous.username) {
       try {
-        registerAgentOnColonnadePersistence(ctx.host.persistence, ctx.catalogDb, ctx.store, {
+        ctx.applyProfileUsernameAndMaps({
           principalId: did,
           profileUpsert: { id: merged.id, bodyJson: JSON.stringify(merged) },
           username: merged.username,

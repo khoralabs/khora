@@ -8,10 +8,14 @@ import type {
   SqliteColonnadeCluster,
 } from "@khoralabs/colonnade-persistence";
 import type {
+  PrincipalTeardownWorkerHandle,
   RelayCatalogSourceMapStore,
   SocialRelationshipPersistence,
 } from "@khoralabs/relay-colonnade";
+import type { AtriumHostCatalogApi } from "./catalog-facade.ts";
 import type { AtriumInvitesRepo } from "./invites/atrium-invites.ts";
+
+export type { AtriumHostCatalogApi } from "./catalog-facade.ts";
 
 export type AtriumHostContext = {
   host: AgentRelay<AtriumProfile, AtriumPost, unknown, never>;
@@ -30,4 +34,5 @@ export type AtriumHostContext = {
   roomLifecycle?: (event: AtriumRoomLifecycleHostEvent) => void;
   /** Present when `ATRIUM_INVITE_PEPPER` is set (or seeds / required invites need it). */
   invitesRepo: AtriumInvitesRepo | undefined;
-};
+  principalTeardownWorker: PrincipalTeardownWorkerHandle;
+} & AtriumHostCatalogApi;

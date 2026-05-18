@@ -1,6 +1,5 @@
 import type { PrincipalRegistrationRequest } from "@khoralabs/agent-relay";
 import { zAtriumUnregisterRequestBody } from "@khoralabs/atrium-contracts";
-import { phase1UnregisterColonnadePrincipal } from "@khoralabs/relay-colonnade";
 import { logger } from "../logger.ts";
 import { clientIpFromRequest } from "../rate-limit.ts";
 import type { HostRouteDeps } from "./deps.ts";
@@ -39,13 +38,7 @@ export async function handleUnregister(req: Request, deps: HostRouteDeps): Promi
     return new Response(null, { status: 204 });
   }
 
-  phase1UnregisterColonnadePrincipal({
-    persistence: ctx.host.persistence,
-    store: ctx.store,
-    catalogDb: ctx.catalogDb,
-    tenantKey: ctx.tenantKey,
-    principalId: body.did,
-  });
+  ctx.phase1UnregisterPrincipal(body.did);
 
   logger.info({ did: body.did }, "principal unregistered");
   return new Response(null, { status: 204 });

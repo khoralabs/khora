@@ -1,9 +1,6 @@
 import type { Database } from "bun:sqlite";
 
 export function ensureCatalogSchema(db: Database): void {
-  db.exec(`DROP TABLE IF EXISTS principal_home_cell`);
-  db.exec(`DROP TABLE IF EXISTS catalog_meta`);
-
   db.run(`
     CREATE TABLE IF NOT EXISTS discovery_documents (
       document_key TEXT PRIMARY KEY NOT NULL,

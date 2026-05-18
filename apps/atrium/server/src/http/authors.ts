@@ -5,10 +5,6 @@ import {
   authorTopicSubscriptionSubject,
   parseAuthorTopicSubscriptionSubject,
 } from "@khoralabs/atrium-host";
-import {
-  SOURCE_USERNAME_TO_PRINCIPAL,
-  USERNAME_INDEX_TENANT_KEY,
-} from "@khoralabs/relay-colonnade";
 import type { HostRouteDeps } from "./deps.ts";
 import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses.ts";
 
@@ -26,16 +22,8 @@ function resolveAuthorDidFromUsernameInput(
   } catch {
     return { ok: false, response: jsonError("unknown username", 404) };
   }
-  const hit = ctx.store.lookupProjection(
-    USERNAME_INDEX_TENANT_KEY,
-    SOURCE_USERNAME_TO_PRINCIPAL,
-    normalized,
-  );
-  if (!hit.found || hit.projection === null || typeof hit.projection !== "object") {
-    return { ok: false, response: jsonError("unknown username", 404) };
-  }
-  const pid = (hit.projection as Record<string, unknown>).principalId;
-  if (typeof pid !== "string") {
+  const pid = ctx.lookupPrincipalIdByNormalizedUsername(normalized);
+  if (pid === undefined) {
     return { ok: false, response: jsonError("unknown username", 404) };
   }
   return { ok: true, authorDid: pid };

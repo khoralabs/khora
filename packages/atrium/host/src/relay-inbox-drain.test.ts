@@ -2,10 +2,6 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-  phase1UnregisterColonnadePrincipal,
-  registerAgentOnColonnadePersistence,
-} from "@khoralabs/relay-colonnade";
 import { createAtriumHost } from "./atrium-host.ts";
 import { popRelayInboxDrainItemsForDid } from "./relay-inbox-drain.ts";
 
@@ -28,13 +24,14 @@ test("popRelayInboxDrainItemsForDid drops cell inbox row when author unregistere
     framesDbPath: join(root, "f.sqlite"),
     cellsDir: join(root, "cells"),
     tenantKey: "tn",
+    startPrincipalTeardownWorker: false,
   });
-  registerAgentOnColonnadePersistence(ctx.host.persistence, ctx.catalogDb, ctx.store, {
+  ctx.applyProfileUsernameAndMaps({
     principalId: "did:author",
     username: "author",
     profileUpsert: { id: "prof-a", bodyJson: "{}" },
   });
-  registerAgentOnColonnadePersistence(ctx.host.persistence, ctx.catalogDb, ctx.store, {
+  ctx.applyProfileUsernameAndMaps({
     principalId: "did:sub",
     username: "sub",
     profileUpsert: { id: "prof-s", bodyJson: "{}" },
@@ -102,15 +99,10 @@ test("popRelayInboxDrainItemsForDid drops cell inbox row when author unregistere
     },
   });
 
-  phase1UnregisterColonnadePrincipal({
-    persistence: ctx.host.persistence,
-    store: ctx.store,
-    catalogDb: ctx.catalogDb,
-    tenantKey: ctx.tenantKey,
-    principalId: "did:author",
-  });
+  ctx.phase1UnregisterPrincipal("did:author");
 
   expect(await popRelayInboxDrainItemsForDid(ctx, "did:sub")).toHaveLength(0);
   expect(await popRelayInboxDrainItemsForDid(ctx, "did:sub")).toHaveLength(0);
+  ctx.principalTeardownWorker.stop();
   ctx.cluster.close();
 });
