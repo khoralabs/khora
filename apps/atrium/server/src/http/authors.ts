@@ -1,10 +1,10 @@
-import { normalizeTopicSlug, normalizeUsername } from "@khoralabs/at2-contracts";
+import { normalizeTopicSlug, normalizeUsername } from "@khoralabs/atrium-contracts";
 import {
   authorDidFromSubscriptionSubject,
   authorSubscriptionSubject,
   authorTopicSubscriptionSubject,
   parseAuthorTopicSubscriptionSubject,
-} from "@khoralabs/at2-host";
+} from "@khoralabs/atrium-host";
 import {
   SOURCE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
@@ -91,7 +91,11 @@ export async function handleAuthorSubMutation(
   const subject = authorSubscriptionSubject(resolved.authorDid);
   if (req.method === "POST") {
     ctx.host.persistenceClient.subscribeAgentSubject(did, subject);
-    return Response.json({ ok: true, username: usernameRaw.trim(), authorDid: resolved.authorDid });
+    return Response.json({
+      ok: true,
+      username: usernameRaw.trim(),
+      authorDid: resolved.authorDid,
+    });
   }
   if (req.method === "DELETE") {
     ctx.host.persistenceClient.unsubscribeAgentSubject(did, subject);

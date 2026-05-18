@@ -1,4 +1,4 @@
-import { ATRIUM_BUILTIN_PLUGIN_ID } from "../at2-plugins.ts";
+import { ATRIUM_BUILTIN_PLUGIN_ID } from "../atrium-plugins.ts";
 import type { AtriumAppConfigBase, AtriumAppPluginMap } from "./schema.ts";
 
 const DEFAULT_TELEMETRY_MAX_BYTES = 4 * 1024 * 1024;

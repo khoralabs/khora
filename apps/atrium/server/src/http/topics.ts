@@ -1,4 +1,4 @@
-import { normalizeTopicSlug } from "@khoralabs/at2-contracts";
+import { normalizeTopicSlug } from "@khoralabs/atrium-contracts";
 import type { HostRouteDeps } from "./deps.ts";
 import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses.ts";
 

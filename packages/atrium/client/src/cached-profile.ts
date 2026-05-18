@@ -4,9 +4,9 @@ import {
   type AtriumProfile,
   zAtriumPost,
   zAtriumProfile,
-} from "@khoralabs/at2-contracts";
+} from "@khoralabs/atrium-contracts";
 import z from "zod";
-import { ATRIUM_BUILTIN_PLUGIN_ID, createAtriumResolvePath } from "./at2-plugins.ts";
+import { ATRIUM_BUILTIN_PLUGIN_ID, createAtriumResolvePath } from "./atrium-plugins.ts";
 import type { AtriumAppConfigBase } from "./config/schema.ts";
 
 /**

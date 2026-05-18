@@ -1,5 +1,5 @@
 import z from "zod";
-import { ATRIUM_BUILTIN_PLUGIN_ID } from "../at2-plugins.ts";
+import { ATRIUM_BUILTIN_PLUGIN_ID } from "../atrium-plugins.ts";
 
 const zProfileSyncOptions = z
   .object({
@@ -88,7 +88,7 @@ export const zAtriumAppPluginMap = z
 export type AtriumAppPluginMap = z.infer<typeof zAtriumAppPluginMap>;
 
 /**
- * Reusable base schema for any `@khoralabs/at2-client` consumer. Top-level is `passthrough` so a
+ * Reusable base schema for any `@khoralabs/atrium-client` consumer. Top-level is `passthrough` so a
  * single JSON file can serve multiple hosts; each host parses with its own extended schema and
  * receives just the fields it knows.
  */
@@ -98,7 +98,7 @@ export const zAtriumAppConfigBase = z
       .string()
       .optional()
       .describe(
-        "Path or URL to at2-config.schema.json. Purely for editor IntelliSense; ignored at runtime.",
+        "Path or URL to atrium-config.schema.json. Purely for editor IntelliSense; ignored at runtime.",
       ),
     extends: z
       .union([z.string(), z.array(z.string())])

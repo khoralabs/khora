@@ -3,7 +3,7 @@
   "type": "object",
   "properties": {
     "$schema": {
-      "description": "Path or URL to at2-config.schema.json. Purely for editor IntelliSense; ignored at runtime.",
+      "description": "Path or URL to atrium-config.schema.json. Purely for editor IntelliSense; ignored at runtime.",
       "type": "string"
     },
     "extends": {

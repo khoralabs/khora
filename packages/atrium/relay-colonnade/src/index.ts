@@ -1,9 +1,5 @@
 export type { AgentRelayPersistence } from "@khoralabs/agent-relay";
-export {
-  deleteRelayInboxRowsForPostId,
-  purgeRelayCatalogPostEntity,
-  RELAY_CATALOG_SOURCE_POST,
-} from "./catalog-post-adapter.ts";
+export { purgeRelayCatalogPostEntity, RELAY_CATALOG_SOURCE_POST } from "./catalog-post-adapter.ts";
 export {
   type CatalogSourceMapListedRow,
   escapeSqlLikeLiteral,

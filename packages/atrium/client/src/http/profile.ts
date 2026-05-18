@@ -4,8 +4,8 @@ import {
   normalizeUsername,
   zAtriumProfile,
   zAtriumProfilePatch,
-} from "@khoralabs/at2-contracts";
-import { AtriumClientError, type AtriumUnaryTransport } from "@khoralabs/at2-transport";
+} from "@khoralabs/atrium-contracts";
+import { AtriumClientError, type AtriumUnaryTransport } from "@khoralabs/atrium-transport";
 
 export function updateProfile(
   t: AtriumUnaryTransport,

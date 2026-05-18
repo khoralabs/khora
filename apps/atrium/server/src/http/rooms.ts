@@ -7,13 +7,16 @@ import {
   zAtriumRoomJoinTicketResponse,
   zAtriumRoomMintTicketBody,
   zAtriumRoomTicketResponse,
-} from "@khoralabs/at2-contracts";
+} from "@khoralabs/atrium-contracts";
 import {
   ATRIUM_ROOM_INVITE_SOURCE_MAP_ID,
   ATRIUM_ROOM_REGISTRY_SOURCE_MAP_ID,
   RELAY_INBOX_SOURCE_MAP_ID,
-} from "@khoralabs/at2-host";
-import type { AtriumRoomLifecycleHostEvent, AtriumWsUpgradePort } from "@khoralabs/at2-transport";
+} from "@khoralabs/atrium-host";
+import type {
+  AtriumRoomLifecycleHostEvent,
+  AtriumWsUpgradePort,
+} from "@khoralabs/atrium-transport";
 import {
   relaySyntheticPointer,
   SOURCE_USERNAME_TO_PRINCIPAL,

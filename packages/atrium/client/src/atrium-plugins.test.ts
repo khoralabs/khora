@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { resolve } from "node:path";
-import { AtriumClient } from "./at2-client.ts";
-import { createAtriumResolvePath, mergeLabeledAtriumPluginLayers } from "./at2-plugins.ts";
+import { AtriumClient } from "./atrium-client.ts";
+import { createAtriumResolvePath, mergeLabeledAtriumPluginLayers } from "./atrium-plugins.ts";
 
 describe("createAtriumResolvePath", () => {
   test("joins relative paths under dataDir", () => {

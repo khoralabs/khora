@@ -10,7 +10,7 @@ import {
 
 let dir: string;
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), "at2-cached-profile-"));
+  dir = mkdtempSync(join(tmpdir(), "atrium-cached-profile-"));
 });
 afterEach(() => {
   rmSync(dir, { recursive: true, force: true });

@@ -2,7 +2,7 @@ import {
   AtriumClientError,
   type AtriumUnaryTransport,
   readErrorMessage,
-} from "@khoralabs/at2-transport";
+} from "@khoralabs/atrium-transport";
 import z from "zod";
 
 const zHealth = z.object({ ok: z.literal(true) });

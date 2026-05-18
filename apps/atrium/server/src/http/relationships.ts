@@ -1,4 +1,4 @@
-import { zAtriumRelationshipListResponse } from "@khoralabs/at2-contracts";
+import { zAtriumRelationshipListResponse } from "@khoralabs/atrium-contracts";
 import type { HostRouteDeps } from "./deps.ts";
 import { authErrorResponse, rateLimitedResponse } from "./responses.ts";
 

@@ -1,14 +1,13 @@
 import { mkdirSync, unlinkSync } from "node:fs";
 import { dirname } from "node:path";
-import {
-  type AtriumHostContext,
-  createAtriumHost,
-  RELAY_INBOX_SOURCE_MAP_ID,
-} from "@khoralabs/at2-host";
-import type { AtriumWsData } from "@khoralabs/at2-transport";
+import { type AtriumHostContext, createAtriumHost } from "@khoralabs/atrium-host";
+import type { AtriumWsData } from "@khoralabs/atrium-transport";
 import { startPrincipalTeardownWorker } from "@khoralabs/relay-colonnade";
 import {
   envCatalogPath,
+  envCellPoolCount,
+  envCellsDir,
+  envColonnadeUseCellWorkers,
   envFramesDbPath,
   envHostDuplexIngress,
   envHostDuplexUnixPath,
@@ -18,8 +17,8 @@ import {
   validateEnv,
 } from "./env.ts";
 import type { HostRouteDeps } from "./http/deps.ts";
-import { logger } from "./logger.ts";
 import { at2FrameChannelWsHandlers, route } from "./http/router.ts";
+import { logger } from "./logger.ts";
 import { createV2HostRateLimiters } from "./rate-limit-buckets.ts";
 import { startDuplexUnixIngress } from "./server/duplex-unix-listener.ts";
 import { startStdioUnaryIngress } from "./server/stdio-unary-listener.ts";
@@ -29,13 +28,19 @@ validateEnv();
 
 const catalogPath = envCatalogPath();
 const framesDbPath = envFramesDbPath();
+const cellsDir = envCellsDir();
+const cellPoolCount = envCellPoolCount();
 mkdirSync(dirname(catalogPath), { recursive: true });
 mkdirSync(dirname(framesDbPath), { recursive: true });
+mkdirSync(cellsDir, { recursive: true });
 
 const tenantKey = envTenantKey();
 const ctx: AtriumHostContext = await createAtriumHost({
   catalogPath,
   framesDbPath,
+  cellsDir,
+  cellPoolCount,
+  useCellWorkers: envColonnadeUseCellWorkers(),
   ...(tenantKey !== undefined ? { tenantKey } : {}),
 });
 
@@ -45,7 +50,7 @@ const teardownWorker = startPrincipalTeardownWorker({
   store: ctx.store,
   persistence: ctx.host.persistence,
   tenantKey: ctx.tenantKey,
-  relayInboxSourceMapId: RELAY_INBOX_SOURCE_MAP_ID,
+  cluster: ctx.cluster,
 });
 
 const deps: HostRouteDeps = { ctx, rateLimiters: createV2HostRateLimiters() };
@@ -124,6 +129,11 @@ function shutdown(signal: NodeJS.Signals): void {
 
   try {
     teardownWorker.stop();
+  } catch {
+    /* ignore */
+  }
+  try {
+    ctx.cluster.close();
   } catch {
     /* ignore */
   }

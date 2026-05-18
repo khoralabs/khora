@@ -6,7 +6,7 @@ import {
   zAtriumPost,
   zAtriumPostCreate,
   zAtriumPostPatch,
-} from "@khoralabs/at2-contracts";
+} from "@khoralabs/atrium-contracts";
 import z from "zod";
 import type { HostRouteDeps } from "./deps.ts";
 import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses.ts";

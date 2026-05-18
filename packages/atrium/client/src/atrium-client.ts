@@ -1,4 +1,4 @@
-import type { AgentSigner } from "@khoralabs/at2-auth";
+import type { AgentSigner } from "@khoralabs/atrium-auth";
 import type {
   AtriumInviteListResponse,
   AtriumInvitePreviewResponse,
@@ -16,7 +16,7 @@ import type {
   AtriumRoomJoinTicketResponse,
   AtriumRoomMintTicketBody,
   AtriumRoomTicketResponse,
-} from "@khoralabs/at2-contracts";
+} from "@khoralabs/atrium-contracts";
 import {
   type AtriumClientEvent,
   type AtriumDuplexTransport,
@@ -25,7 +25,7 @@ import {
   type AtriumUnaryTransport,
   createAtriumTransportBundleFromEnv,
   type InboxWsHandlers,
-} from "@khoralabs/at2-transport";
+} from "@khoralabs/atrium-transport";
 import type { Checkpoint, SessionOp } from "@khoralabs/obp-v2-session-impl";
 import {
   connectObpFrameChannelSession,
@@ -36,7 +36,7 @@ import {
   type AtriumPluginHandle,
   type AtriumPluginInstaller,
   createAtriumResolvePath,
-} from "./at2-plugins.ts";
+} from "./atrium-plugins.ts";
 import { getAgentStatus } from "./http/agent.ts";
 import {
   type AuthorSubscriptionsSnapshot,
@@ -73,7 +73,7 @@ export type {
   AtriumRoomJoinTicketResponse,
   AtriumRoomMintTicketBody,
   AtriumRoomTicketResponse,
-} from "@khoralabs/at2-contracts";
+} from "@khoralabs/atrium-contracts";
 export type {
   ObpFrameConnection,
   ObpWebSocketConnectOptions,

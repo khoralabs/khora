@@ -1,7 +1,7 @@
 export type {
   AtriumWsData,
   AtriumWsUpgradePort,
-} from "./at2-host-ws-transport.ts";
+} from "./atrium-host-ws-transport.ts";
 export type {
   AtriumTransportBundle,
   CreateAtriumTransportBundleFromEnvOptions,

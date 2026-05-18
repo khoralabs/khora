@@ -3,8 +3,8 @@ import {
   normalizeUsername,
   zAtriumRegisterResult,
   zAtriumRegistrationRequestBody,
-} from "@khoralabs/at2-contracts";
-import { inviteRequiredFromEnv, invitesPerRegistrationFromEnv } from "@khoralabs/at2-host";
+} from "@khoralabs/atrium-contracts";
+import { inviteRequiredFromEnv, invitesPerRegistrationFromEnv } from "@khoralabs/atrium-host";
 import type { RelayCatalogSourceMapStore } from "@khoralabs/relay-colonnade";
 import {
   relaySyntheticPointer,

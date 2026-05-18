@@ -1,4 +1,4 @@
-import type { AgentSigner } from "@khoralabs/at2-auth";
+import type { AgentSigner } from "@khoralabs/atrium-auth";
 import type { AtriumDuplexTransport } from "./duplex-ws.ts";
 import { WsAtriumDuplexTransport } from "./duplex-ws.ts";
 import {

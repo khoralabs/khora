@@ -2,7 +2,7 @@ import z from "zod";
 import { zAtriumAppConfigBase } from "./schema.ts";
 
 /**
- * Generate the JSON Schema for {@link zAtriumAppConfigBase}. The committed `at2-config.schema.json`
+ * Generate the JSON Schema for {@link zAtriumAppConfigBase}. The committed `atrium-config.schema.json`
  * artifact is produced from this same call (see `scripts/build-json-schema.ts`); editors point at the
  * on-disk file via `$schema`.
  */

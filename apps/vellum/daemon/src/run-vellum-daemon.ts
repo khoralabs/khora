@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import type { PersistableAgentSigner } from "@khoralabs/agent-persisted-signer";
-import { AtriumClient } from "@khoralabs/at2-client";
+import { AtriumClient } from "@khoralabs/atrium-client";
 import type { JsonDocument } from "@khoralabs/obp-v2-model";
 import {
   createObpV2SqlitePersistenceClient,

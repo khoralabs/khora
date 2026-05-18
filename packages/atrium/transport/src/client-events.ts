@@ -1,5 +1,9 @@
 import type { AgentNotification } from "@khoralabs/agent-relay";
-import type { AtriumPost, AtriumProfile, AtriumRegistrationResult } from "@khoralabs/at2-contracts";
+import type {
+  AtriumPost,
+  AtriumProfile,
+  AtriumRegistrationResult,
+} from "@khoralabs/atrium-contracts";
 import type { InboxNotificationRow, InboxWsDrainMessage } from "./inbox-ws.ts";
 
 // ---------------------------------------------------------------------------

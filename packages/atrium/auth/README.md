@@ -1,4 +1,4 @@
-# `@khoralabs/at2-auth`
+# `@khoralabs/atrium-auth`
 
 The authentication layer for **at2** agents. Owns:
 
@@ -14,7 +14,7 @@ Swapping the auth scheme is intended to be a one-file change: pass a different `
 
 ```mermaid
 graph LR
-  client["at2 client"] -->|"AgentSigner, signAgentRequest"| auth["@khoralabs/at2-auth"]
+  client["at2 client"] -->|"AgentSigner, signAgentRequest"| auth["@khoralabs/atrium-auth"]
   host["at2 host"] -->|"createAtriumDidAuth(db)"| auth
   auth -->|"AuthPreflight"| relay["@khoralabs/agent-relay"]
 ```
@@ -29,7 +29,7 @@ graph LR
 ### Host side
 
 ```ts
-import { createAtriumDidAuth } from "@khoralabs/at2-auth";
+import { createAtriumDidAuth } from "@khoralabs/atrium-auth";
 
 const auth = createAtriumDidAuth({ db });
 const { did } = await auth.requireAuthenticatedRequest(req, url, bodyText);

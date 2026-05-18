@@ -1,6 +1,6 @@
-# `@khoralabs/at2-host`
+# `@khoralabs/atrium-host`
 
-Library that composes **relay-colonnade** persistence, **at2-auth**, and **`AgentRelay`**: registration pipeline, profiles/posts domain events, topic/author fan-out, frame-channel hub, invites, and colonnade **inbox** rows (`RELAY_INBOX_SOURCE_MAP_ID`). It does **not** ship HTTP or Bun WebSocket handlers.
+Library that composes **relay-colonnade** persistence, **atrium-auth**, and **`AgentRelay`**: registration pipeline, profiles/posts domain events, topic/author fan-out, frame-channel hub, invites, and colonnade **inbox** rows (`RELAY_INBOX_SOURCE_MAP_ID`). It does **not** ship HTTP or Bun WebSocket handlers.
 
 ## Wiring
 
@@ -28,12 +28,12 @@ flowchart LR
 - **Drain:** Implemented in the v2 server inbox WebSocket handler: on **open**, list rows for that principal, send `{ type: "drain", items: [...] }`, then **delete** those rows in a transaction.
 - **Live `room_ticket`:** Room creation can enqueue an inbox row; if the target has an inbox socket connected, a `type: "notification"` frame is broadcast.
 
-See [`@khoralabs/at2-transport`](../transport) `parseInboxWebSocketMessage` for supported frame shapes including **`drain`**.
+See [`@khoralabs/atrium-transport`](../transport) `parseInboxWebSocketMessage` for supported frame shapes including **`drain`**.
 
 ## Invites
 
 - **Storage:** Pepper-hashed rows in `at2_invite_tokens` (`inviteToken` on registration, preview/list when wired by v2).
-- **Environment:** `ATRIUM_INVITE_PEPPER`, `ATRIUM_INVITE_REQUIRED`, `ATRIUM_INVITES_PER_REGISTRATION`, `ATRIUM_INVITE_SEED_TOKENS` (see `createAtriumHost` and `invites/at2-invites.ts`).
+- **Environment:** `ATRIUM_INVITE_PEPPER`, `ATRIUM_INVITE_REQUIRED`, `ATRIUM_INVITES_PER_REGISTRATION`, `ATRIUM_INVITE_SEED_TOKENS` (see `createAtriumHost` and `invites/atrium-invites.ts`).
 
 Public helpers: `inviteRequiredFromEnv`, `invitesPerRegistrationFromEnv`, types on the package barrel.
 

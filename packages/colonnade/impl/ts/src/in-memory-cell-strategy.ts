@@ -203,6 +203,38 @@ export class InMemoryCellPersistenceStrategy implements CellPersistenceStrategy 
     return {};
   }
 
+  async purgePrincipal(principalId: string): Promise<void> {
+    for (const [id, row] of this.inbox) {
+      if (row.recipient_principal_id === principalId) {
+        this.inbox.delete(id);
+      }
+    }
+    for (const [key, row] of this.outbox) {
+      if (row.principal_id === principalId) {
+        this.outbox.delete(key);
+      }
+    }
+  }
+
+  async discardInboxEntries(input: {
+    cell_id: string;
+    tenant_key: string;
+    principal_id: string;
+    inbox_entry_ids: readonly string[];
+  }): Promise<void> {
+    this.assertCell(input.cell_id);
+    for (const id of input.inbox_entry_ids) {
+      const row = this.inbox.get(id);
+      if (
+        row !== undefined &&
+        row.recipient_principal_id === input.principal_id &&
+        row.tenant_key === input.tenant_key
+      ) {
+        this.inbox.delete(id);
+      }
+    }
+  }
+
   /** Test helper: last acked sequence. */
   getAppliedThrough(): string {
     return this.appliedThrough;
@@ -234,6 +266,7 @@ function cloneStaging(s: InboxStagingPayload): InboxStagingPayload {
     kind: "pointer",
     pointer: {
       pointer: { ...s.pointer.pointer },
+      ...(s.pointer.metadata !== undefined ? { metadata: s.pointer.metadata } : {}),
     },
   };
 }

@@ -1,4 +1,4 @@
-import { AtriumClient, type AtriumRoomCreateBody } from "@khoralabs/at2-client";
+import { AtriumClient, type AtriumRoomCreateBody } from "@khoralabs/atrium-client";
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { strFlag } from "@khoralabs/cli-kit";
 

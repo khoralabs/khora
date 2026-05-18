@@ -2,6 +2,7 @@
 
 import { Database } from "bun:sqlite";
 
+import type { DiscardInboxEntriesInput } from "../cell-persistence-strategy.ts";
 import type {
   AckWriteLogAppliedInput,
   AppendOutboxRecordInput,
@@ -55,6 +56,10 @@ async function dispatch(method: string, args: readonly unknown[]): Promise<unkno
       return s.fetchWriteLogBatch(args[0] as FetchWriteLogBatchInput);
     case "ackWriteLogApplied":
       return s.ackWriteLogApplied(args[0] as AckWriteLogAppliedInput);
+    case "purgePrincipal":
+      return s.purgePrincipal(args[0] as string);
+    case "discardInboxEntries":
+      return s.discardInboxEntries(args[0] as DiscardInboxEntriesInput);
     default:
       throw new Error(`sqlite-cell-worker: unknown method ${method}`);
   }

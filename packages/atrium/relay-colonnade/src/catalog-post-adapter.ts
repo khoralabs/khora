@@ -6,7 +6,6 @@ import type {
 } from "@khoralabs/agent-relay";
 import { createCatalogEntityAdapter, parseEntityRow } from "./catalog-entity-adapter.ts";
 import {
-  escapeSqlLikeLiteral,
   type RelayCatalogSourceMapStore,
   relaySyntheticPointer,
 } from "./catalog-source-map-store.ts";
@@ -199,40 +198,20 @@ export function createCatalogPostAdapter(
   };
 }
 
-/** Remove inbox pointer rows whose key ends with `/postId` (fan-out keys are `recipient/postId`). */
-export function deleteRelayInboxRowsForPostId(
-  store: RelayCatalogSourceMapStore,
-  tenantKey: string,
-  inboxSourceMapId: string,
-  postId: string,
-): void {
-  const pattern = `%/${escapeSqlLikeLiteral(postId)}`;
-  for (const r of store.listBySourceMapEntryKeyLike(tenantKey, inboxSourceMapId, pattern)) {
-    store.deleteRow(tenantKey, inboxSourceMapId, r.entry_key);
-  }
-}
-
-/** Physically remove post entity + index buckets + optional relay inbox pointers (not a tombstone). */
+/** Physically remove post entity + index buckets (not a tombstone). */
 export function purgeRelayCatalogPostEntity(
   store: RelayCatalogSourceMapStore,
   db: Database,
   tenantKey: string,
   postId: string,
-  inbox?: { sourceMapId: string },
 ): void {
   const { found, projection } = store.lookupProjection(tenantKey, SOURCE_POST, postId);
   if (!found) {
-    if (inbox !== undefined) {
-      deleteRelayInboxRowsForPostId(store, tenantKey, inbox.sourceMapId, postId);
-    }
     return;
   }
   const row = parseEntityRow(projection, postId);
   const meta = row ? parsePostMeta(row.bodyJson) : null;
   db.transaction(() => {
-    if (inbox !== undefined) {
-      deleteRelayInboxRowsForPostId(store, tenantKey, inbox.sourceMapId, postId);
-    }
     if (meta?.authorProfileId && meta.kind) {
       removePostIdFromIndex(store, tenantKey, meta.authorProfileId, meta.kind, postId);
     }

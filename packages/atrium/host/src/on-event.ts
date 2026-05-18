@@ -10,37 +10,45 @@ import {
   type AtriumProfile,
   parseAtriumRegistrationMetadata,
   zAtriumProfile,
-} from "@khoralabs/at2-contracts";
+} from "@khoralabs/atrium-contracts";
+import type {
+  ColonnadePublicationClient,
+  SqliteColonnadeCluster,
+} from "@khoralabs/colonnade-persistence";
 import {
   purgeRelayCatalogPostEntity,
-  RELAY_CATALOG_SOURCE_POST,
   type RelayCatalogSourceMapStore,
   registerAgentOnColonnadePersistence,
-  relaySyntheticPointer,
 } from "@khoralabs/relay-colonnade";
-import { RELAY_INBOX_SOURCE_MAP_ID } from "./relay-inbox.ts";
 import {
   authorSubscriptionSubject,
   authorTopicSubscriptionSubject,
   topicSubscriptionSubject,
 } from "./subject-keys.ts";
 
-function fanOutPostToInbox(params: {
+const postEncoder = new TextEncoder();
+
+async function fanOutPostToCellInbox(params: {
   ctx: AgentRelayEventHandlerCtx;
-  store: RelayCatalogSourceMapStore;
   tenantKey: string;
   post: AtriumPost;
-}): void {
-  const { ctx, store, tenantKey, post } = params;
-  const subs = params.ctx.persistence.agentSubjectSubscriptions;
+  cluster: SqliteColonnadeCluster;
+  publicationClient: ColonnadePublicationClient;
+}): Promise<void> {
+  const { ctx, tenantKey, post, cluster, publicationClient } = params;
+  const subs = ctx.persistence.agentSubjectSubscriptions;
   const authorPrincipalId =
     post.authorProfileId !== undefined && post.authorProfileId.length > 0
       ? ctx.persistence.agentRegistrations.principalForProfileId(post.authorProfileId)
       : undefined;
 
+  if (authorPrincipalId === undefined || authorPrincipalId.length === 0) {
+    return;
+  }
+
   const byRecipient = new Map<string, InboxPostReason[]>();
   const addReason = (recipientId: string, reason: InboxPostReason): void => {
-    if (authorPrincipalId !== undefined && recipientId === authorPrincipalId) return;
+    if (recipientId === authorPrincipalId) return;
     const cur = byRecipient.get(recipientId);
     if (cur === undefined) {
       byRecipient.set(recipientId, [reason]);
@@ -55,54 +63,66 @@ function fanOutPostToInbox(params: {
       for (const pid of subs.subscriberPrincipalsForSubject(subject, authorPrincipalId)) {
         addReason(pid, { kind: "topic", topic: slug });
       }
-      if (authorPrincipalId !== undefined) {
-        const tupleSubject = authorTopicSubscriptionSubject(authorPrincipalId, slug);
-        for (const pid of subs.subscriberPrincipalsForSubject(tupleSubject, authorPrincipalId)) {
-          addReason(pid, {
-            kind: "author_topic",
-            authorPrincipalId,
-            topic: slug,
-          });
-        }
+      const tupleSubject = authorTopicSubscriptionSubject(authorPrincipalId, slug);
+      for (const pid of subs.subscriberPrincipalsForSubject(tupleSubject, authorPrincipalId)) {
+        addReason(pid, {
+          kind: "author_topic",
+          authorPrincipalId,
+          topic: slug,
+        });
       }
     }
   }
 
-  if (authorPrincipalId !== undefined) {
-    const authorSub = authorSubscriptionSubject(authorPrincipalId);
-    for (const pid of subs.subscriberPrincipalsForSubject(authorSub, authorPrincipalId)) {
-      addReason(pid, { kind: "author" });
-    }
+  const authorSub = authorSubscriptionSubject(authorPrincipalId);
+  for (const pid of subs.subscriberPrincipalsForSubject(authorSub, authorPrincipalId)) {
+    addReason(pid, { kind: "author" });
   }
 
-  const pointer = relaySyntheticPointer(tenantKey, RELAY_CATALOG_SOURCE_POST, post.id);
-  const createdAtMs = Date.now();
-  for (const [recipientId, reasons] of byRecipient) {
-    store.upsertRow({
-      tenant_key: tenantKey,
-      source_map_id: RELAY_INBOX_SOURCE_MAP_ID,
-      entry_key: `${recipientId}/${post.id}`,
-      pointer,
-      projection: {
-        postId: post.id,
-        authorPrincipalId,
-        reasons,
-        createdAtMs,
-        postKind: post.kind,
-      },
-    });
+  if (byRecipient.size === 0) {
+    return;
   }
+
+  const authorCellId = cluster.assignPrincipalToCell(authorPrincipalId);
+  const payload_bytes = postEncoder.encode(JSON.stringify(post));
+  const createdAtMs = Date.now();
+  const fan_out_targets = [...byRecipient.entries()].map(([recipient_principal_id, reasons]) => ({
+    recipient_cell_id: cluster.assignPrincipalToCell(recipient_principal_id),
+    recipient_principal_id,
+    inbox_metadata: {
+      postId: post.id,
+      authorPrincipalId,
+      reasons,
+      createdAtMs,
+      postKind: post.kind,
+    },
+  }));
+
+  await publicationClient.postOperation({
+    author_principal_id: authorPrincipalId,
+    author_cell_id: authorCellId,
+    tenant_key: tenantKey,
+    payload_bytes,
+    payload_metadata: { postId: post.id, postKind: post.kind },
+    routing: {
+      replicate_to_catalog: true,
+      catalog_envelope: { postId: post.id },
+      fan_out_targets,
+    },
+  });
 }
 
 export function createAtriumRelayOnEvent(deps: {
   store: RelayCatalogSourceMapStore;
   tenantKey: string;
   catalogDb: Database;
+  cluster: SqliteColonnadeCluster;
+  publicationClient: ColonnadePublicationClient;
 }): (
   ctx: AgentRelayEventHandlerCtx,
   event: AgentRelayEventUnion<AtriumProfile, AtriumPost, unknown, never>,
 ) => void | Promise<void> {
-  const { store, tenantKey, catalogDb } = deps;
+  const { store, tenantKey, catalogDb, cluster, publicationClient } = deps;
   return async (
     ctx: AgentRelayEventHandlerCtx,
     event: AgentRelayEventUnion<AtriumProfile, AtriumPost, unknown, never>,
@@ -151,16 +171,20 @@ export function createAtriumRelayOnEvent(deps: {
         bodyJson: JSON.stringify(post),
       });
       if (event.kind === AGENT_RELAY_EVENT_KIND.POST_CREATED) {
-        fanOutPostToInbox({ ctx, store, tenantKey, post });
+        await fanOutPostToCellInbox({
+          ctx,
+          tenantKey,
+          post,
+          cluster,
+          publicationClient,
+        });
       }
       return;
     }
 
     if (event.kind === AGENT_RELAY_EVENT_KIND.POST_DELETED) {
       const post = event.payload.post;
-      purgeRelayCatalogPostEntity(store, catalogDb, tenantKey, post.id, {
-        sourceMapId: RELAY_INBOX_SOURCE_MAP_ID,
-      });
+      purgeRelayCatalogPostEntity(store, catalogDb, tenantKey, post.id);
     }
   };
 }

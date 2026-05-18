@@ -16,6 +16,8 @@ import {
 } from "./social-registration.ts";
 import { purgeSocialRelationshipsForPrincipal } from "./social-relationship-persistence.ts";
 
+const RELAY_INBOX_SOURCE_MAP_ID = "relay:inbox";
+
 const POST_KINDS = ["post", "probe", "status"] as const;
 
 function readUsernameFromPrincipalMapProjection(projection: unknown): string | undefined {
@@ -103,7 +105,6 @@ export function cascadeUnregisterColonnadePrincipalWithProfile(p: {
   tenantKey: string;
   principalId: PrincipalId;
   profileId: string;
-  relayInboxSourceMapId: string;
 }): void {
   const seenPost = new Set<string>();
   for (const kind of POST_KINDS) {
@@ -119,9 +120,7 @@ export function cascadeUnregisterColonnadePrincipalWithProfile(p: {
         if (seenPost.has(r.id)) continue;
         seenPost.add(r.id);
         progressed = true;
-        purgeRelayCatalogPostEntity(p.store, p.catalogDb, p.tenantKey, r.id, {
-          sourceMapId: p.relayInboxSourceMapId,
-        });
+        purgeRelayCatalogPostEntity(p.store, p.catalogDb, p.tenantKey, r.id);
       }
       if (!progressed) break;
     }
@@ -129,12 +128,12 @@ export function cascadeUnregisterColonnadePrincipalWithProfile(p: {
 
   const ownInbox = p.store.listBySourceMap(
     p.tenantKey,
-    p.relayInboxSourceMapId,
+    RELAY_INBOX_SOURCE_MAP_ID,
     `${p.principalId}/`,
   );
   p.catalogDb.transaction(() => {
     for (const r of ownInbox) {
-      p.store.deleteRow(p.tenantKey, p.relayInboxSourceMapId, r.entry_key);
+      p.store.deleteRow(p.tenantKey, RELAY_INBOX_SOURCE_MAP_ID, r.entry_key);
     }
   })();
 
@@ -199,7 +198,6 @@ export function cascadeUnregisterColonnadePrincipal(p: {
   framesDb: Database;
   tenantKey: string;
   principalId: PrincipalId;
-  relayInboxSourceMapId: string;
 }): boolean {
   const profileId = p.persistence.agentRegistrations.profileIdForPrincipal(p.principalId);
   if (profileId === undefined) {

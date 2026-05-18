@@ -1,4 +1,4 @@
-import type { AtriumUnaryTransport } from "@khoralabs/at2-transport";
+import type { AtriumUnaryTransport } from "@khoralabs/atrium-transport";
 import z from "zod";
 
 const zSubscribeOk = z.object({

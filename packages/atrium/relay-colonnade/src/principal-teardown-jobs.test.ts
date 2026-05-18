@@ -159,7 +159,6 @@ test("phase1 clears registration and enqueues job; cascade + delete job finishes
     tenantKey,
     principalId: "did:author",
     profileId: "prof-a",
-    relayInboxSourceMapId: "relay:inbox",
   });
   deletePrincipalTeardownJob(catalogDb, "did:author");
   expect(principalHasActiveTeardownJob(catalogDb, "did:author")).toBe(false);

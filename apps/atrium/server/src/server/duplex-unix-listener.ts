@@ -1,4 +1,4 @@
-import { AuthError } from "@khoralabs/at2-auth";
+import { AuthError } from "@khoralabs/atrium-auth";
 import type { DuplexByteStream } from "@khoralabs/duplex-byte-stream";
 import type { Socket } from "bun";
 import type { HostRouteDeps } from "../http/deps.ts";

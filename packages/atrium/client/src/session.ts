@@ -4,9 +4,9 @@ import type {
   AtriumPostPatch,
   AtriumProfile,
   AtriumRegistrationResult,
-} from "@khoralabs/at2-contracts";
-import type { InboxWsHandlers } from "@khoralabs/at2-transport";
-import type { AtriumClient } from "./at2-client.ts";
+} from "@khoralabs/atrium-contracts";
+import type { InboxWsHandlers } from "@khoralabs/atrium-transport";
+import type { AtriumClient } from "./atrium-client.ts";
 
 export type AtriumSession = {
   readonly did: string;

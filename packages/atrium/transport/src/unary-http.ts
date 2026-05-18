@@ -3,7 +3,7 @@ import {
   canonicalAgentRequestPath,
   randomAgentRequestNonce,
   signAgentRequest,
-} from "@khoralabs/at2-auth";
+} from "@khoralabs/atrium-auth";
 import type z from "zod";
 import { AtriumClientError } from "./errors.ts";
 

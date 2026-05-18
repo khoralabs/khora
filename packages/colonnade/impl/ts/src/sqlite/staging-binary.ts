@@ -38,7 +38,11 @@ export function inboxStagingToBlob(s: InboxStagingPayload): Uint8Array {
   const cellId = utf8(p.source_cell_id);
   const rk = utf8(p.source_record_key);
   const hashB = contentHashHexToBytes(p.content_hash);
-  const out = new Uint8Array(2 + 2 + cellId.byteLength + 2 + rk.byteLength + 32);
+  const meta =
+    s.pointer.metadata !== undefined ? utf8(JSON.stringify(s.pointer.metadata)) : new Uint8Array(0);
+  const out = new Uint8Array(
+    2 + 2 + cellId.byteLength + 2 + rk.byteLength + 32 + 4 + meta.byteLength,
+  );
   const dv = new DataView(out.buffer);
   let o = 0;
   out[o++] = MAGIC_STAGING;
@@ -52,6 +56,12 @@ export function inboxStagingToBlob(s: InboxStagingPayload): Uint8Array {
   out.set(rk, o);
   o += rk.byteLength;
   out.set(hashB, o);
+  o += 32;
+  dv.setUint32(o, meta.byteLength, true);
+  o += 4;
+  if (meta.byteLength > 0) {
+    out.set(meta, o);
+  }
   return out;
 }
 
@@ -89,10 +99,28 @@ export function inboxStagingFromBlob(buf: Uint8Array): InboxStagingPayload {
     if (buf.byteLength < o + 32) throw new Error("SqliteColonnade: truncated pointer staging blob");
     const content_hash = contentHashBytesToHex(buf.subarray(o, o + 32));
     assertContentHash(content_hash);
-    return {
-      kind: "pointer",
-      pointer: { pointer: { source_cell_id, source_record_key, content_hash } },
+    o += 32;
+    let metadata: unknown | undefined;
+    if (o + 4 <= buf.byteLength) {
+      const metaLen = dv.getUint32(o, true);
+      o += 4;
+      if (metaLen > 0) {
+        if (buf.byteLength < o + metaLen)
+          throw new Error("SqliteColonnade: truncated pointer metadata");
+        const { s: metaStr } = readUtf8(buf, o, metaLen);
+        o += metaLen;
+        try {
+          metadata = JSON.parse(metaStr) as unknown;
+        } catch {
+          metadata = undefined;
+        }
+      }
+    }
+    const pointerPayload: import("../colonnade-types.ts").PointerPayload = {
+      pointer: { source_cell_id, source_record_key, content_hash },
+      ...(metadata !== undefined ? { metadata } : {}),
     };
+    return { kind: "pointer", pointer: pointerPayload };
   }
   throw new Error("SqliteColonnade: unknown inbox staging blob kind");
 }

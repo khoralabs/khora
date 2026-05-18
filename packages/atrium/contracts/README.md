@@ -1,4 +1,4 @@
-# `@khoralabs/at2-contracts`
+# `@khoralabs/atrium-contracts`
 
 Zod schemas and TypeScript types shared across the **at2** packages. No runtime behaviour beyond validation helpers — host, client, and relay agree on the same wire shapes.
 

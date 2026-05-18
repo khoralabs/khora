@@ -4,7 +4,7 @@ import {
   normalizeUsername,
   zAtriumProfile,
   zAtriumProfilePatch,
-} from "@khoralabs/at2-contracts";
+} from "@khoralabs/atrium-contracts";
 import {
   registerAgentOnColonnadePersistence,
   SOURCE_USERNAME_TO_PRINCIPAL,
@@ -128,7 +128,10 @@ export async function handleProfilePatch(
     await ctx.host.notify({
       kind: AGENT_RELAY_EVENT_KIND.PROFILE_UPDATED,
       occurredAt: Date.now(),
-      aggregate: { domain: AGENT_RELAY_AGGREGATE_DOMAIN.profile, id: merged.id },
+      aggregate: {
+        domain: AGENT_RELAY_AGGREGATE_DOMAIN.profile,
+        id: merged.id,
+      },
       change: "updated",
       source: "app",
       payload: { profile: merged, previous },

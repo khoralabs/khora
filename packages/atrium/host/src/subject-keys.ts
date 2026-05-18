@@ -1,4 +1,4 @@
-import { normalizeTopicSlug } from "@khoralabs/at2-contracts";
+import { normalizeTopicSlug } from "@khoralabs/atrium-contracts";
 
 export function topicSubscriptionSubject(topicSlug: string): string {
   return `topic:${topicSlug}`;

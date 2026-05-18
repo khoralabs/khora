@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ATRIUM_BUILTIN_PLUGIN_ID } from "../at2-plugins.ts";
+import { ATRIUM_BUILTIN_PLUGIN_ID } from "../atrium-plugins.ts";
 import { extendAtriumAppConfig, zAtriumAppConfigBase } from "./schema.ts";
 
 describe("zAtriumAppConfigBase", () => {

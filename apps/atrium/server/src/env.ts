@@ -2,6 +2,9 @@
  * - PORT: HTTP port (default 8788).
  * - ATRIUM_CATALOG_PATH: SQLite catalog DB (required).
  * - ATRIUM_FRAMES_DB_PATH: SQLite frames / frame-channel DB (required).
+ * - ATRIUM_CELLS_DIR: directory for colonnade cell SQLite shards (required).
+ * - ATRIUM_CELL_POOL_COUNT: pool shard count for assignPrincipalToCell (optional, default 16).
+ * - ATRIUM_COLONNADE_CELL_WORKERS: when unset/1/on, cell DBs use Bun Workers (bench `--cell-workers`); 0/off uses main-thread SQLite.
  * - ATRIUM_RELAY_TENANT_KEY: optional relay tenant key (library default "relay").
  * - ATRIUM_HOST_UNARY_TRANSPORT: unset / `http` → HTTP only; `stdio` → NDJSON stdin/out parallel to HTTP.
  * - ATRIUM_HOST_DUPLEX_INGRESS: `off` (default) or `unix`.
@@ -69,6 +72,29 @@ export function envFramesDbPath(): string {
   return p;
 }
 
+export function envCellsDir(): string {
+  const p = process.env.ATRIUM_CELLS_DIR?.trim();
+  if (p === undefined || p.length === 0) {
+    throw new Error("Set ATRIUM_CELLS_DIR to the directory for colonnade cell SQLite files");
+  }
+  return p;
+}
+
+export function envCellPoolCount(): number {
+  const raw = process.env.ATRIUM_CELL_POOL_COUNT?.trim();
+  if (raw === undefined || raw.length === 0) return 16;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 16;
+}
+
+/** Matches bench `--cell-workers` when true (default). False matches sqlite strategy without that flag. */
+export function envColonnadeUseCellWorkers(): boolean {
+  const v = process.env.ATRIUM_COLONNADE_CELL_WORKERS?.trim().toLowerCase();
+  if (v === undefined || v === "") return true;
+  if (v === "0" || v === "false" || v === "off" || v === "no") return false;
+  return true;
+}
+
 export function envTenantKey(): string | undefined {
   const p = process.env.ATRIUM_RELAY_TENANT_KEY?.trim();
   return p !== undefined && p.length > 0 ? p : undefined;
@@ -81,6 +107,7 @@ export function envTenantKey(): string | undefined {
 export function validateEnv(): void {
   envCatalogPath();
   envFramesDbPath();
+  envCellsDir();
   envPort();
   envHostUnaryIngress();
   const duplexMode = envHostDuplexIngress();

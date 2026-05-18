@@ -1,5 +1,5 @@
-import { type AtriumPost, zAgentStatusResponse } from "@khoralabs/at2-contracts";
-import type { AtriumUnaryTransport } from "@khoralabs/at2-transport";
+import { type AtriumPost, zAgentStatusResponse } from "@khoralabs/atrium-contracts";
+import type { AtriumUnaryTransport } from "@khoralabs/atrium-transport";
 
 export type AgentStatusSnapshot = ReturnType<typeof zAgentStatusResponse.parse>;
 

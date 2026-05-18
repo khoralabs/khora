@@ -5,13 +5,13 @@ import type {
   AtriumRoomJoinTicketResponse,
   AtriumRoomMintTicketBody,
   AtriumRoomTicketResponse,
-} from "@khoralabs/at2-contracts";
+} from "@khoralabs/atrium-contracts";
 import {
   zAtriumRoomCreateResponse,
   zAtriumRoomJoinTicketResponse,
   zAtriumRoomTicketResponse,
-} from "@khoralabs/at2-contracts";
-import type { AtriumUnaryTransport } from "@khoralabs/at2-transport";
+} from "@khoralabs/atrium-contracts";
+import type { AtriumUnaryTransport } from "@khoralabs/atrium-transport";
 
 export function createRoom(
   t: AtriumUnaryTransport,

@@ -1,6 +1,6 @@
 import { agentRelayFrameChannelWebSocketHandlers } from "@khoralabs/agent-relay";
-import type { AtriumHostContext } from "@khoralabs/at2-host";
-import type { AtriumWsUpgradePort } from "@khoralabs/at2-transport";
+import type { AtriumHostContext } from "@khoralabs/atrium-host";
+import type { AtriumWsUpgradePort } from "@khoralabs/atrium-transport";
 import { logger } from "../logger.ts";
 import { clientIpFromRequest } from "../rate-limit.ts";
 import { handleInboxWsUpgrade } from "../ws/inbox.ts";

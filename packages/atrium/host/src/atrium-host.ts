@@ -1,7 +1,11 @@
 import { AgentRelay, createFrameChannelHub, createInboxWsHub } from "@khoralabs/agent-relay";
-import { createAtriumDidAuth } from "@khoralabs/at2-auth";
-import type { AtriumPost, AtriumProfile } from "@khoralabs/at2-contracts";
-import type { AtriumRoomLifecycleHostEvent } from "@khoralabs/at2-transport";
+import { createAtriumDidAuth } from "@khoralabs/atrium-auth";
+import type { AtriumPost, AtriumProfile } from "@khoralabs/atrium-contracts";
+import type { AtriumRoomLifecycleHostEvent } from "@khoralabs/atrium-transport";
+import {
+  ColonnadePublicationClient,
+  createSqliteColonnadeCluster,
+} from "@khoralabs/colonnade-persistence";
 import { createRelayColonnadeSocial } from "@khoralabs/relay-colonnade";
 import type { AtriumHostContext } from "./context.ts";
 import {
@@ -9,17 +13,33 @@ import {
   parseInviteSeedTokens,
   readInvitePepper,
   validateInviteEnvConfig,
-} from "./invites/at2-invites.ts";
+} from "./invites/atrium-invites.ts";
 import { createAtriumRelayOnEvent } from "./on-event.ts";
 
 export async function createAtriumHost(opts: {
   catalogPath: string;
   framesDbPath: string;
+  cellsDir: string;
+  cellPoolCount?: number;
+  /**
+   * When true (default), each cell SQLite runs in a Bun `Worker` (same as bench `--cell-workers`).
+   * Set false for main-thread `bun:sqlite` (comparable to bench `--strategy sqlite` without `--cell-workers`).
+   */
+  useCellWorkers?: boolean;
   tenantKey?: string;
   roomLifecycle?: (event: AtriumRoomLifecycleHostEvent) => void;
 }): Promise<AtriumHostContext> {
+  const cellPoolCount = opts.cellPoolCount ?? 16;
+  const useCellWorkers = opts.useCellWorkers ?? true;
   const { persistence, social, catalogDb, framesDb, store, tenantKey } =
     await createRelayColonnadeSocial(opts);
+  const cluster = createSqliteColonnadeCluster({
+    catalogPath: opts.catalogPath,
+    cellsDirectory: opts.cellsDir,
+    mode: { kind: "pool", cellCount: cellPoolCount },
+    useCellWorkers,
+  });
+  const publicationClient = new ColonnadePublicationClient(cluster.catalog, cluster.resolveCell);
   const seedTokens = parseInviteSeedTokens(process.env.ATRIUM_INVITE_SEED_TOKENS);
   validateInviteEnvConfig(seedTokens);
   const pepper = readInvitePepper();
@@ -29,7 +49,7 @@ export async function createAtriumHost(opts: {
     invitesRepo.insertSeedInviteTokens(seedTokens);
     const rootPlain = invitesRepo.ensureRootInviteIfAbsent();
     if (rootPlain !== undefined) {
-      console.error("[at2-host] new root invite plaintext — store securely:", rootPlain);
+      console.error("[atrium-host] new root invite plaintext — store securely:", rootPlain);
     }
   } else {
     invitesRepo = undefined;
@@ -44,7 +64,13 @@ export async function createAtriumHost(opts: {
     authPreflight: auth.preflight,
     inboxHub,
     frameChannelHub: roomHub,
-    onEvent: createAtriumRelayOnEvent({ store, tenantKey, catalogDb }),
+    onEvent: createAtriumRelayOnEvent({
+      store,
+      tenantKey,
+      catalogDb,
+      cluster,
+      publicationClient,
+    }),
   });
   return {
     host,
@@ -56,6 +82,9 @@ export async function createAtriumHost(opts: {
     roomHub,
     social,
     invitesRepo,
+    cluster,
+    publicationClient,
+    cellPoolCount,
     ...(opts.roomLifecycle !== undefined ? { roomLifecycle: opts.roomLifecycle } : {}),
   };
 }

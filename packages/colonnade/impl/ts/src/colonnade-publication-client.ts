@@ -10,8 +10,6 @@ import type {
 import { randomId } from "./hash.ts";
 import { supportsSqliteCellBatch } from "./sqlite/sqlite-cell-strategy.ts";
 
-const INLINE_MAX_BYTES = 2048;
-
 /** Implements **`PostOperation`** ordering: author outbox → catalog (optional) → per-recipient inbox. */
 export class ColonnadePublicationClient {
   constructor(
@@ -67,7 +65,6 @@ export class ColonnadePublicationClient {
       input.author_cell_id,
       appendOut.record_key,
       input.tenant_key,
-      input.payload_bytes,
     );
 
     return {
@@ -84,7 +81,6 @@ export class ColonnadePublicationClient {
     authorCellId: string,
     authorRecordKey: string,
     tenantKey: string,
-    payloadBytes: Uint8Array,
   ): Promise<readonly GeneratedInboxRef[]> {
     const byCell = new Map<string, FanOutTarget[]>();
     for (const target of routing.fan_out_targets) {
@@ -105,13 +101,7 @@ export class ColonnadePublicationClient {
           cell_id: target.recipient_cell_id,
           tenant_key: tenantKey,
           recipient_principal_id: target.recipient_principal_id,
-          staging: stagingForFanOut(
-            target,
-            authorCellId,
-            authorRecordKey,
-            contentHash,
-            payloadBytes,
-          ),
+          staging: stagingForFanOut(target, authorCellId, authorRecordKey, contentHash),
           correlation_id: randomId("fan"),
         }));
 
@@ -126,13 +116,7 @@ export class ColonnadePublicationClient {
 
         const ids: string[] = [];
         for (const target of targets) {
-          const staging = stagingForFanOut(
-            target,
-            authorCellId,
-            authorRecordKey,
-            contentHash,
-            payloadBytes,
-          );
+          const staging = stagingForFanOut(target, authorCellId, authorRecordKey, contentHash);
           const out = await cell.enqueueInboxDelivery({
             cell_id: target.recipient_cell_id,
             tenant_key: tenantKey,
@@ -166,26 +150,21 @@ export class ColonnadePublicationClient {
 }
 
 function stagingForFanOut(
-  _target: FanOutTarget,
+  target: FanOutTarget,
   authorCellId: string,
   authorRecordKey: string,
   contentHash: string,
-  payloadBytes: Uint8Array,
 ): import("./colonnade-types.ts").InboxStagingPayload {
-  if (payloadBytes.byteLength <= INLINE_MAX_BYTES) {
-    return {
-      kind: "inline",
-      inline: { bytes: payloadBytes, content_hash: contentHash },
-    };
-  }
+  const pointer = {
+    source_cell_id: authorCellId,
+    source_record_key: authorRecordKey,
+    content_hash: contentHash,
+  };
   return {
     kind: "pointer",
     pointer: {
-      pointer: {
-        source_cell_id: authorCellId,
-        source_record_key: authorRecordKey,
-        content_hash: contentHash,
-      },
+      pointer,
+      ...(target.inbox_metadata !== undefined ? { metadata: target.inbox_metadata } : {}),
     },
   };
 }

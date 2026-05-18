@@ -3,8 +3,8 @@ import {
   type AtriumRegistrationResult,
   zAtriumRegisterResult,
   zAtriumRegistrationRequestBody,
-} from "@khoralabs/at2-contracts";
-import type { AtriumUnaryTransport } from "@khoralabs/at2-transport";
+} from "@khoralabs/atrium-contracts";
+import type { AtriumUnaryTransport } from "@khoralabs/atrium-transport";
 
 export type RegisterBody = Omit<AtriumRegistrationRequestBody, "did"> & {
   did?: string;

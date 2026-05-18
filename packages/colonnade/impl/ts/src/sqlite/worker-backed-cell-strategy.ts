@@ -1,4 +1,7 @@
-import type { CellPersistenceStrategy } from "../cell-persistence-strategy.ts";
+import type {
+  CellPersistenceStrategy,
+  DiscardInboxEntriesInput,
+} from "../cell-persistence-strategy.ts";
 import type {
   AckWriteLogAppliedInput,
   AckWriteLogAppliedOutput,
@@ -140,6 +143,14 @@ export class WorkerBackedCellStrategy implements CellPersistenceStrategy, Sqlite
   ackWriteLogApplied(input: AckWriteLogAppliedInput): Promise<AckWriteLogAppliedOutput> {
     return this.call("ackWriteLogApplied", [input]);
   }
+
+  purgePrincipal(principalId: string): Promise<void> {
+    return this.call("purgePrincipal", [principalId]);
+  }
+
+  discardInboxEntries(input: DiscardInboxEntriesInput): Promise<void> {
+    return this.call("discardInboxEntries", [input]);
+  }
 }
 
 /** Lazy-init worker façade so **`ResolveCellStrategy`** stays synchronous. */
@@ -164,51 +175,61 @@ export class LazyWorkerBackedCellStrategy
     return this.inner ?? this.boot;
   }
 
-  appendOutboxRecord(input: AppendOutboxRecordInput): Promise<AppendOutboxRecordOutput> {
+  async appendOutboxRecord(input: AppendOutboxRecordInput): Promise<AppendOutboxRecordOutput> {
     return this.s().then((x) => x.appendOutboxRecord(input));
   }
 
-  enqueueInboxDelivery(input: EnqueueInboxDeliveryInput): Promise<EnqueueInboxDeliveryOutput> {
+  async enqueueInboxDelivery(
+    input: EnqueueInboxDeliveryInput,
+  ): Promise<EnqueueInboxDeliveryOutput> {
     return this.s().then((x) => x.enqueueInboxDelivery(input));
   }
 
-  enqueueInboxDeliveriesBatch(
+  async enqueueInboxDeliveriesBatch(
     inputs: readonly EnqueueInboxDeliveryInput[],
   ): Promise<readonly EnqueueInboxDeliveryOutput[]> {
     return this.s().then((x) => x.enqueueInboxDeliveriesBatch(inputs));
   }
 
-  listPendingInboxEntries(
+  async listPendingInboxEntries(
     input: ListPendingInboxEntriesInput,
   ): Promise<ListPendingInboxEntriesOutput> {
     return this.s().then((x) => x.listPendingInboxEntries(input));
   }
 
-  fetchOutboxPayload(input: FetchOutboxPayloadInput): Promise<FetchOutboxPayloadOutput> {
+  async fetchOutboxPayload(input: FetchOutboxPayloadInput): Promise<FetchOutboxPayloadOutput> {
     return this.s().then((x) => x.fetchOutboxPayload(input));
   }
 
-  verifyAndDrainInboxBatch(
+  async verifyAndDrainInboxBatch(
     input: VerifyAndDrainInboxBatchInput,
   ): Promise<VerifyAndDrainInboxBatchOutput> {
     return this.s().then((x) => x.verifyAndDrainInboxBatch(input));
   }
 
-  appendWriteLogEntry(input: AppendWriteLogEntryInput): Promise<AppendWriteLogEntryOutput> {
+  async appendWriteLogEntry(input: AppendWriteLogEntryInput): Promise<AppendWriteLogEntryOutput> {
     return this.s().then((x) => x.appendWriteLogEntry(input));
   }
 
-  appendWriteLogEntriesBatch(
+  async appendWriteLogEntriesBatch(
     inputs: readonly AppendWriteLogEntryInput[],
   ): Promise<readonly AppendWriteLogEntryOutput[]> {
     return this.s().then((x) => x.appendWriteLogEntriesBatch(inputs));
   }
 
-  fetchWriteLogBatch(input: FetchWriteLogBatchInput): Promise<FetchWriteLogBatchOutput> {
+  async fetchWriteLogBatch(input: FetchWriteLogBatchInput): Promise<FetchWriteLogBatchOutput> {
     return this.s().then((x) => x.fetchWriteLogBatch(input));
   }
 
-  ackWriteLogApplied(input: AckWriteLogAppliedInput): Promise<AckWriteLogAppliedOutput> {
+  async ackWriteLogApplied(input: AckWriteLogAppliedInput): Promise<AckWriteLogAppliedOutput> {
     return this.s().then((x) => x.ackWriteLogApplied(input));
+  }
+
+  async purgePrincipal(principalId: string): Promise<void> {
+    return this.s().then((x) => x.purgePrincipal(principalId));
+  }
+
+  async discardInboxEntries(input: DiscardInboxEntriesInput): Promise<void> {
+    return this.s().then((x) => x.discardInboxEntries(input));
   }
 }

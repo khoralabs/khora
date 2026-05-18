@@ -1,9 +1,9 @@
-import { type AtriumHostContext, popRelayInboxDrainItemsForDid } from "@khoralabs/at2-host";
-import type { AtriumWsUpgradePort } from "@khoralabs/at2-transport";
+import { type AtriumHostContext, popRelayInboxDrainItemsForDid } from "@khoralabs/atrium-host";
+import type { AtriumWsUpgradePort } from "@khoralabs/atrium-transport";
 import type { WebSocketHandler } from "bun";
-import { logger } from "../logger.ts";
 import type { HostRouteDeps } from "../http/deps.ts";
 import { authErrorResponse, jsonError, rateLimitedResponse } from "../http/responses.ts";
+import { logger } from "../logger.ts";
 
 export async function handleInboxWsUpgrade(
   req: Request,
@@ -33,12 +33,19 @@ export function createInboxDrainWebSocketHandlers(opts: {
     open(ws) {
       const did = ws.data.did;
       logger.info({ did }, "inbox websocket open");
-      const items = popRelayInboxDrainItemsForDid(opts.ctx, did);
-      ws.send(JSON.stringify({ type: "drain", items }));
-      const hub = opts.ctx.host.inboxHub;
-      if (hub !== undefined) {
-        hub.add(did, ws);
-      }
+      void (async () => {
+        try {
+          const items = await popRelayInboxDrainItemsForDid(opts.ctx, did);
+          ws.send(JSON.stringify({ type: "drain", items }));
+        } catch (e) {
+          logger.error({ err: e, did }, "inbox drain failed");
+          ws.send(JSON.stringify({ type: "drain", items: [] }));
+        }
+        const hub = opts.ctx.host.inboxHub;
+        if (hub !== undefined) {
+          hub.add(did, ws);
+        }
+      })();
     },
     close(ws) {
       logger.info({ did: ws.data.did }, "inbox websocket close");

@@ -5,17 +5,28 @@ import type {
   AppendOutboxRecordOutput,
   AppendWriteLogEntryInput,
   AppendWriteLogEntryOutput,
+  CellId,
   EnqueueInboxDeliveryInput,
   EnqueueInboxDeliveryOutput,
   FetchOutboxPayloadInput,
   FetchOutboxPayloadOutput,
   FetchWriteLogBatchInput,
   FetchWriteLogBatchOutput,
+  InboxEntryId,
   ListPendingInboxEntriesInput,
   ListPendingInboxEntriesOutput,
+  PrincipalId,
+  TenantKey,
   VerifyAndDrainInboxBatchInput,
   VerifyAndDrainInboxBatchOutput,
 } from "./colonnade-types.ts";
+
+export type DiscardInboxEntriesInput = {
+  readonly cell_id: CellId;
+  readonly tenant_key: TenantKey;
+  readonly principal_id: PrincipalId;
+  readonly inbox_entry_ids: readonly InboxEntryId[];
+};
 
 /**
  * Adapter for a single **cell** (shard) database: **`CellStore`** + **`CellWriteLog`**.
@@ -35,6 +46,12 @@ export interface CellPersistenceStrategy {
   appendWriteLogEntry(input: AppendWriteLogEntryInput): Promise<AppendWriteLogEntryOutput>;
   fetchWriteLogBatch(input: FetchWriteLogBatchInput): Promise<FetchWriteLogBatchOutput>;
   ackWriteLogApplied(input: AckWriteLogAppliedInput): Promise<AckWriteLogAppliedOutput>;
+
+  /** Drop inbox rows without resolving payloads (stale pointers / undeliverable author). */
+  discardInboxEntries(input: DiscardInboxEntriesInput): Promise<void>;
+
+  /** Remove all inbox rows for this recipient and outbox rows for this principal (teardown). */
+  purgePrincipal(principalId: PrincipalId): Promise<void>;
 }
 
 /** Resolve the persistence strategy for a logical cell id. */

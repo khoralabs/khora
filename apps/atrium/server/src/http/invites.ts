@@ -1,4 +1,7 @@
-import { zAtriumInviteListResponse, zAtriumInvitePreviewResponse } from "@khoralabs/at2-contracts";
+import {
+  zAtriumInviteListResponse,
+  zAtriumInvitePreviewResponse,
+} from "@khoralabs/atrium-contracts";
 import z from "zod";
 import { clientIpFromRequest } from "../rate-limit.ts";
 import type { HostRouteDeps } from "./deps.ts";

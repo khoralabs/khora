@@ -1,6 +1,6 @@
 import { Buffer } from "node:buffer";
 import type { AgentNotification } from "@khoralabs/agent-relay";
-import { type AgentSigner, signedInboxUrl } from "@khoralabs/at2-auth";
+import { type AgentSigner, signedInboxUrl } from "@khoralabs/atrium-auth";
 import type { AtriumClientEvent } from "./client-events.ts";
 import { type InboxNotificationRow, parseInboxWebSocketMessage } from "./inbox-ws.ts";
 

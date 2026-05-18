@@ -19,7 +19,7 @@ export type SocialAgentIdentity = {
 export type SocialRegisterAgentInput = {
   principalId: PrincipalId;
   profileUpsert: AgentRelayEntityUpsert;
-  /** Human-facing handle; stored as `normalizeUsername()` from `@khoralabs/at2-contracts` (trim + lowercase) for stable URL paths. */
+  /** Human-facing handle; stored as `normalizeUsername()` from `@khoralabs/atrium-contracts` (trim + lowercase) for stable URL paths. */
   username: string;
 };
 

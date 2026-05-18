@@ -1,7 +1,11 @@
 export { CatalogPersistenceClient } from "./catalog-persistence-client.ts";
 export type { CatalogPersistenceStrategy } from "./catalog-persistence-strategy.ts";
 export { CellPersistenceClient } from "./cell-persistence-client.ts";
-export type { CellPersistenceStrategy, ResolveCellStrategy } from "./cell-persistence-strategy.ts";
+export type {
+  CellPersistenceStrategy,
+  DiscardInboxEntriesInput,
+  ResolveCellStrategy,
+} from "./cell-persistence-strategy.ts";
 export { ColonnadePublicationClient } from "./colonnade-publication-client.ts";
 export { ColonnadeRouter } from "./colonnade-router.ts";
 export type * from "./colonnade-types.ts";

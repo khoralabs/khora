@@ -1,4 +1,7 @@
-import type { CellPersistenceStrategy } from "./cell-persistence-strategy.ts";
+import type {
+  CellPersistenceStrategy,
+  DiscardInboxEntriesInput,
+} from "./cell-persistence-strategy.ts";
 import type {
   AckWriteLogAppliedInput,
   AckWriteLogAppliedOutput,
@@ -14,6 +17,7 @@ import type {
   FetchWriteLogBatchOutput,
   ListPendingInboxEntriesInput,
   ListPendingInboxEntriesOutput,
+  PrincipalId,
   VerifyAndDrainInboxBatchInput,
   VerifyAndDrainInboxBatchOutput,
 } from "./colonnade-types.ts";
@@ -63,5 +67,13 @@ export class CellPersistenceClient implements CellPersistenceStrategy {
 
   ackWriteLogApplied(input: AckWriteLogAppliedInput): Promise<AckWriteLogAppliedOutput> {
     return this.strategy.ackWriteLogApplied(input);
+  }
+
+  purgePrincipal(principalId: PrincipalId): Promise<void> {
+    return this.strategy.purgePrincipal(principalId);
+  }
+
+  discardInboxEntries(input: DiscardInboxEntriesInput): Promise<void> {
+    return this.strategy.discardInboxEntries(input);
   }
 }

@@ -3,7 +3,7 @@ export type {
   PrincipalRegistrationRequest,
   PrincipalRegistrationResult,
 } from "@khoralabs/agent-relay";
-export type { AgentSigner } from "@khoralabs/at2-auth";
+export type { AgentSigner } from "@khoralabs/atrium-auth";
 export type {
   AgentStatusResponse,
   AtriumInviteListResponse,
@@ -17,7 +17,7 @@ export type {
   AtriumRegistrationResult,
   AtriumRelationshipItem,
   AtriumRelationshipListResponse,
-} from "@khoralabs/at2-contracts";
+} from "@khoralabs/atrium-contracts";
 export {
   atriumPostLexicalText,
   atriumPostObservationSummary,
@@ -40,15 +40,15 @@ export {
   zAtriumRegistrationRequestBody,
   zAtriumRelationshipListResponse,
   zAtriumUnregisterRequestBody,
-} from "@khoralabs/at2-contracts";
+} from "@khoralabs/atrium-contracts";
 export type {
   AtriumFetch,
   AtriumRoomLifecycleHostEvent,
   AtriumTransportBundle,
   AtriumUnaryTransport,
   InboxWsHandlers,
-} from "@khoralabs/at2-transport";
-/** Transport helpers live in `@khoralabs/at2-transport`; these are commonly paired with the client. */
+} from "@khoralabs/atrium-transport";
+/** Transport helpers live in `@khoralabs/atrium-transport`; these are commonly paired with the client. */
 export {
   AtriumClientError,
   type AtriumClientEvent,
@@ -60,7 +60,7 @@ export {
   isDerivedInboxKindEvent,
   isInboxNotificationEvent,
   parseInboxWebSocketMessage,
-} from "@khoralabs/at2-transport";
+} from "@khoralabs/atrium-transport";
 export {
   AtriumClient,
   type AtriumClientOptions,
@@ -74,7 +74,7 @@ export {
   type ObpFrameConnection,
   type ObpWebSocketConnectOptions,
   type PublicProfileResult,
-} from "./at2-client.ts";
+} from "./atrium-client.ts";
 export {
   ATRIUM_BUILTIN_PLUGIN_ID,
   type AtriumPluginContext,
@@ -84,7 +84,7 @@ export {
   type LabeledAtriumPluginInstaller,
   labelAtriumPlugin,
   mergeLabeledAtriumPluginLayers,
-} from "./at2-plugins.ts";
+} from "./atrium-plugins.ts";
 export {
   type CachedProfileSnapshot,
   loadCachedProfile,

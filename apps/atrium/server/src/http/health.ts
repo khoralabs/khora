@@ -1,5 +1,5 @@
-import type { HostRouteDeps } from "./deps.ts";
 import { logger } from "../logger.ts";
+import type { HostRouteDeps } from "./deps.ts";
 
 export function handleHealth(): Response {
   return new Response("ok", { status: 200 });

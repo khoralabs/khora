@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import type { AgentRelayPersistence } from "@khoralabs/agent-relay";
-import { normalizeUsername } from "@khoralabs/at2-contracts";
+import { normalizeUsername } from "@khoralabs/atrium-contracts";
 import { type RelayCatalogSourceMapStore, relaySyntheticPointer } from "@khoralabs/relay-colonnade";
 import type { SocialAgentIdentity, SocialRegisterAgentInput } from "./social-types.ts";
 

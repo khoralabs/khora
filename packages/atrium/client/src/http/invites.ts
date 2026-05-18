@@ -3,8 +3,8 @@ import {
   type AtriumInvitePreviewResponse,
   zAtriumInviteListResponse,
   zAtriumInvitePreviewResponse,
-} from "@khoralabs/at2-contracts";
-import type { AtriumUnaryTransport } from "@khoralabs/at2-transport";
+} from "@khoralabs/atrium-contracts";
+import type { AtriumUnaryTransport } from "@khoralabs/atrium-transport";
 
 export function listInvites(t: AtriumUnaryTransport): Promise<AtriumInviteListResponse> {
   return t.requestJson("GET", "/v1/invites", {

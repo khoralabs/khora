@@ -46,6 +46,8 @@ export type InlinePayload = {
 
 export type PointerPayload = {
   readonly pointer: PointerRef;
+  /** Opaque JSON carried through list/drain (e.g. postId, authorPrincipalId). */
+  readonly metadata?: JsonDocument;
 };
 
 export type InboxStagingPayload =
@@ -55,6 +57,8 @@ export type InboxStagingPayload =
 export type FanOutTarget = {
   readonly recipient_cell_id: CellId;
   readonly recipient_principal_id: PrincipalId;
+  /** Written into pointer staging `metadata` for this recipient's inbox row. */
+  readonly inbox_metadata?: JsonDocument;
 };
 
 export type SourceMapPointerHit = {

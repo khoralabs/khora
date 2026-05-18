@@ -1,4 +1,4 @@
-import type { AtriumHostContext } from "@khoralabs/at2-host";
+import type { AtriumHostContext } from "@khoralabs/atrium-host";
 import type { V2HostRateLimiters } from "../rate-limit-buckets.ts";
 
 export type HostRouteDeps = {

@@ -1,4 +1,4 @@
-import { AuthError } from "@khoralabs/at2-auth";
+import { AuthError } from "@khoralabs/atrium-auth";
 
 export function jsonError(message: string, status: number): Response {
   return Response.json({ error: message }, { status });
@@ -24,7 +24,10 @@ export function authErrorResponse(e: unknown): Response {
 
 export function registrationOpaqueJson(status: number): Response {
   return Response.json(
-    { error: "Registration could not be completed", code: "registration_failed" },
+    {
+      error: "Registration could not be completed",
+      code: "registration_failed",
+    },
     { status },
   );
 }

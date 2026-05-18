@@ -1,6 +1,9 @@
 import type { Database, Statement } from "bun:sqlite";
 
-import type { CellPersistenceStrategy } from "../cell-persistence-strategy.ts";
+import type {
+  CellPersistenceStrategy,
+  DiscardInboxEntriesInput,
+} from "../cell-persistence-strategy.ts";
 import type {
   AckWriteLogAppliedInput,
   AckWriteLogAppliedOutput,
@@ -314,6 +317,26 @@ export class SqliteCellPersistenceStrategy implements CellPersistenceStrategy {
     this.assertCell(input.cell_id);
     this.setMeta("applied_through_sequence", input.applied_through_sequence);
     return Promise.resolve({});
+  }
+
+  purgePrincipal(principalId: string): Promise<void> {
+    return this.runImmediateTransaction(async () => {
+      this.db.prepare(`DELETE FROM inbox WHERE recipient_principal_id = ?`).run(principalId);
+      this.db.prepare(`DELETE FROM outbox WHERE principal_id = ?`).run(principalId);
+    });
+  }
+
+  discardInboxEntries(input: DiscardInboxEntriesInput): Promise<void> {
+    this.assertCell(input.cell_id);
+    if (input.inbox_entry_ids.length === 0) return Promise.resolve();
+    return this.runImmediateTransaction(async () => {
+      const del = this.db.prepare(
+        `DELETE FROM inbox WHERE inbox_entry_id = ? AND tenant_key = ? AND recipient_principal_id = ?`,
+      );
+      for (const id of input.inbox_entry_ids) {
+        del.run(id, input.tenant_key, input.principal_id);
+      }
+    });
   }
 }
 

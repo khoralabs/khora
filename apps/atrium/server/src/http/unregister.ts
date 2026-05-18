@@ -1,5 +1,5 @@
 import type { PrincipalRegistrationRequest } from "@khoralabs/agent-relay";
-import { zAtriumUnregisterRequestBody } from "@khoralabs/at2-contracts";
+import { zAtriumUnregisterRequestBody } from "@khoralabs/atrium-contracts";
 import { phase1UnregisterColonnadePrincipal } from "@khoralabs/relay-colonnade";
 import { logger } from "../logger.ts";
 import { clientIpFromRequest } from "../rate-limit.ts";

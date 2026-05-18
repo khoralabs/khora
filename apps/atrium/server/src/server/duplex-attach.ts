@@ -3,8 +3,8 @@ import {
   inboxWebSocketFromDuplexUtf8,
   runInboxDuplexAttachment,
 } from "@khoralabs/agent-relay";
-import { AuthError } from "@khoralabs/at2-auth";
-import { type AtriumHostContext, popRelayInboxDrainItemsForDid } from "@khoralabs/at2-host";
+import { AuthError } from "@khoralabs/atrium-auth";
+import { type AtriumHostContext, popRelayInboxDrainItemsForDid } from "@khoralabs/atrium-host";
 import type { DuplexByteStream } from "@khoralabs/duplex-byte-stream";
 import type { HostRouteDeps } from "../http/deps.ts";
 import { ATRIUM_UNARY_INGRESS_ORIGIN } from "./unary-dispatch.ts";
@@ -52,7 +52,7 @@ export async function attachInboxDuplexAfterAuth(opts: {
 
   const inboxHub = opts.deps.ctx.host.inboxHub;
   if (inboxHub === undefined) {
-    throw new Error("at2-host: AgentRelay missing inboxHub");
+    throw new Error("atrium-host: AgentRelay missing inboxHub");
   }
 
   const items = popRelayInboxDrainItemsForDid(opts.deps.ctx, verifiedDid);

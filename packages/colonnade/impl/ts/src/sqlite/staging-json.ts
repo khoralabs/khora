@@ -28,6 +28,7 @@ export function inboxStagingToJson(s: InboxStagingPayload): string {
         source_record_key: s.pointer.pointer.source_record_key,
         content_hash: s.pointer.pointer.content_hash,
       },
+      ...(s.pointer.metadata !== undefined ? { metadata: s.pointer.metadata } : {}),
     },
   });
 }
@@ -42,6 +43,7 @@ export function inboxStagingFromJson(text: string): InboxStagingPayload {
         source_record_key?: string;
         content_hash?: string;
       };
+      metadata?: unknown;
     };
   };
   if (
@@ -63,15 +65,17 @@ export function inboxStagingFromJson(text: string): InboxStagingPayload {
     v.pointer.pointer.source_record_key !== undefined &&
     v.pointer.pointer.content_hash !== undefined
   ) {
+    const payload: import("../colonnade-types.ts").PointerPayload = {
+      pointer: {
+        source_cell_id: v.pointer.pointer.source_cell_id,
+        source_record_key: v.pointer.pointer.source_record_key,
+        content_hash: v.pointer.pointer.content_hash,
+      },
+      ...(v.pointer.metadata !== undefined ? { metadata: v.pointer.metadata } : {}),
+    };
     return {
       kind: "pointer",
-      pointer: {
-        pointer: {
-          source_cell_id: v.pointer.pointer.source_cell_id,
-          source_record_key: v.pointer.pointer.source_record_key,
-          content_hash: v.pointer.pointer.content_hash,
-        },
-      },
+      pointer: payload,
     };
   }
   throw new Error("SqliteColonnade: invalid inbox staging JSON");

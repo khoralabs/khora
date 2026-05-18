@@ -1,4 +1,5 @@
 import { isAbsolute, resolve } from "node:path";
+import type { AtriumClient } from "./atrium-client.ts";
 
 /** Per-plugin teardown (idempotent). */
 export type AtriumPluginHandle = {
@@ -10,7 +11,7 @@ export type AtriumPluginHandle = {
  * {@link AtriumClientOptions.dataDir}. Absolute paths pass through `resolvePath`.
  */
 export type AtriumPluginContext = {
-  readonly client: import("./at2-client.js").AtriumClient;
+  readonly client: AtriumClient;
   resolvePath(rel: string): string;
 };
 
