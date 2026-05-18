@@ -13,6 +13,7 @@ Register on the host before rooms or connect (host may require invite token).
 
 Usage:
   ${PROGRAM} help [<command> ...]
+  ${PROGRAM} keygen [--agent-key-path=…] [--force] [--json]
   ${PROGRAM} register ...
   ${PROGRAM} whoami [--base-url=…] [--json] [--no-fetch]
   ${PROGRAM} room create ...

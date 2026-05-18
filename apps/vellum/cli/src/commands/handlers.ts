@@ -2,6 +2,7 @@ import type { FlagMap } from "@khoralabs/cli-kit";
 
 import type { VellumCliContext } from "../flows/context.ts";
 import { handleConnect } from "./connect.ts";
+import { handleKeygen } from "./keygen.ts";
 import { handleList } from "./list.ts";
 import { handleRegister } from "./register.ts";
 import { handleRoomCreate, handleRoomJoin } from "./room.ts";
@@ -34,6 +35,11 @@ export async function dispatch(
 
   if (a === "whoami") {
     await handleWhoami(flags);
+    return;
+  }
+
+  if (a === "keygen") {
+    await handleKeygen(flags);
     return;
   }
 

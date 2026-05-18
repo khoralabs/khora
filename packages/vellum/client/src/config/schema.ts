@@ -6,6 +6,7 @@ import z from "zod";
  */
 export const zVellumAppConfigBase = z
   .object({
+    $schema: z.string().optional(),
     baseUrl: z.string().min(1).optional().describe("ATRIUM / Atrium-compatible HTTP host"),
     dataDir: z
       .string()
