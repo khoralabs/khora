@@ -66,6 +66,8 @@ describe("printSetupSummary", () => {
   });
 
   test("prints wrote/overwrote/skipped lines when files are present", () => {
+    const prevNoColor = process.env.NO_COLOR;
+    process.env.NO_COLOR = "1";
     const lines: string[] = [];
     const log = console.log;
     console.log = (msg: unknown) => {
@@ -81,6 +83,8 @@ describe("printSetupSummary", () => {
       });
     } finally {
       console.log = log;
+      if (prevNoColor === undefined) delete process.env.NO_COLOR;
+      else process.env.NO_COLOR = prevNoColor;
     }
     expect(lines[0]).toContain("wrote a.json");
     expect(lines[1]).toContain("overwrote b.json");
