@@ -1,7 +1,6 @@
-import type { ResolvedPayload } from "@khoralabs/colonnade-persistence";
+import { type ResolvedPayload, sha256HexLower } from "@khoralabs/colonnade-persistence";
 import { relayInboxAuthorPointerDeliverable } from "@khoralabs/relay-colonnade";
 import type { AtriumHostContext } from "./context.ts";
-import { RELAY_INBOX_SOURCE_MAP_ID } from "./relay-inbox.ts";
 
 export type RelayInboxDrainItem = {
   entryKey: string;
@@ -9,61 +8,8 @@ export type RelayInboxDrainItem = {
   projection: unknown;
 };
 
-function authorPrincipalIdFromRelayInboxProjection(projection: unknown): string | undefined {
-  if (projection === null || typeof projection !== "object" || Array.isArray(projection)) {
-    return undefined;
-  }
-  const id = (projection as Record<string, unknown>).authorPrincipalId;
-  return typeof id === "string" && id.length > 0 ? id : undefined;
-}
-
-function postIdFromRelayInboxProjection(projection: unknown): string | undefined {
-  if (projection === null || typeof projection !== "object" || Array.isArray(projection)) {
-    return undefined;
-  }
-  const id = (projection as Record<string, unknown>).postId;
-  return typeof id === "string" && id.length > 0 ? id : undefined;
-}
-
-function popCatalogRelayInboxRows(ctx: AtriumHostContext, did: string): RelayInboxDrainItem[] {
-  const { store, tenantKey, catalogDb, host } = ctx;
-  const prefix = `${did}/`;
-  const rows = store.listBySourceMap(tenantKey, RELAY_INBOX_SOURCE_MAP_ID, prefix);
-  const items: RelayInboxDrainItem[] = [];
-  catalogDb.transaction(() => {
-    for (const r of rows) {
-      const postId = postIdFromRelayInboxProjection(r.projection);
-      if (postId !== undefined && host.persistenceClient.getPostById(postId) == null) {
-        store.deleteRow(tenantKey, RELAY_INBOX_SOURCE_MAP_ID, r.entry_key);
-        continue;
-      }
-      const authorPrincipalId = authorPrincipalIdFromRelayInboxProjection(r.projection);
-      if (
-        !relayInboxAuthorPointerDeliverable({
-          catalogDb,
-          persistence: ctx.host.persistence,
-          authorPrincipalId,
-          postId,
-          getPostById: (id) => host.persistenceClient.getPostById(id),
-        })
-      ) {
-        store.deleteRow(tenantKey, RELAY_INBOX_SOURCE_MAP_ID, r.entry_key);
-        continue;
-      }
-      items.push({
-        entryKey: r.entry_key,
-        pointer: r.pointer,
-        projection: r.projection,
-      });
-      store.deleteRow(tenantKey, RELAY_INBOX_SOURCE_MAP_ID, r.entry_key);
-    }
-  })();
-  return items;
-}
-
 /**
- * Drain cell-backed post inbox (pointer → author outbox) plus legacy catalog rows under
- * `relay:inbox` (e.g. room tickets).
+ * Drain the principal's cell inbox: post fan-out (pointer → author outbox) and room tickets (inline JSON).
  */
 export async function popRelayInboxDrainItemsForDid(
   ctx: AtriumHostContext,
@@ -81,13 +27,38 @@ export async function popRelayInboxDrainItemsForDid(
   });
 
   const resolvedBatch: ResolvedPayload[] = [];
+  const inlineDrainIds: string[] = [];
+  const inlineItems: RelayInboxDrainItem[] = [];
   const toDiscard: string[] = [];
 
   for (const e of list.entries) {
+    if (e.staging.kind === "inline") {
+      const hash = sha256HexLower(e.staging.inline.bytes);
+      if (hash !== e.staging.inline.content_hash) {
+        toDiscard.push(e.inbox_entry_id);
+        continue;
+      }
+      let projection: unknown;
+      try {
+        projection = JSON.parse(new TextDecoder().decode(e.staging.inline.bytes)) as unknown;
+      } catch {
+        toDiscard.push(e.inbox_entry_id);
+        continue;
+      }
+      inlineDrainIds.push(e.inbox_entry_id);
+      inlineItems.push({
+        entryKey: e.inbox_entry_id,
+        pointer: null,
+        projection,
+      });
+      continue;
+    }
+
     if (e.staging.kind !== "pointer") {
       toDiscard.push(e.inbox_entry_id);
       continue;
     }
+
     const ptr = e.staging.pointer.pointer;
     const metaRaw = e.staging.pointer.metadata;
     const meta =
@@ -146,14 +117,14 @@ export async function popRelayInboxDrainItemsForDid(
     });
   }
 
-  const cellItems: RelayInboxDrainItem[] = [];
-  if (resolvedBatch.length > 0) {
-    const drainIds = resolvedBatch.map((r) => r.inbox_entry_id);
+  const pointerItems: RelayInboxDrainItem[] = [];
+  const allDrainIds = [...resolvedBatch.map((r) => r.inbox_entry_id), ...inlineDrainIds];
+  if (allDrainIds.length > 0) {
     await cell.verifyAndDrainInboxBatch({
       cell_id: cellId,
       tenant_key: tenantKey,
       principal_id: did,
-      inbox_entry_ids: drainIds,
+      inbox_entry_ids: allDrainIds,
       resolved_payloads: resolvedBatch,
     });
 
@@ -168,7 +139,7 @@ export async function popRelayInboxDrainItemsForDid(
         typeof metadata === "object" && metadata !== null && !Array.isArray(metadata)
           ? { ...(metadata as Record<string, unknown>) }
           : {};
-      cellItems.push({
+      pointerItems.push({
         entryKey: r.inbox_entry_id,
         pointer: r.pointer,
         projection: {
@@ -179,6 +150,5 @@ export async function popRelayInboxDrainItemsForDid(
     }
   }
 
-  const catalogItems = popCatalogRelayInboxRows(ctx, did);
-  return [...cellItems, ...catalogItems];
+  return [...pointerItems, ...inlineItems];
 }

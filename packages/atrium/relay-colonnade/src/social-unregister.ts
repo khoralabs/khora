@@ -16,8 +16,6 @@ import {
 } from "./social-registration.ts";
 import { purgeSocialRelationshipsForPrincipal } from "./social-relationship-persistence.ts";
 
-const RELAY_INBOX_SOURCE_MAP_ID = "relay:inbox";
-
 const POST_KINDS = ["post", "probe", "status"] as const;
 
 function readUsernameFromPrincipalMapProjection(projection: unknown): string | undefined {
@@ -126,17 +124,6 @@ export function cascadeUnregisterColonnadePrincipalWithProfile(p: {
     }
   }
 
-  const ownInbox = p.store.listBySourceMap(
-    p.tenantKey,
-    RELAY_INBOX_SOURCE_MAP_ID,
-    `${p.principalId}/`,
-  );
-  p.catalogDb.transaction(() => {
-    for (const r of ownInbox) {
-      p.store.deleteRow(p.tenantKey, RELAY_INBOX_SOURCE_MAP_ID, r.entry_key);
-    }
-  })();
-
   const authorSub = `author:${p.principalId}`;
   const followers = [
     ...p.persistence.agentSubjectSubscriptions.subscriberPrincipalsForSubject(authorSub),
@@ -188,8 +175,8 @@ export function cascadeUnregisterColonnadePrincipalWithProfile(p: {
 }
 
 /**
- * Eager teardown for a relay principal: posts (+ cross-principal inbox pointers to those posts),
- * own inbox prefix, subscriptions, social rooms, username maps, registration, profile, invites.
+ * Eager teardown for a relay principal: posts, subscriptions, social rooms, username maps,
+ * registration, profile, invites. Cell inbox/outbox for the principal is purged by the teardown worker.
  */
 export function cascadeUnregisterColonnadePrincipal(p: {
   persistence: AgentRelayPersistence;

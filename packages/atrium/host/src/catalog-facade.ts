@@ -10,7 +10,6 @@ import {
   SOURCE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
 } from "@khoralabs/relay-colonnade";
-import { RELAY_INBOX_SOURCE_MAP_ID } from "./relay-inbox.ts";
 import { ATRIUM_ROOM_INVITE_SOURCE_MAP_ID } from "./room-invite.ts";
 import { ATRIUM_ROOM_REGISTRY_SOURCE_MAP_ID } from "./room-registry.ts";
 
@@ -32,15 +31,11 @@ export type AtriumHostCatalogApi = {
     roomId: string,
     projection: { creatorDid: string; inviteTargetDid: string | null; expiresAtMs: number },
   ): void;
-  upsertRelayInboxRoomTicketRow(entryKey: string, roomId: string, projection: unknown): void;
   upsertRoomInviteRow(inviteHashKey: string, projection: unknown): void;
   lookupRoomInviteRow(joinTokenHashKey: string): { found: boolean; projection: unknown };
   lookupRoomRegistryRow(roomId: string): { found: boolean; projection: unknown };
   deleteRoomRegistryRow(roomId: string): void;
-  deleteRelayInboxRoomTicketRow(entryKey: string): void;
 };
-
-const RELAY_ROOM_TICKET_SOURCE_MAP_ID = "relay:room-ticket";
 
 export function createAtriumCatalogApi(deps: {
   persistence: AgentRelayPersistence;
@@ -139,15 +134,6 @@ export function createAtriumCatalogApi(deps: {
         projection,
       });
     },
-    upsertRelayInboxRoomTicketRow(entryKey, roomId, projection) {
-      store.upsertRow({
-        tenant_key: tenantKey,
-        source_map_id: RELAY_INBOX_SOURCE_MAP_ID,
-        entry_key: entryKey,
-        pointer: relaySyntheticPointer(tenantKey, RELAY_ROOM_TICKET_SOURCE_MAP_ID, roomId),
-        projection,
-      });
-    },
     upsertRoomInviteRow(inviteHashKey, projection) {
       store.upsertRow({
         tenant_key: tenantKey,
@@ -165,9 +151,6 @@ export function createAtriumCatalogApi(deps: {
     },
     deleteRoomRegistryRow(roomId) {
       store.deleteRow(tenantKey, ATRIUM_ROOM_REGISTRY_SOURCE_MAP_ID, roomId);
-    },
-    deleteRelayInboxRoomTicketRow(entryKey) {
-      store.deleteRow(tenantKey, RELAY_INBOX_SOURCE_MAP_ID, entryKey);
     },
   };
 }

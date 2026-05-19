@@ -29,7 +29,7 @@ Colonnade catalog tables (`ensureCatalogSchema` in `/Users/zach/Documents/dev/kh
 - **Social rooms (pairwise):** `relay:social:relationship`, `relay:social:relationships-by-principal` — relationship projection as in `SocialRelationshipRow` (`/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/relay-colonnade/src/social-relationship-persistence.ts`, `/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/relay-colonnade/src/social-types.ts`).
 - **Room registry:** `at2:room-registry` — projection `{ creatorDid, inviteTargetDid, expiresAtMs }` (`/Users/zach/Documents/dev/khora-labs/khora/apps/atrium/server/src/http/rooms.ts`, `/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/src/catalog-facade.ts`).
 - **Room link invites:** `at2:room-invite` — keyed by **SHA-256 hex** of join token; projection `{ roomId, creatorDid, inviteExpiresAtMs, consumedByDid, consumedAtMs }` (`rooms.ts`, `/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/src/room-invite.ts`).
-- **Inbox ticket pointers:** `relay:inbox` — e.g. `entry_key = "${targetDid}/${roomId}"` with payload including `kind: "room_ticket"`, `channelId`, `ticket`, `webSocketUrl`, etc. (`rooms.ts`, `/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/src/relay-inbox.ts`).
+- **Per-principal delivery (cell inbox):** post fan-out (pointer → author outbox) and room tickets (inline JSON) on each principal's home cell — drained via `popRelayInboxDrainItemsForDid`.
 
 **Extra catalog tables** on the same DB file:
 
@@ -122,7 +122,7 @@ Host builds `AtriumProfile` with **server-minted** `id: crypto.randomUUID()` (`c
 **Invites / inbox**
 
 - **Join link:** random `joinToken`; only **SHA-256 hex** stored as `at2:room-invite` key (`rooms.ts`).
-- **Targeted invite:** `relay:inbox` row + optional live WS `notification` with `kind: "room_ticket"` (`rooms.ts`).
+- **Targeted invite:** cell inbox inline row + optional live WS `notification` with `kind: "room_ticket"` (`rooms.ts`).
 
 ---
 
@@ -232,7 +232,6 @@ Populated on `onSessionReady` with `handle.sessionId`, `handle.init.genesis_hash
 | `relay:reg:*` | did / profile id | registration links |
 | `relay:subs:*` | did / subject string | subscription sets |
 | `relay:social:*` | room id / did | social graph |
-| `relay:inbox` | `did/roomId` | room ticket payload |
 | `at2:room-registry` | room id | room metadata |
 | `at2:room-invite` | sha256(joinToken) | invite consumption |
 | `relay:social:username-to-principal` | normalized username | `{ principalId }` |

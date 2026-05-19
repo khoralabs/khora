@@ -55,7 +55,7 @@ export async function attachInboxDuplexAfterAuth(opts: {
     throw new Error("atrium-host: AgentRelay missing inboxHub");
   }
 
-  const items = popRelayInboxDrainItemsForDid(opts.deps.ctx, verifiedDid);
+  const items = await popRelayInboxDrainItemsForDid(opts.deps.ctx, verifiedDid);
   const preSend = inboxWebSocketFromDuplexUtf8(opts.duplex);
   preSend.send(JSON.stringify({ type: "drain", items }));
 

@@ -1,32 +1,24 @@
 # `@khoralabs/atrium-host`
 
-Library that composes **relay-colonnade** persistence, **atrium-auth**, and **`AgentRelay`**: registration pipeline, profiles/posts domain events, topic/author fan-out, frame-channel hub, invites, and colonnade **inbox** rows (`RELAY_INBOX_SOURCE_MAP_ID`). It does **not** ship HTTP or Bun WebSocket handlers.
+Library that composes **relay-colonnade** persistence, **atrium-auth**, and **`AgentRelay`**: registration pipeline, profiles/posts domain events, topic/author fan-out, frame-channel hub, and invites. It does **not** ship HTTP or Bun WebSocket handlers.
 
 ## Wiring
 
-1. `createAtriumHost({ catalogPath, framesDbPath, tenantKey? })` opens the catalog + frames DBs, constructs auth, inbox hub, frame-channel hub, and `AgentRelay`.
-2. **Ingress** (HTTP routes, `Bun.serve`, WebSocket upgrade + drain) lives in **`apps/atrium/v2/server`** (`@khoralabs/atrium-server`).
-
-```mermaid
-flowchart LR
-  subgraph inboxFlow [Inbox drain]
-    fanout["POST_CREATED fan-out\nrelay:inbox rows"]
-    openWs["GET /v1/inbox/ws via v2 server"]
-    list["listBySourceMap\nprefix principalId/"]
-    send["JSON frame type drain"]
-    del["deleteRow each"]
-    fanout --> openWs
-    openWs --> list
-    list --> send
-    send --> del
-  end
-```
+1. `createAtriumHost({ catalogPath, framesDbPath, cellsDir, tenantKey? })` opens the catalog + frames DBs, constructs auth, inbox hub, frame-channel hub, and `AgentRelay`.
+2. **Ingress** (HTTP routes, `Bun.serve`, WebSocket upgrade + drain) lives in **`apps/atrium/server`** (`@khoralabs/atrium-server`).
 
 ## Inbox semantics
 
-- **Fan-out:** On `POST_CREATED`, `on-event` writes one `source_map` row per subscribed principal into `relay:inbox` with `entry_key = "{principalId}/{postId}"`. The row’s **pointer** targets the post entity (`relay:entity:post`); the **projection** holds `{ postId, authorPrincipalId, reasons, createdAtMs, postKind }`.
-- **Drain:** Implemented in the v2 server inbox WebSocket handler: on **open**, list rows for that principal, send `{ type: "drain", items: [...] }`, then **delete** those rows in a transaction.
-- **Live `room_ticket`:** Room creation can enqueue an inbox row; if the target has an inbox socket connected, a `type: "notification"` frame is broadcast.
+Per-principal delivery uses a **single cell inbox** on each principal's home cell. Drain is implemented in `popRelayInboxDrainItemsForDid` and invoked on inbox WebSocket open (`GET /v1/inbox/ws`).
+
+| Delivery | Staging | Source |
+|----------|---------|--------|
+| Post fan-out | **pointer** → author outbox | `POST_CREATED` via `PostOperation` |
+| Room ticket (targeted invite) | **inline** JSON | `enqueueCellInboxInline` from room create |
+
+Drain sends `{ type: "drain", items: [{ entryKey, pointer, projection }] }` then deletes drained rows.
+
+**Live `room_ticket`:** If the target has an inbox socket connected at room create time, a `type: "notification"` frame is also broadcast (in addition to the durable cell inbox row).
 
 See [`@khoralabs/atrium-transport`](../transport) `parseInboxWebSocketMessage` for supported frame shapes including **`drain`**.
 

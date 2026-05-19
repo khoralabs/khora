@@ -5,7 +5,11 @@ export {
   inviteRequiredFromEnv,
   invitesPerRegistrationFromEnv,
 } from "./invites/atrium-invites.ts";
-export { RELAY_INBOX_SOURCE_MAP_ID } from "./relay-inbox.ts";
+export {
+  discardAllCellInboxForPrincipal,
+  discardCellInboxRoomTickets,
+  enqueueCellInboxInline,
+} from "./relay-cell-inbox.ts";
 export {
   popRelayInboxDrainItemsForDid,
   type RelayInboxDrainItem,

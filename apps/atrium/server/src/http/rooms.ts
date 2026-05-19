@@ -1,5 +1,9 @@
 import { createHash } from "node:crypto";
 import {
+  discardCellInboxRoomTickets,
+  enqueueCellInboxInline,
+} from "@khoralabs/atrium-host";
+import {
   normalizeUsername,
   zAtriumRelationshipItem,
   zAtriumRoomCreateBody,
@@ -214,8 +218,7 @@ export async function handleRoomsCreate(
     "room_created",
   );
   if (targetDidResolved !== undefined) {
-    const entryKey = `${targetDidResolved}/${roomId}`;
-    ctx.upsertRelayInboxRoomTicketRow(entryKey, roomId, {
+    await enqueueCellInboxInline(ctx, targetDidResolved, {
       kind: "room_ticket",
       channelId: roomId,
       ticket,
@@ -562,7 +565,7 @@ export async function handleRoomsRemove(
 
   ctx.deleteRoomRegistryRow(roomId);
   if (inviteTargetDid !== null && inviteTargetDid.length > 0) {
-    ctx.deleteRelayInboxRoomTicketRow(`${inviteTargetDid}/${roomId}`);
+    await discardCellInboxRoomTickets(ctx, inviteTargetDid, roomId);
   }
 
   logger.info({ roomId, did }, "room_left");

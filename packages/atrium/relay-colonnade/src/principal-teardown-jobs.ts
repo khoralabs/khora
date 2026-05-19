@@ -95,7 +95,7 @@ export function markPrincipalTeardownJobPendingAfterFailure(
 }
 
 /**
- * Deliver relay:inbox pointer only when the author is registered and not in a teardown job.
+ * Deliver cell inbox post pointer only when the author is registered and not in a teardown job.
  */
 function authorProfileIdFromPostRow(row: AgentRelayEntityRow): string | undefined {
   try {
