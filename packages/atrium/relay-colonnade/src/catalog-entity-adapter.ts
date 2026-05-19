@@ -4,7 +4,7 @@ import type {
   AgentRelayEntityRow,
   AgentRelayEntityUpsert,
 } from "@khoralabs/agent-relay";
-import { type RelayCatalogSourceMapStore, relaySyntheticPointer } from "./catalog-source-map-store";
+import type { RelayCatalogProjectionStore } from "./catalog-projection-store.ts";
 
 export function parseEntityRow(projection: unknown, id: string): AgentRelayEntityRow | undefined {
   if (projection === null || typeof projection !== "object" || Array.isArray(projection)) {
@@ -27,10 +27,10 @@ export function parseEntityRow(projection: unknown, id: string): AgentRelayEntit
 }
 
 export function createCatalogEntityAdapter(
-  store: RelayCatalogSourceMapStore,
+  store: RelayCatalogProjectionStore,
   db: Database,
   tenantKey: string,
-  sourceMapId: string,
+  namespace: string,
 ): AgentRelayEntityPersistence {
   return {
     upsert(record: AgentRelayEntityUpsert): void {
@@ -40,20 +40,18 @@ export function createCatalogEntityAdapter(
         bodyJson: record.bodyJson,
         updatedAtMs: Date.now(),
       };
-      const pointer = relaySyntheticPointer(tenantKey, sourceMapId, record.id);
       db.transaction(() => {
-        store.upsertRow({
+        store.upsert({
           tenant_key: tenantKey,
-          source_map_id: sourceMapId,
+          namespace,
           entry_key: record.id,
-          pointer,
           projection,
         });
       })();
     },
 
     getById(id: string): AgentRelayEntityRow | undefined {
-      const { found, projection } = store.lookupProjection(tenantKey, sourceMapId, id);
+      const { found, projection } = store.lookupProjection(tenantKey, namespace, id);
       if (!found) {
         return undefined;
       }
@@ -61,13 +59,11 @@ export function createCatalogEntityAdapter(
     },
 
     deleteById(id: string): void {
-      const pointer = relaySyntheticPointer(tenantKey, sourceMapId, id);
       db.transaction(() => {
-        store.upsertRow({
+        store.upsert({
           tenant_key: tenantKey,
-          source_map_id: sourceMapId,
+          namespace,
           entry_key: id,
-          pointer,
           projection: { deleted: true },
         });
       })();

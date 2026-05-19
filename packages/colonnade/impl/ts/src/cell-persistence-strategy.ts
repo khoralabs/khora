@@ -6,6 +6,7 @@ import type {
   AppendWriteLogEntryInput,
   AppendWriteLogEntryOutput,
   CellId,
+  DeleteOutboxRecordInput,
   EnqueueInboxDeliveryInput,
   EnqueueInboxDeliveryOutput,
   FetchOutboxPayloadInput,
@@ -13,8 +14,10 @@ import type {
   FetchWriteLogBatchInput,
   FetchWriteLogBatchOutput,
   InboxEntryId,
+  ListOutboxRecordsForPrincipalInput,
   ListPendingInboxEntriesInput,
   ListPendingInboxEntriesOutput,
+  OutboxListedRecord,
   PrincipalId,
   TenantKey,
   VerifyAndDrainInboxBatchInput,
@@ -39,6 +42,10 @@ export interface CellPersistenceStrategy {
     input: ListPendingInboxEntriesInput,
   ): Promise<ListPendingInboxEntriesOutput>;
   fetchOutboxPayload(input: FetchOutboxPayloadInput): Promise<FetchOutboxPayloadOutput>;
+  deleteOutboxRecord(input: DeleteOutboxRecordInput): Promise<void>;
+  listOutboxRecordsForPrincipal(
+    input: ListOutboxRecordsForPrincipalInput,
+  ): Promise<readonly OutboxListedRecord[]>;
   verifyAndDrainInboxBatch(
     input: VerifyAndDrainInboxBatchInput,
   ): Promise<VerifyAndDrainInboxBatchOutput>;

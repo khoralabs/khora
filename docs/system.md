@@ -17,19 +17,20 @@ Colonnade catalog tables (`ensureCatalogSchema` in `/Users/zach/Documents/dev/kh
 | `source_map_rows` | `tenant_key`, `source_map_id`, `entry_key`, `pointer_source_cell_id`, `pointer_source_record_key`, `pointer_content_hash`, `projection`, `source_row_content_hash` — **PK** `(tenant_key, source_map_id, entry_key)` |
 | `connection_tokens` | `token` (PK), `principal_id`, `intended_audience`, `expires_at_ms` |
 
-**Relay-specific content** is mostly **`source_map_rows.projection`** (JSON), keyed by `tenant_key` + `source_map_id` + `entry_key`. Important `source_map_id` values:
+**Atrium relay Tier 1** uses **`relay_catalog_projections`** (`ensureRelayCatalogProjectionsSchema` in `sqlite-setup.ts`): `(tenant_key, namespace, entry_key, projection JSON, updated_at_ms)`. No pointer columns. ID conventions: [`packages/atrium/host/id-conventions.md`](/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/id-conventions.md).
 
-- **Profiles:** `relay:entity:profile` — projection shape from `createCatalogEntityAdapter`: `{ id, memoryId, bodyJson, updatedAtMs }` or `{ deleted: true }` (`/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/relay-colonnade/src/catalog-entity-adapter.ts`).
-- **Posts:** `relay:entity:post` — same entity projection; `bodyJson` is JSON text of an `AtriumPost`.
-- **Post index:** `relay:post-index` — projection `{ postIds: string[] }` (`/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/relay-colonnade/src/catalog-post-adapter.ts`).
+**Relay-specific content** is in **`relay_catalog_projections.projection`** (JSON), keyed by `tenant_key` + `namespace` + `entry_key`. Important `namespace` values:
+
+- **Profiles:** `relay:entity:profile` — `{ id, memoryId, bodyJson, updatedAtMs }` or `{ deleted: true }`.
 - **Topics:** `relay:entity:topic` (same entity adapter pattern).
-- **Registration:** `relay:reg:by-principal` → `{ profileId }`; `relay:reg:by-profile` → `{ principalId }` (`/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/relay-colonnade/src/catalog-registration-adapter.ts`).
-- **Subscriptions:** `relay:subs:by-principal` → `{ subjects: string[] }`; `relay:subs:by-subject` → `{ principals: string[] }` (`/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/relay-colonnade/src/catalog-subscription-adapter.ts`).
-- **Username index (global tenant):** `tenant_key = relay:username-index-global`, maps `relay:social:username-to-principal` / `relay:social:principal-to-username` (`/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/relay-colonnade/src/social-registration.ts`).
-- **Social rooms (pairwise):** `relay:social:relationship`, `relay:social:relationships-by-principal` — relationship projection as in `SocialRelationshipRow` (`/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/relay-colonnade/src/social-relationship-persistence.ts`, `/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/relay-colonnade/src/social-types.ts`).
-- **Room registry:** `at2:room-registry` — projection `{ creatorDid, inviteTargetDid, expiresAtMs }` (`/Users/zach/Documents/dev/khora-labs/khora/apps/atrium/server/src/http/rooms.ts`, `/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/src/catalog-facade.ts`).
-- **Room link invites:** `at2:room-invite` — keyed by **SHA-256 hex** of join token; projection `{ roomId, creatorDid, inviteExpiresAtMs, consumedByDid, consumedAtMs }` (`rooms.ts`, `/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/src/room-invite.ts`).
-- **Per-principal delivery (cell inbox):** post fan-out (pointer → author outbox) and room tickets (inline JSON) on each principal's home cell — drained via `popRelayInboxDrainItemsForDid`.
+- **Posts:** **not in catalog** — bodies live in author cell **outbox** only; ids are address-encoded (`atp1:…`). See Tier 2 in [`colonnade-usage.md`](/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/colonnade-usage.md).
+- **Registration:** `relay:reg:by-principal` → `{ profileId }`; `relay:reg:by-profile` → `{ principalId }`.
+- **Subscriptions:** `relay:subs:by-principal` → `{ subjects: string[] }`; `relay:subs:by-subject` → `{ principals: string[] }`.
+- **Username index (global tenant):** `tenant_key = relay:username-index-global`, maps `relay:social:username-to-principal` / `relay:social:principal-to-username`.
+- **Social rooms (pairwise):** `relay:social:relationship`, `relay:social:relationships-by-principal`.
+- **Room registry:** `at2:room-registry` — `{ creatorDid, inviteTargetDid, expiresAtMs }`.
+- **Room link invites:** `at2:room-invite` — keyed by SHA-256 hex of join token.
+- **Per-principal delivery (cell inbox):** post fan-out (pointer → author outbox) and room tickets (inline JSON) on each principal's home cell.
 
 **Extra catalog tables** on the same DB file:
 
@@ -99,7 +100,7 @@ Host builds `AtriumProfile` with **server-minted** `id: crypto.randomUUID()` (`c
 - `body`: string (max 100,000)
 - Stored document adds: `id`, `authorProfileId?` (required for `kind === "status"`)
 
-**Persistence:** posts are upserted as catalog entities: projection includes `bodyJson: JSON.stringify(post)` (`on-event.ts` → `persistenceClient.upsertPost`).
+**Persistence:** post JSON is written **once** to the author's cell **outbox** (`on-event.ts` → `publishPost` / `postOperation`). The post `id` is address-encoded (`atp1:…` = author principal + cell + outbox record key). Recipients learn ids via inbox drain pointers. **No catalog projection** for posts.
 
 ---
 
@@ -222,12 +223,13 @@ Populated on `onSessionReady` with `handle.sessionId`, `handle.init.genesis_hash
 
 ---
 
-### Source map / catalog summary (quick index)
+### Catalog projection summary (quick index)
 
-| `source_map_id` | Typical `entry_key` | Projection gist |
+Tier 1 table: **`relay_catalog_projections`** — PK `(tenant_key, namespace, entry_key)`. Full reference: [`id-conventions.md`](/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/id-conventions.md).
+
+| `namespace` | Typical `entry_key` | Projection gist |
 | --- | --- | --- |
 | `relay:entity:profile` | profile id | `{ id, memoryId, bodyJson, updatedAtMs }` |
-| `relay:entity:post` | post id | same + post index rows |
 | `relay:entity:topic` | topic id | entity shape |
 | `relay:reg:*` | did / profile id | registration links |
 | `relay:subs:*` | did / subject string | subscription sets |
@@ -237,4 +239,4 @@ Populated on `onSessionReady` with `handle.sessionId`, `handle.init.genesis_hash
 | `relay:social:username-to-principal` | normalized username | `{ principalId }` |
 | `relay:social:principal-to-username` | did | `{ username }` |
 
-All of the above is backed by the physical **`source_map_rows`** columns listed in **§1A**.
+**Posts** are **not** in catalog — author cell outbox only (Tier 2).

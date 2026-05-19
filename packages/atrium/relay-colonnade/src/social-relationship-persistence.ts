@@ -1,13 +1,14 @@
 import type { Database } from "bun:sqlite";
 import type { PrincipalId } from "@khoralabs/agent-relay";
+import type { RelayCatalogProjectionStore } from "./catalog-projection-store.ts";
 import {
-  type RelayCatalogSourceMapStore,
-  relaySyntheticPointer,
-} from "./catalog-source-map-store.ts";
+  RELAY_NAMESPACE_SOCIAL_RELATIONSHIP,
+  RELAY_NAMESPACE_SOCIAL_RELATIONSHIPS_BY_PRINCIPAL,
+} from "./relay-id-conventions.ts";
 import type { SocialRelationshipPersistence, SocialRelationshipRow } from "./social-types.ts";
 
-const SOURCE_RELATIONSHIP = "relay:social:relationship";
-const SOURCE_BY_PRINCIPAL = "relay:social:relationships-by-principal";
+const NAMESPACE_RELATIONSHIP = RELAY_NAMESPACE_SOCIAL_RELATIONSHIP;
+const NAMESPACE_BY_PRINCIPAL = RELAY_NAMESPACE_SOCIAL_RELATIONSHIPS_BY_PRINCIPAL;
 
 function readChannelIds(projection: unknown): string[] {
   if (projection === null || typeof projection !== "object" || Array.isArray(projection)) {
@@ -54,28 +55,30 @@ function parseRelationshipRow(
 }
 
 function upsertPrincipalIndex(
-  store: RelayCatalogSourceMapStore,
+  store: RelayCatalogProjectionStore,
   tenantKey: string,
   principalId: PrincipalId,
   channelIds: string[],
 ): void {
-  const pointer = relaySyntheticPointer(tenantKey, SOURCE_BY_PRINCIPAL, principalId);
-  store.upsertRow({
+  store.upsert({
     tenant_key: tenantKey,
-    source_map_id: SOURCE_BY_PRINCIPAL,
+    namespace: NAMESPACE_BY_PRINCIPAL,
     entry_key: principalId,
-    pointer,
     projection: { channelIds },
   });
 }
 
 function appendChannelForPrincipal(
-  store: RelayCatalogSourceMapStore,
+  store: RelayCatalogProjectionStore,
   tenantKey: string,
   principalId: PrincipalId,
   channelId: string,
 ): void {
-  const { found, projection } = store.lookupProjection(tenantKey, SOURCE_BY_PRINCIPAL, principalId);
+  const { found, projection } = store.lookupProjection(
+    tenantKey,
+    NAMESPACE_BY_PRINCIPAL,
+    principalId,
+  );
   const prev = found ? readChannelIds(projection) : [];
   if (prev.includes(channelId)) {
     return;
@@ -84,15 +87,19 @@ function appendChannelForPrincipal(
 }
 
 export function createSocialRelationshipPersistence(deps: {
-  store: RelayCatalogSourceMapStore;
+  projectionStore: RelayCatalogProjectionStore;
   catalogDb: Database;
   framesDb: Database;
   tenantKey: string;
 }): SocialRelationshipPersistence {
-  const { store, catalogDb, framesDb, tenantKey } = deps;
+  const { projectionStore: store, catalogDb, framesDb, tenantKey } = deps;
 
   function getRelationshipImpl(channelId: string): SocialRelationshipRow | undefined {
-    const { found, projection } = store.lookupProjection(tenantKey, SOURCE_RELATIONSHIP, channelId);
+    const { found, projection } = store.lookupProjection(
+      tenantKey,
+      NAMESPACE_RELATIONSHIP,
+      channelId,
+    );
     if (!found) {
       return undefined;
     }
@@ -110,13 +117,11 @@ export function createSocialRelationshipPersistence(deps: {
         ...(params.expiresAtMs !== undefined ? { expiresAtMs: params.expiresAtMs } : {}),
         ...(params.metadata !== undefined ? { metadata: params.metadata } : {}),
       };
-      const pointer = relaySyntheticPointer(tenantKey, SOURCE_RELATIONSHIP, params.channelId);
       catalogDb.transaction(() => {
-        store.upsertRow({
+        store.upsert({
           tenant_key: tenantKey,
-          source_map_id: SOURCE_RELATIONSHIP,
+          namespace: NAMESPACE_RELATIONSHIP,
           entry_key: params.channelId,
-          pointer,
           projection: row,
         });
         appendChannelForPrincipal(store, tenantKey, params.creatorPrincipalId, params.channelId);
@@ -131,7 +136,7 @@ export function createSocialRelationshipPersistence(deps: {
       catalogDb.transaction(() => {
         const { found, projection } = store.lookupProjection(
           tenantKey,
-          SOURCE_RELATIONSHIP,
+          NAMESPACE_RELATIONSHIP,
           params.channelId,
         );
         if (!found) {
@@ -156,12 +161,10 @@ export function createSocialRelationshipPersistence(deps: {
           ...current,
           peerPrincipalId: params.peerPrincipalId,
         };
-        const pointer = relaySyntheticPointer(tenantKey, SOURCE_RELATIONSHIP, params.channelId);
-        store.upsertRow({
+        store.upsert({
           tenant_key: tenantKey,
-          source_map_id: SOURCE_RELATIONSHIP,
+          namespace: NAMESPACE_RELATIONSHIP,
           entry_key: params.channelId,
-          pointer,
           projection: next,
         });
         appendChannelForPrincipal(store, tenantKey, params.peerPrincipalId, params.channelId);
@@ -173,12 +176,10 @@ export function createSocialRelationshipPersistence(deps: {
         const current = getRelationshipImpl(params.channelId);
         if (current === undefined) return;
         const next: SocialRelationshipRow = { ...current, expiresAtMs: params.expiresAtMs };
-        const pointer = relaySyntheticPointer(tenantKey, SOURCE_RELATIONSHIP, params.channelId);
-        store.upsertRow({
+        store.upsert({
           tenant_key: tenantKey,
-          source_map_id: SOURCE_RELATIONSHIP,
+          namespace: NAMESPACE_RELATIONSHIP,
           entry_key: params.channelId,
-          pointer,
           projection: next,
         });
       })();
@@ -187,7 +188,7 @@ export function createSocialRelationshipPersistence(deps: {
     listRelationshipsForPrincipal(principalId: PrincipalId): SocialRelationshipRow[] {
       const { found, projection } = store.lookupProjection(
         tenantKey,
-        SOURCE_BY_PRINCIPAL,
+        NAMESPACE_BY_PRINCIPAL,
         principalId,
       );
       if (!found) {
@@ -214,7 +215,7 @@ export function createSocialRelationshipPersistence(deps: {
         return undefined;
       }
       catalogDb.transaction(() => {
-        store.deleteRow(tenantKey, SOURCE_RELATIONSHIP, channelId);
+        store.deleteRow(tenantKey, NAMESPACE_RELATIONSHIP, channelId);
         stripChannelFromPrincipalSocialIndex(store, tenantKey, r.creatorPrincipalId, channelId);
         if (r.peerPrincipalId !== null) {
           stripChannelFromPrincipalSocialIndex(store, tenantKey, r.peerPrincipalId, channelId);
@@ -228,18 +229,22 @@ export function createSocialRelationshipPersistence(deps: {
 }
 
 function stripChannelFromPrincipalSocialIndex(
-  store: RelayCatalogSourceMapStore,
+  store: RelayCatalogProjectionStore,
   tenantKey: string,
   principalId: PrincipalId,
   channelId: string,
 ): void {
-  const { found, projection } = store.lookupProjection(tenantKey, SOURCE_BY_PRINCIPAL, principalId);
+  const { found, projection } = store.lookupProjection(
+    tenantKey,
+    NAMESPACE_BY_PRINCIPAL,
+    principalId,
+  );
   if (!found) {
     return;
   }
   const ids = readChannelIds(projection).filter((id) => id !== channelId);
   if (ids.length === 0) {
-    store.deleteRow(tenantKey, SOURCE_BY_PRINCIPAL, principalId);
+    store.deleteRow(tenantKey, NAMESPACE_BY_PRINCIPAL, principalId);
     return;
   }
   upsertPrincipalIndex(store, tenantKey, principalId, ids);
@@ -247,15 +252,14 @@ function stripChannelFromPrincipalSocialIndex(
 
 /** Tear down frame-channel rows + catalog relationship entries for every room this principal participates in. */
 export function purgeSocialRelationshipsForPrincipal(params: {
-  store: RelayCatalogSourceMapStore;
+  projectionStore: RelayCatalogProjectionStore;
   catalogDb: Database;
   framesDb: Database;
   tenantKey: string;
   principalId: PrincipalId;
 }): void {
-  const { store, catalogDb, framesDb, tenantKey, principalId } = params;
-  const social = createSocialRelationshipPersistence({ store, catalogDb, framesDb, tenantKey });
-  const rels = social.listRelationshipsForPrincipal(principalId);
+  const social = createSocialRelationshipPersistence(params);
+  const rels = social.listRelationshipsForPrincipal(params.principalId);
   for (const r of rels) {
     social.deleteRelationship(r.channelId);
   }

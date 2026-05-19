@@ -1,15 +1,16 @@
 import type { Database } from "bun:sqlite";
 import type { AgentRelayRegistrations, PrincipalId } from "@khoralabs/agent-relay";
+import type { RelayCatalogProjectionStore } from "./catalog-projection-store.ts";
 import {
-  type RelayCatalogSourceMapStore,
-  relaySyntheticPointer,
-} from "./catalog-source-map-store.ts";
+  RELAY_NAMESPACE_REG_BY_PRINCIPAL,
+  RELAY_NAMESPACE_REG_BY_PROFILE,
+} from "./relay-id-conventions.ts";
 
-export const RELAY_CATALOG_REG_BY_PRINCIPAL = "relay:reg:by-principal";
-export const RELAY_CATALOG_REG_BY_PROFILE = "relay:reg:by-profile";
+export const RELAY_CATALOG_REG_BY_PRINCIPAL = RELAY_NAMESPACE_REG_BY_PRINCIPAL;
+export const RELAY_CATALOG_REG_BY_PROFILE = RELAY_NAMESPACE_REG_BY_PROFILE;
 
-const SOURCE_BY_PRINCIPAL = RELAY_CATALOG_REG_BY_PRINCIPAL;
-const SOURCE_BY_PROFILE = RELAY_CATALOG_REG_BY_PROFILE;
+const NAMESPACE_BY_PRINCIPAL = RELAY_NAMESPACE_REG_BY_PRINCIPAL;
+const NAMESPACE_BY_PROFILE = RELAY_NAMESPACE_REG_BY_PROFILE;
 
 function readProfileId(projection: unknown): string | undefined {
   if (projection === null || typeof projection !== "object" || Array.isArray(projection)) {
@@ -28,7 +29,7 @@ function readPrincipalId(projection: unknown): PrincipalId | undefined {
 }
 
 export function createCatalogRegistrationAdapter(
-  store: RelayCatalogSourceMapStore,
+  store: RelayCatalogProjectionStore,
   db: Database,
   tenantKey: string,
 ): AgentRelayRegistrations {
@@ -36,28 +37,24 @@ export function createCatalogRegistrationAdapter(
     exists(principalId: PrincipalId): boolean {
       const { found, projection } = store.lookupProjection(
         tenantKey,
-        SOURCE_BY_PRINCIPAL,
+        NAMESPACE_BY_PRINCIPAL,
         principalId,
       );
       return found && readProfileId(projection) !== undefined;
     },
 
     upsert(principalId: PrincipalId, profileId: string): void {
-      const ptrP = relaySyntheticPointer(tenantKey, SOURCE_BY_PRINCIPAL, principalId);
-      const ptrPr = relaySyntheticPointer(tenantKey, SOURCE_BY_PROFILE, profileId);
       db.transaction(() => {
-        store.upsertRow({
+        store.upsert({
           tenant_key: tenantKey,
-          source_map_id: SOURCE_BY_PRINCIPAL,
+          namespace: NAMESPACE_BY_PRINCIPAL,
           entry_key: principalId,
-          pointer: ptrP,
           projection: { profileId },
         });
-        store.upsertRow({
+        store.upsert({
           tenant_key: tenantKey,
-          source_map_id: SOURCE_BY_PROFILE,
+          namespace: NAMESPACE_BY_PROFILE,
           entry_key: profileId,
-          pointer: ptrPr,
           projection: { principalId },
         });
       })();
@@ -66,7 +63,7 @@ export function createCatalogRegistrationAdapter(
     profileIdForPrincipal(principalId: PrincipalId): string | undefined {
       const { found, projection } = store.lookupProjection(
         tenantKey,
-        SOURCE_BY_PRINCIPAL,
+        NAMESPACE_BY_PRINCIPAL,
         principalId,
       );
       if (!found) {
@@ -76,7 +73,11 @@ export function createCatalogRegistrationAdapter(
     },
 
     principalForProfileId(profileId: string): PrincipalId | undefined {
-      const { found, projection } = store.lookupProjection(tenantKey, SOURCE_BY_PROFILE, profileId);
+      const { found, projection } = store.lookupProjection(
+        tenantKey,
+        NAMESPACE_BY_PROFILE,
+        profileId,
+      );
       if (!found) {
         return undefined;
       }

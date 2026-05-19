@@ -2,6 +2,16 @@
 
 Library that composes **relay-colonnade** persistence, **atrium-auth**, and **`AgentRelay`**: registration pipeline, profiles/posts domain events, topic/author fan-out, frame-channel hub, and invites. It does **not** ship HTTP or Bun WebSocket handlers.
 
+## Colonnade storage
+
+Three tiers — see [colonnade-usage.md](./colonnade-usage.md) and [id-conventions.md](./id-conventions.md):
+
+1. **Catalog projections** — profiles, subscriptions, rooms (`relay_catalog_projections`, JSON + indexes)
+2. **Author outbox** — post bodies only; address-encoded post ids (`atp1:…`)
+3. **Cell inbox** — pointer fan-out (posts) + inline room tickets
+
+**Fresh deploy:** wipe catalog SQLite, frames DB, and `cells/` when upgrading to this layout (no in-place migration).
+
 ## Wiring
 
 1. `createAtriumHost({ catalogPath, framesDbPath, cellsDir, tenantKey? })` opens the catalog + frames DBs, constructs auth, inbox hub, frame-channel hub, and `AgentRelay`.

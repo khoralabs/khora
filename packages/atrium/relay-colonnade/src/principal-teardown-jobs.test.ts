@@ -49,7 +49,6 @@ test("relayInboxAuthorPointerDeliverable false when teardown job active", () => 
   const persistence = {
     agentRegistrations: {
       exists: () => true,
-      principalForProfileId: () => "did:x",
     },
   } as unknown as AgentRelayPersistence;
   insertPendingPrincipalTeardownJob(db, { did: "did:x", profileId: "p", nowMs: 1 });
@@ -58,8 +57,6 @@ test("relayInboxAuthorPointerDeliverable false when teardown job active", () => 
       catalogDb: db,
       persistence,
       authorPrincipalId: "did:x",
-      postId: undefined,
-      getPostById: () => undefined,
     }),
   ).toBe(false);
 });
@@ -70,7 +67,6 @@ test("relayInboxAuthorPointerDeliverable true when registered and no job", () =>
   const persistence = {
     agentRegistrations: {
       exists: (id: string) => id === "did:x",
-      principalForProfileId: (pid: string) => (pid === "prof" ? "did:x" : undefined),
     },
   } as unknown as AgentRelayPersistence;
   expect(
@@ -78,40 +74,23 @@ test("relayInboxAuthorPointerDeliverable true when registered and no job", () =>
       catalogDb: db,
       persistence,
       authorPrincipalId: "did:x",
-      postId: "post-1",
-      getPostById: () => ({
-        id: "post-1",
-        memoryId: null,
-        bodyJson: JSON.stringify({ authorProfileId: "prof", kind: "post", body: "x" }),
-        updatedAtMs: 0,
-      }),
     }),
   ).toBe(true);
 });
 
-test("relayInboxAuthorPointerDeliverable derives author from post body", () => {
+test("relayInboxAuthorPointerDeliverable false when authorPrincipalId missing", () => {
   const db = new Database(":memory:");
   ensurePrincipalTeardownJobsSchema(db);
   const persistence = {
-    agentRegistrations: {
-      exists: (id: string) => id === "did:x",
-      principalForProfileId: (pid: string) => (pid === "prof" ? "did:x" : undefined),
-    },
+    agentRegistrations: { exists: () => true },
   } as unknown as AgentRelayPersistence;
   expect(
     relayInboxAuthorPointerDeliverable({
       catalogDb: db,
       persistence,
       authorPrincipalId: undefined,
-      postId: "post-1",
-      getPostById: () => ({
-        id: "post-1",
-        memoryId: null,
-        bodyJson: JSON.stringify({ authorProfileId: "prof", kind: "post", body: "x" }),
-        updatedAtMs: 0,
-      }),
     }),
-  ).toBe(true);
+  ).toBe(false);
 });
 
 const tmpRoot = mkdtempSync(join(tmpdir(), "relay-teardown-int-"));
@@ -128,12 +107,13 @@ afterAll(() => {
 
 test("phase1 clears registration and enqueues job; cascade + delete job finishes", async () => {
   const dir = nextDir();
-  const { persistence, store, catalogDb, tenantKey, framesDb } = await createRelayColonnadeSocial({
-    catalogPath: join(dir, "c.sqlite"),
-    framesDbPath: join(dir, "f.sqlite"),
-    tenantKey: "tn",
-  });
-  registerAgentOnColonnadePersistence(persistence, catalogDb, store, {
+  const { persistence, projectionStore, catalogDb, tenantKey, framesDb } =
+    await createRelayColonnadeSocial({
+      catalogPath: join(dir, "c.sqlite"),
+      framesDbPath: join(dir, "f.sqlite"),
+      tenantKey: "tn",
+    });
+  registerAgentOnColonnadePersistence(persistence, catalogDb, projectionStore, {
     principalId: "did:author",
     username: "author",
     profileUpsert: { id: "prof-a", bodyJson: "{}" },
@@ -142,7 +122,7 @@ test("phase1 clears registration and enqueues job; cascade + delete job finishes
   expect(
     phase1UnregisterColonnadePrincipal({
       persistence,
-      store,
+      projectionStore,
       catalogDb,
       tenantKey,
       principalId: "did:author",
@@ -153,7 +133,7 @@ test("phase1 clears registration and enqueues job; cascade + delete job finishes
 
   cascadeUnregisterColonnadePrincipalWithProfile({
     persistence,
-    store,
+    projectionStore,
     catalogDb,
     framesDb,
     tenantKey,

@@ -51,6 +51,16 @@ export class CellPersistenceClient implements CellPersistenceStrategy {
     return out;
   }
 
+  deleteOutboxRecord(input: import("./colonnade-types.ts").DeleteOutboxRecordInput): Promise<void> {
+    return this.strategy.deleteOutboxRecord(input);
+  }
+
+  listOutboxRecordsForPrincipal(
+    input: import("./colonnade-types.ts").ListOutboxRecordsForPrincipalInput,
+  ): Promise<readonly import("./colonnade-types.ts").OutboxListedRecord[]> {
+    return this.strategy.listOutboxRecordsForPrincipal(input);
+  }
+
   verifyAndDrainInboxBatch(
     input: VerifyAndDrainInboxBatchInput,
   ): Promise<VerifyAndDrainInboxBatchOutput> {

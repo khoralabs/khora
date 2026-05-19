@@ -24,7 +24,7 @@ export class ColonnadePublicationClient {
       cell_id: input.author_cell_id,
       tenant_key: input.tenant_key,
       principal_id: input.author_principal_id,
-      record_key: "",
+      record_key: input.outbox_record_key ?? "",
       payload_bytes: input.payload_bytes,
       metadata: input.payload_metadata,
     });

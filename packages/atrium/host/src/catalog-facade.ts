@@ -3,17 +3,18 @@ import type { AgentRelayPersistence } from "@khoralabs/agent-relay";
 import { normalizeUsername } from "@khoralabs/atrium-contracts";
 import {
   phase1UnregisterColonnadePrincipal,
-  type RelayCatalogSourceMapStore,
+  RELAY_NAMESPACE_PRINCIPAL_TO_USERNAME,
+  RELAY_NAMESPACE_ROOM_INVITE,
+  RELAY_NAMESPACE_ROOM_REGISTRY,
+  RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL,
+  type RelayCatalogProjectionStore,
   registerAgentOnColonnadePersistence,
-  relaySyntheticPointer,
   SOURCE_PRINCIPAL_TO_USERNAME,
   SOURCE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
 } from "@khoralabs/relay-colonnade";
-import { ATRIUM_ROOM_INVITE_SOURCE_MAP_ID } from "./room-invite.ts";
-import { ATRIUM_ROOM_REGISTRY_SOURCE_MAP_ID } from "./room-registry.ts";
 
-/** Catalog operations used by HTTP adapters; relay `source_map` keys stay inside the host. */
+/** Catalog operations used by HTTP adapters; relay projection keys stay inside the host. */
 export type AtriumHostCatalogApi = {
   lookupPrincipalIdByNormalizedUsername(normalized: string): string | undefined;
   lookupNormalizedUsernameForPrincipal(principalId: string): string | undefined;
@@ -39,14 +40,14 @@ export type AtriumHostCatalogApi = {
 
 export function createAtriumCatalogApi(deps: {
   persistence: AgentRelayPersistence;
-  store: RelayCatalogSourceMapStore;
+  projectionStore: RelayCatalogProjectionStore;
   catalogDb: Database;
   tenantKey: string;
 }): AtriumHostCatalogApi {
-  const { persistence, store, catalogDb, tenantKey } = deps;
+  const { persistence, projectionStore, catalogDb, tenantKey } = deps;
 
   function lookupPrincipalIdByNormalizedUsername(normalized: string): string | undefined {
-    const hit = store.lookupProjection(
+    const hit = projectionStore.lookupProjection(
       USERNAME_INDEX_TENANT_KEY,
       SOURCE_USERNAME_TO_PRINCIPAL,
       normalized,
@@ -59,7 +60,7 @@ export function createAtriumCatalogApi(deps: {
   }
 
   function lookupNormalizedUsernameForPrincipal(principalId: string): string | undefined {
-    const hit = store.lookupProjection(
+    const hit = projectionStore.lookupProjection(
       USERNAME_INDEX_TENANT_KEY,
       SOURCE_PRINCIPAL_TO_USERNAME,
       principalId,
@@ -77,30 +78,28 @@ export function createAtriumCatalogApi(deps: {
   ): void {
     const current = lookupNormalizedUsernameForPrincipal(principalId);
     if (current === undefined) return;
-    store.deleteRow(USERNAME_INDEX_TENANT_KEY, SOURCE_PRINCIPAL_TO_USERNAME, principalId);
-    store.deleteRow(USERNAME_INDEX_TENANT_KEY, SOURCE_USERNAME_TO_PRINCIPAL, current);
+    projectionStore.deleteRow(
+      USERNAME_INDEX_TENANT_KEY,
+      RELAY_NAMESPACE_PRINCIPAL_TO_USERNAME,
+      principalId,
+    );
+    projectionStore.deleteRow(
+      USERNAME_INDEX_TENANT_KEY,
+      RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL,
+      current,
+    );
     if (priorNormalizedUsername === undefined) return;
     const username = normalizeUsername(priorNormalizedUsername);
-    store.upsertRow({
+    projectionStore.upsert({
       tenant_key: USERNAME_INDEX_TENANT_KEY,
-      source_map_id: SOURCE_USERNAME_TO_PRINCIPAL,
+      namespace: RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL,
       entry_key: username,
-      pointer: relaySyntheticPointer(
-        USERNAME_INDEX_TENANT_KEY,
-        SOURCE_USERNAME_TO_PRINCIPAL,
-        username,
-      ),
       projection: { principalId },
     });
-    store.upsertRow({
+    projectionStore.upsert({
       tenant_key: USERNAME_INDEX_TENANT_KEY,
-      source_map_id: SOURCE_PRINCIPAL_TO_USERNAME,
+      namespace: RELAY_NAMESPACE_PRINCIPAL_TO_USERNAME,
       entry_key: principalId,
-      pointer: relaySyntheticPointer(
-        USERNAME_INDEX_TENANT_KEY,
-        SOURCE_PRINCIPAL_TO_USERNAME,
-        principalId,
-      ),
       projection: { username },
     });
   }
@@ -110,7 +109,7 @@ export function createAtriumCatalogApi(deps: {
     lookupNormalizedUsernameForPrincipal,
     rollbackUsernameMapsAfterFailedRegistration,
     applyProfileUsernameAndMaps(input) {
-      registerAgentOnColonnadePersistence(persistence, catalogDb, store, {
+      registerAgentOnColonnadePersistence(persistence, catalogDb, projectionStore, {
         principalId: input.principalId,
         username: input.username,
         profileUpsert: input.profileUpsert,
@@ -119,38 +118,40 @@ export function createAtriumCatalogApi(deps: {
     phase1UnregisterPrincipal(principalId) {
       phase1UnregisterColonnadePrincipal({
         persistence,
-        store,
+        projectionStore,
         catalogDb,
         tenantKey,
         principalId,
       });
     },
     upsertRoomRegistryRow(roomId, projection) {
-      store.upsertRow({
+      projectionStore.upsert({
         tenant_key: tenantKey,
-        source_map_id: ATRIUM_ROOM_REGISTRY_SOURCE_MAP_ID,
+        namespace: RELAY_NAMESPACE_ROOM_REGISTRY,
         entry_key: roomId,
-        pointer: relaySyntheticPointer(tenantKey, ATRIUM_ROOM_REGISTRY_SOURCE_MAP_ID, roomId),
         projection,
       });
     },
     upsertRoomInviteRow(inviteHashKey, projection) {
-      store.upsertRow({
+      projectionStore.upsert({
         tenant_key: tenantKey,
-        source_map_id: ATRIUM_ROOM_INVITE_SOURCE_MAP_ID,
+        namespace: RELAY_NAMESPACE_ROOM_INVITE,
         entry_key: inviteHashKey,
-        pointer: relaySyntheticPointer(tenantKey, ATRIUM_ROOM_INVITE_SOURCE_MAP_ID, inviteHashKey),
         projection,
       });
     },
     lookupRoomInviteRow(joinTokenHashKey) {
-      return store.lookupProjection(tenantKey, ATRIUM_ROOM_INVITE_SOURCE_MAP_ID, joinTokenHashKey);
+      return projectionStore.lookupProjection(
+        tenantKey,
+        RELAY_NAMESPACE_ROOM_INVITE,
+        joinTokenHashKey,
+      );
     },
     lookupRoomRegistryRow(roomId) {
-      return store.lookupProjection(tenantKey, ATRIUM_ROOM_REGISTRY_SOURCE_MAP_ID, roomId);
+      return projectionStore.lookupProjection(tenantKey, RELAY_NAMESPACE_ROOM_REGISTRY, roomId);
     },
     deleteRoomRegistryRow(roomId) {
-      store.deleteRow(tenantKey, ATRIUM_ROOM_REGISTRY_SOURCE_MAP_ID, roomId);
+      projectionStore.deleteRow(tenantKey, RELAY_NAMESPACE_ROOM_REGISTRY, roomId);
     },
   };
 }

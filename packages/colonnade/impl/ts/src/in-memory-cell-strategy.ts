@@ -133,6 +133,54 @@ export class InMemoryCellPersistenceStrategy implements CellPersistenceStrategy 
     };
   }
 
+  async deleteOutboxRecord(input: {
+    cell_id: string;
+    principal_id: string;
+    record_key: string;
+  }): Promise<void> {
+    this.assertCell(input.cell_id);
+    const row = this.outbox.get(input.record_key);
+    if (row !== undefined && row.principal_id === input.principal_id) {
+      this.outbox.delete(input.record_key);
+    }
+  }
+
+  async listOutboxRecordsForPrincipal(input: {
+    cell_id: string;
+    tenant_key: string;
+    principal_id: string;
+    post_kind?: string;
+    limit: number;
+  }): Promise<
+    {
+      record_key: string;
+      content_hash: string;
+      metadata: unknown;
+      committed_at_ms: number;
+    }[]
+  > {
+    this.assertCell(input.cell_id);
+    let rows = [...this.outbox.entries()]
+      .filter(([, row]) => row.principal_id === input.principal_id)
+      .map(([record_key, row]) => ({ record_key, ...row }));
+    if (input.post_kind !== undefined) {
+      const kind = input.post_kind;
+      rows = rows.filter(({ metadata }) => {
+        if (metadata === null || typeof metadata !== "object" || Array.isArray(metadata)) {
+          return false;
+        }
+        return (metadata as Record<string, unknown>).postKind === kind;
+      });
+    }
+    rows.sort((a, b) => b.committed_at_ms - a.committed_at_ms);
+    return rows.slice(0, input.limit).map((r) => ({
+      record_key: r.record_key,
+      content_hash: r.content_hash,
+      metadata: r.metadata,
+      committed_at_ms: r.committed_at_ms,
+    }));
+  }
+
   async verifyAndDrainInboxBatch(
     input: VerifyAndDrainInboxBatchInput,
   ): Promise<VerifyAndDrainInboxBatchOutput> {

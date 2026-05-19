@@ -196,6 +196,27 @@ export type FetchOutboxPayloadOutput = {
   readonly bytes_available: boolean;
 };
 
+export type DeleteOutboxRecordInput = {
+  readonly cell_id: CellId;
+  readonly principal_id: PrincipalId;
+  readonly record_key: OutboxRecordKey;
+};
+
+export type ListOutboxRecordsForPrincipalInput = {
+  readonly cell_id: CellId;
+  readonly tenant_key: TenantKey;
+  readonly principal_id: PrincipalId;
+  readonly post_kind?: string;
+  readonly limit: number;
+};
+
+export type OutboxListedRecord = {
+  readonly record_key: OutboxRecordKey;
+  readonly content_hash: ContentHash;
+  readonly metadata: JsonDocument;
+  readonly committed_at_ms: number;
+};
+
 export type ResolvedPayload = {
   readonly inbox_entry_id: InboxEntryId;
   readonly pointer: PointerRef;
@@ -315,6 +336,8 @@ export type PostOperationInput = {
   readonly payload_bytes: Uint8Array;
   readonly payload_metadata: JsonDocument;
   readonly routing: PublicationRouting;
+  /** When non-empty, used as the outbox record key instead of generating one. */
+  readonly outbox_record_key?: OutboxRecordKey;
 };
 
 export type GeneratedInboxRef = {

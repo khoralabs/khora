@@ -120,6 +120,18 @@ export class WorkerBackedCellStrategy implements CellPersistenceStrategy, Sqlite
     return this.call("fetchOutboxPayload", [input]);
   }
 
+  deleteOutboxRecord(
+    input: import("../colonnade-types.ts").DeleteOutboxRecordInput,
+  ): Promise<void> {
+    return this.call("deleteOutboxRecord", [input]);
+  }
+
+  listOutboxRecordsForPrincipal(
+    input: import("../colonnade-types.ts").ListOutboxRecordsForPrincipalInput,
+  ): Promise<readonly import("../colonnade-types.ts").OutboxListedRecord[]> {
+    return this.call("listOutboxRecordsForPrincipal", [input]);
+  }
+
   verifyAndDrainInboxBatch(
     input: VerifyAndDrainInboxBatchInput,
   ): Promise<VerifyAndDrainInboxBatchOutput> {
@@ -199,6 +211,18 @@ export class LazyWorkerBackedCellStrategy
 
   async fetchOutboxPayload(input: FetchOutboxPayloadInput): Promise<FetchOutboxPayloadOutput> {
     return this.s().then((x) => x.fetchOutboxPayload(input));
+  }
+
+  async deleteOutboxRecord(
+    input: import("../colonnade-types.ts").DeleteOutboxRecordInput,
+  ): Promise<void> {
+    return this.s().then((x) => x.deleteOutboxRecord(input));
+  }
+
+  async listOutboxRecordsForPrincipal(
+    input: import("../colonnade-types.ts").ListOutboxRecordsForPrincipalInput,
+  ): Promise<readonly import("../colonnade-types.ts").OutboxListedRecord[]> {
+    return this.s().then((x) => x.listOutboxRecordsForPrincipal(input));
   }
 
   async verifyAndDrainInboxBatch(

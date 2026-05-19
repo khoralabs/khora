@@ -68,22 +68,15 @@ export async function popRelayInboxDrainItemsForDid(
       !Array.isArray(metaRaw)
         ? (metaRaw as Record<string, unknown>)
         : undefined;
-    const postId = typeof meta?.postId === "string" ? meta.postId : undefined;
+    const _postId = typeof meta?.postId === "string" ? meta.postId : undefined;
     const authorPrincipalId =
       typeof meta?.authorPrincipalId === "string" ? meta.authorPrincipalId : undefined;
-
-    if (postId !== undefined && host.persistenceClient.getPostById(postId) == null) {
-      toDiscard.push(e.inbox_entry_id);
-      continue;
-    }
 
     if (
       !relayInboxAuthorPointerDeliverable({
         catalogDb,
         persistence: host.persistence,
         authorPrincipalId,
-        postId,
-        getPostById: (id) => host.persistenceClient.getPostById(id),
       })
     ) {
       toDiscard.push(e.inbox_entry_id);

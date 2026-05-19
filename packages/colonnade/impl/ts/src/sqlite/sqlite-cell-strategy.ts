@@ -11,6 +11,7 @@ import type {
   AppendOutboxRecordOutput,
   AppendWriteLogEntryInput,
   AppendWriteLogEntryOutput,
+  DeleteOutboxRecordInput,
   EnqueueInboxDeliveryInput,
   EnqueueInboxDeliveryOutput,
   FetchOutboxPayloadInput,
@@ -18,8 +19,10 @@ import type {
   FetchWriteLogBatchInput,
   FetchWriteLogBatchOutput,
   InboxStagingPayload,
+  ListOutboxRecordsForPrincipalInput,
   ListPendingInboxEntriesInput,
   ListPendingInboxEntriesOutput,
+  OutboxListedRecord,
   ResolvedPayload,
   VerifyAndDrainInboxBatchInput,
   VerifyAndDrainInboxBatchOutput,
@@ -65,6 +68,8 @@ export class SqliteCellPersistenceStrategy implements CellPersistenceStrategy {
   private readonly stmtListInbox: Statement;
   private readonly stmtCountInbox: Statement;
   private readonly stmtFetchOutbox: Statement;
+  private readonly stmtDeleteOutbox: Statement;
+  private readonly stmtListOutbox: Statement;
   private readonly stmtSelectInboxDrain: Statement;
   private readonly stmtDeleteInbox: Statement;
   private readonly stmtAppendWriteLog: Statement;
@@ -96,6 +101,16 @@ export class SqliteCellPersistenceStrategy implements CellPersistenceStrategy {
     );
     this.stmtFetchOutbox = this.db.prepare(
       `SELECT payload, content_hash FROM outbox WHERE record_key = ?`,
+    );
+    this.stmtDeleteOutbox = this.db.prepare(
+      `DELETE FROM outbox WHERE record_key = ? AND principal_id = ?`,
+    );
+    this.stmtListOutbox = this.db.prepare(
+      `SELECT record_key, content_hash, metadata, committed_at_ms FROM outbox
+       WHERE tenant_key = ? AND principal_id = ?
+       AND (? IS NULL OR json_extract(metadata, '$.postKind') = ?)
+       ORDER BY committed_at_ms DESC
+       LIMIT ?`,
     );
     this.stmtSelectInboxDrain = this.db.prepare(
       `SELECT recipient_principal_id, tenant_key, staging FROM inbox WHERE inbox_entry_id = ?`,
@@ -230,6 +245,47 @@ export class SqliteCellPersistenceStrategy implements CellPersistenceStrategy {
       content_hash: row.content_hash,
       bytes_available: true,
     });
+  }
+
+  deleteOutboxRecord(input: DeleteOutboxRecordInput): Promise<void> {
+    this.assertCell(input.cell_id);
+    this.stmtDeleteOutbox.run(input.record_key, input.principal_id);
+    return Promise.resolve();
+  }
+
+  listOutboxRecordsForPrincipal(
+    input: ListOutboxRecordsForPrincipalInput,
+  ): Promise<readonly OutboxListedRecord[]> {
+    this.assertCell(input.cell_id);
+    const postKind = input.post_kind ?? null;
+    const rows = this.stmtListOutbox.all(
+      input.tenant_key,
+      input.principal_id,
+      postKind,
+      postKind,
+      input.limit,
+    ) as {
+      record_key: string;
+      content_hash: string;
+      metadata: string;
+      committed_at_ms: number;
+    }[];
+    return Promise.resolve(
+      rows.map((r) => {
+        let metadata: unknown = {};
+        try {
+          metadata = JSON.parse(r.metadata) as unknown;
+        } catch {
+          /* keep {} */
+        }
+        return {
+          record_key: r.record_key,
+          content_hash: r.content_hash,
+          metadata,
+          committed_at_ms: r.committed_at_ms,
+        };
+      }),
+    );
   }
 
   verifyAndDrainInboxBatch(

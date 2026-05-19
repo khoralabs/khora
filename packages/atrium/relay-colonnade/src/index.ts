@@ -1,11 +1,9 @@
 export type { AgentRelayPersistence } from "@khoralabs/agent-relay";
-export { purgeRelayCatalogPostEntity, RELAY_CATALOG_SOURCE_POST } from "./catalog-post-adapter.ts";
 export {
-  type CatalogSourceMapListedRow,
+  type CatalogProjectionListedRow,
   escapeSqlLikeLiteral,
-  RelayCatalogSourceMapStore,
-  relaySyntheticPointer,
-} from "./catalog-source-map-store.ts";
+  RelayCatalogProjectionStore,
+} from "./catalog-projection-store.ts";
 export { createRelayColonnadeSocial } from "./create-relay-colonnade-social.ts";
 export { createFrameChannelHubPersistenceSqlite } from "./frame-channel-sqlite.ts";
 export {
@@ -24,13 +22,32 @@ export {
 export {
   createRelayColonnadePersistence,
   createRelayColonnadePersistenceFromDatabases,
+  RELAY_CATALOG_SOURCE_PROFILE,
+  RELAY_CATALOG_SOURCE_TOPIC,
 } from "./relay-colonnade-persistence.ts";
 export {
-  registerAgentOnColonnadePersistence,
+  RELAY_CATALOG_REG_BY_PRINCIPAL,
+  RELAY_CATALOG_REG_BY_PROFILE,
+  RELAY_CATALOG_SUBS_BY_PRINCIPAL,
+  RELAY_CATALOG_SUBS_BY_SUBJECT,
+  RELAY_DEFAULT_TENANT_KEY,
+  RELAY_NAMESPACE_ENTITY_PROFILE,
+  RELAY_NAMESPACE_ENTITY_TOPIC,
+  RELAY_NAMESPACE_PRINCIPAL_TO_USERNAME,
+  RELAY_NAMESPACE_REG_BY_PRINCIPAL,
+  RELAY_NAMESPACE_REG_BY_PROFILE,
+  RELAY_NAMESPACE_ROOM_INVITE,
+  RELAY_NAMESPACE_ROOM_REGISTRY,
+  RELAY_NAMESPACE_SOCIAL_RELATIONSHIP,
+  RELAY_NAMESPACE_SOCIAL_RELATIONSHIPS_BY_PRINCIPAL,
+  RELAY_NAMESPACE_SUBS_BY_PRINCIPAL,
+  RELAY_NAMESPACE_SUBS_BY_SUBJECT,
+  RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL,
   SOURCE_PRINCIPAL_TO_USERNAME,
   SOURCE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
-} from "./social-registration.ts";
+} from "./relay-id-conventions.ts";
+export { registerAgentOnColonnadePersistence } from "./social-registration.ts";
 export { createSocialRelationshipPersistence } from "./social-relationship-persistence.ts";
 export type {
   SocialAgentIdentity,
@@ -43,4 +60,9 @@ export {
   cascadeUnregisterColonnadePrincipalWithProfile,
   phase1UnregisterColonnadePrincipal,
 } from "./social-unregister.ts";
-export { applyRelaySqlitePragmas, openRelayCatalogDb, openRelayFramesDb } from "./sqlite-setup.ts";
+export {
+  applyRelaySqlitePragmas,
+  ensureRelayCatalogProjectionsSchema,
+  openRelayCatalogDb,
+  openRelayFramesDb,
+} from "./sqlite-setup.ts";

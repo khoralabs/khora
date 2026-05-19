@@ -46,6 +46,14 @@ async function dispatch(method: string, args: readonly unknown[]): Promise<unkno
       return s.listPendingInboxEntries(args[0] as ListPendingInboxEntriesInput);
     case "fetchOutboxPayload":
       return s.fetchOutboxPayload(args[0] as FetchOutboxPayloadInput);
+    case "deleteOutboxRecord":
+      return s.deleteOutboxRecord(
+        args[0] as import("../colonnade-types.ts").DeleteOutboxRecordInput,
+      );
+    case "listOutboxRecordsForPrincipal":
+      return s.listOutboxRecordsForPrincipal(
+        args[0] as import("../colonnade-types.ts").ListOutboxRecordsForPrincipalInput,
+      );
     case "verifyAndDrainInboxBatch":
       return s.verifyAndDrainInboxBatch(args[0] as VerifyAndDrainInboxBatchInput);
     case "appendWriteLogEntry":

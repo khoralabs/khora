@@ -11,10 +11,8 @@ const TOPIC_SUBJECT_PREFIX = "topic:";
 export type AgentRelayPersistenceClient = {
   readonly persistence: AgentRelayPersistence;
   upsertProfile(record: AgentRelayEntityUpsert): void;
-  upsertPost(record: AgentRelayEntityUpsert): void;
   upsertTopic(record: AgentRelayEntityUpsert): void;
   getProfileById(id: string): AgentRelayEntityRow | undefined;
-  getPostById(id: string): AgentRelayEntityRow | undefined;
   getTopicById(id: string): AgentRelayEntityRow | undefined;
   upsertAgentRegistration(principalId: PrincipalId, profileId: string): void;
   agentRegistrationExists(principalId: PrincipalId): boolean;
@@ -26,11 +24,6 @@ export type AgentRelayPersistenceClient = {
   subscriberPrincipalsForSubject(subject: string, excludePrincipalId?: PrincipalId): PrincipalId[];
   /** Subjects with `topic:` prefix, slug only (for `/v1/topics` and agent sync). */
   listTopicSlugsForPrincipal(principalId: PrincipalId): string[];
-  listPostRowsByAuthorProfileIdAndKind(params: {
-    authorProfileId: string;
-    kind: string;
-    limit: number;
-  }): AgentRelayEntityRow[];
 };
 
 export function createAgentRelayPersistenceClient(
@@ -39,10 +32,8 @@ export function createAgentRelayPersistenceClient(
   return {
     persistence,
     upsertProfile: (record) => persistence.profiles.upsert(record),
-    upsertPost: (record) => persistence.posts.upsert(record),
     upsertTopic: (record) => persistence.topics.upsert(record),
     getProfileById: (id) => persistence.profiles.getById(id),
-    getPostById: (id) => persistence.posts.getById(id),
     getTopicById: (id) => persistence.topics.getById(id),
     upsertAgentRegistration: (principalId, profileId) =>
       persistence.agentRegistrations.upsert(principalId, profileId),
@@ -68,7 +59,5 @@ export function createAgentRelayPersistenceClient(
         .filter((s) => s.startsWith(TOPIC_SUBJECT_PREFIX))
         .map((s) => s.slice(TOPIC_SUBJECT_PREFIX.length));
     },
-    listPostRowsByAuthorProfileIdAndKind: (params) =>
-      persistence.posts.listRowsByAuthorProfileIdAndKind(params),
   };
 }

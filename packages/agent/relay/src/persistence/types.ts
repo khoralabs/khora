@@ -27,7 +27,7 @@ export interface FrameChannelHubPersistence {
 }
 
 /** Discriminator for rows in the shared `host_entities` table (matches `source_key` domain prefix). */
-export type AgentRelayEntityKind = "profile" | "post" | "topic";
+export type AgentRelayEntityKind = "profile" | "topic";
 
 /** Insert/update payload for `host_entities` (`body_json` is canonical JSON). */
 export type AgentRelayEntityUpsert = {
@@ -44,7 +44,7 @@ export type AgentRelayEntityRow = {
   updatedAtMs: number;
 };
 
-/** CRUD slice for one host entity table (profile, post, topic). */
+/** CRUD slice for one host entity table (profile, topic). */
 export interface AgentRelayEntityPersistence {
   upsert(record: AgentRelayEntityUpsert): void;
   getById(id: string): AgentRelayEntityRow | undefined;
@@ -67,23 +67,13 @@ export interface AgentRelaySubjectSubscriptions {
   unsubscribe(principalId: PrincipalId, subject: string): void;
 }
 
-/** Post entity persistence plus filtered listing (e.g. probes by author profile id). */
-export interface AgentRelayPostPersistence extends AgentRelayEntityPersistence {
-  listRowsByAuthorProfileIdAndKind(params: {
-    authorProfileId: string;
-    kind: string;
-    limit: number;
-  }): AgentRelayEntityRow[];
-}
-
 /**
- * Relay persistence facade: frame-channel hub store plus logical entity slices over one `host_entities` table.
- * Add slices (e.g. notifications) without changing call sites that already take this composite.
+ * Relay persistence facade: frame-channel hub store plus logical entity slices.
+ * Post bodies live in author cell outbox (not catalog); see atrium-host post resolution.
  */
 export type AgentRelayPersistence = {
   frameChannelHubPersistence: FrameChannelHubPersistence;
   profiles: AgentRelayEntityPersistence;
-  posts: AgentRelayPostPersistence;
   topics: AgentRelayEntityPersistence;
   agentRegistrations: AgentRelayRegistrations;
   agentSubjectSubscriptions: AgentRelaySubjectSubscriptions;

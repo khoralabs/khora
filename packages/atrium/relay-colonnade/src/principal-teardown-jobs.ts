@@ -1,9 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type {
-  AgentRelayEntityRow,
-  AgentRelayPersistence,
-  PrincipalId,
-} from "@khoralabs/agent-relay";
+import type { AgentRelayPersistence, PrincipalId } from "@khoralabs/agent-relay";
 
 export type PrincipalTeardownJobState = "pending" | "running" | "completed" | "failed";
 
@@ -97,40 +93,14 @@ export function markPrincipalTeardownJobPendingAfterFailure(
 /**
  * Deliver cell inbox post pointer only when the author is registered and not in a teardown job.
  */
-function authorProfileIdFromPostRow(row: AgentRelayEntityRow): string | undefined {
-  try {
-    const o = JSON.parse(row.bodyJson) as { authorProfileId?: string };
-    const ap = o.authorProfileId;
-    return typeof ap === "string" && ap.length > 0 ? ap : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 export function relayInboxAuthorPointerDeliverable(p: {
   catalogDb: Database;
   persistence: AgentRelayPersistence;
   authorPrincipalId: PrincipalId | undefined;
-  postId: string | undefined;
-  getPostById: (id: string) => AgentRelayEntityRow | undefined;
 }): boolean {
-  let did = p.authorPrincipalId;
+  const did = p.authorPrincipalId;
   if (did === undefined || did.length === 0) {
-    if (p.postId === undefined || p.postId.length === 0) {
-      return false;
-    }
-    const post = p.getPostById(p.postId);
-    if (post == null) {
-      return false;
-    }
-    const ap = authorProfileIdFromPostRow(post);
-    if (ap === undefined) {
-      return false;
-    }
-    did = p.persistence.agentRegistrations.principalForProfileId(ap);
-    if (did === undefined) {
-      return false;
-    }
+    return false;
   }
   if (!p.persistence.agentRegistrations.exists(did)) {
     return false;

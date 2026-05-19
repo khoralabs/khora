@@ -1,33 +1,46 @@
 import type { Database } from "bun:sqlite";
 import type { AgentRelayPersistence } from "@khoralabs/agent-relay";
 import { createCatalogEntityAdapter } from "./catalog-entity-adapter.ts";
-import { createCatalogPostAdapter } from "./catalog-post-adapter.ts";
+import { RelayCatalogProjectionStore } from "./catalog-projection-store.ts";
 import { createCatalogRegistrationAdapter } from "./catalog-registration-adapter.ts";
-import { RelayCatalogSourceMapStore } from "./catalog-source-map-store.ts";
 import { createCatalogSubscriptionAdapter } from "./catalog-subscription-adapter.ts";
 import { createFrameChannelHubPersistenceSqlite } from "./frame-channel-sqlite.ts";
+import {
+  RELAY_NAMESPACE_ENTITY_PROFILE,
+  RELAY_NAMESPACE_ENTITY_TOPIC,
+} from "./relay-id-conventions.ts";
 import { openRelayCatalogDb, openRelayFramesDb } from "./sqlite-setup.ts";
 
-export const RELAY_CATALOG_SOURCE_PROFILE = "relay:entity:profile";
-export const RELAY_CATALOG_SOURCE_TOPIC = "relay:entity:topic";
+export const RELAY_CATALOG_SOURCE_PROFILE = RELAY_NAMESPACE_ENTITY_PROFILE;
+export const RELAY_CATALOG_SOURCE_TOPIC = RELAY_NAMESPACE_ENTITY_TOPIC;
 
-const SOURCE_PROFILE = RELAY_CATALOG_SOURCE_PROFILE;
-const SOURCE_TOPIC = RELAY_CATALOG_SOURCE_TOPIC;
-
-/** Compose relay persistence from already-open catalog + frames DBs (same catalog file as social rows). */
+/** Compose relay persistence from already-open catalog + frames DBs. */
 export function createRelayColonnadePersistenceFromDatabases(
   catalogDb: Database,
   framesDb: Database,
   tenantKey = "relay",
 ): AgentRelayPersistence {
-  const store = new RelayCatalogSourceMapStore(catalogDb);
+  const projectionStore = new RelayCatalogProjectionStore(catalogDb);
   return {
     frameChannelHubPersistence: createFrameChannelHubPersistenceSqlite(framesDb),
-    profiles: createCatalogEntityAdapter(store, catalogDb, tenantKey, SOURCE_PROFILE),
-    topics: createCatalogEntityAdapter(store, catalogDb, tenantKey, SOURCE_TOPIC),
-    posts: createCatalogPostAdapter(store, catalogDb, tenantKey),
-    agentRegistrations: createCatalogRegistrationAdapter(store, catalogDb, tenantKey),
-    agentSubjectSubscriptions: createCatalogSubscriptionAdapter(store, catalogDb, tenantKey),
+    profiles: createCatalogEntityAdapter(
+      projectionStore,
+      catalogDb,
+      tenantKey,
+      RELAY_NAMESPACE_ENTITY_PROFILE,
+    ),
+    topics: createCatalogEntityAdapter(
+      projectionStore,
+      catalogDb,
+      tenantKey,
+      RELAY_NAMESPACE_ENTITY_TOPIC,
+    ),
+    agentRegistrations: createCatalogRegistrationAdapter(projectionStore, catalogDb, tenantKey),
+    agentSubjectSubscriptions: createCatalogSubscriptionAdapter(
+      projectionStore,
+      catalogDb,
+      tenantKey,
+    ),
   };
 }
 

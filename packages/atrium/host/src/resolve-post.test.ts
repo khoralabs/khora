@@ -3,23 +3,20 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createAtriumHost } from "./atrium-host.ts";
-import { assignPostAddress, encodePostId } from "./on-event.ts";
-import { popRelayInboxDrainItemsForDid } from "./relay-inbox-drain.ts";
+import { assignPostAddress } from "./on-event.ts";
+import { encodePostId } from "./post-address-id.ts";
+import { deletePostOutboxRecord, resolvePostById } from "./resolve-post.ts";
 
-const tmpRoot = mkdtempSync(join(tmpdir(), "atrium-drain-"));
+const tmpRoot = mkdtempSync(join(tmpdir(), "atrium-post-outbox-"));
 let seq = 0;
-function nextHostDir(): string {
-  const d = join(tmpRoot, `h${seq++}`);
-  mkdirSync(d, { recursive: true });
-  return d;
-}
 
 afterAll(() => {
   rmSync(tmpRoot, { recursive: true, force: true });
 });
 
-test("popRelayInboxDrainItemsForDid drops cell inbox row when author unregistered (phase1)", async () => {
-  const root = nextHostDir();
+test("resolvePostById reads author outbox; delete leaves ghost", async () => {
+  const root = join(tmpRoot, `h${seq++}`);
+  mkdirSync(root, { recursive: true });
   const ctx = await createAtriumHost({
     catalogPath: join(root, "c.sqlite"),
     framesDbPath: join(root, "f.sqlite"),
@@ -32,11 +29,6 @@ test("popRelayInboxDrainItemsForDid drops cell inbox row when author unregistere
     principalId: "did:author",
     username: "author",
     profileUpsert: { id: "prof-a", bodyJson: "{}" },
-  });
-  ctx.applyProfileUsernameAndMaps({
-    principalId: "did:sub",
-    username: "sub",
-    profileUpsert: { id: "prof-s", bodyJson: "{}" },
   });
 
   const { recordKey, authorCellId } = assignPostAddress({
@@ -51,9 +43,8 @@ test("popRelayInboxDrainItemsForDid drops cell inbox row when author unregistere
   const post = {
     id: postId,
     kind: "post" as const,
-    body: "hi",
+    body: "hello outbox",
     authorProfileId: "prof-a",
-    topics: ["x"],
   };
 
   await ctx.publicationClient.postOperation({
@@ -63,30 +54,15 @@ test("popRelayInboxDrainItemsForDid drops cell inbox row when author unregistere
     payload_bytes: new TextEncoder().encode(JSON.stringify(post)),
     payload_metadata: { postId, postKind: "post" },
     outbox_record_key: recordKey,
-    routing: {
-      replicate_to_catalog: false,
-      catalog_envelope: {},
-      fan_out_targets: [
-        {
-          recipient_cell_id: ctx.cluster.assignPrincipalToCell("did:sub"),
-          recipient_principal_id: "did:sub",
-          inbox_metadata: {
-            postId,
-            authorPrincipalId: "did:author",
-            reasons: [{ kind: "topic", topic: "x" }],
-            postKind: "post",
-            createdAtMs: Date.now(),
-          },
-        },
-      ],
-    },
+    routing: { replicate_to_catalog: false, catalog_envelope: {}, fan_out_targets: [] },
   });
 
-  expect(await popRelayInboxDrainItemsForDid(ctx, "did:sub")).toHaveLength(1);
+  const loaded = await resolvePostById(ctx.cluster, postId);
+  expect(loaded?.body).toBe("hello outbox");
 
-  ctx.phase1UnregisterPrincipal("did:author");
+  await deletePostOutboxRecord(ctx.cluster, postId);
+  expect(await resolvePostById(ctx.cluster, postId)).toBeUndefined();
 
-  expect(await popRelayInboxDrainItemsForDid(ctx, "did:sub")).toHaveLength(0);
   ctx.principalTeardownWorker.stop();
   ctx.cluster.close();
 });

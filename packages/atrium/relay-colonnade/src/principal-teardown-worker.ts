@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
 import type { AgentRelayPersistence } from "@khoralabs/agent-relay";
 import type { SqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
-import type { RelayCatalogSourceMapStore } from "./catalog-source-map-store.ts";
+import type { RelayCatalogProjectionStore } from "./catalog-projection-store.ts";
 import {
   deletePrincipalTeardownJob,
   markPrincipalTeardownJobPendingAfterFailure,
@@ -14,7 +14,7 @@ export type PrincipalTeardownWorkerHandle = { stop(): void };
 export function startPrincipalTeardownWorker(opts: {
   catalogDb: Database;
   framesDb: Database;
-  store: RelayCatalogSourceMapStore;
+  projectionStore: RelayCatalogProjectionStore;
   persistence: AgentRelayPersistence;
   tenantKey: string;
   cluster: SqliteColonnadeCluster;
@@ -31,7 +31,7 @@ export function startPrincipalTeardownWorker(opts: {
       try {
         cascadeUnregisterColonnadePrincipalWithProfile({
           persistence: opts.persistence,
-          store: opts.store,
+          projectionStore: opts.projectionStore,
           catalogDb: opts.catalogDb,
           framesDb: opts.framesDb,
           tenantKey: opts.tenantKey,

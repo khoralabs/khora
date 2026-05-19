@@ -15,11 +15,13 @@ import type {
   ColonnadePublicationClient,
   SqliteColonnadeCluster,
 } from "@khoralabs/colonnade-persistence";
+import { randomId } from "@khoralabs/colonnade-persistence";
 import {
-  purgeRelayCatalogPostEntity,
-  type RelayCatalogSourceMapStore,
+  type RelayCatalogProjectionStore,
   registerAgentOnColonnadePersistence,
 } from "@khoralabs/relay-colonnade";
+import { decodePostId } from "./post-address-id.ts";
+import { deletePostOutboxRecord } from "./resolve-post.ts";
 import {
   authorSubscriptionSubject,
   authorTopicSubscriptionSubject,
@@ -28,75 +30,74 @@ import {
 
 const postEncoder = new TextEncoder();
 
-async function fanOutPostToCellInbox(params: {
+async function publishPost(params: {
   ctx: AgentRelayEventHandlerCtx;
   tenantKey: string;
   post: AtriumPost;
   cluster: SqliteColonnadeCluster;
   publicationClient: ColonnadePublicationClient;
+  fanOut: boolean;
 }): Promise<void> {
-  const { ctx, tenantKey, post, cluster, publicationClient } = params;
-  const subs = ctx.persistence.agentSubjectSubscriptions;
-  const authorPrincipalId =
-    post.authorProfileId !== undefined && post.authorProfileId.length > 0
-      ? ctx.persistence.agentRegistrations.principalForProfileId(post.authorProfileId)
-      : undefined;
-
-  if (authorPrincipalId === undefined || authorPrincipalId.length === 0) {
-    return;
+  const { ctx, tenantKey, post, cluster, publicationClient, fanOut } = params;
+  const address = decodePostId(post.id);
+  if (address === undefined) {
+    throw new Error("publishPost: post.id is not a valid address-encoded id");
   }
+
+  const authorPrincipalId = address.authorPrincipalId;
+  const authorCellId = address.authorCellId;
+  const payload_bytes = postEncoder.encode(JSON.stringify(post));
 
   const byRecipient = new Map<string, InboxPostReason[]>();
-  const addReason = (recipientId: string, reason: InboxPostReason): void => {
-    if (recipientId === authorPrincipalId) return;
-    const cur = byRecipient.get(recipientId);
-    if (cur === undefined) {
-      byRecipient.set(recipientId, [reason]);
-    } else {
-      cur.push(reason);
-    }
-  };
-
-  if (post.topics !== undefined && post.topics.length > 0) {
-    for (const slug of post.topics) {
-      const subject = topicSubscriptionSubject(slug);
-      for (const pid of subs.subscriberPrincipalsForSubject(subject, authorPrincipalId)) {
-        addReason(pid, { kind: "topic", topic: slug });
+  if (fanOut) {
+    const subs = ctx.persistence.agentSubjectSubscriptions;
+    const addReason = (recipientId: string, reason: InboxPostReason): void => {
+      if (recipientId === authorPrincipalId) return;
+      const cur = byRecipient.get(recipientId);
+      if (cur === undefined) {
+        byRecipient.set(recipientId, [reason]);
+      } else {
+        cur.push(reason);
       }
-      const tupleSubject = authorTopicSubscriptionSubject(authorPrincipalId, slug);
-      for (const pid of subs.subscriberPrincipalsForSubject(tupleSubject, authorPrincipalId)) {
-        addReason(pid, {
-          kind: "author_topic",
-          authorPrincipalId,
-          topic: slug,
-        });
+    };
+
+    if (post.topics !== undefined && post.topics.length > 0) {
+      for (const slug of post.topics) {
+        const subject = topicSubscriptionSubject(slug);
+        for (const pid of subs.subscriberPrincipalsForSubject(subject, authorPrincipalId)) {
+          addReason(pid, { kind: "topic", topic: slug });
+        }
+        const tupleSubject = authorTopicSubscriptionSubject(authorPrincipalId, slug);
+        for (const pid of subs.subscriberPrincipalsForSubject(tupleSubject, authorPrincipalId)) {
+          addReason(pid, {
+            kind: "author_topic",
+            authorPrincipalId,
+            topic: slug,
+          });
+        }
       }
+    }
+
+    const authorSub = authorSubscriptionSubject(authorPrincipalId);
+    for (const pid of subs.subscriberPrincipalsForSubject(authorSub, authorPrincipalId)) {
+      addReason(pid, { kind: "author" });
     }
   }
 
-  const authorSub = authorSubscriptionSubject(authorPrincipalId);
-  for (const pid of subs.subscriberPrincipalsForSubject(authorSub, authorPrincipalId)) {
-    addReason(pid, { kind: "author" });
-  }
-
-  if (byRecipient.size === 0) {
-    return;
-  }
-
-  const authorCellId = cluster.assignPrincipalToCell(authorPrincipalId);
-  const payload_bytes = postEncoder.encode(JSON.stringify(post));
   const createdAtMs = Date.now();
-  const fan_out_targets = [...byRecipient.entries()].map(([recipient_principal_id, reasons]) => ({
-    recipient_cell_id: cluster.assignPrincipalToCell(recipient_principal_id),
-    recipient_principal_id,
-    inbox_metadata: {
-      postId: post.id,
-      authorPrincipalId,
-      reasons,
-      createdAtMs,
-      postKind: post.kind,
-    },
-  }));
+  const fan_out_targets = fanOut
+    ? [...byRecipient.entries()].map(([recipient_principal_id, reasons]) => ({
+        recipient_cell_id: cluster.assignPrincipalToCell(recipient_principal_id),
+        recipient_principal_id,
+        inbox_metadata: {
+          postId: post.id,
+          authorPrincipalId,
+          reasons,
+          createdAtMs,
+          postKind: post.kind,
+        },
+      }))
+    : [];
 
   await publicationClient.postOperation({
     author_principal_id: authorPrincipalId,
@@ -104,16 +105,17 @@ async function fanOutPostToCellInbox(params: {
     tenant_key: tenantKey,
     payload_bytes,
     payload_metadata: { postId: post.id, postKind: post.kind },
+    outbox_record_key: address.recordKey,
     routing: {
-      replicate_to_catalog: true,
-      catalog_envelope: { postId: post.id },
+      replicate_to_catalog: false,
+      catalog_envelope: {},
       fan_out_targets,
     },
   });
 }
 
 export function createAtriumRelayOnEvent(deps: {
-  store: RelayCatalogSourceMapStore;
+  projectionStore: RelayCatalogProjectionStore;
   tenantKey: string;
   catalogDb: Database;
   cluster: SqliteColonnadeCluster;
@@ -122,7 +124,7 @@ export function createAtriumRelayOnEvent(deps: {
   ctx: AgentRelayEventHandlerCtx,
   event: AgentRelayEventUnion<AtriumProfile, AtriumPost, unknown, never>,
 ) => void | Promise<void> {
-  const { store, tenantKey, catalogDb, cluster, publicationClient } = deps;
+  const { projectionStore, tenantKey, catalogDb, cluster, publicationClient } = deps;
   return async (
     ctx: AgentRelayEventHandlerCtx,
     event: AgentRelayEventUnion<AtriumProfile, AtriumPost, unknown, never>,
@@ -137,7 +139,7 @@ export function createAtriumRelayOnEvent(deps: {
           displayName: meta.displayName,
           bio: meta.bio,
         });
-        registerAgentOnColonnadePersistence(ctx.persistence, catalogDb, store, {
+        registerAgentOnColonnadePersistence(ctx.persistence, catalogDb, projectionStore, {
           principalId: req.principalId,
           profileUpsert: { id: profile.id, bodyJson: JSON.stringify(profile) },
           username: meta.username,
@@ -161,30 +163,47 @@ export function createAtriumRelayOnEvent(deps: {
       return;
     }
 
-    if (
-      event.kind === AGENT_RELAY_EVENT_KIND.POST_CREATED ||
-      event.kind === AGENT_RELAY_EVENT_KIND.POST_UPDATED
-    ) {
+    if (event.kind === AGENT_RELAY_EVENT_KIND.POST_CREATED) {
       const post = event.payload.post;
-      ctx.persistenceClient.upsertPost({
-        id: post.id,
-        bodyJson: JSON.stringify(post),
+      await publishPost({
+        ctx,
+        tenantKey,
+        post,
+        cluster,
+        publicationClient,
+        fanOut: true,
       });
-      if (event.kind === AGENT_RELAY_EVENT_KIND.POST_CREATED) {
-        await fanOutPostToCellInbox({
-          ctx,
-          tenantKey,
-          post,
-          cluster,
-          publicationClient,
-        });
-      }
+      return;
+    }
+
+    if (event.kind === AGENT_RELAY_EVENT_KIND.POST_UPDATED) {
+      const post = event.payload.post;
+      await publishPost({
+        ctx,
+        tenantKey,
+        post,
+        cluster,
+        publicationClient,
+        fanOut: false,
+      });
       return;
     }
 
     if (event.kind === AGENT_RELAY_EVENT_KIND.POST_DELETED) {
       const post = event.payload.post;
-      purgeRelayCatalogPostEntity(store, catalogDb, tenantKey, post.id);
+      await deletePostOutboxRecord(cluster, post.id);
     }
   };
 }
+
+/** Assign a new address-encoded post id before create/update HTTP handlers notify the relay. */
+export function assignPostAddress(params: {
+  cluster: SqliteColonnadeCluster;
+  authorPrincipalId: string;
+}): { recordKey: string; authorCellId: string } {
+  const authorCellId = params.cluster.assignPrincipalToCell(params.authorPrincipalId);
+  const recordKey = randomId("ob");
+  return { recordKey, authorCellId };
+}
+
+export { encodePostId } from "./post-address-id.ts";

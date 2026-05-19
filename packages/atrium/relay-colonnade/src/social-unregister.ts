@@ -1,22 +1,19 @@
 import type { Database } from "bun:sqlite";
 import type { AgentRelayPersistence, PrincipalId } from "@khoralabs/agent-relay";
-import { purgeRelayCatalogPostEntity } from "./catalog-post-adapter.ts";
+import type { RelayCatalogProjectionStore } from "./catalog-projection-store.ts";
 import {
   RELAY_CATALOG_REG_BY_PRINCIPAL,
   RELAY_CATALOG_REG_BY_PROFILE,
 } from "./catalog-registration-adapter.ts";
-import type { RelayCatalogSourceMapStore } from "./catalog-source-map-store.ts";
 import { RELAY_CATALOG_SUBS_BY_SUBJECT } from "./catalog-subscription-adapter.ts";
 import { insertPendingPrincipalTeardownJob } from "./principal-teardown-jobs.ts";
-import { RELAY_CATALOG_SOURCE_PROFILE } from "./relay-colonnade-persistence.ts";
 import {
-  SOURCE_PRINCIPAL_TO_USERNAME,
-  SOURCE_USERNAME_TO_PRINCIPAL,
+  RELAY_NAMESPACE_ENTITY_PROFILE,
+  RELAY_NAMESPACE_PRINCIPAL_TO_USERNAME,
+  RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
-} from "./social-registration.ts";
+} from "./relay-id-conventions.ts";
 import { purgeSocialRelationshipsForPrincipal } from "./social-relationship-persistence.ts";
-
-const POST_KINDS = ["post", "probe", "status"] as const;
 
 function readUsernameFromPrincipalMapProjection(projection: unknown): string | undefined {
   if (projection === null || typeof projection !== "object" || Array.isArray(projection)) {
@@ -36,36 +33,36 @@ function deleteInviteTokensForDid(catalogDb: Database, did: PrincipalId): void {
   }
 }
 
-/** Username global index + tenant registration + profile source rows (within caller transaction). */
+/** Username global index + tenant registration + profile projection rows (within caller transaction). */
 export function deletePrincipalUsernameIndexAndRegistrationRows(p: {
-  store: RelayCatalogSourceMapStore;
+  projectionStore: RelayCatalogProjectionStore;
   tenantKey: string;
   principalId: PrincipalId;
   profileId: string;
 }): void {
-  const { store, tenantKey, principalId, profileId } = p;
+  const { projectionStore: store, tenantKey, principalId, profileId } = p;
   const hit = store.lookupProjection(
     USERNAME_INDEX_TENANT_KEY,
-    SOURCE_PRINCIPAL_TO_USERNAME,
+    RELAY_NAMESPACE_PRINCIPAL_TO_USERNAME,
     principalId,
   );
   const u = readUsernameFromPrincipalMapProjection(hit.projection);
-  store.deleteRow(USERNAME_INDEX_TENANT_KEY, SOURCE_PRINCIPAL_TO_USERNAME, principalId);
+  store.deleteRow(USERNAME_INDEX_TENANT_KEY, RELAY_NAMESPACE_PRINCIPAL_TO_USERNAME, principalId);
   if (u !== undefined) {
-    store.deleteRow(USERNAME_INDEX_TENANT_KEY, SOURCE_USERNAME_TO_PRINCIPAL, u);
+    store.deleteRow(USERNAME_INDEX_TENANT_KEY, RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL, u);
   }
   store.deleteRow(tenantKey, RELAY_CATALOG_REG_BY_PRINCIPAL, principalId);
   store.deleteRow(tenantKey, RELAY_CATALOG_REG_BY_PROFILE, profileId);
-  store.deleteRow(tenantKey, RELAY_CATALOG_SOURCE_PROFILE, profileId);
+  store.deleteRow(tenantKey, RELAY_NAMESPACE_ENTITY_PROFILE, profileId);
 }
 
 /**
  * Fast unregister: clear catalog registration + username index and enqueue durable teardown.
- * Does not delete posts, subscriptions, or social graph (worker completes teardown).
+ * Does not delete subscriptions or social graph (worker completes teardown).
  */
 export function phase1UnregisterColonnadePrincipal(p: {
   persistence: AgentRelayPersistence;
-  store: RelayCatalogSourceMapStore;
+  projectionStore: RelayCatalogProjectionStore;
   catalogDb: Database;
   tenantKey: string;
   principalId: PrincipalId;
@@ -77,7 +74,7 @@ export function phase1UnregisterColonnadePrincipal(p: {
   const nowMs = Date.now();
   p.catalogDb.transaction(() => {
     deletePrincipalUsernameIndexAndRegistrationRows({
-      store: p.store,
+      projectionStore: p.projectionStore,
       tenantKey: p.tenantKey,
       principalId: p.principalId,
       profileId,
@@ -94,36 +91,17 @@ export function phase1UnregisterColonnadePrincipal(p: {
 
 /**
  * Full Colonnade teardown when `profileId` is known (e.g. worker after phase1 removed registration).
+ * Author outbox/inbox purged separately by teardown worker via purgePrincipal.
  */
 export function cascadeUnregisterColonnadePrincipalWithProfile(p: {
   persistence: AgentRelayPersistence;
-  store: RelayCatalogSourceMapStore;
+  projectionStore: RelayCatalogProjectionStore;
   catalogDb: Database;
   framesDb: Database;
   tenantKey: string;
   principalId: PrincipalId;
   profileId: string;
 }): void {
-  const seenPost = new Set<string>();
-  for (const kind of POST_KINDS) {
-    for (;;) {
-      const rows = p.persistence.posts.listRowsByAuthorProfileIdAndKind({
-        authorProfileId: p.profileId,
-        kind,
-        limit: 256,
-      });
-      if (rows.length === 0) break;
-      let progressed = false;
-      for (const r of rows) {
-        if (seenPost.has(r.id)) continue;
-        seenPost.add(r.id);
-        progressed = true;
-        purgeRelayCatalogPostEntity(p.store, p.catalogDb, p.tenantKey, r.id);
-      }
-      if (!progressed) break;
-    }
-  }
-
   const authorSub = `author:${p.principalId}`;
   const followers = [
     ...p.persistence.agentSubjectSubscriptions.subscriberPrincipalsForSubject(authorSub),
@@ -132,7 +110,7 @@ export function cascadeUnregisterColonnadePrincipalWithProfile(p: {
     p.persistence.agentSubjectSubscriptions.unsubscribe(peer, authorSub);
   }
 
-  const tupleSubjects = p.store.listBySourceMap(
+  const tupleSubjects = p.projectionStore.listByPrefix(
     p.tenantKey,
     RELAY_CATALOG_SUBS_BY_SUBJECT,
     `author_topic:${p.principalId}\t`,
@@ -155,7 +133,7 @@ export function cascadeUnregisterColonnadePrincipalWithProfile(p: {
   }
 
   purgeSocialRelationshipsForPrincipal({
-    store: p.store,
+    projectionStore: p.projectionStore,
     catalogDb: p.catalogDb,
     framesDb: p.framesDb,
     tenantKey: p.tenantKey,
@@ -164,7 +142,7 @@ export function cascadeUnregisterColonnadePrincipalWithProfile(p: {
 
   p.catalogDb.transaction(() => {
     deletePrincipalUsernameIndexAndRegistrationRows({
-      store: p.store,
+      projectionStore: p.projectionStore,
       tenantKey: p.tenantKey,
       principalId: p.principalId,
       profileId: p.profileId,
@@ -174,13 +152,10 @@ export function cascadeUnregisterColonnadePrincipalWithProfile(p: {
   deleteInviteTokensForDid(p.catalogDb, p.principalId);
 }
 
-/**
- * Eager teardown for a relay principal: posts, subscriptions, social rooms, username maps,
- * registration, profile, invites. Cell inbox/outbox for the principal is purged by the teardown worker.
- */
+/** Eager teardown for a relay principal. Cell inbox/outbox purged by the teardown worker. */
 export function cascadeUnregisterColonnadePrincipal(p: {
   persistence: AgentRelayPersistence;
-  store: RelayCatalogSourceMapStore;
+  projectionStore: RelayCatalogProjectionStore;
   catalogDb: Database;
   framesDb: Database;
   tenantKey: string;

@@ -25,22 +25,14 @@ export async function createAtriumHost(opts: {
   framesDbPath: string;
   cellsDir: string;
   cellPoolCount?: number;
-  /**
-   * When true (default), each cell SQLite runs in a Bun `Worker` (same as bench `--cell-workers`).
-   * Set false for main-thread `bun:sqlite` (comparable to bench `--strategy sqlite` without `--cell-workers`).
-   */
   useCellWorkers?: boolean;
-  /**
-   * When true (default), runs the async principal teardown job worker (relay catalog + cell purge).
-   * Set false in tests to avoid a background interval.
-   */
   startPrincipalTeardownWorker?: boolean;
   tenantKey?: string;
   roomLifecycle?: (event: AtriumRoomLifecycleHostEvent) => void;
 }): Promise<AtriumHostContext> {
   const cellPoolCount = opts.cellPoolCount ?? 16;
   const useCellWorkers = opts.useCellWorkers ?? true;
-  const { persistence, social, catalogDb, framesDb, store, tenantKey, catalogStrategy } =
+  const { persistence, social, catalogDb, framesDb, projectionStore, tenantKey, catalogStrategy } =
     await createRelayColonnadeSocial(opts);
   const cluster = createSqliteColonnadeCluster({
     catalog: catalogStrategy,
@@ -74,20 +66,25 @@ export async function createAtriumHost(opts: {
     inboxHub,
     frameChannelHub: roomHub,
     onEvent: createAtriumRelayOnEvent({
-      store,
+      projectionStore,
       tenantKey,
       catalogDb,
       cluster,
       publicationClient,
     }),
   });
-  const catalogApi = createAtriumCatalogApi({ persistence, store, catalogDb, tenantKey });
+  const catalogApi = createAtriumCatalogApi({
+    persistence,
+    projectionStore,
+    catalogDb,
+    tenantKey,
+  });
   const runTeardownWorker = opts.startPrincipalTeardownWorker ?? true;
   const principalTeardownWorker = runTeardownWorker
     ? startPrincipalTeardownWorker({
         catalogDb,
         framesDb,
-        store,
+        projectionStore,
         persistence,
         tenantKey,
         cluster,
@@ -96,7 +93,7 @@ export async function createAtriumHost(opts: {
   return {
     host,
     auth,
-    store,
+    projectionStore,
     tenantKey,
     catalogDb,
     framesDb,

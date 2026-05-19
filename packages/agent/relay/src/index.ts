@@ -52,7 +52,6 @@ export type {
   AgentRelayEntityRow,
   AgentRelayEntityUpsert,
   AgentRelayPersistence,
-  AgentRelayPostPersistence,
   AgentRelayRegistrations,
   AgentRelaySubjectSubscriptions,
   FrameChannelHubPersistence,

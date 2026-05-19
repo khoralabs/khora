@@ -1,15 +1,16 @@
 import type { Database } from "bun:sqlite";
 import type { AgentRelaySubjectSubscriptions, PrincipalId } from "@khoralabs/agent-relay";
+import type { RelayCatalogProjectionStore } from "./catalog-projection-store.ts";
 import {
-  type RelayCatalogSourceMapStore,
-  relaySyntheticPointer,
-} from "./catalog-source-map-store.ts";
+  RELAY_NAMESPACE_SUBS_BY_PRINCIPAL,
+  RELAY_NAMESPACE_SUBS_BY_SUBJECT,
+} from "./relay-id-conventions.ts";
 
-export const RELAY_CATALOG_SUBS_BY_PRINCIPAL = "relay:subs:by-principal";
-export const RELAY_CATALOG_SUBS_BY_SUBJECT = "relay:subs:by-subject";
+export const RELAY_CATALOG_SUBS_BY_PRINCIPAL = RELAY_NAMESPACE_SUBS_BY_PRINCIPAL;
+export const RELAY_CATALOG_SUBS_BY_SUBJECT = RELAY_NAMESPACE_SUBS_BY_SUBJECT;
 
-const SOURCE_BY_PRINCIPAL = RELAY_CATALOG_SUBS_BY_PRINCIPAL;
-const SOURCE_BY_SUBJECT = RELAY_CATALOG_SUBS_BY_SUBJECT;
+const NAMESPACE_BY_PRINCIPAL = RELAY_NAMESPACE_SUBS_BY_PRINCIPAL;
+const NAMESPACE_BY_SUBJECT = RELAY_NAMESPACE_SUBS_BY_SUBJECT;
 
 function readStringSet(projection: unknown, key: "subjects" | "principals"): string[] {
   if (projection === null || typeof projection !== "object" || Array.isArray(projection)) {
@@ -23,7 +24,7 @@ function readStringSet(projection: unknown, key: "subjects" | "principals"): str
 }
 
 export function createCatalogSubscriptionAdapter(
-  store: RelayCatalogSourceMapStore,
+  store: RelayCatalogProjectionStore,
   db: Database,
   tenantKey: string,
 ): AgentRelaySubjectSubscriptions {
@@ -31,7 +32,7 @@ export function createCatalogSubscriptionAdapter(
     listSubjectsForPrincipal(principalId: PrincipalId): string[] {
       const { found, projection } = store.lookupProjection(
         tenantKey,
-        SOURCE_BY_PRINCIPAL,
+        NAMESPACE_BY_PRINCIPAL,
         principalId,
       );
       if (!found) {
@@ -44,7 +45,11 @@ export function createCatalogSubscriptionAdapter(
       subject: string,
       excludePrincipalId?: PrincipalId,
     ): PrincipalId[] {
-      const { found, projection } = store.lookupProjection(tenantKey, SOURCE_BY_SUBJECT, subject);
+      const { found, projection } = store.lookupProjection(
+        tenantKey,
+        NAMESPACE_BY_SUBJECT,
+        subject,
+      );
       if (!found) {
         return [];
       }
@@ -57,28 +62,23 @@ export function createCatalogSubscriptionAdapter(
 
     subscribe(principalId: PrincipalId, subject: string): void {
       db.transaction(() => {
-        const subjPtr = relaySyntheticPointer(tenantKey, SOURCE_BY_SUBJECT, subject);
-        const prinPtr = relaySyntheticPointer(tenantKey, SOURCE_BY_PRINCIPAL, principalId);
-
-        const pRow = store.lookupProjection(tenantKey, SOURCE_BY_PRINCIPAL, principalId);
+        const pRow = store.lookupProjection(tenantKey, NAMESPACE_BY_PRINCIPAL, principalId);
         const subjects = new Set(pRow.found ? readStringSet(pRow.projection, "subjects") : []);
         subjects.add(subject);
-        store.upsertRow({
+        store.upsert({
           tenant_key: tenantKey,
-          source_map_id: SOURCE_BY_PRINCIPAL,
+          namespace: NAMESPACE_BY_PRINCIPAL,
           entry_key: principalId,
-          pointer: prinPtr,
           projection: { subjects: [...subjects] },
         });
 
-        const sRow = store.lookupProjection(tenantKey, SOURCE_BY_SUBJECT, subject);
+        const sRow = store.lookupProjection(tenantKey, NAMESPACE_BY_SUBJECT, subject);
         const principals = new Set(sRow.found ? readStringSet(sRow.projection, "principals") : []);
         principals.add(principalId);
-        store.upsertRow({
+        store.upsert({
           tenant_key: tenantKey,
-          source_map_id: SOURCE_BY_SUBJECT,
+          namespace: NAMESPACE_BY_SUBJECT,
           entry_key: subject,
-          pointer: subjPtr,
           projection: { principals: [...principals] },
         });
       })();
@@ -86,31 +86,26 @@ export function createCatalogSubscriptionAdapter(
 
     unsubscribe(principalId: PrincipalId, subject: string): void {
       db.transaction(() => {
-        const subjPtr = relaySyntheticPointer(tenantKey, SOURCE_BY_SUBJECT, subject);
-        const prinPtr = relaySyntheticPointer(tenantKey, SOURCE_BY_PRINCIPAL, principalId);
-
-        const pRow = store.lookupProjection(tenantKey, SOURCE_BY_PRINCIPAL, principalId);
+        const pRow = store.lookupProjection(tenantKey, NAMESPACE_BY_PRINCIPAL, principalId);
         if (pRow.found) {
           const subjects = readStringSet(pRow.projection, "subjects").filter((s) => s !== subject);
-          store.upsertRow({
+          store.upsert({
             tenant_key: tenantKey,
-            source_map_id: SOURCE_BY_PRINCIPAL,
+            namespace: NAMESPACE_BY_PRINCIPAL,
             entry_key: principalId,
-            pointer: prinPtr,
             projection: { subjects },
           });
         }
 
-        const sRow = store.lookupProjection(tenantKey, SOURCE_BY_SUBJECT, subject);
+        const sRow = store.lookupProjection(tenantKey, NAMESPACE_BY_SUBJECT, subject);
         if (sRow.found) {
           const principals = readStringSet(sRow.projection, "principals").filter(
             (p) => p !== principalId,
           );
-          store.upsertRow({
+          store.upsert({
             tenant_key: tenantKey,
-            source_map_id: SOURCE_BY_SUBJECT,
+            namespace: NAMESPACE_BY_SUBJECT,
             entry_key: subject,
-            pointer: subjPtr,
             projection: { principals },
           });
         }

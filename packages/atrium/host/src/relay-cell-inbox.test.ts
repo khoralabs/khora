@@ -3,10 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createAtriumHost } from "./atrium-host.ts";
-import {
-  discardCellInboxRoomTickets,
-  enqueueCellInboxInline,
-} from "./relay-cell-inbox.ts";
+import { discardCellInboxRoomTickets, enqueueCellInboxInline } from "./relay-cell-inbox.ts";
 import { popRelayInboxDrainItemsForDid } from "./relay-inbox-drain.ts";
 
 const tmpRoot = mkdtempSync(join(tmpdir(), "atrium-cell-inbox-"));

@@ -7,6 +7,12 @@ import {
   zAtriumPostCreate,
   zAtriumPostPatch,
 } from "@khoralabs/atrium-contracts";
+import {
+  assignPostAddress,
+  encodePostId,
+  listAuthorOutboxRecords,
+  resolvePostById,
+} from "@khoralabs/atrium-host";
 import z from "zod";
 import type { HostRouteDeps } from "./deps.ts";
 import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses.ts";
@@ -27,11 +33,10 @@ export async function handleGetPost(
   try {
     const pRl = rateLimiters.postsDid(`did:${did}`);
     if (!pRl.ok) return rateLimitedResponse(pRl.retryAfterSec);
-    const row = ctx.host.persistenceClient.getPostById(id);
-    if (row === undefined) {
+    const post = await resolvePostById(ctx.cluster, id);
+    if (post === undefined) {
       return jsonError("Post not found", 404);
     }
-    const post = zAtriumPost.parse(JSON.parse(row.bodyJson));
     return Response.json(post);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -61,9 +66,18 @@ export async function handleCreatePost(
   try {
     const raw = JSON.parse(bodyText) as unknown;
     const created = zAtriumPostCreate.parse(raw);
+    const { recordKey, authorCellId } = assignPostAddress({
+      cluster: ctx.cluster,
+      authorPrincipalId: did,
+    });
+    const postId = encodePostId({
+      authorPrincipalId: did,
+      authorCellId,
+      recordKey,
+    });
     const post = zAtriumPost.parse({
       ...created,
-      id: crypto.randomUUID(),
+      id: postId,
       authorProfileId: profileId,
     });
     if (post.topics !== undefined) {
@@ -104,11 +118,10 @@ export async function handleUpdatePost(
   if (agentProfileId === undefined) {
     return jsonError("Register before updating posts", 400);
   }
-  const row = ctx.host.persistenceClient.getPostById(id);
-  if (row === undefined) {
+  const previous = await resolvePostById(ctx.cluster, id);
+  if (previous === undefined) {
     return jsonError("Post not found", 404);
   }
-  const previous = zAtriumPost.parse(JSON.parse(row.bodyJson));
   if (previous.id !== id) {
     return jsonError("Stored post id mismatch", 500);
   }
@@ -122,10 +135,20 @@ export async function handleUpdatePost(
       return jsonError("authorProfileId cannot be changed", 400);
     }
     const patch = zAtriumPostPatch.parse(patchRaw);
-    const post = mergeAtriumPostPatch(previous, patch);
-    if (post.topics !== undefined) {
-      post.topics = post.topics.map((t) => normalizeTopicSlug(t));
+    const merged = mergeAtriumPostPatch(previous, patch);
+    if (merged.topics !== undefined) {
+      merged.topics = merged.topics.map((t) => normalizeTopicSlug(t));
     }
+    const { recordKey, authorCellId } = assignPostAddress({
+      cluster: ctx.cluster,
+      authorPrincipalId: did,
+    });
+    const postId = encodePostId({
+      authorPrincipalId: did,
+      authorCellId,
+      recordKey,
+    });
+    const post = zAtriumPost.parse({ ...merged, id: postId });
     await ctx.host.notify({
       kind: AGENT_RELAY_EVENT_KIND.POST_UPDATED,
       occurredAt: Date.now(),
@@ -160,11 +183,10 @@ export async function handleDeletePost(
   if (agentProfileId === undefined) {
     return jsonError("Register before deleting posts", 400);
   }
-  const row = ctx.host.persistenceClient.getPostById(id);
-  if (row === undefined) {
+  const post = await resolvePostById(ctx.cluster, id);
+  if (post === undefined) {
     return jsonError("Post not found", 404);
   }
-  const post = zAtriumPost.parse(JSON.parse(row.bodyJson));
   const authorId = post.authorProfileId;
   if (authorId === undefined || authorId.length === 0 || authorId !== agentProfileId) {
     return jsonError("Forbidden", 403);
@@ -198,14 +220,24 @@ export async function handleAgentStatus(
   if (profileId === undefined) {
     return jsonError("Register first", 400);
   }
-  const rows = ctx.host.persistenceClient.listPostRowsByAuthorProfileIdAndKind({
-    authorProfileId: profileId,
-    kind: "status",
+  const authorCellId = ctx.cluster.assignPrincipalToCell(did);
+  const rows = await listAuthorOutboxRecords({
+    cluster: ctx.cluster,
+    authorPrincipalId: did,
+    authorCellId,
+    tenantKey: ctx.tenantKey,
+    postKind: "status",
     limit: 1,
   });
-  const status =
-    rows.length > 0 && rows[0] !== undefined
-      ? zAtriumPost.parse(JSON.parse(rows[0].bodyJson))
-      : null;
+  let status = null;
+  if (rows.length > 0 && rows[0] !== undefined) {
+    const { record_key } = rows[0];
+    const postId = encodePostId({
+      authorPrincipalId: did,
+      authorCellId,
+      recordKey: record_key,
+    });
+    status = (await resolvePostById(ctx.cluster, postId)) ?? null;
+  }
   return Response.json(zAgentStatusResponse.parse({ status }));
 }

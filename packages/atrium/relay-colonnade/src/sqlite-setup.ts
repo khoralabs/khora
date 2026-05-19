@@ -2,9 +2,35 @@ import { Database } from "bun:sqlite";
 import { SqliteCatalogPersistenceStrategy } from "@khoralabs/colonnade-persistence";
 import { ensurePrincipalTeardownJobsSchema } from "./principal-teardown-jobs.ts";
 
+/** Tier 1 relay catalog projections (JSON columns + expression indexes). */
+export function ensureRelayCatalogProjectionsSchema(db: Database): void {
+  db.run(`
+    CREATE TABLE IF NOT EXISTS relay_catalog_projections (
+      tenant_key TEXT NOT NULL,
+      namespace TEXT NOT NULL,
+      entry_key TEXT NOT NULL,
+      projection JSON NOT NULL CHECK (json_valid(projection)),
+      updated_at_ms INTEGER NOT NULL,
+      PRIMARY KEY (tenant_key, namespace, entry_key)
+    );
+    CREATE INDEX IF NOT EXISTS idx_relay_username_to_principal
+      ON relay_catalog_projections (
+        tenant_key,
+        json_extract(projection, '$.principalId')
+      )
+      WHERE namespace = 'relay:social:username-to-principal';
+    CREATE INDEX IF NOT EXISTS idx_relay_room_registry_creator
+      ON relay_catalog_projections (
+        tenant_key,
+        json_extract(projection, '$.creatorDid')
+      )
+      WHERE namespace = 'at2:room-registry';
+  `);
+}
+
 /** WAL + defaults aligned with colonnade SQLite workloads. */
 export function applyRelaySqlitePragmas(db: Database): void {
-  db.exec(`
+  db.run(`
     PRAGMA journal_mode = WAL;
     PRAGMA synchronous = NORMAL;
     PRAGMA foreign_keys = ON;
@@ -21,6 +47,7 @@ export function openRelayCatalogDb(path: string): {
 } {
   const db = new Database(path, { create: true });
   const catalogStrategy = new SqliteCatalogPersistenceStrategy(db);
+  ensureRelayCatalogProjectionsSchema(db);
   ensurePrincipalTeardownJobsSchema(db);
   return { db, catalogStrategy };
 }
