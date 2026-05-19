@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 import { expect, test } from "bun:test";
-import { ensureRelayCatalogProjectionsSchema } from "./sqlite-setup.ts";
 import { RelaySubscriptionEdgeStore } from "./relay-subscription-edge-store.ts";
+import { ensureRelayCatalogProjectionsSchema } from "./sqlite-setup.ts";
 
 function memStore(): RelaySubscriptionEdgeStore {
   const db = new Database(":memory:");

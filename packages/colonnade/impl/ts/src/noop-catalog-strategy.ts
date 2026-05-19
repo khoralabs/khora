@@ -36,11 +36,15 @@ export class NoopCatalogPersistenceStrategy implements CatalogPersistenceStrateg
     return { revision_token: "0" };
   }
 
-  async upsertCatalogPointer(_input: UpsertCatalogPointerInput): Promise<UpsertCatalogPointerOutput> {
+  async upsertCatalogPointer(
+    _input: UpsertCatalogPointerInput,
+  ): Promise<UpsertCatalogPointerOutput> {
     return {};
   }
 
-  async resolveCatalogPointer(input: ResolveCatalogPointerInput): Promise<ResolveCatalogPointerOutput> {
+  async resolveCatalogPointer(
+    input: ResolveCatalogPointerInput,
+  ): Promise<ResolveCatalogPointerOutput> {
     throw new Error(
       `NoopCatalogPersistenceStrategy: unknown catalog_pointer_id ${input.catalog_pointer_id}`,
     );
@@ -82,7 +86,9 @@ export class NoopCatalogPersistenceStrategy implements CatalogPersistenceStrateg
     return { content_hash: sha256HexLower(input.canonical_row_bytes) };
   }
 
-  async issueConnectionToken(input: IssueConnectionTokenInput): Promise<IssueConnectionTokenOutput> {
+  async issueConnectionToken(
+    input: IssueConnectionTokenInput,
+  ): Promise<IssueConnectionTokenOutput> {
     return {
       token: "",
       expires_at_ms: Date.now() + input.ttl_seconds * 1000,

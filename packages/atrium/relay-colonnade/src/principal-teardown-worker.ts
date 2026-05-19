@@ -2,13 +2,13 @@ import type { Database } from "bun:sqlite";
 import type { AgentRelayPersistence } from "@khoralabs/agent-relay";
 import type { SqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
 import type { RelayCatalogProjectionStore } from "./catalog-projection-store.ts";
-import type { RelaySocialPrincipalChannelStore } from "./relay-social-principal-channel-store.ts";
-import type { RelaySubscriptionEdgeStore } from "./relay-subscription-edge-store.ts";
 import {
   deletePrincipalTeardownJob,
   markPrincipalTeardownJobPendingAfterFailure,
   tryClaimNextPendingPrincipalTeardownJob,
 } from "./principal-teardown-jobs.ts";
+import type { RelaySocialPrincipalChannelStore } from "./relay-social-principal-channel-store.ts";
+import type { RelaySubscriptionEdgeStore } from "./relay-subscription-edge-store.ts";
 import { cascadeUnregisterColonnadePrincipalWithProfile } from "./social-unregister.ts";
 
 export type PrincipalTeardownWorkerHandle = { stop(): void };

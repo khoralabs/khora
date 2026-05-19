@@ -1,5 +1,5 @@
 import type { CatalogPersistenceStrategy } from "./catalog-persistence-strategy.ts";
-import type { CellPersistenceStrategy, ResolveCellStrategy } from "./cell-persistence-strategy.ts";
+import type { ResolveCellStrategy } from "./cell-persistence-strategy.ts";
 import type {
   FanOutTarget,
   GeneratedInboxRef,

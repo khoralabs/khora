@@ -49,13 +49,9 @@ export {
   SOURCE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
 } from "./relay-id-conventions.ts";
+export { RelaySocialPrincipalChannelStore } from "./relay-social-principal-channel-store.ts";
+export { RelaySubscriptionEdgeStore } from "./relay-subscription-edge-store.ts";
 export { registerAgentOnColonnadePersistence } from "./social-registration.ts";
-export {
-  RelaySocialPrincipalChannelStore,
-} from "./relay-social-principal-channel-store.ts";
-export {
-  RelaySubscriptionEdgeStore,
-} from "./relay-subscription-edge-store.ts";
 export { createSocialRelationshipPersistence } from "./social-relationship-persistence.ts";
 export type {
   SocialAgentIdentity,

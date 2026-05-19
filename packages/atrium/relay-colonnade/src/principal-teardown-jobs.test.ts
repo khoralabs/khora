@@ -107,12 +107,19 @@ afterAll(() => {
 
 test("phase1 clears registration and enqueues job; cascade + delete job finishes", async () => {
   const dir = nextDir();
-  const { persistence, projectionStore, subscriptionEdgeStore, principalChannelStore, catalogDb, tenantKey, framesDb } =
-    await createRelayColonnadeSocial({
-      catalogPath: join(dir, "c.sqlite"),
-      framesDbPath: join(dir, "f.sqlite"),
-      tenantKey: "tn",
-    });
+  const {
+    persistence,
+    projectionStore,
+    subscriptionEdgeStore,
+    principalChannelStore,
+    catalogDb,
+    tenantKey,
+    framesDb,
+  } = await createRelayColonnadeSocial({
+    catalogPath: join(dir, "c.sqlite"),
+    framesDbPath: join(dir, "f.sqlite"),
+    tenantKey: "tn",
+  });
   registerAgentOnColonnadePersistence(persistence, catalogDb, projectionStore, {
     principalId: "did:author",
     username: "author",

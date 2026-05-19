@@ -4,12 +4,12 @@ import { createCatalogEntityAdapter } from "./catalog-entity-adapter.ts";
 import { RelayCatalogProjectionStore } from "./catalog-projection-store.ts";
 import { createCatalogRegistrationAdapter } from "./catalog-registration-adapter.ts";
 import { createCatalogSubscriptionAdapter } from "./catalog-subscription-adapter.ts";
-import { RelaySubscriptionEdgeStore } from "./relay-subscription-edge-store.ts";
 import { createFrameChannelHubPersistenceSqlite } from "./frame-channel-sqlite.ts";
 import {
   RELAY_NAMESPACE_ENTITY_PROFILE,
   RELAY_NAMESPACE_ENTITY_TOPIC,
 } from "./relay-id-conventions.ts";
+import { RelaySubscriptionEdgeStore } from "./relay-subscription-edge-store.ts";
 import { openRelayCatalogDb, openRelayFramesDb } from "./sqlite-setup.ts";
 
 export const RELAY_CATALOG_SOURCE_PROFILE = RELAY_NAMESPACE_ENTITY_PROFILE;
