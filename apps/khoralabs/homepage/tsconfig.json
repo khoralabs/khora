@@ -25,6 +25,7 @@
     "paths": {
       "@/*": ["./src/*"]
     },
+    "plugins": [{ "name": "workflow" }],
 
     // Some stricter flags (disabled by default)
     "noUnusedLocals": false,

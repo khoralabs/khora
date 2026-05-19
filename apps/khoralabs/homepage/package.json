@@ -9,6 +9,7 @@
     "build": "bun run build.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-ses": "^3.1050.0",
     "@mdx-js/mdx": "^3.1.1",
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-select": "^2.2.6",
@@ -21,7 +22,8 @@
     "react": "^19",
     "react-dom": "^19",
     "remark-gfm": "^4.0.1",
-    "tailwind-merge": "^3.3.1"
+    "tailwind-merge": "^3.3.1",
+    "workflow": "^4.2.4"
   },
   "devDependencies": {
     "@types/react": "^19",

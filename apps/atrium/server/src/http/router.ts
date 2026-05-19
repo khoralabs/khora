@@ -11,6 +11,7 @@ import {
 } from "./authors.ts";
 import type { HostRouteDeps } from "./deps.ts";
 import { handleHealth, handleReady } from "./health.ts";
+import { handleInternalMintInvite } from "./internal-invite.ts";
 import { handleInvitePreview, handleListInvites } from "./invites.ts";
 import {
   handleAgentStatus,
@@ -54,6 +55,10 @@ export async function route(
 
   if (req.method === "GET" && url.pathname === "/ready") {
     return handleReady(deps);
+  }
+
+  if (req.method === "POST" && url.pathname === "/internal/mint-invite") {
+    return handleInternalMintInvite(req, deps);
   }
 
   const ip = clientIpFromRequest(req);

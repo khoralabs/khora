@@ -32,9 +32,17 @@ export function InviteEmailForm({ variant = "dark", onSuccess }: InviteEmailForm
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const form = e.currentTarget;
+    const email = new FormData(form).get("email");
+    if (typeof email !== "string" || email.trim().length === 0) return;
+
     setPending(true);
     try {
-      await new Promise((r) => setTimeout(r, 1500));
+      await fetch("/api/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
       onSuccess?.();
     } finally {
       setPending(false);
