@@ -61,9 +61,9 @@ import { listRelationships as httpListRelationships } from "./http/relationships
 import {
   createRoom as httpCreateRoom,
   getRoom as httpGetRoom,
+  leaveRoom as httpLeaveRoom,
   mintRoomTicket as httpMintRoomTicket,
   redeemRoomInvite as httpRedeemRoomInvite,
-  leaveRoom as httpLeaveRoom,
 } from "./http/rooms.ts";
 import { subscribeTopic, unsubscribeTopic } from "./http/topics.ts";
 import { unregister as httpUnregister, type UnregisterBody } from "./http/unregister.ts";

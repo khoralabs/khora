@@ -31,9 +31,7 @@ export {
   SOURCE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
 } from "./social-registration.ts";
-export {
-  createSocialRelationshipPersistence,
-} from "./social-relationship-persistence.ts";
+export { createSocialRelationshipPersistence } from "./social-relationship-persistence.ts";
 export type {
   SocialAgentIdentity,
   SocialRegisterAgentInput,

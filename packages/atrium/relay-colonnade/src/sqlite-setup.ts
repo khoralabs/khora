@@ -15,11 +15,14 @@ export function applyRelaySqlitePragmas(db: Database): void {
 }
 
 /** Opens catalog DB and ensures colonnade catalog schema (via strategy constructor). */
-export function openRelayCatalogDb(path: string): Database {
+export function openRelayCatalogDb(path: string): {
+  db: Database;
+  catalogStrategy: SqliteCatalogPersistenceStrategy;
+} {
   const db = new Database(path, { create: true });
-  new SqliteCatalogPersistenceStrategy(db);
+  const catalogStrategy = new SqliteCatalogPersistenceStrategy(db);
   ensurePrincipalTeardownJobsSchema(db);
-  return db;
+  return { db, catalogStrategy };
 }
 
 /** Relay frame-channel SQLite (separate file from catalog). */

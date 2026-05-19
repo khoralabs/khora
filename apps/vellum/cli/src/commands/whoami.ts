@@ -16,9 +16,7 @@ export async function handleWhoami(flags: FlagMap): Promise<void> {
     const idPath = agentIdentityPath(flags);
     const msg = e instanceof Error ? e.message : String(e);
     console.error(style.error(msg));
-    console.error(
-      style.error(`No agent identity at ${idPath}. Generate or import a key first.`),
-    );
+    console.error(style.error(`No agent identity at ${idPath}. Generate or import a key first.`));
     process.exit(1);
   }
 

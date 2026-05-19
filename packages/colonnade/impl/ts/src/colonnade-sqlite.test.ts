@@ -1,5 +1,6 @@
+import { Database } from "bun:sqlite";
 import { afterAll, describe, expect, test } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -7,6 +8,8 @@ import { ColonnadePublicationClient } from "./colonnade-publication-client.ts";
 import { parseCatalogPointerShardIndex } from "./sqlite/catalog-pointer-id.ts";
 import { createSqliteColonnadeCluster } from "./sqlite/cluster.ts";
 import { derivePoolHomeCell, perPrincipalCellId } from "./sqlite/principal-cell-id.ts";
+import { ShardingCatalogPersistenceStrategy } from "./sqlite/sharding-catalog-strategy.ts";
+import { SqliteCatalogPersistenceStrategy } from "./sqlite/sqlite-catalog-strategy.ts";
 import { catalogShardIndexForTenant } from "./sqlite/tenant-catalog-shard.ts";
 
 describe("SQLite Colonnade cluster", () => {
@@ -19,8 +22,10 @@ describe("SQLite Colonnade cluster", () => {
   });
 
   test("pool mode: deterministic home cells and publication fans out across cell files", async () => {
+    const catalogDb = new Database(catalogPath, { create: true });
+    const catalog = new SqliteCatalogPersistenceStrategy(catalogDb);
     const cluster = createSqliteColonnadeCluster({
-      catalogPath,
+      catalog,
       cellsDirectory: cellsDir,
       mode: { kind: "pool", cellCount: 2 },
     });
@@ -88,14 +93,23 @@ describe("SQLite Colonnade cluster", () => {
       expect(drain.drained_entry_ids.length).toBe(1);
     } finally {
       cluster.close();
+      catalogDb.close();
     }
   });
 
   test("catalog shards: tenant-key routing stores pointers on the correct SQLite file", async () => {
     const catDir = join(root, "cat-shards");
+    mkdirSync(catDir, { recursive: true });
+    const shardPaths = [
+      join(catDir, "catalog-shard-0.sqlite"),
+      join(catDir, "catalog-shard-1.sqlite"),
+    ];
+    const shardDbs = shardPaths.map((p) => new Database(p, { create: true }));
+    const catalog = new ShardingCatalogPersistenceStrategy(
+      shardDbs.map((db, i) => new SqliteCatalogPersistenceStrategy(db, { shardIndex: i })),
+    );
     const cluster = createSqliteColonnadeCluster({
-      catalogPath: catDir,
-      catalogShardCount: 2,
+      catalog,
       cellsDirectory: join(root, "cells-sharded"),
       mode: { kind: "per_principal" },
     });
@@ -122,29 +136,34 @@ describe("SQLite Colonnade cluster", () => {
       });
       const shardIdx = parseCatalogPointerShardIndex(res.catalog_pointer_id);
       expect(shardIdx).toBe(catalogShardIndexForTenant(tenant_key, 2));
+      if (shardIdx === undefined) throw new Error("expected shard index");
 
-      const idx = shardIdx!;
       const countOnShard = (si: number) =>
         Number(
           (
-            cluster.catalogDatabases[si]
+            shardDbs[si]
               ?.prepare("SELECT COUNT(*) AS c FROM catalog_pointers WHERE catalog_pointer_id = ?")
               .get(res.catalog_pointer_id) as { c: number }
           ).c,
         );
 
-      expect(countOnShard(idx)).toBe(1);
-      expect(countOnShard((idx + 1) % 2)).toBe(0);
+      expect(countOnShard(shardIdx)).toBe(1);
+      expect(countOnShard((shardIdx + 1) % 2)).toBe(0);
     } finally {
       cluster.close();
+      for (const db of shardDbs) {
+        db.close();
+      }
     }
   });
 
   test("useCellWorkers: publication + inbox pointer staging round-trip", async () => {
     const dir = mkdtempSync(join(tmpdir(), "colonnade-sqlite-worker-"));
     try {
+      const catalogDb = new Database(join(dir, "catalog.sqlite"), { create: true });
+      const catalog = new SqliteCatalogPersistenceStrategy(catalogDb);
       const cluster = createSqliteColonnadeCluster({
-        catalogPath: join(dir, "catalog.sqlite"),
+        catalog,
         cellsDirectory: join(dir, "cells"),
         mode: { kind: "pool", cellCount: 2 },
         useCellWorkers: true,
@@ -180,6 +199,7 @@ describe("SQLite Colonnade cluster", () => {
         expect(listed.entries[0]?.staging.kind).toBe("pointer");
       } finally {
         cluster.close();
+        catalogDb.close();
       }
     } finally {
       rmSync(dir, { recursive: true, force: true });
@@ -189,8 +209,10 @@ describe("SQLite Colonnade cluster", () => {
   test("per_principal mode: deterministic dedicated cell id", () => {
     const dir = mkdtempSync(join(tmpdir(), "colonnade-sqlite-iso-"));
     try {
+      const catalogDb = new Database(join(dir, "catalog.sqlite"), { create: true });
+      const catalog = new SqliteCatalogPersistenceStrategy(catalogDb);
       const cluster = createSqliteColonnadeCluster({
-        catalogPath: join(dir, "catalog.sqlite"),
+        catalog,
         cellsDirectory: join(dir, "cells"),
         mode: { kind: "per_principal" },
       });
@@ -202,6 +224,7 @@ describe("SQLite Colonnade cluster", () => {
         expect(cluster.assignPrincipalToCell("user-a")).toBe(c1);
       } finally {
         cluster.close();
+        catalogDb.close();
       }
     } finally {
       rmSync(dir, { recursive: true, force: true });

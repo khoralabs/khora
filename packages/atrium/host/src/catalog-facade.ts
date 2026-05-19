@@ -3,12 +3,12 @@ import type { AgentRelayPersistence } from "@khoralabs/agent-relay";
 import { normalizeUsername } from "@khoralabs/atrium-contracts";
 import {
   phase1UnregisterColonnadePrincipal,
+  type RelayCatalogSourceMapStore,
   registerAgentOnColonnadePersistence,
   relaySyntheticPointer,
   SOURCE_PRINCIPAL_TO_USERNAME,
   SOURCE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
-  type RelayCatalogSourceMapStore,
 } from "@khoralabs/relay-colonnade";
 import { RELAY_INBOX_SOURCE_MAP_ID } from "./relay-inbox.ts";
 import { ATRIUM_ROOM_INVITE_SOURCE_MAP_ID } from "./room-invite.ts";

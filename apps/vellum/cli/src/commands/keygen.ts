@@ -16,7 +16,9 @@ export async function handleKeygen(flags: FlagMap): Promise<void> {
   if (!force) {
     const existing = await loadIdentity(keyPath);
     if (existing !== undefined) {
-      console.error(style.error(`Identity already exists at ${keyPath}. Use --force to overwrite.`));
+      console.error(
+        style.error(`Identity already exists at ${keyPath}. Use --force to overwrite.`),
+      );
       process.exit(1);
     }
   }

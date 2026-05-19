@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 
 describe("terminal-style", () => {
   test("semantic wrappers include original text", async () => {

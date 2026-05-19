@@ -5,7 +5,10 @@ import { listLocalVellumRows } from "@khoralabs/vellum-client";
 
 import { cliBaseUrl, dataDirForEnv, loadSigner } from "../flows/context.ts";
 
-function localConnectedLabel(roomId: string, locals: ReturnType<typeof listLocalVellumRows>): string {
+function localConnectedLabel(
+  roomId: string,
+  locals: ReturnType<typeof listLocalVellumRows>,
+): string {
   const local = locals.find((r) => r.roomId === roomId);
   if (local === undefined) return "-";
   return local.status === "running" ? "running" : "stale";

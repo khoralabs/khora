@@ -5,12 +5,7 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import {
-  envCatalogPath,
-  envCellsDir,
-  envFramesDbPath,
-  validateEnv,
-} from "../src/env.ts";
+import { envCatalogPath, envCellsDir, envFramesDbPath, validateEnv } from "../src/env.ts";
 
 const serverRoot = path.resolve(path.dirname(import.meta.path), "..");
 const indexEntry = path.join(serverRoot, "src", "index.ts");
@@ -33,11 +28,9 @@ function requireNonEmpty(name: string): string {
 }
 
 function s3Credentials(): void {
-  const key =
-    process.env.LITESTREAM_ACCESS_KEY_ID?.trim() || process.env.AWS_ACCESS_KEY_ID?.trim();
+  const key = process.env.LITESTREAM_ACCESS_KEY_ID?.trim() || process.env.AWS_ACCESS_KEY_ID?.trim();
   const secret =
-    process.env.LITESTREAM_SECRET_ACCESS_KEY?.trim() ||
-    process.env.AWS_SECRET_ACCESS_KEY?.trim();
+    process.env.LITESTREAM_SECRET_ACCESS_KEY?.trim() || process.env.AWS_SECRET_ACCESS_KEY?.trim();
   if (key === undefined || key.length === 0 || secret === undefined || secret.length === 0) {
     throw new Error(
       "start-atrium: set LITESTREAM_ACCESS_KEY_ID and LITESTREAM_SECRET_ACCESS_KEY " +

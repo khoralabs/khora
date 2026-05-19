@@ -37,7 +37,7 @@ export async function createRelayColonnadePersistence(opts: {
   tenantKey?: string;
 }): Promise<AgentRelayPersistence> {
   const tenantKey = opts.tenantKey ?? "relay";
-  const catalogDb = openRelayCatalogDb(opts.catalogPath);
+  const { db: catalogDb } = openRelayCatalogDb(opts.catalogPath);
   const framesDb = openRelayFramesDb(opts.framesDbPath);
   return createRelayColonnadePersistenceFromDatabases(catalogDb, framesDb, tenantKey);
 }

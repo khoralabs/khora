@@ -40,10 +40,10 @@ export async function createAtriumHost(opts: {
 }): Promise<AtriumHostContext> {
   const cellPoolCount = opts.cellPoolCount ?? 16;
   const useCellWorkers = opts.useCellWorkers ?? true;
-  const { persistence, social, catalogDb, framesDb, store, tenantKey } =
+  const { persistence, social, catalogDb, framesDb, store, tenantKey, catalogStrategy } =
     await createRelayColonnadeSocial(opts);
   const cluster = createSqliteColonnadeCluster({
-    catalogPath: opts.catalogPath,
+    catalog: catalogStrategy,
     cellsDirectory: opts.cellsDir,
     mode: { kind: "pool", cellCount: cellPoolCount },
     useCellWorkers,

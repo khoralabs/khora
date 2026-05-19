@@ -5,8 +5,6 @@ import { join } from "node:path";
 import type { CatalogPersistenceStrategy } from "../catalog-persistence-strategy.ts";
 import type { CellPersistenceStrategy, ResolveCellStrategy } from "../cell-persistence-strategy.ts";
 import { cellDbFilenameStem, derivePoolHomeCell, perPrincipalCellId } from "./principal-cell-id.ts";
-import { ShardingCatalogPersistenceStrategy } from "./sharding-catalog-strategy.ts";
-import { SqliteCatalogPersistenceStrategy } from "./sqlite-catalog-strategy.ts";
 import { SqliteCellPersistenceStrategy } from "./sqlite-cell-strategy.ts";
 import { LazyWorkerBackedCellStrategy } from "./worker-backed-cell-strategy.ts";
 
@@ -15,12 +13,8 @@ export type SqliteColonnadeClusterMode =
   | { readonly kind: "per_principal" };
 
 export type SqliteColonnadeClusterOptions = {
-  /**
-   * Single-catalog mode (**`catalogShardCount === 1`**): path to the SQLite file.
-   * Multi-shard mode: directory containing **`catalog-shard-{i}.sqlite`** files.
-   */
-  readonly catalogPath: string;
-  readonly catalogShardCount?: number;
+  /** Caller-owned catalog strategy (and its backing DB). */
+  readonly catalog: CatalogPersistenceStrategy;
   readonly cellsDirectory: string;
   readonly mode: SqliteColonnadeClusterMode;
   /** One Bun **`Worker`** per opened cell (SQLite runs off the main thread). */
@@ -29,43 +23,20 @@ export type SqliteColonnadeClusterOptions = {
 
 export type SqliteColonnadeCluster = {
   readonly catalog: CatalogPersistenceStrategy;
-  /** Open catalog database handles (length matches **`catalogShardCount`**). */
-  readonly catalogDatabases: readonly Database[];
-  /** First catalog DB when present (same as **`catalogDatabases[0]`**). */
-  readonly catalogDb: Database;
   readonly resolveCell: ResolveCellStrategy;
   /** Pool mode: **`derivePoolHomeCell`**; per-principal: **`perPrincipalCellId`** (pure functions; no catalog rows). */
   assignPrincipalToCell(principalId: string): string;
   close(): void;
 };
 
-function openCatalogDatabasePaths(catalogPath: string, shardCount: number): string[] {
-  if (shardCount === 1) {
-    return [catalogPath];
-  }
-  mkdirSync(catalogPath, { recursive: true });
-  return Array.from({ length: shardCount }, (_, i) =>
-    join(catalogPath, `catalog-shard-${i}.sqlite`),
-  );
-}
-
 /**
- * SQLite-backed catalog shard(s) + lazy-open cell DBs (`cellsDirectory/<stem>.sqlite`).
+ * SQLite-backed lazy-open cell DBs (`cellsDirectory/<stem>.sqlite`).
+ * Catalog persistence is supplied by the caller.
  */
 export function createSqliteColonnadeCluster(
   opts: SqliteColonnadeClusterOptions,
 ): SqliteColonnadeCluster {
   mkdirSync(opts.cellsDirectory, { recursive: true });
-  const shardCount = opts.catalogShardCount ?? 1;
-  const catalogPaths = openCatalogDatabasePaths(opts.catalogPath, shardCount);
-  const catalogDatabases = catalogPaths.map((p) => new Database(p, { create: true }));
-  const leafCatalogStrategies = catalogDatabases.map(
-    (db, i) => new SqliteCatalogPersistenceStrategy(db, { shardIndex: i }),
-  );
-  const catalog: CatalogPersistenceStrategy =
-    shardCount === 1
-      ? leafCatalogStrategies[0]!
-      : new ShardingCatalogPersistenceStrategy(leafCatalogStrategies);
 
   const cellDbById = new Map<string, Database>();
   const cellStrategyById = new Map<string, SqliteCellPersistenceStrategy>();
@@ -110,9 +81,6 @@ export function createSqliteColonnadeCluster(
       w.terminate();
     }
     lazyWorkersById.clear();
-    for (const db of catalogDatabases) {
-      db.close();
-    }
     for (const db of cellDbById.values()) {
       db.close();
     }
@@ -120,15 +88,8 @@ export function createSqliteColonnadeCluster(
     cellStrategyById.clear();
   }
 
-  const catalogDb = catalogDatabases[0];
-  if (catalogDb === undefined) {
-    throw new Error("createSqliteColonnadeCluster: catalogDatabases empty");
-  }
-
   return {
-    catalog,
-    catalogDatabases,
-    catalogDb,
+    catalog: opts.catalog,
     resolveCell,
     assignPrincipalToCell,
     close,

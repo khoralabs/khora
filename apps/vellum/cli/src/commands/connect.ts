@@ -16,8 +16,7 @@ export async function handleConnect(
 ): Promise<void> {
   const idx = opts?.roomPositionalIndex ?? 1;
   const slot = positional[idx];
-  const fromPositional =
-    slot !== undefined && slot.trim().length > 0 ? slot.trim() : undefined;
+  const fromPositional = slot !== undefined && slot.trim().length > 0 ? slot.trim() : undefined;
   const roomId = await promptRoomIdIfMissing(ctx, flags, fromPositional);
 
   const client = makeVellumClient(flags, roomId);
