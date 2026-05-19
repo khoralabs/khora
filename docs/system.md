@@ -6,18 +6,20 @@ This is an overview of **`apps/atrium`**, **`apps/vellum`**, and the **packages 
 
 Atrium persists to **several SQLite surfaces**:
 
-**A. Relay catalog DB** (`ATRIUM_CATALOG_PATH` — opened via `openRelayCatalogDb` in `/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/relay-colonnade/src/sqlite-setup.ts`)
+**A. Relay catalog DB** (`ATRIUM_CATALOG_PATH` — opened via `openRelayCatalogDb` in `packages/atrium/relay-colonnade/src/sqlite-setup.ts`)
 
-Colonnade catalog tables (`ensureCatalogSchema` in `/Users/zach/Documents/dev/khora-labs/khora/packages/colonnade/impl/ts/src/sqlite/schema-catalog.ts`):
+The relay catalog file holds **Atrium-specific tables only** (not Colonnade `discovery_documents` / `catalog_pointers` / `source_map_rows`). Colonnade-spec catalog tables live in the Colonnade package for benchmarks and non-Atrium clients.
 
-| Table | Columns |
+| Table | Purpose |
 | --- | --- |
-| `discovery_documents` | `document_key` (PK), `body`, `revision` |
-| `catalog_pointers` | `catalog_pointer_id` (PK), `locator_cell_id`, `locator_record_key`, `content_hash`, `projection` |
-| `source_map_rows` | `tenant_key`, `source_map_id`, `entry_key`, `pointer_source_cell_id`, `pointer_source_record_key`, `pointer_content_hash`, `projection`, `source_row_content_hash` — **PK** `(tenant_key, source_map_id, entry_key)` |
-| `connection_tokens` | `token` (PK), `principal_id`, `intended_audience`, `expires_at_ms` |
+| `relay_catalog_projections` | Tier 1 JSON projections (profiles, regs, rooms, …) |
+| `relay_subscription_edges` | Subscription fan-out index |
+| `relay_social_principal_channels` | Social principal → channel index |
+| `principal_teardown_jobs` | Durable unregister teardown queue |
+| `at2_invite_tokens` | Invite tokens (when enabled) |
+| `agent_request_nonces` | Auth nonces |
 
-**Atrium relay Tier 1** uses **`relay_catalog_projections`** (`ensureRelayCatalogProjectionsSchema` in `sqlite-setup.ts`): `(tenant_key, namespace, entry_key, projection JSON, updated_at_ms)`. No pointer columns. ID conventions: [`packages/atrium/host/id-conventions.md`](/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/id-conventions.md).
+**Atrium relay Tier 1** uses **`relay_catalog_projections`** (`ensureRelayCatalogProjectionsSchema` in `sqlite-setup.ts`): `(tenant_key, namespace, entry_key, projection JSON, updated_at_ms)`. ID conventions: [`packages/atrium/host/id-conventions.md`](/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/id-conventions.md).
 
 **Relay-specific content** is in **`relay_catalog_projections.projection`** (JSON), keyed by `tenant_key` + `namespace` + `entry_key`. Important `namespace` values:
 

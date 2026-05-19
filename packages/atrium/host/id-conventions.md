@@ -77,9 +77,11 @@ Invalid ids decode to `undefined`. Post JSON `id` field must match encoded addre
 | `principalId` | DID (`did:plc:…`) |
 | `profileId` | UUID v4 at registration |
 
-## Colonnade catalog ids (unused for Atrium posts)
+## Colonnade catalog ids (Colonnade spec; not in Atrium relay catalog DB)
 
-| Id | Format | When |
-|----|--------|------|
-| `catalog_pointer_id` | `cptr_{4hex shard}_{32 hex}` | `replicate_to_catalog: true` (not used for posts) |
-| `document_key` | `colonnade:publication:{tenant}:{content_hash}` | discovery_documents |
+| Id | Format | When (Colonnade clients) |
+|----|--------|--------------------------|
+| `catalog_pointer_id` | `cptr_{4hex shard}_{32 hex}` | `replicate_to_catalog: true` on `PostOperation` |
+| `document_key` | `colonnade:publication:{tenant}:{content_hash}` | Paired discovery row in `discovery_documents` |
+
+Atrium relay does not create or write these tables. See `.idea/docs/colonnade.md` §3 for when catalog pointers are useful.

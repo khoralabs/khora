@@ -1,5 +1,5 @@
 import type { CatalogPersistenceStrategy } from "./catalog-persistence-strategy.ts";
-import type { ResolveCellStrategy } from "./cell-persistence-strategy.ts";
+import type { CellPersistenceStrategy, ResolveCellStrategy } from "./cell-persistence-strategy.ts";
 import type {
   FanOutTarget,
   GeneratedInboxRef,
@@ -8,14 +8,39 @@ import type {
   PublicationRouting,
 } from "./colonnade-types.ts";
 import { randomId } from "./hash.ts";
+import { defaultNoopCatalogPersistenceStrategy } from "./noop-catalog-strategy.ts";
 import { supportsSqliteCellBatch } from "./sqlite/sqlite-cell-strategy.ts";
+
+function isResolveCellStrategy(
+  value: CatalogPersistenceStrategy | ResolveCellStrategy,
+): value is ResolveCellStrategy {
+  return typeof value === "function";
+}
 
 /** Implements **`PostOperation`** ordering: author outbox → catalog (optional) → per-recipient inbox. */
 export class ColonnadePublicationClient {
+  private readonly catalog: CatalogPersistenceStrategy;
+  private readonly resolveCell: ResolveCellStrategy;
+
+  /** Pass `resolveCell` only to use the built-in noop catalog (no `replicate_to_catalog` writes). */
+  constructor(resolveCell: ResolveCellStrategy);
+  constructor(catalog: CatalogPersistenceStrategy, resolveCell: ResolveCellStrategy);
   constructor(
-    private readonly catalog: CatalogPersistenceStrategy,
-    private readonly resolveCell: ResolveCellStrategy,
-  ) {}
+    catalogOrResolveCell: CatalogPersistenceStrategy | ResolveCellStrategy,
+    maybeResolveCell?: ResolveCellStrategy,
+  ) {
+    if (maybeResolveCell !== undefined) {
+      this.catalog = catalogOrResolveCell as CatalogPersistenceStrategy;
+      this.resolveCell = maybeResolveCell;
+    } else if (isResolveCellStrategy(catalogOrResolveCell)) {
+      this.catalog = defaultNoopCatalogPersistenceStrategy();
+      this.resolveCell = catalogOrResolveCell;
+    } else {
+      throw new Error(
+        "ColonnadePublicationClient: pass ResolveCellStrategy alone, or (CatalogPersistenceStrategy, ResolveCellStrategy)",
+      );
+    }
+  }
 
   async postOperation(input: PostOperationInput): Promise<PostOperationOutput> {
     const authorCell = this.resolveCell(input.author_cell_id);

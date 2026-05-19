@@ -1,5 +1,4 @@
 import { Database } from "bun:sqlite";
-import { SqliteCatalogPersistenceStrategy } from "@khoralabs/colonnade-persistence";
 import { ensurePrincipalTeardownJobsSchema } from "./principal-teardown-jobs.ts";
 
 /** Tier 1 relay catalog projections (JSON columns + expression indexes). */
@@ -55,16 +54,13 @@ export function applyRelaySqlitePragmas(db: Database): void {
   `);
 }
 
-/** Opens catalog DB and ensures colonnade catalog schema (via strategy constructor). */
-export function openRelayCatalogDb(path: string): {
-  db: Database;
-  catalogStrategy: SqliteCatalogPersistenceStrategy;
-} {
+/** Opens relay catalog DB (Tier 1 projections + edge tables). Does not create Colonnade pointer/discovery tables. */
+export function openRelayCatalogDb(path: string): Database {
   const db = new Database(path, { create: true });
-  const catalogStrategy = new SqliteCatalogPersistenceStrategy(db);
+  applyRelaySqlitePragmas(db);
   ensureRelayCatalogProjectionsSchema(db);
   ensurePrincipalTeardownJobsSchema(db);
-  return { db, catalogStrategy };
+  return db;
 }
 
 /** Relay frame-channel SQLite (separate file from catalog). */

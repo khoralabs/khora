@@ -206,4 +206,22 @@ describe("ColonnadePublicationClient", () => {
     expect(listed.entries.length).toBe(1);
     expect(listed.entries[0]?.staging.kind).toBe("pointer");
   });
+
+  test("resolveCell-only constructor uses noop catalog when replicate_to_catalog is false", async () => {
+    const cellA = new InMemoryCellPersistenceStrategy("cell-a");
+    const resolve: ResolveCellStrategy = (id) => {
+      if (id === "cell-a") return cellA;
+      throw new Error(`no cell ${id}`);
+    };
+    const pub = new ColonnadePublicationClient(resolve);
+    const res = await pub.postOperation({
+      author_principal_id: "alice",
+      author_cell_id: "cell-a",
+      tenant_key: "tenant",
+      payload_bytes: new TextEncoder().encode("{}"),
+      routing: { replicate_to_catalog: false, catalog_envelope: {}, fan_out_targets: [] },
+    });
+    expect(res.catalog_pointer_id).toBe("");
+    expect(res.outbox_record_key.length).toBeGreaterThan(0);
+  });
 });

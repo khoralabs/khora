@@ -32,15 +32,14 @@ export async function createAtriumHost(opts: {
 }): Promise<AtriumHostContext> {
   const cellPoolCount = opts.cellPoolCount ?? 16;
   const useCellWorkers = opts.useCellWorkers ?? true;
-  const { persistence, social, catalogDb, framesDb, projectionStore, subscriptionEdgeStore, principalChannelStore, tenantKey, catalogStrategy } =
+  const { persistence, social, catalogDb, framesDb, projectionStore, subscriptionEdgeStore, principalChannelStore, tenantKey } =
     await createRelayColonnadeSocial(opts);
   const cluster = createSqliteColonnadeCluster({
-    catalog: catalogStrategy,
     cellsDirectory: opts.cellsDir,
     mode: { kind: "pool", cellCount: cellPoolCount },
     useCellWorkers,
   });
-  const publicationClient = new ColonnadePublicationClient(cluster.catalog, cluster.resolveCell);
+  const publicationClient = new ColonnadePublicationClient(cluster.resolveCell);
   const seedTokens = parseInviteSeedTokens(process.env.ATRIUM_INVITE_SEED_TOKENS);
   validateInviteEnvConfig(seedTokens);
   const pepper = readInvitePepper();

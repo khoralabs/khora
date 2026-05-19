@@ -1,6 +1,5 @@
 import type { Database } from "bun:sqlite";
 import type { AgentRelayPersistence } from "@khoralabs/agent-relay";
-import type { SqliteCatalogPersistenceStrategy } from "@khoralabs/colonnade-persistence";
 import { RelayCatalogProjectionStore } from "./catalog-projection-store.ts";
 import { createRelayColonnadePersistenceFromDatabases } from "./relay-colonnade-persistence.ts";
 import { RelaySocialPrincipalChannelStore } from "./relay-social-principal-channel-store.ts";
@@ -22,10 +21,9 @@ export async function createRelayColonnadeSocial(opts: {
   subscriptionEdgeStore: RelaySubscriptionEdgeStore;
   principalChannelStore: RelaySocialPrincipalChannelStore;
   tenantKey: string;
-  catalogStrategy: SqliteCatalogPersistenceStrategy;
 }> {
   const tenantKey = opts.tenantKey ?? "relay";
-  const { db: catalogDb, catalogStrategy } = openRelayCatalogDb(opts.catalogPath);
+  const catalogDb = openRelayCatalogDb(opts.catalogPath);
   const framesDb = openRelayFramesDb(opts.framesDbPath);
   const projectionStore = new RelayCatalogProjectionStore(catalogDb);
   const subscriptionEdgeStore = new RelaySubscriptionEdgeStore(catalogDb);
@@ -47,6 +45,5 @@ export async function createRelayColonnadeSocial(opts: {
     subscriptionEdgeStore,
     principalChannelStore,
     tenantKey,
-    catalogStrategy,
   };
 }

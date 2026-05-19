@@ -21,6 +21,10 @@ export {
 export { InMemoryCatalogPersistenceStrategy } from "./in-memory-catalog-strategy.ts";
 export { InMemoryCellPersistenceStrategy } from "./in-memory-cell-strategy.ts";
 export {
+  defaultNoopCatalogPersistenceStrategy,
+  NoopCatalogPersistenceStrategy,
+} from "./noop-catalog-strategy.ts";
+export {
   encodeCatalogPointerId,
   parseCatalogPointerShardIndex,
 } from "./sqlite/catalog-pointer-id.ts";

@@ -4,6 +4,7 @@ import { join } from "node:path";
 
 import type { CatalogPersistenceStrategy } from "../catalog-persistence-strategy.ts";
 import type { CellPersistenceStrategy, ResolveCellStrategy } from "../cell-persistence-strategy.ts";
+import { defaultNoopCatalogPersistenceStrategy } from "../noop-catalog-strategy.ts";
 import { cellDbFilenameStem, derivePoolHomeCell, perPrincipalCellId } from "./principal-cell-id.ts";
 import { SqliteCellPersistenceStrategy } from "./sqlite-cell-strategy.ts";
 import { LazyWorkerBackedCellStrategy } from "./worker-backed-cell-strategy.ts";
@@ -13,8 +14,8 @@ export type SqliteColonnadeClusterMode =
   | { readonly kind: "per_principal" };
 
 export type SqliteColonnadeClusterOptions = {
-  /** Caller-owned catalog strategy (and its backing DB). */
-  readonly catalog: CatalogPersistenceStrategy;
+  /** Colonnade publication replication catalog; defaults to noop when omitted. */
+  readonly catalog?: CatalogPersistenceStrategy;
   readonly cellsDirectory: string;
   readonly mode: SqliteColonnadeClusterMode;
   /** One Bun **`Worker`** per opened cell (SQLite runs off the main thread). */
@@ -89,7 +90,7 @@ export function createSqliteColonnadeCluster(
   }
 
   return {
-    catalog: opts.catalog,
+    catalog: opts.catalog ?? defaultNoopCatalogPersistenceStrategy(),
     resolveCell,
     assignPrincipalToCell,
     close,

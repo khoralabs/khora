@@ -14,6 +14,7 @@ Three storage tiers for relay data. See [id-conventions.md](./id-conventions.md)
 - Use SQLite `JSON` column type; hot fields have expression indexes (username → principal, room creator).
 - Namespace constants live in `relay-id-conventions.ts`.
 - **Set indexes** (subscriptions, social principal→channel) use normalized edge tables — not JSON arrays in projections.
+- **No Colonnade publication catalog path** — `replicate_to_catalog: false`; `ColonnadePublicationClient` uses built-in noop when no strategy is passed (see `.idea/docs/colonnade.md` §3 two layers).
 
 ## Tier 2 — Author outbox (posts)
 
