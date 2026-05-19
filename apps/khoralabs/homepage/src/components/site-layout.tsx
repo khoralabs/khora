@@ -12,6 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 
 import handsBg from "../assets/hands.png";
+import skyBg from "../assets/khora_landing_sky.jpg";
 import logoUrl from "../assets/khora_logo_text_w.svg";
 
 function Root({ className, ...props }: ComponentProps<"div">) {
@@ -25,6 +26,30 @@ function BackgroundImage({ className, style, ...props }: ComponentProps<"div">) 
       aria-hidden
       className={cn("pointer-events-none fixed inset-0 bg-cover bg-center bg-no-repeat", className)}
       style={{ backgroundImage: `url(${handsBg})`, ...style }}
+    />
+  );
+}
+
+function SkyBackground({ className, style, ...props }: ComponentProps<"div">) {
+  return (
+    <div
+      {...props}
+      aria-hidden
+      className={cn("pointer-events-none fixed inset-0 bg-cover bg-center bg-no-repeat", className)}
+      style={{ backgroundImage: `url(${skyBg})`, ...style }}
+    />
+  );
+}
+
+function SkyBottomFade({ className, ...props }: ComponentProps<"div">) {
+  return (
+    <div
+      {...props}
+      aria-hidden
+      className={cn(
+        "pointer-events-none fixed inset-x-0 bottom-0 z-[1] h-[42vh] bg-gradient-to-t from-[#ffffff] to-transparent",
+        className,
+      )}
     />
   );
 }
@@ -97,6 +122,8 @@ function Footer({ className, children, ...props }: ComponentProps<"footer">) {
 export const SiteLayout = {
   Root,
   BackgroundImage,
+  SkyBackground,
+  SkyBottomFade,
   Noise,
   Frame,
   Header,

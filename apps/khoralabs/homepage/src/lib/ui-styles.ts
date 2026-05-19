@@ -111,3 +111,57 @@ export const mdxHrClass = "my-8 border-[#F4F4EF]/20";
 
 export const mdxBlockquoteClass =
   "my-4 border-l-2 border-[#F4F4EF]/30 pl-4 text-[#F4F4EF]/80 italic";
+
+// --- Landing page (light sky hero) ---
+
+/** Body, footer, form — Helvetica Neue. Headline uses `font-landing-serif` (Stratford). */
+export const landingSansClass =
+  "font-[Helvetica_Neue,Helvetica,Arial,sans-serif] font-normal tracking-[-0.01em]";
+
+export const landingShellClass = `relative min-h-dvh bg-transparent text-black antialiased ${landingSansClass}`;
+
+/** Grain overlay tuned for the light sky landing background. */
+export const landingNoiseProps = {
+  noiseOpacity: 0.3,
+  mixBlendMode: "soft-light" as const,
+  grainContrast: 1.45,
+};
+
+export const landingHeaderClass = "flex shrink-0 px-4 pt-4 md:px-6 md:pt-5";
+
+export const landingMainClass =
+  "flex flex-1 flex-col items-center justify-center px-3 py-6 text-center md:px-5 md:py-10";
+
+/** Hero block entrance: slide up + fade in on first paint. */
+export const landingHeroEnterClass =
+  "animate-landing-hero-in motion-reduce:animate-none motion-reduce:opacity-100";
+
+export const landingFooterClass = `flex shrink-0 flex-wrap items-end justify-between gap-2 px-4 pb-4 pt-2 text-xs text-black/80 md:px-6 md:pb-5 md:text-[13px] ${landingSansClass}`;
+
+export const landingFooterLinkClass =
+  "text-inherit no-underline transition-opacity hover:opacity-70";
+
+export const landingHeroTitleClass =
+  "font-landing-serif text-balance text-[2rem] font-normal leading-[0.896] md:text-[2.75rem] lg:text-[3.25rem] lg:leading-[0.88]";
+
+export const landingConfirmTitleClass =
+  "font-landing-serif text-balance text-[2rem] font-normal leading-[0.896] md:text-[2.75rem] lg:leading-[0.88]";
+
+export const landingConfirmMessageClass = `mt-4 text-pretty text-sm leading-[1.32] text-[#838383] md:text-[15px] md:leading-[1.36] ${landingSansClass}`;
+
+export const landingBodyClass = `text-pretty text-sm leading-[1.32] text-[#838383] md:text-[15px] md:leading-[1.36] ${landingSansClass}`;
+
+export const landingCtaLabelClass = `text-sm text-[#838383] md:text-[15px] ${landingSansClass}`;
+
+/** Inset pill email field on the sky hero (pairs with shadcn InputGroup + inline-end addon). */
+export const landingInputGroupShellClass =
+  "h-12 gap-0 rounded-full border-0 bg-[#8797B7]/30 p-2 text-white shadow-[inset_2px_3px_8px_rgba(0,0,0,0.12),inset_-1px_-1px_4px_#ffffff] ring-0 backdrop-blur-[2px] has-[[data-slot=input-group-control]:focus-visible]:shadow-[inset_2px_4px_10px_rgba(0,0,0,0.14),inset_-1px_-1px_4px_#ffffff] has-[[data-slot=input-group-control]:focus-visible]:ring-0 has-[>[data-align=inline-end]]:[&>input]:pr-0";
+
+export const landingInputGroupInnerClass = `h-full min-h-0 border-0 bg-transparent pl-3 text-sm text-white caret-white shadow-none transition-[color,box-shadow] placeholder:text-[#ffffff] focus:placeholder:!text-[#E0E7EE] focus-visible:placeholder:!text-[#E0E7EE] focus-visible:ring-0 md:text-[15px] ${landingSansClass}`;
+
+/** Reset shadcn inline-end addon padding/negative margin so the button sits in the pill cap. */
+export const landingInputGroupAddonClass =
+  "order-last h-full shrink-0 p-0 has-[>button]:!m-0";
+
+export const landingSubmitButtonClass =
+  "size-9 shrink-0 rounded-full border-0 bg-[#fafaf8] text-neutral-600 shadow-[0_2px_8px_rgba(0,0,0,0.12),0_1px_2px_rgba(0,0,0,0.08)] transition-[background-color,color,box-shadow] duration-300 ease-in-out hover:bg-[#2E2E2E] hover:text-[#ffffff] hover:shadow-[0_3px_10px_rgba(0,0,0,0.14)]";
