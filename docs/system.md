@@ -25,9 +25,9 @@ Colonnade catalog tables (`ensureCatalogSchema` in `/Users/zach/Documents/dev/kh
 - **Topics:** `relay:entity:topic` (same entity adapter pattern).
 - **Posts:** **not in catalog** — bodies live in author cell **outbox** only; ids are address-encoded (`atp1:…`). See Tier 2 in [`colonnade-usage.md`](/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/colonnade-usage.md).
 - **Registration:** `relay:reg:by-principal` → `{ profileId }`; `relay:reg:by-profile` → `{ principalId }`.
-- **Subscriptions:** `relay:subs:by-principal` → `{ subjects: string[] }`; `relay:subs:by-subject` → `{ principals: string[] }`.
+- **Subscriptions:** `relay_subscription_edges` — PK `(tenant_key, principal_id, subject)`; index on `(tenant_key, subject)`.
 - **Username index (global tenant):** `tenant_key = relay:username-index-global`, maps `relay:social:username-to-principal` / `relay:social:principal-to-username`.
-- **Social rooms (pairwise):** `relay:social:relationship`, `relay:social:relationships-by-principal`.
+- **Social rooms (pairwise):** `relay:social:relationship` projection bodies; principal→channel index in `relay_social_principal_channels`.
 - **Room registry:** `at2:room-registry` — `{ creatorDid, inviteTargetDid, expiresAtMs }`.
 - **Room link invites:** `at2:room-invite` — keyed by SHA-256 hex of join token.
 - **Per-principal delivery (cell inbox):** post fan-out (pointer → author outbox) and room tickets (inline JSON) on each principal's home cell.
@@ -111,7 +111,7 @@ Host builds `AtriumProfile` with **server-minted** `id: crypto.randomUUID()` (`c
 - **Server-minted** `roomId` (UUID) (`rooms.ts`).
 - **Registry row** (`at2:room-registry`): `creatorDid`, `inviteTargetDid` (nullable), `expiresAtMs`.
 - **Social graph** (`relay:social:relationship`): `channelId`, `creatorPrincipalId`, `peerPrincipalId` (null until bound), `createdAtMs`, optional `expiresAtMs`, optional `metadata` (`social-types.ts`, `social-relationship-persistence.ts`).
-- **Per-principal index** lists `channelIds` under `relay:social:relationships-by-principal`.
+- **Per-principal index** for social channels: `relay_social_principal_channels` (not a projection array).
 
 **Frame-channel “session” (transport)**
 
@@ -232,8 +232,9 @@ Tier 1 table: **`relay_catalog_projections`** — PK `(tenant_key, namespace, en
 | `relay:entity:profile` | profile id | `{ id, memoryId, bodyJson, updatedAtMs }` |
 | `relay:entity:topic` | topic id | entity shape |
 | `relay:reg:*` | did / profile id | registration links |
-| `relay:subs:*` | did / subject string | subscription sets |
-| `relay:social:*` | room id / did | social graph |
+| `relay:social:*` | room id / did | social graph (relationship bodies) |
+| `relay_subscription_edges` | principal + subject | subscription fan-out |
+| `relay_social_principal_channels` | principal + channel | social channel index |
 | `at2:room-registry` | room id | room metadata |
 | `at2:room-invite` | sha256(joinToken) | invite consumption |
 | `relay:social:username-to-principal` | normalized username | `{ principalId }` |

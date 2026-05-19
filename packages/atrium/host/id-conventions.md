@@ -19,12 +19,9 @@ Primary key: `(tenant_key, namespace, entry_key)`.
 | `relay:entity:topic` | topic entity id | `{ id, bodyJson, updatedAtMs }` |
 | `relay:reg:by-principal` | principal DID | `{ profileId }` |
 | `relay:reg:by-profile` | profile UUID | `{ principalId }` |
-| `relay:subs:by-principal` | principal DID | `{ subjects: string[] }` |
-| `relay:subs:by-subject` | subject string | `{ principals: string[] }` |
 | `relay:social:username-to-principal` | normalized username | `{ **principalId** }` |
 | `relay:social:principal-to-username` | principal DID | `{ username }` |
 | `relay:social:relationship` | channel id | relationship row |
-| `relay:social:relationships-by-principal` | principal DID | `{ channelIds: string[] }` |
 | `at2:room-registry` | room id | `{ **creatorDid**, inviteTargetDid, expiresAtMs }` |
 | `at2:room-invite` | SHA-256 hex of join token | invite metadata |
 
@@ -35,6 +32,15 @@ Primary key: `(tenant_key, namespace, entry_key)`.
 | `topic:{slug}` | `topic:rust` |
 | `author:{did}` | `author:did:plc:…` |
 | `author_topic:{did}\t{slug}` | tab-separated tuple |
+
+### Tier 1 — normalized edge tables (set indexes)
+
+| Table | Primary key | Index | Purpose |
+|-------|-------------|-------|---------|
+| `relay_subscription_edges` | `(tenant_key, principal_id, subject)` | `(tenant_key, subject)` | Subscription fan-out; replaces subs projection arrays |
+| `relay_social_principal_channels` | `(tenant_key, principal_id, channel_id)` | PK covers principal lookup | List channels per principal |
+
+Writes use `INSERT OR IGNORE` / `DELETE` — no JSON array RMW.
 
 ## Tier 2 — post + outbox ids
 

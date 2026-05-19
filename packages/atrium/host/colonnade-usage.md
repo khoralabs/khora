@@ -13,6 +13,7 @@ Three storage tiers for relay data. See [id-conventions.md](./id-conventions.md)
 - No Colonnade pointer columns — projection-only KV keyed by `(tenant_key, namespace, entry_key)`.
 - Use SQLite `JSON` column type; hot fields have expression indexes (username → principal, room creator).
 - Namespace constants live in `relay-id-conventions.ts`.
+- **Set indexes** (subscriptions, social principal→channel) use normalized edge tables — not JSON arrays in projections.
 
 ## Tier 2 — Author outbox (posts)
 

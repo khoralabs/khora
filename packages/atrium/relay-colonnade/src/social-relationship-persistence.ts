@@ -1,25 +1,11 @@
 import type { Database } from "bun:sqlite";
 import type { PrincipalId } from "@khoralabs/agent-relay";
 import type { RelayCatalogProjectionStore } from "./catalog-projection-store.ts";
-import {
-  RELAY_NAMESPACE_SOCIAL_RELATIONSHIP,
-  RELAY_NAMESPACE_SOCIAL_RELATIONSHIPS_BY_PRINCIPAL,
-} from "./relay-id-conventions.ts";
+import { RELAY_NAMESPACE_SOCIAL_RELATIONSHIP } from "./relay-id-conventions.ts";
+import type { RelaySocialPrincipalChannelStore } from "./relay-social-principal-channel-store.ts";
 import type { SocialRelationshipPersistence, SocialRelationshipRow } from "./social-types.ts";
 
 const NAMESPACE_RELATIONSHIP = RELAY_NAMESPACE_SOCIAL_RELATIONSHIP;
-const NAMESPACE_BY_PRINCIPAL = RELAY_NAMESPACE_SOCIAL_RELATIONSHIPS_BY_PRINCIPAL;
-
-function readChannelIds(projection: unknown): string[] {
-  if (projection === null || typeof projection !== "object" || Array.isArray(projection)) {
-    return [];
-  }
-  const raw = (projection as Record<string, unknown>).channelIds;
-  if (!Array.isArray(raw)) {
-    return [];
-  }
-  return raw.filter((x): x is string => typeof x === "string");
-}
 
 function parseRelationshipRow(
   projection: unknown,
@@ -54,45 +40,14 @@ function parseRelationshipRow(
   };
 }
 
-function upsertPrincipalIndex(
-  store: RelayCatalogProjectionStore,
-  tenantKey: string,
-  principalId: PrincipalId,
-  channelIds: string[],
-): void {
-  store.upsert({
-    tenant_key: tenantKey,
-    namespace: NAMESPACE_BY_PRINCIPAL,
-    entry_key: principalId,
-    projection: { channelIds },
-  });
-}
-
-function appendChannelForPrincipal(
-  store: RelayCatalogProjectionStore,
-  tenantKey: string,
-  principalId: PrincipalId,
-  channelId: string,
-): void {
-  const { found, projection } = store.lookupProjection(
-    tenantKey,
-    NAMESPACE_BY_PRINCIPAL,
-    principalId,
-  );
-  const prev = found ? readChannelIds(projection) : [];
-  if (prev.includes(channelId)) {
-    return;
-  }
-  upsertPrincipalIndex(store, tenantKey, principalId, [...prev, channelId]);
-}
-
 export function createSocialRelationshipPersistence(deps: {
   projectionStore: RelayCatalogProjectionStore;
+  principalChannelStore: RelaySocialPrincipalChannelStore;
   catalogDb: Database;
   framesDb: Database;
   tenantKey: string;
 }): SocialRelationshipPersistence {
-  const { projectionStore: store, catalogDb, framesDb, tenantKey } = deps;
+  const { projectionStore: store, principalChannelStore, catalogDb, framesDb, tenantKey } = deps;
 
   function getRelationshipImpl(channelId: string): SocialRelationshipRow | undefined {
     const { found, projection } = store.lookupProjection(
@@ -124,7 +79,7 @@ export function createSocialRelationshipPersistence(deps: {
           entry_key: params.channelId,
           projection: row,
         });
-        appendChannelForPrincipal(store, tenantKey, params.creatorPrincipalId, params.channelId);
+        principalChannelStore.insertChannel(tenantKey, params.creatorPrincipalId, params.channelId);
       })();
     },
 
@@ -167,7 +122,7 @@ export function createSocialRelationshipPersistence(deps: {
           entry_key: params.channelId,
           projection: next,
         });
-        appendChannelForPrincipal(store, tenantKey, params.peerPrincipalId, params.channelId);
+        principalChannelStore.insertChannel(tenantKey, params.peerPrincipalId, params.channelId);
       })();
     },
 
@@ -186,15 +141,7 @@ export function createSocialRelationshipPersistence(deps: {
     },
 
     listRelationshipsForPrincipal(principalId: PrincipalId): SocialRelationshipRow[] {
-      const { found, projection } = store.lookupProjection(
-        tenantKey,
-        NAMESPACE_BY_PRINCIPAL,
-        principalId,
-      );
-      if (!found) {
-        return [];
-      }
-      const ids = readChannelIds(projection);
+      const ids = principalChannelStore.listChannelIds(tenantKey, principalId);
       const out: SocialRelationshipRow[] = [];
       for (let i = ids.length - 1; i >= 0; i--) {
         const channelId = ids[i];
@@ -216,9 +163,9 @@ export function createSocialRelationshipPersistence(deps: {
       }
       catalogDb.transaction(() => {
         store.deleteRow(tenantKey, NAMESPACE_RELATIONSHIP, channelId);
-        stripChannelFromPrincipalSocialIndex(store, tenantKey, r.creatorPrincipalId, channelId);
+        principalChannelStore.deleteChannel(tenantKey, r.creatorPrincipalId, channelId);
         if (r.peerPrincipalId !== null) {
-          stripChannelFromPrincipalSocialIndex(store, tenantKey, r.peerPrincipalId, channelId);
+          principalChannelStore.deleteChannel(tenantKey, r.peerPrincipalId, channelId);
         }
       })();
       framesDb.prepare(`DELETE FROM room_frames WHERE channel_id = ?`).run(channelId);
@@ -228,31 +175,10 @@ export function createSocialRelationshipPersistence(deps: {
   };
 }
 
-function stripChannelFromPrincipalSocialIndex(
-  store: RelayCatalogProjectionStore,
-  tenantKey: string,
-  principalId: PrincipalId,
-  channelId: string,
-): void {
-  const { found, projection } = store.lookupProjection(
-    tenantKey,
-    NAMESPACE_BY_PRINCIPAL,
-    principalId,
-  );
-  if (!found) {
-    return;
-  }
-  const ids = readChannelIds(projection).filter((id) => id !== channelId);
-  if (ids.length === 0) {
-    store.deleteRow(tenantKey, NAMESPACE_BY_PRINCIPAL, principalId);
-    return;
-  }
-  upsertPrincipalIndex(store, tenantKey, principalId, ids);
-}
-
 /** Tear down frame-channel rows + catalog relationship entries for every room this principal participates in. */
 export function purgeSocialRelationshipsForPrincipal(params: {
   projectionStore: RelayCatalogProjectionStore;
+  principalChannelStore: RelaySocialPrincipalChannelStore;
   catalogDb: Database;
   framesDb: Database;
   tenantKey: string;

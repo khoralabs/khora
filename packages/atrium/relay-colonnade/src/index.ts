@@ -43,11 +43,19 @@ export {
   RELAY_NAMESPACE_SUBS_BY_PRINCIPAL,
   RELAY_NAMESPACE_SUBS_BY_SUBJECT,
   RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL,
+  RELAY_TABLE_SOCIAL_PRINCIPAL_CHANNELS,
+  RELAY_TABLE_SUBSCRIPTION_EDGES,
   SOURCE_PRINCIPAL_TO_USERNAME,
   SOURCE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
 } from "./relay-id-conventions.ts";
 export { registerAgentOnColonnadePersistence } from "./social-registration.ts";
+export {
+  RelaySocialPrincipalChannelStore,
+} from "./relay-social-principal-channel-store.ts";
+export {
+  RelaySubscriptionEdgeStore,
+} from "./relay-subscription-edge-store.ts";
 export { createSocialRelationshipPersistence } from "./social-relationship-persistence.ts";
 export type {
   SocialAgentIdentity,

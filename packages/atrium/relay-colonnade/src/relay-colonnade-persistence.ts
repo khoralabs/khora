@@ -4,6 +4,7 @@ import { createCatalogEntityAdapter } from "./catalog-entity-adapter.ts";
 import { RelayCatalogProjectionStore } from "./catalog-projection-store.ts";
 import { createCatalogRegistrationAdapter } from "./catalog-registration-adapter.ts";
 import { createCatalogSubscriptionAdapter } from "./catalog-subscription-adapter.ts";
+import { RelaySubscriptionEdgeStore } from "./relay-subscription-edge-store.ts";
 import { createFrameChannelHubPersistenceSqlite } from "./frame-channel-sqlite.ts";
 import {
   RELAY_NAMESPACE_ENTITY_PROFILE,
@@ -21,6 +22,7 @@ export function createRelayColonnadePersistenceFromDatabases(
   tenantKey = "relay",
 ): AgentRelayPersistence {
   const projectionStore = new RelayCatalogProjectionStore(catalogDb);
+  const subscriptionEdgeStore = new RelaySubscriptionEdgeStore(catalogDb);
   return {
     frameChannelHubPersistence: createFrameChannelHubPersistenceSqlite(framesDb),
     profiles: createCatalogEntityAdapter(
@@ -37,7 +39,7 @@ export function createRelayColonnadePersistenceFromDatabases(
     ),
     agentRegistrations: createCatalogRegistrationAdapter(projectionStore, catalogDb, tenantKey),
     agentSubjectSubscriptions: createCatalogSubscriptionAdapter(
-      projectionStore,
+      subscriptionEdgeStore,
       catalogDb,
       tenantKey,
     ),

@@ -25,6 +25,21 @@ export function ensureRelayCatalogProjectionsSchema(db: Database): void {
         json_extract(projection, '$.creatorDid')
       )
       WHERE namespace = 'at2:room-registry';
+    CREATE TABLE IF NOT EXISTS relay_subscription_edges (
+      tenant_key TEXT NOT NULL,
+      principal_id TEXT NOT NULL,
+      subject TEXT NOT NULL,
+      created_at_ms INTEGER NOT NULL,
+      PRIMARY KEY (tenant_key, principal_id, subject)
+    );
+    CREATE INDEX IF NOT EXISTS idx_relay_subscription_by_subject
+      ON relay_subscription_edges (tenant_key, subject);
+    CREATE TABLE IF NOT EXISTS relay_social_principal_channels (
+      tenant_key TEXT NOT NULL,
+      principal_id TEXT NOT NULL,
+      channel_id TEXT NOT NULL,
+      PRIMARY KEY (tenant_key, principal_id, channel_id)
+    );
   `);
 }
 

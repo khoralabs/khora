@@ -5,7 +5,6 @@ import {
   RELAY_CATALOG_REG_BY_PRINCIPAL,
   RELAY_CATALOG_REG_BY_PROFILE,
 } from "./catalog-registration-adapter.ts";
-import { RELAY_CATALOG_SUBS_BY_SUBJECT } from "./catalog-subscription-adapter.ts";
 import { insertPendingPrincipalTeardownJob } from "./principal-teardown-jobs.ts";
 import {
   RELAY_NAMESPACE_ENTITY_PROFILE,
@@ -13,6 +12,8 @@ import {
   RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
 } from "./relay-id-conventions.ts";
+import type { RelaySocialPrincipalChannelStore } from "./relay-social-principal-channel-store.ts";
+import type { RelaySubscriptionEdgeStore } from "./relay-subscription-edge-store.ts";
 import { purgeSocialRelationshipsForPrincipal } from "./social-relationship-persistence.ts";
 
 function readUsernameFromPrincipalMapProjection(projection: unknown): string | undefined {
@@ -96,6 +97,8 @@ export function phase1UnregisterColonnadePrincipal(p: {
 export function cascadeUnregisterColonnadePrincipalWithProfile(p: {
   persistence: AgentRelayPersistence;
   projectionStore: RelayCatalogProjectionStore;
+  subscriptionEdgeStore: RelaySubscriptionEdgeStore;
+  principalChannelStore: RelaySocialPrincipalChannelStore;
   catalogDb: Database;
   framesDb: Database;
   tenantKey: string;
@@ -110,13 +113,11 @@ export function cascadeUnregisterColonnadePrincipalWithProfile(p: {
     p.persistence.agentSubjectSubscriptions.unsubscribe(peer, authorSub);
   }
 
-  const tupleSubjects = p.projectionStore.listByPrefix(
+  const tupleSubjects = p.subscriptionEdgeStore.listSubjectsWithPrefix(
     p.tenantKey,
-    RELAY_CATALOG_SUBS_BY_SUBJECT,
     `author_topic:${p.principalId}\t`,
   );
-  for (const row of tupleSubjects) {
-    const subject = row.entry_key;
+  for (const subject of tupleSubjects) {
     const peers = [
       ...p.persistence.agentSubjectSubscriptions.subscriberPrincipalsForSubject(subject),
     ];
@@ -134,6 +135,7 @@ export function cascadeUnregisterColonnadePrincipalWithProfile(p: {
 
   purgeSocialRelationshipsForPrincipal({
     projectionStore: p.projectionStore,
+    principalChannelStore: p.principalChannelStore,
     catalogDb: p.catalogDb,
     framesDb: p.framesDb,
     tenantKey: p.tenantKey,
@@ -156,6 +158,8 @@ export function cascadeUnregisterColonnadePrincipalWithProfile(p: {
 export function cascadeUnregisterColonnadePrincipal(p: {
   persistence: AgentRelayPersistence;
   projectionStore: RelayCatalogProjectionStore;
+  subscriptionEdgeStore: RelaySubscriptionEdgeStore;
+  principalChannelStore: RelaySocialPrincipalChannelStore;
   catalogDb: Database;
   framesDb: Database;
   tenantKey: string;
