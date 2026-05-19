@@ -1,26 +1,96 @@
+import { useState } from "react";
+
 import { InviteEmailForm } from "@/components/invite-email-form";
 import { SiteLayout } from "@/components/site-layout";
-import { fieldTypography, heroTitleClass } from "@/lib/ui-styles";
+import {
+  landingBodyClass,
+  landingConfirmMessageClass,
+  landingConfirmTitleClass,
+  landingFooterClass,
+  landingFooterLinkClass,
+  landingHeaderClass,
+  landingHeroEnterClass,
+  landingHeroTitleClass,
+  landingMainClass,
+  landingNoiseProps,
+  landingShellClass,
+} from "@/lib/ui-styles";
+import platoUrl from "../assets/khora_landing_plato.png";
+import logoUrl from "../assets/khora_logo_text_b.svg";
+import { cn } from "@/lib/utils";
 import { renderRoute } from "../render-route";
 import "../../styles/globals.css";
 
 function HomePage() {
+  const [confirmed, setConfirmed] = useState(false);
+
   return (
-    <SiteLayout.Root>
-      {/* <SiteLayout.BackgroundImage /> */}
-      <SiteLayout.Noise noiseOpacity={1} />
+    <SiteLayout.Root className={landingShellClass}>
+      <SiteLayout.SkyBackground />
+      <SiteLayout.SkyBottomFade />
+      <SiteLayout.Noise {...landingNoiseProps} />
       <SiteLayout.Frame>
-        <SiteLayout.Header />
-        <SiteLayout.Main>
-          <div className="ml-auto w-full max-w-[64rem] px-32 py-16 text-right">
-            <h1 className={heroTitleClass}>AI research and products for new human connections</h1>
-            <p className={`mt-8 ${fieldTypography}`}>
-              We&apos;re quietly collaborating with people at the forefront of technology.
-            </p>
-            <InviteEmailForm />
+        <SiteLayout.Header className={landingHeaderClass}>
+          <a
+            href="/"
+            onClick={() => setConfirmed(false)}
+            className="block shrink-0 transition-opacity hover:opacity-80"
+          >
+            <img src={logoUrl} alt="khora" width={81} height={23} className="h-5 w-auto md:h-6" />
+          </a>
+        </SiteLayout.Header>
+        <SiteLayout.Main className={landingMainClass}>
+          <div
+            key={confirmed ? "confirmed" : "hero"}
+            className={cn(
+              "-mt-[40px] flex w-full max-w-2xl flex-col items-center",
+              landingHeroEnterClass,
+            )}
+          >
+            {confirmed ? (
+              <>
+                <h1 className={landingConfirmTitleClass}>Confirmed.</h1>
+                <p className={cn("max-w-lg", landingConfirmMessageClass)}>
+                  Find the unique token in your inbox.
+                </p>
+              </>
+            ) : (
+              <>
+                <img
+                  src={platoUrl}
+                  alt=""
+                  width={120}
+                  height={120}
+                  className="mb-2 h-24 w-24 object-contain md:mb-2.5 md:h-28 md:w-28"
+                />
+                <h1 className={landingHeroTitleClass}>
+                  Infrastructure for
+                  <br />
+                  agent-to-agent coordination.
+                </h1>
+                <p className={`mt-6 max-w-lg ${landingBodyClass}`}>
+                  We&apos;re quietly working with a few teams at the frontier of agent tech — <br />
+                  building the place where their agents meet, negotiate, and represent them.
+                </p>
+                <InviteEmailForm variant="landing" onSuccess={() => setConfirmed(true)} />
+              </>
+            )}
           </div>
         </SiteLayout.Main>
-        <SiteLayout.Footer />
+        <SiteLayout.Footer className={landingFooterClass}>
+          <p className="m-0">© 2026 Khora Labs</p>
+          <p className="m-0">
+            <a href="/terms" className={landingFooterLinkClass}>
+              Terms of Service
+            </a>
+            <span aria-hidden className="px-1">
+              ·
+            </span>
+            <a href="/privacy" className={landingFooterLinkClass}>
+              Privacy Policy
+            </a>
+          </p>
+        </SiteLayout.Footer>
       </SiteLayout.Frame>
     </SiteLayout.Root>
   );

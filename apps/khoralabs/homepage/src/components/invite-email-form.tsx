@@ -1,4 +1,4 @@
-import { Loader } from "lucide-react";
+import { ArrowRight, Loader } from "lucide-react";
 import type { FormEvent } from "react";
 import { useState } from "react";
 import {
@@ -13,16 +13,29 @@ import {
   inputGroupAddonTextClass,
   inputGroupInnerTypography,
   inputGroupShellClass,
+  landingCtaLabelClass,
+  landingInputGroupAddonClass,
+  landingInputGroupInnerClass,
+  landingInputGroupShellClass,
+  landingSubmitButtonClass,
 } from "@/lib/ui-styles";
+import { cn } from "@/lib/utils";
 
-export function InviteEmailForm() {
+type InviteEmailFormProps = {
+  variant?: "dark" | "landing";
+  onSuccess?: () => void;
+};
+
+export function InviteEmailForm({ variant = "dark", onSuccess }: InviteEmailFormProps) {
   const [pending, setPending] = useState(false);
+  const isLanding = variant === "landing";
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setPending(true);
     try {
       await new Promise((r) => setTimeout(r, 1500));
+      onSuccess?.();
     } finally {
       setPending(false);
     }
@@ -30,12 +43,22 @@ export function InviteEmailForm() {
 
   return (
     <form
-      className={`mt-3 ml-auto block w-full max-w-md ${fieldTypography}`}
+      className={cn(
+        "block w-full",
+        isLanding
+          ? "mx-auto mt-8 w-full max-w-[21rem]"
+          : `mt-3 ml-auto max-w-md ${fieldTypography}`,
+      )}
       onSubmit={onSubmit}
       aria-busy={pending}
     >
+      {isLanding ? (
+        <p className={cn("mb-2 text-center", landingCtaLabelClass)}>
+          Request an invite token for Atrium + Vellum.
+        </p>
+      ) : null}
       <InputGroup
-        className={inputGroupShellClass}
+        className={cn(isLanding ? landingInputGroupShellClass : inputGroupShellClass)}
         {...(pending ? { "data-disabled": true as const } : {})}
       >
         <InputGroupInput
@@ -44,20 +67,29 @@ export function InviteEmailForm() {
           required
           autoComplete="email"
           disabled={pending}
-          placeholder="Request an invite token"
-          aria-label="Request an invite token"
-          className={inputGroupInnerTypography}
+          placeholder={isLanding ? "Email" : "Request an invite token"}
+          aria-label={isLanding ? "Email" : "Request an invite token"}
+          className={cn(isLanding ? landingInputGroupInnerClass : inputGroupInnerTypography)}
         />
-        <InputGroupAddon align="inline-end" className={inputGroupAddonTextClass}>
+        <InputGroupAddon
+          align="inline-end"
+          className={cn(isLanding ? landingInputGroupAddonClass : inputGroupAddonTextClass)}
+        >
           <InputGroupButton
             type="submit"
             disabled={pending}
             variant="ghost"
-            size="sm"
-            className={inputGhostButtonClass}
+            size={isLanding ? "icon-sm" : "sm"}
+            className={cn(isLanding ? landingSubmitButtonClass : inputGhostButtonClass)}
             aria-label={pending ? "Sending request" : "Submit invite request"}
           >
-            {pending ? <Loader className="size-4 animate-spin" aria-hidden /> : "Submit"}
+            {pending ? (
+              <Loader className="size-4 animate-spin" aria-hidden />
+            ) : isLanding ? (
+              <ArrowRight className="size-4 stroke-[1.25] text-current" aria-hidden />
+            ) : (
+              "Submit"
+            )}
           </InputGroupButton>
         </InputGroupAddon>
       </InputGroup>

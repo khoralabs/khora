@@ -118,3 +118,35 @@
     @apply bg-background text-foreground;
   }
 }
+
+@font-face {
+  font-family: "Stratford";
+  src: url("../src/assets/fonts/Stratford-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Stratford";
+  src: url("../src/assets/fonts/Stratford-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@keyframes landing-hero-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@theme inline {
+  --font-landing-serif: "Stratford", "Times New Roman", serif;
+  --animate-landing-hero-in: landing-hero-slide-in 1s ease-in-out both;
+}
