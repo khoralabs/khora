@@ -15,9 +15,9 @@ import {
   landingNoiseProps,
   landingShellClass,
 } from "@/lib/ui-styles";
+import { cn } from "@/lib/utils";
 import platoUrl from "../assets/khora_landing_plato.png";
 import logoUrl from "../assets/khora_logo_text_b.svg";
-import { cn } from "@/lib/utils";
 import { renderRoute } from "../render-route";
 import "../../styles/globals.css";
 

@@ -160,8 +160,7 @@ export const landingInputGroupShellClass =
 export const landingInputGroupInnerClass = `h-full min-h-0 border-0 bg-transparent pl-3 text-sm text-white caret-white shadow-none transition-[color,box-shadow] placeholder:text-[#ffffff] focus:placeholder:!text-[#E0E7EE] focus-visible:placeholder:!text-[#E0E7EE] focus-visible:ring-0 md:text-[15px] ${landingSansClass}`;
 
 /** Reset shadcn inline-end addon padding/negative margin so the button sits in the pill cap. */
-export const landingInputGroupAddonClass =
-  "order-last h-full shrink-0 p-0 has-[>button]:!m-0";
+export const landingInputGroupAddonClass = "order-last h-full shrink-0 p-0 has-[>button]:!m-0";
 
 export const landingSubmitButtonClass =
   "size-9 shrink-0 rounded-full border-0 bg-[#fafaf8] text-neutral-600 shadow-[0_2px_8px_rgba(0,0,0,0.12),0_1px_2px_rgba(0,0,0,0.08)] transition-[background-color,color,box-shadow] duration-300 ease-in-out hover:bg-[#2E2E2E] hover:text-[#ffffff] hover:shadow-[0_3px_10px_rgba(0,0,0,0.14)]";
