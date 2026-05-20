@@ -1,5 +1,4 @@
 import { serve } from "bun";
-import { start } from "workflow/api";
 import { inviteWorkflow } from "./api/invite-workflow.ts";
 import blog from "./routes/blog/index.html";
 import contact from "./routes/contact/index.html";
@@ -16,7 +15,7 @@ import terms from "./routes/terms/index.html";
  *
  * Stores:
  *   - Email KV  : Valkey/Redis (disk-backed, AOF) via Bun.redis
- *   - Workflow  : Workflow SDK local world (.workflow-data/, filesystem)
+ *   - Pipeline  : inviteWorkflow() runs in-process (Workflow SDK `start()` needs Nitro)
  *
  * @sequence
  * ```mermaid
@@ -29,7 +28,7 @@ import terms from "./routes/terms/index.html";
  *   participant S as AWS SES
  *
  *   C->>B: POST /api/invite { email }
- *   B->>W: start(inviteWorkflow, [email])
+ *   B->>W: inviteWorkflow(email)
  *   W->>R: SET email NX (step: storeEmail)
  *   alt duplicate
  *     R-->>W: null (key exists)
@@ -63,14 +62,17 @@ async function handleInviteRequest(req: Request): Promise<Response> {
     return Response.json({ ok: true }, { status: 200 });
   }
 
-  void start(inviteWorkflow, [email]).catch((err: unknown) => {
+  void inviteWorkflow(email).catch((err: unknown) => {
     console.error("[invite] workflow failed:", err);
   });
 
   return Response.json({ ok: true }, { status: 200 });
 }
 
+const port = Number.parseInt(process.env.PORT ?? "3000", 10);
+
 const server = serve({
+  port: Number.isFinite(port) ? port : 3000,
   routes: {
     "/api/invite": {
       POST: handleInviteRequest,
