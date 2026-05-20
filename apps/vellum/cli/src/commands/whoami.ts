@@ -1,5 +1,5 @@
 import type { PersistableAgentSigner } from "@khoralabs/agent-persisted-signer";
-import { AtriumClient } from "@khoralabs/atrium-client";
+import { AtriumClient, AtriumClientError } from "@khoralabs/atrium-client";
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { boolFlag, style } from "@khoralabs/cli-kit";
 
@@ -30,7 +30,8 @@ export async function handleWhoami(flags: FlagMap): Promise<void> {
     return;
   }
 
-  const ac = new AtriumClient({ baseUrl: cliBaseUrl(flags), signer });
+  const baseUrl = cliBaseUrl(flags);
+  const ac = new AtriumClient({ baseUrl, signer });
   try {
     const result = await ac.lookupProfileByDid(signer.did);
     if (result === null) {
@@ -52,6 +53,16 @@ export async function handleWhoami(flags: FlagMap): Promise<void> {
     if (profile.bio !== undefined && profile.bio.trim().length > 0) {
       console.log(`Bio:       ${profile.bio}`);
     }
+  } catch (e) {
+    if (e instanceof AtriumClientError) {
+      console.error(style.error(`Host request failed: ${e.message}`));
+      console.error(style.muted(`base-url: ${baseUrl}`));
+      console.error(
+        style.muted("Use --no-fetch to print your local DID without contacting the host."),
+      );
+      process.exit(1);
+    }
+    throw e;
   } finally {
     ac.dispose();
   }

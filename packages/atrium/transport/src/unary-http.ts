@@ -188,6 +188,23 @@ export function createHttpAtriumUnaryTransport(
   };
 }
 
+function looksLikeHtml(text: string): boolean {
+  const head = text.trimStart().slice(0, 256).toLowerCase();
+  return (
+    head.startsWith("<!doctype html") ||
+    head.startsWith("<html") ||
+    (head.includes("<head") && head.includes("<body"))
+  );
+}
+
+function htmlErrorSummary(text: string, res: Response): string {
+  const title = /<title[^>]*>([^<]+)<\/title>/i.exec(text)?.[1]?.trim();
+  const h1 = /<h1[^>]*>([^<]+)<\/h1>/i.exec(text)?.[1]?.trim();
+  const detail = h1 ?? title;
+  const statusPart = `${res.status} ${res.statusText}`.trim();
+  return detail !== undefined && detail.length > 0 ? `${statusPart}: ${detail}` : statusPart;
+}
+
 export async function readErrorMessage(res: Response): Promise<string> {
   const text = await res.text();
   try {
@@ -195,6 +212,12 @@ export async function readErrorMessage(res: Response): Promise<string> {
     if (typeof j.error === "string" && j.error.length > 0) return j.error;
   } catch {
     /* ignore */
+  }
+  if (looksLikeHtml(text)) {
+    return htmlErrorSummary(text, res);
+  }
+  if (text.length > 400) {
+    return `${res.status} ${res.statusText}`.trim();
   }
   return text.length > 0 ? text : res.statusText;
 }
