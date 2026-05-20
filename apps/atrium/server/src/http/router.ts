@@ -11,6 +11,10 @@ import {
 } from "./authors.ts";
 import type { HostRouteDeps } from "./deps.ts";
 import { handleHealth, handleReady } from "./health.ts";
+import {
+  handleInternalAdminStatsPrincipal,
+  handleInternalAdminStatsSummary,
+} from "./internal-admin-stats.ts";
 import { handleInternalMintInvite } from "./internal-invite.ts";
 import { handleInvitePreview, handleListInvites } from "./invites.ts";
 import {
@@ -59,6 +63,14 @@ export async function route(
 
   if (req.method === "POST" && url.pathname === "/internal/mint-invite") {
     return handleInternalMintInvite(req, deps);
+  }
+
+  if (req.method === "GET" && url.pathname === "/internal/admin/stats/summary") {
+    return handleInternalAdminStatsSummary(req, deps);
+  }
+
+  if (req.method === "GET" && url.pathname === "/internal/admin/stats/principal") {
+    return handleInternalAdminStatsPrincipal(req, url, deps);
   }
 
   const ip = clientIpFromRequest(req);

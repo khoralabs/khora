@@ -2,6 +2,9 @@
 .memories
 .obp
 .atrium
+*.sqlite
+*.wal
+*.journal
 
 # dependencies (bun install)
 node_modules
