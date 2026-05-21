@@ -40,7 +40,7 @@ Three storage tiers for relay data. See [id-conventions.md](./id-conventions.md)
 
 - Post fan-out: **pointer** staging → author outbox (content-addressed verify on drain).
 - Room tickets: **inline** JSON staging (no pointer).
-- Deliverability: author registered + no active teardown job + outbox bytes available.
+- Deliverability: `ctx.principalLifecycle.isPostPointerDeliverable(authorDid)` — author registered + no active teardown job. Storage verification (ghost outbox, hash mismatch) stays in drain. See [`docs/principal-lifecycle.md`](../../docs/principal-lifecycle.md).
 
 ## Anti-patterns
 

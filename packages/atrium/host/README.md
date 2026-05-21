@@ -30,7 +30,7 @@ const ctx = await createAtriumHost({
 });
 ```
 
-`AtriumHostContext` exposes `host` (`AgentRelay`), `auth`, `cluster`, `publicationClient`, `social`, `projectionStore`, catalog DB handles, `principalTeardownWorker`, optional `invitesRepo`, and catalog helpers from `createAtriumCatalogApi` (username lookup, room registry rows, phase-1 unregister).
+`AtriumHostContext` exposes `host` (`AgentRelay`), `auth`, `cluster`, `publicationClient`, `principalLifecycle`, `social`, `projectionStore`, catalog DB handles, `principalTeardownWorker`, optional `invitesRepo`, and catalog helpers from `createAtriumCatalogApi` (username lookup, room registry rows, phase-1 unregister).
 
 ## Posts
 

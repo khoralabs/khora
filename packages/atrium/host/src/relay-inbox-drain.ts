@@ -8,7 +8,6 @@ import {
   resolveSourcemap,
   sha256HexLower,
 } from "@khoralabs/colonnade-persistence";
-import { relayInboxAuthorPointerDeliverable } from "@khoralabs/relay-colonnade";
 import type { AtriumHostContext } from "./context.ts";
 
 export type RelayInboxDrainItem = {
@@ -24,7 +23,7 @@ export async function popRelayInboxDrainItemsForDid(
   ctx: AtriumHostContext,
   did: string,
 ): Promise<RelayInboxDrainItem[]> {
-  const { cluster, tenantKey, catalogDb, host } = ctx;
+  const { cluster, tenantKey, principalLifecycle } = ctx;
   const cellId = cluster.assignPrincipalToCell(did);
   const cell = cluster.resolveCell(cellId);
   const list = await cell.listPendingInboxEntries({
@@ -91,13 +90,7 @@ export async function popRelayInboxDrainItemsForDid(
     const authorPrincipalId =
       typeof meta?.authorPrincipalId === "string" ? meta.authorPrincipalId : undefined;
 
-    if (
-      !relayInboxAuthorPointerDeliverable({
-        catalogDb,
-        persistence: host.persistence,
-        authorPrincipalId,
-      })
-    ) {
+    if (!principalLifecycle.isPostPointerDeliverable(authorPrincipalId)) {
       toDiscard.push(e.inbox_entry_id);
       continue;
     }

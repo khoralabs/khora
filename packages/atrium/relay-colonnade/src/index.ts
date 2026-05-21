@@ -7,14 +7,11 @@ export {
 export { createRelayColonnadeSocial } from "./create-relay-colonnade-social.ts";
 export { createFrameChannelHubPersistenceSqlite } from "./frame-channel-sqlite.ts";
 export {
-  type ClaimedPrincipalTeardownJob,
-  deletePrincipalTeardownJob,
-  ensurePrincipalTeardownJobsSchema,
-  insertPendingPrincipalTeardownJob,
-  principalHasActiveTeardownJob,
-  relayInboxAuthorPointerDeliverable,
-  tryClaimNextPendingPrincipalTeardownJob,
-} from "./principal-teardown-jobs.ts";
+  createRelayPrincipalLifecycle,
+  type RelayPrincipalLifecycle,
+  type RelayPrincipalLifecycleDeps,
+} from "./principal-lifecycle.ts";
+export { ensurePrincipalTeardownJobsSchema } from "./principal-teardown-jobs.ts";
 export {
   type PrincipalTeardownWorkerHandle,
   startPrincipalTeardownWorker,
@@ -59,11 +56,6 @@ export type {
   SocialRelationshipPersistence,
   SocialRelationshipRow,
 } from "./social-types.ts";
-export {
-  cascadeUnregisterColonnadePrincipal,
-  cascadeUnregisterColonnadePrincipalWithProfile,
-  phase1UnregisterColonnadePrincipal,
-} from "./social-unregister.ts";
 export {
   applyRelaySqlitePragmas,
   ensureRelayCatalogProjectionsSchema,

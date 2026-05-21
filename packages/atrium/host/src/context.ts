@@ -10,6 +10,7 @@ import type {
 import type {
   PrincipalTeardownWorkerHandle,
   RelayCatalogProjectionStore,
+  RelayPrincipalLifecycle,
   SocialRelationshipPersistence,
 } from "@khoralabs/relay-colonnade";
 import type { AtriumHostCatalogApi } from "./catalog-facade.ts";
@@ -28,6 +29,7 @@ export type AtriumHostContext = {
   cluster: SqliteColonnadeCluster;
   publicationClient: ColonnadePublicationClient;
   cellPoolCount: number;
+  principalLifecycle: RelayPrincipalLifecycle;
   social: SocialRelationshipPersistence;
   roomLifecycle?: (event: AtriumRoomLifecycleHostEvent) => void;
   invitesRepo: AtriumInvitesRepo | undefined;

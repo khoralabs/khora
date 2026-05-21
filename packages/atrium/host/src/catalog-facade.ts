@@ -2,12 +2,12 @@ import type { Database } from "bun:sqlite";
 import type { AgentRelayPersistence } from "@khoralabs/agent-relay";
 import { normalizeUsername } from "@khoralabs/atrium-contracts";
 import {
-  phase1UnregisterColonnadePrincipal,
   RELAY_NAMESPACE_PRINCIPAL_TO_USERNAME,
   RELAY_NAMESPACE_ROOM_INVITE,
   RELAY_NAMESPACE_ROOM_REGISTRY,
   RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL,
   type RelayCatalogProjectionStore,
+  type RelayPrincipalLifecycle,
   registerAgentOnColonnadePersistence,
   SOURCE_PRINCIPAL_TO_USERNAME,
   SOURCE_USERNAME_TO_PRINCIPAL,
@@ -43,8 +43,9 @@ export function createAtriumCatalogApi(deps: {
   projectionStore: RelayCatalogProjectionStore;
   catalogDb: Database;
   tenantKey: string;
+  principalLifecycle: RelayPrincipalLifecycle;
 }): AtriumHostCatalogApi {
-  const { persistence, projectionStore, catalogDb, tenantKey } = deps;
+  const { persistence, projectionStore, catalogDb, tenantKey, principalLifecycle } = deps;
 
   function lookupPrincipalIdByNormalizedUsername(normalized: string): string | undefined {
     const hit = projectionStore.lookupProjection(
@@ -116,13 +117,7 @@ export function createAtriumCatalogApi(deps: {
       });
     },
     phase1UnregisterPrincipal(principalId) {
-      phase1UnregisterColonnadePrincipal({
-        persistence,
-        projectionStore,
-        catalogDb,
-        tenantKey,
-        principalId,
-      });
+      principalLifecycle.enqueueTeardown(principalId);
     },
     upsertRoomRegistryRow(roomId, projection) {
       projectionStore.upsert({

@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { AgentRelayPersistence, PrincipalId } from "@khoralabs/agent-relay";
+import type { PrincipalId } from "@khoralabs/agent-relay";
 
 export type PrincipalTeardownJobState = "pending" | "running" | "completed" | "failed";
 
@@ -88,25 +88,4 @@ export function markPrincipalTeardownJobPendingAfterFailure(
      SET state = 'pending', updated_at_ms = ?, last_error = ?
      WHERE did = ?`,
   ).run(nowMs, lastError, did);
-}
-
-/**
- * Deliver cell inbox post pointer only when the author is registered and not in a teardown job.
- */
-export function relayInboxAuthorPointerDeliverable(p: {
-  catalogDb: Database;
-  persistence: AgentRelayPersistence;
-  authorPrincipalId: PrincipalId | undefined;
-}): boolean {
-  const did = p.authorPrincipalId;
-  if (did === undefined || did.length === 0) {
-    return false;
-  }
-  if (!p.persistence.agentRegistrations.exists(did)) {
-    return false;
-  }
-  if (principalHasActiveTeardownJob(p.catalogDb, did)) {
-    return false;
-  }
-  return true;
 }

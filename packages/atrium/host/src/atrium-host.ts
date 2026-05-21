@@ -8,6 +8,7 @@ import {
 } from "@khoralabs/colonnade-persistence";
 import {
   createRelayColonnadeSocial,
+  createRelayPrincipalLifecycle,
   startPrincipalTeardownWorker,
 } from "@khoralabs/relay-colonnade";
 import { createAtriumCatalogApi } from "./catalog-facade.ts";
@@ -48,6 +49,16 @@ export async function createAtriumHost(opts: {
     useCellWorkers,
   });
   const publicationClient = new ColonnadePublicationClient(cluster.resolveCell);
+  const principalLifecycle = createRelayPrincipalLifecycle({
+    catalogDb,
+    framesDb,
+    projectionStore,
+    subscriptionEdgeStore,
+    principalChannelStore,
+    persistence,
+    tenantKey,
+    cluster,
+  });
   const seedTokens = parseInviteSeedTokens(process.env.ATRIUM_INVITE_SEED_TOKENS);
   validateInviteEnvConfig(seedTokens);
   const pepper = readInvitePepper();
@@ -85,19 +96,11 @@ export async function createAtriumHost(opts: {
     projectionStore,
     catalogDb,
     tenantKey,
+    principalLifecycle,
   });
   const runTeardownWorker = opts.startPrincipalTeardownWorker ?? true;
   const principalTeardownWorker = runTeardownWorker
-    ? startPrincipalTeardownWorker({
-        catalogDb,
-        framesDb,
-        projectionStore,
-        subscriptionEdgeStore,
-        principalChannelStore,
-        persistence,
-        tenantKey,
-        cluster,
-      })
+    ? startPrincipalTeardownWorker({ lifecycle: principalLifecycle })
     : { stop(): void {} };
   return {
     host,
@@ -112,6 +115,7 @@ export async function createAtriumHost(opts: {
     cluster,
     publicationClient,
     cellPoolCount,
+    principalLifecycle,
     ...catalogApi,
     principalTeardownWorker,
     ...(opts.roomLifecycle !== undefined ? { roomLifecycle: opts.roomLifecycle } : {}),

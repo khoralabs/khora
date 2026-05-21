@@ -36,7 +36,7 @@ The relay catalog file holds **Atrium-specific tables only** (not Colonnade `dis
 
 **Extra catalog tables** on the same DB file:
 
-- **`principal_teardown_jobs`** (`/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/relay-colonnade/src/principal-teardown-jobs.ts`): `did` (PK), `profile_id`, `state`, `enqueued_at_ms`, `updated_at_ms`, `attempt_count`, `last_error`.
+- **`principal_teardown_jobs`**: durable unregister queue; policy and orchestration in [`docs/principal-lifecycle.md`](/Users/zach/Documents/dev/khora-labs/khora/docs/principal-lifecycle.md) (`RelayPrincipalLifecycle`). Columns: `did` (PK), `profile_id`, `state`, `enqueued_at_ms`, `updated_at_ms`, `attempt_count`, `last_error`.
 - **`at2_invite_tokens`** (if invites enabled) (`/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/src/invites/schema.ts`): `token_hash` (PK), `created_at_ms`, `consumed_at_ms`, `consumed_by_did`, `minted_by_did`, `kind`.
 - **Auth nonces:** `agent_request_nonces` (`/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/auth/src/sqlite-nonce-store.ts`): `did`, `nonce`, `expires_at_ms` (PK `(did, nonce)`).
 
