@@ -1,7 +1,7 @@
 import "./load-env.ts";
 import { ensureAuthSchema } from "@khoralabs/atrium-console-auth";
 import { serve } from "bun";
-import { handleAdminStatsPrincipal, handleAdminStatsSummary } from "./api/admin-stats.ts";
+import { handleAdminStatsCell, handleAdminStatsPrincipal, handleAdminStatsSummary } from "./api/admin-stats.ts";
 import admin from "./routes/admin/index.html";
 import index from "./routes/index.html";
 import login from "./routes/login/index.html";
@@ -21,6 +21,9 @@ const server = serve({
     },
     "/api/admin/stats/principal": {
       GET: handleAdminStatsPrincipal,
+    },
+    "/api/admin/stats/cell": {
+      GET: handleAdminStatsCell,
     },
     "/login": login,
     "/login/": login,

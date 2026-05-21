@@ -15,6 +15,7 @@
     "@khoralabs/atrium-contracts": "workspace:*",
     "@khoralabs/atrium-host": "workspace:*",
     "@khoralabs/atrium-transport": "workspace:*",
+    "@khoralabs/colonnade-persistence": "workspace:*",
     "@khoralabs/duplex-byte-stream": "workspace:*",
     "pino": "^10.3.1",
     "zod": "^4"

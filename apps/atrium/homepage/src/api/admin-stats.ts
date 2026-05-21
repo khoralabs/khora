@@ -55,3 +55,16 @@ export async function handleAdminStatsPrincipal(req: Request): Promise<Response>
     );
   });
 }
+
+export async function handleAdminStatsCell(req: Request): Promise<Response> {
+  return withAdmin(req, async () => {
+    const url = new URL(req.url);
+    const cellId = url.searchParams.get("cellId")?.trim() ?? "";
+    if (cellId.length === 0) {
+      return Response.json({ error: "Missing cellId query parameter" }, { status: 400 });
+    }
+    return proxyJson(
+      `/internal/admin/stats/cell?cellId=${encodeURIComponent(cellId)}`,
+    );
+  });
+}

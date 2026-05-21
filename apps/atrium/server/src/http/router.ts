@@ -12,6 +12,7 @@ import {
 import type { HostRouteDeps } from "./deps.ts";
 import { handleHealth, handleReady } from "./health.ts";
 import {
+  handleInternalAdminStatsCell,
   handleInternalAdminStatsPrincipal,
   handleInternalAdminStatsSummary,
 } from "./internal-admin-stats.ts";
@@ -71,6 +72,10 @@ export async function route(
 
   if (req.method === "GET" && url.pathname === "/internal/admin/stats/principal") {
     return handleInternalAdminStatsPrincipal(req, url, deps);
+  }
+
+  if (req.method === "GET" && url.pathname === "/internal/admin/stats/cell") {
+    return handleInternalAdminStatsCell(req, url, deps);
   }
 
   const ip = clientIpFromRequest(req);
