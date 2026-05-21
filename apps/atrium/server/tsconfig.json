@@ -2,7 +2,10 @@
   "extends": "../../../tsconfig.json",
   "compilerOptions": {
     "lib": ["ESNext", "DOM"],
+    "jsx": "react-jsx",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
     "types": ["bun"]
   },
-  "include": ["src/**/*.ts", "scripts/**/*.ts"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "scripts/**/*.ts"]
 }

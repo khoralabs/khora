@@ -1,7 +1,10 @@
+import { createConsoleAuthFromEnv } from "@khoralabs/atrium-console";
 import { mkdirSync, unlinkSync } from "node:fs";
 import { dirname } from "node:path";
 import { type AtriumHostContext, createAtriumHost } from "@khoralabs/atrium-host";
 import type { AtriumWsData } from "@khoralabs/atrium-transport";
+import adminPage from "./admin-ui/routes/admin/index.html";
+import adminLoginPage from "./admin-ui/routes/login/index.html";
 import {
   envCatalogPath,
   envCellPoolCount,
@@ -43,12 +46,29 @@ const ctx: AtriumHostContext = await createAtriumHost({
   ...(tenantKey !== undefined ? { tenantKey } : {}),
 });
 
-const deps: HostRouteDeps = { ctx, rateLimiters: createV2HostRateLimiters() };
+const consoleAuth = createConsoleAuthFromEnv();
+if (consoleAuth === null) {
+  logger.info("Admin console disabled (set ATRIUM_CONSOLE_ROOT_TOKEN to enable)");
+} else {
+  logger.info("Admin console enabled at /admin");
+}
+
+const deps: HostRouteDeps = {
+  ctx,
+  rateLimiters: createV2HostRateLimiters(),
+  consoleAuth,
+};
 const inboxWsHandlers = createInboxDrainWebSocketHandlers({ ctx });
 const roomWsHandlers = at2FrameChannelWsHandlers(ctx);
 
 const server = Bun.serve<AtriumWsData>({
   port: envPort(),
+  routes: {
+    "/admin": adminPage,
+    "/admin/": adminPage,
+    "/admin/login": adminLoginPage,
+    "/admin/login/": adminLoginPage,
+  },
   async fetch(req) {
     const url = new URL(req.url);
     try {
@@ -58,6 +78,10 @@ const server = Bun.serve<AtriumWsData>({
       logger.error({ err }, "unhandled fetch error");
       return new Response("Internal server error", { status: 500 });
     }
+  },
+  development: process.env.NODE_ENV !== "production" && {
+    hmr: true,
+    console: true,
   },
   websocket: {
     open(ws) {
@@ -111,7 +135,6 @@ if (duplexMode === "unix") {
 function shutdown(signal: NodeJS.Signals): void {
   logger.info({ signal }, "draining and shutting down");
 
-  // Force-exit if graceful drain takes too long.
   setTimeout(() => {
     logger.error("shutdown timeout; forcing exit");
     process.exit(1);
@@ -128,7 +151,6 @@ function shutdown(signal: NodeJS.Signals): void {
     /* ignore */
   }
   try {
-    // false = finish in-flight requests before closing
     server.stop(false);
   } catch {
     /* already stopped */

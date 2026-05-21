@@ -165,6 +165,7 @@ function deps(overrides?: Partial<AtriumHostContext>): HostRouteDeps {
       ...overrides,
     } as unknown as AtriumHostContext,
     rateLimiters: {} as HostRouteDeps["rateLimiters"],
+    consoleAuth: null,
   };
 }
 

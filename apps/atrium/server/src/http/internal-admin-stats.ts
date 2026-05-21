@@ -326,13 +326,7 @@ function requireInternalAuth(req: Request): Response | undefined {
   return undefined;
 }
 
-export function handleInternalAdminStatsSummary(
-  req: Request,
-  deps: HostRouteDeps,
-): Response {
-  const denied = requireInternalAuth(req);
-  if (denied !== undefined) return denied;
-
+export function adminStatsSummaryResponse(deps: HostRouteDeps): Response {
   const { catalogDb, framesDb, tenantKey } = deps.ctx;
   const registeredUsers = (
     catalogDb
@@ -353,40 +347,15 @@ export function handleInternalAdminStatsSummary(
   });
 }
 
-export function handleInternalAdminStatsCell(
-  req: Request,
-  url: URL,
-  deps: HostRouteDeps,
-): Response {
-  const denied = requireInternalAuth(req);
-  if (denied !== undefined) return denied;
-
-  const cellId = url.searchParams.get("cellId")?.trim() ?? "";
-  if (cellId.length === 0) {
-    return jsonError("Missing cellId query parameter", 400);
-  }
-
+export function adminStatsCellResponse(deps: HostRouteDeps, cellId: string): Response {
   const poolCount = deps.ctx.cellPoolCount;
   if (!isValidPoolCellId(cellId, poolCount)) {
     return jsonError("Invalid cellId", 400);
   }
-
   return Response.json(cellDetailStats(deps, cellId));
 }
 
-export function handleInternalAdminStatsPrincipal(
-  req: Request,
-  url: URL,
-  deps: HostRouteDeps,
-): Response {
-  const denied = requireInternalAuth(req);
-  if (denied !== undefined) return denied;
-
-  const did = url.searchParams.get("did")?.trim() ?? "";
-  if (did.length === 0) {
-    return jsonError("Missing did query parameter", 400);
-  }
-
+export function adminStatsPrincipalResponse(deps: HostRouteDeps, did: string): Response {
   const { ctx } = deps;
   const { catalogDb, tenantKey, cluster } = ctx;
 
@@ -421,4 +390,45 @@ export function handleInternalAdminStatsPrincipal(
     subscriptionCount,
     cellId,
   });
+}
+
+export function handleInternalAdminStatsSummary(
+  req: Request,
+  deps: HostRouteDeps,
+): Response {
+  const denied = requireInternalAuth(req);
+  if (denied !== undefined) return denied;
+  return adminStatsSummaryResponse(deps);
+}
+
+export function handleInternalAdminStatsCell(
+  req: Request,
+  url: URL,
+  deps: HostRouteDeps,
+): Response {
+  const denied = requireInternalAuth(req);
+  if (denied !== undefined) return denied;
+
+  const cellId = url.searchParams.get("cellId")?.trim() ?? "";
+  if (cellId.length === 0) {
+    return jsonError("Missing cellId query parameter", 400);
+  }
+
+  return adminStatsCellResponse(deps, cellId);
+}
+
+export function handleInternalAdminStatsPrincipal(
+  req: Request,
+  url: URL,
+  deps: HostRouteDeps,
+): Response {
+  const denied = requireInternalAuth(req);
+  if (denied !== undefined) return denied;
+
+  const did = url.searchParams.get("did")?.trim() ?? "";
+  if (did.length === 0) {
+    return jsonError("Missing did query parameter", 400);
+  }
+
+  return adminStatsPrincipalResponse(deps, did);
 }

@@ -12,6 +12,12 @@ import {
 import type { HostRouteDeps } from "./deps.ts";
 import { handleHealth, handleReady } from "./health.ts";
 import {
+  handleAdminStatsCell,
+  handleAdminStatsPrincipal,
+  handleAdminStatsSummary,
+} from "./admin-stats.ts";
+import { routeConsoleAuth } from "./console-guard.ts";
+import {
   handleInternalAdminStatsCell,
   handleInternalAdminStatsPrincipal,
   handleInternalAdminStatsSummary,
@@ -76,6 +82,21 @@ export async function route(
 
   if (req.method === "GET" && url.pathname === "/internal/admin/stats/cell") {
     return handleInternalAdminStatsCell(req, url, deps);
+  }
+
+  const consoleRoute = await routeConsoleAuth(req, url, deps.consoleAuth);
+  if (consoleRoute !== undefined) return consoleRoute;
+
+  if (req.method === "GET" && url.pathname === "/admin/api/stats/summary") {
+    return handleAdminStatsSummary(req, deps);
+  }
+
+  if (req.method === "GET" && url.pathname === "/admin/api/stats/principal") {
+    return handleAdminStatsPrincipal(req, url, deps);
+  }
+
+  if (req.method === "GET" && url.pathname === "/admin/api/stats/cell") {
+    return handleAdminStatsCell(req, url, deps);
   }
 
   const ip = clientIpFromRequest(req);

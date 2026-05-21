@@ -11,6 +11,7 @@ describe("handleInternalMintInvite", () => {
       const deps = {
         ctx: { invitesRepo: undefined } as unknown as AtriumHostContext,
         rateLimiters: {} as HostRouteDeps["rateLimiters"],
+        consoleAuth: null,
       };
       const res = await handleInternalMintInvite(new Request("http://x/internal/mint-invite"), deps);
       expect(res.status).toBe(401);

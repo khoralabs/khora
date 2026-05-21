@@ -1,30 +1,36 @@
-import { authClient } from "@khoralabs/atrium-console-auth/client";
 import { AdminStats } from "@khoralabs/atrium-react";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "../../components/ui/button.tsx";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { renderRoute } from "../../render-route";
-import "../../../styles/globals.css";
+} from "../../components/ui/card.tsx";
+import { renderRoute } from "../../render-route.tsx";
+import "../../styles/globals.css";
 
 function AdminPage() {
-  const { data: session, isPending, error: sessionError } = authClient.useSession();
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [selectedCellId, setSelectedCellId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isPending || sessionError) return;
-    if (session?.user == null) {
-      const next = encodeURIComponent("/admin");
-      window.location.href = `/login?next=${next}`;
-    }
-  }, [session, isPending, sessionError]);
+    void (async () => {
+      try {
+        const res = await fetch("/admin/api/session");
+        setAuthenticated(res.ok);
+        if (!res.ok) {
+          window.location.href = "/admin/login";
+        }
+      } catch {
+        setAuthenticated(false);
+        window.location.href = "/admin/login";
+      }
+    })();
+  }, []);
 
-  if (isPending || session?.user == null) {
+  if (authenticated !== true) {
     return (
       <main className="mx-auto min-h-dvh max-w-2xl p-6">
         <p className="text-sm text-muted-foreground">Loading session…</p>
@@ -37,15 +43,13 @@ function AdminPage() {
       <header className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Atrium Admin</h1>
-          <p className="text-sm text-muted-foreground">{session.user.email}</p>
+          <p className="text-sm text-muted-foreground">Host console</p>
         </div>
         <Button
           type="button"
-          variant="outline"
-          size="sm"
           onClick={async () => {
-            await authClient.signOut();
-            window.location.href = "/login";
+            await fetch("/admin/api/logout", { method: "POST" });
+            window.location.href = "/admin/login";
           }}
         >
           Sign out
@@ -53,6 +57,7 @@ function AdminPage() {
       </header>
 
       <AdminStats.Root
+        baseUrl="/admin/api/stats"
         className="space-y-6"
         selectedCellId={selectedCellId}
         onSelectedCellIdChange={setSelectedCellId}
@@ -101,7 +106,7 @@ function AdminPage() {
           </CardHeader>
           <CardContent>
             <AdminStats.PrincipalLookup className="space-y-4">
-              <AdminStats.PrincipalLookupForm className="flex gap-2 [&_input]:min-w-0 [&_input]:flex-1 [&_input]:rounded-md [&_input]:border [&_input]:bg-background [&_input]:px-3 [&_input]:py-2 [&_input]:font-mono [&_input]:text-sm" />
+              <AdminStats.PrincipalLookupForm className="flex gap-2 [&_input]:min-w-0 [&_input]:flex-1 [&_input]:rounded-md [&_input]:border [&_input]:bg-background [&_input]:px-3 [&_input]:py-2 [&_input]:font-mono [&_input]:text-sm [&_button]:rounded-md [&_button]:border [&_button]:bg-background [&_button]:px-3 [&_button]:py-2 [&_button]:text-sm" />
               <AdminStats.PrincipalLookupResult className="grid gap-2 text-sm [&_dt]:text-muted-foreground [&_dd]:font-mono [&_dd:last-child]:text-xs" />
             </AdminStats.PrincipalLookup>
           </CardContent>

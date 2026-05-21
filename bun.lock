@@ -20,8 +20,6 @@
       "name": "@khoralabs/atrium-homepage",
       "version": "0.1.0",
       "dependencies": {
-        "@khoralabs/atrium-console-auth": "workspace:*",
-        "@khoralabs/atrium-react": "workspace:*",
         "@radix-ui/react-label": "^2.1.7",
         "@radix-ui/react-select": "^2.2.6",
         "@radix-ui/react-slot": "^1.2.3",
@@ -50,16 +48,26 @@
       "dependencies": {
         "@khoralabs/agent-relay": "workspace:*",
         "@khoralabs/atrium-auth": "workspace:*",
+        "@khoralabs/atrium-console": "workspace:*",
         "@khoralabs/atrium-contracts": "workspace:*",
         "@khoralabs/atrium-host": "workspace:*",
+        "@khoralabs/atrium-react": "workspace:*",
         "@khoralabs/atrium-transport": "workspace:*",
         "@khoralabs/colonnade-persistence": "workspace:*",
         "@khoralabs/duplex-byte-stream": "workspace:*",
+        "bun-plugin-tailwind": "^0.1.2",
+        "clsx": "^2.1.1",
         "pino": "^10.3.1",
+        "react": "^19",
+        "react-dom": "^19",
+        "tailwind-merge": "^3.3.1",
         "zod": "^4",
       },
       "devDependencies": {
         "@types/bun": "latest",
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "tailwindcss": "^4.1.11",
         "typescript": "^5",
       },
     },
@@ -279,6 +287,14 @@
         "typescript": "^5",
       },
       "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/atrium/console": {
+      "name": "@khoralabs/atrium-console",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@types/bun": "latest",
         "typescript": "^5",
       },
     },
@@ -1087,6 +1103,8 @@
     "@khoralabs/atrium-auth": ["@khoralabs/atrium-auth@workspace:packages/atrium/auth"],
 
     "@khoralabs/atrium-client": ["@khoralabs/atrium-client@workspace:packages/atrium/client"],
+
+    "@khoralabs/atrium-console": ["@khoralabs/atrium-console@workspace:packages/atrium/console"],
 
     "@khoralabs/atrium-console-auth": ["@khoralabs/atrium-console-auth@workspace:packages/atrium/console-auth"],
 
