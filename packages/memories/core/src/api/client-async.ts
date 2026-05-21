@@ -11,7 +11,8 @@ import {
 } from "./merge-memory-async";
 import type { OntologyDefinition } from "./ontology";
 import { validateEdgeLabel, validateNodeLabel } from "./ontology";
-import type { ResolvedSource, Store } from "./resolve-sourcemap.js";
+import type { ResolvedSource } from "@khoralabs/sourcemaps";
+import type { Store } from "./resolve-sourcemap.js";
 import {
   type SearchHit,
   type SearchParams,

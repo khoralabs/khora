@@ -1,12 +1,11 @@
 import { appendFileSync, mkdirSync, readFileSync, statSync } from "node:fs";
 import { dirname } from "node:path";
 import type {
-  DefaultEntityMap,
-  ResolvedSource,
   ResolvedSourceMapLine,
   SourceMap,
   Store,
 } from "@khoralabs/memories-core";
+import type { DefaultEntityMap, ResolvedSource } from "@khoralabs/sourcemaps";
 import type { TextFeatureExportRow } from "@khoralabs/memories-core/persistence";
 
 function storeKey(memoryId: string, sourceKey: string): string {
@@ -20,13 +19,13 @@ function lineToResolved(line: ResolvedSourceMapLine): ResolvedSource<DefaultEnti
   if (
     line.kind === "record" &&
     typeof line.domain === "string" &&
-    typeof line.entityId === "string" &&
+    typeof line.entity_id === "string" &&
     typeof line.json === "string"
   ) {
     return {
       kind: "record",
       domain: line.domain,
-      entityId: line.entityId,
+      entity_id: line.entity_id,
       value: JSON.parse(line.json) as unknown,
     };
   }
@@ -40,7 +39,7 @@ function lineToResolved(line: ResolvedSourceMapLine): ResolvedSource<DefaultEnti
     const bin = Buffer.from(line.blob, "base64");
     return {
       kind: "blob",
-      blob: new Blob([bin], { type: line.mimeType ?? "application/octet-stream" }),
+      blob: new Blob([bin], { type: line.mime_type ?? "application/octet-stream" }),
     };
   }
   throw new Error(
@@ -67,7 +66,7 @@ function parseLine(raw: string): ResolvedSourceMapLine | undefined {
   if (
     o.kind === "record" &&
     typeof o.domain === "string" &&
-    typeof o.entityId === "string" &&
+    typeof o.entity_id === "string" &&
     typeof o.json === "string"
   ) {
     return o;

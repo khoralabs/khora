@@ -18,19 +18,19 @@ function makeClient() {
 describe("ObpPersistenceClient invariant 4", () => {
   test("rejects empty name", () => {
     const client = makeClient();
-    expect(() => client.registerParty({ name: "  ", sourcemaps: [] })).toThrow(ObpError);
+    expect(() => client.registerParty({ name: "  " })).toThrow(ObpError);
   });
 
   test("rejects blank name", () => {
     const client = makeClient();
-    expect(() => client.registerParty({ name: "", sourcemaps: [] })).toThrow(ObpError);
+    expect(() => client.registerParty({ name: "" })).toThrow(ObpError);
   });
 });
 
 describe("registerParty + getPartyOrNull", () => {
   test("roundtrip", async () => {
     const client = makeClient();
-    const { party } = await client.registerParty({ name: "Alice", sourcemaps: [] });
+    const { party } = await client.registerParty({ name: "Alice" });
     expect(party.name).toBe("Alice");
     const found = await client.getPartyOrNull(party.id);
     expect(found?.name).toBe("Alice");
@@ -41,10 +41,10 @@ describe("registerParty + getPartyOrNull", () => {
 describe("extendOffer + getExtendingPartyId", () => {
   test("associates party to offer", async () => {
     const client = makeClient();
-    const { party } = await client.registerParty({ name: "Bob", sourcemaps: [] });
+    const { party } = await client.registerParty({ name: "Bob" });
     const { offer } = await client.extendOffer({
       partyId: party.id,
-      offer: { id: "", type: "step", sourcemaps: [] },
+      offer: { id: "", type: "step" },
       bindPortId: "",
       bind_payload: null,
     });
@@ -56,10 +56,10 @@ describe("extendOffer + getExtendingPartyId", () => {
 describe("exposePort + isPortExposed", () => {
   test("port exposed after exposePort", async () => {
     const client = makeClient();
-    const { party } = await client.registerParty({ name: "Carol", sourcemaps: [] });
+    const { party } = await client.registerParty({ name: "Carol" });
     const { offer } = await client.extendOffer({
       partyId: party.id,
-      offer: { id: "", type: "step", sourcemaps: [] },
+      offer: { id: "", type: "step" },
       bindPortId: "",
       bind_payload: null,
     });
@@ -70,7 +70,6 @@ describe("exposePort + isPortExposed", () => {
         type: "slot",
         promise: "fill me",
         ref: "",
-        sourcemaps: [],
       },
     });
     expect((await client.isPortExposed(port.id)).exposed).toBe(true);
@@ -81,16 +80,16 @@ describe("exposePort + isPortExposed", () => {
 describe("bindPort + listBinds", () => {
   test("records bind row", async () => {
     const client = makeClient();
-    const { party } = await client.registerParty({ name: "Dave", sourcemaps: [] });
+    const { party } = await client.registerParty({ name: "Dave" });
     const { offer } = await client.extendOffer({
       partyId: party.id,
-      offer: { id: "", type: "step", sourcemaps: [] },
+      offer: { id: "", type: "step" },
       bindPortId: "",
       bind_payload: null,
     });
     const { port } = await client.exposePort({
       offerId: offer.id,
-      port: { id: "", type: "slot", promise: "p", ref: "", sourcemaps: [] },
+      port: { id: "", type: "slot", promise: "p", ref: "" },
     });
     await client.bindPort({ offerId: offer.id, portId: port.id, bind_payload: null });
     const { binds } = await client.listBinds();
@@ -101,16 +100,16 @@ describe("bindPort + listBinds", () => {
 describe("getPortsSnapshot", () => {
   test("returns exposed ports", async () => {
     const client = makeClient();
-    const { party } = await client.registerParty({ name: "Eve", sourcemaps: [] });
+    const { party } = await client.registerParty({ name: "Eve" });
     const { offer } = await client.extendOffer({
       partyId: party.id,
-      offer: { id: "", type: "step", sourcemaps: [] },
+      offer: { id: "", type: "step" },
       bindPortId: "",
       bind_payload: null,
     });
     await client.exposePort({
       offerId: offer.id,
-      port: { id: "", type: "slot", promise: "p", ref: "", sourcemaps: [] },
+      port: { id: "", type: "slot", promise: "p", ref: "" },
     });
     const snap = await client.getPortsSnapshot();
     expect(snap.entries.length).toBeGreaterThan(0);

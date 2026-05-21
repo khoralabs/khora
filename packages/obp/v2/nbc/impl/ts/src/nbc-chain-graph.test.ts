@@ -5,10 +5,10 @@ import { collectNbcChainGraph } from "./nbc-chain-graph.ts";
 describe("collectNbcChainGraph", () => {
   test("collects offers, ports, exposes from persistence client", async () => {
     const client = createInMemoryObpPersistenceClient();
-    const { party } = await client.registerParty({ name: "Issuer", sourcemaps: [] });
+    const { party } = await client.registerParty({ name: "Issuer" });
     const { offer } = await client.extendOffer({
       partyId: party.id,
-      offer: { id: "", type: "opening", sourcemaps: [] },
+      offer: { id: "", type: "opening" },
       nbc_expires_turn: 99,
       nbc_expires_at_relay_ms: 0,
       bindPortId: "",
@@ -21,7 +21,6 @@ describe("collectNbcChainGraph", () => {
         type: "slot",
         promise: "Do thing",
         ref: "",
-        sourcemaps: [],
       },
       nbc_expires_turn: 99,
       nbc_expires_at_relay_ms: 0,

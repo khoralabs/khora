@@ -22,13 +22,11 @@ Some rules that reference implementations historically treated as “OBP persist
 
 **NBC (separate spec)** — bind admissibility, ledger/expiry at bind, canonical **`NbcPortExposePolicy.max_bindings`** tally, **`NbcPortExposePolicy.terminal`**, **`NbcPortExposePolicy`** bind/TTL fields, **`NbcBindSatisfaction`**, concurrent cap atomicity, and related orchestration: see **`cfd.obp.nbc#NegotiatedBindingConvention`**, **`cfd.obp.nbc#NbcPortExposePolicy`**, and narrative doc above. OBP’s prior numbered items **3–4, 7, 9–11** (ledger/expiry, `max_bindings` tally, bind policy MUST, multi-EXPOSES cap behavior, concurrent atomicity, store-boundary cap rules) are **NBC** normative rules **N1–N7** there.
 
-**Provenance:** optional **sourcemaps** on entities and edges (see `SourceMapRef` in `packages/obp/v2/model/spec/model/shapes.smithy`) — store-agnostic; a concrete adapter may map them to an external system (e.g. a document store’s ids).
+**Policy payloads:** **`bind_payload`** on **BindPort** / **ExtendOffer** inputs and **ListBinds** rows is **`Document`** on the **persistence** surface (storage projection), not part of the core graph shape; NBC defines **`NbcBindSatisfaction`** and **when** bind-policy validation runs (`packages/obp/v2/nbc/spec/model/nbc-policy.smithy`); concrete **`bind_policy`** JSON shapes are **product/host-defined**. **`max_bindings`**, **`terminal`**, bind-policy JSON, and TTL/expose context for ports live under **`cfd.obp.nbc#NbcPortExposePolicy`**.
 
 **Staging:** ports that must not be bindable yet are **not** EXPOSES'd (no separate lifecycle enum on **Port**).
 
 **Orchestration reads:** **IsPortExposed**, **ListBinds**, **GetPortsSnapshot**, and **GetExtendingPartyId** mirror the **`ObpPersistence`** strategy surface in `@khoralabs/obp-persistence-client` (same semantics as TS **`OBPPersistenceClient`** helpers). NBC drivers use these reads when evaluating NBC preconditions.
-
-**Policy payloads:** **`cfd.obp#BindsEdge`** carries only graph identity and **`content_receipts`**. **`bind_payload`** / **`bind_policy_snapshot`** on **BindPort** / **ExtendOffer** inputs and **ListBinds** rows are **`Document`** on the **persistence** surface (storage projection), not part of the core graph shape; NBC defines **`NbcBindSatisfaction`** / **`NbcBindPolicyAuditSnapshot`** and **when** bind-policy validation runs (`packages/obp/v2/nbc/spec/model/nbc-policy.smithy`); concrete **`bind_policy`** JSON shapes are **product/host-defined**. **`max_bindings`**, **`terminal`**, bind-policy JSON, and TTL/expose context for ports live under **`cfd.obp.nbc#NbcPortExposePolicy`**.
 
 **Errors:** Operations model **success** shapes only. Implementations may throw or map failures for: not found, not exposed, ref cycle, invalid graph; NBC-specific failures (expired, max bindings exceeded, bind-policy validation) are defined under NBC.
 
@@ -73,8 +71,6 @@ operation RegisterParty {
 
 structure RegisterPartyInput {
     name: String
-    /// Empty list means no source-map provenance links.
-    sourcemaps: SourceMapRefList
 }
 
 structure RegisterPartyOutput {
@@ -260,7 +256,7 @@ structure IsPortExposedOutput {
     exposed: Boolean
 }
 
-/// All **BINDS** rows for capacity / ref resolution (`ObpPersistence.listBinds`). **`bind_payload`** / **`bind_policy_snapshot`** are listing projection fields (see **`BindListingRow`**), not **`cfd.obp#BindsEdge`** members.
+/// All **BINDS** rows for capacity / ref resolution (`ObpPersistence.listBinds`). **`bind_payload`** is a listing projection field (see **`BindListingRow`**), not a **`cfd.obp#BindsEdge`** member.
 operation ListBinds {
     input: ListBindsInput
     output: ListBindsOutput
@@ -271,11 +267,8 @@ structure ListBindsInput {}
 structure BindListingRow {
     offerId: String
     portId: String
-    content_receipts: ContentAddressedSourceRefList
     /// Policy-shaped satisfaction persisted with bind listing; not on **`cfd.obp#BindsEdge`**.
     bind_payload: Document = null
-    /// Policy-shaped audit (**`cfd.obp.nbc#NbcBindPolicyAuditSnapshot`**); not on **`cfd.obp#BindsEdge`**.
-    bind_policy_snapshot: Document = null
 }
 
 list BindListingRowList {

@@ -64,7 +64,7 @@ export class InMemoryObpPersistenceStrategy implements ObpPersistenceStrategy {
   }
 
   async registerParty(input: RegisterPartyInput): Promise<RegisterPartyOutput> {
-    const party: Party = { id: this.nextId(), name: input.name, sourcemaps: input.sourcemaps };
+    const party: Party = { id: this.nextId(), name: input.name };
     this.parties.set(party.id, party);
     return { party };
   }
@@ -105,9 +105,7 @@ export class InMemoryObpPersistenceStrategy implements ObpPersistenceStrategy {
       this.binds.push({
         offerId: offer.id,
         portId: input.bindPortId,
-        content_receipts: [],
         bind_payload: input.bind_payload,
-        bind_policy_snapshot: null,
       });
     }
     return { offer };
@@ -128,9 +126,7 @@ export class InMemoryObpPersistenceStrategy implements ObpPersistenceStrategy {
     this.binds.push({
       offerId: input.offerId,
       portId: input.portId,
-      content_receipts: [],
       bind_payload: input.bind_payload,
-      bind_policy_snapshot: null,
     });
     return {};
   }

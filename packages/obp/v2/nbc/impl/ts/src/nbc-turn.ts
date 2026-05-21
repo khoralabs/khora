@@ -61,7 +61,6 @@ export async function applyNbcTurn(params: ApplyNbcTurnParams): Promise<ApplyNbc
     offer: {
       id: body.offer.id,
       type: body.offer.type,
-      sourcemaps: body.offer.sourcemaps,
     },
     nbc_expires_turn: body.offer.expires_turn,
     nbc_expires_at_relay_ms: body.offer.expires_at_relay_ms,

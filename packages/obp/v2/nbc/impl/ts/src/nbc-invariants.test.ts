@@ -24,7 +24,7 @@ const textBindSchema = {
   },
 };
 
-const basePortFields = { type: "t" as const, promise: "", sourcemaps: [] as const };
+const basePortFields = { type: "t" as const, promise: "" as const };
 
 const win = (turn: number, relay: number) => ({
   nbc_expires_turn: turn,
@@ -67,14 +67,12 @@ describe("validateNbcBind", () => {
   const offer: Offer = {
     id: "o1",
     type: "step",
-    sourcemaps: [],
   };
   const port: Port = {
     id: "p1",
     type: "slot",
     promise: "x",
     ref: "",
-    sourcemaps: [],
   };
   const ports = new Map<string, Port>([["p1", port]]);
 

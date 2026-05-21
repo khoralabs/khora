@@ -1,4 +1,4 @@
-import type { Edge, GraphEdgeLink, Memory, SourceMap } from "../persistence";
+import type { Edge, GraphEdgeLink, Memory, SourceMapRow } from "../persistence";
 import type { OntologyLabelInstance } from "./ontology-label";
 
 /** Where hybrid search hit content attaches in the graph (primary node vs single edge). */
@@ -29,7 +29,7 @@ export type NeighborFilter<
   some?: NeighborConstraint<EDGE_LABEL, NODE_LABEL>[];
 };
 
-export type HydratedSourceMapHit = SourceMap & {
+export type HydratedSourceMapHit = SourceMapRow & {
   memory: Memory;
   /** Node labels for `memory.kind === "node"`; edge label instances for `memory.kind === "edge"`. */
   labels: OntologyLabelInstance[];

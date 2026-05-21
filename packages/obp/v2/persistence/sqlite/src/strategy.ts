@@ -1,14 +1,6 @@
 import type { Database, Statement } from "bun:sqlite";
 import { ObpError } from "@khoralabs/obp-v2-errors";
-import type {
-  ContentAddressedSourceRef,
-  JsonDocument,
-  Offer,
-  Party,
-  Port,
-  Sha256HexLower,
-  SourceMapRef,
-} from "@khoralabs/obp-v2-model";
+import type { JsonDocument, Offer, Party, Port } from "@khoralabs/obp-v2-model";
 import type {
   BindPortInput,
   BindPortOutput,
@@ -51,7 +43,6 @@ type PartyRow = {
   id: string;
   created_seq: number;
   name: string;
-  sourcemaps_json: string;
 };
 
 type OfferRow = {
@@ -60,7 +51,6 @@ type OfferRow = {
   nbc_expires_turn: number;
   nbc_expires_at_relay_ms: number;
   type: string;
-  sourcemaps_json: string;
 };
 
 type PortRow = {
@@ -73,41 +63,16 @@ type PortRow = {
   max_bindings: number;
   terminal: number;
   ref: string;
-  sourcemaps_json: string;
   ttl_basis: string | null;
   ttl_measure: number | null;
   expose_seq: number | null;
   bind_policy_json: string | null;
 };
 
-function parseSourcemaps(json: string): SourceMapRef[] {
-  try {
-    const v: unknown = JSON.parse(json);
-    if (!Array.isArray(v)) return [];
-    const out: SourceMapRef[] = [];
-    for (const x of v) {
-      if (x && typeof x === "object") {
-        const r = x as Record<string, unknown>;
-        if (typeof r.resource_id === "string" && typeof r.source_key === "string") {
-          out.push({ resource_id: r.resource_id, source_key: r.source_key });
-        }
-      }
-    }
-    return out;
-  } catch {
-    return [];
-  }
-}
-
-function stringifySourcemaps(s: SourceMapRef[]): string {
-  return JSON.stringify(s);
-}
-
 function rowToPartyV2(r: PartyRow): Party {
   return {
     id: r.id,
     name: r.name,
-    sourcemaps: parseSourcemaps(r.sourcemaps_json),
   };
 }
 
@@ -115,7 +80,6 @@ function rowToOfferV2(r: OfferRow): Offer {
   return {
     id: r.id,
     type: r.type,
-    sourcemaps: parseSourcemaps(r.sourcemaps_json),
   };
 }
 
@@ -125,7 +89,6 @@ function rowToPortV2(r: PortRow): Port {
     type: r.type,
     promise: r.promise ?? "",
     ref: r.ref ?? "",
-    sourcemaps: parseSourcemaps(r.sourcemaps_json),
   };
 }
 
@@ -140,39 +103,6 @@ function parseJsonDocument(raw: string | null): JsonDocument {
     return JSON.parse(raw) as JsonDocument;
   } catch {
     return null;
-  }
-}
-
-function stringifyContentReceipts(receipts: ContentAddressedSourceRef[]): string {
-  if (receipts.length === 0) return "[]";
-  return JSON.stringify(receipts);
-}
-
-function parseContentReceipts(raw: string | null): ContentAddressedSourceRef[] {
-  if (raw === null || raw === "" || raw === "[]") return [];
-  try {
-    const v: unknown = JSON.parse(raw);
-    if (!Array.isArray(v)) return [];
-    const out: ContentAddressedSourceRef[] = [];
-    for (const x of v) {
-      if (x !== null && typeof x === "object" && !Array.isArray(x)) {
-        const r = x as Record<string, unknown>;
-        if (
-          typeof r.resource_id === "string" &&
-          typeof r.source_key === "string" &&
-          typeof r.content_sha256_hex === "string"
-        ) {
-          out.push({
-            resource_id: r.resource_id,
-            source_key: r.source_key,
-            content_sha256_hex: r.content_sha256_hex as Sha256HexLower,
-          });
-        }
-      }
-    }
-    return out;
-  } catch {
-    return [];
   }
 }
 
@@ -221,7 +151,7 @@ export class SqliteObpPersistenceStrategy implements ObpPersistenceStrategy {
 
   constructor(private readonly db: Database) {
     this.insertParty = db.prepare(
-      `INSERT INTO obp_parties (id, created_seq, name, sourcemaps_json) VALUES (?, ?, ?, ?)`,
+      `INSERT INTO obp_parties (id, created_seq, name) VALUES (?, ?, ?)`,
     );
     this.updatePortExpiresNow = db.prepare(
       `UPDATE obp_ports SET nbc_expires_turn = ?, nbc_expires_at_relay_ms = ? WHERE id = ?`,
@@ -233,19 +163,19 @@ export class SqliteObpPersistenceStrategy implements ObpPersistenceStrategy {
       `UPDATE obp_ports SET nbc_expires_turn = ?, nbc_expires_at_relay_ms = ? WHERE id IN (SELECT port_id FROM obp_exposes WHERE offer_id = ?)`,
     );
     this.insertOffer = db.prepare(
-      `INSERT INTO obp_offers (id, created_seq, nbc_expires_turn, nbc_expires_at_relay_ms, type, sourcemaps_json) VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO obp_offers (id, created_seq, nbc_expires_turn, nbc_expires_at_relay_ms, type) VALUES (?, ?, ?, ?, ?)`,
     );
     this.insertExtend = db.prepare(
-      `INSERT INTO obp_extends (edge_id, party_id, offer_id, created_seq, sourcemaps_json) VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO obp_extends (edge_id, party_id, offer_id, created_seq) VALUES (?, ?, ?, ?)`,
     );
     this.insertBind = db.prepare(
-      `INSERT INTO obp_binds (edge_id, offer_id, port_id, created_seq, sourcemaps_json, counterparty_bind_json, bind_policy_json, content_receipts_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO obp_binds (edge_id, offer_id, port_id, created_seq, counterparty_bind_json) VALUES (?, ?, ?, ?, ?)`,
     );
     this.insertPort = db.prepare(
-      `INSERT INTO obp_ports (id, created_seq, nbc_expires_turn, nbc_expires_at_relay_ms, type, promise, max_bindings, terminal, ref, sourcemaps_json, ttl_basis, ttl_measure, expose_seq, bind_policy_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO obp_ports (id, created_seq, nbc_expires_turn, nbc_expires_at_relay_ms, type, promise, max_bindings, terminal, ref, ttl_basis, ttl_measure, expose_seq, bind_policy_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
     this.insertExpose = db.prepare(
-      `INSERT INTO obp_exposes (edge_id, offer_id, port_id, created_seq, sourcemaps_json) VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO obp_exposes (edge_id, offer_id, port_id, created_seq) VALUES (?, ?, ?, ?)`,
     );
   }
 
@@ -253,14 +183,12 @@ export class SqliteObpPersistenceStrategy implements ObpPersistenceStrategy {
     return this.db.transaction(() => {
       const id = crypto.randomUUID();
       const seq = Date.now();
-      const smJson = stringifySourcemaps([...input.sourcemaps]);
-      this.insertParty.run(id, seq, input.name, smJson);
+      this.insertParty.run(id, seq, input.name);
       return {
         party: rowToPartyV2({
           id,
           created_seq: seq,
           name: input.name,
-          sourcemaps_json: smJson,
         }),
       };
     })();
@@ -268,9 +196,7 @@ export class SqliteObpPersistenceStrategy implements ObpPersistenceStrategy {
 
   async getParty(input: GetPartyInput): Promise<GetPartyOutput> {
     const row = this.db
-      .query<PartyRow, [string]>(
-        `SELECT id, created_seq, name, sourcemaps_json FROM obp_parties WHERE id = ?`,
-      )
+      .query<PartyRow, [string]>(`SELECT id, created_seq, name FROM obp_parties WHERE id = ?`)
       .get(input.id);
     if (!row) return { result: { kind: "notFound" } };
     return { result: { kind: "party", party: rowToPartyV2(row) } };
@@ -279,7 +205,7 @@ export class SqliteObpPersistenceStrategy implements ObpPersistenceStrategy {
   async getOffer(input: GetOfferInput): Promise<GetOfferOutput> {
     const row = this.db
       .query<OfferRow, [string]>(
-        `SELECT id, created_seq, nbc_expires_turn, nbc_expires_at_relay_ms, type, sourcemaps_json FROM obp_offers WHERE id = ?`,
+        `SELECT id, created_seq, nbc_expires_turn, nbc_expires_at_relay_ms, type FROM obp_offers WHERE id = ?`,
       )
       .get(input.id);
     if (!row) return { result: { kind: "notFound" } };
@@ -289,7 +215,7 @@ export class SqliteObpPersistenceStrategy implements ObpPersistenceStrategy {
   async getPort(input: GetPortInput): Promise<GetPortOutput> {
     const row = this.db
       .query<PortRow, [string]>(
-        `SELECT id, created_seq, nbc_expires_turn, nbc_expires_at_relay_ms, type, promise, max_bindings, terminal, ref, sourcemaps_json, ttl_basis, ttl_measure, expose_seq, bind_policy_json FROM obp_ports WHERE id = ?`,
+        `SELECT id, created_seq, nbc_expires_turn, nbc_expires_at_relay_ms, type, promise, max_bindings, terminal, ref, ttl_basis, ttl_measure, expose_seq, bind_policy_json FROM obp_ports WHERE id = ?`,
       )
       .get(input.id);
     if (!row) return { result: { kind: "notFound" } };
@@ -323,19 +249,18 @@ export class SqliteObpPersistenceStrategy implements ObpPersistenceStrategy {
         ...input.offer,
         id: offerId,
       };
-      const smJson = stringifySourcemaps([...offer.sourcemaps]);
       const nbcT = input.nbc_expires_turn ?? 0;
       const nbcM = input.nbc_expires_at_relay_ms ?? 0;
-      this.insertOffer.run(offer.id, seq, nbcT, nbcM, offer.type, smJson);
+      this.insertOffer.run(offer.id, seq, nbcT, nbcM, offer.type);
 
       const extId = crypto.randomUUID();
-      this.insertExtend.run(extId, input.partyId, offer.id, seq, "[]");
+      this.insertExtend.run(extId, input.partyId, offer.id, seq);
 
       const bindPortId = input.bindPortId.trim();
       if (bindPortId !== "") {
         const portRow = this.db
           .query<PortRow, [string]>(
-            `SELECT id, created_seq, nbc_expires_turn, nbc_expires_at_relay_ms, type, promise, max_bindings, terminal, ref, sourcemaps_json, ttl_basis, ttl_measure, expose_seq, bind_policy_json FROM obp_ports WHERE id = ?`,
+            `SELECT id, created_seq, nbc_expires_turn, nbc_expires_at_relay_ms, type, promise, max_bindings, terminal, ref, ttl_basis, ttl_measure, expose_seq, bind_policy_json FROM obp_ports WHERE id = ?`,
           )
           .get(bindPortId);
         if (!portRow) {
@@ -343,18 +268,7 @@ export class SqliteObpPersistenceStrategy implements ObpPersistenceStrategy {
         }
         const bindEdge = crypto.randomUUID();
         const cbJson = stringifyCounterpartyBind(input.bind_payload);
-        const bindPolicyJson = portRow.bind_policy_json;
-        const receiptsJson = stringifyContentReceipts([]);
-        this.insertBind.run(
-          bindEdge,
-          offer.id,
-          bindPortId,
-          seq,
-          "[]",
-          cbJson,
-          bindPolicyJson,
-          receiptsJson,
-        );
+        this.insertBind.run(bindEdge, offer.id, bindPortId, seq, cbJson);
       }
 
       return { offer };
@@ -376,7 +290,6 @@ export class SqliteObpPersistenceStrategy implements ObpPersistenceStrategy {
         ...input.port,
         id: portId,
       };
-      const smJson = stringifySourcemaps([...port.sourcemaps]);
 
       const map = this.loadPortsMap();
       map.set(port.id, port);
@@ -406,7 +319,6 @@ export class SqliteObpPersistenceStrategy implements ObpPersistenceStrategy {
         0,
         0,
         port.ref,
-        smJson,
         null,
         null,
         null,
@@ -414,7 +326,7 @@ export class SqliteObpPersistenceStrategy implements ObpPersistenceStrategy {
       );
 
       const exId = crypto.randomUUID();
-      this.insertExpose.run(exId, input.offerId, port.id, seq, "[]");
+      this.insertExpose.run(exId, input.offerId, port.id, seq);
 
       return { port };
     })();
@@ -424,7 +336,7 @@ export class SqliteObpPersistenceStrategy implements ObpPersistenceStrategy {
     return this.db.transaction(() => {
       const offerRes = this.db
         .query<OfferRow, [string]>(
-          `SELECT id, created_seq, nbc_expires_turn, nbc_expires_at_relay_ms, type, sourcemaps_json FROM obp_offers WHERE id = ?`,
+          `SELECT id, created_seq, nbc_expires_turn, nbc_expires_at_relay_ms, type FROM obp_offers WHERE id = ?`,
         )
         .get(input.offerId);
       if (!offerRes) {
@@ -433,7 +345,7 @@ export class SqliteObpPersistenceStrategy implements ObpPersistenceStrategy {
 
       const portRow = this.db
         .query<PortRow, [string]>(
-          `SELECT id, created_seq, nbc_expires_turn, nbc_expires_at_relay_ms, type, promise, max_bindings, terminal, ref, sourcemaps_json, ttl_basis, ttl_measure, expose_seq, bind_policy_json FROM obp_ports WHERE id = ?`,
+          `SELECT id, created_seq, nbc_expires_turn, nbc_expires_at_relay_ms, type, promise, max_bindings, terminal, ref, ttl_basis, ttl_measure, expose_seq, bind_policy_json FROM obp_ports WHERE id = ?`,
         )
         .get(input.portId);
       if (!portRow) {
@@ -443,19 +355,8 @@ export class SqliteObpPersistenceStrategy implements ObpPersistenceStrategy {
       const seq = Date.now();
       const bindEdge = crypto.randomUUID();
       const cbJson = stringifyCounterpartyBind(input.bind_payload);
-      const bindPolicyJson = portRow.bind_policy_json;
-      const receiptsJson = stringifyContentReceipts([]);
       try {
-        this.insertBind.run(
-          bindEdge,
-          input.offerId,
-          input.portId,
-          seq,
-          "[]",
-          cbJson,
-          bindPolicyJson,
-          receiptsJson,
-        );
+        this.insertBind.run(bindEdge, input.offerId, input.portId, seq, cbJson);
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         if (msg.includes("UNIQUE") || msg.includes("unique")) {
@@ -495,21 +396,15 @@ export class SqliteObpPersistenceStrategy implements ObpPersistenceStrategy {
           offer_id: string;
           port_id: string;
           counterparty_bind_json: string | null;
-          bind_policy_json: string | null;
-          content_receipts_json: string | null;
         },
         []
-      >(
-        `SELECT offer_id, port_id, counterparty_bind_json, bind_policy_json, content_receipts_json FROM obp_binds`,
-      )
+      >(`SELECT offer_id, port_id, counterparty_bind_json FROM obp_binds`)
       .all();
     return {
       binds: rows.map((r) => ({
         offerId: r.offer_id,
         portId: r.port_id,
-        content_receipts: parseContentReceipts(r.content_receipts_json),
         bind_payload: parseJsonDocument(r.counterparty_bind_json),
-        bind_policy_snapshot: parseJsonDocument(r.bind_policy_json),
       })),
     };
   }
@@ -594,7 +489,7 @@ export class SqliteObpPersistenceStrategy implements ObpPersistenceStrategy {
   private loadPortsMap(): Map<string, Port> {
     const rows = this.db
       .query<PortRow, []>(
-        `SELECT id, created_seq, nbc_expires_turn, nbc_expires_at_relay_ms, type, promise, max_bindings, terminal, ref, sourcemaps_json, ttl_basis, ttl_measure, expose_seq, bind_policy_json FROM obp_ports`,
+        `SELECT id, created_seq, nbc_expires_turn, nbc_expires_at_relay_ms, type, promise, max_bindings, terminal, ref, ttl_basis, ttl_measure, expose_seq, bind_policy_json FROM obp_ports`,
       )
       .all();
     const m = new Map<string, Port>();

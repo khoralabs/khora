@@ -265,7 +265,7 @@ export class VellumClient {
   }
 
   readPolicySnapshot(portId: string): unknown | null {
-    return this.readPort(portId)?.bind_policy_snapshot ?? null;
+    return this.readPort(portId)?.bind_policy ?? null;
   }
 
   validatePolicy(portId: string, payload: unknown): Record<string, unknown> {
@@ -274,7 +274,7 @@ export class VellumClient {
       throw new Error(`port not found: ${portId}`);
     }
     return validateVellumBindPayloadForPort(
-      port.bind_policy_snapshot as JsonDocument | null,
+      port.bind_policy as JsonDocument | null,
       payload,
     );
   }

@@ -43,6 +43,7 @@
   },
   "dependencies": {
     "@khoralabs/memories-core": "workspace:*",
+    "@khoralabs/sourcemaps": "workspace:*",
     "convex": "^1.35.1"
   },
   "scripts": {

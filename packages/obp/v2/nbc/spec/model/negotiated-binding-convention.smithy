@@ -11,7 +11,7 @@ namespace cfd.obp.nbc
 /// - **NBC** defines additional **MUST** rules for implementations that claim **NBC conformance**. An implementation may be **OBP-conformant** without NBC; it **MUST NOT** claim NBC conformance unless it satisfies all normative rules below.
 ///
 /// **Driver model (informative)**
-/// - An **NBC driver** applies NBC preconditions, refusals, and policy **around** delegation to a **pure OBP driver** (opaque frame **`body`** verification + session envelope + `ObpPersistence` projection without NBC’s extra bind-admissibility rules). Evaluate NBC **before** committing a bind that OBP would otherwise allow at the graph level; after delegation, NBC may attach audit metadata (e.g. **`NbcBindPolicyAuditSnapshot`**) via **`bind_policy_snapshot`** on **BindPort** / listing rows where adapters persist it.
+/// - An **NBC driver** applies NBC preconditions, refusals, and policy **around** delegation to a **pure OBP driver** (opaque frame **`body`** verification + session envelope + `ObpPersistence` projection without NBC’s extra bind-admissibility rules). Evaluate NBC **before** committing a bind that OBP would otherwise allow at the graph level.
 ///
 /// **Normative rules (NBC)**
 ///
@@ -21,7 +21,7 @@ namespace cfd.obp.nbc
 ///
 /// **N3. `Port.ref` at bind enforcement.** Resolve refs before applying **N2**; detect cycles on the ref chain and reject binds that depend on an invalid ref projection (aligns with OBP graph rules; NBC **requires** this resolution order when enforcing **N2** at bind time).
 ///
-/// **N4. Bind policy.** When an expose path carries non-empty **`NbcPortExposePolicy.bind_policy`**, **BindPort** / bind leg of **ExtendOffer** MUST supply **`bind_payload`** (`Document` on the **`ObpPersistence`** operation / listing surface) whose bytes validate against that policy before committing the **BINDS** edge; validated payload is stored with the bind row. **`bind_policy_snapshot`** on listing rows MAY hold an **`NbcBindPolicyAuditSnapshot`**. **Vellum** canonical **`bind_policy`** on the wire is JSON Schema (draft 2020-12) for **`bind_payload`**; other products MAY use other shapes if their host validator agrees.
+/// **N4. Bind policy.** When an expose path carries non-empty **`NbcPortExposePolicy.bind_policy`**, **BindPort** / bind leg of **ExtendOffer** MUST supply **`bind_payload`** (`Document` on the **`ObpPersistence`** operation / listing surface) that validates against that policy before committing the **BINDS** edge; validated payload is stored with the bind row. **Vellum** canonical **`bind_policy`** on the wire is JSON Schema (draft 2020-12) for **`bind_payload`**; other products MAY use other shapes if their host validator agrees.
 ///
 /// **N5. Multiple EXPOSES, same `portId`.** More than one **EXPOSES** edge MAY reference the same **`portId`**. Under NBC, any successful bind against that port consumes **`NbcPortExposePolicy.max_bindings`** capacity **for every** such exposure — the **strictest** reading is the **NBC normative** baseline.
 ///

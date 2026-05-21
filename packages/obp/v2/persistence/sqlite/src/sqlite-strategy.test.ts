@@ -12,7 +12,7 @@ function makeClient() {
 describe("SqliteObpPersistenceStrategy", () => {
   test("registerParty + getParty roundtrip", async () => {
     const client = makeClient();
-    const { party } = await client.registerParty({ name: "Alice", sourcemaps: [] });
+    const { party } = await client.registerParty({ name: "Alice" });
     expect(party.name).toBe("Alice");
     expect((await client.getParty({ id: party.id })).result.kind).toBe("party");
     expect((await client.getParty({ id: "missing" })).result.kind).toBe("notFound");
@@ -20,10 +20,10 @@ describe("SqliteObpPersistenceStrategy", () => {
 
   test("extendOffer + bindPort + listBinds", async () => {
     const client = makeClient();
-    const { party } = await client.registerParty({ name: "Bob", sourcemaps: [] });
+    const { party } = await client.registerParty({ name: "Bob" });
     const { offer } = await client.extendOffer({
       partyId: party.id,
-      offer: { id: "", type: "step", sourcemaps: [] },
+      offer: { id: "", type: "step" },
       bindPortId: "",
       bind_payload: null,
     });
@@ -34,7 +34,6 @@ describe("SqliteObpPersistenceStrategy", () => {
         type: "slot",
         promise: "p",
         ref: "",
-        sourcemaps: [],
       },
     });
     await client.bindPort({ offerId: offer.id, portId: port.id, bind_payload: { x: 1 } });
@@ -45,10 +44,10 @@ describe("SqliteObpPersistenceStrategy", () => {
 
   test("exposePort persists bind_policy and getPortBindPolicy reads it", async () => {
     const client = makeClient();
-    const { party } = await client.registerParty({ name: "Dana", sourcemaps: [] });
+    const { party } = await client.registerParty({ name: "Dana" });
     const { offer } = await client.extendOffer({
       partyId: party.id,
-      offer: { id: "", type: "step", sourcemaps: [] },
+      offer: { id: "", type: "step" },
       bindPortId: "",
       bind_payload: null,
     });
@@ -61,7 +60,7 @@ describe("SqliteObpPersistenceStrategy", () => {
     };
     const { port } = await client.exposePort({
       offerId: offer.id,
-      port: { id: "", type: "slot", promise: "p", ref: "", sourcemaps: [] },
+      port: { id: "", type: "slot", promise: "p", ref: "" },
       bind_policy: policy,
     });
     const pr = await client.getPortBindPolicy({ portId: port.id });
@@ -73,10 +72,10 @@ describe("SqliteObpPersistenceStrategy", () => {
 
   test("setOfferExpiredNow cascades to exposed ports", async () => {
     const client = makeClient();
-    const { party } = await client.registerParty({ name: "Carol", sourcemaps: [] });
+    const { party } = await client.registerParty({ name: "Carol" });
     const { offer } = await client.extendOffer({
       partyId: party.id,
-      offer: { id: "", type: "step", sourcemaps: [] },
+      offer: { id: "", type: "step" },
       bindPortId: "",
       bind_payload: null,
     });
@@ -87,7 +86,6 @@ describe("SqliteObpPersistenceStrategy", () => {
         type: "slot",
         promise: "",
         ref: "",
-        sourcemaps: [],
       },
     });
     await client.setOfferExpiredNow(offer.id);

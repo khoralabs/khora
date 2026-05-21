@@ -16,7 +16,6 @@ test("flowchart layout places successor offer to the right of bound port", () =>
         partyName: "Buyer",
         expires_turn: 0,
         expires_at_relay_ms: 0,
-        sourcemaps: [],
       },
       {
         id: "offer-bind",
@@ -25,7 +24,6 @@ test("flowchart layout places successor offer to the right of bound port", () =>
         partyName: "Seller",
         expires_turn: 0,
         expires_at_relay_ms: 0,
-        sourcemaps: [],
       },
     ],
     ports: [
@@ -34,7 +32,6 @@ test("flowchart layout places successor offer to the right of bound port", () =>
         type: "afford-a",
         promise: "Affordance A.",
         ref: "",
-        sourcemaps: [],
         expires_turn: 0,
         expires_at_relay_ms: 0,
         exposedOnOfferIds: ["offer-genesis"],
@@ -45,7 +42,6 @@ test("flowchart layout places successor offer to the right of bound port", () =>
         type: "afford-b",
         promise: "Affordance B.",
         ref: "",
-        sourcemaps: [],
         expires_turn: 0,
         expires_at_relay_ms: 0,
         exposedOnOfferIds: ["offer-genesis"],
@@ -56,7 +52,6 @@ test("flowchart layout places successor offer to the right of bound port", () =>
         type: "next",
         promise: "Next-step affordance.",
         ref: "",
-        sourcemaps: [],
         expires_turn: 0,
         expires_at_relay_ms: 0,
         exposedOnOfferIds: ["offer-bind"],
@@ -76,9 +71,7 @@ test("flowchart layout places successor offer to the right of bound port", () =>
       {
         offerId: "offer-bind",
         portId: "port-a",
-        content_receipts: [],
         bind_payload: null,
-        bind_policy_snapshot: null,
       },
     ],
   };
@@ -110,7 +103,6 @@ test("genesis-only snapshot lays offer then ports to the right", () => {
         partyName: "Party",
         expires_turn: 0,
         expires_at_relay_ms: 0,
-        sourcemaps: [],
       },
     ],
     ports: [
@@ -119,7 +111,6 @@ test("genesis-only snapshot lays offer then ports to the right", () => {
         type: "listing",
         promise: "Layout test listing.",
         ref: "",
-        sourcemaps: [],
         expires_turn: 0,
         expires_at_relay_ms: 0,
         exposedOnOfferIds: ["o1"],

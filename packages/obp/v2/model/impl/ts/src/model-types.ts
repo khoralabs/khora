@@ -12,62 +12,19 @@ export type JsonDocument =
   | readonly JsonDocument[]
   | { readonly [key: string]: JsonDocument };
 
-/** `Sha256HexLower` — lowercase hex SHA-256 digest, length 64, no `0x`. */
-export type Sha256HexLower = string & { readonly __brand?: "Sha256HexLower" };
-
-const SHA256_HEX_RE = /^[0-9a-f]{64}$/;
-
-export function isSha256HexLower(s: string): s is Sha256HexLower {
-  return SHA256_HEX_RE.test(s);
-}
-
-export function toSha256HexLower(s: string): Sha256HexLower {
-  if (!SHA256_HEX_RE.test(s)) {
-    throw new TypeError("expected 64-char lowercase hex Sha256HexLower");
-  }
-  return s as Sha256HexLower;
-}
-
-// ---------------------------------------------------------------------------
-// Provenance
-// ---------------------------------------------------------------------------
-
-/** Optional provenance link; fields are opaque to the protocol. */
-export type SourceMapRef = {
-  resource_id: string;
-  source_key: string;
-};
-
-export type SourceMapRefList = readonly SourceMapRef[];
-
-/** Content receipt: source addressing + digest commitment. */
-export type ContentAddressedSourceRef = {
-  resource_id: string;
-  source_key: string;
-  content_sha256_hex: Sha256HexLower;
-};
-
-export type ContentAddressedSourceRefList = readonly ContentAddressedSourceRef[];
-
-// ---------------------------------------------------------------------------
-// Graph nodes
-// ---------------------------------------------------------------------------
-
 /** Issuing actor. Implementations SHOULD use UUID v7 ids. */
 export type Party = {
   id: string;
   name: string;
-  sourcemaps: SourceMapRefList;
 };
 
 /**
- * Proposal or workflow step — identity, `type`, `sourcemaps` only.
+ * Proposal or workflow step — identity and `type` only.
  * NBC bind windows live on TURN wire (`NbcOfferSpec`) and `ObpPersistence` `nbc_expires_*` projection.
  */
 export type Offer = {
   id: string;
   type: string;
-  sourcemaps: SourceMapRefList;
 };
 
 /**
@@ -81,34 +38,24 @@ export type Port = {
   type: string;
   promise: string;
   ref: string;
-  sourcemaps: SourceMapRefList;
 };
-
-// ---------------------------------------------------------------------------
-// Graph edges
-// ---------------------------------------------------------------------------
 
 /** Party -[EXTENDS]-> Offer. */
 export type ExtendsEdge = {
   id: string;
-  sourcemaps: SourceMapRefList;
 };
 
 /** Offer -[EXPOSES]-> Port. */
 export type ExposesEdge = {
   id: string;
-  sourcemaps: SourceMapRefList;
 };
 
 /**
- * Offer -[BINDS]-> Port — graph identity and provenance only.
- * Policy-shaped payloads (`NbcBindSatisfaction`, `NbcBindPolicyAuditSnapshot`) and
- * `bind_payload` / `bind_policy_snapshot` live on the persistence listing row, not here.
+ * Offer -[BINDS]-> Port — graph identity only.
+ * `bind_payload` lives on the persistence listing row, not here.
  */
 export type BindsEdge = {
   id: string;
-  sourcemaps: SourceMapRefList;
-  content_receipts: ContentAddressedSourceRefList;
 };
 
 /** Service version for `ObpPersistence` in Smithy. */

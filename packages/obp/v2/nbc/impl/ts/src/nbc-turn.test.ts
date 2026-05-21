@@ -65,7 +65,7 @@ class InMemoryStrategy implements ObpPersistenceStrategy {
   }
 
   async registerParty(input: RegisterPartyInput): Promise<RegisterPartyOutput> {
-    const party: Party = { id: this.nextId(), name: input.name, sourcemaps: input.sourcemaps };
+    const party: Party = { id: this.nextId(), name: input.name };
     this.parties.set(party.id, party);
     return { party };
   }
@@ -107,9 +107,7 @@ class InMemoryStrategy implements ObpPersistenceStrategy {
       this.binds.push({
         offerId: offer.id,
         portId: input.bindPortId,
-        content_receipts: [],
         bind_payload: input.bind_payload,
-        bind_policy_snapshot: null,
       });
     }
     return { offer };
@@ -131,9 +129,7 @@ class InMemoryStrategy implements ObpPersistenceStrategy {
     this.binds.push({
       offerId: input.offerId,
       portId: input.portId,
-      content_receipts: [],
       bind_payload: input.bind_payload,
-      bind_policy_snapshot: null,
     });
     return {};
   }
@@ -226,11 +222,11 @@ const textBindSchema = {
 describe("applyNbcTurn", () => {
   test("extend + expose + bind", async () => {
     const client = new ObpPersistenceClient(new InMemoryStrategy());
-    const { party: a } = await client.registerParty({ name: "A", sourcemaps: [] });
-    const { party: b } = await client.registerParty({ name: "B", sourcemaps: [] });
+    const { party: a } = await client.registerParty({ name: "A" });
+    const { party: b } = await client.registerParty({ name: "B" });
 
     const bodyA = parseNbcTurnBody({
-      offer: { id: "", expires_turn: 100, expires_at_relay_ms: 0, type: "step", sourcemaps: [] },
+      offer: { id: "", expires_turn: 100, expires_at_relay_ms: 0, type: "step" },
       ports: [
         {
           id: "",
@@ -251,7 +247,7 @@ describe("applyNbcTurn", () => {
     if (counterpartyPortId === undefined) throw new Error("expected port");
 
     const bodyB = parseNbcTurnBody({
-      offer: { id: "", expires_turn: 100, expires_at_relay_ms: 0, type: "reply", sourcemaps: [] },
+      offer: { id: "", expires_turn: 100, expires_at_relay_ms: 0, type: "reply" },
       ports: [],
       bind_port_id: counterpartyPortId,
       bind_payload: {},
@@ -263,11 +259,11 @@ describe("applyNbcTurn", () => {
 
   test("persisted bind_policy enables later-turn bind with normalized payload", async () => {
     const client = new ObpPersistenceClient(new InMemoryStrategy());
-    const { party: a } = await client.registerParty({ name: "A", sourcemaps: [] });
-    const { party: b } = await client.registerParty({ name: "B", sourcemaps: [] });
+    const { party: a } = await client.registerParty({ name: "A" });
+    const { party: b } = await client.registerParty({ name: "B" });
 
     const bodyA = parseNbcTurnBody({
-      offer: { id: "", expires_turn: 100, expires_at_relay_ms: 0, type: "step", sourcemaps: [] },
+      offer: { id: "", expires_turn: 100, expires_at_relay_ms: 0, type: "step" },
       ports: [
         {
           id: "",
@@ -287,7 +283,7 @@ describe("applyNbcTurn", () => {
     if (pid === undefined) throw new Error("expected port");
 
     const bodyB = parseNbcTurnBody({
-      offer: { id: "", expires_turn: 100, expires_at_relay_ms: 0, type: "reply", sourcemaps: [] },
+      offer: { id: "", expires_turn: 100, expires_at_relay_ms: 0, type: "reply" },
       ports: [],
       bind_port_id: pid,
       bind_payload: { greeting: "yo" },
@@ -308,11 +304,11 @@ describe("applyNbcTurn", () => {
 describe("nbc session reads", () => {
   test("getBindablePortsForParty filters by extending party", async () => {
     const client = new ObpPersistenceClient(new InMemoryStrategy());
-    const { party: alice } = await client.registerParty({ name: "Alice", sourcemaps: [] });
-    const { party: bob } = await client.registerParty({ name: "Bob", sourcemaps: [] });
+    const { party: alice } = await client.registerParty({ name: "Alice" });
+    const { party: bob } = await client.registerParty({ name: "Bob" });
 
     const body = parseNbcTurnBody({
-      offer: { id: "", expires_turn: 100, expires_at_relay_ms: 0, type: "step", sourcemaps: [] },
+      offer: { id: "", expires_turn: 100, expires_at_relay_ms: 0, type: "step" },
       ports: [
         {
           id: "",
@@ -344,9 +340,9 @@ describe("nbc session reads", () => {
 
   test("nbcNaturalStop after empty turn with no bindables", async () => {
     const client = new ObpPersistenceClient(new InMemoryStrategy());
-    const { party } = await client.registerParty({ name: "Solo", sourcemaps: [] });
+    const { party } = await client.registerParty({ name: "Solo" });
     const body = parseNbcTurnBody({
-      offer: { id: "", expires_turn: 100, expires_at_relay_ms: 0, type: "step", sourcemaps: [] },
+      offer: { id: "", expires_turn: 100, expires_at_relay_ms: 0, type: "step" },
       ports: [],
       bind_port_id: "",
       bind_payload: null,

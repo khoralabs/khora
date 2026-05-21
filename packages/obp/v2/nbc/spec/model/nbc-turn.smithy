@@ -3,7 +3,6 @@ $version: "2"
 namespace cfd.obp.nbc
 
 use smithy.api#Document
-use cfd.obp#SourceMapRefList
 
 @documentation("""
 **Bilateral NBC turn payload** — JSON shape carried in **`cfd.obp.frame#Frame.body`** for negotiation TURN frames when peers use the Negotiated Binding Convention in a **private two-party** session.
@@ -16,8 +15,6 @@ structure NbcOfferSpec {
     /// Client placeholder; persistence assigns the canonical **`cfd.obp#Offer.id`**.
     id: String
     type: String
-    /// Optional source-map provenance links; empty list means none (maps to **`cfd.obp#Offer.sourcemaps`**).
-    sourcemaps: SourceMapRefList
     /// Turn-based NBC bind window (N1). **`0`** disables this mode. Persisted as **`nbc_expires_turn`** on the offer row — **not** a field on **`cfd.obp#Offer`**.
     expires_turn: Integer = 0
     /// Relay-anchored time bind window (N1). **`0`** disables this mode. Persisted as **`nbc_expires_at_relay_ms`** — **not** on **`cfd.obp#Offer`**.

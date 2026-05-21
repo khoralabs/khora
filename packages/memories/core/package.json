@@ -44,6 +44,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@khoralabs/sourcemaps": "workspace:*",
     "js-sha256": "^0.11.0",
     "@ai-sdk/provider-utils": "^4.0.23",
     "@khoralabs/reciprocal-rank-fusion": "workspace:*",

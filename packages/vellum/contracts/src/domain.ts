@@ -18,7 +18,7 @@ export type VellumPortRow = {
   ref: string;
   nbc_expires_turn: number;
   nbc_expires_at_relay_ms: number;
-  bind_policy_snapshot: unknown | null;
+  bind_policy: unknown | null;
 };
 
 export type VellumChainRow = {

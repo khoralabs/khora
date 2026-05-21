@@ -27,11 +27,6 @@ structure NbcBindSatisfaction {
     payload: Document
 }
 
-/// Optional audit copy of the **`NbcPortExposePolicy`** (or digest thereof) enforced at bind time; persists via **`ObpPersistence`** **`bind_policy_snapshot`** **`Document`** on bind rows / listings, not on **`cfd.obp#BindsEdge`**.
-structure NbcBindPolicyAuditSnapshot {
-    snapshot: Document
-}
-
 /// First-commit ledger tick for a persisted **`cfd.obp`** graph row (**`Party`**, **`Offer`**, **`Port`**, or an edge). **Not** a member of those shapes in `packages/obp/v2/model/spec/model/shapes.smithy`; **`ObpPersistence`** and NBC-aware adapters record **`created_seq`** (or equivalent) when they require monotonic row ordering or audit.
 structure NbcRowCommitMeta {
     created_seq: Long

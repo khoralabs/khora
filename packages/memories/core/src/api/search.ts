@@ -10,7 +10,7 @@ import type {
   NeighborFilter,
 } from "../models/neighbor-search-types";
 import type { OntologyLabelInstance } from "../models/ontology-label";
-import type { Edge, Memory, SourceMap } from "../persistence/rows.js";
+import type { Edge, Memory, SourceMapRow } from "../persistence/rows.js";
 import type { MemoriesBackendCapabilities, SearchNamespaceScope } from "../persistence/types";
 import { type MemoriesPersistence, resolveMemoriesBackendCapabilities } from "../persistence/types";
 import type { MutationCtx } from "./merge-memory";
@@ -92,7 +92,7 @@ export type SearchNeighborHit<
 };
 
 export interface SearchHit<NODE_LABELS extends string = string, EDGE_LABELS extends string = string>
-  extends SourceMap {
+  extends SourceMapRow {
   score: number;
   memory: Memory;
   labels: OntologyLabelInstance[];

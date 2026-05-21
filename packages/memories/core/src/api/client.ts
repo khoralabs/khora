@@ -11,10 +11,11 @@ import {
   zMergeMemoryContentItem,
 } from "./merge-memory";
 import { type OntologyDefinition, validateEdgeLabel, validateNodeLabel } from "./ontology";
-import type { DefaultEntityMap, ResolvedSource, Store } from "./resolve-sourcemap.js";
+import type { DefaultEntityMap, ResolvedSource } from "@khoralabs/sourcemaps";
+import type { Store } from "./resolve-sourcemap.js";
 import { type SearchHit, type SearchParams, search as searchHandler } from "./search";
 
-export type { DefaultEntityMap } from "./resolve-sourcemap.js";
+export type { DefaultEntityMap } from "@khoralabs/sourcemaps";
 
 type LabelKind<TLabels extends Record<string, z.ZodType>> = keyof TLabels & string;
 

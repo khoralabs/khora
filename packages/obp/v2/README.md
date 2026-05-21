@@ -4,8 +4,8 @@ This tree is a **physical split** of the OBP Smithy contract under canonical nam
 
 ## Layering (OBP vs NBC vs frames)
 
-- **`cfd.obp`:** Peer **DAG** — parties, offers, **ports as affordances** (identity, ledger expiry, ref, promise, type), **BINDS** as the bind-with-offer verb (**`BindsEdge`** is graph identity + receipts only). Policy payloads use **`cfd.obp.nbc`** shapes and **`ObpPersistence`** **`Document`** fields on bind operations / listings—not fields on **`BindsEdge`**.
-- **`cfd.obp.nbc`:** **When** a bind is allowed; **`NbcPortExposePolicy`**, **`NbcBindSatisfaction`**, **`NbcBindPolicyAuditSnapshot`**, **`NbcRowCommitMeta`** (`packages/obp/v2/nbc/spec/model/nbc-policy.smithy`); **NegotiatedBindingConvention** rules **N1–N9**.
+- **`cfd.obp`:** Peer **DAG** — parties, offers, **ports as affordances** (identity, ref, promise, type), **BINDS** as the bind-with-offer verb (**`BindsEdge`** is graph identity only). Policy payloads use **`cfd.obp.nbc`** shapes and **`ObpPersistence`** **`Document`** fields on bind operations / listings—not fields on **`BindsEdge`**.
+- **`cfd.obp.nbc`:** **When** a bind is allowed; **`NbcPortExposePolicy`**, **`NbcBindSatisfaction`**, **`NbcRowCommitMeta`** (`packages/obp/v2/nbc/spec/model/nbc-policy.smithy`); **NegotiatedBindingConvention** rules **N1–N9**.
 - **`cfd.obp.frame`:** Signed **Frame** DAG + **`SessionInit`**; **`Frame.body`** is **opaque** JSON for **TURN** / **END_OFFERS** / **TERMINATE** — no normative `TurnBody` / `PortSpec` wire shapes in v2.
 
 ```mermaid

@@ -1,5 +1,14 @@
 import { describe, expect, test } from "bun:test";
-import type { ResolvedSource } from "./resolve-sourcemap.ts";
+import type { ResolvedSource, SourceRef } from "@khoralabs/sourcemaps";
+import type { SourceMap, SourceMapLocators } from "../persistence/row-schemas.ts";
+
+describe("SourceMap ref contract", () => {
+  test("SourceMap satisfies SourceRef<SourceMapLocators>", () => {
+    const sm: SourceMap = { memory_id: "mem_1", source_key: "body" };
+    const ref: SourceRef<SourceMapLocators> = sm;
+    expect(ref.memory_id).toBe("mem_1");
+  });
+});
 
 describe("ResolvedSource", () => {
   test("json kind carries unparsed body", () => {
@@ -15,7 +24,7 @@ describe("ResolvedSource", () => {
     const r: ResolvedSource<EM> = {
       kind: "record",
       domain: "profile",
-      entityId: "p1",
+      entity_id: "p1",
       value: { id: "p1" },
     };
     if (r.kind === "record" && r.domain === "profile") {

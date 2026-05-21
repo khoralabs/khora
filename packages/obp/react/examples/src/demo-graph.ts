@@ -15,7 +15,6 @@ export function demoNbcChainGraph(): NbcChainGraph {
         partyName: "Buyer",
         expires_turn: 0,
         expires_at_relay_ms: 0,
-        sourcemaps: [],
       },
       {
         id: "offer-bind",
@@ -24,7 +23,6 @@ export function demoNbcChainGraph(): NbcChainGraph {
         partyName: "Seller",
         expires_turn: 0,
         expires_at_relay_ms: 0,
-        sourcemaps: [],
       },
     ],
     ports: [
@@ -33,7 +31,6 @@ export function demoNbcChainGraph(): NbcChainGraph {
         type: "afford-a",
         promise: "Affordance A.",
         ref: "",
-        sourcemaps: [],
         expires_turn: 0,
         expires_at_relay_ms: 0,
         exposedOnOfferIds: ["offer-genesis"],
@@ -44,7 +41,6 @@ export function demoNbcChainGraph(): NbcChainGraph {
         type: "afford-b",
         promise: "Affordance B.",
         ref: "",
-        sourcemaps: [],
         expires_turn: 0,
         expires_at_relay_ms: 0,
         exposedOnOfferIds: ["offer-genesis"],
@@ -55,7 +51,6 @@ export function demoNbcChainGraph(): NbcChainGraph {
         type: "next",
         promise: "Next-step affordance.",
         ref: "",
-        sourcemaps: [],
         expires_turn: 0,
         expires_at_relay_ms: 0,
         exposedOnOfferIds: ["offer-bind"],
@@ -75,9 +70,7 @@ export function demoNbcChainGraph(): NbcChainGraph {
       {
         offerId: "offer-bind",
         portId: "port-a",
-        content_receipts: [],
         bind_payload: null,
-        bind_policy_snapshot: null,
       },
     ],
   };

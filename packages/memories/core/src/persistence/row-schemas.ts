@@ -1,3 +1,4 @@
+import type { ContentHash, SourceRef } from "@khoralabs/sourcemaps";
 import z from "zod";
 import { MEMORY_NAMESPACE_PATH_REGEX } from "../models/namespace-path";
 import { defineSchema, zId } from "./define-schema";
@@ -188,7 +189,12 @@ export type MemoriesPersistenceSchema = z.infer<typeof memoriesPersistenceDocume
 
 export type Memory = MemoriesPersistenceSchema["memories"];
 export type MemoryProvenance = MemoriesPersistenceSchema["memory_provenance"];
-export type SourceMap = MemoriesPersistenceSchema["source_maps"];
+
+export type SourceMapLocators = { memory_id: string; source_key: string };
+/** Address ref for resolve / provenance (not the full persisted row). */
+export type SourceMap = SourceRef<SourceMapLocators> & { content_hash?: ContentHash };
+/** Persisted `source_maps` table row (`_id`, `_ts_created`, locators, optional hash). */
+export type SourceMapRow = MemoriesPersistenceSchema["source_maps"];
 export type TextFeature = MemoriesPersistenceSchema["text_features"];
 export type VectorFeature = MemoriesPersistenceSchema["vector_features"];
 export type Node = MemoriesPersistenceSchema["nodes"];

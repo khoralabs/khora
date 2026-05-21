@@ -44,7 +44,6 @@ export const DEFAULT_GENESIS_TURN_WIRE: Record<string, unknown> = {
     expires_turn: 100,
     expires_at_relay_ms: 0,
     type: "step",
-    sourcemaps: [],
   },
   ports: [
     {

@@ -428,6 +428,15 @@
         "typescript": "^5",
       },
     },
+    "packages/libs/sourcemaps": {
+      "name": "@khoralabs/sourcemaps",
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "packages/libs/sqlite-migrate": {
       "name": "@khoralabs/sqlite-migrate",
       "version": "0.0.0",
@@ -526,6 +535,7 @@
       "dependencies": {
         "@ai-sdk/provider-utils": "^4.0.23",
         "@khoralabs/reciprocal-rank-fusion": "workspace:*",
+        "@khoralabs/sourcemaps": "workspace:*",
         "ai": "^6",
         "js-sha256": "^0.11.0",
         "zod": "^4",
@@ -543,6 +553,7 @@
       "name": "@khoralabs/memories-convex",
       "dependencies": {
         "@khoralabs/memories-core": "workspace:*",
+        "@khoralabs/sourcemaps": "workspace:*",
         "convex": "^1.35.1",
       },
       "devDependencies": {
@@ -613,6 +624,7 @@
       "name": "@khoralabs/memories-stores",
       "dependencies": {
         "@khoralabs/memories-core": "workspace:*",
+        "@khoralabs/sourcemaps": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -1083,6 +1095,8 @@
     "@khoralabs/reciprocal-rank-fusion": ["@khoralabs/reciprocal-rank-fusion@workspace:packages/libs/reciprocal-rank-fusion"],
 
     "@khoralabs/relay-colonnade": ["@khoralabs/relay-colonnade@workspace:packages/atrium/relay-colonnade"],
+
+    "@khoralabs/sourcemaps": ["@khoralabs/sourcemaps@workspace:packages/libs/sourcemaps"],
 
     "@khoralabs/sqlite-migrate": ["@khoralabs/sqlite-migrate@workspace:packages/libs/sqlite-migrate"],
 

@@ -3,14 +3,7 @@
  * `packages/obp/v2/persistence/spec/model/persistence.smithy`.
  */
 
-import type {
-  ContentAddressedSourceRefList,
-  JsonDocument,
-  Offer,
-  Party,
-  Port,
-  SourceMapRefList,
-} from "@khoralabs/obp-v2-model";
+import type { JsonDocument, Offer, Party, Port } from "@khoralabs/obp-v2-model";
 
 // ---------------------------------------------------------------------------
 // Result unions (Smithy `union GetXResult`)
@@ -30,7 +23,6 @@ export type GetPortResult = { readonly kind: "notFound" } | { readonly kind: "po
 
 export type RegisterPartyInput = {
   name: string;
-  sourcemaps: SourceMapRefList;
 };
 
 export type RegisterPartyOutput = {
@@ -142,11 +134,8 @@ export type ListBindsInput = Record<string, never>;
 export type BindListingRow = {
   offerId: string;
   portId: string;
-  content_receipts: ContentAddressedSourceRefList;
   /** Persistence projection field; not on `cfd.obp#BindsEdge`. */
   bind_payload: JsonDocument;
-  /** Audit snapshot; not on `cfd.obp#BindsEdge`. */
-  bind_policy_snapshot: JsonDocument;
 };
 
 export type BindListingRowList = readonly BindListingRow[];

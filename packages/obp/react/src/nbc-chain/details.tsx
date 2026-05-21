@@ -76,8 +76,6 @@ export function NbcChainNodeDetails({ node, graph, ...rest }: NbcChainNodeDetail
                 </dd>
               </dl>
               <JsonBlock label="bind_payload (submitted)" value={b.bind_payload} />
-              <JsonBlock label="bind_policy_snapshot (at bind)" value={b.bind_policy_snapshot} />
-              <JsonBlock label="content_receipts" value={b.content_receipts} />
             </div>
           ))
         )}
@@ -172,9 +170,7 @@ export function NbcChainEdgeDetails({ edge, ...rest }: NbcChainEdgeDetailsProps)
           <code>{d.portId}</code>
         </dd>
       </dl>
-      <JsonBlock label="bind_policy_snapshot (at bind)" value={d.bind_policy_snapshot} />
       <JsonBlock label="bind_payload" value={d.bind_payload} />
-      <JsonBlock label="content_receipts" value={d.content_receipts} />
     </section>
   );
 }

@@ -3,7 +3,7 @@
  * `packages/obp/v2/nbc/spec/model/nbc-turn.smithy`.
  */
 
-import type { JsonDocument, Port, SourceMapRefList } from "@khoralabs/obp-v2-model";
+import type { JsonDocument, Port } from "@khoralabs/obp-v2-model";
 
 /** Service version from `NbcNegotiationProtocol` in Smithy. */
 export const NBC_NEGOTIATION_PROTOCOL_VERSION = "2026-05-14" as const;
@@ -12,7 +12,6 @@ export const NBC_NEGOTIATION_PROTOCOL_VERSION = "2026-05-14" as const;
 export type NbcOfferSpec = {
   id: string;
   type: string;
-  sourcemaps: SourceMapRefList;
   expires_turn: number;
   expires_at_relay_ms: number;
 };
@@ -63,19 +62,6 @@ function toRelayMs(v: unknown, field: string): number {
   return n;
 }
 
-function parseSourceMapRefList(v: unknown): SourceMapRefList {
-  if (!Array.isArray(v)) return [];
-  const out: { resource_id: string; source_key: string }[] = [];
-  for (const el of v) {
-    if (!isRecord(el)) continue;
-    const resource_id = el.resource_id;
-    const source_key = el.source_key;
-    if (typeof resource_id !== "string" || typeof source_key !== "string") continue;
-    out.push({ resource_id, source_key });
-  }
-  return out;
-}
-
 function parseNbcOfferSpec(v: unknown): NbcOfferSpec {
   if (!isRecord(v)) throw new TypeError("offer: expected object");
   const id = v.id;
@@ -84,8 +70,7 @@ function parseNbcOfferSpec(v: unknown): NbcOfferSpec {
   if (typeof type !== "string") throw new TypeError("offer.type: expected string");
   const expires_turn = toNonnegInt(v.expires_turn, "offer.expires_turn");
   const expires_at_relay_ms = toRelayMs(v.expires_at_relay_ms, "offer.expires_at_relay_ms");
-  const sourcemaps = parseSourceMapRefList(v.sourcemaps);
-  return { id, type, expires_turn, expires_at_relay_ms, sourcemaps };
+  return { id, type, expires_turn, expires_at_relay_ms };
 }
 
 function parseNbcPortSpec(v: unknown): NbcPortSpec {
@@ -123,8 +108,7 @@ export function parseNbcTurnBody(v: unknown): NbcTurnBody {
     const type = String(v.offerType ?? "");
     const expires_turn = toNonnegInt(v.expires_turn, "expires_turn");
     const expires_at_relay_ms = toRelayMs(v.expires_at_relay_ms, "expires_at_relay_ms");
-    const sourcemaps = parseSourceMapRefList(v.sourcemaps);
-    offer = { id, type, expires_turn, expires_at_relay_ms, sourcemaps };
+    offer = { id, type, expires_turn, expires_at_relay_ms };
   }
 
   const portsRaw = v.ports;
@@ -165,6 +149,5 @@ export function nbcPortSpecToPort(spec: NbcPortSpec): Port {
     type: spec.type,
     promise: spec.promise,
     ref: spec.ref,
-    sourcemaps: [],
   };
 }

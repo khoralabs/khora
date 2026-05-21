@@ -36,7 +36,6 @@ export function nbcTurnBodyToWireRecord(body: NbcTurnBody): Record<string, unkno
       body.offer.expires_at_relay_ms >= Number.MIN_SAFE_INTEGER
         ? Number(body.offer.expires_at_relay_ms)
         : String(body.offer.expires_at_relay_ms),
-    sourcemaps: body.offer.sourcemaps,
     ports: body.ports.map((p) => ({
       id: p.id,
       type: p.type,

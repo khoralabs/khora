@@ -12,6 +12,8 @@ export type {
   NodeLabel,
   NodeLabelAssignment,
   SourceMap,
+  SourceMapLocators,
+  SourceMapRow,
   TextFeature,
   TextFeatureExportRow,
   VectorFeature,

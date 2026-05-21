@@ -2,7 +2,7 @@
  * View-model graph for NBC chain visualization — derived from {@link ObpPersistenceClient} reads.
  */
 
-import type { JsonDocument, SourceMapRefList } from "@khoralabs/obp-v2-model";
+import type { JsonDocument } from "@khoralabs/obp-v2-model";
 import type { BindListingRow } from "@khoralabs/obp-v2-persistence";
 
 export type NbcChainPartyRow = {
@@ -24,7 +24,6 @@ export type NbcChainExposeEdge = {
 export type NbcChainOfferRow = {
   readonly id: string;
   readonly type: string;
-  readonly sourcemaps: SourceMapRefList;
   readonly expires_turn: number;
   readonly expires_at_relay_ms: number;
   readonly partyId: string;
@@ -38,7 +37,6 @@ export type NbcChainPortRow = {
   readonly type: string;
   readonly promise: string;
   readonly ref: string;
-  readonly sourcemaps: SourceMapRefList;
   readonly expires_turn: number;
   readonly expires_at_relay_ms: number;
   readonly exposedOnOfferIds: readonly string[];

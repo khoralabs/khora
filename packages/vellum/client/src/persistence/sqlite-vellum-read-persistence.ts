@@ -93,12 +93,12 @@ export class SqliteVellumReadModel implements VellumReadModel {
         )
         .get(portId);
       if (r == null) return undefined;
-      let bind_policy_snapshot: unknown | null = null;
+      let bind_policy: unknown | null = null;
       if (r.bind_policy_json !== null && r.bind_policy_json.length > 0) {
         try {
-          bind_policy_snapshot = JSON.parse(r.bind_policy_json) as unknown;
+          bind_policy = JSON.parse(r.bind_policy_json) as unknown;
         } catch {
-          bind_policy_snapshot = null;
+          bind_policy = null;
         }
       }
       return {
@@ -108,7 +108,7 @@ export class SqliteVellumReadModel implements VellumReadModel {
         ref: r.ref,
         nbc_expires_turn: r.nbc_expires_turn,
         nbc_expires_at_relay_ms: r.nbc_expires_at_relay_ms,
-        bind_policy_snapshot,
+        bind_policy,
       };
     });
   }
