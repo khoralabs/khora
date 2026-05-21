@@ -33,6 +33,7 @@ export type CellRef = {
 export type OutboxLocators = {
   readonly cell_id: CellId;
   readonly record_key: OutboxRecordKey;
+  readonly cell_pool_count: number;
 };
 
 export type OutboxLocator = OutboxLocators;
@@ -40,6 +41,7 @@ export type OutboxLocator = OutboxLocators;
 export type PointerLocators = {
   readonly source_cell_id: CellId;
   readonly source_record_key: OutboxRecordKey;
+  readonly cell_pool_count: number;
 };
 
 export type PointerRef = ContentAddressedRef<PointerLocators>;
@@ -348,6 +350,7 @@ export type PostOperationInput = {
   readonly author_principal_id: PrincipalId;
   readonly author_cell_id: CellId;
   readonly tenant_key: TenantKey;
+  readonly cell_pool_count: number;
   readonly payload_bytes: Uint8Array;
   readonly payload_metadata: JsonDocument;
   readonly routing: PublicationRouting;

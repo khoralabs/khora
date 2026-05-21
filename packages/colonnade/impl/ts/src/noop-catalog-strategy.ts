@@ -26,6 +26,7 @@ const MISS_POINTER: PointerRef = {
   source_cell_id: "_",
   source_record_key: "_",
   content_hash: ZERO_HASH,
+  cell_pool_count: 1,
 };
 
 /** Default when `PostOperation` runs with `replicate_to_catalog: false` (no discovery/pointer writes). */

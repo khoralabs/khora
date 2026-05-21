@@ -15,6 +15,8 @@ import {
   resolveSourcemap,
 } from "./resolve-pointer.ts";
 
+const POOL = 16;
+
 describe("Outbox / pointer Store adapters", () => {
   test("createOutboxLocatorStore roundtrips blob", async () => {
     const cell = new CellPersistenceClient(new InMemoryCellPersistenceStrategy("cell-a"));
@@ -27,9 +29,9 @@ describe("Outbox / pointer Store adapters", () => {
       payload_bytes: bytes,
       metadata: {},
     });
-    const store = createOutboxLocatorStore(cell);
+    const store = createOutboxLocatorStore(cell, POOL);
     const resolved = await resolveSourcemap(
-      { cell_id: "cell-a", record_key: out.record_key },
+      { cell_id: "cell-a", record_key: out.record_key, cell_pool_count: POOL },
       store,
     );
     expect(resolved.kind).toBe("blob");
@@ -40,9 +42,9 @@ describe("Outbox / pointer Store adapters", () => {
 
   test("createOutboxLocatorStore throws OutboxGhostError on missing row", async () => {
     const cell = new CellPersistenceClient(new InMemoryCellPersistenceStrategy("cell-a"));
-    const store = createOutboxLocatorStore(cell);
+    const store = createOutboxLocatorStore(cell, POOL);
     await expect(
-      resolveSourcemap({ cell_id: "cell-a", record_key: "missing" }, store),
+      resolveSourcemap({ cell_id: "cell-a", record_key: "missing", cell_pool_count: POOL }, store),
     ).rejects.toBeInstanceOf(OutboxGhostError);
   });
 
@@ -61,8 +63,9 @@ describe("Outbox / pointer Store adapters", () => {
       source_cell_id: "cell-a",
       source_record_key: out.record_key,
       content_hash: out.content_hash,
+      cell_pool_count: POOL,
     };
-    const store = createPointerStore(cell);
+    const store = createPointerStore(cell, POOL);
     const resolved = await resolveSourcemap(ptr, store);
     expect(resolved.kind).toBe("blob");
     if (resolved.kind !== "blob") throw new Error("expected blob");
@@ -84,8 +87,9 @@ describe("Outbox / pointer Store adapters", () => {
       source_cell_id: "cell-a",
       source_record_key: out.record_key,
       content_hash: "0".repeat(64),
+      cell_pool_count: POOL,
     };
-    const store = createPointerStore(cell);
+    const store = createPointerStore(cell, POOL);
     await expect(resolveSourcemap(ptr, store)).rejects.toBeInstanceOf(PointerHashMismatchError);
   });
 });
@@ -107,7 +111,7 @@ describe("InMemoryCellPersistenceStrategy", () => {
 
     const fetchA = await cellA.fetchOutboxPayload({
       cell_id: "cell-a",
-      locator: { cell_id: "cell-a", record_key: out.record_key },
+      locator: { cell_id: "cell-a", record_key: out.record_key, cell_pool_count: POOL },
     });
     expect(fetchA.bytes_available).toBe(true);
     expect(new TextDecoder().decode(fetchA.payload_bytes)).toBe("hello");
@@ -116,6 +120,7 @@ describe("InMemoryCellPersistenceStrategy", () => {
       source_cell_id: "cell-a",
       source_record_key: out.record_key,
       content_hash: out.content_hash,
+      cell_pool_count: POOL,
     };
     const { inbox_entry_id } = await cellB.enqueueInboxDelivery({
       cell_id: "cell-b",
@@ -194,6 +199,7 @@ describe("CatalogRead model (in-memory)", () => {
       source_cell_id: "cell-src",
       source_record_key: "rk1",
       content_hash: sha256HexLower(new TextEncoder().encode("payload")),
+      cell_pool_count: POOL,
     };
     const projection = { span: [0, 4] };
     const rowOut = await catalog.upsertSourceMapPointerRow({
@@ -262,6 +268,7 @@ describe("ColonnadePublicationClient", () => {
       author_principal_id: "alice",
       author_cell_id: "cell-a",
       tenant_key: "tenant",
+      cell_pool_count: POOL,
       payload_bytes: body,
       payload_metadata: { kind: "test" },
       routing: {
@@ -300,6 +307,7 @@ describe("ColonnadePublicationClient", () => {
       author_principal_id: "alice",
       author_cell_id: "cell-a",
       tenant_key: "tenant",
+      cell_pool_count: POOL,
       payload_bytes: new TextEncoder().encode("{}"),
       payload_metadata: {},
       routing: { replicate_to_catalog: false, catalog_envelope: {}, fan_out_targets: [] },

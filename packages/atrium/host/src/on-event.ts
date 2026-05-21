@@ -43,6 +43,12 @@ async function publishPost(params: {
   if (address === undefined) {
     throw new Error("publishPost: post.id is not a valid address-encoded id");
   }
+  if (
+    cluster.cellPoolCount !== undefined &&
+    address.cellPoolCount !== cluster.cellPoolCount
+  ) {
+    throw new Error("publishPost: post id cell pool count does not match cluster");
+  }
 
   const authorPrincipalId = address.authorPrincipalId;
   const authorCellId = address.authorCellId;
@@ -103,6 +109,7 @@ async function publishPost(params: {
     author_principal_id: authorPrincipalId,
     author_cell_id: authorCellId,
     tenant_key: tenantKey,
+    cell_pool_count: address.cellPoolCount,
     payload_bytes,
     payload_metadata: { postId: post.id, postKind: post.kind },
     outbox_record_key: address.recordKey,
@@ -200,10 +207,13 @@ export function createAtriumRelayOnEvent(deps: {
 export function assignPostAddress(params: {
   cluster: SqliteColonnadeCluster;
   authorPrincipalId: string;
-}): { recordKey: string; authorCellId: string } {
-  const authorCellId = params.cluster.assignPrincipalToCell(params.authorPrincipalId);
+}): { recordKey: string; cellPoolCount: number } {
+  const cellPoolCount = params.cluster.cellPoolCount;
+  if (cellPoolCount === undefined) {
+    throw new Error("assignPostAddress requires a pool-mode Colonnade cluster");
+  }
   const recordKey = randomId("ob");
-  return { recordKey, authorCellId };
+  return { recordKey, cellPoolCount };
 }
 
 export { encodePostId } from "./post-address-id.ts";

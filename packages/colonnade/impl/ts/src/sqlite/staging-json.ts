@@ -27,6 +27,7 @@ export function inboxStagingToJson(s: InboxStagingPayload): string {
         source_cell_id: s.pointer.pointer.source_cell_id,
         source_record_key: s.pointer.pointer.source_record_key,
         content_hash: s.pointer.pointer.content_hash,
+        cell_pool_count: s.pointer.pointer.cell_pool_count,
       },
       ...(s.pointer.metadata !== undefined ? { metadata: s.pointer.metadata } : {}),
     },
@@ -42,6 +43,7 @@ export function inboxStagingFromJson(text: string): InboxStagingPayload {
         source_cell_id?: string;
         source_record_key?: string;
         content_hash?: string;
+        cell_pool_count?: number;
       };
       metadata?: unknown;
     };
@@ -63,13 +65,15 @@ export function inboxStagingFromJson(text: string): InboxStagingPayload {
     v.kind === "pointer" &&
     v.pointer?.pointer?.source_cell_id !== undefined &&
     v.pointer.pointer.source_record_key !== undefined &&
-    v.pointer.pointer.content_hash !== undefined
+    v.pointer.pointer.content_hash !== undefined &&
+    typeof v.pointer.pointer.cell_pool_count === "number"
   ) {
     const payload: import("../colonnade-types.ts").PointerPayload = {
       pointer: {
         source_cell_id: v.pointer.pointer.source_cell_id,
         source_record_key: v.pointer.pointer.source_record_key,
         content_hash: v.pointer.pointer.content_hash,
+        cell_pool_count: v.pointer.pointer.cell_pool_count,
       },
       ...(v.pointer.metadata !== undefined ? { metadata: v.pointer.metadata } : {}),
     };

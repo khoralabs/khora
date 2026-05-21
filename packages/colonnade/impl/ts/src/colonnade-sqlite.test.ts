@@ -41,6 +41,7 @@ describe("SQLite Colonnade cluster", () => {
         author_principal_id: "alice",
         author_cell_id: aliceCell,
         tenant_key: "tenant",
+        cell_pool_count: 2,
         payload_bytes: body,
         payload_metadata: { kind: "sqlite-test" },
         routing: {
@@ -72,6 +73,7 @@ describe("SQLite Colonnade cluster", () => {
         locator: {
           cell_id: ptr.pointer.pointer.source_cell_id,
           record_key: ptr.pointer.pointer.source_record_key,
+          cell_pool_count: ptr.pointer.pointer.cell_pool_count,
         },
       });
       expect(fetched.bytes_available).toBe(true);
@@ -124,6 +126,7 @@ describe("SQLite Colonnade cluster", () => {
         author_principal_id: "author",
         author_cell_id: authorCell,
         tenant_key,
+        cell_pool_count: 1,
         payload_bytes: body,
         payload_metadata: {},
         routing: {
@@ -177,6 +180,7 @@ describe("SQLite Colonnade cluster", () => {
           author_principal_id: "alice",
           author_cell_id: aliceCell,
           tenant_key: "tenant",
+          cell_pool_count: 2,
           payload_bytes: body,
           payload_metadata: {},
           routing: {

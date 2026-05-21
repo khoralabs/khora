@@ -46,16 +46,16 @@ Writes use `INSERT OR IGNORE` / `DELETE` — no JSON array RMW.
 
 | Id | Format | Notes |
 |----|--------|-------|
-| **`postId`** | `atp1:` + base64url(JSON `{p,c,r}`) | Encodes `authorPrincipalId`, `authorCellId`, `recordKey`. Not a UUID. |
+| **`postId`** | `atp0:` + base64url(JSON `{p,r,n}`) | Encodes `authorPrincipalId`, `recordKey`, `cellPoolCount`. Not a UUID. |
 | `record_key` | `ob_{32 hex}` | Colonnade outbox row key; pre-assigned before append |
 | `content_hash` | 64 lowercase hex SHA-256 | Verified on inbox drain |
-| `authorCellId` | cell pool id | From `assignPrincipalToCell(did)` |
+| `authorCellId` | cell pool id | Derived: `derivePoolHomeCell(authorPrincipalId, cellPoolCount)` |
 
 ### Encode/decode (`post-address-id.ts`)
 
 ```typescript
-encodePostId({ authorPrincipalId, authorCellId, recordKey }) → string
-decodePostId(id) → PostAddress | undefined
+encodePostId({ authorPrincipalId, recordKey, cellPoolCount }) → string
+decodePostId(id) → DecodedPostAddress | undefined  // includes derived authorCellId
 ```
 
 Invalid ids decode to `undefined`. Post JSON `id` field must match encoded address.
@@ -66,7 +66,7 @@ Invalid ids decode to `undefined`. Post JSON `id` field must match encoded addre
 |----|--------|-------|
 | `inbox_entry_id` | `ib_{32 hex}` | One row per delivery |
 | `correlation_id` | `fan_{32 hex}` | Fan-out internal |
-| inbox pointer | `{ source_cell_id, source_record_key, content_hash }` | Points at **author** outbox |
+| inbox pointer | `{ source_cell_id, source_record_key, content_hash, cell_pool_count }` | Points at **author** outbox |
 | inbox pointer metadata | JSON | `{ postId, authorPrincipalId, reasons, createdAtMs, postKind }` |
 | inline staging | JSON bytes + hash | Room tickets |
 

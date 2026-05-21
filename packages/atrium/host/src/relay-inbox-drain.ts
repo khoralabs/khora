@@ -1,4 +1,5 @@
 import {
+  CellPoolCountMismatchError,
   createPointerStore,
   OutboxGhostError,
   PointerHashMismatchError,
@@ -43,7 +44,7 @@ export async function popRelayInboxDrainItemsForDid(
   const pointerStoreForCell = (sourceCellId: string): PointerStore => {
     let store = pointerStores.get(sourceCellId);
     if (store === undefined) {
-      store = createPointerStore(cluster.resolveCell(sourceCellId));
+      store = createPointerStore(cluster.resolveCell(sourceCellId), ctx.cellPoolCount);
       pointerStores.set(sourceCellId, store);
     }
     return store;
@@ -110,7 +111,11 @@ export async function popRelayInboxDrainItemsForDid(
       }
       verified_bytes = new Uint8Array(await resolved.blob.arrayBuffer());
     } catch (err) {
-      if (err instanceof OutboxGhostError || err instanceof PointerHashMismatchError) {
+      if (
+        err instanceof OutboxGhostError ||
+        err instanceof PointerHashMismatchError ||
+        err instanceof CellPoolCountMismatchError
+      ) {
         toDiscard.push(e.inbox_entry_id);
         continue;
       }

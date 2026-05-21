@@ -9,7 +9,7 @@ Details: [colonnade-usage.md](./colonnade-usage.md), [id-conventions.md](./id-co
 | Tier | What | Where |
 |------|------|--------|
 | **1** | Profiles, registrations, subscriptions, username index, social/rooms | Relay catalog SQLite: `relay_catalog_projections` + edge tables (`relay_subscription_edges`, `relay_social_principal_channels`) |
-| **2** | Post bodies | Author cell **outbox** only; ids are address-encoded (`atp1:…`) |
+| **2** | Post bodies | Author cell **outbox** only; ids are address-encoded (`atp0:…`) |
 | **3** | Delivery to principals | Cell **inbox** — pointer fan-out (posts), inline JSON (room tickets) |
 
 Posts are **not** in the catalog. Publication uses `replicate_to_catalog: false`; Colonnade publication catalog is the built-in noop (profiles/subs/rooms use `relay_catalog_projections`, not `CatalogPersistenceStrategy`).

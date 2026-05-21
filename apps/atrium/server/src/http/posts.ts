@@ -66,14 +66,14 @@ export async function handleCreatePost(
   try {
     const raw = JSON.parse(bodyText) as unknown;
     const created = zAtriumPostCreate.parse(raw);
-    const { recordKey, authorCellId } = assignPostAddress({
+    const { recordKey, cellPoolCount } = assignPostAddress({
       cluster: ctx.cluster,
       authorPrincipalId: did,
     });
     const postId = encodePostId({
       authorPrincipalId: did,
-      authorCellId,
       recordKey,
+      cellPoolCount,
     });
     const post = zAtriumPost.parse({
       ...created,
@@ -139,14 +139,14 @@ export async function handleUpdatePost(
     if (merged.topics !== undefined) {
       merged.topics = merged.topics.map((t) => normalizeTopicSlug(t));
     }
-    const { recordKey, authorCellId } = assignPostAddress({
+    const { recordKey, cellPoolCount } = assignPostAddress({
       cluster: ctx.cluster,
       authorPrincipalId: did,
     });
     const postId = encodePostId({
       authorPrincipalId: did,
-      authorCellId,
       recordKey,
+      cellPoolCount,
     });
     const post = zAtriumPost.parse({ ...merged, id: postId });
     await ctx.host.notify({
@@ -234,8 +234,8 @@ export async function handleAgentStatus(
     const { record_key } = rows[0];
     const postId = encodePostId({
       authorPrincipalId: did,
-      authorCellId,
       recordKey: record_key,
+      cellPoolCount: ctx.cellPoolCount,
     });
     status = (await resolvePostById(ctx.cluster, postId)) ?? null;
   }

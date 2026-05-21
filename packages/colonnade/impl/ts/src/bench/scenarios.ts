@@ -137,6 +137,7 @@ export async function benchPostOutboxOnly(params: BenchRunParams): Promise<Bench
         author_principal_id: `bench-author-${seed}`,
         author_cell_id: author,
         tenant_key: TENANT,
+        cell_pool_count: 16,
         payload_bytes: bytes,
         payload_metadata: BENCH_PAYLOAD_META,
         routing: {
@@ -178,6 +179,7 @@ export async function benchPostCatalogFanout(params: BenchRunParams): Promise<Be
         author_principal_id: `bench-author-${seed}`,
         author_cell_id: author,
         tenant_key: TENANT,
+        cell_pool_count: 16,
         payload_bytes: bytes,
         payload_metadata: BENCH_PAYLOAD_META,
         routing: {
@@ -277,6 +279,7 @@ export async function benchDrainCycle(params: BenchRunParams): Promise<BenchResu
         source_cell_id: src,
         source_record_key: out.record_key,
         content_hash: out.content_hash,
+        cell_pool_count: 16,
       };
 
       const recipientCell = resolve(dst);
@@ -290,7 +293,7 @@ export async function benchDrainCycle(params: BenchRunParams): Promise<BenchResu
 
       const fetched = await authorCell.fetchOutboxPayload({
         cell_id: src,
-        locator: { cell_id: src, record_key: out.record_key },
+        locator: { cell_id: src, record_key: out.record_key, cell_pool_count: 16 },
       });
 
       await recipientCell.verifyAndDrainInboxBatch({

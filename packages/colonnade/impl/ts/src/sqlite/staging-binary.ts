@@ -1,6 +1,6 @@
 import type { InboxStagingPayload, WriteOp } from "../colonnade-types.ts";
 import { assertContentHash, contentHashBytesToHex, contentHashHexToBytes } from "../hash.ts";
-import { inboxStagingFromJson, writeOpFromJson } from "./staging-json.ts";
+import { writeOpFromJson } from "./staging-json.ts";
 
 const MAGIC_STAGING = 0xc1;
 const MAGIC_WRITE_OP = 0xc2;
@@ -35,13 +35,16 @@ export function inboxStagingToBlob(s: InboxStagingPayload): Uint8Array {
     return out;
   }
   const p = s.pointer.pointer;
+  if (!Number.isInteger(p.cell_pool_count) || p.cell_pool_count < 1) {
+    throw new Error("Colonnade: pointer staging requires cell_pool_count >= 1");
+  }
   const cellId = utf8(p.source_cell_id);
   const rk = utf8(p.source_record_key);
   const hashB = contentHashHexToBytes(p.content_hash);
   const meta =
     s.pointer.metadata !== undefined ? utf8(JSON.stringify(s.pointer.metadata)) : new Uint8Array(0);
   const out = new Uint8Array(
-    2 + 2 + cellId.byteLength + 2 + rk.byteLength + 32 + 4 + meta.byteLength,
+    2 + 2 + cellId.byteLength + 2 + rk.byteLength + 32 + 4 + meta.byteLength + 4,
   );
   const dv = new DataView(out.buffer);
   let o = 0;
@@ -61,13 +64,15 @@ export function inboxStagingToBlob(s: InboxStagingPayload): Uint8Array {
   o += 4;
   if (meta.byteLength > 0) {
     out.set(meta, o);
+    o += meta.byteLength;
   }
+  dv.setUint32(o, p.cell_pool_count, true);
   return out;
 }
 
 export function inboxStagingFromBlob(buf: Uint8Array): InboxStagingPayload {
   if (buf.byteLength < 2 || buf[0] !== MAGIC_STAGING) {
-    return inboxStagingFromJson(new TextDecoder().decode(buf));
+    throw new Error("Colonnade: invalid inbox staging blob (expected magic 0xc1)");
   }
   const kind = buf[1];
   if (kind === KIND_INLINE) {
@@ -84,7 +89,7 @@ export function inboxStagingFromBlob(buf: Uint8Array): InboxStagingPayload {
     return { kind: "inline", inline: { bytes, content_hash } };
   }
   if (kind === KIND_POINTER) {
-    if (buf.byteLength < 2 + 2 + 2 + 32)
+    if (buf.byteLength < 2 + 2 + 2 + 32 + 4 + 4)
       throw new Error("SqliteColonnade: truncated pointer staging blob");
     const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
     let o = 2;
@@ -96,28 +101,31 @@ export function inboxStagingFromBlob(buf: Uint8Array): InboxStagingPayload {
     o += 2;
     const { s: source_record_key, next: o3 } = readUtf8(buf, o, rkLen);
     o = o3;
-    if (buf.byteLength < o + 32) throw new Error("SqliteColonnade: truncated pointer staging blob");
+    if (buf.byteLength < o + 32 + 4 + 4)
+      throw new Error("SqliteColonnade: truncated pointer staging blob");
     const content_hash = contentHashBytesToHex(buf.subarray(o, o + 32));
     assertContentHash(content_hash);
     o += 32;
+    const metaLen = dv.getUint32(o, true);
+    o += 4;
     let metadata: unknown | undefined;
-    if (o + 4 <= buf.byteLength) {
-      const metaLen = dv.getUint32(o, true);
-      o += 4;
-      if (metaLen > 0) {
-        if (buf.byteLength < o + metaLen)
-          throw new Error("SqliteColonnade: truncated pointer metadata");
-        const { s: metaStr } = readUtf8(buf, o, metaLen);
-        o += metaLen;
-        try {
-          metadata = JSON.parse(metaStr) as unknown;
-        } catch {
-          metadata = undefined;
-        }
+    if (metaLen > 0) {
+      if (buf.byteLength < o + metaLen + 4)
+        throw new Error("SqliteColonnade: truncated pointer metadata");
+      const { s: metaStr } = readUtf8(buf, o, metaLen);
+      o += metaLen;
+      try {
+        metadata = JSON.parse(metaStr) as unknown;
+      } catch {
+        metadata = undefined;
       }
     }
+    const cell_pool_count = dv.getUint32(o, true);
+    if (!Number.isInteger(cell_pool_count) || cell_pool_count < 1) {
+      throw new Error("SqliteColonnade: pointer staging missing valid cell_pool_count");
+    }
     const pointerPayload: import("../colonnade-types.ts").PointerPayload = {
-      pointer: { source_cell_id, source_record_key, content_hash },
+      pointer: { source_cell_id, source_record_key, content_hash, cell_pool_count },
       ...(metadata !== undefined ? { metadata } : {}),
     };
     return { kind: "pointer", pointer: pointerPayload };

@@ -20,12 +20,23 @@ export async function resolvePostById(
   if (address === undefined) {
     return undefined;
   }
+  if (
+    cluster.cellPoolCount !== undefined &&
+    address.cellPoolCount !== cluster.cellPoolCount
+  ) {
+    return undefined;
+  }
+  const poolCount = cluster.cellPoolCount ?? address.cellPoolCount;
   const cell = cluster.resolveCell(address.authorCellId);
-  const store = createOutboxLocatorStore(cell);
+  const store = createOutboxLocatorStore(cell, poolCount);
   let resolved: ResolvedSource;
   try {
     resolved = await resolveSourcemap(
-      { cell_id: address.authorCellId, record_key: address.recordKey },
+      {
+        cell_id: address.authorCellId,
+        record_key: address.recordKey,
+        cell_pool_count: poolCount,
+      },
       store,
     );
   } catch (e) {

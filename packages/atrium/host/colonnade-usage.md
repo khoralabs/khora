@@ -25,8 +25,8 @@ Three storage tiers for relay data. See [id-conventions.md](./id-conventions.md)
 **Rules:**
 
 - **No catalog rows for posts.** No `source_map_rows`, no metadata stub, no search index yet.
-- Post `id` is address-encoded (`atp1:` + base64url JSON of `{ authorPrincipalId, authorCellId, recordKey }`). The id **is** the locator.
-- Resolve: `decodePostId` → `createOutboxLocatorStore` + `resolveSourcemap`. Ghost when outbox row deleted (`OutboxGhostError`).
+- Post `id` is address-encoded (`atp0:` + base64url JSON of `{ authorPrincipalId, recordKey, cellPoolCount }`). `authorCellId` is derived at decode.
+- Resolve: `decodePostId` → verify `cellPoolCount` → `createOutboxLocatorStore` + `resolveSourcemap`. Ghost when outbox row deleted (`OutboxGhostError`).
 - PATCH appends a new outbox record → **new post id** (immutable revisions). No re-fan-out on update.
 - Recipients learn post ids from **inbox drain** (pointer staging metadata includes `postId`).
 
@@ -51,7 +51,7 @@ Three storage tiers for relay data. See [id-conventions.md](./id-conventions.md)
 
 ## Fresh deploy
 
-This layout is **not** upgraded in place. Wipe catalog SQLite, frames DB, and `cells/` directory before deploying a build with this schema.
+This layout is **not** upgraded in place. Wipe catalog SQLite, frames DB, and `cells/` directory before deploying a build with this schema. `ATRIUM_CELL_POOL_COUNT` is pinned via [`docs/cell-pool-placement.md`](../../docs/cell-pool-placement.md).
 
 ## Deferred
 

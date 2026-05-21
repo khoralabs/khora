@@ -30,6 +30,7 @@ const MISS_POINTER: PointerRef = {
   source_cell_id: "_",
   source_record_key: "_",
   content_hash: ZERO_HASH,
+  cell_pool_count: 1,
 };
 
 function sourceMapStoreKey(tenant_key: string, source_map_id: string): string {

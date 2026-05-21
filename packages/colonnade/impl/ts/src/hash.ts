@@ -81,6 +81,7 @@ export function canonicalSourceMapRowBytes(params: {
       source_cell_id: params.pointer.source_cell_id,
       source_record_key: params.pointer.source_record_key,
       content_hash: params.pointer.content_hash,
+      cell_pool_count: params.pointer.cell_pool_count,
     },
     projection: params.projection,
   };

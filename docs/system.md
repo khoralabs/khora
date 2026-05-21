@@ -25,7 +25,7 @@ The relay catalog file holds **Atrium-specific tables only** (not Colonnade `dis
 
 - **Profiles:** `relay:entity:profile` — `{ id, memoryId, bodyJson, updatedAtMs }` or `{ deleted: true }`.
 - **Topics:** `relay:entity:topic` (same entity adapter pattern).
-- **Posts:** **not in catalog** — bodies live in author cell **outbox** only; ids are address-encoded (`atp1:…`). See Tier 2 in [`colonnade-usage.md`](/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/colonnade-usage.md).
+- **Posts:** **not in catalog** — bodies live in author cell **outbox** only; ids are address-encoded (`atp0:…`). See Tier 2 in [`colonnade-usage.md`](/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/colonnade-usage.md) and [`cell-pool-placement.md`](/Users/zach/Documents/dev/khora-labs/khora/docs/cell-pool-placement.md).
 - **Registration:** `relay:reg:by-principal` → `{ profileId }`; `relay:reg:by-profile` → `{ principalId }`.
 - **Subscriptions:** `relay_subscription_edges` — PK `(tenant_key, principal_id, subject)`; index on `(tenant_key, subject)`.
 - **Username index (global tenant):** `tenant_key = relay:username-index-global`, maps `relay:social:username-to-principal` / `relay:social:principal-to-username`.
@@ -102,7 +102,7 @@ Host builds `AtriumProfile` with **server-minted** `id: crypto.randomUUID()` (`c
 - `body`: string (max 100,000)
 - Stored document adds: `id`, `authorProfileId?` (required for `kind === "status"`)
 
-**Persistence:** post JSON is written **once** to the author's cell **outbox** (`on-event.ts` → `publishPost` / `postOperation`). The post `id` is address-encoded (`atp1:…` = author principal + cell + outbox record key). Recipients learn ids via inbox drain pointers. **No catalog projection** for posts.
+**Persistence:** post JSON is written **once** to the author's cell **outbox** (`on-event.ts` → `publishPost` / `postOperation`). The post `id` is address-encoded (`atp0:…` = author principal + outbox record key + pool count). Recipients learn ids via inbox drain pointers. **No catalog projection** for posts.
 
 ---
 

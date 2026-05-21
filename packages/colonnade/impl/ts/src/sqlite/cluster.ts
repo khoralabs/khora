@@ -5,6 +5,7 @@ import { join } from "node:path";
 import type { CatalogPersistenceStrategy } from "../catalog-persistence-strategy.ts";
 import type { CellPersistenceStrategy, ResolveCellStrategy } from "../cell-persistence-strategy.ts";
 import { defaultNoopCatalogPersistenceStrategy } from "../noop-catalog-strategy.ts";
+import { ensureCellPoolManifest } from "./cell-pool-manifest.ts";
 import { cellDbFilenameStem, derivePoolHomeCell, perPrincipalCellId } from "./principal-cell-id.ts";
 import { SqliteCellPersistenceStrategy } from "./sqlite-cell-strategy.ts";
 import { LazyWorkerBackedCellStrategy } from "./worker-backed-cell-strategy.ts";
@@ -25,6 +26,8 @@ export type SqliteColonnadeClusterOptions = {
 export type SqliteColonnadeCluster = {
   readonly catalog: CatalogPersistenceStrategy;
   readonly resolveCell: ResolveCellStrategy;
+  /** Pool mode: fixed N from startup; undefined in per-principal mode. */
+  readonly cellPoolCount: number | undefined;
   /** Pool mode: **`derivePoolHomeCell`**; per-principal: **`perPrincipalCellId`** (pure functions; no catalog rows). */
   assignPrincipalToCell(principalId: string): string;
   close(): void;
@@ -38,6 +41,10 @@ export function createSqliteColonnadeCluster(
   opts: SqliteColonnadeClusterOptions,
 ): SqliteColonnadeCluster {
   mkdirSync(opts.cellsDirectory, { recursive: true });
+
+  if (opts.mode.kind === "pool") {
+    ensureCellPoolManifest(opts.cellsDirectory, opts.mode.cellCount);
+  }
 
   const cellDbById = new Map<string, Database>();
   const cellStrategyById = new Map<string, SqliteCellPersistenceStrategy>();
@@ -92,6 +99,7 @@ export function createSqliteColonnadeCluster(
   return {
     catalog: opts.catalog ?? defaultNoopCatalogPersistenceStrategy(),
     resolveCell,
+    cellPoolCount: opts.mode.kind === "pool" ? opts.mode.cellCount : undefined,
     assignPrincipalToCell,
     close,
   };

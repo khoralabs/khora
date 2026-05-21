@@ -70,6 +70,7 @@ export class ColonnadePublicationClient {
           locator: {
             cell_id: input.author_cell_id,
             record_key: appendOut.record_key,
+            cell_pool_count: input.cell_pool_count,
           },
           content_hash: appendOut.content_hash,
           public_projection: input.routing.catalog_envelope,
@@ -90,6 +91,7 @@ export class ColonnadePublicationClient {
       input.author_cell_id,
       appendOut.record_key,
       input.tenant_key,
+      input.cell_pool_count,
     );
 
     return {
@@ -106,6 +108,7 @@ export class ColonnadePublicationClient {
     authorCellId: string,
     authorRecordKey: string,
     tenantKey: string,
+    cellPoolCount: number,
   ): Promise<readonly GeneratedInboxRef[]> {
     const byCell = new Map<string, FanOutTarget[]>();
     for (const target of routing.fan_out_targets) {
@@ -126,7 +129,13 @@ export class ColonnadePublicationClient {
           cell_id: target.recipient_cell_id,
           tenant_key: tenantKey,
           recipient_principal_id: target.recipient_principal_id,
-          staging: stagingForFanOut(target, authorCellId, authorRecordKey, contentHash),
+          staging: stagingForFanOut(
+            target,
+            authorCellId,
+            authorRecordKey,
+            contentHash,
+            cellPoolCount,
+          ),
           correlation_id: randomId("fan"),
         }));
 
@@ -141,7 +150,13 @@ export class ColonnadePublicationClient {
 
         const ids: string[] = [];
         for (const target of targets) {
-          const staging = stagingForFanOut(target, authorCellId, authorRecordKey, contentHash);
+          const staging = stagingForFanOut(
+            target,
+            authorCellId,
+            authorRecordKey,
+            contentHash,
+            cellPoolCount,
+          );
           const out = await cell.enqueueInboxDelivery({
             cell_id: target.recipient_cell_id,
             tenant_key: tenantKey,
@@ -179,11 +194,13 @@ function stagingForFanOut(
   authorCellId: string,
   authorRecordKey: string,
   contentHash: string,
+  cellPoolCount: number,
 ): import("./colonnade-types.ts").InboxStagingPayload {
   const pointer = {
     source_cell_id: authorCellId,
     source_record_key: authorRecordKey,
     content_hash: contentHash,
+    cell_pool_count: cellPoolCount,
   };
   return {
     kind: "pointer",

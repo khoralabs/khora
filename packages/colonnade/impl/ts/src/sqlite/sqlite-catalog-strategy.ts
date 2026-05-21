@@ -33,6 +33,7 @@ const MISS_POINTER: PointerRef = {
   source_cell_id: "_",
   source_record_key: "_",
   content_hash: ZERO_HASH,
+  cell_pool_count: 1,
 };
 
 export type SqliteCatalogPersistenceOptions = {
@@ -71,24 +72,25 @@ export class SqliteCatalogPersistenceStrategy implements CatalogPersistenceStrat
        ON CONFLICT(document_key) DO UPDATE SET body = excluded.body, revision = excluded.revision`,
     );
     this.stmtUpsertCatalogPointer = db.prepare(
-      `INSERT OR REPLACE INTO catalog_pointers(catalog_pointer_id, locator_cell_id, locator_record_key, content_hash, projection)
-       VALUES (?, ?, ?, ?, ?)`,
+      `INSERT OR REPLACE INTO catalog_pointers(catalog_pointer_id, locator_cell_id, locator_record_key, locator_cell_pool_count, content_hash, projection)
+       VALUES (?, ?, ?, ?, ?, ?)`,
     );
     this.stmtResolveCatalogPointer = db.prepare(
-      `SELECT locator_cell_id, locator_record_key, content_hash FROM catalog_pointers WHERE catalog_pointer_id = ?`,
+      `SELECT locator_cell_id, locator_record_key, locator_cell_pool_count, content_hash FROM catalog_pointers WHERE catalog_pointer_id = ?`,
     );
     this.stmtUpsertSourceMapRow = db.prepare(
-      `INSERT INTO source_map_rows(tenant_key, source_map_id, entry_key, pointer_source_cell_id, pointer_source_record_key, pointer_content_hash, projection, source_row_content_hash)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO source_map_rows(tenant_key, source_map_id, entry_key, pointer_source_cell_id, pointer_source_record_key, pointer_content_hash, pointer_cell_pool_count, projection, source_row_content_hash)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(tenant_key, source_map_id, entry_key) DO UPDATE SET
          pointer_source_cell_id = excluded.pointer_source_cell_id,
          pointer_source_record_key = excluded.pointer_source_record_key,
          pointer_content_hash = excluded.pointer_content_hash,
+         pointer_cell_pool_count = excluded.pointer_cell_pool_count,
          projection = excluded.projection,
          source_row_content_hash = excluded.source_row_content_hash`,
     );
     this.stmtLookupSourceMapRow = db.prepare(
-      `SELECT pointer_source_cell_id, pointer_source_record_key, pointer_content_hash, projection, source_row_content_hash
+      `SELECT pointer_source_cell_id, pointer_source_record_key, pointer_content_hash, pointer_cell_pool_count, projection, source_row_content_hash
        FROM source_map_rows WHERE tenant_key = ? AND source_map_id = ? AND entry_key = ?`,
     );
     this.stmtInsertConnectionToken = db.prepare(
@@ -111,7 +113,7 @@ export class SqliteCatalogPersistenceStrategy implements CatalogPersistenceStrat
     if (s === undefined) {
       const placeholders = Array.from({ length: n }, () => "?").join(",");
       s = this.db.prepare(
-        `SELECT entry_key, pointer_source_cell_id, pointer_source_record_key, pointer_content_hash, projection, source_row_content_hash
+        `SELECT entry_key, pointer_source_cell_id, pointer_source_record_key, pointer_content_hash, pointer_cell_pool_count, projection, source_row_content_hash
          FROM source_map_rows WHERE tenant_key = ? AND source_map_id = ? AND entry_key IN (${placeholders})`,
       );
       this.batchLookupBySize.set(n, s);
@@ -137,6 +139,7 @@ export class SqliteCatalogPersistenceStrategy implements CatalogPersistenceStrat
       input.catalog_pointer_id,
       input.locator.cell_id,
       input.locator.record_key,
+      input.locator.cell_pool_count,
       input.content_hash,
       JSON.stringify(input.public_projection),
     );
@@ -148,6 +151,7 @@ export class SqliteCatalogPersistenceStrategy implements CatalogPersistenceStrat
       | {
           locator_cell_id: string;
           locator_record_key: string;
+          locator_cell_pool_count: number;
           content_hash: string;
         }
       | null
@@ -161,6 +165,7 @@ export class SqliteCatalogPersistenceStrategy implements CatalogPersistenceStrat
       locator: {
         cell_id: row.locator_cell_id,
         record_key: row.locator_record_key,
+        cell_pool_count: row.locator_cell_pool_count,
       },
       content_hash: row.content_hash,
       cell: { cell_id: row.locator_cell_id, tenant_key: "" },
@@ -185,6 +190,7 @@ export class SqliteCatalogPersistenceStrategy implements CatalogPersistenceStrat
       input.pointer.source_cell_id,
       input.pointer.source_record_key,
       input.pointer.content_hash,
+      input.pointer.cell_pool_count,
       JSON.stringify(input.projection),
       source_row_content_hash,
     );
@@ -203,6 +209,7 @@ export class SqliteCatalogPersistenceStrategy implements CatalogPersistenceStrat
           pointer_source_cell_id: string;
           pointer_source_record_key: string;
           pointer_content_hash: string;
+          pointer_cell_pool_count: number;
           projection: string;
           source_row_content_hash: string;
         }
@@ -228,6 +235,7 @@ export class SqliteCatalogPersistenceStrategy implements CatalogPersistenceStrat
         source_cell_id: row.pointer_source_cell_id,
         source_record_key: row.pointer_source_record_key,
         content_hash: row.pointer_content_hash,
+        cell_pool_count: row.pointer_cell_pool_count,
       },
       source_row_content_hash: row.source_row_content_hash,
       projection,
@@ -247,6 +255,7 @@ export class SqliteCatalogPersistenceStrategy implements CatalogPersistenceStrat
       pointer_source_cell_id: string;
       pointer_source_record_key: string;
       pointer_content_hash: string;
+      pointer_cell_pool_count: number;
       projection: string;
       source_row_content_hash: string;
     }[];
@@ -263,6 +272,7 @@ export class SqliteCatalogPersistenceStrategy implements CatalogPersistenceStrat
           source_cell_id: row.pointer_source_cell_id,
           source_record_key: row.pointer_source_record_key,
           content_hash: row.pointer_content_hash,
+          cell_pool_count: row.pointer_cell_pool_count,
         },
         source_row_content_hash: row.source_row_content_hash,
         projection,

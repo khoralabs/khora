@@ -9,7 +9,8 @@ export {
   authorPrincipalIdFromPostId,
   decodePostId,
   encodePostId,
-  type PostAddress,
+  type DecodedPostAddress,
+  type PostAddressInput,
 } from "./post-address-id.ts";
 export {
   discardCellInboxRoomTickets,

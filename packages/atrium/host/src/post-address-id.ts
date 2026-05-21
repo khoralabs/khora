@@ -1,39 +1,50 @@
 /**
- * Address-encoded Atrium post ids (`atp1:` prefix).
+ * Address-encoded Atrium post ids (`atp0:` prefix).
  * See packages/atrium/host/id-conventions.md
  */
 
-export type PostAddress = {
-  authorPrincipalId: string;
-  authorCellId: string;
-  recordKey: string;
+import { derivePoolHomeCell } from "@khoralabs/colonnade-persistence";
+
+export type PostAddressInput = {
+  readonly authorPrincipalId: string;
+  readonly recordKey: string;
+  readonly cellPoolCount: number;
 };
 
-const PREFIX = "atp1:";
+export type DecodedPostAddress = PostAddressInput & {
+  readonly authorCellId: string;
+};
 
-export function encodePostId(address: PostAddress): string {
+const PREFIX = "atp0:";
+
+export function encodePostId(address: PostAddressInput): string {
   const payload = JSON.stringify({
     p: address.authorPrincipalId,
-    c: address.authorCellId,
     r: address.recordKey,
+    n: address.cellPoolCount,
   });
   return PREFIX + Buffer.from(payload, "utf8").toString("base64url");
 }
 
-export function decodePostId(id: string): PostAddress | undefined {
+export function decodePostId(id: string): DecodedPostAddress | undefined {
   if (!id.startsWith(PREFIX)) {
     return undefined;
   }
   try {
     const json = Buffer.from(id.slice(PREFIX.length), "base64url").toString("utf8");
-    const o = JSON.parse(json) as { p?: string; c?: string; r?: string };
-    if (typeof o.p !== "string" || typeof o.c !== "string" || typeof o.r !== "string") {
+    const o = JSON.parse(json) as { p?: string; r?: string; n?: number };
+    if (typeof o.p !== "string" || typeof o.r !== "string" || typeof o.n !== "number") {
       return undefined;
     }
-    if (o.p.length === 0 || o.c.length === 0 || o.r.length === 0) {
+    if (o.p.length === 0 || o.r.length === 0 || !Number.isInteger(o.n) || o.n < 1) {
       return undefined;
     }
-    return { authorPrincipalId: o.p, authorCellId: o.c, recordKey: o.r };
+    return {
+      authorPrincipalId: o.p,
+      recordKey: o.r,
+      cellPoolCount: o.n,
+      authorCellId: derivePoolHomeCell(o.p, o.n),
+    };
   } catch {
     return undefined;
   }

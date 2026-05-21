@@ -36,6 +36,7 @@ export type {
 export {
   createOutboxLocatorStore,
   createPointerStore,
+  CellPoolCountMismatchError,
   OutboxGhostError,
   PointerHashMismatchError,
   resolveSourcemap,
@@ -50,6 +51,11 @@ export {
   type SqliteColonnadeClusterMode,
   type SqliteColonnadeClusterOptions,
 } from "./sqlite/cluster.ts";
+export {
+  cellPoolManifestPath,
+  ensureCellPoolManifest,
+  type CellPoolManifest,
+} from "./sqlite/cell-pool-manifest.ts";
 export {
   cellDbFilenameStem,
   derivePoolHomeCell,

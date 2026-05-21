@@ -31,14 +31,14 @@ test("resolvePostById reads author outbox; delete leaves ghost", async () => {
     profileUpsert: { id: "prof-a", bodyJson: "{}" },
   });
 
-  const { recordKey, authorCellId } = assignPostAddress({
+  const { recordKey, cellPoolCount } = assignPostAddress({
     cluster: ctx.cluster,
     authorPrincipalId: "did:author",
   });
   const postId = encodePostId({
     authorPrincipalId: "did:author",
-    authorCellId,
     recordKey,
+    cellPoolCount,
   });
   const post = {
     id: postId,
@@ -49,8 +49,9 @@ test("resolvePostById reads author outbox; delete leaves ghost", async () => {
 
   await ctx.publicationClient.postOperation({
     author_principal_id: "did:author",
-    author_cell_id: authorCellId,
+    author_cell_id: ctx.cluster.assignPrincipalToCell("did:author"),
     tenant_key: ctx.tenantKey,
+    cell_pool_count: cellPoolCount,
     payload_bytes: new TextEncoder().encode(JSON.stringify(post)),
     payload_metadata: { postId, postKind: "post" },
     outbox_record_key: recordKey,
