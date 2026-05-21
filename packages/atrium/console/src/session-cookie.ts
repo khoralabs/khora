@@ -41,7 +41,10 @@ export function clearSessionCookie(): string {
   return `${COOKIE_NAME}=; Path=/admin; HttpOnly; SameSite=Lax; Max-Age=0`;
 }
 
-export function readSessionPrincipal(req: Request, rootToken: string): { id: string; role: "root" } | null {
+export function readSessionPrincipal(
+  req: Request,
+  rootToken: string,
+): { id: string; role: "root" } | null {
   const cookie = req.headers.get("cookie");
   if (cookie === null) return null;
   const match = cookie.match(new RegExp(`(?:^|;\\s*)${COOKIE_NAME}=([^;]+)`));

@@ -273,9 +273,6 @@ export class VellumClient {
     if (port === undefined) {
       throw new Error(`port not found: ${portId}`);
     }
-    return validateVellumBindPayloadForPort(
-      port.bind_policy as JsonDocument | null,
-      payload,
-    );
+    return validateVellumBindPayloadForPort(port.bind_policy as JsonDocument | null, payload);
   }
 }

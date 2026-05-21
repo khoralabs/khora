@@ -34,9 +34,9 @@ export type {
   SourceMapEntryRef,
 } from "./resolve-pointer.ts";
 export {
+  CellPoolCountMismatchError,
   createOutboxLocatorStore,
   createPointerStore,
-  CellPoolCountMismatchError,
   OutboxGhostError,
   PointerHashMismatchError,
   resolveSourcemap,
@@ -46,16 +46,16 @@ export {
   parseCatalogPointerShardIndex,
 } from "./sqlite/catalog-pointer-id.ts";
 export {
+  type CellPoolManifest,
+  cellPoolManifestPath,
+  ensureCellPoolManifest,
+} from "./sqlite/cell-pool-manifest.ts";
+export {
   createSqliteColonnadeCluster,
   type SqliteColonnadeCluster,
   type SqliteColonnadeClusterMode,
   type SqliteColonnadeClusterOptions,
 } from "./sqlite/cluster.ts";
-export {
-  cellPoolManifestPath,
-  ensureCellPoolManifest,
-  type CellPoolManifest,
-} from "./sqlite/cell-pool-manifest.ts";
 export {
   cellDbFilenameStem,
   derivePoolHomeCell,

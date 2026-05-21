@@ -1,6 +1,6 @@
 import type { Store } from "@khoralabs/memories-core";
-import type { DefaultEntityMap } from "@khoralabs/sourcemaps";
 import type { SourceMap } from "@khoralabs/memories-core/persistence";
+import type { DefaultEntityMap } from "@khoralabs/sourcemaps";
 import type { FunctionReference } from "convex/server";
 
 type RunQuery = (ref: unknown, args: Record<string, unknown>) => Promise<unknown>;

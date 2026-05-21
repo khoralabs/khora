@@ -7,9 +7,9 @@ export {
 export { assignPostAddress } from "./on-event.ts";
 export {
   authorPrincipalIdFromPostId,
+  type DecodedPostAddress,
   decodePostId,
   encodePostId,
-  type DecodedPostAddress,
   type PostAddressInput,
 } from "./post-address-id.ts";
 export {

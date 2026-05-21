@@ -1,4 +1,4 @@
-import { normalizeEmail, isBootstrapAdminEmail } from "./allowlist.ts";
+import { isBootstrapAdminEmail, normalizeEmail } from "./allowlist.ts";
 import { getAuthDatabase } from "./db.ts";
 
 type UserRow = { role: string | null };

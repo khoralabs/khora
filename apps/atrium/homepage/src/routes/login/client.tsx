@@ -1,4 +1,3 @@
-import { authClient } from "@khoralabs/atrium-console-auth/client";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { ArrowLeftIcon, ArrowRight, Loader } from "lucide-react";
 import { useState } from "react";
@@ -15,6 +14,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
+import { authClient } from "@/lib/auth-client";
 import { renderRoute } from "../../render-route";
 import "../../../styles/globals.css";
 
@@ -28,7 +28,7 @@ function nextPath(): string {
   if (next?.startsWith("/") && !next.startsWith("//")) {
     return next;
   }
-  return "/admin";
+  return "/";
 }
 
 type EmailFormCardProps = {

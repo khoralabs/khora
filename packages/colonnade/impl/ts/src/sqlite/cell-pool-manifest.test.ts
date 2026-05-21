@@ -4,9 +4,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import {
+  type CellPoolManifest,
   cellPoolManifestPath,
   ensureCellPoolManifest,
-  type CellPoolManifest,
 } from "./cell-pool-manifest.ts";
 
 const dirs: string[] = [];

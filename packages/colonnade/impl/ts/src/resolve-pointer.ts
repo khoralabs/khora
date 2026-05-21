@@ -20,9 +20,7 @@ export interface PointerStore extends ContentAddressedStore<PointerRef> {}
 /** Outbox row bytes were erased at source (ghost). */
 export class OutboxGhostError extends Error {
   constructor(readonly locators: OutboxLocators) {
-    super(
-      `Colonnade: outbox ghost (${locators.cell_id}/${locators.record_key})`,
-    );
+    super(`Colonnade: outbox ghost (${locators.cell_id}/${locators.record_key})`);
     this.name = "OutboxGhostError";
   }
 }

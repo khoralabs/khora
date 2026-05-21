@@ -1,8 +1,13 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from "react";
 import { useAdminCellDetail } from "./hooks/use-admin-cell-detail.ts";
 import { useAdminPrincipalLookup } from "./hooks/use-admin-principal-lookup.ts";
 import { useAdminSummary } from "./hooks/use-admin-summary.ts";
-import type { AdminCellDetail, AdminCellShardSummary, AdminPrincipal, AdminSummary } from "./types.ts";
+import type {
+  AdminCellDetail,
+  AdminCellShardSummary,
+  AdminPrincipal,
+  AdminSummary,
+} from "./types.ts";
 
 export type AdminStatsContextValue = {
   baseUrl: string;
@@ -50,7 +55,9 @@ export function AdminStatsProvider({
   onSelectedCellIdChange,
   children,
 }: AdminStatsProviderProps) {
-  const [uncontrolledCellId, setUncontrolledCellId] = useState<string | null>(defaultSelectedCellId);
+  const [uncontrolledCellId, setUncontrolledCellId] = useState<string | null>(
+    defaultSelectedCellId,
+  );
   const selectedCellId = selectedCellIdProp !== undefined ? selectedCellIdProp : uncontrolledCellId;
 
   const selectCell = useCallback(
@@ -63,10 +70,12 @@ export function AdminStatsProvider({
     [onSelectedCellIdChange, selectedCellIdProp],
   );
 
-  const { summary, isLoading: summaryLoading, error: summaryError, refetch } = useAdminSummary(
-    baseUrl,
-    fetchImpl,
-  );
+  const {
+    summary,
+    isLoading: summaryLoading,
+    error: summaryError,
+    refetch,
+  } = useAdminSummary(baseUrl, fetchImpl);
   const {
     detail: cellDetail,
     isLoading: cellDetailLoading,

@@ -1,14 +1,15 @@
-import { emailOTPClient } from "better-auth/client/plugins";
-import { createAuthClient } from "better-auth/react";
+/**
+ * @deprecated Use `@khoralabs/users-auth/client` and `createUsersAuthClient({ registryUrl })`.
+ */
+export { createUsersAuthClient } from "@khoralabs/users-auth/client";
 
-function clientBaseUrl(): string | undefined {
-  if (typeof window === "undefined") return undefined;
-  return window.location.origin;
-}
+import { createUsersAuthClient } from "@khoralabs/users-auth/client";
 
-export const authClient = createAuthClient({
-  baseURL: clientBaseUrl(),
-  basePath: "/api/auth",
-  fetchOptions: { credentials: "include" },
-  plugins: [emailOTPClient()],
+/** @deprecated Use `createUsersAuthClient({ registryUrl })`. */
+export const authClient = createUsersAuthClient({
+  registryUrl:
+    typeof window !== "undefined"
+      ? ((import.meta.env.BUN_PUBLIC_KHORA_REGISTRY_URL as string | undefined) ??
+        window.location.origin)
+      : (process.env.KHORA_REGISTRY_URL ?? "http://localhost:4000"),
 });

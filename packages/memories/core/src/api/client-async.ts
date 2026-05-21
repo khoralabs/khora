@@ -1,3 +1,4 @@
+import type { ResolvedSource } from "@khoralabs/sourcemaps";
 import type z from "zod";
 import type { DeleteMemoryParams } from "../models/delete-memory";
 import { deleteMemoryAsync } from "../models/delete-memory-async";
@@ -11,7 +12,6 @@ import {
 } from "./merge-memory-async";
 import type { OntologyDefinition } from "./ontology";
 import { validateEdgeLabel, validateNodeLabel } from "./ontology";
-import type { ResolvedSource } from "@khoralabs/sourcemaps";
 import type { Store } from "./resolve-sourcemap.js";
 import {
   type SearchHit,

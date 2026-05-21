@@ -1,6 +1,6 @@
-import { createConsoleAuthFromEnv } from "@khoralabs/atrium-console";
 import { mkdirSync, unlinkSync } from "node:fs";
 import { dirname } from "node:path";
+import { createConsoleAuthFromEnv } from "@khoralabs/atrium-console";
 import { type AtriumHostContext, createAtriumHost } from "@khoralabs/atrium-host";
 import type { AtriumWsData } from "@khoralabs/atrium-transport";
 import adminPage from "./admin-ui/routes/admin/index.html";

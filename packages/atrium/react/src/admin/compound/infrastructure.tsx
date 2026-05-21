@@ -1,11 +1,6 @@
 import type * as React from "react";
 import { cn } from "../cn.ts";
-import {
-  findCellShard,
-  formatBytes,
-  formatShardLabel,
-  useAdminStats,
-} from "../context.tsx";
+import { findCellShard, formatBytes, formatShardLabel, useAdminStats } from "../context.tsx";
 
 function MetricRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -30,19 +25,11 @@ function LoadingOrError({
   return null;
 }
 
-export function AdminStatsInfrastructure({
-  className,
-  ...props
-}: React.ComponentProps<"section">) {
-  return (
-    <section data-slot="admin-stats-infrastructure" className={cn(className)} {...props} />
-  );
+export function AdminStatsInfrastructure({ className, ...props }: React.ComponentProps<"section">) {
+  return <section data-slot="admin-stats-infrastructure" className={cn(className)} {...props} />;
 }
 
-export function AdminStatsCatalogMetrics({
-  className,
-  ...props
-}: React.ComponentProps<"dl">) {
+export function AdminStatsCatalogMetrics({ className, ...props }: React.ComponentProps<"dl">) {
   const { summary, summaryLoading, summaryError } = useAdminStats();
 
   return (
@@ -60,10 +47,7 @@ export function AdminStatsCatalogMetrics({
   );
 }
 
-export function AdminStatsFramesMetrics({
-  className,
-  ...props
-}: React.ComponentProps<"dl">) {
+export function AdminStatsFramesMetrics({ className, ...props }: React.ComponentProps<"dl">) {
   const { summary, summaryLoading, summaryError } = useAdminStats();
 
   return (
@@ -80,10 +64,7 @@ export function AdminStatsFramesMetrics({
   );
 }
 
-export function AdminStatsCellUtilizationBar({
-  className,
-  ...props
-}: React.ComponentProps<"div">) {
+export function AdminStatsCellUtilizationBar({ className, ...props }: React.ComponentProps<"div">) {
   const { summary, summaryLoading, summaryError } = useAdminStats();
   if (summaryLoading || summaryError !== null || summary === null) return null;
 
@@ -113,8 +94,7 @@ export function AdminStatsCellGrid({ className, ...props }: React.ComponentProps
       {summaryError !== null && <p data-slot="admin-stats-error">{summaryError}</p>}
       {!summaryLoading &&
         summaryError === null &&
-        summary !== null &&
-        summary.cells.shards.map((shard) => (
+        summary?.cells.shards.map((shard) => (
           <AdminStatsCellGridItem key={shard.cellId} cellId={shard.cellId} />
         ))}
     </div>
@@ -161,10 +141,7 @@ export function AdminStatsCellGridItem({
   );
 }
 
-export function AdminStatsCellDetail({
-  className,
-  ...props
-}: React.ComponentProps<"section">) {
+export function AdminStatsCellDetail({ className, ...props }: React.ComponentProps<"section">) {
   const { selectedCellId, cellDetail, cellDetailLoading, cellDetailError, selectCell } =
     useAdminStats();
 

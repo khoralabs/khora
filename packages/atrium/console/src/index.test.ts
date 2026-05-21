@@ -4,7 +4,7 @@ import { createConsoleAuthFromEnv, createRootTokenConsoleAuth } from "./index.ts
 describe("atrium-console", () => {
   test("createRootTokenConsoleAuth authenticates after login cookie", async () => {
     const auth = createRootTokenConsoleAuth({ rootToken: "test-root-token-16chars" });
-    const login = await auth.route!(
+    const login = await auth.route?.(
       new Request("http://x/admin/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

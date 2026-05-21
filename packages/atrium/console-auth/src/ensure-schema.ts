@@ -5,9 +5,7 @@ export function isAuthSchemaReady(): boolean {
   try {
     const db = getAuthDatabase();
     const row = db
-      .prepare(
-        `SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'verification'`,
-      )
+      .prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'verification'`)
       .get() as { name: string } | undefined;
     return row != null;
   } catch {
@@ -18,8 +16,6 @@ export function isAuthSchemaReady(): boolean {
 /** Apply pending @khoralabs/sqlite-migrate migrations when Better Auth tables are missing. */
 export async function ensureAuthSchema(): Promise<void> {
   if (isAuthSchemaReady()) return;
-  console.log(
-    `[atrium-console-auth] Creating auth tables in ${authDatabasePath()} …`,
-  );
+  console.log(`[atrium-console-auth] Creating auth tables in ${authDatabasePath()} …`);
   await initAuthSchema(getAuthDatabase());
 }

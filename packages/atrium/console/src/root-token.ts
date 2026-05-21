@@ -1,10 +1,10 @@
-import type { ConsoleAuth, ConsolePrincipal } from "./types.ts";
 import {
   clearSessionCookie,
   issueSessionCookie,
   readSessionPrincipal,
   tokensEqual,
 } from "./session-cookie.ts";
+import type { ConsoleAuth, ConsolePrincipal } from "./types.ts";
 
 export type RootTokenConsoleAuthOptions = {
   rootToken: string;

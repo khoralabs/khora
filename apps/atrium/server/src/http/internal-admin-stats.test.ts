@@ -3,8 +3,8 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { poolShardCellId } from "@khoralabs/colonnade-persistence";
 import type { AtriumHostContext } from "@khoralabs/atrium-host";
+import { poolShardCellId } from "@khoralabs/colonnade-persistence";
 import type { HostRouteDeps } from "./deps.ts";
 import {
   handleInternalAdminStatsCell,
@@ -90,8 +90,12 @@ function seedFrames(): void {
        VALUES (?, ?, ?, ?)`,
     )
     .run("room-expired", "bb", now, now - 60_000);
-  framesDb.prepare(`INSERT INTO room_frames (channel_id, bytes) VALUES (?, ?)`).run("room-active", new Uint8Array([1]));
-  framesDb.prepare(`INSERT INTO room_frames (channel_id, bytes) VALUES (?, ?)`).run("room-active", new Uint8Array([2]));
+  framesDb
+    .prepare(`INSERT INTO room_frames (channel_id, bytes) VALUES (?, ?)`)
+    .run("room-active", new Uint8Array([1]));
+  framesDb
+    .prepare(`INSERT INTO room_frames (channel_id, bytes) VALUES (?, ?)`)
+    .run("room-active", new Uint8Array([2]));
 }
 
 function seedCellShard(shardIndex: number, outboxRows: number, inboxRows: number): void {

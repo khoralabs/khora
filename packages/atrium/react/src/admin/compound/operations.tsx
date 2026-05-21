@@ -11,17 +11,11 @@ function MetricRow({ label, value }: { label: string; value: React.ReactNode }) 
   );
 }
 
-export function AdminStatsOperations({
-  className,
-  ...props
-}: React.ComponentProps<"section">) {
+export function AdminStatsOperations({ className, ...props }: React.ComponentProps<"section">) {
   return <section data-slot="admin-stats-operations" className={cn(className)} {...props} />;
 }
 
-export function AdminStatsInvitesMetrics({
-  className,
-  ...props
-}: React.ComponentProps<"dl">) {
+export function AdminStatsInvitesMetrics({ className, ...props }: React.ComponentProps<"dl">) {
   const { summary, summaryLoading, summaryError } = useAdminStats();
 
   if (summaryLoading) {
@@ -44,26 +38,14 @@ export function AdminStatsInvitesMetrics({
 
   return (
     <dl data-slot="admin-stats-invites-metrics" className={cn(className)} {...props}>
-      <MetricRow
-        label="Invites (total)"
-        value={invites.configured ? invites.total : "—"}
-      />
-      <MetricRow
-        label="Invites consumed"
-        value={invites.configured ? invites.consumed : "—"}
-      />
-      <MetricRow
-        label="Invites unconsumed"
-        value={invites.configured ? invites.unconsumed : "—"}
-      />
+      <MetricRow label="Invites (total)" value={invites.configured ? invites.total : "—"} />
+      <MetricRow label="Invites consumed" value={invites.configured ? invites.consumed : "—"} />
+      <MetricRow label="Invites unconsumed" value={invites.configured ? invites.unconsumed : "—"} />
     </dl>
   );
 }
 
-export function AdminStatsTeardownMetrics({
-  className,
-  ...props
-}: React.ComponentProps<"dl">) {
+export function AdminStatsTeardownMetrics({ className, ...props }: React.ComponentProps<"dl">) {
   const { summary, summaryLoading, summaryError } = useAdminStats();
 
   if (summaryLoading) {

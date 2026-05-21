@@ -21,9 +21,7 @@
     "migrate": "bun scripts/migrate.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-ses": "^3.1050.0",
-    "@khoralabs/sqlite-migrate": "workspace:*",
-    "better-auth": "^1.6.11"
+    "@khoralabs/users-auth": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",

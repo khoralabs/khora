@@ -1,10 +1,14 @@
 import type {
   DefaultEntityMap,
-  SourceRef,
   Store as GenericStore,
   ResolvedSourceWire,
+  SourceRef,
 } from "@khoralabs/sourcemaps";
-import type { SourceMap, SourceMapLocators, TextFeatureExportRow } from "../persistence/row-schemas.js";
+import type {
+  SourceMap,
+  SourceMapLocators,
+  TextFeatureExportRow,
+} from "../persistence/row-schemas.js";
 
 export type { SourceMap, SourceMapLocators };
 

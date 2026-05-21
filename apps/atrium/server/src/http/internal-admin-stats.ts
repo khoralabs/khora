@@ -1,9 +1,9 @@
 import { Database } from "bun:sqlite";
-import { poolShardCellId } from "@khoralabs/colonnade-persistence";
 import { existsSync, statSync } from "node:fs";
 import { join } from "node:path";
-import type { HostRouteDeps } from "./deps.ts";
+import { poolShardCellId } from "@khoralabs/colonnade-persistence";
 import { envCellsDir } from "../env.ts";
+import type { HostRouteDeps } from "./deps.ts";
 import { authorizeInternal } from "./internal-auth.ts";
 import { jsonError } from "./responses.ts";
 
@@ -18,9 +18,9 @@ function cellDbPath(cellsDir: string, cellId: string): string {
 }
 
 function tableExists(db: Database, name: string): boolean {
-  const row = db.prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?`).get(name) as
-    | { name: string }
-    | null;
+  const row = db
+    .prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?`)
+    .get(name) as { name: string } | null;
   return row !== null;
 }
 
@@ -146,9 +146,7 @@ function teardownQueueStats(catalogDb: Database): {
     return { pending: 0, running: 0, active: 0, completed: 0, failed: 0 };
   }
   const rows = catalogDb
-    .prepare(
-      `SELECT state, COUNT(*) AS c FROM principal_teardown_jobs GROUP BY state`,
-    )
+    .prepare(`SELECT state, COUNT(*) AS c FROM principal_teardown_jobs GROUP BY state`)
     .all() as { state: string; c: number }[];
   const byState = new Map(rows.map((r) => [r.state, r.c]));
   const pending = byState.get("pending") ?? 0;
@@ -162,7 +160,11 @@ function teardownQueueStats(catalogDb: Database): {
   };
 }
 
-function catalogStats(catalogDb: Database, tenantKey: string, registeredUsers: number): {
+function catalogStats(
+  catalogDb: Database,
+  tenantKey: string,
+  registeredUsers: number,
+): {
   projectionRows: number;
   subscriptionEdges: number;
   registeredUsers: number;
@@ -188,9 +190,9 @@ function framesStats(framesDb: Database): { activeRooms: number; totalFrames: nu
   }
   const nowMs = Date.now();
   const activeRooms = (
-    framesDb
-      .prepare(`SELECT COUNT(*) AS c FROM rooms WHERE expires_at_ms > ?`)
-      .get(nowMs) as { c: number }
+    framesDb.prepare(`SELECT COUNT(*) AS c FROM rooms WHERE expires_at_ms > ?`).get(nowMs) as {
+      c: number;
+    }
   ).c;
   const totalFrames = tableExists(framesDb, "room_frames")
     ? (framesDb.prepare(`SELECT COUNT(*) AS c FROM room_frames`).get() as { c: number }).c
@@ -212,7 +214,10 @@ function buildCellShardsSummary(deps: HostRouteDeps): {
   const poolCount = deps.ctx.cellPoolCount;
   const cellsDir = envCellsDir();
   const tenantKey = deps.ctx.tenantKey;
-  const homeCounts = homePrincipalCountsByCell(deps, listRegisteredPrincipalIds(deps.ctx.catalogDb, tenantKey));
+  const homeCounts = homePrincipalCountsByCell(
+    deps,
+    listRegisteredPrincipalIds(deps.ctx.catalogDb, tenantKey),
+  );
 
   const shards = Array.from({ length: poolCount }, (_, i) => {
     const cellId = poolShardCellId(i);
@@ -224,11 +229,16 @@ function buildCellShardsSummary(deps: HostRouteDeps): {
     };
   });
 
-  const inUseCount = shards.filter((s) => s.provisioned && (s.outboxCount > 0 || s.inboxCount > 0)).length;
+  const inUseCount = shards.filter(
+    (s) => s.provisioned && (s.outboxCount > 0 || s.inboxCount > 0),
+  ).length;
   return { poolCount, inUseCount, shards };
 }
 
-function cellDetailStats(deps: HostRouteDeps, cellId: string): {
+function cellDetailStats(
+  deps: HostRouteDeps,
+  cellId: string,
+): {
   cellId: string;
   provisioned: boolean;
   fileSizeBytes: number | null;
@@ -245,7 +255,10 @@ function cellDetailStats(deps: HostRouteDeps, cellId: string): {
   const provisioned = existsSync(path);
   const fileSizeBytes = provisioned ? statSync(path).size : null;
 
-  const homeCounts = homePrincipalCountsByCell(deps, listRegisteredPrincipalIds(deps.ctx.catalogDb, tenantKey));
+  const homeCounts = homePrincipalCountsByCell(
+    deps,
+    listRegisteredPrincipalIds(deps.ctx.catalogDb, tenantKey),
+  );
   const homePrincipals = homeCounts.get(cellId) ?? 0;
 
   const db = openCellDbReadonly(cellsDir, cellId);
@@ -272,13 +285,13 @@ function cellDetailStats(deps: HostRouteDeps, cellId: string): {
 
     if (tableExists(db, "outbox")) {
       outboxCount = (
-        db.prepare(`SELECT COUNT(*) AS c FROM outbox WHERE tenant_key = ?`).get(tenantKey) as { c: number }
+        db.prepare(`SELECT COUNT(*) AS c FROM outbox WHERE tenant_key = ?`).get(tenantKey) as {
+          c: number;
+        }
       ).c;
       outboxPrincipals = (
         db
-          .prepare(
-            `SELECT COUNT(DISTINCT principal_id) AS c FROM outbox WHERE tenant_key = ?`,
-          )
+          .prepare(`SELECT COUNT(DISTINCT principal_id) AS c FROM outbox WHERE tenant_key = ?`)
           .get(tenantKey) as { c: number }
       ).c;
       topOutboxAuthors = db
@@ -292,7 +305,9 @@ function cellDetailStats(deps: HostRouteDeps, cellId: string): {
 
     if (tableExists(db, "inbox")) {
       inboxCount = (
-        db.prepare(`SELECT COUNT(*) AS c FROM inbox WHERE tenant_key = ?`).get(tenantKey) as { c: number }
+        db.prepare(`SELECT COUNT(*) AS c FROM inbox WHERE tenant_key = ?`).get(tenantKey) as {
+          c: number;
+        }
       ).c;
       inboxRecipients = (
         db
@@ -392,10 +407,7 @@ export function adminStatsPrincipalResponse(deps: HostRouteDeps, did: string): R
   });
 }
 
-export function handleInternalAdminStatsSummary(
-  req: Request,
-  deps: HostRouteDeps,
-): Response {
+export function handleInternalAdminStatsSummary(req: Request, deps: HostRouteDeps): Response {
   const denied = requireInternalAuth(req);
   if (denied !== undefined) return denied;
   return adminStatsSummaryResponse(deps);

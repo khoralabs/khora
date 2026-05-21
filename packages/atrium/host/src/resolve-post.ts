@@ -20,10 +20,7 @@ export async function resolvePostById(
   if (address === undefined) {
     return undefined;
   }
-  if (
-    cluster.cellPoolCount !== undefined &&
-    address.cellPoolCount !== cluster.cellPoolCount
-  ) {
+  if (cluster.cellPoolCount !== undefined && address.cellPoolCount !== cluster.cellPoolCount) {
     return undefined;
   }
   const poolCount = cluster.cellPoolCount ?? address.cellPoolCount;

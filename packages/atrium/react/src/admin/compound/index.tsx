@@ -1,4 +1,3 @@
-import { AdminStatsRoot } from "./root.tsx";
 import {
   AdminStatsCatalogMetrics,
   AdminStatsCellDetail,
@@ -18,6 +17,7 @@ import {
   AdminStatsPrincipalLookupForm,
   AdminStatsPrincipalLookupResult,
 } from "./principal-lookup.tsx";
+import { AdminStatsRoot } from "./root.tsx";
 
 export const AdminStats = {
   Root: AdminStatsRoot,

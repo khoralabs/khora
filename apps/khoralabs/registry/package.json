@@ -1,0 +1,21 @@
+{
+  "name": "@khoralabs/registry",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --env-file=.env --hot src/index",
+    "start": "NODE_ENV=production bun --env-file=.env src/index",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aws-sdk/client-ses": "^3.1050.0",
+    "@khoralabs/users": "workspace:*",
+    "@khoralabs/users-auth": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5"
+  }
+}

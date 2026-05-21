@@ -13,7 +13,10 @@ describe("handleInternalMintInvite", () => {
         rateLimiters: {} as HostRouteDeps["rateLimiters"],
         consoleAuth: null,
       };
-      const res = await handleInternalMintInvite(new Request("http://x/internal/mint-invite"), deps);
+      const res = await handleInternalMintInvite(
+        new Request("http://x/internal/mint-invite"),
+        deps,
+      );
       expect(res.status).toBe(401);
     } finally {
       if (prev === undefined) delete process.env.ATRIUM_INTERNAL_SECRET;

@@ -7,6 +7,7 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group";
+import { getRegistryUrl } from "@/lib/registry-url";
 import {
   fieldTypography,
   inputGhostButtonClass,
@@ -38,10 +39,13 @@ export function InviteEmailForm({ variant = "dark", onSuccess }: InviteEmailForm
 
     setPending(true);
     try {
-      await fetch("/api/invite", {
+      await fetch(`${getRegistryUrl()}/v1/access-token/request`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim() }),
+        body: JSON.stringify({
+          email: email.trim(),
+          sourceApp: "khoralabs-homepage",
+        }),
       });
       onSuccess?.();
     } finally {

@@ -44,7 +44,7 @@ function deps(consoleAuth: HostRouteDeps["consoleAuth"]): HostRouteDeps {
 }
 
 async function loginCookie(auth: ReturnType<typeof createRootTokenConsoleAuth>): Promise<string> {
-  const loginRes = await auth.route!(
+  const loginRes = await auth.route?.(
     new Request("http://x/admin/api/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -59,7 +59,7 @@ async function loginCookie(auth: ReturnType<typeof createRootTokenConsoleAuth>):
 describe("admin console auth", () => {
   test("login rejects invalid token", async () => {
     const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
-    const res = await auth.route!(
+    const res = await auth.route?.(
       new Request("http://x/admin/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -72,7 +72,7 @@ describe("admin console auth", () => {
 
   test("login accepts valid token and sets session cookie", async () => {
     const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
-    const res = await auth.route!(
+    const res = await auth.route?.(
       new Request("http://x/admin/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -85,7 +85,10 @@ describe("admin console auth", () => {
   });
 
   test("admin stats returns 503 when console disabled", async () => {
-    const res = await handleAdminStatsSummary(new Request("http://x/admin/api/stats/summary"), deps(null));
+    const res = await handleAdminStatsSummary(
+      new Request("http://x/admin/api/stats/summary"),
+      deps(null),
+    );
     expect(res.status).toBe(503);
   });
 
@@ -114,14 +117,14 @@ describe("admin console auth", () => {
 
   test("session endpoint reflects authentication state", async () => {
     const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
-    const unauth = await auth.route!(
+    const unauth = await auth.route?.(
       new Request("http://x/admin/api/session"),
       new URL("http://x/admin/api/session"),
     );
     expect(unauth?.status).toBe(401);
 
     const cookie = await loginCookie(auth);
-    const authed = await auth.route!(
+    const authed = await auth.route?.(
       new Request("http://x/admin/api/session", { headers: { cookie } }),
       new URL("http://x/admin/api/session"),
     );

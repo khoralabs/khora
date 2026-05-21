@@ -43,10 +43,7 @@ async function publishPost(params: {
   if (address === undefined) {
     throw new Error("publishPost: post.id is not a valid address-encoded id");
   }
-  if (
-    cluster.cellPoolCount !== undefined &&
-    address.cellPoolCount !== cluster.cellPoolCount
-  ) {
+  if (cluster.cellPoolCount !== undefined && address.cellPoolCount !== cluster.cellPoolCount) {
     throw new Error("publishPost: post id cell pool count does not match cluster");
   }
 

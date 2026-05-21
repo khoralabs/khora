@@ -15,9 +15,7 @@ export function AdminStatsPrincipalLookup({
   className,
   ...props
 }: React.ComponentProps<"section">) {
-  return (
-    <section data-slot="admin-stats-principal-lookup" className={cn(className)} {...props} />
-  );
+  return <section data-slot="admin-stats-principal-lookup" className={cn(className)} {...props} />;
 }
 
 export function AdminStatsPrincipalLookupForm({
@@ -62,9 +60,7 @@ export function AdminStatsPrincipalLookupResult({
 
   return (
     <>
-      {principalError !== null && (
-        <p data-slot="admin-stats-error">{principalError}</p>
-      )}
+      {principalError !== null && <p data-slot="admin-stats-error">{principalError}</p>}
       {principal !== null && (
         <dl data-slot="admin-stats-principal-lookup-result" className={cn(className)} {...props}>
           <MetricRow label="Username" value={principal.username ?? "—"} />

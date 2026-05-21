@@ -1,5 +1,5 @@
-import type { HostRouteDeps } from "./deps.ts";
 import { withConsoleAuth } from "./console-guard.ts";
+import type { HostRouteDeps } from "./deps.ts";
 import {
   adminStatsCellResponse,
   adminStatsPrincipalResponse,
@@ -7,7 +7,10 @@ import {
 } from "./internal-admin-stats.ts";
 import { jsonError } from "./responses.ts";
 
-export async function handleAdminStatsSummary(req: Request, deps: HostRouteDeps): Promise<Response> {
+export async function handleAdminStatsSummary(
+  req: Request,
+  deps: HostRouteDeps,
+): Promise<Response> {
   return withConsoleAuth(req, deps, () => adminStatsSummaryResponse(deps));
 }
 
