@@ -24,6 +24,22 @@ export {
   defaultNoopCatalogPersistenceStrategy,
   NoopCatalogPersistenceStrategy,
 } from "./noop-catalog-strategy.ts";
+export type {
+  OutboxContentRef,
+  OutboxLocators,
+  OutboxStore,
+  PointerRef,
+  PointerStore,
+  ResolvedSource,
+  SourceMapEntryRef,
+} from "./resolve-pointer.ts";
+export {
+  createOutboxLocatorStore,
+  createPointerStore,
+  OutboxGhostError,
+  PointerHashMismatchError,
+  resolveSourcemap,
+} from "./resolve-pointer.ts";
 export {
   encodeCatalogPointerId,
   parseCatalogPointerShardIndex,

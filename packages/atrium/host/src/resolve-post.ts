@@ -1,6 +1,15 @@
 import type { AtriumPost } from "@khoralabs/atrium-contracts";
 import { zAtriumPost } from "@khoralabs/atrium-contracts";
-import type { OutboxListedRecord, SqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
+import type {
+  OutboxListedRecord,
+  ResolvedSource,
+  SqliteColonnadeCluster,
+} from "@khoralabs/colonnade-persistence";
+import {
+  createOutboxLocatorStore,
+  OutboxGhostError,
+  resolveSourcemap,
+} from "@khoralabs/colonnade-persistence";
 import { decodePostId } from "./post-address-id.ts";
 
 export async function resolvePostById(
@@ -12,15 +21,25 @@ export async function resolvePostById(
     return undefined;
   }
   const cell = cluster.resolveCell(address.authorCellId);
-  const fetched = await cell.fetchOutboxPayload({
-    cell_id: address.authorCellId,
-    locator: { cell_id: address.authorCellId, record_key: address.recordKey },
-  });
-  if (!fetched.bytes_available) {
+  const store = createOutboxLocatorStore(cell);
+  let resolved: ResolvedSource;
+  try {
+    resolved = await resolveSourcemap(
+      { cell_id: address.authorCellId, record_key: address.recordKey },
+      store,
+    );
+  } catch (e) {
+    if (e instanceof OutboxGhostError) {
+      return undefined;
+    }
+    throw e;
+  }
+  if (resolved.kind !== "blob") {
     return undefined;
   }
   try {
-    const raw = JSON.parse(new TextDecoder().decode(fetched.payload_bytes)) as unknown;
+    const bytes = new Uint8Array(await resolved.blob.arrayBuffer());
+    const raw = JSON.parse(new TextDecoder().decode(bytes)) as unknown;
     const post = zAtriumPost.parse(raw);
     if (post.id !== id) {
       return undefined;
@@ -39,7 +58,7 @@ export async function listAuthorOutboxRecords(params: {
   postKind?: string;
   limit: number;
 }): Promise<readonly OutboxListedRecord[]> {
-  const cell = cluster.resolveCell(params.authorCellId);
+  const cell = params.cluster.resolveCell(params.authorCellId);
   return cell.listOutboxRecordsForPrincipal({
     cell_id: params.authorCellId,
     tenant_key: params.tenantKey,

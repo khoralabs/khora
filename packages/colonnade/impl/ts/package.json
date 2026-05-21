@@ -16,6 +16,9 @@
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "@khoralabs/sourcemaps": "workspace:*"
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "typescript": "^5"

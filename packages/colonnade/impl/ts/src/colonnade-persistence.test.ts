@@ -7,6 +7,88 @@ import type { RoutedWrite, WriteOp } from "./colonnade-types.ts";
 import { canonicalSourceMapRowBytes, sha256HexLower } from "./hash.ts";
 import { InMemoryCatalogPersistenceStrategy } from "./in-memory-catalog-strategy.ts";
 import { InMemoryCellPersistenceStrategy } from "./in-memory-cell-strategy.ts";
+import {
+  createOutboxLocatorStore,
+  createPointerStore,
+  OutboxGhostError,
+  PointerHashMismatchError,
+  resolveSourcemap,
+} from "./resolve-pointer.ts";
+
+describe("Outbox / pointer Store adapters", () => {
+  test("createOutboxLocatorStore roundtrips blob", async () => {
+    const cell = new CellPersistenceClient(new InMemoryCellPersistenceStrategy("cell-a"));
+    const bytes = new TextEncoder().encode("hello");
+    const out = await cell.appendOutboxRecord({
+      cell_id: "cell-a",
+      tenant_key: "tenant",
+      principal_id: "alice",
+      record_key: "",
+      payload_bytes: bytes,
+      metadata: {},
+    });
+    const store = createOutboxLocatorStore(cell);
+    const resolved = await resolveSourcemap(
+      { cell_id: "cell-a", record_key: out.record_key },
+      store,
+    );
+    expect(resolved.kind).toBe("blob");
+    if (resolved.kind !== "blob") throw new Error("expected blob");
+    const got = new Uint8Array(await resolved.blob.arrayBuffer());
+    expect(new TextDecoder().decode(got)).toBe("hello");
+  });
+
+  test("createOutboxLocatorStore throws OutboxGhostError on missing row", async () => {
+    const cell = new CellPersistenceClient(new InMemoryCellPersistenceStrategy("cell-a"));
+    const store = createOutboxLocatorStore(cell);
+    await expect(
+      resolveSourcemap({ cell_id: "cell-a", record_key: "missing" }, store),
+    ).rejects.toBeInstanceOf(OutboxGhostError);
+  });
+
+  test("createPointerStore verifies content_hash", async () => {
+    const cell = new CellPersistenceClient(new InMemoryCellPersistenceStrategy("cell-a"));
+    const bytes = new TextEncoder().encode("payload");
+    const out = await cell.appendOutboxRecord({
+      cell_id: "cell-a",
+      tenant_key: "tenant",
+      principal_id: "alice",
+      record_key: "",
+      payload_bytes: bytes,
+      metadata: {},
+    });
+    const ptr = {
+      source_cell_id: "cell-a",
+      source_record_key: out.record_key,
+      content_hash: out.content_hash,
+    };
+    const store = createPointerStore(cell);
+    const resolved = await resolveSourcemap(ptr, store);
+    expect(resolved.kind).toBe("blob");
+    if (resolved.kind !== "blob") throw new Error("expected blob");
+    const got = new Uint8Array(await resolved.blob.arrayBuffer());
+    expect(new TextDecoder().decode(got)).toBe("payload");
+  });
+
+  test("createPointerStore throws PointerHashMismatchError on wrong hash", async () => {
+    const cell = new CellPersistenceClient(new InMemoryCellPersistenceStrategy("cell-a"));
+    const out = await cell.appendOutboxRecord({
+      cell_id: "cell-a",
+      tenant_key: "tenant",
+      principal_id: "alice",
+      record_key: "",
+      payload_bytes: new TextEncoder().encode("payload"),
+      metadata: {},
+    });
+    const ptr = {
+      source_cell_id: "cell-a",
+      source_record_key: out.record_key,
+      content_hash: "0".repeat(64),
+    };
+    const store = createPointerStore(cell);
+    await expect(resolveSourcemap(ptr, store)).rejects.toBeInstanceOf(PointerHashMismatchError);
+  });
+});
 
 describe("InMemoryCellPersistenceStrategy", () => {
   test("append outbox, fetch, inbox pointer, drain with verified bytes", async () => {
@@ -219,6 +301,7 @@ describe("ColonnadePublicationClient", () => {
       author_cell_id: "cell-a",
       tenant_key: "tenant",
       payload_bytes: new TextEncoder().encode("{}"),
+      payload_metadata: {},
       routing: { replicate_to_catalog: false, catalog_envelope: {}, fan_out_targets: [] },
     });
     expect(res.catalog_pointer_id).toBe("");

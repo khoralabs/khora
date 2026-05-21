@@ -136,7 +136,7 @@ describe("SQLite Colonnade cluster", () => {
       });
       const shardIdx = parseCatalogPointerShardIndex(res.catalog_pointer_id);
       expect(shardIdx).toBe(catalogShardIndexForTenant(tenant_key, 2));
-      if (shardIdx === undefined) throw new Error("expected shard index");
+      if (shardIdx == null) throw new Error("expected shard index");
 
       const countOnShard = (si: number) =>
         Number(

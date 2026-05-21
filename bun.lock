@@ -378,6 +378,9 @@
     "packages/colonnade/impl/ts": {
       "name": "@khoralabs/colonnade-persistence",
       "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/sourcemaps": "workspace:*",
+      },
       "devDependencies": {
         "@types/bun": "latest",
         "typescript": "^5",

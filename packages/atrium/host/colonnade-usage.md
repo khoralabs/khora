@@ -26,7 +26,7 @@ Three storage tiers for relay data. See [id-conventions.md](./id-conventions.md)
 
 - **No catalog rows for posts.** No `source_map_rows`, no metadata stub, no search index yet.
 - Post `id` is address-encoded (`atp1:` + base64url JSON of `{ authorPrincipalId, authorCellId, recordKey }`). The id **is** the locator.
-- Resolve: `decodePostId` → `fetchOutboxPayload`. Ghost when outbox row deleted (`bytes_available === false`).
+- Resolve: `decodePostId` → `createOutboxLocatorStore` + `resolveSourcemap`. Ghost when outbox row deleted (`OutboxGhostError`).
 - PATCH appends a new outbox record → **new post id** (immutable revisions). No re-fan-out on update.
 - Recipients learn post ids from **inbox drain** (pointer staging metadata includes `postId`).
 

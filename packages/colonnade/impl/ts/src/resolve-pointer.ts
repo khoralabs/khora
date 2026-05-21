@@ -1,0 +1,79 @@
+import type { ContentAddressedStore, ResolvedSource, Store } from "@khoralabs/sourcemaps";
+import { resolveSourcemap } from "@khoralabs/sourcemaps";
+
+import type { CellPersistenceStrategy } from "./cell-persistence-strategy.ts";
+import type {
+  OutboxContentRef,
+  OutboxLocators,
+  PointerRef,
+  SourceMapEntryRef,
+} from "./colonnade-types.ts";
+import { assertContentHash, sha256HexLower } from "./hash.ts";
+
+export type { OutboxContentRef, OutboxLocators, PointerRef, ResolvedSource, SourceMapEntryRef };
+export { resolveSourcemap };
+
+export interface OutboxStore extends Store<OutboxLocators> {}
+
+export interface PointerStore extends ContentAddressedStore<PointerRef> {}
+
+/** Outbox row bytes were erased at source (ghost). */
+export class OutboxGhostError extends Error {
+  constructor(readonly locators: OutboxLocators) {
+    super(
+      `Colonnade: outbox ghost (${locators.cell_id}/${locators.record_key})`,
+    );
+    this.name = "OutboxGhostError";
+  }
+}
+
+/** Fetched bytes do not match `PointerRef.content_hash`. */
+export class PointerHashMismatchError extends Error {
+  constructor(readonly ref: PointerRef) {
+    super(
+      `Colonnade: pointer content_hash mismatch (${ref.source_cell_id}/${ref.source_record_key})`,
+    );
+    this.name = "PointerHashMismatchError";
+  }
+}
+
+export function createOutboxLocatorStore(cell: CellPersistenceStrategy): OutboxStore {
+  return {
+    async resolve(locators: OutboxLocators): Promise<ResolvedSource> {
+      const fetched = await cell.fetchOutboxPayload({
+        cell_id: locators.cell_id,
+        locator: locators,
+      });
+      if (!fetched.bytes_available) {
+        throw new OutboxGhostError(locators);
+      }
+      return { kind: "blob", blob: new Blob([Uint8Array.from(fetched.payload_bytes)]) };
+    },
+  };
+}
+
+export function createPointerStore(cell: CellPersistenceStrategy): PointerStore {
+  return {
+    async resolve(ref: PointerRef): Promise<ResolvedSource> {
+      assertContentHash(ref.content_hash);
+      const fetched = await cell.fetchOutboxPayload({
+        cell_id: ref.source_cell_id,
+        locator: {
+          cell_id: ref.source_cell_id,
+          record_key: ref.source_record_key,
+        },
+      });
+      if (!fetched.bytes_available) {
+        throw new OutboxGhostError({
+          cell_id: ref.source_cell_id,
+          record_key: ref.source_record_key,
+        });
+      }
+      const hash = sha256HexLower(fetched.payload_bytes);
+      if (hash !== ref.content_hash) {
+        throw new PointerHashMismatchError(ref);
+      }
+      return { kind: "blob", blob: new Blob([Uint8Array.from(fetched.payload_bytes)]) };
+    },
+  };
+}

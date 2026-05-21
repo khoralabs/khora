@@ -1,4 +1,12 @@
-import { type ResolvedPayload, sha256HexLower } from "@khoralabs/colonnade-persistence";
+import {
+  createPointerStore,
+  OutboxGhostError,
+  PointerHashMismatchError,
+  type PointerStore,
+  type ResolvedPayload,
+  resolveSourcemap,
+  sha256HexLower,
+} from "@khoralabs/colonnade-persistence";
 import { relayInboxAuthorPointerDeliverable } from "@khoralabs/relay-colonnade";
 import type { AtriumHostContext } from "./context.ts";
 
@@ -30,6 +38,16 @@ export async function popRelayInboxDrainItemsForDid(
   const inlineDrainIds: string[] = [];
   const inlineItems: RelayInboxDrainItem[] = [];
   const toDiscard: string[] = [];
+  const pointerStores = new Map<string, PointerStore>();
+
+  const pointerStoreForCell = (sourceCellId: string): PointerStore => {
+    let store = pointerStores.get(sourceCellId);
+    if (store === undefined) {
+      store = createPointerStore(cluster.resolveCell(sourceCellId));
+      pointerStores.set(sourceCellId, store);
+    }
+    return store;
+  };
 
   for (const e of list.entries) {
     if (e.staging.kind === "inline") {
@@ -83,21 +101,26 @@ export async function popRelayInboxDrainItemsForDid(
       continue;
     }
 
-    const sourceCell = cluster.resolveCell(ptr.source_cell_id);
-    const fetched = await sourceCell.fetchOutboxPayload({
-      cell_id: ptr.source_cell_id,
-      locator: { cell_id: ptr.source_cell_id, record_key: ptr.source_record_key },
-    });
-
-    if (!fetched.bytes_available) {
-      toDiscard.push(e.inbox_entry_id);
-      continue;
+    let verified_bytes: Uint8Array;
+    try {
+      const resolved = await resolveSourcemap(ptr, pointerStoreForCell(ptr.source_cell_id));
+      if (resolved.kind !== "blob") {
+        toDiscard.push(e.inbox_entry_id);
+        continue;
+      }
+      verified_bytes = new Uint8Array(await resolved.blob.arrayBuffer());
+    } catch (err) {
+      if (err instanceof OutboxGhostError || err instanceof PointerHashMismatchError) {
+        toDiscard.push(e.inbox_entry_id);
+        continue;
+      }
+      throw err;
     }
 
     resolvedBatch.push({
       inbox_entry_id: e.inbox_entry_id,
       pointer: ptr,
-      verified_bytes: fetched.payload_bytes,
+      verified_bytes,
     });
   }
 

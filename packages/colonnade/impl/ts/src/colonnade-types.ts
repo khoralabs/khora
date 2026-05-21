@@ -3,6 +3,10 @@
  * Smithy `Document` → `unknown`; `Blob` → `Uint8Array`.
  */
 
+import type { ContentAddressedRef, ContentHash, SourceRef } from "@khoralabs/sourcemaps";
+
+export type { ContentHash };
+
 /** `cfd.colonnade` opaque JSON document. */
 export type JsonDocument = unknown;
 
@@ -15,8 +19,6 @@ export type InboxEntryId = string;
 export type OutboxRecordKey = string;
 export type CatalogPointerId = string;
 export type SourceMapId = string;
-/** Lowercase hex SHA-256, 64 chars. */
-export type ContentHash = string;
 
 export type PrincipalRef = {
   readonly principal_id: PrincipalId;
@@ -28,16 +30,29 @@ export type CellRef = {
   readonly tenant_key: TenantKey;
 };
 
-export type OutboxLocator = {
+export type OutboxLocators = {
   readonly cell_id: CellId;
   readonly record_key: OutboxRecordKey;
 };
 
-export type PointerRef = {
+export type OutboxLocator = OutboxLocators;
+
+export type PointerLocators = {
   readonly source_cell_id: CellId;
   readonly source_record_key: OutboxRecordKey;
-  readonly content_hash: ContentHash;
 };
+
+export type PointerRef = ContentAddressedRef<PointerLocators>;
+
+export type OutboxContentRef = ContentAddressedRef<OutboxLocators>;
+
+export type SourceMapEntryLocators = {
+  readonly tenant_key: TenantKey;
+  readonly source_map_id: SourceMapId;
+  readonly entry_key: string;
+};
+
+export type SourceMapEntryRef = SourceRef<SourceMapEntryLocators>;
 
 export type InlinePayload = {
   readonly bytes: Uint8Array;
