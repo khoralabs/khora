@@ -28,11 +28,11 @@ export async function sendOtpEmail(params: { email: string; otp: string }): Prom
       Source: sesFromAddress(),
       Destination: { ToAddresses: [params.email] },
       Message: {
-        Subject: { Data: "Your Atrium admin sign-in code" },
+        Subject: { Data: "Your one-time sign in code for Atrium" },
         Body: {
           Text: {
             Data: [
-              "Your one-time sign-in code for Atrium Admin:",
+              "Your one-time sign in code for Atrium:",
               "",
               params.otp,
               "",

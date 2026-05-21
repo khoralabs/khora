@@ -49,7 +49,7 @@ async function readJsonError(res: Response): Promise<string> {
 }
 
 function AdminPage() {
-  const { data: session, isPending } = authClient.useSession();
+  const { data: session, isPending, error: sessionError } = authClient.useSession();
   const [summary, setSummary] = useState<Summary | null>(null);
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
@@ -60,15 +60,15 @@ function AdminPage() {
   const [principalLoading, setPrincipalLoading] = useState(false);
 
   useEffect(() => {
-    if (isPending) return;
-    if (session === null) {
+    if (isPending || sessionError) return;
+    if (session?.user == null) {
       const next = encodeURIComponent("/admin");
       window.location.href = `/login?next=${next}`;
     }
-  }, [session, isPending]);
+  }, [session, isPending, sessionError]);
 
   useEffect(() => {
-    if (isPending || session === null) return;
+    if (isPending || session?.user == null) return;
     let cancelled = false;
     (async () => {
       setSummaryLoading(true);
@@ -130,7 +130,7 @@ function AdminPage() {
             {session?.user.email ?? (isPending ? "Loading session…" : "")}
           </p>
         </div>
-        {session !== null && (
+        {session?.user != null && (
           <Button
             type="button"
             variant="outline"

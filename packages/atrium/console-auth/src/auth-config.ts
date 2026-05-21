@@ -9,9 +9,10 @@ import { canReceiveAdminOtp, canSignInAsAdmin } from "./users.ts";
 function readAuthEnv(): { baseURL: string; secret: string; trustedOrigins: string[] } {
   const port = process.env.PORT?.trim() ?? "3000";
   const localOrigin = `http://localhost:${port}`;
+  const loopbackOrigin = `http://127.0.0.1:${port}`;
   const configuredUrl = process.env.BETTER_AUTH_URL?.trim()?.replace(/\/$/, "");
   const baseURL = configuredUrl ?? localOrigin;
-  const trustedOrigins = [...new Set([baseURL, localOrigin])];
+  const trustedOrigins = [...new Set([baseURL, localOrigin, loopbackOrigin])];
 
   const secret = process.env.BETTER_AUTH_SECRET?.trim();
   if (secret === undefined || secret.length < 32) {
@@ -33,6 +34,7 @@ export function createAuthInstance() {
   return betterAuth({
     database: getAuthDatabase(),
     baseURL,
+    basePath: "/api/auth",
     secret,
     trustedOrigins,
     user: {
