@@ -62,7 +62,7 @@ Per-cell schema (`ensureCellSchema` in `/Users/zach/Documents/dev/khora-labs/kho
 
 Inbox `staging` encodes pointer/inline payload (+ optional metadata such as post fan-out reasons); see `InboxStagingPayload` plumbing in `/Users/zach/Documents/dev/khora-labs/khora/packages/colonnade/impl/ts/src/sqlite/staging-json.ts` and fan-out in `/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/src/on-event.ts`.
 
-**D. Optional replication** — Litestream config in `/Users/zach/Documents/dev/khora-labs/khora/apps/atrium/server/scripts/start-atrium.ts` replicates catalog, frames, and `cells/*.sqlite` to **`s3://`** (S3-compatible).
+**D. Optional replication** — Litestream (via `scripts/litestream-config.ts`) replicates Atrium catalog, frames, and `cells/*.sqlite`, and registry `registry.sqlite`, to **`s3://`**. Production uses **AWS S3**; local dev may use MinIO (`apps/s3/`).
 
 ---
 
@@ -154,7 +154,7 @@ Comments in that file note **`nbc_expires_*`** are NBC N1 bind-window **projecti
 
 | Area | Service / dependency | Where |
 | --- | --- | --- |
-| Backups | **S3-compatible** + **Litestream** | `/Users/zach/Documents/dev/khora-labs/khora/apps/atrium/server/scripts/start-atrium.ts`, `.env.example` |
+| Backups | **AWS S3** + **Litestream** (MinIO optional for local dev) | `scripts/litestream-config.ts`, `apps/atrium/server/scripts/start-atrium.ts`, `apps/khoralabs/registry/scripts/start-registry.ts` |
 | Crypto / tickets | **`@khoralabs/duplex-byte-stream`** (room ticket sign/verify) | `/Users/zach/Documents/dev/khora-labs/khora/packages/agent/relay/src/frame-channel/hub.ts` |
 | DID / signatures | **`@noble/ed25519`**, **`iso-did`** | `/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/auth/package.json`, `strategy-did-key.ts` |
 | Logging | **`pino`** | `/Users/zach/Documents/dev/khora-labs/khora/apps/atrium/server/package.json`, `logger.ts` |

@@ -1,6 +1,8 @@
-# MinIO for Atrium SQLite backups (Litestream)
+# MinIO for local Litestream dev (AWS S3 in production)
 
-Run an S3-compatible bucket Litestream can replicate to.
+**Production** Atrium and registry backups use **AWS S3** — set `LITESTREAM_S3_BUCKET` and `LITESTREAM_S3_REGION`; omit `LITESTREAM_S3_ENDPOINT`. See `apps/atrium/server/.env.example` and `apps/khoralabs/registry/.env.example`.
+
+This Docker image is **local dev only**: an S3-compatible bucket Litestream can replicate to when you do not want to hit AWS.
 
 ## Build
 
@@ -17,7 +19,7 @@ docker run -d --name atrium-minio \
   -p 9000:9000 -p 9001:9001 \
   -e MINIO_ROOT_USER=minioadmin \
   -e MINIO_ROOT_PASSWORD=minioadmin \
-  -e LITESTREAM_S3_BUCKET=atrium-backups \
+  -e LITESTREAM_BUCKETS=atrium-backups \
   -v atrium-minio-data:/data \
   khora-atrium-minio
 ```
@@ -25,8 +27,15 @@ docker run -d --name atrium-minio \
 - **API:** <http://localhost:9000>
 - **Console:** <http://localhost:9001>
 
-On startup, `entrypoint.sh` ensures the Litestream bucket exists (via `mc`). Set **`LITESTREAM_S3_BUCKET`** to match Atrium’s `LITESTREAM_S3_BUCKET`, or **`LITESTREAM_BUCKETS`** as a comma-separated list (default `atrium-backups` if neither is set). Litestream itself still does not create buckets; this image does.
+On startup, `entrypoint.sh` ensures the Litestream bucket(s) exist (via `mc`). Set **`LITESTREAM_S3_BUCKET`** (single) or **`LITESTREAM_BUCKETS`** (comma-separated; default `atrium-backups`). Litestream itself does not create buckets; this image does for local dev.
 
-Use the same access key and secret in Atrium as `LITESTREAM_ACCESS_KEY_ID` / `LITESTREAM_SECRET_ACCESS_KEY` (see `apps/atrium/server/.env.example`).
+Point Atrium/registry at MinIO:
 
-Example Litestream endpoint: `http://localhost:9000`, bucket in `s3://` URLs: `s3://atrium-backups/...` with that endpoint in config (see Litestream [MinIO](https://litestream.io/reference/config/#minio-configuration)).
+```env
+LITESTREAM_S3_ENDPOINT=http://127.0.0.1:9000
+LITESTREAM_S3_BUCKET=atrium-backups
+LITESTREAM_ACCESS_KEY_ID=minioadmin
+LITESTREAM_SECRET_ACCESS_KEY=minioadmin
+```
+
+Example replica URL: `s3://atrium-backups/registry/litestream/registry.sqlite` with endpoint in Litestream config (see [MinIO](https://litestream.io/reference/config/#minio-configuration)).

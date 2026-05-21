@@ -1,4 +1,4 @@
-# S3-compatible object store for Atrium Litestream replicas (see apps/s3/README.md).
+# S3-compatible object store for local Litestream dev (production uses AWS S3; see apps/s3/README.md).
 # API :9000, console :9001 — match Litestream MinIO examples:
 # https://litestream.io/getting-started/
 # mc client image tag: pin to a published minio/mc release (API compatible with MinIO server).
