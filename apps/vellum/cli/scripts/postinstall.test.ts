@@ -11,7 +11,7 @@ let home: string;
 const BASE_BODY = JSON.stringify(
   {
     $schema: "./vellum-config.schema.json",
-    baseUrl: "https://atr0.khoralabs.com",
+    baseUrl: "https://k-0.khoralabs.com",
     dataDir: "~/.vellum/data",
   },
   null,
