@@ -8,6 +8,27 @@ export type LitestreamS3Env = {
   endpoint?: string;
 };
 
+export type LitestreamLogLevel = "debug" | "info" | "warn" | "error";
+
+export type LitestreamLogging = {
+  level: LitestreamLogLevel;
+};
+
+const LITESTREAM_LOG_LEVELS = new Set<LitestreamLogLevel>(["debug", "info", "warn", "error"]);
+
+export function readLitestreamLogLevel(): LitestreamLogLevel {
+  const raw = process.env.LITESTREAM_LOG_LEVEL?.trim().toLowerCase();
+  if (raw === undefined || raw.length === 0) return "info";
+  if (!LITESTREAM_LOG_LEVELS.has(raw as LitestreamLogLevel)) {
+    throw new Error("litestream: LITESTREAM_LOG_LEVEL must be debug, info, warn, or error");
+  }
+  return raw as LitestreamLogLevel;
+}
+
+export function readLitestreamLogging(): LitestreamLogging {
+  return { level: readLitestreamLogLevel() };
+}
+
 export type LitestreamDbEntry =
   | { kind: "file"; path: string; replicaSuffix: string }
   | { kind: "dir"; dir: string; pattern: string; watch: boolean; replicaSuffix: string };
@@ -61,9 +82,12 @@ export function assertLitestreamCredentials(s3: Pick<LitestreamS3Env, "endpoint"
   }
 }
 
-export function buildLitestreamYaml(opts: LitestreamS3Env & { dbs: LitestreamDbEntry[] }): string {
+export function buildLitestreamYaml(
+  opts: LitestreamS3Env & { dbs: LitestreamDbEntry[]; logging?: LitestreamLogging },
+): string {
   const base = opts.keyPrefix.replace(/\/+$/, "");
   const replicaUrl = (suffix: string) => `s3://${opts.bucket}/${base}/${suffix}`;
+  const logging = opts.logging ?? readLitestreamLogging();
 
   const endpointLine =
     opts.endpoint !== undefined ? `endpoint: ${yamlQuote(opts.endpoint)}\n` : "";
@@ -83,7 +107,11 @@ export function buildLitestreamYaml(opts: LitestreamS3Env & { dbs: LitestreamDbE
     })
     .join("\n");
 
-  return `region: ${yamlQuote(opts.region)}
+  return `logging:
+  level: ${logging.level}
+  type: text
+  stderr: false
+region: ${yamlQuote(opts.region)}
 ${endpointLine}
 dbs:
 ${dbLines}

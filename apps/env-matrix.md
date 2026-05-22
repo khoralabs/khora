@@ -118,6 +118,7 @@ Legend: **+** = set on this service · **·** = not used · **Kind:** **S** = se
 | `LITESTREAM_S3_BUCKET` | + | + | · | · | C | Shared bucket name. |
 | `LITESTREAM_S3_REGION` | + | + | · | · | C | Bucket region. |
 | `LITESTREAM_S3_KEY_PREFIX` | + | + | · | · | C | **Different per service:** `registry/litestream` vs `atrium/litestream`. |
+| `LITESTREAM_LOG_LEVEL` | + | + | · | · | C | `debug`, `info` (default), `warn`, or `error`. Use `error` in prod to reduce noise. |
 | `LITESTREAM_S3_ENDPOINT` | · | · | · | · | C | **Local MinIO only.** Omit in prod AWS. |
 | `LITESTREAM_ACCESS_KEY_ID` | · | · | · | · | S | MinIO dev only; prod uses `AWS_ACCESS_KEY_ID`. |
 | `LITESTREAM_SECRET_ACCESS_KEY` | · | · | · | · | S | MinIO dev only; prod uses `AWS_SECRET_ACCESS_KEY`. |

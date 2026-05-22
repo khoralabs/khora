@@ -2,7 +2,14 @@ import { describe, expect, test } from "bun:test";
 import {
   assertLitestreamCredentials,
   buildLitestreamYaml,
+  readLitestreamLogLevel,
 } from "./litestream-config.ts";
+
+const fileDb = {
+  kind: "file" as const,
+  path: "/data/registry.sqlite",
+  replicaSuffix: "registry.sqlite",
+};
 
 describe("buildLitestreamYaml", () => {
   test("omits endpoint for AWS S3", () => {
@@ -10,11 +17,23 @@ describe("buildLitestreamYaml", () => {
       bucket: "khora-backups-prod",
       keyPrefix: "registry/litestream",
       region: "us-west-2",
-      dbs: [{ kind: "file", path: "/data/registry.sqlite", replicaSuffix: "registry.sqlite" }],
+      dbs: [fileDb],
     });
+    expect(yaml).toContain("logging:\n  level: info");
     expect(yaml).toContain('region: "us-west-2"');
     expect(yaml).not.toContain("endpoint:");
     expect(yaml).toContain('url: "s3://khora-backups-prod/registry/litestream/registry.sqlite"');
+  });
+
+  test("includes logging level from opts", () => {
+    const yaml = buildLitestreamYaml({
+      bucket: "khora-backups-prod",
+      keyPrefix: "registry/litestream",
+      region: "us-west-2",
+      logging: { level: "error" },
+      dbs: [fileDb],
+    });
+    expect(yaml).toContain("logging:\n  level: error");
   });
 
   test("includes endpoint for MinIO", () => {
@@ -44,6 +63,17 @@ describe("buildLitestreamYaml", () => {
     } finally {
       if (prevKey !== undefined) process.env.LITESTREAM_ACCESS_KEY_ID = prevKey;
       if (prevSecret !== undefined) process.env.LITESTREAM_SECRET_ACCESS_KEY = prevSecret;
+    }
+  });
+
+  test("readLitestreamLogLevel reads LITESTREAM_LOG_LEVEL", () => {
+    const prev = process.env.LITESTREAM_LOG_LEVEL;
+    process.env.LITESTREAM_LOG_LEVEL = "warn";
+    try {
+      expect(readLitestreamLogLevel()).toBe("warn");
+    } finally {
+      if (prev === undefined) delete process.env.LITESTREAM_LOG_LEVEL;
+      else process.env.LITESTREAM_LOG_LEVEL = prev;
     }
   });
 });
