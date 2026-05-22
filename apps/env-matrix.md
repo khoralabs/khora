@@ -43,79 +43,81 @@ Put these in a Render **Environment Group** (or password manager) and link to ev
 
 ## Variable matrix
 
-Legend: **R** = registry · **A** = atrium-server · **KH** = khoralabs homepage · **AH** = atrium homepage · **·** = not used · **S** = secret · **C** = config
+Columns: **R** registry · **A** atrium-server · **KH** khoralabs homepage · **AH** atrium homepage
+
+Legend: **+** = set on this service · **·** = not used · **Kind:** **S** = secret · **C** = config
 
 ### HTTP & runtime
 
 | Variable | R | A | KH | AH | Kind | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| `PORT` | R | R | R | R | C | Render sets automatically; override if needed. |
-| `NODE_ENV` | · | · | C | C | C | `production` for prod builds. |
+| `PORT` | + | + | + | + | C | Render sets automatically; override if needed. |
+| `NODE_ENV` | · | · | + | + | C | `production` for prod builds. |
 
 ### URLs & CORS
 
 | Variable | R | A | KH | AH | Kind | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| `REGISTRY_URL` | R | · | · | · | C | Public base URL for Better Auth (`BETTER_AUTH_URL` alias). |
-| `REGISTRY_TRUSTED_ORIGINS` | R | · | · | · | C | Comma-separated browser origins for CORS + trustedOrigins. |
-| `REGISTRY_COOKIE_DOMAIN` | R | · | · | · | C | Optional, e.g. `.khoralabs.com` for cross-subdomain cookies. |
-| `KHORA_REGISTRY_URL` | · | · | R | R | C | Server-side registry URL (SSR/fetch). |
-| `BUN_PUBLIC_KHORA_REGISTRY_URL` | · | · | R | R | C | Inlined into client bundle at build time. |
-| `REGISTRY_DEFAULT_HOST_SLUG` | R | · | · | · | C | Slug for default Atrium host row (v1 single-host). |
-| `REGISTRY_DEFAULT_HOST_URL` | R | · | · | · | C | Public URL registry uses to call atrium-server mint API. |
-| `ATRIUM_BASE_URL` | R | · | · | · | C | Fallback for host seed if `REGISTRY_DEFAULT_HOST_URL` unset. |
+| `REGISTRY_URL` | + | · | · | · | C | Public base URL for Better Auth (`BETTER_AUTH_URL` alias). |
+| `REGISTRY_TRUSTED_ORIGINS` | + | · | · | · | C | Comma-separated browser origins for CORS + trustedOrigins. |
+| `REGISTRY_COOKIE_DOMAIN` | + | · | · | · | C | Optional, e.g. `.khoralabs.com` for cross-subdomain cookies. |
+| `KHORA_REGISTRY_URL` | · | · | + | + | C | Server-side registry URL (SSR/fetch). |
+| `BUN_PUBLIC_KHORA_REGISTRY_URL` | · | · | + | + | C | Inlined into client bundle at build time. |
+| `REGISTRY_DEFAULT_HOST_SLUG` | + | · | · | · | C | Slug for default Atrium host row (v1 single-host). |
+| `REGISTRY_DEFAULT_HOST_URL` | + | · | · | · | C | Public URL registry uses to call atrium-server mint API. |
+| `ATRIUM_BASE_URL` | + | · | · | · | C | Fallback for host seed if `REGISTRY_DEFAULT_HOST_URL` unset. |
 
 ### Auth & secrets
 
 | Variable | R | A | KH | AH | Kind | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| `BETTER_AUTH_SECRET` | R | · | · | · | S | ≥32 chars. Registry human auth (OTP). |
-| `ATRIUM_INTERNAL_SECRET` | R | R | · | · | S | Shared; see table above. |
-| `ATRIUM_INVITE_PEPPER` | R | R | · | · | S | Shared; see table above. |
-| `REGISTRY_CONSOLE_ROOT_TOKEN` | R | · | · | · | S | ≥16 chars enables `/admin` operator console. |
-| `REGISTRY_INTERNAL_SECRET` | R | · | · | · | S | Optional bearer for `/internal/admin/*`. |
-| `ATRIUM_CONSOLE_ROOT_TOKEN` | · | R | · | · | S | ≥16 chars enables atrium-server `/admin`. |
-| `REGISTRY_BOOTSTRAP_EMAILS` | R | · | · | · | C | Comma-separated emails granted `staff` role on first login. |
+| `BETTER_AUTH_SECRET` | + | · | · | · | S | ≥32 chars. Registry human auth (OTP). |
+| `ATRIUM_INTERNAL_SECRET` | + | + | · | · | S | Shared; see table above. |
+| `ATRIUM_INVITE_PEPPER` | + | + | · | · | S | Shared; see table above. |
+| `REGISTRY_CONSOLE_ROOT_TOKEN` | + | · | · | · | S | ≥16 chars enables `/admin` operator console. |
+| `REGISTRY_INTERNAL_SECRET` | + | · | · | · | S | Optional bearer for `/internal/admin/*`. |
+| `ATRIUM_CONSOLE_ROOT_TOKEN` | · | + | · | · | S | ≥16 chars enables atrium-server `/admin`. |
+| `REGISTRY_BOOTSTRAP_EMAILS` | + | · | · | · | C | Comma-separated emails granted `staff` role on first login. |
 
 ### Email (AWS SES)
 
 | Variable | R | A | KH | AH | Kind | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| `SES_FROM_ADDRESS` | R | · | · | · | C | Verified SES sender for OTP + access-token emails. |
-| `AWS_REGION` | R | R | · | · | C | SES + Litestream region. |
-| `AWS_ACCESS_KEY_ID` | R | R | · | · | S | See shared group. |
-| `AWS_SECRET_ACCESS_KEY` | R | R | · | · | S | See shared group. |
-| `REGISTRY_AUTH_OTP_LOG` | R | · | · | · | C | Dev only: log OTP to stdout instead of SES. |
+| `SES_FROM_ADDRESS` | + | · | · | · | C | Verified SES sender for OTP + access-token emails. |
+| `AWS_REGION` | + | + | · | · | C | SES + Litestream region. |
+| `AWS_ACCESS_KEY_ID` | + | + | · | · | S | See shared group. |
+| `AWS_SECRET_ACCESS_KEY` | + | + | · | · | S | See shared group. |
+| `REGISTRY_AUTH_OTP_LOG` | + | · | · | · | C | Dev only: log OTP to stdout instead of SES. |
 
 ### Atrium persistence
 
 | Variable | R | A | KH | AH | Kind | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| `REGISTRY_DATABASE_PATH` | R | · | · | · | C | Default `./data/registry.sqlite`. Use Render disk mount path in prod. |
-| `ATRIUM_CATALOG_PATH` | · | R | · | · | C | Catalog SQLite file. |
-| `ATRIUM_FRAMES_DB_PATH` | · | R | · | · | C | Frames / frame-channel SQLite. |
-| `ATRIUM_CELLS_DIR` | · | R | · | · | C | Directory of cell shard SQLite files. |
-| `ATRIUM_CELL_POOL_COUNT` | · | C | · | · | C | Shard pool size (default 16). |
-| `ATRIUM_COLONNADE_CELL_WORKERS` | · | C | · | · | C | Bun Workers for cell SQLite (default on). |
-| `LOG_LEVEL` | · | C | · | · | C | Pino level (default `info`). |
+| `REGISTRY_DATABASE_PATH` | + | · | · | · | C | Default `./data/registry.sqlite`. Use Render disk mount path in prod. |
+| `ATRIUM_CATALOG_PATH` | · | + | · | · | C | Catalog SQLite file. |
+| `ATRIUM_FRAMES_DB_PATH` | · | + | · | · | C | Frames / frame-channel SQLite. |
+| `ATRIUM_CELLS_DIR` | · | + | · | · | C | Directory of cell shard SQLite files. |
+| `ATRIUM_CELL_POOL_COUNT` | · | + | · | · | C | Shard pool size (default 16). |
+| `ATRIUM_COLONNADE_CELL_WORKERS` | · | + | · | · | C | Bun Workers for cell SQLite (default on). |
+| `LOG_LEVEL` | · | + | · | · | C | Pino level (default `info`). |
 
 ### Atrium invites & registration
 
 | Variable | R | A | KH | AH | Kind | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| `ATRIUM_INVITE_REQUIRED` | · | C | · | · | C | Set `1` to require invite token on registration. |
-| `ATRIUM_INVITES_PER_REGISTRATION` | · | C | · | · | C | Max invites per registration (default 10). |
-| `ATRIUM_INVITE_SEED_TOKENS` | · | C | · | · | S | Bootstrap plaintext tokens (hashed at startup). |
+| `ATRIUM_INVITE_REQUIRED` | · | + | · | · | C | Set `1` to require invite token on registration. |
+| `ATRIUM_INVITES_PER_REGISTRATION` | · | + | · | · | C | Max invites per registration (default 10). |
+| `ATRIUM_INVITE_SEED_TOKENS` | · | + | · | · | S | Bootstrap plaintext tokens (hashed at startup). |
 
 ### Litestream → S3
 
 | Variable | R | A | KH | AH | Kind | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| `REGISTRY_LITESTREAM` | R | · | · | · | C | `1` enables Litestream sidecar on registry. |
-| `ATRIUM_LITESTREAM` | · | R | · | · | C | `1` enables Litestream sidecar on atrium-server. |
-| `LITESTREAM_S3_BUCKET` | R | R | · | · | C | Shared bucket name. |
-| `LITESTREAM_S3_REGION` | R | R | · | · | C | Bucket region. |
-| `LITESTREAM_S3_KEY_PREFIX` | R | R | · | · | C | **Different per service:** `registry/litestream` vs `atrium/litestream`. |
+| `REGISTRY_LITESTREAM` | + | · | · | · | C | `1` enables Litestream sidecar on registry. |
+| `ATRIUM_LITESTREAM` | · | + | · | · | C | `1` enables Litestream sidecar on atrium-server. |
+| `LITESTREAM_S3_BUCKET` | + | + | · | · | C | Shared bucket name. |
+| `LITESTREAM_S3_REGION` | + | + | · | · | C | Bucket region. |
+| `LITESTREAM_S3_KEY_PREFIX` | + | + | · | · | C | **Different per service:** `registry/litestream` vs `atrium/litestream`. |
 | `LITESTREAM_S3_ENDPOINT` | · | · | · | · | C | **Local MinIO only.** Omit in prod AWS. |
 | `LITESTREAM_ACCESS_KEY_ID` | · | · | · | · | S | MinIO dev only; prod uses `AWS_ACCESS_KEY_ID`. |
 | `LITESTREAM_SECRET_ACCESS_KEY` | · | · | · | · | S | MinIO dev only; prod uses `AWS_SECRET_ACCESS_KEY`. |
