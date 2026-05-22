@@ -1,14 +1,26 @@
 export {
+  getRegistryAdminSummary,
+  lookupRegistryByAccountId,
+  lookupRegistryByEmail,
+  type RegistryAccountLookup,
+  type RegistryAdminSummary,
+  type RegistryAuthUser,
+  type RegistryEmailLookup,
+  type RegistryEmailLookupResponse,
+} from "./admin-stats";
+export {
   createAccessTokenRequest,
   findAccessTokenRequest,
   getAccessTokenRequestById,
   listAccessTokenRequestsForAccount,
+  listAccessTokenRequestsForEmail,
   markAccessTokenMinted,
   markAccessTokenSent,
 } from "./access-token-requests";
 export {
   findAccountByAuthSubject,
   findAccountByEmail,
+  findAccountById,
   linkBetterAuthUser,
   listAccountEmails,
   mergeEmailOntoAccount,
@@ -18,6 +30,7 @@ export {
   findHostById,
   findHostBySlug,
   listActiveHosts,
+  listAllHosts,
   seedDefaultHost,
 } from "./atrium-hosts";
 export { getUsersDatabase, registryDatabasePath, resetUsersDatabase } from "./db";
@@ -26,6 +39,7 @@ export {
   findMarketingConsent,
   listActiveMarketingConsentsForEmail,
   listMarketingConsentsForAccount,
+  listMarketingConsentsForEmail,
   subscribeMarketing,
   unsubscribeMarketing,
 } from "./marketing-consents";

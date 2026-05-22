@@ -12,11 +12,21 @@
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.1050.0",
+    "@khoralabs/atrium-console": "workspace:*",
+    "@khoralabs/users-react": "workspace:*",
     "@khoralabs/users": "workspace:*",
-    "@khoralabs/users-auth": "workspace:*"
+    "@khoralabs/users-auth": "workspace:*",
+    "bun-plugin-tailwind": "^0.1.2",
+    "clsx": "^2.1.1",
+    "react": "^19",
+    "react-dom": "^19",
+    "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "tailwindcss": "^4.1.11",
     "typescript": "^5"
   }
 }

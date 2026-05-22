@@ -42,6 +42,16 @@ export function findHostById(db: Database, hostId: string): AtriumHost | null {
   return row === null ? null : mapHost(row);
 }
 
+export function listAllHosts(db: Database): AtriumHost[] {
+  const rows = db
+    .prepare(
+      `SELECT id, slug, base_url, status, opted_in_at_ms, capabilities
+       FROM atrium_hosts ORDER BY slug ASC`,
+    )
+    .all() as HostRow[];
+  return rows.map(mapHost);
+}
+
 export function listActiveHosts(db: Database): AtriumHost[] {
   const rows = db
     .prepare(

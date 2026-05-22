@@ -31,6 +31,13 @@ export function findAccountByAuthSubject(db: Database, providerSubject: string):
   return row === null ? null : mapAccount(row);
 }
 
+export function findAccountById(db: Database, accountId: string): Account | null {
+  const row = db
+    .prepare(`SELECT id, status, created_at_ms, updated_at_ms FROM accounts WHERE id = ? LIMIT 1`)
+    .get(accountId) as AccountRow | null;
+  return row === null ? null : mapAccount(row);
+}
+
 export function findAccountByEmail(db: Database, email: string): Account | null {
   const normalized = normalizeEmail(email);
   const row = db

@@ -90,6 +90,17 @@ export function markAccessTokenSent(db: Database, requestId: string): void {
   );
 }
 
+export function listAccessTokenRequestsForEmail(db: Database, email: string): AccessTokenRequest[] {
+  const rows = db
+    .prepare(
+      `SELECT id, email, host_id, account_id, membership_id, status, invite_token_hash,
+              requested_at_ms, minted_at_ms, sent_at_ms, redeemed_at_ms, source_app
+       FROM access_token_requests WHERE email = ? ORDER BY requested_at_ms DESC`,
+    )
+    .all(normalizeEmail(email)) as RequestRow[];
+  return rows.map(mapRequest);
+}
+
 export function listAccessTokenRequestsForAccount(
   db: Database,
   accountId: string,

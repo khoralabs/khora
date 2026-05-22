@@ -92,6 +92,16 @@ export function listMarketingConsentsForAccount(
   return rows.map(mapConsent);
 }
 
+export function listMarketingConsentsForEmail(db: Database, email: string): MarketingConsent[] {
+  const rows = db
+    .prepare(
+      `SELECT id, email, account_id, list_slug, opted_in_at_ms, opted_out_at_ms, source_app
+       FROM marketing_consents WHERE email = ? ORDER BY opted_in_at_ms DESC`,
+    )
+    .all(normalizeEmail(email)) as ConsentRow[];
+  return rows.map(mapConsent);
+}
+
 export function listActiveMarketingConsentsForEmail(
   db: Database,
   email: string,

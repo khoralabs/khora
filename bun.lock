@@ -103,11 +103,21 @@
       "version": "0.1.0",
       "dependencies": {
         "@aws-sdk/client-ses": "^3.1050.0",
+        "@khoralabs/atrium-console": "workspace:*",
         "@khoralabs/users": "workspace:*",
         "@khoralabs/users-auth": "workspace:*",
+        "@khoralabs/users-react": "workspace:*",
+        "bun-plugin-tailwind": "^0.1.2",
+        "clsx": "^2.1.1",
+        "react": "^19",
+        "react-dom": "^19",
+        "tailwind-merge": "^3.3.1",
       },
       "devDependencies": {
         "@types/bun": "latest",
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "tailwindcss": "^4.1.11",
         "typescript": "^5",
       },
     },
@@ -484,6 +494,27 @@
       },
       "peerDependencies": {
         "react": "^19",
+        "typescript": "^5",
+      },
+    },
+    "packages/khoralabs/users-react": {
+      "name": "@khoralabs/users-react",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/users": "workspace:*",
+        "clsx": "^2.1.1",
+        "tailwind-merge": "^3.3.1",
+      },
+      "devDependencies": {
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "react": "^19",
+        "react-dom": "^19",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "react": "^19",
+        "react-dom": "^19",
         "typescript": "^5",
       },
     },
@@ -1230,6 +1261,8 @@
     "@khoralabs/users": ["@khoralabs/users@workspace:packages/khoralabs/users"],
 
     "@khoralabs/users-auth": ["@khoralabs/users-auth@workspace:packages/khoralabs/users-auth"],
+
+    "@khoralabs/users-react": ["@khoralabs/users-react@workspace:packages/khoralabs/users-react"],
 
     "@khoralabs/vellum-bind-policy": ["@khoralabs/vellum-bind-policy@workspace:packages/vellum/bind-policy"],
 

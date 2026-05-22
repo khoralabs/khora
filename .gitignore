@@ -5,6 +5,7 @@
 *.sqlite
 *.wal
 *.journal
+.bin
 
 # dependencies (bun install)
 node_modules
