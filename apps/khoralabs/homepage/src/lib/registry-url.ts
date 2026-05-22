@@ -1,5 +1,5 @@
 function registryUrl(): string {
-  const fromEnv = import.meta.env.BUN_PUBLIC_KHORA_REGISTRY_URL as string | undefined;
+  const fromEnv = process.env.BUN_PUBLIC_KHORA_REGISTRY_URL;
   if (fromEnv !== undefined && fromEnv.length > 0) {
     return fromEnv.replace(/\/$/, "");
   }
