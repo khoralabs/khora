@@ -14,6 +14,7 @@ import {
   envHostDuplexIngress,
   envHostDuplexUnixPath,
   envHostUnaryIngress,
+  envMemoriesConfig,
   envPort,
   envTenantKey,
   validateEnv,
@@ -32,6 +33,10 @@ const catalogPath = envCatalogPath();
 const framesDbPath = envFramesDbPath();
 const cellsDir = envCellsDir();
 const cellPoolCount = envCellPoolCount();
+const memoriesConfig = envMemoriesConfig();
+if (memoriesConfig !== undefined) {
+  mkdirSync(dirname(memoriesConfig.dbPath), { recursive: true });
+}
 mkdirSync(dirname(catalogPath), { recursive: true });
 mkdirSync(dirname(framesDbPath), { recursive: true });
 mkdirSync(cellsDir, { recursive: true });
@@ -44,6 +49,7 @@ const ctx: AtriumHostContext = await createAtriumHost({
   cellPoolCount,
   useCellWorkers: envColonnadeUseCellWorkers(),
   ...(tenantKey !== undefined ? { tenantKey } : {}),
+  ...(memoriesConfig !== undefined ? { memoriesConfig } : {}),
 });
 
 const consoleAuth = createConsoleAuthFromEnv();
@@ -147,6 +153,11 @@ function shutdown(signal: NodeJS.Signals): void {
   }
   try {
     ctx.cluster.close();
+  } catch {
+    /* ignore */
+  }
+  try {
+    ctx.memories?.close();
   } catch {
     /* ignore */
   }

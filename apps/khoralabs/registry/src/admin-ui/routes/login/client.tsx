@@ -44,7 +44,9 @@ function LoginPage() {
       <Card className="w-full">
         <CardHeader>
           <CardTitle>Registry Admin</CardTitle>
-          <CardDescription>Enter the console root token configured on this service.</CardDescription>
+          <CardDescription>
+            Enter the console root token configured on this service.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={onSubmit}>

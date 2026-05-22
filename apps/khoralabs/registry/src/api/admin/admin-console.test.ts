@@ -3,9 +3,9 @@ import { createRootTokenConsoleAuth } from "@khoralabs/atrium-console";
 import {
   getUsersDatabase,
   initUsersSchema,
+  type RegistryAdminSummary,
   resetUsersDatabase,
   seedDefaultHost,
-  type RegistryAdminSummary,
 } from "@khoralabs/users";
 import { handleLookupEmail } from "./lookup.ts";
 import { handleAdminStatsSummary } from "./stats.ts";

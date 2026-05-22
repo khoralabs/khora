@@ -3,6 +3,7 @@ import { ensureRegistrySchema, getRegistryAuth, getRegistryDatabase } from "@kho
 import { serve } from "bun";
 import adminPage from "./admin-ui/routes/admin/index.html";
 import adminLoginPage from "./admin-ui/routes/login/index.html";
+import { handleAccessTokenRequest } from "./api/access-token";
 import { routeConsoleAuth } from "./api/admin/console-guard";
 import {
   handleInternalAdminStatsSummary,
@@ -11,7 +12,6 @@ import {
 } from "./api/admin/internal";
 import { handleLookupAccount, handleLookupEmail } from "./api/admin/lookup";
 import { handleAdminStatsSummary } from "./api/admin/stats";
-import { handleAccessTokenRequest } from "./api/access-token";
 import { handleMarketingSubscribe, handleMarketingUnsubscribe } from "./api/marketing";
 import { handleMe } from "./api/me";
 import { handleOptions, withCors } from "./cors";

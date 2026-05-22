@@ -1,13 +1,5 @@
-import type {
-  RegistryAdminSummary,
-  RegistryEmailLookupResponse,
-} from "@khoralabs/users";
-import {
-  createContext,
-  type ReactNode,
-  useContext,
-  useMemo,
-} from "react";
+import type { RegistryAdminSummary, RegistryEmailLookupResponse } from "@khoralabs/users";
+import { createContext, type ReactNode, useContext, useMemo } from "react";
 import { useRegistryEmailLookup } from "./hooks/use-registry-email-lookup.ts";
 import { useRegistrySummary } from "./hooks/use-registry-summary.ts";
 
@@ -95,7 +87,5 @@ export function UsersStatsProvider({
     ],
   );
 
-  return (
-    <UsersStatsContext.Provider value={value}>{children}</UsersStatsContext.Provider>
-  );
+  return <UsersStatsContext.Provider value={value}>{children}</UsersStatsContext.Provider>;
 }

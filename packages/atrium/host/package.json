@@ -14,12 +14,16 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@ai-sdk/google": "^3.0.0",
     "@khoralabs/agent-relay": "workspace:*",
     "@khoralabs/atrium-auth": "workspace:*",
     "@khoralabs/atrium-contracts": "workspace:*",
     "@khoralabs/atrium-transport": "workspace:*",
     "@khoralabs/colonnade-persistence": "workspace:*",
+    "@khoralabs/memories-core": "workspace:*",
+    "@khoralabs/memories-sqlite": "workspace:*",
     "@khoralabs/relay-colonnade": "workspace:*",
+    "@khoralabs/sourcemaps": "workspace:*",
     "zod": "^4"
   },
   "peerDependencies": {

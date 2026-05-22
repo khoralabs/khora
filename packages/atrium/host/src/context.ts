@@ -15,8 +15,10 @@ import type {
 } from "@khoralabs/relay-colonnade";
 import type { AtriumHostCatalogApi } from "./catalog-facade.ts";
 import type { AtriumInvitesRepo } from "./invites/atrium-invites.ts";
+import type { AtriumMemoriesHost } from "./memories/bootstrap.ts";
 
 export type { AtriumHostCatalogApi } from "./catalog-facade.ts";
+export type { AtriumMemoriesHost } from "./memories/bootstrap.ts";
 
 export type AtriumHostContext = {
   host: AgentRelay<AtriumProfile, AtriumPost, unknown, never>;
@@ -34,4 +36,5 @@ export type AtriumHostContext = {
   roomLifecycle?: (event: AtriumRoomLifecycleHostEvent) => void;
   invitesRepo: AtriumInvitesRepo | undefined;
   principalTeardownWorker: PrincipalTeardownWorkerHandle;
+  memories?: AtriumMemoriesHost;
 } & AtriumHostCatalogApi;

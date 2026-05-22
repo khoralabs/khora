@@ -20,6 +20,7 @@ import {
   type RelayCatalogProjectionStore,
   registerAgentOnColonnadePersistence,
 } from "@khoralabs/relay-colonnade";
+import type { AtriumMemoriesHost } from "./memories/bootstrap.ts";
 import { decodePostId } from "./post-address-id.ts";
 import { deletePostOutboxRecord } from "./resolve-post.ts";
 import {
@@ -124,11 +125,12 @@ export function createAtriumRelayOnEvent(deps: {
   catalogDb: Database;
   cluster: SqliteColonnadeCluster;
   publicationClient: ColonnadePublicationClient;
+  memories?: AtriumMemoriesHost;
 }): (
   ctx: AgentRelayEventHandlerCtx,
   event: AgentRelayEventUnion<AtriumProfile, AtriumPost, unknown, never>,
 ) => void | Promise<void> {
-  const { projectionStore, tenantKey, catalogDb, cluster, publicationClient } = deps;
+  const { projectionStore, tenantKey, catalogDb, cluster, publicationClient, memories } = deps;
   return async (
     ctx: AgentRelayEventHandlerCtx,
     event: AgentRelayEventUnion<AtriumProfile, AtriumPost, unknown, never>,
@@ -148,6 +150,9 @@ export function createAtriumRelayOnEvent(deps: {
           profileUpsert: { id: profile.id, bodyJson: JSON.stringify(profile) },
           username: meta.username,
         });
+        if (memories !== undefined) {
+          await memories.indexer.indexProfile(profile);
+        }
         event.payload.fulfill(profile);
       } catch (e) {
         event.payload.reject(e);
@@ -164,6 +169,9 @@ export function createAtriumRelayOnEvent(deps: {
         id: profile.id,
         bodyJson: JSON.stringify(profile),
       });
+      if (memories !== undefined) {
+        await memories.indexer.indexProfile(profile);
+      }
       return;
     }
 
@@ -177,11 +185,15 @@ export function createAtriumRelayOnEvent(deps: {
         publicationClient,
         fanOut: true,
       });
+      if (memories !== undefined) {
+        await memories.indexer.indexPost(post);
+      }
       return;
     }
 
     if (event.kind === AGENT_RELAY_EVENT_KIND.POST_UPDATED) {
       const post = event.payload.post;
+      const previous = event.payload.previous;
       await publishPost({
         ctx,
         tenantKey,
@@ -190,12 +202,18 @@ export function createAtriumRelayOnEvent(deps: {
         publicationClient,
         fanOut: false,
       });
+      if (memories !== undefined) {
+        await memories.indexer.indexPost(post, previous.id);
+      }
       return;
     }
 
     if (event.kind === AGENT_RELAY_EVENT_KIND.POST_DELETED) {
       const post = event.payload.post;
       await deletePostOutboxRecord(cluster, post.id);
+      if (memories !== undefined) {
+        await memories.indexer.deletePost(post);
+      }
     }
   };
 }

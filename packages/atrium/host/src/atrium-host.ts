@@ -1,4 +1,9 @@
-import { AgentRelay, createFrameChannelHub, createInboxWsHub } from "@khoralabs/agent-relay";
+import {
+  AgentRelay,
+  createAgentRelayPersistenceClient,
+  createFrameChannelHub,
+  createInboxWsHub,
+} from "@khoralabs/agent-relay";
 import { createAtriumDidAuth } from "@khoralabs/atrium-auth";
 import type { AtriumPost, AtriumProfile } from "@khoralabs/atrium-contracts";
 import type { AtriumRoomLifecycleHostEvent } from "@khoralabs/atrium-transport";
@@ -19,6 +24,8 @@ import {
   readInvitePepper,
   validateInviteEnvConfig,
 } from "./invites/atrium-invites.ts";
+import { bootstrapAtriumMemories } from "./memories/bootstrap.ts";
+import type { AtriumMemoriesConfig } from "./memories/memories-config.ts";
 import { createAtriumRelayOnEvent } from "./on-event.ts";
 
 export async function createAtriumHost(opts: {
@@ -30,6 +37,7 @@ export async function createAtriumHost(opts: {
   startPrincipalTeardownWorker?: boolean;
   tenantKey?: string;
   roomLifecycle?: (event: AtriumRoomLifecycleHostEvent) => void;
+  memoriesConfig?: AtriumMemoriesConfig;
 }): Promise<AtriumHostContext> {
   const cellPoolCount = opts.cellPoolCount ?? 16;
   const useCellWorkers = opts.useCellWorkers ?? true;
@@ -49,6 +57,15 @@ export async function createAtriumHost(opts: {
     useCellWorkers,
   });
   const publicationClient = new ColonnadePublicationClient(cluster.resolveCell);
+  const persistenceClient = createAgentRelayPersistenceClient(persistence);
+  let memories: AtriumHostContext["memories"];
+  if (opts.memoriesConfig !== undefined) {
+    memories = bootstrapAtriumMemories({
+      ...opts.memoriesConfig,
+      cluster,
+      persistenceClient,
+    });
+  }
   const principalLifecycle = createRelayPrincipalLifecycle({
     catalogDb,
     framesDb,
@@ -89,6 +106,7 @@ export async function createAtriumHost(opts: {
       catalogDb,
       cluster,
       publicationClient,
+      memories,
     }),
   });
   const catalogApi = createAtriumCatalogApi({
@@ -118,6 +136,7 @@ export async function createAtriumHost(opts: {
     principalLifecycle,
     ...catalogApi,
     principalTeardownWorker,
+    ...(memories !== undefined ? { memories } : {}),
     ...(opts.roomLifecycle !== undefined ? { roomLifecycle: opts.roomLifecycle } : {}),
   };
 }

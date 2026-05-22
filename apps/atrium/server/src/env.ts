@@ -1,3 +1,9 @@
+import type { AtriumMemoriesConfig } from "@khoralabs/atrium-host";
+import {
+  createAtriumEmbeddingModelFromEnv,
+  readAtriumMemoriesNamespaceRoot,
+} from "@khoralabs/atrium-host";
+
 /**
  * - PORT: HTTP port (default 8788).
  * - ATRIUM_CATALOG_PATH: SQLite catalog DB (required).
@@ -6,6 +12,9 @@
  * - ATRIUM_CELL_POOL_COUNT: pool shard count for assignPrincipalToCell (optional, default 16).
  * - ATRIUM_COLONNADE_CELL_WORKERS: when unset/1/on, cell DBs use Bun Workers (bench `--cell-workers`); 0/off uses main-thread SQLite.
  * - ATRIUM_RELAY_TENANT_KEY: optional relay tenant key (library default "relay").
+ * - ATRIUM_MEMORIES_DB_PATH: SQLite memories index (optional; enables POST /v1/search).
+ * - ATRIUM_MEMORIES_NAMESPACE_ROOT: relay-wide namespace root (default `global`).
+ * - ATRIUM_EMBEDDING_*: embedding provider config (see @khoralabs/atrium-host memories-config).
  * - ATRIUM_HOST_UNARY_TRANSPORT: unset / `http` → HTTP only; `stdio` → NDJSON stdin/out parallel to HTTP.
  * - ATRIUM_HOST_DUPLEX_INGRESS: `off` (default) or `unix`.
  * - ATRIUM_HOST_DUPLEX_UNIX_PATH: required when `ATRIUM_HOST_DUPLEX_INGRESS=unix`.
@@ -98,6 +107,21 @@ export function envColonnadeUseCellWorkers(): boolean {
 export function envTenantKey(): string | undefined {
   const p = process.env.ATRIUM_RELAY_TENANT_KEY?.trim();
   return p !== undefined && p.length > 0 ? p : undefined;
+}
+
+export function envMemoriesDbPath(): string | undefined {
+  const p = process.env.ATRIUM_MEMORIES_DB_PATH?.trim();
+  return p !== undefined && p.length > 0 ? p : undefined;
+}
+
+export function envMemoriesConfig(): AtriumMemoriesConfig | undefined {
+  const dbPath = envMemoriesDbPath();
+  if (dbPath === undefined) return undefined;
+  return {
+    dbPath,
+    namespaceRoot: readAtriumMemoriesNamespaceRoot(),
+    embeddingModel: createAtriumEmbeddingModelFromEnv(),
+  };
 }
 
 /**

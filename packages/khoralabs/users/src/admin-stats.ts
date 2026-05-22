@@ -1,26 +1,17 @@
 import type { Database } from "bun:sqlite";
 import {
-  findAccountByEmail,
-  findAccountById,
-  listAccountEmails,
-} from "./accounts.ts";
-import {
   listAccessTokenRequestsForAccount,
   listAccessTokenRequestsForEmail,
 } from "./access-token-requests.ts";
+import { findAccountByEmail, findAccountById, listAccountEmails } from "./accounts.ts";
 import { listAllHosts } from "./atrium-hosts.ts";
-import { countMembershipsForAccount } from "./memberships.ts";
 import {
   listMarketingConsentsForAccount,
   listMarketingConsentsForEmail,
 } from "./marketing-consents.ts";
+import { countMembershipsForAccount } from "./memberships.ts";
 import { normalizeEmail } from "./normalize.ts";
-import type {
-  AccessTokenRequest,
-  Account,
-  AtriumHost,
-  MarketingConsent,
-} from "./types.ts";
+import type { AccessTokenRequest, Account, AtriumHost, MarketingConsent } from "./types.ts";
 
 export type RegistryAccountsSummary = {
   total: number;
@@ -87,13 +78,11 @@ export type RegistryEmailLookupResponse = RegistryEmailLookup & {
   authUser: RegistryAuthUser | null;
 };
 
-function countByStatus(
-  db: Database,
-  table: string,
-  statusColumn: string,
-): Record<string, number> {
+function countByStatus(db: Database, table: string, statusColumn: string): Record<string, number> {
   const rows = db
-    .prepare(`SELECT ${statusColumn} AS status, COUNT(*) AS n FROM ${table} GROUP BY ${statusColumn}`)
+    .prepare(
+      `SELECT ${statusColumn} AS status, COUNT(*) AS n FROM ${table} GROUP BY ${statusColumn}`,
+    )
     .all() as { status: string; n: number }[];
   const out: Record<string, number> = {};
   for (const row of rows) {

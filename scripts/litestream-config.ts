@@ -53,9 +53,7 @@ export function readLitestreamS3Env(defaultKeyPrefix: string): LitestreamS3Env {
     "",
   );
   const region =
-    process.env.LITESTREAM_S3_REGION?.trim() ||
-    process.env.AWS_REGION?.trim() ||
-    "us-east-1";
+    process.env.LITESTREAM_S3_REGION?.trim() || process.env.AWS_REGION?.trim() || "us-east-1";
   const endpoint = process.env.LITESTREAM_S3_ENDPOINT?.trim();
 
   return {
@@ -89,8 +87,7 @@ export function buildLitestreamYaml(
   const replicaUrl = (suffix: string) => `s3://${opts.bucket}/${base}/${suffix}`;
   const logging = opts.logging ?? readLitestreamLogging();
 
-  const endpointLine =
-    opts.endpoint !== undefined ? `endpoint: ${yamlQuote(opts.endpoint)}\n` : "";
+  const endpointLine = opts.endpoint !== undefined ? `endpoint: ${yamlQuote(opts.endpoint)}\n` : "";
 
   const dbLines = opts.dbs
     .map((db) => {

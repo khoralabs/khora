@@ -1,0 +1,126 @@
+import type { AgentRelayPersistenceClient } from "@khoralabs/agent-relay";
+import {
+  type AtriumPost,
+  type AtriumProfile,
+  zAtriumPost,
+  zAtriumProfile,
+} from "@khoralabs/atrium-contracts";
+import type { SqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
+import { OutboxGhostError } from "@khoralabs/colonnade-persistence";
+import type { SourceMap, Store } from "@khoralabs/memories-core";
+import type { MemoriesPersistence } from "@khoralabs/memories-core/persistence";
+import type { ResolvedSource } from "@khoralabs/sourcemaps";
+import { resolvePostById } from "../resolve-post.ts";
+
+export class AtriumCanonicalStore implements Store {
+  constructor(
+    private readonly deps: {
+      persistence: MemoriesPersistence;
+      cluster: SqliteColonnadeCluster;
+      getProfileById: (profileId: string) => AtriumProfile | undefined;
+    },
+  ) {}
+
+  async resolve(ref: SourceMap): Promise<ResolvedSource> {
+    const nk = this.deps.persistence.loadMemoryNamespaceKey(ref.memory_id);
+    if (nk === undefined) {
+      throw new Error(`AtriumCanonicalStore: unknown memory_id ${ref.memory_id}`);
+    }
+    const labels = this.deps.persistence.loadNodeLabelsForMemory(nk.namespace, nk.key);
+    const postLabel = labels.find((l) => l.kind === "atrium_post");
+    if (postLabel !== undefined) {
+      const props = postLabel.props as { postId?: string };
+      const postId = props.postId;
+      if (postId === undefined || postId.length === 0) {
+        throw new Error("AtriumCanonicalStore: atrium_post label missing postId");
+      }
+      try {
+        const post = await resolvePostById(this.deps.cluster, postId);
+        if (post === undefined) {
+          return { kind: "json", body: JSON.stringify({ ghost: true, postId }) };
+        }
+        return { kind: "json", body: JSON.stringify(post satisfies AtriumPost) };
+      } catch (e) {
+        if (e instanceof OutboxGhostError) {
+          return { kind: "json", body: JSON.stringify({ ghost: true, postId }) };
+        }
+        throw e;
+      }
+    }
+    const profileLabel = labels.find((l) => l.kind === "atrium_profile");
+    if (profileLabel !== undefined) {
+      const props = profileLabel.props as { profileId?: string };
+      const profileId = props.profileId;
+      if (profileId === undefined || profileId.length === 0) {
+        throw new Error("AtriumCanonicalStore: atrium_profile label missing profileId");
+      }
+      const profile = this.deps.getProfileById(profileId);
+      if (profile === undefined) {
+        throw new Error(`AtriumCanonicalStore: profile not found (${profileId})`);
+      }
+      zAtriumProfile.parse(profile);
+      return { kind: "json", body: JSON.stringify(profile satisfies AtriumProfile) };
+    }
+    throw new Error(
+      `AtriumCanonicalStore: no atrium_post/atrium_profile label on memory ${nk.namespace}/${nk.key}`,
+    );
+  }
+}
+
+export function createAtriumCanonicalStore(deps: {
+  persistence: MemoriesPersistence;
+  cluster: SqliteColonnadeCluster;
+  persistenceClient: AgentRelayPersistenceClient;
+}): AtriumCanonicalStore {
+  return new AtriumCanonicalStore({
+    persistence: deps.persistence,
+    cluster: deps.cluster,
+    getProfileById(profileId: string) {
+      const row = deps.persistenceClient.getProfileById(profileId);
+      if (row === undefined) return undefined;
+      try {
+        return zAtriumProfile.parse(JSON.parse(row.bodyJson));
+      } catch {
+        return undefined;
+      }
+    },
+  });
+}
+
+export type AtriumHydratedEntity =
+  | { kind: "post"; entity: AtriumPost }
+  | { kind: "profile"; entity: AtriumProfile }
+  | { kind: "ghost"; postId: string };
+
+export async function hydrateMemoryLabels(
+  store: AtriumCanonicalStore,
+  labels: ReadonlyArray<{ kind: string; props: unknown }>,
+  memoryId: string,
+  sourceKey = "body",
+): Promise<AtriumHydratedEntity | undefined> {
+  const postLabel = labels.find((l) => l.kind === "atrium_post");
+  const profileLabel = labels.find((l) => l.kind === "atrium_profile");
+  if (postLabel === undefined && profileLabel === undefined) {
+    return undefined;
+  }
+  const resolved = await store.resolve({ memory_id: memoryId, source_key: sourceKey });
+  if (resolved.kind !== "json") return undefined;
+  const bodyText = typeof resolved.body === "string" ? resolved.body : await resolved.body.text();
+  let json: unknown;
+  try {
+    json = JSON.parse(bodyText);
+  } catch {
+    return undefined;
+  }
+  if (json !== null && typeof json === "object" && "ghost" in json && json.ghost === true) {
+    const postId =
+      typeof (json as { postId?: unknown }).postId === "string"
+        ? ((json as { postId?: string }).postId ?? "")
+        : "";
+    return { kind: "ghost", postId };
+  }
+  if (postLabel !== undefined) {
+    return { kind: "post", entity: zAtriumPost.parse(json) };
+  }
+  return { kind: "profile", entity: zAtriumProfile.parse(json) };
+}

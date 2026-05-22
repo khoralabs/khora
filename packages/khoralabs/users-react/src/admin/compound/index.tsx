@@ -1,15 +1,15 @@
 import {
+  UsersStatsEmailLookup,
+  UsersStatsEmailLookupForm,
+  UsersStatsEmailLookupResult,
+} from "./email-lookup.tsx";
+import { UsersStatsHostList, UsersStatsHostListItem } from "./hosts.tsx";
+import {
   UsersStatsAccessRequestsMetrics,
   UsersStatsAccountsMetrics,
   UsersStatsMarketingMetrics,
   UsersStatsOverview,
 } from "./overview.tsx";
-import { UsersStatsHostList, UsersStatsHostListItem } from "./hosts.tsx";
-import {
-  UsersStatsEmailLookup,
-  UsersStatsEmailLookupForm,
-  UsersStatsEmailLookupResult,
-} from "./email-lookup.tsx";
 import { UsersStatsRoot } from "./root.tsx";
 
 export const UsersStats = {

@@ -1,3 +1,4 @@
+import type { ConsoleAuth } from "@khoralabs/atrium-console";
 import {
   lookupRegistryByAccountId,
   lookupRegistryByEmail,
@@ -6,7 +7,6 @@ import {
   type RegistryEmailLookupResponse,
 } from "@khoralabs/users";
 import { getRegistryDatabase } from "@khoralabs/users-auth";
-import type { ConsoleAuth } from "@khoralabs/atrium-console";
 import { withConsoleAuth } from "./console-guard.ts";
 
 function findAuthUserByEmail(email: string): RegistryAuthUser | null {

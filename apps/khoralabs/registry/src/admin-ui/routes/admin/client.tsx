@@ -55,7 +55,11 @@ function AdminPage() {
         </Button>
       </header>
 
-      <UsersStats.Root baseUrl="/admin/api/stats" lookupBaseUrl="/admin/api/lookup" className="space-y-6">
+      <UsersStats.Root
+        baseUrl="/admin/api/stats"
+        lookupBaseUrl="/admin/api/lookup"
+        className="space-y-6"
+      >
         <Card>
           <CardHeader>
             <CardTitle>Network overview</CardTitle>

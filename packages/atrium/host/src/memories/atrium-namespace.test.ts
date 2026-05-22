@@ -1,0 +1,35 @@
+import { describe, expect, test } from "bun:test";
+import {
+  agentScope,
+  PROFILE_MEMORY_KEY,
+  postAttachScopes,
+  postsMemoryNamespace,
+  profileMemoryNamespace,
+  topicScope,
+} from "./atrium-namespace.ts";
+import { DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT } from "./memories-config.ts";
+
+describe("atrium-namespace", () => {
+  const root = DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT;
+  const profileId = "prof-abc-123";
+
+  test("builds hierarchical paths under global root", () => {
+    expect(agentScope(root, profileId)).toBe("global/agents/prof-abc-123");
+    expect(profileMemoryNamespace(root, profileId)).toBe("global/agents/prof-abc-123/profile");
+    expect(postsMemoryNamespace(root, profileId)).toBe("global/agents/prof-abc-123/posts");
+    expect(topicScope(root, profileId, "climate")).toBe(
+      "global/agents/prof-abc-123/topics/climate",
+    );
+  });
+
+  test("postAttachScopes includes agent and topic scopes", () => {
+    const scopes = postAttachScopes(root, profileId, ["climate", "ai"]);
+    expect(scopes).toContain("global/agents/prof-abc-123");
+    expect(scopes).toContain("global/agents/prof-abc-123/topics/climate");
+    expect(scopes).toContain("global/agents/prof-abc-123/topics/ai");
+  });
+
+  test("profile memory key is self", () => {
+    expect(PROFILE_MEMORY_KEY).toBe("self");
+  });
+});

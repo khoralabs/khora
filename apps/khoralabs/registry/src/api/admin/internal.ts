@@ -1,6 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
-import { adminStatsSummaryResponse } from "./stats.ts";
 import { lookupAccountResponse, lookupEmailResponse } from "./lookup.ts";
+import { adminStatsSummaryResponse } from "./stats.ts";
 
 function authorizeInternal(req: Request): boolean {
   const secret = process.env.REGISTRY_INTERNAL_SECRET?.trim();

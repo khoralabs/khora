@@ -4,6 +4,19 @@ export {
   inviteRequiredFromEnv,
   invitesPerRegistrationFromEnv,
 } from "./invites/atrium-invites.ts";
+export {
+  type AtriumSearchRequest,
+  type AtriumSearchResponse,
+  atriumSearchRequestFromGetQuery,
+  executeAtriumMemoriesSearch,
+} from "./memories/atrium-memories-search.ts";
+export type { AtriumMemoriesConfig } from "./memories/memories-config.ts";
+export {
+  createAtriumEmbeddingModelFromEnv,
+  DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT,
+  readAtriumEmbeddingEnv,
+  readAtriumMemoriesNamespaceRoot,
+} from "./memories/memories-config.ts";
 export { assignPostAddress } from "./on-event.ts";
 export {
   authorPrincipalIdFromPostId,

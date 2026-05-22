@@ -46,6 +46,7 @@ import {
   parseRoomsMintTicketRoomId,
   parseRoomsUnaryRoomId,
 } from "./rooms.ts";
+import { handleSearchGet, handleSearchPost } from "./search.ts";
 import { handleTopicSubscribe, handleTopicUnsubscribe } from "./topics.ts";
 import { handleUnregister } from "./unregister.ts";
 
@@ -112,6 +113,14 @@ export async function route(
 
   if (req.method === "POST" && url.pathname === "/v1/unregister") {
     return handleUnregister(req, deps);
+  }
+
+  if (req.method === "POST" && url.pathname === "/v1/search") {
+    return handleSearchPost(req, deps);
+  }
+
+  if (req.method === "GET" && url.pathname === "/v1/search") {
+    return handleSearchGet(url, deps);
   }
 
   if (req.method === "POST" && url.pathname === "/v1/invite/preview") {
