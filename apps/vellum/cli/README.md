@@ -23,7 +23,7 @@ If your package manager blocks `postinstall` (e.g. Bun's default), run **`vellum
 vellum keygen
 
 # 2. Register with an Atrium host (invite token required during preview)
-vellum register --base-url https://atr2.khoralabs.com --invite-token <token>
+vellum register --base-url https://atr0.khoralabs.com --invite-token <token>
 
 # 3. Create a room or join with an invite token (opt-in to membership)
 vellum room create
@@ -64,7 +64,7 @@ Run `vellum help <command>` for per-command flags and usage.
 
 Configuration layers merge in order: **built-in defaults** → **environment variables** → **JSON config file** (with optional `extends` chain). Later layers win.
 
-The default host is **`https://atr2.khoralabs.com`**. The default data directory is **`~/.vellum/data`**.
+The default host is **`https://atr0.khoralabs.com`**. The default data directory is **`~/.vellum/data`**.
 
 `vellum setup [--force]` copies `base.config.json`, `cli.config.json`, `daemon.config.json`, and `vellum-config.schema.json` into `~/.vellum/`. Point `"$schema": "./vellum-config.schema.json"` at the file next to your config for editor IntelliSense.
 
