@@ -108,14 +108,20 @@ export const searchVectorSourceMapIds = action({
             limit: knnLimit,
             filter: (q) => {
               if (scope.kind === "unscoped") {
-                const mids = memoryFilterIds!;
+                if (memoryFilterIds === undefined) {
+                  throw new Error("searchVectorSourceMapIds: memoryFilterIds required");
+                }
+                const mids = memoryFilterIds;
                 const idClauses = mids.map((id) => q.eq("memoryId", id));
                 const first = idClauses[0];
                 if (first === undefined) throw new Error("searchVectorSourceMapIds: empty filter");
                 return idClauses.length === 1 ? first : q.or(...idClauses);
               }
               if (scope.kind === "scopeDag" || scope.kind === "exactScope") {
-                const mids = memoryFilterIds!;
+                if (memoryFilterIds === undefined) {
+                  throw new Error("searchVectorSourceMapIds: memoryFilterIds required");
+                }
+                const mids = memoryFilterIds;
                 const idClauses = mids.slice(0, 64).map((id) => q.eq("memoryId", id));
                 const first = idClauses[0];
                 if (first === undefined) throw new Error("searchVectorSourceMapIds: empty filter");

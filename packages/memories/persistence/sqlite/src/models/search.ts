@@ -411,7 +411,7 @@ export function hydrateSourceMapHits(
     ...new Set(
       sourceMapRows
         .filter((row) => (row.memoryKind ?? "node") === "edge" && row.memoryEdgeId)
-        .map((row) => row.memoryEdgeId!),
+        .flatMap((row) => (row.memoryEdgeId ? [row.memoryEdgeId] : [])),
     ),
   ];
   const edgeLabelsByEdgeId = new Map<string, OntologyLabelInstance[]>();

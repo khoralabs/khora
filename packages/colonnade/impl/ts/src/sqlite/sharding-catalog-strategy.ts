@@ -37,7 +37,10 @@ export class ShardingCatalogPersistenceStrategy implements CatalogPersistenceStr
     }
     this.nextCatalogPointerId = (tenantKey: string) => {
       const i = catalogShardIndexForTenant(tenantKey, shards.length);
-      const leaf = shards[i]!;
+      const leaf = shards[i];
+      if (leaf === undefined) {
+        throw new Error("ShardingCatalogPersistenceStrategy: shard index out of range");
+      }
       const gen = leaf.nextCatalogPointerId;
       if (gen === undefined) {
         throw new Error("ShardingCatalogPersistenceStrategy: shard missing nextCatalogPointerId");
@@ -49,7 +52,10 @@ export class ShardingCatalogPersistenceStrategy implements CatalogPersistenceStr
       fn: () => Promise<T>,
     ): Promise<T> => {
       const i = catalogShardIndexForTenant(tenantKey, shards.length);
-      const leaf = shards[i]!;
+      const leaf = shards[i];
+      if (leaf === undefined) {
+        throw new Error("ShardingCatalogPersistenceStrategy: shard index out of range");
+      }
       const run = leaf.runImmediateTransactionForTenant;
       if (run === undefined) {
         return fn();
@@ -73,7 +79,12 @@ export class ShardingCatalogPersistenceStrategy implements CatalogPersistenceStr
     if (m?.[1] !== undefined) {
       return this.shardForTenantKey(m[1]);
     }
-    return this.shards[catalogShardIndexForTenant(documentKey, this.shards.length)]!;
+    const i = catalogShardIndexForTenant(documentKey, this.shards.length);
+    const s = this.shards[i];
+    if (s === undefined) {
+      throw new Error("ShardingCatalogPersistenceStrategy: shard index out of range");
+    }
+    return s;
   }
 
   upsertDiscoveryDocument(

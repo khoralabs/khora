@@ -105,7 +105,7 @@ export async function syncLabelPropsSearchFeaturesImpl(
   if (memKind === "edge" && mem0.edgeId) {
     const elas = await ctx.db
       .query("edge_label_assignments")
-      .withIndex("by_edge_label", (q) => q.eq("edgeId", mem0.edgeId!))
+      .withIndex("by_edge_label", (q) => q.eq("edgeId", mem0.edgeId))
       .collect();
     const sorted = [...elas].sort((a, b) =>
       (a.assignmentId ?? "").localeCompare(b.assignmentId ?? ""),

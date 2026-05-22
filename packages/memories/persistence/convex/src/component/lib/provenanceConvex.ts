@@ -11,9 +11,12 @@ type DbReader = QueryCtx | MutationCtx;
 export async function getProvenanceHeadRootHexImpl(ctx: DbReader): Promise<string | undefined> {
   const rows = await ctx.db.query("memory_provenance").collect();
   if (rows.length === 0) return undefined;
-  let best = rows[0]!;
+  const first = rows[0];
+  if (first === undefined) return undefined;
+  let best = first;
   for (let i = 1; i < rows.length; i++) {
-    const r = rows[i]!;
+    const r = rows[i];
+    if (r === undefined) continue;
     if (
       r.tsCreated > best.tsCreated ||
       (r.tsCreated === best.tsCreated && r.provenanceId > best.provenanceId)

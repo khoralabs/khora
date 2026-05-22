@@ -32,9 +32,17 @@ describe("MemoriesClient store sync", () => {
     });
     const memoryId = persistence.findMemoryIdByKey("ns", "m1");
     expect(memoryId).toBeDefined();
-    const expected = persistence.listTextFeatureExportRowsForMemory(memoryId!);
+    if (memoryId === undefined) {
+      throw new Error("expected memoryId");
+    }
+    const expected = persistence.listTextFeatureExportRowsForMemory(memoryId);
     expect(syncCalls.length).toBe(1);
-    expect([...syncCalls[0]!]).toEqual(expected);
+    const firstSync = syncCalls[0];
+    expect(firstSync).toBeDefined();
+    if (firstSync === undefined) {
+      throw new Error("expected sync call");
+    }
+    expect([...firstSync]).toEqual(expected);
   });
 
   test("resolveSourcesForMemory uses store.resolve per source map", async () => {
@@ -54,7 +62,10 @@ describe("MemoriesClient store sync", () => {
     });
     const memoryId = persistence.findMemoryIdByKey("ns", "m1");
     expect(memoryId).toBeDefined();
-    const rows = await client.resolveSourcesForMemory("ns", memoryId!, 10);
+    if (memoryId === undefined) {
+      throw new Error("expected memoryId");
+    }
+    const rows = await client.resolveSourcesForMemory("ns", memoryId, 10);
     expect(rows.length).toBeGreaterThan(0);
     for (const r of rows) {
       expect(r.content?.kind).toBe("string");

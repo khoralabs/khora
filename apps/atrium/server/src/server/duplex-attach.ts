@@ -42,8 +42,7 @@ export async function attachInboxDuplexAfterAuth(opts: {
   url.searchParams.set("sig", opts.sig);
 
   const req = new Request(url.toString(), { method: "GET" });
-  let verifiedDid: string;
-  ({ did: verifiedDid } = await opts.deps.ctx.auth.requireInboxAccess(req, url, []));
+  const { did: verifiedDid } = await opts.deps.ctx.auth.requireInboxAccess(req, url, []);
 
   const inboxRl = opts.deps.rateLimiters.inboxDid(`did:${verifiedDid}`);
   if (!inboxRl.ok) {

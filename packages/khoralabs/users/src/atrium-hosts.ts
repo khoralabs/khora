@@ -82,7 +82,11 @@ export function seedDefaultHost(
     now,
     params.capabilities === undefined ? null : JSON.stringify(params.capabilities),
   );
-  return findHostById(db, id)!;
+  const host = findHostById(db, id);
+  if (host === null) {
+    throw new Error("atrium host insert failed");
+  }
+  return host;
 }
 
 export function countHosts(db: Database): number {

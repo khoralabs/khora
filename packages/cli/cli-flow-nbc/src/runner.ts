@@ -73,7 +73,8 @@ export async function runFlow(
   const valuesByOffer: Record<string, Record<string, string | undefined>> = {};
 
   for (const offer of def.offers) {
-    valuesByOffer[offer.id] = {};
+    const offerValues: Record<string, string | undefined> = {};
+    valuesByOffer[offer.id] = offerValues;
     for (const port of offer.ports) {
       const policy = chain.resolveBindPolicy(offer.id, port);
       const key = bindKey(offer.id, port.id);
@@ -103,7 +104,7 @@ export async function runFlow(
         }
       }
 
-      valuesByOffer[offer.id]![port.id] = resolved;
+      offerValues[port.id] = resolved;
     }
   }
 

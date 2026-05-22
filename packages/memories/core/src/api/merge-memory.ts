@@ -343,11 +343,7 @@ function mergeMemoryNode<TNode extends LabelSchemaMap, TEdge extends LabelSchema
 
     const sortedHashes =
       Object.keys(contentHashes).length > 0
-        ? Object.fromEntries(
-            Object.keys(contentHashes)
-              .sort((a, b) => a.localeCompare(b))
-              .map((k) => [k, contentHashes[k]!]),
-          )
+        ? Object.fromEntries(Object.entries(contentHashes).sort(([a], [b]) => a.localeCompare(b)))
         : undefined;
     persistence.appendProvenanceEvent(op, {
       v: 1,
@@ -480,11 +476,7 @@ function mergeMemoryEdge<TNode extends LabelSchemaMap, TEdge extends LabelSchema
 
     const sortedHashes =
       Object.keys(contentHashes).length > 0
-        ? Object.fromEntries(
-            Object.keys(contentHashes)
-              .sort((a, b) => a.localeCompare(b))
-              .map((k) => [k, contentHashes[k]!]),
-          )
+        ? Object.fromEntries(Object.entries(contentHashes).sort(([a], [b]) => a.localeCompare(b)))
         : undefined;
     persistence.appendProvenanceEvent(op, {
       v: 1,

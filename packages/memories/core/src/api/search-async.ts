@@ -268,10 +268,7 @@ export async function searchAsync<
     return [];
   }
 
-  const { scope, additionalNamespaceCount, unscoped } = normalizeSearchScopeFromParams(
-    params,
-    caps,
-  );
+  const { scope } = normalizeSearchScopeFromParams(params, caps);
 
   if (params.asOfTimestampMs !== undefined && caps.asOfTimestampMsSearch !== true) {
     throw new Error(

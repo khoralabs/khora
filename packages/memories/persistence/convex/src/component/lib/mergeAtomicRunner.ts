@@ -230,11 +230,7 @@ async function runMergeMemoryAtomicNode(
     .sort((a, b) => a.localeCompare(b));
   const sortedHashes =
     Object.keys(contentHashes).length > 0
-      ? Object.fromEntries(
-          Object.keys(contentHashes)
-            .sort((a, b) => a.localeCompare(b))
-            .map((k) => [k, contentHashes[k]!]),
-        )
+      ? Object.fromEntries(Object.entries(contentHashes).sort(([a], [b]) => a.localeCompare(b)))
       : undefined;
   await appendProvenanceEventImpl(ctx, {
     now,
@@ -403,11 +399,7 @@ async function runMergeMemoryAtomicEdge(
     .sort((a, b) => a.localeCompare(b));
   const sortedHashes =
     Object.keys(contentHashes).length > 0
-      ? Object.fromEntries(
-          Object.keys(contentHashes)
-            .sort((a, b) => a.localeCompare(b))
-            .map((k) => [k, contentHashes[k]!]),
-        )
+      ? Object.fromEntries(Object.entries(contentHashes).sort(([a], [b]) => a.localeCompare(b)))
       : undefined;
   await appendProvenanceEventImpl(ctx, {
     now,

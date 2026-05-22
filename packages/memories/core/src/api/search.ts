@@ -405,10 +405,7 @@ export function search<NODE_LABELS extends string = string, EDGE_LABELS extends 
     return [];
   }
 
-  const { scope, additionalNamespaceCount, unscoped } = normalizeSearchScopeFromParams(
-    params,
-    caps,
-  );
+  const { scope } = normalizeSearchScopeFromParams(params, caps);
 
   if (params.asOfTimestampMs !== undefined && caps.asOfTimestampMsSearch !== true) {
     throw new Error(

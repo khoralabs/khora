@@ -66,7 +66,11 @@ export function createAccessTokenRequest(
        (id, email, host_id, status, requested_at_ms, source_app)
      VALUES (?, ?, ?, 'pending', ?, ?)`,
   ).run(id, email, params.hostId, now, params.sourceApp ?? null);
-  return { request: findAccessTokenRequest(db, email, params.hostId)!, inserted: true };
+  const request = findAccessTokenRequest(db, email, params.hostId);
+  if (request === null) {
+    throw new Error("access token request insert failed");
+  }
+  return { request, inserted: true };
 }
 
 export function markAccessTokenMinted(

@@ -52,7 +52,11 @@ export function subscribeMarketing(
            account_id = COALESCE(?, account_id)
        WHERE id = ?`,
     ).run(now, params.sourceApp ?? null, params.accountId ?? null, existing.id);
-    return findMarketingConsent(db, email, params.listSlug)!;
+    const consent = findMarketingConsent(db, email, params.listSlug);
+    if (consent === null) {
+      throw new Error("marketing consent update failed");
+    }
+    return consent;
   }
 
   const id = crypto.randomUUID();
@@ -61,7 +65,11 @@ export function subscribeMarketing(
        (id, email, account_id, list_slug, opted_in_at_ms, source_app)
      VALUES (?, ?, ?, ?, ?, ?)`,
   ).run(id, email, params.accountId ?? null, params.listSlug, now, params.sourceApp ?? null);
-  return findMarketingConsent(db, email, params.listSlug)!;
+  const consent = findMarketingConsent(db, email, params.listSlug);
+  if (consent === null) {
+    throw new Error("marketing consent insert failed");
+  }
+  return consent;
 }
 
 export function unsubscribeMarketing(

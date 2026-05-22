@@ -95,7 +95,11 @@ export function linkBetterAuthUser(
      VALUES (?, 'better_auth', ?, ?)`,
   ).run(accountId, params.providerSubject, now);
   mergePreAccountRecords(db, accountId, email);
-  return findAccountByAuthSubject(db, params.providerSubject)!;
+  const account = findAccountByAuthSubject(db, params.providerSubject);
+  if (account === null) {
+    throw new Error("account insert failed");
+  }
+  return account;
 }
 
 export function mergeEmailOntoAccount(

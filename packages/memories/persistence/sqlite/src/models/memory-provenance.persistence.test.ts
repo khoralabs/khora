@@ -103,12 +103,15 @@ describe("memory provenance + content_hash (SQLite)", () => {
     );
     const head = persistence.getProvenanceHeadRootHex();
     expect(head).toBeDefined();
-    const ts = persistence.getProvenanceTimestampMsForRootHex(head!);
+    if (head === undefined) {
+      throw new Error("expected provenance head");
+    }
+    const ts = persistence.getProvenanceTimestampMsForRootHex(head);
     const rowTs = db
       .query<{ t: number }, [string]>(
         `SELECT _ts_created AS t FROM memory_provenance WHERE root_hex = ?`,
       )
-      .get(head!);
+      .get(head);
     expect(ts).toBe(rowTs?.t);
   });
 
