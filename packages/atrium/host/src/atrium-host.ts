@@ -4,139 +4,53 @@ import {
   createFrameChannelHub,
   createInboxWsHub,
 } from "@khoralabs/agent-relay";
-import { createAtriumDidAuth } from "@khoralabs/atrium-auth";
 import type { AtriumPost, AtriumProfile } from "@khoralabs/atrium-contracts";
-import type { AtriumRoomLifecycleHostEvent } from "@khoralabs/atrium-transport";
-import {
-  ColonnadePublicationClient,
-  createSqliteColonnadeCluster,
-} from "@khoralabs/colonnade-persistence";
-import {
-  createRelayColonnadeSocial,
-  createRelayPrincipalLifecycle,
-  startPrincipalTeardownWorker,
-} from "@khoralabs/relay-colonnade";
-import { createAtriumCatalogApi } from "./catalog-facade.ts";
+import { startPrincipalTeardownWorker } from "@khoralabs/relay-colonnade";
+import type { AtriumHostDeps } from "./atrium-host-deps.ts";
 import type { AtriumHostContext } from "./context.ts";
-import {
-  createAtriumInvitesRepo,
-  parseInviteSeedTokens,
-  readInvitePepper,
-  validateInviteEnvConfig,
-} from "./invites/atrium-invites.ts";
-import { bootstrapAtriumMemories } from "./memories/bootstrap.ts";
-import type { AtriumMemoriesConfig } from "./memories/memories-config.ts";
 import { createAtriumRelayOnEvent } from "./on-event.ts";
 
-export async function createAtriumHost(opts: {
-  catalogPath: string;
-  framesDbPath: string;
-  cellsDir: string;
-  cellPoolCount?: number;
-  useCellWorkers?: boolean;
-  startPrincipalTeardownWorker?: boolean;
-  tenantKey?: string;
-  roomLifecycle?: (event: AtriumRoomLifecycleHostEvent) => void;
-  memoriesConfig?: AtriumMemoriesConfig;
-}): Promise<AtriumHostContext> {
-  const cellPoolCount = opts.cellPoolCount ?? 16;
-  const useCellWorkers = opts.useCellWorkers ?? true;
-  const {
-    persistence,
-    social,
-    catalogDb,
-    framesDb,
-    projectionStore,
-    subscriptionEdgeStore,
-    principalChannelStore,
-    tenantKey,
-  } = await createRelayColonnadeSocial(opts);
-  const cluster = createSqliteColonnadeCluster({
-    cellsDirectory: opts.cellsDir,
-    mode: { kind: "pool", cellCount: cellPoolCount },
-    useCellWorkers,
-  });
-  const publicationClient = new ColonnadePublicationClient(cluster.resolveCell);
-  const persistenceClient = createAgentRelayPersistenceClient(persistence);
-  let memories: AtriumHostContext["memories"];
-  if (opts.memoriesConfig !== undefined) {
-    memories = bootstrapAtriumMemories({
-      ...opts.memoriesConfig,
-      cluster,
-      persistenceClient,
-    });
-  }
-  const principalLifecycle = createRelayPrincipalLifecycle({
-    catalogDb,
-    framesDb,
-    projectionStore,
-    subscriptionEdgeStore,
-    principalChannelStore,
-    persistence,
-    tenantKey,
-    cluster,
-  });
-  const seedTokens = parseInviteSeedTokens(process.env.ATRIUM_INVITE_SEED_TOKENS);
-  validateInviteEnvConfig(seedTokens);
-  const pepper = readInvitePepper();
-  let invitesRepo: AtriumHostContext["invitesRepo"];
-  if (pepper !== undefined && pepper.length > 0) {
-    invitesRepo = createAtriumInvitesRepo(catalogDb, pepper);
-    invitesRepo.insertSeedInviteTokens(seedTokens);
-    const rootPlain = invitesRepo.ensureRootInviteIfAbsent();
-    if (rootPlain !== undefined) {
-      console.error("[atrium-host] new root invite plaintext — store securely:", rootPlain);
-    }
-  } else {
-    invitesRepo = undefined;
-  }
-  const auth = createAtriumDidAuth({ db: catalogDb });
+export type { AtriumHostDeps } from "./atrium-host-deps.ts";
+
+export function createAtriumHost(deps: AtriumHostDeps): AtriumHostContext {
+  const _persistenceClient = createAgentRelayPersistenceClient(deps.persistence);
   const inboxHub = createInboxWsHub();
   const roomHub = createFrameChannelHub({
-    hubPersistence: persistence.frameChannelHubPersistence,
+    hubPersistence: deps.persistence.frameChannelHubPersistence,
   });
   const host = new AgentRelay<AtriumProfile, AtriumPost, unknown, never>({
-    persistence,
-    authPreflight: auth.preflight,
+    persistence: deps.persistence,
+    authPreflight: deps.auth.preflight,
     inboxHub,
     frameChannelHub: roomHub,
     onEvent: createAtriumRelayOnEvent({
-      projectionStore,
-      tenantKey,
-      catalogDb,
-      cluster,
-      publicationClient,
-      memories,
+      catalog: deps.catalog,
+      tenantKey: deps.tenantKey,
+      cluster: deps.cluster,
+      publicationClient: deps.publicationClient,
+      memories: deps.memories,
     }),
   });
-  const catalogApi = createAtriumCatalogApi({
-    persistence,
-    projectionStore,
-    catalogDb,
-    tenantKey,
-    principalLifecycle,
-  });
-  const runTeardownWorker = opts.startPrincipalTeardownWorker ?? true;
+  const runTeardownWorker = deps.startPrincipalTeardownWorker ?? true;
   const principalTeardownWorker = runTeardownWorker
-    ? startPrincipalTeardownWorker({ lifecycle: principalLifecycle })
+    ? startPrincipalTeardownWorker({ lifecycle: deps.principalLifecycle })
     : { stop(): void {} };
   return {
     host,
-    auth,
-    projectionStore,
-    tenantKey,
-    catalogDb,
-    framesDb,
+    auth: deps.auth,
+    tenantKey: deps.tenantKey,
     roomHub,
-    social,
-    invitesRepo,
-    cluster,
-    publicationClient,
-    cellPoolCount,
-    principalLifecycle,
-    ...catalogApi,
+    social: deps.social,
+    invitesRepo: deps.invitesRepo,
+    cluster: deps.cluster,
+    publicationClient: deps.publicationClient,
+    cellPoolCount: deps.cellPoolCount,
+    principalLifecycle: deps.principalLifecycle,
+    health: deps.health,
+    adminStats: deps.adminStats,
     principalTeardownWorker,
-    ...(memories !== undefined ? { memories } : {}),
-    ...(opts.roomLifecycle !== undefined ? { roomLifecycle: opts.roomLifecycle } : {}),
+    ...(deps.memories !== undefined ? { memories: deps.memories } : {}),
+    ...(deps.roomLifecycle !== undefined ? { roomLifecycle: deps.roomLifecycle } : {}),
+    ...deps.catalog,
   };
 }

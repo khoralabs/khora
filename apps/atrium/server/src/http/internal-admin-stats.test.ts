@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AtriumHostContext } from "@khoralabs/atrium-host";
 import { poolShardCellId } from "@khoralabs/colonnade-persistence";
+import { createAtriumAdminStatsPort } from "../ops/admin-stats-port.ts";
 import type { HostRouteDeps } from "./deps.ts";
 import {
   handleInternalAdminStatsCell,
@@ -155,17 +156,35 @@ function seedCellShard(shardIndex: number, outboxRows: number, inboxRows: number
 }
 
 function deps(overrides?: Partial<AtriumHostContext>): HostRouteDeps {
+  const cluster = {
+    cellPoolCount: 2 as number | undefined,
+    assignPrincipalToCell: (principalId: string) =>
+      principalId === "did:key:alice" ? poolShardCellId(0) : poolShardCellId(1),
+    resolveCell: () => {
+      throw new Error("resolveCell not used in admin stats tests");
+    },
+    close: () => {},
+    ...(overrides?.cluster ?? {}),
+  };
+  const lookupNormalizedUsernameForPrincipal =
+    overrides?.lookupNormalizedUsernameForPrincipal ?? (() => undefined);
+  const adminStats = createAtriumAdminStatsPort({
+    catalogDb,
+    framesDb,
+    cellsDir,
+    tenantKey: "relay",
+    cellPoolCount: 2,
+    cluster,
+    lookupNormalizedUsernameForPrincipal,
+  });
   return {
     ctx: {
-      catalogDb,
-      framesDb,
       tenantKey: "relay",
       cellPoolCount: 2,
-      cluster: {
-        assignPrincipalToCell: (principalId: string) =>
-          principalId === "did:key:alice" ? poolShardCellId(0) : poolShardCellId(1),
-      },
-      lookupNormalizedUsernameForPrincipal: () => undefined,
+      cluster,
+      adminStats,
+      health: { ping() {} },
+      lookupNormalizedUsernameForPrincipal,
       ...overrides,
     } as unknown as AtriumHostContext,
     rateLimiters: {} as HostRouteDeps["rateLimiters"],

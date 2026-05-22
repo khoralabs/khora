@@ -1,6 +1,6 @@
 import type { PrincipalRegistrationRequest } from "@khoralabs/agent-relay";
 import { zAtriumRegisterResult, zAtriumRegistrationRequestBody } from "@khoralabs/atrium-contracts";
-import { inviteRequiredFromEnv, invitesPerRegistrationFromEnv } from "@khoralabs/atrium-host";
+import { inviteRequiredFromEnv, invitesPerRegistrationFromEnv } from "@khoralabs/atrium-invites";
 import { logger } from "../logger.ts";
 import { clientIpFromRequest } from "../rate-limit.ts";
 import type { HostRouteDeps } from "./deps.ts";

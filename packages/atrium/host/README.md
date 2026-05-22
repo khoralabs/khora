@@ -6,43 +6,38 @@ The **host library** lives in `packages/atrium/host` (`@khoralabs/atrium-host`).
 
 ## 1. Host configuration structure and options
 
-### Library entry: `createAtriumHost` opts
+### Library entry: `createAtriumHost(deps)`
 
-**File:** `/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/src/atrium-host.ts`
+**File:** `packages/atrium/host/src/atrium-host.ts`
 
-```24:33:packages/atrium/host/src/atrium-host.ts
-export async function createAtriumHost(opts: {
-  catalogPath: string;
-  framesDbPath: string;
-  cellsDir: string;
-  cellPoolCount?: number;
-  useCellWorkers?: boolean;
-  startPrincipalTeardownWorker?: boolean;
-  tenantKey?: string;
-  roomLifecycle?: (event: AtriumRoomLifecycleHostEvent) => void;
-}): Promise<AtriumHostContext> {
-```
+The host is a **persistence-agnostic orchestrator**. It does not open SQLite files or read path env vars. The composition root (typically `apps/atrium/server/src/bootstrap-atrium.ts`) opens databases, builds ports, and passes an `AtriumHostDeps` object:
 
-| Option | Default | Purpose |
-|--------|---------|---------|
-| `catalogPath` | required | Relay catalog SQLite (profiles, regs, projections) |
-| `framesDbPath` | required | Frame-channel SQLite (rooms) |
-| `cellsDir` | required | Colonnade cell shard directory (inbox/outbox) |
-| `cellPoolCount` | `16` | Pool shards for `assignPrincipalToCell` |
-| `useCellWorkers` | `true` | Bun Workers per cell DB vs main-thread `bun:sqlite` |
-| `startPrincipalTeardownWorker` | `true` | Background unregister teardown |
-| `tenantKey` | `"relay"` | Catalog key prefix |
-| `roomLifecycle` | optional | Hook for room lifecycle events |
+| Dep | Purpose |
+|-----|---------|
+| `persistence`, `social` | Relay persistence + social relationships (on context via `host` / `social`) |
+| `catalog` | Pre-built `AtriumHostCatalogApi` (registration, username maps, rooms) |
+| `cluster` | `AtriumColonnadeCluster` — cell shards, post resolution |
+| `publicationClient` | Colonnade publish/fan-out |
+| `auth` | `AtriumDidAuth` |
+| `invitesRepo?` | `AtriumInvitesRepo` from `@khoralabs/atrium-invites` |
+| `memories?` | `AtriumMemoriesHost` from `bootstrapAtriumMemories({ persistence, postResolver, … })` |
+| `health` | `AtriumHostHealthPort` — readiness ping |
+| `adminStats` | `AtriumAdminStatsPort` — internal admin stats |
+| `startPrincipalTeardownWorker?` | Background unregister teardown (default `true`) |
+| `roomLifecycle?` | Hook for room lifecycle events |
 
-**Invite env** (read inside `createAtriumHost`, not passed as opts):
-- `/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/.env.example`
-- `ATRIUM_INVITE_PEPPER`, `ATRIUM_INVITE_REQUIRED`, `ATRIUM_INVITES_PER_REGISTRATION`, `ATRIUM_INVITE_SEED_TOKENS`
+SQLite handles and relay-colonnade stores are wired in the server bootstrap (`createRelayColonnadeSocial`, health/admin ports, `createAtriumCatalogApi`) — not passed to `createAtriumHost`.
 
-### Server env (maps to `createAtriumHost`)
+**Invite env** (read in server bootstrap, not inside host):
+- `@khoralabs/atrium-invites` — `readInvitePepper`, `validateInviteEnvConfig`, etc.
+- `apps/atrium/server/.env.example`
+
+### Server env (maps to `bootstrapAtriumHost`)
 
 **Files:**
-- `/Users/zach/Documents/dev/khora-labs/khora/apps/atrium/server/src/env.ts`
-- `/Users/zach/Documents/dev/khora-labs/khora/apps/atrium/server/.env.example`
+- `apps/atrium/server/src/env.ts` — catalog/frames/cells paths
+- `apps/atrium/server/src/memories-env.ts` — memories DB + embedding env
+- `apps/atrium/server/.env.example`
 
 | Env var | Maps to |
 |---------|---------|
@@ -58,19 +53,21 @@ export async function createAtriumHost(opts: {
 
 ### Context type returned
 
-**File:** `/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/src/context.ts`
+**File:** `packages/atrium/host/src/context.ts`
 
 Key fields on `AtriumHostContext`:
 - `host` — `AgentRelay<AtriumProfile, AtriumPost, …>`
 - `auth` — `AtriumDidAuth`
-- `catalogDb`, `framesDb` — `bun:sqlite` handles
-- `cluster` — `SqliteColonnadeCluster`
+- `cluster` — `AtriumColonnadeCluster`
 - `publicationClient` — `ColonnadePublicationClient`
-- `projectionStore`, `social`, `principalLifecycle`
+- `health` — `AtriumHostHealthPort` (readiness)
+- `adminStats` — `AtriumAdminStatsPort` (internal ops)
+- `social`, `principalLifecycle`
 - `invitesRepo` (optional)
+- `memories` (optional)
 - Catalog helpers from `AtriumHostCatalogApi` (username lookup, room registry, etc.)
 
-**Docs:** `/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/README.md`, `/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/colonnade-usage.md`
+Raw SQLite handles are **not** on context; server ops use `health` and `adminStats` ports instead.
 
 ---
 
@@ -80,16 +77,18 @@ Key fields on `AtriumHostContext`:
 apps/atrium/server/src/index.ts
   validateEnv()
   mkdir catalog/frames/cells dirs
-  createAtriumHost({ catalogPath, framesDbPath, cellsDir, cellPoolCount, useCellWorkers, tenantKey? })
+  bootstrapAtriumHost({ catalogPath, framesDbPath, cellsDir, cellPoolCount, useCellWorkers, tenantKey?, memories? })
     createRelayColonnadeSocial()     → catalog + frames DBs, AgentRelayPersistence
     createSqliteColonnadeCluster()   → cell shards
+    createColonnadePostResolver()    → PostResolver for memories + posts
     ColonnadePublicationClient
     createRelayPrincipalLifecycle()
-    createAtriumInvitesRepo()        → if ATRIUM_INVITE_PEPPER set
+    createAtriumInvitesSqliteRepo()  → if ATRIUM_INVITE_PEPPER set (@khoralabs/atrium-invites)
     createAtriumDidAuth({ db: catalogDb })
-    AgentRelay + createAtriumRelayOnEvent()
+    bootstrapAtriumMemories()        → if ATRIUM_MEMORIES_DB_PATH set (server opens sqlite)
+    createAtriumHostHealthPort() / createAtriumAdminStatsPort()
     createAtriumCatalogApi()
-    startPrincipalTeardownWorker()
+    createAtriumHost(deps)           → AgentRelay + teardown worker
   createConsoleAuthFromEnv()
   Bun.serve() + route() + inbox/room WS handlers
   optional: startStdioUnaryIngress(), startDuplexUnixIngress()
@@ -98,12 +97,15 @@ apps/atrium/server/src/index.ts
 **Key files:**
 | Step | Path |
 |------|------|
-| Server bootstrap | `/Users/zach/Documents/dev/khora-labs/khora/apps/atrium/server/src/index.ts` |
-| Host composition | `/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/src/atrium-host.ts` |
-| Relay social layer | `/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/relay-colonnade/src/create-relay-colonnade-social.ts` |
-| Cell cluster | `/Users/zach/Documents/dev/khora-labs/khora/packages/colonnade/impl/ts/src/sqlite/cluster.ts` |
-| Event handler (posts/profiles) | `/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/src/on-event.ts` |
-| Litestream wrapper | `/Users/zach/Documents/dev/khora-labs/khora/apps/atrium/server/scripts/start-atrium.ts` |
+| Server bootstrap | `apps/atrium/server/src/index.ts` |
+| Composition root | `apps/atrium/server/src/bootstrap-atrium.ts` |
+| Host orchestration | `packages/atrium/host/src/atrium-host.ts` |
+| Health / admin ops ports | `apps/atrium/server/src/ops/health-port.ts`, `admin-stats-port.ts` |
+| Invites | `packages/atrium/invites/` |
+| Relay social layer | `packages/atrium/relay-colonnade/src/create-relay-colonnade-social.ts` |
+| Cell cluster | `packages/colonnade/impl/ts/src/sqlite/cluster.ts` |
+| Event handler (posts/profiles) | `packages/atrium/host/src/on-event.ts` |
+| Litestream wrapper | `apps/atrium/server/scripts/start-atrium.ts` |
 
 ---
 
@@ -147,15 +149,13 @@ Opened lazily by `createSqliteColonnadeCluster()` as `{cellsDir}/{stem}.sqlite`.
 
 ---
 
-## 4. Embeddings, search, AI SDK
+## 4. Memories search (optional)
 
-**No embeddings, vector search, BM25, or AI SDK usage exists in `apps/atrium/` or `packages/atrium/`.**
+When `ATRIUM_MEMORIES_DB_PATH` is set, the server opens a memories SQLite DB (`@khoralabs/memories-sqlite`), bootstraps `AtriumMemoriesHost` via `bootstrapAtriumMemories({ persistence, postResolver, … })`, and exposes `GET /v1/search`.
 
-Explicit deferrals:
-- `/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/colonnade-usage.md` — “Post search / topic discovery (separate structure when needed)”
-- `/Users/zach/Documents/dev/khora-labs/khora/apps/atrium/README.md` — “Server-side semantic / BM25 / vector indexes are not part of this host today”
+Embedding env (`ATRIUM_EMBEDDING_*`) is read in `apps/atrium/server/src/memories-env.ts`, not in the host package.
 
-The only “search” hits are URL `searchParams` for DID auth signing (`packages/atrium/auth/src/wire.ts`) and a test fixture mentioning `probe-hit` in inbox metadata (`packages/atrium/transport/src/inbox-ws.test.ts`). Probes are not implemented as a host feature; contracts use `kind: "post" | "status"` only.
+Host exports search helpers: `executeAtriumMemoriesSearch`, `atriumSearchRequestFromGetQuery`, and `PostResolver` / `createColonnadePostResolver` for post hydration during indexing.
 
 ---
 
@@ -277,6 +277,7 @@ For post pointers: resolve author outbox via `resolveSourcemap`, verify content 
 | `@khoralabs/relay-colonnade` | `packages/atrium/relay-colonnade/` | Catalog SQLite, persistence adapters |
 | `@khoralabs/colonnade-persistence` | `packages/colonnade/impl/ts/` | Cell cluster, outbox/inbox, PostOperation |
 | `@khoralabs/atrium-auth` | `packages/atrium/auth/` | DID auth + nonce store |
+| `@khoralabs/atrium-invites` | `packages/atrium/invites/` | Invite tokens repo + env |
 | `@khoralabs/atrium-contracts` | `packages/atrium/contracts/` | Profile/post Zod schemas |
 | `@khoralabs/agent-relay` | `packages/agent/relay/` | `AgentRelay`, persistence client |
 | `@khoralabs/atrium-transport` | `packages/atrium/transport/` | Inbox WS, unary HTTP |

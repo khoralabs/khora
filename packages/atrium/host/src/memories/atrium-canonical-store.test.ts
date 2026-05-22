@@ -11,6 +11,7 @@ import {
 } from "@khoralabs/memories-sqlite";
 import { RelayCatalogProjectionStore } from "@khoralabs/relay-colonnade";
 import { encodePostId } from "../post-address-id.ts";
+import { createColonnadePostResolver } from "../resolve-post.ts";
 import { createAtriumCanonicalStore, hydrateMemoryLabels } from "./atrium-canonical-store.ts";
 import {
   PROFILE_MEMORY_KEY,
@@ -97,7 +98,8 @@ function setup(profile: AtriumProfile, post: AtriumPost) {
   });
   const memoriesDb = openMemoriesDatabase(":memory:");
   const persistence = createMemoriesPersistence(memoriesDb);
-  const store = createAtriumCanonicalStore({ persistence, cluster, persistenceClient });
+  const postResolver = createColonnadePostResolver(cluster);
+  const store = createAtriumCanonicalStore({ persistence, postResolver, persistenceClient });
   const client = new MemoriesClient(persistence, atriumOntology, { store });
   const indexer = createAtriumMemoriesIndexer({
     client,
@@ -146,7 +148,7 @@ describe("AtriumCanonicalStore", () => {
     );
     const postNk = persistence.loadMemoryNamespaceKey(postMemoryId);
     expect(postNk).toBeDefined();
-    const postLabels = persistence.loadNodeLabelsForMemory(postNk!.namespace, postNk!.key);
+    const postLabels = persistence.loadNodeLabelsForMemory(postNk?.namespace, postNk?.key);
     const postHydrated = await hydrateMemoryLabels(store, postLabels, postMemoryId);
     expect(postHydrated?.kind).toBe("post");
     if (postHydrated?.kind === "post") {

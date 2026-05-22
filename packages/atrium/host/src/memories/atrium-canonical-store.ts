@@ -5,18 +5,17 @@ import {
   zAtriumPost,
   zAtriumProfile,
 } from "@khoralabs/atrium-contracts";
-import type { SqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
 import { OutboxGhostError } from "@khoralabs/colonnade-persistence";
 import type { SourceMap, Store } from "@khoralabs/memories-core";
 import type { MemoriesPersistence } from "@khoralabs/memories-core/persistence";
 import type { ResolvedSource } from "@khoralabs/sourcemaps";
-import { resolvePostById } from "../resolve-post.ts";
+import type { PostResolver } from "../ports.ts";
 
 export class AtriumCanonicalStore implements Store {
   constructor(
     private readonly deps: {
       persistence: MemoriesPersistence;
-      cluster: SqliteColonnadeCluster;
+      postResolver: PostResolver;
       getProfileById: (profileId: string) => AtriumProfile | undefined;
     },
   ) {}
@@ -35,7 +34,7 @@ export class AtriumCanonicalStore implements Store {
         throw new Error("AtriumCanonicalStore: atrium_post label missing postId");
       }
       try {
-        const post = await resolvePostById(this.deps.cluster, postId);
+        const post = await this.deps.postResolver.resolvePostById(postId);
         if (post === undefined) {
           return { kind: "json", body: JSON.stringify({ ghost: true, postId }) };
         }
@@ -69,12 +68,12 @@ export class AtriumCanonicalStore implements Store {
 
 export function createAtriumCanonicalStore(deps: {
   persistence: MemoriesPersistence;
-  cluster: SqliteColonnadeCluster;
+  postResolver: PostResolver;
   persistenceClient: AgentRelayPersistenceClient;
 }): AtriumCanonicalStore {
   return new AtriumCanonicalStore({
     persistence: deps.persistence,
-    cluster: deps.cluster,
+    postResolver: deps.postResolver,
     getProfileById(profileId: string) {
       const row = deps.persistenceClient.getProfileById(profileId);
       if (row === undefined) return undefined;

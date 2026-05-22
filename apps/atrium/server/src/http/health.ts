@@ -7,8 +7,7 @@ export function handleHealth(): Response {
 
 export function handleReady(deps: HostRouteDeps): Response {
   try {
-    deps.ctx.catalogDb.query("SELECT 1").run();
-    deps.ctx.framesDb.query("SELECT 1").run();
+    deps.ctx.health.ping();
     return new Response("ready", { status: 200 });
   } catch (err) {
     logger.error({ err }, "readiness check failed");

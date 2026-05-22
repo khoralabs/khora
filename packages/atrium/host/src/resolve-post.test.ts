@@ -2,10 +2,10 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createAtriumHost } from "./atrium-host.ts";
 import { assignPostAddress } from "./on-event.ts";
 import { encodePostId } from "./post-address-id.ts";
 import { deletePostOutboxRecord, resolvePostById } from "./resolve-post.ts";
+import { createTestAtriumHost } from "./test/bootstrap-sqlite.ts";
 
 const tmpRoot = mkdtempSync(join(tmpdir(), "atrium-post-outbox-"));
 let seq = 0;
@@ -17,7 +17,7 @@ afterAll(() => {
 test("resolvePostById reads author outbox; delete leaves ghost", async () => {
   const root = join(tmpRoot, `h${seq++}`);
   mkdirSync(root, { recursive: true });
-  const ctx = await createAtriumHost({
+  const ctx = await createTestAtriumHost({
     catalogPath: join(root, "c.sqlite"),
     framesDbPath: join(root, "f.sqlite"),
     cellsDir: join(root, "cells"),

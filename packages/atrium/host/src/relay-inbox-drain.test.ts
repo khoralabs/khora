@@ -2,9 +2,9 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createAtriumHost } from "./atrium-host.ts";
 import { assignPostAddress, encodePostId } from "./on-event.ts";
 import { popRelayInboxDrainItemsForDid } from "./relay-inbox-drain.ts";
+import { createTestAtriumHost } from "./test/bootstrap-sqlite.ts";
 
 const tmpRoot = mkdtempSync(join(tmpdir(), "atrium-drain-"));
 let seq = 0;
@@ -20,7 +20,7 @@ afterAll(() => {
 
 test("popRelayInboxDrainItemsForDid drops cell inbox row when author unregistered (phase1)", async () => {
   const root = nextHostDir();
-  const ctx = await createAtriumHost({
+  const ctx = await createTestAtriumHost({
     catalogPath: join(root, "c.sqlite"),
     framesDbPath: join(root, "f.sqlite"),
     cellsDir: join(root, "cells"),

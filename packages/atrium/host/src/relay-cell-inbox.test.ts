@@ -2,9 +2,9 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createAtriumHost } from "./atrium-host.ts";
 import { discardCellInboxRoomTickets, enqueueCellInboxInline } from "./relay-cell-inbox.ts";
 import { popRelayInboxDrainItemsForDid } from "./relay-inbox-drain.ts";
+import { createTestAtriumHost } from "./test/bootstrap-sqlite.ts";
 
 const tmpRoot = mkdtempSync(join(tmpdir(), "atrium-cell-inbox-"));
 let seq = 0;
@@ -20,7 +20,7 @@ afterAll(() => {
 
 test("enqueueCellInboxInline room ticket drains with kind room_ticket", async () => {
   const root = nextHostDir();
-  const ctx = await createAtriumHost({
+  const ctx = await createTestAtriumHost({
     catalogPath: join(root, "c.sqlite"),
     framesDbPath: join(root, "f.sqlite"),
     cellsDir: join(root, "cells"),
@@ -52,7 +52,7 @@ test("enqueueCellInboxInline room ticket drains with kind room_ticket", async ()
 
 test("discardCellInboxRoomTickets removes matching inline rows only", async () => {
   const root = nextHostDir();
-  const ctx = await createAtriumHost({
+  const ctx = await createTestAtriumHost({
     catalogPath: join(root, "c.sqlite"),
     framesDbPath: join(root, "f.sqlite"),
     cellsDir: join(root, "cells"),

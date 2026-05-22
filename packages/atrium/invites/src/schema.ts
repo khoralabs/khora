@@ -8,7 +8,7 @@ export const ATRIUM_INVITE_KIND = {
 export type AtriumInviteKind = (typeof ATRIUM_INVITE_KIND)[keyof typeof ATRIUM_INVITE_KIND];
 
 export function ensureAtriumInviteSchema(db: import("bun:sqlite").Database): void {
-  db.exec(`
+  db.run(`
     CREATE TABLE IF NOT EXISTS at2_invite_tokens (
       token_hash TEXT PRIMARY KEY NOT NULL,
       created_at_ms INTEGER NOT NULL,

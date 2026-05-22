@@ -3,7 +3,6 @@ import type { HydratedNeighbor, HydratedSourceMapHit } from "@khoralabs/memories
 import {
   canonicalizeNamespacePrefixes,
   ids,
-  type MemoryGraphAssociation,
   type NeighborConstraint,
   type NeighborFilter,
   type NeighborNodesFilter,

@@ -1,4 +1,3 @@
-import type { Database } from "bun:sqlite";
 import {
   AGENT_RELAY_EVENT_KIND,
   type AgentRelayEventHandlerCtx,
@@ -11,16 +10,11 @@ import {
   parseAtriumRegistrationMetadata,
   zAtriumProfile,
 } from "@khoralabs/atrium-contracts";
-import type {
-  ColonnadePublicationClient,
-  SqliteColonnadeCluster,
-} from "@khoralabs/colonnade-persistence";
+import type { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
 import { randomId } from "@khoralabs/colonnade-persistence";
-import {
-  type RelayCatalogProjectionStore,
-  registerAgentOnColonnadePersistence,
-} from "@khoralabs/relay-colonnade";
+import type { AtriumHostCatalogApi } from "./catalog-facade.ts";
 import type { AtriumMemoriesHost } from "./memories/bootstrap.ts";
+import type { AtriumColonnadeCluster } from "./ports.ts";
 import { decodePostId } from "./post-address-id.ts";
 import { deletePostOutboxRecord } from "./resolve-post.ts";
 import {
@@ -35,7 +29,7 @@ async function publishPost(params: {
   ctx: AgentRelayEventHandlerCtx;
   tenantKey: string;
   post: AtriumPost;
-  cluster: SqliteColonnadeCluster;
+  cluster: AtriumColonnadeCluster;
   publicationClient: ColonnadePublicationClient;
   fanOut: boolean;
 }): Promise<void> {
@@ -120,17 +114,16 @@ async function publishPost(params: {
 }
 
 export function createAtriumRelayOnEvent(deps: {
-  projectionStore: RelayCatalogProjectionStore;
+  catalog: AtriumHostCatalogApi;
   tenantKey: string;
-  catalogDb: Database;
-  cluster: SqliteColonnadeCluster;
+  cluster: AtriumColonnadeCluster;
   publicationClient: ColonnadePublicationClient;
   memories?: AtriumMemoriesHost;
 }): (
   ctx: AgentRelayEventHandlerCtx,
   event: AgentRelayEventUnion<AtriumProfile, AtriumPost, unknown, never>,
 ) => void | Promise<void> {
-  const { projectionStore, tenantKey, catalogDb, cluster, publicationClient, memories } = deps;
+  const { catalog, tenantKey, cluster, publicationClient, memories } = deps;
   return async (
     ctx: AgentRelayEventHandlerCtx,
     event: AgentRelayEventUnion<AtriumProfile, AtriumPost, unknown, never>,
@@ -145,10 +138,10 @@ export function createAtriumRelayOnEvent(deps: {
           displayName: meta.displayName,
           bio: meta.bio,
         });
-        registerAgentOnColonnadePersistence(ctx.persistence, catalogDb, projectionStore, {
+        catalog.applyProfileUsernameAndMaps({
           principalId: req.principalId,
-          profileUpsert: { id: profile.id, bodyJson: JSON.stringify(profile) },
           username: meta.username,
+          profileUpsert: { id: profile.id, bodyJson: JSON.stringify(profile) },
         });
         if (memories !== undefined) {
           await memories.indexer.indexProfile(profile);
@@ -220,7 +213,7 @@ export function createAtriumRelayOnEvent(deps: {
 
 /** Assign a new address-encoded post id before create/update HTTP handlers notify the relay. */
 export function assignPostAddress(params: {
-  cluster: SqliteColonnadeCluster;
+  cluster: AtriumColonnadeCluster;
   authorPrincipalId: string;
 }): { recordKey: string; cellPoolCount: number } {
   const cellPoolCount = params.cluster.cellPoolCount;

@@ -1,23 +1,37 @@
 export { createAtriumHost } from "./atrium-host.ts";
+export type { AtriumHostDeps } from "./atrium-host-deps.ts";
+export { type AtriumHostCatalogApi, createAtriumCatalogApi } from "./catalog-facade.ts";
 export type { AtriumHostContext } from "./context.ts";
-export {
-  inviteRequiredFromEnv,
-  invitesPerRegistrationFromEnv,
-} from "./invites/atrium-invites.ts";
 export {
   type AtriumSearchRequest,
   type AtriumSearchResponse,
   atriumSearchRequestFromGetQuery,
   executeAtriumMemoriesSearch,
 } from "./memories/atrium-memories-search.ts";
-export type { AtriumMemoriesConfig } from "./memories/memories-config.ts";
 export {
-  createAtriumEmbeddingModelFromEnv,
-  DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT,
-  readAtriumEmbeddingEnv,
-  readAtriumMemoriesNamespaceRoot,
-} from "./memories/memories-config.ts";
+  type AtriumMemoriesHost,
+  type BootstrapAtriumMemoriesOpts,
+  bootstrapAtriumMemories,
+} from "./memories/bootstrap.ts";
+export { DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT } from "./memories/memories-config.ts";
 export { assignPostAddress } from "./on-event.ts";
+export type {
+  AtriumAdminCatalogStats,
+  AtriumAdminCellDetail,
+  AtriumAdminCellDetailResult,
+  AtriumAdminCellShardSummary,
+  AtriumAdminCellsSummary,
+  AtriumAdminFramesStats,
+  AtriumAdminInviteStats,
+  AtriumAdminPrincipalDetail,
+  AtriumAdminPrincipalDetailResult,
+  AtriumAdminStatsPort,
+  AtriumAdminStatsSummary,
+  AtriumAdminTeardownStats,
+  AtriumColonnadeCluster,
+  AtriumHostHealthPort,
+  PostResolver,
+} from "./ports.ts";
 export {
   authorPrincipalIdFromPostId,
   type DecodedPostAddress,
@@ -34,6 +48,7 @@ export {
   type RelayInboxDrainItem,
 } from "./relay-inbox-drain.ts";
 export {
+  createColonnadePostResolver,
   deletePostOutboxRecord,
   listAuthorOutboxRecords,
   resolvePostById,

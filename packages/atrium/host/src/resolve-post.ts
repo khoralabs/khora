@@ -1,19 +1,18 @@
 import type { AtriumPost } from "@khoralabs/atrium-contracts";
 import { zAtriumPost } from "@khoralabs/atrium-contracts";
-import type {
-  OutboxListedRecord,
-  ResolvedSource,
-  SqliteColonnadeCluster,
-} from "@khoralabs/colonnade-persistence";
+import type { OutboxListedRecord, ResolvedSource } from "@khoralabs/colonnade-persistence";
 import {
   createOutboxLocatorStore,
   OutboxGhostError,
   resolveSourcemap,
 } from "@khoralabs/colonnade-persistence";
+import type { AtriumColonnadeCluster, PostResolver } from "./ports.ts";
 import { decodePostId } from "./post-address-id.ts";
 
-export async function resolvePostById(
-  cluster: SqliteColonnadeCluster,
+export type { OutboxListedRecord };
+
+async function resolvePostByIdFromCluster(
+  cluster: AtriumColonnadeCluster,
   id: string,
 ): Promise<AtriumPost | undefined> {
   const address = decodePostId(id);
@@ -58,39 +57,59 @@ export async function resolvePostById(
   }
 }
 
+export function createColonnadePostResolver(cluster: AtriumColonnadeCluster): PostResolver {
+  return {
+    resolvePostById(id) {
+      return resolvePostByIdFromCluster(cluster, id);
+    },
+    async listAuthorOutboxRecords(params) {
+      const cell = cluster.resolveCell(params.authorCellId);
+      return cell.listOutboxRecordsForPrincipal({
+        cell_id: params.authorCellId,
+        tenant_key: params.tenantKey,
+        principal_id: params.authorPrincipalId,
+        ...(params.postKind !== undefined ? { post_kind: params.postKind } : {}),
+        limit: params.limit,
+      });
+    },
+    async deletePostOutboxRecord(postId) {
+      const address = decodePostId(postId);
+      if (address === undefined) {
+        return false;
+      }
+      const cell = cluster.resolveCell(address.authorCellId);
+      await cell.deleteOutboxRecord({
+        cell_id: address.authorCellId,
+        principal_id: address.authorPrincipalId,
+        record_key: address.recordKey,
+      });
+      return true;
+    },
+  };
+}
+
+/** Convenience wrapper; prefer {@link PostResolver} on injected deps. */
+export async function resolvePostById(
+  cluster: AtriumColonnadeCluster,
+  id: string,
+): Promise<AtriumPost | undefined> {
+  return resolvePostByIdFromCluster(cluster, id);
+}
+
 export async function listAuthorOutboxRecords(params: {
-  cluster: SqliteColonnadeCluster;
+  cluster: AtriumColonnadeCluster;
   authorPrincipalId: string;
   authorCellId: string;
   tenantKey: string;
   postKind?: string;
   limit: number;
 }): Promise<readonly OutboxListedRecord[]> {
-  const cell = params.cluster.resolveCell(params.authorCellId);
-  return cell.listOutboxRecordsForPrincipal({
-    cell_id: params.authorCellId,
-    tenant_key: params.tenantKey,
-    principal_id: params.authorPrincipalId,
-    ...(params.postKind !== undefined ? { post_kind: params.postKind } : {}),
-    limit: params.limit,
-  });
+  return createColonnadePostResolver(params.cluster).listAuthorOutboxRecords(params);
 }
 
 export async function deletePostOutboxRecord(
-  cluster: SqliteColonnadeCluster,
+  cluster: AtriumColonnadeCluster,
   postId: string,
 ): Promise<boolean> {
-  const address = decodePostId(postId);
-  if (address === undefined) {
-    return false;
-  }
-  const cell = cluster.resolveCell(address.authorCellId);
-  await cell.deleteOutboxRecord({
-    cell_id: address.authorCellId,
-    principal_id: address.authorPrincipalId,
-    record_key: address.recordKey,
-  });
-  return true;
+  return createColonnadePostResolver(cluster).deletePostOutboxRecord(postId);
 }
-
-export type { OutboxListedRecord };

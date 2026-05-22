@@ -1,89 +1,14 @@
 import type { Database } from "bun:sqlite";
-import { createHash, randomBytes } from "node:crypto";
+import { generateInvitePlaintext, hashInviteToken } from "./crypto.ts";
+import type { AtriumInviteListRow, AtriumInvitesRepo, InvitePreviewResult } from "./ports.ts";
 import { ATRIUM_INVITE_KIND, ensureAtriumInviteSchema } from "./schema.ts";
-
-export function hashInviteToken(pepper: string, plaintext: string): string {
-  return createHash("sha256")
-    .update(pepper, "utf8")
-    .update("\0", "utf8")
-    .update(plaintext, "utf8")
-    .digest("hex");
-}
-
-export function generateInvitePlaintext(): string {
-  return randomBytes(24).toString("base64url");
-}
-
-export function parseInviteSeedTokens(raw: string | undefined): string[] {
-  if (raw === undefined) return [];
-  return raw
-    .split(/[\n,]+/)
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
-}
-
-export function readInvitePepper(): string | undefined {
-  const p = process.env.ATRIUM_INVITE_PEPPER?.trim();
-  return p !== undefined && p.length > 0 ? p : undefined;
-}
-
-export function inviteRequiredFromEnv(): boolean {
-  return process.env.ATRIUM_INVITE_REQUIRED?.trim() === "1";
-}
-
-export function invitesPerRegistrationFromEnv(): number {
-  const raw = process.env.ATRIUM_INVITES_PER_REGISTRATION?.trim();
-  if (raw === undefined || raw.length === 0) return 10;
-  const n = Number.parseInt(raw, 10);
-  return Number.isFinite(n) && n > 0 ? Math.min(Math.floor(n), 500) : 10;
-}
-
-export function validateInviteEnvConfig(seedTokens: string[]): void {
-  if (inviteRequiredFromEnv() || seedTokens.length > 0) {
-    const pepper = readInvitePepper();
-    if (pepper === undefined || pepper.length === 0) {
-      throw new Error(
-        "Set ATRIUM_INVITE_PEPPER when ATRIUM_INVITE_REQUIRED=1 or ATRIUM_INVITE_SEED_TOKENS is non-empty.",
-      );
-    }
-  }
-}
-
-export type AtriumInviteListRow = {
-  preview: string;
-  consumed: boolean;
-  consumedByDid: string | undefined;
-  createdAtMs: number;
-  kind: string;
-};
-
-export type InvitePreviewResult =
-  | {
-      ok: true;
-      inviter: { did: string; profile: unknown } | null;
-      source: "inviter" | "root" | "seed";
-    }
-  | { ok: false };
 
 function previewFromHash(tokenHash: string): string {
   if (tokenHash.length <= 12) return `${tokenHash.slice(0, 4)}…`;
   return `${tokenHash.slice(0, 6)}…${tokenHash.slice(-4)}`;
 }
 
-export type AtriumInvitesRepo = {
-  insertSeedInviteTokens(plaintexts: string[]): number;
-  ensureRootInviteIfAbsent(): string | undefined;
-  tryConsumeInviteToken(plaintext: string, consumerDid: string): boolean;
-  rollbackInviteConsumption(plaintext: string, consumerDid: string): void;
-  mintStandardInviteTokens(mintedByDid: string, count: number): string[];
-  listInvitesMintedForDid(minterDid: string): AtriumInviteListRow[];
-  previewInviteToken(
-    plaintext: string,
-    loadProfileForDid: (did: string) => unknown | null | undefined,
-  ): InvitePreviewResult;
-};
-
-export function createAtriumInvitesRepo(db: Database, pepper: string): AtriumInvitesRepo {
+export function createAtriumInvitesSqliteRepo(db: Database, pepper: string): AtriumInvitesRepo {
   ensureAtriumInviteSchema(db);
 
   const insertSeed = db.prepare(
@@ -189,7 +114,7 @@ export function createAtriumInvitesRepo(db: Database, pepper: string): AtriumInv
       return plaintexts;
     },
 
-    listInvitesMintedForDid(minterDid) {
+    listInvitesMintedForDid(minterDid): AtriumInviteListRow[] {
       const rows = selectMintedForDid.all(minterDid);
       return rows.map((r) => ({
         preview: previewFromHash(r.token_hash),
@@ -200,7 +125,7 @@ export function createAtriumInvitesRepo(db: Database, pepper: string): AtriumInv
       }));
     },
 
-    previewInviteToken(plaintext, loadProfileForDid) {
+    previewInviteToken(plaintext, loadProfileForDid): InvitePreviewResult {
       const tokenHash = hashInviteToken(pepper, plaintext);
       const row = selectByHashForPreview.get(tokenHash);
       if (row === undefined || row === null || row.consumed_at_ms !== null) {
@@ -221,3 +146,6 @@ export function createAtriumInvitesRepo(db: Database, pepper: string): AtriumInv
     },
   };
 }
+
+/** @deprecated Use createAtriumInvitesSqliteRepo */
+export const createAtriumInvitesRepo = createAtriumInvitesSqliteRepo;

@@ -1,11 +1,9 @@
-import type { AgentRelay, FrameChannelHubPort } from "@khoralabs/agent-relay";
+import type { AgentRelayPersistence } from "@khoralabs/agent-relay";
 import type { AtriumDidAuth } from "@khoralabs/atrium-auth";
-import type { AtriumPost, AtriumProfile } from "@khoralabs/atrium-contracts";
 import type { AtriumInvitesRepo } from "@khoralabs/atrium-invites";
 import type { AtriumRoomLifecycleHostEvent } from "@khoralabs/atrium-transport";
 import type { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
 import type {
-  PrincipalTeardownWorkerHandle,
   RelayPrincipalLifecycle,
   SocialRelationshipPersistence,
 } from "@khoralabs/relay-colonnade";
@@ -17,23 +15,20 @@ import type {
   AtriumHostHealthPort,
 } from "./ports.ts";
 
-export type { AtriumHostCatalogApi } from "./catalog-facade.ts";
-export type { AtriumMemoriesHost } from "./memories/bootstrap.ts";
-
-export type AtriumHostContext = {
-  host: AgentRelay<AtriumProfile, AtriumPost, unknown, never>;
-  auth: AtriumDidAuth;
+export type AtriumHostDeps = {
+  persistence: AgentRelayPersistence;
+  social: SocialRelationshipPersistence;
   tenantKey: string;
-  roomHub: FrameChannelHubPort;
   cluster: AtriumColonnadeCluster;
   publicationClient: ColonnadePublicationClient;
   cellPoolCount: number;
+  auth: AtriumDidAuth;
   principalLifecycle: RelayPrincipalLifecycle;
-  social: SocialRelationshipPersistence;
-  roomLifecycle?: (event: AtriumRoomLifecycleHostEvent) => void;
-  invitesRepo: AtriumInvitesRepo | undefined;
-  principalTeardownWorker: PrincipalTeardownWorkerHandle;
+  invitesRepo?: AtriumInvitesRepo;
   memories?: AtriumMemoriesHost;
   health: AtriumHostHealthPort;
   adminStats: AtriumAdminStatsPort;
-} & AtriumHostCatalogApi;
+  catalog: AtriumHostCatalogApi;
+  startPrincipalTeardownWorker?: boolean;
+  roomLifecycle?: (event: AtriumRoomLifecycleHostEvent) => void;
+};

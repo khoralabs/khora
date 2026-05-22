@@ -30,13 +30,32 @@ async function withCellsDirAsync<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 function deps(consoleAuth: HostRouteDeps["consoleAuth"]): HostRouteDeps {
+  const adminStats = {
+    summary: () => ({
+      registeredUsers: 0,
+      invites: { configured: false, total: 0, consumed: 0, unconsumed: 0 },
+      teardown: { pending: 0, running: 0, active: 0, completed: 0, failed: 0 },
+      catalog: { projectionRows: 0, subscriptionEdges: 0, registeredUsers: 0 },
+      frames: { activeRooms: 0, totalFrames: 0 },
+      cells: { poolCount: 1, inUseCount: 0, shards: [] },
+    }),
+    cellDetail: () => ({ error: "invalid_cell" as const }),
+    principalDetail: () => ({ error: "not_registered" as const }),
+  };
   return {
     ctx: {
-      catalogDb: { prepare: () => ({ get: () => ({ c: 0 }), all: () => [] }) },
-      framesDb: { prepare: () => ({ get: () => ({ c: 0 }) }) },
       tenantKey: "relay",
       cellPoolCount: 1,
-      cluster: { assignPrincipalToCell: () => "colonnade-shard-0" },
+      cluster: {
+        cellPoolCount: 1,
+        assignPrincipalToCell: () => "colonnade-shard-0",
+        resolveCell: () => {
+          throw new Error("not used");
+        },
+        close: () => {},
+      },
+      adminStats,
+      health: { ping() {} },
     } as unknown as AtriumHostContext,
     rateLimiters: {} as HostRouteDeps["rateLimiters"],
     consoleAuth,

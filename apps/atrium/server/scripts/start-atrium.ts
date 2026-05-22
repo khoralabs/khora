@@ -12,13 +12,8 @@ import {
   readLitestreamS3Env,
   resolveLitestreamBin,
 } from "../../../../scripts/litestream-config.ts";
-import {
-  envCatalogPath,
-  envCellsDir,
-  envFramesDbPath,
-  envMemoriesDbPath,
-  validateEnv,
-} from "../src/env.ts";
+import { envCatalogPath, envCellsDir, envFramesDbPath, validateEnv } from "../src/env.ts";
+import { envMemoriesBootstrapConfig } from "../src/memories-env.ts";
 
 const serverRoot = path.resolve(path.dirname(import.meta.path), "..");
 const indexEntry = path.join(serverRoot, "src", "index.ts");
@@ -41,7 +36,7 @@ async function runWithLitestream(): Promise<void> {
   const catalogAbs = path.resolve(process.cwd(), envCatalogPath());
   const framesAbs = path.resolve(process.cwd(), envFramesDbPath());
   const cellsAbs = path.resolve(process.cwd(), envCellsDir());
-  const memoriesPath = envMemoriesDbPath();
+  const memoriesPath = envMemoriesBootstrapConfig()?.dbPath;
   const memoriesAbs =
     memoriesPath !== undefined ? path.resolve(process.cwd(), memoriesPath) : undefined;
 

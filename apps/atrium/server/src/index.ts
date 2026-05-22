@@ -1,10 +1,11 @@
 import { mkdirSync, unlinkSync } from "node:fs";
 import { dirname } from "node:path";
 import { createConsoleAuthFromEnv } from "@khoralabs/atrium-console";
-import { type AtriumHostContext, createAtriumHost } from "@khoralabs/atrium-host";
+import type { AtriumHostContext } from "@khoralabs/atrium-host";
 import type { AtriumWsData } from "@khoralabs/atrium-transport";
 import adminPage from "./admin-ui/routes/admin/index.html";
 import adminLoginPage from "./admin-ui/routes/login/index.html";
+import { bootstrapAtriumHost } from "./bootstrap-atrium.ts";
 import {
   envCatalogPath,
   envCellPoolCount,
@@ -14,7 +15,6 @@ import {
   envHostDuplexIngress,
   envHostDuplexUnixPath,
   envHostUnaryIngress,
-  envMemoriesConfig,
   envPort,
   envTenantKey,
   validateEnv,
@@ -22,6 +22,7 @@ import {
 import type { HostRouteDeps } from "./http/deps.ts";
 import { at2FrameChannelWsHandlers, route } from "./http/router.ts";
 import { logger } from "./logger.ts";
+import { envMemoriesBootstrapConfig } from "./memories-env.ts";
 import { createV2HostRateLimiters } from "./rate-limit-buckets.ts";
 import { startDuplexUnixIngress } from "./server/duplex-unix-listener.ts";
 import { startStdioUnaryIngress } from "./server/stdio-unary-listener.ts";
@@ -33,7 +34,7 @@ const catalogPath = envCatalogPath();
 const framesDbPath = envFramesDbPath();
 const cellsDir = envCellsDir();
 const cellPoolCount = envCellPoolCount();
-const memoriesConfig = envMemoriesConfig();
+const memoriesConfig = envMemoriesBootstrapConfig();
 if (memoriesConfig !== undefined) {
   mkdirSync(dirname(memoriesConfig.dbPath), { recursive: true });
 }
@@ -42,14 +43,14 @@ mkdirSync(dirname(framesDbPath), { recursive: true });
 mkdirSync(cellsDir, { recursive: true });
 
 const tenantKey = envTenantKey();
-const ctx: AtriumHostContext = await createAtriumHost({
+const ctx: AtriumHostContext = await bootstrapAtriumHost({
   catalogPath,
   framesDbPath,
   cellsDir,
   cellPoolCount,
   useCellWorkers: envColonnadeUseCellWorkers(),
   ...(tenantKey !== undefined ? { tenantKey } : {}),
-  ...(memoriesConfig !== undefined ? { memoriesConfig } : {}),
+  ...(memoriesConfig !== undefined ? { memories: memoriesConfig } : {}),
 });
 
 const consoleAuth = createConsoleAuthFromEnv();

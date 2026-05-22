@@ -11,12 +11,12 @@ import {
 } from "@khoralabs/memories-sqlite";
 import { RelayCatalogProjectionStore } from "@khoralabs/relay-colonnade";
 import { encodePostId } from "../post-address-id.ts";
+import { createColonnadePostResolver } from "../resolve-post.ts";
 import { createAtriumCanonicalStore } from "./atrium-canonical-store.ts";
 import {
   agentScope,
   PROFILE_MEMORY_KEY,
   postsMemoryNamespace,
-  profileMemoryNamespace,
   topicScope,
 } from "./atrium-namespace.ts";
 import { atriumOntology } from "./atrium-ontology.ts";
@@ -107,7 +107,8 @@ describe("atrium memories indexer", () => {
     });
     const memoriesDb = openMemoriesDatabase(":memory:");
     const persistence = createMemoriesPersistence(memoriesDb);
-    const store = createAtriumCanonicalStore({ persistence, cluster, persistenceClient });
+    const postResolver = createColonnadePostResolver(cluster);
+    const store = createAtriumCanonicalStore({ persistence, postResolver, persistenceClient });
     const client = new MemoriesClient(persistence, atriumOntology, { store });
     const indexer = createAtriumMemoriesIndexer({
       client,
