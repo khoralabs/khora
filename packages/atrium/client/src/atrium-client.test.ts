@@ -727,6 +727,83 @@ describe("AtriumClient", () => {
     });
   });
 
+  test("search GET /v1/search with query params and auth headers", async () => {
+    const signer = staticSigner("did:key:a");
+    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("http://h/v1/search?q=hello&topK=5&neighbors=true");
+      expect(init?.method ?? "GET").toBe("GET");
+      expectAuthHeaders(init, "did:key:a");
+      return Response.json({
+        hits: [
+          {
+            score: 0.5,
+            hydrated: {
+              kind: "post",
+              entity: {
+                id: "post-1",
+                kind: "post",
+                body: "hello world",
+                authorProfileId: "p1",
+              },
+            },
+          },
+        ],
+      });
+    });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
+    const out = await c.search({ q: "hello", topK: 5, neighbors: true });
+    expect(out.hits).toHaveLength(1);
+    expect(out.hits[0]?.hydrated?.kind).toBe("post");
+  });
+
+  test("searchAdvanced POST /v1/search with JSON body", async () => {
+    const signer = staticSigner("did:key:b");
+    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("http://h/v1/search");
+      expect(init?.method).toBe("POST");
+      expectAuthHeaders(init, "did:key:b");
+      expect(JSON.parse(String(init?.body))).toEqual({
+        content: { text: "vector query" },
+        options: { topK: 3 },
+      });
+      return Response.json({ hits: [] });
+    });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
+    await expect(
+      c.searchAdvanced({ content: { text: "vector query" }, options: { topK: 3 } }),
+    ).resolves.toEqual({ hits: [] });
+  });
+
+  test("search throws AtriumClientError on 503 when memories not configured", async () => {
+    const signer = staticSigner();
+    const fetchMock = mock(async () =>
+      Response.json(
+        { error: "Memories search is not configured (set ATRIUM_MEMORIES_DB_PATH)" },
+        { status: 503 },
+      ),
+    );
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
+    try {
+      await c.search({ q: "hello" });
+      expect.unreachable();
+    } catch (e) {
+      expect(e).toBeInstanceOf(AtriumClientError);
+      expect((e as AtriumClientError).status).toBe(503);
+    }
+  });
+
   test("non-OK throws AtriumClientError with parsed message", async () => {
     const signer = staticSigner();
     const fetchMock = mock(async () => Response.json({ error: "bad did" }, { status: 400 }));

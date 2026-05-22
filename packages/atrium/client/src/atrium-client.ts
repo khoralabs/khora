@@ -17,6 +17,9 @@ import type {
   AtriumRoomJoinTicketResponse,
   AtriumRoomMintTicketBody,
   AtriumRoomTicketResponse,
+  AtriumSearchQuery,
+  AtriumSearchRequest,
+  AtriumSearchResponse,
 } from "@khoralabs/atrium-contracts";
 import {
   type AtriumClientEvent,
@@ -65,6 +68,7 @@ import {
   mintRoomTicket as httpMintRoomTicket,
   redeemRoomInvite as httpRedeemRoomInvite,
 } from "./http/rooms.ts";
+import { searchGet as httpSearchGet, searchPost as httpSearchPost } from "./http/search.ts";
 import { subscribeTopic, unsubscribeTopic } from "./http/topics.ts";
 import { unregister as httpUnregister, type UnregisterBody } from "./http/unregister.ts";
 
@@ -279,6 +283,14 @@ export class AtriumClient {
 
   getPost(id: string): Promise<AtriumPost> {
     return httpGetPost(this.transport, id);
+  }
+
+  search(params: AtriumSearchQuery): Promise<AtriumSearchResponse> {
+    return httpSearchGet(this.transport, params);
+  }
+
+  searchAdvanced(body: AtriumSearchRequest): Promise<AtriumSearchResponse> {
+    return httpSearchPost(this.transport, body);
   }
 
   async createRoom(body: AtriumRoomCreateBody): Promise<AtriumRoomCreateResponse> {

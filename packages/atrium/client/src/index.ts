@@ -17,6 +17,11 @@ export type {
   AtriumRegistrationResult,
   AtriumRelationshipItem,
   AtriumRelationshipListResponse,
+  AtriumSearchHit,
+  AtriumSearchHydratedEntity,
+  AtriumSearchQuery,
+  AtriumSearchRequest,
+  AtriumSearchResponse,
 } from "@khoralabs/atrium-contracts";
 export {
   atriumPostLexicalText,
@@ -39,6 +44,8 @@ export {
   zAtriumRegistrationMetadata,
   zAtriumRegistrationRequestBody,
   zAtriumRelationshipListResponse,
+  zAtriumSearchRequest,
+  zAtriumSearchResponse,
   zAtriumUnregisterRequestBody,
 } from "@khoralabs/atrium-contracts";
 export type {

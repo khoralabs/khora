@@ -82,7 +82,7 @@ export const zAtriumAppPluginMap = z
       .optional()
       .describe("inbox-buffer plugin options, or false to disable an inherited entry."),
   })
-  .passthrough()
+  .loose()
   .describe("Builtin ATRIUM plugins keyed by id.");
 
 export type AtriumAppPluginMap = z.infer<typeof zAtriumAppPluginMap>;
@@ -129,7 +129,7 @@ export const zAtriumAppConfigBase = z
         "Builtin plugins by id. Merged across layers per-id; set an id to false to cancel.",
       ),
   })
-  .passthrough()
+  .loose()
   .describe("ATRIUM client base configuration.");
 
 export type AtriumAppConfigBase = z.infer<typeof zAtriumAppConfigBase>;

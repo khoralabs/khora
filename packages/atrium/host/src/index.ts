@@ -1,10 +1,15 @@
+export type {
+  AtriumSearchHit,
+  AtriumSearchHydratedEntity,
+  AtriumSearchQuery,
+  AtriumSearchRequest,
+  AtriumSearchResponse,
+} from "@khoralabs/atrium-contracts";
 export { createAtriumHost } from "./atrium-host.ts";
 export type { AtriumHostDeps } from "./atrium-host-deps.ts";
 export { type AtriumHostCatalogApi, createAtriumCatalogApi } from "./catalog-facade.ts";
 export type { AtriumHostContext } from "./context.ts";
 export {
-  type AtriumSearchRequest,
-  type AtriumSearchResponse,
   atriumSearchRequestFromGetQuery,
   executeAtriumMemoriesSearch,
 } from "./memories/atrium-memories-search.ts";

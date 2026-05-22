@@ -1,36 +1,19 @@
-import type { AtriumPost, AtriumProfile } from "@khoralabs/atrium-contracts";
 import type {
-  MemoriesClient,
-  SearchHit,
-  SearchNeighborHit,
-  SearchParams,
-} from "@khoralabs/memories-core";
+  AtriumSearchQuery,
+  AtriumSearchRequest,
+  AtriumSearchResponse,
+} from "@khoralabs/atrium-contracts";
+import type { MemoriesClient, SearchParams } from "@khoralabs/memories-core";
 import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import { embedTextChunks } from "@khoralabs/memories-core/helpers";
-import {
-  type AtriumCanonicalStore,
-  type AtriumHydratedEntity,
-  hydrateMemoryLabels,
-} from "./atrium-canonical-store.ts";
+import { type AtriumCanonicalStore, hydrateMemoryLabels } from "./atrium-canonical-store.ts";
 import type { atriumOntology } from "./atrium-ontology.ts";
 
-export type AtriumSearchRequest = Omit<SearchParams, "content" | "namespace"> & {
-  namespace?: string;
-  content: { text?: string; vector?: number[] };
-};
-
-export type AtriumSearchNeighborHit = SearchNeighborHit & {
-  hydrated?: AtriumHydratedEntity;
-};
-
-export type AtriumSearchHit = SearchHit & {
-  hydrated?: AtriumHydratedEntity;
-  neighbors?: AtriumSearchNeighborHit[];
-};
-
-export type AtriumSearchResponse = {
-  hits: AtriumSearchHit[];
-};
+export type {
+  AtriumSearchQuery,
+  AtriumSearchRequest,
+  AtriumSearchResponse,
+} from "@khoralabs/atrium-contracts";
 
 export async function executeAtriumMemoriesSearch(deps: {
   client: MemoriesClient<typeof atriumOntology.nodeLabels, typeof atriumOntology.edgeLabels>;
@@ -60,14 +43,21 @@ export async function executeAtriumMemoriesSearch(deps: {
   }
 
   const searchParams = {
-    ...params,
+    ...(params.additionalNamespaces !== undefined
+      ? { additionalNamespaces: params.additionalNamespaces }
+      : {}),
+    ...(params.searchEntireDatabase !== undefined
+      ? { searchEntireDatabase: params.searchEntireDatabase }
+      : {}),
+    ...(params.asOfTimestampMs !== undefined ? { asOfTimestampMs: params.asOfTimestampMs } : {}),
+    ...(params.options !== undefined ? { options: params.options } : {}),
     namespace: params.namespace ?? namespaceRoot,
     searchScopeMode: params.searchScopeMode ?? "pathSubtree",
     content,
   } satisfies SearchParams;
 
   const hits = client.search(searchParams as Parameters<typeof client.search>[0]);
-  const enriched: AtriumSearchHit[] = [];
+  const enriched: AtriumSearchResponse["hits"] = [];
   for (const hit of hits) {
     const hydrated = await hydrateMemoryLabels(store, hit.labels, hit.memory._id, hit.source_key);
     const neighbors = hit.neighbors
@@ -78,21 +68,13 @@ export async function executeAtriumMemoriesSearch(deps: {
           })),
         )
       : undefined;
-    enriched.push({ ...hit, hydrated, neighbors });
+    enriched.push({ ...hit, hydrated, neighbors } as AtriumSearchResponse["hits"][number]);
   }
   return { hits: enriched };
 }
 
-export type AtriumSearchGetQuery = {
-  q: string;
-  topK?: number;
-  neighbors?: boolean;
-  maxNeighbors?: number;
-  namespace?: string;
-};
-
 export function atriumSearchRequestFromGetQuery(
-  query: AtriumSearchGetQuery,
+  query: AtriumSearchQuery,
   namespaceRoot: string,
 ): AtriumSearchRequest {
   return {
@@ -105,5 +87,3 @@ export function atriumSearchRequestFromGetQuery(
     },
   };
 }
-
-export type { AtriumPost, AtriumProfile };

@@ -1,5 +1,5 @@
+import type { AtriumSearchRequest } from "@khoralabs/atrium-contracts";
 import {
-  type AtriumSearchRequest,
   atriumSearchRequestFromGetQuery,
   executeAtriumMemoriesSearch,
 } from "@khoralabs/atrium-host";
