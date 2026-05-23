@@ -6,6 +6,7 @@ import { clientIpFromRequest } from "../rate-limit.ts";
 import { handleInboxWsUpgrade } from "../ws/inbox.ts";
 import {
   handleAdminStatsCell,
+  handleAdminStatsInactiveMembers,
   handleAdminStatsPrincipal,
   handleAdminStatsSummary,
 } from "./admin-stats.ts";
@@ -19,6 +20,7 @@ import type { HostRouteDeps } from "./deps.ts";
 import { handleHealth, handleReady } from "./health.ts";
 import {
   handleInternalAdminStatsCell,
+  handleInternalAdminStatsInactiveMembers,
   handleInternalAdminStatsPrincipal,
   handleInternalAdminStatsSummary,
 } from "./internal-admin-stats.ts";
@@ -85,6 +87,10 @@ export async function route(
     return handleInternalAdminStatsCell(req, url, deps);
   }
 
+  if (req.method === "GET" && url.pathname === "/internal/admin/stats/inactive-members") {
+    return handleInternalAdminStatsInactiveMembers(req, url, deps);
+  }
+
   const consoleRoute = await routeConsoleAuth(req, url, deps.consoleAuth);
   if (consoleRoute !== undefined) return consoleRoute;
 
@@ -98,6 +104,10 @@ export async function route(
 
   if (req.method === "GET" && url.pathname === "/admin/api/stats/cell") {
     return handleAdminStatsCell(req, url, deps);
+  }
+
+  if (req.method === "GET" && url.pathname === "/admin/api/stats/inactive-members") {
+    return handleAdminStatsInactiveMembers(req, url, deps);
   }
 
   const ip = clientIpFromRequest(req);

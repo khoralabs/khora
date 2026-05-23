@@ -130,6 +130,7 @@ describe("serializeProfileSyncStateFile round-trip", () => {
           title: "Intros",
           body: "Looking",
           authorProfileId: "p1",
+          authorSignature: "test-post-sig",
           attributes: { engagementType: "intros" },
         },
       ],

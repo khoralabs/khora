@@ -5,10 +5,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AtriumHostContext } from "@khoralabs/atrium-host";
 import { poolShardCellId } from "@khoralabs/colonnade-persistence";
+import { openEncryptedDatabaseSync, TEST_ATRIUM_SQLCIPHER_KEY } from "@khoralabs/sqlite-crypto";
 import { createAtriumAdminStatsPort } from "../ops/admin-stats-port.ts";
 import type { HostRouteDeps } from "./deps.ts";
 import {
   handleInternalAdminStatsCell,
+  handleInternalAdminStatsInactiveMembers,
   handleInternalAdminStatsPrincipal,
   handleInternalAdminStatsSummary,
 } from "./internal-admin-stats.ts";
@@ -99,11 +101,16 @@ function seedFrames(): void {
     .run("room-active", new Uint8Array([2]));
 }
 
-function seedCellShard(shardIndex: number, outboxRows: number, inboxRows: number): void {
+function seedCellShard(
+  shardIndex: number,
+  outboxRows: number,
+  inboxRows: number,
+  committedAtMs = Date.now(),
+): void {
   const cellId = poolShardCellId(shardIndex);
   const path = join(cellsDir, `${cellId}.sqlite`);
   rmSync(path, { force: true });
-  const db = new Database(path, { create: true });
+  const db = openEncryptedDatabaseSync(path, { create: true }, TEST_ATRIUM_SQLCIPHER_KEY);
   db.run(`
     CREATE TABLE outbox (
       record_key TEXT PRIMARY KEY NOT NULL,
@@ -135,7 +142,7 @@ function seedCellShard(shardIndex: number, outboxRows: number, inboxRows: number
       new Uint8Array([1]),
       "{}",
       "hash",
-      Date.now(),
+      committedAtMs,
     );
   }
   const insertInbox = db.prepare(
@@ -176,6 +183,7 @@ function deps(overrides?: Partial<AtriumHostContext>): HostRouteDeps {
     cellPoolCount: 2,
     cluster,
     lookupNormalizedUsernameForPrincipal,
+    sqlCipherKey: TEST_ATRIUM_SQLCIPHER_KEY,
   });
   return {
     ctx: {
@@ -258,6 +266,9 @@ describe("internal admin stats", () => {
               homePrincipals: number;
             }>;
           };
+          networkActivity: {
+            heartbeat: { registeredAgents: number };
+          };
         };
 
         expect(body.registeredUsers).toBe(1);
@@ -283,6 +294,28 @@ describe("internal admin stats", () => {
           inboxCount: 0,
           homePrincipals: 0,
         });
+        expect(body.networkActivity).toBeDefined();
+        expect(body.networkActivity.heartbeat.registeredAgents).toBe(1);
+      }),
+    );
+  });
+
+  test("inactive-members returns registered stale principals", async () => {
+    seedCatalog();
+    const staleMs = Date.now() - 10 * 24 * 60 * 60 * 1000;
+    seedCellShard(0, 1, 0, staleMs);
+
+    await withSecret(() =>
+      withCellsDir(async () => {
+        const url = new URL("http://x/inactive-members?days=7");
+        const res = handleInternalAdminStatsInactiveMembers(
+          new Request(url, { headers: { Authorization: "Bearer test-secret" } }),
+          url,
+          deps(),
+        );
+        expect(res.status).toBe(200);
+        const body = (await res.json()) as { members: Array<{ did: string }> };
+        expect(body.members.some((m) => m.did === "did:key:alice")).toBe(true);
       }),
     );
   });

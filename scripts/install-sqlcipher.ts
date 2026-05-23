@@ -14,7 +14,10 @@
  * This script checks whether a SQLCipher library is discoverable (same paths as
  * @khoralabs/sqlite-crypto resolveSqlCipherLib).
  */
-import { resolveSqlCipherLib, SQLCIPHER_CUSTOM_LIB_ENV } from "../packages/libs/sqlite-crypto/src/sqlcipher.ts";
+import {
+  resolveSqlCipherLib,
+  SQLCIPHER_CUSTOM_LIB_ENV,
+} from "../packages/libs/sqlite-crypto/src/sqlcipher.ts";
 
 console.log(`Checking SQLCipher library (${SQLCIPHER_CUSTOM_LIB_ENV})…`);
 try {

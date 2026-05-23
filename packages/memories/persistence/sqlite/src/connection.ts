@@ -1,8 +1,8 @@
 import { Database, type DatabaseOptions } from "bun:sqlite";
-import { openEncryptedDatabaseSync, TEST_ATRIUM_SQLCIPHER_KEY } from "@khoralabs/sqlite-crypto";
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { openEncryptedDatabaseSync, TEST_ATRIUM_SQLCIPHER_KEY } from "@khoralabs/sqlite-crypto";
 import { createMigrationRunner } from "@khoralabs/sqlite-migrate";
 import * as sqliteVec from "sqlite-vec";
 import m001Initial from "./migrations/0.0.0-0.1.0/001-initial";

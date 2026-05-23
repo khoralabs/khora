@@ -1,17 +1,28 @@
-import { Database } from "bun:sqlite";
+import type { Database } from "bun:sqlite";
 import { existsSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
 import type {
   AtriumAdminCellDetailResult,
+  AtriumAdminInactiveMember,
+  AtriumAdminInactiveMembersResult,
+  AtriumAdminNetworkActivityStats,
   AtriumAdminPrincipalDetailResult,
   AtriumAdminStatsPort,
   AtriumAdminStatsSummary,
   AtriumColonnadeCluster,
 } from "@khoralabs/atrium-host";
 import { poolShardCellId } from "@khoralabs/colonnade-persistence";
+import { openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
 
 const REG_BY_PRINCIPAL = "relay:reg:by-principal";
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const WEEK_MS = 7 * MS_PER_DAY;
+const HEARTBEAT_24H_MS = MS_PER_DAY;
+
+type PrincipalActivity = {
+  lastPostAtMs: number | null;
+  lastStatusAtMs: number | null;
+};
 
 function cellDbFilenameStem(cellId: string): string {
   return cellId.replace(/[^a-zA-Z0-9._-]+/g, "_");
@@ -118,6 +129,203 @@ function isValidPoolCellId(cellId: string, poolCount: number): boolean {
   if (match === null) return false;
   const index = Number.parseInt(match[1] ?? "", 10);
   return Number.isInteger(index) && index >= 0 && index < poolCount;
+}
+
+function mergePrincipalActivity(
+  target: Map<string, PrincipalActivity>,
+  principalId: string,
+  lastPostAtMs: number | null,
+  lastStatusAtMs: number | null,
+): void {
+  const existing = target.get(principalId);
+  if (existing === undefined) {
+    target.set(principalId, { lastPostAtMs, lastStatusAtMs });
+    return;
+  }
+  target.set(principalId, {
+    lastPostAtMs:
+      lastPostAtMs === null
+        ? existing.lastPostAtMs
+        : existing.lastPostAtMs === null
+          ? lastPostAtMs
+          : Math.max(existing.lastPostAtMs, lastPostAtMs),
+    lastStatusAtMs:
+      lastStatusAtMs === null
+        ? existing.lastStatusAtMs
+        : existing.lastStatusAtMs === null
+          ? lastStatusAtMs
+          : Math.max(existing.lastStatusAtMs, lastStatusAtMs),
+  });
+}
+
+function scanOutboxActivity(
+  cellsDir: string,
+  tenantKey: string,
+  sqlCipherKey: string,
+  cellPoolCount: number,
+): Map<string, PrincipalActivity> {
+  const activity = new Map<string, PrincipalActivity>();
+  for (let i = 0; i < cellPoolCount; i++) {
+    const cellId = poolShardCellId(i);
+    const db = openCellDbReadonly(cellsDir, cellId, sqlCipherKey);
+    if (db === undefined) continue;
+    try {
+      if (!tableExists(db, "outbox")) continue;
+      const rows = db
+        .prepare(
+          `SELECT principal_id AS principalId,
+                  MAX(committed_at_ms) AS lastPostAtMs,
+                  MAX(CASE WHEN json_extract(metadata, '$.postKind') = 'status'
+                           THEN committed_at_ms END) AS lastStatusAtMs
+           FROM outbox WHERE tenant_key = ?
+           GROUP BY principal_id`,
+        )
+        .all(tenantKey) as Array<{
+        principalId: string;
+        lastPostAtMs: number | null;
+        lastStatusAtMs: number | null;
+      }>;
+      for (const row of rows) {
+        mergePrincipalActivity(activity, row.principalId, row.lastPostAtMs, row.lastStatusAtMs);
+      }
+    } finally {
+      db.close();
+    }
+  }
+  return activity;
+}
+
+function countProbesSince(
+  cellsDir: string,
+  tenantKey: string,
+  sqlCipherKey: string,
+  cellPoolCount: number,
+  sinceMs: number,
+): number {
+  let total = 0;
+  for (let i = 0; i < cellPoolCount; i++) {
+    const cellId = poolShardCellId(i);
+    const db = openCellDbReadonly(cellsDir, cellId, sqlCipherKey);
+    if (db === undefined) continue;
+    try {
+      if (!tableExists(db, "outbox")) continue;
+      total += (
+        db
+          .prepare(
+            `SELECT COUNT(*) AS c FROM outbox
+             WHERE tenant_key = ?
+               AND json_extract(metadata, '$.postKind') = 'probe'
+               AND committed_at_ms >= ?`,
+          )
+          .get(tenantKey, sinceMs) as { c: number }
+      ).c;
+    } finally {
+      db.close();
+    }
+  }
+  return total;
+}
+
+function countRoomsSince(framesDb: Database, sinceMs: number): number {
+  if (!tableExists(framesDb, "rooms")) return 0;
+  return (
+    framesDb.prepare(`SELECT COUNT(*) AS c FROM rooms WHERE created_at_ms >= ?`).get(sinceMs) as {
+      c: number;
+    }
+  ).c;
+}
+
+function countTotalRooms(framesDb: Database): number {
+  if (!tableExists(framesDb, "rooms")) return 0;
+  return (framesDb.prepare(`SELECT COUNT(*) AS c FROM rooms`).get() as { c: number }).c;
+}
+
+function buildNetworkActivity(
+  registeredAgents: number,
+  principalIds: readonly string[],
+  activity: Map<string, PrincipalActivity>,
+  probesThisWeek: number,
+  roomsCreatedThisWeek: number,
+  totalRoomsCreated: number,
+  nowMs: number,
+): AtriumAdminNetworkActivityStats {
+  const threshold24h = nowMs - HEARTBEAT_24H_MS;
+  const threshold7d = nowMs - WEEK_MS;
+  let withStatusPost = 0;
+  let activeLast24h = 0;
+  let activeLast7d = 0;
+  let silent7dPlus = 0;
+
+  for (const did of principalIds) {
+    const a = activity.get(did);
+    const lastStatus = a?.lastStatusAtMs ?? null;
+    if (lastStatus !== null) {
+      withStatusPost++;
+      if (lastStatus >= threshold24h) activeLast24h++;
+      if (lastStatus >= threshold7d) activeLast7d++;
+    }
+    if (lastStatus === null || lastStatus < threshold7d) {
+      silent7dPlus++;
+    }
+  }
+
+  return {
+    probesThisWeek,
+    roomsCreatedThisWeek,
+    totalRoomsCreated,
+    heartbeat: {
+      registeredAgents,
+      withStatusPost,
+      activeLast24h,
+      activeLast7d,
+      silent7dPlus,
+    },
+  };
+}
+
+function buildInactiveMembers(
+  principalIds: readonly string[],
+  activity: Map<string, PrincipalActivity>,
+  lookupNormalizedUsernameForPrincipal: (principalId: string) => string | undefined,
+  inactiveDays: number,
+  asOfMs: number,
+): AtriumAdminInactiveMembersResult {
+  const thresholdMs = asOfMs - inactiveDays * MS_PER_DAY;
+  const members: AtriumAdminInactiveMember[] = [];
+
+  for (const did of principalIds) {
+    const a = activity.get(did);
+    const lastPostAtMs = a?.lastPostAtMs ?? null;
+    const lastStatusAtMs = a?.lastStatusAtMs ?? null;
+    const reasons: AtriumAdminInactiveMember["reasons"] = [];
+    if (lastPostAtMs === null || lastPostAtMs < thresholdMs) {
+      reasons.push("no_post_7d");
+    }
+    if (lastStatusAtMs === null || lastStatusAtMs < thresholdMs) {
+      reasons.push("silent_heartbeat_7d");
+    }
+    if (reasons.length === 0) continue;
+    members.push({
+      did,
+      username: lookupNormalizedUsernameForPrincipal(did) ?? null,
+      lastPostAtMs,
+      lastStatusAtMs,
+      reasons,
+    });
+  }
+
+  members.sort((a, b) => {
+    const aMs = Math.min(a.lastPostAtMs ?? 0, a.lastStatusAtMs ?? 0);
+    const bMs = Math.min(b.lastPostAtMs ?? 0, b.lastStatusAtMs ?? 0);
+    return aMs - bMs;
+  });
+
+  return { inactiveDays, asOfMs, members };
+}
+
+function clampInactiveDays(days: number | undefined): number {
+  if (days === undefined || !Number.isFinite(days)) return 7;
+  return Math.min(90, Math.max(1, Math.floor(days)));
 }
 
 export function createAtriumAdminStatsPort(deps: {
@@ -241,6 +449,10 @@ export function createAtriumAdminStatsPort(deps: {
   return {
     summary(): AtriumAdminStatsSummary {
       const registeredUsers = registeredUsersCount();
+      const principalIds = listRegisteredPrincipalIds(catalogDb, tenantKey);
+      const nowMs = Date.now();
+      const weekStart = nowMs - WEEK_MS;
+      const activity = scanOutboxActivity(cellsDir, tenantKey, sqlCipherKey, cellPoolCount);
       return {
         registeredUsers,
         invites: inviteStats(),
@@ -248,6 +460,15 @@ export function createAtriumAdminStatsPort(deps: {
         catalog: catalogStats(registeredUsers),
         frames: framesStats(),
         cells: buildCellShardsSummary(),
+        networkActivity: buildNetworkActivity(
+          registeredUsers,
+          principalIds,
+          activity,
+          countProbesSince(cellsDir, tenantKey, sqlCipherKey, cellPoolCount, weekStart),
+          countRoomsSince(framesDb, weekStart),
+          countTotalRooms(framesDb),
+          nowMs,
+        ),
       };
     },
 
@@ -360,6 +581,20 @@ export function createAtriumAdminStatsPort(deps: {
         subscriptionCount,
         cellId,
       };
+    },
+
+    inactiveMembers(opts?: { inactiveDays?: number }): AtriumAdminInactiveMembersResult {
+      const inactiveDays = clampInactiveDays(opts?.inactiveDays);
+      const asOfMs = Date.now();
+      const principalIds = listRegisteredPrincipalIds(catalogDb, tenantKey);
+      const activity = scanOutboxActivity(cellsDir, tenantKey, sqlCipherKey, cellPoolCount);
+      return buildInactiveMembers(
+        principalIds,
+        activity,
+        lookupNormalizedUsernameForPrincipal,
+        inactiveDays,
+        asOfMs,
+      );
     },
   };
 }

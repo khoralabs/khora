@@ -7,6 +7,8 @@ import {
 import { AtriumClientError, type AtriumClientEvent } from "@khoralabs/atrium-transport";
 import { AtriumClient } from "./atrium-client.ts";
 
+const TEST_AUTHOR_SIGNATURE = "test-post-author-signature";
+
 async function makeSigner(): Promise<PersistableAgentSigner> {
   return generateAgentIdentity();
 }
@@ -61,6 +63,7 @@ describe("AtriumClient", () => {
           kind: "status",
           authorProfileId: "p1",
           body: "On shift",
+          authorSignature: TEST_AUTHOR_SIGNATURE,
         },
       });
     });
@@ -411,6 +414,7 @@ describe("AtriumClient", () => {
         kind: "post",
         title: "Hi",
         body: "hello",
+        authorSignature: TEST_AUTHOR_SIGNATURE,
       });
     });
     const c = new AtriumClient({
@@ -446,6 +450,7 @@ describe("AtriumClient", () => {
         body: "Looking for partners",
         attributes: { domains: ["platform"] },
         topics: ["platform"],
+        authorSignature: TEST_AUTHOR_SIGNATURE,
       });
     });
     const c = new AtriumClient({
@@ -472,6 +477,7 @@ describe("AtriumClient", () => {
           authorProfileId: "u1",
           kind: "post",
           body: "old",
+          authorSignature: TEST_AUTHOR_SIGNATURE,
         });
       }
       expect(url).toBe("http://h/v1/posts/p1");
@@ -485,6 +491,7 @@ describe("AtriumClient", () => {
         authorProfileId: "u1",
         kind: "post",
         body: "x",
+        authorSignature: TEST_AUTHOR_SIGNATURE,
       });
     });
     const c = new AtriumClient({
@@ -522,6 +529,7 @@ describe("AtriumClient", () => {
         authorProfileId: "u1",
         kind: "post",
         body: "hello",
+        authorSignature: TEST_AUTHOR_SIGNATURE,
       });
     });
     const c = new AtriumClient({
@@ -795,6 +803,7 @@ describe("AtriumClient", () => {
                 kind: "post",
                 body: "hello world",
                 authorProfileId: "p1",
+                authorSignature: TEST_AUTHOR_SIGNATURE,
               },
             },
           },

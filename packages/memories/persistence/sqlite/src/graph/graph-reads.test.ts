@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { ids, mergeMemory } from "@khoralabs/memories-core";
-import { createMemoriesPersistence, listMemoryNamespaces, openTestMemoriesDatabase } from "../index";
+import {
+  createMemoriesPersistence,
+  listMemoryNamespaces,
+  openTestMemoriesDatabase,
+} from "../index";
 
 describe("MemoriesGraphIndex per-entity reads", () => {
   test("loadGraphNode matches split loaders; loadGraphEdge; listIncidentGraphEdges", () => {

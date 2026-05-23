@@ -2,6 +2,7 @@ import { withConsoleAuth } from "./console-guard.ts";
 import type { HostRouteDeps } from "./deps.ts";
 import {
   adminStatsCellResponse,
+  adminStatsInactiveMembersResponse,
   adminStatsPrincipalResponse,
   adminStatsSummaryResponse,
 } from "./internal-admin-stats.ts";
@@ -36,4 +37,12 @@ export async function handleAdminStatsCell(
     return jsonError("Missing cellId query parameter", 400);
   }
   return withConsoleAuth(req, deps, () => adminStatsCellResponse(deps, cellId));
+}
+
+export async function handleAdminStatsInactiveMembers(
+  req: Request,
+  url: URL,
+  deps: HostRouteDeps,
+): Promise<Response> {
+  return withConsoleAuth(req, deps, () => adminStatsInactiveMembersResponse(deps, url));
 }

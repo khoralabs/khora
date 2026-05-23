@@ -1,4 +1,3 @@
-import type { OutboxPayloadCodec } from "@khoralabs/sqlite-crypto";
 import type { AgentRelay, FrameChannelHubPort } from "@khoralabs/agent-relay";
 import type { AtriumDidAuth } from "@khoralabs/atrium-auth";
 import type { AtriumPost, AtriumProfile } from "@khoralabs/atrium-contracts";
@@ -10,6 +9,7 @@ import type {
   RelayPrincipalLifecycle,
   SocialRelationshipPersistence,
 } from "@khoralabs/relay-colonnade";
+import type { OutboxPayloadCodec } from "@khoralabs/sqlite-crypto";
 import type { AtriumHostCatalogApi } from "./catalog-facade.ts";
 import type { AtriumMemoriesHost } from "./memories/bootstrap.ts";
 import type {

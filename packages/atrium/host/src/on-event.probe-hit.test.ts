@@ -8,7 +8,6 @@ import {
 } from "@khoralabs/agent-relay";
 import type { AtriumPost, AtriumProfile } from "@khoralabs/atrium-contracts";
 import type { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
-import { createTestEncryptionMaterial, TEST_POST_AUTHOR_SIGNATURE } from "@khoralabs/sqlite-crypto";
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
 import { MemoriesClient } from "@khoralabs/memories-core";
 import {
@@ -17,6 +16,7 @@ import {
   openTestMemoriesDatabase,
 } from "@khoralabs/memories-sqlite";
 import { RelayCatalogProjectionStore } from "@khoralabs/relay-colonnade";
+import { createTestEncryptionMaterial, TEST_POST_AUTHOR_SIGNATURE } from "@khoralabs/sqlite-crypto";
 import { createAtriumCanonicalStore } from "./memories/atrium-canonical-store.ts";
 import { atriumOntology } from "./memories/atrium-ontology.ts";
 import { createAtriumMemoriesIndexer } from "./memories/indexer.ts";

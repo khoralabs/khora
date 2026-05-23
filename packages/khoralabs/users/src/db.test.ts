@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
 import { existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
 import { getUsersDatabase, registryDatabasePath, resetUsersDatabase } from "./db.ts";
 
 describe("registryDatabasePath", () => {

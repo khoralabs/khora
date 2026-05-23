@@ -1,7 +1,11 @@
-import { Database } from "bun:sqlite";
+import type { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname, isAbsolute, resolve } from "node:path";
-import { EnvKeyProvider, openEncryptedDatabaseSync, SqliteCryptoError } from "@khoralabs/sqlite-crypto";
+import {
+  EnvKeyProvider,
+  openEncryptedDatabaseSync,
+  SqliteCryptoError,
+} from "@khoralabs/sqlite-crypto";
 
 let db: Database | undefined;
 

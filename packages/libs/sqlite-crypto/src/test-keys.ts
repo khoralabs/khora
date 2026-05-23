@@ -1,6 +1,6 @@
+import { type EncryptionKeyProvider, EnvKeyProvider, type SqlCipherScope } from "./key-provider.ts";
 import type { OutboxPayloadCodec } from "./outbox-payload.ts";
 import { createOutboxPayloadCodec } from "./outbox-payload.ts";
-import { EnvKeyProvider, type EncryptionKeyProvider, type SqlCipherScope } from "./key-provider.ts";
 
 export const TEST_ATRIUM_SQLCIPHER_KEY = "test-atrium-sqlcipher-key!!";
 export const TEST_REGISTRY_SQLCIPHER_KEY = "test-registry-sqlcipher-key!";

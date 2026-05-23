@@ -1,3 +1,4 @@
+import { AdminStatsInactiveMembers } from "./inactive-members.tsx";
 import {
   AdminStatsCatalogMetrics,
   AdminStatsCellDetail,
@@ -7,6 +8,7 @@ import {
   AdminStatsFramesMetrics,
   AdminStatsInfrastructure,
 } from "./infrastructure.tsx";
+import { AdminStatsNetworkActivity } from "./network-activity.tsx";
 import {
   AdminStatsInvitesMetrics,
   AdminStatsOperations,
@@ -21,6 +23,8 @@ import { AdminStatsRoot } from "./root.tsx";
 
 export const AdminStats = {
   Root: AdminStatsRoot,
+  NetworkActivity: AdminStatsNetworkActivity,
+  InactiveMembers: AdminStatsInactiveMembers,
   Infrastructure: AdminStatsInfrastructure,
   CatalogMetrics: AdminStatsCatalogMetrics,
   FramesMetrics: AdminStatsFramesMetrics,

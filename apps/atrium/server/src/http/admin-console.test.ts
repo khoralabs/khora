@@ -38,9 +38,22 @@ function deps(consoleAuth: HostRouteDeps["consoleAuth"]): HostRouteDeps {
       catalog: { projectionRows: 0, subscriptionEdges: 0, registeredUsers: 0 },
       frames: { activeRooms: 0, totalFrames: 0 },
       cells: { poolCount: 1, inUseCount: 0, shards: [] },
+      networkActivity: {
+        probesThisWeek: 0,
+        roomsCreatedThisWeek: 0,
+        totalRoomsCreated: 0,
+        heartbeat: {
+          registeredAgents: 0,
+          withStatusPost: 0,
+          activeLast24h: 0,
+          activeLast7d: 0,
+          silent7dPlus: 0,
+        },
+      },
     }),
     cellDetail: () => ({ error: "invalid_cell" as const }),
     principalDetail: () => ({ error: "not_registered" as const }),
+    inactiveMembers: () => ({ inactiveDays: 7, asOfMs: Date.now(), members: [] }),
   };
   return {
     ctx: {

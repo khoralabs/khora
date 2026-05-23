@@ -38,6 +38,37 @@ export type AtriumAdminCellsSummary = {
   shards: AtriumAdminCellShardSummary[];
 };
 
+export type AtriumAdminHeartbeatStats = {
+  registeredAgents: number;
+  withStatusPost: number;
+  activeLast24h: number;
+  activeLast7d: number;
+  silent7dPlus: number;
+};
+
+export type AtriumAdminNetworkActivityStats = {
+  probesThisWeek: number;
+  roomsCreatedThisWeek: number;
+  totalRoomsCreated: number;
+  heartbeat: AtriumAdminHeartbeatStats;
+};
+
+export type AtriumAdminInactiveMemberReason = "no_post_7d" | "silent_heartbeat_7d";
+
+export type AtriumAdminInactiveMember = {
+  did: string;
+  username: string | null;
+  lastPostAtMs: number | null;
+  lastStatusAtMs: number | null;
+  reasons: AtriumAdminInactiveMemberReason[];
+};
+
+export type AtriumAdminInactiveMembersResult = {
+  inactiveDays: number;
+  asOfMs: number;
+  members: AtriumAdminInactiveMember[];
+};
+
 export type AtriumAdminStatsSummary = {
   registeredUsers: number;
   invites: AtriumAdminInviteStats;
@@ -45,6 +76,7 @@ export type AtriumAdminStatsSummary = {
   catalog: AtriumAdminCatalogStats;
   frames: AtriumAdminFramesStats;
   cells: AtriumAdminCellsSummary;
+  networkActivity: AtriumAdminNetworkActivityStats;
 };
 
 export type AtriumAdminCellDetail = {

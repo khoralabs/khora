@@ -47,7 +47,9 @@ describe("Outbox field encryption", () => {
       locator: { cell_id: "cell-a", record_key: out.record_key, cell_pool_count: POOL },
       payload_format: "stored",
     });
-    expect(new TextDecoder().decode(raw.payload_bytes)).not.toBe(JSON.stringify({ body: "secret post" }));
+    expect(new TextDecoder().decode(raw.payload_bytes)).not.toBe(
+      JSON.stringify({ body: "secret post" }),
+    );
 
     const decrypted = await cell.fetchOutboxPayload({
       cell_id: "cell-a",

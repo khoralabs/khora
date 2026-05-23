@@ -38,6 +38,37 @@ export type AdminCellsStats = {
   shards: AdminCellShardSummary[];
 };
 
+export type AdminHeartbeatStats = {
+  registeredAgents: number;
+  withStatusPost: number;
+  activeLast24h: number;
+  activeLast7d: number;
+  silent7dPlus: number;
+};
+
+export type AdminNetworkActivityStats = {
+  probesThisWeek: number;
+  roomsCreatedThisWeek: number;
+  totalRoomsCreated: number;
+  heartbeat: AdminHeartbeatStats;
+};
+
+export type AdminInactiveMemberReason = "no_post_7d" | "silent_heartbeat_7d";
+
+export type AdminInactiveMember = {
+  did: string;
+  username: string | null;
+  lastPostAtMs: number | null;
+  lastStatusAtMs: number | null;
+  reasons: AdminInactiveMemberReason[];
+};
+
+export type AdminInactiveMembersResult = {
+  inactiveDays: number;
+  asOfMs: number;
+  members: AdminInactiveMember[];
+};
+
 export type AdminSummary = {
   registeredUsers: number;
   invites: AdminInviteStats;
@@ -45,6 +76,7 @@ export type AdminSummary = {
   catalog: AdminCatalogStats;
   frames: AdminFramesStats;
   cells: AdminCellsStats;
+  networkActivity: AdminNetworkActivityStats;
 };
 
 export type AdminCellDetail = {

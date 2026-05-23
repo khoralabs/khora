@@ -85,10 +85,7 @@ export function createSqliteColonnadeCluster(
       const path = join(opts.cellsDirectory, `${stem}.sqlite`);
       db = openEncryptedDatabaseSync(path, { create: true }, opts.encryption.sqlCipherKey);
       cellDbById.set(cellId, db);
-      cellStrategyById.set(
-        cellId,
-        new SqliteCellPersistenceStrategy(db, cellId, cellStrategyOpts),
-      );
+      cellStrategyById.set(cellId, new SqliteCellPersistenceStrategy(db, cellId, cellStrategyOpts));
     }
     const strategy = cellStrategyById.get(cellId);
     if (strategy === undefined) {

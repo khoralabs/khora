@@ -48,7 +48,7 @@ export type AdminStatsProviderProps = {
 };
 
 export function AdminStatsProvider({
-  baseUrl = "/api/admin/stats",
+  baseUrl = "/admin/api/stats",
   fetchImpl = fetch,
   selectedCellId: selectedCellIdProp,
   defaultSelectedCellId = null,

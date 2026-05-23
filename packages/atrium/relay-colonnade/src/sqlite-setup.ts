@@ -1,5 +1,5 @@
-import { Database } from "bun:sqlite";
-import { openEncryptedDatabase, type EncryptionKeyProvider } from "@khoralabs/sqlite-crypto";
+import type { Database } from "bun:sqlite";
+import { type EncryptionKeyProvider, openEncryptedDatabase } from "@khoralabs/sqlite-crypto";
 import { ensurePrincipalTeardownJobsSchema } from "./principal-teardown-jobs.ts";
 
 /** Tier 1 relay catalog projections (JSON columns + expression indexes). */

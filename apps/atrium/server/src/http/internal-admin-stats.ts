@@ -29,6 +29,19 @@ export function adminStatsPrincipalResponse(deps: HostRouteDeps, did: string): R
   return Response.json(result);
 }
 
+function parseInactiveDays(url: URL): number | undefined {
+  const raw = url.searchParams.get("days")?.trim();
+  if (raw === undefined || raw.length === 0) return undefined;
+  const n = Number.parseInt(raw, 10);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+export function adminStatsInactiveMembersResponse(deps: HostRouteDeps, url: URL): Response {
+  return Response.json(
+    deps.ctx.adminStats.inactiveMembers({ inactiveDays: parseInactiveDays(url) }),
+  );
+}
+
 export function handleInternalAdminStatsSummary(req: Request, deps: HostRouteDeps): Response {
   const denied = requireInternalAuth(req);
   if (denied !== undefined) return denied;
@@ -65,4 +78,14 @@ export function handleInternalAdminStatsPrincipal(
   }
 
   return adminStatsPrincipalResponse(deps, did);
+}
+
+export function handleInternalAdminStatsInactiveMembers(
+  req: Request,
+  url: URL,
+  deps: HostRouteDeps,
+): Response {
+  const denied = requireInternalAuth(req);
+  if (denied !== undefined) return denied;
+  return adminStatsInactiveMembersResponse(deps, url);
 }

@@ -2,6 +2,7 @@ import type { AtriumPost } from "@khoralabs/atrium-contracts";
 import type { CellPersistenceStrategy, OutboxListedRecord } from "@khoralabs/colonnade-persistence";
 import type {
   AtriumAdminCellDetailResult,
+  AtriumAdminInactiveMembersResult,
   AtriumAdminPrincipalDetailResult,
   AtriumAdminStatsSummary,
 } from "./ops/admin-stats-types.ts";
@@ -13,7 +14,12 @@ export type {
   AtriumAdminCellShardSummary,
   AtriumAdminCellsSummary,
   AtriumAdminFramesStats,
+  AtriumAdminHeartbeatStats,
+  AtriumAdminInactiveMember,
+  AtriumAdminInactiveMemberReason,
+  AtriumAdminInactiveMembersResult,
   AtriumAdminInviteStats,
+  AtriumAdminNetworkActivityStats,
   AtriumAdminPrincipalDetail,
   AtriumAdminPrincipalDetailResult,
   AtriumAdminStatsSummary,
@@ -47,4 +53,5 @@ export type AtriumAdminStatsPort = {
   summary(): AtriumAdminStatsSummary;
   cellDetail(cellId: string): AtriumAdminCellDetailResult;
   principalDetail(did: string): AtriumAdminPrincipalDetailResult;
+  inactiveMembers(opts?: { inactiveDays?: number }): AtriumAdminInactiveMembersResult;
 };

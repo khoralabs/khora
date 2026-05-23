@@ -254,7 +254,7 @@ export class SqliteCellPersistenceStrategy implements CellPersistenceStrategy {
         bytes_available: false,
       });
     }
-    let payload_bytes = asUint8(row.payload);
+    const payload_bytes = asUint8(row.payload);
     assertContentHash(row.content_hash);
     if (input.payload_format === "plaintext" && isOutboxEncryptedPayload(payload_bytes)) {
       return this.outboxPayloadCodec.decrypt(payload_bytes).then((decrypted) => ({

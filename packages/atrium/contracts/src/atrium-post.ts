@@ -93,7 +93,9 @@ export const zAtriumPostCreate = zAtriumPostContent
     authorSignature: z.string().trim().min(1),
   })
   .superRefine((val, ctx) => {
-    refinePostKindRules({ ...val, authorProfileId: undefined }, ctx, { requireStatusAuthor: false });
+    refinePostKindRules({ ...val, authorProfileId: undefined }, ctx, {
+      requireStatusAuthor: false,
+    });
   });
 /** Wire/input shape; `kind` may be omitted (defaults to `post`). Excludes server-filled fields and signature. */
 export type AtriumPostCreateContent = z.input<typeof zAtriumPostContent>;

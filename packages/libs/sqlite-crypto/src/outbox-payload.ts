@@ -81,7 +81,11 @@ export async function encryptOutboxPayload(
   const iv = new Uint8Array(12);
   crypto.getRandomValues(iv);
   const ct = new Uint8Array(
-    await crypto.subtle.encrypt({ name: "AES-GCM", iv: u8ToArrayBuffer(iv) }, cryptoKey, u8ToArrayBuffer(plaintext)),
+    await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv: u8ToArrayBuffer(iv) },
+      cryptoKey,
+      u8ToArrayBuffer(plaintext),
+    ),
   );
   const envelope: OutboxEnvelopeV1 = {
     v: OUTBOX_ENVELOPE_V1,

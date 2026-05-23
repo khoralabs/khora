@@ -1,5 +1,6 @@
 import type { Database } from "bun:sqlite";
 import type { AgentRelayPersistence } from "@khoralabs/agent-relay";
+import type { EncryptionKeyProvider } from "@khoralabs/sqlite-crypto";
 import { createCatalogEntityAdapter } from "./catalog-entity-adapter.ts";
 import { RelayCatalogProjectionStore } from "./catalog-projection-store.ts";
 import { createCatalogRegistrationAdapter } from "./catalog-registration-adapter.ts";
@@ -10,7 +11,6 @@ import {
   RELAY_NAMESPACE_ENTITY_TOPIC,
 } from "./relay-id-conventions.ts";
 import { RelaySubscriptionEdgeStore } from "./relay-subscription-edge-store.ts";
-import type { EncryptionKeyProvider } from "@khoralabs/sqlite-crypto";
 import { openRelayCatalogDb, openRelayFramesDb } from "./sqlite-setup.ts";
 
 export const RELAY_CATALOG_SOURCE_PROFILE = RELAY_NAMESPACE_ENTITY_PROFILE;

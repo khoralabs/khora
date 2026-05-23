@@ -53,7 +53,9 @@ export class EnvKeyProvider implements EncryptionKeyProvider {
 
   async getSqlCipherKey(scope: SqlCipherScope): Promise<string> {
     const name =
-      scope === "atrium" ? EnvKeyProvider.ATRIUM_SQLCIPHER_ENV : EnvKeyProvider.REGISTRY_SQLCIPHER_ENV;
+      scope === "atrium"
+        ? EnvKeyProvider.ATRIUM_SQLCIPHER_ENV
+        : EnvKeyProvider.REGISTRY_SQLCIPHER_ENV;
     const key = readEnvRequired(name);
     if (key.length < MIN_SQLCIPHER_KEY_LEN) {
       throw new SqliteCryptoError(`${name} must be at least ${MIN_SQLCIPHER_KEY_LEN} characters`);
@@ -78,17 +80,11 @@ export async function assertEncryptionKeys(
 
 /** Future: AWS KMS envelope decryption. Not implemented in v1. */
 export class KmsEnvelopeKeyProvider implements EncryptionKeyProvider {
-  constructor(_opts: { kmsKeyArn: string; region?: string }) {}
-
   async getSqlCipherKey(_scope: SqlCipherScope): Promise<string> {
-    throw new SqliteCryptoError(
-      "KmsEnvelopeKeyProvider is not implemented; use EnvKeyProvider",
-    );
+    throw new SqliteCryptoError("KmsEnvelopeKeyProvider is not implemented; use EnvKeyProvider");
   }
 
   async getOutboxFieldKey(): Promise<Uint8Array> {
-    throw new SqliteCryptoError(
-      "KmsEnvelopeKeyProvider is not implemented; use EnvKeyProvider",
-    );
+    throw new SqliteCryptoError("KmsEnvelopeKeyProvider is not implemented; use EnvKeyProvider");
   }
 }

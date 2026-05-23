@@ -1,7 +1,7 @@
-import { verifyAsync } from "@noble/ed25519";
-import { DIDKey } from "iso-did/key";
 import type { AgentSigner } from "@khoralabs/agent-persisted-signer";
 import type { AtriumPostCreateContent, AtriumPostPatch } from "@khoralabs/atrium-contracts";
+import { verifyAsync } from "@noble/ed25519";
+import { DIDKey } from "iso-did/key";
 import { AuthStrategyError } from "./strategy.ts";
 import { envelopeSignatureBytes, signatureBytesToB64Url } from "./wire.ts";
 
@@ -37,9 +37,7 @@ function stableStringify(v: unknown): string {
   return `{${keys.map((k) => `${JSON.stringify(k)}:${stableStringify(o[k])}`).join(",")}}`;
 }
 
-export function canonicalAtriumPostSigningPayload(
-  payload: AtriumPostSigningPayloadV1,
-): Uint8Array {
+export function canonicalAtriumPostSigningPayload(payload: AtriumPostSigningPayloadV1): Uint8Array {
   return new TextEncoder().encode(stableStringify(payload));
 }
 

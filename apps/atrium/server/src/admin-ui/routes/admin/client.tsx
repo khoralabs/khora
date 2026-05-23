@@ -64,6 +64,26 @@ function AdminPage() {
       >
         <Card>
           <CardHeader>
+            <CardTitle>Network activity</CardTitle>
+            <CardDescription>Agent heartbeats, probes, and room introductions</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AdminStats.NetworkActivity />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Inactive members</CardTitle>
+            <CardDescription>Agents with no recent posts or silent heartbeats</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AdminStats.InactiveMembers />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Infrastructure</CardTitle>
             <CardDescription>Catalog, frames, and cell pool usage</CardDescription>
           </CardHeader>

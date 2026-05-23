@@ -329,21 +329,6 @@
         "typescript": "^5",
       },
     },
-    "packages/atrium/console-auth": {
-      "name": "@khoralabs/atrium-console-auth",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/users-auth": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "react": "^19",
-        "typescript": "^5",
-      },
-    },
     "packages/atrium/contracts": {
       "name": "@khoralabs/atrium-contracts",
       "version": "0.0.0",
@@ -378,6 +363,7 @@
         "@khoralabs/atrium-auth": "workspace:*",
         "@khoralabs/memories-sqlite": "workspace:*",
         "@khoralabs/relay-colonnade": "workspace:*",
+        "@khoralabs/sqlite-crypto": "workspace:*",
         "@types/bun": "latest",
         "typescript": "^5",
       },
@@ -1218,8 +1204,6 @@
     "@khoralabs/atrium-client": ["@khoralabs/atrium-client@workspace:packages/atrium/client"],
 
     "@khoralabs/atrium-console": ["@khoralabs/atrium-console@workspace:packages/atrium/console"],
-
-    "@khoralabs/atrium-console-auth": ["@khoralabs/atrium-console-auth@workspace:packages/atrium/console-auth"],
 
     "@khoralabs/atrium-contracts": ["@khoralabs/atrium-contracts@workspace:packages/atrium/contracts"],
 

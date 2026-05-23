@@ -2,7 +2,6 @@ import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
 import { createAgentRelayPersistenceClient } from "@khoralabs/agent-relay";
 import type { AtriumPost, AtriumProfile } from "@khoralabs/atrium-contracts";
-import { createTestEncryptionMaterial, TEST_POST_AUTHOR_SIGNATURE } from "@khoralabs/sqlite-crypto";
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
 import { ids, MemoriesClient } from "@khoralabs/memories-core";
 import {
@@ -11,6 +10,7 @@ import {
   openMemoriesDatabase,
 } from "@khoralabs/memories-sqlite";
 import { RelayCatalogProjectionStore } from "@khoralabs/relay-colonnade";
+import { createTestEncryptionMaterial, TEST_POST_AUTHOR_SIGNATURE } from "@khoralabs/sqlite-crypto";
 import { encodePostId } from "../post-address-id.ts";
 import { createColonnadePostResolver } from "../resolve-post.ts";
 import { createAtriumCanonicalStore, hydrateMemoryLabels } from "./atrium-canonical-store.ts";
