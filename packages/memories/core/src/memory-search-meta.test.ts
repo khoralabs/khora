@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   createMemoriesPersistence,
   loadMeanEmbeddingsForNamespace,
-  openMemoriesDatabase,
+  openTestMemoriesDatabase,
 } from "@khoralabs/memories-sqlite";
 import {
   buildCanonicalMemorySearchMetaText,
@@ -18,7 +18,7 @@ import {
 } from "./models/memory-search-meta";
 
 function openTestDb() {
-  return openMemoriesDatabase(":memory:");
+  return openTestMemoriesDatabase();
 }
 
 const vec512 = (): number[] => Array.from({ length: 512 }, (_, i) => (i === 0 ? 1 : 0));

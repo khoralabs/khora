@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createRootTokenConsoleAuth } from "@khoralabs/atrium-console";
+import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
 import {
   getUsersDatabase,
   initUsersSchema,
@@ -29,6 +30,7 @@ describe("registry admin console", () => {
   beforeEach(async () => {
     resetUsersDatabase();
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
+    applyTestEncryptionEnv();
     const db = getUsersDatabase();
     await initUsersSchema(db);
     seedDefaultHost(db, { slug: "khora-local", baseUrl: "http://localhost:8788" });

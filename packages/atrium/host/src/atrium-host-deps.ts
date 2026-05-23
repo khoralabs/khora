@@ -1,3 +1,4 @@
+import type { OutboxPayloadCodec } from "@khoralabs/sqlite-crypto";
 import type { AgentRelayPersistence } from "@khoralabs/agent-relay";
 import type { AtriumDidAuth } from "@khoralabs/atrium-auth";
 import type { AtriumInvitesRepo } from "@khoralabs/atrium-invites";
@@ -29,6 +30,7 @@ export type AtriumHostDeps = {
   health: AtriumHostHealthPort;
   adminStats: AtriumAdminStatsPort;
   catalog: AtriumHostCatalogApi;
+  outboxPayloadCodec: OutboxPayloadCodec;
   startPrincipalTeardownWorker?: boolean;
   roomLifecycle?: (event: AtriumRoomLifecycleHostEvent) => void;
 };

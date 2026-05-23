@@ -3,7 +3,7 @@ import type {
   AtriumInviteListResponse,
   AtriumInvitePreviewResponse,
   AtriumPost,
-  AtriumPostCreate,
+  AtriumPostCreateContent,
   AtriumPostPatch,
   AtriumProbeCreate,
   AtriumProfile,
@@ -271,7 +271,7 @@ export class AtriumClient {
     return httpLookupProfileByDid(this.transport, did);
   }
 
-  async createPost(body: AtriumPostCreate): Promise<AtriumPost> {
+  async createPost(body: AtriumPostCreateContent): Promise<AtriumPost> {
     const post = await createPost(this.transport, body);
     this.emit({ type: "post:created", post, did: this.did });
     return post;
@@ -283,8 +283,9 @@ export class AtriumClient {
     return post;
   }
 
-  async updatePost(id: string, patch: AtriumPostPatch): Promise<AtriumPost> {
-    const post = await updatePost(this.transport, id, patch);
+  async updatePost(id: string, patch: Omit<AtriumPostPatch, "authorSignature">): Promise<AtriumPost> {
+    const previous = await httpGetPost(this.transport, id);
+    const post = await updatePost(this.transport, id, patch, previous);
     this.emit({ type: "post:updated", post, did: this.did });
     return post;
   }

@@ -62,6 +62,7 @@ export function createOutboxLocatorStore(
       const fetched = await cell.fetchOutboxPayload({
         cell_id: locators.cell_id,
         locator: locators,
+        payload_format: "plaintext",
       });
       if (!fetched.bytes_available) {
         throw new OutboxGhostError(locators);
@@ -87,6 +88,7 @@ export function createPointerStore(
       const fetched = await cell.fetchOutboxPayload({
         cell_id: ref.source_cell_id,
         locator: locators,
+        payload_format: "stored",
       });
       if (!fetched.bytes_available) {
         throw new OutboxGhostError(locators);

@@ -61,6 +61,7 @@
         "@khoralabs/memories-core": "workspace:*",
         "@khoralabs/memories-sqlite": "workspace:*",
         "@khoralabs/relay-colonnade": "workspace:*",
+        "@khoralabs/sqlite-crypto": "workspace:*",
         "bun-plugin-tailwind": "^0.1.2",
         "clsx": "^2.1.1",
         "pino": "^10.3.1",
@@ -109,6 +110,7 @@
       "dependencies": {
         "@aws-sdk/client-ses": "^3.1050.0",
         "@khoralabs/atrium-console": "workspace:*",
+        "@khoralabs/sqlite-crypto": "workspace:*",
         "@khoralabs/users": "workspace:*",
         "@khoralabs/users-auth": "workspace:*",
         "@khoralabs/users-react": "workspace:*",
@@ -287,6 +289,7 @@
       "dependencies": {
         "@khoralabs/agent-persisted-signer": "workspace:*",
         "@khoralabs/agent-relay": "workspace:*",
+        "@khoralabs/atrium-contracts": "workspace:*",
         "@noble/ed25519": "^3.1.0",
         "iso-did": "^2.1.1",
       },
@@ -416,6 +419,7 @@
         "@khoralabs/agent-relay": "workspace:*",
         "@khoralabs/atrium-contracts": "workspace:*",
         "@khoralabs/colonnade-persistence": "workspace:*",
+        "@khoralabs/sqlite-crypto": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -478,6 +482,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/sourcemaps": "workspace:*",
+        "@khoralabs/sqlite-crypto": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -491,6 +496,7 @@
       "name": "@khoralabs/users",
       "version": "0.0.0",
       "dependencies": {
+        "@khoralabs/sqlite-crypto": "workspace:*",
         "@khoralabs/sqlite-migrate": "workspace:*",
       },
       "devDependencies": {
@@ -584,6 +590,16 @@
     },
     "packages/libs/sourcemaps": {
       "name": "@khoralabs/sourcemaps",
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/libs/sqlite-crypto": {
+      "name": "@khoralabs/sqlite-crypto",
+      "version": "0.0.0",
       "devDependencies": {
         "@types/bun": "latest",
       },
@@ -725,6 +741,7 @@
       "name": "@khoralabs/memories-sqlite",
       "dependencies": {
         "@khoralabs/memories-core": "workspace:*",
+        "@khoralabs/sqlite-crypto": "workspace:*",
         "@khoralabs/sqlite-migrate": "workspace:*",
         "ajv": "^8",
         "sqlite-vec": "^0.1.9",
@@ -1279,6 +1296,8 @@
     "@khoralabs/relay-colonnade": ["@khoralabs/relay-colonnade@workspace:packages/atrium/relay-colonnade"],
 
     "@khoralabs/sourcemaps": ["@khoralabs/sourcemaps@workspace:packages/libs/sourcemaps"],
+
+    "@khoralabs/sqlite-crypto": ["@khoralabs/sqlite-crypto@workspace:packages/libs/sqlite-crypto"],
 
     "@khoralabs/sqlite-migrate": ["@khoralabs/sqlite-migrate@workspace:packages/libs/sqlite-migrate"],
 

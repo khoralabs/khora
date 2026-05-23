@@ -10,6 +10,7 @@ import {
   RELAY_NAMESPACE_ENTITY_TOPIC,
 } from "./relay-id-conventions.ts";
 import { RelaySubscriptionEdgeStore } from "./relay-subscription-edge-store.ts";
+import type { EncryptionKeyProvider } from "@khoralabs/sqlite-crypto";
 import { openRelayCatalogDb, openRelayFramesDb } from "./sqlite-setup.ts";
 
 export const RELAY_CATALOG_SOURCE_PROFILE = RELAY_NAMESPACE_ENTITY_PROFILE;
@@ -50,9 +51,10 @@ export async function createRelayColonnadePersistence(opts: {
   catalogPath: string;
   framesDbPath: string;
   tenantKey?: string;
+  encryptionProvider: EncryptionKeyProvider;
 }): Promise<AgentRelayPersistence> {
   const tenantKey = opts.tenantKey ?? "relay";
-  const catalogDb = openRelayCatalogDb(opts.catalogPath);
-  const framesDb = openRelayFramesDb(opts.framesDbPath);
+  const catalogDb = await openRelayCatalogDb(opts.catalogPath, opts.encryptionProvider);
+  const framesDb = await openRelayFramesDb(opts.framesDbPath, opts.encryptionProvider);
   return createRelayColonnadePersistenceFromDatabases(catalogDb, framesDb, tenantKey);
 }

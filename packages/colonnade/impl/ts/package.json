@@ -17,7 +17,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@khoralabs/sourcemaps": "workspace:*"
+    "@khoralabs/sourcemaps": "workspace:*",
+    "@khoralabs/sqlite-crypto": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",

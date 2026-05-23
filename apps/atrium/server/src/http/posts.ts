@@ -1,5 +1,12 @@
 import { AGENT_RELAY_AGGREGATE_DOMAIN, AGENT_RELAY_EVENT_KIND } from "@khoralabs/agent-relay";
 import {
+  AuthStrategyError,
+  atriumPostSigningPayloadFromCreate,
+  signingPayloadForPatch,
+  verifyAtriumPostSignature,
+} from "@khoralabs/atrium-auth";
+import {
+  atriumPostCreateSigningContent,
   mergeAtriumPostPatch,
   normalizeTopicSlug,
   zAgentStatusResponse,
@@ -66,6 +73,19 @@ export async function handleCreatePost(
   try {
     const raw = JSON.parse(bodyText) as unknown;
     const created = zAtriumPostCreate.parse(raw);
+    const { authorSignature } = created;
+    try {
+      await verifyAtriumPostSignature({
+        authorDid: did,
+        authorSignature,
+        payload: atriumPostSigningPayloadFromCreate(did, atriumPostCreateSigningContent(created)),
+      });
+    } catch (e) {
+      if (e instanceof AuthStrategyError) {
+        return jsonError(e.message, 401);
+      }
+      throw e;
+    }
     const { recordKey, cellPoolCount } = assignPostAddress({
       cluster: ctx.cluster,
       authorPrincipalId: did,
@@ -76,7 +96,8 @@ export async function handleCreatePost(
       cellPoolCount,
     });
     const post = zAtriumPost.parse({
-      ...created,
+      ...atriumPostCreateSigningContent(created),
+      authorSignature,
       id: postId,
       authorProfileId: profileId,
     });
@@ -135,6 +156,19 @@ export async function handleUpdatePost(
       return jsonError("authorProfileId cannot be changed", 400);
     }
     const patch = zAtriumPostPatch.parse(patchRaw);
+    const { authorSignature, ...patchFields } = patch;
+    try {
+      await verifyAtriumPostSignature({
+        authorDid: did,
+        authorSignature,
+        payload: signingPayloadForPatch(did, previous, patchFields),
+      });
+    } catch (e) {
+      if (e instanceof AuthStrategyError) {
+        return jsonError(e.message, 401);
+      }
+      throw e;
+    }
     const merged = mergeAtriumPostPatch(previous, patch);
     if (merged.topics !== undefined) {
       merged.topics = merged.topics.map((t) => normalizeTopicSlug(t));
@@ -148,7 +182,7 @@ export async function handleUpdatePost(
       recordKey,
       cellPoolCount,
     });
-    const post = zAtriumPost.parse({ ...merged, id: postId });
+    const post = zAtriumPost.parse({ ...merged, authorSignature, id: postId });
     await ctx.host.notify({
       kind: AGENT_RELAY_EVENT_KIND.POST_UPDATED,
       occurredAt: Date.now(),

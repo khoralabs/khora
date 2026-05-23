@@ -5,6 +5,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AgentRelayPersistence } from "@khoralabs/agent-relay";
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
+import {
+  applyTestEncryptionEnv,
+  createTestEncryptionMaterial,
+  TestKeyProvider,
+} from "@khoralabs/sqlite-crypto";
 import { createRelayColonnadeSocial } from "./create-relay-colonnade-social.ts";
 import {
   createRelayPrincipalLifecycle,
@@ -21,6 +26,7 @@ function lifecycleWithMockPersistence(
   catalogDb: Database,
   persistence: AgentRelayPersistence,
 ): RelayPrincipalLifecycle {
+  const encryption = createTestEncryptionMaterial();
   return createRelayPrincipalLifecycle({
     catalogDb,
     framesDb: new Database(":memory:"),
@@ -39,6 +45,11 @@ function lifecycleWithMockPersistence(
       cellsDirectory: mkdtempSync(join(tmpdir(), "lc-cells-")),
       mode: { kind: "pool", cellCount: 2 },
       useCellWorkers: false,
+      encryption: {
+        sqlCipherKey: encryption.sqlCipherKey,
+        outboxPayloadCodec: encryption.outboxPayloadCodec,
+        outboxKeyHex: encryption.outboxKeyHex,
+      },
     }),
   });
 }
@@ -87,7 +98,9 @@ afterAll(() => {
 });
 
 test("enqueueTeardown clears registration and enqueues job; runNextTeardownJob finishes", async () => {
+  applyTestEncryptionEnv();
   const dir = nextDir();
+  const encryptionProvider = new TestKeyProvider();
   const {
     persistence,
     projectionStore,
@@ -100,11 +113,18 @@ test("enqueueTeardown clears registration and enqueues job; runNextTeardownJob f
     catalogPath: join(dir, "c.sqlite"),
     framesDbPath: join(dir, "f.sqlite"),
     tenantKey: "tn",
+    encryptionProvider,
   });
+  const encryption = createTestEncryptionMaterial();
   const cluster = createSqliteColonnadeCluster({
     cellsDirectory: join(dir, "cells"),
     mode: { kind: "pool", cellCount: 2 },
     useCellWorkers: false,
+    encryption: {
+      sqlCipherKey: encryption.sqlCipherKey,
+      outboxPayloadCodec: encryption.outboxPayloadCodec,
+      outboxKeyHex: encryption.outboxKeyHex,
+    },
   });
   const lifecycle = createRelayPrincipalLifecycle({
     catalogDb,

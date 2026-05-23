@@ -1,6 +1,6 @@
 import type {
   AtriumPost,
-  AtriumPostCreate,
+  AtriumPostCreateContent,
   AtriumPostPatch,
   AtriumProfile,
   AtriumRegistrationResult,
@@ -12,8 +12,8 @@ export type AtriumSession = {
   readonly did: string;
   readonly profileId: string;
   readonly profile: AtriumProfile;
-  createPost(body: AtriumPostCreate): Promise<AtriumPost>;
-  updatePost(id: string, patch: AtriumPostPatch): Promise<AtriumPost>;
+  createPost(body: AtriumPostCreateContent): Promise<AtriumPost>;
+  updatePost(id: string, patch: Omit<AtriumPostPatch, "authorSignature">): Promise<AtriumPost>;
   deletePost(id: string): Promise<void>;
   subscribeTopic(topicSlug: string): Promise<{ ok: true; topicSlug: string }>;
   unsubscribeTopic(topicSlug: string): Promise<void>;

@@ -1,4 +1,5 @@
 import type { Database, Statement } from "bun:sqlite";
+import { isOutboxEncryptedPayload, type OutboxPayloadCodec } from "@khoralabs/sqlite-crypto";
 
 import type {
   CellPersistenceStrategy,
@@ -40,6 +41,10 @@ import {
   writeOpToBlob,
 } from "./staging-binary.ts";
 
+export type SqliteCellStrategyOptions = {
+  readonly outboxPayloadCodec: OutboxPayloadCodec;
+};
+
 export type SqliteCellBatchCapable = {
   enqueueInboxDeliveriesBatch(
     inputs: readonly EnqueueInboxDeliveryInput[],
@@ -76,10 +81,12 @@ export class SqliteCellPersistenceStrategy implements CellPersistenceStrategy {
   private readonly stmtLastInsertRowid: Statement;
   private readonly stmtFetchWriteLog: Statement;
   private readonly stmtSetMeta: Statement;
+  private readonly outboxPayloadCodec: OutboxPayloadCodec;
 
-  constructor(db: Database, cellId: string) {
+  constructor(db: Database, cellId: string, opts: SqliteCellStrategyOptions) {
     this.db = db;
     this.cellId = cellId;
+    this.outboxPayloadCodec = opts.outboxPayloadCodec;
     ensureCellSchema(db);
     applySqlitePerfPragmas(db);
     this.stmtAppendOutbox = this.db.prepare(
@@ -146,19 +153,28 @@ export class SqliteCellPersistenceStrategy implements CellPersistenceStrategy {
   appendOutboxRecord(input: AppendOutboxRecordInput): Promise<AppendOutboxRecordOutput> {
     this.assertCell(input.cell_id);
     const recordKey = input.record_key.trim().length > 0 ? input.record_key : randomId("ob");
-    const content_hash = sha256HexLower(input.payload_bytes);
+    return this.encryptAndStoreOutbox(recordKey, input);
+  }
+
+  private async encryptAndStoreOutbox(
+    recordKey: string,
+    input: AppendOutboxRecordInput,
+  ): Promise<AppendOutboxRecordOutput> {
+    let payload_bytes = input.payload_bytes;
+    payload_bytes = await this.outboxPayloadCodec.encryptIfPost(input.metadata, payload_bytes);
+    const content_hash = sha256HexLower(payload_bytes);
     assertContentHash(content_hash);
     const committed_at_ms = Date.now();
     this.stmtAppendOutbox.run(
       recordKey,
       input.principal_id,
       input.tenant_key,
-      input.payload_bytes,
+      payload_bytes,
       JSON.stringify(input.metadata),
       content_hash,
       committed_at_ms,
     );
-    return Promise.resolve({ record_key: recordKey, content_hash, committed_at_ms });
+    return { record_key: recordKey, content_hash, committed_at_ms };
   }
 
   enqueueInboxDelivery(input: EnqueueInboxDeliveryInput): Promise<EnqueueInboxDeliveryOutput> {
@@ -238,8 +254,15 @@ export class SqliteCellPersistenceStrategy implements CellPersistenceStrategy {
         bytes_available: false,
       });
     }
-    const payload_bytes = asUint8(row.payload);
+    let payload_bytes = asUint8(row.payload);
     assertContentHash(row.content_hash);
+    if (input.payload_format === "plaintext" && isOutboxEncryptedPayload(payload_bytes)) {
+      return this.outboxPayloadCodec.decrypt(payload_bytes).then((decrypted) => ({
+        payload_bytes: decrypted,
+        content_hash: row.content_hash,
+        bytes_available: true,
+      }));
+    }
     return Promise.resolve({
       payload_bytes,
       content_hash: row.content_hash,

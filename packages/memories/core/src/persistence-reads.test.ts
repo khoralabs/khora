@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createMemoriesPersistence, openMemoriesDatabase } from "@khoralabs/memories-sqlite";
+import { createMemoriesPersistence, openTestMemoriesDatabase } from "@khoralabs/memories-sqlite";
 import { mergeMemory } from "./api/merge-memory";
 
 function vec512(): number[] {
@@ -8,14 +8,14 @@ function vec512(): number[] {
 
 describe("MemoriesPersistence read helpers", () => {
   test("listVectorEmbeddingIndexDimensions is empty without vector indexes", () => {
-    const db = openMemoriesDatabase(":memory:");
+    const db = openTestMemoriesDatabase();
     const persistence = createMemoriesPersistence(db);
     expect(persistence.listVectorEmbeddingIndexDimensions()).toEqual([]);
     db.close();
   });
 
   test("listVectorEmbeddingIndexDimensions reflects indexed widths after content vectors", () => {
-    const db = openMemoriesDatabase(":memory:");
+    const db = openTestMemoriesDatabase();
     const persistence = createMemoriesPersistence(db);
     const v = vec512();
     mergeMemory(
@@ -34,7 +34,7 @@ describe("MemoriesPersistence read helpers", () => {
   });
 
   test("listTextFeatureExportRowsForMemory joins text to source maps", () => {
-    const db = openMemoriesDatabase(":memory:");
+    const db = openTestMemoriesDatabase();
     const persistence = createMemoriesPersistence(db);
     mergeMemory(
       { persistence },
@@ -55,7 +55,7 @@ describe("MemoriesPersistence read helpers", () => {
   });
 
   test("listSourceMapsForMemory respects limit and rejects invalid limit", () => {
-    const db = openMemoriesDatabase(":memory:");
+    const db = openTestMemoriesDatabase();
     const persistence = createMemoriesPersistence(db);
     expect(() => persistence.listSourceMapsForMemory("x", 0)).toThrow(RangeError);
     mergeMemory(

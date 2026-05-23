@@ -2,6 +2,7 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { TEST_POST_AUTHOR_SIGNATURE } from "@khoralabs/sqlite-crypto";
 import { assignPostAddress, encodePostId } from "./on-event.ts";
 import { popRelayInboxDrainItemsForDid } from "./relay-inbox-drain.ts";
 import { createTestAtriumHost } from "./test/bootstrap-sqlite.ts";
@@ -53,6 +54,7 @@ test("popRelayInboxDrainItemsForDid drops cell inbox row when author unregistere
     kind: "post" as const,
     body: "hi",
     authorProfileId: "prof-a",
+    authorSignature: TEST_POST_AUTHOR_SIGNATURE,
     topics: ["x"],
   };
 

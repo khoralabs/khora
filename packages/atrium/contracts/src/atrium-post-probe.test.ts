@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { atriumProbeLexicalText, zAtriumPost, zAtriumPostCreate } from "./atrium-post.ts";
 
+const SIG = "dGVzdC1zaWduYXR1cmU";
+
 describe("probe posts", () => {
   test("valid probe create", () => {
     const v = zAtriumPostCreate.parse({
@@ -9,6 +11,7 @@ describe("probe posts", () => {
       body: "Looking for warm intros to teams running a beta program.",
       attributes: { stage: "beta", domains: ["platform"], engagementType: "intros" },
       topics: ["platform"],
+      authorSignature: SIG,
     });
     expect(v.kind).toBe("probe");
     expect(v.attributes?.domains).toEqual(["platform"]);
@@ -19,6 +22,7 @@ describe("probe posts", () => {
       zAtriumPostCreate.parse({
         body: "hello",
         attributes: { stage: "seed" },
+        authorSignature: SIG,
       }),
     ).toThrow();
   });
@@ -29,6 +33,7 @@ describe("probe posts", () => {
         kind: "probe",
         body: "desc",
         attributes: { engagementType: "intros" },
+        authorSignature: SIG,
       }),
     ).toThrow();
   });

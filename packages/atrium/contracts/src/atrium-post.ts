@@ -88,11 +88,24 @@ function refinePostKindRules(
 }
 
 /** Body for `POST /v1/posts`; server fills `id` and `authorProfileId` from DID registration. */
-export const zAtriumPostCreate = zAtriumPostContent.superRefine((val, ctx) => {
-  refinePostKindRules({ ...val, authorProfileId: undefined }, ctx, { requireStatusAuthor: false });
-});
-/** Wire/input shape; `kind` may be omitted (defaults to `post`). */
-export type AtriumPostCreate = z.input<typeof zAtriumPostCreate>;
+export const zAtriumPostCreate = zAtriumPostContent
+  .extend({
+    authorSignature: z.string().trim().min(1),
+  })
+  .superRefine((val, ctx) => {
+    refinePostKindRules({ ...val, authorProfileId: undefined }, ctx, { requireStatusAuthor: false });
+  });
+/** Wire/input shape; `kind` may be omitted (defaults to `post`). Excludes server-filled fields and signature. */
+export type AtriumPostCreateContent = z.input<typeof zAtriumPostContent>;
+
+/** Signed create body sent on `POST /v1/posts`. */
+export type AtriumPostCreate = z.infer<typeof zAtriumPostCreate>;
+
+/** Create fields covered by the v1 content signature (excludes `authorSignature`). */
+export function atriumPostCreateSigningContent(body: AtriumPostCreate): AtriumPostCreateContent {
+  const { authorSignature: _authorSignature, ...content } = body;
+  return content;
+}
 
 /** Create body for `kind: "probe"` posts. */
 export type AtriumProbeCreate = AtriumPostCreate & {
@@ -105,6 +118,7 @@ export const zAtriumPost = zAtriumPostContent
   .extend({
     id: z.string().trim().min(1),
     authorProfileId: z.string().trim().min(1).optional(),
+    authorSignature: z.string().trim().min(1),
   })
   .superRefine((val, ctx) => refinePostKindRules(val, ctx, { requireStatusAuthor: true }));
 
@@ -118,6 +132,7 @@ export const zAtriumPostPatch = z.object({
   title: z.string().trim().max(500).optional(),
   body: z.string().max(100_000).optional(),
   attributes: zAtriumProbeAttributes.optional(),
+  authorSignature: z.string().trim().min(1),
 });
 
 export type AtriumPostPatch = z.infer<typeof zAtriumPostPatch>;
@@ -181,5 +196,6 @@ export function mergeAtriumPostPatch(previous: AtriumPost, patch: AtriumPostPatc
     title: patch.title ?? previous.title,
     body: patch.body ?? previous.body,
     attributes: patch.attributes ?? previous.attributes,
+    authorSignature: patch.authorSignature,
   });
 }

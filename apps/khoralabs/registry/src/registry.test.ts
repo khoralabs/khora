@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
 import {
   createAccessTokenRequest,
   findAccessTokenRequest,
@@ -13,6 +14,7 @@ describe("registry domain", () => {
   beforeEach(async () => {
     resetUsersDatabase();
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
+    applyTestEncryptionEnv();
     const db = getUsersDatabase();
     await initUsersSchema(db);
     seedDefaultHost(db, { slug: "khora-local", baseUrl: "http://localhost:8788" });

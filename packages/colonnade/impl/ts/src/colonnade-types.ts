@@ -205,6 +205,8 @@ export type ListPendingInboxEntriesOutput = {
 export type FetchOutboxPayloadInput = {
   readonly cell_id: CellId;
   readonly locator: OutboxLocator;
+  /** `stored` returns ciphertext bytes; `plaintext` decrypts encrypted post payloads. */
+  readonly payload_format: "stored" | "plaintext";
 };
 
 export type FetchOutboxPayloadOutput = {

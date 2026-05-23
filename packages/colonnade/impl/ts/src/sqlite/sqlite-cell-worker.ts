@@ -1,7 +1,5 @@
-/// <reference lib="webworker" />
-
-import { Database } from "bun:sqlite";
-
+/// <reference lib="WebWorker" />
+import { createOutboxPayloadCodec, openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
 import type { DiscardInboxEntriesInput } from "../cell-persistence-strategy.ts";
 import type {
   AckWriteLogAppliedInput,
@@ -15,7 +13,13 @@ import type {
 } from "../colonnade-types.ts";
 import { SqliteCellPersistenceStrategy } from "./sqlite-cell-strategy.ts";
 
-type InitMsg = { readonly kind: "init"; readonly cellId: string; readonly dbPath: string };
+type InitMsg = {
+  readonly kind: "init";
+  readonly cellId: string;
+  readonly dbPath: string;
+  readonly sqlCipherKey: string;
+  readonly outboxKeyHex: string;
+};
 type RpcReq = {
   readonly kind: "rpc";
   readonly id: number;
@@ -73,11 +77,23 @@ async function dispatch(method: string, args: readonly unknown[]): Promise<unkno
   }
 }
 
+function outboxCodecFromHex(outboxKeyHex: string) {
+  if (outboxKeyHex.length !== 64) {
+    throw new Error("sqlite-cell-worker: outboxKeyHex must be 64 hex chars");
+  }
+  const keyBytes = new Uint8Array(32);
+  for (let i = 0; i < 32; i++) {
+    keyBytes[i] = Number.parseInt(outboxKeyHex.slice(i * 2, i * 2 + 2), 16);
+  }
+  return createOutboxPayloadCodec(keyBytes);
+}
+
 self.onmessage = (ev: MessageEvent<InitMsg | RpcReq>) => {
   const msg = ev.data;
   if (msg.kind === "init") {
-    const db = new Database(msg.dbPath, { create: true });
-    strategy = new SqliteCellPersistenceStrategy(db, msg.cellId);
+    const db = openEncryptedDatabaseSync(msg.dbPath, { create: true }, msg.sqlCipherKey);
+    const outboxPayloadCodec = outboxCodecFromHex(msg.outboxKeyHex);
+    strategy = new SqliteCellPersistenceStrategy(db, msg.cellId, { outboxPayloadCodec });
     const ready: ReadyMsg = { kind: "ready" };
     self.postMessage(ready);
     return;

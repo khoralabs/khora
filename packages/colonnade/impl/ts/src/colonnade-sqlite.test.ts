@@ -4,6 +4,7 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { createTestEncryptionMaterial } from "@khoralabs/sqlite-crypto";
 import { ColonnadePublicationClient } from "./colonnade-publication-client.ts";
 import { parseCatalogPointerShardIndex } from "./sqlite/catalog-pointer-id.ts";
 import { createSqliteColonnadeCluster } from "./sqlite/cluster.ts";
@@ -16,6 +17,15 @@ describe("SQLite Colonnade cluster", () => {
   const root = mkdtempSync(join(tmpdir(), "colonnade-sqlite-test-"));
   const catalogPath = join(root, "catalog.sqlite");
   const cellsDir = join(root, "cells");
+  const testEncryption = createTestEncryptionMaterial();
+
+  function clusterEncryption() {
+    return {
+      sqlCipherKey: testEncryption.sqlCipherKey,
+      outboxPayloadCodec: testEncryption.outboxPayloadCodec,
+      outboxKeyHex: testEncryption.outboxKeyHex,
+    };
+  }
 
   afterAll(() => {
     rmSync(root, { recursive: true, force: true });
@@ -28,6 +38,7 @@ describe("SQLite Colonnade cluster", () => {
       catalog,
       cellsDirectory: cellsDir,
       mode: { kind: "pool", cellCount: 2 },
+      encryption: clusterEncryption(),
     });
     try {
       const aliceCell = cluster.assignPrincipalToCell("alice");
@@ -75,6 +86,7 @@ describe("SQLite Colonnade cluster", () => {
           record_key: ptr.pointer.pointer.source_record_key,
           cell_pool_count: ptr.pointer.pointer.cell_pool_count,
         },
+        payload_format: "stored",
       });
       expect(fetched.bytes_available).toBe(true);
 
@@ -114,6 +126,7 @@ describe("SQLite Colonnade cluster", () => {
       catalog,
       cellsDirectory: join(root, "cells-sharded"),
       mode: { kind: "per_principal" },
+      encryption: clusterEncryption(),
     });
     try {
       const authorCell = cluster.assignPrincipalToCell("author");
@@ -170,6 +183,7 @@ describe("SQLite Colonnade cluster", () => {
         cellsDirectory: join(dir, "cells"),
         mode: { kind: "pool", cellCount: 2 },
         useCellWorkers: true,
+        encryption: clusterEncryption(),
       });
       try {
         const aliceCell = cluster.assignPrincipalToCell("alice");
@@ -219,6 +233,7 @@ describe("SQLite Colonnade cluster", () => {
         catalog,
         cellsDirectory: join(dir, "cells"),
         mode: { kind: "per_principal" },
+        encryption: clusterEncryption(),
       });
       try {
         const c1 = cluster.assignPrincipalToCell("user-a");

@@ -2,6 +2,7 @@ import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
 import { createAgentRelayPersistenceClient } from "@khoralabs/agent-relay";
 import type { AtriumPost, AtriumProfile } from "@khoralabs/atrium-contracts";
+import { createTestEncryptionMaterial, TEST_POST_AUTHOR_SIGNATURE } from "@khoralabs/sqlite-crypto";
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
 import { ids, MemoriesClient } from "@khoralabs/memories-core";
 import {
@@ -91,12 +92,18 @@ function setup(profile: AtriumProfile, post: AtriumPost) {
     },
     frameChannelHubPersistence: {} as never,
   });
+  const encryption = createTestEncryptionMaterial();
   const cluster = createSqliteColonnadeCluster({
     cellsDirectory: `/tmp/atrium-canonical-${crypto.randomUUID()}`,
     mode: { kind: "pool", cellCount: 2 },
     useCellWorkers: false,
+    encryption: {
+      sqlCipherKey: encryption.sqlCipherKey,
+      outboxPayloadCodec: encryption.outboxPayloadCodec,
+      outboxKeyHex: encryption.outboxKeyHex,
+    },
   });
-  const memoriesDb = openMemoriesDatabase(":memory:");
+  const memoriesDb = openMemoriesDatabase(":memory:", { sqlCipherKey: encryption.sqlCipherKey });
   const persistence = createMemoriesPersistence(memoriesDb);
   const postResolver = createColonnadePostResolver(cluster);
   const store = createAtriumCanonicalStore({ persistence, postResolver, persistenceClient });
@@ -127,6 +134,7 @@ describe("AtriumCanonicalStore", () => {
       authorProfileId: profile.id,
       kind: "post",
       body: "hello world post",
+      authorSignature: TEST_POST_AUTHOR_SIGNATURE,
     };
     const { cluster, store, indexer, persistence, memoriesDb } = setup(profile, post);
 
@@ -138,7 +146,7 @@ describe("AtriumCanonicalStore", () => {
       principal_id: "did:test:author",
       record_key: recordKey,
       payload_bytes: new TextEncoder().encode(JSON.stringify(post)),
-      metadata: {},
+      metadata: { postId: post.id, postKind: post.kind },
     });
     await indexer.indexPost(post);
 
@@ -148,7 +156,10 @@ describe("AtriumCanonicalStore", () => {
     );
     const postNk = persistence.loadMemoryNamespaceKey(postMemoryId);
     expect(postNk).toBeDefined();
-    const postLabels = persistence.loadNodeLabelsForMemory(postNk?.namespace, postNk?.key);
+    const postLabels = persistence.loadNodeLabelsForMemory(
+      postNk?.namespace ?? "",
+      postNk?.key ?? "",
+    );
     const postHydrated = await hydrateMemoryLabels(store, postLabels, postMemoryId);
     expect(postHydrated?.kind).toBe("post");
     if (postHydrated?.kind === "post") {
@@ -187,6 +198,7 @@ describe("AtriumCanonicalStore", () => {
       title: "Fintech pilots",
       body: "Looking for design partners in payments.",
       attributes: { domains: ["fintech"], engagementType: "pilots" },
+      authorSignature: TEST_POST_AUTHOR_SIGNATURE,
     };
     const { cluster, store, indexer, persistence, memoriesDb } = setup(profile, probe);
 
@@ -198,7 +210,7 @@ describe("AtriumCanonicalStore", () => {
       principal_id: "did:test:author",
       record_key: recordKey,
       payload_bytes: new TextEncoder().encode(JSON.stringify(probe)),
-      metadata: {},
+      metadata: { postId: probe.id, postKind: probe.kind },
     });
     await indexer.indexPost(probe);
 
@@ -208,7 +220,10 @@ describe("AtriumCanonicalStore", () => {
     );
     const probeNk = persistence.loadMemoryNamespaceKey(probeMemoryId);
     expect(probeNk).toBeDefined();
-    const probeLabels = persistence.loadNodeLabelsForMemory(probeNk?.namespace, probeNk?.key);
+    const probeLabels = persistence.loadNodeLabelsForMemory(
+      probeNk?.namespace ?? "",
+      probeNk?.key ?? "",
+    );
     const probeHydrated = await hydrateMemoryLabels(store, probeLabels, probeMemoryId);
     expect(probeHydrated?.kind).toBe("probe");
     if (probeHydrated?.kind === "probe") {

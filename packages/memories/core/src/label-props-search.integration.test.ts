@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createMemoriesPersistence, openMemoriesDatabase } from "@khoralabs/memories-sqlite";
+import { createMemoriesPersistence, openTestMemoriesDatabase } from "@khoralabs/memories-sqlite";
 import { mergeMemory } from "./api/merge-memory";
 import { search } from "./api/search";
 import { ids } from "./models/ids";
@@ -9,7 +9,7 @@ import {
 } from "./search-meta-constants";
 
 function openTestDb() {
-  return openMemoriesDatabase(":memory:");
+  return openTestMemoriesDatabase();
 }
 
 describe("label props search features", () => {

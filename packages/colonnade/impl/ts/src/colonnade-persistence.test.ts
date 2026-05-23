@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { createOutboxPayloadCodec } from "@khoralabs/sqlite-crypto";
 import { CellPersistenceClient } from "./cell-persistence-client.ts";
 import type { ResolveCellStrategy } from "./cell-persistence-strategy.ts";
 import { ColonnadePublicationClient } from "./colonnade-publication-client.ts";
@@ -16,10 +17,68 @@ import {
 } from "./resolve-pointer.ts";
 
 const POOL = 16;
+const TEST_CODEC = createOutboxPayloadCodec(new Uint8Array(32).fill(9));
+
+function testCell(cellId: string): InMemoryCellPersistenceStrategy {
+  return new InMemoryCellPersistenceStrategy(cellId, { outboxPayloadCodec: TEST_CODEC });
+}
+
+describe("Outbox field encryption", () => {
+  const outboxKey = new Uint8Array(32).fill(9);
+  const codec = createOutboxPayloadCodec(outboxKey);
+
+  test("encrypts post outbox payload and hashes ciphertext", async () => {
+    const cell = new CellPersistenceClient(
+      new InMemoryCellPersistenceStrategy("cell-a", { outboxPayloadCodec: codec }),
+    );
+    const plaintext = new TextEncoder().encode(JSON.stringify({ body: "secret post" }));
+    const out = await cell.appendOutboxRecord({
+      cell_id: "cell-a",
+      tenant_key: "tenant",
+      principal_id: "alice",
+      record_key: "",
+      payload_bytes: plaintext,
+      metadata: { postId: "atrium_post_1" },
+    });
+    expect(out.content_hash).not.toBe(sha256HexLower(plaintext));
+
+    const raw = await cell.fetchOutboxPayload({
+      cell_id: "cell-a",
+      locator: { cell_id: "cell-a", record_key: out.record_key, cell_pool_count: POOL },
+      payload_format: "stored",
+    });
+    expect(new TextDecoder().decode(raw.payload_bytes)).not.toBe(JSON.stringify({ body: "secret post" }));
+
+    const decrypted = await cell.fetchOutboxPayload({
+      cell_id: "cell-a",
+      locator: { cell_id: "cell-a", record_key: out.record_key, cell_pool_count: POOL },
+      payload_format: "plaintext",
+    });
+    expect(new TextDecoder().decode(decrypted.payload_bytes)).toBe(
+      JSON.stringify({ body: "secret post" }),
+    );
+  });
+
+  test("non-post metadata stays plaintext", async () => {
+    const cell = new CellPersistenceClient(
+      new InMemoryCellPersistenceStrategy("cell-a", { outboxPayloadCodec: codec }),
+    );
+    const bytes = new TextEncoder().encode("plain");
+    const out = await cell.appendOutboxRecord({
+      cell_id: "cell-a",
+      tenant_key: "tenant",
+      principal_id: "alice",
+      record_key: "",
+      payload_bytes: bytes,
+      metadata: {},
+    });
+    expect(out.content_hash).toBe(sha256HexLower(bytes));
+  });
+});
 
 describe("Outbox / pointer Store adapters", () => {
   test("createOutboxLocatorStore roundtrips blob", async () => {
-    const cell = new CellPersistenceClient(new InMemoryCellPersistenceStrategy("cell-a"));
+    const cell = new CellPersistenceClient(testCell("cell-a"));
     const bytes = new TextEncoder().encode("hello");
     const out = await cell.appendOutboxRecord({
       cell_id: "cell-a",
@@ -41,7 +100,7 @@ describe("Outbox / pointer Store adapters", () => {
   });
 
   test("createOutboxLocatorStore throws OutboxGhostError on missing row", async () => {
-    const cell = new CellPersistenceClient(new InMemoryCellPersistenceStrategy("cell-a"));
+    const cell = new CellPersistenceClient(testCell("cell-a"));
     const store = createOutboxLocatorStore(cell, POOL);
     await expect(
       resolveSourcemap({ cell_id: "cell-a", record_key: "missing", cell_pool_count: POOL }, store),
@@ -49,7 +108,7 @@ describe("Outbox / pointer Store adapters", () => {
   });
 
   test("createPointerStore verifies content_hash", async () => {
-    const cell = new CellPersistenceClient(new InMemoryCellPersistenceStrategy("cell-a"));
+    const cell = new CellPersistenceClient(testCell("cell-a"));
     const bytes = new TextEncoder().encode("payload");
     const out = await cell.appendOutboxRecord({
       cell_id: "cell-a",
@@ -74,7 +133,7 @@ describe("Outbox / pointer Store adapters", () => {
   });
 
   test("createPointerStore throws PointerHashMismatchError on wrong hash", async () => {
-    const cell = new CellPersistenceClient(new InMemoryCellPersistenceStrategy("cell-a"));
+    const cell = new CellPersistenceClient(testCell("cell-a"));
     const out = await cell.appendOutboxRecord({
       cell_id: "cell-a",
       tenant_key: "tenant",
@@ -96,8 +155,8 @@ describe("Outbox / pointer Store adapters", () => {
 
 describe("InMemoryCellPersistenceStrategy", () => {
   test("append outbox, fetch, inbox pointer, drain with verified bytes", async () => {
-    const cellA = new InMemoryCellPersistenceStrategy("cell-a");
-    const cellB = new InMemoryCellPersistenceStrategy("cell-b");
+    const cellA = testCell("cell-a");
+    const cellB = testCell("cell-b");
 
     const out = await cellA.appendOutboxRecord({
       cell_id: "cell-a",
@@ -112,6 +171,7 @@ describe("InMemoryCellPersistenceStrategy", () => {
     const fetchA = await cellA.fetchOutboxPayload({
       cell_id: "cell-a",
       locator: { cell_id: "cell-a", record_key: out.record_key, cell_pool_count: POOL },
+      payload_format: "stored",
     });
     expect(fetchA.bytes_available).toBe(true);
     expect(new TextDecoder().decode(fetchA.payload_bytes)).toBe("hello");
@@ -159,8 +219,8 @@ describe("InMemoryCellPersistenceStrategy", () => {
 
 describe("ColonnadeRouter", () => {
   test("routes writes to distinct cell logs", async () => {
-    const cellA = new InMemoryCellPersistenceStrategy("cell-a");
-    const cellB = new InMemoryCellPersistenceStrategy("cell-b");
+    const cellA = testCell("cell-a");
+    const cellB = testCell("cell-b");
     const map = new Map([
       ["cell-a", cellA],
       ["cell-b", cellB],
@@ -250,8 +310,8 @@ describe("CatalogRead model (in-memory)", () => {
 describe("ColonnadePublicationClient", () => {
   test("replicates to catalog and fans out pointer rows", async () => {
     const catalog = new InMemoryCatalogPersistenceStrategy();
-    const cellA = new InMemoryCellPersistenceStrategy("cell-a");
-    const cellB = new InMemoryCellPersistenceStrategy("cell-b");
+    const cellA = testCell("cell-a");
+    const cellB = testCell("cell-b");
     const map = new Map([
       ["cell-a", cellA],
       ["cell-b", cellB],
@@ -297,7 +357,7 @@ describe("ColonnadePublicationClient", () => {
   });
 
   test("resolveCell-only constructor uses noop catalog when replicate_to_catalog is false", async () => {
-    const cellA = new InMemoryCellPersistenceStrategy("cell-a");
+    const cellA = testCell("cell-a");
     const resolve: ResolveCellStrategy = (id) => {
       if (id === "cell-a") return cellA;
       throw new Error(`no cell ${id}`);

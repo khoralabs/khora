@@ -2,6 +2,7 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { TEST_POST_AUTHOR_SIGNATURE } from "@khoralabs/sqlite-crypto";
 import { assignPostAddress } from "./on-event.ts";
 import { encodePostId } from "./post-address-id.ts";
 import { deletePostOutboxRecord, resolvePostById } from "./resolve-post.ts";
@@ -45,6 +46,7 @@ test("resolvePostById reads author outbox; delete leaves ghost", async () => {
     kind: "post" as const,
     body: "hello outbox",
     authorProfileId: "prof-a",
+    authorSignature: TEST_POST_AUTHOR_SIGNATURE,
   };
 
   await ctx.publicationClient.postOperation({

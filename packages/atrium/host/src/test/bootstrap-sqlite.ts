@@ -7,6 +7,7 @@ import {
   createRelayColonnadeSocial,
   createRelayPrincipalLifecycle,
 } from "@khoralabs/relay-colonnade";
+import { createTestEncryptionMaterial } from "@khoralabs/sqlite-crypto";
 import {
   type AtriumAdminStatsPort,
   type AtriumHostContext,
@@ -32,6 +33,7 @@ export async function createTestAtriumHost(
 ): Promise<AtriumHostContext> {
   const cellPoolCount = opts.cellPoolCount ?? 16;
   const useCellWorkers = opts.useCellWorkers ?? false;
+  const encryption = createTestEncryptionMaterial();
   const {
     persistence,
     social,
@@ -44,12 +46,18 @@ export async function createTestAtriumHost(
   } = await createRelayColonnadeSocial({
     catalogPath: opts.catalogPath,
     framesDbPath: opts.framesDbPath,
+    encryptionProvider: encryption.provider,
     ...(opts.tenantKey !== undefined ? { tenantKey: opts.tenantKey } : {}),
   });
   const cluster = createSqliteColonnadeCluster({
     cellsDirectory: opts.cellsDir,
     mode: { kind: "pool", cellCount: cellPoolCount },
     useCellWorkers,
+    encryption: {
+      sqlCipherKey: encryption.sqlCipherKey,
+      outboxPayloadCodec: encryption.outboxPayloadCodec,
+      outboxKeyHex: encryption.outboxKeyHex,
+    },
   });
   const publicationClient = new ColonnadePublicationClient(cluster.resolveCell);
   const principalLifecycle = createRelayPrincipalLifecycle({
@@ -101,6 +109,7 @@ export async function createTestAtriumHost(
     catalog,
     health,
     adminStats,
+    outboxPayloadCodec: encryption.outboxPayloadCodec,
     startPrincipalTeardownWorker: opts.startPrincipalTeardownWorker ?? false,
   });
 }

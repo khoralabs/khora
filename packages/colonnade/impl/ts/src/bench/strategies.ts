@@ -1,5 +1,6 @@
 import type { CatalogPersistenceStrategy } from "../catalog-persistence-strategy.ts";
 import type { CellPersistenceStrategy, ResolveCellStrategy } from "../cell-persistence-strategy.ts";
+import { createTestOutboxPayloadCodec } from "@khoralabs/sqlite-crypto";
 import { InMemoryCatalogPersistenceStrategy } from "../in-memory-catalog-strategy.ts";
 import { InMemoryCellPersistenceStrategy } from "../in-memory-cell-strategy.ts";
 import {
@@ -20,11 +21,12 @@ export type BenchmarkStrategies = {
 };
 
 export function createDefaultBenchmarkStrategies(): BenchmarkStrategies {
+  const codec = createTestOutboxPayloadCodec();
   return {
     createCatalog: () => new InMemoryCatalogPersistenceStrategy(),
     createResolveCell: (cellIds: readonly string[]) => {
       const map = new Map<string, CellPersistenceStrategy>(
-        cellIds.map((id) => [id, new InMemoryCellPersistenceStrategy(id)]),
+        cellIds.map((id) => [id, new InMemoryCellPersistenceStrategy(id, { outboxPayloadCodec: codec })]),
       );
       return (cellId: string) => {
         const s = map.get(cellId);

@@ -24,6 +24,7 @@
     "@khoralabs/memories-core": "workspace:*",
     "@khoralabs/memories-sqlite": "workspace:*",
     "@khoralabs/relay-colonnade": "workspace:*",
+    "@khoralabs/sqlite-crypto": "workspace:*",
     "bun-plugin-tailwind": "^0.1.2",
     "clsx": "^2.1.1",
     "pino": "^10.3.1",

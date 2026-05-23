@@ -2,6 +2,7 @@ import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
 import { createAgentRelayPersistenceClient } from "@khoralabs/agent-relay";
 import type { AtriumPost, AtriumProfile } from "@khoralabs/atrium-contracts";
+import { createTestEncryptionMaterial, TEST_POST_AUTHOR_SIGNATURE } from "@khoralabs/sqlite-crypto";
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
 import { MemoriesClient, search } from "@khoralabs/memories-core";
 import {
@@ -100,12 +101,18 @@ describe("atrium memories indexer", () => {
       bio: "works on platform tooling",
     };
     const persistenceClient = createTestRelayPersistence(profile);
+    const encryption = createTestEncryptionMaterial();
     const cluster = createSqliteColonnadeCluster({
       cellsDirectory: `/tmp/atrium-mem-test-${crypto.randomUUID()}`,
       mode: { kind: "pool", cellCount: 2 },
       useCellWorkers: false,
+      encryption: {
+        sqlCipherKey: encryption.sqlCipherKey,
+        outboxPayloadCodec: encryption.outboxPayloadCodec,
+        outboxKeyHex: encryption.outboxKeyHex,
+      },
     });
-    const memoriesDb = openMemoriesDatabase(":memory:");
+    const memoriesDb = openMemoriesDatabase(":memory:", { sqlCipherKey: encryption.sqlCipherKey });
     const persistence = createMemoriesPersistence(memoriesDb);
     const postResolver = createColonnadePostResolver(cluster);
     const store = createAtriumCanonicalStore({ persistence, postResolver, persistenceClient });
@@ -132,6 +139,7 @@ describe("atrium memories indexer", () => {
       topics: ["design"],
       title: "Beta program",
       body: "Looking for teams building developer tools.",
+      authorSignature: TEST_POST_AUTHOR_SIGNATURE,
     };
 
     const authorCellId = cluster.assignPrincipalToCell(authorPrincipalId);
@@ -142,7 +150,7 @@ describe("atrium memories indexer", () => {
       principal_id: authorPrincipalId,
       record_key: recordKey,
       payload_bytes: new TextEncoder().encode(JSON.stringify(post)),
-      metadata: {},
+      metadata: { postId: post.id, postKind: post.kind },
     });
 
     await indexer.indexPost(post);
@@ -201,12 +209,18 @@ describe("atrium memories indexer", () => {
       displayName: "Bob",
     };
     const persistenceClient = createTestRelayPersistence(profile);
+    const encryption = createTestEncryptionMaterial();
     const cluster = createSqliteColonnadeCluster({
       cellsDirectory: `/tmp/atrium-mem-probe-${crypto.randomUUID()}`,
       mode: { kind: "pool", cellCount: 2 },
       useCellWorkers: false,
+      encryption: {
+        sqlCipherKey: encryption.sqlCipherKey,
+        outboxPayloadCodec: encryption.outboxPayloadCodec,
+        outboxKeyHex: encryption.outboxKeyHex,
+      },
     });
-    const memoriesDb = openMemoriesDatabase(":memory:");
+    const memoriesDb = openMemoriesDatabase(":memory:", { sqlCipherKey: encryption.sqlCipherKey });
     const persistence = createMemoriesPersistence(memoriesDb);
     const postResolver = createColonnadePostResolver(cluster);
     const store = createAtriumCanonicalStore({ persistence, postResolver, persistenceClient });
@@ -238,6 +252,7 @@ describe("atrium memories indexer", () => {
         domains: ["platform"],
         engagementType: "pilots",
       },
+      authorSignature: TEST_POST_AUTHOR_SIGNATURE,
     };
 
     const authorCellId = cluster.assignPrincipalToCell(authorPrincipalId);
@@ -248,7 +263,7 @@ describe("atrium memories indexer", () => {
       principal_id: authorPrincipalId,
       record_key: recordKey,
       payload_bytes: new TextEncoder().encode(JSON.stringify(probe)),
-      metadata: {},
+      metadata: { postId: probe.id, postKind: probe.kind },
     });
 
     await indexer.indexPost(probe);

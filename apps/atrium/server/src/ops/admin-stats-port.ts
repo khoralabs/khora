@@ -1,6 +1,7 @@
 import { Database } from "bun:sqlite";
 import { existsSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
 import type {
   AtriumAdminCellDetailResult,
   AtriumAdminPrincipalDetailResult,
@@ -27,10 +28,14 @@ function tableExists(db: Database, name: string): boolean {
   return row !== null;
 }
 
-function openCellDbReadonly(cellsDir: string, cellId: string): Database | undefined {
+function openCellDbReadonly(
+  cellsDir: string,
+  cellId: string,
+  sqlCipherKey: string,
+): Database | undefined {
   const path = cellDbPath(cellsDir, cellId);
   if (!existsSync(path)) return undefined;
-  return new Database(path, { readonly: true });
+  return openEncryptedDatabaseSync(path, { readonly: true }, sqlCipherKey);
 }
 
 function countOutboxForPrincipal(
@@ -38,8 +43,9 @@ function countOutboxForPrincipal(
   cellId: string,
   tenantKey: string,
   principalId: string,
+  sqlCipherKey: string,
 ): number {
-  const db = openCellDbReadonly(cellsDir, cellId);
+  const db = openCellDbReadonly(cellsDir, cellId, sqlCipherKey);
   if (db === undefined) return 0;
   try {
     if (!tableExists(db, "outbox")) return 0;
@@ -56,8 +62,9 @@ function cellTableCounts(
   cellsDir: string,
   cellId: string,
   tenantKey: string,
+  sqlCipherKey: string,
 ): { provisioned: boolean; outboxCount: number; inboxCount: number } {
-  const db = openCellDbReadonly(cellsDir, cellId);
+  const db = openCellDbReadonly(cellsDir, cellId, sqlCipherKey);
   if (db === undefined) {
     return { provisioned: false, outboxCount: 0, inboxCount: 0 };
   }
@@ -121,6 +128,7 @@ export function createAtriumAdminStatsPort(deps: {
   cellPoolCount: number;
   cluster: AtriumColonnadeCluster;
   lookupNormalizedUsernameForPrincipal: (principalId: string) => string | undefined;
+  sqlCipherKey: string;
 }): AtriumAdminStatsPort {
   const {
     catalogDb,
@@ -130,6 +138,7 @@ export function createAtriumAdminStatsPort(deps: {
     cellPoolCount,
     cluster,
     lookupNormalizedUsernameForPrincipal,
+    sqlCipherKey,
   } = deps;
 
   function inviteStats(): AtriumAdminStatsSummary["invites"] {
@@ -216,7 +225,7 @@ export function createAtriumAdminStatsPort(deps: {
     );
     const shards = Array.from({ length: cellPoolCount }, (_, i) => {
       const cellId = poolShardCellId(i);
-      const counts = cellTableCounts(cellsDir, cellId, tenantKey);
+      const counts = cellTableCounts(cellsDir, cellId, tenantKey, sqlCipherKey);
       return {
         cellId,
         ...counts,
@@ -254,7 +263,7 @@ export function createAtriumAdminStatsPort(deps: {
         listRegisteredPrincipalIds(catalogDb, tenantKey),
       );
       const homePrincipals = homeCounts.get(cellId) ?? 0;
-      const db = openCellDbReadonly(cellsDir, cellId);
+      const db = openCellDbReadonly(cellsDir, cellId, sqlCipherKey);
       if (db === undefined) {
         return {
           cellId,
@@ -335,7 +344,7 @@ export function createAtriumAdminStatsPort(deps: {
       }
       const username = lookupNormalizedUsernameForPrincipal(did);
       const cellId = cluster.assignPrincipalToCell(did);
-      const outboxCount = countOutboxForPrincipal(cellsDir, cellId, tenantKey, did);
+      const outboxCount = countOutboxForPrincipal(cellsDir, cellId, tenantKey, did, sqlCipherKey);
       const subscriptionCount = (
         catalogDb
           .prepare(

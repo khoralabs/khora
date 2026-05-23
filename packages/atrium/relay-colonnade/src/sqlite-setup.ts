@@ -1,4 +1,5 @@
 import { Database } from "bun:sqlite";
+import { openEncryptedDatabase, type EncryptionKeyProvider } from "@khoralabs/sqlite-crypto";
 import { ensurePrincipalTeardownJobsSchema } from "./principal-teardown-jobs.ts";
 
 /** Tier 1 relay catalog projections (JSON columns + expression indexes). */
@@ -55,8 +56,11 @@ export function applyRelaySqlitePragmas(db: Database): void {
 }
 
 /** Opens relay catalog DB (Tier 1 projections + edge tables). Does not create Colonnade pointer/discovery tables. */
-export function openRelayCatalogDb(path: string): Database {
-  const db = new Database(path, { create: true });
+export async function openRelayCatalogDb(
+  path: string,
+  provider: EncryptionKeyProvider,
+): Promise<Database> {
+  const db = await openEncryptedDatabase(path, { create: true }, "atrium", provider);
   applyRelaySqlitePragmas(db);
   ensureRelayCatalogProjectionsSchema(db);
   ensurePrincipalTeardownJobsSchema(db);
@@ -64,8 +68,11 @@ export function openRelayCatalogDb(path: string): Database {
 }
 
 /** Relay frame-channel SQLite (separate file from catalog). */
-export function openRelayFramesDb(path: string): Database {
-  const db = new Database(path, { create: true });
+export async function openRelayFramesDb(
+  path: string,
+  provider: EncryptionKeyProvider,
+): Promise<Database> {
+  const db = await openEncryptedDatabase(path, { create: true }, "atrium", provider);
   applyRelaySqlitePragmas(db);
   return db;
 }

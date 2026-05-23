@@ -6,6 +6,7 @@ import type { AtriumWsData } from "@khoralabs/atrium-transport";
 import adminPage from "./admin-ui/routes/admin/index.html";
 import adminLoginPage from "./admin-ui/routes/login/index.html";
 import { bootstrapAtriumHost } from "./bootstrap-atrium.ts";
+import { bootstrapAtriumEncryption } from "./encryption-bootstrap.ts";
 import {
   envCatalogPath,
   envCellPoolCount,
@@ -43,12 +44,14 @@ mkdirSync(dirname(framesDbPath), { recursive: true });
 mkdirSync(cellsDir, { recursive: true });
 
 const tenantKey = envTenantKey();
+const encryption = await bootstrapAtriumEncryption();
 const ctx: AtriumHostContext = await bootstrapAtriumHost({
   catalogPath,
   framesDbPath,
   cellsDir,
   cellPoolCount,
   useCellWorkers: envColonnadeUseCellWorkers(),
+  encryption,
   ...(tenantKey !== undefined ? { tenantKey } : {}),
   ...(memoriesConfig !== undefined ? { memories: memoriesConfig } : {}),
 });

@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { mergeMemory, namespacePath, search } from "@khoralabs/memories-core";
-import { openMemoriesDatabase } from "../connection";
+import { openTestMemoriesDatabase } from "../connection";
 import { createMemoriesPersistence } from "../persistence";
 
 describe("scope DAG search (SQLite)", () => {
   test("scopeDag finds memories attached under descendant scopes", () => {
-    const db = openMemoriesDatabase(":memory:");
+    const db = openTestMemoriesDatabase();
     const persistence = createMemoriesPersistence(db);
     const rootScope = namespacePath("teams/acme");
     const childScope = namespacePath("teams/acme/payments");
@@ -41,7 +41,7 @@ describe("scope DAG search (SQLite)", () => {
   });
 
   test("exactScope matches only listed scopes (no DAG descent)", () => {
-    const db = openMemoriesDatabase(":memory:");
+    const db = openTestMemoriesDatabase();
     const persistence = createMemoriesPersistence(db);
     const rootScope = namespacePath("teams/beta");
     const childScope = namespacePath("teams/beta/ledger");

@@ -48,6 +48,7 @@ export function createAtriumHost(deps: AtriumHostDeps): AtriumHostContext {
     principalLifecycle: deps.principalLifecycle,
     health: deps.health,
     adminStats: deps.adminStats,
+    outboxPayloadCodec: deps.outboxPayloadCodec,
     principalTeardownWorker,
     ...(deps.memories !== undefined ? { memories: deps.memories } : {}),
     ...(deps.roomLifecycle !== undefined ? { roomLifecycle: deps.roomLifecycle } : {}),

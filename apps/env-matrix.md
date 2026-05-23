@@ -101,6 +101,27 @@ Legend: **+** = set on this service · **·** = not used · **Kind:** **S** = se
 | `ATRIUM_COLONNADE_CELL_WORKERS` | · | + | · | · | C | Bun Workers for cell SQLite (default on). |
 | `LOG_LEVEL` | · | + | · | · | C | Pino level (default `info`). |
 
+### Encryption at rest
+
+| Variable | R | A | KH | AH | Kind | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| `ATRIUM_SQLCIPHER_KEY` | · | + | · | · | S | **Required.** SQLCipher key for catalog, frames, cells, memories SQLite (≥16 chars). Same key required for Litestream restore. |
+| `ATRIUM_OUTBOX_ENCRYPTION_KEY` | · | + | · | · | S | **Required.** AES-256-GCM field key for post `outbox.payload` (64-char hex or ≥32 UTF-8 bytes). Separate from SQLCipher. |
+| `REGISTRY_SQLCIPHER_KEY` | + | · | · | · | S | **Required.** SQLCipher key for `registry.sqlite`. |
+
+**Prod checklist (in addition to env vars):**
+
+- Render persistent disks: use encrypted disks (default on paid plans — verify in service settings).
+- S3 backup bucket: enable **SSE-KMS** (preferred) or SSE-S3 on `LITESTREAM_S3_BUCKET`; restrict bucket policy to Litestream IAM user only.
+- Store encryption keys in Render secret group; never commit. Lost keys = unreadable DBs after restore.
+- Beta key rotation: manual SQLCipher rekey + redeploy; document key escrow for disaster recovery.
+
+**Design notes:**
+
+- Post outbox payloads are field-encrypted on disk; `content_hash` is over ciphertext.
+- Memories search index remains **plaintext** by design (operator with memories DB can search post text).
+- Post creates/updates require detached Ed25519 **content signatures** (`authorSignature`).
+
 ### Atrium invites & registration
 
 | Variable | R | A | KH | AH | Kind | Notes |
@@ -139,6 +160,9 @@ LITESTREAM_S3_BUCKET=khora-backups-prod
 LITESTREAM_S3_REGION=us-east-1
 ATRIUM_INTERNAL_SECRET=...
 ATRIUM_INVITE_PEPPER=...
+ATRIUM_SQLCIPHER_KEY=...
+ATRIUM_OUTBOX_ENCRYPTION_KEY=...
+REGISTRY_SQLCIPHER_KEY=...
 ```
 
 ### Per-service overrides
@@ -156,6 +180,7 @@ BETTER_AUTH_SECRET=...
 SES_FROM_ADDRESS=noreply@example.com
 REGISTRY_LITESTREAM=1
 LITESTREAM_S3_KEY_PREFIX=registry/litestream
+REGISTRY_SQLCIPHER_KEY=...
 REGISTRY_CONSOLE_ROOT_TOKEN=...
 ```
 
@@ -170,6 +195,8 @@ ATRIUM_INVITE_PEPPER=...          # same as shared group
 ATRIUM_INTERNAL_SECRET=...        # same as shared group
 ATRIUM_LITESTREAM=1
 LITESTREAM_S3_KEY_PREFIX=atrium/litestream
+ATRIUM_SQLCIPHER_KEY=...
+ATRIUM_OUTBOX_ENCRYPTION_KEY=...
 ATRIUM_CONSOLE_ROOT_TOKEN=...
 ```
 

@@ -23,7 +23,7 @@ export async function popRelayInboxDrainItemsForDid(
   ctx: AtriumHostContext,
   did: string,
 ): Promise<RelayInboxDrainItem[]> {
-  const { cluster, tenantKey, principalLifecycle } = ctx;
+  const { cluster, tenantKey, principalLifecycle, outboxPayloadCodec } = ctx;
   const cellId = cluster.assignPrincipalToCell(did);
   const cell = cluster.resolveCell(cellId);
   const list = await cell.listPendingInboxEntries({
@@ -153,12 +153,13 @@ export async function popRelayInboxDrainItemsForDid(
         typeof metadata === "object" && metadata !== null && !Array.isArray(metadata)
           ? { ...(metadata as Record<string, unknown>) }
           : {};
+      const plaintextBytes = await outboxPayloadCodec.decrypt(r.verified_bytes);
       pointerItems.push({
         entryKey: r.inbox_entry_id,
         pointer: r.pointer,
         projection: {
           ...baseProj,
-          bodyJson: new TextDecoder().decode(r.verified_bytes),
+          bodyJson: new TextDecoder().decode(plaintextBytes),
         },
       });
     }

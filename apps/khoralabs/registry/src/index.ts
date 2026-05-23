@@ -1,4 +1,5 @@
 import { createRootTokenConsoleAuth } from "@khoralabs/atrium-console";
+import { assertEncryptionKeys, EnvKeyProvider } from "@khoralabs/sqlite-crypto";
 import { ensureRegistrySchema, getRegistryAuth, getRegistryDatabase } from "@khoralabs/users-auth";
 import { serve } from "bun";
 import adminPage from "./admin-ui/routes/admin/index.html";
@@ -17,6 +18,7 @@ import { handleMe } from "./api/me";
 import { handleOptions, withCors } from "./cors";
 import { seedDefaultHostFromEnv } from "./seed/default-host";
 
+await assertEncryptionKeys(new EnvKeyProvider(), "registry");
 await ensureRegistrySchema();
 seedDefaultHostFromEnv(getRegistryDatabase());
 

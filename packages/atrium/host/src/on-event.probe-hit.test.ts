@@ -8,12 +8,13 @@ import {
 } from "@khoralabs/agent-relay";
 import type { AtriumPost, AtriumProfile } from "@khoralabs/atrium-contracts";
 import type { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
+import { createTestEncryptionMaterial, TEST_POST_AUTHOR_SIGNATURE } from "@khoralabs/sqlite-crypto";
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
 import { MemoriesClient } from "@khoralabs/memories-core";
 import {
   createMemoriesPersistence,
   ensureCustomSqliteForExtensions,
-  openMemoriesDatabase,
+  openTestMemoriesDatabase,
 } from "@khoralabs/memories-sqlite";
 import { RelayCatalogProjectionStore } from "@khoralabs/relay-colonnade";
 import { createAtriumCanonicalStore } from "./memories/atrium-canonical-store.ts";
@@ -129,12 +130,18 @@ describe("probe-hit inbox reasons", () => {
       "did:author": authorProfile,
       "did:sub": subProfile,
     });
+    const encryption = createTestEncryptionMaterial();
     const cluster = createSqliteColonnadeCluster({
       cellsDirectory: `/tmp/atrium-probe-hit-${crypto.randomUUID()}`,
       mode: { kind: "pool", cellCount: 2 },
       useCellWorkers: false,
+      encryption: {
+        sqlCipherKey: encryption.sqlCipherKey,
+        outboxPayloadCodec: encryption.outboxPayloadCodec,
+        outboxKeyHex: encryption.outboxKeyHex,
+      },
     });
-    const memoriesDb = openMemoriesDatabase(":memory:");
+    const memoriesDb = openTestMemoriesDatabase();
     const memoriesPersistence = createMemoriesPersistence(memoriesDb);
     const postResolver = createColonnadePostResolver(cluster);
     const store = createAtriumCanonicalStore({
@@ -171,6 +178,7 @@ describe("probe-hit inbox reasons", () => {
       title: "Design partners",
       body: "Seeking teams for a platform beta.",
       attributes: { domains: ["platform"], engagementType: "beta" },
+      authorSignature: TEST_POST_AUTHOR_SIGNATURE,
     };
 
     let fanOutTargets: Array<{
@@ -222,10 +230,16 @@ describe("probe-hit inbox reasons", () => {
     const { persistence: relayPersistence, persistenceClient } = createRelayPersistence({
       "did:author": authorProfile,
     });
+    const encryption = createTestEncryptionMaterial();
     const cluster = createSqliteColonnadeCluster({
       cellsDirectory: `/tmp/atrium-probe-hit-post-${crypto.randomUUID()}`,
       mode: { kind: "pool", cellCount: 2 },
       useCellWorkers: false,
+      encryption: {
+        sqlCipherKey: encryption.sqlCipherKey,
+        outboxPayloadCodec: encryption.outboxPayloadCodec,
+        outboxKeyHex: encryption.outboxKeyHex,
+      },
     });
 
     const authorPrincipalId = "did:author";
@@ -236,6 +250,7 @@ describe("probe-hit inbox reasons", () => {
       kind: "post",
       topics: ["platform"],
       body: "hello",
+      authorSignature: TEST_POST_AUTHOR_SIGNATURE,
     };
 
     let fanOutTargets: Array<{ inbox_metadata: { reasons: unknown[] } }> = [];

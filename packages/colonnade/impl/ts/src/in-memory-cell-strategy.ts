@@ -1,3 +1,4 @@
+import { isOutboxEncryptedPayload, type OutboxPayloadCodec } from "@khoralabs/sqlite-crypto";
 import type { CellPersistenceStrategy } from "./cell-persistence-strategy.ts";
 import type {
   AckWriteLogAppliedInput,
@@ -41,9 +42,11 @@ export class InMemoryCellPersistenceStrategy implements CellPersistenceStrategy 
   private logSeq = 0;
   private readonly log: WriteLogRecord[] = [];
   private appliedThrough = "";
+  private readonly outboxPayloadCodec: OutboxPayloadCodec;
 
-  constructor(cellId: CellId) {
+  constructor(cellId: CellId, opts: { outboxPayloadCodec: OutboxPayloadCodec }) {
     this.cellId = cellId;
+    this.outboxPayloadCodec = opts.outboxPayloadCodec;
   }
 
   private assertCell(cell_id: CellId): void {
@@ -57,12 +60,14 @@ export class InMemoryCellPersistenceStrategy implements CellPersistenceStrategy 
   async appendOutboxRecord(input: AppendOutboxRecordInput): Promise<AppendOutboxRecordOutput> {
     this.assertCell(input.cell_id);
     const recordKey = input.record_key.trim().length > 0 ? input.record_key : randomId("ob");
-    const content_hash = sha256HexLower(input.payload_bytes);
+    let payload = input.payload_bytes;
+    payload = await this.outboxPayloadCodec.encryptIfPost(input.metadata, payload);
+    const content_hash = sha256HexLower(payload);
     assertContentHash(content_hash);
     const committed_at_ms = Date.now();
     this.outbox.set(recordKey, {
       principal_id: input.principal_id,
-      payload: Uint8Array.from(input.payload_bytes),
+      payload: Uint8Array.from(payload),
       metadata: input.metadata,
       content_hash,
       committed_at_ms,
@@ -126,8 +131,12 @@ export class InMemoryCellPersistenceStrategy implements CellPersistenceStrategy 
       };
     }
     assertContentHash(row.content_hash);
+    let payload_bytes = Uint8Array.from(row.payload);
+    if (input.payload_format === "plaintext" && isOutboxEncryptedPayload(payload_bytes)) {
+      payload_bytes = await this.outboxPayloadCodec.decrypt(payload_bytes);
+    }
     return {
-      payload_bytes: Uint8Array.from(row.payload),
+      payload_bytes,
       content_hash: row.content_hash,
       bytes_available: true,
     };

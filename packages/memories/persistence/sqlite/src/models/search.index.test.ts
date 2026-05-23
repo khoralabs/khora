@@ -1,13 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import { mergeMemory, namespacePath } from "@khoralabs/memories-core";
-import { openMemoriesDatabase } from "../connection";
+import { openTestMemoriesDatabase } from "../connection";
 import { createMemoriesPersistence } from "../persistence";
 import { prepareMemoriesSqliteStmts } from "./prepared-stmts";
 import { searchLexicalSourceMapIds } from "./search";
 
 describe("searchLexicalSourceMapIds namespace index", () => {
   test("subtree scope returns hits under prefix path", () => {
-    const db = openMemoriesDatabase(":memory:");
+    const db = openTestMemoriesDatabase();
     const persistence = createMemoriesPersistence(db);
     mergeMemory(
       { persistence },

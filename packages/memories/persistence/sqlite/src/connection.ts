@@ -1,4 +1,5 @@
 import { Database, type DatabaseOptions } from "bun:sqlite";
+import { openEncryptedDatabaseSync, TEST_ATRIUM_SQLCIPHER_KEY } from "@khoralabs/sqlite-crypto";
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -31,7 +32,9 @@ export function loadSqliteVec(db: Database): void {
   }
 }
 
-export type OpenMemoriesDatabaseOptions = DatabaseOptions;
+export type OpenMemoriesDatabaseOptions = DatabaseOptions & {
+  sqlCipherKey: string;
+};
 
 export const SQLITE_CUSTOM_LIB_ENV = "SQLITE_CUSTOM_LIB";
 
@@ -132,16 +135,25 @@ export function configureMemoriesSqlitePragmas(
   db.run(`PRAGMA wal_autocheckpoint = ${walAutocheckpointPages};`);
 }
 
+/**
+ * Open a SQLCipher-protected Memories database.
+ */
 export function openMemoriesDatabase(
   filename: string,
-  options: OpenMemoriesDatabaseOptions = {},
+  options: OpenMemoriesDatabaseOptions,
 ): Database {
   ensureCustomSqliteForExtensions();
-  const db = new Database(filename, { create: true, ...options });
+  const { sqlCipherKey, ...dbOptions } = options;
+  const db = openEncryptedDatabaseSync(filename, { create: true, ...dbOptions }, sqlCipherKey);
   configureMemoriesSqlitePragmas(db);
   loadSqliteVec(db);
   initMemoriesSchema(db);
   return db;
+}
+
+/** Standard test key; use in unit/integration tests only. */
+export function openTestMemoriesDatabase(filename = ":memory:"): Database {
+  return openMemoriesDatabase(filename, { sqlCipherKey: TEST_ATRIUM_SQLCIPHER_KEY });
 }
 
 export function openMemoriesDatabaseReadonly(filename: string): Database {

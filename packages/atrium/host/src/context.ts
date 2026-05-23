@@ -1,3 +1,4 @@
+import type { OutboxPayloadCodec } from "@khoralabs/sqlite-crypto";
 import type { AgentRelay, FrameChannelHubPort } from "@khoralabs/agent-relay";
 import type { AtriumDidAuth } from "@khoralabs/atrium-auth";
 import type { AtriumPost, AtriumProfile } from "@khoralabs/atrium-contracts";
@@ -36,4 +37,5 @@ export type AtriumHostContext = {
   memories?: AtriumMemoriesHost;
   health: AtriumHostHealthPort;
   adminStats: AtriumAdminStatsPort;
+  outboxPayloadCodec: OutboxPayloadCodec;
 } & AtriumHostCatalogApi;

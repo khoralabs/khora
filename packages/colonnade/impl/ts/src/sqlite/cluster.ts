@@ -1,6 +1,8 @@
-import { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
+
+import type { OutboxPayloadCodec } from "@khoralabs/sqlite-crypto";
+import { openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
 
 import type { CatalogPersistenceStrategy } from "../catalog-persistence-strategy.ts";
 import type { CellPersistenceStrategy, ResolveCellStrategy } from "../cell-persistence-strategy.ts";
@@ -14,6 +16,13 @@ export type SqliteColonnadeClusterMode =
   | { readonly kind: "pool"; readonly cellCount: number }
   | { readonly kind: "per_principal" };
 
+export type SqliteColonnadeClusterEncryptionOptions = {
+  readonly sqlCipherKey: string;
+  readonly outboxPayloadCodec: OutboxPayloadCodec;
+  /** Hex-encoded 32-byte outbox key for worker init. */
+  readonly outboxKeyHex: string;
+};
+
 export type SqliteColonnadeClusterOptions = {
   /** Colonnade publication replication catalog; defaults to noop when omitted. */
   readonly catalog?: CatalogPersistenceStrategy;
@@ -21,6 +30,7 @@ export type SqliteColonnadeClusterOptions = {
   readonly mode: SqliteColonnadeClusterMode;
   /** One Bun **`Worker`** per opened cell (SQLite runs off the main thread). */
   readonly useCellWorkers?: boolean;
+  readonly encryption: SqliteColonnadeClusterEncryptionOptions;
 };
 
 export type SqliteColonnadeCluster = {
@@ -46,9 +56,13 @@ export function createSqliteColonnadeCluster(
     ensureCellPoolManifest(opts.cellsDirectory, opts.mode.cellCount);
   }
 
-  const cellDbById = new Map<string, Database>();
+  const cellDbById = new Map<string, import("bun:sqlite").Database>();
   const cellStrategyById = new Map<string, SqliteCellPersistenceStrategy>();
   const lazyWorkersById = new Map<string, LazyWorkerBackedCellStrategy>();
+
+  const cellStrategyOpts = {
+    outboxPayloadCodec: opts.encryption.outboxPayloadCodec,
+  };
 
   function resolveCell(cellId: string): CellPersistenceStrategy {
     if (opts.useCellWorkers === true) {
@@ -56,7 +70,10 @@ export function createSqliteColonnadeCluster(
       if (w === undefined) {
         const stem = cellDbFilenameStem(cellId);
         const path = join(opts.cellsDirectory, `${stem}.sqlite`);
-        w = new LazyWorkerBackedCellStrategy(cellId, path);
+        w = new LazyWorkerBackedCellStrategy(cellId, path, {
+          sqlCipherKey: opts.encryption.sqlCipherKey,
+          outboxKeyHex: opts.encryption.outboxKeyHex,
+        });
         lazyWorkersById.set(cellId, w);
       }
       return w;
@@ -66,9 +83,12 @@ export function createSqliteColonnadeCluster(
     if (db === undefined) {
       const stem = cellDbFilenameStem(cellId);
       const path = join(opts.cellsDirectory, `${stem}.sqlite`);
-      db = new Database(path, { create: true });
+      db = openEncryptedDatabaseSync(path, { create: true }, opts.encryption.sqlCipherKey);
       cellDbById.set(cellId, db);
-      cellStrategyById.set(cellId, new SqliteCellPersistenceStrategy(db, cellId));
+      cellStrategyById.set(
+        cellId,
+        new SqliteCellPersistenceStrategy(db, cellId, cellStrategyOpts),
+      );
     }
     const strategy = cellStrategyById.get(cellId);
     if (strategy === undefined) {

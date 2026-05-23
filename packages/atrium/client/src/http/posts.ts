@@ -1,19 +1,33 @@
 import {
+  mergeAtriumPostPatch,
   type AtriumPost,
-  type AtriumPostCreate,
+  type AtriumPostCreateContent,
   type AtriumPostPatch,
   type AtriumProbeCreate,
   zAtriumPost,
 } from "@khoralabs/atrium-contracts";
+import {
+  atriumPostSigningPayloadFromCreate,
+  signAtriumPostPayload,
+  signingPayloadForPatch,
+} from "@khoralabs/atrium-auth";
 import type { AtriumUnaryTransport } from "@khoralabs/atrium-transport";
 
-export type AtriumProbeCreateInput = Omit<AtriumProbeCreate, "kind">;
+export type AtriumProbeCreateInput = Omit<AtriumProbeCreate, "kind" | "authorSignature">;
 
-export function createPost(t: AtriumUnaryTransport, body: AtriumPostCreate): Promise<AtriumPost> {
-  return t.requestJson("POST", "/v1/posts", { body, parse: zAtriumPost });
+export async function createPost(
+  t: AtriumUnaryTransport,
+  content: AtriumPostCreateContent,
+): Promise<AtriumPost> {
+  const payload = atriumPostSigningPayloadFromCreate(t.did, content);
+  const authorSignature = await signAtriumPostPayload(t.signer, payload);
+  return t.requestJson("POST", "/v1/posts", {
+    body: { ...content, authorSignature },
+    parse: zAtriumPost,
+  });
 }
 
-export function createProbe(
+export async function createProbe(
   t: AtriumUnaryTransport,
   body: AtriumProbeCreateInput,
 ): Promise<AtriumPost> {
@@ -26,13 +40,16 @@ export function getPost(t: AtriumUnaryTransport, id: string): Promise<AtriumPost
   });
 }
 
-export function updatePost(
+export async function updatePost(
   t: AtriumUnaryTransport,
   id: string,
-  patch: AtriumPostPatch,
+  patch: Omit<AtriumPostPatch, "authorSignature">,
+  previous: AtriumPost,
 ): Promise<AtriumPost> {
+  const payload = signingPayloadForPatch(t.did, previous, patch);
+  const authorSignature = await signAtriumPostPayload(t.signer, payload);
   return t.requestJson("PATCH", `/v1/posts/${encodeURIComponent(id)}`, {
-    body: patch,
+    body: { ...patch, authorSignature },
     parse: zAtriumPost,
   });
 }
@@ -40,3 +57,5 @@ export function updatePost(
 export function deletePost(t: AtriumUnaryTransport, id: string): Promise<void> {
   return t.requestVoid("DELETE", `/v1/posts/${encodeURIComponent(id)}`);
 }
+
+export { mergeAtriumPostPatch };

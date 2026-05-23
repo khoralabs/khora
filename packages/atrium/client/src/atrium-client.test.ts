@@ -400,10 +400,11 @@ describe("AtriumClient", () => {
       expect(String(input)).toBe("http://h/v1/posts");
       expect(init?.method).toBe("POST");
       expectAuthHeaders(init, "did:key:writer");
-      expect(JSON.parse(String(init?.body))).toEqual({
-        body: "hello",
-        title: "Hi",
-      });
+      const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      expect(body.body).toBe("hello");
+      expect(body.title).toBe("Hi");
+      expect(typeof body.authorSignature).toBe("string");
+      expect((body.authorSignature as string).length).toBeGreaterThan(0);
       return Response.json({
         id: "atrium_post_abc",
         authorProfileId: "u1",
@@ -428,13 +429,15 @@ describe("AtriumClient", () => {
       expect(String(input)).toBe("http://h/v1/posts");
       expect(init?.method).toBe("POST");
       expectAuthHeaders(init, "did:key:writer");
-      expect(JSON.parse(String(init?.body))).toEqual({
+      const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      expect(body).toMatchObject({
         kind: "probe",
         title: "Beta intros",
         body: "Looking for partners",
         attributes: { domains: ["platform"] },
         topics: ["platform"],
       });
+      expect(typeof body.authorSignature).toBe("string");
       return Response.json({
         id: "atrium_probe_abc",
         authorProfileId: "u1",
@@ -462,10 +465,21 @@ describe("AtriumClient", () => {
   test("updatePost signs request", async () => {
     const signer = staticSigner("did:key:w");
     const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
-      expect(String(input)).toBe("http://h/v1/posts/p1");
+      const url = String(input);
+      if (url === "http://h/v1/posts/p1" && init?.method === "GET") {
+        return Response.json({
+          id: "p1",
+          authorProfileId: "u1",
+          kind: "post",
+          body: "old",
+        });
+      }
+      expect(url).toBe("http://h/v1/posts/p1");
       expect(init?.method).toBe("PATCH");
       expectAuthHeaders(init, "did:key:w");
-      expect(JSON.parse(String(init?.body))).toEqual({ body: "x" });
+      const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      expect(body.body).toBe("x");
+      expect(typeof body.authorSignature).toBe("string");
       return Response.json({
         id: "p1",
         authorProfileId: "u1",

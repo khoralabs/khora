@@ -31,7 +31,11 @@ type RpcReq = {
 type RpcOk = { readonly kind: "rpc_ok"; readonly id: number; readonly result: unknown };
 type RpcErr = { readonly kind: "rpc_err"; readonly id: number; readonly error: string };
 
-function spawnCellWorker(cellId: string, dbPath: string): Promise<Worker> {
+function spawnCellWorker(
+  cellId: string,
+  dbPath: string,
+  init: { sqlCipherKey: string; outboxKeyHex: string },
+): Promise<Worker> {
   return new Promise((resolve, reject) => {
     const worker = new Worker(new URL("./sqlite-cell-worker.ts", import.meta.url));
     const onMsg = (ev: MessageEvent<{ readonly kind?: string }>) => {
@@ -43,7 +47,7 @@ function spawnCellWorker(cellId: string, dbPath: string): Promise<Worker> {
     };
     worker.addEventListener("message", onMsg as EventListener);
     worker.addEventListener("error", (e) => reject(e));
-    worker.postMessage({ kind: "init", cellId, dbPath });
+    worker.postMessage({ kind: "init", cellId, dbPath, ...init });
   });
 }
 
@@ -75,8 +79,12 @@ export class WorkerBackedCellStrategy implements CellPersistenceStrategy, Sqlite
     }) as EventListener);
   }
 
-  static async create(cellId: string, dbPath: string): Promise<WorkerBackedCellStrategy> {
-    const worker = await spawnCellWorker(cellId, dbPath);
+  static async create(
+    cellId: string,
+    dbPath: string,
+    init: { sqlCipherKey: string; outboxKeyHex: string },
+  ): Promise<WorkerBackedCellStrategy> {
+    const worker = await spawnCellWorker(cellId, dbPath, init);
     return new WorkerBackedCellStrategy(worker);
   }
 
@@ -172,8 +180,12 @@ export class LazyWorkerBackedCellStrategy
   private inner?: WorkerBackedCellStrategy;
   private readonly boot: Promise<WorkerBackedCellStrategy>;
 
-  constructor(cellId: string, dbPath: string) {
-    this.boot = WorkerBackedCellStrategy.create(cellId, dbPath).then((s) => {
+  constructor(
+    cellId: string,
+    dbPath: string,
+    init: { sqlCipherKey: string; outboxKeyHex: string },
+  ) {
+    this.boot = WorkerBackedCellStrategy.create(cellId, dbPath, init).then((s) => {
       this.inner = s;
       return s;
     });

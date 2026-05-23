@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { createMemoriesPersistence, openMemoriesDatabase } from "@khoralabs/memories-sqlite";
+import { createMemoriesPersistence, openTestMemoriesDatabase } from "@khoralabs/memories-sqlite";
 import { mergeMemory } from "./api/merge-memory";
 import { search } from "./api/search";
 import { ids } from "./models/ids";
 
 function openTestDb() {
-  return openMemoriesDatabase(":memory:");
+  return openTestMemoriesDatabase();
 }
 
 const vec512 = (i: number, v = 1): number[] =>

@@ -294,6 +294,7 @@ export async function benchDrainCycle(params: BenchRunParams): Promise<BenchResu
       const fetched = await authorCell.fetchOutboxPayload({
         cell_id: src,
         locator: { cell_id: src, record_key: out.record_key, cell_pool_count: 16 },
+        payload_format: "stored",
       });
 
       await recipientCell.verifyAndDrainInboxBatch({

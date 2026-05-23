@@ -9,6 +9,7 @@ export {
   type OpenMemoriesDatabaseOptions,
   openMemoriesDatabase,
   openMemoriesDatabaseReadonly,
+  openTestMemoriesDatabase,
 } from "./connection";
 export { buildNamespaceGraphLayout } from "./graph/build-namespace-graph-layout";
 export {

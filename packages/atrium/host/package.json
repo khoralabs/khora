@@ -32,6 +32,7 @@
     "@khoralabs/atrium-auth": "workspace:*",
     "@khoralabs/memories-sqlite": "workspace:*",
     "@khoralabs/relay-colonnade": "workspace:*",
+    "@khoralabs/sqlite-crypto": "workspace:*",
     "@types/bun": "latest",
     "typescript": "^5"
   }

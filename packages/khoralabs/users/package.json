@@ -16,6 +16,7 @@
     "test": "bun test"
   },
   "dependencies": {
+    "@khoralabs/sqlite-crypto": "workspace:*",
     "@khoralabs/sqlite-migrate": "workspace:*"
   },
   "devDependencies": {

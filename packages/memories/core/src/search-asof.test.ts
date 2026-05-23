@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { createMemoriesPersistence, openMemoriesDatabase } from "@khoralabs/memories-sqlite";
+import { createMemoriesPersistence, openTestMemoriesDatabase } from "@khoralabs/memories-sqlite";
 import { mergeMemory } from "./api/merge-memory";
 import { search } from "./api/search";
 
 function openTestDb() {
-  return openMemoriesDatabase(":memory:");
+  return openTestMemoriesDatabase();
 }
 
 describe("search asOfTimestampMs", () => {

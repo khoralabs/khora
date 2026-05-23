@@ -27,6 +27,8 @@ import {
   createRelayColonnadeSocial,
   createRelayPrincipalLifecycle,
 } from "@khoralabs/relay-colonnade";
+import { EnvKeyProvider, outboxKeyBytesToHex } from "@khoralabs/sqlite-crypto";
+import type { AtriumEncryptionContext } from "./encryption-context.ts";
 import type { AtriumMemoriesBootstrapConfig } from "./memories-env.ts";
 import { createAtriumAdminStatsPort } from "./ops/admin-stats-port.ts";
 import { createAtriumHostHealthPort } from "./ops/health-port.ts";
@@ -39,6 +41,7 @@ export type BootstrapAtriumHostOpts = {
   useCellWorkers: boolean;
   tenantKey?: string;
   memories?: AtriumMemoriesBootstrapConfig;
+  encryption: AtriumEncryptionContext;
   startPrincipalTeardownWorker?: boolean;
   roomLifecycle?: (event: AtriumRoomLifecycleHostEvent) => void;
 };
@@ -48,6 +51,9 @@ export async function bootstrapAtriumHost(
 ): Promise<AtriumHostContext> {
   const cellPoolCount = opts.cellPoolCount;
   const useCellWorkers = opts.useCellWorkers;
+  const encryption = opts.encryption;
+  const encryptionProvider = new EnvKeyProvider();
+  const outboxKey = await encryptionProvider.getOutboxFieldKey();
   const {
     persistence,
     social,
@@ -60,12 +66,18 @@ export async function bootstrapAtriumHost(
   } = await createRelayColonnadeSocial({
     catalogPath: opts.catalogPath,
     framesDbPath: opts.framesDbPath,
+    encryptionProvider,
     ...(opts.tenantKey !== undefined ? { tenantKey: opts.tenantKey } : {}),
   });
   const cluster = createSqliteColonnadeCluster({
     cellsDirectory: opts.cellsDir,
     mode: { kind: "pool", cellCount: cellPoolCount },
     useCellWorkers,
+    encryption: {
+      sqlCipherKey: encryption.sqlCipherKey,
+      outboxPayloadCodec: encryption.outboxPayloadCodec,
+      outboxKeyHex: outboxKeyBytesToHex(outboxKey),
+    },
   });
   const publicationClient = new ColonnadePublicationClient(cluster.resolveCell);
   const postResolver = createColonnadePostResolver(cluster);
@@ -95,6 +107,7 @@ export async function bootstrapAtriumHost(
     cellPoolCount,
     cluster,
     lookupNormalizedUsernameForPrincipal: catalog.lookupNormalizedUsernameForPrincipal,
+    sqlCipherKey: encryption.sqlCipherKey,
   });
   const auth = createAtriumDidAuth({ nonceStore: createSqliteNonceStore(catalogDb) });
 
@@ -115,7 +128,9 @@ export async function bootstrapAtriumHost(
   let memories: ReturnType<typeof bootstrapAtriumMemories> | undefined;
   if (opts.memories !== undefined) {
     ensureCustomSqliteForExtensions();
-    const memoriesDb = openMemoriesDatabase(opts.memories.dbPath);
+    const memoriesDb = openMemoriesDatabase(opts.memories.dbPath, {
+      sqlCipherKey: encryption.sqlCipherKey,
+    });
     const memoriesPersistence = createMemoriesPersistence(memoriesDb);
     memories = bootstrapAtriumMemories({
       persistence: memoriesPersistence,
@@ -139,6 +154,7 @@ export async function bootstrapAtriumHost(
     catalog,
     health,
     adminStats,
+    outboxPayloadCodec: encryption.outboxPayloadCodec,
     ...(invitesRepoValue !== undefined ? { invitesRepo: invitesRepoValue } : {}),
     ...(memories !== undefined ? { memories } : {}),
     ...(opts.startPrincipalTeardownWorker !== undefined
