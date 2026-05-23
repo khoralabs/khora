@@ -31,6 +31,7 @@ describe("zAtriumPostCreate", () => {
       kind: "status",
       body: "Working",
       authorProfileId: "prof-1",
+      authorSignature: SIG,
     });
     expect(p.kind).toBe("status");
   });

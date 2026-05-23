@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { zAtriumSearchResponse } from "./atrium-search.ts";
 
+const SIG = "dGVzdC1zaWduYXR1cmU";
+
 describe("zAtriumSearchResponse", () => {
   test("parses hit with hydrated post", () => {
     const parsed = zAtriumSearchResponse.parse({
@@ -18,6 +20,7 @@ describe("zAtriumSearchResponse", () => {
               kind: "post",
               body: "hello",
               authorProfileId: "did:key:abc",
+              authorSignature: SIG,
             },
           },
         },
@@ -65,6 +68,7 @@ describe("zAtriumSearchResponse", () => {
               title: "Beta intros",
               body: "Looking for partners",
               authorProfileId: "p1",
+              authorSignature: SIG,
               attributes: { domains: ["platform"] },
             },
           },

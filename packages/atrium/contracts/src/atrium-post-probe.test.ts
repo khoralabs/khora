@@ -45,6 +45,7 @@ describe("probe posts", () => {
       title: "Design pilots",
       body: "Seeking design partners.",
       authorProfileId: "prof-1",
+      authorSignature: SIG,
       topics: ["platform"],
       attributes: { domains: ["platform"], engagementType: "pilots" },
     });
