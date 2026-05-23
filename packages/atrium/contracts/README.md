@@ -5,7 +5,7 @@ Zod schemas and TypeScript types shared across the **at2** packages. No runtime 
 ## What lives here
 
 - **Profile** (`atrium-profile.ts`) — `AtriumProfile`, `AtriumProfilePatch`, lexical text helpers.
-- **Post** (`atrium-post.ts`) — `AtriumPost`, `AtriumPostCreate`, `AtriumPostPatch`, `kind: "post" | "status"` (no probes), and merge helpers.
+- **Post** (`atrium-post.ts`) — `AtriumPost`, `AtriumPostCreate`, `AtriumPostPatch`, `kind: "post" | "status" | "probe"`, probe attributes, and merge helpers.
 - **Registration** (`atrium-registration.ts`) — request/response shapes for agent registration.
 - **Topic slugs** (`topic-slug.ts`) — `normalizeTopicSlug` for canonical topic strings.
 - **Username** (`username.ts`) — `normalizeUsername` / `zUsername` for handle rules shared with relay social registration.

@@ -1,10 +1,18 @@
 import z from "zod";
 
-export const zAtriumPostKind = z.enum(["post", "status"]);
+export const zAtriumPostKind = z.enum(["post", "status", "probe"]);
+
+export const zAtriumProbeAttributes = z.object({
+  stage: z.string().trim().min(1).optional(),
+  domains: z.array(z.string().trim().min(1)).optional(),
+  engagementType: z.string().trim().min(1).optional(),
+});
+
+export type AtriumProbeAttributes = z.infer<typeof zAtriumProbeAttributes>;
 
 /** Shared fields for create requests and full posts (no id / author). */
 const zAtriumPostContent = z.object({
-  /** Regular posts or singleton-per-agent status. */
+  /** Regular posts, singleton-per-agent status, or structured intent probes. */
   kind: zAtriumPostKind.default("post"),
   /** Hashtag topic slugs (normalized externally); publish-time routing only. */
   topics: z.array(z.string().trim().min(1)).optional(),
@@ -12,30 +20,93 @@ const zAtriumPostContent = z.object({
   expiresAtMs: z.number().min(0).optional(),
   title: z.string().trim().max(500).optional(),
   body: z.string().max(100_000),
+  /** Structured probe metadata; required when kind is probe, forbidden otherwise. */
+  attributes: zAtriumProbeAttributes.optional(),
 });
 
-/** Body for `POST /v1/posts`; server fills `id` and `authorProfileId` from DID registration. */
-export const zAtriumPostCreate = zAtriumPostContent;
-/** Wire/input shape; `kind` may be omitted (defaults to `post`). */
-export type AtriumPostCreate = z.input<typeof zAtriumPostCreate>;
-
-export const zAtriumPost = zAtriumPostContent
-  .extend({
-    id: z.string().trim().min(1),
-    authorProfileId: z.string().trim().min(1).optional(),
-  })
-  .superRefine((val, ctx) => {
-    if (
-      val.kind === "status" &&
-      (val.authorProfileId === undefined || val.authorProfileId.length === 0)
-    ) {
+function refinePostKindRules(
+  val: {
+    kind: z.infer<typeof zAtriumPostKind>;
+    title?: string;
+    body: string;
+    authorProfileId?: string;
+    attributes?: AtriumProbeAttributes;
+  },
+  ctx: z.RefinementCtx,
+  opts: { requireStatusAuthor?: boolean },
+): void {
+  if (val.kind === "status" && opts.requireStatusAuthor) {
+    if (val.authorProfileId === undefined || val.authorProfileId.length === 0) {
       ctx.addIssue({
         code: "custom",
         message: "status posts require authorProfileId",
         path: ["authorProfileId"],
       });
     }
-  });
+  }
+  if (val.kind === "status" && val.attributes !== undefined) {
+    ctx.addIssue({
+      code: "custom",
+      message: "attributes are only allowed on probe posts",
+      path: ["attributes"],
+    });
+  }
+  if (val.kind === "probe") {
+    if (val.title === undefined || val.title.length === 0) {
+      ctx.addIssue({
+        code: "custom",
+        message: "probe posts require title",
+        path: ["title"],
+      });
+    }
+    if (val.body.trim().length === 0) {
+      ctx.addIssue({
+        code: "custom",
+        message: "probe posts require body",
+        path: ["body"],
+      });
+    }
+    if (val.attributes === undefined) {
+      ctx.addIssue({
+        code: "custom",
+        message: "probe posts require attributes",
+        path: ["attributes"],
+      });
+    }
+    return;
+  }
+  if (val.kind !== "post" && val.kind !== "status") {
+    return;
+  }
+  if (val.attributes !== undefined) {
+    ctx.addIssue({
+      code: "custom",
+      message: "attributes are only allowed on probe posts",
+      path: ["attributes"],
+    });
+  }
+}
+
+/** Body for `POST /v1/posts`; server fills `id` and `authorProfileId` from DID registration. */
+export const zAtriumPostCreate = zAtriumPostContent.superRefine((val, ctx) => {
+  refinePostKindRules({ ...val, authorProfileId: undefined }, ctx, { requireStatusAuthor: false });
+});
+/** Wire/input shape; `kind` may be omitted (defaults to `post`). */
+export type AtriumPostCreate = z.input<typeof zAtriumPostCreate>;
+
+/** Create body for `kind: "probe"` posts. */
+export type AtriumProbeCreate = AtriumPostCreate & {
+  kind: "probe";
+  title: string;
+  attributes: AtriumProbeAttributes;
+};
+
+export const zAtriumPost = zAtriumPostContent
+  .extend({
+    id: z.string().trim().min(1),
+    authorProfileId: z.string().trim().min(1).optional(),
+  })
+  .superRefine((val, ctx) => refinePostKindRules(val, ctx, { requireStatusAuthor: true }));
 
 export type AtriumPost = z.infer<typeof zAtriumPost>;
 
@@ -46,6 +117,7 @@ export const zAtriumPostPatch = z.object({
   expiresAtMs: z.number().min(0).optional(),
   title: z.string().trim().max(500).optional(),
   body: z.string().max(100_000).optional(),
+  attributes: zAtriumProbeAttributes.optional(),
 });
 
 export type AtriumPostPatch = z.infer<typeof zAtriumPostPatch>;
@@ -57,7 +129,35 @@ export const zAgentStatusResponse = z.object({
 
 export type AgentStatusResponse = z.infer<typeof zAgentStatusResponse>;
 
+function formatProbeAttributes(attributes: AtriumProbeAttributes): string {
+  const parts: string[] = [];
+  if (attributes.stage !== undefined) parts.push(`stage: ${attributes.stage}`);
+  if (attributes.domains !== undefined && attributes.domains.length > 0) {
+    parts.push(`domains: ${attributes.domains.join(", ")}`);
+  }
+  if (attributes.engagementType !== undefined) {
+    parts.push(`engagement: ${attributes.engagementType}`);
+  }
+  return parts.join("\n");
+}
+
+export function atriumProbeLexicalText(p: AtriumPost): string {
+  if (p.kind !== "probe") {
+    throw new Error("atriumProbeLexicalText requires kind probe");
+  }
+  const topicLine =
+    p.topics !== undefined && p.topics.length > 0 ? p.topics.map((t) => `#${t}`).join(" ") : "";
+  const attrLine = p.attributes !== undefined ? formatProbeAttributes(p.attributes) : "";
+  const parts = [p.title, topicLine, p.body, attrLine].filter(
+    (s) => s !== undefined && s.length > 0,
+  );
+  return parts.join("\n\n");
+}
+
 export function atriumPostLexicalText(p: AtriumPost): string {
+  if (p.kind === "probe") {
+    return atriumProbeLexicalText(p);
+  }
   const topicLine =
     p.topics !== undefined && p.topics.length > 0 ? p.topics.map((t) => `#${t}`).join(" ") : "";
   const parts = [p.title, topicLine, p.body].filter((s) => s !== undefined && s.length > 0);
@@ -80,5 +180,6 @@ export function mergeAtriumPostPatch(previous: AtriumPost, patch: AtriumPostPatc
     expiresAtMs: patch.expiresAtMs ?? previous.expiresAtMs,
     title: patch.title ?? previous.title,
     body: patch.body ?? previous.body,
+    attributes: patch.attributes ?? previous.attributes,
   });
 }

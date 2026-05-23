@@ -17,15 +17,13 @@ describe("atrium-namespace", () => {
     expect(agentScope(root, profileId)).toBe("global/agents/prof-abc-123");
     expect(profileMemoryNamespace(root, profileId)).toBe("global/agents/prof-abc-123/profile");
     expect(postsMemoryNamespace(root, profileId)).toBe("global/agents/prof-abc-123/posts");
-    expect(topicScope(root, profileId, "climate")).toBe(
-      "global/agents/prof-abc-123/topics/climate",
-    );
+    expect(topicScope(root, profileId, "design")).toBe("global/agents/prof-abc-123/topics/design");
   });
 
   test("postAttachScopes includes agent and topic scopes", () => {
-    const scopes = postAttachScopes(root, profileId, ["climate", "ai"]);
+    const scopes = postAttachScopes(root, profileId, ["design", "ai"]);
     expect(scopes).toContain("global/agents/prof-abc-123");
-    expect(scopes).toContain("global/agents/prof-abc-123/topics/climate");
+    expect(scopes).toContain("global/agents/prof-abc-123/topics/design");
     expect(scopes).toContain("global/agents/prof-abc-123/topics/ai");
   });
 

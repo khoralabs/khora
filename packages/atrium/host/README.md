@@ -145,7 +145,9 @@ Per-cell tables:
 
 Opened lazily by `createSqliteColonnadeCluster()` as `{cellsDir}/{stem}.sqlite`.
 
-**Full inventory:** `/Users/zach/Documents/dev/khora-labs/khora/docs/system.md`
+**Full inventory:** [`docs/system.md`](../../../docs/system.md)
+
+**Security / threat posture:** [`docs/security.md`](../../../docs/security.md)
 
 ---
 

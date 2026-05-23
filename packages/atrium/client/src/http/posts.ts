@@ -2,12 +2,22 @@ import {
   type AtriumPost,
   type AtriumPostCreate,
   type AtriumPostPatch,
+  type AtriumProbeCreate,
   zAtriumPost,
 } from "@khoralabs/atrium-contracts";
 import type { AtriumUnaryTransport } from "@khoralabs/atrium-transport";
 
+export type AtriumProbeCreateInput = Omit<AtriumProbeCreate, "kind">;
+
 export function createPost(t: AtriumUnaryTransport, body: AtriumPostCreate): Promise<AtriumPost> {
   return t.requestJson("POST", "/v1/posts", { body, parse: zAtriumPost });
+}
+
+export function createProbe(
+  t: AtriumUnaryTransport,
+  body: AtriumProbeCreateInput,
+): Promise<AtriumPost> {
+  return createPost(t, { ...body, kind: "probe" });
 }
 
 export function getPost(t: AtriumUnaryTransport, id: string): Promise<AtriumPost> {

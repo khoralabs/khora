@@ -97,7 +97,7 @@ describe("atrium memories indexer", () => {
       id: "prof-index-1",
       username: "alice",
       displayName: "Alice",
-      bio: "climate investor",
+      bio: "works on platform tooling",
     };
     const persistenceClient = createTestRelayPersistence(profile);
     const cluster = createSqliteColonnadeCluster({
@@ -129,9 +129,9 @@ describe("atrium memories indexer", () => {
       }),
       authorProfileId: profile.id,
       kind: "post",
-      topics: ["climate"],
-      title: "Series A climate fund",
-      body: "Looking for founders in carbon removal.",
+      topics: ["design"],
+      title: "Beta program",
+      body: "Looking for teams building developer tools.",
     };
 
     const authorCellId = cluster.assignPrincipalToCell(authorPrincipalId);
@@ -151,7 +151,7 @@ describe("atrium memories indexer", () => {
       { persistence },
       {
         namespace: root,
-        content: { text: "carbon removal" },
+        content: { text: "developer tools" },
         options: { topK: 5 },
       },
     );
@@ -160,8 +160,8 @@ describe("atrium memories indexer", () => {
     const topicHits = search(
       { persistence },
       {
-        namespace: topicScope(root, profile.id, "climate"),
-        content: { text: "carbon removal" },
+        namespace: topicScope(root, profile.id, "design"),
+        content: { text: "developer tools" },
         searchScopeMode: "scopeDag",
         options: { topK: 5 },
       },
@@ -183,11 +183,96 @@ describe("atrium memories indexer", () => {
       { persistence },
       {
         namespace: postsMemoryNamespace(root, profile.id),
-        content: { text: "carbon" },
+        content: { text: "developer" },
         options: { topK: 5 },
       },
     );
     expect(afterDelete.some((h) => h.memory.key === post.id)).toBe(false);
+
+    memoriesDb.close();
+    cluster.close();
+  });
+
+  test("indexes probe with attributes; label filter finds probe by domain", async () => {
+    const root = DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT;
+    const profile: AtriumProfile = {
+      id: "prof-probe-1",
+      username: "bob",
+      displayName: "Bob",
+    };
+    const persistenceClient = createTestRelayPersistence(profile);
+    const cluster = createSqliteColonnadeCluster({
+      cellsDirectory: `/tmp/atrium-mem-probe-${crypto.randomUUID()}`,
+      mode: { kind: "pool", cellCount: 2 },
+      useCellWorkers: false,
+    });
+    const memoriesDb = openMemoriesDatabase(":memory:");
+    const persistence = createMemoriesPersistence(memoriesDb);
+    const postResolver = createColonnadePostResolver(cluster);
+    const store = createAtriumCanonicalStore({ persistence, postResolver, persistenceClient });
+    const client = new MemoriesClient(persistence, atriumOntology, { store });
+    const indexer = createAtriumMemoriesIndexer({
+      client,
+      persistence,
+      persistenceClient,
+      namespaceRoot: root,
+    });
+
+    await indexer.indexProfile(profile);
+
+    const authorPrincipalId = "did:test:author";
+    const recordKey = "ob_probe123456789012345678901";
+    const probe: AtriumPost = {
+      id: encodePostId({
+        authorPrincipalId,
+        recordKey,
+        cellPoolCount: 2,
+      }),
+      authorProfileId: profile.id,
+      kind: "probe",
+      topics: ["platform"],
+      title: "Design partners",
+      body: "Seeking pilots with enterprise buyers.",
+      attributes: {
+        stage: "beta",
+        domains: ["platform"],
+        engagementType: "pilots",
+      },
+    };
+
+    const authorCellId = cluster.assignPrincipalToCell(authorPrincipalId);
+    const cell = cluster.resolveCell(authorCellId);
+    await cell.appendOutboxRecord({
+      cell_id: authorCellId,
+      tenant_key: "relay",
+      principal_id: authorPrincipalId,
+      record_key: recordKey,
+      payload_bytes: new TextEncoder().encode(JSON.stringify(probe)),
+      metadata: {},
+    });
+
+    await indexer.indexPost(probe);
+
+    const probeHits = search(
+      { persistence },
+      {
+        namespace: root,
+        content: { text: "platform" },
+        options: { topK: 5, labels: { some: ["atrium_probe"] } },
+      },
+    );
+    expect(probeHits.some((h) => h.memory.key === probe.id)).toBe(true);
+    expect(probeHits.every((h) => h.labels.some((l) => l.kind === "atrium_probe"))).toBe(true);
+
+    const postOnlyHits = search(
+      { persistence },
+      {
+        namespace: root,
+        content: { text: "platform" },
+        options: { topK: 5, labels: { some: ["atrium_post"] } },
+      },
+    );
+    expect(postOnlyHits.some((h) => h.memory.key === probe.id)).toBe(false);
 
     memoriesDb.close();
     cluster.close();

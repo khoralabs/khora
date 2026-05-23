@@ -3,6 +3,7 @@ import {
   type AtriumPost,
   type AtriumProfile,
   atriumPostLexicalText,
+  atriumProbeLexicalText,
   atriumProfileLexicalText,
 } from "@khoralabs/atrium-contracts";
 import { sha256HexLower } from "@khoralabs/colonnade-persistence";
@@ -106,29 +107,54 @@ export function createAtriumMemoriesIndexer(deps: {
           client.deleteMemory({ namespace: prevNs, key: previousPostId });
         }
         const ns = postsMemoryNamespace(namespaceRoot, authorProfileId);
-        const text = atriumPostLexicalText(post);
+        const text =
+          post.kind === "probe" ? atriumProbeLexicalText(post) : atriumPostLexicalText(post);
         const vector = await embedLexical(text);
         const payloadHash = sha256HexLower(new TextEncoder().encode(JSON.stringify(post)));
         const profileNs = profileMemoryNamespace(namespaceRoot, authorProfileId);
         const profileMemoryId = ids.memory(profileNs, PROFILE_MEMORY_KEY);
+        const labels =
+          post.kind === "probe"
+            ? [
+                {
+                  kind: "atrium_probe" as const,
+                  props: {
+                    postId: post.id,
+                    authorProfileId,
+                    ...(post.topics !== undefined && post.topics.length > 0
+                      ? { topics: post.topics }
+                      : {}),
+                    ...(post.attributes?.stage !== undefined
+                      ? { stage: post.attributes.stage }
+                      : {}),
+                    ...(post.attributes?.domains !== undefined && post.attributes.domains.length > 0
+                      ? { domains: post.attributes.domains }
+                      : {}),
+                    ...(post.attributes?.engagementType !== undefined
+                      ? { engagementType: post.attributes.engagementType }
+                      : {}),
+                  },
+                },
+              ]
+            : [
+                {
+                  kind: "atrium_post" as const,
+                  props: {
+                    postId: post.id,
+                    kind: post.kind,
+                    authorProfileId,
+                    contentHash: payloadHash,
+                    ...(post.topics !== undefined && post.topics.length > 0
+                      ? { topics: post.topics }
+                      : {}),
+                  },
+                },
+              ];
         client.mergeMemory({
           key: post.id,
           namespace: ns,
           content: [{ key: "body", text, ...(vector !== undefined ? { vector } : {}) }],
-          labels: [
-            {
-              kind: "atrium_post",
-              props: {
-                postId: post.id,
-                kind: post.kind,
-                authorProfileId,
-                contentHash: payloadHash,
-                ...(post.topics !== undefined && post.topics.length > 0
-                  ? { topics: post.topics }
-                  : {}),
-              },
-            },
-          ],
+          labels,
           attachScopes: postAttachScopes(namespaceRoot, authorProfileId, post.topics),
           edges: [
             {

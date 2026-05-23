@@ -5,6 +5,7 @@ import type {
   AtriumPost,
   AtriumPostCreate,
   AtriumPostPatch,
+  AtriumProbeCreate,
   AtriumProfile,
   AtriumProfilePatch,
   AtriumRegistrationRequestBody,
@@ -52,7 +53,13 @@ import {
 } from "./http/authors.ts";
 import { health } from "./http/health.ts";
 import { listInvites, previewInvite } from "./http/invites.ts";
-import { createPost, deletePost, getPost as httpGetPost, updatePost } from "./http/posts.ts";
+import {
+  createPost,
+  deletePost,
+  createProbe as httpCreateProbe,
+  getPost as httpGetPost,
+  updatePost,
+} from "./http/posts.ts";
 import {
   lookupProfileByDid as httpLookupProfileByDid,
   lookupProfileByUsername as httpLookupProfileByUsername,
@@ -266,6 +273,12 @@ export class AtriumClient {
 
   async createPost(body: AtriumPostCreate): Promise<AtriumPost> {
     const post = await createPost(this.transport, body);
+    this.emit({ type: "post:created", post, did: this.did });
+    return post;
+  }
+
+  async createProbe(body: Omit<AtriumProbeCreate, "kind">): Promise<AtriumPost> {
+    const post = await httpCreateProbe(this.transport, body);
     this.emit({ type: "post:created", post, did: this.did });
     return post;
   }

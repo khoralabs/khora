@@ -51,6 +51,7 @@ export type AtriumSearchRequest = z.infer<typeof zAtriumSearchRequest>;
 
 export const zAtriumSearchHydratedEntity = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("post"), entity: zAtriumPost }),
+  z.object({ kind: z.literal("probe"), entity: zAtriumPost }),
   z.object({ kind: z.literal("profile"), entity: zAtriumProfile }),
   z.object({ kind: z.literal("ghost"), postId: z.string() }),
 ]);

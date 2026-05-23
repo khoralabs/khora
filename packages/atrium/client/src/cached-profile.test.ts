@@ -115,4 +115,27 @@ describe("serializeProfileSyncStateFile round-trip", () => {
     writeFileSync(path, serializeProfileSyncStateFile(snap));
     expect(loadCachedProfile(path)).toEqual(snap);
   });
+
+  test("accepts probe posts in snapshot", () => {
+    const path = join(dir, "probes.json");
+    const snap = {
+      did: "did:key:a",
+      profile: { id: "p1", username: "ada" },
+      topicSlugs: [],
+      authorTopics: [],
+      probes: [
+        {
+          id: "probe-1",
+          kind: "probe" as const,
+          title: "Intros",
+          body: "Looking",
+          authorProfileId: "p1",
+          attributes: { engagementType: "intros" },
+        },
+      ],
+      syncedAtMs: 1,
+    };
+    writeFileSync(path, serializeProfileSyncStateFile(snap));
+    expect(loadCachedProfile(path)?.probes[0]?.kind).toBe("probe");
+  });
 });

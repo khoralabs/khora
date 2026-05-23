@@ -422,6 +422,43 @@ describe("AtriumClient", () => {
     expect(out.authorProfileId).toBe("u1");
   });
 
+  test("createProbe sends probe body with kind probe", async () => {
+    const signer = staticSigner("did:key:writer");
+    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("http://h/v1/posts");
+      expect(init?.method).toBe("POST");
+      expectAuthHeaders(init, "did:key:writer");
+      expect(JSON.parse(String(init?.body))).toEqual({
+        kind: "probe",
+        title: "Beta intros",
+        body: "Looking for partners",
+        attributes: { domains: ["platform"] },
+        topics: ["platform"],
+      });
+      return Response.json({
+        id: "atrium_probe_abc",
+        authorProfileId: "u1",
+        kind: "probe",
+        title: "Beta intros",
+        body: "Looking for partners",
+        attributes: { domains: ["platform"] },
+        topics: ["platform"],
+      });
+    });
+    const c = new AtriumClient({
+      baseUrl: "http://h",
+      signer,
+      fetch: fetchMock,
+    });
+    const out = await c.createProbe({
+      title: "Beta intros",
+      body: "Looking for partners",
+      attributes: { domains: ["platform"] },
+      topics: ["platform"],
+    });
+    expect(out.kind).toBe("probe");
+  });
+
   test("updatePost signs request", async () => {
     const signer = staticSigner("did:key:w");
     const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {

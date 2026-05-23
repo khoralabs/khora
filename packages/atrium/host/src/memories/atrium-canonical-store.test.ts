@@ -169,4 +169,53 @@ describe("AtriumCanonicalStore", () => {
     memoriesDb.close();
     cluster.close();
   });
+
+  test("hydrates probe from indexed memories", async () => {
+    const profile: AtriumProfile = {
+      id: "prof-canonical-probe",
+      username: "carol",
+    };
+    const recordKey = "ob_probecanonical123456789012345";
+    const probe: AtriumPost = {
+      id: encodePostId({
+        authorPrincipalId: "did:test:author",
+        recordKey,
+        cellPoolCount: 2,
+      }),
+      authorProfileId: profile.id,
+      kind: "probe",
+      title: "Fintech pilots",
+      body: "Looking for design partners in payments.",
+      attributes: { domains: ["fintech"], engagementType: "pilots" },
+    };
+    const { cluster, store, indexer, persistence, memoriesDb } = setup(profile, probe);
+
+    await indexer.indexProfile(profile);
+    const authorCellId = cluster.assignPrincipalToCell("did:test:author");
+    await cluster.resolveCell(authorCellId).appendOutboxRecord({
+      cell_id: authorCellId,
+      tenant_key: "relay",
+      principal_id: "did:test:author",
+      record_key: recordKey,
+      payload_bytes: new TextEncoder().encode(JSON.stringify(probe)),
+      metadata: {},
+    });
+    await indexer.indexPost(probe);
+
+    const probeMemoryId = ids.memory(
+      postsMemoryNamespace(DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT, profile.id),
+      probe.id,
+    );
+    const probeNk = persistence.loadMemoryNamespaceKey(probeMemoryId);
+    expect(probeNk).toBeDefined();
+    const probeLabels = persistence.loadNodeLabelsForMemory(probeNk?.namespace, probeNk?.key);
+    const probeHydrated = await hydrateMemoryLabels(store, probeLabels, probeMemoryId);
+    expect(probeHydrated?.kind).toBe("probe");
+    if (probeHydrated?.kind === "probe") {
+      expect(probeHydrated.entity.attributes?.domains).toEqual(["fintech"]);
+    }
+
+    memoriesDb.close();
+    cluster.close();
+  });
 });

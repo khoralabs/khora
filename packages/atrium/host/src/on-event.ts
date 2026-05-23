@@ -14,6 +14,7 @@ import type { ColonnadePublicationClient } from "@khoralabs/colonnade-persistenc
 import { randomId } from "@khoralabs/colonnade-persistence";
 import type { AtriumHostCatalogApi } from "./catalog-facade.ts";
 import type { AtriumMemoriesHost } from "./memories/bootstrap.ts";
+import { addProbeHitReasons } from "./memories/probe-hit.ts";
 import type { AtriumColonnadeCluster } from "./ports.ts";
 import { decodePostId } from "./post-address-id.ts";
 import { deletePostOutboxRecord } from "./resolve-post.ts";
@@ -32,8 +33,9 @@ async function publishPost(params: {
   cluster: AtriumColonnadeCluster;
   publicationClient: ColonnadePublicationClient;
   fanOut: boolean;
+  memories?: AtriumMemoriesHost;
 }): Promise<void> {
-  const { ctx, tenantKey, post, cluster, publicationClient, fanOut } = params;
+  const { ctx, tenantKey, post, cluster, publicationClient, fanOut, memories } = params;
   const address = decodePostId(post.id);
   if (address === undefined) {
     throw new Error("publishPost: post.id is not a valid address-encoded id");
@@ -79,6 +81,12 @@ async function publishPost(params: {
     const authorSub = authorSubscriptionSubject(authorPrincipalId);
     for (const pid of subs.subscriberPrincipalsForSubject(authorSub, authorPrincipalId)) {
       addReason(pid, { kind: "author" });
+    }
+
+    if (post.kind === "probe" && memories !== undefined) {
+      await addProbeHitReasons(memories, post, byRecipient, (principalId) =>
+        ctx.persistenceClient.profileIdForPrincipal(principalId),
+      );
     }
   }
 
@@ -177,6 +185,7 @@ export function createAtriumRelayOnEvent(deps: {
         cluster,
         publicationClient,
         fanOut: true,
+        memories,
       });
       if (memories !== undefined) {
         await memories.indexer.indexPost(post);

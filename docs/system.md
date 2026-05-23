@@ -217,13 +217,16 @@ Populated on `onSessionReady` with `handle.sessionId`, `handle.init.genesis_hash
 
 ### 10. What encryption is actually in use?
 
+Full threat posture, actor tables, and peer comparison: **[`security.md`](./security.md)**.
+
 | Mechanism | Evidence |
 | --- | --- |
 | **Request integrity / auth** | **Ed25519** signatures over canonical `METHOD\nPATH\nts\nnonce\nsha256(body)` (`wire.ts`); verification in `strategy-did-key.ts`. This is **sign-then-send**, not payload encryption. |
-| **Room WebSocket tickets** | **Signed/HMAC tickets** via `signRoomTicket` / `verifyRoomTicket` + secret in `rooms.pairing_secret_hex` (`hub.ts`, `frame-channel-sqlite.ts`). |
+| **Room WebSocket tickets** | **Signed/HMAC tickets** via `signRoomTicket` / `verifyRoomTicket` + secret in `rooms.pairing_secret_hex` (`hub.ts`, `frame-channel-sqlite.ts`). Ticket secret is **not** used for frame content keys. |
 | **Transport TLS** | **Deployment-dependent.** Server builds `wss:` when request URL is `https:` (`webSocketBaseFromRequest` in `rooms.ts`). No custom TLS stack in app code. |
 | **SQLite at rest** | Schemas use normal **`bun:sqlite`** files; **no application-layer SQLCipher / field encryption** documented in these paths. |
-| **E2EE** | No claim of end-to-end encryption for post bodies or room frames in the reviewed server/daemon code; frames are **opaque blobs** to the relay but not described as client-encrypted payload.**
+| **Frame-body E2EE** | **Client-side** X25519 + HKDF + AES-256-GCM on negotiation `Frame.body` over WebSocket (`frameChannelBodyE2ee: true` in `ws-connect.ts`). Relay stores ciphertext in `room_frames`; see [`FRAME_CHANNEL_E2EE.md`](../packages/obp/v2/frames/impl/ts/docs/FRAME_CHANNEL_E2EE.md). |
+| **Public post/profile data** | **Not E2EE** — plain JSON in catalog and cell outbox. |
 
 ---
 

@@ -1,5 +1,7 @@
 # Frame-channel E2EE (negotiation `Frame.body`)
 
+Platform-wide security overview: [`docs/security.md`](../../../../../../../docs/security.md).
+
 ## Threat model
 
 **End goal:** The relay host and anyone with access to `room_frames` ciphertext **cannot recover NBC / application semantics** carried in negotiation frame bodies.
