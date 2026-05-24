@@ -1,6 +1,6 @@
 $version: "2"
 
-namespace cfd.agent_identity
+namespace khora.agent_identity
 
 // --- Lists ---
 

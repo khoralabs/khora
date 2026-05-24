@@ -1,6 +1,6 @@
 # OBP v2 — persistence implementations
 
-`ObpPersistenceStrategy` (adapter interface) and `ObpPersistenceClient` (strategy-pattern client) for the `cfd.obp` persistence surface.
+`ObpPersistenceStrategy` (adapter interface) and `ObpPersistenceClient` (strategy-pattern client) for the `khora.obp` persistence surface.
 
 - **`ts/`** — [`@khoralabs/obp-v2-persistence`](ts/package.json). Smithy source of truth: [`../spec`](../spec).
 

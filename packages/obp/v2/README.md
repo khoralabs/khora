@@ -1,12 +1,12 @@
 # OBP v2 — staged Smithy modules
 
-This tree is a **physical split** of the OBP Smithy contract under canonical namespaces (`cfd.obp`, `cfd.obp.frame`, `cfd.obp.session`, `cfd.obp.nbc`, `cfd.obp.frame.http2`). **This v2 tree may diverge** from the monolithic [`packages/obp/persistence/spec`](../persistence/spec) mirror: v2 is the **staging** contract for layering refactors (thin OBP graph, NBC policy, opaque frame bodies) until an explicit repo cutover.
+This tree is a **physical split** of the OBP Smithy contract under canonical namespaces (`khora.obp`, `khora.obp.frame`, `khora.obp.session`, `khora.obp.nbc`, `khora.obp.frame.http2`). **This v2 tree may diverge** from the monolithic [`packages/obp/persistence/spec`](../persistence/spec) mirror: v2 is the **staging** contract for layering refactors (thin OBP graph, NBC policy, opaque frame bodies) until an explicit repo cutover.
 
 ## Layering (OBP vs NBC vs frames)
 
-- **`cfd.obp`:** Peer **DAG** — parties, offers, **ports as affordances** (identity, ref, promise, type), **BINDS** as the bind-with-offer verb (**`BindsEdge`** is graph identity only). Policy payloads use **`cfd.obp.nbc`** shapes and **`ObpPersistence`** **`Document`** fields on bind operations / listings—not fields on **`BindsEdge`**.
-- **`cfd.obp.nbc`:** **When** a bind is allowed; **`NbcPortExposePolicy`**, **`NbcBindSatisfaction`**, **`NbcRowCommitMeta`** (`packages/obp/v2/nbc/spec/model/nbc-policy.smithy`); **NegotiatedBindingConvention** rules **N1–N9**.
-- **`cfd.obp.frame`:** Signed **Frame** DAG + **`SessionInit`**; **`Frame.body`** is **opaque** JSON for **TURN** / **END_OFFERS** / **TERMINATE** — no normative `TurnBody` / `PortSpec` wire shapes in v2.
+- **`khora.obp`:** Peer **DAG** — parties, offers, **ports as affordances** (identity, ref, promise, type), **BINDS** as the bind-with-offer verb (**`BindsEdge`** is graph identity only). Policy payloads use **`khora.obp.nbc`** shapes and **`ObpPersistence`** **`Document`** fields on bind operations / listings—not fields on **`BindsEdge`**.
+- **`khora.obp.nbc`:** **When** a bind is allowed; **`NbcPortExposePolicy`**, **`NbcBindSatisfaction`**, **`NbcRowCommitMeta`** (`packages/obp/v2/nbc/spec/model/nbc-policy.smithy`); **NegotiatedBindingConvention** rules **N1–N9**.
+- **`khora.obp.frame`:** Signed **Frame** DAG + **`SessionInit`**; **`Frame.body`** is **opaque** JSON for **TURN** / **END_OFFERS** / **TERMINATE** — no normative `TurnBody` / `PortSpec` wire shapes in v2.
 
 ```mermaid
 flowchart LR
@@ -32,12 +32,12 @@ flowchart LR
 
 | Folder | Namespace(s) |
 |--------|----------------|
-| `model/` | `cfd.obp` |
-| `persistence/` | `cfd.obp` (extends the same aggregate via multi-root `sources`) |
-| `nbc/` | `cfd.obp.nbc` |
-| `frames/` | `cfd.obp.frame` |
-| `session/` | `cfd.obp.session` |
-| `transport-http2/` | `cfd.obp.frame.http2` |
+| `model/` | `khora.obp` |
+| `persistence/` | `khora.obp` (extends the same aggregate via multi-root `sources`) |
+| `nbc/` | `khora.obp.nbc` |
+| `frames/` | `khora.obp.frame` |
+| `session/` | `khora.obp.session` |
+| `transport-http2/` | `khora.obp.frame.http2` |
 
 ## Validate
 

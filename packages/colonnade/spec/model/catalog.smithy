@@ -1,6 +1,6 @@
 $version: "2"
 
-namespace cfd.colonnade
+namespace khora.colonnade
 
 use smithy.api#Document
 

@@ -7,7 +7,7 @@ import type { ContentAddressedRef, ContentHash, SourceRef } from "@khoralabs/sou
 
 export type { ContentHash };
 
-/** `cfd.colonnade` opaque JSON document. */
+/** `khora.colonnade` opaque JSON document. */
 export type JsonDocument = unknown;
 
 export type CellId = string;

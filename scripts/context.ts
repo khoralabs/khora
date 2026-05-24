@@ -119,18 +119,81 @@ interface ScopedFilter {
 class ContextCollector {
   private ancestorFilters: ScopedFilter[] = [];
   private gitRoot: string | null = null;
-  private lockfilePatterns = [
+  private lockfileNames = new Set([
     "package-lock.json",
-    "yarn.lock",
     "pnpm-lock.yaml",
-    "Pipfile.lock",
-    "poetry.lock",
-    "Gemfile.lock",
     "go.sum",
-    "Cargo.lock",
-    "composer.lock",
-    "bun.lock",
-    "bun.lockb",
+    "npm-shrinkwrap.json",
+  ]);
+
+  private ignoredExtensions = [
+    // Images
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".webp",
+    ".svg",
+    ".ico",
+    ".bmp",
+    ".tiff",
+    ".tif",
+    ".avif",
+    ".heic",
+    ".heif",
+    // Fonts
+    ".woff",
+    ".woff2",
+    ".ttf",
+    ".otf",
+    ".eot",
+    // Archives
+    ".zip",
+    ".gz",
+    ".tar",
+    ".tar.gz",
+    ".bz2",
+    ".xz",
+    ".7z",
+    ".rar",
+    // Compiled / binary
+    ".exe",
+    ".dll",
+    ".so",
+    ".dylib",
+    ".bin",
+    ".wasm",
+    ".o",
+    ".obj",
+    ".a",
+    ".pyc",
+    ".pyo",
+    ".class",
+    // Media
+    ".mp3",
+    ".mp4",
+    ".wav",
+    ".avi",
+    ".mov",
+    ".webm",
+    ".ogg",
+    ".flac",
+    ".mkv",
+    // Binary documents
+    ".pdf",
+    ".doc",
+    ".docx",
+    ".xls",
+    ".xlsx",
+    ".ppt",
+    ".pptx",
+    // Packages / disk images
+    ".deb",
+    ".rpm",
+    ".dmg",
+    ".pkg",
+    ".sqlite",
+    ".db",
   ];
 
   constructor(private options: CollectOptions = {}) {}
@@ -172,6 +235,17 @@ class ContextCollector {
     }
   }
 
+  private isLockfile(fileName: string): boolean {
+    const lower = fileName.toLowerCase();
+    if (this.lockfileNames.has(lower)) return true;
+    return lower.endsWith(".lock") || lower.endsWith(".lockb");
+  }
+
+  private isBinaryOrImageFile(fileName: string): boolean {
+    const lower = fileName.toLowerCase();
+    return this.ignoredExtensions.some((ext) => lower.endsWith(ext));
+  }
+
   private shouldIgnoreFile(
     fullPath: string,
     fileName: string,
@@ -179,7 +253,12 @@ class ContextCollector {
     filterStack: ScopedFilter[],
   ): boolean {
     // Always ignore lockfiles
-    if (!isDir && this.lockfilePatterns.includes(fileName)) {
+    if (!isDir && this.isLockfile(fileName)) {
+      return true;
+    }
+
+    // Always ignore image and binary files
+    if (!isDir && this.isBinaryOrImageFile(fileName)) {
       return true;
     }
 
@@ -321,7 +400,7 @@ class ContextCollector {
     combinedContent += `# Target: ${targetDir}\n`;
     combinedContent += `# Files included: ${allFiles.length}\n`;
     combinedContent +=
-      "# Note: Files are filtered using .gitignore patterns and lockfiles are excluded\n";
+      "# Note: Files are filtered using .gitignore patterns; lockfiles, images, and binary files are excluded\n";
     combinedContent += "\n";
     combinedContent +=
       "================================================================================\n";

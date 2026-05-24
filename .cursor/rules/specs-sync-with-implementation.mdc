@@ -17,7 +17,7 @@ When you change wire shapes, services, or persistence contracts, **update both s
 
 ## What to do
 
-1. **TS / runtime change** that affects interchange, hashes, or storage rows → update the matching Smithy shapes (namespace `cfd.agent_identity` or `cfd.memories`) and run validation.
+1. **TS / runtime change** that affects interchange, hashes, or storage rows → update the matching Smithy shapes (namespace `khora.agent_identity` or `khora.memories`) and run validation.
 2. **Smithy change** → align TypeScript types, public exports, and any persistence adapters that mirror those shapes.
 3. After edits, run **`smithy validate model && smithy build`** from the relevant spec package (`bun run validate` if `package.json` defines it).
 

@@ -1,5 +1,5 @@
 /**
- * TypeScript models for **`cfd.obp.frame`** — see
+ * TypeScript models for **`khora.obp.frame`** — see
  * `packages/obp/v2/frames/spec/model/frame-protocol.smithy`.
  */
 
@@ -89,7 +89,7 @@ export type SessionEnvelopeCheckpointWire = {
 };
 
 /**
- * Multiplexed **`session_envelope`** object on the frame byte stream (`cfd.obp.session` payload).
+ * Multiplexed **`session_envelope`** object on the frame byte stream (`khora.obp.session` payload).
  */
 export type SessionEnvelopeWire = {
   session_id: string;

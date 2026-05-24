@@ -1,6 +1,6 @@
 /**
  * Merkle “extends” check for multiplex **`session_envelope`** sync, using the same tree as
- * {@link checkpointForSessionOps} (v2 **`cfd.obp.session`** rules).
+ * {@link checkpointForSessionOps} (v2 **`khora.obp.session`** rules).
  */
 
 import { ObpError } from "@khoralabs/obp-v2-errors";

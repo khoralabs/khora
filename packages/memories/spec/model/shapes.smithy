@@ -1,6 +1,6 @@
 $version: "2"
 
-namespace cfd.memories
+namespace khora.memories
 
 /// Hierarchical memory namespace: `/`-separated segments matching `[a-z0-9_-]+`, depth 1..6.
 /// In search scopes, each path is a **subtree root** (matches that path and descendant paths).

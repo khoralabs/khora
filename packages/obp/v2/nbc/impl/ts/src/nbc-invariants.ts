@@ -18,7 +18,7 @@ export type NbcBindFailure =
 export type NbcBindTiming = {
   /** DAG-committed frame count on this chain before applying the binding TURN. */
   turnSeq: number;
-  /** `relay_ts_ms` from `cfd.agent.relay#RelayEnvelope` when hub relay is in use; `0` when unset (direct / tests). */
+  /** `relay_ts_ms` from `khora.agent.relay#RelayEnvelope` when hub relay is in use; `0` when unset (direct / tests). */
   relayTsMs: number;
 };
 

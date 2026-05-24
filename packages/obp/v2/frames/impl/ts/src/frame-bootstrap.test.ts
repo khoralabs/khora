@@ -1,6 +1,6 @@
 /**
- * Tests for **`frame-bootstrap.ts`**: **`cfd.obp.frame#SessionInit`** wire constraints only
- * (not `cfd.obp.session`).
+ * Tests for **`frame-bootstrap.ts`**: **`khora.obp.frame#SessionInit`** wire constraints only
+ * (not `khora.obp.session`).
  */
 
 import { describe, expect, test } from "bun:test";

@@ -1,8 +1,8 @@
 /**
- * TypeScript models for **`cfd.obp.session`** — see
+ * TypeScript models for **`khora.obp.session`** — see
  * `packages/obp/v2/session/spec/model/session-protocol.smithy`.
  *
- * `SessionInit` / `SessionParty` wire helpers live in **`@khoralabs/obp-v2-frames-impl`** (`cfd.obp.frame`).
+ * `SessionInit` / `SessionParty` wire helpers live in **`@khoralabs/obp-v2-frames-impl`** (`khora.obp.frame`).
  */
 
 /** Smithy `Document`: JSON-compatible value (RFC 8259 subset for interchange). */

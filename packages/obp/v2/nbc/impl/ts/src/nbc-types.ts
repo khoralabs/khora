@@ -1,5 +1,5 @@
 /**
- * TypeScript models for **`cfd.obp.nbc`** turn payloads — see
+ * TypeScript models for **`khora.obp.nbc`** turn payloads — see
  * `packages/obp/v2/nbc/spec/model/nbc-turn.smithy`.
  */
 
@@ -16,7 +16,7 @@ export type NbcOfferSpec = {
   expires_at_relay_ms: number;
 };
 
-/** Affordance spec in an NBC TURN (maps to `ExposePort` + thin `cfd.obp#Port`). */
+/** Affordance spec in an NBC TURN (maps to `ExposePort` + thin `khora.obp#Port`). */
 export type NbcPortSpec = {
   id: string;
   type: string;
@@ -142,7 +142,7 @@ export function isNbcTurnBody(v: unknown): v is NbcTurnBody {
   }
 }
 
-/** Map **`NbcPortSpec`** to a thin **`cfd.obp#Port`** for `ExposePort` (drops `bind_policy`). */
+/** Map **`NbcPortSpec`** to a thin **`khora.obp#Port`** for `ExposePort` (drops `bind_policy`). */
 export function nbcPortSpecToPort(spec: NbcPortSpec): Port {
   return {
     id: spec.id,

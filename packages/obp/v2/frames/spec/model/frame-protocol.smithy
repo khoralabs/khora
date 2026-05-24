@@ -1,6 +1,6 @@
 $version: "2"
 
-namespace cfd.obp.frame
+namespace khora.obp.frame
 
 use smithy.api#Document
 
@@ -44,20 +44,20 @@ structure Frame {
     /// Signature over **`signing_bytes`** (see **NegotiationFrameProtocol**); encoding is binding-specific.
     sig: String
     type: FrameType
-    /// Opaque JSON payload for this frame type. **`cfd.obp`** does not normatively define keys or nested shapes for **TURN** / **END_OFFERS** / **TERMINATE** bodies.
-    /// NBC-conformant deployments interpret **TURN** bodies per **`cfd.obp.nbc`** and project to **`cfd.obp#ObpPersistence`**; **END_OFFERS** carries no required persistence projection here. OBP-only implementations MAY use a private wire profile.
+    /// Opaque JSON payload for this frame type. **`khora.obp`** does not normatively define keys or nested shapes for **TURN** / **END_OFFERS** / **TERMINATE** bodies.
+    /// NBC-conformant deployments interpret **TURN** bodies per **`khora.obp.nbc`** and project to **`khora.obp#ObpPersistence`**; **END_OFFERS** carries no required persistence projection here. OBP-only implementations MAY use a private wire profile.
     body: Document
 }
 
 @documentation("""
 **OBP/1.0 — bilateral frame protocol (transport-agnostic).**
 
-This namespace models the **Frame** DAG: causal integrity, signed actors, and **opaque** turn payloads. Graph vocabulary (**Party**, **Offer**, **Port**, edges) lives in **`cfd.obp`**; **when** a bind is allowed and how policy JSON is validated lives in **`cfd.obp.nbc`**.
+This namespace models the **Frame** DAG: causal integrity, signed actors, and **opaque** turn payloads. Graph vocabulary (**Party**, **Offer**, **Port**, edges) lives in **`khora.obp`**; **when** a bind is allowed and how policy JSON is validated lives in **`khora.obp.nbc`**.
 
-**Layering:** Verify **`Frame`** signatures and **`p_hash`** chain first. Then (**NBC path**) validate opaque **`body`** against NBC rules and **`NbcPortExposePolicy`**. Finally project accepted effects to **`cfd.obp#ObpPersistence`**. OBP-only stacks MAY skip NBC and use a documented private mapping from **`body`** to persistence ops.
+**Layering:** Verify **`Frame`** signatures and **`p_hash`** chain first. Then (**NBC path**) validate opaque **`body`** against NBC rules and **`NbcPortExposePolicy`**. Finally project accepted effects to **`khora.obp#ObpPersistence`**. OBP-only stacks MAY skip NBC and use a documented private mapping from **`body`** to persistence ops.
 
-**Relationship to persistence:** Accepted **TURN** effects **MUST** be projected to **`cfd.obp#ObpPersistence`**
-via **`OBPPersistenceClient`** (or equivalent) so graph invariants in `packages/obp/v2/persistence/spec/model/persistence.smithy` hold. **END_OFFERS** is a signed DAG step with **no** normative **`ObpPersistence`** projection in **`cfd.obp`** — peers use it to record mutual visibility that an actor will not issue further offer-extending **TURN**s on this chain (bilateral coordination); optional local policy may still allow **TERMINATE** or stream teardown later. **TERMINATE** ends the frame session; it does
+**Relationship to persistence:** Accepted **TURN** effects **MUST** be projected to **`khora.obp#ObpPersistence`**
+via **`OBPPersistenceClient`** (or equivalent) so graph invariants in `packages/obp/v2/persistence/spec/model/persistence.smithy` hold. **END_OFFERS** is a signed DAG step with **no** normative **`ObpPersistence`** projection in **`khora.obp`** — peers use it to record mutual visibility that an actor will not issue further offer-extending **TURN**s on this chain (bilateral coordination); optional local policy may still allow **TERMINATE** or stream teardown later. **TERMINATE** ends the frame session; it does
 not alone mutate **`ObpPersistence`** unless implementations map it to optional revoke ops.
 
 **Canonical JSON:** For any value **`v`**, implementations compute UTF-8 bytes of JSON with **recursively sorted object keys**;
@@ -74,13 +74,13 @@ where **`frame_complete`** is the full **Frame** including **`sig`**, with the s
 **Normative on‑wire framing (default):** Over any duplex byte stream, frames **MUST** be encoded as **`uint32_be(length)`** immediately
 followed by **`length`** bytes of **`UTF-8(canonical_json(frameObject))`**, where **`frameObject`** is either an **`init`** envelope
 (see below) or a **Frame**. Alternative bindings **MAY** substitute an equivalent framing that preserves strict ordering and message
-boundaries; see **`cfd.obp.frame.http2`**.
+boundaries; see **`khora.obp.frame.http2`**.
 
-**Session bootstrap:** Framed objects **MAY** include multiple **`{ "init": `<SessionInit JSON>` }`** envelopes on the **same** duplex byte stream (long‑lived multiplex): each distinct **`session_id`** / **`genesis_hash`** pair starts a separate causal chain. Implementations **MUST** route each **Frame** to the unique open chain whose current tip or registered **`genesis_hash`** equals **`p_hash`**. Keys SHOULD be sorted for canonical framing. Between **`init`** messages, **hub-mediated** deployments that adopt the **agent relay policy** **MUST** frame payloads as **`cfd.agent.relay#RelayEnvelope`** (`frame` + `relay_ts_ms`); that policy is **not** part of core **`cfd.obp.frame`** — see `packages/agent/relay/spec/model/frame-relay-binding.smithy`. Direct streams **without** a relay **MAY** send bare **`Frame`** objects.
+**Session bootstrap:** Framed objects **MAY** include multiple **`{ "init": `<SessionInit JSON>` }`** envelopes on the **same** duplex byte stream (long‑lived multiplex): each distinct **`session_id`** / **`genesis_hash`** pair starts a separate causal chain. Implementations **MUST** route each **Frame** to the unique open chain whose current tip or registered **`genesis_hash`** equals **`p_hash`**. Keys SHOULD be sorted for canonical framing. Between **`init`** messages, **hub-mediated** deployments that adopt the **agent relay policy** **MUST** frame payloads as **`khora.agent.relay#RelayEnvelope`** (`frame` + `relay_ts_ms`); that policy is **not** part of core **`khora.obp.frame`** — see `packages/agent/relay/spec/model/frame-relay-binding.smithy`. Direct streams **without** a relay **MAY** send bare **`Frame`** objects.
 
-**Relay echo (when relay policy applies):** Originators MUST apply **`Frame`** effects only from **`cfd.agent.relay#RelayEnvelope`** bytes received back from the relay (including self-echo), not from the pre-relay send path, so **`relay_ts_ms`** and DAG advance stay consistent with the counterparty.
+**Relay echo (when relay policy applies):** Originators MUST apply **`Frame`** effects only from **`khora.agent.relay#RelayEnvelope`** bytes received back from the relay (including self-echo), not from the pre-relay send path, so **`relay_ts_ms`** and DAG advance stay consistent with the counterparty.
 
-**Turn contract (informal):** After **init**, any actor may send a **TURN** frame. Semantics of **`body`** (extend offer, expose ports, bind) are **not** defined here — see **`cfd.obp.nbc`** and **`cfd.obp#ObpPersistence`**. Causal order is enforced only by **`p_hash`**: each frame's **`p_hash`** MUST equal the local DAG tip (**`CAUSAL_MISMATCH`** otherwise). The wire protocol does **not** imply strict alternation between parties — that is **transport-scoped**. Purely decentralized transports **MAY** embed alternation hints inside the opaque **`body`**.
+**Turn contract (informal):** After **init**, any actor may send a **TURN** frame. Semantics of **`body`** (extend offer, expose ports, bind) are **not** defined here — see **`khora.obp.nbc`** and **`khora.obp#ObpPersistence`**. Causal order is enforced only by **`p_hash`**: each frame's **`p_hash`** MUST equal the local DAG tip (**`CAUSAL_MISMATCH`** otherwise). The wire protocol does **not** imply strict alternation between parties — that is **transport-scoped**. Purely decentralized transports **MAY** embed alternation hints inside the opaque **`body`**.
 
 **END_OFFERS:** Either party **MAY** send **`END_OFFERS`** instead of **TURN** on their move to advance the tip while signaling they will send **no further offers** (no further offer-extending **TURN**s) to the counterparty on this chain. Verifiers apply the same **`p_hash`** and signature rules as **TURN**. **`body`** is opaque; empty object is permitted.
 
@@ -91,15 +91,15 @@ boundaries; see **`cfd.obp.frame.http2`**.
 **Hardened constraints (draft §8):**
 1. **Strict ordering:** reject when **`p_hash`** ≠ local tip.
 2. **Identity verification:** reject invalid **`sig`**; session **SHOULD** abort.
-3. **NBC bind-window / capacity:** after NBC (if any) admits a bind, the **`ObpPersistence`** NBC projection (**`nbc_expires_*`** columns / **`getNbcBindWindowFor*`** reads — not fields on thin **`cfd.obp#Offer`** / **`cfd.obp#Port`**) evaluated against **`turn_seq`** and **`relay_ts_ms`** from **`cfd.agent.relay#RelayEnvelope`** when hub relay policy is in use on the binding **TURN**, plus **`NbcPortExposePolicy.max_bindings`** (see **`cfd.obp.nbc`**), constrain the store.
+3. **NBC bind-window / capacity:** after NBC (if any) admits a bind, the **`ObpPersistence`** NBC projection (**`nbc_expires_*`** columns / **`getNbcBindWindowFor*`** reads — not fields on thin **`khora.obp#Offer`** / **`khora.obp#Port`**) evaluated against **`turn_seq`** and **`relay_ts_ms`** from **`khora.agent.relay#RelayEnvelope`** when hub relay policy is in use on the binding **TURN**, plus **`NbcPortExposePolicy.max_bindings`** (see **`khora.obp.nbc`**), constrain the store.
 4. **No partial binds:** NBC and persistence layers **MUST** reject partial bind projections; opaque **`body`** must not commit a half-applied **BINDS** edge.
 
-**Mapping to decentralized session sync:** Each accepted frame yields one or more replayable **`cfd.obp.session#SessionOp`** values
+**Mapping to decentralized session sync:** Each accepted frame yields one or more replayable **`khora.obp.session#SessionOp`** values
 for **`NegotiationSessionProtocol`** checkpoints; **`SessionOp.payload`** carries opaque replay material aligned with this **`body`** contract (**`kind`** **`turn`**, **`end_offers`**, **`terminate`**, …).
 
-**Concurrent transport sessions:** Servers **MAY** accept **many** open streams at once (one negotiated stream per client session). **How** each logical bilateral session is backed—dedicated **`ObpPersistence`**, a shared store with partitioning, or otherwise—is **implementation-defined**; this protocol **MUST NOT** be read as requiring per-session physical isolation. Projections **MUST** satisfy **`cfd.obp#ObpPersistence`** invariants in `packages/obp/v2/persistence/spec/model/persistence.smithy` on whatever store they use, including NBC **global canonical `NbcPortExposePolicy.max_bindings`** and **atomic** enforcement when concurrent operations mutate the **same** logical graph (see invariant **11** in `packages/obp/v2/persistence/spec/model/persistence.smithy` for shared vs separate store boundaries).
+**Concurrent transport sessions:** Servers **MAY** accept **many** open streams at once (one negotiated stream per client session). **How** each logical bilateral session is backed—dedicated **`ObpPersistence`**, a shared store with partitioning, or otherwise—is **implementation-defined**; this protocol **MUST NOT** be read as requiring per-session physical isolation. Projections **MUST** satisfy **`khora.obp#ObpPersistence`** invariants in `packages/obp/v2/persistence/spec/model/persistence.smithy` on whatever store they use, including NBC **global canonical `NbcPortExposePolicy.max_bindings`** and **atomic** enforcement when concurrent operations mutate the **same** logical graph (see invariant **11** in `packages/obp/v2/persistence/spec/model/persistence.smithy` for shared vs separate store boundaries).
 
-**Explicit non-goals here:** hostnames, ports, TLS, and URLs — see transport bindings (e.g. **`cfd.obp.frame.http2`**).
+**Explicit non-goals here:** hostnames, ports, TLS, and URLs — see transport bindings (e.g. **`khora.obp.frame.http2`**).
 """)
 service NegotiationFrameProtocol {
     version: "2026-05-17"

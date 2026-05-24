@@ -1,6 +1,6 @@
 $version: "2"
 
-namespace cfd.memories
+namespace khora.memories
 
 use smithy.api#Document
 use smithy.api#Unit

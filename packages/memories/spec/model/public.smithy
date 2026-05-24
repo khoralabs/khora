@@ -1,6 +1,6 @@
 $version: "2"
 
-namespace cfd.memories
+namespace khora.memories
 
 @documentation("""
 Logical client API: validates content and ontology at the app layer, then drives persistence.

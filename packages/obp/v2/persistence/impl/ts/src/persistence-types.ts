@@ -134,7 +134,7 @@ export type ListBindsInput = Record<string, never>;
 export type BindListingRow = {
   offerId: string;
   portId: string;
-  /** Persistence projection field; not on `cfd.obp#BindsEdge`. */
+  /** Persistence projection field; not on `khora.obp#BindsEdge`. */
   bind_payload: JsonDocument;
 };
 

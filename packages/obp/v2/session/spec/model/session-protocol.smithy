@@ -1,6 +1,6 @@
 $version: "2"
 
-namespace cfd.obp.session
+namespace khora.obp.session
 
 use smithy.api#Document
 
@@ -14,9 +14,9 @@ list SessionOpList {
 }
 
 /// Abstract operation in the session log. **`kind`** MUST name a replayable effect that implementations
-/// map to **`cfd.obp#ObpPersistence`** operations (or their documented semantics) for the negotiation slice
+/// map to **`khora.obp#ObpPersistence`** operations (or their documented semantics) for the negotiation slice
 /// both peers materialize. Frame-derived kinds include **`turn`** (symmetric negotiation move; payload typically carries
-/// **`actor`** plus opaque **TURN** **`Frame.body`** per **`cfd.obp.frame`**), **`end_offers`** (**`END_OFFERS`** frame: actor signals no further offer-extending **TURN**s; payload typically carries **`actor`** plus opaque **`Frame.body`**; **no** normative **`ObpPersistence`** projection in **`cfd.obp`** unless a host profile extends it), and **`terminate`**. When multiple **`SessionInit`** chains share one transport,
+/// **`actor`** plus opaque **TURN** **`Frame.body`** per **`khora.obp.frame`**), **`end_offers`** (**`END_OFFERS`** frame: actor signals no further offer-extending **TURN**s; payload typically carries **`actor`** plus opaque **`Frame.body`**; **no** normative **`ObpPersistence`** projection in **`khora.obp`** unless a host profile extends it), and **`terminate`**. When multiple **`SessionInit`** chains share one transport,
 /// ops **MAY** carry **`session_id`** (same string as that chain's **`SessionInit.session_id`**) so **`SessionEnvelope`** can
 /// address the correct Merkle prefix. Receivers MUST apply **`delta_ops`** in order when verification succeeds.
 /// **`payload`** is JSON-compatible; canonical hashing rules apply (see **`NegotiationSessionProtocol`** service docs).
@@ -64,15 +64,15 @@ union VerifyError {
 /// Normative documentation and wire shapes for **decentralized negotiation session sync** on top of core OBP.
 ///
 /// **Conceptual dependency:** This namespace describes how two peers agree on an ordered operation log and Merkle checkpoints
-/// while each runs **`cfd.obp#ObpPersistence`** locally. **`cfd.obp`** **`packages/obp/v2/model/spec/model/shapes.smithy`** / **`packages/obp/v2/persistence/spec/model/persistence.smithy`** MUST NOT
-/// import **`cfd.obp.session`** (no compiler dependency from core OBP to this protocol).
+/// while each runs **`khora.obp#ObpPersistence`** locally. **`khora.obp`** **`packages/obp/v2/model/spec/model/shapes.smithy`** / **`packages/obp/v2/persistence/spec/model/persistence.smithy`** MUST NOT
+/// import **`khora.obp.session`** (no compiler dependency from core OBP to this protocol).
 ///
 /// **Session scope:** A negotiation session has **`session_id`** (opaque string) and exactly **two** participant party ids
 /// (opaque strings, e.g. UUIDs). Complete history in protocol messages means the **ordered session log** both parties treat
 /// as authoritative for this negotiation—not every entity in a global store. Implementations SHOULD restrict hashed ops to
 /// in-session mutations when forming leaves.
 ///
-/// **Expiry alignment (NBC):** Bind/expose validity uses NBC bind windows (TURN **`NbcOfferSpec`** / **`NbcPortSpec`**, **`ObpPersistence`** **`nbc_expires_*`** / **`GetNbcBindWindowFor*`**) against session **`turn_seq`** and **`relay_ts_ms`** from **`cfd.agent.relay#RelayEnvelope`** when hub relay policy applies (see **`cfd.obp.nbc`**). Thin **`cfd.obp#Offer`** / **`cfd.obp#Port`** carry **no** expiry fields.
+/// **Expiry alignment (NBC):** Bind/expose validity uses NBC bind windows (TURN **`NbcOfferSpec`** / **`NbcPortSpec`**, **`ObpPersistence`** **`nbc_expires_*`** / **`GetNbcBindWindowFor*`**) against session **`turn_seq`** and **`relay_ts_ms`** from **`khora.agent.relay#RelayEnvelope`** when hub relay policy applies (see **`khora.obp.nbc`**). Thin **`khora.obp#Offer`** / **`khora.obp#Port`** carry **no** expiry fields.
 ///
 /// **Canonical JSON (leaf input):** For each operation value **`op`**, implementations compute UTF-8 JSON with **recursively sorted object keys**;
 /// arrays preserve element order; **`null`**, booleans, numbers, and strings use normal JSON encoding (**`JSON.stringify`** rules).
@@ -103,7 +103,7 @@ union VerifyError {
 /// **Fork / rollback:** After rejection, implementations SHOULD discard tentative tail state and restore **last mutually agreed**
 /// **`{ seq, root_hex }`**, e.g. via persisted snapshots or replay from an exported **`ObpPersistence`** state.
 ///
-/// **Replay into `ObpPersistence`:** When applying **`delta_ops`** after verification, implementations MUST apply effects in order and MUST enforce the same **`cfd.obp#ObpPersistence`** invariants as live frames (see **`packages/obp/v2/persistence/spec/model/persistence.smithy`**, including NBC **global canonical `NbcPortExposePolicy.max_bindings`** and **atomic** bind enforcement when multiple writers target the same store). **`Checkpoint.seq`** orders the **session op log**; it does **not** by itself define cross-store global ordering across unrelated persistence instances. Choosing shared versus partitioned backends for replay matches deployment choice for live frames and is **implementation-defined** subject to **`packages/obp/v2/persistence/spec/model/persistence.smithy`** invariant **11**.
+/// **Replay into `ObpPersistence`:** When applying **`delta_ops`** after verification, implementations MUST apply effects in order and MUST enforce the same **`khora.obp#ObpPersistence`** invariants as live frames (see **`packages/obp/v2/persistence/spec/model/persistence.smithy`**, including NBC **global canonical `NbcPortExposePolicy.max_bindings`** and **atomic** bind enforcement when multiple writers target the same store). **`Checkpoint.seq`** orders the **session op log**; it does **not** by itself define cross-store global ordering across unrelated persistence instances. Choosing shared versus partitioned backends for replay matches deployment choice for live frames and is **implementation-defined** subject to **`packages/obp/v2/persistence/spec/model/persistence.smithy`** invariant **11**.
 ///
 /// **Inclusion proofs:** Optional on the wire: standard Merkle sibling hashes from leaf row to root; verifiers walk **`H_internal`**
 /// with the same odd-count pairing rule used to build the tree.

@@ -1,6 +1,6 @@
 /**
  * Frozen DDL for OBP v2 relational store — collapsed from legacy migrations (`bun:sqlite`).
- * **`nbc_expires_*`** on offers/ports are NBC N1 bind-window projection columns, not `cfd.obp#Offer`/`Port` fields.
+ * **`nbc_expires_*`** on offers/ports are NBC N1 bind-window projection columns, not `khora.obp#Offer`/`Port` fields.
  */
 export const OBP_V2_SCHEMA_SQL = `
 PRAGMA foreign_keys = ON;

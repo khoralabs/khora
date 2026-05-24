@@ -1,9 +1,9 @@
 /**
- * TypeScript models for **`cfd.obp`** graph vocabulary — see
+ * TypeScript models for **`khora.obp`** graph vocabulary — see
  * `packages/obp/v2/model/spec/model/shapes.smithy`.
  */
 
-/** Smithy `Document` — JSON-compatible value (`cfd.obp` persistence surface). */
+/** Smithy `Document` — JSON-compatible value (`khora.obp` persistence surface). */
 export type JsonDocument =
   | null
   | boolean

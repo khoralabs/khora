@@ -1,6 +1,6 @@
 $version: "2"
 
-namespace cfd.agent_identity
+namespace khora.agent_identity
 
 /// Whether serialized policy results are authoritative for replay or advisory only.
 enum PolicySnapshotMode {

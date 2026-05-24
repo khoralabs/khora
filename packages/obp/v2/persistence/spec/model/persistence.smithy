@@ -1,6 +1,6 @@
 $version: "2"
 
-namespace cfd.obp
+namespace khora.obp
 
 use smithy.api#Document
 use smithy.api#Unit
@@ -9,10 +9,10 @@ use smithy.api#Unit
 **Offer Binding Protocol — persistence surface (storage-agnostic RPC shapes).**
 
 **Protocol overview**
-OBP is a small typed graph for causal interaction history: **Party** → **Offer** → **Port**, with edges **EXTENDS** (issuer), **EXPOSES** (makes an affordance available), and **BINDS** (consumes an affordance). See `cfd.obp` shapes in `packages/obp/v2/model/spec/model/shapes.smithy`.
+OBP is a small typed graph for causal interaction history: **Party** → **Offer** → **Port**, with edges **EXTENDS** (issuer), **EXPOSES** (makes an affordance available), and **BINDS** (consumes an affordance). See `khora.obp` shapes in `packages/obp/v2/model/spec/model/shapes.smithy`.
 
 **Layering: OBP vs Negotiated Binding Convention (NBC)**
-Some rules that reference implementations historically treated as “OBP persistence” are **not** universal OBP; they belong to the **Negotiated Binding Convention** (`cfd.obp.nbc`, `packages/obp/v2/nbc/spec/model/negotiated-binding-convention.smithy`, `packages/obp/documentation/negotiated-binding-convention.md`). **OBP-conformant** persistence MAY omit NBC bind-admissibility enforcement. **NBC-conformant** deployments MUST satisfy NBC in addition to OBP graph rules.
+Some rules that reference implementations historically treated as “OBP persistence” are **not** universal OBP; they belong to the **Negotiated Binding Convention** (`khora.obp.nbc`, `packages/obp/v2/nbc/spec/model/negotiated-binding-convention.smithy`, `packages/obp/documentation/negotiated-binding-convention.md`). **OBP-conformant** persistence MAY omit NBC bind-admissibility enforcement. **NBC-conformant** deployments MUST satisfy NBC in addition to OBP graph rules.
 
 **OBP normative invariants (graph / projection)** — implementations MUST enforce for any `ObpPersistence` that faithfully projects the negotiation graph (not expressible in Smithy types alone):
 1. Each **Offer** has exactly one **EXTENDS** from its issuing **Party** (created via **ExtendOffer**).
@@ -20,9 +20,9 @@ Some rules that reference implementations historically treated as “OBP persist
 3. **Port.ref:** resolve for graph integrity; detect cycles on the ref chain and reject invalid projections (see also NBC **N3** when enforcing caps at bind time).
 4. **Party `name`** on **RegisterParty** MUST be non-empty after trim (TS **`OBPPersistenceClient`**).
 
-**NBC (separate spec)** — bind admissibility, ledger/expiry at bind, canonical **`NbcPortExposePolicy.max_bindings`** tally, **`NbcPortExposePolicy.terminal`**, **`NbcPortExposePolicy`** bind/TTL fields, **`NbcBindSatisfaction`**, concurrent cap atomicity, and related orchestration: see **`cfd.obp.nbc#NegotiatedBindingConvention`**, **`cfd.obp.nbc#NbcPortExposePolicy`**, and narrative doc above. OBP’s prior numbered items **3–4, 7, 9–11** (ledger/expiry, `max_bindings` tally, bind policy MUST, multi-EXPOSES cap behavior, concurrent atomicity, store-boundary cap rules) are **NBC** normative rules **N1–N7** there.
+**NBC (separate spec)** — bind admissibility, ledger/expiry at bind, canonical **`NbcPortExposePolicy.max_bindings`** tally, **`NbcPortExposePolicy.terminal`**, **`NbcPortExposePolicy`** bind/TTL fields, **`NbcBindSatisfaction`**, concurrent cap atomicity, and related orchestration: see **`khora.obp.nbc#NegotiatedBindingConvention`**, **`khora.obp.nbc#NbcPortExposePolicy`**, and narrative doc above. OBP’s prior numbered items **3–4, 7, 9–11** (ledger/expiry, `max_bindings` tally, bind policy MUST, multi-EXPOSES cap behavior, concurrent atomicity, store-boundary cap rules) are **NBC** normative rules **N1–N7** there.
 
-**Policy payloads:** **`bind_payload`** on **BindPort** / **ExtendOffer** inputs and **ListBinds** rows is **`Document`** on the **persistence** surface (storage projection), not part of the core graph shape; NBC defines **`NbcBindSatisfaction`** and **when** bind-policy validation runs (`packages/obp/v2/nbc/spec/model/nbc-policy.smithy`); concrete **`bind_policy`** JSON shapes are **product/host-defined**. **`max_bindings`**, **`terminal`**, bind-policy JSON, and TTL/expose context for ports live under **`cfd.obp.nbc#NbcPortExposePolicy`**.
+**Policy payloads:** **`bind_payload`** on **BindPort** / **ExtendOffer** inputs and **ListBinds** rows is **`Document`** on the **persistence** surface (storage projection), not part of the core graph shape; NBC defines **`NbcBindSatisfaction`** and **when** bind-policy validation runs (`packages/obp/v2/nbc/spec/model/nbc-policy.smithy`); concrete **`bind_policy`** JSON shapes are **product/host-defined**. **`max_bindings`**, **`terminal`**, bind-policy JSON, and TTL/expose context for ports live under **`khora.obp.nbc#NbcPortExposePolicy`**.
 
 **Staging:** ports that must not be bindable yet are **not** EXPOSES'd (no separate lifecycle enum on **Port**).
 
@@ -36,9 +36,9 @@ Some rules that reference implementations historically treated as “OBP persist
 
 Narrative: `packages/obp/README.md`, `packages/obp/documentation/*.md`, `packages/obp/documentation/*.obp`.
 
-**Decentralized session sync:** Normative protocol (checkpoints, Merkle tree, hashing, verification, fork semantics) is **`cfd.obp.session#NegotiationSessionProtocol`** in `packages/obp/v2/session/spec/model/session-protocol.smithy`. Non-normative reader guide: `packages/obp/documentation/decentralized-session.md`.
+**Decentralized session sync:** Normative protocol (checkpoints, Merkle tree, hashing, verification, fork semantics) is **`khora.obp.session#NegotiationSessionProtocol`** in `packages/obp/v2/session/spec/model/session-protocol.smithy`. Non-normative reader guide: `packages/obp/documentation/decentralized-session.md`.
 
-**Live negotiation frames:** Bilateral signed **Frame** DAG rules (transport-agnostic) are **`cfd.obp.frame#NegotiationFrameProtocol`** in `packages/obp/v2/frames/spec/model/frame-protocol.smithy`. The HTTP/2 reference binding is **`cfd.obp.frame.http2#Http2Binding`** in `packages/obp/v2/transport-http2/spec/model/frame-binding-http2.smithy`.
+**Live negotiation frames:** Bilateral signed **Frame** DAG rules (transport-agnostic) are **`khora.obp.frame#NegotiationFrameProtocol`** in `packages/obp/v2/frames/spec/model/frame-protocol.smithy`. The HTTP/2 reference binding is **`khora.obp.frame.http2#Http2Binding`** in `packages/obp/v2/transport-http2/spec/model/frame-binding-http2.smithy`.
 """)
 service ObpPersistence {
     version: "2026-05-01"
@@ -63,7 +63,7 @@ service ObpPersistence {
     ]
 }
 
-/// Create a party; implementation assigns **`Party.id`** and MAY record row **`created_seq`** per **`cfd.obp.nbc#NbcRowCommitMeta`** where adapters require it.
+/// Create a party; implementation assigns **`Party.id`** and MAY record row **`created_seq`** per **`khora.obp.nbc#NbcRowCommitMeta`** where adapters require it.
 operation RegisterParty {
     input: RegisterPartyInput
     output: RegisterPartyOutput
@@ -157,7 +157,7 @@ structure GetPortBindPolicyOutput {
 }
 
 /// Create an offer, add Party -[EXTENDS]-> Offer, and optionally Offer -[BINDS]-> Port.
-/// Implementations MUST assign **`Offer.id`** and MAY ignore client-supplied **`id`** on the input **`offer`** if they require placeholders in the wire format. Row **`created_seq`** for persisted rows follows **`cfd.obp.nbc#NbcRowCommitMeta`** when tracked.
+/// Implementations MUST assign **`Offer.id`** and MAY ignore client-supplied **`id`** on the input **`offer`** if they require placeholders in the wire format. Row **`created_seq`** for persisted rows follows **`khora.obp.nbc#NbcRowCommitMeta`** when tracked.
 operation ExtendOffer {
     input: ExtendOfferInput
     output: ExtendOfferOutput
@@ -166,16 +166,16 @@ operation ExtendOffer {
 structure ExtendOfferInput {
     partyId: String
     offer: Offer
-    /// NBC N1 bind-window projection for this offer row — **not** part of **`cfd.obp#Offer`**. Persisted alongside the thin offer; **`0`** disables the corresponding mode.
+    /// NBC N1 bind-window projection for this offer row — **not** part of **`khora.obp#Offer`**. Persisted alongside the thin offer; **`0`** disables the corresponding mode.
     @default(0)
     nbc_expires_turn: Integer
-    /// NBC N1 relay-time bind ceiling for this offer row — **not** part of **`cfd.obp#Offer`**. **`0`** disables relay mode.
+    /// NBC N1 relay-time bind ceiling for this offer row — **not** part of **`khora.obp#Offer`**. **`0`** disables relay mode.
     @default(0)
     nbc_expires_at_relay_ms: Long
     /// When empty, no BINDS edge is created.
     @default("")
     bindPortId: String
-    /// Policy-shaped; NBC validates (**`cfd.obp.nbc#NbcBindSatisfaction`**); persisted on bind row, not on **`cfd.obp#BindsEdge`**.
+    /// Policy-shaped; NBC validates (**`khora.obp.nbc#NbcBindSatisfaction`**); persisted on bind row, not on **`khora.obp#BindsEdge`**.
     bind_payload: Document = null
 }
 
@@ -183,7 +183,7 @@ structure ExtendOfferOutput {
     offer: Offer
 }
 
-/// Create a port and Offer -[EXPOSES]-> Port. Implementation assigns **`Port.id`**; may ignore placeholders on input **`port`**. Row **`created_seq`** follows **`cfd.obp.nbc#NbcRowCommitMeta`** when tracked.
+/// Create a port and Offer -[EXPOSES]-> Port. Implementation assigns **`Port.id`**; may ignore placeholders on input **`port`**. Row **`created_seq`** follows **`khora.obp.nbc#NbcRowCommitMeta`** when tracked.
 operation ExposePort {
     input: ExposePortInput
     output: ExposePortOutput
@@ -192,10 +192,10 @@ operation ExposePort {
 structure ExposePortInput {
     offerId: String
     port: Port
-    /// NBC N1 bind-window projection for this new port row — **not** part of **`cfd.obp#Port`**. **`0`** disables the corresponding mode.
+    /// NBC N1 bind-window projection for this new port row — **not** part of **`khora.obp#Port`**. **`0`** disables the corresponding mode.
     @default(0)
     nbc_expires_turn: Integer
-    /// NBC N1 relay-time bind ceiling — **not** on **`cfd.obp#Port`**. **`0`** disables relay mode.
+    /// NBC N1 relay-time bind ceiling — **not** on **`khora.obp#Port`**. **`0`** disables relay mode.
     @default(0)
     nbc_expires_at_relay_ms: Long
     /// NBC expose-time bind policy snapshot persisted on the port row (ledger-visible). **`null`** when inactive.
@@ -215,7 +215,7 @@ operation BindPort {
 structure BindPortInput {
     offerId: String
     portId: String
-    /// Policy-shaped; NBC validates (**`cfd.obp.nbc#NbcBindSatisfaction`**); persisted on bind row, not on **`cfd.obp#BindsEdge`**.
+    /// Policy-shaped; NBC validates (**`khora.obp.nbc#NbcBindSatisfaction`**); persisted on bind row, not on **`khora.obp#BindsEdge`**.
     bind_payload: Document = null
 }
 
@@ -256,7 +256,7 @@ structure IsPortExposedOutput {
     exposed: Boolean
 }
 
-/// All **BINDS** rows for capacity / ref resolution (`ObpPersistence.listBinds`). **`bind_payload`** is a listing projection field (see **`BindListingRow`**), not a **`cfd.obp#BindsEdge`** member.
+/// All **BINDS** rows for capacity / ref resolution (`ObpPersistence.listBinds`). **`bind_payload`** is a listing projection field (see **`BindListingRow`**), not a **`khora.obp#BindsEdge`** member.
 operation ListBinds {
     input: ListBindsInput
     output: ListBindsOutput
@@ -267,7 +267,7 @@ structure ListBindsInput {}
 structure BindListingRow {
     offerId: String
     portId: String
-    /// Policy-shaped satisfaction persisted with bind listing; not on **`cfd.obp#BindsEdge`**.
+    /// Policy-shaped satisfaction persisted with bind listing; not on **`khora.obp#BindsEdge`**.
     bind_payload: Document = null
 }
 
@@ -316,7 +316,7 @@ structure GetExtendingPartyIdOutput {
     partyId: String
 }
 
-/// Read NBC N1 bind-window projection for an offer row (**`nbc_expires_*`**), not part of thin **`cfd.obp#Offer`**.
+/// Read NBC N1 bind-window projection for an offer row (**`nbc_expires_*`**), not part of thin **`khora.obp#Offer`**.
 operation GetNbcBindWindowForOffer {
     input: GetNbcBindWindowForOfferInput
     output: GetNbcBindWindowForOfferOutput
@@ -340,7 +340,7 @@ structure GetNbcBindWindowForOfferOutput {
     result: GetNbcBindWindowResult
 }
 
-/// Read NBC N1 bind-window projection for a port row (**`nbc_expires_*`**), not part of thin **`cfd.obp#Port`**.
+/// Read NBC N1 bind-window projection for a port row (**`nbc_expires_*`**), not part of thin **`khora.obp#Port`**.
 operation GetNbcBindWindowForPort {
     input: GetNbcBindWindowForPortInput
     output: GetNbcBindWindowForPortOutput
@@ -354,7 +354,7 @@ structure GetNbcBindWindowForPortOutput {
     result: GetNbcBindWindowResult
 }
 
-/// Set NBC bind-window projection columns on the port row (**`nbc_expires_*`**) so N1 rejects new binds. Caller enforces issuer policy. Does **not** mutate thin **`cfd.obp#Port`** shape fields (none carry expiry).
+/// Set NBC bind-window projection columns on the port row (**`nbc_expires_*`**) so N1 rejects new binds. Caller enforces issuer policy. Does **not** mutate thin **`khora.obp#Port`** shape fields (none carry expiry).
 operation SetPortExpiredNow {
     input: SetPortExpiredNowInput
     output: SetPortExpiredNowOutput
@@ -366,7 +366,7 @@ structure SetPortExpiredNowInput {
 
 structure SetPortExpiredNowOutput {}
 
-/// Set NBC bind-window projection columns on the offer row and on ports exposed from that offer so N1 rejects new binds. Caller enforces issuer policy. Does **not** mutate **`cfd.obp#Offer`** / **`cfd.obp#Port`** core shapes.
+/// Set NBC bind-window projection columns on the offer row and on ports exposed from that offer so N1 rejects new binds. Caller enforces issuer policy. Does **not** mutate **`khora.obp#Offer`** / **`khora.obp#Port`** core shapes.
 operation SetOfferExpiredNow {
     input: SetOfferExpiredNowInput
     output: SetOfferExpiredNowOutput

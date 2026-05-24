@@ -31,7 +31,7 @@ export type NbcChainOfferRow = {
   readonly expired?: boolean;
 };
 
-/** Port row: thin `cfd.obp#Port` + NBC expiry projection + layout joins. */
+/** Port row: thin `khora.obp#Port` + NBC expiry projection + layout joins. */
 export type NbcChainPortRow = {
   readonly id: string;
   readonly type: string;

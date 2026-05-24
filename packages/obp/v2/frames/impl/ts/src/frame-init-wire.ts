@@ -1,9 +1,9 @@
 /**
- * Wire helpers for **`cfd.obp.frame#SessionInit`** — decode, encode, and normalize
+ * Wire helpers for **`khora.obp.frame#SessionInit`** — decode, encode, and normalize
  * the `{ "init": … }` bootstrap envelope on the frame byte stream.
  *
  * These belong in **`@khoralabs/obp-v2-frames-impl`** because `SessionInit` is defined in
- * `frame-protocol.smithy` (`namespace cfd.obp.frame`), not in `cfd.obp.session`.
+ * `frame-protocol.smithy` (`namespace khora.obp.frame`), not in `khora.obp.session`.
  */
 
 import { ObpError } from "@khoralabs/obp-v2-errors";
