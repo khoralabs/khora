@@ -5,8 +5,6 @@ import type {
   AgentRelayPersistence,
 } from "./types.ts";
 
-const TOPIC_SUBJECT_PREFIX = "topic:";
-
 /** Thin facade over {@link AgentRelayPersistence} entity slices (backend-agnostic). */
 export type AgentRelayPersistenceClient = {
   readonly persistence: AgentRelayPersistence;
@@ -18,12 +16,6 @@ export type AgentRelayPersistenceClient = {
   agentRegistrationExists(principalId: PrincipalId): boolean;
   profileIdForPrincipal(principalId: PrincipalId): string | undefined;
   principalForAgentProfileId(profileId: string): PrincipalId | undefined;
-  subscribeAgentSubject(principalId: PrincipalId, subject: string): void;
-  unsubscribeAgentSubject(principalId: PrincipalId, subject: string): void;
-  listSubjectsForPrincipal(principalId: PrincipalId): string[];
-  subscriberPrincipalsForSubject(subject: string, excludePrincipalId?: PrincipalId): PrincipalId[];
-  /** Subjects with `topic:` prefix, slug only (for `/v1/topics` and agent sync). */
-  listTopicSlugsForPrincipal(principalId: PrincipalId): string[];
 };
 
 export function createAgentRelayPersistenceClient(
@@ -42,22 +34,5 @@ export function createAgentRelayPersistenceClient(
       persistence.agentRegistrations.profileIdForPrincipal(principalId),
     principalForAgentProfileId: (profileId) =>
       persistence.agentRegistrations.principalForProfileId(profileId),
-    subscribeAgentSubject: (principalId, subject) =>
-      persistence.agentSubjectSubscriptions.subscribe(principalId, subject),
-    unsubscribeAgentSubject: (principalId, subject) =>
-      persistence.agentSubjectSubscriptions.unsubscribe(principalId, subject),
-    listSubjectsForPrincipal: (principalId) =>
-      persistence.agentSubjectSubscriptions.listSubjectsForPrincipal(principalId),
-    subscriberPrincipalsForSubject: (subject, excludePrincipalId) =>
-      persistence.agentSubjectSubscriptions.subscriberPrincipalsForSubject(
-        subject,
-        excludePrincipalId,
-      ),
-    listTopicSlugsForPrincipal(principalId) {
-      return persistence.agentSubjectSubscriptions
-        .listSubjectsForPrincipal(principalId)
-        .filter((s) => s.startsWith(TOPIC_SUBJECT_PREFIX))
-        .map((s) => s.slice(TOPIC_SUBJECT_PREFIX.length));
-    },
   };
 }

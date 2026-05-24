@@ -45,18 +45,14 @@ import { getAgentStatus } from "./http/agent.ts";
 import {
   type AuthorSubscriptionsSnapshot,
   listAuthorSubscriptions as httpListAuthorSubscriptions,
-  subscribeAuthor as httpSubscribeAuthor,
-  subscribeAuthorTopic as httpSubscribeAuthorTopic,
-  unsubscribeAuthor as httpUnsubscribeAuthor,
-  unsubscribeAuthorTopic as httpUnsubscribeAuthorTopic,
 } from "./http/authors.ts";
 import { health } from "./http/health.ts";
 import { listInvites, previewInvite } from "./http/invites.ts";
 import {
-  type AtriumProbeCreateInput,
+  type AtriumSubscriptionCreateInput,
   createPost,
   deletePost,
-  createProbe as httpCreateProbe,
+  createSubscription as httpCreateSubscription,
   getPost as httpGetPost,
   updatePost,
 } from "./http/posts.ts";
@@ -76,7 +72,6 @@ import {
   redeemRoomInvite as httpRedeemRoomInvite,
 } from "./http/rooms.ts";
 import { searchGet as httpSearchGet, searchPost as httpSearchPost } from "./http/search.ts";
-import { subscribeTopic, unsubscribeTopic } from "./http/topics.ts";
 import { unregister as httpUnregister, type UnregisterBody } from "./http/unregister.ts";
 
 export type {
@@ -177,56 +172,8 @@ export class AtriumClient {
     return getAgentStatus(this.transport);
   }
 
-  async subscribeAuthor(
-    username: string,
-  ): Promise<{ ok: true; username: string; authorDid: string }> {
-    const out = await httpSubscribeAuthor(this.transport, username);
-    this.emit({
-      type: "author:subscribed",
-      username: out.username,
-      authorDid: out.authorDid,
-      did: this.did,
-    });
-    return out;
-  }
-
-  async unsubscribeAuthor(username: string): Promise<void> {
-    await httpUnsubscribeAuthor(this.transport, username);
-    this.emit({ type: "author:unsubscribed", username, did: this.did });
-  }
-
   listAuthorSubscriptions(): Promise<AuthorSubscriptionsSnapshot> {
     return httpListAuthorSubscriptions(this.transport);
-  }
-
-  async subscribeAuthorTopic(
-    username: string,
-    topicSlug: string,
-  ): Promise<{
-    ok: true;
-    username: string;
-    authorDid: string;
-    topicSlug: string;
-  }> {
-    const out = await httpSubscribeAuthorTopic(this.transport, username, topicSlug);
-    this.emit({
-      type: "author_topic:subscribed",
-      username: out.username,
-      authorDid: out.authorDid,
-      topicSlug: out.topicSlug,
-      did: this.did,
-    });
-    return out;
-  }
-
-  async unsubscribeAuthorTopic(username: string, topicSlug: string): Promise<void> {
-    await httpUnsubscribeAuthorTopic(this.transport, username, topicSlug);
-    this.emit({
-      type: "author_topic:unsubscribed",
-      username,
-      topicSlug,
-      did: this.did,
-    });
   }
 
   async register(
@@ -277,8 +224,8 @@ export class AtriumClient {
     return post;
   }
 
-  async createProbe(body: AtriumProbeCreateInput): Promise<AtriumPost> {
-    const post = await httpCreateProbe(this.transport, body);
+  async createSubscription(body: AtriumSubscriptionCreateInput): Promise<AtriumPost> {
+    const post = await httpCreateSubscription(this.transport, body);
     this.emit({ type: "post:created", post, did: this.did });
     return post;
   }
@@ -372,21 +319,6 @@ export class AtriumClient {
     } finally {
       handle.dispose();
     }
-  }
-
-  async subscribeTopic(topicSlug: string): Promise<{ ok: true; topicSlug: string }> {
-    const out = await subscribeTopic(this.transport, topicSlug);
-    this.emit({
-      type: "topic:subscribed",
-      topicSlug: out.topicSlug,
-      did: this.did,
-    });
-    return out;
-  }
-
-  async unsubscribeTopic(topicSlug: string): Promise<void> {
-    await unsubscribeTopic(this.transport, topicSlug);
-    this.emit({ type: "topic:unsubscribed", topicSlug, did: this.did });
   }
 
   connectInbox(handlers: InboxWsHandlers): Promise<{ close(): void }> {

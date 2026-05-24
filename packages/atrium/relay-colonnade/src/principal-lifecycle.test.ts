@@ -35,9 +35,6 @@ function lifecycleWithMockPersistence(
       deleteRow: () => {},
       upsert: () => {},
     } as never,
-    subscriptionEdgeStore: {
-      listSubjectsWithPrefix: () => [],
-    } as never,
     principalChannelStore: {} as never,
     persistence,
     tenantKey: "tn",
@@ -101,20 +98,13 @@ test("enqueueTeardown clears registration and enqueues job; runNextTeardownJob f
   applyTestEncryptionEnv();
   const dir = nextDir();
   const encryptionProvider = new TestKeyProvider();
-  const {
-    persistence,
-    projectionStore,
-    subscriptionEdgeStore,
-    principalChannelStore,
-    catalogDb,
-    tenantKey,
-    framesDb,
-  } = await createRelayColonnadeSocial({
-    catalogPath: join(dir, "c.sqlite"),
-    framesDbPath: join(dir, "f.sqlite"),
-    tenantKey: "tn",
-    encryptionProvider,
-  });
+  const { persistence, projectionStore, principalChannelStore, catalogDb, tenantKey, framesDb } =
+    await createRelayColonnadeSocial({
+      catalogPath: join(dir, "c.sqlite"),
+      framesDbPath: join(dir, "f.sqlite"),
+      tenantKey: "tn",
+      encryptionProvider,
+    });
   const encryption = createTestEncryptionMaterial();
   const cluster = createSqliteColonnadeCluster({
     cellsDirectory: join(dir, "cells"),
@@ -130,7 +120,6 @@ test("enqueueTeardown clears registration and enqueues job; runNextTeardownJob f
     catalogDb,
     framesDb,
     projectionStore,
-    subscriptionEdgeStore,
     principalChannelStore,
     persistence,
     tenantKey,

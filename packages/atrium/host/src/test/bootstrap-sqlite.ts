@@ -12,6 +12,7 @@ import {
   type AtriumAdminStatsPort,
   type AtriumHostContext,
   type AtriumHostHealthPort,
+  bootstrapAtriumPercolator,
   createAtriumCatalogApi,
   createAtriumHost,
 } from "../index.ts";
@@ -40,7 +41,6 @@ export async function createTestAtriumHost(
     catalogDb,
     framesDb,
     projectionStore,
-    subscriptionEdgeStore,
     principalChannelStore,
     tenantKey,
   } = await createRelayColonnadeSocial({
@@ -60,15 +60,20 @@ export async function createTestAtriumHost(
     },
   });
   const publicationClient = new ColonnadePublicationClient(cluster.resolveCell);
+  const percolator = bootstrapAtriumPercolator({ catalogDb });
   const principalLifecycle = createRelayPrincipalLifecycle({
     catalogDb,
     framesDb,
     projectionStore,
-    subscriptionEdgeStore,
     principalChannelStore,
     persistence,
     tenantKey,
     cluster,
+    onPrincipalTeardown(principalId) {
+      for (const query of percolator.percolator.listQueriesByOwner(principalId)) {
+        percolator.percolator.deactivateQuery(query.id);
+      }
+    },
   });
   const catalog = createAtriumCatalogApi({
     persistence,
@@ -88,11 +93,11 @@ export async function createTestAtriumHost(
       registeredUsers: 0,
       invites: { configured: false, total: 0, consumed: 0, unconsumed: 0 },
       teardown: { pending: 0, running: 0, active: 0, completed: 0, failed: 0 },
-      catalog: { projectionRows: 0, subscriptionEdges: 0, registeredUsers: 0 },
+      catalog: { projectionRows: 0, standingQueries: 0, registeredUsers: 0 },
       frames: { activeRooms: 0, totalFrames: 0 },
       cells: { poolCount: cellPoolCount, inUseCount: 0, shards: [] },
       networkActivity: {
-        probesThisWeek: 0,
+        subscriptionsThisWeek: 0,
         roomsCreatedThisWeek: 0,
         totalRoomsCreated: 0,
         heartbeat: {
@@ -123,6 +128,7 @@ export async function createTestAtriumHost(
     health,
     adminStats,
     outboxPayloadCodec: encryption.outboxPayloadCodec,
+    percolator,
     startPrincipalTeardownWorker: opts.startPrincipalTeardownWorker ?? false,
   });
 }

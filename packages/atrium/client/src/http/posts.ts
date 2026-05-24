@@ -7,13 +7,16 @@ import {
   type AtriumPost,
   type AtriumPostCreateContent,
   type AtriumPostPatch,
-  type AtriumProbeCreate,
+  type AtriumSubscriptionCreate,
   mergeAtriumPostPatch,
   zAtriumPost,
 } from "@khoralabs/atrium-contracts";
 import type { AtriumUnaryTransport } from "@khoralabs/atrium-transport";
 
-export type AtriumProbeCreateInput = Omit<AtriumProbeCreate, "kind" | "authorSignature">;
+export type AtriumSubscriptionCreateInput = Omit<
+  AtriumSubscriptionCreate,
+  "kind" | "authorSignature"
+>;
 
 export async function createPost(
   t: AtriumUnaryTransport,
@@ -27,11 +30,11 @@ export async function createPost(
   });
 }
 
-export async function createProbe(
+export async function createSubscription(
   t: AtriumUnaryTransport,
-  body: AtriumProbeCreateInput,
+  body: AtriumSubscriptionCreateInput,
 ): Promise<AtriumPost> {
-  return createPost(t, { ...body, kind: "probe" });
+  return createPost(t, { ...body, kind: "subscription" });
 }
 
 export function getPost(t: AtriumUnaryTransport, id: string): Promise<AtriumPost> {

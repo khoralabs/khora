@@ -63,6 +63,7 @@ export {
   poolShardCellId,
   stablePrincipalShardIndex,
 } from "./sqlite/principal-cell-id.ts";
+export { ensureCatalogSchema } from "./sqlite/schema-catalog.ts";
 export { ShardingCatalogPersistenceStrategy } from "./sqlite/sharding-catalog-strategy.ts";
 export { SqliteCatalogPersistenceStrategy } from "./sqlite/sqlite-catalog-strategy.ts";
 export {

@@ -1,27 +1,55 @@
 import z from "zod";
+import {
+  type AtriumStandingSearchRequest,
+  zAtriumStandingSearchRequest,
+} from "./atrium-standing-search.ts";
 
-export const zAtriumPostKind = z.enum(["post", "status", "probe"]);
+export const zAtriumPostKind = z.enum(["post", "status", "subscription"]);
 
-export const zAtriumProbeAttributes = z.object({
-  stage: z.string().trim().min(1).optional(),
-  domains: z.array(z.string().trim().min(1)).optional(),
-  engagementType: z.string().trim().min(1).optional(),
-});
+export const zAtriumPostVisibility = z.enum(["public", "network", "private"]);
 
-export type AtriumProbeAttributes = z.infer<typeof zAtriumProbeAttributes>;
+export type AtriumPostVisibility = z.infer<typeof zAtriumPostVisibility>;
+
+function hasStandingSearchContent(search: AtriumStandingSearchRequest): boolean {
+  const text = search.content.text?.trim() ?? "";
+  const vector = search.content.vector;
+  return text.length > 0 || (vector !== undefined && vector.length > 0);
+}
+
+function hasStandingSearchScope(search: AtriumStandingSearchRequest): boolean {
+  if (search.searchEntireDatabase === true) return true;
+  if (search.namespace !== undefined && search.namespace.length > 0) return true;
+  if (search.additionalNamespaces !== undefined && search.additionalNamespaces.length > 0) {
+    return true;
+  }
+  const labels = search.options?.labels;
+  if (labels?.all !== undefined && labels.all.length > 0) return true;
+  if (labels?.some !== undefined && labels.some.length > 0) return true;
+  return false;
+}
+
+function isValidStandingSearch(search: AtriumStandingSearchRequest): boolean {
+  if (hasStandingSearchContent(search)) return true;
+  return hasStandingSearchScope(search);
+}
 
 /** Shared fields for create requests and full posts (no id / author). */
 const zAtriumPostContent = z.object({
-  /** Regular posts, singleton-per-agent status, or structured intent probes. */
+  /** Regular posts, singleton-per-agent status, or standing-search subscriptions. */
   kind: zAtriumPostKind.default("post"),
-  /** Hashtag topic slugs (normalized externally); publish-time routing only. */
+  /**
+   * Hashtag topic slugs (normalized externally). Publish-side annotation on content posts;
+   * compiled to `atrium_topic:{slug}` candidate labels at index time. Not used for receive intent.
+   */
   topics: z.array(z.string().trim().min(1)).optional(),
+  /** Who may read this post; default public preserves legacy relay semantics. */
+  visibility: zAtriumPostVisibility.default("public"),
   /** Optional expiry (Unix ms); e.g. ephemeral status or time-limited posts. */
   expiresAtMs: z.number().min(0).optional(),
   title: z.string().trim().max(500).optional(),
   body: z.string().max(100_000),
-  /** Structured probe metadata; required when kind is probe, forbidden otherwise. */
-  attributes: zAtriumProbeAttributes.optional(),
+  /** Standing search spec; required when kind is subscription, forbidden otherwise. */
+  search: zAtriumStandingSearchRequest.optional(),
 });
 
 function refinePostKindRules(
@@ -30,7 +58,7 @@ function refinePostKindRules(
     title?: string;
     body: string;
     authorProfileId?: string;
-    attributes?: AtriumProbeAttributes;
+    search?: AtriumStandingSearchRequest;
   },
   ctx: z.RefinementCtx,
   opts: { requireStatusAuthor?: boolean },
@@ -44,33 +72,40 @@ function refinePostKindRules(
       });
     }
   }
-  if (val.kind === "status" && val.attributes !== undefined) {
+  if (val.kind === "status" && val.search !== undefined) {
     ctx.addIssue({
       code: "custom",
-      message: "attributes are only allowed on probe posts",
-      path: ["attributes"],
+      message: "search is only allowed on subscription posts",
+      path: ["search"],
     });
   }
-  if (val.kind === "probe") {
+  if (val.kind === "subscription") {
     if (val.title === undefined || val.title.length === 0) {
       ctx.addIssue({
         code: "custom",
-        message: "probe posts require title",
+        message: "subscription posts require title",
         path: ["title"],
       });
     }
     if (val.body.trim().length === 0) {
       ctx.addIssue({
         code: "custom",
-        message: "probe posts require body",
+        message: "subscription posts require body",
         path: ["body"],
       });
     }
-    if (val.attributes === undefined) {
+    if (val.search === undefined) {
       ctx.addIssue({
         code: "custom",
-        message: "probe posts require attributes",
-        path: ["attributes"],
+        message: "subscription posts require search",
+        path: ["search"],
+      });
+    } else if (!isValidStandingSearch(val.search)) {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          "subscription search requires content (text or vector) or scope (namespace, labels, or searchEntireDatabase)",
+        path: ["search"],
       });
     }
     return;
@@ -78,11 +113,11 @@ function refinePostKindRules(
   if (val.kind !== "post" && val.kind !== "status") {
     return;
   }
-  if (val.attributes !== undefined) {
+  if (val.search !== undefined) {
     ctx.addIssue({
       code: "custom",
-      message: "attributes are only allowed on probe posts",
-      path: ["attributes"],
+      message: "search is only allowed on subscription posts",
+      path: ["search"],
     });
   }
 }
@@ -109,11 +144,11 @@ export function atriumPostCreateSigningContent(body: AtriumPostCreate): AtriumPo
   return content;
 }
 
-/** Create body for `kind: "probe"` posts. */
-export type AtriumProbeCreate = AtriumPostCreate & {
-  kind: "probe";
+/** Create body for `kind: "subscription"` posts. */
+export type AtriumSubscriptionCreate = AtriumPostCreate & {
+  kind: "subscription";
   title: string;
-  attributes: AtriumProbeAttributes;
+  search: AtriumStandingSearchRequest;
 };
 
 export const zAtriumPost = zAtriumPostContent
@@ -130,10 +165,11 @@ export type AtriumPost = z.infer<typeof zAtriumPost>;
 export const zAtriumPostPatch = z.object({
   kind: zAtriumPostKind.optional(),
   topics: z.array(z.string().trim().min(1)).optional(),
+  visibility: zAtriumPostVisibility.optional(),
   expiresAtMs: z.number().min(0).optional(),
   title: z.string().trim().max(500).optional(),
   body: z.string().max(100_000).optional(),
-  attributes: zAtriumProbeAttributes.optional(),
+  search: zAtriumStandingSearchRequest.optional(),
   authorSignature: z.string().trim().min(1),
 });
 
@@ -146,34 +182,22 @@ export const zAgentStatusResponse = z.object({
 
 export type AgentStatusResponse = z.infer<typeof zAgentStatusResponse>;
 
-function formatProbeAttributes(attributes: AtriumProbeAttributes): string {
-  const parts: string[] = [];
-  if (attributes.stage !== undefined) parts.push(`stage: ${attributes.stage}`);
-  if (attributes.domains !== undefined && attributes.domains.length > 0) {
-    parts.push(`domains: ${attributes.domains.join(", ")}`);
-  }
-  if (attributes.engagementType !== undefined) {
-    parts.push(`engagement: ${attributes.engagementType}`);
-  }
-  return parts.join("\n");
-}
-
-export function atriumProbeLexicalText(p: AtriumPost): string {
-  if (p.kind !== "probe") {
-    throw new Error("atriumProbeLexicalText requires kind probe");
+export function atriumSubscriptionLexicalText(p: AtriumPost): string {
+  if (p.kind !== "subscription") {
+    throw new Error("atriumSubscriptionLexicalText requires kind subscription");
   }
   const topicLine =
     p.topics !== undefined && p.topics.length > 0 ? p.topics.map((t) => `#${t}`).join(" ") : "";
-  const attrLine = p.attributes !== undefined ? formatProbeAttributes(p.attributes) : "";
-  const parts = [p.title, topicLine, p.body, attrLine].filter(
+  const searchText = p.search?.content.text?.trim() ?? "";
+  const parts = [p.title, topicLine, p.body, searchText].filter(
     (s) => s !== undefined && s.length > 0,
   );
   return parts.join("\n\n");
 }
 
 export function atriumPostLexicalText(p: AtriumPost): string {
-  if (p.kind === "probe") {
-    return atriumProbeLexicalText(p);
+  if (p.kind === "subscription") {
+    return atriumSubscriptionLexicalText(p);
   }
   const topicLine =
     p.topics !== undefined && p.topics.length > 0 ? p.topics.map((t) => `#${t}`).join(" ") : "";
@@ -194,10 +218,11 @@ export function mergeAtriumPostPatch(previous: AtriumPost, patch: AtriumPostPatc
     authorProfileId: previous.authorProfileId,
     kind: patch.kind ?? previous.kind,
     topics: patch.topics ?? previous.topics,
+    visibility: patch.visibility ?? previous.visibility,
     expiresAtMs: patch.expiresAtMs ?? previous.expiresAtMs,
     title: patch.title ?? previous.title,
     body: patch.body ?? previous.body,
-    attributes: patch.attributes ?? previous.attributes,
+    search: patch.search ?? previous.search,
     authorSignature: patch.authorSignature,
   });
 }

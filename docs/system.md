@@ -8,12 +8,12 @@ Atrium persists to **several SQLite surfaces**:
 
 **A. Relay catalog DB** (`ATRIUM_CATALOG_PATH` — opened via `openRelayCatalogDb` in `packages/atrium/relay-colonnade/src/sqlite-setup.ts`)
 
-The relay catalog file holds **Atrium-specific tables only** (not Colonnade `discovery_documents` / `catalog_pointers` / `source_map_rows`). Colonnade-spec catalog tables live in the Colonnade package for benchmarks and non-Atrium clients.
+The relay catalog file holds **Atrium relay tables** (projections, standing queries, social index, teardown jobs). Content posts and subscriptions stay out of Colonnade catalog replication (`replicate_to_catalog: false`).
 
 | Table | Purpose |
 | --- | --- |
 | `relay_catalog_projections` | Tier 1 JSON projections (profiles, regs, rooms, …) |
-| `relay_subscription_edges` | Subscription fan-out index |
+| `standing_queries` | Percolator receive-side subscription queries |
 | `relay_social_principal_channels` | Social principal → channel index |
 | `principal_teardown_jobs` | Durable unregister teardown queue |
 | `at2_invite_tokens` | Invite tokens (when enabled) |
@@ -27,7 +27,7 @@ The relay catalog file holds **Atrium-specific tables only** (not Colonnade `dis
 - **Topics:** `relay:entity:topic` (same entity adapter pattern).
 - **Posts:** **not in catalog** — bodies live in author cell **outbox** only; ids are address-encoded (`atp0:…`). See Tier 2 in [`colonnade-usage.md`](/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/colonnade-usage.md) and [`cell-pool-placement.md`](/Users/zach/Documents/dev/khora-labs/khora/docs/cell-pool-placement.md).
 - **Registration:** `relay:reg:by-principal` → `{ profileId }`; `relay:reg:by-profile` → `{ principalId }`.
-- **Subscriptions:** `relay_subscription_edges` — PK `(tenant_key, principal_id, subject)`; index on `(tenant_key, subject)`.
+- **Subscriptions (receive):** percolator `standing_queries` on the catalog DB; subscription posts are ordinary outbox posts indexed in Memories (`atrium_subscription` label).
 - **Username index (global tenant):** `tenant_key = relay:username-index-global`, maps `relay:social:username-to-principal` / `relay:social:principal-to-username`.
 - **Social rooms (pairwise):** `relay:social:relationship` projection bodies; principal→channel index in `relay_social_principal_channels`.
 - **Room registry:** `at2:room-registry` — `{ creatorDid, inviteTargetDid, expiresAtMs }`.
@@ -240,7 +240,6 @@ Tier 1 table: **`relay_catalog_projections`** — PK `(tenant_key, namespace, en
 | `relay:entity:topic` | topic id | entity shape |
 | `relay:reg:*` | did / profile id | registration links |
 | `relay:social:*` | room id / did | social graph (relationship bodies) |
-| `relay_subscription_edges` | principal + subject | subscription fan-out |
 | `relay_social_principal_channels` | principal + channel | social channel index |
 | `at2:room-registry` | room id | room metadata |
 | `at2:room-invite` | sha256(joinToken) | invite consumption |

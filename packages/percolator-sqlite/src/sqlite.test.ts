@@ -88,10 +88,7 @@ describe("createPercolatorSqlitePersistence", () => {
     const persistence = createPercolatorSqlitePersistence(db);
     const percolator = createPercolator({ persistence });
     const now = 5_000;
-    percolator.registerQuery(
-      { id: "q1", ownerId: "owner-a", search: { content: {} } },
-      now,
-    );
+    percolator.registerQuery({ id: "q1", ownerId: "owner-a", search: { content: {} } }, now);
     percolator.deactivateQuery("q1", now);
     const matches = await percolator.evaluateCandidate(
       {

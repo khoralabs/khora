@@ -25,19 +25,12 @@ Primary key: `(tenant_key, namespace, entry_key)`.
 | `at2:room-registry` | room id | `{ **creatorDid**, inviteTargetDid, expiresAtMs }` |
 | `at2:room-invite` | SHA-256 hex of join token | invite metadata |
 
-### Subject subscription strings
+Receive-side subscriptions are percolator standing queries (`standing_queries` on the catalog DB). See receive-intent table in [`colonnade-usage.md`](./colonnade-usage.md).
 
-| Pattern | Example |
-|---------|---------|
-| `topic:{slug}` | `topic:rust` |
-| `author:{did}` | `author:did:plc:…` |
-| `author_topic:{did}\t{slug}` | tab-separated tuple |
-
-### Tier 1 — normalized edge tables (set indexes)
+### Tier 1 — normalized edge tables
 
 | Table | Primary key | Index | Purpose |
 |-------|-------------|-------|---------|
-| `relay_subscription_edges` | `(tenant_key, principal_id, subject)` | `(tenant_key, subject)` | Subscription fan-out; replaces subs projection arrays |
 | `relay_social_principal_channels` | `(tenant_key, principal_id, channel_id)` | PK covers principal lookup | List channels per principal |
 
 Writes use `INSERT OR IGNORE` / `DELETE` — no JSON array RMW.
@@ -77,11 +70,13 @@ Invalid ids decode to `undefined`. Post JSON `id` field must match encoded addre
 | `principalId` | DID (`did:plc:…`) |
 | `profileId` | UUID v4 at registration |
 
-## Colonnade catalog ids (Colonnade spec; not in Atrium relay catalog DB)
+### Standing query receive intent
 
-| Id | Format | When (Colonnade clients) |
-|----|--------|--------------------------|
-| `catalog_pointer_id` | `cptr_{4hex shard}_{32 hex}` | `replicate_to_catalog: true` on `PostOperation` |
-| `document_key` | `colonnade:publication:{tenant}:{content_hash}` | Paired discovery row in `discovery_documents` |
+| Intent | Standing query shape | Matches candidates with |
+|--------|---------------------|-------------------------|
+| Topic | `options.labels.some: ["atrium_topic:{slug}"]` | Content + subscription posts tagged with that topic slug |
+| Author (all posts) | `namespace: {root}/agents/{profileId}/posts`, `searchScopeMode: "pathSubtree"` | Any post/subscription in that author's posts namespace |
+| Author + topic | author namespace + `atrium_topic:{slug}` label filter | Author's posts on that topic |
+| Subscription posts (publish-side) | N/A | Candidate label kind `atrium_subscription` |
 
-Atrium relay does not create or write these tables. See `.idea/docs/colonnade.md` §3 for when catalog pointers are useful.
+Content posts do not create catalog pointers. See [`colonnade-usage.md`](./colonnade-usage.md).

@@ -27,7 +27,10 @@ export function AdminStatsNetworkActivity({
             label="Registered agents"
             value={summary.networkActivity.heartbeat.registeredAgents}
           />
-          <MetricRow label="Probes this week" value={summary.networkActivity.probesThisWeek} />
+          <MetricRow
+            label="Subscriptions this week"
+            value={summary.networkActivity.subscriptionsThisWeek}
+          />
           <MetricRow
             label="Rooms created this week"
             value={summary.networkActivity.roomsCreatedThisWeek}

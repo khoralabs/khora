@@ -84,12 +84,6 @@ function setup(profile: AtriumProfile, post: AtriumPost) {
       profileIdForPrincipal: () => profile.id,
       principalForProfileId: () => "did:test:author",
     },
-    agentSubjectSubscriptions: {
-      subscribe: () => {},
-      unsubscribe: () => {},
-      listSubjectsForPrincipal: () => [],
-      subscriberPrincipalsForSubject: () => [],
-    },
     frameChannelHubPersistence: {} as never,
   });
   const encryption = createTestEncryptionMaterial();
@@ -135,6 +129,7 @@ describe("AtriumCanonicalStore", () => {
       kind: "post",
       body: "hello world post",
       authorSignature: TEST_POST_AUTHOR_SIGNATURE,
+      visibility: "public" as const,
     };
     const { cluster, store, indexer, persistence, memoriesDb } = setup(profile, post);
 
@@ -181,26 +176,27 @@ describe("AtriumCanonicalStore", () => {
     cluster.close();
   });
 
-  test("hydrates probe from indexed memories", async () => {
+  test("hydrates subscription from indexed memories", async () => {
     const profile: AtriumProfile = {
-      id: "prof-canonical-probe",
+      id: "prof-canonical-sub",
       username: "carol",
     };
-    const recordKey = "ob_probecanonical123456789012345";
-    const probe: AtriumPost = {
+    const recordKey = "ob_subcanonical123456789012345";
+    const subscription: AtriumPost = {
       id: encodePostId({
         authorPrincipalId: "did:test:author",
         recordKey,
         cellPoolCount: 2,
       }),
       authorProfileId: profile.id,
-      kind: "probe",
+      kind: "subscription",
       title: "Fintech pilots",
       body: "Looking for design partners in payments.",
-      attributes: { domains: ["fintech"], engagementType: "pilots" },
+      search: { content: { text: "fintech payments" } },
       authorSignature: TEST_POST_AUTHOR_SIGNATURE,
+      visibility: "public" as const,
     };
-    const { cluster, store, indexer, persistence, memoriesDb } = setup(profile, probe);
+    const { cluster, store, indexer, persistence, memoriesDb } = setup(profile, subscription);
 
     await indexer.indexProfile(profile);
     const authorCellId = cluster.assignPrincipalToCell("did:test:author");
@@ -209,25 +205,22 @@ describe("AtriumCanonicalStore", () => {
       tenant_key: "relay",
       principal_id: "did:test:author",
       record_key: recordKey,
-      payload_bytes: new TextEncoder().encode(JSON.stringify(probe)),
-      metadata: { postId: probe.id, postKind: probe.kind },
+      payload_bytes: new TextEncoder().encode(JSON.stringify(subscription)),
+      metadata: { postId: subscription.id, postKind: subscription.kind },
     });
-    await indexer.indexPost(probe);
+    await indexer.indexPost(subscription);
 
-    const probeMemoryId = ids.memory(
+    const subMemoryId = ids.memory(
       postsMemoryNamespace(DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT, profile.id),
-      probe.id,
+      subscription.id,
     );
-    const probeNk = persistence.loadMemoryNamespaceKey(probeMemoryId);
-    expect(probeNk).toBeDefined();
-    const probeLabels = persistence.loadNodeLabelsForMemory(
-      probeNk?.namespace ?? "",
-      probeNk?.key ?? "",
-    );
-    const probeHydrated = await hydrateMemoryLabels(store, probeLabels, probeMemoryId);
-    expect(probeHydrated?.kind).toBe("probe");
-    if (probeHydrated?.kind === "probe") {
-      expect(probeHydrated.entity.attributes?.domains).toEqual(["fintech"]);
+    const subNk = persistence.loadMemoryNamespaceKey(subMemoryId);
+    expect(subNk).toBeDefined();
+    const subLabels = persistence.loadNodeLabelsForMemory(subNk?.namespace ?? "", subNk?.key ?? "");
+    const subHydrated = await hydrateMemoryLabels(store, subLabels, subMemoryId);
+    expect(subHydrated?.kind).toBe("subscription");
+    if (subHydrated?.kind === "subscription") {
+      expect(subHydrated.entity.search?.content.text).toBe("fintech payments");
     }
 
     memoriesDb.close();

@@ -65,7 +65,9 @@ function AdminPage() {
         <Card>
           <CardHeader>
             <CardTitle>Network activity</CardTitle>
-            <CardDescription>Agent heartbeats, probes, and room introductions</CardDescription>
+            <CardDescription>
+              Agent heartbeats, subscriptions, and room introductions
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <AdminStats.NetworkActivity />

@@ -119,7 +119,7 @@ Three storage tiers (all `bun:sqlite`):
 
 Tables:
 - `relay_catalog_projections` — JSON KV (profiles, registrations, rooms, …)
-- `relay_subscription_edges` — subscription index
+- `standing_queries` — percolator receive-side subscription queries
 - `relay_social_principal_channels` — social channel index
 - `principal_teardown_jobs` — unregister queue
 - `at2_invite_tokens` — invites (when enabled)

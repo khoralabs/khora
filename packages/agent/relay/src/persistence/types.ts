@@ -59,22 +59,14 @@ export interface AgentRelayRegistrations {
   principalForProfileId(profileId: string): PrincipalId | undefined;
 }
 
-/** Opaque subject subscriptions keyed by principal (e.g. `topic:<slug>`, `author:<principalId>`). */
-export interface AgentRelaySubjectSubscriptions {
-  listSubjectsForPrincipal(principalId: PrincipalId): string[];
-  subscriberPrincipalsForSubject(subject: string, excludePrincipalId?: PrincipalId): PrincipalId[];
-  subscribe(principalId: PrincipalId, subject: string): void;
-  unsubscribe(principalId: PrincipalId, subject: string): void;
-}
-
 /**
  * Relay persistence facade: frame-channel hub store plus logical entity slices.
  * Post bodies live in author cell outbox (not catalog); see atrium-host post resolution.
+ * Receive-side subscriptions are standing queries in the percolator (not catalog edges).
  */
 export type AgentRelayPersistence = {
   frameChannelHubPersistence: FrameChannelHubPersistence;
   profiles: AgentRelayEntityPersistence;
   topics: AgentRelayEntityPersistence;
   agentRegistrations: AgentRelayRegistrations;
-  agentSubjectSubscriptions: AgentRelaySubjectSubscriptions;
 };

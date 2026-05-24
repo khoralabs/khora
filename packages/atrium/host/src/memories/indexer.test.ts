@@ -81,12 +81,6 @@ function createTestRelayPersistence(profile: AtriumProfile) {
       profileIdForPrincipal: () => profile.id,
       principalForProfileId: () => "did:test:author",
     },
-    agentSubjectSubscriptions: {
-      subscribe: () => {},
-      unsubscribe: () => {},
-      listSubjectsForPrincipal: () => [],
-      subscriberPrincipalsForSubject: () => [],
-    },
     frameChannelHubPersistence: {} as never,
   });
 }
@@ -140,6 +134,7 @@ describe("atrium memories indexer", () => {
       title: "Beta program",
       body: "Looking for teams building developer tools.",
       authorSignature: TEST_POST_AUTHOR_SIGNATURE,
+      visibility: "public" as const,
     };
 
     const authorCellId = cluster.assignPrincipalToCell(authorPrincipalId);
@@ -201,7 +196,7 @@ describe("atrium memories indexer", () => {
     cluster.close();
   });
 
-  test("indexes probe with attributes; label filter finds probe by domain", async () => {
+  test("indexes subscription with search; label filter finds subscription", async () => {
     const root = DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT;
     const profile: AtriumProfile = {
       id: "prof-probe-1",
@@ -236,23 +231,23 @@ describe("atrium memories indexer", () => {
 
     const authorPrincipalId = "did:test:author";
     const recordKey = "ob_probe123456789012345678901";
-    const probe: AtriumPost = {
+    const subscription: AtriumPost = {
       id: encodePostId({
         authorPrincipalId,
         recordKey,
         cellPoolCount: 2,
       }),
       authorProfileId: profile.id,
-      kind: "probe",
+      kind: "subscription",
       topics: ["platform"],
       title: "Design partners",
       body: "Seeking pilots with enterprise buyers.",
-      attributes: {
-        stage: "beta",
-        domains: ["platform"],
-        engagementType: "pilots",
+      search: {
+        content: { text: "platform pilots" },
+        options: { labels: { some: ["atrium_topic:platform"] } },
       },
       authorSignature: TEST_POST_AUTHOR_SIGNATURE,
+      visibility: "public" as const,
     };
 
     const authorCellId = cluster.assignPrincipalToCell(authorPrincipalId);
@@ -262,22 +257,24 @@ describe("atrium memories indexer", () => {
       tenant_key: "relay",
       principal_id: authorPrincipalId,
       record_key: recordKey,
-      payload_bytes: new TextEncoder().encode(JSON.stringify(probe)),
-      metadata: { postId: probe.id, postKind: probe.kind },
+      payload_bytes: new TextEncoder().encode(JSON.stringify(subscription)),
+      metadata: { postId: subscription.id, postKind: subscription.kind },
     });
 
-    await indexer.indexPost(probe);
+    await indexer.indexPost(subscription);
 
-    const probeHits = search(
+    const subscriptionHits = search(
       { persistence },
       {
         namespace: root,
         content: { text: "platform" },
-        options: { topK: 5, labels: { some: ["atrium_probe"] } },
+        options: { topK: 5, labels: { some: ["atrium_subscription"] } },
       },
     );
-    expect(probeHits.some((h) => h.memory.key === probe.id)).toBe(true);
-    expect(probeHits.every((h) => h.labels.some((l) => l.kind === "atrium_probe"))).toBe(true);
+    expect(subscriptionHits.some((h) => h.memory.key === subscription.id)).toBe(true);
+    expect(
+      subscriptionHits.every((h) => h.labels.some((l) => l.kind === "atrium_subscription")),
+    ).toBe(true);
 
     const postOnlyHits = search(
       { persistence },
@@ -287,7 +284,7 @@ describe("atrium memories indexer", () => {
         options: { topK: 5, labels: { some: ["atrium_post"] } },
       },
     );
-    expect(postOnlyHits.some((h) => h.memory.key === probe.id)).toBe(false);
+    expect(postOnlyHits.some((h) => h.memory.key === subscription.id)).toBe(false);
 
     memoriesDb.close();
     cluster.close();

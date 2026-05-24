@@ -1,6 +1,7 @@
 import z from "zod";
 import { zAtriumPost } from "./atrium-post.ts";
 import { zAtriumProfile } from "./atrium-profile.ts";
+import { zSearchContent, zSearchLabels } from "./atrium-standing-search.ts";
 
 /** GET /v1/search query params. */
 export type AtriumSearchQuery = {
@@ -10,16 +11,6 @@ export type AtriumSearchQuery = {
   maxNeighbors?: number;
   namespace?: string;
 };
-
-const zSearchContent = z.object({
-  text: z.string().optional(),
-  vector: z.array(z.number()).optional(),
-});
-
-const zSearchLabels = z.object({
-  all: z.array(z.string()).optional(),
-  some: z.array(z.string()).optional(),
-});
 
 const zSearchOptions = z.object({
   topK: z.number().int().min(1).max(50).optional(),
@@ -49,9 +40,14 @@ export const zAtriumSearchRequest = z.object({
 
 export type AtriumSearchRequest = z.infer<typeof zAtriumSearchRequest>;
 
+export {
+  type AtriumStandingSearchRequest,
+  zAtriumStandingSearchRequest,
+} from "./atrium-standing-search.ts";
+
 export const zAtriumSearchHydratedEntity = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("post"), entity: zAtriumPost }),
-  z.object({ kind: z.literal("probe"), entity: zAtriumPost }),
+  z.object({ kind: z.literal("subscription"), entity: zAtriumPost }),
   z.object({ kind: z.literal("profile"), entity: zAtriumProfile }),
   z.object({ kind: z.literal("ghost"), postId: z.string() }),
 ]);

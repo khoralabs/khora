@@ -4,5 +4,7 @@ export * from "./atrium-registration.ts";
 export * from "./atrium-relationships.ts";
 export * from "./atrium-room.ts";
 export * from "./atrium-search.ts";
+export * from "./atrium-standing-search.ts";
+export * from "./atrium-subscription-searches.ts";
 export * from "./topic-slug.ts";
 export * from "./username.ts";

@@ -13,8 +13,20 @@ Three storage tiers for relay data. See [id-conventions.md](./id-conventions.md)
 - No Colonnade pointer columns — projection-only KV keyed by `(tenant_key, namespace, entry_key)`.
 - Use SQLite `JSON` column type; hot fields have expression indexes (username → principal, room creator).
 - Namespace constants live in `relay-id-conventions.ts`.
-- **Set indexes** (subscriptions, social principal→channel) use normalized edge tables — not JSON arrays in projections.
-- **No Colonnade publication catalog path** — `replicate_to_catalog: false`; `ColonnadePublicationClient` uses built-in noop when no strategy is passed (see `.idea/docs/colonnade.md` §3 two layers).
+- Receive-side subscriptions use percolator standing queries (`standing_queries` table), not catalog edge tables.
+- No Colonnade `discovery_documents` / `catalog_pointers` rows for any posts (`replicate_to_catalog: false`).
+
+### Receive intent (standing queries)
+
+Clients express what they want via percolator standing queries. Helpers live in `@khoralabs/atrium-contracts` (`atrium-subscription-searches.ts`):
+
+| Intent | Standing query shape | Matches |
+|--------|---------------------|---------|
+| Topic | `options.labels.some: ["atrium_topic:{slug}"]` | Content + subscription posts tagged with that topic |
+| Author (all posts) | `namespace: {root}/agents/{profileId}/posts`, `searchScopeMode: "pathSubtree"` | Any post/subscription in that author's posts namespace |
+| Author + topic | author namespace + `atrium_topic:{slug}` label filter | Author's posts on that topic |
+
+Publish-side candidates emit `atrium_post` or `atrium_subscription` plus `atrium_topic:{slug}` label kinds. Fan-out delivers inbox pointers only when a standing query matches **and** post visibility allows the recipient (`private` / `network` / `public`).
 
 ## Tier 2 — Author outbox (posts)
 
@@ -55,5 +67,4 @@ This layout is **not** upgraded in place. Wipe catalog SQLite, frames DB, and `c
 
 ## Deferred
 
-- Post search / topic discovery (separate structure when needed).
-- `catalog_pointers` / `discovery_documents` for posts (`replicate_to_catalog: false`).
+- Post search / topic discovery for content posts (Memories index handles search today).

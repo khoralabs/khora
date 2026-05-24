@@ -30,3 +30,7 @@ The JSON Schema artifact is exported at `@khoralabs/atrium-client/atrium-config.
 - `bun run typecheck` — `tsc --noEmit`
 - `bun test` — package tests
 - `bun run build:schema` — regenerate `atrium-config.schema.json`
+
+## Subscriptions
+
+Create standing-search subscriptions with signed `POST /v1/posts` via `createSubscription`. HTTP subscribe shims (`/v1/authors/.../subscribe`, `/v1/topics/.../subscribe`) were removed — use `createSubscription` with helpers from `@khoralabs/atrium-contracts` (`topicSubscriptionSearch`, `authorSubscriptionSearch`, `authorTopicSubscriptionSearch`). Discover public subscriptions via `GET/POST /v1/search` with e.g. `options.labels.some: ["atrium_subscription"]`.

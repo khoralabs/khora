@@ -14,13 +14,11 @@ export const atriumOntology = defineOntology({
       contentHash: z.string().optional(),
       topics: z.array(z.string()).optional(),
     }),
-    atrium_probe: z.object({
+    atrium_subscription: z.object({
       postId: z.string(),
       authorProfileId: z.string().optional(),
+      contentHash: z.string().optional(),
       topics: z.array(z.string()).optional(),
-      stage: z.string().optional(),
-      domains: z.array(z.string()).optional(),
-      engagementType: z.string().optional(),
     }),
   },
   edgeLabels: {

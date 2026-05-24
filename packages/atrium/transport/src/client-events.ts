@@ -56,28 +56,6 @@ export type AtriumClientEvent =
   | { type: "post:created"; post: AtriumPost; did: string }
   | { type: "post:updated"; post: AtriumPost; did: string }
   | { type: "post:deleted"; postId: string; did: string }
-  | { type: "topic:subscribed"; topicSlug: string; did: string }
-  | { type: "topic:unsubscribed"; topicSlug: string; did: string }
-  | {
-      type: "author:subscribed";
-      username: string;
-      authorDid: string;
-      did: string;
-    }
-  | { type: "author:unsubscribed"; username: string; did: string }
-  | {
-      type: "author_topic:subscribed";
-      username: string;
-      authorDid: string;
-      topicSlug: string;
-      did: string;
-    }
-  | {
-      type: "author_topic:unsubscribed";
-      username: string;
-      topicSlug: string;
-      did: string;
-    }
   | {
       type: "inbox:snapshot";
       notifications: InboxNotificationRow[];

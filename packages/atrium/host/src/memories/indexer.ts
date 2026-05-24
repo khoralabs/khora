@@ -3,8 +3,8 @@ import {
   type AtriumPost,
   type AtriumProfile,
   atriumPostLexicalText,
-  atriumProbeLexicalText,
   atriumProfileLexicalText,
+  atriumSubscriptionLexicalText,
 } from "@khoralabs/atrium-contracts";
 import { sha256HexLower } from "@khoralabs/colonnade-persistence";
 import { ids, type MemoriesClient } from "@khoralabs/memories-core";
@@ -108,30 +108,24 @@ export function createAtriumMemoriesIndexer(deps: {
         }
         const ns = postsMemoryNamespace(namespaceRoot, authorProfileId);
         const text =
-          post.kind === "probe" ? atriumProbeLexicalText(post) : atriumPostLexicalText(post);
+          post.kind === "subscription"
+            ? atriumSubscriptionLexicalText(post)
+            : atriumPostLexicalText(post);
         const vector = await embedLexical(text);
         const payloadHash = sha256HexLower(new TextEncoder().encode(JSON.stringify(post)));
         const profileNs = profileMemoryNamespace(namespaceRoot, authorProfileId);
         const profileMemoryId = ids.memory(profileNs, PROFILE_MEMORY_KEY);
         const labels =
-          post.kind === "probe"
+          post.kind === "subscription"
             ? [
                 {
-                  kind: "atrium_probe" as const,
+                  kind: "atrium_subscription" as const,
                   props: {
                     postId: post.id,
                     authorProfileId,
+                    contentHash: payloadHash,
                     ...(post.topics !== undefined && post.topics.length > 0
                       ? { topics: post.topics }
-                      : {}),
-                    ...(post.attributes?.stage !== undefined
-                      ? { stage: post.attributes.stage }
-                      : {}),
-                    ...(post.attributes?.domains !== undefined && post.attributes.domains.length > 0
-                      ? { domains: post.attributes.domains }
-                      : {}),
-                    ...(post.attributes?.engagementType !== undefined
-                      ? { engagementType: post.attributes.engagementType }
                       : {}),
                   },
                 },

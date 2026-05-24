@@ -16,6 +16,7 @@ import {
 } from "@khoralabs/atrium-contracts";
 import {
   assignPostAddress,
+  canReadPost,
   encodePostId,
   listAuthorOutboxRecords,
   resolvePostById,
@@ -43,6 +44,15 @@ export async function handleGetPost(
     const post = await resolvePostById(ctx.cluster, id);
     if (post === undefined) {
       return jsonError("Post not found", 404);
+    }
+    if (
+      !canReadPost({
+        post,
+        readerPrincipalId: did,
+        social: ctx.social,
+      })
+    ) {
+      return jsonError("Forbidden", 403);
     }
     return Response.json(post);
   } catch (e) {

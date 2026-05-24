@@ -26,14 +26,14 @@ export class AtriumCanonicalStore implements Store {
       throw new Error(`AtriumCanonicalStore: unknown memory_id ${ref.memory_id}`);
     }
     const labels = this.deps.persistence.loadNodeLabelsForMemory(nk.namespace, nk.key);
-    const probeLabel = labels.find((l) => l.kind === "atrium_probe");
+    const subscriptionLabel = labels.find((l) => l.kind === "atrium_subscription");
     const postLabel = labels.find((l) => l.kind === "atrium_post");
-    const contentLabel = probeLabel ?? postLabel;
+    const contentLabel = subscriptionLabel ?? postLabel;
     if (contentLabel !== undefined) {
       const props = contentLabel.props as { postId?: string };
       const postId = props.postId;
       if (postId === undefined || postId.length === 0) {
-        throw new Error("AtriumCanonicalStore: atrium_post label missing postId");
+        throw new Error("AtriumCanonicalStore: content label missing postId");
       }
       try {
         const post = await this.deps.postResolver.resolvePostById(postId);
@@ -63,7 +63,7 @@ export class AtriumCanonicalStore implements Store {
       return { kind: "json", body: JSON.stringify(profile satisfies AtriumProfile) };
     }
     throw new Error(
-      `AtriumCanonicalStore: no atrium_post/atrium_profile label on memory ${nk.namespace}/${nk.key}`,
+      `AtriumCanonicalStore: no atrium content label on memory ${nk.namespace}/${nk.key}`,
     );
   }
 }
@@ -90,7 +90,7 @@ export function createAtriumCanonicalStore(deps: {
 
 export type AtriumHydratedEntity =
   | { kind: "post"; entity: AtriumPost }
-  | { kind: "probe"; entity: AtriumPost }
+  | { kind: "subscription"; entity: AtriumPost }
   | { kind: "profile"; entity: AtriumProfile }
   | { kind: "ghost"; postId: string };
 
@@ -101,9 +101,9 @@ export async function hydrateMemoryLabels(
   sourceKey = "body",
 ): Promise<AtriumHydratedEntity | undefined> {
   const postLabel = labels.find((l) => l.kind === "atrium_post");
-  const probeLabel = labels.find((l) => l.kind === "atrium_probe");
+  const subscriptionLabel = labels.find((l) => l.kind === "atrium_subscription");
   const profileLabel = labels.find((l) => l.kind === "atrium_profile");
-  if (postLabel === undefined && probeLabel === undefined && profileLabel === undefined) {
+  if (postLabel === undefined && subscriptionLabel === undefined && profileLabel === undefined) {
     return undefined;
   }
   const resolved = await store.resolve({ memory_id: memoryId, source_key: sourceKey });
@@ -122,9 +122,9 @@ export async function hydrateMemoryLabels(
         : "";
     return { kind: "ghost", postId };
   }
-  if (postLabel !== undefined || probeLabel !== undefined) {
+  if (postLabel !== undefined || subscriptionLabel !== undefined) {
     const entity = zAtriumPost.parse(json);
-    return { kind: entity.kind === "probe" ? "probe" : "post", entity };
+    return { kind: entity.kind === "subscription" ? "subscription" : "post", entity };
   }
   return { kind: "profile", entity: zAtriumProfile.parse(json) };
 }

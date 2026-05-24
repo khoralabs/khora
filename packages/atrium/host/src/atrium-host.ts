@@ -29,6 +29,8 @@ export function createAtriumHost(deps: AtriumHostDeps): AtriumHostContext {
       cluster: deps.cluster,
       publicationClient: deps.publicationClient,
       memories: deps.memories,
+      percolator: deps.percolator,
+      social: deps.social,
     }),
   });
   const runTeardownWorker = deps.startPrincipalTeardownWorker ?? true;
@@ -50,6 +52,7 @@ export function createAtriumHost(deps: AtriumHostDeps): AtriumHostContext {
     adminStats: deps.adminStats,
     outboxPayloadCodec: deps.outboxPayloadCodec,
     principalTeardownWorker,
+    percolator: deps.percolator,
     ...(deps.memories !== undefined ? { memories: deps.memories } : {}),
     ...(deps.roomLifecycle !== undefined ? { roomLifecycle: deps.roomLifecycle } : {}),
     ...deps.catalog,

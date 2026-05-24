@@ -30,12 +30,15 @@ catalogDb.run(`
     updated_at_ms INTEGER NOT NULL,
     PRIMARY KEY (tenant_key, namespace, entry_key)
   );
-  CREATE TABLE relay_subscription_edges (
-    tenant_key TEXT NOT NULL,
-    principal_id TEXT NOT NULL,
-    subject TEXT NOT NULL,
+  CREATE TABLE standing_queries (
+    id TEXT PRIMARY KEY,
+    owner_id TEXT NOT NULL,
+    search_json TEXT NOT NULL,
+    min_score REAL NOT NULL,
+    active INTEGER NOT NULL DEFAULT 1,
     created_at_ms INTEGER NOT NULL,
-    PRIMARY KEY (tenant_key, principal_id, subject)
+    updated_at_ms INTEGER NOT NULL,
+    expires_at_ms INTEGER
   );
 `);
 
@@ -56,7 +59,7 @@ framesDb.run(`
 
 function seedCatalog(): void {
   catalogDb.run("DELETE FROM relay_catalog_projections");
-  catalogDb.run("DELETE FROM relay_subscription_edges");
+  catalogDb.run("DELETE FROM standing_queries");
   catalogDb
     .prepare(
       `INSERT INTO relay_catalog_projections (tenant_key, namespace, entry_key, projection, updated_at_ms)
@@ -71,10 +74,10 @@ function seedCatalog(): void {
     .run("relay", "relay:social:username-to-principal", "alice", Date.now());
   catalogDb
     .prepare(
-      `INSERT INTO relay_subscription_edges (tenant_key, principal_id, subject, created_at_ms)
-       VALUES (?, ?, ?, ?)`,
+      `INSERT INTO standing_queries (id, owner_id, search_json, min_score, active, created_at_ms, updated_at_ms)
+       VALUES (?, ?, '{}', 0, 1, ?, ?)`,
     )
-    .run("relay", "did:key:alice", "did:key:bob", Date.now());
+    .run("sub-1", "did:key:alice", Date.now(), Date.now());
 }
 
 function seedFrames(): void {
@@ -253,7 +256,7 @@ describe("internal admin stats", () => {
         expect(res.status).toBe(200);
         const body = (await res.json()) as {
           registeredUsers: number;
-          catalog: { projectionRows: number; subscriptionEdges: number; registeredUsers: number };
+          catalog: { projectionRows: number; standingQueries: number; registeredUsers: number };
           frames: { activeRooms: number; totalFrames: number };
           cells: {
             poolCount: number;
@@ -273,7 +276,7 @@ describe("internal admin stats", () => {
 
         expect(body.registeredUsers).toBe(1);
         expect(body.catalog.projectionRows).toBe(2);
-        expect(body.catalog.subscriptionEdges).toBe(1);
+        expect(body.catalog.standingQueries).toBe(1);
         expect(body.catalog.registeredUsers).toBe(1);
         expect(body.frames.activeRooms).toBe(1);
         expect(body.frames.totalFrames).toBe(2);

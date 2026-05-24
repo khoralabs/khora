@@ -11,8 +11,6 @@ export type {
   AtriumPost,
   AtriumPostCreate,
   AtriumPostPatch,
-  AtriumProbeAttributes,
-  AtriumProbeCreate,
   AtriumProfile,
   AtriumProfilePatch,
   AtriumRegistrationRequestBody,
@@ -24,12 +22,14 @@ export type {
   AtriumSearchQuery,
   AtriumSearchRequest,
   AtriumSearchResponse,
+  AtriumStandingSearchRequest,
+  AtriumSubscriptionCreate,
 } from "@khoralabs/atrium-contracts";
 export {
   atriumPostLexicalText,
   atriumPostObservationSummary,
-  atriumProbeLexicalText,
   atriumProfileLexicalText,
+  atriumSubscriptionLexicalText,
   mergeAtriumPostPatch,
   mergeAtriumProfilePatch,
   normalizeTopicSlug,
@@ -41,7 +41,7 @@ export {
   zAtriumPostCreate,
   zAtriumPostKind,
   zAtriumPostPatch,
-  zAtriumProbeAttributes,
+  zAtriumPostVisibility,
   zAtriumProfile,
   zAtriumProfilePatch,
   zAtriumRegisterResult,
@@ -50,6 +50,7 @@ export {
   zAtriumRelationshipListResponse,
   zAtriumSearchRequest,
   zAtriumSearchResponse,
+  zAtriumStandingSearchRequest,
   zAtriumUnregisterRequestBody,
 } from "@khoralabs/atrium-contracts";
 export type {

@@ -35,11 +35,11 @@ function deps(consoleAuth: HostRouteDeps["consoleAuth"]): HostRouteDeps {
       registeredUsers: 0,
       invites: { configured: false, total: 0, consumed: 0, unconsumed: 0 },
       teardown: { pending: 0, running: 0, active: 0, completed: 0, failed: 0 },
-      catalog: { projectionRows: 0, subscriptionEdges: 0, registeredUsers: 0 },
+      catalog: { projectionRows: 0, standingQueries: 0, registeredUsers: 0 },
       frames: { activeRooms: 0, totalFrames: 0 },
       cells: { poolCount: 1, inUseCount: 0, shards: [] },
       networkActivity: {
-        probesThisWeek: 0,
+        subscriptionsThisWeek: 0,
         roomsCreatedThisWeek: 0,
         totalRoomsCreated: 0,
         heartbeat: {

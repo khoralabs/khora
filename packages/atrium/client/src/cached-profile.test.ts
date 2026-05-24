@@ -27,7 +27,7 @@ describe("loadCachedProfile", () => {
         did: "did:key:a",
         profile: { id: "p1", username: "ada", displayName: "Ada" },
         topicSlugs: ["rust"],
-        probes: [],
+        subscriptions: [],
       }),
     );
     const snap = loadCachedProfile(path);
@@ -58,7 +58,7 @@ describe("loadCachedProfile", () => {
         did: "did:key:a",
         profile: { id: "p1", username: "ada" },
         topicSlugs: [],
-        probes: [],
+        subscriptions: [],
       }),
     );
     expect(loadCachedProfile(path)).toBeUndefined();
@@ -109,34 +109,34 @@ describe("serializeProfileSyncStateFile round-trip", () => {
       profile: { id: "p1", username: "ada", displayName: "Ada" },
       topicSlugs: ["rust"],
       authorTopics: [],
-      probes: [],
+      subscriptions: [],
       syncedAtMs: 9999,
     };
     writeFileSync(path, serializeProfileSyncStateFile(snap));
     expect(loadCachedProfile(path)).toEqual(snap);
   });
 
-  test("accepts probe posts in snapshot", () => {
-    const path = join(dir, "probes.json");
+  test("accepts subscription posts in snapshot", () => {
+    const path = join(dir, "subscriptions.json");
     const snap = {
       did: "did:key:a",
       profile: { id: "p1", username: "ada" },
       topicSlugs: [],
       authorTopics: [],
-      probes: [
+      subscriptions: [
         {
-          id: "probe-1",
-          kind: "probe" as const,
+          id: "sub-1",
+          kind: "subscription" as const,
           title: "Intros",
           body: "Looking",
           authorProfileId: "p1",
           authorSignature: "test-post-sig",
-          attributes: { engagementType: "intros" },
+          search: { content: { text: "intros" } },
         },
       ],
       syncedAtMs: 1,
     };
     writeFileSync(path, serializeProfileSyncStateFile(snap));
-    expect(loadCachedProfile(path)?.probes[0]?.kind).toBe("probe");
+    expect(loadCachedProfile(path)?.subscriptions[0]?.kind).toBe("subscription");
   });
 });

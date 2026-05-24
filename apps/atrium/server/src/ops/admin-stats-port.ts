@@ -195,7 +195,7 @@ function scanOutboxActivity(
   return activity;
 }
 
-function countProbesSince(
+function countSubscriptionsSince(
   cellsDir: string,
   tenantKey: string,
   sqlCipherKey: string,
@@ -214,7 +214,7 @@ function countProbesSince(
           .prepare(
             `SELECT COUNT(*) AS c FROM outbox
              WHERE tenant_key = ?
-               AND json_extract(metadata, '$.postKind') = 'probe'
+               AND json_extract(metadata, '$.postKind') = 'subscription'
                AND committed_at_ms >= ?`,
           )
           .get(tenantKey, sinceMs) as { c: number }
@@ -244,7 +244,7 @@ function buildNetworkActivity(
   registeredAgents: number,
   principalIds: readonly string[],
   activity: Map<string, PrincipalActivity>,
-  probesThisWeek: number,
+  subscriptionsThisWeek: number,
   roomsCreatedThisWeek: number,
   totalRoomsCreated: number,
   nowMs: number,
@@ -270,7 +270,7 @@ function buildNetworkActivity(
   }
 
   return {
-    probesThisWeek,
+    subscriptionsThisWeek,
     roomsCreatedThisWeek,
     totalRoomsCreated,
     heartbeat: {
@@ -400,14 +400,14 @@ export function createAtriumAdminStatsPort(deps: {
         .prepare(`SELECT COUNT(*) AS c FROM relay_catalog_projections WHERE tenant_key = ?`)
         .get(tenantKey) as { c: number }
     ).c;
-    const subscriptionEdges = tableExists(catalogDb, "relay_subscription_edges")
+    const standingQueries = tableExists(catalogDb, "standing_queries")
       ? (
           catalogDb
-            .prepare(`SELECT COUNT(*) AS c FROM relay_subscription_edges WHERE tenant_key = ?`)
-            .get(tenantKey) as { c: number }
+            .prepare(`SELECT COUNT(*) AS c FROM standing_queries WHERE active = 1`)
+            .get() as { c: number }
         ).c
       : 0;
-    return { projectionRows, subscriptionEdges, registeredUsers };
+    return { projectionRows, standingQueries, registeredUsers };
   }
 
   function framesStats(): AtriumAdminStatsSummary["frames"] {
@@ -464,7 +464,7 @@ export function createAtriumAdminStatsPort(deps: {
           registeredUsers,
           principalIds,
           activity,
-          countProbesSince(cellsDir, tenantKey, sqlCipherKey, cellPoolCount, weekStart),
+          countSubscriptionsSince(cellsDir, tenantKey, sqlCipherKey, cellPoolCount, weekStart),
           countRoomsSince(framesDb, weekStart),
           countTotalRooms(framesDb),
           nowMs,
@@ -566,14 +566,16 @@ export function createAtriumAdminStatsPort(deps: {
       const username = lookupNormalizedUsernameForPrincipal(did);
       const cellId = cluster.assignPrincipalToCell(did);
       const outboxCount = countOutboxForPrincipal(cellsDir, cellId, tenantKey, did, sqlCipherKey);
-      const subscriptionCount = (
-        catalogDb
-          .prepare(
-            `SELECT COUNT(*) AS c FROM relay_subscription_edges
-             WHERE tenant_key = ? AND principal_id = ?`,
-          )
-          .get(tenantKey, did) as { c: number }
-      ).c;
+      const subscriptionCount = tableExists(catalogDb, "standing_queries")
+        ? (
+            catalogDb
+              .prepare(
+                `SELECT COUNT(*) AS c FROM standing_queries
+                 WHERE owner_id = ? AND active = 1`,
+              )
+              .get(did) as { c: number }
+          ).c
+        : 0;
       return {
         did,
         username: username ?? null,

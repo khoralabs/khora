@@ -20,6 +20,16 @@ export {
 } from "./memories/bootstrap.ts";
 export { DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT } from "./memories/memories-config.ts";
 export { assignPostAddress } from "./on-event.ts";
+export {
+  type AtriumPercolatorHost,
+  bootstrapAtriumPercolator,
+} from "./percolator/bootstrap.ts";
+export {
+  authorSubscriptionSearch,
+  authorTopicSubscriptionSearch,
+  topicSubscriptionSearch,
+} from "./percolator/subscription-searches.ts";
+export { topicSlugsToLabelKinds, topicSlugToLabelKind } from "./percolator/topic-labels.ts";
 export type {
   AtriumAdminCatalogStats,
   AtriumAdminCellDetail,
@@ -49,6 +59,7 @@ export {
   encodePostId,
   type PostAddressInput,
 } from "./post-address-id.ts";
+export { canDeliverPostToRecipient, canReadPost } from "./post-visibility.ts";
 export {
   discardCellInboxRoomTickets,
   enqueueCellInboxInline,

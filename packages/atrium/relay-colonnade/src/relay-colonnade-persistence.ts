@@ -4,13 +4,11 @@ import type { EncryptionKeyProvider } from "@khoralabs/sqlite-crypto";
 import { createCatalogEntityAdapter } from "./catalog-entity-adapter.ts";
 import { RelayCatalogProjectionStore } from "./catalog-projection-store.ts";
 import { createCatalogRegistrationAdapter } from "./catalog-registration-adapter.ts";
-import { createCatalogSubscriptionAdapter } from "./catalog-subscription-adapter.ts";
 import { createFrameChannelHubPersistenceSqlite } from "./frame-channel-sqlite.ts";
 import {
   RELAY_NAMESPACE_ENTITY_PROFILE,
   RELAY_NAMESPACE_ENTITY_TOPIC,
 } from "./relay-id-conventions.ts";
-import { RelaySubscriptionEdgeStore } from "./relay-subscription-edge-store.ts";
 import { openRelayCatalogDb, openRelayFramesDb } from "./sqlite-setup.ts";
 
 export const RELAY_CATALOG_SOURCE_PROFILE = RELAY_NAMESPACE_ENTITY_PROFILE;
@@ -23,7 +21,6 @@ export function createRelayColonnadePersistenceFromDatabases(
   tenantKey = "relay",
 ): AgentRelayPersistence {
   const projectionStore = new RelayCatalogProjectionStore(catalogDb);
-  const subscriptionEdgeStore = new RelaySubscriptionEdgeStore(catalogDb);
   return {
     frameChannelHubPersistence: createFrameChannelHubPersistenceSqlite(framesDb),
     profiles: createCatalogEntityAdapter(
@@ -39,11 +36,6 @@ export function createRelayColonnadePersistenceFromDatabases(
       RELAY_NAMESPACE_ENTITY_TOPIC,
     ),
     agentRegistrations: createCatalogRegistrationAdapter(projectionStore, catalogDb, tenantKey),
-    agentSubjectSubscriptions: createCatalogSubscriptionAdapter(
-      subscriptionEdgeStore,
-      catalogDb,
-      tenantKey,
-    ),
   };
 }
 

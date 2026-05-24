@@ -131,7 +131,7 @@ afterAll(() => {
 });
 
 describe("admin network activity", () => {
-  test("counts probes this week and room creation", () => {
+  test("counts subscriptions this week and room creation", () => {
     const now = Date.now();
     registerPrincipal("did:key:active", "active");
     registerPrincipal("did:key:quiet", "quiet");
@@ -140,13 +140,13 @@ describe("admin network activity", () => {
       {
         recordKey: "probe-1",
         principalId: "did:key:active",
-        postKind: "probe",
+        postKind: "subscription",
         committedAtMs: now - 1_000,
       },
       {
         recordKey: "probe-old",
         principalId: "did:key:active",
-        postKind: "probe",
+        postKind: "subscription",
         committedAtMs: now - 8 * 24 * 60 * 60 * 1000,
       },
       {
@@ -182,7 +182,7 @@ describe("admin network activity", () => {
       did === "did:key:active" ? "active" : did === "did:key:quiet" ? "quiet" : undefined,
     ).summary();
 
-    expect(summary.networkActivity.probesThisWeek).toBe(1);
+    expect(summary.networkActivity.subscriptionsThisWeek).toBe(1);
     expect(summary.networkActivity.roomsCreatedThisWeek).toBe(1);
     expect(summary.networkActivity.totalRoomsCreated).toBe(2);
     expect(summary.networkActivity.heartbeat.registeredAgents).toBe(2);

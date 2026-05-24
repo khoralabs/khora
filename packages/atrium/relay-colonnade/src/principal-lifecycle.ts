@@ -20,18 +20,17 @@ import {
   USERNAME_INDEX_TENANT_KEY,
 } from "./relay-id-conventions.ts";
 import type { RelaySocialPrincipalChannelStore } from "./relay-social-principal-channel-store.ts";
-import type { RelaySubscriptionEdgeStore } from "./relay-subscription-edge-store.ts";
 import { purgeSocialRelationshipsForPrincipal } from "./social-relationship-persistence.ts";
 
 export type RelayPrincipalLifecycleDeps = {
   readonly catalogDb: Database;
   readonly framesDb: Database;
   readonly projectionStore: RelayCatalogProjectionStore;
-  readonly subscriptionEdgeStore: RelaySubscriptionEdgeStore;
   readonly principalChannelStore: RelaySocialPrincipalChannelStore;
   readonly persistence: AgentRelayPersistence;
   readonly tenantKey: string;
   readonly cluster: SqliteColonnadeCluster;
+  readonly onPrincipalTeardown?: (principalId: PrincipalId) => void;
 };
 
 export type RelayPrincipalLifecycle = {
@@ -90,33 +89,7 @@ function cascadeTeardownWithProfile(
   principalId: PrincipalId,
   profileId: string,
 ): void {
-  const authorSub = `author:${principalId}`;
-  const followers = [
-    ...deps.persistence.agentSubjectSubscriptions.subscriberPrincipalsForSubject(authorSub),
-  ];
-  for (const peer of followers) {
-    deps.persistence.agentSubjectSubscriptions.unsubscribe(peer, authorSub);
-  }
-
-  const tupleSubjects = deps.subscriptionEdgeStore.listSubjectsWithPrefix(
-    deps.tenantKey,
-    `author_topic:${principalId}\t`,
-  );
-  for (const subject of tupleSubjects) {
-    const peers = [
-      ...deps.persistence.agentSubjectSubscriptions.subscriberPrincipalsForSubject(subject),
-    ];
-    for (const peer of peers) {
-      deps.persistence.agentSubjectSubscriptions.unsubscribe(peer, subject);
-    }
-  }
-
-  const mySubs = [
-    ...deps.persistence.agentSubjectSubscriptions.listSubjectsForPrincipal(principalId),
-  ];
-  for (const s of mySubs) {
-    deps.persistence.agentSubjectSubscriptions.unsubscribe(principalId, s);
-  }
+  deps.onPrincipalTeardown?.(principalId);
 
   purgeSocialRelationshipsForPrincipal({
     projectionStore: deps.projectionStore,

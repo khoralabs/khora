@@ -1,3 +1,4 @@
+import type { PrincipalId } from "@khoralabs/agent-relay";
 import type {
   AtriumSearchQuery,
   AtriumSearchRequest,
@@ -6,6 +7,8 @@ import type {
 import type { MemoriesClient, SearchParams } from "@khoralabs/memories-core";
 import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import { embedTextChunks } from "@khoralabs/memories-core/helpers";
+import type { SocialRelationshipPersistence } from "@khoralabs/relay-colonnade";
+import { canReadPost } from "../post-visibility.ts";
 import { type AtriumCanonicalStore, hydrateMemoryLabels } from "./atrium-canonical-store.ts";
 import type { atriumOntology } from "./atrium-ontology.ts";
 
@@ -21,8 +24,10 @@ export async function executeAtriumMemoriesSearch(deps: {
   embeddingModel?: EmbeddingModel;
   namespaceRoot: string;
   params: AtriumSearchRequest;
+  readerPrincipalId?: PrincipalId;
+  social?: SocialRelationshipPersistence;
 }): Promise<AtriumSearchResponse> {
-  const { client, store, embeddingModel, namespaceRoot, params } = deps;
+  const { client, store, embeddingModel, namespaceRoot, params, readerPrincipalId, social } = deps;
   let content: SearchParams["content"];
   if (params.content.vector !== undefined && params.content.vector.length > 0) {
     content =
@@ -60,13 +65,34 @@ export async function executeAtriumMemoriesSearch(deps: {
   const enriched: AtriumSearchResponse["hits"] = [];
   for (const hit of hits) {
     const hydrated = await hydrateMemoryLabels(store, hit.labels, hit.memory._id, hit.source_key);
+    if (
+      social !== undefined &&
+      hydrated !== undefined &&
+      (hydrated.kind === "post" || hydrated.kind === "subscription") &&
+      !canReadPost({ post: hydrated.entity, readerPrincipalId, social })
+    ) {
+      continue;
+    }
     const neighbors = hit.neighbors
-      ? await Promise.all(
-          hit.neighbors.map(async (n) => ({
-            ...n,
-            hydrated: await hydrateMemoryLabels(store, n.labels, n._id, undefined),
-          })),
-        )
+      ? (
+          await Promise.all(
+            hit.neighbors.map(async (n) => {
+              const neighborHydrated = await hydrateMemoryLabels(store, n.labels, n._id, undefined);
+              if (
+                social !== undefined &&
+                neighborHydrated !== undefined &&
+                (neighborHydrated.kind === "post" || neighborHydrated.kind === "subscription") &&
+                !canReadPost({ post: neighborHydrated.entity, readerPrincipalId, social })
+              ) {
+                return undefined;
+              }
+              return {
+                ...n,
+                hydrated: neighborHydrated,
+              };
+            }),
+          )
+        ).filter((n): n is NonNullable<typeof n> => n !== undefined)
       : undefined;
     enriched.push({ ...hit, hydrated, neighbors } as AtriumSearchResponse["hits"][number]);
   }

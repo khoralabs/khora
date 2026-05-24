@@ -55,26 +55,29 @@ describe("zAtriumSearchResponse", () => {
     expect(parsed.hits[0]?.neighbors?.[0]?.hydrated?.kind).toBe("profile");
   });
 
-  test("parses hit with hydrated probe", () => {
+  test("parses hit with hydrated subscription", () => {
     const parsed = zAtriumSearchResponse.parse({
       hits: [
         {
           score: 0.2,
           hydrated: {
-            kind: "probe",
+            kind: "subscription",
             entity: {
-              id: "probe-1",
-              kind: "probe",
+              id: "sub-1",
+              kind: "subscription",
               title: "Beta intros",
               body: "Looking for partners",
               authorProfileId: "p1",
               authorSignature: SIG,
-              attributes: { domains: ["platform"] },
+              search: {
+                content: { text: "platform" },
+                options: { labels: { some: ["atrium_topic:platform"] } },
+              },
             },
           },
         },
       ],
     });
-    expect(parsed.hits[0]?.hydrated?.kind).toBe("probe");
+    expect(parsed.hits[0]?.hydrated?.kind).toBe("subscription");
   });
 });

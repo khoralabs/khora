@@ -40,7 +40,7 @@ export function AdminStatsCatalogMetrics({ className, ...props }: React.Componen
         <>
           <MetricRow label="Registered users" value={summary.catalog.registeredUsers} />
           <MetricRow label="Projection rows" value={summary.catalog.projectionRows} />
-          <MetricRow label="Subscription edges" value={summary.catalog.subscriptionEdges} />
+          <MetricRow label="Standing queries" value={summary.catalog.standingQueries} />
         </>
       )}
     </dl>

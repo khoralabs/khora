@@ -7,24 +7,48 @@ import {
 import {
   type AtriumPost,
   type AtriumProfile,
+  atriumPostLexicalText,
+  atriumSubscriptionLexicalText,
   parseAtriumRegistrationMetadata,
   zAtriumProfile,
 } from "@khoralabs/atrium-contracts";
-import type { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
+import type {
+  ColonnadePublicationClient,
+  PostOperationOutput,
+} from "@khoralabs/colonnade-persistence";
 import { randomId } from "@khoralabs/colonnade-persistence";
+import { embedTextChunks } from "@khoralabs/memories-core/helpers";
+import type { SocialRelationshipPersistence } from "@khoralabs/relay-colonnade";
 import type { AtriumHostCatalogApi } from "./catalog-facade.ts";
 import type { AtriumMemoriesHost } from "./memories/bootstrap.ts";
-import { addProbeHitReasons } from "./memories/probe-hit.ts";
+import { toPercolatorSearch } from "./percolator/adapter.ts";
+import type { AtriumPercolatorHost } from "./percolator/bootstrap.ts";
+import { buildPercolatorCandidateFromPost } from "./percolator/candidate.ts";
 import type { AtriumColonnadeCluster } from "./ports.ts";
 import { decodePostId } from "./post-address-id.ts";
+import { canDeliverPostToRecipient } from "./post-visibility.ts";
 import { deletePostOutboxRecord } from "./resolve-post.ts";
-import {
-  authorSubscriptionSubject,
-  authorTopicSubscriptionSubject,
-  topicSubscriptionSubject,
-} from "./subject-keys.ts";
 
 const postEncoder = new TextEncoder();
+
+async function postLexicalVector(
+  post: AtriumPost,
+  memories: AtriumMemoriesHost | undefined,
+): Promise<{ lexicalText: string; vector?: number[] }> {
+  const lexicalText =
+    post.kind === "subscription"
+      ? atriumSubscriptionLexicalText(post)
+      : atriumPostLexicalText(post);
+  if (memories?.embeddingModel === undefined) {
+    return { lexicalText };
+  }
+  const vectors = await embedTextChunks(memories.embeddingModel, [lexicalText]);
+  const vector = vectors[0];
+  return {
+    lexicalText,
+    ...(vector !== undefined && vector.length > 0 ? { vector } : {}),
+  };
+}
 
 async function publishPost(params: {
   ctx: AgentRelayEventHandlerCtx;
@@ -34,8 +58,11 @@ async function publishPost(params: {
   publicationClient: ColonnadePublicationClient;
   fanOut: boolean;
   memories?: AtriumMemoriesHost;
-}): Promise<void> {
-  const { ctx, tenantKey, post, cluster, publicationClient, fanOut, memories } = params;
+  percolator?: AtriumPercolatorHost;
+  social?: SocialRelationshipPersistence;
+}): Promise<PostOperationOutput> {
+  const { ctx, tenantKey, post, cluster, publicationClient, fanOut, memories, percolator, social } =
+    params;
   const address = decodePostId(post.id);
   if (address === undefined) {
     throw new Error("publishPost: post.id is not a valid address-encoded id");
@@ -49,8 +76,7 @@ async function publishPost(params: {
   const payload_bytes = postEncoder.encode(JSON.stringify(post));
 
   const byRecipient = new Map<string, InboxPostReason[]>();
-  if (fanOut) {
-    const subs = ctx.persistence.agentSubjectSubscriptions;
+  if (fanOut && percolator !== undefined && memories !== undefined && social !== undefined) {
     const addReason = (recipientId: string, reason: InboxPostReason): void => {
       if (recipientId === authorPrincipalId) return;
       const cur = byRecipient.get(recipientId);
@@ -61,32 +87,34 @@ async function publishPost(params: {
       }
     };
 
-    if (post.topics !== undefined && post.topics.length > 0) {
-      for (const slug of post.topics) {
-        const subject = topicSubscriptionSubject(slug);
-        for (const pid of subs.subscriberPrincipalsForSubject(subject, authorPrincipalId)) {
-          addReason(pid, { kind: "topic", topic: slug });
-        }
-        const tupleSubject = authorTopicSubscriptionSubject(authorPrincipalId, slug);
-        for (const pid of subs.subscriberPrincipalsForSubject(tupleSubject, authorPrincipalId)) {
-          addReason(pid, {
-            kind: "author_topic",
-            authorPrincipalId,
-            topic: slug,
+    const authorProfileId =
+      post.authorProfileId ?? ctx.persistenceClient.profileIdForPrincipal(authorPrincipalId);
+    if (authorProfileId !== undefined) {
+      const { lexicalText, vector } = await postLexicalVector(post, memories);
+      const candidate = buildPercolatorCandidateFromPost({
+        post,
+        authorPrincipalId,
+        authorProfileId,
+        namespaceRoot: memories.namespaceRoot,
+        lexicalText,
+        vector,
+      });
+      const matches = await percolator.percolator.evaluateCandidate(candidate);
+      for (const match of matches) {
+        if (
+          canDeliverPostToRecipient({
+            post,
+            recipientPrincipalId: match.ownerId,
+            social,
+          })
+        ) {
+          addReason(match.ownerId, {
+            kind: "standing_query",
+            queryPostId: match.queryId,
+            score: match.score,
           });
         }
       }
-    }
-
-    const authorSub = authorSubscriptionSubject(authorPrincipalId);
-    for (const pid of subs.subscriberPrincipalsForSubject(authorSub, authorPrincipalId)) {
-      addReason(pid, { kind: "author" });
-    }
-
-    if (post.kind === "probe" && memories !== undefined) {
-      await addProbeHitReasons(memories, post, byRecipient, (principalId) =>
-        ctx.persistenceClient.profileIdForPrincipal(principalId),
-      );
     }
   }
 
@@ -105,7 +133,7 @@ async function publishPost(params: {
       }))
     : [];
 
-  await publicationClient.postOperation({
+  return publicationClient.postOperation({
     author_principal_id: authorPrincipalId,
     author_cell_id: authorCellId,
     tenant_key: tenantKey,
@@ -121,17 +149,36 @@ async function publishPost(params: {
   });
 }
 
+function registerSubscriptionQuery(
+  percolator: AtriumPercolatorHost,
+  post: AtriumPost,
+  ownerPrincipalId: string,
+): void {
+  if (post.kind !== "subscription" || post.search === undefined) return;
+  percolator.percolator.registerQuery({
+    id: post.id,
+    ownerId: ownerPrincipalId,
+    search: toPercolatorSearch(post.search),
+    ...(post.search.options?.minScore !== undefined
+      ? { minScore: post.search.options.minScore }
+      : {}),
+    ...(post.expiresAtMs !== undefined ? { expiresAtMs: post.expiresAtMs } : {}),
+  });
+}
+
 export function createAtriumRelayOnEvent(deps: {
   catalog: AtriumHostCatalogApi;
   tenantKey: string;
   cluster: AtriumColonnadeCluster;
   publicationClient: ColonnadePublicationClient;
   memories?: AtriumMemoriesHost;
+  percolator?: AtriumPercolatorHost;
+  social?: SocialRelationshipPersistence;
 }): (
   ctx: AgentRelayEventHandlerCtx,
   event: AgentRelayEventUnion<AtriumProfile, AtriumPost, unknown, never>,
 ) => void | Promise<void> {
-  const { catalog, tenantKey, cluster, publicationClient, memories } = deps;
+  const { catalog, tenantKey, cluster, publicationClient, memories, percolator, social } = deps;
   return async (
     ctx: AgentRelayEventHandlerCtx,
     event: AgentRelayEventUnion<AtriumProfile, AtriumPost, unknown, never>,
@@ -178,6 +225,10 @@ export function createAtriumRelayOnEvent(deps: {
 
     if (event.kind === AGENT_RELAY_EVENT_KIND.POST_CREATED) {
       const post = event.payload.post;
+      const address = decodePostId(post.id);
+      if (post.kind === "subscription" && percolator !== undefined && address !== undefined) {
+        registerSubscriptionQuery(percolator, post, address.authorPrincipalId);
+      }
       await publishPost({
         ctx,
         tenantKey,
@@ -186,6 +237,8 @@ export function createAtriumRelayOnEvent(deps: {
         publicationClient,
         fanOut: true,
         memories,
+        percolator,
+        social,
       });
       if (memories !== undefined) {
         await memories.indexer.indexPost(post);
@@ -196,6 +249,10 @@ export function createAtriumRelayOnEvent(deps: {
     if (event.kind === AGENT_RELAY_EVENT_KIND.POST_UPDATED) {
       const post = event.payload.post;
       const previous = event.payload.previous;
+      const address = decodePostId(post.id);
+      if (post.kind === "subscription" && percolator !== undefined && address !== undefined) {
+        registerSubscriptionQuery(percolator, post, address.authorPrincipalId);
+      }
       await publishPost({
         ctx,
         tenantKey,
@@ -212,6 +269,9 @@ export function createAtriumRelayOnEvent(deps: {
 
     if (event.kind === AGENT_RELAY_EVENT_KIND.POST_DELETED) {
       const post = event.payload.post;
+      if (post.kind === "subscription" && percolator !== undefined) {
+        percolator.percolator.deactivateQuery(post.id);
+      }
       await deletePostOutboxRecord(cluster, post.id);
       if (memories !== undefined) {
         await memories.indexer.deletePost(post);

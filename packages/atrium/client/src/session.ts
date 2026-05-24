@@ -15,8 +15,6 @@ export type AtriumSession = {
   createPost(body: AtriumPostCreateContent): Promise<AtriumPost>;
   updatePost(id: string, patch: Omit<AtriumPostPatch, "authorSignature">): Promise<AtriumPost>;
   deletePost(id: string): Promise<void>;
-  subscribeTopic(topicSlug: string): Promise<{ ok: true; topicSlug: string }>;
-  unsubscribeTopic(topicSlug: string): Promise<void>;
   connectInbox(handlers: InboxWsHandlers): Promise<{ close(): void }>;
 };
 
@@ -37,12 +35,6 @@ export function createAtriumSession(
     },
     deletePost(id) {
       return client.deletePost(id);
-    },
-    subscribeTopic(topicSlug) {
-      return client.subscribeTopic(topicSlug);
-    },
-    unsubscribeTopic(topicSlug) {
-      return client.unsubscribeTopic(topicSlug);
     },
     connectInbox(handlers) {
       return client.connectInbox(handlers);

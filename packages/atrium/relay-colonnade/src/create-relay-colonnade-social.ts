@@ -4,7 +4,6 @@ import type { EncryptionKeyProvider } from "@khoralabs/sqlite-crypto";
 import { RelayCatalogProjectionStore } from "./catalog-projection-store.ts";
 import { createRelayColonnadePersistenceFromDatabases } from "./relay-colonnade-persistence.ts";
 import { RelaySocialPrincipalChannelStore } from "./relay-social-principal-channel-store.ts";
-import { RelaySubscriptionEdgeStore } from "./relay-subscription-edge-store.ts";
 import { createSocialRelationshipPersistence } from "./social-relationship-persistence.ts";
 import type { SocialRelationshipPersistence } from "./social-types.ts";
 import { openRelayCatalogDb, openRelayFramesDb } from "./sqlite-setup.ts";
@@ -20,7 +19,6 @@ export async function createRelayColonnadeSocial(opts: {
   catalogDb: Database;
   framesDb: Database;
   projectionStore: RelayCatalogProjectionStore;
-  subscriptionEdgeStore: RelaySubscriptionEdgeStore;
   principalChannelStore: RelaySocialPrincipalChannelStore;
   tenantKey: string;
 }> {
@@ -28,7 +26,6 @@ export async function createRelayColonnadeSocial(opts: {
   const catalogDb = await openRelayCatalogDb(opts.catalogPath, opts.encryptionProvider);
   const framesDb = await openRelayFramesDb(opts.framesDbPath, opts.encryptionProvider);
   const projectionStore = new RelayCatalogProjectionStore(catalogDb);
-  const subscriptionEdgeStore = new RelaySubscriptionEdgeStore(catalogDb);
   const principalChannelStore = new RelaySocialPrincipalChannelStore(catalogDb);
   const persistence = createRelayColonnadePersistenceFromDatabases(catalogDb, framesDb, tenantKey);
   const social = createSocialRelationshipPersistence({
@@ -44,7 +41,6 @@ export async function createRelayColonnadeSocial(opts: {
     catalogDb,
     framesDb,
     projectionStore,
-    subscriptionEdgeStore,
     principalChannelStore,
     tenantKey,
   };

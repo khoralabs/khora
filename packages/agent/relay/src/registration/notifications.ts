@@ -12,11 +12,11 @@ export type InboxPostReason =
   | { kind: "topic"; topic: string }
   | { kind: "author" }
   | { kind: "author_topic"; authorPrincipalId: PrincipalId; topic: string }
-  | { kind: "probe-hit"; probePostId: string; score: number };
+  | { kind: "standing_query"; queryPostId: string; score: number };
 
 export type InboxPostNotificationPayload = {
   postId: string;
-  postKind: "post" | "status" | "probe";
+  postKind: "post" | "status" | "subscription";
   authorPrincipalId?: PrincipalId;
   reasons: InboxPostReason[];
 };

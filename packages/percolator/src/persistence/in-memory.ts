@@ -38,9 +38,7 @@ export function createInMemoryPercolatorPersistence(): PercolatorPersistence {
     },
 
     listQueriesByOwner(ownerId: string): StandingQuery[] {
-      return [...queries.values()]
-        .filter((q) => q.ownerId === ownerId)
-        .map((q) => ({ ...q }));
+      return [...queries.values()].filter((q) => q.ownerId === ownerId).map((q) => ({ ...q }));
     },
 
     listActiveQueries(now: number): StandingQuery[] {

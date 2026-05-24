@@ -358,6 +358,8 @@
         "@khoralabs/atrium-transport": "workspace:*",
         "@khoralabs/colonnade-persistence": "workspace:*",
         "@khoralabs/memories-core": "workspace:*",
+        "@khoralabs/percolator": "workspace:*",
+        "@khoralabs/percolator-sqlite": "workspace:*",
         "@khoralabs/relay-colonnade": "workspace:*",
         "@khoralabs/sourcemaps": "workspace:*",
         "zod": "^4",
@@ -408,6 +410,7 @@
         "@khoralabs/agent-relay": "workspace:*",
         "@khoralabs/atrium-contracts": "workspace:*",
         "@khoralabs/colonnade-persistence": "workspace:*",
+        "@khoralabs/percolator-sqlite": "workspace:*",
         "@khoralabs/sqlite-crypto": "workspace:*",
       },
       "devDependencies": {

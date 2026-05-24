@@ -278,22 +278,6 @@ describe("AtriumClient", () => {
     expect(await c.lookupProfileByUsername("ghost")).toBeNull();
   });
 
-  test("subscribeTopic signs request and encodes slug", async () => {
-    const signer = staticSigner("did:key:agent");
-    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
-      expect(String(input)).toBe("http://h/v1/topics/rust-dev/subscribe");
-      expect(init?.method).toBe("POST");
-      expectAuthHeaders(init, "did:key:agent");
-      return Response.json({ ok: true, topicSlug: "rust-dev" });
-    });
-    const c = new AtriumClient({
-      baseUrl: "http://h",
-      signer,
-      fetch: fetchMock,
-    });
-    await c.subscribeTopic("rust-dev");
-  });
-
   test("listAuthorSubscriptions signs GET /v1/authors/subscriptions", async () => {
     const signer = staticSigner("did:key:agent");
     const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -311,90 +295,6 @@ describe("AtriumClient", () => {
       authorDids: ["did:key:bob"],
       authorTopics: [],
     });
-  });
-
-  test("subscribeAuthor signs POST with encoded username", async () => {
-    const signer = staticSigner("did:key:agent");
-    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
-      expect(String(input)).toBe("http://h/v1/authors/ada-99/subscribe");
-      expect(init?.method).toBe("POST");
-      expectAuthHeaders(init, "did:key:agent");
-      return Response.json({
-        ok: true,
-        username: "ada-99",
-        authorDid: "did:key:bob",
-      });
-    });
-    const c = new AtriumClient({
-      baseUrl: "http://h",
-      signer,
-      fetch: fetchMock,
-    });
-    const out = await c.subscribeAuthor("ada-99");
-    expect(out).toEqual({
-      ok: true,
-      username: "ada-99",
-      authorDid: "did:key:bob",
-    });
-  });
-
-  test("unsubscribeAuthor signs DELETE", async () => {
-    const signer = staticSigner("did:key:agent");
-    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
-      expect(String(input)).toBe("http://h/v1/authors/ada-99/subscribe");
-      expect(init?.method).toBe("DELETE");
-      expectAuthHeaders(init, "did:key:agent");
-      return new Response(null, { status: 204 });
-    });
-    const c = new AtriumClient({
-      baseUrl: "http://h",
-      signer,
-      fetch: fetchMock,
-    });
-    await c.unsubscribeAuthor("ada-99");
-  });
-
-  test("subscribeAuthorTopic signs POST with encoded username and slug", async () => {
-    const signer = staticSigner("did:key:agent");
-    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
-      expect(String(input)).toBe("http://h/v1/authors/ada-99/topics/rust-dev/subscribe");
-      expect(init?.method).toBe("POST");
-      expectAuthHeaders(init, "did:key:agent");
-      return Response.json({
-        ok: true,
-        username: "ada-99",
-        authorDid: "did:key:bob",
-        topicSlug: "rust-dev",
-      });
-    });
-    const c = new AtriumClient({
-      baseUrl: "http://h",
-      signer,
-      fetch: fetchMock,
-    });
-    const out = await c.subscribeAuthorTopic("ada-99", "rust-dev");
-    expect(out).toEqual({
-      ok: true,
-      username: "ada-99",
-      authorDid: "did:key:bob",
-      topicSlug: "rust-dev",
-    });
-  });
-
-  test("unsubscribeAuthorTopic signs DELETE", async () => {
-    const signer = staticSigner("did:key:agent");
-    const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
-      expect(String(input)).toBe("http://h/v1/authors/ada-99/topics/zig/subscribe");
-      expect(init?.method).toBe("DELETE");
-      expectAuthHeaders(init, "did:key:agent");
-      return new Response(null, { status: 204 });
-    });
-    const c = new AtriumClient({
-      baseUrl: "http://h",
-      signer,
-      fetch: fetchMock,
-    });
-    await c.unsubscribeAuthorTopic("ada-99", "zig");
   });
 
   test("createPost sends creation body and signs", async () => {
@@ -427,7 +327,7 @@ describe("AtriumClient", () => {
     expect(out.authorProfileId).toBe("u1");
   });
 
-  test("createProbe sends probe body with kind probe", async () => {
+  test("createSubscription sends subscription body with kind subscription", async () => {
     const signer = staticSigner("did:key:writer");
     const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
       expect(String(input)).toBe("http://h/v1/posts");
@@ -435,21 +335,23 @@ describe("AtriumClient", () => {
       expectAuthHeaders(init, "did:key:writer");
       const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
       expect(body).toMatchObject({
-        kind: "probe",
+        kind: "subscription",
         title: "Beta intros",
         body: "Looking for partners",
-        attributes: { domains: ["platform"] },
+        search: { content: { text: "platform partners" } },
         topics: ["platform"],
+        visibility: "public",
       });
       expect(typeof body.authorSignature).toBe("string");
       return Response.json({
-        id: "atrium_probe_abc",
+        id: "atrium_sub_abc",
         authorProfileId: "u1",
-        kind: "probe",
+        kind: "subscription",
         title: "Beta intros",
         body: "Looking for partners",
-        attributes: { domains: ["platform"] },
+        search: { content: { text: "platform partners" } },
         topics: ["platform"],
+        visibility: "public",
         authorSignature: TEST_AUTHOR_SIGNATURE,
       });
     });
@@ -458,13 +360,14 @@ describe("AtriumClient", () => {
       signer,
       fetch: fetchMock,
     });
-    const out = await c.createProbe({
+    const out = await c.createSubscription({
       title: "Beta intros",
       body: "Looking for partners",
-      attributes: { domains: ["platform"] },
+      search: { content: { text: "platform partners" } },
       topics: ["platform"],
+      visibility: "public",
     });
-    expect(out.kind).toBe("probe");
+    expect(out.kind).toBe("subscription");
   });
 
   test("updatePost signs request", async () => {

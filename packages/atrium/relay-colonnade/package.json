@@ -14,6 +14,7 @@
     "@khoralabs/agent-relay": "workspace:*",
     "@khoralabs/atrium-contracts": "workspace:*",
     "@khoralabs/colonnade-persistence": "workspace:*",
+    "@khoralabs/percolator-sqlite": "workspace:*",
     "@khoralabs/sqlite-crypto": "workspace:*"
   },
   "peerDependencies": {

@@ -15,7 +15,7 @@ export type AtriumAdminTeardownStats = {
 
 export type AtriumAdminCatalogStats = {
   projectionRows: number;
-  subscriptionEdges: number;
+  standingQueries: number;
   registeredUsers: number;
 };
 
@@ -47,7 +47,7 @@ export type AtriumAdminHeartbeatStats = {
 };
 
 export type AtriumAdminNetworkActivityStats = {
-  probesThisWeek: number;
+  subscriptionsThisWeek: number;
   roomsCreatedThisWeek: number;
   totalRoomsCreated: number;
   heartbeat: AtriumAdminHeartbeatStats;

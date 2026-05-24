@@ -12,6 +12,7 @@ import type {
 import type { OutboxPayloadCodec } from "@khoralabs/sqlite-crypto";
 import type { AtriumHostCatalogApi } from "./catalog-facade.ts";
 import type { AtriumMemoriesHost } from "./memories/bootstrap.ts";
+import type { AtriumPercolatorHost } from "./percolator/bootstrap.ts";
 import type {
   AtriumAdminStatsPort,
   AtriumColonnadeCluster,
@@ -35,6 +36,7 @@ export type AtriumHostContext = {
   invitesRepo: AtriumInvitesRepo | undefined;
   principalTeardownWorker: PrincipalTeardownWorkerHandle;
   memories?: AtriumMemoriesHost;
+  percolator: AtriumPercolatorHost;
   health: AtriumHostHealthPort;
   adminStats: AtriumAdminStatsPort;
   outboxPayloadCodec: OutboxPayloadCodec;

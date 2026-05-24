@@ -1,5 +1,9 @@
 import type { AgentSigner } from "@khoralabs/agent-persisted-signer";
-import type { AtriumPostCreateContent, AtriumPostPatch } from "@khoralabs/atrium-contracts";
+import type {
+  AtriumPostCreateContent,
+  AtriumPostPatch,
+  AtriumStandingSearchRequest,
+} from "@khoralabs/atrium-contracts";
 import { verifyAsync } from "@noble/ed25519";
 import { DIDKey } from "iso-did/key";
 import { AuthStrategyError } from "./strategy.ts";
@@ -10,16 +14,13 @@ export const ATRIUM_POST_SIGNATURE_V1 = 1 as const;
 export type AtriumPostSigningPayloadV1 = {
   v: typeof ATRIUM_POST_SIGNATURE_V1;
   authorDid: string;
-  kind: "post" | "status" | "probe";
+  kind: "post" | "status" | "subscription";
   topics?: string[];
+  visibility?: "public" | "network" | "private";
   expiresAtMs?: number;
   title?: string;
   body: string;
-  attributes?: {
-    stage?: string;
-    domains?: string[];
-    engagementType?: string;
-  };
+  search?: AtriumStandingSearchRequest;
 };
 
 function stableStringify(v: unknown): string {
@@ -46,27 +47,30 @@ export function atriumPostSigningPayloadFromCreate(
   content: AtriumPostCreateContent,
 ): AtriumPostSigningPayloadV1 {
   const kind = content.kind ?? "post";
+  const visibility = content.visibility ?? "public";
   return {
     v: ATRIUM_POST_SIGNATURE_V1,
     authorDid,
     kind,
     ...(content.topics !== undefined ? { topics: content.topics } : {}),
+    ...(visibility !== "public" ? { visibility } : {}),
     ...(content.expiresAtMs !== undefined ? { expiresAtMs: content.expiresAtMs } : {}),
     ...(content.title !== undefined ? { title: content.title } : {}),
     body: content.body,
-    ...(content.attributes !== undefined ? { attributes: content.attributes } : {}),
+    ...(content.search !== undefined ? { search: content.search } : {}),
   };
 }
 
 export function atriumPostSigningPayloadFromPatch(
   authorDid: string,
   merged: {
-    kind: "post" | "status" | "probe";
+    kind: "post" | "status" | "subscription";
     topics?: string[];
+    visibility?: "public" | "network" | "private";
     expiresAtMs?: number;
     title?: string;
     body: string;
-    attributes?: AtriumPostSigningPayloadV1["attributes"];
+    search?: AtriumStandingSearchRequest;
   },
 ): AtriumPostSigningPayloadV1 {
   return {
@@ -74,10 +78,13 @@ export function atriumPostSigningPayloadFromPatch(
     authorDid,
     kind: merged.kind,
     ...(merged.topics !== undefined ? { topics: merged.topics } : {}),
+    ...(merged.visibility !== undefined && merged.visibility !== "public"
+      ? { visibility: merged.visibility }
+      : {}),
     ...(merged.expiresAtMs !== undefined ? { expiresAtMs: merged.expiresAtMs } : {}),
     ...(merged.title !== undefined ? { title: merged.title } : {}),
     body: merged.body,
-    ...(merged.attributes !== undefined ? { attributes: merged.attributes } : {}),
+    ...(merged.search !== undefined ? { search: merged.search } : {}),
   };
 }
 
@@ -134,21 +141,23 @@ export async function verifyAtriumPostSignature(args: {
 export function signingPayloadForPatch(
   authorDid: string,
   previous: {
-    kind: "post" | "status" | "probe";
+    kind: "post" | "status" | "subscription";
     topics?: string[];
+    visibility?: "public" | "network" | "private";
     expiresAtMs?: number;
     title?: string;
     body: string;
-    attributes?: AtriumPostPatch["attributes"];
+    search?: AtriumPostPatch["search"];
   },
   patch: Omit<AtriumPostPatch, "authorSignature">,
 ): AtriumPostSigningPayloadV1 {
   return atriumPostSigningPayloadFromPatch(authorDid, {
     kind: patch.kind ?? previous.kind,
     topics: patch.topics ?? previous.topics,
+    visibility: patch.visibility ?? previous.visibility,
     expiresAtMs: patch.expiresAtMs ?? previous.expiresAtMs,
     title: patch.title ?? previous.title,
     body: patch.body ?? previous.body,
-    attributes: patch.attributes ?? previous.attributes,
+    search: patch.search ?? previous.search,
   });
 }

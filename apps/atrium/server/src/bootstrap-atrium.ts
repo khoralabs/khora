@@ -3,6 +3,7 @@ import { createAtriumDidAuth, createSqliteNonceStore } from "@khoralabs/atrium-a
 import {
   type AtriumHostContext,
   bootstrapAtriumMemories,
+  bootstrapAtriumPercolator,
   createAtriumCatalogApi,
   createAtriumHost,
   createColonnadePostResolver,
@@ -60,7 +61,6 @@ export async function bootstrapAtriumHost(
     catalogDb,
     framesDb,
     projectionStore,
-    subscriptionEdgeStore,
     principalChannelStore,
     tenantKey,
   } = await createRelayColonnadeSocial({
@@ -81,15 +81,25 @@ export async function bootstrapAtriumHost(
   });
   const publicationClient = new ColonnadePublicationClient(cluster.resolveCell);
   const postResolver = createColonnadePostResolver(cluster);
+  const percolator = bootstrapAtriumPercolator({
+    catalogDb,
+    ...(opts.memories?.embeddingModel !== undefined
+      ? { embeddingModel: opts.memories.embeddingModel }
+      : {}),
+  });
   const principalLifecycle = createRelayPrincipalLifecycle({
     catalogDb,
     framesDb,
     projectionStore,
-    subscriptionEdgeStore,
     principalChannelStore,
     persistence,
     tenantKey,
     cluster,
+    onPrincipalTeardown(principalId) {
+      for (const query of percolator.percolator.listQueriesByOwner(principalId)) {
+        percolator.percolator.deactivateQuery(query.id);
+      }
+    },
   });
   const catalog = createAtriumCatalogApi({
     persistence,
@@ -110,6 +120,7 @@ export async function bootstrapAtriumHost(
     sqlCipherKey: encryption.sqlCipherKey,
   });
   const auth = createAtriumDidAuth({ nonceStore: createSqliteNonceStore(catalogDb) });
+  const persistenceClient = createAgentRelayPersistenceClient(persistence);
 
   const seedTokens = parseInviteSeedTokens(process.env.ATRIUM_INVITE_SEED_TOKENS);
   validateInviteEnvConfig(seedTokens);
@@ -135,7 +146,7 @@ export async function bootstrapAtriumHost(
     memories = bootstrapAtriumMemories({
       persistence: memoriesPersistence,
       close: () => memoriesDb.close(),
-      persistenceClient: createAgentRelayPersistenceClient(persistence),
+      persistenceClient,
       postResolver,
       embeddingModel: opts.memories.embeddingModel,
       namespaceRoot: opts.memories.namespaceRoot,
@@ -157,6 +168,7 @@ export async function bootstrapAtriumHost(
     outboxPayloadCodec: encryption.outboxPayloadCodec,
     ...(invitesRepoValue !== undefined ? { invitesRepo: invitesRepoValue } : {}),
     ...(memories !== undefined ? { memories } : {}),
+    percolator,
     ...(opts.startPrincipalTeardownWorker !== undefined
       ? { startPrincipalTeardownWorker: opts.startPrincipalTeardownWorker }
       : {}),

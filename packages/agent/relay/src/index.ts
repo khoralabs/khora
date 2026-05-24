@@ -53,7 +53,6 @@ export type {
   AgentRelayEntityUpsert,
   AgentRelayPersistence,
   AgentRelayRegistrations,
-  AgentRelaySubjectSubscriptions,
   FrameChannelHubPersistence,
   FrameChannelRoomRecord,
   FrameChannelStoredFrame,

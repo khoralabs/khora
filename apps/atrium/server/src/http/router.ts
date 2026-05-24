@@ -10,11 +10,7 @@ import {
   handleAdminStatsPrincipal,
   handleAdminStatsSummary,
 } from "./admin-stats.ts";
-import {
-  handleAuthorSubMutation,
-  handleAuthorTopicSubMutation,
-  handleListAuthorSubscriptions,
-} from "./authors.ts";
+import { handleListAuthorSubscriptions } from "./authors.ts";
 import { routeConsoleAuth } from "./console-guard.ts";
 import type { HostRouteDeps } from "./deps.ts";
 import { handleHealth, handleReady } from "./health.ts";
@@ -49,10 +45,7 @@ import {
   parseRoomsUnaryRoomId,
 } from "./rooms.ts";
 import { handleSearchGet, handleSearchPost } from "./search.ts";
-import { handleTopicSubscribe, handleTopicUnsubscribe } from "./topics.ts";
 import { handleUnregister } from "./unregister.ts";
-
-const topicSubscribeRe = /^\/v1\/topics\/([^/]+)\/subscribe$/;
 
 /**
  * Match `req` + `url` against at2 HTTP routes. Pass **`upgradePort`** for WebSocket upgrade; omit for unary-only ingress.
@@ -130,7 +123,7 @@ export async function route(
   }
 
   if (req.method === "GET" && url.pathname === "/v1/search") {
-    return handleSearchGet(url, deps);
+    return handleSearchGet(req, url, deps);
   }
 
   if (req.method === "POST" && url.pathname === "/v1/invite/preview") {
@@ -147,27 +140,6 @@ export async function route(
 
   if (req.method === "GET" && url.pathname === "/v1/authors/subscriptions") {
     return handleListAuthorSubscriptions(req, url, deps);
-  }
-
-  const authorTopicSubMatch = /^\/v1\/authors\/([^/]+)\/topics\/([^/]+)\/subscribe$/.exec(
-    url.pathname,
-  );
-  if (
-    authorTopicSubMatch !== null &&
-    authorTopicSubMatch[1] !== undefined &&
-    authorTopicSubMatch[2] !== undefined
-  ) {
-    const usernameRaw = decodeURIComponent(authorTopicSubMatch[1]);
-    const slugRaw = decodeURIComponent(authorTopicSubMatch[2]);
-    const r = await handleAuthorTopicSubMutation(req, url, deps, usernameRaw, slugRaw);
-    if (r !== undefined) return r;
-  }
-
-  const authorSubMatch = /^\/v1\/authors\/([^/]+)\/subscribe$/.exec(url.pathname);
-  if (authorSubMatch !== null && authorSubMatch[1] !== undefined) {
-    const usernameRaw = decodeURIComponent(authorSubMatch[1]);
-    const r = await handleAuthorSubMutation(req, url, deps, usernameRaw);
-    if (r !== undefined) return r;
   }
 
   if (isRoomWsPath(url.pathname)) {
@@ -245,16 +217,6 @@ export async function route(
     }
     if (req.method === "DELETE") {
       return handleDeletePost(req, url, deps, id);
-    }
-  }
-
-  const topicMatch = topicSubscribeRe.exec(url.pathname);
-  if (topicMatch !== null && topicMatch[1] !== undefined) {
-    if (req.method === "POST") {
-      return handleTopicSubscribe(req, url, deps, topicMatch[1]);
-    }
-    if (req.method === "DELETE") {
-      return handleTopicUnsubscribe(req, url, deps, topicMatch[1]);
     }
   }
 

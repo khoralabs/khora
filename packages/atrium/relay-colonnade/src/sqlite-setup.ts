@@ -1,4 +1,5 @@
 import type { Database } from "bun:sqlite";
+import { ensurePercolatorSchema } from "@khoralabs/percolator-sqlite";
 import { type EncryptionKeyProvider, openEncryptedDatabase } from "@khoralabs/sqlite-crypto";
 import { ensurePrincipalTeardownJobsSchema } from "./principal-teardown-jobs.ts";
 
@@ -25,15 +26,6 @@ export function ensureRelayCatalogProjectionsSchema(db: Database): void {
         json_extract(projection, '$.creatorDid')
       )
       WHERE namespace = 'at2:room-registry';
-    CREATE TABLE IF NOT EXISTS relay_subscription_edges (
-      tenant_key TEXT NOT NULL,
-      principal_id TEXT NOT NULL,
-      subject TEXT NOT NULL,
-      created_at_ms INTEGER NOT NULL,
-      PRIMARY KEY (tenant_key, principal_id, subject)
-    );
-    CREATE INDEX IF NOT EXISTS idx_relay_subscription_by_subject
-      ON relay_subscription_edges (tenant_key, subject);
     CREATE TABLE IF NOT EXISTS relay_social_principal_channels (
       tenant_key TEXT NOT NULL,
       principal_id TEXT NOT NULL,
@@ -55,7 +47,7 @@ export function applyRelaySqlitePragmas(db: Database): void {
   `);
 }
 
-/** Opens relay catalog DB (Tier 1 projections + edge tables). Does not create Colonnade pointer/discovery tables. */
+/** Opens relay catalog DB (Tier 1 projections + percolator standing queries). */
 export async function openRelayCatalogDb(
   path: string,
   provider: EncryptionKeyProvider,
@@ -63,6 +55,7 @@ export async function openRelayCatalogDb(
   const db = await openEncryptedDatabase(path, { create: true }, "atrium", provider);
   applyRelaySqlitePragmas(db);
   ensureRelayCatalogProjectionsSchema(db);
+  ensurePercolatorSchema(db);
   ensurePrincipalTeardownJobsSchema(db);
   return db;
 }
