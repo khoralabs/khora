@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 900" fill="none" aria-hidden="true">
+  <defs>
+    <pattern id="halftone-dots" width="6" height="6" patternUnits="userSpaceOnUse">
+      <circle cx="3" cy="3" r="1.15" fill="#9A9A9A" opacity="0.55" />
+    </pattern>
+    <mask id="left-shape">
+      <path
+        d="M120 80 C 40 220, 20 420, 60 620 C 90 760, 140 820, 180 860 L 220 860 C 180 780, 150 640, 160 480 C 170 320, 210 180, 260 80 Z"
+        fill="white"
+      />
+    </mask>
+    <mask id="right-shape">
+      <path
+        d="M320 40 C 400 160, 440 340, 420 520 C 400 700, 360 820, 300 880 L 380 880 C 440 760, 480 560, 470 360 C 460 180, 400 60, 340 20 Z"
+        fill="white"
+      />
+    </mask>
+  </defs>
+  <rect width="520" height="900" fill="url(#halftone-dots)" mask="url(#left-shape)" />
+  <rect width="520" height="900" fill="url(#halftone-dots)" mask="url(#right-shape)" opacity="0.85" />
+</svg>

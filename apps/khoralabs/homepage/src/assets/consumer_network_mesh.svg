@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" fill="none" aria-hidden="true">
+  <g stroke="#C8C8C8" stroke-width="1" stroke-dasharray="2 4" opacity="0.85">
+    <line x1="180" y1="120" x2="420" y2="280" />
+    <line x1="420" y1="280" x2="680" y2="180" />
+    <line x1="680" y1="180" x2="920" y2="320" />
+    <line x1="920" y1="320" x2="1180" y2="140" />
+    <line x1="1180" y1="140" x2="1320" y2="380" />
+    <line x1="320" y1="420" x2="560" y2="520" />
+    <line x1="560" y1="520" x2="780" y2="440" />
+    <line x1="780" y1="440" x2="1020" y2="580" />
+    <line x1="1020" y1="580" x2="1280" y2="480" />
+    <line x1="240" y1="640" x2="480" y2="720" />
+    <line x1="480" y1="720" x2="720" y2="660" />
+    <line x1="720" y1="660" x2="960" y2="760" />
+    <line x1="960" y1="760" x2="1200" y2="680" />
+    <line x1="680" y1="180" x2="780" y2="440" />
+    <line x1="420" y1="280" x2="560" y2="520" />
+    <line x1="920" y1="320" x2="1020" y2="580" />
+    <line x1="780" y1="440" x2="720" y2="660" />
+  </g>
+  <g fill="#B8B8B8" opacity="0.9">
+    <rect x="176" y="116" width="8" height="8" />
+    <rect x="416" y="276" width="8" height="8" />
+    <rect x="676" y="176" width="8" height="8" />
+    <rect x="916" y="316" width="8" height="8" />
+    <rect x="1176" y="136" width="8" height="8" />
+    <rect x="1316" y="376" width="8" height="8" />
+    <rect x="316" y="416" width="8" height="8" />
+    <rect x="556" y="516" width="8" height="8" />
+    <rect x="776" y="436" width="8" height="8" />
+    <rect x="1016" y="576" width="8" height="8" />
+    <rect x="1276" y="476" width="8" height="8" />
+    <rect x="236" y="636" width="8" height="8" />
+    <rect x="476" y="716" width="8" height="8" />
+    <rect x="716" y="656" width="8" height="8" />
+    <rect x="956" y="756" width="8" height="8" />
+    <rect x="1196" y="676" width="8" height="8" />
+  </g>
+</svg>

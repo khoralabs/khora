@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -148,5 +149,7 @@
 
 @theme inline {
   --font-landing-serif: "Stratford", "Times New Roman", serif;
+  --font-landing-mono:
+    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --animate-landing-hero-in: landing-hero-slide-in 1s ease-in-out both;
 }

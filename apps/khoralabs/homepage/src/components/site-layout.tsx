@@ -11,7 +11,9 @@ import {
 } from "@/lib/ui-styles";
 import { cn } from "@/lib/utils";
 
+import consumerMeshUrl from "../assets/consumer_network_mesh.svg";
 import handsBg from "../assets/hands.png";
+import consumerHandsUrl from "../assets/khora_hands_vertical.png";
 import skyBg from "../assets/khora_landing_sky.jpg";
 import logoUrl from "../assets/khora_logo_text_w.svg";
 
@@ -37,6 +39,40 @@ function SkyBackground({ className, style, ...props }: ComponentProps<"div">) {
       aria-hidden
       className={cn("pointer-events-none fixed inset-0 bg-cover bg-center bg-no-repeat", className)}
       style={{ backgroundImage: `url(${skyBg})`, ...style }}
+    />
+  );
+}
+
+function ConsumerBackground({ className, ...props }: ComponentProps<"div">) {
+  return (
+    <div
+      {...props}
+      aria-hidden
+      className={cn("pointer-events-none fixed inset-0 overflow-hidden bg-[#E2E2E2]", className)}
+    >
+      <img
+        src={consumerMeshUrl}
+        alt=""
+        className="absolute inset-0 h-full w-full object-cover opacity-90"
+      />
+      <img
+        src={consumerHandsUrl}
+        alt=""
+        className="absolute top-0 left-1/2 h-dvh w-auto max-w-none -translate-x-1/2 object-contain object-center opacity-30 md:translate-x-[calc(-50%+200px)] lg:left-auto lg:right-0 lg:translate-x-[100px] lg:object-right"
+      />
+    </div>
+  );
+}
+
+function ConsumerBottomFade({ className, ...props }: ComponentProps<"div">) {
+  return (
+    <div
+      {...props}
+      aria-hidden
+      className={cn(
+        "pointer-events-none fixed inset-x-0 bottom-0 z-[1] h-[32vh] bg-gradient-to-t from-white to-transparent",
+        className,
+      )}
     />
   );
 }
@@ -123,6 +159,8 @@ export const SiteLayout = {
   Root,
   BackgroundImage,
   SkyBackground,
+  ConsumerBackground,
+  ConsumerBottomFade,
   SkyBottomFade,
   Noise,
   Frame,
