@@ -164,3 +164,51 @@ export const landingInputGroupAddonClass = "order-last h-full shrink-0 p-0 has-[
 
 export const landingSubmitButtonClass =
   "size-9 shrink-0 rounded-full border-0 bg-[#fafaf8] text-neutral-600 shadow-[0_2px_8px_rgba(0,0,0,0.12),0_1px_2px_rgba(0,0,0,0.08)] transition-[background-color,color,box-shadow] duration-300 ease-in-out hover:bg-[#2E2E2E] hover:text-[#ffffff] hover:shadow-[0_3px_10px_rgba(0,0,0,0.14)]";
+
+// --- Consumer landing (gray shell, left-aligned hero) ---
+
+export const consumerLandingShellClass = `relative min-h-dvh bg-[#E2E2E2] text-black antialiased ${landingSansClass}`;
+
+export const consumerLandingHeaderClass =
+  "flex shrink-0 items-start justify-between px-6 pt-4 md:px-10 md:pt-5";
+
+export const consumerLandingNavLinkClass =
+  "text-[12px] text-black no-underline transition-opacity hover:opacity-70";
+
+export const consumerLandingMainClass =
+  "flex flex-1 flex-col justify-center px-6 py-10 md:px-10 md:py-16 lg:py-20";
+
+export const consumerLandingHeroGridClass =
+  "grid w-full max-w-6xl items-center gap-10 lg:grid-cols-[minmax(0,470px)_1fr] lg:gap-16 xl:max-w-7xl";
+
+export const consumerLandingHeroEnterClass = landingHeroEnterClass;
+
+export const consumerLandingEyebrowClass =
+  "inline-block w-fit bg-white px-2.5 py-1 font-landing-mono text-[12px] text-[#838383]";
+
+export const consumerLandingHeroTitleClass =
+  "font-landing-serif mt-4 text-balance text-[2rem] font-normal tracking-[-0.05em] leading-[1.05] md:text-[2.75rem] lg:text-[3rem] lg:leading-[1.02]";
+
+export const consumerLandingBodyClass = `mt-6 max-w-[470px] text-pretty text-[12px] leading-[1.45] text-[#838383] md:leading-[1.5] ${landingSansClass}`;
+
+export const consumerLandingConfirmTitleClass =
+  "font-landing-serif text-balance text-[2rem] font-normal leading-[1.05] md:text-[2.75rem]";
+
+export const consumerLandingConfirmMessageClass = consumerLandingBodyClass;
+
+export const consumerLandingFooterClass = `flex shrink-0 flex-wrap items-end justify-between gap-6 px-6 pb-4 pt-4 text-[12px] text-[#838383] md:px-10 md:pb-5 ${landingSansClass}`;
+
+export const consumerLandingFooterLinkClass =
+  "text-inherit no-underline transition-opacity hover:opacity-70";
+
+/** Horizontal inline email row with light inset field. */
+export const consumerInputGroupShellClass =
+  "h-auto min-h-12 flex-col gap-2 rounded-[1.75rem] border-0 bg-white/80 p-2 text-black shadow-[inset_2px_3px_8px_rgba(0,0,0,0.08),inset_-1px_-1px_3px_rgba(255,255,255,0.9)] ring-0 sm:h-12 sm:flex-row sm:gap-0 sm:rounded-full sm:p-1.5 has-[[data-slot=input-group-control]:focus-visible]:shadow-[inset_2px_4px_10px_rgba(0,0,0,0.1),inset_-1px_-1px_3px_rgba(255,255,255,0.95)] has-[[data-slot=input-group-control]:focus-visible]:ring-0 has-[>[data-align=inline-end]]:[&>input]:pr-0";
+
+export const consumerInputGroupInnerClass = `h-11 min-h-0 w-full flex-1 border-0 bg-transparent px-4 text-[12px] text-black caret-black shadow-none transition-[color,box-shadow] placeholder:text-[#B0B0B0] focus-visible:ring-0 sm:h-full sm:pl-4 ${landingSansClass}`;
+
+export const consumerInputGroupAddonClass =
+  "order-last h-auto w-full shrink-0 p-0 sm:h-full sm:w-auto has-[>button]:!m-0";
+
+export const consumerSubmitButtonClass =
+  "inline-flex h-11 w-full shrink-0 items-center justify-center gap-0 rounded-full border-0 bg-black px-8 text-[12px] whitespace-nowrap text-white transition-[background-color,opacity] duration-300 ease-in-out hover:bg-[#2E2E2E] disabled:opacity-60 sm:h-full sm:w-auto md:px-9";

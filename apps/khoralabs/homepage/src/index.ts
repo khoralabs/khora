@@ -1,4 +1,5 @@
 import { serve } from "bun";
+import b2b from "./routes/b2b/index.html";
 import blog from "./routes/blog/index.html";
 import contact from "./routes/contact/index.html";
 import index from "./routes/index.html";
@@ -7,11 +8,13 @@ import terms from "./routes/terms/index.html";
 
 const server = serve({
   routes: {
+    "/b2b": b2b,
     "/blog": blog,
     "/contact": contact,
+    "/consumer": index,
     "/privacy": privacy,
     "/terms": terms,
-    // Serve index.html for all unmatched routes.
+    // Serve consumer homepage for all unmatched routes.
     "/*": index,
   },
 

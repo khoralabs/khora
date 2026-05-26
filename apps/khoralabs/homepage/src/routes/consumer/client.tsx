@@ -18,11 +18,11 @@ import {
   consumerLandingShellClass,
 } from "@/lib/ui-styles";
 import { cn } from "@/lib/utils";
-import logoUrl from "../assets/khora_logo_text_b.svg";
-import { renderRoute } from "../render-route";
-import "../../styles/globals.css";
+import logoUrl from "../../assets/khora_logo_text_b.svg";
+import { renderRoute } from "../../render-route";
+import "../../../styles/globals.css";
 
-function HomePage() {
+function ConsumerPage() {
   const [confirmed, setConfirmed] = useState(false);
 
   return (
@@ -114,4 +114,4 @@ function HomePage() {
   );
 }
 
-renderRoute(HomePage);
+renderRoute(ConsumerPage);
