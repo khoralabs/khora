@@ -68,6 +68,7 @@ export const blogPosts: BlogPost[] = [];
     author: ${JSON.stringify(frontmatter.author)},
     tags: ${JSON.stringify(frontmatter.tags)},
     description: ${JSON.stringify(frontmatter.description)},
+    cover: ${JSON.stringify(frontmatter.cover)},
     Content: post${i},
   }`;
     })

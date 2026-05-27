@@ -1,6 +1,7 @@
 import type { BlogPostMeta } from "@khoralabs/blog";
 import { formatPostDate } from "@khoralabs/blog/react";
 
+import { BlogPostCover } from "@/components/blog-post-cover";
 import { fieldTypographyMuted, mdxLinkClass, pageTitleClass } from "@/lib/ui-styles";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +16,11 @@ export function BlogPostCard({ post, className }: BlogPostCardProps) {
 
   return (
     <article className={cn("max-w-2xl border-b border-[#F4F4EF]/15 pb-8 last:border-0", className)}>
+      {post.cover ? (
+        <a href={href} className="mb-4 block">
+          <BlogPostCover src={post.cover} alt={post.title} />
+        </a>
+      ) : null}
       <h2 className={cn(pageTitleClass, "mb-2 text-xl md:text-2xl")}>
         <a href={href} className={cn(mdxLinkClass, "no-underline hover:underline")}>
           {post.title}

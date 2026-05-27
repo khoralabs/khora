@@ -11,6 +11,8 @@ export type BlogPostFrontmatter = {
   author?: string;
   tags: string[];
   description?: string;
+  /** Site-root path (`/blog/media/...`) or absolute `https://` URL for the post hero image. */
+  cover?: string;
 };
 
 export type BlogPostMeta = BlogPostFrontmatter & { slug: string };

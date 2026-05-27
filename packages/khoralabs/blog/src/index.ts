@@ -4,6 +4,7 @@ export {
   getAllTags,
   getPost,
   normalizeTags,
+  parseCoverImage,
   parseFrontmatter,
   sortPostsByDate,
 } from "./posts";

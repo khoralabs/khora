@@ -43,12 +43,14 @@ tags:
   - updates                 # optional; drives /blog?tag= filters
   - engineering
 description: One-line summary for the blog index card  # optional
+cover: /blog/media/my-post/cover.jpg  # optional hero (21:9 crop on site)
 ---
 ```
 
 - **slug** comes from the filename (`my-post.md` → slug `my-post`, URL `/blog/my-post`).
 - If `title` is omitted, the slug is used as the title.
 - `tags` may be a YAML list or a comma-separated string.
+- **`cover`** (or `coverImage`): site path (`/blog/media/{slug}/cover.jpg`) or `https://` URL; shown as a wide hero on the post page and index card. Use a landscape image; the UI crops to **21:9** with `object-cover`.
 
 ## Post body
 

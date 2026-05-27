@@ -10,13 +10,21 @@ export function normalizeTags(raw: unknown): string[] {
   return [];
 }
 
+export function parseCoverImage(raw: unknown): string | undefined {
+  if (raw == null) return undefined;
+  const value = String(raw).trim();
+  return value || undefined;
+}
+
 export function parseFrontmatter(slug: string, data: Record<string, unknown>): BlogPostFrontmatter {
+  const cover = parseCoverImage(data.cover ?? data.coverImage);
   return {
     title: String(data.title ?? slug),
     date: String(data.date ?? ""),
     author: data.author != null ? String(data.author) : undefined,
     tags: normalizeTags(data.tags),
     description: data.description != null ? String(data.description) : undefined,
+    cover,
   };
 }
 

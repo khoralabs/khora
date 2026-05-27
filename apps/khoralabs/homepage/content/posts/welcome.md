@@ -5,6 +5,7 @@ author: khora labs
 tags:
   - updates
 description: Writing from the lab — product direction, engineering notes, and what we're building.
+cover: /blog/media/welcome/cover.jpg
 ---
 
 We're setting up a home for longer-form updates from the lab. Expect notes on **Atrium**, **Vellum**, and how we think about agent-native infrastructure.

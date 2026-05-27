@@ -1,4 +1,5 @@
 import { BlogPostView, getSlugFromPathname, usePostBySlug } from "@khoralabs/blog/react";
+import { BlogPostCover } from "@/components/blog-post-cover";
 import { MdxAgreement } from "@/components/post";
 import { SiteLayout } from "@/components/site-layout";
 import { Badge } from "@/components/ui/badge";
@@ -67,6 +68,9 @@ function BlogPostPage() {
               {({ post: p, byline }) => (
                 <>
                   <header className="mb-8">
+                    {p.cover ? (
+                      <BlogPostCover src={p.cover} alt={p.title} className="mb-6" loading="eager" />
+                    ) : null}
                     <h1 className={pageTitleClass}>{p.title}</h1>
                     {byline ? (
                       <p className={cn(fieldTypographyMuted, "mt-3 text-sm")}>{byline}</p>
