@@ -1,11 +1,24 @@
 import { serve } from "bun";
 import { serveBlogMedia } from "./lib/blog-media.ts";
-import blog from "./routes/blog/index.html";
-import blogPost from "./routes/blog/post/index.html";
-import contact from "./routes/contact/index.html";
-import index from "./routes/index.html";
-import privacy from "./routes/privacy/index.html";
-import terms from "./routes/terms/index.html";
+import { ensureBlogManifest } from "./lib/ensure-blog-manifest.ts";
+
+await ensureBlogManifest();
+
+const [
+  { default: blog },
+  { default: blogPost },
+  { default: contact },
+  { default: index },
+  { default: privacy },
+  { default: terms },
+] = await Promise.all([
+  import("./routes/blog/index.html"),
+  import("./routes/blog/post/index.html"),
+  import("./routes/contact/index.html"),
+  import("./routes/index.html"),
+  import("./routes/privacy/index.html"),
+  import("./routes/terms/index.html"),
+]);
 
 const port = Number.parseInt(process.env.PORT ?? "3000", 10);
 
@@ -25,6 +38,11 @@ const server = serve({
   development: process.env.NODE_ENV !== "production" && {
     hmr: true,
     console: true,
+  },
+
+  error(error) {
+    console.error("[homepage] request error:", error);
+    return new Response("Internal Server Error", { status: 500 });
   },
 });
 

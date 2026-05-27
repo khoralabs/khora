@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "generate:blog": "bun run scripts/generate-blog-manifest.ts",
-    "dev": "bun run generate:blog && bun --hot src/index.ts",
+    "predev": "bun run generate:blog",
+    "dev": "bun --hot src/index.ts",
+    "prestart": "bun run generate:blog",
     "start": "NODE_ENV=production bun src/index.ts",
     "build": "bun run generate:blog && bun run build.ts",
     "test": "bun test"
