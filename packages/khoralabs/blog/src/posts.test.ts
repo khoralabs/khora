@@ -35,9 +35,9 @@ describe("parseFrontmatter", () => {
   });
 
   test("parses cover and coverImage alias", () => {
-    expect(
-      parseFrontmatter("x", { cover: "/blog/media/x/hero.jpg" }).cover,
-    ).toBe("/blog/media/x/hero.jpg");
+    expect(parseFrontmatter("x", { cover: "/blog/media/x/hero.jpg" }).cover).toBe(
+      "/blog/media/x/hero.jpg",
+    );
     expect(parseFrontmatter("x", { coverImage: " https://cdn.example/a.png " }).cover).toBe(
       "https://cdn.example/a.png",
     );
