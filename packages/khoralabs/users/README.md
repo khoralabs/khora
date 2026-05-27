@@ -1,0 +1,91 @@
+# `@khoralabs/users`
+
+Domain and persistence layer for the **Khora registry** — network-level user data stored in encrypted SQLite (`registry.sqlite`).
+
+Owns accounts, emails, auth provider links, Atrium hosts, memberships, access-token requests, and marketing consents. Does **not** implement sign-in; that lives in [`@khoralabs/users-auth`](../users-auth).
+
+## Role in the stack
+
+```mermaid
+graph LR
+  registry["apps/khoralabs/registry"] --> users["@khoralabs/users"]
+  registry --> usersAuth["@khoralabs/users-auth"]
+  usersReact["@khoralabs/users-react"] --> users
+  usersAuth --> users
+  users --> db[("registry.sqlite")]
+```
+
+| Package | Responsibility |
+| --- | --- |
+| `@khoralabs/users` | Domain schema, queries, migrations (`0.0.0 → 1.0.0`) |
+| `@khoralabs/users-auth` | Better Auth integration, OTP, sessions |
+| `@khoralabs/users-react` | Operator admin UI compound components |
+
+## Schema
+
+Domain tables (see `src/schema-sql.ts`):
+
+| Table | Purpose |
+| --- | --- |
+| `accounts` | Canonical registry account |
+| `account_emails` | Verified email addresses per account |
+| `auth_links` | Maps external auth subjects (e.g. Better Auth user id) to accounts |
+| `atrium_hosts` | Federated Atrium host registry |
+| `memberships` | Account ↔ host relationships |
+| `access_token_requests` | Email-based access-token invite flow |
+| `marketing_consents` | Opt-in / opt-out per list |
+
+Auth provider tables (`user`, `session`, `verification`, …) are owned by `@khoralabs/users-auth` migrations.
+
+## Database
+
+```ts
+import { getUsersDatabase, initUsersSchema } from "@khoralabs/users";
+
+const db = getUsersDatabase();
+await initUsersSchema(db);
+```
+
+| Env var | Purpose |
+| --- | --- |
+| `REGISTRY_DATABASE_PATH` | SQLite path (default: `packages/khoralabs/users/data/registry.sqlite`; use `:memory:` in tests) |
+| `REGISTRY_SQLCIPHER_KEY` | SQLCipher encryption key (≥16 chars, required) |
+
+## Public surface (quick map)
+
+| Module | Exports |
+| --- | --- |
+| `accounts.ts` | `findAccountById`, `findAccountByEmail`, `findAccountByAuthSubject`, `linkBetterAuthUser`, `mergeEmailOntoAccount`, `listAccountEmails` |
+| `access-token-requests.ts` | `createAccessTokenRequest`, `findAccessTokenRequest`, `listAccessTokenRequestsForEmail`, `markAccessTokenMinted`, `markAccessTokenSent`, … |
+| `atrium-hosts.ts` | `findHostBySlug`, `listActiveHosts`, `seedDefaultHost`, … |
+| `memberships.ts` | `countMembershipsForAccount` |
+| `marketing-consents.ts` | `subscribeMarketing`, `unsubscribeMarketing`, `listMarketingConsentsForEmail`, … |
+| `admin-stats.ts` | `getRegistryAdminSummary`, `lookupRegistryByEmail`, `lookupRegistryByAccountId` |
+| `db.ts` | `getUsersDatabase`, `registryDatabasePath`, `resetUsersDatabase` |
+| `schema.ts` | `usersMigrations`, `initUsersSchema`, `isUsersSchemaReady` |
+| `types.ts` | `Account`, `AtriumHost`, `AccessTokenRequest`, `MarketingConsent`, admin lookup types |
+
+## Usage
+
+```ts
+import {
+  findAccountByEmail,
+  getUsersDatabase,
+  subscribeMarketing,
+} from "@khoralabs/users";
+
+const db = getUsersDatabase();
+const account = findAccountByEmail(db, "user@example.com");
+
+subscribeMarketing(db, {
+  email: "user@example.com",
+  listSlug: "product-updates",
+  sourceApp: "homepage",
+});
+```
+
+## Tests
+
+```bash
+bun test
+```
