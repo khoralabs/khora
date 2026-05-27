@@ -74,10 +74,7 @@ function HomePage() {
                   </p>
                 </>
               ) : (
-                <WaitlistSignup
-                  resetKey={resetKey}
-                  onSuccess={() => setConfirmed(true)}
-                />
+                <WaitlistSignup resetKey={resetKey} onSuccess={() => setConfirmed(true)} />
               )}
             </div>
             <div aria-hidden className="hidden min-h-[280px] lg:block" />

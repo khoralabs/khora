@@ -1,5 +1,7 @@
 import { serve } from "bun";
+import { serveBlogMedia } from "./lib/blog-media.ts";
 import blog from "./routes/blog/index.html";
+import blogPost from "./routes/blog/post/index.html";
 import contact from "./routes/contact/index.html";
 import index from "./routes/index.html";
 import privacy from "./routes/privacy/index.html";
@@ -11,6 +13,8 @@ const server = serve({
   port: Number.isFinite(port) ? port : 3000,
   routes: {
     "/blog": blog,
+    "/blog/media/*": { GET: serveBlogMedia },
+    "/blog/:slug": blogPost,
     "/contact": contact,
     "/consumer": index,
     "/privacy": privacy,

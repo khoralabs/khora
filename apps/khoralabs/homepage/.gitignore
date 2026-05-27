@@ -1,6 +1,9 @@
 # dependencies (bun install)
 node_modules
 
+# generated blog manifest + compiled post modules
+src/generated/
+
 # output
 out
 dist

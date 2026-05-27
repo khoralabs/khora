@@ -1,6 +1,5 @@
+import type { MdxRootProps } from "@khoralabs/blog";
 import type { ComponentProps, ComponentType } from "react";
-
-import type { MdxRootProps } from "@/lib/post";
 import {
   mdxArticleClass,
   mdxBlockquoteClass,
@@ -56,6 +55,14 @@ const mdxComponents = {
   ),
   blockquote: ({ className, ...props }: ComponentProps<"blockquote">) => (
     <blockquote className={cn(mdxBlockquoteClass, className)} {...props} />
+  ),
+  img: ({ className, alt, ...props }: ComponentProps<"img">) => (
+    <img
+      alt={alt ?? ""}
+      className={cn("my-6 h-auto w-full max-w-full rounded-md border border-[#F4F4EF]/15", className)}
+      loading="lazy"
+      {...props}
+    />
   ),
 };
 

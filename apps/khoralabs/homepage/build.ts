@@ -1,9 +1,9 @@
 #!/usr/bin/env bun
 import { existsSync } from "node:fs";
-import { rm } from "node:fs/promises";
+import { cp, rm } from "node:fs/promises";
 import path from "node:path";
 import plugin from "bun-plugin-tailwind";
-import mdxPlugin from "./src/lib/plugins/mdx.ts";
+import mdxPlugin from "../../../packages/khoralabs/blog/src/plugin/mdx.ts";
 
 if (process.argv.includes("--help") || process.argv.includes("-h")) {
   console.log(`
@@ -133,6 +133,11 @@ const result = await Bun.build({
   target: "browser",
   sourcemap: "linked",
   env: "BUN_PUBLIC_*",
+  naming: {
+    entry: "[dir]/[name].[ext]",
+    chunk: "[dir]/[name]-[hash].[ext]",
+    asset: "[dir]/[name]-[hash].[ext]",
+  },
   define: {
     "process.env.NODE_ENV": JSON.stringify("production"),
   },
@@ -149,5 +154,12 @@ const outputTable = result.outputs.map((output) => ({
 
 console.table(outputTable);
 const buildTime = (end - start).toFixed(2);
+
+const publicBlogMedia = path.join(process.cwd(), "public", "blog", "media");
+if (existsSync(publicBlogMedia)) {
+  const dest = path.join(outdir, "blog", "media");
+  await cp(publicBlogMedia, dest, { recursive: true });
+  console.log(`📁 Copied blog media to ${path.relative(process.cwd(), dest)}\n`);
+}
 
 console.log(`\n✅ Build completed in ${buildTime}ms\n`);
