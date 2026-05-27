@@ -212,3 +212,15 @@ export const consumerInputGroupAddonClass =
 
 export const consumerSubmitButtonClass =
   "inline-flex h-11 w-full shrink-0 items-center justify-center gap-0 rounded-full border-0 bg-black px-8 text-[12px] whitespace-nowrap text-white transition-[background-color,opacity] duration-300 ease-in-out hover:bg-[#2E2E2E] disabled:opacity-60 sm:h-full sm:w-auto md:px-9";
+
+/** OTP digit slots on the consumer gray shell. */
+export const consumerOtpSlotClass =
+  "relative flex h-11 w-11 items-center justify-center rounded-md border border-[#B0B0B0]/60 bg-white/80 text-[12px] text-black shadow-[inset_2px_2px_6px_rgba(0,0,0,0.06)] transition-all outline-none first:rounded-l-lg last:rounded-r-lg data-[active=true]:z-10 data-[active=true]:border-black/40 data-[active=true]:ring-2 data-[active=true]:ring-black/15";
+
+export const consumerMarketingCheckboxClass =
+  "mt-4 flex cursor-pointer items-start gap-2.5 text-left text-[12px] leading-[1.45] text-[#838383]";
+
+export const consumerOtpHintClass = `mt-2 text-[12px] leading-[1.45] text-[#838383] ${landingSansClass}`;
+
+export const consumerVerifyTitleClass =
+  "font-landing-serif text-balance text-[2rem] font-normal tracking-[-0.05em] leading-[1.05] md:text-[2.75rem]";

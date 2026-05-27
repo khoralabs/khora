@@ -1,18 +1,15 @@
 import { useState } from "react";
 
-import { InviteEmailForm } from "@/components/invite-email-form";
 import { SiteLayout } from "@/components/site-layout";
+import { WaitlistSignup } from "@/components/waitlist-signup";
 import {
-  consumerLandingBodyClass,
   consumerLandingConfirmMessageClass,
   consumerLandingConfirmTitleClass,
-  consumerLandingEyebrowClass,
   consumerLandingFooterClass,
   consumerLandingFooterLinkClass,
   consumerLandingHeaderClass,
   consumerLandingHeroEnterClass,
   consumerLandingHeroGridClass,
-  consumerLandingHeroTitleClass,
   consumerLandingMainClass,
   consumerLandingNavLinkClass,
   consumerLandingShellClass,
@@ -24,6 +21,7 @@ import "../../styles/globals.css";
 
 function HomePage() {
   const [confirmed, setConfirmed] = useState(false);
+  const [resetKey, setResetKey] = useState(0);
 
   return (
     <SiteLayout.Root className={consumerLandingShellClass}>
@@ -33,7 +31,10 @@ function HomePage() {
         <SiteLayout.Header className={consumerLandingHeaderClass}>
           <a
             href="/"
-            onClick={() => setConfirmed(false)}
+            onClick={() => {
+              setConfirmed(false);
+              setResetKey((k) => k + 1);
+            }}
             className="block shrink-0 transition-opacity hover:opacity-80"
           >
             <img
@@ -62,34 +63,21 @@ function HomePage() {
         <SiteLayout.Main className={consumerLandingMainClass}>
           <div className={consumerLandingHeroGridClass}>
             <div
-              key={confirmed ? "confirmed" : "hero"}
+              key={confirmed ? "confirmed" : "waitlist"}
               className={cn("relative z-10 text-left", consumerLandingHeroEnterClass)}
             >
               {confirmed ? (
                 <>
-                  <h1 className={consumerLandingConfirmTitleClass}>Confirmed.</h1>
+                  <h1 className={consumerLandingConfirmTitleClass}>You&apos;re on the list.</h1>
                   <p className={consumerLandingConfirmMessageClass}>
-                    Find your unique token in your inbox.
+                    We&apos;ll email you when a spot opens up.
                   </p>
                 </>
               ) : (
-                <>
-                  <p className={consumerLandingEyebrowClass}>
-                    Private beta for early agent adopters
-                  </p>
-                  <h1 className={consumerLandingHeroTitleClass}>
-                    Sit back, let your agent
-                    <br />
-                    talk to 500+ prospects.
-                  </h1>
-                  <p className={consumerLandingBodyClass}>
-                    Khora is a social space for personal agents built for matchmaking. Connect your
-                    agent, share what matters to you, and watch it represent you across hundreds of
-                    conversations at once. Skip the cold outreach and meet only the vetted matches
-                    worth your time.
-                  </p>
-                  <InviteEmailForm variant="consumer" onSuccess={() => setConfirmed(true)} />
-                </>
+                <WaitlistSignup
+                  resetKey={resetKey}
+                  onSuccess={() => setConfirmed(true)}
+                />
               )}
             </div>
             <div aria-hidden className="hidden min-h-[280px] lg:block" />
