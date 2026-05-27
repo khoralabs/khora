@@ -1,7 +1,7 @@
+import { createRegistryEmailConfirmApi } from "@khoralabs/users-auth/client";
+import { EmailConfirm } from "@khoralabs/users-react";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { ArrowLeftIcon, ArrowRight, Loader } from "lucide-react";
-import { useState } from "react";
-import { useLocalStorage } from "usehooks-ts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -14,14 +14,26 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
-import { authClient } from "@/lib/auth-client";
 import { renderRoute } from "../../render-route";
 import "../../../styles/globals.css";
 
 const OTP_LENGTH = 6;
 const LOGIN_STEP_STORAGE_KEY = "atrium-login-step";
 
-type LoginStep = "email" | "otp";
+function registryUrl(): string {
+  if (typeof window !== "undefined") {
+    const fromEnv = import.meta.env.BUN_PUBLIC_KHORA_REGISTRY_URL as string | undefined;
+    if (fromEnv !== undefined && fromEnv.length > 0) {
+      return fromEnv.replace(/\/$/, "");
+    }
+  }
+  return "http://localhost:4000";
+}
+
+const emailConfirmApi = createRegistryEmailConfirmApi({
+  registryUrl: registryUrl(),
+  sourceApp: "atrium-homepage",
+});
 
 function nextPath(): string {
   const next = new URLSearchParams(window.location.search).get("next");
@@ -157,89 +169,42 @@ function OtpFormCard({
 }
 
 function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
-  const [step, setStep, removeStep] = useLocalStorage<LoginStep>(LOGIN_STEP_STORAGE_KEY, "email");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const sendOtp = async () => {
-    const trimmed = email.trim();
-    if (trimmed.length === 0) {
-      setError("Enter your email");
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    const { error: sendError } = await authClient.emailOtp.sendVerificationOtp({
-      email: trimmed,
-      type: "sign-in",
-    });
-    setLoading(false);
-    if (sendError) {
-      setError(sendError.message ?? "Failed to send code");
-      return;
-    }
-    setEmail(trimmed);
-    setStep("otp");
-  };
-
-  const signIn = async (otpCode: string) => {
-    if (loading) return;
-    const trimmedEmail = email.trim();
-    const trimmedOtp = otpCode.trim();
-    if (trimmedEmail.length === 0 || trimmedOtp.length !== OTP_LENGTH) {
-      setError(`Enter email and ${OTP_LENGTH}-digit code`);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    const { data, error: signInError } = await authClient.signIn.emailOtp({
-      email: trimmedEmail,
-      otp: trimmedOtp,
-    });
-    if (signInError || data?.user == null) {
-      setLoading(false);
-      setError(signInError?.message ?? "Sign in failed");
-      return;
-    }
-    const { data: session } = await authClient.getSession();
-    setLoading(false);
-    if (session?.user == null) {
-      setError("Signed in but session could not be verified. Try again.");
-      return;
-    }
-    removeStep();
-    window.location.href = nextPath();
-  };
-
-  const goBack = () => {
-    setStep("email");
-    setOtp("");
-    setError(null);
-  };
-
   return (
     <main className="flex min-h-dvh items-center justify-center p-6">
-      {step === "otp" ? (
-        <OtpFormCard
-          email={email}
-          otp={otp}
-          error={error}
-          loading={loading}
-          onOtpChange={setOtp}
-          onBack={goBack}
-          onSubmit={signIn}
-        />
-      ) : (
-        <EmailFormCard
-          email={email}
-          error={error}
-          loading={loading}
-          onEmailChange={setEmail}
-          onSubmit={sendOtp}
-        />
-      )}
+      <EmailConfirm.Root
+        api={emailConfirmApi}
+        purpose="sign-in"
+        otpLength={OTP_LENGTH}
+        storageKey={LOGIN_STEP_STORAGE_KEY}
+        onSuccess={() => {
+          window.location.href = nextPath();
+        }}
+      >
+        <EmailConfirm.EmailStep>
+          {(props) => (
+            <EmailFormCard
+              email={props.email}
+              error={props.error}
+              loading={props.loading}
+              onEmailChange={props.setEmail}
+              onSubmit={() => void props.sendOtp()}
+            />
+          )}
+        </EmailConfirm.EmailStep>
+        <EmailConfirm.OtpStep>
+          {(props) => (
+            <OtpFormCard
+              email={props.email}
+              otp={props.otp}
+              error={props.error}
+              loading={props.loading}
+              onOtpChange={props.setOtp}
+              onBack={props.goBack}
+              onSubmit={(code) => void props.verifyOtp(code)}
+            />
+          )}
+        </EmailConfirm.OtpStep>
+      </EmailConfirm.Root>
     </main>
   );
 }

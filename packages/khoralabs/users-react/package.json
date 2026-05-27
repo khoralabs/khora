@@ -21,8 +21,10 @@
   },
   "dependencies": {
     "@khoralabs/users": "workspace:*",
+    "@khoralabs/users-auth": "workspace:*",
     "clsx": "^2.1.1",
-    "tailwind-merge": "^3.3.1"
+    "tailwind-merge": "^3.3.1",
+    "usehooks-ts": "^3.1.1"
   },
   "devDependencies": {
     "@types/react": "^19",

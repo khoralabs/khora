@@ -21,7 +21,7 @@ Domain data (`accounts`, `memberships`, …) stays in `@khoralabs/users`. This p
 | Entry | Use |
 | --- | --- |
 | `@khoralabs/users-auth` | Server: auth instance, schema bootstrap, session helpers |
-| `@khoralabs/users-auth/client` | Browser: `createUsersAuthClient` (React / Better Auth client) |
+| `@khoralabs/users-auth/client` | Browser: `createUsersAuthClient`, `createRegistryEmailConfirmApi`, email-confirm types |
 
 ## Server setup
 
@@ -55,7 +55,39 @@ await authClient.emailOtp.sendVerificationOtp({ email, type: "sign-in" });
 await authClient.signIn.emailOtp({ email, otp });
 ```
 
-Used by [`apps/atrium/homepage`](../../../apps/atrium/homepage) for `/login`.
+Used by [`apps/atrium/homepage`](../../../apps/atrium/homepage) for `/login` via `@khoralabs/users-react` `EmailConfirm`.
+
+## Email confirm API
+
+For email → OTP flows (sign-in or sign-up), use the `EmailConfirmApi` interface and registry adapter instead of calling Better Auth methods directly:
+
+```ts
+import {
+  createRegistryEmailConfirmApi,
+  type EmailConfirmApi,
+} from "@khoralabs/users-auth/client";
+
+const api: EmailConfirmApi = createRegistryEmailConfirmApi({
+  registryUrl: "http://localhost:4000",
+  sourceApp: "my-app",
+});
+
+await api.sendOtp({ email, purpose: "sign-in" });
+await api.verifyOtp({ email, otp, purpose: "sign-in" });
+await api.confirmSession();
+await api.subscribeMarketing?.({ email, listSlug: "updates", sourceApp: "my-app" });
+```
+
+| Method | Registry endpoint |
+| --- | --- |
+| `sendOtp` | `POST /api/auth/email-otp/send-verification-otp` |
+| `verifyOtp` | `POST /api/auth/sign-in/email-otp` |
+| `confirmSession` | `GET /api/auth/get-session` |
+| `subscribeMarketing` | `POST /v1/marketing/subscribe` |
+
+Both `purpose: "sign-in"` and `purpose: "sign-up"` map to Better Auth `type: "sign-in"` (new users are created on first OTP verification when `disableSignUp` is false). The purpose flag is app-level semantics for copy and marketing consent.
+
+Pair with `@khoralabs/users-react` `EmailConfirm` compound for the UI flow — see [`users-react` README](../users-react/README.md).
 
 ## Session helpers
 
@@ -92,7 +124,9 @@ Bootstrap staff emails (granted `role: "staff"`) are configured in `src/bootstra
 | --- | --- |
 | `auth-config.ts` | `createRegistryAuth`, `RegistryAuth`, `RegistryAuthOptions` |
 | `auth.ts` | `getRegistryAuth`, `registryAuth` (lazy proxy) |
-| `client.ts` | `createUsersAuthClient` |
+| `client.ts` | `createUsersAuthClient`, `createRegistryEmailConfirmApi`, email-confirm types |
+| `email-confirm/types.ts` | `EmailConfirmApi`, `EmailConfirmPurpose`, … |
+| `email-confirm/registry-api.ts` | `createRegistryEmailConfirmApi` |
 | `db.ts` | `getRegistryDatabase` (alias of `getUsersDatabase`) |
 | `ensure-schema.ts` | `ensureRegistrySchema`, `isRegistryAuthSchemaReady` |
 | `schema.ts` | `authMigrations`, `registryMigrations`, `initRegistrySchema` |
