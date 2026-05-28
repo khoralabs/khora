@@ -14,7 +14,7 @@ import { createInMemoryPercolatorPersistence, createPercolator } from "@khoralab
 import type { SocialRelationshipPersistence } from "@khoralabs/relay-colonnade";
 import { RelayCatalogProjectionStore } from "@khoralabs/relay-colonnade";
 import { createTestEncryptionMaterial, TEST_POST_AUTHOR_SIGNATURE } from "@khoralabs/sqlite-crypto";
-import { DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT } from "./memories/memories-config.ts";
+import { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories/memories-config.ts";
 import { assignPostAddress, createKhoraRelayOnEvent, encodePostId } from "./on-event.ts";
 import { toPercolatorSearch } from "./percolator/adapter.ts";
 
@@ -110,7 +110,7 @@ function createSocialMock(
 
 function createMemoriesStub() {
   return {
-    namespaceRoot: DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT,
+    namespaceRoot: DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT,
     embeddingModel: undefined,
     indexer: {
       indexPost: async () => {},
@@ -123,7 +123,7 @@ function createMemoriesStub() {
 
 describe("percolator inbox reasons", () => {
   test("tagged post fan-out adds standing_query for matching subscription", async () => {
-    const _root = DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT;
+    const _root = DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT;
     const authorProfile: KhoraProfile = {
       id: "prof-author",
       username: "author",
@@ -297,7 +297,7 @@ describe("percolator inbox reasons", () => {
   });
 
   test("author-follow standing query matches subscription in author posts namespace", async () => {
-    const root = DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT;
+    const root = DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT;
     const authorProfile: KhoraProfile = {
       id: "prof-author",
       username: "author",

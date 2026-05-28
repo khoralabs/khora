@@ -34,7 +34,7 @@ import { SqliteVellumReadModel } from "./persistence/sqlite-vellum-read-persiste
 import type { VellumReadModel } from "./persistence/vellum-read-persistence.ts";
 
 export type VellumClientOptions = {
-  /** ATRIUM HTTP origin (e.g. v2 host). */
+  /** KHORA HTTP origin (e.g. v2 host). */
   baseUrl: string;
   roomId: string;
   dataDir?: string | undefined;
@@ -130,8 +130,8 @@ export class VellumClient {
   /** Ensure room daemon is running with a fresh ticket and local control server. */
   async connect(options?: { webSocketUrl?: string }): Promise<void> {
     const idPath =
-      process.env.ATRIUM_AGENT_KEY_PATH?.trim() ??
-      process.env.ATRIUM_AGENT_KEY_PATH?.trim() ??
+      process.env.KHORA_AGENT_KEY_PATH?.trim() ??
+      process.env.KHORA_AGENT_KEY_PATH?.trim() ??
       defaultIdentityPath();
     const signer = await loadIdentity(idPath);
     if (signer === undefined) {
@@ -165,7 +165,7 @@ export class VellumClient {
         ...(dataDir !== undefined
           ? {
               VELLUM_DATA_DIR: dataDir,
-              ATRIUM_DATA_DIR: dataDir,
+              KHORA_DATA_DIR: dataDir,
             }
           : {}),
       },
@@ -187,8 +187,8 @@ export class VellumClient {
     genesisTurn?: Record<string, unknown>;
   }): Promise<ChainInitResponse> {
     const idPath =
-      process.env.ATRIUM_AGENT_KEY_PATH?.trim() ??
-      process.env.ATRIUM_AGENT_KEY_PATH?.trim() ??
+      process.env.KHORA_AGENT_KEY_PATH?.trim() ??
+      process.env.KHORA_AGENT_KEY_PATH?.trim() ??
       defaultIdentityPath();
     const signer = await loadIdentity(idPath);
     if (signer === undefined) {

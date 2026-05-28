@@ -63,7 +63,7 @@ Publish-side candidates emit `khora_post` or `khora_subscription` plus `khora_to
 
 ## Fresh deploy
 
-This layout is **not** upgraded in place. Wipe catalog SQLite, frames DB, and `cells/` directory before deploying a build with this schema. `ATRIUM_CELL_POOL_COUNT` is pinned via [`docs/cell-pool-placement.md`](../../docs/cell-pool-placement.md).
+This layout is **not** upgraded in place. Wipe catalog SQLite, frames DB, and `cells/` directory before deploying a build with this schema. `KHORA_CELL_POOL_COUNT` is pinned via [`docs/cell-pool-placement.md`](../../docs/cell-pool-placement.md).
 
 ## Deferred
 

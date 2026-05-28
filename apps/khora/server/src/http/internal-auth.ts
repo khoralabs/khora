@@ -1,11 +1,11 @@
 import { timingSafeEqual } from "node:crypto";
 
 function readInternalSecret(): string | undefined {
-  const s = process.env.ATRIUM_INTERNAL_SECRET?.trim();
+  const s = process.env.KHORA_INTERNAL_SECRET?.trim();
   return s !== undefined && s.length > 0 ? s : undefined;
 }
 
-/** True when `ATRIUM_INTERNAL_SECRET` is set and the request Bearer token matches. */
+/** True when `KHORA_INTERNAL_SECRET` is set and the request Bearer token matches. */
 export function authorizeInternal(req: Request): boolean {
   const expected = readInternalSecret();
   if (expected === undefined) return false;

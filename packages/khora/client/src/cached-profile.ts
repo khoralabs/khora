@@ -7,7 +7,7 @@ import {
 } from "@khoralabs/khora-contracts";
 import z from "zod";
 import type { KhoraAppConfigBase } from "./config/schema.ts";
-import { ATRIUM_BUILTIN_PLUGIN_ID, createKhoraResolvePath } from "./khora-plugins.ts";
+import { createKhoraResolvePath, KHORA_BUILTIN_PLUGIN_ID } from "./khora-plugins.ts";
 
 /**
  * Persistence envelope written by the profile-sync plugin. Re-declared here (rather than imported
@@ -68,7 +68,7 @@ export function loadCachedProfile(filePath: string): CachedProfileSnapshot | und
  * `undefined` when the plugin is disabled or unconfigured.
  */
 export function resolveProfileSyncPath(cfg: KhoraAppConfigBase): string | undefined {
-  const entry = cfg.plugins?.[ATRIUM_BUILTIN_PLUGIN_ID.profileSync];
+  const entry = cfg.plugins?.[KHORA_BUILTIN_PLUGIN_ID.profileSync];
   if (entry === undefined || entry === false) return undefined;
   const rel = (entry as { filePath?: unknown }).filePath;
   if (typeof rel !== "string" || rel.length === 0) return undefined;

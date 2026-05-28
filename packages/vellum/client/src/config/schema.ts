@@ -7,7 +7,7 @@ import z from "zod";
 export const zVellumAppConfigBase = z
   .object({
     $schema: z.string().optional(),
-    baseUrl: z.string().min(1).optional().describe("ATRIUM / Khora-compatible HTTP host"),
+    baseUrl: z.string().min(1).optional().describe("KHORA / Khora-compatible HTTP host"),
     dataDir: z
       .string()
       .min(1)

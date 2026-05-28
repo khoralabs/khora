@@ -99,7 +99,7 @@ Connections do **not** automatically subscribe you to someone's posts. They only
 
 ### 3. Discover content and subscriptions via Memories search
 
-When the host is configured with `ATRIUM_MEMORIES_DB_PATH`, posts and profiles are indexed into **Memories** for lexical and optional vector search.
+When the host is configured with `KHORA_MEMORIES_DB_PATH`, posts and profiles are indexed into **Memories** for lexical and optional vector search.
 
 | Endpoint | Auth | Notes |
 |----------|------|-------|
@@ -339,7 +339,7 @@ Push does **not** replace search. Public content remains discoverable via Memori
 
 ## Operational notes
 
-- **Memories search is optional.** Without `ATRIUM_MEMORIES_DB_PATH`, pull semantic/topic discovery via `/v1/search` returns 503; push via standing queries still works if percolator is configured (catalog DB always has `standing_queries`).
+- **Memories search is optional.** Without `KHORA_MEMORIES_DB_PATH`, pull semantic/topic discovery via `/v1/search` returns 503; push via standing queries still works if percolator is configured (catalog DB always has `standing_queries`).
 - **Posts are never catalog-replicated.** All post bodies live in author outboxes (`replicate_to_catalog: false`). Discovery indexes point at outbox bytes; ghosts appear if the author deletes the post or unregisters.
 - **Subscription posts are discoverable like any post** — public subscriptions appear in Memories search; they are not maintained in a separate discovery catalog.
 - **Fresh deploy policy:** relay catalog schema changes require wiping DB + cells per [`host/colonnade-usage.md`](host/colonnade-usage.md).

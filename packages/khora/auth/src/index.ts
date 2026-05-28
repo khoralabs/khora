@@ -16,8 +16,8 @@ export {
 } from "./auth.ts";
 export type { NonceStore } from "./nonce-store.ts";
 export {
-  ATRIUM_POST_SIGNATURE_V1,
   canonicalKhoraPostSigningPayload,
+  KHORA_POST_SIGNATURE_V1,
   type KhoraPostSigningPayloadV1,
   khoraPostSigningPayloadFromCreate,
   khoraPostSigningPayloadFromPatch,

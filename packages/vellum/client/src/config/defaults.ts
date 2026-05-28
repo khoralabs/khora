@@ -3,7 +3,7 @@ import path from "node:path";
 
 import type { VellumAppConfigBase } from "./schema.ts";
 
-/** Canonical ATRIUM / Khora host when config files and env omit `baseUrl`. */
+/** Canonical KHORA / Khora host when config files and env omit `baseUrl`. */
 export const VELLUM_CANONICAL_BASE_URL = "https://k-0.khoralabs.com" as const;
 
 /** Default {@link VellumAppConfigBase.dataDir}: room DB + control files under `~/.vellum/data/obp/...`. */

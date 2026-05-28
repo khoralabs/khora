@@ -1,9 +1,9 @@
 import type { KhoraStandingSearchRequest } from "./khora-standing-search.ts";
 
-export const ATRIUM_TOPIC_LABEL_PREFIX = "khora_topic:";
+export const KHORA_TOPIC_LABEL_PREFIX = "khora_topic:";
 
 export function topicSlugToLabelKind(slug: string): string {
-  return `${ATRIUM_TOPIC_LABEL_PREFIX}${slug}`;
+  return `${KHORA_TOPIC_LABEL_PREFIX}${slug}`;
 }
 
 export function postsMemoryNamespace(namespaceRoot: string, profileId: string): string {

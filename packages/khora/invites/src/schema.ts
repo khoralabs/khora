@@ -1,11 +1,11 @@
 /** Invite token kinds stored in `at2_invite_tokens`. */
-export const ATRIUM_INVITE_KIND = {
+export const KHORA_INVITE_KIND = {
   root: "root",
   seed: "seed",
   standard: "standard",
 } as const;
 
-export type KhoraInviteKind = (typeof ATRIUM_INVITE_KIND)[keyof typeof ATRIUM_INVITE_KIND];
+export type KhoraInviteKind = (typeof KHORA_INVITE_KIND)[keyof typeof KHORA_INVITE_KIND];
 
 export function ensureKhoraInviteSchema(db: import("bun:sqlite").Database): void {
   db.run(`

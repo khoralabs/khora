@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { poolShardCellId } from "@khoralabs/colonnade-persistence";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
-import { openEncryptedDatabaseSync, TEST_ATRIUM_SQLCIPHER_KEY } from "@khoralabs/sqlite-crypto";
+import { openEncryptedDatabaseSync, TEST_KHORA_SQLCIPHER_KEY } from "@khoralabs/sqlite-crypto";
 import { createKhoraAdminStatsPort } from "../ops/admin-stats-port.ts";
 import type { HostRouteDeps } from "./deps.ts";
 import {
@@ -113,7 +113,7 @@ function seedCellShard(
   const cellId = poolShardCellId(shardIndex);
   const path = join(cellsDir, `${cellId}.sqlite`);
   rmSync(path, { force: true });
-  const db = openEncryptedDatabaseSync(path, { create: true }, TEST_ATRIUM_SQLCIPHER_KEY);
+  const db = openEncryptedDatabaseSync(path, { create: true }, TEST_KHORA_SQLCIPHER_KEY);
   db.run(`
     CREATE TABLE outbox (
       record_key TEXT PRIMARY KEY NOT NULL,
@@ -186,7 +186,7 @@ function deps(overrides?: Partial<KhoraHostContext>): HostRouteDeps {
     cellPoolCount: 2,
     cluster,
     lookupNormalizedUsernameForPrincipal,
-    sqlCipherKey: TEST_ATRIUM_SQLCIPHER_KEY,
+    sqlCipherKey: TEST_KHORA_SQLCIPHER_KEY,
   });
   return {
     ctx: {
@@ -204,24 +204,24 @@ function deps(overrides?: Partial<KhoraHostContext>): HostRouteDeps {
 }
 
 function withSecret<T>(fn: () => T): T {
-  const prev = process.env.ATRIUM_INTERNAL_SECRET;
-  process.env.ATRIUM_INTERNAL_SECRET = "test-secret";
+  const prev = process.env.KHORA_INTERNAL_SECRET;
+  process.env.KHORA_INTERNAL_SECRET = "test-secret";
   try {
     return fn();
   } finally {
-    if (prev === undefined) delete process.env.ATRIUM_INTERNAL_SECRET;
-    else process.env.ATRIUM_INTERNAL_SECRET = prev;
+    if (prev === undefined) delete process.env.KHORA_INTERNAL_SECRET;
+    else process.env.KHORA_INTERNAL_SECRET = prev;
   }
 }
 
 function withCellsDir<T>(fn: () => T): T {
-  const prev = process.env.ATRIUM_CELLS_DIR;
-  process.env.ATRIUM_CELLS_DIR = cellsDir;
+  const prev = process.env.KHORA_CELLS_DIR;
+  process.env.KHORA_CELLS_DIR = cellsDir;
   try {
     return fn();
   } finally {
-    if (prev === undefined) delete process.env.ATRIUM_CELLS_DIR;
-    else process.env.ATRIUM_CELLS_DIR = prev;
+    if (prev === undefined) delete process.env.KHORA_CELLS_DIR;
+    else process.env.KHORA_CELLS_DIR = prev;
   }
 }
 

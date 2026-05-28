@@ -6,7 +6,7 @@ import type { PostResolver } from "../ports.ts";
 import { createKhoraMemoriesIndexer, type KhoraMemoriesIndexer } from "./indexer.ts";
 import { createKhoraCanonicalStore, type KhoraCanonicalStore } from "./khora-canonical-store.ts";
 import { khoraOntology } from "./khora-ontology.ts";
-import { DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT } from "./memories-config.ts";
+import { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories-config.ts";
 
 export type KhoraMemoriesHost = {
   client: MemoriesClient<typeof khoraOntology.nodeLabels, typeof khoraOntology.edgeLabels>;
@@ -28,7 +28,7 @@ export type BootstrapKhoraMemoriesOpts = {
 };
 
 export function bootstrapKhoraMemories(opts: BootstrapKhoraMemoriesOpts): KhoraMemoriesHost {
-  const namespaceRoot = opts.namespaceRoot ?? DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT;
+  const namespaceRoot = opts.namespaceRoot ?? DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT;
   const store = createKhoraCanonicalStore({
     persistence: opts.persistence,
     postResolver: opts.postResolver,

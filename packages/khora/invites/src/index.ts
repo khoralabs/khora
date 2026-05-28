@@ -11,5 +11,5 @@ export type {
   KhoraInviteListRow,
   KhoraInvitesRepo,
 } from "./ports.ts";
-export { ATRIUM_INVITE_KIND, ensureKhoraInviteSchema, type KhoraInviteKind } from "./schema.ts";
+export { ensureKhoraInviteSchema, KHORA_INVITE_KIND, type KhoraInviteKind } from "./schema.ts";
 export { createKhoraInvitesRepo, createKhoraInvitesSqliteRepo } from "./sqlite.ts";

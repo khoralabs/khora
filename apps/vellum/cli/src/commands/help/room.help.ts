@@ -2,7 +2,7 @@ import type { CommandHelp } from "@khoralabs/cli-kit";
 
 export const roomCreateHelp: CommandHelp = {
   command: "room create",
-  summary: "Create an ATRIUM room (after register)",
+  summary: "Create an KHORA room (after register)",
   args: `vellum room create [--target-did=<did>] [--target-username=<u>] [--ttl-ms=<n>] [--base-url=…] [--data-dir=…]`,
 };
 
@@ -21,7 +21,7 @@ export const roomConnectHelp: CommandHelp = {
 # prompts for room id when no room is given on the CLI, via --room, or env.`,
   args: `vellum room connect <roomId> [--base-url=…] [--ws-url=…] [--data-dir=…]
 vellum room connect --room=<id> …
-Room may also come from VELLUM_ROOM_ID / ATRIUM_ROOM_ID (same as top-level connect).`,
+Room may also come from VELLUM_ROOM_ID / KHORA_ROOM_ID (same as top-level connect).`,
 };
 
 export const roomReadHelp: CommandHelp = {

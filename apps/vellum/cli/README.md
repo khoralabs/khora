@@ -78,7 +78,7 @@ Config file lookup order:
 
 | Variable | Purpose |
 | --- | --- |
-| `VELLUM_BASE_URL` / `ATRIUM_BASE_URL` | Khora host HTTP URL |
+| `VELLUM_BASE_URL` / `KHORA_BASE_URL` | Khora host HTTP URL |
 | `VELLUM_DATA_DIR` | Room data root (`…/obp/rooms/<room>/…`) |
 | `VELLUM_AGENT_KEY_PATH` | Agent identity JSON path |
 | `VELLUM_ROOM_ID` | Default room id |

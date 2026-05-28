@@ -26,7 +26,7 @@ export function createHttpKhoraTransportBundle(
 }
 
 export type CreateKhoraTransportBundleFromEnvOptions = {
-  /** HTTP origin when `ATRIUM_TRANSPORT` is `http` (default). */
+  /** HTTP origin when `KHORA_TRANSPORT` is `http` (default). */
   baseUrl: string;
   signer: AgentSigner;
   fetch?: KhoraFetch;
@@ -43,7 +43,7 @@ export function createKhoraTransportBundleFromEnv(
   opts: CreateKhoraTransportBundleFromEnvOptions,
 ): KhoraTransportBundle {
   const env = opts.env ?? process.env;
-  const mode = (env.ATRIUM_TRANSPORT ?? "http").trim().toLowerCase();
+  const mode = (env.KHORA_TRANSPORT ?? "http").trim().toLowerCase();
   if (mode === "http" || mode === "") {
     return createHttpKhoraTransportBundle({
       baseUrl: opts.baseUrl,
@@ -54,6 +54,6 @@ export function createKhoraTransportBundleFromEnv(
     });
   }
   throw new Error(
-    `ATRIUM_TRANSPORT=${mode} is not implemented; supported: http (omit or set explicitly).`,
+    `KHORA_TRANSPORT=${mode} is not implemented; supported: http (omit or set explicitly).`,
   );
 }

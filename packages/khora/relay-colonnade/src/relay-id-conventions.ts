@@ -3,7 +3,7 @@
  * Full ID conventions: packages/khora/host/id-conventions.md
  */
 
-/** Default relay tenant (`ATRIUM_RELAY_TENANT_KEY`). */
+/** Default relay tenant (`KHORA_RELAY_TENANT_KEY`). */
 export const RELAY_DEFAULT_TENANT_KEY = "relay";
 
 /** Global username index tenant (handles unique across relay tenants). */

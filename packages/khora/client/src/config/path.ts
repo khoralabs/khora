@@ -10,7 +10,7 @@ export function defaultKhoraConfigPath(): string {
 export type ResolvedKhoraConfigPath = {
   /** Absolute (or as-supplied) path to the entry config file. */
   path: string;
-  /** `true` when the path came from `--config` or `ATRIUM_CONFIG`; `false` for auto-discovery. */
+  /** `true` when the path came from `--config` or `KHORA_CONFIG`; `false` for auto-discovery. */
   explicit: boolean;
 };
 
@@ -19,7 +19,7 @@ export type ResolvedKhoraConfigPath = {
  *
  * Priority (first hit wins):
  *   1. `flag` (e.g. `--config <path>`) — explicit
- *   2. `env.ATRIUM_CONFIG` — explicit
+ *   2. `env.KHORA_CONFIG` — explicit
  *   3. First entry of `defaultPaths` that exists on disk — non-explicit
  *
  * `defaultPaths` defaults to `[defaultKhoraConfigPath()]`. The legacy `defaultPath` option is
@@ -42,7 +42,7 @@ export function resolveKhoraConfigPath(
 ): ResolvedKhoraConfigPath | undefined {
   const flag = opts.flag?.trim();
   if (flag !== undefined && flag.length > 0) return { path: flag, explicit: true };
-  const envVal = opts.env?.ATRIUM_CONFIG?.trim();
+  const envVal = opts.env?.KHORA_CONFIG?.trim();
   if (envVal !== undefined && envVal.length > 0) return { path: envVal, explicit: true };
   const exists = opts.fsExists ?? existsSync;
   const candidates =

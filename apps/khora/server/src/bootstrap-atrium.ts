@@ -120,7 +120,7 @@ export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<
   const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(catalogDb) });
   const persistenceClient = createAgentRelayPersistenceClient(persistence);
 
-  const seedTokens = parseInviteSeedTokens(process.env.ATRIUM_INVITE_SEED_TOKENS);
+  const seedTokens = parseInviteSeedTokens(process.env.KHORA_INVITE_SEED_TOKENS);
   validateInviteEnvConfig(seedTokens);
   const pepper = readInvitePepper();
   let invitesRepoValue: ReturnType<typeof createKhoraInvitesSqliteRepo> | undefined;

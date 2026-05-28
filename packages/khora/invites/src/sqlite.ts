@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { generateInvitePlaintext, hashInviteToken } from "./crypto.ts";
 import type { InvitePreviewResult, KhoraInviteListRow, KhoraInvitesRepo } from "./ports.ts";
-import { ATRIUM_INVITE_KIND, ensureKhoraInviteSchema } from "./schema.ts";
+import { ensureKhoraInviteSchema, KHORA_INVITE_KIND } from "./schema.ts";
 
 function previewFromHash(tokenHash: string): string {
   if (tokenHash.length <= 12) return `${tokenHash.slice(0, 4)}…`;
@@ -64,21 +64,21 @@ export function createKhoraInvitesSqliteRepo(db: Database, pepper: string): Khor
       let inserted = 0;
       for (const t of plaintexts) {
         const hash = hashInviteToken(pepper, t);
-        const r = insertSeed.run(hash, now, ATRIUM_INVITE_KIND.seed);
+        const r = insertSeed.run(hash, now, KHORA_INVITE_KIND.seed);
         if (r.changes > 0) inserted++;
       }
       return inserted;
     },
 
     ensureRootInviteIfAbsent() {
-      const exists = countByKind.get(ATRIUM_INVITE_KIND.root);
+      const exists = countByKind.get(KHORA_INVITE_KIND.root);
       if (exists !== null && exists !== undefined && exists.c > 0) {
         return undefined;
       }
       const plaintext = generateInvitePlaintext();
       const hash = hashInviteToken(pepper, plaintext);
       try {
-        insertRoot.run(hash, Date.now(), ATRIUM_INVITE_KIND.root);
+        insertRoot.run(hash, Date.now(), KHORA_INVITE_KIND.root);
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         if (msg.includes("UNIQUE")) {
@@ -107,7 +107,7 @@ export function createKhoraInvitesSqliteRepo(db: Database, pepper: string): Khor
         for (let i = 0; i < count; i++) {
           const plaintext = generateInvitePlaintext();
           const hash = hashInviteToken(pepper, plaintext);
-          insertStandard.run(hash, now, mintedByDid, ATRIUM_INVITE_KIND.standard);
+          insertStandard.run(hash, now, mintedByDid, KHORA_INVITE_KIND.standard);
           plaintexts.push(plaintext);
         }
       })();
@@ -139,7 +139,7 @@ export function createKhoraInvitesSqliteRepo(db: Database, pepper: string): Khor
           source: "inviter",
         };
       }
-      if (row.kind === ATRIUM_INVITE_KIND.root) {
+      if (row.kind === KHORA_INVITE_KIND.root) {
         return { ok: true, inviter: null, source: "root" };
       }
       return { ok: true, inviter: null, source: "seed" };

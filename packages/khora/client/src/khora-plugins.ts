@@ -19,7 +19,7 @@ export type KhoraPluginContext = {
 export type KhoraPluginInstaller = (ctx: KhoraPluginContext) => KhoraPluginHandle;
 
 /** Built-in ids for env-loaded plugins (use for deduplication / user overrides). */
-export const ATRIUM_BUILTIN_PLUGIN_ID = {
+export const KHORA_BUILTIN_PLUGIN_ID = {
   profileSync: "at2.plugin.profile-sync",
   telemetry: "at2.plugin.telemetry",
   inboxBuffer: "at2.plugin.inbox-buffer",

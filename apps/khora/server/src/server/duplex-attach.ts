@@ -7,7 +7,7 @@ import type { DuplexByteStream } from "@khoralabs/duplex-byte-stream";
 import { AuthError } from "@khoralabs/khora-auth";
 import { type KhoraHostContext, popRelayInboxDrainItemsForDid } from "@khoralabs/khora-host";
 import type { HostRouteDeps } from "../http/deps.ts";
-import { ATRIUM_UNARY_INGRESS_ORIGIN } from "./unary-dispatch.ts";
+import { KHORA_UNARY_INGRESS_ORIGIN } from "./unary-dispatch.ts";
 
 export async function attachRoomDuplexAfterTicket(opts: {
   ctx: KhoraHostContext;
@@ -35,7 +35,7 @@ export async function attachInboxDuplexAfterAuth(opts: {
   nonce: string;
   sig: string;
 }): Promise<{ dispose(): Promise<void> }> {
-  const url = new URL(`${ATRIUM_UNARY_INGRESS_ORIGIN}/v1/inbox/ws`);
+  const url = new URL(`${KHORA_UNARY_INGRESS_ORIGIN}/v1/inbox/ws`);
   url.searchParams.set("did", opts.did);
   url.searchParams.set("ts", opts.ts);
   url.searchParams.set("nonce", opts.nonce);

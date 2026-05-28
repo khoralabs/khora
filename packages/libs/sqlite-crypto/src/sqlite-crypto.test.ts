@@ -51,14 +51,14 @@ describe("outbox-payload", () => {
 
 describe("EnvKeyProvider", () => {
   test("reads hex outbox key", async () => {
-    const prev = process.env.ATRIUM_OUTBOX_ENCRYPTION_KEY;
-    process.env.ATRIUM_OUTBOX_ENCRYPTION_KEY = TEST_KEY_HEX;
+    const prev = process.env.KHORA_OUTBOX_ENCRYPTION_KEY;
+    process.env.KHORA_OUTBOX_ENCRYPTION_KEY = TEST_KEY_HEX;
     try {
       const k = await new EnvKeyProvider().getOutboxFieldKey();
       expect(k?.length).toBe(32);
     } finally {
-      if (prev === undefined) delete process.env.ATRIUM_OUTBOX_ENCRYPTION_KEY;
-      else process.env.ATRIUM_OUTBOX_ENCRYPTION_KEY = prev;
+      if (prev === undefined) delete process.env.KHORA_OUTBOX_ENCRYPTION_KEY;
+      else process.env.KHORA_OUTBOX_ENCRYPTION_KEY = prev;
     }
   });
 });

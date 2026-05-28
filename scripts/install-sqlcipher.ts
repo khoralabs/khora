@@ -23,7 +23,7 @@ console.log(`Checking SQLCipher library (${SQLCIPHER_CUSTOM_LIB_ENV})…`);
 try {
   resolveSqlCipherLib();
   console.log("SQLCipher custom library configured (or already loaded).");
-  console.log("Set ATRIUM_SQLCIPHER_KEY / REGISTRY_SQLCIPHER_KEY to enable encrypted DB files.");
+  console.log("Set KHORA_SQLCIPHER_KEY / REGISTRY_SQLCIPHER_KEY to enable encrypted DB files.");
 } catch (e) {
   console.error(e instanceof Error ? e.message : String(e));
   process.exit(1);

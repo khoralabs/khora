@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import path from "node:path";
 import z from "zod";
-import { ATRIUM_BUILTIN_PLUGIN_ID } from "../khora-plugins.ts";
+import { KHORA_BUILTIN_PLUGIN_ID } from "../khora-plugins.ts";
 import { KhoraConfigError } from "./errors.ts";
 import { loadKhoraAppConfig } from "./load.ts";
 import { extendKhoraAppConfig, zKhoraAppConfigBase } from "./schema.ts";
@@ -67,10 +67,10 @@ describe("loadKhoraAppConfig", () => {
       layers: [
         {
           plugins: {
-            [ATRIUM_BUILTIN_PLUGIN_ID.profileSync]: { filePath: "p.json" },
+            [KHORA_BUILTIN_PLUGIN_ID.profileSync]: { filePath: "p.json" },
           },
         },
-        { plugins: { [ATRIUM_BUILTIN_PLUGIN_ID.profileSync]: false } },
+        { plugins: { [KHORA_BUILTIN_PLUGIN_ID.profileSync]: false } },
       ],
       filePath: null,
     });

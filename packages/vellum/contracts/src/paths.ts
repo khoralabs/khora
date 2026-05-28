@@ -1,6 +1,6 @@
 import path from "node:path";
 
-/** Room storage layout: `${dataDir}/obp/...` unless `VELLUM_OBP_STORE_ROOT` / legacy `ATRIUM_OBP_STORE_ROOT` overrides. */
+/** Room storage layout: `${dataDir}/obp/...` unless `VELLUM_OBP_STORE_ROOT` / legacy `KHORA_OBP_STORE_ROOT` overrides. */
 export type VellumPathConfig = {
   dataDir?: string | undefined;
 };
@@ -15,12 +15,12 @@ export function encodeRoomIdForPath(roomId: string): string {
   return encodeURIComponent(roomId);
 }
 
-/** `<dataDir>/obp` (default data dir `~/.vellum/data`) or `VELLUM_OBP_STORE_ROOT` / `ATRIUM_OBP_STORE_ROOT`. */
+/** `<dataDir>/obp` (default data dir `~/.vellum/data`) or `VELLUM_OBP_STORE_ROOT` / `KHORA_OBP_STORE_ROOT`. */
 export function obpStoreRoot(
   dataDir: string | undefined,
   env: NodeJS.ProcessEnv = process.env,
 ): string {
-  const storeOverride = env.VELLUM_OBP_STORE_ROOT?.trim() ?? env.ATRIUM_OBP_STORE_ROOT?.trim();
+  const storeOverride = env.VELLUM_OBP_STORE_ROOT?.trim() ?? env.KHORA_OBP_STORE_ROOT?.trim();
   if (storeOverride !== undefined && storeOverride.length > 0) return path.resolve(storeOverride);
   const home = env.HOME ?? env.USERPROFILE ?? "";
   const root =

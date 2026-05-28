@@ -25,7 +25,7 @@ cd apps/vellum/cli
 bun run src/cli.ts --help
 ```
 
-Point **`ATRIUM_BASE_URL`** (and any daemon control URL your setup uses) at a running Khora host. The CLI uses [`@khoralabs/vellum-client`](../../packages/vellum/client) and [`@khoralabs/khora-client`](../../packages/khora/client) under the hood.
+Point **`KHORA_BASE_URL`** (and any daemon control URL your setup uses) at a running Khora host. The CLI uses [`@khoralabs/vellum-client`](../../packages/vellum/client) and [`@khoralabs/khora-client`](../../packages/khora/client) under the hood.
 
 **Account deletion:** If your deployment exposes Khora’s `POST /v1/unregister`, you can remove server-side account data from the Khora client the CLI uses (`khora unregister --yes`). That does not erase local Vellum daemon state or keys; see `apps/khora/README.md` for the full deletion story.
 

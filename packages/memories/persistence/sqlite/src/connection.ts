@@ -2,7 +2,7 @@ import { Database, type DatabaseOptions } from "bun:sqlite";
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { openEncryptedDatabaseSync, TEST_ATRIUM_SQLCIPHER_KEY } from "@khoralabs/sqlite-crypto";
+import { openEncryptedDatabaseSync, TEST_KHORA_SQLCIPHER_KEY } from "@khoralabs/sqlite-crypto";
 import { createMigrationRunner } from "@khoralabs/sqlite-migrate";
 import * as sqliteVec from "sqlite-vec";
 import m001Initial from "./migrations/0.0.0-0.1.0/001-initial";
@@ -153,7 +153,7 @@ export function openMemoriesDatabase(
 
 /** Standard test key; use in unit/integration tests only. */
 export function openTestMemoriesDatabase(filename = ":memory:"): Database {
-  return openMemoriesDatabase(filename, { sqlCipherKey: TEST_ATRIUM_SQLCIPHER_KEY });
+  return openMemoriesDatabase(filename, { sqlCipherKey: TEST_KHORA_SQLCIPHER_KEY });
 }
 
 export function openMemoriesDatabaseReadonly(filename: string): Database {

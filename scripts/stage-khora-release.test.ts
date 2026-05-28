@@ -13,15 +13,15 @@ import {
 } from "./stage-khora-release.ts";
 
 describe("launcher sources", () => {
-  test("cli launcher: node shebang, supports the three slugs, sets ATRIUM_DAEMON_BIN + ATRIUM_CLI_ASSETS_DIR + ATRIUM_CLI_VERSION", () => {
+  test("cli launcher: node shebang, supports the three slugs, sets KHORA_DAEMON_BIN + KHORA_CLI_ASSETS_DIR + KHORA_CLI_VERSION", () => {
     const src = cliLauncherSource();
     expect(src.startsWith("#!/usr/bin/env node")).toBe(true);
     expect(src).toContain('"darwin-arm64"');
     expect(src).toContain('"linux-x64"');
     expect(src).toContain('"linux-arm64"');
-    expect(src).toContain("ATRIUM_DAEMON_BIN");
-    expect(src).toContain("ATRIUM_CLI_ASSETS_DIR");
-    expect(src).toContain("ATRIUM_CLI_VERSION");
+    expect(src).toContain("KHORA_DAEMON_BIN");
+    expect(src).toContain("KHORA_CLI_ASSETS_DIR");
+    expect(src).toContain("KHORA_CLI_VERSION");
     expect(src).toContain("@khoralabs/khora-cli-");
     expect(src).toContain("@khoralabs/khora-daemon-");
     expect(src).toContain("spawnSync");
@@ -30,14 +30,14 @@ describe("launcher sources", () => {
     expect(src).toContain('require(path.resolve(assetsDir, "package.json"))');
   });
 
-  test("daemon launcher: node shebang, supports the three slugs, no ATRIUM_DAEMON_BIN export", () => {
+  test("daemon launcher: node shebang, supports the three slugs, no KHORA_DAEMON_BIN export", () => {
     const src = daemonLauncherSource();
     expect(src.startsWith("#!/usr/bin/env node")).toBe(true);
     expect(src).toContain('"darwin-arm64"');
     expect(src).toContain('"linux-x64"');
     expect(src).toContain('"linux-arm64"');
     expect(src).toContain("@khoralabs/khora-daemon-");
-    expect(src.includes("ATRIUM_DAEMON_BIN")).toBe(false);
+    expect(src.includes("KHORA_DAEMON_BIN")).toBe(false);
   });
 });
 

@@ -47,7 +47,7 @@ export function ensureCellPoolManifest(cellsDirectory: string, cellPoolCount: nu
   if (stored !== cellPoolCount) {
     throw new Error(
       `Colonnade: cell_pool_count mismatch — configured ${cellPoolCount}, manifest ${stored} at ${path}. ` +
-        `Use a new ATRIUM_CELLS_DIR or restore the original pool size.`,
+        `Use a new KHORA_CELLS_DIR or restore the original pool size.`,
     );
   }
 }

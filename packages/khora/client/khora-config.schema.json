@@ -21,7 +21,7 @@
       ]
     },
     "baseUrl": {
-      "description": "ATRIUM host base URL. Default: http://127.0.0.1:8787",
+      "description": "KHORA host base URL. Default: http://127.0.0.1:8787",
       "type": "string",
       "format": "uri"
     },
@@ -152,5 +152,5 @@
     }
   },
   "additionalProperties": {},
-  "description": "ATRIUM client base configuration."
+  "description": "KHORA client base configuration."
 }

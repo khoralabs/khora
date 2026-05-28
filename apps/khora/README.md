@@ -56,7 +56,7 @@ bun install
 cd apps/khora
 
 # 1. host
-ATRIUM_DB_PATH=/tmp/khora.db bun run host/src/index.ts &
+KHORA_DB_PATH=/tmp/khora.db bun run host/src/index.ts &
 
 # 2. identity + register
 bun run cli/src/cli.ts key generate

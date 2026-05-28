@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ATRIUM_BUILTIN_PLUGIN_ID } from "../khora-plugins.ts";
+import { KHORA_BUILTIN_PLUGIN_ID } from "../khora-plugins.ts";
 import { mergeKhoraAppConfigLayers } from "./merge.ts";
 
 describe("mergeKhoraAppConfigLayers", () => {
@@ -20,19 +20,19 @@ describe("mergeKhoraAppConfigLayers", () => {
     const merged = mergeKhoraAppConfigLayers([
       {
         plugins: {
-          [ATRIUM_BUILTIN_PLUGIN_ID.profileSync]: { filePath: "a.json" },
-          [ATRIUM_BUILTIN_PLUGIN_ID.telemetry]: { dir: "t1" },
+          [KHORA_BUILTIN_PLUGIN_ID.profileSync]: { filePath: "a.json" },
+          [KHORA_BUILTIN_PLUGIN_ID.telemetry]: { dir: "t1" },
         },
       },
       {
         plugins: {
-          [ATRIUM_BUILTIN_PLUGIN_ID.profileSync]: { filePath: "b.json" },
+          [KHORA_BUILTIN_PLUGIN_ID.profileSync]: { filePath: "b.json" },
         },
       },
     ]);
     expect(merged.plugins).toEqual({
-      [ATRIUM_BUILTIN_PLUGIN_ID.profileSync]: { filePath: "b.json" },
-      [ATRIUM_BUILTIN_PLUGIN_ID.telemetry]: { dir: "t1" },
+      [KHORA_BUILTIN_PLUGIN_ID.profileSync]: { filePath: "b.json" },
+      [KHORA_BUILTIN_PLUGIN_ID.telemetry]: { dir: "t1" },
     });
   });
 
@@ -40,14 +40,14 @@ describe("mergeKhoraAppConfigLayers", () => {
     const merged = mergeKhoraAppConfigLayers([
       {
         plugins: {
-          [ATRIUM_BUILTIN_PLUGIN_ID.profileSync]: { filePath: "a.json" },
-          [ATRIUM_BUILTIN_PLUGIN_ID.telemetry]: { dir: "t1" },
+          [KHORA_BUILTIN_PLUGIN_ID.profileSync]: { filePath: "a.json" },
+          [KHORA_BUILTIN_PLUGIN_ID.telemetry]: { dir: "t1" },
         },
       },
-      { plugins: { [ATRIUM_BUILTIN_PLUGIN_ID.profileSync]: false } },
+      { plugins: { [KHORA_BUILTIN_PLUGIN_ID.profileSync]: false } },
     ]);
     expect(merged.plugins).toEqual({
-      [ATRIUM_BUILTIN_PLUGIN_ID.telemetry]: { dir: "t1" },
+      [KHORA_BUILTIN_PLUGIN_ID.telemetry]: { dir: "t1" },
     });
   });
 
@@ -55,14 +55,14 @@ describe("mergeKhoraAppConfigLayers", () => {
     const merged = mergeKhoraAppConfigLayers([
       {
         plugins: {
-          [ATRIUM_BUILTIN_PLUGIN_ID.profileSync]: { filePath: "p.json" },
-          [ATRIUM_BUILTIN_PLUGIN_ID.inboxBuffer]: { dbPath: "b.sqlite" },
+          [KHORA_BUILTIN_PLUGIN_ID.profileSync]: { filePath: "p.json" },
+          [KHORA_BUILTIN_PLUGIN_ID.inboxBuffer]: { dbPath: "b.sqlite" },
         },
       },
     ]);
     expect(merged.plugins).toEqual({
-      [ATRIUM_BUILTIN_PLUGIN_ID.profileSync]: { filePath: "p.json" },
-      [ATRIUM_BUILTIN_PLUGIN_ID.inboxBuffer]: { dbPath: "b.sqlite" },
+      [KHORA_BUILTIN_PLUGIN_ID.profileSync]: { filePath: "p.json" },
+      [KHORA_BUILTIN_PLUGIN_ID.inboxBuffer]: { dbPath: "b.sqlite" },
     });
   });
 

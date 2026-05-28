@@ -30,7 +30,7 @@ export {
   applyTestEncryptionEnv,
   createTestEncryptionMaterial,
   createTestOutboxPayloadCodec,
-  TEST_ATRIUM_SQLCIPHER_KEY,
+  TEST_KHORA_SQLCIPHER_KEY,
   TEST_OUTBOX_KEY_HEX,
   TEST_POST_AUTHOR_SIGNATURE,
   TEST_REGISTRY_SQLCIPHER_KEY,

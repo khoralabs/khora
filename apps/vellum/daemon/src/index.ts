@@ -30,8 +30,8 @@ function daemonJsonOutput(vcfg: { daemonJson?: boolean }): boolean {
 function daemonPathConfig(vcfg: { dataDir?: string }): VellumPathConfig {
   const dataDir =
     process.env.VELLUM_DATA_DIR?.trim() ??
-    process.env.ATRIUM_DATA_DIR?.trim() ??
-    process.env.ATRIUM_DATA_DIR?.trim() ??
+    process.env.KHORA_DATA_DIR?.trim() ??
+    process.env.KHORA_DATA_DIR?.trim() ??
     vcfg.dataDir?.trim();
   return {
     dataDir: dataDir !== undefined && dataDir.length > 0 ? dataDir : undefined,
@@ -50,8 +50,8 @@ function loadDaemonLayeredConfig() {
 
 async function loadSigner(vcfg: { agentKeyPath?: string }): Promise<PersistableAgentSigner> {
   const p =
-    process.env.ATRIUM_AGENT_KEY_PATH?.trim() ??
-    process.env.ATRIUM_AGENT_KEY_PATH?.trim() ??
+    process.env.KHORA_AGENT_KEY_PATH?.trim() ??
+    process.env.KHORA_AGENT_KEY_PATH?.trim() ??
     process.env.VELLUM_AGENT_KEY_PATH?.trim() ??
     vcfg.agentKeyPath?.trim() ??
     defaultIdentityPath();

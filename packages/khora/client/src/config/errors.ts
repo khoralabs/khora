@@ -7,8 +7,8 @@ function formatIssue(issue: z.core.$ZodIssue): string {
 
 function buildMessage(issues: readonly z.core.$ZodIssue[], sourcePath?: string): string {
   const where = sourcePath !== undefined ? ` (${sourcePath})` : "";
-  if (issues.length === 0) return `Invalid ATRIUM config${where}.`;
-  return [`Invalid ATRIUM config${where}:`, ...issues.map(formatIssue)].join("\n");
+  if (issues.length === 0) return `Invalid KHORA config${where}.`;
+  return [`Invalid KHORA config${where}:`, ...issues.map(formatIssue)].join("\n");
 }
 
 /** Thrown by the loader when the merged config fails validation or a file cannot be parsed. */

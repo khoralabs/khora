@@ -6,7 +6,7 @@ import {
   mergeResolutionAndProviderOptions,
 } from "@khoralabs/memories-core/helpers";
 
-export const DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT = "global";
+export const DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT = "global";
 
 export type KhoraMemoriesBootstrapConfig = {
   dbPath: string;
@@ -30,11 +30,11 @@ function parseEmbeddingResolution(raw: string | undefined): EmbeddingResolutionP
 
 export function readKhoraEmbeddingEnv(): KhoraEmbeddingEnv {
   return {
-    provider: process.env.ATRIUM_EMBEDDING_PROVIDER?.trim().toLowerCase(),
-    model: process.env.ATRIUM_EMBEDDING_MODEL?.trim(),
-    resolution: parseEmbeddingResolution(process.env.ATRIUM_EMBEDDING_RESOLUTION?.trim()),
+    provider: process.env.KHORA_EMBEDDING_PROVIDER?.trim().toLowerCase(),
+    model: process.env.KHORA_EMBEDDING_MODEL?.trim(),
+    resolution: parseEmbeddingResolution(process.env.KHORA_EMBEDDING_RESOLUTION?.trim()),
     apiKey:
-      process.env.ATRIUM_EMBEDDING_API_KEY?.trim() ||
+      process.env.KHORA_EMBEDDING_API_KEY?.trim() ||
       process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim() ||
       process.env.GOOGLE_API_KEY?.trim() ||
       process.env.GEMINI_API_KEY?.trim(),
@@ -47,7 +47,7 @@ export function createKhoraEmbeddingModelFromEnv(
   const provider = env.provider ?? "google";
   if (provider !== "google") {
     throw new Error(
-      `ATRIUM_EMBEDDING_PROVIDER=${provider} is not supported yet; use google or omit for lexical-only`,
+      `KHORA_EMBEDDING_PROVIDER=${provider} is not supported yet; use google or omit for lexical-only`,
     );
   }
   const apiKey = env.apiKey;
@@ -64,12 +64,12 @@ export function createKhoraEmbeddingModelFromEnv(
 }
 
 export function readKhoraMemoriesNamespaceRoot(): string {
-  const raw = process.env.ATRIUM_MEMORIES_NAMESPACE_ROOT?.trim();
-  return raw !== undefined && raw.length > 0 ? raw : DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT;
+  const raw = process.env.KHORA_MEMORIES_NAMESPACE_ROOT?.trim();
+  return raw !== undefined && raw.length > 0 ? raw : DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT;
 }
 
 export function envMemoriesBootstrapConfig(): KhoraMemoriesBootstrapConfig | undefined {
-  const dbPath = process.env.ATRIUM_MEMORIES_DB_PATH?.trim();
+  const dbPath = process.env.KHORA_MEMORIES_DB_PATH?.trim();
   if (dbPath === undefined || dbPath.length === 0) return undefined;
   return {
     dbPath,

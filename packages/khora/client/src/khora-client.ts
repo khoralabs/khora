@@ -95,7 +95,7 @@ export type KhoraClientOptions = {
   /** Required unless {@link transportBundle} supplies unary+duplex. */
   baseUrl?: string;
   signer: AgentSigner;
-  /** When set, {@link baseUrl} is optional — deploy-selected transports (`ATRIUM_TRANSPORT`, …). */
+  /** When set, {@link baseUrl} is optional — deploy-selected transports (`KHORA_TRANSPORT`, …). */
   transportBundle?: KhoraTransportBundle;
   fetch?: KhoraFetch;
   WebSocket?: typeof WebSocket;

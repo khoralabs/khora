@@ -44,9 +44,9 @@ let metaVersion = "";
 try { metaVersion = String(require(path.resolve(assetsDir, "package.json")).version || ""); } catch (_) {}
 const env = {
   ...process.env,
-  ATRIUM_DAEMON_BIN: daemonBin,
-  ATRIUM_CLI_ASSETS_DIR: assetsDir,
-  ATRIUM_CLI_VERSION: metaVersion,
+  KHORA_DAEMON_BIN: daemonBin,
+  KHORA_CLI_ASSETS_DIR: assetsDir,
+  KHORA_CLI_VERSION: metaVersion,
 };
 const r = spawnSync(cliBin, process.argv.slice(2), { stdio: "inherit", env });
 process.exit(r.status ?? 1);

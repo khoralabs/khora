@@ -7,10 +7,10 @@ import {
   profileMemoryNamespace,
   topicScope,
 } from "./khora-namespace.ts";
-import { DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT } from "./memories-config.ts";
+import { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories-config.ts";
 
 describe("khora-namespace", () => {
-  const root = DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT;
+  const root = DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT;
   const profileId = "prof-abc-123";
 
   test("builds hierarchical paths under global root", () => {

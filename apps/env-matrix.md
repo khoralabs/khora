@@ -21,8 +21,8 @@ Put these in a Render **Environment Group** (or password manager) and link to ev
 
 | Variable | Services | Notes |
 | --- | --- | --- |
-| `ATRIUM_INTERNAL_SECRET` | registry, khora-server | **Same value.** Registry calls `POST /internal/mint-invite` on khora-server with `Authorization: Bearer …`. |
-| `ATRIUM_INVITE_PEPPER` | registry, khora-server | **Same value.** Registry hashes minted tokens; khora-server validates invites with the same pepper. |
+| `KHORA_INTERNAL_SECRET` | registry, khora-server | **Same value.** Registry calls `POST /internal/mint-invite` on khora-server with `Authorization: Bearer …`. |
+| `KHORA_INVITE_PEPPER` | registry, khora-server | **Same value.** Registry hashes minted tokens; khora-server validates invites with the same pepper. |
 | `AWS_REGION` | registry, khora-server | e.g. `us-east-1` |
 | `AWS_ACCESS_KEY_ID` | registry, khora-server | Render has no IAM roles; use one IAM user for Litestream (+ SES on registry). |
 | `AWS_SECRET_ACCESS_KEY` | registry, khora-server | Pair with access key above. |
@@ -65,18 +65,18 @@ Legend: **+** = set on this service · **·** = not used · **Kind:** **S** = se
 | `BUN_PUBLIC_KHORA_REGISTRY_URL` | · | · | + | + | C | Inlined into client bundle at build time. |
 | `REGISTRY_DEFAULT_HOST_SLUG` | + | · | · | · | C | Slug for default Khora host row (v1 single-host). |
 | `REGISTRY_DEFAULT_HOST_URL` | + | · | · | · | C | Public URL registry uses to call khora-server mint API. |
-| `ATRIUM_BASE_URL` | + | · | · | · | C | Fallback for host seed if `REGISTRY_DEFAULT_HOST_URL` unset. |
+| `KHORA_BASE_URL` | + | · | · | · | C | Fallback for host seed if `REGISTRY_DEFAULT_HOST_URL` unset. |
 
 ### Auth & secrets
 
 | Variable | R | A | KH | AH | Kind | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | `BETTER_AUTH_SECRET` | + | · | · | · | S | ≥32 chars. Registry human auth (OTP). |
-| `ATRIUM_INTERNAL_SECRET` | + | + | · | · | S | Shared; see table above. |
-| `ATRIUM_INVITE_PEPPER` | + | + | · | · | S | Shared; see table above. |
+| `KHORA_INTERNAL_SECRET` | + | + | · | · | S | Shared; see table above. |
+| `KHORA_INVITE_PEPPER` | + | + | · | · | S | Shared; see table above. |
 | `REGISTRY_CONSOLE_ROOT_TOKEN` | + | · | · | · | S | ≥16 chars enables `/admin` operator console. |
 | `REGISTRY_INTERNAL_SECRET` | + | · | · | · | S | Optional bearer for `/internal/admin/*`. |
-| `ATRIUM_CONSOLE_ROOT_TOKEN` | · | + | · | · | S | ≥16 chars enables khora-server `/admin`. |
+| `KHORA_CONSOLE_ROOT_TOKEN` | · | + | · | · | S | ≥16 chars enables khora-server `/admin`. |
 | `REGISTRY_BOOTSTRAP_EMAILS` | + | · | · | · | C | Comma-separated emails granted `staff` role on first login. |
 
 ### Email (AWS SES)
@@ -94,19 +94,19 @@ Legend: **+** = set on this service · **·** = not used · **Kind:** **S** = se
 | Variable | R | A | KH | AH | Kind | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | `REGISTRY_DATABASE_PATH` | + | · | · | · | C | Default `./data/registry.sqlite`. Use Render disk mount path in prod. |
-| `ATRIUM_CATALOG_PATH` | · | + | · | · | C | Catalog SQLite file. |
-| `ATRIUM_FRAMES_DB_PATH` | · | + | · | · | C | Frames / frame-channel SQLite. |
-| `ATRIUM_CELLS_DIR` | · | + | · | · | C | Directory of cell shard SQLite files. |
-| `ATRIUM_CELL_POOL_COUNT` | · | + | · | · | C | Shard pool size (default 16). |
-| `ATRIUM_COLONNADE_CELL_WORKERS` | · | + | · | · | C | Bun Workers for cell SQLite (default on). |
+| `KHORA_CATALOG_PATH` | · | + | · | · | C | Catalog SQLite file. |
+| `KHORA_FRAMES_DB_PATH` | · | + | · | · | C | Frames / frame-channel SQLite. |
+| `KHORA_CELLS_DIR` | · | + | · | · | C | Directory of cell shard SQLite files. |
+| `KHORA_CELL_POOL_COUNT` | · | + | · | · | C | Shard pool size (default 16). |
+| `KHORA_COLONNADE_CELL_WORKERS` | · | + | · | · | C | Bun Workers for cell SQLite (default on). |
 | `LOG_LEVEL` | · | + | · | · | C | Pino level (default `info`). |
 
 ### Encryption at rest
 
 | Variable | R | A | KH | AH | Kind | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| `ATRIUM_SQLCIPHER_KEY` | · | + | · | · | S | **Required.** SQLCipher key for catalog, frames, cells, memories SQLite (≥16 chars). Same key required for Litestream restore. |
-| `ATRIUM_OUTBOX_ENCRYPTION_KEY` | · | + | · | · | S | **Required.** AES-256-GCM field key for post `outbox.payload` (64-char hex or ≥32 UTF-8 bytes). Separate from SQLCipher. |
+| `KHORA_SQLCIPHER_KEY` | · | + | · | · | S | **Required.** SQLCipher key for catalog, frames, cells, memories SQLite (≥16 chars). Same key required for Litestream restore. |
+| `KHORA_OUTBOX_ENCRYPTION_KEY` | · | + | · | · | S | **Required.** AES-256-GCM field key for post `outbox.payload` (64-char hex or ≥32 UTF-8 bytes). Separate from SQLCipher. |
 | `REGISTRY_SQLCIPHER_KEY` | + | · | · | · | S | **Required.** SQLCipher key for `registry.sqlite`. |
 
 **Prod checklist (in addition to env vars):**
@@ -126,16 +126,16 @@ Legend: **+** = set on this service · **·** = not used · **Kind:** **S** = se
 
 | Variable | R | A | KH | AH | Kind | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| `ATRIUM_INVITE_REQUIRED` | · | + | · | · | C | Set `1` to require invite token on registration. |
-| `ATRIUM_INVITES_PER_REGISTRATION` | · | + | · | · | C | Max invites per registration (default 10). |
-| `ATRIUM_INVITE_SEED_TOKENS` | · | + | · | · | S | Bootstrap plaintext tokens (hashed at startup). |
+| `KHORA_INVITE_REQUIRED` | · | + | · | · | C | Set `1` to require invite token on registration. |
+| `KHORA_INVITES_PER_REGISTRATION` | · | + | · | · | C | Max invites per registration (default 10). |
+| `KHORA_INVITE_SEED_TOKENS` | · | + | · | · | S | Bootstrap plaintext tokens (hashed at startup). |
 
 ### Litestream → S3
 
 | Variable | R | A | KH | AH | Kind | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | `REGISTRY_LITESTREAM` | + | · | · | · | C | `1` enables Litestream sidecar on registry. |
-| `ATRIUM_LITESTREAM` | · | + | · | · | C | `1` enables Litestream sidecar on khora-server. |
+| `KHORA_LITESTREAM` | · | + | · | · | C | `1` enables Litestream sidecar on khora-server. |
 | `LITESTREAM_S3_BUCKET` | + | + | · | · | C | Shared bucket name. |
 | `LITESTREAM_S3_REGION` | + | + | · | · | C | Bucket region. |
 | `LITESTREAM_S3_KEY_PREFIX` | + | + | · | · | C | **Different per service:** `registry/litestream` vs `khora/litestream`. |
@@ -158,10 +158,10 @@ AWS_ACCESS_KEY_ID=...
 AWS_SECRET_ACCESS_KEY=...
 LITESTREAM_S3_BUCKET=khora-backups-prod
 LITESTREAM_S3_REGION=us-east-1
-ATRIUM_INTERNAL_SECRET=...
-ATRIUM_INVITE_PEPPER=...
-ATRIUM_SQLCIPHER_KEY=...
-ATRIUM_OUTBOX_ENCRYPTION_KEY=...
+KHORA_INTERNAL_SECRET=...
+KHORA_INVITE_PEPPER=...
+KHORA_SQLCIPHER_KEY=...
+KHORA_OUTBOX_ENCRYPTION_KEY=...
 REGISTRY_SQLCIPHER_KEY=...
 ```
 
@@ -188,16 +188,16 @@ REGISTRY_CONSOLE_ROOT_TOKEN=...
 
 ```
 PORT=8788
-ATRIUM_CATALOG_PATH=/data/khora-catalog.sqlite
-ATRIUM_FRAMES_DB_PATH=/data/khora-frames.sqlite
-ATRIUM_CELLS_DIR=/data/cells
-ATRIUM_INVITE_PEPPER=...          # same as shared group
-ATRIUM_INTERNAL_SECRET=...        # same as shared group
-ATRIUM_LITESTREAM=1
+KHORA_CATALOG_PATH=/data/khora-catalog.sqlite
+KHORA_FRAMES_DB_PATH=/data/khora-frames.sqlite
+KHORA_CELLS_DIR=/data/cells
+KHORA_INVITE_PEPPER=...          # same as shared group
+KHORA_INTERNAL_SECRET=...        # same as shared group
+KHORA_LITESTREAM=1
 LITESTREAM_S3_KEY_PREFIX=khora/litestream
-ATRIUM_SQLCIPHER_KEY=...
-ATRIUM_OUTBOX_ENCRYPTION_KEY=...
-ATRIUM_CONSOLE_ROOT_TOKEN=...
+KHORA_SQLCIPHER_KEY=...
+KHORA_OUTBOX_ENCRYPTION_KEY=...
+KHORA_CONSOLE_ROOT_TOKEN=...
 ```
 
 **khoralabs homepage** / **khora homepage**
@@ -218,12 +218,12 @@ Homepages POST to registry; registry mints via khora-server:
 
 ```
 homepage  →  POST /v1/access-token/request  →  registry
-registry  →  POST /internal/mint-invite     →  khora-server  (Bearer ATRIUM_INTERNAL_SECRET)
+registry  →  POST /internal/mint-invite     →  khora-server  (Bearer KHORA_INTERNAL_SECRET)
 registry  →  SES email with plaintext token
 ```
 
-Requires on **registry**: `ATRIUM_INTERNAL_SECRET`, `ATRIUM_INVITE_PEPPER`, `SES_FROM_ADDRESS`, host URL/slug.  
-Requires on **khora-server**: matching `ATRIUM_INTERNAL_SECRET`, `ATRIUM_INVITE_PEPPER`, invite minting configured.
+Requires on **registry**: `KHORA_INTERNAL_SECRET`, `KHORA_INVITE_PEPPER`, `SES_FROM_ADDRESS`, host URL/slug.  
+Requires on **khora-server**: matching `KHORA_INTERNAL_SECRET`, `KHORA_INVITE_PEPPER`, invite minting configured.
 
 ---
 
@@ -233,7 +233,7 @@ Requires on **khora-server**: matching `ATRIUM_INTERNAL_SECRET`, `ATRIUM_INVITE_
 openssl rand -base64 32
 ```
 
-Use for `BETTER_AUTH_SECRET`, `ATRIUM_INTERNAL_SECRET`, `ATRIUM_INVITE_PEPPER`, `*_CONSOLE_ROOT_TOKEN`, `REGISTRY_INTERNAL_SECRET`.
+Use for `BETTER_AUTH_SECRET`, `KHORA_INTERNAL_SECRET`, `KHORA_INVITE_PEPPER`, `*_CONSOLE_ROOT_TOKEN`, `REGISTRY_INTERNAL_SECRET`.
 
 ---
 

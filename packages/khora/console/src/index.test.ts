@@ -20,12 +20,12 @@ describe("khora-console", () => {
   });
 
   test("createConsoleAuthFromEnv returns null without token", () => {
-    const prev = process.env.ATRIUM_CONSOLE_ROOT_TOKEN;
-    delete process.env.ATRIUM_CONSOLE_ROOT_TOKEN;
+    const prev = process.env.KHORA_CONSOLE_ROOT_TOKEN;
+    delete process.env.KHORA_CONSOLE_ROOT_TOKEN;
     try {
       expect(createConsoleAuthFromEnv()).toBeNull();
     } finally {
-      if (prev !== undefined) process.env.ATRIUM_CONSOLE_ROOT_TOKEN = prev;
+      if (prev !== undefined) process.env.KHORA_CONSOLE_ROOT_TOKEN = prev;
     }
   });
 });

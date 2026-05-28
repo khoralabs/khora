@@ -1,14 +1,14 @@
 # `@khoralabs/khora-client`
 
-TypeScript client for ATRIUM / Colonnade-style HTTP + WebSocket hosts (`/v1/*`, inbox WS, OBP rooms).
+TypeScript client for KHORA / Colonnade-style HTTP + WebSocket hosts (`/v1/*`, inbox WS, OBP rooms).
 
 ## Transport
 
-Wiring (`createHttpKhoraTransportBundle`, `createKhoraTransportBundleFromEnv`, `ATRIUM_TRANSPORT`) lives in **`@khoralabs/khora-transport`**. Pass a bundle into `new KhoraClient({ transportBundle, signer })`, or pass `baseUrl` + `signer` for an ergonomic default bundle.
+Wiring (`createHttpKhoraTransportBundle`, `createKhoraTransportBundleFromEnv`, `KHORA_TRANSPORT`) lives in **`@khoralabs/khora-transport`**. Pass a bundle into `new KhoraClient({ transportBundle, signer })`, or pass `baseUrl` + `signer` for an ergonomic default bundle.
 
 ## Config
 
-- **`loadKhoraAppConfig`**, **`extendKhoraAppConfig`**, **`zKhoraAppConfigBase`**, **`at2ConfigJsonSchema`**, **`resolveKhoraConfigPath`**, **`readKhoraConfigFileWithExtends`**, **`mergeKhoraAppConfigLayers`**, **`at2AppConfigFromEnv`**, **`KhoraConfigError`** — shared base schema with `extends` chaining, per-id plugin maps (`{ [id]: options | false }`), env layering (`ATRIUM_*`), and JSON Schema generation.
+- **`loadKhoraAppConfig`**, **`extendKhoraAppConfig`**, **`zKhoraAppConfigBase`**, **`at2ConfigJsonSchema`**, **`resolveKhoraConfigPath`**, **`readKhoraConfigFileWithExtends`**, **`mergeKhoraAppConfigLayers`**, **`at2AppConfigFromEnv`**, **`KhoraConfigError`** — shared base schema with `extends` chaining, per-id plugin maps (`{ [id]: options | false }`), env layering (`KHORA_*`), and JSON Schema generation.
 
 Example snippet:
 

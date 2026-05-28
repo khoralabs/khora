@@ -11,17 +11,17 @@ import { getRegistryDatabase } from "@khoralabs/users-auth";
 import { defaultHostSlug } from "../seed/default-host";
 
 function internalSecret(): string {
-  const s = process.env.ATRIUM_INTERNAL_SECRET?.trim();
+  const s = process.env.KHORA_INTERNAL_SECRET?.trim();
   if (s === undefined || s.length === 0) {
-    throw new Error("ATRIUM_INTERNAL_SECRET is not configured");
+    throw new Error("KHORA_INTERNAL_SECRET is not configured");
   }
   return s;
 }
 
 function invitePepper(): string {
-  const p = process.env.ATRIUM_INVITE_PEPPER?.trim();
+  const p = process.env.KHORA_INVITE_PEPPER?.trim();
   if (p === undefined || p.length === 0) {
-    throw new Error("ATRIUM_INVITE_PEPPER is not configured");
+    throw new Error("KHORA_INVITE_PEPPER is not configured");
   }
   return p;
 }

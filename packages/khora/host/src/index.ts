@@ -18,7 +18,7 @@ export {
   executeKhoraMemoriesSearch,
   khoraSearchRequestFromGetQuery,
 } from "./memories/khora-memories-search.ts";
-export { DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT } from "./memories/memories-config.ts";
+export { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories/memories-config.ts";
 export { assignPostAddress } from "./on-event.ts";
 export {
   bootstrapKhoraPercolator,

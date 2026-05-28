@@ -1,5 +1,5 @@
 import z from "zod";
-import { ATRIUM_BUILTIN_PLUGIN_ID } from "../khora-plugins.ts";
+import { KHORA_BUILTIN_PLUGIN_ID } from "../khora-plugins.ts";
 
 const zProfileSyncOptions = z
   .object({
@@ -69,21 +69,21 @@ const zInboxBufferOptions = z
  */
 export const zKhoraAppPluginMap = z
   .object({
-    [ATRIUM_BUILTIN_PLUGIN_ID.profileSync]: z
+    [KHORA_BUILTIN_PLUGIN_ID.profileSync]: z
       .union([zProfileSyncOptions, z.literal(false)])
       .optional()
       .describe("profile-sync plugin options, or false to disable an inherited entry."),
-    [ATRIUM_BUILTIN_PLUGIN_ID.telemetry]: z
+    [KHORA_BUILTIN_PLUGIN_ID.telemetry]: z
       .union([zTelemetryOptions, z.literal(false)])
       .optional()
       .describe("telemetry plugin options, or false to disable an inherited entry."),
-    [ATRIUM_BUILTIN_PLUGIN_ID.inboxBuffer]: z
+    [KHORA_BUILTIN_PLUGIN_ID.inboxBuffer]: z
       .union([zInboxBufferOptions, z.literal(false)])
       .optional()
       .describe("inbox-buffer plugin options, or false to disable an inherited entry."),
   })
   .loose()
-  .describe("Builtin ATRIUM plugins keyed by id.");
+  .describe("Builtin KHORA plugins keyed by id.");
 
 export type KhoraAppPluginMap = z.infer<typeof zKhoraAppPluginMap>;
 
@@ -110,7 +110,7 @@ export const zKhoraAppConfigBase = z
       .string()
       .url({ message: "baseUrl must be a valid URL" })
       .optional()
-      .describe("ATRIUM host base URL. Default: http://127.0.0.1:8787"),
+      .describe("KHORA host base URL. Default: http://127.0.0.1:8787"),
     agentKeyPath: z
       .string()
       .optional()
@@ -130,7 +130,7 @@ export const zKhoraAppConfigBase = z
       ),
   })
   .loose()
-  .describe("ATRIUM client base configuration.");
+  .describe("KHORA client base configuration.");
 
 export type KhoraAppConfigBase = z.infer<typeof zKhoraAppConfigBase>;
 

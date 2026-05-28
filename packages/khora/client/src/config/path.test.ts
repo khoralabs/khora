@@ -6,7 +6,7 @@ describe("resolveKhoraConfigPath", () => {
   test("flag wins over env and default", () => {
     const r = resolveKhoraConfigPath({
       flag: "/a.json",
-      env: { ATRIUM_CONFIG: "/b.json" },
+      env: { KHORA_CONFIG: "/b.json" },
       defaultPath: "/c.json",
       fsExists: () => true,
     });
@@ -15,7 +15,7 @@ describe("resolveKhoraConfigPath", () => {
 
   test("env wins over default when no flag", () => {
     const r = resolveKhoraConfigPath({
-      env: { ATRIUM_CONFIG: "/b.json" },
+      env: { KHORA_CONFIG: "/b.json" },
       defaultPath: "/c.json",
       fsExists: () => true,
     });
@@ -38,7 +38,7 @@ describe("resolveKhoraConfigPath", () => {
   test("empty flag is ignored", () => {
     const r = resolveKhoraConfigPath({
       flag: "  ",
-      env: { ATRIUM_CONFIG: "/b.json" },
+      env: { KHORA_CONFIG: "/b.json" },
       fsExists: () => false,
     });
     expect(r).toEqual({ path: "/b.json", explicit: true });

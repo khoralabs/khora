@@ -21,7 +21,7 @@ import {
   profileMemoryNamespace,
 } from "./khora-namespace.ts";
 import { khoraOntology } from "./khora-ontology.ts";
-import { DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT } from "./memories-config.ts";
+import { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories-config.ts";
 
 ensureCustomSqliteForExtensions();
 
@@ -106,7 +106,7 @@ function setup(profile: KhoraProfile, post: KhoraPost) {
     client,
     persistence,
     persistenceClient,
-    namespaceRoot: DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT,
+    namespaceRoot: DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT,
   });
   return { cluster, store, indexer, persistence, memoriesDb, post, profile };
 }
@@ -146,7 +146,7 @@ describe("KhoraCanonicalStore", () => {
     await indexer.indexPost(post);
 
     const postMemoryId = ids.memory(
-      postsMemoryNamespace(DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT, profile.id),
+      postsMemoryNamespace(DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT, profile.id),
       post.id,
     );
     const postNk = persistence.loadMemoryNamespaceKey(postMemoryId);
@@ -162,11 +162,11 @@ describe("KhoraCanonicalStore", () => {
     }
 
     const profileMemoryId = ids.memory(
-      profileMemoryNamespace(DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT, profile.id),
+      profileMemoryNamespace(DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT, profile.id),
       PROFILE_MEMORY_KEY,
     );
     const profileLabels = persistence.loadNodeLabelsForMemory(
-      profileMemoryNamespace(DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT, profile.id),
+      profileMemoryNamespace(DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT, profile.id),
       PROFILE_MEMORY_KEY,
     );
     const profileHydrated = await hydrateMemoryLabels(store, profileLabels, profileMemoryId);
@@ -211,7 +211,7 @@ describe("KhoraCanonicalStore", () => {
     await indexer.indexPost(subscription);
 
     const subMemoryId = ids.memory(
-      postsMemoryNamespace(DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT, profile.id),
+      postsMemoryNamespace(DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT, profile.id),
       subscription.id,
     );
     const subNk = persistence.loadMemoryNamespaceKey(subMemoryId);

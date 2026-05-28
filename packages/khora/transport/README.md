@@ -4,4 +4,4 @@ Transport helpers for **at2** clients: inbox WebSocket URL + frame parsing, sign
 
 Depends on `@khoralabs/khora-auth`, `@khoralabs/khora-contracts`, and `@khoralabs/agent-relay` / `@khoralabs/agent-io` where types overlap.
 
-Deployment mode for bundle selection: **`ATRIUM_TRANSPORT`** (`http` default).
+Deployment mode for bundle selection: **`KHORA_TRANSPORT`** (`http` default).

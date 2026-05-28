@@ -6,7 +6,7 @@ This is an overview of **`apps/khora`**, **`apps/vellum`**, and the **packages t
 
 Khora persists to **several SQLite surfaces**:
 
-**A. Relay catalog DB** (`ATRIUM_CATALOG_PATH` — opened via `openRelayCatalogDb` in `packages/khora/relay-colonnade/src/sqlite-setup.ts`)
+**A. Relay catalog DB** (`KHORA_CATALOG_PATH` — opened via `openRelayCatalogDb` in `packages/khora/relay-colonnade/src/sqlite-setup.ts`)
 
 The relay catalog file holds **Khora relay tables** (projections, standing queries, social index, teardown jobs). Content posts and subscriptions stay out of Colonnade catalog replication (`replicate_to_catalog: false`).
 
@@ -40,7 +40,7 @@ The relay catalog file holds **Khora relay tables** (projections, standing queri
 - **`at2_invite_tokens`** (if invites enabled) (`/Users/zach/Documents/dev/khora-labs/khora/packages/khora/host/src/invites/schema.ts`): `token_hash` (PK), `created_at_ms`, `consumed_at_ms`, `consumed_by_did`, `minted_by_did`, `kind`.
 - **Auth nonces:** `agent_request_nonces` (`/Users/zach/Documents/dev/khora-labs/khora/packages/khora/auth/src/sqlite-nonce-store.ts`): `did`, `nonce`, `expires_at_ms` (PK `(did, nonce)`).
 
-**B. Frames / frame-channel DB** (`ATRIUM_FRAMES_DB_PATH` — `openRelayFramesDb` in `sqlite-setup.ts`)
+**B. Frames / frame-channel DB** (`KHORA_FRAMES_DB_PATH` — `openRelayFramesDb` in `sqlite-setup.ts`)
 
 `/Users/zach/Documents/dev/khora-labs/khora/packages/khora/relay-colonnade/src/frame-channel-sqlite.ts`:
 
@@ -49,7 +49,7 @@ The relay catalog file holds **Khora relay tables** (projections, standing queri
 | `rooms` | `channel_id` (PK), `pairing_secret_hex`, `created_at_ms`, `expires_at_ms` |
 | `room_frames` | `id` (PK auto), `channel_id`, `bytes` (BLOB) |
 
-**C. Colonnade cell shards** (`ATRIUM_CELLS_DIR` — `createSqliteColonnadeCluster` in host)
+**C. Colonnade cell shards** (`KHORA_CELLS_DIR` — `createSqliteColonnadeCluster` in host)
 
 Per-cell schema (`ensureCellSchema` in `/Users/zach/Documents/dev/khora-labs/khora/packages/colonnade/impl/ts/src/sqlite/schema-cell.ts`):
 

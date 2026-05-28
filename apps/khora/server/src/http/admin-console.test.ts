@@ -8,24 +8,24 @@ import { adminStatsSummaryResponse } from "./internal-admin-stats.ts";
 const ROOT_TOKEN = "test-root-token-16chars";
 
 function withCellsDir<T>(fn: () => T): T {
-  const prev = process.env.ATRIUM_CELLS_DIR;
-  process.env.ATRIUM_CELLS_DIR = "/tmp/khora-admin-console-test-cells";
+  const prev = process.env.KHORA_CELLS_DIR;
+  process.env.KHORA_CELLS_DIR = "/tmp/khora-admin-console-test-cells";
   try {
     return fn();
   } finally {
-    if (prev === undefined) delete process.env.ATRIUM_CELLS_DIR;
-    else process.env.ATRIUM_CELLS_DIR = prev;
+    if (prev === undefined) delete process.env.KHORA_CELLS_DIR;
+    else process.env.KHORA_CELLS_DIR = prev;
   }
 }
 
 async function withCellsDirAsync<T>(fn: () => Promise<T>): Promise<T> {
-  const prev = process.env.ATRIUM_CELLS_DIR;
-  process.env.ATRIUM_CELLS_DIR = "/tmp/khora-admin-console-test-cells";
+  const prev = process.env.KHORA_CELLS_DIR;
+  process.env.KHORA_CELLS_DIR = "/tmp/khora-admin-console-test-cells";
   try {
     return await fn();
   } finally {
-    if (prev === undefined) delete process.env.ATRIUM_CELLS_DIR;
-    else process.env.ATRIUM_CELLS_DIR = prev;
+    if (prev === undefined) delete process.env.KHORA_CELLS_DIR;
+    else process.env.KHORA_CELLS_DIR = prev;
   }
 }
 

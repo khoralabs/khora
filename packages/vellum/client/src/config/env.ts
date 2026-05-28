@@ -14,21 +14,21 @@ export function vellumAppConfigFromEnv(
 
   const baseUrl =
     trimmed(env.VELLUM_BASE_URL) ??
-    trimmed(env.VELLUM_ATRIUM_BASE_URL) ??
-    trimmed(env.ATRIUM_BASE_URL);
+    trimmed(env.VELLUM_KHORA_BASE_URL) ??
+    trimmed(env.KHORA_BASE_URL);
   if (baseUrl !== undefined) out.baseUrl = baseUrl;
 
   const dataDir =
-    trimmed(env.VELLUM_DATA_DIR) ?? trimmed(env.ATRIUM_DATA_DIR) ?? trimmed(env.ATRIUM_DATA_DIR);
+    trimmed(env.VELLUM_DATA_DIR) ?? trimmed(env.KHORA_DATA_DIR) ?? trimmed(env.KHORA_DATA_DIR);
   if (dataDir !== undefined) out.dataDir = dataDir;
 
   const agentKeyPath =
-    trimmed(env.ATRIUM_AGENT_KEY_PATH) ??
-    trimmed(env.ATRIUM_AGENT_KEY_PATH) ??
+    trimmed(env.KHORA_AGENT_KEY_PATH) ??
+    trimmed(env.KHORA_AGENT_KEY_PATH) ??
     trimmed(env.VELLUM_AGENT_KEY_PATH);
   if (agentKeyPath !== undefined) out.agentKeyPath = agentKeyPath;
 
-  const defaultRoomId = trimmed(env.VELLUM_ROOM_ID) ?? trimmed(env.ATRIUM_ROOM_ID);
+  const defaultRoomId = trimmed(env.VELLUM_ROOM_ID) ?? trimmed(env.KHORA_ROOM_ID);
   if (defaultRoomId !== undefined) out.defaultRoomId = defaultRoomId;
 
   const defaultRoomWebSocketUrl = trimmed(env.VELLUM_ROOM_WS_URL);

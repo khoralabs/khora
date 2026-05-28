@@ -47,14 +47,14 @@ function decodeOutboxKey(raw: string): Uint8Array {
 
 /** Read keys from environment variables. */
 export class EnvKeyProvider implements EncryptionKeyProvider {
-  static readonly ATRIUM_SQLCIPHER_ENV = "ATRIUM_SQLCIPHER_KEY";
+  static readonly KHORA_SQLCIPHER_ENV = "KHORA_SQLCIPHER_KEY";
   static readonly REGISTRY_SQLCIPHER_ENV = "REGISTRY_SQLCIPHER_KEY";
-  static readonly OUTBOX_ENV = "ATRIUM_OUTBOX_ENCRYPTION_KEY";
+  static readonly OUTBOX_ENV = "KHORA_OUTBOX_ENCRYPTION_KEY";
 
   async getSqlCipherKey(scope: SqlCipherScope): Promise<string> {
     const name =
       scope === "khora"
-        ? EnvKeyProvider.ATRIUM_SQLCIPHER_ENV
+        ? EnvKeyProvider.KHORA_SQLCIPHER_ENV
         : EnvKeyProvider.REGISTRY_SQLCIPHER_ENV;
     const key = readEnvRequired(name);
     if (key.length < MIN_SQLCIPHER_KEY_LEN) {

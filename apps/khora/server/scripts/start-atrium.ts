@@ -1,5 +1,5 @@
 /**
- * When ATRIUM_LITESTREAM is set, runs Litestream (catalog + frames + watched cells dir)
+ * When KHORA_LITESTREAM is set, runs Litestream (catalog + frames + watched cells dir)
  * then the Bun server. Otherwise runs the server only.
  */
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
@@ -103,7 +103,7 @@ async function runWithLitestream(): Promise<void> {
   process.exit(code === 0 ? 0 : code);
 }
 
-if (isTruthyEnv(process.env.ATRIUM_LITESTREAM)) {
+if (isTruthyEnv(process.env.KHORA_LITESTREAM)) {
   await runWithLitestream();
 } else {
   await runServerOnly();

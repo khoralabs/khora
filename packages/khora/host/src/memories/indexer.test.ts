@@ -22,7 +22,7 @@ import {
   topicScope,
 } from "./khora-namespace.ts";
 import { khoraOntology } from "./khora-ontology.ts";
-import { DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT } from "./memories-config.ts";
+import { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories-config.ts";
 
 ensureCustomSqliteForExtensions();
 
@@ -87,7 +87,7 @@ function createTestRelayPersistence(profile: KhoraProfile) {
 
 describe("khora memories indexer", () => {
   test("indexes profile and topic-scoped post; scopeDag finds post by topic", async () => {
-    const root = DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT;
+    const root = DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT;
     const profile: KhoraProfile = {
       id: "prof-index-1",
       username: "alice",
@@ -197,7 +197,7 @@ describe("khora memories indexer", () => {
   });
 
   test("indexes subscription with search; label filter finds subscription", async () => {
-    const root = DEFAULT_ATRIUM_MEMORIES_NAMESPACE_ROOT;
+    const root = DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT;
     const profile: KhoraProfile = {
       id: "prof-probe-1",
       username: "bob",

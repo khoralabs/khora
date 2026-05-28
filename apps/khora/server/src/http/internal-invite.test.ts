@@ -5,8 +5,8 @@ import { handleInternalMintInvite } from "./internal-invite.ts";
 
 describe("handleInternalMintInvite", () => {
   test("returns 401 without bearer secret", async () => {
-    const prev = process.env.ATRIUM_INTERNAL_SECRET;
-    process.env.ATRIUM_INTERNAL_SECRET = "test-secret";
+    const prev = process.env.KHORA_INTERNAL_SECRET;
+    process.env.KHORA_INTERNAL_SECRET = "test-secret";
     try {
       const deps = {
         ctx: { invitesRepo: undefined } as unknown as KhoraHostContext,
@@ -19,8 +19,8 @@ describe("handleInternalMintInvite", () => {
       );
       expect(res.status).toBe(401);
     } finally {
-      if (prev === undefined) delete process.env.ATRIUM_INTERNAL_SECRET;
-      else process.env.ATRIUM_INTERNAL_SECRET = prev;
+      if (prev === undefined) delete process.env.KHORA_INTERNAL_SECRET;
+      else process.env.KHORA_INTERNAL_SECRET = prev;
     }
   });
 });

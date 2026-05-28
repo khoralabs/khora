@@ -24,7 +24,7 @@ bun dev
 
 Operator dashboards live on the backend services, not this app:
 
-- **Khora host** — `http://localhost:8788/admin` (root token: `ATRIUM_CONSOLE_ROOT_TOKEN`)
+- **Khora host** — `http://localhost:8788/admin` (root token: `KHORA_CONSOLE_ROOT_TOKEN`)
 - **Registry** — `http://localhost:4000/admin` (root token: `REGISTRY_CONSOLE_ROOT_TOKEN`)
 
 ## Environment

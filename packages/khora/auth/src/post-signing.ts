@@ -9,10 +9,10 @@ import { DIDKey } from "iso-did/key";
 import { AuthStrategyError } from "./strategy.ts";
 import { envelopeSignatureBytes, signatureBytesToB64Url } from "./wire.ts";
 
-export const ATRIUM_POST_SIGNATURE_V1 = 1 as const;
+export const KHORA_POST_SIGNATURE_V1 = 1 as const;
 
 export type KhoraPostSigningPayloadV1 = {
-  v: typeof ATRIUM_POST_SIGNATURE_V1;
+  v: typeof KHORA_POST_SIGNATURE_V1;
   authorDid: string;
   kind: "post" | "status" | "subscription";
   topics?: string[];
@@ -49,7 +49,7 @@ export function khoraPostSigningPayloadFromCreate(
   const kind = content.kind ?? "post";
   const visibility = content.visibility ?? "public";
   return {
-    v: ATRIUM_POST_SIGNATURE_V1,
+    v: KHORA_POST_SIGNATURE_V1,
     authorDid,
     kind,
     ...(content.topics !== undefined ? { topics: content.topics } : {}),
@@ -74,7 +74,7 @@ export function khoraPostSigningPayloadFromPatch(
   },
 ): KhoraPostSigningPayloadV1 {
   return {
-    v: ATRIUM_POST_SIGNATURE_V1,
+    v: KHORA_POST_SIGNATURE_V1,
     authorDid,
     kind: merged.kind,
     ...(merged.topics !== undefined ? { topics: merged.topics } : {}),

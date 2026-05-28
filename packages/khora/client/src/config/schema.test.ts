@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ATRIUM_BUILTIN_PLUGIN_ID } from "../khora-plugins.ts";
+import { KHORA_BUILTIN_PLUGIN_ID } from "../khora-plugins.ts";
 import { extendKhoraAppConfig, zKhoraAppConfigBase } from "./schema.ts";
 
 describe("zKhoraAppConfigBase", () => {
@@ -32,13 +32,13 @@ describe("zKhoraAppConfigBase", () => {
   test("plugins map: id -> options | false", () => {
     const parsed = zKhoraAppConfigBase.parse({
       plugins: {
-        [ATRIUM_BUILTIN_PLUGIN_ID.profileSync]: { filePath: "p.json" },
-        [ATRIUM_BUILTIN_PLUGIN_ID.telemetry]: false,
+        [KHORA_BUILTIN_PLUGIN_ID.profileSync]: { filePath: "p.json" },
+        [KHORA_BUILTIN_PLUGIN_ID.telemetry]: false,
       },
     });
     expect(parsed.plugins).toEqual({
-      [ATRIUM_BUILTIN_PLUGIN_ID.profileSync]: { filePath: "p.json" },
-      [ATRIUM_BUILTIN_PLUGIN_ID.telemetry]: false,
+      [KHORA_BUILTIN_PLUGIN_ID.profileSync]: { filePath: "p.json" },
+      [KHORA_BUILTIN_PLUGIN_ID.telemetry]: false,
     });
   });
 

@@ -58,7 +58,7 @@ const ctx: KhoraHostContext = await bootstrapKhoraHost({
 
 const consoleAuth = createConsoleAuthFromEnv();
 if (consoleAuth === null) {
-  logger.info("Admin console disabled (set ATRIUM_CONSOLE_ROOT_TOKEN to enable)");
+  logger.info("Admin console disabled (set KHORA_CONSOLE_ROOT_TOKEN to enable)");
 } else {
   logger.info("Admin console enabled at /admin");
 }

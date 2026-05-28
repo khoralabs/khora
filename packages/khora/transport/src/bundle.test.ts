@@ -17,8 +17,8 @@ describe("createKhoraTransportBundleFromEnv", () => {
       createKhoraTransportBundleFromEnv({
         baseUrl: "http://localhost:1",
         signer: { did: "did:web:example" } as never,
-        env: { ATRIUM_TRANSPORT: "ipc" },
+        env: { KHORA_TRANSPORT: "ipc" },
       }),
-    ).toThrow(/ATRIUM_TRANSPORT=ipc/);
+    ).toThrow(/KHORA_TRANSPORT=ipc/);
   });
 });

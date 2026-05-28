@@ -114,8 +114,8 @@ export {
   type PublicProfileResult,
 } from "./khora-client.ts";
 export {
-  ATRIUM_BUILTIN_PLUGIN_ID,
   createKhoraResolvePath,
+  KHORA_BUILTIN_PLUGIN_ID,
   type KhoraPluginContext,
   type KhoraPluginHandle,
   type KhoraPluginInstaller,

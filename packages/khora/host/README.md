@@ -41,15 +41,15 @@ SQLite handles and relay-colonnade stores are wired in the server bootstrap (`cr
 
 | Env var | Maps to |
 |---------|---------|
-| `ATRIUM_CATALOG_PATH` | `catalogPath` |
-| `ATRIUM_FRAMES_DB_PATH` | `framesDbPath` |
-| `ATRIUM_CELLS_DIR` | `cellsDir` |
-| `ATRIUM_CELL_POOL_COUNT` | `cellPoolCount` (default 16) |
-| `ATRIUM_COLONNADE_CELL_WORKERS` | `useCellWorkers` |
-| `ATRIUM_RELAY_TENANT_KEY` | `tenantKey` |
+| `KHORA_CATALOG_PATH` | `catalogPath` |
+| `KHORA_FRAMES_DB_PATH` | `framesDbPath` |
+| `KHORA_CELLS_DIR` | `cellsDir` |
+| `KHORA_CELL_POOL_COUNT` | `cellPoolCount` (default 16) |
+| `KHORA_COLONNADE_CELL_WORKERS` | `useCellWorkers` |
+| `KHORA_RELAY_TENANT_KEY` | `tenantKey` |
 | `PORT` | HTTP port (default 8788) |
-| `ATRIUM_HOST_UNARY_TRANSPORT` | `stdio` parallel ingress (optional) |
-| `ATRIUM_HOST_DUPLEX_INGRESS` / `ATRIUM_HOST_DUPLEX_UNIX_PATH` | Unix duplex ingress (optional) |
+| `KHORA_HOST_UNARY_TRANSPORT` | `stdio` parallel ingress (optional) |
+| `KHORA_HOST_DUPLEX_INGRESS` / `KHORA_HOST_DUPLEX_UNIX_PATH` | Unix duplex ingress (optional) |
 
 ### Context type returned
 
@@ -83,9 +83,9 @@ apps/khora/server/src/index.ts
     createColonnadePostResolver()    → PostResolver for memories + posts
     ColonnadePublicationClient
     createRelayPrincipalLifecycle()
-    createKhoraInvitesSqliteRepo()  → if ATRIUM_INVITE_PEPPER set (@khoralabs/khora-invites)
+    createKhoraInvitesSqliteRepo()  → if KHORA_INVITE_PEPPER set (@khoralabs/khora-invites)
     createKhoraDidAuth({ db: catalogDb })
-    bootstrapKhoraMemories()        → if ATRIUM_MEMORIES_DB_PATH set (server opens sqlite)
+    bootstrapKhoraMemories()        → if KHORA_MEMORIES_DB_PATH set (server opens sqlite)
     createKhoraHostHealthPort() / createKhoraAdminStatsPort()
     createKhoraCatalogApi()
     createKhoraHost(deps)           → AgentRelay + teardown worker
@@ -113,7 +113,7 @@ apps/khora/server/src/index.ts
 
 Three storage tiers (all `bun:sqlite`):
 
-### Tier 1 — Relay catalog (`ATRIUM_CATALOG_PATH`)
+### Tier 1 — Relay catalog (`KHORA_CATALOG_PATH`)
 
 **Schema:** `/Users/zach/Documents/dev/khora-labs/khora/packages/khora/relay-colonnade/src/sqlite-setup.ts`
 
@@ -127,13 +127,13 @@ Tables:
 
 Opened via `openRelayCatalogDb()` → `createRelayColonnadeSocial()`.
 
-### Tier 2 — Frames DB (`ATRIUM_FRAMES_DB_PATH`)
+### Tier 2 — Frames DB (`KHORA_FRAMES_DB_PATH`)
 
 **File:** `/Users/zach/Documents/dev/khora-labs/khora/packages/khora/relay-colonnade/src/frame-channel-sqlite.ts`
 
 Tables: `rooms`, `room_frames`.
 
-### Tier 3 — Cell shards (`ATRIUM_CELLS_DIR`)
+### Tier 3 — Cell shards (`KHORA_CELLS_DIR`)
 
 **Schema:** `/Users/zach/Documents/dev/khora-labs/khora/packages/colonnade/impl/ts/src/sqlite/schema-cell.ts`
 
@@ -153,9 +153,9 @@ Opened lazily by `createSqliteColonnadeCluster()` as `{cellsDir}/{stem}.sqlite`.
 
 ## 4. Memories search (optional)
 
-When `ATRIUM_MEMORIES_DB_PATH` is set, the server opens a memories SQLite DB (`@khoralabs/memories-sqlite`), bootstraps `KhoraMemoriesHost` via `bootstrapKhoraMemories({ persistence, postResolver, … })`, and exposes `GET /v1/search`.
+When `KHORA_MEMORIES_DB_PATH` is set, the server opens a memories SQLite DB (`@khoralabs/memories-sqlite`), bootstraps `KhoraMemoriesHost` via `bootstrapKhoraMemories({ persistence, postResolver, … })`, and exposes `GET /v1/search`.
 
-Embedding env (`ATRIUM_EMBEDDING_*`) is read in `apps/khora/server/src/memories-env.ts`, not in the host package.
+Embedding env (`KHORA_EMBEDDING_*`) is read in `apps/khora/server/src/memories-env.ts`, not in the host package.
 
 Host exports search helpers: `executeKhoraMemoriesSearch`, `khoraSearchRequestFromGetQuery`, and `PostResolver` / `createColonnadePostResolver` for post hydration during indexing.
 
