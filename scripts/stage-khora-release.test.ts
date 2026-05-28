@@ -5,48 +5,34 @@ import path from "node:path";
 import {
   cliLauncherSource,
   cliMetaPkgJson,
-  daemonLauncherSource,
-  daemonMetaPkgJson,
   platformPkgJson,
   SUPPORTED_TARGETS,
   stageKhoraRelease,
 } from "./stage-khora-release.ts";
 
 describe("launcher sources", () => {
-  test("cli launcher: node shebang, supports the three slugs, sets KHORA_DAEMON_BIN + KHORA_CLI_ASSETS_DIR + KHORA_CLI_VERSION", () => {
+  test("cli launcher: node shebang, supports the three slugs, sets KHORA_CLI_ASSETS_DIR + KHORA_CLI_VERSION", () => {
     const src = cliLauncherSource();
     expect(src.startsWith("#!/usr/bin/env node")).toBe(true);
     expect(src).toContain('"darwin-arm64"');
     expect(src).toContain('"linux-x64"');
     expect(src).toContain('"linux-arm64"');
-    expect(src).toContain("KHORA_DAEMON_BIN");
     expect(src).toContain("KHORA_CLI_ASSETS_DIR");
     expect(src).toContain("KHORA_CLI_VERSION");
     expect(src).toContain("@khoralabs/khora-cli-");
-    expect(src).toContain("@khoralabs/khora-daemon-");
+    expect(src.includes("KHORA_DAEMON_BIN")).toBe(false);
     expect(src).toContain("spawnSync");
     expect(src).toContain('path.resolve(__dirname, "..")');
-    // Version stamping: launcher reads its meta package.json
     expect(src).toContain('require(path.resolve(assetsDir, "package.json"))');
-  });
-
-  test("daemon launcher: node shebang, supports the three slugs, no KHORA_DAEMON_BIN export", () => {
-    const src = daemonLauncherSource();
-    expect(src.startsWith("#!/usr/bin/env node")).toBe(true);
-    expect(src).toContain('"darwin-arm64"');
-    expect(src).toContain('"linux-x64"');
-    expect(src).toContain('"linux-arm64"');
-    expect(src).toContain("@khoralabs/khora-daemon-");
-    expect(src.includes("KHORA_DAEMON_BIN")).toBe(false);
   });
 });
 
 describe("package.json factories", () => {
-  test("cli meta lists the three platform optionalDependencies + daemon meta dep", () => {
+  test("cli meta lists the three platform optionalDependencies", () => {
     const pkg = cliMetaPkgJson({ version: "1.2.3" }) as Record<string, Record<string, string>>;
     expect((pkg as Record<string, unknown>).name).toBe("@khoralabs/khora-cli");
     expect((pkg as Record<string, unknown>).version).toBe("1.2.3");
-    expect(pkg.dependencies?.["@khoralabs/khora-daemon"]).toBe("1.2.3");
+    expect((pkg as Record<string, unknown>).dependencies).toBeUndefined();
     expect(Object.keys(pkg.optionalDependencies ?? {}).sort()).toEqual([
       "@khoralabs/khora-cli-darwin-arm64",
       "@khoralabs/khora-cli-linux-arm64",
@@ -61,36 +47,13 @@ describe("package.json factories", () => {
     );
   });
 
-  test("daemon meta lists three platform optionalDependencies + no transitive dep", () => {
-    const pkg = daemonMetaPkgJson({ version: "1.2.3" }) as Record<string, Record<string, string>>;
-    expect((pkg as Record<string, unknown>).name).toBe("@khoralabs/khora-daemon");
-    expect(Object.keys(pkg.optionalDependencies ?? {}).sort()).toEqual([
-      "@khoralabs/khora-daemon-darwin-arm64",
-      "@khoralabs/khora-daemon-linux-arm64",
-      "@khoralabs/khora-daemon-linux-x64",
-    ]);
-    expect((pkg as Record<string, unknown>).dependencies).toBeUndefined();
-    expect(((pkg as Record<string, unknown>).bin as Record<string, string>)["khora-daemon"]).toBe(
-      "./bin/khora-daemon.cjs",
-    );
-  });
-
-  test("platform pkg.json sets os/cpu and includes only its binary", () => {
+  test("platform pkg.json sets os/cpu and includes only khora binary", () => {
     const t = SUPPORTED_TARGETS[0];
-    const pkg = platformPkgJson({ kind: "cli", target: t, version: "1.2.3" }) as Record<
-      string,
-      unknown
-    >;
+    const pkg = platformPkgJson({ target: t, version: "1.2.3" }) as Record<string, unknown>;
     expect(pkg.name).toBe(`@khoralabs/khora-cli-${t.slug}`);
     expect(pkg.os).toEqual([t.os]);
     expect(pkg.cpu).toEqual([t.cpu]);
     expect(pkg.files).toEqual(["khora"]);
-    const daemonPkg = platformPkgJson({ kind: "daemon", target: t, version: "1.2.3" }) as Record<
-      string,
-      unknown
-    >;
-    expect(daemonPkg.name).toBe(`@khoralabs/khora-daemon-${t.slug}`);
-    expect(daemonPkg.files).toEqual(["khora-daemon"]);
   });
 });
 
@@ -102,12 +65,10 @@ describe("stageKhoraRelease", () => {
     workspace = mkdtempSync(path.join(tmpdir(), "khora-stage-"));
     releaseDir = path.join(workspace, "apps/khora/release");
 
-    // Stub workspace inputs that the staging script reads.
     mkdirSync(path.join(workspace, "apps/khora/cli/scripts"), { recursive: true });
     mkdirSync(path.join(workspace, "apps/khora/cli/assets/configs"), { recursive: true });
-    mkdirSync(path.join(workspace, "apps/khora/client"), { recursive: true });
+    mkdirSync(path.join(workspace, "packages/khora/client"), { recursive: true });
 
-    // Minimal postinstall library + entry stubs that bundle fine with target=node.
     writeFileSync(
       path.join(workspace, "apps/khora/cli/scripts/postinstall.ts"),
       `import * as fs from "node:fs";
@@ -130,7 +91,7 @@ describe("stageKhoraRelease", () => {
       );
     }
     writeFileSync(
-      path.join(workspace, "apps/khora/client/khora-config.schema.json"),
+      path.join(workspace, "packages/khora/client/khora-config.schema.json"),
       '{"$id":"khora-config"}',
     );
   });
@@ -139,7 +100,7 @@ describe("stageKhoraRelease", () => {
     rmSync(workspace, { recursive: true, force: true });
   });
 
-  test("produces 8 package directories with the expected layout", async () => {
+  test("produces 4 package directories with the expected layout", async () => {
     const result = await stageKhoraRelease({
       workspaceRoot: workspace,
       releaseDir,
@@ -147,32 +108,18 @@ describe("stageKhoraRelease", () => {
       copyBinaries: false,
     });
 
-    expect(result.packages.length).toBe(8);
+    expect(result.packages.length).toBe(4);
 
-    // Platform pkgs
     for (const t of SUPPORTED_TARGETS) {
-      for (const kind of ["cli", "daemon"] as const) {
-        const dir = path.join(releaseDir, `${kind}-${t.slug}`);
-        expect(existsSync(path.join(dir, "package.json"))).toBe(true);
-        const pkg = JSON.parse(readFileSync(path.join(dir, "package.json"), "utf8"));
-        expect(pkg.name).toBe(`@khoralabs/khora-${kind}-${t.slug}`);
-        expect(pkg.version).toBe("9.9.9");
-        expect(pkg.os).toEqual([t.os]);
-        expect(pkg.cpu).toEqual([t.cpu]);
-      }
+      const dir = path.join(releaseDir, `cli-${t.slug}`);
+      expect(existsSync(path.join(dir, "package.json"))).toBe(true);
+      const pkg = JSON.parse(readFileSync(path.join(dir, "package.json"), "utf8"));
+      expect(pkg.name).toBe(`@khoralabs/khora-cli-${t.slug}`);
+      expect(pkg.version).toBe("9.9.9");
+      expect(pkg.os).toEqual([t.os]);
+      expect(pkg.cpu).toEqual([t.cpu]);
     }
 
-    // Daemon meta
-    const daemonMeta = path.join(releaseDir, "daemon");
-    expect(existsSync(path.join(daemonMeta, "package.json"))).toBe(true);
-    expect(existsSync(path.join(daemonMeta, "bin", "khora-daemon.cjs"))).toBe(true);
-    expect(
-      readFileSync(path.join(daemonMeta, "bin", "khora-daemon.cjs"), "utf8").startsWith(
-        "#!/usr/bin/env node",
-      ),
-    ).toBe(true);
-
-    // Cli meta
     const cliMeta = path.join(releaseDir, "cli");
     expect(existsSync(path.join(cliMeta, "package.json"))).toBe(true);
     expect(existsSync(path.join(cliMeta, "bin", "khora.cjs"))).toBe(true);
@@ -182,7 +129,7 @@ describe("stageKhoraRelease", () => {
       expect(existsSync(path.join(cliMeta, "configs", name))).toBe(true);
     }
     const cliPkg = JSON.parse(readFileSync(path.join(cliMeta, "package.json"), "utf8"));
-    expect(cliPkg.dependencies["@khoralabs/khora-daemon"]).toBe("9.9.9");
+    expect(cliPkg.dependencies).toBeUndefined();
   });
 
   test("wipes existing releaseDir on re-run (idempotent)", async () => {

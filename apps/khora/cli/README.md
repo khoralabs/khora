@@ -11,6 +11,24 @@ bun install
 bun run --cwd apps/khora/cli start --help
 ```
 
+### Build native binary (local)
+
+```bash
+bun run --cwd apps/khora/cli build:darwin-arm64   # macOS arm64
+bun run --cwd apps/khora/cli build:linux-x64      # Linux x64
+bun run --cwd apps/khora/cli build:linux-arm64    # Linux arm64
+bun run --cwd apps/khora/cli build:all            # all release targets
+```
+
+Release staging (after all three targets are built, and `packages/khora/client` schema is built):
+
+```bash
+bun run --cwd packages/khora/client build:schema
+bun run scripts/stage-khora-release.ts 0.1.0
+```
+
+CI publishes via [`.github/workflows/release-khora-cli.yml`](../../.github/workflows/release-khora-cli.yml).
+
 Or run the entry directly:
 
 ```bash

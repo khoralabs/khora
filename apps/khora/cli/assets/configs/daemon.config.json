@@ -1,0 +1,4 @@
+{
+  "$schema": "./khora-config.schema.json",
+  "extends": "./base.config.json"
+}
