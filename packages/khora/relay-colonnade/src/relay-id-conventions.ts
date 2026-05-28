@@ -23,8 +23,8 @@ export const RELAY_NAMESPACE_SOCIAL_RELATIONSHIP = "relay:social:relationship";
 /** @deprecated Social principal index uses `relay_social_principal_channels` table. */
 export const RELAY_NAMESPACE_SOCIAL_RELATIONSHIPS_BY_PRINCIPAL =
   "relay:social:relationships-by-principal";
-export const RELAY_NAMESPACE_ROOM_REGISTRY = "at2:room-registry";
-export const RELAY_NAMESPACE_ROOM_INVITE = "at2:room-invite";
+export const RELAY_NAMESPACE_ROOM_REGISTRY = "khora:room-registry";
+export const RELAY_NAMESPACE_ROOM_INVITE = "khora:room-invite";
 
 /** Normalized principal → channel index (replaces relationships-by-principal projections). */
 export const RELAY_TABLE_SOCIAL_PRINCIPAL_CHANNELS = "relay_social_principal_channels";

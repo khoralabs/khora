@@ -48,7 +48,7 @@ import { handleSearchGet, handleSearchPost } from "./search.ts";
 import { handleUnregister } from "./unregister.ts";
 
 /**
- * Match `req` + `url` against at2 HTTP routes. Pass **`upgradePort`** for WebSocket upgrade; omit for unary-only ingress.
+ * Match `req` + `url` against khora HTTP routes. Pass **`upgradePort`** for WebSocket upgrade; omit for unary-only ingress.
  */
 export async function route(
   req: Request,
@@ -232,8 +232,8 @@ export async function routeUnary(
   return route(req, url, undefined, deps);
 }
 
-/** Build frame-channel WebSocket handlers for `Bun.serve` from an at2 host context. */
-export function at2FrameChannelWsHandlers(
+/** Build frame-channel WebSocket handlers for `Bun.serve` from an khora host context. */
+export function khoraFrameChannelWsHandlers(
   ctx: KhoraHostContext,
 ): ReturnType<typeof agentRelayFrameChannelWebSocketHandlers> {
   return agentRelayFrameChannelWebSocketHandlers({ hub: ctx.roomHub });

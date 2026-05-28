@@ -1,6 +1,6 @@
 # `@khoralabs/khora-auth`
 
-The authentication layer for **at2** agents. Owns:
+The authentication layer for **khora** agents. Owns:
 
 - **Wire format** (`X-Agent-*` headers, WS query params, canonical request message).
 - **Client signing** (`AgentSigner` interface + `signAgentRequest` / `signedInboxUrl` helpers).
@@ -14,8 +14,8 @@ Swapping the auth scheme is intended to be a one-file change: pass a different `
 
 ```mermaid
 graph LR
-  client["at2 client"] -->|"AgentSigner, signAgentRequest"| auth["@khoralabs/khora-auth"]
-  host["at2 host"] -->|"createKhoraDidAuth(db)"| auth
+  client["khora client"] -->|"AgentSigner, signAgentRequest"| auth["@khoralabs/khora-auth"]
+  host["khora host"] -->|"createKhoraDidAuth(db)"| auth
   auth -->|"AuthPreflight"| relay["@khoralabs/agent-relay"]
 ```
 

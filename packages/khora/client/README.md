@@ -8,7 +8,7 @@ Wiring (`createHttpKhoraTransportBundle`, `createKhoraTransportBundleFromEnv`, `
 
 ## Config
 
-- **`loadKhoraAppConfig`**, **`extendKhoraAppConfig`**, **`zKhoraAppConfigBase`**, **`at2ConfigJsonSchema`**, **`resolveKhoraConfigPath`**, **`readKhoraConfigFileWithExtends`**, **`mergeKhoraAppConfigLayers`**, **`at2AppConfigFromEnv`**, **`KhoraConfigError`** — shared base schema with `extends` chaining, per-id plugin maps (`{ [id]: options | false }`), env layering (`KHORA_*`), and JSON Schema generation.
+- **`loadKhoraAppConfig`**, **`extendKhoraAppConfig`**, **`zKhoraAppConfigBase`**, **`khoraConfigJsonSchema`**, **`resolveKhoraConfigPath`**, **`readKhoraConfigFileWithExtends`**, **`mergeKhoraAppConfigLayers`**, **`khoraAppConfigFromEnv`**, **`KhoraConfigError`** — shared base schema with `extends` chaining, per-id plugin maps (`{ [id]: options | false }`), env layering (`KHORA_*`), and JSON Schema generation.
 
 Example snippet:
 
@@ -18,7 +18,7 @@ Example snippet:
   "extends": "./base.json",
   "baseUrl": "http://127.0.0.1:8787",
   "plugins": {
-    "at2.plugin.profile-sync": { "filePath": "./profile-state.json" }
+    "khora.plugin.profile-sync": { "filePath": "./profile-state.json" }
   }
 }
 ```

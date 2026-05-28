@@ -114,7 +114,7 @@ export const zKhoraAppConfigBase = z
     agentKeyPath: z
       .string()
       .optional()
-      .describe("Override path to the Ed25519 identity file. Default: ~/.at2/identity.json"),
+      .describe("Override path to the Ed25519 identity file. Default: ~/.khora/identity.json"),
     dataDir: z
       .string()
       .optional()

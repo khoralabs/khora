@@ -6,7 +6,7 @@ import { zKhoraAppConfigBase } from "./schema.ts";
  * artifact is produced from this same call (see `scripts/build-json-schema.ts`); editors point at the
  * on-disk file via `$schema`.
  */
-export function at2ConfigJsonSchema(): Record<string, unknown> {
+export function khoraConfigJsonSchema(): Record<string, unknown> {
   const generated = z.toJSONSchema(zKhoraAppConfigBase, {
     unrepresentable: "any",
     target: "draft-2020-12",

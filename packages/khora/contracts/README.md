@@ -1,6 +1,6 @@
 # `@khoralabs/khora-contracts`
 
-Zod schemas and TypeScript types shared across the **at2** packages. No runtime behaviour beyond validation helpers — host, client, and relay agree on the same wire shapes.
+Zod schemas and TypeScript types shared across the **khora** packages. No runtime behaviour beyond validation helpers — host, client, and relay agree on the same wire shapes.
 
 ## What lives here
 
@@ -13,4 +13,4 @@ Zod schemas and TypeScript types shared across the **at2** packages. No runtime 
 
 ## Role in the directory
 
-Anything that crosses a process boundary in at2 should be validated or typed through these schemas first. This package depends only on `zod` and `@khoralabs/agent-relay`. Keep it dependency-light.
+Anything that crosses a process boundary in khora should be validated or typed through these schemas first. This package depends only on `zod` and `@khoralabs/agent-relay`. Keep it dependency-light.

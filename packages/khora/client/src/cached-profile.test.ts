@@ -74,16 +74,16 @@ describe("loadCachedProfile", () => {
 describe("resolveProfileSyncPath", () => {
   test("returns absolute path joined with dataDir", () => {
     const p = resolveProfileSyncPath({
-      dataDir: "/tmp/at2",
-      plugins: { "at2.plugin.profile-sync": { filePath: "profile.json" } },
+      dataDir: "/tmp/khora",
+      plugins: { "khora.plugin.profile-sync": { filePath: "profile.json" } },
     });
-    expect(p).toBe("/tmp/at2/profile.json");
+    expect(p).toBe("/tmp/khora/profile.json");
   });
 
   test("absolute filePath wins over dataDir", () => {
     const p = resolveProfileSyncPath({
-      dataDir: "/tmp/at2",
-      plugins: { "at2.plugin.profile-sync": { filePath: "/abs/state.json" } },
+      dataDir: "/tmp/khora",
+      plugins: { "khora.plugin.profile-sync": { filePath: "/abs/state.json" } },
     });
     expect(p).toBe("/abs/state.json");
   });
@@ -91,7 +91,7 @@ describe("resolveProfileSyncPath", () => {
   test("returns undefined when plugin disabled", () => {
     expect(
       resolveProfileSyncPath({
-        plugins: { "at2.plugin.profile-sync": false },
+        plugins: { "khora.plugin.profile-sync": false },
       }),
     ).toBeUndefined();
   });

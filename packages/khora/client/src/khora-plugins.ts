@@ -20,9 +20,9 @@ export type KhoraPluginInstaller = (ctx: KhoraPluginContext) => KhoraPluginHandl
 
 /** Built-in ids for env-loaded plugins (use for deduplication / user overrides). */
 export const KHORA_BUILTIN_PLUGIN_ID = {
-  profileSync: "at2.plugin.profile-sync",
-  telemetry: "at2.plugin.telemetry",
-  inboxBuffer: "at2.plugin.inbox-buffer",
+  profileSync: "khora.plugin.profile-sync",
+  telemetry: "khora.plugin.telemetry",
+  inboxBuffer: "khora.plugin.inbox-buffer",
 } as const;
 
 /** Installer with stable {@link id} for merging layers (CLI/daemon/user loaders). */
@@ -62,7 +62,7 @@ export function mergeLabeledKhoraPluginLayers(
     }
     return order.map((id) => {
       const inst = installById.get(id);
-      if (inst === undefined) throw new Error(`at2: missing install for id ${id}`);
+      if (inst === undefined) throw new Error(`khora: missing install for id ${id}`);
       return inst;
     });
   }
@@ -79,7 +79,7 @@ export function mergeLabeledKhoraPluginLayers(
   }
   return order.map((id) => {
     const inst = installById.get(id);
-    if (inst === undefined) throw new Error(`at2: missing install for id ${id}`);
+    if (inst === undefined) throw new Error(`khora: missing install for id ${id}`);
     return inst;
   });
 }

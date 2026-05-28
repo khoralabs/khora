@@ -46,7 +46,7 @@ describe("resolveKhoraConfigPath", () => {
 
   test("default path uses HOME", () => {
     const def = defaultKhoraConfigPath();
-    expect(def.endsWith(path.join(".at2", "config.json"))).toBe(true);
+    expect(def.endsWith(path.join(".khora", "config.json"))).toBe(true);
   });
 
   test("defaultPaths returns first existing entry", () => {

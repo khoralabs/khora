@@ -12,26 +12,26 @@ export function createKhoraInvitesSqliteRepo(db: Database, pepper: string): Khor
   ensureKhoraInviteSchema(db);
 
   const insertSeed = db.prepare(
-    `INSERT OR IGNORE INTO at2_invite_tokens (token_hash, created_at_ms, consumed_at_ms, consumed_by_did, minted_by_did, kind)
+    `INSERT OR IGNORE INTO khora_invite_tokens (token_hash, created_at_ms, consumed_at_ms, consumed_by_did, minted_by_did, kind)
      VALUES (?, ?, NULL, NULL, NULL, ?)`,
   );
   const countByKind = db.query<{ c: number }, [string]>(
-    `SELECT COUNT(1) AS c FROM at2_invite_tokens WHERE kind = ?`,
+    `SELECT COUNT(1) AS c FROM khora_invite_tokens WHERE kind = ?`,
   );
   const insertRoot = db.prepare(
-    `INSERT INTO at2_invite_tokens (token_hash, created_at_ms, consumed_at_ms, consumed_by_did, minted_by_did, kind)
+    `INSERT INTO khora_invite_tokens (token_hash, created_at_ms, consumed_at_ms, consumed_by_did, minted_by_did, kind)
      VALUES (?, ?, NULL, NULL, NULL, ?)`,
   );
   const consumeToken = db.prepare(
-    `UPDATE at2_invite_tokens SET consumed_at_ms = ?, consumed_by_did = ?
+    `UPDATE khora_invite_tokens SET consumed_at_ms = ?, consumed_by_did = ?
      WHERE token_hash = ? AND consumed_at_ms IS NULL`,
   );
   const rollbackToken = db.prepare(
-    `UPDATE at2_invite_tokens SET consumed_at_ms = NULL, consumed_by_did = NULL
+    `UPDATE khora_invite_tokens SET consumed_at_ms = NULL, consumed_by_did = NULL
      WHERE token_hash = ? AND consumed_by_did = ?`,
   );
   const insertStandard = db.prepare(
-    `INSERT INTO at2_invite_tokens (token_hash, created_at_ms, consumed_at_ms, consumed_by_did, minted_by_did, kind)
+    `INSERT INTO khora_invite_tokens (token_hash, created_at_ms, consumed_at_ms, consumed_by_did, minted_by_did, kind)
      VALUES (?, ?, NULL, NULL, ?, ?)`,
   );
   const selectMintedForDid = db.query<
@@ -45,7 +45,7 @@ export function createKhoraInvitesSqliteRepo(db: Database, pepper: string): Khor
     [string]
   >(
     `SELECT token_hash, created_at_ms, consumed_at_ms, consumed_by_did, kind
-     FROM at2_invite_tokens
+     FROM khora_invite_tokens
      WHERE minted_by_did = ?
      ORDER BY created_at_ms ASC`,
   );
@@ -56,7 +56,7 @@ export function createKhoraInvitesSqliteRepo(db: Database, pepper: string): Khor
       kind: string;
     },
     [string]
-  >(`SELECT consumed_at_ms, minted_by_did, kind FROM at2_invite_tokens WHERE token_hash = ?`);
+  >(`SELECT consumed_at_ms, minted_by_did, kind FROM khora_invite_tokens WHERE token_hash = ?`);
 
   return {
     insertSeedInviteTokens(plaintexts) {

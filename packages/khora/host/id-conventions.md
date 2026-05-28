@@ -22,8 +22,8 @@ Primary key: `(tenant_key, namespace, entry_key)`.
 | `relay:social:username-to-principal` | normalized username | `{ **principalId** }` |
 | `relay:social:principal-to-username` | principal DID | `{ username }` |
 | `relay:social:relationship` | channel id | relationship row |
-| `at2:room-registry` | room id | `{ **creatorDid**, inviteTargetDid, expiresAtMs }` |
-| `at2:room-invite` | SHA-256 hex of join token | invite metadata |
+| `khora:room-registry` | room id | `{ **creatorDid**, inviteTargetDid, expiresAtMs }` |
+| `khora:room-invite` | SHA-256 hex of join token | invite metadata |
 
 Receive-side subscriptions are percolator standing queries (`standing_queries` on the catalog DB). See receive-intent table in [`colonnade-usage.md`](./colonnade-usage.md).
 

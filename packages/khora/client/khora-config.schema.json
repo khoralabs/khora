@@ -26,7 +26,7 @@
       "format": "uri"
     },
     "agentKeyPath": {
-      "description": "Override path to the Ed25519 identity file. Default: ~/.at2/identity.json",
+      "description": "Override path to the Ed25519 identity file. Default: ~/.khora/identity.json",
       "type": "string"
     },
     "dataDir": {
@@ -41,7 +41,7 @@
       "description": "Builtin plugins by id. Merged across layers per-id; set an id to false to cancel.",
       "type": "object",
       "properties": {
-        "at2.plugin.profile-sync": {
+        "khora.plugin.profile-sync": {
           "description": "profile-sync plugin options, or false to disable an inherited entry.",
           "anyOf": [
             {
@@ -64,9 +64,7 @@
                   "maximum": 9007199254740991
                 }
               },
-              "required": [
-                "filePath"
-              ],
+              "required": ["filePath"],
               "additionalProperties": false,
               "description": "Options for the profile-sync plugin."
             },
@@ -76,7 +74,7 @@
             }
           ]
         },
-        "at2.plugin.telemetry": {
+        "khora.plugin.telemetry": {
           "description": "telemetry plugin options, or false to disable an inherited entry.",
           "anyOf": [
             {
@@ -93,9 +91,7 @@
                   "maximum": 9007199254740991
                 }
               },
-              "required": [
-                "dir"
-              ],
+              "required": ["dir"],
               "additionalProperties": false,
               "description": "Options for the telemetry plugin."
             },
@@ -105,7 +101,7 @@
             }
           ]
         },
-        "at2.plugin.inbox-buffer": {
+        "khora.plugin.inbox-buffer": {
           "description": "inbox-buffer plugin options, or false to disable an inherited entry.",
           "anyOf": [
             {
@@ -137,15 +133,11 @@
                       }
                     }
                   },
-                  "required": [
-                    "maxEntries"
-                  ],
+                  "required": ["maxEntries"],
                   "additionalProperties": false
                 }
               },
-              "required": [
-                "dbPath"
-              ],
+              "required": ["dbPath"],
               "additionalProperties": false,
               "description": "Options for the inbox-buffer plugin."
             },

@@ -4,8 +4,8 @@ import path from "node:path";
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { strFlag } from "@khoralabs/cli-kit";
 import {
-  at2AppConfigFromEnv,
   type KhoraAppConfigBase,
+  khoraAppConfigFromEnv,
   loadKhoraAppConfig,
   resolveKhoraConfigPath,
   zKhoraAppConfigBase,
@@ -27,7 +27,7 @@ export function khoraCliResolvedConfig(
   });
   const { config } = loadKhoraAppConfig({
     schema: zKhoraAppConfigBase,
-    layers: [at2AppConfigFromEnv(env)],
+    layers: [khoraAppConfigFromEnv(env)],
     filePath: resolved?.path ?? null,
     filePathExplicit: resolved?.explicit ?? false,
   });

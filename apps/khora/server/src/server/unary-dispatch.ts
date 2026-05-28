@@ -2,7 +2,7 @@ import type { HostRouteDeps } from "../http/deps.ts";
 import { routeUnary } from "../http/router.ts";
 
 /** Canonical synthetic origin for IPC unary ingress (`req.url` / signing visibility only). */
-export const KHORA_UNARY_INGRESS_ORIGIN = "http://at2.ipc";
+export const KHORA_UNARY_INGRESS_ORIGIN = "http://khora.ipc";
 
 export type HttpLikeUnaryCall = {
   method: string;

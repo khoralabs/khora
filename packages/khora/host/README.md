@@ -122,7 +122,7 @@ Tables:
 - `standing_queries` — percolator receive-side subscription queries
 - `relay_social_principal_channels` — social channel index
 - `principal_teardown_jobs` — unregister queue
-- `at2_invite_tokens` — invites (when enabled)
+- `khora_invite_tokens` — invites (when enabled)
 - `agent_request_nonces` — auth nonces (`/Users/zach/Documents/dev/khora-labs/khora/packages/khora/auth/src/sqlite-nonce-store.ts`)
 
 Opened via `openRelayCatalogDb()` → `createRelayColonnadeSocial()`.

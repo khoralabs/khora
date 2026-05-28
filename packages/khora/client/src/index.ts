@@ -80,8 +80,6 @@ export {
   serializeProfileSyncStateFile,
 } from "./cached-profile.ts";
 export {
-  at2AppConfigFromEnv,
-  at2ConfigJsonSchema,
   defaultKhoraConfigPath,
   extendKhoraAppConfig,
   type InferKhoraAppConfig,
@@ -89,6 +87,8 @@ export {
   type KhoraAppPluginMap,
   KhoraConfigError,
   type KhoraConfigFileRead,
+  khoraAppConfigFromEnv,
+  khoraConfigJsonSchema,
   type LoadedKhoraAppConfig,
   type LoadKhoraAppConfigOptions,
   loadKhoraAppConfig,

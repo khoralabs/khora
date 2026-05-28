@@ -25,7 +25,7 @@ export function ensureRelayCatalogProjectionsSchema(db: Database): void {
         tenant_key,
         json_extract(projection, '$.creatorDid')
       )
-      WHERE namespace = 'at2:room-registry';
+      WHERE namespace = 'khora:room-registry';
     CREATE TABLE IF NOT EXISTS relay_social_principal_channels (
       tenant_key TEXT NOT NULL,
       principal_id TEXT NOT NULL,

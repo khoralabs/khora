@@ -2,9 +2,9 @@ import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
 
-/** `${HOME}/.at2/config.json` — the auto-discovered default. */
+/** `${HOME}/.khora/config.json` — the auto-discovered default. */
 export function defaultKhoraConfigPath(): string {
-  return path.join(homedir(), ".at2", "config.json");
+  return path.join(homedir(), ".khora", "config.json");
 }
 
 export type ResolvedKhoraConfigPath = {

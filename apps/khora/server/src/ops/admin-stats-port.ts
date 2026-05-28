@@ -350,15 +350,15 @@ export function createKhoraAdminStatsPort(deps: {
   } = deps;
 
   function inviteStats(): KhoraAdminStatsSummary["invites"] {
-    if (!tableExists(catalogDb, "at2_invite_tokens")) {
+    if (!tableExists(catalogDb, "khora_invite_tokens")) {
       return { configured: false, total: 0, consumed: 0, unconsumed: 0 };
     }
     const total = (
-      catalogDb.prepare(`SELECT COUNT(*) AS c FROM at2_invite_tokens`).get() as { c: number }
+      catalogDb.prepare(`SELECT COUNT(*) AS c FROM khora_invite_tokens`).get() as { c: number }
     ).c;
     const consumed = (
       catalogDb
-        .prepare(`SELECT COUNT(*) AS c FROM at2_invite_tokens WHERE consumed_at_ms IS NOT NULL`)
+        .prepare(`SELECT COUNT(*) AS c FROM khora_invite_tokens WHERE consumed_at_ms IS NOT NULL`)
         .get() as { c: number }
     ).c;
     return { configured: true, total, consumed, unconsumed: total - consumed };

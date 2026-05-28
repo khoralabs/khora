@@ -16,7 +16,7 @@ The relay catalog file holds **Khora relay tables** (projections, standing queri
 | `standing_queries` | Percolator receive-side subscription queries |
 | `relay_social_principal_channels` | Social principal → channel index |
 | `principal_teardown_jobs` | Durable unregister teardown queue |
-| `at2_invite_tokens` | Invite tokens (when enabled) |
+| `khora_invite_tokens` | Invite tokens (when enabled) |
 | `agent_request_nonces` | Auth nonces |
 
 **Khora relay Tier 1** uses **`relay_catalog_projections`** (`ensureRelayCatalogProjectionsSchema` in `sqlite-setup.ts`): `(tenant_key, namespace, entry_key, projection JSON, updated_at_ms)`. ID conventions: [`packages/khora/host/id-conventions.md`](/Users/zach/Documents/dev/khora-labs/khora/packages/khora/host/id-conventions.md).
@@ -30,14 +30,14 @@ The relay catalog file holds **Khora relay tables** (projections, standing queri
 - **Subscriptions (receive):** percolator `standing_queries` on the catalog DB; subscription posts are ordinary outbox posts indexed in Memories (`khora_subscription` label).
 - **Username index (global tenant):** `tenant_key = relay:username-index-global`, maps `relay:social:username-to-principal` / `relay:social:principal-to-username`.
 - **Social rooms (pairwise):** `relay:social:relationship` projection bodies; principal→channel index in `relay_social_principal_channels`.
-- **Room registry:** `at2:room-registry` — `{ creatorDid, inviteTargetDid, expiresAtMs }`.
-- **Room link invites:** `at2:room-invite` — keyed by SHA-256 hex of join token.
+- **Room registry:** `khora:room-registry` — `{ creatorDid, inviteTargetDid, expiresAtMs }`.
+- **Room link invites:** `khora:room-invite` — keyed by SHA-256 hex of join token.
 - **Per-principal delivery (cell inbox):** post fan-out (pointer → author outbox) and room tickets (inline JSON) on each principal's home cell.
 
 **Extra catalog tables** on the same DB file:
 
 - **`principal_teardown_jobs`**: durable unregister queue; policy and orchestration in [`docs/principal-lifecycle.md`](/Users/zach/Documents/dev/khora-labs/khora/docs/principal-lifecycle.md) (`RelayPrincipalLifecycle`). Columns: `did` (PK), `profile_id`, `state`, `enqueued_at_ms`, `updated_at_ms`, `attempt_count`, `last_error`.
-- **`at2_invite_tokens`** (if invites enabled) (`/Users/zach/Documents/dev/khora-labs/khora/packages/khora/host/src/invites/schema.ts`): `token_hash` (PK), `created_at_ms`, `consumed_at_ms`, `consumed_by_did`, `minted_by_did`, `kind`.
+- **`khora_invite_tokens`** (if invites enabled) (`/Users/zach/Documents/dev/khora-labs/khora/packages/khora/host/src/invites/schema.ts`): `token_hash` (PK), `created_at_ms`, `consumed_at_ms`, `consumed_by_did`, `minted_by_did`, `kind`.
 - **Auth nonces:** `agent_request_nonces` (`/Users/zach/Documents/dev/khora-labs/khora/packages/khora/auth/src/sqlite-nonce-store.ts`): `did`, `nonce`, `expires_at_ms` (PK `(did, nonce)`).
 
 **B. Frames / frame-channel DB** (`KHORA_FRAMES_DB_PATH` — `openRelayFramesDb` in `sqlite-setup.ts`)
@@ -113,7 +113,7 @@ Host builds `KhoraProfile` with **server-minted** `id: crypto.randomUUID()` (`cr
 **Logical room**
 
 - **Server-minted** `roomId` (UUID) (`rooms.ts`).
-- **Registry row** (`at2:room-registry`): `creatorDid`, `inviteTargetDid` (nullable), `expiresAtMs`.
+- **Registry row** (`khora:room-registry`): `creatorDid`, `inviteTargetDid` (nullable), `expiresAtMs`.
 - **Social graph** (`relay:social:relationship`): `channelId`, `creatorPrincipalId`, `peerPrincipalId` (null until bound), `createdAtMs`, optional `expiresAtMs`, optional `metadata` (`social-types.ts`, `social-relationship-persistence.ts`).
 - **Per-principal index** for social channels: `relay_social_principal_channels` (not a projection array).
 
@@ -126,7 +126,7 @@ Host builds `KhoraProfile` with **server-minted** `id: crypto.randomUUID()` (`cr
 
 **Invites / inbox**
 
-- **Join link:** random `joinToken`; only **SHA-256 hex** stored as `at2:room-invite` key (`rooms.ts`).
+- **Join link:** random `joinToken`; only **SHA-256 hex** stored as `khora:room-invite` key (`rooms.ts`).
 - **Targeted invite:** cell inbox inline row + optional live WS `notification` with `kind: "room_ticket"` (`rooms.ts`).
 
 ---
@@ -241,8 +241,8 @@ Tier 1 table: **`relay_catalog_projections`** — PK `(tenant_key, namespace, en
 | `relay:reg:*` | did / profile id | registration links |
 | `relay:social:*` | room id / did | social graph (relationship bodies) |
 | `relay_social_principal_channels` | principal + channel | social channel index |
-| `at2:room-registry` | room id | room metadata |
-| `at2:room-invite` | sha256(joinToken) | invite consumption |
+| `khora:room-registry` | room id | room metadata |
+| `khora:room-invite` | sha256(joinToken) | invite consumption |
 | `relay:social:username-to-principal` | normalized username | `{ principalId }` |
 | `relay:social:principal-to-username` | did | `{ username }` |
 

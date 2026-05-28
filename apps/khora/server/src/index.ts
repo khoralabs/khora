@@ -21,7 +21,7 @@ import {
   validateEnv,
 } from "./env.ts";
 import type { HostRouteDeps } from "./http/deps.ts";
-import { at2FrameChannelWsHandlers, route } from "./http/router.ts";
+import { khoraFrameChannelWsHandlers, route } from "./http/router.ts";
 import { logger } from "./logger.ts";
 import { envMemoriesBootstrapConfig } from "./memories-env.ts";
 import { createV2HostRateLimiters } from "./rate-limit-buckets.ts";
@@ -69,7 +69,7 @@ const deps: HostRouteDeps = {
   consoleAuth,
 };
 const inboxWsHandlers = createInboxDrainWebSocketHandlers({ ctx });
-const roomWsHandlers = at2FrameChannelWsHandlers(ctx);
+const roomWsHandlers = khoraFrameChannelWsHandlers(ctx);
 
 const server = Bun.serve<KhoraWsData>({
   port: envPort(),

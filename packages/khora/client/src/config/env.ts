@@ -13,7 +13,7 @@ function trimmed(value: string | undefined): string | undefined {
  * Translate `KHORA_*` env vars into a partial `KhoraAppConfigBase`. Hosts compose by spreading this and
  * adding their own keys before feeding the result into `loadKhoraAppConfig`.
  */
-export function at2AppConfigFromEnv(
+export function khoraAppConfigFromEnv(
   env: NodeJS.ProcessEnv = process.env,
 ): Partial<KhoraAppConfigBase> {
   const out: Partial<KhoraAppConfigBase> = {};

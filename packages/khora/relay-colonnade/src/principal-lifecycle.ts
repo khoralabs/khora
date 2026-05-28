@@ -55,7 +55,7 @@ function readUsernameFromPrincipalMapProjection(projection: unknown): string | u
 function deleteInviteTokensForDid(catalogDb: Database, did: PrincipalId): void {
   try {
     catalogDb
-      .prepare(`DELETE FROM at2_invite_tokens WHERE minted_by_did = ? OR consumed_by_did = ?`)
+      .prepare(`DELETE FROM khora_invite_tokens WHERE minted_by_did = ? OR consumed_by_did = ?`)
       .run(did, did);
   } catch {
     /* optional in minimal catalogs */

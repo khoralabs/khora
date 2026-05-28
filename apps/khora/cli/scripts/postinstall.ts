@@ -70,10 +70,7 @@ export function runKhoraConfigSetup(opts: {
   return { destDir: dest, copied, overwritten, skipped, schema };
 }
 
-export function runKhoraPostinstall(opts: {
-  pkgDistDir: string;
-  home: string;
-}): PostinstallResult {
+export function runKhoraPostinstall(opts: { pkgDistDir: string; home: string }): PostinstallResult {
   const setup = runKhoraConfigSetup({
     configsDir: path.join(opts.pkgDistDir, "configs"),
     schemaPath: path.join(opts.pkgDistDir, SCHEMA_FILE),

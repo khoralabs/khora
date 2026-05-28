@@ -149,12 +149,7 @@ export async function stageKhoraRelease(opts: StageOptions): Promise<StageResult
     mkdirSync(pkgDir, { recursive: true });
     const binName = "khora";
     if (copyBinaries) {
-      const src = path.join(
-        workspaceRoot,
-        "apps/khora/cli/dist",
-        target.bunTarget,
-        binName,
-      );
+      const src = path.join(workspaceRoot, "apps/khora/cli/dist", target.bunTarget, binName);
       if (!existsSync(src)) {
         throw new Error(`missing compiled binary: ${src}`);
       }
