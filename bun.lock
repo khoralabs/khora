@@ -16,6 +16,27 @@
         "typescript": "^5",
       },
     },
+    "apps/khora/cli": {
+      "name": "@khoralabs/khora-cli",
+      "version": "0.0.0",
+      "bin": {
+        "khora": "./src/cli.ts",
+      },
+      "dependencies": {
+        "@khoralabs/agent-persisted-signer": "workspace:*",
+        "@khoralabs/cli-flow-nbc": "workspace:*",
+        "@khoralabs/cli-kit": "workspace:*",
+        "@khoralabs/khora-client": "workspace:*",
+        "@khoralabs/khora-contracts": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "apps/khora/homepage": {
       "name": "@khoralabs/khora-homepage",
       "version": "0.1.0",
@@ -1050,7 +1071,7 @@
         "zod": "^4",
       },
       "devDependencies": {
-        "bun-types": "latest",
+        "@types/bun": "latest",
         "typescript": "^5",
       },
       "peerDependencies": {
@@ -1199,6 +1220,8 @@
     "@khoralabs/duplex-byte-stream": ["@khoralabs/duplex-byte-stream@workspace:packages/libs/duplex-byte-stream"],
 
     "@khoralabs/khora-auth": ["@khoralabs/khora-auth@workspace:packages/khora/auth"],
+
+    "@khoralabs/khora-cli": ["@khoralabs/khora-cli@workspace:apps/khora/cli"],
 
     "@khoralabs/khora-client": ["@khoralabs/khora-client@workspace:packages/khora/client"],
 

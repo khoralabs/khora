@@ -1,0 +1,27 @@
+{
+  "name": "@khoralabs/khora-cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "khora": "./src/cli.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "start": "bun run ./src/cli.ts"
+  },
+  "dependencies": {
+    "@khoralabs/agent-persisted-signer": "workspace:*",
+    "@khoralabs/cli-flow-nbc": "workspace:*",
+    "@khoralabs/cli-kit": "workspace:*",
+    "@khoralabs/khora-client": "workspace:*",
+    "@khoralabs/khora-contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
