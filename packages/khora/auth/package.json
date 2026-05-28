@@ -1,0 +1,32 @@
+{
+  "name": "@khoralabs/khora-auth",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "module": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@khoralabs/agent-persisted-signer": "workspace:*",
+    "@khoralabs/agent-relay": "workspace:*",
+    "@khoralabs/khora-contracts": "workspace:*",
+    "@noble/ed25519": "^3.1.0",
+    "iso-did": "^2.1.1"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

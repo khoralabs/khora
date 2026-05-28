@@ -1,6 +1,6 @@
 # Principal lifecycle
 
-Atrium principal unregister and inbox post-pointer deliverability are owned by **`RelayPrincipalLifecycle`** in `@khoralabs/relay-colonnade`.
+Khora principal unregister and inbox post-pointer deliverability are owned by **`RelayPrincipalLifecycle`** in `@khoralabs/relay-colonnade`.
 
 ```ts
 const lifecycle = createRelayPrincipalLifecycle({ catalogDb, framesDb, projectionStore, ... });
@@ -11,14 +11,14 @@ await lifecycle.runNextTeardownJob();        // phase 2: graph purge + cell purg
 lifecycle.cascadeTeardownNow(did);           // eager teardown (tests / admin)
 ```
 
-Host wiring: one lifecycle instance on [`AtriumHostContext`](../packages/atrium/host/src/context.ts), shared by catalog unregister, inbox drain, and the background worker.
+Host wiring: one lifecycle instance on [`KhoraHostContext`](../packages/khora/host/src/context.ts), shared by catalog unregister, inbox drain, and the background worker.
 
 ## Flow
 
 ```mermaid
 sequenceDiagram
   participant Client
-  participant Host as atrium-host
+  participant Host as khora-host
   participant Lifecycle as RelayPrincipalLifecycle
   participant Catalog as catalog SQLite
   participant Drain as relay-inbox-drain
@@ -62,4 +62,4 @@ Durable jobs live in `principal_teardown_jobs` on the relay catalog DB. Schema i
 
 Grace periods, soft-delete authors, or delayed cell purge: add rules only to `RelayPrincipalLifecycle` (especially `isPostPointerDeliverable` and `runNextTeardownJob`). Colonnade `purgePrincipal` stays a generic storage primitive.
 
-See also [`colonnade-usage.md`](../packages/atrium/host/colonnade-usage.md) Tier 3 and [`system.md`](system.md).
+See also [`colonnade-usage.md`](../packages/khora/host/colonnade-usage.md) Tier 3 and [`system.md`](system.md).

@@ -2,7 +2,7 @@
 
 Domain and persistence layer for the **Khora registry** — network-level user data stored in encrypted SQLite (`registry.sqlite`).
 
-Owns accounts, emails, auth provider links, Atrium hosts, memberships, access-token requests, and marketing consents. Does **not** implement sign-in; that lives in [`@khoralabs/users-auth`](../users-auth).
+Owns accounts, emails, auth provider links, Khora hosts, memberships, access-token requests, and marketing consents. Does **not** implement sign-in; that lives in [`@khoralabs/users-auth`](../users-auth).
 
 ## Role in the stack
 
@@ -30,7 +30,7 @@ Domain tables (see `src/schema-sql.ts`):
 | `accounts` | Canonical registry account |
 | `account_emails` | Verified email addresses per account |
 | `auth_links` | Maps external auth subjects (e.g. Better Auth user id) to accounts |
-| `atrium_hosts` | Federated Atrium host registry |
+| `khora_hosts` | Federated Khora host registry |
 | `memberships` | Account ↔ host relationships |
 | `access_token_requests` | Email-based access-token invite flow |
 | `marketing_consents` | Opt-in / opt-out per list |
@@ -57,13 +57,13 @@ await initUsersSchema(db);
 | --- | --- |
 | `accounts.ts` | `findAccountById`, `findAccountByEmail`, `findAccountByAuthSubject`, `linkBetterAuthUser`, `mergeEmailOntoAccount`, `listAccountEmails` |
 | `access-token-requests.ts` | `createAccessTokenRequest`, `findAccessTokenRequest`, `listAccessTokenRequestsForEmail`, `markAccessTokenMinted`, `markAccessTokenSent`, … |
-| `atrium-hosts.ts` | `findHostBySlug`, `listActiveHosts`, `seedDefaultHost`, … |
+| `khora-hosts.ts` | `findHostBySlug`, `listActiveHosts`, `seedDefaultHost`, … |
 | `memberships.ts` | `countMembershipsForAccount` |
 | `marketing-consents.ts` | `subscribeMarketing`, `unsubscribeMarketing`, `listMarketingConsentsForEmail`, … |
 | `admin-stats.ts` | `getRegistryAdminSummary`, `lookupRegistryByEmail`, `lookupRegistryByAccountId` |
 | `db.ts` | `getUsersDatabase`, `registryDatabasePath`, `resetUsersDatabase` |
 | `schema.ts` | `usersMigrations`, `initUsersSchema`, `isUsersSchemaReady` |
-| `types.ts` | `Account`, `AtriumHost`, `AccessTokenRequest`, `MarketingConsent`, admin lookup types |
+| `types.ts` | `Account`, `KhoraHost`, `AccessTokenRequest`, `MarketingConsent`, admin lookup types |
 
 ## Usage
 

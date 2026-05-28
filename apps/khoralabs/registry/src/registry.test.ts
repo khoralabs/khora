@@ -39,10 +39,10 @@ describe("registry domain", () => {
     const db = getUsersDatabase();
     const consent = subscribeMarketing(db, {
       email: "a@b.com",
-      listSlug: "atrium-waitlist",
+      listSlug: "khora-waitlist",
       sourceApp: "test",
     });
-    expect(consent.listSlug).toBe("atrium-waitlist");
+    expect(consent.listSlug).toBe("khora-waitlist");
     expect(consent.sourceApp).toBe("test");
   });
 });

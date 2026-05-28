@@ -8,7 +8,7 @@ Depends on [`@khoralabs/users`](../users) for domain types and [`@khoralabs/user
 
 ```mermaid
 graph LR
-  atrium["apps/atrium/homepage /login"] --> usersReact["@khoralabs/users-react"]
+  khora["apps/khora/homepage /login"] --> usersReact["@khoralabs/users-react"]
   registry["apps/khoralabs/registry /admin"] --> usersReact
   usersReact --> usersAuth["@khoralabs/users-auth/client"]
   usersReact --> users["@khoralabs/users"]
@@ -77,7 +77,7 @@ const flow = useEmailConfirmFlow({ api, purpose: "sign-in", onSuccess });
 // flow.step, flow.sendOtp(), flow.verifyOtp(), …
 ```
 
-See [`apps/atrium/homepage/src/routes/login/client.tsx`](../../../apps/atrium/homepage/src/routes/login/client.tsx) for a full example with shadcn UI.
+See [`apps/khora/homepage/src/routes/login/client.tsx`](../../../apps/khora/homepage/src/routes/login/client.tsx) for a full example with shadcn UI.
 
 ---
 
@@ -94,7 +94,7 @@ Compound components for the registry operator console — network overview metri
 | `UsersStats.AccountsMetrics` | Account counts |
 | `UsersStats.AccessRequestsMetrics` | Access-token request counts |
 | `UsersStats.MarketingMetrics` | Marketing consent + membership counts |
-| `UsersStats.HostList` | List of registered Atrium hosts |
+| `UsersStats.HostList` | List of registered Khora hosts |
 | `UsersStats.HostListItem` | Single host row (used internally by `HostList`) |
 | `UsersStats.EmailLookup` | Email lookup section wrapper |
 | `UsersStats.EmailLookupForm` | Email input + search button |
@@ -159,4 +159,4 @@ Peer dependencies: `react`, `react-dom` (^19).
 
 Domain types from `@khoralabs/users` and email-confirm types from `@khoralabs/users-auth/client` are re-exported for convenience:
 
-`Account`, `AtriumHost`, `AccessTokenRequest`, `MarketingConsent`, `RegistryAdminSummary`, `RegistryEmailLookupResponse`, `EmailConfirmEmailStepRenderProps`, `EmailConfirmOtpStepRenderProps`, and related lookup types.
+`Account`, `KhoraHost`, `AccessTokenRequest`, `MarketingConsent`, `RegistryAdminSummary`, `RegistryEmailLookupResponse`, `EmailConfirmEmailStepRenderProps`, `EmailConfirmOtpStepRenderProps`, and related lookup types.

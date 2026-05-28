@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS auth_links (
   PRIMARY KEY (account_id, provider)
 );
 
-CREATE TABLE IF NOT EXISTS atrium_hosts (
+CREATE TABLE IF NOT EXISTS khora_hosts (
   id TEXT PRIMARY KEY NOT NULL,
   slug TEXT NOT NULL UNIQUE,
   base_url TEXT NOT NULL UNIQUE,
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS atrium_hosts (
 CREATE TABLE IF NOT EXISTS memberships (
   id TEXT PRIMARY KEY NOT NULL,
   account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-  host_id TEXT NOT NULL REFERENCES atrium_hosts(id) ON DELETE CASCADE,
+  host_id TEXT NOT NULL REFERENCES khora_hosts(id) ON DELETE CASCADE,
   invite_token_hash TEXT,
   agent_did TEXT,
   status TEXT NOT NULL DEFAULT 'requested',
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS memberships (
 CREATE TABLE IF NOT EXISTS access_token_requests (
   id TEXT PRIMARY KEY NOT NULL,
   email TEXT NOT NULL,
-  host_id TEXT NOT NULL REFERENCES atrium_hosts(id) ON DELETE CASCADE,
+  host_id TEXT NOT NULL REFERENCES khora_hosts(id) ON DELETE CASCADE,
   account_id TEXT REFERENCES accounts(id) ON DELETE SET NULL,
   membership_id TEXT REFERENCES memberships(id) ON DELETE SET NULL,
   status TEXT NOT NULL DEFAULT 'pending',

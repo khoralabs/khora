@@ -235,7 +235,7 @@ Source maps in memories are **not** the canonical body — they are addresses. E
 3. **Colonnade (separate domain)** — `/Users/zach/Documents/dev/khora-labs/khora/packages/colonnade/impl/ts/src/resolve-pointer.ts`
    - Uses same `@khoralabs/sourcemaps` pattern with `{ cell_id, record_key }` locators
 
-4. **Atrium host** — `/Users/zach/Documents/dev/khora-labs/khora/apps/atrium/host/src/resolve-post.ts`, `relay-inbox-drain.ts`
+4. **Khora host** — `/Users/zach/Documents/dev/khora-labs/khora/apps/khora/host/src/resolve-post.ts`, `relay-inbox-drain.ts`
    - Resolves colonnade pointers via `resolveSourcemap`
 
 **Content hash (provenance, not resolution identity):**
@@ -363,7 +363,7 @@ Convex indexing mirrors the same contract with Convex search/vector indexes inst
 
 ### Not integrated (yet)
 
-- **`apps/atrium`** — no direct `MemoriesClient` usage found; uses `@khoralabs/sourcemaps` via colonnade for post/pointer resolution, not the memories KG
+- **`apps/khora`** — no direct `MemoriesClient` usage found; uses `@khoralabs/sourcemaps` via colonnade for post/pointer resolution, not the memories KG
 - **`apps/vellum`** — no memories imports found
 
 ---

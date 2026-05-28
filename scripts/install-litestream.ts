@@ -1,13 +1,13 @@
 #!/usr/bin/env bun
 /**
- * Download the pinned Litestream binary into `apps/atrium/server/.bin/litestream` by default.
+ * Download the pinned Litestream binary into `apps/khora/server/.bin/litestream` by default.
  *
  *     bun run ../../../scripts/install-litestream.ts
  *     bun run ../../../scripts/install-litestream.ts --output ./.bin/litestream
  *
- * From the Atrium server package (preinstall):
+ * From the Khora server package (preinstall):
  *
- *     bun run --filter @khoralabs/atrium-server preinstall
+ *     bun run --filter @khoralabs/khora-server preinstall
  *
  * Idempotent: re-running is a no-op when the existing binary reports the same
  * version. Override with `LITESTREAM_BIN_PATH` or `--output <path>` (`--output`
@@ -24,7 +24,7 @@ const DEFAULT_BIN_PATH = path.resolve(
   import.meta.dir,
   "..",
   "apps",
-  "atrium",
+  "khora",
   "server",
   ".bin",
   "litestream",

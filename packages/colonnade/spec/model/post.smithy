@@ -53,7 +53,7 @@ structure PostOperationOutput {
 
 **Decision split:** This operation encodes **whether** catalog and/or fan-out occur; matching recipients via percolation MAY precede construction of **`fan_out_targets`** in embedding adapters.
 
-**Coupling:** No Atrium `POST` / `inbox_post` types appear here — adapters supply **`payload_metadata`** + **`PublicationRouting`** from product rules.
+**Coupling:** No Khora `POST` / `inbox_post` types appear here — adapters supply **`payload_metadata`** + **`PublicationRouting`** from product rules.
 """)
 service ColonnadePublication {
     version: "2026-05-15"

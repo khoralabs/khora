@@ -1,5 +1,5 @@
 /** SQLCipher whole-file encryption scope. */
-export type SqlCipherScope = "atrium" | "registry";
+export type SqlCipherScope = "khora" | "registry";
 
 /**
  * Resolves encryption keys for SQLCipher and outbox field encryption.
@@ -53,7 +53,7 @@ export class EnvKeyProvider implements EncryptionKeyProvider {
 
   async getSqlCipherKey(scope: SqlCipherScope): Promise<string> {
     const name =
-      scope === "atrium"
+      scope === "khora"
         ? EnvKeyProvider.ATRIUM_SQLCIPHER_ENV
         : EnvKeyProvider.REGISTRY_SQLCIPHER_ENV;
     const key = readEnvRequired(name);
@@ -73,7 +73,7 @@ export async function assertEncryptionKeys(
   scope: SqlCipherScope,
 ): Promise<void> {
   await provider.getSqlCipherKey(scope);
-  if (scope === "atrium") {
+  if (scope === "khora") {
     await provider.getOutboxFieldKey();
   }
 }

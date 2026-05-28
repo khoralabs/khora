@@ -38,14 +38,14 @@ describe("buildLitestreamYaml", () => {
 
   test("includes endpoint for MinIO", () => {
     const yaml = buildLitestreamYaml({
-      bucket: "atrium-backups",
-      keyPrefix: "atrium/litestream",
+      bucket: "khora-backups",
+      keyPrefix: "khora/litestream",
       region: "us-east-1",
       endpoint: "http://127.0.0.1:9000",
       dbs: [{ kind: "file", path: "/data/catalog.sqlite", replicaSuffix: "catalog.sqlite" }],
     });
     expect(yaml).toContain('endpoint: "http://127.0.0.1:9000"');
-    expect(yaml).toContain('url: "s3://atrium-backups/atrium/litestream/catalog.sqlite"');
+    expect(yaml).toContain('url: "s3://khora-backups/khora/litestream/catalog.sqlite"');
   });
 
   test("requires credentials when custom endpoint is set", () => {

@@ -2,7 +2,7 @@
 set -eu
 
 # MinIO starts in the background; we create S3 bucket(s) with mc, then wait on the server.
-# Override buckets: set LITESTREAM_S3_BUCKET (single, same name as Atrium) or LITESTREAM_BUCKETS (comma-separated).
+# Override buckets: set LITESTREAM_S3_BUCKET (single, same name as Khora) or LITESTREAM_BUCKETS (comma-separated).
 
 MINIO_ROOT_USER="${MINIO_ROOT_USER:-minioadmin}"
 MINIO_ROOT_PASSWORD="${MINIO_ROOT_PASSWORD:-minioadmin}"
@@ -10,7 +10,7 @@ MINIO_ROOT_PASSWORD="${MINIO_ROOT_PASSWORD:-minioadmin}"
 if [ -n "${LITESTREAM_S3_BUCKET:-}" ]; then
   bucket_list="$LITESTREAM_S3_BUCKET"
 else
-  bucket_list="${LITESTREAM_BUCKETS:-atrium-backups}"
+  bucket_list="${LITESTREAM_BUCKETS:-khora-backups}"
 fi
 
 _forward_term() {

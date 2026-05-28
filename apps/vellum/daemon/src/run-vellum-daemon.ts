@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import type { PersistableAgentSigner } from "@khoralabs/agent-persisted-signer";
-import { AtriumClient } from "@khoralabs/atrium-client";
+import { KhoraClient } from "@khoralabs/khora-client";
 import type { JsonDocument } from "@khoralabs/obp-v2-model";
 import {
   createObpV2SqlitePersistenceClient,
@@ -34,7 +34,7 @@ function logLine(json: boolean, label: string, payload: unknown): void {
 }
 
 /**
- * Hold an Atrium room WebSocket with durable OBP v2 graph in SQLite and a local HTTP control plane.
+ * Hold an Khora room WebSocket with durable OBP v2 graph in SQLite and a local HTTP control plane.
  */
 export function runVellumDaemon(opts: RunVellumDaemonOptions): {
   close(): void;
@@ -62,7 +62,7 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): {
     };
 
     const frameSigner = await createFrameSignerFromPersistableAgent(opts.signer);
-    const client = new AtriumClient({
+    const client = new KhoraClient({
       baseUrl: opts.baseUrl,
       signer: opts.signer,
     });

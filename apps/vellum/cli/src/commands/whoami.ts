@@ -1,7 +1,7 @@
 import type { PersistableAgentSigner } from "@khoralabs/agent-persisted-signer";
-import { AtriumClient, AtriumClientError } from "@khoralabs/atrium-client";
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { boolFlag, style } from "@khoralabs/cli-kit";
+import { KhoraClient, KhoraClientError } from "@khoralabs/khora-client";
 
 import { agentIdentityPath, cliBaseUrl, loadSigner } from "../flows/context.ts";
 
@@ -31,7 +31,7 @@ export async function handleWhoami(flags: FlagMap): Promise<void> {
   }
 
   const baseUrl = cliBaseUrl(flags);
-  const ac = new AtriumClient({ baseUrl, signer });
+  const ac = new KhoraClient({ baseUrl, signer });
   try {
     const result = await ac.lookupProfileByDid(signer.did);
     if (result === null) {
@@ -54,7 +54,7 @@ export async function handleWhoami(flags: FlagMap): Promise<void> {
       console.log(`Bio:       ${profile.bio}`);
     }
   } catch (e) {
-    if (e instanceof AtriumClientError) {
+    if (e instanceof KhoraClientError) {
       console.error(style.error(`Host request failed: ${e.message}`));
       console.error(style.muted(`base-url: ${baseUrl}`));
       console.error(

@@ -1,6 +1,6 @@
-import { AtriumClient, type AtriumRoomCreateBody } from "@khoralabs/atrium-client";
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { boolFlag, strFlag } from "@khoralabs/cli-kit";
+import { KhoraClient, type KhoraRoomCreateBody } from "@khoralabs/khora-client";
 import { cliBaseUrl, loadSigner, type VellumCliContext } from "../flows/context.ts";
 import { promptJoinTokenIfMissing } from "../flows/room-join-flow.ts";
 import { disconnectLocalRoom } from "./disconnect.ts";
@@ -13,7 +13,7 @@ export async function handleRoomCreate(flags: FlagMap): Promise<void> {
   const ttlRaw = strFlag(flags, "ttl-ms") ?? strFlag(flags, "ttlMs") ?? "";
 
   const signer = await loadSigner(flags);
-  const body: AtriumRoomCreateBody = {};
+  const body: KhoraRoomCreateBody = {};
   if (ttlRaw.length > 0) {
     const n = Number.parseInt(ttlRaw, 10);
     if (!Number.isFinite(n)) throw new Error("ttl-ms must be a number");
@@ -22,7 +22,7 @@ export async function handleRoomCreate(flags: FlagMap): Promise<void> {
   if (targetDid.length > 0) body.targetDid = targetDid;
   if (targetUsername.length > 0) body.targetUsername = targetUsername;
 
-  const ac = new AtriumClient({ baseUrl, signer });
+  const ac = new KhoraClient({ baseUrl, signer });
   try {
     const out = await ac.createRoom(body);
     console.log(JSON.stringify(out, null, 2));
@@ -37,7 +37,7 @@ export async function handleRoomRead(positional: string[], flags: FlagMap): Prom
     throw new Error("room id required");
   }
   const signer = await loadSigner(flags);
-  const ac = new AtriumClient({ baseUrl: cliBaseUrl(flags), signer });
+  const ac = new KhoraClient({ baseUrl: cliBaseUrl(flags), signer });
   try {
     const item = await ac.getRoom(roomId);
     if (boolFlag(flags, "json")) {
@@ -76,7 +76,7 @@ export async function handleRoomLeave(
   }
   disconnectLocalRoom(flags, roomId);
   const signer = await loadSigner(flags);
-  const ac = new AtriumClient({ baseUrl: cliBaseUrl(flags), signer });
+  const ac = new KhoraClient({ baseUrl: cliBaseUrl(flags), signer });
   try {
     await ac.leaveRoom(roomId);
   } finally {
@@ -90,7 +90,7 @@ export async function handleRoomJoin(ctx: VellumCliContext, flags: FlagMap): Pro
   const joinToken = await promptJoinTokenIfMissing(ctx, flags);
 
   const signer = await loadSigner(flags);
-  const ac = new AtriumClient({ baseUrl, signer });
+  const ac = new KhoraClient({ baseUrl, signer });
   try {
     const out = await ac.redeemRoomInvite({ joinToken });
     console.log(JSON.stringify(out, null, 2));

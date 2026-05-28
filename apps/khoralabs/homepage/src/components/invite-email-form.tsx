@@ -73,7 +73,7 @@ export function InviteEmailForm({ variant = "dark", onSuccess }: InviteEmailForm
     >
       {isLanding ? (
         <p className={cn("mb-2 text-center", landingCtaLabelClass)}>
-          Request an invite token for Atrium + Vellum.
+          Request an invite token for Khora + Vellum.
         </p>
       ) : null}
       <InputGroup

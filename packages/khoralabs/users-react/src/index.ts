@@ -1,7 +1,7 @@
 export type {
   AccessTokenRequest,
   Account,
-  AtriumHost,
+  KhoraHost,
   MarketingConsent,
   RegistryAccountLookup,
   RegistryAdminSummary,

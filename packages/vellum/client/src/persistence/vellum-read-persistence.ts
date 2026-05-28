@@ -1,7 +1,7 @@
 import type { VellumChainRow, VellumOfferRow, VellumPortRow } from "@khoralabs/vellum-contracts";
 
 /**
- * Read side of persisted NBC / vellum metadata for one Atrium room store.
+ * Read side of persisted NBC / vellum metadata for one Khora room store.
  * Implementations may use SQLite, remote APIs, or mocks — {@link VellumClient} does not embed SQL.
  */
 export interface VellumReadModel {

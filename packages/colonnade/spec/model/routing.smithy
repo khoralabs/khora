@@ -100,7 +100,7 @@ structure AckWriteLogAppliedOutput {}
 
 **Non-normative:** Live transports MAY push bytes to online peers before or while enqueueing (fast-path); durability for offline recipients still lands in inbox staging via **`EnqueueInboxWrite`**.
 
-**Adapter note:** Single-process hosts (e.g. today's Atrium SQLite) can implement router+log as an in-memory queue + one mutex per logical cell without changing wire shapes.
+**Adapter note:** Single-process hosts (e.g. today's Khora SQLite) can implement router+log as an in-memory queue + one mutex per logical cell without changing wire shapes.
 """)
 service ColonnadeRouter {
     version: "2026-05-15"

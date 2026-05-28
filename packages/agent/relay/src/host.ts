@@ -54,7 +54,7 @@ export type AgentRelayDeps<
 
 /**
  * Facade for persistence, optional frame-channel hub, inbox fan-out, and principal registration.
- * App layers (e.g. Atrium) compose Memories and hybrid search outside this package.
+ * App layers (e.g. Khora) compose Memories and hybrid search outside this package.
  */
 export class AgentRelay<
   TProfile = unknown,

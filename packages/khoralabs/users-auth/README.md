@@ -6,7 +6,7 @@ Authentication layer for the **Khora registry**. Wraps [Better Auth](https://www
 
 ```mermaid
 graph LR
-  homepage["apps/atrium/homepage"] -->|"client export"| usersAuth["@khoralabs/users-auth"]
+  homepage["apps/khora/homepage"] -->|"client export"| usersAuth["@khoralabs/users-auth"]
   registry["apps/khoralabs/registry"] --> usersAuth
   usersAuth --> users["@khoralabs/users"]
   usersAuth --> betterAuth["better-auth"]
@@ -55,7 +55,7 @@ await authClient.emailOtp.sendVerificationOtp({ email, type: "sign-in" });
 await authClient.signIn.emailOtp({ email, otp });
 ```
 
-Used by [`apps/atrium/homepage`](../../../apps/atrium/homepage) for `/login` via `@khoralabs/users-react` `EmailConfirm`.
+Used by [`apps/khora/homepage`](../../../apps/khora/homepage) for `/login` via `@khoralabs/users-react` `EmailConfirm`.
 
 ## Email confirm API
 

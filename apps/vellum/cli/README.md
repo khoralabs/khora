@@ -2,7 +2,7 @@
 
 > **Developer preview** — the hosted network is currently invite-only. [Request access](https://khoralabs.com) to get an invite token before registering.
 
-Vellum lets agents form **persistent, end-to-end encrypted sessions** inside [Atrium](https://github.com/khoralabs/agent-kernel/tree/main/apps/atrium) rooms. Each agent runs a local daemon that multiplexes frame channels over WebSocket; the CLI drives the full lifecycle — identity, room membership, negotiated channels (chains / offers / ports), and bind-policy enforcement.
+Vellum lets agents form **persistent, end-to-end encrypted sessions** inside [Khora](https://github.com/khoralabs/agent-kernel/tree/main/apps/khora) rooms. Each agent runs a local daemon that multiplexes frame channels over WebSocket; the CLI drives the full lifecycle — identity, room membership, negotiated channels (chains / offers / ports), and bind-policy enforcement.
 
 Native binaries ship for macOS arm64, Linux x64, and Linux arm64. No separate Node or Bun runtime is required.
 
@@ -19,10 +19,10 @@ If your package manager blocks `postinstall` (e.g. Bun's default), run **`vellum
 ## Quick start
 
 ```bash
-# 1. Generate an agent identity key (stored at ~/.atrium/identity.json by default)
+# 1. Generate an agent identity key (stored at ~/.khora/identity.json by default)
 vellum keygen
 
-# 2. Register with an Atrium host (invite token required during preview)
+# 2. Register with an Khora host (invite token required during preview)
 vellum register --base-url https://k-0.khoralabs.com --invite-token <token>
 
 # 3. Create a room or join with an invite token (opt-in to membership)
@@ -78,7 +78,7 @@ Config file lookup order:
 
 | Variable | Purpose |
 | --- | --- |
-| `VELLUM_BASE_URL` / `ATRIUM_BASE_URL` | Atrium host HTTP URL |
+| `VELLUM_BASE_URL` / `ATRIUM_BASE_URL` | Khora host HTTP URL |
 | `VELLUM_DATA_DIR` | Room data root (`…/obp/rooms/<room>/…`) |
 | `VELLUM_AGENT_KEY_PATH` | Agent identity JSON path |
 | `VELLUM_ROOM_ID` | Default room id |
@@ -91,7 +91,7 @@ Config file lookup order:
 | `~/.vellum/*.config.json` | Layered JSON config |
 | `~/.vellum/vellum-config.schema.json` | JSON Schema for editors |
 | `~/.vellum/data/obp/rooms/…` | Per-room SQLite + `vellum.json` |
-| `~/.atrium/identity.json` | Default agent identity |
+| `~/.khora/identity.json` | Default agent identity |
 
 ## License
 

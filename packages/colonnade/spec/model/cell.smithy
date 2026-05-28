@@ -116,7 +116,7 @@ structure VerifyAndDrainInboxBatchOutput {
 
 **Isolation:** Cells are independent failure domains; corrupting one MUST NOT imply reads across tenant boundaries without explicit routing.
 
-**Future adapters:** Atrium-style notifications map naturally to **`EnqueueInboxDelivery`** + drain; entity bodies map to **`AppendOutboxRecord`**.
+**Future adapters:** Khora-style notifications map naturally to **`EnqueueInboxDelivery`** + drain; entity bodies map to **`AppendOutboxRecord`**.
 """)
 service CellStore {
     version: "2026-05-15"

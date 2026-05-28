@@ -1,4 +1,4 @@
-import type { ConsoleAuth } from "@khoralabs/atrium-console";
+import type { ConsoleAuth } from "@khoralabs/khora-console";
 import { getRegistryAdminSummary } from "@khoralabs/users";
 import { getRegistryDatabase } from "@khoralabs/users-auth";
 import { withConsoleAuth } from "./console-guard.ts";

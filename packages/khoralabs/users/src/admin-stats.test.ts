@@ -24,7 +24,7 @@ describe("admin-stats", () => {
     await initUsersSchema(db);
     const host = seedDefaultHost(db, { slug: "khora-local", baseUrl: "http://localhost:8788" });
     createAccessTokenRequest(db, { email: "a@b.com", hostId: host.id, sourceApp: "test" });
-    subscribeMarketing(db, { email: "a@b.com", listSlug: "atrium-waitlist" });
+    subscribeMarketing(db, { email: "a@b.com", listSlug: "khora-waitlist" });
     linkBetterAuthUser(db, { providerSubject: "user-1", email: "a@b.com" });
   });
 

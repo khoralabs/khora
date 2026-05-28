@@ -1,6 +1,6 @@
-import { AtriumClient } from "@khoralabs/atrium-client";
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { strFlag } from "@khoralabs/cli-kit";
+import { KhoraClient } from "@khoralabs/khora-client";
 
 import { cliBaseUrl, loadSigner, type VellumCliContext } from "../flows/context.ts";
 import { runRegisterInteractiveFlow } from "../flows/register-flow.ts";
@@ -32,7 +32,7 @@ export async function handleRegister(ctx: VellumCliContext, flags: FlagMap): Pro
   }
 
   const signer = await loadSigner(flags);
-  const ac = new AtriumClient({ baseUrl, signer });
+  const ac = new KhoraClient({ baseUrl, signer });
   try {
     const out = await ac.register({
       metadata: { username, displayName },

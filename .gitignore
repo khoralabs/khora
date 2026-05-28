@@ -1,7 +1,7 @@
 .llm-context
 .memories
 .obp
-.atrium
+.khora
 *.sqlite
 *.wal
 *.journal
@@ -13,7 +13,7 @@ node_modules
 # output
 out
 dist
-apps/atrium/release
+apps/khora/release
 apps/vellum/release
 *.tgz
 
@@ -45,4 +45,4 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .DS_Store
 
 # Litestream binary (preinstall)
-apps/atrium/server/.bin/
+apps/khora/server/.bin/

@@ -10,11 +10,11 @@ export type AgentIdentityFile = {
   encoded: string;
 };
 
-/** Resolve the identity file path (`ATRIUM_AGENT_KEY_PATH` overrides default `~/.atrium/identity.json`). */
+/** Resolve the identity file path (`ATRIUM_AGENT_KEY_PATH` overrides default `~/.khora/identity.json`). */
 export function defaultIdentityPath(): string {
   const override = process.env.ATRIUM_AGENT_KEY_PATH?.trim();
   if (override !== undefined && override.length > 0) return override;
-  return path.join(homedir(), ".atrium", "identity.json");
+  return path.join(homedir(), ".khora", "identity.json");
 }
 
 /** Create a fresh agent identity (default scheme: `did:key` + Ed25519). */

@@ -25,6 +25,8 @@ export {
   type RegistryEmailLookup,
   type RegistryEmailLookupResponse,
 } from "./admin-stats";
+export { getUsersDatabase, registryDatabasePath, resetUsersDatabase } from "./db";
+export { hashInviteToken } from "./invite-hash";
 export {
   countHosts,
   findHostById,
@@ -32,9 +34,7 @@ export {
   listActiveHosts,
   listAllHosts,
   seedDefaultHost,
-} from "./atrium-hosts";
-export { getUsersDatabase, registryDatabasePath, resetUsersDatabase } from "./db";
-export { hashInviteToken } from "./invite-hash";
+} from "./khora-hosts";
 export {
   findMarketingConsent,
   listActiveMarketingConsentsForEmail,

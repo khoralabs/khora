@@ -1,4 +1,4 @@
-import type { ConsoleAuth } from "@khoralabs/atrium-console";
+import type { ConsoleAuth } from "@khoralabs/khora-console";
 
 export async function withConsoleAuth(
   req: Request,

@@ -205,7 +205,7 @@ export function WaitlistSignup({ onSuccess, resetKey = 0 }: WaitlistSignupProps)
       purpose="sign-up"
       otpLength={OTP_LENGTH}
       storageKey={WAITLIST_STEP_STORAGE_KEY}
-      marketing={{ listSlug: "atrium-waitlist", sourceApp: "khoralabs-homepage" }}
+      marketing={{ listSlug: "khora-waitlist", sourceApp: "khoralabs-homepage" }}
       onSuccess={() => onSuccess()}
     >
       <EmailConfirm.EmailStep>

@@ -2,7 +2,7 @@ import { type EncryptionKeyProvider, EnvKeyProvider, type SqlCipherScope } from 
 import type { OutboxPayloadCodec } from "./outbox-payload.ts";
 import { createOutboxPayloadCodec } from "./outbox-payload.ts";
 
-export const TEST_ATRIUM_SQLCIPHER_KEY = "test-atrium-sqlcipher-key!!";
+export const TEST_ATRIUM_SQLCIPHER_KEY = "test-khora-sqlcipher-key!!";
 export const TEST_REGISTRY_SQLCIPHER_KEY = "test-registry-sqlcipher-key!";
 export const TEST_OUTBOX_KEY_HEX =
   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
@@ -18,7 +18,7 @@ function testOutboxKeyBytes(): Uint8Array {
 /** Fixed keys for unit/integration tests (not for production). */
 export class TestKeyProvider implements EncryptionKeyProvider {
   async getSqlCipherKey(scope: SqlCipherScope): Promise<string> {
-    return scope === "atrium" ? TEST_ATRIUM_SQLCIPHER_KEY : TEST_REGISTRY_SQLCIPHER_KEY;
+    return scope === "khora" ? TEST_ATRIUM_SQLCIPHER_KEY : TEST_REGISTRY_SQLCIPHER_KEY;
   }
 
   async getOutboxFieldKey(): Promise<Uint8Array> {

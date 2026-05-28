@@ -61,7 +61,7 @@ async function sendInviteEmail(email: string, token: string): Promise<void> {
       Source: sesFromAddress(),
       Destination: { ToAddresses: [email] },
       Message: {
-        Subject: { Data: "Your Atrium invite token" },
+        Subject: { Data: "Your Khora invite token" },
         Body: {
           Text: {
             Data: [
@@ -70,7 +70,7 @@ async function sendInviteEmail(email: string, token: string): Promise<void> {
               "Your invite token:",
               token,
               "",
-              "Use it when registering for Atrium.",
+              "Use it when registering for Khora.",
             ].join("\n"),
           },
         },

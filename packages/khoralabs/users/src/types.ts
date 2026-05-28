@@ -10,7 +10,7 @@ export type Account = {
   updatedAtMs: number;
 };
 
-export type AtriumHost = {
+export type KhoraHost = {
   id: string;
   slug: string;
   baseUrl: string;

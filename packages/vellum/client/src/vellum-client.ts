@@ -2,7 +2,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { defaultIdentityPath, loadIdentity } from "@khoralabs/agent-persisted-signer";
-import { AtriumClient } from "@khoralabs/atrium-client";
+import { KhoraClient } from "@khoralabs/khora-client";
 import {
   canonicalSessionParties,
   normalizeSessionInit,
@@ -138,7 +138,7 @@ export class VellumClient {
       throw new Error(`identity not found at ${idPath}`);
     }
     let webSocketUrl = options?.webSocketUrl ?? process.env.VELLUM_ROOM_WS_URL?.trim();
-    const ac = new AtriumClient({
+    const ac = new KhoraClient({
       baseUrl: this.opts.baseUrl,
       signer,
     });

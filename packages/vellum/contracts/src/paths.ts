@@ -10,7 +10,7 @@ export function cfgDataDir(cfg: VellumPathConfig): string | undefined {
   return d !== undefined && d.length > 0 ? d : undefined;
 }
 
-/** Filesystem-safe segment for `roomId` (aligned with `@khoralabs/atrium-daemon`). */
+/** Filesystem-safe segment for `roomId` (aligned with `@khoralabs/khora-daemon`). */
 export function encodeRoomIdForPath(roomId: string): string {
   return encodeURIComponent(roomId);
 }

@@ -2,7 +2,7 @@ import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createAccessTokenRequest, findAccessTokenRequest } from "../src/access-token-requests";
 import { linkBetterAuthUser } from "../src/accounts";
-import { seedDefaultHost } from "../src/atrium-hosts";
+import { seedDefaultHost } from "../src/khora-hosts";
 import { findMarketingConsent, subscribeMarketing } from "../src/marketing-consents";
 import { initUsersSchema } from "../src/schema";
 
@@ -51,10 +51,10 @@ describe("@khoralabs/users", () => {
   test("creates marketing consent with normalized email", () => {
     subscribeMarketing(db, {
       email: "News@Example.com",
-      listSlug: "atrium-waitlist",
+      listSlug: "khora-waitlist",
       sourceApp: "khoralabs-homepage",
     });
-    const consent = findMarketingConsent(db, "news@example.com", "atrium-waitlist");
+    const consent = findMarketingConsent(db, "news@example.com", "khora-waitlist");
     expect(consent?.email).toBe("news@example.com");
     expect(consent?.optedOutAtMs).toBeNull();
   });
@@ -62,7 +62,7 @@ describe("@khoralabs/users", () => {
   test("merges pre-account records on sign-in", () => {
     const host = seedDefaultHost(db, { slug: "khora-local", baseUrl: "http://localhost:8788" });
     createAccessTokenRequest(db, { email: "user@example.com", hostId: host.id });
-    subscribeMarketing(db, { email: "user@example.com", listSlug: "atrium-waitlist" });
+    subscribeMarketing(db, { email: "user@example.com", listSlug: "khora-waitlist" });
 
     const account = linkBetterAuthUser(db, {
       providerSubject: "ba-user-1",
@@ -70,7 +70,7 @@ describe("@khoralabs/users", () => {
     });
 
     const request = findAccessTokenRequest(db, "user@example.com", host.id);
-    const consent = findMarketingConsent(db, "user@example.com", "atrium-waitlist");
+    const consent = findMarketingConsent(db, "user@example.com", "khora-waitlist");
     expect(request?.accountId).toBe(account.id);
     expect(consent?.accountId).toBe(account.id);
   });

@@ -8,7 +8,7 @@ description: Writing from the lab — product direction, engineering notes, and 
 cover: /blog/media/welcome/cover.jpg
 ---
 
-We're setting up a home for longer-form updates from the lab. Expect notes on **Atrium**, **Vellum**, and how we think about agent-native infrastructure.
+We're setting up a home for longer-form updates from the lab. Expect notes on **Khora**, **Vellum**, and how we think about agent-native infrastructure.
 
 ## What's next
 

@@ -1,6 +1,6 @@
 # Cell pool placement
 
-Atrium maps each principal to a **home cell** SQLite file via deterministic hashing: `assignPrincipalToCell(did)` → `colonnade-shard-{index}` where `index = hash(did) % N`.
+Khora maps each principal to a **home cell** SQLite file via deterministic hashing: `assignPrincipalToCell(did)` → `colonnade-shard-{index}` where `index = hash(did) % N`.
 
 ## Immutable pool size
 
@@ -47,4 +47,4 @@ Inbox fan-out `PointerRef` values include required `cell_pool_count` (same `n` a
 3. To change pool size: use a **new** cells directory (or wipe the old one); do not edit the manifest in place.
 4. Catalog SQLite can remain; post bodies live in cell outbox files only.
 
-See also [`packages/atrium/host/colonnade-usage.md`](../packages/atrium/host/colonnade-usage.md) and [`id-conventions.md`](../packages/atrium/host/id-conventions.md).
+See also [`packages/khora/host/colonnade-usage.md`](../packages/khora/host/colonnade-usage.md) and [`id-conventions.md`](../packages/khora/host/id-conventions.md).

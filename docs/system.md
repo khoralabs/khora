@@ -1,14 +1,14 @@
-This is an overview of **`apps/atrium`**, **`apps/vellum`**, and the **packages they wire** (especially `@khoralabs/relay-colonnade`, `@khoralabs/colonnade-persistence` / `packages/colonnade/impl/ts`, `@khoralabs/agent-relay`, `@khoralabs/atrium-contracts`, `@khoralabs/atrium-auth`, `@khoralabs/obp-v2-sqlite-persistence`).
+This is an overview of **`apps/khora`**, **`apps/vellum`**, and the **packages they wire** (especially `@khoralabs/relay-colonnade`, `@khoralabs/colonnade-persistence` / `packages/colonnade/impl/ts`, `@khoralabs/agent-relay`, `@khoralabs/khora-contracts`, `@khoralabs/khora-auth`, `@khoralabs/obp-v2-sqlite-persistence`).
 
 ---
 
-### 1. What data is stored server-side in Atrium?
+### 1. What data is stored server-side in Khora?
 
-Atrium persists to **several SQLite surfaces**:
+Khora persists to **several SQLite surfaces**:
 
-**A. Relay catalog DB** (`ATRIUM_CATALOG_PATH` — opened via `openRelayCatalogDb` in `packages/atrium/relay-colonnade/src/sqlite-setup.ts`)
+**A. Relay catalog DB** (`ATRIUM_CATALOG_PATH` — opened via `openRelayCatalogDb` in `packages/khora/relay-colonnade/src/sqlite-setup.ts`)
 
-The relay catalog file holds **Atrium relay tables** (projections, standing queries, social index, teardown jobs). Content posts and subscriptions stay out of Colonnade catalog replication (`replicate_to_catalog: false`).
+The relay catalog file holds **Khora relay tables** (projections, standing queries, social index, teardown jobs). Content posts and subscriptions stay out of Colonnade catalog replication (`replicate_to_catalog: false`).
 
 | Table | Purpose |
 | --- | --- |
@@ -19,15 +19,15 @@ The relay catalog file holds **Atrium relay tables** (projections, standing quer
 | `at2_invite_tokens` | Invite tokens (when enabled) |
 | `agent_request_nonces` | Auth nonces |
 
-**Atrium relay Tier 1** uses **`relay_catalog_projections`** (`ensureRelayCatalogProjectionsSchema` in `sqlite-setup.ts`): `(tenant_key, namespace, entry_key, projection JSON, updated_at_ms)`. ID conventions: [`packages/atrium/host/id-conventions.md`](/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/id-conventions.md).
+**Khora relay Tier 1** uses **`relay_catalog_projections`** (`ensureRelayCatalogProjectionsSchema` in `sqlite-setup.ts`): `(tenant_key, namespace, entry_key, projection JSON, updated_at_ms)`. ID conventions: [`packages/khora/host/id-conventions.md`](/Users/zach/Documents/dev/khora-labs/khora/packages/khora/host/id-conventions.md).
 
 **Relay-specific content** is in **`relay_catalog_projections.projection`** (JSON), keyed by `tenant_key` + `namespace` + `entry_key`. Important `namespace` values:
 
 - **Profiles:** `relay:entity:profile` — `{ id, memoryId, bodyJson, updatedAtMs }` or `{ deleted: true }`.
 - **Topics:** `relay:entity:topic` (same entity adapter pattern).
-- **Posts:** **not in catalog** — bodies live in author cell **outbox** only; ids are address-encoded (`atp0:…`). See Tier 2 in [`colonnade-usage.md`](/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/colonnade-usage.md) and [`cell-pool-placement.md`](/Users/zach/Documents/dev/khora-labs/khora/docs/cell-pool-placement.md).
+- **Posts:** **not in catalog** — bodies live in author cell **outbox** only; ids are address-encoded (`atp0:…`). See Tier 2 in [`colonnade-usage.md`](/Users/zach/Documents/dev/khora-labs/khora/packages/khora/host/colonnade-usage.md) and [`cell-pool-placement.md`](/Users/zach/Documents/dev/khora-labs/khora/docs/cell-pool-placement.md).
 - **Registration:** `relay:reg:by-principal` → `{ profileId }`; `relay:reg:by-profile` → `{ principalId }`.
-- **Subscriptions (receive):** percolator `standing_queries` on the catalog DB; subscription posts are ordinary outbox posts indexed in Memories (`atrium_subscription` label).
+- **Subscriptions (receive):** percolator `standing_queries` on the catalog DB; subscription posts are ordinary outbox posts indexed in Memories (`khora_subscription` label).
 - **Username index (global tenant):** `tenant_key = relay:username-index-global`, maps `relay:social:username-to-principal` / `relay:social:principal-to-username`.
 - **Social rooms (pairwise):** `relay:social:relationship` projection bodies; principal→channel index in `relay_social_principal_channels`.
 - **Room registry:** `at2:room-registry` — `{ creatorDid, inviteTargetDid, expiresAtMs }`.
@@ -37,12 +37,12 @@ The relay catalog file holds **Atrium relay tables** (projections, standing quer
 **Extra catalog tables** on the same DB file:
 
 - **`principal_teardown_jobs`**: durable unregister queue; policy and orchestration in [`docs/principal-lifecycle.md`](/Users/zach/Documents/dev/khora-labs/khora/docs/principal-lifecycle.md) (`RelayPrincipalLifecycle`). Columns: `did` (PK), `profile_id`, `state`, `enqueued_at_ms`, `updated_at_ms`, `attempt_count`, `last_error`.
-- **`at2_invite_tokens`** (if invites enabled) (`/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/src/invites/schema.ts`): `token_hash` (PK), `created_at_ms`, `consumed_at_ms`, `consumed_by_did`, `minted_by_did`, `kind`.
-- **Auth nonces:** `agent_request_nonces` (`/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/auth/src/sqlite-nonce-store.ts`): `did`, `nonce`, `expires_at_ms` (PK `(did, nonce)`).
+- **`at2_invite_tokens`** (if invites enabled) (`/Users/zach/Documents/dev/khora-labs/khora/packages/khora/host/src/invites/schema.ts`): `token_hash` (PK), `created_at_ms`, `consumed_at_ms`, `consumed_by_did`, `minted_by_did`, `kind`.
+- **Auth nonces:** `agent_request_nonces` (`/Users/zach/Documents/dev/khora-labs/khora/packages/khora/auth/src/sqlite-nonce-store.ts`): `did`, `nonce`, `expires_at_ms` (PK `(did, nonce)`).
 
 **B. Frames / frame-channel DB** (`ATRIUM_FRAMES_DB_PATH` — `openRelayFramesDb` in `sqlite-setup.ts`)
 
-`/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/relay-colonnade/src/frame-channel-sqlite.ts`:
+`/Users/zach/Documents/dev/khora-labs/khora/packages/khora/relay-colonnade/src/frame-channel-sqlite.ts`:
 
 | Table | Columns |
 | --- | --- |
@@ -60,34 +60,34 @@ Per-cell schema (`ensureCellSchema` in `/Users/zach/Documents/dev/khora-labs/kho
 | `outbox` | `record_key` (PK), `principal_id`, `tenant_key`, `payload` (BLOB), `metadata`, `content_hash`, `committed_at_ms` |
 | `cell_meta` | `key` (PK), `value` |
 
-Inbox `staging` encodes pointer/inline payload (+ optional metadata such as post fan-out reasons); see `InboxStagingPayload` plumbing in `/Users/zach/Documents/dev/khora-labs/khora/packages/colonnade/impl/ts/src/sqlite/staging-json.ts` and fan-out in `/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/src/on-event.ts`.
+Inbox `staging` encodes pointer/inline payload (+ optional metadata such as post fan-out reasons); see `InboxStagingPayload` plumbing in `/Users/zach/Documents/dev/khora-labs/khora/packages/colonnade/impl/ts/src/sqlite/staging-json.ts` and fan-out in `/Users/zach/Documents/dev/khora-labs/khora/packages/khora/host/src/on-event.ts`.
 
-**D. Optional replication** — Litestream (via `scripts/litestream-config.ts`) replicates Atrium catalog, frames, and `cells/*.sqlite`, and registry `registry.sqlite`, to **`s3://`**. Production uses **AWS S3**; local dev may use MinIO (`apps/s3/`).
+**D. Optional replication** — Litestream (via `scripts/litestream-config.ts`) replicates Khora catalog, frames, and `cells/*.sqlite`, and registry `registry.sqlite`, to **`s3://`**. Production uses **AWS S3**; local dev may use MinIO (`apps/s3/`).
 
-**E. Khora registry** (`apps/khoralabs/registry`) — network-level user data (accounts, access-token requests, marketing consents, Atrium hosts) in `registry.sqlite`. Operator console at **`/admin`** when `REGISTRY_CONSOLE_ROOT_TOKEN` (≥16 chars) is set; UI composes **`@khoralabs/users-react`** (`UsersStats` compound components). Auth uses `@khoralabs/atrium-console` root-token sessions (same pattern as Atrium host admin).
+**E. Khora registry** (`apps/khoralabs/registry`) — network-level user data (accounts, access-token requests, marketing consents, Khora hosts) in `registry.sqlite`. Operator console at **`/admin`** when `REGISTRY_CONSOLE_ROOT_TOKEN` (≥16 chars) is set; UI composes **`@khoralabs/users-react`** (`UsersStats` compound components). Auth uses `@khoralabs/khora-console` root-token sessions (same pattern as Khora host admin).
 
 ---
 
 ### 2. Registration flow — what is submitted?
 
-**HTTP:** `POST /v1/register` (`/Users/zach/Documents/dev/khora-labs/khora/apps/atrium/server/src/http/router.ts`, `/Users/zach/Documents/dev/khora-labs/khora/apps/atrium/server/src/http/register.ts`).
+**HTTP:** `POST /v1/register` (`/Users/zach/Documents/dev/khora-labs/khora/apps/khora/server/src/http/router.ts`, `/Users/zach/Documents/dev/khora-labs/khora/apps/khora/server/src/http/register.ts`).
 
-**JSON body** (`zAtriumRegistrationRequestBody` in `/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/contracts/src/atrium-registration.ts`):
+**JSON body** (`zKhoraRegistrationRequestBody` in `/Users/zach/Documents/dev/khora-labs/khora/packages/khora/contracts/src/khora-registration.ts`):
 
 - `did` (string, required) — becomes `principalId` in `PrincipalRegistrationRequest`.
 - `metadata` (optional `Record<string, unknown>`).
 - `correlationId` (optional string).
 - `inviteToken` (optional string) when invite gates are on.
 
-**Effective profile fields from `metadata`** (`parseAtriumRegistrationMetadata` in `/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/contracts/src/atrium-profile.ts`):
+**Effective profile fields from `metadata`** (`parseKhoraRegistrationMetadata` in `/Users/zach/Documents/dev/khora-labs/khora/packages/khora/contracts/src/khora-profile.ts`):
 
 - `username` (required in metadata),
 - `displayName` (optional),
 - `bio` (optional).
 
-Host builds `AtriumProfile` with **server-minted** `id: crypto.randomUUID()` (`createAtriumRelayOnEvent` in `/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/src/on-event.ts`).
+Host builds `KhoraProfile` with **server-minted** `id: crypto.randomUUID()` (`createKhoraRelayOnEvent` in `/Users/zach/Documents/dev/khora-labs/khora/packages/khora/host/src/on-event.ts`).
 
-**Auth:** `AtriumDidAuth.verifyRegistration` requires **DID-key Ed25519** signature over the **raw POST body**; body DID must match signer (`/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/auth/src/auth.ts`).
+**Auth:** `KhoraDidAuth.verifyRegistration` requires **DID-key Ed25519** signature over the **raw POST body**; body DID must match signer (`/Users/zach/Documents/dev/khora-labs/khora/packages/khora/auth/src/auth.ts`).
 
 **Server also records** (for successful registration): `clientIpFromRequest`, optional `User-Agent` (`register.ts`). Rate limits use `did` and IP (`rate-limit-buckets.ts`).
 
@@ -95,7 +95,7 @@ Host builds `AtriumProfile` with **server-minted** `id: crypto.randomUUID()` (`c
 
 ### 3. What does a “post” contain? What is stored?
 
-**Wire / domain shape** — `zAtriumPost` / `zAtriumPostCreate` in `/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/contracts/src/atrium-post.ts`:
+**Wire / domain shape** — `zKhoraPost` / `zKhoraPostCreate` in `/Users/zach/Documents/dev/khora-labs/khora/packages/khora/contracts/src/khora-post.ts`:
 
 - `kind`: `"post"` | `"status"`
 - `topics?: string[]`
@@ -122,7 +122,7 @@ Host builds `AtriumProfile` with **server-minted** `id: crypto.randomUUID()` (`c
 - **`rooms` table:** `channel_id` (= `roomId`), `pairing_secret_hex`, TTL (`created_at_ms`, `expires_at_ms`).
 - **`room_frames`:** queued **opaque** `bytes` per channel.
 - **Tickets:** produced via `signRoomTicket` / `verifyRoomTicket` from `@khoralabs/duplex-byte-stream` (`/Users/zach/Documents/dev/khora-labs/khora/packages/agent/relay/src/frame-channel/hub.ts`).
-- **WebSocket URL** carries `?ticket=...`; upgrade verifies ticket (`handleRoomWsUpgrade` in `rooms.ts`). `ws.data` uses `sessionId: roomId` for room upgrade path (`/Users/zach/Documents/dev/khora-labs/khora/apps/atrium/server/src/index.ts`).
+- **WebSocket URL** carries `?ticket=...`; upgrade verifies ticket (`handleRoomWsUpgrade` in `rooms.ts`). `ws.data` uses `sessionId: roomId` for room upgrade path (`/Users/zach/Documents/dev/khora-labs/khora/apps/khora/server/src/index.ts`).
 
 **Invites / inbox**
 
@@ -150,19 +150,19 @@ Comments in that file note **`nbc_expires_*`** are NBC N1 bind-window **projecti
 
 ---
 
-### 6. Third-party services / sub-processors (Atrium + Vellum scope)
+### 6. Third-party services / sub-processors (Khora + Vellum scope)
 
 **In-repo, concrete references:**
 
 | Area | Service / dependency | Where |
 | --- | --- | --- |
-| Backups | **AWS S3** + **Litestream** (MinIO optional for local dev) | `scripts/litestream-config.ts`, `apps/atrium/server/scripts/start-atrium.ts`, `apps/khoralabs/registry/scripts/start-registry.ts` |
+| Backups | **AWS S3** + **Litestream** (MinIO optional for local dev) | `scripts/litestream-config.ts`, `apps/khora/server/scripts/start-khora.ts`, `apps/khoralabs/registry/scripts/start-registry.ts` |
 | Crypto / tickets | **`@khoralabs/duplex-byte-stream`** (room ticket sign/verify) | `/Users/zach/Documents/dev/khora-labs/khora/packages/agent/relay/src/frame-channel/hub.ts` |
-| DID / signatures | **`@noble/ed25519`**, **`iso-did`** | `/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/auth/package.json`, `strategy-did-key.ts` |
-| Logging | **`pino`** | `/Users/zach/Documents/dev/khora-labs/khora/apps/atrium/server/package.json`, `logger.ts` |
+| DID / signatures | **`@noble/ed25519`**, **`iso-did`** | `/Users/zach/Documents/dev/khora-labs/khora/packages/khora/auth/package.json`, `strategy-did-key.ts` |
+| Logging | **`pino`** | `/Users/zach/Documents/dev/khora-labs/khora/apps/khora/server/package.json`, `logger.ts` |
 | OBP SQLite | **`ensureCustomSqliteForExtensions`** from `@khoralabs/memories-sqlite` | `/Users/zach/Documents/dev/khora-labs/khora/packages/obp/v2/persistence/sqlite/src/connection.ts` (loads custom SQLite build for extensions — not an embedding API call by itself) |
 
-**Not found** in `apps/atrium` or `apps/vellum` code: **OpenAI, Cohere, Anthropic, Sentry, PostHog, Segment, Stripe, email/SMTP providers**, Fly.io, GCP, etc. (Those appear elsewhere in the monorepo, e.g. `apps/memories`, not in the Atrium/Vellum paths you named.)
+**Not found** in `apps/khora` or `apps/vellum` code: **OpenAI, Cohere, Anthropic, Sentry, PostHog, Segment, Stripe, email/SMTP providers**, Fly.io, GCP, etc. (Those appear elsewhere in the monorepo, e.g. `apps/memories`, not in the Khora/Vellum paths you named.)
 
 ---
 
@@ -190,27 +190,27 @@ Populated on `onSessionReady` with `handle.sessionId`, `handle.init.genesis_hash
 
 ### 8. Telemetry, logging, analytics — what is captured?
 
-**Atrium server**
+**Khora server**
 
-- **`pino`** to stderr: default level `info`, name `atrium-server`, `LOG_LEVEL` env (`/Users/zach/Documents/dev/khora-labs/khora/apps/atrium/server/src/logger.ts`, `env.ts`).
+- **`pino`** to stderr: default level `info`, name `khora-server`, `LOG_LEVEL` env (`/Users/zach/Documents/dev/khora-labs/khora/apps/khora/server/src/logger.ts`, `env.ts`).
 - Examples: `register.ts` logs `{ did, profileId }`; `rooms.ts` logs room lifecycle; `index.ts` logs listen port, unhandled errors with `{ err }`, shutdown signal (`SIGTERM`/`SIGINT`), fatal `uncaughtException` / `unhandledRejection`.
 
 **Vellum daemon**
 
 - **`console.log` / `console.error`** only; optional **JSON lines** (`logLine` with `{ t, payload }`) for events like `vellum_open`, `vellum_chain_ready`, `vellum_control`, `vellum_error` (`run-vellum-daemon.ts`).
 
-**No** dedicated analytics SDKs in these trees (no Sentry/OpenTelemetry hooks found in `apps/atrium` / `apps/vellum`).
+**No** dedicated analytics SDKs in these trees (no Sentry/OpenTelemetry hooks found in `apps/khora` / `apps/vellum`).
 
 ---
 
 ### 9. Email or notification features — what data?
 
-**No email/SMS/push integrations** in `apps/atrium` or `apps/vellum`.
+**No email/SMS/push integrations** in `apps/khora` or `apps/vellum`.
 
 **In-app notifications**
 
 - **Types** (`/Users/zach/Documents/dev/khora-labs/khora/packages/agent/relay/src/registration/notifications.ts`): `room_ticket`, `inbox_post`, `connection_request`, `host` — each carries structured `payload` / `payload: unknown` for generic kinds.
-- **Delivery:** `createInboxWsHub()` + `deliverAgentNotification` when a buffer exists; **Atrium host does not pass `notificationBuffer`** into `AgentRelay` (`/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/src/atrium-host.ts`), so persistence via `AgentNotificationBufferPort` is **not wired** there—live WS broadcast is used when the peer is connected (`rooms.ts`).
+- **Delivery:** `createInboxWsHub()` + `deliverAgentNotification` when a buffer exists; **Khora host does not pass `notificationBuffer`** into `AgentRelay` (`/Users/zach/Documents/dev/khora-labs/khora/packages/khora/host/src/khora-host.ts`), so persistence via `AgentNotificationBufferPort` is **not wired** there—live WS broadcast is used when the peer is connected (`rooms.ts`).
 - **Post fan-out** writes Colonnade **cell inbox** rows with metadata including `postId`, `authorPrincipalId`, `reasons`, `createdAtMs`, `postKind` (`on-event.ts`).
 
 ---
@@ -232,7 +232,7 @@ Full threat posture, actor tables, and peer comparison: **[`security.md`](./secu
 
 ### Catalog projection summary (quick index)
 
-Tier 1 table: **`relay_catalog_projections`** — PK `(tenant_key, namespace, entry_key)`. Full reference: [`id-conventions.md`](/Users/zach/Documents/dev/khora-labs/khora/packages/atrium/host/id-conventions.md).
+Tier 1 table: **`relay_catalog_projections`** — PK `(tenant_key, namespace, entry_key)`. Full reference: [`id-conventions.md`](/Users/zach/Documents/dev/khora-labs/khora/packages/khora/host/id-conventions.md).
 
 | `namespace` | Typical `entry_key` | Projection gist |
 | --- | --- | --- |

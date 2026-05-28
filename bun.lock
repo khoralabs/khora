@@ -16,8 +16,8 @@
         "typescript": "^5",
       },
     },
-    "apps/atrium/homepage": {
-      "name": "@khoralabs/atrium-homepage",
+    "apps/khora/homepage": {
+      "name": "@khoralabs/khora-homepage",
       "version": "0.1.0",
       "dependencies": {
         "@khoralabs/users-auth": "workspace:*",
@@ -44,21 +44,21 @@
         "tw-animate-css": "^1.4.0",
       },
     },
-    "apps/atrium/server": {
-      "name": "@khoralabs/atrium-server",
+    "apps/khora/server": {
+      "name": "@khoralabs/khora-server",
       "version": "0.0.0",
       "dependencies": {
         "@ai-sdk/google": "^3.0.0",
         "@khoralabs/agent-relay": "workspace:*",
-        "@khoralabs/atrium-auth": "workspace:*",
-        "@khoralabs/atrium-console": "workspace:*",
-        "@khoralabs/atrium-contracts": "workspace:*",
-        "@khoralabs/atrium-host": "workspace:*",
-        "@khoralabs/atrium-invites": "workspace:*",
-        "@khoralabs/atrium-react": "workspace:*",
-        "@khoralabs/atrium-transport": "workspace:*",
         "@khoralabs/colonnade-persistence": "workspace:*",
         "@khoralabs/duplex-byte-stream": "workspace:*",
+        "@khoralabs/khora-auth": "workspace:*",
+        "@khoralabs/khora-console": "workspace:*",
+        "@khoralabs/khora-contracts": "workspace:*",
+        "@khoralabs/khora-host": "workspace:*",
+        "@khoralabs/khora-invites": "workspace:*",
+        "@khoralabs/khora-react": "workspace:*",
+        "@khoralabs/khora-transport": "workspace:*",
         "@khoralabs/memories-core": "workspace:*",
         "@khoralabs/memories-sqlite": "workspace:*",
         "@khoralabs/relay-colonnade": "workspace:*",
@@ -112,7 +112,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@aws-sdk/client-ses": "^3.1050.0",
-        "@khoralabs/atrium-console": "workspace:*",
+        "@khoralabs/khora-console": "workspace:*",
         "@khoralabs/sqlite-crypto": "workspace:*",
         "@khoralabs/users": "workspace:*",
         "@khoralabs/users-auth": "workspace:*",
@@ -174,9 +174,9 @@
       },
       "dependencies": {
         "@khoralabs/agent-persisted-signer": "workspace:*",
-        "@khoralabs/atrium-client": "workspace:*",
         "@khoralabs/cli-flow-nbc": "workspace:*",
         "@khoralabs/cli-kit": "workspace:*",
+        "@khoralabs/khora-client": "workspace:*",
         "@khoralabs/obp-v2-nbc": "workspace:*",
         "@khoralabs/vellum-client": "workspace:*",
         "@khoralabs/vellum-contracts": "workspace:*",
@@ -194,7 +194,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/agent-persisted-signer": "workspace:*",
-        "@khoralabs/atrium-client": "workspace:*",
+        "@khoralabs/khora-client": "workspace:*",
         "@khoralabs/obp-v2-frames-impl": "workspace:*",
         "@khoralabs/obp-v2-model": "workspace:*",
         "@khoralabs/obp-v2-nbc": "workspace:*",
@@ -286,158 +286,6 @@
         "typescript": "^5",
       },
     },
-    "packages/atrium/auth": {
-      "name": "@khoralabs/atrium-auth",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/agent-persisted-signer": "workspace:*",
-        "@khoralabs/agent-relay": "workspace:*",
-        "@khoralabs/atrium-contracts": "workspace:*",
-        "@noble/ed25519": "^3.1.0",
-        "iso-did": "^2.1.1",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/atrium/client": {
-      "name": "@khoralabs/atrium-client",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/agent-relay": "workspace:*",
-        "@khoralabs/atrium-auth": "workspace:*",
-        "@khoralabs/atrium-contracts": "workspace:*",
-        "@khoralabs/atrium-transport": "workspace:*",
-        "@khoralabs/obp-v2-session-impl": "workspace:*",
-        "@khoralabs/obp-v2-transport-ws": "workspace:*",
-        "zod": "^4",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/atrium/console": {
-      "name": "@khoralabs/atrium-console",
-      "version": "0.0.0",
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-    },
-    "packages/atrium/contracts": {
-      "name": "@khoralabs/atrium-contracts",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/agent-relay": "workspace:*",
-        "zod": "^4",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/atrium/host": {
-      "name": "@khoralabs/atrium-host",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/agent-relay": "workspace:*",
-        "@khoralabs/atrium-auth": "workspace:*",
-        "@khoralabs/atrium-contracts": "workspace:*",
-        "@khoralabs/atrium-invites": "workspace:*",
-        "@khoralabs/atrium-transport": "workspace:*",
-        "@khoralabs/colonnade-persistence": "workspace:*",
-        "@khoralabs/memories-core": "workspace:*",
-        "@khoralabs/percolator": "workspace:*",
-        "@khoralabs/percolator-sqlite": "workspace:*",
-        "@khoralabs/relay-colonnade": "workspace:*",
-        "@khoralabs/sourcemaps": "workspace:*",
-        "zod": "^4",
-      },
-      "devDependencies": {
-        "@khoralabs/atrium-auth": "workspace:*",
-        "@khoralabs/memories-sqlite": "workspace:*",
-        "@khoralabs/relay-colonnade": "workspace:*",
-        "@khoralabs/sqlite-crypto": "workspace:*",
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/atrium/invites": {
-      "name": "@khoralabs/atrium-invites",
-      "version": "0.0.0",
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/atrium/react": {
-      "name": "@khoralabs/atrium-react",
-      "version": "0.0.0",
-      "devDependencies": {
-        "@types/react": "^19",
-        "@types/react-dom": "^19",
-        "react": "^19",
-        "react-dom": "^19",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "react": "^19",
-        "react-dom": "^19",
-        "typescript": "^5",
-      },
-    },
-    "packages/atrium/relay-colonnade": {
-      "name": "@khoralabs/relay-colonnade",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/agent-relay": "workspace:*",
-        "@khoralabs/atrium-contracts": "workspace:*",
-        "@khoralabs/colonnade-persistence": "workspace:*",
-        "@khoralabs/percolator-sqlite": "workspace:*",
-        "@khoralabs/sqlite-crypto": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/atrium/transport": {
-      "name": "@khoralabs/atrium-transport",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/agent-io": "workspace:*",
-        "@khoralabs/agent-relay": "workspace:*",
-        "@khoralabs/atrium-auth": "workspace:*",
-        "@khoralabs/atrium-contracts": "workspace:*",
-        "zod": "^4",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
     "packages/cli/cli-flow-nbc": {
       "name": "@khoralabs/cli-flow-nbc",
       "version": "0.0.0",
@@ -475,6 +323,158 @@
       "dependencies": {
         "@khoralabs/sourcemaps": "workspace:*",
         "@khoralabs/sqlite-crypto": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/khora/auth": {
+      "name": "@khoralabs/khora-auth",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/agent-persisted-signer": "workspace:*",
+        "@khoralabs/agent-relay": "workspace:*",
+        "@khoralabs/khora-contracts": "workspace:*",
+        "@noble/ed25519": "^3.1.0",
+        "iso-did": "^2.1.1",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/khora/client": {
+      "name": "@khoralabs/khora-client",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/agent-relay": "workspace:*",
+        "@khoralabs/khora-auth": "workspace:*",
+        "@khoralabs/khora-contracts": "workspace:*",
+        "@khoralabs/khora-transport": "workspace:*",
+        "@khoralabs/obp-v2-session-impl": "workspace:*",
+        "@khoralabs/obp-v2-transport-ws": "workspace:*",
+        "zod": "^4",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/khora/console": {
+      "name": "@khoralabs/khora-console",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+    },
+    "packages/khora/contracts": {
+      "name": "@khoralabs/khora-contracts",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/agent-relay": "workspace:*",
+        "zod": "^4",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/khora/host": {
+      "name": "@khoralabs/khora-host",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/agent-relay": "workspace:*",
+        "@khoralabs/colonnade-persistence": "workspace:*",
+        "@khoralabs/khora-auth": "workspace:*",
+        "@khoralabs/khora-contracts": "workspace:*",
+        "@khoralabs/khora-invites": "workspace:*",
+        "@khoralabs/khora-transport": "workspace:*",
+        "@khoralabs/memories-core": "workspace:*",
+        "@khoralabs/percolator": "workspace:*",
+        "@khoralabs/percolator-sqlite": "workspace:*",
+        "@khoralabs/relay-colonnade": "workspace:*",
+        "@khoralabs/sourcemaps": "workspace:*",
+        "zod": "^4",
+      },
+      "devDependencies": {
+        "@khoralabs/khora-auth": "workspace:*",
+        "@khoralabs/memories-sqlite": "workspace:*",
+        "@khoralabs/relay-colonnade": "workspace:*",
+        "@khoralabs/sqlite-crypto": "workspace:*",
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/khora/invites": {
+      "name": "@khoralabs/khora-invites",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/khora/react": {
+      "name": "@khoralabs/khora-react",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "react": "^19",
+        "react-dom": "^19",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "react": "^19",
+        "react-dom": "^19",
+        "typescript": "^5",
+      },
+    },
+    "packages/khora/relay-colonnade": {
+      "name": "@khoralabs/relay-colonnade",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/agent-relay": "workspace:*",
+        "@khoralabs/colonnade-persistence": "workspace:*",
+        "@khoralabs/khora-contracts": "workspace:*",
+        "@khoralabs/percolator-sqlite": "workspace:*",
+        "@khoralabs/sqlite-crypto": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/khora/transport": {
+      "name": "@khoralabs/khora-transport",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/agent-io": "workspace:*",
+        "@khoralabs/agent-relay": "workspace:*",
+        "@khoralabs/khora-auth": "workspace:*",
+        "@khoralabs/khora-contracts": "workspace:*",
+        "zod": "^4",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -1023,7 +1023,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/agent-persisted-signer": "workspace:*",
-        "@khoralabs/atrium-client": "workspace:*",
+        "@khoralabs/khora-client": "workspace:*",
         "@khoralabs/obp-v2-frames-impl": "workspace:*",
         "@khoralabs/obp-v2-model": "workspace:*",
         "@khoralabs/obp-v2-nbc": "workspace:*",
@@ -1050,7 +1050,7 @@
         "zod": "^4",
       },
       "devDependencies": {
-        "@types/bun": "latest",
+        "bun-types": "latest",
         "typescript": "^5",
       },
       "peerDependencies": {
@@ -1188,26 +1188,6 @@
 
     "@khoralabs/agent-thread": ["@khoralabs/agent-thread@workspace:packages/agent/thread"],
 
-    "@khoralabs/atrium-auth": ["@khoralabs/atrium-auth@workspace:packages/atrium/auth"],
-
-    "@khoralabs/atrium-client": ["@khoralabs/atrium-client@workspace:packages/atrium/client"],
-
-    "@khoralabs/atrium-console": ["@khoralabs/atrium-console@workspace:packages/atrium/console"],
-
-    "@khoralabs/atrium-contracts": ["@khoralabs/atrium-contracts@workspace:packages/atrium/contracts"],
-
-    "@khoralabs/atrium-homepage": ["@khoralabs/atrium-homepage@workspace:apps/atrium/homepage"],
-
-    "@khoralabs/atrium-host": ["@khoralabs/atrium-host@workspace:packages/atrium/host"],
-
-    "@khoralabs/atrium-invites": ["@khoralabs/atrium-invites@workspace:packages/atrium/invites"],
-
-    "@khoralabs/atrium-react": ["@khoralabs/atrium-react@workspace:packages/atrium/react"],
-
-    "@khoralabs/atrium-server": ["@khoralabs/atrium-server@workspace:apps/atrium/server"],
-
-    "@khoralabs/atrium-transport": ["@khoralabs/atrium-transport@workspace:packages/atrium/transport"],
-
     "@khoralabs/blog": ["@khoralabs/blog@workspace:packages/khoralabs/blog"],
 
     "@khoralabs/cli-flow-nbc": ["@khoralabs/cli-flow-nbc@workspace:packages/cli/cli-flow-nbc"],
@@ -1217,6 +1197,26 @@
     "@khoralabs/colonnade-persistence": ["@khoralabs/colonnade-persistence@workspace:packages/colonnade/impl/ts"],
 
     "@khoralabs/duplex-byte-stream": ["@khoralabs/duplex-byte-stream@workspace:packages/libs/duplex-byte-stream"],
+
+    "@khoralabs/khora-auth": ["@khoralabs/khora-auth@workspace:packages/khora/auth"],
+
+    "@khoralabs/khora-client": ["@khoralabs/khora-client@workspace:packages/khora/client"],
+
+    "@khoralabs/khora-console": ["@khoralabs/khora-console@workspace:packages/khora/console"],
+
+    "@khoralabs/khora-contracts": ["@khoralabs/khora-contracts@workspace:packages/khora/contracts"],
+
+    "@khoralabs/khora-homepage": ["@khoralabs/khora-homepage@workspace:apps/khora/homepage"],
+
+    "@khoralabs/khora-host": ["@khoralabs/khora-host@workspace:packages/khora/host"],
+
+    "@khoralabs/khora-invites": ["@khoralabs/khora-invites@workspace:packages/khora/invites"],
+
+    "@khoralabs/khora-react": ["@khoralabs/khora-react@workspace:packages/khora/react"],
+
+    "@khoralabs/khora-server": ["@khoralabs/khora-server@workspace:apps/khora/server"],
+
+    "@khoralabs/khora-transport": ["@khoralabs/khora-transport@workspace:packages/khora/transport"],
 
     "@khoralabs/khoralabs-homepage": ["@khoralabs/khoralabs-homepage@workspace:apps/khoralabs/homepage"],
 
@@ -1270,7 +1270,7 @@
 
     "@khoralabs/registry": ["@khoralabs/registry@workspace:apps/khoralabs/registry"],
 
-    "@khoralabs/relay-colonnade": ["@khoralabs/relay-colonnade@workspace:packages/atrium/relay-colonnade"],
+    "@khoralabs/relay-colonnade": ["@khoralabs/relay-colonnade@workspace:packages/khora/relay-colonnade"],
 
     "@khoralabs/sourcemaps": ["@khoralabs/sourcemaps@workspace:packages/libs/sourcemaps"],
 

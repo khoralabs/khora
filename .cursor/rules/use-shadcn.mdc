@@ -1,6 +1,6 @@
 ---
-description: Use shadcn/ui components in the atrium and khoralabs homepages
-globs: "apps/atrium/homepage/**/*.tsx, apps/khoralabs/homepage/**/*.tsx"
+description: Use shadcn/ui components in the khora and khoralabs homepages
+globs: "apps/khora/homepage/**/*.tsx, apps/khoralabs/homepage/**/*.tsx"
 alwaysApply: false
 ---
 

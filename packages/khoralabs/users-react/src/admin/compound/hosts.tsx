@@ -1,4 +1,4 @@
-import type { AtriumHost } from "@khoralabs/users";
+import type { KhoraHost } from "@khoralabs/users";
 import type * as React from "react";
 import { cn } from "../cn.ts";
 import { useUsersStats } from "../context.tsx";
@@ -23,7 +23,7 @@ export function UsersStatsHostList({ className, ...props }: React.ComponentProps
 }
 
 export type UsersStatsHostListItemProps = React.ComponentProps<"li"> & {
-  host: AtriumHost;
+  host: KhoraHost;
 };
 
 export function UsersStatsHostListItem({ host, className, ...props }: UsersStatsHostListItemProps) {

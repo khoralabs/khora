@@ -1,4 +1,4 @@
-import type { ConsoleAuth } from "@khoralabs/atrium-console";
+import type { ConsoleAuth } from "@khoralabs/khora-console";
 import {
   lookupRegistryByAccountId,
   lookupRegistryByEmail,

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { createRootTokenConsoleAuth } from "@khoralabs/atrium-console";
+import { createRootTokenConsoleAuth } from "@khoralabs/khora-console";
 import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
 import {
   getUsersDatabase,
@@ -65,7 +65,7 @@ describe("registry admin console", () => {
       new URL("http://x/admin/api/login"),
     );
     expect(res?.status).toBe(200);
-    expect(res?.headers.get("set-cookie")).toContain("atrium_console_session=");
+    expect(res?.headers.get("set-cookie")).toContain("khora_console_session=");
   });
 
   test("admin stats returns 503 when console disabled", async () => {

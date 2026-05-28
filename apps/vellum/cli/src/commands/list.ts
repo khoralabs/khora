@@ -1,6 +1,6 @@
-import { AtriumClient } from "@khoralabs/atrium-client";
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { boolFlag } from "@khoralabs/cli-kit";
+import { KhoraClient } from "@khoralabs/khora-client";
 import { listLocalVellumRows } from "@khoralabs/vellum-client";
 
 import { cliBaseUrl, dataDirForEnv, loadSigner } from "../flows/context.ts";
@@ -19,7 +19,7 @@ export async function handleList(flags: FlagMap): Promise<void> {
   const locals = listLocalVellumRows({ dataDir });
 
   const signer = await loadSigner(flags);
-  const ac = new AtriumClient({ baseUrl: cliBaseUrl(flags), signer });
+  const ac = new KhoraClient({ baseUrl: cliBaseUrl(flags), signer });
   try {
     const { relationships } = await ac.listRelationships();
     const rows = relationships.map((r) => ({

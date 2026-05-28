@@ -88,7 +88,7 @@ function AdminPage() {
         <Card>
           <CardHeader>
             <CardTitle>Hosts</CardTitle>
-            <CardDescription>Federated Atrium hosts registered in the network</CardDescription>
+            <CardDescription>Federated Khora hosts registered in the network</CardDescription>
           </CardHeader>
           <CardContent>
             <UsersStats.HostList className="space-y-2 [&_[data-slot=users-stats-host-list-item]]:rounded-md [&_[data-slot=users-stats-host-list-item]]:border [&_[data-slot=users-stats-host-list-item]]:p-2" />

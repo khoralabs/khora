@@ -83,7 +83,7 @@ export type HybridMemorySearchInput = {
   options?: HybridMemorySearchOptions;
   /**
    * How to interpret `namespace` / `additionalNamespaces` for retrieval (default `pathSubtree`).
-   * Use `scopeDag` when searching from DAG scope roots (e.g. `atrium/<profileId>` with `attachScopes`).
+   * Use `scopeDag` when searching from DAG scope roots (e.g. `khora/<profileId>` with `attachScopes`).
    */
   searchScopeMode?: "pathSubtree" | "scopeDag" | "exactScope";
 };

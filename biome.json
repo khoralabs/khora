@@ -11,7 +11,7 @@
       "**",
       "!apps/memories/src/components/ui",
       "!apps/khoralabs/homepage/src/components/ui",
-      "!apps/atrium/homepage/src/components/ui",
+      "!apps/khora/homepage/src/components/ui",
       "!packages/memories/react/graph/src/components/ui",
       "!packages/memories-spec/src/generated",
       "!packages/memories/persistence/convex/**/_generated",

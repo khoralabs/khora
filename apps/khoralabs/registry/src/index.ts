@@ -1,4 +1,4 @@
-import { createRootTokenConsoleAuth } from "@khoralabs/atrium-console";
+import { createRootTokenConsoleAuth } from "@khoralabs/khora-console";
 import { assertEncryptionKeys, EnvKeyProvider } from "@khoralabs/sqlite-crypto";
 import { ensureRegistrySchema, getRegistryAuth, getRegistryDatabase } from "@khoralabs/users-auth";
 import { serve } from "bun";

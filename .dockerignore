@@ -16,7 +16,7 @@
 **/.cache
 **/*.tsbuildinfo
 **/.eslintcache
-apps/atrium/release
+apps/khora/release
 *.tgz
 *.lcov
 logs

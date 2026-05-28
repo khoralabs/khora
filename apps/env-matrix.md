@@ -7,11 +7,11 @@ Reference for deploying the four Khora web services (Render or similar). Per-app
 | Service | Package | Default port | Start command (prod) | Persistent disk |
 | --- | --- | --- | --- | --- |
 | Khora Labs homepage | `@khoralabs/khoralabs-homepage` | 3000 | `bun run start` | No |
-| Atrium homepage | `@khoralabs/atrium-homepage` | 3000 | `bun run start` | No |
+| Khora homepage | `@khoralabs/khora-homepage` | 3000 | `bun run start` | No |
 | Khora registry | `@khoralabs/registry` | 4000 | `bun run start` | Yes (`registry.sqlite`) |
-| Atrium server | `@khoralabs/atrium-server` | 8788 | `bun run start` | Yes (catalog, frames, cells) |
+| Khora server | `@khoralabs/khora-server` | 8788 | `bun run start` | Yes (catalog, frames, cells) |
 
-Use `bun run start` (not bare `src/index.ts`) on **registry** and **atrium-server** so Litestream sidecars run when enabled.
+Use `bun run start` (not bare `src/index.ts`) on **registry** and **khora-server** so Litestream sidecars run when enabled.
 
 ---
 
@@ -21,20 +21,20 @@ Put these in a Render **Environment Group** (or password manager) and link to ev
 
 | Variable | Services | Notes |
 | --- | --- | --- |
-| `ATRIUM_INTERNAL_SECRET` | registry, atrium-server | **Same value.** Registry calls `POST /internal/mint-invite` on atrium-server with `Authorization: Bearer …`. |
-| `ATRIUM_INVITE_PEPPER` | registry, atrium-server | **Same value.** Registry hashes minted tokens; atrium-server validates invites with the same pepper. |
-| `AWS_REGION` | registry, atrium-server | e.g. `us-east-1` |
-| `AWS_ACCESS_KEY_ID` | registry, atrium-server | Render has no IAM roles; use one IAM user for Litestream (+ SES on registry). |
-| `AWS_SECRET_ACCESS_KEY` | registry, atrium-server | Pair with access key above. |
-| `LITESTREAM_S3_BUCKET` | registry, atrium-server | e.g. `khora-backups-prod`. One bucket, different prefixes per service. |
-| `LITESTREAM_S3_REGION` | registry, atrium-server | Match bucket region. Omit `LITESTREAM_S3_ENDPOINT` for real AWS S3. |
+| `ATRIUM_INTERNAL_SECRET` | registry, khora-server | **Same value.** Registry calls `POST /internal/mint-invite` on khora-server with `Authorization: Bearer …`. |
+| `ATRIUM_INVITE_PEPPER` | registry, khora-server | **Same value.** Registry hashes minted tokens; khora-server validates invites with the same pepper. |
+| `AWS_REGION` | registry, khora-server | e.g. `us-east-1` |
+| `AWS_ACCESS_KEY_ID` | registry, khora-server | Render has no IAM roles; use one IAM user for Litestream (+ SES on registry). |
+| `AWS_SECRET_ACCESS_KEY` | registry, khora-server | Pair with access key above. |
+| `LITESTREAM_S3_BUCKET` | registry, khora-server | e.g. `khora-backups-prod`. One bucket, different prefixes per service. |
+| `LITESTREAM_S3_REGION` | registry, khora-server | Match bucket region. Omit `LITESTREAM_S3_ENDPOINT` for real AWS S3. |
 
 ### URL consistency
 
 | Concept | Set on | Example prod value |
 | --- | --- | --- |
 | Registry public URL | registry (`REGISTRY_URL`), homepages (`KHORA_REGISTRY_URL`, `BUN_PUBLIC_KHORA_REGISTRY_URL`) | `https://registry.khoralabs.com` |
-| Atrium server public URL | registry host seed (`REGISTRY_DEFAULT_HOST_URL`), atrium-server (implicit via Render URL) | `https://api.atrium.khoralabs.com` |
+| Khora server public URL | registry host seed (`REGISTRY_DEFAULT_HOST_URL`), khora-server (implicit via Render URL) | `https://api.khora.khoralabs.com` |
 | Homepage origins | registry (`REGISTRY_TRUSTED_ORIGINS`) | Both homepage URLs, comma-separated |
 
 `REGISTRY_TRUSTED_ORIGINS` must include every browser origin that calls registry APIs (both homepages, local dev origins optional).
@@ -43,7 +43,7 @@ Put these in a Render **Environment Group** (or password manager) and link to ev
 
 ## Variable matrix
 
-Columns: **R** registry · **A** atrium-server · **KH** khoralabs homepage · **AH** atrium homepage
+Columns: **R** registry · **A** khora-server · **KH** khoralabs homepage · **AH** khora homepage
 
 Legend: **+** = set on this service · **·** = not used · **Kind:** **S** = secret · **C** = config
 
@@ -63,8 +63,8 @@ Legend: **+** = set on this service · **·** = not used · **Kind:** **S** = se
 | `REGISTRY_COOKIE_DOMAIN` | + | · | · | · | C | Optional, e.g. `.khoralabs.com` for cross-subdomain cookies. |
 | `KHORA_REGISTRY_URL` | · | · | + | + | C | Server-side registry URL (SSR/fetch). |
 | `BUN_PUBLIC_KHORA_REGISTRY_URL` | · | · | + | + | C | Inlined into client bundle at build time. |
-| `REGISTRY_DEFAULT_HOST_SLUG` | + | · | · | · | C | Slug for default Atrium host row (v1 single-host). |
-| `REGISTRY_DEFAULT_HOST_URL` | + | · | · | · | C | Public URL registry uses to call atrium-server mint API. |
+| `REGISTRY_DEFAULT_HOST_SLUG` | + | · | · | · | C | Slug for default Khora host row (v1 single-host). |
+| `REGISTRY_DEFAULT_HOST_URL` | + | · | · | · | C | Public URL registry uses to call khora-server mint API. |
 | `ATRIUM_BASE_URL` | + | · | · | · | C | Fallback for host seed if `REGISTRY_DEFAULT_HOST_URL` unset. |
 
 ### Auth & secrets
@@ -76,7 +76,7 @@ Legend: **+** = set on this service · **·** = not used · **Kind:** **S** = se
 | `ATRIUM_INVITE_PEPPER` | + | + | · | · | S | Shared; see table above. |
 | `REGISTRY_CONSOLE_ROOT_TOKEN` | + | · | · | · | S | ≥16 chars enables `/admin` operator console. |
 | `REGISTRY_INTERNAL_SECRET` | + | · | · | · | S | Optional bearer for `/internal/admin/*`. |
-| `ATRIUM_CONSOLE_ROOT_TOKEN` | · | + | · | · | S | ≥16 chars enables atrium-server `/admin`. |
+| `ATRIUM_CONSOLE_ROOT_TOKEN` | · | + | · | · | S | ≥16 chars enables khora-server `/admin`. |
 | `REGISTRY_BOOTSTRAP_EMAILS` | + | · | · | · | C | Comma-separated emails granted `staff` role on first login. |
 
 ### Email (AWS SES)
@@ -89,7 +89,7 @@ Legend: **+** = set on this service · **·** = not used · **Kind:** **S** = se
 | `AWS_SECRET_ACCESS_KEY` | + | + | · | · | S | See shared group. |
 | `REGISTRY_AUTH_OTP_LOG` | + | · | · | · | C | Dev only: log OTP to stdout instead of SES. |
 
-### Atrium persistence
+### Khora persistence
 
 | Variable | R | A | KH | AH | Kind | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -122,7 +122,7 @@ Legend: **+** = set on this service · **·** = not used · **Kind:** **S** = se
 - Memories search index remains **plaintext** by design (operator with memories DB can search post text).
 - Post creates/updates require detached Ed25519 **content signatures** (`authorSignature`).
 
-### Atrium invites & registration
+### Khora invites & registration
 
 | Variable | R | A | KH | AH | Kind | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -135,10 +135,10 @@ Legend: **+** = set on this service · **·** = not used · **Kind:** **S** = se
 | Variable | R | A | KH | AH | Kind | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | `REGISTRY_LITESTREAM` | + | · | · | · | C | `1` enables Litestream sidecar on registry. |
-| `ATRIUM_LITESTREAM` | · | + | · | · | C | `1` enables Litestream sidecar on atrium-server. |
+| `ATRIUM_LITESTREAM` | · | + | · | · | C | `1` enables Litestream sidecar on khora-server. |
 | `LITESTREAM_S3_BUCKET` | + | + | · | · | C | Shared bucket name. |
 | `LITESTREAM_S3_REGION` | + | + | · | · | C | Bucket region. |
-| `LITESTREAM_S3_KEY_PREFIX` | + | + | · | · | C | **Different per service:** `registry/litestream` vs `atrium/litestream`. |
+| `LITESTREAM_S3_KEY_PREFIX` | + | + | · | · | C | **Different per service:** `registry/litestream` vs `khora/litestream`. |
 | `LITESTREAM_LOG_LEVEL` | + | + | · | · | C | `debug`, `info` (default), `warn`, or `error`. Use `error` in prod to reduce noise. |
 | `LITESTREAM_S3_ENDPOINT` | · | · | · | · | C | **Local MinIO only.** Omit in prod AWS. |
 | `LITESTREAM_ACCESS_KEY_ID` | · | · | · | · | S | MinIO dev only; prod uses `AWS_ACCESS_KEY_ID`. |
@@ -150,7 +150,7 @@ Legend: **+** = set on this service · **·** = not used · **Kind:** **S** = se
 
 ### `khora-prod-shared` (secrets + AWS)
 
-Link to **registry** and **atrium-server**.
+Link to **registry** and **khora-server**.
 
 ```
 AWS_REGION=us-east-1
@@ -173,9 +173,9 @@ REGISTRY_SQLCIPHER_KEY=...
 PORT=4000
 REGISTRY_URL=https://registry.example.com
 REGISTRY_DATABASE_PATH=/data/registry.sqlite
-REGISTRY_TRUSTED_ORIGINS=https://khoralabs.com,https://atrium.example.com
+REGISTRY_TRUSTED_ORIGINS=https://khoralabs.com,https://khora.example.com
 REGISTRY_DEFAULT_HOST_SLUG=khora-prod
-REGISTRY_DEFAULT_HOST_URL=https://api.atrium.example.com
+REGISTRY_DEFAULT_HOST_URL=https://api.khora.example.com
 BETTER_AUTH_SECRET=...
 SES_FROM_ADDRESS=noreply@example.com
 REGISTRY_LITESTREAM=1
@@ -184,23 +184,23 @@ REGISTRY_SQLCIPHER_KEY=...
 REGISTRY_CONSOLE_ROOT_TOKEN=...
 ```
 
-**atrium-server**
+**khora-server**
 
 ```
 PORT=8788
-ATRIUM_CATALOG_PATH=/data/atrium-catalog.sqlite
-ATRIUM_FRAMES_DB_PATH=/data/atrium-frames.sqlite
+ATRIUM_CATALOG_PATH=/data/khora-catalog.sqlite
+ATRIUM_FRAMES_DB_PATH=/data/khora-frames.sqlite
 ATRIUM_CELLS_DIR=/data/cells
 ATRIUM_INVITE_PEPPER=...          # same as shared group
 ATRIUM_INTERNAL_SECRET=...        # same as shared group
 ATRIUM_LITESTREAM=1
-LITESTREAM_S3_KEY_PREFIX=atrium/litestream
+LITESTREAM_S3_KEY_PREFIX=khora/litestream
 ATRIUM_SQLCIPHER_KEY=...
 ATRIUM_OUTBOX_ENCRYPTION_KEY=...
 ATRIUM_CONSOLE_ROOT_TOKEN=...
 ```
 
-**khoralabs homepage** / **atrium homepage**
+**khoralabs homepage** / **khora homepage**
 
 ```
 PORT=3000
@@ -214,16 +214,16 @@ Set `BUN_PUBLIC_*` at **build time** if the platform separates build from runtim
 
 ## Access-token / invite flow
 
-Homepages POST to registry; registry mints via atrium-server:
+Homepages POST to registry; registry mints via khora-server:
 
 ```
 homepage  →  POST /v1/access-token/request  →  registry
-registry  →  POST /internal/mint-invite     →  atrium-server  (Bearer ATRIUM_INTERNAL_SECRET)
+registry  →  POST /internal/mint-invite     →  khora-server  (Bearer ATRIUM_INTERNAL_SECRET)
 registry  →  SES email with plaintext token
 ```
 
 Requires on **registry**: `ATRIUM_INTERNAL_SECRET`, `ATRIUM_INVITE_PEPPER`, `SES_FROM_ADDRESS`, host URL/slug.  
-Requires on **atrium-server**: matching `ATRIUM_INTERNAL_SECRET`, `ATRIUM_INVITE_PEPPER`, invite minting configured.
+Requires on **khora-server**: matching `ATRIUM_INTERNAL_SECRET`, `ATRIUM_INVITE_PEPPER`, invite minting configured.
 
 ---
 
@@ -242,8 +242,8 @@ Use for `BETTER_AUTH_SECRET`, `ATRIUM_INTERNAL_SECRET`, `ATRIUM_INVITE_PEPPER`, 
 | App | Path |
 | --- | --- |
 | Registry | `apps/khoralabs/registry/.env.example` |
-| Atrium server | `apps/atrium/server/.env.example` |
+| Khora server | `apps/khora/server/.env.example` |
 | Khora Labs homepage | `apps/khoralabs/homepage/.env.example` |
-| Atrium homepage | `apps/atrium/homepage/.env.example` |
+| Khora homepage | `apps/khora/homepage/.env.example` |
 
 Litestream shared logic: `scripts/litestream-config.ts`. Local MinIO: `apps/s3/README.md`.

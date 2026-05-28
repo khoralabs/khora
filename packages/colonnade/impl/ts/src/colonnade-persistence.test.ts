@@ -38,7 +38,7 @@ describe("Outbox field encryption", () => {
       principal_id: "alice",
       record_key: "",
       payload_bytes: plaintext,
-      metadata: { postId: "atrium_post_1" },
+      metadata: { postId: "khora_post_1" },
     });
     expect(out.content_hash).not.toBe(sha256HexLower(plaintext));
 

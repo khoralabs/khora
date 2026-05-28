@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.1050.0",
-    "@khoralabs/atrium-console": "workspace:*",
+    "@khoralabs/khora-console": "workspace:*",
     "@khoralabs/sqlite-crypto": "workspace:*",
     "@khoralabs/users-react": "workspace:*",
     "@khoralabs/users": "workspace:*",

@@ -4,14 +4,14 @@ import {
   listAccessTokenRequestsForEmail,
 } from "./access-token-requests.ts";
 import { findAccountByEmail, findAccountById, listAccountEmails } from "./accounts.ts";
-import { listAllHosts } from "./atrium-hosts.ts";
+import { listAllHosts } from "./khora-hosts.ts";
 import {
   listMarketingConsentsForAccount,
   listMarketingConsentsForEmail,
 } from "./marketing-consents.ts";
 import { countMembershipsForAccount } from "./memberships.ts";
 import { normalizeEmail } from "./normalize.ts";
-import type { AccessTokenRequest, Account, AtriumHost, MarketingConsent } from "./types.ts";
+import type { AccessTokenRequest, Account, KhoraHost, MarketingConsent } from "./types.ts";
 
 export type RegistryAccountsSummary = {
   total: number;
@@ -40,7 +40,7 @@ export type RegistryMarketingConsentsSummary = {
 export type RegistryHostsSummary = {
   total: number;
   active: number;
-  items: AtriumHost[];
+  items: KhoraHost[];
 };
 
 export type RegistryAdminSummary = {

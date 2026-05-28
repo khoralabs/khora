@@ -56,7 +56,7 @@ describe("runVellumPostinstall", () => {
     const dest = path.join(home, ".vellum");
     const written = readFileSync(path.join(dest, "base.config.json"), "utf8");
     expect(written.includes("~/.vellum")).toBe(false);
-    expect(written.includes("~/.atrium")).toBe(false);
+    expect(written.includes("~/.khora")).toBe(false);
     expect(written.includes(path.join(home, ".vellum", "data"))).toBe(true);
   });
 

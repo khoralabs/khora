@@ -18,12 +18,12 @@
     "check": "biome check . && bun run --filter @khoralabs/memories-spec validate && bun run --filter @khoralabs/agent-identity-spec validate && bun run --filter @khoralabs/obp-spec validate",
     "check:write": "biome check --write .",
     "context": "bun run scripts/context.ts",
-    "start:atrium:server": "bun run --filter @khoralabs/atrium-server start"
+    "start:khora:server": "bun run --filter @khoralabs/khora-server start"
   },
   "type": "module",
   "workspaces": [
     "apps/*",
-    "apps/atrium/*",
+    "apps/khora/*",
     "apps/khoralabs/*",
     "packages/libs/*",
     "packages/agent/*",
@@ -44,7 +44,7 @@
     "packages/obp/v2/nbc/impl/ts",
     "packages/obp/v2/transport-http2/impl/ts",
     "packages/obp/v2/transport-ws/impl/ts",
-    "packages/atrium/*",
+    "packages/khora/*",
     "packages/percolator",
     "packages/percolator-sqlite",
     "packages/khoralabs/*",

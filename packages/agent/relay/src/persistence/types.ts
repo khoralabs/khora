@@ -61,7 +61,7 @@ export interface AgentRelayRegistrations {
 
 /**
  * Relay persistence facade: frame-channel hub store plus logical entity slices.
- * Post bodies live in author cell outbox (not catalog); see atrium-host post resolution.
+ * Post bodies live in author cell outbox (not catalog); see khora-host post resolution.
  * Receive-side subscriptions are standing queries in the percolator (not catalog edges).
  */
 export type AgentRelayPersistence = {

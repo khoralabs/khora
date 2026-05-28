@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Document / verify SQLCipher availability for Atrium encrypted SQLite.
+ * Document / verify SQLCipher availability for Khora encrypted SQLite.
  *
  * Bun must load a SQLCipher-enabled libsqlite3 via Database.setCustomSQLite before
  * any Database() call. Install options:

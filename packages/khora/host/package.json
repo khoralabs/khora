@@ -1,0 +1,41 @@
+{
+  "name": "@khoralabs/khora-host",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@khoralabs/agent-relay": "workspace:*",
+    "@khoralabs/khora-auth": "workspace:*",
+    "@khoralabs/khora-contracts": "workspace:*",
+    "@khoralabs/khora-invites": "workspace:*",
+    "@khoralabs/khora-transport": "workspace:*",
+    "@khoralabs/colonnade-persistence": "workspace:*",
+    "@khoralabs/memories-core": "workspace:*",
+    "@khoralabs/percolator": "workspace:*",
+    "@khoralabs/percolator-sqlite": "workspace:*",
+    "@khoralabs/relay-colonnade": "workspace:*",
+    "@khoralabs/sourcemaps": "workspace:*",
+    "zod": "^4"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "devDependencies": {
+    "@khoralabs/khora-auth": "workspace:*",
+    "@khoralabs/memories-sqlite": "workspace:*",
+    "@khoralabs/relay-colonnade": "workspace:*",
+    "@khoralabs/sqlite-crypto": "workspace:*",
+    "@types/bun": "latest",
+    "typescript": "^5"
+  }
+}
