@@ -46,18 +46,21 @@ jobs:
 
       - name: test
         run: |
-          bun test apps/khora/cli scripts/stage-khora-release.test.ts
+          bun test apps/khora/cli apps/khora/daemon apps/khora/plugins/inbox-buffer scripts/stage-khora-release.test.ts
           bun test packages/khora/client
 
       - name: build json schema
         run: bun run --cwd packages/khora/client build:schema
 
-      - name: cross-compile khora cli
+      - name: cross-compile native binaries
         run: |
           set -euo pipefail
           for slug in darwin-arm64 linux-x64 linux-arm64; do
-            echo "::group::khora cli bun-$slug"
+            echo "::group::cli bun-$slug"
             bun run apps/khora/cli/scripts/build.ts "bun-$slug"
+            echo "::endgroup::"
+            echo "::group::daemon bun-$slug"
+            bun run apps/khora/daemon/scripts/build.ts "bun-$slug"
             echo "::endgroup::"
           done
 
@@ -79,11 +82,22 @@ jobs:
           set -euo pipefail
           DRY_FLAG=""
           if [ "$DRY_RUN" = "true" ]; then DRY_FLAG="--dry-run"; fi
-          for slug in cli-darwin-arm64 cli-linux-x64 cli-linux-arm64; do
+          for slug in \
+            cli-darwin-arm64 cli-linux-x64 cli-linux-arm64 \
+            daemon-darwin-arm64 daemon-linux-x64 daemon-linux-arm64; do
             echo "::group::publish $slug"
             (cd "apps/khora/release/$slug" && npm publish --access public --tag "$NPM_TAG" $DRY_FLAG)
             echo "::endgroup::"
           done
+
+      - name: publish daemon meta
+        working-directory: apps/khora/release/daemon
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            npm publish --access public --tag "$NPM_TAG" --dry-run
+          else
+            npm publish --access public --tag "$NPM_TAG"
+          fi
 
       - name: publish cli meta
         working-directory: apps/khora/release/cli

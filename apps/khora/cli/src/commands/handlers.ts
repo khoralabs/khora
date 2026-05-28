@@ -1,6 +1,7 @@
 import type { FlagMap } from "@khoralabs/cli-kit";
 
 import type { KhoraCliContext } from "../flows/context.ts";
+import { handleInboxListen, handleInboxStatus, handleInboxStop } from "./inbox.ts";
 import { handleKeygen } from "./keygen.ts";
 import {
   handlePostsCreate,
@@ -43,6 +44,21 @@ export async function dispatch(
 
   if (a === "search") {
     await handleSearch(flags);
+    return;
+  }
+
+  if (a === "inbox" && b === "listen") {
+    await handleInboxListen(flags);
+    return;
+  }
+
+  if (a === "inbox" && b === "stop") {
+    handleInboxStop(flags);
+    return;
+  }
+
+  if (a === "inbox" && b === "status") {
+    handleInboxStatus(flags);
     return;
   }
 

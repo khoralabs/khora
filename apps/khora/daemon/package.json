@@ -1,14 +1,18 @@
 {
-  "name": "@khoralabs/khora-cli",
+  "name": "@khoralabs/khora-daemon",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "bin": {
-    "khora": "./src/cli.ts"
+  "exports": {
+    ".": "./src/run-khora-inbox-daemon.ts",
+    "./run": "./src/run-khora-inbox-daemon.ts",
+    "./control-pid": "./src/control-pid.ts",
+    "./daemon-config": "./src/daemon-config.ts",
+    "./plugins-from-config": "./src/plugins-from-config.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "start": "bun run ./src/cli.ts",
+    "start": "bun run ./src/index.ts",
     "build:darwin-arm64": "bun run scripts/build.ts bun-darwin-arm64",
     "build:linux-x64": "bun run scripts/build.ts bun-linux-x64",
     "build:linux-arm64": "bun run scripts/build.ts bun-linux-arm64",
@@ -16,17 +20,13 @@
   },
   "dependencies": {
     "@khoralabs/agent-persisted-signer": "workspace:*",
-    "@khoralabs/cli-flow-nbc": "workspace:*",
-    "@khoralabs/cli-kit": "workspace:*",
     "@khoralabs/khora-client": "workspace:*",
-    "@khoralabs/khora-contracts": "workspace:*",
-    "@khoralabs/khora-daemon": "workspace:*"
+    "@khoralabs/khora-plugin-inbox-buffer": "workspace:*",
+    "@khoralabs/khora-transport": "workspace:*"
   },
   "devDependencies": {
+    "@khoralabs/khora-auth": "workspace:*",
     "@types/bun": "latest",
-    "typescript": "^5"
-  },
-  "peerDependencies": {
     "typescript": "^5"
   }
 }

@@ -1,4 +1,11 @@
 {
   "$schema": "./khora-config.schema.json",
-  "extends": "./base.config.json"
+  "extends": "./base.config.json",
+  "plugins": {
+    "khora.plugin.inbox-buffer": {
+      "dbPath": "inbox-buffer.sqlite",
+      "compactAfterAppend": true,
+      "compactPolicy": { "maxEntries": 5000 }
+    }
+  }
 }

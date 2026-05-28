@@ -1,5 +1,6 @@
 import type { CommandHelp } from "@khoralabs/cli-kit";
 
+import { inboxListenHelp, inboxStatusHelp, inboxStopHelp } from "./inbox.help.ts";
 import { keygenHelp } from "./keygen.help.ts";
 import { postsCreateHelp, postsDeleteHelp, postsGetHelp, postsUpdateHelp } from "./posts.help.ts";
 import { profileUpdateHelp } from "./profile.help.ts";
@@ -19,6 +20,9 @@ export const allCommandHelp: readonly CommandHelp[] = [
   whoamiHelp,
   profileUpdateHelp,
   searchHelp,
+  inboxListenHelp,
+  inboxStopHelp,
+  inboxStatusHelp,
   subscriptionsListHelp,
   subscriptionsCreateTopicHelp,
   subscriptionsCreateAuthorHelp,

@@ -70,6 +70,19 @@ If the host requires invites during preview, pass `--invite-token <token>` on `r
 
 Run `khora help` for an overview, or `khora help <command>` for details (e.g. `khora help register`).
 
+### Inbox daemon
+
+Subscribe to your host inbox (WebSocket `/v1/inbox/ws`) for drain batches and live notifications:
+
+```bash
+khora inbox listen              # foreground (Ctrl+C to stop)
+khora inbox listen -b           # background daemon
+khora inbox status [--json]
+khora inbox stop
+```
+
+Requires a local identity (`khora keygen`) and registration on the host.
+
 ### Identity
 
 | Command | Description |

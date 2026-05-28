@@ -24,6 +24,7 @@
   "workspaces": [
     "apps/*",
     "apps/khora/*",
+    "apps/khora/plugins/*",
     "apps/khoralabs/*",
     "packages/libs/*",
     "packages/agent/*",

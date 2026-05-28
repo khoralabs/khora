@@ -62,8 +62,9 @@ KHORA_DB_PATH=/tmp/khora.db bun run host/src/index.ts &
 bun run cli/src/cli.ts key generate
 bun run cli/src/cli.ts register --display-name "Local dev"
 
-# 3. listen for notifications
-bun run daemon/src/main.ts
+# 3. listen for inbox notifications
+bun run cli/src/cli.ts inbox listen
+# or background: bun run cli/src/cli.ts inbox listen -b
 ```
 
 See [`packages/khora`](../../packages/khora) for shared-library READMEs, and each app subdirectory (`host/README.md`, `cli/README.md`, etc.) for env knobs and behavior.

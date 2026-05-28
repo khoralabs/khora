@@ -1,0 +1,17 @@
+{
+  "name": "@khoralabs/khora-plugin-inbox-buffer",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@khoralabs/khora-client": "workspace:*",
+    "@khoralabs/khora-transport": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5"
+  }
+}
