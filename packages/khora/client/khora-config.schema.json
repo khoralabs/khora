@@ -25,6 +25,40 @@
       "type": "string",
       "format": "uri"
     },
+    "registryUrl": {
+      "description": "Khora registry URL for khora link. Default: http://localhost:4000",
+      "type": "string",
+      "format": "uri"
+    },
+    "registryHostSlug": {
+      "description": "Fallback registry host slug when baseUrl lookup fails during link.",
+      "type": "string"
+    },
+    "currentHost": {
+      "description": "Selected Khora host slug (khora host use).",
+      "type": "string"
+    },
+    "hosts": {
+      "description": "Local host aliases and cached catalog entries keyed by slug.",
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "baseUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "displayName": {
+            "type": "string"
+          }
+        },
+        "required": ["baseUrl"],
+        "additionalProperties": false
+      }
+    },
     "agentKeyPath": {
       "description": "Override path to the Ed25519 identity file. Default: ~/.khora/identity.json",
       "type": "string"

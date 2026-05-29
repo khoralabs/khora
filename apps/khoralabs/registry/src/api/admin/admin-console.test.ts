@@ -5,9 +5,12 @@ import {
   getUsersDatabase,
   initUsersSchema,
   type RegistryAdminSummary,
+  registerKhoraHost,
   resetUsersDatabase,
   seedDefaultHost,
 } from "@khoralabs/users";
+import { getRegistryDatabase } from "@khoralabs/users-auth";
+import { handleAdminHostActivate } from "./hosts.ts";
 import { handleLookupEmail } from "./lookup.ts";
 import { handleAdminStatsSummary } from "./stats.ts";
 
@@ -107,6 +110,30 @@ describe("registry admin console", () => {
       auth,
     );
     expect(res.status).toBe(400);
+  });
+
+  test("admin activate pending host", async () => {
+    const db = getRegistryDatabase();
+    const pending = registerKhoraHost(db, {
+      slug: "pending-ops",
+      baseUrl: "http://localhost:9999",
+    });
+    expect(pending.status).toBe("pending");
+
+    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const cookie = await loginCookie(auth);
+    const res = await handleAdminHostActivate(
+      new Request(`http://x/admin/api/hosts/${pending.id}/activate`, {
+        method: "POST",
+        headers: { cookie },
+      }),
+      auth,
+      pending.id,
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { host: { status: string; slug: string } };
+    expect(body.host.status).toBe("active");
+    expect(body.host.slug).toBe("pending-ops");
   });
 
   test("session endpoint reflects authentication state", async () => {

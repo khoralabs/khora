@@ -10,6 +10,7 @@ import {
 } from "../../components/ui/card.tsx";
 import { renderRoute } from "../../render-route.tsx";
 import "../../styles/globals.css";
+import { PendingHostActivations } from "./pending-host-activations.tsx";
 
 function AdminPage() {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
@@ -90,7 +91,8 @@ function AdminPage() {
             <CardTitle>Hosts</CardTitle>
             <CardDescription>Federated Khora hosts registered in the network</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            <PendingHostActivations />
             <UsersStats.HostList className="space-y-2 [&_[data-slot=users-stats-host-list-item]]:rounded-md [&_[data-slot=users-stats-host-list-item]]:border [&_[data-slot=users-stats-host-list-item]]:p-2" />
           </CardContent>
         </Card>

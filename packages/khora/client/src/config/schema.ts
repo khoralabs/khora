@@ -111,6 +111,26 @@ export const zKhoraAppConfigBase = z
       .url({ message: "baseUrl must be a valid URL" })
       .optional()
       .describe("KHORA host base URL. Default: http://127.0.0.1:8787"),
+    registryUrl: z
+      .string()
+      .url({ message: "registryUrl must be a valid URL" })
+      .optional()
+      .describe("Khora registry URL for khora link. Default: http://localhost:4000"),
+    registryHostSlug: z
+      .string()
+      .optional()
+      .describe("Fallback registry host slug when baseUrl lookup fails during link."),
+    currentHost: z.string().optional().describe("Selected Khora host slug (khora host use)."),
+    hosts: z
+      .record(
+        z.string(),
+        z.object({
+          baseUrl: z.string().url(),
+          displayName: z.string().optional(),
+        }),
+      )
+      .optional()
+      .describe("Local host aliases and cached catalog entries keyed by slug."),
     agentKeyPath: z
       .string()
       .optional()

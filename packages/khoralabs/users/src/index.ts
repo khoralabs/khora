@@ -25,15 +25,42 @@ export {
   type RegistryEmailLookup,
   type RegistryEmailLookupResponse,
 } from "./admin-stats";
+export {
+  consumeCliLinkChallenge,
+  createCliLinkChallenge,
+  findCliLinkChallenge,
+} from "./cli-link-challenges";
 export { getUsersDatabase, registryDatabasePath, resetUsersDatabase } from "./db";
+export {
+  approveDeviceAuthorization,
+  consumeDeviceAuthorization,
+  createDeviceAuthorization,
+  deviceSessionCookie,
+  expireDeviceIfNeeded,
+  findDeviceByCodeHash,
+  findPendingDeviceByUserCode,
+  hashDeviceCode,
+} from "./device-authorizations";
+export { InvalidHostSlugError, normalizeHostSlug } from "./host-slug";
+export {
+  findHostByBaseUrl,
+  InvalidKhoraHostBaseUrlError,
+  normalizeKhoraHostBaseUrl,
+} from "./host-url";
 export { hashInviteToken } from "./invite-hash";
 export {
+  activateKhoraHost,
   countHosts,
+  findActiveHostBySlug,
   findHostById,
   findHostBySlug,
+  findPublicHostBySlug,
   listActiveHosts,
   listAllHosts,
+  listPublicHosts,
+  registerKhoraHost,
   seedDefaultHost,
+  suspendKhoraHost,
 } from "./khora-hosts";
 export {
   findMarketingConsent,
@@ -43,7 +70,15 @@ export {
   subscribeMarketing,
   unsubscribeMarketing,
 } from "./marketing-consents";
-export { countMembershipsForAccount } from "./memberships";
+export {
+  clearMembershipAgentDid,
+  countMembershipsForAccount,
+  findMembershipByAccountAndHost,
+  findMembershipById,
+  listMembershipsForAccount,
+  setMembershipAgentDid,
+  upsertMembership,
+} from "./memberships";
 export { normalizeEmail } from "./normalize";
 export { initUsersSchema, isUsersSchemaReady, usersMigrations } from "./schema";
 export type * from "./types";

@@ -16,6 +16,8 @@
   },
   "dependencies": {
     "@khoralabs/agent-persisted-signer": "workspace:*",
+    "@khoralabs/khora-auth": "workspace:*",
+    "@napi-rs/keyring": "^1.2.0",
     "@khoralabs/cli-flow-nbc": "workspace:*",
     "@khoralabs/cli-kit": "workspace:*",
     "@khoralabs/khora-client": "workspace:*",

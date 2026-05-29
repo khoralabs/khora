@@ -83,6 +83,34 @@ export function envTenantKey(): string | undefined {
   return p !== undefined && p.length > 0 ? p : undefined;
 }
 
+export function envHostSlug(): string | undefined {
+  const slug = process.env.KHORA_HOST_SLUG?.trim();
+  return slug !== undefined && slug.length > 0 ? slug : undefined;
+}
+
+export function envPublicBaseUrl(port: number): string {
+  const fromEnv = process.env.KHORA_PUBLIC_BASE_URL?.trim();
+  if (fromEnv !== undefined && fromEnv.length > 0) {
+    return fromEnv.replace(/\/$/, "");
+  }
+  return `http://127.0.0.1:${port}`;
+}
+
+export function envRegistryUrl(): string | undefined {
+  const url = process.env.KHORA_REGISTRY_URL?.trim();
+  return url !== undefined && url.length > 0 ? url.replace(/\/$/, "") : undefined;
+}
+
+export function envRegistryOptIn(): boolean {
+  const v = process.env.KHORA_REGISTRY_OPT_IN?.trim().toLowerCase();
+  return v === "1" || v === "true";
+}
+
+export function envHostDisplayName(): string | undefined {
+  const name = process.env.KHORA_HOST_DISPLAY_NAME?.trim();
+  return name !== undefined && name.length > 0 ? name : undefined;
+}
+
 export function validateEnv(): void {
   envCatalogPath();
   envFramesDbPath();

@@ -6,6 +6,7 @@ import adminPage from "./admin-ui/routes/admin/index.html";
 import adminLoginPage from "./admin-ui/routes/login/index.html";
 import { handleAccessTokenRequest } from "./api/access-token";
 import { routeConsoleAuth } from "./api/admin/console-guard";
+import { handleAdminHostActivate } from "./api/admin/hosts";
 import {
   handleInternalAdminStatsSummary,
   handleInternalLookupAccount,
@@ -13,8 +14,23 @@ import {
 } from "./api/admin/internal";
 import { handleLookupAccount, handleLookupEmail } from "./api/admin/lookup";
 import { handleAdminStatsSummary } from "./api/admin/stats";
+import { handleDeviceApprove, handleDeviceAuthorize, handleDeviceToken } from "./api/device";
+import {
+  handleHostGet,
+  handleHostRegister,
+  handleHostsList,
+  handleInternalHostActivate,
+  handleInternalHostsList,
+} from "./api/hosts";
+import {
+  handleLinkAgent,
+  handleLinkChallenge,
+  handleLinkStatus,
+  handleLinkUnlink,
+} from "./api/link";
 import { handleMarketingSubscribe, handleMarketingUnsubscribe } from "./api/marketing";
 import { handleMe } from "./api/me";
+import cliLinkPage from "./cli-link-ui/routes/link/index.html";
 import { handleOptions, withCors } from "./cors";
 import { seedDefaultHostFromEnv } from "./seed/default-host";
 
@@ -44,6 +60,8 @@ const server = serve({
     "/admin/": adminPage,
     "/admin/login": adminLoginPage,
     "/admin/login/": adminLoginPage,
+    "/cli/link": cliLinkPage,
+    "/cli/link/": cliLinkPage,
   },
   async fetch(req) {
     const options = handleOptions(req);
@@ -73,6 +91,15 @@ const server = serve({
       return withCors(req, await handleLookupAccount(req, url, consoleAuth));
     }
 
+    if (
+      path.startsWith("/admin/api/hosts/") &&
+      path.endsWith("/activate") &&
+      req.method === "POST"
+    ) {
+      const id = path.slice("/admin/api/hosts/".length, -"/activate".length);
+      return withCors(req, await handleAdminHostActivate(req, consoleAuth, id));
+    }
+
     if (path === "/internal/admin/stats/summary" && req.method === "GET") {
       return handleInternalAdminStatsSummary(req);
     }
@@ -89,8 +116,64 @@ const server = serve({
       return withCors(req, await auth.handler(req));
     }
 
+    if (path === "/v1/hosts" && req.method === "GET") {
+      return withCors(req, handleHostsList());
+    }
+
+    if (path === "/v1/hosts/register" && req.method === "POST") {
+      return withCors(req, await handleHostRegister(req));
+    }
+
+    if (path.startsWith("/v1/hosts/") && req.method === "GET") {
+      const slug = path.slice("/v1/hosts/".length);
+      if (slug.length > 0 && slug !== "register") {
+        return withCors(req, handleHostGet(slug));
+      }
+    }
+
+    if (path === "/internal/v1/hosts" && req.method === "GET") {
+      return handleInternalHostsList(req);
+    }
+
+    if (
+      path.startsWith("/internal/v1/hosts/") &&
+      path.endsWith("/activate") &&
+      req.method === "POST"
+    ) {
+      const id = path.slice("/internal/v1/hosts/".length, -"/activate".length);
+      return handleInternalHostActivate(req, id);
+    }
+
     if (path === "/v1/me" && req.method === "GET") {
       return withCors(req, await handleMe(req));
+    }
+
+    if (path === "/v1/device/authorize" && req.method === "POST") {
+      return withCors(req, await handleDeviceAuthorize(req));
+    }
+
+    if (path === "/v1/device/approve" && req.method === "POST") {
+      return withCors(req, await handleDeviceApprove(req));
+    }
+
+    if (path === "/v1/device/token" && req.method === "POST") {
+      return withCors(req, await handleDeviceToken(req));
+    }
+
+    if (path === "/v1/link/challenge" && req.method === "GET") {
+      return withCors(req, await handleLinkChallenge(req, url));
+    }
+
+    if (path === "/v1/link/agent" && req.method === "POST") {
+      return withCors(req, await handleLinkAgent(req));
+    }
+
+    if (path === "/v1/link/status" && req.method === "GET") {
+      return withCors(req, await handleLinkStatus(req));
+    }
+
+    if (path === "/v1/link/agent" && req.method === "DELETE") {
+      return withCors(req, await handleLinkUnlink(req));
     }
 
     if (path === "/v1/access-token/request" && req.method === "POST") {

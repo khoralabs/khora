@@ -25,6 +25,7 @@ import { khoraFrameChannelWsHandlers, route } from "./http/router.ts";
 import { logger } from "./logger.ts";
 import { envMemoriesBootstrapConfig } from "./memories-env.ts";
 import { createV2HostRateLimiters } from "./rate-limit-buckets.ts";
+import { maybeRegistryOptInOnStartup } from "./registry-opt-in.ts";
 import { startDuplexUnixIngress } from "./server/duplex-unix-listener.ts";
 import { startStdioUnaryIngress } from "./server/stdio-unary-listener.ts";
 import { createInboxDrainWebSocketHandlers } from "./ws/inbox.ts";
@@ -119,6 +120,8 @@ const server = Bun.serve<KhoraWsData>({
 });
 
 logger.info({ port: server.port }, "listening");
+
+maybeRegistryOptInOnStartup();
 
 const unaryIngress = envHostUnaryIngress();
 if (unaryIngress === "stdio") {

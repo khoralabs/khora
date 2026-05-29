@@ -1,7 +1,7 @@
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 import {
   createAccessTokenRequest,
-  findHostBySlug,
+  findActiveHostBySlug,
   getAccessTokenRequestById,
   hashInviteToken,
   markAccessTokenMinted,
@@ -87,7 +87,7 @@ export async function runAccessTokenWorkflow(params: {
   const request = getAccessTokenRequestById(db, params.requestId);
   if (request === null) return;
 
-  const host = findHostBySlug(db, params.hostSlug);
+  const host = findActiveHostBySlug(db, params.hostSlug);
   if (host === null) {
     throw new Error(`host not found: ${params.hostSlug}`);
   }
@@ -106,9 +106,9 @@ export function queueAccessTokenWorkflow(params: {
 }): { inserted: boolean } {
   const db = getRegistryDatabase();
   const slug = params.hostSlug?.trim() || defaultHostSlug();
-  const host = findHostBySlug(db, slug);
+  const host = findActiveHostBySlug(db, slug);
   if (host === null) {
-    throw new Error(`host not found: ${slug}`);
+    throw new Error(`active host not found: ${slug}`);
   }
 
   const { inserted, request } = createAccessTokenRequest(db, {

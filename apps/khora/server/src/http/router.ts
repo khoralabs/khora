@@ -46,6 +46,7 @@ import {
 } from "./rooms.ts";
 import { handleSearchGet, handleSearchPost } from "./search.ts";
 import { handleUnregister } from "./unregister.ts";
+import { handleWellKnownKhora } from "./well-known-khora.ts";
 
 /**
  * Match `req` + `url` against khora HTTP routes. Pass **`upgradePort`** for WebSocket upgrade; omit for unary-only ingress.
@@ -58,6 +59,10 @@ export async function route(
 ): Promise<Response | undefined> {
   if (req.method === "GET" && url.pathname === "/health") {
     return handleHealth();
+  }
+
+  if (req.method === "GET" && url.pathname === "/.well-known/khora") {
+    return handleWellKnownKhora();
   }
 
   if (req.method === "GET" && url.pathname === "/ready") {

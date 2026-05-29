@@ -31,9 +31,46 @@ export function readJsonArg(pathOrInline: string): unknown {
   return JSON.parse(pathOrInline) as unknown;
 }
 
-export function cliBaseUrl(flags: FlagMap): string {
+export type ResolvedCliHost = {
+  slug: string | null;
+  baseUrl: string;
+};
+
+export function resolveCliHost(flags: FlagMap): ResolvedCliHost {
   const cfg = khoraCliResolvedConfig(flags);
-  return strFlag(flags, "base-url") ?? strFlag(flags, "baseUrl") ?? cfg.baseUrl ?? DEFAULT_BASE_URL;
+  const baseUrlFlag = strFlag(flags, "base-url") ?? strFlag(flags, "baseUrl");
+  const hostFlag =
+    strFlag(flags, "host") ?? strFlag(flags, "host-slug") ?? strFlag(flags, "hostSlug");
+
+  if (baseUrlFlag !== undefined && baseUrlFlag.length > 0) {
+    return {
+      slug: hostFlag ?? cfg.currentHost ?? null,
+      baseUrl: baseUrlFlag,
+    };
+  }
+
+  const slug = hostFlag ?? cfg.currentHost ?? null;
+  if (slug !== null && slug.length > 0) {
+    const entry = cfg.hosts?.[slug];
+    if (entry?.baseUrl !== undefined) {
+      return { slug, baseUrl: entry.baseUrl };
+    }
+  }
+
+  if (cfg.baseUrl !== undefined) {
+    return { slug, baseUrl: cfg.baseUrl };
+  }
+
+  return { slug, baseUrl: DEFAULT_BASE_URL };
+}
+
+export function cliBaseUrl(flags: FlagMap): string {
+  return resolveCliHost(flags).baseUrl;
+}
+
+export function cliCurrentHostSlug(flags: FlagMap): string | undefined {
+  const slug = resolveCliHost(flags).slug;
+  return slug !== null && slug.length > 0 ? slug : undefined;
 }
 
 export function agentIdentityPath(flags: FlagMap): string {

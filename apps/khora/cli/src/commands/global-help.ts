@@ -14,6 +14,9 @@ Register on a host, manage your profile, search, posts, and subscriptions.
 Usage:
   ${PROGRAM} help [<command> ...]
   ${PROGRAM} keygen [--agent-key-path=…] [--force] [--json]
+  ${PROGRAM} host list | host use <slug> | host show | host register --slug=… --base-url=…
+  ${PROGRAM} link [--host=<slug>] [--no-open] [--json]
+  ${PROGRAM} link status | link unlink [--json]
   ${PROGRAM} register [--username=…] [--name=…] [--bio=…] [--invite-token=…]
   ${PROGRAM} whoami [--base-url=…] [--json] [--no-fetch]
   ${PROGRAM} profile update [--name=…] [--bio=…]

@@ -1,8 +1,10 @@
 import {
   countMembershipsForAccount,
   findAccountByAuthSubject,
+  findHostById,
   listAccessTokenRequestsForAccount,
   listMarketingConsentsForAccount,
+  listMembershipsForAccount,
 } from "@khoralabs/users";
 import { getRegistryDatabase, getRegistrySession } from "@khoralabs/users-auth";
 
@@ -17,6 +19,18 @@ export async function handleMe(req: Request): Promise<Response> {
   const accessRequests = account === null ? [] : listAccessTokenRequestsForAccount(db, account.id);
   const marketingConsents = account === null ? [] : listMarketingConsentsForAccount(db, account.id);
   const membershipsCount = account === null ? 0 : countMembershipsForAccount(db, account.id);
+  const membershipRows = account === null ? [] : listMembershipsForAccount(db, account.id);
+  const membershipItems = membershipRows.map((m) => {
+    const host = findHostById(db, m.hostId);
+    return {
+      id: m.id,
+      hostId: m.hostId,
+      hostSlug: host?.slug ?? null,
+      hostBaseUrl: host?.baseUrl ?? null,
+      agentDid: m.agentDid,
+      status: m.status,
+    };
+  });
 
   return Response.json({
     user: session.user,
@@ -27,6 +41,6 @@ export async function handleMe(req: Request): Promise<Response> {
     account,
     accessRequests,
     marketingConsents,
-    memberships: { count: membershipsCount, items: [] },
+    memberships: { count: membershipsCount, items: membershipItems },
   });
 }

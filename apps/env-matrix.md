@@ -61,11 +61,25 @@ Legend: **+** = set on this service · **·** = not used · **Kind:** **S** = se
 | `REGISTRY_URL` | + | · | · | · | C | Public base URL for Better Auth (`BETTER_AUTH_URL` alias). |
 | `REGISTRY_TRUSTED_ORIGINS` | + | · | · | · | C | Comma-separated browser origins for CORS + trustedOrigins. |
 | `REGISTRY_COOKIE_DOMAIN` | + | · | · | · | C | Optional, e.g. `.khoralabs.com` for cross-subdomain cookies. |
-| `KHORA_REGISTRY_URL` | · | · | + | + | C | Server-side registry URL (SSR/fetch). |
+| `KHORA_REGISTRY_URL` | · | + | + | + | C | khora-server well-known + opt-in; homepages SSR/fetch. |
 | `BUN_PUBLIC_KHORA_REGISTRY_URL` | · | · | + | + | C | Inlined into client bundle at build time. |
-| `REGISTRY_DEFAULT_HOST_SLUG` | + | · | · | · | C | Slug for default Khora host row (v1 single-host). |
-| `REGISTRY_DEFAULT_HOST_URL` | + | · | · | · | C | Public URL registry uses to call khora-server mint API. |
-| `KHORA_BASE_URL` | + | · | · | · | C | Fallback for host seed if `REGISTRY_DEFAULT_HOST_URL` unset. |
+| `REGISTRY_DEFAULT_HOST_SLUG` | + | · | · | · | C | Dev seed host slug (`registerKhoraHost` on startup). |
+| `REGISTRY_DEFAULT_HOST_URL` | + | · | · | · | C | Dev seed host base URL. |
+| `REGISTRY_DEV_AUTO_ACTIVATE_HOST` | + | · | · | · | C | `1` or non-production default: auto-activate seeded host. |
+| `KHORA_BASE_URL` | + | · | · | · | C | Fallback for dev host seed if `REGISTRY_DEFAULT_HOST_URL` unset. |
+| `KHORA_HOST_SLUG` | · | + | · | · | C | Host slug for `/.well-known/khora` and registry opt-in. |
+| `KHORA_PUBLIC_BASE_URL` | · | + | · | · | C | Public base URL in well-known + register body (default loopback + `PORT`). |
+| `KHORA_REGISTRY_OPT_IN` | · | + | · | · | C | `1`/`true`: `POST /v1/hosts/register` on server boot (pending until activated). |
+| `KHORA_HOST_DISPLAY_NAME` | · | + | · | · | C | Optional display name for registry register body. |
+
+### Khora CLI (developer machine, not a deployed service)
+
+| Variable | Notes |
+| --- | --- |
+| `KHORA_REGISTRY_URL` | Registry for `khora host list` / `khora link` (default `http://localhost:4000`). |
+| `KHORA_CURRENT_HOST` | Selected host slug (`khora host use`). |
+| `KHORA_REGISTRY_HOST_SLUG` | Optional API fallback slug for link when not using `currentHost`. |
+| `KHORA_REGISTRY_SESSION_COOKIE` | Test/CI only — full `Cookie` header; production uses OS keychain. |
 
 ### Auth & secrets
 

@@ -15,4 +15,5 @@ export {
   registryMigrations,
 } from "./schema";
 export { getRegistrySession, type RegistrySession } from "./session";
+export { getRegistrySessionToken } from "./session-token";
 export { verifyRegistrySession } from "./verify-registry-session";

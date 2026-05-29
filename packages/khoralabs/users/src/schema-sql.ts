@@ -26,7 +26,9 @@ CREATE TABLE IF NOT EXISTS khora_hosts (
   id TEXT PRIMARY KEY NOT NULL,
   slug TEXT NOT NULL UNIQUE,
   base_url TEXT NOT NULL UNIQUE,
-  status TEXT NOT NULL DEFAULT 'active',
+  display_name TEXT,
+  description TEXT,
+  status TEXT NOT NULL DEFAULT 'pending',
   opted_in_at_ms INTEGER,
   capabilities TEXT
 );
@@ -76,4 +78,32 @@ CREATE INDEX IF NOT EXISTS idx_marketing_consents_account_id
   ON marketing_consents (account_id);
 CREATE INDEX IF NOT EXISTS idx_memberships_account_id
   ON memberships (account_id);
+
+CREATE TABLE IF NOT EXISTS device_authorizations (
+  id TEXT PRIMARY KEY NOT NULL,
+  device_code_hash TEXT NOT NULL UNIQUE,
+  user_code TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  session_token TEXT,
+  expires_at_ms INTEGER NOT NULL,
+  approved_at_ms INTEGER,
+  consumed_at_ms INTEGER,
+  source_app TEXT,
+  created_at_ms INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_device_authorizations_user_code
+  ON device_authorizations (user_code);
+
+CREATE TABLE IF NOT EXISTS cli_link_challenges (
+  id TEXT PRIMARY KEY NOT NULL,
+  agent_did TEXT NOT NULL,
+  nonce TEXT NOT NULL,
+  expires_at_ms INTEGER NOT NULL,
+  consumed_at_ms INTEGER,
+  created_at_ms INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_cli_link_challenges_agent_did
+  ON cli_link_challenges (agent_did);
 `;

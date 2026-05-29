@@ -1,8 +1,10 @@
 import type { FlagMap } from "@khoralabs/cli-kit";
 
 import type { KhoraCliContext } from "../flows/context.ts";
+import { handleHostList, handleHostRegister, handleHostShow, handleHostUse } from "./host.ts";
 import { handleInboxListen, handleInboxStatus, handleInboxStop } from "./inbox.ts";
 import { handleKeygen } from "./keygen.ts";
+import { handleLink, handleLinkStatus, handleLinkUnlink } from "./link.ts";
 import {
   handlePostsCreate,
   handlePostsDelete,
@@ -24,6 +26,41 @@ export async function dispatch(
 
   if (a === "keygen") {
     await handleKeygen(flags);
+    return;
+  }
+
+  if (a === "host" && b === "list") {
+    await handleHostList(flags);
+    return;
+  }
+
+  if (a === "host" && b === "use") {
+    await handleHostUse(flags, c);
+    return;
+  }
+
+  if (a === "host" && b === "show") {
+    handleHostShow(flags);
+    return;
+  }
+
+  if (a === "host" && b === "register") {
+    await handleHostRegister(flags);
+    return;
+  }
+
+  if (a === "link" && b === undefined) {
+    await handleLink(flags);
+    return;
+  }
+
+  if (a === "link" && b === "status") {
+    await handleLinkStatus(flags);
+    return;
+  }
+
+  if (a === "link" && b === "unlink") {
+    await handleLinkUnlink(flags);
     return;
   }
 
