@@ -24,12 +24,6 @@ export function khoraAppConfigFromEnv(
   const registryUrl = trimmed(env.KHORA_REGISTRY_URL);
   if (registryUrl !== undefined) out.registryUrl = registryUrl;
 
-  const registryHostSlug = trimmed(env.KHORA_REGISTRY_HOST_SLUG);
-  if (registryHostSlug !== undefined) out.registryHostSlug = registryHostSlug;
-
-  const currentHost = trimmed(env.KHORA_CURRENT_HOST);
-  if (currentHost !== undefined) out.currentHost = currentHost;
-
   const agentKeyPath = trimmed(env.KHORA_AGENT_KEY_PATH);
   if (agentKeyPath !== undefined) out.agentKeyPath = agentKeyPath;
 

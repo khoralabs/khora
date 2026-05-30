@@ -18,14 +18,6 @@ export function cliRegistryUrl(flags: FlagMap): string {
   ).replace(/\/$/, "");
 }
 
-export function cliRegistryHostSlug(flags: FlagMap): string | undefined {
-  const cfg = khoraCliResolvedConfig(flags);
-  const fromFlag = strFlag(flags, "host-slug") ?? strFlag(flags, "hostSlug");
-  const v = fromFlag ?? cfg.registryHostSlug;
-  const trimmed = v?.trim();
-  return trimmed !== undefined && trimmed.length > 0 ? trimmed : undefined;
-}
-
 export type LinkMetadata = {
   agentDid: string;
   hostBaseUrl: string;

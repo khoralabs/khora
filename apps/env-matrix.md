@@ -70,10 +70,9 @@ Legend: **+** = set on this service · **·** = not used · **Kind:** **S** = se
 
 | Variable | Notes |
 | --- | --- |
-| `KHORA_REGISTRY_URL` | Registry for `khora host list` / `khora link` (default `http://localhost:4000`). |
-| `KHORA_CURRENT_HOST` | Selected host slug (`khora host use`). |
-| `KHORA_REGISTRY_HOST_SLUG` | Optional API fallback slug for link when not using `currentHost`. |
-| `KHORA_REGISTRY_SESSION_COOKIE` | Test/CI only — full `Cookie` header; production uses OS keychain. |
+| `KHORA_REGISTRY_URL` | Registry for `khora host list` / `khora link` (default `http://localhost:4000`). Also set in `~/.khora/cli.config.json` or `--registry-url`. |
+
+Host selection: `khora host use <slug>` writes `currentHost` and `hosts` to `cli.config.json`; override per command with `--host=<slug>`. Registry session after `khora link` is stored in the OS keychain (`@napi-rs/keyring`), not env or config.
 
 ### Auth & secrets
 

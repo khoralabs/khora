@@ -27,16 +27,13 @@ describe("cliRegistryUrl", () => {
 });
 
 describe("registry session store", () => {
-  const prev = process.env.KHORA_REGISTRY_SESSION_COOKIE;
   afterEach(() => {
-    if (prev === undefined) delete process.env.KHORA_REGISTRY_SESSION_COOKIE;
-    else process.env.KHORA_REGISTRY_SESSION_COOKIE = prev;
     clearRegistrySessionCookie();
   });
 
-  test("uses env override when set", () => {
-    process.env.KHORA_REGISTRY_SESSION_COOKIE = "better-auth.session_token=test";
-    saveRegistrySessionCookie("ignored");
-    expect(loadRegistrySessionCookie()).toBe("better-auth.session_token=test");
+  test("save and load round-trip via keychain", () => {
+    const cookie = "better-auth.session_token=test-roundtrip";
+    saveRegistrySessionCookie(cookie);
+    expect(loadRegistrySessionCookie()).toBe(cookie);
   });
 });
