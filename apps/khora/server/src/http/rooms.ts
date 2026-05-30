@@ -9,7 +9,11 @@ import {
   zKhoraRoomMintTicketBody,
   zKhoraRoomTicketResponse,
 } from "@khoralabs/khora-contracts";
-import { discardCellInboxRoomTickets, enqueueCellInboxInline } from "@khoralabs/khora-host";
+import {
+  deliverRoomTicketToPrincipal,
+  discardCellInboxRoomTickets,
+  mintRoomChannelTicketAndSync,
+} from "@khoralabs/khora-host";
 import type { KhoraRoomLifecycleHostEvent, KhoraWsUpgradePort } from "@khoralabs/khora-transport";
 import z from "zod";
 import { logger } from "../logger.ts";
@@ -212,7 +216,7 @@ export async function handleRoomsCreate(
     "room_created",
   );
   if (targetDidResolved !== undefined) {
-    await enqueueCellInboxInline(ctx, targetDidResolved, {
+    await deliverRoomTicketToPrincipal(ctx, targetDidResolved, {
       kind: "room_ticket",
       channelId: roomId,
       ticket,
@@ -221,23 +225,6 @@ export async function handleRoomsCreate(
       issuedAtMs: now,
       fromPrincipalId: did,
     });
-    const hub = ctx.host.inboxHub;
-    if (hub !== undefined && hub.listenerCount(targetDidResolved) > 0) {
-      hub.broadcast(targetDidResolved, {
-        type: "notification",
-        id: now,
-        notification: {
-          kind: "room_ticket",
-          payload: {
-            channelId: roomId,
-            ticket,
-            expiresAtMs,
-            issuedAtMs: now,
-            fromPrincipalId: did,
-          },
-        },
-      });
-    }
   }
   if (targetDidResolved === undefined) {
     const joinToken = randomJoinToken();
@@ -338,9 +325,20 @@ export async function handleRoomsJoin(
     consumedByDid: did,
     consumedAtMs: now,
   });
+  const base = webSocketBaseFromRequest(req);
   let ticket: string;
+  let webSocketUrl: string;
+  let expiresAtMs: number;
   try {
-    ({ ticket } = await ctx.roomHub.rotateChannelTicket(inv.roomId, ttlMs));
+    ({ ticket, webSocketUrl, expiresAtMs } = await mintRoomChannelTicketAndSync({
+      roomHub: ctx.roomHub,
+      social: ctx.social,
+      roomId: inv.roomId,
+      ttlMs,
+      registryMeta: { creatorDid: meta.creatorDid, inviteTargetDid: did },
+      upsertRoomRegistry: (id, row) => ctx.upsertRoomRegistryRow(id, row),
+      webSocketBase: base,
+    }));
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (msg.includes("no active room")) {
@@ -348,18 +346,6 @@ export async function handleRoomsJoin(
     }
     return jsonError(msg, 500);
   }
-  const expiresAtMs = now + ttlMs;
-  const base = webSocketBaseFromRequest(req);
-  const webSocketUrl = `${base}/v1/rooms/${encodeURIComponent(inv.roomId)}/ws?ticket=${encodeURIComponent(ticket)}`;
-  ctx.upsertRoomRegistryRow(inv.roomId, {
-    creatorDid: meta.creatorDid,
-    inviteTargetDid: did,
-    expiresAtMs,
-  });
-  ctx.social.refreshRelationshipTicketExpiry({
-    channelId: inv.roomId,
-    expiresAtMs,
-  });
   const payload = zKhoraRoomJoinTicketResponse.parse({
     roomId: inv.roomId,
     creatorDid: meta.creatorDid,
@@ -436,11 +422,23 @@ export async function handleRoomsMintTicket(
     return jsonError("Room inactive or ticket secret expired", 410);
   }
   const ttlMs = mintBody.ttlMs ?? 86_400_000;
-  const now = Date.now();
-  const expiresAtMs = now + ttlMs;
+  const base = webSocketBaseFromRequest(req);
   let ticket: string;
+  let webSocketUrl: string;
+  let expiresAtMs: number;
   try {
-    ({ ticket } = await ctx.roomHub.rotateChannelTicket(roomId, ttlMs));
+    ({ ticket, webSocketUrl, expiresAtMs } = await mintRoomChannelTicketAndSync({
+      roomHub: ctx.roomHub,
+      social: ctx.social,
+      roomId,
+      ttlMs,
+      registryMeta: {
+        creatorDid: meta.creatorDid,
+        inviteTargetDid: meta.inviteTargetDid,
+      },
+      upsertRoomRegistry: (id, row) => ctx.upsertRoomRegistryRow(id, row),
+      webSocketBase: base,
+    }));
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (msg.includes("no active room")) {
@@ -448,17 +446,6 @@ export async function handleRoomsMintTicket(
     }
     return jsonError(msg, 500);
   }
-  const base = webSocketBaseFromRequest(req);
-  const webSocketUrl = `${base}/v1/rooms/${encodeURIComponent(roomId)}/ws?ticket=${encodeURIComponent(ticket)}`;
-  ctx.upsertRoomRegistryRow(roomId, {
-    creatorDid: meta.creatorDid,
-    inviteTargetDid: meta.inviteTargetDid,
-    expiresAtMs,
-  });
-  ctx.social.refreshRelationshipTicketExpiry({
-    channelId: roomId,
-    expiresAtMs,
-  });
   const payload = zKhoraRoomTicketResponse.parse({
     roomId,
     ticket,

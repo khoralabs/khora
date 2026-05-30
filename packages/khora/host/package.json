@@ -31,8 +31,11 @@
     "typescript": "^5"
   },
   "devDependencies": {
+    "@khoralabs/agent-relay": "workspace:*",
+    "@khoralabs/duplex-byte-stream": "workspace:*",
     "@khoralabs/khora-auth": "workspace:*",
     "@khoralabs/memories-sqlite": "workspace:*",
+    "@khoralabs/obp-v2-frames-impl": "workspace:*",
     "@khoralabs/relay-colonnade": "workspace:*",
     "@khoralabs/sqlite-crypto": "workspace:*",
     "@types/bun": "latest",

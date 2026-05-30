@@ -1,6 +1,6 @@
 # Colonnade usage in Khora
 
-Three storage tiers for relay data. See [id-conventions.md](./id-conventions.md) for every stable identifier.
+Four storage tiers for relay data. See [id-conventions.md](./id-conventions.md) for every stable identifier. Room events and `room_frames` retention: [room-lifecycle.md](./room-lifecycle.md).
 
 ## Tier 1 — Catalog projections
 
@@ -54,12 +54,33 @@ Publish-side candidates emit `khora_post` or `khora_subscription` plus `khora_to
 - Room tickets: **inline** JSON staging (no pointer).
 - Deliverability: `ctx.principalLifecycle.isPostPointerDeliverable(authorDid)` — author registered + no active teardown job. Storage verification (ghost outbox, hash mismatch) stays in drain. See [`docs/principal-lifecycle.md`](../../docs/principal-lifecycle.md).
 
+## Tier 4 — Frame channel (room transport)
+
+**What:** Ticket-gated, channel-scoped opaque byte relay for live OBP/NBC negotiation. `channelId` is the same UUID as `roomId`.
+
+**Where:** `KHORA_FRAMES_DB_PATH` — `rooms` (ticket HMAC secret + TTL) and `room_frames` (append-only ciphertext blobs). Schema: [`packages/khora/relay-colonnade/src/frame-channel-sqlite.ts`](../relay-colonnade/src/frame-channel-sqlite.ts). Hub: [`packages/agent/relay/src/frame-channel/hub.ts`](../../agent/relay/src/frame-channel/hub.ts).
+
+**Rules:**
+
+- Frame bodies are **E2EE at the client** (AES-256-GCM); the relay stores opaque `bytes` only. See [`docs/security.md`](../../docs/security.md) and [`FRAME_CHANNEL_E2EE.md`](../../obp/v2/frames/impl/ts/docs/FRAME_CHANNEL_E2EE.md).
+- **`createChannel`** clears prior `room_frames` for that `channel_id` and upserts `rooms`.
+- **`rotateChannelTicket`** issues a new ticket secret and TTL **without** clearing `room_frames` (rejoin preserves the buffer).
+- On **`attachPeer`**, the hub replays all persisted frames (`drainFramesAfter(channelId, 0)`) then fans out live `relayBytes` to connected peers.
+- **Not inbox:** `room_ticket` inline rows (Tier 3) carry admission metadata only — negotiation frames never use cell inbox staging.
+
+**Retention:**
+
+- The frame buffer survives peer disconnect while the `rooms` row is active and admission has not expired.
+- There is **no** inbox-style prune of `room_frames` during a session; long rooms may grow until teardown or explicit delete.
+- Admission expires when `rooms.expires_at_ms` passes; expired rooms reject new tickets but **do not** auto-delete `room_frames` until relationship delete or principal teardown. See [room-lifecycle.md](./room-lifecycle.md).
+
 ## Anti-patterns
 
 - Putting post bodies in catalog projections or `source_map_rows`.
 - Synthetic pointers for Tier 1 entities (removed).
 - Duplicating outbox bytes in catalog on create.
 - Using random UUID post ids (use address-encoded ids).
+- Putting NBC / negotiation frame bodies in catalog projections or cell inbox (use Tier 4 only).
 
 ## Fresh deploy
 

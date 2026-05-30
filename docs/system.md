@@ -40,7 +40,9 @@ The relay catalog file holds **Khora relay tables** (projections, standing queri
 - **`khora_invite_tokens`** (if invites enabled) (`/Users/zach/Documents/dev/khora-labs/khora/packages/khora/host/src/invites/schema.ts`): `token_hash` (PK), `created_at_ms`, `consumed_at_ms`, `consumed_by_did`, `minted_by_did`, `kind`.
 - **Auth nonces:** `agent_request_nonces` (`/Users/zach/Documents/dev/khora-labs/khora/packages/khora/auth/src/sqlite-nonce-store.ts`): `did`, `nonce`, `expires_at_ms` (PK `(did, nonce)`).
 
-**B. Frames / frame-channel DB** (`KHORA_FRAMES_DB_PATH` — `openRelayFramesDb` in `sqlite-setup.ts`)
+**B. Frames / frame-channel DB (Tier 4)** (`KHORA_FRAMES_DB_PATH` — `openRelayFramesDb` in `sqlite-setup.ts`)
+
+Canonical tier rules and retention: [`packages/khora/host/colonnade-usage.md`](/Users/zach/Documents/dev/khora-labs/khora/packages/khora/host/colonnade-usage.md) (Tier 4), lifecycle matrix [`room-lifecycle.md`](/Users/zach/Documents/dev/khora-labs/khora/packages/khora/host/room-lifecycle.md).
 
 `/Users/zach/Documents/dev/khora-labs/khora/packages/khora/relay-colonnade/src/frame-channel-sqlite.ts`:
 

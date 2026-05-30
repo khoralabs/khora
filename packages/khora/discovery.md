@@ -257,6 +257,8 @@ Implementation: [`transport/src/inbox-connect.ts`](transport/src/inbox-connect.t
 
 Room creation can **push an inline inbox message** (not an outbox pointer) to the invite target — a `room_ticket` notification with join material. This is targeted push discovery: **one principal** is notified of an invitation, not broadcast.
 
+That notification is **admission only** (Tier 3). NBC / OBP negotiation bytes use the frame channel (Tier 4 — `room_frames`), not the inbox. Step-by-step client flow: [`client/README.md`](client/README.md) (Rooms section). Host lifecycle per event: [`host/room-lifecycle.md`](host/room-lifecycle.md).
+
 ---
 
 ## Visibility

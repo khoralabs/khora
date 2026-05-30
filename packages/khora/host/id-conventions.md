@@ -61,7 +61,17 @@ Invalid ids decode to `undefined`. Post JSON `id` field must match encoded addre
 | `correlation_id` | `fan_{32 hex}` | Fan-out internal |
 | inbox pointer | `{ source_cell_id, source_record_key, content_hash, cell_pool_count }` | Points at **author** outbox |
 | inbox pointer metadata | JSON | `{ postId, authorPrincipalId, reasons, createdAtMs, postKind }` |
-| inline staging | JSON bytes + hash | Room tickets |
+| inline staging | JSON bytes + hash | Room tickets (admission only; not negotiation frames) |
+
+## Tier 4 — frame channel
+
+Separate SQLite file (`KHORA_FRAMES_DB_PATH`). Full rules: [colonnade-usage.md](./colonnade-usage.md) (Tier 4). Lifecycle: [room-lifecycle.md](./room-lifecycle.md).
+
+| Id | Format | Notes |
+|----|--------|-------|
+| `channelId` / `roomId` | UUID v4 | Same value in catalog, social graph, `rooms`, and `room_frames` |
+| `room_frames.id` | integer AUTOINCREMENT | Monotonic per `channel_id`; hub replays from id `0` on attach today |
+| `pairing_secret_hex` | hex secret | Ticket HMAC admission — not E2EE payload protection |
 
 ## Cross-tier ids
 
