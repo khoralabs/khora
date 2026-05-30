@@ -9,9 +9,9 @@ import {
   registerKhoraHost,
 } from "@khoralabs/users";
 import { getRegistryDatabase } from "@khoralabs/users-auth";
-import { probeHostHealthById } from "../host-health.ts";
-import { hostToFullJson, hostToPublicJson } from "./host-json.ts";
-import { authorizeRegistryInternal } from "./registry-internal.ts";
+import { probeHostHealthById } from "../host-health";
+import { hostToFullJson, hostToPublicJson } from "./host-json";
+import { authorizeRegistryInternal } from "./registry-internal";
 
 const REGISTER_LIMIT = 20;
 const REGISTER_WINDOW_MS = 60 * 60 * 1000;

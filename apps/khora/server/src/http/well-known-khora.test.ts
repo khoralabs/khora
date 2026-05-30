@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { buildKhoraWellKnownDocument, handleWellKnownKhora } from "./well-known-khora.ts";
+import { buildKhoraWellKnownDocument, handleWellKnownKhora } from "./well-known-khora";
 
 describe("well-known khora", () => {
   const prev: Record<string, string | undefined> = {};

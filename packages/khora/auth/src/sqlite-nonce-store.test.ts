@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
-import { createSqliteNonceStore } from "./sqlite-nonce-store.ts";
+import { createSqliteNonceStore } from "./sqlite-nonce-store";
 
 function memStore() {
   return createSqliteNonceStore(new Database(":memory:"));

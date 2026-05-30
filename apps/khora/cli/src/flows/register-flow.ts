@@ -1,8 +1,8 @@
 import { requireFlowString, runOfferFlow } from "@khoralabs/cli-flow-nbc";
 
-import type { KhoraCliContext } from "./context.ts";
-import { registerFlowDefinition } from "./definitions.ts";
-import { createKhoraFlowChainView } from "./khora-flow-chain.ts";
+import type { KhoraCliContext } from "./context";
+import { registerFlowDefinition } from "./definitions";
+import { createKhoraFlowChainView } from "./khora-flow-chain";
 
 export async function runRegisterInteractiveFlow(
   ctx: KhoraCliContext,

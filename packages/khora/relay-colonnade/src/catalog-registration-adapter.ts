@@ -1,10 +1,10 @@
 import type { Database } from "bun:sqlite";
 import type { AgentRelayRegistrations, PrincipalId } from "@khoralabs/agent-relay";
-import type { RelayCatalogProjectionStore } from "./catalog-projection-store.ts";
+import type { RelayCatalogProjectionStore } from "./catalog-projection-store";
 import {
   RELAY_NAMESPACE_REG_BY_PRINCIPAL,
   RELAY_NAMESPACE_REG_BY_PROFILE,
-} from "./relay-id-conventions.ts";
+} from "./relay-id-conventions";
 
 export const RELAY_CATALOG_REG_BY_PRINCIPAL = RELAY_NAMESPACE_REG_BY_PRINCIPAL;
 export const RELAY_CATALOG_REG_BY_PROFILE = RELAY_NAMESPACE_REG_BY_PROFILE;

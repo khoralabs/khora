@@ -1,21 +1,21 @@
-export { khoraAppConfigFromEnv } from "./env.ts";
-export { KhoraConfigError } from "./errors.ts";
+export { khoraAppConfigFromEnv } from "./env";
+export { KhoraConfigError } from "./errors";
 export {
   type KhoraConfigFileRead,
   readKhoraConfigFileWithExtends,
-} from "./file.ts";
-export { khoraConfigJsonSchema } from "./json-schema.ts";
+} from "./file";
+export { khoraConfigJsonSchema } from "./json-schema";
 export {
   type LoadedKhoraAppConfig,
   type LoadKhoraAppConfigOptions,
   loadKhoraAppConfig,
-} from "./load.ts";
-export { mergeKhoraAppConfigLayers } from "./merge.ts";
+} from "./load";
+export { mergeKhoraAppConfigLayers } from "./merge";
 export {
   defaultKhoraConfigPath,
   type ResolvedKhoraConfigPath,
   resolveKhoraConfigPath,
-} from "./path.ts";
+} from "./path";
 export {
   extendKhoraAppConfig,
   type InferKhoraAppConfig,
@@ -23,4 +23,4 @@ export {
   type KhoraAppPluginMap,
   zKhoraAppConfigBase,
   zKhoraAppPluginMap,
-} from "./schema.ts";
+} from "./schema";

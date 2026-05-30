@@ -1,7 +1,7 @@
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { boolFlag, style } from "@khoralabs/cli-kit";
-import { cliBaseUrl, cliCurrentHostSlug, loadSigner } from "../flows/context.ts";
-import { khoraCliResolvedConfig } from "../khora-app-config.ts";
+import { cliBaseUrl, cliCurrentHostSlug, loadSigner } from "../flows/context";
+import { khoraCliResolvedConfig } from "../khora-app-config";
 import {
   deviceAuthorize,
   devicePollToken,
@@ -9,15 +9,15 @@ import {
   linkChallenge,
   linkStatus,
   linkUnlink,
-} from "../registry/client.ts";
-import { cliRegistryUrl } from "../registry/config.ts";
-import { discoverRegisteredHostSlugs } from "../registry/link-propagate.ts";
-import { clearLinkState, readLinkState, writeLinkState } from "../registry/link-state.ts";
+} from "../registry/client";
+import { cliRegistryUrl } from "../registry/config";
+import { discoverRegisteredHostSlugs } from "../registry/link-propagate";
+import { clearLinkState, readLinkState, writeLinkState } from "../registry/link-state";
 import {
   clearRegistrySessionCookie,
   loadRegistrySessionCookie,
   saveRegistrySessionCookie,
-} from "../registry/session-store.ts";
+} from "../registry/session-store";
 
 async function openVerificationUrl(url: string): Promise<void> {
   if (process.platform === "darwin") {

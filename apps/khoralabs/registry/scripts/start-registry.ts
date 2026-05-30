@@ -11,7 +11,7 @@ import {
   isTruthyEnv,
   readLitestreamS3Env,
   resolveLitestreamBin,
-} from "../../../../scripts/litestream-config.ts";
+} from "../../../../scripts/litestream-config";
 
 const registryRoot = path.resolve(path.dirname(import.meta.path), "..");
 const indexEntry = path.join(registryRoot, "src", "index.ts");

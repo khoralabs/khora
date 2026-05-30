@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { cp, rm } from "node:fs/promises";
 import path from "node:path";
 import plugin from "bun-plugin-tailwind";
-import mdxPlugin from "../../../packages/khoralabs/blog/src/plugin/mdx.ts";
+import mdxPlugin from "../../../packages/khoralabs/blog/src/plugin/mdx";
 
 if (process.argv.includes("--help") || process.argv.includes("-h")) {
   console.log(`

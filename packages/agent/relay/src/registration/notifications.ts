@@ -1,4 +1,4 @@
-import type { PrincipalId } from "./types.ts";
+import type { PrincipalId } from "./types";
 
 export type FrameChannelInvitePayload = {
   channelId: string;

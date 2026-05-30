@@ -1,4 +1,4 @@
-import type { InboxFanoutPort, InboxWebSocket } from "./inbox-fanout-port.ts";
+import type { InboxFanoutPort, InboxWebSocket } from "./inbox-fanout-port";
 
 /** In-memory inbox hub keyed by DID (typical single-node host). */
 export function createInboxWsHub(): InboxFanoutPort {

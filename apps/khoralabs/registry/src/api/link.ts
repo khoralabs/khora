@@ -19,7 +19,7 @@ import {
   unlinkAgentFromMembership,
 } from "@khoralabs/users";
 import { getRegistryDatabase, getRegistrySession } from "@khoralabs/users-auth";
-import { HOST_NOT_FOUND_HINT, resolveRegistryHost } from "./resolve-host.ts";
+import { HOST_NOT_FOUND_HINT, resolveRegistryHost } from "./resolve-host";
 
 const linkStrategy = createDidKeyEd25519Strategy();
 

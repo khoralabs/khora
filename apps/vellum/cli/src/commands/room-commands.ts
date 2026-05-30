@@ -4,7 +4,7 @@ import { parseNbcTurnBody } from "@khoralabs/obp-v2-nbc";
 
 import type { VellumClient } from "@khoralabs/vellum-client";
 
-import { makeVellumClient, readJsonArg, resolveRoomId } from "../flows/context.ts";
+import { makeVellumClient, readJsonArg, resolveRoomId } from "../flows/context";
 
 function clientForRoomCommands(flags: FlagMap): VellumClient {
   const roomId = resolveRoomId(flags);

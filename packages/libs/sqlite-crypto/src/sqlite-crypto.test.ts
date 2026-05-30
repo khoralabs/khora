@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { EnvKeyProvider } from "./key-provider.ts";
+import { EnvKeyProvider } from "./key-provider";
 import {
   createOutboxPayloadCodec,
   decryptOutboxPayload,
   encryptOutboxPayload,
   isOutboxEncryptedPayload,
   outboxMetadataIsPost,
-} from "./outbox-payload.ts";
+} from "./outbox-payload";
 
 const TEST_KEY_HEX = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 

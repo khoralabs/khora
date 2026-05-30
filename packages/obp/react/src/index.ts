@@ -37,15 +37,15 @@ export {
 export type {
   NbcChainAfterBindViewport,
   NbcChainFlowSelection,
-} from "./nbc-chain/flow-types.ts";
-export { formatExpiresTurn, formatRelayMs } from "./nbc-chain/format.ts";
+} from "./nbc-chain/flow-types";
+export { formatExpiresTurn, formatRelayMs } from "./nbc-chain/format";
 export {
   type NbcChainBindEdgeData,
   type NbcChainOfferNodeData,
   type NbcChainPortNodeData,
   nbcChainGraphToFlow,
-} from "./nbc-chain/layout.ts";
-export { mergeClassNames } from "./nbc-chain/merge-class-names.ts";
+} from "./nbc-chain/layout";
+export { mergeClassNames } from "./nbc-chain/merge-class-names";
 export {
   NbcChainOfferNode,
   type NbcChainOfferNodeProps,
@@ -60,4 +60,4 @@ export { NbcChainScene } from "./nbc-chain/scene.tsx";
 export {
   NBC_CHAIN_CANVAS_SHELL_LAYOUT,
   NBC_CHAIN_SCENE_FLOW_LAYOUT,
-} from "./nbc-chain/structural-layout.ts";
+} from "./nbc-chain/structural-layout";

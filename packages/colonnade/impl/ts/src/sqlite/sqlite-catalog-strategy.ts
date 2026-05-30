@@ -1,7 +1,7 @@
 import type { Database, Statement } from "bun:sqlite";
 import { randomBytes } from "node:crypto";
 
-import type { CatalogPersistenceStrategy } from "../catalog-persistence-strategy.ts";
+import type { CatalogPersistenceStrategy } from "../catalog-persistence-strategy";
 import type {
   BatchLookupSourceMapPointersInput,
   BatchLookupSourceMapPointersOutput,
@@ -20,12 +20,12 @@ import type {
   UpsertDiscoveryDocumentOutput,
   UpsertSourceMapPointerRowInput,
   UpsertSourceMapPointerRowOutput,
-} from "../colonnade-types.ts";
-import { canonicalSourceMapRowBytes, sha256HexLower } from "../hash.ts";
-import { encodeCatalogPointerId } from "./catalog-pointer-id.ts";
-import { ensureCatalogSchema } from "./schema-catalog.ts";
-import { runSerializedSqliteImmediateTransaction } from "./sqlite-immediate-txn.ts";
-import { applySqlitePerfPragmas } from "./sqlite-pragmas.ts";
+} from "../colonnade-types";
+import { canonicalSourceMapRowBytes, sha256HexLower } from "../hash";
+import { encodeCatalogPointerId } from "./catalog-pointer-id";
+import { ensureCatalogSchema } from "./schema-catalog";
+import { runSerializedSqliteImmediateTransaction } from "./sqlite-immediate-txn";
+import { applySqlitePerfPragmas } from "./sqlite-pragmas";
 
 const ZERO_HASH = "0".repeat(64);
 

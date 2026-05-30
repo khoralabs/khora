@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { zKhoraRegisterResult, zKhoraRegistrationRequestBody } from "./khora-registration.ts";
+import { zKhoraRegisterResult, zKhoraRegistrationRequestBody } from "./khora-registration";
 
 describe("khora registration contracts", () => {
   test("zKhoraRegistrationRequestBody accepts inviteToken", () => {

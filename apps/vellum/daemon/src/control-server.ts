@@ -13,7 +13,7 @@ import {
   TurnRequestSchema,
 } from "@khoralabs/vellum-contracts";
 
-import { upsertChainRow } from "./vellum-sqlite-meta.ts";
+import { upsertChainRow } from "./vellum-sqlite-meta";
 
 function parseGenesisTurnOrThrow(raw: Record<string, unknown>) {
   const nb = parseNbcTurnBody(raw);

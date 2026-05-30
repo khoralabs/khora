@@ -1,10 +1,10 @@
-export { formatThreadForPlaintext } from "./format-thread-for-prompt.ts";
-export { InMemoryThreadContext } from "./in-memory-thread-context.ts";
-export type { PostThreadMessageInput, ThreadMessage, ThreadMessageMetadata } from "./messages.ts";
-export { postThreadUserText } from "./messages.ts";
+export { formatThreadForPlaintext } from "./format-thread-for-prompt";
+export { InMemoryThreadContext } from "./in-memory-thread-context";
+export type { PostThreadMessageInput, ThreadMessage, ThreadMessageMetadata } from "./messages";
+export { postThreadUserText } from "./messages";
 export {
   buildAssistantPartsFromGeneration,
   mirrorGenerationToThread,
   type ToolLoopGenerationSnapshot,
-} from "./mirror-generation-to-thread.ts";
-export { ThreadContext, type WithThreadContextArgs } from "./thread-context.ts";
+} from "./mirror-generation-to-thread";
+export { ThreadContext, type WithThreadContextArgs } from "./thread-context";

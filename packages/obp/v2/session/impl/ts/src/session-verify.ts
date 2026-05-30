@@ -3,7 +3,7 @@
  * `packages/obp/v2/session/spec/model/session-protocol.smithy`.
  */
 
-import { checkpointForSessionOps } from "./session-merkle.ts";
+import { checkpointForSessionOps } from "./session-merkle";
 import type {
   Checkpoint,
   RootMismatchError,
@@ -11,7 +11,7 @@ import type {
   SessionEnvelope,
   SessionOp,
   VerifyError,
-} from "./session-protocol-types.ts";
+} from "./session-protocol-types";
 
 function checkpointsEqual(a: Checkpoint, b: Checkpoint): boolean {
   return a.seq === b.seq && a.root_hex === b.root_hex;

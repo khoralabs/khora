@@ -29,10 +29,10 @@ import {
   createRelayPrincipalLifecycle,
 } from "@khoralabs/relay-colonnade";
 import { EnvKeyProvider, outboxKeyBytesToHex } from "@khoralabs/sqlite-crypto";
-import type { KhoraEncryptionContext } from "./encryption-context.ts";
-import type { KhoraMemoriesBootstrapConfig } from "./memories-env.ts";
-import { createKhoraAdminStatsPort } from "./ops/admin-stats-port.ts";
-import { createKhoraHostHealthPort } from "./ops/health-port.ts";
+import type { KhoraEncryptionContext } from "./encryption-context";
+import type { KhoraMemoriesBootstrapConfig } from "./memories-env";
+import { createKhoraAdminStatsPort } from "./ops/admin-stats-port";
+import { createKhoraHostHealthPort } from "./ops/health-port";
 
 export type BootstrapKhoraHostOpts = {
   catalogPath: string;

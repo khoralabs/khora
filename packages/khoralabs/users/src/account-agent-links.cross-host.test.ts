@@ -5,12 +5,12 @@ import {
   linkAgentToAccountOnHost,
   listAgentLinksForAccount,
   propagateAgentLinksToHosts,
-} from "./account-agent-links.ts";
-import { linkBetterAuthUser } from "./accounts.ts";
-import { bindAgentToAccount } from "./agent-account-bindings.ts";
-import { getUsersDatabase, resetUsersDatabase } from "./db.ts";
-import { registerKhoraHost, seedDefaultHost } from "./khora-hosts.ts";
-import { initUsersSchema } from "./schema.ts";
+} from "./account-agent-links";
+import { linkBetterAuthUser } from "./accounts";
+import { bindAgentToAccount } from "./agent-account-bindings";
+import { getUsersDatabase, resetUsersDatabase } from "./db";
+import { registerKhoraHost, seedDefaultHost } from "./khora-hosts";
+import { initUsersSchema } from "./schema";
 
 describe("cross-host agent links", () => {
   beforeEach(async () => {

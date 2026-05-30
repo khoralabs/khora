@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
-import { generateInvitePlaintext, hashInviteToken } from "./crypto.ts";
-import type { InvitePreviewResult, KhoraInviteListRow, KhoraInvitesRepo } from "./ports.ts";
-import { ensureKhoraInviteSchema, KHORA_INVITE_KIND } from "./schema.ts";
+import { generateInvitePlaintext, hashInviteToken } from "./crypto";
+import type { InvitePreviewResult, KhoraInviteListRow, KhoraInvitesRepo } from "./ports";
+import { ensureKhoraInviteSchema, KHORA_INVITE_KIND } from "./schema";
 
 function previewFromHash(tokenHash: string): string {
   if (tokenHash.length <= 12) return `${tokenHash.slice(0, 4)}…`;

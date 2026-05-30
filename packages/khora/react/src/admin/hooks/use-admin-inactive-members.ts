@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { fetchAdminJson } from "../client.ts";
-import type { AdminInactiveMembersResult } from "../types.ts";
+import { fetchAdminJson } from "../client";
+import type { AdminInactiveMembersResult } from "../types";
 
 export function useAdminInactiveMembers(
   baseUrl: string,

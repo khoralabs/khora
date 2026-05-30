@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import path from "node:path";
 import z from "zod";
-import { KHORA_BUILTIN_PLUGIN_ID } from "../khora-plugins.ts";
-import { KhoraConfigError } from "./errors.ts";
-import { loadKhoraAppConfig } from "./load.ts";
-import { extendKhoraAppConfig, zKhoraAppConfigBase } from "./schema.ts";
+import { KHORA_BUILTIN_PLUGIN_ID } from "../khora-plugins";
+import { KhoraConfigError } from "./errors";
+import { loadKhoraAppConfig } from "./load";
+import { extendKhoraAppConfig, zKhoraAppConfigBase } from "./schema";
 
 describe("loadKhoraAppConfig", () => {
   test("layers only — env wins over defaults; file absent", () => {

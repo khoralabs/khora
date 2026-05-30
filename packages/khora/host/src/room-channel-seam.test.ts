@@ -13,9 +13,9 @@ import {
   ephemeralX25519Keygen,
   x25519SharedSecret,
 } from "@khoralabs/obp-v2-frames-impl";
-import { popRelayInboxDrainItemsForDid } from "./relay-inbox-drain.ts";
-import { deliverRoomTicketToPrincipal } from "./room-admission.ts";
-import { createTestKhoraHost } from "./test/bootstrap-sqlite.ts";
+import { popRelayInboxDrainItemsForDid } from "./relay-inbox-drain";
+import { deliverRoomTicketToPrincipal } from "./room-admission";
+import { createTestKhoraHost } from "./test/bootstrap-sqlite";
 
 const tmpRoot = mkdtempSync(join(tmpdir(), "khora-room-seam-"));
 let seq = 0;

@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { runVellumPostinstall } from "./postinstall.ts";
+import { runVellumPostinstall } from "./postinstall";
 
 /**
  * Entry script for the npm postinstall hook on `@khoralabs/vellum-cli`.

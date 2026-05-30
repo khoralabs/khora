@@ -1,6 +1,6 @@
-import type { InboxStagingPayload, WriteOp } from "../colonnade-types.ts";
-import { assertContentHash, contentHashBytesToHex, contentHashHexToBytes } from "../hash.ts";
-import { writeOpFromJson } from "./staging-json.ts";
+import type { InboxStagingPayload, WriteOp } from "../colonnade-types";
+import { assertContentHash, contentHashBytesToHex, contentHashHexToBytes } from "../hash";
+import { writeOpFromJson } from "./staging-json";
 
 const MAGIC_STAGING = 0xc1;
 const MAGIC_WRITE_OP = 0xc2;

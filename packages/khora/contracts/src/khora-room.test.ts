@@ -4,7 +4,7 @@ import {
   zKhoraRoomJoinTicketResponse,
   zKhoraRoomListResponse,
   zKhoraRoomTicketResponse,
-} from "./khora-room.ts";
+} from "./khora-room";
 
 describe("khora-room contracts", () => {
   test("zKhoraRoomCreateBody accepts optional fields", () => {

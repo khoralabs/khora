@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
 import { getUsersDatabase, resetUsersDatabase, seedDefaultHost } from "@khoralabs/users";
 import { ensureRegistrySchema } from "@khoralabs/users-auth";
-import { queueAccessTokenWorkflow } from "./access-token.ts";
+import { queueAccessTokenWorkflow } from "./access-token";
 
 describe("queueAccessTokenWorkflow", () => {
   beforeEach(async () => {

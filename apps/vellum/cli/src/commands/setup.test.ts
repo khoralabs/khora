@@ -15,7 +15,7 @@ import {
   printSetupSummary,
   resolveSetupAssets,
   runSetupCommand,
-} from "./setup.ts";
+} from "./setup";
 
 describe("resolveSetupAssets", () => {
   test("uses VELLUM_CLI_ASSETS_DIR when set", () => {

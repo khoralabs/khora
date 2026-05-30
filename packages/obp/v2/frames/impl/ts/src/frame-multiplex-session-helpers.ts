@@ -2,8 +2,8 @@ import { createHash } from "node:crypto";
 import { ObpError } from "@khoralabs/obp-v2-errors";
 import type { FrameLikeForSessionOp } from "@khoralabs/obp-v2-session-impl";
 
-import type { Frame, SessionInitNormalized } from "./frame-protocol-types.ts";
-import type { FrameSigner } from "./frame-signer.ts";
+import type { Frame, SessionInitNormalized } from "./frame-protocol-types";
+import type { FrameSigner } from "./frame-signer";
 
 export function partyIdForActor(init: SessionInitNormalized, actor: string): string {
   const p = init.parties.find((x) => x.pubkey === actor);

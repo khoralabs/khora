@@ -1,16 +1,16 @@
 import type { DuplexByteStream } from "@khoralabs/duplex-byte-stream";
 import type { ObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
 import type { SessionOp } from "@khoralabs/obp-v2-session-impl";
-import { canonicalSessionParties } from "./frame-init-wire.ts";
+import { canonicalSessionParties } from "./frame-init-wire";
 import {
   runFrameMultiplexSession,
   type SessionEnvelopeSyncAdapter,
-} from "./frame-multiplex-session.ts";
-import type { FrameSessionHandlers } from "./frame-mux-types.ts";
-import type { SessionInitNormalized } from "./frame-protocol-types.ts";
-import type { FrameSigner, FrameVerifier } from "./frame-signer.ts";
+} from "./frame-multiplex-session";
+import type { FrameSessionHandlers } from "./frame-mux-types";
+import type { SessionInitNormalized } from "./frame-protocol-types";
+import type { FrameSigner, FrameVerifier } from "./frame-signer";
 
-export type { SessionEnvelopeSyncAdapter } from "./frame-multiplex-session.ts";
+export type { SessionEnvelopeSyncAdapter } from "./frame-multiplex-session";
 
 export type RunFrameSessionArgs = {
   sendInit?: boolean;
@@ -55,4 +55,4 @@ export async function runFrameSession(args: RunFrameSessionArgs): Promise<Sessio
 export {
   type RunFrameMultiplexSessionArgs,
   runFrameMultiplexSession,
-} from "./frame-multiplex-session.ts";
+} from "./frame-multiplex-session";

@@ -8,7 +8,7 @@ import {
 import { createReadlineSession, type FlagMap, type ReadLineFn, strFlag } from "@khoralabs/cli-kit";
 import { KhoraClient } from "@khoralabs/khora-client";
 
-import { khoraCliResolvedConfig } from "../khora-app-config.ts";
+import { khoraCliResolvedConfig } from "../khora-app-config";
 
 const DEFAULT_BASE_URL = "http://127.0.0.1:8787";
 

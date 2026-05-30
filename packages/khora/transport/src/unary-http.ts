@@ -5,7 +5,7 @@ import {
   signAgentRequest,
 } from "@khoralabs/khora-auth";
 import type z from "zod";
-import { KhoraClientError } from "./errors.ts";
+import { KhoraClientError } from "./errors";
 
 /** Subset of `fetch` used by the client (avoids requiring Bun-specific properties on mocks). */
 export type KhoraFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;

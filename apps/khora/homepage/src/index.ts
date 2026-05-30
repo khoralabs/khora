@@ -1,4 +1,4 @@
-import "./load-env.ts";
+import "./load-env";
 import { serve } from "bun";
 import index from "./routes/index.html";
 import login from "./routes/login/index.html";

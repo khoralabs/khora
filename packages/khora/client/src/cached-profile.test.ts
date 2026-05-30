@@ -6,7 +6,7 @@ import {
   loadCachedProfile,
   resolveProfileSyncPath,
   serializeProfileSyncStateFile,
-} from "./cached-profile.ts";
+} from "./cached-profile";
 
 let dir: string;
 beforeEach(() => {

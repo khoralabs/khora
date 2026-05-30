@@ -36,11 +36,11 @@ import {
 import { handleMarketingSubscribe, handleMarketingUnsubscribe } from "./api/marketing";
 import { handleMe } from "./api/me";
 import { handleOptions, withCors } from "./cors";
-import { startHostHealthPoller } from "./host-health.ts";
+import { startHostHealthPoller } from "./host-health";
 import adminPage from "./routes/admin/index.html";
 import adminLoginPage from "./routes/admin/login/index.html";
 import cliLinkPage from "./routes/cli/link/index.html";
-import { readRegistryTrustedOrigins } from "./trusted-origins.ts";
+import { readRegistryTrustedOrigins } from "./trusted-origins";
 
 await assertEncryptionKeys(new EnvKeyProvider(), "registry");
 await ensureRegistrySchema();

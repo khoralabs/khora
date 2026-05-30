@@ -5,7 +5,7 @@ import {
   khoraPostSigningPayloadFromCreate,
   signKhoraPostPayload,
   verifyKhoraPostSignature,
-} from "./post-signing.ts";
+} from "./post-signing";
 
 describe("post-signing", () => {
   test("sign and verify round-trip", async () => {

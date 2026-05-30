@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { TestKeyProvider } from "@khoralabs/sqlite-crypto";
-import { openRelayCatalogDb } from "./sqlite-setup.ts";
+import { openRelayCatalogDb } from "./sqlite-setup";
 
 test("openRelayCatalogDb creates relay projections without Colonnade catalog tables", async () => {
   const db = await openRelayCatalogDb(":memory:", new TestKeyProvider());

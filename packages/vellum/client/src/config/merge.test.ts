@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mergeVellumAppConfigLayers } from "./merge.ts";
+import { mergeVellumAppConfigLayers } from "./merge";
 
 describe("mergeVellumAppConfigLayers", () => {
   test("last wins on overlapping keys", () => {

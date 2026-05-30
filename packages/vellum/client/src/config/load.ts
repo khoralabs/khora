@@ -1,7 +1,7 @@
 import type z from "zod";
-import { VellumConfigError } from "./errors.ts";
-import { readVellumConfigFileWithExtends } from "./file.ts";
-import { mergeVellumAppConfigLayers } from "./merge.ts";
+import { VellumConfigError } from "./errors";
+import { readVellumConfigFileWithExtends } from "./file";
+import { mergeVellumAppConfigLayers } from "./merge";
 
 export type LoadVellumAppConfigOptions<TSchema extends z.ZodTypeAny> = {
   schema: TSchema;

@@ -7,7 +7,7 @@ import {
   POSTINSTALL_SCHEMA_FILE,
   runVellumConfigSetup,
   type VellumSetupResult,
-} from "../../scripts/postinstall.ts";
+} from "../../scripts/postinstall";
 
 const ASSETS_DIR_ENV = "VELLUM_CLI_ASSETS_DIR";
 

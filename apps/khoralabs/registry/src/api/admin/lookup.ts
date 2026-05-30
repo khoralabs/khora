@@ -7,7 +7,7 @@ import {
   type RegistryEmailLookupResponse,
 } from "@khoralabs/users";
 import { getRegistryDatabase } from "@khoralabs/users-auth";
-import { withConsoleAuth } from "./console-guard.ts";
+import { withConsoleAuth } from "./console-guard";
 
 function findAuthUserByEmail(email: string): RegistryAuthUser | null {
   const db = getRegistryDatabase();

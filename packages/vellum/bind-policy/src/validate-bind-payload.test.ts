@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { validateVellumBindPayloadForPort } from "./validate-bind-payload.ts";
+import { validateVellumBindPayloadForPort } from "./validate-bind-payload";
 
 const greetingSchema = {
   type: "object" as const,

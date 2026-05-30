@@ -1,4 +1,4 @@
-import { createRateLimiter, envRatePerMinute, type RateLimitCheck } from "./rate-limit.ts";
+import { createRateLimiter, envRatePerMinute, type RateLimitCheck } from "./rate-limit";
 
 export type RateLimiter = (key: string) => RateLimitCheck;
 

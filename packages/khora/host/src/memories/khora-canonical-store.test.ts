@@ -11,17 +11,17 @@ import {
 } from "@khoralabs/memories-sqlite";
 import { RelayCatalogProjectionStore } from "@khoralabs/relay-colonnade";
 import { createTestEncryptionMaterial, TEST_POST_AUTHOR_SIGNATURE } from "@khoralabs/sqlite-crypto";
-import { encodePostId } from "../post-address-id.ts";
-import { createColonnadePostResolver } from "../resolve-post.ts";
-import { createKhoraMemoriesIndexer } from "./indexer.ts";
-import { createKhoraCanonicalStore, hydrateMemoryLabels } from "./khora-canonical-store.ts";
+import { encodePostId } from "../post-address-id";
+import { createColonnadePostResolver } from "../resolve-post";
+import { createKhoraMemoriesIndexer } from "./indexer";
+import { createKhoraCanonicalStore, hydrateMemoryLabels } from "./khora-canonical-store";
 import {
   PROFILE_MEMORY_KEY,
   postsMemoryNamespace,
   profileMemoryNamespace,
-} from "./khora-namespace.ts";
-import { khoraOntology } from "./khora-ontology.ts";
-import { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories-config.ts";
+} from "./khora-namespace";
+import { khoraOntology } from "./khora-ontology";
+import { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories-config";
 
 ensureCustomSqliteForExtensions();
 

@@ -1,4 +1,4 @@
-import { envHostSlug, envPort, envPublicBaseUrl, envRegistryUrl } from "../env.ts";
+import { envHostSlug, envPort, envPublicBaseUrl, envRegistryUrl } from "../env";
 
 export type KhoraWellKnownDocument = {
   version: 1;

@@ -1,39 +1,39 @@
 import { agentRelayFrameChannelWebSocketHandlers } from "@khoralabs/agent-relay";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
 import type { KhoraWsUpgradePort } from "@khoralabs/khora-transport";
-import { logger } from "../logger.ts";
-import { clientIpFromRequest } from "../rate-limit.ts";
-import { handleInboxWsUpgrade } from "../ws/inbox.ts";
+import { logger } from "../logger";
+import { clientIpFromRequest } from "../rate-limit";
+import { handleInboxWsUpgrade } from "../ws/inbox";
 import {
   handleAdminStatsCell,
   handleAdminStatsInactiveMembers,
   handleAdminStatsPrincipal,
   handleAdminStatsSummary,
-} from "./admin-stats.ts";
-import { handleListAuthorSubscriptions } from "./authors.ts";
-import { routeConsoleAuth } from "./console-guard.ts";
-import type { HostRouteDeps } from "./deps.ts";
-import { handleHealth, handleReady } from "./health.ts";
+} from "./admin-stats";
+import { handleListAuthorSubscriptions } from "./authors";
+import { routeConsoleAuth } from "./console-guard";
+import type { HostRouteDeps } from "./deps";
+import { handleHealth, handleReady } from "./health";
 import {
   handleInternalAdminStatsCell,
   handleInternalAdminStatsInactiveMembers,
   handleInternalAdminStatsPrincipal,
   handleInternalAdminStatsSummary,
-} from "./internal-admin-stats.ts";
-import { handleInternalMintInvite } from "./internal-invite.ts";
-import { handleInvitePreview, handleListInvites } from "./invites.ts";
+} from "./internal-admin-stats";
+import { handleInternalMintInvite } from "./internal-invite";
+import { handleInvitePreview, handleListInvites } from "./invites";
 import {
   handleAgentStatus,
   handleCreatePost,
   handleDeletePost,
   handleGetPost,
   handleUpdatePost,
-} from "./posts.ts";
-import { handleProfileByDid, handleProfileByUsername, handleProfilePatch } from "./profile.ts";
-import { handleRegister } from "./register.ts";
-import { handleAdminRegistryGet, handleAdminRegistryPut } from "./registry-admin.ts";
-import { handleListRelationships } from "./relationships.ts";
-import { jsonError, rateLimitedResponse } from "./responses.ts";
+} from "./posts";
+import { handleProfileByDid, handleProfileByUsername, handleProfilePatch } from "./profile";
+import { handleRegister } from "./register";
+import { handleAdminRegistryGet, handleAdminRegistryPut } from "./registry-admin";
+import { handleListRelationships } from "./relationships";
+import { jsonError, rateLimitedResponse } from "./responses";
 import {
   handleRoomsCreate,
   handleRoomsGet,
@@ -44,10 +44,10 @@ import {
   isRoomWsPath,
   parseRoomsMintTicketRoomId,
   parseRoomsUnaryRoomId,
-} from "./rooms.ts";
-import { handleSearchGet, handleSearchPost } from "./search.ts";
-import { handleUnregister } from "./unregister.ts";
-import { handleWellKnownKhora } from "./well-known-khora.ts";
+} from "./rooms";
+import { handleSearchGet, handleSearchPost } from "./search";
+import { handleUnregister } from "./unregister";
+import { handleWellKnownKhora } from "./well-known-khora";
 
 /**
  * Match `req` + `url` against khora HTTP routes. Pass **`upgradePort`** for WebSocket upgrade; omit for unary-only ingress.

@@ -2,8 +2,8 @@ import type { FlagMap } from "@khoralabs/cli-kit";
 import { boolFlag, strFlag } from "@khoralabs/cli-kit";
 import type { KhoraSearchHit } from "@khoralabs/khora-contracts";
 
-import { withKhoraClient } from "../flows/context.ts";
-import { parseTopK } from "../lib/flags.ts";
+import { withKhoraClient } from "../flows/context";
+import { parseTopK } from "../lib/flags";
 
 function formatSearchHit(hit: KhoraSearchHit): string {
   const h = hit.hydrated;

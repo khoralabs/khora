@@ -7,8 +7,8 @@ import type {
 } from "@khoralabs/obp-v2-frames-impl";
 import { ChainInitWireSchema, DEFAULT_GENESIS_TURN_WIRE } from "@khoralabs/vellum-contracts";
 
-import { startVellumControlServer } from "./control-server.ts";
-import { ensureVellumMetaSchema } from "./vellum-sqlite-meta.ts";
+import { startVellumControlServer } from "./control-server";
+import { ensureVellumMetaSchema } from "./vellum-sqlite-meta";
 
 function mkConn(opts: { turns: unknown[] }): FrameMultiplexOpenerApi {
   return {

@@ -1,7 +1,7 @@
 import { fuseRrf, type RrfArm } from "@khoralabs/reciprocal-rank-fusion";
-import type { StandingSearchRequest } from "./search-request.ts";
-import { tokenizeForOverlap } from "./tokenizer.ts";
-import type { PercolatorCandidate } from "./types.ts";
+import type { StandingSearchRequest } from "./search-request";
+import { tokenizeForOverlap } from "./tokenizer";
+import type { PercolatorCandidate } from "./types";
 
 function cosineSimilarity(a: readonly number[], b: readonly number[]): number {
   if (a.length !== b.length || a.length === 0) return 0;

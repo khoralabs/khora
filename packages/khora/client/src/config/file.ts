@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { KhoraConfigError } from "./errors.ts";
-import { mergeKhoraAppConfigLayers } from "./merge.ts";
+import { KhoraConfigError } from "./errors";
+import { mergeKhoraAppConfigLayers } from "./merge";
 
 export type KhoraConfigFileRead = {
   /** Plain (unvalidated) merged object — extends chain already folded in. */

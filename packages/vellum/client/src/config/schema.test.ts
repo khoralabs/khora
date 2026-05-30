@@ -10,7 +10,7 @@ import {
   vellumAppConfigBuiltinDefaults,
   vellumAppConfigFromEnv,
   zVellumAppConfigBase,
-} from "./index.ts";
+} from "./index";
 
 describe("zVellumAppConfigBase", () => {
   test("accepts empty object", () => {

@@ -1,15 +1,15 @@
-export { generateInvitePlaintext, hashInviteToken } from "./crypto.ts";
+export { generateInvitePlaintext, hashInviteToken } from "./crypto";
 export {
   inviteRequiredFromEnv,
   invitesPerRegistrationFromEnv,
   parseInviteSeedTokens,
   readInvitePepper,
   validateInviteEnvConfig,
-} from "./env.ts";
+} from "./env";
 export type {
   InvitePreviewResult,
   KhoraInviteListRow,
   KhoraInvitesRepo,
-} from "./ports.ts";
-export { ensureKhoraInviteSchema, KHORA_INVITE_KIND, type KhoraInviteKind } from "./schema.ts";
-export { createKhoraInvitesRepo, createKhoraInvitesSqliteRepo } from "./sqlite.ts";
+} from "./ports";
+export { ensureKhoraInviteSchema, KHORA_INVITE_KIND, type KhoraInviteKind } from "./schema";
+export { createKhoraInvitesRepo, createKhoraInvitesSqliteRepo } from "./sqlite";

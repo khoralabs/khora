@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { ContentAddressedRef, ContentHash, SourceRef } from "./types.ts";
-import { isContentAddressedRef } from "./types.ts";
+import type { ContentAddressedRef, ContentHash, SourceRef } from "./types";
+import { isContentAddressedRef } from "./types";
 
 type ExampleLocators = { container_id: string; entry_key: string };
 

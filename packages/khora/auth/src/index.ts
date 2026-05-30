@@ -13,8 +13,8 @@ export {
   createKhoraDidAuth,
   KhoraDidAuth,
   type KhoraDidAuthOptions,
-} from "./auth.ts";
-export type { NonceStore } from "./nonce-store.ts";
+} from "./auth";
+export type { NonceStore } from "./nonce-store";
 export {
   canonicalKhoraPostSigningPayload,
   KHORA_POST_SIGNATURE_V1,
@@ -24,17 +24,17 @@ export {
   signingPayloadForPatch,
   signKhoraPostPayload,
   verifyKhoraPostSignature,
-} from "./post-signing.ts";
+} from "./post-signing";
 export {
   type SignAgentRequestInput,
   type SignedAgentRequest,
   type SignedInboxUrlInput,
   signAgentRequest,
   signedInboxUrl,
-} from "./signer.ts";
-export { createSqliteNonceStore } from "./sqlite-nonce-store.ts";
-export { type AuthStrategy, AuthStrategyError } from "./strategy.ts";
-export { createDidKeyEd25519Strategy } from "./strategy-did-key.ts";
+} from "./signer";
+export { createSqliteNonceStore } from "./sqlite-nonce-store";
+export { type AuthStrategy, AuthStrategyError } from "./strategy";
+export { createDidKeyEd25519Strategy } from "./strategy-did-key";
 export {
   AGENT_REQUEST_FRESHNESS_WINDOW_MS,
   AGENT_REQUEST_HEADER,
@@ -47,4 +47,4 @@ export {
   parseAgentRequestEnvelopeFromSearch,
   randomAgentRequestNonce,
   signatureBytesToB64Url,
-} from "./wire.ts";
+} from "./wire";

@@ -3,7 +3,7 @@ import type { FlagMap } from "@khoralabs/cli-kit";
 import { boolFlag, style } from "@khoralabs/cli-kit";
 import { KhoraClient, KhoraClientError } from "@khoralabs/khora-client";
 
-import { agentIdentityPath, cliBaseUrl, loadSigner } from "../flows/context.ts";
+import { agentIdentityPath, cliBaseUrl, loadSigner } from "../flows/context";
 
 export async function handleWhoami(flags: FlagMap): Promise<void> {
   const json = boolFlag(flags, "json");

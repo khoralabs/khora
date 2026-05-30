@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { isSha256HexLower, toSha256HexLower } from "./frame-protocol-types.ts";
+import { isSha256HexLower, toSha256HexLower } from "./frame-protocol-types";
 
 describe("Sha256HexLower", () => {
   test("toSha256HexLower", () => {

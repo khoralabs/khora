@@ -1,12 +1,12 @@
-import { withConsoleAuth } from "./console-guard.ts";
-import type { HostRouteDeps } from "./deps.ts";
+import { withConsoleAuth } from "./console-guard";
+import type { HostRouteDeps } from "./deps";
 import {
   adminStatsCellResponse,
   adminStatsInactiveMembersResponse,
   adminStatsPrincipalResponse,
   adminStatsSummaryResponse,
-} from "./internal-admin-stats.ts";
-import { jsonError } from "./responses.ts";
+} from "./internal-admin-stats";
+import { jsonError } from "./responses";
 
 export async function handleAdminStatsSummary(
   req: Request,

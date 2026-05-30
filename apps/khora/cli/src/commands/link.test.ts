@@ -3,13 +3,13 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { cliRegistryUrl } from "../registry/config.ts";
+import { cliRegistryUrl } from "../registry/config";
 import {
   clearRegistrySessionCookie,
   loadRegistrySessionCookie,
   registrySessionFilePath,
   saveRegistrySessionCookie,
-} from "../registry/session-store.ts";
+} from "../registry/session-store";
 
 describe("cliRegistryUrl", () => {
   const prev = process.env.KHORA_REGISTRY_URL;

@@ -3,14 +3,14 @@ import type { NbcBindPolicyValidateFn } from "@khoralabs/obp-v2-nbc";
 import type { ObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
 import type { SessionOp } from "@khoralabs/obp-v2-session-impl";
 
-import type { FrameDag } from "./frame-dag.ts";
+import type { FrameDag } from "./frame-dag";
 import type {
   FrameMultiplexOpenerApi,
   FrameSessionHandlers,
   MultiplexChainHooks,
-} from "./frame-mux-types.ts";
-import type { SessionEnvelopeWire, SessionInitNormalized } from "./frame-protocol-types.ts";
-import type { FrameSigner, FrameVerifier } from "./frame-signer.ts";
+} from "./frame-mux-types";
+import type { SessionEnvelopeWire, SessionInitNormalized } from "./frame-protocol-types";
+import type { FrameSigner, FrameVerifier } from "./frame-signer";
 
 export type SessionEnvelopeSyncAdapter = {
   myPartyId?: string;

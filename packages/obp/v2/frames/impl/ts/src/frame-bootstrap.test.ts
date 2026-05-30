@@ -4,9 +4,9 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { isActorPubkeysAscending, isSessionInitPartyStructure } from "./frame-bootstrap.ts";
-import type { SessionInit } from "./frame-protocol-types.ts";
-import { toSha256HexLower } from "./frame-protocol-types.ts";
+import { isActorPubkeysAscending, isSessionInitPartyStructure } from "./frame-bootstrap";
+import type { SessionInit } from "./frame-protocol-types";
+import { toSha256HexLower } from "./frame-protocol-types";
 
 const gh = toSha256HexLower("a".repeat(64));
 

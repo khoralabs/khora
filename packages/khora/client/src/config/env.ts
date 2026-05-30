@@ -1,5 +1,5 @@
-import { KHORA_BUILTIN_PLUGIN_ID } from "../khora-plugins.ts";
-import type { KhoraAppConfigBase, KhoraAppPluginMap } from "./schema.ts";
+import { KHORA_BUILTIN_PLUGIN_ID } from "../khora-plugins";
+import type { KhoraAppConfigBase, KhoraAppPluginMap } from "./schema";
 
 const DEFAULT_TELEMETRY_MAX_BYTES = 4 * 1024 * 1024;
 

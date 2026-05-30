@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createConsoleAuthFromEnv, createRootTokenConsoleAuth } from "./index.ts";
+import { createConsoleAuthFromEnv, createRootTokenConsoleAuth } from "./index";
 
 describe("khora-console", () => {
   test("createRootTokenConsoleAuth authenticates after login cookie", async () => {

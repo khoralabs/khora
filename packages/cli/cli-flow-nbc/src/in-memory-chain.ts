@@ -1,5 +1,5 @@
-import type { FlowChainView } from "./chain-view.ts";
-import type { FlowPort } from "./flow-types.ts";
+import type { FlowChainView } from "./chain-view";
+import type { FlowPort } from "./flow-types";
 
 function bindKey(offerId: string, portId: string): string {
   return `${offerId}::${portId}`;

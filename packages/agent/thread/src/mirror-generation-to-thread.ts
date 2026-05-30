@@ -1,5 +1,5 @@
-import type { InMemoryThreadContext } from "./in-memory-thread-context.ts";
-import type { ThreadMessage } from "./messages.ts";
+import type { InMemoryThreadContext } from "./in-memory-thread-context";
+import type { ThreadMessage } from "./messages";
 
 /**
  * Minimal `ToolLoopAgent.generate()` / `GenerateTextResult` step shape to append a turn to a thread. Structural only.

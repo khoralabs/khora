@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { zKhoraRelationshipListResponse } from "./khora-relationships.ts";
+import { zKhoraRelationshipListResponse } from "./khora-relationships";
 
 describe("khora-relationships", () => {
   test("zKhoraRelationshipListResponse", () => {

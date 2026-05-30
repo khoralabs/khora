@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { ensureCustomSqliteForExtensions } from "@khoralabs/memories-sqlite";
-import { OBP_V2_SCHEMA_SQL } from "./schema.ts";
+import { OBP_V2_SCHEMA_SQL } from "./schema";
 
 /** Run frozen DDL (safe to call on every open). */
 export function initObpV2Schema(db: Database): void {

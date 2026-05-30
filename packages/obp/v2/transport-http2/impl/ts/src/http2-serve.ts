@@ -13,7 +13,7 @@ import {
 } from "@khoralabs/obp-v2-frames-impl";
 import type { ObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
 
-import { frameChannelFromHttp2Stream } from "./http2-channel.ts";
+import { frameChannelFromHttp2Stream } from "./http2-channel";
 
 export type ObpOnConnectContext = {
   headers: http2.IncomingHttpHeaders;

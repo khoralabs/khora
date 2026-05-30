@@ -1,6 +1,6 @@
 import { Buffer } from "node:buffer";
 
-import type { InboxStagingPayload, WriteOp } from "../colonnade-types.ts";
+import type { InboxStagingPayload, WriteOp } from "../colonnade-types";
 
 export function bytesToB64(u: Uint8Array): string {
   return Buffer.from(u).toString("base64");

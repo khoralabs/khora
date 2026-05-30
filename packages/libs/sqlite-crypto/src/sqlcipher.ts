@@ -2,8 +2,8 @@ import { Database, type DatabaseOptions } from "bun:sqlite";
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import type { EncryptionKeyProvider, SqlCipherScope } from "./key-provider.ts";
-import { SqliteCryptoError } from "./key-provider.ts";
+import type { EncryptionKeyProvider, SqlCipherScope } from "./key-provider";
+import { SqliteCryptoError } from "./key-provider";
 
 export const SQLCIPHER_CUSTOM_LIB_ENV = "SQLCIPHER_CUSTOM_LIB";
 

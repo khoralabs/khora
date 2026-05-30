@@ -1,9 +1,6 @@
-import type {
-  AgentNotification,
-  AgentNotificationBufferPort,
-} from "../registration/notifications.ts";
-import type { PrincipalId } from "../registration/types.ts";
-import type { InboxFanoutPort } from "./inbox-fanout-port.ts";
+import type { AgentNotification, AgentNotificationBufferPort } from "../registration/notifications";
+import type { PrincipalId } from "../registration/types";
+import type { InboxFanoutPort } from "./inbox-fanout-port";
 
 /** Persist notification, push to connected inbox WebSockets; mark read when a session is connected. */
 export async function deliverAgentNotification(

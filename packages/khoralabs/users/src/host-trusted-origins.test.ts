@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { getUsersDatabase, resetUsersDatabase } from "./db.ts";
+import { getUsersDatabase, resetUsersDatabase } from "./db";
 import {
   InvalidTrustedOriginError,
   listRegistryTrustedOrigins,
@@ -7,9 +7,9 @@ import {
   OriginQuotaExceededError,
   replaceHostTrustedOrigins,
   setHostRegistryParticipation,
-} from "./host-trusted-origins.ts";
-import { activateKhoraHost, registerKhoraHost } from "./khora-hosts.ts";
-import { initUsersSchema } from "./schema.ts";
+} from "./host-trusted-origins";
+import { activateKhoraHost, registerKhoraHost } from "./khora-hosts";
+import { initUsersSchema } from "./schema";
 
 describe("host trusted origins", () => {
   let db: ReturnType<typeof getUsersDatabase>;

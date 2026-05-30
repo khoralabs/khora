@@ -2,7 +2,7 @@ import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 import { EdDSASigner } from "iso-signatures/signers/eddsa.js";
-import type { PersistableAgentSigner } from "./signer.ts";
+import type { PersistableAgentSigner } from "./signer";
 
 export type AgentIdentityFile = {
   did: string;

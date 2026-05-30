@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { InMemoryThreadContext } from "./in-memory-thread-context.ts";
-import { postThreadUserText } from "./messages.ts";
+import { InMemoryThreadContext } from "./in-memory-thread-context";
+import { postThreadUserText } from "./messages";
 
 describe("InMemoryThreadContext", () => {
   test("post and withContext returns ordered history", async () => {

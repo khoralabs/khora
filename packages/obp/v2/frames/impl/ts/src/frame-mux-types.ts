@@ -1,5 +1,5 @@
 import type { NbcTurnBody } from "@khoralabs/obp-v2-nbc";
-import type { SessionInitNormalized } from "./frame-protocol-types.ts";
+import type { SessionInitNormalized } from "./frame-protocol-types";
 
 /** Handle passed to session handlers and {@link FrameSessionHandlers.onSessionReady}. */
 export type FrameSessionHandle = {

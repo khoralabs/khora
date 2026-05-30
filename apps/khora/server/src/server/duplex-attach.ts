@@ -6,8 +6,8 @@ import {
 import type { DuplexByteStream } from "@khoralabs/duplex-byte-stream";
 import { AuthError } from "@khoralabs/khora-auth";
 import { type KhoraHostContext, popRelayInboxDrainItemsForDid } from "@khoralabs/khora-host";
-import type { HostRouteDeps } from "../http/deps.ts";
-import { KHORA_UNARY_INGRESS_ORIGIN } from "./unary-dispatch.ts";
+import type { HostRouteDeps } from "../http/deps";
+import { KHORA_UNARY_INGRESS_ORIGIN } from "./unary-dispatch";
 
 export async function attachRoomDuplexAfterTicket(opts: {
   ctx: KhoraHostContext;

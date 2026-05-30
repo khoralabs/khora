@@ -1,9 +1,9 @@
-export type { AgentIdentityFile } from "./identity.ts";
+export type { AgentIdentityFile } from "./identity";
 export {
   defaultIdentityPath,
   generateAgentIdentity,
   loadIdentity,
   loadOrCreateIdentity,
   saveIdentity,
-} from "./identity.ts";
-export type { AgentSigner, PersistableAgentSigner } from "./signer.ts";
+} from "./identity";
+export type { AgentSigner, PersistableAgentSigner } from "./signer";

@@ -1,15 +1,15 @@
 import type { PrincipalRegistrationRequest } from "@khoralabs/agent-relay";
 import { zKhoraRegisterResult, zKhoraRegistrationRequestBody } from "@khoralabs/khora-contracts";
 import { inviteRequiredFromEnv, invitesPerRegistrationFromEnv } from "@khoralabs/khora-invites";
-import { logger } from "../logger.ts";
-import { clientIpFromRequest } from "../rate-limit.ts";
-import type { HostRouteDeps } from "./deps.ts";
+import { logger } from "../logger";
+import { clientIpFromRequest } from "../rate-limit";
+import type { HostRouteDeps } from "./deps";
 import {
   authErrorResponse,
   jsonError,
   rateLimitedResponse,
   registrationOpaqueJson,
-} from "./responses.ts";
+} from "./responses";
 
 export async function handleRegister(req: Request, deps: HostRouteDeps): Promise<Response> {
   const { ctx, rateLimiters } = deps;

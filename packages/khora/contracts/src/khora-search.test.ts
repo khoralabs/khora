@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { zKhoraSearchResponse } from "./khora-search.ts";
+import { zKhoraSearchResponse } from "./khora-search";
 
 const SIG = "dGVzdC1zaWduYXR1cmU";
 

@@ -5,31 +5,31 @@ export type {
   KhoraSearchRequest,
   KhoraSearchResponse,
 } from "@khoralabs/khora-contracts";
-export { createKhoraCatalogApi, type KhoraHostCatalogApi } from "./catalog-facade.ts";
-export type { KhoraHostContext } from "./context.ts";
-export { createKhoraHost } from "./khora-host.ts";
-export type { KhoraHostDeps } from "./khora-host-deps.ts";
+export { createKhoraCatalogApi, type KhoraHostCatalogApi } from "./catalog-facade";
+export type { KhoraHostContext } from "./context";
+export { createKhoraHost } from "./khora-host";
+export type { KhoraHostDeps } from "./khora-host-deps";
 export {
   type BootstrapKhoraMemoriesOpts,
   bootstrapKhoraMemories,
   type KhoraMemoriesHost,
-} from "./memories/bootstrap.ts";
+} from "./memories/bootstrap";
 export {
   executeKhoraMemoriesSearch,
   khoraSearchRequestFromGetQuery,
-} from "./memories/khora-memories-search.ts";
-export { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories/memories-config.ts";
-export { assignPostAddress } from "./on-event.ts";
+} from "./memories/khora-memories-search";
+export { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories/memories-config";
+export { assignPostAddress } from "./on-event";
 export {
   bootstrapKhoraPercolator,
   type KhoraPercolatorHost,
-} from "./percolator/bootstrap.ts";
+} from "./percolator/bootstrap";
 export {
   authorSubscriptionSearch,
   authorTopicSubscriptionSearch,
   topicSubscriptionSearch,
-} from "./percolator/subscription-searches.ts";
-export { topicSlugsToLabelKinds, topicSlugToLabelKind } from "./percolator/topic-labels.ts";
+} from "./percolator/subscription-searches";
+export { topicSlugsToLabelKinds, topicSlugToLabelKind } from "./percolator/topic-labels";
 export type {
   KhoraAdminCatalogStats,
   KhoraAdminCellDetail,
@@ -51,29 +51,29 @@ export type {
   KhoraColonnadeCluster,
   KhoraHostHealthPort,
   PostResolver,
-} from "./ports.ts";
+} from "./ports";
 export {
   authorPrincipalIdFromPostId,
   type DecodedPostAddress,
   decodePostId,
   encodePostId,
   type PostAddressInput,
-} from "./post-address-id.ts";
-export { canDeliverPostToRecipient, canReadPost } from "./post-visibility.ts";
+} from "./post-address-id";
+export { canDeliverPostToRecipient, canReadPost } from "./post-visibility";
 export {
   discardCellInboxRoomTickets,
   enqueueCellInboxInline,
-} from "./relay-cell-inbox.ts";
+} from "./relay-cell-inbox";
 export {
   popRelayInboxDrainItemsForDid,
   type RelayInboxDrainItem,
-} from "./relay-inbox-drain.ts";
+} from "./relay-inbox-drain";
 export {
   createColonnadePostResolver,
   deletePostOutboxRecord,
   listAuthorOutboxRecords,
   resolvePostById,
-} from "./resolve-post.ts";
+} from "./resolve-post";
 export {
   deliverRoomTicketToPrincipal,
   type MintRoomChannelTicketOpts,
@@ -81,10 +81,10 @@ export {
   type RoomAdmissionInboxCtx,
   type RoomRegistryMeta,
   type RoomTicketInlinePayload,
-} from "./room-admission.ts";
+} from "./room-admission";
 export {
   authorDidFromSubscriptionSubject,
   authorSubscriptionSubject,
   authorTopicSubscriptionSubject,
   parseAuthorTopicSubscriptionSubject,
-} from "./subject-keys.ts";
+} from "./subject-keys";

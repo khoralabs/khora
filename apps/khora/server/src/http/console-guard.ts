@@ -1,6 +1,6 @@
 import type { ConsoleAuth } from "@khoralabs/khora-console";
-import type { HostRouteDeps } from "./deps.ts";
-import { jsonError } from "./responses.ts";
+import type { HostRouteDeps } from "./deps";
+import { jsonError } from "./responses";
 
 export async function withConsoleAuth(
   req: Request,

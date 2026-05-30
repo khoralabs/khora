@@ -1,7 +1,7 @@
 import type z from "zod";
-import { KhoraConfigError } from "./errors.ts";
-import { readKhoraConfigFileWithExtends } from "./file.ts";
-import { mergeKhoraAppConfigLayers } from "./merge.ts";
+import { KhoraConfigError } from "./errors";
+import { readKhoraConfigFileWithExtends } from "./file";
+import { mergeKhoraAppConfigLayers } from "./merge";
 
 export type LoadKhoraAppConfigOptions<TSchema extends z.ZodTypeAny> = {
   /** Host's extended schema. Use `extendKhoraAppConfig({...})` or pass `zKhoraAppConfigBase`. */

@@ -1,6 +1,6 @@
-import { canonicalJsonString } from "./canonical-json.ts";
-import type { FramedWireObject } from "./frame-protocol-types.ts";
-import { encodeLengthPrefixed } from "./length-prefix.ts";
+import { canonicalJsonString } from "./canonical-json";
+import type { FramedWireObject } from "./frame-protocol-types";
+import { encodeLengthPrefixed } from "./length-prefix";
 
 /**
  * Length-prefixed wire bytes: **`uint32_be(length)`** then **`UTF-8(canonical_json(...))`**

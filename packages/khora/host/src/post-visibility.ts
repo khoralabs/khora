@@ -1,7 +1,7 @@
 import type { PrincipalId } from "@khoralabs/agent-relay";
 import type { KhoraPost } from "@khoralabs/khora-contracts";
 import type { SocialRelationshipPersistence } from "@khoralabs/relay-colonnade";
-import { decodePostId } from "./post-address-id.ts";
+import { decodePostId } from "./post-address-id";
 
 export function authorPrincipalIdFromPost(post: KhoraPost): string | undefined {
   const address = decodePostId(post.id);

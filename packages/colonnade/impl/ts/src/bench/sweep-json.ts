@@ -8,10 +8,10 @@
  * Default iterations/warmup/cells/fanout/payload/strategy match **`CANONICAL_BENCH_DEFAULTS`** (`bench-defaults.ts`).
  */
 
-import { CANONICAL_BENCH_DEFAULTS } from "./bench-defaults.ts";
-import type { BenchResult } from "./scenarios.ts";
-import { BENCH_SCENARIO_IDS, benchCellIds, runScenario, type ScenarioId } from "./scenarios.ts";
-import { getBenchmarkStrategies } from "./strategies.ts";
+import { CANONICAL_BENCH_DEFAULTS } from "./bench-defaults";
+import type { BenchResult } from "./scenarios";
+import { BENCH_SCENARIO_IDS, benchCellIds, runScenario, type ScenarioId } from "./scenarios";
+import { getBenchmarkStrategies } from "./strategies";
 
 type SweepCliArgs = {
   strategy: string;

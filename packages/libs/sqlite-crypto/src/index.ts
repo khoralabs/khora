@@ -5,7 +5,7 @@ export {
   KmsEnvelopeKeyProvider,
   type SqlCipherScope,
   SqliteCryptoError,
-} from "./key-provider.ts";
+} from "./key-provider";
 export {
   createOutboxPayloadCodec,
   decryptOutboxPayload,
@@ -18,14 +18,14 @@ export {
   type OutboxPayloadCodec,
   outboxKeyBytesToHex,
   outboxMetadataIsPost,
-} from "./outbox-payload.ts";
+} from "./outbox-payload";
 export {
   type OpenEncryptedDatabaseOptions,
   openEncryptedDatabase,
   openEncryptedDatabaseSync,
   resolveSqlCipherLib,
   SQLCIPHER_CUSTOM_LIB_ENV,
-} from "./sqlcipher.ts";
+} from "./sqlcipher";
 export {
   applyTestEncryptionEnv,
   createTestEncryptionMaterial,
@@ -36,4 +36,4 @@ export {
   TEST_REGISTRY_SQLCIPHER_KEY,
   type TestEncryptionMaterial,
   TestKeyProvider,
-} from "./test-keys.ts";
+} from "./test-keys";

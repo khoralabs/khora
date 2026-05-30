@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { buildCommandHelpTextMap, formatHelp, tryPrintCommandHelp } from "./help-format.ts";
-import type { CommandHelp } from "./types.ts";
+import { buildCommandHelpTextMap, formatHelp, tryPrintCommandHelp } from "./help-format";
+import type { CommandHelp } from "./types";
 
 describe("formatHelp", () => {
   test("includes Interactive and Non-interactive sections", () => {

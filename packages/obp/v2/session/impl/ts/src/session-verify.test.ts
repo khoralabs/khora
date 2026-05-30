@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { frameToSessionOps } from "./frame-to-session-op.ts";
-import { checkpointForSessionOps } from "./session-merkle.ts";
-import type { SessionEnvelope, SessionOp } from "./session-protocol-types.ts";
-import { verifySessionEnvelope } from "./session-verify.ts";
+import { frameToSessionOps } from "./frame-to-session-op";
+import { checkpointForSessionOps } from "./session-merkle";
+import type { SessionEnvelope, SessionOp } from "./session-protocol-types";
+import { verifySessionEnvelope } from "./session-verify";
 
 describe("verifySessionEnvelope", () => {
   test("accepts valid single delta from empty prefix", () => {

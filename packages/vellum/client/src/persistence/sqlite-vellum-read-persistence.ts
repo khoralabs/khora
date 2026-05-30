@@ -2,7 +2,7 @@ import { Database } from "bun:sqlite";
 import fs from "node:fs";
 import type { VellumChainRow, VellumOfferRow, VellumPortRow } from "@khoralabs/vellum-contracts";
 
-import type { VellumReadModel } from "./vellum-read-persistence.ts";
+import type { VellumReadModel } from "./vellum-read-persistence";
 
 /** Read-only SQLite projection for the room `obp.sqlite` schema. */
 export class SqliteVellumReadModel implements VellumReadModel {

@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { AgentAccountBinding, AgentAccountBindingRow } from "./types.ts";
+import type { AgentAccountBinding, AgentAccountBindingRow } from "./types";
 
 function mapBinding(row: AgentAccountBindingRow): AgentAccountBinding {
   return {

@@ -1,9 +1,5 @@
-import type { PrincipalId } from "../registration/types.ts";
-import type {
-  AgentRelayEntityRow,
-  AgentRelayEntityUpsert,
-  AgentRelayPersistence,
-} from "./types.ts";
+import type { PrincipalId } from "../registration/types";
+import type { AgentRelayEntityRow, AgentRelayEntityUpsert, AgentRelayPersistence } from "./types";
 
 /** Thin facade over {@link AgentRelayPersistence} entity slices (backend-agnostic). */
 export type AgentRelayPersistenceClient = {

@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
-import { inboxStagingToBlob, writeOpToBlob } from "./staging-binary.ts";
-import { inboxStagingFromJson, writeOpFromJson } from "./staging-json.ts";
+import { inboxStagingToBlob, writeOpToBlob } from "./staging-binary";
+import { inboxStagingFromJson, writeOpFromJson } from "./staging-json";
 
 type TableInfoRow = {
   cid: number;

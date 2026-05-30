@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { normalizeTopicSlug } from "./topic-slug.ts";
+import { normalizeTopicSlug } from "./topic-slug";
 
 describe("normalizeTopicSlug", () => {
   test("strips hash and lowercases", () => {

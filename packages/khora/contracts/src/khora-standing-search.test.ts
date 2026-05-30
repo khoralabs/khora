@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { zKhoraStandingSearchRequest } from "./khora-standing-search.ts";
+import { zKhoraStandingSearchRequest } from "./khora-standing-search";
 
 describe("zKhoraStandingSearchRequest", () => {
   test("accepts filter-only with labels", () => {

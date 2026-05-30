@@ -9,7 +9,7 @@ import {
   platformPkgJson,
   SUPPORTED_TARGETS,
   stageVellumRelease,
-} from "./stage-vellum-release.ts";
+} from "./stage-vellum-release";
 
 describe("launcher sources", () => {
   test("cli launcher sets VELLUM_* env vars", () => {
@@ -72,7 +72,7 @@ describe("stageVellumRelease", () => {
     );
     writeFileSync(
       path.join(workspace, "apps/vellum/cli/scripts/postinstall.entry.ts"),
-      `import { runVellumPostinstall } from "./postinstall.ts";
+      `import { runVellumPostinstall } from "./postinstall";
        runVellumPostinstall({ pkgDistDir: ".", home: "/tmp" });
       `,
     );

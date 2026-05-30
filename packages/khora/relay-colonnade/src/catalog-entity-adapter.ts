@@ -4,7 +4,7 @@ import type {
   AgentRelayEntityRow,
   AgentRelayEntityUpsert,
 } from "@khoralabs/agent-relay";
-import type { RelayCatalogProjectionStore } from "./catalog-projection-store.ts";
+import type { RelayCatalogProjectionStore } from "./catalog-projection-store";
 
 export function parseEntityRow(projection: unknown, id: string): AgentRelayEntityRow | undefined {
   if (projection === null || typeof projection !== "object" || Array.isArray(projection)) {

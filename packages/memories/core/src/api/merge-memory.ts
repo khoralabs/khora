@@ -9,7 +9,7 @@ import {
   type MemoryOpContext,
   resolveMemoriesBackendCapabilities,
 } from "../persistence/types";
-import { computeSourceMapContentHash } from "../provenance/index.ts";
+import { computeSourceMapContentHash } from "../provenance/index";
 import type {
   EdgeLabelInstance,
   LabelSchemaMap,

@@ -1,4 +1,4 @@
-import type { KhoraStandingSearchRequest } from "./khora-standing-search.ts";
+import type { KhoraStandingSearchRequest } from "./khora-standing-search";
 
 export const KHORA_TOPIC_LABEL_PREFIX = "khora_topic:";
 

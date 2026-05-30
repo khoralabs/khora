@@ -1,5 +1,5 @@
 import z from "zod";
-import { KHORA_BUILTIN_PLUGIN_ID } from "../khora-plugins.ts";
+import { KHORA_BUILTIN_PLUGIN_ID } from "../khora-plugins";
 
 const zProfileSyncOptions = z
   .object({

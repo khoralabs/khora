@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
-import type { HostRouteDeps } from "./deps.ts";
-import { handleInternalMintInvite } from "./internal-invite.ts";
+import type { HostRouteDeps } from "./deps";
+import { handleInternalMintInvite } from "./internal-invite";
 
 describe("handleInternalMintInvite", () => {
   test("returns 401 without bearer secret", async () => {

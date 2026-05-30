@@ -2,8 +2,8 @@ import type { FlagMap } from "@khoralabs/cli-kit";
 import { strFlag } from "@khoralabs/cli-kit";
 import { KhoraClient } from "@khoralabs/khora-client";
 
-import { cliBaseUrl, loadSigner, type VellumCliContext } from "../flows/context.ts";
-import { runRegisterInteractiveFlow } from "../flows/register-flow.ts";
+import { cliBaseUrl, loadSigner, type VellumCliContext } from "../flows/context";
+import { runRegisterInteractiveFlow } from "../flows/register-flow";
 
 export async function handleRegister(ctx: VellumCliContext, flags: FlagMap): Promise<void> {
   const baseUrl = cliBaseUrl(flags);

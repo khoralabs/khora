@@ -3,25 +3,25 @@ export {
   type CatalogProjectionListedRow,
   escapeSqlLikeLiteral,
   RelayCatalogProjectionStore,
-} from "./catalog-projection-store.ts";
-export { createRelayColonnadeSocial } from "./create-relay-colonnade-social.ts";
-export { createFrameChannelHubPersistenceSqlite } from "./frame-channel-sqlite.ts";
+} from "./catalog-projection-store";
+export { createRelayColonnadeSocial } from "./create-relay-colonnade-social";
+export { createFrameChannelHubPersistenceSqlite } from "./frame-channel-sqlite";
 export {
   createRelayPrincipalLifecycle,
   type RelayPrincipalLifecycle,
   type RelayPrincipalLifecycleDeps,
-} from "./principal-lifecycle.ts";
-export { ensurePrincipalTeardownJobsSchema } from "./principal-teardown-jobs.ts";
+} from "./principal-lifecycle";
+export { ensurePrincipalTeardownJobsSchema } from "./principal-teardown-jobs";
 export {
   type PrincipalTeardownWorkerHandle,
   startPrincipalTeardownWorker,
-} from "./principal-teardown-worker.ts";
+} from "./principal-teardown-worker";
 export {
   createRelayColonnadePersistence,
   createRelayColonnadePersistenceFromDatabases,
   RELAY_CATALOG_SOURCE_PROFILE,
   RELAY_CATALOG_SOURCE_TOPIC,
-} from "./relay-colonnade-persistence.ts";
+} from "./relay-colonnade-persistence";
 export {
   RELAY_CATALOG_REG_BY_PRINCIPAL,
   RELAY_CATALOG_REG_BY_PROFILE,
@@ -44,19 +44,19 @@ export {
   SOURCE_PRINCIPAL_TO_USERNAME,
   SOURCE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
-} from "./relay-id-conventions.ts";
-export { RelaySocialPrincipalChannelStore } from "./relay-social-principal-channel-store.ts";
-export { registerAgentOnColonnadePersistence } from "./social-registration.ts";
-export { createSocialRelationshipPersistence } from "./social-relationship-persistence.ts";
+} from "./relay-id-conventions";
+export { RelaySocialPrincipalChannelStore } from "./relay-social-principal-channel-store";
+export { registerAgentOnColonnadePersistence } from "./social-registration";
+export { createSocialRelationshipPersistence } from "./social-relationship-persistence";
 export type {
   SocialAgentIdentity,
   SocialRegisterAgentInput,
   SocialRelationshipPersistence,
   SocialRelationshipRow,
-} from "./social-types.ts";
+} from "./social-types";
 export {
   applyRelaySqlitePragmas,
   ensureRelayCatalogProjectionsSchema,
   openRelayCatalogDb,
   openRelayFramesDb,
-} from "./sqlite-setup.ts";
+} from "./sqlite-setup";

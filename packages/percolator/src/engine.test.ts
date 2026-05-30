@@ -1,9 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-  createInMemoryPercolatorPersistence,
-  createPercolator,
-  extractQueryTerms,
-} from "./index.ts";
+import { createInMemoryPercolatorPersistence, createPercolator, extractQueryTerms } from "./index";
 
 describe("createPercolator", () => {
   test("filter-only empty query matches candidate with required label", async () => {

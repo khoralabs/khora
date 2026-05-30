@@ -14,9 +14,9 @@ import { createInMemoryPercolatorPersistence, createPercolator } from "@khoralab
 import type { SocialRelationshipPersistence } from "@khoralabs/relay-colonnade";
 import { RelayCatalogProjectionStore } from "@khoralabs/relay-colonnade";
 import { createTestEncryptionMaterial, TEST_POST_AUTHOR_SIGNATURE } from "@khoralabs/sqlite-crypto";
-import { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories/memories-config.ts";
-import { assignPostAddress, createKhoraRelayOnEvent, encodePostId } from "./on-event.ts";
-import { toPercolatorSearch } from "./percolator/adapter.ts";
+import { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories/memories-config";
+import { assignPostAddress, createKhoraRelayOnEvent, encodePostId } from "./on-event";
+import { toPercolatorSearch } from "./percolator/adapter";
 
 function createRelayPersistence(profiles: Record<string, KhoraProfile>) {
   const catalogDb = new Database(":memory:");

@@ -11,7 +11,7 @@ import {
   getRegistrySession,
   getRegistrySessionToken,
 } from "@khoralabs/users-auth";
-import { registryPublicUrl } from "./resolve-host.ts";
+import { registryPublicUrl } from "./resolve-host";
 
 export async function handleDeviceAuthorize(req: Request): Promise<Response> {
   let sourceApp: string | undefined;

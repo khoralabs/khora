@@ -8,7 +8,7 @@ import {
   parseAgentRequestEnvelopeFromSearch,
   randomAgentRequestNonce,
   signatureBytesToB64Url,
-} from "./wire.ts";
+} from "./wire";
 
 describe("canonicalAgentRequestMessage", () => {
   test("deterministic body shape METHOD\\nPATH\\nts\\nnonce\\nbodyHash", async () => {

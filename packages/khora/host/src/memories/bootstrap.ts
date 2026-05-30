@@ -2,11 +2,11 @@ import type { AgentRelayPersistenceClient } from "@khoralabs/agent-relay";
 import { MemoriesClient } from "@khoralabs/memories-core";
 import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import type { MemoriesPersistence } from "@khoralabs/memories-core/persistence";
-import type { PostResolver } from "../ports.ts";
-import { createKhoraMemoriesIndexer, type KhoraMemoriesIndexer } from "./indexer.ts";
-import { createKhoraCanonicalStore, type KhoraCanonicalStore } from "./khora-canonical-store.ts";
-import { khoraOntology } from "./khora-ontology.ts";
-import { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories-config.ts";
+import type { PostResolver } from "../ports";
+import { createKhoraMemoriesIndexer, type KhoraMemoriesIndexer } from "./indexer";
+import { createKhoraCanonicalStore, type KhoraCanonicalStore } from "./khora-canonical-store";
+import { khoraOntology } from "./khora-ontology";
+import { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories-config";
 
 export type KhoraMemoriesHost = {
   client: MemoriesClient<typeof khoraOntology.nodeLabels, typeof khoraOntology.edgeLabels>;

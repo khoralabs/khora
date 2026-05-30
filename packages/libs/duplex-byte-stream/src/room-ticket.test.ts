@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { generateRoomSecretHex, signRoomTicket, verifyRoomTicket } from "./room-ticket.ts";
+import { generateRoomSecretHex, signRoomTicket, verifyRoomTicket } from "./room-ticket";
 
 describe("room-ticket", () => {
   test("round trip", async () => {

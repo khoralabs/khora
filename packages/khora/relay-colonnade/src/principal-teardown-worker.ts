@@ -1,4 +1,4 @@
-import type { RelayPrincipalLifecycle } from "./principal-lifecycle.ts";
+import type { RelayPrincipalLifecycle } from "./principal-lifecycle";
 
 export type PrincipalTeardownWorkerHandle = { stop(): void };
 

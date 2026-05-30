@@ -4,8 +4,8 @@ import {
   accumulateSessionOps,
   accumulateTaggedSessionOps,
   frameToSessionOps,
-} from "./frame-to-session-op.ts";
-import type { SessionOp } from "./session-protocol-types.ts";
+} from "./frame-to-session-op";
+import type { SessionOp } from "./session-protocol-types";
 
 describe("frameToSessionOps", () => {
   test("TURN", () => {

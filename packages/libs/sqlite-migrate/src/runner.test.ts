@@ -1,8 +1,8 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
-import type { Migration } from "./migration.ts";
-import { createMigrationRunner } from "./runner.ts";
-import { encodeSemverForUserVersion } from "./semver.ts";
+import type { Migration } from "./migration";
+import { createMigrationRunner } from "./runner";
+import { encodeSemverForUserVersion } from "./semver";
 
 function makeDb(): Database {
   return new Database(":memory:");

@@ -5,7 +5,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { ObpError } from "@khoralabs/obp-v2-errors";
-import { createInMemoryObpPersistenceClient } from "./in-memory-strategy.ts";
+import { createInMemoryObpPersistenceClient } from "./in-memory-strategy";
 
 function makeClient() {
   return createInMemoryObpPersistenceClient();

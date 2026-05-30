@@ -6,8 +6,8 @@ import {
   zKhoraProfile,
 } from "@khoralabs/khora-contracts";
 import z from "zod";
-import type { KhoraAppConfigBase } from "./config/schema.ts";
-import { createKhoraResolvePath, KHORA_BUILTIN_PLUGIN_ID } from "./khora-plugins.ts";
+import type { KhoraAppConfigBase } from "./config/schema";
+import { createKhoraResolvePath, KHORA_BUILTIN_PLUGIN_ID } from "./khora-plugins";
 
 /**
  * Persistence envelope written by the profile-sync plugin. Re-declared here (rather than imported

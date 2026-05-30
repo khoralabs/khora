@@ -4,7 +4,7 @@ import type {
   DeviceAuthorization,
   DeviceAuthorizationRow,
   DeviceAuthorizationStatus,
-} from "./types.ts";
+} from "./types";
 
 const DEVICE_TTL_MS = 15 * 60 * 1000;
 

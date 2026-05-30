@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { frameToSessionOps } from "./frame-to-session-op.ts";
+import { frameToSessionOps } from "./frame-to-session-op";
 import {
   checkpointForSessionOps,
   emptySessionOpLogRootHex,
   merkleRootHexFromLeafDigests,
   sessionOpLeafDigest,
-} from "./session-merkle.ts";
-import type { SessionOp } from "./session-protocol-types.ts";
+} from "./session-merkle";
+import type { SessionOp } from "./session-protocol-types";
 
 describe("emptySessionOpLogRootHex", () => {
   test("stable 64-char hex", () => {

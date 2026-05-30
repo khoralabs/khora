@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
-import { maybeRegistryOptInOnStartup, registerHostWithRegistry } from "./registry-opt-in.ts";
+import { maybeRegistryOptInOnStartup, registerHostWithRegistry } from "./registry-opt-in";
 
 describe("registry opt-in", () => {
   const prev: Record<string, string | undefined> = {};

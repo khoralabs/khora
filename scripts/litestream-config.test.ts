@@ -3,7 +3,7 @@ import {
   assertLitestreamCredentials,
   buildLitestreamYaml,
   readLitestreamLogLevel,
-} from "./litestream-config.ts";
+} from "./litestream-config";
 
 const fileDb = {
   kind: "file" as const,

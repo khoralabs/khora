@@ -1,19 +1,19 @@
 import type { Database } from "bun:sqlite";
 import type { AgentRelayPersistence } from "@khoralabs/agent-relay";
 import { normalizeUsername } from "@khoralabs/khora-contracts";
-import type { RelayCatalogProjectionStore } from "./catalog-projection-store.ts";
+import type { RelayCatalogProjectionStore } from "./catalog-projection-store";
 import {
   RELAY_NAMESPACE_PRINCIPAL_TO_USERNAME,
   RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
-} from "./relay-id-conventions.ts";
-import type { SocialAgentIdentity, SocialRegisterAgentInput } from "./social-types.ts";
+} from "./relay-id-conventions";
+import type { SocialAgentIdentity, SocialRegisterAgentInput } from "./social-types";
 
 export {
   SOURCE_PRINCIPAL_TO_USERNAME,
   SOURCE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
-} from "./relay-id-conventions.ts";
+} from "./relay-id-conventions";
 
 /**
  * Upsert profile + principal↔profile registration and username maps in one SQLite transaction.

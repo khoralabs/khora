@@ -11,8 +11,8 @@ import {
   type NbcBindPolicyValidateFn,
   type NbcBindTiming,
   validateNbcBind,
-} from "./nbc-invariants.ts";
-import { type NbcTurnBody, nbcPortSpecToPort } from "./nbc-types.ts";
+} from "./nbc-invariants";
+import { type NbcTurnBody, nbcPortSpecToPort } from "./nbc-types";
 
 export type ApplyNbcTurnParams = {
   /** Party id on **`EXTENDS`** for the new offer (`ExtendOffer.partyId`). */

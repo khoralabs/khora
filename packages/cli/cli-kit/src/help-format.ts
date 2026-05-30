@@ -1,4 +1,4 @@
-import type { CommandHelp } from "./types.ts";
+import type { CommandHelp } from "./types";
 
 function indent(block: string, pad: string): string {
   return block

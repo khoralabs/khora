@@ -1,12 +1,12 @@
 import type { AgentSigner } from "@khoralabs/khora-auth";
-import type { KhoraDuplexTransport } from "./duplex-ws.ts";
-import { WsKhoraDuplexTransport } from "./duplex-ws.ts";
+import type { KhoraDuplexTransport } from "./duplex-ws";
+import { WsKhoraDuplexTransport } from "./duplex-ws";
 import {
   type CreateHttpTransportOptions,
   createHttpKhoraUnaryTransport,
   type KhoraFetch,
   type KhoraUnaryTransport,
-} from "./unary-http.ts";
+} from "./unary-http";
 
 export type KhoraTransportBundle = {
   unary: KhoraUnaryTransport;

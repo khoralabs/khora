@@ -1,4 +1,4 @@
-import type { PrincipalId } from "../registration/types.ts";
+import type { PrincipalId } from "../registration/types";
 
 /** Stored frame-channel hub session row (ticket HMAC secret + TTL). Maps to `rooms.session_id`. */
 export type FrameChannelRoomRecord = {

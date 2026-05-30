@@ -8,7 +8,7 @@ import {
 import { createReadlineSession, type FlagMap, type ReadLineFn, strFlag } from "@khoralabs/cli-kit";
 import { VELLUM_CANONICAL_BASE_URL, VellumClient } from "@khoralabs/vellum-client";
 
-import { vellumCliResolvedConfig } from "../vellum-app-config.ts";
+import { vellumCliResolvedConfig } from "../vellum-app-config";
 
 export type VellumCliContext = {
   readLine: ReadLineFn;

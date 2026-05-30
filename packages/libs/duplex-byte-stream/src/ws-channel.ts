@@ -1,4 +1,4 @@
-import type { DuplexByteStream } from "./duplex-byte-stream.ts";
+import type { DuplexByteStream } from "./duplex-byte-stream";
 
 export type WebSocketDuplexByteSend = (bytes: Uint8Array) => void | Promise<void>;
 

@@ -1,9 +1,9 @@
 import { type KhoraHostContext, popRelayInboxDrainItemsForDid } from "@khoralabs/khora-host";
 import type { KhoraWsUpgradePort } from "@khoralabs/khora-transport";
 import type { WebSocketHandler } from "bun";
-import type { HostRouteDeps } from "../http/deps.ts";
-import { authErrorResponse, jsonError, rateLimitedResponse } from "../http/responses.ts";
-import { logger } from "../logger.ts";
+import type { HostRouteDeps } from "../http/deps";
+import { authErrorResponse, jsonError, rateLimitedResponse } from "../http/responses";
+import { logger } from "../logger";
 
 export async function handleInboxWsUpgrade(
   req: Request,

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { createInMemoryObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
-import { collectNbcChainGraph } from "./nbc-chain-graph.ts";
+import { collectNbcChainGraph } from "./nbc-chain-graph";
 
 describe("collectNbcChainGraph", () => {
   test("collects offers, ports, exposes from persistence client", async () => {

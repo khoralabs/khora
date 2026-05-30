@@ -1,9 +1,9 @@
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { boolFlag, strFlag } from "@khoralabs/cli-kit";
 import { KhoraClient, type KhoraRoomCreateBody } from "@khoralabs/khora-client";
-import { cliBaseUrl, loadSigner, type VellumCliContext } from "../flows/context.ts";
-import { promptJoinTokenIfMissing } from "../flows/room-join-flow.ts";
-import { disconnectLocalRoom } from "./disconnect.ts";
+import { cliBaseUrl, loadSigner, type VellumCliContext } from "../flows/context";
+import { promptJoinTokenIfMissing } from "../flows/room-join-flow";
+import { disconnectLocalRoom } from "./disconnect";
 
 export async function handleRoomCreate(flags: FlagMap): Promise<void> {
   const baseUrl = cliBaseUrl(flags);

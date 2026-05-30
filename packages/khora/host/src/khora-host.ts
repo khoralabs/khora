@@ -6,11 +6,11 @@ import {
 } from "@khoralabs/agent-relay";
 import type { KhoraPost, KhoraProfile } from "@khoralabs/khora-contracts";
 import { startPrincipalTeardownWorker } from "@khoralabs/relay-colonnade";
-import type { KhoraHostContext } from "./context.ts";
-import type { KhoraHostDeps } from "./khora-host-deps.ts";
-import { createKhoraRelayOnEvent } from "./on-event.ts";
+import type { KhoraHostContext } from "./context";
+import type { KhoraHostDeps } from "./khora-host-deps";
+import { createKhoraRelayOnEvent } from "./on-event";
 
-export type { KhoraHostDeps } from "./khora-host-deps.ts";
+export type { KhoraHostDeps } from "./khora-host-deps";
 
 export function createKhoraHost(deps: KhoraHostDeps): KhoraHostContext {
   const _persistenceClient = createAgentRelayPersistenceClient(deps.persistence);

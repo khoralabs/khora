@@ -3,11 +3,11 @@ import {
   envRegistryManagementToken,
   envRegistryParticipate,
   envRegistryUrl,
-} from "../env.ts";
-import { fetchHostRegistryState, updateHostRegistryState } from "../registry-client.ts";
-import { withConsoleAuth } from "./console-guard.ts";
-import type { HostRouteDeps } from "./deps.ts";
-import { jsonError } from "./responses.ts";
+} from "../env";
+import { fetchHostRegistryState, updateHostRegistryState } from "../registry-client";
+import { withConsoleAuth } from "./console-guard";
+import type { HostRouteDeps } from "./deps";
+import { jsonError } from "./responses";
 
 export async function handleAdminRegistryGet(req: Request, deps: HostRouteDeps): Promise<Response> {
   return withConsoleAuth(req, deps, async () => {

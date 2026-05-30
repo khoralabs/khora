@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { normalizeUsername, zUsername } from "./username.ts";
+import { normalizeUsername, zUsername } from "./username";
 
 describe("normalizeUsername", () => {
   test("accepts simple lowercase", () => {

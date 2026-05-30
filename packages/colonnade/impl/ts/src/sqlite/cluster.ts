@@ -4,13 +4,13 @@ import { join } from "node:path";
 import type { OutboxPayloadCodec } from "@khoralabs/sqlite-crypto";
 import { openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
 
-import type { CatalogPersistenceStrategy } from "../catalog-persistence-strategy.ts";
-import type { CellPersistenceStrategy, ResolveCellStrategy } from "../cell-persistence-strategy.ts";
-import { defaultNoopCatalogPersistenceStrategy } from "../noop-catalog-strategy.ts";
-import { ensureCellPoolManifest } from "./cell-pool-manifest.ts";
-import { cellDbFilenameStem, derivePoolHomeCell, perPrincipalCellId } from "./principal-cell-id.ts";
-import { SqliteCellPersistenceStrategy } from "./sqlite-cell-strategy.ts";
-import { LazyWorkerBackedCellStrategy } from "./worker-backed-cell-strategy.ts";
+import type { CatalogPersistenceStrategy } from "../catalog-persistence-strategy";
+import type { CellPersistenceStrategy, ResolveCellStrategy } from "../cell-persistence-strategy";
+import { defaultNoopCatalogPersistenceStrategy } from "../noop-catalog-strategy";
+import { ensureCellPoolManifest } from "./cell-pool-manifest";
+import { cellDbFilenameStem, derivePoolHomeCell, perPrincipalCellId } from "./principal-cell-id";
+import { SqliteCellPersistenceStrategy } from "./sqlite-cell-strategy";
+import { LazyWorkerBackedCellStrategy } from "./worker-backed-cell-strategy";
 
 export type SqliteColonnadeClusterMode =
   | { readonly kind: "pool"; readonly cellCount: number }

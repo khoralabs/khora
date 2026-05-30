@@ -1,5 +1,5 @@
 import z from "zod";
-import { zVellumAppConfigBase } from "./schema.ts";
+import { zVellumAppConfigBase } from "./schema";
 
 export function vellumConfigJsonSchema(): Record<string, unknown> {
   const generated = z.toJSONSchema(zVellumAppConfigBase, {

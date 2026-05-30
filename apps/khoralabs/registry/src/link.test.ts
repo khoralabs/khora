@@ -14,8 +14,8 @@ import {
   upsertMembership,
 } from "@khoralabs/users";
 import { ensureRegistrySchema, getRegistryDatabase } from "@khoralabs/users-auth";
-import { handleDeviceAuthorize, handleDeviceToken } from "./api/device.ts";
-import { handleLinkChallenge } from "./api/link.ts";
+import { handleDeviceAuthorize, handleDeviceToken } from "./api/device";
+import { handleLinkChallenge } from "./api/link";
 
 describe("registry device flow", () => {
   beforeEach(async () => {

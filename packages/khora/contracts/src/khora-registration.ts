@@ -1,7 +1,7 @@
 import type { PrincipalRegistrationResult } from "@khoralabs/agent-relay";
 import z from "zod";
-import type { KhoraProfile } from "./khora-profile.ts";
-import { zKhoraProfile } from "./khora-profile.ts";
+import type { KhoraProfile } from "./khora-profile";
+import { zKhoraProfile } from "./khora-profile";
 
 /** HTTP body for `POST /v1/register` (swarm fields + optional Khora invite). */
 export const zKhoraRegisterResult = z.object({

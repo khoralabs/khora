@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mergeAsyncIterators } from "./index.ts";
+import { mergeAsyncIterators } from "./index";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 

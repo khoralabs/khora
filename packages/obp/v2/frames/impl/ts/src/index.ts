@@ -1,10 +1,10 @@
-export { canonicalJsonString, canonicalJsonUtf8 } from "./canonical-json.ts";
-export { encodeFramedJson, encodeFramedWire } from "./encode-framed-json.ts";
+export { canonicalJsonString, canonicalJsonUtf8 } from "./canonical-json";
+export { encodeFramedJson, encodeFramedWire } from "./encode-framed-json";
 export {
   cmpActorPubkeyHex,
   isActorPubkeysAscending,
   isSessionInitPartyStructure,
-} from "./frame-bootstrap.ts";
+} from "./frame-bootstrap";
 export {
   decryptWireFrameBody,
   deriveFrameBodyAesKey,
@@ -19,18 +19,18 @@ export {
   minActorPubkeyFromInit,
   parseHandshakeEphemeralPub,
   x25519SharedSecret,
-} from "./frame-channel-e2ee.ts";
+} from "./frame-channel-e2ee";
 export {
   FrameDag,
   sha256HexLowerFromUtf8String,
   signingPayloadBytes,
-} from "./frame-dag.ts";
+} from "./frame-dag";
 export {
   createFrameDecoder,
   encodeSessionEnvelopeMessage,
   type FrameDecoderYield,
   isNegotiationFrameObject,
-} from "./frame-decoder.ts";
+} from "./frame-decoder";
 export {
   canonicalSessionParties,
   normalizeSessionInit,
@@ -39,25 +39,25 @@ export {
   sessionInitFromUnknownWireRecord,
   sessionInitFromWire,
   sessionInitToWire,
-} from "./frame-init-wire.ts";
+} from "./frame-init-wire";
 export {
   defaultSessionEnvelopeSyncAdapter,
   type RunFrameMultiplexSessionArgs,
   runFrameMultiplexSession,
   type SessionEnvelopeSyncAdapter,
-} from "./frame-multiplex-session.ts";
+} from "./frame-multiplex-session";
 export type {
   FrameMultiplexOpenerApi,
   FrameSessionHandle,
   FrameSessionHandlers,
   MultiplexChainHooks,
-} from "./frame-mux-types.ts";
+} from "./frame-mux-types";
 export {
   createNegotiationCoordinator,
   type NegotiationCoordinatorHooksArgs,
   type WaitForTurnOptions,
   waitForPortOnOffer,
-} from "./frame-negotiation-coordinator.ts";
+} from "./frame-negotiation-coordinator";
 export type {
   ActorPubkeyList,
   Frame,
@@ -71,17 +71,17 @@ export type {
   SessionInitNormalized,
   SessionParty,
   Sha256HexLower,
-} from "./frame-protocol-types.ts";
+} from "./frame-protocol-types";
 export {
   FrameType,
   isSha256HexLower,
   NEGOTIATION_FRAME_PROTOCOL_VERSION,
   toSha256HexLower,
-} from "./frame-protocol-types.ts";
+} from "./frame-protocol-types";
 export {
   type RunFrameSessionArgs,
   runFrameSession,
-} from "./frame-session-pipeline.ts";
+} from "./frame-session-pipeline";
 export {
   createEd25519FrameSigner,
   createEd25519FrameVerifier,
@@ -90,11 +90,11 @@ export {
   generateEd25519KeyPair,
   importEd25519PublicKeyFromActorHex,
   publicKeyActorHex,
-} from "./frame-signer.ts";
+} from "./frame-signer";
 export {
   type FrameSigningPayload,
   frameSigningPayload,
   signingBytesUtf8,
   tipSha256HexFromCompleteFrame,
-} from "./frame-signing.ts";
-export { encodeLengthPrefixed } from "./length-prefix.ts";
+} from "./frame-signing";
+export { encodeLengthPrefixed } from "./length-prefix";

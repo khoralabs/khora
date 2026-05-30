@@ -1,4 +1,4 @@
-import type { PrincipalId, PrincipalRegistrationRequest } from "./registration/types.ts";
+import type { PrincipalId, PrincipalRegistrationRequest } from "./registration/types";
 
 /** Stable reference to the logical entity an event refers to. */
 export type AgentRelayAggregateRef = {

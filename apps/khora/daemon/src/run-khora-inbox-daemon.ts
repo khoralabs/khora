@@ -5,8 +5,8 @@ import {
   type KhoraPluginInstaller,
 } from "@khoralabs/khora-client";
 
-import { removeKhoraDaemonControlFile, writeKhoraDaemonControlFile } from "./control-pid.ts";
-import { createInboxEventSink, type InboxEventSink } from "./inbox-event-sink.ts";
+import { removeKhoraDaemonControlFile, writeKhoraDaemonControlFile } from "./control-pid";
+import { createInboxEventSink, type InboxEventSink } from "./inbox-event-sink";
 
 const MIN_BACKOFF_MS = 1_000;
 const MAX_BACKOFF_MS = 30_000;

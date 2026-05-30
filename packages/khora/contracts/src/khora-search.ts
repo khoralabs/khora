@@ -1,7 +1,7 @@
 import z from "zod";
-import { zKhoraPost } from "./khora-post.ts";
-import { zKhoraProfile } from "./khora-profile.ts";
-import { zSearchContent, zSearchLabels } from "./khora-standing-search.ts";
+import { zKhoraPost } from "./khora-post";
+import { zKhoraProfile } from "./khora-profile";
+import { zSearchContent, zSearchLabels } from "./khora-standing-search";
 
 /** GET /v1/search query params. */
 export type KhoraSearchQuery = {
@@ -43,7 +43,7 @@ export type KhoraSearchRequest = z.infer<typeof zKhoraSearchRequest>;
 export {
   type KhoraStandingSearchRequest,
   zKhoraStandingSearchRequest,
-} from "./khora-standing-search.ts";
+} from "./khora-standing-search";
 
 export const zKhoraSearchHydratedEntity = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("post"), entity: zKhoraPost }),

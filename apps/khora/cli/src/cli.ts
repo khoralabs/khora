@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 import { boolFlag, parseArgv, tryPrintCommandHelp } from "@khoralabs/cli-kit";
-import { commandHelpTextMap, printHelp } from "./commands/global-help.ts";
-import { dispatch } from "./commands/handlers.ts";
-import { createKhoraCliContext } from "./flows/context.ts";
+import { commandHelpTextMap, printHelp } from "./commands/global-help";
+import { dispatch } from "./commands/handlers";
+import { createKhoraCliContext } from "./flows/context";
 
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);

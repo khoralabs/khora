@@ -11,10 +11,10 @@ import {
 import { validateVellumBindPayloadForPort } from "@khoralabs/vellum-bind-policy";
 import { cfgDataDir, roomObpSqlitePath, type VellumPathConfig } from "@khoralabs/vellum-contracts";
 
-import { removeVellumControlFile, writeVellumControlFile } from "./control-pid.ts";
-import { startVellumControlServer, type VellumControlServerState } from "./control-server.ts";
-import { createFrameSignerFromPersistableAgent } from "./frame-signer.ts";
-import { ensureVellumMetaSchema, upsertChainRow } from "./vellum-sqlite-meta.ts";
+import { removeVellumControlFile, writeVellumControlFile } from "./control-pid";
+import { startVellumControlServer, type VellumControlServerState } from "./control-server";
+import { createFrameSignerFromPersistableAgent } from "./frame-signer";
+import { ensureVellumMetaSchema, upsertChainRow } from "./vellum-sqlite-meta";
 
 export type RunVellumDaemonOptions = {
   baseUrl: string;

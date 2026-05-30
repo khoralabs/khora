@@ -1,5 +1,5 @@
 import z from "zod";
-import { zUsername } from "./username.ts";
+import { zUsername } from "./username";
 
 export const zKhoraProfile = z.object({
   id: z.string().trim().min(1),

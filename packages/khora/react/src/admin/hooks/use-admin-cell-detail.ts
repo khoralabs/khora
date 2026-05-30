@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { fetchAdminJson } from "../client.ts";
-import type { AdminCellDetail } from "../types.ts";
+import { fetchAdminJson } from "../client";
+import type { AdminCellDetail } from "../types";
 
 export function useAdminCellDetail(
   baseUrl: string,

@@ -6,9 +6,9 @@ import {
   envRegistryManagementToken,
   envRegistryParticipate,
   envRegistryUrl,
-} from "./env.ts";
-import { logger } from "./logger.ts";
-import { syncHostRegistryOnStartup } from "./registry-client.ts";
+} from "./env";
+import { logger } from "./logger";
+import { syncHostRegistryOnStartup } from "./registry-client";
 
 const DEFAULT_REGISTRY_URL = "http://localhost:4000";
 

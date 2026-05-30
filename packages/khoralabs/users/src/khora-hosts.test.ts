@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
-import { InvalidHostSlugError, normalizeHostSlug } from "./host-slug.ts";
+import { InvalidHostSlugError, normalizeHostSlug } from "./host-slug";
 import {
   activateKhoraHost,
   getUsersDatabase,
@@ -8,7 +8,7 @@ import {
   listPublicHosts,
   registerKhoraHost,
   resetUsersDatabase,
-} from "./index.ts";
+} from "./index";
 
 describe("registerKhoraHost", () => {
   beforeEach(async () => {

@@ -1,6 +1,6 @@
-import { canonicalJsonString } from "./canonical-json.ts";
-import { encodeFramedJson } from "./encode-framed-json.ts";
-import type { Frame, SessionEnvelopeWire } from "./frame-protocol-types.ts";
+import { canonicalJsonString } from "./canonical-json";
+import { encodeFramedJson } from "./encode-framed-json";
+import type { Frame, SessionEnvelopeWire } from "./frame-protocol-types";
 
 export type FrameDecoderYield =
   | { kind: "init"; value: unknown }

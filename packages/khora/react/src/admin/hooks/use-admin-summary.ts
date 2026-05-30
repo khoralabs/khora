@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { fetchAdminJson } from "../client.ts";
-import type { AdminSummary } from "../types.ts";
+import { fetchAdminJson } from "../client";
+import type { AdminSummary } from "../types";
 
 export function useAdminSummary(baseUrl: string, fetchImpl: typeof fetch = fetch) {
   const [summary, setSummary] = useState<AdminSummary | null>(null);

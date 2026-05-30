@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { KHORA_BUILTIN_PLUGIN_ID } from "../khora-plugins.ts";
-import { extendKhoraAppConfig, zKhoraAppConfigBase } from "./schema.ts";
+import { KHORA_BUILTIN_PLUGIN_ID } from "../khora-plugins";
+import { extendKhoraAppConfig, zKhoraAppConfigBase } from "./schema";
 
 describe("zKhoraAppConfigBase", () => {
   test("every documented field carries a description", () => {

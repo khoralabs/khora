@@ -2,7 +2,7 @@ import type { FlagMap } from "@khoralabs/cli-kit";
 import { boolFlag, splitTopics, strFlag } from "@khoralabs/cli-kit";
 import type { KhoraPostPatch, KhoraPostVisibility } from "@khoralabs/khora-contracts";
 
-import { readJsonArg, withKhoraClient } from "../flows/context.ts";
+import { readJsonArg, withKhoraClient } from "../flows/context";
 
 function visibilityFromFlags(flags: FlagMap): KhoraPostVisibility | undefined {
   const v = strFlag(flags, "visibility")?.trim();

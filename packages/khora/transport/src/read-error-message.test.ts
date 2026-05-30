@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { readErrorMessage } from "./unary-http.ts";
+import { readErrorMessage } from "./unary-http";
 
 describe("readErrorMessage", () => {
   test("returns JSON error field when present", async () => {

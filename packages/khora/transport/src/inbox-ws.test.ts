@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { inboxWebSocketUrl, parseInboxWebSocketMessage } from "./inbox-ws.ts";
+import { inboxWebSocketUrl, parseInboxWebSocketMessage } from "./inbox-ws";
 
 describe("parseInboxWebSocketMessage", () => {
   test("snapshot", () => {

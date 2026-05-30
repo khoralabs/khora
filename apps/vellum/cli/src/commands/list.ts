@@ -3,7 +3,7 @@ import { boolFlag } from "@khoralabs/cli-kit";
 import { KhoraClient } from "@khoralabs/khora-client";
 import { listLocalVellumRows } from "@khoralabs/vellum-client";
 
-import { cliBaseUrl, dataDirForEnv, loadSigner } from "../flows/context.ts";
+import { cliBaseUrl, dataDirForEnv, loadSigner } from "../flows/context";
 
 function localConnectedLabel(
   roomId: string,

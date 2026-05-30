@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { NonceStore } from "./nonce-store.ts";
+import type { NonceStore } from "./nonce-store";
 
 const NONCE_STORE_DDL = `
 CREATE TABLE IF NOT EXISTS agent_request_nonces (

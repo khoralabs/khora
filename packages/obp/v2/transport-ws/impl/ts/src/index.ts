@@ -1,8 +1,8 @@
-export { createWebSocketDuplexByteStream } from "./ws-channel.ts";
+export { createWebSocketDuplexByteStream } from "./ws-channel";
 export {
   connectObpFrameChannelSession,
   connectObpWebSocketSession,
   type ObpFrameChannelClientOptions,
   type ObpFrameConnection,
   type ObpWebSocketConnectOptions,
-} from "./ws-connect.ts";
+} from "./ws-connect";

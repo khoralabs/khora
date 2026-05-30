@@ -6,10 +6,10 @@ import type {
   PrincipalRegistrationRequest,
   RegistrationVerifyContext,
 } from "@khoralabs/agent-relay";
-import type { NonceStore } from "./nonce-store.ts";
-import { createSqliteNonceStore } from "./sqlite-nonce-store.ts";
-import type { AuthStrategy } from "./strategy.ts";
-import { createDidKeyEd25519Strategy } from "./strategy-did-key.ts";
+import type { NonceStore } from "./nonce-store";
+import { createSqliteNonceStore } from "./sqlite-nonce-store";
+import type { AuthStrategy } from "./strategy";
+import { createDidKeyEd25519Strategy } from "./strategy-did-key";
 import {
   AGENT_REQUEST_FRESHNESS_WINDOW_MS,
   AGENT_REQUEST_HEADER,
@@ -17,7 +17,7 @@ import {
   canonicalAgentRequestPath,
   parseAgentRequestEnvelopeFromHeaders,
   parseAgentRequestEnvelopeFromSearch,
-} from "./wire.ts";
+} from "./wire";
 
 const DEFAULT_SWEEP_INTERVAL_MS = 60_000;
 

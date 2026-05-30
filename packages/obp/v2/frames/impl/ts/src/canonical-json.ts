@@ -1,4 +1,4 @@
-import type { JsonDocument } from "./frame-protocol-types.ts";
+import type { JsonDocument } from "./frame-protocol-types";
 
 /**
  * UTF-8 bytes of **`canonical_json(v)`** per **`NegotiationFrameProtocol`**

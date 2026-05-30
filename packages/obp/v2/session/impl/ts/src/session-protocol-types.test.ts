@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { isSha256HexLower, toSha256HexLower } from "./session-protocol-types.ts";
+import { isSha256HexLower, toSha256HexLower } from "./session-protocol-types";
 
 describe("Sha256HexLower", () => {
   test("isSha256HexLower", () => {

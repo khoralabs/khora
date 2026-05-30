@@ -9,7 +9,7 @@ import {
   platformPkgJson,
   SUPPORTED_TARGETS,
   stageKhoraRelease,
-} from "./stage-khora-release.ts";
+} from "./stage-khora-release";
 
 describe("launcher sources", () => {
   test("cli launcher sets KHORA_DAEMON_BIN + KHORA_CLI_ASSETS_DIR", () => {
@@ -69,7 +69,7 @@ describe("stageKhoraRelease", () => {
     );
     writeFileSync(
       path.join(workspace, "apps/khora/cli/scripts/postinstall.entry.ts"),
-      `import { runKhoraPostinstall } from "./postinstall.ts"; runKhoraPostinstall();`,
+      `import { runKhoraPostinstall } from "./postinstall"; runKhoraPostinstall();`,
     );
 
     for (const name of ["base.config.json", "cli.config.json", "daemon.config.json"]) {

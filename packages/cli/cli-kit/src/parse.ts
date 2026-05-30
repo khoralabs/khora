@@ -1,4 +1,4 @@
-import type { FlagMap, ParsedArgv } from "./types.ts";
+import type { FlagMap, ParsedArgv } from "./types";
 
 /**
  * argv parser that supports:

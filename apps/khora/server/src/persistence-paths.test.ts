@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import path from "node:path";
-import { KHORA_PERSISTENCE_REL, resolveKhoraPersistencePaths } from "./persistence-paths.ts";
+import { KHORA_PERSISTENCE_REL, resolveKhoraPersistencePaths } from "./persistence-paths";
 
 const ENV_KEYS = [
   "KHORA_DATA_DIR",

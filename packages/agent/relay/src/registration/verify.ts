@@ -1,4 +1,4 @@
-import type { PrincipalRegistrationRequest } from "./types.ts";
+import type { PrincipalRegistrationRequest } from "./types";
 
 /** Optional HTTP hints supplied by the adapter. */
 export type RegistrationVerifyClientHints = {

@@ -7,7 +7,7 @@
  */
 
 import { ObpError } from "@khoralabs/obp-v2-errors";
-import type { SessionInit, SessionInitNormalized, SessionParty } from "./frame-protocol-types.ts";
+import type { SessionInit, SessionInitNormalized, SessionParty } from "./frame-protocol-types";
 
 function cmpPubkeyHex(a: string, b: string): number {
   if (a < b) return -1;

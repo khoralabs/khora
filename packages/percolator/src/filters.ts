@@ -1,5 +1,5 @@
-import type { StandingSearchRequest } from "./search-request.ts";
-import type { PercolatorCandidate } from "./types.ts";
+import type { StandingSearchRequest } from "./search-request";
+import type { PercolatorCandidate } from "./types";
 
 function matchesLabelFilter(
   labelKinds: readonly string[],

@@ -7,8 +7,8 @@ import {
 } from "@khoralabs/khora-daemon/control-pid";
 import { resolveKhoraDataDir } from "@khoralabs/khora-daemon/daemon-config";
 
-import { agentIdentityPath, cliBaseUrl } from "./flows/context.ts";
-import { khoraCliResolvedConfig } from "./khora-app-config.ts";
+import { agentIdentityPath, cliBaseUrl } from "./flows/context";
+import { khoraCliResolvedConfig } from "./khora-app-config";
 
 export function daemonEntryPath(): string {
   const fromEnv = process.env.KHORA_DAEMON_BIN?.trim();

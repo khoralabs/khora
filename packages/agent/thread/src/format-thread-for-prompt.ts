@@ -1,6 +1,6 @@
 import type { DynamicToolUIPart, ToolUIPart, UITools } from "ai";
 import { getToolName, isTextUIPart, isToolUIPart } from "ai";
-import type { ThreadMessage } from "./messages.ts";
+import type { ThreadMessage } from "./messages";
 
 function safeJson(value: unknown): string {
   try {

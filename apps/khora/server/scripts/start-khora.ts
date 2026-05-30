@@ -11,9 +11,9 @@ import {
   isTruthyEnv,
   readLitestreamS3Env,
   resolveLitestreamBin,
-} from "../../../../scripts/litestream-config.ts";
-import { resolveKhoraPersistencePaths, validateEnv } from "../src/env.ts";
-import { envMemoriesBootstrapConfig, envMemoriesEnabled } from "../src/memories-env.ts";
+} from "../../../../scripts/litestream-config";
+import { resolveKhoraPersistencePaths, validateEnv } from "../src/env";
+import { envMemoriesBootstrapConfig, envMemoriesEnabled } from "../src/memories-env";
 
 const serverRoot = path.resolve(path.dirname(import.meta.path), "..");
 const indexEntry = path.join(serverRoot, "src", "index.ts");

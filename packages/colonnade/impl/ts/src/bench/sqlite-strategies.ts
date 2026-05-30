@@ -3,12 +3,12 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import type { CatalogPersistenceStrategy } from "../catalog-persistence-strategy.ts";
-import type { CellPersistenceStrategy, ResolveCellStrategy } from "../cell-persistence-strategy.ts";
-import { cellDbFilenameStem } from "../sqlite/principal-cell-id.ts";
-import { SqliteCatalogPersistenceStrategy } from "../sqlite/sqlite-catalog-strategy.ts";
-import { SqliteCellPersistenceStrategy } from "../sqlite/sqlite-cell-strategy.ts";
-import { LazyWorkerBackedCellStrategy } from "../sqlite/worker-backed-cell-strategy.ts";
+import type { CatalogPersistenceStrategy } from "../catalog-persistence-strategy";
+import type { CellPersistenceStrategy, ResolveCellStrategy } from "../cell-persistence-strategy";
+import { cellDbFilenameStem } from "../sqlite/principal-cell-id";
+import { SqliteCatalogPersistenceStrategy } from "../sqlite/sqlite-catalog-strategy";
+import { SqliteCellPersistenceStrategy } from "../sqlite/sqlite-cell-strategy";
+import { LazyWorkerBackedCellStrategy } from "../sqlite/worker-backed-cell-strategy";
 
 export type SqliteBenchmarkStrategiesOptions = {
   /** Bun **`Worker`** per cell (SQLite off main thread); meaningful with **`--concurrency`** > 1. */

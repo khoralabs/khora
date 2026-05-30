@@ -1,7 +1,7 @@
 import { verifyAsync } from "@noble/ed25519";
 import { DIDKey } from "iso-did/key";
-import { type AuthStrategy, AuthStrategyError } from "./strategy.ts";
-import { canonicalAgentRequestMessage, envelopeSignatureBytes } from "./wire.ts";
+import { type AuthStrategy, AuthStrategyError } from "./strategy";
+import { canonicalAgentRequestMessage, envelopeSignatureBytes } from "./wire";
 
 function publicKeyForDid(did: string): Uint8Array {
   let parsed: DIDKey;

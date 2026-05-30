@@ -4,8 +4,8 @@ import {
   verifyRoomTicket,
 } from "@khoralabs/duplex-byte-stream";
 import { encodeFramedJson, isNegotiationFrameObject } from "@khoralabs/obp-v2-frames-impl";
-import type { FrameChannelHubPersistence } from "../persistence/types.ts";
-import type { FrameChannelHubPort, FrameChannelPeer } from "./port.ts";
+import type { FrameChannelHubPersistence } from "../persistence/types";
+import type { FrameChannelHubPort, FrameChannelPeer } from "./port";
 
 export type CreateFrameChannelHubOptions = {
   hubPersistence: FrameChannelHubPersistence;

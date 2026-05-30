@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
-import { initObpV2Schema } from "./connection.ts";
-import { createObpV2SqlitePersistenceClient } from "./index.ts";
+import { initObpV2Schema } from "./connection";
+import { createObpV2SqlitePersistenceClient } from "./index";
 
 function makeClient() {
   const db = new Database(":memory:");

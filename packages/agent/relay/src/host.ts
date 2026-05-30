@@ -2,23 +2,23 @@ import {
   AGENT_RELAY_EVENT_KIND,
   type AgentRelayAppEventConstraint,
   type AgentRelayEventUnion,
-} from "./events.ts";
-import type { FrameChannelHubPort } from "./frame-channel/port.ts";
-import type { InboxFanoutPort } from "./inbox/inbox-fanout-port.ts";
-import { AGENT_RELAY_AGGREGATE_DOMAIN } from "./model/index.ts";
+} from "./events";
+import type { FrameChannelHubPort } from "./frame-channel/port";
+import type { InboxFanoutPort } from "./inbox/inbox-fanout-port";
+import { AGENT_RELAY_AGGREGATE_DOMAIN } from "./model/index";
 import {
   type AgentRelayPersistenceClient,
   createAgentRelayPersistenceClient,
-} from "./persistence/client.ts";
-import type { AgentRelayPersistence } from "./persistence/types.ts";
-import type { AgentNotificationBufferPort } from "./registration/notifications.ts";
+} from "./persistence/client";
+import type { AgentRelayPersistence } from "./persistence/types";
+import type { AgentNotificationBufferPort } from "./registration/notifications";
 import {
   type PrincipalId,
   type PrincipalRegistrationRequest,
   type PrincipalRegistrationResult,
   profileEntityId,
-} from "./registration/types.ts";
-import type { AuthPreflight, RegistrationVerifyContext } from "./registration/verify.ts";
+} from "./registration/types";
+import type { AuthPreflight, RegistrationVerifyContext } from "./registration/verify";
 
 /** Passed to {@link AgentRelayDeps.onEvent} together with each dispatched event. */
 export type AgentRelayEventHandlerCtx = {

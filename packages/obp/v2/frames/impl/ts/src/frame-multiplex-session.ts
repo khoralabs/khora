@@ -1,17 +1,17 @@
 import { ObpError } from "@khoralabs/obp-v2-errors";
 import type { SessionOp } from "@khoralabs/obp-v2-session-impl";
 
-import { canonicalSessionParties, normalizeSessionInit } from "./frame-init-wire.ts";
-import { MultiplexSessionRuntime } from "./frame-multiplex-runtime.ts";
-import { defaultSessionEnvelopeSyncAdapter } from "./frame-multiplex-session-envelope-default.ts";
-import { ensureSignerInSession } from "./frame-multiplex-session-helpers.ts";
-import type { RunFrameMultiplexSessionArgs } from "./frame-multiplex-session-types.ts";
-import type { SessionInitNormalized } from "./frame-protocol-types.ts";
+import { canonicalSessionParties, normalizeSessionInit } from "./frame-init-wire";
+import { MultiplexSessionRuntime } from "./frame-multiplex-runtime";
+import { defaultSessionEnvelopeSyncAdapter } from "./frame-multiplex-session-envelope-default";
+import { ensureSignerInSession } from "./frame-multiplex-session-helpers";
+import type { RunFrameMultiplexSessionArgs } from "./frame-multiplex-session-types";
+import type { SessionInitNormalized } from "./frame-protocol-types";
 
 export type {
   RunFrameMultiplexSessionArgs,
   SessionEnvelopeSyncAdapter,
-} from "./frame-multiplex-session-types.ts";
+} from "./frame-multiplex-session-types";
 
 export { defaultSessionEnvelopeSyncAdapter };
 

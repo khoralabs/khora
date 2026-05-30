@@ -1,14 +1,14 @@
 import type { ContentAddressedStore, ResolvedSource, Store } from "@khoralabs/sourcemaps";
 import { resolveSourcemap } from "@khoralabs/sourcemaps";
 
-import type { CellPersistenceStrategy } from "./cell-persistence-strategy.ts";
+import type { CellPersistenceStrategy } from "./cell-persistence-strategy";
 import type {
   OutboxContentRef,
   OutboxLocators,
   PointerRef,
   SourceMapEntryRef,
-} from "./colonnade-types.ts";
-import { assertContentHash, sha256HexLower } from "./hash.ts";
+} from "./colonnade-types";
+import { assertContentHash, sha256HexLower } from "./hash";
 
 export type { OutboxContentRef, OutboxLocators, PointerRef, ResolvedSource, SourceMapEntryRef };
 export { resolveSourcemap };

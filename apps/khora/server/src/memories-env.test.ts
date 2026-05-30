@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import path from "node:path";
-import { envMemoriesBootstrapConfig, envMemoriesEnabled } from "./memories-env.ts";
-import { resolveKhoraPersistencePaths } from "./persistence-paths.ts";
+import { envMemoriesBootstrapConfig, envMemoriesEnabled } from "./memories-env";
+import { resolveKhoraPersistencePaths } from "./persistence-paths";
 
 const MEM_ENV = "KHORA_MEMORIES";
 

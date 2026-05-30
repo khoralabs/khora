@@ -15,7 +15,7 @@ import {
   type KhoraAdminStatsPort,
   type KhoraHostContext,
   type KhoraHostHealthPort,
-} from "../index.ts";
+} from "../index";
 
 export type CreateTestKhoraHostOpts = {
   catalogPath: string;

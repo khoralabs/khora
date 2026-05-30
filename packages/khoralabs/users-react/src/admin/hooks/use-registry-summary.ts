@@ -1,6 +1,6 @@
 import type { RegistryAdminSummary } from "@khoralabs/users";
 import { useCallback, useEffect, useState } from "react";
-import { fetchAdminJson } from "../client.ts";
+import { fetchAdminJson } from "../client";
 
 export function useRegistrySummary(baseUrl: string, fetchImpl: typeof fetch = fetch) {
   const [summary, setSummary] = useState<RegistryAdminSummary | null>(null);

@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import path from "node:path";
-import { khoraConfigJsonSchema } from "../src/config/json-schema.ts";
+import { khoraConfigJsonSchema } from "../src/config/json-schema";
 
 const out = path.resolve(import.meta.dir, "..", "khora-config.schema.json");
 const json = `${JSON.stringify(khoraConfigJsonSchema(), null, 2)}\n`;

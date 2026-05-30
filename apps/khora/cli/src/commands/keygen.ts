@@ -6,7 +6,7 @@ import {
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { boolFlag, style } from "@khoralabs/cli-kit";
 
-import { agentIdentityPath } from "../flows/context.ts";
+import { agentIdentityPath } from "../flows/context";
 
 export async function handleKeygen(flags: FlagMap): Promise<void> {
   const force = boolFlag(flags, "force", "f");

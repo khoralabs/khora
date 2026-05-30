@@ -5,13 +5,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createTestEncryptionMaterial } from "@khoralabs/sqlite-crypto";
-import { ColonnadePublicationClient } from "./colonnade-publication-client.ts";
-import { parseCatalogPointerShardIndex } from "./sqlite/catalog-pointer-id.ts";
-import { createSqliteColonnadeCluster } from "./sqlite/cluster.ts";
-import { derivePoolHomeCell, perPrincipalCellId } from "./sqlite/principal-cell-id.ts";
-import { ShardingCatalogPersistenceStrategy } from "./sqlite/sharding-catalog-strategy.ts";
-import { SqliteCatalogPersistenceStrategy } from "./sqlite/sqlite-catalog-strategy.ts";
-import { catalogShardIndexForTenant } from "./sqlite/tenant-catalog-shard.ts";
+import { ColonnadePublicationClient } from "./colonnade-publication-client";
+import { parseCatalogPointerShardIndex } from "./sqlite/catalog-pointer-id";
+import { createSqliteColonnadeCluster } from "./sqlite/cluster";
+import { derivePoolHomeCell, perPrincipalCellId } from "./sqlite/principal-cell-id";
+import { ShardingCatalogPersistenceStrategy } from "./sqlite/sharding-catalog-strategy";
+import { SqliteCatalogPersistenceStrategy } from "./sqlite/sqlite-catalog-strategy";
+import { catalogShardIndexForTenant } from "./sqlite/tenant-catalog-shard";
 
 describe("SQLite Colonnade cluster", () => {
   const root = mkdtempSync(join(tmpdir(), "colonnade-sqlite-test-"));

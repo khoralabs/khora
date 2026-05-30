@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 import { expect, test } from "bun:test";
-import { RelaySocialPrincipalChannelStore } from "./relay-social-principal-channel-store.ts";
-import { ensureRelayCatalogProjectionsSchema } from "./sqlite-setup.ts";
+import { RelaySocialPrincipalChannelStore } from "./relay-social-principal-channel-store";
+import { ensureRelayCatalogProjectionsSchema } from "./sqlite-setup";
 
 function memStore(): RelaySocialPrincipalChannelStore {
   const db = new Database(":memory:");

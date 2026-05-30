@@ -1,6 +1,6 @@
 import { buildCommandHelpTextMap, style } from "@khoralabs/cli-kit";
 
-import { allCommandHelp } from "./help/index.ts";
+import { allCommandHelp } from "./help/index";
 
 const PROGRAM = "khora";
 

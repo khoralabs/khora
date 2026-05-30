@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { createMemoryDuplexByteStreamPair } from "@khoralabs/duplex-byte-stream";
 import { encodeFramedJson } from "@khoralabs/obp-v2-frames-impl";
-import type { FrameChannelHubPersistence, FrameChannelRoomRecord } from "../persistence/types.ts";
-import { attachDuplexAsFrameChannelPeer } from "./duplex-peer.ts";
-import { createFrameChannelHub } from "./hub.ts";
+import type { FrameChannelHubPersistence, FrameChannelRoomRecord } from "../persistence/types";
+import { attachDuplexAsFrameChannelPeer } from "./duplex-peer";
+import { createFrameChannelHub } from "./hub";
 
 function createFakeHubPersistence(): FrameChannelHubPersistence & { deleteCalls: string[] } {
   const rooms = new Map<string, FrameChannelRoomRecord>();

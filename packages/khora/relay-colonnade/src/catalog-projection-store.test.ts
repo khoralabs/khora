@@ -1,12 +1,12 @@
 import { Database } from "bun:sqlite";
 import { expect, test } from "bun:test";
-import { RelayCatalogProjectionStore } from "./catalog-projection-store.ts";
+import { RelayCatalogProjectionStore } from "./catalog-projection-store";
 import {
   RELAY_NAMESPACE_ROOM_REGISTRY,
   RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
-} from "./relay-id-conventions.ts";
-import { ensureRelayCatalogProjectionsSchema } from "./sqlite-setup.ts";
+} from "./relay-id-conventions";
+import { ensureRelayCatalogProjectionsSchema } from "./sqlite-setup";
 
 test("RelayCatalogProjectionStore upsert and lookup", () => {
   const db = new Database(":memory:");

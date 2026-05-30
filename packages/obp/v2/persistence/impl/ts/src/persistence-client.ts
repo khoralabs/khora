@@ -8,7 +8,7 @@
 
 import { ObpError } from "@khoralabs/obp-v2-errors";
 import type { Offer, Party, Port } from "@khoralabs/obp-v2-model";
-import type { ObpPersistenceStrategy } from "./persistence-strategy.ts";
+import type { ObpPersistenceStrategy } from "./persistence-strategy";
 import type {
   BindPortInput,
   BindPortOutput,
@@ -34,7 +34,7 @@ import type {
   RegisterPartyOutput,
   SetOfferExpiredNowOutput,
   SetPortExpiredNowOutput,
-} from "./persistence-types.ts";
+} from "./persistence-types";
 
 export class ObpPersistenceClient {
   constructor(private readonly strategy: ObpPersistenceStrategy) {}

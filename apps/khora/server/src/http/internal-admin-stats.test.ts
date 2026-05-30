@@ -6,14 +6,14 @@ import { join } from "node:path";
 import { poolShardCellId } from "@khoralabs/colonnade-persistence";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
 import { openEncryptedDatabaseSync, TEST_KHORA_SQLCIPHER_KEY } from "@khoralabs/sqlite-crypto";
-import { createKhoraAdminStatsPort } from "../ops/admin-stats-port.ts";
-import type { HostRouteDeps } from "./deps.ts";
+import { createKhoraAdminStatsPort } from "../ops/admin-stats-port";
+import type { HostRouteDeps } from "./deps";
 import {
   handleInternalAdminStatsCell,
   handleInternalAdminStatsInactiveMembers,
   handleInternalAdminStatsPrincipal,
   handleInternalAdminStatsSummary,
-} from "./internal-admin-stats.ts";
+} from "./internal-admin-stats";
 
 const REG_BY_PRINCIPAL = "relay:reg:by-principal";
 const testRoot = mkdtempSync(join(tmpdir(), "admin-stats-test-"));

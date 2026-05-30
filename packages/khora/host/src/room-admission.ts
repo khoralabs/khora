@@ -1,7 +1,7 @@
 import type { FrameChannelHubPort } from "@khoralabs/agent-relay";
 import type { SocialRelationshipPersistence } from "@khoralabs/relay-colonnade";
-import type { KhoraHostContext } from "./context.ts";
-import { enqueueCellInboxInline } from "./relay-cell-inbox.ts";
+import type { KhoraHostContext } from "./context";
+import { enqueueCellInboxInline } from "./relay-cell-inbox";
 
 export type RoomRegistryMeta = {
   creatorDid: string;

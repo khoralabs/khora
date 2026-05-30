@@ -4,9 +4,9 @@
  */
 
 import type { ObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
-import type { NbcBindTiming } from "./nbc-invariants.ts";
-import { type ApplyNbcTurnParams, type ApplyNbcTurnResult, applyNbcTurn } from "./nbc-turn.ts";
-import { type NbcTurnBody, parseNbcTurnBody } from "./nbc-types.ts";
+import type { NbcBindTiming } from "./nbc-invariants";
+import { type ApplyNbcTurnParams, type ApplyNbcTurnResult, applyNbcTurn } from "./nbc-turn";
+import { type NbcTurnBody, parseNbcTurnBody } from "./nbc-types";
 
 export type ApplyNbcFrameTurnResult = ApplyNbcTurnResult;
 

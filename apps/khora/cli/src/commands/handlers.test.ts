@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { createKhoraCliContext } from "../flows/context.ts";
-import { dispatch } from "./handlers.ts";
+import { createKhoraCliContext } from "../flows/context";
+import { dispatch } from "./handlers";
 
 describe("dispatch", () => {
   test("throws on unknown command", async () => {

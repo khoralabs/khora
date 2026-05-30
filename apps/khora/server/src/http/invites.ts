@@ -1,8 +1,8 @@
 import { zKhoraInviteListResponse, zKhoraInvitePreviewResponse } from "@khoralabs/khora-contracts";
 import z from "zod";
-import { clientIpFromRequest } from "../rate-limit.ts";
-import type { HostRouteDeps } from "./deps.ts";
-import { authErrorResponse, inviteOpaqueNotFound, rateLimitedResponse } from "./responses.ts";
+import { clientIpFromRequest } from "../rate-limit";
+import type { HostRouteDeps } from "./deps";
+import { authErrorResponse, inviteOpaqueNotFound, rateLimitedResponse } from "./responses";
 
 const zInvitePreviewBody = z.object({
   token: z.string().trim().min(1),

@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
 import { ObpError } from "@khoralabs/obp-v2-errors";
-import type { Frame, FrameType, Sha256HexLower } from "./frame-protocol-types.ts";
-import { toSha256HexLower } from "./frame-protocol-types.ts";
-import type { FrameSigner, FrameVerifier } from "./frame-signer.ts";
-import { signingBytesUtf8, tipSha256HexFromCompleteFrame } from "./frame-signing.ts";
+import type { Frame, FrameType, Sha256HexLower } from "./frame-protocol-types";
+import { toSha256HexLower } from "./frame-protocol-types";
+import type { FrameSigner, FrameVerifier } from "./frame-signer";
+import { signingBytesUtf8, tipSha256HexFromCompleteFrame } from "./frame-signing";
 
 function bytesToHexLower(digest: Uint8Array): Sha256HexLower {
   let s = "";

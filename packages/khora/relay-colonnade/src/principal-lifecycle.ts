@@ -1,26 +1,26 @@
 import type { Database } from "bun:sqlite";
 import type { AgentRelayPersistence, PrincipalId } from "@khoralabs/agent-relay";
 import type { SqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
-import type { RelayCatalogProjectionStore } from "./catalog-projection-store.ts";
+import type { RelayCatalogProjectionStore } from "./catalog-projection-store";
 import {
   RELAY_CATALOG_REG_BY_PRINCIPAL,
   RELAY_CATALOG_REG_BY_PROFILE,
-} from "./catalog-registration-adapter.ts";
+} from "./catalog-registration-adapter";
 import {
   deletePrincipalTeardownJob,
   insertPendingPrincipalTeardownJob,
   markPrincipalTeardownJobPendingAfterFailure,
   principalHasActiveTeardownJob,
   tryClaimNextPendingPrincipalTeardownJob,
-} from "./principal-teardown-jobs.ts";
+} from "./principal-teardown-jobs";
 import {
   RELAY_NAMESPACE_ENTITY_PROFILE,
   RELAY_NAMESPACE_PRINCIPAL_TO_USERNAME,
   RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
-} from "./relay-id-conventions.ts";
-import type { RelaySocialPrincipalChannelStore } from "./relay-social-principal-channel-store.ts";
-import { purgeSocialRelationshipsForPrincipal } from "./social-relationship-persistence.ts";
+} from "./relay-id-conventions";
+import type { RelaySocialPrincipalChannelStore } from "./relay-social-principal-channel-store";
+import { purgeSocialRelationshipsForPrincipal } from "./social-relationship-persistence";
 
 export type RelayPrincipalLifecycleDeps = {
   readonly catalogDb: Database;

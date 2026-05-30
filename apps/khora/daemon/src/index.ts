@@ -10,9 +10,9 @@ import {
   daemonJsonOutput,
   loadDaemonLayeredConfig,
   resolveKhoraDataDir,
-} from "./daemon-config.ts";
-import { pluginsFromDaemonConfig } from "./plugins-from-config.ts";
-import { runKhoraInboxDaemon } from "./run-khora-inbox-daemon.ts";
+} from "./daemon-config";
+import { pluginsFromDaemonConfig } from "./plugins-from-config";
+import { runKhoraInboxDaemon } from "./run-khora-inbox-daemon";
 
 async function loadSigner(agentKeyPath: string | undefined): Promise<PersistableAgentSigner> {
   const p =

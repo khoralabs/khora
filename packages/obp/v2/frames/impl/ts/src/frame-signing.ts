@@ -4,9 +4,9 @@
  */
 
 import { createHash } from "node:crypto";
-import { canonicalJsonString } from "./canonical-json.ts";
-import type { Frame } from "./frame-protocol-types.ts";
-import { type Sha256HexLower, toSha256HexLower } from "./frame-protocol-types.ts";
+import { canonicalJsonString } from "./canonical-json";
+import type { Frame } from "./frame-protocol-types";
+import { type Sha256HexLower, toSha256HexLower } from "./frame-protocol-types";
 
 /** `signing_payload`: same fields as `Frame` with **`sig`** set to the empty string. */
 export type FrameSigningPayload = Omit<Frame, "sig"> & { sig: "" };

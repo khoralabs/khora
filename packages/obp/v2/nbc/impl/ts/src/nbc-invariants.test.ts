@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import type { JsonDocument, Offer, Port } from "@khoralabs/obp-v2-model";
 import { validateVellumBindPayloadForPort } from "@khoralabs/vellum-bind-policy";
-import { validateNbcBind } from "./nbc-invariants.ts";
-import { resolveCanonicalPortId } from "./nbc-ref.ts";
+import { validateNbcBind } from "./nbc-invariants";
+import { resolveCanonicalPortId } from "./nbc-ref";
 
 function vellumBindValidate(
   bindPolicy: JsonDocument | null,

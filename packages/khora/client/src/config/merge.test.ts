@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { KHORA_BUILTIN_PLUGIN_ID } from "../khora-plugins.ts";
-import { mergeKhoraAppConfigLayers } from "./merge.ts";
+import { KHORA_BUILTIN_PLUGIN_ID } from "../khora-plugins";
+import { mergeKhoraAppConfigLayers } from "./merge";
 
 describe("mergeKhoraAppConfigLayers", () => {
   test("scalar last-wins on defined values", () => {

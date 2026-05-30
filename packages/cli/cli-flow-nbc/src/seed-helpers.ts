@@ -1,4 +1,4 @@
-import type { FlowRunResult } from "./runner.ts";
+import type { FlowRunResult } from "./runner";
 
 const OFFER_PORT_SEP = "::";
 

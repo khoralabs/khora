@@ -7,8 +7,8 @@ import {
   authorTopicSubscriptionSearch,
   topicSubscriptionSearch,
 } from "@khoralabs/khora-contracts";
-import { withKhoraClient } from "../flows/context.ts";
-import { DEFAULT_NAMESPACE_ROOT } from "../lib/flags.ts";
+import { withKhoraClient } from "../flows/context";
+import { DEFAULT_NAMESPACE_ROOT } from "../lib/flags";
 
 function visibilityFromFlags(flags: FlagMap): KhoraPostVisibility | undefined {
   const v = strFlag(flags, "visibility")?.trim();

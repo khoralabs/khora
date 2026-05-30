@@ -1,4 +1,4 @@
-import type { JsonDocument, SessionOp } from "./session-protocol-types.ts";
+import type { JsonDocument, SessionOp } from "./session-protocol-types";
 
 const UNTAGGED_SESSION_ID = "";
 

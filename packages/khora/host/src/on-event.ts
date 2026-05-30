@@ -19,15 +19,15 @@ import {
 } from "@khoralabs/khora-contracts";
 import { embedTextChunks } from "@khoralabs/memories-core/helpers";
 import type { SocialRelationshipPersistence } from "@khoralabs/relay-colonnade";
-import type { KhoraHostCatalogApi } from "./catalog-facade.ts";
-import type { KhoraMemoriesHost } from "./memories/bootstrap.ts";
-import { toPercolatorSearch } from "./percolator/adapter.ts";
-import type { KhoraPercolatorHost } from "./percolator/bootstrap.ts";
-import { buildPercolatorCandidateFromPost } from "./percolator/candidate.ts";
-import type { KhoraColonnadeCluster } from "./ports.ts";
-import { decodePostId } from "./post-address-id.ts";
-import { canDeliverPostToRecipient } from "./post-visibility.ts";
-import { deletePostOutboxRecord } from "./resolve-post.ts";
+import type { KhoraHostCatalogApi } from "./catalog-facade";
+import type { KhoraMemoriesHost } from "./memories/bootstrap";
+import { toPercolatorSearch } from "./percolator/adapter";
+import type { KhoraPercolatorHost } from "./percolator/bootstrap";
+import { buildPercolatorCandidateFromPost } from "./percolator/candidate";
+import type { KhoraColonnadeCluster } from "./ports";
+import { decodePostId } from "./post-address-id";
+import { canDeliverPostToRecipient } from "./post-visibility";
+import { deletePostOutboxRecord } from "./resolve-post";
 
 const postEncoder = new TextEncoder();
 
@@ -291,4 +291,4 @@ export function assignPostAddress(params: {
   return { recordKey, cellPoolCount };
 }
 
-export { encodePostId } from "./post-address-id.ts";
+export { encodePostId } from "./post-address-id";

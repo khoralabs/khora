@@ -1,5 +1,5 @@
-import type { HostRouteDeps } from "./deps.ts";
-import { authErrorResponse, rateLimitedResponse } from "./responses.ts";
+import type { HostRouteDeps } from "./deps";
+import { authErrorResponse, rateLimitedResponse } from "./responses";
 
 export async function handleListAuthorSubscriptions(
   req: Request,

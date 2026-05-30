@@ -1,4 +1,4 @@
-export { canonicalJson } from "./canonical-json.ts";
+export { canonicalJson } from "./canonical-json";
 export {
   bytesToHexLower,
   type DeleteMemoryProvenanceEvent,
@@ -11,9 +11,9 @@ export {
   nextProvenanceRoot,
   provenanceChainLink,
   provenanceEventLeaf,
-} from "./hash-chain.ts";
+} from "./hash-chain";
 export {
   computeSourceMapContentHash,
   MEMORIES_SOURCE_BODY_V1_PREFIX,
   type SourceMapBodyParts,
-} from "./source-body-hash.ts";
+} from "./source-body-hash";

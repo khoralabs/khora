@@ -1,8 +1,8 @@
 import { requireFlowString, runOfferFlow } from "@khoralabs/cli-flow-nbc";
 
-import type { VellumCliContext } from "./context.ts";
-import { registerFlowDefinition } from "./definitions.ts";
-import { createVellumFlowChainView } from "./vellum-flow-chain.ts";
+import type { VellumCliContext } from "./context";
+import { registerFlowDefinition } from "./definitions";
+import { createVellumFlowChainView } from "./vellum-flow-chain";
 
 export async function runRegisterInteractiveFlow(
   ctx: VellumCliContext,

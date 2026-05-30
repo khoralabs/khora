@@ -6,8 +6,8 @@ import type {
 } from "@khoralabs/khora-contracts";
 import { verifyAsync } from "@noble/ed25519";
 import { DIDKey } from "iso-did/key";
-import { AuthStrategyError } from "./strategy.ts";
-import { envelopeSignatureBytes, signatureBytesToB64Url } from "./wire.ts";
+import { AuthStrategyError } from "./strategy";
+import { envelopeSignatureBytes, signatureBytesToB64Url } from "./wire";
 
 export const KHORA_POST_SIGNATURE_V1 = 1 as const;
 

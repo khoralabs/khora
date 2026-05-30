@@ -3,8 +3,8 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { mintRoomChannelTicketAndSync } from "./room-admission.ts";
-import { createTestKhoraHost } from "./test/bootstrap-sqlite.ts";
+import { mintRoomChannelTicketAndSync } from "./room-admission";
+import { createTestKhoraHost } from "./test/bootstrap-sqlite";
 
 const tmpRoot = mkdtempSync(join(tmpdir(), "khora-room-admission-"));
 let seq = 0;

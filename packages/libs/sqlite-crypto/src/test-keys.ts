@@ -1,6 +1,6 @@
-import { type EncryptionKeyProvider, EnvKeyProvider, type SqlCipherScope } from "./key-provider.ts";
-import type { OutboxPayloadCodec } from "./outbox-payload.ts";
-import { createOutboxPayloadCodec } from "./outbox-payload.ts";
+import { type EncryptionKeyProvider, EnvKeyProvider, type SqlCipherScope } from "./key-provider";
+import type { OutboxPayloadCodec } from "./outbox-payload";
+import { createOutboxPayloadCodec } from "./outbox-payload";
 
 export const TEST_KHORA_SQLCIPHER_KEY = "test-khora-sqlcipher-key!!";
 export const TEST_REGISTRY_SQLCIPHER_KEY = "test-registry-sqlcipher-key!";

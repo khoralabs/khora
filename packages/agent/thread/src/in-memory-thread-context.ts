@@ -1,9 +1,9 @@
-import type { ThreadMessage } from "./messages.ts";
+import type { ThreadMessage } from "./messages";
 import {
   type PostThreadMessageInput,
   ThreadContext,
   type WithThreadContextArgs,
-} from "./thread-context.ts";
+} from "./thread-context";
 
 /**
  * In-memory thread: full ordered history; {@link withContext} ignores `query` / `limit` for now.

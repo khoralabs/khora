@@ -1,15 +1,15 @@
-import type { CatalogPersistenceStrategy } from "./catalog-persistence-strategy.ts";
-import type { ResolveCellStrategy } from "./cell-persistence-strategy.ts";
+import type { CatalogPersistenceStrategy } from "./catalog-persistence-strategy";
+import type { ResolveCellStrategy } from "./cell-persistence-strategy";
 import type {
   FanOutTarget,
   GeneratedInboxRef,
   PostOperationInput,
   PostOperationOutput,
   PublicationRouting,
-} from "./colonnade-types.ts";
-import { randomId } from "./hash.ts";
-import { defaultNoopCatalogPersistenceStrategy } from "./noop-catalog-strategy.ts";
-import { supportsSqliteCellBatch } from "./sqlite/sqlite-cell-strategy.ts";
+} from "./colonnade-types";
+import { randomId } from "./hash";
+import { defaultNoopCatalogPersistenceStrategy } from "./noop-catalog-strategy";
+import { supportsSqliteCellBatch } from "./sqlite/sqlite-cell-strategy";
 
 function isResolveCellStrategy(
   value: CatalogPersistenceStrategy | ResolveCellStrategy,

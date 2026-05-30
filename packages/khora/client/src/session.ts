@@ -6,7 +6,7 @@ import type {
   KhoraRegistrationResult,
 } from "@khoralabs/khora-contracts";
 import type { InboxWsHandlers } from "@khoralabs/khora-transport";
-import type { KhoraClient } from "./khora-client.ts";
+import type { KhoraClient } from "./khora-client";
 
 export type KhoraSession = {
   readonly did: string;

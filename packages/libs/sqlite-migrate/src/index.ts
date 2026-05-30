@@ -2,15 +2,15 @@ export type {
   AppliedMigration,
   Migration,
   MigrationResult,
-} from "./migration.ts";
+} from "./migration";
 export {
   type CreateMigrationRunnerOptions,
   createMigrationRunner,
   type MigrationRunner,
-} from "./runner.ts";
+} from "./runner";
 export {
   compareSemver,
   encodeSemverForUserVersion,
   parseSemver,
   type Semver,
-} from "./semver.ts";
+} from "./semver";

@@ -1,4 +1,4 @@
-import type { StandingSearchRequest } from "./search-request.ts";
+import type { StandingSearchRequest } from "./search-request";
 
 export type StandingQueryCreate = {
   id: string;

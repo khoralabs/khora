@@ -20,7 +20,7 @@ import {
   type SessionOp,
 } from "@khoralabs/obp-v2-session-impl";
 
-import { frameChannelFromClientStream } from "./http2-channel.ts";
+import { frameChannelFromClientStream } from "./http2-channel";
 
 export type ObpFrameConnection = FrameMultiplexOpenerApi;
 

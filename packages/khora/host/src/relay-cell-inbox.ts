@@ -1,5 +1,5 @@
 import { randomId, sha256HexLower } from "@khoralabs/colonnade-persistence";
-import type { KhoraHostContext } from "./context.ts";
+import type { KhoraHostContext } from "./context";
 
 type CellInboxCtx = Pick<KhoraHostContext, "cluster" | "tenantKey">;
 

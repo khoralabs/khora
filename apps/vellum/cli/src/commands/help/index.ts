@@ -1,22 +1,22 @@
 import type { CommandHelp } from "@khoralabs/cli-kit";
 
-import { chainCreateHelp, chainListHelp, chainSnapshotHelp } from "./chain.help.ts";
-import { connectHelp } from "./connect.help.ts";
-import { disconnectHelp } from "./disconnect.help.ts";
-import { keygenHelp } from "./keygen.help.ts";
-import { listHelp } from "./list.help.ts";
-import { offerListHelp, offerReadHelp, offerSendTurnHelp } from "./offer.help.ts";
-import { policyReadHelp, policyValidateHelp } from "./policy.help.ts";
-import { portListHelp, portReadHelp } from "./port.help.ts";
-import { registerHelp } from "./register.help.ts";
+import { chainCreateHelp, chainListHelp, chainSnapshotHelp } from "./chain.help";
+import { connectHelp } from "./connect.help";
+import { disconnectHelp } from "./disconnect.help";
+import { keygenHelp } from "./keygen.help";
+import { listHelp } from "./list.help";
+import { offerListHelp, offerReadHelp, offerSendTurnHelp } from "./offer.help";
+import { policyReadHelp, policyValidateHelp } from "./policy.help";
+import { portListHelp, portReadHelp } from "./port.help";
+import { registerHelp } from "./register.help";
 import {
   roomConnectHelp,
   roomCreateHelp,
   roomJoinHelp,
   roomLeaveHelp,
   roomReadHelp,
-} from "./room.help.ts";
-import { whoamiHelp } from "./whoami.help.ts";
+} from "./room.help";
+import { whoamiHelp } from "./whoami.help";
 
 export const allCommandHelp: readonly CommandHelp[] = [
   keygenHelp,

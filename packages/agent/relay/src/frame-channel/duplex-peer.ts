@@ -1,5 +1,5 @@
 import type { DuplexByteStream } from "@khoralabs/duplex-byte-stream";
-import type { FrameChannelHubPort, FrameChannelPeer } from "./port.ts";
+import type { FrameChannelHubPort, FrameChannelPeer } from "./port";
 
 export type AttachDuplexFrameChannelPeerResult = {
   peer: FrameChannelPeer;

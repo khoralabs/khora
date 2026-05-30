@@ -1,7 +1,7 @@
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { strFlag } from "@khoralabs/cli-kit";
-import { promptRoomIdIfMissing } from "../flows/connect-flow.ts";
-import { makeVellumClient, type VellumCliContext } from "../flows/context.ts";
+import { promptRoomIdIfMissing } from "../flows/connect-flow";
+import { makeVellumClient, type VellumCliContext } from "../flows/context";
 
 export type HandleConnectOptions = {
   /** Index into `positional` for `<roomId>` (`1` for `vellum connect`, `2` for `vellum room connect`). */

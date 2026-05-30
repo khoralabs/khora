@@ -3,7 +3,7 @@ import fs from "node:fs";
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { roomVellumControlPath } from "@khoralabs/vellum-contracts";
 
-import { dataDirForEnv } from "../flows/context.ts";
+import { dataDirForEnv } from "../flows/context";
 
 /** Stop local daemon if control file exists. Returns whether a control file was cleaned up. */
 export function disconnectLocalRoom(flags: FlagMap, roomId: string): boolean {

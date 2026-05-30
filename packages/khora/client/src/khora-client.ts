@@ -36,13 +36,13 @@ import {
   type ObpFrameConnection,
   type ObpWebSocketConnectOptions,
 } from "@khoralabs/obp-v2-transport-ws";
-import { getAgentStatus } from "./http/agent.ts";
+import { getAgentStatus } from "./http/agent";
 import {
   type AuthorSubscriptionsSnapshot,
   listAuthorSubscriptions as httpListAuthorSubscriptions,
-} from "./http/authors.ts";
-import { health } from "./http/health.ts";
-import { listInvites, previewInvite } from "./http/invites.ts";
+} from "./http/authors";
+import { health } from "./http/health";
+import { listInvites, previewInvite } from "./http/invites";
 import {
   createPost,
   deletePost,
@@ -50,29 +50,29 @@ import {
   getPost as httpGetPost,
   type KhoraSubscriptionCreateInput,
   updatePost,
-} from "./http/posts.ts";
+} from "./http/posts";
 import {
   lookupProfileByDid as httpLookupProfileByDid,
   lookupProfileByUsername as httpLookupProfileByUsername,
   type PublicProfileResult,
   updateProfile,
-} from "./http/profile.ts";
-import { register } from "./http/register.ts";
-import { listRelationships as httpListRelationships } from "./http/relationships.ts";
+} from "./http/profile";
+import { register } from "./http/register";
+import { listRelationships as httpListRelationships } from "./http/relationships";
 import {
   createRoom as httpCreateRoom,
   getRoom as httpGetRoom,
   leaveRoom as httpLeaveRoom,
   mintRoomTicket as httpMintRoomTicket,
   redeemRoomInvite as httpRedeemRoomInvite,
-} from "./http/rooms.ts";
-import { searchGet as httpSearchGet, searchPost as httpSearchPost } from "./http/search.ts";
-import { unregister as httpUnregister, type UnregisterBody } from "./http/unregister.ts";
+} from "./http/rooms";
+import { searchGet as httpSearchGet, searchPost as httpSearchPost } from "./http/search";
+import { unregister as httpUnregister, type UnregisterBody } from "./http/unregister";
 import {
   createKhoraResolvePath,
   type KhoraPluginHandle,
   type KhoraPluginInstaller,
-} from "./khora-plugins.ts";
+} from "./khora-plugins";
 
 export type {
   KhoraRelationshipItem,
@@ -88,8 +88,8 @@ export type {
   ObpFrameConnection,
   ObpWebSocketConnectOptions,
 } from "@khoralabs/obp-v2-transport-ws";
-export type { AuthorSubscriptionsSnapshot } from "./http/authors.ts";
-export type { PublicProfileResult } from "./http/profile.ts";
+export type { AuthorSubscriptionsSnapshot } from "./http/authors";
+export type { PublicProfileResult } from "./http/profile";
 
 export type KhoraClientOptions = {
   /** Required unless {@link transportBundle} supplies unary+duplex. */

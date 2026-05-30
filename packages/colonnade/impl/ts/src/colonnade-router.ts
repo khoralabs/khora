@@ -1,10 +1,10 @@
-import type { ResolveCellStrategy } from "./cell-persistence-strategy.ts";
+import type { ResolveCellStrategy } from "./cell-persistence-strategy";
 import type {
   RoutedWrite,
   SubmitRoutedWritesInput,
   SubmitRoutedWritesOutput,
-} from "./colonnade-types.ts";
-import { supportsSqliteCellBatch } from "./sqlite/sqlite-cell-strategy.ts";
+} from "./colonnade-types";
+import { supportsSqliteCellBatch } from "./sqlite/sqlite-cell-strategy";
 
 /**
  * Enqueues **`RoutedWrite`** units onto each target cell's durable write log via

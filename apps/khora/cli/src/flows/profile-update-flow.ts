@@ -1,8 +1,8 @@
 import { runOfferFlow } from "@khoralabs/cli-flow-nbc";
 
-import type { KhoraCliContext } from "./context.ts";
-import { profileUpdateFlowDefinition } from "./definitions.ts";
-import { createKhoraFlowChainView } from "./khora-flow-chain.ts";
+import type { KhoraCliContext } from "./context";
+import { profileUpdateFlowDefinition } from "./definitions";
+import { createKhoraFlowChainView } from "./khora-flow-chain";
 
 export async function runProfileUpdateInteractiveFlow(
   ctx: KhoraCliContext,

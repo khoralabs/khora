@@ -1,4 +1,4 @@
-import { SqliteCryptoError } from "./key-provider.ts";
+import { SqliteCryptoError } from "./key-provider";
 
 export const OUTBOX_ENVELOPE_MAGIC = "khora/outbox/v1" as const;
 export const OUTBOX_ENVELOPE_V1 = 1 as const;

@@ -1,20 +1,20 @@
 import { describe, expect, test } from "bun:test";
 import { createOutboxPayloadCodec } from "@khoralabs/sqlite-crypto";
-import { CellPersistenceClient } from "./cell-persistence-client.ts";
-import type { ResolveCellStrategy } from "./cell-persistence-strategy.ts";
-import { ColonnadePublicationClient } from "./colonnade-publication-client.ts";
-import { ColonnadeRouter } from "./colonnade-router.ts";
-import type { RoutedWrite, WriteOp } from "./colonnade-types.ts";
-import { canonicalSourceMapRowBytes, sha256HexLower } from "./hash.ts";
-import { InMemoryCatalogPersistenceStrategy } from "./in-memory-catalog-strategy.ts";
-import { InMemoryCellPersistenceStrategy } from "./in-memory-cell-strategy.ts";
+import { CellPersistenceClient } from "./cell-persistence-client";
+import type { ResolveCellStrategy } from "./cell-persistence-strategy";
+import { ColonnadePublicationClient } from "./colonnade-publication-client";
+import { ColonnadeRouter } from "./colonnade-router";
+import type { RoutedWrite, WriteOp } from "./colonnade-types";
+import { canonicalSourceMapRowBytes, sha256HexLower } from "./hash";
+import { InMemoryCatalogPersistenceStrategy } from "./in-memory-catalog-strategy";
+import { InMemoryCellPersistenceStrategy } from "./in-memory-cell-strategy";
 import {
   createOutboxLocatorStore,
   createPointerStore,
   OutboxGhostError,
   PointerHashMismatchError,
   resolveSourcemap,
-} from "./resolve-pointer.ts";
+} from "./resolve-pointer";
 
 const POOL = 16;
 const TEST_CODEC = createOutboxPayloadCodec(new Uint8Array(32).fill(9));

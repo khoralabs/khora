@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { encodeFramedJson } from "@khoralabs/obp-v2-frames-impl";
-import type { FrameChannelHubPersistence, FrameChannelRoomRecord } from "../persistence/types.ts";
-import { createFrameChannelHub } from "./hub.ts";
+import type { FrameChannelHubPersistence, FrameChannelRoomRecord } from "../persistence/types";
+import { createFrameChannelHub } from "./hub";
 
 function createFakeHubPersistence(): FrameChannelHubPersistence & { deleteCalls: string[] } {
   const rooms = new Map<string, FrameChannelRoomRecord>();

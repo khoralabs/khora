@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { formatThreadForPlaintext } from "./format-thread-for-prompt.ts";
-import type { ThreadMessage } from "./messages.ts";
+import { formatThreadForPlaintext } from "./format-thread-for-prompt";
+import type { ThreadMessage } from "./messages";
 
 describe("formatThreadForPlaintext", () => {
   test("empty history", () => {

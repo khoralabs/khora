@@ -9,7 +9,7 @@ import {
 import type { SourceMap, Store } from "@khoralabs/memories-core";
 import type { MemoriesPersistence } from "@khoralabs/memories-core/persistence";
 import type { ResolvedSource } from "@khoralabs/sourcemaps";
-import type { PostResolver } from "../ports.ts";
+import type { PostResolver } from "../ports";
 
 export class KhoraCanonicalStore implements Store {
   constructor(

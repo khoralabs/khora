@@ -6,7 +6,7 @@
 import { ObpError } from "@khoralabs/obp-v2-errors";
 import type { JsonDocument, Offer, Port } from "@khoralabs/obp-v2-model";
 import type { ObpNbcBindWindow } from "@khoralabs/obp-v2-persistence";
-import { resolveCanonicalPortId } from "./nbc-ref.ts";
+import { resolveCanonicalPortId } from "./nbc-ref";
 
 export type NbcBindFailure =
   | { code: "EXPIRED"; entity: "offer" | "port" }

@@ -1,4 +1,4 @@
-import type { AgentRequestEnvelope } from "./wire.ts";
+import type { AgentRequestEnvelope } from "./wire";
 
 /**
  * Pluggable per-scheme signature verifier. Implementations consume a parsed

@@ -39,9 +39,9 @@ import type {
 } from "@khoralabs/obp-v2-persistence";
 import { ObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
 import { validateVellumBindPayloadForPort } from "@khoralabs/vellum-bind-policy";
-import { getBindablePortsForParty, isSessionAdvanceable, nbcNaturalStop } from "./nbc-session.ts";
-import { applyNbcTurn } from "./nbc-turn.ts";
-import { parseNbcTurnBody } from "./nbc-types.ts";
+import { getBindablePortsForParty, isSessionAdvanceable, nbcNaturalStop } from "./nbc-session";
+import { applyNbcTurn } from "./nbc-turn";
+import { parseNbcTurnBody } from "./nbc-types";
 
 class InMemoryStrategy implements ObpPersistenceStrategy {
   private parties = new Map<string, Party>();

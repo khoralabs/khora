@@ -1,5 +1,5 @@
 import z from "zod";
-import { zKhoraAppConfigBase } from "./schema.ts";
+import { zKhoraAppConfigBase } from "./schema";
 
 /**
  * Generate the JSON Schema for {@link zKhoraAppConfigBase}. The committed `khora-config.schema.json`

@@ -1,10 +1,10 @@
 import { expect, test } from "bun:test";
 
-import type { FlowDefinition } from "./flow-types.ts";
-import { createInMemoryFlowChainView } from "./in-memory-chain.ts";
-import { runOfferFlow } from "./run-offer-flow.ts";
-import { runFlow } from "./runner.ts";
-import { getOfferRow, seedMapFromOffer } from "./seed-helpers.ts";
+import type { FlowDefinition } from "./flow-types";
+import { createInMemoryFlowChainView } from "./in-memory-chain";
+import { runOfferFlow } from "./run-offer-flow";
+import { runFlow } from "./runner";
+import { getOfferRow, seedMapFromOffer } from "./seed-helpers";
 
 const def: FlowDefinition = {
   id: "test-flow",

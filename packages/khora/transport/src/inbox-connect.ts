@@ -1,8 +1,8 @@
 import { Buffer } from "node:buffer";
 import type { AgentNotification } from "@khoralabs/agent-relay";
 import { type AgentSigner, signedInboxUrl } from "@khoralabs/khora-auth";
-import type { KhoraClientEvent } from "./client-events.ts";
-import { type InboxNotificationRow, parseInboxWebSocketMessage } from "./inbox-ws.ts";
+import type { KhoraClientEvent } from "./client-events";
+import { type InboxNotificationRow, parseInboxWebSocketMessage } from "./inbox-ws";
 
 export type InboxWsHandlers = {
   onSnapshot?: (notifications: InboxNotificationRow[]) => void;

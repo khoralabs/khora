@@ -8,7 +8,7 @@ import {
   writeKhoraDaemonControlFile,
 } from "@khoralabs/khora-daemon/control-pid";
 
-import { handleInboxStatus, handleInboxStop } from "./inbox.ts";
+import { handleInboxStatus, handleInboxStop } from "./inbox";
 
 describe("inbox stop/status", () => {
   test("status reports none without pid file", () => {

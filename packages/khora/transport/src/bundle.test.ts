@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createKhoraTransportBundleFromEnv } from "./bundle.ts";
+import { createKhoraTransportBundleFromEnv } from "./bundle";
 
 describe("createKhoraTransportBundleFromEnv", () => {
   test("defaults to http bundle", () => {

@@ -6,8 +6,8 @@ import {
   postsMemoryNamespace,
   profileMemoryNamespace,
   topicScope,
-} from "./khora-namespace.ts";
-import { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories-config.ts";
+} from "./khora-namespace";
+import { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories-config";
 
 describe("khora-namespace", () => {
   const root = DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT;

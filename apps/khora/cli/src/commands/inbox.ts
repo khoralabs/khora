@@ -18,9 +18,9 @@ import {
   resolveCliDataDir,
   spawnDaemonEnv,
   waitForDaemonPidFile,
-} from "../daemon-spawn.ts";
-import { cliBaseUrl, loadSigner } from "../flows/context.ts";
-import { khoraCliResolvedConfig } from "../khora-app-config.ts";
+} from "../daemon-spawn";
+import { cliBaseUrl, loadSigner } from "../flows/context";
+import { khoraCliResolvedConfig } from "../khora-app-config";
 
 export async function handleInboxListen(flags: FlagMap): Promise<void> {
   const background = boolFlag(flags, "b") || boolFlag(flags, "background");

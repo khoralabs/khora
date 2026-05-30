@@ -6,8 +6,8 @@ import {
 } from "@khoralabs/colonnade-persistence";
 import type { KhoraPost } from "@khoralabs/khora-contracts";
 import { zKhoraPost } from "@khoralabs/khora-contracts";
-import type { KhoraColonnadeCluster, PostResolver } from "./ports.ts";
-import { decodePostId } from "./post-address-id.ts";
+import type { KhoraColonnadeCluster, PostResolver } from "./ports";
+import { decodePostId } from "./post-address-id";
 
 export type { OutboxListedRecord };
 

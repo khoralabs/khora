@@ -7,13 +7,13 @@ import type {
   NbcChainOfferRow,
   NbcChainPartyRow,
   NbcChainPortRow,
-} from "./nbc-chain-graph-types.ts";
+} from "./nbc-chain-graph-types";
 import {
   isActiveBindPolicy,
   isRelayExpiryOk,
   isTurnExpiryOk,
   type NbcBindTiming,
-} from "./nbc-invariants.ts";
+} from "./nbc-invariants";
 
 export type CollectNbcChainGraphOptions = {
   /** When set, **`expired`** flags use NBC N1 against this timing. */

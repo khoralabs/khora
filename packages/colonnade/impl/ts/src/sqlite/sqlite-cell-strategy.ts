@@ -4,7 +4,7 @@ import { isOutboxEncryptedPayload, type OutboxPayloadCodec } from "@khoralabs/sq
 import type {
   CellPersistenceStrategy,
   DiscardInboxEntriesInput,
-} from "../cell-persistence-strategy.ts";
+} from "../cell-persistence-strategy";
 import type {
   AckWriteLogAppliedInput,
   AckWriteLogAppliedOutput,
@@ -29,17 +29,17 @@ import type {
   VerifyAndDrainInboxBatchOutput,
   WriteLogRecord,
   WriteOp,
-} from "../colonnade-types.ts";
-import { assertContentHash, randomId, sha256HexLower } from "../hash.ts";
-import { ensureCellSchema } from "./schema-cell.ts";
-import { runSerializedSqliteImmediateTransaction } from "./sqlite-immediate-txn.ts";
-import { applySqlitePerfPragmas } from "./sqlite-pragmas.ts";
+} from "../colonnade-types";
+import { assertContentHash, randomId, sha256HexLower } from "../hash";
+import { ensureCellSchema } from "./schema-cell";
+import { runSerializedSqliteImmediateTransaction } from "./sqlite-immediate-txn";
+import { applySqlitePerfPragmas } from "./sqlite-pragmas";
 import {
   inboxStagingFromBlob,
   inboxStagingToBlob,
   writeOpFromBlob,
   writeOpToBlob,
-} from "./staging-binary.ts";
+} from "./staging-binary";
 
 export type SqliteCellStrategyOptions = {
   readonly outboxPayloadCodec: OutboxPayloadCodec;

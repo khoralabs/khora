@@ -15,7 +15,7 @@ import type {
   UpsertDiscoveryDocumentOutput,
   UpsertSourceMapPointerRowInput,
   UpsertSourceMapPointerRowOutput,
-} from "./colonnade-types.ts";
+} from "./colonnade-types";
 
 /**
  * Adapter for the **catalog** database model (`CatalogIndex` + `CatalogRead` in Smithy).

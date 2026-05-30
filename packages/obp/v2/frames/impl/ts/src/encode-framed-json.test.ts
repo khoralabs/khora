@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { canonicalJsonString } from "./canonical-json.ts";
-import { encodeFramedJson, encodeFramedWire } from "./encode-framed-json.ts";
-import { FrameType, toSha256HexLower } from "./frame-protocol-types.ts";
+import { canonicalJsonString } from "./canonical-json";
+import { encodeFramedJson, encodeFramedWire } from "./encode-framed-json";
+import { FrameType, toSha256HexLower } from "./frame-protocol-types";
 
 const gh = toSha256HexLower("d".repeat(64));
 const ph = toSha256HexLower("e".repeat(64));

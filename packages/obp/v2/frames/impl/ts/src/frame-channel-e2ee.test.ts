@@ -7,7 +7,7 @@ import {
   ephemeralX25519Keygen,
   minActorPubkeyFromInit,
   x25519SharedSecret,
-} from "./frame-channel-e2ee.ts";
+} from "./frame-channel-e2ee";
 
 describe("frame-channel-e2ee", () => {
   test("minActorPubkeyFromInit lexicographic min", () => {

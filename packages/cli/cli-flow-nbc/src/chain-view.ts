@@ -1,6 +1,6 @@
 import type { JsonDocument } from "@khoralabs/obp-v2-model";
 
-import type { FlowPort } from "./flow-types.ts";
+import type { FlowPort } from "./flow-types";
 
 /**
  * Read-only view of “the chain” for a CLI session: existing binds and effective policy per port.

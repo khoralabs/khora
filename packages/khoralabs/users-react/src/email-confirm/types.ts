@@ -1,4 +1,4 @@
-import type { EmailConfirmFlowState } from "./use-email-confirm-flow.ts";
+import type { EmailConfirmFlowState } from "./use-email-confirm-flow";
 
 export type EmailConfirmEmailStepRenderProps = Pick<
   EmailConfirmFlowState,

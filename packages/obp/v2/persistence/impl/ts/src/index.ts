@@ -1,9 +1,9 @@
 export {
   createInMemoryObpPersistenceClient,
   InMemoryObpPersistenceStrategy,
-} from "./in-memory-strategy.ts";
-export { ObpPersistenceClient } from "./persistence-client.ts";
-export type { ObpPersistenceStrategy } from "./persistence-strategy.ts";
+} from "./in-memory-strategy";
+export { ObpPersistenceClient } from "./persistence-client";
+export type { ObpPersistenceStrategy } from "./persistence-strategy";
 export type {
   BindListingRow,
   BindListingRowList,
@@ -51,4 +51,4 @@ export type {
   SetOfferExpiredNowOutput,
   SetPortExpiredNowInput,
   SetPortExpiredNowOutput,
-} from "./persistence-types.ts";
+} from "./persistence-types";

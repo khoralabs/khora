@@ -1,5 +1,5 @@
-import type { KhoraMemoriesBootstrapConfig } from "./memories-env.ts";
-import { type KhoraPersistencePaths, resolveKhoraPersistencePaths } from "./persistence-paths.ts";
+import type { KhoraMemoriesBootstrapConfig } from "./memories-env";
+import { type KhoraPersistencePaths, resolveKhoraPersistencePaths } from "./persistence-paths";
 
 /**
  * Server env for Khora host bootstrap. See `.env.example` for variable names.

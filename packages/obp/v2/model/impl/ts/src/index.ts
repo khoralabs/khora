@@ -6,5 +6,5 @@ export type {
   Offer,
   Party,
   Port,
-} from "./model-types.ts";
-export { OBP_PERSISTENCE_VERSION } from "./model-types.ts";
+} from "./model-types";
+export { OBP_PERSISTENCE_VERSION } from "./model-types";

@@ -2,7 +2,7 @@ import z from "zod";
 import {
   type KhoraStandingSearchRequest,
   zKhoraStandingSearchRequest,
-} from "./khora-standing-search.ts";
+} from "./khora-standing-search";
 
 export const zKhoraPostKind = z.enum(["post", "status", "subscription"]);
 

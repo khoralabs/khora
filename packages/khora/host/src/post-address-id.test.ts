@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { derivePoolHomeCell } from "@khoralabs/colonnade-persistence";
-import { decodePostId, encodePostId } from "./post-address-id.ts";
+import { decodePostId, encodePostId } from "./post-address-id";
 
 const goldenAddress = {
   authorPrincipalId: "did:plc:abc123",

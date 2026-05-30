@@ -1,6 +1,6 @@
 import type { AgentNotification } from "@khoralabs/agent-relay";
 import type { KhoraPost, KhoraProfile, KhoraRegistrationResult } from "@khoralabs/khora-contracts";
-import type { InboxNotificationRow, InboxWsDrainMessage } from "./inbox-ws.ts";
+import type { InboxNotificationRow, InboxWsDrainMessage } from "./inbox-ws";
 
 // ---------------------------------------------------------------------------
 // Host/embedder callbacks (server-side, no secrets)

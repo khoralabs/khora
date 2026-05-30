@@ -22,7 +22,7 @@ import type {
   TenantKey,
   VerifyAndDrainInboxBatchInput,
   VerifyAndDrainInboxBatchOutput,
-} from "./colonnade-types.ts";
+} from "./colonnade-types";
 
 export type DiscardInboxEntriesInput = {
   readonly cell_id: CellId;

@@ -1,12 +1,12 @@
 import { createTestOutboxPayloadCodec } from "@khoralabs/sqlite-crypto";
-import type { CatalogPersistenceStrategy } from "../catalog-persistence-strategy.ts";
-import type { CellPersistenceStrategy, ResolveCellStrategy } from "../cell-persistence-strategy.ts";
-import { InMemoryCatalogPersistenceStrategy } from "../in-memory-catalog-strategy.ts";
-import { InMemoryCellPersistenceStrategy } from "../in-memory-cell-strategy.ts";
+import type { CatalogPersistenceStrategy } from "../catalog-persistence-strategy";
+import type { CellPersistenceStrategy, ResolveCellStrategy } from "../cell-persistence-strategy";
+import { InMemoryCatalogPersistenceStrategy } from "../in-memory-catalog-strategy";
+import { InMemoryCellPersistenceStrategy } from "../in-memory-cell-strategy";
 import {
   createSqliteBenchmarkStrategies,
   type SqliteBenchmarkStrategiesOptions,
-} from "./sqlite-strategies.ts";
+} from "./sqlite-strategies";
 
 /**
  * Factories for comparing persistence backends under the same workloads.

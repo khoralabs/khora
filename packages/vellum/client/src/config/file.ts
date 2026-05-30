@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { VellumConfigError } from "./errors.ts";
-import { mergeVellumAppConfigLayers } from "./merge.ts";
+import { VellumConfigError } from "./errors";
+import { mergeVellumAppConfigLayers } from "./merge";
 
 export type VellumConfigFileRead = {
   merged: Record<string, unknown>;

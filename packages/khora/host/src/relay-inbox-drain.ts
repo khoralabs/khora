@@ -8,7 +8,7 @@ import {
   resolveSourcemap,
   sha256HexLower,
 } from "@khoralabs/colonnade-persistence";
-import type { KhoraHostContext } from "./context.ts";
+import type { KhoraHostContext } from "./context";
 
 export type RelayInboxDrainItem = {
   entryKey: string;

@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { ensurePercolatorSchema } from "@khoralabs/percolator-sqlite";
 import { type EncryptionKeyProvider, openEncryptedDatabase } from "@khoralabs/sqlite-crypto";
-import { ensurePrincipalTeardownJobsSchema } from "./principal-teardown-jobs.ts";
+import { ensurePrincipalTeardownJobsSchema } from "./principal-teardown-jobs";
 
 /** Tier 1 relay catalog projections (JSON columns + expression indexes). */
 export function ensureRelayCatalogProjectionsSchema(db: Database): void {

@@ -1,6 +1,6 @@
-import { authorizeRegistryInternal } from "../registry-internal.ts";
-import { lookupAccountResponse, lookupEmailResponse } from "./lookup.ts";
-import { adminStatsSummaryResponse } from "./stats.ts";
+import { authorizeRegistryInternal } from "../registry-internal";
+import { lookupAccountResponse, lookupEmailResponse } from "./lookup";
+import { adminStatsSummaryResponse } from "./stats";
 
 export function handleInternalAdminStatsSummary(req: Request): Response {
   if (!authorizeRegistryInternal(req)) {

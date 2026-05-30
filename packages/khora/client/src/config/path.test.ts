@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import path from "node:path";
-import { defaultKhoraConfigPath, resolveKhoraConfigPath } from "./path.ts";
+import { defaultKhoraConfigPath, resolveKhoraConfigPath } from "./path";
 
 describe("resolveKhoraConfigPath", () => {
   test("flag wins over env and default", () => {

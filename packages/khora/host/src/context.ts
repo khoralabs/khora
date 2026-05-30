@@ -10,13 +10,13 @@ import type {
   SocialRelationshipPersistence,
 } from "@khoralabs/relay-colonnade";
 import type { OutboxPayloadCodec } from "@khoralabs/sqlite-crypto";
-import type { KhoraHostCatalogApi } from "./catalog-facade.ts";
-import type { KhoraMemoriesHost } from "./memories/bootstrap.ts";
-import type { KhoraPercolatorHost } from "./percolator/bootstrap.ts";
-import type { KhoraAdminStatsPort, KhoraColonnadeCluster, KhoraHostHealthPort } from "./ports.ts";
+import type { KhoraHostCatalogApi } from "./catalog-facade";
+import type { KhoraMemoriesHost } from "./memories/bootstrap";
+import type { KhoraPercolatorHost } from "./percolator/bootstrap";
+import type { KhoraAdminStatsPort, KhoraColonnadeCluster, KhoraHostHealthPort } from "./ports";
 
-export type { KhoraHostCatalogApi } from "./catalog-facade.ts";
-export type { KhoraMemoriesHost } from "./memories/bootstrap.ts";
+export type { KhoraHostCatalogApi } from "./catalog-facade";
+export type { KhoraMemoriesHost } from "./memories/bootstrap";
 
 export type KhoraHostContext = {
   host: AgentRelay<KhoraProfile, KhoraPost, unknown, never>;

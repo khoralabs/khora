@@ -1,6 +1,6 @@
 import type { JsonDocument, Offer, Party, Port } from "@khoralabs/obp-v2-model";
-import { ObpPersistenceClient } from "./persistence-client.ts";
-import type { ObpPersistenceStrategy } from "./persistence-strategy.ts";
+import { ObpPersistenceClient } from "./persistence-client";
+import type { ObpPersistenceStrategy } from "./persistence-strategy";
 import type {
   BindListingRow,
   BindPortInput,
@@ -38,7 +38,7 @@ import type {
   SetOfferExpiredNowOutput,
   SetPortExpiredNowInput,
   SetPortExpiredNowOutput,
-} from "./persistence-types.ts";
+} from "./persistence-types";
 
 /** Minimal in-memory {@link ObpPersistenceStrategy} for tests and local daemons. */
 export class InMemoryObpPersistenceStrategy implements ObpPersistenceStrategy {

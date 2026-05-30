@@ -1,21 +1,16 @@
 import type { FlagMap } from "@khoralabs/cli-kit";
 
-import type { KhoraCliContext } from "../flows/context.ts";
-import { handleHostList, handleHostRegister, handleHostShow, handleHostUse } from "./host.ts";
-import { handleInboxListen, handleInboxStatus, handleInboxStop } from "./inbox.ts";
-import { handleKeygen } from "./keygen.ts";
-import { handleLink, handleLinkStatus, handleLinkUnlink } from "./link.ts";
-import {
-  handlePostsCreate,
-  handlePostsDelete,
-  handlePostsGet,
-  handlePostsUpdate,
-} from "./posts.ts";
-import { handleProfileUpdate } from "./profile.ts";
-import { handleRegister } from "./register.ts";
-import { handleSearch } from "./search.ts";
-import { handleSubscriptionsCreate, handleSubscriptionsList } from "./subscriptions.ts";
-import { handleWhoami } from "./whoami.ts";
+import type { KhoraCliContext } from "../flows/context";
+import { handleHostList, handleHostRegister, handleHostShow, handleHostUse } from "./host";
+import { handleInboxListen, handleInboxStatus, handleInboxStop } from "./inbox";
+import { handleKeygen } from "./keygen";
+import { handleLink, handleLinkStatus, handleLinkUnlink } from "./link";
+import { handlePostsCreate, handlePostsDelete, handlePostsGet, handlePostsUpdate } from "./posts";
+import { handleProfileUpdate } from "./profile";
+import { handleRegister } from "./register";
+import { handleSearch } from "./search";
+import { handleSubscriptionsCreate, handleSubscriptionsList } from "./subscriptions";
+import { handleWhoami } from "./whoami";
 
 export async function dispatch(
   ctx: KhoraCliContext,

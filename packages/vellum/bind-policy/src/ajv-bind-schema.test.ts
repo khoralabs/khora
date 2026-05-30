@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { JsonDocument } from "@khoralabs/obp-v2-model";
-import { getBindPayloadValidator } from "./ajv-compile-bind-schema.ts";
-import { validateVellumBindPayloadForPort } from "./validate-bind-payload.ts";
+import { getBindPayloadValidator } from "./ajv-compile-bind-schema";
+import { validateVellumBindPayloadForPort } from "./validate-bind-payload";
 
 const textSchema = {
   type: "object" as const,

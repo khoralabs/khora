@@ -10,17 +10,14 @@ import {
   createTestEncryptionMaterial,
   TestKeyProvider,
 } from "@khoralabs/sqlite-crypto";
-import { createRelayColonnadeSocial } from "./create-relay-colonnade-social.ts";
-import {
-  createRelayPrincipalLifecycle,
-  type RelayPrincipalLifecycle,
-} from "./principal-lifecycle.ts";
+import { createRelayColonnadeSocial } from "./create-relay-colonnade-social";
+import { createRelayPrincipalLifecycle, type RelayPrincipalLifecycle } from "./principal-lifecycle";
 import {
   ensurePrincipalTeardownJobsSchema,
   insertPendingPrincipalTeardownJob,
   principalHasActiveTeardownJob,
-} from "./principal-teardown-jobs.ts";
-import { registerAgentOnColonnadePersistence } from "./social-registration.ts";
+} from "./principal-teardown-jobs";
+import { registerAgentOnColonnadePersistence } from "./social-registration";
 
 function lifecycleWithMockPersistence(
   catalogDb: Database,

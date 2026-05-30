@@ -1,6 +1,6 @@
-import type { HostRouteDeps } from "./deps.ts";
-import { authorizeInternal } from "./internal-auth.ts";
-import { jsonError } from "./responses.ts";
+import type { HostRouteDeps } from "./deps";
+import { authorizeInternal } from "./internal-auth";
+import { jsonError } from "./responses";
 
 const SYSTEM_MINTER_DID = "did:system";
 

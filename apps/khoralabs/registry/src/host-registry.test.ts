@@ -7,7 +7,7 @@ import {
   resetUsersDatabase,
 } from "@khoralabs/users";
 import { ensureRegistrySchema } from "@khoralabs/users-auth";
-import { handleHostRegistryGet, handleHostRegistryPut } from "./api/host-registry.ts";
+import { handleHostRegistryGet, handleHostRegistryPut } from "./api/host-registry";
 
 describe("host registry API", () => {
   beforeEach(async () => {

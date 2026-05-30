@@ -5,7 +5,7 @@ import {
   parseTopK,
   profilePatchFromFlags,
   registerFieldsFromFlags,
-} from "./flags.ts";
+} from "./flags";
 
 describe("registerFieldsFromFlags", () => {
   test("returns null when any required field is missing", () => {

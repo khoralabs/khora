@@ -10,8 +10,8 @@ import {
 import type { ObpPersistenceClient } from "@khoralabs/obp-v2-persistence";
 import { accumulateTaggedSessionOps, type SessionOp } from "@khoralabs/obp-v2-session-impl";
 
-import { canonicalJsonString } from "./canonical-json.ts";
-import { encodeFramedJson } from "./encode-framed-json.ts";
+import { canonicalJsonString } from "./canonical-json";
+import { encodeFramedJson } from "./encode-framed-json";
 import {
   bytesToHexLower,
   decryptWireFrameBody,
@@ -24,19 +24,19 @@ import {
   minActorPubkeyFromInit,
   parseHandshakeEphemeralPub,
   x25519SharedSecret,
-} from "./frame-channel-e2ee.ts";
-import { FrameDag, sha256HexLowerFromUtf8String, signingPayloadBytes } from "./frame-dag.ts";
+} from "./frame-channel-e2ee";
+import { FrameDag, sha256HexLowerFromUtf8String, signingPayloadBytes } from "./frame-dag";
 import {
   createFrameDecoder,
   encodeSessionEnvelopeMessage,
   type FrameDecoderYield,
-} from "./frame-decoder.ts";
+} from "./frame-decoder";
 import {
   canonicalSessionParties,
   normalizeSessionInit,
   sessionInitFromUnknownWireEnvelope,
   sessionInitToWire,
-} from "./frame-init-wire.ts";
+} from "./frame-init-wire";
 import {
   ensureSignerInSession,
   frameAsOpLike,
@@ -44,20 +44,20 @@ import {
   partyIdForActor,
   remoteActorForSigner,
   templateMatch,
-} from "./frame-multiplex-session-helpers.ts";
+} from "./frame-multiplex-session-helpers";
 import type {
   ChainState,
   RunFrameMultiplexSessionArgs,
   SessionEnvelopeSyncAdapter,
-} from "./frame-multiplex-session-types.ts";
+} from "./frame-multiplex-session-types";
 import type {
   FrameMultiplexOpenerApi,
   FrameSessionHandle,
   FrameSessionHandlers,
   MultiplexChainHooks,
-} from "./frame-mux-types.ts";
-import type { Frame, SessionEnvelopeWire, SessionInitNormalized } from "./frame-protocol-types.ts";
-import type { FrameSigner, FrameVerifier } from "./frame-signer.ts";
+} from "./frame-mux-types";
+import type { Frame, SessionEnvelopeWire, SessionInitNormalized } from "./frame-protocol-types";
+import type { FrameSigner, FrameVerifier } from "./frame-signer";
 
 type MultiplexE2eeState = {
   localSk: Uint8Array;

@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { poolShardCellId } from "@khoralabs/colonnade-persistence";
 import { openEncryptedDatabaseSync, TEST_KHORA_SQLCIPHER_KEY } from "@khoralabs/sqlite-crypto";
-import { createKhoraAdminStatsPort } from "./admin-stats-port.ts";
+import { createKhoraAdminStatsPort } from "./admin-stats-port";
 
 const REG_BY_PRINCIPAL = "relay:reg:by-principal";
 const testRoot = mkdtempSync(join(tmpdir(), "admin-network-test-"));

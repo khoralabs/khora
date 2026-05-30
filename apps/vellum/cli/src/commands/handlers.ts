@@ -1,12 +1,12 @@
 import type { FlagMap } from "@khoralabs/cli-kit";
 
-import type { VellumCliContext } from "../flows/context.ts";
-import { handleConnect } from "./connect.ts";
-import { handleDisconnect } from "./disconnect.ts";
-import { handleKeygen } from "./keygen.ts";
-import { handleList } from "./list.ts";
-import { handleRegister } from "./register.ts";
-import { handleRoomCreate, handleRoomJoin, handleRoomLeave, handleRoomRead } from "./room.ts";
+import type { VellumCliContext } from "../flows/context";
+import { handleConnect } from "./connect";
+import { handleDisconnect } from "./disconnect";
+import { handleKeygen } from "./keygen";
+import { handleList } from "./list";
+import { handleRegister } from "./register";
+import { handleRoomCreate, handleRoomJoin, handleRoomLeave, handleRoomRead } from "./room";
 import {
   handleChainCreate,
   handleChainList,
@@ -18,9 +18,9 @@ import {
   handlePolicyValidate,
   handlePortList,
   handlePortRead,
-} from "./room-commands.ts";
-import { runSetupCommand } from "./setup.ts";
-import { handleWhoami } from "./whoami.ts";
+} from "./room-commands";
+import { runSetupCommand } from "./setup";
+import { handleWhoami } from "./whoami";
 
 export async function dispatch(
   ctx: VellumCliContext,

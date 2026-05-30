@@ -1,10 +1,10 @@
 import type { DuplexByteStream } from "@khoralabs/duplex-byte-stream";
 import { AuthError } from "@khoralabs/khora-auth";
 import type { Socket } from "bun";
-import type { HostRouteDeps } from "../http/deps.ts";
-import { logger } from "../logger.ts";
-import { attachInboxDuplexAfterAuth, attachRoomDuplexAfterTicket } from "./duplex-attach.ts";
-import { type DuplexUnixHandshake, parseDuplexUnixHandshakeJson } from "./duplex-unix-handshake.ts";
+import type { HostRouteDeps } from "../http/deps";
+import { logger } from "../logger";
+import { attachInboxDuplexAfterAuth, attachRoomDuplexAfterTicket } from "./duplex-attach";
+import { type DuplexUnixHandshake, parseDuplexUnixHandshakeJson } from "./duplex-unix-handshake";
 
 export type DuplexUnixIngressHandle = {
   /** @param closeActive forwarded to {@link Bun.listen} stop (default true). */

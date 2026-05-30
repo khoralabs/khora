@@ -16,9 +16,9 @@ import {
 } from "@khoralabs/khora-host";
 import type { KhoraRoomLifecycleHostEvent, KhoraWsUpgradePort } from "@khoralabs/khora-transport";
 import z from "zod";
-import { logger } from "../logger.ts";
-import type { HostRouteDeps } from "./deps.ts";
-import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses.ts";
+import { logger } from "../logger";
+import type { HostRouteDeps } from "./deps";
+import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses";
 
 function safeRoomLifecycle(ctx: HostRouteDeps["ctx"], event: KhoraRoomLifecycleHostEvent): void {
   try {

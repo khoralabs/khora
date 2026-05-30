@@ -10,7 +10,7 @@
  * next to **`frame-protocol-types.ts`**, not in the session impl package.
  */
 
-import type { ActorPubkeyList, SessionInit } from "./frame-protocol-types.ts";
+import type { ActorPubkeyList, SessionInit } from "./frame-protocol-types";
 
 /** Lexicographic compare on strings (binary / UTF-16 code units per `String` `<`). */
 export function cmpActorPubkeyHex(a: string, b: string): number {

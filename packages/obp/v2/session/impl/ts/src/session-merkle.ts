@@ -10,7 +10,7 @@ import {
   type SessionOp,
   type Sha256HexLower,
   toSha256HexLower,
-} from "./session-protocol-types.ts";
+} from "./session-protocol-types";
 
 const LEAF_TAG = new TextEncoder().encode("OBP_SESSION_LEAF_v1");
 const NUL = new Uint8Array([0]);

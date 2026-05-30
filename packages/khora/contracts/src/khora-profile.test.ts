@@ -4,7 +4,7 @@ import {
   mergeKhoraProfilePatch,
   parseKhoraRegistrationMetadata,
   zKhoraProfile,
-} from "./khora-profile.ts";
+} from "./khora-profile";
 
 describe("parseKhoraRegistrationMetadata", () => {
   test("requires username", () => {

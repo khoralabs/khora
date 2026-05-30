@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createRateLimiter, envRatePerMinute } from "./rate-limit.ts";
+import { createRateLimiter, envRatePerMinute } from "./rate-limit";
 
 describe("createRateLimiter", () => {
   test("allows under max", () => {

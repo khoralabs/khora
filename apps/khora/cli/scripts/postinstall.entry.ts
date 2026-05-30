@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { runKhoraPostinstall } from "./postinstall.ts";
+import { runKhoraPostinstall } from "./postinstall";
 
 /**
  * Entry script for the npm postinstall hook on `@khoralabs/khora-cli`.

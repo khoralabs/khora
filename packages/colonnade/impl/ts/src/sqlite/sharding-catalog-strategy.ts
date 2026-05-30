@@ -1,4 +1,4 @@
-import type { CatalogPersistenceStrategy } from "../catalog-persistence-strategy.ts";
+import type { CatalogPersistenceStrategy } from "../catalog-persistence-strategy";
 import type {
   BatchLookupSourceMapPointersInput,
   BatchLookupSourceMapPointersOutput,
@@ -16,9 +16,9 @@ import type {
   UpsertDiscoveryDocumentOutput,
   UpsertSourceMapPointerRowInput,
   UpsertSourceMapPointerRowOutput,
-} from "../colonnade-types.ts";
-import { parseCatalogPointerShardIndex } from "./catalog-pointer-id.ts";
-import { catalogShardIndexForTenant } from "./tenant-catalog-shard.ts";
+} from "../colonnade-types";
+import { parseCatalogPointerShardIndex } from "./catalog-pointer-id";
+import { catalogShardIndexForTenant } from "./tenant-catalog-shard";
 
 /**
  * Tenant-key **routing façade** over catalog SQLite shards (**`catalogShardCount`** files).

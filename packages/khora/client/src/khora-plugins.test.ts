@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { resolve } from "node:path";
-import { KhoraClient } from "./khora-client.ts";
-import { createKhoraResolvePath, mergeLabeledKhoraPluginLayers } from "./khora-plugins.ts";
+import { KhoraClient } from "./khora-client";
+import { createKhoraResolvePath, mergeLabeledKhoraPluginLayers } from "./khora-plugins";
 
 describe("createKhoraResolvePath", () => {
   test("joins relative paths under dataDir", () => {

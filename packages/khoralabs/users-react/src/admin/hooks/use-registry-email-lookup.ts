@@ -1,6 +1,6 @@
 import type { RegistryEmailLookupResponse } from "@khoralabs/users";
 import { useCallback, useState } from "react";
-import { fetchAdminJson } from "../client.ts";
+import { fetchAdminJson } from "../client";
 
 export function useRegistryEmailLookup(lookupBaseUrl: string, fetchImpl: typeof fetch = fetch) {
   const [email, setEmail] = useState("");

@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import type { PersistableAgentSigner } from "@khoralabs/agent-persisted-signer";
 import type { KhoraClientEvent } from "@khoralabs/khora-transport";
-import type { InboxEventSink } from "./inbox-event-sink.ts";
-import { runKhoraInboxDaemon } from "./run-khora-inbox-daemon.ts";
+import type { InboxEventSink } from "./inbox-event-sink";
+import { runKhoraInboxDaemon } from "./run-khora-inbox-daemon";
 
 function testSigner(did = "did:key:daemon-test"): PersistableAgentSigner {
   return {

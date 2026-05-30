@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import path from "node:path";
-import { KhoraConfigError } from "./errors.ts";
-import { readKhoraConfigFileWithExtends } from "./file.ts";
+import { KhoraConfigError } from "./errors";
+import { readKhoraConfigFileWithExtends } from "./file";
 
 function makeFs(files: Record<string, string>) {
   return {

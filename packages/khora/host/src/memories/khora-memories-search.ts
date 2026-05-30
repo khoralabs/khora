@@ -8,9 +8,9 @@ import type { MemoriesClient, SearchParams } from "@khoralabs/memories-core";
 import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import { embedTextChunks } from "@khoralabs/memories-core/helpers";
 import type { SocialRelationshipPersistence } from "@khoralabs/relay-colonnade";
-import { canReadPost } from "../post-visibility.ts";
-import { hydrateMemoryLabels, type KhoraCanonicalStore } from "./khora-canonical-store.ts";
-import type { khoraOntology } from "./khora-ontology.ts";
+import { canReadPost } from "../post-visibility";
+import { hydrateMemoryLabels, type KhoraCanonicalStore } from "./khora-canonical-store";
+import type { khoraOntology } from "./khora-ontology";
 
 export type {
   KhoraSearchQuery,

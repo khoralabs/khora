@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { boolFlag, parseArgv, splitTopics, strFlag } from "./parse.ts";
+import { boolFlag, parseArgv, splitTopics, strFlag } from "./parse";
 
 describe("parseArgv", () => {
   test("recognizes single-letter short flags as booleans", () => {

@@ -43,7 +43,7 @@ import type {
   SetOfferExpiredNowOutput,
   SetPortExpiredNowInput,
   SetPortExpiredNowOutput,
-} from "./persistence-types.ts";
+} from "./persistence-types";
 
 export interface ObpPersistenceStrategy {
   registerParty(input: RegisterPartyInput): Promise<RegisterPartyOutput>;

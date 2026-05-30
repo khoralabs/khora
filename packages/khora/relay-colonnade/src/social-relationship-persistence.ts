@@ -1,9 +1,9 @@
 import type { Database } from "bun:sqlite";
 import type { PrincipalId } from "@khoralabs/agent-relay";
-import type { RelayCatalogProjectionStore } from "./catalog-projection-store.ts";
-import { RELAY_NAMESPACE_SOCIAL_RELATIONSHIP } from "./relay-id-conventions.ts";
-import type { RelaySocialPrincipalChannelStore } from "./relay-social-principal-channel-store.ts";
-import type { SocialRelationshipPersistence, SocialRelationshipRow } from "./social-types.ts";
+import type { RelayCatalogProjectionStore } from "./catalog-projection-store";
+import { RELAY_NAMESPACE_SOCIAL_RELATIONSHIP } from "./relay-id-conventions";
+import type { RelaySocialPrincipalChannelStore } from "./relay-social-principal-channel-store";
+import type { SocialRelationshipPersistence, SocialRelationshipRow } from "./social-types";
 
 const NAMESPACE_RELATIONSHIP = RELAY_NAMESPACE_SOCIAL_RELATIONSHIP;
 

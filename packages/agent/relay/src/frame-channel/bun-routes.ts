@@ -1,5 +1,5 @@
 import type { ServerWebSocket } from "bun";
-import type { FrameChannelHubPort, FrameChannelPeer } from "./port.ts";
+import type { FrameChannelHubPort, FrameChannelPeer } from "./port";
 
 /** WebSocket `data` after upgrade for frame-channel hub sessions (product routes map `sessionId` to room id). */
 export type AgentRelayFrameChannelWsData = { kind: "room"; sessionId: string };

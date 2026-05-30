@@ -6,8 +6,8 @@ import {
   zKhoraProfilePatch,
 } from "@khoralabs/khora-contracts";
 import z from "zod";
-import type { HostRouteDeps } from "./deps.ts";
-import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses.ts";
+import type { HostRouteDeps } from "./deps";
+import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses";
 
 export async function handleProfileByDid(
   req: Request,

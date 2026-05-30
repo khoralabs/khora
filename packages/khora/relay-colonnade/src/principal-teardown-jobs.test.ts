@@ -5,7 +5,7 @@ import {
   insertPendingPrincipalTeardownJob,
   principalHasActiveTeardownJob,
   tryClaimNextPendingPrincipalTeardownJob,
-} from "./principal-teardown-jobs.ts";
+} from "./principal-teardown-jobs";
 
 test("tryClaimNextPendingPrincipalTeardownJob claims one pending row", () => {
   const db = new Database(":memory:");

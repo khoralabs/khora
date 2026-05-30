@@ -78,7 +78,7 @@ export {
   loadCachedProfile,
   resolveProfileSyncPath,
   serializeProfileSyncStateFile,
-} from "./cached-profile.ts";
+} from "./cached-profile";
 export {
   defaultKhoraConfigPath,
   extendKhoraAppConfig,
@@ -98,7 +98,7 @@ export {
   resolveKhoraConfigPath,
   zKhoraAppConfigBase,
   zKhoraAppPluginMap,
-} from "./config/index.ts";
+} from "./config/index";
 export {
   type AuthorSubscriptionsSnapshot,
   KhoraClient,
@@ -112,7 +112,7 @@ export {
   type ObpFrameConnection,
   type ObpWebSocketConnectOptions,
   type PublicProfileResult,
-} from "./khora-client.ts";
+} from "./khora-client";
 export {
   createKhoraResolvePath,
   KHORA_BUILTIN_PLUGIN_ID,
@@ -122,5 +122,5 @@ export {
   type LabeledKhoraPluginInstaller,
   labelKhoraPlugin,
   mergeLabeledKhoraPluginLayers,
-} from "./khora-plugins.ts";
-export { createKhoraSession, type KhoraSession } from "./session.ts";
+} from "./khora-plugins";
+export { createKhoraSession, type KhoraSession } from "./session";

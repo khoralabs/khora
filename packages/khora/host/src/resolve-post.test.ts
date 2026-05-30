@@ -3,10 +3,10 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { TEST_POST_AUTHOR_SIGNATURE } from "@khoralabs/sqlite-crypto";
-import { assignPostAddress } from "./on-event.ts";
-import { encodePostId } from "./post-address-id.ts";
-import { deletePostOutboxRecord, resolvePostById } from "./resolve-post.ts";
-import { createTestKhoraHost } from "./test/bootstrap-sqlite.ts";
+import { assignPostAddress } from "./on-event";
+import { encodePostId } from "./post-address-id";
+import { deletePostOutboxRecord, resolvePostById } from "./resolve-post";
+import { createTestKhoraHost } from "./test/bootstrap-sqlite";
 
 const tmpRoot = mkdtempSync(join(tmpdir(), "khora-post-outbox-"));
 let seq = 0;

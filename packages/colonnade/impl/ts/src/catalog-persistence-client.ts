@@ -1,4 +1,4 @@
-import type { CatalogPersistenceStrategy } from "./catalog-persistence-strategy.ts";
+import type { CatalogPersistenceStrategy } from "./catalog-persistence-strategy";
 import type {
   BatchLookupSourceMapPointersInput,
   BatchLookupSourceMapPointersOutput,
@@ -16,8 +16,8 @@ import type {
   UpsertDiscoveryDocumentOutput,
   UpsertSourceMapPointerRowInput,
   UpsertSourceMapPointerRowOutput,
-} from "./colonnade-types.ts";
-import { assertContentHash } from "./hash.ts";
+} from "./colonnade-types";
+import { assertContentHash } from "./hash";
 
 /** Thin facade over {@link CatalogPersistenceStrategy}; room for shared validation later. */
 export class CatalogPersistenceClient implements CatalogPersistenceStrategy {

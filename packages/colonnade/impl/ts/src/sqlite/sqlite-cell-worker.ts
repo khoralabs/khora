@@ -1,6 +1,6 @@
 /// <reference lib="WebWorker" />
 import { createOutboxPayloadCodec, openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
-import type { DiscardInboxEntriesInput } from "../cell-persistence-strategy.ts";
+import type { DiscardInboxEntriesInput } from "../cell-persistence-strategy";
 import type {
   AckWriteLogAppliedInput,
   AppendOutboxRecordInput,
@@ -10,8 +10,8 @@ import type {
   FetchWriteLogBatchInput,
   ListPendingInboxEntriesInput,
   VerifyAndDrainInboxBatchInput,
-} from "../colonnade-types.ts";
-import { SqliteCellPersistenceStrategy } from "./sqlite-cell-strategy.ts";
+} from "../colonnade-types";
+import { SqliteCellPersistenceStrategy } from "./sqlite-cell-strategy";
 
 type InitMsg = {
   readonly kind: "init";

@@ -1,9 +1,9 @@
 import type { PrincipalRegistrationRequest } from "@khoralabs/agent-relay";
 import { zKhoraUnregisterRequestBody } from "@khoralabs/khora-contracts";
-import { logger } from "../logger.ts";
-import { clientIpFromRequest } from "../rate-limit.ts";
-import type { HostRouteDeps } from "./deps.ts";
-import { authErrorResponse, rateLimitedResponse, registrationOpaqueJson } from "./responses.ts";
+import { logger } from "../logger";
+import { clientIpFromRequest } from "../rate-limit";
+import type { HostRouteDeps } from "./deps";
+import { authErrorResponse, rateLimitedResponse, registrationOpaqueJson } from "./responses";
 
 export async function handleUnregister(req: Request, deps: HostRouteDeps): Promise<Response> {
   const { ctx, rateLimiters } = deps;

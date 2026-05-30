@@ -10,9 +10,9 @@ import {
   seedDefaultHost,
 } from "@khoralabs/users";
 import { getRegistryDatabase } from "@khoralabs/users-auth";
-import { handleAdminHostActivate } from "./hosts.ts";
-import { handleLookupEmail } from "./lookup.ts";
-import { handleAdminStatsSummary } from "./stats.ts";
+import { handleAdminHostActivate } from "./hosts";
+import { handleLookupEmail } from "./lookup";
+import { handleAdminStatsSummary } from "./stats";
 
 const ROOT_TOKEN = "test-root-token-16chars";
 

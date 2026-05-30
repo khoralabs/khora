@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
 import { createPercolator, extractQueryTerms } from "@khoralabs/percolator";
-import { createPercolatorSqlitePersistence } from "./index.ts";
+import { createPercolatorSqlitePersistence } from "./index";
 
 describe("createPercolatorSqlitePersistence", () => {
   test("persists and reloads standing query with search json round-trip", () => {

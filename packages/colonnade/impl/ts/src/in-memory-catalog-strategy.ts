@@ -1,4 +1,4 @@
-import type { CatalogPersistenceStrategy } from "./catalog-persistence-strategy.ts";
+import type { CatalogPersistenceStrategy } from "./catalog-persistence-strategy";
 import type {
   BatchLookupSourceMapPointersInput,
   BatchLookupSourceMapPointersOutput,
@@ -19,9 +19,9 @@ import type {
   UpsertDiscoveryDocumentOutput,
   UpsertSourceMapPointerRowInput,
   UpsertSourceMapPointerRowOutput,
-} from "./colonnade-types.ts";
-import { canonicalSourceMapRowBytes, sha256HexLower } from "./hash.ts";
-import { encodeCatalogPointerId } from "./sqlite/catalog-pointer-id.ts";
+} from "./colonnade-types";
+import { canonicalSourceMapRowBytes, sha256HexLower } from "./hash";
+import { encodeCatalogPointerId } from "./sqlite/catalog-pointer-id";
 
 const ZERO_HASH = "0".repeat(64);
 

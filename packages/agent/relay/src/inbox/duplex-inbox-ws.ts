@@ -1,5 +1,5 @@
 import type { DuplexByteStream } from "@khoralabs/duplex-byte-stream";
-import type { InboxFanoutPort, InboxWebSocket } from "./inbox-fanout-port.ts";
+import type { InboxFanoutPort, InboxWebSocket } from "./inbox-fanout-port";
 
 /** Adapt UTF-8 inbox JSON (`send(string)` like Bun {@link WebSocket}) to binary duplex writes. */
 export function inboxWebSocketFromDuplexUtf8(duplex: DuplexByteStream): InboxWebSocket {

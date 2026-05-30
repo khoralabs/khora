@@ -2,21 +2,21 @@ export {
   VELLUM_CANONICAL_BASE_URL,
   vellumAppConfigBuiltinDefaults,
   vellumDefaultDataDir,
-} from "./defaults.ts";
-export { vellumAppConfigFromEnv } from "./env.ts";
-export { VellumConfigError } from "./errors.ts";
-export { readVellumConfigFileWithExtends, type VellumConfigFileRead } from "./file.ts";
-export { vellumConfigJsonSchema } from "./json-schema.ts";
+} from "./defaults";
+export { vellumAppConfigFromEnv } from "./env";
+export { VellumConfigError } from "./errors";
+export { readVellumConfigFileWithExtends, type VellumConfigFileRead } from "./file";
+export { vellumConfigJsonSchema } from "./json-schema";
 export {
   type LoadedVellumAppConfig,
   type LoadVellumAppConfigOptions,
   loadVellumAppConfig,
-} from "./load.ts";
-export { mergeVellumAppConfigLayers } from "./merge.ts";
+} from "./load";
+export { mergeVellumAppConfigLayers } from "./merge";
 export {
   defaultVellumCliConfigPath,
   defaultVellumDaemonConfigPath,
   type ResolvedVellumConfigPath,
   resolveVellumConfigPath,
-} from "./path.ts";
-export { type VellumAppConfigBase, zVellumAppConfigBase } from "./schema.ts";
+} from "./path";
+export { type VellumAppConfigBase, zVellumAppConfigBase } from "./schema";

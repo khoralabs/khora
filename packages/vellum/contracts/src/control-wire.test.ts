@@ -3,7 +3,7 @@ import {
   ChainInitRequestSchema,
   ChainInitWireSchema,
   DEFAULT_GENESIS_TURN_WIRE,
-} from "./control-wire.ts";
+} from "./control-wire";
 
 const sampleInit = ChainInitWireSchema.parse({
   session_id: "sid-a",

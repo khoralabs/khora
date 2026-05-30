@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
-import type { AppliedMigration, Migration, MigrationResult } from "./migration.ts";
-import { compareSemver, encodeSemverForUserVersion } from "./semver.ts";
+import type { AppliedMigration, Migration, MigrationResult } from "./migration";
+import { compareSemver, encodeSemverForUserVersion } from "./semver";
 
 const DEFAULT_TABLE = "_schema_migrations";
 

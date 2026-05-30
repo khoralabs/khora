@@ -1,5 +1,5 @@
 import { isAbsolute, resolve } from "node:path";
-import type { KhoraClient } from "./khora-client.ts";
+import type { KhoraClient } from "./khora-client";
 
 /** Per-plugin teardown (idempotent). */
 export type KhoraPluginHandle = {

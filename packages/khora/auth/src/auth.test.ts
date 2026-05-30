@@ -1,12 +1,8 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
 import { type AgentSigner, generateAgentIdentity } from "@khoralabs/agent-persisted-signer";
-import { createKhoraDidAuth } from "./auth.ts";
-import {
-  AGENT_REQUEST_HEADER,
-  canonicalAgentRequestMessage,
-  signatureBytesToB64Url,
-} from "./wire.ts";
+import { createKhoraDidAuth } from "./auth";
+import { AGENT_REQUEST_HEADER, canonicalAgentRequestMessage, signatureBytesToB64Url } from "./wire";
 
 function freshDb(): Database {
   return new Database(":memory:");

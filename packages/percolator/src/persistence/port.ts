@@ -1,4 +1,4 @@
-import type { StandingQuery } from "../types.ts";
+import type { StandingQuery } from "../types";
 
 export type PercolatorPersistence = {
   withTransaction<T>(fn: () => T): T;

@@ -6,7 +6,7 @@
 import { ObpError } from "@khoralabs/obp-v2-errors";
 import { x25519 } from "@noble/curves/ed25519.js";
 
-import { canonicalJsonString } from "./canonical-json.ts";
+import { canonicalJsonString } from "./canonical-json";
 
 export const E2EE_HS_BODY_KEY = "e2ee_hs" as const;
 export const E2EE_WIRE_BODY_KEY = "e2ee" as const;

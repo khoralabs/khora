@@ -1,10 +1,10 @@
 import type { ReadLineFn } from "@khoralabs/cli-kit";
 
-import type { FlowChainView } from "./chain-view.ts";
-import type { FlowDefinition } from "./flow-types.ts";
-import { createInMemoryFlowChainView } from "./in-memory-chain.ts";
-import { runFlow } from "./runner.ts";
-import { getOfferRow, seedMapFromOffer } from "./seed-helpers.ts";
+import type { FlowChainView } from "./chain-view";
+import type { FlowDefinition } from "./flow-types";
+import { createInMemoryFlowChainView } from "./in-memory-chain";
+import { runFlow } from "./runner";
+import { getOfferRow, seedMapFromOffer } from "./seed-helpers";
 
 export type RunOfferFlowOptions = {
   readLine: ReadLineFn;

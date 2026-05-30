@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { KHORA_BUILTIN_PLUGIN_ID } from "../khora-plugins.ts";
-import { khoraAppConfigFromEnv } from "./env.ts";
+import { KHORA_BUILTIN_PLUGIN_ID } from "../khora-plugins";
+import { khoraAppConfigFromEnv } from "./env";
 
 describe("khoraAppConfigFromEnv", () => {
   test("translates known env vars to KhoraAppConfigBase fields", () => {

@@ -1,12 +1,12 @@
 import type { Database } from "bun:sqlite";
 import type { AgentRelayPersistence } from "@khoralabs/agent-relay";
 import type { EncryptionKeyProvider } from "@khoralabs/sqlite-crypto";
-import { RelayCatalogProjectionStore } from "./catalog-projection-store.ts";
-import { createRelayColonnadePersistenceFromDatabases } from "./relay-colonnade-persistence.ts";
-import { RelaySocialPrincipalChannelStore } from "./relay-social-principal-channel-store.ts";
-import { createSocialRelationshipPersistence } from "./social-relationship-persistence.ts";
-import type { SocialRelationshipPersistence } from "./social-types.ts";
-import { openRelayCatalogDb, openRelayFramesDb } from "./sqlite-setup.ts";
+import { RelayCatalogProjectionStore } from "./catalog-projection-store";
+import { createRelayColonnadePersistenceFromDatabases } from "./relay-colonnade-persistence";
+import { RelaySocialPrincipalChannelStore } from "./relay-social-principal-channel-store";
+import { createSocialRelationshipPersistence } from "./social-relationship-persistence";
+import type { SocialRelationshipPersistence } from "./social-types";
+import { openRelayCatalogDb, openRelayFramesDb } from "./sqlite-setup";
 
 export async function createRelayColonnadeSocial(opts: {
   catalogPath: string;

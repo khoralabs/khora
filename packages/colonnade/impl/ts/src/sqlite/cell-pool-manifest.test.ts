@@ -7,7 +7,7 @@ import {
   type CellPoolManifest,
   cellPoolManifestPath,
   ensureCellPoolManifest,
-} from "./cell-pool-manifest.ts";
+} from "./cell-pool-manifest";
 
 const dirs: string[] = [];
 

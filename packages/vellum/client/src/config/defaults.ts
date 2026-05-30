@@ -1,7 +1,7 @@
 import { homedir } from "node:os";
 import path from "node:path";
 
-import type { VellumAppConfigBase } from "./schema.ts";
+import type { VellumAppConfigBase } from "./schema";
 
 /** Canonical KHORA / Khora host when config files and env omit `baseUrl`. */
 export const VELLUM_CANONICAL_BASE_URL = "https://k-0.khoralabs.com" as const;

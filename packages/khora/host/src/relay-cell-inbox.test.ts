@@ -2,9 +2,9 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { discardCellInboxRoomTickets, enqueueCellInboxInline } from "./relay-cell-inbox.ts";
-import { popRelayInboxDrainItemsForDid } from "./relay-inbox-drain.ts";
-import { createTestKhoraHost } from "./test/bootstrap-sqlite.ts";
+import { discardCellInboxRoomTickets, enqueueCellInboxInline } from "./relay-cell-inbox";
+import { popRelayInboxDrainItemsForDid } from "./relay-inbox-drain";
+import { createTestKhoraHost } from "./test/bootstrap-sqlite";
 
 const tmpRoot = mkdtempSync(join(tmpdir(), "khora-cell-inbox-"));
 let seq = 0;

@@ -5,7 +5,7 @@ import {
   envRegistryManagementToken,
   envRegistryTrustBaseUrlOrigin,
   envRegistryUrl,
-} from "./env.ts";
+} from "./env";
 
 const DEFAULT_REGISTRY_URL = "http://localhost:4000";
 

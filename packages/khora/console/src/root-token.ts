@@ -3,8 +3,8 @@ import {
   issueSessionCookie,
   readSessionPrincipal,
   tokensEqual,
-} from "./session-cookie.ts";
-import type { ConsoleAuth, ConsolePrincipal } from "./types.ts";
+} from "./session-cookie";
+import type { ConsoleAuth, ConsolePrincipal } from "./types";
 
 export type RootTokenConsoleAuthOptions = {
   rootToken: string;

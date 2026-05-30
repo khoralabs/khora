@@ -1,7 +1,7 @@
 import type {
   CellPersistenceStrategy,
   DiscardInboxEntriesInput,
-} from "./cell-persistence-strategy.ts";
+} from "./cell-persistence-strategy";
 import type {
   AckWriteLogAppliedInput,
   AckWriteLogAppliedOutput,
@@ -20,8 +20,8 @@ import type {
   PrincipalId,
   VerifyAndDrainInboxBatchInput,
   VerifyAndDrainInboxBatchOutput,
-} from "./colonnade-types.ts";
-import { assertContentHash } from "./hash.ts";
+} from "./colonnade-types";
+import { assertContentHash } from "./hash";
 
 /** Thin facade over {@link CellPersistenceStrategy} with light output validation. */
 export class CellPersistenceClient implements CellPersistenceStrategy {

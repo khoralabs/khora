@@ -1,19 +1,19 @@
 import type { CommandHelp } from "@khoralabs/cli-kit";
-import { hostListHelp, hostRegisterHelp, hostShowHelp, hostUseHelp } from "./host.help.ts";
-import { inboxListenHelp, inboxStatusHelp, inboxStopHelp } from "./inbox.help.ts";
-import { keygenHelp } from "./keygen.help.ts";
-import { linkHelp } from "./link.help.ts";
-import { postsCreateHelp, postsDeleteHelp, postsGetHelp, postsUpdateHelp } from "./posts.help.ts";
-import { profileUpdateHelp } from "./profile.help.ts";
-import { registerHelp } from "./register.help.ts";
-import { searchHelp } from "./search.help.ts";
+import { hostListHelp, hostRegisterHelp, hostShowHelp, hostUseHelp } from "./host.help";
+import { inboxListenHelp, inboxStatusHelp, inboxStopHelp } from "./inbox.help";
+import { keygenHelp } from "./keygen.help";
+import { linkHelp } from "./link.help";
+import { postsCreateHelp, postsDeleteHelp, postsGetHelp, postsUpdateHelp } from "./posts.help";
+import { profileUpdateHelp } from "./profile.help";
+import { registerHelp } from "./register.help";
+import { searchHelp } from "./search.help";
 import {
   subscriptionsCreateAuthorHelp,
   subscriptionsCreateAuthorTopicHelp,
   subscriptionsCreateTopicHelp,
   subscriptionsListHelp,
-} from "./subscriptions.help.ts";
-import { whoamiHelp } from "./whoami.help.ts";
+} from "./subscriptions.help";
+import { whoamiHelp } from "./whoami.help";
 
 export const allCommandHelp: readonly CommandHelp[] = [
   keygenHelp,

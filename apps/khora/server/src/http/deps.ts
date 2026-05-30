@@ -1,6 +1,6 @@
 import type { ConsoleAuth } from "@khoralabs/khora-console";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
-import type { V2HostRateLimiters } from "../rate-limit-buckets.ts";
+import type { V2HostRateLimiters } from "../rate-limit-buckets";
 
 export type HostRouteDeps = {
   ctx: KhoraHostContext;

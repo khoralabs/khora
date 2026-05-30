@@ -1,6 +1,6 @@
 import type { NbcTurnBody } from "@khoralabs/obp-v2-nbc";
 
-import type { MultiplexChainHooks } from "./frame-mux-types.ts";
+import type { MultiplexChainHooks } from "./frame-mux-types";
 
 type Waiter = {
   pred: (body: NbcTurnBody) => boolean;

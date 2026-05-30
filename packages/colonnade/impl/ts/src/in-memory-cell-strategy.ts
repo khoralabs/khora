@@ -1,5 +1,5 @@
 import { isOutboxEncryptedPayload, type OutboxPayloadCodec } from "@khoralabs/sqlite-crypto";
-import type { CellPersistenceStrategy } from "./cell-persistence-strategy.ts";
+import type { CellPersistenceStrategy } from "./cell-persistence-strategy";
 import type {
   AckWriteLogAppliedInput,
   AckWriteLogAppliedOutput,
@@ -21,8 +21,8 @@ import type {
   VerifyAndDrainInboxBatchInput,
   VerifyAndDrainInboxBatchOutput,
   WriteLogRecord,
-} from "./colonnade-types.ts";
-import { assertContentHash, randomId, sha256HexLower } from "./hash.ts";
+} from "./colonnade-types";
+import { assertContentHash, randomId, sha256HexLower } from "./hash";
 
 type OutboxRow = {
   readonly principal_id: string;

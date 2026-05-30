@@ -1,9 +1,9 @@
 import { requireFlowString, runOfferFlow } from "@khoralabs/cli-flow-nbc";
 import type { FlagMap } from "@khoralabs/cli-kit";
 
-import { resolveRoomId, type VellumCliContext } from "./context.ts";
-import { connectFlowDefinition } from "./definitions.ts";
-import { createVellumFlowChainView } from "./vellum-flow-chain.ts";
+import { resolveRoomId, type VellumCliContext } from "./context";
+import { connectFlowDefinition } from "./definitions";
+import { createVellumFlowChainView } from "./vellum-flow-chain";
 
 /**
  * Resolve room id from flags, positional, env, or readline when missing.

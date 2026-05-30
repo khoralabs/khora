@@ -1,8 +1,8 @@
 import { AuthStrategyError } from "@khoralabs/khora-auth";
 import type { KhoraSearchRequest } from "@khoralabs/khora-contracts";
 import { executeKhoraMemoriesSearch, khoraSearchRequestFromGetQuery } from "@khoralabs/khora-host";
-import type { HostRouteDeps } from "./deps.ts";
-import { authErrorResponse, jsonError } from "./responses.ts";
+import type { HostRouteDeps } from "./deps";
+import { authErrorResponse, jsonError } from "./responses";
 
 async function optionalReaderDid(
   req: Request,

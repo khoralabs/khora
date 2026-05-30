@@ -1,4 +1,4 @@
-import type { ScenarioId } from "./scenarios.ts";
+import type { ScenarioId } from "./scenarios";
 
 /**
  * Defaults when `bun run bench` is invoked with no workload flags — SQLite,

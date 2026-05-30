@@ -1,6 +1,6 @@
-import type { PostThreadMessageInput, ThreadMessage } from "./messages.ts";
+import type { PostThreadMessageInput, ThreadMessage } from "./messages";
 
-export type { PostThreadMessageInput } from "./messages.ts";
+export type { PostThreadMessageInput } from "./messages";
 
 export type WithThreadContextArgs = {
   /** When retrieving context as a given participant, pass their id (must be in {@link ThreadContext.participantIds}). */

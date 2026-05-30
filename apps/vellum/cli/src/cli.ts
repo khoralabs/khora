@@ -1,10 +1,10 @@
 #!/usr/bin/env bun
 import { boolFlag, parseArgv, tryPrintCommandHelp } from "@khoralabs/cli-kit";
 
-import { commandHelpTextMap, printHelp } from "./commands/global-help.ts";
-import { dispatch } from "./commands/handlers.ts";
-import { maybeBootstrapVellumHome } from "./commands/setup.ts";
-import { createVellumCliContext } from "./flows/context.ts";
+import { commandHelpTextMap, printHelp } from "./commands/global-help";
+import { dispatch } from "./commands/handlers";
+import { maybeBootstrapVellumHome } from "./commands/setup";
+import { createVellumCliContext } from "./flows/context";
 
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);

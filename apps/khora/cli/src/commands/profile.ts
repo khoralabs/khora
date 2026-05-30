@@ -1,10 +1,10 @@
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { boolFlag } from "@khoralabs/cli-kit";
 
-import type { KhoraCliContext } from "../flows/context.ts";
-import { withKhoraClient } from "../flows/context.ts";
-import { runProfileUpdateInteractiveFlow } from "../flows/profile-update-flow.ts";
-import { profilePatchFromFlags } from "../lib/flags.ts";
+import type { KhoraCliContext } from "../flows/context";
+import { withKhoraClient } from "../flows/context";
+import { runProfileUpdateInteractiveFlow } from "../flows/profile-update-flow";
+import { profilePatchFromFlags } from "../lib/flags";
 
 export async function handleProfileUpdate(ctx: KhoraCliContext, flags: FlagMap): Promise<void> {
   const json = boolFlag(flags, "json");

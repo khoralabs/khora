@@ -3,8 +3,8 @@ import { dirname } from "node:path";
 import { createConsoleAuthFromEnv } from "@khoralabs/khora-console";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
 import type { KhoraWsData } from "@khoralabs/khora-transport";
-import { bootstrapKhoraHost } from "./bootstrap-khora.ts";
-import { bootstrapKhoraEncryption } from "./encryption-bootstrap.ts";
+import { bootstrapKhoraHost } from "./bootstrap-khora";
+import { bootstrapKhoraEncryption } from "./encryption-bootstrap";
 import {
   envCellPoolCount,
   envColonnadeUseCellWorkers,
@@ -15,18 +15,18 @@ import {
   envTenantKey,
   resolveKhoraPersistencePaths,
   validateEnv,
-} from "./env.ts";
-import type { HostRouteDeps } from "./http/deps.ts";
-import { khoraFrameChannelWsHandlers, route } from "./http/router.ts";
-import { logger } from "./logger.ts";
-import { envMemoriesBootstrapConfig } from "./memories-env.ts";
-import { createV2HostRateLimiters } from "./rate-limit-buckets.ts";
-import { maybeRegistryOptInOnStartup } from "./registry-opt-in.ts";
+} from "./env";
+import type { HostRouteDeps } from "./http/deps";
+import { khoraFrameChannelWsHandlers, route } from "./http/router";
+import { logger } from "./logger";
+import { envMemoriesBootstrapConfig } from "./memories-env";
+import { createV2HostRateLimiters } from "./rate-limit-buckets";
+import { maybeRegistryOptInOnStartup } from "./registry-opt-in";
 import adminPage from "./routes/admin/index.html";
 import adminLoginPage from "./routes/admin/login/index.html";
-import { startDuplexUnixIngress } from "./server/duplex-unix-listener.ts";
-import { startStdioUnaryIngress } from "./server/stdio-unary-listener.ts";
-import { createInboxDrainWebSocketHandlers } from "./ws/inbox.ts";
+import { startDuplexUnixIngress } from "./server/duplex-unix-listener";
+import { startStdioUnaryIngress } from "./server/stdio-unary-listener";
+import { createInboxDrainWebSocketHandlers } from "./ws/inbox";
 
 validateEnv();
 

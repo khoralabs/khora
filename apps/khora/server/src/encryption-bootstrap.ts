@@ -3,7 +3,7 @@ import {
   createOutboxPayloadCodec,
   EnvKeyProvider,
 } from "@khoralabs/sqlite-crypto";
-import type { KhoraEncryptionContext } from "./encryption-context.ts";
+import type { KhoraEncryptionContext } from "./encryption-context";
 
 export async function bootstrapKhoraEncryption(): Promise<KhoraEncryptionContext> {
   const provider = new EnvKeyProvider();

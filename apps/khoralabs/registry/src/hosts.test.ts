@@ -7,7 +7,7 @@ import {
   handleHostRegister,
   handleHostsList,
   handleInternalHostActivate,
-} from "./api/hosts.ts";
+} from "./api/hosts";
 
 describe("host registry API", () => {
   const internalSecret = "test-registry-internal-secret-32chars";

@@ -29,9 +29,9 @@ import {
   type VellumControlTransport,
 } from "@khoralabs/vellum-transport";
 
-import { createFrameSignerFromPersistableAgent } from "./frame-signer.ts";
-import { SqliteVellumReadModel } from "./persistence/sqlite-vellum-read-persistence.ts";
-import type { VellumReadModel } from "./persistence/vellum-read-persistence.ts";
+import { createFrameSignerFromPersistableAgent } from "./frame-signer";
+import { SqliteVellumReadModel } from "./persistence/sqlite-vellum-read-persistence";
+import type { VellumReadModel } from "./persistence/vellum-read-persistence";
 
 export type VellumClientOptions = {
   /** KHORA HTTP origin (e.g. v2 host). */

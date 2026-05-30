@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ObpError } from "./obp-error.ts";
+import { ObpError } from "./obp-error";
 
 describe("ObpError", () => {
   test("code and message", () => {

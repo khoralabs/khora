@@ -4,7 +4,7 @@ import { zNamespacePath } from "../models/namespace-path";
 import type { MemoriesPersistenceAsync } from "../persistence/async-types";
 import { zVectorPayload } from "../persistence/row-schemas";
 import { resolveMemoriesBackendCapabilities } from "../persistence/types";
-import { computeSourceMapContentHash } from "../provenance/index.ts";
+import { computeSourceMapContentHash } from "../provenance/index";
 import {
   catalogSchemaJsonForEdgeKind,
   catalogSchemaJsonForNodeKind,

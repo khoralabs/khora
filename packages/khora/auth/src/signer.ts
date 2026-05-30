@@ -7,7 +7,7 @@ import {
   canonicalAgentRequestPath,
   randomAgentRequestNonce,
   signatureBytesToB64Url,
-} from "./wire.ts";
+} from "./wire";
 
 export type SignAgentRequestInput = {
   method: string;

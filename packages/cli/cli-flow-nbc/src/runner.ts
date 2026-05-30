@@ -1,8 +1,8 @@
 import type { ReadLineFn } from "@khoralabs/cli-kit";
 import type { JsonDocument } from "@khoralabs/obp-v2-model";
 
-import type { FlowChainView } from "./chain-view.ts";
-import type { FlowDefinition, FlowPort } from "./flow-types.ts";
+import type { FlowChainView } from "./chain-view";
+import type { FlowDefinition, FlowPort } from "./flow-types";
 
 function bindKey(offerId: string, portId: string): string {
   return `${offerId}::${portId}`;

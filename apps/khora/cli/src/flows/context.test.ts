@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { resolveCliHost } from "./context.ts";
+import { resolveCliHost } from "./context";
 
 describe("resolveCliHost", () => {
   test("prefers --base-url flag", () => {

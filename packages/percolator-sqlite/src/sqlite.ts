@@ -4,7 +4,7 @@ import {
   type StandingQuery,
   zStandingSearchRequest,
 } from "@khoralabs/percolator";
-import { ensurePercolatorSchema } from "./schema.ts";
+import { ensurePercolatorSchema } from "./schema";
 
 type QueryRow = {
   id: string;

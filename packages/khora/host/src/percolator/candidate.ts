@@ -1,7 +1,7 @@
 import type { KhoraPost } from "@khoralabs/khora-contracts";
 import type { PercolatorCandidate } from "@khoralabs/percolator";
-import { postsMemoryNamespace } from "../memories/khora-namespace.ts";
-import { topicSlugsToLabelKinds } from "./topic-labels.ts";
+import { postsMemoryNamespace } from "../memories/khora-namespace";
+import { topicSlugsToLabelKinds } from "./topic-labels";
 
 export function buildPercolatorCandidateFromPost(params: {
   post: KhoraPost;

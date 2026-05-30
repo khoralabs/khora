@@ -1,4 +1,4 @@
-import type { VellumAppConfigBase } from "./schema.ts";
+import type { VellumAppConfigBase } from "./schema";
 
 function trimmed(value: string | undefined): string | undefined {
   if (value === undefined) return undefined;

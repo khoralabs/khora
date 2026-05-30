@@ -3,8 +3,8 @@ export type {
   FetchVellumControlTransportOptions,
   VellumControlTransport,
   VellumFetch,
-} from "./control-http.ts";
+} from "./control-http";
 export {
   createVellumControlTransportFromEnv,
   FetchVellumControlTransport,
-} from "./control-http.ts";
+} from "./control-http";

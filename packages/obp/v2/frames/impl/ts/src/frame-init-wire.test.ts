@@ -8,9 +8,9 @@ import {
   sessionInitFromUnknownWireRecord,
   sessionInitFromWire,
   sessionInitToWire,
-} from "./frame-init-wire.ts";
-import type { SessionInitNormalized, SessionParty } from "./frame-protocol-types.ts";
-import { toSha256HexLower } from "./frame-protocol-types.ts";
+} from "./frame-init-wire";
+import type { SessionInitNormalized, SessionParty } from "./frame-protocol-types";
+import { toSha256HexLower } from "./frame-protocol-types";
 
 const gh = toSha256HexLower("a".repeat(64));
 

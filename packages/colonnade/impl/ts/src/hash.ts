@@ -2,7 +2,7 @@ import * as nodeCrypto from "node:crypto";
 import { createHash, randomBytes } from "node:crypto";
 import type { ContentHash } from "@khoralabs/sourcemaps";
 
-import type { PointerRef } from "./colonnade-types.ts";
+import type { PointerRef } from "./colonnade-types";
 
 const HASH_RE = /^[0-9a-f]{64}$/;
 

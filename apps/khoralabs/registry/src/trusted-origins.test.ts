@@ -9,8 +9,8 @@ import {
   setHostRegistryParticipation,
 } from "@khoralabs/users";
 import { ensureRegistrySchema } from "@khoralabs/users-auth";
-import { corsHeaders } from "./cors.ts";
-import { readRegistryTrustedOrigins } from "./trusted-origins.ts";
+import { corsHeadersForTrustedOrigins } from "./cors";
+import { readRegistryTrustedOrigins } from "./trusted-origins";
 
 describe("readRegistryTrustedOrigins", () => {
   beforeEach(async () => {
@@ -46,14 +46,22 @@ describe("readRegistryTrustedOrigins", () => {
     const db = getUsersDatabase();
     const { host } = activateKhoraHost(
       db,
-      registerKhoraHost(db, { slug: "web", baseUrl: "http://localhost:8788" }).id,
+      registerKhoraHost(db, { slug: "web-cors", baseUrl: "https://k-0.example.com" }).id,
     );
     replaceHostTrustedOrigins(db, host.id, ["https://khoralabs.com"]);
     setHostRegistryParticipation(db, host.id, true);
 
-    expect(corsHeaders("https://khoralabs.com")["Access-Control-Allow-Origin"]).toBe(
-      "https://khoralabs.com",
-    );
-    expect(corsHeaders("http://localhost:8788")["Access-Control-Allow-Origin"]).toBeUndefined();
+    const trusted = readRegistryTrustedOrigins(db);
+    expect(trusted).toContain("https://khoralabs.com");
+    expect(trusted).not.toContain("https://k-0.example.com");
+
+    expect(
+      corsHeadersForTrustedOrigins(trusted, "https://khoralabs.com")["Access-Control-Allow-Origin"],
+    ).toBe("https://khoralabs.com");
+    expect(
+      corsHeadersForTrustedOrigins(trusted, "https://k-0.example.com")[
+        "Access-Control-Allow-Origin"
+      ],
+    ).toBeUndefined();
   });
 });

@@ -2,9 +2,9 @@ import { requireFlowString, runOfferFlow } from "@khoralabs/cli-flow-nbc";
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { strFlag } from "@khoralabs/cli-kit";
 
-import type { VellumCliContext } from "./context.ts";
-import { roomJoinFlowDefinition } from "./definitions.ts";
-import { createVellumFlowChainView } from "./vellum-flow-chain.ts";
+import type { VellumCliContext } from "./context";
+import { roomJoinFlowDefinition } from "./definitions";
+import { createVellumFlowChainView } from "./vellum-flow-chain";
 
 /**
  * Resolve join token from flags or readline when absent / empty.

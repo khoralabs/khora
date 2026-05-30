@@ -11,7 +11,7 @@ import { ids, type MemoriesClient } from "@khoralabs/memories-core";
 import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import { embedTextChunks } from "@khoralabs/memories-core/helpers";
 import type { MemoriesPersistence } from "@khoralabs/memories-core/persistence";
-import { decodePostId } from "../post-address-id.ts";
+import { decodePostId } from "../post-address-id";
 import {
   ensureAgentScope,
   ensureTopicScope,
@@ -19,8 +19,8 @@ import {
   postAttachScopes,
   postsMemoryNamespace,
   profileMemoryNamespace,
-} from "./khora-namespace.ts";
-import type { khoraOntology } from "./khora-ontology.ts";
+} from "./khora-namespace";
+import type { khoraOntology } from "./khora-ontology";
 
 export type KhoraMemoriesIndexer = {
   indexProfile(profile: KhoraProfile): Promise<string | undefined>;

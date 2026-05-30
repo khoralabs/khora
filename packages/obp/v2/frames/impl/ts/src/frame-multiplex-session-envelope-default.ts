@@ -4,7 +4,7 @@ import {
   verifySessionOpsExtends,
 } from "@khoralabs/obp-v2-session-impl";
 
-import type { SessionEnvelopeSyncAdapter } from "./frame-multiplex-session-types.ts";
+import type { SessionEnvelopeSyncAdapter } from "./frame-multiplex-session-types";
 
 /** Default adapter: v2 Merkle checkpoints + extends check (see {@link verifySessionOpsExtends}). */
 export function defaultSessionEnvelopeSyncAdapter(): SessionEnvelopeSyncAdapter {

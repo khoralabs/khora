@@ -1,7 +1,7 @@
 import type {
   CellPersistenceStrategy,
   DiscardInboxEntriesInput,
-} from "../cell-persistence-strategy.ts";
+} from "../cell-persistence-strategy";
 import type {
   AckWriteLogAppliedInput,
   AckWriteLogAppliedOutput,
@@ -19,8 +19,8 @@ import type {
   ListPendingInboxEntriesOutput,
   VerifyAndDrainInboxBatchInput,
   VerifyAndDrainInboxBatchOutput,
-} from "../colonnade-types.ts";
-import type { SqliteCellBatchCapable } from "./sqlite-cell-strategy.ts";
+} from "../colonnade-types";
+import type { SqliteCellBatchCapable } from "./sqlite-cell-strategy";
 
 type RpcReq = {
   readonly kind: "rpc";

@@ -4,7 +4,7 @@ import path from "node:path";
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { strFlag } from "@khoralabs/cli-kit";
 
-import { khoraCliResolvedConfig } from "../khora-app-config.ts";
+import { khoraCliResolvedConfig } from "../khora-app-config";
 
 const DEFAULT_REGISTRY_URL = "http://localhost:4000";
 

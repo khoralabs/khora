@@ -1,12 +1,14 @@
 import { getRegistryDatabase } from "@khoralabs/users-auth";
-import { readRegistryTrustedOrigins } from "./trusted-origins.ts";
+import { readRegistryTrustedOrigins } from "./trusted-origins";
 
 export function readTrustedOrigins(): string[] {
   return readRegistryTrustedOrigins(getRegistryDatabase());
 }
 
-export function corsHeaders(origin: string | null): HeadersInit {
-  const trusted = readTrustedOrigins();
+export function corsHeadersForTrustedOrigins(
+  trusted: string[],
+  origin: string | null,
+): HeadersInit {
   if (origin !== null && trusted.includes(origin)) {
     return {
       "Access-Control-Allow-Origin": origin,
@@ -16,6 +18,10 @@ export function corsHeaders(origin: string | null): HeadersInit {
     };
   }
   return {};
+}
+
+export function corsHeaders(origin: string | null): HeadersInit {
+  return corsHeadersForTrustedOrigins(readTrustedOrigins(), origin);
 }
 
 export function withCors(req: Request, res: Response): Response {

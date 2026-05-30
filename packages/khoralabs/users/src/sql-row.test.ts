@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { SnakeCaseKey } from "./sql-row.ts";
+import type { SnakeCaseKey } from "./sql-row";
 
 type Expect<T extends true> = T;
 

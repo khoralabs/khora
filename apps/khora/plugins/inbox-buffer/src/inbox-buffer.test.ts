@@ -6,7 +6,7 @@ import path from "node:path";
 import type { AgentSigner } from "@khoralabs/khora-auth";
 import { KhoraClient } from "@khoralabs/khora-client";
 
-import { createInboxBufferPlugin } from "./index.ts";
+import { createInboxBufferPlugin } from "./index";
 
 function testSigner(): AgentSigner {
   return { did: "did:key:buf", sign: async () => new Uint8Array(64) };

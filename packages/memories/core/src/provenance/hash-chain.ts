@@ -1,5 +1,5 @@
 import { sha256 } from "js-sha256";
-import { canonicalJson } from "./canonical-json.ts";
+import { canonicalJson } from "./canonical-json";
 
 const enc = new TextEncoder();
 

@@ -5,7 +5,7 @@ import type {
   KhoraAdminInactiveMembersResult,
   KhoraAdminPrincipalDetailResult,
   KhoraAdminStatsSummary,
-} from "./ops/admin-stats-types.ts";
+} from "./ops/admin-stats-types";
 
 export type {
   KhoraAdminCatalogStats,
@@ -24,7 +24,7 @@ export type {
   KhoraAdminPrincipalDetailResult,
   KhoraAdminStatsSummary,
   KhoraAdminTeardownStats,
-} from "./ops/admin-stats-types.ts";
+} from "./ops/admin-stats-types";
 
 export type KhoraColonnadeCluster = {
   readonly cellPoolCount: number | undefined;

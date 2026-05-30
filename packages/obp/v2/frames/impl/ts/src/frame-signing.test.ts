@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { canonicalJsonString } from "./canonical-json.ts";
-import { FrameType, toSha256HexLower } from "./frame-protocol-types.ts";
+import { canonicalJsonString } from "./canonical-json";
+import { FrameType, toSha256HexLower } from "./frame-protocol-types";
 import {
   frameSigningPayload,
   signingBytesUtf8,
   tipSha256HexFromCompleteFrame,
-} from "./frame-signing.ts";
+} from "./frame-signing";
 
 const zero = toSha256HexLower("0".repeat(64));
 

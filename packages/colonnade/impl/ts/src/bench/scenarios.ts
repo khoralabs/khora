@@ -1,10 +1,10 @@
-import { ColonnadePublicationClient } from "../colonnade-publication-client.ts";
-import { ColonnadeRouter } from "../colonnade-router.ts";
-import type { RoutedWrite, WriteOp } from "../colonnade-types.ts";
-import { sha256HexLower } from "../hash.ts";
-import type { SampleSummary } from "./stats.ts";
-import { summarizeMs } from "./stats.ts";
-import type { BenchmarkStrategies } from "./strategies.ts";
+import { ColonnadePublicationClient } from "../colonnade-publication-client";
+import { ColonnadeRouter } from "../colonnade-router";
+import type { RoutedWrite, WriteOp } from "../colonnade-types";
+import { sha256HexLower } from "../hash";
+import type { SampleSummary } from "./stats";
+import { summarizeMs } from "./stats";
+import type { BenchmarkStrategies } from "./strategies";
 
 const TENANT = "bench-tenant";
 /** Stable empty metadata for benches (minimal JSON in SQLite). */

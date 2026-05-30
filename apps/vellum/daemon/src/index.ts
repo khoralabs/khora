@@ -16,7 +16,7 @@ import {
 } from "@khoralabs/vellum-client";
 import type { VellumPathConfig } from "@khoralabs/vellum-contracts";
 
-import { runVellumDaemon } from "./run-vellum-daemon.ts";
+import { runVellumDaemon } from "./run-vellum-daemon";
 
 function daemonJsonOutput(vcfg: { daemonJson?: boolean }): boolean {
   return (

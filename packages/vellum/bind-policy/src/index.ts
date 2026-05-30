@@ -1,4 +1,4 @@
-export type { BindPolicyJsonSchema } from "./bind-policy-json-schema.ts";
-export { formatAjvErrorsForAgent } from "./format-ajv-errors.ts";
-export { stableStringify } from "./stable-stringify.ts";
-export { validateVellumBindPayloadForPort } from "./validate-bind-payload.ts";
+export type { BindPolicyJsonSchema } from "./bind-policy-json-schema";
+export { formatAjvErrorsForAgent } from "./format-ajv-errors";
+export { stableStringify } from "./stable-stringify";
+export { validateVellumBindPayloadForPort } from "./validate-bind-payload";

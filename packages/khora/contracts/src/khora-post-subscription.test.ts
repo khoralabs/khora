@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { khoraSubscriptionLexicalText, zKhoraPost, zKhoraPostCreate } from "./khora-post.ts";
+import { khoraSubscriptionLexicalText, zKhoraPost, zKhoraPostCreate } from "./khora-post";
 
 const SIG = "dGVzdC1zaWduYXR1cmU";
 

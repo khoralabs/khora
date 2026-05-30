@@ -15,37 +15,37 @@ export {
   type AgentRelayTopicCreatedEvent,
   type AgentRelayTopicDeletedEvent,
   type AgentRelayTopicUpdatedEvent,
-} from "./events.ts";
+} from "./events";
 export {
   type AgentRelayFrameChannelWsData,
   agentRelayFrameChannelWebSocketHandlers,
-} from "./frame-channel/bun-routes.ts";
+} from "./frame-channel/bun-routes";
 export {
   type AttachDuplexFrameChannelPeerResult,
   attachDuplexAsFrameChannelPeer,
-} from "./frame-channel/duplex-peer.ts";
+} from "./frame-channel/duplex-peer";
 export {
   type CreateFrameChannelHubOptions,
   createFrameChannelHub,
-} from "./frame-channel/hub.ts";
-export type { FrameChannelHubPort, FrameChannelPeer } from "./frame-channel/port.ts";
+} from "./frame-channel/hub";
+export type { FrameChannelHubPort, FrameChannelPeer } from "./frame-channel/port";
 export {
   AgentRelay,
   type AgentRelayDeps,
   type AgentRelayEventHandlerCtx,
-} from "./host.ts";
+} from "./host";
 export {
   createInboxWsHub,
   deliverAgentNotification,
   inboxWebSocketFromDuplexUtf8,
   type RunInboxDuplexAttachmentResult,
   runInboxDuplexAttachment,
-} from "./inbox/index.ts";
-export { AGENT_RELAY_AGGREGATE_DOMAIN } from "./model/index.ts";
+} from "./inbox/index";
+export { AGENT_RELAY_AGGREGATE_DOMAIN } from "./model/index";
 export {
   type AgentRelayPersistenceClient,
   createAgentRelayPersistenceClient,
-} from "./persistence/client.ts";
+} from "./persistence/client";
 export type {
   AgentRelayEntityKind,
   AgentRelayEntityPersistence,
@@ -56,7 +56,7 @@ export type {
   FrameChannelHubPersistence,
   FrameChannelRoomRecord,
   FrameChannelStoredFrame,
-} from "./persistence/types.ts";
+} from "./persistence/types";
 export type {
   AgentNotification,
   AgentNotificationBufferPort,
@@ -64,15 +64,15 @@ export type {
   FrameChannelInvitePayload,
   InboxPostNotificationPayload,
   InboxPostReason,
-} from "./registration/notifications.ts";
+} from "./registration/notifications";
 export type {
   PrincipalId,
   PrincipalRegistrationRequest,
   PrincipalRegistrationResult,
-} from "./registration/types.ts";
+} from "./registration/types";
 export type {
   AuthenticatedAgentVerifyContext,
   AuthPreflight,
   InboxAccessVerifyContext,
   RegistrationVerifyContext,
-} from "./registration/verify.ts";
+} from "./registration/verify";

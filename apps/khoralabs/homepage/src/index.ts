@@ -1,6 +1,6 @@
 import { serve } from "bun";
-import { serveBlogMedia } from "./lib/blog-media.ts";
-import { ensureBlogManifest } from "./lib/ensure-blog-manifest.ts";
+import { serveBlogMedia } from "./lib/blog-media";
+import { ensureBlogManifest } from "./lib/ensure-blog-manifest";
 
 await ensureBlogManifest();
 

@@ -1,5 +1,5 @@
-import type { StandingQuery } from "../types.ts";
-import type { PercolatorPersistence } from "./port.ts";
+import type { StandingQuery } from "../types";
+import type { PercolatorPersistence } from "./port";
 
 export function createInMemoryPercolatorPersistence(): PercolatorPersistence {
   const queries = new Map<string, StandingQuery>();

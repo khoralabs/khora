@@ -1,8 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-  createVellumControlTransportFromEnv,
-  FetchVellumControlTransport,
-} from "./control-http.ts";
+import { createVellumControlTransportFromEnv, FetchVellumControlTransport } from "./control-http";
 
 describe("FetchVellumControlTransport", () => {
   test("joins base URL and path", async () => {

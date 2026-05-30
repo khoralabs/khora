@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
-import { fetchAdminJson } from "../client.ts";
-import type { AdminPrincipal } from "../types.ts";
+import { fetchAdminJson } from "../client";
+import type { AdminPrincipal } from "../types";
 
 export function useAdminPrincipalLookup(baseUrl: string, fetchImpl: typeof fetch = fetch) {
   const [did, setDid] = useState("");

@@ -17,7 +17,7 @@
 import {
   resolveSqlCipherLib,
   SQLCIPHER_CUSTOM_LIB_ENV,
-} from "../packages/libs/sqlite-crypto/src/sqlcipher.ts";
+} from "../packages/libs/sqlite-crypto/src/sqlcipher";
 
 console.log(`Checking SQLCipher library (${SQLCIPHER_CUSTOM_LIB_ENV})…`);
 try {
