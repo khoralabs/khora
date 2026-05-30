@@ -86,15 +86,35 @@ export async function linkChallenge(
   return (await res.json()) as { challengeId: string; expiresAtMs: number };
 }
 
+export type LinkAgentResult = {
+  ok: boolean;
+  link: {
+    id: string;
+    agentDid: string;
+    hostSlug: string;
+    hostBaseUrl: string;
+    linkedAtMs: number;
+  };
+  propagated?: { hostSlug: string | null; ok: boolean; error?: string }[];
+};
+
 export async function linkAgent(
   registryUrl: string,
   signer: PersistableAgentSigner,
-  params: { challengeId: string; hostBaseUrl: string; hostSlug?: string },
-): Promise<unknown> {
+  params: {
+    challengeId: string;
+    hostBaseUrl: string;
+    hostSlug?: string;
+    propagateHostSlugs?: string[];
+  },
+): Promise<LinkAgentResult> {
   const body = JSON.stringify({
     challengeId: params.challengeId,
     hostBaseUrl: params.hostBaseUrl,
     ...(params.hostSlug !== undefined ? { hostSlug: params.hostSlug } : {}),
+    ...(params.propagateHostSlugs !== undefined && params.propagateHostSlugs.length > 0
+      ? { propagateHostSlugs: params.propagateHostSlugs }
+      : {}),
   });
   const signed = await signAgentRequest({
     method: "POST",
@@ -110,7 +130,37 @@ export async function linkAgent(
   if (!res.ok) {
     throw new Error(`link agent failed: ${res.status} ${await res.text()}`);
   }
-  return res.json() as Promise<unknown>;
+  return (await res.json()) as LinkAgentResult;
+}
+
+export async function linkEnsure(
+  registryUrl: string,
+  signer: PersistableAgentSigner,
+  params: { hostBaseUrl: string; hostSlug?: string },
+): Promise<LinkAgentResult["link"] | null> {
+  const body = JSON.stringify({
+    hostBaseUrl: params.hostBaseUrl,
+    ...(params.hostSlug !== undefined ? { hostSlug: params.hostSlug } : {}),
+  });
+  const signed = await signAgentRequest({
+    method: "POST",
+    path: "/v1/link/agent/ensure",
+    bodyText: body,
+    signer,
+  });
+  const res = await registryFetch(registryUrl, "/v1/link/agent/ensure", {
+    method: "POST",
+    body,
+    headers: signed.headers,
+  });
+  if (res.status === 404) {
+    return null;
+  }
+  if (!res.ok) {
+    throw new Error(`link ensure failed: ${res.status} ${await res.text()}`);
+  }
+  const json = (await res.json()) as { link: LinkAgentResult["link"] };
+  return json.link;
 }
 
 export async function linkStatus(registryUrl: string): Promise<unknown> {
@@ -168,10 +218,11 @@ export async function registerHost(
 
 export async function linkUnlink(
   registryUrl: string,
-  params: { hostBaseUrl: string; hostSlug?: string },
+  params: { hostBaseUrl: string; hostSlug?: string; agentDid: string },
 ): Promise<void> {
   const body = JSON.stringify({
     hostBaseUrl: params.hostBaseUrl,
+    agentDid: params.agentDid,
     ...(params.hostSlug !== undefined ? { hostSlug: params.hostSlug } : {}),
   });
   const res = await registryFetch(registryUrl, "/v1/link/agent", {

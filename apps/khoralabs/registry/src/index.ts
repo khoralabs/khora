@@ -24,6 +24,7 @@ import {
 } from "./api/hosts";
 import {
   handleLinkAgent,
+  handleLinkAgentEnsure,
   handleLinkChallenge,
   handleLinkStatus,
   handleLinkUnlink,
@@ -162,6 +163,10 @@ const server = serve({
 
     if (path === "/v1/link/challenge" && req.method === "GET") {
       return withCors(req, await handleLinkChallenge(req, url));
+    }
+
+    if (path === "/v1/link/agent/ensure" && req.method === "POST") {
+      return withCors(req, await handleLinkAgentEnsure(req));
     }
 
     if (path === "/v1/link/agent" && req.method === "POST") {

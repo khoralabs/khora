@@ -8,6 +8,23 @@ export {
   markAccessTokenSent,
 } from "./access-token-requests";
 export {
+  bindAgentToAccount,
+  clearBindingIfNoHostLinks,
+  countAgentLinksForAgentDid,
+  findBindingByAgentDid,
+} from "./agent-account-bindings";
+export {
+  ensureAgentLinkedOnHost,
+  findAgentLinkOnHost,
+  linkAgentToAccountOnHost,
+  linkAgentToMembership,
+  listAgentLinksForAccount,
+  listAgentLinksForMembership,
+  propagateAgentLinksToHosts,
+  unlinkAgentFromMembership,
+  unlinkAllAgentsFromMembership,
+} from "./account-agent-links";
+export {
   findAccountByAuthSubject,
   findAccountByEmail,
   findAccountById,
@@ -71,12 +88,10 @@ export {
   unsubscribeMarketing,
 } from "./marketing-consents";
 export {
-  clearMembershipAgentDid,
   countMembershipsForAccount,
   findMembershipByAccountAndHost,
   findMembershipById,
   listMembershipsForAccount,
-  setMembershipAgentDid,
   upsertMembership,
 } from "./memberships";
 export { normalizeEmail } from "./normalize";

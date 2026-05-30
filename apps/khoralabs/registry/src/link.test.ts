@@ -2,15 +2,15 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
 import {
   approveDeviceAuthorization,
-  clearMembershipAgentDid,
   consumeDeviceAuthorization,
-  findMembershipByAccountAndHost,
   getUsersDatabase,
   initUsersSchema,
+  linkAgentToMembership,
   linkBetterAuthUser,
+  listAgentLinksForMembership,
   resetUsersDatabase,
   seedDefaultHost,
-  setMembershipAgentDid,
+  unlinkAgentFromMembership,
   upsertMembership,
 } from "@khoralabs/users";
 import { ensureRegistrySchema, getRegistryDatabase } from "@khoralabs/users-auth";
@@ -85,13 +85,45 @@ describe("registry device flow", () => {
       }),
     );
     expect(second.status).toBe(400);
-    void consumeDeviceAuthorization;
   });
 
-  test("link challenge returns challengeId", async () => {
-    const did = "did:key:z6MkwTestingChallengeOnly";
-    const req = new Request(`http://localhost/v1/link/challenge?did=${encodeURIComponent(did)}`);
-    const res = await handleLinkChallenge(req, new URL(req.url));
+  test("consume marks device consumed", async () => {
+    const db = getRegistryDatabase();
+    const authRes = await handleDeviceAuthorize(
+      new Request("http://localhost/v1/device/authorize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      }),
+    );
+    const authJson = (await authRes.json()) as { device_code: string; user_code: string };
+    approveDeviceAuthorization(db, {
+      userCode: authJson.user_code,
+      sessionToken: "sess-1",
+    });
+    const consumed = consumeDeviceAuthorization(db, authJson.device_code);
+    expect(consumed?.status).toBe("consumed");
+  });
+});
+
+describe("link challenge", () => {
+  beforeEach(async () => {
+    resetUsersDatabase();
+    process.env.REGISTRY_DATABASE_PATH = ":memory:";
+    applyTestEncryptionEnv();
+    await ensureRegistrySchema();
+  });
+
+  afterEach(() => {
+    delete process.env.REGISTRY_DATABASE_PATH;
+    resetUsersDatabase();
+  });
+
+  test("returns challenge for did", async () => {
+    const res = await handleLinkChallenge(
+      new Request("http://localhost/v1/link/challenge?did=did:key:test"),
+      new URL("http://localhost/v1/link/challenge?did=did:key:test"),
+    );
     expect(res.status).toBe(200);
     const json = (await res.json()) as { challengeId: string; expiresAtMs: number };
     expect(json.challengeId.length).toBeGreaterThan(0);
@@ -99,7 +131,7 @@ describe("registry device flow", () => {
   });
 });
 
-describe("membership link writes", () => {
+describe("membership agent links", () => {
   beforeEach(async () => {
     resetUsersDatabase();
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
@@ -115,20 +147,26 @@ describe("membership link writes", () => {
     resetUsersDatabase();
   });
 
-  test("upsert and set agent did", async () => {
+  test("multiple agents per membership and unlink one", async () => {
     const db = getUsersDatabase();
     const host = seedDefaultHost(db, { slug: "khora-local", baseUrl: "http://localhost:8788" });
     const account = linkBetterAuthUser(db, {
       providerSubject: "user-1",
       email: "cli@test.com",
     });
-    const did = "did:key:z6MkMembershipTest";
+    const didA = "did:key:z6MkMembershipTestA";
+    const didB = "did:key:z6MkMembershipTestB";
     const membership = upsertMembership(db, { accountId: account.id, hostId: host.id });
-    setMembershipAgentDid(db, membership.id, did);
-    const row = findMembershipByAccountAndHost(db, account.id, host.id);
-    expect(row?.agentDid).toBe(did);
-    clearMembershipAgentDid(db, membership.id);
-    const cleared = findMembershipByAccountAndHost(db, account.id, host.id);
-    expect(cleared?.agentDid).toBeNull();
+
+    linkAgentToMembership(db, { membershipId: membership.id, agentDid: didA });
+    linkAgentToMembership(db, { membershipId: membership.id, agentDid: didB });
+
+    const links = listAgentLinksForMembership(db, membership.id);
+    expect(links).toHaveLength(2);
+
+    unlinkAgentFromMembership(db, membership.id, didA);
+    const remaining = listAgentLinksForMembership(db, membership.id);
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0]?.agentDid).toBe(didB);
   });
 });

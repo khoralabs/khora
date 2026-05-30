@@ -51,10 +51,32 @@ export type Membership = {
   accountId: string;
   hostId: string;
   inviteTokenHash: string | null;
-  agentDid: string | null;
   status: MembershipStatus;
   createdAtMs: number;
   updatedAtMs: number;
+};
+
+export type AccountAgentLink = {
+  id: string;
+  membershipId: string;
+  accountId: string;
+  hostId: string;
+  agentDid: string;
+  linkedAtMs: number;
+};
+
+export type AgentAccountBinding = {
+  agentDid: string;
+  accountId: string;
+  boundAtMs: number;
+  boundViaHostId: string | null;
+};
+
+export type HostLinkPropagationResult = {
+  hostId: string;
+  ok: boolean;
+  error?: string;
+  linkId?: string;
 };
 
 export type DeviceAuthorizationStatus = "pending" | "approved" | "consumed" | "expired";

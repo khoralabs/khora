@@ -2,7 +2,10 @@ import type { FlagMap } from "@khoralabs/cli-kit";
 import { boolFlag, strFlag } from "@khoralabs/cli-kit";
 
 import type { KhoraCliContext } from "../flows/context.ts";
-import { withKhoraClient } from "../flows/context.ts";
+import { cliBaseUrl, cliCurrentHostSlug, loadSigner, withKhoraClient } from "../flows/context.ts";
+import { linkEnsure } from "../registry/client.ts";
+import { cliRegistryUrl } from "../registry/config.ts";
+import { readLinkState, writeLinkState } from "../registry/link-state.ts";
 import { runRegisterInteractiveFlow } from "../flows/register-flow.ts";
 import { displayNameFromFlags, registerFieldsFromFlags } from "../lib/flags.ts";
 
@@ -37,6 +40,8 @@ export async function handleRegister(ctx: KhoraCliContext, flags: FlagMap): Prom
     fields = prompted;
   }
 
+  let registeredDid: string | undefined;
+  let registerJson: unknown;
   await withKhoraClient(flags, async (client) => {
     const out = await client.register({
       metadata: {
@@ -46,17 +51,55 @@ export async function handleRegister(ctx: KhoraCliContext, flags: FlagMap): Prom
       },
       ...(fields.inviteToken !== undefined ? { inviteToken: fields.inviteToken } : {}),
     });
-    if (json) {
-      console.log(JSON.stringify(out, null, 2));
-      return;
-    }
-    console.log(`Registered ${out.profile.username} (${out.did})`);
-    console.log(`Profile ID: ${out.profileId}`);
-    if (out.profile.displayName !== undefined) {
-      console.log(`Name: ${out.profile.displayName}`);
-    }
-    if (out.profile.bio !== undefined) {
-      console.log(`Bio: ${out.profile.bio}`);
+    registeredDid = out.did;
+    registerJson = out;
+    if (!json) {
+      console.log(`Registered ${out.profile.username} (${out.did})`);
+      console.log(`Profile ID: ${out.profileId}`);
+      if (out.profile.displayName !== undefined) {
+        console.log(`Name: ${out.profile.displayName}`);
+      }
+      if (out.profile.bio !== undefined) {
+        console.log(`Bio: ${out.profile.bio}`);
+      }
     }
   });
+
+  const hostSlug = cliCurrentHostSlug(flags);
+  if (hostSlug === undefined || registeredDid === undefined) {
+    return;
+  }
+
+  try {
+    const signer = await loadSigner(flags);
+    const registryUrl = cliRegistryUrl(flags);
+    const link = await linkEnsure(registryUrl, signer, {
+      hostBaseUrl: cliBaseUrl(flags),
+      hostSlug,
+    });
+    if (link === null) {
+      return;
+    }
+
+    const linkedAtMs = link.linkedAtMs ?? Date.now();
+    const state = readLinkState();
+    state.currentHost = hostSlug;
+    const entry = state.links[hostSlug] ?? { agents: {} };
+    entry.agents[registeredDid] = linkedAtMs;
+    state.links[hostSlug] = entry;
+    writeLinkState(state);
+
+    if (!json) {
+      console.log(`Registry link ensured for ${registeredDid} on host ${hostSlug}`);
+    }
+  } catch (err: unknown) {
+    if (!json) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`Registry link ensure skipped: ${msg}`);
+    }
+  }
+
+  if (json && registerJson !== undefined) {
+    console.log(JSON.stringify(registerJson, null, 2));
+  }
 }

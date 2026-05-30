@@ -2,9 +2,9 @@ import fs from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
 
+/** Agent DID → linkedAtMs for a host */
 export type LinkStateEntry = {
-  agentDid: string;
-  linkedAtMs: number;
+  agents: Record<string, number>;
 };
 
 export type LinkState = {
@@ -23,6 +23,17 @@ export function linkStatePath(): string {
   return path.join(home, ".khora", "link-state.json");
 }
 
+function normalizeEntry(raw: LinkStateEntry | { agentDid?: string; linkedAtMs?: number }): LinkStateEntry {
+  if ("agents" in raw && raw.agents !== undefined && typeof raw.agents === "object") {
+    return { agents: { ...raw.agents } };
+  }
+  const legacy = raw as { agentDid?: string; linkedAtMs?: number };
+  if (legacy.agentDid !== undefined && legacy.linkedAtMs !== undefined) {
+    return { agents: { [legacy.agentDid]: legacy.linkedAtMs } };
+  }
+  return { agents: {} };
+}
+
 function migrateLegacyLinkState(): LinkState | null {
   if (!fs.existsSync(LEGACY_PATH)) return null;
   try {
@@ -39,7 +50,7 @@ function migrateLegacyLinkState(): LinkState | null {
     return {
       currentHost: legacy.hostSlug ?? null,
       links: {
-        [slug]: { agentDid: legacy.agentDid, linkedAtMs: legacy.linkedAtMs },
+        [slug]: { agents: { [legacy.agentDid]: legacy.linkedAtMs } },
       },
     };
   } catch {
@@ -51,10 +62,16 @@ export function readLinkState(): LinkState {
   const p = linkStatePath();
   if (fs.existsSync(p)) {
     try {
-      const raw = JSON.parse(fs.readFileSync(p, "utf8")) as LinkState;
+      const raw = JSON.parse(fs.readFileSync(p, "utf8")) as LinkState & {
+        links?: Record<string, LinkStateEntry | { agentDid?: string; linkedAtMs?: number }>;
+      };
+      const links: Record<string, LinkStateEntry> = {};
+      for (const [slug, entry] of Object.entries(raw.links ?? {})) {
+        links[slug] = normalizeEntry(entry);
+      }
       return {
         currentHost: raw.currentHost ?? null,
-        links: raw.links ?? {},
+        links,
       };
     } catch {
       return { links: {} };

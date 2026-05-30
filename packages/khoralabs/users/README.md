@@ -31,7 +31,9 @@ Domain tables (see `src/schema-sql.ts`):
 | `account_emails` | Verified email addresses per account |
 | `auth_links` | Maps external auth subjects (e.g. Better Auth user id) to accounts |
 | `khora_hosts` | Federated Khora host catalog (`pending` → `active` via operator activate) |
-| `memberships` | Account ↔ host relationships (`agent_did` links operator agents) |
+| `memberships` | Account ↔ host relationships (invites, access-token flow) |
+| `account_agent_links` | Many claimed agent DIDs per membership; one account per agent per host |
+| `agent_account_bindings` | Global `agent_did → account_id` (one human account per agent network-wide) |
 | `device_authorizations` | CLI device-flow sessions (RFC 8628-style) |
 | `cli_link_challenges` | One-time agent signature challenges for `khora link` |
 | `access_token_requests` | Email-based access-token invite flow |
@@ -62,7 +64,9 @@ await initUsersSchema(db);
 | `khora-hosts.ts` | `registerKhoraHost`, `activateKhoraHost`, `listPublicHosts`, `findActiveHostBySlug`, `seedDefaultHost`, … |
 | `host-slug.ts` | `normalizeHostSlug` validation |
 | `host-url.ts` | `normalizeKhoraHostBaseUrl`, `findHostByBaseUrl` (loopback alias aware) |
-| `memberships.ts` | `upsertMembership`, `setMembershipAgentDid`, `listMembershipsForAccount`, … |
+| `memberships.ts` | `upsertMembership`, `listMembershipsForAccount`, … |
+| `account-agent-links.ts` | `linkAgentToMembership`, `ensureAgentLinkedOnHost`, `propagateAgentLinksToHosts`, … |
+| `agent-account-bindings.ts` | `bindAgentToAccount`, `findBindingByAgentDid`, `clearBindingIfNoHostLinks` |
 | `device-authorizations.ts` | Device flow for `khora link` browser approval |
 | `cli-link-challenges.ts` | Agent proof challenges for link API |
 | `marketing-consents.ts` | `subscribeMarketing`, `unsubscribeMarketing`, `listMarketingConsentsForEmail`, … |

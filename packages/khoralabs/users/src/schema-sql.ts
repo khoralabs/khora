@@ -38,7 +38,6 @@ CREATE TABLE IF NOT EXISTS memberships (
   account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
   host_id TEXT NOT NULL REFERENCES khora_hosts(id) ON DELETE CASCADE,
   invite_token_hash TEXT,
-  agent_did TEXT,
   status TEXT NOT NULL DEFAULT 'requested',
   created_at_ms INTEGER NOT NULL,
   updated_at_ms INTEGER NOT NULL,
@@ -106,4 +105,27 @@ CREATE TABLE IF NOT EXISTS cli_link_challenges (
 
 CREATE INDEX IF NOT EXISTS idx_cli_link_challenges_agent_did
   ON cli_link_challenges (agent_did);
+
+CREATE TABLE IF NOT EXISTS account_agent_links (
+  id TEXT PRIMARY KEY NOT NULL,
+  membership_id TEXT NOT NULL REFERENCES memberships(id) ON DELETE CASCADE,
+  account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  host_id TEXT NOT NULL REFERENCES khora_hosts(id) ON DELETE CASCADE,
+  agent_did TEXT NOT NULL,
+  linked_at_ms INTEGER NOT NULL,
+  UNIQUE(membership_id, agent_did),
+  UNIQUE(host_id, agent_did)
+);
+
+CREATE INDEX IF NOT EXISTS idx_account_agent_links_account_id
+  ON account_agent_links (account_id);
+CREATE INDEX IF NOT EXISTS idx_account_agent_links_membership_id
+  ON account_agent_links (membership_id);
+
+CREATE TABLE IF NOT EXISTS agent_account_bindings (
+  agent_did TEXT PRIMARY KEY NOT NULL,
+  account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  bound_at_ms INTEGER NOT NULL,
+  bound_via_host_id TEXT REFERENCES khora_hosts(id)
+);
 `;

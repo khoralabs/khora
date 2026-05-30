@@ -3,6 +3,7 @@ import {
   findAccountByAuthSubject,
   findHostById,
   listAccessTokenRequestsForAccount,
+  listAgentLinksForMembership,
   listMarketingConsentsForAccount,
   listMembershipsForAccount,
 } from "@khoralabs/users";
@@ -22,12 +23,16 @@ export async function handleMe(req: Request): Promise<Response> {
   const membershipRows = account === null ? [] : listMembershipsForAccount(db, account.id);
   const membershipItems = membershipRows.map((m) => {
     const host = findHostById(db, m.hostId);
+    const linkedAgents = listAgentLinksForMembership(db, m.id).map((link) => ({
+      agentDid: link.agentDid,
+      linkedAtMs: link.linkedAtMs,
+    }));
     return {
       id: m.id,
       hostId: m.hostId,
       hostSlug: host?.slug ?? null,
       hostBaseUrl: host?.baseUrl ?? null,
-      agentDid: m.agentDid,
+      linkedAgents,
       status: m.status,
     };
   });

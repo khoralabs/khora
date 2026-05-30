@@ -4,25 +4,30 @@ import {
   parseAgentRequestEnvelopeFromHeaders,
 } from "@khoralabs/khora-auth";
 import {
-  clearMembershipAgentDid,
+  clearBindingIfNoHostLinks,
   consumeCliLinkChallenge,
   createCliLinkChallenge,
+  ensureAgentLinkedOnHost,
   findAccountByAuthSubject,
+  findActiveHostBySlug,
+  findBindingByAgentDid,
   findHostById,
   findMembershipByAccountAndHost,
-  listMembershipsForAccount,
-  setMembershipAgentDid,
-  upsertMembership,
+  linkAgentToAccountOnHost,
+  listAgentLinksForAccount,
+  propagateAgentLinksToHosts,
+  unlinkAgentFromMembership,
 } from "@khoralabs/users";
 import { getRegistryDatabase, getRegistrySession } from "@khoralabs/users-auth";
 import { HOST_NOT_FOUND_HINT, resolveRegistryHost } from "./resolve-host.ts";
 
 const linkStrategy = createDidKeyEd25519Strategy();
 
-async function verifyLinkAgentSignature(
+async function verifyAgentLinkSignature(
   req: Request,
   bodyText: string,
   claimedDid: string,
+  path: string,
 ): Promise<void> {
   const envelope = parseAgentRequestEnvelopeFromHeaders(req.headers);
   if (envelope === undefined) {
@@ -34,7 +39,7 @@ async function verifyLinkAgentSignature(
   await linkStrategy.verifyEnvelope({
     envelope,
     method: "POST",
-    path: "/v1/link/agent",
+    path,
     bodyText,
   });
 }
@@ -43,7 +48,40 @@ type LinkAgentBody = {
   challengeId?: string;
   hostBaseUrl?: string;
   hostSlug?: string;
+  agentDid?: string;
+  propagateHostSlugs?: string[];
 };
+
+function resolvePropagateHostIds(
+  db: ReturnType<typeof getRegistryDatabase>,
+  slugs: string[],
+  excludeHostId: string,
+): string[] {
+  const ids: string[] = [];
+  for (const slug of slugs) {
+    const trimmed = slug.trim();
+    if (trimmed.length === 0) continue;
+    const host = findActiveHostBySlug(db, trimmed);
+    if (host !== null && host.id !== excludeHostId) {
+      ids.push(host.id);
+    }
+  }
+  return ids;
+}
+
+function formatPropagated(
+  db: ReturnType<typeof getRegistryDatabase>,
+  raw: ReturnType<typeof propagateAgentLinksToHosts>,
+): { hostSlug: string | null; ok: boolean; error?: string }[] {
+  return raw.map((r) => {
+    const host = findHostById(db, r.hostId);
+    return {
+      hostSlug: host?.slug ?? null,
+      ok: r.ok,
+      ...(r.error !== undefined ? { error: r.error } : {}),
+    };
+  });
+}
 
 export async function handleLinkChallenge(_req: Request, url: URL): Promise<Response> {
   const did = url.searchParams.get("did")?.trim() ?? "";
@@ -92,7 +130,7 @@ export async function handleLinkAgent(req: Request): Promise<Response> {
 
   try {
     consumeCliLinkChallenge(db, { challengeId, agentDid: envelopeDid });
-    await verifyLinkAgentSignature(req, bodyText, envelopeDid);
+    await verifyAgentLinkSignature(req, bodyText, envelopeDid, "/v1/link/agent");
   } catch (err: unknown) {
     if (err instanceof AuthStrategyError) {
       return Response.json({ error: err.message }, { status: 401 });
@@ -111,21 +149,112 @@ export async function handleLinkAgent(req: Request): Promise<Response> {
   }
 
   try {
-    const membership = upsertMembership(db, { accountId: account.id, hostId: host.id });
-    const updated = setMembershipAgentDid(db, membership.id, envelopeDid);
+    const link = linkAgentToAccountOnHost(db, {
+      accountId: account.id,
+      agentDid: envelopeDid,
+      hostId: host.id,
+      boundViaHostId: host.id,
+    });
+
+    const propagateIds = resolvePropagateHostIds(
+      db,
+      body.propagateHostSlugs ?? [],
+      host.id,
+    );
+    const propagated =
+      propagateIds.length > 0
+        ? formatPropagated(
+            db,
+            propagateAgentLinksToHosts(db, {
+              accountId: account.id,
+              agentDid: envelopeDid,
+              hostIds: propagateIds,
+            }),
+          )
+        : [];
+
     return Response.json({
       ok: true,
-      membership: {
-        id: updated.id,
+      link: {
+        id: link.id,
+        agentDid: link.agentDid,
         hostId: host.id,
         hostSlug: host.slug,
         hostBaseUrl: host.baseUrl,
-        agentDid: updated.agentDid,
+        membershipId: link.membershipId,
+        linkedAtMs: link.linkedAtMs,
       },
+      propagated,
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "link failed";
-    return Response.json({ error: msg }, { status: 409 });
+    const status =
+      msg.includes("another account") || msg.includes("already bound") ? 409 : 400;
+    return Response.json({ error: msg }, { status });
+  }
+}
+
+export async function handleLinkAgentEnsure(req: Request): Promise<Response> {
+  const bodyText = await req.text();
+  let body: LinkAgentBody;
+  try {
+    body = JSON.parse(bodyText) as LinkAgentBody;
+  } catch {
+    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const envelope = parseAgentRequestEnvelopeFromHeaders(req.headers);
+  if (envelope === undefined) {
+    return Response.json({ error: "missing agent signature" }, { status: 401 });
+  }
+  const envelopeDid = envelope.did;
+
+  try {
+    await verifyAgentLinkSignature(req, bodyText, envelopeDid, "/v1/link/agent/ensure");
+  } catch (err: unknown) {
+    if (err instanceof AuthStrategyError) {
+      return Response.json({ error: err.message }, { status: 401 });
+    }
+    const msg = err instanceof Error ? err.message : "ensure failed";
+    return Response.json({ error: msg }, { status: 401 });
+  }
+
+  const db = getRegistryDatabase();
+  const host = resolveRegistryHost(db, {
+    hostBaseUrl: body.hostBaseUrl,
+    hostSlug: body.hostSlug,
+  });
+  if (host === null) {
+    return Response.json({ error: HOST_NOT_FOUND_HINT }, { status: 404 });
+  }
+
+  const binding = findBindingByAgentDid(db, envelopeDid);
+  if (binding === null) {
+    return Response.json({ error: "no agent account binding; run khora link first" }, { status: 404 });
+  }
+
+  try {
+    const link = ensureAgentLinkedOnHost(db, {
+      accountId: binding.accountId,
+      agentDid: envelopeDid,
+      hostId: host.id,
+    });
+    return Response.json({
+      ok: true,
+      link: {
+        id: link.id,
+        agentDid: link.agentDid,
+        hostId: host.id,
+        hostSlug: host.slug,
+        hostBaseUrl: host.baseUrl,
+        membershipId: link.membershipId,
+        linkedAtMs: link.linkedAtMs,
+      },
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "ensure failed";
+    const status = msg.includes("another account") ? 409 : 400;
+    return Response.json({ error: msg }, { status });
   }
 }
 
@@ -141,20 +270,19 @@ export async function handleLinkStatus(req: Request): Promise<Response> {
     return Response.json({ links: [] });
   }
 
-  const memberships = listMembershipsForAccount(db, account.id);
-  const links = memberships
-    .filter((m) => m.agentDid !== null)
-    .map((m) => {
-      const host = findHostById(db, m.hostId);
-      return {
-        membershipId: m.id,
-        agentDid: m.agentDid,
-        hostId: m.hostId,
-        hostSlug: host?.slug ?? null,
-        hostBaseUrl: host?.baseUrl ?? null,
-        status: m.status,
-      };
-    });
+  const agentLinks = listAgentLinksForAccount(db, account.id);
+  const links = agentLinks.map((link) => {
+    const host = findHostById(db, link.hostId);
+    return {
+      linkId: link.id,
+      membershipId: link.membershipId,
+      agentDid: link.agentDid,
+      hostId: link.hostId,
+      hostSlug: host?.slug ?? null,
+      hostBaseUrl: host?.baseUrl ?? null,
+      linkedAtMs: link.linkedAtMs,
+    };
+  });
 
   return Response.json({ links });
 }
@@ -194,6 +322,15 @@ export async function handleLinkUnlink(req: Request): Promise<Response> {
     return Response.json({ ok: true, unlinked: false });
   }
 
-  clearMembershipAgentDid(db, membership.id);
-  return Response.json({ ok: true, unlinked: true });
+  const envelope = parseAgentRequestEnvelopeFromHeaders(req.headers);
+  const agentDid = body.agentDid?.trim() || envelope?.did;
+  if (agentDid === undefined || agentDid.length === 0) {
+    return Response.json({ error: "agentDid required (body or signature headers)" }, { status: 400 });
+  }
+
+  const unlinked = unlinkAgentFromMembership(db, membership.id, agentDid);
+  if (unlinked) {
+    clearBindingIfNoHostLinks(db, agentDid);
+  }
+  return Response.json({ ok: true, unlinked });
 }
