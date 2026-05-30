@@ -1,13 +1,12 @@
 # Production environment matrix
 
-Reference for deploying the four Khora web services (Render or similar). Per-app `.env.example` files hold local dev defaults; this doc is the **prod wiring map**.
+Reference for deploying the three Khora web services (Render or similar). Per-app `.env.example` files hold local dev defaults; this doc is the **prod wiring map**.
 
 ## Services
 
 | Service | Package | Default port | Start command (prod) | Persistent disk |
 | --- | --- | --- | --- | --- |
 | Khora Labs homepage | `@khoralabs/khoralabs-homepage` | 3000 | `bun run start` | No |
-| Khora homepage | `@khoralabs/khora-homepage` | 3000 | `bun run start` | No |
 | Khora registry | `@khoralabs/registry` | 4000 | `bun run start` | Yes (`registry.sqlite`) |
 | Khora server | `@khoralabs/khora-server` | 8788 | `bun run start` | Yes (catalog, frames, cells) |
 
@@ -33,7 +32,7 @@ Put these in a Render **Environment Group** (or password manager) and link to ev
 
 | Concept | Set on | Example prod value |
 | --- | --- | --- |
-| Registry public URL | registry (`REGISTRY_URL`), homepages (`KHORA_REGISTRY_URL`, `BUN_PUBLIC_KHORA_REGISTRY_URL`) | `https://registry.khoralabs.com` |
+| Registry public URL | registry (`REGISTRY_URL`), khoralabs homepage (`KHORA_REGISTRY_URL`, `BUN_PUBLIC_KHORA_REGISTRY_URL`) | `https://registry.khoralabs.com` |
 | Khora server public URL | host registry (`POST /v1/hosts/register` + activate), khora-server (`KHORA_PUBLIC_BASE_URL`) | `https://api.khora.khoralabs.com` |
 | Browser origins for registry APIs | Admin console → Hosts → CORS trust per host (`clientOrigin` when homepage ≠ API URL) | e.g. `https://khoralabs.com` on the web host row |
 
@@ -43,29 +42,29 @@ Each active host with CORS trust enabled contributes its resolved origin (`clien
 
 ## Variable matrix
 
-Columns: **R** registry · **A** khora-server · **KH** khoralabs homepage · **AH** khora homepage
+Columns: **R** registry · **K** khora-server · **KH** khoralabs homepage
 
 Legend: **+** = set on this service · **·** = not used · **Kind:** **S** = secret · **C** = config
 
 ### HTTP & runtime
 
-| Variable | R | A | KH | AH | Kind | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| `PORT` | + | + | + | + | C | Render sets automatically; override if needed. |
-| `NODE_ENV` | · | · | + | + | C | `production` for prod builds. |
+| Variable | R | K | KH | Kind | Notes |
+| --- | --- | --- | --- | --- | --- |
+| `PORT` | + | + | + | C | Render sets automatically; override if needed. |
+| `NODE_ENV` | · | · | + | C | `production` for prod builds. |
 
 ### URLs & CORS
 
-| Variable | R | A | KH | AH | Kind | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| `REGISTRY_URL` | + | · | · | · | C | Public base URL for Better Auth (`BETTER_AUTH_URL` alias). |
-| `REGISTRY_COOKIE_DOMAIN` | + | · | · | · | C | Optional, e.g. `.khoralabs.com` for cross-subdomain cookies. |
-| `KHORA_REGISTRY_URL` | · | + | + | + | C | khora-server well-known + opt-in; homepages SSR/fetch. |
-| `BUN_PUBLIC_KHORA_REGISTRY_URL` | · | · | + | + | C | Inlined into client bundle at build time. |
-| `KHORA_HOST_SLUG` | · | + | · | · | C | Host slug for `/.well-known/khora` and registry opt-in. |
-| `KHORA_PUBLIC_BASE_URL` | · | + | · | · | C | Public base URL in well-known + register body (default loopback + `PORT`). |
-| `KHORA_REGISTRY_OPT_IN` | · | + | · | · | C | `1`/`true`: `POST /v1/hosts/register` on server boot (pending until activated). |
-| `KHORA_HOST_DISPLAY_NAME` | · | + | · | · | C | Optional display name for registry register body. |
+| Variable | R | K | KH | Kind | Notes |
+| --- | --- | --- | --- | --- | --- |
+| `REGISTRY_URL` | + | · | · | C | Public base URL for Better Auth (`BETTER_AUTH_URL` alias). |
+| `REGISTRY_COOKIE_DOMAIN` | + | · | · | C | Optional, e.g. `.khoralabs.com` for cross-subdomain cookies. |
+| `KHORA_REGISTRY_URL` | · | + | + | C | khora-server well-known + opt-in; khoralabs homepage SSR/fetch. |
+| `BUN_PUBLIC_KHORA_REGISTRY_URL` | · | · | + | C | Inlined into khoralabs homepage client bundle at build time. |
+| `KHORA_HOST_SLUG` | · | + | · | C | Host slug for `/.well-known/khora` and registry opt-in. |
+| `KHORA_PUBLIC_BASE_URL` | · | + | · | C | Public base URL in well-known + register body (default loopback + `PORT`). |
+| `KHORA_REGISTRY_OPT_IN` | · | + | · | C | `1`/`true`: `POST /v1/hosts/register` on server boot (pending until activated). |
+| `KHORA_HOST_DISPLAY_NAME` | · | + | · | C | Optional display name for registry register body. |
 
 ### Khora CLI (developer machine, not a deployed service)
 
@@ -78,45 +77,45 @@ Legend: **+** = set on this service · **·** = not used · **Kind:** **S** = se
 
 ### Auth & secrets
 
-| Variable | R | A | KH | AH | Kind | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| `BETTER_AUTH_SECRET` | + | · | · | · | S | ≥32 chars. Registry human auth (OTP). |
-| `KHORA_INTERNAL_SECRET` | + | + | · | · | S | Shared; see table above. |
-| `KHORA_INVITE_PEPPER` | + | + | · | · | S | Shared; see table above. |
-| `REGISTRY_CONSOLE_ROOT_TOKEN` | + | · | · | · | S | ≥16 chars enables `/admin` operator console. |
-| `REGISTRY_INTERNAL_SECRET` | + | · | · | · | S | Optional bearer for `/internal/admin/*`. |
-| `KHORA_CONSOLE_ROOT_TOKEN` | · | + | · | · | S | ≥16 chars enables khora-server `/admin`. |
-| `REGISTRY_BOOTSTRAP_EMAILS` | + | · | · | · | C | Comma-separated emails granted `staff` role on first login. |
+| Variable | R | K | KH | Kind | Notes |
+| --- | --- | --- | --- | --- | --- |
+| `BETTER_AUTH_SECRET` | + | · | · | S | ≥32 chars. Registry human auth (OTP). |
+| `KHORA_INTERNAL_SECRET` | + | + | · | S | Shared; see table above. |
+| `KHORA_INVITE_PEPPER` | + | + | · | S | Shared; see table above. |
+| `REGISTRY_CONSOLE_ROOT_TOKEN` | + | · | · | S | ≥16 chars enables `/admin` operator console. |
+| `REGISTRY_INTERNAL_SECRET` | + | · | · | S | Optional bearer for `/internal/admin/*`. |
+| `KHORA_CONSOLE_ROOT_TOKEN` | · | + | · | S | ≥16 chars enables khora-server `/admin`. |
+| `REGISTRY_BOOTSTRAP_EMAILS` | + | · | · | C | Comma-separated emails granted `staff` role on first login. |
 
 ### Email (AWS SES)
 
-| Variable | R | A | KH | AH | Kind | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| `SES_FROM_ADDRESS` | + | · | · | · | C | Verified SES sender for OTP + access-token emails. |
-| `AWS_REGION` | + | + | · | · | C | SES + Litestream region. |
-| `AWS_ACCESS_KEY_ID` | + | + | · | · | S | See shared group. |
-| `AWS_SECRET_ACCESS_KEY` | + | + | · | · | S | See shared group. |
-| `REGISTRY_AUTH_OTP_LOG` | + | · | · | · | C | Dev only: log OTP to stdout instead of SES. |
+| Variable | R | K | KH | Kind | Notes |
+| --- | --- | --- | --- | --- | --- |
+| `SES_FROM_ADDRESS` | + | · | · | C | Verified SES sender for OTP + access-token emails. |
+| `AWS_REGION` | + | + | · | C | SES + Litestream region. |
+| `AWS_ACCESS_KEY_ID` | + | + | · | S | See shared group. |
+| `AWS_SECRET_ACCESS_KEY` | + | + | · | S | See shared group. |
+| `REGISTRY_AUTH_OTP_LOG` | + | · | · | C | Dev only: log OTP to stdout instead of SES. |
 
 ### Khora persistence
 
-| Variable | R | A | KH | AH | Kind | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| `REGISTRY_DATABASE_PATH` | + | · | · | · | C | Default `./data/registry.sqlite`. Use Render disk mount path in prod. |
-| `KHORA_CATALOG_PATH` | · | + | · | · | C | Catalog SQLite file. |
-| `KHORA_FRAMES_DB_PATH` | · | + | · | · | C | Frames / frame-channel SQLite. |
-| `KHORA_CELLS_DIR` | · | + | · | · | C | Directory of cell shard SQLite files. |
-| `KHORA_CELL_POOL_COUNT` | · | + | · | · | C | Shard pool size (default 16). |
-| `KHORA_COLONNADE_CELL_WORKERS` | · | + | · | · | C | Bun Workers for cell SQLite (default on). |
-| `LOG_LEVEL` | · | + | · | · | C | Pino level (default `info`). |
+| Variable | R | K | KH | Kind | Notes |
+| --- | --- | --- | --- | --- | --- |
+| `REGISTRY_DATABASE_PATH` | + | · | · | C | Default `./data/registry.sqlite`. Use Render disk mount path in prod. |
+| `KHORA_CATALOG_PATH` | · | + | · | C | Catalog SQLite file. |
+| `KHORA_FRAMES_DB_PATH` | · | + | · | C | Frames / frame-channel SQLite. |
+| `KHORA_CELLS_DIR` | · | + | · | C | Directory of cell shard SQLite files. |
+| `KHORA_CELL_POOL_COUNT` | · | + | · | C | Shard pool size (default 16). |
+| `KHORA_COLONNADE_CELL_WORKERS` | · | + | · | C | Bun Workers for cell SQLite (default on). |
+| `LOG_LEVEL` | · | + | · | C | Pino level (default `info`). |
 
 ### Encryption at rest
 
-| Variable | R | A | KH | AH | Kind | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| `KHORA_SQLCIPHER_KEY` | · | + | · | · | S | **Required.** SQLCipher key for catalog, frames, cells, memories SQLite (≥16 chars). Same key required for Litestream restore. |
-| `KHORA_OUTBOX_ENCRYPTION_KEY` | · | + | · | · | S | **Required.** AES-256-GCM field key for post `outbox.payload` (64-char hex or ≥32 UTF-8 bytes). Separate from SQLCipher. |
-| `REGISTRY_SQLCIPHER_KEY` | + | · | · | · | S | **Required.** SQLCipher key for `registry.sqlite`. |
+| Variable | R | K | KH | Kind | Notes |
+| --- | --- | --- | --- | --- | --- |
+| `KHORA_SQLCIPHER_KEY` | · | + | · | S | **Required.** SQLCipher key for catalog, frames, cells, memories SQLite (≥16 chars). Same key required for Litestream restore. |
+| `KHORA_OUTBOX_ENCRYPTION_KEY` | · | + | · | S | **Required.** AES-256-GCM field key for post `outbox.payload` (64-char hex or ≥32 UTF-8 bytes). Separate from SQLCipher. |
+| `REGISTRY_SQLCIPHER_KEY` | + | · | · | S | **Required.** SQLCipher key for `registry.sqlite`. |
 
 **Prod checklist (in addition to env vars):**
 
@@ -133,25 +132,25 @@ Legend: **+** = set on this service · **·** = not used · **Kind:** **S** = se
 
 ### Khora invites & registration
 
-| Variable | R | A | KH | AH | Kind | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| `KHORA_INVITE_REQUIRED` | · | + | · | · | C | Set `1` to require invite token on registration. |
-| `KHORA_INVITES_PER_REGISTRATION` | · | + | · | · | C | Max invites per registration (default 10). |
-| `KHORA_INVITE_SEED_TOKENS` | · | + | · | · | S | Bootstrap plaintext tokens (hashed at startup). |
+| Variable | R | K | KH | Kind | Notes |
+| --- | --- | --- | --- | --- | --- |
+| `KHORA_INVITE_REQUIRED` | · | + | · | C | Set `1` to require invite token on registration. |
+| `KHORA_INVITES_PER_REGISTRATION` | · | + | · | C | Max invites per registration (default 10). |
+| `KHORA_INVITE_SEED_TOKENS` | · | + | · | S | Bootstrap plaintext tokens (hashed at startup). |
 
 ### Litestream → S3
 
-| Variable | R | A | KH | AH | Kind | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| `REGISTRY_LITESTREAM` | + | · | · | · | C | `1` enables Litestream sidecar on registry. |
-| `KHORA_LITESTREAM` | · | + | · | · | C | `1` enables Litestream sidecar on khora-server. |
-| `LITESTREAM_S3_BUCKET` | + | + | · | · | C | Shared bucket name. |
-| `LITESTREAM_S3_REGION` | + | + | · | · | C | Bucket region. |
-| `LITESTREAM_S3_KEY_PREFIX` | + | + | · | · | C | **Different per service:** `registry/litestream` vs `khora/litestream`. |
-| `LITESTREAM_LOG_LEVEL` | + | + | · | · | C | `debug`, `info` (default), `warn`, or `error`. Use `error` in prod to reduce noise. |
-| `LITESTREAM_S3_ENDPOINT` | · | · | · | · | C | **Local MinIO only.** Omit in prod AWS. |
-| `LITESTREAM_ACCESS_KEY_ID` | · | · | · | · | S | MinIO dev only; prod uses `AWS_ACCESS_KEY_ID`. |
-| `LITESTREAM_SECRET_ACCESS_KEY` | · | · | · | · | S | MinIO dev only; prod uses `AWS_SECRET_ACCESS_KEY`. |
+| Variable | R | K | KH | Kind | Notes |
+| --- | --- | --- | --- | --- | --- |
+| `REGISTRY_LITESTREAM` | + | · | · | C | `1` enables Litestream sidecar on registry. |
+| `KHORA_LITESTREAM` | · | + | · | C | `1` enables Litestream sidecar on khora-server. |
+| `LITESTREAM_S3_BUCKET` | + | + | · | C | Shared bucket name. |
+| `LITESTREAM_S3_REGION` | + | + | · | C | Bucket region. |
+| `LITESTREAM_S3_KEY_PREFIX` | + | + | · | C | **Different per service:** `registry/litestream` vs `khora/litestream`. |
+| `LITESTREAM_LOG_LEVEL` | + | + | · | C | `debug`, `info` (default), `warn`, or `error`. Use `error` in prod to reduce noise. |
+| `LITESTREAM_S3_ENDPOINT` | · | · | · | C | **Local MinIO only.** Omit in prod AWS. |
+| `LITESTREAM_ACCESS_KEY_ID` | · | · | · | S | MinIO dev only; prod uses `AWS_ACCESS_KEY_ID`. |
+| `LITESTREAM_SECRET_ACCESS_KEY` | · | · | · | S | MinIO dev only; prod uses `AWS_SECRET_ACCESS_KEY`. |
 
 ---
 
@@ -207,7 +206,7 @@ KHORA_OUTBOX_ENCRYPTION_KEY=...
 KHORA_CONSOLE_ROOT_TOKEN=...
 ```
 
-**khoralabs homepage** / **khora homepage**
+**khoralabs homepage**
 
 ```
 PORT=3000
@@ -221,12 +220,12 @@ Set `BUN_PUBLIC_*` at **build time** if the platform separates build from runtim
 
 ## Access-token / invite flow
 
-Homepages POST to registry; registry mints via khora-server:
+Khora Labs homepage POSTs to registry; registry mints via khora-server:
 
 ```
-homepage  →  POST /v1/access-token/request  →  registry
-registry  →  POST /internal/mint-invite     →  khora-server  (Bearer KHORA_INTERNAL_SECRET)
-registry  →  SES email with plaintext token
+khoralabs homepage  →  POST /v1/access-token/request  →  registry
+registry            →  POST /internal/mint-invite       →  khora-server  (Bearer KHORA_INTERNAL_SECRET)
+registry            →  SES email with plaintext token
 ```
 
 Requires on **registry**: `KHORA_INTERNAL_SECRET`, `KHORA_INVITE_PEPPER`, `SES_FROM_ADDRESS`, host URL/slug.  
@@ -251,6 +250,5 @@ Use for `BETTER_AUTH_SECRET`, `KHORA_INTERNAL_SECRET`, `KHORA_INVITE_PEPPER`, `*
 | Registry | `apps/khoralabs/registry/.env.example` |
 | Khora server | `apps/khora/server/.env.example` |
 | Khora Labs homepage | `apps/khoralabs/homepage/.env.example` |
-| Khora homepage | `apps/khora/homepage/.env.example` |
 
 Litestream shared logic: `scripts/litestream-config.ts`. Local MinIO: `apps/s3/README.md`.
