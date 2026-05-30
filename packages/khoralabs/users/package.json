@@ -9,6 +9,11 @@
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./host-trusted-origins": {
+      "types": "./src/host-trusted-origins.ts",
+      "import": "./src/host-trusted-origins.ts",
+      "default": "./src/host-trusted-origins.ts"
     }
   },
   "scripts": {

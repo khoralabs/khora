@@ -1,4 +1,6 @@
-import { type KhoraHost, resolveHostTrustedOrigin } from "@khoralabs/users";
+import type { Database } from "bun:sqlite";
+import type { HostRegistryState, KhoraHost } from "@khoralabs/users";
+import { readHostRegistryState } from "@khoralabs/users";
 
 export function hostHealthJson(host: KhoraHost): Record<string, unknown> {
   return {
@@ -8,6 +10,17 @@ export function hostHealthJson(host: KhoraHost): Record<string, unknown> {
     checkedAtMs: host.healthCheckedAtMs,
     latencyMs: host.healthLatencyMs,
     probedEndpoint: host.healthProbedEndpoint,
+  };
+}
+
+export function hostRegistryJson(
+  _host: KhoraHost,
+  state: HostRegistryState,
+): Record<string, unknown> {
+  return {
+    registryParticipationEnabled: state.participationEnabled,
+    trustedOrigins: state.origins,
+    trustedOriginQuota: state.quota,
   };
 }
 
@@ -24,18 +37,17 @@ export function hostToPublicJson(host: KhoraHost): Record<string, unknown> {
   };
 }
 
-export function hostToFullJson(host: KhoraHost): Record<string, unknown> {
-  let resolvedTrustedOrigin: string | null = null;
-  try {
-    resolvedTrustedOrigin = resolveHostTrustedOrigin(host);
-  } catch {
-    /* invalid base URL */
-  }
+export function hostToFullJson(host: KhoraHost, db: Database): Record<string, unknown> {
+  const state = readHostRegistryState(db, host.id);
   return {
     ...hostToPublicJson(host),
     status: host.status,
-    corsTrusted: host.corsTrusted,
-    clientOrigin: host.clientOrigin,
-    resolvedTrustedOrigin,
+    registryParticipationEnabled: host.registryParticipationEnabled,
+    includedTrustedOrigins: host.includedTrustedOrigins,
+    trustedOrigins: state?.origins ?? [],
+    trustedOriginQuota: state?.quota ?? {
+      used: 0,
+      included: host.includedTrustedOrigins,
+    },
   };
 }

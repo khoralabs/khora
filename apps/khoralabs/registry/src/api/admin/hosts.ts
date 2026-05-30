@@ -1,8 +1,10 @@
 import type { ConsoleAuth } from "@khoralabs/khora-console";
 import {
   activateKhoraHost,
-  InvalidClientOriginError,
-  updateHostCorsSettings,
+  InvalidTrustedOriginError,
+  OriginQuotaExceededError,
+  TrustedOriginConflictError,
+  updateHostRegistrySettings,
 } from "@khoralabs/users";
 import { getRegistryDatabase, reloadRegistryAuth } from "@khoralabs/users-auth";
 import { probeHostHealthById } from "../../host-health";
@@ -10,14 +12,15 @@ import { readRegistryTrustedOrigins } from "../../trusted-origins";
 import { hostToFullJson } from "../host-json";
 import { withConsoleAuth } from "./console-guard";
 
-type HostCorsBody = {
-  corsTrusted?: boolean;
-  clientOrigin?: string | null;
+type HostRegistryBody = {
+  registryParticipationEnabled?: boolean;
+  origins?: string[];
+  includedTrustedOrigins?: number;
 };
 
 function reloadAuthTrustedOrigins(): void {
   reloadRegistryAuth({
-    trustedOrigins: readRegistryTrustedOrigins(getRegistryDatabase()),
+    resolveTrustedOrigins: () => readRegistryTrustedOrigins(getRegistryDatabase()),
   });
 }
 
@@ -33,9 +36,12 @@ export function handleAdminHostActivate(
     }
     const db = getRegistryDatabase();
     try {
-      const host = activateKhoraHost(db, id);
+      const { host, managementToken } = activateKhoraHost(db, id);
       const probed = await probeHostHealthById(db, host.id);
-      return Response.json({ host: hostToFullJson(probed ?? host) });
+      return Response.json({
+        host: hostToFullJson(probed ?? host, db),
+        ...(managementToken !== null ? { managementToken } : {}),
+      });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "activate failed";
       const status = msg.includes("not found") ? 404 : 400;
@@ -44,7 +50,7 @@ export function handleAdminHostActivate(
   });
 }
 
-export function handleAdminHostCors(
+export function handleAdminHostRegistry(
   req: Request,
   consoleAuth: ConsoleAuth | null,
   hostId: string,
@@ -55,30 +61,46 @@ export function handleAdminHostCors(
       return Response.json({ error: "host id required" }, { status: 400 });
     }
 
-    let body: HostCorsBody;
+    let body: HostRegistryBody;
     try {
-      body = (await req.json()) as HostCorsBody;
+      body = (await req.json()) as HostRegistryBody;
     } catch {
       return Response.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    if (body.corsTrusted === undefined && body.clientOrigin === undefined) {
-      return Response.json({ error: "corsTrusted or clientOrigin required" }, { status: 400 });
+    if (
+      body.registryParticipationEnabled === undefined &&
+      body.origins === undefined &&
+      body.includedTrustedOrigins === undefined
+    ) {
+      return Response.json(
+        { error: "registryParticipationEnabled, origins, or includedTrustedOrigins required" },
+        { status: 400 },
+      );
     }
 
     const db = getRegistryDatabase();
     try {
-      const host = updateHostCorsSettings(db, id, {
-        ...(body.corsTrusted !== undefined ? { corsTrusted: body.corsTrusted } : {}),
-        ...(body.clientOrigin !== undefined ? { clientOrigin: body.clientOrigin } : {}),
+      const host = updateHostRegistrySettings(db, id, {
+        ...(body.registryParticipationEnabled !== undefined
+          ? { registryParticipationEnabled: body.registryParticipationEnabled }
+          : {}),
+        ...(body.origins !== undefined ? { origins: body.origins } : {}),
+        ...(body.includedTrustedOrigins !== undefined
+          ? { includedTrustedOrigins: body.includedTrustedOrigins }
+          : {}),
       });
       reloadAuthTrustedOrigins();
-      return Response.json({ host: hostToFullJson(host) });
+      return Response.json({ host: hostToFullJson(host, db) });
     } catch (err: unknown) {
-      if (err instanceof InvalidClientOriginError) {
+      if (
+        err instanceof InvalidTrustedOriginError ||
+        err instanceof OriginQuotaExceededError ||
+        err instanceof TrustedOriginConflictError
+      ) {
         return Response.json({ error: err.message }, { status: 400 });
       }
-      const msg = err instanceof Error ? err.message : "cors update failed";
+      const msg = err instanceof Error ? err.message : "registry update failed";
       const status = msg.includes("not found") ? 404 : 400;
       return Response.json({ error: msg }, { status });
     }

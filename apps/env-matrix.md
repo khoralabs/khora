@@ -34,9 +34,9 @@ Put these in a Render **Environment Group** (or password manager) and link to ev
 | --- | --- | --- |
 | Registry public URL | registry (`REGISTRY_URL`), khoralabs homepage (`KHORA_REGISTRY_URL`, `BUN_PUBLIC_KHORA_REGISTRY_URL`) | `https://registry.khoralabs.com` |
 | Khora server public URL | host registry (`POST /v1/hosts/register` + activate), khora-server (`KHORA_PUBLIC_BASE_URL`) | `https://api.khora.khoralabs.com` |
-| Browser origins for registry APIs | Admin console → Hosts → CORS trust per host (`clientOrigin` when homepage ≠ API URL) | e.g. `https://khoralabs.com` on the web host row |
+| Browser origins for registry APIs | Host admin or registry admin → register explicit trusted origins; enable registry participation | e.g. `https://k-0.khoralabs.com`, `https://khoralabs.com` |
 
-Each active host with CORS trust enabled contributes its resolved origin (`clientOrigin` or `baseUrl` origin) to registry CORS and Better Auth `trustedOrigins`.
+Each active host with registry participation enabled contributes its registered **trusted origins** to registry CORS and Better Auth `trustedOrigins`. Host `baseUrl` is not trusted unless explicitly listed (or included via `KHORA_REGISTRY_TRUST_BASE_URL_ORIGIN` on the host).
 
 ---
 
@@ -63,7 +63,9 @@ Legend: **+** = set on this service · **·** = not used · **Kind:** **S** = se
 | `BUN_PUBLIC_KHORA_REGISTRY_URL` | · | · | + | C | Inlined into khoralabs homepage client bundle at build time. |
 | `KHORA_HOST_SLUG` | · | + | · | C | Host slug for `/.well-known/khora` and registry opt-in. |
 | `KHORA_PUBLIC_BASE_URL` | · | + | · | C | Public base URL in well-known + register body (default loopback + `PORT`). |
-| `KHORA_REGISTRY_OPT_IN` | · | + | · | C | `1`/`true`: `POST /v1/hosts/register` on server boot (pending until activated). |
+| `KHORA_REGISTRY_PARTICIPATE` | · | + | · | C | `1`/`true`: register with registry on boot (pending until activated). |
+| `KHORA_REGISTRY_MANAGEMENT_TOKEN` | · | + | · | S | Bearer token from host activation; host admin syncs trusted origins. |
+| `KHORA_REGISTRY_TRUST_BASE_URL_ORIGIN` | · | + | · | C | When syncing, include `KHORA_PUBLIC_BASE_URL` origin in trusted origins. |
 | `KHORA_HOST_DISPLAY_NAME` | · | + | · | C | Optional display name for registry register body. |
 
 ### Khora CLI (developer machine, not a deployed service)
@@ -179,7 +181,7 @@ REGISTRY_SQLCIPHER_KEY=...
 PORT=4000
 REGISTRY_URL=https://registry.example.com
 REGISTRY_DATABASE_PATH=/data/registry.sqlite
-# CORS: activate hosts in /admin, enable "Trust for CORS", set clientOrigin for homepages
+# Registry participation: activate host in /admin, set KHORA_REGISTRY_MANAGEMENT_TOKEN on host, configure trusted origins
 BETTER_AUTH_SECRET=...
 SES_FROM_ADDRESS=noreply@example.com
 REGISTRY_LITESTREAM=1

@@ -109,8 +109,18 @@ export function envRegistryUrl(): string | undefined {
   return url !== undefined && url.length > 0 ? url.replace(/\/$/, "") : undefined;
 }
 
-export function envRegistryOptIn(): boolean {
-  const v = process.env.KHORA_REGISTRY_OPT_IN?.trim().toLowerCase();
+export function envRegistryParticipate(): boolean {
+  const v = process.env.KHORA_REGISTRY_PARTICIPATE?.trim().toLowerCase();
+  return v === "1" || v === "true";
+}
+
+export function envRegistryManagementToken(): string | undefined {
+  const token = process.env.KHORA_REGISTRY_MANAGEMENT_TOKEN?.trim();
+  return token !== undefined && token.length > 0 ? token : undefined;
+}
+
+export function envRegistryTrustBaseUrlOrigin(): boolean {
+  const v = process.env.KHORA_REGISTRY_TRUST_BASE_URL_ORIGIN?.trim().toLowerCase();
   return v === "1" || v === "true";
 }
 

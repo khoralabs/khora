@@ -31,6 +31,7 @@ import {
 } from "./posts.ts";
 import { handleProfileByDid, handleProfileByUsername, handleProfilePatch } from "./profile.ts";
 import { handleRegister } from "./register.ts";
+import { handleAdminRegistryGet, handleAdminRegistryPut } from "./registry-admin.ts";
 import { handleListRelationships } from "./relationships.ts";
 import { jsonError, rateLimitedResponse } from "./responses.ts";
 import {
@@ -106,6 +107,14 @@ export async function route(
 
   if (req.method === "GET" && url.pathname === "/admin/api/stats/inactive-members") {
     return handleAdminStatsInactiveMembers(req, url, deps);
+  }
+
+  if (req.method === "GET" && url.pathname === "/admin/api/registry") {
+    return handleAdminRegistryGet(req, deps);
+  }
+
+  if (req.method === "PUT" && url.pathname === "/admin/api/registry") {
+    return handleAdminRegistryPut(req, deps);
   }
 
   const ip = clientIpFromRequest(req);

@@ -4,9 +4,9 @@ import {
   activateKhoraHost,
   getUsersDatabase,
   registerKhoraHost,
+  replaceHostTrustedOrigins,
   resetUsersDatabase,
-  setHostClientOrigin,
-  setHostCorsTrusted,
+  setHostRegistryParticipation,
 } from "@khoralabs/users";
 import { ensureRegistrySchema } from "@khoralabs/users-auth";
 import { corsHeaders } from "./cors.ts";
@@ -27,29 +27,33 @@ describe("readRegistryTrustedOrigins", () => {
     resetUsersDatabase();
   });
 
-  test("includes trusted active host origin", () => {
+  test("includes explicit trusted origins from participating hosts", () => {
     const db = getUsersDatabase();
-    const host = activateKhoraHost(
+    const { host } = activateKhoraHost(
       db,
       registerKhoraHost(db, { slug: "web", baseUrl: "http://localhost:8788" }).id,
     );
-    setHostClientOrigin(db, host.id, "https://khoralabs.com");
-    setHostCorsTrusted(db, host.id, true);
+    replaceHostTrustedOrigins(db, host.id, ["http://localhost:8788", "https://khoralabs.com"]);
+    setHostRegistryParticipation(db, host.id, true);
 
     const origins = readRegistryTrustedOrigins(db);
+    expect(origins).toContain("http://localhost:8788");
     expect(origins).toContain("https://khoralabs.com");
     expect(origins).toContain("http://localhost:4000");
   });
 
-  test("corsHeaders allows trusted origin", () => {
+  test("corsHeaders allows declared trusted origin only", () => {
     const db = getUsersDatabase();
-    const host = activateKhoraHost(
+    const { host } = activateKhoraHost(
       db,
       registerKhoraHost(db, { slug: "web", baseUrl: "http://localhost:8788" }).id,
     );
-    setHostCorsTrusted(db, host.id, true);
+    replaceHostTrustedOrigins(db, host.id, ["https://khoralabs.com"]);
+    setHostRegistryParticipation(db, host.id, true);
 
-    const headers = corsHeaders("http://localhost:8788");
-    expect(headers["Access-Control-Allow-Origin"]).toBe("http://localhost:8788");
+    expect(corsHeaders("https://khoralabs.com")["Access-Control-Allow-Origin"]).toBe(
+      "https://khoralabs.com",
+    );
+    expect(corsHeaders("http://localhost:8788")["Access-Control-Allow-Origin"]).toBeUndefined();
   });
 });

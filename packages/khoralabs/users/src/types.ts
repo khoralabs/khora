@@ -30,8 +30,15 @@ export type KhoraHost = {
   healthCheckedAtMs: number | null;
   healthLatencyMs: number | null;
   healthProbedEndpoint: HostHealthProbedEndpoint | null;
-  corsTrusted: boolean;
-  clientOrigin: string | null;
+  registryParticipationEnabled: boolean;
+  includedTrustedOrigins: number;
+};
+
+export type HostTrustedOrigin = {
+  id: string;
+  hostId: string;
+  origin: string;
+  createdAtMs: number;
 };
 
 export type AccessTokenRequest = {
@@ -118,7 +125,8 @@ export type CliLinkChallenge = {
 
 /** SQLite row shapes (snake_case columns) derived from domain types above */
 export type AccountRow = SqlRow<Account>;
-export type KhoraHostRow = SqlRow<KhoraHost>;
+export type KhoraHostRow = SqlRow<KhoraHost> & { management_token_hash: string | null };
+export type HostTrustedOriginRow = SqlRow<HostTrustedOrigin>;
 export type AccessTokenRequestRow = SqlRow<AccessTokenRequest>;
 export type MarketingConsentRow = SqlRow<MarketingConsent>;
 export type MembershipRow = SqlRow<Membership>;
@@ -143,8 +151,17 @@ export const KHORA_HOST_SQL_COLUMNS = {
   healthCheckedAtMs: "health_checked_at_ms",
   healthLatencyMs: "health_latency_ms",
   healthProbedEndpoint: "health_probed_endpoint",
-  corsTrusted: "cors_trusted",
-  clientOrigin: "client_origin",
+  registryParticipationEnabled: "registry_participation_enabled",
+  includedTrustedOrigins: "included_trusted_origins",
 } as const satisfies { [K in keyof KhoraHost]: SnakeCaseKey<K & string> };
+
+export const HOST_TRUSTED_ORIGIN_SQL_COLUMNS = {
+  id: "id",
+  hostId: "host_id",
+  origin: "origin",
+  createdAtMs: "created_at_ms",
+} as const satisfies { [K in keyof HostTrustedOrigin]: SnakeCaseKey<K & string> };
+
+export const HOST_TRUSTED_ORIGIN_SELECT = sqlSelectColumns(HOST_TRUSTED_ORIGIN_SQL_COLUMNS);
 
 export const KHORA_HOST_SELECT = sqlSelectColumns(KHORA_HOST_SQL_COLUMNS);

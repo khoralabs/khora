@@ -34,7 +34,7 @@ describe("registerKhoraHost", () => {
     expect(host.displayName).toBe("My Host");
     expect(listPublicHosts(db)).toHaveLength(0);
 
-    const active = activateKhoraHost(db, host.id);
+    const { host: active } = activateKhoraHost(db, host.id);
     expect(active.status).toBe("active");
     expect(listPublicHosts(db)).toHaveLength(1);
     expect(listPublicHosts(db)[0]?.slug).toBe("my-host");

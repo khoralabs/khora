@@ -6,7 +6,7 @@ describe("registry opt-in", () => {
 
   beforeEach(() => {
     for (const key of [
-      "KHORA_REGISTRY_OPT_IN",
+      "KHORA_REGISTRY_PARTICIPATE",
       "KHORA_HOST_SLUG",
       "KHORA_REGISTRY_URL",
       "KHORA_PUBLIC_BASE_URL",
@@ -56,15 +56,15 @@ describe("registry opt-in", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
-  test("maybeRegistryOptInOnStartup skips when opt-in disabled", () => {
-    delete process.env.KHORA_REGISTRY_OPT_IN;
+  test("maybeRegistryOptInOnStartup skips when participation disabled", () => {
+    delete process.env.KHORA_REGISTRY_PARTICIPATE;
     const fetchImpl = mock(async () => new Response(null, { status: 201 }));
     maybeRegistryOptInOnStartup();
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
   test("maybeRegistryOptInOnStartup skips without slug", () => {
-    process.env.KHORA_REGISTRY_OPT_IN = "1";
+    process.env.KHORA_REGISTRY_PARTICIPATE = "1";
     delete process.env.KHORA_HOST_SLUG;
     const fetchImpl = mock(async () => new Response(null, { status: 201 }));
     maybeRegistryOptInOnStartup();

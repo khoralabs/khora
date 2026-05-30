@@ -52,7 +52,7 @@ describe("khora host health", () => {
       slug: "lab",
       baseUrl: "http://localhost:8788",
     });
-    const active = activateKhoraHost(db, host.id);
+    const { host: active } = activateKhoraHost(db, host.id);
     const updated = updateHostHealthCheck(db, active.id, {
       status: "up",
       checkedAtMs: 1_700_000_000_000,

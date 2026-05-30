@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { renderRoute } from "../../render-route";
 import "../../../styles/globals.css";
-import { HostCorsTrust } from "./host-cors-trust";
+import { HostRegistryParticipation } from "./host-registry-participation";
 import { PendingHostActivations } from "./pending-host-activations";
 
 function EmailLookupForm() {
@@ -123,7 +123,7 @@ function AdminPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <PendingHostActivations />
-            <HostCorsTrust />
+            <HostRegistryParticipation />
             <UsersStats.HostList className="space-y-2 [&_[data-slot=users-stats-host-list-item]]:rounded-md [&_[data-slot=users-stats-host-list-item]]:border [&_[data-slot=users-stats-host-list-item]]:p-2" />
           </CardContent>
         </Card>

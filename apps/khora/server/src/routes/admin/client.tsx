@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { renderRoute } from "../../render-route";
+import { HostRegistryCard } from "./registry-card";
 import "../../../styles/globals.css";
 
 function PrincipalLookupForm() {
@@ -147,6 +148,18 @@ function AdminPage() {
               <AdminStats.InvitesMetrics className="grid gap-2 text-sm [&_dt]:text-muted-foreground [&_dd]:font-mono" />
               <AdminStats.TeardownMetrics className="grid gap-2 text-sm [&_dt]:text-muted-foreground [&_dd]:font-mono" />
             </AdminStats.Operations>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Registry</CardTitle>
+            <CardDescription>
+              Register trusted browser origins with the network registry
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <HostRegistryCard />
           </CardContent>
         </Card>
 

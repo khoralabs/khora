@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { CliLinkChallenge, CliLinkChallengeRow } from "./types.ts";
+import type { CliLinkChallenge, CliLinkChallengeRow } from "./types";
 
 const CHALLENGE_TTL_MS = 5 * 60 * 1000;
 

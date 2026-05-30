@@ -37,9 +37,21 @@ CREATE TABLE IF NOT EXISTS khora_hosts (
   health_checked_at_ms INTEGER,
   health_latency_ms INTEGER,
   health_probed_endpoint TEXT,
-  cors_trusted INTEGER NOT NULL DEFAULT 0,
-  client_origin TEXT
+  registry_participation_enabled INTEGER NOT NULL DEFAULT 0,
+  included_trusted_origins INTEGER NOT NULL DEFAULT 2,
+  management_token_hash TEXT
 );
+
+CREATE TABLE IF NOT EXISTS host_trusted_origins (
+  id TEXT PRIMARY KEY NOT NULL,
+  host_id TEXT NOT NULL REFERENCES khora_hosts(id) ON DELETE CASCADE,
+  origin TEXT NOT NULL UNIQUE,
+  created_at_ms INTEGER NOT NULL,
+  UNIQUE(host_id, origin)
+);
+
+CREATE INDEX IF NOT EXISTS idx_host_trusted_origins_host_id
+  ON host_trusted_origins (host_id);
 
 CREATE TABLE IF NOT EXISTS memberships (
   id TEXT PRIMARY KEY NOT NULL,

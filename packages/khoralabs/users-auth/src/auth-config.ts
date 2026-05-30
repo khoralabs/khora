@@ -7,7 +7,8 @@ import { sendOtpEmail } from "./ses";
 
 export type RegistryAuthOptions = {
   baseURL?: string;
-  trustedOrigins?: string[];
+  /** Returns all browser origins allowed to call /api/auth (registry + trusted host origins). */
+  resolveTrustedOrigins?: () => string[];
 };
 
 function readRegistryPort(): string {
@@ -17,21 +18,15 @@ function readRegistryPort(): string {
 function readAuthEnv(opts: RegistryAuthOptions = {}): {
   baseURL: string;
   secret: string;
-  trustedOrigins: string[];
   cookieDomain: string | undefined;
 } {
   const port = readRegistryPort();
   const localOrigin = `http://localhost:${port}`;
-  const loopbackOrigin = `http://127.0.0.1:${port}`;
   const configuredUrl =
     opts.baseURL?.trim()?.replace(/\/$/, "") ??
     process.env.REGISTRY_URL?.trim()?.replace(/\/$/, "") ??
     process.env.BETTER_AUTH_URL?.trim()?.replace(/\/$/, "");
   const baseURL = configuredUrl ?? localOrigin;
-
-  const trustedOrigins = [
-    ...new Set([baseURL, localOrigin, loopbackOrigin, ...(opts.trustedOrigins ?? [])]),
-  ];
 
   const secret = process.env.BETTER_AUTH_SECRET?.trim();
   if (secret === undefined || secret.length < 32) {
@@ -45,7 +40,6 @@ function readAuthEnv(opts: RegistryAuthOptions = {}): {
   return {
     baseURL,
     secret: secret ?? "dev-only-insecure-secret-replace-me-32chars",
-    trustedOrigins,
     cookieDomain,
   };
 }
@@ -58,13 +52,21 @@ function syncAccountForUser(userId: string, email: string): void {
 }
 
 export function createRegistryAuth(opts: RegistryAuthOptions = {}) {
-  const { baseURL, secret, trustedOrigins, cookieDomain } = readAuthEnv(opts);
+  const { baseURL, secret, cookieDomain } = readAuthEnv(opts);
+  const port = readRegistryPort();
+  const fallbackOrigins = [baseURL, `http://localhost:${port}`, `http://127.0.0.1:${port}`];
+
   return betterAuth({
     database: getRegistryDatabase(),
     baseURL,
     basePath: "/api/auth",
     secret,
-    trustedOrigins,
+    trustedOrigins: async () => {
+      if (opts.resolveTrustedOrigins !== undefined) {
+        return opts.resolveTrustedOrigins();
+      }
+      return fallbackOrigins;
+    },
     ...(cookieDomain !== undefined
       ? {
           advanced: {

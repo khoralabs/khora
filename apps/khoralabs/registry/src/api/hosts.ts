@@ -96,7 +96,7 @@ export async function handleHostRegister(req: Request): Promise<Response> {
     });
     return Response.json(
       {
-        host: hostToFullJson(host),
+        host: hostToFullJson(host, db),
         message:
           "Host registered as pending. An operator must activate it before it appears in the public catalog.",
       },
@@ -121,7 +121,7 @@ export function handleInternalHostsList(req: Request): Response {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
   const db = getRegistryDatabase();
-  const hosts = listAllHosts(db).map(hostToFullJson);
+  const hosts = listAllHosts(db).map((host) => hostToFullJson(host, db));
   return Response.json({ hosts });
 }
 
@@ -135,9 +135,12 @@ export async function handleInternalHostActivate(req: Request, hostId: string): 
   }
   const db = getRegistryDatabase();
   try {
-    const host = activateKhoraHost(db, id);
+    const { host, managementToken } = activateKhoraHost(db, id);
     const probed = await probeHostHealthById(db, host.id);
-    return Response.json({ host: hostToFullJson(probed ?? host) });
+    return Response.json({
+      host: hostToFullJson(probed ?? host, db),
+      ...(managementToken !== null ? { managementToken } : {}),
+    });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "activate failed";
     const status = msg.includes("not found") ? 404 : 400;

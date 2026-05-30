@@ -1,5 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { normalizeHostHealthPath } from "./host-health-path";
+import { issueHostManagementToken } from "./host-management-token";
 import { normalizeHostSlug } from "./host-slug";
 import { normalizeKhoraHostBaseUrl } from "./host-url";
 import type { HostHealthProbedEndpoint, HostHealthStatus, KhoraHost, KhoraHostRow } from "./types";
@@ -31,8 +32,8 @@ function mapHost(row: KhoraHostRow): KhoraHost {
     healthCheckedAtMs: row.health_checked_at_ms,
     healthLatencyMs: row.health_latency_ms,
     healthProbedEndpoint: mapProbedEndpoint(row.health_probed_endpoint),
-    corsTrusted: row.cors_trusted !== 0,
-    clientOrigin: row.client_origin,
+    registryParticipationEnabled: row.registry_participation_enabled !== 0,
+    includedTrustedOrigins: row.included_trusted_origins,
   };
 }
 
@@ -177,23 +178,27 @@ export function updateHostHealthCheck(
   return host;
 }
 
-export function activateKhoraHost(db: Database, hostId: string): KhoraHost {
+export function activateKhoraHost(
+  db: Database,
+  hostId: string,
+): { host: KhoraHost; managementToken: string | null } {
   const existing = findHostById(db, hostId);
   if (existing === null) {
     throw new Error("host not found");
   }
   if (existing.status === "active") {
-    return existing;
+    return { host: existing, managementToken: null };
   }
   if (existing.status !== "pending") {
     throw new Error(`cannot activate host in status: ${existing.status}`);
   }
   db.prepare(`UPDATE khora_hosts SET status = 'active' WHERE id = ?`).run(hostId);
+  const managementToken = issueHostManagementToken(db, hostId);
   const host = findHostById(db, hostId);
   if (host === null) {
     throw new Error("host activate failed");
   }
-  return host;
+  return { host, managementToken };
 }
 
 export function suspendKhoraHost(db: Database, hostId: string): KhoraHost {
@@ -224,7 +229,8 @@ export function seedDefaultHost(
   const existing = findHostBySlug(db, slug);
   if (existing !== null) {
     if (existing.status !== "active") {
-      return activateKhoraHost(db, existing.id);
+      const activated = activateKhoraHost(db, existing.id);
+      return activated.host;
     }
     return existing;
   }

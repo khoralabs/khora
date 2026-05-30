@@ -2,16 +2,22 @@ import type { Database } from "bun:sqlite";
 import {
   listAccessTokenRequestsForAccount,
   listAccessTokenRequestsForEmail,
-} from "./access-token-requests.ts";
-import { findAccountByEmail, findAccountById, listAccountEmails } from "./accounts.ts";
-import { listAllHosts } from "./khora-hosts.ts";
+} from "./access-token-requests";
+import { findAccountByEmail, findAccountById, listAccountEmails } from "./accounts";
+import { readHostRegistryState } from "./host-trusted-origins";
+import { listAllHosts } from "./khora-hosts";
 import {
   listMarketingConsentsForAccount,
   listMarketingConsentsForEmail,
-} from "./marketing-consents.ts";
-import { countMembershipsForAccount } from "./memberships.ts";
-import { normalizeEmail } from "./normalize.ts";
-import type { AccessTokenRequest, Account, KhoraHost, MarketingConsent } from "./types.ts";
+} from "./marketing-consents";
+import { countMembershipsForAccount } from "./memberships";
+import { normalizeEmail } from "./normalize";
+import type { AccessTokenRequest, Account, KhoraHost, MarketingConsent } from "./types";
+
+export type RegistryHostSummaryItem = KhoraHost & {
+  trustedOrigins: string[];
+  trustedOriginQuota: { used: number; included: number };
+};
 
 export type RegistryAccountsSummary = {
   total: number;
@@ -40,7 +46,7 @@ export type RegistryMarketingConsentsSummary = {
 export type RegistryHostsSummary = {
   total: number;
   active: number;
-  items: KhoraHost[];
+  items: RegistryHostSummaryItem[];
 };
 
 export type RegistryAdminSummary = {
@@ -110,7 +116,17 @@ export function getRegistryAdminSummary(db: Database): RegistryAdminSummary {
   for (const row of listSlugRows) {
     byListSlug[row.list_slug] = row.n;
   }
-  const hosts = listAllHosts(db);
+  const hosts = listAllHosts(db).map((host) => {
+    const state = readHostRegistryState(db, host.id);
+    return {
+      ...host,
+      trustedOrigins: state?.origins ?? [],
+      trustedOriginQuota: state?.quota ?? {
+        used: 0,
+        included: host.includedTrustedOrigins,
+      },
+    };
+  });
   const membershipRow = db.prepare(`SELECT COUNT(*) AS n FROM memberships`).get() as { n: number };
 
   return {

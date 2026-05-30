@@ -9,7 +9,7 @@ import {
 import { serve } from "bun";
 import { handleAccessTokenRequest } from "./api/access-token";
 import { routeConsoleAuth } from "./api/admin/console-guard";
-import { handleAdminHostActivate, handleAdminHostCors } from "./api/admin/hosts";
+import { handleAdminHostActivate, handleAdminHostRegistry } from "./api/admin/hosts";
 import {
   handleInternalAdminStatsSummary,
   handleInternalLookupAccount,
@@ -18,6 +18,7 @@ import {
 import { handleLookupAccount, handleLookupEmail } from "./api/admin/lookup";
 import { handleAdminStatsSummary } from "./api/admin/stats";
 import { handleDeviceApprove, handleDeviceAuthorize, handleDeviceToken } from "./api/device";
+import { handleHostRegistryGet, handleHostRegistryPut } from "./api/host-registry";
 import {
   handleHostGet,
   handleHostRegister,
@@ -44,7 +45,9 @@ import { readRegistryTrustedOrigins } from "./trusted-origins.ts";
 await assertEncryptionKeys(new EnvKeyProvider(), "registry");
 await ensureRegistrySchema();
 const registryDb = getRegistryDatabase();
-reloadRegistryAuth({ trustedOrigins: readRegistryTrustedOrigins(registryDb) });
+reloadRegistryAuth({
+  resolveTrustedOrigins: () => readRegistryTrustedOrigins(registryDb),
+});
 startHostHealthPoller(registryDb);
 
 const auth = getRegistryAuth();
@@ -109,9 +112,25 @@ const server = serve({
       return withCors(req, await handleAdminHostActivate(req, consoleAuth, id));
     }
 
-    if (path.startsWith("/admin/api/hosts/") && path.endsWith("/cors") && req.method === "PATCH") {
-      const id = path.slice("/admin/api/hosts/".length, -"/cors".length);
-      return withCors(req, await handleAdminHostCors(req, consoleAuth, id));
+    if (
+      path.startsWith("/admin/api/hosts/") &&
+      path.endsWith("/registry") &&
+      req.method === "PATCH"
+    ) {
+      const id = path.slice("/admin/api/hosts/".length, -"/registry".length);
+      return withCors(req, await handleAdminHostRegistry(req, consoleAuth, id));
+    }
+
+    if (path.startsWith("/v1/hosts/") && path.endsWith("/registry")) {
+      const slug = path.slice("/v1/hosts/".length, -"/registry".length);
+      if (slug.length > 0) {
+        if (req.method === "GET") {
+          return withCors(req, handleHostRegistryGet(req, slug));
+        }
+        if (req.method === "PUT") {
+          return withCors(req, await handleHostRegistryPut(req, slug));
+        }
+      }
     }
 
     if (path === "/internal/admin/stats/summary" && req.method === "GET") {

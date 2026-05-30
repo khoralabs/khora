@@ -3,10 +3,12 @@ import {
   envHostSlug,
   envPort,
   envPublicBaseUrl,
-  envRegistryOptIn,
+  envRegistryManagementToken,
+  envRegistryParticipate,
   envRegistryUrl,
 } from "./env.ts";
 import { logger } from "./logger.ts";
+import { syncHostRegistryOnStartup } from "./registry-client.ts";
 
 const DEFAULT_REGISTRY_URL = "http://localhost:4000";
 
@@ -59,14 +61,14 @@ export async function registerHostWithRegistry(params: RegistryOptInParams): Pro
 }
 
 export function maybeRegistryOptInOnStartup(): void {
-  if (!envRegistryOptIn()) {
+  if (!envRegistryParticipate()) {
     return;
   }
 
   const slug = envHostSlug();
   if (slug === undefined) {
     logger.warn(
-      "KHORA_REGISTRY_OPT_IN is set but KHORA_HOST_SLUG is missing; skipping registration",
+      "KHORA_REGISTRY_PARTICIPATE is set but KHORA_HOST_SLUG is missing; skipping registration",
     );
     return;
   }
@@ -75,10 +77,20 @@ export function maybeRegistryOptInOnStartup(): void {
   const baseUrl = envPublicBaseUrl(envPort());
   const displayName = envHostDisplayName();
 
-  void registerHostWithRegistry({
-    registryUrl,
-    slug,
-    baseUrl,
-    ...(displayName !== undefined ? { displayName } : {}),
-  });
+  void (async () => {
+    await registerHostWithRegistry({
+      registryUrl,
+      slug,
+      baseUrl,
+      ...(displayName !== undefined ? { displayName } : {}),
+    });
+    if (envRegistryManagementToken() !== undefined) {
+      try {
+        await syncHostRegistryOnStartup();
+        logger.info({ slug, registryUrl }, "registry: synced trusted origins");
+      } catch (err) {
+        logger.warn({ err, slug, registryUrl }, "registry: trusted origin sync failed");
+      }
+    }
+  })();
 }
