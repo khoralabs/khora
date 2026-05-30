@@ -1,17 +1,45 @@
-import { UsersStats } from "@khoralabs/users-react";
+import { UsersStats, useUsersStats } from "@khoralabs/users-react";
 import { useEffect, useState } from "react";
-import { Button } from "../../components/ui/button.tsx";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../../components/ui/card.tsx";
-import { renderRoute } from "../../render-route.tsx";
-import "../../styles/globals.css";
-import { HostCorsTrust } from "./host-cors-trust.tsx";
-import { PendingHostActivations } from "./pending-host-activations.tsx";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { renderRoute } from "../../render-route";
+import "../../../styles/globals.css";
+import { HostCorsTrust } from "./host-cors-trust";
+import { PendingHostActivations } from "./pending-host-activations";
+
+function EmailLookupForm() {
+  const { lookupEmail, setLookupEmail, runEmailLookup, emailLookupLoading } = useUsersStats();
+
+  return (
+    <form
+      className="flex gap-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void runEmailLookup();
+      }}
+    >
+      <div className="min-w-0 flex-1 space-y-2">
+        <Label htmlFor="users-lookup-email" className="sr-only">
+          Email
+        </Label>
+        <Input
+          id="users-lookup-email"
+          name="email"
+          type="email"
+          value={lookupEmail}
+          onChange={(e) => setLookupEmail(e.target.value)}
+          placeholder="user@example.com"
+          disabled={emailLookupLoading}
+        />
+      </div>
+      <Button type="submit" disabled={emailLookupLoading}>
+        {emailLookupLoading ? "…" : "Look up"}
+      </Button>
+    </form>
+  );
+}
 
 function AdminPage() {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
@@ -48,6 +76,7 @@ function AdminPage() {
         </div>
         <Button
           type="button"
+          variant="outline"
           onClick={async () => {
             await fetch("/admin/api/logout", { method: "POST" });
             window.location.href = "/admin/login";
@@ -106,7 +135,7 @@ function AdminPage() {
           </CardHeader>
           <CardContent>
             <UsersStats.EmailLookup className="space-y-4">
-              <UsersStats.EmailLookupForm className="flex gap-2 [&_input]:min-w-0 [&_input]:flex-1 [&_input]:rounded-md [&_input]:border [&_input]:bg-background [&_input]:px-3 [&_input]:py-2 [&_input]:text-sm [&_button]:rounded-md [&_button]:border [&_button]:bg-background [&_button]:px-3 [&_button]:py-2 [&_button]:text-sm" />
+              <EmailLookupForm />
               <UsersStats.EmailLookupResult className="rounded-lg border p-4 text-sm" />
             </UsersStats.EmailLookup>
           </CardContent>

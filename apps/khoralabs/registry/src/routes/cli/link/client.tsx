@@ -1,16 +1,10 @@
 import { createRegistryEmailConfirmApi } from "@khoralabs/users-auth/client";
 import { useEmailConfirmFlow } from "@khoralabs/users-react";
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "../../../admin-ui/components/ui/button.tsx";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../../../admin-ui/components/ui/card.tsx";
-import { renderRoute } from "../../render-route.tsx";
-import "../../styles/globals.css";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { renderRoute } from "../../../render-route";
+import "../../../../styles/globals.css";
 
 const emailConfirmApi = createRegistryEmailConfirmApi({
   registryUrl: window.location.origin,

@@ -1,11 +1,17 @@
-import { type KhoraHost, resolveHostTrustedOrigin } from "@khoralabs/users";
+import type { KhoraHost } from "@khoralabs/users";
 import { useUsersStats } from "@khoralabs/users-react";
 import { useState } from "react";
-import { Button } from "../../components/ui/button.tsx";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 function previewOrigin(host: KhoraHost): string {
   try {
-    return resolveHostTrustedOrigin(host);
+    if (host.clientOrigin !== null && host.clientOrigin.length > 0) {
+      return host.clientOrigin;
+    }
+    return new URL(host.baseUrl).origin;
   } catch {
     return "(invalid base URL)";
   }
@@ -49,6 +55,7 @@ export function HostCorsTrust() {
           const active = host.status === "active";
           const draft =
             draftOrigins[host.id] ?? (host.clientOrigin !== null ? host.clientOrigin : "");
+          const trustId = `host-cors-trusted-${host.id}`;
           return (
             <li
               key={host.id}
@@ -60,19 +67,19 @@ export function HostCorsTrust() {
                 <span className="text-muted-foreground">({host.status})</span>
               </div>
               <p className="text-muted-foreground">Resolved origin: {previewOrigin(host)}</p>
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id={trustId}
                   checked={host.corsTrusted}
                   disabled={!active || savingId === host.id}
-                  onChange={async (e) => {
+                  onCheckedChange={async (checked) => {
                     setError(null);
                     setSavingId(host.id);
                     try {
                       const res = await fetch(`/admin/api/hosts/${host.id}/cors`, {
                         method: "PATCH",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ corsTrusted: e.target.checked }),
+                        body: JSON.stringify({ corsTrusted: checked === true }),
                       });
                       if (!res.ok) {
                         const json = (await res.json().catch(() => ({}))) as { error?: string };
@@ -86,17 +93,25 @@ export function HostCorsTrust() {
                     }
                   }}
                 />
-                <span>Trust for CORS / auth</span>
-                {!active ? (
-                  <span className="text-muted-foreground">(activate host first)</span>
-                ) : null}
-              </label>
+                <Label htmlFor={trustId} className="font-normal">
+                  Trust for CORS / auth
+                  {!active ? (
+                    <span className="text-muted-foreground"> (activate host first)</span>
+                  ) : null}
+                </Label>
+              </div>
               <div className="flex flex-wrap items-end gap-2">
-                <label className="flex min-w-0 flex-1 flex-col gap-1">
-                  <span className="text-xs text-muted-foreground">Client origin (optional)</span>
-                  <input
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  <Label
+                    htmlFor={`host-client-origin-${host.id}`}
+                    className="text-xs text-muted-foreground"
+                  >
+                    Client origin (optional)
+                  </Label>
+                  <Input
+                    id={`host-client-origin-${host.id}`}
                     type="text"
-                    className="rounded-md border bg-background px-2 py-1 font-mono text-sm"
+                    className="font-mono"
                     placeholder="https://khoralabs.com"
                     value={draft}
                     disabled={savingId === host.id}
@@ -104,7 +119,7 @@ export function HostCorsTrust() {
                       setDraftOrigins((prev) => ({ ...prev, [host.id]: e.target.value }));
                     }}
                   />
-                </label>
+                </div>
                 <Button
                   type="button"
                   size="sm"

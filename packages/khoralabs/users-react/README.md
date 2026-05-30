@@ -129,7 +129,7 @@ export function RegistryAdmin() {
 }
 ```
 
-See [`apps/khoralabs/registry/src/admin-ui/routes/admin/client.tsx`](../../../apps/khoralabs/registry/src/admin-ui/routes/admin/client.tsx) for a full example with cards and styling.
+See [`apps/khoralabs/registry/src/routes/admin/client.tsx`](../../../apps/khoralabs/registry/src/routes/admin/client.tsx) for a full example with cards and styling.
 
 ## Hooks and context
 

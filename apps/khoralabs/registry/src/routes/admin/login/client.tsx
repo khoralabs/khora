@@ -1,14 +1,10 @@
 import { type FormEvent, useState } from "react";
-import { Button } from "../../components/ui/button.tsx";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../../components/ui/card.tsx";
-import { renderRoute } from "../../render-route.tsx";
-import "../../styles/globals.css";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { renderRoute } from "../../../render-route";
+import "../../../../styles/globals.css";
 
 function LoginPage() {
   const [error, setError] = useState<string | null>(null);
@@ -50,22 +46,19 @@ function LoginPage() {
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={onSubmit}>
-            <label className="block space-y-2 text-sm">
-              <span className="font-medium">Root token</span>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="root-token">Root token</Label>
+              <Input
+                id="root-token"
                 name="token"
                 type="password"
                 autoComplete="off"
-                className="w-full rounded-md border bg-background px-3 py-2 font-mono text-sm"
+                className="font-mono"
                 disabled={pending}
               />
-            </label>
+            </div>
             {error !== null && <p className="text-sm text-destructive">{error}</p>}
-            <Button
-              type="submit"
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-              disabled={pending}
-            >
+            <Button type="submit" className="w-full" disabled={pending}>
               {pending ? "Signing in…" : "Sign in"}
             </Button>
           </form>

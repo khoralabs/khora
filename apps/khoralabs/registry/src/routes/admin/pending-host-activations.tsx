@@ -1,6 +1,6 @@
 import { useUsersStats } from "@khoralabs/users-react";
 import { useState } from "react";
-import { Button } from "../../components/ui/button.tsx";
+import { Button } from "@/components/ui/button";
 
 export function PendingHostActivations() {
   const { summary, summaryLoading, summaryError, refetchSummary } = useUsersStats();

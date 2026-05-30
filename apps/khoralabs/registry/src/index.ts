@@ -7,8 +7,6 @@ import {
   reloadRegistryAuth,
 } from "@khoralabs/users-auth";
 import { serve } from "bun";
-import adminPage from "./admin-ui/routes/admin/index.html";
-import adminLoginPage from "./admin-ui/routes/login/index.html";
 import { handleAccessTokenRequest } from "./api/access-token";
 import { routeConsoleAuth } from "./api/admin/console-guard";
 import { handleAdminHostActivate, handleAdminHostCors } from "./api/admin/hosts";
@@ -36,9 +34,11 @@ import {
 } from "./api/link";
 import { handleMarketingSubscribe, handleMarketingUnsubscribe } from "./api/marketing";
 import { handleMe } from "./api/me";
-import cliLinkPage from "./cli-link-ui/routes/link/index.html";
 import { handleOptions, withCors } from "./cors";
 import { startHostHealthPoller } from "./host-health.ts";
+import adminPage from "./routes/admin/index.html";
+import adminLoginPage from "./routes/admin/login/index.html";
+import cliLinkPage from "./routes/cli/link/index.html";
 import { readRegistryTrustedOrigins } from "./trusted-origins.ts";
 
 await assertEncryptionKeys(new EnvKeyProvider(), "registry");
