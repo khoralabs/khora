@@ -156,11 +156,7 @@ export async function handleLinkAgent(req: Request): Promise<Response> {
       boundViaHostId: host.id,
     });
 
-    const propagateIds = resolvePropagateHostIds(
-      db,
-      body.propagateHostSlugs ?? [],
-      host.id,
-    );
+    const propagateIds = resolvePropagateHostIds(db, body.propagateHostSlugs ?? [], host.id);
     const propagated =
       propagateIds.length > 0
         ? formatPropagated(
@@ -188,8 +184,7 @@ export async function handleLinkAgent(req: Request): Promise<Response> {
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "link failed";
-    const status =
-      msg.includes("another account") || msg.includes("already bound") ? 409 : 400;
+    const status = msg.includes("another account") || msg.includes("already bound") ? 409 : 400;
     return Response.json({ error: msg }, { status });
   }
 }
@@ -230,7 +225,10 @@ export async function handleLinkAgentEnsure(req: Request): Promise<Response> {
 
   const binding = findBindingByAgentDid(db, envelopeDid);
   if (binding === null) {
-    return Response.json({ error: "no agent account binding; run khora link first" }, { status: 404 });
+    return Response.json(
+      { error: "no agent account binding; run khora link first" },
+      { status: 404 },
+    );
   }
 
   try {
@@ -325,7 +323,10 @@ export async function handleLinkUnlink(req: Request): Promise<Response> {
   const envelope = parseAgentRequestEnvelopeFromHeaders(req.headers);
   const agentDid = body.agentDid?.trim() || envelope?.did;
   if (agentDid === undefined || agentDid.length === 0) {
-    return Response.json({ error: "agentDid required (body or signature headers)" }, { status: 400 });
+    return Response.json(
+      { error: "agentDid required (body or signature headers)" },
+      { status: 400 },
+    );
   }
 
   const unlinked = unlinkAgentFromMembership(db, membership.id, agentDid);

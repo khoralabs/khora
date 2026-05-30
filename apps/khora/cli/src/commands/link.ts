@@ -63,9 +63,7 @@ export async function handleLink(flags: FlagMap): Promise<void> {
 
   const cfg = khoraCliResolvedConfig(flags);
   const propagateHostSlugs =
-    cfg.hosts !== undefined
-      ? await discoverRegisteredHostSlugs(signer, cfg.hosts, hostSlug)
-      : [];
+    cfg.hosts !== undefined ? await discoverRegisteredHostSlugs(signer, cfg.hosts, hostSlug) : [];
 
   const { challengeId } = await linkChallenge(registryUrl, signer.did);
   const result = await linkAgent(registryUrl, signer, {
@@ -174,5 +172,7 @@ export async function handleLinkUnlink(flags: FlagMap): Promise<void> {
     );
     return;
   }
-  console.log(`Unlinked ${signer.did} from registry account on host ${hostSlug} and cleared session.`);
+  console.log(
+    `Unlinked ${signer.did} from registry account on host ${hostSlug} and cleared session.`,
+  );
 }

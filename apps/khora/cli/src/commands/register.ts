@@ -3,11 +3,11 @@ import { boolFlag, strFlag } from "@khoralabs/cli-kit";
 
 import type { KhoraCliContext } from "../flows/context.ts";
 import { cliBaseUrl, cliCurrentHostSlug, loadSigner, withKhoraClient } from "../flows/context.ts";
+import { runRegisterInteractiveFlow } from "../flows/register-flow.ts";
+import { displayNameFromFlags, registerFieldsFromFlags } from "../lib/flags.ts";
 import { linkEnsure } from "../registry/client.ts";
 import { cliRegistryUrl } from "../registry/config.ts";
 import { readLinkState, writeLinkState } from "../registry/link-state.ts";
-import { runRegisterInteractiveFlow } from "../flows/register-flow.ts";
-import { displayNameFromFlags, registerFieldsFromFlags } from "../lib/flags.ts";
 
 export async function handleRegister(ctx: KhoraCliContext, flags: FlagMap): Promise<void> {
   const json = boolFlag(flags, "json");

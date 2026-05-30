@@ -23,7 +23,9 @@ export function linkStatePath(): string {
   return path.join(home, ".khora", "link-state.json");
 }
 
-function normalizeEntry(raw: LinkStateEntry | { agentDid?: string; linkedAtMs?: number }): LinkStateEntry {
+function normalizeEntry(
+  raw: LinkStateEntry | { agentDid?: string; linkedAtMs?: number },
+): LinkStateEntry {
   if ("agents" in raw && raw.agents !== undefined && typeof raw.agents === "object") {
     return { agents: { ...raw.agents } };
   }

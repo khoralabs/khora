@@ -8,12 +8,6 @@ export {
   markAccessTokenSent,
 } from "./access-token-requests";
 export {
-  bindAgentToAccount,
-  clearBindingIfNoHostLinks,
-  countAgentLinksForAgentDid,
-  findBindingByAgentDid,
-} from "./agent-account-bindings";
-export {
   ensureAgentLinkedOnHost,
   findAgentLinkOnHost,
   linkAgentToAccountOnHost,
@@ -42,6 +36,12 @@ export {
   type RegistryEmailLookup,
   type RegistryEmailLookupResponse,
 } from "./admin-stats";
+export {
+  bindAgentToAccount,
+  clearBindingIfNoHostLinks,
+  countAgentLinksForAgentDid,
+  findBindingByAgentDid,
+} from "./agent-account-bindings";
 export {
   consumeCliLinkChallenge,
   createCliLinkChallenge,

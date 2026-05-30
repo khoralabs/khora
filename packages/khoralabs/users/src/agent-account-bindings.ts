@@ -36,12 +36,7 @@ export function bindAgentToAccount(
   db.prepare(
     `INSERT INTO agent_account_bindings (agent_did, account_id, bound_at_ms, bound_via_host_id)
      VALUES (?, ?, ?, ?)`,
-  ).run(
-    params.agentDid,
-    params.accountId,
-    now,
-    params.boundViaHostId ?? null,
-  );
+  ).run(params.agentDid, params.accountId, now, params.boundViaHostId ?? null);
 
   const created = findBindingByAgentDid(db, params.agentDid);
   if (created === null) {
@@ -61,8 +56,6 @@ export function clearBindingIfNoHostLinks(db: Database, agentDid: string): boole
   if (countAgentLinksForAgentDid(db, agentDid) > 0) {
     return false;
   }
-  const result = db
-    .prepare(`DELETE FROM agent_account_bindings WHERE agent_did = ?`)
-    .run(agentDid);
+  const result = db.prepare(`DELETE FROM agent_account_bindings WHERE agent_did = ?`).run(agentDid);
   return result.changes > 0;
 }

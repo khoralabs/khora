@@ -1,16 +1,16 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
+import { linkAgentToMembership, unlinkAgentFromMembership } from "./account-agent-links.ts";
 import { linkBetterAuthUser } from "./accounts.ts";
-import { getUsersDatabase, resetUsersDatabase } from "./db.ts";
-import { seedDefaultHost } from "./khora-hosts.ts";
-import { initUsersSchema } from "./schema.ts";
 import {
   bindAgentToAccount,
   clearBindingIfNoHostLinks,
   findBindingByAgentDid,
 } from "./agent-account-bindings.ts";
-import { linkAgentToMembership, unlinkAgentFromMembership } from "./account-agent-links.ts";
+import { getUsersDatabase, resetUsersDatabase } from "./db.ts";
+import { seedDefaultHost } from "./khora-hosts.ts";
 import { upsertMembership } from "./memberships.ts";
+import { initUsersSchema } from "./schema.ts";
 
 describe("agent account bindings", () => {
   beforeEach(async () => {
