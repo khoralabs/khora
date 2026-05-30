@@ -1,18 +1,9 @@
 import type { Database } from "bun:sqlite";
-import type { CliLinkChallenge } from "./types.ts";
+import type { CliLinkChallenge, CliLinkChallengeRow } from "./types.ts";
 
 const CHALLENGE_TTL_MS = 5 * 60 * 1000;
 
-type ChallengeRow = {
-  id: string;
-  agent_did: string;
-  nonce: string;
-  expires_at_ms: number;
-  consumed_at_ms: number | null;
-  created_at_ms: number;
-};
-
-function mapChallenge(row: ChallengeRow): CliLinkChallenge {
+function mapChallenge(row: CliLinkChallengeRow): CliLinkChallenge {
   return {
     id: row.id,
     agentDid: row.agent_did,
@@ -41,7 +32,7 @@ export function createCliLinkChallenge(
       `SELECT id, agent_did, nonce, expires_at_ms, consumed_at_ms, created_at_ms
        FROM cli_link_challenges WHERE id = ? LIMIT 1`,
     )
-    .get(id) as ChallengeRow | null;
+    .get(id) as CliLinkChallengeRow | null;
   if (row === null) {
     throw new Error("cli link challenge insert failed");
   }
@@ -54,7 +45,7 @@ export function findCliLinkChallenge(db: Database, challengeId: string): CliLink
       `SELECT id, agent_did, nonce, expires_at_ms, consumed_at_ms, created_at_ms
        FROM cli_link_challenges WHERE id = ? LIMIT 1`,
     )
-    .get(challengeId) as ChallengeRow | null;
+    .get(challengeId) as CliLinkChallengeRow | null;
   return row === null ? null : mapChallenge(row);
 }
 

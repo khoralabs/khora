@@ -33,11 +33,14 @@ import { handleMarketingSubscribe, handleMarketingUnsubscribe } from "./api/mark
 import { handleMe } from "./api/me";
 import cliLinkPage from "./cli-link-ui/routes/link/index.html";
 import { handleOptions, withCors } from "./cors";
+import { startHostHealthPoller } from "./host-health.ts";
 import { seedDefaultHostFromEnv } from "./seed/default-host";
 
 await assertEncryptionKeys(new EnvKeyProvider(), "registry");
 await ensureRegistrySchema();
-seedDefaultHostFromEnv(getRegistryDatabase());
+const registryDb = getRegistryDatabase();
+seedDefaultHostFromEnv(registryDb);
+startHostHealthPoller(registryDb);
 
 const auth = getRegistryAuth();
 const rootToken = process.env.REGISTRY_CONSOLE_ROOT_TOKEN?.trim();

@@ -1,16 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { bindAgentToAccount, findBindingByAgentDid } from "./agent-account-bindings";
 import { findMembershipById, upsertMembership } from "./memberships";
-import type { AccountAgentLink, HostLinkPropagationResult } from "./types";
-
-type AccountAgentLinkRow = {
-  id: string;
-  membership_id: string;
-  account_id: string;
-  host_id: string;
-  agent_did: string;
-  linked_at_ms: number;
-};
+import type { AccountAgentLink, AccountAgentLinkRow, HostLinkPropagationResult } from "./types";
 
 function mapLink(row: AccountAgentLinkRow): AccountAgentLink {
   return {

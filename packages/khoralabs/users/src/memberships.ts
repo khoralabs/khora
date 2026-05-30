@@ -1,15 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { Membership, MembershipStatus } from "./types.ts";
-
-type MembershipRow = {
-  id: string;
-  account_id: string;
-  host_id: string;
-  invite_token_hash: string | null;
-  status: string;
-  created_at_ms: number;
-  updated_at_ms: number;
-};
+import type { Membership, MembershipRow, MembershipStatus } from "./types.ts";
 
 function mapMembership(row: MembershipRow): Membership {
   return {

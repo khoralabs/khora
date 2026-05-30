@@ -30,7 +30,13 @@ CREATE TABLE IF NOT EXISTS khora_hosts (
   description TEXT,
   status TEXT NOT NULL DEFAULT 'pending',
   opted_in_at_ms INTEGER,
-  capabilities TEXT
+  capabilities TEXT,
+  health_ready_path TEXT NOT NULL DEFAULT '/ready',
+  health_path TEXT NOT NULL DEFAULT '/health',
+  health_status TEXT NOT NULL DEFAULT 'unknown',
+  health_checked_at_ms INTEGER,
+  health_latency_ms INTEGER,
+  health_probed_endpoint TEXT
 );
 
 CREATE TABLE IF NOT EXISTS memberships (

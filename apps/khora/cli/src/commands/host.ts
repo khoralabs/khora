@@ -1,11 +1,11 @@
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { boolFlag, strFlag, style } from "@khoralabs/cli-kit";
 
-import { cliCurrentHostSlug, resolveCliHost } from "../flows/context.ts";
-import { khoraCliResolvedConfig } from "../khora-app-config.ts";
-import { patchCliConfigFile, resolveCliConfigWritePath } from "../lib/cli-config-write.ts";
-import { fetchHosts, registerHost } from "../registry/client.ts";
-import { cliRegistryUrl } from "../registry/config.ts";
+import { cliCurrentHostSlug, resolveCliHost } from "../flows/context";
+import { khoraCliResolvedConfig } from "../khora-app-config";
+import { patchCliConfigFile, resolveCliConfigWritePath } from "../lib/cli-config-write";
+import { fetchHosts, type RegistryHostHealth, registerHost } from "../registry/client";
+import { cliRegistryUrl } from "../registry/config";
 
 export async function handleHostList(flags: FlagMap): Promise<void> {
   const json = boolFlag(flags, "json");
@@ -28,7 +28,20 @@ export async function handleHostList(flags: FlagMap): Promise<void> {
     const name = h.displayName !== undefined ? ` — ${h.displayName}` : "";
     console.log(`${h.slug}${mark}${name}`);
     console.log(`  ${h.baseUrl}`);
+    if (h.health !== undefined) {
+      console.log(`  health: ${formatHostHealth(h.health)}`);
+    }
   }
+}
+
+function formatHostHealth(health: RegistryHostHealth): string {
+  if (health.status === "unknown") return "unknown";
+  if (health.status === "down") return "down";
+  const details: string[] = [];
+  if (health.latencyMs !== null) details.push(`${health.latencyMs}ms`);
+  if (health.probedEndpoint !== null) details.push(health.probedEndpoint);
+  if (details.length === 0) return "up";
+  return `up (${details.join(", ")})`;
 }
 
 export async function handleHostUse(flags: FlagMap, slugArg: string | undefined): Promise<void> {

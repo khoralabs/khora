@@ -1,23 +1,8 @@
 import type { Database } from "bun:sqlite";
 import { normalizeEmail } from "./normalize";
-import type { AccessTokenRequest } from "./types";
+import type { AccessTokenRequest, AccessTokenRequestRow } from "./types";
 
-type RequestRow = {
-  id: string;
-  email: string;
-  host_id: string;
-  account_id: string | null;
-  membership_id: string | null;
-  status: string;
-  invite_token_hash: string | null;
-  requested_at_ms: number;
-  minted_at_ms: number | null;
-  sent_at_ms: number | null;
-  redeemed_at_ms: number | null;
-  source_app: string | null;
-};
-
-function mapRequest(row: RequestRow): AccessTokenRequest {
+function mapRequest(row: AccessTokenRequestRow): AccessTokenRequest {
   return {
     id: row.id,
     email: row.email,
@@ -45,7 +30,7 @@ export function findAccessTokenRequest(
               requested_at_ms, minted_at_ms, sent_at_ms, redeemed_at_ms, source_app
        FROM access_token_requests WHERE email = ? AND host_id = ? LIMIT 1`,
     )
-    .get(normalizeEmail(email), hostId) as RequestRow | null;
+    .get(normalizeEmail(email), hostId) as AccessTokenRequestRow | null;
   return row === null ? null : mapRequest(row);
 }
 
@@ -101,7 +86,7 @@ export function listAccessTokenRequestsForEmail(db: Database, email: string): Ac
               requested_at_ms, minted_at_ms, sent_at_ms, redeemed_at_ms, source_app
        FROM access_token_requests WHERE email = ? ORDER BY requested_at_ms DESC`,
     )
-    .all(normalizeEmail(email)) as RequestRow[];
+    .all(normalizeEmail(email)) as AccessTokenRequestRow[];
   return rows.map(mapRequest);
 }
 
@@ -115,7 +100,7 @@ export function listAccessTokenRequestsForAccount(
               requested_at_ms, minted_at_ms, sent_at_ms, redeemed_at_ms, source_app
        FROM access_token_requests WHERE account_id = ? ORDER BY requested_at_ms DESC`,
     )
-    .all(accountId) as RequestRow[];
+    .all(accountId) as AccessTokenRequestRow[];
   return rows.map(mapRequest);
 }
 
@@ -129,6 +114,6 @@ export function getAccessTokenRequestById(
               requested_at_ms, minted_at_ms, sent_at_ms, redeemed_at_ms, source_app
        FROM access_token_requests WHERE id = ? LIMIT 1`,
     )
-    .get(requestId) as RequestRow | null;
+    .get(requestId) as AccessTokenRequestRow | null;
   return row === null ? null : mapRequest(row);
 }

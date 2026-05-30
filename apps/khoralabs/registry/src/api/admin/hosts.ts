@@ -1,8 +1,9 @@
 import type { ConsoleAuth } from "@khoralabs/khora-console";
 import { activateKhoraHost } from "@khoralabs/users";
 import { getRegistryDatabase } from "@khoralabs/users-auth";
-import { hostToFullJson } from "../host-json.ts";
-import { withConsoleAuth } from "./console-guard.ts";
+import { probeHostHealthById } from "../../host-health";
+import { hostToFullJson } from "../host-json";
+import { withConsoleAuth } from "./console-guard";
 
 export function handleAdminHostActivate(
   req: Request,
@@ -17,6 +18,7 @@ export function handleAdminHostActivate(
     const db = getRegistryDatabase();
     try {
       const host = activateKhoraHost(db, id);
+      void probeHostHealthById(db, host.id);
       return Response.json({ host: hostToFullJson(host) });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "activate failed";

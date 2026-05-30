@@ -1,13 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { normalizeEmail } from "./normalize";
-import type { Account } from "./types";
-
-type AccountRow = {
-  id: string;
-  status: string;
-  created_at_ms: number;
-  updated_at_ms: number;
-};
+import type { Account, AccountRow } from "./types";
 
 function mapAccount(row: AccountRow): Account {
   return {

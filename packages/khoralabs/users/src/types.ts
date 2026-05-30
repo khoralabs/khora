@@ -1,5 +1,10 @@
+import type { SnakeCaseKey, SqlRow } from "./sql-row";
+import { sqlSelectColumns } from "./sql-row";
+
 export type AccountStatus = "active" | "suspended";
 export type HostStatus = "pending" | "active" | "suspended";
+export type HostHealthStatus = "unknown" | "up" | "down";
+export type HostHealthProbedEndpoint = "ready" | "health";
 export type MembershipStatus = "requested" | "invited" | "active" | "revoked";
 export type AccessTokenRequestStatus = "pending" | "minted" | "sent" | "redeemed";
 
@@ -19,6 +24,12 @@ export type KhoraHost = {
   status: HostStatus;
   optedInAtMs: number | null;
   capabilities: Record<string, unknown> | null;
+  healthReadyPath: string;
+  healthPath: string;
+  healthStatus: HostHealthStatus;
+  healthCheckedAtMs: number | null;
+  healthLatencyMs: number | null;
+  healthProbedEndpoint: HostHealthProbedEndpoint | null;
 };
 
 export type AccessTokenRequest = {
@@ -102,3 +113,34 @@ export type CliLinkChallenge = {
   consumedAtMs: number | null;
   createdAtMs: number;
 };
+
+/** SQLite row shapes (snake_case columns) derived from domain types above */
+export type AccountRow = SqlRow<Account>;
+export type KhoraHostRow = SqlRow<KhoraHost>;
+export type AccessTokenRequestRow = SqlRow<AccessTokenRequest>;
+export type MarketingConsentRow = SqlRow<MarketingConsent>;
+export type MembershipRow = SqlRow<Membership>;
+export type AccountAgentLinkRow = SqlRow<AccountAgentLink>;
+export type AgentAccountBindingRow = SqlRow<AgentAccountBinding>;
+export type DeviceAuthorizationRow = SqlRow<DeviceAuthorization>;
+export type CliLinkChallengeRow = SqlRow<CliLinkChallenge>;
+
+/** Domain key → SQL column; satisfies SnakeCaseKey for compile-time checks */
+export const KHORA_HOST_SQL_COLUMNS = {
+  id: "id",
+  slug: "slug",
+  baseUrl: "base_url",
+  displayName: "display_name",
+  description: "description",
+  status: "status",
+  optedInAtMs: "opted_in_at_ms",
+  capabilities: "capabilities",
+  healthReadyPath: "health_ready_path",
+  healthPath: "health_path",
+  healthStatus: "health_status",
+  healthCheckedAtMs: "health_checked_at_ms",
+  healthLatencyMs: "health_latency_ms",
+  healthProbedEndpoint: "health_probed_endpoint",
+} as const satisfies { [K in keyof KhoraHost]: SnakeCaseKey<K & string> };
+
+export const KHORA_HOST_SELECT = sqlSelectColumns(KHORA_HOST_SQL_COLUMNS);

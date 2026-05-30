@@ -1,6 +1,7 @@
 import {
   activateKhoraHost,
   findPublicHostBySlug,
+  InvalidHostHealthPathError,
   InvalidHostSlugError,
   InvalidKhoraHostBaseUrlError,
   listAllHosts,
@@ -8,6 +9,7 @@ import {
   registerKhoraHost,
 } from "@khoralabs/users";
 import { getRegistryDatabase } from "@khoralabs/users-auth";
+import { probeHostHealthById } from "../host-health.ts";
 import { hostToFullJson, hostToPublicJson } from "./host-json.ts";
 import { authorizeRegistryInternal } from "./registry-internal.ts";
 
@@ -44,6 +46,8 @@ type RegisterBody = {
   displayName?: string;
   description?: string;
   capabilities?: Record<string, unknown>;
+  healthReadyPath?: string;
+  healthPath?: string;
 };
 
 export function handleHostsList(): Response {
@@ -87,6 +91,8 @@ export async function handleHostRegister(req: Request): Promise<Response> {
       ...(body.displayName !== undefined ? { displayName: body.displayName } : {}),
       ...(body.description !== undefined ? { description: body.description } : {}),
       ...(body.capabilities !== undefined ? { capabilities: body.capabilities } : {}),
+      ...(body.healthReadyPath !== undefined ? { healthReadyPath: body.healthReadyPath } : {}),
+      ...(body.healthPath !== undefined ? { healthPath: body.healthPath } : {}),
     });
     return Response.json(
       {
@@ -97,7 +103,11 @@ export async function handleHostRegister(req: Request): Promise<Response> {
       { status: 201 },
     );
   } catch (err: unknown) {
-    if (err instanceof InvalidHostSlugError || err instanceof InvalidKhoraHostBaseUrlError) {
+    if (
+      err instanceof InvalidHostSlugError ||
+      err instanceof InvalidKhoraHostBaseUrlError ||
+      err instanceof InvalidHostHealthPathError
+    ) {
       return Response.json({ error: err.message }, { status: 400 });
     }
     const msg = err instanceof Error ? err.message : "registration failed";
@@ -126,6 +136,7 @@ export function handleInternalHostActivate(req: Request, hostId: string): Respon
   const db = getRegistryDatabase();
   try {
     const host = activateKhoraHost(db, id);
+    void probeHostHealthById(db, host.id);
     return Response.json({ host: hostToFullJson(host) });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "activate failed";

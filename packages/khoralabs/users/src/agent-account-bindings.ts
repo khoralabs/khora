@@ -1,14 +1,7 @@
 import type { Database } from "bun:sqlite";
-import type { AgentAccountBinding } from "./types.ts";
+import type { AgentAccountBinding, AgentAccountBindingRow } from "./types.ts";
 
-type BindingRow = {
-  agent_did: string;
-  account_id: string;
-  bound_at_ms: number;
-  bound_via_host_id: string | null;
-};
-
-function mapBinding(row: BindingRow): AgentAccountBinding {
+function mapBinding(row: AgentAccountBindingRow): AgentAccountBinding {
   return {
     agentDid: row.agent_did,
     accountId: row.account_id,
@@ -23,7 +16,7 @@ export function findBindingByAgentDid(db: Database, agentDid: string): AgentAcco
       `SELECT agent_did, account_id, bound_at_ms, bound_via_host_id
        FROM agent_account_bindings WHERE agent_did = ? LIMIT 1`,
     )
-    .get(agentDid) as BindingRow | null;
+    .get(agentDid) as AgentAccountBindingRow | null;
   return row === null ? null : mapBinding(row);
 }
 

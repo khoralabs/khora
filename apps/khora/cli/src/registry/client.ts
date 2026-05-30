@@ -1,6 +1,6 @@
 import type { PersistableAgentSigner } from "@khoralabs/agent-persisted-signer";
 import { signAgentRequest } from "@khoralabs/khora-auth";
-import { loadRegistrySessionCookie } from "./session-store.ts";
+import { loadRegistrySessionCookie } from "./session-store";
 
 export async function registryFetch(
   registryUrl: string,
@@ -174,6 +174,15 @@ export async function linkStatus(registryUrl: string): Promise<unknown> {
   return res.json() as Promise<unknown>;
 }
 
+export type RegistryHostHealth = {
+  status: "unknown" | "up" | "down";
+  readyPath: string;
+  healthPath: string;
+  checkedAtMs: number | null;
+  latencyMs: number | null;
+  probedEndpoint: "ready" | "health" | null;
+};
+
 export type RegistryHostPublic = {
   id: string;
   slug: string;
@@ -182,6 +191,7 @@ export type RegistryHostPublic = {
   description?: string;
   capabilities?: Record<string, unknown>;
   optedInAtMs: number | null;
+  health?: RegistryHostHealth;
 };
 
 export async function fetchHosts(registryUrl: string): Promise<RegistryHostPublic[]> {

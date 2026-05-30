@@ -1,18 +1,8 @@
 import type { Database } from "bun:sqlite";
 import { normalizeEmail } from "./normalize";
-import type { MarketingConsent } from "./types";
+import type { MarketingConsent, MarketingConsentRow } from "./types";
 
-type ConsentRow = {
-  id: string;
-  email: string;
-  account_id: string | null;
-  list_slug: string;
-  opted_in_at_ms: number;
-  opted_out_at_ms: number | null;
-  source_app: string | null;
-};
-
-function mapConsent(row: ConsentRow): MarketingConsent {
+function mapConsent(row: MarketingConsentRow): MarketingConsent {
   return {
     id: row.id,
     email: row.email,
@@ -34,7 +24,7 @@ export function findMarketingConsent(
       `SELECT id, email, account_id, list_slug, opted_in_at_ms, opted_out_at_ms, source_app
        FROM marketing_consents WHERE email = ? AND list_slug = ? LIMIT 1`,
     )
-    .get(normalizeEmail(email), listSlug) as ConsentRow | null;
+    .get(normalizeEmail(email), listSlug) as MarketingConsentRow | null;
   return row === null ? null : mapConsent(row);
 }
 
@@ -96,7 +86,7 @@ export function listMarketingConsentsForAccount(
       `SELECT id, email, account_id, list_slug, opted_in_at_ms, opted_out_at_ms, source_app
        FROM marketing_consents WHERE account_id = ? ORDER BY opted_in_at_ms DESC`,
     )
-    .all(accountId) as ConsentRow[];
+    .all(accountId) as MarketingConsentRow[];
   return rows.map(mapConsent);
 }
 
@@ -106,7 +96,7 @@ export function listMarketingConsentsForEmail(db: Database, email: string): Mark
       `SELECT id, email, account_id, list_slug, opted_in_at_ms, opted_out_at_ms, source_app
        FROM marketing_consents WHERE email = ? ORDER BY opted_in_at_ms DESC`,
     )
-    .all(normalizeEmail(email)) as ConsentRow[];
+    .all(normalizeEmail(email)) as MarketingConsentRow[];
   return rows.map(mapConsent);
 }
 
@@ -121,6 +111,6 @@ export function listActiveMarketingConsentsForEmail(
        WHERE email = ? AND opted_out_at_ms IS NULL
        ORDER BY opted_in_at_ms DESC`,
     )
-    .all(normalizeEmail(email)) as ConsentRow[];
+    .all(normalizeEmail(email)) as MarketingConsentRow[];
   return rows.map(mapConsent);
 }

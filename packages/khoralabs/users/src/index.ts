@@ -58,6 +58,10 @@ export {
   findPendingDeviceByUserCode,
   hashDeviceCode,
 } from "./device-authorizations";
+export {
+  InvalidHostHealthPathError,
+  normalizeHostHealthPath,
+} from "./host-health-path";
 export { InvalidHostSlugError, normalizeHostSlug } from "./host-slug";
 export {
   findHostByBaseUrl,
@@ -78,6 +82,7 @@ export {
   registerKhoraHost,
   seedDefaultHost,
   suspendKhoraHost,
+  updateHostHealthCheck,
 } from "./khora-hosts";
 export {
   findMarketingConsent,

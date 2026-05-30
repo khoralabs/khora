@@ -1,23 +1,14 @@
 import type { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
-import type { DeviceAuthorization, DeviceAuthorizationStatus } from "./types.ts";
+import type {
+  DeviceAuthorization,
+  DeviceAuthorizationRow,
+  DeviceAuthorizationStatus,
+} from "./types.ts";
 
 const DEVICE_TTL_MS = 15 * 60 * 1000;
 
-type DeviceRow = {
-  id: string;
-  device_code_hash: string;
-  user_code: string;
-  status: string;
-  session_token: string | null;
-  expires_at_ms: number;
-  approved_at_ms: number | null;
-  consumed_at_ms: number | null;
-  source_app: string | null;
-  created_at_ms: number;
-};
-
-function mapDevice(row: DeviceRow): DeviceAuthorization {
+function mapDevice(row: DeviceAuthorizationRow): DeviceAuthorization {
   return {
     id: row.id,
     deviceCodeHash: row.device_code_hash,
@@ -72,7 +63,7 @@ export function createDeviceAuthorization(
               approved_at_ms, consumed_at_ms, source_app, created_at_ms
        FROM device_authorizations WHERE id = ? LIMIT 1`,
     )
-    .get(id) as DeviceRow | null;
+    .get(id) as DeviceAuthorizationRow | null;
   if (row === null) {
     throw new Error("device authorization insert failed");
   }
@@ -89,7 +80,7 @@ export function findDeviceByCodeHash(
               approved_at_ms, consumed_at_ms, source_app, created_at_ms
        FROM device_authorizations WHERE device_code_hash = ? LIMIT 1`,
     )
-    .get(deviceCodeHash) as DeviceRow | null;
+    .get(deviceCodeHash) as DeviceAuthorizationRow | null;
   return row === null ? null : mapDevice(row);
 }
 
@@ -106,7 +97,7 @@ export function findPendingDeviceByUserCode(
        WHERE user_code = ? AND status = 'pending'
        ORDER BY created_at_ms DESC LIMIT 1`,
     )
-    .get(normalized) as DeviceRow | null;
+    .get(normalized) as DeviceAuthorizationRow | null;
   return row === null ? null : mapDevice(row);
 }
 

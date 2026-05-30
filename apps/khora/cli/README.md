@@ -74,10 +74,12 @@ If the host requires invites during preview, pass `--invite-token <token>` on `r
 
 | Command | Purpose |
 | --- | --- |
-| `khora host list` | Active hosts from `GET /v1/hosts` |
+| `khora host list` | Active hosts from `GET /v1/hosts` (includes registry-cached `health` status) |
 | `khora host use <slug>` | Set `currentHost` and cache `baseUrl` in config |
 | `khora host show` | Print resolved slug + base URL |
 | `khora host register --slug=… --base-url=…` | Opt-in registration (`pending` until ops activates) |
+
+The registry probes each active host’s `/ready` endpoint (falling back to `/health`) on a schedule and exposes cached reachability on the catalog. Optional registration fields: `healthReadyPath`, `healthPath` (defaults match khora-server well-known).
 
 ### Registry link (optional)
 
