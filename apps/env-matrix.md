@@ -103,10 +103,6 @@ Host selection: `khora host use <slug>` writes `currentHost` and `hosts` to `cli
 | `REGISTRY_DATABASE_PATH` | + | · | · | C | Default `./data/registry.sqlite`. Use Render disk mount path in prod. |
 | `KHORA_DATA_DIR` | · | + | · | C | Host persistence root (default `./data`). Derives catalog, frames, cells, memories paths. |
 | `KHORA_MEMORIES` | · | + | · | C | `1` / unset = search index on (default); `0` / `off` = disabled (`/v1/search` 503). |
-| `KHORA_CATALOG_PATH` | · | + | · | C | Optional override: catalog SQLite file. |
-| `KHORA_FRAMES_DB_PATH` | · | + | · | C | Optional override: frames SQLite file. |
-| `KHORA_CELLS_DIR` | · | + | · | C | Optional override: cell shards directory. |
-| `KHORA_MEMORIES_DB_PATH` | · | + | · | C | Optional override: memories SQLite file (when enabled). |
 | `KHORA_CELL_POOL_COUNT` | · | + | · | C | Shard pool size (default 16). |
 | `KHORA_COLONNADE_CELL_WORKERS` | · | + | · | C | Bun Workers for cell SQLite (default on). |
 | `LOG_LEVEL` | · | + | · | C | Pino level (default `info`). |
