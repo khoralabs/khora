@@ -65,7 +65,7 @@ Invalid ids decode to `undefined`. Post JSON `id` field must match encoded addre
 
 ## Tier 4 — frame channel
 
-Separate SQLite file (`KHORA_FRAMES_DB_PATH`). Full rules: [colonnade-usage.md](./colonnade-usage.md) (Tier 4). Lifecycle: [room-lifecycle.md](./room-lifecycle.md).
+Separate SQLite file under `KHORA_DATA_DIR` (`khora-frames.sqlite`). Full rules: [colonnade-usage.md](./colonnade-usage.md) (Tier 4). Lifecycle: [room-lifecycle.md](./room-lifecycle.md).
 
 | Id | Format | Notes |
 |----|--------|-------|

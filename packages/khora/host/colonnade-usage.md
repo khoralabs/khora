@@ -58,7 +58,7 @@ Publish-side candidates emit `khora_post` or `khora_subscription` plus `khora_to
 
 **What:** Ticket-gated, channel-scoped opaque byte relay for live OBP/NBC negotiation. `channelId` is the same UUID as `roomId`.
 
-**Where:** `KHORA_FRAMES_DB_PATH` — `rooms` (ticket HMAC secret + TTL) and `room_frames` (append-only ciphertext blobs). Schema: [`packages/khora/relay-colonnade/src/frame-channel-sqlite.ts`](../relay-colonnade/src/frame-channel-sqlite.ts). Hub: [`packages/agent/relay/src/frame-channel/hub.ts`](../../agent/relay/src/frame-channel/hub.ts).
+**Where:** `{KHORA_DATA_DIR}/khora-frames.sqlite` — `rooms` (ticket HMAC secret + TTL) and `room_frames` (append-only ciphertext blobs). Schema: [`packages/khora/relay-colonnade/src/frame-channel-sqlite.ts`](../relay-colonnade/src/frame-channel-sqlite.ts). Hub: [`packages/agent/relay/src/frame-channel/hub.ts`](../../agent/relay/src/frame-channel/hub.ts).
 
 **Rules:**
 
@@ -84,7 +84,7 @@ Publish-side candidates emit `khora_post` or `khora_subscription` plus `khora_to
 
 ## Fresh deploy
 
-This layout is **not** upgraded in place. Wipe catalog SQLite, frames DB, and `cells/` directory before deploying a build with this schema. `KHORA_CELL_POOL_COUNT` is pinned via [`docs/cell-pool-placement.md`](../../docs/cell-pool-placement.md).
+This layout is **not** upgraded in place. Wipe the host `KHORA_DATA_DIR` tree (catalog, frames, cells, memories SQLite files) before deploying a build with this schema. `KHORA_CELL_POOL_COUNT` is pinned via [`docs/cell-pool-placement.md`](../../docs/cell-pool-placement.md).
 
 ## Deferred
 

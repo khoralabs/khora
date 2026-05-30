@@ -8,16 +8,14 @@ import adminLoginPage from "./admin-ui/routes/login/index.html";
 import { bootstrapKhoraHost } from "./bootstrap-khora.ts";
 import { bootstrapKhoraEncryption } from "./encryption-bootstrap.ts";
 import {
-  envCatalogPath,
   envCellPoolCount,
-  envCellsDir,
   envColonnadeUseCellWorkers,
-  envFramesDbPath,
   envHostDuplexIngress,
   envHostDuplexUnixPath,
   envHostUnaryIngress,
   envPort,
   envTenantKey,
+  resolveKhoraPersistencePaths,
   validateEnv,
 } from "./env.ts";
 import type { HostRouteDeps } from "./http/deps.ts";
@@ -32,17 +30,17 @@ import { createInboxDrainWebSocketHandlers } from "./ws/inbox.ts";
 
 validateEnv();
 
-const catalogPath = envCatalogPath();
-const framesDbPath = envFramesDbPath();
-const cellsDir = envCellsDir();
+const persistencePaths = resolveKhoraPersistencePaths();
+const { catalogPath, framesDbPath, cellsDir, dataDir } = persistencePaths;
 const cellPoolCount = envCellPoolCount();
-const memoriesConfig = envMemoriesBootstrapConfig();
-if (memoriesConfig !== undefined) {
-  mkdirSync(dirname(memoriesConfig.dbPath), { recursive: true });
-}
+const memoriesConfig = envMemoriesBootstrapConfig(persistencePaths);
+mkdirSync(dataDir, { recursive: true });
 mkdirSync(dirname(catalogPath), { recursive: true });
 mkdirSync(dirname(framesDbPath), { recursive: true });
 mkdirSync(cellsDir, { recursive: true });
+if (memoriesConfig !== undefined) {
+  mkdirSync(dirname(memoriesConfig.dbPath), { recursive: true });
+}
 
 const tenantKey = envTenantKey();
 const encryption = await bootstrapKhoraEncryption();

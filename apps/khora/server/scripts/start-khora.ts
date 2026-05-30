@@ -12,8 +12,8 @@ import {
   readLitestreamS3Env,
   resolveLitestreamBin,
 } from "../../../../scripts/litestream-config.ts";
-import { envCatalogPath, envCellsDir, envFramesDbPath, validateEnv } from "../src/env.ts";
-import { envMemoriesBootstrapConfig } from "../src/memories-env.ts";
+import { resolveKhoraPersistencePaths, validateEnv } from "../src/env.ts";
+import { envMemoriesBootstrapConfig, envMemoriesEnabled } from "../src/memories-env.ts";
 
 const serverRoot = path.resolve(path.dirname(import.meta.path), "..");
 const indexEntry = path.join(serverRoot, "src", "index.ts");
@@ -33,13 +33,19 @@ async function runWithLitestream(): Promise<void> {
   assertLitestreamCredentials(s3);
   validateEnv();
 
-  const catalogAbs = path.resolve(process.cwd(), envCatalogPath());
-  const framesAbs = path.resolve(process.cwd(), envFramesDbPath());
-  const cellsAbs = path.resolve(process.cwd(), envCellsDir());
-  const memoriesPath = envMemoriesBootstrapConfig()?.dbPath;
+  const persistencePaths = resolveKhoraPersistencePaths();
+  const catalogAbs = path.resolve(process.cwd(), persistencePaths.catalogPath);
+  const framesAbs = path.resolve(process.cwd(), persistencePaths.framesDbPath);
+  const cellsAbs = path.resolve(process.cwd(), persistencePaths.cellsDir);
+  const memoriesConfig = envMemoriesEnabled()
+    ? envMemoriesBootstrapConfig(persistencePaths)
+    : undefined;
   const memoriesAbs =
-    memoriesPath !== undefined ? path.resolve(process.cwd(), memoriesPath) : undefined;
+    memoriesConfig !== undefined
+      ? path.resolve(process.cwd(), memoriesConfig.dbPath)
+      : undefined;
 
+  mkdirSync(persistencePaths.dataDir, { recursive: true });
   mkdirSync(path.dirname(catalogAbs), { recursive: true });
   mkdirSync(path.dirname(framesAbs), { recursive: true });
   mkdirSync(cellsAbs, { recursive: true });

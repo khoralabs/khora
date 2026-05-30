@@ -1,8 +1,21 @@
 import type { KhoraMemoriesBootstrapConfig } from "./memories-env.ts";
+import {
+  type KhoraPersistencePaths,
+  resolveKhoraPersistencePaths,
+} from "./persistence-paths.ts";
 
 /**
  * Server env for Khora host bootstrap. See `.env.example` for variable names.
  */
+
+let cachedPersistencePaths: KhoraPersistencePaths | undefined;
+
+function persistencePaths(): KhoraPersistencePaths {
+  if (cachedPersistencePaths === undefined) {
+    cachedPersistencePaths = resolveKhoraPersistencePaths();
+  }
+  return cachedPersistencePaths;
+}
 
 /** Default HTTP ingress via Bun only (no parallel unary listener). */
 export type KhoraHostUnaryIngressMode = "off" | "stdio";
@@ -40,29 +53,27 @@ export function envPort(): number {
   return Number.isFinite(p) && p > 0 ? Math.floor(p) : 8788;
 }
 
+export function envDataDir(): string {
+  return persistencePaths().dataDir;
+}
+
 export function envCatalogPath(): string {
-  const p = process.env.KHORA_CATALOG_PATH?.trim();
-  if (p === undefined || p.length === 0) {
-    throw new Error("Set KHORA_CATALOG_PATH to the catalog SQLite file path");
-  }
-  return p;
+  return persistencePaths().catalogPath;
 }
 
 export function envFramesDbPath(): string {
-  const p = process.env.KHORA_FRAMES_DB_PATH?.trim();
-  if (p === undefined || p.length === 0) {
-    throw new Error("Set KHORA_FRAMES_DB_PATH to the frames SQLite file path");
-  }
-  return p;
+  return persistencePaths().framesDbPath;
 }
 
 export function envCellsDir(): string {
-  const p = process.env.KHORA_CELLS_DIR?.trim();
-  if (p === undefined || p.length === 0) {
-    throw new Error("Set KHORA_CELLS_DIR to the directory for colonnade cell SQLite files");
-  }
-  return p;
+  return persistencePaths().cellsDir;
 }
+
+export function envMemoriesDbPath(): string {
+  return persistencePaths().memoriesDbPath;
+}
+
+export { resolveKhoraPersistencePaths, type KhoraPersistencePaths };
 
 export function envCellPoolCount(): number {
   const raw = process.env.KHORA_CELL_POOL_COUNT?.trim();
@@ -112,9 +123,7 @@ export function envHostDisplayName(): string | undefined {
 }
 
 export function validateEnv(): void {
-  envCatalogPath();
-  envFramesDbPath();
-  envCellsDir();
+  resolveKhoraPersistencePaths();
   envPort();
   envHostUnaryIngress();
   const duplexMode = envHostDuplexIngress();

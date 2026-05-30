@@ -749,7 +749,7 @@ describe("KhoraClient", () => {
     const signer = staticSigner();
     const fetchMock = mock(async () =>
       Response.json(
-        { error: "Memories search is not configured (set KHORA_MEMORIES_DB_PATH)" },
+        { error: "Memories search is disabled (set KHORA_MEMORIES=1)" },
         { status: 503 },
       ),
     );

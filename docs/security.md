@@ -26,7 +26,7 @@ This split is intentional and aligns with Mastodon and Bluesky for public timeli
 | **Frame-channel negotiation** | NBC `TURN` bodies, non-handshake `END_OFFERS`, `TERMINATE` after handshake | **Yes** — AES-256-GCM; keys derived client-side | `room_frames.bytes` (ciphertext on the wire) |
 | **Admission only** | Room WebSocket tickets | N/A — HMAC over room id, not content | `rooms.pairing_secret_hex` |
 
-Optional **Memories search** (`KHORA_MEMORIES_DB_PATH`) indexes **plaintext** derived from posts and profiles when enabled — by design, so FTS/embedding pipelines operate on readable text. The memories SQLite file itself may be SQLCipher-encrypted at rest, but indexed content inside remains searchable plaintext.
+Optional **Memories search** (`KHORA_MEMORIES=1`, default on; DB at `{KHORA_DATA_DIR}/khora-memories.sqlite`) indexes **plaintext** derived from posts and profiles when enabled — by design, so FTS/embedding pipelines operate on readable text. The memories SQLite file itself may be SQLCipher-encrypted at rest, but indexed content inside remains searchable plaintext.
 
 ---
 
@@ -103,10 +103,10 @@ The host does **not** learn the content encryption key from the handshake: it ne
 
 | Surface | Application-layer encryption | Notes |
 | --- | --- | --- |
-| Catalog SQLite (`KHORA_CATALOG_PATH`) | SQLCipher; profile JSON not field-encrypted | Registrations, room metadata |
-| Frames SQLite (`KHORA_FRAMES_DB_PATH`) | SQLCipher; bodies are E2EE ciphertext | `room_frames.bytes` |
-| Cell shards (`KHORA_CELLS_DIR`) | SQLCipher + AES-GCM on post `outbox.payload` | Non-post outbox rows may remain plaintext JSON |
-| Memories SQLite (`KHORA_MEMORIES_DB_PATH`) | SQLCipher; **index content plaintext** | Searchable post/profile text by design |
+| Catalog SQLite (`{KHORA_DATA_DIR}/khora-catalog.sqlite`) | SQLCipher; profile JSON not field-encrypted | Registrations, room metadata |
+| Frames SQLite (`{KHORA_DATA_DIR}/khora-frames.sqlite`) | SQLCipher; bodies are E2EE ciphertext | `room_frames.bytes` |
+| Cell shards (`{KHORA_DATA_DIR}/cells/`) | SQLCipher + AES-GCM on post `outbox.payload` | Non-post outbox rows may remain plaintext JSON |
+| Memories SQLite (`{KHORA_DATA_DIR}/khora-memories.sqlite`) | SQLCipher; **index content plaintext** | Searchable post/profile text by design; disable with `KHORA_MEMORIES=0` |
 | Registry SQLite | SQLCipher | Accounts, hosts, auth tables |
 | Vellum daemon OBP SQLite (local) | No | Negotiation state on device |
 | Litestream replicas (S3) | Infra SSE-KMS/SSE-S3; replicates ciphertext as on disk | Operator with bucket + keys sees same semantics as disk |

@@ -5,6 +5,7 @@ import {
   type EmbeddingResolutionPreset,
   mergeResolutionAndProviderOptions,
 } from "@khoralabs/memories-core/helpers";
+import type { KhoraPersistencePaths } from "./persistence-paths.ts";
 
 export const DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT = "global";
 
@@ -28,16 +29,24 @@ function parseEmbeddingResolution(raw: string | undefined): EmbeddingResolutionP
   return undefined;
 }
 
-export function readKhoraEmbeddingEnv(): KhoraEmbeddingEnv {
+/** Default on when unset. Set `KHORA_MEMORIES=0` / `false` / `off` / `no` to disable. */
+export function envMemoriesEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+  const v = env.KHORA_MEMORIES?.trim().toLowerCase();
+  if (v === undefined || v === "") return true;
+  if (v === "0" || v === "false" || v === "off" || v === "no") return false;
+  return true;
+}
+
+export function readKhoraEmbeddingEnv(env: NodeJS.ProcessEnv = process.env): KhoraEmbeddingEnv {
   return {
-    provider: process.env.KHORA_EMBEDDING_PROVIDER?.trim().toLowerCase(),
-    model: process.env.KHORA_EMBEDDING_MODEL?.trim(),
-    resolution: parseEmbeddingResolution(process.env.KHORA_EMBEDDING_RESOLUTION?.trim()),
+    provider: env.KHORA_EMBEDDING_PROVIDER?.trim().toLowerCase(),
+    model: env.KHORA_EMBEDDING_MODEL?.trim(),
+    resolution: parseEmbeddingResolution(env.KHORA_EMBEDDING_RESOLUTION?.trim()),
     apiKey:
-      process.env.KHORA_EMBEDDING_API_KEY?.trim() ||
-      process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim() ||
-      process.env.GOOGLE_API_KEY?.trim() ||
-      process.env.GEMINI_API_KEY?.trim(),
+      env.KHORA_EMBEDDING_API_KEY?.trim() ||
+      env.GOOGLE_GENERATIVE_AI_API_KEY?.trim() ||
+      env.GOOGLE_API_KEY?.trim() ||
+      env.GEMINI_API_KEY?.trim(),
   };
 }
 
@@ -63,17 +72,21 @@ export function createKhoraEmbeddingModelFromEnv(
   });
 }
 
-export function readKhoraMemoriesNamespaceRoot(): string {
-  const raw = process.env.KHORA_MEMORIES_NAMESPACE_ROOT?.trim();
+export function readKhoraMemoriesNamespaceRoot(env: NodeJS.ProcessEnv = process.env): string {
+  const raw = env.KHORA_MEMORIES_NAMESPACE_ROOT?.trim();
   return raw !== undefined && raw.length > 0 ? raw : DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT;
 }
 
-export function envMemoriesBootstrapConfig(): KhoraMemoriesBootstrapConfig | undefined {
-  const dbPath = process.env.KHORA_MEMORIES_DB_PATH?.trim();
-  if (dbPath === undefined || dbPath.length === 0) return undefined;
+export function envMemoriesBootstrapConfig(
+  paths: Pick<KhoraPersistencePaths, "memoriesDbPath">,
+  env: NodeJS.ProcessEnv = process.env,
+): KhoraMemoriesBootstrapConfig | undefined {
+  if (!envMemoriesEnabled(env)) {
+    return undefined;
+  }
   return {
-    dbPath,
-    namespaceRoot: readKhoraMemoriesNamespaceRoot(),
-    embeddingModel: createKhoraEmbeddingModelFromEnv(),
+    dbPath: paths.memoriesDbPath,
+    namespaceRoot: readKhoraMemoriesNamespaceRoot(env),
+    embeddingModel: createKhoraEmbeddingModelFromEnv(readKhoraEmbeddingEnv(env)),
   };
 }

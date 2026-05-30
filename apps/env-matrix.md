@@ -101,9 +101,12 @@ Host selection: `khora host use <slug>` writes `currentHost` and `hosts` to `cli
 | Variable | R | K | KH | Kind | Notes |
 | --- | --- | --- | --- | --- | --- |
 | `REGISTRY_DATABASE_PATH` | + | · | · | C | Default `./data/registry.sqlite`. Use Render disk mount path in prod. |
-| `KHORA_CATALOG_PATH` | · | + | · | C | Catalog SQLite file. |
-| `KHORA_FRAMES_DB_PATH` | · | + | · | C | Frames / frame-channel SQLite. |
-| `KHORA_CELLS_DIR` | · | + | · | C | Directory of cell shard SQLite files. |
+| `KHORA_DATA_DIR` | · | + | · | C | Host persistence root (default `./data`). Derives catalog, frames, cells, memories paths. |
+| `KHORA_MEMORIES` | · | + | · | C | `1` / unset = search index on (default); `0` / `off` = disabled (`/v1/search` 503). |
+| `KHORA_CATALOG_PATH` | · | + | · | C | Optional override: catalog SQLite file. |
+| `KHORA_FRAMES_DB_PATH` | · | + | · | C | Optional override: frames SQLite file. |
+| `KHORA_CELLS_DIR` | · | + | · | C | Optional override: cell shards directory. |
+| `KHORA_MEMORIES_DB_PATH` | · | + | · | C | Optional override: memories SQLite file (when enabled). |
 | `KHORA_CELL_POOL_COUNT` | · | + | · | C | Shard pool size (default 16). |
 | `KHORA_COLONNADE_CELL_WORKERS` | · | + | · | C | Bun Workers for cell SQLite (default on). |
 | `LOG_LEVEL` | · | + | · | C | Pino level (default `info`). |
@@ -193,9 +196,8 @@ REGISTRY_CONSOLE_ROOT_TOKEN=...
 
 ```
 PORT=8788
-KHORA_CATALOG_PATH=/data/khora-catalog.sqlite
-KHORA_FRAMES_DB_PATH=/data/khora-frames.sqlite
-KHORA_CELLS_DIR=/data/cells
+KHORA_DATA_DIR=/data
+# KHORA_MEMORIES=0   # omit for default (search index on)
 KHORA_INVITE_PEPPER=...          # same as shared group
 KHORA_INTERNAL_SECRET=...        # same as shared group
 KHORA_LITESTREAM=1

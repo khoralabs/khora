@@ -4,12 +4,12 @@ Khora maps each principal to a **home cell** SQLite file via deterministic hashi
 
 ## Immutable pool size
 
-`KHORA_CELL_POOL_COUNT` (default `16`) must stay **fixed** for the lifetime of a given `KHORA_CELLS_DIR`.
+`KHORA_CELL_POOL_COUNT` (default `16`) must stay **fixed** for the lifetime of a given cells directory (`{KHORA_DATA_DIR}/cells/` by default).
 
 On first startup with a cells directory, Colonnade writes:
 
 ```text
-{KHORA_CELLS_DIR}/.colonnade-pool.json
+{KHORA_DATA_DIR}/cells/.colonnade-pool.json
 ```
 
 ```json
@@ -43,7 +43,7 @@ Inbox fan-out `PointerRef` values include required `cell_pool_count` (same `n` a
 ## Operator checklist
 
 1. Set `KHORA_CELL_POOL_COUNT` before first write to a cells directory.
-2. Back up the entire `KHORA_CELLS_DIR` with the manifest file.
+2. Back up the entire `{KHORA_DATA_DIR}/cells/` tree with the manifest file.
 3. To change pool size: use a **new** cells directory (or wipe the old one); do not edit the manifest in place.
 4. Catalog SQLite can remain; post bodies live in cell outbox files only.
 

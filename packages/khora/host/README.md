@@ -35,15 +35,16 @@ SQLite handles and relay-colonnade stores are wired in the server bootstrap (`cr
 ### Server env (maps to `bootstrapKhoraHost`)
 
 **Files:**
-- `apps/khora/server/src/env.ts` — catalog/frames/cells paths
-- `apps/khora/server/src/memories-env.ts` — memories DB + embedding env
+- `apps/khora/server/src/persistence-paths.ts` — `KHORA_DATA_DIR` + derived paths
+- `apps/khora/server/src/env.ts` — host env (wraps persistence paths)
+- `apps/khora/server/src/memories-env.ts` — `KHORA_MEMORIES` toggle + embedding env
 - `apps/khora/server/.env.example`
 
 | Env var | Maps to |
 |---------|---------|
-| `KHORA_CATALOG_PATH` | `catalogPath` |
-| `KHORA_FRAMES_DB_PATH` | `framesDbPath` |
-| `KHORA_CELLS_DIR` | `cellsDir` |
+| `KHORA_DATA_DIR` | persistence root (default `./data`) |
+| `KHORA_MEMORIES` | memories on/off (default on) |
+| `KHORA_CATALOG_PATH` / `KHORA_FRAMES_DB_PATH` / `KHORA_CELLS_DIR` | optional per-path overrides |
 | `KHORA_CELL_POOL_COUNT` | `cellPoolCount` (default 16) |
 | `KHORA_COLONNADE_CELL_WORKERS` | `useCellWorkers` |
 | `KHORA_RELAY_TENANT_KEY` | `tenantKey` |
@@ -76,7 +77,7 @@ Raw SQLite handles are **not** on context; server ops use `health` and `adminSta
 ```
 apps/khora/server/src/index.ts
   validateEnv()
-  mkdir catalog/frames/cells dirs
+  mkdir KHORA_DATA_DIR + catalog/frames/cells/memories paths
   bootstrapKhoraHost({ catalogPath, framesDbPath, cellsDir, cellPoolCount, useCellWorkers, tenantKey?, memories? })
     createRelayColonnadeSocial()     → catalog + frames DBs, AgentRelayPersistence
     createSqliteColonnadeCluster()   → cell shards
@@ -85,7 +86,7 @@ apps/khora/server/src/index.ts
     createRelayPrincipalLifecycle()
     createKhoraInvitesSqliteRepo()  → if KHORA_INVITE_PEPPER set (@khoralabs/khora-invites)
     createKhoraDidAuth({ db: catalogDb })
-    bootstrapKhoraMemories()        → if KHORA_MEMORIES_DB_PATH set (server opens sqlite)
+    bootstrapKhoraMemories()        → if KHORA_MEMORIES enabled (default on)
     createKhoraHostHealthPort() / createKhoraAdminStatsPort()
     createKhoraCatalogApi()
     createKhoraHost(deps)           → AgentRelay + teardown worker
@@ -113,7 +114,7 @@ apps/khora/server/src/index.ts
 
 Three storage tiers (all `bun:sqlite`):
 
-### Tier 1 — Relay catalog (`KHORA_CATALOG_PATH`)
+### Tier 1 — Relay catalog (`{KHORA_DATA_DIR}/khora-catalog.sqlite`)
 
 **Schema:** `/Users/zach/Documents/dev/khora-labs/khora/packages/khora/relay-colonnade/src/sqlite-setup.ts`
 
@@ -127,13 +128,13 @@ Tables:
 
 Opened via `openRelayCatalogDb()` → `createRelayColonnadeSocial()`.
 
-### Tier 2 — Frames DB (`KHORA_FRAMES_DB_PATH`)
+### Tier 4 — Frames DB (`{KHORA_DATA_DIR}/khora-frames.sqlite`)
 
 **File:** `/Users/zach/Documents/dev/khora-labs/khora/packages/khora/relay-colonnade/src/frame-channel-sqlite.ts`
 
 Tables: `rooms`, `room_frames`.
 
-### Tier 3 — Cell shards (`KHORA_CELLS_DIR`)
+### Tier 2–3 — Cell shards (`{KHORA_DATA_DIR}/cells/`)
 
 **Schema:** `/Users/zach/Documents/dev/khora-labs/khora/packages/colonnade/impl/ts/src/sqlite/schema-cell.ts`
 
@@ -151,9 +152,9 @@ Opened lazily by `createSqliteColonnadeCluster()` as `{cellsDir}/{stem}.sqlite`.
 
 ---
 
-## 4. Memories search (optional)
+## 4. Memories search (default on)
 
-When `KHORA_MEMORIES_DB_PATH` is set, the server opens a memories SQLite DB (`@khoralabs/memories-sqlite`), bootstraps `KhoraMemoriesHost` via `bootstrapKhoraMemories({ persistence, postResolver, … })`, and exposes `GET /v1/search`.
+When `KHORA_MEMORIES` is enabled (default), the server opens `{KHORA_DATA_DIR}/khora-memories.sqlite` (`@khoralabs/memories-sqlite`), bootstraps `KhoraMemoriesHost` via `bootstrapKhoraMemories({ persistence, postResolver, … })`, and exposes `GET /v1/search`.
 
 Embedding env (`KHORA_EMBEDDING_*`) is read in `apps/khora/server/src/memories-env.ts`, not in the host package.
 

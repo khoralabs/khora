@@ -23,7 +23,7 @@ async function optionalReaderDid(
 export async function handleSearchPost(req: Request, deps: HostRouteDeps): Promise<Response> {
   const memories = deps.ctx.memories;
   if (memories === undefined) {
-    return jsonError("Memories search is not configured (set KHORA_MEMORIES_DB_PATH)", 503);
+    return jsonError("Memories search is disabled (set KHORA_MEMORIES=1)", 503);
   }
   let body: KhoraSearchRequest;
   try {
@@ -64,7 +64,7 @@ export async function handleSearchGet(
 ): Promise<Response> {
   const memories = deps.ctx.memories;
   if (memories === undefined) {
-    return jsonError("Memories search is not configured (set KHORA_MEMORIES_DB_PATH)", 503);
+    return jsonError("Memories search is disabled (set KHORA_MEMORIES=1)", 503);
   }
   const q = url.searchParams.get("q")?.trim() ?? "";
   if (q.length === 0) {
