@@ -159,7 +159,7 @@ export function HostRegistryCard() {
           id="host-registry-participation"
           checked={participationEnabled}
           disabled={saving || state.status !== "active"}
-          onCheckedChange={async (checked) => {
+          onCheckedChange={async (checked: boolean | "indeterminate") => {
             const next = checked === true;
             setParticipationEnabled(next);
             await saveRegistry(origins, next);
