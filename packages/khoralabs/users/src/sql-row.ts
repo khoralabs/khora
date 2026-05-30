@@ -29,7 +29,7 @@ export type SqlRowValue<T> = [T] extends [Record<string, unknown>]
 /** Row type returned by bun:sqlite for a domain entity */
 export type SqlRow<
   T extends Record<string, unknown>,
-  Overrides extends Partial<{ [K in keyof T]: unknown }> = {},
+  Overrides extends Partial<{ [K in keyof T]: unknown }> = object,
 > = {
   [K in keyof T as SnakeCaseKey<K & string>]: K extends keyof Overrides
     ? Overrides[K]
