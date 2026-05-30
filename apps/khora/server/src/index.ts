@@ -3,8 +3,6 @@ import { dirname } from "node:path";
 import { createConsoleAuthFromEnv } from "@khoralabs/khora-console";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
 import type { KhoraWsData } from "@khoralabs/khora-transport";
-import adminPage from "./admin-ui/routes/admin/index.html";
-import adminLoginPage from "./admin-ui/routes/login/index.html";
 import { bootstrapKhoraHost } from "./bootstrap-khora.ts";
 import { bootstrapKhoraEncryption } from "./encryption-bootstrap.ts";
 import {
@@ -24,6 +22,8 @@ import { logger } from "./logger.ts";
 import { envMemoriesBootstrapConfig } from "./memories-env.ts";
 import { createV2HostRateLimiters } from "./rate-limit-buckets.ts";
 import { maybeRegistryOptInOnStartup } from "./registry-opt-in.ts";
+import adminPage from "./routes/admin/index.html";
+import adminLoginPage from "./routes/admin/login/index.html";
 import { startDuplexUnixIngress } from "./server/duplex-unix-listener.ts";
 import { startStdioUnaryIngress } from "./server/stdio-unary-listener.ts";
 import { createInboxDrainWebSocketHandlers } from "./ws/inbox.ts";

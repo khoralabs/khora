@@ -1,15 +1,43 @@
-import { AdminStats } from "@khoralabs/khora-react";
+import { AdminStats, useAdminStats } from "@khoralabs/khora-react";
 import { useEffect, useState } from "react";
-import { Button } from "../../components/ui/button.tsx";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../../components/ui/card.tsx";
-import { renderRoute } from "../../render-route.tsx";
-import "../../styles/globals.css";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { renderRoute } from "../../render-route";
+import "../../../styles/globals.css";
+
+function PrincipalLookupForm() {
+  const { principalDid, setPrincipalDid, lookupPrincipal, principalLoading } = useAdminStats();
+
+  return (
+    <form
+      className="flex gap-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void lookupPrincipal();
+      }}
+    >
+      <div className="min-w-0 flex-1 space-y-2">
+        <Label htmlFor="admin-principal-did" className="sr-only">
+          DID
+        </Label>
+        <Input
+          id="admin-principal-did"
+          name="did"
+          value={principalDid}
+          onChange={(e) => setPrincipalDid(e.target.value)}
+          placeholder="did:…"
+          className="font-mono"
+          disabled={principalLoading}
+        />
+      </div>
+      <Button type="submit" disabled={principalLoading}>
+        {principalLoading ? "…" : "Look up"}
+      </Button>
+    </form>
+  );
+}
 
 function AdminPage() {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
@@ -47,6 +75,7 @@ function AdminPage() {
         </div>
         <Button
           type="button"
+          variant="outline"
           onClick={async () => {
             await fetch("/admin/api/logout", { method: "POST" });
             window.location.href = "/admin/login";
@@ -128,7 +157,7 @@ function AdminPage() {
           </CardHeader>
           <CardContent>
             <AdminStats.PrincipalLookup className="space-y-4">
-              <AdminStats.PrincipalLookupForm className="flex gap-2 [&_input]:min-w-0 [&_input]:flex-1 [&_input]:rounded-md [&_input]:border [&_input]:bg-background [&_input]:px-3 [&_input]:py-2 [&_input]:font-mono [&_input]:text-sm [&_button]:rounded-md [&_button]:border [&_button]:bg-background [&_button]:px-3 [&_button]:py-2 [&_button]:text-sm" />
+              <PrincipalLookupForm />
               <AdminStats.PrincipalLookupResult className="grid gap-2 text-sm [&_dt]:text-muted-foreground [&_dd]:font-mono [&_dd:last-child]:text-xs" />
             </AdminStats.PrincipalLookup>
           </CardContent>
