@@ -112,4 +112,4 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag "vellum-cli-v${VERSION}"
-          git push origin "vellum-cli-v${VERSION}"
+          HUSKY=0 git push origin "vellum-cli-v${VERSION}"

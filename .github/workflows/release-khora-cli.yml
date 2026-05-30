@@ -121,4 +121,4 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag "khora-cli-v${VERSION}"
-          git push origin "khora-cli-v${VERSION}"
+          HUSKY=0 git push origin "khora-cli-v${VERSION}"
