@@ -1,10 +1,11 @@
 {
   "name": "@khoralabs/agent-kernel",
   "devDependencies": {
-    "@tsconfig/node20": "20.1.8",
     "@biomejs/biome": "^2.4.10",
+    "@tsconfig/node20": "20.1.8",
     "@types/bun": "latest",
     "@types/parse-gitignore": "^1.0.2",
+    "husky": "^9.1.7",
     "minimatch": "^10.2.5",
     "parse-gitignore": "^2.0.0"
   },
@@ -17,8 +18,11 @@
     "clean": "find . -name node_modules -type d -prune -exec rm -rf {} +",
     "check": "biome check . && bun run --filter @khoralabs/memories-spec validate && bun run --filter @khoralabs/agent-identity-spec validate && bun run --filter @khoralabs/obp-spec validate",
     "check:write": "biome check --write .",
+    "format": "biome check --write .",
+    "format:check": "biome check .",
     "context": "bun run scripts/context.ts",
-    "start:khora:server": "bun run --filter @khoralabs/khora-server start"
+    "start:khora:server": "bun run --filter @khoralabs/khora-server start",
+    "prepare": "husky"
   },
   "type": "module",
   "workspaces": [

@@ -6,6 +6,8 @@ To install dependencies:
 bun install
 ```
 
+[Husky](https://typicode.github.io/husky/) runs **Biome** format/lint on `git push` (see `.husky/pre-push`). Fix issues locally with `bun run format`, or check without writing via `bun run format:check`.
+
 To run:
 
 ```bash
