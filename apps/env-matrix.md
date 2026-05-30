@@ -34,10 +34,10 @@ Put these in a Render **Environment Group** (or password manager) and link to ev
 | Concept | Set on | Example prod value |
 | --- | --- | --- |
 | Registry public URL | registry (`REGISTRY_URL`), homepages (`KHORA_REGISTRY_URL`, `BUN_PUBLIC_KHORA_REGISTRY_URL`) | `https://registry.khoralabs.com` |
-| Khora server public URL | registry host seed (`REGISTRY_DEFAULT_HOST_URL`), khora-server (implicit via Render URL) | `https://api.khora.khoralabs.com` |
-| Homepage origins | registry (`REGISTRY_TRUSTED_ORIGINS`) | Both homepage URLs, comma-separated |
+| Khora server public URL | host registry (`POST /v1/hosts/register` + activate), khora-server (`KHORA_PUBLIC_BASE_URL`) | `https://api.khora.khoralabs.com` |
+| Browser origins for registry APIs | Admin console → Hosts → CORS trust per host (`clientOrigin` when homepage ≠ API URL) | e.g. `https://khoralabs.com` on the web host row |
 
-`REGISTRY_TRUSTED_ORIGINS` must include every browser origin that calls registry APIs (both homepages, local dev origins optional).
+Each active host with CORS trust enabled contributes its resolved origin (`clientOrigin` or `baseUrl` origin) to registry CORS and Better Auth `trustedOrigins`.
 
 ---
 
@@ -59,14 +59,9 @@ Legend: **+** = set on this service · **·** = not used · **Kind:** **S** = se
 | Variable | R | A | KH | AH | Kind | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | `REGISTRY_URL` | + | · | · | · | C | Public base URL for Better Auth (`BETTER_AUTH_URL` alias). |
-| `REGISTRY_TRUSTED_ORIGINS` | + | · | · | · | C | Comma-separated browser origins for CORS + trustedOrigins. |
 | `REGISTRY_COOKIE_DOMAIN` | + | · | · | · | C | Optional, e.g. `.khoralabs.com` for cross-subdomain cookies. |
 | `KHORA_REGISTRY_URL` | · | + | + | + | C | khora-server well-known + opt-in; homepages SSR/fetch. |
 | `BUN_PUBLIC_KHORA_REGISTRY_URL` | · | · | + | + | C | Inlined into client bundle at build time. |
-| `REGISTRY_DEFAULT_HOST_SLUG` | + | · | · | · | C | Dev seed host slug (`registerKhoraHost` on startup). |
-| `REGISTRY_DEFAULT_HOST_URL` | + | · | · | · | C | Dev seed host base URL. |
-| `REGISTRY_DEV_AUTO_ACTIVATE_HOST` | + | · | · | · | C | `1` or non-production default: auto-activate seeded host. |
-| `KHORA_BASE_URL` | + | · | · | · | C | Fallback for dev host seed if `REGISTRY_DEFAULT_HOST_URL` unset. |
 | `KHORA_HOST_SLUG` | · | + | · | · | C | Host slug for `/.well-known/khora` and registry opt-in. |
 | `KHORA_PUBLIC_BASE_URL` | · | + | · | · | C | Public base URL in well-known + register body (default loopback + `PORT`). |
 | `KHORA_REGISTRY_OPT_IN` | · | + | · | · | C | `1`/`true`: `POST /v1/hosts/register` on server boot (pending until activated). |
@@ -187,9 +182,7 @@ REGISTRY_SQLCIPHER_KEY=...
 PORT=4000
 REGISTRY_URL=https://registry.example.com
 REGISTRY_DATABASE_PATH=/data/registry.sqlite
-REGISTRY_TRUSTED_ORIGINS=https://khoralabs.com,https://khora.example.com
-REGISTRY_DEFAULT_HOST_SLUG=khora-prod
-REGISTRY_DEFAULT_HOST_URL=https://api.khora.example.com
+# CORS: activate hosts in /admin, enable "Trust for CORS", set clientOrigin for homepages
 BETTER_AUTH_SECRET=...
 SES_FROM_ADDRESS=noreply@example.com
 REGISTRY_LITESTREAM=1

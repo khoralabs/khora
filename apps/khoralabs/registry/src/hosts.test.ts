@@ -45,7 +45,7 @@ describe("host registry API", () => {
     const listBefore = handleHostsList();
     expect((await listBefore.json()) as { hosts: unknown[] }).toMatchObject({ hosts: [] });
 
-    const activate = handleInternalHostActivate(
+    const activate = await handleInternalHostActivate(
       new Request("http://localhost/internal/v1/hosts/x/activate", {
         method: "POST",
         headers: { Authorization: `Bearer ${internalSecret}` },

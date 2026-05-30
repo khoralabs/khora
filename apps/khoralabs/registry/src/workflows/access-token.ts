@@ -8,7 +8,6 @@ import {
   markAccessTokenSent,
 } from "@khoralabs/users";
 import { getRegistryDatabase } from "@khoralabs/users-auth";
-import { defaultHostSlug } from "../seed/default-host";
 
 function internalSecret(): string {
   const s = process.env.KHORA_INTERNAL_SECRET?.trim();
@@ -103,9 +102,14 @@ export function queueAccessTokenWorkflow(params: {
   email: string;
   hostSlug?: string;
   sourceApp?: string;
-}): { inserted: boolean } {
+}): { inserted: boolean } | null {
+  const slug = params.hostSlug?.trim();
+  if (slug === undefined || slug.length === 0) {
+    console.warn("[registry] access-token request skipped: hostSlug is required");
+    return null;
+  }
+
   const db = getRegistryDatabase();
-  const slug = params.hostSlug?.trim() || defaultHostSlug();
   const host = findActiveHostBySlug(db, slug);
   if (host === null) {
     throw new Error(`active host not found: ${slug}`);

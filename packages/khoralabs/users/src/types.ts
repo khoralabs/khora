@@ -30,6 +30,8 @@ export type KhoraHost = {
   healthCheckedAtMs: number | null;
   healthLatencyMs: number | null;
   healthProbedEndpoint: HostHealthProbedEndpoint | null;
+  corsTrusted: boolean;
+  clientOrigin: string | null;
 };
 
 export type AccessTokenRequest = {
@@ -141,6 +143,8 @@ export const KHORA_HOST_SQL_COLUMNS = {
   healthCheckedAtMs: "health_checked_at_ms",
   healthLatencyMs: "health_latency_ms",
   healthProbedEndpoint: "health_probed_endpoint",
+  corsTrusted: "cors_trusted",
+  clientOrigin: "client_origin",
 } as const satisfies { [K in keyof KhoraHost]: SnakeCaseKey<K & string> };
 
 export const KHORA_HOST_SELECT = sqlSelectColumns(KHORA_HOST_SQL_COLUMNS);

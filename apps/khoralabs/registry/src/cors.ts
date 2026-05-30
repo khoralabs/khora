@@ -1,20 +1,8 @@
+import { getRegistryDatabase } from "@khoralabs/users-auth";
+import { readRegistryTrustedOrigins } from "./trusted-origins.ts";
+
 export function readTrustedOrigins(): string[] {
-  const port = process.env.PORT?.trim() ?? "4000";
-  const registryUrl =
-    process.env.REGISTRY_URL?.trim()?.replace(/\/$/, "") ?? `http://localhost:${port}`;
-  const envOrigins =
-    process.env.REGISTRY_TRUSTED_ORIGINS?.trim()
-      .split(",")
-      .map((o) => o.trim())
-      .filter((o) => o.length > 0) ?? [];
-  return [
-    ...new Set([
-      registryUrl,
-      `http://localhost:${port}`,
-      `http://127.0.0.1:${port}`,
-      ...envOrigins,
-    ]),
-  ];
+  return readRegistryTrustedOrigins(getRegistryDatabase());
 }
 
 export function corsHeaders(origin: string | null): HeadersInit {

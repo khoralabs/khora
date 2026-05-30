@@ -125,7 +125,7 @@ export function handleInternalHostsList(req: Request): Response {
   return Response.json({ hosts });
 }
 
-export function handleInternalHostActivate(req: Request, hostId: string): Response {
+export async function handleInternalHostActivate(req: Request, hostId: string): Promise<Response> {
   if (!authorizeRegistryInternal(req)) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -136,8 +136,8 @@ export function handleInternalHostActivate(req: Request, hostId: string): Respon
   const db = getRegistryDatabase();
   try {
     const host = activateKhoraHost(db, id);
-    void probeHostHealthById(db, host.id);
-    return Response.json({ host: hostToFullJson(host) });
+    const probed = await probeHostHealthById(db, host.id);
+    return Response.json({ host: hostToFullJson(probed ?? host) });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "activate failed";
     const status = msg.includes("not found") ? 404 : 400;

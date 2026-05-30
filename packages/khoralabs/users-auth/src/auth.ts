@@ -1,9 +1,15 @@
-import { createRegistryAuth } from "./auth-config";
+import { createRegistryAuth, type RegistryAuthOptions } from "./auth-config";
 
 let authInstance: ReturnType<typeof createRegistryAuth> | undefined;
+let authOptions: RegistryAuthOptions = {};
+
+export function reloadRegistryAuth(opts: RegistryAuthOptions = {}): void {
+  authOptions = { ...authOptions, ...opts };
+  authInstance = undefined;
+}
 
 export function getRegistryAuth(): ReturnType<typeof createRegistryAuth> {
-  authInstance ??= createRegistryAuth();
+  authInstance ??= createRegistryAuth(authOptions);
   return authInstance;
 }
 

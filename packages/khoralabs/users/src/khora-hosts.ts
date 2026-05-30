@@ -31,6 +31,8 @@ function mapHost(row: KhoraHostRow): KhoraHost {
     healthCheckedAtMs: row.health_checked_at_ms,
     healthLatencyMs: row.health_latency_ms,
     healthProbedEndpoint: mapProbedEndpoint(row.health_probed_endpoint),
+    corsTrusted: row.cors_trusted !== 0,
+    clientOrigin: row.client_origin,
   };
 }
 

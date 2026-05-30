@@ -1,4 +1,4 @@
-import type { KhoraHost } from "@khoralabs/users";
+import { type KhoraHost, resolveHostTrustedOrigin } from "@khoralabs/users";
 
 export function hostHealthJson(host: KhoraHost): Record<string, unknown> {
   return {
@@ -25,8 +25,17 @@ export function hostToPublicJson(host: KhoraHost): Record<string, unknown> {
 }
 
 export function hostToFullJson(host: KhoraHost): Record<string, unknown> {
+  let resolvedTrustedOrigin: string | null = null;
+  try {
+    resolvedTrustedOrigin = resolveHostTrustedOrigin(host);
+  } catch {
+    /* invalid base URL */
+  }
   return {
     ...hostToPublicJson(host),
     status: host.status,
+    corsTrusted: host.corsTrusted,
+    clientOrigin: host.clientOrigin,
+    resolvedTrustedOrigin,
   };
 }

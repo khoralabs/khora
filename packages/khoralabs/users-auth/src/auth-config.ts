@@ -29,19 +29,8 @@ function readAuthEnv(opts: RegistryAuthOptions = {}): {
     process.env.BETTER_AUTH_URL?.trim()?.replace(/\/$/, "");
   const baseURL = configuredUrl ?? localOrigin;
 
-  const envOrigins =
-    process.env.REGISTRY_TRUSTED_ORIGINS?.trim()
-      .split(",")
-      .map((o) => o.trim())
-      .filter((o) => o.length > 0) ?? [];
   const trustedOrigins = [
-    ...new Set([
-      baseURL,
-      localOrigin,
-      loopbackOrigin,
-      ...envOrigins,
-      ...(opts.trustedOrigins ?? []),
-    ]),
+    ...new Set([baseURL, localOrigin, loopbackOrigin, ...(opts.trustedOrigins ?? [])]),
   ];
 
   const secret = process.env.BETTER_AUTH_SECRET?.trim();

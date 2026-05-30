@@ -36,7 +36,9 @@ CREATE TABLE IF NOT EXISTS khora_hosts (
   health_status TEXT NOT NULL DEFAULT 'unknown',
   health_checked_at_ms INTEGER,
   health_latency_ms INTEGER,
-  health_probed_endpoint TEXT
+  health_probed_endpoint TEXT,
+  cors_trusted INTEGER NOT NULL DEFAULT 0,
+  client_origin TEXT
 );
 
 CREATE TABLE IF NOT EXISTS memberships (

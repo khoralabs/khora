@@ -1,4 +1,4 @@
-export { getRegistryAuth, registryAuth } from "./auth";
+export { getRegistryAuth, registryAuth, reloadRegistryAuth } from "./auth";
 export { createRegistryAuth, type RegistryAuth, type RegistryAuthOptions } from "./auth-config";
 export { bootstrapStaffEmails, isBootstrapStaffEmail, normalizeEmail } from "./bootstrap";
 export { createUsersAuthClient } from "./client";

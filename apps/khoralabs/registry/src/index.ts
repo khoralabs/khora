@@ -1,12 +1,17 @@
 import { createRootTokenConsoleAuth } from "@khoralabs/khora-console";
 import { assertEncryptionKeys, EnvKeyProvider } from "@khoralabs/sqlite-crypto";
-import { ensureRegistrySchema, getRegistryAuth, getRegistryDatabase } from "@khoralabs/users-auth";
+import {
+  ensureRegistrySchema,
+  getRegistryAuth,
+  getRegistryDatabase,
+  reloadRegistryAuth,
+} from "@khoralabs/users-auth";
 import { serve } from "bun";
 import adminPage from "./admin-ui/routes/admin/index.html";
 import adminLoginPage from "./admin-ui/routes/login/index.html";
 import { handleAccessTokenRequest } from "./api/access-token";
 import { routeConsoleAuth } from "./api/admin/console-guard";
-import { handleAdminHostActivate } from "./api/admin/hosts";
+import { handleAdminHostActivate, handleAdminHostCors } from "./api/admin/hosts";
 import {
   handleInternalAdminStatsSummary,
   handleInternalLookupAccount,
@@ -34,12 +39,12 @@ import { handleMe } from "./api/me";
 import cliLinkPage from "./cli-link-ui/routes/link/index.html";
 import { handleOptions, withCors } from "./cors";
 import { startHostHealthPoller } from "./host-health.ts";
-import { seedDefaultHostFromEnv } from "./seed/default-host";
+import { readRegistryTrustedOrigins } from "./trusted-origins.ts";
 
 await assertEncryptionKeys(new EnvKeyProvider(), "registry");
 await ensureRegistrySchema();
 const registryDb = getRegistryDatabase();
-seedDefaultHostFromEnv(registryDb);
+reloadRegistryAuth({ trustedOrigins: readRegistryTrustedOrigins(registryDb) });
 startHostHealthPoller(registryDb);
 
 const auth = getRegistryAuth();
@@ -104,6 +109,11 @@ const server = serve({
       return withCors(req, await handleAdminHostActivate(req, consoleAuth, id));
     }
 
+    if (path.startsWith("/admin/api/hosts/") && path.endsWith("/cors") && req.method === "PATCH") {
+      const id = path.slice("/admin/api/hosts/".length, -"/cors".length);
+      return withCors(req, await handleAdminHostCors(req, consoleAuth, id));
+    }
+
     if (path === "/internal/admin/stats/summary" && req.method === "GET") {
       return handleInternalAdminStatsSummary(req);
     }
@@ -145,7 +155,7 @@ const server = serve({
       req.method === "POST"
     ) {
       const id = path.slice("/internal/v1/hosts/".length, -"/activate".length);
-      return handleInternalHostActivate(req, id);
+      return await handleInternalHostActivate(req, id);
     }
 
     if (path === "/v1/me" && req.method === "GET") {

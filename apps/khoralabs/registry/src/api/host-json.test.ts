@@ -18,6 +18,8 @@ function mockHost(overrides: Partial<KhoraHost> = {}): KhoraHost {
     healthCheckedAtMs: 100,
     healthLatencyMs: 5,
     healthProbedEndpoint: "ready",
+    corsTrusted: false,
+    clientOrigin: null,
     ...overrides,
   };
 }

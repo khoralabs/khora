@@ -101,4 +101,13 @@ export {
 } from "./memberships";
 export { normalizeEmail } from "./normalize";
 export { initUsersSchema, isUsersSchemaReady, usersMigrations } from "./schema";
+export {
+  InvalidClientOriginError,
+  listCorsTrustedOrigins,
+  normalizeClientOrigin,
+  resolveHostTrustedOrigin,
+  setHostClientOrigin,
+  setHostCorsTrusted,
+  updateHostCorsSettings,
+} from "./trusted-origins";
 export type * from "./types";

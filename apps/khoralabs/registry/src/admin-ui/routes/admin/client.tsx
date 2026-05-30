@@ -10,6 +10,7 @@ import {
 } from "../../components/ui/card.tsx";
 import { renderRoute } from "../../render-route.tsx";
 import "../../styles/globals.css";
+import { HostCorsTrust } from "./host-cors-trust.tsx";
 import { PendingHostActivations } from "./pending-host-activations.tsx";
 
 function AdminPage() {
@@ -93,6 +94,7 @@ function AdminPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <PendingHostActivations />
+            <HostCorsTrust />
             <UsersStats.HostList className="space-y-2 [&_[data-slot=users-stats-host-list-item]]:rounded-md [&_[data-slot=users-stats-host-list-item]]:border [&_[data-slot=users-stats-host-list-item]]:p-2" />
           </CardContent>
         </Card>
