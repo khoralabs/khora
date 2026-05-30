@@ -61,14 +61,6 @@ export {
 } from "./post-address-id.ts";
 export { canDeliverPostToRecipient, canReadPost } from "./post-visibility.ts";
 export {
-  deliverRoomTicketToPrincipal,
-  mintRoomChannelTicketAndSync,
-  type MintRoomChannelTicketOpts,
-  type RoomAdmissionInboxCtx,
-  type RoomRegistryMeta,
-  type RoomTicketInlinePayload,
-} from "./room-admission.ts";
-export {
   discardCellInboxRoomTickets,
   enqueueCellInboxInline,
 } from "./relay-cell-inbox.ts";
@@ -82,6 +74,14 @@ export {
   listAuthorOutboxRecords,
   resolvePostById,
 } from "./resolve-post.ts";
+export {
+  deliverRoomTicketToPrincipal,
+  type MintRoomChannelTicketOpts,
+  mintRoomChannelTicketAndSync,
+  type RoomAdmissionInboxCtx,
+  type RoomRegistryMeta,
+  type RoomTicketInlinePayload,
+} from "./room-admission.ts";
 export {
   authorDidFromSubscriptionSubject,
   authorSubscriptionSubject,

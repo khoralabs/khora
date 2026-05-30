@@ -41,9 +41,7 @@ async function runWithLitestream(): Promise<void> {
     ? envMemoriesBootstrapConfig(persistencePaths)
     : undefined;
   const memoriesAbs =
-    memoriesConfig !== undefined
-      ? path.resolve(process.cwd(), memoriesConfig.dbPath)
-      : undefined;
+    memoriesConfig !== undefined ? path.resolve(process.cwd(), memoriesConfig.dbPath) : undefined;
 
   mkdirSync(persistencePaths.dataDir, { recursive: true });
   mkdirSync(path.dirname(catalogAbs), { recursive: true });

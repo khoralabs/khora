@@ -35,9 +35,9 @@ test("mintRoomChannelTicketAndSync twice preserves room_frames and verifies new 
   const db = new Database(framesPath);
   const frameCount = () =>
     (
-      db
-        .prepare(`SELECT COUNT(*) AS c FROM room_frames WHERE channel_id = ?`)
-        .get(roomId) as { c: number }
+      db.prepare(`SELECT COUNT(*) AS c FROM room_frames WHERE channel_id = ?`).get(roomId) as {
+        c: number;
+      }
     ).c;
 
   expect(frameCount()).toBe(1);

@@ -1,5 +1,8 @@
 import { Database } from "bun:sqlite";
 import { afterAll, describe, expect, test } from "bun:test";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { attachDuplexAsFrameChannelPeer } from "@khoralabs/agent-relay";
 import { createMemoryDuplexByteStreamPair } from "@khoralabs/duplex-byte-stream";
 import {
@@ -10,11 +13,8 @@ import {
   ephemeralX25519Keygen,
   x25519SharedSecret,
 } from "@khoralabs/obp-v2-frames-impl";
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { deliverRoomTicketToPrincipal } from "./room-admission.ts";
 import { popRelayInboxDrainItemsForDid } from "./relay-inbox-drain.ts";
+import { deliverRoomTicketToPrincipal } from "./room-admission.ts";
 import { createTestKhoraHost } from "./test/bootstrap-sqlite.ts";
 
 const tmpRoot = mkdtempSync(join(tmpdir(), "khora-room-seam-"));
@@ -29,7 +29,10 @@ afterAll(() => {
   rmSync(tmpRoot, { recursive: true, force: true });
 });
 
-function parseRelayEnvelope(bytes: Uint8Array): { frame: Record<string, unknown>; relay_ts_ms: number } {
+function parseRelayEnvelope(bytes: Uint8Array): {
+  frame: Record<string, unknown>;
+  relay_ts_ms: number;
+} {
   const len = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(0, false);
   const text = new TextDecoder().decode(bytes.subarray(4, 4 + len));
   return JSON.parse(text) as { frame: Record<string, unknown>; relay_ts_ms: number };
@@ -64,7 +67,7 @@ describe("room channel seam", () => {
 
     await ctx.roomHub.rotateChannelTicket(roomId);
 
-    const [replayClient, replayServer] = createMemoryDuplexByteStreamPair();
+    const [_replayClient, replayServer] = createMemoryDuplexByteStreamPair();
     const replayed: Uint8Array[] = [];
     const replayPeer = {
       send(b: Uint8Array) {
@@ -132,8 +135,11 @@ describe("room channel seam", () => {
     const framesPath = join(root, "f.sqlite");
     const db = new Database(framesPath);
     expect(
-      (db.prepare(`SELECT COUNT(*) AS c FROM room_frames WHERE channel_id = ?`).get(roomId) as { c: number })
-        .c,
+      (
+        db.prepare(`SELECT COUNT(*) AS c FROM room_frames WHERE channel_id = ?`).get(roomId) as {
+          c: number;
+        }
+      ).c,
     ).toBe(1);
 
     const received: Uint8Array[] = [];
@@ -187,9 +193,9 @@ describe("room channel seam", () => {
 
     const db = new Database(framesPath);
     const frameBytes = (
-      db
-        .prepare(`SELECT bytes FROM room_frames WHERE channel_id = ?`)
-        .get(roomId) as { bytes: Uint8Array }
+      db.prepare(`SELECT bytes FROM room_frames WHERE channel_id = ?`).get(roomId) as {
+        bytes: Uint8Array;
+      }
     ).bytes;
     expect(frameBytes[0]).toBe(0xde);
 

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import path from "node:path";
 import { envMemoriesBootstrapConfig, envMemoriesEnabled } from "./memories-env.ts";
 import { resolveKhoraPersistencePaths } from "./persistence-paths.ts";

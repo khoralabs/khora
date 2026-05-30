@@ -1,8 +1,5 @@
 import type { KhoraMemoriesBootstrapConfig } from "./memories-env.ts";
-import {
-  type KhoraPersistencePaths,
-  resolveKhoraPersistencePaths,
-} from "./persistence-paths.ts";
+import { type KhoraPersistencePaths, resolveKhoraPersistencePaths } from "./persistence-paths.ts";
 
 /**
  * Server env for Khora host bootstrap. See `.env.example` for variable names.
@@ -73,7 +70,7 @@ export function envMemoriesDbPath(): string {
   return persistencePaths().memoriesDbPath;
 }
 
-export { resolveKhoraPersistencePaths, type KhoraPersistencePaths };
+export { type KhoraPersistencePaths, resolveKhoraPersistencePaths };
 
 export function envCellPoolCount(): number {
   const raw = process.env.KHORA_CELL_POOL_COUNT?.trim();
