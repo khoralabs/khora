@@ -77,6 +77,13 @@ jobs:
           fi
           echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > "$HOME/.npmrc"
 
+      - name: verify npm publish access to @khoralabs
+        run: |
+          set -euo pipefail
+          echo "npm user: $(npm whoami)"
+          echo "Dry-run first platform package (404 here = no publish rights on @khoralabs scope)..."
+          (cd apps/khora/release/cli-darwin-arm64 && npm publish --access public --tag "$NPM_TAG" --dry-run)
+
       - name: publish platform packages
         run: |
           set -euo pipefail

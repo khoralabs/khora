@@ -90,6 +90,7 @@ export function cliMetaPkgJson({
     scripts: { postinstall: "node ./postinstall.js" },
     dependencies: { "@khoralabs/khora-daemon": version },
     optionalDependencies,
+    publishConfig: { access: "public" },
   };
 }
 
@@ -131,6 +132,7 @@ export function daemonMetaPkgJson({
     bin: { "khora-daemon": "./bin/khora-daemon.cjs" },
     files: ["bin/**", "README.md", "LICENSE"],
     optionalDependencies,
+    publishConfig: { access: "public" },
   };
 }
 
@@ -158,6 +160,7 @@ export function platformPkgJson({
     os: [target.os],
     cpu: [target.cpu],
     files: [binName],
+    publishConfig: { access: "public" },
   };
 }
 
