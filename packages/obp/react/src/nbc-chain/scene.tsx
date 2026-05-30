@@ -1,8 +1,8 @@
 import { type Edge, type Node, ReactFlow } from "@xyflow/react";
 import { type ComponentProps, useCallback, useRef } from "react";
-import { useNbcChain } from "./context.tsx";
+import { useNbcChain } from "./context";
 import { NBC_CHAIN_SCENE_FLOW_LAYOUT } from "./structural-layout.ts";
-import { NbcChainViewportFitEffect } from "./viewport-fit.tsx";
+import { NbcChainViewportFitEffect } from "./viewport-fit";
 
 export type NbcChainSceneProps = Omit<
   ComponentProps<typeof ReactFlow>,

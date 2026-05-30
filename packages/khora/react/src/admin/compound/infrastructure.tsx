@@ -1,6 +1,6 @@
 import type * as React from "react";
 import { cn } from "../cn.ts";
-import { findCellShard, formatBytes, formatShardLabel, useAdminStats } from "../context.tsx";
+import { findCellShard, formatBytes, formatShardLabel, useAdminStats } from "../context";
 
 function MetricRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (

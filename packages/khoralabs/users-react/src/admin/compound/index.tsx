@@ -2,15 +2,15 @@ import {
   UsersStatsEmailLookup,
   UsersStatsEmailLookupForm,
   UsersStatsEmailLookupResult,
-} from "./email-lookup.tsx";
-import { UsersStatsHostList, UsersStatsHostListItem } from "./hosts.tsx";
+} from "./email-lookup";
+import { UsersStatsHostList, UsersStatsHostListItem } from "./hosts";
 import {
   UsersStatsAccessRequestsMetrics,
   UsersStatsAccountsMetrics,
   UsersStatsMarketingMetrics,
   UsersStatsOverview,
-} from "./overview.tsx";
-import { UsersStatsRoot } from "./root.tsx";
+} from "./overview";
+import { UsersStatsRoot } from "./root";
 
 export const UsersStats = {
   Root: UsersStatsRoot,

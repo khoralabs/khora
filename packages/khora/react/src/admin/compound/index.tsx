@@ -1,4 +1,4 @@
-import { AdminStatsInactiveMembers } from "./inactive-members.tsx";
+import { AdminStatsInactiveMembers } from "./inactive-members";
 import {
   AdminStatsCatalogMetrics,
   AdminStatsCellDetail,
@@ -7,19 +7,19 @@ import {
   AdminStatsCellUtilizationBar,
   AdminStatsFramesMetrics,
   AdminStatsInfrastructure,
-} from "./infrastructure.tsx";
-import { AdminStatsNetworkActivity } from "./network-activity.tsx";
+} from "./infrastructure";
+import { AdminStatsNetworkActivity } from "./network-activity";
 import {
   AdminStatsInvitesMetrics,
   AdminStatsOperations,
   AdminStatsTeardownMetrics,
-} from "./operations.tsx";
+} from "./operations";
 import {
   AdminStatsPrincipalLookup,
   AdminStatsPrincipalLookupForm,
   AdminStatsPrincipalLookupResult,
-} from "./principal-lookup.tsx";
-import { AdminStatsRoot } from "./root.tsx";
+} from "./principal-lookup";
+import { AdminStatsRoot } from "./root";
 
 export const AdminStats = {
   Root: AdminStatsRoot,

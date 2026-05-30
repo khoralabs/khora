@@ -1,11 +1,7 @@
 import { Background, Controls, Panel } from "@xyflow/react";
 import type { ComponentProps } from "react";
-import { useNbcChain } from "./context.tsx";
-import {
-  NbcChainEdgeDetails,
-  NbcChainEmptySelectionHint,
-  NbcChainNodeDetails,
-} from "./details.tsx";
+import { useNbcChain } from "./context";
+import { NbcChainEdgeDetails, NbcChainEmptySelectionHint, NbcChainNodeDetails } from "./details";
 
 export type NbcChainBackgroundProps = ComponentProps<typeof Background>;
 

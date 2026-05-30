@@ -1,10 +1,6 @@
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "../admin/cn.ts";
-import {
-  EmailConfirmProvider,
-  type EmailConfirmProviderProps,
-  useEmailConfirm,
-} from "./context.tsx";
+import { EmailConfirmProvider, type EmailConfirmProviderProps, useEmailConfirm } from "./context";
 import type { EmailConfirmEmailStepRenderProps, EmailConfirmOtpStepRenderProps } from "./types.ts";
 
 export type EmailConfirmRootProps = EmailConfirmProviderProps &

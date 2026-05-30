@@ -7,11 +7,11 @@ import {
   useNodesState,
 } from "@xyflow/react";
 import { type ComponentProps, type ReactNode, useEffect, useMemo, useState } from "react";
-import { NbcChainContext, type NbcChainContextValue } from "./context.tsx";
+import { NbcChainContext, type NbcChainContextValue } from "./context";
 import type { NbcChainAfterBindViewport, NbcChainFlowSelection } from "./flow-types.ts";
 import { nbcChainGraphToFlow } from "./layout.ts";
 import { mergeClassNames } from "./merge-class-names.ts";
-import { nbcChainDefaultNodeTypes } from "./nodes.tsx";
+import { nbcChainDefaultNodeTypes } from "./nodes";
 import { NBC_CHAIN_CANVAS_SHELL_LAYOUT } from "./structural-layout.ts";
 
 export type NbcChainProviderProps = Omit<ComponentProps<"div">, "children"> & {

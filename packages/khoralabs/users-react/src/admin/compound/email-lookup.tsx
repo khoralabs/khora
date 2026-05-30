@@ -1,6 +1,6 @@
 import type * as React from "react";
 import { cn } from "../cn.ts";
-import { useUsersStats } from "../context.tsx";
+import { useUsersStats } from "../context";
 
 function MetricRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (

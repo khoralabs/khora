@@ -14,26 +14,26 @@ export type {
   NbcChainBackgroundProps,
   NbcChainControlsProps,
   NbcChainSelectionPanelProps,
-} from "./nbc-chain/chrome.tsx";
+} from "./nbc-chain/chrome";
 export {
   NbcChainBackground,
   NbcChainControls,
   NbcChainSelectionPanel,
-} from "./nbc-chain/chrome.tsx";
-export type { NbcChainDefaultLayoutProps } from "./nbc-chain/compound.tsx";
-export { NbcChain, NbcChainDefaultLayout } from "./nbc-chain/compound.tsx";
-export type { NbcChainContextValue } from "./nbc-chain/context.tsx";
-export { useNbcChain } from "./nbc-chain/context.tsx";
+} from "./nbc-chain/chrome";
+export type { NbcChainDefaultLayoutProps } from "./nbc-chain/compound";
+export { NbcChain, NbcChainDefaultLayout } from "./nbc-chain/compound";
+export type { NbcChainContextValue } from "./nbc-chain/context";
+export { useNbcChain } from "./nbc-chain/context";
 export type {
   NbcChainEdgeDetailsProps,
   NbcChainEmptySelectionHintProps,
   NbcChainNodeDetailsProps,
-} from "./nbc-chain/details.tsx";
+} from "./nbc-chain/details";
 export {
   NbcChainEdgeDetails,
   NbcChainEmptySelectionHint,
   NbcChainNodeDetails,
-} from "./nbc-chain/details.tsx";
+} from "./nbc-chain/details";
 export type {
   NbcChainAfterBindViewport,
   NbcChainFlowSelection,
@@ -52,11 +52,11 @@ export {
   NbcChainPortNode,
   type NbcChainPortNodeProps,
   nbcChainDefaultNodeTypes,
-} from "./nbc-chain/nodes.tsx";
-export type { NbcChainProviderProps } from "./nbc-chain/provider.tsx";
-export { NbcChainProvider } from "./nbc-chain/provider.tsx";
-export type { NbcChainSceneProps } from "./nbc-chain/scene.tsx";
-export { NbcChainScene } from "./nbc-chain/scene.tsx";
+} from "./nbc-chain/nodes";
+export type { NbcChainProviderProps } from "./nbc-chain/provider";
+export { NbcChainProvider } from "./nbc-chain/provider";
+export type { NbcChainSceneProps } from "./nbc-chain/scene";
+export { NbcChainScene } from "./nbc-chain/scene";
 export {
   NBC_CHAIN_CANVAS_SHELL_LAYOUT,
   NBC_CHAIN_SCENE_FLOW_LAYOUT,

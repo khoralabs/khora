@@ -1,6 +1,6 @@
 import type * as React from "react";
 import { cn } from "../cn.ts";
-import { UsersStatsProvider, type UsersStatsProviderProps } from "../context.tsx";
+import { UsersStatsProvider, type UsersStatsProviderProps } from "../context";
 
 export type UsersStatsRootProps = React.ComponentProps<"div"> &
   Omit<UsersStatsProviderProps, "children">;

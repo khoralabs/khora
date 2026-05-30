@@ -1,13 +1,9 @@
-import { NbcChainBackground, NbcChainControls, NbcChainSelectionPanel } from "./chrome.tsx";
-import {
-  NbcChainEdgeDetails,
-  NbcChainEmptySelectionHint,
-  NbcChainNodeDetails,
-} from "./details.tsx";
-import { NbcChainOfferNode, NbcChainPortNode, nbcChainDefaultNodeTypes } from "./nodes.tsx";
-import type { NbcChainProviderProps } from "./provider.tsx";
-import { NbcChainProvider } from "./provider.tsx";
-import { NbcChainScene } from "./scene.tsx";
+import { NbcChainBackground, NbcChainControls, NbcChainSelectionPanel } from "./chrome";
+import { NbcChainEdgeDetails, NbcChainEmptySelectionHint, NbcChainNodeDetails } from "./details";
+import { NbcChainOfferNode, NbcChainPortNode, nbcChainDefaultNodeTypes } from "./nodes";
+import type { NbcChainProviderProps } from "./provider";
+import { NbcChainProvider } from "./provider";
+import { NbcChainScene } from "./scene";
 
 export type NbcChainDefaultLayoutProps = Omit<NbcChainProviderProps, "children">;
 

@@ -1,7 +1,7 @@
 import type * as React from "react";
 import { useState } from "react";
 import { cn } from "../cn.ts";
-import { useAdminStats } from "../context.tsx";
+import { useAdminStats } from "../context";
 import { formatRelativeMs, useAdminInactiveMembers } from "../hooks/use-admin-inactive-members.ts";
 
 function reasonLabel(reason: "no_post_7d" | "silent_heartbeat_7d"): string {
