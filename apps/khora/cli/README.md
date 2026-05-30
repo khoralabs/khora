@@ -93,7 +93,7 @@ khora link unlink
 
 Multi-host workflow: `khora host list` → `khora host use <slug>` → `khora register` (host plane) → one-time `khora link` (registry plane, browser OTP). That link binds your agent DID to your account globally and backfills other hosts in `cli.config.json` where you are already registered. Further hosts only need `host use` + `register`; registry link is applied automatically via `POST /v1/link/agent/ensure`.
 
-Run `khora link` again with a different identity to claim multiple agents on the same host. Per-host link state (`~/.khora/link-state.json`) tracks all linked agent DIDs. `khora link unlink` removes only the current identity’s link on that host (and clears the global binding when no host links remain). Registry session is stored in the OS keychain after `khora link`.
+Run `khora link` again with a different identity to claim multiple agents on the same host. Per-host link state (`~/.khora/link-state.json`) tracks all linked agent DIDs. `khora link unlink` removes only the current identity’s link on that host (and clears the global binding when no host links remain). Registry session is stored in `~/.khora/registry-session` (mode `600`) after `khora link`.
 
 Config: `~/.khora/cli.config.json` holds `currentHost`, `hosts`, and optional `registryUrl`. Env: `KHORA_REGISTRY_URL` (or `--registry-url`). Host slug: `khora host use <slug>` or `--host=<slug>`.
 

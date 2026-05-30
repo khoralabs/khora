@@ -72,7 +72,7 @@ Legend: **+** = set on this service · **·** = not used · **Kind:** **S** = se
 | --- | --- |
 | `KHORA_REGISTRY_URL` | Registry for `khora host list` / `khora link` (default `http://localhost:4000`). Also set in `~/.khora/cli.config.json` or `--registry-url`. |
 
-Host selection: `khora host use <slug>` writes `currentHost` and `hosts` to `cli.config.json`; override per command with `--host=<slug>`. Registry session after `khora link` is stored in the OS keychain (`@napi-rs/keyring`), not env or config.
+Host selection: `khora host use <slug>` writes `currentHost` and `hosts` to `cli.config.json`; override per command with `--host=<slug>`. Registry session after `khora link` is stored in `~/.khora/registry-session` (not env or config).
 
 ### Auth & secrets
 
