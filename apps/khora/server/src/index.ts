@@ -70,22 +70,20 @@ const deps: HostRouteDeps = {
 const inboxWsHandlers = createInboxDrainWebSocketHandlers({ ctx });
 const roomWsHandlers = khoraFrameChannelWsHandlers(ctx);
 
-function isAdminSpaPath(pathname: string): boolean {
-  return (
-    pathname.startsWith("/admin") &&
-    !pathname.startsWith("/admin/login") &&
-    !pathname.startsWith("/admin/api")
-  );
-}
-
-function adminHtmlResponse(page: typeof adminPage): Response {
-  return page as unknown as Response;
-}
-
 const server = Bun.serve<KhoraWsData>({
   port: envPort(),
   routes: {
     "/admin/": adminPage,
+    "/admin/network": adminPage,
+    "/admin/network/*": adminPage,
+    "/admin/infrastructure": adminPage,
+    "/admin/infrastructure/*": adminPage,
+    "/admin/operations": adminPage,
+    "/admin/operations/*": adminPage,
+    "/admin/registry": adminPage,
+    "/admin/registry/*": adminPage,
+    "/admin/lookup": adminPage,
+    "/admin/lookup/*": adminPage,
     "/admin/login": adminLoginPage,
     "/admin/login/": adminLoginPage,
   },
@@ -95,9 +93,6 @@ const server = Bun.serve<KhoraWsData>({
       const path = url.pathname;
       if (path === "/admin") {
         return Response.redirect(`${url.origin}/admin/`, 301);
-      }
-      if (isAdminSpaPath(path) && path !== "/admin/") {
-        return adminHtmlResponse(adminPage);
       }
     }
     try {
