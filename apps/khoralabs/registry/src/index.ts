@@ -10,13 +10,16 @@ import { serve } from "bun";
 import { routeConsoleAuth } from "./api/admin/console-guard";
 import {
   handleAdminHostActivate,
+  handleAdminHostDelete,
   handleAdminHostOriginRequestApprove,
   handleAdminHostOriginRequestReject,
   handleAdminHostOriginRequests,
   handleAdminHostQuotaRequestApprove,
   handleAdminHostQuotaRequestReject,
   handleAdminHostQuotaRequests,
+  handleAdminHostReactivate,
   handleAdminHostRegistry,
+  handleAdminHostSuspend,
 } from "./api/admin/hosts";
 import { handleLookupAccount, handleLookupEmail } from "./api/admin/lookup";
 import { handleAdminStatsSummary } from "./api/admin/stats";
@@ -114,6 +117,31 @@ const server = serve({
 
     if (path === "/admin/api/lookup/account" && req.method === "GET") {
       return withCors(req, await handleLookupAccount(req, url, consoleAuth));
+    }
+
+    if (
+      path.startsWith("/admin/api/hosts/") &&
+      path.endsWith("/suspend") &&
+      req.method === "POST"
+    ) {
+      const id = path.slice("/admin/api/hosts/".length, -"/suspend".length);
+      return withCors(req, await handleAdminHostSuspend(req, consoleAuth, id));
+    }
+
+    if (
+      path.startsWith("/admin/api/hosts/") &&
+      path.endsWith("/reactivate") &&
+      req.method === "POST"
+    ) {
+      const id = path.slice("/admin/api/hosts/".length, -"/reactivate".length);
+      return withCors(req, await handleAdminHostReactivate(req, consoleAuth, id));
+    }
+
+    if (path.startsWith("/admin/api/hosts/") && req.method === "DELETE") {
+      const id = path.slice("/admin/api/hosts/".length);
+      if (id.length > 0 && !id.includes("/")) {
+        return withCors(req, await handleAdminHostDelete(req, consoleAuth, id));
+      }
     }
 
     if (

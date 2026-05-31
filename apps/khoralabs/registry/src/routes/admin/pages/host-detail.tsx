@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { RegistrationRequirementState } from "../admin-types.ts";
 import { HostHealthCard } from "../components/host-health-card.tsx";
+import { HostLifecycleActions } from "../components/host-lifecycle-actions.tsx";
 import { HostRegistryRow } from "../components/host-registry-row.tsx";
 import { PendingHostActivation } from "../components/pending-host-activation.tsx";
 import { RegistrationRequirementsList } from "../components/registration-requirements.tsx";
@@ -72,6 +73,8 @@ export function HostDetailPage() {
       </div>
 
       <HostHealthCard host={host} />
+
+      <HostLifecycleActions host={host} />
 
       <PendingHostActivation host={host} />
 

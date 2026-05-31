@@ -3,7 +3,12 @@ import { createRootTokenConsoleAuth } from "@khoralabs/khora-console";
 import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
 import { resetUsersDatabase } from "@khoralabs/users";
 import { ensureRegistrySchema } from "@khoralabs/users-auth";
-import { handleAdminHostActivate } from "./api/admin/hosts";
+import {
+  handleAdminHostActivate,
+  handleAdminHostDelete,
+  handleAdminHostReactivate,
+  handleAdminHostSuspend,
+} from "./api/admin/hosts";
 import { handleHostGet, handleHostRegister, handleHostsList } from "./api/hosts";
 
 const ROOT_TOKEN = "test-root-token-16chars";
@@ -72,6 +77,69 @@ describe("host registry API", () => {
 
     const get = handleHostGet("test-host");
     expect(get.status).toBe(200);
+  });
+
+  test("activate suspend reactivate delete lifecycle", async () => {
+    const reg = await handleHostRegister(
+      new Request("http://localhost/v1/hosts/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug: "lifecycle", baseUrl: "http://localhost:9997" }),
+      }),
+    );
+    const regJson = (await reg.json()) as { host: { id: string } };
+    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const cookie = await loginCookie(auth);
+    const hostId = regJson.host.id;
+
+    const activate = await handleAdminHostActivate(
+      new Request(`http://localhost/admin/api/hosts/${hostId}/activate`, {
+        method: "POST",
+        headers: { cookie },
+      }),
+      auth,
+      hostId,
+    );
+    expect(activate.status).toBe(200);
+
+    const suspend = await handleAdminHostSuspend(
+      new Request(`http://localhost/admin/api/hosts/${hostId}/suspend`, {
+        method: "POST",
+        headers: { cookie },
+      }),
+      auth,
+      hostId,
+    );
+    expect(suspend.status).toBe(200);
+    const listSuspended = (await handleHostsList().json()) as { hosts: unknown[] };
+    expect(listSuspended.hosts).toHaveLength(0);
+    expect((await handleHostGet("lifecycle")).status).toBe(404);
+
+    const reactivate = await handleAdminHostReactivate(
+      new Request(`http://localhost/admin/api/hosts/${hostId}/reactivate`, {
+        method: "POST",
+        headers: { cookie },
+      }),
+      auth,
+      hostId,
+    );
+    expect(reactivate.status).toBe(200);
+    const listActive = (await handleHostsList().json()) as { hosts: unknown[] };
+    expect(listActive.hosts).toHaveLength(1);
+
+    const del = await handleAdminHostDelete(
+      new Request(`http://localhost/admin/api/hosts/${hostId}`, {
+        method: "DELETE",
+        headers: { cookie },
+      }),
+      auth,
+      hostId,
+    );
+    expect(del.status).toBe(200);
+    const delJson = (await del.json()) as { ok: boolean; slug: string };
+    expect(delJson).toMatchObject({ ok: true, slug: "lifecycle" });
+    const listAfterDelete = (await handleHostsList().json()) as { hosts: unknown[] };
+    expect(listAfterDelete.hosts).toHaveLength(0);
   });
 
   test("inactive host returns 404 on public get", async () => {

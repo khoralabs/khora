@@ -3,13 +3,16 @@ import {
   activateKhoraHost,
   approveHostTrustedOriginQuotaRequest,
   approveHostTrustedOriginRequest,
+  deleteKhoraHost,
   findHostById,
   InvalidTrustedOriginError,
   listHostTrustedOriginQuotaRequests,
   listHostTrustedOriginRequests,
   OriginQuotaExceededError,
+  reactivateKhoraHost,
   rejectHostTrustedOriginQuotaRequest,
   rejectHostTrustedOriginRequest,
+  suspendKhoraHost,
   TrustedOriginConflictError,
   updateHostRegistrySettings,
 } from "@khoralabs/users";
@@ -27,6 +30,81 @@ type HostRegistryBody = {
 function reloadAuthTrustedOrigins(): void {
   reloadRegistryAuth({
     resolveTrustedOrigins: () => readRegistryTrustedOrigins(getRegistryDatabase()),
+  });
+}
+
+function mapHostLifecycleError(
+  err: unknown,
+  fallback: string,
+): { message: string; status: number } {
+  const msg = err instanceof Error ? err.message : fallback;
+  const status = msg.includes("not found") ? 404 : 400;
+  return { message: msg, status };
+}
+
+export function handleAdminHostSuspend(
+  req: Request,
+  consoleAuth: ConsoleAuth | null,
+  hostId: string,
+): Promise<Response> {
+  return withConsoleAuth(req, consoleAuth, () => {
+    const id = hostId.trim();
+    if (id.length === 0) {
+      return Response.json({ error: "host id required" }, { status: 400 });
+    }
+    const db = getRegistryDatabase();
+    try {
+      const host = suspendKhoraHost(db, id);
+      reloadAuthTrustedOrigins();
+      return Response.json({ host: hostToFullJson(host, db) });
+    } catch (err: unknown) {
+      const mapped = mapHostLifecycleError(err, "suspend failed");
+      return Response.json({ error: mapped.message }, { status: mapped.status });
+    }
+  });
+}
+
+export function handleAdminHostReactivate(
+  req: Request,
+  consoleAuth: ConsoleAuth | null,
+  hostId: string,
+): Promise<Response> {
+  return withConsoleAuth(req, consoleAuth, () => {
+    const id = hostId.trim();
+    if (id.length === 0) {
+      return Response.json({ error: "host id required" }, { status: 400 });
+    }
+    const db = getRegistryDatabase();
+    try {
+      const host = reactivateKhoraHost(db, id);
+      reloadAuthTrustedOrigins();
+      return Response.json({ host: hostToFullJson(host, db) });
+    } catch (err: unknown) {
+      const mapped = mapHostLifecycleError(err, "reactivate failed");
+      return Response.json({ error: mapped.message }, { status: mapped.status });
+    }
+  });
+}
+
+export function handleAdminHostDelete(
+  req: Request,
+  consoleAuth: ConsoleAuth | null,
+  hostId: string,
+): Promise<Response> {
+  return withConsoleAuth(req, consoleAuth, () => {
+    const id = hostId.trim();
+    if (id.length === 0) {
+      return Response.json({ error: "host id required" }, { status: 400 });
+    }
+    const db = getRegistryDatabase();
+    try {
+      const deleted = deleteKhoraHost(db, id);
+      reloadAuthTrustedOrigins();
+      return Response.json({ ok: true, slug: deleted.slug, baseUrl: deleted.baseUrl });
+    } catch (err: unknown) {
+      const mapped = mapHostLifecycleError(err, "delete failed");
+      return Response.json({ error: mapped.message }, { status: mapped.status });
+    }
   });
 }
 

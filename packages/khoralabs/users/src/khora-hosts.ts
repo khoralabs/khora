@@ -270,12 +270,49 @@ export function suspendKhoraHost(db: Database, hostId: string): KhoraHost {
   if (existing === null) {
     throw new Error("host not found");
   }
+  if (existing.status === "suspended") {
+    return existing;
+  }
   db.prepare(`UPDATE khora_hosts SET status = 'suspended' WHERE id = ?`).run(hostId);
   const host = findHostById(db, hostId);
   if (host === null) {
     throw new Error("host suspend failed");
   }
   return host;
+}
+
+export function reactivateKhoraHost(db: Database, hostId: string): KhoraHost {
+  const existing = findHostById(db, hostId);
+  if (existing === null) {
+    throw new Error("host not found");
+  }
+  if (existing.status !== "suspended") {
+    throw new Error(`cannot reactivate host in status: ${existing.status}`);
+  }
+  db.prepare(`UPDATE khora_hosts SET status = 'active' WHERE id = ?`).run(hostId);
+  const host = findHostById(db, hostId);
+  if (host === null) {
+    throw new Error("host reactivate failed");
+  }
+  return host;
+}
+
+export type DeletedKhoraHostRef = { slug: string; baseUrl: string };
+
+export function deleteKhoraHost(db: Database, hostId: string): DeletedKhoraHostRef {
+  const existing = findHostById(db, hostId);
+  if (existing === null) {
+    throw new Error("host not found");
+  }
+  const ref = { slug: existing.slug, baseUrl: existing.baseUrl };
+  db.prepare(
+    `UPDATE agent_account_bindings SET bound_via_host_id = NULL WHERE bound_via_host_id = ?`,
+  ).run(hostId);
+  const result = db.prepare(`DELETE FROM khora_hosts WHERE id = ?`).run(hostId);
+  if (result.changes === 0) {
+    throw new Error("host delete failed");
+  }
+  return ref;
 }
 
 /** Dev bootstrap: insert or return existing host as active. */

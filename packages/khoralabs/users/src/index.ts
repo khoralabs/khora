@@ -135,6 +135,8 @@ export { hashInviteToken } from "./invite-hash";
 export {
   activateKhoraHost,
   countHosts,
+  type DeletedKhoraHostRef,
+  deleteKhoraHost,
   deliverPendingManagementToken,
   findActiveHostBySlug,
   findHostById,
@@ -144,6 +146,7 @@ export {
   listAllHosts,
   listHostsForHealthPoll,
   listPublicHosts,
+  reactivateKhoraHost,
   registerKhoraHost,
   saveHostRegistrationRequirements,
   seedDefaultHost,
