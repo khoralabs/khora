@@ -163,5 +163,8 @@ export function consumeDeviceAuthorization(
 }
 
 export function deviceSessionCookie(sessionToken: string): string {
+  if (sessionToken.includes("session_token=")) {
+    return sessionToken;
+  }
   return `better-auth.session_token=${sessionToken}`;
 }

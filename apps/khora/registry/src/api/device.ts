@@ -9,7 +9,7 @@ import {
 import {
   getRegistryDatabase,
   getRegistrySession,
-  getRegistrySessionToken,
+  getRegistrySessionCookieHeader,
 } from "@khoralabs/registry-auth";
 import { registryPublicUrl } from "./resolve-host";
 
@@ -61,14 +61,14 @@ export async function handleDeviceApprove(req: Request): Promise<Response> {
     return Response.json({ error: "user_code required" }, { status: 400 });
   }
 
-  const token = await getRegistrySessionToken(req);
-  if (token === null) {
-    return Response.json({ error: "Session token unavailable" }, { status: 500 });
+  const sessionCookie = getRegistrySessionCookieHeader(req);
+  if (sessionCookie === null) {
+    return Response.json({ error: "Session cookie unavailable" }, { status: 500 });
   }
 
   const db = getRegistryDatabase();
   try {
-    const device = approveDeviceAuthorization(db, { userCode, sessionToken: token });
+    const device = approveDeviceAuthorization(db, { userCode, sessionToken: sessionCookie });
     return Response.json({ ok: true, user_code: device.userCode });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "approve failed";

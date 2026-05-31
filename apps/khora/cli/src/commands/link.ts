@@ -61,6 +61,14 @@ export async function handleLink(flags: FlagMap): Promise<void> {
   const sessionCookie = await devicePollToken(registryUrl, auth.device_code, auth.expires_in);
   saveRegistrySessionCookie(sessionCookie);
 
+  const sessionCheck = await linkStatus(registryUrl);
+  if (sessionCheck === null) {
+    clearRegistrySessionCookie();
+    throw new Error(
+      "Registry session could not be verified after browser approval. Run khora link again and complete sign-in + Approve CLI.",
+    );
+  }
+
   const cfg = khoraCliResolvedConfig(flags);
   const propagateHostSlugs =
     cfg.hosts !== undefined ? await discoverRegisteredHostSlugs(signer, cfg.hosts, hostSlug) : [];

@@ -6,5 +6,5 @@ export { getRegistryDatabase, registryDatabasePath, resetRegistryDatabase } from
 export { ensureRegistrySchema } from "./ensure-schema";
 export { initAuthSchema, initRegistrySchema } from "./schema";
 export { getRegistrySession, type RegistrySession } from "./session";
-export { getRegistrySessionToken } from "./session-token";
+export { getRegistrySessionCookieHeader, getRegistrySessionToken } from "./session-token";
 export { verifyRegistrySession } from "./verify-registry-session";
