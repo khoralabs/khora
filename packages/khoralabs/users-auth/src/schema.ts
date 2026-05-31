@@ -1,24 +1,23 @@
 import type { Database } from "bun:sqlite";
-import { createMigrationRunner } from "@khoralabs/sqlite-migrate";
-import { usersMigrations } from "@khoralabs/users";
-import m001BetterAuthSchema from "./migrations/1.0.0-2.0.0/001-better-auth-schema";
+import { initUsersSchema } from "@khoralabs/users";
+import { getMigrations } from "better-auth/db/migration";
+import { createRegistryAuth } from "./auth-config";
 
-export const authMigrations = [m001BetterAuthSchema];
-export const registryMigrations = [...usersMigrations, ...authMigrations];
+async function ensureAuthSchema(): Promise<void> {
+  const auth = createRegistryAuth();
+  const { toBeAdded, toBeCreated, runMigrations } = await getMigrations(auth.options);
+  if (toBeAdded.length === 0 && toBeCreated.length === 0) {
+    return;
+  }
+  await runMigrations();
+}
 
 export async function initAuthSchema(db: Database): Promise<void> {
   db.exec("PRAGMA foreign_keys = ON;");
-  await createMigrationRunner().run(db, authMigrations);
+  await ensureAuthSchema();
 }
 
 export async function initRegistrySchema(db: Database): Promise<void> {
-  db.exec("PRAGMA foreign_keys = ON;");
-  await createMigrationRunner().run(db, registryMigrations);
-}
-
-export function isAuthSchemaReady(db: Database): boolean {
-  const row = db
-    .prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'verification'`)
-    .get() as { name: string } | null;
-  return row !== null;
+  await initUsersSchema(db);
+  await ensureAuthSchema();
 }

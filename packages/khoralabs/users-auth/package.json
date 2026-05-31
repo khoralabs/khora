@@ -21,7 +21,6 @@
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.1050.0",
-    "@khoralabs/sqlite-migrate": "workspace:*",
     "@khoralabs/users": "workspace:*",
     "better-auth": "^1.6.11"
   },

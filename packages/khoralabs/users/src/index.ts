@@ -152,5 +152,5 @@ export {
   upsertMembership,
 } from "./memberships";
 export { normalizeEmail } from "./normalize";
-export { initUsersSchema, isUsersSchemaReady, usersMigrations } from "./schema";
+export { initUsersSchema } from "./schema";
 export type * from "./types";

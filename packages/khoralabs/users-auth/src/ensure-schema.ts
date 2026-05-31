@@ -1,17 +1,7 @@
 import { getRegistryDatabase } from "./db";
-import { initRegistrySchema, isAuthSchemaReady } from "./schema";
+import { initRegistrySchema } from "./schema";
 
-export function isRegistryAuthSchemaReady(): boolean {
-  try {
-    return isAuthSchemaReady(getRegistryDatabase());
-  } catch {
-    return false;
-  }
-}
-
-/** Apply pending domain + Better Auth migrations when auth tables are missing. */
+/** Ensure domain + Better Auth tables exist (greenfield bootstrap on every startup). */
 export async function ensureRegistrySchema(): Promise<void> {
-  if (isRegistryAuthSchemaReady()) return;
-  console.log("[users-auth] Applying registry schema migrations …");
   await initRegistrySchema(getRegistryDatabase());
 }
