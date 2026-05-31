@@ -1,3 +1,4 @@
+import type { RegistrationRequirementState } from "./host-registration-requirements";
 import type { SnakeCaseKey, SqlRow } from "./sql-row";
 import { sqlSelectColumns } from "./sql-row";
 
@@ -32,6 +33,7 @@ export type KhoraHost = {
   healthProbedEndpoint: HostHealthProbedEndpoint | null;
   registryParticipationEnabled: boolean;
   includedTrustedOrigins: number;
+  registrationRequirements: RegistrationRequirementState[];
 };
 
 export type HostTrustedOrigin = {
@@ -125,7 +127,15 @@ export type CliLinkChallenge = {
 
 /** SQLite row shapes (snake_case columns) derived from domain types above */
 export type AccountRow = SqlRow<Account>;
-export type KhoraHostRow = SqlRow<KhoraHost> & { management_token_hash: string | null };
+/** Columns loaded from SQLite for khora_hosts (JSON-backed fields are row overrides). */
+type KhoraHostSqlFields = Omit<KhoraHost, "registrationRequirements">;
+
+export type KhoraHostRow = SqlRow<KhoraHostSqlFields> & {
+  registration_requirements: string | null;
+  management_token_hash: string | null;
+  registration_secret_hash: string | null;
+  pending_management_token: string | null;
+};
 export type HostTrustedOriginRow = SqlRow<HostTrustedOrigin>;
 export type AccessTokenRequestRow = SqlRow<AccessTokenRequest>;
 export type MarketingConsentRow = SqlRow<MarketingConsent>;
@@ -153,7 +163,7 @@ export const KHORA_HOST_SQL_COLUMNS = {
   healthProbedEndpoint: "health_probed_endpoint",
   registryParticipationEnabled: "registry_participation_enabled",
   includedTrustedOrigins: "included_trusted_origins",
-} as const satisfies { [K in keyof KhoraHost]: SnakeCaseKey<K & string> };
+} as const satisfies { [K in keyof KhoraHostSqlFields]: SnakeCaseKey<K & string> };
 
 export const HOST_TRUSTED_ORIGIN_SQL_COLUMNS = {
   id: "id",
@@ -164,4 +174,4 @@ export const HOST_TRUSTED_ORIGIN_SQL_COLUMNS = {
 
 export const HOST_TRUSTED_ORIGIN_SELECT = sqlSelectColumns(HOST_TRUSTED_ORIGIN_SQL_COLUMNS);
 
-export const KHORA_HOST_SELECT = sqlSelectColumns(KHORA_HOST_SQL_COLUMNS);
+export const KHORA_HOST_SELECT = `${sqlSelectColumns(KHORA_HOST_SQL_COLUMNS)}, registration_requirements`;

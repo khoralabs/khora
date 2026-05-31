@@ -36,7 +36,9 @@ export function handleAdminHostActivate(
     }
     const db = getRegistryDatabase();
     try {
-      const { host, managementToken } = activateKhoraHost(db, id);
+      const { host, managementToken } = activateKhoraHost(db, id, {
+        satisfyOperatorApproval: true,
+      });
       const probed = await probeHostHealthById(db, host.id);
       return Response.json({
         host: hostToFullJson(probed ?? host, db),

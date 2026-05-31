@@ -31,7 +31,7 @@ describe("readRegistryTrustedOrigins", () => {
     const db = getUsersDatabase();
     const { host } = activateKhoraHost(
       db,
-      registerKhoraHost(db, { slug: "web", baseUrl: "http://localhost:8788" }).id,
+      registerKhoraHost(db, { slug: "web", baseUrl: "http://localhost:8788" }).host.id,
     );
     replaceHostTrustedOrigins(db, host.id, ["http://localhost:8788", "https://khoralabs.com"]);
     setHostRegistryParticipation(db, host.id, true);
@@ -46,7 +46,7 @@ describe("readRegistryTrustedOrigins", () => {
     const db = getUsersDatabase();
     const { host } = activateKhoraHost(
       db,
-      registerKhoraHost(db, { slug: "web-cors", baseUrl: "https://k-0.example.com" }).id,
+      registerKhoraHost(db, { slug: "web-cors", baseUrl: "https://k-0.example.com" }).host.id,
     );
     replaceHostTrustedOrigins(db, host.id, ["https://khoralabs.com"]);
     setHostRegistryParticipation(db, host.id, true);

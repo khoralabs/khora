@@ -42,6 +42,7 @@ export function hostToFullJson(host: KhoraHost, db: Database): Record<string, un
   return {
     ...hostToPublicJson(host),
     status: host.status,
+    registrationRequirements: host.registrationRequirements,
     registryParticipationEnabled: host.registryParticipationEnabled,
     includedTrustedOrigins: host.includedTrustedOrigins,
     trustedOrigins: state?.origins ?? [],

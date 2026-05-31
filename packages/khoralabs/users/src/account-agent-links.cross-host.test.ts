@@ -32,7 +32,7 @@ describe("cross-host agent links", () => {
     const hostB = registerKhoraHost(db, {
       slug: "host-b",
       baseUrl: "http://localhost:8789",
-    });
+    }).host;
     const account = linkBetterAuthUser(db, {
       providerSubject: "user-1",
       email: "a@test.com",

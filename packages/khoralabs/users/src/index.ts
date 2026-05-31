@@ -64,6 +64,38 @@ export {
   normalizeHostHealthPath,
 } from "./host-health-path";
 export { issueHostManagementToken } from "./host-management-token";
+export {
+  evaluateHostHealthRequirement,
+  type HostHealthProbeFn,
+  readHostRegistrationPolicy,
+  registrationStatusJson,
+  tryAutoActivateHost,
+} from "./host-registration-flow";
+export {
+  allAutoActivateRequirementsMet,
+  initializeRegistrationRequirements,
+  parseRegistrationRequirements,
+  parseRegistrationTrustLevel,
+  type RegistrationPolicy,
+  type RegistrationRequirementId,
+  type RegistrationRequirementState,
+  type RegistrationRequirementStatus,
+  type RegistrationTrustLevel,
+  readRegistrationPolicyFromEnv,
+  registrationPolicyForTrustLevel,
+  registrationRequirementsSummary,
+  serializeRegistrationRequirements,
+  updateRegistrationRequirement,
+} from "./host-registration-requirements";
+export {
+  clearHostRegistrationSecret,
+  generateHostRegistrationSecret,
+  hashHostRegistrationSecret,
+  issueHostRegistrationSecret,
+  storePendingManagementToken,
+  takePendingManagementToken,
+  verifyHostRegistrationSecret,
+} from "./host-registration-secret";
 export { InvalidHostSlugError, normalizeHostSlug } from "./host-slug";
 export {
   type HostRegistryState,
@@ -90,6 +122,7 @@ export { hashInviteToken } from "./invite-hash";
 export {
   activateKhoraHost,
   countHosts,
+  deliverPendingManagementToken,
   findActiveHostBySlug,
   findHostById,
   findHostBySlug,
@@ -98,6 +131,7 @@ export {
   listAllHosts,
   listPublicHosts,
   registerKhoraHost,
+  saveHostRegistrationRequirements,
   seedDefaultHost,
   suspendKhoraHost,
   updateHostHealthCheck,

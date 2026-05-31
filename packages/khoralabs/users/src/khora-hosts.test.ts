@@ -25,7 +25,7 @@ describe("registerKhoraHost", () => {
 
   test("creates pending host not in public list until activated", () => {
     const db = getUsersDatabase();
-    const host = registerKhoraHost(db, {
+    const { host } = registerKhoraHost(db, {
       slug: "my-host",
       baseUrl: "http://localhost:8788",
       displayName: "My Host",

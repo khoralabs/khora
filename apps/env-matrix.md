@@ -38,6 +38,8 @@ Put these in a Render **Environment Group** (or password manager) and link to ev
 
 Each active host with registry participation enabled contributes its registered **trusted origins** to registry CORS and Better Auth `trustedOrigins`. Host `baseUrl` is not trusted unless explicitly listed (or included via `KHORA_REGISTRY_TRUST_BASE_URL_ORIGIN` on the host).
 
+Registry operators configure host registration trust via `REGISTRY_REGISTRATION_TRUST` (`manual` | `health` | `open`). Self-hosters complete registration and origin setup from the host admin at `/admin/registry`.
+
 ---
 
 ## Variable matrix
@@ -63,9 +65,11 @@ Legend: **+** = set on this service · **·** = not used · **Kind:** **S** = se
 | `BUN_PUBLIC_KHORA_REGISTRY_URL` | · | · | + | C | Inlined into khoralabs homepage client bundle at build time. |
 | `KHORA_HOST_SLUG` | · | + | · | C | Host slug for `/.well-known/khora` and registry opt-in. |
 | `KHORA_PUBLIC_BASE_URL` | · | + | · | C | Public base URL in well-known + register body (default loopback + `PORT`). |
-| `KHORA_REGISTRY_PARTICIPATE` | · | + | · | C | `1`/`true`: register with registry on boot (pending until activated). |
-| `KHORA_REGISTRY_MANAGEMENT_TOKEN` | · | + | · | S | Bearer token from host activation; host admin syncs trusted origins. |
+| `KHORA_REGISTRY_PARTICIPATE` | · | + | · | C | Legacy: `1`/`true` registers with registry on boot when slug set via env. Prefer `/admin/registry`. |
+| `KHORA_REGISTRY_MANAGEMENT_TOKEN` | · | + | · | S | Optional bootstrap override; host admin stores token in `registry-config.json`. |
 | `KHORA_REGISTRY_TRUST_BASE_URL_ORIGIN` | · | + | · | C | When syncing, include `KHORA_PUBLIC_BASE_URL` origin in trusted origins. |
+| `REGISTRY_REGISTRATION_TRUST` | + | · | · | C | `manual` (default), `health`, or `open` — controls auto-activation policy for self-serve host registration. |
+| `REGISTRY_REGISTRATION_REQUIREMENTS` | + | · | · | C | Optional JSON override of registration requirement IDs (extensibility hook). |
 | `KHORA_HOST_DISPLAY_NAME` | · | + | · | C | Optional display name for registry register body. |
 
 ### Khora CLI (developer machine, not a deployed service)
@@ -181,7 +185,9 @@ REGISTRY_SQLCIPHER_KEY=...
 PORT=4000
 REGISTRY_URL=https://registry.example.com
 REGISTRY_DATABASE_PATH=/data/registry.sqlite
-# Registry participation: activate host in /admin, set KHORA_REGISTRY_MANAGEMENT_TOKEN on host, configure trusted origins
+# Host registration trust: manual (default), health (auto-activate on probe), open
+# REGISTRY_REGISTRATION_TRUST=manual
+# REGISTRY_REGISTRATION_REQUIREMENTS=
 BETTER_AUTH_SECRET=...
 SES_FROM_ADDRESS=noreply@example.com
 REGISTRY_LITESTREAM=1

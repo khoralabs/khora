@@ -31,7 +31,13 @@ import {
 } from "./posts";
 import { handleProfileByDid, handleProfileByUsername, handleProfilePatch } from "./profile";
 import { handleRegister } from "./register";
-import { handleAdminRegistryGet, handleAdminRegistryPut } from "./registry-admin";
+import {
+  handleAdminRegistryClaimPost,
+  handleAdminRegistryConfigPut,
+  handleAdminRegistryGet,
+  handleAdminRegistryPut,
+  handleAdminRegistryRegisterPost,
+} from "./registry-admin";
 import { handleListRelationships } from "./relationships";
 import { jsonError, rateLimitedResponse } from "./responses";
 import {
@@ -111,6 +117,18 @@ export async function route(
 
   if (req.method === "GET" && url.pathname === "/admin/api/registry") {
     return handleAdminRegistryGet(req, deps);
+  }
+
+  if (req.method === "PUT" && url.pathname === "/admin/api/registry/config") {
+    return handleAdminRegistryConfigPut(req, deps);
+  }
+
+  if (req.method === "POST" && url.pathname === "/admin/api/registry/register") {
+    return handleAdminRegistryRegisterPost(req, deps);
+  }
+
+  if (req.method === "POST" && url.pathname === "/admin/api/registry/claim") {
+    return handleAdminRegistryClaimPost(req, deps);
   }
 
   if (req.method === "PUT" && url.pathname === "/admin/api/registry") {

@@ -24,7 +24,7 @@ describe("khora host health", () => {
 
   test("register defaults health paths and unknown status", () => {
     const db = getUsersDatabase();
-    const host = registerKhoraHost(db, {
+    const { host } = registerKhoraHost(db, {
       slug: "lab",
       baseUrl: "http://localhost:8788",
     });
@@ -36,7 +36,7 @@ describe("khora host health", () => {
 
   test("register accepts custom health paths", () => {
     const db = getUsersDatabase();
-    const host = registerKhoraHost(db, {
+    const { host } = registerKhoraHost(db, {
       slug: "lab",
       baseUrl: "http://localhost:8788",
       healthReadyPath: "readyz",
@@ -48,7 +48,7 @@ describe("khora host health", () => {
 
   test("updateHostHealthCheck persists probe result", () => {
     const db = getUsersDatabase();
-    const host = registerKhoraHost(db, {
+    const { host } = registerKhoraHost(db, {
       slug: "lab",
       baseUrl: "http://localhost:8788",
     });

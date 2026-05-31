@@ -4,12 +4,16 @@ import {
   InvalidHostHealthPathError,
   InvalidHostSlugError,
   InvalidKhoraHostBaseUrlError,
+  initializeRegistrationRequirements,
   listAllHosts,
   listPublicHosts,
+  readHostRegistrationPolicy,
   registerKhoraHost,
+  registrationStatusJson,
+  tryAutoActivateHost,
 } from "@khoralabs/users";
 import { getRegistryDatabase } from "@khoralabs/users-auth";
-import { probeHostHealthById } from "../host-health";
+import { probeHostHealth, probeHostHealthById } from "../host-health";
 import { hostToFullJson, hostToPublicJson } from "./host-json";
 import { authorizeRegistryInternal } from "./registry-internal";
 
@@ -38,6 +42,12 @@ function checkRegisterRateLimit(req: Request): boolean {
   }
   entry.count += 1;
   return true;
+}
+
+function envProbeTimeoutMs(): number {
+  const raw = process.env.REGISTRY_HOST_HEALTH_PROBE_TIMEOUT_MS?.trim();
+  const n = raw !== undefined ? Number.parseInt(raw, 10) : 5000;
+  return Number.isFinite(n) && n > 0 ? n : 5000;
 }
 
 type RegisterBody = {
@@ -84,21 +94,41 @@ export async function handleHostRegister(req: Request): Promise<Response> {
   }
 
   const db = getRegistryDatabase();
+  const policy = readHostRegistrationPolicy();
   try {
-    const host = registerKhoraHost(db, {
+    const { host, registrationSecret } = registerKhoraHost(db, {
       slug,
       baseUrl,
+      registrationRequirements: initializeRegistrationRequirements(policy),
       ...(body.displayName !== undefined ? { displayName: body.displayName } : {}),
       ...(body.description !== undefined ? { description: body.description } : {}),
       ...(body.capabilities !== undefined ? { capabilities: body.capabilities } : {}),
       ...(body.healthReadyPath !== undefined ? { healthReadyPath: body.healthReadyPath } : {}),
       ...(body.healthPath !== undefined ? { healthPath: body.healthPath } : {}),
     });
+
+    const timeoutMs = envProbeTimeoutMs();
+    const activation = await tryAutoActivateHost(db, host.id, policy, async (registeredHost) =>
+      probeHostHealth(registeredHost, { timeoutMs }),
+    );
+
+    const message =
+      activation.host.status === "active"
+        ? "Host registered and activated."
+        : policy.trustLevel === "manual"
+          ? "Host registered as pending. An operator must activate it before it appears in the public catalog."
+          : "Host registered as pending. Complete registration requirements and claim activation.";
+
     return Response.json(
       {
-        host: hostToFullJson(host, db),
-        message:
-          "Host registered as pending. An operator must activate it before it appears in the public catalog.",
+        ...registrationStatusJson(activation.host, policy),
+        host: hostToFullJson(activation.host, db),
+        registrationSecret,
+        activated: activation.activated,
+        ...(activation.managementToken !== null
+          ? { managementToken: activation.managementToken }
+          : {}),
+        message,
       },
       { status: 201 },
     );
@@ -135,7 +165,9 @@ export async function handleInternalHostActivate(req: Request, hostId: string): 
   }
   const db = getRegistryDatabase();
   try {
-    const { host, managementToken } = activateKhoraHost(db, id);
+    const { host, managementToken } = activateKhoraHost(db, id, {
+      satisfyOperatorApproval: true,
+    });
     const probed = await probeHostHealthById(db, host.id);
     return Response.json({
       host: hostToFullJson(probed ?? host, db),

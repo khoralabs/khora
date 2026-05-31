@@ -39,7 +39,10 @@ CREATE TABLE IF NOT EXISTS khora_hosts (
   health_probed_endpoint TEXT,
   registry_participation_enabled INTEGER NOT NULL DEFAULT 0,
   included_trusted_origins INTEGER NOT NULL DEFAULT 2,
-  management_token_hash TEXT
+  management_token_hash TEXT,
+  registration_requirements TEXT,
+  registration_secret_hash TEXT,
+  pending_management_token TEXT
 );
 
 CREATE TABLE IF NOT EXISTS host_trusted_origins (

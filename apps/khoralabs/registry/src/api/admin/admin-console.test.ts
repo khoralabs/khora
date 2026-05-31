@@ -117,7 +117,7 @@ describe("registry admin console", () => {
     const pending = registerKhoraHost(db, {
       slug: "pending-ops",
       baseUrl: "http://localhost:9999",
-    });
+    }).host;
     expect(pending.status).toBe("pending");
 
     const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });

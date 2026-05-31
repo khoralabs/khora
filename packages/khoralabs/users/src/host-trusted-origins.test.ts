@@ -29,7 +29,7 @@ describe("host trusted origins", () => {
     registerKhoraHost(db, { slug: "pending-host", baseUrl: "http://localhost:8789" });
     const active = activateKhoraHost(
       db,
-      registerKhoraHost(db, { slug: "active-host", baseUrl: "http://localhost:8788" }).id,
+      registerKhoraHost(db, { slug: "active-host", baseUrl: "http://localhost:8788" }).host.id,
     ).host;
     expect(listRegistryTrustedOrigins(db)).toHaveLength(0);
 
@@ -41,7 +41,7 @@ describe("host trusted origins", () => {
   test("listRegistryTrustedOrigins includes multiple explicit origins", () => {
     const active = activateKhoraHost(
       db,
-      registerKhoraHost(db, { slug: "web", baseUrl: "http://localhost:8788" }).id,
+      registerKhoraHost(db, { slug: "web", baseUrl: "http://localhost:8788" }).host.id,
     ).host;
     replaceHostTrustedOrigins(db, active.id, ["http://localhost:8788", "https://khoralabs.com"]);
     setHostRegistryParticipation(db, active.id, true);
@@ -60,7 +60,7 @@ describe("host trusted origins", () => {
   test("replaceHostTrustedOrigins enforces quota", () => {
     const active = activateKhoraHost(
       db,
-      registerKhoraHost(db, { slug: "quota", baseUrl: "http://localhost:8788" }).id,
+      registerKhoraHost(db, { slug: "quota", baseUrl: "http://localhost:8788" }).host.id,
     ).host;
     expect(() =>
       replaceHostTrustedOrigins(db, active.id, [

@@ -24,7 +24,10 @@ describe("host registry API", () => {
 
   test("GET and PUT /v1/hosts/:slug/registry with management token", async () => {
     const db = getUsersDatabase();
-    const pending = registerKhoraHost(db, { slug: "khora-0", baseUrl: "https://k-0.example.com" });
+    const pending = registerKhoraHost(db, {
+      slug: "khora-0",
+      baseUrl: "https://k-0.example.com",
+    }).host;
     const { host, managementToken } = activateKhoraHost(db, pending.id);
     expect(managementToken).not.toBeNull();
 

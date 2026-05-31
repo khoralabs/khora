@@ -9,6 +9,7 @@ import {
 } from "./env";
 import { logger } from "./logger";
 import { syncHostRegistryOnStartup } from "./registry-client";
+import { readEffectiveRegistryConfig } from "./registry-local-config";
 
 const DEFAULT_REGISTRY_URL = "http://localhost:4000";
 
@@ -42,10 +43,7 @@ export async function registerHostWithRegistry(params: RegistryOptInParams): Pro
 
   const text = await res.text();
   if (res.status === 201) {
-    logger.info(
-      { slug, registryUrl },
-      "registry opt-in: host registered as pending; activate in registry admin",
-    );
+    logger.info({ slug, registryUrl }, "registry opt-in: host registered");
     return;
   }
 
@@ -61,36 +59,44 @@ export async function registerHostWithRegistry(params: RegistryOptInParams): Pro
 }
 
 export function maybeRegistryOptInOnStartup(): void {
-  if (!envRegistryParticipate()) {
-    return;
-  }
-
-  const slug = envHostSlug();
+  const local = readEffectiveRegistryConfig();
+  const envParticipate = envRegistryParticipate();
+  const slug = local.slug ?? envHostSlug();
   if (slug === undefined) {
-    logger.warn(
-      "KHORA_REGISTRY_PARTICIPATE is set but KHORA_HOST_SLUG is missing; skipping registration",
-    );
+    if (envParticipate) {
+      logger.warn("Registry opt-in enabled but host slug is missing; skipping registration");
+    }
     return;
   }
 
-  const registryUrl = envRegistryUrl() ?? DEFAULT_REGISTRY_URL;
-  const baseUrl = envPublicBaseUrl(envPort());
-  const displayName = envHostDisplayName();
+  const registryUrl = local.registryUrl ?? envRegistryUrl() ?? DEFAULT_REGISTRY_URL;
+  const baseUrl = local.publicBaseUrl ?? envPublicBaseUrl(envPort());
+  const displayName = local.displayName ?? envHostDisplayName();
+  const managementToken = local.managementToken ?? envRegistryManagementToken();
 
-  void (async () => {
-    await registerHostWithRegistry({
+  if (envParticipate || local.slug !== undefined) {
+    void registerHostWithRegistry({
       registryUrl,
       slug,
       baseUrl,
       ...(displayName !== undefined ? { displayName } : {}),
     });
-    if (envRegistryManagementToken() !== undefined) {
+  }
+
+  if (managementToken !== undefined) {
+    void (async () => {
       try {
-        await syncHostRegistryOnStartup();
+        await syncHostRegistryOnStartup({
+          registryUrl,
+          slug,
+          publicBaseUrl: baseUrl,
+          ...(displayName !== undefined ? { displayName } : {}),
+          managementToken,
+        });
         logger.info({ slug, registryUrl }, "registry: synced trusted origins");
       } catch (err) {
         logger.warn({ err, slug, registryUrl }, "registry: trusted origin sync failed");
       }
-    }
-  })();
+    })();
+  }
 }

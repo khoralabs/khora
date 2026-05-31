@@ -70,6 +70,14 @@ const deps: HostRouteDeps = {
 const inboxWsHandlers = createInboxDrainWebSocketHandlers({ ctx });
 const roomWsHandlers = khoraFrameChannelWsHandlers(ctx);
 
+function isAdminSpaPath(pathname: string): boolean {
+  return (
+    pathname.startsWith("/admin") &&
+    !pathname.startsWith("/admin/login") &&
+    !pathname.startsWith("/admin/api")
+  );
+}
+
 const server = Bun.serve<KhoraWsData>({
   port: envPort(),
   routes: {
@@ -80,6 +88,9 @@ const server = Bun.serve<KhoraWsData>({
   },
   async fetch(req) {
     const url = new URL(req.url);
+    if (req.method === "GET" && isAdminSpaPath(url.pathname)) {
+      return adminPage;
+    }
     try {
       const res = await route(req, url, server, deps);
       return res ?? new Response("Not found", { status: 404 });

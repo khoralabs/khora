@@ -18,6 +18,7 @@ import {
 import { handleLookupAccount, handleLookupEmail } from "./api/admin/lookup";
 import { handleAdminStatsSummary } from "./api/admin/stats";
 import { handleDeviceApprove, handleDeviceAuthorize, handleDeviceToken } from "./api/device";
+import { handleHostRegistrationClaim, handleHostRegistrationGet } from "./api/host-registration";
 import { handleHostRegistryGet, handleHostRegistryPut } from "./api/host-registry";
 import {
   handleHostGet,
@@ -130,6 +131,20 @@ const server = serve({
         if (req.method === "PUT") {
           return withCors(req, await handleHostRegistryPut(req, slug));
         }
+      }
+    }
+
+    if (path.startsWith("/v1/hosts/") && path.endsWith("/registration/claim")) {
+      const slug = path.slice("/v1/hosts/".length, -"/registration/claim".length);
+      if (slug.length > 0 && req.method === "POST") {
+        return withCors(req, await handleHostRegistrationClaim(req, slug));
+      }
+    }
+
+    if (path.startsWith("/v1/hosts/") && path.endsWith("/registration")) {
+      const slug = path.slice("/v1/hosts/".length, -"/registration".length);
+      if (slug.length > 0 && req.method === "GET") {
+        return withCors(req, handleHostRegistrationGet(req, slug));
       }
     }
 

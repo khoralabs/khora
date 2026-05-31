@@ -1,6 +1,17 @@
 import type { Database } from "bun:sqlite";
 import { normalizeHostHealthPath } from "./host-health-path";
 import { issueHostManagementToken } from "./host-management-token";
+import {
+  parseRegistrationRequirements,
+  type RegistrationRequirementState,
+  serializeRegistrationRequirements,
+} from "./host-registration-requirements";
+import {
+  clearHostRegistrationSecret,
+  issueHostRegistrationSecret,
+  storePendingManagementToken,
+  takePendingManagementToken,
+} from "./host-registration-secret";
 import { normalizeHostSlug } from "./host-slug";
 import { normalizeKhoraHostBaseUrl } from "./host-url";
 import type { HostHealthProbedEndpoint, HostHealthStatus, KhoraHost, KhoraHostRow } from "./types";
@@ -34,6 +45,7 @@ function mapHost(row: KhoraHostRow): KhoraHost {
     healthProbedEndpoint: mapProbedEndpoint(row.health_probed_endpoint),
     registryParticipationEnabled: row.registry_participation_enabled !== 0,
     includedTrustedOrigins: row.included_trusted_origins,
+    registrationRequirements: parseRegistrationRequirements(row.registration_requirements),
   };
 }
 
@@ -99,6 +111,26 @@ export function listPublicHosts(db: Database): KhoraHost[] {
   return listActiveHosts(db);
 }
 
+export function saveHostRegistrationRequirements(
+  db: Database,
+  hostId: string,
+  requirements: RegistrationRequirementState[],
+): KhoraHost {
+  const existing = findHostById(db, hostId);
+  if (existing === null) {
+    throw new Error("host not found");
+  }
+  db.prepare(`UPDATE khora_hosts SET registration_requirements = ? WHERE id = ?`).run(
+    serializeRegistrationRequirements(requirements),
+    hostId,
+  );
+  const host = findHostById(db, hostId);
+  if (host === null) {
+    throw new Error("host registration requirements update failed");
+  }
+  return host;
+}
+
 export function registerKhoraHost(
   db: Database,
   params: {
@@ -109,8 +141,9 @@ export function registerKhoraHost(
     capabilities?: Record<string, unknown>;
     healthReadyPath?: string;
     healthPath?: string;
+    registrationRequirements?: RegistrationRequirementState[];
   },
-): KhoraHost {
+): { host: KhoraHost; registrationSecret: string } {
   const slug = normalizeHostSlug(params.slug);
   const baseUrl = storageBaseUrl(params.baseUrl);
   normalizeKhoraHostBaseUrl(baseUrl);
@@ -126,11 +159,15 @@ export function registerKhoraHost(
 
   const now = Date.now();
   const id = crypto.randomUUID();
+  const requirementsJson =
+    params.registrationRequirements !== undefined
+      ? serializeRegistrationRequirements(params.registrationRequirements)
+      : null;
   db.prepare(
     `INSERT INTO khora_hosts (
        id, slug, base_url, display_name, description, status, opted_in_at_ms, capabilities,
-       health_ready_path, health_path
-     ) VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)`,
+       health_ready_path, health_path, registration_requirements
+     ) VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)`,
   ).run(
     id,
     slug,
@@ -141,12 +178,14 @@ export function registerKhoraHost(
     params.capabilities === undefined ? null : JSON.stringify(params.capabilities),
     healthReadyPath,
     healthPath,
+    requirementsJson,
   );
+  const registrationSecret = issueHostRegistrationSecret(db, id);
   const host = findHostById(db, id);
   if (host === null) {
     throw new Error("khora host insert failed");
   }
-  return host;
+  return { host, registrationSecret };
 }
 
 export function updateHostHealthCheck(
@@ -181,6 +220,7 @@ export function updateHostHealthCheck(
 export function activateKhoraHost(
   db: Database,
   hostId: string,
+  options?: { satisfyOperatorApproval?: boolean },
 ): { host: KhoraHost; managementToken: string | null } {
   const existing = findHostById(db, hostId);
   if (existing === null) {
@@ -192,13 +232,32 @@ export function activateKhoraHost(
   if (existing.status !== "pending") {
     throw new Error(`cannot activate host in status: ${existing.status}`);
   }
+
+  let requirements = existing.registrationRequirements;
+  if (options?.satisfyOperatorApproval === true) {
+    requirements = requirements.map((item) =>
+      item.id === "operator_approval"
+        ? { ...item, status: "satisfied" as const, checkedAtMs: Date.now() }
+        : item,
+    );
+    saveHostRegistrationRequirements(db, hostId, requirements);
+  }
+
   db.prepare(`UPDATE khora_hosts SET status = 'active' WHERE id = ?`).run(hostId);
   const managementToken = issueHostManagementToken(db, hostId);
+  if (managementToken !== null) {
+    storePendingManagementToken(db, hostId, managementToken);
+  }
+  clearHostRegistrationSecret(db, hostId);
   const host = findHostById(db, hostId);
   if (host === null) {
     throw new Error("host activate failed");
   }
   return { host, managementToken };
+}
+
+export function deliverPendingManagementToken(db: Database, hostId: string): string | null {
+  return takePendingManagementToken(db, hostId);
 }
 
 export function suspendKhoraHost(db: Database, hostId: string): KhoraHost {
