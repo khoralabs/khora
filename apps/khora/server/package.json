@@ -5,13 +5,17 @@
   "private": true,
   "scripts": {
     "preinstall": "bun ../../../scripts/install-litestream.ts --output .bin/litestream",
-    "start": "bun run scripts/start-khora.ts",
+    "build:web": "bun-web build",
+    "prestart": "bun run build:web",
+    "start": "NODE_ENV=production bun run scripts/start-khora.ts",
     "start:server": "bun run src/index.ts",
+    "dev": "bun --hot src/index.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.0",
     "@khoralabs/agent-relay": "workspace:*",
+    "@khoralabs/bun-web": "workspace:*",
     "@khoralabs/colonnade-persistence": "workspace:*",
     "@khoralabs/duplex-byte-stream": "workspace:*",
     "@khoralabs/khora-auth": "workspace:*",

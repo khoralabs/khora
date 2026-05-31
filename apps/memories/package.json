@@ -4,13 +4,16 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build:web": "bun-web build",
     "dev": "bun --hot src/index.ts",
-    "start": "NODE_ENV=production bun src/index.ts",
-    "build": "bun run build.ts"
+    "prestart": "bun run build:web",
+    "start": "NODE_ENV=production bun dist/index.js",
+    "build": "bun run build:web"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.0",
     "@khoralabs/agent-identity": "workspace:*",
+    "@khoralabs/bun-web": "workspace:*",
     "@khoralabs/memories-core": "workspace:*",
     "@khoralabs/memories-investigator": "workspace:*",
     "@khoralabs/memories-react-graph": "workspace:*",

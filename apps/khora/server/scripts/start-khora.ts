@@ -16,10 +16,13 @@ import { resolveKhoraPersistencePaths, validateEnv } from "../src/env";
 import { envMemoriesBootstrapConfig, envMemoriesEnabled } from "../src/memories-env";
 
 const serverRoot = path.resolve(path.dirname(import.meta.path), "..");
-const indexEntry = path.join(serverRoot, "src", "index.ts");
+const isProd = process.env.NODE_ENV === "production";
+const indexEntry = isProd
+  ? path.join(serverRoot, "dist", "index.js")
+  : path.join(serverRoot, "src", "index.ts");
 
 async function runServerOnly(): Promise<never> {
-  const proc = Bun.spawn(["bun", "run", indexEntry], {
+  const proc = Bun.spawn(isProd ? ["bun", indexEntry] : ["bun", "run", indexEntry], {
     cwd: serverRoot,
     stdio: ["inherit", "inherit", "inherit"],
     env: process.env,
@@ -72,7 +75,7 @@ async function runWithLitestream(): Promise<void> {
     env: process.env,
   });
 
-  const srvProc = Bun.spawn(["bun", "run", indexEntry], {
+  const srvProc = Bun.spawn(isProd ? ["bun", indexEntry] : ["bun", "run", indexEntry], {
     cwd: serverRoot,
     stdio: ["inherit", "inherit", "inherit"],
     env: process.env,

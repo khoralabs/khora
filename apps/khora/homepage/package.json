@@ -5,10 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "bun --env-file=.env --hot src/index.ts",
-    "start": "NODE_ENV=production bun --env-file=.env src/index.ts",
-    "build": "bun run build.ts"
+    "build:web": "bun-web build",
+    "prestart": "bun run build:web",
+    "start": "NODE_ENV=production bun --env-file=.env dist/index.js",
+    "build": "bun run build:web"
   },
   "dependencies": {
+    "@khoralabs/bun-web": "workspace:*",
     "@khoralabs/users-auth": "workspace:*",
     "@khoralabs/users-react": "workspace:*",
     "@radix-ui/react-label": "^2.1.7",

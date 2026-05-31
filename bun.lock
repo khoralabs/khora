@@ -59,6 +59,7 @@
       "name": "@khoralabs/khora-homepage",
       "version": "0.1.0",
       "dependencies": {
+        "@khoralabs/bun-web": "workspace:*",
         "@khoralabs/users-auth": "workspace:*",
         "@khoralabs/users-react": "workspace:*",
         "@radix-ui/react-label": "^2.1.7",
@@ -100,6 +101,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@aws-sdk/client-ses": "^3.1050.0",
+        "@khoralabs/bun-web": "workspace:*",
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/khora-console": "workspace:*",
         "@khoralabs/sqlite-crypto": "workspace:*",
@@ -129,6 +131,7 @@
       "dependencies": {
         "@ai-sdk/google": "^3.0.0",
         "@khoralabs/agent-relay": "workspace:*",
+        "@khoralabs/bun-web": "workspace:*",
         "@khoralabs/colonnade-persistence": "workspace:*",
         "@khoralabs/duplex-byte-stream": "workspace:*",
         "@khoralabs/khora-auth": "workspace:*",
@@ -168,6 +171,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@khoralabs/blog": "workspace:*",
+        "@khoralabs/bun-web": "workspace:*",
         "@khoralabs/users-auth": "workspace:*",
         "@khoralabs/users-react": "workspace:*",
         "@radix-ui/react-label": "^2.1.7",
@@ -197,6 +201,7 @@
       "dependencies": {
         "@ai-sdk/google": "^3.0.0",
         "@khoralabs/agent-identity": "workspace:*",
+        "@khoralabs/bun-web": "workspace:*",
         "@khoralabs/memories-core": "workspace:*",
         "@khoralabs/memories-investigator": "workspace:*",
         "@khoralabs/memories-react-graph": "workspace:*",
@@ -632,6 +637,22 @@
       "devDependencies": {
         "@types/bun": "latest",
         "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/libs/bun-web": {
+      "name": "@khoralabs/bun-web",
+      "version": "0.0.0",
+      "bin": {
+        "bun-web": "./src/cli.ts",
+      },
+      "dependencies": {
+        "bun-plugin-tailwind": "^0.1.2",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
       },
       "peerDependencies": {
         "typescript": "^5",
@@ -1250,6 +1271,8 @@
     "@khoralabs/agent-thread": ["@khoralabs/agent-thread@workspace:packages/agent/thread"],
 
     "@khoralabs/blog": ["@khoralabs/blog@workspace:packages/khoralabs/blog"],
+
+    "@khoralabs/bun-web": ["@khoralabs/bun-web@workspace:packages/libs/bun-web"],
 
     "@khoralabs/cli-flow-nbc": ["@khoralabs/cli-flow-nbc@workspace:packages/cli/cli-flow-nbc"],
 

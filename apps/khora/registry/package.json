@@ -5,16 +5,16 @@
   "type": "module",
   "scripts": {
     "preinstall": "bun ../../../scripts/install-litestream.ts --output .bin/litestream",
-    "build:admin-ui": "bun build src/routes/admin/index.html --outdir=dist/admin-ui --target=bun && bun run check:admin-ui-bundle",
-    "check:admin-ui-bundle": "bun scripts/check-admin-ui-bundle.ts",
+    "build:web": "bun-web build",
     "dev": "bun --env-file=.env --hot src/index",
-    "prestart": "bun run build:admin-ui",
+    "prestart": "bun run build:web",
     "start": "NODE_ENV=production bun scripts/start-registry.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.1050.0",
+    "@khoralabs/bun-web": "workspace:*",
     "@khoralabs/khora-auth": "workspace:*",
     "@khoralabs/khora-console": "workspace:*",
     "@khoralabs/sqlite-crypto": "workspace:*",

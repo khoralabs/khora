@@ -14,10 +14,13 @@ import {
 } from "../../../../scripts/litestream-config";
 
 const registryRoot = path.resolve(path.dirname(import.meta.path), "..");
-const indexEntry = path.join(registryRoot, "src", "index.ts");
+const isProd = process.env.NODE_ENV === "production";
+const indexEntry = isProd
+  ? path.join(registryRoot, "dist", "index.js")
+  : path.join(registryRoot, "src", "index.ts");
 
 async function runServerOnly(): Promise<never> {
-  const proc = Bun.spawn(["bun", "run", indexEntry], {
+  const proc = Bun.spawn(isProd ? ["bun", indexEntry] : ["bun", "run", indexEntry], {
     cwd: registryRoot,
     stdio: ["inherit", "inherit", "inherit"],
     env: process.env,
@@ -49,7 +52,7 @@ async function runWithLitestream(): Promise<void> {
     env: process.env,
   });
 
-  const srvProc = Bun.spawn(["bun", "run", indexEntry], {
+  const srvProc = Bun.spawn(isProd ? ["bun", indexEntry] : ["bun", "run", indexEntry], {
     cwd: registryRoot,
     stdio: ["inherit", "inherit", "inherit"],
     env: process.env,

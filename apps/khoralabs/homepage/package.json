@@ -7,13 +7,15 @@
     "generate:blog": "bun run scripts/generate-blog-manifest.ts",
     "predev": "bun run generate:blog",
     "dev": "bun --hot src/index.ts",
-    "prestart": "bun run generate:blog",
-    "start": "NODE_ENV=production bun src/index.ts",
-    "build": "bun run generate:blog && bun run build.ts",
+    "build:web": "bun-web build",
+    "prestart": "bun run generate:blog && bun run build:web",
+    "start": "NODE_ENV=production bun dist/index.js",
+    "build": "bun run generate:blog && bun run build:web",
     "test": "bun test"
   },
   "dependencies": {
     "@khoralabs/blog": "workspace:*",
+    "@khoralabs/bun-web": "workspace:*",
     "@khoralabs/users-auth": "workspace:*",
     "@khoralabs/users-react": "workspace:*",
     "@radix-ui/react-label": "^2.1.7",

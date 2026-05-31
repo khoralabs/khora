@@ -36,6 +36,15 @@ test("hello world", () => {
 });
 ```
 
+## Bun web apps (`@khoralabs/bun-web`)
+
+Apps with a React/HTML frontend served by `Bun.serve` use the repo convention in [`packages/libs/bun-web/README.md`](packages/libs/bun-web/README.md):
+
+- `web-ui.config.ts` at the app root (`defineWebUi`, mounts, `serverEntry`)
+- HTML imports only in `routes` (never return HTMLBundle from `fetch`)
+- **Dev:** `bun --hot src/index.ts` with `development: { hmr: true }`
+- **Prod:** `bun run build:web` then `NODE_ENV=production bun dist/index.js` (`bun build --target=bun` on the server entry)
+
 ## Frontend
 
 Use HTML imports with `Bun.serve()`. Don't use `vite`. HTML imports fully support React, CSS, Tailwind.

@@ -1,5 +1,6 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { type AgentRegistry, createAgentRegistry } from "@khoralabs/agent-identity";
+import { buildRoutesFromMounts } from "@khoralabs/bun-web";
 import {
   MemoriesClient,
   type SearchHit,
@@ -23,6 +24,7 @@ import {
 } from "@khoralabs/memories-sqlite";
 import { embedMany } from "ai";
 import { serve } from "bun";
+import webUi from "../web-ui.config.ts";
 import index from "./index.html";
 
 const MEMORIES_DB_PATH = process.env.MEMORIES_DB_PATH?.trim();
@@ -129,6 +131,8 @@ function parseListenPort(): number {
 }
 
 const listenPort = parseListenPort();
+
+const htmlRoutes = buildRoutesFromMounts(webUi.mounts, { app: index });
 
 const server = serve({
   port: listenPort,
@@ -491,7 +495,7 @@ const server = serve({
         db.close();
       }
     },
-    "/*": index,
+    ...htmlRoutes,
   },
 
   development: process.env.NODE_ENV !== "production" && {

@@ -1,3 +1,4 @@
+import { buildRoutesFromMounts } from "@khoralabs/bun-web";
 import { createConsoleAuthFromEnv } from "@khoralabs/khora-console";
 import { assertEncryptionKeys, EnvKeyProvider } from "@khoralabs/sqlite-crypto";
 import {
@@ -7,6 +8,7 @@ import {
   reloadRegistryAuth,
 } from "@khoralabs/users-auth";
 import { serve } from "bun";
+import webUi from "../web-ui.config.ts";
 import { routeConsoleAuth } from "./api/admin/console-guard";
 import {
   handleAdminHostActivate,
@@ -45,17 +47,16 @@ import { handleMarketingSubscribe, handleMarketingUnsubscribe } from "./api/mark
 import { handleMe } from "./api/me";
 import { handleOptions, withCors } from "./cors";
 import { startHostHealthPoller } from "./host-health";
-import adminPageDev from "./routes/admin/index.html";
+import adminPage from "./routes/admin/index.html";
 import adminLoginPage from "./routes/admin/login/index.html";
 import cliLinkPage from "./routes/cli/link/index.html";
-
-/** Runtime HTML bundling fails silently for the large admin app in production; prebuild via `bun run build:admin-ui`. */
-const adminPage =
-  process.env.NODE_ENV === "production"
-    ? (await import("../dist/admin-ui/index.html")).default
-    : adminPageDev;
-
 import { readRegistryTrustedOrigins } from "./trusted-origins";
+
+const htmlRoutes = buildRoutesFromMounts(webUi.mounts, {
+  admin: adminPage,
+  "admin-login": adminLoginPage,
+  "cli-link": cliLinkPage,
+});
 
 await assertEncryptionKeys(new EnvKeyProvider(), "registry");
 await ensureRegistrySchema();
@@ -74,25 +75,14 @@ if (consoleAuth === null) {
   console.log("[registry] Admin console enabled at /admin");
 }
 if (process.env.NODE_ENV === "production") {
-  console.log("[registry] Admin UI: prebuilt dist/admin-ui");
+  console.log("[registry] Web UI: prebuilt dist/ (bun-web)");
 }
 
 const port = Number.parseInt(process.env.PORT ?? "4000", 10);
 
 const server = serve({
   port: Number.isFinite(port) ? port : 4000,
-  routes: {
-    "/admin": adminPage,
-    "/admin/": adminPage,
-    "/admin/hosts": adminPage,
-    "/admin/hosts/*": adminPage,
-    "/admin/lookup": adminPage,
-    "/admin/lookup/*": adminPage,
-    "/admin/login": adminLoginPage,
-    "/admin/login/": adminLoginPage,
-    "/cli/link": cliLinkPage,
-    "/cli/link/": cliLinkPage,
-  },
+  routes: htmlRoutes,
   async fetch(req) {
     const options = handleOptions(req);
     if (options !== null) return options;

@@ -1,8 +1,10 @@
 import { mkdirSync, unlinkSync } from "node:fs";
 import { dirname } from "node:path";
+import { buildRoutesFromMounts } from "@khoralabs/bun-web";
 import { createConsoleAuthFromEnv } from "@khoralabs/khora-console";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
 import type { KhoraWsData } from "@khoralabs/khora-transport";
+import webUi from "../web-ui.config.ts";
 import { bootstrapKhoraHost } from "./bootstrap-khora";
 import { bootstrapKhoraEncryption } from "./encryption-bootstrap";
 import {
@@ -70,24 +72,14 @@ const deps: HostRouteDeps = {
 const inboxWsHandlers = createInboxDrainWebSocketHandlers({ ctx });
 const roomWsHandlers = khoraFrameChannelWsHandlers(ctx);
 
+const htmlRoutes = buildRoutesFromMounts(webUi.mounts, {
+  admin: adminPage,
+  "admin-login": adminLoginPage,
+});
+
 const server = Bun.serve<KhoraWsData>({
   port: envPort(),
-  routes: {
-    "/admin": adminPage,
-    "/admin/": adminPage,
-    "/admin/network": adminPage,
-    "/admin/network/*": adminPage,
-    "/admin/infrastructure": adminPage,
-    "/admin/infrastructure/*": adminPage,
-    "/admin/operations": adminPage,
-    "/admin/operations/*": adminPage,
-    "/admin/registry": adminPage,
-    "/admin/registry/*": adminPage,
-    "/admin/lookup": adminPage,
-    "/admin/lookup/*": adminPage,
-    "/admin/login": adminLoginPage,
-    "/admin/login/": adminLoginPage,
-  },
+  routes: htmlRoutes,
   async fetch(req) {
     const url = new URL(req.url);
     try {
