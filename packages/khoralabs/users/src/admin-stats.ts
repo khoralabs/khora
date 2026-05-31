@@ -1,8 +1,4 @@
 import type { Database } from "bun:sqlite";
-import {
-  listAccessTokenRequestsForAccount,
-  listAccessTokenRequestsForEmail,
-} from "./access-token-requests";
 import { findAccountByEmail, findAccountById, listAccountEmails } from "./accounts";
 import {
   countAllPendingHostTrustedOriginQuotaRequests,
@@ -16,7 +12,7 @@ import {
 } from "./marketing-consents";
 import { countMembershipsForAccount } from "./memberships";
 import { normalizeEmail } from "./normalize";
-import type { AccessTokenRequest, Account, KhoraHost, MarketingConsent } from "./types";
+import type { Account, KhoraHost, MarketingConsent } from "./types";
 
 export type RegistryHostSummaryItem = KhoraHost & {
   trustedOrigins: string[];
@@ -29,17 +25,6 @@ export type RegistryAccountsSummary = {
   total: number;
   active: number;
   suspended: number;
-};
-
-export type RegistryAccessTokenRequestsSummary = {
-  total: number;
-  withoutAccount: number;
-  byStatus: {
-    pending: number;
-    minted: number;
-    sent: number;
-    redeemed: number;
-  };
 };
 
 export type RegistryMarketingConsentsSummary = {
@@ -60,7 +45,6 @@ export type RegistryHostsSummary = {
 export type RegistryAdminSummary = {
   accounts: RegistryAccountsSummary;
   hosts: RegistryHostsSummary;
-  accessTokenRequests: RegistryAccessTokenRequestsSummary;
   marketingConsents: RegistryMarketingConsentsSummary;
   memberships: { total: number };
 };
@@ -69,7 +53,6 @@ export type RegistryEmailLookup = {
   email: string;
   account: Account | null;
   accountEmails: string[];
-  accessRequests: AccessTokenRequest[];
   marketingConsents: MarketingConsent[];
   membershipsCount: number;
 };
@@ -77,7 +60,6 @@ export type RegistryEmailLookup = {
 export type RegistryAccountLookup = {
   account: Account;
   accountEmails: string[];
-  accessRequests: AccessTokenRequest[];
   marketingConsents: MarketingConsent[];
   membershipsCount: number;
 };
@@ -107,10 +89,6 @@ function countByStatus(db: Database, table: string, statusColumn: string): Recor
 
 export function getRegistryAdminSummary(db: Database): RegistryAdminSummary {
   const accountCounts = countByStatus(db, "accounts", "status");
-  const requestCounts = countByStatus(db, "access_token_requests", "status");
-  const withoutAccountRow = db
-    .prepare(`SELECT COUNT(*) AS n FROM access_token_requests WHERE account_id IS NULL`)
-    .get() as { n: number };
   const consentTotal = db.prepare(`SELECT COUNT(*) AS n FROM marketing_consents`).get() as {
     n: number;
   };
@@ -155,16 +133,6 @@ export function getRegistryAdminSummary(db: Database): RegistryAdminSummary {
       pendingQuotaRequests,
       items: hosts,
     },
-    accessTokenRequests: {
-      total: Object.values(requestCounts).reduce((a, b) => a + b, 0),
-      withoutAccount: withoutAccountRow.n,
-      byStatus: {
-        pending: requestCounts.pending ?? 0,
-        minted: requestCounts.minted ?? 0,
-        sent: requestCounts.sent ?? 0,
-        redeemed: requestCounts.redeemed ?? 0,
-      },
-    },
     marketingConsents: {
       total: consentTotal.n,
       active: consentActive.n,
@@ -182,7 +150,6 @@ export function lookupRegistryByEmail(db: Database, email: string): RegistryEmai
     email: normalized,
     account,
     accountEmails: account === null ? [] : listAccountEmails(db, account.id),
-    accessRequests: listAccessTokenRequestsForEmail(db, normalized),
     marketingConsents: listMarketingConsentsForEmail(db, normalized),
     membershipsCount: account === null ? 0 : countMembershipsForAccount(db, account.id),
   };
@@ -197,7 +164,6 @@ export function lookupRegistryByAccountId(
   return {
     account,
     accountEmails: listAccountEmails(db, account.id),
-    accessRequests: listAccessTokenRequestsForAccount(db, account.id),
     marketingConsents: listMarketingConsentsForAccount(db, account.id),
     membershipsCount: countMembershipsForAccount(db, account.id),
   };

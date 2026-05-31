@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { bindAgentToAccount, findBindingByAgentDid } from "./agent-account-bindings";
-import { findMembershipById, upsertMembership } from "./memberships";
+import { deleteMembershipIfEmpty, findMembershipById, upsertMembership } from "./memberships";
 import type { AccountAgentLink, AccountAgentLinkRow, HostLinkPropagationResult } from "./types";
 
 function mapLink(row: AccountAgentLinkRow): AccountAgentLink {
@@ -96,11 +96,6 @@ export function linkAgentToMembership(
     throw err;
   }
 
-  db.prepare(`UPDATE memberships SET status = 'active', updated_at_ms = ? WHERE id = ?`).run(
-    now,
-    membership.id,
-  );
-
   const created = db
     .prepare(
       `SELECT id, membership_id, account_id, host_id, agent_did, linked_at_ms
@@ -121,6 +116,9 @@ export function unlinkAgentFromMembership(
   const result = db
     .prepare(`DELETE FROM account_agent_links WHERE membership_id = ? AND agent_did = ?`)
     .run(membershipId, agentDid);
+  if (result.changes > 0) {
+    deleteMembershipIfEmpty(db, membershipId);
+  }
   return result.changes > 0;
 }
 
@@ -128,6 +126,9 @@ export function unlinkAllAgentsFromMembership(db: Database, membershipId: string
   const result = db
     .prepare(`DELETE FROM account_agent_links WHERE membership_id = ?`)
     .run(membershipId);
+  if (result.changes > 0) {
+    deleteMembershipIfEmpty(db, membershipId);
+  }
   return result.changes;
 }
 

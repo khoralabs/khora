@@ -111,9 +111,6 @@ export function mergeEmailOntoAccount(
 
 function mergePreAccountRecords(db: Database, accountId: string, email: string): void {
   db.prepare(
-    `UPDATE access_token_requests SET account_id = ? WHERE email = ? AND account_id IS NULL`,
-  ).run(accountId, email);
-  db.prepare(
     `UPDATE marketing_consents SET account_id = ? WHERE email = ? AND account_id IS NULL`,
   ).run(accountId, email);
 }

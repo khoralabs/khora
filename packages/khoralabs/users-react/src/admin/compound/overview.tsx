@@ -46,29 +46,6 @@ export function UsersStatsAccountsMetrics({ className, ...props }: React.Compone
   );
 }
 
-export function UsersStatsAccessRequestsMetrics({
-  className,
-  ...props
-}: React.ComponentProps<"dl">) {
-  const { summary, summaryLoading, summaryError } = useUsersStats();
-
-  return (
-    <dl data-slot="users-stats-access-requests-metrics" className={cn(className)} {...props}>
-      <LoadingOrError loading={summaryLoading} error={summaryError} />
-      {!summaryLoading && summaryError === null && summary !== null && (
-        <>
-          <MetricRow label="Total requests" value={summary.accessTokenRequests.total} />
-          <MetricRow label="Without account" value={summary.accessTokenRequests.withoutAccount} />
-          <MetricRow label="Pending" value={summary.accessTokenRequests.byStatus.pending} />
-          <MetricRow label="Minted" value={summary.accessTokenRequests.byStatus.minted} />
-          <MetricRow label="Sent" value={summary.accessTokenRequests.byStatus.sent} />
-          <MetricRow label="Redeemed" value={summary.accessTokenRequests.byStatus.redeemed} />
-        </>
-      )}
-    </dl>
-  );
-}
-
 export function UsersStatsMarketingMetrics({ className, ...props }: React.ComponentProps<"dl">) {
   const { summary, summaryLoading, summaryError } = useUsersStats();
 

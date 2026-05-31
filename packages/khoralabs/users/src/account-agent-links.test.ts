@@ -103,7 +103,21 @@ describe("account agent links", () => {
     expect(links).toHaveLength(1);
     expect(links[0]?.agentDid).toBe(didB);
 
-    const row = findMembershipByAccountAndHost(db, account.id, host.id);
-    expect(row?.status).toBe("active");
+    expect(findMembershipByAccountAndHost(db, account.id, host.id)).not.toBeNull();
+  });
+
+  test("unlink last agent deletes membership", () => {
+    const db = getUsersDatabase();
+    const host = seedDefaultHost(db, { slug: "khora-local", baseUrl: "http://localhost:8788" });
+    const account = linkBetterAuthUser(db, {
+      providerSubject: "user-1",
+      email: "a@test.com",
+    });
+    const membership = upsertMembership(db, { accountId: account.id, hostId: host.id });
+    const did = "did:key:z6MkAgentA";
+
+    linkAgentToMembership(db, { membershipId: membership.id, agentDid: did });
+    expect(unlinkAgentFromMembership(db, membership.id, did)).toBe(true);
+    expect(findMembershipByAccountAndHost(db, account.id, host.id)).toBeNull();
   });
 });

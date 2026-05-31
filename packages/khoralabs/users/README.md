@@ -2,7 +2,7 @@
 
 Domain and persistence layer for the **Khora registry** — network-level user data stored in encrypted SQLite (`registry.sqlite`).
 
-Owns accounts, emails, auth provider links, Khora hosts, memberships, access-token requests, and marketing consents. Does **not** implement sign-in; that lives in [`@khoralabs/users-auth`](../users-auth).
+Owns accounts, emails, auth provider links, Khora hosts, memberships (created via agent linking), agent bindings, and marketing consents. Does **not** implement sign-in; that lives in [`@khoralabs/users-auth`](../users-auth).
 
 ## Role in the stack
 
@@ -31,12 +31,11 @@ Domain tables (see `src/schema-sql.ts`):
 | `account_emails` | Verified email addresses per account |
 | `auth_links` | Maps external auth subjects (e.g. Better Auth user id) to accounts |
 | `khora_hosts` | Federated Khora host catalog (`pending` → `active` via operator activate) |
-| `memberships` | Account ↔ host relationships (invites, access-token flow) |
+| `memberships` | Account ↔ host participation (created on first agent link, removed when last agent unlinks) |
 | `account_agent_links` | Many claimed agent DIDs per membership; one account per agent per host |
 | `agent_account_bindings` | Global `agent_did → account_id` (one human account per agent network-wide) |
 | `device_authorizations` | CLI device-flow sessions (RFC 8628-style) |
 | `cli_link_challenges` | One-time agent signature challenges for `khora link` |
-| `access_token_requests` | Email-based access-token invite flow |
 | `marketing_consents` | Opt-in / opt-out per list |
 
 Auth provider tables (`user`, `session`, `verification`, …) are owned by `@khoralabs/users-auth` migrations.
@@ -60,7 +59,6 @@ await initUsersSchema(db);
 | Module | Exports |
 | --- | --- |
 | `accounts.ts` | `findAccountById`, `findAccountByEmail`, `findAccountByAuthSubject`, `linkBetterAuthUser`, `mergeEmailOntoAccount`, `listAccountEmails` |
-| `access-token-requests.ts` | `createAccessTokenRequest`, `findAccessTokenRequest`, `listAccessTokenRequestsForEmail`, `markAccessTokenMinted`, `markAccessTokenSent`, … |
 | `khora-hosts.ts` | `registerKhoraHost`, `activateKhoraHost`, `listPublicHosts`, `findActiveHostBySlug`, `seedDefaultHost`, … |
 | `host-slug.ts` | `normalizeHostSlug` validation |
 | `host-url.ts` | `normalizeKhoraHostBaseUrl`, `findHostByBaseUrl` (loopback alias aware) |
@@ -73,12 +71,28 @@ await initUsersSchema(db);
 | `admin-stats.ts` | `getRegistryAdminSummary`, `lookupRegistryByEmail`, `lookupRegistryByAccountId` |
 | `db.ts` | `getUsersDatabase`, `registryDatabasePath`, `resetUsersDatabase` |
 | `schema.ts` | `usersMigrations`, `initUsersSchema`, `isUsersSchemaReady` |
-| `types.ts` | `Account`, `KhoraHost`, `AccessTokenRequest`, `MarketingConsent`, admin lookup types |
+| `types.ts` | `Account`, `KhoraHost`, `MarketingConsent`, admin lookup types |
+
+## Registry vs host boundaries
+
+The registry is the **control plane** (human identity, host catalog, agent participation records, agent bindings). Each Khora host is a **data plane** (DID-key agent auth, invite mint/consume, relay data). Even first-party hosts like `k-0` are external participants—not extensions of registry auth.
+
+| Registry owns | Host owns |
+| --- | --- |
+| Better Auth sessions, accounts | Agent DID signatures |
+| Host catalog & discovery | `POST /v1/register`, invite pepper |
+| Membership + agent↔account bindings (participation audit) | Invite plaintext mint/consume |
+| Marketing consents | Profiles, posts, rooms |
+| Operator user lookup | Local admin console |
+
+**Signup:** marketing homepage `/join` runs registry OTP (creates a verified user). Operator finds users in registry admin, mints invite tokens on host admin, delivers tokens manually. User registers on host, then links agent to registry account via CLI.
+
+Registry never sees invite plaintext or hashes. Membership rows have no status or invite fields—only account, host, and timestamps.
 
 ## Host catalog lifecycle
 
 1. **`POST /v1/hosts/register`** (registry) — inserts `khora_hosts` with `status: pending`.
-2. **`POST /internal/v1/hosts/:id/activate`** — bearer `REGISTRY_INTERNAL_SECRET` promotes to `active`.
+2. **`POST /admin/api/hosts/:id/activate`** — operator console promotes to `active`.
 3. **`GET /v1/hosts`** — public discovery (active hosts only).
 
 CLI: `khora host list`, `khora host use <slug>`, `khora host register` (submits pending registration).

@@ -44,6 +44,14 @@ function readAuthEnv(opts: RegistryAuthOptions = {}): {
   };
 }
 
+function shouldUseSecureCookies(baseURL: string): boolean {
+  const explicit = process.env.KHORA_SECURE_COOKIES?.trim().toLowerCase();
+  if (explicit === "1" || explicit === "true") return true;
+  if (explicit === "0" || explicit === "false") return false;
+  if (process.env.NODE_ENV === "production") return true;
+  return baseURL.startsWith("https://");
+}
+
 function syncAccountForUser(userId: string, email: string): void {
   linkBetterAuthUser(getRegistryDatabase(), {
     providerSubject: userId,
@@ -67,16 +75,17 @@ export function createRegistryAuth(opts: RegistryAuthOptions = {}) {
       }
       return fallbackOrigins;
     },
-    ...(cookieDomain !== undefined
-      ? {
-          advanced: {
+    advanced: {
+      useSecureCookies: shouldUseSecureCookies(baseURL),
+      ...(cookieDomain !== undefined
+        ? {
             crossSubDomainCookies: {
               enabled: true,
               domain: cookieDomain,
             },
-          },
-        }
-      : {}),
+          }
+        : {}),
+    },
     user: {
       additionalFields: {
         role: {

@@ -30,15 +30,24 @@ function verifySigned(value: string, key: Buffer): string | null {
   return payload;
 }
 
-export function issueSessionCookie(rootToken: string): string {
+type SessionCookieOptions = { secure?: boolean };
+
+function cookieFlags(secure: boolean): string {
+  const base = "Path=/admin; HttpOnly; SameSite=Lax";
+  return secure ? `${base}; Secure` : base;
+}
+
+export function issueSessionCookie(rootToken: string, options: SessionCookieOptions = {}): string {
   const exp = Date.now() + SESSION_TTL_MS;
   const payload = JSON.stringify({ id: "root", role: "root", exp });
   const signed = signPayload(payload, sessionSigningKey(rootToken));
-  return `${COOKIE_NAME}=${signed}; Path=/admin; HttpOnly; SameSite=Lax; Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}`;
+  const secure = options.secure ?? false;
+  return `${COOKIE_NAME}=${signed}; ${cookieFlags(secure)}; Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}`;
 }
 
-export function clearSessionCookie(): string {
-  return `${COOKIE_NAME}=; Path=/admin; HttpOnly; SameSite=Lax; Max-Age=0`;
+export function clearSessionCookie(options: SessionCookieOptions = {}): string {
+  const secure = options.secure ?? false;
+  return `${COOKIE_NAME}=; ${cookieFlags(secure)}; Max-Age=0`;
 }
 
 export function readSessionPrincipal(

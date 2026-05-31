@@ -78,18 +78,22 @@ function isAdminSpaPath(pathname: string): boolean {
   );
 }
 
+function adminHtmlResponse(page: typeof adminPage): Response {
+  return page as unknown as Response;
+}
+
 const server = Bun.serve<KhoraWsData>({
   port: envPort(),
-  routes: {
-    "/admin": adminPage,
-    "/admin/": adminPage,
-    "/admin/login": adminLoginPage,
-    "/admin/login/": adminLoginPage,
-  },
   async fetch(req) {
     const url = new URL(req.url);
-    if (req.method === "GET" && isAdminSpaPath(url.pathname)) {
-      return adminPage;
+    if (req.method === "GET") {
+      const path = url.pathname;
+      if (path === "/admin/login" || path === "/admin/login/") {
+        return adminHtmlResponse(adminLoginPage);
+      }
+      if (isAdminSpaPath(path)) {
+        return adminHtmlResponse(adminPage);
+      }
     }
     try {
       const res = await route(req, url, server, deps);

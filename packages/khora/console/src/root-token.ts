@@ -1,3 +1,4 @@
+import { clientIpFromRequest, createRateLimiter, type RateLimitRule } from "./rate-limit";
 import {
   clearSessionCookie,
   issueSessionCookie,
@@ -8,10 +9,14 @@ import type { ConsoleAuth, ConsolePrincipal } from "./types";
 
 export type RootTokenConsoleAuthOptions = {
   rootToken: string;
+  secureCookies?: boolean;
+  loginRateLimit?: RateLimitRule | null;
 };
 
 export function createRootTokenConsoleAuth(options: RootTokenConsoleAuthOptions): ConsoleAuth {
-  const { rootToken } = options;
+  const { rootToken, secureCookies = false, loginRateLimit = null } = options;
+  const cookieOptions = { secure: secureCookies };
+  const loginRateLimiter = createRateLimiter(loginRateLimit ?? null);
 
   return {
     async authenticate(req: Request): Promise<ConsolePrincipal | null> {
@@ -20,6 +25,18 @@ export function createRootTokenConsoleAuth(options: RootTokenConsoleAuthOptions)
 
     async route(req: Request, url: URL): Promise<Response | undefined> {
       if (url.pathname === "/admin/api/login" && req.method === "POST") {
+        const ip = clientIpFromRequest(req);
+        const rl = loginRateLimiter(`login:ip:${ip}`);
+        if (!rl.ok) {
+          return Response.json(
+            { error: "Too many requests", code: "rate_limited" },
+            {
+              status: 429,
+              headers: { "Retry-After": String(rl.retryAfterSec) },
+            },
+          );
+        }
+
         let body: { token?: string };
         try {
           body = (await req.json()) as { token?: string };
@@ -34,7 +51,7 @@ export function createRootTokenConsoleAuth(options: RootTokenConsoleAuthOptions)
           status: 200,
           headers: {
             "Content-Type": "application/json",
-            "Set-Cookie": issueSessionCookie(rootToken),
+            "Set-Cookie": issueSessionCookie(rootToken, cookieOptions),
           },
         });
       }
@@ -44,7 +61,7 @@ export function createRootTokenConsoleAuth(options: RootTokenConsoleAuthOptions)
           status: 200,
           headers: {
             "Content-Type": "application/json",
-            "Set-Cookie": clearSessionCookie(),
+            "Set-Cookie": clearSessionCookie(cookieOptions),
           },
         });
       }

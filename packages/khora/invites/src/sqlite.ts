@@ -1,6 +1,11 @@
 import type { Database } from "bun:sqlite";
 import { generateInvitePlaintext, hashInviteToken } from "./crypto";
-import type { InvitePreviewResult, KhoraInviteListRow, KhoraInvitesRepo } from "./ports";
+import type {
+  InvitePreviewResult,
+  KhoraInviteAdminListRow,
+  KhoraInviteListRow,
+  KhoraInvitesRepo,
+} from "./ports";
 import { ensureKhoraInviteSchema, KHORA_INVITE_KIND } from "./schema";
 
 function previewFromHash(tokenHash: string): string {
@@ -48,6 +53,39 @@ export function createKhoraInvitesSqliteRepo(db: Database, pepper: string): Khor
      FROM khora_invite_tokens
      WHERE minted_by_did = ?
      ORDER BY created_at_ms ASC`,
+  );
+  const selectAllInvites = db.query<
+    {
+      token_hash: string;
+      created_at_ms: number;
+      consumed_at_ms: number | null;
+      consumed_by_did: string | null;
+      minted_by_did: string | null;
+      kind: string;
+    },
+    [number]
+  >(
+    `SELECT token_hash, created_at_ms, consumed_at_ms, consumed_by_did, minted_by_did, kind
+     FROM khora_invite_tokens
+     ORDER BY created_at_ms DESC
+     LIMIT ?`,
+  );
+  const selectAllInvitesForMinter = db.query<
+    {
+      token_hash: string;
+      created_at_ms: number;
+      consumed_at_ms: number | null;
+      consumed_by_did: string | null;
+      minted_by_did: string | null;
+      kind: string;
+    },
+    [string, number]
+  >(
+    `SELECT token_hash, created_at_ms, consumed_at_ms, consumed_by_did, minted_by_did, kind
+     FROM khora_invite_tokens
+     WHERE minted_by_did = ?
+     ORDER BY created_at_ms DESC
+     LIMIT ?`,
   );
   const selectByHashForPreview = db.query<
     {
@@ -122,6 +160,22 @@ export function createKhoraInvitesSqliteRepo(db: Database, pepper: string): Khor
         consumedByDid: r.consumed_by_did ?? undefined,
         createdAtMs: r.created_at_ms,
         kind: r.kind,
+      }));
+    },
+
+    listAllInviteTokens(params): KhoraInviteAdminListRow[] {
+      const limit = params?.limit ?? 100;
+      const rows =
+        params?.mintedByDid !== undefined && params.mintedByDid.length > 0
+          ? selectAllInvitesForMinter.all(params.mintedByDid, limit)
+          : selectAllInvites.all(limit);
+      return rows.map((r) => ({
+        preview: previewFromHash(r.token_hash),
+        consumed: r.consumed_at_ms !== null,
+        consumedByDid: r.consumed_by_did ?? undefined,
+        createdAtMs: r.created_at_ms,
+        kind: r.kind,
+        mintedByDid: r.minted_by_did,
       }));
     },
 

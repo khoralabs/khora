@@ -1,15 +1,12 @@
 import type { Database } from "bun:sqlite";
-import type { Membership, MembershipRow, MembershipStatus } from "./types";
+import type { Membership, MembershipRow } from "./types";
 
 function mapMembership(row: MembershipRow): Membership {
   return {
     id: row.id,
     accountId: row.account_id,
     hostId: row.host_id,
-    inviteTokenHash: row.invite_token_hash,
-    status: row.status as MembershipStatus,
     createdAtMs: row.created_at_ms,
-    updatedAtMs: row.updated_at_ms,
   };
 }
 
@@ -27,7 +24,7 @@ export function findMembershipByAccountAndHost(
 ): Membership | null {
   const row = db
     .prepare(
-      `SELECT id, account_id, host_id, invite_token_hash, status, created_at_ms, updated_at_ms
+      `SELECT id, account_id, host_id, created_at_ms
        FROM memberships WHERE account_id = ? AND host_id = ? LIMIT 1`,
     )
     .get(accountId, hostId) as MembershipRow | null;
@@ -37,7 +34,7 @@ export function findMembershipByAccountAndHost(
 export function findMembershipById(db: Database, membershipId: string): Membership | null {
   const row = db
     .prepare(
-      `SELECT id, account_id, host_id, invite_token_hash, status, created_at_ms, updated_at_ms
+      `SELECT id, account_id, host_id, created_at_ms
        FROM memberships WHERE id = ? LIMIT 1`,
     )
     .get(membershipId) as MembershipRow | null;
@@ -47,7 +44,7 @@ export function findMembershipById(db: Database, membershipId: string): Membersh
 export function listMembershipsForAccount(db: Database, accountId: string): Membership[] {
   const rows = db
     .prepare(
-      `SELECT id, account_id, host_id, invite_token_hash, status, created_at_ms, updated_at_ms
+      `SELECT id, account_id, host_id, created_at_ms
        FROM memberships WHERE account_id = ? ORDER BY created_at_ms ASC`,
     )
     .all(accountId) as MembershipRow[];
@@ -56,7 +53,7 @@ export function listMembershipsForAccount(db: Database, accountId: string): Memb
 
 export function upsertMembership(
   db: Database,
-  params: { accountId: string; hostId: string; status?: MembershipStatus },
+  params: { accountId: string; hostId: string },
 ): Membership {
   const existing = findMembershipByAccountAndHost(db, params.accountId, params.hostId);
   if (existing !== null) {
@@ -64,14 +61,24 @@ export function upsertMembership(
   }
   const now = Date.now();
   const id = crypto.randomUUID();
-  const status = params.status ?? "active";
   db.prepare(
-    `INSERT INTO memberships (id, account_id, host_id, status, created_at_ms, updated_at_ms)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-  ).run(id, params.accountId, params.hostId, status, now, now);
+    `INSERT INTO memberships (id, account_id, host_id, created_at_ms)
+     VALUES (?, ?, ?, ?)`,
+  ).run(id, params.accountId, params.hostId, now);
   const created = findMembershipById(db, id);
   if (created === null) {
     throw new Error("membership insert failed");
   }
   return created;
+}
+
+export function deleteMembershipIfEmpty(db: Database, membershipId: string): boolean {
+  const row = db
+    .prepare(`SELECT COUNT(*) AS n FROM account_agent_links WHERE membership_id = ?`)
+    .get(membershipId) as { n: number };
+  if (row.n > 0) {
+    return false;
+  }
+  const result = db.prepare(`DELETE FROM memberships WHERE id = ?`).run(membershipId);
+  return result.changes > 0;
 }

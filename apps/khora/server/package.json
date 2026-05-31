@@ -21,6 +21,8 @@
     "@khoralabs/khora-invites": "workspace:*",
     "@khoralabs/khora-react": "workspace:*",
     "@khoralabs/khora-transport": "workspace:*",
+    "@khoralabs/users-auth": "workspace:*",
+    "@khoralabs/users-react": "workspace:*",
     "@khoralabs/memories-core": "workspace:*",
     "@khoralabs/memories-sqlite": "workspace:*",
     "@khoralabs/relay-colonnade": "workspace:*",

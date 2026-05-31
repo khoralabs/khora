@@ -1,5 +1,4 @@
 export type {
-  AccessTokenRequest,
   Account,
   KhoraHost,
   MarketingConsent,

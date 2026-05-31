@@ -92,7 +92,6 @@ Compound components for the registry operator console — network overview metri
 | `UsersStats.Root` | Provider + layout wrapper; configures API base URLs |
 | `UsersStats.Overview` | Loading / error shell for summary data |
 | `UsersStats.AccountsMetrics` | Account counts |
-| `UsersStats.AccessRequestsMetrics` | Access-token request counts |
 | `UsersStats.MarketingMetrics` | Marketing consent + membership counts |
 | `UsersStats.HostList` | List of registered Khora hosts |
 | `UsersStats.HostListItem` | Single host row (used internally by `HostList`) |
@@ -114,7 +113,6 @@ export function RegistryAdmin() {
     >
       <UsersStats.Overview>
         <UsersStats.AccountsMetrics />
-        <UsersStats.AccessRequestsMetrics />
         <UsersStats.MarketingMetrics />
       </UsersStats.Overview>
 
@@ -159,4 +157,4 @@ Peer dependencies: `react`, `react-dom` (^19).
 
 Domain types from `@khoralabs/users` and email-confirm types from `@khoralabs/users-auth/client` are re-exported for convenience:
 
-`Account`, `KhoraHost`, `AccessTokenRequest`, `MarketingConsent`, `RegistryAdminSummary`, `RegistryEmailLookupResponse`, `EmailConfirmEmailStepRenderProps`, `EmailConfirmOtpStepRenderProps`, and related lookup types.
+`Account`, `KhoraHost`, `MarketingConsent`, `RegistryAdminSummary`, `RegistryEmailLookupResponse`, `EmailConfirmEmailStepRenderProps`, `EmailConfirmOtpStepRenderProps`, and related lookup types.

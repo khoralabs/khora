@@ -1,6 +1,5 @@
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { createAccessTokenRequest, findAccessTokenRequest } from "../src/access-token-requests";
 import { linkBetterAuthUser } from "../src/accounts";
 import { seedDefaultHost } from "../src/khora-hosts";
 import { findMarketingConsent, subscribeMarketing } from "../src/marketing-consents";
@@ -31,23 +30,6 @@ describe("@khoralabs/users", () => {
     expect(first.slug).toBe("khora-local");
   });
 
-  test("dedupes access token requests per email and host", () => {
-    const host = seedDefaultHost(db, { slug: "khora-local", baseUrl: "http://localhost:8788" });
-    const first = createAccessTokenRequest(db, {
-      email: "User@Example.com",
-      hostId: host.id,
-      sourceApp: "khoralabs-homepage",
-    });
-    const second = createAccessTokenRequest(db, {
-      email: "user@example.com",
-      hostId: host.id,
-    });
-    expect(first.inserted).toBe(true);
-    expect(second.inserted).toBe(false);
-    expect(first.request.id).toBe(second.request.id);
-    expect(findAccessTokenRequest(db, "user@example.com", host.id)?.email).toBe("user@example.com");
-  });
-
   test("creates marketing consent with normalized email", () => {
     subscribeMarketing(db, {
       email: "News@Example.com",
@@ -59,9 +41,7 @@ describe("@khoralabs/users", () => {
     expect(consent?.optedOutAtMs).toBeNull();
   });
 
-  test("merges pre-account records on sign-in", () => {
-    const host = seedDefaultHost(db, { slug: "khora-local", baseUrl: "http://localhost:8788" });
-    createAccessTokenRequest(db, { email: "user@example.com", hostId: host.id });
+  test("merges pre-account marketing consent on sign-in", () => {
     subscribeMarketing(db, { email: "user@example.com", listSlug: "khora-waitlist" });
 
     const account = linkBetterAuthUser(db, {
@@ -69,9 +49,7 @@ describe("@khoralabs/users", () => {
       email: "user@example.com",
     });
 
-    const request = findAccessTokenRequest(db, "user@example.com", host.id);
     const consent = findMarketingConsent(db, "user@example.com", "khora-waitlist");
-    expect(request?.accountId).toBe(account.id);
     expect(consent?.accountId).toBe(account.id);
   });
 });

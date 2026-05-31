@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { createConsoleAuthFromEnv, createRootTokenConsoleAuth } from "./index";
+import { clearSessionCookie, issueSessionCookie } from "./session-cookie";
 
 describe("khora-console", () => {
   test("createRootTokenConsoleAuth authenticates after login cookie", async () => {
@@ -19,13 +20,44 @@ describe("khora-console", () => {
     expect(principal).toEqual({ id: "root", role: "root" });
   });
 
+  test("issueSessionCookie adds Secure in prod mode", () => {
+    const cookie = issueSessionCookie("test-root-token-16chars", { secure: true });
+    expect(cookie).toContain("; Secure");
+  });
+
+  test("clearSessionCookie adds Secure when configured", () => {
+    expect(clearSessionCookie({ secure: true })).toContain("; Secure");
+  });
+
+  test("login is rate limited by IP", async () => {
+    const auth = createRootTokenConsoleAuth({
+      rootToken: "test-root-token-16chars",
+      loginRateLimit: { windowMs: 60_000, max: 2 },
+    });
+    const url = new URL("http://x/admin/api/login");
+    const req = () =>
+      new Request(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-real-ip": "203.0.113.1" },
+        body: JSON.stringify({ token: "wrong" }),
+      });
+    expect((await auth.route?.(req(), url))?.status).toBe(401);
+    expect((await auth.route?.(req(), url))?.status).toBe(401);
+    const limited = await auth.route?.(req(), url);
+    expect(limited?.status).toBe(429);
+    expect(limited?.headers.get("retry-after")).toBeTruthy();
+  });
+
   test("createConsoleAuthFromEnv returns null without token", () => {
-    const prev = process.env.KHORA_CONSOLE_ROOT_TOKEN;
+    const prevKhora = process.env.KHORA_CONSOLE_ROOT_TOKEN;
+    const prevRegistry = process.env.REGISTRY_CONSOLE_ROOT_TOKEN;
     delete process.env.KHORA_CONSOLE_ROOT_TOKEN;
+    delete process.env.REGISTRY_CONSOLE_ROOT_TOKEN;
     try {
       expect(createConsoleAuthFromEnv()).toBeNull();
     } finally {
-      if (prev !== undefined) process.env.KHORA_CONSOLE_ROOT_TOKEN = prev;
+      if (prevKhora !== undefined) process.env.KHORA_CONSOLE_ROOT_TOKEN = prevKhora;
+      if (prevRegistry !== undefined) process.env.REGISTRY_CONSOLE_ROOT_TOKEN = prevRegistry;
     }
   });
 });

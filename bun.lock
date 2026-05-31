@@ -114,6 +114,8 @@
         "@khoralabs/memories-sqlite": "workspace:*",
         "@khoralabs/relay-colonnade": "workspace:*",
         "@khoralabs/sqlite-crypto": "workspace:*",
+        "@khoralabs/users-auth": "workspace:*",
+        "@khoralabs/users-react": "workspace:*",
         "bun-plugin-tailwind": "^0.1.2",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",

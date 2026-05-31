@@ -3,6 +3,7 @@ import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
 import {
   approveDeviceAuthorization,
   consumeDeviceAuthorization,
+  findMembershipByAccountAndHost,
   getUsersDatabase,
   initUsersSchema,
   linkAgentToMembership,
@@ -168,5 +169,21 @@ describe("membership agent links", () => {
     const remaining = listAgentLinksForMembership(db, membership.id);
     expect(remaining).toHaveLength(1);
     expect(remaining[0]?.agentDid).toBe(didB);
+    expect(findMembershipByAccountAndHost(db, account.id, host.id)).not.toBeNull();
+  });
+
+  test("unlink last agent deletes membership", () => {
+    const db = getUsersDatabase();
+    const host = seedDefaultHost(db, { slug: "khora-local", baseUrl: "http://localhost:8788" });
+    const account = linkBetterAuthUser(db, {
+      providerSubject: "user-1",
+      email: "cli@test.com",
+    });
+    const did = "did:key:z6MkMembershipTestOnly";
+    const membership = upsertMembership(db, { accountId: account.id, hostId: host.id });
+
+    linkAgentToMembership(db, { membershipId: membership.id, agentDid: did });
+    unlinkAgentFromMembership(db, membership.id, did);
+    expect(findMembershipByAccountAndHost(db, account.id, host.id)).toBeNull();
   });
 });

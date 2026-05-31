@@ -1,13 +1,4 @@
 export {
-  createAccessTokenRequest,
-  findAccessTokenRequest,
-  getAccessTokenRequestById,
-  listAccessTokenRequestsForAccount,
-  listAccessTokenRequestsForEmail,
-  markAccessTokenMinted,
-  markAccessTokenSent,
-} from "./access-token-requests";
-export {
   ensureAgentLinkedOnHost,
   findAgentLinkOnHost,
   linkAgentToAccountOnHost,
@@ -160,6 +151,7 @@ export {
 } from "./marketing-consents";
 export {
   countMembershipsForAccount,
+  deleteMembershipIfEmpty,
   findMembershipByAccountAndHost,
   findMembershipById,
   listMembershipsForAccount,

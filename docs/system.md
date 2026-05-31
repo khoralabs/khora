@@ -66,7 +66,7 @@ Inbox `staging` encodes pointer/inline payload (+ optional metadata such as post
 
 **D. Optional replication** — Litestream (via `scripts/litestream-config.ts`) replicates Khora catalog, frames, and `cells/*.sqlite`, and registry `registry.sqlite`, to **`s3://`**. Production uses **AWS S3**; local dev may use MinIO (`apps/s3/`).
 
-**E. Khora registry** (`apps/khoralabs/registry`) — network-level user data (accounts, access-token requests, marketing consents, Khora hosts) in `registry.sqlite`. Operator console at **`/admin`** when `REGISTRY_CONSOLE_ROOT_TOKEN` (≥16 chars) is set; UI composes **`@khoralabs/users-react`** (`UsersStats` compound components). Auth uses `@khoralabs/khora-console` root-token sessions (same pattern as Khora host admin).
+**E. Khora registry** (`apps/khoralabs/registry`) — network-level user data (accounts, marketing consents, Khora hosts, agent bindings) in `registry.sqlite`. Operator console at **`/admin`** when `REGISTRY_CONSOLE_ROOT_TOKEN` (≥16 chars) is set; UI composes **`@khoralabs/users-react`** (`UsersStats` compound components). Auth uses `@khoralabs/khora-console` root-token sessions (same pattern as Khora host admin).
 
 ---
 

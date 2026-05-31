@@ -2,7 +2,6 @@ import {
   countMembershipsForAccount,
   findAccountByAuthSubject,
   findHostById,
-  listAccessTokenRequestsForAccount,
   listAgentLinksForMembership,
   listMarketingConsentsForAccount,
   listMembershipsForAccount,
@@ -17,7 +16,6 @@ export async function handleMe(req: Request): Promise<Response> {
 
   const db = getRegistryDatabase();
   const account = findAccountByAuthSubject(db, session.user.id);
-  const accessRequests = account === null ? [] : listAccessTokenRequestsForAccount(db, account.id);
   const marketingConsents = account === null ? [] : listMarketingConsentsForAccount(db, account.id);
   const membershipsCount = account === null ? 0 : countMembershipsForAccount(db, account.id);
   const membershipRows = account === null ? [] : listMembershipsForAccount(db, account.id);
@@ -33,7 +31,6 @@ export async function handleMe(req: Request): Promise<Response> {
       hostSlug: host?.slug ?? null,
       hostBaseUrl: host?.baseUrl ?? null,
       linkedAgents,
-      status: m.status,
     };
   });
 
@@ -44,7 +41,6 @@ export async function handleMe(req: Request): Promise<Response> {
       expiresAt: session.session.expiresAt,
     },
     account,
-    accessRequests,
     marketingConsents,
     memberships: { count: membershipsCount, items: membershipItems },
   });

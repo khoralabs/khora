@@ -20,8 +20,7 @@ Put these in a Render **Environment Group** (or password manager) and link to ev
 
 | Variable | Services | Notes |
 | --- | --- | --- |
-| `KHORA_INTERNAL_SECRET` | registry, khora-server | **Same value.** Registry calls `POST /internal/mint-invite` on khora-server with `Authorization: Bearer …`. |
-| `KHORA_INVITE_PEPPER` | registry, khora-server | **Same value.** Registry hashes minted tokens; khora-server validates invites with the same pepper. |
+| `KHORA_INVITE_PEPPER` | khora-server | Host-only. Used to hash minted invite tokens locally; registry never sees plaintext or pepper. |
 | `AWS_REGION` | registry, khora-server | e.g. `us-east-1` |
 | `AWS_ACCESS_KEY_ID` | registry, khora-server | Render has no IAM roles; use one IAM user for Litestream (+ SES on registry). |
 | `AWS_SECRET_ACCESS_KEY` | registry, khora-server | Pair with access key above. |
@@ -84,10 +83,8 @@ Host selection: `khora host use <slug>` writes `currentHost` and `hosts` to `cli
 | Variable | R | K | KH | Kind | Notes |
 | --- | --- | --- | --- | --- | --- |
 | `BETTER_AUTH_SECRET` | + | · | · | S | ≥32 chars. Registry human auth (OTP). |
-| `KHORA_INTERNAL_SECRET` | + | + | · | S | Shared; see table above. |
-| `KHORA_INVITE_PEPPER` | + | + | · | S | Shared; see table above. |
+| `KHORA_INVITE_PEPPER` | · | + | · | S | khora-server only; local invite mint + validation. |
 | `REGISTRY_CONSOLE_ROOT_TOKEN` | + | · | · | S | ≥16 chars enables `/admin` operator console. |
-| `REGISTRY_INTERNAL_SECRET` | + | · | · | S | Optional bearer for `/internal/admin/*`. |
 | `KHORA_CONSOLE_ROOT_TOKEN` | · | + | · | S | ≥16 chars enables khora-server `/admin`. |
 | `REGISTRY_BOOTSTRAP_EMAILS` | + | · | · | C | Comma-separated emails granted `staff` role on first login. |
 
@@ -95,7 +92,7 @@ Host selection: `khora host use <slug>` writes `currentHost` and `hosts` to `cli
 
 | Variable | R | K | KH | Kind | Notes |
 | --- | --- | --- | --- | --- | --- |
-| `SES_FROM_ADDRESS` | + | · | · | C | Verified SES sender for OTP + access-token emails. |
+| `SES_FROM_ADDRESS` | + | · | · | C | Verified SES sender for OTP emails. |
 | `AWS_REGION` | + | + | · | C | SES + Litestream region. |
 | `AWS_ACCESS_KEY_ID` | + | + | · | S | See shared group. |
 | `AWS_SECRET_ACCESS_KEY` | + | + | · | S | See shared group. |
@@ -161,7 +158,7 @@ Host selection: `khora host use <slug>` writes `currentHost` and `hosts` to `cli
 
 ### `khora-prod-shared` (secrets + AWS)
 
-Link to **registry** and **khora-server**.
+Link to **khora-server** (and registry for AWS/Litestream only).
 
 ```
 AWS_REGION=us-east-1
@@ -169,7 +166,6 @@ AWS_ACCESS_KEY_ID=...
 AWS_SECRET_ACCESS_KEY=...
 LITESTREAM_S3_BUCKET=khora-backups-prod
 LITESTREAM_S3_REGION=us-east-1
-KHORA_INTERNAL_SECRET=...
 KHORA_INVITE_PEPPER=...
 KHORA_SQLCIPHER_KEY=...
 KHORA_OUTBOX_ENCRYPTION_KEY=...
@@ -202,7 +198,6 @@ PORT=8788
 KHORA_DATA_DIR=/data
 # KHORA_MEMORIES=0   # omit for default (search index on)
 KHORA_INVITE_PEPPER=...          # same as shared group
-KHORA_INTERNAL_SECRET=...        # same as shared group
 KHORA_LITESTREAM=1
 LITESTREAM_S3_KEY_PREFIX=khora/litestream
 KHORA_SQLCIPHER_KEY=...
@@ -214,26 +209,10 @@ KHORA_CONSOLE_ROOT_TOKEN=...
 
 ```
 PORT=3000
-KHORA_REGISTRY_URL=https://registry.example.com
 BUN_PUBLIC_KHORA_REGISTRY_URL=https://registry.example.com
 ```
 
 Set `BUN_PUBLIC_*` at **build time** if the platform separates build from runtime (Render: set on the service before deploy).
-
----
-
-## Access-token / invite flow
-
-Khora Labs homepage POSTs to registry; registry mints via khora-server:
-
-```
-khoralabs homepage  →  POST /v1/access-token/request  →  registry
-registry            →  POST /internal/mint-invite       →  khora-server  (Bearer KHORA_INTERNAL_SECRET)
-registry            →  SES email with plaintext token
-```
-
-Requires on **registry**: `KHORA_INTERNAL_SECRET`, `KHORA_INVITE_PEPPER`, `SES_FROM_ADDRESS`, host URL/slug.  
-Requires on **khora-server**: matching `KHORA_INTERNAL_SECRET`, `KHORA_INVITE_PEPPER`, invite minting configured.
 
 ---
 
@@ -243,7 +222,7 @@ Requires on **khora-server**: matching `KHORA_INTERNAL_SECRET`, `KHORA_INVITE_PE
 openssl rand -base64 32
 ```
 
-Use for `BETTER_AUTH_SECRET`, `KHORA_INTERNAL_SECRET`, `KHORA_INVITE_PEPPER`, `*_CONSOLE_ROOT_TOKEN`, `REGISTRY_INTERNAL_SECRET`.
+Use for `BETTER_AUTH_SECRET`, `KHORA_INVITE_PEPPER`, `*_CONSOLE_ROOT_TOKEN`.
 
 ---
 

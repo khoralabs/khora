@@ -84,27 +84,8 @@ CREATE TABLE IF NOT EXISTS memberships (
   id TEXT PRIMARY KEY NOT NULL,
   account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
   host_id TEXT NOT NULL REFERENCES khora_hosts(id) ON DELETE CASCADE,
-  invite_token_hash TEXT,
-  status TEXT NOT NULL DEFAULT 'requested',
   created_at_ms INTEGER NOT NULL,
-  updated_at_ms INTEGER NOT NULL,
   UNIQUE(account_id, host_id)
-);
-
-CREATE TABLE IF NOT EXISTS access_token_requests (
-  id TEXT PRIMARY KEY NOT NULL,
-  email TEXT NOT NULL,
-  host_id TEXT NOT NULL REFERENCES khora_hosts(id) ON DELETE CASCADE,
-  account_id TEXT REFERENCES accounts(id) ON DELETE SET NULL,
-  membership_id TEXT REFERENCES memberships(id) ON DELETE SET NULL,
-  status TEXT NOT NULL DEFAULT 'pending',
-  invite_token_hash TEXT,
-  requested_at_ms INTEGER NOT NULL,
-  minted_at_ms INTEGER,
-  sent_at_ms INTEGER,
-  redeemed_at_ms INTEGER,
-  source_app TEXT,
-  UNIQUE(email, host_id)
 );
 
 CREATE TABLE IF NOT EXISTS marketing_consents (
@@ -118,8 +99,6 @@ CREATE TABLE IF NOT EXISTS marketing_consents (
   UNIQUE(email, list_slug)
 );
 
-CREATE INDEX IF NOT EXISTS idx_access_token_requests_account_id
-  ON access_token_requests (account_id);
 CREATE INDEX IF NOT EXISTS idx_marketing_consents_account_id
   ON marketing_consents (account_id);
 CREATE INDEX IF NOT EXISTS idx_memberships_account_id

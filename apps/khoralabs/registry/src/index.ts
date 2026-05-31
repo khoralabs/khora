@@ -1,4 +1,4 @@
-import { createRootTokenConsoleAuth } from "@khoralabs/khora-console";
+import { createConsoleAuthFromEnv } from "@khoralabs/khora-console";
 import { assertEncryptionKeys, EnvKeyProvider } from "@khoralabs/sqlite-crypto";
 import {
   ensureRegistrySchema,
@@ -7,7 +7,6 @@ import {
   reloadRegistryAuth,
 } from "@khoralabs/users-auth";
 import { serve } from "bun";
-import { handleAccessTokenRequest } from "./api/access-token";
 import { routeConsoleAuth } from "./api/admin/console-guard";
 import {
   handleAdminHostActivate,
@@ -19,11 +18,6 @@ import {
   handleAdminHostQuotaRequests,
   handleAdminHostRegistry,
 } from "./api/admin/hosts";
-import {
-  handleInternalAdminStatsSummary,
-  handleInternalLookupAccount,
-  handleInternalLookupEmail,
-} from "./api/admin/internal";
 import { handleLookupAccount, handleLookupEmail } from "./api/admin/lookup";
 import { handleAdminStatsSummary } from "./api/admin/stats";
 import { handleDeviceApprove, handleDeviceAuthorize, handleDeviceToken } from "./api/device";
@@ -36,13 +30,7 @@ import {
   handleHostRegistryQuotaRequestDelete,
   handleHostRegistryQuotaRequestPost,
 } from "./api/host-registry";
-import {
-  handleHostGet,
-  handleHostRegister,
-  handleHostsList,
-  handleInternalHostActivate,
-  handleInternalHostsList,
-} from "./api/hosts";
+import { handleHostGet, handleHostRegister, handleHostsList } from "./api/hosts";
 import {
   handleLinkAgent,
   handleLinkAgentEnsure,
@@ -68,11 +56,7 @@ reloadRegistryAuth({
 startHostHealthPoller(registryDb);
 
 const auth = getRegistryAuth();
-const rootToken = process.env.REGISTRY_CONSOLE_ROOT_TOKEN?.trim();
-const consoleAuth =
-  rootToken !== undefined && rootToken.length >= 16
-    ? createRootTokenConsoleAuth({ rootToken })
-    : null;
+const consoleAuth = createConsoleAuthFromEnv();
 
 if (consoleAuth === null) {
   console.log("[registry] Admin console disabled (set REGISTRY_CONSOLE_ROOT_TOKEN to enable)");
@@ -292,18 +276,6 @@ const server = serve({
       }
     }
 
-    if (path === "/internal/admin/stats/summary" && req.method === "GET") {
-      return handleInternalAdminStatsSummary(req);
-    }
-
-    if (path === "/internal/admin/lookup/email" && req.method === "GET") {
-      return handleInternalLookupEmail(req, url);
-    }
-
-    if (path === "/internal/admin/lookup/account" && req.method === "GET") {
-      return handleInternalLookupAccount(req, url);
-    }
-
     if (path.startsWith("/api/auth")) {
       return withCors(req, await auth.handler(req));
     }
@@ -321,19 +293,6 @@ const server = serve({
       if (slug.length > 0 && slug !== "register") {
         return withCors(req, handleHostGet(slug));
       }
-    }
-
-    if (path === "/internal/v1/hosts" && req.method === "GET") {
-      return handleInternalHostsList(req);
-    }
-
-    if (
-      path.startsWith("/internal/v1/hosts/") &&
-      path.endsWith("/activate") &&
-      req.method === "POST"
-    ) {
-      const id = path.slice("/internal/v1/hosts/".length, -"/activate".length);
-      return await handleInternalHostActivate(req, id);
     }
 
     if (path === "/v1/me" && req.method === "GET") {
@@ -370,10 +329,6 @@ const server = serve({
 
     if (path === "/v1/link/agent" && req.method === "DELETE") {
       return withCors(req, await handleLinkUnlink(req));
-    }
-
-    if (path === "/v1/access-token/request" && req.method === "POST") {
-      return withCors(req, await handleAccessTokenRequest(req));
     }
 
     if (path === "/v1/marketing/subscribe") {

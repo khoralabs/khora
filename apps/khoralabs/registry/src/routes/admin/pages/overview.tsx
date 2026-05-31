@@ -55,9 +55,7 @@ function OverviewContent() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
-        <p className="text-sm text-muted-foreground">
-          Network accounts, hosts, and access activity
-        </p>
+        <p className="text-sm text-muted-foreground">Network accounts, hosts, and consents</p>
       </div>
 
       {pendingCount > 0 ? (
@@ -138,7 +136,7 @@ function OverviewContent() {
         </Card>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <OverviewKpi
           label="Accounts"
           value={summary.accounts.total}
@@ -150,11 +148,6 @@ function OverviewContent() {
           detail={`${summary.hosts.active} active`}
         />
         <OverviewKpi
-          label="Access requests"
-          value={summary.accessTokenRequests.total}
-          detail={`${summary.accessTokenRequests.byStatus.pending} pending`}
-        />
-        <OverviewKpi
           label="Marketing consents"
           value={summary.marketingConsents.active}
           detail={`${summary.marketingConsents.total} total`}
@@ -164,7 +157,7 @@ function OverviewContent() {
       <Card>
         <CardHeader>
           <CardTitle>Network metrics</CardTitle>
-          <CardDescription>Accounts, access requests, and marketing consents</CardDescription>
+          <CardDescription>Accounts, marketing consents, and memberships</CardDescription>
         </CardHeader>
         <CardContent>
           <UsersStats.Overview className="space-y-4">
@@ -174,13 +167,9 @@ function OverviewContent() {
                 <UsersStats.AccountsMetrics className="grid gap-2 text-sm [&_dt]:text-muted-foreground [&_dd]:font-mono" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-sm font-medium">Access requests</h3>
-                <UsersStats.AccessRequestsMetrics className="grid gap-2 text-sm [&_dt]:text-muted-foreground [&_dd]:font-mono" />
+                <h3 className="text-sm font-medium">Marketing & memberships</h3>
+                <UsersStats.MarketingMetrics className="grid gap-2 text-sm [&_dt]:text-muted-foreground [&_dd]:font-mono" />
               </div>
-            </div>
-            <div className="space-y-1">
-              <h3 className="text-sm font-medium">Marketing & memberships</h3>
-              <UsersStats.MarketingMetrics className="grid gap-2 text-sm [&_dt]:text-muted-foreground [&_dd]:font-mono" />
             </div>
           </UsersStats.Overview>
         </CardContent>

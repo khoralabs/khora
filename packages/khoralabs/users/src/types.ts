@@ -6,8 +6,6 @@ export type AccountStatus = "active" | "suspended";
 export type HostStatus = "pending" | "active" | "suspended";
 export type HostHealthStatus = "unknown" | "up" | "down";
 export type HostHealthProbedEndpoint = "ready" | "health";
-export type MembershipStatus = "requested" | "invited" | "active" | "revoked";
-export type AccessTokenRequestStatus = "pending" | "minted" | "sent" | "redeemed";
 
 export type Account = {
   id: string;
@@ -65,21 +63,6 @@ export type HostTrustedOriginQuotaRequest = {
   reviewedAtMs: number | null;
 };
 
-export type AccessTokenRequest = {
-  id: string;
-  email: string;
-  hostId: string;
-  accountId: string | null;
-  membershipId: string | null;
-  status: AccessTokenRequestStatus;
-  inviteTokenHash: string | null;
-  requestedAtMs: number;
-  mintedAtMs: number | null;
-  sentAtMs: number | null;
-  redeemedAtMs: number | null;
-  sourceApp: string | null;
-};
-
 export type MarketingConsent = {
   id: string;
   email: string;
@@ -94,10 +77,7 @@ export type Membership = {
   id: string;
   accountId: string;
   hostId: string;
-  inviteTokenHash: string | null;
-  status: MembershipStatus;
   createdAtMs: number;
-  updatedAtMs: number;
 };
 
 export type AccountAgentLink = {
@@ -161,7 +141,6 @@ export type KhoraHostRow = SqlRow<KhoraHostSqlFields> & {
 export type HostTrustedOriginRow = SqlRow<HostTrustedOrigin>;
 export type HostTrustedOriginRequestRow = SqlRow<HostTrustedOriginRequest>;
 export type HostTrustedOriginQuotaRequestRow = SqlRow<HostTrustedOriginQuotaRequest>;
-export type AccessTokenRequestRow = SqlRow<AccessTokenRequest>;
 export type MarketingConsentRow = SqlRow<MarketingConsent>;
 export type MembershipRow = SqlRow<Membership>;
 export type AccountAgentLinkRow = SqlRow<AccountAgentLink>;

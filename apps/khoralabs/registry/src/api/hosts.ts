@@ -1,11 +1,9 @@
 import {
-  activateKhoraHost,
   findPublicHostBySlug,
   InvalidHostHealthPathError,
   InvalidHostSlugError,
   InvalidKhoraHostBaseUrlError,
   initializeRegistrationRequirements,
-  listAllHosts,
   listPublicHosts,
   readHostRegistrationPolicy,
   registerKhoraHost,
@@ -13,9 +11,8 @@ import {
   tryAutoActivateHost,
 } from "@khoralabs/users";
 import { getRegistryDatabase } from "@khoralabs/users-auth";
-import { probeHostHealth, probeHostHealthById } from "../host-health";
+import { probeHostHealth } from "../host-health";
 import { hostToFullJson, hostToPublicJson } from "./host-json";
-import { authorizeRegistryInternal } from "./registry-internal";
 
 const REGISTER_LIMIT = 20;
 const REGISTER_WINDOW_MS = 60 * 60 * 1000;
@@ -142,40 +139,6 @@ export async function handleHostRegister(req: Request): Promise<Response> {
     }
     const msg = err instanceof Error ? err.message : "registration failed";
     const status = msg.includes("already registered") ? 409 : 400;
-    return Response.json({ error: msg }, { status });
-  }
-}
-
-export function handleInternalHostsList(req: Request): Response {
-  if (!authorizeRegistryInternal(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const db = getRegistryDatabase();
-  const hosts = listAllHosts(db).map((host) => hostToFullJson(host, db));
-  return Response.json({ hosts });
-}
-
-export async function handleInternalHostActivate(req: Request, hostId: string): Promise<Response> {
-  if (!authorizeRegistryInternal(req)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const id = hostId.trim();
-  if (id.length === 0) {
-    return Response.json({ error: "host id required" }, { status: 400 });
-  }
-  const db = getRegistryDatabase();
-  try {
-    const { host, managementToken } = activateKhoraHost(db, id, {
-      satisfyOperatorApproval: true,
-    });
-    const probed = await probeHostHealthById(db, host.id);
-    return Response.json({
-      host: hostToFullJson(probed ?? host, db),
-      ...(managementToken !== null ? { managementToken } : {}),
-    });
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "activate failed";
-    const status = msg.includes("not found") ? 404 : 400;
     return Response.json({ error: msg }, { status });
   }
 }

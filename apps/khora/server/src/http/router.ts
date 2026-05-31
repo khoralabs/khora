@@ -4,6 +4,7 @@ import type { KhoraWsUpgradePort } from "@khoralabs/khora-transport";
 import { logger } from "../logger";
 import { clientIpFromRequest } from "../rate-limit";
 import { handleInboxWsUpgrade } from "../ws/inbox";
+import { handleAdminInvitesList, handleAdminInvitesMint } from "./admin-invites";
 import {
   handleAdminStatsCell,
   handleAdminStatsInactiveMembers,
@@ -14,13 +15,6 @@ import { handleListAuthorSubscriptions } from "./authors";
 import { routeConsoleAuth } from "./console-guard";
 import type { HostRouteDeps } from "./deps";
 import { handleHealth, handleReady } from "./health";
-import {
-  handleInternalAdminStatsCell,
-  handleInternalAdminStatsInactiveMembers,
-  handleInternalAdminStatsPrincipal,
-  handleInternalAdminStatsSummary,
-} from "./internal-admin-stats";
-import { handleInternalMintInvite } from "./internal-invite";
 import { handleInvitePreview, handleListInvites } from "./invites";
 import {
   handleAgentStatus,
@@ -80,24 +74,8 @@ export async function route(
     return handleReady(deps);
   }
 
-  if (req.method === "POST" && url.pathname === "/internal/mint-invite") {
-    return handleInternalMintInvite(req, deps);
-  }
-
-  if (req.method === "GET" && url.pathname === "/internal/admin/stats/summary") {
-    return handleInternalAdminStatsSummary(req, deps);
-  }
-
-  if (req.method === "GET" && url.pathname === "/internal/admin/stats/principal") {
-    return handleInternalAdminStatsPrincipal(req, url, deps);
-  }
-
-  if (req.method === "GET" && url.pathname === "/internal/admin/stats/cell") {
-    return handleInternalAdminStatsCell(req, url, deps);
-  }
-
-  if (req.method === "GET" && url.pathname === "/internal/admin/stats/inactive-members") {
-    return handleInternalAdminStatsInactiveMembers(req, url, deps);
+  if (url.pathname.startsWith("/internal/")) {
+    return jsonError("Not found", 404);
   }
 
   const consoleRoute = await routeConsoleAuth(req, url, deps.consoleAuth);
@@ -159,6 +137,14 @@ export async function route(
 
   if (req.method === "DELETE" && url.pathname === "/admin/api/registry/origins") {
     return handleAdminRegistryOriginDelete(req, deps);
+  }
+
+  if (req.method === "POST" && url.pathname === "/admin/api/invites/mint") {
+    return handleAdminInvitesMint(req, deps);
+  }
+
+  if (req.method === "GET" && url.pathname === "/admin/api/invites") {
+    return handleAdminInvitesList(req, url, deps);
   }
 
   const ip = clientIpFromRequest(req);

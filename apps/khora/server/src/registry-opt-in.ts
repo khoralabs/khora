@@ -1,4 +1,4 @@
-import type { KhoraHostSpecPort } from "@khoralabs/khora-host";
+import type { KhoraHostContext, KhoraHostSpecPort } from "@khoralabs/khora-host";
 import {
   envHostDisplayName,
   envHostSlug,
@@ -57,7 +57,10 @@ export async function registerHostWithRegistry(params: RegistryOptInParams): Pro
   );
 }
 
-export function maybeRegistryOptInOnStartup(hostSpec: KhoraHostSpecPort): void {
+export function maybeRegistryOptInOnStartup(
+  hostSpec: KhoraHostSpecPort,
+  _ctx?: KhoraHostContext,
+): void {
   const effective = hostSpec.readEffective();
   const envParticipate = envRegistryParticipate();
   const slug = effective.slug ?? envHostSlug();

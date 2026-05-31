@@ -4,16 +4,19 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { poolShardCellId } from "@khoralabs/colonnade-persistence";
+import { createRootTokenConsoleAuth } from "@khoralabs/khora-console";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
 import { openEncryptedDatabaseSync, TEST_KHORA_SQLCIPHER_KEY } from "@khoralabs/sqlite-crypto";
 import { createKhoraAdminStatsPort } from "../ops/admin-stats-port";
-import type { HostRouteDeps } from "./deps";
 import {
-  handleInternalAdminStatsCell,
-  handleInternalAdminStatsInactiveMembers,
-  handleInternalAdminStatsPrincipal,
-  handleInternalAdminStatsSummary,
-} from "./internal-admin-stats";
+  handleAdminStatsCell,
+  handleAdminStatsInactiveMembers,
+  handleAdminStatsPrincipal,
+  handleAdminStatsSummary,
+} from "./admin-stats";
+import type { HostRouteDeps } from "./deps";
+
+const ROOT_TOKEN = "test-root-token-16chars";
 
 const REG_BY_PRINCIPAL = "relay:reg:by-principal";
 const testRoot = mkdtempSync(join(tmpdir(), "admin-stats-test-"));
@@ -165,7 +168,10 @@ function seedCellShard(
   db.close();
 }
 
-function deps(overrides?: Partial<KhoraHostContext>): HostRouteDeps {
+function deps(
+  consoleAuth: HostRouteDeps["consoleAuth"],
+  overrides?: Partial<KhoraHostContext>,
+): HostRouteDeps {
   const cluster = {
     cellPoolCount: 2 as number | undefined,
     assignPrincipalToCell: (principalId: string) =>
@@ -199,19 +205,21 @@ function deps(overrides?: Partial<KhoraHostContext>): HostRouteDeps {
       ...overrides,
     } as unknown as KhoraHostContext,
     rateLimiters: {} as HostRouteDeps["rateLimiters"],
-    consoleAuth: null,
+    consoleAuth,
   };
 }
 
-function withSecret<T>(fn: () => T): T {
-  const prev = process.env.KHORA_INTERNAL_SECRET;
-  process.env.KHORA_INTERNAL_SECRET = "test-secret";
-  try {
-    return fn();
-  } finally {
-    if (prev === undefined) delete process.env.KHORA_INTERNAL_SECRET;
-    else process.env.KHORA_INTERNAL_SECRET = prev;
-  }
+async function loginCookie(auth: ReturnType<typeof createRootTokenConsoleAuth>): Promise<string> {
+  const loginRes = await auth.route?.(
+    new Request("http://x/admin/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: ROOT_TOKEN }),
+    }),
+    new URL("http://x/admin/api/login"),
+  );
+  const setCookie = loginRes?.headers.get("set-cookie") ?? "";
+  return setCookie.split(";")[0] ?? "";
 }
 
 function withCellsDir<T>(fn: () => T): T {
@@ -231,12 +239,22 @@ afterAll(() => {
   rmSync(testRoot, { recursive: true, force: true });
 });
 
-describe("internal admin stats", () => {
-  test("summary returns 401 without bearer secret", () => {
-    withSecret(() => {
-      const res = handleInternalAdminStatsSummary(new Request("http://x/summary"), deps());
-      expect(res.status).toBe(401);
-    });
+describe("admin stats", () => {
+  test("summary returns 503 when console disabled", async () => {
+    const res = await handleAdminStatsSummary(
+      new Request("http://x/admin/api/stats/summary"),
+      deps(null),
+    );
+    expect(res.status).toBe(503);
+  });
+
+  test("summary returns 401 without session", async () => {
+    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const res = await handleAdminStatsSummary(
+      new Request("http://x/admin/api/stats/summary"),
+      deps(auth),
+    );
+    expect(res.status).toBe(401);
   });
 
   test("summary includes catalog, frames, and cell aggregates", async () => {
@@ -245,62 +263,60 @@ describe("internal admin stats", () => {
     seedCellShard(0, 2, 1);
     seedCellShard(1, 0, 0);
 
-    await withSecret(() =>
-      withCellsDir(async () => {
-        const res = handleInternalAdminStatsSummary(
-          new Request("http://x/summary", {
-            headers: { Authorization: "Bearer test-secret" },
-          }),
-          deps(),
-        );
-        expect(res.status).toBe(200);
-        const body = (await res.json()) as {
-          registeredUsers: number;
-          catalog: { projectionRows: number; standingQueries: number; registeredUsers: number };
-          frames: { activeRooms: number; totalFrames: number };
-          cells: {
-            poolCount: number;
-            inUseCount: number;
-            shards: Array<{
-              cellId: string;
-              provisioned: boolean;
-              outboxCount: number;
-              inboxCount: number;
-              homePrincipals: number;
-            }>;
-          };
-          networkActivity: {
-            heartbeat: { registeredAgents: number };
-          };
+    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const cookie = await loginCookie(auth);
+    await withCellsDir(async () => {
+      const res = await handleAdminStatsSummary(
+        new Request("http://x/admin/api/stats/summary", { headers: { cookie } }),
+        deps(auth),
+      );
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as {
+        registeredUsers: number;
+        catalog: { projectionRows: number; standingQueries: number; registeredUsers: number };
+        frames: { activeRooms: number; totalFrames: number };
+        cells: {
+          poolCount: number;
+          inUseCount: number;
+          shards: Array<{
+            cellId: string;
+            provisioned: boolean;
+            outboxCount: number;
+            inboxCount: number;
+            homePrincipals: number;
+          }>;
         };
+        networkActivity: {
+          heartbeat: { registeredAgents: number };
+        };
+      };
 
-        expect(body.registeredUsers).toBe(1);
-        expect(body.catalog.projectionRows).toBe(2);
-        expect(body.catalog.standingQueries).toBe(1);
-        expect(body.catalog.registeredUsers).toBe(1);
-        expect(body.frames.activeRooms).toBe(1);
-        expect(body.frames.totalFrames).toBe(2);
-        expect(body.cells.poolCount).toBe(2);
-        expect(body.cells.inUseCount).toBe(1);
-        expect(body.cells.shards).toHaveLength(2);
-        expect(body.cells.shards[0]).toMatchObject({
-          cellId: poolShardCellId(0),
-          provisioned: true,
-          outboxCount: 2,
-          inboxCount: 1,
-          homePrincipals: 1,
-        });
-        expect(body.cells.shards[1]).toMatchObject({
-          cellId: poolShardCellId(1),
-          provisioned: true,
-          outboxCount: 0,
-          inboxCount: 0,
-          homePrincipals: 0,
-        });
-        expect(body.networkActivity).toBeDefined();
-        expect(body.networkActivity.heartbeat.registeredAgents).toBe(1);
-      }),
-    );
+      expect(body.registeredUsers).toBe(1);
+      expect(body.catalog.projectionRows).toBe(2);
+      expect(body.catalog.standingQueries).toBe(1);
+      expect(body.catalog.registeredUsers).toBe(1);
+      expect(body.frames.activeRooms).toBe(1);
+      expect(body.frames.totalFrames).toBe(2);
+      expect(body.cells.poolCount).toBe(2);
+      expect(body.cells.inUseCount).toBe(1);
+      expect(body.cells.shards).toHaveLength(2);
+      expect(body.cells.shards[0]).toMatchObject({
+        cellId: poolShardCellId(0),
+        provisioned: true,
+        outboxCount: 2,
+        inboxCount: 1,
+        homePrincipals: 1,
+      });
+      expect(body.cells.shards[1]).toMatchObject({
+        cellId: poolShardCellId(1),
+        provisioned: true,
+        outboxCount: 0,
+        inboxCount: 0,
+        homePrincipals: 0,
+      });
+      expect(body.networkActivity).toBeDefined();
+      expect(body.networkActivity.heartbeat.registeredAgents).toBe(1);
+    });
   });
 
   test("inactive-members returns registered stale principals", async () => {
@@ -308,113 +324,109 @@ describe("internal admin stats", () => {
     const staleMs = Date.now() - 10 * 24 * 60 * 60 * 1000;
     seedCellShard(0, 1, 0, staleMs);
 
-    await withSecret(() =>
-      withCellsDir(async () => {
-        const url = new URL("http://x/inactive-members?days=7");
-        const res = handleInternalAdminStatsInactiveMembers(
-          new Request(url, { headers: { Authorization: "Bearer test-secret" } }),
-          url,
-          deps(),
-        );
-        expect(res.status).toBe(200);
-        const body = (await res.json()) as { members: Array<{ did: string }> };
-        expect(body.members.some((m) => m.did === "did:key:alice")).toBe(true);
-      }),
+    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const cookie = await loginCookie(auth);
+    await withCellsDir(async () => {
+      const url = new URL("http://x/admin/api/stats/inactive-members?days=7");
+      const res = await handleAdminStatsInactiveMembers(
+        new Request(url, { headers: { cookie } }),
+        url,
+        deps(auth),
+      );
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { members: Array<{ did: string }> };
+      expect(body.members.some((m) => m.did === "did:key:alice")).toBe(true);
+    });
+  });
+
+  test("cell returns 401 without session", async () => {
+    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const url = new URL(`http://x/admin/api/stats/cell?cellId=${poolShardCellId(0)}`);
+    const res = await handleAdminStatsCell(new Request(url), url, deps(auth));
+    expect(res.status).toBe(401);
+  });
+
+  test("cell returns 400 when cellId is missing", async () => {
+    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const cookie = await loginCookie(auth);
+    const url = new URL("http://x/admin/api/stats/cell");
+    const res = await handleAdminStatsCell(
+      new Request(url, { headers: { cookie } }),
+      url,
+      deps(auth),
     );
+    expect(res.status).toBe(400);
   });
 
-  test("cell returns 401 without bearer secret", () => {
-    withSecret(() => {
-      const url = new URL(`http://x/cell?cellId=${poolShardCellId(0)}`);
-      const res = handleInternalAdminStatsCell(new Request(url), url, deps());
-      expect(res.status).toBe(401);
-    });
-  });
-
-  test("cell returns 400 when cellId is missing", () => {
-    withSecret(() => {
-      const url = new URL("http://x/cell");
-      const res = handleInternalAdminStatsCell(
-        new Request(url, { headers: { Authorization: "Bearer test-secret" } }),
-        url,
-        deps(),
-      );
-      expect(res.status).toBe(400);
-    });
-  });
-
-  test("cell returns 400 for unknown shard id", () => {
-    withSecret(() => {
-      const url = new URL("http://x/cell?cellId=colonnade-shard-99");
-      const res = handleInternalAdminStatsCell(
-        new Request(url, { headers: { Authorization: "Bearer test-secret" } }),
-        url,
-        deps(),
-      );
-      expect(res.status).toBe(400);
-    });
+  test("cell returns 400 for unknown shard id", async () => {
+    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const cookie = await loginCookie(auth);
+    const url = new URL("http://x/admin/api/stats/cell?cellId=colonnade-shard-99");
+    const res = await handleAdminStatsCell(
+      new Request(url, { headers: { cookie } }),
+      url,
+      deps(auth),
+    );
+    expect(res.status).toBe(400);
   });
 
   test("cell returns detail for a provisioned shard", async () => {
     seedCatalog();
     seedCellShard(0, 3, 2);
 
-    await withSecret(() =>
-      withCellsDir(async () => {
-        const cellId = poolShardCellId(0);
-        const url = new URL(`http://x/cell?cellId=${cellId}`);
-        const res = handleInternalAdminStatsCell(
-          new Request(url, { headers: { Authorization: "Bearer test-secret" } }),
-          url,
-          deps(),
-        );
-        expect(res.status).toBe(200);
-        const body = (await res.json()) as {
-          cellId: string;
-          provisioned: boolean;
-          fileSizeBytes: number | null;
-          outboxCount: number;
-          inboxCount: number;
-          outboxPrincipals: number;
-          inboxRecipients: number;
-          homePrincipals: number;
-          topOutboxAuthors: Array<{ principalId: string; count: number }>;
-        };
+    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const cookie = await loginCookie(auth);
+    await withCellsDir(async () => {
+      const cellId = poolShardCellId(0);
+      const url = new URL(`http://x/admin/api/stats/cell?cellId=${cellId}`);
+      const res = await handleAdminStatsCell(
+        new Request(url, { headers: { cookie } }),
+        url,
+        deps(auth),
+      );
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as {
+        cellId: string;
+        provisioned: boolean;
+        fileSizeBytes: number | null;
+        outboxCount: number;
+        inboxCount: number;
+        outboxPrincipals: number;
+        inboxRecipients: number;
+        homePrincipals: number;
+        topOutboxAuthors: Array<{ principalId: string; count: number }>;
+      };
 
-        expect(body.cellId).toBe(cellId);
-        expect(body.provisioned).toBe(true);
-        expect(body.fileSizeBytes).toBeGreaterThan(0);
-        expect(body.outboxCount).toBe(3);
-        expect(body.inboxCount).toBe(2);
-        expect(body.outboxPrincipals).toBe(2);
-        expect(body.inboxRecipients).toBe(1);
-        expect(body.homePrincipals).toBe(1);
-        expect(body.topOutboxAuthors.length).toBeGreaterThan(0);
-      }),
+      expect(body.cellId).toBe(cellId);
+      expect(body.provisioned).toBe(true);
+      expect(body.fileSizeBytes).toBeGreaterThan(0);
+      expect(body.outboxCount).toBe(3);
+      expect(body.inboxCount).toBe(2);
+      expect(body.outboxPrincipals).toBe(2);
+      expect(body.inboxRecipients).toBe(1);
+      expect(body.homePrincipals).toBe(1);
+      expect(body.topOutboxAuthors.length).toBeGreaterThan(0);
+    });
+  });
+
+  test("principal returns 401 without session", async () => {
+    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const res = await handleAdminStatsPrincipal(
+      new Request("http://x/admin/api/stats/principal?did=did:key:abc"),
+      new URL("http://x/admin/api/stats/principal?did=did:key:abc"),
+      deps(auth),
     );
+    expect(res.status).toBe(401);
   });
 
-  test("principal returns 401 without bearer secret", () => {
-    withSecret(() => {
-      const res = handleInternalAdminStatsPrincipal(
-        new Request("http://x/principal?did=did:key:abc"),
-        new URL("http://x/principal?did=did:key:abc"),
-        deps(),
-      );
-      expect(res.status).toBe(401);
-    });
-  });
-
-  test("principal returns 400 when did is missing", () => {
-    withSecret(() => {
-      const res = handleInternalAdminStatsPrincipal(
-        new Request("http://x/principal", {
-          headers: { Authorization: "Bearer test-secret" },
-        }),
-        new URL("http://x/principal"),
-        deps(),
-      );
-      expect(res.status).toBe(400);
-    });
+  test("principal returns 400 when did is missing", async () => {
+    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const cookie = await loginCookie(auth);
+    const res = await handleAdminStatsPrincipal(
+      new Request("http://x/admin/api/stats/principal", { headers: { cookie } }),
+      new URL("http://x/admin/api/stats/principal"),
+      deps(auth),
+    );
+    expect(res.status).toBe(400);
   });
 });

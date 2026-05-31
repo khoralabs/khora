@@ -9,6 +9,7 @@ const [
   { default: blogPost },
   { default: contact },
   { default: index },
+  { default: join },
   { default: privacy },
   { default: terms },
 ] = await Promise.all([
@@ -16,6 +17,7 @@ const [
   import("./routes/blog/post/index.html"),
   import("./routes/contact/index.html"),
   import("./routes/index.html"),
+  import("./routes/join/index.html"),
   import("./routes/privacy/index.html"),
   import("./routes/terms/index.html"),
 ]);
@@ -29,6 +31,7 @@ const server = serve({
     "/blog/media/*": { GET: serveBlogMedia },
     "/blog/:slug": blogPost,
     "/contact": contact,
+    "/join": join,
     "/consumer": index,
     "/privacy": privacy,
     "/terms": terms,

@@ -59,7 +59,6 @@ export function UsersStatsEmailLookupResult({ className, ...props }: React.Compo
             <MetricRow label="Account" value={emailLookup.account?.id ?? "—"} />
             <MetricRow label="Auth user" value={emailLookup.authUser?.id ?? "—"} />
             <MetricRow label="Role" value={emailLookup.authUser?.role ?? "—"} />
-            <MetricRow label="Access requests" value={emailLookup.accessRequests.length} />
             <MetricRow label="Marketing consents" value={emailLookup.marketingConsents.length} />
             <MetricRow label="Memberships" value={emailLookup.membershipsCount} />
           </dl>

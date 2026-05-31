@@ -5,7 +5,6 @@ import {
 } from "./email-lookup";
 import { UsersStatsHostList, UsersStatsHostListItem } from "./hosts";
 import {
-  UsersStatsAccessRequestsMetrics,
   UsersStatsAccountsMetrics,
   UsersStatsMarketingMetrics,
   UsersStatsOverview,
@@ -16,7 +15,6 @@ export const UsersStats = {
   Root: UsersStatsRoot,
   Overview: UsersStatsOverview,
   AccountsMetrics: UsersStatsAccountsMetrics,
-  AccessRequestsMetrics: UsersStatsAccessRequestsMetrics,
   MarketingMetrics: UsersStatsMarketingMetrics,
   HostList: UsersStatsHostList,
   HostListItem: UsersStatsHostListItem,

@@ -6,6 +6,10 @@ export type KhoraInviteListRow = {
   kind: string;
 };
 
+export type KhoraInviteAdminListRow = KhoraInviteListRow & {
+  mintedByDid: string | null;
+};
+
 export type InvitePreviewResult =
   | {
       ok: true;
@@ -21,6 +25,7 @@ export type KhoraInvitesRepo = {
   rollbackInviteConsumption(plaintext: string, consumerDid: string): void;
   mintStandardInviteTokens(mintedByDid: string, count: number): string[];
   listInvitesMintedForDid(minterDid: string): KhoraInviteListRow[];
+  listAllInviteTokens(params?: { limit?: number; mintedByDid?: string }): KhoraInviteAdminListRow[];
   previewInviteToken(
     plaintext: string,
     loadProfileForDid: (did: string) => unknown | null | undefined,
