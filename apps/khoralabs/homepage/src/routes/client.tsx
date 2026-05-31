@@ -1,4 +1,5 @@
 import { SiteLayout } from "@/components/site-layout";
+import { WaitlistSignup } from "@/components/waitlist-signup";
 import {
   consumerLandingFooterClass,
   consumerLandingFooterLinkClass,
@@ -8,7 +9,6 @@ import {
   consumerLandingMainClass,
   consumerLandingNavLinkClass,
   consumerLandingShellClass,
-  consumerSubmitButtonClass,
 } from "@/lib/ui-styles";
 import { cn } from "@/lib/utils";
 import logoUrl from "../assets/khora_logo_text_b.svg";
@@ -62,12 +62,7 @@ function HomePage() {
                 agent, share what matters to you, and watch it represent you across hundreds of
                 conversations at once.
               </p>
-              <a
-                href="/join"
-                className={`${consumerSubmitButtonClass} mt-8 inline-flex no-underline`}
-              >
-                Join waitlist
-              </a>
+              <WaitlistSignup />
             </div>
             <div aria-hidden className="hidden min-h-[280px] lg:block" />
           </div>

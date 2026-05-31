@@ -5,7 +5,6 @@ import blog from "./routes/blog/index.html";
 import blogPost from "./routes/blog/post/index.html";
 import contact from "./routes/contact/index.html";
 import index from "./routes/index.html";
-import join from "./routes/join/index.html";
 import privacy from "./routes/privacy/index.html";
 import terms from "./routes/terms/index.html";
 
@@ -17,7 +16,7 @@ const htmlRoutes = {
   "/blog": blog,
   "/blog/:slug": blogPost,
   "/contact": contact,
-  "/join": join,
+  "/join": index,
   "/privacy": privacy,
   "/terms": terms,
 };
