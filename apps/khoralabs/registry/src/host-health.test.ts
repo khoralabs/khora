@@ -20,6 +20,7 @@ function mockHost(overrides: Partial<KhoraHost> = {}): KhoraHost {
     healthProbedEndpoint: null,
     registryParticipationEnabled: false,
     includedTrustedOrigins: 2,
+    registrationRequirements: [],
     ...overrides,
   };
 }

@@ -66,6 +66,14 @@ if (consoleAuth === null) {
 
 const port = Number.parseInt(process.env.PORT ?? "4000", 10);
 
+function isAdminSpaPath(pathname: string): boolean {
+  return (
+    pathname.startsWith("/admin") &&
+    !pathname.startsWith("/admin/login") &&
+    !pathname.startsWith("/admin/api")
+  );
+}
+
 const server = serve({
   port: Number.isFinite(port) ? port : 4000,
   routes: {
@@ -82,6 +90,10 @@ const server = serve({
 
     const url = new URL(req.url);
     const path = url.pathname;
+
+    if (req.method === "GET" && isAdminSpaPath(path)) {
+      return adminPage as unknown as Response;
+    }
 
     const consoleRoute = await routeConsoleAuth(req, url, consoleAuth);
     if (consoleRoute !== undefined) {

@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-function HostRegistryRow({ host }: { host: RegistryHostSummaryItem }) {
+export function HostRegistryRow({ host }: { host: RegistryHostSummaryItem }) {
   const { refetchSummary } = useUsersStats();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,10 +43,7 @@ function HostRegistryRow({ host }: { host: RegistryHostSummaryItem }) {
   }
 
   return (
-    <li className="space-y-3 rounded-md border p-3 text-sm" data-slot="host-registry-row">
-      <div className="font-mono">
-        {host.slug} — {host.baseUrl} <span className="text-muted-foreground">({host.status})</span>
-      </div>
+    <div className="space-y-3 text-sm" data-slot="host-registry-row">
       <p className="text-muted-foreground">
         Quota: {host.trustedOriginQuota.used} / {host.trustedOriginQuota.included} trusted origins
       </p>
@@ -60,7 +57,7 @@ function HostRegistryRow({ host }: { host: RegistryHostSummaryItem }) {
           id={participationId}
           checked={participationEnabled}
           disabled={!active || saving}
-          onCheckedChange={async (checked) => {
+          onCheckedChange={async (checked: boolean | "indeterminate") => {
             const next = checked === true;
             setParticipationEnabled(next);
             await saveRegistry(origins, next);
@@ -124,43 +121,6 @@ function HostRegistryRow({ host }: { host: RegistryHostSummaryItem }) {
           </Button>
         </div>
       </div>
-    </li>
-  );
-}
-
-export function HostRegistryParticipation() {
-  const { summary, summaryLoading, summaryError } = useUsersStats();
-
-  if (summaryLoading || summaryError !== null) {
-    return null;
-  }
-
-  const hosts = (summary?.hosts.items ?? []) as RegistryHostSummaryItem[];
-  if (hosts.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground" data-slot="host-registry-empty">
-        No hosts registered. Hosts opt in via POST /v1/hosts/register.
-      </p>
-    );
-  }
-
-  return (
-    <div className="space-y-3 border-t pt-4" data-slot="host-registry-participation">
-      <div>
-        <h3 className="text-sm font-medium">Registry participation</h3>
-        <p className="text-sm text-muted-foreground">
-          Hosts register explicit browser origins with the registry. When participation is enabled,
-          those origins may call registry auth and API routes from the browser.
-        </p>
-      </div>
-      <ul className="space-y-3">
-        {hosts.map((host) => (
-          <HostRegistryRow
-            key={`${host.id}-${host.trustedOrigins.join("|")}-${host.registryParticipationEnabled}`}
-            host={host}
-          />
-        ))}
-      </ul>
     </div>
   );
 }

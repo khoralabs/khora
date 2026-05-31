@@ -55,13 +55,15 @@ describe("readRegistryTrustedOrigins", () => {
     expect(trusted).toContain("https://khoralabs.com");
     expect(trusted).not.toContain("https://k-0.example.com");
 
-    expect(
-      corsHeadersForTrustedOrigins(trusted, "https://khoralabs.com")["Access-Control-Allow-Origin"],
-    ).toBe("https://khoralabs.com");
-    expect(
-      corsHeadersForTrustedOrigins(trusted, "https://k-0.example.com")[
-        "Access-Control-Allow-Origin"
-      ],
-    ).toBeUndefined();
+    const allowed = corsHeadersForTrustedOrigins(
+      trusted,
+      "https://khoralabs.com",
+    ) as Record<string, string>;
+    expect(allowed["Access-Control-Allow-Origin"]).toBe("https://khoralabs.com");
+    const denied = corsHeadersForTrustedOrigins(
+      trusted,
+      "https://k-0.example.com",
+    ) as Record<string, string>;
+    expect(denied["Access-Control-Allow-Origin"]).toBeUndefined();
   });
 });
