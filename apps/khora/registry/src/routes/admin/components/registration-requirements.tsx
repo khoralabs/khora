@@ -1,4 +1,4 @@
-import type { RegistrationRequirementState } from "../admin-types.ts";
+import type { RegistrationRequirementState } from "@khoralabs/users-react/admin";
 
 function requirementLabel(id: RegistrationRequirementState["id"]): string {
   if (id === "health_check") return "Health check";

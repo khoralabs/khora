@@ -1,9 +1,11 @@
-import type { RegistryHostSummaryItem } from "@khoralabs/users";
-import { registrationRequirementsWithoutHealth } from "@khoralabs/users";
-import { useUsersStats } from "@khoralabs/users-react";
+import {
+  type RegistrationRequirementState,
+  type RegistryHostSummaryItem,
+  registrationRequirementsWithoutHealth,
+  useUsersStats,
+} from "@khoralabs/users-react/admin";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import type { RegistrationRequirementState } from "../admin-types.ts";
 import { HostHealthCard } from "../components/host-health-card.tsx";
 import { HostLifecycleActions } from "../components/host-lifecycle-actions.tsx";
 import { HostRegistryRow } from "../components/host-registry-row.tsx";

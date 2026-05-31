@@ -1,5 +1,4 @@
-import type { RegistryHostSummaryItem } from "@khoralabs/users";
-import { useUsersStats } from "@khoralabs/users-react";
+import { type RegistryHostSummaryItem, useUsersStats } from "@khoralabs/users-react/admin";
 import { Badge } from "@/components/ui/badge";
 import { navigateAdmin } from "../use-pathname.ts";
 

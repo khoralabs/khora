@@ -153,8 +153,20 @@ Components render semantic markup with `data-slot` attributes and minimal defaul
 
 Peer dependencies: `react`, `react-dom` (^19).
 
+## Registry / Khora admin UI boundary
+
+**Do not value-import `@khoralabs/users` in browser admin routes** (registry host directory, khora operator pages, etc.). That package pulls SQLite and server-only modules into the bundle.
+
+Use `@khoralabs/users-react/admin` for:
+
+- Types: `RegistryHostSummaryItem`, `RegistrationRequirementState`, lookup/summary types
+- Display helpers: `healthCheckRequirementDetail`, `registrationRequirementsWithoutHealth`
+- Operator console: `UsersStats`, `useUsersStats`, registry hooks
+
+Server APIs and workflows continue to import `@khoralabs/users` directly.
+
 ## Re-exported types
 
-Domain types from `@khoralabs/users` and email-confirm types from `@khoralabs/users-auth/client` are re-exported for convenience:
+Domain types from `@khoralabs/users` (type-only at compile time) and email-confirm types from `@khoralabs/users-auth/client` are re-exported for convenience:
 
-`Account`, `KhoraHost`, `MarketingConsent`, `RegistryAdminSummary`, `RegistryEmailLookupResponse`, `EmailConfirmEmailStepRenderProps`, `EmailConfirmOtpStepRenderProps`, and related lookup types.
+`Account`, `KhoraHost`, `MarketingConsent`, `RegistryAdminSummary`, `RegistryHostSummaryItem`, `RegistryEmailLookupResponse`, `EmailConfirmEmailStepRenderProps`, `EmailConfirmOtpStepRenderProps`, and related lookup types.

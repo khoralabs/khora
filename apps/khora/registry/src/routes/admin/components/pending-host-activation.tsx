@@ -1,9 +1,11 @@
-import type { RegistryHostSummaryItem } from "@khoralabs/users";
-import { registrationRequirementsWithoutHealth } from "@khoralabs/users";
-import { useUsersStats } from "@khoralabs/users-react";
+import {
+  type RegistrationRequirementState,
+  type RegistryHostSummaryItem,
+  registrationRequirementsWithoutHealth,
+  useUsersStats,
+} from "@khoralabs/users-react/admin";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import type { RegistrationRequirementState } from "../admin-types.ts";
 import { RegistrationRequirementsList } from "./registration-requirements.tsx";
 
 type ActivateResult = {

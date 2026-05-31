@@ -45,9 +45,16 @@ import { handleMarketingSubscribe, handleMarketingUnsubscribe } from "./api/mark
 import { handleMe } from "./api/me";
 import { handleOptions, withCors } from "./cors";
 import { startHostHealthPoller } from "./host-health";
-import adminPage from "./routes/admin/index.html";
+import adminPageDev from "./routes/admin/index.html";
 import adminLoginPage from "./routes/admin/login/index.html";
 import cliLinkPage from "./routes/cli/link/index.html";
+
+/** Runtime HTML bundling fails silently for the large admin app in production; prebuild via `bun run build:admin-ui`. */
+const adminPage =
+  process.env.NODE_ENV === "production"
+    ? (await import("../dist/admin-ui/index.html")).default
+    : adminPageDev;
+
 import { readRegistryTrustedOrigins } from "./trusted-origins";
 
 await assertEncryptionKeys(new EnvKeyProvider(), "registry");
@@ -65,6 +72,9 @@ if (consoleAuth === null) {
   console.log("[registry] Admin console disabled (set REGISTRY_CONSOLE_ROOT_TOKEN to enable)");
 } else {
   console.log("[registry] Admin console enabled at /admin");
+}
+if (process.env.NODE_ENV === "production") {
+  console.log("[registry] Admin UI: prebuilt dist/admin-ui");
 }
 
 const port = Number.parseInt(process.env.PORT ?? "4000", 10);

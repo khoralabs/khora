@@ -1,4 +1,7 @@
-import { healthCheckRequirementDetail, type RegistryHostSummaryItem } from "@khoralabs/users";
+import {
+  healthCheckRequirementDetail,
+  type RegistryHostSummaryItem,
+} from "@khoralabs/users-react/admin";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 function formatCheckedAt(ms: number | null): string | null {
@@ -15,7 +18,6 @@ export function HostHealthCard({ host }: { host: RegistryHostSummaryItem }) {
     (host.healthStatus === "up"
       ? healthCheckRequirementDetail({
           status: "up",
-          latencyMs: host.healthLatencyMs,
           probedEndpoint: host.healthProbedEndpoint,
         })
       : host.healthStatus === "down"

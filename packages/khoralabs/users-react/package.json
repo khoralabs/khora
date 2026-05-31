@@ -9,9 +9,15 @@
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./admin": {
+      "types": "./src/admin/index.ts",
+      "import": "./src/admin/index.ts",
+      "default": "./src/admin/index.ts"
     }
   },
   "scripts": {
+    "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {

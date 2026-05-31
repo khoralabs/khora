@@ -1,4 +1,4 @@
-import { useUsersStats } from "@khoralabs/users-react";
+import { useUsersStats } from "@khoralabs/users-react/admin";
 
 export type PendingHostsBadge = {
   label: string;

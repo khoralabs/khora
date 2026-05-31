@@ -1,5 +1,4 @@
-import type { RegistryHostSummaryItem } from "@khoralabs/users";
-import { useUsersStats } from "@khoralabs/users-react";
+import { type RegistryHostSummaryItem, useUsersStats } from "@khoralabs/users-react/admin";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

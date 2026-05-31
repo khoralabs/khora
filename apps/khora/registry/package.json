@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "preinstall": "bun ../../../scripts/install-litestream.ts --output .bin/litestream",
+    "build:admin-ui": "bun build src/routes/admin/index.html --outdir=dist/admin-ui --target=bun && bun run check:admin-ui-bundle",
+    "check:admin-ui-bundle": "bun scripts/check-admin-ui-bundle.ts",
     "dev": "bun --env-file=.env --hot src/index",
+    "prestart": "bun run build:admin-ui",
     "start": "NODE_ENV=production bun scripts/start-registry.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit"

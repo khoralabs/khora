@@ -1,4 +1,4 @@
-import { UsersStats } from "@khoralabs/users-react";
+import { UsersStats } from "@khoralabs/users-react/admin";
 import { renderRoute } from "../../render-route.tsx";
 import { AdminRouter } from "./router.tsx";
 import { AdminShell } from "./shell.tsx";
