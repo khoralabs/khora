@@ -73,6 +73,7 @@ const server = serve({
   port: Number.isFinite(port) ? port : 4000,
   routes: {
     "/admin": adminPage,
+    "/admin/": adminPage,
     "/admin/hosts": adminPage,
     "/admin/hosts/*": adminPage,
     "/admin/lookup": adminPage,
@@ -88,10 +89,6 @@ const server = serve({
 
     const url = new URL(req.url);
     const path = url.pathname;
-
-    if (req.method === "GET" && path === "/admin/") {
-      return Response.redirect(`${url.origin}/admin`, 301);
-    }
 
     const consoleRoute = await routeConsoleAuth(req, url, consoleAuth);
     if (consoleRoute !== undefined) {
