@@ -5,7 +5,10 @@ export type RegistryBadge = {
   variant: "default" | "secondary" | "outline" | "destructive";
 };
 
-function badgeFromRegistryJson(json: Record<string, unknown>, resOk: boolean): RegistryBadge {
+function badgeFromRegistryJson(
+  json: Record<string, unknown>,
+  resOk: boolean,
+): RegistryBadge | undefined {
   if (!resOk || json.configured !== true) {
     return { label: "Registry not connected", variant: "outline" };
   }
@@ -18,6 +21,9 @@ function badgeFromRegistryJson(json: Record<string, unknown>, resOk: boolean): R
   }
   if (status === "suspended") {
     return { label: "Registry suspended", variant: "destructive" };
+  }
+  if (status === "needs-registration") {
+    return undefined;
   }
   return { label: `Registry ${status}`, variant: "outline" };
 }

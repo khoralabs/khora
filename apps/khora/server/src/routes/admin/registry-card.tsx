@@ -69,6 +69,13 @@ function RequirementList({ requirements }: { requirements: RegistrationRequireme
   );
 }
 
+function formatRegistryStatusLabel(status: string): string {
+  if (status === "needs-registration") {
+    return "Not Registered";
+  }
+  return status;
+}
+
 export function HostRegistryCard() {
   const [state, setState] = useState<RegistryState | null>(null);
   const [loading, setLoading] = useState(true);
@@ -387,7 +394,7 @@ export function HostRegistryCard() {
           </div>
           {status !== undefined ? (
             <p className="text-sm">
-              Status: <span className="font-mono">{status}</span>
+              Status: <span className="font-mono">{formatRegistryStatusLabel(status)}</span>
             </p>
           ) : null}
           {typeof state.message === "string" ? (
