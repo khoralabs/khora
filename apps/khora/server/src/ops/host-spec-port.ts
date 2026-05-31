@@ -7,7 +7,14 @@ import {
 } from "@khoralabs/khora-contracts";
 import type { KhoraHostSpecPort } from "@khoralabs/khora-host";
 import { RELAY_NAMESPACE_HOST_SPEC, RelayCatalogProjectionStore } from "@khoralabs/relay-colonnade";
-import { envHostDisplayName, envHostSlug, envPort, envPublicBaseUrl, envRegistryUrl } from "../env";
+import {
+  envHostDisplayName,
+  envHostSlug,
+  envPopulationLimit,
+  envPort,
+  envPublicBaseUrl,
+  envRegistryUrl,
+} from "../env";
 
 const HOST_SPEC_ENTRY_KEY = "self";
 
@@ -61,6 +68,7 @@ export function createKhoraHostSpecPort(deps: {
         slug: envHostSlug() ?? stored.slug,
         publicBaseUrl: stored.publicBaseUrl ?? envPublicBaseUrl(envPort()),
         displayName: envHostDisplayName() ?? stored.displayName,
+        populationLimit: envPopulationLimit() ?? stored.populationLimit,
         registrationSecret: stored.registrationSecret,
         managementToken: stored.managementToken,
       };
@@ -68,13 +76,19 @@ export function createKhoraHostSpecPort(deps: {
 
     patch(patch: KhoraHostSpecPatch): KhoraHostSpec {
       const current = readStored() ?? {};
-      return write({
+      const next: KhoraHostSpec = {
         ...current,
         ...(patch.registryUrl !== undefined ? { registryUrl: patch.registryUrl } : {}),
         ...(patch.slug !== undefined ? { slug: patch.slug } : {}),
         ...(patch.publicBaseUrl !== undefined ? { publicBaseUrl: patch.publicBaseUrl } : {}),
         ...(patch.displayName !== undefined ? { displayName: patch.displayName } : {}),
-      });
+      };
+      if (patch.populationLimit === null) {
+        delete next.populationLimit;
+      } else if (patch.populationLimit !== undefined) {
+        next.populationLimit = patch.populationLimit;
+      }
+      return write(next);
     },
 
     storeSecrets(secrets: {

@@ -54,6 +54,7 @@ function deps(consoleAuth: HostRouteDeps["consoleAuth"]): HostRouteDeps {
     cellDetail: () => ({ error: "invalid_cell" as const }),
     principalDetail: () => ({ error: "not_registered" as const }),
     inactiveMembers: () => ({ inactiveDays: 7, asOfMs: Date.now(), members: [] }),
+    registeredPrincipalCount: () => 0,
   };
   return {
     ctx: {

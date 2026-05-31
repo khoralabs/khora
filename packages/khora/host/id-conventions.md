@@ -24,7 +24,7 @@ Primary key: `(tenant_key, namespace, entry_key)`.
 | `relay:social:relationship` | channel id | relationship row |
 | `khora:room-registry` | room id | `{ **creatorDid**, inviteTargetDid, expiresAtMs }` |
 | `khora:room-invite` | SHA-256 hex of join token | invite metadata |
-| `khora:host-spec` | `self` (singleton) | host slug, public URL, registry URL, registration/management tokens |
+| `khora:host-spec` | `self` (singleton) | host slug, public URL, registry URL, optional `populationLimit`, registration/management tokens |
 
 Receive-side subscriptions are percolator standing queries (`standing_queries` on the catalog DB). See receive-intent table in [`colonnade-usage.md`](./colonnade-usage.md).
 

@@ -6,6 +6,7 @@ export const zKhoraHostSpec = z.object({
   slug: z.string().optional(),
   publicBaseUrl: z.string().optional(),
   displayName: z.string().optional(),
+  populationLimit: z.number().int().positive().optional(),
   registrationSecret: z.string().optional(),
   managementToken: z.string().optional(),
   updatedAtMs: z.number().optional(),
@@ -19,6 +20,7 @@ export const zKhoraHostSpecPatch = z.object({
   slug: z.string().optional(),
   publicBaseUrl: z.string().optional(),
   displayName: z.string().optional(),
+  populationLimit: z.number().int().positive().nullable().optional(),
 });
 
 export type KhoraHostSpecPatch = z.infer<typeof zKhoraHostSpecPatch>;
@@ -28,6 +30,7 @@ export type EffectiveKhoraHostSpec = {
   slug: string | undefined;
   publicBaseUrl: string;
   displayName: string | undefined;
+  populationLimit: number | undefined;
   registrationSecret: string | undefined;
   managementToken: string | undefined;
 };

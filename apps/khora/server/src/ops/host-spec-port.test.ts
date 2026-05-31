@@ -25,6 +25,7 @@ describe("host spec port", () => {
     delete process.env.KHORA_HOST_SLUG;
     delete process.env.KHORA_REGISTRY_URL;
     delete process.env.KHORA_PUBLIC_BASE_URL;
+    delete process.env.KHORA_POPULATION_LIMIT;
     delete process.env.PORT;
   });
 
@@ -47,6 +48,19 @@ describe("host spec port", () => {
     port.storeSecrets({ managementToken: "mgmt-token" });
     expect(port.readEffective().managementToken).toBe("mgmt-token");
     expect(port.read()?.registrationSecret).toBeUndefined();
+  });
+
+  test("population limit env override and patch clear", () => {
+    const port = createKhoraHostSpecPort({
+      catalogDb,
+      tenantKey: RELAY_DEFAULT_TENANT_KEY,
+    });
+    port.patch({ populationLimit: 99 });
+    process.env.KHORA_POPULATION_LIMIT = "10";
+    expect(port.readEffective().populationLimit).toBe(10);
+    delete process.env.KHORA_POPULATION_LIMIT;
+    port.patch({ populationLimit: null });
+    expect(port.read()?.populationLimit).toBeUndefined();
   });
 
   test("env overrides effective slug and registry URL", () => {

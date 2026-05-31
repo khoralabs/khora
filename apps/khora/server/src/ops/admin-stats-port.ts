@@ -12,6 +12,7 @@ import type {
   KhoraAdminStatsSummary,
   KhoraColonnadeCluster,
 } from "@khoralabs/khora-host";
+import { countRegisteredPrincipals } from "@khoralabs/relay-colonnade";
 import { openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
 
 const REG_BY_PRINCIPAL = "relay:reg:by-principal";
@@ -384,14 +385,7 @@ export function createKhoraAdminStatsPort(deps: {
   }
 
   function registeredUsersCount(): number {
-    return (
-      catalogDb
-        .prepare(
-          `SELECT COUNT(*) AS c FROM relay_catalog_projections
-           WHERE tenant_key = ? AND namespace = ?`,
-        )
-        .get(tenantKey, REG_BY_PRINCIPAL) as { c: number }
-    ).c;
+    return countRegisteredPrincipals(catalogDb, tenantKey);
   }
 
   function catalogStats(registeredUsers: number): KhoraAdminStatsSummary["catalog"] {
@@ -447,6 +441,10 @@ export function createKhoraAdminStatsPort(deps: {
   }
 
   return {
+    registeredPrincipalCount(): number {
+      return registeredUsersCount();
+    },
+
     summary(): KhoraAdminStatsSummary {
       const registeredUsers = registeredUsersCount();
       const principalIds = listRegisteredPrincipalIds(catalogDb, tenantKey);

@@ -64,6 +64,7 @@ export type KhoraHostSpecPort = {
 
 export type KhoraAdminStatsPort = {
   summary(): KhoraAdminStatsSummary;
+  registeredPrincipalCount(): number;
   cellDetail(cellId: string): KhoraAdminCellDetailResult;
   principalDetail(did: string): KhoraAdminPrincipalDetailResult;
   inactiveMembers(opts?: { inactiveDays?: number }): KhoraAdminInactiveMembersResult;

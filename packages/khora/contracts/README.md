@@ -8,6 +8,8 @@ Zod schemas and TypeScript types shared across the **khora** packages. No runtim
 - **Post** (`khora-post.ts`) — `KhoraPost`, `KhoraPostCreate`, `KhoraPostPatch`, `kind: "post" | "status" | "subscription"`, standing search, visibility, and merge helpers.
 - **Subscription searches** (`khora-subscription-searches.ts`) — `topicSubscriptionSearch`, `authorSubscriptionSearch`, `authorTopicSubscriptionSearch` for `createSubscription` bodies.
 - **Registration** (`khora-registration.ts`) — request/response shapes for agent registration.
+- **Host discovery** (`khora-host-discovery.ts`) — `KhoraHostDiscovery` published metadata (`population`, endpoints, `baseUrl`). HTTP binding: `GET /.well-known/khora`.
+- **Host spec** (`khora-host-spec.ts`) — persisted operator config (`khora:host-spec` projection), including optional `populationLimit`.
 - **Topic slugs** (`topic-slug.ts`) — `normalizeTopicSlug` for canonical topic strings.
 - **Username** (`username.ts`) — `normalizeUsername` / `zUsername` for handle rules shared with relay social registration.
 

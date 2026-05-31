@@ -36,6 +36,14 @@ export async function handleRegister(req: Request, deps: HostRouteDeps): Promise
     logger.warn({ did: body.did, bucket: "register_did" }, "register rate limit exceeded");
     return rateLimitedResponse(regDid.retryAfterSec);
   }
+  const effective = ctx.hostSpec.readEffective();
+  const populationLimit = effective.populationLimit;
+  if (populationLimit !== undefined) {
+    const current = ctx.adminStats.registeredPrincipalCount();
+    if (current >= populationLimit) {
+      return jsonError("Host at population capacity", 503);
+    }
+  }
   if (ctx.host.persistenceClient.agentRegistrationExists(body.did)) {
     return jsonError("Already registered", 409);
   }

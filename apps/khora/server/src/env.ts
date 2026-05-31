@@ -124,6 +124,15 @@ export function envHostDisplayName(): string | undefined {
   return name !== undefined && name.length > 0 ? name : undefined;
 }
 
+export function envPopulationLimit(): number | undefined {
+  const raw = process.env.KHORA_POPULATION_LIMIT?.trim();
+  if (raw === undefined || raw.length === 0) {
+    return undefined;
+  }
+  const n = Number.parseInt(raw, 10);
+  return Number.isFinite(n) && n > 0 ? n : undefined;
+}
+
 export function validateEnv(): void {
   resolveKhoraPersistencePaths();
   envPort();

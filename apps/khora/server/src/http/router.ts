@@ -15,6 +15,7 @@ import { handleListAuthorSubscriptions } from "./authors";
 import { routeConsoleAuth } from "./console-guard";
 import type { HostRouteDeps } from "./deps";
 import { handleHealth, handleReady } from "./health";
+import { handleAdminHostConfigGet, handleAdminHostConfigPatch } from "./host-admin";
 import { handleInvitePreview, handleListInvites } from "./invites";
 import {
   handleAgentStatus,
@@ -67,7 +68,7 @@ export async function route(
   }
 
   if (req.method === "GET" && url.pathname === "/.well-known/khora") {
-    return handleWellKnownKhora(deps.ctx.hostSpec);
+    return handleWellKnownKhora(deps);
   }
 
   if (req.method === "GET" && url.pathname === "/ready") {
@@ -145,6 +146,14 @@ export async function route(
 
   if (req.method === "GET" && url.pathname === "/admin/api/invites") {
     return handleAdminInvitesList(req, url, deps);
+  }
+
+  if (req.method === "GET" && url.pathname === "/admin/api/host/config") {
+    return handleAdminHostConfigGet(req, deps);
+  }
+
+  if (req.method === "PATCH" && url.pathname === "/admin/api/host/config") {
+    return handleAdminHostConfigPatch(req, deps);
   }
 
   const ip = clientIpFromRequest(req);
