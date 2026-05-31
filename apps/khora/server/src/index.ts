@@ -73,7 +73,7 @@ const roomWsHandlers = khoraFrameChannelWsHandlers(ctx);
 const server = Bun.serve<KhoraWsData>({
   port: envPort(),
   routes: {
-    "/admin/": adminPage,
+    "/admin": adminPage,
     "/admin/network": adminPage,
     "/admin/network/*": adminPage,
     "/admin/infrastructure": adminPage,
@@ -91,8 +91,8 @@ const server = Bun.serve<KhoraWsData>({
     const url = new URL(req.url);
     if (req.method === "GET") {
       const path = url.pathname;
-      if (path === "/admin") {
-        return Response.redirect(`${url.origin}/admin/`, 301);
+      if (path === "/admin/") {
+        return Response.redirect(`${url.origin}/admin`, 301);
       }
     }
     try {

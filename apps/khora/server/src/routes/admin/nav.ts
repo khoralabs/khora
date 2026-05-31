@@ -6,7 +6,7 @@ export type AdminNavItem = {
 
 export const ADMIN_NAV: AdminNavItem[] = [
   {
-    href: "/admin/",
+    href: "/admin",
     label: "Overview",
     match: (pathname) => pathname === "/admin" || pathname === "/admin/",
   },
