@@ -1,8 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createRootTokenConsoleAuth } from "@khoralabs/khora-console";
+import { ensureRegistrySchema, resetRegistryDatabase } from "@khoralabs/registry-auth";
 import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
-import { resetUsersDatabase } from "@khoralabs/users";
-import { ensureRegistrySchema } from "@khoralabs/users-auth";
 import {
   handleAdminHostActivate,
   handleAdminHostDelete,
@@ -28,7 +27,7 @@ async function loginCookie(auth: ReturnType<typeof createRootTokenConsoleAuth>):
 
 describe("host registry API", () => {
   beforeEach(async () => {
-    resetUsersDatabase();
+    resetRegistryDatabase();
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
     applyTestEncryptionEnv();
     await ensureRegistrySchema();
@@ -36,7 +35,7 @@ describe("host registry API", () => {
 
   afterEach(() => {
     delete process.env.REGISTRY_DATABASE_PATH;
-    resetUsersDatabase();
+    resetRegistryDatabase();
   });
 
   test("register pending then activate appears in public list", async () => {

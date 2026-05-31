@@ -36,14 +36,23 @@ test("hello world", () => {
 });
 ```
 
-## Bun web apps (`@khoralabs/bun-web`)
+## Bun web apps
 
-Apps with a React/HTML frontend served by `Bun.serve` use the repo convention in [`packages/libs/bun-web/README.md`](packages/libs/bun-web/README.md):
+Apps with a React/HTML frontend served by `Bun.serve`:
 
-- `web-ui.config.ts` at the app root (`defineWebUi`, mounts, `serverEntry`)
 - HTML imports only in `routes` (never return HTMLBundle from `fetch`)
 - **Dev:** `bun --hot src/index.ts` with `development: { hmr: true }`
-- **Prod:** `bun run build:web` then `NODE_ENV=production bun dist/index.js` (`bun build --target=bun` on the server entry)
+- **Prod:** `NODE_ENV=production bun src/index.ts` with `development: false` (or omit `development`)
+
+Optional AOT bundling via [`@khoralabs/bun-web`](packages/libs/bun-web/README.md) — not required for production.
+
+## Registry packages
+
+Registry system uses layered packages (no legacy `@khoralabs/users*`):
+
+- `@khoralabs/registry-catalog-contracts` / `@khoralabs/registry-accounts-contracts` — types only
+- `@khoralabs/registry-catalog` / `@khoralabs/registry-accounts` / `@khoralabs/registry-auth` — server (SQLite)
+- `@khoralabs/registry-catalog-react` / `@khoralabs/registry-accounts-react` — browser (contracts only)
 
 ## Frontend
 

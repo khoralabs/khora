@@ -1,12 +1,12 @@
 import {
   countMembershipsForAccount,
   findAccountByAuthSubject,
-  findHostById,
   listAgentLinksForMembership,
   listMarketingConsentsForAccount,
   listMembershipsForAccount,
-} from "@khoralabs/users";
-import { getRegistryDatabase, getRegistrySession } from "@khoralabs/users-auth";
+} from "@khoralabs/registry-accounts";
+import { getRegistryDatabase, getRegistrySession } from "@khoralabs/registry-auth";
+import { findHostById } from "@khoralabs/registry-catalog";
 
 export async function handleMe(req: Request): Promise<Response> {
   const session = await getRegistrySession(req);

@@ -1,15 +1,17 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createRootTokenConsoleAuth } from "@khoralabs/khora-console";
-import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
+import {
+  ensureRegistrySchema,
+  getRegistryDatabase,
+  resetRegistryDatabase,
+} from "@khoralabs/registry-auth";
 import {
   activateKhoraHost,
-  getUsersDatabase,
   listHostTrustedOriginStrings,
   registerKhoraHost,
   requestHostTrustedOrigin,
-  resetUsersDatabase,
-} from "@khoralabs/users";
-import { ensureRegistrySchema } from "@khoralabs/users-auth";
+} from "@khoralabs/registry-catalog";
+import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
 import {
   handleAdminHostOriginRequestApprove,
   handleAdminHostOriginRequestReject,
@@ -35,7 +37,7 @@ describe("operator origin requests", () => {
   const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
 
   beforeEach(async () => {
-    resetUsersDatabase();
+    resetRegistryDatabase();
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
     applyTestEncryptionEnv();
     await ensureRegistrySchema();
@@ -43,11 +45,11 @@ describe("operator origin requests", () => {
 
   afterEach(() => {
     delete process.env.REGISTRY_DATABASE_PATH;
-    resetUsersDatabase();
+    resetRegistryDatabase();
   });
 
   test("approve and reject origin requests", async () => {
-    const db = getUsersDatabase();
+    const db = getRegistryDatabase();
     const host = activateKhoraHost(
       db,
       registerKhoraHost(db, { slug: "op-host", baseUrl: "https://host.example.com" }).host.id,

@@ -1,15 +1,17 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createRootTokenConsoleAuth } from "@khoralabs/khora-console";
-import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
+import {
+  ensureRegistrySchema,
+  getRegistryDatabase,
+  resetRegistryDatabase,
+} from "@khoralabs/registry-auth";
 import {
   activateKhoraHost,
   findHostById,
-  getUsersDatabase,
   registerKhoraHost,
   requestHostTrustedOriginQuota,
-  resetUsersDatabase,
-} from "@khoralabs/users";
-import { ensureRegistrySchema } from "@khoralabs/users-auth";
+} from "@khoralabs/registry-catalog";
+import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
 import {
   handleAdminHostQuotaRequestApprove,
   handleAdminHostQuotaRequestReject,
@@ -39,7 +41,7 @@ describe("operator quota requests", () => {
   const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
 
   beforeEach(async () => {
-    resetUsersDatabase();
+    resetRegistryDatabase();
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
     applyTestEncryptionEnv();
     await ensureRegistrySchema();
@@ -47,11 +49,11 @@ describe("operator quota requests", () => {
 
   afterEach(() => {
     delete process.env.REGISTRY_DATABASE_PATH;
-    resetUsersDatabase();
+    resetRegistryDatabase();
   });
 
   test("approve and reject quota requests", async () => {
-    const db = getUsersDatabase();
+    const db = getRegistryDatabase();
     const { host } = activateKhoraHost(
       db,
       registerKhoraHost(db, { slug: "quota-host", baseUrl: "https://host.example.com" }).host.id,
@@ -95,7 +97,7 @@ describe("operator quota requests", () => {
   });
 
   test("host POST and DELETE quota requests", async () => {
-    const db = getUsersDatabase();
+    const db = getRegistryDatabase();
     const { host, managementToken } = activateKhoraHost(
       db,
       registerKhoraHost(db, { slug: "quota-api", baseUrl: "https://host.example.com" }).host.id,

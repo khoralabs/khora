@@ -1,4 +1,4 @@
-import { getRegistryDatabase } from "@khoralabs/users-auth";
+import { getRegistryDatabase } from "@khoralabs/registry-auth";
 import { readRegistryTrustedOrigins } from "./trusted-origins";
 
 export function readTrustedOrigins(): string[] {

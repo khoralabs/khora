@@ -1,30 +1,32 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
+import { subscribeMarketing } from "@khoralabs/registry-accounts";
 import {
-  getUsersDatabase,
-  initUsersSchema,
-  resetUsersDatabase,
-  seedDefaultHost,
-  subscribeMarketing,
-} from "@khoralabs/users";
+  ensureRegistrySchema,
+  getRegistryDatabase,
+  resetRegistryDatabase,
+} from "@khoralabs/registry-auth";
+import { seedDefaultHost } from "@khoralabs/registry-catalog";
+import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
 
 describe("registry domain", () => {
   beforeEach(async () => {
-    resetUsersDatabase();
+    resetRegistryDatabase();
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
     applyTestEncryptionEnv();
-    const db = getUsersDatabase();
-    await initUsersSchema(db);
-    seedDefaultHost(db, { slug: "khora-local", baseUrl: "http://localhost:8788" });
+    await ensureRegistrySchema();
+    seedDefaultHost(getRegistryDatabase(), {
+      slug: "khora-local",
+      baseUrl: "http://localhost:8788",
+    });
   });
 
   afterEach(() => {
     delete process.env.REGISTRY_DATABASE_PATH;
-    resetUsersDatabase();
+    resetRegistryDatabase();
   });
 
   test("marketing subscribe stores consent", () => {
-    const db = getUsersDatabase();
+    const db = getRegistryDatabase();
     const consent = subscribeMarketing(db, {
       email: "a@b.com",
       listSlug: "khora-waitlist",

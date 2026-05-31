@@ -2,12 +2,14 @@ import type { Database } from "bun:sqlite";
 import {
   applyHostHealthProbe,
   findHostById,
+  type HostHealthProbeResult,
   type KhoraHost,
   listHostsForHealthPoll,
-} from "@khoralabs/users";
+  probeHostHealth,
+} from "@khoralabs/registry-catalog";
 
-export type { HostHealthProbeResult } from "@khoralabs/users";
-export { probeHostHealth } from "@khoralabs/users";
+export type { HostHealthProbeResult };
+export { probeHostHealth };
 
 function envPollIntervalMs(): number {
   const raw = process.env.REGISTRY_HOST_HEALTH_POLL_INTERVAL_MS?.trim();

@@ -1,4 +1,4 @@
-import { createUsersAuthClient } from "@khoralabs/users-auth/client";
+import { createUsersAuthClient } from "@khoralabs/registry-auth/client";
 
 function registryUrl(): string {
   if (typeof window !== "undefined") {

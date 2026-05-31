@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { KhoraHost } from "@khoralabs/users";
-import { probeHostHealth } from "@khoralabs/users";
+import type { KhoraHost } from "@khoralabs/registry-catalog";
+import { probeHostHealth } from "@khoralabs/registry-catalog";
 
 function mockHost(overrides: Partial<KhoraHost> = {}): KhoraHost {
   return {

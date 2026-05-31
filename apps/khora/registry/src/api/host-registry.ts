@@ -1,3 +1,4 @@
+import { getRegistryDatabase } from "@khoralabs/registry-auth";
 import {
   cancelHostTrustedOriginQuotaRequest,
   cancelHostTrustedOriginRequest,
@@ -9,8 +10,7 @@ import {
   requestHostTrustedOriginQuota,
   TrustedOriginConflictError,
   verifyHostManagementToken,
-} from "@khoralabs/users";
-import { getRegistryDatabase } from "@khoralabs/users-auth";
+} from "@khoralabs/registry-catalog";
 import { hostRegistryJson, hostToFullJson } from "./host-json";
 
 function readBearerToken(req: Request): string | null {

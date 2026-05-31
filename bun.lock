@@ -59,9 +59,8 @@
       "name": "@khoralabs/khora-homepage",
       "version": "0.1.0",
       "dependencies": {
-        "@khoralabs/bun-web": "workspace:*",
-        "@khoralabs/users-auth": "workspace:*",
-        "@khoralabs/users-react": "workspace:*",
+        "@khoralabs/registry-accounts-react": "workspace:*",
+        "@khoralabs/registry-auth": "workspace:*",
         "@radix-ui/react-label": "^2.1.7",
         "@radix-ui/react-select": "^2.2.6",
         "@radix-ui/react-slot": "^1.2.3",
@@ -101,13 +100,14 @@
       "version": "0.1.0",
       "dependencies": {
         "@aws-sdk/client-ses": "^3.1050.0",
-        "@khoralabs/bun-web": "workspace:*",
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/khora-console": "workspace:*",
+        "@khoralabs/registry-accounts": "workspace:*",
+        "@khoralabs/registry-accounts-react": "workspace:*",
+        "@khoralabs/registry-auth": "workspace:*",
+        "@khoralabs/registry-catalog": "workspace:*",
+        "@khoralabs/registry-catalog-react": "workspace:*",
         "@khoralabs/sqlite-crypto": "workspace:*",
-        "@khoralabs/users": "workspace:*",
-        "@khoralabs/users-auth": "workspace:*",
-        "@khoralabs/users-react": "workspace:*",
         "bun-plugin-tailwind": "^0.1.2",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
@@ -131,7 +131,6 @@
       "dependencies": {
         "@ai-sdk/google": "^3.0.0",
         "@khoralabs/agent-relay": "workspace:*",
-        "@khoralabs/bun-web": "workspace:*",
         "@khoralabs/colonnade-persistence": "workspace:*",
         "@khoralabs/duplex-byte-stream": "workspace:*",
         "@khoralabs/khora-auth": "workspace:*",
@@ -145,8 +144,6 @@
         "@khoralabs/memories-sqlite": "workspace:*",
         "@khoralabs/relay-colonnade": "workspace:*",
         "@khoralabs/sqlite-crypto": "workspace:*",
-        "@khoralabs/users-auth": "workspace:*",
-        "@khoralabs/users-react": "workspace:*",
         "bun-plugin-tailwind": "^0.1.2",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
@@ -171,9 +168,8 @@
       "version": "0.1.0",
       "dependencies": {
         "@khoralabs/blog": "workspace:*",
-        "@khoralabs/bun-web": "workspace:*",
-        "@khoralabs/users-auth": "workspace:*",
-        "@khoralabs/users-react": "workspace:*",
+        "@khoralabs/registry-accounts-react": "workspace:*",
+        "@khoralabs/registry-auth": "workspace:*",
         "@radix-ui/react-label": "^2.1.7",
         "@radix-ui/react-select": "^2.2.6",
         "@radix-ui/react-slot": "^1.2.3",
@@ -201,7 +197,6 @@
       "dependencies": {
         "@ai-sdk/google": "^3.0.0",
         "@khoralabs/agent-identity": "workspace:*",
-        "@khoralabs/bun-web": "workspace:*",
         "@khoralabs/memories-core": "workspace:*",
         "@khoralabs/memories-investigator": "workspace:*",
         "@khoralabs/memories-react-graph": "workspace:*",
@@ -552,13 +547,16 @@
         "typescript": "^5",
       },
     },
-    "packages/khoralabs/users": {
-      "name": "@khoralabs/users",
+    "packages/khoralabs/registry-accounts": {
+      "name": "@khoralabs/registry-accounts",
       "version": "0.0.0",
       "dependencies": {
+        "@khoralabs/registry-accounts-contracts": "workspace:*",
+        "@khoralabs/registry-catalog-contracts": "workspace:*",
         "@khoralabs/sqlite-crypto": "workspace:*",
       },
       "devDependencies": {
+        "@khoralabs/registry-catalog": "workspace:*",
         "@types/bun": "latest",
         "typescript": "^5",
       },
@@ -566,12 +564,43 @@
         "typescript": "^5",
       },
     },
-    "packages/khoralabs/users-auth": {
-      "name": "@khoralabs/users-auth",
+    "packages/khoralabs/registry-accounts-contracts": {
+      "name": "@khoralabs/registry-accounts-contracts",
+      "version": "0.0.0",
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/khoralabs/registry-accounts-react": {
+      "name": "@khoralabs/registry-accounts-react",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/registry-accounts-contracts": "workspace:*",
+        "@khoralabs/registry-auth": "workspace:*",
+        "clsx": "^2.1.1",
+        "tailwind-merge": "^3.3.1",
+        "usehooks-ts": "^3.1.1",
+      },
+      "devDependencies": {
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "react": "^19",
+        "react-dom": "^19",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "react": "^19",
+        "react-dom": "^19",
+        "typescript": "^5",
+      },
+    },
+    "packages/khoralabs/registry-auth": {
+      "name": "@khoralabs/registry-auth",
       "version": "0.0.0",
       "dependencies": {
         "@aws-sdk/client-ses": "^3.1050.0",
-        "@khoralabs/users": "workspace:*",
+        "@khoralabs/registry-accounts": "workspace:*",
+        "@khoralabs/registry-catalog": "workspace:*",
         "better-auth": "^1.6.11",
       },
       "devDependencies": {
@@ -583,12 +612,38 @@
         "typescript": "^5",
       },
     },
-    "packages/khoralabs/users-react": {
-      "name": "@khoralabs/users-react",
+    "packages/khoralabs/registry-catalog": {
+      "name": "@khoralabs/registry-catalog",
       "version": "0.0.0",
       "dependencies": {
-        "@khoralabs/users": "workspace:*",
-        "@khoralabs/users-auth": "workspace:*",
+        "@khoralabs/registry-accounts": "workspace:*",
+        "@khoralabs/registry-accounts-contracts": "workspace:*",
+        "@khoralabs/registry-catalog-contracts": "workspace:*",
+        "@khoralabs/sqlite-crypto": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/khoralabs/registry-catalog-contracts": {
+      "name": "@khoralabs/registry-catalog-contracts",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/registry-accounts-contracts": "workspace:*",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/khoralabs/registry-catalog-react": {
+      "name": "@khoralabs/registry-catalog-react",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/registry-catalog-contracts": "workspace:*",
         "clsx": "^2.1.1",
         "tailwind-merge": "^3.3.1",
         "usehooks-ts": "^3.1.1",
@@ -1360,6 +1415,20 @@
 
     "@khoralabs/reciprocal-rank-fusion": ["@khoralabs/reciprocal-rank-fusion@workspace:packages/libs/reciprocal-rank-fusion"],
 
+    "@khoralabs/registry-accounts": ["@khoralabs/registry-accounts@workspace:packages/khoralabs/registry-accounts"],
+
+    "@khoralabs/registry-accounts-contracts": ["@khoralabs/registry-accounts-contracts@workspace:packages/khoralabs/registry-accounts-contracts"],
+
+    "@khoralabs/registry-accounts-react": ["@khoralabs/registry-accounts-react@workspace:packages/khoralabs/registry-accounts-react"],
+
+    "@khoralabs/registry-auth": ["@khoralabs/registry-auth@workspace:packages/khoralabs/registry-auth"],
+
+    "@khoralabs/registry-catalog": ["@khoralabs/registry-catalog@workspace:packages/khoralabs/registry-catalog"],
+
+    "@khoralabs/registry-catalog-contracts": ["@khoralabs/registry-catalog-contracts@workspace:packages/khoralabs/registry-catalog-contracts"],
+
+    "@khoralabs/registry-catalog-react": ["@khoralabs/registry-catalog-react@workspace:packages/khoralabs/registry-catalog-react"],
+
     "@khoralabs/relay-colonnade": ["@khoralabs/relay-colonnade@workspace:packages/khora/relay-colonnade"],
 
     "@khoralabs/sourcemaps": ["@khoralabs/sourcemaps@workspace:packages/libs/sourcemaps"],
@@ -1367,12 +1436,6 @@
     "@khoralabs/sqlite-crypto": ["@khoralabs/sqlite-crypto@workspace:packages/libs/sqlite-crypto"],
 
     "@khoralabs/sqlite-migrate": ["@khoralabs/sqlite-migrate@workspace:packages/libs/sqlite-migrate"],
-
-    "@khoralabs/users": ["@khoralabs/users@workspace:packages/khoralabs/users"],
-
-    "@khoralabs/users-auth": ["@khoralabs/users-auth@workspace:packages/khoralabs/users-auth"],
-
-    "@khoralabs/users-react": ["@khoralabs/users-react@workspace:packages/khoralabs/users-react"],
 
     "@khoralabs/vellum-bind-policy": ["@khoralabs/vellum-bind-policy@workspace:packages/vellum/bind-policy"],
 

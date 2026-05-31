@@ -1,14 +1,12 @@
-import { buildRoutesFromMounts } from "@khoralabs/bun-web";
 import { createConsoleAuthFromEnv } from "@khoralabs/khora-console";
-import { assertEncryptionKeys, EnvKeyProvider } from "@khoralabs/sqlite-crypto";
 import {
   ensureRegistrySchema,
   getRegistryAuth,
   getRegistryDatabase,
   reloadRegistryAuth,
-} from "@khoralabs/users-auth";
+} from "@khoralabs/registry-auth";
+import { assertEncryptionKeys, EnvKeyProvider } from "@khoralabs/sqlite-crypto";
 import { serve } from "bun";
-import webUi from "../web-ui.config.ts";
 import { routeConsoleAuth } from "./api/admin/console-guard";
 import {
   handleAdminHostActivate,
@@ -52,11 +50,18 @@ import adminLoginPage from "./routes/admin/login/index.html";
 import cliLinkPage from "./routes/cli/link/index.html";
 import { readRegistryTrustedOrigins } from "./trusted-origins";
 
-const htmlRoutes = buildRoutesFromMounts(webUi.mounts, {
-  admin: adminPage,
-  "admin-login": adminLoginPage,
-  "cli-link": cliLinkPage,
-});
+const htmlRoutes = {
+  "/admin": adminPage,
+  "/admin/": adminPage,
+  "/admin/hosts": adminPage,
+  "/admin/hosts/*": adminPage,
+  "/admin/lookup": adminPage,
+  "/admin/lookup/*": adminPage,
+  "/admin/login": adminLoginPage,
+  "/admin/login/": adminLoginPage,
+  "/cli/link": cliLinkPage,
+  "/cli/link/": cliLinkPage,
+};
 
 await assertEncryptionKeys(new EnvKeyProvider(), "registry");
 await ensureRegistrySchema();
@@ -74,10 +79,6 @@ if (consoleAuth === null) {
 } else {
   console.log("[registry] Admin console enabled at /admin");
 }
-if (process.env.NODE_ENV === "production") {
-  console.log("[registry] Web UI: prebuilt dist/ (bun-web)");
-}
-
 const port = Number.parseInt(process.env.PORT ?? "4000", 10);
 
 const server = serve({

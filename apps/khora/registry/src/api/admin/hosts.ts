@@ -1,4 +1,5 @@
 import type { ConsoleAuth } from "@khoralabs/khora-console";
+import { getRegistryDatabase, reloadRegistryAuth } from "@khoralabs/registry-auth";
 import {
   activateKhoraHost,
   approveHostTrustedOriginQuotaRequest,
@@ -15,8 +16,7 @@ import {
   suspendKhoraHost,
   TrustedOriginConflictError,
   updateHostRegistrySettings,
-} from "@khoralabs/users";
-import { getRegistryDatabase, reloadRegistryAuth } from "@khoralabs/users-auth";
+} from "@khoralabs/registry-catalog";
 import { probeHostHealthById } from "../../host-health";
 import { readRegistryTrustedOrigins } from "../../trusted-origins";
 import { hostToFullJson } from "../host-json";

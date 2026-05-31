@@ -1,0 +1,37 @@
+{
+  "name": "@khoralabs/registry-accounts-react",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "module": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "react": "^19",
+    "react-dom": "^19",
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@khoralabs/registry-accounts-contracts": "workspace:*",
+    "@khoralabs/registry-auth": "workspace:*",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.3.1",
+    "usehooks-ts": "^3.1.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "react": "^19",
+    "react-dom": "^19",
+    "typescript": "^5"
+  }
+}

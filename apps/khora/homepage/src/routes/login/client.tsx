@@ -1,5 +1,5 @@
-import { createRegistryEmailConfirmApi } from "@khoralabs/users-auth/client";
-import { EmailConfirm } from "@khoralabs/users-react";
+import { EmailConfirm } from "@khoralabs/registry-accounts-react";
+import { createRegistryEmailConfirmApi } from "@khoralabs/registry-auth/client";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { ArrowLeftIcon, ArrowRight, Loader } from "lucide-react";
 import { Button } from "@/components/ui/button";

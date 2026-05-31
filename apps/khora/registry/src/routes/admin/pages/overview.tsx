@@ -1,4 +1,4 @@
-import { UsersStats, useUsersStats } from "@khoralabs/users-react/admin";
+import { UsersStats, useUsersStats } from "@khoralabs/registry-catalog-react/admin";
 import { useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { navigateAdmin } from "../use-pathname.ts";

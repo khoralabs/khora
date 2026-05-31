@@ -9,16 +9,15 @@ import {
   createCliLinkChallenge,
   ensureAgentLinkedOnHost,
   findAccountByAuthSubject,
-  findActiveHostBySlug,
   findBindingByAgentDid,
-  findHostById,
   findMembershipByAccountAndHost,
   linkAgentToAccountOnHost,
   listAgentLinksForAccount,
   propagateAgentLinksToHosts,
   unlinkAgentFromMembership,
-} from "@khoralabs/users";
-import { getRegistryDatabase, getRegistrySession } from "@khoralabs/users-auth";
+} from "@khoralabs/registry-accounts";
+import { getRegistryDatabase, getRegistrySession } from "@khoralabs/registry-auth";
+import { findActiveHostBySlug, findHostById } from "@khoralabs/registry-catalog";
 import { HOST_NOT_FOUND_HINT, resolveRegistryHost } from "./resolve-host";
 
 const linkStrategy = createDidKeyEd25519Strategy();

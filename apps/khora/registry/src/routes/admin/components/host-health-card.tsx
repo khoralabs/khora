@@ -1,7 +1,7 @@
 import {
   healthCheckRequirementDetail,
   type RegistryHostSummaryItem,
-} from "@khoralabs/users-react/admin";
+} from "@khoralabs/registry-catalog-react/admin";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 function formatCheckedAt(ms: number | null): string | null {

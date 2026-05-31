@@ -5,12 +5,12 @@ import {
   deviceSessionCookie,
   expireDeviceIfNeeded,
   hashDeviceCode,
-} from "@khoralabs/users";
+} from "@khoralabs/registry-accounts";
 import {
   getRegistryDatabase,
   getRegistrySession,
   getRegistrySessionToken,
-} from "@khoralabs/users-auth";
+} from "@khoralabs/registry-auth";
 import { registryPublicUrl } from "./resolve-host";
 
 export async function handleDeviceAuthorize(req: Request): Promise<Response> {

@@ -1,14 +1,13 @@
 import "./load-env";
-import { buildRoutesFromMounts } from "@khoralabs/bun-web";
 import { serve } from "bun";
-import webUi from "../web-ui.config.ts";
 import index from "./routes/index.html";
 import login from "./routes/login/index.html";
 
-const htmlRoutes = buildRoutesFromMounts(webUi.mounts, {
-  index,
-  login,
-});
+const htmlRoutes = {
+  "/*": index,
+  "/login": login,
+  "/login/": login,
+};
 
 const port = Number.parseInt(process.env.PORT ?? "3000", 10);
 

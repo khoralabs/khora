@@ -1,6 +1,6 @@
 import type { ConsoleAuth } from "@khoralabs/khora-console";
-import { getRegistryAdminSummary } from "@khoralabs/users";
-import { getRegistryDatabase } from "@khoralabs/users-auth";
+import { getRegistryDatabase } from "@khoralabs/registry-auth";
+import { getRegistryAdminSummary } from "@khoralabs/registry-catalog";
 import { withConsoleAuth } from "./console-guard";
 
 export function handleAdminStatsSummary(

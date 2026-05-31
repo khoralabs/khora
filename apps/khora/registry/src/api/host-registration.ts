@@ -1,3 +1,4 @@
+import { getRegistryDatabase } from "@khoralabs/registry-auth";
 import {
   deliverPendingManagementToken,
   findHostBySlug,
@@ -5,8 +6,7 @@ import {
   registrationStatusJson,
   tryAutoActivateHost,
   verifyHostRegistrationSecret,
-} from "@khoralabs/users";
-import { getRegistryDatabase } from "@khoralabs/users-auth";
+} from "@khoralabs/registry-catalog";
 import { probeHostHealth } from "../host-health";
 import { hostToFullJson } from "./host-json";
 

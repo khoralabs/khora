@@ -1,4 +1,4 @@
-import { UsersStats, useUsersStats } from "@khoralabs/users-react/admin";
+import { UsersStats, useUsersStats } from "@khoralabs/registry-catalog-react/admin";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

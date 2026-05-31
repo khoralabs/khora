@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
-import type { HostRegistryState, KhoraHost } from "@khoralabs/users";
-import { readHostRegistryState } from "@khoralabs/users";
+import type { HostRegistryState, KhoraHost } from "@khoralabs/registry-catalog";
+import { readHostRegistryState } from "@khoralabs/registry-catalog";
 
 export function hostHealthJson(host: KhoraHost): Record<string, unknown> {
   return {

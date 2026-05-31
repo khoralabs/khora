@@ -1,15 +1,13 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createRootTokenConsoleAuth } from "@khoralabs/khora-console";
-import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
 import {
-  getUsersDatabase,
-  initUsersSchema,
-  type RegistryAdminSummary,
-  registerKhoraHost,
-  resetUsersDatabase,
-  seedDefaultHost,
-} from "@khoralabs/users";
-import { getRegistryDatabase } from "@khoralabs/users-auth";
+  ensureRegistrySchema,
+  getRegistryDatabase,
+  resetRegistryDatabase,
+} from "@khoralabs/registry-auth";
+import type { RegistryAdminSummary } from "@khoralabs/registry-catalog";
+import { registerKhoraHost, seedDefaultHost } from "@khoralabs/registry-catalog";
+import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
 import { handleAdminHostActivate } from "./hosts";
 import { handleLookupEmail } from "./lookup";
 import { handleAdminStatsSummary } from "./stats";
@@ -31,17 +29,19 @@ async function loginCookie(auth: ReturnType<typeof createRootTokenConsoleAuth>):
 
 describe("registry admin console", () => {
   beforeEach(async () => {
-    resetUsersDatabase();
+    resetRegistryDatabase();
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
     applyTestEncryptionEnv();
-    const db = getUsersDatabase();
-    await initUsersSchema(db);
-    seedDefaultHost(db, { slug: "khora-local", baseUrl: "http://localhost:8788" });
+    await ensureRegistrySchema();
+    seedDefaultHost(getRegistryDatabase(), {
+      slug: "khora-local",
+      baseUrl: "http://localhost:8788",
+    });
   });
 
   afterEach(() => {
     delete process.env.REGISTRY_DATABASE_PATH;
-    resetUsersDatabase();
+    resetRegistryDatabase();
   });
 
   test("login rejects invalid token", async () => {

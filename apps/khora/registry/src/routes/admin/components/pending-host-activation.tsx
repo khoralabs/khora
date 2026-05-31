@@ -3,7 +3,7 @@ import {
   type RegistryHostSummaryItem,
   registrationRequirementsWithoutHealth,
   useUsersStats,
-} from "@khoralabs/users-react/admin";
+} from "@khoralabs/registry-catalog-react/admin";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { RegistrationRequirementsList } from "./registration-requirements.tsx";

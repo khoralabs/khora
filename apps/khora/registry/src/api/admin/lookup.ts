@@ -5,8 +5,8 @@ import {
   normalizeEmail,
   type RegistryAuthUser,
   type RegistryEmailLookupResponse,
-} from "@khoralabs/users";
-import { getRegistryDatabase } from "@khoralabs/users-auth";
+} from "@khoralabs/registry-accounts";
+import { getRegistryDatabase } from "@khoralabs/registry-auth";
 import { withConsoleAuth } from "./console-guard";
 
 function findAuthUserByEmail(email: string): RegistryAuthUser | null {

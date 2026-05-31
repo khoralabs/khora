@@ -1,21 +1,23 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
+import {
+  ensureRegistrySchema,
+  getRegistryDatabase,
+  resetRegistryDatabase,
+} from "@khoralabs/registry-auth";
 import {
   activateKhoraHost,
-  getUsersDatabase,
   registerKhoraHost,
   replaceHostTrustedOrigins,
   requestHostTrustedOrigin,
-  resetUsersDatabase,
   setHostRegistryParticipation,
-} from "@khoralabs/users";
-import { ensureRegistrySchema } from "@khoralabs/users-auth";
+} from "@khoralabs/registry-catalog";
+import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
 import { corsHeadersForTrustedOrigins } from "./cors";
 import { readRegistryTrustedOrigins } from "./trusted-origins";
 
 describe("readRegistryTrustedOrigins", () => {
   beforeEach(async () => {
-    resetUsersDatabase();
+    resetRegistryDatabase();
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
     process.env.REGISTRY_URL = "http://localhost:4000";
     applyTestEncryptionEnv();
@@ -25,11 +27,11 @@ describe("readRegistryTrustedOrigins", () => {
   afterEach(() => {
     delete process.env.REGISTRY_DATABASE_PATH;
     delete process.env.REGISTRY_URL;
-    resetUsersDatabase();
+    resetRegistryDatabase();
   });
 
   test("includes explicit trusted origins from participating hosts", () => {
-    const db = getUsersDatabase();
+    const db = getRegistryDatabase();
     const { host } = activateKhoraHost(
       db,
       registerKhoraHost(db, { slug: "web", baseUrl: "http://localhost:8788" }).host.id,
@@ -44,7 +46,7 @@ describe("readRegistryTrustedOrigins", () => {
   });
 
   test("corsHeaders allows declared trusted origin only", () => {
-    const db = getUsersDatabase();
+    const db = getRegistryDatabase();
     const { host } = activateKhoraHost(
       db,
       registerKhoraHost(db, { slug: "web-cors", baseUrl: "https://k-0.example.com" }).host.id,
@@ -69,7 +71,7 @@ describe("readRegistryTrustedOrigins", () => {
   });
 
   test("pending origin requests are excluded from trusted origins until approved", () => {
-    const db = getUsersDatabase();
+    const db = getRegistryDatabase();
     const { host } = activateKhoraHost(
       db,
       registerKhoraHost(db, { slug: "pending-cors", baseUrl: "https://k-0.example.com" }).host.id,

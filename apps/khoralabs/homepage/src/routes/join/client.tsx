@@ -1,5 +1,5 @@
-import { createRegistryEmailConfirmApi } from "@khoralabs/users-auth/client";
-import { EmailConfirm } from "@khoralabs/users-react";
+import { EmailConfirm } from "@khoralabs/registry-accounts-react";
+import { createRegistryEmailConfirmApi } from "@khoralabs/registry-auth/client";
 import { Loader } from "lucide-react";
 import { useState } from "react";
 

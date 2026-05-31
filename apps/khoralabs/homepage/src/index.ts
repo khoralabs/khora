@@ -1,6 +1,4 @@
-import { buildRoutesFromMounts } from "@khoralabs/bun-web";
 import { serve } from "bun";
-import webUi from "../web-ui.config.ts";
 import { serveBlogMedia } from "./lib/blog-media";
 import { ensureBlogManifest } from "./lib/ensure-blog-manifest";
 import blog from "./routes/blog/index.html";
@@ -13,15 +11,16 @@ import terms from "./routes/terms/index.html";
 
 await ensureBlogManifest();
 
-const htmlRoutes = buildRoutesFromMounts(webUi.mounts, {
-  blog,
-  blogPost,
-  contact,
-  index,
-  join,
-  privacy,
-  terms,
-});
+const htmlRoutes = {
+  "/consumer": index,
+  "/*": index,
+  "/blog": blog,
+  "/blog/:slug": blogPost,
+  "/contact": contact,
+  "/join": join,
+  "/privacy": privacy,
+  "/terms": terms,
+};
 
 const port = Number.parseInt(process.env.PORT ?? "3000", 10);
 

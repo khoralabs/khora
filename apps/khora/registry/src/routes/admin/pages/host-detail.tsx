@@ -3,7 +3,7 @@ import {
   type RegistryHostSummaryItem,
   registrationRequirementsWithoutHealth,
   useUsersStats,
-} from "@khoralabs/users-react/admin";
+} from "@khoralabs/registry-catalog-react/admin";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { HostHealthCard } from "../components/host-health-card.tsx";

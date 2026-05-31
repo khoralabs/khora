@@ -1,0 +1,10 @@
+export { getRegistryAuth, registryAuth, reloadRegistryAuth } from "./auth";
+export { createRegistryAuth, type RegistryAuth, type RegistryAuthOptions } from "./auth-config";
+export { bootstrapStaffEmails, isBootstrapStaffEmail, normalizeEmail } from "./bootstrap";
+export { createUsersAuthClient } from "./client";
+export { getRegistryDatabase, registryDatabasePath, resetRegistryDatabase } from "./db";
+export { ensureRegistrySchema } from "./ensure-schema";
+export { initAuthSchema, initRegistrySchema } from "./schema";
+export { getRegistrySession, type RegistrySession } from "./session";
+export { getRegistrySessionToken } from "./session-token";
+export { verifyRegistrySession } from "./verify-registry-session";

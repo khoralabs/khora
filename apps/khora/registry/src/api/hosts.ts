@@ -1,3 +1,4 @@
+import { getRegistryDatabase } from "@khoralabs/registry-auth";
 import {
   findPublicHostBySlug,
   InvalidHostHealthPathError,
@@ -9,8 +10,7 @@ import {
   registerKhoraHost,
   registrationStatusJson,
   tryAutoActivateHost,
-} from "@khoralabs/users";
-import { getRegistryDatabase } from "@khoralabs/users-auth";
+} from "@khoralabs/registry-catalog";
 import { probeHostHealth } from "../host-health";
 import { hostToFullJson, hostToPublicJson } from "./host-json";
 

@@ -1,5 +1,9 @@
 import type { Database } from "bun:sqlite";
-import { findActiveHostBySlug, findHostByBaseUrl, type KhoraHost } from "@khoralabs/users";
+import {
+  findActiveHostBySlug,
+  findHostByBaseUrl,
+  type KhoraHost,
+} from "@khoralabs/registry-catalog";
 
 export function resolveRegistryHost(
   db: Database,

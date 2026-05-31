@@ -5,7 +5,6 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { resolveDistIndex, resolveDistServeCwd } from "@khoralabs/bun-web";
 import {
   assertLitestreamCredentials,
   buildLitestreamYaml,
@@ -17,13 +16,11 @@ import { resolveKhoraPersistencePaths, validateEnv } from "../src/env";
 import { envMemoriesBootstrapConfig, envMemoriesEnabled } from "../src/memories-env";
 
 const serverRoot = path.resolve(path.dirname(import.meta.path), "..");
-const isProd = process.env.NODE_ENV === "production";
-const indexEntry = isProd ? resolveDistIndex(serverRoot) : path.join(serverRoot, "src", "index.ts");
-const serveCwd = isProd ? resolveDistServeCwd(serverRoot) : serverRoot;
+const indexEntry = path.join(serverRoot, "src", "index.ts");
 
 async function runServerOnly(): Promise<never> {
-  const proc = Bun.spawn(isProd ? ["bun", "index.js"] : ["bun", "run", indexEntry], {
-    cwd: serveCwd,
+  const proc = Bun.spawn(["bun", "run", indexEntry], {
+    cwd: serverRoot,
     stdio: ["inherit", "inherit", "inherit"],
     env: process.env,
   });

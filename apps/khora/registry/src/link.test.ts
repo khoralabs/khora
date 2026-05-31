@@ -1,36 +1,37 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
 import {
   approveDeviceAuthorization,
   consumeDeviceAuthorization,
   findMembershipByAccountAndHost,
-  getUsersDatabase,
-  initUsersSchema,
   linkAgentToMembership,
   linkBetterAuthUser,
   listAgentLinksForMembership,
-  resetUsersDatabase,
-  seedDefaultHost,
   unlinkAgentFromMembership,
   upsertMembership,
-} from "@khoralabs/users";
-import { ensureRegistrySchema, getRegistryDatabase } from "@khoralabs/users-auth";
+} from "@khoralabs/registry-accounts";
+import {
+  ensureRegistrySchema,
+  getRegistryDatabase,
+  resetRegistryDatabase,
+} from "@khoralabs/registry-auth";
+import { seedDefaultHost } from "@khoralabs/registry-catalog";
+import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
 import { handleDeviceAuthorize, handleDeviceToken } from "./api/device";
 import { handleLinkChallenge } from "./api/link";
 
 describe("registry device flow", () => {
   beforeEach(async () => {
-    resetUsersDatabase();
+    resetRegistryDatabase();
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
     applyTestEncryptionEnv();
     await ensureRegistrySchema();
-    const db = getUsersDatabase();
+    const db = getRegistryDatabase();
     seedDefaultHost(db, { slug: "khora-local", baseUrl: "http://localhost:8788" });
   });
 
   afterEach(() => {
     delete process.env.REGISTRY_DATABASE_PATH;
-    resetUsersDatabase();
+    resetRegistryDatabase();
   });
 
   test("authorize then token after approve", async () => {
@@ -109,7 +110,7 @@ describe("registry device flow", () => {
 
 describe("link challenge", () => {
   beforeEach(async () => {
-    resetUsersDatabase();
+    resetRegistryDatabase();
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
     applyTestEncryptionEnv();
     await ensureRegistrySchema();
@@ -117,7 +118,7 @@ describe("link challenge", () => {
 
   afterEach(() => {
     delete process.env.REGISTRY_DATABASE_PATH;
-    resetUsersDatabase();
+    resetRegistryDatabase();
   });
 
   test("returns challenge for did", async () => {
@@ -134,22 +135,22 @@ describe("link challenge", () => {
 
 describe("membership agent links", () => {
   beforeEach(async () => {
-    resetUsersDatabase();
+    resetRegistryDatabase();
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
     applyTestEncryptionEnv();
-    const db = getUsersDatabase();
-    await initUsersSchema(db);
+    const db = getRegistryDatabase();
+    await ensureRegistrySchema();
     seedDefaultHost(db, { slug: "khora-local", baseUrl: "http://localhost:8788" });
     linkBetterAuthUser(db, { providerSubject: "user-1", email: "cli@test.com" });
   });
 
   afterEach(() => {
     delete process.env.REGISTRY_DATABASE_PATH;
-    resetUsersDatabase();
+    resetRegistryDatabase();
   });
 
   test("multiple agents per membership and unlink one", async () => {
-    const db = getUsersDatabase();
+    const db = getRegistryDatabase();
     const host = seedDefaultHost(db, { slug: "khora-local", baseUrl: "http://localhost:8788" });
     const account = linkBetterAuthUser(db, {
       providerSubject: "user-1",
@@ -173,7 +174,7 @@ describe("membership agent links", () => {
   });
 
   test("unlink last agent deletes membership", () => {
-    const db = getUsersDatabase();
+    const db = getRegistryDatabase();
     const host = seedDefaultHost(db, { slug: "khora-local", baseUrl: "http://localhost:8788" });
     const account = linkBetterAuthUser(db, {
       providerSubject: "user-1",

@@ -1,5 +1,5 @@
-import { createRegistryEmailConfirmApi } from "@khoralabs/users-auth/client";
-import { useEmailConfirmFlow } from "@khoralabs/users-react";
+import { useEmailConfirmFlow } from "@khoralabs/registry-accounts-react";
+import { createRegistryEmailConfirmApi } from "@khoralabs/registry-auth/client";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

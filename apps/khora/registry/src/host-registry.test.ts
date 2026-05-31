@@ -1,16 +1,18 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
+import {
+  ensureRegistrySchema,
+  getRegistryDatabase,
+  resetRegistryDatabase,
+} from "@khoralabs/registry-auth";
 import {
   activateKhoraHost,
   approveHostTrustedOriginRequest,
-  getUsersDatabase,
   listHostTrustedOriginStrings,
   registerKhoraHost,
   requestHostTrustedOrigin,
-  resetUsersDatabase,
   setHostRegistryParticipation,
-} from "@khoralabs/users";
-import { ensureRegistrySchema } from "@khoralabs/users-auth";
+} from "@khoralabs/registry-catalog";
+import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
 import {
   handleHostRegistryGet,
   handleHostRegistryOriginDelete,
@@ -20,7 +22,7 @@ import {
 
 describe("host registry API", () => {
   beforeEach(async () => {
-    resetUsersDatabase();
+    resetRegistryDatabase();
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
     applyTestEncryptionEnv();
     await ensureRegistrySchema();
@@ -28,11 +30,11 @@ describe("host registry API", () => {
 
   afterEach(() => {
     delete process.env.REGISTRY_DATABASE_PATH;
-    resetUsersDatabase();
+    resetRegistryDatabase();
   });
 
   test("GET and origin request flow with management token", async () => {
-    const db = getUsersDatabase();
+    const db = getRegistryDatabase();
     const pending = registerKhoraHost(db, {
       slug: "khora-0",
       baseUrl: "https://k-0.example.com",
