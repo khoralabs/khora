@@ -2,8 +2,8 @@
 import { existsSync } from "node:fs";
 import { cp, rm } from "node:fs/promises";
 import path from "node:path";
-import plugin from "bun-plugin-tailwind";
 import mdxPlugin from "@khoralabs/blog/plugin";
+import plugin from "bun-plugin-tailwind";
 
 if (process.argv.includes("--help") || process.argv.includes("-h")) {
   console.log(`
