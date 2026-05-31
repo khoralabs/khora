@@ -14,7 +14,7 @@ import type { GraphSearchState } from "./projection-types.js";
 import { unifiedMarkdown } from "./unified-markdown.js";
 import { useMemoriesGraphChrome, useProjection } from "./use-projection.js";
 
-const INVESTIGATE_URL = "/api/investigate";
+const INVESTIGATE_PATH = "/investigate";
 
 export type InvestigatorCitation = {
   memory_key: string;
@@ -75,7 +75,7 @@ function citationsToGraphSearchState(
 }
 
 export function GraphInvestigatorProvider({ children }: PropsWithChildren) {
-  const { namespace, setSearchQuery, setGraphSearchOverride } = useMemoriesGraphChrome();
+  const { apiBase, namespace, setSearchQuery, setGraphSearchOverride } = useMemoriesGraphChrome();
 
   const [deepEnabled, setDeepEnabledState] = useState(false);
   const [query, setQueryState] = useState("");
@@ -141,7 +141,7 @@ export function GraphInvestigatorProvider({ children }: PropsWithChildren) {
     setGraphSearchOverride(null);
     void (async () => {
       try {
-        const res = await fetch(INVESTIGATE_URL, {
+        const res = await fetch(`${apiBase}${INVESTIGATE_PATH}`, {
           method: "POST",
           signal: ac.signal,
           headers: { "Content-Type": "application/json" },
@@ -172,7 +172,7 @@ export function GraphInvestigatorProvider({ children }: PropsWithChildren) {
         if (!ac.signal.aborted) setLoading(false);
       }
     })();
-  }, [cancelInFlight, namespace, query, setGraphSearchOverride]);
+  }, [apiBase, cancelInFlight, namespace, query, setGraphSearchOverride]);
 
   // Drop stale state from a previous namespace; in-flight requests are aborted so their
   // resolution can't surface against the now-current namespace.

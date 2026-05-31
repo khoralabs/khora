@@ -10,6 +10,7 @@ type AdminShellProps = {
 
 export function AdminShell({ children }: AdminShellProps) {
   const pathname = usePathname();
+  const isGraphRoute = pathname.startsWith("/admin/graph");
 
   return (
     <div className="flex min-h-dvh bg-background">
@@ -73,8 +74,13 @@ export function AdminShell({ children }: AdminShellProps) {
             Sign out
           </Button>
         </header>
-        <main className="flex-1 overflow-auto p-4 md:p-6">
-          <div className="mx-auto max-w-6xl">{children}</div>
+        <main
+          className={cn(
+            "flex min-h-0 flex-1 flex-col",
+            isGraphRoute ? "overflow-hidden" : "overflow-auto p-4 md:p-6",
+          )}
+        >
+          {isGraphRoute ? children : <div className="mx-auto w-full max-w-6xl">{children}</div>}
         </main>
       </div>
     </div>

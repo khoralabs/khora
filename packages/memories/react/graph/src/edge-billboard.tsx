@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { SceneEdge } from "./projection-types.js";
 import { graphLabelFingerprint } from "./projection-types.js";
-import { useProjection } from "./use-projection.js";
+import { useMemoriesGraphChrome, useProjection } from "./use-projection.js";
 
 type EdgePreviewJson = {
   edgeId?: string;
@@ -13,7 +13,8 @@ type EdgePreviewJson = {
 };
 
 export function EdgePreviewCard({ edge, open }: { edge: SceneEdge; open: boolean }) {
-  const { namespace, onMemoryPreviewPointerEnter, onMemoryPreviewPointerLeave } = useProjection();
+  const { apiBase, namespace } = useMemoriesGraphChrome();
+  const { onMemoryPreviewPointerEnter, onMemoryPreviewPointerLeave } = useProjection();
 
   const [detail, setDetail] = useState<EdgePreviewJson | null>(null);
   const [loading, setLoading] = useState(false);
@@ -28,7 +29,7 @@ export function EdgePreviewCard({ edge, open }: { edge: SceneEdge; open: boolean
     setLoading(true);
     setDetail(null);
     void fetch(
-      `/api/edge-preview?namespace=${encodeURIComponent(namespace)}&edgeId=${encodeURIComponent(edge.edgeId)}`,
+      `${apiBase}/edge-preview?namespace=${encodeURIComponent(namespace)}&edgeId=${encodeURIComponent(edge.edgeId)}`,
       { signal: ac.signal },
     )
       .then((res) => res.json() as Promise<EdgePreviewJson>)
@@ -42,7 +43,7 @@ export function EdgePreviewCard({ edge, open }: { edge: SceneEdge; open: boolean
         if (!ac.signal.aborted) setLoading(false);
       });
     return () => ac.abort();
-  }, [open, namespace, edge.edgeId]);
+  }, [open, apiBase, namespace, edge.edgeId]);
 
   /** Union graph + API (same fingerprints); API wins on overlap. Sorted like graph reads. */
   const ontologyLabels = useMemo(() => {

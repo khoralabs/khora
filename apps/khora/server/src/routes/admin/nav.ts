@@ -31,6 +31,11 @@ export const ADMIN_NAV: AdminNavItem[] = [
     match: (pathname) => pathname.startsWith("/admin/registry"),
   },
   {
+    href: "/admin/graph",
+    label: "Graph",
+    match: (pathname) => pathname.startsWith("/admin/graph"),
+  },
+  {
     href: "/admin/lookup",
     label: "Lookup",
     match: (pathname) => pathname.startsWith("/admin/lookup"),

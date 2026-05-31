@@ -80,6 +80,7 @@ const DEFAULT_MEMORIES_NAMESPACE = "_global_";
 
 /** Fetch/search chrome from {@link GraphProjectionProvider} (namespaces, graph load, search). */
 export type MemoriesGraphChromeBaseValue = {
+  apiBase: string;
   namespace: string;
   setNamespace: (v: string) => void;
   knownNamespaces: string[];
@@ -257,9 +258,18 @@ type ProjectionProviderInnerProps = PropsWithChildren<{
 export type GraphProjectionProviderProps = PropsWithChildren<{
   /** Initial / reset seed; user can override via the namespace selector in chrome. */
   namespace?: string;
+  /** API prefix for graph endpoints (default `/api`). */
+  apiBase?: string;
   focusDelay?: number;
   unFocusDelay?: number;
 }>;
+
+const DEFAULT_API_BASE = "/api";
+
+function normalizeApiBase(base: string | undefined): string {
+  const trimmed = (base ?? DEFAULT_API_BASE).trim() || DEFAULT_API_BASE;
+  return trimmed.endsWith("/") ? trimmed.slice(0, -1) : trimmed;
+}
 
 function ProjectionProviderInner({
   children,
@@ -551,16 +561,17 @@ function ProjectionProviderInner({
   );
 }
 
-const NAMESPACES_URL = "/api/namespaces";
 const SEARCH_DEBOUNCE_MS = 320;
 const GRAPH_SEARCH_MAX_VECTOR_DISTANCE = 0.65;
 
 export function GraphProjectionProvider({
   children,
   namespace: namespaceProp = DEFAULT_MEMORIES_NAMESPACE,
+  apiBase: apiBaseProp,
   focusDelay = DEFAULT_GRAPH_FOCUS_DELAY_MS,
   unFocusDelay = DEFAULT_GRAPH_UNFOCUS_DELAY_MS,
 }: GraphProjectionProviderProps) {
+  const apiBase = useMemo(() => normalizeApiBase(apiBaseProp), [apiBaseProp]);
   const seed = namespaceProp.trim() || DEFAULT_MEMORIES_NAMESPACE;
   const [namespace, setNamespace] = useState(seed);
   useEffect(() => {
@@ -579,7 +590,7 @@ export function GraphProjectionProvider({
     setNamespacesLoading(true);
     setNamespacesError(null);
     try {
-      const res = await fetch(NAMESPACES_URL);
+      const res = await fetch(`${apiBase}/namespaces`);
       const json = (await res.json()) as { namespaces?: string[]; error?: string };
       if (!res.ok) {
         setKnownNamespaces([]);
@@ -598,7 +609,7 @@ export function GraphProjectionProvider({
     } finally {
       setNamespacesLoading(false);
     }
-  }, []);
+  }, [apiBase]);
 
   useEffect(() => {
     void reloadNamespaces();
@@ -609,7 +620,7 @@ export function GraphProjectionProvider({
     setGraphError(null);
     const ns = namespace.trim();
     try {
-      const res = await fetch(`/api/graph?namespace=${encodeURIComponent(ns)}`);
+      const res = await fetch(`${apiBase}/graph?namespace=${encodeURIComponent(ns)}`);
       const json = (await res.json()) as GraphPayload & { error?: string };
       if (!res.ok) {
         setFetchedPayload(null);
@@ -639,7 +650,7 @@ export function GraphProjectionProvider({
       setGraphError(String(e));
       setGraphLoading(false);
     }
-  }, [namespace]);
+  }, [apiBase, namespace]);
 
   useEffect(() => {
     void loadGraph();
@@ -663,7 +674,7 @@ export function GraphProjectionProvider({
       void (async () => {
         setSearchLoading(true);
         try {
-          const res = await fetch("/api/search", {
+          const res = await fetch(`${apiBase}/search`, {
             method: "POST",
             signal: ac.signal,
             headers: { "Content-Type": "application/json" },
@@ -721,7 +732,7 @@ export function GraphProjectionProvider({
       window.clearTimeout(id);
       ac.abort();
     };
-  }, [searchQuery, namespace]);
+  }, [apiBase, searchQuery, namespace]);
 
   const effectiveData = useMemo((): GraphPayload => {
     return (
@@ -749,6 +760,7 @@ export function GraphProjectionProvider({
 
   const chromeValue = useMemo(
     (): MemoriesGraphChromeBaseValue => ({
+      apiBase,
       namespace,
       setNamespace,
       knownNamespaces,
@@ -768,6 +780,7 @@ export function GraphProjectionProvider({
       refreshAll,
     }),
     [
+      apiBase,
       namespace,
       knownNamespaces,
       namespacesLoading,

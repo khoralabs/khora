@@ -5,6 +5,7 @@ import { logger } from "../logger";
 import { clientIpFromRequest } from "../rate-limit";
 import { handleInboxWsUpgrade } from "../ws/inbox";
 import { handleAdminInvitesList, handleAdminInvitesMint } from "./admin-invites";
+import { handleAdminMemoriesRoute } from "./admin-memories";
 import {
   handleAdminStatsCell,
   handleAdminStatsInactiveMembers,
@@ -154,6 +155,10 @@ export async function route(
 
   if (req.method === "PATCH" && url.pathname === "/admin/api/host/config") {
     return handleAdminHostConfigPatch(req, deps);
+  }
+
+  if (url.pathname.startsWith("/admin/api/memories")) {
+    return handleAdminMemoriesRoute(req, url, deps);
   }
 
   const ip = clientIpFromRequest(req);

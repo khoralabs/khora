@@ -89,6 +89,8 @@ const htmlRoutes = {
   "/admin/registry/*": adminPage,
   "/admin/lookup": adminPage,
   "/admin/lookup/*": adminPage,
+  "/admin/graph": adminPage,
+  "/admin/graph/*": adminPage,
   "/admin/login": adminLoginPage,
   "/admin/login/": adminLoginPage,
 };

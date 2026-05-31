@@ -1,10 +1,11 @@
-import { InfrastructurePage } from "./pages/infrastructure.tsx";
-import { LookupPage } from "./pages/lookup.tsx";
-import { NetworkPage } from "./pages/network.tsx";
-import { OperationsPage } from "./pages/operations.tsx";
-import { OverviewPage } from "./pages/overview.tsx";
-import { RegistryPage } from "./pages/registry.tsx";
-import { usePathname } from "./use-pathname.ts";
+import { GraphPage } from "./pages/graph";
+import { InfrastructurePage } from "./pages/infrastructure";
+import { LookupPage } from "./pages/lookup";
+import { NetworkPage } from "./pages/network";
+import { OperationsPage } from "./pages/operations";
+import { OverviewPage } from "./pages/overview";
+import { RegistryPage } from "./pages/registry";
+import { usePathname } from "./use-pathname";
 
 export function AdminRouter() {
   const pathname = usePathname();
@@ -20,6 +21,9 @@ export function AdminRouter() {
   }
   if (pathname.startsWith("/admin/registry")) {
     return <RegistryPage />;
+  }
+  if (pathname.startsWith("/admin/graph")) {
+    return <GraphPage />;
   }
   if (pathname.startsWith("/admin/lookup")) {
     return <LookupPage />;
