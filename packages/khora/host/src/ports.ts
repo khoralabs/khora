@@ -1,5 +1,10 @@
 import type { CellPersistenceStrategy, OutboxListedRecord } from "@khoralabs/colonnade-persistence";
-import type { KhoraPost } from "@khoralabs/khora-contracts";
+import type {
+  EffectiveKhoraHostSpec,
+  KhoraHostSpec,
+  KhoraHostSpecPatch,
+  KhoraPost,
+} from "@khoralabs/khora-contracts";
 import type {
   KhoraAdminCellDetailResult,
   KhoraAdminInactiveMembersResult,
@@ -47,6 +52,14 @@ export type PostResolver = {
 
 export type KhoraHostHealthPort = {
   ping(): void;
+};
+
+export type KhoraHostSpecPort = {
+  read(): KhoraHostSpec | null;
+  readEffective(): EffectiveKhoraHostSpec;
+  patch(patch: KhoraHostSpecPatch): KhoraHostSpec;
+  storeSecrets(secrets: { registrationSecret?: string; managementToken?: string }): KhoraHostSpec;
+  clearRegistrationSecret(): KhoraHostSpec;
 };
 
 export type KhoraAdminStatsPort = {

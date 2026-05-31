@@ -5,20 +5,14 @@ import {
   registerHostWithRegistryRemote,
   updateHostRegistryState,
 } from "../registry-client";
-import {
-  clearRegistryRegistrationSecret,
-  readEffectiveRegistryConfig,
-  readRegistryLocalConfig,
-  saveRegistryLocalConfig,
-  storeRegistrySecrets,
-} from "../registry-local-config";
 import { withConsoleAuth } from "./console-guard";
 import type { HostRouteDeps } from "./deps";
 import { jsonError } from "./responses";
 
 export async function handleAdminRegistryGet(req: Request, deps: HostRouteDeps): Promise<Response> {
   return withConsoleAuth(req, deps, async () => {
-    const config = readEffectiveRegistryConfig();
+    const hostSpec = deps.ctx.hostSpec;
+    const config = hostSpec.readEffective();
     const base = {
       registryUrl: config.registryUrl,
       slug: config.slug,
@@ -40,11 +34,11 @@ export async function handleAdminRegistryGet(req: Request, deps: HostRouteDeps):
       try {
         const remote = await fetchHostRegistrationStatus(config);
         if (remote.managementToken !== undefined) {
-          storeRegistrySecrets({ managementToken: remote.managementToken });
-          clearRegistryRegistrationSecret();
+          hostSpec.storeSecrets({ managementToken: remote.managementToken });
+          hostSpec.clearRegistrationSecret();
         }
         if (remote.status === "active") {
-          const activeConfig = readEffectiveRegistryConfig();
+          const activeConfig = hostSpec.readEffective();
           if (activeConfig.managementToken !== undefined) {
             const state = await fetchHostRegistryState(activeConfig);
             return Response.json({ configured: true, ...base, ...state, ...remote });
@@ -62,7 +56,8 @@ export async function handleAdminRegistryGet(req: Request, deps: HostRouteDeps):
         ...base,
         configured: true,
         status: "needs-registration",
-        message: "Register this host with the registry",
+        message:
+          "Register this host with the registry (Save connection, then Register with registry)",
       });
     }
 
@@ -93,19 +88,20 @@ export async function handleAdminRegistryConfigPut(
       return jsonError("Invalid JSON body", 400);
     }
 
-    const saved = saveRegistryLocalConfig({
+    deps.ctx.hostSpec.patch({
       ...(body.registryUrl !== undefined ? { registryUrl: body.registryUrl.trim() } : {}),
       ...(body.slug !== undefined ? { slug: body.slug.trim() } : {}),
       ...(body.publicBaseUrl !== undefined ? { publicBaseUrl: body.publicBaseUrl.trim() } : {}),
       ...(body.displayName !== undefined ? { displayName: body.displayName.trim() } : {}),
     });
+    const effective = deps.ctx.hostSpec.readEffective();
 
     return Response.json({
-      configured: saved.slug !== undefined,
-      registryUrl: saved.registryUrl ?? "http://localhost:4000",
-      slug: saved.slug,
-      publicBaseUrl: saved.publicBaseUrl,
-      displayName: saved.displayName,
+      configured: effective.slug !== undefined,
+      registryUrl: effective.registryUrl,
+      slug: effective.slug,
+      publicBaseUrl: effective.publicBaseUrl,
+      displayName: effective.displayName,
     });
   });
 }
@@ -115,7 +111,8 @@ export async function handleAdminRegistryRegisterPost(
   deps: HostRouteDeps,
 ): Promise<Response> {
   return withConsoleAuth(req, deps, async () => {
-    const config = readEffectiveRegistryConfig();
+    const hostSpec = deps.ctx.hostSpec;
+    const config = hostSpec.readEffective();
     if (config.slug === undefined) {
       return jsonError("Configure host slug before registering", 400);
     }
@@ -123,19 +120,21 @@ export async function handleAdminRegistryRegisterPost(
     try {
       const result = await registerHostWithRegistryRemote(config);
       if (result.registrationSecret !== undefined) {
-        storeRegistrySecrets({ registrationSecret: result.registrationSecret });
+        hostSpec.storeSecrets({ registrationSecret: result.registrationSecret });
       }
       if (result.managementToken !== undefined) {
-        storeRegistrySecrets({ managementToken: result.managementToken });
-        clearRegistryRegistrationSecret();
+        hostSpec.storeSecrets({ managementToken: result.managementToken });
+        hostSpec.clearRegistrationSecret();
       }
+      const effective = hostSpec.readEffective();
+      const stored = hostSpec.read();
       return Response.json({
         configured: true,
         slug: config.slug,
         registryUrl: config.registryUrl,
         ...result,
-        hasManagementToken: readEffectiveRegistryConfig().managementToken !== undefined,
-        hasRegistrationSecret: readRegistryLocalConfig().registrationSecret !== undefined,
+        hasManagementToken: effective.managementToken !== undefined,
+        hasRegistrationSecret: stored?.registrationSecret !== undefined,
       });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "registration failed";
@@ -149,27 +148,26 @@ export async function handleAdminRegistryClaimPost(
   deps: HostRouteDeps,
 ): Promise<Response> {
   return withConsoleAuth(req, deps, async () => {
-    const config = readEffectiveRegistryConfig();
+    const hostSpec = deps.ctx.hostSpec;
+    const config = hostSpec.readEffective();
     if (config.slug === undefined || config.registrationSecret === undefined) {
       return jsonError("Registration secret not available", 400);
     }
 
     try {
       const result = await claimHostRegistration(config);
-      const stored = storeRegistrySecrets({
-        ...(result.managementToken !== undefined
-          ? { managementToken: result.managementToken }
-          : {}),
-      });
       if (result.managementToken !== undefined) {
-        clearRegistryRegistrationSecret();
+        hostSpec.storeSecrets({ managementToken: result.managementToken });
+        hostSpec.clearRegistrationSecret();
       }
+      const effective = hostSpec.readEffective();
+      const stored = hostSpec.read();
       return Response.json({
         configured: true,
         slug: config.slug,
         ...result,
-        hasManagementToken: stored.managementToken !== undefined,
-        hasRegistrationSecret: readRegistryLocalConfig().registrationSecret !== undefined,
+        hasManagementToken: effective.managementToken !== undefined,
+        hasRegistrationSecret: stored?.registrationSecret !== undefined,
       });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "claim failed";
@@ -180,7 +178,7 @@ export async function handleAdminRegistryClaimPost(
 
 export async function handleAdminRegistryPut(req: Request, deps: HostRouteDeps): Promise<Response> {
   return withConsoleAuth(req, deps, async () => {
-    const config = readEffectiveRegistryConfig();
+    const config = deps.ctx.hostSpec.readEffective();
     if (config.managementToken === undefined) {
       return jsonError("Management token is not configured", 400);
     }

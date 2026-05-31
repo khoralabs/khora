@@ -33,6 +33,7 @@ import type { KhoraEncryptionContext } from "./encryption-context";
 import type { KhoraMemoriesBootstrapConfig } from "./memories-env";
 import { createKhoraAdminStatsPort } from "./ops/admin-stats-port";
 import { createKhoraHostHealthPort } from "./ops/health-port";
+import { createKhoraHostSpecPort } from "./ops/host-spec-port";
 
 export type BootstrapKhoraHostOpts = {
   catalogPath: string;
@@ -107,6 +108,7 @@ export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<
     principalLifecycle,
   });
   const health = createKhoraHostHealthPort(catalogDb, framesDb);
+  const hostSpec = createKhoraHostSpecPort({ catalogDb, tenantKey });
   const adminStats = createKhoraAdminStatsPort({
     catalogDb,
     framesDb,
@@ -163,6 +165,7 @@ export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<
     catalog,
     health,
     adminStats,
+    hostSpec,
     outboxPayloadCodec: encryption.outboxPayloadCodec,
     ...(invitesRepoValue !== undefined ? { invitesRepo: invitesRepoValue } : {}),
     ...(memories !== undefined ? { memories } : {}),

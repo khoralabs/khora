@@ -69,7 +69,7 @@ export async function route(
   }
 
   if (req.method === "GET" && url.pathname === "/.well-known/khora") {
-    return handleWellKnownKhora();
+    return handleWellKnownKhora(deps.ctx.hostSpec);
   }
 
   if (req.method === "GET" && url.pathname === "/ready") {

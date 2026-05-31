@@ -15,6 +15,7 @@ import {
   type KhoraAdminStatsPort,
   type KhoraHostContext,
   type KhoraHostHealthPort,
+  type KhoraHostSpecPort,
 } from "../index";
 
 export type CreateTestKhoraHostOpts = {
@@ -27,6 +28,7 @@ export type CreateTestKhoraHostOpts = {
   startPrincipalTeardownWorker?: boolean;
   health?: KhoraHostHealthPort;
   adminStats?: KhoraAdminStatsPort;
+  hostSpec?: KhoraHostSpecPort;
 };
 
 export async function createTestKhoraHost(
@@ -113,6 +115,20 @@ export async function createTestKhoraHost(
     principalDetail: () => ({ error: "not_registered" as const }),
     inactiveMembers: () => ({ inactiveDays: 7, asOfMs: Date.now(), members: [] }),
   };
+  const hostSpec: KhoraHostSpecPort = opts.hostSpec ?? {
+    read: () => null,
+    readEffective: () => ({
+      registryUrl: "http://localhost:4000",
+      slug: undefined,
+      publicBaseUrl: "http://127.0.0.1:8788",
+      displayName: undefined,
+      registrationSecret: undefined,
+      managementToken: undefined,
+    }),
+    patch: (patch) => ({ ...patch, updatedAtMs: Date.now() }),
+    storeSecrets: (secrets) => ({ ...secrets, updatedAtMs: Date.now() }),
+    clearRegistrationSecret: () => ({ updatedAtMs: Date.now() }),
+  };
   const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(catalogDb) });
 
   return createKhoraHost({
@@ -127,6 +143,7 @@ export async function createTestKhoraHost(
     catalog,
     health,
     adminStats,
+    hostSpec,
     outboxPayloadCodec: encryption.outboxPayloadCodec,
     percolator,
     startPrincipalTeardownWorker: opts.startPrincipalTeardownWorker ?? false,

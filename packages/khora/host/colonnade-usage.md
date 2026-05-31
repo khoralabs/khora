@@ -4,7 +4,7 @@ Four storage tiers for relay data. See [id-conventions.md](./id-conventions.md) 
 
 ## Tier 1 — Catalog projections
 
-**What:** Small JSON documents with central read paths (profiles, registrations, subscriptions, username index, social relationships, room registry/invites).
+**What:** Small JSON documents with central read paths (profiles, registrations, subscriptions, username index, social relationships, room registry/invites, host spec).
 
 **Where:** `relay_catalog_projections` table via `RelayCatalogProjectionStore` (`packages/khora/relay-colonnade`).
 

@@ -13,7 +13,12 @@ import type { OutboxPayloadCodec } from "@khoralabs/sqlite-crypto";
 import type { KhoraHostCatalogApi } from "./catalog-facade";
 import type { KhoraMemoriesHost } from "./memories/bootstrap";
 import type { KhoraPercolatorHost } from "./percolator/bootstrap";
-import type { KhoraAdminStatsPort, KhoraColonnadeCluster, KhoraHostHealthPort } from "./ports";
+import type {
+  KhoraAdminStatsPort,
+  KhoraColonnadeCluster,
+  KhoraHostHealthPort,
+  KhoraHostSpecPort,
+} from "./ports";
 
 export type { KhoraHostCatalogApi } from "./catalog-facade";
 export type { KhoraMemoriesHost } from "./memories/bootstrap";
@@ -35,5 +40,6 @@ export type KhoraHostContext = {
   percolator: KhoraPercolatorHost;
   health: KhoraHostHealthPort;
   adminStats: KhoraAdminStatsPort;
+  hostSpec: KhoraHostSpecPort;
   outboxPayloadCodec: OutboxPayloadCodec;
 } & KhoraHostCatalogApi;

@@ -66,7 +66,6 @@ Legend: **+** = set on this service · **·** = not used · **Kind:** **S** = se
 | `KHORA_HOST_SLUG` | · | + | · | C | Host slug for `/.well-known/khora` and registry opt-in. |
 | `KHORA_PUBLIC_BASE_URL` | · | + | · | C | Public base URL in well-known + register body (default loopback + `PORT`). |
 | `KHORA_REGISTRY_PARTICIPATE` | · | + | · | C | Legacy: `1`/`true` registers with registry on boot when slug set via env. Prefer `/admin/registry`. |
-| `KHORA_REGISTRY_MANAGEMENT_TOKEN` | · | + | · | S | Optional bootstrap override; host admin stores token in `registry-config.json`. |
 | `KHORA_REGISTRY_TRUST_BASE_URL_ORIGIN` | · | + | · | C | When syncing, include `KHORA_PUBLIC_BASE_URL` origin in trusted origins. |
 | `REGISTRY_REGISTRATION_TRUST` | + | · | · | C | `manual` (default), `health`, or `open` — controls auto-activation policy for self-serve host registration. |
 | `REGISTRY_REGISTRATION_REQUIREMENTS` | + | · | · | C | Optional JSON override of registration requirement IDs (extensibility hook). |

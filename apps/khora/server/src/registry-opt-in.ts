@@ -1,15 +1,14 @@
+import type { KhoraHostSpecPort } from "@khoralabs/khora-host";
 import {
   envHostDisplayName,
   envHostSlug,
   envPort,
   envPublicBaseUrl,
-  envRegistryManagementToken,
   envRegistryParticipate,
   envRegistryUrl,
 } from "./env";
 import { logger } from "./logger";
 import { syncHostRegistryOnStartup } from "./registry-client";
-import { readEffectiveRegistryConfig } from "./registry-local-config";
 
 const DEFAULT_REGISTRY_URL = "http://localhost:4000";
 
@@ -58,10 +57,10 @@ export async function registerHostWithRegistry(params: RegistryOptInParams): Pro
   );
 }
 
-export function maybeRegistryOptInOnStartup(): void {
-  const local = readEffectiveRegistryConfig();
+export function maybeRegistryOptInOnStartup(hostSpec: KhoraHostSpecPort): void {
+  const effective = hostSpec.readEffective();
   const envParticipate = envRegistryParticipate();
-  const slug = local.slug ?? envHostSlug();
+  const slug = effective.slug ?? envHostSlug();
   if (slug === undefined) {
     if (envParticipate) {
       logger.warn("Registry opt-in enabled but host slug is missing; skipping registration");
@@ -69,12 +68,13 @@ export function maybeRegistryOptInOnStartup(): void {
     return;
   }
 
-  const registryUrl = local.registryUrl ?? envRegistryUrl() ?? DEFAULT_REGISTRY_URL;
-  const baseUrl = local.publicBaseUrl ?? envPublicBaseUrl(envPort());
-  const displayName = local.displayName ?? envHostDisplayName();
-  const managementToken = local.managementToken ?? envRegistryManagementToken();
+  const registryUrl = effective.registryUrl ?? envRegistryUrl() ?? DEFAULT_REGISTRY_URL;
+  const baseUrl = effective.publicBaseUrl ?? envPublicBaseUrl(envPort());
+  const displayName = effective.displayName ?? envHostDisplayName();
+  const managementToken = effective.managementToken;
+  const stored = hostSpec.read();
 
-  if (envParticipate || local.slug !== undefined) {
+  if (envParticipate || stored?.slug !== undefined) {
     void registerHostWithRegistry({
       registryUrl,
       slug,

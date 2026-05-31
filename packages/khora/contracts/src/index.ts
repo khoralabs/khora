@@ -1,3 +1,4 @@
+export * from "./khora-host-spec";
 export * from "./khora-post";
 export * from "./khora-profile";
 export * from "./khora-registration";

@@ -1,5 +1,39 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
+import type { KhoraHostSpecPort } from "@khoralabs/khora-host";
 import { maybeRegistryOptInOnStartup, registerHostWithRegistry } from "./registry-opt-in";
+
+function createMockHostSpec(overrides: Partial<KhoraHostSpecPort> = {}): KhoraHostSpecPort {
+  let stored: ReturnType<KhoraHostSpecPort["read"]> = null;
+  return {
+    read: () => stored,
+    readEffective: () => ({
+      registryUrl: "http://localhost:4000",
+      slug: stored?.slug,
+      publicBaseUrl: "http://127.0.0.1:8788",
+      displayName: stored?.displayName,
+      registrationSecret: stored?.registrationSecret,
+      managementToken: stored?.managementToken,
+    }),
+    patch: (patch) => {
+      stored = { ...stored, ...patch, updatedAtMs: Date.now() };
+      return stored;
+    },
+    storeSecrets: (secrets) => {
+      stored = { ...stored, ...secrets, updatedAtMs: Date.now() };
+      if (secrets.managementToken !== undefined) {
+        delete stored.registrationSecret;
+      }
+      return stored;
+    },
+    clearRegistrationSecret: () => {
+      if (stored !== null) {
+        delete stored.registrationSecret;
+      }
+      return stored ?? { updatedAtMs: Date.now() };
+    },
+    ...overrides,
+  };
+}
 
 describe("registry opt-in", () => {
   const prev: Record<string, string | undefined> = {};
@@ -32,12 +66,12 @@ describe("registry opt-in", () => {
       registryUrl: "http://localhost:4000",
       slug: "lab",
       baseUrl: "http://127.0.0.1:8788",
-      fetchImpl,
+      fetchImpl: fetchImpl as typeof fetch,
     });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
-    const [url, init] = fetchImpl.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("http://localhost:4000/v1/hosts/register");
-    expect(init.method).toBe("POST");
+    const call = fetchImpl.mock.calls[0];
+    expect(call?.[0]).toBe("http://localhost:4000/v1/hosts/register");
+    expect((call?.[1] as RequestInit | undefined)?.method).toBe("POST");
   });
 
   test("registerHostWithRegistry treats 409 as idempotent", async () => {
@@ -51,7 +85,7 @@ describe("registry opt-in", () => {
       registryUrl: "http://localhost:4000",
       slug: "lab",
       baseUrl: "http://127.0.0.1:8788",
-      fetchImpl,
+      fetchImpl: fetchImpl as typeof fetch,
     });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
@@ -59,7 +93,7 @@ describe("registry opt-in", () => {
   test("maybeRegistryOptInOnStartup skips when participation disabled", () => {
     delete process.env.KHORA_REGISTRY_PARTICIPATE;
     const fetchImpl = mock(async () => new Response(null, { status: 201 }));
-    maybeRegistryOptInOnStartup();
+    maybeRegistryOptInOnStartup(createMockHostSpec());
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
@@ -67,7 +101,7 @@ describe("registry opt-in", () => {
     process.env.KHORA_REGISTRY_PARTICIPATE = "1";
     delete process.env.KHORA_HOST_SLUG;
     const fetchImpl = mock(async () => new Response(null, { status: 201 }));
-    maybeRegistryOptInOnStartup();
+    maybeRegistryOptInOnStartup(createMockHostSpec());
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 });

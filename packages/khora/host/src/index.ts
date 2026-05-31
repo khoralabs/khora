@@ -50,6 +50,7 @@ export type {
   KhoraAdminTeardownStats,
   KhoraColonnadeCluster,
   KhoraHostHealthPort,
+  KhoraHostSpecPort,
   PostResolver,
 } from "./ports";
 export {

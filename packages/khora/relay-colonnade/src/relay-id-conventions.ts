@@ -25,6 +25,8 @@ export const RELAY_NAMESPACE_SOCIAL_RELATIONSHIPS_BY_PRINCIPAL =
   "relay:social:relationships-by-principal";
 export const RELAY_NAMESPACE_ROOM_REGISTRY = "khora:room-registry";
 export const RELAY_NAMESPACE_ROOM_INVITE = "khora:room-invite";
+/** Singleton host identity + registry connection (entry_key `self`). */
+export const RELAY_NAMESPACE_HOST_SPEC = "khora:host-spec";
 
 /** Normalized principal → channel index (replaces relationships-by-principal projections). */
 export const RELAY_TABLE_SOCIAL_PRINCIPAL_CHANNELS = "relay_social_principal_channels";

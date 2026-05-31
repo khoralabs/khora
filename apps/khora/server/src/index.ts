@@ -130,7 +130,7 @@ const server = Bun.serve<KhoraWsData>({
 
 logger.info({ port: server.port }, "listening");
 
-maybeRegistryOptInOnStartup();
+maybeRegistryOptInOnStartup(ctx.hostSpec);
 
 const unaryIngress = envHostUnaryIngress();
 if (unaryIngress === "stdio") {

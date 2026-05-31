@@ -11,7 +11,12 @@ import type { OutboxPayloadCodec } from "@khoralabs/sqlite-crypto";
 import type { KhoraHostCatalogApi } from "./catalog-facade";
 import type { KhoraMemoriesHost } from "./memories/bootstrap";
 import type { KhoraPercolatorHost } from "./percolator/bootstrap";
-import type { KhoraAdminStatsPort, KhoraColonnadeCluster, KhoraHostHealthPort } from "./ports";
+import type {
+  KhoraAdminStatsPort,
+  KhoraColonnadeCluster,
+  KhoraHostHealthPort,
+  KhoraHostSpecPort,
+} from "./ports";
 
 export type KhoraHostDeps = {
   persistence: AgentRelayPersistence;
@@ -27,6 +32,7 @@ export type KhoraHostDeps = {
   percolator: KhoraPercolatorHost;
   health: KhoraHostHealthPort;
   adminStats: KhoraAdminStatsPort;
+  hostSpec: KhoraHostSpecPort;
   catalog: KhoraHostCatalogApi;
   outboxPayloadCodec: OutboxPayloadCodec;
   startPrincipalTeardownWorker?: boolean;
