@@ -1,4 +1,10 @@
 import { SiteLayout } from "@/components/site-layout";
+import {
+  NavigationMenu,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+} from "@/components/ui/navigation-menu";
 import { WaitlistSignup } from "@/components/waitlist-signup";
 import {
   consumerLandingFooterClass,
@@ -7,7 +13,6 @@ import {
   consumerLandingHeroEnterClass,
   consumerLandingHeroGridClass,
   consumerLandingMainClass,
-  consumerLandingNavLinkClass,
   consumerLandingShellClass,
 } from "@/lib/ui-styles";
 import { cn } from "@/lib/utils";
@@ -31,20 +36,16 @@ function HomePage() {
               className="h-4 w-auto md:h-[1.2rem]"
             />
           </a>
-          <nav aria-label="Primary">
-            <ul className="m-0 flex list-none gap-8 p-0 md:gap-10">
-              <li>
-                <a href="/blog" className={consumerLandingNavLinkClass}>
-                  Blog
-                </a>
-              </li>
-              <li>
-                <a href="/contact" className={consumerLandingNavLinkClass}>
-                  Contact
-                </a>
-              </li>
-            </ul>
-          </nav>
+          <NavigationMenu aria-label="Primary" viewport={false}>
+            <NavigationMenuList>
+              <NavigationMenuItem>
+                <NavigationMenuLink href="/blog">Blog</NavigationMenuLink>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <NavigationMenuLink href="/contact">Contact</NavigationMenuLink>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
         </SiteLayout.Header>
         <SiteLayout.Main className={consumerLandingMainClass}>
           <div className={consumerLandingHeroGridClass}>

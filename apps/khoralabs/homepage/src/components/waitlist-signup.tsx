@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Field, FieldLabel } from "@/components/ui/field";
 import {
   InputGroup,
   InputGroupAddon,
@@ -17,15 +18,6 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { getRegistryUrl } from "@/lib/registry-url";
-import {
-  consumerInputGroupAddonClass,
-  consumerInputGroupInnerClass,
-  consumerInputGroupShellClass,
-  consumerMarketingCheckboxClass,
-  consumerOtpHintClass,
-  consumerSubmitButtonClass,
-  fieldTypographyMuted,
-} from "@/lib/ui-styles";
 
 const OTP_LENGTH = 6;
 const WAITLIST_STORAGE_KEY = "khoralabs-homepage-waitlist";
@@ -69,7 +61,7 @@ export function WaitlistEmailStep({
         Email
       </Label>
       <InputGroup
-        className={consumerInputGroupShellClass}
+        className="h-12 px-1 rounded-full border-0 bg-white/80 text-black shadow-[inset_2px_3px_8px_rgba(0,0,0,0.08),inset_-1px_-1px_3px_rgba(255,255,255,0.9)] ring-0 has-[[data-slot=input-group-control]:focus-visible]:shadow-[inset_2px_4px_10px_rgba(0,0,0,0.1),inset_-1px_-1px_3px_rgba(255,255,255,0.95)] has-[[data-slot=input-group-control]:focus-visible]:ring-0"
         {...(loading ? { "data-disabled": true as const } : {})}
       >
         <InputGroupInput
@@ -81,13 +73,15 @@ export function WaitlistEmailStep({
           onChange={(e) => onEmailChange(e.target.value)}
           disabled={loading}
           placeholder="Enter your email"
-          className={consumerInputGroupInnerClass}
+          className="border-0 bg-transparent text-[12px] text-black caret-black shadow-none transition-[color,box-shadow] placeholder:text-[#B0B0B0] focus-visible:ring-0"
         />
-        <InputGroupAddon align="inline-end" className={consumerInputGroupAddonClass}>
+        <InputGroupAddon align="inline-end">
           <InputGroupButton
             type="submit"
             disabled={loading}
-            className={consumerSubmitButtonClass}
+            size="icon-sm"
+            className="rounded-full"
+            variant="default"
             aria-label={loading ? "Sending code" : "Join waitlist"}
           >
             {loading ? (
@@ -99,17 +93,18 @@ export function WaitlistEmailStep({
         </InputGroupAddon>
       </InputGroup>
       {showMarketingConsent ? (
-        <div className={consumerMarketingCheckboxClass}>
+        <Field orientation="horizontal" className="text-[12px] leading-[1.45] text-[#838383]">
           <Checkbox
             id="waitlist-marketing"
             checked={marketingConsent}
             onCheckedChange={(checked) => onMarketingConsentChange(checked === true)}
             disabled={loading}
+            className="border-0 bg-white/80 size-4"
           />
-          <Label htmlFor="waitlist-marketing" className="font-normal leading-[1.45]">
+          <FieldLabel htmlFor="waitlist-marketing" className="font-normal leading-[1.45]">
             Keep me updated about Khora news and product updates.
-          </Label>
-        </div>
+          </FieldLabel>
+        </Field>
       ) : null}
       {error !== null && <p className="text-sm text-destructive">{error}</p>}
     </form>
@@ -150,7 +145,9 @@ export function WaitlistOtpStep({
         </Button>
         <p className="m-0 text-[14px] font-medium text-black">{email}</p>
       </div>
-      <p className={consumerOtpHintClass}>Enter the code we sent to your email</p>
+      <p className="mt-2 text-[12px] leading-[1.45] text-[#838383]">
+        Enter the code we sent to your email
+      </p>
       <div className="relative mt-4 w-fit" aria-busy={loading}>
         <InputOTP
           id="waitlist-otp"
@@ -185,7 +182,7 @@ export function WaitlistOtpStep({
 
 export function WaitlistSuccess() {
   return (
-    <p className={`mt-8 max-w-md text-[14px] leading-relaxed ${fieldTypographyMuted}`}>
+    <p className="mt-8 max-w-md text-[14px] leading-relaxed text-[#838383]">
       You&apos;re on the list. We&apos;ll reach out when a spot opens up.
     </p>
   );
