@@ -6,11 +6,10 @@ import { navigateAdmin } from "../use-pathname.ts";
 
 export function HostsDirectoryPage() {
   const { summary, summaryLoading } = useUsersStats();
-  const pendingCount =
-    summary?.hosts.items.filter((host) => host.status === "pending").length ?? 0;
-  const firstPending = summary?.hosts.items.find(
-    (host) => host.status === "pending",
-  ) as RegistryHostSummaryItem | undefined;
+  const pendingCount = summary?.hosts.items.filter((host) => host.status === "pending").length ?? 0;
+  const firstPending = summary?.hosts.items.find((host) => host.status === "pending") as
+    | RegistryHostSummaryItem
+    | undefined;
 
   return (
     <div className="space-y-6">
@@ -48,7 +47,9 @@ export function HostsDirectoryPage() {
       <Card>
         <CardHeader>
           <CardTitle>Host directory</CardTitle>
-          <CardDescription>Select a host to manage activation, requirements, and origins</CardDescription>
+          <CardDescription>
+            Select a host to manage activation, requirements, and origins
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <HostDirectoryTable />

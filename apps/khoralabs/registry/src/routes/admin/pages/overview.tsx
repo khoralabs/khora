@@ -46,7 +46,9 @@ function OverviewContent() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
-        <p className="text-sm text-muted-foreground">Network accounts, hosts, and access activity</p>
+        <p className="text-sm text-muted-foreground">
+          Network accounts, hosts, and access activity
+        </p>
       </div>
 
       {pendingCount > 0 ? (
@@ -63,9 +65,7 @@ function OverviewContent() {
               className="rounded-md border px-3 py-1.5 text-sm hover:bg-accent"
               onClick={() =>
                 navigateAdmin(
-                  firstPending !== undefined
-                    ? `/admin/hosts/${firstPending.slug}`
-                    : "/admin/hosts",
+                  firstPending !== undefined ? `/admin/hosts/${firstPending.slug}` : "/admin/hosts",
                 )
               }
             >

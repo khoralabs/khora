@@ -2,8 +2,8 @@ import type { RegistryHostSummaryItem } from "@khoralabs/users";
 import { useUsersStats } from "@khoralabs/users-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { RegistrationRequirementsList } from "./registration-requirements.tsx";
 import type { RegistrationRequirementState } from "../admin-types.ts";
+import { RegistrationRequirementsList } from "./registration-requirements.tsx";
 
 type ActivateResult = {
   managementToken?: string;
@@ -29,7 +29,9 @@ export function PendingHostActivation({ host }: { host: RegistryHostSummaryItem 
           Approve this host to issue a management token and include it in the public catalog.
         </p>
       </div>
-      {requirements.length > 0 ? <RegistrationRequirementsList requirements={requirements} /> : null}
+      {requirements.length > 0 ? (
+        <RegistrationRequirementsList requirements={requirements} />
+      ) : null}
       {error !== null ? <p className="text-sm text-destructive">{error}</p> : null}
       {managementToken !== null ? (
         <div className="rounded-md border bg-muted/40 p-3 text-sm">

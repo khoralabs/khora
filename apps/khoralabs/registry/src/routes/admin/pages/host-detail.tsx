@@ -2,11 +2,11 @@ import type { RegistryHostSummaryItem } from "@khoralabs/users";
 import { useUsersStats } from "@khoralabs/users-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import type { RegistrationRequirementState } from "../admin-types.ts";
 import { HostRegistryRow } from "../components/host-registry-row.tsx";
 import { PendingHostActivation } from "../components/pending-host-activation.tsx";
 import { RegistrationRequirementsList } from "../components/registration-requirements.tsx";
 import { parseHostDetailSlug } from "../nav.ts";
-import type { RegistrationRequirementState } from "../admin-types.ts";
 import { navigateAdmin, usePathname } from "../use-pathname.ts";
 
 export function HostDetailPage() {
@@ -25,9 +25,9 @@ export function HostDetailPage() {
     return <p className="text-sm text-destructive">{summaryError}</p>;
   }
 
-  const host = (summary?.hosts.items ?? []).find(
-    (item) => item.slug === slug,
-  ) as RegistryHostSummaryItem | undefined;
+  const host = (summary?.hosts.items ?? []).find((item) => item.slug === slug) as
+    | RegistryHostSummaryItem
+    | undefined;
 
   if (host === undefined) {
     return (

@@ -60,7 +60,9 @@ export function AdminShell({ children, pendingBadge }: AdminShellProps) {
                 </option>
               ))}
             </select>
-            <p className="hidden text-sm text-muted-foreground md:block">{navSectionLabel(pathname)}</p>
+            <p className="hidden text-sm text-muted-foreground md:block">
+              {navSectionLabel(pathname)}
+            </p>
             {pendingBadge !== undefined ? (
               <Badge variant={pendingBadge.variant}>{pendingBadge.label}</Badge>
             ) : null}

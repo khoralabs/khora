@@ -50,9 +50,7 @@ export function HostDirectoryTable() {
                   {host.status}
                 </Badge>
               </td>
-              <td className="px-3 py-2">
-                {host.registryParticipationEnabled ? "On" : "Off"}
-              </td>
+              <td className="px-3 py-2">{host.registryParticipationEnabled ? "On" : "Off"}</td>
               <td className="px-3 py-2 font-mono text-muted-foreground">
                 {host.trustedOrigins.length} / {host.trustedOriginQuota.included}
               </td>
