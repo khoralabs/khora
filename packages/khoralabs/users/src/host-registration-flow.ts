@@ -1,18 +1,12 @@
 import type { Database } from "bun:sqlite";
+import { type HostHealthProbeResult, recordHostHealthProbe } from "./host-health-probe";
 import {
   allAutoActivateRequirementsMet,
   type RegistrationPolicy,
   type RegistrationRequirementState,
   readRegistrationPolicyFromEnv,
-  updateRegistrationRequirement,
 } from "./host-registration-requirements";
-import {
-  activateKhoraHost,
-  deliverPendingManagementToken,
-  findHostById,
-  saveHostRegistrationRequirements,
-  updateHostHealthCheck,
-} from "./khora-hosts";
+import { activateKhoraHost, deliverPendingManagementToken, findHostById } from "./khora-hosts";
 import type { HostHealthProbedEndpoint, HostHealthStatus, KhoraHost } from "./types";
 
 export type HostHealthProbeFn = (host: KhoraHost) => Promise<{
@@ -36,7 +30,7 @@ export async function evaluateHostHealthRequirement(
   if (host === null) {
     throw new Error("host not found");
   }
-  let requirements = host.registrationRequirements;
+  const requirements = host.registrationRequirements;
   const hasHealth = requirements.some((item) => item.id === "health_check");
   if (!hasHealth) {
     return { host, requirements };
@@ -44,28 +38,17 @@ export async function evaluateHostHealthRequirement(
 
   try {
     const result = await probe(host);
-    updateHostHealthCheck(db, hostId, {
-      status: result.status,
-      checkedAtMs: Date.now(),
-      latencyMs: result.latencyMs,
-      probedEndpoint: result.probedEndpoint,
-    });
-    requirements = updateRegistrationRequirement(requirements, "health_check", {
-      status: result.status === "up" ? "satisfied" : "failed",
-      detail:
-        result.status === "up"
-          ? `Health probe OK (${result.probedEndpoint ?? "unknown"})`
-          : "Health probe failed",
-    });
+    const updated = recordHostHealthProbe(db, hostId, result);
+    return { host: updated, requirements: updated.registrationRequirements };
   } catch (err: unknown) {
-    requirements = updateRegistrationRequirement(requirements, "health_check", {
-      status: "failed",
-      detail: err instanceof Error ? err.message : "Health probe error",
-    });
+    const updated = recordHostHealthProbe(
+      db,
+      hostId,
+      { status: "down", latencyMs: null, probedEndpoint: null } satisfies HostHealthProbeResult,
+      { errorDetail: err instanceof Error ? err.message : "Health probe error" },
+    );
+    return { host: updated, requirements: updated.registrationRequirements };
   }
-
-  const updated = saveHostRegistrationRequirements(db, hostId, requirements);
-  return { host: updated, requirements: updated.registrationRequirements };
 }
 
 export async function tryAutoActivateHost(

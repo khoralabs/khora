@@ -1,4 +1,5 @@
 import type { RegistryHostSummaryItem } from "@khoralabs/users";
+import { registrationRequirementsWithoutHealth } from "@khoralabs/users";
 import { useUsersStats } from "@khoralabs/users-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,9 @@ export function PendingHostActivation({ host }: { host: RegistryHostSummaryItem 
     return null;
   }
 
-  const requirements = host.registrationRequirements as RegistrationRequirementState[];
+  const requirements = registrationRequirementsWithoutHealth(
+    host.registrationRequirements as RegistrationRequirementState[],
+  );
 
   return (
     <div className="space-y-3 rounded-lg border p-4" data-slot="pending-host-activation">

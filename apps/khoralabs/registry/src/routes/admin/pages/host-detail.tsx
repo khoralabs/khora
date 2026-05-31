@@ -1,8 +1,10 @@
 import type { RegistryHostSummaryItem } from "@khoralabs/users";
+import { registrationRequirementsWithoutHealth } from "@khoralabs/users";
 import { useUsersStats } from "@khoralabs/users-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { RegistrationRequirementState } from "../admin-types.ts";
+import { HostHealthCard } from "../components/host-health-card.tsx";
 import { HostRegistryRow } from "../components/host-registry-row.tsx";
 import { PendingHostActivation } from "../components/pending-host-activation.tsx";
 import { RegistrationRequirementsList } from "../components/registration-requirements.tsx";
@@ -44,7 +46,9 @@ export function HostDetailPage() {
     );
   }
 
-  const requirements = host.registrationRequirements as RegistrationRequirementState[];
+  const policyRequirements = registrationRequirementsWithoutHealth(
+    host.registrationRequirements as RegistrationRequirementState[],
+  );
 
   return (
     <div className="space-y-6">
@@ -67,16 +71,18 @@ export function HostDetailPage() {
         ) : null}
       </div>
 
+      <HostHealthCard host={host} />
+
       <PendingHostActivation host={host} />
 
-      {host.status !== "pending" && requirements.length > 0 ? (
+      {policyRequirements.length > 0 ? (
         <Card>
           <CardHeader>
             <CardTitle>Registration requirements</CardTitle>
-            <CardDescription>Host registration policy checklist</CardDescription>
+            <CardDescription>Operator and billing checklist (health is above)</CardDescription>
           </CardHeader>
           <CardContent>
-            <RegistrationRequirementsList requirements={requirements} />
+            <RegistrationRequirementsList requirements={policyRequirements} />
           </CardContent>
         </Card>
       ) : null}
@@ -91,31 +97,6 @@ export function HostDetailPage() {
         </CardHeader>
         <CardContent>
           <HostRegistryRow host={host} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Health</CardTitle>
-          <CardDescription>Last probe from registry health poller</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-2 text-sm sm:grid-cols-2">
-          <div>
-            <span className="text-muted-foreground">Status: </span>
-            <span className="font-mono">{host.healthStatus}</span>
-          </div>
-          {host.healthLatencyMs !== null ? (
-            <div>
-              <span className="text-muted-foreground">Latency: </span>
-              <span className="font-mono">{host.healthLatencyMs}ms</span>
-            </div>
-          ) : null}
-          {host.healthProbedEndpoint !== null ? (
-            <div>
-              <span className="text-muted-foreground">Probed: </span>
-              <span className="font-mono">{host.healthProbedEndpoint}</span>
-            </div>
-          ) : null}
         </CardContent>
       </Card>
     </div>

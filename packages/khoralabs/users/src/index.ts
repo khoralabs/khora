@@ -54,6 +54,14 @@ export {
   InvalidHostHealthPathError,
   normalizeHostHealthPath,
 } from "./host-health-path";
+export {
+  applyHostHealthProbe,
+  type HostHealthProbeResult,
+  healthCheckRequirementDetail,
+  probeHostHealth,
+  recordHostHealthProbe,
+  registrationRequirementsWithoutHealth,
+} from "./host-health-probe";
 export { issueHostManagementToken } from "./host-management-token";
 export {
   evaluateHostHealthRequirement,
@@ -134,6 +142,7 @@ export {
   findPublicHostBySlug,
   listActiveHosts,
   listAllHosts,
+  listHostsForHealthPoll,
   listPublicHosts,
   registerKhoraHost,
   saveHostRegistrationRequirements,

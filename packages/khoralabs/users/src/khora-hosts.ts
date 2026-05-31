@@ -107,6 +107,11 @@ export function listActiveHosts(db: Database): KhoraHost[] {
   return rows.map(mapHost);
 }
 
+/** Hosts probed by the registry health poller (active and pending). */
+export function listHostsForHealthPoll(db: Database): KhoraHost[] {
+  return listAllHosts(db).filter((host) => host.status === "active" || host.status === "pending");
+}
+
 export function listPublicHosts(db: Database): KhoraHost[] {
   return listActiveHosts(db);
 }
