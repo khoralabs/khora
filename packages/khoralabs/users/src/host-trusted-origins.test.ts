@@ -1,11 +1,13 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { getUsersDatabase, resetUsersDatabase } from "./db";
 import {
+  approveHostTrustedOriginRequest,
   InvalidTrustedOriginError,
   listRegistryTrustedOrigins,
   normalizeTrustedOrigin,
   OriginQuotaExceededError,
   replaceHostTrustedOrigins,
+  requestHostTrustedOrigin,
   setHostRegistryParticipation,
 } from "./host-trusted-origins";
 import { activateKhoraHost, registerKhoraHost } from "./khora-hosts";
@@ -69,5 +71,29 @@ describe("host trusted origins", () => {
         "https://c.example.com",
       ]),
     ).toThrow(OriginQuotaExceededError);
+  });
+
+  test("pending origin requests do not appear in listRegistryTrustedOrigins until approved", () => {
+    const active = activateKhoraHost(
+      db,
+      registerKhoraHost(db, { slug: "req", baseUrl: "http://localhost:8788" }).host.id,
+    ).host;
+    const request = requestHostTrustedOrigin(db, active.id, "https://app.example.com");
+    expect(listRegistryTrustedOrigins(db)).toHaveLength(0);
+    approveHostTrustedOriginRequest(db, request.id);
+    setHostRegistryParticipation(db, active.id, true);
+    expect(listRegistryTrustedOrigins(db)).toEqual(["https://app.example.com"]);
+  });
+
+  test("requestHostTrustedOrigin enforces combined quota", () => {
+    const active = activateKhoraHost(
+      db,
+      registerKhoraHost(db, { slug: "req-quota", baseUrl: "http://localhost:8788" }).host.id,
+    ).host;
+    replaceHostTrustedOrigins(db, active.id, ["https://a.example.com"]);
+    requestHostTrustedOrigin(db, active.id, "https://b.example.com");
+    expect(() => requestHostTrustedOrigin(db, active.id, "https://c.example.com")).toThrow(
+      OriginQuotaExceededError,
+    );
   });
 });

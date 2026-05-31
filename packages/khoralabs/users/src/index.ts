@@ -98,15 +98,23 @@ export {
 } from "./host-registration-secret";
 export { InvalidHostSlugError, normalizeHostSlug } from "./host-slug";
 export {
+  approveHostTrustedOriginRequest,
+  cancelHostTrustedOriginRequest,
+  countAllPendingHostTrustedOriginRequests,
+  countPendingHostTrustedOriginRequests,
   type HostRegistryState,
   InvalidTrustedOriginError,
+  listHostTrustedOriginRequests,
   listHostTrustedOriginStrings,
   listHostTrustedOrigins,
   listRegistryTrustedOrigins,
   normalizeTrustedOrigin,
   OriginQuotaExceededError,
   readHostRegistryState,
+  rejectHostTrustedOriginRequest,
+  removeHostTrustedOrigin,
   replaceHostTrustedOrigins,
+  requestHostTrustedOrigin,
   setHostIncludedTrustedOrigins,
   setHostRegistryParticipation,
   TrustedOriginConflictError,

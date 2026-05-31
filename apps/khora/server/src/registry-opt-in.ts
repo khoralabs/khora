@@ -8,7 +8,7 @@ import {
   envRegistryUrl,
 } from "./env";
 import { logger } from "./logger";
-import { syncHostRegistryOnStartup } from "./registry-client";
+import { fetchHostRegistrationStatus, syncHostRegistryOnStartup } from "./registry-client";
 
 const DEFAULT_REGISTRY_URL = "http://localhost:4000";
 
@@ -71,7 +71,6 @@ export function maybeRegistryOptInOnStartup(hostSpec: KhoraHostSpecPort): void {
   const registryUrl = effective.registryUrl ?? envRegistryUrl() ?? DEFAULT_REGISTRY_URL;
   const baseUrl = effective.publicBaseUrl ?? envPublicBaseUrl(envPort());
   const displayName = effective.displayName ?? envHostDisplayName();
-  const managementToken = effective.managementToken;
   const stored = hostSpec.read();
 
   if (envParticipate || stored?.slug !== undefined) {
@@ -83,7 +82,30 @@ export function maybeRegistryOptInOnStartup(hostSpec: KhoraHostSpecPort): void {
     });
   }
 
-  if (managementToken !== undefined) {
+  const registrationSecret = stored?.registrationSecret;
+  if (registrationSecret !== undefined && hostSpec.readEffective().managementToken === undefined) {
+    void (async () => {
+      try {
+        const remote = await fetchHostRegistrationStatus({
+          registryUrl,
+          slug,
+          publicBaseUrl: baseUrl,
+          ...(displayName !== undefined ? { displayName } : {}),
+          registrationSecret,
+        });
+        if (remote.managementToken !== undefined) {
+          hostSpec.storeSecrets({ managementToken: remote.managementToken });
+          hostSpec.clearRegistrationSecret();
+          logger.info({ slug, registryUrl }, "registry: stored pending management token");
+        }
+      } catch (err) {
+        logger.warn({ err, slug, registryUrl }, "registry: registration status poll failed");
+      }
+    })();
+  }
+
+  const effectiveToken = hostSpec.readEffective().managementToken;
+  if (effectiveToken !== undefined) {
     void (async () => {
       try {
         await syncHostRegistryOnStartup({
@@ -91,7 +113,7 @@ export function maybeRegistryOptInOnStartup(hostSpec: KhoraHostSpecPort): void {
           slug,
           publicBaseUrl: baseUrl,
           ...(displayName !== undefined ? { displayName } : {}),
-          managementToken,
+          managementToken: effectiveToken,
         });
         logger.info({ slug, registryUrl }, "registry: synced trusted origins");
       } catch (err) {

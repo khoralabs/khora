@@ -20,6 +20,7 @@ export function hostRegistryJson(
   return {
     registryParticipationEnabled: state.participationEnabled,
     trustedOrigins: state.origins,
+    pendingOriginRequests: state.pendingOriginRequests,
     trustedOriginQuota: state.quota,
   };
 }
@@ -48,7 +49,9 @@ export function hostToFullJson(host: KhoraHost, db: Database): Record<string, un
     trustedOrigins: state?.origins ?? [],
     trustedOriginQuota: state?.quota ?? {
       used: 0,
+      pending: 0,
       included: host.includedTrustedOrigins,
     },
+    pendingOriginRequests: state?.pendingOriginRequests ?? [],
   };
 }

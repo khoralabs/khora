@@ -1,24 +1,53 @@
 import type { RegistryHostSummaryItem } from "@khoralabs/users";
 import { useUsersStats } from "@khoralabs/users-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+type OriginRequest = {
+  id: string;
+  origin: string;
+  status: string;
+  requestedAtMs: number;
+};
+
 export function HostRegistryRow({ host }: { host: RegistryHostSummaryItem }) {
   const { refetchSummary } = useUsersStats();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [origins, setOrigins] = useState<string[]>(host.trustedOrigins);
-  const [newOrigin, setNewOrigin] = useState("");
   const [participationEnabled, setParticipationEnabled] = useState(
     host.registryParticipationEnabled,
   );
+  const [quotaIncluded, setQuotaIncluded] = useState(host.trustedOriginQuota.included);
+  const [pendingRequests, setPendingRequests] = useState<OriginRequest[]>([]);
+  const [loadingRequests, setLoadingRequests] = useState(true);
   const active = host.status === "active";
   const participationId = `host-registry-participation-${host.id}`;
 
-  async function saveRegistry(nextOrigins: string[], nextParticipation: boolean): Promise<void> {
+  useEffect(() => {
+    void (async () => {
+      setLoadingRequests(true);
+      try {
+        const res = await fetch(`/admin/api/hosts/${host.id}/origin-requests`);
+        const json = (await res.json().catch(() => ({}))) as {
+          pending?: OriginRequest[];
+          error?: string;
+        };
+        if (res.ok && Array.isArray(json.pending)) {
+          setPendingRequests(json.pending);
+        }
+      } finally {
+        setLoadingRequests(false);
+      }
+    })();
+  }, [host.id]);
+
+  async function saveRegistrySettings(
+    nextParticipation: boolean,
+    nextQuota: number,
+  ): Promise<void> {
     setError(null);
     setSaving(true);
     try {
@@ -27,7 +56,7 @@ export function HostRegistryRow({ host }: { host: RegistryHostSummaryItem }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           registryParticipationEnabled: nextParticipation,
-          origins: nextOrigins,
+          includedTrustedOrigins: nextQuota,
         }),
       });
       if (!res.ok) {
@@ -42,82 +71,136 @@ export function HostRegistryRow({ host }: { host: RegistryHostSummaryItem }) {
     }
   }
 
+  async function reviewRequest(requestId: string, action: "approve" | "reject"): Promise<void> {
+    setError(null);
+    setSaving(true);
+    try {
+      const res = await fetch(
+        `/admin/api/hosts/${host.id}/origin-requests/${requestId}/${action}`,
+        { method: "POST" },
+      );
+      if (!res.ok) {
+        const json = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(json.error ?? `${action} failed (${res.status})`);
+      }
+      const listRes = await fetch(`/admin/api/hosts/${host.id}/origin-requests`);
+      const listJson = (await listRes.json().catch(() => ({}))) as { pending?: OriginRequest[] };
+      if (listRes.ok && Array.isArray(listJson.pending)) {
+        setPendingRequests(listJson.pending);
+      }
+      await refetchSummary();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Review failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
-    <div className="space-y-3 text-sm" data-slot="host-registry-row">
+    <div className="space-y-4 text-sm" data-slot="host-registry-row">
       <p className="text-muted-foreground">
-        Quota: {host.trustedOriginQuota.used} / {host.trustedOriginQuota.included} trusted origins
+        Quota: {host.trustedOriginQuota.used} approved, {host.trustedOriginQuota.pending} pending /{" "}
+        {host.trustedOriginQuota.included} included
       </p>
       {error !== null ? (
         <p className="text-destructive" data-slot="host-registry-error">
           {error}
         </p>
       ) : null}
-      <div className="flex items-center gap-2">
-        <Checkbox
-          id={participationId}
-          checked={participationEnabled}
-          disabled={!active || saving}
-          onCheckedChange={async (checked: boolean | "indeterminate") => {
-            const next = checked === true;
-            setParticipationEnabled(next);
-            await saveRegistry(origins, next);
-          }}
-        />
-        <Label htmlFor={participationId} className="font-normal">
-          Registry participation (CORS / auth)
-          {!active ? <span className="text-muted-foreground"> (activate host first)</span> : null}
-        </Label>
-      </div>
+
       <div className="space-y-2">
-        <Label className="text-xs text-muted-foreground">Trusted origins</Label>
-        <ul className="space-y-1">
-          {origins.map((origin) => (
-            <li key={origin} className="flex items-center gap-2 font-mono">
-              <span className="min-w-0 flex-1 truncate">{origin}</span>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                disabled={saving}
-                onClick={async () => {
-                  const next = origins.filter((item) => item !== origin);
-                  setOrigins(next);
-                  await saveRegistry(next, participationEnabled);
-                }}
+        <Label className="text-xs text-muted-foreground">Approved trusted origins</Label>
+        {host.trustedOrigins.length === 0 ? (
+          <p className="text-muted-foreground">No approved origins yet.</p>
+        ) : (
+          <ul className="space-y-1 font-mono">
+            {host.trustedOrigins.map((origin) => (
+              <li key={origin}>{origin}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-xs text-muted-foreground">Pending origin requests</Label>
+        {loadingRequests ? (
+          <p className="text-muted-foreground">Loading requests…</p>
+        ) : pendingRequests.length === 0 ? (
+          <p className="text-muted-foreground">No pending origin requests.</p>
+        ) : (
+          <ul className="space-y-2">
+            {pendingRequests.map((request) => (
+              <li
+                key={request.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2"
               >
-                Remove
-              </Button>
-            </li>
-          ))}
-        </ul>
+                <span className="min-w-0 flex-1 truncate font-mono">{request.origin}</span>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={saving}
+                    onClick={() => void reviewRequest(request.id, "approve")}
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={saving}
+                    onClick={() => void reviewRequest(request.id, "reject")}
+                  >
+                    Reject
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="space-y-3 rounded-md border p-3">
+        <p className="font-medium">Operator controls</p>
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id={participationId}
+            checked={participationEnabled}
+            disabled={!active || saving}
+            onCheckedChange={async (checked: boolean | "indeterminate") => {
+              const next = checked === true;
+              setParticipationEnabled(next);
+              await saveRegistrySettings(next, quotaIncluded);
+            }}
+          />
+          <Label htmlFor={participationId} className="font-normal">
+            Registry participation (CORS / auth)
+            {!active ? <span className="text-muted-foreground"> (activate host first)</span> : null}
+          </Label>
+        </div>
         <div className="flex flex-wrap items-end gap-2">
-          <div className="min-w-0 flex-1 space-y-1">
+          <div className="space-y-1">
+            <Label htmlFor={`${participationId}-quota`} className="text-xs text-muted-foreground">
+              Origin quota
+            </Label>
             <Input
-              type="text"
-              className="font-mono"
-              placeholder="https://your-app.example.com"
-              value={newOrigin}
+              id={`${participationId}-quota`}
+              type="number"
+              min={0}
+              className="w-24"
+              value={quotaIncluded}
               disabled={saving}
-              onChange={(e) => setNewOrigin(e.target.value)}
+              onChange={(e) => setQuotaIncluded(Number.parseInt(e.target.value, 10) || 0)}
             />
           </div>
           <Button
             type="button"
             size="sm"
             variant="outline"
-            disabled={saving || newOrigin.trim().length === 0}
-            onClick={async () => {
-              const trimmed = newOrigin.trim();
-              if (trimmed.length === 0 || origins.includes(trimmed)) {
-                return;
-              }
-              const next = [...origins, trimmed];
-              setOrigins(next);
-              setNewOrigin("");
-              await saveRegistry(next, participationEnabled);
-            }}
+            disabled={saving}
+            onClick={() => void saveRegistrySettings(participationEnabled, quotaIncluded)}
           >
-            Add origin
+            Save quota
           </Button>
         </div>
       </div>

@@ -35,7 +35,9 @@ import {
   handleAdminRegistryClaimPost,
   handleAdminRegistryConfigPut,
   handleAdminRegistryGet,
-  handleAdminRegistryPut,
+  handleAdminRegistryOriginDelete,
+  handleAdminRegistryOriginRequestDelete,
+  handleAdminRegistryOriginRequestPost,
   handleAdminRegistryRegisterPost,
 } from "./registry-admin";
 import { handleListRelationships } from "./relationships";
@@ -131,8 +133,19 @@ export async function route(
     return handleAdminRegistryClaimPost(req, deps);
   }
 
-  if (req.method === "PUT" && url.pathname === "/admin/api/registry") {
-    return handleAdminRegistryPut(req, deps);
+  if (req.method === "POST" && url.pathname === "/admin/api/registry/origin-requests") {
+    return handleAdminRegistryOriginRequestPost(req, deps);
+  }
+
+  if (req.method === "DELETE" && url.pathname.startsWith("/admin/api/registry/origin-requests/")) {
+    const requestId = url.pathname.slice("/admin/api/registry/origin-requests/".length);
+    if (requestId.length > 0) {
+      return handleAdminRegistryOriginRequestDelete(req, deps, requestId);
+    }
+  }
+
+  if (req.method === "DELETE" && url.pathname === "/admin/api/registry/origins") {
+    return handleAdminRegistryOriginDelete(req, deps);
   }
 
   const ip = clientIpFromRequest(req);

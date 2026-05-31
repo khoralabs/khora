@@ -56,6 +56,18 @@ CREATE TABLE IF NOT EXISTS host_trusted_origins (
 CREATE INDEX IF NOT EXISTS idx_host_trusted_origins_host_id
   ON host_trusted_origins (host_id);
 
+CREATE TABLE IF NOT EXISTS host_trusted_origin_requests (
+  id TEXT PRIMARY KEY NOT NULL,
+  host_id TEXT NOT NULL REFERENCES khora_hosts(id) ON DELETE CASCADE,
+  origin TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  requested_at_ms INTEGER NOT NULL,
+  reviewed_at_ms INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS idx_host_trusted_origin_requests_host_status
+  ON host_trusted_origin_requests (host_id, status);
+
 CREATE TABLE IF NOT EXISTS memberships (
   id TEXT PRIMARY KEY NOT NULL,
   account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,

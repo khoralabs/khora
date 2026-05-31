@@ -43,6 +43,17 @@ export type HostTrustedOrigin = {
   createdAtMs: number;
 };
 
+export type HostTrustedOriginRequestStatus = "pending" | "approved" | "rejected";
+
+export type HostTrustedOriginRequest = {
+  id: string;
+  hostId: string;
+  origin: string;
+  status: HostTrustedOriginRequestStatus;
+  requestedAtMs: number;
+  reviewedAtMs: number | null;
+};
+
 export type AccessTokenRequest = {
   id: string;
   email: string;
@@ -137,6 +148,7 @@ export type KhoraHostRow = SqlRow<KhoraHostSqlFields> & {
   pending_management_token: string | null;
 };
 export type HostTrustedOriginRow = SqlRow<HostTrustedOrigin>;
+export type HostTrustedOriginRequestRow = SqlRow<HostTrustedOriginRequest>;
 export type AccessTokenRequestRow = SqlRow<AccessTokenRequest>;
 export type MarketingConsentRow = SqlRow<MarketingConsent>;
 export type MembershipRow = SqlRow<Membership>;
@@ -173,5 +185,20 @@ export const HOST_TRUSTED_ORIGIN_SQL_COLUMNS = {
 } as const satisfies { [K in keyof HostTrustedOrigin]: SnakeCaseKey<K & string> };
 
 export const HOST_TRUSTED_ORIGIN_SELECT = sqlSelectColumns(HOST_TRUSTED_ORIGIN_SQL_COLUMNS);
+
+export const HOST_TRUSTED_ORIGIN_REQUEST_SQL_COLUMNS = {
+  id: "id",
+  hostId: "host_id",
+  origin: "origin",
+  status: "status",
+  requestedAtMs: "requested_at_ms",
+  reviewedAtMs: "reviewed_at_ms",
+} as const satisfies {
+  [K in keyof HostTrustedOriginRequest]: SnakeCaseKey<K & string>;
+};
+
+export const HOST_TRUSTED_ORIGIN_REQUEST_SELECT = sqlSelectColumns(
+  HOST_TRUSTED_ORIGIN_REQUEST_SQL_COLUMNS,
+);
 
 export const KHORA_HOST_SELECT = `${sqlSelectColumns(KHORA_HOST_SQL_COLUMNS)}, registration_requirements`;

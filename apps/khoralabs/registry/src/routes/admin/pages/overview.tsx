@@ -1,4 +1,5 @@
 import { UsersStats, useUsersStats } from "@khoralabs/users-react";
+import { useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { navigateAdmin } from "../use-pathname.ts";
 
@@ -27,7 +28,11 @@ function OverviewKpi({
 }
 
 function OverviewContent() {
-  const { summary, summaryLoading, summaryError } = useUsersStats();
+  const { summary, summaryLoading, summaryError, refetchSummary } = useUsersStats();
+
+  useEffect(() => {
+    void refetchSummary();
+  }, [refetchSummary]);
 
   if (summaryLoading) {
     return <p className="text-sm text-muted-foreground">Loading overview…</p>;
@@ -41,6 +46,8 @@ function OverviewContent() {
 
   const pendingCount = summary.hosts.items.filter((host) => host.status === "pending").length;
   const firstPending = summary.hosts.items.find((host) => host.status === "pending");
+  const pendingOriginCount = summary.hosts.pendingOriginRequests;
+  const firstOriginHost = summary.hosts.items.find((host) => host.pendingOriginRequestCount > 0);
 
   return (
     <div className="space-y-6">
@@ -70,6 +77,33 @@ function OverviewContent() {
               }
             >
               Review pending hosts
+            </button>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {pendingOriginCount > 0 ? (
+        <Card className="border-secondary">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Pending trusted origin requests</CardTitle>
+            <CardDescription>
+              {pendingOriginCount} origin request{pendingOriginCount === 1 ? "" : "s"} awaiting
+              operator approval
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <button
+              type="button"
+              className="rounded-md border px-3 py-1.5 text-sm hover:bg-accent"
+              onClick={() =>
+                navigateAdmin(
+                  firstOriginHost !== undefined
+                    ? `/admin/hosts/${firstOriginHost.slug}`
+                    : "/admin/hosts",
+                )
+              }
+            >
+              Review origin requests
             </button>
           </CardContent>
         </Card>

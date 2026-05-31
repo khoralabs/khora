@@ -15,14 +15,24 @@ export type HostRegistryRemoteState = {
   status: string;
   participationEnabled: boolean;
   origins: string[];
-  quota: { used: number; included: number };
+  pendingOriginRequests: HostTrustedOriginRequestRemote[];
+  quota: { used: number; pending: number; included: number };
   serverOrigin: string;
   trustBaseUrlOriginConfigured: boolean;
 };
 
+export type HostTrustedOriginRequestRemote = {
+  id: string;
+  hostId: string;
+  origin: string;
+  status: string;
+  requestedAtMs: number;
+  reviewedAtMs: number | null;
+};
+
 export type HostRegistryUpdateBody = {
-  participationEnabled?: boolean;
-  origins?: string[];
+  origin?: string;
+  requestId?: string;
 };
 
 export type HostRegistrationRemoteState = {
@@ -71,7 +81,29 @@ function mapRegistryResponse(
   json: Record<string, unknown>,
   config: RegistryConfigSource,
 ): HostRegistryRemoteState {
-  const quota = json.trustedOriginQuota as { used?: number; included?: number } | undefined;
+  const quota = json.trustedOriginQuota as
+    | { used?: number; pending?: number; included?: number }
+    | undefined;
+  const pendingRaw = json.pendingOriginRequests;
+  const pendingOriginRequests = Array.isArray(pendingRaw)
+    ? pendingRaw
+        .filter(
+          (item): item is Record<string, unknown> => typeof item === "object" && item !== null,
+        )
+        .map(
+          (item): HostTrustedOriginRequestRemote => ({
+            id: String(item.id ?? ""),
+            hostId: String(item.hostId ?? ""),
+            origin: String(item.origin ?? ""),
+            status: String(item.status ?? "pending"),
+            requestedAtMs: Number(item.requestedAtMs ?? 0),
+            reviewedAtMs:
+              item.reviewedAtMs === null || item.reviewedAtMs === undefined
+                ? null
+                : Number(item.reviewedAtMs),
+          }),
+        )
+    : [];
   return {
     slug: String(json.slug ?? config.slug ?? ""),
     status: String(json.status ?? "unknown"),
@@ -79,8 +111,10 @@ function mapRegistryResponse(
     origins: Array.isArray(json.trustedOrigins)
       ? json.trustedOrigins.filter((item): item is string => typeof item === "string")
       : [],
+    pendingOriginRequests,
     quota: {
       used: quota?.used ?? 0,
+      pending: quota?.pending ?? 0,
       included: quota?.included ?? 0,
     },
     serverOrigin: readServerPublicOrigin(config),
@@ -221,29 +255,45 @@ export async function fetchHostRegistryState(
   return mapRegistryResponse(json, config);
 }
 
-export async function updateHostRegistryState(
+export async function requestHostTrustedOriginRemote(
   config: RegistryConfigSource,
-  body: HostRegistryUpdateBody,
+  origin: string,
   fetchImpl: typeof fetch = fetch,
 ): Promise<HostRegistryRemoteState> {
   const slug = slugOrThrow(config);
   const token = managementTokenOrThrow(config);
-  const origins =
-    body.origins !== undefined ? mergeRegistryOrigins(config, body.origins) : undefined;
   const res = await fetchImpl(
-    `${config.registryUrl.replace(/\/$/, "")}/v1/hosts/${slug}/registry`,
+    `${config.registryUrl.replace(/\/$/, "")}/v1/hosts/${slug}/registry/origin-requests`,
     {
-      method: "PUT",
+      method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        ...(body.participationEnabled !== undefined
-          ? { participationEnabled: body.participationEnabled }
-          : {}),
-        ...(origins !== undefined ? { origins } : {}),
-      }),
+      body: JSON.stringify({ origin }),
+    },
+  );
+  if (!res.ok) {
+    const json = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(
+      typeof json.error === "string" ? json.error : `Origin request failed (${res.status})`,
+    );
+  }
+  return fetchHostRegistryState(config, fetchImpl);
+}
+
+export async function cancelHostTrustedOriginRequestRemote(
+  config: RegistryConfigSource,
+  requestId: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<HostRegistryRemoteState> {
+  const slug = slugOrThrow(config);
+  const token = managementTokenOrThrow(config);
+  const res = await fetchImpl(
+    `${config.registryUrl.replace(/\/$/, "")}/v1/hosts/${slug}/registry/origin-requests/${encodeURIComponent(requestId)}`,
+    {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
     },
   );
   const json = (await res.json().catch(() => ({}))) as Record<string, unknown> & {
@@ -251,7 +301,36 @@ export async function updateHostRegistryState(
   };
   if (!res.ok) {
     throw new Error(
-      typeof json.error === "string" ? json.error : `Registry update failed (${res.status})`,
+      typeof json.error === "string" ? json.error : `Cancel origin request failed (${res.status})`,
+    );
+  }
+  return mapRegistryResponse(json, config);
+}
+
+export async function removeHostTrustedOriginRemote(
+  config: RegistryConfigSource,
+  origin: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<HostRegistryRemoteState> {
+  const slug = slugOrThrow(config);
+  const token = managementTokenOrThrow(config);
+  const res = await fetchImpl(
+    `${config.registryUrl.replace(/\/$/, "")}/v1/hosts/${slug}/registry/origins`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ origin }),
+    },
+  );
+  const json = (await res.json().catch(() => ({}))) as Record<string, unknown> & {
+    error?: string;
+  };
+  if (!res.ok) {
+    throw new Error(
+      typeof json.error === "string" ? json.error : `Remove origin failed (${res.status})`,
     );
   }
   return mapRegistryResponse(json, config);
@@ -265,12 +344,13 @@ export async function syncHostRegistryOnStartup(
     return;
   }
   const state = await fetchHostRegistryState(config, fetchImpl);
-  const merged = mergeRegistryOrigins(config, state.origins);
-  const unchanged =
-    merged.length === state.origins.length &&
-    merged.every((origin) => state.origins.includes(origin));
-  if (unchanged) {
+  const serverOrigin = readServerPublicOrigin(config);
+  const approved = state.origins.includes(serverOrigin);
+  const pending = state.pendingOriginRequests.some(
+    (request) => request.origin === serverOrigin && request.status === "pending",
+  );
+  if (approved || pending) {
     return;
   }
-  await updateHostRegistryState(config, { origins: state.origins }, fetchImpl);
+  await requestHostTrustedOriginRemote(config, serverOrigin, fetchImpl);
 }

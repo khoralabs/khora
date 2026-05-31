@@ -5,6 +5,7 @@ import {
   getUsersDatabase,
   registerKhoraHost,
   replaceHostTrustedOrigins,
+  requestHostTrustedOrigin,
   resetUsersDatabase,
   setHostRegistryParticipation,
 } from "@khoralabs/users";
@@ -65,5 +66,17 @@ describe("readRegistryTrustedOrigins", () => {
       string
     >;
     expect(denied["Access-Control-Allow-Origin"]).toBeUndefined();
+  });
+
+  test("pending origin requests are excluded from trusted origins until approved", () => {
+    const db = getUsersDatabase();
+    const { host } = activateKhoraHost(
+      db,
+      registerKhoraHost(db, { slug: "pending-cors", baseUrl: "https://k-0.example.com" }).host.id,
+    );
+    requestHostTrustedOrigin(db, host.id, "https://pending.example.com");
+    setHostRegistryParticipation(db, host.id, true);
+    const trusted = readRegistryTrustedOrigins(db);
+    expect(trusted).not.toContain("https://pending.example.com");
   });
 });

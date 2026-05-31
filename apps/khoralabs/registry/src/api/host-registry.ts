@@ -1,13 +1,14 @@
 import {
+  cancelHostTrustedOriginRequest,
   InvalidTrustedOriginError,
   OriginQuotaExceededError,
   readHostRegistryState,
+  removeHostTrustedOrigin,
+  requestHostTrustedOrigin,
   TrustedOriginConflictError,
-  updateHostRegistrySettings,
   verifyHostManagementToken,
 } from "@khoralabs/users";
-import { getRegistryDatabase, reloadRegistryAuth } from "@khoralabs/users-auth";
-import { readRegistryTrustedOrigins } from "../trusted-origins";
+import { getRegistryDatabase } from "@khoralabs/users-auth";
 import { hostRegistryJson, hostToFullJson } from "./host-json";
 
 function readBearerToken(req: Request): string | null {
@@ -20,27 +21,10 @@ function readBearerToken(req: Request): string | null {
   return token.length > 0 ? token : null;
 }
 
-function reloadAuthTrustedOrigins(): void {
-  reloadRegistryAuth({
-    resolveTrustedOrigins: () => readRegistryTrustedOrigins(getRegistryDatabase()),
-  });
-}
-
-type HostRegistryPutBody = {
-  participationEnabled?: boolean;
-  origins?: string[];
-};
-
-export function handleHostRegistryGet(req: Request, slug: string): Response {
-  const token = readBearerToken(req);
-  if (token === null) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const db = getRegistryDatabase();
-  const host = verifyHostManagementToken(db, slug, token);
-  if (host === null) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+function registryStateResponse(
+  host: NonNullable<ReturnType<typeof verifyHostManagementToken>>,
+  db: ReturnType<typeof getRegistryDatabase>,
+): Response {
   const state = readHostRegistryState(db, host.id);
   if (state === null) {
     return Response.json({ error: "Host not found" }, { status: 404 });
@@ -52,7 +36,36 @@ export function handleHostRegistryGet(req: Request, slug: string): Response {
   });
 }
 
-export async function handleHostRegistryPut(req: Request, slug: string): Promise<Response> {
+function mapOriginRequestError(err: unknown): { message: string; status: number } {
+  if (
+    err instanceof InvalidTrustedOriginError ||
+    err instanceof OriginQuotaExceededError ||
+    err instanceof TrustedOriginConflictError
+  ) {
+    return { message: err.message, status: 400 };
+  }
+  const msg = err instanceof Error ? err.message : "origin request failed";
+  const status = msg.includes("not found") ? 404 : 400;
+  return { message: msg, status };
+}
+
+export function handleHostRegistryGet(req: Request, slug: string): Response {
+  const token = readBearerToken(req);
+  if (token === null) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const db = getRegistryDatabase();
+  const host = verifyHostManagementToken(db, slug, token);
+  if (host === null) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  return registryStateResponse(host, db);
+}
+
+export async function handleHostRegistryOriginRequestPost(
+  req: Request,
+  slug: string,
+): Promise<Response> {
   const token = readBearerToken(req);
   if (token === null) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -63,45 +76,81 @@ export async function handleHostRegistryPut(req: Request, slug: string): Promise
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: HostRegistryPutBody;
+  let body: { origin?: string };
   try {
-    body = (await req.json()) as HostRegistryPutBody;
+    body = (await req.json()) as { origin?: string };
   } catch {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
-
-  if (body.participationEnabled === undefined && body.origins === undefined) {
-    return Response.json({ error: "participationEnabled or origins required" }, { status: 400 });
+  const origin = body.origin?.trim() ?? "";
+  if (origin.length === 0) {
+    return Response.json({ error: "origin is required" }, { status: 400 });
   }
 
   try {
-    const updated = updateHostRegistrySettings(db, host.id, {
-      ...(body.participationEnabled !== undefined
-        ? { registryParticipationEnabled: body.participationEnabled }
-        : {}),
-      ...(body.origins !== undefined ? { origins: body.origins } : {}),
-    });
-    reloadAuthTrustedOrigins();
-    const state = readHostRegistryState(db, updated.id);
-    if (state === null) {
-      return Response.json({ error: "Host not found" }, { status: 404 });
-    }
-    return Response.json({
-      slug: updated.slug,
-      status: updated.status,
-      ...hostRegistryJson(updated, state),
-    });
+    const request = requestHostTrustedOrigin(db, host.id, origin);
+    return Response.json({ ok: true, request }, { status: 201 });
   } catch (err: unknown) {
-    if (
-      err instanceof InvalidTrustedOriginError ||
-      err instanceof OriginQuotaExceededError ||
-      err instanceof TrustedOriginConflictError
-    ) {
-      return Response.json({ error: err.message }, { status: 400 });
-    }
-    const msg = err instanceof Error ? err.message : "registry update failed";
-    const status = msg.includes("not found") ? 404 : 400;
-    return Response.json({ error: msg }, { status });
+    const mapped = mapOriginRequestError(err);
+    return Response.json({ error: mapped.message }, { status: mapped.status });
+  }
+}
+
+export function handleHostRegistryOriginRequestDelete(
+  req: Request,
+  slug: string,
+  requestId: string,
+): Response {
+  const token = readBearerToken(req);
+  if (token === null) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const db = getRegistryDatabase();
+  const host = verifyHostManagementToken(db, slug, token);
+  if (host === null) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    cancelHostTrustedOriginRequest(db, host.id, requestId.trim());
+    return registryStateResponse(host, db);
+  } catch (err: unknown) {
+    const mapped = mapOriginRequestError(err);
+    return Response.json({ error: mapped.message }, { status: mapped.status });
+  }
+}
+
+export async function handleHostRegistryOriginDelete(
+  req: Request,
+  slug: string,
+): Promise<Response> {
+  const token = readBearerToken(req);
+  if (token === null) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const db = getRegistryDatabase();
+  const host = verifyHostManagementToken(db, slug, token);
+  if (host === null) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let body: { origin?: string };
+  try {
+    body = (await req.json()) as { origin?: string };
+  } catch {
+    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+  const origin = body.origin?.trim() ?? "";
+  if (origin.length === 0) {
+    return Response.json({ error: "origin is required" }, { status: 400 });
+  }
+
+  try {
+    removeHostTrustedOrigin(db, host.id, origin);
+    return registryStateResponse(host, db);
+  } catch (err: unknown) {
+    const mapped = mapOriginRequestError(err);
+    return Response.json({ error: mapped.message }, { status: mapped.status });
   }
 }
 

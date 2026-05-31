@@ -1,8 +1,12 @@
 import type { ConsoleAuth } from "@khoralabs/khora-console";
 import {
   activateKhoraHost,
+  approveHostTrustedOriginRequest,
+  findHostById,
   InvalidTrustedOriginError,
+  listHostTrustedOriginRequests,
   OriginQuotaExceededError,
+  rejectHostTrustedOriginRequest,
   TrustedOriginConflictError,
   updateHostRegistrySettings,
 } from "@khoralabs/users";
@@ -14,7 +18,6 @@ import { withConsoleAuth } from "./console-guard";
 
 type HostRegistryBody = {
   registryParticipationEnabled?: boolean;
-  origins?: string[];
   includedTrustedOrigins?: number;
 };
 
@@ -72,11 +75,10 @@ export function handleAdminHostRegistry(
 
     if (
       body.registryParticipationEnabled === undefined &&
-      body.origins === undefined &&
       body.includedTrustedOrigins === undefined
     ) {
       return Response.json(
-        { error: "registryParticipationEnabled, origins, or includedTrustedOrigins required" },
+        { error: "registryParticipationEnabled or includedTrustedOrigins required" },
         { status: 400 },
       );
     }
@@ -87,7 +89,6 @@ export function handleAdminHostRegistry(
         ...(body.registryParticipationEnabled !== undefined
           ? { registryParticipationEnabled: body.registryParticipationEnabled }
           : {}),
-        ...(body.origins !== undefined ? { origins: body.origins } : {}),
         ...(body.includedTrustedOrigins !== undefined
           ? { includedTrustedOrigins: body.includedTrustedOrigins }
           : {}),
@@ -103,8 +104,96 @@ export function handleAdminHostRegistry(
         return Response.json({ error: err.message }, { status: 400 });
       }
       const msg = err instanceof Error ? err.message : "registry update failed";
-      const status = msg.includes("not found") ? 404 : 400;
-      return Response.json({ error: msg }, { status });
+      const httpStatus = msg.includes("not found") ? 404 : 400;
+      return Response.json({ error: msg }, { status: httpStatus });
+    }
+  });
+}
+
+export function handleAdminHostOriginRequests(
+  req: Request,
+  consoleAuth: ConsoleAuth | null,
+  hostId: string,
+): Promise<Response> {
+  return withConsoleAuth(req, consoleAuth, () => {
+    const id = hostId.trim();
+    if (id.length === 0) {
+      return Response.json({ error: "host id required" }, { status: 400 });
+    }
+    const db = getRegistryDatabase();
+    if (findHostById(db, id) === null) {
+      return Response.json({ error: "host not found" }, { status: 404 });
+    }
+    const pending = listHostTrustedOriginRequests(db, id, "pending");
+    const rejected = listHostTrustedOriginRequests(db, id, "rejected").slice(0, 20);
+    return Response.json({ pending, rejected });
+  });
+}
+
+function mapOriginApprovalError(err: unknown): { message: string; status: number } {
+  if (
+    err instanceof InvalidTrustedOriginError ||
+    err instanceof OriginQuotaExceededError ||
+    err instanceof TrustedOriginConflictError
+  ) {
+    return { message: err.message, status: 400 };
+  }
+  const msg = err instanceof Error ? err.message : "origin request update failed";
+  const status = msg.includes("not found") ? 404 : 400;
+  return { message: msg, status };
+}
+
+export function handleAdminHostOriginRequestApprove(
+  req: Request,
+  consoleAuth: ConsoleAuth | null,
+  hostId: string,
+  requestId: string,
+): Promise<Response> {
+  return withConsoleAuth(req, consoleAuth, () => {
+    const id = hostId.trim();
+    const rid = requestId.trim();
+    if (id.length === 0 || rid.length === 0) {
+      return Response.json({ error: "host id and request id required" }, { status: 400 });
+    }
+    const db = getRegistryDatabase();
+    const request = listHostTrustedOriginRequests(db, id).find((item) => item.id === rid);
+    if (request === undefined || request.hostId !== id) {
+      return Response.json({ error: "origin request not found" }, { status: 404 });
+    }
+    try {
+      const { host } = approveHostTrustedOriginRequest(db, rid);
+      reloadAuthTrustedOrigins();
+      return Response.json({ host: hostToFullJson(host, db) });
+    } catch (err: unknown) {
+      const mapped = mapOriginApprovalError(err);
+      return Response.json({ error: mapped.message }, { status: mapped.status });
+    }
+  });
+}
+
+export function handleAdminHostOriginRequestReject(
+  req: Request,
+  consoleAuth: ConsoleAuth | null,
+  hostId: string,
+  requestId: string,
+): Promise<Response> {
+  return withConsoleAuth(req, consoleAuth, () => {
+    const id = hostId.trim();
+    const rid = requestId.trim();
+    if (id.length === 0 || rid.length === 0) {
+      return Response.json({ error: "host id and request id required" }, { status: 400 });
+    }
+    const db = getRegistryDatabase();
+    const request = listHostTrustedOriginRequests(db, id).find((item) => item.id === rid);
+    if (request === undefined || request.hostId !== id) {
+      return Response.json({ error: "origin request not found" }, { status: 404 });
+    }
+    try {
+      rejectHostTrustedOriginRequest(db, rid);
+      return Response.json({ ok: true });
+    } catch (err: unknown) {
+      const mapped = mapOriginApprovalError(err);
+      return Response.json({ error: mapped.message }, { status: mapped.status });
     }
   });
 }

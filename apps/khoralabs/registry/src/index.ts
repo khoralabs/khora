@@ -9,7 +9,13 @@ import {
 import { serve } from "bun";
 import { handleAccessTokenRequest } from "./api/access-token";
 import { routeConsoleAuth } from "./api/admin/console-guard";
-import { handleAdminHostActivate, handleAdminHostRegistry } from "./api/admin/hosts";
+import {
+  handleAdminHostActivate,
+  handleAdminHostOriginRequestApprove,
+  handleAdminHostOriginRequestReject,
+  handleAdminHostOriginRequests,
+  handleAdminHostRegistry,
+} from "./api/admin/hosts";
 import {
   handleInternalAdminStatsSummary,
   handleInternalLookupAccount,
@@ -19,7 +25,12 @@ import { handleLookupAccount, handleLookupEmail } from "./api/admin/lookup";
 import { handleAdminStatsSummary } from "./api/admin/stats";
 import { handleDeviceApprove, handleDeviceAuthorize, handleDeviceToken } from "./api/device";
 import { handleHostRegistrationClaim, handleHostRegistrationGet } from "./api/host-registration";
-import { handleHostRegistryGet, handleHostRegistryPut } from "./api/host-registry";
+import {
+  handleHostRegistryGet,
+  handleHostRegistryOriginDelete,
+  handleHostRegistryOriginRequestDelete,
+  handleHostRegistryOriginRequestPost,
+} from "./api/host-registry";
 import {
   handleHostGet,
   handleHostRegister,
@@ -127,6 +138,51 @@ const server = serve({
 
     if (
       path.startsWith("/admin/api/hosts/") &&
+      path.endsWith("/origin-requests") &&
+      req.method === "GET"
+    ) {
+      const id = path.slice("/admin/api/hosts/".length, -"/origin-requests".length);
+      return withCors(req, await handleAdminHostOriginRequests(req, consoleAuth, id));
+    }
+
+    if (
+      path.startsWith("/admin/api/hosts/") &&
+      path.includes("/origin-requests/") &&
+      path.endsWith("/approve") &&
+      req.method === "POST"
+    ) {
+      const middle = path.slice("/admin/api/hosts/".length, -"/approve".length);
+      const slash = middle.lastIndexOf("/origin-requests/");
+      if (slash > 0) {
+        const id = middle.slice(0, slash);
+        const requestId = middle.slice(slash + "/origin-requests/".length);
+        return withCors(
+          req,
+          await handleAdminHostOriginRequestApprove(req, consoleAuth, id, requestId),
+        );
+      }
+    }
+
+    if (
+      path.startsWith("/admin/api/hosts/") &&
+      path.includes("/origin-requests/") &&
+      path.endsWith("/reject") &&
+      req.method === "POST"
+    ) {
+      const middle = path.slice("/admin/api/hosts/".length, -"/reject".length);
+      const slash = middle.lastIndexOf("/origin-requests/");
+      if (slash > 0) {
+        const id = middle.slice(0, slash);
+        const requestId = middle.slice(slash + "/origin-requests/".length);
+        return withCors(
+          req,
+          await handleAdminHostOriginRequestReject(req, consoleAuth, id, requestId),
+        );
+      }
+    }
+
+    if (
+      path.startsWith("/admin/api/hosts/") &&
       path.endsWith("/registry") &&
       req.method === "PATCH"
     ) {
@@ -134,15 +190,32 @@ const server = serve({
       return withCors(req, await handleAdminHostRegistry(req, consoleAuth, id));
     }
 
+    if (path.startsWith("/v1/hosts/") && path.includes("/registry/")) {
+      const registryPrefix = "/v1/hosts/";
+      const registrySuffix = path.slice(registryPrefix.length);
+      const slashIdx = registrySuffix.indexOf("/registry/");
+      if (slashIdx > 0) {
+        const slug = registrySuffix.slice(0, slashIdx);
+        const subPath = registrySuffix.slice(slashIdx + "/registry".length);
+        if (subPath === "/origin-requests" && req.method === "POST") {
+          return withCors(req, await handleHostRegistryOriginRequestPost(req, slug));
+        }
+        if (subPath.startsWith("/origin-requests/") && req.method === "DELETE") {
+          const requestId = subPath.slice("/origin-requests/".length);
+          if (requestId.length > 0) {
+            return withCors(req, handleHostRegistryOriginRequestDelete(req, slug, requestId));
+          }
+        }
+        if (subPath === "/origins" && req.method === "DELETE") {
+          return withCors(req, await handleHostRegistryOriginDelete(req, slug));
+        }
+      }
+    }
+
     if (path.startsWith("/v1/hosts/") && path.endsWith("/registry")) {
       const slug = path.slice("/v1/hosts/".length, -"/registry".length);
-      if (slug.length > 0) {
-        if (req.method === "GET") {
-          return withCors(req, handleHostRegistryGet(req, slug));
-        }
-        if (req.method === "PUT") {
-          return withCors(req, await handleHostRegistryPut(req, slug));
-        }
+      if (slug.length > 0 && req.method === "GET") {
+        return withCors(req, handleHostRegistryGet(req, slug));
       }
     }
 

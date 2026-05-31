@@ -1,9 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { RegistrationRequirementState } from "../../registry-types";
+
+type OriginRequest = {
+  id: string;
+  origin: string;
+  status: string;
+  requestedAtMs: number;
+};
 
 type RegistryState = Record<string, unknown> & {
   configured?: boolean;
@@ -18,7 +24,8 @@ type RegistryState = Record<string, unknown> & {
   requirements?: RegistrationRequirementState[];
   participationEnabled?: boolean;
   origins?: string[];
-  quota?: { used: number; included: number };
+  pendingOriginRequests?: OriginRequest[];
+  quota?: { used: number; pending?: number; included: number };
   serverOrigin?: string;
   trustBaseUrlOriginConfigured?: boolean;
   hasManagementToken?: boolean;
@@ -63,9 +70,9 @@ export function HostRegistryCard() {
   const [slug, setSlug] = useState("");
   const [publicBaseUrl, setPublicBaseUrl] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [origins, setOrigins] = useState<string[]>([]);
+  const [approvedOrigins, setApprovedOrigins] = useState<string[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<OriginRequest[]>([]);
   const [newOrigin, setNewOrigin] = useState("");
-  const [participationEnabled, setParticipationEnabled] = useState(false);
 
   const loadRegistry = useCallback(async (): Promise<void> => {
     setError(null);
@@ -84,10 +91,21 @@ export function HostRegistryCard() {
     if (typeof json.publicBaseUrl === "string") setPublicBaseUrl(json.publicBaseUrl);
     if (typeof json.displayName === "string") setDisplayName(json.displayName);
     if (Array.isArray(json.origins)) {
-      setOrigins(json.origins.filter((item): item is string => typeof item === "string"));
+      setApprovedOrigins(json.origins.filter((item): item is string => typeof item === "string"));
     }
-    if (json.participationEnabled === true) setParticipationEnabled(true);
+    if (Array.isArray(json.pendingOriginRequests)) {
+      setPendingRequests(
+        json.pendingOriginRequests.filter(
+          (item): item is OriginRequest =>
+            typeof item === "object" &&
+            item !== null &&
+            typeof item.id === "string" &&
+            typeof item.origin === "string",
+        ),
+      );
+    }
     setLoading(false);
+    window.dispatchEvent(new CustomEvent("khora:registry-updated"));
   }, []);
 
   useEffect(() => {
@@ -150,25 +168,65 @@ export function HostRegistryCard() {
     }
   }
 
-  async function saveRegistry(nextOrigins: string[], nextParticipation: boolean): Promise<void> {
+  async function requestOrigin(origin: string): Promise<void> {
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch("/admin/api/registry", {
-        method: "PUT",
+      const res = await fetch("/admin/api/registry/origin-requests", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          participationEnabled: nextParticipation,
-          origins: nextOrigins,
-        }),
+        body: JSON.stringify({ origin }),
       });
       const json = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        throw new Error(json.error ?? `Update failed (${res.status})`);
+        throw new Error(json.error ?? `Origin request failed (${res.status})`);
       }
       await loadRegistry();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Update failed");
+      setError(err instanceof Error ? err.message : "Origin request failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function cancelOriginRequest(requestId: string): Promise<void> {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/admin/api/registry/origin-requests/${encodeURIComponent(requestId)}`,
+        {
+          method: "DELETE",
+        },
+      );
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        throw new Error(json.error ?? `Cancel failed (${res.status})`);
+      }
+      await loadRegistry();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Cancel failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function removeApprovedOrigin(origin: string): Promise<void> {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch("/admin/api/registry/origins", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ origin }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        throw new Error(json.error ?? `Remove failed (${res.status})`);
+      }
+      await loadRegistry();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Remove failed");
     } finally {
       setSaving(false);
     }
@@ -185,7 +243,7 @@ export function HostRegistryCard() {
           typeof item === "object" && item !== null && typeof item.id === "string",
       )
     : [];
-  const canManageOrigins = status === "active" && state.hasManagementToken === true;
+  const canRequestOrigins = status === "active" && state.hasManagementToken === true;
 
   return (
     <div className="space-y-6" data-slot="host-registry-card">
@@ -253,7 +311,7 @@ export function HostRegistryCard() {
         </div>
       </section>
 
-      {(status !== undefined || requirements.length > 0) && !canManageOrigins ? (
+      {(status !== undefined || requirements.length > 0) && !canRequestOrigins ? (
         <section className="space-y-3 rounded-lg border p-4">
           <div>
             <h2 className="text-sm font-medium">Registration</h2>
@@ -272,7 +330,8 @@ export function HostRegistryCard() {
             <p className="text-sm text-muted-foreground">{state.message}</p>
           ) : null}
           {requirements.length > 0 ? <RequirementList requirements={requirements} /> : null}
-          {state.hasRegistrationSecret === true && status !== "active" ? (
+          {(state.hasRegistrationSecret === true && status !== "active") ||
+          (status === "active" && state.hasManagementToken !== true) ? (
             <Button
               type="button"
               size="sm"
@@ -285,90 +344,103 @@ export function HostRegistryCard() {
         </section>
       ) : null}
 
-      {canManageOrigins ? (
+      {canRequestOrigins ? (
         <section className="space-y-3 rounded-lg border p-4">
           <div>
-            <h2 className="text-sm font-medium">Participation and trusted origins</h2>
+            <h2 className="text-sm font-medium">Trusted origins</h2>
             <p className="text-xs text-muted-foreground">
-              Browser origins allowed to call registry APIs for this host
+              Request browser origins for registry CORS/auth. A registry operator must approve each
+              request; participation is enabled by the operator after approval.
             </p>
           </div>
           {state.quota !== undefined ? (
             <p className="text-sm text-muted-foreground">
-              Quota: {state.quota.used} / {state.quota.included} trusted origins
+              Quota: {state.quota.used} approved, {state.quota.pending ?? 0} pending /{" "}
+              {state.quota.included} included
             </p>
           ) : null}
+          {state.participationEnabled === true ? (
+            <p className="text-sm text-muted-foreground">Registry participation is enabled.</p>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Registry participation is off until a registry operator enables it.
+            </p>
+          )}
           {state.trustBaseUrlOriginConfigured && state.serverOrigin !== undefined ? (
             <p className="text-sm text-muted-foreground">
-              Server origin included via config:{" "}
+              Server origin auto-request on startup:{" "}
               <span className="font-mono text-foreground">{state.serverOrigin}</span>
             </p>
           ) : null}
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="host-registry-participation"
-              checked={participationEnabled}
-              disabled={saving}
-              onCheckedChange={async (checked: boolean | "indeterminate") => {
-                const next = checked === true;
-                setParticipationEnabled(next);
-                await saveRegistry(origins, next);
-              }}
-            />
-            <Label htmlFor="host-registry-participation" className="font-normal">
-              Registry participation
-            </Label>
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Approved origins</Label>
+            {approvedOrigins.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No approved origins yet.</p>
+            ) : (
+              <ul className="space-y-1">
+                {approvedOrigins.map((origin) => (
+                  <li key={origin} className="flex items-center gap-2 font-mono text-sm">
+                    <span className="min-w-0 flex-1 truncate">{origin}</span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      disabled={saving}
+                      onClick={() => void removeApprovedOrigin(origin)}
+                    >
+                      Remove
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
           <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">Trusted origins</Label>
-            <ul className="space-y-1">
-              {origins.map((origin) => (
-                <li key={origin} className="flex items-center gap-2 font-mono text-sm">
-                  <span className="min-w-0 flex-1 truncate">{origin}</span>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    disabled={saving}
-                    onClick={async () => {
-                      const next = origins.filter((item) => item !== origin);
-                      setOrigins(next);
-                      await saveRegistry(next, participationEnabled);
-                    }}
-                  >
-                    Remove
-                  </Button>
-                </li>
-              ))}
-            </ul>
-            <div className="flex flex-wrap items-end gap-2">
-              <Input
-                type="text"
-                className="min-w-0 flex-1 font-mono"
-                placeholder="https://your-app.example.com"
-                value={newOrigin}
-                disabled={saving}
-                onChange={(e) => setNewOrigin(e.target.value)}
-              />
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={saving || newOrigin.trim().length === 0}
-                onClick={async () => {
-                  const trimmed = newOrigin.trim();
-                  if (trimmed.length === 0 || origins.includes(trimmed)) {
-                    return;
-                  }
-                  const next = [...origins, trimmed];
-                  setOrigins(next);
-                  setNewOrigin("");
-                  await saveRegistry(next, participationEnabled);
-                }}
-              >
-                Add origin
-              </Button>
-            </div>
+            <Label className="text-xs text-muted-foreground">Pending requests</Label>
+            {pendingRequests.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No pending origin requests.</p>
+            ) : (
+              <ul className="space-y-1">
+                {pendingRequests.map((request) => (
+                  <li key={request.id} className="flex items-center gap-2 font-mono text-sm">
+                    <span className="min-w-0 flex-1 truncate">{request.origin}</span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      disabled={saving}
+                      onClick={() => void cancelOriginRequest(request.id)}
+                    >
+                      Cancel
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className="flex flex-wrap items-end gap-2">
+            <Input
+              type="text"
+              className="min-w-0 flex-1 font-mono"
+              placeholder="https://your-app.example.com"
+              value={newOrigin}
+              disabled={saving}
+              onChange={(e) => setNewOrigin(e.target.value)}
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={saving || newOrigin.trim().length === 0}
+              onClick={() => {
+                const trimmed = newOrigin.trim();
+                if (trimmed.length === 0) return;
+                setNewOrigin("");
+                void requestOrigin(trimmed);
+              }}
+            >
+              Request origin
+            </Button>
           </div>
         </section>
       ) : null}

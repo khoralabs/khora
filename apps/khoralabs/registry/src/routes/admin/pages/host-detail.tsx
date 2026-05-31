@@ -85,7 +85,8 @@ export function HostDetailPage() {
         <CardHeader>
           <CardTitle>Registry participation</CardTitle>
           <CardDescription>
-            Trusted browser origins for CORS and auth when participation is enabled
+            Trusted browser origins for CORS and auth when participation is enabled. Hosts request
+            origins; operators approve them here.
           </CardDescription>
         </CardHeader>
         <CardContent>

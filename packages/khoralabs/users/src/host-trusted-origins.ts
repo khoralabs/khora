@@ -1,8 +1,14 @@
 import type { Database } from "bun:sqlite";
 import { verifyHostManagementToken as verifyHostManagementTokenId } from "./host-management-token";
 import { findHostById, listActiveHosts } from "./khora-hosts";
-import type { HostTrustedOrigin, HostTrustedOriginRow, KhoraHost } from "./types";
-import { HOST_TRUSTED_ORIGIN_SELECT } from "./types";
+import type {
+  HostTrustedOrigin,
+  HostTrustedOriginRequest,
+  HostTrustedOriginRequestRow,
+  HostTrustedOriginRow,
+  KhoraHost,
+} from "./types";
+import { HOST_TRUSTED_ORIGIN_REQUEST_SELECT, HOST_TRUSTED_ORIGIN_SELECT } from "./types";
 
 export function verifyHostManagementToken(
   db: Database,
@@ -81,6 +87,60 @@ export function countHostTrustedOrigins(db: Database, hostId: string): number {
     .prepare(`SELECT COUNT(*) AS n FROM host_trusted_origins WHERE host_id = ?`)
     .get(hostId) as { n: number };
   return row.n;
+}
+
+export function countPendingHostTrustedOriginRequests(db: Database, hostId: string): number {
+  const row = db
+    .prepare(
+      `SELECT COUNT(*) AS n FROM host_trusted_origin_requests WHERE host_id = ? AND status = 'pending'`,
+    )
+    .get(hostId) as { n: number };
+  return row.n;
+}
+
+export function countAllPendingHostTrustedOriginRequests(db: Database): number {
+  const row = db
+    .prepare(`SELECT COUNT(*) AS n FROM host_trusted_origin_requests WHERE status = 'pending'`)
+    .get() as { n: number };
+  return row.n;
+}
+
+function mapOriginRequest(row: HostTrustedOriginRequestRow): HostTrustedOriginRequest {
+  return {
+    id: row.id,
+    hostId: row.host_id,
+    origin: row.origin,
+    status: row.status as HostTrustedOriginRequest["status"],
+    requestedAtMs: row.requested_at_ms,
+    reviewedAtMs: row.reviewed_at_ms,
+  };
+}
+
+function findOriginRequestById(db: Database, requestId: string): HostTrustedOriginRequest | null {
+  const row = db
+    .prepare(
+      `SELECT ${HOST_TRUSTED_ORIGIN_REQUEST_SELECT} FROM host_trusted_origin_requests WHERE id = ? LIMIT 1`,
+    )
+    .get(requestId) as HostTrustedOriginRequestRow | null;
+  return row === null ? null : mapOriginRequest(row);
+}
+
+function assertOriginNotRegisteredElsewhere(db: Database, hostId: string, origin: string): void {
+  const approved = db
+    .prepare(`SELECT host_id FROM host_trusted_origins WHERE origin = ? LIMIT 1`)
+    .get(origin) as { host_id: string } | null;
+  if (approved !== null && approved.host_id !== hostId) {
+    throw new TrustedOriginConflictError(origin);
+  }
+  const pending = db
+    .prepare(
+      `SELECT host_id FROM host_trusted_origin_requests
+       WHERE origin = ? AND status = 'pending' LIMIT 1`,
+    )
+    .get(origin) as { host_id: string } | null;
+  if (pending !== null && pending.host_id !== hostId) {
+    throw new TrustedOriginConflictError(origin);
+  }
 }
 
 export function assertOriginQuota(host: KhoraHost, nextCount: number): void {
@@ -190,6 +250,144 @@ export function replaceHostTrustedOrigins(
   return updated;
 }
 
+export function listHostTrustedOriginRequests(
+  db: Database,
+  hostId: string,
+  status?: HostTrustedOriginRequest["status"],
+): HostTrustedOriginRequest[] {
+  const rows =
+    status === undefined
+      ? (db
+          .prepare(
+            `SELECT ${HOST_TRUSTED_ORIGIN_REQUEST_SELECT}
+             FROM host_trusted_origin_requests WHERE host_id = ?
+             ORDER BY requested_at_ms DESC`,
+          )
+          .all(hostId) as HostTrustedOriginRequestRow[])
+      : (db
+          .prepare(
+            `SELECT ${HOST_TRUSTED_ORIGIN_REQUEST_SELECT}
+             FROM host_trusted_origin_requests WHERE host_id = ? AND status = ?
+             ORDER BY requested_at_ms DESC`,
+          )
+          .all(hostId, status) as HostTrustedOriginRequestRow[]);
+  return rows.map(mapOriginRequest);
+}
+
+export function requestHostTrustedOrigin(
+  db: Database,
+  hostId: string,
+  rawOrigin: string,
+): HostTrustedOriginRequest {
+  const host = findHostById(db, hostId);
+  if (host === null) {
+    throw new Error("host not found");
+  }
+  if (host.status !== "active") {
+    throw new Error("only active hosts can request trusted origins");
+  }
+  const origin = normalizeTrustedOrigin(rawOrigin);
+  assertOriginNotRegisteredElsewhere(db, hostId, origin);
+
+  const existingApproved = db
+    .prepare(`SELECT id FROM host_trusted_origins WHERE host_id = ? AND origin = ? LIMIT 1`)
+    .get(hostId, origin);
+  if (existingApproved !== null && existingApproved !== undefined) {
+    throw new InvalidTrustedOriginError("origin is already approved");
+  }
+
+  const existingPending = db
+    .prepare(
+      `SELECT id FROM host_trusted_origin_requests
+       WHERE host_id = ? AND origin = ? AND status = 'pending' LIMIT 1`,
+    )
+    .get(hostId, origin);
+  if (existingPending !== null && existingPending !== undefined) {
+    throw new InvalidTrustedOriginError("origin request is already pending");
+  }
+
+  const nextCount =
+    countHostTrustedOrigins(db, hostId) + countPendingHostTrustedOriginRequests(db, hostId) + 1;
+  assertOriginQuota(host, nextCount);
+
+  const id = crypto.randomUUID();
+  const now = Date.now();
+  db.prepare(
+    `INSERT INTO host_trusted_origin_requests
+       (id, host_id, origin, status, requested_at_ms)
+     VALUES (?, ?, ?, 'pending', ?)`,
+  ).run(id, hostId, origin, now);
+  const created = findOriginRequestById(db, id);
+  if (created === null) {
+    throw new Error("origin request insert failed");
+  }
+  return created;
+}
+
+export function cancelHostTrustedOriginRequest(
+  db: Database,
+  hostId: string,
+  requestId: string,
+): void {
+  const request = findOriginRequestById(db, requestId);
+  if (request === null || request.hostId !== hostId) {
+    throw new Error("origin request not found");
+  }
+  if (request.status !== "pending") {
+    throw new Error("only pending origin requests can be cancelled");
+  }
+  db.prepare(`DELETE FROM host_trusted_origin_requests WHERE id = ?`).run(requestId);
+}
+
+export function approveHostTrustedOriginRequest(
+  db: Database,
+  requestId: string,
+): { host: KhoraHost; request: HostTrustedOriginRequest } {
+  const request = findOriginRequestById(db, requestId);
+  if (request === null) {
+    throw new Error("origin request not found");
+  }
+  if (request.status !== "pending") {
+    throw new Error("origin request is not pending");
+  }
+  const host = addHostTrustedOrigin(db, request.hostId, request.origin);
+  const now = Date.now();
+  db.prepare(
+    `UPDATE host_trusted_origin_requests
+     SET status = 'approved', reviewed_at_ms = ?
+     WHERE id = ?`,
+  ).run(now, requestId);
+  const updated = findOriginRequestById(db, requestId);
+  if (updated === null) {
+    throw new Error("origin request approve failed");
+  }
+  return { host, request: updated };
+}
+
+export function rejectHostTrustedOriginRequest(
+  db: Database,
+  requestId: string,
+): HostTrustedOriginRequest {
+  const request = findOriginRequestById(db, requestId);
+  if (request === null) {
+    throw new Error("origin request not found");
+  }
+  if (request.status !== "pending") {
+    throw new Error("origin request is not pending");
+  }
+  const now = Date.now();
+  db.prepare(
+    `UPDATE host_trusted_origin_requests
+     SET status = 'rejected', reviewed_at_ms = ?
+     WHERE id = ?`,
+  ).run(now, requestId);
+  const updated = findOriginRequestById(db, requestId);
+  if (updated === null) {
+    throw new Error("origin request reject failed");
+  }
+  return updated;
+}
+
 export function setHostRegistryParticipation(
   db: Database,
   hostId: string,
@@ -276,7 +474,8 @@ export function listRegistryTrustedOrigins(db: Database): string[] {
 export type HostRegistryState = {
   participationEnabled: boolean;
   origins: string[];
-  quota: { used: number; included: number };
+  pendingOriginRequests: HostTrustedOriginRequest[];
+  quota: { used: number; pending: number; included: number };
 };
 
 export function readHostRegistryState(db: Database, hostId: string): HostRegistryState | null {
@@ -285,11 +484,14 @@ export function readHostRegistryState(db: Database, hostId: string): HostRegistr
     return null;
   }
   const origins = listHostTrustedOriginStrings(db, hostId);
+  const pendingOriginRequests = listHostTrustedOriginRequests(db, hostId, "pending");
   return {
     participationEnabled: host.registryParticipationEnabled,
     origins,
+    pendingOriginRequests,
     quota: {
       used: origins.length,
+      pending: pendingOriginRequests.length,
       included: host.includedTrustedOrigins,
     },
   };

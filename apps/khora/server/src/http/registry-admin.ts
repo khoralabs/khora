@@ -1,9 +1,11 @@
 import {
+  cancelHostTrustedOriginRequestRemote,
   claimHostRegistration,
   fetchHostRegistrationStatus,
   fetchHostRegistryState,
   registerHostWithRegistryRemote,
-  updateHostRegistryState,
+  removeHostTrustedOriginRemote,
+  requestHostTrustedOriginRemote,
 } from "../registry-client";
 import { withConsoleAuth } from "./console-guard";
 import type { HostRouteDeps } from "./deps";
@@ -12,15 +14,23 @@ import { jsonError } from "./responses";
 export async function handleAdminRegistryGet(req: Request, deps: HostRouteDeps): Promise<Response> {
   return withConsoleAuth(req, deps, async () => {
     const hostSpec = deps.ctx.hostSpec;
-    const config = hostSpec.readEffective();
-    const base = {
-      registryUrl: config.registryUrl,
-      slug: config.slug,
-      publicBaseUrl: config.publicBaseUrl,
-      displayName: config.displayName,
-      hasRegistrationSecret: config.registrationSecret !== undefined,
-      hasManagementToken: config.managementToken !== undefined,
-    };
+
+    function connectionBase() {
+      const config = hostSpec.readEffective();
+      return {
+        config,
+        base: {
+          registryUrl: config.registryUrl,
+          slug: config.slug,
+          publicBaseUrl: config.publicBaseUrl,
+          displayName: config.displayName,
+          hasRegistrationSecret: config.registrationSecret !== undefined,
+          hasManagementToken: config.managementToken !== undefined,
+        },
+      };
+    }
+
+    let { config, base } = connectionBase();
 
     if (config.slug === undefined) {
       return Response.json({
@@ -37,12 +47,18 @@ export async function handleAdminRegistryGet(req: Request, deps: HostRouteDeps):
           hostSpec.storeSecrets({ managementToken: remote.managementToken });
           hostSpec.clearRegistrationSecret();
         }
-        if (remote.status === "active") {
-          const activeConfig = hostSpec.readEffective();
-          if (activeConfig.managementToken !== undefined) {
-            const state = await fetchHostRegistryState(activeConfig);
-            return Response.json({ configured: true, ...base, ...state, ...remote });
-          }
+        ({ config, base } = connectionBase());
+        if (remote.status === "active" && config.managementToken !== undefined) {
+          const state = await fetchHostRegistryState(config);
+          return Response.json({
+            configured: true,
+            ...base,
+            ...state,
+            status: remote.status,
+            trustLevel: remote.trustLevel,
+            requirements: remote.requirements,
+            message: remote.message,
+          });
         }
         return Response.json({ configured: true, ...base, ...remote });
       } catch (err: unknown) {
@@ -176,29 +192,84 @@ export async function handleAdminRegistryClaimPost(
   });
 }
 
-export async function handleAdminRegistryPut(req: Request, deps: HostRouteDeps): Promise<Response> {
+export async function handleAdminRegistryOriginRequestPost(
+  req: Request,
+  deps: HostRouteDeps,
+): Promise<Response> {
   return withConsoleAuth(req, deps, async () => {
     const config = deps.ctx.hostSpec.readEffective();
     if (config.managementToken === undefined) {
       return jsonError("Management token is not configured", 400);
     }
 
-    let body: { participationEnabled?: boolean; origins?: string[] };
+    let body: { origin?: string };
     try {
-      body = (await req.json()) as { participationEnabled?: boolean; origins?: string[] };
+      body = (await req.json()) as { origin?: string };
     } catch {
       return jsonError("Invalid JSON body", 400);
     }
-
-    if (body.participationEnabled === undefined && body.origins === undefined) {
-      return jsonError("participationEnabled or origins required", 400);
+    const origin = body.origin?.trim() ?? "";
+    if (origin.length === 0) {
+      return jsonError("origin is required", 400);
     }
 
     try {
-      const state = await updateHostRegistryState(config, body);
+      const state = await requestHostTrustedOriginRemote(config, origin);
       return Response.json(state);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "registry update failed";
+      const msg = err instanceof Error ? err.message : "origin request failed";
+      return jsonError(msg, 502);
+    }
+  });
+}
+
+export async function handleAdminRegistryOriginRequestDelete(
+  req: Request,
+  deps: HostRouteDeps,
+  requestId: string,
+): Promise<Response> {
+  return withConsoleAuth(req, deps, async () => {
+    const config = deps.ctx.hostSpec.readEffective();
+    if (config.managementToken === undefined) {
+      return jsonError("Management token is not configured", 400);
+    }
+
+    try {
+      const state = await cancelHostTrustedOriginRequestRemote(config, requestId.trim());
+      return Response.json(state);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "cancel origin request failed";
+      return jsonError(msg, 502);
+    }
+  });
+}
+
+export async function handleAdminRegistryOriginDelete(
+  req: Request,
+  deps: HostRouteDeps,
+): Promise<Response> {
+  return withConsoleAuth(req, deps, async () => {
+    const config = deps.ctx.hostSpec.readEffective();
+    if (config.managementToken === undefined) {
+      return jsonError("Management token is not configured", 400);
+    }
+
+    let body: { origin?: string };
+    try {
+      body = (await req.json()) as { origin?: string };
+    } catch {
+      return jsonError("Invalid JSON body", 400);
+    }
+    const origin = body.origin?.trim() ?? "";
+    if (origin.length === 0) {
+      return jsonError("origin is required", 400);
+    }
+
+    try {
+      const state = await removeHostTrustedOriginRemote(config, origin);
+      return Response.json(state);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "remove origin failed";
       return jsonError(msg, 502);
     }
   });
