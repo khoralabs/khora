@@ -1,10 +1,12 @@
 import {
+  cancelHostTrustedOriginQuotaRequestRemote,
   cancelHostTrustedOriginRequestRemote,
   claimHostRegistration,
   fetchHostRegistrationStatus,
   fetchHostRegistryState,
   registerHostWithRegistryRemote,
   removeHostTrustedOriginRemote,
+  requestHostTrustedOriginQuotaRemote,
   requestHostTrustedOriginRemote,
 } from "../registry-client";
 import { withConsoleAuth } from "./console-guard";
@@ -270,6 +272,57 @@ export async function handleAdminRegistryOriginDelete(
       return Response.json(state);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "remove origin failed";
+      return jsonError(msg, 502);
+    }
+  });
+}
+
+export async function handleAdminRegistryQuotaRequestPost(
+  req: Request,
+  deps: HostRouteDeps,
+): Promise<Response> {
+  return withConsoleAuth(req, deps, async () => {
+    const config = deps.ctx.hostSpec.readEffective();
+    if (config.managementToken === undefined) {
+      return jsonError("Management token is not configured", 400);
+    }
+
+    let body: { requestedIncluded?: number };
+    try {
+      body = (await req.json()) as { requestedIncluded?: number };
+    } catch {
+      return jsonError("Invalid JSON body", 400);
+    }
+    if (body.requestedIncluded === undefined || !Number.isFinite(body.requestedIncluded)) {
+      return jsonError("requestedIncluded is required", 400);
+    }
+
+    try {
+      const state = await requestHostTrustedOriginQuotaRemote(config, body.requestedIncluded);
+      return Response.json(state);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "quota request failed";
+      return jsonError(msg, 502);
+    }
+  });
+}
+
+export async function handleAdminRegistryQuotaRequestDelete(
+  req: Request,
+  deps: HostRouteDeps,
+  requestId: string,
+): Promise<Response> {
+  return withConsoleAuth(req, deps, async () => {
+    const config = deps.ctx.hostSpec.readEffective();
+    if (config.managementToken === undefined) {
+      return jsonError("Management token is not configured", 400);
+    }
+
+    try {
+      const state = await cancelHostTrustedOriginQuotaRequestRemote(config, requestId.trim());
+      return Response.json(state);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "cancel quota request failed";
       return jsonError(msg, 502);
     }
   });

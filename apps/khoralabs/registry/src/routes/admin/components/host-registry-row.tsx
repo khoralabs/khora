@@ -13,6 +13,13 @@ type OriginRequest = {
   requestedAtMs: number;
 };
 
+type QuotaRequest = {
+  id: string;
+  requestedIncluded: number;
+  status: string;
+  requestedAtMs: number;
+};
+
 export function HostRegistryRow({ host }: { host: RegistryHostSummaryItem }) {
   const { refetchSummary } = useUsersStats();
   const [saving, setSaving] = useState(false);
@@ -22,6 +29,7 @@ export function HostRegistryRow({ host }: { host: RegistryHostSummaryItem }) {
   );
   const [quotaIncluded, setQuotaIncluded] = useState(host.trustedOriginQuota.included);
   const [pendingRequests, setPendingRequests] = useState<OriginRequest[]>([]);
+  const [pendingQuotaRequests, setPendingQuotaRequests] = useState<QuotaRequest[]>([]);
   const [loadingRequests, setLoadingRequests] = useState(true);
   const active = host.status === "active";
   const participationId = `host-registry-participation-${host.id}`;
@@ -30,13 +38,21 @@ export function HostRegistryRow({ host }: { host: RegistryHostSummaryItem }) {
     void (async () => {
       setLoadingRequests(true);
       try {
-        const res = await fetch(`/admin/api/hosts/${host.id}/origin-requests`);
-        const json = (await res.json().catch(() => ({}))) as {
+        const [originRes, quotaRes] = await Promise.all([
+          fetch(`/admin/api/hosts/${host.id}/origin-requests`),
+          fetch(`/admin/api/hosts/${host.id}/quota-requests`),
+        ]);
+        const originJson = (await originRes.json().catch(() => ({}))) as {
           pending?: OriginRequest[];
-          error?: string;
         };
-        if (res.ok && Array.isArray(json.pending)) {
-          setPendingRequests(json.pending);
+        const quotaJson = (await quotaRes.json().catch(() => ({}))) as {
+          pending?: QuotaRequest[];
+        };
+        if (originRes.ok && Array.isArray(originJson.pending)) {
+          setPendingRequests(originJson.pending);
+        }
+        if (quotaRes.ok && Array.isArray(quotaJson.pending)) {
+          setPendingQuotaRequests(quotaJson.pending);
         }
       } finally {
         setLoadingRequests(false);
@@ -87,6 +103,37 @@ export function HostRegistryRow({ host }: { host: RegistryHostSummaryItem }) {
       const listJson = (await listRes.json().catch(() => ({}))) as { pending?: OriginRequest[] };
       if (listRes.ok && Array.isArray(listJson.pending)) {
         setPendingRequests(listJson.pending);
+      }
+      await refetchSummary();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Review failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function reviewQuotaRequest(
+    requestId: string,
+    action: "approve" | "reject",
+  ): Promise<void> {
+    setError(null);
+    setSaving(true);
+    const pending = pendingQuotaRequests.find((item) => item.id === requestId);
+    try {
+      const res = await fetch(`/admin/api/hosts/${host.id}/quota-requests/${requestId}/${action}`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const json = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(json.error ?? `${action} failed (${res.status})`);
+      }
+      if (action === "approve" && pending !== undefined) {
+        setQuotaIncluded(pending.requestedIncluded);
+      }
+      const listRes = await fetch(`/admin/api/hosts/${host.id}/quota-requests`);
+      const listJson = (await listRes.json().catch(() => ({}))) as { pending?: QuotaRequest[] };
+      if (listRes.ok && Array.isArray(listJson.pending)) {
+        setPendingQuotaRequests(listJson.pending);
       }
       await refetchSummary();
     } catch (err: unknown) {
@@ -150,6 +197,48 @@ export function HostRegistryRow({ host }: { host: RegistryHostSummaryItem }) {
                     variant="outline"
                     disabled={saving}
                     onClick={() => void reviewRequest(request.id, "reject")}
+                  >
+                    Reject
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-xs text-muted-foreground">Pending quota requests</Label>
+        {loadingRequests ? (
+          <p className="text-muted-foreground">Loading requests…</p>
+        ) : pendingQuotaRequests.length === 0 ? (
+          <p className="text-muted-foreground">No pending quota requests.</p>
+        ) : (
+          <ul className="space-y-2">
+            {pendingQuotaRequests.map((request) => (
+              <li
+                key={request.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2"
+              >
+                <span>
+                  Request {request.requestedIncluded} included (current{" "}
+                  {host.trustedOriginQuota.included})
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={saving}
+                    onClick={() => void reviewQuotaRequest(request.id, "approve")}
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={saving}
+                    onClick={() => void reviewQuotaRequest(request.id, "reject")}
                   >
                     Reject
                   </Button>

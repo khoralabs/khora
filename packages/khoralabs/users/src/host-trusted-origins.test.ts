@@ -1,16 +1,21 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { getUsersDatabase, resetUsersDatabase } from "./db";
 import {
+  approveHostTrustedOriginQuotaRequest,
   approveHostTrustedOriginRequest,
+  cancelHostTrustedOriginQuotaRequest,
   InvalidTrustedOriginError,
   listRegistryTrustedOrigins,
   normalizeTrustedOrigin,
   OriginQuotaExceededError,
+  readHostRegistryState,
+  rejectHostTrustedOriginQuotaRequest,
   replaceHostTrustedOrigins,
   requestHostTrustedOrigin,
+  requestHostTrustedOriginQuota,
   setHostRegistryParticipation,
 } from "./host-trusted-origins";
-import { activateKhoraHost, registerKhoraHost } from "./khora-hosts";
+import { activateKhoraHost, findHostById, registerKhoraHost } from "./khora-hosts";
 import { initUsersSchema } from "./schema";
 
 describe("host trusted origins", () => {
@@ -95,5 +100,38 @@ describe("host trusted origins", () => {
     expect(() => requestHostTrustedOrigin(db, active.id, "https://c.example.com")).toThrow(
       OriginQuotaExceededError,
     );
+  });
+
+  test("quota request must exceed current included and allows one pending request", () => {
+    const active = activateKhoraHost(
+      db,
+      registerKhoraHost(db, { slug: "quota-req", baseUrl: "http://localhost:8788" }).host.id,
+    ).host;
+    expect(() => requestHostTrustedOriginQuota(db, active.id, 2)).toThrow(
+      /must exceed current included/,
+    );
+    const request = requestHostTrustedOriginQuota(db, active.id, 5);
+    expect(request.requestedIncluded).toBe(5);
+    expect(readHostRegistryState(db, active.id)?.pendingQuotaRequest?.id).toBe(request.id);
+    expect(() => requestHostTrustedOriginQuota(db, active.id, 6)).toThrow(
+      /quota request is already pending/,
+    );
+    cancelHostTrustedOriginQuotaRequest(db, active.id, request.id);
+    expect(readHostRegistryState(db, active.id)?.pendingQuotaRequest).toBeNull();
+  });
+
+  test("approve and reject quota requests update included trusted origins", () => {
+    const active = activateKhoraHost(
+      db,
+      registerKhoraHost(db, { slug: "quota-approve", baseUrl: "http://localhost:8788" }).host.id,
+    ).host;
+    const rejected = requestHostTrustedOriginQuota(db, active.id, 4);
+    rejectHostTrustedOriginQuotaRequest(db, rejected.id);
+    expect(findHostById(db, active.id)?.includedTrustedOrigins).toBe(2);
+
+    const pending = requestHostTrustedOriginQuota(db, active.id, 5);
+    const { host } = approveHostTrustedOriginQuotaRequest(db, pending.id);
+    expect(host.includedTrustedOrigins).toBe(5);
+    expect(findHostById(db, active.id)?.includedTrustedOrigins).toBe(5);
   });
 });

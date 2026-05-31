@@ -21,6 +21,7 @@ export function hostRegistryJson(
     registryParticipationEnabled: state.participationEnabled,
     trustedOrigins: state.origins,
     pendingOriginRequests: state.pendingOriginRequests,
+    pendingQuotaRequest: state.pendingQuotaRequest,
     trustedOriginQuota: state.quota,
   };
 }
@@ -53,5 +54,6 @@ export function hostToFullJson(host: KhoraHost, db: Database): Record<string, un
       included: host.includedTrustedOrigins,
     },
     pendingOriginRequests: state?.pendingOriginRequests ?? [],
+    pendingQuotaRequest: state?.pendingQuotaRequest ?? null,
   };
 }

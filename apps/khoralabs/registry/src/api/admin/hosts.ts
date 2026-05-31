@@ -1,11 +1,14 @@
 import type { ConsoleAuth } from "@khoralabs/khora-console";
 import {
   activateKhoraHost,
+  approveHostTrustedOriginQuotaRequest,
   approveHostTrustedOriginRequest,
   findHostById,
   InvalidTrustedOriginError,
+  listHostTrustedOriginQuotaRequests,
   listHostTrustedOriginRequests,
   OriginQuotaExceededError,
+  rejectHostTrustedOriginQuotaRequest,
   rejectHostTrustedOriginRequest,
   TrustedOriginConflictError,
   updateHostRegistrySettings,
@@ -193,6 +196,86 @@ export function handleAdminHostOriginRequestReject(
       return Response.json({ ok: true });
     } catch (err: unknown) {
       const mapped = mapOriginApprovalError(err);
+      return Response.json({ error: mapped.message }, { status: mapped.status });
+    }
+  });
+}
+
+export function handleAdminHostQuotaRequests(
+  req: Request,
+  consoleAuth: ConsoleAuth | null,
+  hostId: string,
+): Promise<Response> {
+  return withConsoleAuth(req, consoleAuth, () => {
+    const id = hostId.trim();
+    if (id.length === 0) {
+      return Response.json({ error: "host id required" }, { status: 400 });
+    }
+    const db = getRegistryDatabase();
+    if (findHostById(db, id) === null) {
+      return Response.json({ error: "host not found" }, { status: 404 });
+    }
+    const pending = listHostTrustedOriginQuotaRequests(db, id, "pending");
+    const rejected = listHostTrustedOriginQuotaRequests(db, id, "rejected").slice(0, 20);
+    return Response.json({ pending, rejected });
+  });
+}
+
+function mapQuotaApprovalError(err: unknown): { message: string; status: number } {
+  const msg = err instanceof Error ? err.message : "quota request update failed";
+  const status = msg.includes("not found") ? 404 : 400;
+  return { message: msg, status };
+}
+
+export function handleAdminHostQuotaRequestApprove(
+  req: Request,
+  consoleAuth: ConsoleAuth | null,
+  hostId: string,
+  requestId: string,
+): Promise<Response> {
+  return withConsoleAuth(req, consoleAuth, () => {
+    const id = hostId.trim();
+    const rid = requestId.trim();
+    if (id.length === 0 || rid.length === 0) {
+      return Response.json({ error: "host id and request id required" }, { status: 400 });
+    }
+    const db = getRegistryDatabase();
+    const request = listHostTrustedOriginQuotaRequests(db, id).find((item) => item.id === rid);
+    if (request === undefined || request.hostId !== id) {
+      return Response.json({ error: "quota request not found" }, { status: 404 });
+    }
+    try {
+      const { host } = approveHostTrustedOriginQuotaRequest(db, rid);
+      return Response.json({ host: hostToFullJson(host, db) });
+    } catch (err: unknown) {
+      const mapped = mapQuotaApprovalError(err);
+      return Response.json({ error: mapped.message }, { status: mapped.status });
+    }
+  });
+}
+
+export function handleAdminHostQuotaRequestReject(
+  req: Request,
+  consoleAuth: ConsoleAuth | null,
+  hostId: string,
+  requestId: string,
+): Promise<Response> {
+  return withConsoleAuth(req, consoleAuth, () => {
+    const id = hostId.trim();
+    const rid = requestId.trim();
+    if (id.length === 0 || rid.length === 0) {
+      return Response.json({ error: "host id and request id required" }, { status: 400 });
+    }
+    const db = getRegistryDatabase();
+    const request = listHostTrustedOriginQuotaRequests(db, id).find((item) => item.id === rid);
+    if (request === undefined || request.hostId !== id) {
+      return Response.json({ error: "quota request not found" }, { status: 404 });
+    }
+    try {
+      rejectHostTrustedOriginQuotaRequest(db, rid);
+      return Response.json({ ok: true });
+    } catch (err: unknown) {
+      const mapped = mapQuotaApprovalError(err);
       return Response.json({ error: mapped.message }, { status: mapped.status });
     }
   });

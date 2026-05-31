@@ -16,6 +16,7 @@ export type HostRegistryRemoteState = {
   participationEnabled: boolean;
   origins: string[];
   pendingOriginRequests: HostTrustedOriginRequestRemote[];
+  pendingQuotaRequest: HostTrustedOriginQuotaRequestRemote | null;
   quota: { used: number; pending: number; included: number };
   serverOrigin: string;
   trustBaseUrlOriginConfigured: boolean;
@@ -25,6 +26,15 @@ export type HostTrustedOriginRequestRemote = {
   id: string;
   hostId: string;
   origin: string;
+  status: string;
+  requestedAtMs: number;
+  reviewedAtMs: number | null;
+};
+
+export type HostTrustedOriginQuotaRequestRemote = {
+  id: string;
+  hostId: string;
+  requestedIncluded: number;
   status: string;
   requestedAtMs: number;
   reviewedAtMs: number | null;
@@ -104,6 +114,22 @@ function mapRegistryResponse(
           }),
         )
     : [];
+  const quotaRaw = json.pendingQuotaRequest;
+  const pendingQuotaRequest =
+    typeof quotaRaw === "object" && quotaRaw !== null
+      ? {
+          id: String((quotaRaw as Record<string, unknown>).id ?? ""),
+          hostId: String((quotaRaw as Record<string, unknown>).hostId ?? ""),
+          requestedIncluded: Number((quotaRaw as Record<string, unknown>).requestedIncluded ?? 0),
+          status: String((quotaRaw as Record<string, unknown>).status ?? "pending"),
+          requestedAtMs: Number((quotaRaw as Record<string, unknown>).requestedAtMs ?? 0),
+          reviewedAtMs:
+            (quotaRaw as Record<string, unknown>).reviewedAtMs === null ||
+            (quotaRaw as Record<string, unknown>).reviewedAtMs === undefined
+              ? null
+              : Number((quotaRaw as Record<string, unknown>).reviewedAtMs),
+        }
+      : null;
   return {
     slug: String(json.slug ?? config.slug ?? ""),
     status: String(json.status ?? "unknown"),
@@ -112,6 +138,7 @@ function mapRegistryResponse(
       ? json.trustedOrigins.filter((item): item is string => typeof item === "string")
       : [],
     pendingOriginRequests,
+    pendingQuotaRequest,
     quota: {
       used: quota?.used ?? 0,
       pending: quota?.pending ?? 0,
@@ -302,6 +329,58 @@ export async function cancelHostTrustedOriginRequestRemote(
   if (!res.ok) {
     throw new Error(
       typeof json.error === "string" ? json.error : `Cancel origin request failed (${res.status})`,
+    );
+  }
+  return mapRegistryResponse(json, config);
+}
+
+export async function requestHostTrustedOriginQuotaRemote(
+  config: RegistryConfigSource,
+  requestedIncluded: number,
+  fetchImpl: typeof fetch = fetch,
+): Promise<HostRegistryRemoteState> {
+  const slug = slugOrThrow(config);
+  const token = managementTokenOrThrow(config);
+  const res = await fetchImpl(
+    `${config.registryUrl.replace(/\/$/, "")}/v1/hosts/${slug}/registry/quota-requests`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ requestedIncluded }),
+    },
+  );
+  if (!res.ok) {
+    const json = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(
+      typeof json.error === "string" ? json.error : `Quota request failed (${res.status})`,
+    );
+  }
+  return fetchHostRegistryState(config, fetchImpl);
+}
+
+export async function cancelHostTrustedOriginQuotaRequestRemote(
+  config: RegistryConfigSource,
+  requestId: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<HostRegistryRemoteState> {
+  const slug = slugOrThrow(config);
+  const token = managementTokenOrThrow(config);
+  const res = await fetchImpl(
+    `${config.registryUrl.replace(/\/$/, "")}/v1/hosts/${slug}/registry/quota-requests/${encodeURIComponent(requestId)}`,
+    {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+  const json = (await res.json().catch(() => ({}))) as Record<string, unknown> & {
+    error?: string;
+  };
+  if (!res.ok) {
+    throw new Error(
+      typeof json.error === "string" ? json.error : `Cancel quota request failed (${res.status})`,
     );
   }
   return mapRegistryResponse(json, config);

@@ -14,6 +14,9 @@ import {
   handleAdminHostOriginRequestApprove,
   handleAdminHostOriginRequestReject,
   handleAdminHostOriginRequests,
+  handleAdminHostQuotaRequestApprove,
+  handleAdminHostQuotaRequestReject,
+  handleAdminHostQuotaRequests,
   handleAdminHostRegistry,
 } from "./api/admin/hosts";
 import {
@@ -30,6 +33,8 @@ import {
   handleHostRegistryOriginDelete,
   handleHostRegistryOriginRequestDelete,
   handleHostRegistryOriginRequestPost,
+  handleHostRegistryQuotaRequestDelete,
+  handleHostRegistryQuotaRequestPost,
 } from "./api/host-registry";
 import {
   handleHostGet,
@@ -183,6 +188,51 @@ const server = serve({
 
     if (
       path.startsWith("/admin/api/hosts/") &&
+      path.endsWith("/quota-requests") &&
+      req.method === "GET"
+    ) {
+      const id = path.slice("/admin/api/hosts/".length, -"/quota-requests".length);
+      return withCors(req, await handleAdminHostQuotaRequests(req, consoleAuth, id));
+    }
+
+    if (
+      path.startsWith("/admin/api/hosts/") &&
+      path.includes("/quota-requests/") &&
+      path.endsWith("/approve") &&
+      req.method === "POST"
+    ) {
+      const middle = path.slice("/admin/api/hosts/".length, -"/approve".length);
+      const slash = middle.lastIndexOf("/quota-requests/");
+      if (slash > 0) {
+        const id = middle.slice(0, slash);
+        const requestId = middle.slice(slash + "/quota-requests/".length);
+        return withCors(
+          req,
+          await handleAdminHostQuotaRequestApprove(req, consoleAuth, id, requestId),
+        );
+      }
+    }
+
+    if (
+      path.startsWith("/admin/api/hosts/") &&
+      path.includes("/quota-requests/") &&
+      path.endsWith("/reject") &&
+      req.method === "POST"
+    ) {
+      const middle = path.slice("/admin/api/hosts/".length, -"/reject".length);
+      const slash = middle.lastIndexOf("/quota-requests/");
+      if (slash > 0) {
+        const id = middle.slice(0, slash);
+        const requestId = middle.slice(slash + "/quota-requests/".length);
+        return withCors(
+          req,
+          await handleAdminHostQuotaRequestReject(req, consoleAuth, id, requestId),
+        );
+      }
+    }
+
+    if (
+      path.startsWith("/admin/api/hosts/") &&
       path.endsWith("/registry") &&
       req.method === "PATCH"
     ) {
@@ -204,6 +254,15 @@ const server = serve({
           const requestId = subPath.slice("/origin-requests/".length);
           if (requestId.length > 0) {
             return withCors(req, handleHostRegistryOriginRequestDelete(req, slug, requestId));
+          }
+        }
+        if (subPath === "/quota-requests" && req.method === "POST") {
+          return withCors(req, await handleHostRegistryQuotaRequestPost(req, slug));
+        }
+        if (subPath.startsWith("/quota-requests/") && req.method === "DELETE") {
+          const requestId = subPath.slice("/quota-requests/".length);
+          if (requestId.length > 0) {
+            return withCors(req, handleHostRegistryQuotaRequestDelete(req, slug, requestId));
           }
         }
         if (subPath === "/origins" && req.method === "DELETE") {

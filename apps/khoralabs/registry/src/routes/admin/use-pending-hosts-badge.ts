@@ -12,7 +12,8 @@ export function usePendingHostsBadge(): PendingHostsBadge | undefined {
   }
   const pendingHosts = summary.hosts.items.filter((host) => host.status === "pending").length;
   const pendingOrigins = summary.hosts.pendingOriginRequests;
-  if (pendingHosts === 0 && pendingOrigins === 0) {
+  const pendingQuotas = summary.hosts.pendingQuotaRequests;
+  if (pendingHosts === 0 && pendingOrigins === 0 && pendingQuotas === 0) {
     return undefined;
   }
   const parts: string[] = [];
@@ -21,6 +22,9 @@ export function usePendingHostsBadge(): PendingHostsBadge | undefined {
   }
   if (pendingOrigins > 0) {
     parts.push(`${pendingOrigins} origin${pendingOrigins === 1 ? "" : "s"}`);
+  }
+  if (pendingQuotas > 0) {
+    parts.push(`${pendingQuotas} quota${pendingQuotas === 1 ? "" : "s"}`);
   }
   return { label: `${parts.join(", ")} pending`, variant: "secondary" };
 }

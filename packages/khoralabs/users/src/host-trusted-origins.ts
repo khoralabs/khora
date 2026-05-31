@@ -3,12 +3,18 @@ import { verifyHostManagementToken as verifyHostManagementTokenId } from "./host
 import { findHostById, listActiveHosts } from "./khora-hosts";
 import type {
   HostTrustedOrigin,
+  HostTrustedOriginQuotaRequest,
+  HostTrustedOriginQuotaRequestRow,
   HostTrustedOriginRequest,
   HostTrustedOriginRequestRow,
   HostTrustedOriginRow,
   KhoraHost,
 } from "./types";
-import { HOST_TRUSTED_ORIGIN_REQUEST_SELECT, HOST_TRUSTED_ORIGIN_SELECT } from "./types";
+import {
+  HOST_TRUSTED_ORIGIN_QUOTA_REQUEST_SELECT,
+  HOST_TRUSTED_ORIGIN_REQUEST_SELECT,
+  HOST_TRUSTED_ORIGIN_SELECT,
+} from "./types";
 
 export function verifyHostManagementToken(
   db: Database,
@@ -101,6 +107,15 @@ export function countPendingHostTrustedOriginRequests(db: Database, hostId: stri
 export function countAllPendingHostTrustedOriginRequests(db: Database): number {
   const row = db
     .prepare(`SELECT COUNT(*) AS n FROM host_trusted_origin_requests WHERE status = 'pending'`)
+    .get() as { n: number };
+  return row.n;
+}
+
+export function countAllPendingHostTrustedOriginQuotaRequests(db: Database): number {
+  const row = db
+    .prepare(
+      `SELECT COUNT(*) AS n FROM host_trusted_origin_quota_requests WHERE status = 'pending'`,
+    )
     .get() as { n: number };
   return row.n;
 }
@@ -388,6 +403,164 @@ export function rejectHostTrustedOriginRequest(
   return updated;
 }
 
+function mapQuotaRequest(row: HostTrustedOriginQuotaRequestRow): HostTrustedOriginQuotaRequest {
+  return {
+    id: row.id,
+    hostId: row.host_id,
+    requestedIncluded: row.requested_included,
+    status: row.status as HostTrustedOriginQuotaRequest["status"],
+    requestedAtMs: row.requested_at_ms,
+    reviewedAtMs: row.reviewed_at_ms,
+  };
+}
+
+function findQuotaRequestById(
+  db: Database,
+  requestId: string,
+): HostTrustedOriginQuotaRequest | null {
+  const row = db
+    .prepare(
+      `SELECT ${HOST_TRUSTED_ORIGIN_QUOTA_REQUEST_SELECT}
+       FROM host_trusted_origin_quota_requests WHERE id = ? LIMIT 1`,
+    )
+    .get(requestId) as HostTrustedOriginQuotaRequestRow | null;
+  return row === null ? null : mapQuotaRequest(row);
+}
+
+export function listHostTrustedOriginQuotaRequests(
+  db: Database,
+  hostId: string,
+  status?: HostTrustedOriginQuotaRequest["status"],
+): HostTrustedOriginQuotaRequest[] {
+  const rows =
+    status === undefined
+      ? (db
+          .prepare(
+            `SELECT ${HOST_TRUSTED_ORIGIN_QUOTA_REQUEST_SELECT}
+             FROM host_trusted_origin_quota_requests WHERE host_id = ?
+             ORDER BY requested_at_ms DESC`,
+          )
+          .all(hostId) as HostTrustedOriginQuotaRequestRow[])
+      : (db
+          .prepare(
+            `SELECT ${HOST_TRUSTED_ORIGIN_QUOTA_REQUEST_SELECT}
+             FROM host_trusted_origin_quota_requests WHERE host_id = ? AND status = ?
+             ORDER BY requested_at_ms DESC`,
+          )
+          .all(hostId, status) as HostTrustedOriginQuotaRequestRow[]);
+  return rows.map(mapQuotaRequest);
+}
+
+export function findPendingHostTrustedOriginQuotaRequest(
+  db: Database,
+  hostId: string,
+): HostTrustedOriginQuotaRequest | null {
+  const rows = listHostTrustedOriginQuotaRequests(db, hostId, "pending");
+  return rows[0] ?? null;
+}
+
+export function requestHostTrustedOriginQuota(
+  db: Database,
+  hostId: string,
+  requestedIncluded: number,
+): HostTrustedOriginQuotaRequest {
+  const host = findHostById(db, hostId);
+  if (host === null) {
+    throw new Error("host not found");
+  }
+  if (host.status !== "active") {
+    throw new Error("only active hosts can request trusted origin quota");
+  }
+  if (!Number.isFinite(requestedIncluded) || requestedIncluded < 0) {
+    throw new Error("requested included trusted origins must be a non-negative number");
+  }
+  const target = Math.floor(requestedIncluded);
+  if (target <= host.includedTrustedOrigins) {
+    throw new Error("requested quota must exceed current included trusted origins");
+  }
+  const existingPending = findPendingHostTrustedOriginQuotaRequest(db, hostId);
+  if (existingPending !== null) {
+    throw new Error("quota request is already pending");
+  }
+
+  const id = crypto.randomUUID();
+  const now = Date.now();
+  db.prepare(
+    `INSERT INTO host_trusted_origin_quota_requests
+       (id, host_id, requested_included, status, requested_at_ms)
+     VALUES (?, ?, ?, 'pending', ?)`,
+  ).run(id, hostId, target, now);
+  const created = findQuotaRequestById(db, id);
+  if (created === null) {
+    throw new Error("quota request insert failed");
+  }
+  return created;
+}
+
+export function cancelHostTrustedOriginQuotaRequest(
+  db: Database,
+  hostId: string,
+  requestId: string,
+): void {
+  const request = findQuotaRequestById(db, requestId);
+  if (request === null || request.hostId !== hostId) {
+    throw new Error("quota request not found");
+  }
+  if (request.status !== "pending") {
+    throw new Error("only pending quota requests can be cancelled");
+  }
+  db.prepare(`DELETE FROM host_trusted_origin_quota_requests WHERE id = ?`).run(requestId);
+}
+
+export function approveHostTrustedOriginQuotaRequest(
+  db: Database,
+  requestId: string,
+): { host: KhoraHost; request: HostTrustedOriginQuotaRequest } {
+  const request = findQuotaRequestById(db, requestId);
+  if (request === null) {
+    throw new Error("quota request not found");
+  }
+  if (request.status !== "pending") {
+    throw new Error("quota request is not pending");
+  }
+  const host = setHostIncludedTrustedOrigins(db, request.hostId, request.requestedIncluded);
+  const now = Date.now();
+  db.prepare(
+    `UPDATE host_trusted_origin_quota_requests
+     SET status = 'approved', reviewed_at_ms = ?
+     WHERE id = ?`,
+  ).run(now, requestId);
+  const updated = findQuotaRequestById(db, requestId);
+  if (updated === null) {
+    throw new Error("quota request approve failed");
+  }
+  return { host, request: updated };
+}
+
+export function rejectHostTrustedOriginQuotaRequest(
+  db: Database,
+  requestId: string,
+): HostTrustedOriginQuotaRequest {
+  const request = findQuotaRequestById(db, requestId);
+  if (request === null) {
+    throw new Error("quota request not found");
+  }
+  if (request.status !== "pending") {
+    throw new Error("quota request is not pending");
+  }
+  const now = Date.now();
+  db.prepare(
+    `UPDATE host_trusted_origin_quota_requests
+     SET status = 'rejected', reviewed_at_ms = ?
+     WHERE id = ?`,
+  ).run(now, requestId);
+  const updated = findQuotaRequestById(db, requestId);
+  if (updated === null) {
+    throw new Error("quota request reject failed");
+  }
+  return updated;
+}
+
 export function setHostRegistryParticipation(
   db: Database,
   hostId: string,
@@ -475,6 +648,7 @@ export type HostRegistryState = {
   participationEnabled: boolean;
   origins: string[];
   pendingOriginRequests: HostTrustedOriginRequest[];
+  pendingQuotaRequest: HostTrustedOriginQuotaRequest | null;
   quota: { used: number; pending: number; included: number };
 };
 
@@ -485,10 +659,12 @@ export function readHostRegistryState(db: Database, hostId: string): HostRegistr
   }
   const origins = listHostTrustedOriginStrings(db, hostId);
   const pendingOriginRequests = listHostTrustedOriginRequests(db, hostId, "pending");
+  const pendingQuotaRequest = findPendingHostTrustedOriginQuotaRequest(db, hostId);
   return {
     participationEnabled: host.registryParticipationEnabled,
     origins,
     pendingOriginRequests,
+    pendingQuotaRequest,
     quota: {
       used: origins.length,
       pending: pendingOriginRequests.length,

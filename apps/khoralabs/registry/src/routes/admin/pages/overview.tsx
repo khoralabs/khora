@@ -48,6 +48,8 @@ function OverviewContent() {
   const firstPending = summary.hosts.items.find((host) => host.status === "pending");
   const pendingOriginCount = summary.hosts.pendingOriginRequests;
   const firstOriginHost = summary.hosts.items.find((host) => host.pendingOriginRequestCount > 0);
+  const pendingQuotaCount = summary.hosts.pendingQuotaRequests;
+  const firstQuotaHost = summary.hosts.items.find((host) => host.pendingQuotaRequestCount > 0);
 
   return (
     <div className="space-y-6">
@@ -104,6 +106,33 @@ function OverviewContent() {
               }
             >
               Review origin requests
+            </button>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {pendingQuotaCount > 0 ? (
+        <Card className="border-secondary">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Pending trusted origin quota requests</CardTitle>
+            <CardDescription>
+              {pendingQuotaCount} quota request{pendingQuotaCount === 1 ? "" : "s"} awaiting
+              operator approval
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <button
+              type="button"
+              className="rounded-md border px-3 py-1.5 text-sm hover:bg-accent"
+              onClick={() =>
+                navigateAdmin(
+                  firstQuotaHost !== undefined
+                    ? `/admin/hosts/${firstQuotaHost.slug}`
+                    : "/admin/hosts",
+                )
+              }
+            >
+              Review quota requests
             </button>
           </CardContent>
         </Card>

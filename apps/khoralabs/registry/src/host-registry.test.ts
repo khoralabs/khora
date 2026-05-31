@@ -57,10 +57,12 @@ describe("host registry API", () => {
       registryParticipationEnabled: boolean;
       trustedOrigins: string[];
       pendingOriginRequests: unknown[];
+      pendingQuotaRequest: null;
     };
     expect(getJson.registryParticipationEnabled).toBe(false);
     expect(getJson.trustedOrigins).toEqual([]);
     expect(getJson.pendingOriginRequests).toEqual([]);
+    expect(getJson.pendingQuotaRequest).toBeNull();
 
     const postRes = await handleHostRegistryOriginRequestPost(
       new Request("http://localhost/v1/hosts/khora-0/registry/origin-requests", {

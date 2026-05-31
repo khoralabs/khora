@@ -1,10 +1,12 @@
 import {
+  cancelHostTrustedOriginQuotaRequest,
   cancelHostTrustedOriginRequest,
   InvalidTrustedOriginError,
   OriginQuotaExceededError,
   readHostRegistryState,
   removeHostTrustedOrigin,
   requestHostTrustedOrigin,
+  requestHostTrustedOriginQuota,
   TrustedOriginConflictError,
   verifyHostManagementToken,
 } from "@khoralabs/users";
@@ -150,6 +152,69 @@ export async function handleHostRegistryOriginDelete(
     return registryStateResponse(host, db);
   } catch (err: unknown) {
     const mapped = mapOriginRequestError(err);
+    return Response.json({ error: mapped.message }, { status: mapped.status });
+  }
+}
+
+function mapQuotaRequestError(err: unknown): { message: string; status: number } {
+  const msg = err instanceof Error ? err.message : "quota request failed";
+  const status = msg.includes("not found") ? 404 : 400;
+  return { message: msg, status };
+}
+
+export async function handleHostRegistryQuotaRequestPost(
+  req: Request,
+  slug: string,
+): Promise<Response> {
+  const token = readBearerToken(req);
+  if (token === null) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const db = getRegistryDatabase();
+  const host = verifyHostManagementToken(db, slug, token);
+  if (host === null) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let body: { requestedIncluded?: number };
+  try {
+    body = (await req.json()) as { requestedIncluded?: number };
+  } catch {
+    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+  if (body.requestedIncluded === undefined || !Number.isFinite(body.requestedIncluded)) {
+    return Response.json({ error: "requestedIncluded is required" }, { status: 400 });
+  }
+
+  try {
+    const request = requestHostTrustedOriginQuota(db, host.id, body.requestedIncluded);
+    return Response.json({ ok: true, request }, { status: 201 });
+  } catch (err: unknown) {
+    const mapped = mapQuotaRequestError(err);
+    return Response.json({ error: mapped.message }, { status: mapped.status });
+  }
+}
+
+export function handleHostRegistryQuotaRequestDelete(
+  req: Request,
+  slug: string,
+  requestId: string,
+): Response {
+  const token = readBearerToken(req);
+  if (token === null) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const db = getRegistryDatabase();
+  const host = verifyHostManagementToken(db, slug, token);
+  if (host === null) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    cancelHostTrustedOriginQuotaRequest(db, host.id, requestId.trim());
+    return registryStateResponse(host, db);
+  } catch (err: unknown) {
+    const mapped = mapQuotaRequestError(err);
     return Response.json({ error: mapped.message }, { status: mapped.status });
   }
 }

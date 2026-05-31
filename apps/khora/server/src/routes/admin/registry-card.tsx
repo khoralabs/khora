@@ -11,6 +11,13 @@ type OriginRequest = {
   requestedAtMs: number;
 };
 
+type QuotaRequest = {
+  id: string;
+  requestedIncluded: number;
+  status: string;
+  requestedAtMs: number;
+};
+
 type RegistryState = Record<string, unknown> & {
   configured?: boolean;
   message?: string;
@@ -25,6 +32,7 @@ type RegistryState = Record<string, unknown> & {
   participationEnabled?: boolean;
   origins?: string[];
   pendingOriginRequests?: OriginRequest[];
+  pendingQuotaRequest?: QuotaRequest | null;
   quota?: { used: number; pending?: number; included: number };
   serverOrigin?: string;
   trustBaseUrlOriginConfigured?: boolean;
@@ -72,7 +80,9 @@ export function HostRegistryCard() {
   const [displayName, setDisplayName] = useState("");
   const [approvedOrigins, setApprovedOrigins] = useState<string[]>([]);
   const [pendingRequests, setPendingRequests] = useState<OriginRequest[]>([]);
+  const [pendingQuotaRequest, setPendingQuotaRequest] = useState<QuotaRequest | null>(null);
   const [newOrigin, setNewOrigin] = useState("");
+  const [requestedQuota, setRequestedQuota] = useState("");
 
   const loadRegistry = useCallback(async (): Promise<void> => {
     setError(null);
@@ -103,6 +113,17 @@ export function HostRegistryCard() {
             typeof item.origin === "string",
         ),
       );
+    }
+    const quotaReq = json.pendingQuotaRequest;
+    if (
+      typeof quotaReq === "object" &&
+      quotaReq !== null &&
+      typeof quotaReq.id === "string" &&
+      typeof quotaReq.requestedIncluded === "number"
+    ) {
+      setPendingQuotaRequest(quotaReq);
+    } else {
+      setPendingQuotaRequest(null);
     }
     setLoading(false);
     window.dispatchEvent(new CustomEvent("khora:registry-updated"));
@@ -227,6 +248,49 @@ export function HostRegistryCard() {
       await loadRegistry();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Remove failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function requestQuotaIncrease(requestedIncluded: number): Promise<void> {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch("/admin/api/registry/quota-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestedIncluded }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        throw new Error(json.error ?? `Quota request failed (${res.status})`);
+      }
+      await loadRegistry();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Quota request failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function cancelQuotaRequest(requestId: string): Promise<void> {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/admin/api/registry/quota-requests/${encodeURIComponent(requestId)}`,
+        {
+          method: "DELETE",
+        },
+      );
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        throw new Error(json.error ?? `Cancel failed (${res.status})`);
+      }
+      await loadRegistry();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Cancel failed");
     } finally {
       setSaving(false);
     }
@@ -441,6 +505,55 @@ export function HostRegistryCard() {
             >
               Request origin
             </Button>
+          </div>
+          <div className="space-y-2 border-t pt-3">
+            <Label className="text-xs text-muted-foreground">Origin quota</Label>
+            <p className="text-xs text-muted-foreground">
+              Request a higher included origin limit. A registry operator must approve the increase.
+            </p>
+            {pendingQuotaRequest !== null ? (
+              <div className="flex items-center gap-2 text-sm">
+                <span>
+                  Pending: request {pendingQuotaRequest.requestedIncluded} included (current{" "}
+                  {state.quota?.included ?? 0})
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  disabled={saving}
+                  onClick={() => void cancelQuotaRequest(pendingQuotaRequest.id)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-end gap-2">
+                <Input
+                  type="number"
+                  min={(state.quota?.included ?? 0) + 1}
+                  className="w-24"
+                  placeholder="5"
+                  value={requestedQuota}
+                  disabled={saving}
+                  onChange={(e) => setRequestedQuota(e.target.value)}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={saving || requestedQuota.trim().length === 0}
+                  onClick={() => {
+                    const value = Number.parseInt(requestedQuota.trim(), 10);
+                    if (!Number.isFinite(value)) return;
+                    setRequestedQuota("");
+                    void requestQuotaIncrease(value);
+                  }}
+                >
+                  Request quota increase
+                </Button>
+              </div>
+            )}
           </div>
         </section>
       ) : null}

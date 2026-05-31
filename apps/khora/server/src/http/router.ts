@@ -38,6 +38,8 @@ import {
   handleAdminRegistryOriginDelete,
   handleAdminRegistryOriginRequestDelete,
   handleAdminRegistryOriginRequestPost,
+  handleAdminRegistryQuotaRequestDelete,
+  handleAdminRegistryQuotaRequestPost,
   handleAdminRegistryRegisterPost,
 } from "./registry-admin";
 import { handleListRelationships } from "./relationships";
@@ -141,6 +143,17 @@ export async function route(
     const requestId = url.pathname.slice("/admin/api/registry/origin-requests/".length);
     if (requestId.length > 0) {
       return handleAdminRegistryOriginRequestDelete(req, deps, requestId);
+    }
+  }
+
+  if (req.method === "POST" && url.pathname === "/admin/api/registry/quota-requests") {
+    return handleAdminRegistryQuotaRequestPost(req, deps);
+  }
+
+  if (req.method === "DELETE" && url.pathname.startsWith("/admin/api/registry/quota-requests/")) {
+    const requestId = url.pathname.slice("/admin/api/registry/quota-requests/".length);
+    if (requestId.length > 0) {
+      return handleAdminRegistryQuotaRequestDelete(req, deps, requestId);
     }
   }
 

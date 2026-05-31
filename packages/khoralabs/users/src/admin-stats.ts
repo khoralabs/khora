@@ -5,6 +5,7 @@ import {
 } from "./access-token-requests";
 import { findAccountByEmail, findAccountById, listAccountEmails } from "./accounts";
 import {
+  countAllPendingHostTrustedOriginQuotaRequests,
   countAllPendingHostTrustedOriginRequests,
   readHostRegistryState,
 } from "./host-trusted-origins";
@@ -21,6 +22,7 @@ export type RegistryHostSummaryItem = KhoraHost & {
   trustedOrigins: string[];
   trustedOriginQuota: { used: number; pending: number; included: number };
   pendingOriginRequestCount: number;
+  pendingQuotaRequestCount: number;
 };
 
 export type RegistryAccountsSummary = {
@@ -51,6 +53,7 @@ export type RegistryHostsSummary = {
   total: number;
   active: number;
   pendingOriginRequests: number;
+  pendingQuotaRequests: number;
   items: RegistryHostSummaryItem[];
 };
 
@@ -132,9 +135,11 @@ export function getRegistryAdminSummary(db: Database): RegistryAdminSummary {
         included: host.includedTrustedOrigins,
       },
       pendingOriginRequestCount: state?.pendingOriginRequests.length ?? 0,
+      pendingQuotaRequestCount: state?.pendingQuotaRequest !== null ? 1 : 0,
     };
   });
   const pendingOriginRequests = countAllPendingHostTrustedOriginRequests(db);
+  const pendingQuotaRequests = countAllPendingHostTrustedOriginQuotaRequests(db);
   const membershipRow = db.prepare(`SELECT COUNT(*) AS n FROM memberships`).get() as { n: number };
 
   return {
@@ -147,6 +152,7 @@ export function getRegistryAdminSummary(db: Database): RegistryAdminSummary {
       total: hosts.length,
       active: hosts.filter((h) => h.status === "active").length,
       pendingOriginRequests,
+      pendingQuotaRequests,
       items: hosts,
     },
     accessTokenRequests: {
