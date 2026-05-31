@@ -3,13 +3,11 @@ import { useState } from "react";
 import { renderRoute } from "../../render-route";
 import { AdminRouter } from "./router";
 import { AdminShell } from "./shell";
-import { useRegistryBadge } from "./use-registry-badge";
 import { useAdminSession } from "./use-session";
 import "../../../styles/globals.css";
 
 function AdminApp() {
   const authenticated = useAdminSession();
-  const registryBadge = useRegistryBadge();
   const [selectedCellId, setSelectedCellId] = useState<string | null>(null);
 
   if (authenticated !== true) {
@@ -26,7 +24,7 @@ function AdminApp() {
       selectedCellId={selectedCellId}
       onSelectedCellIdChange={setSelectedCellId}
     >
-      <AdminShell registryBadge={registryBadge}>
+      <AdminShell>
         <AdminRouter />
       </AdminShell>
     </AdminStats.Root>

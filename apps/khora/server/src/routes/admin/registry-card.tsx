@@ -69,9 +69,18 @@ function RequirementList({ requirements }: { requirements: RegistrationRequireme
   );
 }
 
-function formatRegistryStatusLabel(status: string): string {
-  if (status === "needs-registration") {
-    return "Not Registered";
+function formatRegistryStatusLabel(status: string, configured: boolean): string {
+  if (!configured || status === "needs-registration") {
+    return "Unregistered";
+  }
+  if (status === "active") {
+    return "Registered";
+  }
+  if (status === "pending" || status === "pending-token") {
+    return "Pending";
+  }
+  if (status === "suspended") {
+    return "Suspended";
   }
   return status;
 }
@@ -392,9 +401,15 @@ export function HostRegistryCard() {
                 : "Registration status"}
             </p>
           </div>
-          {status !== undefined ? (
+          {status !== undefined || state.configured !== true ? (
             <p className="text-sm">
-              Status: <span className="font-mono">{formatRegistryStatusLabel(status)}</span>
+              Status:{" "}
+              <span className="font-mono">
+                {formatRegistryStatusLabel(
+                  status ?? "needs-registration",
+                  state.configured === true,
+                )}
+              </span>
             </p>
           ) : null}
           {typeof state.message === "string" ? (

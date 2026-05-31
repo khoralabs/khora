@@ -5,29 +5,30 @@ export type RegistryBadge = {
   variant: "default" | "secondary" | "outline" | "destructive";
 };
 
-function badgeFromRegistryJson(
+export function badgeFromRegistryJson(
   json: Record<string, unknown>,
   resOk: boolean,
-): RegistryBadge | undefined {
+): RegistryBadge {
   if (!resOk || json.configured !== true) {
-    return { label: "Registry not connected", variant: "outline" };
+    return { label: "Unregistered", variant: "outline" };
   }
   const status = typeof json.status === "string" ? json.status : "unknown";
+  if (status === "needs-registration") {
+    return { label: "Unregistered", variant: "outline" };
+  }
   if (status === "active") {
-    return { label: "Registry active", variant: "default" };
+    return { label: "Registered", variant: "default" };
   }
   if (status === "pending" || status === "pending-token") {
-    return { label: "Registry pending", variant: "secondary" };
+    return { label: "Pending", variant: "secondary" };
   }
   if (status === "suspended") {
-    return { label: "Registry suspended", variant: "destructive" };
+    return { label: "Suspended", variant: "destructive" };
   }
-  if (status === "needs-registration") {
-    return undefined;
-  }
-  return { label: `Registry ${status}`, variant: "outline" };
+  return { label: "Unregistered", variant: "outline" };
 }
 
+/** Registry connection status for the Registry admin page only. */
 export function useRegistryBadge(): RegistryBadge | undefined {
   const [badge, setBadge] = useState<RegistryBadge | undefined>(undefined);
 
@@ -37,7 +38,7 @@ export function useRegistryBadge(): RegistryBadge | undefined {
       const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
       setBadge(badgeFromRegistryJson(json, res.ok));
     } catch {
-      setBadge(undefined);
+      setBadge({ label: "Unregistered", variant: "outline" });
     }
   }, []);
 

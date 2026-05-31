@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ADMIN_NAV } from "./nav";
@@ -7,10 +6,9 @@ import { navigateAdmin, usePathname } from "./use-pathname";
 
 type AdminShellProps = {
   children: ReactNode;
-  registryBadge?: { label: string; variant: "default" | "secondary" | "outline" | "destructive" };
 };
 
-export function AdminShell({ children, registryBadge }: AdminShellProps) {
+export function AdminShell({ children }: AdminShellProps) {
   const pathname = usePathname();
 
   return (
@@ -62,9 +60,6 @@ export function AdminShell({ children, registryBadge }: AdminShellProps) {
             <p className="hidden text-sm text-muted-foreground md:block">
               {ADMIN_NAV.find((item) => item.match(pathname))?.label ?? "Admin"}
             </p>
-            {registryBadge !== undefined ? (
-              <Badge variant={registryBadge.variant}>{registryBadge.label}</Badge>
-            ) : null}
           </div>
           <Button
             type="button"
