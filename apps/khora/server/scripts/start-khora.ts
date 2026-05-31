@@ -72,8 +72,8 @@ async function runWithLitestream(): Promise<void> {
     env: process.env,
   });
 
-  const srvProc = Bun.spawn(isProd ? ["bun", "index.js"] : ["bun", "run", indexEntry], {
-    cwd: serveCwd,
+  const srvProc = Bun.spawn(["bun", "run", indexEntry], {
+    cwd: serverRoot,
     stdio: ["inherit", "inherit", "inherit"],
     env: process.env,
   });
