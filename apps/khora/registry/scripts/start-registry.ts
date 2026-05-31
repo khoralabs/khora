@@ -4,6 +4,7 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { resolveDistIndex, resolveDistServeCwd } from "@khoralabs/bun-web";
 import { registryDatabasePath } from "@khoralabs/users";
 import {
   assertLitestreamCredentials,
@@ -16,12 +17,13 @@ import {
 const registryRoot = path.resolve(path.dirname(import.meta.path), "..");
 const isProd = process.env.NODE_ENV === "production";
 const indexEntry = isProd
-  ? path.join(registryRoot, "dist", "index.js")
+  ? resolveDistIndex(registryRoot)
   : path.join(registryRoot, "src", "index.ts");
+const serveCwd = isProd ? resolveDistServeCwd(registryRoot) : registryRoot;
 
 async function runServerOnly(): Promise<never> {
-  const proc = Bun.spawn(isProd ? ["bun", indexEntry] : ["bun", "run", indexEntry], {
-    cwd: registryRoot,
+  const proc = Bun.spawn(isProd ? ["bun", "index.js"] : ["bun", "run", indexEntry], {
+    cwd: serveCwd,
     stdio: ["inherit", "inherit", "inherit"],
     env: process.env,
   });
@@ -52,8 +54,8 @@ async function runWithLitestream(): Promise<void> {
     env: process.env,
   });
 
-  const srvProc = Bun.spawn(isProd ? ["bun", indexEntry] : ["bun", "run", indexEntry], {
-    cwd: registryRoot,
+  const srvProc = Bun.spawn(isProd ? ["bun", "index.js"] : ["bun", "run", indexEntry], {
+    cwd: serveCwd,
     stdio: ["inherit", "inherit", "inherit"],
     env: process.env,
   });

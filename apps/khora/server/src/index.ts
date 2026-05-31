@@ -1,5 +1,8 @@
 import { mkdirSync, unlinkSync } from "node:fs";
-import { dirname } from "node:path";
+import path from "node:path";
+
+const { dirname } = path;
+
 import { buildRoutesFromMounts } from "@khoralabs/bun-web";
 import { createConsoleAuthFromEnv } from "@khoralabs/khora-console";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
@@ -30,9 +33,12 @@ import { startDuplexUnixIngress } from "./server/duplex-unix-listener";
 import { startStdioUnaryIngress } from "./server/stdio-unary-listener";
 import { createInboxDrainWebSocketHandlers } from "./ws/inbox";
 
-validateEnv();
+/** App root (parent of `src/` or `dist/`) — not `process.cwd()` when prod runs from `dist/`. */
+const appRoot = path.resolve(import.meta.dir, "..");
 
-const persistencePaths = resolveKhoraPersistencePaths();
+validateEnv(appRoot);
+
+const persistencePaths = resolveKhoraPersistencePaths(process.env, appRoot);
 const { catalogPath, framesDbPath, cellsDir, dataDir } = persistencePaths;
 const cellPoolCount = envCellPoolCount();
 const memoriesConfig = envMemoriesBootstrapConfig(persistencePaths);

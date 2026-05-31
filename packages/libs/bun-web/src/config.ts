@@ -20,6 +20,11 @@ export type WebUiConfig = {
   plugins?: BunPlugin[];
   /** Passed to Bun.build `env` when set (e.g. "BUN_PUBLIC_*") */
   buildEnv?: "inline" | "disable" | `${string}*`;
+  /**
+   * When false (default), leave dependencies external so native addons (sqlite-vec, etc.)
+   * resolve from node_modules at runtime. HTML/JS/CSS assets still emit to `outdir`.
+   */
+  bundleDependencies?: boolean;
   mounts: WebUiMount[];
   check?: WebUiCheckConfig;
 };

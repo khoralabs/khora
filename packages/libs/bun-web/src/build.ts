@@ -19,6 +19,7 @@ export async function runBuild(config: WebUiConfig, cwd = process.cwd()): Promis
   }
 
   const start = performance.now();
+  const bundleDeps = config.bundleDependencies === true;
   const result = await Bun.build({
     entrypoints: [entry],
     outdir,
@@ -26,6 +27,7 @@ export async function runBuild(config: WebUiConfig, cwd = process.cwd()): Promis
     minify: true,
     sourcemap: "linked",
     plugins: [plugin, ...(config.plugins ?? [])],
+    ...(bundleDeps ? {} : { packages: "external" }),
     ...(config.buildEnv !== undefined ? { env: config.buildEnv } : {}),
     define: {
       "process.env.NODE_ENV": JSON.stringify("production"),

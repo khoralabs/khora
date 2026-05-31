@@ -7,7 +7,7 @@
     "build:web": "bun-web build",
     "dev": "bun --hot src/index.ts",
     "prestart": "bun run build:web",
-    "start": "NODE_ENV=production bun dist/index.js",
+    "start": "NODE_ENV=production sh -c 'cd dist && exec bun index.js'",
     "build": "bun run build:web"
   },
   "dependencies": {

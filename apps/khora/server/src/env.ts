@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { KhoraMemoriesBootstrapConfig } from "./memories-env";
 import { type KhoraPersistencePaths, resolveKhoraPersistencePaths } from "./persistence-paths";
 
@@ -9,7 +10,8 @@ let cachedPersistencePaths: KhoraPersistencePaths | undefined;
 
 function persistencePaths(): KhoraPersistencePaths {
   if (cachedPersistencePaths === undefined) {
-    cachedPersistencePaths = resolveKhoraPersistencePaths();
+    const appRoot = path.resolve(import.meta.dir, "..");
+    cachedPersistencePaths = resolveKhoraPersistencePaths(process.env, appRoot);
   }
   return cachedPersistencePaths;
 }
@@ -133,8 +135,8 @@ export function envPopulationLimit(): number | undefined {
   return Number.isFinite(n) && n > 0 ? n : undefined;
 }
 
-export function validateEnv(): void {
-  resolveKhoraPersistencePaths();
+export function validateEnv(appRoot?: string): void {
+  resolveKhoraPersistencePaths(process.env, appRoot ?? process.cwd());
   envPort();
   envHostUnaryIngress();
   const duplexMode = envHostDuplexIngress();

@@ -52,10 +52,14 @@ Bun.serve({
   "scripts": {
     "build:web": "bun-web build",
     "prestart": "bun run build:web",
-    "start": "NODE_ENV=production bun dist/index.js"
+    "start": "NODE_ENV=production sh -c 'cd dist && exec bun index.js'"
   }
 }
 ```
+
+Production must run with **`cwd` = `dist/`** (e.g. `cd dist && bun index.js`) so the embedded HTML manifest resolves `./chunk-*.js` next to `dist/index.js`. Do **not** run `bun dist/index.js` from the app root. Apps with native deps (e.g. `sqlite-vec`) use `packages: "external"` (default) so `node_modules` remains at the app root (`dist/../node_modules`).
+
+Embedded servers with data dirs should resolve paths from `import.meta.dir` (parent = app root), not `process.cwd()`, when using `cd dist`.
 
 `bunfig.toml`:
 

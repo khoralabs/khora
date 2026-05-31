@@ -5,6 +5,7 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { resolveDistIndex, resolveDistServeCwd } from "@khoralabs/bun-web";
 import {
   assertLitestreamCredentials,
   buildLitestreamYaml,
@@ -17,13 +18,12 @@ import { envMemoriesBootstrapConfig, envMemoriesEnabled } from "../src/memories-
 
 const serverRoot = path.resolve(path.dirname(import.meta.path), "..");
 const isProd = process.env.NODE_ENV === "production";
-const indexEntry = isProd
-  ? path.join(serverRoot, "dist", "index.js")
-  : path.join(serverRoot, "src", "index.ts");
+const indexEntry = isProd ? resolveDistIndex(serverRoot) : path.join(serverRoot, "src", "index.ts");
+const serveCwd = isProd ? resolveDistServeCwd(serverRoot) : serverRoot;
 
 async function runServerOnly(): Promise<never> {
-  const proc = Bun.spawn(isProd ? ["bun", indexEntry] : ["bun", "run", indexEntry], {
-    cwd: serverRoot,
+  const proc = Bun.spawn(isProd ? ["bun", "index.js"] : ["bun", "run", indexEntry], {
+    cwd: serveCwd,
     stdio: ["inherit", "inherit", "inherit"],
     env: process.env,
   });
@@ -36,7 +36,7 @@ async function runWithLitestream(): Promise<void> {
   assertLitestreamCredentials(s3);
   validateEnv();
 
-  const persistencePaths = resolveKhoraPersistencePaths();
+  const persistencePaths = resolveKhoraPersistencePaths(process.env, serverRoot);
   const catalogAbs = path.resolve(process.cwd(), persistencePaths.catalogPath);
   const framesAbs = path.resolve(process.cwd(), persistencePaths.framesDbPath);
   const cellsAbs = path.resolve(process.cwd(), persistencePaths.cellsDir);
@@ -75,8 +75,8 @@ async function runWithLitestream(): Promise<void> {
     env: process.env,
   });
 
-  const srvProc = Bun.spawn(isProd ? ["bun", indexEntry] : ["bun", "run", indexEntry], {
-    cwd: serverRoot,
+  const srvProc = Bun.spawn(isProd ? ["bun", "index.js"] : ["bun", "run", indexEntry], {
+    cwd: serveCwd,
     stdio: ["inherit", "inherit", "inherit"],
     env: process.env,
   });
