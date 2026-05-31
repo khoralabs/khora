@@ -84,14 +84,19 @@ function adminHtmlResponse(page: typeof adminPage): Response {
 
 const server = Bun.serve<KhoraWsData>({
   port: envPort(),
+  routes: {
+    "/admin/": adminPage,
+    "/admin/login": adminLoginPage,
+    "/admin/login/": adminLoginPage,
+  },
   async fetch(req) {
     const url = new URL(req.url);
     if (req.method === "GET") {
       const path = url.pathname;
-      if (path === "/admin/login" || path === "/admin/login/") {
-        return adminHtmlResponse(adminLoginPage);
+      if (path === "/admin") {
+        return Response.redirect(`${url.origin}/admin/`, 301);
       }
-      if (isAdminSpaPath(path)) {
+      if (isAdminSpaPath(path) && path !== "/admin/") {
         return adminHtmlResponse(adminPage);
       }
     }

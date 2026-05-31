@@ -80,7 +80,6 @@ function isAdminSpaPath(pathname: string): boolean {
 const server = serve({
   port: Number.isFinite(port) ? port : 4000,
   routes: {
-    "/admin": adminPage,
     "/admin/": adminPage,
     "/admin/login": adminLoginPage,
     "/admin/login/": adminLoginPage,
@@ -93,6 +92,10 @@ const server = serve({
 
     const url = new URL(req.url);
     const path = url.pathname;
+
+    if (req.method === "GET" && path === "/admin") {
+      return Response.redirect(`${url.origin}/admin/`, 301);
+    }
 
     if (req.method === "GET" && isAdminSpaPath(path)) {
       return adminPage as unknown as Response;

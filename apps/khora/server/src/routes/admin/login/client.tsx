@@ -27,7 +27,7 @@ function LoginPage() {
         setError("Invalid token");
         return;
       }
-      window.location.href = "/admin";
+      window.location.href = "/admin/";
     } catch {
       setError("Login failed");
     } finally {
