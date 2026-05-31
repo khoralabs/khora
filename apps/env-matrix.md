@@ -7,7 +7,7 @@ Reference for deploying the three Khora web services (Render or similar). Per-ap
 | Service | Package | Default port | Start command (prod) | Persistent disk |
 | --- | --- | --- | --- | --- |
 | Khora Labs homepage | `@khoralabs/khoralabs-homepage` | 3000 | `bun run start` | No |
-| Khora registry | `@khoralabs/registry` | 4000 | `bun run start` | Yes (`registry.sqlite`) |
+| Khora registry | `@khoralabs/khora-registry` | 4000 | `bun run start` | Yes (`registry.sqlite`) |
 | Khora server | `@khoralabs/khora-server` | 8788 | `bun run start` | Yes (catalog, frames, cells) |
 
 Use `bun run start` (not bare `src/index.ts`) on **registry** and **khora-server** so Litestream sidecars run when enabled.
