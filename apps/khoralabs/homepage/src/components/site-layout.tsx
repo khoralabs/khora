@@ -1,12 +1,12 @@
 import type { ComponentProps } from "react";
 
 import { NoiseOverlay } from "@/components/noise-overlay";
+import { SiteNav } from "@/components/site-nav";
 import {
   footerDefaultClass,
   footerLegalLinkClass,
   headerDefaultClass,
   mainDefaultClass,
-  navLinkClass,
   shellClass,
 } from "@/lib/ui-styles";
 import { cn } from "@/lib/utils";
@@ -106,25 +106,7 @@ function Header({ className, children, ...props }: ComponentProps<"header">) {
           <a href="/" className="block shrink-0 transition-opacity hover:opacity-80">
             <img src={logoUrl} alt="khora" width={162} height={46} className="h-4 w-auto md:h-6" />
           </a>
-          <nav aria-label="Primary">
-            <ul className="flex gap-8 md:gap-10">
-              <li>
-                <a href="/blog" className={navLinkClass}>
-                  Blog
-                </a>
-              </li>
-              <li>
-                <a href="/contact" className={navLinkClass}>
-                  Contact
-                </a>
-              </li>
-              <li>
-                <a href="/skills" className={navLinkClass}>
-                  Skills
-                </a>
-              </li>
-            </ul>
-          </nav>
+          <SiteNav />
         </>
       )}
     </header>

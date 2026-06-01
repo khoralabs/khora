@@ -41,10 +41,6 @@ export const heroTitleClass =
 /** Inner page H1 (contact, etc.). */
 export const pageTitleClass = "text-balance text-2xl font-normal leading-tight md:text-3xl";
 
-/** Header nav links (Blog, Contact). */
-export const navLinkClass =
-  "text-sm text-[#F4F4EF] no-underline transition-opacity hover:opacity-75 md:text-[15px]";
-
 // --- Forms ---
 
 /** Native text inputs and textareas on the dark shell. */

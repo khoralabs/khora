@@ -1,10 +1,5 @@
 import { SiteLayout } from "@/components/site-layout";
-import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-} from "@/components/ui/navigation-menu";
+import { SiteNav } from "@/components/site-nav";
 import { WaitlistSignup } from "@/components/waitlist-signup";
 import {
   consumerLandingFooterClass,
@@ -36,16 +31,7 @@ function HomePage() {
               className="h-4 w-auto md:h-[1.2rem]"
             />
           </a>
-          <NavigationMenu aria-label="Primary" viewport={false}>
-            <NavigationMenuList>
-              <NavigationMenuItem>
-                <NavigationMenuLink href="/blog">Blog</NavigationMenuLink>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuLink href="/contact">Contact</NavigationMenuLink>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
+          <SiteNav variant="light" />
         </SiteLayout.Header>
         <SiteLayout.Main className={consumerLandingMainClass}>
           <div className={consumerLandingHeroGridClass}>
