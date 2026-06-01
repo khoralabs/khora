@@ -118,6 +118,11 @@ function Header({ className, children, ...props }: ComponentProps<"header">) {
                   Contact
                 </a>
               </li>
+              <li>
+                <a href="/skills" className={navLinkClass}>
+                  Skills
+                </a>
+              </li>
             </ul>
           </nav>
         </>
