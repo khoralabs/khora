@@ -4,6 +4,14 @@ import { commandHelpTextMap, printHelp } from "./commands/global-help";
 import { dispatch } from "./commands/handlers";
 import { createKhoraCliContext } from "./flows/context";
 
+function errorMessage(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  if (e !== null && typeof e === "object" && "message" in e) {
+    return String((e as { message: unknown }).message);
+  }
+  return String(e);
+}
+
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
 
@@ -51,7 +59,7 @@ async function main(): Promise<void> {
   try {
     await dispatch(ctx, positional, flags);
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
+    const msg = errorMessage(e);
     if (msg.startsWith("Unknown command:")) {
       console.error(msg);
       printHelp();

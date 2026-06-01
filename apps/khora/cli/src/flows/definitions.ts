@@ -39,3 +39,49 @@ export const profileUpdateFlowDefinition: FlowDefinition = {
     },
   ],
 };
+
+export const postsCreateFlowDefinition: FlowDefinition = {
+  id: "khora-posts-create",
+  offers: [
+    {
+      id: "create",
+      ports: [
+        { id: "body", prompt: "Body: " },
+        { id: "title", prompt: "Title (optional): ", optional: true },
+        {
+          id: "topics",
+          prompt: "Topics, comma-separated (optional): ",
+          optional: true,
+        },
+        {
+          id: "visibility",
+          prompt: "Visibility [public/network/private] (optional): ",
+          optional: true,
+        },
+      ],
+    },
+  ],
+};
+
+export const postsUpdateFlowDefinition: FlowDefinition = {
+  id: "khora-posts-update",
+  offers: [
+    {
+      id: "update",
+      ports: [
+        { id: "body", prompt: "Body (leave empty to skip): ", optional: true },
+        { id: "title", prompt: "Title (leave empty to skip): ", optional: true },
+        {
+          id: "topics",
+          prompt: "Topics, comma-separated (leave empty to skip): ",
+          optional: true,
+        },
+        {
+          id: "visibility",
+          prompt: "Visibility [public/network/private] (leave empty to skip): ",
+          optional: true,
+        },
+      ],
+    },
+  ],
+};

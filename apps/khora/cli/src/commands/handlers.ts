@@ -105,7 +105,7 @@ export async function dispatch(
   }
 
   if (a === "posts" && b === "create") {
-    await handlePostsCreate(flags);
+    await handlePostsCreate(ctx, flags);
     return;
   }
 
@@ -115,7 +115,7 @@ export async function dispatch(
   }
 
   if (a === "posts" && b === "update") {
-    await handlePostsUpdate(positional, flags);
+    await handlePostsUpdate(ctx, positional, flags);
     return;
   }
 

@@ -2,7 +2,9 @@ import type { FlagMap } from "@khoralabs/cli-kit";
 import { boolFlag, splitTopics, strFlag } from "@khoralabs/cli-kit";
 import type { KhoraPostPatch, KhoraPostVisibility } from "@khoralabs/khora-contracts";
 
+import type { KhoraCliContext } from "../flows/context";
 import { readJsonArg, withKhoraClient } from "../flows/context";
+import { runPostCreateInteractiveFlow, runPostUpdateInteractiveFlow } from "../flows/post-flows";
 
 function visibilityFromFlags(flags: FlagMap): KhoraPostVisibility | undefined {
   const v = strFlag(flags, "visibility")?.trim();
@@ -11,23 +13,23 @@ function visibilityFromFlags(flags: FlagMap): KhoraPostVisibility | undefined {
   throw new Error("--visibility must be public, network, or private");
 }
 
-export async function handlePostsCreate(flags: FlagMap): Promise<void> {
+export async function handlePostsCreate(ctx: KhoraCliContext, flags: FlagMap): Promise<void> {
   const json = boolFlag(flags, "json");
   const body = strFlag(flags, "body")?.trim();
-  if (body === undefined || body.length === 0) {
-    throw new Error("--body is required");
-  }
-  const title = strFlag(flags, "title")?.trim();
-  const topics = splitTopics(strFlag(flags, "topics"));
-  const visibility = visibilityFromFlags(flags);
+  const createBody =
+    body === undefined || body.length === 0
+      ? await runPostCreateInteractiveFlow(ctx)
+      : {
+          body,
+          ...(strFlag(flags, "title")?.trim() ? { title: strFlag(flags, "title")?.trim() } : {}),
+          ...(splitTopics(strFlag(flags, "topics")) !== undefined
+            ? { topics: splitTopics(strFlag(flags, "topics")) }
+            : {}),
+          visibility: visibilityFromFlags(flags) ?? "public",
+        };
 
   await withKhoraClient(flags, async (client) => {
-    const post = await client.createPost({
-      body,
-      ...(title !== undefined && title.length > 0 ? { title } : {}),
-      ...(topics !== undefined ? { topics } : {}),
-      visibility: visibility ?? "public",
-    });
+    const post = await client.createPost(createBody);
     if (json) {
       console.log(JSON.stringify(post, null, 2));
     } else {
@@ -59,7 +61,11 @@ export async function handlePostsDelete(positional: string[], flags: FlagMap): P
   });
 }
 
-export async function handlePostsUpdate(positional: string[], flags: FlagMap): Promise<void> {
+export async function handlePostsUpdate(
+  ctx: KhoraCliContext,
+  positional: string[],
+  flags: FlagMap,
+): Promise<void> {
   const jsonOut = boolFlag(flags, "json");
   const postId = positional[2]?.trim();
   if (postId === undefined || postId.length === 0) {
@@ -84,14 +90,15 @@ export async function handlePostsUpdate(positional: string[], flags: FlagMap): P
       topics === undefined &&
       visibility === undefined
     ) {
-      throw new Error("Provide at least one of --body, --title, --topics, --visibility, or --json");
+      patch = await runPostUpdateInteractiveFlow(ctx);
+    } else {
+      patch = {
+        ...(body !== undefined ? { body } : {}),
+        ...(title !== undefined ? { title } : {}),
+        ...(topics !== undefined ? { topics } : {}),
+        ...(visibility !== undefined ? { visibility } : {}),
+      };
     }
-    patch = {
-      ...(body !== undefined ? { body } : {}),
-      ...(title !== undefined ? { title } : {}),
-      ...(topics !== undefined ? { topics } : {}),
-      ...(visibility !== undefined ? { visibility } : {}),
-    };
   }
 
   await withKhoraClient(flags, async (client) => {
