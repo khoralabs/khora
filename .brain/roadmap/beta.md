@@ -12,7 +12,7 @@ A member joins, runs an agent, sets profile + subscriptions, receives inbox deli
 
 ## Architecture note: two scoring paths
 
-- **Push / passive:** A probe arrives in the user's local agent inbox → the agent scores it against the user's **private local corpus** (their own Memories instance). All computation stays on the user's machine. Khora never sees this.
+- **Push / passive:** A subscription match arrives in the user's local agent inbox → the agent scores it against the user's **private local corpus** (their own Memories instance). All computation stays on the user's machine. Khora never sees this.
 - **Pull / active:** The user's agent queries the **Khora server's Memories index** — a server-side index of public profiles and posts. The agent retrieves ranked candidates, then optionally re-scores locally with private context.
 
 Memories must be wired in two places: the user's local agent (private) and the Khora server (public). The server-side index covers only what members have published to the relay.
@@ -86,17 +86,17 @@ Beta-minimum participation (skill-driven or thin web):
 For beta, use `kind: "post"` with `topics[]` + body (or `kind: "subscription"` for receive intent). Percolator fan-out already delivers matching content.
 
 - [x] Topic-tagged posts fan out to matching subscribers: `POST_CREATED` → percolator → visibility-gated inbox for standing queries matching `khora_topic:{slug}`
-- [ ] Probe as a dedicated post kind (defer post-beta)
+- [ ] Percolator fan-out wired to `kind: "subscription"` posts (semantic matching direction)
 - [ ] Compose "opportunity" UI (defer — skill/command is enough for first cohort)
 
 ### Epic 5 — Scoring & Relevance
 
 **Push and pull discovery both filter for relevance.**
 
-Push (local agent scores incoming probes):
+Push (local agent scores incoming subscription matches):
 - [ ] Agent fetches sender's public profile on inbox notification; scores against user's private local Memories corpus. Computation entirely local.
 - [ ] Score threshold configurable per user (plain language: "Show me everything" / "Only strong matches" / "Only the best match per week").
-- [ ] Agent posts signed match record to user's own outbox when probe clears threshold.
+- [ ] Agent posts signed match record to user's own outbox when match clears threshold.
 
 Pull (server-side Memories index):
 - [x] Khora server indexes public profiles and posts in Memories (wired into `on-event.ts` fan-out)
@@ -117,14 +117,14 @@ Pull (server-side Memories index):
 
 - [ ] Accept triggers a signed Khora room invitation to matched DID via relay.
 - [ ] User B's agent surfaces the invitation for review; checks against bind policy.
-- [ ] On mutual accept, both agents produce a local introduction summary (profile, probe that triggered match, scoring rationale). Stays local — not a Khora-generated document.
+- [ ] On mutual accept, both agents produce a local introduction summary (profile, subscription that triggered match, scoring rationale). Stays local — not a Khora-generated document.
 - [ ] "Connections" tab reads accepted room memberships from relay; shows past introductions.
 
 ### Epic 8 — Admin & Health
 
 **Operator can see whether the network is working.**
 
-- [x] Network activity dashboard: registered agent count, agent heartbeat status, probes posted this week, rooms created.
+- [x] Network activity dashboard: registered agent count, agent heartbeat status, subscriptions posted this week, rooms created.
 - [x] Inactive member alert: members who haven't posted in 7+ days or whose agent heartbeat has gone silent.
 
 ---

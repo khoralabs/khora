@@ -9,20 +9,19 @@ POST/DELETE /v1/topics/:slug/subscribe
 POST/DELETE /v1/authors/.../subscribe
   → relay_subscription_edges (principal_id, subject)   [edge table, bypasses percolator]
 
-POST /v1/posts
+POST /v1/posts (kind: "post" | "status" | "subscription")
   → AgentRelay.notify(POST_CREATED)
   → publishPost → subscriberPrincipalsForSubject (topic/author/author_topic edge lookup)
-  → addProbeHitReasons (if kind=probe — inverted: scores probe against existing fan-out set)
   → Colonnade inbox pointer staging
 ```
 
-**The problem with probes today:** `addProbeHitReasons` scores a probe against *recipients already in the fan-out set* — people who subscribed to the probe's topics. That is **inverted** relative to the standing-search model. The percolator model is: `new content → find matching queries → deliver content to query owners`. Probes fan-out like regular posts; they don't trigger reverse-lookup.
+`kind: "probe"` has been consolidated into `kind: "subscription"`. Subscriptions of any kind are created via the CLI `subscriptions` commands. The legacy `addProbeHitReasons` / `probe-hit` path is the next thing to remove (Phase 2 below). The remaining problem is that fan-out still runs through the edge table rather than the percolator — content posts don't trigger reverse standing-query lookup.
 
 ---
 
 ## The unifying insight
 
-Tags and probes are the same thing at layer 1:
+All subscription types are the same thing at layer 1:
 
 > "I want to receive posts related to this marker."
 
@@ -30,7 +29,7 @@ Tags and probes are the same thing at layer 1:
 |-------------|-------|-------------------------------------|
 | Topic tag | `topic:rust` edge + post `topics: ["rust"]` | Filter-only: `options.labels.some: ["khora_topic:rust"]` |
 | Author follow | `author:{did}` edge | `namespace = author's post scope` or label `author:{did}` |
-| Semantic probe | `kind: "probe"` + attributes | Semantic: `content.text` + optional filters |
+| Semantic subscription | `kind: "subscription"` + `search` | `content.text` + optional filters |
 
 Layer 2 is orthogonal: **should the act of subscribing itself be visible / fanned out?** That maps cleanly to **post visibility**, not to the marker semantics.
 
@@ -61,13 +60,13 @@ One delivery rail (Colonnade inbox pointers), one matching engine (percolator), 
 
 ## Integration plan (phased)
 
-### Phase 0 — Align contracts (no behavior change)
+### Phase 0 — Align contracts ✓ done
 
-1. Add post kind `subscription` (or rename `probe` → `subscription`)
-2. Replace `attributes` with `search: StandingSearchRequest` (same shape as `zKhoraSearchRequest` minus `topK`)
-3. Add `visibility: "public" | "network" | "private"` to all post kinds
-4. Extend `InboxPostReason` with `{ kind: "standing_query"; queryPostId: string; score: number }` (replaces `probe-hit`)
-5. Keep legacy `topics` on content posts for authoring/tagging; matching uses labels derived at index time
+1. ~~Add post kind `subscription` (rename `probe` → `subscription`)~~ — done; `kind: "probe"` removed
+2. `search: StandingSearchRequest` replaces `attributes`
+3. `visibility: "public" | "network" | "private"` on all post kinds
+4. `InboxPostReason` extended with `{ kind: "standing_query"; queryPostId: string; score: number }` (replaces `probe-hit`)
+5. Legacy `topics` on content posts retained for authoring/tagging; matching uses labels derived at index time
 
 ### Phase 1 — Bootstrap percolator in host
 
@@ -89,7 +88,7 @@ In `createKhoraRelayOnEvent`, on `POST_CREATED` for content posts (`post`, `stat
 2. `matches = await percolator.evaluateCandidate(candidate)`
 3. For each match: `addReason(match.ownerId, { kind: "standing_query", queryPostId, score })`
 4. **Remove** topic/author edge lookup from content fan-out (or keep behind a flag)
-5. Delete `probe-hit.ts` and topic-based probe fan-out
+5. Delete `addProbeHitReasons` / `probe-hit.ts` and topic-based legacy fan-out
 
 Also evaluate on `PROFILE_UPDATED` for semantic profile matching.
 
@@ -142,13 +141,12 @@ Connected-set lookup: `social.listRelationshipsForPrincipal(authorDid)` → peer
 | `/v1/topics/:slug/subscribe` | `POST /v1/posts` subscription shim → remove |
 | `addProbeHitReasons` / `probe-hit.ts` | percolator on content publish |
 | Topic fan-out loop in `publishPost` | percolator matches |
-| `kind: "probe"` + `attributes` | `kind: "subscription"` + `search` |
 
 ---
 
 ## Key design decisions
 
-1. **One kind or two?** Recommend single `subscription` kind with `search` discriminating exact vs semantic (empty content = filter-only). Drop `probe` as a separate concept.
+1. **One kind:** Single `subscription` kind with `search` discriminating exact vs semantic (empty `content` = filter-only). `kind: "probe"` is removed.
 
 2. **Do content posts still carry `topics`?** Yes for authoring/hydration; routing should not depend on a parallel edge table. Topics become candidate labels at index + percolator time.
 

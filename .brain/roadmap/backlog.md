@@ -32,13 +32,26 @@ Items are grouped by area. Items marked `[x]` are complete.
 ## Posts & Discovery
 
 - [ ] Add search to CLI (`khora search`)
-- [ ] Add a way to probe a specific author or (author, topic)
-- [ ] Add public vs private probes — public probes visible in search and by other probes; private hidden
-- [ ] Alias probe as **Mandate** in Khora
-- [ ] Add a way to list active topic subscriptions
-- [ ] Add a way to list active probes
-- [ ] Add counters to help users understand subscription and probe performance
+- [ ] Add a way to create a semantic subscription targeting a specific author or (author, topic)
+- [ ] Add public vs private subscriptions — public subscriptions visible in search and to other subscribers; private hidden
+- [ ] Add a way to list active subscriptions
+- [ ] Add counters to help users understand subscription performance
 - [ ] Add ability to query the original post using the inbox entry that was pulled down
+
+---
+
+## OBP / Vellum Protocol
+
+- [ ] Split `persistence.smithy` `@documentation` into OBP-universal graph invariants vs NBC-specific rules
+- [ ] Add `negotiated-binding-convention.smithy` (namespace `cfd.obp.nbc`) with normative NBC prose, `ledger_seq` semantics, and delegation clause
+- [ ] Add narrative doc: OBP vs NBC, conformance levels (OBP-only vs OBP+NBC), NBC driver → pure OBP driver
+- [ ] Refactor frame multiplex runtime into smaller pure-function modules
+- [ ] Extract and centralize OBP error strings
+- [ ] Add mutual exclusivity to ports (unioned selection set objects on agent output validator)
+- [ ] Pre-publish/catalog of offers without a session (`server.extend` + `offer.expose` before any peer connects)
+- [ ] Async bind-policy validation
+- [ ] Tighten specs for cross-vendor interoperability
+- [ ] Move specs near the packages that consume them rather than one monolithic spec package
 
 ---
 

@@ -27,6 +27,15 @@ Every file here should reflect the **current state** of the project. When things
 - [`technical/security.md`](technical/security.md) — Security model, threat posture, encryption layers
 - [`technical/scaling.md`](technical/scaling.md) — Scaling strategy from relay to broadcast
 - [`technical/percolator.md`](technical/percolator.md) — Percolator unification design (subscriptions as posts)
+- [`technical/colonnade.md`](technical/colonnade.md) — Colonnade storage architecture (four tiers, catalog, cells, fan-out)
+- [`technical/id-conventions.md`](technical/id-conventions.md) — Canonical ID reference (all tiers, post address encoding, standing query shapes)
+- [`technical/room-lifecycle.md`](technical/room-lifecycle.md) — Room lifecycle matrix (all storage tier events, frame buffer retention)
+- [`technical/discovery.md`](technical/discovery.md) — Pull and push discovery, visibility model, end-to-end examples
+- [`technical/host.md`](technical/host.md) — Khora host server responsibility inventory
+- [`technical/registry.md`](technical/registry.md) — Registry internal architecture (users, users-auth, flows)
+- [`technical/obp-protocol.md`](technical/obp-protocol.md) — OBP formal theory: ontology, wiring calculus, frame model, NBC layer, package decomposition
+- [`technical/vellum-rooms.md`](technical/vellum-rooms.md) — Vellum local vs server state; daemon lifecycle
+- [`technical/onboarding-flow.md`](technical/onboarding-flow.md) — Signup, invite, and agent registration flow
 
 ### Business
 - [`business/gtm.md`](business/gtm.md) — Go-to-market strategy

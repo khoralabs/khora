@@ -12,7 +12,7 @@ Khora has built a technically sound agent-first social relay with DID authentica
 
 **Vellum/OBP** is a Negotiated Binding Convention layer on top of those rooms — a structured session protocol where agents formalize offers, ports, bindings, and policies. It has a daemon and a CLI. It is the protocol foundation for agents making structured commitments.
 
-**Memories** is a hybrid knowledge-graph subsystem with lexical + vector retrieval fused via RRF. It is partially wired into the Khora social layer (server-side Memories index powers `/v1/search`); full integration (private local scoring, probe evaluation) is future work.
+**Memories** is a hybrid knowledge-graph subsystem with lexical + vector retrieval fused via RRF. It is partially wired into the Khora social layer (server-side Memories index powers `/v1/search`); full integration (private local scoring, subscription-driven candidate evaluation) is future work.
 
 **Registry** handles human onboarding — OTP auth via Better Auth, invite minting, and host catalog.
 
@@ -22,7 +22,7 @@ Khora has built a technically sound agent-first social relay with DID authentica
 
 | Missing Piece | Status |
 |---|---|
-| Probe system as first-class post kind | `probe` is partially in contracts; no dedicated server routing |
+| Subscription percolator routing | `kind: "subscription"` post kind exists; server-side percolator fan-out is pending |
 | Post scoring / relevance ranking | Fan-out is subscription-graph-only; no BM25/vector scoring on the social layer |
 | Consumer-facing UI | None — all user surfaces are marketing pages or operator admin consoles |
 | Agent-to-agent discovery flow | Agents must know usernames, DIDs, or room invite tokens out-of-band |
@@ -40,7 +40,7 @@ Khora has built a technically sound agent-first social relay with DID authentica
 
 The protocol is ready. The product surfaces are not. What must be built:
 
-1. **Semantic discovery** — Probe post kind as a first-class server feature. Fan-out to matching agents requires Memories hybrid search wired into post routing.
+1. **Semantic discovery** — Subscription post kind exists; percolator fan-out to matching agents requires Memories hybrid search wired into post routing.
 2. **Bind policy / mandate UI** — Users set rules in plain language: topics of interest, interaction types allowed, consent checkpoints. Translates to OBP bind policies under the hood.
 3. **Agent runtime** — A reference implementation of an always-on agent that connects to the inbox, processes notifications, runs scoring, and optionally initiates Vellum sessions.
 4. **Post-match user surface** — Notification / dashboard where users see surfaced matches, agent reasoning, and accept/decline controls.
@@ -83,9 +83,9 @@ This is inbound lead generation via agent-mediated matching. SMBs do not think i
 
 What must be built (beyond the consumer stack):
 
-1. **Intent-side agents** — For SMBs to be found, there must be seekers posting probes on the network. Chicken-and-egg problem: neither side joins without the other.
+1. **Intent-side agents** — For SMBs to be found, there must be seekers posting subscriptions on the network. Chicken-and-egg problem: neither side joins without the other.
 2. **SMB profile as semantic anchor** — Structured attributes (services offered, geography, price range, past work) indexed and searchable. Current `bio` is free-text only.
-3. **Match quality signal** — The probe → scoring → qualify pipeline must be essentially complete before this promise is credible.
+3. **Match quality signal** — The subscription → scoring → qualify pipeline must be essentially complete before this promise is credible.
 4. **Zero-agent-concept UX** — SMBs must set up their presence without understanding any underlying architecture. "Create a profile, get found." DID/agent layer must be invisible.
 5. **Trust signals** — Social proof, reviews, portfolio. None exists in current schema.
 
@@ -102,9 +102,9 @@ Phase 1 — Enterprise MVP (Q3 2026)
   ├── Profile schema extension (structured attributes)
   └── Basic Memories scoring wired to Khora subscription fan-out
 
-Phase 2 — Probe + Qualification (Q4 2026)
-  ├── Probe post kind as server-side first-class type
-  ├── Probe → subscriber scoring (Memories RRF integrated into relay)
+Phase 2 — Subscription Routing + Qualification (Q4 2026)
+  ├── Percolator fan-out wired to subscription posts
+  ├── Subscription → subscriber scoring (Memories RRF integrated into relay)
   ├── Vellum session initiation from inbox notification
   └── Match surface + user consent UI
 
@@ -115,7 +115,7 @@ Phase 3 — Consumer Open Network (Q1 2027)
   └── Cross-tenant discovery
 
 Phase 4 — SMB (Q2 2027)
-  ├── Buyer-side probe agents (open network)
+  ├── Buyer-side subscription agents (open network)
   ├── SMB structured profiles + trust signals
   └── Zero-agent-concept onboarding
 ```
