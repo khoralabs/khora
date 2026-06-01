@@ -35,14 +35,29 @@ export function createKhoraMemoriesIndexer(deps: {
   embeddingModel?: EmbeddingModel;
   namespaceRoot: string;
   logError?: (message: string, err: unknown) => void;
+  onEmbeddingFailure?: (input: { namespace: string; memoryKey: string; text: string }) => void;
 }): KhoraMemoriesIndexer {
   const { client, persistence, persistenceClient, embeddingModel, namespaceRoot } = deps;
   const logError = deps.logError ?? ((msg, err) => console.error(msg, err));
 
-  async function embedLexical(text: string): Promise<number[] | undefined> {
+  async function embedLexical(input: {
+    text: string;
+    namespace: string;
+    memoryKey: string;
+  }): Promise<number[] | undefined> {
     if (embeddingModel === undefined) return undefined;
-    const vectors = await embedTextChunks(embeddingModel, [text]);
-    return vectors[0];
+    try {
+      const vectors = await embedTextChunks(embeddingModel, [input.text]);
+      return vectors[0];
+    } catch (err) {
+      logError("[khora-memories] embed failed, falling back to lexical-only", err);
+      try {
+        deps.onEmbeddingFailure?.(input);
+      } catch (queueErr) {
+        logError("[khora-memories] queueing pending embedding failed", queueErr);
+      }
+      return undefined;
+    }
   }
 
   function resolveAuthorProfileId(post: KhoraPost): string | undefined {
@@ -54,13 +69,32 @@ export function createKhoraMemoriesIndexer(deps: {
     return persistenceClient.profileIdForPrincipal(address.authorPrincipalId);
   }
 
-  return {
+  async function ensureProfileIndexed(profileId: string): Promise<void> {
+    const ns = profileMemoryNamespace(namespaceRoot, profileId);
+    const existing = persistence.findMemoryIdByKey(ns, PROFILE_MEMORY_KEY);
+    if (existing !== undefined) return;
+    const projection = persistenceClient.getProfileById(profileId);
+    if (!projection?.bodyJson) return;
+    try {
+      const profile = JSON.parse(projection.bodyJson) as KhoraProfile;
+      if (typeof profile.id !== "string" || profile.id !== profileId) return;
+      await indexer.indexProfile(profile);
+    } catch (err) {
+      logError("[khora-memories] ensureProfileIndexed parse failed", err);
+    }
+  }
+
+  const indexer: KhoraMemoriesIndexer = {
     async indexProfile(profile: KhoraProfile): Promise<string | undefined> {
       try {
         ensureAgentScope(persistence, namespaceRoot, profile.id);
         const ns = profileMemoryNamespace(namespaceRoot, profile.id);
         const text = khoraProfileLexicalText(profile);
-        const vector = await embedLexical(text);
+        const vector = await embedLexical({
+          text,
+          namespace: ns,
+          memoryKey: PROFILE_MEMORY_KEY,
+        });
         const memoryId = ids.memory(ns, PROFILE_MEMORY_KEY);
         client.mergeMemory({
           key: PROFILE_MEMORY_KEY,
@@ -96,6 +130,7 @@ export function createKhoraMemoriesIndexer(deps: {
           logError("[khora-memories] indexPost skipped: no authorProfileId", post.id);
           return;
         }
+        await ensureProfileIndexed(authorProfileId);
         ensureAgentScope(persistence, namespaceRoot, authorProfileId);
         if (post.topics !== undefined) {
           for (const slug of post.topics) {
@@ -111,7 +146,7 @@ export function createKhoraMemoriesIndexer(deps: {
           post.kind === "subscription"
             ? khoraSubscriptionLexicalText(post)
             : khoraPostLexicalText(post);
-        const vector = await embedLexical(text);
+        const vector = await embedLexical({ text, namespace: ns, memoryKey: post.id });
         const payloadHash = sha256HexLower(new TextEncoder().encode(JSON.stringify(post)));
         const profileNs = profileMemoryNamespace(namespaceRoot, authorProfileId);
         const profileMemoryId = ids.memory(profileNs, PROFILE_MEMORY_KEY);
@@ -174,4 +209,5 @@ export function createKhoraMemoriesIndexer(deps: {
       }
     },
   };
+  return indexer;
 }

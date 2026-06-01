@@ -12,9 +12,23 @@ import {
   GraphScene,
   GraphSearch,
 } from "@khoralabs/memories-react-graph";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 const MEMORIES_API_BASE = "/admin/api/memories";
+const EMBEDDING_QUEUE_POLL_MS = 10_000;
+
+type EmbeddingQueueStatus = {
+  pending: number;
+  failed: number;
+  rows: Array<{
+    id: number;
+    namespace: string;
+    memoryKey: string;
+    attempts: number;
+    lastAttemptAt: number | null;
+    createdAt: number;
+  }>;
+};
 
 function defaultNamespace(): string {
   if (typeof window === "undefined") return "global";
@@ -25,6 +39,42 @@ function defaultNamespace(): string {
 export function GraphPage() {
   const [memoriesAvailable, setMemoriesAvailable] = useState<boolean | null>(null);
   const [unavailableMessage, setUnavailableMessage] = useState<string | null>(null);
+  const [embeddingQueue, setEmbeddingQueue] = useState<EmbeddingQueueStatus | null>(null);
+  const [retryingQueue, setRetryingQueue] = useState(false);
+
+  const loadQueue = useCallback(async (stoppedRef?: { stopped: boolean }) => {
+    try {
+      const res = await fetch(`${MEMORIES_API_BASE}/embedding-queue`);
+      if (!res.ok) return;
+      const json = (await res.json()) as EmbeddingQueueStatus;
+      if (!stoppedRef?.stopped) setEmbeddingQueue(json);
+    } catch {
+      // best effort status panel
+    }
+  }, []);
+
+  const retryNow = useCallback(async () => {
+    setRetryingQueue(true);
+    try {
+      await fetch(`${MEMORIES_API_BASE}/embedding-queue/retry-now`, { method: "POST" });
+      await loadQueue();
+    } finally {
+      setRetryingQueue(false);
+    }
+  }, [loadQueue]);
+
+  useEffect(() => {
+    if (!memoriesAvailable) return;
+    const stoppedRef = { stopped: false };
+    void loadQueue();
+    const id = window.setInterval(() => {
+      void loadQueue(stoppedRef);
+    }, EMBEDDING_QUEUE_POLL_MS);
+    return () => {
+      stoppedRef.stopped = true;
+      window.clearInterval(id);
+    };
+  }, [memoriesAvailable, loadQueue]);
 
   useEffect(() => {
     void (async () => {
@@ -86,6 +136,21 @@ export function GraphPage() {
                 <GraphOverlayContainer>
                   <GraphNamespaceSelector />
                   <GraphSearch />
+                  {embeddingQueue !== null ? (
+                    <div className="rounded border p-2 text-xs text-muted-foreground">
+                      <div className="font-medium text-foreground">Embedding queue</div>
+                      <div>{embeddingQueue.pending} pending</div>
+                      <div>{embeddingQueue.failed} failed</div>
+                      <button
+                        type="button"
+                        className="mt-2 rounded border px-2 py-1 text-xs text-foreground disabled:opacity-50"
+                        onClick={() => void retryNow()}
+                        disabled={retryingQueue}
+                      >
+                        {retryingQueue ? "Retrying..." : "Retry now"}
+                      </button>
+                    </div>
+                  ) : null}
                   <GraphFetchError />
                 </GraphOverlayContainer>
                 <GraphInvestigatorAnswerOverlay className="max-h-72 overflow-y-auto" />

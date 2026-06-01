@@ -25,6 +25,7 @@ export type BootstrapKhoraMemoriesOpts = {
   postResolver: PostResolver;
   embeddingModel?: EmbeddingModel;
   namespaceRoot?: string;
+  onEmbeddingFailure?: (input: { namespace: string; memoryKey: string; text: string }) => void;
 };
 
 export function bootstrapKhoraMemories(opts: BootstrapKhoraMemoriesOpts): KhoraMemoriesHost {
@@ -41,6 +42,9 @@ export function bootstrapKhoraMemories(opts: BootstrapKhoraMemoriesOpts): KhoraM
     persistenceClient: opts.persistenceClient,
     embeddingModel: opts.embeddingModel,
     namespaceRoot,
+    ...(opts.onEmbeddingFailure !== undefined
+      ? { onEmbeddingFailure: opts.onEmbeddingFailure }
+      : {}),
   });
   return {
     client,

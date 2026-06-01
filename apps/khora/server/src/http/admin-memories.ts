@@ -2,6 +2,10 @@ import type { Database } from "bun:sqlite";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { type AgentRegistry, createAgentRegistry } from "@khoralabs/agent-identity";
 import {
+  readPendingEmbeddingQueueSummary,
+  runPendingEmbeddingRetryBatch,
+} from "@khoralabs/khora-host";
+import {
   MemoriesClient,
   type SearchHit,
   searchAsync,
@@ -9,6 +13,7 @@ import {
 } from "@khoralabs/memories-core";
 import {
   createMemoriesEmbeddingModel,
+  type EmbeddingModel,
   type EmbeddingResolutionPreset,
   mergeResolutionAndProviderOptions,
 } from "@khoralabs/memories-core/helpers";
@@ -53,6 +58,7 @@ type MemoriesAccess = {
   persistence: MemoriesPersistence;
   db: Database;
   namespaceRoot: string;
+  embeddingModel?: EmbeddingModel;
 };
 
 let didWarnLexicalOnlySearch = false;
@@ -87,6 +93,7 @@ function resolveMemoriesAccess(deps: HostRouteDeps): MemoriesAccess | Response {
     persistence: memories.persistence,
     db: getMemoriesSqliteDatabase(memories.persistence),
     namespaceRoot: memories.namespaceRoot,
+    embeddingModel: memories.embeddingModel,
   };
 }
 
@@ -209,7 +216,7 @@ async function handleMemoriesRoute(req: Request, url: URL, deps: HostRouteDeps):
   const access = resolveMemoriesAccess(deps);
   if (access instanceof Response) return access;
 
-  const { persistence, db, namespaceRoot } = access;
+  const { persistence, db, namespaceRoot, embeddingModel } = access;
   const subpath = memoriesSubpath(url);
 
   if (req.method === "GET" && subpath === "/namespaces") {
@@ -249,6 +256,29 @@ async function handleMemoriesRoute(req: Request, url: URL, deps: HostRouteDeps):
           ? buildNamespaceSubtreeGraphLayout(db, persistence, namespace)
           : buildNamespaceGraphLayout(db, persistence, namespace);
       return jsonResponse(layout);
+    } catch (err) {
+      return jsonResponse({ error: String(err) }, 500);
+    }
+  }
+
+  if (req.method === "GET" && subpath === "/embedding-queue") {
+    try {
+      return jsonResponse(readPendingEmbeddingQueueSummary(db, { limit: 50 }));
+    } catch (err) {
+      return jsonResponse({ error: String(err) }, 500);
+    }
+  }
+
+  if (req.method === "POST" && subpath === "/embedding-queue/retry-now") {
+    try {
+      const result = await runPendingEmbeddingRetryBatch({
+        db,
+        persistence,
+        embeddingModel,
+        ignoreBackoff: true,
+        batchSize: 100,
+      });
+      return jsonResponse(result);
     } catch (err) {
       return jsonResponse({ error: String(err) }, 500);
     }

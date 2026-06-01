@@ -10,7 +10,10 @@ import {
   createColonnadePostResolver,
   createKhoraCatalogApi,
   createKhoraHost,
+  enqueuePendingEmbedding,
+  ensurePendingEmbeddingsTable,
   type KhoraHostContext,
+  startEmbeddingRetryWorker,
 } from "@khoralabs/khora-host";
 import {
   createKhoraInvitesSqliteRepo,
@@ -145,6 +148,7 @@ export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<
       sqlCipherKey: encryption.sqlCipherKey,
     });
     const memoriesPersistence = createMemoriesPersistence(memoriesDb);
+    ensurePendingEmbeddingsTable(memoriesDb);
     memories = bootstrapKhoraMemories({
       persistence: memoriesPersistence,
       close: () => memoriesDb.close(),
@@ -152,6 +156,14 @@ export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<
       postResolver,
       embeddingModel: opts.memories.embeddingModel,
       namespaceRoot: opts.memories.namespaceRoot,
+      onEmbeddingFailure: ({ namespace, memoryKey, text }) => {
+        enqueuePendingEmbedding(memoriesDb, { namespace, memoryKey, text });
+      },
+    });
+    startEmbeddingRetryWorker({
+      db: memoriesDb,
+      persistence: memoriesPersistence,
+      embeddingModel: opts.memories.embeddingModel,
     });
   }
 

@@ -19,6 +19,17 @@ export {
   khoraSearchRequestFromGetQuery,
 } from "./memories/khora-memories-search";
 export { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories/memories-config";
+export {
+  enqueuePendingEmbedding,
+  ensurePendingEmbeddingsTable,
+  type PendingEmbeddingQueueHandle,
+  type PendingEmbeddingQueueSummary,
+  type PendingEmbeddingQueueSummaryRow,
+  type RunPendingEmbeddingRetryBatchResult,
+  readPendingEmbeddingQueueSummary,
+  runPendingEmbeddingRetryBatch,
+  startEmbeddingRetryWorker,
+} from "./memories/pending-embeddings";
 export { assignPostAddress } from "./on-event";
 export {
   bootstrapKhoraPercolator,
