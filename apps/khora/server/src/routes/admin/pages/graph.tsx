@@ -129,7 +129,7 @@ export function GraphPage() {
         <GraphInvestigatorProvider>
           <GraphScene
             edgeRenderMode="activeOnly"
-            overlay={{ nodeLabelsVisible: false, edgeLabelsVisible: false }}
+            overlay={{ nodeLabelsVisible: true, edgeLabelsVisible: false }}
           >
             <GraphScene.TopLeft>
               <div className="flex w-sm flex-col gap-4">

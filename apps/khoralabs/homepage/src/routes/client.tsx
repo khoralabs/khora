@@ -31,7 +31,7 @@ function HomePage() {
               className="h-4 w-auto md:h-[1.2rem]"
             />
           </a>
-          <SiteNav variant="light" />
+          <SiteNav />
         </SiteLayout.Header>
         <SiteLayout.Main className={consumerLandingMainClass}>
           <div className={consumerLandingHeroGridClass}>
