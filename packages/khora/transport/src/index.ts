@@ -23,7 +23,7 @@ export {
   openWebSocketNegotiationDuplex,
   WsKhoraDuplexTransport,
 } from "./duplex-ws";
-export { KhoraClientError } from "./errors";
+export { formatThrownError, KhoraClientError } from "./errors";
 export type { ConnectInboxOptions, InboxWsHandlers } from "./inbox-connect";
 export { connectInbox } from "./inbox-connect";
 export type {

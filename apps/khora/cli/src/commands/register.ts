@@ -4,6 +4,7 @@ import { boolFlag, strFlag } from "@khoralabs/cli-kit";
 import type { KhoraCliContext } from "../flows/context";
 import { cliBaseUrl, cliCurrentHostSlug, loadSigner, withKhoraClient } from "../flows/context";
 import { runRegisterInteractiveFlow } from "../flows/register-flow";
+import { errorMessage } from "../lib/error-message";
 import { displayNameFromFlags, registerFieldsFromFlags } from "../lib/flags";
 import { linkEnsure } from "../registry/client";
 import { cliRegistryUrl } from "../registry/config";
@@ -94,7 +95,7 @@ export async function handleRegister(ctx: KhoraCliContext, flags: FlagMap): Prom
     }
   } catch (err: unknown) {
     if (!json) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = errorMessage(err);
       console.warn(`Registry link ensure skipped: ${msg}`);
     }
   }

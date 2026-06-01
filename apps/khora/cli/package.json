@@ -20,6 +20,7 @@
     "@khoralabs/cli-flow-nbc": "workspace:*",
     "@khoralabs/cli-kit": "workspace:*",
     "@khoralabs/khora-client": "workspace:*",
+    "@khoralabs/khora-transport": "workspace:*",
     "@khoralabs/khora-contracts": "workspace:*",
     "@khoralabs/khora-daemon": "workspace:*"
   },

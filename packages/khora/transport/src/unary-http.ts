@@ -5,7 +5,7 @@ import {
   signAgentRequest,
 } from "@khoralabs/khora-auth";
 import type z from "zod";
-import { KhoraClientError } from "./errors";
+import { formatThrownError, KhoraClientError } from "./errors";
 
 /** Subset of `fetch` used by the client (avoids requiring Bun-specific properties on mocks). */
 export type KhoraFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
@@ -81,7 +81,11 @@ export function createHttpKhoraUnaryTransport(
   }
 
   async function rawFetch(path: string, init?: RequestInit): Promise<Response> {
-    return fetchFn(`${base}${path}`, init);
+    try {
+      return await fetchFn(`${base}${path}`, init);
+    } catch (e) {
+      throw new Error(formatThrownError(e));
+    }
   }
 
   function paths(

@@ -5,6 +5,7 @@ import type { KhoraPostPatch, KhoraPostVisibility } from "@khoralabs/khora-contr
 import type { KhoraCliContext } from "../flows/context";
 import { readJsonArg, withKhoraClient } from "../flows/context";
 import { runPostCreateInteractiveFlow, runPostUpdateInteractiveFlow } from "../flows/post-flows";
+import { exitOnClientError } from "../lib/client-error";
 
 function visibilityFromFlags(flags: FlagMap): KhoraPostVisibility | undefined {
   const v = strFlag(flags, "visibility")?.trim();
@@ -28,14 +29,18 @@ export async function handlePostsCreate(ctx: KhoraCliContext, flags: FlagMap): P
           visibility: visibilityFromFlags(flags) ?? "public",
         };
 
-  await withKhoraClient(flags, async (client) => {
-    const post = await client.createPost(createBody);
-    if (json) {
-      console.log(JSON.stringify(post, null, 2));
-    } else {
-      console.log(`Created post ${post.id}`);
-    }
-  });
+  try {
+    await withKhoraClient(flags, async (client) => {
+      const post = await client.createPost(createBody);
+      if (json) {
+        console.log(JSON.stringify(post, null, 2));
+      } else {
+        console.log(`Created post ${post.id}`);
+      }
+    });
+  } catch (e) {
+    exitOnClientError(e, flags);
+  }
 }
 
 export async function handlePostsGet(positional: string[], flags: FlagMap): Promise<void> {
@@ -101,8 +106,12 @@ export async function handlePostsUpdate(
     }
   }
 
-  await withKhoraClient(flags, async (client) => {
-    const post = await client.updatePost(postId, patch);
-    console.log(JSON.stringify(post, null, jsonOut ? 2 : 0));
-  });
+  try {
+    await withKhoraClient(flags, async (client) => {
+      const post = await client.updatePost(postId, patch);
+      console.log(JSON.stringify(post, null, jsonOut ? 2 : 0));
+    });
+  } catch (e) {
+    exitOnClientError(e, flags);
+  }
 }

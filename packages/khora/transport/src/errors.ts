@@ -1,3 +1,5 @@
+export { formatThrownError } from "./format-thrown-error";
+
 export class KhoraClientError extends Error {
   readonly status: number;
   readonly bodyText?: string;

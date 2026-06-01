@@ -4,6 +4,7 @@ import { boolFlag, style } from "@khoralabs/cli-kit";
 import { KhoraClientError } from "@khoralabs/khora-client";
 
 import { agentIdentityPath, cliBaseUrl, loadSigner, withKhoraClient } from "../flows/context";
+import { errorMessage } from "../lib/error-message";
 
 export async function handleWhoami(flags: FlagMap): Promise<void> {
   const json = boolFlag(flags, "json");
@@ -14,7 +15,7 @@ export async function handleWhoami(flags: FlagMap): Promise<void> {
     signer = await loadSigner(flags);
   } catch (e) {
     const idPath = agentIdentityPath(flags);
-    const msg = e instanceof Error ? e.message : String(e);
+    const msg = errorMessage(e);
     console.error(style.error(msg));
     console.error(style.error(`No agent identity at ${idPath}. Run 'khora keygen' first.`));
     process.exit(1);

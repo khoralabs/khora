@@ -40,12 +40,17 @@ async function postLexicalVector(
   if (memories?.embeddingModel === undefined) {
     return { lexicalText };
   }
-  const vectors = await embedTextChunks(memories.embeddingModel, [lexicalText]);
-  const vector = vectors[0];
-  return {
-    lexicalText,
-    ...(vector !== undefined && vector.length > 0 ? { vector } : {}),
-  };
+  try {
+    const vectors = await embedTextChunks(memories.embeddingModel, [lexicalText]);
+    const vector = vectors[0];
+    return {
+      lexicalText,
+      ...(vector !== undefined && vector.length > 0 ? { vector } : {}),
+    };
+  } catch (err) {
+    console.error("[khora-host] post embed failed, continuing without vector", err);
+    return { lexicalText };
+  }
 }
 
 async function publishPost(params: {

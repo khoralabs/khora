@@ -21,9 +21,20 @@ import {
   listAuthorOutboxRecords,
   resolvePostById,
 } from "@khoralabs/khora-host";
+import { formatThrownError } from "@khoralabs/khora-transport";
 import z from "zod";
+import { logger } from "../logger";
 import type { HostRouteDeps } from "./deps";
 import { authErrorResponse, jsonError, rateLimitedResponse } from "./responses";
+
+function postHandlerError(e: unknown, context: string): Response {
+  const status = e instanceof z.ZodError ? 400 : 500;
+  const msg = formatThrownError(e);
+  if (status >= 500) {
+    logger.error({ err: e, context }, "posts handler error");
+  }
+  return jsonError(msg, status);
+}
 
 export async function handleGetPost(
   req: Request,
@@ -56,8 +67,7 @@ export async function handleGetPost(
     }
     return Response.json(post);
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return jsonError(msg, e instanceof z.ZodError ? 400 : 500);
+    return postHandlerError(e, "getPost");
   }
 }
 
@@ -124,8 +134,7 @@ export async function handleCreatePost(
     });
     return Response.json(post);
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return jsonError(msg, e instanceof z.ZodError ? 400 : 500);
+    return postHandlerError(e, "createPost");
   }
 }
 
@@ -203,8 +212,7 @@ export async function handleUpdatePost(
     });
     return Response.json(post);
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return jsonError(msg, e instanceof z.ZodError ? 400 : 500);
+    return postHandlerError(e, "updatePost");
   }
 }
 

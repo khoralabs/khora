@@ -3,14 +3,7 @@ import { boolFlag, parseArgv, tryPrintCommandHelp } from "@khoralabs/cli-kit";
 import { commandHelpTextMap, printHelp } from "./commands/global-help";
 import { dispatch } from "./commands/handlers";
 import { createKhoraCliContext } from "./flows/context";
-
-function errorMessage(e: unknown): string {
-  if (e instanceof Error) return e.message;
-  if (e !== null && typeof e === "object" && "message" in e) {
-    return String((e as { message: unknown }).message);
-  }
-  return String(e);
-}
+import { errorMessage } from "./lib/error-message";
 
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
