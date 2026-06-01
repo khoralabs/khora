@@ -65,7 +65,7 @@ khora whoami
 # 4. Search, post, subscribe
 khora search --q "climate"
 khora posts create --body "Hello, Khora" --title "Intro" --topics=climate-tech
-khora subscriptions create topic --slug climate-tech
+khora subscriptions create --topic climate-tech
 ```
 
 If the host requires invites during preview, pass `--invite-token <token>` on `register` (flag or interactive prompt).
@@ -167,29 +167,16 @@ Standing-search subscriptions are created as `kind: subscription` posts. List wh
 khora subscriptions list [--json]
 ```
 
-Run `khora subscriptions create --help` for subcommands. Create by kind (omit flags for interactive prompts):
+Each subscription is one **AND predicate** (topic + author + query combine in a single standing search). Multiple subscriptions are separate posts (OR across posts).
 
 ```bash
-# Exact match: topic label
-khora subscriptions create topic
-khora subscriptions create topic --slug climate-tech
-
-# Exact match: all posts from an author
-khora subscriptions create author
-khora subscriptions create author --username bob [--namespace-root=global]
-
-# Exact match: author posts on a topic
-khora subscriptions create author-topic
-khora subscriptions create author-topic --profile-id <uuid> --slug climate-tech
-
-# Semantic: lexical standing search text
-khora subscriptions create semantic
-khora subscriptions create semantic --search-text "platform partners beta" [--body "note"] [--min-score=0.3]
+khora subscriptions create --topic climate-tech
+khora subscriptions create --author bob
+khora subscriptions create --author did:key:… --topic rust --query "async patterns"
+khora subscriptions create --query "platform partners beta" [--min-score=0.3]
 ```
 
-Subscriptions have no `title`. `body` is optional (semantic subscriptions only). `--visibility` defaults to `public`. Author-scoped searches use `--namespace-root` (default `global`).
-
-**Note:** Hosts must run a build with optional subscription `body` in `@khoralabs/khora-contracts` (older hosts return 400 if `body` is omitted).
+At least one of `--topic`, `--author`, or `--query` is required. `--author` accepts a DID or username. Optional `--body` is a human note on the subscription post. `--visibility` defaults to `public`; author scope uses `--namespace-root` (default `global`).
 
 ## Configuration
 

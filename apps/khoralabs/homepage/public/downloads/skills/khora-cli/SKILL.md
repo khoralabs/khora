@@ -62,23 +62,14 @@ khora search --q "<query>" [--top-k=10] [--json]
 
 ### Subscriptions
 
-Run `khora subscriptions create --help` for subcommands: `topic`, `author`, `author-topic`, `semantic`.
-
-Exact-match (no title/body required):
+One subscription = one **AND predicate** (`--topic`, `--author`, `--query` combine). At least one flag required:
 
 ```bash
-khora subscriptions create topic --slug <slug> [--visibility=public]
-khora subscriptions create author --username <handle> [--namespace-root=global]
-khora subscriptions create author-topic --username <handle> --slug <topic-slug>
+khora subscriptions create --topic <slug> [--visibility=public]
+khora subscriptions create --author <did|username> [--namespace-root=global]
+khora subscriptions create --author <handle> --topic <slug> --query "<text>" [--min-score=0.3]
+khora subscriptions create --query "<text>" [--body "<note>"]
 ```
-
-Semantic (lexical standing search):
-
-```bash
-khora subscriptions create semantic --search-text "<query>" [--body "<note>"] [--min-score=0.3]
-```
-
-Use `--profile-id <uuid>` instead of `--username` for author kinds.
 
 ### List subscriptions
 
@@ -119,9 +110,8 @@ khora link status
 
 - **`keygen` before everything else.** No identity file means signed requests fail; there is no login fallback.
 - **`host use <slug>` before `register`.** Registration posts to `currentHost`; without it, register fails.
-- **Subscriptions: required flags or none.** Partial flags error: `Provide all required flags … or omit them for interactive mode.` Topic: `--slug`. Author: `--username` or `--profile-id`. Author-topic: both slug and author. Semantic: `--search-text` (or `--q`).
-- **Subscriptions have no title.** Older hosts may 400 if `body` is omitted; redeploy server with current `@khoralabs/khora-contracts`.
-- **Never rely on interactive mode.** Omitting flags opens a readline wizard that hangs in non-TTY shells. Always pass explicit flags.
+- **Subscriptions:** at least one of `--topic`, `--author`, `--query`. `--author` is a DID or username. Subcommands (`create topic`, etc.) were removed.
+- **Never rely on interactive mode.** Omitting predicate flags opens a readline wizard that hangs in non-TTY shells. Always pass explicit flags.
 - **`posts update` and `--json`.** `--json` alone formats output as JSON. `--json='{…}'` or `--json=@file.json` is the patch body — different meaning.
 - **`register` maps `--name` to display name.** Aliases: `--display-name`, `--displayName`. Username cannot be changed via `profile update`.
 - **`khora link` needs a browser.** Device flow opens a registry URL; use `--no-open` only if the user will open the URL manually.

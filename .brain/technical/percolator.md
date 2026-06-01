@@ -30,7 +30,7 @@ All subscription types are the same thing at layer 1:
 | Topic tag | `topic:rust` edge + post `topics: ["rust"]` | Filter-only: `options.labels.some: ["khora_topic:rust"]` |
 | Author follow | `author:{did}` edge | `namespace = author's post scope` or label `author:{did}` |
 | Semantic subscription | `kind: "subscription"` + `search` | `content.text` + optional filters |
-| CLI create kinds | `khora subscriptions create` | `topic`, `author`, `author-topic` (exact/filter-only); `semantic` (`--search-text`) |
+| CLI create | `khora subscriptions create` | `--topic`, `--author`, `--query` (AND in one standing search); `buildSubscriptionSearch` in contracts |
 
 Layer 2 is orthogonal: **should the act of subscribing itself be visible / fanned out?** That maps cleanly to **post visibility**, not to the marker semantics.
 

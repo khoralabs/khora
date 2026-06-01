@@ -86,65 +86,15 @@ export const postsUpdateFlowDefinition: FlowDefinition = {
   ],
 };
 
-export const subscriptionsCreateTopicFlowDefinition: FlowDefinition = {
-  id: "khora-subscriptions-create-topic",
+export const subscriptionsCreateFlowDefinition: FlowDefinition = {
+  id: "khora-subscriptions-create",
   offers: [
     {
       id: "create",
       ports: [
-        { id: "slug", prompt: "Topic slug: " },
-        {
-          id: "visibility",
-          prompt: "Visibility [public/network/private] (optional): ",
-          optional: true,
-        },
-      ],
-    },
-  ],
-};
-
-export const subscriptionsCreateAuthorFlowDefinition: FlowDefinition = {
-  id: "khora-subscriptions-create-author",
-  offers: [
-    {
-      id: "create",
-      ports: [
-        { id: "username", prompt: "Username: " },
-        {
-          id: "visibility",
-          prompt: "Visibility [public/network/private] (optional): ",
-          optional: true,
-        },
-      ],
-    },
-  ],
-};
-
-export const subscriptionsCreateAuthorTopicFlowDefinition: FlowDefinition = {
-  id: "khora-subscriptions-create-author-topic",
-  offers: [
-    {
-      id: "create",
-      ports: [
-        { id: "username", prompt: "Username: " },
-        { id: "slug", prompt: "Topic slug: " },
-        {
-          id: "visibility",
-          prompt: "Visibility [public/network/private] (optional): ",
-          optional: true,
-        },
-      ],
-    },
-  ],
-};
-
-export const subscriptionsCreateSemanticFlowDefinition: FlowDefinition = {
-  id: "khora-subscriptions-create-semantic",
-  offers: [
-    {
-      id: "create",
-      ports: [
-        { id: "searchText", prompt: "Search text (semantic match): " },
+        { id: "topic", prompt: "Topic slug (optional): ", optional: true },
+        { id: "author", prompt: "Author DID or username (optional): ", optional: true },
+        { id: "query", prompt: "Semantic query text (optional): ", optional: true },
         { id: "body", prompt: "Body note (optional): ", optional: true },
         { id: "minScore", prompt: "Min score 0–1 (optional): ", optional: true },
         {

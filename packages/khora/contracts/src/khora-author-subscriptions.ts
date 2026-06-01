@@ -2,24 +2,28 @@ import z from "zod";
 import type { KhoraStandingSearchRequest } from "./khora-standing-search";
 import { KHORA_TOPIC_LABEL_PREFIX } from "./khora-subscription-searches";
 
+export const zSubscriptionPredicate = z.object({
+  topicSlug: z.string().optional(),
+  authorDid: z.string().optional(),
+  query: z.string().optional(),
+});
+
+export type SubscriptionPredicate = z.infer<typeof zSubscriptionPredicate>;
+
 export const zAuthorSubscriptionsSnapshot = z.object({
-  authorDids: z.array(z.string()),
-  authorTopics: z.array(z.object({ authorDid: z.string(), topicSlug: z.string() })).default([]),
-  topicSlugs: z.array(z.string()).default([]),
-  semantic: z.array(z.object({ searchText: z.string() })).default([]),
+  predicates: z.array(zSubscriptionPredicate),
 });
 
 export type AuthorSubscriptionsSnapshot = z.infer<typeof zAuthorSubscriptionsSnapshot>;
 
-function topicSlugsFromLabels(search: KhoraStandingSearchRequest): string[] {
+function topicSlugFromLabels(search: KhoraStandingSearchRequest): string | undefined {
   const prefix = KHORA_TOPIC_LABEL_PREFIX;
-  const slugs: string[] = [];
   for (const label of search.options?.labels?.some ?? []) {
     if (label.startsWith(prefix)) {
-      slugs.push(label.slice(prefix.length));
+      return label.slice(prefix.length);
     }
   }
-  return slugs;
+  return undefined;
 }
 
 function authorProfileIdFromSearch(search: KhoraStandingSearchRequest): string | undefined {
@@ -29,77 +33,37 @@ function authorProfileIdFromSearch(search: KhoraStandingSearchRequest): string |
   return ns.split("/").at(-2);
 }
 
-function hasSemanticContent(search: KhoraStandingSearchRequest): boolean {
-  const text = search.content.text?.trim() ?? "";
-  const vector = search.content.vector;
-  return text.length > 0 || (vector !== undefined && vector.length > 0);
-}
-
-/** Classify a standing query into listable subscription targets (profile ids, not DIDs). */
-export function parseStandingQuerySubscriptionTargets(search: KhoraStandingSearchRequest): {
-  authorProfileId?: string;
-  authorTopicSlugs: string[];
-  topicSlugs: string[];
-  semanticSearchText?: string;
-} {
-  const authorProfileId = authorProfileIdFromSearch(search);
-  const labelTopicSlugs = topicSlugsFromLabels(search);
-
-  if (authorProfileId !== undefined) {
-    return {
-      authorProfileId,
-      authorTopicSlugs: labelTopicSlugs,
-      topicSlugs: [],
-      semanticSearchText: undefined,
-    };
+/** Parse a standing query into the unified predicate shape (for list/display). */
+export function standingSearchToPredicate(
+  search: KhoraStandingSearchRequest,
+  resolveAuthorDid: (profileId: string) => string | undefined,
+): SubscriptionPredicate {
+  const predicate: SubscriptionPredicate = {};
+  const topicSlug = topicSlugFromLabels(search);
+  if (topicSlug !== undefined) {
+    predicate.topicSlug = topicSlug;
   }
-
-  const text = search.content.text?.trim() ?? "";
-  return {
-    authorTopicSlugs: [],
-    topicSlugs: labelTopicSlugs,
-    semanticSearchText: hasSemanticContent(search) && text.length > 0 ? text : undefined,
-  };
+  const authorProfileId = authorProfileIdFromSearch(search);
+  if (authorProfileId !== undefined) {
+    const authorDid = resolveAuthorDid(authorProfileId);
+    if (authorDid !== undefined) {
+      predicate.authorDid = authorDid;
+    }
+  }
+  const query = search.content.text?.trim() ?? "";
+  if (query.length > 0) {
+    predicate.query = query;
+  }
+  return predicate;
 }
 
-export function mergeAuthorSubscriptionsSnapshot(
-  parts: Iterable<ReturnType<typeof parseStandingQuerySubscriptionTargets>>,
+export function listAuthorSubscriptionsSnapshot(
+  searches: Iterable<KhoraStandingSearchRequest>,
   resolveAuthorDid: (profileId: string) => string | undefined,
 ): AuthorSubscriptionsSnapshot {
-  const authorDids = new Set<string>();
-  const authorTopics: { authorDid: string; topicSlug: string }[] = [];
-  const topicSlugs = new Set<string>();
-  const semanticTexts = new Set<string>();
-  const seenAuthorTopics = new Set<string>();
-
-  for (const part of parts) {
-    if (part.authorProfileId !== undefined) {
-      const authorDid = resolveAuthorDid(part.authorProfileId);
-      if (authorDid === undefined) continue;
-      if (part.authorTopicSlugs.length === 0) {
-        authorDids.add(authorDid);
-      } else {
-        for (const topicSlug of part.authorTopicSlugs) {
-          const key = `${authorDid}\0${topicSlug}`;
-          if (seenAuthorTopics.has(key)) continue;
-          seenAuthorTopics.add(key);
-          authorTopics.push({ authorDid, topicSlug });
-        }
-      }
-      continue;
-    }
-    for (const slug of part.topicSlugs) {
-      topicSlugs.add(slug);
-    }
-    if (part.semanticSearchText !== undefined) {
-      semanticTexts.add(part.semanticSearchText);
-    }
+  const predicates: SubscriptionPredicate[] = [];
+  for (const search of searches) {
+    predicates.push(standingSearchToPredicate(search, resolveAuthorDid));
   }
-
-  return {
-    authorDids: [...authorDids].sort(),
-    authorTopics,
-    topicSlugs: [...topicSlugs].sort(),
-    semantic: [...semanticTexts].sort().map((searchText) => ({ searchText })),
-  };
+  return { predicates };
 }

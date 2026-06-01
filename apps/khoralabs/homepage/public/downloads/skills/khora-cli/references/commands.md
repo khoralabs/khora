@@ -184,56 +184,30 @@ No additional flags documented.
 
 ## Subscriptions
 
-Standing-search subscriptions are `kind: subscription` posts. Subscriptions have **no title**; `body` is optional (semantic only). Run `khora subscriptions create --help` for subcommands.
+Standing-search subscriptions are `kind: subscription` posts. Each post is one **AND predicate** (`--topic`, `--author`, `--query`). Multiple subscriptions are separate posts.
 
 ### `khora subscriptions list`
 
 | Flag | Description |
 | --- | --- |
-| `--json` | JSON output |
+| `--json` | `{ "predicates": [ { "topicSlug?", "authorDid?", "query?" } ] }` |
 
-### `khora subscriptions create topic`
+### `khora subscriptions create`
 
-Exact match on topic label `khora_topic:{slug}`.
-
-| Flag | Required (non-interactive) | Description |
-| --- | --- | --- |
-| `--slug` | yes | Topic slug |
-| `--visibility` | no | `public`, `network`, or `private` (default `public`) |
-| `--json` | no | JSON output |
-
-### `khora subscriptions create author`
+At least one of `--topic`, `--author`, `--query` is required. Flags combine with AND semantics.
 
 | Flag | Required (non-interactive) | Description |
 | --- | --- | --- |
-| `--profile-id` / `--profileId` **or** `--username` | yes (one of) | Author |
+| `--topic` | one of three | Topic slug |
+| `--author` | one of three | Author DID or username |
+| `--query` / `--q` | one of three | Semantic match text |
+| `--body` | no | Optional note on subscription post |
+| `--min-score` / `--minScore` | no | Min score when `--query` is set |
 | `--namespace-root` / `--namespaceRoot` | no | Default `global` |
 | `--visibility` | no | Default `public` |
 | `--json` | no | JSON output |
 
-### `khora subscriptions create author-topic`
-
-| Flag | Required (non-interactive) | Description |
-| --- | --- | --- |
-| `--slug` | yes | Topic slug |
-| `--profile-id` / `--profileId` **or** `--username` | yes (one of) | Author |
-| `--namespace-root` | no | Default `global` |
-| `--visibility` | no | Default `public` |
-| `--json` | no | JSON output |
-
-### `khora subscriptions create semantic`
-
-Lexical/semantic standing search (`search.content.text`).
-
-| Flag | Required (non-interactive) | Description |
-| --- | --- | --- |
-| `--search-text` / `--searchText` / `--q` | yes | Standing search text |
-| `--body` | no | Optional note on subscription post |
-| `--min-score` / `--minScore` | no | Minimum match score |
-| `--visibility` | no | Default `public` |
-| `--json` | no | JSON output |
-
-Partial flags without a full set → error. Omit all flags only in interactive TTY (not for agents). Host must run current contracts (optional subscription `body`); older hosts return 400 if `body` is omitted.
+Subcommands and legacy flags (`--slug`, `--username`, `--search-text`) are removed.
 
 ## Inbox
 

@@ -1,67 +1,55 @@
 import { describe, expect, test } from "bun:test";
 import {
-  mergeAuthorSubscriptionsSnapshot,
-  parseStandingQuerySubscriptionTargets,
+  listAuthorSubscriptionsSnapshot,
+  standingSearchToPredicate,
 } from "./khora-author-subscriptions";
 import {
-  authorSubscriptionSearch,
   authorTopicSubscriptionSearch,
+  buildSubscriptionSearch,
   topicSubscriptionSearch,
 } from "./khora-subscription-searches";
 
-describe("parseStandingQuerySubscriptionTargets", () => {
-  test("global topic subscription", () => {
-    expect(parseStandingQuerySubscriptionTargets(topicSubscriptionSearch("khoralabs"))).toEqual({
-      authorTopicSlugs: [],
-      topicSlugs: ["khoralabs"],
-      semanticSearchText: undefined,
+const resolve = (profileId: string) => (profileId === "p1" ? "did:key:bob" : undefined);
+
+describe("standingSearchToPredicate", () => {
+  test("topic only", () => {
+    expect(standingSearchToPredicate(topicSubscriptionSearch("khoralabs"), resolve)).toEqual({
+      topicSlug: "khoralabs",
     });
   });
 
-  test("author subscription", () => {
-    const search = authorSubscriptionSearch("prof-1", "global");
-    expect(parseStandingQuerySubscriptionTargets(search)).toEqual({
-      authorProfileId: "prof-1",
-      authorTopicSlugs: [],
-      topicSlugs: [],
-      semanticSearchText: undefined,
+  test("author-topic and query compound", () => {
+    const search = buildSubscriptionSearch({
+      authorProfileId: "p1",
+      topicSlug: "rust",
+      queryText: "platform partners",
+      namespaceRoot: "global",
+    });
+    expect(standingSearchToPredicate(search, resolve)).toEqual({
+      authorDid: "did:key:bob",
+      topicSlug: "rust",
+      query: "platform partners",
     });
   });
 
-  test("author-topic subscription", () => {
-    const search = authorTopicSubscriptionSearch("prof-1", "rust", "global");
-    expect(parseStandingQuerySubscriptionTargets(search)).toEqual({
-      authorProfileId: "prof-1",
-      authorTopicSlugs: ["rust"],
-      topicSlugs: [],
-      semanticSearchText: undefined,
-    });
-  });
-
-  test("semantic subscription", () => {
+  test("semantic only", () => {
     expect(
-      parseStandingQuerySubscriptionTargets({
-        content: { text: "platform partners" },
-        options: { minScore: 0.3 },
-      }),
-    ).toEqual({
-      authorTopicSlugs: [],
-      topicSlugs: [],
-      semanticSearchText: "platform partners",
-    });
+      standingSearchToPredicate(buildSubscriptionSearch({ queryText: "beta intros" }), resolve),
+    ).toEqual({ query: "beta intros" });
   });
 });
 
-describe("mergeAuthorSubscriptionsSnapshot", () => {
-  test("merges topic and author rows", () => {
-    const snap = mergeAuthorSubscriptionsSnapshot(
-      [
-        parseStandingQuerySubscriptionTargets(topicSubscriptionSearch("khora")),
-        parseStandingQuerySubscriptionTargets(authorSubscriptionSearch("p1", "global")),
-      ],
-      (profileId) => (profileId === "p1" ? "did:key:bob" : undefined),
+describe("listAuthorSubscriptionsSnapshot", () => {
+  test("one predicate per standing query", () => {
+    const snap = listAuthorSubscriptionsSnapshot(
+      [topicSubscriptionSearch("khora"), authorTopicSubscriptionSearch("p1", "rust", "global")],
+      resolve,
     );
-    expect(snap.topicSlugs).toEqual(["khora"]);
-    expect(snap.authorDids).toEqual(["did:key:bob"]);
+    expect(snap.predicates).toHaveLength(2);
+    expect(snap.predicates[0]).toEqual({ topicSlug: "khora" });
+    expect(snap.predicates[1]).toEqual({
+      authorDid: "did:key:bob",
+      topicSlug: "rust",
+    });
   });
 });

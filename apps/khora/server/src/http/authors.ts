@@ -1,7 +1,4 @@
-import {
-  mergeAuthorSubscriptionsSnapshot,
-  parseStandingQuerySubscriptionTargets,
-} from "@khoralabs/khora-contracts";
+import { listAuthorSubscriptionsSnapshot } from "@khoralabs/khora-contracts";
 import type { HostRouteDeps } from "./deps";
 import { authErrorResponse, rateLimitedResponse } from "./responses";
 
@@ -20,12 +17,12 @@ export async function handleListAuthorSubscriptions(
   const tRl = rateLimiters.topicsDid(`did:${did}`);
   if (!tRl.ok) return rateLimitedResponse(tRl.retryAfterSec);
 
-  const parts = ctx.percolator.percolator
+  const searches = ctx.percolator.percolator
     .listQueriesByOwner(did)
     .filter((query) => query.active)
-    .map((query) => parseStandingQuerySubscriptionTargets(query.search));
+    .map((query) => query.search);
 
-  const snap = mergeAuthorSubscriptionsSnapshot(parts, (profileId) =>
+  const snap = listAuthorSubscriptionsSnapshot(searches, (profileId) =>
     ctx.host.persistenceClient.principalForAgentProfileId(profileId),
   );
 

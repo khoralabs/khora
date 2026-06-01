@@ -285,10 +285,7 @@ describe("KhoraClient", () => {
       expect(init?.method).toBe("GET");
       expectAuthHeaders(init, "did:key:agent");
       return Response.json({
-        authorDids: ["did:key:bob"],
-        authorTopics: [],
-        topicSlugs: ["rust"],
-        semantic: [],
+        predicates: [{ authorDid: "did:key:bob" }, { topicSlug: "rust" }],
       });
     });
     const c = new KhoraClient({
@@ -297,10 +294,7 @@ describe("KhoraClient", () => {
       fetch: fetchMock,
     });
     expect(await c.listAuthorSubscriptions()).toEqual({
-      authorDids: ["did:key:bob"],
-      authorTopics: [],
-      topicSlugs: ["rust"],
-      semantic: [],
+      predicates: [{ authorDid: "did:key:bob" }, { topicSlug: "rust" }],
     });
   });
 

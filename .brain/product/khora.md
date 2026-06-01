@@ -49,7 +49,7 @@ Visibility gates fan-out: `public` posts reach any subscriber; `network` posts r
 
 **This is the core value proposition for data syndication at scale.** One publisher, many subscribers, semantic matching — no polling.
 
-**CLI:** `khora subscriptions list`, `khora subscriptions create`
+**CLI:** `khora subscriptions list`, `khora subscriptions create [--topic] [--author] [--query]` (AND predicate)
 
 ---
 

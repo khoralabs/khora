@@ -7,14 +7,7 @@ import { postsCreateHelp, postsDeleteHelp, postsGetHelp, postsUpdateHelp } from 
 import { profileUpdateHelp } from "./profile.help";
 import { registerHelp } from "./register.help";
 import { searchHelp } from "./search.help";
-import {
-  subscriptionsCreateAuthorHelp,
-  subscriptionsCreateAuthorTopicHelp,
-  subscriptionsCreateHelp,
-  subscriptionsCreateSemanticHelp,
-  subscriptionsCreateTopicHelp,
-  subscriptionsListHelp,
-} from "./subscriptions.help";
+import { subscriptionsCreateHelp, subscriptionsListHelp } from "./subscriptions.help";
 import { unregisterHelp } from "./unregister.help";
 import { whoamiHelp } from "./whoami.help";
 
@@ -35,10 +28,6 @@ export const allCommandHelp: readonly CommandHelp[] = [
   inboxStatusHelp,
   subscriptionsListHelp,
   subscriptionsCreateHelp,
-  subscriptionsCreateTopicHelp,
-  subscriptionsCreateAuthorHelp,
-  subscriptionsCreateAuthorTopicHelp,
-  subscriptionsCreateSemanticHelp,
   postsCreateHelp,
   postsGetHelp,
   postsUpdateHelp,
