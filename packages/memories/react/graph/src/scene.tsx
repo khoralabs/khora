@@ -23,6 +23,7 @@ import {
 import { Marker } from "./marker.js";
 import { SCALE } from "./projection-types.js";
 import { useProjection } from "./use-projection.js";
+import { useSuppressBenignResizeObserverErrors } from "./use-suppress-benign-resize-observer-errors.js";
 
 /**
  * Padding around the node AABB (drei `Bounds` `margin` equivalent). Tighter than the old `margin={2}`.
@@ -396,6 +397,7 @@ function GraphSceneRoot({
   overlay?: GraphSceneOverlayOptions;
   children?: ReactNode;
 }) {
+  useSuppressBenignResizeObserverErrors();
   const slots = partitionGraphSceneChildren(children);
   const overlayResolved = resolveGraphSceneOverlay(overlay);
 

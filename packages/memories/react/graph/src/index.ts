@@ -35,8 +35,11 @@ export {
   type GraphSearchProps,
   graphSearchSummaryLine,
 } from "./graph-search.js";
+export {
+  installBenignResizeObserverErrorSuppression,
+  isBenignResizeObserverError,
+} from "./lib/suppress-benign-resize-observer-errors.js";
 export * from "./projection-types.js";
-
 export type {
   GraphEdgeRenderMode,
   GraphSceneOverlayOptions,
@@ -54,3 +57,4 @@ export {
   useMemoriesGraphChrome,
   useProjection,
 } from "./use-projection.js";
+export { useSuppressBenignResizeObserverErrors } from "./use-suppress-benign-resize-observer-errors.js";
