@@ -256,8 +256,6 @@ describe("percolator inbox reasons", () => {
       id: encodePostId({ authorPrincipalId, recordKey, cellPoolCount }),
       authorProfileId: authorProfile.id,
       kind: "subscription",
-      title: "Follow climate-tech",
-      body: "Notify me",
       topics: ["climate-tech"],
       search: {
         content: {},
@@ -339,8 +337,6 @@ describe("percolator inbox reasons", () => {
       id: encodePostId({ authorPrincipalId, recordKey, cellPoolCount }),
       authorProfileId: authorProfile.id,
       kind: "subscription",
-      title: "Author updates",
-      body: "All posts",
       search: authorSubscriptionSearch(authorProfile.id, root),
       authorSignature: TEST_POST_AUTHOR_SIGNATURE,
       visibility: "public" as const,

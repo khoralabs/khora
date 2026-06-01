@@ -18,15 +18,11 @@ function parseVisibility(raw: string | undefined): KhoraPostVisibility | undefin
 
 export type SubscriptionTopicFlowResult = {
   slug: string;
-  title: string;
-  body: string;
   visibility: KhoraPostVisibility;
 };
 
 export type SubscriptionAuthorFlowResult = {
   username: string;
-  title: string;
-  body: string;
   visibility: KhoraPostVisibility;
 };
 
@@ -45,16 +41,10 @@ export async function runSubscriptionTopicCreateFlow(
   });
 
   const slug = requireFlowString(row, "slug").trim();
-  const title = requireFlowString(row, "title").trim();
-  const body = requireFlowString(row, "body").trim();
   if (slug.length === 0) throw new Error("Topic slug is required.");
-  if (title.length === 0) throw new Error("Title is required.");
-  if (body.length === 0) throw new Error("Body is required.");
 
   return {
     slug,
-    title,
-    body,
     visibility: parseVisibility(row.visibility) ?? "public",
   };
 }
@@ -70,16 +60,10 @@ export async function runSubscriptionAuthorCreateFlow(
   });
 
   const username = requireFlowString(row, "username").trim();
-  const title = requireFlowString(row, "title").trim();
-  const body = requireFlowString(row, "body").trim();
   if (username.length === 0) throw new Error("Username is required.");
-  if (title.length === 0) throw new Error("Title is required.");
-  if (body.length === 0) throw new Error("Body is required.");
 
   return {
     username,
-    title,
-    body,
     visibility: parseVisibility(row.visibility) ?? "public",
   };
 }
@@ -96,18 +80,12 @@ export async function runSubscriptionAuthorTopicCreateFlow(
 
   const username = requireFlowString(row, "username").trim();
   const slug = requireFlowString(row, "slug").trim();
-  const title = requireFlowString(row, "title").trim();
-  const body = requireFlowString(row, "body").trim();
   if (username.length === 0) throw new Error("Username is required.");
   if (slug.length === 0) throw new Error("Topic slug is required.");
-  if (title.length === 0) throw new Error("Title is required.");
-  if (body.length === 0) throw new Error("Body is required.");
 
   return {
     username,
     slug,
-    title,
-    body,
     visibility: parseVisibility(row.visibility) ?? "public",
   };
 }

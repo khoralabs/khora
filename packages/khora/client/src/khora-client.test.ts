@@ -336,7 +336,6 @@ describe("KhoraClient", () => {
       const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
       expect(body).toMatchObject({
         kind: "subscription",
-        title: "Beta intros",
         body: "Looking for partners",
         search: { content: { text: "platform partners" } },
         topics: ["platform"],
@@ -347,7 +346,6 @@ describe("KhoraClient", () => {
         id: "khora_sub_abc",
         authorProfileId: "u1",
         kind: "subscription",
-        title: "Beta intros",
         body: "Looking for partners",
         search: { content: { text: "platform partners" } },
         topics: ["platform"],
@@ -361,7 +359,6 @@ describe("KhoraClient", () => {
       fetch: fetchMock,
     });
     const out = await c.createSubscription({
-      title: "Beta intros",
       body: "Looking for partners",
       search: { content: { text: "platform partners" } },
       topics: ["platform"],

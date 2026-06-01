@@ -240,7 +240,6 @@ describe("khora memories indexer", () => {
       authorProfileId: profile.id,
       kind: "subscription",
       topics: ["platform"],
-      title: "Design partners",
       body: "Seeking pilots with enterprise buyers.",
       search: {
         content: { text: "platform pilots" },

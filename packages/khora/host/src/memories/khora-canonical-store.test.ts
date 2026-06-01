@@ -190,7 +190,6 @@ describe("KhoraCanonicalStore", () => {
       }),
       authorProfileId: profile.id,
       kind: "subscription",
-      title: "Fintech pilots",
       body: "Looking for design partners in payments.",
       search: { content: { text: "fintech payments" } },
       authorSignature: TEST_POST_AUTHOR_SIGNATURE,

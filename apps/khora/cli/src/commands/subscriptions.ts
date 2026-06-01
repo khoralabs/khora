@@ -74,8 +74,6 @@ function partialFlagsError(kind: string): never {
 }
 
 type SubscriptionCreateInput = {
-  title: string;
-  body: string;
   search: KhoraStandingSearchRequest;
   visibility: KhoraPostVisibility;
 };
@@ -114,23 +112,20 @@ export async function handleSubscriptionsCreate(
     throw new Error("Usage: khora subscriptions create <topic|author|author-topic> ...");
   }
 
-  const topicPartial = hasStrFlag(flags, "slug", "title", "body", "visibility");
-  const topicComplete = hasStrFlag(flags, "slug", "title", "body");
+  const topicPartial = hasStrFlag(flags, "slug", "visibility");
+  const topicComplete = hasStrFlag(flags, "slug");
 
   const authorPartial = hasStrFlag(
     flags,
     "profile-id",
     "profileId",
     "username",
-    "title",
-    "body",
     "visibility",
     "namespace-root",
     "namespaceRoot",
   );
   const authorComplete =
-    (hasStrFlag(flags, "profile-id", "profileId") || hasStrFlag(flags, "username")) &&
-    hasStrFlag(flags, "title", "body");
+    hasStrFlag(flags, "profile-id", "profileId") || hasStrFlag(flags, "username");
 
   const authorTopicPartial = hasStrFlag(
     flags,
@@ -138,8 +133,6 @@ export async function handleSubscriptionsCreate(
     "profile-id",
     "profileId",
     "username",
-    "title",
-    "body",
     "visibility",
     "namespace-root",
     "namespaceRoot",
@@ -147,13 +140,11 @@ export async function handleSubscriptionsCreate(
   const authorTopicComplete = hasStrFlag(flags, "slug") && authorComplete;
 
   let prepared:
-    | { mode: "topic"; slug: string; title: string; body: string; visibility: KhoraPostVisibility }
+    | { mode: "topic"; slug: string; visibility: KhoraPostVisibility }
     | {
         mode: "author";
         profileId?: string;
         username?: string;
-        title: string;
-        body: string;
         visibility: KhoraPostVisibility;
       }
     | {
@@ -161,8 +152,6 @@ export async function handleSubscriptionsCreate(
         slug: string;
         profileId?: string;
         username?: string;
-        title: string;
-        body: string;
         visibility: KhoraPostVisibility;
       };
 
@@ -171,8 +160,6 @@ export async function handleSubscriptionsCreate(
       prepared = {
         mode: "topic",
         slug: requireStrFlag(flags, "slug"),
-        title: requireStrFlag(flags, "title"),
-        body: requireStrFlag(flags, "body"),
         visibility: visibilityFromFlags(flags) ?? "public",
       };
     } else if (topicPartial) {
@@ -185,8 +172,6 @@ export async function handleSubscriptionsCreate(
     if (authorComplete) {
       prepared = {
         mode: "author",
-        title: requireStrFlag(flags, "title"),
-        body: requireStrFlag(flags, "body"),
         visibility: visibilityFromFlags(flags) ?? "public",
         ...(hasStrFlag(flags, "profile-id", "profileId")
           ? { profileId: requireStrFlag(flags, "profile-id", "profileId") }
@@ -203,8 +188,6 @@ export async function handleSubscriptionsCreate(
       prepared = {
         mode: "author-topic",
         slug: requireStrFlag(flags, "slug"),
-        title: requireStrFlag(flags, "title"),
-        body: requireStrFlag(flags, "body"),
         visibility: visibilityFromFlags(flags) ?? "public",
         ...(hasStrFlag(flags, "profile-id", "profileId")
           ? { profileId: requireStrFlag(flags, "profile-id", "profileId") }
@@ -227,8 +210,6 @@ export async function handleSubscriptionsCreate(
 
       if (prepared.mode === "topic") {
         input = {
-          title: prepared.title,
-          body: prepared.body,
           visibility: prepared.visibility,
           search: topicSubscriptionSearch(prepared.slug),
         };
@@ -237,8 +218,6 @@ export async function handleSubscriptionsCreate(
           prepared.profileId ??
           (await resolveAuthorProfileIdByUsername(client, requireUsername(prepared.username)));
         input = {
-          title: prepared.title,
-          body: prepared.body,
           visibility: prepared.visibility,
           search: authorSubscriptionSearch(profileId, namespaceRoot),
         };
@@ -247,8 +226,6 @@ export async function handleSubscriptionsCreate(
           prepared.profileId ??
           (await resolveAuthorProfileIdByUsername(client, requireUsername(prepared.username)));
         input = {
-          title: prepared.title,
-          body: prepared.body,
           visibility: prepared.visibility,
           search: authorTopicSubscriptionSearch(profileId, prepared.slug, namespaceRoot),
         };

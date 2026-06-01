@@ -93,8 +93,6 @@ export const subscriptionsCreateTopicFlowDefinition: FlowDefinition = {
       id: "create",
       ports: [
         { id: "slug", prompt: "Topic slug: " },
-        { id: "title", prompt: "Title: " },
-        { id: "body", prompt: "Body: " },
         {
           id: "visibility",
           prompt: "Visibility [public/network/private] (optional): ",
@@ -112,8 +110,6 @@ export const subscriptionsCreateAuthorFlowDefinition: FlowDefinition = {
       id: "create",
       ports: [
         { id: "username", prompt: "Username: " },
-        { id: "title", prompt: "Title: " },
-        { id: "body", prompt: "Body: " },
         {
           id: "visibility",
           prompt: "Visibility [public/network/private] (optional): ",
@@ -132,8 +128,6 @@ export const subscriptionsCreateAuthorTopicFlowDefinition: FlowDefinition = {
       ports: [
         { id: "username", prompt: "Username: " },
         { id: "slug", prompt: "Topic slug: " },
-        { id: "title", prompt: "Title: " },
-        { id: "body", prompt: "Body: " },
         {
           id: "visibility",
           prompt: "Visibility [public/network/private] (optional): ",

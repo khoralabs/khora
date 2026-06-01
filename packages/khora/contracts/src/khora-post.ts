@@ -47,7 +47,7 @@ const zKhoraPostContent = z.object({
   /** Optional expiry (Unix ms); e.g. ephemeral status or time-limited posts. */
   expiresAtMs: z.number().min(0).optional(),
   title: z.string().trim().max(500).optional(),
-  body: z.string().max(100_000),
+  body: z.string().max(100_000).optional(),
   /** Standing search spec; required when kind is subscription, forbidden otherwise. */
   search: zKhoraStandingSearchRequest.optional(),
 });
@@ -56,7 +56,7 @@ function refinePostKindRules(
   val: {
     kind: z.infer<typeof zKhoraPostKind>;
     title?: string;
-    body: string;
+    body?: string;
     authorProfileId?: string;
     search?: KhoraStandingSearchRequest;
   },
@@ -80,18 +80,11 @@ function refinePostKindRules(
     });
   }
   if (val.kind === "subscription") {
-    if (val.title === undefined || val.title.length === 0) {
+    if (val.title !== undefined && val.title.length > 0) {
       ctx.addIssue({
         code: "custom",
-        message: "subscription posts require title",
+        message: "subscription posts must not have title",
         path: ["title"],
-      });
-    }
-    if (val.body.trim().length === 0) {
-      ctx.addIssue({
-        code: "custom",
-        message: "subscription posts require body",
-        path: ["body"],
       });
     }
     if (val.search === undefined) {
@@ -112,6 +105,14 @@ function refinePostKindRules(
   }
   if (val.kind !== "post" && val.kind !== "status") {
     return;
+  }
+  const body = val.body?.trim() ?? "";
+  if (body.length === 0) {
+    ctx.addIssue({
+      code: "custom",
+      message: "post and status require body",
+      path: ["body"],
+    });
   }
   if (val.search !== undefined) {
     ctx.addIssue({
@@ -147,7 +148,6 @@ export function khoraPostCreateSigningContent(body: KhoraPostCreate): KhoraPostC
 /** Create body for `kind: "subscription"` posts. */
 export type KhoraSubscriptionCreate = KhoraPostCreate & {
   kind: "subscription";
-  title: string;
   search: KhoraStandingSearchRequest;
 };
 
@@ -189,9 +189,8 @@ export function khoraSubscriptionLexicalText(p: KhoraPost): string {
   const topicLine =
     p.topics !== undefined && p.topics.length > 0 ? p.topics.map((t) => `#${t}`).join(" ") : "";
   const searchText = p.search?.content.text?.trim() ?? "";
-  const parts = [p.title, topicLine, p.body, searchText].filter(
-    (s) => s !== undefined && s.length > 0,
-  );
+  const body = p.body?.trim() ?? "";
+  const parts = [topicLine, body, searchText].filter((s) => s.length > 0);
   return parts.join("\n\n");
 }
 
@@ -201,14 +200,18 @@ export function khoraPostLexicalText(p: KhoraPost): string {
   }
   const topicLine =
     p.topics !== undefined && p.topics.length > 0 ? p.topics.map((t) => `#${t}`).join(" ") : "";
-  const parts = [p.title, topicLine, p.body].filter((s) => s !== undefined && s.length > 0);
+  const body = p.body?.trim() ?? "";
+  const parts = [p.title, topicLine, body].filter((s) => s !== undefined && s.length > 0);
   return parts.join("\n\n");
 }
 
 /** Short summary for canonical `observation` label on posts and status. */
 export function khoraPostObservationSummary(p: KhoraPost): string {
-  const base = p.title !== undefined && p.title.length > 0 ? p.title : p.body;
+  const title = p.title?.trim() ?? "";
+  const body = p.body?.trim() ?? "";
+  const base = title.length > 0 ? title : body;
   const max = 280;
+  if (base.length === 0) return "";
   return base.length <= max ? base : `${base.slice(0, max - 1)}…`;
 }
 

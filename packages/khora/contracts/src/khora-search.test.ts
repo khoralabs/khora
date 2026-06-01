@@ -65,7 +65,6 @@ describe("zKhoraSearchResponse", () => {
             entity: {
               id: "sub-1",
               kind: "subscription",
-              title: "Beta intros",
               body: "Looking for partners",
               authorProfileId: "p1",
               authorSignature: SIG,

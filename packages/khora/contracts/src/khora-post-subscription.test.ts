@@ -4,10 +4,9 @@ import { khoraSubscriptionLexicalText, zKhoraPost, zKhoraPostCreate } from "./kh
 const SIG = "dGVzdC1zaWduYXR1cmU";
 
 describe("subscription posts", () => {
-  test("valid subscription create", () => {
+  test("valid semantic subscription create", () => {
     const v = zKhoraPostCreate.parse({
       kind: "subscription",
-      title: "Beta intros",
       body: "Looking for platform partners",
       topics: ["platform"],
       search: {
@@ -30,22 +29,33 @@ describe("subscription posts", () => {
     ).toThrow();
   });
 
-  test("rejects subscription without title", () => {
+  test("rejects subscription with title", () => {
     expect(() =>
       zKhoraPostCreate.parse({
         kind: "subscription",
-        body: "body",
+        title: "Beta intros",
         search: { content: { text: "x" } },
         authorSignature: SIG,
       }),
     ).toThrow();
   });
 
+  test("filter-only subscription without title or body", () => {
+    const v = zKhoraPostCreate.parse({
+      kind: "subscription",
+      search: {
+        content: {},
+        options: { labels: { some: ["khora_topic:climate-tech"] } },
+      },
+      authorSignature: SIG,
+    });
+    expect(v.search?.options?.labels?.some).toEqual(["khora_topic:climate-tech"]);
+  });
+
   test("khoraSubscriptionLexicalText includes search text", () => {
     const sub = zKhoraPost.parse({
       id: "sub-1",
       kind: "subscription",
-      title: "Beta intros",
       body: "Looking for partners",
       topics: ["platform"],
       authorProfileId: "p1",
@@ -55,22 +65,8 @@ describe("subscription posts", () => {
       },
     });
     const text = khoraSubscriptionLexicalText(sub);
-    expect(text).toContain("Beta intros");
     expect(text).toContain("#platform");
     expect(text).toContain("platform pilots");
-  });
-
-  test("filter-only subscription with labels", () => {
-    const v = zKhoraPostCreate.parse({
-      kind: "subscription",
-      title: "Follow climate-tech",
-      body: "Notify me",
-      search: {
-        content: {},
-        options: { labels: { some: ["khora_topic:climate-tech"] } },
-      },
-      authorSignature: SIG,
-    });
-    expect(v.search?.options?.labels?.some).toEqual(["khora_topic:climate-tech"]);
+    expect(text).not.toContain("Beta intros");
   });
 });
