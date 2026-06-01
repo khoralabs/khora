@@ -119,7 +119,7 @@ export function GraphPage() {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-lg border bg-background text-foreground">
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-background text-foreground">
       <GraphProjectionProvider
         apiBase={MEMORIES_API_BASE}
         namespace={defaultNamespace()}
