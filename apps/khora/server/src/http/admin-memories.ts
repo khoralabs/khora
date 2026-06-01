@@ -1,3 +1,4 @@
+import type { Database } from "bun:sqlite";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { type AgentRegistry, createAgentRegistry } from "@khoralabs/agent-identity";
 import {
@@ -12,17 +13,24 @@ import {
   mergeResolutionAndProviderOptions,
 } from "@khoralabs/memories-core/helpers";
 import { canonicalOntology } from "@khoralabs/memories-core/ontologies";
+import type { MemoriesPersistence } from "@khoralabs/memories-core/persistence";
 import { MemoryInvestigatorClient } from "@khoralabs/memories-investigator";
 import {
   buildNamespaceGraphLayout,
-  createMemoriesPersistence,
+  buildNamespaceSubtreeGraphLayout,
+  getMemoriesSqliteDatabase,
   listMemoryNamespaces,
   loadEdgePreview,
   loadSourceMapTextPreview,
-  openMemoriesDatabaseReadonly,
+  qualifyMemoryKey,
 } from "@khoralabs/memories-sqlite";
+import {
+  RELAY_NAMESPACE_ENTITY_PROFILE,
+  RelayCatalogProjectionStore,
+} from "@khoralabs/relay-colonnade";
+import { EnvKeyProvider, openEncryptedDatabase } from "@khoralabs/sqlite-crypto";
 import { embedMany } from "ai";
-import { envMemoriesDbPath } from "../env";
+import { envCatalogPath } from "../env";
 import { envMemoriesEnabled } from "../memories-env";
 import { withConsoleAuth } from "./console-guard";
 import type { HostRouteDeps } from "./deps";
@@ -32,10 +40,29 @@ const ADMIN_MEMORIES_PREFIX = "/admin/api/memories";
 
 const EMBEDDING_DIM_BY_PRESET = { L: 768, M: 1536, H: 3072 } as const;
 
+export type AdminMemoriesProfileEntry = {
+  profileId: string;
+  username?: string;
+  namespace: string;
+  indexed: boolean;
+};
+
+type GraphScope = "exact" | "subtree";
+
+type MemoriesAccess = {
+  persistence: MemoriesPersistence;
+  db: Database;
+  namespaceRoot: string;
+};
+
 let didWarnLexicalOnlySearch = false;
 let didWarnMultiVectorDim = false;
 let didLogInferredSearchPreset = false;
 let investigatorRegistry: AgentRegistry | undefined;
+
+function profileMemoryNamespace(namespaceRoot: string, profileId: string): string {
+  return `${namespaceRoot}/agents/${profileId}/profile`;
+}
 
 function jsonResponse(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -46,6 +73,67 @@ function jsonResponse(data: unknown, status = 200): Response {
 
 function memoriesUnavailableResponse(): Response {
   return jsonError("Memories database is not configured on this host", 503);
+}
+
+function resolveMemoriesAccess(deps: HostRouteDeps): MemoriesAccess | Response {
+  if (!envMemoriesEnabled()) {
+    return memoriesUnavailableResponse();
+  }
+  const memories = deps.ctx.memories;
+  if (memories === undefined) {
+    return memoriesUnavailableResponse();
+  }
+  return {
+    persistence: memories.persistence,
+    db: getMemoriesSqliteDatabase(memories.persistence),
+    namespaceRoot: memories.namespaceRoot,
+  };
+}
+
+function parseGraphScope(raw: string | null | undefined): GraphScope {
+  return raw?.trim().toLowerCase() === "subtree" ? "subtree" : "exact";
+}
+
+function parseProfileUsername(bodyJson: string): string | undefined {
+  try {
+    const parsed = JSON.parse(bodyJson) as { username?: unknown };
+    return typeof parsed.username === "string" ? parsed.username : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function listCatalogProfiles(
+  tenantKey: string,
+): Promise<Array<{ profileId: string; username?: string }>> {
+  const catalogDb = await openEncryptedDatabase(
+    envCatalogPath(),
+    { readonly: true },
+    "khora",
+    new EnvKeyProvider(),
+  );
+  try {
+    const store = new RelayCatalogProjectionStore(catalogDb);
+    const rows = store.listByPrefix(tenantKey, RELAY_NAMESPACE_ENTITY_PROFILE, "");
+    const out: Array<{ profileId: string; username?: string }> = [];
+    for (const row of rows) {
+      const projection = row.projection;
+      if (projection === null || typeof projection !== "object" || Array.isArray(projection)) {
+        continue;
+      }
+      const o = projection as Record<string, unknown>;
+      if (o.deleted === true) continue;
+      const profileId = typeof o.id === "string" ? o.id : row.entry_key;
+      const bodyJson = typeof o.bodyJson === "string" ? o.bodyJson : "";
+      out.push({
+        profileId,
+        username: parseProfileUsername(bodyJson),
+      });
+    }
+    return out;
+  } finally {
+    catalogDb.close();
+  }
 }
 
 function resolveGeminiApiKey(): string | undefined {
@@ -76,7 +164,7 @@ function providerOptionsForSearchPreset(preset: EmbeddingResolutionPreset) {
 }
 
 function resolveSearchEmbeddingPreset(
-  persistence: ReturnType<typeof createMemoriesPersistence>,
+  persistence: MemoriesPersistence,
   bodyResolution: string | undefined,
 ): EmbeddingResolutionPreset {
   const fromBody = parseExplicitEmbeddingPreset(bodyResolution);
@@ -113,26 +201,39 @@ function memoriesSubpath(url: URL): string {
   return url.pathname.slice(ADMIN_MEMORIES_PREFIX.length);
 }
 
-async function handleMemoriesRoute(req: Request, url: URL): Promise<Response> {
-  if (!envMemoriesEnabled()) {
-    return memoriesUnavailableResponse();
-  }
+function qualifySearchKey(namespace: string, memoryKey: string, scope: GraphScope): string {
+  return scope === "subtree" ? qualifyMemoryKey(namespace, memoryKey) : memoryKey;
+}
 
+async function handleMemoriesRoute(req: Request, url: URL, deps: HostRouteDeps): Promise<Response> {
+  const access = resolveMemoriesAccess(deps);
+  if (access instanceof Response) return access;
+
+  const { persistence, db, namespaceRoot } = access;
   const subpath = memoriesSubpath(url);
 
   if (req.method === "GET" && subpath === "/namespaces") {
-    let db: ReturnType<typeof openMemoriesDatabaseReadonly>;
     try {
-      db = openMemoriesDatabaseReadonly(envMemoriesDbPath());
-    } catch (err) {
-      return jsonResponse({ error: `open database: ${String(err)}` }, 500);
-    }
-    try {
-      return jsonResponse({ namespaces: listMemoryNamespaces(db) });
+      const namespaces = listMemoryNamespaces(db);
+      const namespaceSet = new Set(namespaces);
+      const catalogProfiles = await listCatalogProfiles(deps.ctx.tenantKey);
+      const profiles: AdminMemoriesProfileEntry[] = catalogProfiles.map((p) => {
+        const ns = profileMemoryNamespace(namespaceRoot, p.profileId);
+        return {
+          profileId: p.profileId,
+          ...(p.username !== undefined ? { username: p.username } : {}),
+          namespace: ns,
+          indexed: namespaceSet.has(ns),
+        };
+      });
+      profiles.sort((a, b) => {
+        const aLabel = a.username ?? a.profileId;
+        const bLabel = b.username ?? b.profileId;
+        return aLabel.localeCompare(bLabel);
+      });
+      return jsonResponse({ namespaces, profiles, namespaceRoot });
     } catch (err) {
       return jsonResponse({ error: String(err) }, 500);
-    } finally {
-      db.close();
     }
   }
 
@@ -141,20 +242,15 @@ async function handleMemoriesRoute(req: Request, url: URL): Promise<Response> {
     if (!namespace) {
       return jsonResponse({ error: "missing required query namespace" }, 400);
     }
-    let db: ReturnType<typeof openMemoriesDatabaseReadonly>;
+    const scope = parseGraphScope(url.searchParams.get("scope"));
     try {
-      db = openMemoriesDatabaseReadonly(envMemoriesDbPath());
-    } catch (err) {
-      return jsonResponse({ error: `open database: ${String(err)}` }, 500);
-    }
-    try {
-      const persistence = createMemoriesPersistence(db);
-      const layout = buildNamespaceGraphLayout(db, persistence, namespace);
+      const layout =
+        scope === "subtree"
+          ? buildNamespaceSubtreeGraphLayout(db, persistence, namespace)
+          : buildNamespaceGraphLayout(db, persistence, namespace);
       return jsonResponse(layout);
     } catch (err) {
       return jsonResponse({ error: String(err) }, 500);
-    } finally {
-      db.close();
     }
   }
 
@@ -164,12 +260,6 @@ async function handleMemoriesRoute(req: Request, url: URL): Promise<Response> {
     if (!namespace || !edgeId) {
       return jsonResponse({ error: "missing required query namespace and edgeId" }, 400);
     }
-    let db: ReturnType<typeof openMemoriesDatabaseReadonly>;
-    try {
-      db = openMemoriesDatabaseReadonly(envMemoriesDbPath());
-    } catch (err) {
-      return jsonResponse({ error: `open database: ${String(err)}` }, 500);
-    }
     try {
       const detail = loadEdgePreview(db, namespace, edgeId);
       if (!detail) {
@@ -178,8 +268,6 @@ async function handleMemoriesRoute(req: Request, url: URL): Promise<Response> {
       return jsonResponse(detail);
     } catch (err) {
       return jsonResponse({ error: String(err) }, 500);
-    } finally {
-      db.close();
     }
   }
 
@@ -191,6 +279,7 @@ async function handleMemoriesRoute(req: Request, url: URL): Promise<Response> {
       maxNeighbors?: number;
       maxVectorDistance?: number;
       resolution?: string;
+      scope?: string;
     };
     try {
       body = (await req.json()) as typeof body;
@@ -199,6 +288,7 @@ async function handleMemoriesRoute(req: Request, url: URL): Promise<Response> {
     }
     const namespace = body.namespace?.trim();
     const query = (body.query ?? "").trim();
+    const scope = parseGraphScope(body.scope);
     if (!namespace) {
       return jsonResponse({ error: "missing namespace" }, 400);
     }
@@ -219,14 +309,7 @@ async function handleMemoriesRoute(req: Request, url: URL): Promise<Response> {
       rawMaxDist !== undefined && Number.isFinite(rawMaxDist) && rawMaxDist > 0
         ? rawMaxDist
         : undefined;
-    let db: ReturnType<typeof openMemoriesDatabaseReadonly>;
     try {
-      db = openMemoriesDatabaseReadonly(envMemoriesDbPath());
-    } catch (err) {
-      return jsonResponse({ error: `open database: ${String(err)}` }, 500);
-    }
-    try {
-      const persistence = createMemoriesPersistence(db);
       const apiKey = resolveGeminiApiKey();
       let content: { text: string; vector?: number[] };
       let arms: { lexical: number; vector: number };
@@ -274,17 +357,22 @@ async function handleMemoriesRoute(req: Request, url: URL): Promise<Response> {
           },
         },
       );
-      const hitKeys = hits.map((h: SearchHit) => h.memory.key);
+      const hitKeys = hits.map((h: SearchHit) =>
+        qualifySearchKey(h.memory.namespace, h.memory.key, scope),
+      );
       const neighborKeys: string[] = [];
       const edgeEndpointKeys: string[] = [];
       const SEARCH_HIT_SNIPPET_MAX = 2400;
 
       for (const h of hits) {
         for (const n of h.neighbors ?? []) {
-          neighborKeys.push(n.key);
+          neighborKeys.push(qualifySearchKey(n.namespace, n.key, scope));
         }
         if (h.graph.kind === "edge") {
-          edgeEndpointKeys.push(h.graph.edge.fromKey, h.graph.edge.toKey);
+          edgeEndpointKeys.push(
+            qualifySearchKey(h.memory.namespace, h.graph.edge.fromKey, scope),
+            qualifySearchKey(h.memory.namespace, h.graph.edge.toKey, scope),
+          );
         }
       }
 
@@ -293,7 +381,7 @@ async function handleMemoriesRoute(req: Request, url: URL): Promise<Response> {
       const hitSnippets = hits.map((h: SearchHit) => {
         const sourceMapId = (h as SearchHit & { _id: string })._id;
         return {
-          key: h.memory.key,
+          key: qualifySearchKey(h.memory.namespace, h.memory.key, scope),
           sourceKey: h.source_key,
           text: loadSourceMapTextPreview(db, sourceMapId, SEARCH_HIT_SNIPPET_MAX),
         };
@@ -305,8 +393,8 @@ async function handleMemoriesRoute(req: Request, url: URL): Promise<Response> {
         return [
           {
             edgeId: h.graph.edge.edgeId,
-            fromKey: h.graph.edge.fromKey,
-            toKey: h.graph.edge.toKey,
+            fromKey: qualifySearchKey(h.memory.namespace, h.graph.edge.fromKey, scope),
+            toKey: qualifySearchKey(h.memory.namespace, h.graph.edge.toKey, scope),
             text: loadSourceMapTextPreview(db, sourceMapId, SEARCH_HIT_SNIPPET_MAX),
           },
         ];
@@ -322,8 +410,6 @@ async function handleMemoriesRoute(req: Request, url: URL): Promise<Response> {
       });
     } catch (err) {
       return jsonResponse({ error: String(err) }, 500);
-    } finally {
-      db.close();
     }
   }
 
@@ -357,14 +443,7 @@ async function handleMemoriesRoute(req: Request, url: URL): Promise<Response> {
     const maxSteps =
       Number.isFinite(rawSteps) && rawSteps > 0 ? Math.min(50, Math.floor(rawSteps)) : 12;
 
-    let db: ReturnType<typeof openMemoriesDatabaseReadonly>;
     try {
-      db = openMemoriesDatabaseReadonly(envMemoriesDbPath());
-    } catch (err) {
-      return jsonResponse({ error: `open database: ${String(err)}` }, 500);
-    }
-    try {
-      const persistence = createMemoriesPersistence(db);
       const resolution = resolveSearchEmbeddingPreset(persistence, body.resolution);
       const google = createGoogleGenerativeAI({ apiKey });
       const embeddingModel = createMemoriesEmbeddingModel({
@@ -385,8 +464,6 @@ async function handleMemoriesRoute(req: Request, url: URL): Promise<Response> {
       return jsonResponse(answer);
     } catch (err) {
       return jsonResponse({ error: String(err) }, 500);
-    } finally {
-      db.close();
     }
   }
 
@@ -398,5 +475,5 @@ export async function handleAdminMemoriesRoute(
   url: URL,
   deps: HostRouteDeps,
 ): Promise<Response> {
-  return withConsoleAuth(req, deps, () => handleMemoriesRoute(req, url));
+  return withConsoleAuth(req, deps, () => handleMemoriesRoute(req, url, deps));
 }

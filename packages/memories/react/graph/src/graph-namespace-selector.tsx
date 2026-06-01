@@ -1,5 +1,5 @@
 import { Check, FolderSearchIcon, RefreshCcwIcon } from "lucide-react";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   Command,
   CommandEmpty,
@@ -11,7 +11,7 @@ import {
 import { InputGroup, InputGroupAddon, InputGroupButton } from "@/components/ui/input-group";
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { useMemoriesGraphChrome } from "./use-projection.js";
+import { type GraphScope, useMemoriesGraphChrome } from "./use-projection.js";
 
 export type GraphNamespaceSelectorProps = {
   className?: string;
@@ -23,31 +23,47 @@ function NamespacePickerMenu({ close }: NamespacePickerMenuProps) {
   const {
     namespace: value,
     setNamespace: onValueChange,
+    namespaceRoot,
+    setScope,
     knownNamespaces,
+    knownProfiles,
     namespacesLoading: knownLoading,
     namespacesError: knownError,
   } = useMemoriesGraphChrome();
   const [search, setSearch] = useState("");
 
   const q = search.trim().toLowerCase();
+  const filteredProfiles = useMemo(() => {
+    if (!q) return knownProfiles;
+    return knownProfiles.filter((p) => {
+      const label = (p.username ?? p.profileId).toLowerCase();
+      return label.includes(q) || p.namespace.toLowerCase().includes(q);
+    });
+  }, [knownProfiles, q]);
+
   const filteredNs = !q
     ? knownNamespaces
     : knownNamespaces.filter((ns) => ns.toLowerCase().includes(q));
 
   const customExact = search.trim();
   const showCustom = customExact.length > 0 && !knownNamespaces.includes(customExact);
-  const showNoMatches = filteredNs.length === 0 && !showCustom;
+  const showNoMatches = filteredNs.length === 0 && filteredProfiles.length === 0 && !showCustom;
 
-  const commitNamespace = (raw: string) => {
+  const commitNamespace = (raw: string, scope: GraphScope) => {
     const trimmed = raw.trim();
     if (!trimmed) return;
     close();
     setSearch("");
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
+        setScope(scope);
         onValueChange(trimmed);
       });
     });
+  };
+
+  const commitFromList = (ns: string) => {
+    commitNamespace(ns, ns === namespaceRoot ? "subtree" : "exact");
   };
 
   return (
@@ -60,7 +76,7 @@ function NamespacePickerMenu({ close }: NamespacePickerMenuProps) {
           if (e.key === "Enter") {
             e.preventDefault();
             const t = search.trim();
-            if (t) commitNamespace(t);
+            if (t) commitFromList(t);
           }
         }}
       />
@@ -75,10 +91,37 @@ function NamespacePickerMenu({ close }: NamespacePickerMenuProps) {
           </CommandEmpty>
         )}
 
+        {filteredProfiles.length > 0 && (
+          <CommandGroup heading="Profiles">
+            {filteredProfiles.map((p) => {
+              const label = p.username ? `@${p.username}` : p.profileId;
+              return (
+                <CommandItem
+                  key={p.profileId}
+                  value={`profile:${p.profileId}`}
+                  onSelect={() => commitNamespace(p.namespace, "exact")}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 size-4 shrink-0",
+                      value === p.namespace ? "opacity-100" : "opacity-0",
+                    )}
+                    aria-hidden
+                  />
+                  <span className="min-w-0 flex-1 truncate">{label}</span>
+                  {!p.indexed ? (
+                    <span className="ml-2 shrink-0 text-xs text-muted-foreground">not indexed</span>
+                  ) : null}
+                </CommandItem>
+              );
+            })}
+          </CommandGroup>
+        )}
+
         {filteredNs.length > 0 && (
           <CommandGroup heading="In database">
             {filteredNs.map((ns) => (
-              <CommandItem key={ns} value={ns} onSelect={() => commitNamespace(ns)}>
+              <CommandItem key={ns} value={ns} onSelect={() => commitFromList(ns)}>
                 <Check
                   className={cn("mr-2 size-4 shrink-0", value === ns ? "opacity-100" : "opacity-0")}
                   aria-hidden
@@ -93,7 +136,7 @@ function NamespacePickerMenu({ close }: NamespacePickerMenuProps) {
           <CommandGroup heading="Custom">
             <CommandItem
               value={`~custom~${customExact}`}
-              onSelect={() => commitNamespace(customExact)}
+              onSelect={() => commitFromList(customExact)}
             >
               Use &quot;{customExact}&quot;
             </CommandItem>

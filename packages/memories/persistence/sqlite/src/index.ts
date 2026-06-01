@@ -12,11 +12,13 @@ export {
   openTestMemoriesDatabase,
 } from "./connection";
 export { buildNamespaceGraphLayout } from "./graph/build-namespace-graph-layout";
+export { buildNamespaceSubtreeGraphLayout } from "./graph/build-namespace-subtree-graph-layout";
 export {
   LABEL_PROPERTY_SYNTH_DIM,
   labelPropertySyntheticEmbedding,
 } from "./graph/label-property-features";
 export type { GraphLayoutEdge, GraphLayoutNode, NamespaceGraphLayout } from "./graph/layout-types";
+export { QUALIFIED_MEMORY_KEY_SEP, qualifyMemoryKey } from "./graph/qualified-memory-key";
 export {
   createSeededRandom,
   DEFAULT_UMAP_LAYOUT_SEED,
@@ -27,8 +29,10 @@ export {
   umap3DLayout,
 } from "./graph/umap-layout";
 export { listMemoryNamespaces } from "./models/list-memory-namespaces";
+export { listNamespacesUnderPrefix } from "./models/list-namespaces-under-prefix";
 export {
   createMemoriesPersistence,
+  getMemoriesSqliteDatabase,
   MemoriesPersistence,
 } from "./persistence";
 export {

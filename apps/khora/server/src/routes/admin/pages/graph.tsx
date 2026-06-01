@@ -73,6 +73,7 @@ export function GraphPage() {
       <GraphProjectionProvider
         apiBase={MEMORIES_API_BASE}
         namespace={defaultNamespace()}
+        scope="subtree"
         focusDelay={200}
       >
         <GraphInvestigatorProvider>

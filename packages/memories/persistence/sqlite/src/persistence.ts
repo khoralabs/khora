@@ -418,6 +418,19 @@ export class MemoriesPersistence implements IMemoriesPersistence {
     if (!this.capabilities.graphIndex) return null;
     return loadGraphNodeQuery(this.db, namespace, memoryKey);
   }
+
+  /** Underlying Bun SQLite handle (host-owned; do not close from callers). */
+  getDatabase(): Database {
+    return this.db;
+  }
+}
+
+/** Resolve the SQLite `Database` from a host persistence instance. */
+export function getMemoriesSqliteDatabase(persistence: IMemoriesPersistence): Database {
+  if (persistence instanceof MemoriesPersistence) {
+    return persistence.getDatabase();
+  }
+  throw new Error("getMemoriesSqliteDatabase: expected SQLite MemoriesPersistence");
 }
 
 export function createMemoriesPersistence(
