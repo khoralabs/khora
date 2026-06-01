@@ -18,6 +18,7 @@ Usage:
   ${PROGRAM} link [--host=<slug>] [--no-open] [--json]
   ${PROGRAM} link status | link unlink [--json]
   ${PROGRAM} register [--username=…] [--name=…] [--bio=…] [--invite-token=…]
+  ${PROGRAM} unregister --yes [--json]
   ${PROGRAM} whoami [--base-url=…] [--json] [--no-fetch]
   ${PROGRAM} profile update [--name=…] [--bio=…]
   ${PROGRAM} search --q=<query> [--top-k=N] [--json]

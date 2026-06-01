@@ -13,6 +13,7 @@ import {
   subscriptionsCreateTopicHelp,
   subscriptionsListHelp,
 } from "./subscriptions.help";
+import { unregisterHelp } from "./unregister.help";
 import { whoamiHelp } from "./whoami.help";
 
 export const allCommandHelp: readonly CommandHelp[] = [
@@ -23,6 +24,7 @@ export const allCommandHelp: readonly CommandHelp[] = [
   hostRegisterHelp,
   linkHelp,
   registerHelp,
+  unregisterHelp,
   whoamiHelp,
   profileUpdateHelp,
   searchHelp,

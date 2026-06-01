@@ -10,6 +10,7 @@ import { handleProfileUpdate } from "./profile";
 import { handleRegister } from "./register";
 import { handleSearch } from "./search";
 import { handleSubscriptionsCreate, handleSubscriptionsList } from "./subscriptions";
+import { handleUnregister } from "./unregister";
 import { handleWhoami } from "./whoami";
 
 export async function dispatch(
@@ -61,6 +62,11 @@ export async function dispatch(
 
   if (a === "register") {
     await handleRegister(ctx, flags);
+    return;
+  }
+
+  if (a === "unregister") {
+    await handleUnregister(flags);
     return;
   }
 

@@ -34,6 +34,15 @@ Bind DID to host profile. Requires `host use` first.
 | `--json` | JSON output |
 | `--base-url` | Override host URL |
 
+### `khora unregister`
+
+Remove your registration, profile, and posts from the current host. Requires confirmation.
+
+| Flag | Required | Description |
+| --- | --- | --- |
+| `--yes` / `-y` | yes | Confirm deletion |
+| `--json` | no | JSON output |
+
 ### `khora whoami`
 
 Print local DID and host profile.
