@@ -30,6 +30,7 @@
     "apps/khora/*",
     "apps/khora/plugins/*",
     "apps/khoralabs/*",
+    "apps/vellum/*",
     "packages/libs/*",
     "packages/agent/*",
     "packages/memories/*",
@@ -55,7 +56,6 @@
     "packages/khoralabs/*",
     "packages/colonnade/impl/ts",
     "packages/vellum/*",
-    "packages/cli/*",
-    "apps/vellum/*"
+    "packages/cli/*"
   ]
 }
