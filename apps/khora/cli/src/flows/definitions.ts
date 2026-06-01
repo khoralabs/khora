@@ -85,3 +85,61 @@ export const postsUpdateFlowDefinition: FlowDefinition = {
     },
   ],
 };
+
+export const subscriptionsCreateTopicFlowDefinition: FlowDefinition = {
+  id: "khora-subscriptions-create-topic",
+  offers: [
+    {
+      id: "create",
+      ports: [
+        { id: "slug", prompt: "Topic slug: " },
+        { id: "title", prompt: "Title: " },
+        { id: "body", prompt: "Body: " },
+        {
+          id: "visibility",
+          prompt: "Visibility [public/network/private] (optional): ",
+          optional: true,
+        },
+      ],
+    },
+  ],
+};
+
+export const subscriptionsCreateAuthorFlowDefinition: FlowDefinition = {
+  id: "khora-subscriptions-create-author",
+  offers: [
+    {
+      id: "create",
+      ports: [
+        { id: "username", prompt: "Username: " },
+        { id: "title", prompt: "Title: " },
+        { id: "body", prompt: "Body: " },
+        {
+          id: "visibility",
+          prompt: "Visibility [public/network/private] (optional): ",
+          optional: true,
+        },
+      ],
+    },
+  ],
+};
+
+export const subscriptionsCreateAuthorTopicFlowDefinition: FlowDefinition = {
+  id: "khora-subscriptions-create-author-topic",
+  offers: [
+    {
+      id: "create",
+      ports: [
+        { id: "username", prompt: "Username: " },
+        { id: "slug", prompt: "Topic slug: " },
+        { id: "title", prompt: "Title: " },
+        { id: "body", prompt: "Body: " },
+        {
+          id: "visibility",
+          prompt: "Visibility [public/network/private] (optional): ",
+          optional: true,
+        },
+      ],
+    },
+  ],
+};

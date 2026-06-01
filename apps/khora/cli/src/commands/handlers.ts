@@ -100,7 +100,7 @@ export async function dispatch(
   }
 
   if (a === "subscriptions" && b === "create") {
-    await handleSubscriptionsCreate(positional, flags);
+    await handleSubscriptionsCreate(ctx, positional, flags);
     return;
   }
 

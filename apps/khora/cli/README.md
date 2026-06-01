@@ -167,16 +167,19 @@ Standing-search subscriptions are created as `kind: subscription` posts. List wh
 khora subscriptions list [--json]
 ```
 
-Create by kind:
+Create by kind (omit flags for interactive prompts):
 
 ```bash
 # Topic label subscription
+khora subscriptions create topic
 khora subscriptions create topic --slug climate-tech --title "Climate tech" --body "…"
 
 # All posts from an author (by profile id or username)
+khora subscriptions create author
 khora subscriptions create author --username bob --title "Bob" --body "…" [--namespace-root=global]
 
 # Author posts on a topic
+khora subscriptions create author-topic
 khora subscriptions create author-topic --profile-id <uuid> --slug climate-tech --title "…" --body "…"
 ```
 
