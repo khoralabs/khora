@@ -7,6 +7,12 @@ import {
 } from "@khoralabs/registry-auth";
 import { assertEncryptionKeys, EnvKeyProvider } from "@khoralabs/sqlite-crypto";
 import { serve } from "bun";
+import {
+  handleAdminAccountDelete,
+  handleAdminAccountReactivate,
+  handleAdminAccountReactivateByEmail,
+  handleAdminAccountSuspend,
+} from "./api/admin/accounts";
 import { routeConsoleAuth } from "./api/admin/console-guard";
 import {
   handleAdminHostActivate,
@@ -110,6 +116,35 @@ const server = serve({
 
     if (path === "/admin/api/lookup/account" && req.method === "GET") {
       return withCors(req, await handleLookupAccount(req, url, consoleAuth));
+    }
+
+    if (
+      path.startsWith("/admin/api/accounts/") &&
+      path.endsWith("/suspend") &&
+      req.method === "POST"
+    ) {
+      const id = path.slice("/admin/api/accounts/".length, -"/suspend".length);
+      return withCors(req, await handleAdminAccountSuspend(req, consoleAuth, id));
+    }
+
+    if (
+      path.startsWith("/admin/api/accounts/") &&
+      path.endsWith("/reactivate") &&
+      req.method === "POST"
+    ) {
+      const id = path.slice("/admin/api/accounts/".length, -"/reactivate".length);
+      return withCors(req, await handleAdminAccountReactivate(req, consoleAuth, id));
+    }
+
+    if (path === "/admin/api/accounts/reactivate-by-email" && req.method === "POST") {
+      return withCors(req, await handleAdminAccountReactivateByEmail(req, consoleAuth));
+    }
+
+    if (path.startsWith("/admin/api/accounts/") && req.method === "DELETE") {
+      const id = path.slice("/admin/api/accounts/".length);
+      if (id.length > 0 && !id.includes("/")) {
+        return withCors(req, await handleAdminAccountDelete(req, consoleAuth, id));
+      }
     }
 
     if (

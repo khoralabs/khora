@@ -26,12 +26,19 @@ export {
   unlinkAllAgentsFromMembership,
 } from "./account-agent-links";
 export {
+  type BlockedEmail,
+  type BlockedEmailReason,
+  deleteAccount,
   findAccountByAuthSubject,
   findAccountByEmail,
   findAccountById,
+  findBlockedEmail,
   linkBetterAuthUser,
   listAccountEmails,
   mergeEmailOntoAccount,
+  reactivateAccount,
+  reactivateAccountByEmail,
+  suspendAccount,
 } from "./accounts";
 export { lookupRegistryByAccountId, lookupRegistryByEmail } from "./admin-stats";
 export {

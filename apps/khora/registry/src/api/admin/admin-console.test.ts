@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createRootTokenConsoleAuth } from "@khoralabs/khora-console";
+import { linkBetterAuthUser } from "@khoralabs/registry-accounts";
 import {
   ensureRegistrySchema,
   getRegistryDatabase,
@@ -8,6 +9,11 @@ import {
 import type { RegistryAdminSummary } from "@khoralabs/registry-catalog";
 import { registerKhoraHost, seedDefaultHost } from "@khoralabs/registry-catalog";
 import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
+import {
+  handleAdminAccountDelete,
+  handleAdminAccountReactivate,
+  handleAdminAccountSuspend,
+} from "./accounts";
 import { handleAdminHostActivate } from "./hosts";
 import { handleLookupEmail } from "./lookup";
 import { handleAdminStatsSummary } from "./stats";
@@ -150,5 +156,53 @@ describe("registry admin console", () => {
       new URL("http://x/admin/api/session"),
     );
     expect(authed?.status).toBe(200);
+  });
+
+  test("admin account suspend/reactivate/delete lifecycle", async () => {
+    const db = getRegistryDatabase();
+    const account = linkBetterAuthUser(db, {
+      providerSubject: "ba-admin-lifecycle-1",
+      email: "lifecycle@example.com",
+    });
+
+    const auth = createRootTokenConsoleAuth({ rootToken: ROOT_TOKEN });
+    const cookie = await loginCookie(auth);
+
+    const suspendRes = await handleAdminAccountSuspend(
+      new Request(`http://x/admin/api/accounts/${account.id}/suspend`, {
+        method: "POST",
+        headers: { cookie },
+      }),
+      auth,
+      account.id,
+    );
+    expect(suspendRes.status).toBe(200);
+    const suspendedBody = (await suspendRes.json()) as { account: { status: string } };
+    expect(suspendedBody.account.status).toBe("suspended");
+
+    const reactivateRes = await handleAdminAccountReactivate(
+      new Request(`http://x/admin/api/accounts/${account.id}/reactivate`, {
+        method: "POST",
+        headers: { cookie },
+      }),
+      auth,
+      account.id,
+    );
+    expect(reactivateRes.status).toBe(200);
+    const reactivatedBody = (await reactivateRes.json()) as { account: { status: string } };
+    expect(reactivatedBody.account.status).toBe("active");
+
+    const deleteRes = await handleAdminAccountDelete(
+      new Request(`http://x/admin/api/accounts/${account.id}`, {
+        method: "DELETE",
+        headers: { cookie },
+      }),
+      auth,
+      account.id,
+    );
+    expect(deleteRes.status).toBe(200);
+    const deletedBody = (await deleteRes.json()) as { ok: boolean; blockedEmailsCount: number };
+    expect(deletedBody.ok).toBe(true);
+    expect(deletedBody.blockedEmailsCount).toBe(1);
   });
 });

@@ -1,4 +1,4 @@
-import { linkBetterAuthUser } from "@khoralabs/registry-accounts";
+import { findBlockedEmail, linkBetterAuthUser } from "@khoralabs/registry-accounts";
 import { betterAuth } from "better-auth";
 import { emailOTP } from "better-auth/plugins";
 import { isBootstrapStaffEmail, normalizeEmail } from "./bootstrap";
@@ -59,6 +59,13 @@ function syncAccountForUser(userId: string, email: string): void {
   });
 }
 
+function assertEmailAllowedForAuth(email: string): void {
+  const blocked = findBlockedEmail(getRegistryDatabase(), email);
+  if (blocked !== null) {
+    throw new Error("email blocked");
+  }
+}
+
 export function createRegistryAuth(opts: RegistryAuthOptions = {}) {
   const { baseURL, secret, cookieDomain } = readAuthEnv(opts);
   const port = readRegistryPort();
@@ -110,6 +117,7 @@ export function createRegistryAuth(opts: RegistryAuthOptions = {}) {
       user: {
         create: {
           before: async (user) => {
+            assertEmailAllowedForAuth(user.email);
             const role = isBootstrapStaffEmail(user.email) ? "staff" : "user";
             return { data: { ...user, role } };
           },

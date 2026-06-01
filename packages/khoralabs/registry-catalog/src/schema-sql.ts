@@ -14,6 +14,24 @@ CREATE TABLE IF NOT EXISTS account_emails (
   PRIMARY KEY (account_id, email)
 );
 
+CREATE TABLE IF NOT EXISTS blocked_emails (
+  email TEXT PRIMARY KEY NOT NULL,
+  reason TEXT NOT NULL,
+  account_id TEXT,
+  blocked_at_ms INTEGER NOT NULL,
+  updated_at_ms INTEGER NOT NULL
+);
+
+INSERT INTO blocked_emails (email, reason, account_id, blocked_at_ms, updated_at_ms)
+SELECT e.email, 'suspended', a.id, a.updated_at_ms, a.updated_at_ms
+FROM accounts a
+JOIN account_emails e ON e.account_id = a.id
+WHERE a.status = 'suspended'
+ON CONFLICT(email) DO UPDATE SET
+  reason = excluded.reason,
+  account_id = excluded.account_id,
+  updated_at_ms = excluded.updated_at_ms;
+
 CREATE TABLE IF NOT EXISTS auth_links (
   account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
   provider TEXT NOT NULL,

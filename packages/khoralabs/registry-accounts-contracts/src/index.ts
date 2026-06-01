@@ -1,4 +1,4 @@
-export type AccountStatus = "active" | "suspended";
+export type AccountStatus = "active" | "suspended" | "deleted";
 
 export type Account = {
   id: string;
