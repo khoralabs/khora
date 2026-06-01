@@ -574,12 +574,20 @@ export function createKhoraAdminStatsPort(deps: {
               .get(did) as { c: number }
           ).c
         : 0;
+      const accountStatus = tableExists(catalogDb, "agent_account_status")
+        ? (
+            catalogDb.prepare(`SELECT status FROM agent_account_status WHERE did = ?`).get(did) as
+              | { status: "suspended" | "deleted" }
+              | undefined
+          )?.status
+        : undefined;
       return {
         did,
         username: username ?? null,
         outboxCount,
         subscriptionCount,
         cellId,
+        ...(accountStatus !== undefined ? { accountStatus } : {}),
       };
     },
 

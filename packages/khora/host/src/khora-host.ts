@@ -50,6 +50,7 @@ export function createKhoraHost(deps: KhoraHostDeps): KhoraHostContext {
     principalLifecycle: deps.principalLifecycle,
     health: deps.health,
     adminStats: deps.adminStats,
+    agentAccountStatus: deps.agentAccountStatus,
     hostSpec: deps.hostSpec,
     outboxPayloadCodec: deps.outboxPayloadCodec,
     principalTeardownWorker,

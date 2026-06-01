@@ -1,5 +1,10 @@
 export type { AgentRelayPersistence } from "@khoralabs/agent-relay";
 export {
+  type AgentAccountStatus,
+  type AgentAccountStatusPort,
+  createAgentAccountStatusPort,
+} from "./agent-account-status";
+export {
   type CatalogProjectionListedRow,
   escapeSqlLikeLiteral,
   RelayCatalogProjectionStore,

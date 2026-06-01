@@ -64,6 +64,7 @@ export function AdminStatsPrincipalLookupResult({
       {principal !== null && (
         <dl data-slot="admin-stats-principal-lookup-result" className={cn(className)} {...props}>
           <MetricRow label="Username" value={principal.username ?? "—"} />
+          <MetricRow label="Account status" value={principal.accountStatus ?? "active"} />
           <MetricRow label="Outbox count" value={principal.outboxCount} />
           <MetricRow label="Subscriptions" value={principal.subscriptionCount} />
           <MetricRow label="Cell" value={principal.cellId} />

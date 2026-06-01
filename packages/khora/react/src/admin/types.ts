@@ -97,4 +97,5 @@ export type AdminPrincipal = {
   outboxCount: number;
   subscriptionCount: number;
   cellId: string;
+  accountStatus?: "suspended" | "deleted";
 };

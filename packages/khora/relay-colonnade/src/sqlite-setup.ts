@@ -32,6 +32,11 @@ export function ensureRelayCatalogProjectionsSchema(db: Database): void {
       channel_id TEXT NOT NULL,
       PRIMARY KEY (tenant_key, principal_id, channel_id)
     );
+    CREATE TABLE IF NOT EXISTS agent_account_status (
+      did TEXT PRIMARY KEY NOT NULL,
+      status TEXT NOT NULL CHECK(status IN ('suspended', 'deleted')),
+      created_at_ms INTEGER NOT NULL
+    );
   `);
 }
 

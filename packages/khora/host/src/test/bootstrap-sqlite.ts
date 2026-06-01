@@ -131,6 +131,11 @@ export async function createTestKhoraHost(
     clearRegistrationSecret: () => ({ updatedAtMs: Date.now() }),
   };
   const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(catalogDb) });
+  const agentAccountStatus = {
+    getStatus: () => undefined,
+    setStatus: () => {},
+    clearStatus: () => {},
+  };
 
   return createKhoraHost({
     persistence,
@@ -144,6 +149,7 @@ export async function createTestKhoraHost(
     catalog,
     health,
     adminStats,
+    agentAccountStatus,
     hostSpec,
     outboxPayloadCodec: encryption.outboxPayloadCodec,
     percolator,

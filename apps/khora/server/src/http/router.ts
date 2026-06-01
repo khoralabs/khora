@@ -4,6 +4,7 @@ import type { KhoraWsUpgradePort } from "@khoralabs/khora-transport";
 import { logger } from "../logger";
 import { clientIpFromRequest } from "../rate-limit";
 import { handleInboxWsUpgrade } from "../ws/inbox";
+import { handleAdminAgentsRoute } from "./admin-agents";
 import { handleAdminInvitesList, handleAdminInvitesMint } from "./admin-invites";
 import { handleAdminMemoriesRoute } from "./admin-memories";
 import {
@@ -159,6 +160,10 @@ export async function route(
 
   if (url.pathname.startsWith("/admin/api/memories")) {
     return handleAdminMemoriesRoute(req, url, deps);
+  }
+
+  if (url.pathname.startsWith("/admin/api/agents/")) {
+    return handleAdminAgentsRoute(req, url, deps);
   }
 
   const ip = clientIpFromRequest(req);

@@ -25,6 +25,7 @@ import {
   openMemoriesDatabase,
 } from "@khoralabs/memories-sqlite";
 import {
+  createAgentAccountStatusPort,
   createRelayColonnadeSocial,
   createRelayPrincipalLifecycle,
 } from "@khoralabs/relay-colonnade";
@@ -119,6 +120,7 @@ export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<
     lookupNormalizedUsernameForPrincipal: catalog.lookupNormalizedUsernameForPrincipal,
     sqlCipherKey: encryption.sqlCipherKey,
   });
+  const agentAccountStatus = createAgentAccountStatusPort(catalogDb);
   const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(catalogDb) });
   const persistenceClient = createAgentRelayPersistenceClient(persistence);
 
@@ -165,6 +167,7 @@ export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<
     catalog,
     health,
     adminStats,
+    agentAccountStatus,
     hostSpec,
     outboxPayloadCodec: encryption.outboxPayloadCodec,
     ...(invitesRepoValue !== undefined ? { invitesRepo: invitesRepoValue } : {}),

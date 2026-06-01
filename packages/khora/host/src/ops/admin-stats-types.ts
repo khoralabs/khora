@@ -97,6 +97,7 @@ export type KhoraAdminPrincipalDetail = {
   outboxCount: number;
   subscriptionCount: number;
   cellId: string;
+  accountStatus?: "suspended" | "deleted";
 };
 
 export type KhoraAdminCellDetailResult = KhoraAdminCellDetail | { error: "invalid_cell" };

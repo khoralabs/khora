@@ -47,6 +47,10 @@ export async function handleRegister(req: Request, deps: HostRouteDeps): Promise
   if (ctx.host.persistenceClient.agentRegistrationExists(body.did)) {
     return jsonError("Already registered", 409);
   }
+  const accountStatus = ctx.agentAccountStatus.getStatus(body.did);
+  if (accountStatus !== undefined) {
+    return jsonError("Registration not allowed", 403);
+  }
   const inviteTokenRaw = body.inviteToken?.trim();
   const inviteTokenPresent = inviteTokenRaw !== undefined && inviteTokenRaw.length > 0;
 

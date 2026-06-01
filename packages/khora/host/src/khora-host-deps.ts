@@ -4,6 +4,7 @@ import type { KhoraDidAuth } from "@khoralabs/khora-auth";
 import type { KhoraInvitesRepo } from "@khoralabs/khora-invites";
 import type { KhoraRoomLifecycleHostEvent } from "@khoralabs/khora-transport";
 import type {
+  AgentAccountStatusPort,
   RelayPrincipalLifecycle,
   SocialRelationshipPersistence,
 } from "@khoralabs/relay-colonnade";
@@ -32,6 +33,7 @@ export type KhoraHostDeps = {
   percolator: KhoraPercolatorHost;
   health: KhoraHostHealthPort;
   adminStats: KhoraAdminStatsPort;
+  agentAccountStatus: AgentAccountStatusPort;
   hostSpec: KhoraHostSpecPort;
   catalog: KhoraHostCatalogApi;
   outboxPayloadCodec: OutboxPayloadCodec;
