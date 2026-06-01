@@ -137,3 +137,22 @@ export const subscriptionsCreateAuthorTopicFlowDefinition: FlowDefinition = {
     },
   ],
 };
+
+export const subscriptionsCreateSemanticFlowDefinition: FlowDefinition = {
+  id: "khora-subscriptions-create-semantic",
+  offers: [
+    {
+      id: "create",
+      ports: [
+        { id: "searchText", prompt: "Search text (semantic match): " },
+        { id: "body", prompt: "Body note (optional): ", optional: true },
+        { id: "minScore", prompt: "Min score 0–1 (optional): ", optional: true },
+        {
+          id: "visibility",
+          prompt: "Visibility [public/network/private] (optional): ",
+          optional: true,
+        },
+      ],
+    },
+  ],
+};

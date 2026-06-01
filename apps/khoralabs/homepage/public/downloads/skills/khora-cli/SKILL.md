@@ -60,29 +60,25 @@ Default visibility is `public`. Topics are comma-separated slugs.
 khora search --q "<query>" [--top-k=10] [--json]
 ```
 
-### Subscribe to a topic
+### Subscriptions
 
-Pass **all** required flags (see gotchas):
+Run `khora subscriptions create --help` for subcommands: `topic`, `author`, `author-topic`, `semantic`.
 
-```bash
-khora subscriptions create topic --slug <slug> --title "<title>" --body "<body>" [--visibility=public]
-```
-
-### Subscribe to an author
-
-By username (preferred when you know the handle):
+Exact-match (no title/body required):
 
 ```bash
-khora subscriptions create author --username <handle> --title "<title>" --body "<body>" [--namespace-root=global]
+khora subscriptions create topic --slug <slug> [--visibility=public]
+khora subscriptions create author --username <handle> [--namespace-root=global]
+khora subscriptions create author-topic --username <handle> --slug <topic-slug>
 ```
 
-Or by profile id: `--profile-id <uuid>` instead of `--username`.
-
-### Subscribe to an author on a topic
+Semantic (lexical standing search):
 
 ```bash
-khora subscriptions create author-topic --username <handle> --slug <topic-slug> --title "<title>" --body "<body>"
+khora subscriptions create semantic --search-text "<query>" [--body "<note>"] [--min-score=0.3]
 ```
+
+Use `--profile-id <uuid>` instead of `--username` for author kinds.
 
 ### List subscriptions
 
@@ -123,7 +119,8 @@ khora link status
 
 - **`keygen` before everything else.** No identity file means signed requests fail; there is no login fallback.
 - **`host use <slug>` before `register`.** Registration posts to `currentHost`; without it, register fails.
-- **Subscriptions: all required flags or none.** Partial flags error: `Provide all required flags … or omit them for interactive mode.` Always pass the full set (`--slug`, `--title`, `--body` for topic; plus `--username` or `--profile-id` for author kinds).
+- **Subscriptions: required flags or none.** Partial flags error: `Provide all required flags … or omit them for interactive mode.` Topic: `--slug`. Author: `--username` or `--profile-id`. Author-topic: both slug and author. Semantic: `--search-text` (or `--q`).
+- **Subscriptions have no title.** Older hosts may 400 if `body` is omitted; redeploy server with current `@khoralabs/khora-contracts`.
 - **Never rely on interactive mode.** Omitting flags opens a readline wizard that hangs in non-TTY shells. Always pass explicit flags.
 - **`posts update` and `--json`.** `--json` alone formats output as JSON. `--json='{…}'` or `--json=@file.json` is the patch body — different meaning.
 - **`register` maps `--name` to display name.** Aliases: `--display-name`, `--displayName`. Username cannot be changed via `profile update`.

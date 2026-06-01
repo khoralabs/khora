@@ -56,7 +56,7 @@ export function khoraPostSigningPayloadFromCreate(
     ...(visibility !== "public" ? { visibility } : {}),
     ...(content.expiresAtMs !== undefined ? { expiresAtMs: content.expiresAtMs } : {}),
     ...(content.title !== undefined ? { title: content.title } : {}),
-    body: content.body,
+    body: content.body ?? "",
     ...(content.search !== undefined ? { search: content.search } : {}),
   };
 }
@@ -83,7 +83,7 @@ export function khoraPostSigningPayloadFromPatch(
       : {}),
     ...(merged.expiresAtMs !== undefined ? { expiresAtMs: merged.expiresAtMs } : {}),
     ...(merged.title !== undefined ? { title: merged.title } : {}),
-    body: merged.body,
+    body: merged.body ?? "",
     ...(merged.search !== undefined ? { search: merged.search } : {}),
   };
 }
@@ -157,7 +157,7 @@ export function signingPayloadForPatch(
     visibility: patch.visibility ?? previous.visibility,
     expiresAtMs: patch.expiresAtMs ?? previous.expiresAtMs,
     title: patch.title ?? previous.title,
-    body: patch.body ?? previous.body,
+    body: patch.body ?? previous.body ?? "",
     search: patch.search ?? previous.search,
   });
 }

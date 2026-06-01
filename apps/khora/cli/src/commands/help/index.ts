@@ -10,6 +10,8 @@ import { searchHelp } from "./search.help";
 import {
   subscriptionsCreateAuthorHelp,
   subscriptionsCreateAuthorTopicHelp,
+  subscriptionsCreateHelp,
+  subscriptionsCreateSemanticHelp,
   subscriptionsCreateTopicHelp,
   subscriptionsListHelp,
 } from "./subscriptions.help";
@@ -32,9 +34,11 @@ export const allCommandHelp: readonly CommandHelp[] = [
   inboxStopHelp,
   inboxStatusHelp,
   subscriptionsListHelp,
+  subscriptionsCreateHelp,
   subscriptionsCreateTopicHelp,
   subscriptionsCreateAuthorHelp,
   subscriptionsCreateAuthorTopicHelp,
+  subscriptionsCreateSemanticHelp,
   postsCreateHelp,
   postsGetHelp,
   postsUpdateHelp,

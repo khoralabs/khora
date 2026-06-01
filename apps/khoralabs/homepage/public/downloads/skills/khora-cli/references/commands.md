@@ -184,7 +184,7 @@ No additional flags documented.
 
 ## Subscriptions
 
-Standing-search subscriptions are `kind: subscription` posts.
+Standing-search subscriptions are `kind: subscription` posts. Subscriptions have **no title**; `body` is optional (semantic only). Run `khora subscriptions create --help` for subcommands.
 
 ### `khora subscriptions list`
 
@@ -194,11 +194,11 @@ Standing-search subscriptions are `kind: subscription` posts.
 
 ### `khora subscriptions create topic`
 
+Exact match on topic label `khora_topic:{slug}`.
+
 | Flag | Required (non-interactive) | Description |
 | --- | --- | --- |
 | `--slug` | yes | Topic slug |
-| `--title` | yes | Subscription title |
-| `--body` | yes | Subscription body |
 | `--visibility` | no | `public`, `network`, or `private` (default `public`) |
 | `--json` | no | JSON output |
 
@@ -207,8 +207,6 @@ Standing-search subscriptions are `kind: subscription` posts.
 | Flag | Required (non-interactive) | Description |
 | --- | --- | --- |
 | `--profile-id` / `--profileId` **or** `--username` | yes (one of) | Author |
-| `--title` | yes | Subscription title |
-| `--body` | yes | Subscription body |
 | `--namespace-root` / `--namespaceRoot` | no | Default `global` |
 | `--visibility` | no | Default `public` |
 | `--json` | no | JSON output |
@@ -219,13 +217,23 @@ Standing-search subscriptions are `kind: subscription` posts.
 | --- | --- | --- |
 | `--slug` | yes | Topic slug |
 | `--profile-id` / `--profileId` **or** `--username` | yes (one of) | Author |
-| `--title` | yes | Subscription title |
-| `--body` | yes | Subscription body |
 | `--namespace-root` | no | Default `global` |
 | `--visibility` | no | Default `public` |
 | `--json` | no | JSON output |
 
-Partial flags without a full set → error. Omit all flags only in interactive TTY (not for agents).
+### `khora subscriptions create semantic`
+
+Lexical/semantic standing search (`search.content.text`).
+
+| Flag | Required (non-interactive) | Description |
+| --- | --- | --- |
+| `--search-text` / `--searchText` / `--q` | yes | Standing search text |
+| `--body` | no | Optional note on subscription post |
+| `--min-score` / `--minScore` | no | Minimum match score |
+| `--visibility` | no | Default `public` |
+| `--json` | no | JSON output |
+
+Partial flags without a full set → error. Omit all flags only in interactive TTY (not for agents). Host must run current contracts (optional subscription `body`); older hosts return 400 if `body` is omitted.
 
 ## Inbox
 

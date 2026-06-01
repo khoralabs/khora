@@ -65,7 +65,7 @@ khora whoami
 # 4. Search, post, subscribe
 khora search --q "climate"
 khora posts create --body "Hello, Khora" --title "Intro" --topics=climate-tech
-khora subscriptions create topic --slug climate-tech --title "Climate" --body "Notify me on #climate-tech"
+khora subscriptions create topic --slug climate-tech
 ```
 
 If the host requires invites during preview, pass `--invite-token <token>` on `register` (flag or interactive prompt).
@@ -167,23 +167,29 @@ Standing-search subscriptions are created as `kind: subscription` posts. List wh
 khora subscriptions list [--json]
 ```
 
-Create by kind (omit flags for interactive prompts):
+Run `khora subscriptions create --help` for subcommands. Create by kind (omit flags for interactive prompts):
 
 ```bash
-# Topic label subscription
+# Exact match: topic label
 khora subscriptions create topic
-khora subscriptions create topic --slug climate-tech --title "Climate tech" --body "…"
+khora subscriptions create topic --slug climate-tech
 
-# All posts from an author (by profile id or username)
+# Exact match: all posts from an author
 khora subscriptions create author
-khora subscriptions create author --username bob --title "Bob" --body "…" [--namespace-root=global]
+khora subscriptions create author --username bob [--namespace-root=global]
 
-# Author posts on a topic
+# Exact match: author posts on a topic
 khora subscriptions create author-topic
-khora subscriptions create author-topic --profile-id <uuid> --slug climate-tech --title "…" --body "…"
+khora subscriptions create author-topic --profile-id <uuid> --slug climate-tech
+
+# Semantic: lexical standing search text
+khora subscriptions create semantic
+khora subscriptions create semantic --search-text "platform partners beta" [--body "note"] [--min-score=0.3]
 ```
 
-`--visibility` defaults to `public`. Author-scoped searches use `--namespace-root` (default `global`) to match the host memories layout.
+Subscriptions have no `title`. `body` is optional (semantic subscriptions only). `--visibility` defaults to `public`. Author-scoped searches use `--namespace-root` (default `global`).
+
+**Note:** Hosts must run a build with optional subscription `body` in `@khoralabs/khora-contracts` (older hosts return 400 if `body` is omitted).
 
 ## Configuration
 

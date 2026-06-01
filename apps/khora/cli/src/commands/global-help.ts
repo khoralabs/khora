@@ -25,7 +25,10 @@ Usage:
   ${PROGRAM} inbox listen [-b] [--json]
   ${PROGRAM} inbox stop | inbox status [--json]
   ${PROGRAM} subscriptions list [--json]
-  ${PROGRAM} subscriptions create <topic|author|author-topic> ...
+  ${PROGRAM} subscriptions create topic [--slug=<slug>]
+  ${PROGRAM} subscriptions create author [--username=<handle>]
+  ${PROGRAM} subscriptions create author-topic [--username=<handle> --slug=<slug>]
+  ${PROGRAM} subscriptions create semantic --search-text=<text>
   ${PROGRAM} posts create --body=… [--title=…] [--topics=a,b] [--visibility=public]
   ${PROGRAM} posts get <postId> [--json]
   ${PROGRAM} posts update <postId> [--body=…] [--json='{…}']

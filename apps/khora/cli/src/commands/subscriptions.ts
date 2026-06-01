@@ -1,5 +1,5 @@
 import type { FlagMap } from "@khoralabs/cli-kit";
-import { boolFlag, strFlag } from "@khoralabs/cli-kit";
+import { boolFlag, strFlag, tryPrintCommandHelp } from "@khoralabs/cli-kit";
 import type { KhoraClient } from "@khoralabs/khora-client";
 import type { KhoraPostVisibility, KhoraStandingSearchRequest } from "@khoralabs/khora-contracts";
 import {
@@ -7,16 +7,17 @@ import {
   authorTopicSubscriptionSearch,
   topicSubscriptionSearch,
 } from "@khoralabs/khora-contracts";
-
 import type { KhoraCliContext } from "../flows/context";
 import { withKhoraClient } from "../flows/context";
 import {
   runSubscriptionAuthorCreateFlow,
   runSubscriptionAuthorTopicCreateFlow,
+  runSubscriptionSemanticCreateFlow,
   runSubscriptionTopicCreateFlow,
 } from "../flows/subscription-flows";
 import { exitOnClientError } from "../lib/client-error";
 import { DEFAULT_NAMESPACE_ROOT } from "../lib/flags";
+import { commandHelpTextMap } from "./global-help";
 
 function visibilityFromFlags(flags: FlagMap): KhoraPostVisibility | undefined {
   const v = strFlag(flags, "visibility")?.trim();
@@ -39,6 +40,15 @@ function requireStrFlag(flags: FlagMap, ...keys: string[]): string {
     if (v !== undefined && v.length > 0) return v;
   }
   throw new Error(`Missing required flag: ${keys.join(" or ")}`);
+}
+
+function minScoreFromFlags(flags: FlagMap): number | undefined {
+  const raw = strFlag(flags, "min-score") ?? strFlag(flags, "minScore");
+  const v = raw?.trim();
+  if (v === undefined || v.length === 0) return undefined;
+  const n = Number.parseFloat(v);
+  if (Number.isNaN(n)) throw new Error("--min-score must be a number");
+  return n;
 }
 
 function namespaceRootFromFlags(flags: FlagMap): string {
@@ -73,9 +83,21 @@ function partialFlagsError(kind: string): never {
   );
 }
 
+function printSubscriptionsCreateHelp(): void {
+  tryPrintCommandHelp(["subscriptions", "create"], commandHelpTextMap);
+}
+
+function semanticSearchFromText(searchText: string, minScore?: number): KhoraStandingSearchRequest {
+  return {
+    content: { text: searchText },
+    ...(minScore !== undefined ? { options: { minScore } } : {}),
+  };
+}
+
 type SubscriptionCreateInput = {
   search: KhoraStandingSearchRequest;
   visibility: KhoraPostVisibility;
+  body?: string;
 };
 
 export async function handleSubscriptionsList(flags: FlagMap): Promise<void> {
@@ -109,7 +131,8 @@ export async function handleSubscriptionsCreate(
   const json = boolFlag(flags, "json");
   const kind = positional[2];
   if (kind === undefined) {
-    throw new Error("Usage: khora subscriptions create <topic|author|author-topic> ...");
+    printSubscriptionsCreateHelp();
+    throw new Error("Missing subscription kind.");
   }
 
   const topicPartial = hasStrFlag(flags, "slug", "visibility");
@@ -139,6 +162,18 @@ export async function handleSubscriptionsCreate(
   );
   const authorTopicComplete = hasStrFlag(flags, "slug") && authorComplete;
 
+  const semanticPartial = hasStrFlag(
+    flags,
+    "search-text",
+    "searchText",
+    "q",
+    "body",
+    "min-score",
+    "minScore",
+    "visibility",
+  );
+  const semanticComplete = hasStrFlag(flags, "search-text", "searchText", "q");
+
   let prepared:
     | { mode: "topic"; slug: string; visibility: KhoraPostVisibility }
     | {
@@ -152,6 +187,13 @@ export async function handleSubscriptionsCreate(
         slug: string;
         profileId?: string;
         username?: string;
+        visibility: KhoraPostVisibility;
+      }
+    | {
+        mode: "semantic";
+        searchText: string;
+        body?: string;
+        minScore?: number;
         visibility: KhoraPostVisibility;
       };
 
@@ -199,6 +241,23 @@ export async function handleSubscriptionsCreate(
       const flow = await runSubscriptionAuthorTopicCreateFlow(ctx);
       prepared = { mode: "author-topic", ...flow };
     }
+  } else if (kind === "semantic") {
+    if (semanticComplete) {
+      const searchText = requireStrFlag(flags, "search-text", "searchText", "q");
+      const bodyRaw = strFlag(flags, "body")?.trim();
+      prepared = {
+        mode: "semantic",
+        searchText,
+        ...(bodyRaw !== undefined && bodyRaw.length > 0 ? { body: bodyRaw } : {}),
+        minScore: minScoreFromFlags(flags),
+        visibility: visibilityFromFlags(flags) ?? "public",
+      };
+    } else if (semanticPartial) {
+      partialFlagsError("semantic");
+    } else {
+      const flow = await runSubscriptionSemanticCreateFlow(ctx);
+      prepared = { mode: "semantic", ...flow };
+    }
   } else {
     throw new Error(`Unknown subscription kind: ${kind}`);
   }
@@ -221,13 +280,19 @@ export async function handleSubscriptionsCreate(
           visibility: prepared.visibility,
           search: authorSubscriptionSearch(profileId, namespaceRoot),
         };
-      } else {
+      } else if (prepared.mode === "author-topic") {
         const profileId =
           prepared.profileId ??
           (await resolveAuthorProfileIdByUsername(client, requireUsername(prepared.username)));
         input = {
           visibility: prepared.visibility,
           search: authorTopicSubscriptionSearch(profileId, prepared.slug, namespaceRoot),
+        };
+      } else {
+        input = {
+          visibility: prepared.visibility,
+          search: semanticSearchFromText(prepared.searchText, prepared.minScore),
+          ...(prepared.body !== undefined ? { body: prepared.body } : {}),
         };
       }
 

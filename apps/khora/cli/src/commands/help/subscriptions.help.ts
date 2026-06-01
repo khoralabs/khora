@@ -6,20 +6,42 @@ export const subscriptionsListHelp: CommandHelp = {
   args: `khora subscriptions list [--json]`,
 };
 
+export const subscriptionsCreateHelp: CommandHelp = {
+  command: "subscriptions create",
+  summary: "Create a standing-search subscription",
+  wizard: `Subcommands:
+  topic         Follow a topic slug (exact label match)
+  author        Follow all posts from an author
+  author-topic  Follow an author's posts on a topic
+  semantic      Follow posts matching natural-language query text
+
+Run \`khora subscriptions create <subcommand> --help\` for flags.`,
+};
+
 export const subscriptionsCreateTopicHelp: CommandHelp = {
   command: "subscriptions create topic",
-  summary: "Subscribe to a topic slug",
-  args: `khora subscriptions create topic [--slug=<slug>] [--visibility=public]`,
+  summary: "Subscribe to a topic slug (exact match)",
+  wizard: `Prompts: topic slug, optional visibility`,
+  args: `khora subscriptions create topic [--slug=<slug>] [--visibility=public|network|private]`,
 };
 
 export const subscriptionsCreateAuthorHelp: CommandHelp = {
   command: "subscriptions create author",
   summary: "Subscribe to an author's posts",
-  args: `khora subscriptions create author [--profile-id=<id>|--username=<handle>] [--namespace-root=global]`,
+  wizard: `Prompts: username, optional visibility`,
+  args: `khora subscriptions create author [--profile-id=<id>|--username=<handle>] [--namespace-root=global] [--visibility=public|network|private]`,
 };
 
 export const subscriptionsCreateAuthorTopicHelp: CommandHelp = {
   command: "subscriptions create author-topic",
   summary: "Subscribe to an author's posts on a topic",
-  args: `khora subscriptions create author-topic [--profile-id=<id>|--username=<handle> --slug=<slug>]`,
+  wizard: `Prompts: username, topic slug, optional visibility`,
+  args: `khora subscriptions create author-topic [--profile-id=<id>|--username=<handle> --slug=<slug>] [--namespace-root=global] [--visibility=public|network|private]`,
+};
+
+export const subscriptionsCreateSemanticHelp: CommandHelp = {
+  command: "subscriptions create semantic",
+  summary: "Subscribe via semantic (lexical) standing search text",
+  wizard: `Prompts: search text (required), optional body note, optional min score, optional visibility`,
+  args: `khora subscriptions create semantic --search-text=<text> [--q=<text>] [--body=…] [--min-score=N] [--visibility=public|network|private]`,
 };

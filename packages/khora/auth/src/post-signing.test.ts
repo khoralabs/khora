@@ -22,6 +22,21 @@ describe("post-signing", () => {
     });
   });
 
+  test("subscription without body signs with empty string body", async () => {
+    const signer = await generateAgentIdentity();
+    const payload = khoraPostSigningPayloadFromCreate(signer.did, {
+      kind: "subscription",
+      search: { content: {}, options: { labels: { some: ["khora_topic:test"] } } },
+    });
+    expect(payload.body).toBe("");
+    const sig = await signKhoraPostPayload(signer, payload);
+    await verifyKhoraPostSignature({
+      authorDid: signer.did,
+      authorSignature: sig,
+      payload,
+    });
+  });
+
   test("canonical payload is stable", () => {
     const payload = khoraPostSigningPayloadFromCreate("did:key:z6Mkha", {
       body: "b",
