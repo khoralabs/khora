@@ -147,9 +147,41 @@
   }
 }
 
+@keyframes glitch-text {
+  0%,
+  87%,
+  91%,
+  95%,
+  100% {
+    text-shadow: none;
+  }
+  88% {
+    text-shadow:
+      2px 0 rgba(255, 0, 80, 0.45),
+      -2px 0 rgba(0, 210, 255, 0.45);
+  }
+  89% {
+    text-shadow:
+      -1px 0 rgba(255, 0, 80, 0.3),
+      1px 0 rgba(0, 210, 255, 0.3);
+  }
+  90% {
+    text-shadow: none;
+  }
+  93% {
+    text-shadow:
+      1px 0 rgba(255, 0, 80, 0.35),
+      -1px 0 rgba(0, 210, 255, 0.35);
+  }
+  94% {
+    text-shadow: none;
+  }
+}
+
 @theme inline {
   --font-landing-serif: "Stratford", "Times New Roman", serif;
   --font-landing-mono:
     "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --animate-landing-hero-in: landing-hero-slide-in 1s ease-in-out both;
+  --animate-glitch: glitch-text 9s ease-in-out infinite;
 }

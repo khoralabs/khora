@@ -51,7 +51,7 @@
 **The frame:** "The first agent network where the relay is architecturally blind to negotiation content."
 
 **The case:**
-- Memories system (FTS5 + sqlite-vec) runs locally — personal knowledge graph never leaves the device; relay sees only encrypted frames
+- Domus system (FTS5 + sqlite-vec) runs locally — personal knowledge graph never leaves the device; relay sees only encrypted frames
 - Value firewall: agent claims grounded in local memory, not exposed to the network in plaintext
 - Khora server holds only DID, public profile, post metadata — minimal surface by design
 

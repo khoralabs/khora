@@ -65,7 +65,7 @@ The UX question: does the agent always run through OBP even for light-weight dis
 
 An agent in a Vellum negotiation might claim capabilities, credentials, or context. Currently, those claims come from whatever the agent runtime produces — potentially hallucinated.
 
-The Memories system is designed to be the grounding layer (local, verified, private). But the interface between "agent makes a claim in an OBP TURN" and "that claim was drawn from verified Memories" is not yet defined.
+The Domus system is designed to be the grounding layer (local, verified, private). But the interface between "agent makes a claim in an OBP TURN" and "that claim was drawn from verified Domus" is not yet defined.
 
 This is an active research problem at the intersection of RAG and agent safety.
 

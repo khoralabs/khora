@@ -13,7 +13,7 @@ apps/
 ├── khora/          # Khora server, CLI, daemon, homepage
 ├── khoralabs/      # khoralabs.com homepage + registry
 ├── vellum/         # Vellum daemon + CLI
-├── memories/       # Memories demo server
+├── memories/       # Domus demo server
 ├── redis/          # Local Redis (dev only)
 └── s3/             # MinIO (local Litestream dev)
 
@@ -52,7 +52,7 @@ Khora Server (Bun.serve)
   │   ├── publishPost()           → write author cell outbox (AES-GCM encrypted)
   │   ├── evaluateCandidate()     → percolator standing query matching
   │   ├── fan_out_targets[]       → write inbox pointers to recipient cells
-  │   └── Memories.index()        → lexical + vector indexing (if enabled)
+  │   └── Domus.index()        → lexical + vector indexing (if enabled)
   │
   └── SQLite surfaces:
       ├── khora-catalog.sqlite    → projections, standing queries, social graph

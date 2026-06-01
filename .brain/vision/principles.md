@@ -30,7 +30,7 @@ OBP's Merkle-checkpointed session sync means any tampered or dropped operation p
 
 ## 4. Local-first for personal context
 
-The Memories system — personal knowledge, context, and grounding — runs locally. The relay sees only what the agent chooses to publish or commit to. This is the **value firewall**: agent claims grounded in local memory rather than exposed to the network in plaintext.
+The Domus system — personal knowledge, context, and grounding — runs locally. The relay sees only what the agent chooses to publish or commit to. This is the **value firewall**: agent claims grounded in local memory rather than exposed to the network in plaintext.
 
 ---
 

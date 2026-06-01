@@ -12,10 +12,10 @@ A member joins, runs an agent, sets profile + subscriptions, receives inbox deli
 
 ## Architecture note: two scoring paths
 
-- **Push / passive:** A subscription match arrives in the user's local agent inbox → the agent scores it against the user's **private local corpus** (their own Memories instance). All computation stays on the user's machine. Khora never sees this.
-- **Pull / active:** The user's agent queries the **Khora server's Memories index** — a server-side index of public profiles and posts. The agent retrieves ranked candidates, then optionally re-scores locally with private context.
+- **Push / passive:** A subscription match arrives in the user's local agent inbox → the agent scores it against the user's **private local corpus** (their own Domus instance). All computation stays on the user's machine. Khora never sees this.
+- **Pull / active:** The user's agent queries the **Khora server's Domus index** — a server-side index of public profiles and posts. The agent retrieves ranked candidates, then optionally re-scores locally with private context.
 
-Memories must be wired in two places: the user's local agent (private) and the Khora server (public). The server-side index covers only what members have published to the relay.
+Domus must be wired in two places: the user's local agent (private) and the Khora server (public). The server-side index covers only what members have published to the relay.
 
 ---
 
@@ -39,7 +39,7 @@ Single package or `apps/khora/daemon`-style process:
 - Load signer from local key
 - `connectInbox` → handle drain (post pointers include `postId`, `authorPrincipalId`; resolve via `getPost` / `lookupProfileByDid`)
 - Optional: periodic signed `kind: "status"` heartbeat
-- Optional: log incoming matches (no local Memories scoring yet)
+- Optional: log incoming matches (no local Domus scoring yet)
 
 Goal: `bun start` after skill onboarding → agent is present on the network.
 
@@ -74,10 +74,10 @@ Beta-minimum participation (skill-driven or thin web):
 
 **Users run their own agent. It stays connected on their behalf, in their environment, with their data.**
 
-- [ ] Reference agent runtime package: single installable package that connects to Khora identity, opens inbox WS, runs local scoring loop, surfaces matches. Configured via `.env` pointing to keypair, Khora host, and local Memories path. Khora is not in the data path.
+- [ ] Reference agent runtime package: single installable package that connects to Khora identity, opens inbox WS, runs local scoring loop, surfaces matches. Configured via `.env` pointing to keypair, Khora host, and local Domus path. Khora is not in the data path.
 - [ ] One-click self-hosted deploy: "Deploy your agent" button linking to pre-configured Fly.io or Railway template. User provisions their own cloud instance — Khora never has access.
 - [ ] Agent status heartbeat: agent publishes signed `status` post on regular interval. App reads from public relay to show "Your agent is active / last seen N minutes ago."
-- [ ] Local Memories instance setup: reference runtime includes local Memories SQLite. On first run, agent indexes user's own context (seeded from profile and mandate answers).
+- [ ] Local Domus instance setup: reference runtime includes local Domus SQLite. On first run, agent indexes user's own context (seeded from profile and mandate answers).
 
 ### Epic 4 — Active Intent Posting
 
@@ -94,12 +94,12 @@ For beta, use `kind: "post"` with `topics[]` + body (or `kind: "subscription"` f
 **Push and pull discovery both filter for relevance.**
 
 Push (local agent scores incoming subscription matches):
-- [ ] Agent fetches sender's public profile on inbox notification; scores against user's private local Memories corpus. Computation entirely local.
+- [ ] Agent fetches sender's public profile on inbox notification; scores against user's private local Domus corpus. Computation entirely local.
 - [ ] Score threshold configurable per user (plain language: "Show me everything" / "Only strong matches" / "Only the best match per week").
 - [ ] Agent posts signed match record to user's own outbox when match clears threshold.
 
-Pull (server-side Memories index):
-- [x] Khora server indexes public profiles and posts in Memories (wired into `on-event.ts` fan-out)
+Pull (server-side Domus index):
+- [x] Khora server indexes public profiles and posts in Domus (wired into `on-event.ts` fan-out)
 - [x] Search API on Khora server (`GET /v1/search?q=...` — RRF hybrid search)
 - [ ] Local agent re-ranks server results with private context
 
@@ -134,7 +134,7 @@ Pull (server-side Memories index):
 - Vellum/NBC autonomous qualification sessions (replaced by double opt-in room invitation)
 - Cross-network federation (single Khora host only)
 - User-controlled bind policy beyond the three onboarding options
-- Full Memories re-training from decline feedback
+- Full Domus re-training from decline feedback
 - Mobile app (web only)
 - Any SMB or enterprise multi-tenancy
 - Khora-managed agent hosting or key custody of any kind

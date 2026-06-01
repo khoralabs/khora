@@ -5,7 +5,7 @@
 Khora is a **hosted relay**: it stores public social data (profiles, posts, subscriptions, room metadata) in plaintext at the application layer, and routes bilateral negotiation traffic over **end-to-end encrypted** frame channels.
 
 Users should assume:
-- **Published posts and profiles** are readable by the Khora operator via application APIs and the optional Memories search index (plaintext FTS/vectors at query time)
+- **Published posts and profiles** are readable by the Khora operator via application APIs and the optional Domus search index (plaintext FTS/vectors at query time)
 - **Frame-channel bodies** (NBC negotiation semantics) are confidential between the two peers — the relay stores and forwards ciphertext only
 - **Transport** (TLS/WSS) and **infrastructure** encryption protect data in motion and backup blobs; they do not alone make post content confidential from the operator
 
@@ -17,7 +17,7 @@ This split is intentional and aligns with Mastodon/Bluesky for public timelines.
 
 | Plane | Examples | Encrypted from host? |
 |-------|----------|---------------------|
-| **Public relay data** | Profiles, posts, topics, subscriptions, username index, room registry, social graph | Partial — SQLCipher at file level; post `outbox.payload` field-encrypted (AES-GCM); Memories index plaintext when enabled |
+| **Public relay data** | Profiles, posts, topics, subscriptions, username index, room registry, social graph | Partial — SQLCipher at file level; post `outbox.payload` field-encrypted (AES-GCM); Domus index plaintext when enabled |
 | **Frame-channel negotiation** | NBC TURN bodies, non-handshake frames after E2EE handshake | Yes — AES-256-GCM; keys derived client-side |
 
 ---
@@ -76,7 +76,7 @@ New post creates and updates require a detached Ed25519 **content signature** (`
 | Actor | Public posts/profiles | Frame-channel bodies | Mitigations |
 |-------|----------------------|---------------------|-------------|
 | Honest Khora operator | Full read via normal operation | Ciphertext only | Documented trust model |
-| Compromised host / disk theft | Ciphertext + SQLCipher files; Memories may expose searchable plaintext | Ciphertext without keys | SQLCipher + outbox keys in secret manager |
+| Compromised host / disk theft | Ciphertext + SQLCipher files; Domus may expose searchable plaintext | Ciphertext without keys | SQLCipher + outbox keys in secret manager |
 | Network eavesdropper | Protected by TLS in production | Protected by TLS + E2EE | Deploy HTTPS/WSS |
 | Unauthenticated client | Public read APIs only | Cannot join room without valid ticket + signed WS upgrade | Ed25519 auth, nonce store, ticket HMAC |
 | Malicious peer in room | N/A | Can send frames; must pass signature verification; bodies hidden from relay, not from the other peer | OBP signature rules |
@@ -95,6 +95,6 @@ The privacy guarantee Khora makes is stronger in one specific area — bilateral
 
 | | Public posts | Private/session traffic | Integrity |
 |--|-------------|------------------------|-----------|
-| **Khora** | Plaintext via APIs/Memories; encrypted on disk when keys set | Frame bodies E2EE (NBC/Vellum) | Ed25519 transport + post content signatures |
+| **Khora** | Plaintext via APIs/Domus; encrypted on disk when keys set | Frame bodies E2EE (NBC/Vellum) | Ed25519 transport + post content signatures |
 | **Mastodon** | Plaintext in instance DB + federation | DMs: plaintext on server; E2EE spec in progress (not default) | ActivityPub actor identity |
 | **Bluesky (AT Protocol)** | Signed plaintext repos on PDS; relays index copies | Native DMs not E2EE | Signed Merkle repositories |

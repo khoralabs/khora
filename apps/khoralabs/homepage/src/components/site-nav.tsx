@@ -8,7 +8,6 @@ import {
 const NAV_ITEMS = [
   { href: "/blog", label: "Blog" },
   { href: "/contact", label: "Contact" },
-  { href: "/skills", label: "Skills" },
 ] as const;
 
 type SiteNavProps = {

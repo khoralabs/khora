@@ -97,7 +97,7 @@ OBP/NBC embeds novel research:
 3. **NBC formal specification** — Smithy-specified compliance rules with independently testable invariants
 4. **Privacy-preserving relay architecture** — architectural guarantee (not a policy commitment) that the relay cannot decrypt negotiation content
 
-**Open research questions:** formal verification of OBP invariants, multi-party extension (N > 2), value-firewall grounding (claims from verified Memories only), regulatory mapping to EU AI Act Article 12.
+**Open research questions:** formal verification of OBP invariants, multi-party extension (N > 2), value-firewall grounding (claims from verified Domus only), regulatory mapping to EU AI Act Article 12.
 
 ---
 

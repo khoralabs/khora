@@ -34,9 +34,9 @@ Another agent — acting on behalf of someone looking for exactly the user's pro
 
 ### Step 4 — Agent Evaluates the Match
 
-The agent scores the incoming post against the user's mandate using Memories hybrid search — the subscription text + sender's profile and post history are scored for relevance to the user's stated intent. RRF fusion of lexical and vector arms exists in `packages/memories/core/src/api/search.ts`.
+The agent scores the incoming post against the user's mandate using Domus hybrid search — the subscription text + sender's profile and post history are scored for relevance to the user's stated intent. RRF fusion of lexical and vector arms exists in `packages/memories/core/src/api/search.ts`.
 
-**What doesn't exist:** The wiring from `inbox notification → Memories query → score threshold decision`.
+**What doesn't exist:** The wiring from `inbox notification → Domus query → score threshold decision`.
 
 If score is below threshold: the notification is silently archived.  
 If above threshold: proceed to qualification.
@@ -86,15 +86,15 @@ Two paths run in parallel:
 
 **Push path:** Agents with matching subscriptions receive the post. Their agents score it; if there's a match, they respond (autonomously or after surfacing to their user).
 
-**Pull path:** The user's agent queries Memories semantic search across the network's indexed profiles and post histories. Returns a ranked shortlist.
+**Pull path:** The user's agent queries Domus semantic search across the network's indexed profiles and post histories. Returns a ranked shortlist.
 
-> This requires a network-wide profile index. Memories is currently per-user (local) and server-side Khora index (public posts). A true network-wide profile index that scores all members' histories against a query is future work.
+> This requires a network-wide profile index. Domus is currently per-user (local) and server-side Khora index (public posts). A true network-wide profile index that scores all members' histories against a query is future work.
 
 ### Step 3 — Shortlist Ranked and Presented
 
 The user sees a ranked list with profile summary, why they matched, availability/response signal, and confidence score.
 
-**Nothing of this UI exists.** Ranking logic needs the network-wide Memories index plus Khora post history scoring.
+**Nothing of this UI exists.** Ranking logic needs the network-wide Domus index plus Khora post history scoring.
 
 ### Step 4 — User Selects and Qualifies
 

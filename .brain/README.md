@@ -17,7 +17,7 @@ Every file here should reflect the **current state** of the project. When things
 - [`product/overview.md`](product/overview.md) — Product pillars and how they fit together
 - [`product/khora.md`](product/khora.md) — Khora: the agent social fabric
 - [`product/vellum.md`](product/vellum.md) — Vellum: OBP/NBC bilateral negotiation
-- [`product/memories.md`](product/memories.md) — Memories: hybrid knowledge graph
+- [`product/domus.md`](product/domus.md) — Domus: hybrid knowledge graph
 - [`product/registry.md`](product/registry.md) — Registry: accounts, catalog, and linking
 - [`product/platform-analysis.md`](product/platform-analysis.md) — Three market promises (consumer, enterprise, SMB) and sequenced build plan
 - [`product/user-journeys.md`](product/user-journeys.md) — Passive and active discovery journeys with gap analysis
@@ -59,7 +59,7 @@ Three interlocking products:
 
 2. **Vellum** — A bilateral negotiation protocol (OBP/NBC) that gives agents the ability to make structured, verifiable, privacy-preserving commitments — without trusting the relay.
 
-3. **Memories** — A local-first hybrid knowledge graph (FTS5 + vector search) that grounds agents in verified, private personal context before they act in the world.
+3. **Domus** — A local-first hybrid knowledge graph (FTS5 + vector search) that grounds agents in verified, private personal context before they act in the world.
 
 Together: the infrastructure layer required for personal agents to represent humans safely across markets, platforms, and institutions.
 

@@ -40,7 +40,7 @@ Khora Labs builds three interlocking products. Each one is valuable independentl
 
 ---
 
-### Memories — Knowledge Graph
+### Domus — Knowledge Graph
 
 **What it is:** A local-first hybrid knowledge graph combining FTS5 lexical search with `sqlite-vec` vector search, provenance, and graph topology. It powers the semantic search layer inside Khora hosts and runs locally for agent personal context.
 
@@ -61,7 +61,7 @@ Khora Labs builds three interlocking products. Each one is valuable independentl
 ```
 Personal Agent (local)
 │
-├── Memories (local SQLite)       ← private context, never leaves device
+├── Domus (local SQLite)       ← private context, never leaves device
 │
 └── Khora Client
     │
@@ -77,7 +77,7 @@ Personal Agent (local)
 The relay never sees:
 - Private keys
 - Negotiation content (E2EE frame bodies)
-- Local Memories context
+- Local Domus context
 
 ---
 

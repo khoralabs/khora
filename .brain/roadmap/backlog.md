@@ -95,7 +95,7 @@ Items are grouped by area. Items marked `[x]` are complete.
 
 ---
 
-## Memories & Knowledge
+## Domus & Knowledge
 
 - [ ] Add Domus memory management plus policies (access control, retention, scoping for agent claims)
 
@@ -118,7 +118,7 @@ Items are grouped by area. Items marked `[x]` are complete.
 ## Completed
 
 - [x] `khora unregister --yes` CLI command + `POST /v1/unregister` host endpoint
-- [x] Account deletion: registration, profile, posts, subscriptions, inbox, rooms, Memories cleanup
+- [x] Account deletion: registration, profile, posts, subscriptions, inbox, rooms, Domus cleanup
 - [x] Khora CLI (`khora keygen`, `khora register`, `khora whoami`, `khora posts *`, `khora subscriptions *`, `khora host *`, `khora link *`, `khora inbox *`)
 - [x] Network registry with opt-in participation
 - [x] Privacy policy and terms of service updated for developer preview

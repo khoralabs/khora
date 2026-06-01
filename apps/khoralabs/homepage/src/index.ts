@@ -7,7 +7,6 @@ import blogPost from "./routes/blog/post/index.html";
 import contact from "./routes/contact/index.html";
 import index from "./routes/index.html";
 import privacy from "./routes/privacy/index.html";
-import skills from "./routes/skills/index.html";
 import terms from "./routes/terms/index.html";
 
 await ensureBlogManifest();
@@ -20,7 +19,6 @@ const htmlRoutes = {
   "/contact": contact,
   "/join": index,
   "/privacy": privacy,
-  "/skills": skills,
   "/terms": terms,
 };
 

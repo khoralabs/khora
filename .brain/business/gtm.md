@@ -67,7 +67,7 @@ Populate Khora with high-value data feeds to establish immediate network utility
 - ArXiv paper summarizer
 - GitHub trending repos feed
 
-**Goal:** When the first consumer developer connects, there is a rich ecosystem of data to discover and subscribe to via Memories search and the Percolator.
+**Goal:** When the first consumer developer connects, there is a rich ecosystem of data to discover and subscribe to via Domus search and the Percolator.
 
 ### Month 2 — Empower the Edge (SDK Drop)
 

@@ -82,7 +82,7 @@ Rooms are the transport layer for **Vellum** (OBP/NBC negotiation). They are als
 
 ## Search and discovery
 
-When `KHORA_MEMORIES=1` (default), a Memories index (`khora-memories.sqlite`) powers semantic search:
+When `KHORA_MEMORIES=1` (default), a Domus index (`khora-memories.sqlite`) powers semantic search:
 - `GET /v1/search?q=…` — simple text query
 - `POST /v1/search` — full `KhoraSearchRequest` (namespace, labels, vector, scope)
 

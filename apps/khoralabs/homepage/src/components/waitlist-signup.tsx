@@ -33,6 +33,9 @@ type WaitlistEmailStepProps = {
   loading: boolean;
   marketingConsent: boolean;
   showMarketingConsent: boolean;
+  autoFocus?: boolean;
+  emailInputId?: string;
+  marketingCheckboxId?: string;
   onEmailChange: (email: string) => void;
   onMarketingConsentChange: (checked: boolean) => void;
   onSubmit: () => void;
@@ -44,6 +47,9 @@ export function WaitlistEmailStep({
   loading,
   marketingConsent,
   showMarketingConsent,
+  autoFocus = false,
+  emailInputId = "waitlist-email",
+  marketingCheckboxId = "waitlist-marketing",
   onEmailChange,
   onMarketingConsentChange,
   onSubmit,
@@ -57,7 +63,7 @@ export function WaitlistEmailStep({
       }}
       aria-busy={loading}
     >
-      <Label htmlFor="waitlist-email" className="sr-only">
+      <Label htmlFor={emailInputId} className="sr-only">
         Email
       </Label>
       <InputGroup
@@ -65,10 +71,10 @@ export function WaitlistEmailStep({
         {...(loading ? { "data-disabled": true as const } : {})}
       >
         <InputGroupInput
-          id="waitlist-email"
+          id={emailInputId}
           type="email"
           autoComplete="email"
-          autoFocus
+          autoFocus={autoFocus}
           value={email}
           onChange={(e) => onEmailChange(e.target.value)}
           disabled={loading}
@@ -95,13 +101,13 @@ export function WaitlistEmailStep({
       {showMarketingConsent ? (
         <Field orientation="horizontal" className="text-[12px] leading-[1.45] text-[#838383]">
           <Checkbox
-            id="waitlist-marketing"
+            id={marketingCheckboxId}
             checked={marketingConsent}
             onCheckedChange={(checked) => onMarketingConsentChange(checked === true)}
             disabled={loading}
             className="border-0 bg-white/80 size-4"
           />
-          <FieldLabel htmlFor="waitlist-marketing" className="font-normal leading-[1.45]">
+          <FieldLabel htmlFor={marketingCheckboxId} className="font-normal leading-[1.45]">
             Keep me updated about Khora news and product updates.
           </FieldLabel>
         </Field>
@@ -116,6 +122,7 @@ type WaitlistOtpStepProps = {
   otp: string;
   error: string | null;
   loading: boolean;
+  otpInputId?: string;
   onOtpChange: (otp: string) => void;
   onBack: () => void;
   onSubmit: (otp: string) => void;
@@ -126,6 +133,7 @@ export function WaitlistOtpStep({
   otp,
   error,
   loading,
+  otpInputId = "waitlist-otp",
   onOtpChange,
   onBack,
   onSubmit,
@@ -150,7 +158,7 @@ export function WaitlistOtpStep({
       </p>
       <div className="relative mt-4 w-fit" aria-busy={loading}>
         <InputOTP
-          id="waitlist-otp"
+          id={otpInputId}
           maxLength={OTP_LENGTH}
           pattern={REGEXP_ONLY_DIGITS}
           autoComplete="one-time-code"
@@ -188,8 +196,20 @@ export function WaitlistSuccess() {
   );
 }
 
-export function WaitlistSignup() {
+type WaitlistSignupProps = {
+  /** When false (default), avoids scrolling the page to this form on load. */
+  autoFocusEmail?: boolean;
+  idPrefix?: string;
+};
+
+export function WaitlistSignup({
+  autoFocusEmail = false,
+  idPrefix = "waitlist",
+}: WaitlistSignupProps) {
   const [confirmed, setConfirmed] = useState(false);
+  const emailInputId = `${idPrefix}-email`;
+  const marketingCheckboxId = `${idPrefix}-marketing`;
+  const otpInputId = `${idPrefix}-otp`;
 
   if (confirmed) {
     return <WaitlistSuccess />;
@@ -221,6 +241,9 @@ export function WaitlistSignup() {
             loading={props.loading}
             marketingConsent={props.marketingConsent}
             showMarketingConsent={props.showMarketingConsent}
+            autoFocus={autoFocusEmail}
+            emailInputId={emailInputId}
+            marketingCheckboxId={marketingCheckboxId}
             onEmailChange={props.setEmail}
             onMarketingConsentChange={props.setMarketingConsent}
             onSubmit={() => void props.sendOtp()}
@@ -234,6 +257,7 @@ export function WaitlistSignup() {
             otp={props.otp}
             error={props.error}
             loading={props.loading}
+            otpInputId={otpInputId}
             onOtpChange={props.setOtp}
             onBack={props.goBack}
             onSubmit={(code) => void props.verifyOtp(code)}

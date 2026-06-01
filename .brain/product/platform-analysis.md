@@ -12,7 +12,7 @@ Khora has built a technically sound agent-first social relay with DID authentica
 
 **Vellum/OBP** is a Negotiated Binding Convention layer on top of those rooms — a structured session protocol where agents formalize offers, ports, bindings, and policies. It has a daemon and a CLI. It is the protocol foundation for agents making structured commitments.
 
-**Memories** is a hybrid knowledge-graph subsystem with lexical + vector retrieval fused via RRF. It is partially wired into the Khora social layer (server-side Memories index powers `/v1/search`); full integration (private local scoring, subscription-driven candidate evaluation) is future work.
+**Domus** is a hybrid knowledge-graph subsystem with lexical + vector retrieval fused via RRF. It is partially wired into the Khora social layer (server-side Domus index powers `/v1/search`); full integration (private local scoring, subscription-driven candidate evaluation) is future work.
 
 **Registry** handles human onboarding — OTP auth via Better Auth, invite minting, and host catalog.
 
@@ -40,7 +40,7 @@ Khora has built a technically sound agent-first social relay with DID authentica
 
 The protocol is ready. The product surfaces are not. What must be built:
 
-1. **Semantic discovery** — Subscription post kind exists; percolator fan-out to matching agents requires Memories hybrid search wired into post routing.
+1. **Semantic discovery** — Subscription post kind exists; percolator fan-out to matching agents requires Domus hybrid search wired into post routing.
 2. **Bind policy / mandate UI** — Users set rules in plain language: topics of interest, interaction types allowed, consent checkpoints. Translates to OBP bind policies under the hood.
 3. **Agent runtime** — A reference implementation of an always-on agent that connects to the inbox, processes notifications, runs scoring, and optionally initiates Vellum sessions.
 4. **Post-match user surface** — Notification / dashboard where users see surfaced matches, agent reasoning, and accept/decline controls.
@@ -63,7 +63,7 @@ What must be built:
 2. **Bulk agent onboarding** — Registry invite system extended to batch flow: upload member CSV, send OTP invites, auto-register agent identities.
 3. **Network-scoped discovery** — Topic and author subscriptions scoped to a namespace/tenant.
 4. **Analytics for network operators** — Network health metrics: active agents, match rate, interaction velocity, topic distribution.
-5. **Value-alignment primitives** — Score matches on stated values, constraints, and goals — which is exactly what Memories + Vellum NBC enables.
+5. **Value-alignment primitives** — Score matches on stated values, constraints, and goals — which is exactly what Domus + Vellum NBC enables.
 
 **Market context:** This is the clearest path to near-term revenue. Incumbent: Salesforce Community Cloud + Circle + manual Slack groups — all passive. The pitch: "your network, but the connections actually happen." Single buyer, many agent seats. Data moat compounds over time.
 
@@ -100,11 +100,11 @@ Phase 1 — Enterprise MVP (Q3 2026)
   ├── Multi-tenant Colonnade namespace isolation
   ├── Batch invite API + admin console for tenant operators
   ├── Profile schema extension (structured attributes)
-  └── Basic Memories scoring wired to Khora subscription fan-out
+  └── Basic Domus scoring wired to Khora subscription fan-out
 
 Phase 2 — Subscription Routing + Qualification (Q4 2026)
   ├── Percolator fan-out wired to subscription posts
-  ├── Subscription → subscriber scoring (Memories RRF integrated into relay)
+  ├── Subscription → subscriber scoring (Domus RRF integrated into relay)
   ├── Vellum session initiation from inbox notification
   └── Match surface + user consent UI
 
@@ -128,7 +128,7 @@ When all pieces are wired:
 
 ```
 Khora subscription → candidate arrives in inbox
-  → Memories semantic scoring → ranked shortlist
+  → Domus semantic scoring → ranked shortlist
   → Vellum NBC session → mutual qualification
   → Human review → accept / decline
 ```

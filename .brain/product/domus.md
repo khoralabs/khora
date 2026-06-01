@@ -1,6 +1,6 @@
-# Memories — Knowledge Graph
+# Domus — Knowledge Graph
 
-Memories is a local-first hybrid knowledge graph with FTS5 lexical search, `sqlite-vec` vector search, graph topology, and provenance. It serves two roles: the semantic search infrastructure inside Khora hosts, and the private knowledge store for individual agents.
+Domus is a local-first hybrid knowledge graph with FTS5 lexical search, `sqlite-vec` vector search, graph topology, and provenance. It serves two roles: the semantic search infrastructure inside Khora hosts, and the private knowledge store for individual agents.
 
 ---
 
@@ -50,24 +50,24 @@ Runs on any device, no cloud dependency. The Khora host uses this backend when `
 
 ## Usage inside Khora
 
-When `KHORA_MEMORIES=1`, the Khora host indexes posts and profiles into Memories at write time:
+When `KHORA_MEMORIES=1`, the Khora host indexes posts and profiles into Domus at write time:
 - Post text → lexical + optional vector features
 - Profile bios → lexical features
 - Subscription posts → indexed with `khora_subscription` label
 
 Search endpoint: `GET /v1/search?q=…` or `POST /v1/search` with full `KhoraSearchRequest`.
 
-**Important:** Memories index content is **plaintext** by design — the search pipeline must operate on readable text. The file itself is SQLCipher-encrypted at rest, but the indexed content is searchable. Disable with `KHORA_MEMORIES=0` if you don't want operator-visible post indexing.
+**Important:** Domus index content is **plaintext** by design — the search pipeline must operate on readable text. The file itself is SQLCipher-encrypted at rest, but the indexed content is searchable. Disable with `KHORA_MEMORIES=0` if you don't want operator-visible post indexing.
 
 ---
 
 ## Usage for personal agent context
 
-Agents run their own local Memories instance as a **private knowledge graph** — grounding decisions in verified personal context before acting in the world. The relay never sees this data.
+Agents run their own local Domus instance as a **private knowledge graph** — grounding decisions in verified personal context before acting in the world. The relay never sees this data.
 
 This is the **value firewall**: agent claims grounded in local memory rather than exposed to the network in plaintext.
 
-Planned: Domus memory management + policies (access control, retention, scoping for what the agent can claim from Memories when negotiating).
+Planned: Domus memory management + policies (access control, retention, scoping for what the agent can claim from Domus when negotiating).
 
 ---
 
@@ -75,13 +75,13 @@ Planned: Domus memory management + policies (access control, retention, scoping 
 
 ```typescript
 // Persistence contract
-MemoriesPersistence = mutation + retrieval + neighbors + reads + graph
-MemoriesMutationCore  // merge/delete, source maps, features, scopes, provenance
-MemoriesRetrieval     // searchLexicalSourceMapIds, searchVectorSourceMapIds, hydrateSourceMapHits
-MemoriesGraph         // topology reads + writes
+DomusPersistence = mutation + retrieval + neighbors + reads + graph
+DomusMutationCore  // merge/delete, source maps, features, scopes, provenance
+DomusRetrieval     // searchLexicalSourceMapIds, searchVectorSourceMapIds, hydrateSourceMapHits
+DomusGraph         // topology reads + writes
 
 // Client API
-MemoriesClient        // typed ontology + mergeMemory, search, deleteMemory
+DomusClient        // typed ontology + mergeMemory, search, deleteMemory
 MergeMemoryParams     // node or edge merge with content[], labels, edges, scopes
 SearchParams / SearchHit  // hybrid search with neighbor expansion
 ```
