@@ -2,8 +2,9 @@ import type { CommandHelp } from "@khoralabs/cli-kit";
 
 export const subscriptionsListHelp: CommandHelp = {
   command: "subscriptions list",
-  summary: "List author and topic subscriptions",
+  summary: "List your standing-search subscriptions",
   args: `khora subscriptions list [--json]`,
+  wizard: `Shows topic slugs, followed authors, author+topic pairs, and semantic queries.`,
 };
 
 export const subscriptionsCreateHelp: CommandHelp = {

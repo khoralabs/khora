@@ -92,7 +92,7 @@ Creating or joining a room adds the peer to your **connection set** (`network` v
 
 | Endpoint | Returns |
 |----------|---------|
-| `GET /v1/authors/subscriptions` | `{ authorDids, authorTopics }` derived from your `standing_queries` |
+| `GET /v1/authors/subscriptions` | `{ authorDids, authorTopics, topicSlugs, semantic }` derived from your `standing_queries` |
 
 **Client:** `client.listAuthorSubscriptions()`
 

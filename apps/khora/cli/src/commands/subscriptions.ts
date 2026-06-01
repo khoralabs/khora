@@ -109,6 +109,10 @@ export async function handleSubscriptionsList(flags: FlagMap): Promise<void> {
         console.log(JSON.stringify(snap, null, 2));
         return;
       }
+      console.log(`Topics (${snap.topicSlugs.length}):`);
+      for (const slug of snap.topicSlugs) {
+        console.log(`  #${slug}`);
+      }
       console.log(`Authors (${snap.authorDids.length}):`);
       for (const did of snap.authorDids) {
         console.log(`  ${did}`);
@@ -116,6 +120,10 @@ export async function handleSubscriptionsList(flags: FlagMap): Promise<void> {
       console.log(`Author topics (${snap.authorTopics.length}):`);
       for (const t of snap.authorTopics) {
         console.log(`  ${t.authorDid} / ${t.topicSlug}`);
+      }
+      console.log(`Semantic (${snap.semantic.length}):`);
+      for (const s of snap.semantic) {
+        console.log(`  ${s.searchText}`);
       }
     });
   } catch (e) {

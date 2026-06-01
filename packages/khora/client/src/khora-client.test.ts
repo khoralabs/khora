@@ -284,7 +284,12 @@ describe("KhoraClient", () => {
       expect(String(input)).toBe("http://h/v1/authors/subscriptions");
       expect(init?.method).toBe("GET");
       expectAuthHeaders(init, "did:key:agent");
-      return Response.json({ authorDids: ["did:key:bob"], authorTopics: [] });
+      return Response.json({
+        authorDids: ["did:key:bob"],
+        authorTopics: [],
+        topicSlugs: ["rust"],
+        semantic: [],
+      });
     });
     const c = new KhoraClient({
       baseUrl: "http://h",
@@ -294,6 +299,8 @@ describe("KhoraClient", () => {
     expect(await c.listAuthorSubscriptions()).toEqual({
       authorDids: ["did:key:bob"],
       authorTopics: [],
+      topicSlugs: ["rust"],
+      semantic: [],
     });
   });
 

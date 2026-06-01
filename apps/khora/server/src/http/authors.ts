@@ -1,3 +1,7 @@
+import {
+  mergeAuthorSubscriptionsSnapshot,
+  parseStandingQuerySubscriptionTargets,
+} from "@khoralabs/khora-contracts";
 import type { HostRouteDeps } from "./deps";
 import { authErrorResponse, rateLimitedResponse } from "./responses";
 
@@ -15,31 +19,15 @@ export async function handleListAuthorSubscriptions(
   }
   const tRl = rateLimiters.topicsDid(`did:${did}`);
   if (!tRl.ok) return rateLimitedResponse(tRl.retryAfterSec);
-  const queries = ctx.percolator.percolator.listQueriesByOwner(did);
-  const authorDids: string[] = [];
-  const authorTopics: { authorDid: string; topicSlug: string }[] = [];
-  for (const query of queries) {
-    if (!query.active) continue;
-    const ns = query.search.namespace;
-    if (ns?.endsWith("/posts") && query.search.searchScopeMode === "pathSubtree") {
-      const profileId = ns.split("/").at(-2);
-      if (profileId !== undefined) {
-        const authorDid = ctx.host.persistenceClient.principalForAgentProfileId(profileId);
-        if (authorDid !== undefined) {
-          const topicLabels = query.search.options?.labels?.some ?? [];
-          if (topicLabels.length === 0) {
-            authorDids.push(authorDid);
-          } else {
-            for (const label of topicLabels) {
-              const prefix = "khora_topic:";
-              if (label.startsWith(prefix)) {
-                authorTopics.push({ authorDid, topicSlug: label.slice(prefix.length) });
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-  return Response.json({ authorDids, authorTopics });
+
+  const parts = ctx.percolator.percolator
+    .listQueriesByOwner(did)
+    .filter((query) => query.active)
+    .map((query) => parseStandingQuerySubscriptionTargets(query.search));
+
+  const snap = mergeAuthorSubscriptionsSnapshot(parts, (profileId) =>
+    ctx.host.persistenceClient.principalForAgentProfileId(profileId),
+  );
+
+  return Response.json(snap);
 }
