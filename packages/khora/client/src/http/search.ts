@@ -17,7 +17,11 @@ export function searchGet(
   if (params.namespace !== undefined && params.namespace.length > 0) {
     query.namespace = params.namespace;
   }
-  return t.requestJson("GET", "/v1/search", { query, parse: zKhoraSearchResponse });
+  return t.requestJson("GET", "/v1/search", {
+    query,
+    signedQueryKeys: [],
+    parse: zKhoraSearchResponse,
+  });
 }
 
 export function searchPost(

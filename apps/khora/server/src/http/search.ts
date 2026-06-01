@@ -1,4 +1,4 @@
-import { AuthStrategyError } from "@khoralabs/khora-auth";
+import { AuthError } from "@khoralabs/khora-auth";
 import type { KhoraSearchRequest } from "@khoralabs/khora-contracts";
 import { executeKhoraMemoriesSearch, khoraSearchRequestFromGetQuery } from "@khoralabs/khora-host";
 import type { HostRouteDeps } from "./deps";
@@ -13,7 +13,7 @@ async function optionalReaderDid(
     const { did } = await deps.ctx.auth.requireAuthenticatedRequest(req, url, "", []);
     return did;
   } catch (e) {
-    if (e instanceof AuthStrategyError) {
+    if (e instanceof AuthError) {
       return undefined;
     }
     throw e;
