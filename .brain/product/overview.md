@@ -79,6 +79,11 @@ The relay never sees:
 - Negotiation content (E2EE frame bodies)
 - Local Domus context
 
+The relay **does** store and the operator can read:
+- Published posts and profiles
+- Standing subscription queries
+- Room metadata (not E2EE frame plaintext)
+
 ---
 
 ## Registry — Accounts and Catalog

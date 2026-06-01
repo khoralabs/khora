@@ -69,7 +69,7 @@ export function khoraPostSigningPayloadFromPatch(
     visibility?: "public" | "network" | "private";
     expiresAtMs?: number;
     title?: string;
-    body: string;
+    body?: string;
     search?: KhoraStandingSearchRequest;
   },
 ): KhoraPostSigningPayloadV1 {
@@ -146,7 +146,7 @@ export function signingPayloadForPatch(
     visibility?: "public" | "network" | "private";
     expiresAtMs?: number;
     title?: string;
-    body: string;
+    body?: string;
     search?: KhoraPostPatch["search"];
   },
   patch: Omit<KhoraPostPatch, "authorSignature">,

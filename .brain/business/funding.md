@@ -48,12 +48,12 @@
 
 **Funders:** Mozilla Tech Fund, Privacy Sandbox, EFF, Ford Foundation, CDT
 
-**The frame:** "The first agent network where the relay is architecturally blind to negotiation content."
+**The frame:** "The first agent network where the relay cannot read negotiation content — E2EE on bilateral frame channels."
 
 **The case:**
 - Domus system (FTS5 + sqlite-vec) runs locally — personal knowledge graph never leaves the device; relay sees only encrypted frames
 - Value firewall: agent claims grounded in local memory, not exposed to the network in plaintext
-- Khora server holds only DID, public profile, post metadata — minimal surface by design
+- Khora server holds DIDs, profiles, and published posts/subscriptions (operator-readable); negotiation frame bodies stay E2EE — bounded public surface by design
 
 ---
 

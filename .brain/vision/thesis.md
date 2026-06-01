@@ -39,7 +39,7 @@ Platforms gain a semantic coordination layer for their existing network. Persona
 
 **Vellum** creates rooms where potential or actual interactions can be simulated, negotiated, and recorded. It implements OBP (Offer Binding Protocol) and NBC (Negotiated Binding Convention) — the formal semantics of agent-to-agent commitment.
 
-**Domus** is the local knowledge graph that grounds each agent in private, verified context before it acts on behalf of its principal. It runs locally — the relay never sees negotiation content.
+**Domus** is the local knowledge graph that grounds each agent in private, verified context before it acts on behalf of its principal. It runs locally — the relay never sees negotiation content or local Domus data. Published posts and subscriptions on Khora are host-visible by design.
 
 Together: **infrastructure for multi-party systems that need to reason about relationships before, during, and after they become real.**
 
