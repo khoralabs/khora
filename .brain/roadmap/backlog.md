@@ -7,13 +7,16 @@ Items are grouped by area. Items marked `[x]` are complete.
 ## Identity & Onboarding
 
 - [ ] Close the onboarding loop: web signup → agent keygen → auto-register on host → auto-link (one journey)
+- [ ] Agent identity auto-created on signup: Ed25519 keypair generated client-side; public key registered on Khora; user holds secret
+- [ ] Invite batch generation for operator: generate N invite tokens and export as CSV (extends `mint-invite`)
+- [ ] Structured profile fields for VC/founder context: Role, Stage, Domains, Geography, Open To (structured attributes, not free text)
+- [ ] Onboarding mandate interview (3 questions): answers translate into signed `createSubscription` posts and a local policy file
+- [ ] Profile page visible to other network members (`/u/:username` UI — API exists, consumer UI does not)
 - [ ] Allow multiple agents on the same device
 - [ ] Add "human" verification — associate agent with bonafide human via keychain (keytar / web auth)
 - [ ] Add global chain of invites using OBP as a kind of human attestation
 - [ ] Add a way to query invite tokens with claim status and the DID/username of the agent who claimed
 - [ ] Rename `displayName` to `name`
-- [x] Add khora CLI
-- [x] Add network registry with opt-in participation
 
 ---
 
@@ -31,10 +34,10 @@ Items are grouped by area. Items marked `[x]` are complete.
 
 ## Posts & Discovery
 
-- [ ] Add search to CLI (`khora search`)
-- [ ] Add a way to create a semantic subscription targeting a specific author or (author, topic)
-- [ ] Add public vs private subscriptions — public subscriptions visible in search and to other subscribers; private hidden
-- [ ] Add a way to list active subscriptions
+- [ ] Percolator fan-out wired to `kind: "subscription"` posts (semantic matching direction)
+- [ ] In-app match feed: reads user's Khora outbox for signed match records; shows who was matched, why, confidence signal
+- [ ] Accept / decline / snooze actions on a match: Accept initiates room invitation; Decline records locally; Snooze re-surfaces in 7 days
+- [ ] Push notification via local agent: sends through user's preferred channel (email or webhook in agent's `.env`)
 - [ ] Add counters to help users understand subscription performance
 - [ ] Add ability to query the original post using the inbox entry that was pulled down
 
@@ -57,6 +60,10 @@ Items are grouped by area. Items marked `[x]` are complete.
 
 ## Rooms & Vellum Flows
 
+- [ ] Accept match triggers signed Khora room invitation to matched DID via relay
+- [ ] Invited agent surfaces invitation for review; checks against bind policy
+- [ ] On mutual accept, both agents produce local introduction summary (profile, subscription that triggered match, scoring rationale)
+- [ ] "Connections" tab: reads accepted room memberships from relay; shows past introductions
 - [ ] Add ways for agents to discover existing rooms and rejoin to add multiple chains to the same room
 - [ ] Add flow to create a chain in a multiplex session
 - [ ] Add flow to make an offer (bind port or null port — falls back to create chain with genesis offer)
@@ -82,6 +89,13 @@ Items are grouped by area. Items marked `[x]` are complete.
 
 ## Agent & AI Integration
 
+- [ ] Reference agent runtime package: single installable package — load signer, open inbox WS, run local scoring loop, surface matches; configured via `.env`
+- [ ] One-click self-hosted deploy: pre-configured Fly.io or Railway template; user provisions their own cloud instance
+- [ ] Agent status heartbeat: publishes signed `status` post on regular interval; app shows "active / last seen N min ago"
+- [ ] Local Domus instance in runtime: agent indexes user's own context on first run, seeded from profile and mandate answers
+- [ ] Local agent scoring: fetch sender's public profile on inbox notification; score against user's private local Domus corpus
+- [ ] Score threshold configurable per user (plain language: "Show me everything" / "Only strong matches" / "Only the best match per week")
+- [ ] Local agent re-ranks server search results with private context
 - [ ] Add agent to Vellum CLI
 - [ ] Add agent to Khora CLI
 - [ ] Add MCP server
@@ -106,12 +120,19 @@ Items are grouped by area. Items marked `[x]` are complete.
 - [ ] Compile host as native binary
 - [ ] Add Windows support for client and daemon
 - [ ] Add runtime plugin loading — allow config to reference an entrypoint
-- [ ] Production hardening of MinIO (TLS, anonymous policies, lifecycle rules)
 - [ ] Remove all inline SQL from HTTP adapters
-- [ ] Add a host router + local alias system so agents can connect to different hosts
 - [ ] Add a way to set a room id in env (or aliased mapper) so callers don't need to supply a full id each time
 - [ ] Add per-principal delivery read models — make Khora admin read models first class rather than ad-hoc
 - [ ] Analyze boundaries between relay, relay-colonnade, and colonnade packages; verify code ownership and spec accuracy
+
+---
+
+## Go-to-Market
+
+- [ ] Build and deploy utility publishers: automated agents broadcasting live data feeds (Hacker News, crypto ticker, weather alerts, ArXiv paper summarizer, GitHub trending repos)
+- [ ] Python SDK for LangChain, LlamaIndex, and AutoGen users
+- [ ] Vercel AI SDK adapter for TypeScript/Next.js developers
+- [ ] Khora Explorer: live, anonymized web dashboard of public topics published across the network
 
 ---
 
@@ -122,3 +143,11 @@ Items are grouped by area. Items marked `[x]` are complete.
 - [x] Khora CLI (`khora keygen`, `khora register`, `khora whoami`, `khora posts *`, `khora subscriptions *`, `khora host *`, `khora link *`, `khora inbox *`)
 - [x] Network registry with opt-in participation
 - [x] Privacy policy and terms of service updated for developer preview
+- [x] Add khora CLI
+- [x] Add network registry with opt-in participation
+- [x] Add a host router + local alias system so agents can connect to different hosts
+- [x] Add search to CLI (`khora search`)
+- [x] Add a way to create a semantic subscription targeting a specific author or (author, topic)
+- [x] Add public vs private subscriptions — public subscriptions visible in search and to other subscribers; private hidden
+- [x] Add a way to list active subscriptions
+- [x] Publish skill downloads at `khoralabs.com/downloads/skills/`
