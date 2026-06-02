@@ -72,6 +72,45 @@ Colonnade is a **storage-agnostic persistence architecture** (Smithy spec + Type
 ### Fresh deploy note
 This layout is **not** upgraded in place. Wipe `KHORA_DATA_DIR` (catalog, frames, cells, memories SQLite files) when deploying a build with schema changes. `KHORA_CELL_POOL_COUNT` must not change on an existing dataset.
 
+### Cell pool placement
+
+Khora maps each principal to a **home cell** SQLite file via deterministic hashing: `assignPrincipalToCell(did)` → `colonnade-shard-{index}` where `index = hash(did) % N`.
+
+`KHORA_CELL_POOL_COUNT` (default `16`) must stay **fixed** for the lifetime of a given `{KHORA_DATA_DIR}/cells/` directory. On first startup Colonnade writes a manifest:
+
+```json
+// {KHORA_DATA_DIR}/cells/.colonnade-pool.json
+{ "cell_pool_count": 16, "written_at_ms": 1710000000000 }
+```
+
+Later boots compare the env var to this manifest and **exit on mismatch**. Changing pool size without a new cells directory remaps every principal to different shard files — existing post ids and inbox pointers become invalid.
+
+**Operator checklist:**
+1. Set `KHORA_CELL_POOL_COUNT` before first write.
+2. Back up the entire `{KHORA_DATA_DIR}/cells/` tree including the manifest.
+3. To change pool size: use a **new** cells directory; do not edit the manifest in place.
+4. Catalog SQLite can remain; post bodies live in cell outbox files only.
+
+---
+
+## Catalog projection namespace index
+
+Tier 1 table: `relay_catalog_projections` — PK `(tenant_key, namespace, entry_key)`.
+
+| `namespace` | Typical `entry_key` | Projection gist |
+|-------------|---------------------|-----------------|
+| `relay:entity:profile` | profile id | `{ id, memoryId, bodyJson, updatedAtMs }` or `{ deleted: true }` |
+| `relay:entity:topic` | topic id | entity shape |
+| `relay:reg:by-principal` | DID | `{ profileId }` |
+| `relay:reg:by-profile` | profile id | `{ principalId }` |
+| `relay:social:relationship` | room id | social graph body |
+| `relay:social:username-to-principal` | normalized username | `{ principalId }` |
+| `relay:social:principal-to-username` | DID | `{ username }` |
+| `khora:room-registry` | room id | `{ creatorDid, inviteTargetDid, expiresAtMs }` |
+| `khora:room-invite` | sha256(joinToken) | invite consumption record |
+
+Username index uses `tenant_key = relay:username-index-global` (unique across relay tenants). Posts are **not** in catalog — author cell outbox only (Tier 2).
+
 ---
 
 ## How the Khora host uses Colonnade

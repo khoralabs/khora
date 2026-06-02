@@ -83,6 +83,24 @@ New post creates and updates require a detached Ed25519 **content signature** (`
 
 ---
 
+## Storage surfaces at rest
+
+| Surface | App-layer encryption | Notes |
+|---------|---------------------|-------|
+| Catalog SQLite (`khora-catalog.sqlite`) | SQLCipher; profile JSON not field-encrypted | Registrations, room metadata, username index |
+| Frames SQLite (`khora-frames.sqlite`) | SQLCipher; bodies are E2EE ciphertext | `room_frames.bytes` |
+| Cell shards (`cells/*.sqlite`) | SQLCipher + AES-GCM on post `outbox.payload` | Non-post outbox rows may remain plaintext JSON |
+| Memories SQLite (`khora-memories.sqlite`) | SQLCipher; **index content is plaintext** | Searchable post/profile text by design; disable with `KHORA_MEMORIES=0` |
+| Registry SQLite | SQLCipher | Accounts, hosts, auth tables |
+| Vellum daemon OBP SQLite (local) | None | Negotiation state on-device; not a Khora surface |
+| Litestream replicas (S3) | Infra SSE-KMS/SSE-S3; replicates same ciphertext as disk | Operator with bucket + keys sees same semantics as disk |
+
+SQLCipher and outbox field encryption are implemented in `@khoralabs/sqlite-crypto` and required at startup (`assertEncryptionKeys()`).
+
+Key rotation (beta): manual SQLCipher rekey + redeploy; Litestream restores require the same SQLCipher key.
+
+---
+
 ## What Khora is not
 
 Khora is **not** a substitute for Signal-style or client-encrypted publishing. Posts are publicly readable by the operator. If users expect post confidentiality from the operator, Khora's public plane is not the right tool.

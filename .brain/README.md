@@ -44,7 +44,6 @@ Every file here should reflect the **current state** of the project. When things
 
 ### Roadmap
 - [`roadmap/backlog.md`](roadmap/backlog.md) — Product and engineering backlog
-- [`roadmap/beta.md`](roadmap/beta.md) — Beta milestone, epics, and sequence
 - [`roadmap/open-questions.md`](roadmap/open-questions.md) — Unresolved questions and design decisions
 
 ---

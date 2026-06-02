@@ -109,7 +109,62 @@ Env: `KHORA_REGISTRY_URL`, `KHORA_HOST_SLUG`, `KHORA_PUBLIC_BASE_URL`, `KHORA_RE
 
 ---
 
-## 7. Two separate auth planes
+## 7. Principal lifecycle (unregister / teardown)
+
+`RelayPrincipalLifecycle` in `@khoralabs/relay-colonnade` owns unregister and inbox deliverability.
+
+```
+lifecycle.enqueueTeardown(did)         // phase 1: drop registration, enqueue durable job
+lifecycle.isPostPointerDeliverable(did) // read-path gate during inbox drain
+await lifecycle.runNextTeardownJob()   // phase 2: cascade graph purge + cell purgePrincipal
+lifecycle.cascadeTeardownNow(did)      // eager path (tests / admin)
+```
+
+**Flow:**
+1. `POST /v1/unregister` → `enqueueTeardown` deletes registration rows, inserts `principal_teardown_jobs` (state: `pending`)
+2. Inbox drain calls `isPostPointerDeliverable(authorDid)` before resolving any pointer — discards entry if author is unregistered or teardown active
+3. Background worker: `runNextTeardownJob` claims job → cascades subscriptions/social/projections → `purgePrincipal` on home cell → deletes job row
+
+**Policy tiers:**
+
+| Tier | Where | Rule |
+|------|-------|------|
+| Lifecycle policy | `isPostPointerDeliverable` | Author registered AND no active teardown job |
+| Storage verification | `relay-inbox-drain.ts` | `OutboxGhostError`, hash mismatch, pool mismatch → discard row |
+
+Lifecycle policy runs **before** pointer resolution. Storage verification runs **during** resolution.
+
+Durable jobs live in `principal_teardown_jobs` on the catalog DB (columns: `did`, `profile_id`, `state`, `enqueued_at_ms`, `updated_at_ms`, `attempt_count`, `last_error`).
+
+Extension point: add rules only to `RelayPrincipalLifecycle` (`isPostPointerDeliverable` and `runNextTeardownJob`). `purgePrincipal` stays a generic Colonnade primitive.
+
+---
+
+## 8. In-app notifications
+
+Notification types (`packages/agent/relay/src/registration/notifications.ts`): `room_ticket`, `inbox_post`, `connection_request`, `host`.
+
+Delivery: `createInboxWsHub()` + `deliverAgentNotification` when a buffer exists. **Note:** Khora host does **not** wire `notificationBuffer` into `AgentRelay` — live WS broadcast is used when the peer is connected; persistent notification buffer is not active.
+
+Post fan-out writes Colonnade cell inbox rows with metadata: `postId`, `authorPrincipalId`, `reasons`, `createdAtMs`, `postKind`.
+
+---
+
+## 9. Third-party services
+
+| Area | Service | Where |
+|------|---------|-------|
+| Backups | AWS S3 + Litestream (MinIO optional for local dev) | `scripts/litestream-config.ts` |
+| Room tickets | `@khoralabs/duplex-byte-stream` | `packages/agent/relay/src/frame-channel/hub.ts` |
+| DID / signatures | `@noble/ed25519`, `iso-did` | `packages/khora/auth/` |
+| Logging | `pino` (level `info`, name `khora-server`, `LOG_LEVEL` env) | `apps/khora/server/src/logger.ts` |
+| OBP SQLite extensions | `ensureCustomSqliteForExtensions` from `@khoralabs/memories-sqlite` | `packages/obp/v2/persistence/sqlite/src/connection.ts` |
+
+No OpenAI, Sentry, PostHog, Segment, Stripe, or email/SMTP integrations in `apps/khora` or `apps/vellum`.
+
+---
+
+## 10. Two separate auth planes
 
 ```
 Host (data plane)                       Registry (control plane)

@@ -215,3 +215,13 @@ Push does **not** replace search. Public content remains discoverable via Domus 
 - **Posts are never catalog-replicated.** All post bodies live in author outboxes. Discovery indexes point at outbox bytes; ghosts appear if the author deletes or unregisters.
 - **Subscription posts are discoverable like any post** — public subscriptions appear in Domus search.
 - **Fresh deploy policy:** relay catalog schema changes require wiping DB + cells.
+
+---
+
+## ADR: Semantic index cleanup on account deletion
+
+If a deployment adds BM25, vector, or other query-only indexes (e.g. Domus/Memories), those stores **must** subscribe to the same principal teardown and per-post delete hooks — or run equivalent async reindex/tombstone jobs.
+
+**Lazy pointer reconciliation is not sufficient** for query-only indexes: an index entry is never traversed through the pointer path on deletion, so stale entries will persist indefinitely if not explicitly removed.
+
+Constraint: account unregister and post delete must eagerly trigger index cleanup, not rely on a future read to surface the stale record.
