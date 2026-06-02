@@ -12,8 +12,7 @@ import { randomId } from "@khoralabs/colonnade-persistence";
 import {
   type KhoraPost,
   type KhoraProfile,
-  khoraPostLexicalText,
-  khoraSubscriptionLexicalText,
+  khoraPostIndexableLexicalText,
   parseKhoraRegistrationMetadata,
   zKhoraProfile,
 } from "@khoralabs/khora-contracts";
@@ -35,9 +34,8 @@ async function postLexicalVector(
   post: KhoraPost,
   memories: KhoraMemoriesHost | undefined,
 ): Promise<{ lexicalText: string; vector?: number[] }> {
-  const lexicalText =
-    post.kind === "subscription" ? khoraSubscriptionLexicalText(post) : khoraPostLexicalText(post);
-  if (memories?.embeddingModel === undefined) {
+  const lexicalText = khoraPostIndexableLexicalText(post);
+  if (memories?.embeddingModel === undefined || lexicalText.trim().length === 0) {
     return { lexicalText };
   }
   try {

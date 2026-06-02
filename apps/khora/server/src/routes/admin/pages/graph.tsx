@@ -41,6 +41,7 @@ export function GraphPage() {
   const [unavailableMessage, setUnavailableMessage] = useState<string | null>(null);
   const [embeddingQueue, setEmbeddingQueue] = useState<EmbeddingQueueStatus | null>(null);
   const [retryingQueue, setRetryingQueue] = useState(false);
+  const [lastRetryResult, setLastRetryResult] = useState<string | null>(null);
 
   const loadQueue = useCallback(async (stoppedRef?: { stopped: boolean }) => {
     try {
@@ -55,8 +56,29 @@ export function GraphPage() {
 
   const retryNow = useCallback(async () => {
     setRetryingQueue(true);
+    setLastRetryResult(null);
     try {
-      await fetch(`${MEMORIES_API_BASE}/embedding-queue/retry-now`, { method: "POST" });
+      const res = await fetch(`${MEMORIES_API_BASE}/embedding-queue/retry-now`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        const json = (await res.json()) as {
+          succeeded?: number;
+          failed?: number;
+          removedEmpty?: number;
+          resetFailed?: number;
+        };
+        const parts: string[] = [];
+        if (json.succeeded !== undefined) parts.push(`${json.succeeded} ok`);
+        if (json.failed !== undefined) parts.push(`${json.failed} failed`);
+        if (json.removedEmpty !== undefined && json.removedEmpty > 0) {
+          parts.push(`${json.removedEmpty} empty removed`);
+        }
+        if (json.resetFailed !== undefined && json.resetFailed > 0) {
+          parts.push(`${json.resetFailed} reset`);
+        }
+        if (parts.length > 0) setLastRetryResult(parts.join(", "));
+      }
       await loadQueue();
     } finally {
       setRetryingQueue(false);
@@ -149,6 +171,9 @@ export function GraphPage() {
                       >
                         {retryingQueue ? "Retrying..." : "Retry now"}
                       </button>
+                      {lastRetryResult !== null ? (
+                        <div className="mt-1 text-[10px] text-foreground">{lastRetryResult}</div>
+                      ) : null}
                     </div>
                   ) : null}
                   <GraphFetchError />

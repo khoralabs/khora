@@ -10,6 +10,8 @@ export type {
   KhoraInvitePreviewResponse,
   KhoraPost,
   KhoraPostCreate,
+  KhoraPostIndexableFeature,
+  KhoraPostIndexableFeatureKey,
   KhoraPostPatch,
   KhoraProfile,
   KhoraProfilePatch,
@@ -26,6 +28,8 @@ export type {
   KhoraSubscriptionCreate,
 } from "@khoralabs/khora-contracts";
 export {
+  khoraPostIndexableFeatures,
+  khoraPostIndexableLexicalText,
   khoraPostLexicalText,
   khoraPostObservationSummary,
   khoraProfileLexicalText,

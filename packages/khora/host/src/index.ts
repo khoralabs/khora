@@ -25,8 +25,10 @@ export {
   type PendingEmbeddingQueueHandle,
   type PendingEmbeddingQueueSummary,
   type PendingEmbeddingQueueSummaryRow,
+  purgeEmptyPendingEmbeddings,
   type RunPendingEmbeddingRetryBatchResult,
   readPendingEmbeddingQueueSummary,
+  resetFailedPendingEmbeddings,
   runPendingEmbeddingRetryBatch,
   startEmbeddingRetryWorker,
 } from "./memories/pending-embeddings";

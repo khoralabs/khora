@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { khoraSubscriptionLexicalText, zKhoraPost, zKhoraPostCreate } from "./khora-post";
+import {
+  khoraPostIndexableFeatures,
+  khoraPostIndexableLexicalText,
+  zKhoraPost,
+  zKhoraPostCreate,
+} from "./khora-post";
 
 const SIG = "dGVzdC1zaWduYXR1cmU";
 
@@ -51,22 +56,80 @@ describe("subscription posts", () => {
     });
     expect(v.search?.options?.labels?.some).toEqual(["khora_topic:climate-tech"]);
   });
+});
 
-  test("khoraSubscriptionLexicalText includes search text", () => {
+describe("khoraPostIndexableFeatures", () => {
+  test("filter-only topic subscription returns no features", () => {
     const sub = zKhoraPost.parse({
-      id: "sub-1",
+      id: "sub-filter",
       kind: "subscription",
-      body: "Looking for partners",
-      topics: ["platform"],
+      topics: ["climate-tech"],
       authorProfileId: "p1",
       authorSignature: SIG,
       search: {
-        content: { text: "platform pilots" },
+        content: {},
+        options: { labels: { some: ["khora_topic:climate-tech"] } },
       },
     });
-    const text = khoraSubscriptionLexicalText(sub);
-    expect(text).toContain("#platform");
-    expect(text).toContain("platform pilots");
-    expect(text).not.toContain("Beta intros");
+    expect(khoraPostIndexableFeatures(sub)).toEqual([]);
+    expect(khoraPostIndexableLexicalText(sub)).toBe("");
+  });
+
+  test("body only", () => {
+    const sub = zKhoraPost.parse({
+      id: "sub-body",
+      kind: "subscription",
+      body: "Looking for partners",
+      authorProfileId: "p1",
+      authorSignature: SIG,
+      search: {
+        content: {},
+        options: { labels: { some: ["khora_topic:platform"] } },
+      },
+    });
+    expect(khoraPostIndexableFeatures(sub)).toEqual([
+      { key: "body", text: "Looking for partners" },
+    ]);
+  });
+
+  test("query only", () => {
+    const sub = zKhoraPost.parse({
+      id: "sub-query",
+      kind: "subscription",
+      authorProfileId: "p1",
+      authorSignature: SIG,
+      search: { content: { text: "platform pilots" } },
+    });
+    expect(khoraPostIndexableFeatures(sub)).toEqual([{ key: "query", text: "platform pilots" }]);
+  });
+
+  test("body and query", () => {
+    const sub = zKhoraPost.parse({
+      id: "sub-both",
+      kind: "subscription",
+      body: "Looking for partners",
+      authorProfileId: "p1",
+      authorSignature: SIG,
+      search: { content: { text: "platform pilots" } },
+    });
+    expect(khoraPostIndexableFeatures(sub)).toEqual([
+      { key: "body", text: "Looking for partners" },
+      { key: "query", text: "platform pilots" },
+    ]);
+    expect(khoraPostIndexableLexicalText(sub)).toBe("Looking for partners\n\nplatform pilots");
+  });
+
+  test("regular post indexes body only, not title or topics", () => {
+    const post = zKhoraPost.parse({
+      id: "post-1",
+      kind: "post",
+      title: "Headline",
+      topics: ["platform"],
+      body: "Hello world",
+      authorProfileId: "p1",
+      authorSignature: SIG,
+    });
+    expect(khoraPostIndexableFeatures(post)).toEqual([{ key: "body", text: "Hello world" }]);
+    expect(khoraPostIndexableLexicalText(post)).toBe("Hello world");
   });
 });

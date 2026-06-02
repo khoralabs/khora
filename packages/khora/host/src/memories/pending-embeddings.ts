@@ -41,10 +41,11 @@ export type RunPendingEmbeddingRetryBatchResult = {
   succeeded: number;
   failed: number;
   removedMissing: number;
+  removedEmpty: number;
 };
 
 export function ensurePendingEmbeddingsTable(db: Database): void {
-  db.exec(`
+  db.run(`
     CREATE TABLE IF NOT EXISTS pending_embeddings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       namespace TEXT NOT NULL,
@@ -58,10 +59,32 @@ export function ensurePendingEmbeddingsTable(db: Database): void {
   `);
 }
 
+export function purgeEmptyPendingEmbeddings(db: Database): number {
+  ensurePendingEmbeddingsTable(db);
+  const result = db.query("DELETE FROM pending_embeddings WHERE trim(text) = ''").run();
+  return result.changes;
+}
+
+export function resetFailedPendingEmbeddings(db: Database, maxAttempts?: number): number {
+  ensurePendingEmbeddingsTable(db);
+  const limit = maxAttempts ?? DEFAULT_MAX_ATTEMPTS;
+  const result = db
+    .query(
+      `
+        UPDATE pending_embeddings
+        SET attempts = 0, last_attempt_at = NULL
+        WHERE attempts >= ?
+      `,
+    )
+    .run(limit);
+  return result.changes;
+}
+
 export function enqueuePendingEmbedding(
   db: Database,
   input: { namespace: string; memoryKey: string; text: string },
 ): void {
+  if (input.text.trim().length === 0) return;
   ensurePendingEmbeddingsTable(db);
   db.query(
     `
@@ -129,7 +152,7 @@ export async function runPendingEmbeddingRetryBatch(opts: {
 }): Promise<RunPendingEmbeddingRetryBatchResult> {
   ensurePendingEmbeddingsTable(opts.db);
   if (opts.embeddingModel === undefined) {
-    return { picked: 0, attempted: 0, succeeded: 0, failed: 0, removedMissing: 0 };
+    return { picked: 0, attempted: 0, succeeded: 0, failed: 0, removedMissing: 0, removedEmpty: 0 };
   }
   const batchSize = opts.batchSize ?? DEFAULT_BATCH_SIZE;
   const maxAttempts = opts.maxAttempts ?? DEFAULT_MAX_ATTEMPTS;
@@ -159,9 +182,15 @@ export async function runPendingEmbeddingRetryBatch(opts: {
     succeeded: 0,
     failed: 0,
     removedMissing: 0,
+    removedEmpty: 0,
   };
 
   for (const row of rows) {
+    if (row.text.trim().length === 0) {
+      opts.db.query("DELETE FROM pending_embeddings WHERE id = ?").run(row.id);
+      result.removedEmpty += 1;
+      continue;
+    }
     const lastAttemptMs = row.last_attempt_at !== null ? row.last_attempt_at * 1000 : undefined;
     const waitMs = backoffBaseMs * 2 ** row.attempts;
     if (!ignoreBackoff && lastAttemptMs !== undefined && nowMs - lastAttemptMs < waitMs) continue;

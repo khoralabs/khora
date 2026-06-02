@@ -182,27 +182,45 @@ export const zAgentStatusResponse = z.object({
 
 export type AgentStatusResponse = z.infer<typeof zAgentStatusResponse>;
 
+export type KhoraPostIndexableFeatureKey = "body" | "query";
+
+export type KhoraPostIndexableFeature = {
+  key: KhoraPostIndexableFeatureKey;
+  text: string;
+};
+
+/** Text features indexed for Domus (lexical + embedding): body and subscription semantic query only. */
+export function khoraPostIndexableFeatures(p: KhoraPost): KhoraPostIndexableFeature[] {
+  const features: KhoraPostIndexableFeature[] = [];
+  const body = p.body?.trim() ?? "";
+  if (body.length > 0) {
+    features.push({ key: "body", text: body });
+  }
+  if (p.kind === "subscription") {
+    const query = p.search?.content.text?.trim() ?? "";
+    if (query.length > 0) {
+      features.push({ key: "query", text: query });
+    }
+  }
+  return features;
+}
+
+/** Combined indexable text for percolator candidate content (empty when nothing to index). */
+export function khoraPostIndexableLexicalText(p: KhoraPost): string {
+  return khoraPostIndexableFeatures(p)
+    .map((f) => f.text)
+    .join("\n\n");
+}
+
 export function khoraSubscriptionLexicalText(p: KhoraPost): string {
   if (p.kind !== "subscription") {
     throw new Error("khoraSubscriptionLexicalText requires kind subscription");
   }
-  const topicLine =
-    p.topics !== undefined && p.topics.length > 0 ? p.topics.map((t) => `#${t}`).join(" ") : "";
-  const searchText = p.search?.content.text?.trim() ?? "";
-  const body = p.body?.trim() ?? "";
-  const parts = [topicLine, body, searchText].filter((s) => s.length > 0);
-  return parts.join("\n\n");
+  return khoraPostIndexableLexicalText(p);
 }
 
 export function khoraPostLexicalText(p: KhoraPost): string {
-  if (p.kind === "subscription") {
-    return khoraSubscriptionLexicalText(p);
-  }
-  const topicLine =
-    p.topics !== undefined && p.topics.length > 0 ? p.topics.map((t) => `#${t}`).join(" ") : "";
-  const body = p.body?.trim() ?? "";
-  const parts = [p.title, topicLine, body].filter((s) => s !== undefined && s.length > 0);
-  return parts.join("\n\n");
+  return khoraPostIndexableLexicalText(p);
 }
 
 /** Short summary for canonical `observation` label on posts and status. */

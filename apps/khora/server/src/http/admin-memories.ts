@@ -2,7 +2,9 @@ import type { Database } from "bun:sqlite";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { type AgentRegistry, createAgentRegistry } from "@khoralabs/agent-identity";
 import {
+  purgeEmptyPendingEmbeddings,
   readPendingEmbeddingQueueSummary,
+  resetFailedPendingEmbeddings,
   runPendingEmbeddingRetryBatch,
 } from "@khoralabs/khora-host";
 import {
@@ -271,6 +273,8 @@ async function handleMemoriesRoute(req: Request, url: URL, deps: HostRouteDeps):
 
   if (req.method === "POST" && subpath === "/embedding-queue/retry-now") {
     try {
+      const removedEmpty = purgeEmptyPendingEmbeddings(db);
+      const resetFailed = resetFailedPendingEmbeddings(db);
       const result = await runPendingEmbeddingRetryBatch({
         db,
         persistence,
@@ -278,7 +282,11 @@ async function handleMemoriesRoute(req: Request, url: URL, deps: HostRouteDeps):
         ignoreBackoff: true,
         batchSize: 100,
       });
-      return jsonResponse(result);
+      return jsonResponse({
+        ...result,
+        removedEmpty: removedEmpty + result.removedEmpty,
+        resetFailed,
+      });
     } catch (err) {
       return jsonResponse({ error: String(err) }, 500);
     }

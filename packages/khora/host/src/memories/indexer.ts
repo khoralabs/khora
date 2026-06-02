@@ -3,9 +3,8 @@ import { sha256HexLower } from "@khoralabs/colonnade-persistence";
 import {
   type KhoraPost,
   type KhoraProfile,
-  khoraPostLexicalText,
+  khoraPostIndexableFeatures,
   khoraProfileLexicalText,
-  khoraSubscriptionLexicalText,
 } from "@khoralabs/khora-contracts";
 import { ids, type MemoriesClient } from "@khoralabs/memories-core";
 import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
@@ -45,7 +44,7 @@ export function createKhoraMemoriesIndexer(deps: {
     namespace: string;
     memoryKey: string;
   }): Promise<number[] | undefined> {
-    if (embeddingModel === undefined) return undefined;
+    if (embeddingModel === undefined || input.text.trim().length === 0) return undefined;
     try {
       const vectors = await embedTextChunks(embeddingModel, [input.text]);
       return vectors[0];
@@ -142,11 +141,23 @@ export function createKhoraMemoriesIndexer(deps: {
           client.deleteMemory({ namespace: prevNs, key: previousPostId });
         }
         const ns = postsMemoryNamespace(namespaceRoot, authorProfileId);
-        const text =
-          post.kind === "subscription"
-            ? khoraSubscriptionLexicalText(post)
-            : khoraPostLexicalText(post);
-        const vector = await embedLexical({ text, namespace: ns, memoryKey: post.id });
+        const features = khoraPostIndexableFeatures(post);
+        if (features.length === 0) {
+          return;
+        }
+        const content: Array<{ key: string; text: string; vector?: number[] }> = [];
+        for (const feature of features) {
+          const vector = await embedLexical({
+            text: feature.text,
+            namespace: ns,
+            memoryKey: post.id,
+          });
+          content.push({
+            key: feature.key,
+            text: feature.text,
+            ...(vector !== undefined ? { vector } : {}),
+          });
+        }
         const payloadHash = sha256HexLower(new TextEncoder().encode(JSON.stringify(post)));
         const profileNs = profileMemoryNamespace(namespaceRoot, authorProfileId);
         const profileMemoryId = ids.memory(profileNs, PROFILE_MEMORY_KEY);
@@ -182,7 +193,7 @@ export function createKhoraMemoriesIndexer(deps: {
         client.mergeMemory({
           key: post.id,
           namespace: ns,
-          content: [{ key: "body", text, ...(vector !== undefined ? { vector } : {}) }],
+          content,
           labels,
           attachScopes: postAttachScopes(namespaceRoot, authorProfileId, post.topics),
           edges: [
