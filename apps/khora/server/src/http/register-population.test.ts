@@ -8,12 +8,33 @@ const registerBody = {
   metadata: { username: "newuser" },
 };
 
+function rateLimitersAlwaysOk(): HostRouteDeps["rateLimiters"] {
+  const rateOk = { ok: true as const, retryAfterSec: 0 };
+  const allow: HostRouteDeps["rateLimiters"]["registerIp"] = () => rateOk;
+  return {
+    registerIp: allow,
+    registerDid: allow,
+    postsDid: allow,
+    topicsDid: allow,
+    profileDid: allow,
+    inboxDid: allow,
+    defaultIp: allow,
+    invitePreviewIp: allow,
+    invitesListDid: allow,
+    roomsCreateDid: allow,
+    roomsTicketMintDid: allow,
+    roomsJoinDid: allow,
+    roomsReadDid: allow,
+    roomsRemoveDid: allow,
+    relationshipsListDid: allow,
+  };
+}
+
 function deps(overrides: {
   populationLimit?: number;
   registeredCount: number;
   alreadyRegistered?: boolean;
 }): HostRouteDeps {
-  const rateOk = { ok: true as const, retryAfterSec: 0 };
   return {
     ctx: {
       hostSpec: {
@@ -36,11 +57,11 @@ function deps(overrides: {
       },
       lookupNormalizedUsernameForPrincipal: () => undefined,
       rollbackUsernameMapsAfterFailedRegistration: () => {},
+      agentAccountStatus: {
+        getStatus: () => undefined,
+      },
     } as unknown as KhoraHostContext,
-    rateLimiters: {
-      registerIp: () => rateOk,
-      registerDid: () => rateOk,
-    } as HostRouteDeps["rateLimiters"],
+    rateLimiters: rateLimitersAlwaysOk(),
     consoleAuth: null,
   };
 }
