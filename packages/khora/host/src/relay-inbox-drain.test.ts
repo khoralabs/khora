@@ -76,7 +76,7 @@ test("popRelayInboxDrainItemsForDid drops cell inbox row when author unregistere
           inbox_metadata: {
             postId,
             authorPrincipalId: "did:author",
-            reasons: [{ kind: "topic", topic: "x" }],
+            subscriptionMatches: [{ subscriptionId: "sub-x", score: 1 }],
             postKind: "post",
             createdAtMs: Date.now(),
           },

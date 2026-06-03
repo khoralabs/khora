@@ -8,17 +8,16 @@ export type FrameChannelInvitePayload = {
   fromPrincipalId?: PrincipalId;
 };
 
-export type InboxPostReason =
-  | { kind: "topic"; topic: string }
-  | { kind: "author" }
-  | { kind: "author_topic"; authorPrincipalId: PrincipalId; topic: string }
-  | { kind: "standing_query"; queryPostId: string; score: number };
+export type InboxSubscriptionMatch = {
+  subscriptionId: string;
+  score: number;
+};
 
 export type InboxPostNotificationPayload = {
   postId: string;
   postKind: "post" | "status" | "subscription";
   authorPrincipalId?: PrincipalId;
-  reasons: InboxPostReason[];
+  subscriptionMatches: InboxSubscriptionMatch[];
 };
 
 export type AgentNotification =

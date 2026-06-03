@@ -146,7 +146,7 @@ Notification types (`packages/agent/relay/src/registration/notifications.ts`): `
 
 Delivery: `createInboxWsHub()` + `deliverAgentNotification` when a buffer exists. **Note:** Khora host does **not** wire `notificationBuffer` into `AgentRelay` — live WS broadcast is used when the peer is connected; persistent notification buffer is not active.
 
-Post fan-out writes Colonnade cell inbox rows with metadata: `postId`, `authorPrincipalId`, `reasons`, `createdAtMs`, `postKind`.
+Post fan-out writes Colonnade cell inbox rows with metadata: `postId`, `authorPrincipalId`, `subscriptionMatches`, `createdAtMs`, `postKind`.
 
 ---
 

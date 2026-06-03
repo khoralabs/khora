@@ -17,12 +17,12 @@ export async function handleListAuthorSubscriptions(
   const tRl = rateLimiters.topicsDid(`did:${did}`);
   if (!tRl.ok) return rateLimitedResponse(tRl.retryAfterSec);
 
-  const searches = ctx.percolator.percolator
+  const queries = ctx.percolator.percolator
     .listQueriesByOwner(did)
     .filter((query) => query.active)
-    .map((query) => query.search);
+    .map((query) => ({ id: query.id, search: query.search }));
 
-  const snap = listAuthorSubscriptionsSnapshot(searches, (profileId) =>
+  const snap = listAuthorSubscriptionsSnapshot(queries, (profileId) =>
     ctx.host.persistenceClient.principalForAgentProfileId(profileId),
   );
 

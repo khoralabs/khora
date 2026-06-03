@@ -63,7 +63,7 @@ export type {
   AgentNotificationRow,
   FrameChannelInvitePayload,
   InboxPostNotificationPayload,
-  InboxPostReason,
+  InboxSubscriptionMatch,
 } from "./registration/notifications";
 export type {
   PrincipalId,

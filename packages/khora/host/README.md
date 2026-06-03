@@ -282,7 +282,7 @@ On `GET /v1/inbox/ws` open:
 - `/Users/zach/Documents/dev/khora-labs/khora/apps/khora/server/src/ws/inbox.ts` → `popRelayInboxDrainItemsForDid()`
 - `/Users/zach/Documents/dev/khora-labs/khora/packages/khora/host/src/relay-inbox-drain.ts`
 
-For post pointers: resolve author outbox via `resolveSourcemap`, verify content hash, return `bodyJson` + metadata (`postId`, `reasons`, etc.).
+For post pointers: resolve author outbox via `resolveSourcemap`, verify content hash, return `bodyJson` + metadata (`postId`, `subscriptionMatches`, etc.).
 
 ### Update/delete semantics
 

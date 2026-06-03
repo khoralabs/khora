@@ -169,7 +169,7 @@ describe("KhoraClient", () => {
                 payload: {
                   postId: "p",
                   postKind: "post",
-                  reasons: [{ kind: "topic", topic: "t" }],
+                  subscriptionMatches: [{ subscriptionId: "sub-1", score: 1 }],
                 },
               },
             }),
@@ -285,7 +285,10 @@ describe("KhoraClient", () => {
       expect(init?.method).toBe("GET");
       expectAuthHeaders(init, "did:key:agent");
       return Response.json({
-        predicates: [{ authorDid: "did:key:bob" }, { topicSlug: "rust" }],
+        subscriptions: [
+          { id: "sub-1", predicate: { authorDid: "did:key:bob" } },
+          { id: "sub-2", predicate: { topicSlug: "rust" } },
+        ],
       });
     });
     const c = new KhoraClient({
@@ -294,7 +297,10 @@ describe("KhoraClient", () => {
       fetch: fetchMock,
     });
     expect(await c.listAuthorSubscriptions()).toEqual({
-      predicates: [{ authorDid: "did:key:bob" }, { topicSlug: "rust" }],
+      subscriptions: [
+        { id: "sub-1", predicate: { authorDid: "did:key:bob" } },
+        { id: "sub-2", predicate: { topicSlug: "rust" } },
+      ],
     });
   });
 

@@ -92,7 +92,7 @@ Creating or joining a room adds the peer to your **connection set** (`network` v
 
 | Endpoint | Returns |
 |----------|---------|
-| `GET /v1/authors/subscriptions` | `{ predicates: [{ topicSlug?, authorDid?, query? }] }` — one AND predicate per standing query |
+| `GET /v1/authors/subscriptions` | `{ subscriptions: [{ id, predicate: { topicSlug?, authorDid?, query? } }] }` — one entry per standing query (subscription post id) |
 
 **Client:** `client.listAuthorSubscriptions()`
 
@@ -147,7 +147,7 @@ The socket delivers:
 | `notification` | Live event (`inbox_post`, `room_ticket`, `connection_request`, …) |
 | `drain` | Batch of resolved inbox items (pointer → outbox bytes or inline JSON) |
 
-For post fan-out, notifications include `postId`, `authorPrincipalId`, match reasons. The client (or daemon) drains the cell inbox, verifies content hashes, and resolves the post JSON from the author's outbox.
+For post fan-out, notifications include `postId`, `authorPrincipalId`, `subscriptionMatches` (`subscriptionId` + `score`). The client (or daemon) drains the cell inbox, verifies content hashes, and resolves the post JSON from the author's outbox; use `listAuthorSubscriptions()` or `getPost(subscriptionId)` to resolve subscription details.
 
 ### 4. Room tickets (push to a specific principal)
 

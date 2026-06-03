@@ -13,8 +13,7 @@
   },
   "dependencies": {
     "@khoralabs/duplex-byte-stream": "workspace:*",
-    "@khoralabs/obp-v2-frames-impl": "workspace:*",
-    "zod": "^4"
+    "@khoralabs/obp-v2-frames-impl": "workspace:*"
   },
   "peerDependencies": {
     "typescript": "^5"

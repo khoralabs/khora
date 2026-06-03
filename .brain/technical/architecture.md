@@ -157,7 +157,7 @@ outbox row:
 
 ```
 inbox row:
-  staging = { postId, authorPrincipalId, reasons: [{ kind, queryPostId, score }], … }
+  staging = { postId, authorPrincipalId, subscriptionMatches: [{ subscriptionId, score }], … }
 ```
 
 ### Room (catalog + frames)

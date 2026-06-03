@@ -2,7 +2,7 @@ import {
   AGENT_RELAY_EVENT_KIND,
   type AgentRelayEventHandlerCtx,
   type AgentRelayEventUnion,
-  type InboxPostReason,
+  type InboxSubscriptionMatch,
 } from "@khoralabs/agent-relay";
 import type {
   ColonnadePublicationClient,
@@ -76,16 +76,17 @@ async function publishPost(params: {
   const authorCellId = address.authorCellId;
   const payload_bytes = postEncoder.encode(JSON.stringify(post));
 
-  const byRecipient = new Map<string, InboxPostReason[]>();
+  const byRecipient = new Map<string, InboxSubscriptionMatch[]>();
   if (fanOut && percolator !== undefined && memories !== undefined && social !== undefined) {
-    const addReason = (recipientId: string, reason: InboxPostReason): void => {
+    const addMatch = (recipientId: string, match: InboxSubscriptionMatch): void => {
       if (recipientId === authorPrincipalId) return;
       const cur = byRecipient.get(recipientId);
       if (cur === undefined) {
-        byRecipient.set(recipientId, [reason]);
-      } else {
-        cur.push(reason);
+        byRecipient.set(recipientId, [match]);
+        return;
       }
+      if (cur.some((m) => m.subscriptionId === match.subscriptionId)) return;
+      cur.push(match);
     };
 
     const authorProfileId =
@@ -109,9 +110,8 @@ async function publishPost(params: {
             social,
           })
         ) {
-          addReason(match.ownerId, {
-            kind: "standing_query",
-            queryPostId: match.queryId,
+          addMatch(match.ownerId, {
+            subscriptionId: match.queryId,
             score: match.score,
           });
         }
@@ -121,13 +121,13 @@ async function publishPost(params: {
 
   const createdAtMs = Date.now();
   const fan_out_targets = fanOut
-    ? [...byRecipient.entries()].map(([recipient_principal_id, reasons]) => ({
+    ? [...byRecipient.entries()].map(([recipient_principal_id, subscriptionMatches]) => ({
         recipient_cell_id: cluster.assignPrincipalToCell(recipient_principal_id),
         recipient_principal_id,
         inbox_metadata: {
           postId: post.id,
           authorPrincipalId,
-          reasons,
+          subscriptionMatches,
           createdAtMs,
           postKind: post.kind,
         },

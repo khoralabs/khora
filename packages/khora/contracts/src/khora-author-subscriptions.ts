@@ -10,8 +10,15 @@ export const zSubscriptionPredicate = z.object({
 
 export type SubscriptionPredicate = z.infer<typeof zSubscriptionPredicate>;
 
+export const zAuthorSubscriptionEntry = z.object({
+  id: z.string(),
+  predicate: zSubscriptionPredicate,
+});
+
+export type AuthorSubscriptionEntry = z.infer<typeof zAuthorSubscriptionEntry>;
+
 export const zAuthorSubscriptionsSnapshot = z.object({
-  predicates: z.array(zSubscriptionPredicate),
+  subscriptions: z.array(zAuthorSubscriptionEntry),
 });
 
 export type AuthorSubscriptionsSnapshot = z.infer<typeof zAuthorSubscriptionsSnapshot>;
@@ -58,12 +65,15 @@ export function standingSearchToPredicate(
 }
 
 export function listAuthorSubscriptionsSnapshot(
-  searches: Iterable<KhoraStandingSearchRequest>,
+  queries: Iterable<{ id: string; search: KhoraStandingSearchRequest }>,
   resolveAuthorDid: (profileId: string) => string | undefined,
 ): AuthorSubscriptionsSnapshot {
-  const predicates: SubscriptionPredicate[] = [];
-  for (const search of searches) {
-    predicates.push(standingSearchToPredicate(search, resolveAuthorDid));
+  const subscriptions: AuthorSubscriptionEntry[] = [];
+  for (const query of queries) {
+    subscriptions.push({
+      id: query.id,
+      predicate: standingSearchToPredicate(query.search, resolveAuthorDid),
+    });
   }
-  return { predicates };
+  return { subscriptions };
 }

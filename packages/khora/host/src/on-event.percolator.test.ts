@@ -124,8 +124,8 @@ function createMemoriesStub() {
   } as unknown as import("./memories/bootstrap.ts").KhoraMemoriesHost;
 }
 
-describe("percolator inbox reasons", () => {
-  test("tagged post fan-out adds standing_query for matching subscription", async () => {
+describe("percolator inbox subscriptionMatches", () => {
+  test("tagged post fan-out adds subscription match for matching subscription", async () => {
     const _root = DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT;
     const authorProfile: KhoraProfile = {
       id: "prof-author",
@@ -179,7 +179,7 @@ describe("percolator inbox reasons", () => {
 
     let fanOutTargets: Array<{
       recipient_principal_id: string;
-      inbox_metadata: { reasons: unknown[] };
+      inbox_metadata: { subscriptionMatches: { subscriptionId: string; score: number }[] };
     }> = [];
     const publicationClient = {
       postOperation: mock(async (op) => {
@@ -205,16 +205,14 @@ describe("percolator inbox reasons", () => {
 
     expect(fanOutTargets).toHaveLength(1);
     expect(fanOutTargets[0]?.recipient_principal_id).toBe("did:sub");
-    const standingQuery = (fanOutTargets[0]?.inbox_metadata.reasons ?? []).find(
-      (r) => r && typeof r === "object" && "kind" in r && r.kind === "standing_query",
-    ) as { kind: "standing_query"; queryPostId: string; score: number } | undefined;
-    expect(standingQuery).toBeDefined();
-    expect(standingQuery?.queryPostId).toBe("sub-query-1");
+    expect(fanOutTargets[0]?.inbox_metadata.subscriptionMatches).toEqual([
+      { subscriptionId: "sub-query-1", score: expect.any(Number) },
+    ]);
 
     cluster.close();
   });
 
-  test("public subscription fan-out adds standing_query for matching topic query", async () => {
+  test("public subscription fan-out adds subscription match for matching topic query", async () => {
     const authorProfile: KhoraProfile = {
       id: "prof-author",
       username: "author",
@@ -549,7 +547,7 @@ describe("percolator inbox reasons", () => {
     cluster.close();
   });
 
-  test("post without matching subscription does not fan out standing_query", async () => {
+  test("post without matching subscription does not fan out subscriptionMatches", async () => {
     const authorProfile: KhoraProfile = {
       id: "prof-author",
       username: "author",
@@ -582,7 +580,7 @@ describe("percolator inbox reasons", () => {
       visibility: "public" as const,
     };
 
-    let fanOutTargets: Array<{ inbox_metadata: { reasons: unknown[] } }> = [];
+    let fanOutTargets: Array<{ inbox_metadata: { subscriptionMatches: unknown[] } }> = [];
     const publicationClient = {
       postOperation: mock(async (op) => {
         fanOutTargets = op.routing.fan_out_targets ?? [];

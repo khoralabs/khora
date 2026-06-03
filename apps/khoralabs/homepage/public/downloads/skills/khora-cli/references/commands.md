@@ -190,7 +190,7 @@ Standing-search subscriptions are `kind: subscription` posts. Each post is one *
 
 | Flag | Description |
 | --- | --- |
-| `--json` | `{ "predicates": [ { "topicSlug?", "authorDid?", "query?" } ] }` |
+| `--json` | `{ "subscriptions": [ { "id", "predicate": { "topicSlug?", "authorDid?", "query?" } } ] }` |
 
 ### `khora subscriptions create`
 

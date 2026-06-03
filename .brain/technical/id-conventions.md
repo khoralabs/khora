@@ -66,7 +66,7 @@ Invalid ids decode to `undefined`. Post JSON `id` field must match the encoded a
 | `inbox_entry_id` | `ib_{32 hex}` | One row per delivery |
 | `correlation_id` | `fan_{32 hex}` | Fan-out internal |
 | inbox pointer | `{ source_cell_id, source_record_key, content_hash, cell_pool_count }` | Points at **author** outbox |
-| inbox pointer metadata | JSON | `{ postId, authorPrincipalId, reasons, createdAtMs, postKind }` |
+| inbox pointer metadata | JSON | `{ postId, authorPrincipalId, subscriptionMatches, createdAtMs, postKind }` |
 | inline staging | JSON bytes + hash | Room tickets (admission only; not negotiation frames) |
 
 ---

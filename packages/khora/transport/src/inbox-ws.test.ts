@@ -15,7 +15,7 @@ describe("parseInboxWebSocketMessage", () => {
             payload: {
               postId: "b",
               postKind: "post",
-              reasons: [{ kind: "standing_query", queryPostId: "a", score: 0.9 }],
+              subscriptionMatches: [{ subscriptionId: "a", score: 0.9 }],
             },
           },
         },
@@ -36,7 +36,7 @@ describe("parseInboxWebSocketMessage", () => {
         payload: {
           postId: "y",
           postKind: "post",
-          reasons: [{ kind: "topic", topic: "x" }],
+          subscriptionMatches: [{ subscriptionId: "sub-x", score: 1 }],
         },
       },
     });

@@ -91,9 +91,9 @@ export async function handleSubscriptionsList(flags: FlagMap): Promise<void> {
         console.log(JSON.stringify(snap, null, 2));
         return;
       }
-      console.log(`Subscriptions (${snap.predicates.length}):`);
-      for (const p of snap.predicates) {
-        console.log(`  ${formatSubscriptionPredicate(p)}`);
+      console.log(`Subscriptions (${snap.subscriptions.length}):`);
+      for (const entry of snap.subscriptions) {
+        console.log(`  ${entry.id} ${formatSubscriptionPredicate(entry.predicate)}`);
       }
     });
   } catch (e) {

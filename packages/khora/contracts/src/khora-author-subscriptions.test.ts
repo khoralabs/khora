@@ -40,16 +40,28 @@ describe("standingSearchToPredicate", () => {
 });
 
 describe("listAuthorSubscriptionsSnapshot", () => {
-  test("one predicate per standing query", () => {
+  test("one entry per standing query with id and predicate", () => {
     const snap = listAuthorSubscriptionsSnapshot(
-      [topicSubscriptionSearch("khora"), authorTopicSubscriptionSearch("p1", "rust", "global")],
+      [
+        { id: "sub-topic", search: topicSubscriptionSearch("khora") },
+        {
+          id: "sub-author-topic",
+          search: authorTopicSubscriptionSearch("p1", "rust", "global"),
+        },
+      ],
       resolve,
     );
-    expect(snap.predicates).toHaveLength(2);
-    expect(snap.predicates[0]).toEqual({ topicSlug: "khora" });
-    expect(snap.predicates[1]).toEqual({
-      authorDid: "did:key:bob",
-      topicSlug: "rust",
+    expect(snap.subscriptions).toHaveLength(2);
+    expect(snap.subscriptions[0]).toEqual({
+      id: "sub-topic",
+      predicate: { topicSlug: "khora" },
+    });
+    expect(snap.subscriptions[1]).toEqual({
+      id: "sub-author-topic",
+      predicate: {
+        authorDid: "did:key:bob",
+        topicSlug: "rust",
+      },
     });
   });
 });

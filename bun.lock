@@ -274,22 +274,11 @@
       "dependencies": {
         "@khoralabs/duplex-byte-stream": "workspace:*",
         "@khoralabs/obp-v2-frames-impl": "workspace:*",
-        "zod": "^4",
       },
       "devDependencies": {
         "@types/bun": "latest",
       },
       "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/agent/thread": {
-      "name": "@khoralabs/agent-thread",
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "ai": "^6",
         "typescript": "^5",
       },
     },
@@ -1256,8 +1245,6 @@
     "@khoralabs/agent-persisted-signer": ["@khoralabs/agent-persisted-signer@workspace:packages/agent/persisted-signer"],
 
     "@khoralabs/agent-relay": ["@khoralabs/agent-relay@workspace:packages/agent/relay"],
-
-    "@khoralabs/agent-thread": ["@khoralabs/agent-thread@workspace:packages/agent/thread"],
 
     "@khoralabs/blog": ["@khoralabs/blog@workspace:packages/libs/blog"],
 

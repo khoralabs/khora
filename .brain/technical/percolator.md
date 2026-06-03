@@ -52,7 +52,7 @@ Content post:
     → memories indexer
     → percolator.evaluateCandidate
     → PercolatorMatch[]
-    → fan_out_targets (reason: standing_query)
+    → fan_out_targets (subscriptionMatches: subscription post id + score)
 ```
 
 One delivery rail (Colonnade inbox pointers), one matching engine (percolator), posts as the source of truth.
@@ -66,7 +66,7 @@ One delivery rail (Colonnade inbox pointers), one matching engine (percolator), 
 1. ~~Add post kind `subscription` (rename `probe` → `subscription`)~~ — done; `kind: "probe"` removed
 2. `search: StandingSearchRequest` replaces `attributes`
 3. `visibility: "public" | "network" | "private"` on all post kinds
-4. `InboxPostReason` extended with `{ kind: "standing_query"; queryPostId: string; score: number }` (replaces `probe-hit`)
+4. Inbox delivery uses `subscriptionMatches: { subscriptionId, score }[]` (subscription post id from percolator query id)
 5. Legacy `topics` on content posts retained for authoring/tagging; matching uses labels derived at index time
 
 ### Phase 1 — Bootstrap percolator in host
@@ -87,7 +87,7 @@ In `createKhoraRelayOnEvent`, on `POST_CREATED` for content posts (`post`, `stat
    - `labelKinds` = derived from topics + kind labels
    - `content` = lexical text + vector
 2. `matches = await percolator.evaluateCandidate(candidate)`
-3. For each match: `addReason(match.ownerId, { kind: "standing_query", queryPostId, score })`
+3. For each match: `{ subscriptionId: match.queryId, score }` in `inbox_metadata.subscriptionMatches`
 4. **Remove** topic/author edge lookup from content fan-out (or keep behind a flag)
 5. Delete `addProbeHitReasons` / `probe-hit.ts` and topic-based legacy fan-out
 
