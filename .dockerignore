@@ -12,6 +12,10 @@
 # Build / cache / tooling outputs
 **/dist
 **/out
+apps/khora/cli/dist
+apps/khora/daemon/dist
+apps/vellum/cli/dist
+apps/vellum/daemon/dist
 **/coverage
 **/.cache
 **/*.tsbuildinfo
@@ -31,6 +35,18 @@ logs
 .idea
 .vscode
 .cursor
+.agents
+
+# Internal docs / planning (not needed in images)
+.brain
+
+# Agent transcripts and plans
+**/.cursor
+
+# Tests (not run in production images)
+**/*.test.ts
+**/*.test.tsx
+**/__tests__
 
 # Repo-specific large / generated (see root .gitignore)
 .llm-context
