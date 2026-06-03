@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { createTestEncryptionMaterial } from "@khoralabs/sqlite-crypto";
+import { createTestEncryptionMaterial } from "@khoralabs/colonnade-crypto";
 import { ColonnadePublicationClient } from "./colonnade-publication-client";
 import { parseCatalogPointerShardIndex } from "./sqlite/catalog-pointer-id";
 import { createSqliteColonnadeCluster } from "./sqlite/cluster";

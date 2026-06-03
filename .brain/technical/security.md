@@ -95,7 +95,7 @@ New post creates and updates require a detached Ed25519 **content signature** (`
 | Vellum daemon OBP SQLite (local) | None | Negotiation state on-device; not a Khora surface |
 | Litestream replicas (S3) | Infra SSE-KMS/SSE-S3; replicates same ciphertext as disk | Operator with bucket + keys sees same semantics as disk |
 
-SQLCipher and outbox field encryption are implemented in `@khoralabs/sqlite-crypto` and required at startup (`assertEncryptionKeys()`).
+SQLCipher is implemented in `@khoralabs/sqlite-crypto`. Colonnade outbox field encryption lives in `@khoralabs/colonnade-crypto` and is required at Khora Host startup (`assertEncryptionKeys()`).
 
 Key rotation (beta): manual SQLCipher rekey + redeploy; Litestream restores require the same SQLCipher key.
 

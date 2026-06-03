@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { applyTestEncryptionEnv } from "@khoralabs/colonnade-crypto";
 import {
   getRegistryCatalogDb,
   initCatalogSchema,
   resetRegistryCatalogDb,
   seedDefaultHost,
 } from "@khoralabs/registry-catalog";
-import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
 import { linkAgentToMembership, unlinkAgentFromMembership } from "./account-agent-links";
 import { linkBetterAuthUser } from "./accounts";
 import {

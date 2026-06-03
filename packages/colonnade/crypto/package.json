@@ -1,5 +1,5 @@
 {
-  "name": "@khoralabs/colonnade-persistence",
+  "name": "@khoralabs/colonnade-crypto",
   "version": "0.0.0",
   "type": "module",
   "private": true,
@@ -11,19 +11,14 @@
     }
   },
   "scripts": {
-    "bench": "bun run src/bench/run.ts",
-    "bench:sweep-json": "bun run src/bench/sweep-json.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@khoralabs/colonnade-crypto": "workspace:*",
-    "@khoralabs/sourcemaps": "^0.1.0",
     "@khoralabs/sqlite-crypto": "workspace:*"
   },
   "devDependencies": {
-    "@types/bun": "latest",
-    "typescript": "^5"
+    "@types/bun": "latest"
   },
   "peerDependencies": {
     "typescript": "^5"

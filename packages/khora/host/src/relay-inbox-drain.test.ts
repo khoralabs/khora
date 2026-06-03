@@ -2,7 +2,7 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { TEST_POST_AUTHOR_SIGNATURE } from "@khoralabs/sqlite-crypto";
+import { TEST_POST_AUTHOR_SIGNATURE } from "@khoralabs/colonnade-crypto";
 import { assignPostAddress, encodePostId } from "./on-event";
 import { popRelayInboxDrainItemsForDid } from "./relay-inbox-drain";
 import { createTestKhoraHost } from "./test/bootstrap-sqlite";

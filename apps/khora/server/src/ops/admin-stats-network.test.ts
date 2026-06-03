@@ -3,8 +3,9 @@ import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { TEST_KHORA_SQLCIPHER_KEY } from "@khoralabs/colonnade-crypto";
 import { poolShardCellId } from "@khoralabs/colonnade-persistence";
-import { openEncryptedDatabaseSync, TEST_KHORA_SQLCIPHER_KEY } from "@khoralabs/sqlite-crypto";
+import { openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
 import { createKhoraAdminStatsPort } from "./admin-stats-port";
 
 const REG_BY_PRINCIPAL = "relay:reg:by-principal";

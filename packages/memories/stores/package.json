@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@khoralabs/memories-core": "workspace:*",
-    "@khoralabs/sourcemaps": "workspace:*"
+    "@khoralabs/sourcemaps": "^0.1.0"
   },
   "devDependencies": {
     "@types/bun": "latest"

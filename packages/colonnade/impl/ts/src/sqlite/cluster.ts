@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 
-import type { OutboxPayloadCodec } from "@khoralabs/sqlite-crypto";
+import type { OutboxPayloadCodec } from "@khoralabs/colonnade-crypto";
 import { openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
 
 import type { CatalogPersistenceStrategy } from "../catalog-persistence-strategy";

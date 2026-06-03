@@ -1,6 +1,10 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
 import { createAgentRelayPersistenceClient } from "@khoralabs/agent-relay";
+import {
+  createTestEncryptionMaterial,
+  TEST_POST_AUTHOR_SIGNATURE,
+} from "@khoralabs/colonnade-crypto";
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
 import type { KhoraPost, KhoraProfile } from "@khoralabs/khora-contracts";
 import { ids, MemoriesClient } from "@khoralabs/memories-core";
@@ -10,7 +14,6 @@ import {
   openMemoriesDatabase,
 } from "@khoralabs/memories-sqlite";
 import { RelayCatalogProjectionStore } from "@khoralabs/relay-colonnade";
-import { createTestEncryptionMaterial, TEST_POST_AUTHOR_SIGNATURE } from "@khoralabs/sqlite-crypto";
 import { encodePostId } from "../post-address-id";
 import { createColonnadePostResolver } from "../resolve-post";
 import { createKhoraMemoriesIndexer } from "./indexer";

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { applyTestEncryptionEnv } from "@khoralabs/colonnade-crypto";
 import {
   getRegistryCatalogDb,
   initCatalogSchema,
@@ -6,7 +7,6 @@ import {
   resetRegistryCatalogDb,
   seedDefaultHost,
 } from "@khoralabs/registry-catalog";
-import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
 import {
   ensureAgentLinkedOnHost,
   linkAgentToAccountOnHost,

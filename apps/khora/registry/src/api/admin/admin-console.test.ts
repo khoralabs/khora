@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { applyTestEncryptionEnv } from "@khoralabs/colonnade-crypto";
 import { createRootTokenConsoleAuth } from "@khoralabs/khora-console";
 import { linkBetterAuthUser } from "@khoralabs/registry-accounts";
 import {
@@ -8,7 +9,6 @@ import {
 } from "@khoralabs/registry-auth";
 import type { RegistryAdminSummary } from "@khoralabs/registry-catalog";
 import { registerKhoraHost, seedDefaultHost } from "@khoralabs/registry-catalog";
-import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
 import {
   handleAdminAccountDelete,
   handleAdminAccountReactivate,

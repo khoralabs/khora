@@ -1,4 +1,4 @@
-import { isOutboxEncryptedPayload, type OutboxPayloadCodec } from "@khoralabs/sqlite-crypto";
+import { isOutboxEncryptedPayload, type OutboxPayloadCodec } from "@khoralabs/colonnade-crypto";
 import type { CellPersistenceStrategy } from "./cell-persistence-strategy";
 import type {
   AckWriteLogAppliedInput,

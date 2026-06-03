@@ -3,10 +3,11 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { TEST_KHORA_SQLCIPHER_KEY } from "@khoralabs/colonnade-crypto";
 import { poolShardCellId } from "@khoralabs/colonnade-persistence";
 import { createRootTokenConsoleAuth } from "@khoralabs/khora-console";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
-import { openEncryptedDatabaseSync, TEST_KHORA_SQLCIPHER_KEY } from "@khoralabs/sqlite-crypto";
+import { openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
 import { createKhoraAdminStatsPort } from "../ops/admin-stats-port";
 import {
   handleAdminStatsCell,

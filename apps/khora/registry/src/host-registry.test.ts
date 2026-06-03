@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { applyTestEncryptionEnv } from "@khoralabs/colonnade-crypto";
 import {
   ensureRegistrySchema,
   getRegistryDatabase,
@@ -12,7 +13,6 @@ import {
   requestHostTrustedOrigin,
   setHostRegistryParticipation,
 } from "@khoralabs/registry-catalog";
-import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
 import {
   handleHostRegistryGet,
   handleHostRegistryOriginDelete,

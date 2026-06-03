@@ -4,12 +4,12 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AgentRelayPersistence } from "@khoralabs/agent-relay";
-import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
 import {
   applyTestEncryptionEnv,
   createTestEncryptionMaterial,
   TestKeyProvider,
-} from "@khoralabs/sqlite-crypto";
+} from "@khoralabs/colonnade-crypto";
+import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
 import { createRelayColonnadeSocial } from "./create-relay-colonnade-social";
 import { createRelayPrincipalLifecycle, type RelayPrincipalLifecycle } from "./principal-lifecycle";
 import {

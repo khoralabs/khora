@@ -1,5 +1,6 @@
 /// <reference lib="WebWorker" />
-import { createOutboxPayloadCodec, openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
+import { createOutboxPayloadCodec } from "@khoralabs/colonnade-crypto";
+import { openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
 import type { DiscardInboxEntriesInput } from "../cell-persistence-strategy";
 import type {
   AckWriteLogAppliedInput,

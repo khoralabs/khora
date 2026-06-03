@@ -1,6 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { type AgentRegistry, createAgentRegistry } from "@khoralabs/agent-identity";
+import { EnvKeyProvider } from "@khoralabs/colonnade-crypto";
 import {
   purgeEmptyPendingEmbeddings,
   readPendingEmbeddingQueueSummary,
@@ -35,7 +36,7 @@ import {
   RELAY_NAMESPACE_ENTITY_PROFILE,
   RelayCatalogProjectionStore,
 } from "@khoralabs/relay-colonnade";
-import { EnvKeyProvider, openEncryptedDatabase } from "@khoralabs/sqlite-crypto";
+import { openEncryptedDatabase } from "@khoralabs/sqlite-crypto";
 import { embedMany } from "ai";
 import { envCatalogPath } from "../env";
 import { envMemoriesEnabled } from "../memories-env";

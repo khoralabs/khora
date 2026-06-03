@@ -1,5 +1,5 @@
 import type { Database, Statement } from "bun:sqlite";
-import { isOutboxEncryptedPayload, type OutboxPayloadCodec } from "@khoralabs/sqlite-crypto";
+import { isOutboxEncryptedPayload, type OutboxPayloadCodec } from "@khoralabs/colonnade-crypto";
 
 import type {
   CellPersistenceStrategy,

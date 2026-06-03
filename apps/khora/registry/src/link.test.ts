@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { applyTestEncryptionEnv } from "@khoralabs/colonnade-crypto";
 import {
   approveDeviceAuthorization,
   consumeDeviceAuthorization,
@@ -15,7 +16,6 @@ import {
   resetRegistryDatabase,
 } from "@khoralabs/registry-auth";
 import { seedDefaultHost } from "@khoralabs/registry-catalog";
-import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
 import { handleDeviceAuthorize, handleDeviceToken } from "./api/device";
 import { handleLinkChallenge } from "./api/link";
 

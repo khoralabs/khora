@@ -54,6 +54,7 @@
     "packages/percolator",
     "packages/percolator-sqlite",
     "packages/khoralabs/*",
+    "packages/colonnade/crypto",
     "packages/colonnade/impl/ts",
     "packages/vellum/*",
     "packages/cli/*"

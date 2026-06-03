@@ -2,7 +2,7 @@ import {
   assertEncryptionKeys,
   createOutboxPayloadCodec,
   EnvKeyProvider,
-} from "@khoralabs/sqlite-crypto";
+} from "@khoralabs/colonnade-crypto";
 import type { KhoraEncryptionContext } from "./encryption-context";
 
 export async function bootstrapKhoraEncryption(): Promise<KhoraEncryptionContext> {

@@ -17,10 +17,10 @@
   },
   "dependencies": {
     "@khoralabs/registry-accounts-contracts": "workspace:*",
-    "@khoralabs/registry-catalog-contracts": "workspace:*",
-    "@khoralabs/sqlite-crypto": "workspace:*"
+    "@khoralabs/registry-catalog-contracts": "workspace:*"
   },
   "devDependencies": {
+    "@khoralabs/colonnade-crypto": "workspace:*",
     "@khoralabs/registry-catalog": "workspace:*",
     "@types/bun": "latest",
     "typescript": "^5"

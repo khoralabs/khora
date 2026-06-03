@@ -1,3 +1,4 @@
+import { createTestEncryptionMaterial } from "@khoralabs/colonnade-crypto";
 import {
   ColonnadePublicationClient,
   createSqliteColonnadeCluster,
@@ -7,7 +8,6 @@ import {
   createRelayColonnadeSocial,
   createRelayPrincipalLifecycle,
 } from "@khoralabs/relay-colonnade";
-import { createTestEncryptionMaterial } from "@khoralabs/sqlite-crypto";
 import {
   bootstrapKhoraPercolator,
   createKhoraCatalogApi,

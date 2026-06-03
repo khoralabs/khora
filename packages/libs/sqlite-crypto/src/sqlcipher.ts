@@ -2,8 +2,8 @@ import { Database, type DatabaseOptions } from "bun:sqlite";
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import type { EncryptionKeyProvider, SqlCipherScope } from "./key-provider";
-import { SqliteCryptoError } from "./key-provider";
+import { SqliteCryptoError } from "./errors";
+import type { SqlCipherKeyProvider } from "./key-provider";
 
 export const SQLCIPHER_CUSTOM_LIB_ENV = "SQLCIPHER_CUSTOM_LIB";
 
@@ -100,8 +100,8 @@ export function openEncryptedDatabaseSync(
 export async function openEncryptedDatabase(
   path: string,
   options: OpenEncryptedDatabaseOptions,
-  scope: SqlCipherScope,
-  provider: EncryptionKeyProvider,
+  scope: string,
+  provider: SqlCipherKeyProvider,
 ): Promise<Database> {
   const key = await provider.getSqlCipherKey(scope);
   return openEncryptedDatabaseSync(path, options, key);

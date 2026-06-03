@@ -1,4 +1,4 @@
-import { createTestOutboxPayloadCodec } from "@khoralabs/sqlite-crypto";
+import { createTestOutboxPayloadCodec } from "@khoralabs/colonnade-crypto";
 import type { CatalogPersistenceStrategy } from "../catalog-persistence-strategy";
 import type { CellPersistenceStrategy, ResolveCellStrategy } from "../cell-persistence-strategy";
 import { InMemoryCatalogPersistenceStrategy } from "../in-memory-catalog-strategy";

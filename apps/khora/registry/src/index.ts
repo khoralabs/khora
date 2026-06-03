@@ -1,3 +1,4 @@
+import { assertEncryptionKeys, EnvKeyProvider } from "@khoralabs/colonnade-crypto";
 import { createConsoleAuthFromEnv } from "@khoralabs/khora-console";
 import {
   ensureRegistrySchema,
@@ -5,7 +6,6 @@ import {
   getRegistryDatabase,
   reloadRegistryAuth,
 } from "@khoralabs/registry-auth";
-import { assertEncryptionKeys, EnvKeyProvider } from "@khoralabs/sqlite-crypto";
 import { serve } from "bun";
 import {
   handleAdminAccountDelete,

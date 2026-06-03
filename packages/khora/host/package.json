@@ -24,7 +24,7 @@
     "@khoralabs/percolator": "workspace:*",
     "@khoralabs/percolator-sqlite": "workspace:*",
     "@khoralabs/relay-colonnade": "workspace:*",
-    "@khoralabs/sourcemaps": "workspace:*",
+    "@khoralabs/sourcemaps": "^0.1.0",
     "zod": "^4"
   },
   "peerDependencies": {
@@ -37,7 +37,7 @@
     "@khoralabs/memories-sqlite": "workspace:*",
     "@khoralabs/obp-v2-frames-impl": "workspace:*",
     "@khoralabs/relay-colonnade": "workspace:*",
-    "@khoralabs/sqlite-crypto": "workspace:*",
+    "@khoralabs/colonnade-crypto": "workspace:*",
     "@types/bun": "latest",
     "typescript": "^5"
   }

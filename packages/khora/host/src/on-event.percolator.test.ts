@@ -6,6 +6,10 @@ import {
   type AgentRelayPersistence,
   createAgentRelayPersistenceClient,
 } from "@khoralabs/agent-relay";
+import {
+  createTestEncryptionMaterial,
+  TEST_POST_AUTHOR_SIGNATURE,
+} from "@khoralabs/colonnade-crypto";
 import type { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
 import type { KhoraPost, KhoraProfile } from "@khoralabs/khora-contracts";
@@ -13,7 +17,6 @@ import { authorSubscriptionSearch } from "@khoralabs/khora-contracts";
 import { createInMemoryPercolatorPersistence, createPercolator } from "@khoralabs/percolator";
 import type { SocialRelationshipPersistence } from "@khoralabs/relay-colonnade";
 import { RelayCatalogProjectionStore } from "@khoralabs/relay-colonnade";
-import { createTestEncryptionMaterial, TEST_POST_AUTHOR_SIGNATURE } from "@khoralabs/sqlite-crypto";
 import { DEFAULT_KHORA_MEMORIES_NAMESPACE_ROOT } from "./memories/memories-config";
 import { assignPostAddress, createKhoraRelayOnEvent, encodePostId } from "./on-event";
 import { toPercolatorSearch } from "./percolator/adapter";

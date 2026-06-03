@@ -15,6 +15,7 @@
     "@khoralabs/khora-contracts": "workspace:*",
     "@khoralabs/colonnade-persistence": "workspace:*",
     "@khoralabs/percolator-sqlite": "workspace:*",
+    "@khoralabs/colonnade-crypto": "workspace:*",
     "@khoralabs/sqlite-crypto": "workspace:*"
   },
   "peerDependencies": {

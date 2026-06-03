@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import type { AgentRelayPersistence } from "@khoralabs/agent-relay";
-import type { EncryptionKeyProvider } from "@khoralabs/sqlite-crypto";
+import type { EncryptionKeyProvider } from "@khoralabs/colonnade-crypto";
 import { RelayCatalogProjectionStore } from "./catalog-projection-store";
 import { createRelayColonnadePersistenceFromDatabases } from "./relay-colonnade-persistence";
 import { RelaySocialPrincipalChannelStore } from "./relay-social-principal-channel-store";

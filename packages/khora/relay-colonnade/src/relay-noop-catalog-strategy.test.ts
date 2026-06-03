@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { TestKeyProvider } from "@khoralabs/sqlite-crypto";
+import { TestKeyProvider } from "@khoralabs/colonnade-crypto";
 import { openRelayCatalogDb } from "./sqlite-setup";
 
 test("openRelayCatalogDb creates relay projections without Colonnade catalog tables", async () => {

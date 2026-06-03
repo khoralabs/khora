@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createOutboxPayloadCodec } from "@khoralabs/sqlite-crypto";
+import { createOutboxPayloadCodec } from "@khoralabs/colonnade-crypto";
 import { CellPersistenceClient } from "./cell-persistence-client";
 import type { ResolveCellStrategy } from "./cell-persistence-strategy";
 import { ColonnadePublicationClient } from "./colonnade-publication-client";

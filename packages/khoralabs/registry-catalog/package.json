@@ -19,6 +19,7 @@
     "@khoralabs/registry-catalog-contracts": "workspace:*",
     "@khoralabs/registry-accounts": "workspace:*",
     "@khoralabs/registry-accounts-contracts": "workspace:*",
+    "@khoralabs/colonnade-crypto": "workspace:*",
     "@khoralabs/sqlite-crypto": "workspace:*"
   },
   "devDependencies": {

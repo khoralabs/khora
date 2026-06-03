@@ -1,4 +1,5 @@
 import type { AgentRelay, FrameChannelHubPort } from "@khoralabs/agent-relay";
+import type { OutboxPayloadCodec } from "@khoralabs/colonnade-crypto";
 import type { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
 import type { KhoraDidAuth } from "@khoralabs/khora-auth";
 import type { KhoraPost, KhoraProfile } from "@khoralabs/khora-contracts";
@@ -10,7 +11,6 @@ import type {
   RelayPrincipalLifecycle,
   SocialRelationshipPersistence,
 } from "@khoralabs/relay-colonnade";
-import type { OutboxPayloadCodec } from "@khoralabs/sqlite-crypto";
 import type { KhoraHostCatalogApi } from "./catalog-facade";
 import type { KhoraMemoriesHost } from "./memories/bootstrap";
 import type { KhoraPercolatorHost } from "./percolator/bootstrap";

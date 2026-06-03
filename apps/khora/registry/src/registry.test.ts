@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { applyTestEncryptionEnv } from "@khoralabs/colonnade-crypto";
 import { subscribeMarketing } from "@khoralabs/registry-accounts";
 import {
   ensureRegistrySchema,
@@ -6,7 +7,6 @@ import {
   resetRegistryDatabase,
 } from "@khoralabs/registry-auth";
 import { seedDefaultHost } from "@khoralabs/registry-catalog";
-import { applyTestEncryptionEnv } from "@khoralabs/sqlite-crypto";
 
 describe("registry domain", () => {
   beforeEach(async () => {

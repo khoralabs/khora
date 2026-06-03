@@ -1,24 +1,11 @@
-/** SQLCipher whole-file encryption scope. */
-export type SqlCipherScope = "khora" | "registry";
+import { SqliteCryptoError } from "./errors";
 
-/**
- * Resolves encryption keys for SQLCipher and outbox field encryption.
- * v1: {@link EnvKeyProvider}. v2: {@link KmsEnvelopeKeyProvider} (stub).
- */
-export type EncryptionKeyProvider = {
-  getSqlCipherKey(scope: SqlCipherScope): Promise<string>;
-  getOutboxFieldKey(): Promise<Uint8Array>;
+/** Resolves SQLCipher passphrase(s) by opaque scope id (e.g. product-specific names in the app layer). */
+export type SqlCipherKeyProvider = {
+  getSqlCipherKey(scope: string): Promise<string>;
 };
 
-export class SqliteCryptoError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "SqliteCryptoError";
-  }
-}
-
 const MIN_SQLCIPHER_KEY_LEN = 16;
-const MIN_OUTBOX_KEY_BYTES = 32;
 
 function readEnvRequired(name: string): string {
   const v = process.env[name]?.trim();
@@ -28,63 +15,29 @@ function readEnvRequired(name: string): string {
   return v;
 }
 
-function decodeOutboxKey(raw: string): Uint8Array {
-  if (/^[0-9a-f]{64}$/i.test(raw)) {
-    const out = new Uint8Array(32);
-    for (let i = 0; i < 32; i++) {
-      out[i] = Number.parseInt(raw.slice(i * 2, i * 2 + 2), 16);
+/** Read SQLCipher keys from environment variables keyed by scope. */
+export class EnvSqlCipherKeyProvider implements SqlCipherKeyProvider {
+  constructor(
+    private readonly envByScope: Readonly<Record<string, string>>,
+    private readonly minKeyLen = MIN_SQLCIPHER_KEY_LEN,
+  ) {}
+
+  async getSqlCipherKey(scope: string): Promise<string> {
+    const name = this.envByScope[scope];
+    if (name === undefined) {
+      throw new SqliteCryptoError(`unknown SQLCipher scope: ${scope}`);
     }
-    return out;
-  }
-  const bytes = new TextEncoder().encode(raw);
-  if (bytes.length < MIN_OUTBOX_KEY_BYTES) {
-    throw new SqliteCryptoError(
-      `${EnvKeyProvider.OUTBOX_ENV}: must be 32-byte hex (64 chars) or UTF-8 string of at least ${MIN_OUTBOX_KEY_BYTES} bytes`,
-    );
-  }
-  return bytes;
-}
-
-/** Read keys from environment variables. */
-export class EnvKeyProvider implements EncryptionKeyProvider {
-  static readonly KHORA_SQLCIPHER_ENV = "KHORA_SQLCIPHER_KEY";
-  static readonly REGISTRY_SQLCIPHER_ENV = "REGISTRY_SQLCIPHER_KEY";
-  static readonly OUTBOX_ENV = "KHORA_OUTBOX_ENCRYPTION_KEY";
-
-  async getSqlCipherKey(scope: SqlCipherScope): Promise<string> {
-    const name =
-      scope === "khora"
-        ? EnvKeyProvider.KHORA_SQLCIPHER_ENV
-        : EnvKeyProvider.REGISTRY_SQLCIPHER_ENV;
     const key = readEnvRequired(name);
-    if (key.length < MIN_SQLCIPHER_KEY_LEN) {
-      throw new SqliteCryptoError(`${name} must be at least ${MIN_SQLCIPHER_KEY_LEN} characters`);
+    if (key.length < this.minKeyLen) {
+      throw new SqliteCryptoError(`${name} must be at least ${this.minKeyLen} characters`);
     }
     return key;
   }
-
-  async getOutboxFieldKey(): Promise<Uint8Array> {
-    return decodeOutboxKey(readEnvRequired(EnvKeyProvider.OUTBOX_ENV));
-  }
 }
 
-export async function assertEncryptionKeys(
-  provider: EncryptionKeyProvider,
-  scope: SqlCipherScope,
+export async function assertSqlCipherKey(
+  provider: SqlCipherKeyProvider,
+  scope: string,
 ): Promise<void> {
   await provider.getSqlCipherKey(scope);
-  if (scope === "khora") {
-    await provider.getOutboxFieldKey();
-  }
-}
-
-/** Future: AWS KMS envelope decryption. Not implemented in v1. */
-export class KmsEnvelopeKeyProvider implements EncryptionKeyProvider {
-  async getSqlCipherKey(_scope: SqlCipherScope): Promise<string> {
-    throw new SqliteCryptoError("KmsEnvelopeKeyProvider is not implemented; use EnvKeyProvider");
-  }
-
-  async getOutboxFieldKey(): Promise<Uint8Array> {
-    throw new SqliteCryptoError("KmsEnvelopeKeyProvider is not implemented; use EnvKeyProvider");
-  }
 }
