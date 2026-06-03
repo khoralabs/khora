@@ -20,7 +20,7 @@
     "@khoralabs/registry-accounts": "workspace:*",
     "@khoralabs/registry-accounts-contracts": "workspace:*",
     "@khoralabs/colonnade-crypto": "workspace:*",
-    "@khoralabs/sqlite-crypto": "workspace:*"
+    "@khoralabs/sqlite-crypto": "^0.1.0"
   },
   "devDependencies": {
     "@types/bun": "latest",

@@ -19,7 +19,7 @@
   "dependencies": {
     "@khoralabs/colonnade-crypto": "workspace:*",
     "@khoralabs/sourcemaps": "^0.1.0",
-    "@khoralabs/sqlite-crypto": "workspace:*"
+    "@khoralabs/sqlite-crypto": "^0.1.0"
   },
   "devDependencies": {
     "@types/bun": "latest",

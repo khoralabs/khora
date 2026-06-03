@@ -29,7 +29,7 @@
     "@khoralabs/memories-sqlite": "workspace:*",
     "@khoralabs/relay-colonnade": "workspace:*",
     "@khoralabs/colonnade-crypto": "workspace:*",
-    "@khoralabs/sqlite-crypto": "workspace:*",
+    "@khoralabs/sqlite-crypto": "^0.1.0",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
     "ai": "^6",

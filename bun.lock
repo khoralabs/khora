@@ -120,7 +120,7 @@
         "@khoralabs/memories-react-graph": "workspace:*",
         "@khoralabs/memories-sqlite": "workspace:*",
         "@khoralabs/relay-colonnade": "workspace:*",
-        "@khoralabs/sqlite-crypto": "workspace:*",
+        "@khoralabs/sqlite-crypto": "^0.1.0",
         "@react-three/drei": "^10.7.7",
         "@react-three/fiber": "^9.5.0",
         "ai": "^6",
@@ -328,7 +328,7 @@
       "name": "@khoralabs/colonnade-crypto",
       "version": "0.0.0",
       "dependencies": {
-        "@khoralabs/sqlite-crypto": "workspace:*",
+        "@khoralabs/sqlite-crypto": "^0.1.0",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -343,7 +343,7 @@
       "dependencies": {
         "@khoralabs/colonnade-crypto": "workspace:*",
         "@khoralabs/sourcemaps": "^0.1.0",
-        "@khoralabs/sqlite-crypto": "workspace:*",
+        "@khoralabs/sqlite-crypto": "^0.1.0",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -482,7 +482,7 @@
         "@khoralabs/colonnade-persistence": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
         "@khoralabs/percolator-sqlite": "workspace:*",
-        "@khoralabs/sqlite-crypto": "workspace:*",
+        "@khoralabs/sqlite-crypto": "^0.1.0",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -582,7 +582,7 @@
         "@khoralabs/registry-accounts": "workspace:*",
         "@khoralabs/registry-accounts-contracts": "workspace:*",
         "@khoralabs/registry-catalog-contracts": "workspace:*",
-        "@khoralabs/sqlite-crypto": "workspace:*",
+        "@khoralabs/sqlite-crypto": "^0.1.0",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -704,26 +704,6 @@
         "typescript": "^5",
       },
     },
-    "packages/libs/sqlite-crypto": {
-      "name": "@khoralabs/sqlite-crypto",
-      "version": "0.0.0",
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/libs/sqlite-migrate": {
-      "name": "@khoralabs/sqlite-migrate",
-      "version": "0.0.0",
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
     "packages/memories/agents/adapter": {
       "name": "@khoralabs/memories-adapter",
       "dependencies": {
@@ -830,8 +810,8 @@
       "name": "@khoralabs/memories-sqlite",
       "dependencies": {
         "@khoralabs/memories-core": "workspace:*",
-        "@khoralabs/sqlite-crypto": "workspace:*",
-        "@khoralabs/sqlite-migrate": "workspace:*",
+        "@khoralabs/sqlite-crypto": "^0.1.0",
+        "@khoralabs/sqlite-migrate": "^0.1.0",
         "ajv": "^8",
         "sqlite-vec": "^0.1.9",
         "umap-js": "^1.4.0",
@@ -1385,9 +1365,9 @@
 
     "@khoralabs/sourcemaps": ["@khoralabs/sourcemaps@0.1.0", "", { "peerDependencies": { "typescript": "^5" } }, "sha512-9eXXrtxYeOCGpKdcEWoGtLVzHfi3zF+6s//LPv4SFWoy9tJtGu1hLdW9gGFhtbRfTHDxMb1/RHblk7NREqQdwQ=="],
 
-    "@khoralabs/sqlite-crypto": ["@khoralabs/sqlite-crypto@workspace:packages/libs/sqlite-crypto"],
+    "@khoralabs/sqlite-crypto": ["@khoralabs/sqlite-crypto@0.1.0", "", {}, "sha512-HTpnQtwaPQDD0J5fwk9w8o47cs1HrhTBYEL5SKUlEMuvUdcqC/JgEZzwMqeT7wIZQLPdrBuPoHJMyrAkyVJGDw=="],
 
-    "@khoralabs/sqlite-migrate": ["@khoralabs/sqlite-migrate@workspace:packages/libs/sqlite-migrate"],
+    "@khoralabs/sqlite-migrate": ["@khoralabs/sqlite-migrate@0.1.0", "", {}, "sha512-mGkPR6WposZArUh1k4A1s2VwyOtGJUPlKkUY+DYjZ8pkhgJ6mEhHQOlRQJNOAXKlJETsdVy4iPTeyuvzPl/zFg=="],
 
     "@khoralabs/vellum-bind-policy": ["@khoralabs/vellum-bind-policy@workspace:packages/vellum/bind-policy"],
 
