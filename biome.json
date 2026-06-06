@@ -12,9 +12,7 @@
       "!apps/memories/src/components/ui",
       "!apps/khoralabs/homepage/src/components/ui",
       "!apps/khora/homepage/src/components/ui",
-      "!packages/memories/packages/react/graph/src/components/ui",
-      "!packages/memories/packages/spec/src/generated",
-      "!packages/memories/packages/persistence/convex/**/_generated",
+      "!!packages/memories",
       "!packages/swarm/clients"
     ]
   },
