@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { type AgentRegistry, createAgentRegistry } from "@khoralabs/agent-identity";
+import { type AgentRegistry, createAgentRegistry } from "@khoralabs/agent-capabilities";
 import { EnvKeyProvider } from "@khoralabs/colonnade-crypto";
 import {
   purgeEmptyPendingEmbeddings,

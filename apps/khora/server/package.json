@@ -13,7 +13,7 @@
   "dependencies": {
     "@ai-sdk/google": "^3.0.0",
     "@khoralabs/agent-relay": "workspace:*",
-    "@khoralabs/agent-identity": "workspace:*",
+    "@khoralabs/agent-capabilities": "^0.1.0",
     "@khoralabs/colonnade-persistence": "workspace:*",
     "@khoralabs/duplex-byte-stream": "workspace:*",
     "@khoralabs/khora-auth": "workspace:*",
