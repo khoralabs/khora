@@ -3,6 +3,6 @@
  * Otherwise earlier tests (e.g. direct `new Database(":memory:")`) load bundled SQLite and
  * `Database.setCustomSQLite` fails with "SQLite already loaded".
  */
-import { ensureCustomSqliteForExtensions } from "../packages/memories/persistence/sqlite/src/connection";
+import { ensureCustomSqliteForExtensions } from "../packages/memories/packages/persistence/sqlite/src/connection";
 
 ensureCustomSqliteForExtensions();

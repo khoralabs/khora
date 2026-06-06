@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Run `bun test` with SQLITE_CUSTOM_LIB set when a suitable SQLite shared library is found
 # (Homebrew on macOS). Linux usually relies on ensureCustomSqliteForExtensions() candidates in
-# packages/memories/persistence/sqlite/src/connection.ts; set SQLITE_CUSTOM_LIB manually if needed.
+# packages/memories/packages/persistence/sqlite/src/connection.ts; set SQLITE_CUSTOM_LIB manually if needed.
 
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

@@ -95,7 +95,6 @@ SearchParams / SearchHit  // hybrid search with neighbor expansion
 | `@khoralabs/memories-core` | Contracts, merge/search/delete APIs, IDs, provenance |
 | `@khoralabs/memories-sqlite` | Reference SQLite backend (FTS5 + sqlite-vec) |
 | `@khoralabs/memories-convex` | Async Convex backend |
-| `@khoralabs/memories-stores` | File-backed Store implementations (JSONL) |
 | `@khoralabs/memories-autolink` | Search-then-link graph integration |
 | `@khoralabs/memories-spec` | Smithy wire model |
 | `@khoralabs/memories-react-graph` | Graph visualization UI |

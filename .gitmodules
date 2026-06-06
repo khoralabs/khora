@@ -1,0 +1,3 @@
+[submodule "packages/memories"]
+	path = packages/memories
+	url = git@github.com:khoralabs/memories.git

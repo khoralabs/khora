@@ -694,12 +694,12 @@
         "typescript": "^5",
       },
     },
-    "packages/memories/agents/adapter": {
+    "packages/memories/packages/agents/adapter": {
       "name": "@khoralabs/memories-adapter",
       "dependencies": {
         "@ai-sdk/provider-utils": "^4.0.23",
-        "@khoralabs/agent-identity": "workspace:*",
-        "@khoralabs/agent-identity-adapters": "workspace:*",
+        "@khoralabs/agent-capabilities": "^0.1.0",
+        "@khoralabs/agent-capabilities-ai-sdk": "^0.1.0",
         "@khoralabs/memories-core": "workspace:*",
         "@khoralabs/memories-tools": "workspace:*",
         "ai": "^6",
@@ -712,12 +712,12 @@
         "typescript": "^5",
       },
     },
-    "packages/memories/agents/integrator": {
+    "packages/memories/packages/agents/integrator": {
       "name": "@khoralabs/memories-integrator",
       "dependencies": {
         "@ai-sdk/provider-utils": "^4.0.23",
-        "@khoralabs/agent-identity": "workspace:*",
-        "@khoralabs/agent-identity-adapters": "workspace:*",
+        "@khoralabs/agent-capabilities": "^0.1.0",
+        "@khoralabs/agent-capabilities-ai-sdk": "^0.1.0",
         "@khoralabs/memories-core": "workspace:*",
         "@khoralabs/memories-tools": "workspace:*",
         "ai": "^6",
@@ -730,12 +730,12 @@
         "typescript": "^5",
       },
     },
-    "packages/memories/agents/investigator": {
+    "packages/memories/packages/agents/investigator": {
       "name": "@khoralabs/memories-investigator",
       "dependencies": {
         "@ai-sdk/provider-utils": "^4.0.23",
-        "@khoralabs/agent-identity": "workspace:*",
-        "@khoralabs/agent-identity-adapters": "workspace:*",
+        "@khoralabs/agent-capabilities": "^0.1.0",
+        "@khoralabs/agent-capabilities-ai-sdk": "^0.1.0",
         "@khoralabs/memories-core": "workspace:*",
         "@khoralabs/memories-tools": "workspace:*",
         "ai": "^6",
@@ -748,11 +748,11 @@
         "typescript": "^5",
       },
     },
-    "packages/memories/agents/tools": {
+    "packages/memories/packages/agents/tools": {
       "name": "@khoralabs/memories-tools",
       "dependencies": {
-        "@khoralabs/agent-identity": "workspace:*",
-        "@khoralabs/agent-identity-adapters": "workspace:*",
+        "@khoralabs/agent-capabilities": "^0.1.0",
+        "@khoralabs/agent-capabilities-ai-sdk": "^0.1.0",
         "@khoralabs/memories-core": "workspace:*",
         "ai": "^6",
         "zod": "^4",
@@ -764,7 +764,7 @@
         "typescript": "^5",
       },
     },
-    "packages/memories/autolink": {
+    "packages/memories/packages/autolink": {
       "name": "@khoralabs/memories-autolink",
       "dependencies": {
         "@khoralabs/memories-core": "workspace:*",
@@ -777,11 +777,10 @@
         "typescript": "^5",
       },
     },
-    "packages/memories/core": {
+    "packages/memories/packages/core": {
       "name": "@khoralabs/memories-core",
       "dependencies": {
         "@ai-sdk/provider-utils": "^4.0.23",
-        "@khoralabs/reciprocal-rank-fusion": "workspace:*",
         "@khoralabs/sourcemaps": "^0.1.0",
         "@standard-schema/spec": "^1.1.0",
         "ai": "^6",
@@ -799,7 +798,7 @@
         "typescript": "^5",
       },
     },
-    "packages/memories/ontologies": {
+    "packages/memories/packages/ontologies": {
       "name": "@khoralabs/memories-ontologies",
       "dependencies": {
         "@khoralabs/memories-core": "workspace:*",
@@ -812,7 +811,7 @@
         "typescript": "^5",
       },
     },
-    "packages/memories/persistence/sqlite": {
+    "packages/memories/packages/persistence/sqlite": {
       "name": "@khoralabs/memories-sqlite",
       "dependencies": {
         "@khoralabs/memories-core": "workspace:*",
@@ -830,7 +829,7 @@
         "typescript": "^5",
       },
     },
-    "packages/memories/react/graph": {
+    "packages/memories/packages/react/graph": {
       "name": "@khoralabs/memories-react-graph",
       "version": "0.0.0",
       "dependencies": {
@@ -863,21 +862,8 @@
         "typescript": "^5",
       },
     },
-    "packages/memories/spec": {
+    "packages/memories/packages/spec": {
       "name": "@khoralabs/memories-spec",
-    },
-    "packages/memories/stores": {
-      "name": "@khoralabs/memories-stores",
-      "dependencies": {
-        "@khoralabs/memories-core": "workspace:*",
-        "@khoralabs/sourcemaps": "^0.1.0",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
     },
     "packages/obp/react": {
       "name": "@khoralabs/obp-react",
@@ -1254,6 +1240,10 @@
 
     "@floating-ui/utils": ["@floating-ui/utils@0.2.11", "", {}, "sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg=="],
 
+    "@khoralabs/agent-capabilities": ["@khoralabs/agent-capabilities@0.1.0", "", { "peerDependencies": { "typescript": "^5" } }, "sha512-/xKc0/MuxH8NGPP6Kav1J/iCciBgFbpbgPP/BiHKWIfoiMMZcUf/rP6542BQBv++BFb2P4BRixumko/aVwlBtw=="],
+
+    "@khoralabs/agent-capabilities-ai-sdk": ["@khoralabs/agent-capabilities-ai-sdk@0.1.0", "", { "dependencies": { "@khoralabs/agent-capabilities": "^0.1.0", "ai": "^6" }, "peerDependencies": { "typescript": "^5" } }, "sha512-flk0KF54z0DiKPnSQEz9dxAicMdMYfyyT7M0ScxQvK8EC4yiNdqj5ivm1uTUsWLNGcm3FPzv6CB17slLqck92A=="],
+
     "@khoralabs/agent-identity": ["@khoralabs/agent-identity@workspace:packages/agent/identity"],
 
     "@khoralabs/agent-identity-adapters": ["@khoralabs/agent-identity-adapters@workspace:packages/agent/identity-adapters"],
@@ -1308,27 +1298,25 @@
 
     "@khoralabs/khoralabs-homepage": ["@khoralabs/khoralabs-homepage@workspace:apps/khoralabs/homepage"],
 
-    "@khoralabs/memories-adapter": ["@khoralabs/memories-adapter@workspace:packages/memories/agents/adapter"],
+    "@khoralabs/memories-adapter": ["@khoralabs/memories-adapter@workspace:packages/memories/packages/agents/adapter"],
 
-    "@khoralabs/memories-autolink": ["@khoralabs/memories-autolink@workspace:packages/memories/autolink"],
+    "@khoralabs/memories-autolink": ["@khoralabs/memories-autolink@workspace:packages/memories/packages/autolink"],
 
-    "@khoralabs/memories-core": ["@khoralabs/memories-core@workspace:packages/memories/core"],
+    "@khoralabs/memories-core": ["@khoralabs/memories-core@workspace:packages/memories/packages/core"],
 
-    "@khoralabs/memories-integrator": ["@khoralabs/memories-integrator@workspace:packages/memories/agents/integrator"],
+    "@khoralabs/memories-integrator": ["@khoralabs/memories-integrator@workspace:packages/memories/packages/agents/integrator"],
 
-    "@khoralabs/memories-investigator": ["@khoralabs/memories-investigator@workspace:packages/memories/agents/investigator"],
+    "@khoralabs/memories-investigator": ["@khoralabs/memories-investigator@workspace:packages/memories/packages/agents/investigator"],
 
-    "@khoralabs/memories-ontologies": ["@khoralabs/memories-ontologies@workspace:packages/memories/ontologies"],
+    "@khoralabs/memories-ontologies": ["@khoralabs/memories-ontologies@workspace:packages/memories/packages/ontologies"],
 
-    "@khoralabs/memories-react-graph": ["@khoralabs/memories-react-graph@workspace:packages/memories/react/graph"],
+    "@khoralabs/memories-react-graph": ["@khoralabs/memories-react-graph@workspace:packages/memories/packages/react/graph"],
 
-    "@khoralabs/memories-spec": ["@khoralabs/memories-spec@workspace:packages/memories/spec"],
+    "@khoralabs/memories-spec": ["@khoralabs/memories-spec@workspace:packages/memories/packages/spec"],
 
-    "@khoralabs/memories-sqlite": ["@khoralabs/memories-sqlite@workspace:packages/memories/persistence/sqlite"],
+    "@khoralabs/memories-sqlite": ["@khoralabs/memories-sqlite@workspace:packages/memories/packages/persistence/sqlite"],
 
-    "@khoralabs/memories-stores": ["@khoralabs/memories-stores@workspace:packages/memories/stores"],
-
-    "@khoralabs/memories-tools": ["@khoralabs/memories-tools@workspace:packages/memories/agents/tools"],
+    "@khoralabs/memories-tools": ["@khoralabs/memories-tools@workspace:packages/memories/packages/agents/tools"],
 
     "@khoralabs/obp-react": ["@khoralabs/obp-react@workspace:packages/obp/react"],
 
