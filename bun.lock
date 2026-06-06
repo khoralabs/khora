@@ -117,6 +117,7 @@
         "@khoralabs/khora-transport": "workspace:*",
         "@khoralabs/memories-core": "workspace:*",
         "@khoralabs/memories-investigator": "workspace:*",
+        "@khoralabs/memories-ontologies": "workspace:*",
         "@khoralabs/memories-react-graph": "workspace:*",
         "@khoralabs/memories-sqlite": "workspace:*",
         "@khoralabs/relay-colonnade": "workspace:*",
@@ -782,13 +783,29 @@
         "@ai-sdk/provider-utils": "^4.0.23",
         "@khoralabs/reciprocal-rank-fusion": "workspace:*",
         "@khoralabs/sourcemaps": "^0.1.0",
+        "@standard-schema/spec": "^1.1.0",
         "ai": "^6",
         "js-sha256": "^0.11.0",
         "zod": "^4",
       },
       "devDependencies": {
         "@khoralabs/memories-autolink": "workspace:*",
+        "@khoralabs/memories-ontologies": "workspace:*",
         "@khoralabs/memories-sqlite": "workspace:*",
+        "@types/bun": "latest",
+        "zod": "^4.2",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/memories/ontologies": {
+      "name": "@khoralabs/memories-ontologies",
+      "dependencies": {
+        "@khoralabs/memories-core": "workspace:*",
+        "zod": "^4.2",
+      },
+      "devDependencies": {
         "@types/bun": "latest",
       },
       "peerDependencies": {
@@ -1129,6 +1146,9 @@
       },
     },
   },
+  "overrides": {
+    "kysely": "0.28.17",
+  },
   "packages": {
     "@adraffy/ens-normalize": ["@adraffy/ens-normalize@1.11.1", "", {}, "sha512-nhCBV3quEgesuf7c7KYfperqSS14T8bYuvJ8PcLJp6znkZpFc0AuW4qBtr8eKVyPPe/8RSr7sglCWPU5eaxwKQ=="],
 
@@ -1297,6 +1317,8 @@
     "@khoralabs/memories-integrator": ["@khoralabs/memories-integrator@workspace:packages/memories/agents/integrator"],
 
     "@khoralabs/memories-investigator": ["@khoralabs/memories-investigator@workspace:packages/memories/agents/investigator"],
+
+    "@khoralabs/memories-ontologies": ["@khoralabs/memories-ontologies@workspace:packages/memories/ontologies"],
 
     "@khoralabs/memories-react-graph": ["@khoralabs/memories-react-graph@workspace:packages/memories/react/graph"],
 
@@ -1884,7 +1906,7 @@
 
     "kind-of": ["kind-of@6.0.3", "", {}, "sha512-dcS1ul+9tmeD95T+x28/ehLgd9mENa3LsvDTtzm3vyBEO7RPptvAD+t44WVXaUjTBRcrpFeFlC8WCruUR456hw=="],
 
-    "kysely": ["kysely@0.29.2", "", {}, "sha512-s6WVJyEZrbm6jhBpiKHsGHyePMrVQKJ85wZCFCr9W4QHv6WTjWIrdvTmO9hDEA3bNK0xkrE2DqrHsXMLWuZpQg=="],
+    "kysely": ["kysely@0.28.17", "", {}, "sha512-nbD8lB9EB3wNdMhOCdx5Li8DxnLbvKByylRLcJ1h+4SkrowVeECAyZlyiKMThF7xFdRz0jSQ2MoJr+wXux2y0Q=="],
 
     "lie": ["lie@3.3.0", "", { "dependencies": { "immediate": "~3.0.5" } }, "sha512-UaiMJzeWRlEujzAuw5LokY1L5ecNQYZKfmyZ9L7wDHb/p5etKaxXhohBcrw0EYby+G/NA52vRSN4N39dxHAIwQ=="],
 

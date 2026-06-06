@@ -16,7 +16,7 @@ import type {
   NodeLabelInstance,
   OntologyDefinition,
 } from "./ontology";
-import { zodPropsSchemaToJson } from "./ontology";
+import { propsSchemaToJson } from "./ontology";
 
 export {
   buildCanonicalMemorySearchMetaTextForMerge,
@@ -118,7 +118,7 @@ export function catalogSchemaJsonForNodeKind(
   if (!ontology) return "";
   const sch = ontology.nodeLabels[kind];
   if (!sch) throw new RangeError(`Unknown node label kind in ontology: ${kind}`);
-  return JSON.stringify(zodPropsSchemaToJson(sch));
+  return JSON.stringify(propsSchemaToJson(sch));
 }
 
 export function catalogSchemaJsonForEdgeKind(
@@ -128,7 +128,7 @@ export function catalogSchemaJsonForEdgeKind(
   if (!ontology) return "";
   const sch = ontology.edgeLabels[kind];
   if (!sch) throw new RangeError(`Unknown edge label kind in ontology: ${kind}`);
-  return JSON.stringify(zodPropsSchemaToJson(sch));
+  return JSON.stringify(propsSchemaToJson(sch));
 }
 
 function validateContentAndMetaVector(

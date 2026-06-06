@@ -1,13 +1,15 @@
 import { describe, expect, test } from "bun:test";
-import { createMemoriesPersistence, openTestMemoriesDatabase } from "@khoralabs/memories-sqlite";
+import { createMemoriesPersistence, openMemoriesDatabase } from "@khoralabs/memories-sqlite";
 import { mergeMemory } from "./api/merge-memory";
 import { MAX_ADDITIONAL_NAMESPACES, search } from "./api/search";
 import { namespacePath } from "./models/namespace-path";
 import type { HydratedSourceMapHit } from "./models/neighbor-search-types";
 import type { MemoriesPersistence } from "./persistence/types";
 
+const TEST_SQLCIPHER_KEY = "test-khora-sqlcipher-key!!";
+
 function openTestDb() {
-  return openTestMemoriesDatabase();
+  return openMemoriesDatabase(":memory:", { sqlCipherKey: TEST_SQLCIPHER_KEY });
 }
 
 describe("cross-namespace search", () => {

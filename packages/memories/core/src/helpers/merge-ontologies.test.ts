@@ -39,8 +39,10 @@ describe("mergeOntologies", () => {
     const merged = mergeOntologies(a, b, c);
     expect(merged.nodeLabels).toHaveProperty("y");
     // c's `x` overwrites a's `x`
-    const xSchema = merged.nodeLabels.x as z.ZodObject<Record<string, z.ZodTypeAny>>;
-    expect(xSchema.safeParse({ c: true }).success).toBe(true);
-    expect(xSchema.safeParse({ a: 1 }).success).toBe(false);
+    const xSchema = merged.nodeLabels.x;
+    const ok = xSchema["~standard"].validate({ c: true });
+    const bad = xSchema["~standard"].validate({ a: 1 });
+    expect(ok).toEqual({ value: { c: true } });
+    expect(bad).toHaveProperty("issues");
   });
 });

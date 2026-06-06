@@ -1,5 +1,5 @@
+import { defineOntology } from "@khoralabs/memories-core";
 import z from "zod";
-import { defineOntology } from "../";
 
 /** Default graph vocabulary for personal/agent memory: people, places, time, facts, and how they relate. */
 export const canonicalOntology = defineOntology({

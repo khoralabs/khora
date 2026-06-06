@@ -13,6 +13,9 @@
     "typescript": "^5"
   },
   "private": true,
+  "overrides": {
+    "kysely": "0.28.17"
+  },
   "scripts": {
     "test:with-sqlite": "bash scripts/test-with-homebrew-sqlite.sh",
     "clean": "find . -name node_modules -type d -prune -exec rm -rf {} +",

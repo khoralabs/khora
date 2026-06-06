@@ -8,7 +8,8 @@ Host-side lexical / retrieval autolinking for **[@khoralabs/memories-core](https
 2. Merge in the retrieval fragment:
 
 ```ts
-import { defineOntology, canonicalOntology } from "@khoralabs/memories-core";
+import { defineOntology } from "@khoralabs/memories-core";
+import { canonicalOntology } from "@khoralabs/memories-ontologies";
 import { mergeOntologies } from "@khoralabs/memories-core/helpers";
 import { retrievalAutolinkOntology } from "@khoralabs/memories-autolink";
 

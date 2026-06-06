@@ -28,23 +28,21 @@
       "types": "./src/helpers/index.ts",
       "import": "./src/helpers/index.ts",
       "default": "./src/helpers/index.ts"
-    },
-    "./ontologies": {
-      "types": "./src/ontologies/index.ts",
-      "import": "./src/ontologies/index.ts",
-      "default": "./src/ontologies/index.ts"
     }
   },
   "devDependencies": {
     "@khoralabs/memories-autolink": "workspace:*",
+    "@khoralabs/memories-ontologies": "workspace:*",
     "@khoralabs/memories-sqlite": "workspace:*",
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "zod": "^4.2"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
     "@khoralabs/sourcemaps": "^0.1.0",
+    "@standard-schema/spec": "^1.1.0",
     "js-sha256": "^0.11.0",
     "@ai-sdk/provider-utils": "^4.0.23",
     "@khoralabs/reciprocal-rank-fusion": "workspace:*",

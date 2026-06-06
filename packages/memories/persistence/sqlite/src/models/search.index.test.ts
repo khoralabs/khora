@@ -1,13 +1,15 @@
 import { describe, expect, test } from "bun:test";
 import { mergeMemory, namespacePath } from "@khoralabs/memories-core";
-import { openTestMemoriesDatabase } from "../connection";
+import { openMemoriesDatabase } from "../connection";
 import { createMemoriesPersistence } from "../persistence";
 import { prepareMemoriesSqliteStmts } from "./prepared-stmts";
 import { searchLexicalSourceMapIds } from "./search";
 
+const TEST_SQLCIPHER_KEY = "test-khora-sqlcipher-key!!";
+
 describe("searchLexicalSourceMapIds namespace index", () => {
   test("subtree scope returns hits under prefix path", () => {
-    const db = openTestMemoriesDatabase();
+    const db = openMemoriesDatabase(":memory:", { sqlCipherKey: TEST_SQLCIPHER_KEY });
     const persistence = createMemoriesPersistence(db);
     mergeMemory(
       { persistence },

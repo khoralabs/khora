@@ -6,11 +6,13 @@ import {
   GENESIS_PARENT_HEX,
   nextProvenanceRoot,
 } from "@khoralabs/memories-core/provenance";
-import { createMemoriesPersistence, openTestMemoriesDatabase } from "../index";
+import { createMemoriesPersistence, openMemoriesDatabase } from "../index";
+
+const TEST_SQLCIPHER_KEY = "test-khora-sqlcipher-key!!";
 
 describe("memory provenance + content_hash (SQLite)", () => {
   test("merge head matches nextProvenanceRoot from genesis; first row links genesis parent", () => {
-    const db = openTestMemoriesDatabase();
+    const db = openMemoriesDatabase(":memory:", { sqlCipherKey: TEST_SQLCIPHER_KEY });
     const persistence = createMemoriesPersistence(db);
     const namespace = "ns";
     const key = "mem";
@@ -53,7 +55,7 @@ describe("memory provenance + content_hash (SQLite)", () => {
   });
 
   test("delete advances chain; duplicate delete does not append", () => {
-    const db = openTestMemoriesDatabase();
+    const db = openMemoriesDatabase(":memory:", { sqlCipherKey: TEST_SQLCIPHER_KEY });
     const persistence = createMemoriesPersistence(db);
     mergeMemory(
       { persistence },
@@ -89,7 +91,7 @@ describe("memory provenance + content_hash (SQLite)", () => {
   });
 
   test("getProvenanceTimestampMsForRootHex matches row timestamp", () => {
-    const db = openTestMemoriesDatabase();
+    const db = openMemoriesDatabase(":memory:", { sqlCipherKey: TEST_SQLCIPHER_KEY });
     const persistence = createMemoriesPersistence(db);
     mergeMemory(
       { persistence },
@@ -116,7 +118,7 @@ describe("memory provenance + content_hash (SQLite)", () => {
   });
 
   test("appendProvenanceEvent rolls back with the transaction on throw", () => {
-    const db = openTestMemoriesDatabase();
+    const db = openMemoriesDatabase(":memory:", { sqlCipherKey: TEST_SQLCIPHER_KEY });
     const persistence = createMemoriesPersistence(db);
     const op: MemoryOpContext = { now: Date.now() };
     expect(() =>

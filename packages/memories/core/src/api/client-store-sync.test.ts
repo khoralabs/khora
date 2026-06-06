@@ -1,12 +1,14 @@
 import { describe, expect, test } from "bun:test";
-import { createMemoriesPersistence, openTestMemoriesDatabase } from "@khoralabs/memories-sqlite";
-import { canonicalOntology } from "../ontologies/cannonical";
+import { createMemoriesPersistence, openMemoriesDatabase } from "@khoralabs/memories-sqlite";
+
+const TEST_SQLCIPHER_KEY = "test-khora-sqlcipher-key!!";
+import { canonicalOntology } from "@khoralabs/memories-ontologies";
 import type { TextFeatureExportRow } from "../persistence/row-schemas";
 import { MemoriesClient } from "./client";
 import type { Store } from "./resolve-sourcemap";
 
 function openTestPersistence() {
-  const db = openTestMemoriesDatabase();
+  const db = openMemoriesDatabase(":memory:", { sqlCipherKey: TEST_SQLCIPHER_KEY });
   return createMemoriesPersistence(db);
 }
 

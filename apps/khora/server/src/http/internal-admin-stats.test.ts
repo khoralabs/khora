@@ -3,7 +3,6 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { TEST_KHORA_SQLCIPHER_KEY } from "@khoralabs/colonnade-crypto";
 import { poolShardCellId } from "@khoralabs/colonnade-persistence";
 import { createRootTokenConsoleAuth } from "@khoralabs/khora-console";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
@@ -18,6 +17,7 @@ import {
 import type { HostRouteDeps } from "./deps";
 
 const ROOT_TOKEN = "test-root-token-16chars";
+const TEST_SQLCIPHER_KEY = "test-khora-sqlcipher-key!!";
 
 const REG_BY_PRINCIPAL = "relay:reg:by-principal";
 const testRoot = mkdtempSync(join(tmpdir(), "admin-stats-test-"));
@@ -117,7 +117,7 @@ function seedCellShard(
   const cellId = poolShardCellId(shardIndex);
   const path = join(cellsDir, `${cellId}.sqlite`);
   rmSync(path, { force: true });
-  const db = openEncryptedDatabaseSync(path, { create: true }, TEST_KHORA_SQLCIPHER_KEY);
+  const db = openEncryptedDatabaseSync(path, { create: true }, TEST_SQLCIPHER_KEY);
   db.run(`
     CREATE TABLE outbox (
       record_key TEXT PRIMARY KEY NOT NULL,
@@ -193,7 +193,7 @@ function deps(
     cellPoolCount: 2,
     cluster,
     lookupNormalizedUsernameForPrincipal,
-    sqlCipherKey: TEST_KHORA_SQLCIPHER_KEY,
+    sqlCipherKey: TEST_SQLCIPHER_KEY,
   });
   return {
     ctx: {

@@ -4,8 +4,20 @@ import {
   defineOntology,
   edgeLabelPropsSchema,
   nodeLabelPropsSchema,
-  zodPropsSchemaToJson,
+  propsSchemaToJson,
 } from "./ontology";
+
+function validateProps(schema: { "~standard": { validate: (v: unknown) => unknown } }, value: unknown) {
+  const result = schema["~standard"].validate(value);
+  if (result instanceof Promise) {
+    throw new Error("expected sync validation");
+  }
+  const r = result as { value?: unknown; issues?: { message: string }[] };
+  if (r.issues?.length) {
+    throw new Error(r.issues.map((i) => i.message).join("; "));
+  }
+  return r.value;
+}
 
 describe("ontology narrow helpers", () => {
   const ontology = defineOntology({
@@ -18,24 +30,24 @@ describe("ontology narrow helpers", () => {
     },
   });
 
-  test("nodeLabelPropsSchema returns Zod schema for known kind", () => {
+  test("nodeLabelPropsSchema returns schema for known kind", () => {
     const s = nodeLabelPropsSchema(ontology, "topic");
     expect(s).toBeDefined();
-    expect(s?.parse({ weight: 0.5 })).toEqual({ weight: 0.5 });
+    expect(validateProps(s!, { weight: 0.5 })).toEqual({ weight: 0.5 });
   });
 
   test("nodeLabelPropsSchema returns undefined for unknown kind", () => {
     expect(nodeLabelPropsSchema(ontology, "missing")).toBeUndefined();
   });
 
-  test("edgeLabelPropsSchema returns Zod schema for known kind", () => {
+  test("edgeLabelPropsSchema returns schema for known kind", () => {
     const s = edgeLabelPropsSchema(ontology, "relates_to");
     expect(s).toBeDefined();
-    expect(s?.parse({ strength: 0.5 })).toEqual({ strength: 0.5 });
+    expect(validateProps(s!, { strength: 0.5 })).toEqual({ strength: 0.5 });
   });
 
-  test("zodPropsSchemaToJson produces an object", () => {
-    const j = zodPropsSchemaToJson(z.object({ a: z.number() }));
+  test("propsSchemaToJson produces an object", () => {
+    const j = propsSchemaToJson(z.object({ a: z.number() }));
     expect(j).toBeDefined();
     expect(typeof j).toBe("object");
   });

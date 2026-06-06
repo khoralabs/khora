@@ -1,14 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { ids, mergeMemory } from "@khoralabs/memories-core";
-import {
-  createMemoriesPersistence,
-  listMemoryNamespaces,
-  openTestMemoriesDatabase,
-} from "../index";
+import { createMemoriesPersistence, listMemoryNamespaces, openMemoriesDatabase } from "../index";
+
+const TEST_SQLCIPHER_KEY = "test-khora-sqlcipher-key!!";
 
 describe("MemoriesGraphIndex per-entity reads", () => {
   test("loadGraphNode matches split loaders; loadGraphEdge; listIncidentGraphEdges", () => {
-    const db = openTestMemoriesDatabase();
+    const db = openMemoriesDatabase(":memory:", { sqlCipherKey: TEST_SQLCIPHER_KEY });
     const persistence = createMemoriesPersistence(db);
     mergeMemory(
       { persistence },

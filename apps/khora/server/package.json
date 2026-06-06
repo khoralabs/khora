@@ -24,6 +24,7 @@
     "@khoralabs/khora-react": "workspace:*",
     "@khoralabs/khora-transport": "workspace:*",
     "@khoralabs/memories-core": "workspace:*",
+    "@khoralabs/memories-ontologies": "workspace:*",
     "@khoralabs/memories-investigator": "workspace:*",
     "@khoralabs/memories-react-graph": "workspace:*",
     "@khoralabs/memories-sqlite": "workspace:*",

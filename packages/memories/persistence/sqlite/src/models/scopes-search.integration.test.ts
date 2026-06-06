@@ -1,11 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import { mergeMemory, namespacePath, search } from "@khoralabs/memories-core";
-import { openTestMemoriesDatabase } from "../connection";
+import { openMemoriesDatabase } from "../connection";
 import { createMemoriesPersistence } from "../persistence";
+
+const TEST_SQLCIPHER_KEY = "test-khora-sqlcipher-key!!";
 
 describe("scope DAG search (SQLite)", () => {
   test("scopeDag finds memories attached under descendant scopes", () => {
-    const db = openTestMemoriesDatabase();
+    const db = openMemoriesDatabase(":memory:", { sqlCipherKey: TEST_SQLCIPHER_KEY });
     const persistence = createMemoriesPersistence(db);
     const rootScope = namespacePath("teams/acme");
     const childScope = namespacePath("teams/acme/payments");
@@ -41,7 +43,7 @@ describe("scope DAG search (SQLite)", () => {
   });
 
   test("exactScope matches only listed scopes (no DAG descent)", () => {
-    const db = openTestMemoriesDatabase();
+    const db = openMemoriesDatabase(":memory:", { sqlCipherKey: TEST_SQLCIPHER_KEY });
     const persistence = createMemoriesPersistence(db);
     const rootScope = namespacePath("teams/beta");
     const childScope = namespacePath("teams/beta/ledger");

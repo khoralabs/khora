@@ -1,5 +1,5 @@
-import type z from "zod";
 import type { MemoriesClient } from "../api/client.js";
+import type { LabelSchemaMap } from "../api/ontology.js";
 import type { MemoriesClientAsync } from "../api/client-async.js";
 import type {
   NeighborSearchOption,
@@ -15,14 +15,11 @@ import type { EmbeddingModel } from "./embedding-model.js";
 import { embedTextChunks } from "./embedding-model.js";
 
 /** Wide client shape for hybrid search (matches agent-session widening). */
-export type HybridMemorySearchWideClient = MemoriesClient<
-  Record<string, z.ZodType>,
-  Record<string, z.ZodType>
->;
+export type HybridMemorySearchWideClient = MemoriesClient<LabelSchemaMap, LabelSchemaMap>;
 
 export type HybridMemorySearchWideClientAsync = MemoriesClientAsync<
-  Record<string, z.ZodType>,
-  Record<string, z.ZodType>
+  LabelSchemaMap,
+  LabelSchemaMap
 >;
 
 export type HybridMemorySearchClient =

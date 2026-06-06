@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   createMemoriesPersistence,
   loadMeanEmbeddingsForNamespace,
-  openTestMemoriesDatabase,
+  openMemoriesDatabase,
 } from "@khoralabs/memories-sqlite";
 import {
   buildCanonicalMemorySearchMetaText,
@@ -17,8 +17,10 @@ import {
   MEMORY_SEARCH_META_SOURCE_KEY,
 } from "./models/memory-search-meta";
 
+const TEST_SQLCIPHER_KEY = "test-khora-sqlcipher-key!!";
+
 function openTestDb() {
-  return openTestMemoriesDatabase();
+  return openMemoriesDatabase(":memory:", { sqlCipherKey: TEST_SQLCIPHER_KEY });
 }
 
 const vec512 = (): number[] => Array.from({ length: 512 }, (_, i) => (i === 0 ? 1 : 0));

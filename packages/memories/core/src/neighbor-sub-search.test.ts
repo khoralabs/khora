@@ -1,11 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import { createMemoriesPersistence, openTestMemoriesDatabase } from "@khoralabs/memories-sqlite";
+import { createMemoriesPersistence, openMemoriesDatabase } from "@khoralabs/memories-sqlite";
 import { mergeMemory } from "./api/merge-memory";
 import { search } from "./api/search";
 import { ids } from "./models/ids";
 
+const TEST_SQLCIPHER_KEY = "test-khora-sqlcipher-key!!";
+
 function openTestDb() {
-  return openTestMemoriesDatabase();
+  return openMemoriesDatabase(":memory:", { sqlCipherKey: TEST_SQLCIPHER_KEY });
 }
 
 const vec512 = (i: number, v = 1): number[] =>

@@ -1,5 +1,4 @@
 import type { ResolvedSource } from "@khoralabs/sourcemaps";
-import type z from "zod";
 import type { DeleteMemoryParams } from "../models/delete-memory";
 import { deleteMemoryAsync } from "../models/delete-memory-async";
 import type { MemoriesPersistenceAsync } from "../persistence/async-types";
@@ -10,7 +9,7 @@ import {
   mergeMemoryAsync,
   zMergeMemoryContentItem,
 } from "./merge-memory-async";
-import type { OntologyDefinition } from "./ontology";
+import type { LabelSchemaMap, OntologyDefinition } from "./ontology";
 import { validateEdgeLabel, validateNodeLabel } from "./ontology";
 import type { Store } from "./resolve-sourcemap.js";
 import {
@@ -19,29 +18,29 @@ import {
   searchAsync as searchHandlerAsync,
 } from "./search-async";
 
-type LabelKind<TLabels extends Record<string, z.ZodType>> = keyof TLabels & string;
+type LabelKind<TLabels extends LabelSchemaMap> = keyof TLabels & string;
 
 export type TypedMergeParamsAsync<
-  TNode extends Record<string, z.ZodType>,
-  TEdge extends Record<string, z.ZodType>,
+  TNode extends LabelSchemaMap,
+  TEdge extends LabelSchemaMap,
 > = MergeMemoryParams<TNode, TEdge>;
 
 export type TypedSearchParamsAsync<
-  TNode extends Record<string, z.ZodType>,
-  TEdge extends Record<string, z.ZodType>,
+  TNode extends LabelSchemaMap,
+  TEdge extends LabelSchemaMap,
 > = SearchParams<LabelKind<TNode>, LabelKind<TEdge>>;
 
 export type TypedSearchHitAsync<
-  TNode extends Record<string, z.ZodType>,
-  TEdge extends Record<string, z.ZodType>,
+  TNode extends LabelSchemaMap,
+  TEdge extends LabelSchemaMap,
 > = SearchHit<LabelKind<TNode>, LabelKind<TEdge>>;
 
 /**
  * Async variant of {@link MemoriesClient} for {@link MemoriesPersistenceAsync} backends.
  */
 export class MemoriesClientAsync<
-  TNode extends Record<string, z.ZodType>,
-  TEdge extends Record<string, z.ZodType>,
+  TNode extends LabelSchemaMap,
+  TEdge extends LabelSchemaMap,
   EntityMap extends Record<string, unknown> = DefaultEntityMap,
 > {
   readonly ontology: OntologyDefinition<TNode, TEdge>;

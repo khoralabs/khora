@@ -1,5 +1,4 @@
 import type { DefaultEntityMap, ResolvedSource } from "@khoralabs/sourcemaps";
-import type z from "zod";
 import {
   type DeleteMemoryParams,
   deleteMemory as deleteMemoryHandler,
@@ -11,27 +10,32 @@ import {
   mergeMemory,
   zMergeMemoryContentItem,
 } from "./merge-memory";
-import { type OntologyDefinition, validateEdgeLabel, validateNodeLabel } from "./ontology";
+import {
+  type LabelSchemaMap,
+  type OntologyDefinition,
+  validateEdgeLabel,
+  validateNodeLabel,
+} from "./ontology";
 import type { Store } from "./resolve-sourcemap.js";
 import { type SearchHit, type SearchParams, search as searchHandler } from "./search";
 
 export type { DefaultEntityMap } from "@khoralabs/sourcemaps";
 
-type LabelKind<TLabels extends Record<string, z.ZodType>> = keyof TLabels & string;
+type LabelKind<TLabels extends LabelSchemaMap> = keyof TLabels & string;
 
 export type TypedMergeParams<
-  TNode extends Record<string, z.ZodType>,
-  TEdge extends Record<string, z.ZodType>,
+  TNode extends LabelSchemaMap,
+  TEdge extends LabelSchemaMap,
 > = MergeMemoryParams<TNode, TEdge>;
 
 export type TypedSearchParams<
-  TNode extends Record<string, z.ZodType>,
-  TEdge extends Record<string, z.ZodType>,
+  TNode extends LabelSchemaMap,
+  TEdge extends LabelSchemaMap,
 > = SearchParams<LabelKind<TNode>, LabelKind<TEdge>>;
 
 export type TypedSearchHit<
-  TNode extends Record<string, z.ZodType>,
-  TEdge extends Record<string, z.ZodType>,
+  TNode extends LabelSchemaMap,
+  TEdge extends LabelSchemaMap,
 > = SearchHit<LabelKind<TNode>, LabelKind<TEdge>>;
 
 export type MemoriesClientOptions<EntityMap extends Record<string, unknown> = DefaultEntityMap> = {
@@ -43,11 +47,11 @@ export type MemoriesClientOptions<EntityMap extends Record<string, unknown> = De
 
 /**
  * Memories API with a **fixed ontology**: node/edge label kinds and per-kind props are
- * validated via Zod before {@link mergeMemory}.
+ * validated via Standard Schema before {@link mergeMemory}.
  */
 export class MemoriesClient<
-  TNode extends Record<string, z.ZodType>,
-  TEdge extends Record<string, z.ZodType>,
+  TNode extends LabelSchemaMap,
+  TEdge extends LabelSchemaMap,
   EntityMap extends Record<string, unknown> = DefaultEntityMap,
 > {
   readonly ontology: OntologyDefinition<TNode, TEdge>;

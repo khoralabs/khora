@@ -1,5 +1,5 @@
-import type z from "zod";
 import type { MemoriesClient, TypedSearchHit } from "../api/client";
+import type { LabelSchemaMap } from "../api/ontology";
 import { MemoriesClientAsync } from "../api/client-async";
 import type { MergeMemoryContentItem, MergeMemoryParamsNode } from "../api/merge-memory";
 import type { SearchContent } from "../api/search";
@@ -30,8 +30,8 @@ export function mergeMemoryItemToSearchContent(item: MergeMemoryContentItem): Se
 }
 
 export async function prefetchRelatedMemories<
-  TNode extends Record<string, z.ZodType>,
-  TEdge extends Record<string, z.ZodType>,
+  TNode extends LabelSchemaMap,
+  TEdge extends LabelSchemaMap,
 >(
   client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>,
   namespace: string,
@@ -65,8 +65,8 @@ export async function prefetchRelatedMemories<
  * then refreshes search-meta vectors when the backend supports vector search.
  */
 export async function mergeLogicalMemoryWithMergeSlice<
-  TNode extends Record<string, z.ZodType>,
-  TEdge extends Record<string, z.ZodType>,
+  TNode extends LabelSchemaMap,
+  TEdge extends LabelSchemaMap,
 >(
   client: MemoriesClient<TNode, TEdge> | MemoriesClientAsync<TNode, TEdge>,
   processedLogicalMemory: ProcessedLogicalMemory,

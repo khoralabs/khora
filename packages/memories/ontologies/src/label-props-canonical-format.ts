@@ -1,4 +1,4 @@
-import type { LabelPropsSearchFormatter, LabelPropsSearchRole } from "../";
+import type { LabelPropsSearchFormatter, LabelPropsSearchRole } from "@khoralabs/memories-core";
 
 function s(v: unknown): string {
   return v === null || v === undefined ? "" : String(v);

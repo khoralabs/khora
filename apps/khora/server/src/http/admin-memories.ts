@@ -20,7 +20,7 @@ import {
   type EmbeddingResolutionPreset,
   mergeResolutionAndProviderOptions,
 } from "@khoralabs/memories-core/helpers";
-import { canonicalOntology } from "@khoralabs/memories-core/ontologies";
+import { canonicalOntology } from "@khoralabs/memories-ontologies";
 import type { MemoriesPersistence } from "@khoralabs/memories-core/persistence";
 import { MemoryInvestigatorClient } from "@khoralabs/memories-investigator";
 import {

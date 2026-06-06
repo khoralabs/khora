@@ -3,11 +3,11 @@ import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { TEST_KHORA_SQLCIPHER_KEY } from "@khoralabs/colonnade-crypto";
 import { poolShardCellId } from "@khoralabs/colonnade-persistence";
 import { openEncryptedDatabaseSync } from "@khoralabs/sqlite-crypto";
 import { createKhoraAdminStatsPort } from "./admin-stats-port";
 
+const TEST_SQLCIPHER_KEY = "test-khora-sqlcipher-key!!";
 const REG_BY_PRINCIPAL = "relay:reg:by-principal";
 const testRoot = mkdtempSync(join(tmpdir(), "admin-network-test-"));
 const cellsDir = join(testRoot, "cells");
@@ -66,7 +66,7 @@ function seedOutbox(
   const cellId = poolShardCellId(shardIndex);
   const path = join(cellsDir, `${cellId}.sqlite`);
   rmSync(path, { force: true });
-  const db = openEncryptedDatabaseSync(path, { create: true }, TEST_KHORA_SQLCIPHER_KEY);
+  const db = openEncryptedDatabaseSync(path, { create: true }, TEST_SQLCIPHER_KEY);
   db.run(`
     CREATE TABLE outbox (
       record_key TEXT PRIMARY KEY NOT NULL,
@@ -114,7 +114,7 @@ function makePort(lookup?: (did: string) => string | undefined) {
       close: () => {},
     },
     lookupNormalizedUsernameForPrincipal: lookup ?? (() => undefined),
-    sqlCipherKey: TEST_KHORA_SQLCIPHER_KEY,
+    sqlCipherKey: TEST_SQLCIPHER_KEY,
   });
 }
 

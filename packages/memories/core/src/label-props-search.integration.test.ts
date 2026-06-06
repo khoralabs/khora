@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createMemoriesPersistence, openTestMemoriesDatabase } from "@khoralabs/memories-sqlite";
+import { createMemoriesPersistence, openMemoriesDatabase } from "@khoralabs/memories-sqlite";
 import { mergeMemory } from "./api/merge-memory";
 import { search } from "./api/search";
 import { ids } from "./models/ids";
@@ -8,8 +8,10 @@ import {
   MEMORY_NODE_LABEL_PROPS_KEY_PREFIX,
 } from "./search-meta-constants";
 
+const TEST_SQLCIPHER_KEY = "test-khora-sqlcipher-key!!";
+
 function openTestDb() {
-  return openTestMemoriesDatabase();
+  return openMemoriesDatabase(":memory:", { sqlCipherKey: TEST_SQLCIPHER_KEY });
 }
 
 describe("label props search features", () => {
