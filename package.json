@@ -59,7 +59,7 @@
     "packages/khora/*",
     "packages/percolator",
     "packages/percolator-sqlite",
-    "packages/khoralabs/*",
+    "packages/registry/*",
     "packages/colonnade/crypto",
     "packages/colonnade/impl/ts",
     "packages/vellum/*",

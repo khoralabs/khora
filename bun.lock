@@ -461,121 +461,6 @@
         "typescript": "^5",
       },
     },
-    "packages/khoralabs/registry-accounts": {
-      "name": "@khoralabs/registry-accounts",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/registry-accounts-contracts": "workspace:*",
-        "@khoralabs/registry-catalog-contracts": "workspace:*",
-      },
-      "devDependencies": {
-        "@khoralabs/colonnade-crypto": "workspace:*",
-        "@khoralabs/registry-catalog": "workspace:*",
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/khoralabs/registry-accounts-contracts": {
-      "name": "@khoralabs/registry-accounts-contracts",
-      "version": "0.0.0",
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/khoralabs/registry-accounts-react": {
-      "name": "@khoralabs/registry-accounts-react",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/registry-accounts-contracts": "workspace:*",
-        "@khoralabs/registry-auth": "workspace:*",
-        "clsx": "^2.1.1",
-        "tailwind-merge": "^3.3.1",
-        "usehooks-ts": "^3.1.1",
-      },
-      "devDependencies": {
-        "@types/react": "^19",
-        "@types/react-dom": "^19",
-        "react": "^19",
-        "react-dom": "^19",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "react": "^19",
-        "react-dom": "^19",
-        "typescript": "^5",
-      },
-    },
-    "packages/khoralabs/registry-auth": {
-      "name": "@khoralabs/registry-auth",
-      "version": "0.0.0",
-      "dependencies": {
-        "@aws-sdk/client-ses": "^3.1050.0",
-        "@khoralabs/registry-accounts": "workspace:*",
-        "@khoralabs/registry-catalog": "workspace:*",
-        "better-auth": "^1.6.11",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "react": "^19",
-        "typescript": "^5",
-      },
-    },
-    "packages/khoralabs/registry-catalog": {
-      "name": "@khoralabs/registry-catalog",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/colonnade-crypto": "workspace:*",
-        "@khoralabs/registry-accounts": "workspace:*",
-        "@khoralabs/registry-accounts-contracts": "workspace:*",
-        "@khoralabs/registry-catalog-contracts": "workspace:*",
-        "@khoralabs/sqlite-crypto": "^0.1.0",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/khoralabs/registry-catalog-contracts": {
-      "name": "@khoralabs/registry-catalog-contracts",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/registry-accounts-contracts": "workspace:*",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/khoralabs/registry-catalog-react": {
-      "name": "@khoralabs/registry-catalog-react",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/registry-catalog-contracts": "workspace:*",
-        "clsx": "^2.1.1",
-        "tailwind-merge": "^3.3.1",
-        "usehooks-ts": "^3.1.1",
-      },
-      "devDependencies": {
-        "@types/react": "^19",
-        "@types/react-dom": "^19",
-        "react": "^19",
-        "react-dom": "^19",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "react": "^19",
-        "react-dom": "^19",
-        "typescript": "^5",
-      },
-    },
     "packages/libs/agent-io": {
       "name": "@khoralabs/agent-io",
       "version": "0.0.0",
@@ -1097,6 +982,121 @@
         "typescript": "^5",
       },
     },
+    "packages/registry/accounts": {
+      "name": "@khoralabs/registry-accounts",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/registry-accounts-contracts": "workspace:*",
+        "@khoralabs/registry-catalog-contracts": "workspace:*",
+      },
+      "devDependencies": {
+        "@khoralabs/colonnade-crypto": "workspace:*",
+        "@khoralabs/registry-catalog": "workspace:*",
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/registry/accounts-contracts": {
+      "name": "@khoralabs/registry-accounts-contracts",
+      "version": "0.0.0",
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/registry/accounts-react": {
+      "name": "@khoralabs/registry-accounts-react",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/registry-accounts-contracts": "workspace:*",
+        "@khoralabs/registry-auth": "workspace:*",
+        "clsx": "^2.1.1",
+        "tailwind-merge": "^3.3.1",
+        "usehooks-ts": "^3.1.1",
+      },
+      "devDependencies": {
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "react": "^19",
+        "react-dom": "^19",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "react": "^19",
+        "react-dom": "^19",
+        "typescript": "^5",
+      },
+    },
+    "packages/registry/auth": {
+      "name": "@khoralabs/registry-auth",
+      "version": "0.0.0",
+      "dependencies": {
+        "@aws-sdk/client-ses": "^3.1050.0",
+        "@khoralabs/registry-accounts": "workspace:*",
+        "@khoralabs/registry-catalog": "workspace:*",
+        "better-auth": "^1.6.11",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "react": "^19",
+        "typescript": "^5",
+      },
+    },
+    "packages/registry/catalog": {
+      "name": "@khoralabs/registry-catalog",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/colonnade-crypto": "workspace:*",
+        "@khoralabs/registry-accounts": "workspace:*",
+        "@khoralabs/registry-accounts-contracts": "workspace:*",
+        "@khoralabs/registry-catalog-contracts": "workspace:*",
+        "@khoralabs/sqlite-crypto": "^0.1.0",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/registry/catalog-contracts": {
+      "name": "@khoralabs/registry-catalog-contracts",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/registry-accounts-contracts": "workspace:*",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/registry/catalog-react": {
+      "name": "@khoralabs/registry-catalog-react",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/registry-catalog-contracts": "workspace:*",
+        "clsx": "^2.1.1",
+        "tailwind-merge": "^3.3.1",
+        "usehooks-ts": "^3.1.1",
+      },
+      "devDependencies": {
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "react": "^19",
+        "react-dom": "^19",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "react": "^19",
+        "react-dom": "^19",
+        "typescript": "^5",
+      },
+    },
     "packages/vellum/bind-policy": {
       "name": "@khoralabs/vellum-bind-policy",
       "version": "0.0.0",
@@ -1378,19 +1378,19 @@
 
     "@khoralabs/reciprocal-rank-fusion": ["@khoralabs/reciprocal-rank-fusion@workspace:packages/libs/reciprocal-rank-fusion"],
 
-    "@khoralabs/registry-accounts": ["@khoralabs/registry-accounts@workspace:packages/khoralabs/registry-accounts"],
+    "@khoralabs/registry-accounts": ["@khoralabs/registry-accounts@workspace:packages/registry/accounts"],
 
-    "@khoralabs/registry-accounts-contracts": ["@khoralabs/registry-accounts-contracts@workspace:packages/khoralabs/registry-accounts-contracts"],
+    "@khoralabs/registry-accounts-contracts": ["@khoralabs/registry-accounts-contracts@workspace:packages/registry/accounts-contracts"],
 
-    "@khoralabs/registry-accounts-react": ["@khoralabs/registry-accounts-react@workspace:packages/khoralabs/registry-accounts-react"],
+    "@khoralabs/registry-accounts-react": ["@khoralabs/registry-accounts-react@workspace:packages/registry/accounts-react"],
 
-    "@khoralabs/registry-auth": ["@khoralabs/registry-auth@workspace:packages/khoralabs/registry-auth"],
+    "@khoralabs/registry-auth": ["@khoralabs/registry-auth@workspace:packages/registry/auth"],
 
-    "@khoralabs/registry-catalog": ["@khoralabs/registry-catalog@workspace:packages/khoralabs/registry-catalog"],
+    "@khoralabs/registry-catalog": ["@khoralabs/registry-catalog@workspace:packages/registry/catalog"],
 
-    "@khoralabs/registry-catalog-contracts": ["@khoralabs/registry-catalog-contracts@workspace:packages/khoralabs/registry-catalog-contracts"],
+    "@khoralabs/registry-catalog-contracts": ["@khoralabs/registry-catalog-contracts@workspace:packages/registry/catalog-contracts"],
 
-    "@khoralabs/registry-catalog-react": ["@khoralabs/registry-catalog-react@workspace:packages/khoralabs/registry-catalog-react"],
+    "@khoralabs/registry-catalog-react": ["@khoralabs/registry-catalog-react@workspace:packages/registry/catalog-react"],
 
     "@khoralabs/relay-colonnade": ["@khoralabs/relay-colonnade@workspace:packages/khora/relay-colonnade"],
 
