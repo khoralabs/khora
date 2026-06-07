@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import type { EncryptionKeyProvider } from "@khoralabs/colonnade-crypto";
-import type { AgentRelayPersistence } from "@khoralabs/host-runtime";
+import type { HostPersistence } from "@khoralabs/host-runtime";
 import type { FrameRelayStoreStrategy } from "@khoralabs/obp-frame-relay";
 import { createSqliteFrameRelayStoreStrategy } from "@khoralabs/obp-frame-relay-sqlite";
 import { RelayCatalogProjectionStore } from "./catalog-projection-store";
@@ -16,7 +16,7 @@ export async function createRelayColonnadeSocial(opts: {
   tenantKey?: string;
   encryptionProvider: EncryptionKeyProvider;
 }): Promise<{
-  persistence: AgentRelayPersistence;
+  persistence: HostPersistence;
   frameRelayStore: FrameRelayStoreStrategy;
   social: SocialRelationshipPersistence;
   catalogDb: Database;

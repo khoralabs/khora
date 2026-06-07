@@ -1,53 +1,39 @@
 export type { SessionInit } from "@khoralabs/obp-v2-frames-impl";
 export {
-  AGENT_RELAY_EVENT_KIND,
-  type AgentRelayAppEventConstraint,
-  type AgentRelayBuiltInEvent,
-  type AgentRelayEventUnion,
-  type AgentRelayPostCreatedEvent,
-  type AgentRelayPostDeletedEvent,
-  type AgentRelayPostUpdatedEvent,
-  type AgentRelayProfileCreatedEvent,
-  type AgentRelayProfileDeletedEvent,
-  type AgentRelayProfileUpdatedEvent,
-  type AgentRelayRegistrationProfileBuildEvent,
-  type AgentRelayRegistrationProfileBuildPayload,
-  type AgentRelayTopicCreatedEvent,
-  type AgentRelayTopicDeletedEvent,
-  type AgentRelayTopicUpdatedEvent,
+  HOST_EVENT_KIND,
+  type HostAppEventConstraint,
+  type HostBuiltInEvent,
+  type HostEventBase,
+  type HostEventUnion,
+  type HostProfileCreatedEvent,
+  type HostProfileDeletedEvent,
+  type HostProfileUpdatedEvent,
+  type HostRegistrationProfileBuildEvent,
+  type HostRegistrationProfileBuildPayload,
 } from "./events";
 export {
-  AgentRelay,
-  type AgentRelayDeps,
-  type AgentRelayEventHandlerCtx,
-} from "./host";
-export {
   createInboxWsHub,
-  deliverAgentNotification,
+  deliverNotification,
   inboxWebSocketFromDuplexUtf8,
   type RunInboxDuplexAttachmentResult,
   runInboxDuplexAttachment,
 } from "./inbox/index";
-export { AGENT_RELAY_AGGREGATE_DOMAIN } from "./model/index";
+export { HOST_AGGREGATE_DOMAIN } from "./model/index";
 export {
-  type AgentRelayPersistenceClient,
-  createAgentRelayPersistenceClient,
+  createHostPersistenceClient,
+  type HostPersistenceClient,
 } from "./persistence/client";
 export type {
-  AgentRelayEntityKind,
-  AgentRelayEntityPersistence,
-  AgentRelayEntityRow,
-  AgentRelayEntityUpsert,
-  AgentRelayPersistence,
-  AgentRelayRegistrations,
+  HostEntityPersistence,
+  HostEntityRow,
+  HostEntityUpsert,
+  HostPersistence,
+  HostRegistrations,
 } from "./persistence/types";
 export type {
-  AgentNotification,
-  AgentNotificationBufferPort,
-  AgentNotificationRow,
-  FrameChannelInvitePayload,
-  InboxPostNotificationPayload,
-  InboxSubscriptionMatch,
+  HostNotification,
+  HostNotificationRow,
+  NotificationBufferPort,
 } from "./registration/notifications";
 export type {
   PrincipalId,
@@ -55,8 +41,10 @@ export type {
   PrincipalRegistrationResult,
 } from "./registration/types";
 export type {
-  AuthenticatedAgentVerifyContext,
+  AuthenticatedPrincipalVerifyContext,
   AuthPreflight,
   InboxAccessVerifyContext,
   RegistrationVerifyContext,
 } from "./registration/verify";
+export type { HostRuntimeDeps, HostRuntimeEventHandlerCtx } from "./runtime";
+export { HostRuntime } from "./runtime";

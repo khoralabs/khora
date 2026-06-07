@@ -1,5 +1,5 @@
 import { sha256HexLower } from "@khoralabs/colonnade-persistence";
-import type { AgentRelayPersistenceClient } from "@khoralabs/host-runtime";
+import type { HostPersistenceClient } from "@khoralabs/host-runtime";
 import {
   type KhoraPost,
   type KhoraProfile,
@@ -30,7 +30,7 @@ export type KhoraMemoriesIndexer = {
 export function createKhoraMemoriesIndexer(deps: {
   client: MemoriesClient<typeof khoraOntology.nodeLabels, typeof khoraOntology.edgeLabels>;
   persistence: MemoriesPersistence;
-  persistenceClient: AgentRelayPersistenceClient;
+  persistenceClient: HostPersistenceClient;
   embeddingModel?: EmbeddingModel;
   namespaceRoot: string;
   logError?: (message: string, err: unknown) => void;

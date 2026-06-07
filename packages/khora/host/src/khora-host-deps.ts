@@ -1,6 +1,6 @@
 import type { OutboxPayloadCodec } from "@khoralabs/colonnade-crypto";
 import type { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
-import type { AgentRelayPersistence } from "@khoralabs/host-runtime";
+import type { HostPersistence } from "@khoralabs/host-runtime";
 import type { KhoraDidAuth } from "@khoralabs/khora-auth";
 import type { KhoraInvitesRepo } from "@khoralabs/khora-invites";
 import type { KhoraRoomLifecycleHostEvent } from "@khoralabs/khora-transport";
@@ -21,7 +21,7 @@ import type {
 } from "./ports";
 
 export type KhoraHostDeps = {
-  persistence: AgentRelayPersistence;
+  persistence: HostPersistence;
   frameRelayStore: FrameRelayStoreStrategy;
   social: SocialRelationshipPersistence;
   tenantKey: string;

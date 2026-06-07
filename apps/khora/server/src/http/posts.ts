@@ -1,4 +1,3 @@
-import { AGENT_RELAY_AGGREGATE_DOMAIN, AGENT_RELAY_EVENT_KIND } from "@khoralabs/host-runtime";
 import {
   AuthStrategyError,
   khoraPostSigningPayloadFromCreate,
@@ -6,6 +5,8 @@ import {
   verifyKhoraPostSignature,
 } from "@khoralabs/khora-auth";
 import {
+  KHORA_AGGREGATE_DOMAIN,
+  KHORA_EVENT_KIND,
   khoraPostCreateSigningContent,
   mergeKhoraPostPatch,
   normalizeTopicSlug,
@@ -125,9 +126,9 @@ export async function handleCreatePost(
       post.topics = post.topics.map((t) => normalizeTopicSlug(t));
     }
     await ctx.host.notify({
-      kind: AGENT_RELAY_EVENT_KIND.POST_CREATED,
+      kind: KHORA_EVENT_KIND.POST_CREATED,
       occurredAt: Date.now(),
-      aggregate: { domain: AGENT_RELAY_AGGREGATE_DOMAIN.post, id: post.id },
+      aggregate: { domain: KHORA_AGGREGATE_DOMAIN.post, id: post.id },
       change: "created",
       source: "app",
       payload: { post },
@@ -203,9 +204,9 @@ export async function handleUpdatePost(
     });
     const post = zKhoraPost.parse({ ...merged, authorSignature, id: postId });
     await ctx.host.notify({
-      kind: AGENT_RELAY_EVENT_KIND.POST_UPDATED,
+      kind: KHORA_EVENT_KIND.POST_UPDATED,
       occurredAt: Date.now(),
-      aggregate: { domain: AGENT_RELAY_AGGREGATE_DOMAIN.post, id: post.id },
+      aggregate: { domain: KHORA_AGGREGATE_DOMAIN.post, id: post.id },
       change: "updated",
       source: "app",
       payload: { post, previous },
@@ -244,9 +245,9 @@ export async function handleDeletePost(
     return jsonError("Forbidden", 403);
   }
   await ctx.host.notify({
-    kind: AGENT_RELAY_EVENT_KIND.POST_DELETED,
+    kind: KHORA_EVENT_KIND.POST_DELETED,
     occurredAt: Date.now(),
-    aggregate: { domain: AGENT_RELAY_AGGREGATE_DOMAIN.post, id: post.id },
+    aggregate: { domain: KHORA_AGGREGATE_DOMAIN.post, id: post.id },
     change: "deleted",
     source: "app",
     payload: { post },

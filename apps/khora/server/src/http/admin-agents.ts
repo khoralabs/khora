@@ -44,7 +44,7 @@ export async function handleAdminAgentsRoute(
   if (req.method === "DELETE" && action === undefined) {
     return withConsoleAuth(req, deps, async () => {
       deps.ctx.agentAccountStatus.setStatus(did, "deleted");
-      if (deps.ctx.host.persistenceClient.agentRegistrationExists(did)) {
+      if (deps.ctx.host.persistenceClient.registrationExists(did)) {
         await deps.ctx.phase1UnregisterPrincipal(did);
       }
       return Response.json({ did, status: "deleted" });

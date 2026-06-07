@@ -13,7 +13,7 @@
 |---|---|
 | Auth engine (Ed25519 DID-key, nonce replay protection) | `packages/khora/auth/src/auth.ts` |
 | Wired at bootstrap (`createKhoraDidAuth` + SQLite nonce store) | `bootstrap-khora.ts` |
-| Preflight handed to `AgentRelay` | `packages/agent/relay/src/host.ts` |
+| Preflight handed to `HostRuntime` | `packages/host-runtime/src/runtime.ts` |
 
 **Route guards:**
 - `requireAuthenticatedRequest` — posts, profile, rooms, relationships, etc.
@@ -28,7 +28,7 @@
 |---|---|
 | HTTP handler, rate limits, invite gate | `src/http/register.ts` |
 | Core registration (`ctx.host.registerPrincipal`) | `@khoralabs/khora-host` / `@khoralabs/host-runtime` |
-| Persistence of DID→profileId | via `createAgentRelayPersistenceClient` in bootstrap |
+| Persistence of DID→profileId | via `createHostPersistenceClient` in bootstrap |
 | Unregister (`POST /v1/unregister`) | `src/http/unregister.ts` |
 | Discovery doc | `src/http/well-known-khora.ts` → `GET /.well-known/khora` |
 
@@ -142,9 +142,9 @@ Extension point: add rules only to `RelayPrincipalLifecycle` (`isPostPointerDeli
 
 ## 8. In-app notifications
 
-Notification types (`packages/agent/relay/src/registration/notifications.ts`): `room_ticket`, `inbox_post`, `connection_request`, `host`.
+Notification types (`packages/khora/contracts/src/khora-inbox-notifications.ts`): `room_ticket`, `inbox_post`, `connection_request`, `host`.
 
-Delivery: `createInboxWsHub()` + `deliverAgentNotification` when a buffer exists. **Note:** Khora host does **not** wire `notificationBuffer` into `AgentRelay` — live WS broadcast is used when the peer is connected; persistent notification buffer is not active.
+Delivery: `createInboxWsHub()` + `deliverNotification` when a buffer exists. **Note:** Khora host does **not** wire `notificationBuffer` into `HostRuntime` — live WS broadcast is used when the peer is connected; persistent notification buffer is not active.
 
 Post fan-out writes Colonnade cell inbox rows with metadata: `postId`, `authorPrincipalId`, `subscriptionMatches`, `createdAtMs`, `postKind`.
 
@@ -155,7 +155,7 @@ Post fan-out writes Colonnade cell inbox rows with metadata: `postId`, `authorPr
 | Area | Service | Where |
 |------|---------|-------|
 | Backups | AWS S3 + Litestream (MinIO optional for local dev) | `scripts/litestream-config.ts` |
-| Room tickets | `@khoralabs/duplex-byte-stream` | `packages/agent/relay/src/frame-channel/hub.ts` |
+| Room tickets | `@khoralabs/duplex-byte-stream` | `@khoralabs/obp-frame-relay` hub |
 | DID / signatures | `@noble/ed25519`, `iso-did` | `packages/khora/auth/` |
 | Logging | `pino` (level `info`, name `khora-server`, `LOG_LEVEL` env) | `apps/khora/server/src/logger.ts` |
 | OBP SQLite extensions | `ensureCustomSqliteForExtensions` from `@khoralabs/memories-sqlite` | `packages/obp/v2/persistence/sqlite/src/connection.ts` |

@@ -20,7 +20,6 @@ Primary key: `(tenant_key, namespace, entry_key)`.
 | Namespace | `entry_key` | Projection |
 |-----------|-------------|------------|
 | `relay:entity:profile` | profile UUID | `{ id, bodyJson, updatedAtMs }` |
-| `relay:entity:topic` | topic entity id | `{ id, bodyJson, updatedAtMs }` |
 | `relay:reg:by-principal` | principal DID | `{ profileId }` |
 | `relay:reg:by-profile` | profile UUID | `{ principalId }` |
 | `relay:social:username-to-principal` | normalized username | `{ principalId }` |

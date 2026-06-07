@@ -48,7 +48,7 @@ export async function attachInboxDuplexAfterAuth(opts: {
 
   const inboxHub = opts.deps.ctx.host.inboxHub;
   if (inboxHub === undefined) {
-    throw new Error("khora-host: AgentRelay missing inboxHub");
+    throw new Error("khora-host: HostRuntime missing inboxHub");
   }
 
   const items = await popRelayInboxDrainItemsForDid(opts.deps.ctx, verifiedDid);

@@ -1,5 +1,9 @@
-import type { AgentNotification } from "@khoralabs/host-runtime";
-import type { KhoraPost, KhoraProfile, KhoraRegistrationResult } from "@khoralabs/khora-contracts";
+import type {
+  KhoraInboxNotification,
+  KhoraPost,
+  KhoraProfile,
+  KhoraRegistrationResult,
+} from "@khoralabs/khora-contracts";
 import type { InboxNotificationRow, InboxWsDrainMessage } from "./inbox-ws";
 
 // ---------------------------------------------------------------------------
@@ -65,31 +69,31 @@ export type KhoraClientEvent =
   | {
       type: "inbox:notification";
       id: number;
-      notification: AgentNotification;
+      notification: KhoraInboxNotification;
       did: string;
     }
   | {
       type: "inbox:connection_request";
       id: number;
-      notification: Extract<AgentNotification, { kind: "connection_request" }>;
+      notification: Extract<KhoraInboxNotification, { kind: "connection_request" }>;
       did: string;
     }
   | {
       type: "inbox:host";
       id: number;
-      notification: Extract<AgentNotification, { kind: "host" }>;
+      notification: Extract<KhoraInboxNotification, { kind: "host" }>;
       did: string;
     }
   | {
       type: "inbox:room_ticket";
       id: number;
-      notification: Extract<AgentNotification, { kind: "room_ticket" }>;
+      notification: Extract<KhoraInboxNotification, { kind: "room_ticket" }>;
       did: string;
     }
   | {
       type: "inbox:post";
       id: number;
-      notification: Extract<AgentNotification, { kind: "inbox_post" }>;
+      notification: Extract<KhoraInboxNotification, { kind: "inbox_post" }>;
       did: string;
     }
   | {

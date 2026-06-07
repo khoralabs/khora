@@ -4,12 +4,14 @@ import type {
 } from "@khoralabs/colonnade-persistence";
 import { randomId } from "@khoralabs/colonnade-persistence";
 import {
-  AGENT_RELAY_EVENT_KIND,
-  type AgentRelayEventHandlerCtx,
-  type AgentRelayEventUnion,
-  type InboxSubscriptionMatch,
+  HOST_EVENT_KIND,
+  type HostEventUnion,
+  type HostRuntimeEventHandlerCtx,
 } from "@khoralabs/host-runtime";
 import {
+  type InboxSubscriptionMatch,
+  KHORA_EVENT_KIND,
+  type KhoraHostAppEvent,
   type KhoraPost,
   type KhoraProfile,
   khoraPostIndexableLexicalText,
@@ -52,7 +54,7 @@ async function postLexicalVector(
 }
 
 async function publishPost(params: {
-  ctx: AgentRelayEventHandlerCtx;
+  ctx: HostRuntimeEventHandlerCtx;
   tenantKey: string;
   post: KhoraPost;
   cluster: KhoraColonnadeCluster;
@@ -176,15 +178,15 @@ export function createKhoraRelayOnEvent(deps: {
   percolator?: KhoraPercolatorHost;
   social?: SocialRelationshipPersistence;
 }): (
-  ctx: AgentRelayEventHandlerCtx,
-  event: AgentRelayEventUnion<KhoraProfile, KhoraPost, unknown, never>,
+  ctx: HostRuntimeEventHandlerCtx,
+  event: HostEventUnion<KhoraProfile, KhoraHostAppEvent>,
 ) => void | Promise<void> {
   const { catalog, tenantKey, cluster, publicationClient, memories, percolator, social } = deps;
   return async (
-    ctx: AgentRelayEventHandlerCtx,
-    event: AgentRelayEventUnion<KhoraProfile, KhoraPost, unknown, never>,
+    ctx: HostRuntimeEventHandlerCtx,
+    event: HostEventUnion<KhoraProfile, KhoraHostAppEvent>,
   ): Promise<void> => {
-    if (event.kind === AGENT_RELAY_EVENT_KIND.REGISTRATION_PROFILE_BUILD) {
+    if (event.kind === HOST_EVENT_KIND.REGISTRATION_PROFILE_BUILD) {
       const req = event.payload.request;
       try {
         const meta = parseKhoraRegistrationMetadata(req.metadata);
@@ -210,8 +212,8 @@ export function createKhoraRelayOnEvent(deps: {
     }
 
     if (
-      event.kind === AGENT_RELAY_EVENT_KIND.PROFILE_CREATED ||
-      event.kind === AGENT_RELAY_EVENT_KIND.PROFILE_UPDATED
+      event.kind === HOST_EVENT_KIND.PROFILE_CREATED ||
+      event.kind === HOST_EVENT_KIND.PROFILE_UPDATED
     ) {
       const profile = event.payload.profile;
       ctx.persistenceClient.upsertProfile({
@@ -224,7 +226,7 @@ export function createKhoraRelayOnEvent(deps: {
       return;
     }
 
-    if (event.kind === AGENT_RELAY_EVENT_KIND.POST_CREATED) {
+    if (event.kind === KHORA_EVENT_KIND.POST_CREATED) {
       const post = event.payload.post;
       const address = decodePostId(post.id);
       if (post.kind === "subscription" && percolator !== undefined && address !== undefined) {
@@ -247,7 +249,7 @@ export function createKhoraRelayOnEvent(deps: {
       return;
     }
 
-    if (event.kind === AGENT_RELAY_EVENT_KIND.POST_UPDATED) {
+    if (event.kind === KHORA_EVENT_KIND.POST_UPDATED) {
       const post = event.payload.post;
       const previous = event.payload.previous;
       const address = decodePostId(post.id);
@@ -268,7 +270,7 @@ export function createKhoraRelayOnEvent(deps: {
       return;
     }
 
-    if (event.kind === AGENT_RELAY_EVENT_KIND.POST_DELETED) {
+    if (event.kind === KHORA_EVENT_KIND.POST_DELETED) {
       const post = event.payload.post;
       if (post.kind === "subscription" && percolator !== undefined) {
         percolator.percolator.deactivateQuery(post.id);

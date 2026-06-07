@@ -3,7 +3,7 @@ import {
   ColonnadePublicationClient,
   createSqliteColonnadeCluster,
 } from "@khoralabs/colonnade-persistence";
-import { createAgentRelayPersistenceClient } from "@khoralabs/host-runtime";
+import { createHostPersistenceClient } from "@khoralabs/host-runtime";
 import { createKhoraDidAuth, createSqliteNonceStore } from "@khoralabs/khora-auth";
 import {
   bootstrapKhoraMemories,
@@ -126,7 +126,7 @@ export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<
   });
   const agentAccountStatus = createAgentAccountStatusPort(catalogDb);
   const auth = createKhoraDidAuth({ nonceStore: createSqliteNonceStore(catalogDb) });
-  const persistenceClient = createAgentRelayPersistenceClient(persistence);
+  const persistenceClient = createHostPersistenceClient(persistence);
 
   const seedTokens = parseInviteSeedTokens(process.env.KHORA_INVITE_SEED_TOKENS);
   validateInviteEnvConfig(seedTokens);

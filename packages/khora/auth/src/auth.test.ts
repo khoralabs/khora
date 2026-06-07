@@ -47,7 +47,7 @@ describe("KhoraDidAuth.preflight (did:key Ed25519 default)", () => {
       nonce: "nonce-1",
     });
     await expect(
-      auth.preflight.verifyAuthenticatedAgent({
+      auth.preflight.verifyAuthenticatedPrincipal({
         method: "PATCH",
         path: "/v1/profile",
         headers,
@@ -71,7 +71,7 @@ describe("KhoraDidAuth.preflight (did:key Ed25519 default)", () => {
       nonce: "old",
     });
     await expect(
-      auth.preflight.verifyAuthenticatedAgent({
+      auth.preflight.verifyAuthenticatedPrincipal({
         method: "GET",
         path: "/v1/agent/sync",
         headers,
@@ -93,14 +93,14 @@ describe("KhoraDidAuth.preflight (did:key Ed25519 default)", () => {
       timestampMs: now,
       nonce: "same",
     });
-    await auth.preflight.verifyAuthenticatedAgent({
+    await auth.preflight.verifyAuthenticatedPrincipal({
       method: "GET",
       path: "/v1/agent/sync",
       headers,
       claimedPrincipalId: signer.did,
     });
     await expect(
-      auth.preflight.verifyAuthenticatedAgent({
+      auth.preflight.verifyAuthenticatedPrincipal({
         method: "GET",
         path: "/v1/agent/sync",
         headers,
@@ -123,7 +123,7 @@ describe("KhoraDidAuth.preflight (did:key Ed25519 default)", () => {
       nonce: "n",
     });
     await expect(
-      auth.preflight.verifyAuthenticatedAgent({
+      auth.preflight.verifyAuthenticatedPrincipal({
         method: "GET",
         path: "/v1/agent/sync",
         headers,
@@ -146,7 +146,7 @@ describe("KhoraDidAuth.preflight (did:key Ed25519 default)", () => {
       nonce: "n-tampered",
     });
     await expect(
-      auth.preflight.verifyAuthenticatedAgent({
+      auth.preflight.verifyAuthenticatedPrincipal({
         method: "POST",
         path: "/v1/posts",
         headers,

@@ -1,4 +1,4 @@
-import type { AgentRelayEntityUpsert, PrincipalId } from "@khoralabs/host-runtime";
+import type { HostEntityUpsert, PrincipalId } from "@khoralabs/host-runtime";
 
 /** Pairwise relationship (e.g. frame channel room); peer is unknown until {@link SocialRelationshipPersistence.bindPeer}. */
 export type SocialRelationshipRow = {
@@ -18,7 +18,7 @@ export type SocialAgentIdentity = {
 
 export type SocialRegisterAgentInput = {
   principalId: PrincipalId;
-  profileUpsert: AgentRelayEntityUpsert;
+  profileUpsert: HostEntityUpsert;
   /** Human-facing handle; stored as `normalizeUsername()` from `@khoralabs/khora-contracts` (trim + lowercase) for stable URL paths. */
   username: string;
 };

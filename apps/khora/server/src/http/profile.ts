@@ -1,4 +1,4 @@
-import { AGENT_RELAY_AGGREGATE_DOMAIN, AGENT_RELAY_EVENT_KIND } from "@khoralabs/host-runtime";
+import { HOST_AGGREGATE_DOMAIN, HOST_EVENT_KIND } from "@khoralabs/host-runtime";
 import {
   mergeKhoraProfilePatch,
   normalizeUsername,
@@ -113,10 +113,10 @@ export async function handleProfilePatch(
       }
     }
     await ctx.host.notify({
-      kind: AGENT_RELAY_EVENT_KIND.PROFILE_UPDATED,
+      kind: HOST_EVENT_KIND.PROFILE_UPDATED,
       occurredAt: Date.now(),
       aggregate: {
-        domain: AGENT_RELAY_AGGREGATE_DOMAIN.profile,
+        domain: HOST_AGGREGATE_DOMAIN.profile,
         id: merged.id,
       },
       change: "updated",

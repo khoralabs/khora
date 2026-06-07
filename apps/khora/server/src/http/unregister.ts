@@ -34,7 +34,7 @@ export async function handleUnregister(req: Request, deps: HostRouteDeps): Promi
   const regDid = rateLimiters.registerDid(`did:${body.did}`);
   if (!regDid.ok) return rateLimitedResponse(regDid.retryAfterSec);
 
-  if (!ctx.host.persistenceClient.agentRegistrationExists(body.did)) {
+  if (!ctx.host.persistenceClient.registrationExists(body.did)) {
     return new Response(null, { status: 204 });
   }
 

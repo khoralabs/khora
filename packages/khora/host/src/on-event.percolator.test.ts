@@ -7,13 +7,16 @@ import {
 import type { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
 import {
-  AGENT_RELAY_EVENT_KIND,
-  type AgentRelayEventHandlerCtx,
-  type AgentRelayPersistence,
-  createAgentRelayPersistenceClient,
+  createHostPersistenceClient,
+  type HostPersistence,
+  type HostRuntimeEventHandlerCtx,
 } from "@khoralabs/host-runtime";
-import type { KhoraPost, KhoraProfile } from "@khoralabs/khora-contracts";
-import { authorSubscriptionSearch } from "@khoralabs/khora-contracts";
+import {
+  authorSubscriptionSearch,
+  KHORA_EVENT_KIND,
+  type KhoraPost,
+  type KhoraProfile,
+} from "@khoralabs/khora-contracts";
 import { createInMemoryPercolatorPersistence, createPercolator } from "@khoralabs/percolator";
 import type { SocialRelationshipPersistence } from "@khoralabs/relay-colonnade";
 import { RelayCatalogProjectionStore } from "@khoralabs/relay-colonnade";
@@ -52,7 +55,7 @@ function createRelayPersistence(profiles: Record<string, KhoraProfile>) {
     Object.entries(profiles).map(([principalId, profile]) => [profile.id, principalId]),
   );
 
-  const persistenceClient = createAgentRelayPersistenceClient({
+  const persistenceClient = createHostPersistenceClient({
     profiles: {
       upsert: (record) => {
         store.upsert({
@@ -80,8 +83,7 @@ function createRelayPersistence(profiles: Record<string, KhoraProfile>) {
       },
       deleteById: () => {},
     },
-    topics: { upsert: () => {}, getById: () => undefined, deleteById: () => {} },
-    agentRegistrations: {
+    registrations: {
       upsert: () => {},
       exists: () => true,
       profileIdForPrincipal: (principalId) => profiles[principalId]?.id,
@@ -89,7 +91,7 @@ function createRelayPersistence(profiles: Record<string, KhoraProfile>) {
     },
   });
 
-  const persistence = {} as unknown as AgentRelayPersistence;
+  const persistence = {} as unknown as HostPersistence;
 
   return { persistence, persistenceClient };
 }
@@ -196,9 +198,9 @@ describe("percolator inbox subscriptionMatches", () => {
       social: createSocialMock({}),
     });
 
-    const ctx = { persistence: relayPersistence, persistenceClient } as AgentRelayEventHandlerCtx;
+    const ctx = { persistence: relayPersistence, persistenceClient } as HostRuntimeEventHandlerCtx;
     await onEvent(ctx, {
-      kind: AGENT_RELAY_EVENT_KIND.POST_CREATED,
+      kind: KHORA_EVENT_KIND.POST_CREATED,
       payload: { post },
     } as never);
 
@@ -282,9 +284,9 @@ describe("percolator inbox subscriptionMatches", () => {
       social: createSocialMock({}),
     });
 
-    const ctx = { persistence: relayPersistence, persistenceClient } as AgentRelayEventHandlerCtx;
+    const ctx = { persistence: relayPersistence, persistenceClient } as HostRuntimeEventHandlerCtx;
     await onEvent(ctx, {
-      kind: AGENT_RELAY_EVENT_KIND.POST_CREATED,
+      kind: KHORA_EVENT_KIND.POST_CREATED,
       payload: { post },
     } as never);
 
@@ -359,9 +361,9 @@ describe("percolator inbox subscriptionMatches", () => {
       social: createSocialMock({}),
     });
 
-    const ctx = { persistence: relayPersistence, persistenceClient } as AgentRelayEventHandlerCtx;
+    const ctx = { persistence: relayPersistence, persistenceClient } as HostRuntimeEventHandlerCtx;
     await onEvent(ctx, {
-      kind: AGENT_RELAY_EVENT_KIND.POST_CREATED,
+      kind: KHORA_EVENT_KIND.POST_CREATED,
       payload: { post },
     } as never);
 
@@ -439,9 +441,9 @@ describe("percolator inbox subscriptionMatches", () => {
       social: createSocialMock({}),
     });
 
-    const ctx = { persistence: relayPersistence, persistenceClient } as AgentRelayEventHandlerCtx;
+    const ctx = { persistence: relayPersistence, persistenceClient } as HostRuntimeEventHandlerCtx;
     await onEvent(ctx, {
-      kind: AGENT_RELAY_EVENT_KIND.POST_CREATED,
+      kind: KHORA_EVENT_KIND.POST_CREATED,
       payload: { post },
     } as never);
 
@@ -534,9 +536,9 @@ describe("percolator inbox subscriptionMatches", () => {
       }),
     });
 
-    const ctx = { persistence: relayPersistence, persistenceClient } as AgentRelayEventHandlerCtx;
+    const ctx = { persistence: relayPersistence, persistenceClient } as HostRuntimeEventHandlerCtx;
     await onEvent(ctx, {
-      kind: AGENT_RELAY_EVENT_KIND.POST_CREATED,
+      kind: KHORA_EVENT_KIND.POST_CREATED,
       payload: { post },
     } as never);
 
@@ -599,9 +601,9 @@ describe("percolator inbox subscriptionMatches", () => {
       percolator,
     });
 
-    const ctx = { persistence: relayPersistence, persistenceClient } as AgentRelayEventHandlerCtx;
+    const ctx = { persistence: relayPersistence, persistenceClient } as HostRuntimeEventHandlerCtx;
     await onEvent(ctx, {
-      kind: AGENT_RELAY_EVENT_KIND.POST_CREATED,
+      kind: KHORA_EVENT_KIND.POST_CREATED,
       payload: { post },
     } as never);
 

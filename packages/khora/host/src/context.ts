@@ -1,8 +1,8 @@
 import type { OutboxPayloadCodec } from "@khoralabs/colonnade-crypto";
 import type { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
-import type { AgentRelay } from "@khoralabs/host-runtime";
+import type { HostRuntime } from "@khoralabs/host-runtime";
 import type { KhoraDidAuth } from "@khoralabs/khora-auth";
-import type { KhoraPost, KhoraProfile } from "@khoralabs/khora-contracts";
+import type { KhoraHostAppEvent, KhoraProfile } from "@khoralabs/khora-contracts";
 import type { KhoraInvitesRepo } from "@khoralabs/khora-invites";
 import type { KhoraRoomLifecycleHostEvent } from "@khoralabs/khora-transport";
 import type { FrameRelayHubPort, FrameRelayStoreStrategy } from "@khoralabs/obp-frame-relay";
@@ -26,7 +26,7 @@ export type { KhoraHostCatalogApi } from "./catalog-facade";
 export type { KhoraMemoriesHost } from "./memories/bootstrap";
 
 export type KhoraHostContext = {
-  host: AgentRelay<KhoraProfile, KhoraPost, unknown, never>;
+  host: HostRuntime<KhoraProfile, KhoraHostAppEvent>;
   auth: KhoraDidAuth;
   tenantKey: string;
   roomHub: FrameRelayHubPort;

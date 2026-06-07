@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { AgentRelayPersistence } from "@khoralabs/host-runtime";
+import type { HostPersistence } from "@khoralabs/host-runtime";
 import { normalizeUsername } from "@khoralabs/khora-contracts";
 import {
   RELAY_NAMESPACE_PRINCIPAL_TO_USERNAME,
@@ -39,7 +39,7 @@ export type KhoraHostCatalogApi = {
 };
 
 export function createKhoraCatalogApi(deps: {
-  persistence: AgentRelayPersistence;
+  persistence: HostPersistence;
   projectionStore: RelayCatalogProjectionStore;
   catalogDb: Database;
   tenantKey: string;

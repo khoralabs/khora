@@ -1,5 +1,4 @@
 # @khoralabs/host-runtime
 
-Host relay runtime: fan-out inbox delivery, topic subscriptions, and principal registration / notification buffer. Transport-agnostic — persistence ports are app-defined.
+Principal host runtime: registration, profile lifecycle events, inbox fan-out, and persistence ports. Transport-agnostic — persistence adapters are app-defined.
 
-Ticket-gated OBP frame relay lives in `@khoralabs/obp-frame-relay`.

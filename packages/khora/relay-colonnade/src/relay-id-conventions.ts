@@ -10,7 +10,6 @@ export const RELAY_DEFAULT_TENANT_KEY = "relay";
 export const USERNAME_INDEX_TENANT_KEY = "relay:username-index-global";
 
 export const RELAY_NAMESPACE_ENTITY_PROFILE = "relay:entity:profile";
-export const RELAY_NAMESPACE_ENTITY_TOPIC = "relay:entity:topic";
 export const RELAY_NAMESPACE_REG_BY_PRINCIPAL = "relay:reg:by-principal";
 export const RELAY_NAMESPACE_REG_BY_PROFILE = "relay:reg:by-profile";
 /** @deprecated Legacy catalog subs projections; receive intent uses percolator standing queries. */
@@ -34,8 +33,6 @@ export const RELAY_TABLE_SOCIAL_PRINCIPAL_CHANNELS = "relay_social_principal_cha
 // TODO: Remove
 /** @deprecated use RELAY_NAMESPACE_* */
 export const RELAY_CATALOG_SOURCE_PROFILE = RELAY_NAMESPACE_ENTITY_PROFILE;
-/** @deprecated use RELAY_NAMESPACE_* */
-export const RELAY_CATALOG_SOURCE_TOPIC = RELAY_NAMESPACE_ENTITY_TOPIC;
 /** @deprecated use RELAY_NAMESPACE_* */
 export const RELAY_CATALOG_REG_BY_PRINCIPAL = RELAY_NAMESPACE_REG_BY_PRINCIPAL;
 /** @deprecated use RELAY_NAMESPACE_* */

@@ -10,7 +10,7 @@ POST/DELETE /v1/authors/.../subscribe
   → relay_subscription_edges (principal_id, subject)   [edge table, bypasses percolator]
 
 POST /v1/posts (kind: "post" | "status" | "subscription")
-  → AgentRelay.notify(POST_CREATED)
+  → HostRuntime.notify(POST_CREATED)
   → publishPost → subscriberPrincipalsForSubject (topic/author/author_topic edge lookup)
   → Colonnade inbox pointer staging
 ```

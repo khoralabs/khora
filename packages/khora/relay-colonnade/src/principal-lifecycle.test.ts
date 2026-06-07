@@ -9,7 +9,7 @@ import {
   TestKeyProvider,
 } from "@khoralabs/colonnade-crypto";
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
-import type { AgentRelayPersistence } from "@khoralabs/host-runtime";
+import type { HostPersistence } from "@khoralabs/host-runtime";
 import { InMemoryFrameRelayStoreStrategy } from "@khoralabs/obp-frame-relay";
 import { createRelayColonnadeSocial } from "./create-relay-colonnade-social";
 import { createRelayPrincipalLifecycle, type RelayPrincipalLifecycle } from "./principal-lifecycle";
@@ -22,7 +22,7 @@ import { registerAgentOnColonnadePersistence } from "./social-registration";
 
 function lifecycleWithMockPersistence(
   catalogDb: Database,
-  persistence: AgentRelayPersistence,
+  persistence: HostPersistence,
 ): RelayPrincipalLifecycle {
   const encryption = createTestEncryptionMaterial();
   return createRelayPrincipalLifecycle({
@@ -53,8 +53,8 @@ test("isPostPointerDeliverable false when teardown job active", () => {
   const db = new Database(":memory:");
   ensurePrincipalTeardownJobsSchema(db);
   const persistence = {
-    agentRegistrations: { exists: () => true },
-  } as unknown as AgentRelayPersistence;
+    registrations: { exists: () => true },
+  } as unknown as HostPersistence;
   insertPendingPrincipalTeardownJob(db, { did: "did:x", profileId: "p", nowMs: 1 });
   const lifecycle = lifecycleWithMockPersistence(db, persistence);
   expect(lifecycle.isPostPointerDeliverable("did:x")).toBe(false);
@@ -64,8 +64,8 @@ test("isPostPointerDeliverable true when registered and no job", () => {
   const db = new Database(":memory:");
   ensurePrincipalTeardownJobsSchema(db);
   const persistence = {
-    agentRegistrations: { exists: (id: string) => id === "did:x" },
-  } as unknown as AgentRelayPersistence;
+    registrations: { exists: (id: string) => id === "did:x" },
+  } as unknown as HostPersistence;
   const lifecycle = lifecycleWithMockPersistence(db, persistence);
   expect(lifecycle.isPostPointerDeliverable("did:x")).toBe(true);
 });
@@ -74,8 +74,8 @@ test("isPostPointerDeliverable false when authorPrincipalId missing", () => {
   const db = new Database(":memory:");
   ensurePrincipalTeardownJobsSchema(db);
   const persistence = {
-    agentRegistrations: { exists: () => true },
-  } as unknown as AgentRelayPersistence;
+    registrations: { exists: () => true },
+  } as unknown as HostPersistence;
   const lifecycle = lifecycleWithMockPersistence(db, persistence);
   expect(lifecycle.isPostPointerDeliverable(undefined)).toBe(false);
 });
@@ -135,9 +135,9 @@ test("enqueueTeardown clears registration and enqueues job; runNextTeardownJob f
     username: "author",
     profileUpsert: { id: "prof-a", bodyJson: "{}" },
   });
-  expect(persistence.agentRegistrations.exists("did:author")).toBe(true);
+  expect(persistence.registrations.exists("did:author")).toBe(true);
   expect(lifecycle.enqueueTeardown("did:author")).toBe(true);
-  expect(persistence.agentRegistrations.exists("did:author")).toBe(false);
+  expect(persistence.registrations.exists("did:author")).toBe(false);
   expect(principalHasActiveTeardownJob(catalogDb, "did:author")).toBe(true);
   expect(lifecycle.isPostPointerDeliverable("did:author")).toBe(false);
 

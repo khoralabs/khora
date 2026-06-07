@@ -16,7 +16,7 @@ export type RegistrationVerifyContext = {
 };
 
 /** Context for mutating HTTP routes carrying an authenticated principal claim. */
-export type AuthenticatedAgentVerifyContext = {
+export type AuthenticatedPrincipalVerifyContext = {
   method: string;
   path: string;
   headers: Headers;
@@ -34,11 +34,11 @@ export type InboxAccessVerifyContext = {
 };
 
 /**
- * Optional preflight: verify registration payloads and inbound agent routes before agent-relay proceeds.
+ * Optional preflight: verify registration payloads and inbound routes before host-runtime proceeds.
  * Omitted when the embedder trusts another layer or disables verification (e.g. tests).
  */
 export interface AuthPreflight {
   verifyRegistration(ctx: RegistrationVerifyContext): Promise<void>;
-  verifyAuthenticatedAgent(ctx: AuthenticatedAgentVerifyContext): Promise<void>;
+  verifyAuthenticatedPrincipal(ctx: AuthenticatedPrincipalVerifyContext): Promise<void>;
   verifyInboxAccess(ctx: InboxAccessVerifyContext): Promise<void>;
 }

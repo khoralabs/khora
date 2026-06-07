@@ -1,12 +1,12 @@
 import type { Database } from "bun:sqlite";
 import type {
-  AgentRelayEntityPersistence,
-  AgentRelayEntityRow,
-  AgentRelayEntityUpsert,
+  HostEntityPersistence,
+  HostEntityRow,
+  HostEntityUpsert,
 } from "@khoralabs/host-runtime";
 import type { RelayCatalogProjectionStore } from "./catalog-projection-store";
 
-export function parseEntityRow(projection: unknown, id: string): AgentRelayEntityRow | undefined {
+export function parseEntityRow(projection: unknown, id: string): HostEntityRow | undefined {
   if (projection === null || typeof projection !== "object" || Array.isArray(projection)) {
     return undefined;
   }
@@ -31,9 +31,9 @@ export function createCatalogEntityAdapter(
   db: Database,
   tenantKey: string,
   namespace: string,
-): AgentRelayEntityPersistence {
+): HostEntityPersistence {
   return {
-    upsert(record: AgentRelayEntityUpsert): void {
+    upsert(record: HostEntityUpsert): void {
       const projection = {
         id: record.id,
         memoryId: record.memoryId ?? null,
@@ -50,7 +50,7 @@ export function createCatalogEntityAdapter(
       })();
     },
 
-    getById(id: string): AgentRelayEntityRow | undefined {
+    getById(id: string): HostEntityRow | undefined {
       const { found, projection } = store.lookupProjection(tenantKey, namespace, id);
       if (!found) {
         return undefined;

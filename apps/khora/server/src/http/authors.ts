@@ -23,7 +23,7 @@ export async function handleListAuthorSubscriptions(
     .map((query) => ({ id: query.id, search: query.search }));
 
   const snap = listAuthorSubscriptionsSnapshot(queries, (profileId) =>
-    ctx.host.persistenceClient.principalForAgentProfileId(profileId),
+    ctx.host.persistenceClient.principalForProfileId(profileId),
   );
 
   return Response.json(snap);

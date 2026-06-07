@@ -57,7 +57,7 @@ SQLite handles and relay-colonnade stores are wired in the server bootstrap (`cr
 **File:** `packages/khora/host/src/context.ts`
 
 Key fields on `KhoraHostContext`:
-- `host` — `AgentRelay<KhoraProfile, KhoraPost, …>`
+- `host` — `HostRuntime<KhoraProfile, KhoraHostAppEvent>`
 - `auth` — `KhoraDidAuth`
 - `cluster` — `KhoraColonnadeCluster`
 - `publicationClient` — `ColonnadePublicationClient`
@@ -79,7 +79,7 @@ apps/khora/server/src/index.ts
   validateEnv()
   mkdir KHORA_DATA_DIR + catalog/frames/cells/memories paths
   bootstrapKhoraHost({ catalogPath, framesDbPath, cellsDir, cellPoolCount, useCellWorkers, tenantKey?, memories? })
-    createRelayColonnadeSocial()     → catalog + frames DBs, AgentRelayPersistence
+    createRelayColonnadeSocial()     → catalog + frames DBs, HostPersistence
     createSqliteColonnadeCluster()   → cell shards
     createColonnadePostResolver()    → PostResolver for memories + posts
     ColonnadePublicationClient
@@ -89,7 +89,7 @@ apps/khora/server/src/index.ts
     bootstrapKhoraMemories()        → if KHORA_MEMORIES enabled (default on)
     createKhoraHostHealthPort() / createKhoraAdminStatsPort()
     createKhoraCatalogApi()
-    createKhoraHost(deps)           → AgentRelay + teardown worker
+    createKhoraHost(deps)           → HostRuntime + teardown worker
   createConsoleAuthFromEnv()
   Bun.serve() + route() + inbox/room WS handlers
   optional: startStdioUnaryIngress(), startDuplexUnixIngress()
@@ -202,7 +202,7 @@ Host exports search helpers: `executeKhoraMemoriesSearch`, `khoraSearchRequestFr
 
 **Contracts:** `/Users/zach/Documents/dev/khora-labs/khora/packages/khora/contracts/src/khora-profile.ts`
 
-**Persistence client:** `/Users/zach/Documents/dev/khora-labs/khora/packages/agent/relay/src/persistence/client.ts` — `ctx.host.persistenceClient.getProfileById()`, `profileIdForPrincipal()`
+**Persistence client:** `packages/host-runtime/src/persistence/client.ts` — `ctx.host.persistenceClient.getProfileById()`, `profileIdForPrincipal()`
 
 ### Posts (Tier 2 outbox — not in catalog)
 
@@ -238,7 +238,7 @@ This follows Colonnade’s **`PostOperation`** orchestration.
 ```
 HTTP create post
   → assignPostAddress() + encodePostId()
-  → AgentRelay.notify(POST_CREATED)
+  → HostRuntime.notify(KHORA_EVENT_KIND.POST_CREATED)
   → publishPost() [on-event.ts]
       → compute fan_out_targets from subscriptions
       → publicationClient.postOperation({
@@ -397,5 +397,5 @@ Full detail with examples: [`.brain/technical/discovery.md`](../../../.brain/tec
 | `@khoralabs/khora-auth` | `packages/khora/auth/` | DID auth + nonce store |
 | `@khoralabs/khora-invites` | `packages/khora/invites/` | Invite tokens repo + env |
 | `@khoralabs/khora-contracts` | `packages/khora/contracts/` | Profile/post Zod schemas |
-| `@khoralabs/host-runtime` | `packages/agent/relay/` | `AgentRelay`, persistence client |
+| `@khoralabs/host-runtime` | `packages/host-runtime/` | `HostRuntime`, persistence client |
 | `@khoralabs/khora-transport` | `packages/khora/transport/` | Inbox WS, unary HTTP |

@@ -1,4 +1,4 @@
-export { deliverAgentNotification } from "./deliver-agent-notification";
+export { deliverNotification } from "./deliver-notification";
 export {
   inboxWebSocketFromDuplexUtf8,
   type RunInboxDuplexAttachmentResult,

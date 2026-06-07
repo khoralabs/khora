@@ -1,6 +1,6 @@
 # Colonnade — Storage Architecture
 
-Colonnade is a **storage-agnostic persistence architecture** (Smithy spec + TypeScript strategies) that splits discovery/indexing (catalog) from authoritative payload storage and delivery (cells). The Khora host uses it as the durable layer under `AgentRelay`.
+Colonnade is a **storage-agnostic persistence architecture** (Smithy spec + TypeScript strategies) that splits discovery/indexing (catalog) from authoritative payload storage and delivery (cells). The Khora host uses it as the durable layer under `HostRuntime`.
 
 ---
 
@@ -100,7 +100,6 @@ Tier 1 table: `relay_catalog_projections` — PK `(tenant_key, namespace, entry_
 | `namespace` | Typical `entry_key` | Projection gist |
 |-------------|---------------------|-----------------|
 | `relay:entity:profile` | profile id | `{ id, memoryId, bodyJson, updatedAtMs }` or `{ deleted: true }` |
-| `relay:entity:topic` | topic id | entity shape |
 | `relay:reg:by-principal` | DID | `{ profileId }` |
 | `relay:reg:by-profile` | profile id | `{ principalId }` |
 | `relay:social:relationship` | room id | social graph body |

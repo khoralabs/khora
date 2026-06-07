@@ -16,4 +16,4 @@ export type {
   KhoraInvitesRepo,
 } from "./ports";
 export { ensureKhoraInviteSchema, KHORA_INVITE_KIND, type KhoraInviteKind } from "./schema";
-export { createKhoraInvitesRepo, createKhoraInvitesSqliteRepo } from "./sqlite";
+export { createKhoraInvitesSqliteRepo } from "./sqlite";

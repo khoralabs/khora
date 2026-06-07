@@ -7,8 +7,8 @@ export function inboxWebSocketFromDuplexUtf8(duplex: DuplexByteStream): InboxWeb
   return {
     send(data: string): number {
       const u = enc.encode(data);
-      void duplex.write(u).catch((err) => {
-        console.error("[agent-relay] duplex inbox write failed", err);
+      void duplex.write(u).catch((err: unknown) => {
+        console.error("[host-runtime] duplex inbox write failed", err);
       });
       return u.byteLength;
     },

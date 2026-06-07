@@ -5,7 +5,7 @@ import {
   TEST_POST_AUTHOR_SIGNATURE,
 } from "@khoralabs/colonnade-crypto";
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
-import { createAgentRelayPersistenceClient } from "@khoralabs/host-runtime";
+import { createHostPersistenceClient } from "@khoralabs/host-runtime";
 import type { KhoraPost, KhoraProfile } from "@khoralabs/khora-contracts";
 import { ids, MemoriesClient } from "@khoralabs/memories-core";
 import {
@@ -48,7 +48,7 @@ function setup(profile: KhoraProfile, post: KhoraPost) {
     entry_key: profile.id,
     projection: { id: profile.id, memoryId: null, bodyJson: profileBody, updatedAtMs: Date.now() },
   });
-  const persistenceClient = createAgentRelayPersistenceClient({
+  const persistenceClient = createHostPersistenceClient({
     profiles: {
       upsert: (record) => {
         projectionStore.upsert({
@@ -80,8 +80,7 @@ function setup(profile: KhoraProfile, post: KhoraPost) {
       },
       deleteById: () => {},
     },
-    topics: { upsert: () => {}, getById: () => undefined, deleteById: () => {} },
-    agentRegistrations: {
+    registrations: {
       upsert: () => {},
       exists: () => true,
       profileIdForPrincipal: () => profile.id,

@@ -1,13 +1,13 @@
 import { Buffer } from "node:buffer";
-import type { AgentNotification } from "@khoralabs/host-runtime";
 import { type AgentSigner, signedInboxUrl } from "@khoralabs/khora-auth";
+import type { KhoraInboxNotification } from "@khoralabs/khora-contracts";
 import type { KhoraClientEvent } from "./client-events";
 import { type InboxNotificationRow, parseInboxWebSocketMessage } from "./inbox-ws";
 
 export type InboxWsHandlers = {
   onSnapshot?: (notifications: InboxNotificationRow[]) => void;
   onDrain?: (items: { entryKey: string; pointer: unknown; projection: unknown }[]) => void;
-  onNotification?: (msg: { id: number; notification: AgentNotification }) => void;
+  onNotification?: (msg: { id: number; notification: KhoraInboxNotification }) => void;
   onOpen?: () => void;
   onClose?: () => void;
   onError?: (err: unknown) => void;
@@ -91,7 +91,7 @@ function emitInboxNotification(
   emit: (event: KhoraClientEvent) => void,
   did: string,
   id: number,
-  notification: AgentNotification,
+  notification: KhoraInboxNotification,
 ): void {
   emit({ type: "inbox:notification", did, id, notification });
   switch (notification.kind) {

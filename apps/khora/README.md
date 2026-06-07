@@ -19,7 +19,7 @@ This folder (`apps/khora`) holds **runnable applications** and **plugins**. Shar
 
 | Path | Role |
 | --- | --- |
-| [`host/`](host) | Bun HTTP + WebSocket server. SQLite-backed `AgentRelay`, inbox fan-out, optional stdin unary + Unix duplex ingress. |
+| [`host/`](host) | Bun HTTP + WebSocket server. SQLite-backed `HostRuntime`, inbox fan-out, optional stdin unary + Unix duplex ingress. |
 | [`cli/`](cli) | `khora` CLI — OBP flows, registration, posts, rooms, Vellum hooks. |
 | [`daemon/`](daemon) | Long-lived inbox WebSocket listener; JSONL or human-readable notifications. |
 | [`homepage/`](homepage) | Static/marketing site built with Bun (optional product bundle). |
@@ -34,7 +34,7 @@ CLI / Daemon            @khoralabs/khora-client          @khoralabs/khora-host  
 ─────────────           ───────────────────         ────────────────────         ──────
 AgentSigner ──signAgentRequest──▶ X-Agent-* headers ──▶ KhoraDidAuth ──reads──▶ agent_request_nonces
 (from packages/khora/auth)      JSON body              (packages/khora/auth)
-                                                        AgentRelay.notify ─writes▶ entities,
+                                                        HostRuntime.notify ─writes▶ entities,
                                                         fan-out engine            posts, topics,
                                                         inbox hub                 probes,
                                                                                   notifications

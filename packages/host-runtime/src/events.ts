@@ -1,119 +1,72 @@
 import type { PrincipalId, PrincipalRegistrationRequest } from "./registration/types";
 
 /** Stable reference to the logical entity an event refers to. */
-export type AgentRelayAggregateRef = {
+export type HostAggregateRef = {
   domain: string;
   id: string;
 };
 
-export type AgentRelayChange = "created" | "updated" | "deleted";
+export type HostEventChange = "created" | "updated" | "deleted";
 
-export type AgentRelayEventSource = "swarm" | "app";
+export type HostEventSource = "host" | "app";
 
 /**
- * Standard envelope for swarm and app events so generic handlers can rely on
- * stable fields without per-entity relay methods.
+ * Standard envelope for host and app events so generic handlers can rely on
+ * stable fields without per-entity dispatch methods.
  */
-export type AgentRelayEventBase<TKind extends string = string, TPayload = unknown> = {
+export type HostEventBase<TKind extends string = string, TPayload = unknown> = {
   kind: TKind;
   occurredAt: number;
-  aggregate: AgentRelayAggregateRef;
-  change: AgentRelayChange;
-  source: AgentRelayEventSource;
+  aggregate: HostAggregateRef;
+  change: HostEventChange;
+  source: HostEventSource;
   payload: TPayload;
   correlationId?: string;
 };
 
-/** Constraint for {@link AgentRelay} `TAppEvent` generic. */
-export type AgentRelayAppEventConstraint = AgentRelayEventBase<string, unknown>;
+/** Constraint for {@link HostRuntime} `TAppEvent` generic. */
+export type HostAppEventConstraint = HostEventBase<string, unknown>;
 
-export const AGENT_RELAY_EVENT_KIND = {
-  REGISTRATION_PROFILE_BUILD: "swarm.registration.profile_build",
-  PROFILE_CREATED: "swarm.profile.created",
-  PROFILE_UPDATED: "swarm.profile.updated",
-  PROFILE_DELETED: "swarm.profile.deleted",
-  POST_CREATED: "swarm.post.created",
-  POST_UPDATED: "swarm.post.updated",
-  POST_DELETED: "swarm.post.deleted",
-  TOPIC_CREATED: "swarm.topic.created",
-  TOPIC_UPDATED: "swarm.topic.updated",
-  TOPIC_DELETED: "swarm.topic.deleted",
+export const HOST_EVENT_KIND = {
+  REGISTRATION_PROFILE_BUILD: "host.registration.profile_build",
+  PROFILE_CREATED: "host.profile.created",
+  PROFILE_UPDATED: "host.profile.updated",
+  PROFILE_DELETED: "host.profile.deleted",
 } as const;
 
-/** Emitted during {@link AgentRelay.registerPrincipal}; listener must call `fulfill` or `reject` exactly once. */
-export type AgentRelayRegistrationProfileBuildPayload<TProfile> = {
+/** Emitted during {@link HostRuntime.registerPrincipal}; listener must call `fulfill` or `reject` exactly once. */
+export type HostRegistrationProfileBuildPayload<TProfile> = {
   request: PrincipalRegistrationRequest;
   fulfill: (profile: TProfile) => void;
   reject: (reason: unknown) => void;
 };
 
-export type AgentRelayRegistrationProfileBuildEvent<TProfile> = AgentRelayEventBase<
-  typeof AGENT_RELAY_EVENT_KIND.REGISTRATION_PROFILE_BUILD,
-  AgentRelayRegistrationProfileBuildPayload<TProfile>
+export type HostRegistrationProfileBuildEvent<TProfile> = HostEventBase<
+  typeof HOST_EVENT_KIND.REGISTRATION_PROFILE_BUILD,
+  HostRegistrationProfileBuildPayload<TProfile>
 >;
 
-export type AgentRelayProfileCreatedEvent<TProfile> = AgentRelayEventBase<
-  typeof AGENT_RELAY_EVENT_KIND.PROFILE_CREATED,
+export type HostProfileCreatedEvent<TProfile> = HostEventBase<
+  typeof HOST_EVENT_KIND.PROFILE_CREATED,
   { profile: TProfile }
 >;
 
-export type AgentRelayProfileUpdatedEvent<TProfile> = AgentRelayEventBase<
-  typeof AGENT_RELAY_EVENT_KIND.PROFILE_UPDATED,
+export type HostProfileUpdatedEvent<TProfile> = HostEventBase<
+  typeof HOST_EVENT_KIND.PROFILE_UPDATED,
   { profile: TProfile; previous: TProfile }
 >;
 
-export type AgentRelayProfileDeletedEvent<TProfile> = AgentRelayEventBase<
-  typeof AGENT_RELAY_EVENT_KIND.PROFILE_DELETED,
+export type HostProfileDeletedEvent<TProfile> = HostEventBase<
+  typeof HOST_EVENT_KIND.PROFILE_DELETED,
   { profile: TProfile; principalId: PrincipalId }
 >;
 
-export type AgentRelayPostCreatedEvent<TPost> = AgentRelayEventBase<
-  typeof AGENT_RELAY_EVENT_KIND.POST_CREATED,
-  { post: TPost }
->;
+export type HostBuiltInEvent<TProfile = unknown> =
+  | HostRegistrationProfileBuildEvent<TProfile>
+  | HostProfileCreatedEvent<TProfile>
+  | HostProfileUpdatedEvent<TProfile>
+  | HostProfileDeletedEvent<TProfile>;
 
-export type AgentRelayPostUpdatedEvent<TPost> = AgentRelayEventBase<
-  typeof AGENT_RELAY_EVENT_KIND.POST_UPDATED,
-  { post: TPost; previous: TPost }
->;
-
-export type AgentRelayPostDeletedEvent<TPost> = AgentRelayEventBase<
-  typeof AGENT_RELAY_EVENT_KIND.POST_DELETED,
-  { post: TPost }
->;
-
-export type AgentRelayTopicCreatedEvent<TTopic> = AgentRelayEventBase<
-  typeof AGENT_RELAY_EVENT_KIND.TOPIC_CREATED,
-  { topic: TTopic }
->;
-
-export type AgentRelayTopicUpdatedEvent<TTopic> = AgentRelayEventBase<
-  typeof AGENT_RELAY_EVENT_KIND.TOPIC_UPDATED,
-  { topic: TTopic; previous: TTopic }
->;
-
-export type AgentRelayTopicDeletedEvent<TTopic> = AgentRelayEventBase<
-  typeof AGENT_RELAY_EVENT_KIND.TOPIC_DELETED,
-  { topic: TTopic }
->;
-
-export type AgentRelayBuiltInEvent<TProfile = unknown, TPost = unknown, TTopic = unknown> =
-  | AgentRelayRegistrationProfileBuildEvent<TProfile>
-  | AgentRelayProfileCreatedEvent<TProfile>
-  | AgentRelayProfileUpdatedEvent<TProfile>
-  | AgentRelayProfileDeletedEvent<TProfile>
-  | AgentRelayPostCreatedEvent<TPost>
-  | AgentRelayPostUpdatedEvent<TPost>
-  | AgentRelayPostDeletedEvent<TPost>
-  | AgentRelayTopicCreatedEvent<TTopic>
-  | AgentRelayTopicUpdatedEvent<TTopic>
-  | AgentRelayTopicDeletedEvent<TTopic>;
-
-export type AgentRelayEventUnion<
-  TProfile = unknown,
-  TPost = unknown,
-  TTopic = unknown,
-  TAppEvent extends AgentRelayAppEventConstraint = never,
-> =
-  | AgentRelayBuiltInEvent<TProfile, TPost, TTopic>
+export type HostEventUnion<TProfile = unknown, TAppEvent extends HostAppEventConstraint = never> =
+  | HostBuiltInEvent<TProfile>
   | ([TAppEvent] extends [never] ? never : TAppEvent);

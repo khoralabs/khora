@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import type { SqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
-import type { AgentRelayPersistence, PrincipalId } from "@khoralabs/host-runtime";
+import type { HostPersistence, PrincipalId } from "@khoralabs/host-runtime";
 import type { FrameRelayStoreStrategy } from "@khoralabs/obp-frame-relay";
 import type { RelayCatalogProjectionStore } from "./catalog-projection-store";
 import {
@@ -28,7 +28,7 @@ export type RelayPrincipalLifecycleDeps = {
   readonly frameRelayStore: FrameRelayStoreStrategy;
   readonly projectionStore: RelayCatalogProjectionStore;
   readonly principalChannelStore: RelaySocialPrincipalChannelStore;
-  readonly persistence: AgentRelayPersistence;
+  readonly persistence: HostPersistence;
   readonly tenantKey: string;
   readonly cluster: SqliteColonnadeCluster;
   readonly onPrincipalTeardown?: (principalId: PrincipalId) => void;
@@ -118,7 +118,7 @@ export function createRelayPrincipalLifecycle(
 ): RelayPrincipalLifecycle {
   return {
     enqueueTeardown(principalId: PrincipalId): boolean {
-      const profileId = deps.persistence.agentRegistrations.profileIdForPrincipal(principalId);
+      const profileId = deps.persistence.registrations.profileIdForPrincipal(principalId);
       if (profileId === undefined) {
         return false;
       }
@@ -145,7 +145,7 @@ export function createRelayPrincipalLifecycle(
       if (did === undefined || did.length === 0) {
         return false;
       }
-      if (!deps.persistence.agentRegistrations.exists(did)) {
+      if (!deps.persistence.registrations.exists(did)) {
         return false;
       }
       if (principalHasActiveTeardownJob(deps.catalogDb, did)) {
@@ -174,7 +174,7 @@ export function createRelayPrincipalLifecycle(
     },
 
     cascadeTeardownNow(principalId: PrincipalId): boolean {
-      const profileId = deps.persistence.agentRegistrations.profileIdForPrincipal(principalId);
+      const profileId = deps.persistence.registrations.profileIdForPrincipal(principalId);
       if (profileId === undefined) {
         return false;
       }

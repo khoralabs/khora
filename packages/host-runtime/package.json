@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "type": "module",
   "private": true,
+  "types": "./src/index.ts",
   "module": "src/index.ts",
   "exports": {
     ".": {
@@ -12,6 +13,7 @@
     }
   },
   "dependencies": {
+    "@khoralabs/duplex-byte-stream": "workspace:*",
     "@khoralabs/obp-v2-frames-impl": "workspace:*"
   },
   "peerDependencies": {

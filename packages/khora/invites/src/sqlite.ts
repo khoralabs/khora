@@ -200,6 +200,3 @@ export function createKhoraInvitesSqliteRepo(db: Database, pepper: string): Khor
     },
   };
 }
-
-/** @deprecated Use createKhoraInvitesSqliteRepo */
-export const createKhoraInvitesRepo = createKhoraInvitesSqliteRepo;

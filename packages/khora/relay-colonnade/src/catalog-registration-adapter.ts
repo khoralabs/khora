@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { AgentRelayRegistrations, PrincipalId } from "@khoralabs/host-runtime";
+import type { HostRegistrations, PrincipalId } from "@khoralabs/host-runtime";
 import type { RelayCatalogProjectionStore } from "./catalog-projection-store";
 import {
   RELAY_NAMESPACE_REG_BY_PRINCIPAL,
@@ -32,7 +32,7 @@ export function createCatalogRegistrationAdapter(
   store: RelayCatalogProjectionStore,
   db: Database,
   tenantKey: string,
-): AgentRelayRegistrations {
+): HostRegistrations {
   return {
     exists(principalId: PrincipalId): boolean {
       const { found, projection } = store.lookupProjection(

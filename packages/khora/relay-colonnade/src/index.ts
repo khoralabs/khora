@@ -1,4 +1,4 @@
-export type { AgentRelayPersistence } from "@khoralabs/host-runtime";
+export type { HostPersistence } from "@khoralabs/host-runtime";
 export {
   type AgentAccountStatus,
   type AgentAccountStatusPort,
@@ -25,7 +25,6 @@ export {
   createRelayColonnadePersistence,
   createRelayColonnadePersistenceFromDatabases,
   RELAY_CATALOG_SOURCE_PROFILE,
-  RELAY_CATALOG_SOURCE_TOPIC,
 } from "./relay-colonnade-persistence";
 export {
   RELAY_CATALOG_REG_BY_PRINCIPAL,
@@ -34,7 +33,6 @@ export {
   RELAY_CATALOG_SUBS_BY_SUBJECT,
   RELAY_DEFAULT_TENANT_KEY,
   RELAY_NAMESPACE_ENTITY_PROFILE,
-  RELAY_NAMESPACE_ENTITY_TOPIC,
   RELAY_NAMESPACE_HOST_SPEC,
   RELAY_NAMESPACE_PRINCIPAL_TO_USERNAME,
   RELAY_NAMESPACE_REG_BY_PRINCIPAL,

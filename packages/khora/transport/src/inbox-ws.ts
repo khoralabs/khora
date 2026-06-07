@@ -1,4 +1,4 @@
-import type { AgentNotification } from "@khoralabs/host-runtime";
+import type { KhoraInboxNotification } from "@khoralabs/khora-contracts";
 import z from "zod";
 
 const zInboxRow = z.object({
@@ -12,7 +12,7 @@ export type InboxNotificationRow = {
   id: number;
   createdAtMs: number;
   read: boolean;
-  notification: AgentNotification;
+  notification: KhoraInboxNotification;
 };
 
 const zSnapshot = z.object({
@@ -47,7 +47,7 @@ export type InboxWsSnapshotMessage = {
 export type InboxWsNotificationMessage = {
   type: "notification";
   id: number;
-  notification: AgentNotification;
+  notification: KhoraInboxNotification;
 };
 
 export type InboxWsDrainMessage = {
@@ -72,7 +72,7 @@ export function parseInboxWebSocketMessage(
       type: "snapshot",
       notifications: r.data.notifications.map((row) => ({
         ...row,
-        notification: row.notification as AgentNotification,
+        notification: row.notification as KhoraInboxNotification,
       })),
     };
   }
@@ -80,7 +80,7 @@ export function parseInboxWebSocketMessage(
     return {
       type: "notification",
       id: r.data.id,
-      notification: r.data.notification as AgentNotification,
+      notification: r.data.notification as KhoraInboxNotification,
     };
   }
   return { type: "drain", items: r.data.items };

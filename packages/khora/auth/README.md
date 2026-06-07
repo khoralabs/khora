@@ -6,7 +6,7 @@ The authentication layer for **khora** agents. Owns:
 - **Client signing** (`AgentSigner` interface + `signAgentRequest` / `signedInboxUrl` helpers).
 - **Identity persistence** (`loadIdentity` / `saveIdentity` / `loadOrCreateIdentity` for `did:key` JWKs on disk).
 - **Replay protection** (`NonceStore` port + a default SQLite implementation).
-- **Host-side facade** (`KhoraDidAuth` class) that wraps `AgentRelay`'s `AuthPreflight` interface so the host can verify any route in one call.
+- **Host-side facade** (`KhoraDidAuth` class) that wraps `HostRuntime`'s `AuthPreflight` interface so the host can verify any route in one call.
 
 Swapping the auth scheme is intended to be a one-file change: pass a different `AuthStrategy` to `KhoraDidAuth` and clients + host stay aligned.
 

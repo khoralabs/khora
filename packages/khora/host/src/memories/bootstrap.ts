@@ -1,4 +1,4 @@
-import type { AgentRelayPersistenceClient } from "@khoralabs/host-runtime";
+import type { HostPersistenceClient } from "@khoralabs/host-runtime";
 import { MemoriesClient } from "@khoralabs/memories-core";
 import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import type { MemoriesPersistence } from "@khoralabs/memories-core/persistence";
@@ -21,7 +21,7 @@ export type KhoraMemoriesHost = {
 export type BootstrapKhoraMemoriesOpts = {
   persistence: MemoriesPersistence;
   close: () => void;
-  persistenceClient: AgentRelayPersistenceClient;
+  persistenceClient: HostPersistenceClient;
   postResolver: PostResolver;
   embeddingModel?: EmbeddingModel;
   namespaceRoot?: string;

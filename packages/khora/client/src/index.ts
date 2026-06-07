@@ -1,11 +1,11 @@
 export type {
-  AgentNotification,
   PrincipalRegistrationRequest,
   PrincipalRegistrationResult,
 } from "@khoralabs/host-runtime";
 export type { AgentSigner } from "@khoralabs/khora-auth";
 export type {
   AgentStatusResponse,
+  KhoraInboxNotification,
   KhoraInviteListResponse,
   KhoraInvitePreviewResponse,
   KhoraPost,

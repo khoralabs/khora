@@ -49,7 +49,7 @@ function deps(overrides: {
       },
       host: {
         persistenceClient: {
-          agentRegistrationExists: () => overrides.alreadyRegistered ?? false,
+          registrationExists: () => overrides.alreadyRegistered ?? false,
         },
         registerPrincipal: async () => {
           throw new Error("should not register when at capacity");

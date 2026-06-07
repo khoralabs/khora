@@ -1,34 +1,28 @@
 import type { PrincipalId } from "../registration/types";
-import type { AgentRelayEntityRow, AgentRelayEntityUpsert, AgentRelayPersistence } from "./types";
+import type { HostEntityRow, HostEntityUpsert, HostPersistence } from "./types";
 
-/** Thin facade over {@link AgentRelayPersistence} entity slices (backend-agnostic). */
-export type AgentRelayPersistenceClient = {
-  readonly persistence: AgentRelayPersistence;
-  upsertProfile(record: AgentRelayEntityUpsert): void;
-  upsertTopic(record: AgentRelayEntityUpsert): void;
-  getProfileById(id: string): AgentRelayEntityRow | undefined;
-  getTopicById(id: string): AgentRelayEntityRow | undefined;
-  upsertAgentRegistration(principalId: PrincipalId, profileId: string): void;
-  agentRegistrationExists(principalId: PrincipalId): boolean;
+/** Thin facade over {@link HostPersistence} entity slices (backend-agnostic). */
+export type HostPersistenceClient = {
+  readonly persistence: HostPersistence;
+  upsertProfile(record: HostEntityUpsert): void;
+  getProfileById(id: string): HostEntityRow | undefined;
+  upsertRegistration(principalId: PrincipalId, profileId: string): void;
+  registrationExists(principalId: PrincipalId): boolean;
   profileIdForPrincipal(principalId: PrincipalId): string | undefined;
-  principalForAgentProfileId(profileId: string): PrincipalId | undefined;
+  principalForProfileId(profileId: string): PrincipalId | undefined;
 };
 
-export function createAgentRelayPersistenceClient(
-  persistence: AgentRelayPersistence,
-): AgentRelayPersistenceClient {
+export function createHostPersistenceClient(persistence: HostPersistence): HostPersistenceClient {
   return {
     persistence,
     upsertProfile: (record) => persistence.profiles.upsert(record),
-    upsertTopic: (record) => persistence.topics.upsert(record),
     getProfileById: (id) => persistence.profiles.getById(id),
-    getTopicById: (id) => persistence.topics.getById(id),
-    upsertAgentRegistration: (principalId, profileId) =>
-      persistence.agentRegistrations.upsert(principalId, profileId),
-    agentRegistrationExists: (principalId) => persistence.agentRegistrations.exists(principalId),
+    upsertRegistration: (principalId, profileId) =>
+      persistence.registrations.upsert(principalId, profileId),
+    registrationExists: (principalId) => persistence.registrations.exists(principalId),
     profileIdForPrincipal: (principalId) =>
-      persistence.agentRegistrations.profileIdForPrincipal(principalId),
-    principalForAgentProfileId: (profileId) =>
-      persistence.agentRegistrations.principalForProfileId(profileId),
+      persistence.registrations.profileIdForPrincipal(principalId),
+    principalForProfileId: (profileId) =>
+      persistence.registrations.principalForProfileId(profileId),
   };
 }

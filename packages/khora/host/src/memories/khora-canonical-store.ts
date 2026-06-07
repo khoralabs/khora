@@ -1,5 +1,5 @@
 import { OutboxGhostError } from "@khoralabs/colonnade-persistence";
-import type { AgentRelayPersistenceClient } from "@khoralabs/host-runtime";
+import type { HostPersistenceClient } from "@khoralabs/host-runtime";
 import {
   type KhoraPost,
   type KhoraProfile,
@@ -71,7 +71,7 @@ export class KhoraCanonicalStore implements Store {
 export function createKhoraCanonicalStore(deps: {
   persistence: MemoriesPersistence;
   postResolver: PostResolver;
-  persistenceClient: AgentRelayPersistenceClient;
+  persistenceClient: HostPersistenceClient;
 }): KhoraCanonicalStore {
   return new KhoraCanonicalStore({
     persistence: deps.persistence,

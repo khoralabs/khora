@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import type {
-  AuthenticatedAgentVerifyContext,
+  AuthenticatedPrincipalVerifyContext,
   AuthPreflight,
   InboxAccessVerifyContext,
   PrincipalRegistrationRequest,
@@ -55,7 +55,7 @@ export type CreateKhoraDidAuthOptions = Omit<KhoraDidAuthOptions, "nonceStore"> 
 
 /**
  * Lifecycle owner for Khora DID authentication. Construct one per host process, hand
- * {@link KhoraDidAuth.preflight} to `AgentRelay`, and use `requireAuthenticatedRequest` /
+ * {@link KhoraDidAuth.preflight} to `HostRuntime`, and use `requireAuthenticatedRequest` /
  * `requireInboxAccess` / `verifyRegistration` to guard HTTP routes.
  *
  * Swapping the auth scheme = passing a different {@link AuthStrategy}; route code is unaffected.
@@ -77,7 +77,7 @@ export class KhoraDidAuth {
     this.sweepIntervalMs = opts.sweepIntervalMs ?? DEFAULT_SWEEP_INTERVAL_MS;
     this.preflight = {
       verifyRegistration: (ctx) => this.verifyRegistrationContext(ctx),
-      verifyAuthenticatedAgent: (ctx) => this.verifyAuthenticatedContext(ctx),
+      verifyAuthenticatedPrincipal: (ctx) => this.verifyAuthenticatedContext(ctx),
       verifyInboxAccess: (ctx) => this.verifyInboxContext(ctx),
     };
   }
@@ -136,7 +136,7 @@ export class KhoraDidAuth {
   /**
    * Registration-time verification: the signed body DID must match the claimed registration DID,
    * and the signature must verify over the raw POST body bytes. Designed to be called once before
-   * `AgentRelay.registerPrincipal` (which calls the same preflight internally via the registration
+   * `HostRuntime.registerPrincipal` (which calls the same preflight internally via the registration
    * context — see {@link KhoraDidAuth.preflight}).
    */
   async verifyRegistration(
@@ -199,7 +199,9 @@ export class KhoraDidAuth {
     });
   }
 
-  private async verifyAuthenticatedContext(ctx: AuthenticatedAgentVerifyContext): Promise<void> {
+  private async verifyAuthenticatedContext(
+    ctx: AuthenticatedPrincipalVerifyContext,
+  ): Promise<void> {
     const envelope = parseAgentRequestEnvelopeFromHeaders(ctx.headers);
     await this.verifyEnvelope({
       envelope,

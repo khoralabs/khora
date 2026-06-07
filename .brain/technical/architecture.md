@@ -46,7 +46,7 @@ Khora Server (Bun.serve)
   │
   ├── KhoraDidAuth.verify()       → checks nonce store, verifies Ed25519 sig
   │
-  ├── AgentRelay.notify()         → routes to relay handler
+  ├── HostRuntime.notify()         → routes to relay handler
   │
   ├── on-event.ts                 → fan-out orchestration
   │   ├── publishPost()           → write author cell outbox (AES-GCM encrypted)

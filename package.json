@@ -36,7 +36,6 @@
     "apps/vellum/*",
     "packages/*",
     "packages/libs/*",
-    "packages/agent/*",
     "packages/memories/packages/*",
     "packages/memories/packages/persistence/*",
     "packages/memories/packages/agents/*",

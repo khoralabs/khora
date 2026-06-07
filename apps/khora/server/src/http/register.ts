@@ -44,7 +44,7 @@ export async function handleRegister(req: Request, deps: HostRouteDeps): Promise
       return jsonError("Host at population capacity", 503);
     }
   }
-  if (ctx.host.persistenceClient.agentRegistrationExists(body.did)) {
+  if (ctx.host.persistenceClient.registrationExists(body.did)) {
     return jsonError("Already registered", 409);
   }
   const accountStatus = ctx.agentAccountStatus.getStatus(body.did);
@@ -84,7 +84,7 @@ export async function handleRegister(req: Request, deps: HostRouteDeps): Promise
       bodyText,
       client: { ip, userAgent: ua },
     });
-    ctx.host.persistenceClient.upsertAgentRegistration(result.principalId, result.profileId);
+    ctx.host.persistenceClient.upsertRegistration(result.principalId, result.profileId);
     let inviteTokens: string[] | undefined;
     if (consumedInvitePlain !== undefined && ctx.invitesRepo !== undefined) {
       inviteTokens = ctx.invitesRepo.mintStandardInviteTokens(

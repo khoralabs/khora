@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { AgentRelayPersistence } from "@khoralabs/host-runtime";
+import type { HostPersistence } from "@khoralabs/host-runtime";
 import { normalizeUsername } from "@khoralabs/khora-contracts";
 import type { RelayCatalogProjectionStore } from "./catalog-projection-store";
 import {
@@ -20,7 +20,7 @@ export {
  * Usernames are **globally** unique in the catalog (not scoped to the relay tenant on `persistence`).
  */
 export function registerAgentOnColonnadePersistence(
-  persistence: AgentRelayPersistence,
+  persistence: HostPersistence,
   catalogDb: Database,
   store: RelayCatalogProjectionStore,
   input: SocialRegisterAgentInput,
@@ -30,7 +30,7 @@ export function registerAgentOnColonnadePersistence(
 
   catalogDb.transaction(() => {
     persistence.profiles.upsert(input.profileUpsert);
-    persistence.agentRegistrations.upsert(input.principalId, profileId);
+    persistence.registrations.upsert(input.principalId, profileId);
 
     const usernameHit = store.lookupProjection(
       USERNAME_INDEX_TENANT_KEY,
