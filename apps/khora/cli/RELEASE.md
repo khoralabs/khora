@@ -2,6 +2,15 @@
 
 GitHub Actions: [`.github/workflows/release-khora-cli.yml`](../../../.github/workflows/release-khora-cli.yml) (manual `workflow_dispatch`).
 
+Workflow inputs:
+
+| Input | Purpose |
+| --- | --- |
+| `version` | Semver to publish |
+| `tag` | npm dist-tag (`latest` or `next`) |
+| `registry_url` | Registry URL baked into compiled CLI default and staged `base.config.json` (default `https://r.khoralabs.com`) |
+| `dry_run` | npm publish dry-run only; skip GitHub release / Homebrew bump |
+
 ## Packages published (8)
 
 | Package | Role |

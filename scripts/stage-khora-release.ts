@@ -163,12 +163,36 @@ export type StageOptions = {
   workspaceRoot: string;
   releaseDir: string;
   version: string;
+  /** Registry URL written into staged base.config.json (defaults to repo template). */
+  registryUrl?: string;
   /**
    * When false, the staging script does not attempt to copy cross-compiled
    * binaries (used by unit tests that don't run `bun build --compile`).
    */
   copyBinaries?: boolean;
 };
+
+export function normalizeRegistryUrl(value: string): string {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) throw new Error("registry URL must not be empty");
+  let url: URL;
+  try {
+    url = new URL(trimmed);
+  } catch {
+    throw new Error(`invalid registry URL: ${value}`);
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    throw new Error(`registry URL must be http(s): ${value}`);
+  }
+  return trimmed.replace(/\/$/, "");
+}
+
+export function withRegistryUrl(
+  baseConfig: Record<string, unknown>,
+  registryUrl: string,
+): Record<string, unknown> {
+  return { ...baseConfig, registryUrl: normalizeRegistryUrl(registryUrl) };
+}
 
 export type StageResult = {
   releaseDir: string;
@@ -229,7 +253,16 @@ export async function stageKhoraRelease(opts: StageOptions): Promise<StageResult
   // canonical configs
   const configsSrc = path.join(workspaceRoot, "apps/khora/cli/assets/configs");
   for (const name of ["base.config.json", "cli.config.json", "daemon.config.json"]) {
-    await Bun.write(path.join(cliMetaDir, "configs", name), Bun.file(path.join(configsSrc, name)));
+    const srcPath = path.join(configsSrc, name);
+    if (name === "base.config.json" && opts.registryUrl !== undefined) {
+      const baseConfig = JSON.parse(await Bun.file(srcPath).text()) as Record<string, unknown>;
+      await writeJson(
+        path.join(cliMetaDir, "configs", name),
+        withRegistryUrl(baseConfig, opts.registryUrl),
+      );
+    } else {
+      await Bun.write(path.join(cliMetaDir, "configs", name), Bun.file(srcPath));
+    }
   }
 
   // json schema (built via build:schema upstream)
@@ -252,13 +285,25 @@ export async function stageKhoraRelease(opts: StageOptions): Promise<StageResult
 if (import.meta.main) {
   const version = process.argv[2];
   if (!version || !/^\d+\.\d+\.\d+(?:-[\w.-]+)?$/.test(version)) {
-    console.error("usage: stage-khora-release.ts <semver>");
+    console.error("usage: stage-khora-release.ts <semver> [--registry-url=<url>]");
     process.exit(1);
+  }
+  let registryUrl: string | undefined;
+  for (const arg of process.argv.slice(3)) {
+    if (arg.startsWith("--registry-url=")) {
+      registryUrl = normalizeRegistryUrl(arg.slice("--registry-url=".length));
+    }
+  }
+  if (registryUrl === undefined && process.env.KHORA_RELEASE_REGISTRY_URL?.trim()) {
+    registryUrl = normalizeRegistryUrl(process.env.KHORA_RELEASE_REGISTRY_URL);
   }
   const workspaceRoot = path.resolve(import.meta.dir, "..");
   const releaseDir = path.join(workspaceRoot, "apps/khora/release");
-  const result = await stageKhoraRelease({ workspaceRoot, releaseDir, version });
+  const result = await stageKhoraRelease({ workspaceRoot, releaseDir, version, registryUrl });
   console.log(
     `staged ${result.packages.length} khora release packages under ${path.relative(process.cwd(), result.releaseDir)}`,
   );
+  if (registryUrl !== undefined) {
+    console.log(`registry URL: ${registryUrl}`);
+  }
 }

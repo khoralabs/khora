@@ -23,9 +23,15 @@ const OUT_FILE = path.join(OUT_DIR, "khora");
 if (existsSync(OUT_DIR)) rmSync(OUT_DIR, { recursive: true, force: true });
 mkdirSync(OUT_DIR, { recursive: true });
 
-const result = await Bun.$`bun build --compile --target=${target} --outfile=${OUT_FILE} ${ENTRY}`
-  .nothrow()
-  .quiet();
+const registryUrl = (
+  process.env.KHORA_RELEASE_REGISTRY_URL?.trim() || "https://r.khoralabs.com"
+).replace(/\/$/, "");
+const defineFlag = `--define=import.meta.env.KHORA_DEFAULT_REGISTRY_URL=${JSON.stringify(registryUrl)}`;
+
+const result =
+  await Bun.$`bun build --compile --target=${target} --outfile=${OUT_FILE} ${defineFlag} ${ENTRY}`
+    .nothrow()
+    .quiet();
 
 if (result.exitCode !== 0) {
   process.stderr.write(result.stderr);

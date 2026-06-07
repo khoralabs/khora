@@ -1,5 +1,6 @@
 {
   "$schema": "./khora-config.schema.json",
   "baseUrl": "http://127.0.0.1:8787",
+  "registryUrl": "https://r.khoralabs.com",
   "agentKeyPath": "~/.khora/identity.json"
 }

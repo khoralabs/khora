@@ -115,7 +115,9 @@ export const zKhoraAppConfigBase = z
       .string()
       .url({ message: "registryUrl must be a valid URL" })
       .optional()
-      .describe("Khora registry URL for khora link. Default: http://localhost:4000"),
+      .describe(
+        "Khora registry URL for host catalog and khora link. Default: https://r.khoralabs.com",
+      ),
     currentHost: z.string().optional().describe("Selected Khora host slug (khora host use)."),
     hosts: z
       .record(

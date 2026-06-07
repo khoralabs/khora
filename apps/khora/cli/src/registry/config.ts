@@ -5,8 +5,7 @@ import type { FlagMap } from "@khoralabs/cli-kit";
 import { strFlag } from "@khoralabs/cli-kit";
 
 import { khoraCliResolvedConfig } from "../khora-app-config";
-
-const DEFAULT_REGISTRY_URL = "http://localhost:4000";
+import { defaultRegistryUrl } from "./default-registry-url";
 
 export function cliRegistryUrl(flags: FlagMap): string {
   const cfg = khoraCliResolvedConfig(flags);
@@ -14,7 +13,7 @@ export function cliRegistryUrl(flags: FlagMap): string {
     strFlag(flags, "registry-url") ??
     strFlag(flags, "registryUrl") ??
     cfg.registryUrl ??
-    DEFAULT_REGISTRY_URL
+    defaultRegistryUrl()
   ).replace(/\/$/, "");
 }
 

@@ -6,9 +6,11 @@ import {
   cliLauncherSource,
   cliMetaPkgJson,
   daemonLauncherSource,
+  normalizeRegistryUrl,
   platformPkgJson,
   SUPPORTED_TARGETS,
   stageKhoraRelease,
+  withRegistryUrl,
 } from "./stage-khora-release";
 
 describe("launcher sources", () => {
@@ -56,6 +58,21 @@ describe("package.json factories", () => {
   });
 });
 
+describe("registry URL staging", () => {
+  test("normalizeRegistryUrl strips trailing slash", () => {
+    expect(normalizeRegistryUrl("https://r.khoralabs.com/")).toBe("https://r.khoralabs.com");
+  });
+
+  test("withRegistryUrl overrides base config", () => {
+    expect(
+      withRegistryUrl({ baseUrl: "http://127.0.0.1:8787" }, "https://registry.example.com/"),
+    ).toEqual({
+      baseUrl: "http://127.0.0.1:8787",
+      registryUrl: "https://registry.example.com",
+    });
+  });
+});
+
 describe("stageKhoraRelease", () => {
   let workspace: string;
   let releaseDir: string;
@@ -92,5 +109,23 @@ describe("stageKhoraRelease", () => {
     });
     expect(result.packages.length).toBe(8);
     expect(existsSync(path.join(releaseDir, "daemon", "bin", "khora-daemon.cjs"))).toBe(true);
+  });
+
+  test("writes registryUrl into staged base.config.json", async () => {
+    writeFileSync(
+      path.join(workspace, "apps/khora/cli/assets/configs/base.config.json"),
+      JSON.stringify({ baseUrl: "http://127.0.0.1:8787" }),
+    );
+    await stageKhoraRelease({
+      workspaceRoot: workspace,
+      releaseDir,
+      version: "9.9.9",
+      registryUrl: "https://registry.example.com/",
+      copyBinaries: false,
+    });
+    const staged = JSON.parse(
+      await Bun.file(path.join(releaseDir, "cli/configs/base.config.json")).text(),
+    ) as { registryUrl?: string };
+    expect(staged.registryUrl).toBe("https://registry.example.com");
   });
 });

@@ -20,6 +20,11 @@ on:
         required: false
         type: boolean
         default: false
+      registry_url:
+        description: "Registry URL baked into CLI default and packaged configs"
+        required: true
+        type: string
+        default: https://r.khoralabs.com
 
 permissions:
   contents: write
@@ -31,6 +36,7 @@ jobs:
       VERSION: ${{ inputs.version }}
       NPM_TAG: ${{ inputs.tag }}
       DRY_RUN: ${{ inputs.dry_run }}
+      KHORA_RELEASE_REGISTRY_URL: ${{ inputs.registry_url }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -69,7 +75,7 @@ jobs:
         run: bun run scripts/verify-khora-release-binaries.ts
 
       - name: stage release packages
-        run: bun run scripts/stage-khora-release.ts "$VERSION"
+        run: bun run scripts/stage-khora-release.ts "$VERSION" --registry-url="$KHORA_RELEASE_REGISTRY_URL"
 
       - name: package release tarballs
         run: bun run scripts/package-khora-release-tarballs.ts "$VERSION"

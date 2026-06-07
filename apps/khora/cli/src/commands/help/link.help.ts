@@ -7,5 +7,5 @@ export const linkHelp: CommandHelp = {
 # opens registry /cli/link for email OTP, then associates identity with your account.`,
   args: `khora link [--host=<slug>] [--no-open] [--json]
 khora link status | link unlink [--host=<slug>] [--json]
-# Requires khora host use <slug> (or --host). KHORA_REGISTRY_URL defaults to http://localhost:4000.`,
+# Requires khora host use <slug> (or --host). KHORA_REGISTRY_URL defaults to https://r.khoralabs.com.`,
 };
