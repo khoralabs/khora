@@ -62,3 +62,18 @@ bun run scripts/stage-khora-release.ts 0.0.1-canary
 ```
 
 Output: `apps/khora/release/`.
+
+## Dist-tags and version alignment
+
+| Tag | Audience | When to use |
+| --- | --- | --- |
+| `next` | Maintainers / early adopters | Test a release before wide rollout |
+| `latest` | Everyone | Promote a tested build for default installs |
+
+All **8** packages must publish under the **same semver** on every release. The meta package (`@khoralabs/khora-cli`) pins `optionalDependencies` to that exact version. Publishing platform packages under newer versions while `latest` still points at an old meta release leaves default installs broken.
+
+**Workflow:** publish to `next` → verify (`khora help`, smoke tests) → publish the **same version** to `latest` (or run one release with tag `latest` once you are confident). Do not iterate platform-only publishes on `next` without also updating the meta package and eventually moving `latest`.
+
+When publishing with the `latest` tag, CI runs `npm dist-tag add <pkg>@<version> latest` on every package after publish.
+
+Before publish, CI smoke-tests each compiled binary (`scripts/verify-khora-release-binaries.ts`) so startup crashes (e.g. eager native-binding loads) fail the release.

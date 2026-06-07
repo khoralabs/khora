@@ -64,6 +64,9 @@ jobs:
             echo "::endgroup::"
           done
 
+      - name: smoke-test compiled binaries
+        run: bun run scripts/verify-khora-release-binaries.ts
+
       - name: stage release packages
         run: bun run scripts/stage-khora-release.ts "$VERSION"
 
@@ -114,6 +117,22 @@ jobs:
           else
             npm publish --access public --tag "$NPM_TAG"
           fi
+
+      - name: align latest dist-tag on all packages
+        if: ${{ inputs.dry_run == false && inputs.tag == 'latest' }}
+        run: |
+          set -euo pipefail
+          for pkg in \
+            @khoralabs/khora-cli-darwin-arm64 \
+            @khoralabs/khora-cli-linux-x64 \
+            @khoralabs/khora-cli-linux-arm64 \
+            @khoralabs/khora-daemon-darwin-arm64 \
+            @khoralabs/khora-daemon-linux-x64 \
+            @khoralabs/khora-daemon-linux-arm64 \
+            @khoralabs/khora-daemon \
+            @khoralabs/khora-cli; do
+            npm dist-tag add "${pkg}@${VERSION}" latest
+          done
 
       - name: tag and push
         if: ${{ inputs.dry_run == false }}
