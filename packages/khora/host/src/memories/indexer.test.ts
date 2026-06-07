@@ -84,7 +84,6 @@ function createTestRelayPersistence(profile: KhoraProfile) {
       profileIdForPrincipal: () => profile.id,
       principalForProfileId: () => "did:test:author",
     },
-    frameChannelHubPersistence: {} as never,
   });
 }
 

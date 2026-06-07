@@ -1,10 +1,10 @@
 import {
   AgentRelay,
   createAgentRelayPersistenceClient,
-  createFrameChannelHub,
   createInboxWsHub,
 } from "@khoralabs/agent-relay";
 import type { KhoraPost, KhoraProfile } from "@khoralabs/khora-contracts";
+import { createFrameRelayHub } from "@khoralabs/obp-frame-relay";
 import { startPrincipalTeardownWorker } from "@khoralabs/relay-colonnade";
 import type { KhoraHostContext } from "./context";
 import type { KhoraHostDeps } from "./khora-host-deps";
@@ -15,14 +15,11 @@ export type { KhoraHostDeps } from "./khora-host-deps";
 export function createKhoraHost(deps: KhoraHostDeps): KhoraHostContext {
   const _persistenceClient = createAgentRelayPersistenceClient(deps.persistence);
   const inboxHub = createInboxWsHub();
-  const roomHub = createFrameChannelHub({
-    hubPersistence: deps.persistence.frameChannelHubPersistence,
-  });
+  const roomHub = createFrameRelayHub({ store: deps.frameRelayStore });
   const host = new AgentRelay<KhoraProfile, KhoraPost, unknown, never>({
     persistence: deps.persistence,
     authPreflight: deps.auth.preflight,
     inboxHub,
-    frameChannelHub: roomHub,
     onEvent: createKhoraRelayOnEvent({
       catalog: deps.catalog,
       tenantKey: deps.tenantKey,
@@ -42,6 +39,7 @@ export function createKhoraHost(deps: KhoraHostDeps): KhoraHostContext {
     auth: deps.auth,
     tenantKey: deps.tenantKey,
     roomHub,
+    frameRelayStore: deps.frameRelayStore,
     social: deps.social,
     invitesRepo: deps.invitesRepo,
     cluster: deps.cluster,

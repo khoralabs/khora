@@ -29,8 +29,8 @@ test("mintRoomChannelTicketAndSync twice preserves room_frames and verifies new 
   });
   const roomId = crypto.randomUUID();
   await ctx.roomHub.createChannel(roomId);
-  const hubPersistence = ctx.host.persistenceClient.persistence.frameChannelHubPersistence;
-  hubPersistence.enqueueFrame(roomId, new Uint8Array([9, 8, 7]));
+  const hubStore = ctx.frameRelayStore;
+  hubStore.enqueueRelayedFrame(roomId, new Uint8Array([9, 8, 7]));
 
   const db = new Database(framesPath);
   const frameCount = () =>

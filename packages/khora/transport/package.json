@@ -18,6 +18,7 @@
   "dependencies": {
     "@khoralabs/agent-io": "workspace:*",
     "@khoralabs/agent-relay": "workspace:*",
+    "@khoralabs/obp-frame-relay": "workspace:*",
     "@khoralabs/khora-auth": "workspace:*",
     "@khoralabs/khora-contracts": "workspace:*",
     "zod": "^4"

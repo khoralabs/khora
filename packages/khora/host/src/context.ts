@@ -1,10 +1,11 @@
-import type { AgentRelay, FrameChannelHubPort } from "@khoralabs/agent-relay";
+import type { AgentRelay } from "@khoralabs/agent-relay";
 import type { OutboxPayloadCodec } from "@khoralabs/colonnade-crypto";
 import type { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
 import type { KhoraDidAuth } from "@khoralabs/khora-auth";
 import type { KhoraPost, KhoraProfile } from "@khoralabs/khora-contracts";
 import type { KhoraInvitesRepo } from "@khoralabs/khora-invites";
 import type { KhoraRoomLifecycleHostEvent } from "@khoralabs/khora-transport";
+import type { FrameRelayHubPort, FrameRelayStoreStrategy } from "@khoralabs/obp-frame-relay";
 import type {
   AgentAccountStatusPort,
   PrincipalTeardownWorkerHandle,
@@ -28,7 +29,8 @@ export type KhoraHostContext = {
   host: AgentRelay<KhoraProfile, KhoraPost, unknown, never>;
   auth: KhoraDidAuth;
   tenantKey: string;
-  roomHub: FrameChannelHubPort;
+  roomHub: FrameRelayHubPort;
+  frameRelayStore: FrameRelayStoreStrategy;
   cluster: KhoraColonnadeCluster;
   publicationClient: ColonnadePublicationClient;
   cellPoolCount: number;

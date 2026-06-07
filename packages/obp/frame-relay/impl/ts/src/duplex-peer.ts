@@ -1,20 +1,20 @@
 import type { DuplexByteStream } from "@khoralabs/duplex-byte-stream";
-import type { FrameChannelHubPort, FrameChannelPeer } from "./port";
+import type { FrameRelayHubPort, FrameRelayPeer } from "./hub-port";
 
-export type AttachDuplexFrameChannelPeerResult = {
-  peer: FrameChannelPeer;
+export type AttachDuplexFrameRelayPeerResult = {
+  peer: FrameRelayPeer;
   dispose(): Promise<void>;
 };
 
 /**
- * Attach a {@link DuplexByteStream} as a {@link FrameChannelPeer} on `channelId` (same semantics as WebSocket handlers).
+ * Attach a {@link DuplexByteStream} as a {@link FrameRelayPeer} on `channelId` (same semantics as WebSocket handlers).
  * Pump runs until {@link DuplexByteStream.close}; then the peer is detached automatically.
  */
-export async function attachDuplexAsFrameChannelPeer(
-  hub: FrameChannelHubPort,
+export async function attachDuplexAsFrameRelayPeer(
+  hub: FrameRelayHubPort,
   channelId: string,
   duplex: DuplexByteStream,
-): Promise<AttachDuplexFrameChannelPeerResult> {
+): Promise<AttachDuplexFrameRelayPeerResult> {
   const abort = new AbortController();
   let detached = false;
   const detachOnce = (): void => {
@@ -23,10 +23,10 @@ export async function attachDuplexAsFrameChannelPeer(
     hub.detachPeer(channelId, peer);
   };
 
-  const peer: FrameChannelPeer = {
+  const peer: FrameRelayPeer = {
     send(bytes: Uint8Array) {
-      void duplex.write(bytes).catch((err) => {
-        console.error("[agent-relay] duplex frame-channel write failed", err);
+      void duplex.write(bytes).catch((err: unknown) => {
+        console.error("[obp-frame-relay] duplex write failed", err);
       });
     },
   };
@@ -41,7 +41,7 @@ export async function attachDuplexAsFrameChannelPeer(
       }
     } catch (e) {
       if (!abort.signal.aborted) {
-        console.error("[agent-relay] duplex frame-channel read pump failed", e);
+        console.error("[obp-frame-relay] duplex read pump failed", e);
       }
     } finally {
       detachOnce();

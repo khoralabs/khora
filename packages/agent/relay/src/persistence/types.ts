@@ -1,31 +1,5 @@
 import type { PrincipalId } from "../registration/types";
 
-/** Stored frame-channel hub session row (ticket HMAC secret + TTL). Maps to `rooms.session_id`. */
-export type FrameChannelRoomRecord = {
-  channelId: string;
-  pairingSecretHex: string;
-  createdAtMs: number;
-  expiresAtMs: number;
-};
-
-/** One persisted opaque frame for replay / buffering in the hub store. */
-export type FrameChannelStoredFrame = {
-  id: number;
-  bytes: Uint8Array;
-};
-
-/**
- * Persistence slice for {@link FrameChannelHubPort}: secrets + queued opaque bytes (`rooms` +
- * `room_messages` in typical SQLite backends).
- */
-export interface FrameChannelHubPersistence {
-  upsertRoom(record: FrameChannelRoomRecord): void;
-  getPairingSecretIfActive(channelId: string, nowMs: number): string | undefined;
-  enqueueFrame(channelId: string, bytes: Uint8Array): number;
-  drainFramesAfter(channelId: string, afterId: number): FrameChannelStoredFrame[];
-  deleteFramesForRoom(channelId: string): void;
-}
-
 /** Discriminator for rows in the shared `host_entities` table (matches `source_key` domain prefix). */
 export type AgentRelayEntityKind = "profile" | "topic";
 
@@ -60,12 +34,12 @@ export interface AgentRelayRegistrations {
 }
 
 /**
- * Relay persistence facade: frame-channel hub store plus logical entity slices.
+ * Host relay persistence facade: logical entity slices for profiles, topics, and registrations.
  * Post bodies live in author cell outbox (not catalog); see khora-host post resolution.
  * Receive-side subscriptions are standing queries in the percolator (not catalog edges).
+ * Frame relay hub storage lives in `@khoralabs/obp-frame-relay`.
  */
 export type AgentRelayPersistence = {
-  frameChannelHubPersistence: FrameChannelHubPersistence;
   profiles: AgentRelayEntityPersistence;
   topics: AgentRelayEntityPersistence;
   agentRegistrations: AgentRelayRegistrations;

@@ -1,11 +1,8 @@
-import {
-  attachDuplexAsFrameChannelPeer,
-  inboxWebSocketFromDuplexUtf8,
-  runInboxDuplexAttachment,
-} from "@khoralabs/agent-relay";
+import { inboxWebSocketFromDuplexUtf8, runInboxDuplexAttachment } from "@khoralabs/agent-relay";
 import type { DuplexByteStream } from "@khoralabs/duplex-byte-stream";
 import { AuthError } from "@khoralabs/khora-auth";
 import { type KhoraHostContext, popRelayInboxDrainItemsForDid } from "@khoralabs/khora-host";
+import { attachDuplexAsFrameRelayPeer } from "@khoralabs/obp-frame-relay";
 import type { HostRouteDeps } from "../http/deps";
 import { KHORA_UNARY_INGRESS_ORIGIN } from "./unary-dispatch";
 
@@ -19,7 +16,7 @@ export async function attachRoomDuplexAfterTicket(opts: {
   if (!ok) {
     throw new AuthError("Invalid or expired ticket", 401);
   }
-  const { dispose } = await attachDuplexAsFrameChannelPeer(
+  const { dispose } = await attachDuplexAsFrameRelayPeer(
     opts.ctx.roomHub,
     opts.roomId,
     opts.duplex,

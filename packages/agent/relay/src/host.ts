@@ -3,7 +3,6 @@ import {
   type AgentRelayAppEventConstraint,
   type AgentRelayEventUnion,
 } from "./events";
-import type { FrameChannelHubPort } from "./frame-channel/port";
 import type { InboxFanoutPort } from "./inbox/inbox-fanout-port";
 import { AGENT_RELAY_AGGREGATE_DOMAIN } from "./model/index";
 import {
@@ -38,8 +37,6 @@ export type AgentRelayDeps<
   TAppEvent extends AgentRelayAppEventConstraint = never,
 > = {
   persistence: AgentRelayPersistence;
-  /** Optional ticket-gated frame-channel hub (HMAC tickets, replay on re-join). */
-  frameChannelHub?: FrameChannelHubPort;
   /** Optional inbound verification (registration / authenticated routes / inbox upgrade). */
   authPreflight?: AuthPreflight;
   notificationBuffer?: AgentNotificationBufferPort;
@@ -53,8 +50,8 @@ export type AgentRelayDeps<
 };
 
 /**
- * Facade for persistence, optional frame-channel hub, inbox fan-out, and principal registration.
- * App layers (e.g. Khora) compose Memories and hybrid search outside this package.
+ * Facade for host persistence, inbox fan-out, and principal registration.
+ * App layers (e.g. Khora) compose frame relay, Memories, and hybrid search outside this package.
  */
 export class AgentRelay<
   TProfile = unknown,
@@ -64,7 +61,6 @@ export class AgentRelay<
 > {
   readonly persistence: AgentRelayPersistence;
   readonly persistenceClient: AgentRelayPersistenceClient;
-  readonly frameChannelHub?: FrameChannelHubPort;
   readonly authPreflight?: AuthPreflight;
   readonly notificationBuffer?: AgentNotificationBufferPort;
   readonly inboxHub?: InboxFanoutPort;
@@ -75,7 +71,6 @@ export class AgentRelay<
   constructor(deps: AgentRelayDeps<TProfile, TPost, TTopic, TAppEvent>) {
     this.persistence = deps.persistence;
     this.persistenceClient = createAgentRelayPersistenceClient(deps.persistence);
-    this.frameChannelHub = deps.frameChannelHub;
     this.authPreflight = deps.authPreflight;
     this.notificationBuffer = deps.notificationBuffer;
     this.inboxHub = deps.inboxHub;
@@ -178,7 +173,7 @@ export class AgentRelay<
   }
 
   /**
-   * Queue a join ticket for another agent (e.g. after {@link FrameChannelHubPort.createChannel}).
+   * Queue a room join ticket for another principal.
    * Requires {@link AgentRelayDeps.notificationBuffer}.
    */
   async offerFrameChannelToPrincipal(params: {

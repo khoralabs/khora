@@ -1,6 +1,6 @@
-import { agentRelayFrameChannelWebSocketHandlers } from "@khoralabs/agent-relay";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
 import type { KhoraWsUpgradePort } from "@khoralabs/khora-transport";
+import { frameRelayHubWebSocketHandlers } from "@khoralabs/obp-frame-relay";
 import { logger } from "../logger";
 import { clientIpFromRequest } from "../rate-limit";
 import { handleInboxWsUpgrade } from "../ws/inbox";
@@ -298,6 +298,6 @@ export async function routeUnary(
 /** Build frame-channel WebSocket handlers for `Bun.serve` from an khora host context. */
 export function khoraFrameChannelWsHandlers(
   ctx: KhoraHostContext,
-): ReturnType<typeof agentRelayFrameChannelWebSocketHandlers> {
-  return agentRelayFrameChannelWebSocketHandlers({ hub: ctx.roomHub });
+): ReturnType<typeof frameRelayHubWebSocketHandlers> {
+  return frameRelayHubWebSocketHandlers({ hub: ctx.roomHub });
 }

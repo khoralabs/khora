@@ -120,6 +120,7 @@
         "@khoralabs/memories-ontologies": "workspace:*",
         "@khoralabs/memories-react-graph": "workspace:*",
         "@khoralabs/memories-sqlite": "workspace:*",
+        "@khoralabs/obp-frame-relay": "workspace:*",
         "@khoralabs/relay-colonnade": "workspace:*",
         "@khoralabs/sqlite-crypto": "^0.1.0",
         "@khoralabs/sqlite-graph-projections": "workspace:*",
@@ -229,7 +230,6 @@
       "name": "@khoralabs/agent-relay",
       "version": "0.0.0",
       "dependencies": {
-        "@khoralabs/duplex-byte-stream": "workspace:*",
         "@khoralabs/obp-v2-frames-impl": "workspace:*",
       },
       "devDependencies": {
@@ -371,6 +371,7 @@
         "@khoralabs/khora-invites": "workspace:*",
         "@khoralabs/khora-transport": "workspace:*",
         "@khoralabs/memories-core": "workspace:*",
+        "@khoralabs/obp-frame-relay": "workspace:*",
         "@khoralabs/percolator": "workspace:*",
         "@khoralabs/percolator-sqlite": "workspace:*",
         "@khoralabs/relay-colonnade": "workspace:*",
@@ -383,6 +384,7 @@
         "@khoralabs/duplex-byte-stream": "workspace:*",
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/memories-sqlite": "workspace:*",
+        "@khoralabs/obp-frame-relay": "workspace:*",
         "@khoralabs/obp-v2-frames-impl": "workspace:*",
         "@khoralabs/relay-colonnade": "workspace:*",
         "@types/bun": "latest",
@@ -427,6 +429,8 @@
         "@khoralabs/colonnade-crypto": "workspace:*",
         "@khoralabs/colonnade-persistence": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
+        "@khoralabs/obp-frame-relay": "workspace:*",
+        "@khoralabs/obp-frame-relay-sqlite": "workspace:*",
         "@khoralabs/percolator-sqlite": "workspace:*",
         "@khoralabs/sqlite-crypto": "^0.1.0",
       },
@@ -445,6 +449,7 @@
         "@khoralabs/agent-relay": "workspace:*",
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
+        "@khoralabs/obp-frame-relay": "workspace:*",
         "zod": "^4",
       },
       "devDependencies": {
@@ -625,15 +630,6 @@
     "packages/libs/duplex-byte-stream": {
       "name": "@khoralabs/duplex-byte-stream",
       "version": "0.0.0",
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/libs/merge-async-iterators": {
-      "name": "merge-async-iterators",
       "devDependencies": {
         "@types/bun": "latest",
       },
@@ -855,6 +851,36 @@
     "packages/memories/packages/spec": {
       "name": "@khoralabs/memories-spec",
       "version": "0.1.0",
+    },
+    "packages/obp/frame-relay/impl/ts": {
+      "name": "@khoralabs/obp-frame-relay",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/duplex-byte-stream": "workspace:*",
+        "@khoralabs/obp-v2-frames-impl": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/obp/frame-relay/spec": {
+      "name": "@khoralabs/obp-frame-relay-spec",
+    },
+    "packages/obp/frame-relay/sqlite": {
+      "name": "@khoralabs/obp-frame-relay-sqlite",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/obp-frame-relay": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
     },
     "packages/obp/react": {
       "name": "@khoralabs/obp-react",
@@ -1318,6 +1344,12 @@
     "@khoralabs/memories-sqlite": ["@khoralabs/memories-sqlite@workspace:packages/memories/packages/persistence/sqlite"],
 
     "@khoralabs/memories-tools": ["@khoralabs/memories-tools@workspace:packages/memories/packages/agents/tools"],
+
+    "@khoralabs/obp-frame-relay": ["@khoralabs/obp-frame-relay@workspace:packages/obp/frame-relay/impl/ts"],
+
+    "@khoralabs/obp-frame-relay-spec": ["@khoralabs/obp-frame-relay-spec@workspace:packages/obp/frame-relay/spec"],
+
+    "@khoralabs/obp-frame-relay-sqlite": ["@khoralabs/obp-frame-relay-sqlite@workspace:packages/obp/frame-relay/sqlite"],
 
     "@khoralabs/obp-react": ["@khoralabs/obp-react@workspace:packages/obp/react"],
 
@@ -1946,8 +1978,6 @@
     "mdast-util-to-markdown": ["mdast-util-to-markdown@2.1.2", "", { "dependencies": { "@types/mdast": "^4.0.0", "@types/unist": "^3.0.0", "longest-streak": "^3.0.0", "mdast-util-phrasing": "^4.0.0", "mdast-util-to-string": "^4.0.0", "micromark-util-classify-character": "^2.0.0", "micromark-util-decode-string": "^2.0.0", "unist-util-visit": "^5.0.0", "zwitch": "^2.0.0" } }, "sha512-xj68wMTvGXVOKonmog6LwyJKrYXZPvlwabaryTjLh9LuvovB/KAH+kvi8Gjj+7rJjsFi23nkUxRQv1KqSroMqA=="],
 
     "mdast-util-to-string": ["mdast-util-to-string@4.0.0", "", { "dependencies": { "@types/mdast": "^4.0.0" } }, "sha512-0H44vDimn51F0YwvxSJSm0eCDOJTRlmN0R1yBh4HLj9wiV1Dn0QoXGbvFAWj2hSItVTlCmBF1hqKlIyUBVFLPg=="],
-
-    "merge-async-iterators": ["merge-async-iterators@workspace:packages/libs/merge-async-iterators"],
 
     "meshline": ["meshline@3.3.1", "", { "peerDependencies": { "three": ">=0.137" } }, "sha512-/TQj+JdZkeSUOl5Mk2J7eLcYTLiQm2IDzmlSvYm7ov15anEcDJ92GHqqazxTSreeNgfnYu24kiEvvv0WlbCdFQ=="],
 

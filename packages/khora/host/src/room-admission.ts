@@ -1,4 +1,4 @@
-import type { FrameChannelHubPort } from "@khoralabs/agent-relay";
+import type { FrameRelayHubPort } from "@khoralabs/obp-frame-relay";
 import type { SocialRelationshipPersistence } from "@khoralabs/relay-colonnade";
 import type { KhoraHostContext } from "./context";
 import { enqueueCellInboxInline } from "./relay-cell-inbox";
@@ -20,7 +20,7 @@ export type RoomTicketInlinePayload = {
 };
 
 export type MintRoomChannelTicketOpts = {
-  roomHub: FrameChannelHubPort;
+  roomHub: FrameRelayHubPort;
   social: SocialRelationshipPersistence;
   roomId: string;
   ttlMs: number;

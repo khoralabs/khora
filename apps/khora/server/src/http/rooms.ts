@@ -302,8 +302,8 @@ export async function handleRoomsJoin(
   if (meta.inviteTargetDid !== null && meta.inviteTargetDid !== did) {
     return jsonError("Room invite slot already filled", 409);
   }
-  const hubPersistence = ctx.host.persistenceClient.persistence.frameChannelHubPersistence;
-  if (hubPersistence.getPairingSecretIfActive(inv.roomId, Date.now()) === undefined) {
+  const frameRelayStore = ctx.frameRelayStore;
+  if (frameRelayStore.getPairingSecretIfActive(inv.roomId, Date.now()) === undefined) {
     return jsonError("Room inactive or ticket secret expired", 410);
   }
   const ttlMs = 86_400_000;
@@ -417,8 +417,8 @@ export async function handleRoomsMintTicket(
         : "Forbidden";
     return jsonError(msg, 403);
   }
-  const hubPersistence = ctx.host.persistenceClient.persistence.frameChannelHubPersistence;
-  if (hubPersistence.getPairingSecretIfActive(roomId, Date.now()) === undefined) {
+  const frameRelayStore = ctx.frameRelayStore;
+  if (frameRelayStore.getPairingSecretIfActive(roomId, Date.now()) === undefined) {
     return jsonError("Room inactive or ticket secret expired", 410);
   }
   const ttlMs = mintBody.ttlMs ?? 86_400_000;

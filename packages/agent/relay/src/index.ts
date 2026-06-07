@@ -17,19 +17,6 @@ export {
   type AgentRelayTopicUpdatedEvent,
 } from "./events";
 export {
-  type AgentRelayFrameChannelWsData,
-  agentRelayFrameChannelWebSocketHandlers,
-} from "./frame-channel/bun-routes";
-export {
-  type AttachDuplexFrameChannelPeerResult,
-  attachDuplexAsFrameChannelPeer,
-} from "./frame-channel/duplex-peer";
-export {
-  type CreateFrameChannelHubOptions,
-  createFrameChannelHub,
-} from "./frame-channel/hub";
-export type { FrameChannelHubPort, FrameChannelPeer } from "./frame-channel/port";
-export {
   AgentRelay,
   type AgentRelayDeps,
   type AgentRelayEventHandlerCtx,
@@ -53,9 +40,6 @@ export type {
   AgentRelayEntityUpsert,
   AgentRelayPersistence,
   AgentRelayRegistrations,
-  FrameChannelHubPersistence,
-  FrameChannelRoomRecord,
-  FrameChannelStoredFrame,
 } from "./persistence/types";
 export type {
   AgentNotification,

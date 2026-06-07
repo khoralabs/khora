@@ -39,6 +39,7 @@ export async function createTestKhoraHost(
   const encryption = createTestEncryptionMaterial();
   const {
     persistence,
+    frameRelayStore,
     social,
     catalogDb,
     framesDb,
@@ -65,7 +66,7 @@ export async function createTestKhoraHost(
   const percolator = bootstrapKhoraPercolator({ catalogDb });
   const principalLifecycle = createRelayPrincipalLifecycle({
     catalogDb,
-    framesDb,
+    frameRelayStore,
     projectionStore,
     principalChannelStore,
     persistence,
@@ -139,6 +140,7 @@ export async function createTestKhoraHost(
 
   return createKhoraHost({
     persistence,
+    frameRelayStore,
     social,
     tenantKey,
     cluster,

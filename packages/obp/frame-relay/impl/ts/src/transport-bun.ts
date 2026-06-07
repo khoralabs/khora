@@ -1,10 +1,10 @@
 import type { ServerWebSocket } from "bun";
-import type { FrameChannelHubPort, FrameChannelPeer } from "./port";
+import type { FrameRelayHubPort, FrameRelayPeer } from "./hub-port";
 
-/** WebSocket `data` after upgrade for frame-channel hub sessions (product routes map `sessionId` to room id). */
-export type AgentRelayFrameChannelWsData = { kind: "room"; sessionId: string };
+/** WebSocket `data` after upgrade for frame relay hub sessions (routes map `sessionId` to channel id). */
+export type FrameRelayHubWsData = { kind: "room"; sessionId: string };
 
-function peerFromWebSocket(ws: ServerWebSocket<AgentRelayFrameChannelWsData>): FrameChannelPeer {
+function peerFromWebSocket(ws: ServerWebSocket<FrameRelayHubWsData>): FrameRelayPeer {
   return {
     send(bytes: Uint8Array) {
       ws.send(bytes);
@@ -12,12 +12,12 @@ function peerFromWebSocket(ws: ServerWebSocket<AgentRelayFrameChannelWsData>): F
   };
 }
 
-export function agentRelayFrameChannelWebSocketHandlers(deps: { hub: FrameChannelHubPort }): {
-  open(ws: ServerWebSocket<AgentRelayFrameChannelWsData>): void;
-  close(ws: ServerWebSocket<AgentRelayFrameChannelWsData>): void;
-  message(ws: ServerWebSocket<AgentRelayFrameChannelWsData>, message: string | Buffer): void;
+export function frameRelayHubWebSocketHandlers(deps: { hub: FrameRelayHubPort }): {
+  open(ws: ServerWebSocket<FrameRelayHubWsData>): void;
+  close(ws: ServerWebSocket<FrameRelayHubWsData>): void;
+  message(ws: ServerWebSocket<FrameRelayHubWsData>, message: string | Buffer): void;
 } {
-  const peerByWs = new WeakMap<ServerWebSocket<AgentRelayFrameChannelWsData>, FrameChannelPeer>();
+  const peerByWs = new WeakMap<ServerWebSocket<FrameRelayHubWsData>, FrameRelayPeer>();
 
   return {
     open(ws) {

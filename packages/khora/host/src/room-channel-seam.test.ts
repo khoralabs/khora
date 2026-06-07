@@ -3,8 +3,8 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { attachDuplexAsFrameChannelPeer } from "@khoralabs/agent-relay";
 import { createMemoryDuplexByteStreamPair } from "@khoralabs/duplex-byte-stream";
+import { attachDuplexAsFrameRelayPeer } from "@khoralabs/obp-frame-relay";
 import {
   decryptWireFrameBody,
   deriveFrameBodyAesKey,
@@ -58,7 +58,7 @@ describe("room channel seam", () => {
     ];
 
     const [senderClient, senderServer] = createMemoryDuplexByteStreamPair();
-    const senderAttach = await attachDuplexAsFrameChannelPeer(ctx.roomHub, roomId, senderServer);
+    const senderAttach = await attachDuplexAsFrameRelayPeer(ctx.roomHub, roomId, senderServer);
     for (const p of payloads) {
       await senderClient.write(p);
       await new Promise<void>((r) => queueMicrotask(r));
@@ -75,7 +75,7 @@ describe("room channel seam", () => {
       },
     };
     await ctx.roomHub.attachPeer(roomId, replayPeer);
-    await attachDuplexAsFrameChannelPeer(ctx.roomHub, roomId, replayServer);
+    await attachDuplexAsFrameRelayPeer(ctx.roomHub, roomId, replayServer);
 
     for (let i = 0; i < 100 && replayed.length < payloads.length; i++) {
       await new Promise<void>((r) => queueMicrotask(r));
@@ -125,7 +125,7 @@ describe("room channel seam", () => {
     });
 
     const [senderClient, senderServer] = createMemoryDuplexByteStreamPair();
-    const senderAttach = await attachDuplexAsFrameChannelPeer(ctx.roomHub, roomId, senderServer);
+    const senderAttach = await attachDuplexAsFrameRelayPeer(ctx.roomHub, roomId, senderServer);
     await senderClient.write(raw);
     for (let i = 0; i < 30; i++) {
       await new Promise<void>((r) => queueMicrotask(r));
@@ -170,10 +170,7 @@ describe("room channel seam", () => {
     });
     const roomId = "room-seam-inbox";
     await ctx.roomHub.createChannel(roomId);
-    ctx.host.persistenceClient.persistence.frameChannelHubPersistence.enqueueFrame(
-      roomId,
-      new Uint8Array([0xde, 0xad]),
-    );
+    ctx.frameRelayStore.enqueueRelayedFrame(roomId, new Uint8Array([0xde, 0xad]));
 
     await deliverRoomTicketToPrincipal(ctx, "did:peer", {
       kind: "room_ticket",

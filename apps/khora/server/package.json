@@ -20,6 +20,7 @@
     "@khoralabs/khora-console": "workspace:*",
     "@khoralabs/khora-contracts": "workspace:*",
     "@khoralabs/khora-host": "workspace:*",
+    "@khoralabs/obp-frame-relay": "workspace:*",
     "@khoralabs/khora-invites": "workspace:*",
     "@khoralabs/khora-react": "workspace:*",
     "@khoralabs/khora-transport": "workspace:*",

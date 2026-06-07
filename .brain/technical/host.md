@@ -65,7 +65,7 @@ Registration is **fully local**: DID signature verified on-host; no registry cal
 
 | Surface | File |
 |---|---|
-| Room frame-channel WS | `src/http/router.ts` (`agentRelayFrameChannelWebSocketHandlers`) |
+| Room frame-channel WS | `src/http/router.ts` (`frameRelayHubWebSocketHandlers`) |
 | Room HTTP (create/join/ticket/get/delete) | `src/http/rooms.ts` |
 | Inbox WS upgrade + drain | `src/ws/inbox.ts` |
 | Posts / agent status | `src/http/posts.ts` |

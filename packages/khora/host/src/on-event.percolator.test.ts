@@ -87,7 +87,6 @@ function createRelayPersistence(profiles: Record<string, KhoraProfile>) {
       profileIdForPrincipal: (principalId) => profiles[principalId]?.id,
       principalForProfileId: (profileId) => principalForProfile[profileId],
     },
-    frameChannelHubPersistence: {} as never,
   });
 
   const persistence = {} as unknown as AgentRelayPersistence;

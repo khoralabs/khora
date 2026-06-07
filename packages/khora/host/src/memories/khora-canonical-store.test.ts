@@ -87,7 +87,6 @@ function setup(profile: KhoraProfile, post: KhoraPost) {
       profileIdForPrincipal: () => profile.id,
       principalForProfileId: () => "did:test:author",
     },
-    frameChannelHubPersistence: {} as never,
   });
   const encryption = createTestEncryptionMaterial();
   const cluster = createSqliteColonnadeCluster({

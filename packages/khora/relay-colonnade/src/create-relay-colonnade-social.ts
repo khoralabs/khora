@@ -1,6 +1,8 @@
 import type { Database } from "bun:sqlite";
 import type { AgentRelayPersistence } from "@khoralabs/agent-relay";
 import type { EncryptionKeyProvider } from "@khoralabs/colonnade-crypto";
+import type { FrameRelayStoreStrategy } from "@khoralabs/obp-frame-relay";
+import { createSqliteFrameRelayStoreStrategy } from "@khoralabs/obp-frame-relay-sqlite";
 import { RelayCatalogProjectionStore } from "./catalog-projection-store";
 import { createRelayColonnadePersistenceFromDatabases } from "./relay-colonnade-persistence";
 import { RelaySocialPrincipalChannelStore } from "./relay-social-principal-channel-store";
@@ -15,6 +17,7 @@ export async function createRelayColonnadeSocial(opts: {
   encryptionProvider: EncryptionKeyProvider;
 }): Promise<{
   persistence: AgentRelayPersistence;
+  frameRelayStore: FrameRelayStoreStrategy;
   social: SocialRelationshipPersistence;
   catalogDb: Database;
   framesDb: Database;
@@ -25,18 +28,20 @@ export async function createRelayColonnadeSocial(opts: {
   const tenantKey = opts.tenantKey ?? "relay";
   const catalogDb = await openRelayCatalogDb(opts.catalogPath, opts.encryptionProvider);
   const framesDb = await openRelayFramesDb(opts.framesDbPath, opts.encryptionProvider);
+  const frameRelayStore = createSqliteFrameRelayStoreStrategy(framesDb);
   const projectionStore = new RelayCatalogProjectionStore(catalogDb);
   const principalChannelStore = new RelaySocialPrincipalChannelStore(catalogDb);
-  const persistence = createRelayColonnadePersistenceFromDatabases(catalogDb, framesDb, tenantKey);
+  const persistence = createRelayColonnadePersistenceFromDatabases(catalogDb, tenantKey);
   const social = createSocialRelationshipPersistence({
     projectionStore,
     principalChannelStore,
     catalogDb,
-    framesDb,
+    frameRelayStore,
     tenantKey,
   });
   return {
     persistence,
+    frameRelayStore,
     social,
     catalogDb,
     framesDb,

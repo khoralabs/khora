@@ -60,6 +60,7 @@ export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<
   const outboxKey = await encryptionProvider.getOutboxFieldKey();
   const {
     persistence,
+    frameRelayStore,
     social,
     catalogDb,
     framesDb,
@@ -92,7 +93,7 @@ export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<
   });
   const principalLifecycle = createRelayPrincipalLifecycle({
     catalogDb,
-    framesDb,
+    frameRelayStore,
     projectionStore,
     principalChannelStore,
     persistence,
@@ -169,6 +170,7 @@ export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<
 
   return createKhoraHost({
     persistence,
+    frameRelayStore,
     social,
     tenantKey,
     cluster,

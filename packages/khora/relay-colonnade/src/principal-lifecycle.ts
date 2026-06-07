@@ -1,6 +1,7 @@
 import type { Database } from "bun:sqlite";
 import type { AgentRelayPersistence, PrincipalId } from "@khoralabs/agent-relay";
 import type { SqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
+import type { FrameRelayStoreStrategy } from "@khoralabs/obp-frame-relay";
 import type { RelayCatalogProjectionStore } from "./catalog-projection-store";
 import {
   RELAY_CATALOG_REG_BY_PRINCIPAL,
@@ -24,7 +25,7 @@ import { purgeSocialRelationshipsForPrincipal } from "./social-relationship-pers
 
 export type RelayPrincipalLifecycleDeps = {
   readonly catalogDb: Database;
-  readonly framesDb: Database;
+  readonly frameRelayStore: FrameRelayStoreStrategy;
   readonly projectionStore: RelayCatalogProjectionStore;
   readonly principalChannelStore: RelaySocialPrincipalChannelStore;
   readonly persistence: AgentRelayPersistence;
@@ -95,7 +96,7 @@ function cascadeTeardownWithProfile(
     projectionStore: deps.projectionStore,
     principalChannelStore: deps.principalChannelStore,
     catalogDb: deps.catalogDb,
-    framesDb: deps.framesDb,
+    frameRelayStore: deps.frameRelayStore,
     tenantKey: deps.tenantKey,
     principalId,
   });

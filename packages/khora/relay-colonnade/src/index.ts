@@ -11,7 +11,6 @@ export {
 } from "./catalog-projection-store";
 export { countRegisteredPrincipals } from "./count-registered-principals";
 export { createRelayColonnadeSocial } from "./create-relay-colonnade-social";
-export { createFrameChannelHubPersistenceSqlite } from "./frame-channel-sqlite";
 export {
   createRelayPrincipalLifecycle,
   type RelayPrincipalLifecycle,

@@ -4,6 +4,7 @@ import type { ColonnadePublicationClient } from "@khoralabs/colonnade-persistenc
 import type { KhoraDidAuth } from "@khoralabs/khora-auth";
 import type { KhoraInvitesRepo } from "@khoralabs/khora-invites";
 import type { KhoraRoomLifecycleHostEvent } from "@khoralabs/khora-transport";
+import type { FrameRelayStoreStrategy } from "@khoralabs/obp-frame-relay";
 import type {
   AgentAccountStatusPort,
   RelayPrincipalLifecycle,
@@ -21,6 +22,7 @@ import type {
 
 export type KhoraHostDeps = {
   persistence: AgentRelayPersistence;
+  frameRelayStore: FrameRelayStoreStrategy;
   social: SocialRelationshipPersistence;
   tenantKey: string;
   cluster: KhoraColonnadeCluster;
