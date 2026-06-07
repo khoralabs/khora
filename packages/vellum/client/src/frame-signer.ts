@@ -1,5 +1,5 @@
 import type { PersistableAgentSigner } from "@khoralabs/agent-persisted-signer";
-import type { FrameSigner } from "@khoralabs/obp-v2-frames-impl";
+import type { FrameSigner } from "@khoralabs/obp-frames-impl";
 import { getPublicKeyAsync, signAsync } from "@noble/ed25519";
 import { base64pad } from "iso-base/rfc4648";
 import { untag } from "iso-base/varint";

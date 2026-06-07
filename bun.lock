@@ -187,7 +187,7 @@
         "@khoralabs/cli-flow-nbc": "workspace:*",
         "@khoralabs/cli-kit": "workspace:*",
         "@khoralabs/khora-client": "workspace:*",
-        "@khoralabs/obp-v2-nbc": "workspace:*",
+        "@khoralabs/obp-nbc": "workspace:*",
         "@khoralabs/vellum-client": "workspace:*",
         "@khoralabs/vellum-contracts": "workspace:*",
       },
@@ -205,12 +205,12 @@
       "dependencies": {
         "@khoralabs/agent-persisted-signer": "workspace:*",
         "@khoralabs/khora-client": "workspace:*",
-        "@khoralabs/obp-v2-frames-impl": "workspace:*",
-        "@khoralabs/obp-v2-model": "workspace:*",
-        "@khoralabs/obp-v2-nbc": "workspace:*",
-        "@khoralabs/obp-v2-persistence": "workspace:*",
-        "@khoralabs/obp-v2-sqlite-persistence": "workspace:*",
-        "@khoralabs/obp-v2-transport-ws": "workspace:*",
+        "@khoralabs/obp-frames-impl": "workspace:*",
+        "@khoralabs/obp-model": "workspace:*",
+        "@khoralabs/obp-nbc": "workspace:*",
+        "@khoralabs/obp-persistence": "workspace:*",
+        "@khoralabs/obp-sqlite-persistence": "workspace:*",
+        "@khoralabs/obp-transport-ws": "workspace:*",
         "@khoralabs/vellum-bind-policy": "workspace:*",
         "@khoralabs/vellum-client": "workspace:*",
         "@khoralabs/vellum-contracts": "workspace:*",
@@ -231,8 +231,8 @@
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/cli-kit": "workspace:*",
-        "@khoralabs/obp-v2-model": "workspace:*",
-        "@khoralabs/obp-v2-nbc": "workspace:*",
+        "@khoralabs/obp-model": "workspace:*",
+        "@khoralabs/obp-nbc": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -291,7 +291,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/duplex-byte-stream": "workspace:*",
-        "@khoralabs/obp-v2-frames-impl": "workspace:*",
+        "@khoralabs/obp-frames-impl": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -326,8 +326,8 @@
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
         "@khoralabs/khora-transport": "workspace:*",
-        "@khoralabs/obp-v2-session-impl": "workspace:*",
-        "@khoralabs/obp-v2-transport-ws": "workspace:*",
+        "@khoralabs/obp-session-impl": "workspace:*",
+        "@khoralabs/obp-transport-ws": "workspace:*",
         "zod": "^4",
       },
       "devDependencies": {
@@ -386,7 +386,7 @@
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/memories-sqlite": "workspace:*",
         "@khoralabs/obp-frame-relay": "workspace:*",
-        "@khoralabs/obp-v2-frames-impl": "workspace:*",
+        "@khoralabs/obp-frames-impl": "workspace:*",
         "@khoralabs/relay-colonnade": "workspace:*",
         "@types/bun": "latest",
         "typescript": "^5",
@@ -738,12 +738,22 @@
       "name": "@khoralabs/memories-spec",
       "version": "0.1.0",
     },
+    "packages/obp/errors/impl/ts": {
+      "name": "@khoralabs/obp-errors",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "packages/obp/frame-relay/impl/ts": {
       "name": "@khoralabs/obp-frame-relay",
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/duplex-byte-stream": "workspace:*",
-        "@khoralabs/obp-v2-frames-impl": "workspace:*",
+        "@khoralabs/obp-frames-impl": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -768,12 +778,89 @@
         "typescript": "^5",
       },
     },
+    "packages/obp/frames/impl/ts": {
+      "name": "@khoralabs/obp-frames-impl",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/duplex-byte-stream": "workspace:*",
+        "@khoralabs/obp-errors": "workspace:*",
+        "@khoralabs/obp-nbc": "workspace:*",
+        "@khoralabs/obp-persistence": "workspace:*",
+        "@khoralabs/obp-session-impl": "workspace:*",
+        "@noble/curves": "^2.2.0",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/obp/model/impl/ts": {
+      "name": "@khoralabs/obp-model",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/obp/nbc/impl/ts": {
+      "name": "@khoralabs/obp-nbc",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/obp-errors": "workspace:*",
+        "@khoralabs/obp-model": "workspace:*",
+        "@khoralabs/obp-persistence": "workspace:*",
+      },
+      "devDependencies": {
+        "@khoralabs/vellum-bind-policy": "workspace:*",
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/obp/persistence/impl/ts": {
+      "name": "@khoralabs/obp-persistence",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/obp-errors": "workspace:*",
+        "@khoralabs/obp-model": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/obp/persistence/spec": {
+      "name": "@khoralabs/obp-persistence-spec",
+    },
+    "packages/obp/persistence/sqlite": {
+      "name": "@khoralabs/obp-sqlite-persistence",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/memories-sqlite": "workspace:*",
+        "@khoralabs/obp-errors": "workspace:*",
+        "@khoralabs/obp-model": "workspace:*",
+        "@khoralabs/obp-persistence": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "packages/obp/react": {
       "name": "@khoralabs/obp-react",
       "version": "0.0.0",
       "dependencies": {
-        "@khoralabs/obp-v2-nbc": "workspace:*",
-        "@khoralabs/obp-v2-persistence": "workspace:*",
+        "@khoralabs/obp-nbc": "workspace:*",
+        "@khoralabs/obp-persistence": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -807,9 +894,13 @@
         "@types/react-dom": "^19",
       },
     },
-    "packages/obp/v2/errors/impl/ts": {
-      "name": "@khoralabs/obp-v2-errors",
+    "packages/obp/session/impl/ts": {
+      "name": "@khoralabs/obp-session-impl",
       "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/obp-errors": "workspace:*",
+        "@khoralabs/obp-frames-impl": "workspace:*",
+      },
       "devDependencies": {
         "@types/bun": "latest",
       },
@@ -817,16 +908,15 @@
         "typescript": "^5",
       },
     },
-    "packages/obp/v2/frames/impl/ts": {
-      "name": "@khoralabs/obp-v2-frames-impl",
+    "packages/obp/transport-http2/impl/ts": {
+      "name": "@khoralabs/obp-transport-http2",
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/duplex-byte-stream": "workspace:*",
-        "@khoralabs/obp-v2-errors": "workspace:*",
-        "@khoralabs/obp-v2-nbc": "workspace:*",
-        "@khoralabs/obp-v2-persistence": "workspace:*",
-        "@khoralabs/obp-v2-session-impl": "workspace:*",
-        "@noble/curves": "^2.2.0",
+        "@khoralabs/obp-errors": "workspace:*",
+        "@khoralabs/obp-frames-impl": "workspace:*",
+        "@khoralabs/obp-persistence": "workspace:*",
+        "@khoralabs/obp-session-impl": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -835,102 +925,15 @@
         "typescript": "^5",
       },
     },
-    "packages/obp/v2/model/impl/ts": {
-      "name": "@khoralabs/obp-v2-model",
-      "version": "0.0.0",
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/obp/v2/nbc/impl/ts": {
-      "name": "@khoralabs/obp-v2-nbc",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/obp-v2-errors": "workspace:*",
-        "@khoralabs/obp-v2-model": "workspace:*",
-        "@khoralabs/obp-v2-persistence": "workspace:*",
-      },
-      "devDependencies": {
-        "@khoralabs/vellum-bind-policy": "workspace:*",
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/obp/v2/persistence/impl/ts": {
-      "name": "@khoralabs/obp-v2-persistence",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/obp-v2-errors": "workspace:*",
-        "@khoralabs/obp-v2-model": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/obp/v2/persistence/sqlite": {
-      "name": "@khoralabs/obp-v2-sqlite-persistence",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/memories-sqlite": "workspace:*",
-        "@khoralabs/obp-v2-errors": "workspace:*",
-        "@khoralabs/obp-v2-model": "workspace:*",
-        "@khoralabs/obp-v2-persistence": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/obp/v2/session/impl/ts": {
-      "name": "@khoralabs/obp-v2-session-impl",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/obp-v2-errors": "workspace:*",
-        "@khoralabs/obp-v2-frames-impl": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/obp/v2/transport-http2/impl/ts": {
-      "name": "@khoralabs/obp-v2-transport-http2",
+    "packages/obp/transport-ws/impl/ts": {
+      "name": "@khoralabs/obp-transport-ws",
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/duplex-byte-stream": "workspace:*",
-        "@khoralabs/obp-v2-errors": "workspace:*",
-        "@khoralabs/obp-v2-frames-impl": "workspace:*",
-        "@khoralabs/obp-v2-persistence": "workspace:*",
-        "@khoralabs/obp-v2-session-impl": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/obp/v2/transport-ws/impl/ts": {
-      "name": "@khoralabs/obp-v2-transport-ws",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/duplex-byte-stream": "workspace:*",
-        "@khoralabs/obp-v2-errors": "workspace:*",
-        "@khoralabs/obp-v2-frames-impl": "workspace:*",
-        "@khoralabs/obp-v2-persistence": "workspace:*",
-        "@khoralabs/obp-v2-session-impl": "workspace:*",
+        "@khoralabs/obp-errors": "workspace:*",
+        "@khoralabs/obp-frames-impl": "workspace:*",
+        "@khoralabs/obp-persistence": "workspace:*",
+        "@khoralabs/obp-session-impl": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -1101,8 +1104,8 @@
       "name": "@khoralabs/vellum-bind-policy",
       "version": "0.0.0",
       "dependencies": {
-        "@khoralabs/obp-v2-errors": "workspace:*",
-        "@khoralabs/obp-v2-model": "workspace:*",
+        "@khoralabs/obp-errors": "workspace:*",
+        "@khoralabs/obp-model": "workspace:*",
         "ajv": "^8.17.1",
       },
       "devDependencies": {
@@ -1119,9 +1122,9 @@
       "dependencies": {
         "@khoralabs/agent-persisted-signer": "workspace:*",
         "@khoralabs/khora-client": "workspace:*",
-        "@khoralabs/obp-v2-frames-impl": "workspace:*",
-        "@khoralabs/obp-v2-model": "workspace:*",
-        "@khoralabs/obp-v2-nbc": "workspace:*",
+        "@khoralabs/obp-frames-impl": "workspace:*",
+        "@khoralabs/obp-model": "workspace:*",
+        "@khoralabs/obp-nbc": "workspace:*",
         "@khoralabs/vellum-bind-policy": "workspace:*",
         "@khoralabs/vellum-contracts": "workspace:*",
         "@khoralabs/vellum-transport": "workspace:*",
@@ -1346,31 +1349,33 @@
 
     "@khoralabs/memories-tools": ["@khoralabs/memories-tools@workspace:packages/memories/packages/agents/tools"],
 
+    "@khoralabs/obp-errors": ["@khoralabs/obp-errors@workspace:packages/obp/errors/impl/ts"],
+
     "@khoralabs/obp-frame-relay": ["@khoralabs/obp-frame-relay@workspace:packages/obp/frame-relay/impl/ts"],
 
     "@khoralabs/obp-frame-relay-spec": ["@khoralabs/obp-frame-relay-spec@workspace:packages/obp/frame-relay/spec"],
 
     "@khoralabs/obp-frame-relay-sqlite": ["@khoralabs/obp-frame-relay-sqlite@workspace:packages/obp/frame-relay/sqlite"],
 
+    "@khoralabs/obp-frames-impl": ["@khoralabs/obp-frames-impl@workspace:packages/obp/frames/impl/ts"],
+
+    "@khoralabs/obp-model": ["@khoralabs/obp-model@workspace:packages/obp/model/impl/ts"],
+
+    "@khoralabs/obp-nbc": ["@khoralabs/obp-nbc@workspace:packages/obp/nbc/impl/ts"],
+
+    "@khoralabs/obp-persistence": ["@khoralabs/obp-persistence@workspace:packages/obp/persistence/impl/ts"],
+
+    "@khoralabs/obp-persistence-spec": ["@khoralabs/obp-persistence-spec@workspace:packages/obp/persistence/spec"],
+
     "@khoralabs/obp-react": ["@khoralabs/obp-react@workspace:packages/obp/react"],
 
-    "@khoralabs/obp-v2-errors": ["@khoralabs/obp-v2-errors@workspace:packages/obp/v2/errors/impl/ts"],
+    "@khoralabs/obp-session-impl": ["@khoralabs/obp-session-impl@workspace:packages/obp/session/impl/ts"],
 
-    "@khoralabs/obp-v2-frames-impl": ["@khoralabs/obp-v2-frames-impl@workspace:packages/obp/v2/frames/impl/ts"],
+    "@khoralabs/obp-sqlite-persistence": ["@khoralabs/obp-sqlite-persistence@workspace:packages/obp/persistence/sqlite"],
 
-    "@khoralabs/obp-v2-model": ["@khoralabs/obp-v2-model@workspace:packages/obp/v2/model/impl/ts"],
+    "@khoralabs/obp-transport-http2": ["@khoralabs/obp-transport-http2@workspace:packages/obp/transport-http2/impl/ts"],
 
-    "@khoralabs/obp-v2-nbc": ["@khoralabs/obp-v2-nbc@workspace:packages/obp/v2/nbc/impl/ts"],
-
-    "@khoralabs/obp-v2-persistence": ["@khoralabs/obp-v2-persistence@workspace:packages/obp/v2/persistence/impl/ts"],
-
-    "@khoralabs/obp-v2-session-impl": ["@khoralabs/obp-v2-session-impl@workspace:packages/obp/v2/session/impl/ts"],
-
-    "@khoralabs/obp-v2-sqlite-persistence": ["@khoralabs/obp-v2-sqlite-persistence@workspace:packages/obp/v2/persistence/sqlite"],
-
-    "@khoralabs/obp-v2-transport-http2": ["@khoralabs/obp-v2-transport-http2@workspace:packages/obp/v2/transport-http2/impl/ts"],
-
-    "@khoralabs/obp-v2-transport-ws": ["@khoralabs/obp-v2-transport-ws@workspace:packages/obp/v2/transport-ws/impl/ts"],
+    "@khoralabs/obp-transport-ws": ["@khoralabs/obp-transport-ws@workspace:packages/obp/transport-ws/impl/ts"],
 
     "@khoralabs/percolator": ["@khoralabs/percolator@workspace:packages/percolator"],
 

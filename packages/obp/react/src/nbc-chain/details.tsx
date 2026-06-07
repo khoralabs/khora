@@ -1,4 +1,4 @@
-import type { NbcChainGraph } from "@khoralabs/obp-v2-nbc";
+import type { NbcChainGraph } from "@khoralabs/obp-nbc";
 import type { Edge, Node } from "@xyflow/react";
 import type { ComponentProps } from "react";
 import { formatExpiresTurn, formatRelayMs } from "./format.ts";

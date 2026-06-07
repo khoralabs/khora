@@ -3,11 +3,11 @@ import path from "node:path";
 
 import type { PersistableAgentSigner } from "@khoralabs/agent-persisted-signer";
 import { KhoraClient } from "@khoralabs/khora-client";
-import type { JsonDocument } from "@khoralabs/obp-v2-model";
+import type { JsonDocument } from "@khoralabs/obp-model";
 import {
   createObpV2SqlitePersistenceClient,
   openObpV2Database,
-} from "@khoralabs/obp-v2-sqlite-persistence";
+} from "@khoralabs/obp-sqlite-persistence";
 import { validateVellumBindPayloadForPort } from "@khoralabs/vellum-bind-policy";
 import { cfgDataDir, roomObpSqlitePath, type VellumPathConfig } from "@khoralabs/vellum-contracts";
 

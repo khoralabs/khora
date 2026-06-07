@@ -9,7 +9,7 @@ export {
   type NbcChainOfferRow,
   type NbcChainPartyRow,
   type NbcChainPortRow,
-} from "@khoralabs/obp-v2-nbc";
+} from "@khoralabs/obp-nbc";
 export type {
   NbcChainBackgroundProps,
   NbcChainControlsProps,

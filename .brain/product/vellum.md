@@ -107,7 +107,7 @@ OBP/NBC embeds novel research:
 |---------|---------|
 | OBP v2 spec (Smithy) | `packages/obp/v2/` (model, nbc, frames, session, persistence) |
 | TypeScript OBP/NBC impl | `packages/obp/v2/*/impl/ts/` |
-| SQLite persistence | `@khoralabs/obp-v2-sqlite-persistence` |
+| SQLite persistence | `@khoralabs/obp-sqlite-persistence` |
 | Frame E2EE | `packages/obp/v2/frames/impl/ts/` |
 | Vellum contracts | `@khoralabs/vellum-contracts` |
 | Vellum client | `@khoralabs/vellum-client` |

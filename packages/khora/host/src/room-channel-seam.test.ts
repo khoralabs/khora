@@ -12,7 +12,7 @@ import {
   encryptLogicalFrameBody,
   ephemeralX25519Keygen,
   x25519SharedSecret,
-} from "@khoralabs/obp-v2-frames-impl";
+} from "@khoralabs/obp-frames-impl";
 import { popRelayInboxDrainItemsForDid } from "./relay-inbox-drain";
 import { deliverRoomTicketToPrincipal } from "./room-admission";
 import { createTestKhoraHost } from "./test/bootstrap-sqlite";
@@ -35,7 +35,10 @@ function parseRelayEnvelope(bytes: Uint8Array): {
 } {
   const len = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(0, false);
   const text = new TextDecoder().decode(bytes.subarray(4, 4 + len));
-  return JSON.parse(text) as { frame: Record<string, unknown>; relay_ts_ms: number };
+  return JSON.parse(text) as {
+    frame: Record<string, unknown>;
+    relay_ts_ms: number;
+  };
 }
 
 describe("room channel seam", () => {

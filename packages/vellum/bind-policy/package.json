@@ -16,8 +16,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@khoralabs/obp-v2-errors": "workspace:*",
-    "@khoralabs/obp-v2-model": "workspace:*",
+    "@khoralabs/obp-errors": "workspace:*",
+    "@khoralabs/obp-model": "workspace:*",
     "ajv": "^8.17.1"
   },
   "devDependencies": {

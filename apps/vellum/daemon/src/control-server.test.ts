@@ -4,7 +4,7 @@ import type {
   FrameMultiplexOpenerApi,
   FrameSessionHandle,
   SessionInitNormalized,
-} from "@khoralabs/obp-v2-frames-impl";
+} from "@khoralabs/obp-frames-impl";
 import { ChainInitWireSchema, DEFAULT_GENESIS_TURN_WIRE } from "@khoralabs/vellum-contracts";
 
 import { startVellumControlServer } from "./control-server";

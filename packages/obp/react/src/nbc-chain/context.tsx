@@ -1,4 +1,4 @@
-import type { NbcChainGraph } from "@khoralabs/obp-v2-nbc";
+import type { NbcChainGraph } from "@khoralabs/obp-nbc";
 import type { Edge, Node, NodeTypes, useEdgesState, useNodesState } from "@xyflow/react";
 import { createContext, useContext } from "react";
 import type { NbcChainAfterBindViewport, NbcChainFlowSelection } from "./flow-types.ts";

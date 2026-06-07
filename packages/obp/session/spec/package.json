@@ -1,0 +1,7 @@
+{
+  "name": "@khoralabs/obp-session-spec",
+  "private": true,
+  "scripts": {
+    "validate": "smithy validate model && smithy build"
+  }
+}

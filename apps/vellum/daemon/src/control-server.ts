@@ -4,8 +4,8 @@ import {
   type FrameSessionHandle,
   normalizeSessionInit,
   sessionInitFromWire,
-} from "@khoralabs/obp-v2-frames-impl";
-import { type NbcTurnBody, parseNbcTurnBody } from "@khoralabs/obp-v2-nbc";
+} from "@khoralabs/obp-frames-impl";
+import { type NbcTurnBody, parseNbcTurnBody } from "@khoralabs/obp-nbc";
 import {
   ChainInitRequestSchema,
   type ChainInitResponse,
@@ -122,7 +122,10 @@ export function startVellumControlServer(opts: { state: VellumControlServerState
             state.handles.set(norm.session_id, handle);
             upsertChainRow(db, norm.session_id, norm.genesis_hash, Date.now());
             await handle.sendTurn(genesisNb);
-            const out: ChainInitResponse = { ok: true, session_id: norm.session_id };
+            const out: ChainInitResponse = {
+              ok: true,
+              session_id: norm.session_id,
+            };
             return Response.json(out);
           } catch (e) {
             const msg = e instanceof Error ? e.message : String(e);

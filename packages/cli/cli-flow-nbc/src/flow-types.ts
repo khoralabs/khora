@@ -1,4 +1,4 @@
-import type { JsonDocument } from "@khoralabs/obp-v2-model";
+import type { JsonDocument } from "@khoralabs/obp-model";
 
 /**
  * Declarative CLI affordance aligned with **`NbcPortSpec`** (id, optional bind_policy, promise hint).

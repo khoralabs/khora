@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { JsonDocument } from "@khoralabs/obp-v2-model";
+import type { JsonDocument } from "@khoralabs/obp-model";
 import { getBindPayloadValidator } from "./ajv-compile-bind-schema";
 import { validateVellumBindPayloadForPort } from "./validate-bind-payload";
 

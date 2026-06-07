@@ -1,4 +1,4 @@
-import { ObpError } from "@khoralabs/obp-v2-errors";
+import { ObpError } from "@khoralabs/obp-errors";
 import type { ValidateFunction } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
 

@@ -1,4 +1,4 @@
-import type { JsonDocument } from "@khoralabs/obp-v2-model";
+import type { JsonDocument } from "@khoralabs/obp-model";
 
 import type { FlowPort } from "./flow-types";
 

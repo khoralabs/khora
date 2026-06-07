@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { createMemoryDuplexByteStreamPair } from "@khoralabs/duplex-byte-stream";
-import { encodeFramedJson } from "@khoralabs/obp-v2-frames-impl";
+import { encodeFramedJson } from "@khoralabs/obp-frames-impl";
 import { attachDuplexAsFrameRelayPeer } from "./duplex-peer";
 import { createFrameRelayHub } from "./hub";
 import { InMemoryFrameRelayStoreStrategy } from "./in-memory-store-strategy";

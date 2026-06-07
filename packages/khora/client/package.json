@@ -21,8 +21,8 @@
     "@khoralabs/khora-auth": "workspace:*",
     "@khoralabs/khora-contracts": "workspace:*",
     "@khoralabs/khora-transport": "workspace:*",
-    "@khoralabs/obp-v2-session-impl": "workspace:*",
-    "@khoralabs/obp-v2-transport-ws": "workspace:*",
+    "@khoralabs/obp-session-impl": "workspace:*",
+    "@khoralabs/obp-transport-ws": "workspace:*",
     "@khoralabs/host-runtime": "workspace:*",
     "zod": "^4"
   },

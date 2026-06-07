@@ -1,5 +1,5 @@
-import type { NbcChainGraph, NbcChainOfferRow, NbcChainPortRow } from "@khoralabs/obp-v2-nbc";
-import type { BindListingRow } from "@khoralabs/obp-v2-persistence";
+import type { NbcChainGraph, NbcChainOfferRow, NbcChainPortRow } from "@khoralabs/obp-nbc";
+import type { BindListingRow } from "@khoralabs/obp-persistence";
 import type { Edge, Node } from "@xyflow/react";
 
 /** React Flow `data` for offer nodes. */
@@ -35,7 +35,10 @@ function partyLabelForOffer(o: NbcChainOfferRow): string {
  * Left-to-right flowchart (no party nodes): genesis offers at the left edge, ports fanning right;
  * each bind places the **new** offer immediately to the right of the bound counterparty port.
  */
-export function nbcChainGraphToFlow(g: NbcChainGraph): { nodes: Node[]; edges: Edge[] } {
+export function nbcChainGraphToFlow(g: NbcChainGraph): {
+  nodes: Node[];
+  edges: Edge[];
+} {
   const pad = 100;
   const partyStride = 120;
   const rowGap = 100;
@@ -188,7 +191,10 @@ export function nbcChainGraphToFlow(g: NbcChainGraph): { nodes: Node[]; edges: E
     nodes.push({
       id: `offer:${o.id}`,
       type: "offer",
-      position: { x: offerX.get(o.id) ?? genesisOfferX, y: offerY.get(o.id) ?? pad },
+      position: {
+        x: offerX.get(o.id) ?? genesisOfferX,
+        y: offerY.get(o.id) ?? pad,
+      },
       data: {
         partyLabel: partyLabelForOffer(o),
         title: shortId(o.id),

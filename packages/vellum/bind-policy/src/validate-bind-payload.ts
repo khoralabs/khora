@@ -1,5 +1,5 @@
-import { ObpError } from "@khoralabs/obp-v2-errors";
-import type { JsonDocument } from "@khoralabs/obp-v2-model";
+import { ObpError } from "@khoralabs/obp-errors";
+import type { JsonDocument } from "@khoralabs/obp-model";
 
 import { assertBindPolicyJsonSchema, getBindPayloadValidator } from "./ajv-compile-bind-schema";
 import { formatAjvErrorsForAgent } from "./format-ajv-errors";

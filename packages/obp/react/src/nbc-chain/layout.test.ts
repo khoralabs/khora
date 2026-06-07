@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import type { NbcChainGraph } from "@khoralabs/obp-v2-nbc";
+import type { NbcChainGraph } from "@khoralabs/obp-nbc";
 import { nbcChainGraphToFlow } from "./layout";
 
 test("flowchart layout places successor offer to the right of bound port", () => {

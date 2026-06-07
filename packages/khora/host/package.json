@@ -37,7 +37,7 @@
     "@khoralabs/khora-auth": "workspace:*",
     "@khoralabs/memories-sqlite": "workspace:*",
     "@khoralabs/obp-frame-relay": "workspace:*",
-    "@khoralabs/obp-v2-frames-impl": "workspace:*",
+    "@khoralabs/obp-frames-impl": "workspace:*",
     "@khoralabs/relay-colonnade": "workspace:*",
     "@khoralabs/colonnade-crypto": "workspace:*",
     "@types/bun": "latest",

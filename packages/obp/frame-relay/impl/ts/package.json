@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@khoralabs/duplex-byte-stream": "workspace:*",
-    "@khoralabs/obp-v2-frames-impl": "workspace:*"
+    "@khoralabs/obp-frames-impl": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest"

@@ -1,6 +1,6 @@
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { strFlag } from "@khoralabs/cli-kit";
-import { parseNbcTurnBody } from "@khoralabs/obp-v2-nbc";
+import { parseNbcTurnBody } from "@khoralabs/obp-nbc";
 
 import type { VellumClient } from "@khoralabs/vellum-client";
 

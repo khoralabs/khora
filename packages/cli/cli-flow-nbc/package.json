@@ -16,8 +16,8 @@
   },
   "dependencies": {
     "@khoralabs/cli-kit": "workspace:*",
-    "@khoralabs/obp-v2-model": "workspace:*",
-    "@khoralabs/obp-v2-nbc": "workspace:*"
+    "@khoralabs/obp-model": "workspace:*",
+    "@khoralabs/obp-nbc": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",

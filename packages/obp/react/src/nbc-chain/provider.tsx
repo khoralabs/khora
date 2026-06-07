@@ -1,4 +1,4 @@
-import type { NbcChainGraph } from "@khoralabs/obp-v2-nbc";
+import type { NbcChainGraph } from "@khoralabs/obp-nbc";
 import {
   type Edge,
   type Node,

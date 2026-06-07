@@ -1,5 +1,5 @@
 import type { ReadLineFn } from "@khoralabs/cli-kit";
-import type { JsonDocument } from "@khoralabs/obp-v2-model";
+import type { JsonDocument } from "@khoralabs/obp-model";
 
 import type { FlowChainView } from "./chain-view";
 import type { FlowDefinition, FlowPort } from "./flow-types";

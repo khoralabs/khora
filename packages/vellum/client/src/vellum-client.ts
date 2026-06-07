@@ -7,8 +7,8 @@ import {
   canonicalSessionParties,
   normalizeSessionInit,
   sessionInitToWire,
-} from "@khoralabs/obp-v2-frames-impl";
-import type { JsonDocument } from "@khoralabs/obp-v2-model";
+} from "@khoralabs/obp-frames-impl";
+import type { JsonDocument } from "@khoralabs/obp-model";
 import { validateVellumBindPayloadForPort } from "@khoralabs/vellum-bind-policy";
 import {
   type ChainInitResponse,

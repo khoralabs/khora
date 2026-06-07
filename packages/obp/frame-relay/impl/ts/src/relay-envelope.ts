@@ -1,4 +1,4 @@
-import { encodeFramedJson, isNegotiationFrameObject } from "@khoralabs/obp-v2-frames-impl";
+import { encodeFramedJson, isNegotiationFrameObject } from "@khoralabs/obp-frames-impl";
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return v !== null && typeof v === "object" && !Array.isArray(v);

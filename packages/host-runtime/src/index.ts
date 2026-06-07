@@ -1,4 +1,4 @@
-export type { SessionInit } from "@khoralabs/obp-v2-frames-impl";
+export type { SessionInit } from "@khoralabs/obp-frames-impl";
 export {
   HOST_EVENT_KIND,
   type HostAppEventConstraint,

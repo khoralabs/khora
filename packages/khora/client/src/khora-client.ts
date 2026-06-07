@@ -30,12 +30,12 @@ import {
   type KhoraTransportBundle,
   type KhoraUnaryTransport,
 } from "@khoralabs/khora-transport";
-import type { Checkpoint, SessionOp } from "@khoralabs/obp-v2-session-impl";
+import type { Checkpoint, SessionOp } from "@khoralabs/obp-session-impl";
 import {
   connectObpFrameChannelSession,
   type ObpFrameConnection,
   type ObpWebSocketConnectOptions,
-} from "@khoralabs/obp-v2-transport-ws";
+} from "@khoralabs/obp-transport-ws";
 import { getAgentStatus } from "./http/agent";
 import {
   type AuthorSubscriptionsSnapshot,
@@ -87,7 +87,7 @@ export type {
 export type {
   ObpFrameConnection,
   ObpWebSocketConnectOptions,
-} from "@khoralabs/obp-v2-transport-ws";
+} from "@khoralabs/obp-transport-ws";
 export type { AuthorSubscriptionsSnapshot } from "./http/authors";
 export type { PublicProfileResult } from "./http/profile";
 
