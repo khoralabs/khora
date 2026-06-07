@@ -1,5 +1,5 @@
-import type { AgentRelayPersistenceClient } from "@khoralabs/agent-relay";
 import { OutboxGhostError } from "@khoralabs/colonnade-persistence";
+import type { AgentRelayPersistenceClient } from "@khoralabs/host-runtime";
 import {
   type KhoraPost,
   type KhoraProfile,

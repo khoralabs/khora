@@ -1,4 +1,4 @@
-import type { AgentRelayPersistenceClient } from "@khoralabs/agent-relay";
+import type { AgentRelayPersistenceClient } from "@khoralabs/host-runtime";
 import { MemoriesClient } from "@khoralabs/memories-core";
 import type { EmbeddingModel } from "@khoralabs/memories-core/helpers";
 import type { MemoriesPersistence } from "@khoralabs/memories-core/persistence";

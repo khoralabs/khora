@@ -1,4 +1,4 @@
-# @khoralabs/agent-relay
+# @khoralabs/host-runtime
 
 Host relay runtime: fan-out inbox delivery, topic subscriptions, and principal registration / notification buffer. Transport-agnostic — persistence ports are app-defined.
 

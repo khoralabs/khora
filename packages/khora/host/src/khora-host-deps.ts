@@ -1,6 +1,6 @@
-import type { AgentRelayPersistence } from "@khoralabs/agent-relay";
 import type { OutboxPayloadCodec } from "@khoralabs/colonnade-crypto";
 import type { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
+import type { AgentRelayPersistence } from "@khoralabs/host-runtime";
 import type { KhoraDidAuth } from "@khoralabs/khora-auth";
 import type { KhoraInvitesRepo } from "@khoralabs/khora-invites";
 import type { KhoraRoomLifecycleHostEvent } from "@khoralabs/khora-transport";

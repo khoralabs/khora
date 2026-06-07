@@ -1,4 +1,4 @@
-import type { AgentNotification } from "@khoralabs/agent-relay";
+import type { AgentNotification } from "@khoralabs/host-runtime";
 import type { KhoraPost, KhoraProfile, KhoraRegistrationResult } from "@khoralabs/khora-contracts";
 import type { InboxNotificationRow, InboxWsDrainMessage } from "./inbox-ws";
 

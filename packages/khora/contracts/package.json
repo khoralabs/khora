@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@khoralabs/agent-relay": "workspace:*",
+    "@khoralabs/host-runtime": "workspace:*",
     "zod": "^4"
   },
   "devDependencies": {

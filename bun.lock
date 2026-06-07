@@ -104,10 +104,10 @@
       "dependencies": {
         "@ai-sdk/google": "^3.0.0",
         "@khoralabs/agent-capabilities": "^0.1.0",
-        "@khoralabs/agent-relay": "workspace:*",
         "@khoralabs/colonnade-crypto": "workspace:*",
         "@khoralabs/colonnade-persistence": "workspace:*",
         "@khoralabs/duplex-byte-stream": "workspace:*",
+        "@khoralabs/host-runtime": "workspace:*",
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/khora-console": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
@@ -226,19 +226,6 @@
         "typescript": "^5",
       },
     },
-    "packages/agent/relay": {
-      "name": "@khoralabs/agent-relay",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/obp-v2-frames-impl": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
     "packages/cli/cli-flow-nbc": {
       "name": "@khoralabs/cli-flow-nbc",
       "version": "0.0.0",
@@ -299,12 +286,25 @@
         "typescript": "^5",
       },
     },
+    "packages/host-runtime": {
+      "name": "@khoralabs/host-runtime",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/obp-v2-frames-impl": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "packages/khora/auth": {
       "name": "@khoralabs/khora-auth",
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/agent-persisted-signer": "workspace:*",
-        "@khoralabs/agent-relay": "workspace:*",
+        "@khoralabs/host-runtime": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
         "@noble/ed25519": "^3.1.0",
         "iso-did": "^2.1.1",
@@ -321,7 +321,7 @@
       "name": "@khoralabs/khora-client",
       "version": "0.0.0",
       "dependencies": {
-        "@khoralabs/agent-relay": "workspace:*",
+        "@khoralabs/host-runtime": "workspace:*",
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
         "@khoralabs/khora-transport": "workspace:*",
@@ -349,7 +349,7 @@
       "name": "@khoralabs/khora-contracts",
       "version": "0.0.0",
       "dependencies": {
-        "@khoralabs/agent-relay": "workspace:*",
+        "@khoralabs/host-runtime": "workspace:*",
         "zod": "^4",
       },
       "devDependencies": {
@@ -364,8 +364,8 @@
       "name": "@khoralabs/khora-host",
       "version": "0.0.0",
       "dependencies": {
-        "@khoralabs/agent-relay": "workspace:*",
         "@khoralabs/colonnade-persistence": "workspace:*",
+        "@khoralabs/host-runtime": "workspace:*",
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
         "@khoralabs/khora-invites": "workspace:*",
@@ -379,9 +379,9 @@
         "zod": "^4",
       },
       "devDependencies": {
-        "@khoralabs/agent-relay": "workspace:*",
         "@khoralabs/colonnade-crypto": "workspace:*",
         "@khoralabs/duplex-byte-stream": "workspace:*",
+        "@khoralabs/host-runtime": "workspace:*",
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/memories-sqlite": "workspace:*",
         "@khoralabs/obp-frame-relay": "workspace:*",
@@ -425,9 +425,9 @@
       "name": "@khoralabs/relay-colonnade",
       "version": "0.0.0",
       "dependencies": {
-        "@khoralabs/agent-relay": "workspace:*",
         "@khoralabs/colonnade-crypto": "workspace:*",
         "@khoralabs/colonnade-persistence": "workspace:*",
+        "@khoralabs/host-runtime": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
         "@khoralabs/obp-frame-relay": "workspace:*",
         "@khoralabs/obp-frame-relay-sqlite": "workspace:*",
@@ -446,7 +446,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/agent-io": "workspace:*",
-        "@khoralabs/agent-relay": "workspace:*",
+        "@khoralabs/host-runtime": "workspace:*",
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
         "@khoralabs/obp-frame-relay": "workspace:*",
@@ -1279,8 +1279,6 @@
 
     "@khoralabs/agent-persisted-signer": ["@khoralabs/agent-persisted-signer@workspace:packages/persisted-signer"],
 
-    "@khoralabs/agent-relay": ["@khoralabs/agent-relay@workspace:packages/agent/relay"],
-
     "@khoralabs/blog": ["@khoralabs/blog@workspace:packages/libs/blog"],
 
     "@khoralabs/bun-web": ["@khoralabs/bun-web@workspace:packages/libs/bun-web"],
@@ -1294,6 +1292,8 @@
     "@khoralabs/colonnade-persistence": ["@khoralabs/colonnade-persistence@workspace:packages/colonnade/impl/ts"],
 
     "@khoralabs/duplex-byte-stream": ["@khoralabs/duplex-byte-stream@workspace:packages/libs/duplex-byte-stream"],
+
+    "@khoralabs/host-runtime": ["@khoralabs/host-runtime@workspace:packages/host-runtime"],
 
     "@khoralabs/khora-auth": ["@khoralabs/khora-auth@workspace:packages/khora/auth"],
 

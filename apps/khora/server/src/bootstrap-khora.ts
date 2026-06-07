@@ -1,9 +1,9 @@
-import { createAgentRelayPersistenceClient } from "@khoralabs/agent-relay";
 import { EnvKeyProvider, outboxKeyBytesToHex } from "@khoralabs/colonnade-crypto";
 import {
   ColonnadePublicationClient,
   createSqliteColonnadeCluster,
 } from "@khoralabs/colonnade-persistence";
+import { createAgentRelayPersistenceClient } from "@khoralabs/host-runtime";
 import { createKhoraDidAuth, createSqliteNonceStore } from "@khoralabs/khora-auth";
 import {
   bootstrapKhoraMemories,

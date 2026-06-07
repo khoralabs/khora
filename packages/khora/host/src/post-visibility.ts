@@ -1,4 +1,4 @@
-import type { PrincipalId } from "@khoralabs/agent-relay";
+import type { PrincipalId } from "@khoralabs/host-runtime";
 import type { KhoraPost } from "@khoralabs/khora-contracts";
 import type { SocialRelationshipPersistence } from "@khoralabs/relay-colonnade";
 import { decodePostId } from "./post-address-id";

@@ -1,4 +1,4 @@
-export type { AgentRelayPersistence } from "@khoralabs/agent-relay";
+export type { AgentRelayPersistence } from "@khoralabs/host-runtime";
 export {
   type AgentAccountStatus,
   type AgentAccountStatusPort,

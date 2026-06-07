@@ -27,7 +27,7 @@
 | Step | File |
 |---|---|
 | HTTP handler, rate limits, invite gate | `src/http/register.ts` |
-| Core registration (`ctx.host.registerPrincipal`) | `@khoralabs/khora-host` / `@khoralabs/agent-relay` |
+| Core registration (`ctx.host.registerPrincipal`) | `@khoralabs/khora-host` / `@khoralabs/host-runtime` |
 | Persistence of DID→profileId | via `createAgentRelayPersistenceClient` in bootstrap |
 | Unregister (`POST /v1/unregister`) | `src/http/unregister.ts` |
 | Discovery doc | `src/http/well-known-khora.ts` → `GET /.well-known/khora` |

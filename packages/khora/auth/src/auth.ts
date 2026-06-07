@@ -5,7 +5,7 @@ import type {
   InboxAccessVerifyContext,
   PrincipalRegistrationRequest,
   RegistrationVerifyContext,
-} from "@khoralabs/agent-relay";
+} from "@khoralabs/host-runtime";
 import type { NonceStore } from "./nonce-store";
 import { createSqliteNonceStore } from "./sqlite-nonce-store";
 import type { AuthStrategy } from "./strategy";

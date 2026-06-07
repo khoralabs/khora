@@ -1,4 +1,4 @@
-import type { PrincipalRegistrationResult } from "@khoralabs/agent-relay";
+import type { PrincipalRegistrationResult } from "@khoralabs/host-runtime";
 import z from "zod";
 import type { KhoraProfile } from "./khora-profile";
 import { zKhoraProfile } from "./khora-profile";

@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@khoralabs/agent-persisted-signer": "workspace:*",
-    "@khoralabs/agent-relay": "workspace:*",
+    "@khoralabs/host-runtime": "workspace:*",
     "@khoralabs/khora-contracts": "workspace:*",
     "@noble/ed25519": "^3.1.0",
     "iso-did": "^2.1.1"

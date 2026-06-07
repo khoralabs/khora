@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { AgentRelayPersistence } from "@khoralabs/agent-relay";
+import type { AgentRelayPersistence } from "@khoralabs/host-runtime";
 import { normalizeUsername } from "@khoralabs/khora-contracts";
 import type { RelayCatalogProjectionStore } from "./catalog-projection-store";
 import {

@@ -2,7 +2,7 @@ import {
   AgentRelay,
   createAgentRelayPersistenceClient,
   createInboxWsHub,
-} from "@khoralabs/agent-relay";
+} from "@khoralabs/host-runtime";
 import type { KhoraPost, KhoraProfile } from "@khoralabs/khora-contracts";
 import { createFrameRelayHub } from "@khoralabs/obp-frame-relay";
 import { startPrincipalTeardownWorker } from "@khoralabs/relay-colonnade";

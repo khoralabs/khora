@@ -1,5 +1,5 @@
 {
-  "name": "@khoralabs/agent-relay",
+  "name": "@khoralabs/host-runtime",
   "version": "0.0.0",
   "type": "module",
   "private": true,

@@ -1,4 +1,4 @@
-import { AGENT_RELAY_AGGREGATE_DOMAIN, AGENT_RELAY_EVENT_KIND } from "@khoralabs/agent-relay";
+import { AGENT_RELAY_AGGREGATE_DOMAIN, AGENT_RELAY_EVENT_KIND } from "@khoralabs/host-runtime";
 import {
   AuthStrategyError,
   khoraPostSigningPayloadFromCreate,

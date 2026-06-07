@@ -3,7 +3,7 @@ import type {
   AgentRelayEntityPersistence,
   AgentRelayEntityRow,
   AgentRelayEntityUpsert,
-} from "@khoralabs/agent-relay";
+} from "@khoralabs/host-runtime";
 import type { RelayCatalogProjectionStore } from "./catalog-projection-store";
 
 export function parseEntityRow(projection: unknown, id: string): AgentRelayEntityRow | undefined {

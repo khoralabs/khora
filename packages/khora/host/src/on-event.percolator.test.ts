@@ -1,17 +1,17 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, mock, test } from "bun:test";
 import {
-  AGENT_RELAY_EVENT_KIND,
-  type AgentRelayEventHandlerCtx,
-  type AgentRelayPersistence,
-  createAgentRelayPersistenceClient,
-} from "@khoralabs/agent-relay";
-import {
   createTestEncryptionMaterial,
   TEST_POST_AUTHOR_SIGNATURE,
 } from "@khoralabs/colonnade-crypto";
 import type { ColonnadePublicationClient } from "@khoralabs/colonnade-persistence";
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
+import {
+  AGENT_RELAY_EVENT_KIND,
+  type AgentRelayEventHandlerCtx,
+  type AgentRelayPersistence,
+  createAgentRelayPersistenceClient,
+} from "@khoralabs/host-runtime";
 import type { KhoraPost, KhoraProfile } from "@khoralabs/khora-contracts";
 import { authorSubscriptionSearch } from "@khoralabs/khora-contracts";
 import { createInMemoryPercolatorPersistence, createPercolator } from "@khoralabs/percolator";

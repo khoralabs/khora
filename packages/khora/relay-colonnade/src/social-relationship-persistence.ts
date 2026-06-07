@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { PrincipalId } from "@khoralabs/agent-relay";
+import type { PrincipalId } from "@khoralabs/host-runtime";
 import type { FrameRelayStoreStrategy } from "@khoralabs/obp-frame-relay";
 import type { RelayCatalogProjectionStore } from "./catalog-projection-store";
 import { RELAY_NAMESPACE_SOCIAL_RELATIONSHIP } from "./relay-id-conventions";

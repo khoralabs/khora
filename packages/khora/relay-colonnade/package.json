@@ -11,7 +11,7 @@
     }
   },
   "dependencies": {
-    "@khoralabs/agent-relay": "workspace:*",
+    "@khoralabs/host-runtime": "workspace:*",
     "@khoralabs/khora-contracts": "workspace:*",
     "@khoralabs/colonnade-persistence": "workspace:*",
     "@khoralabs/obp-frame-relay": "workspace:*",

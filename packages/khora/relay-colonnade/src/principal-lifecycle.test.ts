@@ -3,13 +3,13 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AgentRelayPersistence } from "@khoralabs/agent-relay";
 import {
   applyTestEncryptionEnv,
   createTestEncryptionMaterial,
   TestKeyProvider,
 } from "@khoralabs/colonnade-crypto";
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
+import type { AgentRelayPersistence } from "@khoralabs/host-runtime";
 import { InMemoryFrameRelayStoreStrategy } from "@khoralabs/obp-frame-relay";
 import { createRelayColonnadeSocial } from "./create-relay-colonnade-social";
 import { createRelayPrincipalLifecycle, type RelayPrincipalLifecycle } from "./principal-lifecycle";

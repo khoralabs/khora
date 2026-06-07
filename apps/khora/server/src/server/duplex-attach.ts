@@ -1,5 +1,5 @@
-import { inboxWebSocketFromDuplexUtf8, runInboxDuplexAttachment } from "@khoralabs/agent-relay";
 import type { DuplexByteStream } from "@khoralabs/duplex-byte-stream";
+import { inboxWebSocketFromDuplexUtf8, runInboxDuplexAttachment } from "@khoralabs/host-runtime";
 import { AuthError } from "@khoralabs/khora-auth";
 import { type KhoraHostContext, popRelayInboxDrainItemsForDid } from "@khoralabs/khora-host";
 import { attachDuplexAsFrameRelayPeer } from "@khoralabs/obp-frame-relay";

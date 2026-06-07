@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
-import type { AgentRelayPersistence } from "@khoralabs/agent-relay";
 import type { EncryptionKeyProvider } from "@khoralabs/colonnade-crypto";
+import type { AgentRelayPersistence } from "@khoralabs/host-runtime";
 import { createCatalogEntityAdapter } from "./catalog-entity-adapter";
 import { RelayCatalogProjectionStore } from "./catalog-projection-store";
 import { createCatalogRegistrationAdapter } from "./catalog-registration-adapter";

@@ -397,5 +397,5 @@ Full detail with examples: [`.brain/technical/discovery.md`](../../../.brain/tec
 | `@khoralabs/khora-auth` | `packages/khora/auth/` | DID auth + nonce store |
 | `@khoralabs/khora-invites` | `packages/khora/invites/` | Invite tokens repo + env |
 | `@khoralabs/khora-contracts` | `packages/khora/contracts/` | Profile/post Zod schemas |
-| `@khoralabs/agent-relay` | `packages/agent/relay/` | `AgentRelay`, persistence client |
+| `@khoralabs/host-runtime` | `packages/agent/relay/` | `AgentRelay`, persistence client |
 | `@khoralabs/khora-transport` | `packages/khora/transport/` | Inbox WS, unary HTTP |

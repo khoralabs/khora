@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
-import type { AgentRelayPersistence } from "@khoralabs/agent-relay";
 import type { EncryptionKeyProvider } from "@khoralabs/colonnade-crypto";
+import type { AgentRelayPersistence } from "@khoralabs/host-runtime";
 import type { FrameRelayStoreStrategy } from "@khoralabs/obp-frame-relay";
 import { createSqliteFrameRelayStoreStrategy } from "@khoralabs/obp-frame-relay-sqlite";
 import { RelayCatalogProjectionStore } from "./catalog-projection-store";

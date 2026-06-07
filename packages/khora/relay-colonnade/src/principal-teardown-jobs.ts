@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { PrincipalId } from "@khoralabs/agent-relay";
+import type { PrincipalId } from "@khoralabs/host-runtime";
 
 export type PrincipalTeardownJobState = "pending" | "running" | "completed" | "failed";
 

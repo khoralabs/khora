@@ -1,14 +1,14 @@
-import {
-  AGENT_RELAY_EVENT_KIND,
-  type AgentRelayEventHandlerCtx,
-  type AgentRelayEventUnion,
-  type InboxSubscriptionMatch,
-} from "@khoralabs/agent-relay";
 import type {
   ColonnadePublicationClient,
   PostOperationOutput,
 } from "@khoralabs/colonnade-persistence";
 import { randomId } from "@khoralabs/colonnade-persistence";
+import {
+  AGENT_RELAY_EVENT_KIND,
+  type AgentRelayEventHandlerCtx,
+  type AgentRelayEventUnion,
+  type InboxSubscriptionMatch,
+} from "@khoralabs/host-runtime";
 import {
   type KhoraPost,
   type KhoraProfile,

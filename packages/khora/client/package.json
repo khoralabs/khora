@@ -23,7 +23,7 @@
     "@khoralabs/khora-transport": "workspace:*",
     "@khoralabs/obp-v2-session-impl": "workspace:*",
     "@khoralabs/obp-v2-transport-ws": "workspace:*",
-    "@khoralabs/agent-relay": "workspace:*",
+    "@khoralabs/host-runtime": "workspace:*",
     "zod": "^4"
   },
   "devDependencies": {

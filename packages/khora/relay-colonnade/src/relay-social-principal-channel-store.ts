@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { PrincipalId } from "@khoralabs/agent-relay";
+import type { PrincipalId } from "@khoralabs/host-runtime";
 
 export class RelaySocialPrincipalChannelStore {
   private readonly insertStmt;

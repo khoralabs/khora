@@ -1,4 +1,4 @@
-import type { AgentNotification } from "@khoralabs/agent-relay";
+import type { AgentNotification } from "@khoralabs/host-runtime";
 import z from "zod";
 
 const zInboxRow = z.object({

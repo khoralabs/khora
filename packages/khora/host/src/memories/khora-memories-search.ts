@@ -1,4 +1,4 @@
-import type { PrincipalId } from "@khoralabs/agent-relay";
+import type { PrincipalId } from "@khoralabs/host-runtime";
 import type {
   KhoraSearchQuery,
   KhoraSearchRequest,

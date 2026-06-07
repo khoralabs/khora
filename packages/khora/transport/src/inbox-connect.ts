@@ -1,5 +1,5 @@
 import { Buffer } from "node:buffer";
-import type { AgentNotification } from "@khoralabs/agent-relay";
+import type { AgentNotification } from "@khoralabs/host-runtime";
 import { type AgentSigner, signedInboxUrl } from "@khoralabs/khora-auth";
 import type { KhoraClientEvent } from "./client-events";
 import { type InboxNotificationRow, parseInboxWebSocketMessage } from "./inbox-ws";

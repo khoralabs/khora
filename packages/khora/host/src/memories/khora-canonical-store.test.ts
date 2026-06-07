@@ -1,11 +1,11 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
-import { createAgentRelayPersistenceClient } from "@khoralabs/agent-relay";
 import {
   createTestEncryptionMaterial,
   TEST_POST_AUTHOR_SIGNATURE,
 } from "@khoralabs/colonnade-crypto";
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
+import { createAgentRelayPersistenceClient } from "@khoralabs/host-runtime";
 import type { KhoraPost, KhoraProfile } from "@khoralabs/khora-contracts";
 import { ids, MemoriesClient } from "@khoralabs/memories-core";
 import {

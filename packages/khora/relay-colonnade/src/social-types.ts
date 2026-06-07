@@ -1,4 +1,4 @@
-import type { AgentRelayEntityUpsert, PrincipalId } from "@khoralabs/agent-relay";
+import type { AgentRelayEntityUpsert, PrincipalId } from "@khoralabs/host-runtime";
 
 /** Pairwise relationship (e.g. frame channel room); peer is unknown until {@link SocialRelationshipPersistence.bindPeer}. */
 export type SocialRelationshipRow = {
