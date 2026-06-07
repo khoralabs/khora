@@ -942,7 +942,7 @@
         "typescript": "^5",
       },
     },
-    "packages/percolator": {
+    "packages/percolator/runtime": {
       "name": "@khoralabs/percolator",
       "version": "0.0.0",
       "dependencies": {
@@ -957,7 +957,7 @@
         "typescript": "^5",
       },
     },
-    "packages/percolator-sqlite": {
+    "packages/percolator/sqlite": {
       "name": "@khoralabs/percolator-sqlite",
       "version": "0.0.0",
       "dependencies": {
@@ -1377,9 +1377,9 @@
 
     "@khoralabs/obp-transport-ws": ["@khoralabs/obp-transport-ws@workspace:packages/obp/transport-ws/impl/ts"],
 
-    "@khoralabs/percolator": ["@khoralabs/percolator@workspace:packages/percolator"],
+    "@khoralabs/percolator": ["@khoralabs/percolator@workspace:packages/percolator/runtime"],
 
-    "@khoralabs/percolator-sqlite": ["@khoralabs/percolator-sqlite@workspace:packages/percolator-sqlite"],
+    "@khoralabs/percolator-sqlite": ["@khoralabs/percolator-sqlite@workspace:packages/percolator/sqlite"],
 
     "@khoralabs/reciprocal-rank-fusion": ["@khoralabs/reciprocal-rank-fusion@workspace:packages/libs/reciprocal-rank-fusion"],
 
