@@ -34,6 +34,7 @@
     "apps/khora/plugins/*",
     "apps/khoralabs/*",
     "apps/vellum/*",
+    "packages/*",
     "packages/libs/*",
     "packages/agent/*",
     "packages/memories/packages/*",

@@ -225,51 +225,6 @@
         "typescript": "^5",
       },
     },
-    "packages/agent/identity": {
-      "name": "@khoralabs/agent-identity",
-      "dependencies": {
-        "pino": "^10.3.1",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "ai": "^6.0.142",
-        "zod": "^4",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/agent/identity-adapters": {
-      "name": "@khoralabs/agent-identity-adapters",
-      "dependencies": {
-        "@khoralabs/agent-identity": "workspace:*",
-        "ai": "^6",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "zod": "^4",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/agent/identity-spec": {
-      "name": "@khoralabs/agent-identity-spec",
-    },
-    "packages/agent/persisted-signer": {
-      "name": "@khoralabs/agent-persisted-signer",
-      "version": "0.0.0",
-      "dependencies": {
-        "iso-signatures": "^0.5.1",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
     "packages/agent/relay": {
       "name": "@khoralabs/agent-relay",
       "version": "0.0.0",
@@ -695,6 +650,18 @@
         "typescript": "^5",
       },
     },
+    "packages/memories": {
+      "name": "@khoralabs/memories",
+      "devDependencies": {
+        "@biomejs/biome": "^2.4.16",
+        "@types/bun": "latest",
+        "husky": "^9.1.7",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "packages/memories/packages/agents/adapter": {
       "name": "@khoralabs/memories-adapter",
       "version": "0.1.0",
@@ -1089,6 +1056,20 @@
         "typescript": "^5",
       },
     },
+    "packages/persisted-signer": {
+      "name": "@khoralabs/agent-persisted-signer",
+      "version": "0.0.0",
+      "dependencies": {
+        "iso-signatures": "^0.5.1",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "packages/vellum/bind-policy": {
       "name": "@khoralabs/vellum-bind-policy",
       "version": "0.0.0",
@@ -1268,15 +1249,9 @@
 
     "@khoralabs/agent-capabilities-ai-sdk": ["@khoralabs/agent-capabilities-ai-sdk@0.1.0", "", { "dependencies": { "@khoralabs/agent-capabilities": "^0.1.0", "ai": "^6" }, "peerDependencies": { "typescript": "^5" } }, "sha512-flk0KF54z0DiKPnSQEz9dxAicMdMYfyyT7M0ScxQvK8EC4yiNdqj5ivm1uTUsWLNGcm3FPzv6CB17slLqck92A=="],
 
-    "@khoralabs/agent-identity": ["@khoralabs/agent-identity@workspace:packages/agent/identity"],
-
-    "@khoralabs/agent-identity-adapters": ["@khoralabs/agent-identity-adapters@workspace:packages/agent/identity-adapters"],
-
-    "@khoralabs/agent-identity-spec": ["@khoralabs/agent-identity-spec@workspace:packages/agent/identity-spec"],
-
     "@khoralabs/agent-io": ["@khoralabs/agent-io@workspace:packages/libs/agent-io"],
 
-    "@khoralabs/agent-persisted-signer": ["@khoralabs/agent-persisted-signer@workspace:packages/agent/persisted-signer"],
+    "@khoralabs/agent-persisted-signer": ["@khoralabs/agent-persisted-signer@workspace:packages/persisted-signer"],
 
     "@khoralabs/agent-relay": ["@khoralabs/agent-relay@workspace:packages/agent/relay"],
 
@@ -1321,6 +1296,8 @@
     "@khoralabs/khora-transport": ["@khoralabs/khora-transport@workspace:packages/khora/transport"],
 
     "@khoralabs/khoralabs-homepage": ["@khoralabs/khoralabs-homepage@workspace:apps/khoralabs/homepage"],
+
+    "@khoralabs/memories": ["@khoralabs/memories@workspace:packages/memories"],
 
     "@khoralabs/memories-adapter": ["@khoralabs/memories-adapter@workspace:packages/memories/packages/agents/adapter"],
 
