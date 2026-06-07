@@ -22,7 +22,7 @@ bun run --cwd apps/khora/cli start inbox stop
 
 ## Configuration
 
-Default config path: `~/.khora/daemon.config.json` (extends `base.config.json` from postinstall).
+Default config path: `~/.khora/daemon.config.json` (extends `base.config.json` from `khora setup`).
 
 | Field / env | Purpose |
 |-------------|---------|

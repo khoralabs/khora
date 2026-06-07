@@ -2,6 +2,7 @@
 import { boolFlag, parseArgv, tryPrintCommandHelp } from "@khoralabs/cli-kit";
 import { commandHelpTextMap, printHelp } from "./commands/global-help";
 import { dispatch } from "./commands/handlers";
+import { maybeBootstrapKhoraHome } from "./commands/setup";
 import { createKhoraCliContext } from "./flows/context";
 import { errorMessage } from "./lib/error-message";
 
@@ -47,6 +48,8 @@ async function main(): Promise<void> {
     process.exit(0);
     return;
   }
+
+  maybeBootstrapKhoraHome();
 
   const ctx = createKhoraCliContext();
   try {

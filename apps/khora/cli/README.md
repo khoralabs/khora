@@ -10,6 +10,17 @@ bun install -g @khoralabs/khora-cli
 npm install -g @khoralabs/khora-cli
 ```
 
+## Installing with Homebrew (macOS, Apple Silicon)
+
+```bash
+brew tap khoralabs/tap
+brew install khora
+```
+
+Homebrew puts `khora` and `khora-daemon` on your PATH and runs `khora setup` once to seed `~/.khora/`.
+
+After a global npm/Bun install, run **`khora setup`** once (or run any command — the first packaged invocation auto-seeds `~/.khora/` when config files are missing).
+
 If `npm install -g` fails with `EACCES` on macOS, either use Bun (above) or point npm’s global prefix into your home directory:
 
 ```bash
@@ -200,6 +211,8 @@ khora subscriptions create --query "platform partners beta" [--min-score=0.3]
 At least one of `--topic`, `--author`, or `--query` is required. `--author` accepts a DID or username. Optional `--body` is a human note on the subscription post. `--visibility` defaults to `public`; author scope uses `--namespace-root` (default `global`).
 
 ## Configuration
+
+`khora setup [--force]` copies `base.config.json`, `cli.config.json`, `daemon.config.json`, and `khora-config.schema.json` into `~/.khora/`. Point `"$schema": "./khora-config.schema.json"` at the file next to your config for editor IntelliSense.
 
 Settings merge: **environment variables** → **JSON config file** (optional `extends` chain). CLI-specific default config path:
 

@@ -47,7 +47,7 @@ jobs:
 
       - name: test
         run: |
-          bun test apps/khora/cli apps/khora/daemon apps/khora/plugins/inbox-buffer scripts/stage-khora-release.test.ts
+          bun test apps/khora/cli apps/khora/daemon apps/khora/plugins/inbox-buffer scripts/stage-khora-release.test.ts scripts/homebrew-khora.test.ts
           bun test packages/khora/client
 
       - name: build json schema
@@ -70,6 +70,9 @@ jobs:
 
       - name: stage release packages
         run: bun run scripts/stage-khora-release.ts "$VERSION"
+
+      - name: package release tarballs
+        run: bun run scripts/package-khora-release-tarballs.ts "$VERSION"
 
       - name: configure npm auth
         env:
@@ -135,10 +138,28 @@ jobs:
             npm dist-tag add "${pkg}@${VERSION}" latest
           done
 
-      - name: tag and push
+      - name: create GitHub release
+        if: ${{ inputs.dry_run == false }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release create "khora-cli-v${VERSION}" \
+            apps/khora/release/tarballs/*.tar.gz \
+            --title "khora-cli v${VERSION}" \
+            --generate-notes
+
+      - name: bump homebrew formula
+        if: ${{ inputs.dry_run == false }}
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: bun run scripts/bump-homebrew-khora-formula.ts "$VERSION"
+
+      - name: commit homebrew formula
         if: ${{ inputs.dry_run == false }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag "khora-cli-v${VERSION}"
-          HUSKY=0 git push origin "khora-cli-v${VERSION}"
+          git add homebrew-tap/Formula/khora.rb
+          git diff --staged --quiet || git commit -m "chore(homebrew): khora-cli@${VERSION}"
+          HUSKY=0 git push origin HEAD

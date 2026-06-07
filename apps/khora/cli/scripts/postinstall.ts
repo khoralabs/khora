@@ -2,8 +2,8 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 /**
- * Pure library for the canonical-config drop into `~/.khora/`.
- * Bundled into the npm postinstall script; no top-level side effects.
+ * Pure library for seeding canonical config templates into `~/.khora/`.
+ * Used by `khora setup` and first-run bootstrap in the CLI.
  */
 
 const CONFIG_FILES = ["base.config.json", "cli.config.json", "daemon.config.json"] as const;
@@ -17,13 +17,6 @@ export type KhoraSetupResult = {
   overwritten: string[];
   skipped: string[];
   schema: KhoraSetupSchemaStatus;
-};
-
-export type PostinstallResult = {
-  destDir: string;
-  copied: string[];
-  skipped: string[];
-  schemaCopied: boolean;
 };
 
 export function runKhoraConfigSetup(opts: {
@@ -68,21 +61,6 @@ export function runKhoraConfigSetup(opts: {
   }
 
   return { destDir: dest, copied, overwritten, skipped, schema };
-}
-
-export function runKhoraPostinstall(opts: { pkgDistDir: string; home: string }): PostinstallResult {
-  const setup = runKhoraConfigSetup({
-    configsDir: path.join(opts.pkgDistDir, "configs"),
-    schemaPath: path.join(opts.pkgDistDir, SCHEMA_FILE),
-    home: opts.home,
-    force: false,
-  });
-  return {
-    destDir: setup.destDir,
-    copied: setup.copied,
-    skipped: setup.skipped,
-    schemaCopied: setup.schema === "copied",
-  };
 }
 
 export const POSTINSTALL_SCHEMA_FILE = SCHEMA_FILE;

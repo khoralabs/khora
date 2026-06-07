@@ -9,6 +9,7 @@ import { handlePostsCreate, handlePostsDelete, handlePostsGet, handlePostsUpdate
 import { handleProfileUpdate } from "./profile";
 import { handleRegister } from "./register";
 import { handleSearch } from "./search";
+import { runSetupCommand } from "./setup";
 import { handleSubscriptionsCreate, handleSubscriptionsList } from "./subscriptions";
 import { handleUnregister } from "./unregister";
 import { handleWhoami } from "./whoami";
@@ -19,6 +20,11 @@ export async function dispatch(
   flags: FlagMap,
 ): Promise<void> {
   const [a, b, c] = positional;
+
+  if (a === "setup") {
+    await runSetupCommand(flags);
+    return;
+  }
 
   if (a === "keygen") {
     await handleKeygen(flags);

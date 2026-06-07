@@ -9,7 +9,7 @@ GitHub Actions: [`.github/workflows/release-khora-cli.yml`](../../../.github/wor
 | `@khoralabs/khora-cli-darwin-arm64` (and linux-*) | Native `khora` binary |
 | `@khoralabs/khora-daemon-*` | Native `khora-daemon` binary |
 | `@khoralabs/khora-daemon` | Meta launcher + optional platform deps |
-| `@khoralabs/khora-cli` | Meta launcher, configs, postinstall |
+| `@khoralabs/khora-cli` | Meta launcher, configs, schema |
 
 Order: **6 platform** → **daemon meta** → **cli meta**.
 
@@ -80,3 +80,16 @@ All **8** packages must publish under the **same semver** on every release. The 
 When publishing with the `latest` tag, CI runs `npm dist-tag add <pkg>@<version> latest` on every package after publish.
 
 Before publish, CI smoke-tests each compiled binary (`scripts/verify-khora-release-binaries.ts`) so startup crashes (e.g. eager native-binding loads) fail the release.
+
+## GitHub release tarballs + Homebrew
+
+After staging, CI runs `scripts/package-khora-release-tarballs.ts` to produce `apps/khora/release/tarballs/khora-<platform>.tar.gz` (CLI + daemon + configs + schema). Assets upload to GitHub Releases under tag `khora-cli-v<semver>`.
+
+The Homebrew formula lives in [`homebrew-tap/Formula/khora.rb`](../../../homebrew-tap/Formula/khora.rb). Release CI rewrites it via `scripts/bump-homebrew-khora-formula.ts` and pushes to [`khoralabs/homebrew-tap`](https://github.com/khoralabs/homebrew-tap) when `HOMEBREW_TAP_TOKEN` is set.
+
+Install:
+
+```bash
+brew tap khoralabs/tap
+brew install khora
+```

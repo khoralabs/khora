@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { strFlag } from "@khoralabs/cli-kit";
@@ -10,17 +12,41 @@ import { resolveKhoraDataDir } from "@khoralabs/khora-daemon/daemon-config";
 import { agentIdentityPath, cliBaseUrl } from "./flows/context";
 import { khoraCliResolvedConfig } from "./khora-app-config";
 
-export function daemonEntryPath(): string {
+const MONOREPO_DAEMON_ENTRY = fileURLToPath(new URL("../../daemon/src/index.ts", import.meta.url));
+
+function findExecutableOnPath(name: string): string | undefined {
+  const pathEnv = process.env.PATH ?? "";
+  for (const dir of pathEnv.split(path.delimiter)) {
+    if (!dir) continue;
+    const candidate = path.join(dir, name);
+    if (existsSync(candidate)) return candidate;
+  }
+  return undefined;
+}
+
+function siblingDaemonBinary(): string | undefined {
+  const execBase = path.basename(process.execPath);
+  if (execBase === "bun" || execBase === "bun.exe") return undefined;
+  const sibling = path.join(path.dirname(process.execPath), "khora-daemon");
+  return existsSync(sibling) ? sibling : undefined;
+}
+
+/** Resolve a packaged `khora-daemon` binary (env, sibling, or PATH). */
+export function resolveDaemonBinary(): string | undefined {
   const fromEnv = process.env.KHORA_DAEMON_BIN?.trim();
   if (fromEnv !== undefined && fromEnv.length > 0) return fromEnv;
-  return fileURLToPath(new URL("../../daemon/src/index.ts", import.meta.url));
+  return siblingDaemonBinary() ?? findExecutableOnPath("khora-daemon");
+}
+
+export function daemonEntryPath(): string {
+  return resolveDaemonBinary() ?? MONOREPO_DAEMON_ENTRY;
 }
 
 export function daemonSpawnCmd(flags?: FlagMap): string[] {
-  const bin = process.env.KHORA_DAEMON_BIN?.trim();
-  if (bin !== undefined && bin.length > 0) return [bin];
+  const bin = resolveDaemonBinary();
+  if (bin !== undefined) return [bin];
   void flags;
-  return ["bun", "run", daemonEntryPath()];
+  return ["bun", "run", MONOREPO_DAEMON_ENTRY];
 }
 
 export function resolveCliDataDir(flags: FlagMap): string {

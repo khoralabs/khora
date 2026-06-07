@@ -7,7 +7,6 @@
  *   apps/khora/daemon/dist/<bun-target>/khora-daemon
  *   apps/khora/cli/assets/configs/{base,cli,daemon}.config.json
  *   packages/khora/client/khora-config.schema.json
- *   apps/khora/cli/scripts/postinstall.entry.ts
  *
  * Output tree: `<releaseDir>/{cli,daemon,cli-<slug>,daemon-<slug>}/...`
  * Publish order: all 6 platform pkgs → daemon meta → cli meta.
@@ -79,15 +78,7 @@ export function cliMetaPkgJson({
     keywords: ["khora", "agent", "cli", "khoralabs"],
     type: "module",
     bin: { khora: "./bin/khora.cjs" },
-    files: [
-      "bin/**",
-      "configs/**",
-      "postinstall.js",
-      "khora-config.schema.json",
-      "README.md",
-      "LICENSE",
-    ],
-    scripts: { postinstall: "node ./postinstall.js" },
+    files: ["bin/**", "configs/**", "khora-config.schema.json", "README.md", "LICENSE"],
     dependencies: { "@khoralabs/khora-daemon": version },
     optionalDependencies,
     publishConfig: { access: "public" },
@@ -234,27 +225,6 @@ export async function stageKhoraRelease(opts: StageOptions): Promise<StageResult
   mkdirSync(path.join(cliMetaDir, "configs"), { recursive: true });
   await Bun.write(path.join(cliMetaDir, "bin", "khora.cjs"), cliLauncherSource());
   await Bun.$`chmod +x ${path.join(cliMetaDir, "bin", "khora.cjs")}`.quiet();
-
-  // bundle postinstall.entry.ts -> postinstall.js (target=node)
-  const postinstallSrc = path.join(workspaceRoot, "apps/khora/cli/scripts/postinstall.entry.ts");
-  const postinstallOut = path.join(cliMetaDir, "postinstall.js");
-  const piResult = await Bun.build({
-    entrypoints: [postinstallSrc],
-    target: "node",
-    format: "esm",
-    packages: "bundle",
-    outdir: cliMetaDir,
-    naming: { entry: "postinstall.js" },
-    minify: false,
-  });
-  if (!piResult.success) {
-    for (const log of piResult.logs) console.error(log);
-    throw new Error("failed to bundle postinstall.entry.ts");
-  }
-  // Ensure file was emitted at the expected name (Bun.build with naming above does this).
-  if (!existsSync(postinstallOut)) {
-    throw new Error(`postinstall bundle missing at ${postinstallOut}`);
-  }
 
   // canonical configs
   const configsSrc = path.join(workspaceRoot, "apps/khora/cli/assets/configs");

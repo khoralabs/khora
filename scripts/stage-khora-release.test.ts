@@ -28,9 +28,14 @@ describe("launcher sources", () => {
 
 describe("package.json factories", () => {
   test("cli meta lists daemon dependency + platform optionalDependencies", () => {
-    const pkg = cliMetaPkgJson({ version: "1.2.3" }) as Record<string, Record<string, string>>;
+    const pkg = cliMetaPkgJson({ version: "1.2.3" }) as Record<string, unknown> & {
+      dependencies?: Record<string, string>;
+      optionalDependencies?: Record<string, string>;
+      scripts?: Record<string, string>;
+    };
     expect(pkg.dependencies?.["@khoralabs/khora-daemon"]).toBe("1.2.3");
     expect(Object.keys(pkg.optionalDependencies ?? {}).length).toBe(3);
+    expect(pkg.scripts?.postinstall).toBeUndefined();
   });
 
   test("platform pkg.json for cli and daemon binaries", () => {
@@ -59,18 +64,8 @@ describe("stageKhoraRelease", () => {
     workspace = mkdtempSync(path.join(tmpdir(), "khora-stage-"));
     releaseDir = path.join(workspace, "apps/khora/release");
 
-    mkdirSync(path.join(workspace, "apps/khora/cli/scripts"), { recursive: true });
     mkdirSync(path.join(workspace, "apps/khora/cli/assets/configs"), { recursive: true });
     mkdirSync(path.join(workspace, "packages/khora/client"), { recursive: true });
-
-    writeFileSync(
-      path.join(workspace, "apps/khora/cli/scripts/postinstall.ts"),
-      `export function runKhoraPostinstall() { return { destDir: "/tmp", copied: [], skipped: [], schemaCopied: false }; }`,
-    );
-    writeFileSync(
-      path.join(workspace, "apps/khora/cli/scripts/postinstall.entry.ts"),
-      `import { runKhoraPostinstall } from "./postinstall"; runKhoraPostinstall();`,
-    );
 
     for (const name of ["base.config.json", "cli.config.json", "daemon.config.json"]) {
       writeFileSync(
