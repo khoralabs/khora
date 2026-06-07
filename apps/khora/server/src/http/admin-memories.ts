@@ -23,20 +23,19 @@ import {
 import type { MemoriesPersistence } from "@khoralabs/memories-core/persistence";
 import { MemoryInvestigatorClient } from "@khoralabs/memories-investigator";
 import { canonicalOntology } from "@khoralabs/memories-ontologies";
-import {
-  buildNamespaceGraphLayout,
-  buildNamespaceSubtreeGraphLayout,
-  getMemoriesSqliteDatabase,
-  listMemoryNamespaces,
-  loadEdgePreview,
-  loadSourceMapTextPreview,
-  qualifyMemoryKey,
-} from "@khoralabs/memories-sqlite";
+import { getMemoriesSqliteDatabase, listMemoryNamespaces } from "@khoralabs/memories-sqlite";
 import {
   RELAY_NAMESPACE_ENTITY_PROFILE,
   RelayCatalogProjectionStore,
 } from "@khoralabs/relay-colonnade";
 import { openEncryptedDatabase } from "@khoralabs/sqlite-crypto";
+import {
+  buildNamespaceGraphLayout,
+  buildNamespaceSubtreeGraphLayout,
+  loadEdgePreview,
+  loadSourceMapTextPreview,
+  qualifyMemoryKey,
+} from "@khoralabs/sqlite-graph-projections";
 import { embedMany } from "ai";
 import { envCatalogPath } from "../env";
 import { envMemoriesEnabled } from "../memories-env";
@@ -300,7 +299,7 @@ async function handleMemoriesRoute(req: Request, url: URL, deps: HostRouteDeps):
       return jsonResponse({ error: "missing required query namespace and edgeId" }, 400);
     }
     try {
-      const detail = loadEdgePreview(db, namespace, edgeId);
+      const detail = loadEdgePreview(persistence, namespace, edgeId);
       if (!detail) {
         return jsonResponse({ error: "edge not found in namespace" }, 404);
       }
