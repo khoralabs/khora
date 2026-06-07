@@ -51,7 +51,10 @@ npm publish --access public --tag next --dry-run
 
 ## Staging locally
 
+`packages/memories` is a git submodule. CI and local installs need it checked out before `bun install`:
+
 ```bash
+git submodule update --init --recursive
 bun install
 bun run --cwd packages/khora/client build:schema
 for t in bun-darwin-arm64 bun-linux-x64 bun-linux-arm64; do
