@@ -77,6 +77,8 @@ This is an active research problem at the intersection of RAG and agent safety.
 
 OBP v2 is designed for two-party negotiation. Auction-like settings, consortium agreements, or group contracting require N-party causal consistency models. This is an open research problem.
 
+**Near-term direction:** keep NBC chains bilateral; generalize the **room multiplex** to N transport peers and late join, and model multi-party scenarios as a **mesh of bilateral chains** plus a room roster. See [`technical/khora-vellum-separation.md`](../technical/khora-vellum-separation.md) §3. N-signer causal logs on a single chain remain deferred.
+
 ---
 
 ## Scaling the percolator semantically

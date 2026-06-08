@@ -53,7 +53,9 @@ The Smithy specification (`packages/obp/v2/nbc/spec`) is the normative source; T
 
 ## Session mechanics
 
-Each bilateral session runs over a Khora room frame channel:
+Each bilateral session runs over a frame channel (today: Khora-hosted room WebSocket; **target:** Vellum-spawned ephemeral relay):
+
+**Roadmap:** Vellum owns room allocation, relay infra, pluggable principal auth, and N-peer room multiplex with bilateral NBC chains only. See [`technical/khora-vellum-separation.md`](../technical/khora-vellum-separation.md).
 
 1. **SessionInit** — exchanged `init` envelopes establish `session_id`, party identities, actor public keys, and `genesis_hash`
 2. **E2EE handshake** — two plaintext `e2ee_hs` frames exchange ephemeral X25519 public keys

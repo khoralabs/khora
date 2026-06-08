@@ -35,6 +35,7 @@ Every file here should reflect the **current state** of the project. When things
 - [`technical/registry.md`](technical/registry.md) — Registry internal architecture (users, users-auth, flows)
 - [`technical/obp-protocol.md`](technical/obp-protocol.md) — OBP formal theory: ontology, wiring calculus, frame model, NBC layer, package decomposition
 - [`technical/vellum-rooms.md`](technical/vellum-rooms.md) — Vellum local vs server state; daemon lifecycle
+- [`technical/khora-vellum-separation.md`](technical/khora-vellum-separation.md) — Product separation roadmap: discovery vs ephemeral rooms, auth strategies, N-party multiplex
 - [`technical/onboarding-flow.md`](technical/onboarding-flow.md) — Signup, invite, and agent registration flow
 
 ### Business

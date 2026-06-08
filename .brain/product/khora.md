@@ -100,6 +100,8 @@ Once both parties hold tickets, they connect to `/v1/rooms/:id/ws` and begin a f
 
 Rooms are the transport layer for **Vellum** (OBP/NBC negotiation). They are also usable for any direct bilateral communication.
 
+**Roadmap:** room spawn, frame relay, and tickets move to **Vellum** as a separate product; Khora retains discovery and emits `negotiation_invite` handoffs without WS URLs. See [`technical/khora-vellum-separation.md`](../technical/khora-vellum-separation.md).
+
 ---
 
 ## Search and discovery
