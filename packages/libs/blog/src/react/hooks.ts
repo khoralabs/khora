@@ -11,13 +11,13 @@ function getSearchSnapshot() {
   return window.location.search;
 }
 
-export function useBlogSearchParams(): URLSearchParams {
-  const search = useSyncExternalStore(subscribeToSearch, getSearchSnapshot, () => "");
+export function useBlogSearchParams(initialSearch = ""): URLSearchParams {
+  const search = useSyncExternalStore(subscribeToSearch, getSearchSnapshot, () => initialSearch);
   return useMemo(() => new URLSearchParams(search), [search]);
 }
 
-export function useBlogManifest<T extends BlogPostMeta>(posts: T[]) {
-  const searchParams = useBlogSearchParams();
+export function useBlogManifest<T extends BlogPostMeta>(posts: T[], initialSearch = "") {
+  const searchParams = useBlogSearchParams(initialSearch);
   const activeTag = searchParams.get("tag") ?? undefined;
 
   const sorted = useMemo(() => sortPostsByDate(posts), [posts]);

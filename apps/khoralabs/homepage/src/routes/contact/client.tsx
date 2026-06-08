@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { renderRoute } from "../../render-route";
 import "../../../styles/globals.css";
 
-function ContactPage() {
+export function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
 
   return (
@@ -80,4 +80,6 @@ function ContactPage() {
   );
 }
 
-renderRoute(ContactPage);
+if (typeof document !== "undefined") {
+  renderRoute(ContactPage);
+}

@@ -2,6 +2,7 @@ import type { ComponentProps } from "react";
 
 import { NoiseOverlay } from "@/components/noise-overlay";
 import { SiteNav } from "@/components/site-nav";
+import { ASSETS } from "@/lib/asset-urls";
 import {
   footerDefaultClass,
   footerLegalLinkClass,
@@ -10,12 +11,6 @@ import {
   shellClass,
 } from "@/lib/ui-styles";
 import { cn } from "@/lib/utils";
-
-import consumerMeshUrl from "../assets/consumer_network_mesh.svg";
-import handsBg from "../assets/hands.png";
-import consumerHandsUrl from "../assets/khora_hands_vertical.png";
-import skyBg from "../assets/khora_landing_sky.jpg";
-import logoUrl from "../assets/khora_logo_text_w.svg";
 
 function Root({ className, ...props }: ComponentProps<"div">) {
   return <div {...props} className={cn(shellClass, className)} />;
@@ -27,7 +22,7 @@ function BackgroundImage({ className, style, ...props }: ComponentProps<"div">) 
       {...props}
       aria-hidden
       className={cn("pointer-events-none fixed inset-0 bg-cover bg-center bg-no-repeat", className)}
-      style={{ backgroundImage: `url(${handsBg})`, ...style }}
+      style={{ backgroundImage: `url(${ASSETS.hands})`, ...style }}
     />
   );
 }
@@ -38,7 +33,7 @@ function SkyBackground({ className, style, ...props }: ComponentProps<"div">) {
       {...props}
       aria-hidden
       className={cn("pointer-events-none fixed inset-0 bg-cover bg-center bg-no-repeat", className)}
-      style={{ backgroundImage: `url(${skyBg})`, ...style }}
+      style={{ backgroundImage: `url(${ASSETS.sky})`, ...style }}
     />
   );
 }
@@ -51,12 +46,12 @@ function ConsumerBackground({ className, ...props }: ComponentProps<"div">) {
       className={cn("pointer-events-none fixed inset-0 overflow-hidden bg-[#E2E2E2]", className)}
     >
       <img
-        src={consumerMeshUrl}
+        src={ASSETS.consumerMesh}
         alt=""
         className="absolute inset-0 h-full w-full object-cover opacity-90"
       />
       <img
-        src={consumerHandsUrl}
+        src={ASSETS.consumerHands}
         alt=""
         className="absolute top-0 left-1/2 h-dvh w-auto max-w-none -translate-x-1/2 object-contain object-center opacity-30 md:translate-x-[calc(-50%+200px)] lg:left-auto lg:right-0 lg:translate-x-[100px] lg:object-right"
       />
@@ -104,7 +99,13 @@ function Header({ className, children, ...props }: ComponentProps<"header">) {
       {children ?? (
         <>
           <a href="/" className="block shrink-0 transition-opacity hover:opacity-80">
-            <img src={logoUrl} alt="khora" width={162} height={46} className="h-4 w-auto md:h-6" />
+            <img
+              src={ASSETS.logoWhite}
+              alt="khora"
+              width={162}
+              height={46}
+              className="h-4 w-auto md:h-6"
+            />
           </a>
           <SiteNav />
         </>

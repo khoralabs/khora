@@ -33,8 +33,7 @@ function BlogPostNotFound() {
   );
 }
 
-function BlogPostPage() {
-  const slug = getSlugFromPathname(window.location.pathname) ?? "";
+export function BlogPostPage({ slug }: { slug: string }) {
   const post = usePostBySlug(blogPosts, slug);
 
   if (!post) {
@@ -97,4 +96,7 @@ function BlogPostPage() {
   );
 }
 
-renderRoute(BlogPostPage);
+if (typeof document !== "undefined") {
+  const slug = getSlugFromPathname(window.location.pathname) ?? "";
+  renderRoute(BlogPostPage, { slug });
+}

@@ -68,8 +68,9 @@ function BlogEmptyState() {
   );
 }
 
-function BlogPage() {
-  const { posts, filteredPosts, activeTag, setTag } = useBlogManifest(blogPosts);
+export function BlogPage({ initialTag }: { initialTag?: string } = {}) {
+  const initialSearch = initialTag ? `?tag=${encodeURIComponent(initialTag)}` : "";
+  const { posts, filteredPosts, activeTag, setTag } = useBlogManifest(blogPosts, initialSearch);
 
   return (
     <SiteLayout.Root>
@@ -145,4 +146,7 @@ function BlogPage() {
   );
 }
 
-renderRoute(BlogPage);
+if (typeof document !== "undefined") {
+  const initialTag = new URLSearchParams(window.location.search).get("tag") ?? undefined;
+  renderRoute(BlogPage, { initialTag });
+}

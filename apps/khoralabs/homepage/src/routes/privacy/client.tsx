@@ -4,7 +4,7 @@ import { renderRoute } from "../../render-route";
 import "../../../styles/globals.css";
 import PrivacyDocument from "./privacy-policy.md";
 
-function PrivacyPage() {
+export function PrivacyPage() {
   return (
     <SiteLayout.Root>
       <SiteLayout.Noise />
@@ -21,4 +21,6 @@ function PrivacyPage() {
   );
 }
 
-renderRoute(PrivacyPage);
+if (typeof document !== "undefined") {
+  renderRoute(PrivacyPage);
+}

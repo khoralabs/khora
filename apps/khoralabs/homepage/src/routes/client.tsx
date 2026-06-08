@@ -3,6 +3,7 @@ import { SiteLayout } from "@/components/site-layout";
 import { SiteNav } from "@/components/site-nav";
 import { Separator } from "@/components/ui/separator";
 import { WaitlistSignup } from "@/components/waitlist-signup";
+import { ASSETS } from "@/lib/asset-urls";
 import {
   consumerLandingBodyClass,
   consumerLandingHeaderClass,
@@ -14,7 +15,6 @@ import {
   footerLegalLinkClass,
 } from "@/lib/ui-styles";
 import { cn } from "@/lib/utils";
-import logoUrl from "../assets/khora_logo_text_b.svg";
 import { renderRoute } from "../render-route";
 import "../../styles/globals.css";
 
@@ -234,8 +234,7 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-function AgentSkillsSection() {
-  const origin = typeof window !== "undefined" ? window.location.origin : "https://khoralabs.com";
+function AgentSkillsSection({ origin }: { origin: string }) {
   const script = installScript(origin);
 
   return (
@@ -325,7 +324,7 @@ function FinalCtaSection() {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-function HomePage() {
+export function HomePage({ origin }: { origin: string }) {
   return (
     <SiteLayout.Root className={consumerLandingShellClass}>
       <SiteLayout.ConsumerBackground />
@@ -334,7 +333,7 @@ function HomePage() {
         <SiteLayout.Header className={consumerLandingHeaderClass}>
           <a href="/" className="block shrink-0 transition-opacity hover:opacity-80">
             <img
-              src={logoUrl}
+              src={ASSETS.logoBlack}
               alt="khora"
               width={130}
               height={37}
@@ -349,7 +348,7 @@ function HomePage() {
             <ProtocolSection />
             <CommitmentsSection />
             <ArchitectureSection />
-            <AgentSkillsSection />
+            <AgentSkillsSection origin={origin} />
             <FinalCtaSection />
           </div>
         </SiteLayout.Main>
@@ -372,4 +371,6 @@ function HomePage() {
   );
 }
 
-renderRoute(HomePage);
+if (typeof document !== "undefined") {
+  renderRoute(HomePage, { origin: window.location.origin });
+}

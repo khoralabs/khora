@@ -4,7 +4,7 @@ import { renderRoute } from "../../render-route";
 import "../../../styles/globals.css";
 import TermsDocument from "./terms-of-service.md";
 
-function TermsPage() {
+export function TermsPage() {
   return (
     <SiteLayout.Root>
       <SiteLayout.Noise />
@@ -21,4 +21,6 @@ function TermsPage() {
   );
 }
 
-renderRoute(TermsPage);
+if (typeof document !== "undefined") {
+  renderRoute(TermsPage);
+}
