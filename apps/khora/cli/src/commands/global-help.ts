@@ -13,6 +13,7 @@ Register on a host, manage your profile, search, posts, and subscriptions.
 
 Usage:
   ${PROGRAM} help [<command> ...]
+  ${PROGRAM} version [--json]
   ${PROGRAM} setup [--force] [--json]
   ${PROGRAM} keygen [--agent-key-path=…] [--force] [--json]
   ${PROGRAM} host list | host use <slug> | host show | host register --slug=… --base-url=…

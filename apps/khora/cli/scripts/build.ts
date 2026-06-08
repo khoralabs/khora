@@ -26,10 +26,17 @@ mkdirSync(OUT_DIR, { recursive: true });
 const registryUrl = (
   process.env.KHORA_RELEASE_REGISTRY_URL?.trim() || "https://r.khoralabs.com"
 ).replace(/\/$/, "");
-const defineFlag = `--define=import.meta.env.KHORA_DEFAULT_REGISTRY_URL=${JSON.stringify(registryUrl)}`;
+const pkgJson = JSON.parse(await Bun.file(path.join(PKG_ROOT, "package.json")).text()) as {
+  version?: string;
+};
+const version = process.env.VERSION?.trim() || pkgJson.version || "0.0.0";
+const defineFlags = [
+  `--define=import.meta.env.KHORA_DEFAULT_REGISTRY_URL=${JSON.stringify(registryUrl)}`,
+  `--define=import.meta.env.KHORA_CLI_VERSION=${JSON.stringify(version)}`,
+];
 
 const result =
-  await Bun.$`bun build --compile --target=${target} --outfile=${OUT_FILE} ${defineFlag} ${ENTRY}`
+  await Bun.$`bun build --compile --target=${target} --outfile=${OUT_FILE} ${defineFlags} ${ENTRY}`
     .nothrow()
     .quiet();
 

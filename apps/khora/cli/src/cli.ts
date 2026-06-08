@@ -3,6 +3,7 @@ import { boolFlag, parseArgv, tryPrintCommandHelp } from "@khoralabs/cli-kit";
 import { commandHelpTextMap, printHelp } from "./commands/global-help";
 import { dispatch } from "./commands/handlers";
 import { maybeBootstrapKhoraHome } from "./commands/setup";
+import { handleVersion } from "./commands/version";
 import { createKhoraCliContext } from "./flows/context";
 import { errorMessage } from "./lib/error-message";
 
@@ -37,7 +38,19 @@ async function main(): Promise<void> {
     return;
   }
 
+  if (argv[0] === "--version" || argv[0] === "-V") {
+    handleVersion({});
+    process.exit(0);
+    return;
+  }
+
   const { positional, flags } = parseArgv(argv);
+
+  if (boolFlag(flags, "version", "V") && positional.length === 0) {
+    handleVersion(flags);
+    process.exit(0);
+    return;
+  }
 
   if (boolFlag(flags, "help", "h")) {
     if (tryPrintCommandHelp(positional, commandHelpTextMap)) {

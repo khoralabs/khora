@@ -12,6 +12,7 @@ import { handleSearch } from "./search";
 import { runSetupCommand } from "./setup";
 import { handleSubscriptionsCreate, handleSubscriptionsList } from "./subscriptions";
 import { handleUnregister } from "./unregister";
+import { handleVersion } from "./version";
 import { handleWhoami } from "./whoami";
 
 export async function dispatch(
@@ -23,6 +24,11 @@ export async function dispatch(
 
   if (a === "setup") {
     await runSetupCommand(flags);
+    return;
+  }
+
+  if (a === "version") {
+    handleVersion(flags);
     return;
   }
 
