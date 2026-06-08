@@ -54,6 +54,7 @@ No account CRUD in registry app — users owns schema (`accounts`, `account_emai
 
 **Flows:**
 - **Device + browser link:** `POST /v1/device/authorize` → user opens `/cli/link?user_code=...` → logged-in user approves → CLI polls for token (OAuth device-code style)
+- **auth.md agent register:** `POST /agent/auth` (verified_email) → OTP email → `POST /agent/auth/claim/complete` → Better Auth session cookie (`session_cookie` in JSON). Metadata at `/.well-known/oauth-protected-resource` and `/.well-known/oauth-authorization-server` (`agent_auth.register_uri`, `claim_complete_uri`). Prose at khoralabs.com `/auth.md`; discovery via `/.well-known/khoralabs.json`.
 - **Agent link:** `GET /v1/link/challenge?did=` → signed `POST /v1/link/agent` (session + challenge) → `linkAgentToAccountOnHost`
 - **Status/unlink:** `GET /v1/link/status`, `DELETE /v1/link/agent`
 
@@ -74,6 +75,7 @@ Flow: Host operator → management token → `POST /v1/hosts/:slug/registry/orig
 | `/v1/hosts*` | Public / mgmt token / secret | Catalog, register, registry participation |
 | `/v1/access-token/request` | None (opaque) | Waitlist enqueue |
 | `/v1/device/*`, `/v1/link/*` | Device code / session / agent sig | CLI linking |
+| `/agent/auth*`, `/.well-known/oauth-*` | None / claim token | auth.md agent registration |
 | `/v1/marketing/*` | None | List subscribe/unsubscribe |
 | `/admin/api/*` | `REGISTRY_CONSOLE_ROOT_TOKEN` | Operator console API |
 | `/internal/admin/*`, `/internal/v1/hosts*` | `REGISTRY_INTERNAL_SECRET` | Machine admin |

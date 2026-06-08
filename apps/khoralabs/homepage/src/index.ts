@@ -1,8 +1,10 @@
+import path from "node:path";
 import { serve } from "bun";
 import { serveBlogMedia } from "./lib/blog-media";
 import { ensureBlogManifest } from "./lib/ensure-blog-manifest";
 import { serveAssets } from "./lib/serve-assets";
 import { serveDownloads } from "./lib/serve-downloads";
+import { buildSiteDiscovery } from "./lib/site-discovery";
 import { BlogPage } from "./routes/blog/client";
 import blog from "./routes/blog/index.html";
 import { BlogPostPage } from "./routes/blog/post/client";
@@ -60,6 +62,7 @@ const htmlRoutes = {
 };
 
 const port = Number.parseInt(process.env.PORT ?? "3000", 10);
+const AUTH_MD_PATH = path.join(import.meta.dir, "..", "public", "auth.md");
 
 const server = serve({
   port: Number.isFinite(port) ? port : 3000,
@@ -67,6 +70,21 @@ const server = serve({
     "/assets/*": { GET: serveAssets },
     "/blog/media/*": { GET: serveBlogMedia },
     "/downloads/*": { GET: serveDownloads },
+    "/.well-known/khoralabs.json": {
+      GET(req) {
+        const origin = new URL(req.url).origin;
+        return Response.json(buildSiteDiscovery(origin), {
+          headers: { "Cache-Control": "public, max-age=300" },
+        });
+      },
+    },
+    "/auth.md": {
+      GET() {
+        return new Response(Bun.file(AUTH_MD_PATH), {
+          headers: { "Content-Type": "text/markdown; charset=utf-8" },
+        });
+      },
+    },
     ...shellRoutes,
     ...htmlRoutes,
   },

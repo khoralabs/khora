@@ -29,6 +29,12 @@ import {
 } from "./api/admin/hosts";
 import { handleLookupAccount, handleLookupEmail } from "./api/admin/lookup";
 import { handleAdminStatsSummary } from "./api/admin/stats";
+import {
+  handleAgentAuthClaimComplete,
+  handleAgentAuthRegister,
+  handleOAuthAuthorizationServerMetadata,
+  handleOAuthProtectedResourceMetadata,
+} from "./api/agent-auth";
 import { handleDeviceApprove, handleDeviceAuthorize, handleDeviceToken } from "./api/device";
 import { handleHostRegistrationClaim, handleHostRegistrationGet } from "./api/host-registration";
 import {
@@ -365,6 +371,22 @@ const server = serve({
 
     if (path === "/v1/device/token" && req.method === "POST") {
       return withCors(req, await handleDeviceToken(req));
+    }
+
+    if (path === "/.well-known/oauth-protected-resource" && req.method === "GET") {
+      return withCors(req, handleOAuthProtectedResourceMetadata());
+    }
+
+    if (path === "/.well-known/oauth-authorization-server" && req.method === "GET") {
+      return withCors(req, handleOAuthAuthorizationServerMetadata());
+    }
+
+    if (path === "/agent/auth" && req.method === "POST") {
+      return withCors(req, await handleAgentAuthRegister(req));
+    }
+
+    if (path === "/agent/auth/claim/complete" && req.method === "POST") {
+      return withCors(req, await handleAgentAuthClaimComplete(req));
     }
 
     if (path === "/v1/link/challenge" && req.method === "GET") {

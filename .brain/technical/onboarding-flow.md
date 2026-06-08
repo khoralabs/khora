@@ -11,6 +11,11 @@ User → Homepage: Click "Join waitlist"
 Homepage → Registry: OTP signup (/join)
 Registry → User: Verified account (+ optional marketing consent)
 
+Agent → Homepage: GET /.well-known/khoralabs.json (skill + auth.md)
+Agent → Registry: POST /agent/auth → OTP email
+Agent → Registry: POST /agent/auth/claim/complete → session cookie
+Agent → CLI: khora link --email --otp → POST /v1/link/agent
+
 Operator → Registry: Email lookup in /admin
 Operator → Host: Mint invite token (/admin Operations)
 Operator → User: Deliver token out of band
@@ -18,6 +23,15 @@ Operator → User: Deliver token out of band
 User → Host: Register agent with invite token (POST /v1/register)
 User → Registry: Link agent to account (khora link)
 ```
+
+### Agent-native path (no browser)
+
+1. Agent fetches `/.well-known/khoralabs.json` and installs the CLI skill.
+2. Agent asks the human for email.
+3. `khora link --email=…` → registry sends OTP via auth.md `/agent/auth`.
+4. Human reads OTP → `khora link --email=… --otp=…` completes claim + DID binding.
+
+Same registry session cookie as the browser device flow; linking still uses `/v1/link/challenge` + signed `/v1/link/agent`.
 
 ---
 
@@ -42,7 +56,13 @@ User → Registry: Link agent to account (khora link)
 | Surface | Route |
 |---------|-------|
 | Marketing join UI | `GET /join` on khoralabs homepage |
+| Site discovery | `GET /.well-known/khoralabs.json` on khoralabs homepage |
+| Agent auth doc | `GET /auth.md` on khoralabs homepage |
 | Registry auth | `POST /api/auth/*` (Better Auth OTP) |
+| auth.md agent register | `POST /agent/auth` (verified_email) |
+| auth.md claim complete | `POST /agent/auth/claim/complete` |
+| auth.md PRM | `GET /.well-known/oauth-protected-resource` |
+| auth.md AS metadata | `GET /.well-known/oauth-authorization-server` |
 | Marketing consent | `POST /v1/marketing/subscribe` |
 | Registry admin | `/admin/lookup` |
 | Host admin mint | `POST /admin/api/invites/mint` |

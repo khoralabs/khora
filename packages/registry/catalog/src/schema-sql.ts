@@ -138,6 +138,19 @@ CREATE TABLE IF NOT EXISTS device_authorizations (
 CREATE INDEX IF NOT EXISTS idx_device_authorizations_user_code
   ON device_authorizations (user_code);
 
+CREATE TABLE IF NOT EXISTS agent_auth_registrations (
+  id TEXT PRIMARY KEY NOT NULL,
+  email TEXT NOT NULL,
+  claim_token_hash TEXT NOT NULL UNIQUE,
+  otp_hash TEXT,
+  expires_at_ms INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending_claim',
+  created_at_ms INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_agent_auth_registrations_email
+  ON agent_auth_registrations (email, status, created_at_ms DESC);
+
 CREATE TABLE IF NOT EXISTS cli_link_challenges (
   id TEXT PRIMARY KEY NOT NULL,
   agent_did TEXT NOT NULL,

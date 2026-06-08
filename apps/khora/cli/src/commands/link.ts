@@ -1,8 +1,17 @@
+import { stdin as input, stdout as output } from "node:process";
+import * as readline from "node:readline/promises";
 import type { FlagMap } from "@khoralabs/cli-kit";
-import { boolFlag, style } from "@khoralabs/cli-kit";
+import { boolFlag, strFlag, style } from "@khoralabs/cli-kit";
 import { cliBaseUrl, cliCurrentHostSlug, loadSigner } from "../flows/context";
 import { khoraCliResolvedConfig } from "../khora-app-config";
 import {
+  clearAgentAuthPending,
+  readAgentAuthPending,
+  writeAgentAuthPending,
+} from "../registry/agent-auth-pending";
+import {
+  agentAuthComplete,
+  agentAuthRegister,
   deviceAuthorize,
   devicePollToken,
   linkAgent,
@@ -29,20 +38,67 @@ async function openVerificationUrl(url: string): Promise<void> {
   }
 }
 
-export async function handleLink(flags: FlagMap): Promise<void> {
-  const json = boolFlag(flags, "json");
-  const noOpen = boolFlag(flags, "no-open");
-  const registryUrl = cliRegistryUrl(flags);
-  const hostBaseUrl = cliBaseUrl(flags);
-  const hostSlug = cliCurrentHostSlug(flags);
-
-  if (hostSlug === undefined) {
+async function promptOtp(): Promise<string> {
+  if (!process.stdin.isTTY) {
     throw new Error(
-      "No host selected. Run khora host use <slug> or pass --host=<slug> before khora link.",
+      "OTP required. Re-run with --otp=<code> after the user receives the email code.",
     );
   }
+  const rl = readline.createInterface({ input, output });
+  try {
+    const code = (await rl.question("Enter the 6-digit code from email: ")).trim();
+    if (code.length === 0) {
+      throw new Error("OTP required");
+    }
+    return code;
+  } finally {
+    rl.close();
+  }
+}
 
-  const signer = await loadSigner(flags);
+async function establishRegistrySession(
+  registryUrl: string,
+  flags: FlagMap,
+  json: boolean,
+  noOpen: boolean,
+): Promise<void> {
+  const email = strFlag(flags, "email")?.trim();
+  const otp = strFlag(flags, "otp")?.trim();
+
+  if (email !== undefined && email.length > 0) {
+    if (otp !== undefined && otp.length > 0) {
+      const pending = readAgentAuthPending();
+      const sessionCookie = await agentAuthComplete(registryUrl, {
+        otp,
+        email,
+        ...(pending !== null && pending.email === email ? { claimToken: pending.claimToken } : {}),
+      });
+      saveRegistrySessionCookie(sessionCookie);
+      clearAgentAuthPending();
+      return;
+    }
+
+    const registered = await agentAuthRegister(registryUrl, email);
+    writeAgentAuthPending({
+      email,
+      claimToken: registered.claim_token,
+      registrationId: registered.registration_id,
+      createdAtMs: Date.now(),
+    });
+    if (!json) {
+      console.log(`OTP sent to ${email}. Enter the code to finish linking.`);
+    }
+    const code = await promptOtp();
+    const sessionCookie = await agentAuthComplete(registryUrl, {
+      email,
+      claimToken: registered.claim_token,
+      otp: code,
+    });
+    saveRegistrySessionCookie(sessionCookie);
+    clearAgentAuthPending();
+    return;
+  }
+
   const auth = await deviceAuthorize(registryUrl);
 
   if (!json) {
@@ -60,12 +116,28 @@ export async function handleLink(flags: FlagMap): Promise<void> {
 
   const sessionCookie = await devicePollToken(registryUrl, auth.device_code, auth.expires_in);
   saveRegistrySessionCookie(sessionCookie);
+}
+
+async function completeAgentLink(
+  registryUrl: string,
+  flags: FlagMap,
+  json: boolean,
+): Promise<void> {
+  const hostBaseUrl = cliBaseUrl(flags);
+  const hostSlug = cliCurrentHostSlug(flags);
+  if (hostSlug === undefined) {
+    throw new Error(
+      "No host selected. Run khora host use <slug> or pass --host=<slug> before khora link.",
+    );
+  }
+
+  const signer = await loadSigner(flags);
 
   const sessionCheck = await linkStatus(registryUrl);
   if (sessionCheck === null) {
     clearRegistrySessionCookie();
     throw new Error(
-      "Registry session could not be verified after browser approval. Run khora link again and complete sign-in + Approve CLI.",
+      "Registry session could not be verified. Run khora link again and complete sign-in.",
     );
   }
 
@@ -113,6 +185,29 @@ export async function handleLink(flags: FlagMap): Promise<void> {
   }
 }
 
+export async function handleLink(flags: FlagMap): Promise<void> {
+  const json = boolFlag(flags, "json");
+  const noOpen = boolFlag(flags, "no-open");
+  const registryUrl = cliRegistryUrl(flags);
+  const email = strFlag(flags, "email")?.trim();
+  const otp = strFlag(flags, "otp")?.trim();
+
+  if (email !== undefined && email.length > 0 && otp !== undefined && otp.length > 0) {
+    await establishRegistrySession(registryUrl, flags, json, noOpen);
+    await completeAgentLink(registryUrl, flags, json);
+    return;
+  }
+
+  if (email !== undefined && email.length > 0) {
+    await establishRegistrySession(registryUrl, flags, json, noOpen);
+    await completeAgentLink(registryUrl, flags, json);
+    return;
+  }
+
+  await establishRegistrySession(registryUrl, flags, json, noOpen);
+  await completeAgentLink(registryUrl, flags, json);
+}
+
 export async function handleLinkStatus(flags: FlagMap): Promise<void> {
   const json = boolFlag(flags, "json");
   const registryUrl = cliRegistryUrl(flags);
@@ -156,6 +251,7 @@ export async function handleLinkUnlink(flags: FlagMap): Promise<void> {
 
   await linkUnlink(registryUrl, { hostBaseUrl, hostSlug, agentDid: signer.did });
   clearRegistrySessionCookie();
+  clearAgentAuthPending();
 
   const state = readLinkState();
   const entry = state.links[hostSlug];

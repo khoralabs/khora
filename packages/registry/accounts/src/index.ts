@@ -3,6 +3,8 @@ export type {
   AccountAgentLink,
   AccountStatus,
   AgentAccountBinding,
+  AgentAuthRegistration,
+  AgentAuthRegistrationStatus,
   CliLinkChallenge,
   DeviceAuthorization,
   DeviceAuthorizationStatus,
@@ -47,6 +49,16 @@ export {
   countAgentLinksForAgentDid,
   findBindingByAgentDid,
 } from "./agent-account-bindings";
+export {
+  AGENT_AUTH_TTL_MS,
+  consumeClaimToken,
+  createAgentAuthRegistration,
+  expireAgentAuthIfNeeded,
+  findAgentAuthByClaimToken,
+  findPendingAgentAuthByEmail,
+  hashAgentAuthSecret,
+  verifyAgentAuthOtp,
+} from "./agent-auth-registrations";
 export {
   consumeCliLinkChallenge,
   createCliLinkChallenge,

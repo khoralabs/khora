@@ -71,6 +71,52 @@ export async function devicePollToken(
   throw new Error("authorization expired; run khora link again");
 }
 
+export async function agentAuthRegister(
+  registryUrl: string,
+  email: string,
+): Promise<{ registration_id: string; claim_token: string; status: string }> {
+  const res = await registryFetch(registryUrl, "/agent/auth", {
+    method: "POST",
+    body: JSON.stringify({
+      type: "identity_assertion",
+      assertion_type: "verified_email",
+      email,
+    }),
+  });
+  if (!res.ok) {
+    throw new Error(`agent auth register failed: ${res.status} ${await res.text()}`);
+  }
+  return (await res.json()) as { registration_id: string; claim_token: string; status: string };
+}
+
+export async function agentAuthComplete(
+  registryUrl: string,
+  params: { claimToken?: string; email?: string; otp: string },
+): Promise<string> {
+  const body: { claim_token?: string; email?: string; otp: string } = { otp: params.otp };
+  if (params.claimToken !== undefined && params.claimToken.length > 0) {
+    body.claim_token = params.claimToken;
+  }
+  if (params.email !== undefined && params.email.length > 0) {
+    body.email = params.email;
+  }
+  const res = await registryFetch(registryUrl, "/agent/auth/claim/complete", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    throw new Error(`agent auth complete failed: ${res.status} ${await res.text()}`);
+  }
+  const json = (await res.json()) as {
+    credential?: { session_cookie?: string };
+  };
+  const sessionCookie = json.credential?.session_cookie;
+  if (sessionCookie === undefined || sessionCookie.length === 0) {
+    throw new Error("agent auth complete response missing session_cookie");
+  }
+  return sessionCookie;
+}
+
 export async function linkChallenge(
   registryUrl: string,
   did: string,

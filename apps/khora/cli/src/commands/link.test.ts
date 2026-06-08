@@ -2,7 +2,12 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-
+import {
+  clearAgentAuthPending,
+  readAgentAuthPending,
+  writeAgentAuthPending,
+} from "../registry/agent-auth-pending";
+import { agentAuthComplete, agentAuthRegister } from "../registry/client";
 import { cliRegistryUrl } from "../registry/config";
 import {
   clearRegistrySessionCookie,
@@ -61,5 +66,82 @@ describe("registry session store", () => {
     saveRegistrySessionCookie(cookie);
     expect(loadRegistrySessionCookie()).toBe(cookie);
     expect(registrySessionFilePath()).toBe(sessionFile);
+  });
+});
+
+describe("agent auth client helpers", () => {
+  const prevFetch = globalThis.fetch;
+  let calls: { url: string; init?: RequestInit }[] = [];
+
+  beforeEach(() => {
+    calls = [];
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : input.toString();
+      calls.push({ url, init });
+      if (url.endsWith("/agent/auth")) {
+        return Response.json({
+          registration_id: "reg-1",
+          claim_token: "clm_test",
+          status: "pending_claim",
+        });
+      }
+      if (url.endsWith("/agent/auth/claim/complete")) {
+        return Response.json({
+          status: "claimed",
+          credential: { type: "session", session_cookie: "better-auth.session_token=abc" },
+        });
+      }
+      return new Response("not found", { status: 404 });
+    }) as typeof fetch;
+  });
+
+  afterEach(() => {
+    globalThis.fetch = prevFetch;
+  });
+
+  test("register posts verified_email identity assertion", async () => {
+    const json = await agentAuthRegister("http://registry.test", "user@example.com");
+    expect(json.claim_token).toBe("clm_test");
+    expect(calls[0]?.init?.body).toContain("verified_email");
+  });
+
+  test("complete returns session cookie", async () => {
+    const cookie = await agentAuthComplete("http://registry.test", {
+      email: "user@example.com",
+      otp: "123456",
+      claimToken: "clm_test",
+    });
+    expect(cookie).toContain("better-auth.session_token=");
+  });
+});
+
+describe("agent auth pending store", () => {
+  let dir: string;
+  let prevHome: string | undefined;
+
+  beforeEach(() => {
+    prevHome = process.env.HOME;
+    dir = mkdtempSync(path.join(tmpdir(), "khora-agent-auth-"));
+    process.env.HOME = dir;
+    clearAgentAuthPending();
+  });
+
+  afterEach(() => {
+    clearAgentAuthPending();
+    rmSync(dir, { recursive: true, force: true });
+    if (prevHome === undefined) delete process.env.HOME;
+    else process.env.HOME = prevHome;
+  });
+
+  test("round-trips pending claim state", () => {
+    writeAgentAuthPending({
+      email: "a@b.com",
+      claimToken: "clm_x",
+      registrationId: "reg-1",
+      createdAtMs: 1,
+    });
+    const pending = readAgentAuthPending();
+    expect(pending?.email).toBe("a@b.com");
+    expect(pending?.claimToken).toBe("clm_x");
   });
 });

@@ -49,6 +49,18 @@ export type HostLinkPropagationResult = {
 
 export type DeviceAuthorizationStatus = "pending" | "approved" | "consumed" | "expired";
 
+export type AgentAuthRegistrationStatus = "pending_claim" | "claimed" | "expired";
+
+export type AgentAuthRegistration = {
+  id: string;
+  email: string;
+  claimTokenHash: string;
+  otpHash: string | null;
+  expiresAtMs: number;
+  status: AgentAuthRegistrationStatus;
+  createdAtMs: number;
+};
+
 export type DeviceAuthorization = {
   id: string;
   deviceCodeHash: string;
