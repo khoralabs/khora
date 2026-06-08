@@ -33,12 +33,13 @@ export type KhoralabsSiteDiscovery = z.infer<typeof zKhoralabsSiteDiscovery>;
 const SKILL_BASE = "/downloads/skills/khora-cli";
 
 export function buildSkillInstallScript(origin: string): string {
-  const base = origin.replace(/\/$/, "");
-  return `mkdir -p .agents/skills/khora-cli/references
+  return `khora setup
+# Or install manually from ${origin.replace(/\/$/, "")}:
+mkdir -p .agents/skills/khora-cli/references
 curl -fsSL -o .agents/skills/khora-cli/SKILL.md \\
-  ${base}${SKILL_BASE}/SKILL.md
+  ${origin.replace(/\/$/, "")}${SKILL_BASE}/SKILL.md
 curl -fsSL -o .agents/skills/khora-cli/references/commands.md \\
-  ${base}${SKILL_BASE}/references/commands.md`;
+  ${origin.replace(/\/$/, "")}${SKILL_BASE}/references/commands.md`;
 }
 
 export function buildSiteDiscovery(origin: string): KhoralabsSiteDiscovery {

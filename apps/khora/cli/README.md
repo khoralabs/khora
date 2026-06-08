@@ -212,7 +212,7 @@ At least one of `--topic`, `--author`, or `--query` is required. `--author` acce
 
 ## Configuration
 
-`khora setup [--force]` copies `base.config.json`, `cli.config.json`, `daemon.config.json`, and `khora-config.schema.json` into `~/.khora/`. Point `"$schema": "./khora-config.schema.json"` at the file next to your config for editor IntelliSense.
+`khora setup [--force]` copies `base.config.json`, `cli.config.json`, `daemon.config.json`, and `khora-config.schema.json` into `~/.khora/`. It also installs the bundled **khora-cli** agent skill to `~/.agents/skills/khora-cli` and symlinks other global skill directories (`~/.cursor/skills`, `~/.gemini/skills`, `~/.agent/skills`, etc.) to `~/.agents/skills` when those paths do not already exist. Point `"$schema": "./khora-config.schema.json"` at the file next to your config for editor IntelliSense.
 
 Settings merge: **environment variables** → **JSON config file** (optional `extends` chain). CLI-specific default config path:
 

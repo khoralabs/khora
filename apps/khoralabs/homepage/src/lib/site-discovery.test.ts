@@ -7,6 +7,7 @@ describe("buildSiteDiscovery", () => {
     const discovery = buildSiteDiscovery("https://khoralabs.com");
     expect(zKhoralabsSiteDiscovery.safeParse(discovery).success).toBe(true);
     expect(discovery.skill.url).toContain("/downloads/skills/khora-cli/SKILL.md");
+    expect(discovery.skill.installScript).toContain("khora setup");
     expect(discovery.skill.installScript).toContain("curl -fsSL");
     expect(discovery.auth.authMd).toBe("https://khoralabs.com/auth.md");
     expect(discovery.auth.protectedResourceMetadata).toBe(

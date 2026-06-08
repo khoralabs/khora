@@ -26,6 +26,7 @@ describe("resolveSetupAssets", () => {
       const out = resolveSetupAssets({ KHORA_CLI_ASSETS_DIR: ws });
       expect(out.configsDir).toBe(path.join(ws, "configs"));
       expect(out.schemaPath).toBe(path.join(ws, "khora-config.schema.json"));
+      expect(out.skillAssetsDir).toBe(path.join(ws, "skills", "khora-cli"));
     } finally {
       rmSync(ws, { recursive: true, force: true });
     }
@@ -88,6 +89,7 @@ describe("runSetupCommand", () => {
   test("creates ~/.khora on first run", async () => {
     await runSetupCommand({});
     expect(existsSync(path.join(home, ".khora"))).toBe(true);
+    expect(existsSync(path.join(home, ".agents", "skills", "khora-cli", "SKILL.md"))).toBe(true);
   });
 
   test("idempotent: second run still succeeds", async () => {
@@ -123,10 +125,13 @@ describe("maybeBootstrapKhoraHome", () => {
     assetsDir = path.join(workspace, "assets");
     mkdirSync(home, { recursive: true });
     mkdirSync(path.join(assetsDir, "configs"), { recursive: true });
+    mkdirSync(path.join(assetsDir, "skills", "khora-cli", "references"), { recursive: true });
     for (const name of ["base.config.json", "cli.config.json", "daemon.config.json"]) {
       writeFileSync(path.join(assetsDir, "configs", name), "{}\n");
     }
     writeFileSync(path.join(assetsDir, "khora-config.schema.json"), '{"$id":"x"}');
+    writeFileSync(path.join(assetsDir, "skills", "khora-cli", "SKILL.md"), "# skill\n");
+    writeFileSync(path.join(assetsDir, "skills", "khora-cli", "references", "commands.md"), "#\n");
   });
 
   afterEach(() => {
@@ -139,6 +144,7 @@ describe("maybeBootstrapKhoraHome", () => {
       errors.push(line),
     );
     expect(existsSync(path.join(home, ".khora", "cli.config.json"))).toBe(true);
+    expect(existsSync(path.join(home, ".agents", "skills", "khora-cli", "SKILL.md"))).toBe(true);
     expect(errors).toEqual([]);
   });
 

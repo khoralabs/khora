@@ -6,6 +6,7 @@
  *   apps/khora/cli/dist/<bun-target>/khora
  *   apps/khora/daemon/dist/<bun-target>/khora-daemon
  *   apps/khora/cli/assets/configs/{base,cli,daemon}.config.json
+ *   apps/khora/cli/assets/skills/khora-cli/
  *   packages/khora/client/khora-config.schema.json
  *
  * Output tree: `<releaseDir>/{cli,daemon,cli-<slug>,daemon-<slug>}/...`
@@ -78,7 +79,14 @@ export function cliMetaPkgJson({
     keywords: ["khora", "agent", "cli", "khoralabs"],
     type: "module",
     bin: { khora: "./bin/khora.cjs" },
-    files: ["bin/**", "configs/**", "khora-config.schema.json", "README.md", "LICENSE"],
+    files: [
+      "bin/**",
+      "configs/**",
+      "skills/**",
+      "khora-config.schema.json",
+      "README.md",
+      "LICENSE",
+    ],
     dependencies: { "@khoralabs/khora-daemon": version },
     optionalDependencies,
     publishConfig: { access: "public" },
@@ -271,6 +279,11 @@ export async function stageKhoraRelease(opts: StageOptions): Promise<StageResult
     throw new Error(`missing khora-config.schema.json at ${schemaSrc} — run build:schema first`);
   }
   await Bun.write(path.join(cliMetaDir, "khora-config.schema.json"), Bun.file(schemaSrc));
+
+  const skillsSrc = path.join(workspaceRoot, "apps/khora/cli/assets/skills");
+  if (existsSync(skillsSrc)) {
+    await Bun.$`cp -R ${skillsSrc} ${path.join(cliMetaDir, "skills")}`.quiet();
+  }
 
   await writeJson(path.join(cliMetaDir, "package.json"), cliMetaPkgJson({ version }));
   const cliReadme = path.join(workspaceRoot, "apps/khora/cli/README.md");
