@@ -3,19 +3,18 @@ import type { ComponentProps } from "react";
 import { NoiseOverlay } from "@/components/noise-overlay";
 import { SiteNav } from "@/components/site-nav";
 import { ASSETS } from "@/lib/asset-urls";
-import {
-  footerDefaultClass,
-  footerLegalLinkClass,
-  headerDefaultClass,
-  mainDefaultClass,
-  shellClass,
-  siteLogoClass,
-  siteNavLinkClass,
-} from "@/lib/ui-styles";
 import { cn } from "@/lib/utils";
 
 function Root({ className, ...props }: ComponentProps<"div">) {
-  return <div {...props} className={cn(shellClass, className)} />;
+  return (
+    <div
+      {...props}
+      className={cn(
+        "relative min-h-dvh bg-[#3F3F3F] font-[Helvetica_Neue,Helvetica,Arial,sans-serif] tracking-[-0.01em] text-[#F4F4EF] antialiased",
+        className,
+      )}
+    />
+  );
 }
 
 function BackgroundImage({ className, style, ...props }: ComponentProps<"div">) {
@@ -97,7 +96,13 @@ function Frame({ className, ...props }: ComponentProps<"div">) {
 
 function Header({ className, children, ...props }: ComponentProps<"header">) {
   return (
-    <header {...props} className={cn(headerDefaultClass, className)}>
+    <header
+      {...props}
+      className={cn(
+        "flex shrink-0 items-start justify-between px-6 pt-8 md:px-10 md:pt-10",
+        className,
+      )}
+    >
       {children ?? (
         <>
           <a href="/" className="block shrink-0 transition-opacity hover:opacity-80">
@@ -106,10 +111,10 @@ function Header({ className, children, ...props }: ComponentProps<"header">) {
               alt="khora"
               width={130}
               height={37}
-              className={siteLogoClass}
+              className="h-4 w-auto md:h-[1.2rem]"
             />
           </a>
-          <SiteNav linkClassName={siteNavLinkClass} />
+          <SiteNav />
         </>
       )}
     </header>
@@ -117,23 +122,40 @@ function Header({ className, children, ...props }: ComponentProps<"header">) {
 }
 
 function Main({ className, ...props }: ComponentProps<"main">) {
-  return <main {...props} className={cn(mainDefaultClass, className)} />;
+  return (
+    <main
+      {...props}
+      className={cn("flex flex-1 flex-col px-6 py-16 md:px-10 md:py-20", className)}
+    />
+  );
 }
 
 function Footer({ className, children, ...props }: ComponentProps<"footer">) {
   return (
-    <footer {...props} className={cn(footerDefaultClass, className)}>
+    <footer
+      {...props}
+      className={cn(
+        "flex shrink-0 flex-wrap items-end justify-between gap-6 px-6 pb-8 pt-4 text-[11px] text-[#F4F4EF]/85 md:px-10 md:pb-10 md:text-xs",
+        className,
+      )}
+    >
       {children ?? (
         <>
           <p className="m-0">© 2026 khora labs</p>
           <ul className="m-0 flex list-none gap-6 p-0 md:gap-8">
             <li>
-              <a href="/terms" className={footerLegalLinkClass}>
+              <a
+                href="/terms"
+                className="text-inherit no-underline transition-opacity hover:opacity-75"
+              >
                 Terms of Service
               </a>
             </li>
             <li>
-              <a href="/privacy" className={footerLegalLinkClass}>
+              <a
+                href="/privacy"
+                className="text-inherit no-underline transition-opacity hover:opacity-75"
+              >
                 Privacy Policy
               </a>
             </li>

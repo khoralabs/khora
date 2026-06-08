@@ -2,7 +2,6 @@ import * as React from "react";
 import { OTPInput, OTPInputContext } from "input-otp";
 import { MinusIcon } from "lucide-react";
 
-import { consumerOtpSlotClass } from "@/lib/ui-styles";
 import { cn } from "@/lib/utils";
 
 function InputOTP({
@@ -49,7 +48,10 @@ function InputOTPSlot({
     <div
       data-slot="input-otp-slot"
       data-active={isActive}
-      className={cn(consumerOtpSlotClass, className)}
+      className={cn(
+        "relative flex h-11 w-11 items-center justify-center rounded-md border border-[#B0B0B0]/60 bg-white/80 text-[12px] text-black shadow-[inset_2px_2px_6px_rgba(0,0,0,0.06)] transition-all outline-none first:rounded-l-lg last:rounded-r-lg data-[active=true]:z-10 data-[active=true]:border-black/40 data-[active=true]:ring-2 data-[active=true]:ring-black/15",
+        className,
+      )}
       {...props}
     >
       {char}

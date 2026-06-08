@@ -2,7 +2,8 @@ import type { BlogPostMeta } from "@khoralabs/blog";
 import { formatPostDate } from "@khoralabs/blog/react";
 
 import { BlogPostCover } from "@/components/blog-post-cover";
-import { fieldTypographyMuted, mdxLinkClass, pageTitleClass } from "@/lib/ui-styles";
+import { MutedBody } from "@/components/muted-body";
+import { ShellLink } from "@/components/shell-link";
 import { cn } from "@/lib/utils";
 
 type BlogPostCardProps = {
@@ -21,19 +22,17 @@ export function BlogPostCard({ post, className }: BlogPostCardProps) {
           <BlogPostCover src={post.cover} alt={post.title} />
         </a>
       ) : null}
-      <h2 className={cn(pageTitleClass, "mb-2 text-xl md:text-2xl")}>
-        <a href={href} className={cn(mdxLinkClass, "no-underline hover:underline")}>
+      <h2 className="mb-2 text-balance text-xl font-normal leading-tight md:text-2xl">
+        <ShellLink href={href} className="no-underline hover:underline">
           {post.title}
-        </a>
+        </ShellLink>
       </h2>
       {(dateDisp || post.author) && (
-        <p className={cn(fieldTypographyMuted, "mb-3 text-xs md:text-sm")}>
+        <MutedBody className="mb-3 text-xs md:text-sm">
           {[dateDisp, post.author].filter(Boolean).join(" · ")}
-        </p>
+        </MutedBody>
       )}
-      {post.description ? (
-        <p className={cn(fieldTypographyMuted, "mb-3")}>{post.description}</p>
-      ) : null}
+      {post.description ? <MutedBody className="mb-3">{post.description}</MutedBody> : null}
       {post.tags.length > 0 ? (
         <div className="mb-3 flex flex-wrap gap-2">
           {post.tags.map((tag) => (
@@ -46,9 +45,9 @@ export function BlogPostCard({ post, className }: BlogPostCardProps) {
           ))}
         </div>
       ) : null}
-      <a href={href} className={cn(mdxLinkClass, "text-sm")}>
+      <ShellLink href={href} className="text-sm">
         Read more →
-      </a>
+      </ShellLink>
     </article>
   );
 }

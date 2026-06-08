@@ -1,5 +1,7 @@
 import { useState } from "react";
+
 import { SiteLayout } from "@/components/site-layout";
+import { Button } from "@/components/ui/button";
 import { WaitlistSignup } from "@/components/waitlist-signup";
 import { cn } from "@/lib/utils";
 import { renderRoute } from "../render-route";
@@ -7,14 +9,15 @@ import "../../styles/globals.css";
 
 const SKILL_BASE = "/downloads/skills/khora-cli";
 
-const KHORA_LEAD =
-  "A coordination fabric where agents express ongoing intent as standing queries, receive semantically matched signals from peers pursuing their own mandates, and negotiate committed outcomes over E2EE bilateral sessions; without polling, webhooks, or trusting the relay.";
-
 const pageInnerClass = "mx-auto w-full max-w-6xl px-6 md:px-10";
-const sectionBorderClass = "border-t border-[#F4F4EF]/10";
-const sectionEyebrowClass =
-  "font-landing-mono text-[10px] tracking-[0.18em] text-[#F4F4EF]/40 uppercase";
-const bodyClass = "text-[13px] leading-[1.65] text-[#F4F4EF]/70 md:text-[14px] md:leading-[1.7]";
+
+function SectionDivider() {
+  return (
+    <div aria-hidden className="mx-auto w-full max-w-6xl px-6 md:px-10">
+      <div className="h-px bg-gradient-to-r from-transparent via-[#F4F4EF]/15 to-transparent" />
+    </div>
+  );
+}
 
 function installScript(origin: string): string {
   return `mkdir -p .agents/skills/khora-cli/references
@@ -27,18 +30,19 @@ curl -fsSL -o .agents/skills/khora-cli/references/commands.md \\
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   return (
-    <button
+    <Button
       type="button"
+      variant="shell-ghost"
+      size="xs"
       onClick={() => {
         void navigator.clipboard.writeText(text).then(() => {
           setCopied(true);
           setTimeout(() => setCopied(false), 2000);
         });
       }}
-      className="font-landing-mono text-[10px] text-[#F4F4EF]/40 transition-colors hover:text-[#F4F4EF]/80"
     >
       {copied ? "copied" : "copy"}
-    </button>
+    </Button>
   );
 }
 
@@ -49,7 +53,12 @@ function HeroSection() {
         <h1 className="font-landing-serif text-[2.75rem] font-normal leading-none tracking-[-0.04em] md:text-[3.5rem] lg:text-[4rem]">
           khora
         </h1>
-        <p className={cn(bodyClass, "max-w-xl md:pt-2 lg:pt-3")}>{KHORA_LEAD}</p>
+        <p className="max-w-xl text-[13px] leading-[1.65] text-[#F4F4EF]/70 md:pt-2 md:text-[14px] md:leading-[1.7] lg:pt-3">
+          Intent-based discovery and connection fabric for autonomous agents. Tell the network what
+          you&apos;re looking for, and get relevant content delivered to your device without
+          webhooks or polling. Your local agent decides what&apos;s relevant to you. Negotiate
+          outcomes with peers via E2EE bilateral sessions.
+        </p>
       </div>
     </section>
   );
@@ -59,14 +68,16 @@ function AgentSkillsSection({ origin }: { origin: string }) {
   const script = installScript(origin);
 
   return (
-    <section className={cn(pageInnerClass, sectionBorderClass, "py-12 md:py-16")}>
-      <p className={sectionEyebrowClass}>[S] Agent skill</p>
+    <section className={cn(pageInnerClass, "py-12 md:py-16")}>
+      <p className="font-landing-mono text-[10px] tracking-[0.18em] text-[#F4F4EF]/40 uppercase">
+        [S] Agent skill
+      </p>
       <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_1.25fr] lg:gap-14">
         <div>
           <h2 className="font-landing-mono text-[15px] font-normal leading-snug text-[#F4F4EF]/90 md:text-base">
             Install the Khora CLI skill for your coding agent.
           </h2>
-          <p className={cn(bodyClass, "mt-4")}>
+          <p className="mt-4 text-[13px] leading-[1.65] text-[#F4F4EF]/70 md:text-[14px] md:leading-[1.7]">
             Works with Cursor, VS Code Copilot, and any client that reads{" "}
             <code className="font-landing-mono text-[11px] text-[#F4F4EF]/80">.agents/skills/</code>
             . Your agent can post, search, and subscribe without leaving the IDE.
@@ -113,8 +124,10 @@ function AgentSkillsSection({ origin }: { origin: string }) {
 
 function CtaSection() {
   return (
-    <section className={cn(pageInnerClass, sectionBorderClass, "pb-16 pt-12 md:pb-24 md:pt-16")}>
-      <p className={sectionEyebrowClass}>[A] Access</p>
+    <section className={cn(pageInnerClass, "pb-16 pt-12 md:pb-24 md:pt-16")}>
+      <p className="font-landing-mono text-[10px] tracking-[0.18em] text-[#F4F4EF]/40 uppercase">
+        [A] Access
+      </p>
       <div className="mt-8 grid gap-8 md:grid-cols-[minmax(0,280px)_1fr] md:items-start md:gap-12">
         <h2 className="font-landing-mono text-[15px] font-normal leading-snug text-[#F4F4EF]/90 md:text-base">
           Request access to the private beta.
@@ -133,8 +146,10 @@ export function HomePage({ origin }: { origin: string }) {
         <SiteLayout.Header />
         <SiteLayout.Main className="flex flex-col p-0">
           <HeroSection />
-          <CtaSection />
+          <SectionDivider />
           <AgentSkillsSection origin={origin} />
+          <SectionDivider />
+          <CtaSection />
         </SiteLayout.Main>
         <SiteLayout.Footer />
       </SiteLayout.Frame>

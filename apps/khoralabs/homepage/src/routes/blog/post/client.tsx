@@ -1,32 +1,23 @@
 import { BlogPostView, getSlugFromPathname, usePostBySlug } from "@khoralabs/blog/react";
+
 import { BlogPostCover } from "@/components/blog-post-cover";
+import { MutedBody } from "@/components/muted-body";
+import { PageTitle } from "@/components/page-title";
 import { MdxAgreement } from "@/components/post";
+import { ShellLink } from "@/components/shell-link";
 import { SiteLayout } from "@/components/site-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { blogPosts } from "@/generated/blog-manifest";
-import {
-  ctaOutlineOnDarkClass,
-  fieldTypographyMuted,
-  mdxLinkClass,
-  pageTitleClass,
-} from "@/lib/ui-styles";
-import { cn } from "@/lib/utils";
-
-const blogTagBadgeClass =
-  "border-[#F4F4EF]/25 bg-transparent text-[#F4F4EF]/80 hover:bg-[#F4F4EF]/10 hover:text-[#F4F4EF]";
-
 import { renderRoute } from "../../../render-route";
 import "../../../../styles/globals.css";
 
 function BlogPostNotFound() {
   return (
     <div className="mx-auto w-full max-w-3xl text-center">
-      <h1 className={pageTitleClass}>Post not found</h1>
-      <p className={cn(fieldTypographyMuted, "mt-4")}>
-        That post doesn&apos;t exist or may have been removed.
-      </p>
-      <Button variant="outline" asChild className={cn(ctaOutlineOnDarkClass, "mt-6")}>
+      <PageTitle>Post not found</PageTitle>
+      <MutedBody className="mt-4">That post doesn&apos;t exist or may have been removed.</MutedBody>
+      <Button variant="shell-outline" asChild className="mt-6">
         <a href="/blog">← Back to blog</a>
       </Button>
     </div>
@@ -59,9 +50,7 @@ export function BlogPostPage({ slug }: { slug: string }) {
         <SiteLayout.Main className="items-start justify-start">
           <div className="mx-auto w-full max-w-3xl">
             <p className="mb-6">
-              <a href="/blog" className={mdxLinkClass}>
-                ← Blog
-              </a>
+              <ShellLink href="/blog">← Blog</ShellLink>
             </p>
             <BlogPostView post={post}>
               {({ post: p, byline }) => (
@@ -70,14 +59,17 @@ export function BlogPostPage({ slug }: { slug: string }) {
                     {p.cover ? (
                       <BlogPostCover src={p.cover} alt={p.title} className="mb-6" loading="eager" />
                     ) : null}
-                    <h1 className={pageTitleClass}>{p.title}</h1>
-                    {byline ? (
-                      <p className={cn(fieldTypographyMuted, "mt-3 text-sm")}>{byline}</p>
-                    ) : null}
+                    <PageTitle>{p.title}</PageTitle>
+                    {byline ? <MutedBody className="mt-3 text-sm">{byline}</MutedBody> : null}
                     {p.tags.length > 0 ? (
                       <div className="mt-4 flex flex-wrap gap-2">
                         {p.tags.map((tag) => (
-                          <Badge key={tag} variant="outline" asChild className={blogTagBadgeClass}>
+                          <Badge
+                            key={tag}
+                            variant="outline"
+                            asChild
+                            className="border-[#F4F4EF]/25 bg-transparent text-[#F4F4EF]/80 hover:bg-[#F4F4EF]/10 hover:text-[#F4F4EF]"
+                          >
                             <a href={`/blog?tag=${encodeURIComponent(tag)}`}>{tag}</a>
                           </Badge>
                         ))}

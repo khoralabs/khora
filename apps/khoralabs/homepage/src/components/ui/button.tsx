@@ -17,6 +17,13 @@ const buttonVariants = cva(
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
         link: "text-primary underline-offset-4 hover:underline",
+        shell: "bg-[#F4F4EF] text-[#3F3F3F] hover:bg-[#F4F4EF]/90",
+        "shell-outline":
+          "border border-[#F4F4EF]/50 bg-transparent text-[#F4F4EF] shadow-none hover:bg-[#F4F4EF]/10",
+        "shell-link":
+          "text-[#F4F4EF]/65 underline-offset-4 hover:text-[#F4F4EF]/80 hover:underline",
+        "shell-ghost":
+          "font-landing-mono text-[10px] font-normal text-[#F4F4EF]/40 hover:bg-transparent hover:text-[#F4F4EF]/80",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",

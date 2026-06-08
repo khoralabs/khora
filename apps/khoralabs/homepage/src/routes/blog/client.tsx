@@ -6,7 +6,11 @@ import {
   useBlogManifest,
 } from "@khoralabs/blog/react";
 import { ArrowUpRight, Newspaper } from "lucide-react";
+
 import { BlogPostCard } from "@/components/blog-post-card";
+import { MutedBody } from "@/components/muted-body";
+import { PageTitle } from "@/components/page-title";
+import { ShellLink } from "@/components/shell-link";
 import { SiteLayout } from "@/components/site-layout";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,47 +23,31 @@ import {
 } from "@/components/ui/empty";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { blogPosts } from "@/generated/blog-manifest";
-import {
-  ctaLinkMutedClass,
-  ctaOutlineOnDarkClass,
-  ctaSolidOnDarkClass,
-  emptyStateDescriptionClass,
-  emptyStateIconWrapClass,
-  emptyStatePanelClass,
-  emptyStateTitleClass,
-  fieldTypographyMuted,
-  mdxLinkClass,
-} from "@/lib/ui-styles";
-
-const blogTagToggleItemClass =
-  "border-[#F4F4EF]/25 bg-transparent text-sm text-[#F4F4EF] hover:bg-[#F4F4EF]/10 hover:text-[#F4F4EF] data-[state=on]:border-[#F4F4EF]/50 data-[state=on]:bg-[#F4F4EF]/10 data-[state=on]:text-[#F4F4EF]";
-
-import { cn } from "@/lib/utils";
 import { renderRoute } from "../../render-route";
 import "../../../styles/globals.css";
 
 function BlogEmptyState() {
   return (
-    <Empty className={emptyStatePanelClass}>
+    <Empty className="max-w-xl border border-[#F4F4EF]/20 bg-[#F4F4EF]/[0.04] text-[#F4F4EF]">
       <EmptyHeader>
-        <EmptyMedia variant="icon" className={emptyStateIconWrapClass}>
+        <EmptyMedia variant="icon" className="bg-[#F4F4EF]/12 text-[#F4F4EF]">
           <Newspaper />
         </EmptyMedia>
-        <EmptyTitle className={emptyStateTitleClass}>No posts yet</EmptyTitle>
-        <EmptyDescription className={emptyStateDescriptionClass}>
+        <EmptyTitle className="text-[#F4F4EF]">No posts yet</EmptyTitle>
+        <EmptyDescription className="text-[#F4F4EF]/75">
           Writing from the lab will land here. Until then, reach out if you&apos;d like to
           collaborate.
         </EmptyDescription>
       </EmptyHeader>
       <EmptyContent className="flex-row justify-center gap-2">
-        <Button asChild className={ctaSolidOnDarkClass}>
+        <Button variant="shell" asChild>
           <a href="/contact">Get in touch</a>
         </Button>
-        <Button variant="outline" asChild className={ctaOutlineOnDarkClass}>
+        <Button variant="shell-outline" asChild>
           <a href="/">Home</a>
         </Button>
       </EmptyContent>
-      <Button variant="link" asChild className={ctaLinkMutedClass} size="sm">
+      <Button variant="shell-link" asChild size="sm">
         <a href="/contact">
           Learn more <ArrowUpRight />
         </a>
@@ -79,12 +67,10 @@ export function BlogPage({ initialTag }: { initialTag?: string } = {}) {
         <SiteLayout.Header />
         <SiteLayout.Main className="items-start justify-start">
           <div className="mx-auto w-full max-w-3xl">
-            <h1 className="mb-2 text-balance text-2xl font-normal leading-tight md:text-3xl">
-              Blog
-            </h1>
-            <p className={cn(fieldTypographyMuted, "mb-8")}>
+            <PageTitle className="mb-2">Blog</PageTitle>
+            <MutedBody className="mb-8">
               Updates from the lab on products, engineering, and preview releases.
-            </p>
+            </MutedBody>
 
             <BlogRoot className="flex flex-col gap-8">
               <BlogTagFilter posts={posts} activeTag={activeTag}>
@@ -101,11 +87,18 @@ export function BlogPage({ initialTag }: { initialTag?: string } = {}) {
                     className="flex w-full flex-wrap"
                     aria-label="Filter by tag"
                   >
-                    <ToggleGroupItem value="all" className={blogTagToggleItemClass}>
+                    <ToggleGroupItem
+                      value="all"
+                      className="border-[#F4F4EF]/25 bg-transparent text-sm text-[#F4F4EF] hover:bg-[#F4F4EF]/10 hover:text-[#F4F4EF] data-[state=on]:border-[#F4F4EF]/50 data-[state=on]:bg-[#F4F4EF]/10 data-[state=on]:text-[#F4F4EF]"
+                    >
                       All
                     </ToggleGroupItem>
                     {tagList.map((tag) => (
-                      <ToggleGroupItem key={tag} value={tag} className={blogTagToggleItemClass}>
+                      <ToggleGroupItem
+                        key={tag}
+                        value={tag}
+                        className="border-[#F4F4EF]/25 bg-transparent text-sm text-[#F4F4EF] hover:bg-[#F4F4EF]/10 hover:text-[#F4F4EF] data-[state=on]:border-[#F4F4EF]/50 data-[state=on]:bg-[#F4F4EF]/10 data-[state=on]:text-[#F4F4EF]"
+                      >
                         {tag}
                       </ToggleGroupItem>
                     ))}
@@ -118,12 +111,10 @@ export function BlogPage({ initialTag }: { initialTag?: string } = {}) {
                   totalCount === 0 ? (
                     <BlogEmptyState />
                   ) : (
-                    <p className={fieldTypographyMuted}>
+                    <MutedBody>
                       No posts tagged &ldquo;{tag}&rdquo;.{" "}
-                      <a href="/blog" className={mdxLinkClass}>
-                        View all
-                      </a>
-                    </p>
+                      <ShellLink href="/blog">View all</ShellLink>
+                    </MutedBody>
                   )
                 }
               </BlogPostListEmpty>
