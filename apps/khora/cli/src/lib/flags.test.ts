@@ -1,9 +1,11 @@
 import { describe, expect, test } from "bun:test";
 
 import {
-  displayNameFromFlags,
+  minScoreFromFlags,
+  nameFromFlags,
   parseTopK,
   profilePatchFromFlags,
+  queryFromFlags,
   registerFieldsFromFlags,
 } from "./flags";
 
@@ -27,13 +29,14 @@ describe("registerFieldsFromFlags", () => {
     });
   });
 
-  test("accepts display-name alias", () => {
+  test("accepts invite-token", () => {
     const f = registerFieldsFromFlags({
       username: "ada",
-      "display-name": "Ada",
+      name: "Ada",
       bio: "hi",
+      "invite-token": "tok",
     });
-    expect(f?.displayName).toBe("Ada");
+    expect(f?.inviteToken).toBe("tok");
   });
 });
 
@@ -54,9 +57,16 @@ describe("profilePatchFromFlags", () => {
   });
 });
 
-describe("displayNameFromFlags", () => {
-  test("prefers --name over display-name", () => {
-    expect(displayNameFromFlags({ name: "A", "display-name": "B" })).toBe("A");
+describe("nameFromFlags", () => {
+  test("reads --name only", () => {
+    expect(nameFromFlags({ name: "Ada" })).toBe("Ada");
+    expect(nameFromFlags({ "display-name": "Legacy" })).toBeUndefined();
+  });
+});
+
+describe("queryFromFlags", () => {
+  test("reads --query", () => {
+    expect(queryFromFlags({ query: "async rust" })).toBe("async rust");
   });
 });
 
@@ -67,5 +77,15 @@ describe("parseTopK", () => {
 
   test("rejects invalid top-k", () => {
     expect(() => parseTopK({ "top-k": "0" })).toThrow(/positive integer/i);
+  });
+});
+
+describe("minScoreFromFlags", () => {
+  test("parses valid score", () => {
+    expect(minScoreFromFlags({ "min-score": "0.5" })).toBe(0.5);
+  });
+
+  test("rejects out of range", () => {
+    expect(() => minScoreFromFlags({ "min-score": "2" })).toThrow(/between 0 and 1/i);
   });
 });

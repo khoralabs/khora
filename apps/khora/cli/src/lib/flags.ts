@@ -1,11 +1,62 @@
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { strFlag } from "@khoralabs/cli-kit";
 
-export function displayNameFromFlags(flags: FlagMap): string | undefined {
-  const v =
-    strFlag(flags, "name") ?? strFlag(flags, "display-name") ?? strFlag(flags, "displayName");
-  const t = v?.trim();
-  return t !== undefined && t.length > 0 ? t : undefined;
+function trimmedStrFlag(flags: FlagMap, key: string): string | undefined {
+  const v = strFlag(flags, key)?.trim();
+  return v !== undefined && v.length > 0 ? v : undefined;
+}
+
+export function nameFromFlags(flags: FlagMap): string | undefined {
+  return trimmedStrFlag(flags, "name");
+}
+
+export function queryFromFlags(flags: FlagMap): string | undefined {
+  return trimmedStrFlag(flags, "query");
+}
+
+export function baseUrlFromFlags(flags: FlagMap): string | undefined {
+  return trimmedStrFlag(flags, "base-url");
+}
+
+export function hostSlugFromFlags(flags: FlagMap): string | undefined {
+  return trimmedStrFlag(flags, "host");
+}
+
+export function registryUrlFromFlags(flags: FlagMap): string | undefined {
+  return trimmedStrFlag(flags, "registry-url");
+}
+
+export function agentKeyPathFromFlags(flags: FlagMap): string | undefined {
+  return trimmedStrFlag(flags, "agent-key-path");
+}
+
+export function configPathFromFlags(flags: FlagMap): string | undefined {
+  return trimmedStrFlag(flags, "config");
+}
+
+export function dataDirFromFlags(flags: FlagMap): string | undefined {
+  return trimmedStrFlag(flags, "data-dir");
+}
+
+export function inviteTokenFromFlags(flags: FlagMap): string | undefined {
+  return trimmedStrFlag(flags, "invite-token");
+}
+
+export function namespaceRootFromFlags(
+  flags: FlagMap,
+  defaultRoot = DEFAULT_NAMESPACE_ROOT,
+): string {
+  return trimmedStrFlag(flags, "namespace-root") ?? defaultRoot;
+}
+
+export function minScoreFromFlags(flags: FlagMap): number | undefined {
+  const raw = trimmedStrFlag(flags, "min-score");
+  if (raw === undefined) return undefined;
+  const n = Number.parseFloat(raw);
+  if (!Number.isFinite(n) || n < 0 || n > 1) {
+    throw new Error("--min-score must be a number between 0 and 1");
+  }
+  return n;
 }
 
 export function registerFieldsFromFlags(flags: FlagMap): {
@@ -14,20 +65,18 @@ export function registerFieldsFromFlags(flags: FlagMap): {
   bio: string;
   inviteToken?: string;
 } | null {
-  const username = strFlag(flags, "username")?.trim() ?? "";
-  const displayName = displayNameFromFlags(flags) ?? "";
-  const bio = strFlag(flags, "bio")?.trim() ?? "";
+  const username = trimmedStrFlag(flags, "username") ?? "";
+  const displayName = nameFromFlags(flags) ?? "";
+  const bio = trimmedStrFlag(flags, "bio") ?? "";
   if (username.length === 0 || displayName.length === 0 || bio.length === 0) {
     return null;
   }
-  const inviteToken = strFlag(flags, "invite-token") ?? strFlag(flags, "inviteToken");
+  const inviteToken = inviteTokenFromFlags(flags);
   return {
     username,
     displayName,
     bio,
-    ...(inviteToken !== undefined && inviteToken.trim().length > 0
-      ? { inviteToken: inviteToken.trim() }
-      : {}),
+    ...(inviteToken !== undefined ? { inviteToken } : {}),
   };
 }
 
@@ -38,10 +87,9 @@ export function profilePatchFromFlags(flags: FlagMap): {
   if (flags.username !== undefined) {
     throw new Error("Username cannot be changed via the CLI. Omit --username.");
   }
-  const displayName = displayNameFromFlags(flags);
-  const bioRaw = strFlag(flags, "bio");
-  const bio = bioRaw?.trim();
-  const hasBio = bio !== undefined && bio.length > 0;
+  const displayName = nameFromFlags(flags);
+  const bio = trimmedStrFlag(flags, "bio");
+  const hasBio = bio !== undefined;
   const hasName = displayName !== undefined;
   if (!hasName && !hasBio) {
     return null;
@@ -53,7 +101,7 @@ export function profilePatchFromFlags(flags: FlagMap): {
 }
 
 export function parseTopK(flags: FlagMap): number | undefined {
-  const raw = strFlag(flags, "top-k") ?? strFlag(flags, "topK");
+  const raw = trimmedStrFlag(flags, "top-k");
   if (raw === undefined) return undefined;
   const n = Number.parseInt(raw, 10);
   if (!Number.isFinite(n) || n <= 0) {

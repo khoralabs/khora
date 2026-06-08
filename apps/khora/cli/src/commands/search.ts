@@ -1,9 +1,9 @@
 import type { FlagMap } from "@khoralabs/cli-kit";
-import { boolFlag, strFlag } from "@khoralabs/cli-kit";
+import { boolFlag } from "@khoralabs/cli-kit";
 import type { KhoraSearchHit } from "@khoralabs/khora-contracts";
 
 import { withKhoraClient } from "../flows/context";
-import { parseTopK } from "../lib/flags";
+import { parseTopK, queryFromFlags } from "../lib/flags";
 
 function formatSearchHit(hit: KhoraSearchHit): string {
   const h = hit.hydrated;
@@ -15,15 +15,15 @@ function formatSearchHit(hit: KhoraSearchHit): string {
 
 export async function handleSearch(flags: FlagMap): Promise<void> {
   const json = boolFlag(flags, "json");
-  const q = strFlag(flags, "q")?.trim();
-  if (q === undefined || q.length === 0) {
-    throw new Error("--q is required");
+  const query = queryFromFlags(flags);
+  if (query === undefined) {
+    throw new Error("--query is required");
   }
   const topK = parseTopK(flags);
 
   await withKhoraClient(flags, async (client) => {
     const out = await client.search({
-      q,
+      q: query,
       ...(topK !== undefined ? { topK } : {}),
     });
     if (json) {

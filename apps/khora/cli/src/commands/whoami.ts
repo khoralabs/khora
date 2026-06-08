@@ -8,7 +8,7 @@ import { errorMessage } from "../lib/error-message";
 
 export async function handleWhoami(flags: FlagMap): Promise<void> {
   const json = boolFlag(flags, "json");
-  const noFetch = boolFlag(flags, "no-fetch") || boolFlag(flags, "noFetch");
+  const noFetch = boolFlag(flags, "no-fetch");
 
   let signer: PersistableAgentSigner;
   try {

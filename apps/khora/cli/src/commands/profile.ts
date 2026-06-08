@@ -11,15 +11,9 @@ export async function handleProfileUpdate(ctx: KhoraCliContext, flags: FlagMap):
   let patch = profilePatchFromFlags(flags);
 
   if (patch === null) {
-    const partial =
-      flags.name !== undefined ||
-      flags["display-name"] !== undefined ||
-      flags.displayName !== undefined ||
-      flags.bio !== undefined;
+    const partial = flags.name !== undefined || flags.bio !== undefined;
     if (partial) {
-      throw new Error(
-        "Profile update requires at least one of --name (or --display-name) or --bio.",
-      );
+      throw new Error("Profile update requires at least one of --name or --bio.");
     }
     patch = await runProfileUpdateInteractiveFlow(ctx);
   }

@@ -5,7 +5,7 @@ import type { KhoraCliContext } from "../flows/context";
 import { cliBaseUrl, cliCurrentHostSlug, loadSigner, withKhoraClient } from "../flows/context";
 import { runRegisterInteractiveFlow } from "../flows/register-flow";
 import { errorMessage } from "../lib/error-message";
-import { displayNameFromFlags, registerFieldsFromFlags } from "../lib/flags";
+import { nameFromFlags, registerFieldsFromFlags } from "../lib/flags";
 import { linkEnsure } from "../registry/client";
 import { cliRegistryUrl } from "../registry/config";
 import { readLinkState, writeLinkState } from "../registry/link-state";
@@ -15,21 +15,16 @@ export async function handleRegister(ctx: KhoraCliContext, flags: FlagMap): Prom
   let fields = registerFieldsFromFlags(flags);
 
   const hasUsernameFlag = flags.username !== undefined;
-  const hasNameFlag =
-    flags.name !== undefined ||
-    flags["display-name"] !== undefined ||
-    flags.displayName !== undefined;
+  const hasNameFlag = flags.name !== undefined;
   const hasBioFlag = flags.bio !== undefined;
   const partialFlags = hasUsernameFlag || hasNameFlag || hasBioFlag;
 
   if (fields === null) {
     if (partialFlags) {
-      throw new Error(
-        "Non-interactive register requires --username, --name (or --display-name), and --bio.",
-      );
+      throw new Error("Non-interactive register requires --username, --name, and --bio.");
     }
     const usernameDefault = strFlag(flags, "username")?.trim();
-    const nameDefault = displayNameFromFlags(flags);
+    const nameDefault = nameFromFlags(flags);
     const bioDefault = strFlag(flags, "bio")?.trim();
     const prompted = await runRegisterInteractiveFlow(ctx, {
       ...(usernameDefault !== undefined && usernameDefault.length > 0

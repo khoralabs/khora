@@ -234,7 +234,25 @@ export async function handleLinkStatus(flags: FlagMap): Promise<void> {
   }
   if (remote !== null) {
     console.log(`Registry: ${registryUrl}`);
-    console.log(JSON.stringify(remote, null, 2));
+    const remoteLinks = (remote as { links?: unknown[] }).links;
+    if (Array.isArray(remoteLinks) && remoteLinks.length > 0) {
+      for (const link of remoteLinks) {
+        if (typeof link === "object" && link !== null) {
+          const row = link as {
+            hostSlug?: string | null;
+            agentDid?: string;
+            linkedAtMs?: number;
+          };
+          const slug = row.hostSlug ?? "?";
+          const did = row.agentDid ?? "?";
+          const at =
+            row.linkedAtMs !== undefined ? new Date(row.linkedAtMs).toISOString() : "unknown time";
+          console.log(`  remote ${slug}: ${did} (linked ${at})`);
+        }
+      }
+    } else {
+      console.log("  remote: session valid, no agent links");
+    }
   }
 }
 

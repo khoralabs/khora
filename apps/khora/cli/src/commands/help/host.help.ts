@@ -21,5 +21,5 @@ export const hostShowHelp: CommandHelp = {
 export const hostRegisterHelp: CommandHelp = {
   command: "host register",
   summary: "Register a host in the registry (pending until activated)",
-  args: "khora host register --slug=<slug> --base-url=<url> [--display-name=…] [--description=…] [--json]",
+  args: "khora host register --slug=<slug> --base-url=<url> [--name=…] [--description=…] [--json]",
 };

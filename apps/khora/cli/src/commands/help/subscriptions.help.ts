@@ -11,5 +11,5 @@ export const subscriptionsCreateHelp: CommandHelp = {
   command: "subscriptions create",
   summary: "Create a standing-search subscription (AND predicate)",
   wizard: `Prompts: optional topic slug, author (DID or username), semantic query (at least one required), optional body note, min score, visibility`,
-  args: `khora subscriptions create [--topic=<slug>] [--author=<did|username>] [--query=<text>] [--body=…] [--min-score=N] [--visibility=public|network|private] [--namespace-root=global]`,
+  args: `khora subscriptions create [--topic=<slug>] [--author=<did|username>] [--query=<text>] [--body=…] [--min-score=N] [--visibility=public|network|private] [--namespace-root=global] [--json]`,
 };

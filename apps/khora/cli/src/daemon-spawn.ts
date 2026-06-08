@@ -2,7 +2,6 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { FlagMap } from "@khoralabs/cli-kit";
-import { strFlag } from "@khoralabs/cli-kit";
 import {
   type KhoraDaemonControlFile,
   readKhoraDaemonControlFile,
@@ -11,6 +10,7 @@ import { resolveKhoraDataDir } from "@khoralabs/khora-daemon/daemon-config";
 
 import { agentIdentityPath, cliBaseUrl } from "./flows/context";
 import { khoraCliResolvedConfig } from "./khora-app-config";
+import { dataDirFromFlags } from "./lib/flags";
 
 const MONOREPO_DAEMON_ENTRY = fileURLToPath(new URL("../../daemon/src/index.ts", import.meta.url));
 
@@ -50,8 +50,8 @@ export function daemonSpawnCmd(flags?: FlagMap): string[] {
 }
 
 export function resolveCliDataDir(flags: FlagMap): string {
-  const fromFlag = strFlag(flags, "data-dir") ?? strFlag(flags, "dataDir");
-  if (fromFlag !== undefined && fromFlag.trim().length > 0) return fromFlag.trim();
+  const fromFlag = dataDirFromFlags(flags);
+  if (fromFlag !== undefined) return fromFlag;
   const cfg = khoraCliResolvedConfig(flags);
   return resolveKhoraDataDir(cfg);
 }

@@ -49,7 +49,7 @@ export async function handleInboxListen(flags: FlagMap): Promise<void> {
   }
 
   const cfg = loadDaemonLayeredConfig();
-  const json = daemonJsonOutput(cfg) || boolFlag(flags, "json") || process.argv.includes("--json");
+  const json = boolFlag(flags, "json") || daemonJsonOutput(cfg);
   const baseUrl = cliBaseUrl(flags) || cfg.baseUrl?.trim() || DEFAULT_KHORA_BASE_URL;
   const dataDir = resolveKhoraDataDir(khoraCliResolvedConfig(flags));
   const signer = await loadSigner(flags);

@@ -43,26 +43,31 @@ export async function handlePostsCreate(ctx: KhoraCliContext, flags: FlagMap): P
   }
 }
 
-export async function handlePostsGet(positional: string[], flags: FlagMap): Promise<void> {
-  const json = boolFlag(flags, "json");
-  const postId = positional[2]?.trim();
+export async function handlePostsGet(_positional: string[], flags: FlagMap): Promise<void> {
+  const pretty = boolFlag(flags, "pretty");
+  const postId = _positional[2]?.trim();
   if (postId === undefined || postId.length === 0) {
-    throw new Error("Usage: khora posts get <postId>");
+    throw new Error("Usage: khora posts get <postId> [--pretty]");
   }
   await withKhoraClient(flags, async (client) => {
     const post = await client.getPost(postId);
-    console.log(JSON.stringify(post, null, json ? 2 : 0));
+    console.log(JSON.stringify(post, null, pretty ? 2 : 0));
   });
 }
 
-export async function handlePostsDelete(positional: string[], flags: FlagMap): Promise<void> {
-  const postId = positional[2]?.trim();
+export async function handlePostsDelete(_positional: string[], flags: FlagMap): Promise<void> {
+  const json = boolFlag(flags, "json");
+  const postId = _positional[2]?.trim();
   if (postId === undefined || postId.length === 0) {
-    throw new Error("Usage: khora posts delete <postId>");
+    throw new Error("Usage: khora posts delete <postId> [--json]");
   }
   await withKhoraClient(flags, async (client) => {
     await client.deletePost(postId);
-    console.log(`Deleted post ${postId}`);
+    if (json) {
+      console.log(JSON.stringify({ ok: true, postId }, null, 2));
+    } else {
+      console.log(`Deleted post ${postId}`);
+    }
   });
 }
 
@@ -71,17 +76,18 @@ export async function handlePostsUpdate(
   positional: string[],
   flags: FlagMap,
 ): Promise<void> {
-  const jsonOut = boolFlag(flags, "json");
+  const json = boolFlag(flags, "json");
+  const pretty = boolFlag(flags, "pretty");
   const postId = positional[2]?.trim();
   if (postId === undefined || postId.length === 0) {
-    throw new Error("Usage: khora posts update <postId> [--body=…] [--title=…] [--json=…]");
+    throw new Error("Usage: khora posts update <postId> [--body=…] [--patch=…]");
   }
 
-  const patchJson = strFlag(flags, "json");
+  const patchRaw = strFlag(flags, "patch");
   let patch: Omit<KhoraPostPatch, "authorSignature">;
 
-  if (patchJson !== undefined && patchJson.length > 0) {
-    const parsed = readJsonArg(patchJson) as Record<string, unknown>;
+  if (patchRaw !== undefined && patchRaw.length > 0) {
+    const parsed = readJsonArg(patchRaw) as Record<string, unknown>;
     const { authorSignature: _ignored, ...rest } = parsed;
     patch = rest as Omit<KhoraPostPatch, "authorSignature">;
   } else {
@@ -109,7 +115,8 @@ export async function handlePostsUpdate(
   try {
     await withKhoraClient(flags, async (client) => {
       const post = await client.updatePost(postId, patch);
-      console.log(JSON.stringify(post, null, jsonOut ? 2 : 0));
+      const indent = json || pretty ? 2 : 0;
+      console.log(JSON.stringify(post, null, indent));
     });
   } catch (e) {
     exitOnClientError(e, flags);

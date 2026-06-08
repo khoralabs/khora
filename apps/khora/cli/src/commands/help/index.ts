@@ -7,12 +7,14 @@ import { postsCreateHelp, postsDeleteHelp, postsGetHelp, postsUpdateHelp } from 
 import { profileUpdateHelp } from "./profile.help";
 import { registerHelp } from "./register.help";
 import { searchHelp } from "./search.help";
+import { setupHelp } from "./setup.help";
 import { subscriptionsCreateHelp, subscriptionsListHelp } from "./subscriptions.help";
 import { unregisterHelp } from "./unregister.help";
 import { versionHelp } from "./version.help";
 import { whoamiHelp } from "./whoami.help";
 
 export const allCommandHelp: readonly CommandHelp[] = [
+  setupHelp,
   versionHelp,
   keygenHelp,
   hostListHelp,

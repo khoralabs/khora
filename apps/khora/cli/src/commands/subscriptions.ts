@@ -8,7 +8,7 @@ import type { KhoraCliContext } from "../flows/context";
 import { withKhoraClient } from "../flows/context";
 import { runSubscriptionCreateFlow } from "../flows/subscription-flows";
 import { exitOnClientError } from "../lib/client-error";
-import { DEFAULT_NAMESPACE_ROOT } from "../lib/flags";
+import { minScoreFromFlags, namespaceRootFromFlags, queryFromFlags } from "../lib/flags";
 
 function visibilityFromFlags(flags: FlagMap): KhoraPostVisibility | undefined {
   const v = strFlag(flags, "visibility")?.trim();
@@ -29,24 +29,7 @@ function hasPredicateFlag(flags: FlagMap): boolean {
   return (
     optionalStrFlag(flags, "topic") !== undefined ||
     optionalStrFlag(flags, "author") !== undefined ||
-    optionalStrFlag(flags, "query", "q") !== undefined
-  );
-}
-
-function minScoreFromFlags(flags: FlagMap): number | undefined {
-  const raw = strFlag(flags, "min-score") ?? strFlag(flags, "minScore");
-  const v = raw?.trim();
-  if (v === undefined || v.length === 0) return undefined;
-  const n = Number.parseFloat(v);
-  if (Number.isNaN(n)) throw new Error("--min-score must be a number");
-  return n;
-}
-
-function namespaceRootFromFlags(flags: FlagMap): string {
-  return (
-    strFlag(flags, "namespace-root")?.trim() ??
-    strFlag(flags, "namespaceRoot")?.trim() ??
-    DEFAULT_NAMESPACE_ROOT
+    queryFromFlags(flags) !== undefined
   );
 }
 
@@ -133,7 +116,7 @@ export async function handleSubscriptionsCreate(
   if (hasPredicateFlag(flags)) {
     const topicSlug = optionalStrFlag(flags, "topic");
     const author = optionalStrFlag(flags, "author");
-    const queryText = optionalStrFlag(flags, "query", "q");
+    const queryText = queryFromFlags(flags);
     const body = optionalStrFlag(flags, "body");
     if (topicSlug === undefined && author === undefined && queryText === undefined) {
       throw new Error("At least one of --topic, --author, or --query is required.");
@@ -196,17 +179,10 @@ function hasStrFlag(flags: FlagMap, ...keys: string[]): boolean {
 }
 
 function hasAnyCreateFlag(flags: FlagMap): boolean {
-  return hasStrFlag(
-    flags,
-    "topic",
-    "author",
-    "query",
-    "q",
-    "body",
-    "min-score",
-    "minScore",
-    "visibility",
-    "namespace-root",
-    "namespaceRoot",
+  return (
+    hasStrFlag(flags, "topic", "author", "body", "visibility") ||
+    queryFromFlags(flags) !== undefined ||
+    strFlag(flags, "min-score") !== undefined ||
+    strFlag(flags, "namespace-root") !== undefined
   );
 }

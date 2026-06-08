@@ -5,10 +5,11 @@ import {
   loadIdentity,
   type PersistableAgentSigner,
 } from "@khoralabs/agent-persisted-signer";
-import { createReadlineSession, type FlagMap, type ReadLineFn, strFlag } from "@khoralabs/cli-kit";
+import { createReadlineSession, type FlagMap, type ReadLineFn } from "@khoralabs/cli-kit";
 import { KhoraClient } from "@khoralabs/khora-client";
 
 import { khoraCliResolvedConfig } from "../khora-app-config";
+import { agentKeyPathFromFlags, baseUrlFromFlags, hostSlugFromFlags } from "../lib/flags";
 
 const DEFAULT_BASE_URL = "http://127.0.0.1:8787";
 
@@ -38,9 +39,8 @@ export type ResolvedCliHost = {
 
 export function resolveCliHost(flags: FlagMap): ResolvedCliHost {
   const cfg = khoraCliResolvedConfig(flags);
-  const baseUrlFlag = strFlag(flags, "base-url") ?? strFlag(flags, "baseUrl");
-  const hostFlag =
-    strFlag(flags, "host") ?? strFlag(flags, "host-slug") ?? strFlag(flags, "hostSlug");
+  const baseUrlFlag = baseUrlFromFlags(flags);
+  const hostFlag = hostSlugFromFlags(flags);
 
   if (baseUrlFlag !== undefined && baseUrlFlag.length > 0) {
     return {
@@ -74,6 +74,8 @@ export function cliCurrentHostSlug(flags: FlagMap): string | undefined {
 }
 
 export function agentIdentityPath(flags: FlagMap): string {
+  const fromFlag = agentKeyPathFromFlags(flags);
+  if (fromFlag !== undefined) return fromFlag;
   const cfg = khoraCliResolvedConfig(flags);
   const p = cfg.agentKeyPath?.trim();
   return p !== undefined && p.length > 0 ? p : defaultIdentityPath();

@@ -2,7 +2,7 @@ import { homedir } from "node:os";
 import path from "node:path";
 
 import type { FlagMap } from "@khoralabs/cli-kit";
-import { strFlag } from "@khoralabs/cli-kit";
+
 import {
   type KhoraAppConfigBase,
   khoraAppConfigFromEnv,
@@ -10,6 +10,7 @@ import {
   resolveKhoraConfigPath,
   zKhoraAppConfigBase,
 } from "@khoralabs/khora-client";
+import { configPathFromFlags } from "./lib/flags";
 
 function khoraCliDefaultConfigPaths(env: NodeJS.ProcessEnv): string[] {
   const home = env.HOME ?? env.USERPROFILE ?? homedir();
@@ -21,7 +22,7 @@ export function khoraCliResolvedConfig(
   env: NodeJS.ProcessEnv = process.env,
 ): KhoraAppConfigBase {
   const resolved = resolveKhoraConfigPath({
-    flag: strFlag(flags, "config"),
+    flag: configPathFromFlags(flags),
     env,
     defaultPaths: khoraCliDefaultConfigPaths(env),
   });

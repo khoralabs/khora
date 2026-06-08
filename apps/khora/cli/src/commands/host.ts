@@ -4,6 +4,7 @@ import { boolFlag, strFlag, style } from "@khoralabs/cli-kit";
 import { cliCurrentHostSlug, resolveCliHost } from "../flows/context";
 import { khoraCliResolvedConfig } from "../khora-app-config";
 import { patchCliConfigFile, resolveCliConfigWritePath } from "../lib/cli-config-write";
+import { baseUrlFromFlags, nameFromFlags } from "../lib/flags";
 import { fetchHosts, type RegistryHostHealth, registerHost } from "../registry/client";
 import { cliRegistryUrl } from "../registry/config";
 
@@ -92,8 +93,8 @@ export function handleHostShow(flags: FlagMap): void {
 export async function handleHostRegister(flags: FlagMap): Promise<void> {
   const json = boolFlag(flags, "json");
   const slug = strFlag(flags, "slug")?.trim();
-  const baseUrl = strFlag(flags, "base-url") ?? strFlag(flags, "baseUrl");
-  const displayName = strFlag(flags, "display-name") ?? strFlag(flags, "displayName");
+  const baseUrl = baseUrlFromFlags(flags);
+  const displayName = nameFromFlags(flags);
   const description = strFlag(flags, "description");
 
   if (slug === undefined || slug.length === 0 || baseUrl === undefined || baseUrl.length === 0) {

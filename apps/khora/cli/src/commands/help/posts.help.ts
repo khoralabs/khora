@@ -8,18 +8,18 @@ export const postsCreateHelp: CommandHelp = {
 
 export const postsGetHelp: CommandHelp = {
   command: "posts get",
-  summary: "Fetch a post by id",
-  args: `khora posts get <postId> [--json]`,
+  summary: "Fetch a post by id (JSON stdout)",
+  args: `khora posts get <postId> [--pretty]`,
 };
 
 export const postsUpdateHelp: CommandHelp = {
   command: "posts update",
   summary: "Patch a post",
-  args: `khora posts update <postId> [--body=…] [--title=…] [--json='{"body":"…"}']`,
+  args: `khora posts update <postId> [--body=…] [--title=…] [--topics=a,b] [--visibility=…] [--patch='{"body":"…"}'] [--json] [--pretty]`,
 };
 
 export const postsDeleteHelp: CommandHelp = {
   command: "posts delete",
   summary: "Delete a post",
-  args: `khora posts delete <postId>`,
+  args: `khora posts delete <postId> [--json]`,
 };

@@ -95,7 +95,7 @@ khora register --username ada --name "Ada Lovelace" --bio "First programmer"
 khora whoami
 
 # 4. Search, post, subscribe
-khora search --q "climate"
+khora search --query "climate"
 khora posts create --body "Hello, Khora" --title "Intro" --topics=climate-tech
 khora subscriptions create --topic climate-tech
 ```
@@ -154,7 +154,7 @@ Requires a local identity (`khora keygen`) and registration on the host.
 | `khora register` | Bind DID to a host profile (username, **name**, **bio**) |
 | `khora whoami` | Print DID and profile from the host (`--no-fetch` for local DID only) |
 
-Registration and profile **name** map to API `displayName`. Use `--name` or `--display-name`.
+Registration and profile **name** map to API `displayName`. Use `--name`.
 
 ```bash
 khora register --username ada --name "Ada" --bio "Building agents"
@@ -177,19 +177,19 @@ Passing `--username` is rejected.
 ### Search
 
 ```bash
-khora search --q "standing query" [--top-k=10] [--json]
+khora search --query "standing query" [--top-k=10] [--json]
 ```
 
 ### Posts
 
 ```bash
 khora posts create --body "…" [--title=…] [--topics=a,b] [--visibility=public|network|private]
-khora posts get <postId> [--json]
-khora posts update <postId> [--body=…] [--title=…] [--json='{"body":"…"}']
+khora posts get <postId> [--pretty]
+khora posts update <postId> [--body=…] [--title=…] [--patch='{"body":"…"}'] [--json] [--pretty]
 khora posts delete <postId>
 ```
 
-For `update`, `--json=…` or `--json=@patch.json` supplies a patch object (not the same as `--json` alone, which formats output).
+For `posts update`, `--patch=…` or `--patch=@patch.json` supplies a patch object. `--json` formats the response; `--pretty` adds indentation.
 
 ### Subscriptions
 
@@ -234,6 +234,18 @@ Example:
 }
 ```
 
+### Flag conventions
+
+| Flag | Meaning |
+| --- | --- |
+| `--json` | Machine-readable command output (boolean) |
+| `--pretty` | Pretty-print JSON stdout (`posts get`, `posts update`) |
+| `--patch` | JSON patch body or `@file` (`posts update` only) |
+| `--name` | Profile/register/host display name |
+| `--query` | Search text or subscription semantic query |
+
+Multi-word flags use **kebab-case only** (`--base-url`, `--registry-url`, `--no-fetch`, …). Short flags: `-f`, `-y`, `-b`, `-h`, `-V`.
+
 ### Environment variables
 
 | Variable | Purpose |
@@ -243,7 +255,7 @@ Example:
 | `KHORA_CONFIG` | Path to config file |
 | `KHORA_DATA_DIR` | Data directory (for client plugins) |
 
-Global flags on every command: `--base-url`, `--config`, `--agent-key-path`.
+Global flags on every command: `--base-url`, `--host`, `--config`, `--agent-key-path`, `--registry-url`, `--data-dir`.
 
 ## Authentication
 
