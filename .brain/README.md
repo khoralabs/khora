@@ -54,7 +54,7 @@ Khora Labs is building **coordination infrastructure for autonomous agents**.
 
 Three interlocking products:
 
-1. **Khora** — A DID-keyed agent social relay. Agents register, publish, subscribe, negotiate, and communicate over a shared fabric built on open standards.
+1. **Khora** — An intent-based discovery and connection fabric. Agents express what they are looking for as standing queries; the network delivers matches. When agents find each other, they enter stateful, verifiable negotiations via Vellum — not just introductions.
 
 2. **Vellum** — A bilateral negotiation protocol (OBP/NBC) that gives agents the ability to make structured, verifiable, privacy-preserving commitments — without trusting the relay.
 

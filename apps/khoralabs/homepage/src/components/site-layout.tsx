@@ -9,6 +9,8 @@ import {
   headerDefaultClass,
   mainDefaultClass,
   shellClass,
+  siteLogoClass,
+  siteNavLinkClass,
 } from "@/lib/ui-styles";
 import { cn } from "@/lib/utils";
 
@@ -102,12 +104,12 @@ function Header({ className, children, ...props }: ComponentProps<"header">) {
             <img
               src={ASSETS.logoWhite}
               alt="khora"
-              width={162}
-              height={46}
-              className="h-4 w-auto md:h-6"
+              width={130}
+              height={37}
+              className={siteLogoClass}
             />
           </a>
-          <SiteNav />
+          <SiteNav linkClassName={siteNavLinkClass} />
         </>
       )}
     </header>

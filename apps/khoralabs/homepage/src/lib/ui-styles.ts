@@ -18,6 +18,13 @@ export const footerDefaultClass =
 
 export const footerLegalLinkClass = "text-inherit no-underline transition-opacity hover:opacity-75";
 
+/** Site-wide header logo (white wordmark on dark shell). */
+export const siteLogoClass = "h-4 w-auto md:h-[1.2rem]";
+
+/** Nav links on the dark site shell. */
+export const siteNavLinkClass =
+  "bg-transparent p-0 text-[12px] text-[#F4F4EF]/55 no-underline hover:bg-transparent hover:text-[#F4F4EF]/90 focus:bg-transparent focus:text-[#F4F4EF]/90 data-[active=true]:bg-transparent";
+
 // --- Typography ---
 
 /** Primary body copy: intro paragraphs, form context, etc. */
@@ -163,7 +170,7 @@ export const landingSubmitButtonClass =
 
 // --- Consumer landing (gray shell, left-aligned hero) ---
 
-export const consumerLandingShellClass = `relative min-h-dvh bg-[#E2E2E2] text-black antialiased ${landingSansClass}`;
+export const consumerLandingShellClass = `relative min-h-dvh antialiased ${landingSansClass}`;
 
 export const consumerLandingHeaderClass =
   "flex shrink-0 items-start justify-between px-6 pt-4 md:px-10 md:pt-5";

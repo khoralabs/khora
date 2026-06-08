@@ -12,15 +12,18 @@ const NAV_ITEMS = [
 
 type SiteNavProps = {
   className?: string;
+  linkClassName?: string;
 };
 
-export function SiteNav({ className }: SiteNavProps) {
+export function SiteNav({ className, linkClassName }: SiteNavProps) {
   return (
     <NavigationMenu aria-label="Primary" viewport={false} className={className}>
-      <NavigationMenuList className="gap-8 md:gap-10">
+      <NavigationMenuList className="gap-2 md:gap-4">
         {NAV_ITEMS.map((item) => (
           <NavigationMenuItem key={item.href}>
-            <NavigationMenuLink href={item.href}>{item.label}</NavigationMenuLink>
+            <NavigationMenuLink href={item.href} className={linkClassName}>
+              {item.label}
+            </NavigationMenuLink>
           </NavigationMenuItem>
         ))}
       </NavigationMenuList>

@@ -56,7 +56,7 @@ export function WaitlistEmailStep({
 }: WaitlistEmailStepProps) {
   return (
     <form
-      className="mt-8 max-w-md space-y-4"
+      className="max-w-md space-y-4"
       onSubmit={(e) => {
         e.preventDefault();
         onSubmit();
