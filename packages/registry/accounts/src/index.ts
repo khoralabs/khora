@@ -3,11 +3,7 @@ export type {
   AccountAgentLink,
   AccountStatus,
   AgentAccountBinding,
-  AgentAuthRegistration,
-  AgentAuthRegistrationStatus,
   CliLinkChallenge,
-  DeviceAuthorization,
-  DeviceAuthorizationStatus,
   HostLinkPropagationResult,
   MarketingConsent,
   Membership,
@@ -59,6 +55,12 @@ export {
   hashAgentAuthSecret,
   verifyAgentAuthOtp,
 } from "./agent-auth-registrations";
+export type {
+  AgentAuthRegistration,
+  AgentAuthRegistrationStatus,
+  DeviceAuthorization,
+  DeviceAuthorizationStatus,
+} from "./ceremony-types";
 export {
   consumeCliLinkChallenge,
   createCliLinkChallenge,

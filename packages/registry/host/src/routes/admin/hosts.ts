@@ -1,5 +1,4 @@
 import type { ConsoleAuth } from "@khoralabs/khora-console";
-import { getRegistryDatabase, reloadRegistryAuth } from "@khoralabs/registry-auth";
 import {
   activateKhoraHost,
   approveHostTrustedOriginQuotaRequest,
@@ -18,7 +17,7 @@ import {
   updateHostRegistrySettings,
 } from "@khoralabs/registry-catalog";
 import { probeHostHealthById } from "../../host-health";
-import { readRegistryTrustedOrigins } from "../../trusted-origins";
+import { registryHostRuntime } from "../../runtime";
 import { hostToFullJson } from "../host-json";
 import { withConsoleAuth } from "./console-guard";
 
@@ -28,9 +27,7 @@ type HostRegistryBody = {
 };
 
 function reloadAuthTrustedOrigins(): void {
-  reloadRegistryAuth({
-    resolveTrustedOrigins: () => readRegistryTrustedOrigins(getRegistryDatabase()),
-  });
+  registryHostRuntime().identity.reloadTrustedOrigins?.();
 }
 
 function mapHostLifecycleError(
@@ -52,7 +49,7 @@ export function handleAdminHostSuspend(
     if (id.length === 0) {
       return Response.json({ error: "host id required" }, { status: 400 });
     }
-    const db = getRegistryDatabase();
+    const db = registryHostRuntime().db;
     try {
       const host = suspendKhoraHost(db, id);
       reloadAuthTrustedOrigins();
@@ -74,7 +71,7 @@ export function handleAdminHostReactivate(
     if (id.length === 0) {
       return Response.json({ error: "host id required" }, { status: 400 });
     }
-    const db = getRegistryDatabase();
+    const db = registryHostRuntime().db;
     try {
       const host = reactivateKhoraHost(db, id);
       reloadAuthTrustedOrigins();
@@ -96,7 +93,7 @@ export function handleAdminHostDelete(
     if (id.length === 0) {
       return Response.json({ error: "host id required" }, { status: 400 });
     }
-    const db = getRegistryDatabase();
+    const db = registryHostRuntime().db;
     try {
       const deleted = deleteKhoraHost(db, id);
       reloadAuthTrustedOrigins();
@@ -118,7 +115,7 @@ export function handleAdminHostActivate(
     if (id.length === 0) {
       return Response.json({ error: "host id required" }, { status: 400 });
     }
-    const db = getRegistryDatabase();
+    const db = registryHostRuntime().db;
     try {
       const { host, managementToken } = activateKhoraHost(db, id, {
         satisfyOperatorApproval: true,
@@ -164,7 +161,7 @@ export function handleAdminHostRegistry(
       );
     }
 
-    const db = getRegistryDatabase();
+    const db = registryHostRuntime().db;
     try {
       const host = updateHostRegistrySettings(db, id, {
         ...(body.registryParticipationEnabled !== undefined
@@ -201,7 +198,7 @@ export function handleAdminHostOriginRequests(
     if (id.length === 0) {
       return Response.json({ error: "host id required" }, { status: 400 });
     }
-    const db = getRegistryDatabase();
+    const db = registryHostRuntime().db;
     if (findHostById(db, id) === null) {
       return Response.json({ error: "host not found" }, { status: 404 });
     }
@@ -236,7 +233,7 @@ export function handleAdminHostOriginRequestApprove(
     if (id.length === 0 || rid.length === 0) {
       return Response.json({ error: "host id and request id required" }, { status: 400 });
     }
-    const db = getRegistryDatabase();
+    const db = registryHostRuntime().db;
     const request = listHostTrustedOriginRequests(db, id).find((item) => item.id === rid);
     if (request === undefined || request.hostId !== id) {
       return Response.json({ error: "origin request not found" }, { status: 404 });
@@ -264,7 +261,7 @@ export function handleAdminHostOriginRequestReject(
     if (id.length === 0 || rid.length === 0) {
       return Response.json({ error: "host id and request id required" }, { status: 400 });
     }
-    const db = getRegistryDatabase();
+    const db = registryHostRuntime().db;
     const request = listHostTrustedOriginRequests(db, id).find((item) => item.id === rid);
     if (request === undefined || request.hostId !== id) {
       return Response.json({ error: "origin request not found" }, { status: 404 });
@@ -289,7 +286,7 @@ export function handleAdminHostQuotaRequests(
     if (id.length === 0) {
       return Response.json({ error: "host id required" }, { status: 400 });
     }
-    const db = getRegistryDatabase();
+    const db = registryHostRuntime().db;
     if (findHostById(db, id) === null) {
       return Response.json({ error: "host not found" }, { status: 404 });
     }
@@ -317,7 +314,7 @@ export function handleAdminHostQuotaRequestApprove(
     if (id.length === 0 || rid.length === 0) {
       return Response.json({ error: "host id and request id required" }, { status: 400 });
     }
-    const db = getRegistryDatabase();
+    const db = registryHostRuntime().db;
     const request = listHostTrustedOriginQuotaRequests(db, id).find((item) => item.id === rid);
     if (request === undefined || request.hostId !== id) {
       return Response.json({ error: "quota request not found" }, { status: 404 });
@@ -344,7 +341,7 @@ export function handleAdminHostQuotaRequestReject(
     if (id.length === 0 || rid.length === 0) {
       return Response.json({ error: "host id and request id required" }, { status: 400 });
     }
-    const db = getRegistryDatabase();
+    const db = registryHostRuntime().db;
     const request = listHostTrustedOriginQuotaRequests(db, id).find((item) => item.id === rid);
     if (request === undefined || request.hostId !== id) {
       return Response.json({ error: "quota request not found" }, { status: 404 });

@@ -9,11 +9,12 @@ import {
 } from "@khoralabs/registry-auth";
 import { seedDefaultHost } from "@khoralabs/registry-catalog";
 import {
+  type AgentAuthRouteDeps,
   handleAgentAuthClaimComplete,
   handleAgentAuthRegister,
   handleOAuthAuthorizationServerMetadata,
   handleOAuthProtectedResourceMetadata,
-} from "./api/agent-auth";
+} from "./routes/agent-auth";
 
 function parseOtpFromLogs(logs: string[], email: string): string {
   const line = logs.find((l) => l.includes(`OTP for ${email}:`));
@@ -23,10 +24,29 @@ function parseOtpFromLogs(logs: string[], email: string): string {
   return match[1];
 }
 
+function agentAuthDeps(db: ReturnType<typeof getRegistryDatabase>): AgentAuthRouteDeps {
+  return {
+    db,
+    publicUrl: () => "http://localhost:4000",
+    authMdUrl: "https://khoralabs.com/auth.md",
+    resourceName: "Khora Registry",
+    callAuthEndpoint: async (path: string, body: unknown) => {
+      return getRegistryAuth().handler(
+        new Request(`http://localhost:4000/api/auth${path}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }),
+      );
+    },
+  };
+}
+
 describe("registry agent auth", () => {
   const prevOtpLog = process.env.REGISTRY_AUTH_OTP_LOG;
   let logLines: string[] = [];
   const origLog = console.log;
+  let deps: AgentAuthRouteDeps;
 
   beforeEach(async () => {
     resetRegistryDatabase();
@@ -39,6 +59,7 @@ describe("registry agent auth", () => {
     reloadRegistryAuth();
     getRegistryAuth();
     const db = getRegistryDatabase();
+    deps = agentAuthDeps(db);
     seedDefaultHost(db, { slug: "khora-local", baseUrl: "http://localhost:8788" });
     logLines = [];
     console.log = (...args: unknown[]) => {
@@ -58,7 +79,7 @@ describe("registry agent auth", () => {
   });
 
   test("PRM and AS metadata expose agent_auth register and claim URIs", async () => {
-    const prm = handleOAuthProtectedResourceMetadata();
+    const prm = handleOAuthProtectedResourceMetadata(deps);
     expect(prm.status).toBe(200);
     const prmJson = (await prm.json()) as {
       authorization_servers: string[];
@@ -67,7 +88,7 @@ describe("registry agent auth", () => {
     expect(prmJson.authorization_servers[0]).toContain("localhost");
     expect(prmJson.scopes_supported).toContain("registry.session");
 
-    const asRes = handleOAuthAuthorizationServerMetadata();
+    const asRes = handleOAuthAuthorizationServerMetadata(deps);
     const asJson = (await asRes.json()) as {
       agent_auth: { register_uri: string; claim_complete_uri: string };
     };
@@ -87,6 +108,7 @@ describe("registry agent auth", () => {
           email,
         }),
       }),
+      deps,
     );
     expect(registerRes.status).toBe(200);
     const registerJson = (await registerRes.json()) as {
@@ -108,6 +130,7 @@ describe("registry agent auth", () => {
           otp,
         }),
       }),
+      deps,
     );
     expect(completeRes.status).toBe(200);
     const completeJson = (await completeRes.json()) as {
@@ -131,6 +154,7 @@ describe("registry agent auth", () => {
           email,
         }),
       }),
+      deps,
     );
     const otp = parseOtpFromLogs(logLines, email);
 
@@ -140,6 +164,7 @@ describe("registry agent auth", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, otp }),
       }),
+      deps,
     );
     expect(completeRes.status).toBe(200);
   });

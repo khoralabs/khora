@@ -81,6 +81,7 @@
         "@khoralabs/registry-auth": "workspace:*",
         "@khoralabs/registry-catalog": "workspace:*",
         "@khoralabs/registry-catalog-react": "workspace:*",
+        "@khoralabs/registry-host": "workspace:*",
         "bun-plugin-tailwind": "^0.1.2",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
@@ -1040,9 +1041,11 @@
         "@aws-sdk/client-ses": "^3.1050.0",
         "@khoralabs/registry-accounts": "workspace:*",
         "@khoralabs/registry-catalog": "workspace:*",
+        "@khoralabs/registry-host": "workspace:*",
         "better-auth": "^1.6.11",
       },
       "devDependencies": {
+        "@khoralabs/colonnade-crypto": "workspace:*",
         "@types/bun": "latest",
         "typescript": "^5",
       },
@@ -1098,6 +1101,25 @@
       "peerDependencies": {
         "react": "^19",
         "react-dom": "^19",
+        "typescript": "^5",
+      },
+    },
+    "packages/registry/host": {
+      "name": "@khoralabs/registry-host",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/khora-auth": "workspace:*",
+        "@khoralabs/khora-console": "workspace:*",
+        "@khoralabs/registry-accounts": "workspace:*",
+        "@khoralabs/registry-catalog": "workspace:*",
+      },
+      "devDependencies": {
+        "@khoralabs/colonnade-crypto": "workspace:*",
+        "@khoralabs/registry-auth": "workspace:*",
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
         "typescript": "^5",
       },
     },
@@ -1397,6 +1419,8 @@
     "@khoralabs/registry-catalog-contracts": ["@khoralabs/registry-catalog-contracts@workspace:packages/registry/catalog-contracts"],
 
     "@khoralabs/registry-catalog-react": ["@khoralabs/registry-catalog-react@workspace:packages/registry/catalog-react"],
+
+    "@khoralabs/registry-host": ["@khoralabs/registry-host@workspace:packages/registry/host"],
 
     "@khoralabs/relay-colonnade": ["@khoralabs/relay-colonnade@workspace:packages/khora/relay-colonnade"],
 

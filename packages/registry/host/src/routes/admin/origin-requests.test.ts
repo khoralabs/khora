@@ -12,11 +12,12 @@ import {
   registerKhoraHost,
   requestHostTrustedOrigin,
 } from "@khoralabs/registry-catalog";
+import { initTestRegistryHostRuntime } from "../../test-helpers";
 import {
   handleAdminHostOriginRequestApprove,
   handleAdminHostOriginRequestReject,
   handleAdminHostOriginRequests,
-} from "./api/admin/hosts";
+} from "./hosts";
 
 const ROOT_TOKEN = "test-root-token-16chars";
 
@@ -41,6 +42,7 @@ describe("operator origin requests", () => {
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
     applyTestEncryptionEnv();
     await ensureRegistrySchema();
+    initTestRegistryHostRuntime(getRegistryDatabase());
   });
 
   afterEach(() => {

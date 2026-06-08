@@ -1,4 +1,5 @@
 export const USERS_SCHEMA_SQL = `
+-- Federation domain: accounts, memberships, hosts, link protocol
 CREATE TABLE IF NOT EXISTS accounts (
   id TEXT PRIMARY KEY NOT NULL,
   status TEXT NOT NULL DEFAULT 'active',
@@ -122,6 +123,7 @@ CREATE INDEX IF NOT EXISTS idx_marketing_consents_account_id
 CREATE INDEX IF NOT EXISTS idx_memberships_account_id
   ON memberships (account_id);
 
+-- IdP ceremony (ephemeral; not federation domain)
 CREATE TABLE IF NOT EXISTS device_authorizations (
   id TEXT PRIMARY KEY NOT NULL,
   device_code_hash TEXT NOT NULL UNIQUE,
@@ -151,6 +153,7 @@ CREATE TABLE IF NOT EXISTS agent_auth_registrations (
 CREATE INDEX IF NOT EXISTS idx_agent_auth_registrations_email
   ON agent_auth_registrations (email, status, created_at_ms DESC);
 
+-- Federation: agent link protocol + bindings
 CREATE TABLE IF NOT EXISTS cli_link_challenges (
   id TEXT PRIMARY KEY NOT NULL,
   agent_did TEXT NOT NULL,

@@ -9,6 +9,7 @@ import {
 } from "@khoralabs/registry-auth";
 import type { RegistryAdminSummary } from "@khoralabs/registry-catalog";
 import { registerKhoraHost, seedDefaultHost } from "@khoralabs/registry-catalog";
+import { initTestRegistryHostRuntime } from "../../test-helpers";
 import {
   handleAdminAccountDelete,
   handleAdminAccountReactivate,
@@ -39,7 +40,9 @@ describe("registry admin console", () => {
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
     applyTestEncryptionEnv();
     await ensureRegistrySchema();
-    seedDefaultHost(getRegistryDatabase(), {
+    const db = getRegistryDatabase();
+    initTestRegistryHostRuntime(db);
+    seedDefaultHost(db, {
       slug: "khora-local",
       baseUrl: "http://localhost:8788",
     });

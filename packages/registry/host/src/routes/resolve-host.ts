@@ -21,12 +21,10 @@ export function resolveRegistryHost(
   return null;
 }
 
+import { registryHostRuntime } from "../runtime";
+
 export function registryPublicUrl(): string {
-  const port = process.env.PORT?.trim() ?? "4000";
-  const configured =
-    process.env.REGISTRY_URL?.trim()?.replace(/\/$/, "") ??
-    process.env.BETTER_AUTH_URL?.trim()?.replace(/\/$/, "");
-  return configured ?? `http://localhost:${port}`;
+  return registryHostRuntime().publicUrl();
 }
 
 export const HOST_NOT_FOUND_HINT =

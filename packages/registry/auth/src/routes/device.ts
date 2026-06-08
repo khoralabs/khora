@@ -1,3 +1,4 @@
+import type { Database } from "bun:sqlite";
 import {
   approveDeviceAuthorization,
   consumeDeviceAuthorization,
@@ -6,14 +7,20 @@ import {
   expireDeviceIfNeeded,
   hashDeviceCode,
 } from "@khoralabs/registry-accounts";
-import {
-  getRegistryDatabase,
-  getRegistrySession,
-  getRegistrySessionCookieHeader,
-} from "@khoralabs/registry-auth";
-import { registryPublicUrl } from "./resolve-host";
+import type { RegistryIdentityPort } from "@khoralabs/registry-host";
 
-export async function handleDeviceAuthorize(req: Request): Promise<Response> {
+export type DeviceRouteDeps = {
+  db: Database;
+  identity: RegistryIdentityPort;
+  publicUrl: () => string;
+  deviceVerificationPath: string;
+  defaultSourceApp: string;
+};
+
+export async function handleDeviceAuthorize(
+  req: Request,
+  deps: DeviceRouteDeps,
+): Promise<Response> {
   let sourceApp: string | undefined;
   try {
     const body = (await req.json()) as { sourceApp?: unknown };
@@ -22,12 +29,11 @@ export async function handleDeviceAuthorize(req: Request): Promise<Response> {
     /* optional body */
   }
 
-  const db = getRegistryDatabase();
-  const { device, deviceCode } = createDeviceAuthorization(db, {
-    sourceApp: sourceApp ?? "khora-cli",
+  const { device, deviceCode } = createDeviceAuthorization(deps.db, {
+    sourceApp: sourceApp ?? deps.defaultSourceApp,
   });
-  const base = registryPublicUrl();
-  const verificationUrl = `${base}/cli/link?user_code=${encodeURIComponent(device.userCode)}`;
+  const base = deps.publicUrl();
+  const verificationUrl = `${base}${deps.deviceVerificationPath}?user_code=${encodeURIComponent(device.userCode)}`;
   const expiresIn = Math.max(0, Math.floor((device.expiresAtMs - Date.now()) / 1000));
 
   return Response.json({
@@ -38,8 +44,8 @@ export async function handleDeviceAuthorize(req: Request): Promise<Response> {
   });
 }
 
-export async function handleDeviceApprove(req: Request): Promise<Response> {
-  const session = await getRegistrySession(req);
+export async function handleDeviceApprove(req: Request, deps: DeviceRouteDeps): Promise<Response> {
+  const session = await deps.identity.getSession(req);
   if (session === null) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -61,14 +67,13 @@ export async function handleDeviceApprove(req: Request): Promise<Response> {
     return Response.json({ error: "user_code required" }, { status: 400 });
   }
 
-  const sessionCookie = getRegistrySessionCookieHeader(req);
+  const sessionCookie = deps.identity.getSessionCookieHeader(req);
   if (sessionCookie === null) {
     return Response.json({ error: "Session cookie unavailable" }, { status: 500 });
   }
 
-  const db = getRegistryDatabase();
   try {
-    const device = approveDeviceAuthorization(db, { userCode, sessionToken: sessionCookie });
+    const device = approveDeviceAuthorization(deps.db, { userCode, sessionToken: sessionCookie });
     return Response.json({ ok: true, user_code: device.userCode });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "approve failed";
@@ -76,7 +81,7 @@ export async function handleDeviceApprove(req: Request): Promise<Response> {
   }
 }
 
-export async function handleDeviceToken(req: Request): Promise<Response> {
+export async function handleDeviceToken(req: Request, deps: DeviceRouteDeps): Promise<Response> {
   let deviceCode = "";
   try {
     const body = (await req.json()) as { device_code?: unknown; deviceCode?: unknown };
@@ -94,9 +99,8 @@ export async function handleDeviceToken(req: Request): Promise<Response> {
     return Response.json({ error: "device_code required" }, { status: 400 });
   }
 
-  const db = getRegistryDatabase();
   const hash = hashDeviceCode(deviceCode);
-  const existing = db
+  const existing = deps.db
     .prepare(
       `SELECT id, device_code_hash, user_code, status, session_token, expires_at_ms,
               approved_at_ms, consumed_at_ms, source_app, created_at_ms
@@ -132,7 +136,7 @@ export async function handleDeviceToken(req: Request): Promise<Response> {
     createdAtMs: existing.created_at_ms,
   };
 
-  const checked = expireDeviceIfNeeded(db, device);
+  const checked = expireDeviceIfNeeded(deps.db, device);
   if (checked.status === "expired") {
     return Response.json({ error: "expired", status: "expired" }, { status: 400 });
   }
@@ -143,7 +147,7 @@ export async function handleDeviceToken(req: Request): Promise<Response> {
     return Response.json({ status: "authorization_pending" }, { status: 428 });
   }
 
-  const consumed = consumeDeviceAuthorization(db, deviceCode);
+  const consumed = consumeDeviceAuthorization(deps.db, deviceCode);
   if (consumed === null || consumed.sessionToken === null) {
     return Response.json({ error: "token unavailable" }, { status: 500 });
   }

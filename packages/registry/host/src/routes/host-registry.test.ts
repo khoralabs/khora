@@ -13,12 +13,13 @@ import {
   requestHostTrustedOrigin,
   setHostRegistryParticipation,
 } from "@khoralabs/registry-catalog";
+import { initTestRegistryHostRuntime } from "../test-helpers";
 import {
   handleHostRegistryGet,
   handleHostRegistryOriginDelete,
   handleHostRegistryOriginRequestDelete,
   handleHostRegistryOriginRequestPost,
-} from "./api/host-registry";
+} from "./host-registry";
 
 describe("host registry API", () => {
   beforeEach(async () => {
@@ -26,6 +27,7 @@ describe("host registry API", () => {
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
     applyTestEncryptionEnv();
     await ensureRegistrySchema();
+    initTestRegistryHostRuntime(getRegistryDatabase());
   });
 
   afterEach(() => {

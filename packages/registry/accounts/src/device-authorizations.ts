@@ -1,9 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
-import type {
-  DeviceAuthorization,
-  DeviceAuthorizationStatus,
-} from "@khoralabs/registry-accounts-contracts";
+import type { DeviceAuthorization, DeviceAuthorizationStatus } from "../ceremony-types";
 import type { DeviceAuthorizationRow } from "./types-internal";
 
 const DEVICE_TTL_MS = 15 * 60 * 1000;

@@ -1,4 +1,3 @@
-import { getRegistryDatabase } from "@khoralabs/registry-auth";
 import {
   findPublicHostBySlug,
   InvalidHostHealthPathError,
@@ -12,6 +11,7 @@ import {
   tryAutoActivateHost,
 } from "@khoralabs/registry-catalog";
 import { probeHostHealth } from "../host-health";
+import { registryHostRuntime } from "../runtime";
 import { hostToFullJson, hostToPublicJson } from "./host-json";
 
 const REGISTER_LIMIT = 20;
@@ -58,13 +58,13 @@ type RegisterBody = {
 };
 
 export function handleHostsList(): Response {
-  const db = getRegistryDatabase();
+  const db = registryHostRuntime().db;
   const hosts = listPublicHosts(db).map(hostToPublicJson);
   return Response.json({ hosts });
 }
 
 export function handleHostGet(slug: string): Response {
-  const db = getRegistryDatabase();
+  const db = registryHostRuntime().db;
   const host = findPublicHostBySlug(db, slug);
   if (host === null) {
     return Response.json({ error: "Host not found" }, { status: 404 });
@@ -90,7 +90,7 @@ export async function handleHostRegister(req: Request): Promise<Response> {
     return Response.json({ error: "slug and baseUrl are required" }, { status: 400 });
   }
 
-  const db = getRegistryDatabase();
+  const db = registryHostRuntime().db;
   const policy = readHostRegistrationPolicy();
   try {
     const { host, registrationSecret } = registerKhoraHost(db, {

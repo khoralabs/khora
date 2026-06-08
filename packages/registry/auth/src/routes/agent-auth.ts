@@ -1,3 +1,4 @@
+import type { Database } from "bun:sqlite";
 import {
   consumeClaimToken,
   createAgentAuthRegistration,
@@ -9,15 +10,20 @@ import {
   normalizeEmail,
   verifyAgentAuthOtp,
 } from "@khoralabs/registry-accounts";
-import { getRegistryAuth, getRegistryDatabase } from "@khoralabs/registry-auth";
-import { registryPublicUrl } from "./resolve-host";
 
 const AGENT_AUTH_SCOPES = ["registry.session", "link.agent"] as const;
-const AUTH_MD_URL = process.env.KHORA_AUTH_MD_URL?.trim() || "https://khoralabs.com/auth.md";
 
 const rateLimit = new Map<string, { count: number; resetAtMs: number }>();
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const RATE_LIMIT_MAX = 8;
+
+export type AgentAuthRouteDeps = {
+  db: Database;
+  publicUrl: () => string;
+  authMdUrl: string;
+  resourceName: string;
+  callAuthEndpoint: (path: string, body: unknown) => Promise<Response>;
+};
 
 function clientKey(req: Request, email?: string): string {
   const ip =
@@ -39,24 +45,6 @@ function checkRateLimit(key: string): boolean {
   return true;
 }
 
-function assertEmailAllowed(email: string): void {
-  const blocked = findBlockedEmail(getRegistryDatabase(), email);
-  if (blocked !== null) {
-    throw new Error("email blocked");
-  }
-}
-
-async function callAuthEndpoint(path: string, body: unknown): Promise<Response> {
-  const base = registryPublicUrl();
-  return getRegistryAuth().handler(
-    new Request(`${base}/api/auth${path}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    }),
-  );
-}
-
 function sessionCookieFromAuthResponse(res: Response): string | null {
   const cookies = res.headers.getSetCookie?.() ?? [];
   for (const raw of cookies) {
@@ -72,19 +60,19 @@ function sessionCookieFromAuthResponse(res: Response): string | null {
   return null;
 }
 
-export function handleOAuthProtectedResourceMetadata(): Response {
-  const base = registryPublicUrl();
+export function handleOAuthProtectedResourceMetadata(deps: AgentAuthRouteDeps): Response {
+  const base = deps.publicUrl();
   return Response.json({
     resource: `${base}/`,
-    resource_name: "Khora Registry",
+    resource_name: deps.resourceName,
     authorization_servers: [base],
     scopes_supported: [...AGENT_AUTH_SCOPES],
     bearer_methods_supported: ["header"],
   });
 }
 
-export function handleOAuthAuthorizationServerMetadata(): Response {
-  const base = registryPublicUrl();
+export function handleOAuthAuthorizationServerMetadata(deps: AgentAuthRouteDeps): Response {
+  const base = deps.publicUrl();
   return Response.json({
     resource: `${base}/`,
     authorization_servers: [base],
@@ -92,7 +80,7 @@ export function handleOAuthAuthorizationServerMetadata(): Response {
     bearer_methods_supported: ["header"],
     issuer: base,
     agent_auth: {
-      skill: AUTH_MD_URL,
+      skill: deps.authMdUrl,
       register_uri: `${base}/agent/auth`,
       claim_complete_uri: `${base}/agent/auth/claim/complete`,
       identity_types_supported: ["identity_assertion"],
@@ -103,7 +91,10 @@ export function handleOAuthAuthorizationServerMetadata(): Response {
   });
 }
 
-export async function handleAgentAuthRegister(req: Request): Promise<Response> {
+export async function handleAgentAuthRegister(
+  req: Request,
+  deps: AgentAuthRouteDeps,
+): Promise<Response> {
   let body: {
     type?: unknown;
     assertion_type?: unknown;
@@ -138,16 +129,13 @@ export async function handleAgentAuthRegister(req: Request): Promise<Response> {
     return Response.json({ error: "rate limit exceeded" }, { status: 429 });
   }
 
-  try {
-    assertEmailAllowed(email);
-  } catch {
+  if (findBlockedEmail(deps.db, email) !== null) {
     return Response.json({ error: "email blocked" }, { status: 403 });
   }
 
-  const db = getRegistryDatabase();
-  const { registration, claimToken } = createAgentAuthRegistration(db, { email });
+  const { registration, claimToken } = createAgentAuthRegistration(deps.db, { email });
 
-  const sendRes = await callAuthEndpoint("/email-otp/send-verification-otp", {
+  const sendRes = await deps.callAuthEndpoint("/email-otp/send-verification-otp", {
     email,
     type: "sign-in",
   });
@@ -162,7 +150,10 @@ export async function handleAgentAuthRegister(req: Request): Promise<Response> {
   });
 }
 
-export async function handleAgentAuthClaimComplete(req: Request): Promise<Response> {
+export async function handleAgentAuthClaimComplete(
+  req: Request,
+  deps: AgentAuthRouteDeps,
+): Promise<Response> {
   let body: { claim_token?: unknown; email?: unknown; otp?: unknown };
   try {
     body = (await req.json()) as typeof body;
@@ -182,16 +173,15 @@ export async function handleAgentAuthClaimComplete(req: Request): Promise<Respon
     return Response.json({ error: "rate limit exceeded" }, { status: 429 });
   }
 
-  const db = getRegistryDatabase();
-  let registration = claimToken.length > 0 ? findAgentAuthByClaimToken(db, claimToken) : null;
+  let registration = claimToken.length > 0 ? findAgentAuthByClaimToken(deps.db, claimToken) : null;
   if (registration === null && emailRaw.length > 0) {
-    registration = findPendingAgentAuthByEmail(db, emailRaw);
+    registration = findPendingAgentAuthByEmail(deps.db, emailRaw);
   }
   if (registration === null) {
     return Response.json({ error: "registration not found" }, { status: 404 });
   }
 
-  registration = expireAgentAuthIfNeeded(db, registration);
+  registration = expireAgentAuthIfNeeded(deps.db, registration);
   if (registration.status === "expired") {
     return Response.json({ error: "registration expired" }, { status: 400 });
   }
@@ -203,7 +193,7 @@ export async function handleAgentAuthClaimComplete(req: Request): Promise<Respon
     return Response.json({ error: "invalid otp" }, { status: 401 });
   }
 
-  const signInRes = await callAuthEndpoint("/sign-in/email-otp", {
+  const signInRes = await deps.callAuthEndpoint("/sign-in/email-otp", {
     email: registration.email,
     otp,
   });
@@ -222,7 +212,7 @@ export async function handleAgentAuthClaimComplete(req: Request): Promise<Respon
     return Response.json({ error: "session cookie unavailable" }, { status: 500 });
   }
 
-  const consumed = consumeClaimToken(db, registration.id);
+  const consumed = consumeClaimToken(deps.db, registration.id);
   if (consumed === null) {
     return Response.json({ error: "claim failed" }, { status: 500 });
   }

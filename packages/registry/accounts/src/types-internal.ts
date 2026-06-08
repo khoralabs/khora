@@ -2,12 +2,11 @@ import type {
   Account,
   AccountAgentLink,
   AgentAccountBinding,
-  AgentAuthRegistration,
   CliLinkChallenge,
-  DeviceAuthorization,
   MarketingConsent,
   Membership,
 } from "@khoralabs/registry-accounts-contracts";
+import type { AgentAuthRegistration, DeviceAuthorization } from "./ceremony-types";
 import type { SqlRow } from "./sql-row";
 
 /** SQLite row shapes (snake_case columns) derived from domain types */

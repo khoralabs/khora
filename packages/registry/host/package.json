@@ -1,5 +1,5 @@
 {
-  "name": "@khoralabs/registry-auth",
+  "name": "@khoralabs/registry-host",
   "version": "0.0.0",
   "type": "module",
   "private": true,
@@ -9,16 +9,6 @@
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
-    },
-    "./client": {
-      "types": "./src/client.ts",
-      "import": "./src/client.ts",
-      "default": "./src/client.ts"
-    },
-    "./ses": {
-      "types": "./src/ses.ts",
-      "import": "./src/ses.ts",
-      "default": "./src/ses.ts"
     }
   },
   "scripts": {
@@ -26,19 +16,18 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@aws-sdk/client-ses": "^3.1050.0",
-    "@khoralabs/registry-catalog": "workspace:*",
+    "@khoralabs/khora-auth": "workspace:*",
+    "@khoralabs/khora-console": "workspace:*",
     "@khoralabs/registry-accounts": "workspace:*",
-    "@khoralabs/registry-host": "workspace:*",
-    "better-auth": "^1.6.11"
+    "@khoralabs/registry-catalog": "workspace:*"
   },
   "devDependencies": {
     "@khoralabs/colonnade-crypto": "workspace:*",
+    "@khoralabs/registry-auth": "workspace:*",
     "@types/bun": "latest",
     "typescript": "^5"
   },
   "peerDependencies": {
-    "react": "^19",
     "typescript": "^5"
   }
 }

@@ -47,33 +47,6 @@ export type HostLinkPropagationResult = {
   linkId?: string;
 };
 
-export type DeviceAuthorizationStatus = "pending" | "approved" | "consumed" | "expired";
-
-export type AgentAuthRegistrationStatus = "pending_claim" | "claimed" | "expired";
-
-export type AgentAuthRegistration = {
-  id: string;
-  email: string;
-  claimTokenHash: string;
-  otpHash: string | null;
-  expiresAtMs: number;
-  status: AgentAuthRegistrationStatus;
-  createdAtMs: number;
-};
-
-export type DeviceAuthorization = {
-  id: string;
-  deviceCodeHash: string;
-  userCode: string;
-  status: DeviceAuthorizationStatus;
-  sessionToken: string | null;
-  expiresAtMs: number;
-  approvedAtMs: number | null;
-  consumedAtMs: number | null;
-  sourceApp: string | null;
-  createdAtMs: number;
-};
-
 export type CliLinkChallenge = {
   id: string;
   agentDid: string;

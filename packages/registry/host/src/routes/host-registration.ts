@@ -1,4 +1,3 @@
-import { getRegistryDatabase } from "@khoralabs/registry-auth";
 import {
   deliverPendingManagementToken,
   findHostBySlug,
@@ -8,6 +7,7 @@ import {
   verifyHostRegistrationSecret,
 } from "@khoralabs/registry-catalog";
 import { probeHostHealth } from "../host-health";
+import { registryHostRuntime } from "../runtime";
 import { hostToFullJson } from "./host-json";
 
 function readBearerToken(req: Request): string | null {
@@ -27,7 +27,7 @@ function envProbeTimeoutMs(): number {
 }
 
 function resolveHostForRegistrationSecret(
-  db: ReturnType<typeof getRegistryDatabase>,
+  db: import("bun:sqlite").Database,
   slug: string,
   secret: string,
 ) {
@@ -43,7 +43,7 @@ function resolveHostForRegistrationSecret(
 }
 
 function registrationResponse(
-  db: ReturnType<typeof getRegistryDatabase>,
+  db: import("bun:sqlite").Database,
   host: NonNullable<ReturnType<typeof findHostBySlug>>,
   extras?: Record<string, unknown>,
 ): Response {
@@ -63,7 +63,7 @@ export function handleHostRegistrationGet(req: Request, slug: string): Response 
   if (secret === null) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const db = getRegistryDatabase();
+  const db = registryHostRuntime().db;
   const host = resolveHostForRegistrationSecret(db, slug, secret);
   if (host === null) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -76,7 +76,7 @@ export async function handleHostRegistrationClaim(req: Request, slug: string): P
   if (secret === null) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const db = getRegistryDatabase();
+  const db = registryHostRuntime().db;
   const hostId = verifyHostRegistrationSecret(db, slug, secret);
   if (hostId === null) {
     const host = findHostBySlug(db, slug);

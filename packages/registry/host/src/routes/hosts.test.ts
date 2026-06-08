@@ -1,14 +1,19 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { applyTestEncryptionEnv } from "@khoralabs/colonnade-crypto";
 import { createRootTokenConsoleAuth } from "@khoralabs/khora-console";
-import { ensureRegistrySchema, resetRegistryDatabase } from "@khoralabs/registry-auth";
+import {
+  ensureRegistrySchema,
+  getRegistryDatabase,
+  resetRegistryDatabase,
+} from "@khoralabs/registry-auth";
+import { initTestRegistryHostRuntime } from "../test-helpers";
 import {
   handleAdminHostActivate,
   handleAdminHostDelete,
   handleAdminHostReactivate,
   handleAdminHostSuspend,
-} from "./api/admin/hosts";
-import { handleHostGet, handleHostRegister, handleHostsList } from "./api/hosts";
+} from "./admin/hosts";
+import { handleHostGet, handleHostRegister, handleHostsList } from "./hosts";
 
 const ROOT_TOKEN = "test-root-token-16chars";
 
@@ -31,6 +36,7 @@ describe("host registry API", () => {
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
     applyTestEncryptionEnv();
     await ensureRegistrySchema();
+    initTestRegistryHostRuntime(getRegistryDatabase());
   });
 
   afterEach(() => {

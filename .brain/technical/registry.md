@@ -1,122 +1,133 @@
 # Registry — Internal Architecture
 
-The registry (`apps/khoralabs/registry`) is a thin **orchestration layer** over two packages:
+Three layers mirror the khora-server pattern: **library composes federation**; **app bootstraps deps and serves HTTP**.
 
-| Layer | Path | Role |
-|-------|------|------|
-| **Registry app** | `apps/khoralabs/registry` | `Bun.serve` routing, CORS, admin SPA, rate limits, health poller, workflow glue |
-| **users-auth** | `packages/khoralabs/users-auth` | Better Auth config, `/api/auth`, sessions, OTP email, schema bootstrap |
-| **users** | `packages/khoralabs/users` | Domain schema + all SQLite CRUD |
+```mermaid
+flowchart TB
+  subgraph app ["apps/khora/registry (deployment)"]
+    Bootstrap["bootstrap-registry.ts"]
+    SPAs["Admin SPA, /cli/link pages"]
+    Serve["Bun.serve + HTML routes"]
+  end
 
-**Single database:** encrypted SQLite at `REGISTRY_DATABASE_PATH` (default `data/registry.sqlite`), opened via `getUsersDatabase()`. All three layers share the same connection.
+  subgraph host ["@khoralabs/registry-host"]
+    CreateHost["createRegistryHost(deps)"]
+    FedRoutes["Federation: /v1/hosts*, /v1/link/*, /v1/me"]
+    AdminRoutes["Operator: /admin/api/*"]
+    CORS["withCors, trusted-origins"]
+  end
+
+  subgraph idp ["@khoralabs/registry-auth (Better Auth adapter)"]
+    IdentityPort["RegistryIdentityPort"]
+    AuthRoutes["/api/auth/*, /v1/device/*, /agent/auth*"]
+  end
+
+  subgraph domain ["Domain packages"]
+    Catalog["registry-catalog"]
+    Accounts["registry-accounts"]
+    Contracts["*-contracts"]
+  end
+
+  Bootstrap --> CreateHost
+  Bootstrap --> IdentityPort
+  Serve --> CreateHost
+  Serve --> AuthRoutes
+  CreateHost --> FedRoutes
+  CreateHost --> AdminRoutes
+  FedRoutes --> Catalog
+  FedRoutes --> Accounts
+  FedRoutes --> IdentityPort
+  IdentityPort --> Accounts
+```
+
+## Package boundaries
+
+| Layer | Package | Owns | Does not own |
+|-------|---------|------|--------------|
+| **Contracts** | `registry-catalog-contracts`, `registry-accounts-contracts` | `Account`, memberships, host catalog, link wire shapes | Better Auth, ceremony row types |
+| **Domain CRUD** | `registry-catalog`, `registry-accounts` | Federation persistence + CRUD; ceremony helpers internal | HTTP, Better Auth |
+| **Identity adapter** | `registry-auth` | Better Auth, session port, OTP/SES, IdP HTTP routes | Host catalog, link protocol |
+| **Federation host** | `registry-host` | `createRegistryHost`, federation + operator HTTP, CORS | Better Auth, SPAs, env reads |
+| **Deployment app** | `apps/khora/registry` | `bootstrap-registry.ts`, Litestream, HTML routes, marketing | Inline route table |
+
+**Single database:** encrypted SQLite at `REGISTRY_DATABASE_PATH`, opened via `getRegistryDatabase()`.
+
+**Dependency direction:**
+
+```
+apps/khora/registry → registry-host, registry-auth, khora-console
+
+registry-host → registry-catalog, registry-accounts, *-contracts, khora-auth (link DID verify)
+              → NO better-auth
+
+registry-auth → better-auth, registry-accounts, registry-catalog
+              → implements RegistryIdentityPort (types from registry-host)
+
+registry-catalog / registry-accounts → NO registry-auth, NO better-auth
+```
 
 ---
 
 ## Authentication
 
-Better Auth with `emailOTP` plugin. Flow:
+Better Auth with `emailOTP`. App bootstrap wires:
 
-```
-Client → POST /api/auth/email-otp/...
-  → on user/session create hooks → linkBetterAuthUser
-  → domain accounts + auth_links
-  
-Registry routes: getRegistrySession(req) → findAccountByAuthSubject(db, session.user.id)
-```
+- `createBetterAuthRegistryIdentity({ resolveTrustedOrigins })` → `RegistryIdentityPort`
+- `createBetterAuthRegistryRoutes({ db, identity, publicUrl, ... })` → IdP HTTP dispatch
 
-**users-auth owns:** `createRegistryAuth`, email OTP, Better Auth table migrations, `getRegistrySession`  
-**users owns:** `linkBetterAuthUser`, `auth_links`, `accounts` / `account_emails`
+Federation handlers call `identity.getSession(req)` instead of importing Better Auth directly.
 
----
+After trusted-origin admin approval, host calls `identity.reloadTrustedOrigins?.()`.
 
-## Domain inventory
-
-### Accounts
-No account CRUD in registry app — users owns schema (`accounts`, `account_emails`, `auth_links`), `findAccountBy*`, `linkBetterAuthUser`. Registry exposes data via `/v1/me` and admin lookup.
-
-### Hosts catalog
-
-**Registration flows:**
-1. **Self-serve:** `POST /v1/hosts/register` → `registerKhoraHost` → optional auto-activate + health probe → returns `registrationSecret` / `managementToken`
-2. **Claim:** `GET|POST /v1/hosts/:slug/registration` with bearer secret
-3. **Operator activate:** `POST /admin/api/hosts/:id/activate` (console token) or internal API
-4. **Catalog:** `GET /v1/hosts`, `GET /v1/hosts/:slug` (active/public only)
-
-**Delegated to hosts:** Invite minting and consumption happen on `khora-server`. Registry never holds invite plaintext or `KHORA_INVITE_PEPPER`.
-
-### Membership
-`memberships` table with statuses: `requested` / `approved` / `active` / `revoked`. Membership rows are created when an agent links to an account on a host — not during marketing signup.
-
-### Marketing consents
-`POST|DELETE /v1/marketing/subscribe` → `marketing_consents` CRUD. Homepage `/join` may subscribe users to `khora-waitlist` after OTP signup. Consent tracking only — not a waitlist queue.
-
-### Agent links (CLI / DID)
-
-**Flows:**
-- **Device + browser link:** `POST /v1/device/authorize` → user opens `/cli/link?user_code=...` → logged-in user approves → CLI polls for token (OAuth device-code style)
-- **auth.md agent register:** `POST /agent/auth` (verified_email) → OTP email → `POST /agent/auth/claim/complete` → Better Auth session cookie (`session_cookie` in JSON). Metadata at `/.well-known/oauth-protected-resource` and `/.well-known/oauth-authorization-server` (`agent_auth.register_uri`, `claim_complete_uri`). Prose at khoralabs.com `/auth.md`; discovery via `/.well-known/khoralabs.json`.
-- **Agent link:** `GET /v1/link/challenge?did=` → signed `POST /v1/link/agent` (session + challenge) → `linkAgentToAccountOnHost`
-- **Status/unlink:** `GET /v1/link/status`, `DELETE /v1/link/agent`
-
-### Trusted origins
-
-**Rules:** Only active hosts with `registry_participation_enabled` and at least one row in `host_trusted_origins` contribute to registry CORS and Better Auth `trustedOrigins`. Host `base_url` is **not** auto-trusted unless explicitly registered.
-
-Flow: Host operator → management token → `POST /v1/hosts/:slug/registry/origin-requests` → admin approves → `reloadRegistryAuth` refreshes CORS + Better Auth.
+Ceremony persistence (`device_authorizations`, `agent_auth_registrations`) lives in domain schema but types are **internal** to `registry-accounts` (`ceremony-types.ts`), not exported from contracts.
 
 ---
 
 ## HTTP surface (by prefix)
 
-| Prefix | Auth | Purpose |
-|--------|------|---------|
-| `/api/auth/*` | Better Auth | Sign-in, sessions, OTP |
-| `/v1/me` | Session | Account, memberships, access requests, marketing |
-| `/v1/hosts*` | Public / mgmt token / secret | Catalog, register, registry participation |
-| `/v1/access-token/request` | None (opaque) | Waitlist enqueue |
-| `/v1/device/*`, `/v1/link/*` | Device code / session / agent sig | CLI linking |
-| `/agent/auth*`, `/.well-known/oauth-*` | None / claim token | auth.md agent registration |
-| `/v1/marketing/*` | None | List subscribe/unsubscribe |
-| `/admin/api/*` | `REGISTRY_CONSOLE_ROOT_TOKEN` | Operator console API |
-| `/internal/admin/*`, `/internal/v1/hosts*` | `REGISTRY_INTERNAL_SECRET` | Machine admin |
-| `/admin`, `/cli/link` | Static SPA | Operator UI, link UX |
+| Prefix | Layer | Auth | Purpose |
+|--------|-------|------|---------|
+| `/api/auth/*` | registry-auth | Better Auth | Sign-in, sessions, OTP |
+| `/v1/device/*`, `/agent/auth*`, `/.well-known/oauth-*` | registry-auth | Device / claim | CLI device flow, auth.md agent register |
+| `/v1/me`, `/v1/hosts*`, `/v1/link/*` | registry-host | Session / public | Federation catalog + linking |
+| `/admin/api/*` | registry-host | Console token | Operator console API |
+| `/v1/marketing/*` | registry app | None | List subscribe/unsubscribe (khoralabs growth) |
+| `/admin`, `/cli/link` | registry app | Static SPA | Operator UI, link UX |
 
 ---
 
-## What registry does NOT own
+## Bootstrap
 
-- Per-host runtime auth, invites DB, or agent execution (that's `khora-server`)
-- Invite token plaintext / pepper (host only)
-- Better Auth table definitions (generated migrations in users-auth)
+`apps/khora/registry/src/bootstrap-registry.ts`:
+
+1. `assertEncryptionKeys`
+2. `ensureRegistrySchema`
+3. `createBetterAuthRegistryIdentity` + `createBetterAuthRegistryRoutes`
+4. `createRegistryHost({ db, identity, consoleAuth, publicUrl, resolveTrustedOrigins })`
+
+`index.ts` dispatch order: `identityRoutes.handle` → marketing → `host.fetch` → 404.
+
+---
+
+## Domain inventory
+
+### Hosts catalog
+Self-serve register, claim, operator activate, public catalog. Health poller started by `createRegistryHost`.
+
+### Agent links (CLI / DID)
+Device + browser link, auth.md register/claim, DID challenge link, status/unlink.
+
+### Trusted origins
+Participating hosts contribute explicit origins to registry CORS and Better Auth via `readRegistryTrustedOrigins` + identity reload.
 
 ---
 
 ## Package file map
 
-**Registry app:**
-- `src/index.ts` — route table
-- `src/api/*.ts` — HTTP handlers
-- `src/workflows/access-token.ts` — waitlist → invite request
-- `src/trusted-origins.ts`, `src/cors.ts`
-- `src/host-health.ts` — background health probes
+**Registry app:** `src/bootstrap-registry.ts`, `src/index.ts`, `src/api/marketing.ts`, admin/cli HTML routes
 
-**users package:**
-- `src/schema-sql.ts` — all domain tables
-- `src/accounts.ts`, `memberships.ts`, `membership-invites.ts`, `access-token-requests.ts`
-- `src/khora-hosts.ts`, `host-trusted-origins.ts`
-- `src/account-agent-links.ts`, `device-authorizations.ts`, `marketing-consents.ts`
-- `src/admin-stats.ts`
+**registry-host:** `src/create-registry-host.ts`, `src/fetch.ts`, `src/routes/*`, `src/cors.ts`, `src/trusted-origins.ts`, `src/host-health.ts`, `src/ports/identity.ts`
 
-**users-auth package:**
-- `src/auth-config.ts`, `auth.ts`, `session.ts`, `ensure-schema.ts`
-- `src/client.ts`, `email-confirm/registry-api.ts`
-- `src/db.ts` — alias to users DB
+**registry-auth:** `src/better-auth-identity.ts`, `src/better-auth-routes.ts`, `src/routes/device.ts`, `src/routes/agent-auth.ts`, `src/auth-config.ts`, `src/session.ts`
 
----
-
-## Primary cross-app data flows
-
-1. **Waitlist:** `khoralabs/homepage` → `/v1/access-token/request` → admin approve → khora-server poller → `/invite-mint-jobs/.../complete`
-2. **Sign-in:** homepage/admin → `/api/auth` OTP → account link → `/v1/me` or device/link flows
-3. **Host joins registry:** khora-server registers, sets trusted origins via `/registry` API, enables participation → origins flow into registry CORS + Better Auth
-4. **CLI identity:** device auth or link challenge → registry session cookie / agent bindings stored in shared SQLite
+**registry-accounts / registry-catalog:** domain CRUD + `schema-sql.ts` (federation vs ceremony DDL sections)

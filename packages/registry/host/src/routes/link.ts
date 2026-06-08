@@ -16,8 +16,8 @@ import {
   propagateAgentLinksToHosts,
   unlinkAgentFromMembership,
 } from "@khoralabs/registry-accounts";
-import { getRegistryDatabase, getRegistrySession } from "@khoralabs/registry-auth";
 import { findActiveHostBySlug, findHostById } from "@khoralabs/registry-catalog";
+import { registryHostRuntime } from "../runtime";
 import { HOST_NOT_FOUND_HINT, resolveRegistryHost } from "./resolve-host";
 
 const linkStrategy = createDidKeyEd25519Strategy();
@@ -52,7 +52,7 @@ type LinkAgentBody = {
 };
 
 function resolvePropagateHostIds(
-  db: ReturnType<typeof getRegistryDatabase>,
+  db: import("bun:sqlite").Database,
   slugs: string[],
   excludeHostId: string,
 ): string[] {
@@ -69,7 +69,7 @@ function resolvePropagateHostIds(
 }
 
 function formatPropagated(
-  db: ReturnType<typeof getRegistryDatabase>,
+  db: import("bun:sqlite").Database,
   raw: ReturnType<typeof propagateAgentLinksToHosts>,
 ): { hostSlug: string | null; ok: boolean; error?: string }[] {
   return raw.map((r) => {
@@ -88,7 +88,7 @@ export async function handleLinkChallenge(_req: Request, url: URL): Promise<Resp
     return Response.json({ error: "did query required" }, { status: 400 });
   }
 
-  const db = getRegistryDatabase();
+  const db = registryHostRuntime().db;
   const challenge = createCliLinkChallenge(db, did);
   return Response.json({
     challengeId: challenge.id,
@@ -97,7 +97,7 @@ export async function handleLinkChallenge(_req: Request, url: URL): Promise<Resp
 }
 
 export async function handleLinkAgent(req: Request): Promise<Response> {
-  const session = await getRegistrySession(req);
+  const session = await registryHostRuntime().identity.getSession(req);
   if (session === null) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -115,7 +115,7 @@ export async function handleLinkAgent(req: Request): Promise<Response> {
     return Response.json({ error: "challengeId required" }, { status: 400 });
   }
 
-  const db = getRegistryDatabase();
+  const db = registryHostRuntime().db;
   const account = findAccountByAuthSubject(db, session.user.id);
   if (account === null) {
     return Response.json({ error: "Account not found" }, { status: 404 });
@@ -213,7 +213,7 @@ export async function handleLinkAgentEnsure(req: Request): Promise<Response> {
     return Response.json({ error: msg }, { status: 401 });
   }
 
-  const db = getRegistryDatabase();
+  const db = registryHostRuntime().db;
   const host = resolveRegistryHost(db, {
     hostBaseUrl: body.hostBaseUrl,
     hostSlug: body.hostSlug,
@@ -256,12 +256,12 @@ export async function handleLinkAgentEnsure(req: Request): Promise<Response> {
 }
 
 export async function handleLinkStatus(req: Request): Promise<Response> {
-  const session = await getRegistrySession(req);
+  const session = await registryHostRuntime().identity.getSession(req);
   if (session === null) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const db = getRegistryDatabase();
+  const db = registryHostRuntime().db;
   const account = findAccountByAuthSubject(db, session.user.id);
   if (account === null) {
     return Response.json({ links: [] });
@@ -285,7 +285,7 @@ export async function handleLinkStatus(req: Request): Promise<Response> {
 }
 
 export async function handleLinkUnlink(req: Request): Promise<Response> {
-  const session = await getRegistrySession(req);
+  const session = await registryHostRuntime().identity.getSession(req);
   if (session === null) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -300,7 +300,7 @@ export async function handleLinkUnlink(req: Request): Promise<Response> {
     }
   }
 
-  const db = getRegistryDatabase();
+  const db = registryHostRuntime().db;
   const account = findAccountByAuthSubject(db, session.user.id);
   if (account === null) {
     return Response.json({ error: "Account not found" }, { status: 404 });

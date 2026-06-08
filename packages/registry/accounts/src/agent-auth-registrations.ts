@@ -1,9 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { createHash, timingSafeEqual } from "node:crypto";
-import type {
-  AgentAuthRegistration,
-  AgentAuthRegistrationStatus,
-} from "@khoralabs/registry-accounts-contracts";
+import type { AgentAuthRegistration, AgentAuthRegistrationStatus } from "./ceremony-types";
 import { normalizeEmail } from "./normalize";
 import type { AgentAuthRegistrationRow } from "./types-internal";
 

@@ -7,7 +7,7 @@ import {
   reactivateAccountByEmail,
   suspendAccount,
 } from "@khoralabs/registry-accounts";
-import { getRegistryDatabase } from "@khoralabs/registry-auth";
+import { registryHostRuntime } from "../../runtime";
 import { withConsoleAuth } from "./console-guard";
 
 function mapAccountLifecycleError(
@@ -31,7 +31,7 @@ export function handleAdminAccountSuspend(
     if (id.length === 0) {
       return Response.json({ error: "account id required" }, { status: 400 });
     }
-    const db = getRegistryDatabase();
+    const db = registryHostRuntime().db;
     try {
       const account = suspendAccount(db, id);
       const blockedEmailsCount = listAccountEmails(db, account.id).length;
@@ -53,7 +53,7 @@ export function handleAdminAccountDelete(
     if (id.length === 0) {
       return Response.json({ error: "account id required" }, { status: 400 });
     }
-    const db = getRegistryDatabase();
+    const db = registryHostRuntime().db;
     try {
       const deleted = deleteAccount(db, id);
       return Response.json({ ok: true, ...deleted });
@@ -74,7 +74,7 @@ export function handleAdminAccountReactivate(
     if (id.length === 0) {
       return Response.json({ error: "account id required" }, { status: 400 });
     }
-    const db = getRegistryDatabase();
+    const db = registryHostRuntime().db;
     try {
       const account = reactivateAccount(db, id);
       return Response.json({ account });
@@ -102,7 +102,7 @@ export function handleAdminAccountReactivateByEmail(
     if (!email) {
       return Response.json({ error: "email required" }, { status: 400 });
     }
-    const db = getRegistryDatabase();
+    const db = registryHostRuntime().db;
     const normalized = normalizeEmail(email);
     const authUser = db.prepare(`SELECT id FROM user WHERE email = ? LIMIT 1`).get(normalized) as {
       id: string;

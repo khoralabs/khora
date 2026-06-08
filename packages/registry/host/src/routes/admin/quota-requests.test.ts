@@ -12,15 +12,16 @@ import {
   registerKhoraHost,
   requestHostTrustedOriginQuota,
 } from "@khoralabs/registry-catalog";
+import { initTestRegistryHostRuntime } from "../../test-helpers";
+import {
+  handleHostRegistryQuotaRequestDelete,
+  handleHostRegistryQuotaRequestPost,
+} from "../host-registry";
 import {
   handleAdminHostQuotaRequestApprove,
   handleAdminHostQuotaRequestReject,
   handleAdminHostQuotaRequests,
-} from "./api/admin/hosts";
-import {
-  handleHostRegistryQuotaRequestDelete,
-  handleHostRegistryQuotaRequestPost,
-} from "./api/host-registry";
+} from "./hosts";
 
 const ROOT_TOKEN = "test-root-token-16chars";
 
@@ -45,6 +46,7 @@ describe("operator quota requests", () => {
     process.env.REGISTRY_DATABASE_PATH = ":memory:";
     applyTestEncryptionEnv();
     await ensureRegistrySchema();
+    initTestRegistryHostRuntime(getRegistryDatabase());
   });
 
   afterEach(() => {

@@ -1,20 +1,21 @@
 import {
   countMembershipsForAccount,
   findAccountByAuthSubject,
+  listAccountEmails,
   listAgentLinksForMembership,
   listMarketingConsentsForAccount,
   listMembershipsForAccount,
 } from "@khoralabs/registry-accounts";
-import { getRegistryDatabase, getRegistrySession } from "@khoralabs/registry-auth";
 import { findHostById } from "@khoralabs/registry-catalog";
+import { registryHostRuntime } from "../runtime";
 
 export async function handleMe(req: Request): Promise<Response> {
-  const session = await getRegistrySession(req);
+  const session = await registryHostRuntime().identity.getSession(req);
   if (session === null) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const db = getRegistryDatabase();
+  const db = registryHostRuntime().db;
   const account = findAccountByAuthSubject(db, session.user.id);
   const marketingConsents = account === null ? [] : listMarketingConsentsForAccount(db, account.id);
   const membershipsCount = account === null ? 0 : countMembershipsForAccount(db, account.id);
@@ -35,7 +36,8 @@ export async function handleMe(req: Request): Promise<Response> {
   });
 
   return Response.json({
-    user: session.user,
+    user: { id: session.user.id },
+    emails: account === null ? [] : listAccountEmails(db, account.id),
     session: {
       id: session.session.id,
       expiresAt: session.session.expiresAt,
