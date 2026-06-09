@@ -26,6 +26,6 @@ export async function promptChannelIdIfMissing(
   return requireFlowString(
     row,
     "channelId",
-    "--channel <channelId>, positional <channelId>, or env VELLUM_CHANNEL_ID is required",
+    "--channel <channelId> or positional <channelId> is required",
   );
 }

@@ -1,8 +1,12 @@
 import { expect, test } from "bun:test";
+import {
+  AGENT_REQUEST_HEADER,
+  canonicalAgentRequestMessage,
+  createChannelRelayAuth,
+  createTestAgent,
+  signedPath,
+} from "@khoralabs/vellum-channel-host";
 import { signAsync } from "@noble/ed25519";
-
-import { AGENT_REQUEST_HEADER, canonicalAgentRequestMessage, createChannelRelayAuth } from "./auth";
-import { createTestAgent, signedPath } from "./test-sign";
 
 function bytesToBase64Url(bytes: Uint8Array): string {
   let s = "";

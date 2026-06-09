@@ -9,10 +9,10 @@ import {
   openObpV2Database,
 } from "@khoralabs/obp-sqlite-persistence";
 import { validateVellumBindPayloadForPort } from "@khoralabs/vellum-bind-policy";
-import { VellumChannelClient } from "@khoralabs/vellum-client";
+import { VellumChannelClient } from "@khoralabs/vellum-channel-client";
 import {
   cfgDataDir,
-  channelObpSqlitePath,
+  channelSqlitePath,
   type VellumPathConfig,
   vellumWsUpgradeProtocol,
 } from "@khoralabs/vellum-contracts";
@@ -55,7 +55,7 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): {
   });
 
   void (async () => {
-    const sqlitePath = channelObpSqlitePath(cfgDataDir(opts.cfg), opts.channelId);
+    const sqlitePath = channelSqlitePath(cfgDataDir(opts.cfg), opts.channelId);
     fs.mkdirSync(path.dirname(sqlitePath), { recursive: true });
 
     const db = openObpV2Database(sqlitePath);

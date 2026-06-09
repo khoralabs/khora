@@ -17,7 +17,7 @@ import {
   mintChannelTicketHttp,
   mintWsNonceHttp,
   releaseChainHttp,
-} from "./http/channels";
+} from "./channels";
 
 export type VellumChannelClientOptions = {
   relayBaseUrl: string;

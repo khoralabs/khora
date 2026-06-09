@@ -1,10 +1,14 @@
 import { expect, test } from "bun:test";
 
-import { createChannelRelayApp } from "./app";
-import { createRateLimiter } from "./rate-limit";
-import { createChannelRelayRateLimiters } from "./rate-limit-buckets";
-import { createTestChannelRelayApp } from "./test-app";
-import { createTestAgent, signedFetch, signedPath } from "./test-sign";
+import {
+  createChannelRelayApp,
+  createChannelRelayRateLimiters,
+  createRateLimiter,
+  createTestAgent,
+  createTestChannelRelayApp,
+  signedFetch,
+  signedPath,
+} from "@khoralabs/vellum-channel-host";
 
 test("rate limiter returns 429", async () => {
   const limiter = createRateLimiter({ windowMs: 60_000, max: 1 });

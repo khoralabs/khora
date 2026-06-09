@@ -16,17 +16,12 @@
       "minLength": 1
     },
     "dataDir": {
-      "description": "Vellum channel data root (SQLite + vellum.json under …/obp/channels/…)",
+      "description": "Vellum channel data root (SQLite + vellum.json under …/vellum/channels/…)",
       "type": "string",
       "minLength": 1
     },
     "agentKeyPath": {
       "description": "Path to Ed25519 identity JSON (see agent-persisted-signer)",
-      "type": "string",
-      "minLength": 1
-    },
-    "defaultChannelId": {
-      "description": "Default channel id when --channel / env not set",
       "type": "string",
       "minLength": 1
     },

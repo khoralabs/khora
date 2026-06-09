@@ -5,13 +5,14 @@ import { join } from "node:path";
 import { createFrameRelayHub } from "@khoralabs/obp-frame-relay";
 
 import { type ChannelRelayApp, createChannelRelayApp } from "./app";
-import { createFrameStore, DEV_SQLCIPHER_KEY, envRelayMaxChannels, openRelayDatabase } from "./db";
 import { createChannelRegistry } from "./registry";
 import {
   bootstrapSingleChannel,
   type RelayProfile,
   type SingleChannelConfig,
 } from "./relay-config";
+import { envRelayMaxChannels } from "./relay-env";
+import { createFrameStore, DEV_SQLCIPHER_KEY, openRelayDatabase } from "./test-db";
 
 export async function createTestChannelRelayApp(opts?: {
   relayProfile?: RelayProfile;

@@ -66,15 +66,12 @@ export function dataDirForEnv(flags: FlagMap): string | undefined {
   return t !== undefined && t.length > 0 ? t : undefined;
 }
 
-/** Channel from flag, config, env (via merged config), or optional positional. */
+/** Channel from positional argument or --channel flag. */
 export function resolveChannelId(flags: FlagMap, channelPositional?: string | undefined): string {
-  const cfg = vellumCliResolvedConfig(flags);
   const fromArg = channelPositional?.trim();
   if (fromArg !== undefined && fromArg.length > 0) return fromArg;
   const fromFlag = strFlag(flags, "channel")?.trim();
   if (fromFlag !== undefined && fromFlag.length > 0) return fromFlag;
-  const fromCfg = cfg.defaultChannelId?.trim();
-  if (fromCfg !== undefined && fromCfg.length > 0) return fromCfg;
   return "";
 }
 

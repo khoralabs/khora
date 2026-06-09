@@ -1,7 +1,12 @@
 import type { CommandHelp } from "@khoralabs/cli-kit";
 
 import { chainCreateHelp, chainListHelp, chainSnapshotHelp } from "./chain.help";
-import { channelConnectHelp, channelCreateHelp, channelJoinHelp } from "./channel.help";
+import {
+  channelAttachHelp,
+  channelConnectHelp,
+  channelCreateHelp,
+  channelJoinHelp,
+} from "./channel.help";
 import { connectHelp } from "./connect.help";
 import { disconnectHelp } from "./disconnect.help";
 import { keygenHelp } from "./keygen.help";
@@ -19,6 +24,7 @@ export const allCommandHelp: readonly CommandHelp[] = [
   channelCreateHelp,
   channelJoinHelp,
   channelConnectHelp,
+  channelAttachHelp,
   listHelp,
   disconnectHelp,
   connectHelp,

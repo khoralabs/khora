@@ -24,9 +24,6 @@ export function vellumAppConfigFromEnv(
   const agentKeyPath = trimmed(env.VELLUM_AGENT_KEY_PATH) ?? trimmed(env.KHORA_AGENT_KEY_PATH);
   if (agentKeyPath !== undefined) out.agentKeyPath = agentKeyPath;
 
-  const defaultChannelId = trimmed(env.VELLUM_CHANNEL_ID);
-  if (defaultChannelId !== undefined) out.defaultChannelId = defaultChannelId;
-
   const defaultChannelWebSocketUrl = trimmed(env.VELLUM_CHANNEL_WS_URL);
   if (defaultChannelWebSocketUrl !== undefined) {
     out.defaultChannelWebSocketUrl = defaultChannelWebSocketUrl;

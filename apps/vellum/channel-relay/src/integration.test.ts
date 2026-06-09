@@ -1,8 +1,11 @@
 import { expect, test } from "bun:test";
+import {
+  createTestAgent,
+  createTestChannelRelayApp,
+  signedFetch,
+  signedPath,
+} from "@khoralabs/vellum-channel-host";
 import { vellumWsUpgradeProtocol } from "@khoralabs/vellum-contracts";
-
-import { createTestChannelRelayApp } from "./test-app";
-import { createTestAgent, signedFetch, signedPath } from "./test-sign";
 
 function serve(app: Awaited<ReturnType<typeof createTestChannelRelayApp>>["app"]) {
   return Bun.serve({

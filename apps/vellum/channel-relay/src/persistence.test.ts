@@ -4,10 +4,16 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createFrameRelayHub } from "@khoralabs/obp-frame-relay";
 
-import { createChannelRelayApp } from "./app";
-import { createFrameStore, DEV_SQLCIPHER_KEY, openRelayDatabase } from "./db";
-import { createChannelRegistry } from "./registry";
-import { createTestAgent, signedFetch, signedPath } from "./test-sign";
+import {
+  createChannelRegistry,
+  createChannelRelayApp,
+  createFrameStore,
+  createTestAgent,
+  DEV_SQLCIPHER_KEY,
+  openRelayDatabase,
+  signedFetch,
+  signedPath,
+} from "@khoralabs/vellum-channel-host";
 
 test("restart survival: registry + chain slots", async () => {
   const dir = mkdtempSync(join(tmpdir(), "vellum-relay-persist-"));

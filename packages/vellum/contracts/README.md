@@ -1,6 +1,8 @@
 # `@khoralabs/vellum-contracts`
 
-Zod-backed types and helpers shared by the Vellum **CLI**, **daemon**, and **`@khoralabs/vellum-client`**. Covers control-plane response shapes, domain rows (chains, offers, ports), path conventions (`cfgDataDir`, SQLite filenames), and constants such as default genesis turn wire.
+Zod-backed types and helpers shared by the Vellum **CLI**, **daemon**, and **`@khoralabs/vellum-client`**. Covers control-plane response shapes, domain rows (chains, offers, ports), path conventions (`vellumStoreRoot`, `channelDir`, `channelSqlitePath`), and constants such as default genesis turn wire.
+
+Default local layout: `{dataDir}/vellum/channels/<channelId>/{vellum.json,obp.sqlite}`.
 
 **Normative behavior** lives in [`../spec/channel-relay-deployment.md`](../spec/channel-relay-deployment.md) (deployment), [`../spec/channel-control-protocol.md`](../spec/channel-control-protocol.md) (control plane), and [`.brain/technical/channel-lifecycle.md`](../../../.brain/technical/channel-lifecycle.md). Types in [`src/channels.ts`](src/channels.ts) are **bindings** — not the spec itself.
 

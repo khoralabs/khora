@@ -2,6 +2,8 @@ import type { CommandHelp } from "@khoralabs/cli-kit";
 
 export const listHelp: CommandHelp = {
   command: "list",
-  summary: "List local Vellum channels and daemon connection status",
-  args: `vellum list [--data-dir=…] [--json]`,
+  summary: "List all local Vellum channels and per-channel daemon status (multi-channel overview)",
+  args: `vellum list [--data-dir=…] [--json]
+
+Scans vellum/channels/* — no channel id argument. Use before vellum channel attach --all.`,
 };

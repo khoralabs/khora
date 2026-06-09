@@ -6,8 +6,8 @@ import {
 } from "@khoralabs/vellum-contracts";
 
 import { MAX_CHANNEL_TTL_MS } from "./auth";
-import { envRelayMaxChannels } from "./db";
 import type { ChannelRegistry } from "./registry";
+import { envRelayMaxChannels } from "./relay-env";
 
 export const DEFAULT_CHANNEL_TTL_MS = 86_400_000;
 

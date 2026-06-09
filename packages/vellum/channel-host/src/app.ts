@@ -1,7 +1,6 @@
 import type { FrameRelayHubPort, FrameRelayHubWsData } from "@khoralabs/obp-frame-relay";
 
 import { type ChannelRelayAuth, createChannelRelayAuth } from "./auth";
-import { envRelayMaxChannels } from "./db";
 import type { ChannelRelayHttpDeps } from "./http/deps";
 import { routeChannelRelayHttp } from "./http/router";
 import { createPeerTrackedWebSocketHandlers } from "./peer-tracker";
@@ -11,6 +10,7 @@ import {
 } from "./rate-limit-buckets";
 import type { ChannelRegistry } from "./registry";
 import type { RelayProfile } from "./relay-config";
+import { envRelayMaxChannels } from "./relay-env";
 
 export { DEFAULT_CHANNEL_TTL_MS } from "./relay-config";
 

@@ -17,7 +17,7 @@ Understanding the split between channel-relay spawn and local daemon state is im
 | Command | What it does |
 |--------|----------------|
 | `vellum channel create` | Relay-side channel creation via `POST /v1/channels` — **no** local state written |
-| `vellum list` | **Local filesystem only** — directories under `obp/channels/` + `vellum.json` written by the daemon |
+| `vellum list` | **Local filesystem only** — directories under `vellum/channels/` + `vellum.json` written by the daemon |
 
 After `channel create`, the channel does **not** appear in `vellum list`. Run `vellum channel connect <channelId>` (or `vellum connect`) to spawn the daemon and create the local directory structure.
 
@@ -40,7 +40,7 @@ The response includes:
 `VellumClient.connect()` spawns the Vellum daemon for a channel. The daemon:
 
 1. Resolves the local data directory (`~/.vellum/data` by default, or `VELLUM_DATA_DIR`)
-2. Creates the OBP SQLite directory: `{dataDir}/obp/channels/<channelId>/`
+2. Creates the channel artifact directory: `{dataDir}/vellum/channels/<channelId>/`
 3. Opens `obp.sqlite` — the per-channel OBP v2 database
 4. Starts a local HTTP control server on a random port
 5. Writes `vellum.json` — the control file that `vellum list` reads
@@ -54,23 +54,23 @@ The response includes:
 }
 ```
 
-`vellum list` reads all `obp/channels/*/vellum.json` files and checks if the process is alive (via pid) to display `status: running | stale`.
+`vellum list` reads all `vellum/channels/*/vellum.json` files and checks if the process is alive (via pid) to display `status: running | stale`.
 
 ---
 
 ## Local storage path
 
 ```
-$VELLUM_OBP_STORE_ROOT    (if set)
+$VELLUM_STORE_ROOT         (if set)
   or
-{dataDir}/obp/            (default: ~/.vellum/data/obp/)
+{dataDir}/vellum/          (default: ~/.vellum/data/vellum/)
   └── channels/
       └── <channelId>/
           ├── vellum.json       ← control file (pid, controlPort)
-          └── obp.sqlite        ← OBP v2 tables
+          └── obp.sqlite        ← OBP v2 graph tables
 ```
 
-Override: `VELLUM_OBP_STORE_ROOT` env var.
+Override: `VELLUM_STORE_ROOT` env var.
 
 ---
 

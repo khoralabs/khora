@@ -1,9 +1,12 @@
 import { createFrameRelayHub } from "@khoralabs/obp-frame-relay";
+import {
+  bootstrapSingleChannel,
+  createChannelRegistry,
+  createChannelRelayApp,
+  loadRelayProfile,
+} from "@khoralabs/vellum-channel-host";
 
-import { createChannelRelayApp } from "./app";
 import { createFrameStore, openRelayDatabase } from "./db";
-import { createChannelRegistry } from "./registry";
-import { bootstrapSingleChannel, loadRelayProfile } from "./relay-config";
 
 const DEFAULT_PORT = 8790;
 

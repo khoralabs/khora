@@ -60,14 +60,14 @@ async function loadSigner(vcfg: { agentKeyPath?: string }): Promise<PersistableA
 const vcfg = loadDaemonLayeredConfig();
 
 const json = daemonJsonOutput(vcfg);
-const channelId = process.env.VELLUM_CHANNEL_ID?.trim() ?? vcfg.defaultChannelId?.trim() ?? "";
+const channelId = process.env.VELLUM_CHANNEL_ID?.trim() ?? "";
 const webSocketUrl =
   process.env.VELLUM_CHANNEL_WS_URL?.trim() ?? vcfg.defaultChannelWebSocketUrl?.trim() ?? "";
 const relayBaseUrl = process.env.VELLUM_BASE_URL?.trim() ?? vcfg.relayBaseUrl?.trim() ?? "";
 
 if (channelId.length === 0) {
   console.error(
-    "VELLUM_CHANNEL_ID is required (or set defaultChannelId in ~/.vellum/daemon.config.json)",
+    "VELLUM_CHANNEL_ID is required (set by vellum connect/attach when spawning the daemon)",
   );
   process.exit(1);
 }

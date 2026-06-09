@@ -1,7 +1,12 @@
 import type { FlagMap } from "@khoralabs/cli-kit";
 
 import type { VellumCliContext } from "../flows/context";
-import { handleChannelConnect, handleChannelCreate, handleChannelJoin } from "./channel";
+import {
+  handleChannelAttach,
+  handleChannelConnect,
+  handleChannelCreate,
+  handleChannelJoin,
+} from "./channel";
 import {
   handleChainCreate,
   handleChainList,
@@ -61,6 +66,11 @@ export async function dispatch(
 
   if (a === "channel" && b === "connect") {
     await handleChannelConnect(ctx, positional, flags);
+    return;
+  }
+
+  if (a === "channel" && b === "attach") {
+    await handleChannelAttach(ctx, positional, flags);
     return;
   }
 

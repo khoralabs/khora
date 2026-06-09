@@ -1,10 +1,18 @@
 import type { FlagMap } from "@khoralabs/cli-kit";
-import { strFlag } from "@khoralabs/cli-kit";
-import { VellumChannelClient } from "@khoralabs/vellum-client";
+import { boolFlag, strFlag } from "@khoralabs/cli-kit";
+import { VellumChannelClient } from "@khoralabs/vellum-channel-client";
+import { listLocalVellumRows } from "@khoralabs/vellum-client";
 import type { VellumMaxChains } from "@khoralabs/vellum-contracts";
+import { resolveAttachInviteToken } from "../flows/channel-attach-flow";
 import { promptInviteTokenIfMissing } from "../flows/channel-join-flow";
-import { cliRelayBaseUrl, loadSigner, type VellumCliContext } from "../flows/context";
-import { handleConnect } from "./connect";
+import {
+  cliRelayBaseUrl,
+  dataDirForEnv,
+  loadSigner,
+  resolveChannelId,
+  type VellumCliContext,
+} from "../flows/context";
+import { connectChannel, handleConnect, printChannelConnectResult } from "./connect";
 
 function parseChainLimit(raw: string | undefined): VellumMaxChains | undefined {
   if (raw === undefined || raw.trim().length === 0) return undefined;
@@ -65,4 +73,71 @@ export async function handleChannelConnect(
   flags: FlagMap,
 ): Promise<void> {
   await handleConnect(ctx, positional, flags, { channelPositionalIndex: 2 });
+}
+
+/**
+ * Join (when invited) then connect, or connect directly when channel id is already known.
+ * See `channel attach` help for when to use attach vs join vs connect.
+ */
+export async function handleChannelAttach(
+  ctx: VellumCliContext,
+  positional: string[],
+  flags: FlagMap,
+): Promise<void> {
+  if (boolFlag(flags, "all")) {
+    await handleChannelAttachAll(flags);
+    return;
+  }
+
+  const channelFromPositional = positional[2]?.trim();
+  const knownChannelId = resolveChannelId(flags, channelFromPositional);
+  const inviteFromFlag = strFlag(flags, "invite-token") ?? strFlag(flags, "inviteToken");
+  if (
+    inviteFromFlag !== undefined &&
+    inviteFromFlag.trim().length > 0 &&
+    knownChannelId.length > 0
+  ) {
+    throw new Error("channel attach: use --invite-token or a channel id, not both");
+  }
+
+  const inviteToken = await resolveAttachInviteToken(ctx, flags, {
+    promptIfMissing: knownChannelId.length === 0,
+  });
+
+  if (inviteToken !== undefined) {
+    const signer = await loadSigner(flags);
+    const cc = new VellumChannelClient({ relayBaseUrl: cliRelayBaseUrl(flags), signer });
+    const joinOut = await cc.joinChannel({ inviteToken });
+    const result = await connectChannel(flags, joinOut.channelId, {
+      webSocketUrl: joinOut.webSocketUrl,
+      upgradeNonce: joinOut.upgradeNonce,
+    });
+    printChannelConnectResult(joinOut.channelId, result);
+    return;
+  }
+
+  await handleConnect(ctx, positional, flags, { channelPositionalIndex: 2 });
+}
+
+async function handleChannelAttachAll(flags: FlagMap): Promise<void> {
+  const invite = strFlag(flags, "invite-token") ?? strFlag(flags, "inviteToken");
+  if (invite !== undefined && invite.trim().length > 0) {
+    throw new Error("channel attach --all cannot be combined with --invite-token");
+  }
+
+  const rows = listLocalVellumRows({ dataDir: dataDirForEnv(flags) });
+  const needAttach = rows.filter((r) => r.status !== "running");
+  if (needAttach.length === 0) {
+    if (rows.length === 0) {
+      console.log("(no local channels under vellum/channels/)");
+    } else {
+      console.log("all local channels already connected");
+    }
+    return;
+  }
+
+  for (const row of needAttach) {
+    const result = await connectChannel(flags, row.channelId);
+    printChannelConnectResult(row.channelId, result);
+  }
 }

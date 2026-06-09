@@ -63,7 +63,7 @@ Each bilateral session runs over a frame channel (slice 1: Vellum channel-relay 
 4. **TURN frames** — encrypted OBP operations (offers, port specs, bind requests)
 5. **Merkle checkpoints** — each `SessionEnvelope` carries `Checkpoint.root_hex` over all prior operations
 
-**Local state:** the Vellum daemon persists OBP state in a per-channel SQLite DB at `~/.vellum/data/obp/channels/<channelId>/obp.sqlite`.
+**Local state:** the Vellum daemon persists OBP state in a per-channel SQLite DB at `~/.vellum/data/vellum/channels/<channelId>/obp.sqlite`.
 
 ---
 

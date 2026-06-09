@@ -13,17 +13,12 @@ export const zVellumAppConfigBase = z
       .string()
       .min(1)
       .optional()
-      .describe("Vellum channel data root (SQLite + vellum.json under …/obp/channels/…)"),
+      .describe("Vellum channel data root (SQLite + vellum.json under …/vellum/channels/…)"),
     agentKeyPath: z
       .string()
       .min(1)
       .optional()
       .describe("Path to Ed25519 identity JSON (see agent-persisted-signer)"),
-    defaultChannelId: z
-      .string()
-      .min(1)
-      .optional()
-      .describe("Default channel id when --channel / env not set"),
     defaultChannelWebSocketUrl: z
       .string()
       .min(1)

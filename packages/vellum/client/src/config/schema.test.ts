@@ -24,7 +24,6 @@ describe("zVellumAppConfigBase", () => {
       khoraBaseUrl: "http://127.0.0.1:8787",
       dataDir: "/tmp/v",
       agentKeyPath: "/k",
-      defaultChannelId: "c1",
       defaultChannelWebSocketUrl: "ws://x",
       daemonJson: true,
     });

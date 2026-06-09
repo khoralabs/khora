@@ -3,6 +3,5 @@
   "relayBaseUrl": "http://localhost:8790",
   "khoraBaseUrl": "https://k-0.khoralabs.com",
   "dataDir": "~/.vellum/data",
-  "defaultChannelId": "replace-with-your-channel-id",
-  "defaultChannelWebSocketUrl": "ws://localhost:8790/v1/channels/replace-with-your-channel-id/ws?ticket=..."
+  "defaultChannelWebSocketUrl": "ws://localhost:8790/v1/channels/<channelId>/ws?ticket=..."
 }

@@ -9,7 +9,7 @@ import { makeVellumClient, readJsonArg, resolveChannelId } from "../flows/contex
 function clientForChannelCommands(flags: FlagMap): VellumClient {
   const channelId = resolveChannelId(flags);
   if (channelId.length === 0) {
-    throw new Error("--channel <channelId> or env VELLUM_CHANNEL_ID is required");
+    throw new Error("--channel <channelId> is required");
   }
   return makeVellumClient(flags, channelId);
 }

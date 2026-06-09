@@ -9,13 +9,14 @@ import {
 } from "@khoralabs/obp-frames-impl";
 import type { JsonDocument } from "@khoralabs/obp-model";
 import { validateVellumBindPayloadForPort } from "@khoralabs/vellum-bind-policy";
+import { VellumChannelClient } from "@khoralabs/vellum-channel-client";
 import {
   type ChainInitResponse,
   ChainInitResponseSchema,
   type ChainStateResponse,
   ChainStateResponseSchema,
   cfgDataDir,
-  channelObpSqlitePath,
+  channelSqlitePath,
   channelVellumControlPath,
   DEFAULT_GENESIS_TURN_WIRE,
   type VellumChainRow,
@@ -27,11 +28,12 @@ import {
   createVellumControlTransportFromEnv,
   type VellumControlTransport,
 } from "@khoralabs/vellum-transport";
-
 import { createFrameSignerFromPersistableAgent } from "./frame-signer";
+import { isPidAlive } from "./list-local-vellum";
 import { SqliteVellumReadModel } from "./persistence/sqlite-vellum-read-persistence";
 import type { VellumReadModel } from "./persistence/vellum-read-persistence";
-import { VellumChannelClient } from "./vellum-channel-client";
+
+export type VellumConnectResult = "spawned" | "already-running";
 
 export type VellumClientOptions = {
   /** Vellum channel-relay HTTP origin. */
@@ -106,7 +108,7 @@ export class VellumClient {
     };
     this.reads =
       opts.readPersistence ??
-      new SqliteVellumReadModel(channelObpSqlitePath(cfgDataDir(this.pathConfig), opts.channelId));
+      new SqliteVellumReadModel(channelSqlitePath(cfgDataDir(this.pathConfig), opts.channelId));
   }
 
   private controlBaseUrl(): string {
@@ -128,7 +130,15 @@ export class VellumClient {
   }
 
   /** Ensure channel daemon is running with a fresh ticket and local control server. */
-  async connect(options?: { webSocketUrl?: string }): Promise<void> {
+  async connect(options?: {
+    webSocketUrl?: string;
+    upgradeNonce?: string;
+  }): Promise<VellumConnectResult> {
+    const existing = readControlPlane(this.pathConfig, this.opts.channelId);
+    if (existing !== undefined && isPidAlive(existing.pid)) {
+      return "already-running";
+    }
+
     const idPath =
       process.env.VELLUM_AGENT_KEY_PATH?.trim() ??
       process.env.KHORA_AGENT_KEY_PATH?.trim() ??
@@ -138,7 +148,7 @@ export class VellumClient {
       throw new Error(`identity not found at ${idPath}`);
     }
     let webSocketUrl = options?.webSocketUrl ?? process.env.VELLUM_CHANNEL_WS_URL?.trim();
-    let upgradeNonce = process.env.VELLUM_CHANNEL_WS_NONCE?.trim();
+    let upgradeNonce = options?.upgradeNonce ?? process.env.VELLUM_CHANNEL_WS_NONCE?.trim();
     if (
       webSocketUrl === undefined ||
       webSocketUrl.length === 0 ||
@@ -171,6 +181,7 @@ export class VellumClient {
     });
 
     await waitForControlPlane(this.pathConfig, this.opts.channelId, 15_000);
+    return "spawned";
   }
 
   async chainCreate(input: {

@@ -1,6 +1,6 @@
 import path from "node:path";
 
-/** Channel storage layout: `${dataDir}/obp/...` unless `VELLUM_OBP_STORE_ROOT` overrides. */
+/** Channel storage layout: `${dataDir}/vellum/...` unless `VELLUM_STORE_ROOT` overrides. */
 export type VellumPathConfig = {
   dataDir?: string | undefined;
 };
@@ -15,12 +15,12 @@ export function encodeChannelIdForPath(channelId: string): string {
   return encodeURIComponent(channelId);
 }
 
-/** `<dataDir>/obp` (default data dir `~/.vellum/data`) or `VELLUM_OBP_STORE_ROOT`. */
-export function obpStoreRoot(
+/** `<dataDir>/vellum` (default data dir `~/.vellum/data`) or `VELLUM_STORE_ROOT`. */
+export function vellumStoreRoot(
   dataDir: string | undefined,
   env: NodeJS.ProcessEnv = process.env,
 ): string {
-  const storeOverride = env.VELLUM_OBP_STORE_ROOT?.trim();
+  const storeOverride = env.VELLUM_STORE_ROOT?.trim();
   if (storeOverride !== undefined && storeOverride.length > 0) return path.resolve(storeOverride);
   const home = env.HOME ?? env.USERPROFILE ?? "";
   const root =
@@ -28,24 +28,24 @@ export function obpStoreRoot(
       ? path.join(home, ".vellum", "data")
       : path.join(process.cwd(), ".vellum", "data");
   const base = dataDir?.trim()?.length ? path.resolve(dataDir.trim()) : root;
-  return path.join(base, "obp");
+  return path.join(base, "vellum");
 }
 
-export function channelObpDir(
+export function channelDir(
   dataDir: string | undefined,
   channelId: string,
   env?: NodeJS.ProcessEnv,
 ): string {
   const enc = encodeChannelIdForPath(channelId);
-  return path.join(obpStoreRoot(dataDir, env), "channels", enc);
+  return path.join(vellumStoreRoot(dataDir, env), "channels", enc);
 }
 
-export function channelObpSqlitePath(
+export function channelSqlitePath(
   dataDir: string | undefined,
   channelId: string,
   env?: NodeJS.ProcessEnv,
 ): string {
-  return path.join(channelObpDir(dataDir, channelId, env), "obp.sqlite");
+  return path.join(channelDir(dataDir, channelId, env), "obp.sqlite");
 }
 
 export function channelVellumControlPath(
@@ -53,5 +53,5 @@ export function channelVellumControlPath(
   channelId: string,
   env?: NodeJS.ProcessEnv,
 ): string {
-  return path.join(channelObpDir(dataDir, channelId, env), "vellum.json");
+  return path.join(channelDir(dataDir, channelId, env), "vellum.json");
 }

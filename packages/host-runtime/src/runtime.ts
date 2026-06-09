@@ -41,7 +41,6 @@ export type HostRuntimeDeps<
 
 /**
  * Facade for host persistence, inbox fan-out, and principal registration.
- * App layers (e.g. Khora) compose frame relay, publication, and search outside this package.
  */
 export class HostRuntime<TProfile = unknown, TAppEvent extends HostAppEventConstraint = never> {
   readonly persistence: HostPersistence;

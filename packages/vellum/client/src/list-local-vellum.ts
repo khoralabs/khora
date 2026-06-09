@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { cfgDataDir, obpStoreRoot, type VellumPathConfig } from "@khoralabs/vellum-contracts";
+import { cfgDataDir, type VellumPathConfig, vellumStoreRoot } from "@khoralabs/vellum-contracts";
 
 export type LocalVellumRow = {
   channelId: string;
@@ -10,7 +10,7 @@ export type LocalVellumRow = {
   status: "running" | "stale" | "no-control-file" | "invalid-control-file";
 };
 
-function isPidAlive(pid: number): boolean {
+export function isPidAlive(pid: number): boolean {
   try {
     process.kill(pid, 0);
     return true;
@@ -20,13 +20,13 @@ function isPidAlive(pid: number): boolean {
 }
 
 /**
- * Inspect `vellum.json` under each `{obpStoreRoot}/channels/*` directory (aligned with the daemon).
+ * Inspect `vellum.json` under each `{vellumStoreRoot}/channels/*` directory (aligned with the daemon).
  */
 export function listLocalVellumRows(
   cfg: VellumPathConfig,
   env: NodeJS.ProcessEnv = process.env,
 ): LocalVellumRow[] {
-  const channelsRoot = path.join(obpStoreRoot(cfgDataDir(cfg), env), "channels");
+  const channelsRoot = path.join(vellumStoreRoot(cfgDataDir(cfg), env), "channels");
   let names: string[] = [];
   try {
     names = fs.readdirSync(channelsRoot);

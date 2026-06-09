@@ -185,8 +185,7 @@
         "@khoralabs/obp-frame-relay": "workspace:*",
         "@khoralabs/obp-frame-relay-sqlite": "workspace:*",
         "@khoralabs/sqlite-crypto": "^0.1.0",
-        "@khoralabs/vellum-contracts": "workspace:*",
-        "@noble/ed25519": "^3.1.0",
+        "@khoralabs/vellum-channel-host": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -208,6 +207,7 @@
         "@khoralabs/cli-kit": "workspace:*",
         "@khoralabs/khora-client": "workspace:*",
         "@khoralabs/obp-nbc": "workspace:*",
+        "@khoralabs/vellum-channel-client": "workspace:*",
         "@khoralabs/vellum-client": "workspace:*",
         "@khoralabs/vellum-contracts": "workspace:*",
       },
@@ -232,6 +232,7 @@
         "@khoralabs/obp-sqlite-persistence": "workspace:*",
         "@khoralabs/obp-transport-ws": "workspace:*",
         "@khoralabs/vellum-bind-policy": "workspace:*",
+        "@khoralabs/vellum-channel-client": "workspace:*",
         "@khoralabs/vellum-client": "workspace:*",
         "@khoralabs/vellum-contracts": "workspace:*",
         "@noble/ed25519": "^3.1.0",
@@ -1157,6 +1158,39 @@
         "typescript": "^5",
       },
     },
+    "packages/vellum/channel-client": {
+      "name": "@khoralabs/vellum-channel-client",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/agent-persisted-signer": "workspace:*",
+        "@khoralabs/vellum-contracts": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/vellum/channel-host": {
+      "name": "@khoralabs/vellum-channel-host",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/obp-frame-relay": "workspace:*",
+        "@khoralabs/obp-frame-relay-sqlite": "workspace:*",
+        "@khoralabs/sqlite-crypto": "^0.1.0",
+        "@khoralabs/vellum-contracts": "workspace:*",
+        "@noble/ed25519": "^3.1.0",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "packages/vellum/client": {
       "name": "@khoralabs/vellum-client",
       "version": "0.0.0",
@@ -1167,6 +1201,7 @@
         "@khoralabs/obp-model": "workspace:*",
         "@khoralabs/obp-nbc": "workspace:*",
         "@khoralabs/vellum-bind-policy": "workspace:*",
+        "@khoralabs/vellum-channel-client": "workspace:*",
         "@khoralabs/vellum-contracts": "workspace:*",
         "@khoralabs/vellum-transport": "workspace:*",
         "@noble/ed25519": "^3.1.0",
@@ -1451,6 +1486,10 @@
     "@khoralabs/sqlite-migrate": ["@khoralabs/sqlite-migrate@0.1.0", "", {}, "sha512-mGkPR6WposZArUh1k4A1s2VwyOtGJUPlKkUY+DYjZ8pkhgJ6mEhHQOlRQJNOAXKlJETsdVy4iPTeyuvzPl/zFg=="],
 
     "@khoralabs/vellum-bind-policy": ["@khoralabs/vellum-bind-policy@workspace:packages/vellum/bind-policy"],
+
+    "@khoralabs/vellum-channel-client": ["@khoralabs/vellum-channel-client@workspace:packages/vellum/channel-client"],
+
+    "@khoralabs/vellum-channel-host": ["@khoralabs/vellum-channel-host@workspace:packages/vellum/channel-host"],
 
     "@khoralabs/vellum-channel-relay": ["@khoralabs/vellum-channel-relay@workspace:apps/vellum/channel-relay"],
 

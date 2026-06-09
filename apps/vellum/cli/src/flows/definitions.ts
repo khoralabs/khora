@@ -38,3 +38,19 @@ export const channelJoinFlowDefinition: FlowDefinition = {
     },
   ],
 };
+
+export const channelAttachFlowDefinition: FlowDefinition = {
+  id: "vellum-channel-attach",
+  offers: [
+    {
+      id: "attach",
+      ports: [
+        {
+          id: "inviteToken",
+          prompt: "Invite token (leave empty if already a member): ",
+          optional: true,
+        },
+      ],
+    },
+  ],
+};
