@@ -7,29 +7,29 @@ const PROGRAM = "vellum";
 export const commandHelpTextMap = buildCommandHelpTextMap(allCommandHelp, PROGRAM);
 
 export function printHelp(): void {
-  console.error(`${style.bold(`${PROGRAM} — NBC tools for KHORA-backed rooms`)}
+  console.error(`${style.bold(`${PROGRAM} — NBC tools for Vellum channels`)}
 
-Register on the host before rooms or connect (host may require invite token).
+Register on Khora for discovery; create channels on the Vellum channel-relay.
 
 Usage:
   ${PROGRAM} help [<command> ...]
   ${PROGRAM} keygen [--agent-key-path=…] [--force] [--json]
-  ${PROGRAM} register ...
-  ${PROGRAM} whoami [--base-url=…] [--json] [--no-fetch]
-  ${PROGRAM} room create ...
-  ${PROGRAM} room join ...
-  ${PROGRAM} room connect <roomId>|--room=<id> [--base-url=…] [--ws-url=…]
-  ${PROGRAM} room read <roomId> ...
-  ${PROGRAM} room leave <roomId> ...
+  ${PROGRAM} register ... [--khora-base-url=…]
+  ${PROGRAM} whoami [--khora-base-url=…] [--json] [--no-fetch]
+  ${PROGRAM} channel create ...
+  ${PROGRAM} channel join ...
+  ${PROGRAM} channel connect <channelId>|--channel=<id> [--base-url=…] [--ws-url=…]
   ${PROGRAM} list [--data-dir=…] [--json]
-  ${PROGRAM} disconnect <roomId> [--data-dir=…]
-  ${PROGRAM} connect …   # shorthand for room connect
-  ${PROGRAM} [--room=id] chain create ...
-  ${PROGRAM} [--room=id] chain list | chain snapshot
-  ${PROGRAM} [--room=id] offer list | offer read <id> | offer send-turn ...
-  ${PROGRAM} [--room=id] port list <offerId> | port read <portId>
-  ${PROGRAM} [--room=id] policy read <portId> | policy validate <portId> --json=...
+  ${PROGRAM} disconnect <channelId> [--data-dir=…]
+  ${PROGRAM} connect …   # shorthand for channel connect
+  ${PROGRAM} [--channel=id] chain create ...
+  ${PROGRAM} [--channel=id] chain list | chain snapshot
+  ${PROGRAM} [--channel=id] offer list | offer read <id> | offer send-turn ...
+  ${PROGRAM} [--channel=id] port list <offerId> | port read <portId>
+  ${PROGRAM} [--channel=id] policy read <portId> | policy validate <portId> --json=...
   ${PROGRAM} setup [--force] [--json]
+
+Env: VELLUM_BASE_URL (relay), KHORA_BASE_URL (discovery), VELLUM_CHANNEL_ID
 
 Run \`${PROGRAM} <command> --help\` for per-command interactive vs flag usage.`);
 }

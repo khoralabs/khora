@@ -6,7 +6,7 @@ import path from "node:path";
 import {
   loadVellumAppConfig,
   readVellumConfigFileWithExtends,
-  VELLUM_CANONICAL_BASE_URL,
+  VELLUM_CANONICAL_KHORA_BASE_URL,
   vellumAppConfigBuiltinDefaults,
   vellumAppConfigFromEnv,
   zVellumAppConfigBase,
@@ -20,11 +20,12 @@ describe("zVellumAppConfigBase", () => {
 
   test("accepts sample valid document", () => {
     const r = zVellumAppConfigBase.safeParse({
-      baseUrl: "http://127.0.0.1:8787",
+      relayBaseUrl: "http://127.0.0.1:8790",
+      khoraBaseUrl: "http://127.0.0.1:8787",
       dataDir: "/tmp/v",
       agentKeyPath: "/k",
-      defaultRoomId: "r1",
-      defaultRoomWebSocketUrl: "ws://x",
+      defaultChannelId: "c1",
+      defaultChannelWebSocketUrl: "ws://x",
       daemonJson: true,
     });
     expect(r.success).toBe(true);
@@ -43,7 +44,7 @@ describe("loadVellumAppConfig", () => {
       layers: [vellumAppConfigBuiltinDefaults(), vellumAppConfigFromEnv({})],
       filePath: null,
     });
-    expect(config.baseUrl).toBe(VELLUM_CANONICAL_BASE_URL);
+    expect(config.khoraBaseUrl).toBe(VELLUM_CANONICAL_KHORA_BASE_URL);
     expect(config.dataDir).toBe(path.join(homedir(), ".vellum", "data"));
   });
 
@@ -56,7 +57,7 @@ describe("loadVellumAppConfig", () => {
       ],
       filePath: null,
     });
-    expect(config.baseUrl).toBe("http://env");
+    expect(config.relayBaseUrl).toBe("http://env");
   });
 });
 
@@ -71,11 +72,11 @@ describe("readVellumConfigFileWithExtends", () => {
     writeFileSync(path.join(dir, "base.json"), JSON.stringify({ dataDir: "/from-base" }));
     writeFileSync(
       path.join(dir, "child.json"),
-      JSON.stringify({ extends: "./base.json", baseUrl: "http://child" }),
+      JSON.stringify({ extends: "./base.json", relayBaseUrl: "http://child" }),
     );
     const read = readVellumConfigFileWithExtends(path.join(dir, "child.json"));
     expect(read).toBeDefined();
-    expect(read?.merged.baseUrl).toBe("http://child");
+    expect(read?.merged.relayBaseUrl).toBe("http://child");
     expect(read?.merged.dataDir).toBe("/from-base");
   });
 });

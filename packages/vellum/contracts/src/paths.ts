@@ -1,6 +1,6 @@
 import path from "node:path";
 
-/** Room storage layout: `${dataDir}/obp/...` unless `VELLUM_OBP_STORE_ROOT` / legacy `KHORA_OBP_STORE_ROOT` overrides. */
+/** Channel storage layout: `${dataDir}/obp/...` unless `VELLUM_OBP_STORE_ROOT` overrides. */
 export type VellumPathConfig = {
   dataDir?: string | undefined;
 };
@@ -10,17 +10,17 @@ export function cfgDataDir(cfg: VellumPathConfig): string | undefined {
   return d !== undefined && d.length > 0 ? d : undefined;
 }
 
-/** Filesystem-safe segment for `roomId` (aligned with `@khoralabs/khora-daemon`). */
-export function encodeRoomIdForPath(roomId: string): string {
-  return encodeURIComponent(roomId);
+/** Filesystem-safe segment for `channelId`. */
+export function encodeChannelIdForPath(channelId: string): string {
+  return encodeURIComponent(channelId);
 }
 
-/** `<dataDir>/obp` (default data dir `~/.vellum/data`) or `VELLUM_OBP_STORE_ROOT` / `KHORA_OBP_STORE_ROOT`. */
+/** `<dataDir>/obp` (default data dir `~/.vellum/data`) or `VELLUM_OBP_STORE_ROOT`. */
 export function obpStoreRoot(
   dataDir: string | undefined,
   env: NodeJS.ProcessEnv = process.env,
 ): string {
-  const storeOverride = env.VELLUM_OBP_STORE_ROOT?.trim() ?? env.KHORA_OBP_STORE_ROOT?.trim();
+  const storeOverride = env.VELLUM_OBP_STORE_ROOT?.trim();
   if (storeOverride !== undefined && storeOverride.length > 0) return path.resolve(storeOverride);
   const home = env.HOME ?? env.USERPROFILE ?? "";
   const root =
@@ -31,27 +31,27 @@ export function obpStoreRoot(
   return path.join(base, "obp");
 }
 
-export function roomObpDir(
+export function channelObpDir(
   dataDir: string | undefined,
-  roomId: string,
+  channelId: string,
   env?: NodeJS.ProcessEnv,
 ): string {
-  const enc = encodeRoomIdForPath(roomId);
-  return path.join(obpStoreRoot(dataDir, env), "rooms", enc);
+  const enc = encodeChannelIdForPath(channelId);
+  return path.join(obpStoreRoot(dataDir, env), "channels", enc);
 }
 
-export function roomObpSqlitePath(
+export function channelObpSqlitePath(
   dataDir: string | undefined,
-  roomId: string,
+  channelId: string,
   env?: NodeJS.ProcessEnv,
 ): string {
-  return path.join(roomObpDir(dataDir, roomId, env), "obp.sqlite");
+  return path.join(channelObpDir(dataDir, channelId, env), "obp.sqlite");
 }
 
-export function roomVellumControlPath(
+export function channelVellumControlPath(
   dataDir: string | undefined,
-  roomId: string,
+  channelId: string,
   env?: NodeJS.ProcessEnv,
 ): string {
-  return path.join(roomObpDir(dataDir, roomId, env), "vellum.json");
+  return path.join(channelObpDir(dataDir, channelId, env), "vellum.json");
 }

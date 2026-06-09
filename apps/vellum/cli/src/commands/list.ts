@@ -1,46 +1,25 @@
 import type { FlagMap } from "@khoralabs/cli-kit";
 import { boolFlag } from "@khoralabs/cli-kit";
-import { KhoraClient } from "@khoralabs/khora-client";
 import { listLocalVellumRows } from "@khoralabs/vellum-client";
 
-import { cliBaseUrl, dataDirForEnv, loadSigner } from "../flows/context";
-
-function localConnectedLabel(
-  roomId: string,
-  locals: ReturnType<typeof listLocalVellumRows>,
-): string {
-  const local = locals.find((r) => r.roomId === roomId);
-  if (local === undefined) return "-";
-  return local.status === "running" ? "running" : "stale";
-}
+import { dataDirForEnv } from "../flows/context";
 
 export async function handleList(flags: FlagMap): Promise<void> {
   const dataDir = dataDirForEnv(flags);
   const locals = listLocalVellumRows({ dataDir });
 
-  const signer = await loadSigner(flags);
-  const ac = new KhoraClient({ baseUrl: cliBaseUrl(flags), signer });
-  try {
-    const { relationships } = await ac.listRelationships();
-    const rows = relationships.map((r) => ({
-      ...r,
-      connected: localConnectedLabel(r.roomId, locals),
-    }));
-    if (boolFlag(flags, "json")) {
-      console.log(JSON.stringify(rows, null, 2));
-      return;
-    }
-    if (rows.length === 0) {
-      console.log("(no rooms)");
-      return;
-    }
-    console.log("roomId\trole\tpeerDid\tconnected\texpiresAtMs");
-    for (const r of rows) {
-      const peer = r.peerDid ?? "-";
-      const exp = r.expiresAtMs !== undefined ? String(r.expiresAtMs) : "-";
-      console.log(`${r.roomId}\t${r.role}\t${peer}\t${r.connected}\t${exp}`);
-    }
-  } finally {
-    ac.dispose();
+  if (boolFlag(flags, "json")) {
+    console.log(JSON.stringify(locals, null, 2));
+    return;
+  }
+  if (locals.length === 0) {
+    console.log("(no local channels)");
+    return;
+  }
+  console.log("channelId\tstatus\tpid\tcontrolPort");
+  for (const r of locals) {
+    const pid = r.pid !== undefined ? String(r.pid) : "-";
+    const port = r.controlPort !== undefined ? String(r.controlPort) : "-";
+    console.log(`${r.channelId}\t${r.status}\t${pid}\t${port}`);
   }
 }

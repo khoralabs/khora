@@ -9,7 +9,11 @@ import {
   openObpV2Database,
 } from "@khoralabs/obp-sqlite-persistence";
 import { validateVellumBindPayloadForPort } from "@khoralabs/vellum-bind-policy";
-import { cfgDataDir, roomObpSqlitePath, type VellumPathConfig } from "@khoralabs/vellum-contracts";
+import {
+  cfgDataDir,
+  channelObpSqlitePath,
+  type VellumPathConfig,
+} from "@khoralabs/vellum-contracts";
 
 import { removeVellumControlFile, writeVellumControlFile } from "./control-pid";
 import { startVellumControlServer, type VellumControlServerState } from "./control-server";
@@ -17,9 +21,9 @@ import { createFrameSignerFromPersistableAgent } from "./frame-signer";
 import { ensureVellumMetaSchema, upsertChainRow } from "./vellum-sqlite-meta";
 
 export type RunVellumDaemonOptions = {
-  baseUrl: string;
+  relayBaseUrl: string;
   signer: PersistableAgentSigner;
-  roomId: string;
+  channelId: string;
   webSocketUrl: string;
   json?: boolean;
   cfg: VellumPathConfig;
@@ -34,7 +38,7 @@ function logLine(json: boolean, label: string, payload: unknown): void {
 }
 
 /**
- * Hold an Khora room WebSocket with durable OBP v2 graph in SQLite and a local HTTP control plane.
+ * Hold a Vellum channel WebSocket with durable OBP v2 graph in SQLite and a local HTTP control plane.
  */
 export function runVellumDaemon(opts: RunVellumDaemonOptions): {
   close(): void;
@@ -49,7 +53,7 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): {
   });
 
   void (async () => {
-    const sqlitePath = roomObpSqlitePath(cfgDataDir(opts.cfg), opts.roomId);
+    const sqlitePath = channelObpSqlitePath(cfgDataDir(opts.cfg), opts.channelId);
     fs.mkdirSync(path.dirname(sqlitePath), { recursive: true });
 
     const db = openObpV2Database(sqlitePath);
@@ -63,12 +67,12 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): {
 
     const frameSigner = await createFrameSignerFromPersistableAgent(opts.signer);
     const client = new KhoraClient({
-      baseUrl: opts.baseUrl,
+      baseUrl: opts.relayBaseUrl,
       signer: opts.signer,
     });
 
     try {
-      logLine(json, "vellum_open", { roomId: opts.roomId, sqlitePath });
+      logLine(json, "vellum_open", { channelId: opts.channelId, sqlitePath });
       await client.connectRoom(
         {
           webSocketUrl: opts.webSocketUrl,
@@ -90,10 +94,10 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): {
           state.conn = conn;
           const server = startVellumControlServer({ state, db });
           serverStop = server.stop;
-          writeVellumControlFile(opts.cfg, opts.roomId, {
+          writeVellumControlFile(opts.cfg, opts.channelId, {
             pid: process.pid,
             controlPort: server.port,
-            roomId: opts.roomId,
+            channelId: opts.channelId,
           });
           logLine(json, "vellum_control", {
             hostname: server.hostname,
@@ -105,12 +109,12 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): {
     } catch (e) {
       if (!ac.signal.aborted) {
         const msg = e instanceof Error ? e.message : String(e);
-        logLine(json, "vellum_error", { roomId: opts.roomId, error: msg });
+        logLine(json, "vellum_error", { channelId: opts.channelId, error: msg });
         console.error(msg);
       }
     } finally {
       serverStop?.();
-      removeVellumControlFile(opts.cfg, opts.roomId);
+      removeVellumControlFile(opts.cfg, opts.channelId);
       client.dispose();
       try {
         db.close();

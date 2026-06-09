@@ -9,7 +9,6 @@ import {
 import {
   defaultVellumDaemonConfigPath,
   loadVellumAppConfig,
-  VELLUM_CANONICAL_BASE_URL,
   vellumAppConfigBuiltinDefaults,
   vellumAppConfigFromEnv,
   zVellumAppConfigBase,
@@ -28,11 +27,7 @@ function daemonJsonOutput(vcfg: { daemonJson?: boolean }): boolean {
 }
 
 function daemonPathConfig(vcfg: { dataDir?: string }): VellumPathConfig {
-  const dataDir =
-    process.env.VELLUM_DATA_DIR?.trim() ??
-    process.env.KHORA_DATA_DIR?.trim() ??
-    process.env.KHORA_DATA_DIR?.trim() ??
-    vcfg.dataDir?.trim();
+  const dataDir = process.env.VELLUM_DATA_DIR?.trim() ?? vcfg.dataDir?.trim();
   return {
     dataDir: dataDir !== undefined && dataDir.length > 0 ? dataDir : undefined,
   };
@@ -50,9 +45,8 @@ function loadDaemonLayeredConfig() {
 
 async function loadSigner(vcfg: { agentKeyPath?: string }): Promise<PersistableAgentSigner> {
   const p =
-    process.env.KHORA_AGENT_KEY_PATH?.trim() ??
-    process.env.KHORA_AGENT_KEY_PATH?.trim() ??
     process.env.VELLUM_AGENT_KEY_PATH?.trim() ??
+    process.env.KHORA_AGENT_KEY_PATH?.trim() ??
     vcfg.agentKeyPath?.trim() ??
     defaultIdentityPath();
   const signer = await loadIdentity(p);
@@ -66,29 +60,33 @@ async function loadSigner(vcfg: { agentKeyPath?: string }): Promise<PersistableA
 const vcfg = loadDaemonLayeredConfig();
 
 const json = daemonJsonOutput(vcfg);
-const roomId = process.env.VELLUM_ROOM_ID?.trim() ?? vcfg.defaultRoomId?.trim() ?? "";
+const channelId = process.env.VELLUM_CHANNEL_ID?.trim() ?? vcfg.defaultChannelId?.trim() ?? "";
 const webSocketUrl =
-  process.env.VELLUM_ROOM_WS_URL?.trim() ?? vcfg.defaultRoomWebSocketUrl?.trim() ?? "";
-const baseUrl = vcfg.baseUrl?.trim() ?? VELLUM_CANONICAL_BASE_URL;
+  process.env.VELLUM_CHANNEL_WS_URL?.trim() ?? vcfg.defaultChannelWebSocketUrl?.trim() ?? "";
+const relayBaseUrl = process.env.VELLUM_BASE_URL?.trim() ?? vcfg.relayBaseUrl?.trim() ?? "";
 
-if (roomId.length === 0) {
+if (channelId.length === 0) {
   console.error(
-    "VELLUM_ROOM_ID is required (or set defaultRoomId in ~/.vellum/daemon.config.json)",
+    "VELLUM_CHANNEL_ID is required (or set defaultChannelId in ~/.vellum/daemon.config.json)",
   );
   process.exit(1);
 }
 if (webSocketUrl.length === 0) {
   console.error(
-    "VELLUM_ROOM_WS_URL is required (or set defaultRoomWebSocketUrl in ~/.vellum/daemon.config.json)",
+    "VELLUM_CHANNEL_WS_URL is required (or set defaultChannelWebSocketUrl in ~/.vellum/daemon.config.json)",
   );
+  process.exit(1);
+}
+if (relayBaseUrl.length === 0) {
+  console.error("VELLUM_BASE_URL is required (Vellum channel-relay HTTP origin)");
   process.exit(1);
 }
 
 const signer = await loadSigner(vcfg);
 const handle = runVellumDaemon({
-  baseUrl,
+  relayBaseUrl,
   signer,
-  roomId,
+  channelId,
   webSocketUrl,
   json,
   cfg: daemonPathConfig(vcfg),

@@ -7,27 +7,28 @@ import z from "zod";
 export const zVellumAppConfigBase = z
   .object({
     $schema: z.string().optional(),
-    baseUrl: z.string().min(1).optional().describe("KHORA / Khora-compatible HTTP host"),
+    relayBaseUrl: z.string().min(1).optional().describe("Vellum channel-relay HTTP origin"),
+    khoraBaseUrl: z.string().min(1).optional().describe("Khora discovery host (register / whoami)"),
     dataDir: z
       .string()
       .min(1)
       .optional()
-      .describe("Vellum room data root (SQLite + vellum.json under …/obp/rooms/…)"),
+      .describe("Vellum channel data root (SQLite + vellum.json under …/obp/channels/…)"),
     agentKeyPath: z
       .string()
       .min(1)
       .optional()
       .describe("Path to Ed25519 identity JSON (see agent-persisted-signer)"),
-    defaultRoomId: z
+    defaultChannelId: z
       .string()
       .min(1)
       .optional()
-      .describe("Default room id when --room / env not set"),
-    defaultRoomWebSocketUrl: z
+      .describe("Default channel id when --channel / env not set"),
+    defaultChannelWebSocketUrl: z
       .string()
       .min(1)
       .optional()
-      .describe("Default room WebSocket URL when env not set"),
+      .describe("Default channel WebSocket URL when env not set"),
     daemonJson: z.boolean().optional().describe("JSON log lines from vellum-daemon"),
   })
   .strict();

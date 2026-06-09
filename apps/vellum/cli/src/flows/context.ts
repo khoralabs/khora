@@ -6,7 +6,7 @@ import {
   type PersistableAgentSigner,
 } from "@khoralabs/agent-persisted-signer";
 import { createReadlineSession, type FlagMap, type ReadLineFn, strFlag } from "@khoralabs/cli-kit";
-import { VELLUM_CANONICAL_BASE_URL, VellumClient } from "@khoralabs/vellum-client";
+import { VELLUM_CANONICAL_KHORA_BASE_URL, VellumClient } from "@khoralabs/vellum-client";
 
 import { vellumCliResolvedConfig } from "../vellum-app-config";
 
@@ -29,14 +29,28 @@ export function readJsonArg(pathOrInline: string): unknown {
   return JSON.parse(pathOrInline) as unknown;
 }
 
-export function cliBaseUrl(flags: FlagMap): string {
+export function cliKhoraBaseUrl(flags: FlagMap): string {
   const cfg = vellumCliResolvedConfig(flags);
   return (
+    strFlag(flags, "khora-base-url") ??
+    strFlag(flags, "khoraBaseUrl") ??
+    cfg.khoraBaseUrl ??
+    VELLUM_CANONICAL_KHORA_BASE_URL
+  );
+}
+
+export function cliRelayBaseUrl(flags: FlagMap): string {
+  const cfg = vellumCliResolvedConfig(flags);
+  const relay =
     strFlag(flags, "base-url") ??
     strFlag(flags, "baseUrl") ??
-    cfg.baseUrl ??
-    VELLUM_CANONICAL_BASE_URL
-  );
+    strFlag(flags, "relay-base-url") ??
+    strFlag(flags, "relayBaseUrl") ??
+    cfg.relayBaseUrl;
+  if (relay === undefined || relay.trim().length === 0) {
+    throw new Error("VELLUM_BASE_URL or --base-url is required (Vellum channel-relay HTTP origin)");
+  }
+  return relay.trim();
 }
 
 export function agentIdentityPath(flags: FlagMap): string {
@@ -52,22 +66,22 @@ export function dataDirForEnv(flags: FlagMap): string | undefined {
   return t !== undefined && t.length > 0 ? t : undefined;
 }
 
-/** Room from flag, config, env (via merged config), or optional positional. */
-export function resolveRoomId(flags: FlagMap, roomPositional?: string | undefined): string {
+/** Channel from flag, config, env (via merged config), or optional positional. */
+export function resolveChannelId(flags: FlagMap, channelPositional?: string | undefined): string {
   const cfg = vellumCliResolvedConfig(flags);
-  const fromArg = roomPositional?.trim();
+  const fromArg = channelPositional?.trim();
   if (fromArg !== undefined && fromArg.length > 0) return fromArg;
-  const fromFlag = strFlag(flags, "room")?.trim();
+  const fromFlag = strFlag(flags, "channel")?.trim();
   if (fromFlag !== undefined && fromFlag.length > 0) return fromFlag;
-  const fromCfg = cfg.defaultRoomId?.trim();
+  const fromCfg = cfg.defaultChannelId?.trim();
   if (fromCfg !== undefined && fromCfg.length > 0) return fromCfg;
   return "";
 }
 
-export function makeVellumClient(flags: FlagMap, roomId: string): VellumClient {
+export function makeVellumClient(flags: FlagMap, channelId: string): VellumClient {
   return new VellumClient({
-    baseUrl: cliBaseUrl(flags),
-    roomId,
+    relayBaseUrl: cliRelayBaseUrl(flags),
+    channelId,
     dataDir: dataDirForEnv(flags),
   });
 }

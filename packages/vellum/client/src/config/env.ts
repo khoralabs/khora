@@ -6,33 +6,31 @@ function trimmed(value: string | undefined): string | undefined {
   return v.length > 0 ? v : undefined;
 }
 
-/** Map env vars into a partial config layer (overrides built-in defaults; overridden by config files — see load order in CLI/daemon). */
+/** Map env vars into a partial config layer (overrides built-in defaults; overridden by config files). */
 export function vellumAppConfigFromEnv(
   env: NodeJS.ProcessEnv = process.env,
 ): Partial<VellumAppConfigBase> {
   const out: Partial<VellumAppConfigBase> = {};
 
-  const baseUrl =
-    trimmed(env.VELLUM_BASE_URL) ??
-    trimmed(env.VELLUM_KHORA_BASE_URL) ??
-    trimmed(env.KHORA_BASE_URL);
-  if (baseUrl !== undefined) out.baseUrl = baseUrl;
+  const relayBaseUrl = trimmed(env.VELLUM_BASE_URL);
+  if (relayBaseUrl !== undefined) out.relayBaseUrl = relayBaseUrl;
 
-  const dataDir =
-    trimmed(env.VELLUM_DATA_DIR) ?? trimmed(env.KHORA_DATA_DIR) ?? trimmed(env.KHORA_DATA_DIR);
+  const khoraBaseUrl = trimmed(env.KHORA_BASE_URL) ?? trimmed(env.VELLUM_KHORA_BASE_URL);
+  if (khoraBaseUrl !== undefined) out.khoraBaseUrl = khoraBaseUrl;
+
+  const dataDir = trimmed(env.VELLUM_DATA_DIR);
   if (dataDir !== undefined) out.dataDir = dataDir;
 
-  const agentKeyPath =
-    trimmed(env.KHORA_AGENT_KEY_PATH) ??
-    trimmed(env.KHORA_AGENT_KEY_PATH) ??
-    trimmed(env.VELLUM_AGENT_KEY_PATH);
+  const agentKeyPath = trimmed(env.VELLUM_AGENT_KEY_PATH) ?? trimmed(env.KHORA_AGENT_KEY_PATH);
   if (agentKeyPath !== undefined) out.agentKeyPath = agentKeyPath;
 
-  const defaultRoomId = trimmed(env.VELLUM_ROOM_ID) ?? trimmed(env.KHORA_ROOM_ID);
-  if (defaultRoomId !== undefined) out.defaultRoomId = defaultRoomId;
+  const defaultChannelId = trimmed(env.VELLUM_CHANNEL_ID);
+  if (defaultChannelId !== undefined) out.defaultChannelId = defaultChannelId;
 
-  const defaultRoomWebSocketUrl = trimmed(env.VELLUM_ROOM_WS_URL);
-  if (defaultRoomWebSocketUrl !== undefined) out.defaultRoomWebSocketUrl = defaultRoomWebSocketUrl;
+  const defaultChannelWebSocketUrl = trimmed(env.VELLUM_CHANNEL_WS_URL);
+  if (defaultChannelWebSocketUrl !== undefined) {
+    out.defaultChannelWebSocketUrl = defaultChannelWebSocketUrl;
+  }
 
   const jsonRaw = trimmed(env.VELLUM_DAEMON_JSON);
   if (jsonRaw === "1" || jsonRaw === "true") out.daemonJson = true;

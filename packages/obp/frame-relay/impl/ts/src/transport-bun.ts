@@ -2,7 +2,7 @@ import type { ServerWebSocket } from "bun";
 import type { FrameRelayHubPort, FrameRelayPeer } from "./hub-port";
 
 /** WebSocket `data` after upgrade for frame relay hub sessions (routes map `sessionId` to channel id). */
-export type FrameRelayHubWsData = { kind: "room"; sessionId: string };
+export type FrameRelayHubWsData = { kind: "channel"; sessionId: string };
 
 function peerFromWebSocket(ws: ServerWebSocket<FrameRelayHubWsData>): FrameRelayPeer {
   return {

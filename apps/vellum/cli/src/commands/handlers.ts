@@ -1,12 +1,7 @@
 import type { FlagMap } from "@khoralabs/cli-kit";
 
 import type { VellumCliContext } from "../flows/context";
-import { handleConnect } from "./connect";
-import { handleDisconnect } from "./disconnect";
-import { handleKeygen } from "./keygen";
-import { handleList } from "./list";
-import { handleRegister } from "./register";
-import { handleRoomCreate, handleRoomJoin, handleRoomLeave, handleRoomRead } from "./room";
+import { handleChannelConnect, handleChannelCreate, handleChannelJoin } from "./channel";
 import {
   handleChainCreate,
   handleChainList,
@@ -18,7 +13,12 @@ import {
   handlePolicyValidate,
   handlePortList,
   handlePortRead,
-} from "./room-commands";
+} from "./channel-commands";
+import { handleConnect } from "./connect";
+import { handleDisconnect } from "./disconnect";
+import { handleKeygen } from "./keygen";
+import { handleList } from "./list";
+import { handleRegister } from "./register";
 import { runSetupCommand } from "./setup";
 import { handleWhoami } from "./whoami";
 
@@ -49,28 +49,18 @@ export async function dispatch(
     return;
   }
 
-  if (a === "room" && b === "create") {
-    await handleRoomCreate(flags);
+  if (a === "channel" && b === "create") {
+    await handleChannelCreate(flags);
     return;
   }
 
-  if (a === "room" && b === "join") {
-    await handleRoomJoin(ctx, flags);
+  if (a === "channel" && b === "join") {
+    await handleChannelJoin(ctx, flags);
     return;
   }
 
-  if (a === "room" && b === "read") {
-    await handleRoomRead(positional, flags);
-    return;
-  }
-
-  if (a === "room" && b === "leave") {
-    await handleRoomLeave(ctx, positional, flags);
-    return;
-  }
-
-  if (a === "room" && b === "connect") {
-    await handleConnect(ctx, positional, flags, { roomPositionalIndex: 2 });
+  if (a === "channel" && b === "connect") {
+    await handleChannelConnect(ctx, positional, flags);
     return;
   }
 

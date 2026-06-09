@@ -1,7 +1,7 @@
 {
   "name": "@khoralabs/vellum-daemon",
   "version": "0.0.0",
-  "description": "Vellum NBC room daemon: WebSocket multiplex, SQLite graph, HTTP control.",
+  "description": "Vellum NBC channel daemon: WebSocket multiplex, SQLite graph, HTTP control.",
   "type": "module",
   "private": true,
   "exports": {

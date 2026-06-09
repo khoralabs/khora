@@ -1,13 +1,13 @@
 import fs from "node:fs";
 
 import type { FlagMap } from "@khoralabs/cli-kit";
-import { roomVellumControlPath } from "@khoralabs/vellum-contracts";
+import { channelVellumControlPath } from "@khoralabs/vellum-contracts";
 
 import { dataDirForEnv } from "../flows/context";
 
 /** Stop local daemon if control file exists. Returns whether a control file was cleaned up. */
-export function disconnectLocalRoom(flags: FlagMap, roomId: string): boolean {
-  const ctlPath = roomVellumControlPath(dataDirForEnv(flags), roomId);
+export function disconnectLocalChannel(flags: FlagMap, channelId: string): boolean {
+  const ctlPath = channelVellumControlPath(dataDirForEnv(flags), channelId);
   if (!fs.existsSync(ctlPath)) {
     return false;
   }
@@ -42,13 +42,13 @@ export function disconnectLocalRoom(flags: FlagMap, roomId: string): boolean {
 }
 
 export function handleDisconnect(positional: string[], flags: FlagMap): void {
-  const roomId = positional[1]?.trim();
-  if (roomId === undefined || roomId.length === 0) {
-    throw new Error("room id required");
+  const channelId = positional[1]?.trim();
+  if (channelId === undefined || channelId.length === 0) {
+    throw new Error("channel id required");
   }
-  if (!disconnectLocalRoom(flags, roomId)) {
+  if (!disconnectLocalChannel(flags, channelId)) {
     console.log("(no local daemon control file)");
     return;
   }
-  console.log(`disconnected local daemon for room ${roomId}`);
+  console.log(`disconnected local daemon for channel ${channelId}`);
 }

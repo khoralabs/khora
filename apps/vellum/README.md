@@ -1,34 +1,36 @@
 # Vellum apps
 
-Vellum provides NBC (negotiated-binding-convention) session tooling on top of Khora **rooms**: a long-running **daemon** per agent multiplexes frame channels over WebSocket to the Khora host, and a **CLI** drives chains, offers, ports, and bind policy.
+Vellum provides NBC (negotiated-binding-convention) session tooling on **channels**: a long-running **daemon** per agent multiplexes frame channels over WebSocket to the Vellum channel-relay, and a **CLI** drives chains, offers, ports, and bind policy.
 
-Shared TypeScript libraries (`@khoralabs/vellum-*`) live under [`packages/vellum`](../../packages/vellum).
+| App | Package | Role |
+|-----|---------|------|
+| [`channel-relay/`](channel-relay) | `@khoralabs/vellum-channel-relay` | Minimal Bun relay — DID-signed `/v1/channels` spawn API + in-memory frame hub |
+| [`cli/`](cli) | `@khoralabs/vellum-cli` | `vellum` entrypoint — channel create/join/connect, chain lifecycle, offers/ports, policy |
+| [`daemon/`](daemon) | `@khoralabs/vellum-daemon` | Per-channel WebSocket holder + local HTTP control plane + SQLite OBP graph |
 
-## Layout
+## Env split
 
-| Directory | npm name | Role |
-| --- | --- | --- |
-| [`cli/`](cli) | `@khoralabs/vellum-cli` | `vellum` entrypoint — connect to rooms, chain lifecycle, offers/ports, policy inspection. Depends on `@khoralabs/vellum-client` and contracts. |
-| [`daemon/`](daemon) | `@khoralabs/vellum-daemon` | Room daemon: WS multiplex to Khora, SQLite-backed graph/state, HTTP control server for the CLI. |
+| Env | Target |
+|-----|--------|
+| `VELLUM_BASE_URL` | Channel-relay HTTP (`POST /v1/channels`, ticket mint) |
+| `KHORA_BASE_URL` | Khora discovery only (`register`, `whoami`) |
+| `VELLUM_CHANNEL_ID` / `VELLUM_CHANNEL_WS_URL` | Daemon session |
 
 ## Quick start
 
-From the repo root (after `bun install`):
-
 ```bash
-# Example: run daemon (requires Khora host + env as documented in daemon README)
-cd apps/vellum/daemon
-bun run src/index.ts
+# Terminal 1 — relay
+cd apps/vellum/channel-relay && bun run src/index.ts
 
-# In another shell — CLI talks to daemon control + Khora
-cd apps/vellum/cli
-bun run src/cli.ts --help
+# Terminal 2 — CLI
+export KHORA_BASE_URL=https://k-0.khoralabs.com
+export VELLUM_BASE_URL=http://localhost:8790
+
+vellum register ...
+vellum channel create --json
+vellum channel join --invite-token=...
+vellum channel connect <channelId>
+vellum --channel <channelId> chain create --peer-party=... --peer-key=...
 ```
 
-Point **`KHORA_BASE_URL`** (and any daemon control URL your setup uses) at a running Khora host. The CLI uses [`@khoralabs/vellum-client`](../../packages/vellum/client) and [`@khoralabs/khora-client`](../../packages/khora/client) under the hood.
-
-**Rooms:** Vellum handles **frame-channel transport** (step 3 — WebSocket to `/v1/rooms/:id/ws` with a ticket). Inbox `room_ticket` delivery and optional `mintRoomTicket` are Khora client / [`khora-daemon`](../khora/daemon) concerns; see [`packages/khora/client/README.md`](../../packages/khora/client/README.md) (Rooms section).
-
-**Account deletion:** If your deployment exposes Khora’s `POST /v1/unregister`, you can remove server-side account data from the Khora client the CLI uses (`khora unregister --yes`). That does not erase local Vellum daemon state or keys; see `apps/khora/README.md` for the full deletion story.
-
-See **`cli/README.md`** and **`daemon/README.md`** in each folder for flags, env vars, and architecture notes.
+See [`.brain/technical/vellum-channels.md`](../../.brain/technical/vellum-channels.md) for local data layout (`obp/channels/<channelId>/`).

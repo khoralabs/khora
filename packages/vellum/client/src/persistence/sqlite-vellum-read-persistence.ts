@@ -4,13 +4,13 @@ import type { VellumChainRow, VellumOfferRow, VellumPortRow } from "@khoralabs/v
 
 import type { VellumReadModel } from "./vellum-read-persistence";
 
-/** Read-only SQLite projection for the room `obp.sqlite` schema. */
+/** Read-only SQLite projection for the channel `obp.sqlite` schema. */
 export class SqliteVellumReadModel implements VellumReadModel {
   constructor(private readonly sqlitePath: string) {}
 
   private withDb<T>(fn: (db: Database) => T): T {
     if (!fs.existsSync(this.sqlitePath)) {
-      throw new Error(`room database not found at ${this.sqlitePath}`);
+      throw new Error(`channel database not found at ${this.sqlitePath}`);
     }
     const db = new Database(this.sqlitePath, { readonly: true });
     try {

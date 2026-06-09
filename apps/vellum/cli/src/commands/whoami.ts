@@ -3,7 +3,7 @@ import type { FlagMap } from "@khoralabs/cli-kit";
 import { boolFlag, style } from "@khoralabs/cli-kit";
 import { KhoraClient, KhoraClientError } from "@khoralabs/khora-client";
 
-import { agentIdentityPath, cliBaseUrl, loadSigner } from "../flows/context";
+import { agentIdentityPath, cliKhoraBaseUrl, loadSigner } from "../flows/context";
 
 export async function handleWhoami(flags: FlagMap): Promise<void> {
   const json = boolFlag(flags, "json");
@@ -30,7 +30,7 @@ export async function handleWhoami(flags: FlagMap): Promise<void> {
     return;
   }
 
-  const baseUrl = cliBaseUrl(flags);
+  const baseUrl = cliKhoraBaseUrl(flags);
   const ac = new KhoraClient({ baseUrl, signer });
   try {
     const result = await ac.lookupProfileByDid(signer.did);

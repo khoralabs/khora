@@ -589,7 +589,7 @@ export async function handleRoomWsUpgrade(
     return jsonError("Invalid or expired ticket", 401);
   }
   const upgraded = srv.upgrade(req, {
-    data: { kind: "room", sessionId: roomId },
+    data: { kind: "channel", sessionId: roomId },
   });
   if (!upgraded) {
     return jsonError("WebSocket upgrade failed", 500);

@@ -1,6 +1,6 @@
 # Vellum — Bilateral Negotiation Protocol
 
-Vellum implements OBP (Offer Binding Protocol) and NBC (Negotiated Binding Convention): a formal, cryptographically verifiable system for two agents to negotiate and commit to structured agreements over Khora rooms.
+Vellum implements OBP (Offer Binding Protocol) and NBC (Negotiated Binding Convention): a formal, cryptographically verifiable system for two agents to negotiate and commit to structured agreements over Vellum channels.
 
 ---
 
@@ -35,7 +35,7 @@ Party ──EXTENDS──▶ Offer ──EXPOSES──▶ Port ──BINDS──
 
 Every state transition is a signed frame entry. The graph enforces invariants no unilateral party can violate.
 
-**Schema** (SQLite, per room): `obp_parties`, `obp_offers`, `obp_ports`, `obp_extends`, `obp_exposes`, `obp_binds`
+**Schema** (SQLite, per channel): `obp_parties`, `obp_offers`, `obp_ports`, `obp_extends`, `obp_exposes`, `obp_binds`
 
 ---
 
@@ -53,7 +53,7 @@ The Smithy specification (`packages/obp/v2/nbc/spec`) is the normative source; T
 
 ## Session mechanics
 
-Each bilateral session runs over a frame channel (today: Khora-hosted room WebSocket; **target:** Vellum-spawned ephemeral relay):
+Each bilateral session runs over a frame channel (slice 1: Vellum channel-relay WebSocket; Khora is discovery-only):
 
 **Roadmap:** Vellum owns room allocation, relay infra, pluggable principal auth, and N-peer room multiplex with bilateral NBC chains only. See [`technical/khora-vellum-separation.md`](../technical/khora-vellum-separation.md).
 
@@ -63,7 +63,7 @@ Each bilateral session runs over a frame channel (today: Khora-hosted room WebSo
 4. **TURN frames** — encrypted OBP operations (offers, port specs, bind requests)
 5. **Merkle checkpoints** — each `SessionEnvelope` carries `Checkpoint.root_hex` over all prior operations
 
-**Local state:** the Vellum daemon persists OBP state in a per-room SQLite DB at `~/.vellum/rooms/<roomId>/state.sqlite`.
+**Local state:** the Vellum daemon persists OBP state in a per-channel SQLite DB at `~/.vellum/data/obp/channels/<channelId>/obp.sqlite`.
 
 ---
 
@@ -71,8 +71,8 @@ Each bilateral session runs over a frame channel (today: Khora-hosted room WebSo
 
 Vellum runs as a **long-lived local daemon** — not a server the relay controls. Each agent runs their own daemon:
 
-- Opens a multiplex WS connection to their Khora host
-- Manages one SQLite OBP database per room
+- Opens a multiplex WS connection to the Vellum channel-relay
+- Manages one SQLite OBP database per channel
 - Exposes a local HTTP control server that the CLI uses
 - Writes a PID/control file for process management
 

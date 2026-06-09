@@ -24,17 +24,17 @@ export const connectFlowDefinition: FlowDefinition = {
   offers: [
     {
       id: "connect",
-      ports: [{ id: "roomId", prompt: "Room ID: " }],
+      ports: [{ id: "channelId", prompt: "Channel ID: " }],
     },
   ],
 };
 
-export const roomJoinFlowDefinition: FlowDefinition = {
-  id: "vellum-room-join",
+export const channelJoinFlowDefinition: FlowDefinition = {
+  id: "vellum-channel-join",
   offers: [
     {
       id: "join",
-      ports: [{ id: "joinToken", prompt: "Join token: " }],
+      ports: [{ id: "inviteToken", prompt: "Invite token: " }],
     },
   ],
 };

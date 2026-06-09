@@ -2,7 +2,6 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { defaultIdentityPath, loadIdentity } from "@khoralabs/agent-persisted-signer";
-import { KhoraClient } from "@khoralabs/khora-client";
 import {
   canonicalSessionParties,
   normalizeSessionInit,
@@ -16,9 +15,9 @@ import {
   type ChainStateResponse,
   ChainStateResponseSchema,
   cfgDataDir,
+  channelObpSqlitePath,
+  channelVellumControlPath,
   DEFAULT_GENESIS_TURN_WIRE,
-  roomObpSqlitePath,
-  roomVellumControlPath,
   type VellumChainRow,
   type VellumOfferRow,
   type VellumPathConfig,
@@ -32,13 +31,14 @@ import {
 import { createFrameSignerFromPersistableAgent } from "./frame-signer";
 import { SqliteVellumReadModel } from "./persistence/sqlite-vellum-read-persistence";
 import type { VellumReadModel } from "./persistence/vellum-read-persistence";
+import { VellumChannelClient } from "./vellum-channel-client";
 
 export type VellumClientOptions = {
-  /** KHORA HTTP origin (e.g. v2 host). */
-  baseUrl: string;
-  roomId: string;
+  /** Vellum channel-relay HTTP origin. */
+  relayBaseUrl: string;
+  channelId: string;
   dataDir?: string | undefined;
-  /** Override how room metadata is read (defaults to SQLite under the configured data dir). */
+  /** Override how channel metadata is read (defaults to SQLite under the configured data dir). */
   readPersistence?: VellumReadModel | undefined;
   /** Defaults to env-selected HTTP (`VELLUM_CONTROL_TRANSPORT`, default `http`). */
   controlTransport?: VellumControlTransport | undefined;
@@ -46,10 +46,10 @@ export type VellumClientOptions = {
 
 function readControlPlane(
   cfg: VellumPathConfig,
-  roomId: string,
+  channelId: string,
 ): { controlPort: number; pid: number } | undefined {
   try {
-    const p = roomVellumControlPath(cfgDataDir(cfg), roomId);
+    const p = channelVellumControlPath(cfgDataDir(cfg), channelId);
     const raw = fs.readFileSync(p, "utf8");
     const j = JSON.parse(raw) as unknown;
     if (j !== null && typeof j === "object") {
@@ -66,12 +66,12 @@ function readControlPlane(
 
 async function waitForControlPlane(
   cfg: VellumPathConfig,
-  roomId: string,
+  channelId: string,
   deadlineMs: number,
 ): Promise<{ controlPort: number }> {
   const deadline = Date.now() + deadlineMs;
   while (Date.now() < deadline) {
-    const c = readControlPlane(cfg, roomId);
+    const c = readControlPlane(cfg, channelId);
     if (c !== undefined) return { controlPort: c.controlPort };
     await Bun.sleep(50);
   }
@@ -106,11 +106,11 @@ export class VellumClient {
     };
     this.reads =
       opts.readPersistence ??
-      new SqliteVellumReadModel(roomObpSqlitePath(cfgDataDir(this.pathConfig), opts.roomId));
+      new SqliteVellumReadModel(channelObpSqlitePath(cfgDataDir(this.pathConfig), opts.channelId));
   }
 
   private controlBaseUrl(): string {
-    const cp = readControlPlane(this.pathConfig, this.opts.roomId);
+    const cp = readControlPlane(this.pathConfig, this.opts.channelId);
     if (cp === undefined) {
       throw new Error("Vellum daemon control not available (run `vellum connect` first)");
     }
@@ -127,28 +127,21 @@ export class VellumClient {
     return this.cachedControlTransport;
   }
 
-  /** Ensure room daemon is running with a fresh ticket and local control server. */
+  /** Ensure channel daemon is running with a fresh ticket and local control server. */
   async connect(options?: { webSocketUrl?: string }): Promise<void> {
     const idPath =
-      process.env.KHORA_AGENT_KEY_PATH?.trim() ??
+      process.env.VELLUM_AGENT_KEY_PATH?.trim() ??
       process.env.KHORA_AGENT_KEY_PATH?.trim() ??
       defaultIdentityPath();
     const signer = await loadIdentity(idPath);
     if (signer === undefined) {
       throw new Error(`identity not found at ${idPath}`);
     }
-    let webSocketUrl = options?.webSocketUrl ?? process.env.VELLUM_ROOM_WS_URL?.trim();
-    const ac = new KhoraClient({
-      baseUrl: this.opts.baseUrl,
-      signer,
-    });
-    try {
-      if (webSocketUrl === undefined || webSocketUrl.length === 0) {
-        const out = await ac.mintRoomTicket(this.opts.roomId);
-        webSocketUrl = out.webSocketUrl;
-      }
-    } finally {
-      ac.dispose();
+    let webSocketUrl = options?.webSocketUrl ?? process.env.VELLUM_CHANNEL_WS_URL?.trim();
+    if (webSocketUrl === undefined || webSocketUrl.length === 0) {
+      const cc = new VellumChannelClient({ relayBaseUrl: this.opts.relayBaseUrl, signer });
+      const out = await cc.mintTicket(this.opts.channelId);
+      webSocketUrl = out.webSocketUrl;
     }
 
     const dataDir =
@@ -159,22 +152,17 @@ export class VellumClient {
       cmd: ["bun", "run", daemonEntryPath()],
       env: {
         ...process.env,
-        VELLUM_ROOM_ID: this.opts.roomId,
-        VELLUM_ROOM_WS_URL: webSocketUrl,
-        VELLUM_BASE_URL: this.opts.baseUrl,
-        ...(dataDir !== undefined
-          ? {
-              VELLUM_DATA_DIR: dataDir,
-              KHORA_DATA_DIR: dataDir,
-            }
-          : {}),
+        VELLUM_CHANNEL_ID: this.opts.channelId,
+        VELLUM_CHANNEL_WS_URL: webSocketUrl,
+        VELLUM_BASE_URL: this.opts.relayBaseUrl,
+        ...(dataDir !== undefined ? { VELLUM_DATA_DIR: dataDir } : {}),
       },
       stdout: "inherit",
       stderr: "inherit",
       stdin: "inherit",
     });
 
-    await waitForControlPlane(this.pathConfig, this.opts.roomId, 15_000);
+    await waitForControlPlane(this.pathConfig, this.opts.channelId, 15_000);
   }
 
   async chainCreate(input: {
@@ -187,7 +175,7 @@ export class VellumClient {
     genesisTurn?: Record<string, unknown>;
   }): Promise<ChainInitResponse> {
     const idPath =
-      process.env.KHORA_AGENT_KEY_PATH?.trim() ??
+      process.env.VELLUM_AGENT_KEY_PATH?.trim() ??
       process.env.KHORA_AGENT_KEY_PATH?.trim() ??
       defaultIdentityPath();
     const signer = await loadIdentity(idPath);

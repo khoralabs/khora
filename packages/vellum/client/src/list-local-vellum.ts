@@ -4,7 +4,7 @@ import path from "node:path";
 import { cfgDataDir, obpStoreRoot, type VellumPathConfig } from "@khoralabs/vellum-contracts";
 
 export type LocalVellumRow = {
-  roomId: string;
+  channelId: string;
   pid?: number;
   controlPort?: number;
   status: "running" | "stale" | "no-control-file" | "invalid-control-file";
@@ -20,23 +20,23 @@ function isPidAlive(pid: number): boolean {
 }
 
 /**
- * Inspect `vellum.json` under each `{obpStoreRoot}/rooms/*` directory (aligned with the daemon).
+ * Inspect `vellum.json` under each `{obpStoreRoot}/channels/*` directory (aligned with the daemon).
  */
 export function listLocalVellumRows(
   cfg: VellumPathConfig,
   env: NodeJS.ProcessEnv = process.env,
 ): LocalVellumRow[] {
-  const roomsRoot = path.join(obpStoreRoot(cfgDataDir(cfg), env), "rooms");
+  const channelsRoot = path.join(obpStoreRoot(cfgDataDir(cfg), env), "channels");
   let names: string[] = [];
   try {
-    names = fs.readdirSync(roomsRoot);
+    names = fs.readdirSync(channelsRoot);
   } catch {
     return [];
   }
   names.sort();
   const out: LocalVellumRow[] = [];
   for (const enc of names) {
-    const sub = path.join(roomsRoot, enc);
+    const sub = path.join(channelsRoot, enc);
     let st: fs.Stats;
     try {
       st = fs.statSync(sub);
@@ -45,34 +45,34 @@ export function listLocalVellumRows(
     }
     if (!st.isDirectory()) continue;
 
-    let roomId: string;
+    let channelId: string;
     try {
-      roomId = decodeURIComponent(enc);
+      channelId = decodeURIComponent(enc);
     } catch {
       continue;
     }
 
     const ctlPath = path.join(sub, "vellum.json");
     if (!fs.existsSync(ctlPath)) {
-      out.push({ roomId, status: "no-control-file" });
+      out.push({ channelId, status: "no-control-file" });
       continue;
     }
     let raw: string;
     try {
       raw = fs.readFileSync(ctlPath, "utf8");
     } catch {
-      out.push({ roomId, status: "no-control-file" });
+      out.push({ channelId, status: "no-control-file" });
       continue;
     }
     let j: unknown;
     try {
       j = JSON.parse(raw) as unknown;
     } catch {
-      out.push({ roomId, status: "invalid-control-file" });
+      out.push({ channelId, status: "invalid-control-file" });
       continue;
     }
     if (j === null || typeof j !== "object") {
-      out.push({ roomId, status: "invalid-control-file" });
+      out.push({ channelId, status: "invalid-control-file" });
       continue;
     }
     const o = j as Record<string, unknown>;
@@ -84,11 +84,11 @@ export function listLocalVellumRows(
       typeof controlPort !== "number" ||
       !Number.isFinite(controlPort)
     ) {
-      out.push({ roomId, status: "invalid-control-file" });
+      out.push({ channelId, status: "invalid-control-file" });
       continue;
     }
     out.push({
-      roomId,
+      channelId,
       pid,
       controlPort,
       status: isPidAlive(pid) ? "running" : "stale",

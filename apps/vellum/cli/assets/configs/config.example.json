@@ -1,9 +1,8 @@
 {
-  "$schema": "./vellum-config.schema.json",
-  "baseUrl": "https://k-0.khoralabs.com",
+  "$schema": "../../../packages/vellum/client/vellum-config.schema.json",
+  "relayBaseUrl": "http://localhost:8790",
+  "khoraBaseUrl": "https://k-0.khoralabs.com",
   "dataDir": "~/.vellum/data",
-  "agentKeyPath": "~/.khora/identity.json",
-  "defaultRoomId": "replace-with-your-room-id",
-  "defaultRoomWebSocketUrl": "wss://k-0.khoralabs.com/ws/replace-with-your-room-id",
-  "daemonJson": false
+  "defaultChannelId": "replace-with-your-channel-id",
+  "defaultChannelWebSocketUrl": "ws://localhost:8790/v1/channels/replace-with-your-channel-id/ws?ticket=..."
 }

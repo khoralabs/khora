@@ -5,13 +5,18 @@
     "$schema": {
       "type": "string"
     },
-    "baseUrl": {
-      "description": "KHORA / Khora-compatible HTTP host",
+    "relayBaseUrl": {
+      "description": "Vellum channel-relay HTTP origin",
+      "type": "string",
+      "minLength": 1
+    },
+    "khoraBaseUrl": {
+      "description": "Khora discovery host (register / whoami)",
       "type": "string",
       "minLength": 1
     },
     "dataDir": {
-      "description": "Vellum room data root (SQLite + vellum.json under …/obp/rooms/…)",
+      "description": "Vellum channel data root (SQLite + vellum.json under …/obp/channels/…)",
       "type": "string",
       "minLength": 1
     },
@@ -20,13 +25,13 @@
       "type": "string",
       "minLength": 1
     },
-    "defaultRoomId": {
-      "description": "Default room id when --room / env not set",
+    "defaultChannelId": {
+      "description": "Default channel id when --channel / env not set",
       "type": "string",
       "minLength": 1
     },
-    "defaultRoomWebSocketUrl": {
-      "description": "Default room WebSocket URL when env not set",
+    "defaultChannelWebSocketUrl": {
+      "description": "Default channel WebSocket URL when env not set",
       "type": "string",
       "minLength": 1
     },

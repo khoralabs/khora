@@ -3,50 +3,50 @@ import path from "node:path";
 
 import {
   cfgDataDir,
-  roomVellumControlPath,
+  channelVellumControlPath,
   type VellumPathConfig,
 } from "@khoralabs/vellum-contracts";
 
 export type VellumControlFile = {
   pid: number;
   controlPort: number;
-  roomId: string;
+  channelId: string;
 };
 
 export function vellumControlPath(
   cfg: VellumPathConfig,
-  roomId: string,
+  channelId: string,
   env?: NodeJS.ProcessEnv,
 ): string {
-  return roomVellumControlPath(cfgDataDir(cfg), roomId, env);
+  return channelVellumControlPath(cfgDataDir(cfg), channelId, env);
 }
 
 export function writeVellumControlFile(
   cfg: VellumPathConfig,
-  roomId: string,
+  channelId: string,
   state: VellumControlFile,
 ): void {
-  const p = vellumControlPath(cfg, roomId);
+  const p = vellumControlPath(cfg, channelId);
   fs.mkdirSync(path.dirname(p), { recursive: true });
   fs.writeFileSync(p, `${JSON.stringify(state satisfies VellumControlFile)}\n`, "utf8");
 }
 
 /** Best-effort remove `vellum.json`. */
-export function removeVellumControlFile(cfg: VellumPathConfig, roomId: string): void {
+export function removeVellumControlFile(cfg: VellumPathConfig, channelId: string): void {
   try {
-    fs.unlinkSync(vellumControlPath(cfg, roomId));
+    fs.unlinkSync(vellumControlPath(cfg, channelId));
   } catch {
     // ignore
   }
 }
 
-/** Read `{ pid, controlPort, roomId }` written by daemon. */
+/** Read `{ pid, controlPort, channelId }` written by daemon. */
 export function readVellumControlFile(
   cfg: VellumPathConfig,
-  roomId: string,
+  channelId: string,
 ): VellumControlFile | undefined {
   try {
-    const raw = fs.readFileSync(vellumControlPath(cfg, roomId), "utf8");
+    const raw = fs.readFileSync(vellumControlPath(cfg, channelId), "utf8");
     const j = JSON.parse(raw) as unknown;
     if (j !== null && typeof j === "object") {
       const o = j as Record<string, unknown>;
@@ -58,7 +58,11 @@ export function readVellumControlFile(
         typeof controlPort === "number" &&
         Number.isFinite(controlPort)
       ) {
-        return { pid, controlPort, roomId: typeof o.roomId === "string" ? o.roomId : roomId };
+        return {
+          pid,
+          controlPort,
+          channelId: typeof o.channelId === "string" ? o.channelId : channelId,
+        };
       }
     }
   } catch {
