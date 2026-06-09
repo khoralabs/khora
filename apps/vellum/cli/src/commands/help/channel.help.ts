@@ -3,7 +3,7 @@ import type { CommandHelp } from "@khoralabs/cli-kit";
 export const channelCreateHelp: CommandHelp = {
   command: "channel create",
   summary: "Create a Vellum channel on the channel-relay",
-  args: `vellum channel create [--ttl-ms=<n>] [--base-url=…] [--data-dir=…]`,
+  args: `vellum channel create [--ttl-ms=<n>] [--max-population=<n>] [--chain-limit=global:N|principal:N] [--base-url=…]`,
 };
 
 export const channelJoinHelp: CommandHelp = {

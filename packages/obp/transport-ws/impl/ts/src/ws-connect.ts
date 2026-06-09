@@ -43,6 +43,7 @@ export type ObpFrameChannelClientOptions = {
 export type ObpWebSocketConnectOptions = Omit<ObpFrameChannelClientOptions, "channel"> & {
   webSocketUrl: string;
   WebSocketCtor?: typeof WebSocket;
+  webSocketProtocols?: string | string[] | undefined;
 };
 
 export async function connectObpFrameChannelSession(
@@ -109,12 +110,15 @@ export async function connectObpWebSocketSession(
   options: ObpWebSocketConnectOptions,
   runner: (conn: ObpFrameConnection) => Promise<void>,
 ): Promise<{ sessionOps: SessionOp[]; checkpoint: Checkpoint }> {
-  const { webSocketUrl, WebSocketCtor, ...rest } = options;
+  const { webSocketUrl, webSocketProtocols, WebSocketCtor, ...rest } = options;
   const WS = WebSocketCtor ?? WebSocket;
   if (typeof WS !== "function") {
     throw new Error("connectObpWebSocketSession: WebSocket is not available (pass WebSocketCtor)");
   }
-  const ws = new WS(webSocketUrl);
+  const ws =
+    webSocketProtocols !== undefined
+      ? new WS(webSocketUrl, webSocketProtocols)
+      : new WS(webSocketUrl);
   ws.binaryType = "arraybuffer";
 
   await new Promise<void>((resolve, reject) => {

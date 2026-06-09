@@ -10,14 +10,14 @@ export async function runSqliteImmediateTransaction<T>(
   db: Database,
   fn: () => Promise<T>,
 ): Promise<T> {
-  db.exec("BEGIN IMMEDIATE");
+  db.run("BEGIN IMMEDIATE");
   try {
     const out = await fn();
-    db.exec("COMMIT");
+    db.run("COMMIT");
     return out;
   } catch (e) {
     try {
-      db.exec("ROLLBACK");
+      db.run("ROLLBACK");
     } catch {
       /* ignore */
     }

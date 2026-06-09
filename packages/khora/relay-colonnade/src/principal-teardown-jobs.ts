@@ -5,7 +5,7 @@ export type PrincipalTeardownJobState = "pending" | "running" | "completed" | "f
 
 /** Ensures durable teardown job metadata table on relay catalog SQLite. */
 export function ensurePrincipalTeardownJobsSchema(db: Database): void {
-  db.exec(`
+  db.run(`
     CREATE TABLE IF NOT EXISTS principal_teardown_jobs (
       did TEXT PRIMARY KEY NOT NULL,
       profile_id TEXT NOT NULL,

@@ -4,10 +4,6 @@ import type { HostPersistence, PrincipalId } from "@khoralabs/host-runtime";
 import type { FrameRelayStoreStrategy } from "@khoralabs/obp-frame-relay";
 import type { RelayCatalogProjectionStore } from "./catalog-projection-store";
 import {
-  RELAY_CATALOG_REG_BY_PRINCIPAL,
-  RELAY_CATALOG_REG_BY_PROFILE,
-} from "./catalog-registration-adapter";
-import {
   deletePrincipalTeardownJob,
   insertPendingPrincipalTeardownJob,
   markPrincipalTeardownJobPendingAfterFailure,
@@ -17,6 +13,8 @@ import {
 import {
   RELAY_NAMESPACE_ENTITY_PROFILE,
   RELAY_NAMESPACE_PRINCIPAL_TO_USERNAME,
+  RELAY_NAMESPACE_REG_BY_PRINCIPAL,
+  RELAY_NAMESPACE_REG_BY_PROFILE,
   RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
 } from "./relay-id-conventions";
@@ -80,8 +78,8 @@ function deletePrincipalUsernameIndexAndRegistrationRows(p: {
   if (u !== undefined) {
     store.deleteRow(USERNAME_INDEX_TENANT_KEY, RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL, u);
   }
-  store.deleteRow(tenantKey, RELAY_CATALOG_REG_BY_PRINCIPAL, principalId);
-  store.deleteRow(tenantKey, RELAY_CATALOG_REG_BY_PROFILE, profileId);
+  store.deleteRow(tenantKey, RELAY_NAMESPACE_REG_BY_PRINCIPAL, principalId);
+  store.deleteRow(tenantKey, RELAY_NAMESPACE_REG_BY_PROFILE, profileId);
   store.deleteRow(tenantKey, RELAY_NAMESPACE_ENTITY_PROFILE, profileId);
 }
 

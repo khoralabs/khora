@@ -138,10 +138,17 @@ export class VellumClient {
       throw new Error(`identity not found at ${idPath}`);
     }
     let webSocketUrl = options?.webSocketUrl ?? process.env.VELLUM_CHANNEL_WS_URL?.trim();
-    if (webSocketUrl === undefined || webSocketUrl.length === 0) {
+    let upgradeNonce = process.env.VELLUM_CHANNEL_WS_NONCE?.trim();
+    if (
+      webSocketUrl === undefined ||
+      webSocketUrl.length === 0 ||
+      upgradeNonce === undefined ||
+      upgradeNonce.length === 0
+    ) {
       const cc = new VellumChannelClient({ relayBaseUrl: this.opts.relayBaseUrl, signer });
       const out = await cc.mintTicket(this.opts.channelId);
       webSocketUrl = out.webSocketUrl;
+      upgradeNonce = out.upgradeNonce;
     }
 
     const dataDir =
@@ -154,6 +161,7 @@ export class VellumClient {
         ...process.env,
         VELLUM_CHANNEL_ID: this.opts.channelId,
         VELLUM_CHANNEL_WS_URL: webSocketUrl,
+        VELLUM_CHANNEL_WS_NONCE: upgradeNonce,
         VELLUM_BASE_URL: this.opts.relayBaseUrl,
         ...(dataDir !== undefined ? { VELLUM_DATA_DIR: dataDir } : {}),
       },
@@ -171,6 +179,8 @@ export class VellumClient {
     myPartyId?: string;
     peerPartyId: string;
     peerActorPubkeyHex: string;
+    /** Counterparty DID for relay chain allocation (required). */
+    counterpartyDid: string;
     /** NBC genesis body (extend + ≥1 port, no bind); defaults to {@link DEFAULT_GENESIS_TURN_WIRE}. */
     genesisTurn?: Record<string, unknown>;
   }): Promise<ChainInitResponse> {
@@ -195,20 +205,51 @@ export class VellumClient {
       genesis_hash: genesis,
       parties,
     });
+    const channelClient = new VellumChannelClient({
+      relayBaseUrl: this.opts.relayBaseUrl,
+      signer,
+    });
+    await channelClient.allocateChain(this.opts.channelId, {
+      counterpartyDid: input.counterpartyDid.trim(),
+      sessionId: norm.session_id,
+    });
+
     const payload = {
       init: sessionInitToWire(norm),
       genesis_turn: input.genesisTurn ?? DEFAULT_GENESIS_TURN_WIRE,
     };
-    const res = await this.control().fetch("/chain/init", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const j: unknown = await res.json().catch(() => null);
-    if (!res.ok) {
-      throw new Error(httpFailMessage(res.statusText, j));
+    try {
+      const res = await this.control().fetch("/chain/init", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const j: unknown = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(httpFailMessage(res.statusText, j));
+      }
+      return ChainInitResponseSchema.parse(j);
+    } catch (e) {
+      await channelClient.releaseChain(this.opts.channelId, norm.session_id).catch(() => {});
+      throw e;
     }
-    return ChainInitResponseSchema.parse(j);
+  }
+
+  /** Release a bilateral chain slot on the relay (frees quota). */
+  async chainRelease(sessionId: string): Promise<void> {
+    const idPath =
+      process.env.VELLUM_AGENT_KEY_PATH?.trim() ??
+      process.env.KHORA_AGENT_KEY_PATH?.trim() ??
+      defaultIdentityPath();
+    const signer = await loadIdentity(idPath);
+    if (signer === undefined) {
+      throw new Error(`identity not found at ${idPath}`);
+    }
+    const channelClient = new VellumChannelClient({
+      relayBaseUrl: this.opts.relayBaseUrl,
+      signer,
+    });
+    await channelClient.releaseChain(this.opts.channelId, sessionId.trim());
   }
 
   async sendTurn(sessionId: string, body: Record<string, unknown>): Promise<void> {

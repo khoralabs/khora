@@ -2,7 +2,7 @@ import type { Database } from "bun:sqlite";
 
 /** Reference SQLite schema for {@link FrameRelayStoreStrategy}. */
 export function ensureFrameRelayStoreSchema(db: Database): void {
-  db.exec(`
+  db.run(`
     CREATE TABLE IF NOT EXISTS rooms (
       channel_id TEXT PRIMARY KEY NOT NULL,
       pairing_secret_hex TEXT NOT NULL,

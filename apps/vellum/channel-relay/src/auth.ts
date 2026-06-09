@@ -1,13 +1,12 @@
 import { verifyAsync } from "@noble/ed25519";
 
-export const AGENT_REQUEST_HEADER = {
-  did: "X-Agent-Did",
-  ts: "X-Agent-Timestamp",
-  nonce: "X-Agent-Nonce",
-  sig: "X-Agent-Signature",
-} as const;
+import { AGENT_REQUEST_HEADER } from "./http-headers";
+
+export { AGENT_REQUEST_HEADER };
 
 export const AGENT_REQUEST_FRESHNESS_WINDOW_MS = 60_000;
+export const MAX_AGENT_REQUEST_BODY_BYTES = 65_536;
+export const MAX_CHANNEL_TTL_MS = 7 * 86_400_000;
 
 export type AgentRequestEnvelope = {
   did: string;
@@ -189,15 +188,6 @@ export function createChannelRelayAuth(opts?: { now?: () => number; freshnessWin
     if (Math.abs(t - envelope.timestampMs) > freshnessWindowMs) {
       throw new AuthError("agent request timestamp out of window", 401);
     }
-    nonceStore.sweepExpired(t);
-    const inserted = nonceStore.tryInsert({
-      did: envelope.did,
-      nonce: envelope.nonce,
-      expiresAtMs: envelope.timestampMs + freshnessWindowMs,
-    });
-    if (!inserted) {
-      throw new AuthError("agent request nonce reuse", 401);
-    }
     const path = canonicalAgentRequestPath(url.pathname, url.searchParams, signedQueryKeys);
     const message = await canonicalAgentRequestMessage({
       method: req.method,
@@ -210,6 +200,15 @@ export function createChannelRelayAuth(opts?: { now?: () => number; freshnessWin
     const ok = await verifyAsync(b64UrlToBytes(envelope.signatureB64Url), message, pubKey);
     if (!ok) {
       throw new AuthError("agent request signature invalid", 401);
+    }
+    nonceStore.sweepExpired(t);
+    const inserted = nonceStore.tryInsert({
+      did: envelope.did,
+      nonce: envelope.nonce,
+      expiresAtMs: envelope.timestampMs + freshnessWindowMs,
+    });
+    if (!inserted) {
+      throw new AuthError("agent request nonce reuse", 401);
     }
     return { did };
   }

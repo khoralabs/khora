@@ -6,6 +6,8 @@ import { type ConnectInboxOptions, connectInbox, type InboxWsHandlers } from "./
 export type NegotiationDuplexArgs = {
   webSocketUrl: string;
   WebSocketCtor: typeof WebSocket;
+  /** e.g. one-time upgrade nonce subprotocol for Vellum channel relay. */
+  webSocketProtocols?: string | string[] | undefined;
 };
 
 /** Owns the underlying socket until {@link dispose}. */
@@ -18,7 +20,10 @@ export async function openWebSocketNegotiationDuplex(
   args: NegotiationDuplexArgs,
 ): Promise<NegotiationDuplexHandle> {
   const WS = args.WebSocketCtor;
-  const ws = new WS(args.webSocketUrl);
+  const ws =
+    args.webSocketProtocols !== undefined
+      ? new WS(args.webSocketUrl, args.webSocketProtocols)
+      : new WS(args.webSocketUrl);
   ws.binaryType = "arraybuffer";
 
   await new Promise<void>((resolve, reject) => {

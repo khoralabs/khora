@@ -13,7 +13,7 @@ import { findMarketingConsent, subscribeMarketing } from "./marketing-consents";
 
 function testDb(): Database {
   const db = new Database(":memory:", { create: true });
-  db.exec("PRAGMA foreign_keys = ON;");
+  db.run("PRAGMA foreign_keys = ON;");
   return db;
 }
 

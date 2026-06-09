@@ -23,5 +23,5 @@ CREATE INDEX IF NOT EXISTS idx_standing_query_terms_term ON standing_query_terms
 `.trim();
 
 export function ensurePercolatorSchema(db: { exec: (sql: string) => void }): void {
-  db.exec(PERCOLATOR_SCHEMA_SQL);
+  db.run(PERCOLATOR_SCHEMA_SQL);
 }

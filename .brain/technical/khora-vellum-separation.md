@@ -2,7 +2,7 @@
 
 Strategic intent and engineering pathway for treating **Khora** and **Vellum** as separate products, generalizing **channel auth**, and evolving the **room multiplex** toward N participants and late joins — while keeping **NBC chains strictly bilateral**.
 
-Related: [`product/khora.md`](../product/khora.md), [`product/vellum.md`](../product/vellum.md), [`technical/discovery.md`](discovery.md), [`technical/vellum-channels.md`](vellum-channels.md), [`technical/room-lifecycle.md`](room-lifecycle.md), [`technical/obp-protocol.md`](obp-protocol.md), [`technical/host.md`](host.md), [`roadmap/open-questions.md`](../roadmap/open-questions.md).
+Related: [`product/khora.md`](../product/khora.md), [`product/vellum.md`](../product/vellum.md), [`technical/discovery.md`](discovery.md), [`technical/vellum-channels.md`](vellum-channels.md), [`packages/vellum/spec/channel-relay-deployment.md`](../../packages/vellum/spec/channel-relay-deployment.md), [`technical/channel-lifecycle.md`](channel-lifecycle.md), [`packages/vellum/spec/channel-control-protocol.md`](../../packages/vellum/spec/channel-control-protocol.md), [`technical/room-lifecycle.md`](room-lifecycle.md), [`technical/obp-protocol.md`](obp-protocol.md), [`technical/host.md`](host.md), [`roadmap/open-questions.md`](../roadmap/open-questions.md).
 
 ---
 
@@ -100,8 +100,8 @@ Minimal cross-product notification (replaces or supplements `room_ticket`):
 | Phase | Outcome | Stack changes |
 |-------|---------|---------------|
 | **P0 — Document & ports** | Frame relay deployable without Khora catalog | Already true at package level (`@khoralabs/obp-frame-relay`); document Vellum-owned deployment |
-| **P1 — Vellum channel-relay** | `apps/vellum/channel-relay`: hub + in-memory store, WS attach, `/v1/channels` spawn API | **Done (slice 1)** — 2 deps, no Colonnade |
-| **P2 — Vellum client cutover** | `POST /v1/channels`; returns `{ channelId, webSocketUrl, inviteToken?, expiresAtMs }` | **Done (slice 1)** — `VellumChannelClient`, CLI `channel *`, `--channel`, `obp/channels/` |
+| **P1 — Vellum channel-relay** | One **container per channel**: OBP multiplex + policy enforcement (roster cap, chain slots); join = OOB single-use token | **In progress** — pool reference app done (slice 2); canonical deployment per [`channel-relay-deployment.md`](../../packages/vellum/spec/channel-relay-deployment.md) |
+| **P2 — Vellum client cutover** | `POST /v1/channels` + join/allocate APIs; `VellumChannelClient` | **Done (slice 2)** — admission modes, chain limits, CLI `channel *`, `obp/channels/` |
 | **P3 — Khora handoff** | Inbox `negotiation_invite`; deprecate Khora `room_ticket` for new flows | `@khoralabs/khora-contracts` notification kind; discovery docs updated |
 | **P4 — Decouple social graph** | `network` visibility independent of frame channel existence | Relationship model not created by room spawn; optional explicit `connection_request` flow |
 | **P5 — Ephemeral infra** | Relay on Fly/Modal per room or pool; destroy OK; rejoin via DAG descriptor | Orchestrator in Vellum spawn; see §3 rejoin |

@@ -12,16 +12,9 @@ export const USERNAME_INDEX_TENANT_KEY = "relay:username-index-global";
 export const RELAY_NAMESPACE_ENTITY_PROFILE = "relay:entity:profile";
 export const RELAY_NAMESPACE_REG_BY_PRINCIPAL = "relay:reg:by-principal";
 export const RELAY_NAMESPACE_REG_BY_PROFILE = "relay:reg:by-profile";
-/** @deprecated Legacy catalog subs projections; receive intent uses percolator standing queries. */
-export const RELAY_NAMESPACE_SUBS_BY_PRINCIPAL = "relay:subs:by-principal";
-/** @deprecated Legacy catalog subs projections; receive intent uses percolator standing queries. */
-export const RELAY_NAMESPACE_SUBS_BY_SUBJECT = "relay:subs:by-subject";
 export const RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL = "relay:social:username-to-principal";
 export const RELAY_NAMESPACE_PRINCIPAL_TO_USERNAME = "relay:social:principal-to-username";
 export const RELAY_NAMESPACE_SOCIAL_RELATIONSHIP = "relay:social:relationship";
-/** @deprecated Social principal index uses `relay_social_principal_channels` table. */
-export const RELAY_NAMESPACE_SOCIAL_RELATIONSHIPS_BY_PRINCIPAL =
-  "relay:social:relationships-by-principal";
 export const RELAY_NAMESPACE_ROOM_REGISTRY = "khora:room-registry";
 export const RELAY_NAMESPACE_ROOM_INVITE = "khora:room-invite";
 /** Singleton host identity + registry connection (entry_key `self`). */
@@ -29,19 +22,3 @@ export const RELAY_NAMESPACE_HOST_SPEC = "khora:host-spec";
 
 /** Normalized principal → channel index (replaces relationships-by-principal projections). */
 export const RELAY_TABLE_SOCIAL_PRINCIPAL_CHANNELS = "relay_social_principal_channels";
-
-// TODO: Remove
-/** @deprecated use RELAY_NAMESPACE_* */
-export const RELAY_CATALOG_SOURCE_PROFILE = RELAY_NAMESPACE_ENTITY_PROFILE;
-/** @deprecated use RELAY_NAMESPACE_* */
-export const RELAY_CATALOG_REG_BY_PRINCIPAL = RELAY_NAMESPACE_REG_BY_PRINCIPAL;
-/** @deprecated use RELAY_NAMESPACE_* */
-export const RELAY_CATALOG_REG_BY_PROFILE = RELAY_NAMESPACE_REG_BY_PROFILE;
-/** @deprecated legacy subs projection namespace */
-export const RELAY_CATALOG_SUBS_BY_PRINCIPAL = RELAY_NAMESPACE_SUBS_BY_PRINCIPAL;
-/** @deprecated legacy subs projection namespace */
-export const RELAY_CATALOG_SUBS_BY_SUBJECT = RELAY_NAMESPACE_SUBS_BY_SUBJECT;
-/** @deprecated use RELAY_NAMESPACE_* */
-export const SOURCE_USERNAME_TO_PRINCIPAL = RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL;
-/** @deprecated use RELAY_NAMESPACE_* */
-export const SOURCE_PRINCIPAL_TO_USERNAME = RELAY_NAMESPACE_PRINCIPAL_TO_USERNAME;

@@ -47,13 +47,18 @@ function obpTableCount(db: Database, table: string): number {
   return row?.c ?? 0;
 }
 
-export function startVellumControlServer(opts: { state: VellumControlServerState; db: Database }): {
+export function startVellumControlServer(opts: {
+  state: VellumControlServerState;
+  db: Database;
+  /** When set, chain/init requires a prior relay allocation for session_id. */
+  isChainAllocated?: (sessionId: string) => boolean | Promise<boolean>;
+}): {
   hostname: string;
   port: number;
   stop(): void;
 } {
   const mux = { tail: Promise.resolve() };
-  const { state, db } = opts;
+  const { state, db, isChainAllocated } = opts;
 
   const server = Bun.serve({
     port: 0,
@@ -86,9 +91,6 @@ export function startVellumControlServer(opts: { state: VellumControlServerState
 
       if (req.method === "POST" && url.pathname === "/chain/init") {
         return serialize(mux, async () => {
-          if (state.conn === undefined) {
-            return Response.json({ error: "multiplex not ready" }, { status: 503 });
-          }
           let body: unknown;
           try {
             body = await req.json();
@@ -101,6 +103,15 @@ export function startVellumControlServer(opts: { state: VellumControlServerState
               { error: "bad request", detail: parsed.error.flatten() },
               { status: 400 },
             );
+          }
+          if (isChainAllocated !== undefined) {
+            const allocated = await Promise.resolve(isChainAllocated(parsed.data.init.session_id));
+            if (!allocated) {
+              return Response.json({ error: "chain slot not allocated on relay" }, { status: 409 });
+            }
+          }
+          if (state.conn === undefined) {
+            return Response.json({ error: "multiplex not ready" }, { status: 503 });
           }
           const wi = parsed.data.init;
           let genesisNb: NbcTurnBody;

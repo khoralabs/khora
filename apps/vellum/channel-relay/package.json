@@ -10,6 +10,9 @@
   },
   "dependencies": {
     "@khoralabs/obp-frame-relay": "workspace:*",
+    "@khoralabs/obp-frame-relay-sqlite": "workspace:*",
+    "@khoralabs/sqlite-crypto": "^0.1.0",
+    "@khoralabs/vellum-contracts": "workspace:*",
     "@noble/ed25519": "^3.1.0"
   },
   "devDependencies": {

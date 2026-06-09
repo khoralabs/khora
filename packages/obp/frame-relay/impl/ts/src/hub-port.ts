@@ -8,6 +8,8 @@ export interface FrameRelayHubPort {
   createChannel(channelId: string, ttlMs?: number): Promise<{ ticket: string }>;
   /** New ticket + secret for an existing channel without clearing buffered frames (rejoin). */
   rotateChannelTicket(channelId: string, ttlMs?: number): Promise<{ ticket: string }>;
+  /** Sign a ticket with the current pairing secret without rotating (shared multiplex ticket). */
+  mintChannelTicket(channelId: string): Promise<{ ticket: string } | undefined>;
   verifyTicket(channelId: string, ticket: string): Promise<boolean>;
   attachPeer(channelId: string, peer: FrameRelayPeer): Promise<void>;
   detachPeer(channelId: string, peer: FrameRelayPeer): void;

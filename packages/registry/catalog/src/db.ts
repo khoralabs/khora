@@ -40,6 +40,6 @@ export function getRegistryCatalogDb(): Database {
     mkdirSync(dirname(path), { recursive: true });
   }
   db = openEncryptedDatabaseSync(path, { create: true }, registrySqlCipherKeyFromEnv());
-  db.exec("PRAGMA foreign_keys = ON;");
+  db.run("PRAGMA foreign_keys = ON;");
   return db;
 }

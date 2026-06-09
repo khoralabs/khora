@@ -9,8 +9,6 @@ import {
   type RelayCatalogProjectionStore,
   type RelayPrincipalLifecycle,
   registerAgentOnColonnadePersistence,
-  SOURCE_PRINCIPAL_TO_USERNAME,
-  SOURCE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
 } from "@khoralabs/relay-colonnade";
 
@@ -50,7 +48,7 @@ export function createKhoraCatalogApi(deps: {
   function lookupPrincipalIdByNormalizedUsername(normalized: string): string | undefined {
     const hit = projectionStore.lookupProjection(
       USERNAME_INDEX_TENANT_KEY,
-      SOURCE_USERNAME_TO_PRINCIPAL,
+      RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL,
       normalized,
     );
     if (!hit.found || hit.projection === null || typeof hit.projection !== "object") {
@@ -63,7 +61,7 @@ export function createKhoraCatalogApi(deps: {
   function lookupNormalizedUsernameForPrincipal(principalId: string): string | undefined {
     const hit = projectionStore.lookupProjection(
       USERNAME_INDEX_TENANT_KEY,
-      SOURCE_PRINCIPAL_TO_USERNAME,
+      RELAY_NAMESPACE_PRINCIPAL_TO_USERNAME,
       principalId,
     );
     if (!hit.found || hit.projection === null || typeof hit.projection !== "object") {

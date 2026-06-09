@@ -14,7 +14,7 @@ async function ensureAuthSchema(): Promise<void> {
 }
 
 export async function initAuthSchema(db: Database): Promise<void> {
-  db.exec("PRAGMA foreign_keys = ON;");
+  db.run("PRAGMA foreign_keys = ON;");
   await ensureAuthSchema();
 }
 

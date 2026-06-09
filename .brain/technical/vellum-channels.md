@@ -2,6 +2,14 @@
 
 Understanding the split between channel-relay spawn and local daemon state is important for using the Vellum CLI correctly.
 
+**Protocol specs** (normative behavior, not implementation):
+
+- [`packages/vellum/spec/channel-relay-deployment.md`](../../packages/vellum/spec/channel-relay-deployment.md) — **canonical:** one container = one channel; OOB join tokens
+- [`packages/vellum/spec/channel-control-protocol.md`](../../packages/vellum/spec/channel-control-protocol.md) — limits, roster, chain slots, attach credentials
+- [`.brain/technical/channel-lifecycle.md`](channel-lifecycle.md) — protocol event matrix
+
+**Terminology:** one **channel** = one nonce-gated byte **multiplex** (`channel_id`). Production intent is **one relay container per channel**; parties coordinate OOB and distribute single-use join tokens. The current `channel-relay` app can also run as a **multi-tenant pool** for local dev. OBP **hub** = relay stamping on a stream — not a "channel hub."
+
 ---
 
 ## The disconnect
@@ -66,16 +74,37 @@ Override: `VELLUM_OBP_STORE_ROOT` env var.
 
 ---
 
-## Channel-relay (slice 1)
+## Channel-relay
 
-`apps/vellum/channel-relay` is an ultra-minimal Bun app:
+**Canonical deployment** ([`channel-relay-deployment.md`](../../packages/vellum/spec/channel-relay-deployment.md)): one container, one `channel_id`, join via **single-use token OOB**. Policy (`maxPopulation`, `maxChains`, chain allocate/release) is still enforced on that instance.
 
-- **Deps:** `@khoralabs/obp-frame-relay`, `@noble/ed25519` only
-- **Store:** in-memory frame hub (ephemeral — restart drops channels)
-- **Auth:** inline DID-signed HTTP (no Khora registration lookup)
-- **Routes:** `/v1/channels`, `/v1/channels/join`, `/v1/channels/:id/ticket`, `/v1/channels/:id/ws`
+**Reference pool app** (`apps/vellum/channel-relay`): multi-tenant Bun server for local dev — SQLCipher registry + frame store, DID-signed HTTP, `invite_only` admission, `VELLUM_RELAY_MAX_CHANNELS`.
+
+### Control-plane routes
+
+| Route | Purpose |
+|-------|---------|
+| `POST /v1/channels` | Create channel — pool only (`VELLUM_CHANNEL_ID` mode returns 501) |
+| `POST /v1/channels/join` | Redeem join token → roster + attach creds |
+| `POST /v1/channels/:id/join-tokens` | Mint single-use join token for OOB distribution |
+| `POST /v1/channels/:id/chains/allocate` | Reserve bilateral chain slot |
+| `GET /v1/channels/:id/chains/:sessionId` | Chain slot status (daemon gate) |
+| `POST /v1/channels/:id/chains/:sessionId/release` | Release chain slot |
+| `POST /v1/channels/:id/ticket` | Mint ticket + one-time upgrade nonce (members only) |
+| `POST /v1/channels/:id/ws-nonce` | Mint upgrade nonce only (re-attach) |
+| `GET /v1/channels/:id/ws` | WebSocket upgrade (`Sec-WebSocket-Protocol: vellum.nonce.<nonce>`) |
+| `GET /health` | Liveness |
 
 Khora (`KHORA_BASE_URL`) remains discovery-only (`register`, `whoami`).
+
+### Chain limits (`maxChains`)
+
+```ts
+{ mode: "global", measure: N }     // channel-wide active chain cap
+{ mode: "principal", measure: N }   // equal quota per member on join
+```
+
+`vellum chain create` calls relay **allocate** before daemon `chain/init` (`--peer-did` required).
 
 ---
 
@@ -90,7 +119,8 @@ Each channel's `obp.sqlite` contains the full OBP v2 schema plus `vellum_chains`
 Chain/offer/port/policy commands use `--channel <id>` and talk to the local daemon HTTP control server. The daemon multiplexes OBP over the channel-relay WebSocket.
 
 ```
-vellum --channel <id> chain create ...
+vellum --channel <id> chain create --peer-did <did> ...
+  → relay POST /v1/channels/:id/chains/allocate
   → reads vellum.json (controlPort)
   → HTTP POST to localhost:<controlPort>/chain/init
   → daemon sends OBP frame over channel WS

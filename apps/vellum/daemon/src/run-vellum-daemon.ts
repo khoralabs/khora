@@ -9,10 +9,12 @@ import {
   openObpV2Database,
 } from "@khoralabs/obp-sqlite-persistence";
 import { validateVellumBindPayloadForPort } from "@khoralabs/vellum-bind-policy";
+import { VellumChannelClient } from "@khoralabs/vellum-client";
 import {
   cfgDataDir,
   channelObpSqlitePath,
   type VellumPathConfig,
+  vellumWsUpgradeProtocol,
 } from "@khoralabs/vellum-contracts";
 
 import { removeVellumControlFile, writeVellumControlFile } from "./control-pid";
@@ -66,6 +68,10 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): {
     };
 
     const frameSigner = await createFrameSignerFromPersistableAgent(opts.signer);
+    const channelClient = new VellumChannelClient({
+      relayBaseUrl: opts.relayBaseUrl,
+      signer: opts.signer,
+    });
     const client = new KhoraClient({
       baseUrl: opts.relayBaseUrl,
       signer: opts.signer,
@@ -73,9 +79,15 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): {
 
     try {
       logLine(json, "vellum_open", { channelId: opts.channelId, sqlitePath });
+      const wsNonce = process.env.VELLUM_CHANNEL_WS_NONCE?.trim();
+      const webSocketProtocols =
+        wsNonce !== undefined && wsNonce.length > 0
+          ? [vellumWsUpgradeProtocol(wsNonce)]
+          : undefined;
       await client.connectRoom(
         {
           webSocketUrl: opts.webSocketUrl,
+          webSocketProtocols,
           signer: frameSigner,
           client: persistence,
           validateBindPayload: (bindPolicy, bindPayload) =>
@@ -92,7 +104,12 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): {
         },
         async (conn) => {
           state.conn = conn;
-          const server = startVellumControlServer({ state, db });
+          const server = startVellumControlServer({
+            state,
+            db,
+            isChainAllocated: (sessionId) =>
+              channelClient.isChainAllocated(opts.channelId, sessionId),
+          });
           serverStop = server.stop;
           writeVellumControlFile(opts.cfg, opts.channelId, {
             pid: process.pid,

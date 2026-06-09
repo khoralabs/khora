@@ -7,8 +7,6 @@ import { createCatalogRegistrationAdapter } from "./catalog-registration-adapter
 import { RELAY_NAMESPACE_ENTITY_PROFILE } from "./relay-id-conventions";
 import { openRelayCatalogDb } from "./sqlite-setup";
 
-export const RELAY_CATALOG_SOURCE_PROFILE = RELAY_NAMESPACE_ENTITY_PROFILE;
-
 /** Compose host persistence from an already-open catalog DB. */
 export function createRelayColonnadePersistenceFromDatabases(
   catalogDb: Database,

@@ -306,9 +306,10 @@ export class KhoraClient {
     options: Omit<ObpWebSocketConnectOptions, "WebSocketCtor">,
     runner: (conn: ObpFrameConnection) => Promise<void>,
   ): Promise<{ sessionOps: SessionOp[]; checkpoint: Checkpoint }> {
-    const { webSocketUrl, ...rest } = options;
+    const { webSocketUrl, webSocketProtocols, ...rest } = options;
     const handle = await this.duplex.openNegotiationDuplex({
       webSocketUrl,
+      webSocketProtocols,
       WebSocketCtor: this.WebSocketCtor,
     });
     try {

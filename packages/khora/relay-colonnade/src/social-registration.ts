@@ -9,11 +9,7 @@ import {
 } from "./relay-id-conventions";
 import type { SocialAgentIdentity, SocialRegisterAgentInput } from "./social-types";
 
-export {
-  SOURCE_PRINCIPAL_TO_USERNAME,
-  SOURCE_USERNAME_TO_PRINCIPAL,
-  USERNAME_INDEX_TENANT_KEY,
-} from "./relay-id-conventions";
+export { USERNAME_INDEX_TENANT_KEY } from "./relay-id-conventions";
 
 /**
  * Upsert profile + principal↔profile registration and username maps in one SQLite transaction.

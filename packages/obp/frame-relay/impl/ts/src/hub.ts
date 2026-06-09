@@ -39,6 +39,15 @@ export function createFrameRelayHub(options: CreateFrameRelayHubOptions): FrameR
       return { ticket };
     },
 
+    async mintChannelTicket(channelId: string): Promise<{ ticket: string } | undefined> {
+      const secret = store.getPairingSecretIfActive(channelId, Date.now());
+      if (secret === undefined) {
+        return undefined;
+      }
+      const ticket = await signRoomTicket(channelId, secret);
+      return { ticket };
+    },
+
     async rotateChannelTicket(channelId: string, ttlMs = 86_400_000): Promise<{ ticket: string }> {
       const prior = store.getPairingSecretIfActive(channelId, Date.now());
       if (prior === undefined) {

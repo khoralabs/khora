@@ -1,4 +1,9 @@
+import { createFrameRelayHub } from "@khoralabs/obp-frame-relay";
+
 import { createChannelRelayApp } from "./app";
+import { createFrameStore, openRelayDatabase } from "./db";
+import { createChannelRegistry } from "./registry";
+import { bootstrapSingleChannel, loadRelayProfile } from "./relay-config";
 
 const DEFAULT_PORT = 8790;
 
@@ -9,7 +14,20 @@ function envPort(): number {
   return Number.isFinite(n) ? n : DEFAULT_PORT;
 }
 
-const app = createChannelRelayApp();
+const relayProfile = loadRelayProfile();
+const db = openRelayDatabase();
+const hub = createFrameRelayHub({ store: createFrameStore(db) });
+const registry = createChannelRegistry(db);
+
+if (relayProfile.mode === "single") {
+  await bootstrapSingleChannel({ hub, registry, config: relayProfile.config });
+}
+
+const app = createChannelRelayApp({
+  registry,
+  hub,
+  relayProfile,
+});
 
 const server = Bun.serve({
   port: envPort(),
@@ -19,4 +37,6 @@ const server = Bun.serve({
   websocket: app.websocket,
 });
 
-console.log(`vellum channel-relay listening on :${server.port}`);
+const modeLabel =
+  relayProfile.mode === "single" ? `single channel ${relayProfile.config.channelId}` : "pool";
+console.log(`vellum channel-relay (${modeLabel}) listening on :${server.port}`);

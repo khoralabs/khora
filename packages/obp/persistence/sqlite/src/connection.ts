@@ -6,7 +6,7 @@ import { OBP_V2_SCHEMA_SQL } from "./schema";
 export function initObpV2Schema(db: Database): void {
   db.run("PRAGMA foreign_keys = ON;");
   db.run("PRAGMA journal_mode = WAL;");
-  db.exec(OBP_V2_SCHEMA_SQL);
+  db.run(OBP_V2_SCHEMA_SQL);
 }
 
 /** Open (or create) a SQLite file and initialize OBP v2 tables. */
