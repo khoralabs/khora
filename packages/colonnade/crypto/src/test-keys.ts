@@ -30,6 +30,10 @@ export class TestKeyProvider implements EncryptionKeyProvider {
   async getOutboxFieldKey(): Promise<Uint8Array> {
     return testOutboxKeyBytes();
   }
+
+  async getPairingSecretKey(): Promise<Uint8Array> {
+    return testOutboxKeyBytes();
+  }
 }
 
 export function createTestOutboxPayloadCodec(): OutboxPayloadCodec {

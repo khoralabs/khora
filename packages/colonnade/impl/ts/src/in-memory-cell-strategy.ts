@@ -133,10 +133,10 @@ export class InMemoryCellPersistenceStrategy implements CellPersistenceStrategy 
     assertContentHash(row.content_hash);
     let payload_bytes = Uint8Array.from(row.payload);
     if (input.payload_format === "plaintext" && isOutboxEncryptedPayload(payload_bytes)) {
-      payload_bytes = await this.outboxPayloadCodec.decrypt(payload_bytes);
+      payload_bytes = new Uint8Array(await this.outboxPayloadCodec.decrypt(payload_bytes));
     }
     return {
-      payload_bytes,
+      payload_bytes: new Uint8Array(payload_bytes),
       content_hash: row.content_hash,
       bytes_available: true,
     };

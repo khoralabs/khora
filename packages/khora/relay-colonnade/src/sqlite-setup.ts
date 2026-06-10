@@ -1,5 +1,6 @@
 import type { Database } from "bun:sqlite";
 import type { EncryptionKeyProvider } from "@khoralabs/colonnade-crypto";
+import { restrictRelayStoreDatabasePermissions } from "@khoralabs/obp-frame-relay-sqlite";
 import { ensurePercolatorSchema } from "@khoralabs/percolator-sqlite";
 import { openEncryptedDatabase } from "@khoralabs/sqlite-crypto";
 import { ensurePrincipalTeardownJobsSchema } from "./principal-teardown-jobs";
@@ -72,6 +73,7 @@ export async function openRelayFramesDb(
   provider: EncryptionKeyProvider,
 ): Promise<Database> {
   const db = await openEncryptedDatabase(path, { create: true }, "khora", provider);
+  restrictRelayStoreDatabasePermissions(path);
   applyRelaySqlitePragmas(db);
   return db;
 }

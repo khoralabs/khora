@@ -28,7 +28,9 @@ export async function createRelayColonnadeSocial(opts: {
   const tenantKey = opts.tenantKey ?? "relay";
   const catalogDb = await openRelayCatalogDb(opts.catalogPath, opts.encryptionProvider);
   const framesDb = await openRelayFramesDb(opts.framesDbPath, opts.encryptionProvider);
-  const frameRelayStore = createSqliteFrameRelayStoreStrategy(framesDb);
+  const frameRelayStore = createSqliteFrameRelayStoreStrategy(framesDb, {
+    pairingSecretKey: await opts.encryptionProvider.getPairingSecretKey(),
+  });
   const projectionStore = new RelayCatalogProjectionStore(catalogDb);
   const principalChannelStore = new RelaySocialPrincipalChannelStore(catalogDb);
   const persistence = createRelayColonnadePersistenceFromDatabases(catalogDb, tenantKey);

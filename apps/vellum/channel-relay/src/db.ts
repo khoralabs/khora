@@ -2,7 +2,11 @@ import type { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname, isAbsolute, resolve } from "node:path";
 import type { FrameRelayStoreStrategy } from "@khoralabs/obp-frame-relay";
-import { createSqliteFrameRelayStoreStrategy } from "@khoralabs/obp-frame-relay-sqlite";
+import {
+  createSqliteFrameRelayStoreStrategy,
+  pairingSecretKeyFromEnv,
+  restrictRelayStoreDatabasePermissions,
+} from "@khoralabs/obp-frame-relay-sqlite";
 import { openEncryptedDatabaseSync, SqliteCryptoError } from "@khoralabs/sqlite-crypto";
 import { ensureChannelRegistrySchema } from "@khoralabs/vellum-channel-host";
 
@@ -49,11 +53,14 @@ export function openRelayDatabase(path?: string, key?: string): Database {
     mkdirSync(dirname(dbPath), { recursive: true });
   }
   const db = openEncryptedDatabaseSync(dbPath, { create: true }, key ?? sqlCipherKeyFromEnv());
+  restrictRelayStoreDatabasePermissions(dbPath);
   applyRelayDbPragmas(db);
   ensureChannelRegistrySchema(db);
   return db;
 }
 
 export function createFrameStore(db: Database): FrameRelayStoreStrategy {
-  return createSqliteFrameRelayStoreStrategy(db);
+  return createSqliteFrameRelayStoreStrategy(db, {
+    pairingSecretKey: pairingSecretKeyFromEnv(),
+  });
 }

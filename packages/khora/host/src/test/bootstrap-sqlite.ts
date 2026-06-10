@@ -4,6 +4,7 @@ import {
   createSqliteColonnadeCluster,
 } from "@khoralabs/colonnade-persistence";
 import { createKhoraDidAuth, createSqliteNonceStore } from "@khoralabs/khora-auth";
+import type { KhoraHostSpec } from "@khoralabs/khora-contracts";
 import {
   createRelayColonnadeSocial,
   createRelayPrincipalLifecycle,
@@ -124,10 +125,23 @@ export async function createTestKhoraHost(
       slug: undefined,
       publicBaseUrl: "http://127.0.0.1:8788",
       displayName: undefined,
+      populationLimit: undefined,
       registrationSecret: undefined,
       managementToken: undefined,
     }),
-    patch: (patch) => ({ ...patch, updatedAtMs: Date.now() }),
+    patch: (patch) => {
+      const next: KhoraHostSpec = { updatedAtMs: Date.now() };
+      if (patch.registryUrl !== undefined) next.registryUrl = patch.registryUrl;
+      if (patch.slug !== undefined) next.slug = patch.slug;
+      if (patch.publicBaseUrl !== undefined) next.publicBaseUrl = patch.publicBaseUrl;
+      if (patch.displayName !== undefined) next.displayName = patch.displayName;
+      if (patch.populationLimit === null) {
+        delete next.populationLimit;
+      } else if (patch.populationLimit !== undefined) {
+        next.populationLimit = patch.populationLimit;
+      }
+      return next;
+    },
     storeSecrets: (secrets) => ({ ...secrets, updatedAtMs: Date.now() }),
     clearRegistrationSecret: () => ({ updatedAtMs: Date.now() }),
   };

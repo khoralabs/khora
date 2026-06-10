@@ -750,10 +750,10 @@
       "version": "0.1.0",
     },
     "packages/obp": {
-      "name": "@khoralabs",
+      "name": "@khoralabs/obp",
       "devDependencies": {
         "@biomejs/biome": "^2.4.16",
-        "@types/bun": "latest",
+        "@types/bun": "^1.3.14",
         "husky": "^9.1.7",
         "typescript": "^5",
       },
@@ -765,12 +765,24 @@
       "name": "@khoralabs/nbc-bind-policy",
       "version": "0.0.0",
       "dependencies": {
+        "@khoralabs/canonical-json": "workspace:*",
         "@khoralabs/obp-errors": "workspace:*",
         "@khoralabs/obp-model": "workspace:*",
         "ajv": "^8.17.1",
       },
       "devDependencies": {
-        "@types/bun": "latest",
+        "@types/bun": "^1.3.14",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/obp/packages/canonical-json": {
+      "name": "@khoralabs/canonical-json",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@types/bun": "^1.3.14",
         "typescript": "^5",
       },
       "peerDependencies": {
@@ -780,8 +792,11 @@
     "packages/obp/packages/duplex-byte-stream": {
       "name": "@khoralabs/duplex-byte-stream",
       "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/obp-primitives": "workspace:*",
+      },
       "devDependencies": {
-        "@types/bun": "latest",
+        "@types/bun": "^1.3.14",
       },
       "peerDependencies": {
         "typescript": "^5",
@@ -791,7 +806,7 @@
       "name": "@khoralabs/obp-errors",
       "version": "0.0.0",
       "devDependencies": {
-        "@types/bun": "latest",
+        "@types/bun": "^1.3.14",
       },
       "peerDependencies": {
         "typescript": "^5",
@@ -805,7 +820,7 @@
         "@khoralabs/obp-frames-impl": "workspace:*",
       },
       "devDependencies": {
-        "@types/bun": "latest",
+        "@types/bun": "^1.3.14",
       },
       "peerDependencies": {
         "typescript": "^5",
@@ -821,7 +836,7 @@
         "@khoralabs/obp-frame-relay": "workspace:*",
       },
       "devDependencies": {
-        "@types/bun": "latest",
+        "@types/bun": "^1.3.14",
       },
       "peerDependencies": {
         "typescript": "^5",
@@ -831,15 +846,18 @@
       "name": "@khoralabs/obp-frames-impl",
       "version": "0.0.0",
       "dependencies": {
+        "@khoralabs/canonical-json": "workspace:*",
         "@khoralabs/duplex-byte-stream": "workspace:*",
         "@khoralabs/obp-errors": "workspace:*",
+        "@khoralabs/obp-model": "workspace:*",
         "@khoralabs/obp-nbc": "workspace:*",
         "@khoralabs/obp-persistence": "workspace:*",
+        "@khoralabs/obp-primitives": "workspace:*",
         "@khoralabs/obp-session-impl": "workspace:*",
         "@noble/curves": "^2.2.0",
       },
       "devDependencies": {
-        "@types/bun": "latest",
+        "@types/bun": "^1.3.14",
       },
       "peerDependencies": {
         "typescript": "^5",
@@ -849,7 +867,7 @@
       "name": "@khoralabs/obp-model",
       "version": "0.0.0",
       "devDependencies": {
-        "@types/bun": "latest",
+        "@types/bun": "^1.3.14",
       },
       "peerDependencies": {
         "typescript": "^5",
@@ -865,7 +883,18 @@
       },
       "devDependencies": {
         "@khoralabs/nbc-bind-policy": "workspace:*",
-        "@types/bun": "latest",
+        "@types/bun": "^1.3.14",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/obp/packages/obp-primitives": {
+      "name": "@khoralabs/obp-primitives",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@types/bun": "^1.3.14",
+        "typescript": "^5",
       },
       "peerDependencies": {
         "typescript": "^5",
@@ -875,11 +904,12 @@
       "name": "@khoralabs/obp-persistence",
       "version": "0.0.0",
       "dependencies": {
+        "@khoralabs/nbc-bind-policy": "workspace:*",
         "@khoralabs/obp-errors": "workspace:*",
         "@khoralabs/obp-model": "workspace:*",
       },
       "devDependencies": {
-        "@types/bun": "latest",
+        "@types/bun": "^1.3.14",
       },
       "peerDependencies": {
         "typescript": "^5",
@@ -892,12 +922,13 @@
       "name": "@khoralabs/obp-sqlite-persistence",
       "version": "0.0.0",
       "dependencies": {
+        "@khoralabs/nbc-bind-policy": "workspace:*",
         "@khoralabs/obp-errors": "workspace:*",
         "@khoralabs/obp-model": "workspace:*",
         "@khoralabs/obp-persistence": "workspace:*",
       },
       "devDependencies": {
-        "@types/bun": "latest",
+        "@types/bun": "^1.3.14",
       },
       "peerDependencies": {
         "typescript": "^5",
@@ -911,7 +942,7 @@
         "@khoralabs/obp-persistence": "workspace:*",
       },
       "devDependencies": {
-        "@types/bun": "latest",
+        "@types/bun": "^1.3.14",
         "@types/react": "^19.2.14",
         "@types/react-dom": "^19.2.3",
         "@xyflow/react": "^12.10.2",
@@ -926,8 +957,8 @@
       },
     },
     "packages/obp/packages/react/examples": {
-      "name": "bun-react-template",
-      "version": "0.1.0",
+      "name": "@khoralabs/obp-react-examples",
+      "version": "0.0.0",
       "dependencies": {
         "@khoralabs/obp-react": "workspace:*",
         "@xyflow/react": "^12.10.2",
@@ -937,7 +968,7 @@
         "tailwindcss": "^4.1.11",
       },
       "devDependencies": {
-        "@types/bun": "latest",
+        "@types/bun": "^1.3.14",
         "@types/react": "^19",
         "@types/react-dom": "^19",
       },
@@ -948,9 +979,11 @@
       "dependencies": {
         "@khoralabs/obp-errors": "workspace:*",
         "@khoralabs/obp-frames-impl": "workspace:*",
+        "@khoralabs/obp-model": "workspace:*",
+        "@khoralabs/obp-primitives": "workspace:*",
       },
       "devDependencies": {
-        "@types/bun": "latest",
+        "@types/bun": "^1.3.14",
       },
       "peerDependencies": {
         "typescript": "^5",
@@ -967,7 +1000,7 @@
         "@khoralabs/obp-session-impl": "workspace:*",
       },
       "devDependencies": {
-        "@types/bun": "latest",
+        "@types/bun": "^1.3.14",
       },
       "peerDependencies": {
         "typescript": "^5",
@@ -984,7 +1017,7 @@
         "@khoralabs/obp-session-impl": "workspace:*",
       },
       "devDependencies": {
-        "@types/bun": "latest",
+        "@types/bun": "^1.3.14",
       },
       "peerDependencies": {
         "typescript": "^5",
@@ -1362,8 +1395,6 @@
 
     "@floating-ui/utils": ["@floating-ui/utils@0.2.11", "", {}, "sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg=="],
 
-    "@khoralabs": ["@khoralabs@workspace:packages/obp"],
-
     "@khoralabs/agent-capabilities": ["@khoralabs/agent-capabilities@0.1.0", "", { "peerDependencies": { "typescript": "^5" } }, "sha512-/xKc0/MuxH8NGPP6Kav1J/iCciBgFbpbgPP/BiHKWIfoiMMZcUf/rP6542BQBv++BFb2P4BRixumko/aVwlBtw=="],
 
     "@khoralabs/agent-capabilities-ai-sdk": ["@khoralabs/agent-capabilities-ai-sdk@0.1.0", "", { "dependencies": { "@khoralabs/agent-capabilities": "^0.1.0", "ai": "^6" }, "peerDependencies": { "typescript": "^5" } }, "sha512-flk0KF54z0DiKPnSQEz9dxAicMdMYfyyT7M0ScxQvK8EC4yiNdqj5ivm1uTUsWLNGcm3FPzv6CB17slLqck92A=="],
@@ -1375,6 +1406,8 @@
     "@khoralabs/blog": ["@khoralabs/blog@workspace:packages/libs/blog"],
 
     "@khoralabs/bun-web": ["@khoralabs/bun-web@workspace:packages/libs/bun-web"],
+
+    "@khoralabs/canonical-json": ["@khoralabs/canonical-json@workspace:packages/obp/packages/canonical-json"],
 
     "@khoralabs/cli-flow-nbc": ["@khoralabs/cli-flow-nbc@workspace:packages/cli/cli-flow-nbc"],
 
@@ -1440,6 +1473,8 @@
 
     "@khoralabs/nbc-bind-policy": ["@khoralabs/nbc-bind-policy@workspace:packages/obp/packages/bind-policy"],
 
+    "@khoralabs/obp": ["@khoralabs/obp@workspace:packages/obp"],
+
     "@khoralabs/obp-errors": ["@khoralabs/obp-errors@workspace:packages/obp/packages/errors/impl/ts"],
 
     "@khoralabs/obp-frame-relay": ["@khoralabs/obp-frame-relay@workspace:packages/obp/packages/frame-relay/impl/ts"],
@@ -1458,7 +1493,11 @@
 
     "@khoralabs/obp-persistence-spec": ["@khoralabs/obp-persistence-spec@workspace:packages/obp/packages/persistence/spec"],
 
+    "@khoralabs/obp-primitives": ["@khoralabs/obp-primitives@workspace:packages/obp/packages/obp-primitives"],
+
     "@khoralabs/obp-react": ["@khoralabs/obp-react@workspace:packages/obp/packages/react"],
+
+    "@khoralabs/obp-react-examples": ["@khoralabs/obp-react-examples@workspace:packages/obp/packages/react/examples"],
 
     "@khoralabs/obp-session-impl": ["@khoralabs/obp-session-impl@workspace:packages/obp/packages/session/impl/ts"],
 
@@ -1835,8 +1874,6 @@
     "bun": ["bun@1.3.14", "", { "optionalDependencies": { "@oven/bun-darwin-aarch64": "1.3.14", "@oven/bun-darwin-x64": "1.3.14", "@oven/bun-darwin-x64-baseline": "1.3.14", "@oven/bun-freebsd-aarch64": "1.3.14", "@oven/bun-freebsd-x64": "1.3.14", "@oven/bun-linux-aarch64": "1.3.14", "@oven/bun-linux-aarch64-android": "1.3.14", "@oven/bun-linux-aarch64-musl": "1.3.14", "@oven/bun-linux-x64": "1.3.14", "@oven/bun-linux-x64-android": "1.3.14", "@oven/bun-linux-x64-baseline": "1.3.14", "@oven/bun-linux-x64-musl": "1.3.14", "@oven/bun-linux-x64-musl-baseline": "1.3.14", "@oven/bun-windows-aarch64": "1.3.14", "@oven/bun-windows-x64": "1.3.14", "@oven/bun-windows-x64-baseline": "1.3.14" }, "os": [ "!aix", "!sunos", "!openbsd", ], "cpu": [ "x64", "arm64", ], "bin": { "bun": "bin/bun.exe", "bunx": "bin/bunx.exe" } }, "sha512-aB6GVd42x1Y5ie1K16SF+oLGtgSkwX9hgoDdIW88pjvfTccU8F1vfpoOt34QLv0dZ1v3XimtaxPlZUG81Gx9Zg=="],
 
     "bun-plugin-tailwind": ["bun-plugin-tailwind@0.1.2", "", { "peerDependencies": { "bun": ">=1.0.0" } }, "sha512-41jNC1tZRSK3s1o7pTNrLuQG8kL/0vR/JgiTmZAJ1eHwe0w5j6HFPKeqEk0WAD13jfrUC7+ULuewFBBCoADPpg=="],
-
-    "bun-react-template": ["bun-react-template@workspace:packages/obp/packages/react/examples"],
 
     "bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
 

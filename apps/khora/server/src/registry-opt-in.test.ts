@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
+import type { KhoraHostSpec } from "@khoralabs/khora-contracts";
 import type { KhoraHostSpecPort } from "@khoralabs/khora-host";
 import { maybeRegistryOptInOnStartup, registerHostWithRegistry } from "./registry-opt-in";
 
 function createMockHostSpec(overrides: Partial<KhoraHostSpecPort> = {}): KhoraHostSpecPort {
-  let stored: ReturnType<KhoraHostSpecPort["read"]> = null;
+  let stored: KhoraHostSpec | null = null;
   return {
     read: () => stored,
     readEffective: () => ({
@@ -11,19 +12,31 @@ function createMockHostSpec(overrides: Partial<KhoraHostSpecPort> = {}): KhoraHo
       slug: stored?.slug,
       publicBaseUrl: "http://127.0.0.1:8788",
       displayName: stored?.displayName,
+      populationLimit: stored?.populationLimit,
       registrationSecret: stored?.registrationSecret,
       managementToken: stored?.managementToken,
     }),
     patch: (patch) => {
-      stored = { ...stored, ...patch, updatedAtMs: Date.now() };
-      return stored;
+      const next: KhoraHostSpec = { ...(stored ?? {}), updatedAtMs: Date.now() };
+      if (patch.registryUrl !== undefined) next.registryUrl = patch.registryUrl;
+      if (patch.slug !== undefined) next.slug = patch.slug;
+      if (patch.publicBaseUrl !== undefined) next.publicBaseUrl = patch.publicBaseUrl;
+      if (patch.displayName !== undefined) next.displayName = patch.displayName;
+      if (patch.populationLimit === null) {
+        delete next.populationLimit;
+      } else if (patch.populationLimit !== undefined) {
+        next.populationLimit = patch.populationLimit;
+      }
+      stored = next;
+      return next;
     },
     storeSecrets: (secrets) => {
-      stored = { ...stored, ...secrets, updatedAtMs: Date.now() };
+      const next: KhoraHostSpec = { ...(stored ?? {}), ...secrets, updatedAtMs: Date.now() };
       if (secrets.managementToken !== undefined) {
-        delete stored.registrationSecret;
+        delete next.registrationSecret;
       }
-      return stored;
+      stored = next;
+      return next;
     },
     clearRegistrationSecret: () => {
       if (stored !== null) {
@@ -60,13 +73,14 @@ describe("registry opt-in", () => {
 
   test("registerHostWithRegistry treats 201 as success", async () => {
     const fetchImpl = mock(
-      async () => new Response(JSON.stringify({ host: { status: "pending" } }), { status: 201 }),
+      async (_url: string, _init?: RequestInit) =>
+        new Response(JSON.stringify({ host: { status: "pending" } }), { status: 201 }),
     );
     await registerHostWithRegistry({
       registryUrl: "http://localhost:4000",
       slug: "lab",
       baseUrl: "http://127.0.0.1:8788",
-      fetchImpl: fetchImpl as typeof fetch,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
     });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     const call = fetchImpl.mock.calls[0];
@@ -76,7 +90,7 @@ describe("registry opt-in", () => {
 
   test("registerHostWithRegistry treats 409 as idempotent", async () => {
     const fetchImpl = mock(
-      async () =>
+      async (_url: string, _init?: RequestInit) =>
         new Response(JSON.stringify({ error: "host slug already registered: lab" }), {
           status: 409,
         }),
@@ -85,7 +99,7 @@ describe("registry opt-in", () => {
       registryUrl: "http://localhost:4000",
       slug: "lab",
       baseUrl: "http://127.0.0.1:8788",
-      fetchImpl: fetchImpl as typeof fetch,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
     });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });

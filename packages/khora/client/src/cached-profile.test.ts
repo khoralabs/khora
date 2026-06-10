@@ -127,6 +127,7 @@ describe("serializeProfileSyncStateFile round-trip", () => {
         {
           id: "sub-1",
           kind: "subscription" as const,
+          visibility: "public" as const,
           body: "Looking",
           authorProfileId: "p1",
           authorSignature: "test-post-sig",
