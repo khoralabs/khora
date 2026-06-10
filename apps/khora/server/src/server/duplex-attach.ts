@@ -19,6 +19,7 @@ export async function attachRoomDuplexAfterTicket(opts: {
   const { dispose } = await attachDuplexAsFrameRelayPeer(
     opts.ctx.roomHub,
     opts.roomId,
+    opts.ticket,
     opts.duplex,
   );
   return { dispose };

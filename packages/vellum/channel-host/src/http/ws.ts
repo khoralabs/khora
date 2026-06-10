@@ -38,8 +38,13 @@ export async function handleChannelWsUpgrade(
     return jsonError("Invalid or expired upgrade credentials", 401);
   }
 
+  const minted = await deps.hub.mintChannelTicket(channelId);
+  if (minted === undefined) {
+    return jsonError("Channel not found or expired", 404);
+  }
+
   const upgraded = server.upgrade(req, {
-    data: { kind: "channel", sessionId: channelId },
+    data: { kind: "channel", sessionId: channelId, ticket: minted.ticket },
     ...(selectedProtocol !== undefined ? { protocol: selectedProtocol } : {}),
   });
   if (!upgraded) return jsonError("WebSocket upgrade failed", 500);

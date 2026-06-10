@@ -52,7 +52,7 @@ describe("room channel seam", () => {
       cellPoolCount: 2,
     });
     const roomId = crypto.randomUUID();
-    await ctx.roomHub.createChannel(roomId);
+    const { ticket: senderTicket } = await ctx.roomHub.createChannel(roomId);
 
     const payloads = [
       encodeFramedJson({ ping: 1 }),
@@ -61,14 +61,19 @@ describe("room channel seam", () => {
     ];
 
     const [senderClient, senderServer] = createMemoryDuplexByteStreamPair();
-    const senderAttach = await attachDuplexAsFrameRelayPeer(ctx.roomHub, roomId, senderServer);
+    const senderAttach = await attachDuplexAsFrameRelayPeer(
+      ctx.roomHub,
+      roomId,
+      senderTicket,
+      senderServer,
+    );
     for (const p of payloads) {
       await senderClient.write(p);
       await new Promise<void>((r) => queueMicrotask(r));
     }
     await senderAttach.dispose();
 
-    await ctx.roomHub.rotateChannelTicket(roomId);
+    const { ticket: replayTicket } = await ctx.roomHub.rotateChannelTicket(roomId);
 
     const [_replayClient, replayServer] = createMemoryDuplexByteStreamPair();
     const replayed: Uint8Array[] = [];
@@ -77,8 +82,8 @@ describe("room channel seam", () => {
         replayed.push(b);
       },
     };
-    await ctx.roomHub.attachPeer(roomId, replayPeer);
-    await attachDuplexAsFrameRelayPeer(ctx.roomHub, roomId, replayServer);
+    await ctx.roomHub.attachPeer(roomId, replayPeer, replayTicket);
+    await attachDuplexAsFrameRelayPeer(ctx.roomHub, roomId, replayTicket, replayServer);
 
     for (let i = 0; i < 100 && replayed.length < payloads.length; i++) {
       await new Promise<void>((r) => queueMicrotask(r));
@@ -107,7 +112,7 @@ describe("room channel seam", () => {
       cellPoolCount: 2,
     });
     const roomId = crypto.randomUUID();
-    await ctx.roomHub.createChannel(roomId);
+    const { ticket } = await ctx.roomHub.createChannel(roomId);
 
     const kp1 = ephemeralX25519Keygen();
     const kp2 = ephemeralX25519Keygen();
@@ -128,7 +133,12 @@ describe("room channel seam", () => {
     });
 
     const [senderClient, senderServer] = createMemoryDuplexByteStreamPair();
-    const senderAttach = await attachDuplexAsFrameRelayPeer(ctx.roomHub, roomId, senderServer);
+    const senderAttach = await attachDuplexAsFrameRelayPeer(
+      ctx.roomHub,
+      roomId,
+      ticket,
+      senderServer,
+    );
     await senderClient.write(raw);
     for (let i = 0; i < 30; i++) {
       await new Promise<void>((r) => queueMicrotask(r));
@@ -146,11 +156,15 @@ describe("room channel seam", () => {
     ).toBe(1);
 
     const received: Uint8Array[] = [];
-    await ctx.roomHub.attachPeer(roomId, {
-      send(b) {
-        received.push(b);
+    await ctx.roomHub.attachPeer(
+      roomId,
+      {
+        send(b) {
+          received.push(b);
+        },
       },
-    });
+      ticket,
+    );
     expect(received.length).toBeGreaterThanOrEqual(1);
 
     const env = parseRelayEnvelope(received[0] ?? new Uint8Array());

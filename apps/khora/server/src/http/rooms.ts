@@ -15,6 +15,7 @@ import {
   mintRoomChannelTicketAndSync,
 } from "@khoralabs/khora-host";
 import type { KhoraRoomLifecycleHostEvent, KhoraWsUpgradePort } from "@khoralabs/khora-transport";
+import { upgradeFrameRelayHubWebSocket } from "@khoralabs/obp-frame-relay";
 import z from "zod";
 import { logger } from "../logger";
 import type { HostRouteDeps } from "./deps";
@@ -572,29 +573,19 @@ export async function handleRoomWsUpgrade(
   srv: KhoraWsUpgradePort,
   deps: HostRouteDeps,
 ): Promise<Response | undefined> {
-  if (req.headers.get("upgrade")?.toLowerCase() !== "websocket") {
-    return jsonError("Expected WebSocket upgrade", 426);
-  }
   const m = roomWsPathRe.exec(url.pathname);
   if (m == null || m[1] === undefined) {
     return jsonError("Invalid room WebSocket path", 400);
   }
   const roomId = decodeURIComponent(m[1]);
   const ticket = url.searchParams.get("ticket") ?? "";
-  if (ticket.length === 0) {
-    return jsonError("Missing ticket", 400);
-  }
-  const ok = await deps.ctx.roomHub.verifyTicket(roomId, ticket);
-  if (!ok) {
-    return jsonError("Invalid or expired ticket", 401);
-  }
-  const upgraded = srv.upgrade(req, {
-    data: { kind: "channel", sessionId: roomId },
+  return upgradeFrameRelayHubWebSocket({
+    req,
+    channelId: roomId,
+    ticket,
+    hub: deps.ctx.roomHub,
+    upgrade: (upgradeReq, data) => srv.upgrade(upgradeReq, { data }),
   });
-  if (!upgraded) {
-    return jsonError("WebSocket upgrade failed", 500);
-  }
-  return undefined;
 }
 
 export function isRoomWsPath(pathname: string): boolean {
