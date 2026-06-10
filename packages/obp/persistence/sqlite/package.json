@@ -15,7 +15,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@khoralabs/memories-sqlite": "workspace:*",
     "@khoralabs/obp-errors": "workspace:*",
     "@khoralabs/obp-model": "workspace:*",
     "@khoralabs/obp-persistence": "workspace:*"
