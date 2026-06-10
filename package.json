@@ -43,6 +43,8 @@
     "packages/memories/packages/agents/*",
     "packages/memories/packages/react/*",
     "packages/obp/packages/*",
+    "packages/obp/packages/bind-policy",
+    "packages/obp/packages/duplex-byte-stream",
     "packages/obp/packages/react/examples",
     "packages/obp/packages/agents/*",
     "packages/obp/packages/persistence/*",
