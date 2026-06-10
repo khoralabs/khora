@@ -6,8 +6,8 @@ import { KhoraClient } from "@khoralabs/khora-client";
 import { validateNbcBindPayloadForPort } from "@khoralabs/nbc-bind-policy";
 import type { JsonDocument } from "@khoralabs/obp-model";
 import {
-  createObpV2SqlitePersistenceClient,
-  openObpV2Database,
+  createObpSqlitePersistenceClient,
+  openObpDatabase,
 } from "@khoralabs/obp-sqlite-persistence";
 import { VellumChannelClient } from "@khoralabs/vellum-channel-client";
 import {
@@ -58,9 +58,9 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): {
     const sqlitePath = channelSqlitePath(cfgDataDir(opts.cfg), opts.channelId);
     fs.mkdirSync(path.dirname(sqlitePath), { recursive: true });
 
-    const db = openObpV2Database(sqlitePath);
+    const db = openObpDatabase(sqlitePath);
     ensureVellumMetaSchema(db);
-    const persistence = createObpV2SqlitePersistenceClient(db);
+    const persistence = createObpSqlitePersistenceClient(db);
 
     const state: VellumControlServerState = {
       conn: undefined,
