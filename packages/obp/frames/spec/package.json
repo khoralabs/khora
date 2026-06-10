@@ -1,7 +1,0 @@
-{
-  "name": "@khoralabs/obp-frames-spec",
-  "private": true,
-  "scripts": {
-    "validate": "smithy validate model && smithy build"
-  }
-}

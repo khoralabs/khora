@@ -3,12 +3,12 @@ import path from "node:path";
 
 import type { PersistableAgentSigner } from "@khoralabs/agent-persisted-signer";
 import { KhoraClient } from "@khoralabs/khora-client";
+import { validateNbcBindPayloadForPort } from "@khoralabs/nbc-bind-policy";
 import type { JsonDocument } from "@khoralabs/obp-model";
 import {
   createObpV2SqlitePersistenceClient,
   openObpV2Database,
 } from "@khoralabs/obp-sqlite-persistence";
-import { validateVellumBindPayloadForPort } from "@khoralabs/vellum-bind-policy";
 import { VellumChannelClient } from "@khoralabs/vellum-channel-client";
 import {
   cfgDataDir,
@@ -91,7 +91,7 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): {
           signer: frameSigner,
           client: persistence,
           validateBindPayload: (bindPolicy, bindPayload) =>
-            validateVellumBindPayloadForPort(bindPolicy, bindPayload) as JsonDocument,
+            validateNbcBindPayloadForPort(bindPolicy, bindPayload) as JsonDocument,
           handlers: {
             onSessionReady: async (handle) => {
               state.handles.set(handle.sessionId, handle);

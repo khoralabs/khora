@@ -12,7 +12,8 @@
       "!apps/memories/src/components/ui",
       "!apps/khoralabs/homepage/src/components/ui",
       "!apps/khora/homepage/src/components/ui",
-      "!!packages/memories"
+      "!!packages/memories",
+      "!!packages/obp"
     ]
   },
   "formatter": {

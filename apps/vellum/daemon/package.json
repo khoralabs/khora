@@ -25,7 +25,7 @@
     "@khoralabs/obp-persistence": "workspace:*",
     "@khoralabs/obp-sqlite-persistence": "workspace:*",
     "@khoralabs/obp-transport-ws": "workspace:*",
-    "@khoralabs/vellum-bind-policy": "workspace:*",
+    "@khoralabs/nbc-bind-policy": "workspace:*",
     "@khoralabs/vellum-channel-client": "workspace:*",
     "@khoralabs/vellum-client": "workspace:*",
     "@khoralabs/vellum-contracts": "workspace:*",

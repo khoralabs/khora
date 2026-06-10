@@ -24,7 +24,7 @@
     "@khoralabs/obp-frames-impl": "workspace:*",
     "@khoralabs/obp-model": "workspace:*",
     "@khoralabs/obp-nbc": "workspace:*",
-    "@khoralabs/vellum-bind-policy": "workspace:*",
+    "@khoralabs/nbc-bind-policy": "workspace:*",
     "@khoralabs/vellum-contracts": "workspace:*",
     "@khoralabs/vellum-transport": "workspace:*",
     "@noble/ed25519": "^3.1.0",

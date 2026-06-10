@@ -1,3 +1,6 @@
 [submodule "packages/memories"]
 	path = packages/memories
 	url = git@github.com:khoralabs/memories.git
+[submodule "packages/obp"]
+	path = packages/obp
+	url = git@github.com:khoralabs/open-binding-protocol.git

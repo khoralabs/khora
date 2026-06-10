@@ -2,13 +2,13 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { defaultIdentityPath, loadIdentity } from "@khoralabs/agent-persisted-signer";
+import { validateNbcBindPayloadForPort } from "@khoralabs/nbc-bind-policy";
 import {
   canonicalSessionParties,
   normalizeSessionInit,
   sessionInitToWire,
 } from "@khoralabs/obp-frames-impl";
 import type { JsonDocument } from "@khoralabs/obp-model";
-import { validateVellumBindPayloadForPort } from "@khoralabs/vellum-bind-policy";
 import { VellumChannelClient } from "@khoralabs/vellum-channel-client";
 import {
   type ChainInitResponse,
@@ -313,6 +313,6 @@ export class VellumClient {
     if (port === undefined) {
       throw new Error(`port not found: ${portId}`);
     }
-    return validateVellumBindPayloadForPort(port.bind_policy as JsonDocument | null, payload);
+    return validateNbcBindPayloadForPort(port.bind_policy as JsonDocument | null, payload);
   }
 }

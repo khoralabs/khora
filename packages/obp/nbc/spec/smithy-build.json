@@ -1,4 +1,0 @@
-{
-  "version": "1.0",
-  "sources": ["../../model/spec/model", "../../persistence/spec/model", "model"]
-}

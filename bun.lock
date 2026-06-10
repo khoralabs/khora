@@ -225,13 +225,13 @@
       "dependencies": {
         "@khoralabs/agent-persisted-signer": "workspace:*",
         "@khoralabs/khora-client": "workspace:*",
+        "@khoralabs/nbc-bind-policy": "workspace:*",
         "@khoralabs/obp-frames-impl": "workspace:*",
         "@khoralabs/obp-model": "workspace:*",
         "@khoralabs/obp-nbc": "workspace:*",
         "@khoralabs/obp-persistence": "workspace:*",
         "@khoralabs/obp-sqlite-persistence": "workspace:*",
         "@khoralabs/obp-transport-ws": "workspace:*",
-        "@khoralabs/vellum-bind-policy": "workspace:*",
         "@khoralabs/vellum-channel-client": "workspace:*",
         "@khoralabs/vellum-client": "workspace:*",
         "@khoralabs/vellum-contracts": "workspace:*",
@@ -534,16 +534,6 @@
         "typescript": "^5",
       },
     },
-    "packages/libs/duplex-byte-stream": {
-      "name": "@khoralabs/duplex-byte-stream",
-      "version": "0.0.0",
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
     "packages/libs/reciprocal-rank-fusion": {
       "name": "@khoralabs/reciprocal-rank-fusion",
       "devDependencies": {
@@ -759,7 +749,45 @@
       "name": "@khoralabs/memories-spec",
       "version": "0.1.0",
     },
-    "packages/obp/errors/impl/ts": {
+    "packages/obp": {
+      "name": "@khoralabs",
+      "devDependencies": {
+        "@biomejs/biome": "^2.4.16",
+        "@types/bun": "latest",
+        "husky": "^9.1.7",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/obp/packages/bind-policy": {
+      "name": "@khoralabs/nbc-bind-policy",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/obp-errors": "workspace:*",
+        "@khoralabs/obp-model": "workspace:*",
+        "ajv": "^8.17.1",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/obp/packages/duplex-byte-stream": {
+      "name": "@khoralabs/duplex-byte-stream",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/obp/packages/errors/impl/ts": {
       "name": "@khoralabs/obp-errors",
       "version": "0.0.0",
       "devDependencies": {
@@ -769,7 +797,7 @@
         "typescript": "^5",
       },
     },
-    "packages/obp/frame-relay/impl/ts": {
+    "packages/obp/packages/frame-relay/impl/ts": {
       "name": "@khoralabs/obp-frame-relay",
       "version": "0.0.0",
       "dependencies": {
@@ -783,10 +811,10 @@
         "typescript": "^5",
       },
     },
-    "packages/obp/frame-relay/spec": {
+    "packages/obp/packages/frame-relay/spec": {
       "name": "@khoralabs/obp-frame-relay-spec",
     },
-    "packages/obp/frame-relay/sqlite": {
+    "packages/obp/packages/frame-relay/sqlite": {
       "name": "@khoralabs/obp-frame-relay-sqlite",
       "version": "0.0.0",
       "dependencies": {
@@ -799,7 +827,7 @@
         "typescript": "^5",
       },
     },
-    "packages/obp/frames/impl/ts": {
+    "packages/obp/packages/frames/impl/ts": {
       "name": "@khoralabs/obp-frames-impl",
       "version": "0.0.0",
       "dependencies": {
@@ -817,7 +845,7 @@
         "typescript": "^5",
       },
     },
-    "packages/obp/model/impl/ts": {
+    "packages/obp/packages/model/impl/ts": {
       "name": "@khoralabs/obp-model",
       "version": "0.0.0",
       "devDependencies": {
@@ -827,7 +855,7 @@
         "typescript": "^5",
       },
     },
-    "packages/obp/nbc/impl/ts": {
+    "packages/obp/packages/nbc/impl/ts": {
       "name": "@khoralabs/obp-nbc",
       "version": "0.0.0",
       "dependencies": {
@@ -836,14 +864,14 @@
         "@khoralabs/obp-persistence": "workspace:*",
       },
       "devDependencies": {
-        "@khoralabs/vellum-bind-policy": "workspace:*",
+        "@khoralabs/nbc-bind-policy": "workspace:*",
         "@types/bun": "latest",
       },
       "peerDependencies": {
         "typescript": "^5",
       },
     },
-    "packages/obp/persistence/impl/ts": {
+    "packages/obp/packages/persistence/impl/ts": {
       "name": "@khoralabs/obp-persistence",
       "version": "0.0.0",
       "dependencies": {
@@ -857,14 +885,13 @@
         "typescript": "^5",
       },
     },
-    "packages/obp/persistence/spec": {
+    "packages/obp/packages/persistence/spec": {
       "name": "@khoralabs/obp-persistence-spec",
     },
-    "packages/obp/persistence/sqlite": {
+    "packages/obp/packages/persistence/sqlite": {
       "name": "@khoralabs/obp-sqlite-persistence",
       "version": "0.0.0",
       "dependencies": {
-        "@khoralabs/memories-sqlite": "workspace:*",
         "@khoralabs/obp-errors": "workspace:*",
         "@khoralabs/obp-model": "workspace:*",
         "@khoralabs/obp-persistence": "workspace:*",
@@ -876,7 +903,7 @@
         "typescript": "^5",
       },
     },
-    "packages/obp/react": {
+    "packages/obp/packages/react": {
       "name": "@khoralabs/obp-react",
       "version": "0.0.0",
       "dependencies": {
@@ -898,7 +925,7 @@
         "typescript": "^5",
       },
     },
-    "packages/obp/react/examples": {
+    "packages/obp/packages/react/examples": {
       "name": "bun-react-template",
       "version": "0.1.0",
       "dependencies": {
@@ -915,7 +942,7 @@
         "@types/react-dom": "^19",
       },
     },
-    "packages/obp/session/impl/ts": {
+    "packages/obp/packages/session/impl/ts": {
       "name": "@khoralabs/obp-session-impl",
       "version": "0.0.0",
       "dependencies": {
@@ -929,7 +956,7 @@
         "typescript": "^5",
       },
     },
-    "packages/obp/transport-http2/impl/ts": {
+    "packages/obp/packages/transport-http2/impl/ts": {
       "name": "@khoralabs/obp-transport-http2",
       "version": "0.0.0",
       "dependencies": {
@@ -946,7 +973,7 @@
         "typescript": "^5",
       },
     },
-    "packages/obp/transport-ws/impl/ts": {
+    "packages/obp/packages/transport-ws/impl/ts": {
       "name": "@khoralabs/obp-transport-ws",
       "version": "0.0.0",
       "dependencies": {
@@ -1142,22 +1169,6 @@
         "typescript": "^5",
       },
     },
-    "packages/vellum/bind-policy": {
-      "name": "@khoralabs/vellum-bind-policy",
-      "version": "0.0.0",
-      "dependencies": {
-        "@khoralabs/obp-errors": "workspace:*",
-        "@khoralabs/obp-model": "workspace:*",
-        "ajv": "^8.17.1",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
     "packages/vellum/channel-client": {
       "name": "@khoralabs/vellum-channel-client",
       "version": "0.0.0",
@@ -1197,10 +1208,10 @@
       "dependencies": {
         "@khoralabs/agent-persisted-signer": "workspace:*",
         "@khoralabs/khora-client": "workspace:*",
+        "@khoralabs/nbc-bind-policy": "workspace:*",
         "@khoralabs/obp-frames-impl": "workspace:*",
         "@khoralabs/obp-model": "workspace:*",
         "@khoralabs/obp-nbc": "workspace:*",
-        "@khoralabs/vellum-bind-policy": "workspace:*",
         "@khoralabs/vellum-channel-client": "workspace:*",
         "@khoralabs/vellum-contracts": "workspace:*",
         "@khoralabs/vellum-transport": "workspace:*",
@@ -1351,6 +1362,8 @@
 
     "@floating-ui/utils": ["@floating-ui/utils@0.2.11", "", {}, "sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg=="],
 
+    "@khoralabs": ["@khoralabs@workspace:packages/obp"],
+
     "@khoralabs/agent-capabilities": ["@khoralabs/agent-capabilities@0.1.0", "", { "peerDependencies": { "typescript": "^5" } }, "sha512-/xKc0/MuxH8NGPP6Kav1J/iCciBgFbpbgPP/BiHKWIfoiMMZcUf/rP6542BQBv++BFb2P4BRixumko/aVwlBtw=="],
 
     "@khoralabs/agent-capabilities-ai-sdk": ["@khoralabs/agent-capabilities-ai-sdk@0.1.0", "", { "dependencies": { "@khoralabs/agent-capabilities": "^0.1.0", "ai": "^6" }, "peerDependencies": { "typescript": "^5" } }, "sha512-flk0KF54z0DiKPnSQEz9dxAicMdMYfyyT7M0ScxQvK8EC4yiNdqj5ivm1uTUsWLNGcm3FPzv6CB17slLqck92A=="],
@@ -1371,7 +1384,7 @@
 
     "@khoralabs/colonnade-persistence": ["@khoralabs/colonnade-persistence@workspace:packages/colonnade/impl/ts"],
 
-    "@khoralabs/duplex-byte-stream": ["@khoralabs/duplex-byte-stream@workspace:packages/libs/duplex-byte-stream"],
+    "@khoralabs/duplex-byte-stream": ["@khoralabs/duplex-byte-stream@workspace:packages/obp/packages/duplex-byte-stream"],
 
     "@khoralabs/host-runtime": ["@khoralabs/host-runtime@workspace:packages/host-runtime"],
 
@@ -1425,33 +1438,35 @@
 
     "@khoralabs/memories-tools": ["@khoralabs/memories-tools@workspace:packages/memories/packages/agents/tools"],
 
-    "@khoralabs/obp-errors": ["@khoralabs/obp-errors@workspace:packages/obp/errors/impl/ts"],
+    "@khoralabs/nbc-bind-policy": ["@khoralabs/nbc-bind-policy@workspace:packages/obp/packages/bind-policy"],
 
-    "@khoralabs/obp-frame-relay": ["@khoralabs/obp-frame-relay@workspace:packages/obp/frame-relay/impl/ts"],
+    "@khoralabs/obp-errors": ["@khoralabs/obp-errors@workspace:packages/obp/packages/errors/impl/ts"],
 
-    "@khoralabs/obp-frame-relay-spec": ["@khoralabs/obp-frame-relay-spec@workspace:packages/obp/frame-relay/spec"],
+    "@khoralabs/obp-frame-relay": ["@khoralabs/obp-frame-relay@workspace:packages/obp/packages/frame-relay/impl/ts"],
 
-    "@khoralabs/obp-frame-relay-sqlite": ["@khoralabs/obp-frame-relay-sqlite@workspace:packages/obp/frame-relay/sqlite"],
+    "@khoralabs/obp-frame-relay-spec": ["@khoralabs/obp-frame-relay-spec@workspace:packages/obp/packages/frame-relay/spec"],
 
-    "@khoralabs/obp-frames-impl": ["@khoralabs/obp-frames-impl@workspace:packages/obp/frames/impl/ts"],
+    "@khoralabs/obp-frame-relay-sqlite": ["@khoralabs/obp-frame-relay-sqlite@workspace:packages/obp/packages/frame-relay/sqlite"],
 
-    "@khoralabs/obp-model": ["@khoralabs/obp-model@workspace:packages/obp/model/impl/ts"],
+    "@khoralabs/obp-frames-impl": ["@khoralabs/obp-frames-impl@workspace:packages/obp/packages/frames/impl/ts"],
 
-    "@khoralabs/obp-nbc": ["@khoralabs/obp-nbc@workspace:packages/obp/nbc/impl/ts"],
+    "@khoralabs/obp-model": ["@khoralabs/obp-model@workspace:packages/obp/packages/model/impl/ts"],
 
-    "@khoralabs/obp-persistence": ["@khoralabs/obp-persistence@workspace:packages/obp/persistence/impl/ts"],
+    "@khoralabs/obp-nbc": ["@khoralabs/obp-nbc@workspace:packages/obp/packages/nbc/impl/ts"],
 
-    "@khoralabs/obp-persistence-spec": ["@khoralabs/obp-persistence-spec@workspace:packages/obp/persistence/spec"],
+    "@khoralabs/obp-persistence": ["@khoralabs/obp-persistence@workspace:packages/obp/packages/persistence/impl/ts"],
 
-    "@khoralabs/obp-react": ["@khoralabs/obp-react@workspace:packages/obp/react"],
+    "@khoralabs/obp-persistence-spec": ["@khoralabs/obp-persistence-spec@workspace:packages/obp/packages/persistence/spec"],
 
-    "@khoralabs/obp-session-impl": ["@khoralabs/obp-session-impl@workspace:packages/obp/session/impl/ts"],
+    "@khoralabs/obp-react": ["@khoralabs/obp-react@workspace:packages/obp/packages/react"],
 
-    "@khoralabs/obp-sqlite-persistence": ["@khoralabs/obp-sqlite-persistence@workspace:packages/obp/persistence/sqlite"],
+    "@khoralabs/obp-session-impl": ["@khoralabs/obp-session-impl@workspace:packages/obp/packages/session/impl/ts"],
 
-    "@khoralabs/obp-transport-http2": ["@khoralabs/obp-transport-http2@workspace:packages/obp/transport-http2/impl/ts"],
+    "@khoralabs/obp-sqlite-persistence": ["@khoralabs/obp-sqlite-persistence@workspace:packages/obp/packages/persistence/sqlite"],
 
-    "@khoralabs/obp-transport-ws": ["@khoralabs/obp-transport-ws@workspace:packages/obp/transport-ws/impl/ts"],
+    "@khoralabs/obp-transport-http2": ["@khoralabs/obp-transport-http2@workspace:packages/obp/packages/transport-http2/impl/ts"],
+
+    "@khoralabs/obp-transport-ws": ["@khoralabs/obp-transport-ws@workspace:packages/obp/packages/transport-ws/impl/ts"],
 
     "@khoralabs/percolator": ["@khoralabs/percolator@workspace:packages/percolator/runtime"],
 
@@ -1484,8 +1499,6 @@
     "@khoralabs/sqlite-graph-projections": ["@khoralabs/sqlite-graph-projections@workspace:packages/memories/packages/persistence/sqlite-graph-projections"],
 
     "@khoralabs/sqlite-migrate": ["@khoralabs/sqlite-migrate@0.1.0", "", {}, "sha512-mGkPR6WposZArUh1k4A1s2VwyOtGJUPlKkUY+DYjZ8pkhgJ6mEhHQOlRQJNOAXKlJETsdVy4iPTeyuvzPl/zFg=="],
-
-    "@khoralabs/vellum-bind-policy": ["@khoralabs/vellum-bind-policy@workspace:packages/vellum/bind-policy"],
 
     "@khoralabs/vellum-channel-client": ["@khoralabs/vellum-channel-client@workspace:packages/vellum/channel-client"],
 
@@ -1823,7 +1836,7 @@
 
     "bun-plugin-tailwind": ["bun-plugin-tailwind@0.1.2", "", { "peerDependencies": { "bun": ">=1.0.0" } }, "sha512-41jNC1tZRSK3s1o7pTNrLuQG8kL/0vR/JgiTmZAJ1eHwe0w5j6HFPKeqEk0WAD13jfrUC7+ULuewFBBCoADPpg=="],
 
-    "bun-react-template": ["bun-react-template@workspace:packages/obp/react/examples"],
+    "bun-react-template": ["bun-react-template@workspace:packages/obp/packages/react/examples"],
 
     "bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
 
