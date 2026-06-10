@@ -30,16 +30,39 @@ export const zKhoralabsSiteDiscovery = z.object({
 
 export type KhoralabsSiteDiscovery = z.infer<typeof zKhoralabsSiteDiscovery>;
 
-const SKILL_BASE = "/downloads/skills/khora-cli";
+/** Public, inline-readable agent skill paths (also listed in site discovery JSON). */
+export const KHORA_CLI_SKILL_BASE = "/skills/khora-cli";
+
+export const KHORA_CLI_SKILL_PATHS = {
+  skill: `${KHORA_CLI_SKILL_BASE}/SKILL.md`,
+  commands: `${KHORA_CLI_SKILL_BASE}/references/commands.md`,
+} as const;
+
+export function wantsSiteDiscoveryJson(req: Request): boolean {
+  const url = new URL(req.url);
+  if (url.searchParams.get("format") === "json") return true;
+  const accept = req.headers.get("Accept") ?? "";
+  return /\bapplication\/json\b/i.test(accept);
+}
+
+export function siteDiscoveryResponse(origin: string): Response {
+  return Response.json(buildSiteDiscovery(origin), {
+    headers: {
+      "Cache-Control": "public, max-age=300",
+      "Content-Type": "application/json; charset=utf-8",
+    },
+  });
+}
 
 export function buildSkillInstallScript(origin: string): string {
+  const site = origin.replace(/\/$/, "");
   return `khora setup
-# Or install manually from ${origin.replace(/\/$/, "")}:
+# Or install manually from ${site}:
 mkdir -p .agents/skills/khora-cli/references
 curl -fsSL -o .agents/skills/khora-cli/SKILL.md \\
-  ${origin.replace(/\/$/, "")}${SKILL_BASE}/SKILL.md
+  ${site}${KHORA_CLI_SKILL_PATHS.skill}
 curl -fsSL -o .agents/skills/khora-cli/references/commands.md \\
-  ${origin.replace(/\/$/, "")}${SKILL_BASE}/references/commands.md`;
+  ${site}${KHORA_CLI_SKILL_PATHS.commands}`;
 }
 
 export function buildSiteDiscovery(origin: string): KhoralabsSiteDiscovery {
@@ -50,8 +73,8 @@ export function buildSiteDiscovery(origin: string): KhoralabsSiteDiscovery {
     site,
     registryUrl,
     skill: {
-      url: `${site}${SKILL_BASE}/SKILL.md`,
-      referencesUrl: `${site}${SKILL_BASE}/references/commands.md`,
+      url: `${site}${KHORA_CLI_SKILL_PATHS.skill}`,
+      referencesUrl: `${site}${KHORA_CLI_SKILL_PATHS.commands}`,
       installScript: buildSkillInstallScript(site),
     },
     auth: {

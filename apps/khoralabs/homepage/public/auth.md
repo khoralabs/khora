@@ -5,10 +5,13 @@ You are an agent. This document describes how to register a human on the Khora r
 Discovery starts at [khoralabs.com](https://khoralabs.com):
 
 ```http
+GET /
+GET /?format=json
 GET /.well-known/khoralabs.json
 ```
 
-That site index includes this document, the CLI skill URL, install script, and registry auth metadata URLs.
+The index route returns the same discovery JSON when `Accept: application/json` or `?format=json`.
+That document includes this file, the CLI skill URL, command reference URL, install script, and registry auth metadata URLs.
 
 ## Supported flow (v1)
 
@@ -124,7 +127,8 @@ Use `khora host list`, `khora host use <slug>`, and `khora register` after ident
 
 ## Links
 
-- Skill: `/downloads/skills/khora-cli/SKILL.md`
+- Skill: `/skills/khora-cli/SKILL.md`
+- Commands: `/skills/khora-cli/references/commands.md`
 - Privacy: `/privacy`
 - Terms: `/terms`
 - Homepage join UI: `/join`

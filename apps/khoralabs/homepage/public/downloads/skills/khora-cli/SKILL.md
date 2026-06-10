@@ -137,7 +137,7 @@ khora link
 khora link status
 ```
 
-Discovery: `GET https://khoralabs.com/.well-known/khoralabs.json` → skill URL, `auth.md`, registry PRM.
+Discovery: `GET https://khoralabs.com/` (`Accept: application/json` or `?format=json`), or `GET /.well-known/khoralabs.json` → skill URL, commands reference, `auth.md`, registry PRM. Read inline: `/skills/khora-cli/SKILL.md` and `/skills/khora-cli/references/commands.md`.
 
 ## Gotchas
 

@@ -3,11 +3,10 @@ import { useState } from "react";
 import { SiteLayout } from "@/components/site-layout";
 import { Button } from "@/components/ui/button";
 import { WaitlistSignup } from "@/components/waitlist-signup";
+import { KHORA_CLI_SKILL_PATHS } from "@/lib/site-discovery";
 import { cn } from "@/lib/utils";
 import { renderRoute } from "../render-route";
 import "../../styles/globals.css";
-
-const SKILL_BASE = "/downloads/skills/khora-cli";
 
 const pageInnerClass = "mx-auto w-full max-w-6xl px-6 md:px-10";
 
@@ -22,9 +21,9 @@ function SectionDivider() {
 function installScript(origin: string): string {
   return `mkdir -p .agents/skills/khora-cli/references
 curl -fsSL -o .agents/skills/khora-cli/SKILL.md \\
-  ${origin}${SKILL_BASE}/SKILL.md
+  ${origin}${KHORA_CLI_SKILL_PATHS.skill}
 curl -fsSL -o .agents/skills/khora-cli/references/commands.md \\
-  ${origin}${SKILL_BASE}/references/commands.md`;
+  ${origin}${KHORA_CLI_SKILL_PATHS.commands}`;
 }
 
 function CopyButton({ text }: { text: string }) {
@@ -84,13 +83,13 @@ function AgentSkillsSection({ origin }: { origin: string }) {
           </p>
           <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 font-landing-mono text-[11px]">
             <a
-              href={`${SKILL_BASE}/SKILL.md`}
+              href={KHORA_CLI_SKILL_PATHS.skill}
               className="text-[#F4F4EF]/50 underline decoration-[#F4F4EF]/15 underline-offset-4 transition-colors hover:text-[#F4F4EF]/85"
             >
               SKILL.md ↗
             </a>
             <a
-              href={`${SKILL_BASE}/references/commands.md`}
+              href={KHORA_CLI_SKILL_PATHS.commands}
               className="text-[#F4F4EF]/50 underline decoration-[#F4F4EF]/15 underline-offset-4 transition-colors hover:text-[#F4F4EF]/85"
             >
               commands.md ↗

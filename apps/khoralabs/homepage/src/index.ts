@@ -4,7 +4,8 @@ import { serveBlogMedia } from "./lib/blog-media";
 import { ensureBlogManifest } from "./lib/ensure-blog-manifest";
 import { serveAssets } from "./lib/serve-assets";
 import { serveDownloads } from "./lib/serve-downloads";
-import { buildSiteDiscovery } from "./lib/site-discovery";
+import { serveSkills } from "./lib/serve-skills";
+import { siteDiscoveryResponse, wantsSiteDiscoveryJson } from "./lib/site-discovery";
 import { BlogPage } from "./routes/blog/client";
 import blog from "./routes/blog/index.html";
 import { BlogPostPage } from "./routes/blog/post/client";
@@ -18,7 +19,7 @@ import privacy from "./routes/privacy/index.html";
 import { TermsPage } from "./routes/terms/client";
 import terms from "./routes/terms/index.html";
 import { blogPostHead } from "./ssr/blog-head";
-import { type BunRouteRequest, ssrRoute } from "./ssr/render-html-route";
+import { type BunRouteRequest, type SsrServer, ssrRoute } from "./ssr/render-html-route";
 
 await ensureBlogManifest();
 
@@ -37,11 +38,21 @@ const homeSsrProps = (req: BunRouteRequest): { origin: string } => ({
   origin: new URL(req.url).origin,
 });
 
+const homePage = ssrRoute<{ origin: string }>(`${SSR_SHELL}/index`, HomePage, {
+  props: homeSsrProps,
+});
+
 const htmlRoutes = {
-  "/consumer": ssrRoute<{ origin: string }>(`${SSR_SHELL}/index`, HomePage, {
-    props: homeSsrProps,
-  }),
-  "/*": ssrRoute<{ origin: string }>(`${SSR_SHELL}/index`, HomePage, { props: homeSsrProps }),
+  "/": {
+    GET(req: BunRouteRequest, server: SsrServer) {
+      if (wantsSiteDiscoveryJson(req)) {
+        return siteDiscoveryResponse(new URL(req.url).origin);
+      }
+      return homePage.GET(req, server);
+    },
+  },
+  "/consumer": homePage,
+  "/*": homePage,
   "/join": ssrRoute<{ origin: string }>(`${SSR_SHELL}/index`, HomePage, { props: homeSsrProps }),
   "/blog": ssrRoute(`${SSR_SHELL}/blog`, BlogPage, {
     props: (req) => ({
@@ -70,12 +81,10 @@ const server = serve({
     "/assets/*": { GET: serveAssets },
     "/blog/media/*": { GET: serveBlogMedia },
     "/downloads/*": { GET: serveDownloads },
+    "/skills/*": { GET: serveSkills },
     "/.well-known/khoralabs.json": {
       GET(req) {
-        const origin = new URL(req.url).origin;
-        return Response.json(buildSiteDiscovery(origin), {
-          headers: { "Cache-Control": "public, max-age=300" },
-        });
+        return siteDiscoveryResponse(new URL(req.url).origin);
       },
     },
     "/auth.md": {
