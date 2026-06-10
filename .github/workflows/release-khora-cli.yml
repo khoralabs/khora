@@ -44,6 +44,19 @@ jobs:
           submodules: recursive
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: init submodules
+        run: |
+          set -euo pipefail
+          git submodule sync --recursive
+          git submodule update --init --recursive
+
+      - name: verify submodules
+        run: |
+          set -euo pipefail
+          test -f packages/memories/package.json
+          test -f packages/obp/package.json
+          test -f packages/obp/packages/model/impl/ts/package.json
+
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest

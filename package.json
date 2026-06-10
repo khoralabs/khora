@@ -19,12 +19,14 @@
   "scripts": {
     "test:with-sqlite": "bash scripts/test-with-homebrew-sqlite.sh",
     "clean": "find . -name node_modules -type d -prune -exec rm -rf {} +",
-    "check": "biome check . && bun run --filter @khoralabs/memories-spec validate && bun run --filter @khoralabs/agent-identity-spec validate && bash packages/obp/packages/validate-all.sh",
-    "check:write": "biome check --write .",
     "format": "biome check --write .",
     "format:check": "biome check .",
     "context": "bun run scripts/context.ts",
     "start:khora:server": "bun run --filter @khoralabs/khora-server start",
+    "submodules:init": "git submodule update --init --recursive",
+    "submodules:update": "git submodule update --remote --merge packages/memories packages/obp && bun install",
+    "submodules:update:memories": "git submodule update --remote --merge packages/memories && bun install",
+    "submodules:update:obp": "git submodule update --remote --merge packages/obp && bun install",
     "prepare": "husky"
   },
   "type": "module",
