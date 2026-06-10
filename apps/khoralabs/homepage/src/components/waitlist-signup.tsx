@@ -4,6 +4,7 @@ import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { ArrowLeftIcon, ArrowRight, Loader } from "lucide-react";
 import { useState } from "react";
 
+import { terminalOtpSlotClass } from "@/components/terminal-panel";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldLabel } from "@/components/ui/field";
@@ -67,7 +68,7 @@ export function WaitlistEmailStep({
         Email
       </Label>
       <InputGroup
-        className="h-12 px-1 rounded-full border-0 bg-white/80 text-black shadow-[inset_2px_3px_8px_rgba(0,0,0,0.08),inset_-1px_-1px_3px_rgba(255,255,255,0.9)] ring-0 has-[[data-slot=input-group-control]:focus-visible]:shadow-[inset_2px_4px_10px_rgba(0,0,0,0.1),inset_-1px_-1px_3px_rgba(255,255,255,0.95)] has-[[data-slot=input-group-control]:focus-visible]:ring-0"
+        className="h-12 border-[#F4F4EF]/12 bg-[#242424] px-1 shadow-none ring-0 has-[[data-slot=input-group-control]:focus-visible]:border-[#F4F4EF]/30 has-[[data-slot=input-group-control]:focus-visible]:ring-0"
         {...(loading ? { "data-disabled": true as const } : {})}
       >
         <InputGroupInput
@@ -79,15 +80,14 @@ export function WaitlistEmailStep({
           onChange={(e) => onEmailChange(e.target.value)}
           disabled={loading}
           placeholder="Enter your email"
-          className="border-0 bg-transparent text-[12px] text-black caret-black shadow-none transition-[color,box-shadow] placeholder:text-[#B0B0B0] focus-visible:ring-0"
+          className="border-0 bg-transparent font-landing-mono text-[11px] text-[#F4F4EF]/85 caret-[#F4F4EF]/85 shadow-none placeholder:text-[#F4F4EF]/30 focus-visible:ring-0 md:text-xs"
         />
         <InputGroupAddon align="inline-end">
           <InputGroupButton
             type="submit"
             disabled={loading}
             size="icon-sm"
-            className="rounded-full"
-            variant="default"
+            variant="shell-ghost"
             aria-label={loading ? "Sending code" : "Join waitlist"}
           >
             {loading ? (
@@ -99,20 +99,23 @@ export function WaitlistEmailStep({
         </InputGroupAddon>
       </InputGroup>
       {showMarketingConsent ? (
-        <Field orientation="horizontal" className="text-[12px] leading-[1.45] text-[#838383]">
+        <Field
+          orientation="horizontal"
+          className="font-landing-mono text-[11px] leading-[1.7] text-[#F4F4EF]/50"
+        >
           <Checkbox
             id={marketingCheckboxId}
             checked={marketingConsent}
             onCheckedChange={(checked) => onMarketingConsentChange(checked === true)}
             disabled={loading}
-            className="border-0 bg-white/80 size-4"
+            className="size-4 border-[#F4F4EF]/20 bg-[#2a2a2a] data-[state=checked]:border-[#F4F4EF]/40 data-[state=checked]:bg-[#F4F4EF]/15"
           />
-          <FieldLabel htmlFor={marketingCheckboxId} className="font-normal leading-[1.45]">
+          <FieldLabel htmlFor={marketingCheckboxId} className="font-normal leading-[1.7]">
             Keep me updated about Khora news and product updates.
           </FieldLabel>
         </Field>
       ) : null}
-      {error !== null && <p className="text-sm text-destructive">{error}</p>}
+      {error !== null && <p className="font-landing-mono text-[11px] text-red-400/90">{error}</p>}
     </form>
   );
 }
@@ -139,24 +142,26 @@ export function WaitlistOtpStep({
   onSubmit,
 }: WaitlistOtpStepProps) {
   return (
-    <div className="mt-8 max-w-md">
+    <div className="max-w-md space-y-4">
       <div className="flex items-center gap-2">
         <Button
           type="button"
-          variant="ghost"
-          size="icon-sm"
+          variant="shell-ghost"
+          size="icon-xs"
           onClick={onBack}
           disabled={loading}
-          className="shrink-0 text-[#838383] hover:bg-black/5 hover:text-black"
+          className="shrink-0"
         >
-          <ArrowLeftIcon className="size-4" />
+          <ArrowLeftIcon className="size-3.5" />
         </Button>
-        <p className="m-0 text-[14px] font-medium text-black">{email}</p>
+        <p className="m-0 truncate font-landing-mono text-[11px] text-[#F4F4EF]/85 md:text-xs">
+          {email}
+        </p>
       </div>
-      <p className="mt-2 text-[12px] leading-[1.45] text-[#838383]">
+      <p className="font-landing-mono text-[11px] leading-[1.7] text-[#F4F4EF]/50">
         Enter the code we sent to your email
       </p>
-      <div className="relative mt-4 w-fit" aria-busy={loading}>
+      <div className="relative w-fit" aria-busy={loading}>
         <InputOTP
           id={otpInputId}
           maxLength={OTP_LENGTH}
@@ -168,29 +173,29 @@ export function WaitlistOtpStep({
           onComplete={onSubmit}
           disabled={loading}
         >
-          <InputOTPGroup>
-            <InputOTPSlot index={0} />
-            <InputOTPSlot index={1} />
-            <InputOTPSlot index={2} />
-            <InputOTPSlot index={3} />
-            <InputOTPSlot index={4} />
-            <InputOTPSlot index={5} />
+          <InputOTPGroup className="gap-1.5">
+            <InputOTPSlot index={0} className={terminalOtpSlotClass} />
+            <InputOTPSlot index={1} className={terminalOtpSlotClass} />
+            <InputOTPSlot index={2} className={terminalOtpSlotClass} />
+            <InputOTPSlot index={3} className={terminalOtpSlotClass} />
+            <InputOTPSlot index={4} className={terminalOtpSlotClass} />
+            <InputOTPSlot index={5} className={terminalOtpSlotClass} />
           </InputOTPGroup>
         </InputOTP>
         {loading ? (
-          <Skeleton className="absolute inset-0 flex items-center justify-center rounded-md bg-[#E8E8E3]/80">
-            <Spinner />
+          <Skeleton className="absolute inset-0 flex items-center justify-center rounded-md bg-[#242424]/80">
+            <Spinner className="text-[#F4F4EF]/50" />
           </Skeleton>
         ) : null}
       </div>
-      {error !== null && <p className="mt-3 text-sm text-destructive">{error}</p>}
+      {error !== null && <p className="font-landing-mono text-[11px] text-red-400/90">{error}</p>}
     </div>
   );
 }
 
 export function WaitlistSuccess() {
   return (
-    <p className="mt-8 max-w-md text-[14px] leading-relaxed text-[#838383]">
+    <p className="max-w-md font-landing-mono text-[11px] leading-[1.7] text-[#F4F4EF]/70 md:text-xs">
       You&apos;re on the list. We&apos;ll reach out when a spot opens up.
     </p>
   );

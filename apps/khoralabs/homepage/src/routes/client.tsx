@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { SiteLayout } from "@/components/site-layout";
+import { TerminalPanel } from "@/components/terminal-panel";
 import { Button } from "@/components/ui/button";
 import { WaitlistSignup } from "@/components/waitlist-signup";
 import { KHORA_CLI_SKILL_PATHS } from "@/lib/site-discovery";
@@ -96,26 +97,16 @@ function AgentSkillsSection({ origin }: { origin: string }) {
             </a>
           </div>
         </div>
-        <div className="flex flex-col overflow-hidden rounded-md border border-[#F4F4EF]/12">
-          <div className="flex items-center gap-1.5 border-b border-[#F4F4EF]/12 bg-[#2a2a2a] px-4 py-2.5">
-            <span aria-hidden className="size-2 rounded-full bg-[#F4F4EF]/10" />
-            <span aria-hidden className="size-2 rounded-full bg-[#F4F4EF]/10" />
-            <span aria-hidden className="size-2 rounded-full bg-[#F4F4EF]/10" />
-            <span className="ml-2 font-landing-mono text-[10px] text-[#F4F4EF]/30">bash</span>
-            <div className="ml-auto">
-              <CopyButton text={script} />
-            </div>
-          </div>
+        <TerminalPanel title="bash" action={<CopyButton text={script} />}>
           <pre
             className={cn(
               "overflow-x-auto p-5 text-left font-landing-mono text-[11px] leading-[1.7] text-[#F4F4EF]/85 md:text-xs",
-              "bg-[#242424]",
             )}
           >
             <span className="text-[#F4F4EF]/30">$ </span>
             {script}
           </pre>
-        </div>
+        </TerminalPanel>
       </div>
     </section>
   );
