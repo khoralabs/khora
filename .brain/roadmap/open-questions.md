@@ -71,6 +71,18 @@ This is an active research problem at the intersection of RAG and agent safety.
 
 ---
 
+## DAG join key and peer-sync relay
+
+**Should late join and dead-channel recovery use peer-verified DAGs instead of relay spool history?**
+
+Research direction: treat the frame relay as disposable live transport; treat `{ genesis_hash, checkpoint, parties }` as the logical join key for re-init; sync catch-up via `SessionEnvelope` from peers holding local SQLite — not unbounded `room_frames` replay.
+
+**Hard requirement:** Using a DAG id as a shared secret must be paired with **principal authentication** and verification that the principal is one of the parties on that chain. DAG unpredictability is not authorization.
+
+Full write-up: [`technical/dag-join-key-research.md`](../technical/dag-join-key-research.md).
+
+---
+
 ## Multi-party OBP
 
 **How does OBP extend beyond bilateral negotiation?**

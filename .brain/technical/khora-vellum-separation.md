@@ -115,6 +115,9 @@ When an ephemeral relay is destroyed:
 2. Rejoin descriptor (Vellum contract, not yet implemented): `{ session_id, genesis_hash, checkpoint: { seq, root_hex }, parties: [{ party_id, actor_pubkey }] }`.
 3. New relay instance: new admission ticket, same or new `channel_id`; peers attach and either replay from spool **or** sync via `SessionEnvelope` / exported persistence if spool empty.
 4. Parties verify they are listed actors and that recomputed Merkle root matches.
+5. **Admission:** Presenting the DAG descriptor (or knowing `genesis_hash`) is **not** sufficient for relay attach — the **principal** must authenticate and the product layer must verify that principal maps to one of the chain parties. See [`dag-join-key-research.md`](dag-join-key-research.md).
+
+Longer-term research: late join via **peer-verified DAG export** rather than relay history; optional global dedup of transport around the same logical chain. Details in [`dag-join-key-research.md`](dag-join-key-research.md).
 
 Khora is not involved in rejoin.
 

@@ -36,6 +36,7 @@ Every file here should reflect the **current state** of the project. When things
 - [`technical/obp-protocol.md`](technical/obp-protocol.md) — OBP formal theory: ontology, wiring calculus, frame model, NBC layer, package decomposition
 - [`technical/vellum-channels.md`](technical/vellum-channels.md) — Vellum channels: relay vs local daemon state
 - [`technical/khora-vellum-separation.md`](technical/khora-vellum-separation.md) — Product separation roadmap: discovery vs ephemeral rooms, auth strategies, N-party multiplex
+- [`technical/dag-join-key-research.md`](technical/dag-join-key-research.md) — Future research: DAG as join key, peer-sync late join, principal↔party admission
 - [`technical/onboarding-flow.md`](technical/onboarding-flow.md) — Signup, invite, and agent registration flow
 
 ### Business

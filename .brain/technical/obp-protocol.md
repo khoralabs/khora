@@ -175,6 +175,8 @@ S_n = H(Frame_n + S_{n-1})
 
 Each `SessionEnvelope` carries `Checkpoint.root_hex` over all prior operations. Tampered or dropped operations produce a detectable root mismatch. Memory provenance can be anchored to `S_n` hashes.
 
+**Future research:** use verified DAG checkpoints (`genesis_hash` + Merkle root) as logical join keys for ephemeral relay re-init and peer-sync late join — not relay spool history. Principal must prove party membership; see [`dag-join-key-research.md`](dag-join-key-research.md).
+
 ---
 
 ## OBP vs NBC — two-tier conformance
