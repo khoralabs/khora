@@ -2,24 +2,24 @@ import fs from "node:fs";
 import path from "node:path";
 
 import type { PersistableAgentSigner } from "@khoralabs/agent-persisted-signer";
-import { KhoraClient } from "@khoralabs/khora-client";
 import { validateNbcBindPayloadForPort } from "@khoralabs/nbc-bind-policy";
 import type { JsonDocument } from "@khoralabs/obp-model";
 import {
   createObpSqlitePersistenceClient,
   openObpDatabase,
 } from "@khoralabs/obp-sqlite-persistence";
-import { VellumChannelClient } from "@khoralabs/vellum-channel-client";
+import { RelayClient } from "@khoralabs/relay-client";
+import { relayWsUpgradeProtocol } from "@khoralabs/relay-contracts";
 import {
   cfgDataDir,
   channelSqlitePath,
   type VellumPathConfig,
-  vellumWsUpgradeProtocol,
 } from "@khoralabs/vellum-contracts";
 
 import { removeVellumControlFile, writeVellumControlFile } from "./control-pid";
 import { startVellumControlServer, type VellumControlServerState } from "./control-server";
 import { createFrameSignerFromPersistableAgent } from "./frame-signer";
+import { connectObpOverRelay } from "./relay-obp-adapter";
 import { ensureVellumMetaSchema, upsertChainRow } from "./vellum-sqlite-meta";
 
 export type RunVellumDaemonOptions = {
@@ -68,12 +68,8 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): {
     };
 
     const frameSigner = await createFrameSignerFromPersistableAgent(opts.signer);
-    const channelClient = new VellumChannelClient({
+    const channelClient = new RelayClient({
       relayBaseUrl: opts.relayBaseUrl,
-      signer: opts.signer,
-    });
-    const client = new KhoraClient({
-      baseUrl: opts.relayBaseUrl,
       signer: opts.signer,
     });
 
@@ -82,9 +78,9 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): {
       const wsNonce = process.env.VELLUM_CHANNEL_WS_NONCE?.trim();
       const webSocketProtocols =
         wsNonce !== undefined && wsNonce.length > 0
-          ? [vellumWsUpgradeProtocol(wsNonce)]
+          ? [relayWsUpgradeProtocol(wsNonce)]
           : undefined;
-      await client.connectRoom(
+      await connectObpOverRelay(
         {
           webSocketUrl: opts.webSocketUrl,
           webSocketProtocols,
@@ -107,8 +103,8 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): {
           const server = startVellumControlServer({
             state,
             db,
-            isChainAllocated: (sessionId) =>
-              channelClient.isChainAllocated(opts.channelId, sessionId),
+            isSessionAllocated: (sessionId) =>
+              channelClient.isSessionAllocated(opts.channelId, sessionId),
           });
           serverStop = server.stop;
           writeVellumControlFile(opts.cfg, opts.channelId, {
@@ -132,7 +128,6 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): {
     } finally {
       serverStop?.();
       removeVellumControlFile(opts.cfg, opts.channelId);
-      client.dispose();
       try {
         db.close();
       } catch {

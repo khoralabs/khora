@@ -16,6 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@khoralabs/relay-contracts": "workspace:*",
     "@khoralabs/agent-persisted-signer": "workspace:*",
     "@khoralabs/host-runtime": "workspace:*",
     "@khoralabs/khora-contracts": "workspace:*",

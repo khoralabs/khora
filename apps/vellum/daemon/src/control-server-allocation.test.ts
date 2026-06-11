@@ -13,7 +13,7 @@ test("chain/init rejects without relay allocation when check enabled", async () 
   const server = startVellumControlServer({
     state: { conn: undefined, handles: new Map() },
     db,
-    isChainAllocated: (sessionId) => allocated.has(sessionId),
+    isSessionAllocated: (sessionId) => allocated.has(sessionId),
   });
 
   const sampleInit = ChainInitWireSchema.parse({

@@ -18,7 +18,7 @@
     "build:schema": "bun run scripts/build-json-schema.ts"
   },
   "dependencies": {
-    "@khoralabs/vellum-channel-client": "workspace:*",
+    "@khoralabs/relay-client": "workspace:*",
     "@khoralabs/agent-persisted-signer": "workspace:*",
     "@khoralabs/khora-client": "workspace:*",
     "@khoralabs/obp-frames-impl": "workspace:*",

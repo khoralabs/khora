@@ -9,7 +9,7 @@ import {
   sessionInitToWire,
 } from "@khoralabs/obp-frames-impl";
 import type { JsonDocument } from "@khoralabs/obp-model";
-import { VellumChannelClient } from "@khoralabs/vellum-channel-client";
+import { RelayClient } from "@khoralabs/relay-client";
 import {
   type ChainInitResponse,
   ChainInitResponseSchema,
@@ -155,7 +155,7 @@ export class VellumClient {
       upgradeNonce === undefined ||
       upgradeNonce.length === 0
     ) {
-      const cc = new VellumChannelClient({ relayBaseUrl: this.opts.relayBaseUrl, signer });
+      const cc = new RelayClient({ relayBaseUrl: this.opts.relayBaseUrl, signer });
       const out = await cc.mintTicket(this.opts.channelId);
       webSocketUrl = out.webSocketUrl;
       upgradeNonce = out.upgradeNonce;
@@ -216,11 +216,11 @@ export class VellumClient {
       genesis_hash: genesis,
       parties,
     });
-    const channelClient = new VellumChannelClient({
+    const channelClient = new RelayClient({
       relayBaseUrl: this.opts.relayBaseUrl,
       signer,
     });
-    await channelClient.allocateChain(this.opts.channelId, {
+    await channelClient.allocateSession(this.opts.channelId, {
       counterpartyDid: input.counterpartyDid.trim(),
       sessionId: norm.session_id,
     });
@@ -241,7 +241,7 @@ export class VellumClient {
       }
       return ChainInitResponseSchema.parse(j);
     } catch (e) {
-      await channelClient.releaseChain(this.opts.channelId, norm.session_id).catch(() => {});
+      await channelClient.releaseSession(this.opts.channelId, norm.session_id).catch(() => {});
       throw e;
     }
   }
@@ -256,11 +256,11 @@ export class VellumClient {
     if (signer === undefined) {
       throw new Error(`identity not found at ${idPath}`);
     }
-    const channelClient = new VellumChannelClient({
+    const channelClient = new RelayClient({
       relayBaseUrl: this.opts.relayBaseUrl,
       signer,
     });
-    await channelClient.releaseChain(this.opts.channelId, sessionId.trim());
+    await channelClient.releaseSession(this.opts.channelId, sessionId.trim());
   }
 
   async sendTurn(sessionId: string, body: Record<string, unknown>): Promise<void> {

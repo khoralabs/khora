@@ -51,14 +51,14 @@ export function startVellumControlServer(opts: {
   state: VellumControlServerState;
   db: Database;
   /** When set, chain/init requires a prior relay allocation for session_id. */
-  isChainAllocated?: (sessionId: string) => boolean | Promise<boolean>;
+  isSessionAllocated?: (sessionId: string) => boolean | Promise<boolean>;
 }): {
   hostname: string;
   port: number;
   stop(): void;
 } {
   const mux = { tail: Promise.resolve() };
-  const { state, db, isChainAllocated } = opts;
+  const { state, db, isSessionAllocated } = opts;
 
   const server = Bun.serve({
     port: 0,
@@ -104,10 +104,12 @@ export function startVellumControlServer(opts: {
               { status: 400 },
             );
           }
-          if (isChainAllocated !== undefined) {
-            const allocated = await Promise.resolve(isChainAllocated(parsed.data.init.session_id));
+          if (isSessionAllocated !== undefined) {
+            const allocated = await Promise.resolve(
+              isSessionAllocated(parsed.data.init.session_id),
+            );
             if (!allocated) {
-              return Response.json({ error: "chain slot not allocated on relay" }, { status: 409 });
+              return Response.json({ error: "session slot not allocated on relay" }, { status: 409 });
             }
           }
           if (state.conn === undefined) {
