@@ -1,4 +1,3 @@
-export type { PersistableRelaySigner, RelaySigner } from "@khoralabs/relay-crypto";
 export {
   type AgentIdentityFile,
   defaultIdentityPath,
@@ -7,6 +6,7 @@ export {
   loadOrCreateIdentity,
   saveIdentity,
 } from "@khoralabs/agent-persisted-signer";
+export type { PersistableRelaySigner, RelaySigner } from "@khoralabs/relay-crypto";
 export {
   AuthError,
   type CreateKhoraDidAuthOptions,

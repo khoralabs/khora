@@ -1,8 +1,8 @@
 import type { RelaySigner } from "@khoralabs/agent-persisted-signer";
 import {
   type SignAgentRequestInput as RelaySignAgentRequestInput,
-  type SignedAgentRequest,
   signAgentRequest as relaySignAgentRequest,
+  type SignedAgentRequest,
 } from "@khoralabs/relay-client";
 import { AGENT_REQUEST_SEARCH, canonicalAgentRequestPath } from "./wire";
 

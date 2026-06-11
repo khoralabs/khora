@@ -1,8 +1,8 @@
 import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
-import { EdDSASigner } from "iso-signatures/signers/eddsa.js";
 import type { PersistableRelaySigner } from "@khoralabs/relay-crypto";
+import { EdDSASigner } from "iso-signatures/signers/eddsa.js";
 
 export type AgentIdentityFile = {
   did: string;

@@ -1,8 +1,8 @@
 import { describe, expect, mock, test } from "bun:test";
 import {
-  type RelaySigner,
   generateAgentIdentity,
   type PersistableRelaySigner,
+  type RelaySigner,
 } from "@khoralabs/khora-auth";
 import { KhoraClientError, type KhoraClientEvent } from "@khoralabs/khora-transport";
 import { KhoraClient } from "./khora-client";

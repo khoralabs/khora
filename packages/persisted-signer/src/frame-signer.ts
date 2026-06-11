@@ -1,8 +1,7 @@
+import type { PersistableRelaySigner } from "@khoralabs/relay-crypto";
 import { bytesToHex } from "@khoralabs/relay-crypto";
 import { getPublicKeyAsync, signAsync } from "@noble/ed25519";
-
 import { identityPrivFromPersistableAgent } from "./identity-priv";
-import type { PersistableRelaySigner } from "@khoralabs/relay-crypto";
 
 export type PersistedFrameSigner = {
   readonly did: string;

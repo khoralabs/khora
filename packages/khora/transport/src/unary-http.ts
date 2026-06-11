@@ -1,6 +1,6 @@
 import {
-  type RelaySigner,
   canonicalAgentRequestPath,
+  type RelaySigner,
   randomAgentRequestNonce,
   signAgentRequest,
 } from "@khoralabs/khora-auth";
