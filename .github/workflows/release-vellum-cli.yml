@@ -50,6 +50,7 @@ jobs:
           test -f packages/memories/package.json
           test -f packages/obp/package.json
           test -f packages/obp/packages/bind-policy/package.json
+          test -f packages/relay/package.json
 
       - uses: oven-sh/setup-bun@v2
         with:

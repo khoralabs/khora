@@ -751,10 +751,15 @@
     },
     "packages/obp": {
       "name": "@khoralabs/obp",
+      "dependencies": {
+        "@types/parse-gitignore": "^1.0.2",
+      },
       "devDependencies": {
         "@biomejs/biome": "^2.4.16",
         "@types/bun": "^1.3.14",
         "husky": "^9.1.7",
+        "minimatch": "^10.2.5",
+        "parse-gitignore": "^2.0.0",
         "typescript": "^5",
       },
       "peerDependencies": {
@@ -765,22 +770,10 @@
       "name": "@khoralabs/nbc-bind-policy",
       "version": "0.0.0",
       "dependencies": {
-        "@khoralabs/canonical-json": "workspace:*",
         "@khoralabs/obp-errors": "workspace:*",
         "@khoralabs/obp-model": "workspace:*",
         "ajv": "^8.17.1",
       },
-      "devDependencies": {
-        "@types/bun": "^1.3.14",
-        "typescript": "^5",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "packages/obp/packages/canonical-json": {
-      "name": "@khoralabs/canonical-json",
-      "version": "0.0.0",
       "devDependencies": {
         "@types/bun": "^1.3.14",
         "typescript": "^5",
@@ -846,7 +839,6 @@
       "name": "@khoralabs/obp-frames-impl",
       "version": "0.0.0",
       "dependencies": {
-        "@khoralabs/canonical-json": "workspace:*",
         "@khoralabs/duplex-byte-stream": "workspace:*",
         "@khoralabs/obp-errors": "workspace:*",
         "@khoralabs/obp-model": "workspace:*",
@@ -1202,6 +1194,32 @@
         "typescript": "^5",
       },
     },
+    "packages/relay": {
+      "name": "@khoralabs/relay",
+      "dependencies": {
+        "@types/parse-gitignore": "^1.0.2",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "^2.4.16",
+        "@types/bun": "^1.3.14",
+        "husky": "^9.1.7",
+        "minimatch": "^10.2.5",
+        "parse-gitignore": "^2.0.0",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/relay/apps/relay-server": {
+      "name": "@khoralabs/relay-server",
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "packages/vellum/channel-client": {
       "name": "@khoralabs/vellum-channel-client",
       "version": "0.0.0",
@@ -1407,8 +1425,6 @@
 
     "@khoralabs/bun-web": ["@khoralabs/bun-web@workspace:packages/libs/bun-web"],
 
-    "@khoralabs/canonical-json": ["@khoralabs/canonical-json@workspace:packages/obp/packages/canonical-json"],
-
     "@khoralabs/cli-flow-nbc": ["@khoralabs/cli-flow-nbc@workspace:packages/cli/cli-flow-nbc"],
 
     "@khoralabs/cli-kit": ["@khoralabs/cli-kit@workspace:packages/cli/cli-kit"],
@@ -1529,7 +1545,11 @@
 
     "@khoralabs/registry-host": ["@khoralabs/registry-host@workspace:packages/registry/host"],
 
+    "@khoralabs/relay": ["@khoralabs/relay@workspace:packages/relay"],
+
     "@khoralabs/relay-colonnade": ["@khoralabs/relay-colonnade@workspace:packages/khora/relay-colonnade"],
+
+    "@khoralabs/relay-server": ["@khoralabs/relay-server@workspace:packages/relay/apps/relay-server"],
 
     "@khoralabs/sourcemaps": ["@khoralabs/sourcemaps@0.1.0", "", { "peerDependencies": { "typescript": "^5" } }, "sha512-9eXXrtxYeOCGpKdcEWoGtLVzHfi3zF+6s//LPv4SFWoy9tJtGu1hLdW9gGFhtbRfTHDxMb1/RHblk7NREqQdwQ=="],
 

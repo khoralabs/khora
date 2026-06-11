@@ -4,3 +4,6 @@
 [submodule "packages/obp"]
 	path = packages/obp
 	url = git@github.com:khoralabs/open-binding-protocol.git
+[submodule "packages/relay"]
+	path = packages/relay
+	url = git@github.com:khoralabs/relay.git

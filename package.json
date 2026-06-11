@@ -24,9 +24,10 @@
     "context": "bun run scripts/context.ts",
     "start:khora:server": "bun run --filter @khoralabs/khora-server start",
     "submodules:init": "git submodule update --init --recursive",
-    "submodules:update": "git submodule update --remote --merge packages/memories packages/obp && bun install",
+    "submodules:update": "git submodule update --remote --merge packages/memories packages/obp packages/relay && bun install",
     "submodules:update:memories": "git submodule update --remote --merge packages/memories && bun install",
     "submodules:update:obp": "git submodule update --remote --merge packages/obp && bun install",
+    "submodules:update:relay": "git submodule update --remote --merge packages/relay && bun install",
     "prepare": "husky"
   },
   "type": "module",
@@ -66,6 +67,8 @@
     "packages/colonnade/crypto",
     "packages/colonnade/impl/ts",
     "packages/vellum/*",
-    "packages/cli/*"
+    "packages/cli/*",
+    "packages/relay/packages/*",
+    "packages/relay/apps/*"
   ]
 }
