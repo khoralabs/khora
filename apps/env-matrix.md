@@ -31,7 +31,7 @@ Put these in a Render **Environment Group** (or password manager) and link to ev
 
 | Concept | Set on | Example prod value |
 | --- | --- | --- |
-| Registry public URL | registry (`REGISTRY_URL`), khoralabs homepage (`KHORA_REGISTRY_URL`, `BUN_PUBLIC_KHORA_REGISTRY_URL`) | `https://registry.khoralabs.com` |
+| Registry public URL | registry (`REGISTRY_URL`), khoralabs homepage (`BUN_PUBLIC_KHORA_REGISTRY_URL`) | `https://registry.khoralabs.com` |
 | Khora server public URL | host registry (`POST /v1/hosts/register` + activate), khora-server (`KHORA_PUBLIC_BASE_URL`) | `https://api.khora.khoralabs.com` |
 | Browser origins for registry APIs | Host admin or registry admin → register explicit trusted origins; enable registry participation | e.g. `https://k-0.khoralabs.com`, `https://khoralabs.com` |
 
@@ -60,8 +60,8 @@ Legend: **+** = set on this service · **·** = not used · **Kind:** **S** = se
 | --- | --- | --- | --- | --- | --- |
 | `REGISTRY_URL` | + | · | · | C | Public base URL for Better Auth (`BETTER_AUTH_URL` alias). |
 | `REGISTRY_COOKIE_DOMAIN` | + | · | · | C | Optional, e.g. `.khoralabs.com` for cross-subdomain cookies. |
-| `KHORA_REGISTRY_URL` | · | + | + | C | khora-server well-known + opt-in; khoralabs homepage SSR/fetch. |
-| `BUN_PUBLIC_KHORA_REGISTRY_URL` | · | · | + | C | Inlined into khoralabs homepage client bundle at build time. |
+| `KHORA_REGISTRY_URL` | · | + | · | C | khora-server well-known + opt-in; CLI default. |
+| `BUN_PUBLIC_KHORA_REGISTRY_URL` | · | · | + | C | Registry URL for waitlist/contact OTP on khoralabs homepage (client + server). Set at build time on platforms that split build/runtime. |
 | `KHORA_HOST_SLUG` | · | + | · | C | Host slug for `/.well-known/khora` and registry opt-in. |
 | `KHORA_PUBLIC_BASE_URL` | · | + | · | C | Public base URL in well-known + register body (default loopback + `PORT`). |
 | `KHORA_REGISTRY_PARTICIPATE` | · | + | · | C | Legacy: `1`/`true` registers with registry on boot when slug set via env. Prefer `/admin/registry`. |
@@ -107,7 +107,7 @@ Host selection: `khora host use <slug>` writes `currentHost` and `hosts` to `cli
 | `KHORA_MEMORIES` | · | + | · | C | `1` / unset = search index on (default); `0` / `off` = disabled (`/v1/search` 503). |
 | `KHORA_CELL_POOL_COUNT` | · | + | · | C | Shard pool size (default 16). |
 | `KHORA_COLONNADE_CELL_WORKERS` | · | + | · | C | Bun Workers for cell SQLite (default on). |
-| `LOG_LEVEL` | · | + | · | C | Pino level (default `info`). |
+| `LOG_LEVEL` | · | + | + | C | Pino level (default `info`). |
 
 ### Encryption at rest
 
@@ -151,6 +151,16 @@ Host selection: `khora host use <slug>` writes `currentHost` and `hosts` to `cli
 | `LITESTREAM_S3_ENDPOINT` | · | · | · | C | **Local MinIO only.** Omit in prod AWS. |
 | `LITESTREAM_ACCESS_KEY_ID` | · | · | · | S | MinIO dev only; prod uses `AWS_ACCESS_KEY_ID`. |
 | `LITESTREAM_SECRET_ACCESS_KEY` | · | · | · | S | MinIO dev only; prod uses `AWS_SECRET_ACCESS_KEY`. |
+
+### Contact form & Slack (khoralabs homepage)
+
+| Variable | R | K | KH | Kind | Notes |
+| --- | --- | --- | --- | --- | --- |
+| `SLACK_BOT_TOKEN` | · | · | + | S | Slack app bot token (`xoxb-...`) with `chat:write`. Posts contact form submissions via `chat.postMessage`. |
+| `SLACK_CONTACT_CHANNEL_ID` | · | · | + | C | Target channel ID (e.g. `C0123456789`). Invite the bot to this channel. |
+| `CONTACT_QUEUE_TTL_SECONDS` | · | · | + | C | Seconds to wait for OTP before sending an **Unconfirmed** Slack message (default `300`; matches Better Auth `expiresIn` on registry). |
+
+Contact flow: submission is queued when the user reaches the OTP step; Slack sends **Verified** immediately on OTP confirm, or **Unconfirmed** when this TTL expires. Includes marketing opt-in status in the Slack payload. Server logs (`contact.queued`, `contact.slack_sent`) never include email or message body.
 
 ---
 
@@ -209,10 +219,15 @@ KHORA_CONSOLE_ROOT_TOKEN=...
 
 ```
 PORT=3000
+NODE_ENV=production
 BUN_PUBLIC_KHORA_REGISTRY_URL=https://registry.example.com
+LOG_LEVEL=info
+SLACK_BOT_TOKEN=xoxb-...
+SLACK_CONTACT_CHANNEL_ID=C0123456789
+CONTACT_QUEUE_TTL_SECONDS=300
 ```
 
-Set `BUN_PUBLIC_*` at **build time** if the platform separates build from runtime (Render: set on the service before deploy).
+Set `BUN_PUBLIC_*` at **build time** if the platform separates build from runtime (Render: set on the service before deploy). `SLACK_BOT_TOKEN` is server-only (never `BUN_PUBLIC_*`).
 
 ---
 

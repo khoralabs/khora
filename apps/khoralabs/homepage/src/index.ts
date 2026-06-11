@@ -1,7 +1,10 @@
 import path from "node:path";
 import { serve } from "bun";
 import { serveBlogMedia } from "./lib/blog-media";
+import { handleContactCancel, handleContactConfirm, handleContactQueue } from "./lib/contact-api";
 import { ensureBlogManifest } from "./lib/ensure-blog-manifest";
+import type { AppEvent } from "./lib/log-event";
+import { logger } from "./lib/logger";
 import { serveAssets } from "./lib/serve-assets";
 import { serveDownloads } from "./lib/serve-downloads";
 import { serveSkills } from "./lib/serve-skills";
@@ -78,6 +81,28 @@ const AUTH_MD_PATH = path.join(import.meta.dir, "..", "public", "auth.md");
 const server = serve({
   port: Number.isFinite(port) ? port : 3000,
   routes: {
+    "/api/contact/queue": {
+      POST: handleContactQueue,
+    },
+    "/api/contact/confirm": {
+      POST: handleContactConfirm,
+    },
+    "/api/contact/queue/:id": {
+      DELETE(req: BunRouteRequest) {
+        return handleContactCancel(req, req.params?.id ?? "");
+      },
+    },
+    "/api/events": {
+      async POST(req) {
+        try {
+          const { event } = (await req.json()) as { event: AppEvent };
+          logger.info({ event }, "app_event");
+        } catch {
+          return new Response(null, { status: 400 });
+        }
+        return new Response(null, { status: 204 });
+      },
+    },
     "/assets/*": { GET: serveAssets },
     "/blog/media/*": { GET: serveBlogMedia },
     "/downloads/*": { GET: serveDownloads },

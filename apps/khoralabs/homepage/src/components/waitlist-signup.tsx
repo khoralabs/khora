@@ -1,5 +1,4 @@
 import { EmailConfirm } from "@khoralabs/registry-accounts-react";
-import { createRegistryEmailConfirmApi } from "@khoralabs/registry-auth/client";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { ArrowLeftIcon, ArrowRight, Loader } from "lucide-react";
 import { useState } from "react";
@@ -18,15 +17,11 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
-import { getRegistryUrl } from "@/lib/registry-url";
+import { logEvent } from "@/lib/log-event";
+import { registryEmailConfirmApi } from "@/lib/registry-email-confirm-api";
 
 const OTP_LENGTH = 6;
 const WAITLIST_STORAGE_KEY = "khoralabs-homepage-waitlist";
-
-const emailConfirmApi = createRegistryEmailConfirmApi({
-  registryUrl: getRegistryUrl(),
-  sourceApp: "khoralabs-homepage",
-});
 
 type WaitlistEmailStepProps = {
   email: string;
@@ -222,19 +217,20 @@ export function WaitlistSignup({
 
   return (
     <EmailConfirm.Root
-      api={emailConfirmApi}
+      api={registryEmailConfirmApi}
       purpose="sign-up"
       otpLength={OTP_LENGTH}
       storageKey={WAITLIST_STORAGE_KEY}
       marketing={{ listSlug: "khora-waitlist", sourceApp: "khoralabs-homepage" }}
       onSuccess={async (session) => {
-        if (emailConfirmApi.subscribeMarketing !== undefined) {
-          await emailConfirmApi.subscribeMarketing({
+        if (registryEmailConfirmApi.subscribeMarketing !== undefined) {
+          await registryEmailConfirmApi.subscribeMarketing({
             email: session.user.email,
             listSlug: "khora-waitlist",
             sourceApp: "khoralabs-homepage",
           });
         }
+        logEvent("waitlist.signup_completed");
         setConfirmed(true);
       }}
     >
@@ -251,7 +247,10 @@ export function WaitlistSignup({
             marketingCheckboxId={marketingCheckboxId}
             onEmailChange={props.setEmail}
             onMarketingConsentChange={props.setMarketingConsent}
-            onSubmit={() => void props.sendOtp()}
+            onSubmit={() => {
+              logEvent("waitlist.otp_requested");
+              void props.sendOtp();
+            }}
           />
         )}
       </EmailConfirm.EmailStep>
@@ -265,7 +264,10 @@ export function WaitlistSignup({
             otpInputId={otpInputId}
             onOtpChange={props.setOtp}
             onBack={props.goBack}
-            onSubmit={(code) => void props.verifyOtp(code)}
+            onSubmit={(code) => {
+              logEvent("waitlist.otp_verified");
+              void props.verifyOtp(code);
+            }}
           />
         )}
       </EmailConfirm.OtpStep>

@@ -105,6 +105,7 @@ export function createRegistryAuth(opts: RegistryAuthOptions = {}) {
     plugins: [
       emailOTP({
         disableSignUp: false,
+        expiresIn: 300,
         async sendVerificationOTP({ email, otp, type }) {
           if (type !== "sign-in") return;
           void sendOtpEmail({ email: normalizeEmail(email), otp }).catch((err: unknown) => {
