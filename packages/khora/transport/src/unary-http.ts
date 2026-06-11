@@ -1,5 +1,5 @@
 import {
-  type AgentSigner,
+  type RelaySigner,
   canonicalAgentRequestPath,
   randomAgentRequestNonce,
   signAgentRequest,
@@ -38,7 +38,7 @@ export type RequestVoidOptions = {
 export type KhoraUnaryTransport = {
   readonly base: string;
   readonly did: string;
-  readonly signer: AgentSigner;
+  readonly signer: RelaySigner;
   readonly now: () => number;
   readonly nonce: () => string;
   fetch(path: string, init?: RequestInit): Promise<Response>;
@@ -48,7 +48,7 @@ export type KhoraUnaryTransport = {
 
 export type CreateHttpTransportOptions = {
   baseUrl: string;
-  signer: AgentSigner;
+  signer: RelaySigner;
   fetch?: KhoraFetch;
   nowMs?: () => number;
   nonceFactory?: () => string;

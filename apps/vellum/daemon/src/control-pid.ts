@@ -11,6 +11,7 @@ export type VellumControlFile = {
   pid: number;
   controlPort: number;
   channelId: string;
+  lastBlobId?: number;
 };
 
 export function vellumControlPath(
@@ -62,6 +63,9 @@ export function readVellumControlFile(
           pid,
           controlPort,
           channelId: typeof o.channelId === "string" ? o.channelId : channelId,
+          ...(typeof o.lastBlobId === "number" && Number.isFinite(o.lastBlobId)
+            ? { lastBlobId: o.lastBlobId }
+            : {}),
         };
       }
     }

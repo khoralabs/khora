@@ -1,9 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import type { PersistableAgentSigner } from "@khoralabs/agent-persisted-signer";
+import type { PersistableRelaySigner } from "@khoralabs/agent-persisted-signer";
+import {
+  createFrameSignerFromPersistableAgent,
+  identityPrivFromPersistableAgent,
+} from "@khoralabs/agent-persisted-signer";
 import { validateNbcBindPayloadForPort } from "@khoralabs/nbc-bind-policy";
 import type { JsonDocument } from "@khoralabs/obp-model";
+import type { NbcTurnBody } from "@khoralabs/obp-nbc";
 import {
   createObpSqlitePersistenceClient,
   openObpDatabase,
@@ -11,22 +16,35 @@ import {
 import { RelayClient } from "@khoralabs/relay-client";
 import { relayWsUpgradeProtocol } from "@khoralabs/relay-contracts";
 import {
-  cfgDataDir,
-  channelSqlitePath,
-  type VellumPathConfig,
-} from "@khoralabs/vellum-contracts";
-
-import { removeVellumControlFile, writeVellumControlFile } from "./control-pid";
+  bytesToHex,
+  deriveX3dhResponder,
+  generateOneTimePreKeys,
+  generateSignedPreKey,
+  parseX3dhInitMessage,
+} from "@khoralabs/relay-crypto";
+import { cfgDataDir, channelSqlitePath, type VellumPathConfig } from "@khoralabs/vellum-contracts";
+import {
+  readVellumControlFile,
+  removeVellumControlFile,
+  writeVellumControlFile,
+} from "./control-pid";
 import { startVellumControlServer, type VellumControlServerState } from "./control-server";
-import { createFrameSignerFromPersistableAgent } from "./frame-signer";
 import { connectObpOverRelay } from "./relay-obp-adapter";
-import { ensureVellumMetaSchema, upsertChainRow } from "./vellum-sqlite-meta";
+import {
+  ensureVellumMetaSchema,
+  loadPreKeySecrets,
+  upsertChainRow,
+  upsertPreKeySecrets,
+  upsertRosterEntry,
+  upsertSessionKey,
+} from "./vellum-sqlite-meta";
 
 export type RunVellumDaemonOptions = {
   relayBaseUrl: string;
-  signer: PersistableAgentSigner;
+  signer: PersistableRelaySigner;
   channelId: string;
   webSocketUrl: string;
+  lastBlobId?: number;
   json?: boolean;
   cfg: VellumPathConfig;
 };
@@ -37,6 +55,20 @@ function logLine(json: boolean, label: string, payload: unknown): void {
   } else {
     console.log(`[${label}] ${JSON.stringify(payload)}`);
   }
+}
+
+function x3dhFromTurnBody(body: NbcTurnBody): ReturnType<typeof parseX3dhInitMessage> | undefined {
+  const port = body.ports[0];
+  if (port === undefined || port.ref.length === 0) return undefined;
+  try {
+    const parsed = JSON.parse(port.ref) as unknown;
+    if (typeof parsed === "object" && parsed !== null && "x3dh" in parsed) {
+      return parseX3dhInitMessage((parsed as { x3dh: unknown }).x3dh);
+    }
+  } catch {
+    return undefined;
+  }
+  return undefined;
 }
 
 /**
@@ -68,22 +100,39 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): {
     };
 
     const frameSigner = await createFrameSignerFromPersistableAgent(opts.signer);
+    const rawIdentityPriv = identityPrivFromPersistableAgent(opts.signer);
     const channelClient = new RelayClient({
       relayBaseUrl: opts.relayBaseUrl,
       signer: opts.signer,
     });
 
+    const { bundle: spk, priv: spkPriv } = await generateSignedPreKey(rawIdentityPriv, 1);
+    const otks = generateOneTimePreKeys(10, 1);
+    upsertPreKeySecrets(
+      db,
+      spk.keyId,
+      bytesToHex(spkPriv),
+      otks.map((o) => ({ otkId: o.bundle.keyId, otkPrivHex: bytesToHex(o.priv) })),
+      Date.now(),
+    );
+    await channelClient.publishPreKeys({
+      identityKey: frameSigner.actor,
+      signedPreKey: spk,
+      oneTimePreKeys: otks.map((o) => o.bundle),
+    });
+    logLine(json, "vellum_prekeys_published", { did: frameSigner.did });
+
     try {
       logLine(json, "vellum_open", { channelId: opts.channelId, sqlitePath });
       const wsNonce = process.env.VELLUM_CHANNEL_WS_NONCE?.trim();
       const webSocketProtocols =
-        wsNonce !== undefined && wsNonce.length > 0
-          ? [relayWsUpgradeProtocol(wsNonce)]
-          : undefined;
+        wsNonce !== undefined && wsNonce.length > 0 ? [relayWsUpgradeProtocol(wsNonce)] : undefined;
+      const replayAfter = opts.lastBlobId;
       await connectObpOverRelay(
         {
           webSocketUrl: opts.webSocketUrl,
           webSocketProtocols,
+          replayAfter,
           signer: frameSigner,
           client: persistence,
           validateBindPayload: (bindPolicy, bindPayload) =>
@@ -96,21 +145,61 @@ export function runVellumDaemon(opts: RunVellumDaemonOptions): {
                 sessionId: handle.sessionId,
               });
             },
+            onIncomingOffer: async (body, session) => {
+              const initMessage = x3dhFromTurnBody(body);
+              if (initMessage === undefined) return null;
+              const peerParty = session.init.parties.find((p) => p.pubkey !== frameSigner.actor);
+              if (peerParty === undefined) return null;
+              try {
+                const { spkPriv, otkPriv } = loadPreKeySecrets(db, initMessage.opkId);
+                const sk = await deriveX3dhResponder({
+                  myIdentityPriv: rawIdentityPriv,
+                  mySpkPriv: spkPriv,
+                  myOtkPriv: otkPriv,
+                  initMessage,
+                  peerIdentityKey: peerParty.pubkey,
+                });
+                upsertSessionKey(db, session.sessionId, bytesToHex(sk), Date.now());
+                logLine(json, "vellum_x3dh_responder", { sessionId: session.sessionId });
+              } catch (e) {
+                const msg = e instanceof Error ? e.message : String(e);
+                logLine(json, "vellum_x3dh_responder_error", { error: msg });
+              }
+              return null;
+            },
           },
         },
         async (conn) => {
           state.conn = conn;
+
+          await channelClient.registerActor(opts.channelId, frameSigner.actor);
+          const snapshot = await channelClient.getRoster(opts.channelId);
+          for (const m of snapshot.members) {
+            if (m.actorPubkey !== undefined) {
+              upsertRosterEntry(db, m.principalUri, m.actorPubkey, Date.now());
+            }
+          }
+          logLine(json, "vellum_roster_synced", { members: snapshot.members.length });
+
           const server = startVellumControlServer({
             state,
             db,
+            signer: opts.signer,
+            myActorPubkeyHex: frameSigner.actor,
             isSessionAllocated: (sessionId) =>
               channelClient.isSessionAllocated(opts.channelId, sessionId),
           });
           serverStop = server.stop;
+          const existing = readVellumControlFile(opts.cfg, opts.channelId);
           writeVellumControlFile(opts.cfg, opts.channelId, {
             pid: process.pid,
             controlPort: server.port,
             channelId: opts.channelId,
+            ...(opts.lastBlobId !== undefined
+              ? { lastBlobId: opts.lastBlobId }
+              : existing?.lastBlobId !== undefined
+                ? { lastBlobId: existing.lastBlobId }
+                : {}),
           });
           logLine(json, "vellum_control", {
             hostname: server.hostname,

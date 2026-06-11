@@ -3,24 +3,28 @@ import { expect, test } from "bun:test";
 import { ChainInitWireSchema, DEFAULT_GENESIS_TURN_WIRE } from "@khoralabs/vellum-contracts";
 
 import { startVellumControlServer } from "./control-server";
+import { testControlSigner } from "./test-signer";
 import { ensureVellumMetaSchema } from "./vellum-sqlite-meta";
 
 test("chain/init rejects without relay allocation when check enabled", async () => {
   const db = new Database(":memory:");
   ensureVellumMetaSchema(db);
   const allocated = new Set<string>();
+  const signer = testControlSigner("did:key:alice");
 
   const server = startVellumControlServer({
     state: { conn: undefined, handles: new Map() },
     db,
+    signer,
+    myActorPubkeyHex: "bb".repeat(32),
     isSessionAllocated: (sessionId) => allocated.has(sessionId),
   });
 
   const sampleInit = ChainInitWireSchema.parse({
     session_id: "unallocated",
     genesis_hash: "aa".repeat(32),
-    party_ids: ["a", "b"],
-    actor_pubkeys: ["bb".repeat(32), "cc".repeat(32)],
+    party_dids: ["did:key:alice", "did:key:bob"],
+    peer_identity_key: "cc".repeat(32),
   });
 
   const res = await fetch(`http://${server.hostname}:${server.port}/chain/init`, {

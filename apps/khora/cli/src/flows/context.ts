@@ -3,7 +3,7 @@ import fs from "node:fs";
 import {
   defaultIdentityPath,
   loadIdentity,
-  type PersistableAgentSigner,
+  type PersistableRelaySigner,
 } from "@khoralabs/agent-persisted-signer";
 import { createReadlineSession, type FlagMap, type ReadLineFn } from "@khoralabs/cli-kit";
 import { KhoraClient } from "@khoralabs/khora-client";
@@ -94,7 +94,7 @@ export async function withKhoraClient<T>(
   }
 }
 
-export async function loadSigner(flags: FlagMap): Promise<PersistableAgentSigner> {
+export async function loadSigner(flags: FlagMap): Promise<PersistableRelaySigner> {
   const idPath = agentIdentityPath(flags);
   const signer = await loadIdentity(idPath);
   if (signer === undefined) {

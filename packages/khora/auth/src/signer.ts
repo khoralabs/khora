@@ -1,64 +1,26 @@
-import type { AgentSigner } from "@khoralabs/agent-persisted-signer";
+import type { RelaySigner } from "@khoralabs/agent-persisted-signer";
 import {
-  AGENT_REQUEST_HEADER,
-  AGENT_REQUEST_SEARCH,
-  type AgentRequestEnvelope,
-  canonicalAgentRequestMessage,
-  canonicalAgentRequestPath,
-  randomAgentRequestNonce,
-  signatureBytesToB64Url,
-} from "./wire";
+  type SignAgentRequestInput as RelaySignAgentRequestInput,
+  type SignedAgentRequest,
+  signAgentRequest as relaySignAgentRequest,
+} from "@khoralabs/relay-client";
+import { AGENT_REQUEST_SEARCH, canonicalAgentRequestPath } from "./wire";
 
-export type SignAgentRequestInput = {
-  method: string;
-  path: string;
-  bodyText: string;
-  signer: AgentSigner;
-  /** Override the clock (defaults to `Date.now`). */
-  now?: () => number;
-  /** Override the nonce generator (defaults to `randomAgentRequestNonce`). */
-  nonce?: () => string;
+export type SignAgentRequestInput = Omit<RelaySignAgentRequestInput, "signer"> & {
+  signer: RelaySigner;
 };
 
-export type SignedAgentRequest = {
-  /** Headers ready to merge into a fetch request. */
-  headers: Record<string, string>;
-  envelope: AgentRequestEnvelope;
-};
+export type { SignedAgentRequest };
 
-/**
- * Build the four `X-Agent-*` headers (plus the parsed envelope) for the given
- * METHOD + PATH + body using the signer's DID.
- */
 export async function signAgentRequest(input: SignAgentRequestInput): Promise<SignedAgentRequest> {
-  const timestampMs = (input.now ?? Date.now)();
-  const nonce = (input.nonce ?? randomAgentRequestNonce)();
-  const message = await canonicalAgentRequestMessage({
-    method: input.method,
-    path: input.path,
-    timestampMs,
-    nonce,
-    bodyText: input.bodyText,
-  });
-  const sigBytes = await input.signer.sign(message);
-  const signatureB64Url = signatureBytesToB64Url(sigBytes);
-  const headers: Record<string, string> = {
-    [AGENT_REQUEST_HEADER.did]: input.signer.did,
-    [AGENT_REQUEST_HEADER.ts]: String(timestampMs),
-    [AGENT_REQUEST_HEADER.nonce]: nonce,
-    [AGENT_REQUEST_HEADER.sig]: signatureB64Url,
-  };
-  return {
-    headers,
-    envelope: { did: input.signer.did, timestampMs, nonce, signatureB64Url },
-  };
+  return relaySignAgentRequest(input);
 }
 
 export type SignedInboxUrlInput = {
   baseUrl: string;
   /** Defaults to `/v1/inbox/ws`. */
   path?: string;
-  signer: AgentSigner;
+  signer: RelaySigner;
   now?: () => number;
   nonce?: () => string;
 };

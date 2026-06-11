@@ -4,7 +4,7 @@ import { existsSync } from "node:fs";
 import {
   defaultIdentityPath,
   loadIdentity,
-  type PersistableAgentSigner,
+  type PersistableRelaySigner,
 } from "@khoralabs/agent-persisted-signer";
 import {
   defaultVellumDaemonConfigPath,
@@ -43,7 +43,7 @@ function loadDaemonLayeredConfig() {
   }).config;
 }
 
-async function loadSigner(vcfg: { agentKeyPath?: string }): Promise<PersistableAgentSigner> {
+async function loadSigner(vcfg: { agentKeyPath?: string }): Promise<PersistableRelaySigner> {
   const p =
     process.env.VELLUM_AGENT_KEY_PATH?.trim() ??
     process.env.KHORA_AGENT_KEY_PATH?.trim() ??
@@ -83,11 +83,17 @@ if (relayBaseUrl.length === 0) {
 }
 
 const signer = await loadSigner(vcfg);
+const lastBlobRaw = process.env.VELLUM_LAST_BLOB_ID?.trim();
+const lastBlobId =
+  lastBlobRaw !== undefined && lastBlobRaw.length > 0
+    ? Number.parseInt(lastBlobRaw, 10)
+    : undefined;
 const handle = runVellumDaemon({
   relayBaseUrl,
   signer,
   channelId,
   webSocketUrl,
+  ...(lastBlobId !== undefined && Number.isFinite(lastBlobId) ? { lastBlobId } : {}),
   json,
   cfg: daemonPathConfig(vcfg),
 });

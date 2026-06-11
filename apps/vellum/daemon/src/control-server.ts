@@ -1,4 +1,5 @@
 import type { Database } from "bun:sqlite";
+import type { PersistableRelaySigner } from "@khoralabs/agent-persisted-signer";
 import {
   type FrameMultiplexOpenerApi,
   type FrameSessionHandle,
@@ -12,8 +13,7 @@ import {
   type ChainStateResponse,
   TurnRequestSchema,
 } from "@khoralabs/vellum-contracts";
-
-import { upsertChainRow } from "./vellum-sqlite-meta";
+import { upsertChainRow, upsertSessionKey } from "./vellum-sqlite-meta";
 
 function parseGenesisTurnOrThrow(raw: Record<string, unknown>) {
   const nb = parseNbcTurnBody(raw);
@@ -50,6 +50,8 @@ function obpTableCount(db: Database, table: string): number {
 export function startVellumControlServer(opts: {
   state: VellumControlServerState;
   db: Database;
+  signer: PersistableRelaySigner;
+  myActorPubkeyHex: string;
   /** When set, chain/init requires a prior relay allocation for session_id. */
   isSessionAllocated?: (sessionId: string) => boolean | Promise<boolean>;
 }): {
@@ -58,8 +60,8 @@ export function startVellumControlServer(opts: {
   stop(): void;
 } {
   const mux = { tail: Promise.resolve() };
-  const { state, db, isSessionAllocated } = opts;
-
+  const { state, db, isSessionAllocated, signer, myActorPubkeyHex } = opts;
+  const myDid = signer.did;
   const server = Bun.serve({
     port: 0,
     hostname: "127.0.0.1",
@@ -109,7 +111,10 @@ export function startVellumControlServer(opts: {
               isSessionAllocated(parsed.data.init.session_id),
             );
             if (!allocated) {
-              return Response.json({ error: "session slot not allocated on relay" }, { status: 409 });
+              return Response.json(
+                { error: "session slot not allocated on relay" },
+                { status: 409 },
+              );
             }
           }
           if (state.conn === undefined) {
@@ -123,13 +128,22 @@ export function startVellumControlServer(opts: {
             const msg = e instanceof Error ? e.message : String(e);
             return Response.json({ error: msg }, { status: 400 });
           }
+
+          const [didA, didB] = wi.party_dids;
+          const peerDid = didA === myDid ? didB : didA;
+          const peerPubkeyHex = wi.peer_identity_key;
           const wire = sessionInitFromWire({
             session_id: wi.session_id,
             genesis_hash: wi.genesis_hash,
-            party_ids: [wi.party_ids[0], wi.party_ids[1]],
-            actor_pubkeys: [wi.actor_pubkeys[0], wi.actor_pubkeys[1]],
+            party_ids: [myDid, peerDid],
+            actor_pubkeys: [myActorPubkeyHex, peerPubkeyHex],
           });
           const norm = normalizeSessionInit(wire);
+
+          if (parsed.data.x3dh_session_key !== undefined) {
+            upsertSessionKey(db, norm.session_id, parsed.data.x3dh_session_key, Date.now());
+          }
+
           try {
             const handle = await state.conn.init(norm, {});
             state.handles.set(norm.session_id, handle);

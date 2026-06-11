@@ -2,7 +2,7 @@ import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 import { EdDSASigner } from "iso-signatures/signers/eddsa.js";
-import type { PersistableAgentSigner } from "./signer";
+import type { PersistableRelaySigner } from "@khoralabs/relay-crypto";
 
 export type AgentIdentityFile = {
   did: string;
@@ -18,12 +18,12 @@ export function defaultIdentityPath(): string {
 }
 
 /** Create a fresh agent identity (default scheme: `did:key` + Ed25519). */
-export async function generateAgentIdentity(): Promise<PersistableAgentSigner> {
+export async function generateAgentIdentity(): Promise<PersistableRelaySigner> {
   return EdDSASigner.generate();
 }
 
 /** Load a signer from disk; returns undefined when the file is missing. */
-export async function loadIdentity(filePath: string): Promise<PersistableAgentSigner | undefined> {
+export async function loadIdentity(filePath: string): Promise<PersistableRelaySigner | undefined> {
   let text: string;
   try {
     text = await readFile(filePath, "utf8");
@@ -47,7 +47,7 @@ export async function loadIdentity(filePath: string): Promise<PersistableAgentSi
 /** Persist signer JSON with `0600` permissions; creates parent dirs as needed. */
 export async function saveIdentity(
   filePath: string,
-  signer: PersistableAgentSigner,
+  signer: PersistableRelaySigner,
 ): Promise<void> {
   const parent = path.dirname(filePath);
   await mkdir(parent, { recursive: true });
@@ -57,7 +57,7 @@ export async function saveIdentity(
 }
 
 /** Return an existing signer or generate and persist a new one. */
-export async function loadOrCreateIdentity(filePath: string): Promise<PersistableAgentSigner> {
+export async function loadOrCreateIdentity(filePath: string): Promise<PersistableRelaySigner> {
   const existing = await loadIdentity(filePath);
   if (existing !== undefined) return existing;
   const signer = await generateAgentIdentity();

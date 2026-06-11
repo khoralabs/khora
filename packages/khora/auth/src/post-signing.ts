@@ -1,11 +1,12 @@
-import type { AgentSigner } from "@khoralabs/agent-persisted-signer";
+import type { RelaySigner } from "@khoralabs/agent-persisted-signer";
 import type {
   KhoraPostCreateContent,
   KhoraPostPatch,
   KhoraStandingSearchRequest,
 } from "@khoralabs/khora-contracts";
 import { verifyAsync } from "@noble/ed25519";
-import { DIDKey } from "iso-did/key";
+
+import { publicKeyForDid } from "./did-pubkey";
 import { AuthStrategyError } from "./strategy";
 import { envelopeSignatureBytes, signatureBytesToB64Url } from "./wire";
 
@@ -89,7 +90,7 @@ export function khoraPostSigningPayloadFromPatch(
 }
 
 export async function signKhoraPostPayload(
-  signer: AgentSigner,
+  signer: RelaySigner,
   payload: KhoraPostSigningPayloadV1,
 ): Promise<string> {
   if (payload.authorDid !== signer.did) {
@@ -98,19 +99,6 @@ export async function signKhoraPostPayload(
   const message = canonicalKhoraPostSigningPayload(payload);
   const sigBytes = await signer.sign(message);
   return signatureBytesToB64Url(sigBytes);
-}
-
-function publicKeyForDid(did: string): Uint8Array {
-  let parsed: DIDKey;
-  try {
-    parsed = DIDKey.fromString(did);
-  } catch {
-    throw new AuthStrategyError(`unknown did:key: ${did}`);
-  }
-  if (parsed.type !== "Ed25519") {
-    throw new AuthStrategyError(`unsupported did:key type: ${parsed.type}`);
-  }
-  return parsed.publicKey;
 }
 
 export async function verifyKhoraPostSignature(args: {

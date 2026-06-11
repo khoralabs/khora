@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import type { PersistableAgentSigner } from "@khoralabs/agent-persisted-signer";
+import type { PersistableRelaySigner } from "@khoralabs/agent-persisted-signer";
 import type { KhoraClientEvent } from "@khoralabs/khora-transport";
 import type { InboxEventSink } from "./inbox-event-sink";
 import { runKhoraInboxDaemon } from "./run-khora-inbox-daemon";
 
-function testSigner(did = "did:key:daemon-test"): PersistableAgentSigner {
+function testSigner(did = "did:key:daemon-test"): PersistableRelaySigner {
   return {
     did,
     sign: async () => new Uint8Array(64),

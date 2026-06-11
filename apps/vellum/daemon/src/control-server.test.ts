@@ -8,7 +8,14 @@ import type {
 import { ChainInitWireSchema, DEFAULT_GENESIS_TURN_WIRE } from "@khoralabs/vellum-contracts";
 
 import { startVellumControlServer } from "./control-server";
+import { testControlSigner } from "./test-signer";
 import { ensureVellumMetaSchema } from "./vellum-sqlite-meta";
+
+const testSigner = testControlSigner("did:key:alice");
+const testServerOpts = {
+  signer: testSigner,
+  myActorPubkeyHex: "ee".repeat(32),
+};
 
 function mkConn(opts: { turns: unknown[] }): FrameMultiplexOpenerApi {
   return {
@@ -38,13 +45,13 @@ describe("POST /chain/init genesis_turn", () => {
     ensureVellumMetaSchema(db);
     const turns: unknown[] = [];
     const state = { conn: mkConn({ turns }), handles: new Map() };
-    const server = startVellumControlServer({ state, db });
+    const server = startVellumControlServer({ state, db, ...testServerOpts });
     try {
       const sampleInit = ChainInitWireSchema.parse({
         session_id: "s1",
         genesis_hash: "33".repeat(32),
-        party_ids: ["a", "b"],
-        actor_pubkeys: ["44".repeat(32), "55".repeat(32)],
+        party_dids: ["did:key:alice", "did:key:bob"],
+        peer_identity_key: "55".repeat(32),
       });
       const res = await fetch(`http://${server.hostname}:${server.port}/chain/init`, {
         method: "POST",
@@ -64,13 +71,13 @@ describe("POST /chain/init genesis_turn", () => {
     ensureVellumMetaSchema(db);
     const turns: unknown[] = [];
     const state = { conn: mkConn({ turns }), handles: new Map() };
-    const server = startVellumControlServer({ state, db });
+    const server = startVellumControlServer({ state, db, ...testServerOpts });
     try {
       const sampleInit = ChainInitWireSchema.parse({
         session_id: "s2",
         genesis_hash: "66".repeat(32),
-        party_ids: ["a", "b"],
-        actor_pubkeys: ["77".repeat(32), "88".repeat(32)],
+        party_dids: ["did:key:alice", "did:key:bob"],
+        peer_identity_key: "88".repeat(32),
       });
       const res = await fetch(`http://${server.hostname}:${server.port}/chain/init`, {
         method: "POST",
@@ -98,13 +105,13 @@ describe("POST /chain/init genesis_turn", () => {
     ensureVellumMetaSchema(db);
     const turns: unknown[] = [];
     const state = { conn: mkConn({ turns }), handles: new Map() };
-    const server = startVellumControlServer({ state, db });
+    const server = startVellumControlServer({ state, db, ...testServerOpts });
     try {
       const sampleInit = ChainInitWireSchema.parse({
         session_id: "s3",
         genesis_hash: "aa".repeat(32),
-        party_ids: ["a", "b"],
-        actor_pubkeys: ["bb".repeat(32), "cc".repeat(32)],
+        party_dids: ["did:key:alice", "did:key:bob"],
+        peer_identity_key: "cc".repeat(32),
       });
       const res = await fetch(`http://${server.hostname}:${server.port}/chain/init`, {
         method: "POST",
@@ -130,13 +137,13 @@ describe("POST /chain/init genesis_turn", () => {
     ensureVellumMetaSchema(db);
     const turns: unknown[] = [];
     const state = { conn: mkConn({ turns }), handles: new Map() };
-    const server = startVellumControlServer({ state, db });
+    const server = startVellumControlServer({ state, db, ...testServerOpts });
     try {
       const sampleInit = ChainInitWireSchema.parse({
         session_id: "s4",
         genesis_hash: "dd".repeat(32),
-        party_ids: ["a", "b"],
-        actor_pubkeys: ["ee".repeat(32), "ff".repeat(32)],
+        party_dids: ["did:key:alice", "did:key:bob"],
+        peer_identity_key: "ff".repeat(32),
       });
       const res = await fetch(`http://${server.hostname}:${server.port}/chain/init`, {
         method: "POST",

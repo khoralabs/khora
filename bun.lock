@@ -218,11 +218,9 @@
         "@khoralabs/obp-transport-ws": "workspace:*",
         "@khoralabs/relay-client": "workspace:*",
         "@khoralabs/relay-contracts": "workspace:*",
+        "@khoralabs/relay-crypto": "workspace:*",
         "@khoralabs/vellum-client": "workspace:*",
         "@khoralabs/vellum-contracts": "workspace:*",
-        "@noble/ed25519": "^3.1.0",
-        "iso-base": "^4.2.1",
-        "iso-signatures": "^0.5.1",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -313,9 +311,10 @@
         "@khoralabs/agent-persisted-signer": "workspace:*",
         "@khoralabs/host-runtime": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
+        "@khoralabs/relay-client": "workspace:*",
         "@khoralabs/relay-contracts": "workspace:*",
+        "@khoralabs/relay-crypto": "workspace:*",
         "@noble/ed25519": "^3.1.0",
-        "iso-did": "^2.1.1",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -1034,6 +1033,9 @@
       "name": "@khoralabs/agent-persisted-signer",
       "version": "0.0.0",
       "dependencies": {
+        "@khoralabs/relay-crypto": "workspace:*",
+        "@noble/ed25519": "^3.1.0",
+        "iso-base": "^4.2.1",
         "iso-signatures": "^0.5.1",
       },
       "devDependencies": {
@@ -1219,6 +1221,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/relay-contracts": "workspace:*",
+        "@khoralabs/relay-crypto": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -1231,6 +1234,25 @@
     "packages/relay/packages/relay-contracts": {
       "name": "@khoralabs/relay-contracts",
       "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/relay-crypto": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/relay/packages/relay-crypto": {
+      "name": "@khoralabs/relay-crypto",
+      "version": "0.0.0",
+      "dependencies": {
+        "@noble/curves": "^2.2.0",
+        "@noble/ed25519": "^3.1.0",
+        "lru-cache": "^11.5.1",
+      },
       "devDependencies": {
         "@types/bun": "latest",
         "typescript": "^5",
@@ -1244,9 +1266,9 @@
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/relay-contracts": "workspace:*",
+        "@khoralabs/relay-crypto": "workspace:*",
         "@khoralabs/sqlite-crypto": "^0.1.0",
         "@noble/ed25519": "^3.1.0",
-        "lru-cache": "^11.5.1",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -1267,11 +1289,9 @@
         "@khoralabs/obp-model": "workspace:*",
         "@khoralabs/obp-nbc": "workspace:*",
         "@khoralabs/relay-client": "workspace:*",
+        "@khoralabs/relay-crypto": "workspace:*",
         "@khoralabs/vellum-contracts": "workspace:*",
         "@khoralabs/vellum-transport": "workspace:*",
-        "@noble/ed25519": "^3.1.0",
-        "iso-base": "^4.2.1",
-        "iso-signatures": "^0.5.1",
         "zod": "^4",
       },
       "devDependencies": {
@@ -1555,6 +1575,8 @@
     "@khoralabs/relay-colonnade": ["@khoralabs/relay-colonnade@workspace:packages/khora/relay-colonnade"],
 
     "@khoralabs/relay-contracts": ["@khoralabs/relay-contracts@workspace:packages/relay/packages/relay-contracts"],
+
+    "@khoralabs/relay-crypto": ["@khoralabs/relay-crypto@workspace:packages/relay/packages/relay-crypto"],
 
     "@khoralabs/relay-server": ["@khoralabs/relay-server@workspace:packages/relay/apps/relay-server"],
 

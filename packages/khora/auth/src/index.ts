@@ -1,4 +1,4 @@
-export type { AgentSigner, PersistableAgentSigner } from "@khoralabs/agent-persisted-signer";
+export type { PersistableRelaySigner, RelaySigner } from "@khoralabs/relay-crypto";
 export {
   type AgentIdentityFile,
   defaultIdentityPath,

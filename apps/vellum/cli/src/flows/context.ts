@@ -3,7 +3,7 @@ import fs from "node:fs";
 import {
   defaultIdentityPath,
   loadIdentity,
-  type PersistableAgentSigner,
+  type PersistableRelaySigner,
 } from "@khoralabs/agent-persisted-signer";
 import { createReadlineSession, type FlagMap, type ReadLineFn, strFlag } from "@khoralabs/cli-kit";
 import { VELLUM_CANONICAL_KHORA_BASE_URL, VellumClient } from "@khoralabs/vellum-client";
@@ -83,7 +83,7 @@ export function makeVellumClient(flags: FlagMap, channelId: string): VellumClien
   });
 }
 
-export async function loadSigner(flags: FlagMap): Promise<PersistableAgentSigner> {
+export async function loadSigner(flags: FlagMap): Promise<PersistableRelaySigner> {
   const idPath = agentIdentityPath(flags);
   const signer = await loadIdentity(idPath);
   if (signer === undefined) {

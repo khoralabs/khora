@@ -16,11 +16,9 @@ function clientForChannelCommands(flags: FlagMap): VellumClient {
 
 export async function handleChainCreate(flags: FlagMap): Promise<void> {
   const client = clientForChannelCommands(flags);
-  const peerParty = strFlag(flags, "peer-party") ?? strFlag(flags, "peerParty");
-  const peerKey = strFlag(flags, "peer-key") ?? strFlag(flags, "peerKey");
   const peerDid = strFlag(flags, "peer-did") ?? strFlag(flags, "peerDid");
-  if (peerParty === undefined || peerKey === undefined || peerDid === undefined) {
-    throw new Error("chain create requires --peer-party, --peer-key, and --peer-did");
+  if (peerDid === undefined) {
+    throw new Error("chain create requires --peer-did");
   }
   const genesisJson = strFlag(flags, "genesis-json") ?? strFlag(flags, "genesisJson");
   let genesisTurn: Record<string, unknown> | undefined;
@@ -32,12 +30,9 @@ export async function handleChainCreate(flags: FlagMap): Promise<void> {
     genesisTurn = parsed as Record<string, unknown>;
   }
   const out = await client.chainCreate({
-    peerPartyId: peerParty,
-    peerActorPubkeyHex: peerKey,
     counterpartyDid: peerDid,
     sessionId: strFlag(flags, "session"),
     genesisHash: strFlag(flags, "genesis"),
-    myPartyId: strFlag(flags, "my-party") ?? strFlag(flags, "myParty"),
     ...(genesisTurn !== undefined ? { genesisTurn } : {}),
   });
   console.log(JSON.stringify(out, null, 2));

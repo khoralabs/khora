@@ -1,4 +1,4 @@
-import type { AgentSigner } from "@khoralabs/khora-auth";
+import type { RelaySigner } from "@khoralabs/khora-auth";
 import type {
   KhoraInviteListResponse,
   KhoraInvitePreviewResponse,
@@ -94,7 +94,7 @@ export type { PublicProfileResult } from "./http/profile";
 export type KhoraClientOptions = {
   /** Required unless {@link transportBundle} supplies unary+duplex. */
   baseUrl?: string;
-  signer: AgentSigner;
+  signer: RelaySigner;
   /** When set, {@link baseUrl} is optional — deploy-selected transports (`KHORA_TRANSPORT`, …). */
   transportBundle?: KhoraTransportBundle;
   fetch?: KhoraFetch;

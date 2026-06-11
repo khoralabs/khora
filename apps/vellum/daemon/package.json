@@ -28,11 +28,9 @@
     "@khoralabs/obp-transport-ws": "workspace:*",
     "@khoralabs/relay-client": "workspace:*",
     "@khoralabs/relay-contracts": "workspace:*",
+    "@khoralabs/relay-crypto": "workspace:*",
     "@khoralabs/vellum-client": "workspace:*",
-    "@khoralabs/vellum-contracts": "workspace:*",
-    "@noble/ed25519": "^3.1.0",
-    "iso-base": "^4.2.1",
-    "iso-signatures": "^0.5.1"
+    "@khoralabs/vellum-contracts": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",

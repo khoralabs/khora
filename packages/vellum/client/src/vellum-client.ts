@@ -1,15 +1,15 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
-import { defaultIdentityPath, loadIdentity } from "@khoralabs/agent-persisted-signer";
-import { validateNbcBindPayloadForPort } from "@khoralabs/nbc-bind-policy";
 import {
-  canonicalSessionParties,
-  normalizeSessionInit,
-  sessionInitToWire,
-} from "@khoralabs/obp-frames-impl";
+  defaultIdentityPath,
+  identityPrivFromPersistableAgent,
+  loadIdentity,
+} from "@khoralabs/agent-persisted-signer";
+import { validateNbcBindPayloadForPort } from "@khoralabs/nbc-bind-policy";
 import type { JsonDocument } from "@khoralabs/obp-model";
 import { RelayClient } from "@khoralabs/relay-client";
+import { buildX3dhInitiator, bytesToHex, verifySignedPreKey } from "@khoralabs/relay-crypto";
 import {
   type ChainInitResponse,
   ChainInitResponseSchema,
@@ -28,7 +28,6 @@ import {
   createVellumControlTransportFromEnv,
   type VellumControlTransport,
 } from "@khoralabs/vellum-transport";
-import { createFrameSignerFromPersistableAgent } from "./frame-signer";
 import { isPidAlive } from "./list-local-vellum";
 import { SqliteVellumReadModel } from "./persistence/sqlite-vellum-read-persistence";
 import type { VellumReadModel } from "./persistence/vellum-read-persistence";
@@ -49,7 +48,7 @@ export type VellumClientOptions = {
 function readControlPlane(
   cfg: VellumPathConfig,
   channelId: string,
-): { controlPort: number; pid: number } | undefined {
+): { controlPort: number; pid: number; lastBlobId?: number } | undefined {
   try {
     const p = channelVellumControlPath(cfgDataDir(cfg), channelId);
     const raw = fs.readFileSync(p, "utf8");
@@ -57,7 +56,11 @@ function readControlPlane(
     if (j !== null && typeof j === "object") {
       const o = j as Record<string, unknown>;
       if (typeof o.controlPort === "number" && typeof o.pid === "number") {
-        return { controlPort: o.controlPort, pid: o.pid };
+        return {
+          controlPort: o.controlPort,
+          pid: o.pid,
+          ...(typeof o.lastBlobId === "number" ? { lastBlobId: o.lastBlobId } : {}),
+        };
       }
     }
   } catch {
@@ -149,6 +152,7 @@ export class VellumClient {
     }
     let webSocketUrl = options?.webSocketUrl ?? process.env.VELLUM_CHANNEL_WS_URL?.trim();
     let upgradeNonce = options?.upgradeNonce ?? process.env.VELLUM_CHANNEL_WS_NONCE?.trim();
+    let lastBlobId: number | undefined;
     if (
       webSocketUrl === undefined ||
       webSocketUrl.length === 0 ||
@@ -159,6 +163,9 @@ export class VellumClient {
       const out = await cc.mintTicket(this.opts.channelId);
       webSocketUrl = out.webSocketUrl;
       upgradeNonce = out.upgradeNonce;
+      lastBlobId = out.lastBlobId;
+    } else {
+      lastBlobId = readControlPlane(this.pathConfig, this.opts.channelId)?.lastBlobId;
     }
 
     const dataDir =
@@ -173,6 +180,7 @@ export class VellumClient {
         VELLUM_CHANNEL_WS_URL: webSocketUrl,
         VELLUM_CHANNEL_WS_NONCE: upgradeNonce,
         VELLUM_BASE_URL: this.opts.relayBaseUrl,
+        ...(lastBlobId !== undefined ? { VELLUM_LAST_BLOB_ID: String(lastBlobId) } : {}),
         ...(dataDir !== undefined ? { VELLUM_DATA_DIR: dataDir } : {}),
       },
       stdout: "inherit",
@@ -185,14 +193,9 @@ export class VellumClient {
   }
 
   async chainCreate(input: {
+    counterpartyDid: string;
     sessionId?: string;
     genesisHash?: string;
-    myPartyId?: string;
-    peerPartyId: string;
-    peerActorPubkeyHex: string;
-    /** Counterparty DID for relay chain allocation (required). */
-    counterpartyDid: string;
-    /** NBC genesis body (extend + ≥1 port, no bind); defaults to {@link DEFAULT_GENESIS_TURN_WIRE}. */
     genesisTurn?: Record<string, unknown>;
   }): Promise<ChainInitResponse> {
     const idPath =
@@ -203,31 +206,54 @@ export class VellumClient {
     if (signer === undefined) {
       throw new Error(`identity not found at ${idPath}`);
     }
-    const frameSigner = await createFrameSignerFromPersistableAgent(signer);
-    const myPid = input.myPartyId?.trim() ?? randomUUID();
+    const myDid = signer.did;
+    const peerDid = input.counterpartyDid.trim();
     const sessionId = input.sessionId?.trim() ?? randomUUID();
     const genesis = input.genesisHash?.trim() ?? randomGenesisSha256();
-    const parties = canonicalSessionParties([
-      { id: myPid, pubkey: frameSigner.actor },
-      { id: input.peerPartyId.trim(), pubkey: input.peerActorPubkeyHex.trim() },
-    ]);
-    const norm = normalizeSessionInit({
-      session_id: sessionId,
-      genesis_hash: genesis,
-      parties,
-    });
+    const rawIdentityPriv = identityPrivFromPersistableAgent(signer);
+
     const channelClient = new RelayClient({
       relayBaseUrl: this.opts.relayBaseUrl,
       signer,
     });
     await channelClient.allocateSession(this.opts.channelId, {
-      counterpartyDid: input.counterpartyDid.trim(),
-      sessionId: norm.session_id,
+      counterpartyDid: peerDid,
+      sessionId,
     });
 
+    const peerBundle = await channelClient.fetchPreKeys(peerDid);
+    if (!(await verifySignedPreKey(peerBundle))) {
+      await channelClient.releaseSession(this.opts.channelId, sessionId).catch(() => {});
+      throw new Error(`invalid signed prekey for ${peerDid}`);
+    }
+    const { sk, initMessage } = await buildX3dhInitiator({
+      myIdentityPriv: rawIdentityPriv,
+      peerBundle,
+    });
+
+    const baseTurn = input.genesisTurn ?? DEFAULT_GENESIS_TURN_WIRE;
+    const ports = Array.isArray(baseTurn.ports) ? [...baseTurn.ports] : [];
+    const firstPort =
+      typeof ports[0] === "object" && ports[0] !== null
+        ? { ...(ports[0] as Record<string, unknown>) }
+        : {};
+    firstPort.ref = JSON.stringify({ x3dh: initMessage });
+    if (ports.length === 0) {
+      ports.push(firstPort);
+    } else {
+      ports[0] = firstPort;
+    }
+    const genesisTurn = { ...baseTurn, ports };
+
     const payload = {
-      init: sessionInitToWire(norm),
-      genesis_turn: input.genesisTurn ?? DEFAULT_GENESIS_TURN_WIRE,
+      init: {
+        session_id: sessionId,
+        genesis_hash: genesis,
+        party_dids: [myDid, peerDid] as [string, string],
+        peer_identity_key: peerBundle.identityKey,
+      },
+      genesis_turn: genesisTurn,
+      x3dh_session_key: bytesToHex(sk),
     };
     try {
       const res = await this.control().fetch("/chain/init", {
@@ -241,7 +267,7 @@ export class VellumClient {
       }
       return ChainInitResponseSchema.parse(j);
     } catch (e) {
-      await channelClient.releaseSession(this.opts.channelId, norm.session_id).catch(() => {});
+      await channelClient.releaseSession(this.opts.channelId, sessionId).catch(() => {});
       throw e;
     }
   }

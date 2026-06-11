@@ -1,3 +1,8 @@
+export type { PersistableRelaySigner, RelaySigner } from "@khoralabs/relay-crypto";
+export {
+  createFrameSignerFromPersistableAgent,
+  type PersistedFrameSigner,
+} from "./frame-signer";
 export type { AgentIdentityFile } from "./identity";
 export {
   defaultIdentityPath,
@@ -6,4 +11,4 @@ export {
   loadOrCreateIdentity,
   saveIdentity,
 } from "./identity";
-export type { AgentSigner, PersistableAgentSigner } from "./signer";
+export { identityPrivFromPersistableAgent } from "./identity-priv";

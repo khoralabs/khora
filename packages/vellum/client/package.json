@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@khoralabs/relay-client": "workspace:*",
+    "@khoralabs/relay-crypto": "workspace:*",
     "@khoralabs/agent-persisted-signer": "workspace:*",
     "@khoralabs/khora-client": "workspace:*",
     "@khoralabs/obp-frames-impl": "workspace:*",
@@ -27,9 +28,6 @@
     "@khoralabs/nbc-bind-policy": "workspace:*",
     "@khoralabs/vellum-contracts": "workspace:*",
     "@khoralabs/vellum-transport": "workspace:*",
-    "@noble/ed25519": "^3.1.0",
-    "iso-base": "^4.2.1",
-    "iso-signatures": "^0.5.1",
     "zod": "^4"
   },
   "devDependencies": {
