@@ -20,7 +20,7 @@ import {
   validateEnv,
 } from "./env";
 import type { HostRouteDeps } from "./http/deps";
-import { khoraFrameChannelWsHandlers, route } from "./http/router";
+import { route } from "./http/router";
 import { logger } from "./logger";
 import { envMemoriesBootstrapConfig } from "./memories-env";
 import { createV2HostRateLimiters } from "./rate-limit-buckets";
@@ -37,12 +37,11 @@ const appRoot = path.resolve(import.meta.dir, "..");
 validateEnv(appRoot);
 
 const persistencePaths = resolveKhoraPersistencePaths(process.env, appRoot);
-const { catalogPath, framesDbPath, cellsDir, dataDir } = persistencePaths;
+const { catalogPath, cellsDir, dataDir } = persistencePaths;
 const cellPoolCount = envCellPoolCount();
 const memoriesConfig = envMemoriesBootstrapConfig(persistencePaths);
 mkdirSync(dataDir, { recursive: true });
 mkdirSync(dirname(catalogPath), { recursive: true });
-mkdirSync(dirname(framesDbPath), { recursive: true });
 mkdirSync(cellsDir, { recursive: true });
 if (memoriesConfig !== undefined) {
   mkdirSync(dirname(memoriesConfig.dbPath), { recursive: true });
@@ -52,7 +51,6 @@ const tenantKey = envTenantKey();
 const encryption = await bootstrapKhoraEncryption();
 const ctx: KhoraHostContext = await bootstrapKhoraHost({
   catalogPath,
-  framesDbPath,
   cellsDir,
   cellPoolCount,
   useCellWorkers: envColonnadeUseCellWorkers(),
@@ -74,7 +72,6 @@ const deps: HostRouteDeps = {
   consoleAuth,
 };
 const inboxWsHandlers = createInboxDrainWebSocketHandlers({ ctx });
-const roomWsHandlers = khoraFrameChannelWsHandlers(ctx);
 
 const htmlRoutes = {
   "/admin": adminPage,
@@ -112,29 +109,7 @@ const server = Bun.serve<KhoraWsData>({
     hmr: true,
     console: true,
   },
-  websocket: {
-    open(ws) {
-      if (ws.data.kind === "inbox") {
-        inboxWsHandlers.open?.(ws as never);
-      } else {
-        roomWsHandlers.open(ws as never);
-      }
-    },
-    close(ws, code, reason) {
-      if (ws.data.kind === "inbox") {
-        inboxWsHandlers.close?.(ws as never, code, reason);
-      } else {
-        roomWsHandlers.close(ws as never);
-      }
-    },
-    message(ws, msg) {
-      if (ws.data.kind === "inbox") {
-        inboxWsHandlers.message(ws as never, msg);
-      } else {
-        roomWsHandlers.message(ws as never, msg);
-      }
-    },
-  },
+  websocket: inboxWsHandlers,
 });
 
 logger.info({ port: server.port }, "listening");

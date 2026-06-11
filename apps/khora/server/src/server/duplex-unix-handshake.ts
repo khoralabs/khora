@@ -1,11 +1,5 @@
 import z from "zod";
 
-const zRoom = z.object({
-  kind: z.literal("room"),
-  roomId: z.string().min(1),
-  ticket: z.string().min(1),
-});
-
 const zInbox = z.object({
   kind: z.literal("inbox"),
   did: z.string().min(1),
@@ -14,7 +8,7 @@ const zInbox = z.object({
   sig: z.string().min(1),
 });
 
-export const zDuplexUnixHandshake = z.discriminatedUnion("kind", [zRoom, zInbox]);
+export const zDuplexUnixHandshake = zInbox;
 
 export type DuplexUnixHandshake = z.infer<typeof zDuplexUnixHandshake>;
 

@@ -5,7 +5,6 @@ import { KHORA_PERSISTENCE_REL, resolveKhoraPersistencePaths } from "./persisten
 const ENV_KEYS = [
   "KHORA_DATA_DIR",
   "KHORA_CATALOG_PATH",
-  "KHORA_FRAMES_DB_PATH",
   "KHORA_CELLS_DIR",
   "KHORA_MEMORIES_DB_PATH",
 ] as const;
@@ -31,11 +30,10 @@ afterEach(() => {
 });
 
 describe("resolveKhoraPersistencePaths", () => {
-  test("KHORA_DATA_DIR alone derives all four paths", () => {
+  test("KHORA_DATA_DIR alone derives catalog, cells, and memories paths", () => {
     const prev = snapshotEnv();
     try {
       delete process.env.KHORA_CATALOG_PATH;
-      delete process.env.KHORA_FRAMES_DB_PATH;
       delete process.env.KHORA_CELLS_DIR;
       delete process.env.KHORA_MEMORIES_DB_PATH;
       process.env.KHORA_DATA_DIR = "./my-data";
@@ -43,7 +41,6 @@ describe("resolveKhoraPersistencePaths", () => {
       const p = resolveKhoraPersistencePaths(process.env, cwd);
       expect(p.dataDir).toBe(path.join(cwd, "my-data"));
       expect(p.catalogPath).toBe(path.join(cwd, "my-data", KHORA_PERSISTENCE_REL.catalog));
-      expect(p.framesDbPath).toBe(path.join(cwd, "my-data", KHORA_PERSISTENCE_REL.frames));
       expect(p.cellsDir).toBe(path.join(cwd, "my-data", KHORA_PERSISTENCE_REL.cellsDir));
       expect(p.memoriesDbPath).toBe(path.join(cwd, "my-data", KHORA_PERSISTENCE_REL.memories));
     } finally {
@@ -69,7 +66,6 @@ describe("resolveKhoraPersistencePaths", () => {
       process.env.KHORA_DATA_DIR = "./data";
       process.env.KHORA_CELLS_DIR = "/custom/cells";
       delete process.env.KHORA_CATALOG_PATH;
-      delete process.env.KHORA_FRAMES_DB_PATH;
       delete process.env.KHORA_MEMORIES_DB_PATH;
       const p = resolveKhoraPersistencePaths(process.env, "/w");
       expect(p.cellsDir).toBe("/custom/cells");
@@ -79,17 +75,15 @@ describe("resolveKhoraPersistencePaths", () => {
     }
   });
 
-  test("legacy three paths without KHORA_DATA_DIR", () => {
+  test("legacy catalog and cells paths without KHORA_DATA_DIR", () => {
     const prev = snapshotEnv();
     try {
       delete process.env.KHORA_DATA_DIR;
       process.env.KHORA_CATALOG_PATH = "/legacy/cat.sqlite";
-      process.env.KHORA_FRAMES_DB_PATH = "/legacy/frames.sqlite";
       process.env.KHORA_CELLS_DIR = "/legacy/cells";
       delete process.env.KHORA_MEMORIES_DB_PATH;
       const p = resolveKhoraPersistencePaths(process.env, "/w");
       expect(p.catalogPath).toBe("/legacy/cat.sqlite");
-      expect(p.framesDbPath).toBe("/legacy/frames.sqlite");
       expect(p.cellsDir).toBe("/legacy/cells");
       expect(p.dataDir).toBe("/legacy");
       expect(p.memoriesDbPath).toBe(path.join("/legacy", KHORA_PERSISTENCE_REL.memories));
@@ -103,7 +97,6 @@ describe("resolveKhoraPersistencePaths", () => {
     try {
       delete process.env.KHORA_DATA_DIR;
       process.env.KHORA_CATALOG_PATH = "/legacy/cat.sqlite";
-      process.env.KHORA_FRAMES_DB_PATH = "/legacy/frames.sqlite";
       process.env.KHORA_CELLS_DIR = "/legacy/cells";
       process.env.KHORA_MEMORIES_DB_PATH = "/else/mem.sqlite";
       const p = resolveKhoraPersistencePaths(process.env, "/w");

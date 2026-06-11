@@ -49,7 +49,6 @@ export type {
   KhoraAdminCellDetailResult,
   KhoraAdminCellShardSummary,
   KhoraAdminCellsSummary,
-  KhoraAdminFramesStats,
   KhoraAdminHeartbeatStats,
   KhoraAdminInactiveMember,
   KhoraAdminInactiveMemberReason,
@@ -74,10 +73,7 @@ export {
   type PostAddressInput,
 } from "./post-address-id";
 export { canDeliverPostToRecipient, canReadPost } from "./post-visibility";
-export {
-  discardCellInboxRoomTickets,
-  enqueueCellInboxInline,
-} from "./relay-cell-inbox";
+export { enqueueCellInboxInline } from "./relay-cell-inbox";
 export {
   popRelayInboxDrainItemsForDid,
   type RelayInboxDrainItem,
@@ -88,14 +84,6 @@ export {
   listAuthorOutboxRecords,
   resolvePostById,
 } from "./resolve-post";
-export {
-  deliverRoomTicketToPrincipal,
-  type MintRoomChannelTicketOpts,
-  mintRoomChannelTicketAndSync,
-  type RoomAdmissionInboxCtx,
-  type RoomRegistryMeta,
-  type RoomTicketInlinePayload,
-} from "./room-admission";
 export {
   authorDidFromSubscriptionSubject,
   authorSubscriptionSubject,

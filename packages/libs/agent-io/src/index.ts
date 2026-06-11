@@ -4,8 +4,8 @@
 export type {
   DuplexByteStream,
   WebSocketDuplexByteSend,
-} from "@khoralabs/duplex-byte-stream";
+} from "@khoralabs/obp-byte-stream";
 export {
   createMemoryDuplexByteStreamPair,
   createWebSocketDuplexByteStream,
-} from "@khoralabs/duplex-byte-stream";
+} from "@khoralabs/obp-byte-stream";

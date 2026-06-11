@@ -21,7 +21,6 @@ import {
 
 export type CreateTestKhoraHostOpts = {
   catalogPath: string;
-  framesDbPath: string;
   cellsDir: string;
   cellPoolCount?: number;
   useCellWorkers?: boolean;
@@ -38,21 +37,12 @@ export async function createTestKhoraHost(
   const cellPoolCount = opts.cellPoolCount ?? 16;
   const useCellWorkers = opts.useCellWorkers ?? false;
   const encryption = createTestEncryptionMaterial();
-  const {
-    persistence,
-    frameRelayStore,
-    social,
-    catalogDb,
-    framesDb,
-    projectionStore,
-    principalChannelStore,
-    tenantKey,
-  } = await createRelayColonnadeSocial({
-    catalogPath: opts.catalogPath,
-    framesDbPath: opts.framesDbPath,
-    encryptionProvider: encryption.provider,
-    ...(opts.tenantKey !== undefined ? { tenantKey: opts.tenantKey } : {}),
-  });
+  const { persistence, social, catalogDb, projectionStore, principalChannelStore, tenantKey } =
+    await createRelayColonnadeSocial({
+      catalogPath: opts.catalogPath,
+      encryptionProvider: encryption.provider,
+      ...(opts.tenantKey !== undefined ? { tenantKey: opts.tenantKey } : {}),
+    });
   const cluster = createSqliteColonnadeCluster({
     cellsDirectory: opts.cellsDir,
     mode: { kind: "pool", cellCount: cellPoolCount },
@@ -67,7 +57,6 @@ export async function createTestKhoraHost(
   const percolator = bootstrapKhoraPercolator({ catalogDb });
   const principalLifecycle = createRelayPrincipalLifecycle({
     catalogDb,
-    frameRelayStore,
     projectionStore,
     principalChannelStore,
     persistence,
@@ -89,7 +78,6 @@ export async function createTestKhoraHost(
   const health = opts.health ?? {
     ping() {
       catalogDb.query("SELECT 1").run();
-      framesDb.query("SELECT 1").run();
     },
   };
   const adminStats = opts.adminStats ?? {
@@ -98,12 +86,9 @@ export async function createTestKhoraHost(
       invites: { configured: false, total: 0, consumed: 0, unconsumed: 0 },
       teardown: { pending: 0, running: 0, active: 0, completed: 0, failed: 0 },
       catalog: { projectionRows: 0, standingQueries: 0, registeredUsers: 0 },
-      frames: { activeRooms: 0, totalFrames: 0 },
       cells: { poolCount: cellPoolCount, inUseCount: 0, shards: [] },
       networkActivity: {
         subscriptionsThisWeek: 0,
-        roomsCreatedThisWeek: 0,
-        totalRoomsCreated: 0,
         heartbeat: {
           registeredAgents: 0,
           withStatusPost: 0,
@@ -154,7 +139,6 @@ export async function createTestKhoraHost(
 
   return createKhoraHost({
     persistence,
-    frameRelayStore,
     social,
     tenantKey,
     cluster,

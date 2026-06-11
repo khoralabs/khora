@@ -6,25 +6,19 @@ export function InfrastructurePage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Infrastructure</h1>
-        <p className="text-sm text-muted-foreground">Catalog, frames, and cell pool usage</p>
+        <p className="text-sm text-muted-foreground">Catalog and cell pool usage</p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Resources</CardTitle>
-          <CardDescription>Relay catalog, frames, and cell shards</CardDescription>
+          <CardDescription>Relay catalog and cell shards</CardDescription>
         </CardHeader>
         <CardContent>
           <AdminStats.Infrastructure className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1">
-                <h3 className="text-sm font-medium">Relay catalog</h3>
-                <AdminStats.CatalogMetrics className="grid gap-2 text-sm [&_dt]:text-muted-foreground [&_dd]:font-mono" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-sm font-medium">Frames</h3>
-                <AdminStats.FramesMetrics className="grid gap-2 text-sm [&_dt]:text-muted-foreground [&_dd]:font-mono" />
-              </div>
+            <div className="space-y-1">
+              <h3 className="text-sm font-medium">Relay catalog</h3>
+              <AdminStats.CatalogMetrics className="grid gap-2 text-sm [&_dt]:text-muted-foreground [&_dd]:font-mono" />
             </div>
             <AdminStats.CellUtilizationBar className="relative h-2 overflow-hidden rounded-full bg-muted [&_[data-slot=admin-stats-cell-utilization-fill]]:absolute [&_[data-slot=admin-stats-cell-utilization-fill]]:inset-y-0 [&_[data-slot=admin-stats-cell-utilization-fill]]:left-0 [&_[data-slot=admin-stats-cell-utilization-fill]]:rounded-full [&_[data-slot=admin-stats-cell-utilization-fill]]:bg-primary [&_[data-slot=admin-stats-cell-utilization-label]]:sr-only" />
             <AdminStats.CellGrid className="grid grid-cols-2 gap-2 sm:grid-cols-4 [&_[data-slot=admin-stats-cell-grid-item]]:flex [&_[data-slot=admin-stats-cell-grid-item]]:flex-col [&_[data-slot=admin-stats-cell-grid-item]]:items-start [&_[data-slot=admin-stats-cell-grid-item]]:gap-1 [&_[data-slot=admin-stats-cell-grid-item]]:rounded-md [&_[data-slot=admin-stats-cell-grid-item]]:border [&_[data-slot=admin-stats-cell-grid-item]]:p-2 [&_[data-slot=admin-stats-cell-grid-item]]:text-left [&_[data-slot=admin-stats-cell-grid-item]]:text-xs [&_[data-slot=admin-stats-cell-grid-item][data-selected=true]]:border-primary [&_[data-slot=admin-stats-cell-grid-item-label]]:font-medium [&_[data-slot=admin-stats-cell-grid-item-metrics]]:font-mono [&_[data-slot=admin-stats-cell-grid-item-homes]]:text-muted-foreground" />

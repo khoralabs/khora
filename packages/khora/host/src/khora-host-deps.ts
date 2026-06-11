@@ -3,8 +3,6 @@ import type { ColonnadePublicationClient } from "@khoralabs/colonnade-persistenc
 import type { HostPersistence } from "@khoralabs/host-runtime";
 import type { KhoraDidAuth } from "@khoralabs/khora-auth";
 import type { KhoraInvitesRepo } from "@khoralabs/khora-invites";
-import type { KhoraRoomLifecycleHostEvent } from "@khoralabs/khora-transport";
-import type { FrameRelayStoreStrategy } from "@khoralabs/obp-frame-relay";
 import type {
   AgentAccountStatusPort,
   RelayPrincipalLifecycle,
@@ -22,7 +20,6 @@ import type {
 
 export type KhoraHostDeps = {
   persistence: HostPersistence;
-  frameRelayStore: FrameRelayStoreStrategy;
   social: SocialRelationshipPersistence;
   tenantKey: string;
   cluster: KhoraColonnadeCluster;
@@ -40,5 +37,4 @@ export type KhoraHostDeps = {
   catalog: KhoraHostCatalogApi;
   outboxPayloadCodec: OutboxPayloadCodec;
   startPrincipalTeardownWorker?: boolean;
-  roomLifecycle?: (event: KhoraRoomLifecycleHostEvent) => void;
 };

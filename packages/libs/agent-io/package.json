@@ -15,7 +15,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@khoralabs/duplex-byte-stream": "workspace:*"
+    "@khoralabs/obp-byte-stream": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",

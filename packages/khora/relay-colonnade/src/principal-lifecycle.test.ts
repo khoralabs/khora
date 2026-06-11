@@ -10,7 +10,6 @@ import {
 } from "@khoralabs/colonnade-crypto";
 import { createSqliteColonnadeCluster } from "@khoralabs/colonnade-persistence";
 import type { HostPersistence } from "@khoralabs/host-runtime";
-import { InMemoryFrameRelayStoreStrategy } from "@khoralabs/obp-frame-relay";
 import { createRelayColonnadeSocial } from "./create-relay-colonnade-social";
 import { createRelayPrincipalLifecycle, type RelayPrincipalLifecycle } from "./principal-lifecycle";
 import {
@@ -27,7 +26,6 @@ function lifecycleWithMockPersistence(
   const encryption = createTestEncryptionMaterial();
   return createRelayPrincipalLifecycle({
     catalogDb,
-    frameRelayStore: new InMemoryFrameRelayStoreStrategy(),
     projectionStore: {
       lookupProjection: () => ({ found: false, projection: null }),
       deleteRow: () => {},
@@ -96,19 +94,12 @@ test("enqueueTeardown clears registration and enqueues job; runNextTeardownJob f
   applyTestEncryptionEnv();
   const dir = nextDir();
   const encryptionProvider = new TestKeyProvider();
-  const {
-    persistence,
-    projectionStore,
-    principalChannelStore,
-    catalogDb,
-    tenantKey,
-    frameRelayStore,
-  } = await createRelayColonnadeSocial({
-    catalogPath: join(dir, "c.sqlite"),
-    framesDbPath: join(dir, "f.sqlite"),
-    tenantKey: "tn",
-    encryptionProvider,
-  });
+  const { persistence, projectionStore, principalChannelStore, catalogDb, tenantKey } =
+    await createRelayColonnadeSocial({
+      catalogPath: join(dir, "c.sqlite"),
+      tenantKey: "tn",
+      encryptionProvider,
+    });
   const encryption = createTestEncryptionMaterial();
   const cluster = createSqliteColonnadeCluster({
     cellsDirectory: join(dir, "cells"),
@@ -122,7 +113,6 @@ test("enqueueTeardown clears registration and enqueues job; runNextTeardownJob f
   });
   const lifecycle = createRelayPrincipalLifecycle({
     catalogDb,
-    frameRelayStore,
     projectionStore,
     principalChannelStore,
     persistence,

@@ -19,11 +19,6 @@ export type AdminCatalogStats = {
   registeredUsers: number;
 };
 
-export type AdminFramesStats = {
-  activeRooms: number;
-  totalFrames: number;
-};
-
 export type AdminCellShardSummary = {
   cellId: string;
   provisioned: boolean;
@@ -48,8 +43,6 @@ export type AdminHeartbeatStats = {
 
 export type AdminNetworkActivityStats = {
   subscriptionsThisWeek: number;
-  roomsCreatedThisWeek: number;
-  totalRoomsCreated: number;
   heartbeat: AdminHeartbeatStats;
 };
 
@@ -74,7 +67,6 @@ export type AdminSummary = {
   invites: AdminInviteStats;
   teardown: AdminTeardownStats;
   catalog: AdminCatalogStats;
-  frames: AdminFramesStats;
   cells: AdminCellsStats;
   networkActivity: AdminNetworkActivityStats;
 };

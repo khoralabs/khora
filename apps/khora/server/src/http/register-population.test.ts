@@ -21,12 +21,6 @@ function rateLimitersAlwaysOk(): HostRouteDeps["rateLimiters"] {
     defaultIp: allow,
     invitePreviewIp: allow,
     invitesListDid: allow,
-    roomsCreateDid: allow,
-    roomsTicketMintDid: allow,
-    roomsJoinDid: allow,
-    roomsReadDid: allow,
-    roomsRemoveDid: allow,
-    relationshipsListDid: allow,
   };
 }
 

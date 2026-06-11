@@ -6,38 +6,6 @@ import type {
 } from "@khoralabs/khora-contracts";
 import type { InboxNotificationRow, InboxWsDrainMessage } from "./inbox-ws";
 
-// ---------------------------------------------------------------------------
-// Host/embedder callbacks (server-side, no secrets)
-// Fired by the khora server; consumed by KhoraHost via `ctx.roomLifecycle`.
-// ---------------------------------------------------------------------------
-
-export type KhoraRoomLifecycleHostEvent =
-  | {
-      kind: "room_created";
-      roomId: string;
-      creatorDid: string;
-      inviteTargetDid: string | null;
-      hasOpenInvite: boolean;
-      expiresAtMs: number;
-    }
-  | {
-      kind: "room_ticket_minted";
-      roomId: string;
-      principalDid: string;
-      expiresAtMs: number;
-    }
-  | {
-      kind: "room_invite_redeemed";
-      roomId: string;
-      creatorDid: string;
-      peerDid: string;
-      expiresAtMs: number;
-    };
-
-// ---------------------------------------------------------------------------
-// Client-side events (end-user SDK, surfaced by KhoraClient.prototype.subscribe)
-// ---------------------------------------------------------------------------
-
 /**
  * All successful RPC / inbox outcomes surfaced by `KhoraClient.prototype.subscribe`.
  *
@@ -85,38 +53,10 @@ export type KhoraClientEvent =
       did: string;
     }
   | {
-      type: "inbox:room_ticket";
-      id: number;
-      notification: Extract<KhoraInboxNotification, { kind: "room_ticket" }>;
-      did: string;
-    }
-  | {
       type: "inbox:post";
       id: number;
       notification: Extract<KhoraInboxNotification, { kind: "inbox_post" }>;
       did: string;
-    }
-  | {
-      type: "room:created";
-      did: string;
-      roomId: string;
-      expiresAtMs?: number;
-      hasOpenInvite: boolean;
-      targetDid?: string;
-      targetUsername?: string;
-    }
-  | {
-      type: "room:ticket_minted";
-      did: string;
-      roomId: string;
-      expiresAtMs?: number;
-    }
-  | {
-      type: "room:invite_redeemed";
-      did: string;
-      roomId: string;
-      creatorDid: string;
-      expiresAtMs?: number;
     };
 
 export type KhoraDerivedInboxEvent = Exclude<
@@ -134,7 +74,6 @@ export function isDerivedInboxKindEvent(e: KhoraClientEvent): e is KhoraDerivedI
   switch (e.type) {
     case "inbox:connection_request":
     case "inbox:host":
-    case "inbox:room_ticket":
     case "inbox:post":
       return true;
     default:

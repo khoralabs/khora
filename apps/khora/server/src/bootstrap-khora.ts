@@ -22,7 +22,6 @@ import {
   readInvitePepper,
   validateInviteEnvConfig,
 } from "@khoralabs/khora-invites";
-import type { KhoraRoomLifecycleHostEvent } from "@khoralabs/khora-transport";
 import {
   createMemoriesPersistence,
   ensureCustomSqliteForExtensions,
@@ -41,7 +40,6 @@ import { createKhoraHostSpecPort } from "./ops/host-spec-port";
 
 export type BootstrapKhoraHostOpts = {
   catalogPath: string;
-  framesDbPath: string;
   cellsDir: string;
   cellPoolCount: number;
   useCellWorkers: boolean;
@@ -49,7 +47,6 @@ export type BootstrapKhoraHostOpts = {
   memories?: KhoraMemoriesBootstrapConfig;
   encryption: KhoraEncryptionContext;
   startPrincipalTeardownWorker?: boolean;
-  roomLifecycle?: (event: KhoraRoomLifecycleHostEvent) => void;
 };
 
 export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<KhoraHostContext> {
@@ -58,21 +55,12 @@ export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<
   const encryption = opts.encryption;
   const encryptionProvider = new EnvKeyProvider();
   const outboxKey = await encryptionProvider.getOutboxFieldKey();
-  const {
-    persistence,
-    frameRelayStore,
-    social,
-    catalogDb,
-    framesDb,
-    projectionStore,
-    principalChannelStore,
-    tenantKey,
-  } = await createRelayColonnadeSocial({
-    catalogPath: opts.catalogPath,
-    framesDbPath: opts.framesDbPath,
-    encryptionProvider,
-    ...(opts.tenantKey !== undefined ? { tenantKey: opts.tenantKey } : {}),
-  });
+  const { persistence, social, catalogDb, projectionStore, principalChannelStore, tenantKey } =
+    await createRelayColonnadeSocial({
+      catalogPath: opts.catalogPath,
+      encryptionProvider,
+      ...(opts.tenantKey !== undefined ? { tenantKey: opts.tenantKey } : {}),
+    });
   const cluster = createSqliteColonnadeCluster({
     cellsDirectory: opts.cellsDir,
     mode: { kind: "pool", cellCount: cellPoolCount },
@@ -93,7 +81,6 @@ export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<
   });
   const principalLifecycle = createRelayPrincipalLifecycle({
     catalogDb,
-    frameRelayStore,
     projectionStore,
     principalChannelStore,
     persistence,
@@ -112,11 +99,10 @@ export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<
     tenantKey,
     principalLifecycle,
   });
-  const health = createKhoraHostHealthPort(catalogDb, framesDb);
+  const health = createKhoraHostHealthPort(catalogDb);
   const hostSpec = createKhoraHostSpecPort({ catalogDb, tenantKey });
   const adminStats = createKhoraAdminStatsPort({
     catalogDb,
-    framesDb,
     cellsDir: opts.cellsDir,
     tenantKey,
     cellPoolCount,
@@ -170,7 +156,6 @@ export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<
 
   return createKhoraHost({
     persistence,
-    frameRelayStore,
     social,
     tenantKey,
     cluster,
@@ -190,6 +175,5 @@ export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<
     ...(opts.startPrincipalTeardownWorker !== undefined
       ? { startPrincipalTeardownWorker: opts.startPrincipalTeardownWorker }
       : {}),
-    ...(opts.roomLifecycle !== undefined ? { roomLifecycle: opts.roomLifecycle } : {}),
   });
 }

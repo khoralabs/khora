@@ -11,7 +11,7 @@ How Vellum **byte relay** is deployed relative to **channel control** (roster, l
 | **Single-channel container** (canonical) | One relay container ↔ one `channel_id` | Exactly **1** | Out-of-band **single-use join token** | **Target** for production / ephemeral infra |
 | **Multi-tenant relay pool** (dev) | One long-lived Bun process | Many (`VELLUM_RELAY_MAX_CHANNELS`) | `invite_only` via join token | **Current** [`apps/vellum/channel-relay`](../../apps/vellum/channel-relay) reference |
 
-Both profiles share the same **data plane** (`@khoralabs/obp-frame-relay`: pairing secret, frame spool, WS multiplex) and the same **enforcement semantics** for roster size, chain quotas, and bilateral allocation. They differ in **how many channels live in one OS process**.
+Both profiles share the same **data plane** (`relay-server-http`: channel admission tickets, opaque blob spool, WS multiplex) and the same **enforcement semantics** for roster size, chain quotas, and bilateral allocation. They differ in **how many channels live in one OS process**. OBP wire contract: `@khoralabs/obp-frame-relay-spec`.
 
 ```mermaid
 flowchart TB

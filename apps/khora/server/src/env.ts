@@ -60,10 +60,6 @@ export function envCatalogPath(): string {
   return persistencePaths().catalogPath;
 }
 
-export function envFramesDbPath(): string {
-  return persistencePaths().framesDbPath;
-}
-
 export function envCellsDir(): string {
   return persistencePaths().cellsDir;
 }

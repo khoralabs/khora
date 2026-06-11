@@ -32,14 +32,6 @@ export function AdminStatsNetworkActivity({
             value={summary.networkActivity.subscriptionsThisWeek}
           />
           <MetricRow
-            label="Rooms created this week"
-            value={summary.networkActivity.roomsCreatedThisWeek}
-          />
-          <MetricRow
-            label="Total rooms created"
-            value={summary.networkActivity.totalRoomsCreated}
-          />
-          <MetricRow
             label="Heartbeat (24h)"
             value={summary.networkActivity.heartbeat.activeLast24h}
           />

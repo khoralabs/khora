@@ -1,9 +1,9 @@
-import type { DuplexByteStream } from "@khoralabs/duplex-byte-stream";
 import { AuthError } from "@khoralabs/khora-auth";
+import type { DuplexByteStream } from "@khoralabs/obp-byte-stream";
 import type { Socket } from "bun";
 import type { HostRouteDeps } from "../http/deps";
 import { logger } from "../logger";
-import { attachInboxDuplexAfterAuth, attachRoomDuplexAfterTicket } from "./duplex-attach";
+import { attachInboxDuplexAfterAuth } from "./duplex-attach";
 import { type DuplexUnixHandshake, parseDuplexUnixHandshakeJson } from "./duplex-unix-handshake";
 
 export type DuplexUnixIngressHandle = {
@@ -147,16 +147,6 @@ async function settleDuplexUnixSession(
   if (st.tag !== "session") return;
   const { handshake, bridge } = st;
 
-  if (handshake.kind === "room") {
-    const { dispose } = await attachRoomDuplexAfterTicket({
-      ctx: deps.ctx,
-      roomId: handshake.roomId,
-      ticket: handshake.ticket,
-      duplex: bridge.duplex,
-    });
-    st.dispose = dispose;
-    return;
-  }
   const { dispose } = await attachInboxDuplexAfterAuth({
     deps,
     duplex: bridge.duplex,

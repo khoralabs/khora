@@ -35,7 +35,6 @@ async function runWithLitestream(): Promise<void> {
 
   const persistencePaths = resolveKhoraPersistencePaths(process.env, serverRoot);
   const catalogAbs = path.resolve(process.cwd(), persistencePaths.catalogPath);
-  const framesAbs = path.resolve(process.cwd(), persistencePaths.framesDbPath);
   const cellsAbs = path.resolve(process.cwd(), persistencePaths.cellsDir);
   const memoriesConfig = envMemoriesEnabled()
     ? envMemoriesBootstrapConfig(persistencePaths)
@@ -45,7 +44,6 @@ async function runWithLitestream(): Promise<void> {
 
   mkdirSync(persistencePaths.dataDir, { recursive: true });
   mkdirSync(path.dirname(catalogAbs), { recursive: true });
-  mkdirSync(path.dirname(framesAbs), { recursive: true });
   mkdirSync(cellsAbs, { recursive: true });
   if (memoriesAbs !== undefined) {
     mkdirSync(path.dirname(memoriesAbs), { recursive: true });
@@ -57,7 +55,6 @@ async function runWithLitestream(): Promise<void> {
     ...s3,
     dbs: [
       { kind: "file", path: catalogAbs, replicaSuffix: "catalog.sqlite" },
-      { kind: "file", path: framesAbs, replicaSuffix: "frames.sqlite" },
       ...(memoriesAbs !== undefined
         ? [{ kind: "file" as const, path: memoriesAbs, replicaSuffix: "memories.sqlite" }]
         : []),

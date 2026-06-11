@@ -1,6 +1,4 @@
-import type { KhoraHostContext } from "@khoralabs/khora-host";
 import type { KhoraWsUpgradePort } from "@khoralabs/khora-transport";
-import { frameRelayHubWebSocketHandlers } from "@khoralabs/obp-frame-relay";
 import { logger } from "../logger";
 import { clientIpFromRequest } from "../rate-limit";
 import { handleInboxWsUpgrade } from "../ws/inbox";
@@ -39,19 +37,7 @@ import {
   handleAdminRegistryQuotaRequestPost,
   handleAdminRegistryRegisterPost,
 } from "./registry-admin";
-import { handleListRelationships } from "./relationships";
 import { jsonError, rateLimitedResponse } from "./responses";
-import {
-  handleRoomsCreate,
-  handleRoomsGet,
-  handleRoomsJoin,
-  handleRoomsMintTicket,
-  handleRoomsRemove,
-  handleRoomWsUpgrade,
-  isRoomWsPath,
-  parseRoomsMintTicketRoomId,
-  parseRoomsUnaryRoomId,
-} from "./rooms";
 import { handleSearchGet, handleSearchPost } from "./search";
 import { handleUnregister } from "./unregister";
 import { handleWellKnownKhora } from "./well-known-khora";
@@ -197,47 +183,8 @@ export async function route(
     return handleListInvites(req, url, deps);
   }
 
-  if (req.method === "GET" && url.pathname === "/v1/relationships") {
-    return handleListRelationships(req, url, deps);
-  }
-
   if (req.method === "GET" && url.pathname === "/v1/authors/subscriptions") {
     return handleListAuthorSubscriptions(req, url, deps);
-  }
-
-  if (isRoomWsPath(url.pathname)) {
-    if (upgradePort === undefined) {
-      return jsonError("WebSocket upgrade requires HTTP transport", 501);
-    }
-    if (req.method !== "GET") {
-      return undefined;
-    }
-    return handleRoomWsUpgrade(req, url, upgradePort, deps);
-  }
-
-  if (req.method === "POST" && url.pathname === "/v1/rooms") {
-    return handleRoomsCreate(req, url, deps);
-  }
-
-  if (req.method === "POST" && url.pathname === "/v1/rooms/join") {
-    return handleRoomsJoin(req, url, deps);
-  }
-
-  const unaryRoomSeg = parseRoomsUnaryRoomId(url.pathname);
-  if (unaryRoomSeg !== undefined && unaryRoomSeg !== "join") {
-    if (req.method === "GET") {
-      return handleRoomsGet(req, url, deps, unaryRoomSeg);
-    }
-    if (req.method === "DELETE") {
-      return handleRoomsRemove(req, url, deps, unaryRoomSeg);
-    }
-  }
-
-  if (req.method === "POST") {
-    const roomIdForTicket = parseRoomsMintTicketRoomId(url.pathname);
-    if (roomIdForTicket !== undefined) {
-      return handleRoomsMintTicket(req, url, deps, roomIdForTicket);
-    }
   }
 
   if (req.method === "GET" && url.pathname === "/v1/inbox/ws") {
@@ -286,18 +233,11 @@ export async function route(
   return undefined;
 }
 
-/** Unary ingress: inbox and room WS paths return 501. */
+/** Unary ingress: inbox WS paths return 501. */
 export async function routeUnary(
   req: Request,
   url: URL,
   deps: HostRouteDeps,
 ): Promise<Response | undefined> {
   return route(req, url, undefined, deps);
-}
-
-/** Build frame-channel WebSocket handlers for `Bun.serve` from an khora host context. */
-export function khoraFrameChannelWsHandlers(
-  ctx: KhoraHostContext,
-): ReturnType<typeof frameRelayHubWebSocketHandlers> {
-  return frameRelayHubWebSocketHandlers({ hub: ctx.roomHub });
 }

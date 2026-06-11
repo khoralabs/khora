@@ -105,7 +105,7 @@ Minimal cross-product notification (replaces or supplements `room_ticket`):
 | **P3 — Khora handoff** | Inbox `negotiation_invite`; deprecate Khora `room_ticket` for new flows | `@khoralabs/khora-contracts` notification kind; discovery docs updated |
 | **P4 — Decouple social graph** | `network` visibility independent of frame channel existence | Relationship model not created by room spawn; optional explicit `connection_request` flow |
 | **P5 — Ephemeral infra** | Relay on Fly/Modal per room or pool; destroy OK; rejoin via DAG descriptor | Orchestrator in Vellum spawn; see §3 rejoin |
-| **P6 — Retire Khora room surface** | Remove room HTTP/WS from Khora host (breaking) | `bootstrap-khora.ts` drops `frameRelayStore`; `room-lifecycle.md` split |
+| **P6 — Retire Khora room surface** | Done — room HTTP/WS, frames DB, and embedded hub removed | Khora host is discovery-only; relay data plane = `relay-server-http` |
 
 ### DAG as join key (relay disposable)
 

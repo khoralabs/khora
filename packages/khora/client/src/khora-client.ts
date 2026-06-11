@@ -9,14 +9,6 @@ import type {
   KhoraProfilePatch,
   KhoraRegistrationRequestBody,
   KhoraRegistrationResult,
-  KhoraRelationshipItem,
-  KhoraRelationshipListResponse,
-  KhoraRoomCreateBody,
-  KhoraRoomCreateResponse,
-  KhoraRoomJoinRequestBody,
-  KhoraRoomJoinTicketResponse,
-  KhoraRoomMintTicketBody,
-  KhoraRoomTicketResponse,
   KhoraSearchQuery,
   KhoraSearchRequest,
   KhoraSearchResponse,
@@ -30,12 +22,6 @@ import {
   type KhoraTransportBundle,
   type KhoraUnaryTransport,
 } from "@khoralabs/khora-transport";
-import type { Checkpoint, SessionOp } from "@khoralabs/obp-session-impl";
-import {
-  connectObpFrameChannelSession,
-  type ObpFrameConnection,
-  type ObpWebSocketConnectOptions,
-} from "@khoralabs/obp-transport-ws";
 import { getAgentStatus } from "./http/agent";
 import {
   type AuthorSubscriptionsSnapshot,
@@ -58,14 +44,6 @@ import {
   updateProfile,
 } from "./http/profile";
 import { register } from "./http/register";
-import { listRelationships as httpListRelationships } from "./http/relationships";
-import {
-  createRoom as httpCreateRoom,
-  getRoom as httpGetRoom,
-  leaveRoom as httpLeaveRoom,
-  mintRoomTicket as httpMintRoomTicket,
-  redeemRoomInvite as httpRedeemRoomInvite,
-} from "./http/rooms";
 import { searchGet as httpSearchGet, searchPost as httpSearchPost } from "./http/search";
 import { unregister as httpUnregister, type UnregisterBody } from "./http/unregister";
 import {
@@ -74,20 +52,6 @@ import {
   type KhoraPluginInstaller,
 } from "./khora-plugins";
 
-export type {
-  KhoraRelationshipItem,
-  KhoraRelationshipListResponse,
-  KhoraRoomCreateBody,
-  KhoraRoomCreateResponse,
-  KhoraRoomJoinRequestBody,
-  KhoraRoomJoinTicketResponse,
-  KhoraRoomMintTicketBody,
-  KhoraRoomTicketResponse,
-} from "@khoralabs/khora-contracts";
-export type {
-  ObpFrameConnection,
-  ObpWebSocketConnectOptions,
-} from "@khoralabs/obp-transport-ws";
 export type { AuthorSubscriptionsSnapshot } from "./http/authors";
 export type { PublicProfileResult } from "./http/profile";
 
@@ -192,14 +156,6 @@ export class KhoraClient {
     return listInvites(this.transport);
   }
 
-  listRelationships(): Promise<KhoraRelationshipListResponse> {
-    return httpListRelationships(this.transport);
-  }
-
-  getRoom(roomId: string): Promise<KhoraRelationshipItem> {
-    return httpGetRoom(this.transport, roomId);
-  }
-
   previewInvite(token: string): Promise<KhoraInvitePreviewResponse> {
     return previewInvite(this.transport, token);
   }
@@ -252,71 +208,6 @@ export class KhoraClient {
 
   searchAdvanced(body: KhoraSearchRequest): Promise<KhoraSearchResponse> {
     return httpSearchPost(this.transport, body);
-  }
-
-  async createRoom(body: KhoraRoomCreateBody): Promise<KhoraRoomCreateResponse> {
-    const out = await httpCreateRoom(this.transport, body);
-    this.emit({
-      type: "room:created",
-      did: this.did,
-      roomId: out.roomId,
-      hasOpenInvite: out.joinToken !== undefined,
-      ...(out.expiresAtMs !== undefined ? { expiresAtMs: out.expiresAtMs } : {}),
-      ...(body.targetDid !== undefined ? { targetDid: body.targetDid } : {}),
-      ...(body.targetUsername !== undefined ? { targetUsername: body.targetUsername } : {}),
-    });
-    return out;
-  }
-
-  async redeemRoomInvite(body: KhoraRoomJoinRequestBody): Promise<KhoraRoomJoinTicketResponse> {
-    const out = await httpRedeemRoomInvite(this.transport, body);
-    this.emit({
-      type: "room:invite_redeemed",
-      did: this.did,
-      roomId: out.roomId,
-      creatorDid: out.creatorDid,
-      ...(out.expiresAtMs !== undefined ? { expiresAtMs: out.expiresAtMs } : {}),
-    });
-    return out;
-  }
-
-  async mintRoomTicket(
-    roomId: string,
-    body?: KhoraRoomMintTicketBody,
-  ): Promise<KhoraRoomTicketResponse> {
-    const out = await httpMintRoomTicket(this.transport, roomId, body);
-    this.emit({
-      type: "room:ticket_minted",
-      did: this.did,
-      roomId: out.roomId,
-      ...(out.expiresAtMs !== undefined ? { expiresAtMs: out.expiresAtMs } : {}),
-    });
-    return out;
-  }
-
-  async leaveRoom(roomId: string): Promise<void> {
-    await httpLeaveRoom(this.transport, roomId);
-  }
-
-  /**
-   * Opens the room negotiation WebSocket and runs OBP with **frame-body E2EE** (always on for this path).
-   * Pass **`e2eeChannelBinding`** (e.g. room id) for stronger HKDF domain separation; never derived from the ticket secret.
-   */
-  async connectRoom(
-    options: Omit<ObpWebSocketConnectOptions, "WebSocketCtor">,
-    runner: (conn: ObpFrameConnection) => Promise<void>,
-  ): Promise<{ sessionOps: SessionOp[]; checkpoint: Checkpoint }> {
-    const { webSocketUrl, webSocketProtocols, ...rest } = options;
-    const handle = await this.duplex.openNegotiationDuplex({
-      webSocketUrl,
-      webSocketProtocols,
-      WebSocketCtor: this.WebSocketCtor,
-    });
-    try {
-      return await connectObpFrameChannelSession({ ...rest, channel: handle.channel }, runner);
-    } finally {
-      handle.dispose();
-    }
   }
 
   connectInbox(handlers: InboxWsHandlers): Promise<{ close(): void }> {

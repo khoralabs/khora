@@ -19,11 +19,6 @@ export type KhoraAdminCatalogStats = {
   registeredUsers: number;
 };
 
-export type KhoraAdminFramesStats = {
-  activeRooms: number;
-  totalFrames: number;
-};
-
 export type KhoraAdminCellShardSummary = {
   cellId: string;
   provisioned: boolean;
@@ -48,8 +43,6 @@ export type KhoraAdminHeartbeatStats = {
 
 export type KhoraAdminNetworkActivityStats = {
   subscriptionsThisWeek: number;
-  roomsCreatedThisWeek: number;
-  totalRoomsCreated: number;
   heartbeat: KhoraAdminHeartbeatStats;
 };
 
@@ -74,7 +67,6 @@ export type KhoraAdminStatsSummary = {
   invites: KhoraAdminInviteStats;
   teardown: KhoraAdminTeardownStats;
   catalog: KhoraAdminCatalogStats;
-  frames: KhoraAdminFramesStats;
   cells: KhoraAdminCellsSummary;
   networkActivity: KhoraAdminNetworkActivityStats;
 };

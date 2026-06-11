@@ -17,8 +17,6 @@ export type {
   KhoraProfilePatch,
   KhoraRegistrationRequestBody,
   KhoraRegistrationResult,
-  KhoraRelationshipItem,
-  KhoraRelationshipListResponse,
   KhoraSearchHit,
   KhoraSearchHydratedEntity,
   KhoraSearchQuery,
@@ -51,7 +49,6 @@ export {
   zKhoraRegisterResult,
   zKhoraRegistrationMetadata,
   zKhoraRegistrationRequestBody,
-  zKhoraRelationshipListResponse,
   zKhoraSearchRequest,
   zKhoraSearchResponse,
   zKhoraStandingSearchRequest,
@@ -60,7 +57,6 @@ export {
 export type {
   InboxWsHandlers,
   KhoraFetch,
-  KhoraRoomLifecycleHostEvent,
   KhoraTransportBundle,
   KhoraUnaryTransport,
 } from "@khoralabs/khora-transport";
@@ -107,14 +103,6 @@ export {
   type AuthorSubscriptionsSnapshot,
   KhoraClient,
   type KhoraClientOptions,
-  type KhoraRoomCreateBody,
-  type KhoraRoomCreateResponse,
-  type KhoraRoomJoinRequestBody,
-  type KhoraRoomJoinTicketResponse,
-  type KhoraRoomMintTicketBody,
-  type KhoraRoomTicketResponse,
-  type ObpFrameConnection,
-  type ObpWebSocketConnectOptions,
   type PublicProfileResult,
 } from "./khora-client";
 export {

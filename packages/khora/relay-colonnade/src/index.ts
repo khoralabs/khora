@@ -52,5 +52,4 @@ export {
   applyRelaySqlitePragmas,
   ensureRelayCatalogProjectionsSchema,
   openRelayCatalogDb,
-  openRelayFramesDb,
 } from "./sqlite-setup";

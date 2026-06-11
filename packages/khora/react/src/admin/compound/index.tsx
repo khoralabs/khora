@@ -5,7 +5,6 @@ import {
   AdminStatsCellGrid,
   AdminStatsCellGridItem,
   AdminStatsCellUtilizationBar,
-  AdminStatsFramesMetrics,
   AdminStatsInfrastructure,
 } from "./infrastructure";
 import { AdminStatsNetworkActivity } from "./network-activity";
@@ -27,7 +26,6 @@ export const AdminStats = {
   InactiveMembers: AdminStatsInactiveMembers,
   Infrastructure: AdminStatsInfrastructure,
   CatalogMetrics: AdminStatsCatalogMetrics,
-  FramesMetrics: AdminStatsFramesMetrics,
   CellUtilizationBar: AdminStatsCellUtilizationBar,
   CellGrid: AdminStatsCellGrid,
   CellGridItem: AdminStatsCellGridItem,

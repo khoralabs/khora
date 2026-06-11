@@ -6,8 +6,6 @@ export * from "./khora-inbox-notifications";
 export * from "./khora-post";
 export * from "./khora-profile";
 export * from "./khora-registration";
-export * from "./khora-relationships";
-export * from "./khora-room";
 export * from "./khora-search";
 export * from "./khora-standing-search";
 export * from "./khora-subscription-searches";

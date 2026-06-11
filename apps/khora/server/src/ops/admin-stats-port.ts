@@ -227,27 +227,11 @@ function countSubscriptionsSince(
   return total;
 }
 
-function countRoomsSince(framesDb: Database, sinceMs: number): number {
-  if (!tableExists(framesDb, "rooms")) return 0;
-  return (
-    framesDb.prepare(`SELECT COUNT(*) AS c FROM rooms WHERE created_at_ms >= ?`).get(sinceMs) as {
-      c: number;
-    }
-  ).c;
-}
-
-function countTotalRooms(framesDb: Database): number {
-  if (!tableExists(framesDb, "rooms")) return 0;
-  return (framesDb.prepare(`SELECT COUNT(*) AS c FROM rooms`).get() as { c: number }).c;
-}
-
 function buildNetworkActivity(
   registeredAgents: number,
   principalIds: readonly string[],
   activity: Map<string, PrincipalActivity>,
   subscriptionsThisWeek: number,
-  roomsCreatedThisWeek: number,
-  totalRoomsCreated: number,
   nowMs: number,
 ): KhoraAdminNetworkActivityStats {
   const threshold24h = nowMs - HEARTBEAT_24H_MS;
@@ -272,8 +256,6 @@ function buildNetworkActivity(
 
   return {
     subscriptionsThisWeek,
-    roomsCreatedThisWeek,
-    totalRoomsCreated,
     heartbeat: {
       registeredAgents,
       withStatusPost,
@@ -331,7 +313,6 @@ function clampInactiveDays(days: number | undefined): number {
 
 export function createKhoraAdminStatsPort(deps: {
   catalogDb: Database;
-  framesDb: Database;
   cellsDir: string;
   tenantKey: string;
   cellPoolCount: number;
@@ -341,7 +322,6 @@ export function createKhoraAdminStatsPort(deps: {
 }): KhoraAdminStatsPort {
   const {
     catalogDb,
-    framesDb,
     cellsDir,
     tenantKey,
     cellPoolCount,
@@ -404,22 +384,6 @@ export function createKhoraAdminStatsPort(deps: {
     return { projectionRows, standingQueries, registeredUsers };
   }
 
-  function framesStats(): KhoraAdminStatsSummary["frames"] {
-    if (!tableExists(framesDb, "rooms")) {
-      return { activeRooms: 0, totalFrames: 0 };
-    }
-    const nowMs = Date.now();
-    const activeRooms = (
-      framesDb.prepare(`SELECT COUNT(*) AS c FROM rooms WHERE expires_at_ms > ?`).get(nowMs) as {
-        c: number;
-      }
-    ).c;
-    const totalFrames = tableExists(framesDb, "room_frames")
-      ? (framesDb.prepare(`SELECT COUNT(*) AS c FROM room_frames`).get() as { c: number }).c
-      : 0;
-    return { activeRooms, totalFrames };
-  }
-
   function buildCellShardsSummary(): KhoraAdminStatsSummary["cells"] {
     const homeCounts = homePrincipalCountsByCell(
       cluster,
@@ -456,15 +420,12 @@ export function createKhoraAdminStatsPort(deps: {
         invites: inviteStats(),
         teardown: teardownQueueStats(),
         catalog: catalogStats(registeredUsers),
-        frames: framesStats(),
         cells: buildCellShardsSummary(),
         networkActivity: buildNetworkActivity(
           registeredUsers,
           principalIds,
           activity,
           countSubscriptionsSince(cellsDir, tenantKey, sqlCipherKey, cellPoolCount, weekStart),
-          countRoomsSince(framesDb, weekStart),
-          countTotalRooms(framesDb),
           nowMs,
         ),
       };

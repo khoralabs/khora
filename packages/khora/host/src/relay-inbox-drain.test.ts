@@ -23,7 +23,6 @@ test("popRelayInboxDrainItemsForDid drops cell inbox row when author unregistere
   const root = nextHostDir();
   const ctx = await createTestKhoraHost({
     catalogPath: join(root, "c.sqlite"),
-    framesDbPath: join(root, "f.sqlite"),
     cellsDir: join(root, "cells"),
     tenantKey: "tn",
     startPrincipalTeardownWorker: false,

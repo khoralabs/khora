@@ -47,23 +47,6 @@ export function AdminStatsCatalogMetrics({ className, ...props }: React.Componen
   );
 }
 
-export function AdminStatsFramesMetrics({ className, ...props }: React.ComponentProps<"dl">) {
-  const { summary, summaryLoading, summaryError } = useAdminStats();
-
-  return (
-    <dl data-slot="admin-stats-frames-metrics" className={cn(className)} {...props}>
-      {summaryLoading && <p data-slot="admin-stats-loading">Loading…</p>}
-      {summaryError !== null && <p data-slot="admin-stats-error">{summaryError}</p>}
-      {!summaryLoading && summaryError === null && summary !== null && (
-        <>
-          <MetricRow label="Active rooms" value={summary.frames.activeRooms} />
-          <MetricRow label="Stored frames" value={summary.frames.totalFrames} />
-        </>
-      )}
-    </dl>
-  );
-}
-
 export function AdminStatsCellUtilizationBar({ className, ...props }: React.ComponentProps<"div">) {
   const { summary, summaryLoading, summaryError } = useAdminStats();
   if (summaryLoading || summaryError !== null || summary === null) return null;

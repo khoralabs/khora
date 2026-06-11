@@ -18,7 +18,6 @@ export type {
   KhoraAdminCellDetailResult,
   KhoraAdminCellShardSummary,
   KhoraAdminCellsSummary,
-  KhoraAdminFramesStats,
   KhoraAdminHeartbeatStats,
   KhoraAdminInactiveMember,
   KhoraAdminInactiveMemberReason,

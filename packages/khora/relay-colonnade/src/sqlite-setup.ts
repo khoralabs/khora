@@ -1,6 +1,5 @@
 import type { Database } from "bun:sqlite";
 import type { EncryptionKeyProvider } from "@khoralabs/colonnade-crypto";
-import { restrictRelayStoreDatabasePermissions } from "@khoralabs/obp-frame-relay-sqlite";
 import { ensurePercolatorSchema } from "@khoralabs/percolator-sqlite";
 import { openEncryptedDatabase } from "@khoralabs/sqlite-crypto";
 import { ensurePrincipalTeardownJobsSchema } from "./principal-teardown-jobs";
@@ -22,12 +21,6 @@ export function ensureRelayCatalogProjectionsSchema(db: Database): void {
         json_extract(projection, '$.principalId')
       )
       WHERE namespace = 'relay:social:username-to-principal';
-    CREATE INDEX IF NOT EXISTS idx_relay_room_registry_creator
-      ON relay_catalog_projections (
-        tenant_key,
-        json_extract(projection, '$.creatorDid')
-      )
-      WHERE namespace = 'khora:room-registry';
     CREATE TABLE IF NOT EXISTS relay_social_principal_channels (
       tenant_key TEXT NOT NULL,
       principal_id TEXT NOT NULL,
@@ -64,16 +57,5 @@ export async function openRelayCatalogDb(
   ensureRelayCatalogProjectionsSchema(db);
   ensurePercolatorSchema(db);
   ensurePrincipalTeardownJobsSchema(db);
-  return db;
-}
-
-/** Relay frame-channel SQLite (separate file from catalog). */
-export async function openRelayFramesDb(
-  path: string,
-  provider: EncryptionKeyProvider,
-): Promise<Database> {
-  const db = await openEncryptedDatabase(path, { create: true }, "khora", provider);
-  restrictRelayStoreDatabasePermissions(path);
-  applyRelaySqlitePragmas(db);
   return db;
 }

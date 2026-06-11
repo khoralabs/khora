@@ -12,12 +12,6 @@ export type V2HostRateLimiters = {
   defaultIp: RateLimiter;
   invitePreviewIp: RateLimiter;
   invitesListDid: RateLimiter;
-  roomsCreateDid: RateLimiter;
-  roomsTicketMintDid: RateLimiter;
-  roomsJoinDid: RateLimiter;
-  roomsReadDid: RateLimiter;
-  roomsRemoveDid: RateLimiter;
-  relationshipsListDid: RateLimiter;
 };
 
 export function createV2HostRateLimiters(): V2HostRateLimiters {
@@ -44,24 +38,6 @@ export function createV2HostRateLimiters(): V2HostRateLimiters {
     ),
     invitesListDid: createRateLimiter(
       envRatePerMinute(process.env.KHORA_RL_INVITES_LIST_PER_MIN_PER_DID, 60),
-    ),
-    roomsCreateDid: createRateLimiter(
-      envRatePerMinute(process.env.KHORA_RL_ROOMS_CREATE_PER_MIN_PER_DID, 30),
-    ),
-    roomsTicketMintDid: createRateLimiter(
-      envRatePerMinute(process.env.KHORA_RL_ROOMS_TICKET_PER_MIN_PER_DID, 60),
-    ),
-    roomsJoinDid: createRateLimiter(
-      envRatePerMinute(process.env.KHORA_RL_ROOMS_JOIN_PER_MIN_PER_DID, 30),
-    ),
-    roomsReadDid: createRateLimiter(
-      envRatePerMinute(process.env.KHORA_RL_ROOMS_READ_PER_MIN_PER_DID, 120),
-    ),
-    roomsRemoveDid: createRateLimiter(
-      envRatePerMinute(process.env.KHORA_RL_ROOMS_REMOVE_PER_MIN_PER_DID, 30),
-    ),
-    relationshipsListDid: createRateLimiter(
-      envRatePerMinute(process.env.KHORA_RL_RELATIONSHIPS_LIST_PER_MIN_PER_DID, 60),
     ),
   };
 }

@@ -12,7 +12,6 @@ export {
   isInboxNotificationEvent,
   type KhoraClientEvent,
   type KhoraDerivedInboxEvent,
-  type KhoraRoomLifecycleHostEvent,
 } from "./client-events";
 export type {
   KhoraDuplexTransport,

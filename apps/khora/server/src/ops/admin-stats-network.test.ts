@@ -25,16 +25,6 @@ catalogDb.run(`
   );
 `);
 
-const framesDb = new Database(":memory:");
-framesDb.run(`
-  CREATE TABLE rooms (
-    channel_id TEXT PRIMARY KEY NOT NULL,
-    pairing_secret_hex TEXT NOT NULL,
-    created_at_ms INTEGER NOT NULL,
-    expires_at_ms INTEGER NOT NULL
-  );
-`);
-
 function registerPrincipal(did: string, username?: string): void {
   catalogDb
     .prepare(
@@ -100,7 +90,6 @@ function seedOutbox(
 function makePort(lookup?: (did: string) => string | undefined) {
   return createKhoraAdminStatsPort({
     catalogDb,
-    framesDb,
     cellsDir,
     tenantKey: "relay",
     cellPoolCount: 2,
@@ -120,19 +109,17 @@ function makePort(lookup?: (did: string) => string | undefined) {
 
 beforeEach(() => {
   catalogDb.run("DELETE FROM relay_catalog_projections");
-  framesDb.run("DELETE FROM rooms");
   rmSync(cellsDir, { recursive: true, force: true });
   mkdirSync(cellsDir, { recursive: true });
 });
 
 afterAll(() => {
   catalogDb.close();
-  framesDb.close();
   rmSync(testRoot, { recursive: true, force: true });
 });
 
 describe("admin network activity", () => {
-  test("counts subscriptions this week and room creation", () => {
+  test("counts subscriptions this week and heartbeat stats", () => {
     const now = Date.now();
     registerPrincipal("did:key:active", "active");
     registerPrincipal("did:key:quiet", "quiet");
@@ -166,26 +153,11 @@ describe("admin network activity", () => {
       },
     ]);
 
-    framesDb
-      .prepare(
-        `INSERT INTO rooms (channel_id, pairing_secret_hex, created_at_ms, expires_at_ms)
-         VALUES (?, ?, ?, ?)`,
-      )
-      .run("room-new", "aa", now - 2_000, now + 60_000);
-    framesDb
-      .prepare(
-        `INSERT INTO rooms (channel_id, pairing_secret_hex, created_at_ms, expires_at_ms)
-         VALUES (?, ?, ?, ?)`,
-      )
-      .run("room-old", "bb", now - 10 * 24 * 60 * 60 * 1000, now + 60_000);
-
     const summary = makePort((did) =>
       did === "did:key:active" ? "active" : did === "did:key:quiet" ? "quiet" : undefined,
     ).summary();
 
     expect(summary.networkActivity.subscriptionsThisWeek).toBe(1);
-    expect(summary.networkActivity.roomsCreatedThisWeek).toBe(1);
-    expect(summary.networkActivity.totalRoomsCreated).toBe(2);
     expect(summary.networkActivity.heartbeat.registeredAgents).toBe(2);
     expect(summary.networkActivity.heartbeat.withStatusPost).toBe(1);
     expect(summary.networkActivity.heartbeat.activeLast24h).toBe(1);
@@ -204,12 +176,6 @@ describe("admin network activity", () => {
         postKind: "status",
         committedAtMs: now - 60_000,
       },
-      {
-        recordKey: "post-recent",
-        principalId: "did:key:active",
-        postKind: "post",
-        committedAtMs: now - 60_000,
-      },
     ]);
     seedOutbox(1, [
       {
@@ -220,9 +186,10 @@ describe("admin network activity", () => {
       },
     ]);
 
-    const result = makePort().inactiveMembers({ inactiveDays: 7 });
+    const result = makePort((did) =>
+      did === "did:key:active" ? "active" : did === "did:key:quiet" ? "quiet" : undefined,
+    ).inactiveMembers({ inactiveDays: 7 });
 
-    expect(result.inactiveDays).toBe(7);
     expect(result.members).toHaveLength(1);
     expect(result.members[0]?.did).toBe("did:key:quiet");
     expect(result.members[0]?.reasons).toContain("no_post_7d");

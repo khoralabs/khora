@@ -1,6 +1,5 @@
 import type { Database } from "bun:sqlite";
 import type { PrincipalId } from "@khoralabs/host-runtime";
-import type { FrameRelayStoreStrategy } from "@khoralabs/obp-frame-relay";
 import type { RelayCatalogProjectionStore } from "./catalog-projection-store";
 import { RELAY_NAMESPACE_SOCIAL_RELATIONSHIP } from "./relay-id-conventions";
 import type { RelaySocialPrincipalChannelStore } from "./relay-social-principal-channel-store";
@@ -45,16 +44,9 @@ export function createSocialRelationshipPersistence(deps: {
   projectionStore: RelayCatalogProjectionStore;
   principalChannelStore: RelaySocialPrincipalChannelStore;
   catalogDb: Database;
-  frameRelayStore: FrameRelayStoreStrategy;
   tenantKey: string;
 }): SocialRelationshipPersistence {
-  const {
-    projectionStore: store,
-    principalChannelStore,
-    catalogDb,
-    frameRelayStore,
-    tenantKey,
-  } = deps;
+  const { projectionStore: store, principalChannelStore, catalogDb, tenantKey } = deps;
 
   function getRelationshipImpl(channelId: string): SocialRelationshipRow | undefined {
     const { found, projection } = store.lookupProjection(
@@ -175,19 +167,16 @@ export function createSocialRelationshipPersistence(deps: {
           principalChannelStore.deleteChannel(tenantKey, r.peerPrincipalId, channelId);
         }
       })();
-      frameRelayStore.purgeRelayedFramesForChannel(channelId);
-      frameRelayStore.deleteChannelAdmission(channelId);
       return r;
     },
   };
 }
 
-/** Tear down frame-channel rows + catalog relationship entries for every room this principal participates in. */
+/** Tear down catalog relationship entries for every channel this principal participates in. */
 export function purgeSocialRelationshipsForPrincipal(params: {
   projectionStore: RelayCatalogProjectionStore;
   principalChannelStore: RelaySocialPrincipalChannelStore;
   catalogDb: Database;
-  frameRelayStore: FrameRelayStoreStrategy;
   tenantKey: string;
   principalId: PrincipalId;
 }): void {

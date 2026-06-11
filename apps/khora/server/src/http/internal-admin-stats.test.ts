@@ -46,21 +46,6 @@ catalogDb.run(`
   );
 `);
 
-const framesDb = new Database(":memory:");
-framesDb.run(`
-  CREATE TABLE rooms (
-    channel_id TEXT PRIMARY KEY NOT NULL,
-    pairing_secret_hex TEXT NOT NULL,
-    created_at_ms INTEGER NOT NULL,
-    expires_at_ms INTEGER NOT NULL
-  );
-  CREATE TABLE room_frames (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    channel_id TEXT NOT NULL,
-    bytes BLOB NOT NULL
-  );
-`);
-
 function seedCatalog(): void {
   catalogDb.run("DELETE FROM relay_catalog_projections");
   catalogDb.run("DELETE FROM standing_queries");
@@ -82,30 +67,6 @@ function seedCatalog(): void {
        VALUES (?, ?, '{}', 0, 1, ?, ?)`,
     )
     .run("sub-1", "did:key:alice", Date.now(), Date.now());
-}
-
-function seedFrames(): void {
-  framesDb.run("DELETE FROM rooms");
-  framesDb.run("DELETE FROM room_frames");
-  const now = Date.now();
-  framesDb
-    .prepare(
-      `INSERT INTO rooms (channel_id, pairing_secret_hex, created_at_ms, expires_at_ms)
-       VALUES (?, ?, ?, ?)`,
-    )
-    .run("room-active", "aa", now, now + 60_000);
-  framesDb
-    .prepare(
-      `INSERT INTO rooms (channel_id, pairing_secret_hex, created_at_ms, expires_at_ms)
-       VALUES (?, ?, ?, ?)`,
-    )
-    .run("room-expired", "bb", now, now - 60_000);
-  framesDb
-    .prepare(`INSERT INTO room_frames (channel_id, bytes) VALUES (?, ?)`)
-    .run("room-active", new Uint8Array([1]));
-  framesDb
-    .prepare(`INSERT INTO room_frames (channel_id, bytes) VALUES (?, ?)`)
-    .run("room-active", new Uint8Array([2]));
 }
 
 function seedCellShard(
@@ -187,7 +148,6 @@ function deps(
     overrides?.lookupNormalizedUsernameForPrincipal ?? (() => undefined);
   const adminStats = createKhoraAdminStatsPort({
     catalogDb,
-    framesDb,
     cellsDir,
     tenantKey: "relay",
     cellPoolCount: 2,
@@ -236,7 +196,6 @@ function withCellsDir<T>(fn: () => T): T {
 
 afterAll(() => {
   catalogDb.close();
-  framesDb.close();
   rmSync(testRoot, { recursive: true, force: true });
 });
 
@@ -258,9 +217,8 @@ describe("admin stats", () => {
     expect(res.status).toBe(401);
   });
 
-  test("summary includes catalog, frames, and cell aggregates", async () => {
+  test("summary includes catalog and cell aggregates", async () => {
     seedCatalog();
-    seedFrames();
     seedCellShard(0, 2, 1);
     seedCellShard(1, 0, 0);
 
@@ -275,7 +233,6 @@ describe("admin stats", () => {
       const body = (await res.json()) as {
         registeredUsers: number;
         catalog: { projectionRows: number; standingQueries: number; registeredUsers: number };
-        frames: { activeRooms: number; totalFrames: number };
         cells: {
           poolCount: number;
           inUseCount: number;
@@ -296,8 +253,6 @@ describe("admin stats", () => {
       expect(body.catalog.projectionRows).toBe(2);
       expect(body.catalog.standingQueries).toBe(1);
       expect(body.catalog.registeredUsers).toBe(1);
-      expect(body.frames.activeRooms).toBe(1);
-      expect(body.frames.totalFrames).toBe(2);
       expect(body.cells.poolCount).toBe(2);
       expect(body.cells.inUseCount).toBe(1);
       expect(body.cells.shards).toHaveLength(2);

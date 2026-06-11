@@ -1,6 +1,5 @@
 import { createInboxWsHub, HostRuntime } from "@khoralabs/host-runtime";
 import type { KhoraHostAppEvent, KhoraProfile } from "@khoralabs/khora-contracts";
-import { createFrameRelayHub } from "@khoralabs/obp-frame-relay";
 import { startPrincipalTeardownWorker } from "@khoralabs/relay-colonnade";
 import type { KhoraHostContext } from "./context";
 import type { KhoraHostDeps } from "./khora-host-deps";
@@ -10,7 +9,6 @@ export type { KhoraHostDeps } from "./khora-host-deps";
 
 export function createKhoraHost(deps: KhoraHostDeps): KhoraHostContext {
   const inboxHub = createInboxWsHub();
-  const roomHub = createFrameRelayHub({ store: deps.frameRelayStore });
   const host = new HostRuntime<KhoraProfile, KhoraHostAppEvent>({
     persistence: deps.persistence,
     authPreflight: deps.auth.preflight,
@@ -33,8 +31,6 @@ export function createKhoraHost(deps: KhoraHostDeps): KhoraHostContext {
     host,
     auth: deps.auth,
     tenantKey: deps.tenantKey,
-    roomHub,
-    frameRelayStore: deps.frameRelayStore,
     social: deps.social,
     invitesRepo: deps.invitesRepo,
     cluster: deps.cluster,
@@ -49,7 +45,6 @@ export function createKhoraHost(deps: KhoraHostDeps): KhoraHostContext {
     principalTeardownWorker,
     percolator: deps.percolator,
     ...(deps.memories !== undefined ? { memories: deps.memories } : {}),
-    ...(deps.roomLifecycle !== undefined ? { roomLifecycle: deps.roomLifecycle } : {}),
     ...deps.catalog,
   };
 }

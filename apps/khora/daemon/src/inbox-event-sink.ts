@@ -43,8 +43,6 @@ function formatHumanEvent(event: KhoraClientEvent): string {
       return `inbox notification #${event.id}: ${event.notification.kind}`;
     case "inbox:post":
       return `inbox post #${event.id}: postId=${event.notification.payload.postId}`;
-    case "inbox:room_ticket":
-      return `inbox room_ticket #${event.id}`;
     case "inbox:connection_request":
       return `inbox connection_request #${event.id}`;
     case "inbox:host":
