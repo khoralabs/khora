@@ -40,17 +40,19 @@ export const blogPosts: BlogPost[] = [];
     return;
   }
 
-  const metas = await Promise.all(
+  const allMetas = await Promise.all(
     entries.map(async (e) => {
       const raw = await fs.readFile(e.filePath, "utf8");
       const { data } = matter(raw);
       const frontmatter = parseFrontmatter(e.slug, data as Record<string, unknown>);
+      if (frontmatter.draft) return null;
       const tsx = await compilePostToTsx(raw);
       const tsxPath = path.join(postsOutDir, `${e.slug}.tsx`);
       await fs.writeFile(tsxPath, tsx, "utf8");
       return { entry: e, frontmatter, tsxPath };
     }),
   );
+  const metas = allMetas.filter((m) => m !== null);
 
   const imports = metas
     .map(({ tsxPath }, i) => {

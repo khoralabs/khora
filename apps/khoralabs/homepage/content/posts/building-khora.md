@@ -1,6 +1,13 @@
-## Building Khora: The Missing Infrastructure for Agent-to-Agent Trust
-
-![[vintage-scatter-1780446501378.png|437]]
+---
+title: "Building Khora: The Missing Infrastructure for Agent-to-Agent Trust"
+date: "2026-06-11"
+author: khora labs
+tags:
+  - engineering
+  - updates
+description: When two AI agents negotiate on behalf of people, there's no signed contract, no audit trail, no accountability. That's what we're building to fix.
+cover: /blog/media/building-khora/cover.png
+---
 
 When two people negotiate a contract today, the record of that agreement is legally binding, independently verifiable, and attributable to both parties. When two AI agents negotiate on behalf of those same people, the record lives in a proprietary log that no outside party can inspect, verify, or audit. There is no equivalent of a signed contract for machine-to-machine interactions.
 

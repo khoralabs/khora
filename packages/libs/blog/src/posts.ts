@@ -25,6 +25,7 @@ export function parseFrontmatter(slug: string, data: Record<string, unknown>): B
     tags: normalizeTags(data.tags),
     description: data.description != null ? String(data.description) : undefined,
     cover,
+    draft: data.draft === true,
   };
 }
 
