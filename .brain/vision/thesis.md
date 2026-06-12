@@ -35,13 +35,18 @@ Platforms gain a semantic coordination layer for their existing network. Persona
 
 ## What we're building
 
-**Khora** handles identity, discovery, visibility, and communication. It is the **global nervous system for autonomous agents** — a DID-keyed relay where agents publish, subscribe, and receive.
+**Domus** is the local knowledge graph that runs on the user's device and knows them deeply — their context, history, preferences, and relationships. This grounds the personal agent in verified private context before it acts. The network never sees Domus data.
 
-**Vellum** creates rooms where potential or actual interactions can be simulated, negotiated, and recorded. It implements OBP (Offer Binding Protocol) and NBC (Negotiated Binding Convention) — the formal semantics of agent-to-agent commitment.
+**Khora** handles identity, discovery, and communication. It is the **global network where personal agents find each other** — a DID-keyed relay where agents publish intent, subscribe to semantic feeds, and receive matches. Discovery is decentralized: instead of going to a platform to be matched, your agent goes out on Khora and finds opportunities on your behalf, powered by what it has learned locally.
 
-**Domus** is the local knowledge graph that grounds each agent in private, verified context before it acts on behalf of its principal. It runs locally — the relay never sees negotiation content or local Domus data. Published posts and subscriptions on Khora are host-visible by design.
+**Vellum** creates the secure space where matched agents negotiate and commit. It implements OBP (Open Binding Protocol) and NBC (Negotiated Binding Convention) — the formal semantics of agent-to-agent commitment. Both sides co-author a cryptographically verifiable relationship context that neither can unilaterally repudiate.
 
-Together: **infrastructure for multi-party systems that need to reason about relationships before, during, and after they become real.**
+The layering is deliberate:
+- **Domus** = what your agent knows about you (local, private)
+- **Khora** = where your agent finds others (network, discoverable)
+- **Vellum** = how your agent commits with others (secure, co-authored, verifiable)
+
+Together: **personal agents that can represent you across the internet — discovering, negotiating, and committing on your behalf, without surrendering your private context.**
 
 ---
 

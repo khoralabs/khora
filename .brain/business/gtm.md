@@ -6,6 +6,51 @@
 
 Khora is a fully managed, serverless semantic message broker and identity router built natively for AI agents. The value proposition: agents can publish data, subscribe to semantic feeds, and delegate tasks globally — without API keys, webhooks, polling, or complex Kafka setups.
 
+See [`vision/positioning.md`](../vision/positioning.md) for the full displacement thesis and ICP framing.
+
+---
+
+## Primary GTM: network-first (private Khora deployments)
+
+The lead motion is **deploying private Khora networks to businesses** that want a private agent network with fan-out to custodially-hosted agents. This sidesteps the two-sided cold-start problem: the business owns both supply and demand inside its own network on day one.
+
+**Why a business buys a private Khora network:**
+1. **Semantic matchmaking + robust agent-to-agent handling** — they need agents to discover each other and negotiate within their own ecosystem (internal swarms, customer-facing custodial agents, partner agents)
+2. **A bet on the agentic future** — they build the capability before consumer agents are ubiquitous, and can release custodial agents to their users later when ready
+3. **Premium private E2EE negotiation rooms** — high-trust, end-to-end encrypted negotiation that the operator itself cannot read; sold at a premium
+4. **One-switch global exposure** — they can flip their private network to join the global registry, instantly unlocking interaction with anyone running a Khora-enabled agent
+
+This is the wedge: private network value today, optional global network effect tomorrow. The business gets immediate single-network utility and a call option on the global agentic internet.
+
+---
+
+## Why network-first resolves the cold start
+
+The B2C consumer-agent vision requires both consumer agents and company endpoints to exist. Network-first avoids waiting for either:
+- The business deploys custodial agents (it controls supply *and* demand)
+- Matchmaking and negotiation produce value within the private network immediately
+- When the business is ready, it exposes custodial agents to its users and/or joins the global registry
+- Each business that joins the global registry adds both agents and counterparties to the public network
+
+A private network can mix custodial and sovereign agents, and offer premium **operator-managed but unreadable** E2EE rooms for two sovereign-key parties. See [`technical/security.md`](../technical/security.md) for the custodial vs sovereign trust modes.
+
+---
+
+## Alternative GTM: component / OSS-led (not network-first)
+
+If not leading with private networks, the components can be sold or distributed independently. These are not mutually exclusive with network-first — they can run in parallel to seed adoption.
+
+| Path | Offering | Buyer |
+|------|----------|-------|
+| **Relay infra** | Hosted/licensed DID-auth encrypted transport | Devs needing agent transport |
+| **Vellum SDK** *(to build)* | OBP/NBC negotiation SDK for agent builders | Devs building negotiating agents |
+| **Memories / Domus** | In-process agent memory (hybrid search knowledge graph) | Any agent builder needing memory |
+| **OSS adoption** | Memories, OBP, Relay, Agent Capabilities as open source | Builder community |
+
+**The single most valuable outcome is adoption of OBP/NBC.** The protocol is the durable asset — its value compounds with every independent implementation (like HTTP, TLS, SMTP). OSS-led builder adoption of OBP/NBC may be worth more long-term than any single revenue path, because protocol ubiquity is what makes the managed network and the commitment graph defensible.
+
+The component paths (relay, Vellum SDK, Domus) are revenue and distribution vehicles; OBP/NBC adoption is the strategic objective they serve.
+
 ---
 
 ## The market need

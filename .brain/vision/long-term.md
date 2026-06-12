@@ -29,6 +29,22 @@ The goal: Khora becomes the operating layer for a class of platforms. The protoc
 
 ---
 
+## Two paths to the compounding moat
+
+The long-term defensible position is one of two strategic outcomes (not mutually exclusive — the first can fund the second, or one can dominate):
+
+### Path A — The everything network (aggregate behavioral intelligence)
+Become the network that understands agent behavior **in aggregate**. A sovereign local agent only ever sees its own principal's experience; it can never learn global network effects, trends, or availability. The hub that sees aggregate behavior holds a view no participant can replicate — and that view is what powers discovery and is itself a sellable asset. This is a data-network-effect moat: it compounds with every agent and every transaction on the network.
+
+### Path B — Infrastructure of the agentic internet
+Become the foundational infrastructure layer, monetized two ways:
+1. **Managed Khora network infrastructure** — private and public network deployments, sold like managed messaging/coordination infra (the Twilio analogy)
+2. **The "Stripe for agent-to-agent commitments"** — Vellum as the verifiable commitment rail every agent-to-agent transaction settles through. Just as Stripe became the default for moving money, Vellum becomes the default for binding agreements between agents.
+
+Both paths rest on the same foundation: **OBP/NBC stays open and ubiquitous** (the wedge that makes Khora the natural hub), while the managed network and the commitment rail are the commercial layer. Protocol openness accelerates adoption; the network data and the commitment infrastructure are what compound and defend.
+
+---
+
 ## Why this is infrastructure-scale
 
 Vellum's OBP is a protocol, not a product feature. Like TCP/IP, TLS, or SMTP, its value compounds with adoption. Khora Labs captures a portion of that value through the managed network and API tiers, but the protocol itself is open and can be implemented by any party — which accelerates adoption beyond what a closed product achieves.

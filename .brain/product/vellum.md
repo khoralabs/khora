@@ -103,6 +103,29 @@ OBP/NBC embeds novel research:
 
 ---
 
+## Workflow capture before runtime automation
+
+Vellum is valuable *before* agents drive negotiations. Companies can use manually-crafted ports and offers to model their real transactions in the **same OBP shape** they would later use to automate them. Humans transact through the typed DAG; the company captures the structure and outcomes of real deals.
+
+This is a judgment-capture play. By the time the company is ready to put an agent behind the negotiation, it already has:
+- A library of port/offer shapes that match its actual deal flow
+- A corpus of real human negotiations in OBP form — training/grounding data for the eventual agent
+- A proven mapping from its business logic to bind policies
+
+This maps directly onto the Dark Marketplace "authoring layer" and the Stage 1→4 judgment-abstraction arc: start by capturing the shape of human decisions, then progressively let the agent make them. Vellum is the structured medium that makes that progression continuous rather than a rebuild.
+
+---
+
+## Mandate Guard — structural policy enforcement
+
+The critical missing layer between the NBC wire protocol and the strategy LLM is the **Mandate Guard** — a runtime filter that makes an agent structurally unable to violate its principal's mandate.
+
+The LLM never sees the mandate, constraint logic, or CEL expressions. It only sees the filtered set of allowed moves (`TurnDecision`). Policy is enforced by construction, not by instruction.
+
+See [`technical/mandate-guard.md`](../technical/mandate-guard.md) for the full design.
+
+---
+
 ## Package map
 
 | Concern | Package |

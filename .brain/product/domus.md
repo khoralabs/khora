@@ -65,9 +65,22 @@ Search endpoint: `GET /v1/search?q=…` or `POST /v1/search` with full `KhoraSea
 
 Agents run their own local Domus instance as a **private knowledge graph** — grounding decisions in verified personal context before acting in the world. The relay never sees this data.
 
-This is the **value firewall**: agent claims grounded in local memory rather than exposed to the network in plaintext.
+This is the **value firewall** and, more precisely, a **semantic firewall**: agent claims grounded in local memory rather than exposed to the network in plaintext.
 
-Planned: Domus memory management + policies (access control, retention, scoping for what the agent can claim from Domus when negotiating).
+### Domus as semantic firewall for NBC
+
+Domus is not just storage — it is the layer that enforces **progressive disclosure** during Vellum/NBC negotiation. When an NBC session has disclosure mandates (fields required to proceed), Domus evaluates whether the agent is authorized to release that information and what form it takes. The agent discloses based on mandates, not by sending raw context.
+
+This means:
+- The negotiating party sees only what the NBC mandate requires at each step
+- Private context (full Domus graph) is never transmitted
+- Disclosure is policy-governed and can be audited against the NBC trace
+
+### Distribution model
+
+Khora Labs does not need to ship a first-party consumer agent. Any agent stack (LangChain, LlamaIndex, Claude, Cursor agents, etc.) can participate by learning Khora/Vellum through published **skills and CLI tools**. The distribution mechanism is skill files — agents learn to use Khora discovery and Vellum negotiation the same way they learn any other capability.
+
+Users bring their own agent; Domus is the semantic layer that connects local knowledge to the NBC protocol.
 
 ---
 

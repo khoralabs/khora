@@ -12,6 +12,7 @@ Every file here should reflect the **current state** of the project. When things
 - [`vision/thesis.md`](vision/thesis.md) — The core thesis: why the world needs agent-readable coordination networks
 - [`vision/long-term.md`](vision/long-term.md) — The long-term arc: from relay to internet of agent-readable networks
 - [`vision/principles.md`](vision/principles.md) — Design principles and philosophical commitments
+- [`vision/positioning.md`](vision/positioning.md) — Displacement thesis, ICP framing, near-term use cases, what this is not
 
 ### Product
 - [`product/overview.md`](product/overview.md) — Product pillars and how they fit together
@@ -34,6 +35,7 @@ Every file here should reflect the **current state** of the project. When things
 - [`technical/host.md`](technical/host.md) — Khora host server responsibility inventory
 - [`technical/registry.md`](technical/registry.md) — Registry internal architecture (users, users-auth, flows)
 - [`technical/obp-protocol.md`](technical/obp-protocol.md) — OBP formal theory: ontology, wiring calculus, frame model, NBC layer, package decomposition
+- [`technical/mandate-guard.md`](technical/mandate-guard.md) — NBC Mandate Guard: structural policy enforcement, constraint language, Domus integration, consumer mandate UX
 - [`technical/vellum-channels.md`](technical/vellum-channels.md) — Vellum channels: relay vs local daemon state
 - [`technical/khora-vellum-separation.md`](technical/khora-vellum-separation.md) — Product separation roadmap: discovery vs ephemeral rooms, auth strategies, N-party multiplex
 - [`technical/dag-join-key-research.md`](technical/dag-join-key-research.md) — Future research: DAG as join key, peer-sync late join, principal↔party admission
@@ -54,16 +56,18 @@ Every file here should reflect the **current state** of the project. When things
 
 Khora Labs is building **coordination infrastructure for autonomous agents**.
 
-Three interlocking products:
+The layering, by what each does for the user's agent:
 
-1. **Khora** — An intent-based discovery and connection fabric. Agents express what they are looking for as standing queries; the network delivers matches. When agents find each other, they enter stateful, verifiable negotiations via Vellum — not just introductions.
+1. **Domus** — *what your agent knows about you.* A local-first hybrid knowledge graph (FTS5 + vector search) that grounds agents in verified, private context. Also the **semantic firewall**: it governs progressive disclosure during negotiation, so private context never leaves the device wholesale.
 
-2. **Vellum** — A bilateral negotiation protocol (OBP/NBC) that gives agents the ability to make structured, verifiable, privacy-preserving commitments — without trusting the relay.
+2. **Khora** — *where your agent finds others.* An intent-based discovery and connection fabric. Agents express what they want as standing queries; the network delivers matches (tag, author, or RRF semantic relevance). Discovery is decentralized and push-based — the personal algorithm replaces the platform algorithm.
 
-3. **Domus** — A local-first hybrid knowledge graph (FTS5 + vector search) that grounds agents in verified, private personal context before they act in the world.
+3. **Vellum** — *how your agent commits with others.* A bilateral negotiation protocol (OBP/NBC) for structured, verifiable, privacy-preserving commitments without trusting the relay. The co-authored NBC chain is the new home of the relationship between two parties.
 
-Together: the infrastructure layer required for personal agents to represent humans safely across markets, platforms, and institutions.
+Two supporting components, each independently valuable: **Relay** (blind DID-auth blob transport) and **Agent Capabilities** (static→runtime→invocation hashing + policy-gated capability graphs).
+
+**Positioning:** on-device personal agents will own the user's judgment in a way no platform can replicate. The browser UX — data capture, context, relationship — is displaced; the verifiable NBC chain becomes its replacement. Khora Labs builds the coordination and commitment substrate that makes this safe. See [`vision/positioning.md`](vision/positioning.md).
 
 ---
 
-*Last updated: June 2026*
+*Last updated: June 12, 2026*

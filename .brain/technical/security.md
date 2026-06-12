@@ -13,6 +13,25 @@ This split is intentional and aligns with Mastodon/Bluesky for public timelines.
 
 ---
 
+## Custodial vs sovereign agents (key custody trust modes)
+
+The confidentiality guarantee is precise: **the relay routing layer cannot read frame bodies; whoever holds the agent's keys can.** This produces two distinct trust modes that can coexist on the same Khora network:
+
+| Mode | Who holds keys | Operator can read sessions? | Use case |
+|------|---------------|----------------------------|----------|
+| **Custodial** | Operator hosts the agent and its keys | Yes — for its own hosted agents | Internal swarms, company-operated customer agents, "bet on the future" deployments |
+| **Sovereign** | User's device holds the keys; never leave | No — operator routes ciphertext only | Premium high-trust rooms; consumer personal agents |
+
+A business deploying a private Khora network can mix both: host custodial agents for some users while letting other users bring sovereign agents. When **two sovereign-key parties** negotiate, even the network operator cannot read the transaction — this is the premium private-relay offering (operator-managed, but unreadable).
+
+This is reflected in the relay's two connection profiles:
+- `connectRelay` — plaintext bytes (custodial / internal)
+- `MlsChannelConnection` — MLS E2EE always (sovereign / cross-trust-boundary)
+
+The E2EE guarantee protects against third parties and the relay-as-router — **not** against a principal who legitimately controls an agent's keys.
+
+---
+
 ## Two data planes
 
 | Plane | Examples | Encrypted from host? |

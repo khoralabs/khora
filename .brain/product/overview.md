@@ -19,7 +19,7 @@ Khora Labs builds three interlocking products. Each one is valuable independentl
 
 **Who it's for:** AI developers building agents that need to act on behalf of their users across a network of other agents — finding relevant peers, expressing intent, and reaching verifiable agreements without polling, webhooks, or centralised matchmaking.
 
-**How it differs from A2A / MCP:** A2A describes what an agent can do. MCP provides tools to call. Khora is the layer where agents express what they *want*, discover who else has aligned intent, and initiate stateful relationships that can lead to committed outcomes.
+**How it differs from A2A / MCP:** A2A describes what an agent can do (pull-based capability discovery). MCP provides tools to call. Khora is push-based: agents express what they *want* as standing queries, and the network delivers when a match appears — without polling. An agent-readable internet of peers cannot be purely pull-based (discovery would require knowing where to look); Khora's percolator enables intent-driven push matching at network scale.
 
 → [Full detail](khora.md)
 
@@ -36,7 +36,13 @@ Khora Labs builds three interlocking products. Each one is valuable independentl
 - Merkle-checkpointed sessions — any tampered or dropped operation is cryptographically detectable
 - E2EE frame bodies — the relay routes ciphertext; it never learns negotiation semantics
 
-**Who it's for:** Developers building agents that need to make structured commitments on behalf of humans — contracts, offers, job terms, service agreements — with verifiable audit trails.
+**Who it's for:** Developers building agents that need to make structured commitments — contracts, offers, job terms, service agreements — with verifiable audit trails.
+
+**Target use cases (near-term):**
+- **B2C retention/negotiation** — a company's agent negotiates with a consumer's agent: dynamic pricing, discount allocation for high-value at-risk customers, upsell terms. The NBC session produces a signed commitment the company can act on (issue the code, update the account).
+- **B2B procurement** — two companies' agents negotiate supply chain terms (price, delivery, conditions) peer-to-peer over a Vellum channel. The signed NBC record replaces email chains and unverifiable verbal agreements.
+
+The Mandate Guard (structurally policy-governed agents) is the cornerstone long-term vision for personal agents, but these near-term use cases can be served with simpler programmatic company-side mandates (bind policies + NBC turn logic) before the full Domus-integrated mandate compiler is ready.
 
 → [Full detail](vellum.md)
 
@@ -55,6 +61,22 @@ Khora Labs builds three interlocking products. Each one is valuable independentl
 **Who it's for:** Agents that need to ground decisions in private personal knowledge before acting. Also the search infrastructure inside Khora hosts.
 
 → [Full detail](memories.md)
+
+---
+
+## Each component has standalone value
+
+The system is designed so that **every component is independently valuable** — not just as part of the integrated stack. This de-risks adoption (a buyer can take one piece) and creates multiple distribution and revenue surfaces.
+
+| Component | Standalone value proposition |
+|-----------|------------------------------|
+| **Khora** | Semantic fan-out + agent registry — pub/sub and identity for agents without polling or webhooks |
+| **Vellum** | Typed ports/offers for negotiation — and, before runtime automation, a **workflow-capture layer**: companies model transactions in the same OBP shape humans use today, learning the structure they'll later drive with agents |
+| **Memories / Domus** | In-process agent memory — semantic retrieval, ontological graph merging, agentic investigation of the graph, and visualization |
+| **Relay** | Blind DID-auth blob relay — generic encrypted transport that learns nothing about payloads |
+| **Agent Capabilities** | Static → Runtime → Invocation hashing of agent capability + context, with evaluatable policy graphs that trim what the agent can access based on state |
+
+The integrated stack is more than the sum, but each piece earns its keep alone.
 
 ---
 

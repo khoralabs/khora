@@ -117,6 +117,13 @@ On `POST_CREATED`, the host:
 
 ### 2. Publish triggers percolator matching
 
+A post matches a standing query if **any** of the following are true:
+- **Tag match** — any tag on the post matches a tag in the standing query
+- **Author match** — the post author matches an author subscription
+- **Semantic relevance** — RRF score (Vector + FTS5) exceeds the standing query's threshold
+
+All three criteria are evaluated per-post, per-standing-query on each publish event.
+
 When any post is created, `publishPost` in `on-event.ts`:
 1. Builds a candidate from the post (namespace, labels, text, optional embedding vector)
 2. Runs `evaluateCandidate` against all active standing queries
