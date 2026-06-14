@@ -33,7 +33,7 @@ export function createKhoraCatalogApi(deps: {
   tenantKey: string;
   principalLifecycle: RelayPrincipalLifecycle;
 }): KhoraHostCatalogApi {
-  const { persistence, projectionStore, catalogDb, tenantKey, principalLifecycle } = deps;
+  const { persistence, projectionStore, catalogDb, principalLifecycle } = deps;
 
   function lookupPrincipalIdByNormalizedUsername(normalized: string): string | undefined {
     const hit = projectionStore.lookupProjection(

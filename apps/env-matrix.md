@@ -175,6 +175,9 @@ Contact flow: submission is queued when the user reaches the OTP step; Slack sen
 | `AI_API_KEY` | · | · | · | + | S | OpenAI (or compatible) API key for interview agent. |
 | `AI_MODEL` | · | · | · | + | C | Model id (default `gpt-4o`). |
 | `AI_BASE_URL` | · | · | · | + | C | Optional OpenAI-compatible base URL. |
+| `EXEDRA_STUB_REGISTRY` | · | · | · | + | C | `1` mounts in-process Better Auth–compatible stub at `/api/auth/*` (local dev only). |
+| `BUN_PUBLIC_EXEDRA_STUB_REGISTRY` | · | · | · | + | C | `1` — browser uses same origin for OTP (pair with `EXEDRA_STUB_REGISTRY`). |
+| `EXEDRA_STUB_REGISTRY_OTP` | · | · | · | + | C | Fixed OTP for stub sign-in (default `000000`). |
 
 ---
 
@@ -241,7 +244,18 @@ SLACK_CONTACT_CHANNEL_ID=C0123456789
 CONTACT_QUEUE_TTL_SECONDS=300
 ```
 
-**exedra**
+**exedra (local stub — single process, no registry app)**
+
+```
+EXEDRA_STUB_REGISTRY=1
+BUN_PUBLIC_EXEDRA_STUB_REGISTRY=1
+# EXEDRA_STUB_REGISTRY_OTP=000000
+INVITE_PEPPER=<openssl rand -hex 32>
+EXEDRA_IDENTITY_KEY=<openssl rand -hex 32>
+AI_API_KEY=sk-...
+```
+
+**exedra (production — separate registry)**
 
 ```
 PORT=3000

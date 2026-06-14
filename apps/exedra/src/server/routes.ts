@@ -1,8 +1,10 @@
 import { handleGetSession } from "./auth/session";
 import { handleAcceptInvite, handleGetInvite, handleMintInvite } from "./invites/routes";
+import { stubRegistryAuthRoutes } from "./registry-stub/routes";
 import { handleCreateSession, handleGetInterview, handleGetSessionById } from "./sessions/routes";
 
 export const apiRoutes = {
+  ...stubRegistryAuthRoutes,
   "/api/health": {
     GET: () => Response.json({ ok: true }),
   },

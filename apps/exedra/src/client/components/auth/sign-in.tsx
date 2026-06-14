@@ -13,6 +13,11 @@ import { registryEmailConfirmApi } from "@/lib/registry-email-confirm-api";
 const OTP_LENGTH = 6;
 const SIGN_IN_STORAGE_KEY = "exedra-sign-in";
 
+const DEFAULT_SIGN_IN_DESCRIPTION =
+  process.env.BUN_PUBLIC_EXEDRA_STUB_REGISTRY === "1"
+    ? "Local stub registry — use any email and OTP 000000 (or EXEDRA_STUB_REGISTRY_OTP)."
+    : "Enter your email to receive a one-time code from the Khora registry.";
+
 type SignInProps = {
   title?: string;
   description?: string;
@@ -22,7 +27,7 @@ type SignInProps = {
 
 export function SignIn({
   title = "Sign in to Exedra",
-  description = "Enter your email to receive a one-time code from the Khora registry.",
+  description = DEFAULT_SIGN_IN_DESCRIPTION,
   storageKey = SIGN_IN_STORAGE_KEY,
   onSuccess,
 }: SignInProps) {

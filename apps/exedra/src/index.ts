@@ -1,10 +1,17 @@
 import { serve } from "bun";
 import index from "./client/index.html";
 import { getDb } from "./server/db/index";
+import { getStubRegistryOtp, isExedraStubRegistryEnabled } from "./server/registry-stub/config";
 import { apiRoutes } from "./server/routes";
 import { interviewWsHandlers, verifyInterviewWsUpgrade } from "./server/ws/interview";
 
 getDb();
+
+if (isExedraStubRegistryEnabled()) {
+  console.log(
+    `[exedra] stub registry enabled — /api/auth/* in-process; OTP ${getStubRegistryOtp()}`,
+  );
+}
 
 const server = serve({
   routes: {
