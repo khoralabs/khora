@@ -7,7 +7,7 @@ Three distinct SQLite databases, strictly separated:
 | Database | Contents | Owner |
 |---|---|---|
 | `exedra.db` | App state: orgs, teams, sessions, invites, auth tokens, group chat messages | Exedra server |
-| `memories/{userId}.db` | Personal memory namespace — user's beliefs, observations across all sessions | The individual user |
+| `memories/{encodedUserId}.db` | Personal memory namespace — user's beliefs, observations across all sessions | The individual user |
 | `memories/{orgId}.db` | Org/team shared namespace — promoted facts, contention reports | The organization |
 
 ### Why Separate
@@ -35,6 +35,35 @@ Uses `@khoralabs/registry-auth` (Better Auth + email OTP) as the identity provid
 **Key env vars:** `BUN_PUBLIC_KHORA_REGISTRY_URL`, `REGISTRY_URL` (server-side session verify)
 
 **Reference:** `apps/khoralabs/homepage` for client OTP pattern; `apps/exedra/src/server/auth/` for session API.
+
+## Onboarding
+
+Facilitators without a `team_members` row complete a three-step wizard (org → team → invite team) gated by `GET /api/me` (`onboardingRequired`). See [onboarding.md](./onboarding.md).
+
+On step 2 submit, `POST /api/onboarding` creates relational org/team records and bootstraps memories scope chains via `server/memories/bootstrap.ts`.
+
+## Memories module (`server/memories/`)
+
+Separate SQLite files under `{EXEDRA_DATA_DIR}/memories/`:
+
+| File | Purpose |
+|---|---|
+| `{orgId}.db` | Shared org/team namespaces |
+| `{encodedUserId}.db` | Facilitator personal namespace |
+
+User IDs stay as DIDs in app tables. For memories paths/filenames only, Exedra encodes principals with `encodePrincipalIdForMemories` (`Buffer.from(id, "utf8").toString("base64url").toLowerCase()`).
+
+Opened via lazy `Map` cache in `store.ts`; requires `EXEDRA_MEMORIES_SQLCIPHER_KEY`. Optional `SQLITE_CUSTOM_LIB` for sqlite-vec (Homebrew sqlite).
+
+Scope chains created at onboarding:
+
+```
+# org DB
+_global_ → _global_/org/{orgId} → _global_/org/{orgId}/team/{teamId}
+
+# user DB
+_global_ → _global_/{encodedUserId} → _global_/{encodedUserId}/org/{orgId}/team/{teamId}
+```
 
 ## Server Structure
 

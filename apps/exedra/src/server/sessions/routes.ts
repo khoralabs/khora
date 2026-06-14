@@ -2,9 +2,7 @@ import { requireRegistrySessionResponse } from "../auth/require-session";
 import { getDb } from "../db/index";
 import { listInvitesForSession, userAcceptedSessionInvite } from "../db/invites";
 import {
-  createOrg,
   createSession,
-  createTeam,
   getOrCreateInterviewThread,
   getSession,
   isTeamMember,
@@ -13,8 +11,6 @@ import { getOrCreateUser } from "../identity/users";
 
 type CreateSessionBody = {
   teamId?: string;
-  orgName?: string;
-  teamName?: string;
   displayName?: string;
   topic?: string;
   prompt?: string;
@@ -42,13 +38,14 @@ export async function handleCreateSession(req: Request): Promise<Response> {
   const db = getDb();
   const user = await getOrCreateUser(db, auth.session.user.id);
 
-  let teamId = body.teamId?.trim();
-  if (teamId === undefined || teamId.length === 0) {
-    const orgName = body.orgName?.trim() || "My organization";
-    const teamName = body.teamName?.trim() || "Default team";
-    const orgId = createOrg(db, { name: orgName, ownerId: user.id });
-    teamId = createTeam(db, { orgId, name: teamName, ownerId: user.id });
-  } else if (!isTeamMember(db, teamId, user.id)) {
+  const teamId = body.teamId?.trim() ?? "";
+  if (teamId.length === 0) {
+    return Response.json(
+      { error: "teamId is required", onboardingRequired: true },
+      { status: 400 },
+    );
+  }
+  if (!isTeamMember(db, teamId, user.id)) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 

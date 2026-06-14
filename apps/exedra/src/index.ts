@@ -1,3 +1,4 @@
+import { ensureCustomSqliteForExtensions } from "@khoralabs/memories-sqlite";
 import { serve } from "bun";
 import index from "./client/index.html";
 import { getDb } from "./server/db/index";
@@ -5,6 +6,8 @@ import { getStubRegistryOtp, isExedraStubRegistryEnabled } from "./server/regist
 import { apiRoutes } from "./server/routes";
 import { interviewWsHandlers, verifyInterviewWsUpgrade } from "./server/ws/interview";
 
+// Must run before any bun:sqlite Database (including exedra.db) so sqlite-vec can load.
+ensureCustomSqliteForExtensions();
 getDb();
 
 if (isExedraStubRegistryEnabled()) {

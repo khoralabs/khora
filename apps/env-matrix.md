@@ -172,6 +172,8 @@ Contact flow: submission is queued when the user reaches the OTP step; Slack sen
 | `EXEDRA_DATA_DIR` | · | · | · | + | C | SQLite root (default `./data`; holds `exedra.db`, `memories/`). |
 | `INVITE_PEPPER` | · | · | · | + | S | **Required.** HMAC pepper for single-use session invite tokens. |
 | `EXEDRA_IDENTITY_KEY` | · | · | · | + | S | **Required.** 32-byte hex AES key for custodial `did:key` identity blobs in `users.identity_encrypted`. |
+| `EXEDRA_MEMORIES_SQLCIPHER_KEY` | · | · | · | + | S | **Required.** SQLCipher key for `memories/{orgId}.db` and encoded user DB files. |
+| `SQLITE_CUSTOM_LIB` | · | · | · | + | C | Optional path to Homebrew/custom sqlite for sqlite-vec (memories extensions). |
 | `AI_API_KEY` | · | · | · | + | S | OpenAI (or compatible) API key for interview agent. |
 | `AI_MODEL` | · | · | · | + | C | Model id (default `gpt-4o`). |
 | `AI_BASE_URL` | · | · | · | + | C | Optional OpenAI-compatible base URL. |
@@ -252,6 +254,7 @@ BUN_PUBLIC_EXEDRA_STUB_REGISTRY=1
 # EXEDRA_STUB_REGISTRY_OTP=000000
 INVITE_PEPPER=<openssl rand -hex 32>
 EXEDRA_IDENTITY_KEY=<openssl rand -hex 32>
+EXEDRA_MEMORIES_SQLCIPHER_KEY=<openssl rand -base64 32>
 AI_API_KEY=sk-...
 ```
 
@@ -265,6 +268,7 @@ REGISTRY_URL=https://registry.example.com
 EXEDRA_DATA_DIR=/var/data/exedra
 INVITE_PEPPER=<openssl rand -hex 32>
 EXEDRA_IDENTITY_KEY=<openssl rand -hex 32>
+EXEDRA_MEMORIES_SQLCIPHER_KEY=<openssl rand -base64 32>
 AI_API_KEY=sk-...
 AI_MODEL=gpt-4o
 # EXEDRA_LITESTREAM=1                    # planned

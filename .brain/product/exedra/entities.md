@@ -22,6 +22,17 @@ Created by any org member. Persistent container for the shared knowledge base ac
 | `ownerId` | User who created the team (manages membership) |
 | `memberIds` | Team members with read access to the shared knowledge base |
 
+## Team Invite
+
+Shareable link for adding colleagues to a team (distinct from session stakeholder invites).
+
+| Field | Description |
+|---|---|
+| `token` | Single-use plaintext token (hashed in `team_invites.token_hash`) |
+| `teamId` | Team the invite adds members to |
+| `createdByUserId` | Team member who minted the link |
+| `revokedAtMs` | Optional revocation timestamp |
+
 ## Session
 
 Created by the facilitator. Scoped to a team. Moves through a defined lifecycle.

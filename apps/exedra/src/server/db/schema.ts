@@ -82,6 +82,17 @@ export function ensureExedraSchema(db: Database): void {
     CREATE INDEX IF NOT EXISTS idx_messages_thread
       ON messages(thread_id, message_index);
 
+    CREATE TABLE IF NOT EXISTS team_invites (
+      token_hash TEXT PRIMARY KEY NOT NULL,
+      team_id TEXT NOT NULL REFERENCES teams(id),
+      created_by_user_id TEXT NOT NULL REFERENCES users(id),
+      created_at_ms INTEGER NOT NULL,
+      revoked_at_ms INTEGER
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_team_invites_team
+      ON team_invites(team_id);
+
     CREATE TABLE IF NOT EXISTS jobs (
       id TEXT PRIMARY KEY NOT NULL,
       kind TEXT NOT NULL,

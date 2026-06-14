@@ -6,7 +6,11 @@ exedra/
 │   ├── index.ts              # Bun.serve() entry point
 │   ├── server/               # API routes, WebSocket handlers, background jobs
 │   │   ├── auth/             # GET /api/auth/session (registry verify)
-│   │   ├── invites/          # Deep-link invite metadata + accept
+│   │   ├── db/               # schema, membership, team-invites, sessions, messages
+│   │   ├── invites/          # Session deep-link invite metadata + accept
+│   │   ├── memories/       # Org/user SQLite open, namespace bootstrap
+│   │   ├── onboarding/       # GET /api/me, POST /api/onboarding
+│   │   ├── teams/            # Team join invite mint/accept
 │   │   └── routes.ts         # Route table wired in src/index.ts
 │   ├── agents/               # Interview, synthesis, alignment agent logic
 │   │   ├── interview.ts      # Interview agent (Vercel AI SDK streamText)
@@ -16,8 +20,9 @@ exedra/
 │   │   ├── schema.ts         # Table definitions (threads, messages, sessions, etc.)
 │   │   └── queries/          # Typed query helpers per domain
 │   └── client/               # React pages + components (browser bundle)
-│       ├── components/auth/  # SignIn, InviteGate (EmailConfirm + registry OTP)
-│       ├── lib/              # registry-url, registry-email-confirm-api, auth-session
+│       ├── components/auth/  # SignIn, InviteGate, JoinTeamGate (EmailConfirm + registry OTP)
+│       ├── components/onboarding/  # OnboardingWizard (org → team → invite)
+│       ├── lib/              # registry-url, auth-session, me-api
 │       └── components/ui/    # shadcn primitives
 ├── package.json
 ├── tsconfig.json

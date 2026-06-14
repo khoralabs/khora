@@ -19,7 +19,7 @@ The product is essentially a structured version of an AI-facilitated alignment c
 
 | Role | Description |
 |---|---|
-| **Facilitator** | PM, team lead, or founder. Configures the interview scope, monitors responses, manages the knowledge base. |
+| **Facilitator** | PM, team lead, or founder. Configures the interview scope, monitors responses, manages the knowledge base. Completes [onboarding](./onboarding.md) (org → team → invite) on first sign-in. |
 | **Respondent** | Stakeholder who receives an invite link and completes the structured interview. |
 | **Team** | All team members have read access to the global knowledge base once facts are integrated. |
 

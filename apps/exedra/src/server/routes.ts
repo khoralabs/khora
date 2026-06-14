@@ -1,7 +1,9 @@
 import { handleGetSession } from "./auth/session";
 import { handleAcceptInvite, handleGetInvite, handleMintInvite } from "./invites/routes";
+import { handleGetMe, handlePostOnboarding } from "./onboarding/routes";
 import { stubRegistryAuthRoutes } from "./registry-stub/routes";
 import { handleCreateSession, handleGetInterview, handleGetSessionById } from "./sessions/routes";
+import { handleAcceptJoinTeam, handleGetJoinTeam, handleMintTeamInvite } from "./teams/routes";
 
 export const apiRoutes = {
   ...stubRegistryAuthRoutes,
@@ -11,6 +13,14 @@ export const apiRoutes = {
 
   "/api/auth/session": {
     GET: handleGetSession,
+  },
+
+  "/api/me": {
+    GET: handleGetMe,
+  },
+
+  "/api/onboarding": {
+    POST: handlePostOnboarding,
   },
 
   "/api/sessions": {
@@ -36,5 +46,19 @@ export const apiRoutes = {
   "/api/invites/:token/accept": {
     POST: (req: Request & { params: { token: string } }) =>
       handleAcceptInvite(req, req.params.token),
+  },
+
+  "/api/teams/:teamId/invites": {
+    POST: (req: Request & { params: { teamId: string } }) =>
+      handleMintTeamInvite(req, req.params.teamId),
+  },
+
+  "/api/join-team/:token": {
+    GET: (req: Request & { params: { token: string } }) => handleGetJoinTeam(req, req.params.token),
+  },
+
+  "/api/join-team/:token/accept": {
+    POST: (req: Request & { params: { token: string } }) =>
+      handleAcceptJoinTeam(req, req.params.token),
   },
 } as const;
