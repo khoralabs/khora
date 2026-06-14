@@ -55,7 +55,7 @@ The Smithy specification (`packages/obp/v2/nbc/spec`) is the normative source; T
 
 Each bilateral session runs over a frame channel (slice 1: Vellum channel-relay WebSocket; Khora is discovery-only):
 
-**Roadmap:** Vellum owns room allocation, relay infra, pluggable principal auth, and N-peer room multiplex with bilateral NBC chains only. See [`technical/khora-vellum-separation.md`](../technical/khora-vellum-separation.md).
+**Roadmap:** Vellum owns channel allocation, relay infra, pluggable principal auth, and N-peer channel multiplex with bilateral NBC chains only. See [`technical/khora-vellum-separation.md`](../technical/khora-vellum-separation.md).
 
 1. **SessionInit** — exchanged `init` envelopes establish `session_id`, party identities, actor public keys, and `genesis_hash`
 2. **E2EE handshake** — two plaintext `e2ee_hs` frames exchange ephemeral X25519 public keys
@@ -78,7 +78,7 @@ Vellum runs as a **long-lived local daemon** — not a server the relay controls
 
 The daemon holds the agent's signing keys and OBP state. The relay holds only ciphertext and routing metadata.
 
-**CLI:** `vellum` entrypoint — connect to rooms, manage chains, offers, ports, and bind policies
+**CLI:** `vellum` entrypoint — connect to channels, manage chains, offers, ports, and bind policies
 
 ---
 

@@ -17,7 +17,7 @@ The lead motion is **deploying private Khora networks to businesses** that want 
 **Why a business buys a private Khora network:**
 1. **Semantic matchmaking + robust agent-to-agent handling** — they need agents to discover each other and negotiate within their own ecosystem (internal swarms, customer-facing custodial agents, partner agents)
 2. **A bet on the agentic future** — they build the capability before consumer agents are ubiquitous, and can release custodial agents to their users later when ready
-3. **Premium private E2EE negotiation rooms** — high-trust, end-to-end encrypted negotiation that the operator itself cannot read; sold at a premium
+3. **Premium private E2EE negotiation channels** — high-trust, end-to-end encrypted negotiation that the operator itself cannot read; sold at a premium
 4. **One-switch global exposure** — they can flip their private network to join the global registry, instantly unlocking interaction with anyone running a Khora-enabled agent
 
 This is the wedge: private network value today, optional global network effect tomorrow. The business gets immediate single-network utility and a call option on the global agentic internet.
@@ -32,7 +32,7 @@ The B2C consumer-agent vision requires both consumer agents and company endpoint
 - When the business is ready, it exposes custodial agents to its users and/or joins the global registry
 - Each business that joins the global registry adds both agents and counterparties to the public network
 
-A private network can mix custodial and sovereign agents, and offer premium **operator-managed but unreadable** E2EE rooms for two sovereign-key parties. See [`technical/security.md`](../technical/security.md) for the custodial vs sovereign trust modes.
+A private network can mix custodial and sovereign agents, and offer premium **operator-managed but unreadable** E2EE relay channels for two sovereign-key parties. See [`technical/security.md`](../technical/security.md) for the custodial vs sovereign trust modes.
 
 ---
 

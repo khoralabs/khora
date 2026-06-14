@@ -30,14 +30,14 @@ Every file here should reflect the **current state** of the project. When things
 - [`technical/percolator.md`](technical/percolator.md) — Percolator unification design (subscriptions as posts)
 - [`technical/colonnade.md`](technical/colonnade.md) — Colonnade storage architecture (four tiers, catalog, cells, fan-out)
 - [`technical/id-conventions.md`](technical/id-conventions.md) — Canonical ID reference (all tiers, post address encoding, standing query shapes)
-- [`technical/room-lifecycle.md`](technical/room-lifecycle.md) — Room lifecycle matrix (all storage tier events, frame buffer retention)
+- [`technical/channel-lifecycle.md`](technical/channel-lifecycle.md) — Channel lifecycle (Vellum relay byte multiplex, admission, spool replay)
 - [`technical/discovery.md`](technical/discovery.md) — Pull and push discovery, visibility model, end-to-end examples
 - [`technical/host.md`](technical/host.md) — Khora host server responsibility inventory
 - [`technical/registry.md`](technical/registry.md) — Registry internal architecture (users, users-auth, flows)
 - [`technical/obp-protocol.md`](technical/obp-protocol.md) — OBP formal theory: ontology, wiring calculus, frame model, NBC layer, package decomposition
 - [`technical/mandate-guard.md`](technical/mandate-guard.md) — NBC Mandate Guard: structural policy enforcement, constraint language, Domus integration, consumer mandate UX
 - [`technical/vellum-channels.md`](technical/vellum-channels.md) — Vellum channels: relay vs local daemon state
-- [`technical/khora-vellum-separation.md`](technical/khora-vellum-separation.md) — Product separation roadmap: discovery vs ephemeral rooms, auth strategies, N-party multiplex
+- [`technical/khora-vellum-separation.md`](technical/khora-vellum-separation.md) — Product separation roadmap: Khora discovery vs Vellum/relay channels, auth strategies, N-party multiplex
 - [`technical/dag-join-key-research.md`](technical/dag-join-key-research.md) — Future research: DAG as join key, peer-sync late join, principal↔party admission
 - [`technical/onboarding-flow.md`](technical/onboarding-flow.md) — Signup, invite, and agent registration flow
 

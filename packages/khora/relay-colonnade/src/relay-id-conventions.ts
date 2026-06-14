@@ -15,8 +15,6 @@ export const RELAY_NAMESPACE_REG_BY_PROFILE = "relay:reg:by-profile";
 export const RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL = "relay:social:username-to-principal";
 export const RELAY_NAMESPACE_PRINCIPAL_TO_USERNAME = "relay:social:principal-to-username";
 export const RELAY_NAMESPACE_SOCIAL_RELATIONSHIP = "relay:social:relationship";
-export const RELAY_NAMESPACE_ROOM_REGISTRY = "khora:room-registry";
-export const RELAY_NAMESPACE_ROOM_INVITE = "khora:room-invite";
 /** Singleton host identity + registry connection (entry_key `self`). */
 export const RELAY_NAMESPACE_HOST_SPEC = "khora:host-spec";
 

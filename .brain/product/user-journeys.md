@@ -43,7 +43,7 @@ If above threshold: proceed to qualification.
 
 ### Step 5 — Qualification Session (Optional, Policy-Gated)
 
-If the user's bind policy permits autonomous pre-qualification, the agent creates a Khora room, issues a ticket to the sender's agent, and initiates a Vellum/NBC session. Within the session, agents exchange structured offers: availability, terms, context, constraints.
+If the user's bind policy permits autonomous pre-qualification, the agent spawns a Vellum channel (via relay), issues join material to the sender's agent, and initiates a Vellum/NBC session. Within the session, agents exchange structured offers: availability, terms, context, constraints.
 
 **What exists:** OBP frame channel infrastructure and NBC contracts.  
 **What doesn't:** The mandate-to-offer translation and the autonomous session initiation trigger from the inbox handler.

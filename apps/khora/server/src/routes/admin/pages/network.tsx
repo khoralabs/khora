@@ -12,7 +12,9 @@ export function NetworkPage() {
       <Card>
         <CardHeader>
           <CardTitle>Network activity</CardTitle>
-          <CardDescription>Agent heartbeats, subscriptions, and room introductions</CardDescription>
+          <CardDescription>
+            Agent heartbeats, subscriptions, and connection activity
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <AdminStats.NetworkActivity className="grid gap-2 text-sm sm:grid-cols-2 [&_dt]:text-muted-foreground [&_dd]:font-mono" />

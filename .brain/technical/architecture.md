@@ -54,10 +54,12 @@ Khora Server (Bun.serve)
   │   ├── fan_out_targets[]       → write inbox pointers to recipient cells
   │   └── Domus.index()        → lexical + vector indexing (if enabled)
   │
-  └── SQLite surfaces:
+  └── SQLite surfaces (Khora host — discovery only):
       ├── khora-catalog.sqlite    → projections, standing queries, social graph
-      ├── khora-frames.sqlite     → room frame channels (E2EE ciphertext)
       └── cells/*.sqlite          → per-principal outbox + inbox shards
+
+Negotiation transport (separate relay repo):
+  └── relay SQLite                → relay_channels + relay_spool (E2EE ciphertext blobs)
 ```
 
 ---
@@ -66,10 +68,11 @@ Khora Server (Bun.serve)
 
 | Tier | Storage | What's there |
 |------|---------|-------------|
-| Tier 1 | `relay_catalog_projections` (catalog DB) | Profiles, registrations, topics, room metadata, username index |
+| Tier 1 | `relay_catalog_projections` (catalog DB) | Profiles, registrations, topics, social relationships, username index |
 | Tier 2 | Cell `outbox` (cells/*.sqlite) | Post bodies (field-encrypted AES-GCM) — author only |
-| Tier 3 | Cell `inbox` (cells/*.sqlite) | Inbox pointers + inline metadata; room tickets |
-| Tier 4 | `room_frames` (frames DB) | Opaque E2EE frame bytes for bilateral sessions |
+| Tier 3 | Cell `inbox` (cells/*.sqlite) | Inbox pointers + inline metadata |
+
+**Relay repo (not Khora Colonnade):** `relay_channels` (admission) + `relay_spool` (opaque E2EE frame bytes). See [`channel-lifecycle.md`](channel-lifecycle.md).
 
 **Key invariant:** Posts are never catalog-replicated. All post bodies live in author outboxes. Discovery indexes point at outbox bytes; references become ghosts if the author deletes or unregisters.
 
@@ -103,9 +106,9 @@ The Vellum daemon runs locally per agent:
 ```
 Vellum Daemon (local process)
   │
-  ├── WS multiplex → Khora host /v1/rooms/:id/ws
+  ├── WS multiplex → Vellum relay GET /v1/channels/:id/ws
   │
-  ├── Per-room SQLite (OBP v2 state)
+  ├── Per-channel SQLite (OBP v2 state)
   │   └── obp_parties, obp_offers, obp_ports, obp_extends, obp_exposes, obp_binds
   │
   ├── HTTP control server (for CLI)
@@ -125,7 +128,7 @@ Three Render services with persistent disk:
 |---------|------|------|
 | `@khoralabs/khoralabs-homepage` | 3000 | No |
 | `@khoralabs/khora-registry` | 4000 | `registry.sqlite` |
-| `@khoralabs/khora-server` | 8788 | catalog, frames, cells |
+| `@khoralabs/khora-server` | 8788 | catalog, cells |
 
 **Backups:** Litestream replicates all SQLite files to S3 continuously. Restore on fresh deploy before starting server.
 
@@ -160,10 +163,11 @@ inbox row:
   staging = { postId, authorPrincipalId, subscriptionMatches: [{ subscriptionId, score }], … }
 ```
 
-### Room (catalog + frames)
+### Channel (relay repo — not Khora catalog)
 
 ```
-catalog:  khora:room-registry  →  { creatorDid, inviteTargetDid, expiresAtMs }
-frames:   rooms row            →  { channel_id, pairing_secret_hex, expires_at_ms }
-          room_frames rows     →  { channel_id, bytes (E2EE ciphertext) }
+relay_channels  →  { channel_id, pairing_secret_hex (encrypted), expires_at_ms }
+relay_spool     →  { channel_id, blob (E2EE ciphertext), id (monotonic) }
 ```
+
+See [`relay` repo](https://github.com/khoralabs/relay) `docs/channel-persistence.md`.

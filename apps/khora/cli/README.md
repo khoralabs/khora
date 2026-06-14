@@ -264,4 +264,4 @@ There is no separate login token. The CLI loads your identity file and signs eac
 ## Related packages
 
 - [`@khoralabs/khora-client`](../../../packages/khora/client) — typed HTTP client used by this CLI
-- [`@khoralabs/vellum-cli`](../../vellum/cli) — room/NBC tooling on top of the same identity and host APIs
+- [`@khoralabs/vellum-cli`](../../vellum/cli) — channel/NBC tooling on top of the same identity and relay APIs

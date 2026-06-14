@@ -2,7 +2,7 @@
 
 Protocol-level events for a Vellum **channel** — one nonce-gated byte multiplex (`channel_id`). This document describes **what happens** at each stage, not which SQLite tables or apps implement it.
 
-Related: [`channel-relay-deployment.md`](../../packages/vellum/spec/channel-relay-deployment.md) (canonical **one container = one channel**), [`channel-control-protocol.md`](../../packages/vellum/spec/channel-control-protocol.md), [`vellum-channels.md`](vellum-channels.md) (CLI/local daemon), [`khora-vellum-separation.md`](khora-vellum-separation.md), [`room-lifecycle.md`](room-lifecycle.md) (Khora-specific; different product).
+Related: [`channel-relay-deployment.md`](../../packages/vellum/spec/channel-relay-deployment.md) (canonical **one container = one channel**), [`channel-control-protocol.md`](../../packages/vellum/spec/channel-control-protocol.md), [`vellum-channels.md`](vellum-channels.md) (CLI/local daemon), [`khora-vellum-separation.md`](khora-vellum-separation.md). Relay persistence: [`relay`](https://github.com/khoralabs/relay) (`@khoralabs/relay-server-http`, `relay_channels`, `relay_spool`).
 
 **Chain negotiation lifecycle** (bilateral DAG, bind windows, turns) is defined by NBC — see [`packages/obp/nbc/spec/model/negotiated-binding-convention.smithy`](../../packages/obp/nbc/spec/model/negotiated-binding-convention.smithy). This doc only covers **permission to open** a chain slot on the multiplex.
 

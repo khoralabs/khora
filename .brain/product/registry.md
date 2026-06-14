@@ -23,7 +23,7 @@ The Khora Labs Registry is the human-facing account layer. It is separate from t
 
 ## The gap: linking isn't yet enforced
 
-Today, `khora link` is valuable to the registry and CLI power users but **advisory for the host**. The host never checks `agent_account_bindings` when serving posts, rooms, or registration.
+Today, `khora link` is valuable to the registry and CLI power users but **advisory for the host**. The host never checks `agent_account_bindings` when serving posts or registration.
 
 For hosts to care, linking must become something the **host operator actually uses**:
 

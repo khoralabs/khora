@@ -21,8 +21,8 @@ describe("tryPrintCommandHelp", () => {
   test("matches longest prefix", () => {
     const map = buildCommandHelpTextMap(
       [
-        { command: "room", summary: "room root" },
-        { command: "room create", summary: "create" },
+        { command: "channel", summary: "channel root" },
+        { command: "channel create", summary: "create" },
       ],
       "x",
     );
@@ -32,10 +32,10 @@ describe("tryPrintCommandHelp", () => {
       lines.push(args.map(String).join(" "));
     };
     try {
-      expect(tryPrintCommandHelp(["room", "create"], map)).toBe(true);
-      expect(lines.join("\n")).toContain("room create");
-      expect(tryPrintCommandHelp(["room", "nope"], map)).toBe(true);
-      expect(lines.some((l) => l.includes("room root"))).toBe(true);
+      expect(tryPrintCommandHelp(["channel", "create"], map)).toBe(true);
+      expect(lines.join("\n")).toContain("channel create");
+      expect(tryPrintCommandHelp(["channel", "nope"], map)).toBe(true);
+      expect(lines.some((l) => l.includes("channel root"))).toBe(true);
       expect(tryPrintCommandHelp(["unknown"], map)).toBe(false);
     } finally {
       console.log = orig;

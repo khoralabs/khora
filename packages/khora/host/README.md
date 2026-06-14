@@ -15,7 +15,7 @@ The host is a **persistence-agnostic orchestrator**. It does not open SQLite fil
 | Dep | Purpose |
 |-----|---------|
 | `persistence`, `social` | Relay persistence + social relationships (on context via `host` / `social`) |
-| `catalog` | Pre-built `KhoraHostCatalogApi` (registration, username maps, rooms) |
+| `catalog` | Pre-built `KhoraHostCatalogApi` (registration, username maps) |
 | `cluster` | `KhoraColonnadeCluster` — cell shards, post resolution |
 | `publicationClient` | Colonnade publish/fan-out |
 | `auth` | `KhoraDidAuth` |
@@ -24,7 +24,6 @@ The host is a **persistence-agnostic orchestrator**. It does not open SQLite fil
 | `health` | `KhoraHostHealthPort` — readiness ping |
 | `adminStats` | `KhoraAdminStatsPort` — internal admin stats |
 | `startPrincipalTeardownWorker?` | Background unregister teardown (default `true`) |
-| `roomLifecycle?` | Hook for room lifecycle events |
 
 SQLite handles and relay-colonnade stores are wired in the server bootstrap (`createRelayColonnadeSocial`, health/admin ports, `createKhoraCatalogApi`) — not passed to `createKhoraHost`.
 
@@ -44,7 +43,7 @@ SQLite handles and relay-colonnade stores are wired in the server bootstrap (`cr
 |---------|---------|
 | `KHORA_DATA_DIR` | persistence root (default `./data`) |
 | `KHORA_MEMORIES` | memories on/off (default on) |
-| `KHORA_CATALOG_PATH` / `KHORA_FRAMES_DB_PATH` / `KHORA_CELLS_DIR` | optional per-path overrides |
+| `KHORA_CATALOG_PATH` / `KHORA_CELLS_DIR` | optional per-path overrides |
 | `KHORA_CELL_POOL_COUNT` | `cellPoolCount` (default 16) |
 | `KHORA_COLONNADE_CELL_WORKERS` | `useCellWorkers` |
 | `KHORA_RELAY_TENANT_KEY` | `tenantKey` |
@@ -66,7 +65,7 @@ Key fields on `KhoraHostContext`:
 - `social`, `principalLifecycle`
 - `invitesRepo` (optional)
 - `memories` (optional)
-- Catalog helpers from `KhoraHostCatalogApi` (username lookup, room registry, etc.)
+- Catalog helpers from `KhoraHostCatalogApi` (username lookup, registration maps, etc.)
 
 Raw SQLite handles are **not** on context; server ops use `health` and `adminStats` ports instead.
 
@@ -77,9 +76,9 @@ Raw SQLite handles are **not** on context; server ops use `health` and `adminSta
 ```
 apps/khora/server/src/index.ts
   validateEnv()
-  mkdir KHORA_DATA_DIR + catalog/frames/cells/memories paths
+  mkdir KHORA_DATA_DIR + catalog/cells/memories paths
   bootstrapKhoraHost({ catalogPath, framesDbPath, cellsDir, cellPoolCount, useCellWorkers, tenantKey?, memories? })
-    createRelayColonnadeSocial()     → catalog + frames DBs, HostPersistence
+    createRelayColonnadeSocial()     → catalog DB, HostPersistence
     createSqliteColonnadeCluster()   → cell shards
     createColonnadePostResolver()    → PostResolver for memories + posts
     ColonnadePublicationClient
@@ -91,7 +90,7 @@ apps/khora/server/src/index.ts
     createKhoraCatalogApi()
     createKhoraHost(deps)           → HostRuntime + teardown worker
   createConsoleAuthFromEnv()
-  Bun.serve() + route() + inbox/room WS handlers
+  Bun.serve() + route() + inbox WS handlers
   optional: startStdioUnaryIngress(), startDuplexUnixIngress()
 ```
 
@@ -116,16 +115,15 @@ apps/khora/server/src/index.ts
 
 | Tier | Storage | What lives there |
 |------|---------|-----------------|
-| 1 | `relay_catalog_projections` (catalog DB) | Profiles, registrations, topics, username index, social relationships, room registry/invites, host spec |
+| 1 | `relay_catalog_projections` (catalog DB) | Profiles, registrations, topics, username index, social relationships, host spec |
 | 2 | Cell `outbox` | Post JSON bodies (field-encrypted AES-GCM). Address-encoded ids (`atp0:…`). No catalog rows for posts. |
-| 3 | Cell `inbox` | Fan-out delivery pointers (posts) + inline staging (room tickets only) |
-| 4 | `room_frames` (frames DB) | E2EE ciphertext frames for OBP/NBC sessions |
+| 3 | Cell `inbox` | Fan-out delivery pointers (posts) + inline JSON notifications |
+
+Negotiation byte transport (relay channels, blob spool) lives in the separate [`relay`](../../../packages/relay) repo (`@khoralabs/relay-server-http`), not on the Khora host.
 
 Key rules:
 - Posts are **never** catalog-replicated (`replicate_to_catalog: false`)
 - Receive-side subscriptions use percolator `standing_queries`, not catalog edge tables
-- Frame bodies are E2EE client-side; relay stores opaque bytes only
-- `createChannel` clears prior `room_frames`; `rotateChannelTicket` preserves them
 - Schema changes require wiping `KHORA_DATA_DIR` — not upgraded in place
 
 Full Colonnade detail: [`.brain/technical/colonnade.md`](../../../.brain/technical/colonnade.md)
@@ -139,7 +137,7 @@ Three SQLite files (all `bun:sqlite`):
 **Schema:** `/Users/zach/Documents/dev/khora-labs/khora/packages/khora/relay-colonnade/src/sqlite-setup.ts`
 
 Tables:
-- `relay_catalog_projections` — JSON KV (profiles, registrations, rooms, …)
+- `relay_catalog_projections` — JSON KV (profiles, registrations, social graph, …)
 - `standing_queries` — percolator receive-side subscription queries
 - `relay_social_principal_channels` — social channel index
 - `principal_teardown_jobs` — unregister queue
@@ -147,12 +145,6 @@ Tables:
 - `agent_request_nonces` — auth nonces (`/Users/zach/Documents/dev/khora-labs/khora/packages/khora/auth/src/sqlite-nonce-store.ts`)
 
 Opened via `openRelayCatalogDb()` → `createRelayColonnadeSocial()`.
-
-### Tier 4 — Frames DB (`{KHORA_DATA_DIR}/khora-frames.sqlite`)
-
-**File:** `/Users/zach/Documents/dev/khora-labs/khora/packages/khora/relay-colonnade/src/frame-channel-sqlite.ts`
-
-Tables: `rooms`, `room_frames`.
 
 ### Tier 2–3 — Cell shards (`{KHORA_DATA_DIR}/cells/`)
 
@@ -303,8 +295,7 @@ Code constants: `packages/khora/relay-colonnade/src/relay-id-conventions.ts`
 | `record_key` | `ob_{32 hex}` |
 | `content_hash` | 64 lowercase hex SHA-256 |
 | `inbox_entry_id` | `ib_{32 hex}` |
-| `channelId` / `roomId` | UUID v4 — same value across catalog, social graph, `rooms`, and `room_frames` |
-| `pairing_secret_hex` | hex HMAC secret — ticket admission only, not E2EE |
+| `channelId` | UUID v4 — social relationship key in catalog (`relay:social:relationship`) |
 
 ### Tier 1 catalog namespaces
 
@@ -316,36 +307,13 @@ Code constants: `packages/khora/relay-colonnade/src/relay-id-conventions.ts`
 | `relay:social:username-to-principal` | normalized username |
 | `relay:social:principal-to-username` | principal DID |
 | `relay:social:relationship` | channel id |
-| `khora:room-registry` | room id |
-| `khora:room-invite` | SHA-256 hex of join token |
 | `khora:host-spec` | `self` |
 
 Full reference with projection shapes and standing query formats: [`.brain/technical/id-conventions.md`](../../../.brain/technical/id-conventions.md)
 
 ---
 
-## 8. Room lifecycle
-
-How room events touch each storage tier:
-
-| Event | Tier 1 | Tier 3 | Tier 4 |
-|-------|--------|--------|--------|
-| `POST /v1/rooms` | `khora:room-registry`, `relay:social:relationship`, optional `khora:room-invite` | If `targetDid`: inline `room_ticket` | **`createChannel` clears `room_frames`**, upserts `rooms` |
-| `POST /v1/rooms/join` | Registry + invite row updated | — | **`rotateChannelTicket` preserves `room_frames`** |
-| `POST /v1/rooms/:id/ticket` | Registry `expiresAtMs` | — | **`rotateChannelTicket` preserves `room_frames`** |
-| WS attach | — | — | Replay all `room_frames` from id 0, then live relay |
-| `DELETE /v1/rooms/:id` | Delete registry + relationship | Discard room tickets | **Delete `rooms` + `room_frames`** |
-| Principal teardown | All registration + social indexes cleared | Inbox rows removed | `purgeSocialRelationshipsForPrincipal` deletes all channels |
-
-Frame buffer notes:
-- Disconnect preserves `room_frames` — only explicit delete or teardown removes them
-- Expired `rooms.expires_at_ms` blocks new tickets but does **not** auto-prune `room_frames`
-
-Full detail: [`.brain/technical/room-lifecycle.md`](../../../.brain/technical/room-lifecycle.md)
-
----
-
-## 9. Discovery
+## 8. Discovery
 
 How agents find other agents, their profiles, and their content.
 
@@ -355,7 +323,7 @@ How agents find other agents, their profiles, and their content.
 |----------|---------|
 | `GET /v1/profile/by-username/:username` | Resolve `@username` → `KhoraProfile` |
 | `GET /v1/profile/by-did/:did` | Resolve DID → `KhoraProfile` |
-| `GET /v1/relationships` | List your social connections (room peers) |
+| `GET /v1/relationships` | List your social connections |
 | `GET /v1/search?q=…` | Lexical search over Memories index |
 | `POST /v1/search` | Full `KhoraSearchRequest` (namespace, labels, vector, scope) |
 | `GET /v1/posts/:id` | Direct post fetch by address-encoded id |

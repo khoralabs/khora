@@ -16,7 +16,7 @@
 | Preflight handed to `HostRuntime` | `packages/host-runtime/src/runtime.ts` |
 
 **Route guards:**
-- `requireAuthenticatedRequest` — posts, profile, rooms, relationships, etc.
+- `requireAuthenticatedRequest` — posts, profile, relationships, etc.
 - `requireInboxAccess` — inbox WS (query-param DID for browser WS)
 - `verifyRegistration` / `verifyUnregister` — register/unregister bodies
 
@@ -61,15 +61,15 @@ Registration is **fully local**: DID signature verified on-host; no registry cal
 
 ---
 
-## 4. Agent relay surfaces
+## 4. Agent relay surfaces (discovery)
+
+Khora host is **discovery-only**. Negotiation transport (E2EE frame channels) lives in the **relay** repo (`@khoralabs/relay-server-http`) and Vellum channel orchestration (`POST /v1/channels`). See [`channel-lifecycle.md`](channel-lifecycle.md).
 
 | Surface | File |
 |---|---|
-| Room frame-channel WS | `src/http/router.ts` (`frameRelayHubWebSocketHandlers`) |
-| Room HTTP (create/join/ticket/get/delete) | `src/http/rooms.ts` |
 | Inbox WS upgrade + drain | `src/ws/inbox.ts` |
 | Posts / agent status | `src/http/posts.ts` |
-| Relationships, authors, search | `relationships.ts`, `authors.ts`, `search.ts` |
+| Authors, search | `authors.ts`, `search.ts` |
 | Duplex unix ingress (local agents) | `src/server/duplex-unix-listener.ts` |
 | Stdio NDJSON unary ingress | `src/server/stdio-unary-listener.ts` |
 
@@ -142,7 +142,7 @@ Extension point: add rules only to `RelayPrincipalLifecycle` (`isPostPointerDeli
 
 ## 8. In-app notifications
 
-Notification types (`packages/khora/contracts/src/khora-inbox-notifications.ts`): `room_ticket`, `inbox_post`, `connection_request`, `host`.
+Notification types (`packages/khora/contracts/src/khora-inbox-notifications.ts`): `inbox_post`, `connection_request`, `host`. Target: `negotiation_invite` for Vellum channel handoff (P3 in [`khora-vellum-separation.md`](khora-vellum-separation.md)).
 
 Delivery: `createInboxWsHub()` + `deliverNotification` when a buffer exists. **Note:** Khora host does **not** wire `notificationBuffer` into `HostRuntime` — live WS broadcast is used when the peer is connected; persistent notification buffer is not active.
 
@@ -155,7 +155,6 @@ Post fan-out writes Colonnade cell inbox rows with metadata: `postId`, `authorPr
 | Area | Service | Where |
 |------|---------|-------|
 | Backups | AWS S3 + Litestream (MinIO optional for local dev) | `scripts/litestream-config.ts` |
-| Room tickets | `@khoralabs/duplex-byte-stream` | `@khoralabs/obp-frame-relay` hub |
 | DID / signatures | `@noble/ed25519`, `iso-did` | `packages/khora/auth/` |
 | Logging | `pino` (level `info`, name `khora-server`, `LOG_LEVEL` env) | `apps/khora/server/src/logger.ts` |
 | OBP SQLite extensions | `ensureCustomSqliteForExtensions` from `@khoralabs/memories-sqlite` | `packages/obp/v2/persistence/sqlite/src/connection.ts` |
@@ -172,7 +171,7 @@ Host (data plane)                       Registry (control plane)
 DID-key auth (khora-auth)               User accounts (Better Auth)
 POST /v1/register                       Host registration (secret → mgmt token)
 Local invite repo (khora-invites)       Trusted origins (CORS / auth origins)
-Agent relay (rooms/inbox/posts)         Access-token requests (membership invites)
+Agent relay (inbox/posts)               Access-token requests (membership invites)
 Invite mint poller
 ```
 

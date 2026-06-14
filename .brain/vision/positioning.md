@@ -123,7 +123,7 @@ A local personal agent will **never have enough transactions or relationships to
 
 So the hub/relay keeps two durable functions:
 1. **Network behavior aggregation** — seeing behavior in aggregate across the network, which is exactly what enables pull-based discovery and surfacing of network trends. This aggregate view is itself a sellable asset.
-2. **Relationship facilitation** — being the place where agents find each other and where high-trust negotiation rooms are hosted.
+2. **Relationship facilitation** — being the place where agents find each other and where high-trust negotiation channels are hosted (Vellum + relay).
 
 The shift is *away from* owning the user's judgment (the local agent does that now) and *toward* relationship facilitation and network-level intelligence. Khora is that hub: it provides the global view no local agent can build, while the personal agent retains the per-user judgment no platform can replicate.
 

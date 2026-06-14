@@ -25,8 +25,6 @@ Primary key: `(tenant_key, namespace, entry_key)`.
 | `relay:social:username-to-principal` | normalized username | `{ principalId }` |
 | `relay:social:principal-to-username` | principal DID | `{ username }` |
 | `relay:social:relationship` | channel id | relationship row |
-| `khora:room-registry` | room id | `{ creatorDid, inviteTargetDid, expiresAtMs }` |
-| `khora:room-invite` | SHA-256 hex of join token | invite metadata |
 | `khora:host-spec` | `self` (singleton) | host slug, public URL, registry URL, optional `populationLimit`, registration/management tokens |
 
 ### Normalized edge tables (Tier 1)
@@ -66,18 +64,17 @@ Invalid ids decode to `undefined`. Post JSON `id` field must match the encoded a
 | `correlation_id` | `fan_{32 hex}` | Fan-out internal |
 | inbox pointer | `{ source_cell_id, source_record_key, content_hash, cell_pool_count }` | Points at **author** outbox |
 | inbox pointer metadata | JSON | `{ postId, authorPrincipalId, subscriptionMatches, createdAtMs, postKind }` |
-| inline staging | JSON bytes + hash | Room tickets (admission only; not negotiation frames) |
 
 ---
 
-## Tier 4 — Frame channel IDs
+## Relay channel IDs (relay repo — not Khora host)
 
-Separate SQLite file (`khora-frames.sqlite`).
+Separate SQLite in [`relay`](https://github.com/khoralabs/relay) (`relay_channels`, `relay_spool`). See `docs/channel-persistence.md`.
 
 | Id | Format | Notes |
 |----|--------|-------|
-| `channelId` / `roomId` | UUID v4 | Same value in catalog, social graph, `rooms`, and `room_frames` |
-| `room_frames.id` | integer AUTOINCREMENT | Monotonic per `channel_id`; hub replays from id 0 on attach |
+| `channelId` | UUID v4 | Primary channel identity; admission + spool keyed by this value |
+| `relay_spool.id` | integer AUTOINCREMENT | Monotonic per `channel_id`; hub replays from cursor on attach |
 | `pairing_secret_hex` | hex secret | Ticket HMAC admission — **not** E2EE payload protection |
 
 ---

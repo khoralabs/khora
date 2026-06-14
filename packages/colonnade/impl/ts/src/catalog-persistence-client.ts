@@ -19,7 +19,7 @@ import type {
 } from "./colonnade-types";
 import { assertContentHash } from "./hash";
 
-/** Thin facade over {@link CatalogPersistenceStrategy}; room for shared validation later. */
+/** Thin facade over {@link CatalogPersistenceStrategy}; space for shared validation later. */
 export class CatalogPersistenceClient implements CatalogPersistenceStrategy {
   readonly nextCatalogPointerId?: (tenantKey: string) => string;
   readonly runImmediateTransactionForTenant?: <T>(

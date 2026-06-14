@@ -6,7 +6,7 @@ export type ParsedArgv = {
 };
 
 export interface CommandHelp {
-  /** Command id, e.g. `register` or `room create` (space-separated prefixes). */
+  /** Command id, e.g. `register` or `channel create` (space-separated prefixes). */
   command: string;
   summary: string;
   /** Interactive usage (prompts when run without required flags). */

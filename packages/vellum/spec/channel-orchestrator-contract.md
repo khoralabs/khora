@@ -61,7 +61,7 @@ Orchestrator should wait for `GET /health` → `200` before returning URL to Kho
 
 ## Orchestrator → Khora (response)
 
-Minimal handoff when Khora replaces `POST /v1/rooms` for new flows:
+Minimal handoff when Khora discovery notifies a peer of a Vellum-provisioned channel:
 
 ```json
 {

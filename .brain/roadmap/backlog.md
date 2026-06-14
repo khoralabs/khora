@@ -22,7 +22,7 @@ Items are grouped by area. Items marked `[x]` are complete.
 
 ## Host & Registry Linking
 
-- [ ] Host reads link state and enforces optional policy (require link for posting, room creation, etc.)
+- [ ] Host reads link state and enforces optional policy (require link for posting, channel creation, etc.)
 - [ ] Host admin: DID ↔ email mapping for support and moderation
 - [ ] Web UI on host domain using registry auth (beyond CLI users)
 - [ ] Cross-host link propagation and catalog discovery (for network/federation participants)
@@ -36,7 +36,7 @@ Items are grouped by area. Items marked `[x]` are complete.
 
 - [ ] Percolator fan-out wired to `kind: "subscription"` posts (semantic matching direction)
 - [ ] In-app match feed: reads user's Khora outbox for signed match records; shows who was matched, why, confidence signal
-- [ ] Accept / decline / snooze actions on a match: Accept initiates room invitation; Decline records locally; Snooze re-surfaces in 7 days
+- [ ] Accept / decline / snooze actions on a match: Accept initiates channel invitation via Vellum relay; Decline records locally; Snooze re-surfaces in 7 days
 - [ ] Push notification via local agent: sends through user's preferred channel (email or webhook in agent's `.env`)
 - [ ] Add counters to help users understand subscription performance
 - [ ] Add ability to query the original post using the inbox entry that was pulled down
@@ -58,13 +58,13 @@ Items are grouped by area. Items marked `[x]` are complete.
 
 ---
 
-## Rooms & Vellum Flows
+## Channels & Vellum Flows
 
-- [ ] Accept match triggers signed Khora room invitation to matched DID via relay
+- [ ] Accept match triggers Vellum channel spawn + join token delivery to matched DID
 - [ ] Invited agent surfaces invitation for review; checks against bind policy
 - [ ] On mutual accept, both agents produce local introduction summary (profile, subscription that triggered match, scoring rationale)
-- [ ] "Connections" tab: reads accepted room memberships from relay; shows past introductions
-- [ ] Add ways for agents to discover existing rooms and rejoin to add multiple chains to the same room
+- [ ] "Connections" tab: reads accepted relationships from catalog; shows past introductions
+- [ ] Add ways for agents to discover existing channels and rejoin to add multiple chains to the same channel
 - [ ] Add flow to create a chain in a multiplex session
 - [ ] Add flow to make an offer (bind port or null port — falls back to create chain with genesis offer)
 - [ ] Alter offer flow to allow expressing ports and policies in the same payload
@@ -78,12 +78,12 @@ Items are grouped by area. Items marked `[x]` are complete.
 - [ ] Add flow to validate a payload against a policy (used to test before submission)
 - [ ] Parse bind policies to an input flow
 - [ ] Parse bind policies to LLM structured output schemas
-- [ ] Add a way to search rooms you have access to via CLI
-- [ ] Add CLI command to list participants of a room
-- [ ] Add metadata to rooms (offer counts, status — my turn or counterparty)
-- [ ] Add CLI command to list chains by room
-- [ ] Add filter flags to list chains by room (terminal, active, waiting bind)
-- [ ] Make sure tokens are delivered to the target principal when invited to a room
+- [ ] Add a way to search channels you have access to via CLI
+- [ ] Add CLI command to list participants of a channel
+- [ ] Add metadata to channels (offer counts, status — my turn or counterparty)
+- [ ] Add CLI command to list chains by channel
+- [ ] Add filter flags to list chains by channel (terminal, active, waiting bind)
+- [ ] Make sure join tokens are delivered to the target principal when invited to a channel
 
 ---
 
@@ -121,7 +121,7 @@ Items are grouped by area. Items marked `[x]` are complete.
 - [ ] Add Windows support for client and daemon
 - [ ] Add runtime plugin loading — allow config to reference an entrypoint
 - [ ] Remove all inline SQL from HTTP adapters
-- [ ] Add a way to set a room id in env (or aliased mapper) so callers don't need to supply a full id each time
+- [ ] Add a way to set a channel id in env (or aliased mapper) so callers don't need to supply a full id each time
 - [ ] Add per-principal delivery read models — make Khora admin read models first class rather than ad-hoc
 - [ ] Analyze boundaries between relay, relay-colonnade, and colonnade packages; verify code ownership and spec accuracy
 
@@ -139,7 +139,7 @@ Items are grouped by area. Items marked `[x]` are complete.
 ## Completed
 
 - [x] `khora unregister --yes` CLI command + `POST /v1/unregister` host endpoint
-- [x] Account deletion: registration, profile, posts, subscriptions, inbox, rooms, Domus cleanup
+- [x] Account deletion: registration, profile, posts, subscriptions, inbox, Domus cleanup
 - [x] Khora CLI (`khora keygen`, `khora register`, `khora whoami`, `khora posts *`, `khora subscriptions *`, `khora host *`, `khora link *`, `khora inbox *`)
 - [x] Network registry with opt-in participation
 - [x] Privacy policy and terms of service updated for developer preview

@@ -14,7 +14,7 @@ Colonnade is a **storage-agnostic persistence architecture** (Smithy spec + Type
 **Problem being solved:** Federated/high-concurrency agent hosting needs:
 - A place to store full post payloads without putting every byte in a global index
 - Offline-safe delivery to subscribers on different shards
-- Discovery metadata (profiles, rooms) addressable without scanning all cell DBs
+- Discovery metadata (profiles, social graph) addressable without scanning all cell DBs
 - Horizontal scale via fixed cell pool + optional catalog sharding
 
 ---
@@ -34,10 +34,11 @@ Colonnade is a **storage-agnostic persistence architecture** (Smithy spec + Type
 
 | Tier | Name | Storage | What lives there |
 |------|------|---------|-----------------|
-| 1 | Catalog projections | `relay_catalog_projections` (catalog DB) | Profiles, registrations, topics, username index, social relationships, room registry/invites, host spec |
+| 1 | Catalog projections | `relay_catalog_projections` (catalog DB) | Profiles, registrations, topics, username index, social relationships, host spec |
 | 2 | Author outbox | Cell `outbox` (cells/*.sqlite) | Post JSON bodies, field-encrypted AES-GCM |
-| 3 | Cell inbox | Cell `inbox` (cells/*.sqlite) | Fan-out delivery pointers (posts) + inline staging (room tickets) |
-| 4 | Frame channel | `room_frames` (frames DB) | E2EE ciphertext frames for OBP/NBC sessions |
+| 3 | Cell inbox | Cell `inbox` (cells/*.sqlite) | Fan-out delivery pointers (posts) |
+
+**Negotiation frame bytes** live in the **relay** repo (`relay_spool`), not in Khora Colonnade. See [`channel-lifecycle.md`](channel-lifecycle.md).
 
 ### Tier 1 rules
 - Projection-only KV keyed by `(tenant_key, namespace, entry_key)` — no Colonnade pointer columns
@@ -53,24 +54,16 @@ Colonnade is a **storage-agnostic persistence architecture** (Smithy spec + Type
 
 ### Tier 3 rules
 - Post fan-out: **pointer** staging → author outbox (content-addressed verify on drain)
-- Room tickets: **inline** JSON staging (no pointer)
 - Deliverability gate: author registered + no active teardown job
-
-### Tier 4 rules
-- Frame bodies are **E2EE at the client** (AES-256-GCM); relay stores opaque `bytes` only
-- `createChannel` clears prior `room_frames` and upserts `rooms` row
-- `rotateChannelTicket` issues a new ticket secret **without** clearing `room_frames` (rejoin preserves buffer)
-- On `attachPeer`: replay all persisted frames from id 0, then fan out live `relayBytes`
-- **Not inbox** — room tickets (Tier 3) carry admission metadata only; negotiation frames never use cell inbox staging
 
 ### Anti-patterns
 - Putting post bodies in catalog projections or `source_map_rows`
 - Duplicating outbox bytes in catalog on create
 - Using random UUID post ids (use address-encoded ids)
-- Putting NBC / negotiation frame bodies in catalog projections or cell inbox (Tier 4 only)
+- Putting NBC / negotiation frame bodies in catalog projections or cell inbox (relay `relay_spool` only)
 
 ### Fresh deploy note
-This layout is **not** upgraded in place. Wipe `KHORA_DATA_DIR` (catalog, frames, cells, memories SQLite files) when deploying a build with schema changes. `KHORA_CELL_POOL_COUNT` must not change on an existing dataset.
+This layout is **not** upgraded in place. Wipe `KHORA_DATA_DIR` (catalog, cells, memories SQLite files) when deploying a build with schema changes. `KHORA_CELL_POOL_COUNT` must not change on an existing dataset.
 
 ### Cell pool placement
 
@@ -102,11 +95,9 @@ Tier 1 table: `relay_catalog_projections` — PK `(tenant_key, namespace, entry_
 | `relay:entity:profile` | profile id | `{ id, memoryId, bodyJson, updatedAtMs }` or `{ deleted: true }` |
 | `relay:reg:by-principal` | DID | `{ profileId }` |
 | `relay:reg:by-profile` | profile id | `{ principalId }` |
-| `relay:social:relationship` | room id | social graph body |
+| `relay:social:relationship` | channel id | social graph body |
 | `relay:social:username-to-principal` | normalized username | `{ principalId }` |
 | `relay:social:principal-to-username` | DID | `{ username }` |
-| `khora:room-registry` | room id | `{ creatorDid, inviteTargetDid, expiresAtMs }` |
-| `khora:room-invite` | sha256(joinToken) | invite consumption record |
 
 Username index uses `tenant_key = relay:username-index-global` (unique across relay tenants). Posts are **not** in catalog — author cell outbox only (Tier 2).
 
@@ -118,7 +109,7 @@ Username index uses `tenant_key = relay:username-index-global` (unique across re
 
 | Layer | What it is | Used by Khora? |
 |-------|------------|----------------|
-| **Application catalog** | `relay_catalog_projections` + edge tables — profiles, registrations, subscriptions, rooms | **Yes — heavily** |
+| **Application catalog** | `relay_catalog_projections` + edge tables — profiles, registrations, subscriptions, social graph | **Yes — heavily** |
 | **Colonnade publication catalog** | `discovery_documents` + `catalog_pointers` written when `replicate_to_catalog: true` | **No** — Khora passes `replicate_to_catalog: false`; `ColonnadePublicationClient` defaults to noop |
 
 **Profiles are stored in the relay catalog database. They do not go through `CatalogPersistenceStrategy`.** The noop is only for the optional Colonnade post-replication index path that Khora skips.
@@ -218,16 +209,16 @@ The write log (`write_log` table on each cell) is spec-complete but **operationa
 
 ```
 Catalog SQLite (khora-catalog.sqlite)
-  relay_catalog_projections  — profiles, subs, rooms, usernames (Tier 1)
+  relay_catalog_projections  — profiles, subs, social graph, usernames (Tier 1)
   principal_teardown_jobs, invites, nonces
 
 Cell pool SQLite (cells/*.sqlite)
   outbox  — post payload bytes, field-encrypted AES-GCM (Tier 2)
-  inbox   — post pointers + room ticket inline staging (Tier 3)
+  inbox   — post pointer staging (Tier 3)
   write_log — mostly unused in prod
 
-Frames SQLite (khora-frames.sqlite)
-  rooms + room_frames         — E2EE ciphertext (Tier 4)
+Relay SQLite (relay repo — not Khora host)
+  relay_channels + relay_spool  — E2EE ciphertext blobs
 
 POST_CREATED
   → publishPost / postOperation
@@ -244,7 +235,7 @@ GET /v1/inbox/ws
 ## Known pain points / resolved issues
 
 1. ~~Dual persistence APIs for the same catalog file~~ — Resolved: one catalog SQLite for Tier 1 projections; cell cluster uses noop catalog.
-2. ~~Dual inbox systems~~ — Resolved: single cell inbox for both post fan-out and room tickets.
+2. ~~Dual inbox systems~~ — Resolved: single cell inbox for post fan-out.
 3. **`write_log` is spec-complete but operationally inert** — No production worker applies log entries. Live until a replication use case emerges.
 4. ~~Synthetic pointers obscure the model~~ — Resolved: Tier 1 uses projection-only `relay_catalog_projections`.
 5. ~~Hand-rolled secondary indexes in JSON projections~~ — Resolved: subscriptions and social indexes use normalized SQLite edge tables.

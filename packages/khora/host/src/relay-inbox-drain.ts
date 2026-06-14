@@ -17,7 +17,7 @@ export type RelayInboxDrainItem = {
 };
 
 /**
- * Drain the principal's cell inbox: post fan-out (pointer → author outbox) and room tickets (inline JSON).
+ * Drain the principal's cell inbox: post fan-out (pointer → author outbox) and inline JSON notifications.
  */
 export async function popRelayInboxDrainItemsForDid(
   ctx: KhoraHostContext,

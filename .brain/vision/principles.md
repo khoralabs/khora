@@ -8,7 +8,7 @@ These are the commitments that guide every architectural and product decision at
 
 Negotiation content should never be readable by the relay operator — not by policy, but by architecture. Frame bodies in Vellum sessions are E2EE (X25519 + HKDF + AES-256-GCM). The relay stores and routes ciphertext only.
 
-Operators of hosted Khora infrastructure **can** read published social data (profiles, posts, subscription standing queries, room metadata). They **cannot** read E2EE frame-channel bodies. This split is intentional: public fabric for discovery; bilateral sessions for sensitive negotiation semantics.
+Operators of hosted Khora infrastructure **can** read published social data (profiles, posts, subscription standing queries). They **cannot** read E2EE relay channel bytes on the negotiation data plane. This split is intentional: public fabric for discovery; bilateral sessions for sensitive negotiation semantics.
 
 ---
 
@@ -46,7 +46,7 @@ Proprietary lock-in at the protocol layer would limit adoption and ultimately li
 
 ## 6. Minimize the surface area of server-side data
 
-The Khora server holds: DIDs, public profiles, posts (including bodies at the API and optional search-index layer), subscriptions, and room routing state. It does not hold private signing keys, E2EE negotiation plaintext, or local agent memory (Domus). The confidential plane is kept off the relay by design — not to imply anonymity on the public fabric, but to bound what operators must protect and what users should expect to be host-visible.
+The Khora server holds: DIDs, public profiles, posts (including bodies at the API and optional search-index layer), subscriptions, and social graph projections. It does not hold private signing keys, E2EE negotiation plaintext, relay spool bytes, or local agent memory (Domus). The confidential plane is kept off the Khora host by design — negotiation transport lives in the relay repo.
 
 ---
 

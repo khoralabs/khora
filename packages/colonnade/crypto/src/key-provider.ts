@@ -18,8 +18,6 @@ const SQLCIPHER_ENV_BY_SCOPE: Record<SqlCipherScope, string> = {
  */
 export type EncryptionKeyProvider = SqlCipherKeyProvider & {
   getOutboxFieldKey(): Promise<Uint8Array>;
-  /** AES-256 key for frame-relay pairing secrets at rest (`rooms.pairing_secret_hex`). */
-  getPairingSecretKey(): Promise<Uint8Array>;
 };
 
 const MIN_OUTBOX_KEY_BYTES = 32;
@@ -54,7 +52,6 @@ export class EnvKeyProvider implements EncryptionKeyProvider {
   static readonly KHORA_SQLCIPHER_ENV = SQLCIPHER_ENV_BY_SCOPE.khora;
   static readonly REGISTRY_SQLCIPHER_ENV = SQLCIPHER_ENV_BY_SCOPE.registry;
   static readonly OUTBOX_ENV = "KHORA_OUTBOX_ENCRYPTION_KEY";
-  static readonly PAIRING_SECRET_ENV = "KHORA_PAIRING_SECRET_ENCRYPTION_KEY";
 
   private readonly sqlCipher = new EnvSqlCipherKeyProvider(SQLCIPHER_ENV_BY_SCOPE);
 
@@ -65,14 +62,6 @@ export class EnvKeyProvider implements EncryptionKeyProvider {
   async getOutboxFieldKey(): Promise<Uint8Array> {
     return decodeOutboxKey(readEnvRequired(EnvKeyProvider.OUTBOX_ENV));
   }
-
-  async getPairingSecretKey(): Promise<Uint8Array> {
-    const dedicated = process.env[EnvKeyProvider.PAIRING_SECRET_ENV]?.trim();
-    if (dedicated !== undefined && dedicated.length > 0) {
-      return decodeOutboxKey(dedicated);
-    }
-    return this.getOutboxFieldKey();
-  }
 }
 
 export async function assertEncryptionKeys(
@@ -82,7 +71,6 @@ export async function assertEncryptionKeys(
   await provider.getSqlCipherKey(scope);
   if (scope === "khora") {
     await provider.getOutboxFieldKey();
-    await provider.getPairingSecretKey();
   }
 }
 
@@ -93,10 +81,6 @@ export class KmsEnvelopeKeyProvider implements EncryptionKeyProvider {
   }
 
   async getOutboxFieldKey(): Promise<Uint8Array> {
-    throw new SqliteCryptoError("KmsEnvelopeKeyProvider is not implemented; use EnvKeyProvider");
-  }
-
-  async getPairingSecretKey(): Promise<Uint8Array> {
     throw new SqliteCryptoError("KmsEnvelopeKeyProvider is not implemented; use EnvKeyProvider");
   }
 }

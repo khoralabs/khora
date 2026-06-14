@@ -14,7 +14,7 @@ Today the frame relay hub persists every forwarded byte until channel re-creatio
 - Late joiners can receive unbounded history into peer memory.
 - The relay is treated as a history source even though **negotiation state already lives on participants** (local SQLite, Merkle-checkpointed `SessionOp` logs).
 
-For bilateral rooms with two parties and modest traffic, capped spool is sufficient. The longer-term model treats the relay as **disposable live transport** and the bilateral DAG as **durable identity and state**.
+For bilateral channels with two parties and modest traffic, capped spool is sufficient. The longer-term model treats the relay as **disposable live transport** and the bilateral DAG as **durable identity and state**.
 
 ---
 
@@ -106,11 +106,11 @@ Preferred pattern: principal auth → roster/policy checks actor is party → op
 | Today | Research target |
 |-------|-----------------|
 | Full spool replay on attach | Peer `SessionEnvelope` sync; optional spool tail |
-| `channel_id` is primary room identity | `channel_id` ephemeral; DAG descriptor is logical join key |
-| Khora `room_ticket` + spool for offline rejoin | Vellum rejoin descriptor + daemon export |
-| Relay stores all frames until `createChannel` | Capped ring buffer + TTL purge; eventually minimal buffer |
+| `channelId` is primary transport identity | `channelId` ephemeral; DAG descriptor is logical join key |
+| Khora-mediated tickets + spool for offline rejoin (removed) | Vellum rejoin descriptor + daemon export |
+| Relay stores all blobs until channel purge | Capped ring buffer + TTL purge; eventually minimal buffer |
 
-Khora bilateral rooms can keep capped spool until P5/P6 in [`khora-vellum-separation.md`](khora-vellum-separation.md). Vellum is the natural first consumer of peer-sync rejoin.
+Vellum is the natural first consumer of peer-sync rejoin. Khora host is discovery-only (P6 complete).
 
 ---
 

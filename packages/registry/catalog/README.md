@@ -82,7 +82,7 @@ The registry is the **control plane** (human identity, host catalog, agent parti
 | Better Auth sessions, accounts | Agent DID signatures |
 | Host catalog & discovery | `POST /v1/register`, invite pepper |
 | Membership + agent↔account bindings (participation audit) | Invite plaintext mint/consume |
-| Marketing consents | Profiles, posts, rooms |
+| Marketing consents | Profiles, posts |
 | Operator user lookup | Local admin console |
 
 **Signup:** marketing homepage `/join` runs registry OTP (creates a verified user). Operator finds users in registry admin, mints invite tokens on host admin, delivers tokens manually. User registers on host, then links agent to registry account via CLI.

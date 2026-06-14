@@ -2,7 +2,6 @@ import { Database } from "bun:sqlite";
 import { expect, test } from "bun:test";
 import { RelayCatalogProjectionStore } from "./catalog-projection-store";
 import {
-  RELAY_NAMESPACE_ROOM_REGISTRY,
   RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL,
   USERNAME_INDEX_TENANT_KEY,
 } from "./relay-id-conventions";
@@ -64,26 +63,4 @@ test("username index JSON expression index is usable", () => {
     | { entry_key: string }
     | undefined;
   expect(row?.entry_key).toBe("alice");
-});
-
-test("room registry creator index is usable", () => {
-  const db = new Database(":memory:");
-  ensureRelayCatalogProjectionsSchema(db);
-  const store = new RelayCatalogProjectionStore(db);
-  store.upsert({
-    tenant_key: "relay",
-    namespace: RELAY_NAMESPACE_ROOM_REGISTRY,
-    entry_key: "room-1",
-    projection: { creatorDid: "did:creator", inviteTargetDid: null, expiresAtMs: 1 },
-  });
-  const row = db
-    .prepare(
-      `SELECT entry_key FROM relay_catalog_projections
-       WHERE tenant_key = ? AND namespace = ?
-       AND json_extract(projection, '$.creatorDid') = ?`,
-    )
-    .get("relay", RELAY_NAMESPACE_ROOM_REGISTRY, "did:creator") as
-    | { entry_key: string }
-    | undefined;
-  expect(row?.entry_key).toBe("room-1");
 });

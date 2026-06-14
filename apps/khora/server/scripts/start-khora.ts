@@ -1,5 +1,5 @@
 /**
- * When KHORA_LITESTREAM is set, runs Litestream (catalog + frames + watched cells dir)
+ * When KHORA_LITESTREAM is set, runs Litestream (catalog + watched cells dir)
  * then the Bun server. Otherwise runs the server only.
  */
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";

@@ -23,7 +23,7 @@ docker run --rm -p 8788:8788 \
 
 | Variable | Description |
 |----------|-------------|
-| `KHORA_SQLCIPHER_KEY` | SQLCipher key for catalog, frames, cells, memories DBs |
+| `KHORA_SQLCIPHER_KEY` | SQLCipher key for catalog, cells, memories DBs |
 | `KHORA_OUTBOX_ENCRYPTION_KEY` | AES-GCM key for post outbox payloads (see `.env.example`) |
 
 ## Linux container defaults (image)

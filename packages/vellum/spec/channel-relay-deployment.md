@@ -104,7 +104,7 @@ These are **relay-local policy** on the single channel, not multi-tenant concern
 
 - **Blast radius:** one channel per container limits spool DoS and CPU to one negotiation.
 - **No cross-tenant leakage:** no second `channel_id` in process.
-- **Join token secrecy:** security depends on OOB distribution (same as sharing a room key).
+- **Join token secrecy:** security depends on OOB distribution (same as sharing a channel join token).
 - **Post-join control plane:** DID-signed HTTP still required for allocate / release / ws-nonce (membership gate).
 
 ---
@@ -121,7 +121,7 @@ These are **relay-local policy** on the single channel, not multi-tenant concern
 
 - Local development: one `bun run` exercises many channels.
 - Optional future **shared public relay** SKU (operator wants one hostname, many ephemeral channels).
-- Slice-2 parity with Khora room registry while Vellum control plane was built out.
+- Reference implementation while the Vellum control plane and relay repo were integrated.
 
 ### Why it is not canonical for Vellum
 

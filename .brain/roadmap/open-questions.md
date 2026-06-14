@@ -30,7 +30,7 @@ The percolator surfaces matching content to an agent's inbox. The agent sees: "t
 
 - Is the match always pre-analyzed by the agent?
 - Is negotiation via Vellum that analysis?
-- Does the match trigger a room creation?
+- Does the match trigger a Vellum channel spawn?
 - Do users give their agent explicit permission to interact with another agent? Under what conditions?
 
 The gap between "match" and "commitment" is currently filled by the user/developer. The product should define a clearer UX path through this transition.
@@ -41,7 +41,7 @@ The gap between "match" and "commitment" is currently filled by the user/develop
 
 **Do users need to explicitly authorize their agent to interact with another user's agent?**
 
-Current model: rooms are initiated explicitly by one party. The target receives an inbox notification (room ticket). They can choose to join or not.
+Current model: channels are initiated explicitly by one party (Vellum relay). The target receives join material out-of-band or via `negotiation_invite` handoff from Khora. They can choose to join or not.
 
 But in an automated system where agents act on behalf of humans asynchronously, who decides when the agent proceeds vs. pauses for human approval? This is particularly important in binding contexts (Vellum NBC binds commit on behalf of the principal).
 
@@ -51,9 +51,9 @@ Bind policies express the constraints. But who sets them, and at what level of g
 
 ## What is the purpose of a Vellum interaction?
 
-**Is a Vellum room for matching, evaluating a commitment, or both?**
+**Is a Vellum channel for matching, evaluating a commitment, or both?**
 
-The Knowledge Bazaar pilot uses rooms for knowledge-exchange coordination. The OBP graph models structured negotiation toward a bind. But the line between "evaluation" (is this person/agent a good fit?) and "commitment" (I agree to these terms) is blurry.
+The Knowledge Bazaar pilot uses channels for knowledge-exchange coordination. The OBP graph models structured negotiation toward a bind. But the line between "evaluation" (is this person/agent a good fit?) and "commitment" (I agree to these terms) is blurry.
 
 The UX question: does the agent always run through OBP even for light-weight discovery interactions? Or is OBP reserved for formal commitments?
 
@@ -75,7 +75,7 @@ This is an active research problem at the intersection of RAG and agent safety.
 
 **Should late join and dead-channel recovery use peer-verified DAGs instead of relay spool history?**
 
-Research direction: treat the frame relay as disposable live transport; treat `{ genesis_hash, checkpoint, parties }` as the logical join key for re-init; sync catch-up via `SessionEnvelope` from peers holding local SQLite — not unbounded `room_frames` replay.
+Research direction: treat the frame relay as disposable live transport; treat `{ genesis_hash, checkpoint, parties }` as the logical join key for re-init; sync catch-up via `SessionEnvelope` from peers holding local SQLite — not unbounded `relay_spool` replay.
 
 **Hard requirement:** Using a DAG id as a shared secret must be paired with **principal authentication** and verification that the principal is one of the parties on that chain. DAG unpredictability is not authorization.
 
@@ -89,7 +89,7 @@ Full write-up: [`technical/dag-join-key-research.md`](../technical/dag-join-key-
 
 OBP v2 is designed for two-party negotiation. Auction-like settings, consortium agreements, or group contracting require N-party causal consistency models. This is an open research problem.
 
-**Near-term direction:** keep NBC chains bilateral; generalize the **room multiplex** to N transport peers and late join, and model multi-party scenarios as a **mesh of bilateral chains** plus a room roster. See [`technical/khora-vellum-separation.md`](../technical/khora-vellum-separation.md) §3. N-signer causal logs on a single chain remain deferred.
+**Near-term direction:** keep NBC chains bilateral; generalize the **channel multiplex** to N transport peers and late join, and model multi-party scenarios as a **mesh of bilateral chains** plus a channel roster. See [`technical/khora-vellum-separation.md`](../technical/khora-vellum-separation.md) §3. N-signer causal logs on a single chain remain deferred.
 
 ---
 

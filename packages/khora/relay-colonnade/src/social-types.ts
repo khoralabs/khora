@@ -1,6 +1,6 @@
 import type { HostEntityUpsert, PrincipalId } from "@khoralabs/host-runtime";
 
-/** Pairwise relationship (e.g. frame channel room); peer is unknown until {@link SocialRelationshipPersistence.bindPeer}. */
+/** Pairwise social relationship keyed by relay `channelId`; peer is unknown until {@link SocialRelationshipPersistence.bindPeer}. */
 export type SocialRelationshipRow = {
   channelId: string;
   creatorPrincipalId: PrincipalId;
@@ -39,7 +39,7 @@ export type SocialRelationshipPersistence = {
   refreshRelationshipTicketExpiry(params: { channelId: string; expiresAtMs: number }): void;
   listRelationshipsForPrincipal(principalId: PrincipalId): SocialRelationshipRow[];
   /**
-   * Tear down one channel: catalog relationship + principal indexes + frames DB `rooms` / `room_frames`.
+   * Tear down one channel: catalog relationship row + principal channel indexes.
    * Returns the removed row, or undefined if the channel was unknown.
    */
   deleteRelationship(channelId: string): SocialRelationshipRow | undefined;

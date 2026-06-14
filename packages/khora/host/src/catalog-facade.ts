@@ -3,8 +3,6 @@ import type { HostPersistence } from "@khoralabs/host-runtime";
 import { normalizeUsername } from "@khoralabs/khora-contracts";
 import {
   RELAY_NAMESPACE_PRINCIPAL_TO_USERNAME,
-  RELAY_NAMESPACE_ROOM_INVITE,
-  RELAY_NAMESPACE_ROOM_REGISTRY,
   RELAY_NAMESPACE_USERNAME_TO_PRINCIPAL,
   type RelayCatalogProjectionStore,
   type RelayPrincipalLifecycle,
@@ -26,14 +24,6 @@ export type KhoraHostCatalogApi = {
     profileUpsert: { id: string; bodyJson: string };
   }): void;
   phase1UnregisterPrincipal(principalId: string): void;
-  upsertRoomRegistryRow(
-    roomId: string,
-    projection: { creatorDid: string; inviteTargetDid: string | null; expiresAtMs: number },
-  ): void;
-  upsertRoomInviteRow(inviteHashKey: string, projection: unknown): void;
-  lookupRoomInviteRow(joinTokenHashKey: string): { found: boolean; projection: unknown };
-  lookupRoomRegistryRow(roomId: string): { found: boolean; projection: unknown };
-  deleteRoomRegistryRow(roomId: string): void;
 };
 
 export function createKhoraCatalogApi(deps: {
@@ -116,35 +106,6 @@ export function createKhoraCatalogApi(deps: {
     },
     phase1UnregisterPrincipal(principalId) {
       principalLifecycle.enqueueTeardown(principalId);
-    },
-    upsertRoomRegistryRow(roomId, projection) {
-      projectionStore.upsert({
-        tenant_key: tenantKey,
-        namespace: RELAY_NAMESPACE_ROOM_REGISTRY,
-        entry_key: roomId,
-        projection,
-      });
-    },
-    upsertRoomInviteRow(inviteHashKey, projection) {
-      projectionStore.upsert({
-        tenant_key: tenantKey,
-        namespace: RELAY_NAMESPACE_ROOM_INVITE,
-        entry_key: inviteHashKey,
-        projection,
-      });
-    },
-    lookupRoomInviteRow(joinTokenHashKey) {
-      return projectionStore.lookupProjection(
-        tenantKey,
-        RELAY_NAMESPACE_ROOM_INVITE,
-        joinTokenHashKey,
-      );
-    },
-    lookupRoomRegistryRow(roomId) {
-      return projectionStore.lookupProjection(tenantKey, RELAY_NAMESPACE_ROOM_REGISTRY, roomId);
-    },
-    deleteRoomRegistryRow(roomId) {
-      projectionStore.deleteRow(tenantKey, RELAY_NAMESPACE_ROOM_REGISTRY, roomId);
     },
   };
 }

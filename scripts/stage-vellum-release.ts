@@ -86,7 +86,7 @@ export function cliMetaPkgJson({
   return {
     name: "@khoralabs/vellum-cli",
     version,
-    description: "CLI for Vellum NBC rooms. Native binaries; no runtime required.",
+    description: "CLI for Vellum NBC channels. Native binaries; no runtime required.",
     license: "MIT",
     author: "Khora Labs",
     homepage: "https://github.com/khoralabs/agent-kernel/tree/main/apps/vellum/cli",
@@ -119,7 +119,7 @@ export function daemonMetaPkgJson({
     name: "@khoralabs/vellum-daemon",
     version,
     description:
-      "Vellum NBC room daemon: WebSocket multiplex, SQLite graph, HTTP control. Native binaries; no runtime required.",
+      "Vellum NBC channel daemon: WebSocket multiplex, SQLite graph, HTTP control. Native binaries; no runtime required.",
     license: "MIT",
     author: "Khora Labs",
     homepage: "https://github.com/khoralabs/agent-kernel/tree/main/apps/vellum/daemon",

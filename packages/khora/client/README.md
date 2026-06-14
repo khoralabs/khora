@@ -1,6 +1,6 @@
 # `@khoralabs/khora-client`
 
-TypeScript client for KHORA / Colonnade-style HTTP + WebSocket hosts (`/v1/*`, inbox WS, OBP rooms).
+TypeScript client for Khora / Colonnade-style HTTP + WebSocket hosts (`/v1/*`, inbox WS). Negotiation transport uses the separate [`relay`](../../../packages/relay) repo (`@khoralabs/relay-client`), not the Khora host.
 
 ## Transport
 
@@ -31,30 +31,13 @@ The JSON Schema artifact is exported at `@khoralabs/khora-client/khora-config.sc
 - `bun test` — package tests
 - `bun run build:schema` — regenerate `khora-config.schema.json`
 
-## Rooms: inbox admission + frame channel
+## Negotiation channels (relay, not Khora host)
 
-Joining a bilateral room is **one product feature, two transports**: Tier 3 inbox delivers **admission**; Tier 4 frame channel carries **negotiation bytes** (E2EE). Storage boundaries: [`host/colonnade-usage.md`](../host/colonnade-usage.md), lifecycle matrix [`host/room-lifecycle.md`](../host/room-lifecycle.md).
+Bilateral OBP/NBC sessions use **relay channels** (`POST /v1/channels`, WebSocket upgrade nonces) from `@khoralabs/relay-client` / `@khoralabs/relay-mls`. The Khora host provides discovery (profiles, posts, inbox) only.
 
-```mermaid
-sequenceDiagram
-  participant Agent
-  participant Inbox as Inbox_WS_Tier3
-  participant Host as Khora_HTTP
-  participant Room as Room_WS_Tier4
-
-  Agent->>Inbox: connectInbox
-  Inbox-->>Agent: inbox:room_ticket
-  Agent->>Host: mintRoomTicket optional
-  Host-->>Agent: ticket webSocketUrl
-  Agent->>Room: connectRoom or vellum-daemon
-  Room-->>Agent: replay room_frames plus live relay
-```
-
-1. **Discover / receive admission** — `KhoraClient.connectInbox()` and handle `inbox:room_ticket` (or process a `drain` item whose projection has `kind: "room_ticket"`). The payload may include `channelId`, `ticket`, and `webSocketUrl`. Tickets can go stale after the peer mints a new one.
-2. **Refresh admission if needed** — `mintRoomTicket(roomId)` when the ticket expired, you only have `channelId`, or the embedded URL returns 401.
-3. **Negotiation transport** — `connectRoom({ webSocketUrl, … })` for in-process OBP, **or** start [`@khoralabs/vellum-daemon`](../../../apps/vellum/daemon) via `VellumClient.connect()` (sets `VELLUM_ROOM_WS_URL` from step 1–2). The Khora inbox daemon ([`apps/khora/daemon`](../../../apps/khora/daemon)) covers step 1 only.
-
-Subscribe events: `inbox:room_ticket`, `room:created`, and related types in `@khoralabs/khora-transport` (`KhoraClientEvent`).
+1. **Discovery** — `KhoraClient.connectInbox()` for post fan-out and future `negotiation_invite` handoff notifications.
+2. **Channel transport** — `RelayClient` + `connectRelay` or `MlsChannelConnection` against a Vellum-provisioned relay URL. See [`packages/relay`](../../../packages/relay) and [`.brain/technical/channel-lifecycle.md`](../../../.brain/technical/channel-lifecycle.md).
+3. **Local daemon** — [`@khoralabs/vellum-daemon`](../../../apps/vellum/daemon) connects to the relay multiplex; the Khora inbox daemon ([`apps/khora/daemon`](../../../apps/khora/daemon)) covers inbox delivery only.
 
 ## Subscriptions
 
