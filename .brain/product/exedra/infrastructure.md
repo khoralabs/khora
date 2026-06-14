@@ -6,16 +6,16 @@ The alignment app is a strategic opportunity to introduce the Khora network into
 
 ### Delivery & Fan-out
 
-- Session invites and notifications can be delivered via **Khora network inbox** for participants with a DID identity
-- For participants without a DID, standard email magic links serve as the fallback
-- Over time, completing an alignment interview is a natural on-ramp to acquiring a Khora identity
+- Session invites are **deep links** into Exedra (`/invite/{token}`), delivered by email or Khora inbox
+- Invitee completes registry OTP on the invite page if not already signed in
+- For participants with a DID, Khora network inbox can deliver the deep link URL
 
 ### Auth Planes
 
 | Participant | Auth |
 |---|---|
 | Facilitator (internal team member) | Khora DID (`@khoralabs/khora-auth`) or registry OTP (`@khoralabs/registry-auth`) |
-| Respondent (external stakeholder) | Email magic link (no registration); optionally a DID if they have one |
+| Respondent (external stakeholder) | Registry OTP via invite deep link (`/invite/{token}`) |
 
 ### Reusable Packages
 
@@ -35,7 +35,7 @@ The alignment app is a strategic opportunity to introduce the Khora network into
 
 ## Tech Stack
 
-- **Repo:** Standalone in `/Users/zach/Documents/dev/khora-labs/alignment`
+- **Repo:** `apps/exedra` in the khora monorepo
 - **Runtime:** Bun
 - **Backend:** `Bun.serve()` (TypeScript)
 - **Frontend:** React + HTML imports via Bun bundler

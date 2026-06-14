@@ -19,26 +19,22 @@ Three distinct SQLite databases, strictly separated:
 
 ## Auth
 
-Uses `@khoralabs/registry-auth` (Better Auth + email OTP) as the identity provider.
+Uses `@khoralabs/registry-auth` (Better Auth + email OTP) as the identity provider — same pattern as `apps/khoralabs/homepage`.
 
-**For facilitators and team members (registered users):**
-- OTP flow via `createRegistryEmailConfirmApi` (browser) → `POST /api/auth/email-otp/send-verification-otp` → `POST /api/auth/sign-in/email-otp`
-- Sessions are signed HTTP-only cookies, verified via `verifyRegistrySession`
-- React components from `@khoralabs/registry-accounts-react` (`useEmailConfirmFlow`, `EmailConfirm.*`) for OTP UI
+**All participants (facilitators and invitees):**
+- OTP flow via `createRegistryEmailConfirmApi` (browser → registry `/api/auth/*` with `credentials: "include"`)
+- React UI via `@khoralabs/registry-accounts-react` (`EmailConfirm.*`) and Exedra `SignIn` component
+- Server session check: `GET /api/auth/session` forwards cookies to registry via `verifyRegistrySession`
 
-**For stakeholder respondents (invite link):**
-- Invite link contains a short-lived signed token scoped to the session
-- On first use, the token is exchanged for a registry OTP flow — every respondent gets a registry account (email already confirmed via OTP at zero marginal cost)
-- Subsequent visits use the registry session cookie
-- Their registry account is the stable identity anchor for personal memories and future DID linking
+**Invite deep links (not magic auth):**
+- Facilitator sends a URL like `/invite/{token}` — a normal deep link into Exedra
+- Invitee lands on the invite page; if not authenticated, they complete the same registry OTP flow
+- After OTP, `POST /api/invites/{token}/accept` binds the invite to their registry account and redirects into the session
+- Every invitee gets a registry account (stable identity for personal memories)
 
-**DID linking (v1.5+):**
-- `POST /agent/auth` + `POST /agent/auth/claim/complete` on the registry handles OTP → agent DID linking
-- `linkAgentToMembership` from `@khoralabs/registry-accounts` links the DID to their account
+**Key env vars:** `BUN_PUBLIC_KHORA_REGISTRY_URL`, `REGISTRY_URL` (server-side session verify)
 
-**Key env vars:** `BETTER_AUTH_SECRET`, `REGISTRY_URL`, `REGISTRY_DATABASE_PATH`, `SES_FROM_ADDRESS`
-
-**Reference:** `apps/khoralabs/homepage` for external SPA + registry IdP pattern; `apps/khora/registry` for full bootstrap.
+**Reference:** `apps/khoralabs/homepage` for client OTP pattern; `apps/exedra/src/server/auth/` for session API.
 
 ## Server Structure
 
@@ -49,7 +45,9 @@ Bun.serve({
   routes: {
     "/api/*"   → API handlers (sessions, teams, invites, jobs)
     "/ws"      → WebSocket upgrade (interview + alignment chat)
-    "/api/auth/*" → registry auth proxy (Better Auth endpoints)
+    "/api/auth/session" → verify registry session (cookie forwarded to registry)
+    "/api/invites/:token" → public invite metadata for deep links
+    "/api/invites/:token/accept" → accept invite (requires registry session)
     "/__ssr-shell/*" → internal HTML bundle shells (not user-facing)
     "/*"       → ssrRoute() — React SSR with hydration
   },
@@ -65,7 +63,7 @@ Bun.serve({
 
 **HTML imports:** each page route has an `index.html` + `client.tsx`; Bun's bundler handles React + Tailwind transpilation automatically.
 
-**Registry auth:** browser talks directly to the registry URL (`REGISTRY_URL`) via `credentials: "include"` — not proxied through Exedra. Same pattern as homepage.
+**Registry auth:** browser OTP goes directly to the registry (`BUN_PUBLIC_KHORA_REGISTRY_URL`); Exedra server verifies sessions by forwarding cookies to registry (`REGISTRY_URL`). Register Exedra's origin as a registry trusted origin for CORS.
 
 ## Agent & LLM Stack
 
@@ -137,16 +135,35 @@ Mirrors the Khora host pattern from `@khoralabs/khora` (`scripts/litestream-conf
 
 Exedra ships standalone. Khora networking is progressively enabled without a breaking migration.
 
-| Phase | What's added | Khora dependency |
-|---|---|---|
-| v1 | Email magic links, WebSocket group chat | None |
-| v1.5 | Optional DID creation for users (`did:key` via `@khoralabs/khora-auth`) | Identity only — no network calls |
-| v2 | Invite delivery via Khora inbox (email fallback) | Single `POST /v1/posts` to Khora host |
-| v2+ | Alignment group chat → Khora room; alignment agent subscribes with its own DID | Full Khora participation |
+| Phase | Transport | Auth | Identity | Khora dep |
+|---|---|---|---|---|
+| v1 (now) | Bun WS | Registry OTP | `did:key` minted at invite accept, stored custodially | None |
+| v2 | Bun WS | Registry OTP | DID + registry link (`/v1/link/agent`) | `@khoralabs/khora-auth` link API |
+| v3 | Exedra → relay (proxied) | Registry OTP → custodial signer | Custodial agent on exedra-host | `@khoralabs/khora-host` + relay |
+| v4 | Direct relay | DID-signed WS | Sovereign user, own device | Full Khora participation |
 
-**Key invariant:** user/org IDs are DID-compatible from day one. In standalone mode `userId` is a UUID; in Khora mode it's the `did:key`. The memories namespace key is always this same field — no re-keying required.
+**Key invariant:** `users.id` is a `did:key` from day one. The memories namespace key is always this field — no re-keying required when moving to Khora-native transport.
 
 **Long-term:** In the Khora-native version, the alignment agent is a deployable Khora agent (registered with its own DID on a Khora host) — not an Exedra application feature. Exedra provisions and operates it custodially; orgs can self-host it. The alignment group chat is a Khora room visible in any Khora-compatible client.
+
+### Sovereign cutover (v3 → v4)
+
+What changes when a user moves from custodial (Exedra-held keys) to sovereign (own device):
+
+| Concern | Custodial (v1–v3) | Sovereign (v4) |
+|---|---|---|
+| Key custody | `users.identity_encrypted` on Exedra server | User device / agent keychain |
+| Interview transport | Exedra Bun WS | Relay channel multiplex (direct attach) |
+| Session invites | Exedra single-use deep links | Relay join tokens via Khora inbox |
+| Registry link | Optional until v2 | Required (`account_agent_links`) |
+
+What is preserved across cutover:
+
+- **DID** — stable; no memories re-keying
+- **Session history** — `messages` rows are portable `UIMessage` JSON (JSONB)
+- **Personal memories** — `memories/{did}.db` paths unchanged
+
+Research on low-complexity Khora-native web apps: [`.brain/research/khora-native-apps.md`](../../research/khora-native-apps.md).
 
 ## Deployment Targets
 

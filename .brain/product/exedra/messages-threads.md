@@ -12,23 +12,26 @@ Generic thread container. Can represent an interview session or an alignment gro
 | `kind` | TEXT | `"interview"` \| `"alignment"` |
 | `session_id` | TEXT FK | Parent alignment session |
 | `user_id` | TEXT | Owner/participant (interview) or null (group) |
-| `created_at` | INTEGER | Unix ms |
-| `closed_at` | INTEGER | Null until thread closes |
+| `created_at_ms` | INTEGER | Unix ms |
+| `closed_at_ms` | INTEGER | Null until thread closes |
 
 ### `messages`
 
-Generic messages table. All threads share it.
+Stores [Vercel AI SDK `UIMessage`](https://ai-sdk.dev/docs/reference/ai-sdk-core/ui-message) rows natively.
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | TEXT PK | Stable message ID |
+| `id` | TEXT PK | AI SDK message id |
 | `thread_id` | TEXT FK | Parent thread |
-| `sender_id` | TEXT | User ID or agent DID |
 | `role` | TEXT | `"user"` \| `"assistant"` \| `"system"` |
-| `content` | TEXT | Raw message text |
-| `content_hash` | TEXT | SHA-256 of content (for sourcemap verify-on-read) |
+| `parts` | BLOB (JSONB) | `UIMessagePart[]` via `jsonb(?)` |
+| `metadata` | BLOB (JSONB) | Optional `UIMessage.metadata` |
 | `message_index` | INTEGER | Position in thread (0-based, monotonic) |
-| `created_at` | INTEGER | Unix ms |
+| `created_at_ms` | INTEGER | Unix ms |
+
+Load: `SELECT id, role, json(parts) AS parts, json(metadata) AS metadata, message_index FROM messages WHERE thread_id = ? ORDER BY message_index`.
+
+Insert: bind `parts` (and optional `metadata`) with `jsonb(?)`.
 
 ---
 
@@ -47,26 +50,9 @@ type MessageLocator = {
 };
 
 type MessageRef = ContentAddressedRef<MessageLocator>;
-// { domain, entity_id, thread_id, message_index, content_hash }
 ```
 
-### Exedra `Store` implementation
-
-Resolves a `MessageRef` back to the original message row (verifying `content_hash`):
-
-```typescript
-class ExedraMessageStore implements ContentAddressedStore<MessageRef, { exedra_message: Message }> {
-  async resolve(ref: MessageRef): Promise<ResolvedSource<...>> {
-    const msg = db.query("SELECT * FROM messages WHERE id = ?").get(ref.entity_id);
-    // verify content_hash if present
-    return { kind: "record", domain: "exedra_message", entity_id: ref.entity_id, value: msg };
-  }
-}
-```
-
-### Usage in memories
-
-When a belief is merged into the stakeholder's namespace, the `source` field of the `fact`/`belief` memory receives the serialized `MessageRef`. The memories system's `source_map_id` links to the ref; the ref can be resolved back to the exact interview message at any time.
+Provenance uses message id + index; `parts` JSONB is the canonical body (tool parts include `flagBelief` invocations).
 
 ### Feedback loop
 
@@ -74,11 +60,9 @@ When a stakeholder confirms, corrects, or dismisses a belief flag, the outcome i
 
 ```typescript
 type BeliefFlagOutcome = {
-  ref: MessageRef;         // which message sourced the belief
+  ref: MessageRef;
   outcome: "confirmed" | "corrected" | "dismissed";
-  corrected_content?: string;  // if corrected
+  corrected_content?: string;
   created_at: number;
 };
 ```
-
-This gives the interview agent a durable signal on what it extracted correctly vs. incorrectly — groundwork for fine-tuning or prompt improvement.

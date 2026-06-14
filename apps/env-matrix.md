@@ -1,12 +1,13 @@
 # Production environment matrix
 
-Reference for deploying the three Khora web services (Render or similar). Per-app `.env.example` files hold local dev defaults; this doc is the **prod wiring map**.
+Reference for deploying the four Khora web services (Render or similar). Per-app `.env.example` files hold local dev defaults; this doc is the **prod wiring map**.
 
 ## Services
 
 | Service | Package | Default port | Start command (prod) | Persistent disk |
 | --- | --- | --- | --- | --- |
 | Khora Labs homepage | `@khoralabs/khoralabs-homepage` | 3000 | `bun run start` | No |
+| Exedra | `@khoralabs/exedra` | 3000 | `bun run start` | Yes (`exedra.db`, `memories/`) — planned |
 | Khora registry | `@khoralabs/khora-registry` | 4000 | `bun run start` | Yes (`registry.sqlite`) |
 | Khora server | `@khoralabs/khora-server` | 8788 | `bun run start` | Yes (catalog, frames, cells) |
 
@@ -31,9 +32,10 @@ Put these in a Render **Environment Group** (or password manager) and link to ev
 
 | Concept | Set on | Example prod value |
 | --- | --- | --- |
-| Registry public URL | registry (`REGISTRY_URL`), khoralabs homepage (`BUN_PUBLIC_KHORA_REGISTRY_URL`) | `https://registry.khoralabs.com` |
+| Registry public URL | registry (`REGISTRY_URL`), khoralabs homepage + Exedra (`BUN_PUBLIC_KHORA_REGISTRY_URL`), Exedra server (`REGISTRY_URL`) | `https://registry.khoralabs.com` |
+| Exedra public URL | Render service URL; register as registry trusted origin | `https://exedra.khoralabs.com` |
 | Khora server public URL | host registry (`POST /v1/hosts/register` + activate), khora-server (`KHORA_PUBLIC_BASE_URL`) | `https://api.khora.khoralabs.com` |
-| Browser origins for registry APIs | Host admin or registry admin → register explicit trusted origins; enable registry participation | e.g. `https://k-0.khoralabs.com`, `https://khoralabs.com` |
+| Browser origins for registry APIs | Host admin or registry admin → register explicit trusted origins; enable registry participation | e.g. `https://k-0.khoralabs.com`, `https://khoralabs.com`, `https://exedra.khoralabs.com` |
 
 Each active host with registry participation enabled contributes its registered **trusted origins** to registry CORS and Better Auth `trustedOrigins`. Host `baseUrl` is not trusted unless explicitly listed (or included via `KHORA_REGISTRY_TRUST_BASE_URL_ORIGIN` on the host).
 
@@ -43,32 +45,32 @@ Registry operators configure host registration trust via `REGISTRY_REGISTRATION_
 
 ## Variable matrix
 
-Columns: **R** registry · **K** khora-server · **KH** khoralabs homepage
+Columns: **R** registry · **K** khora-server · **KH** khoralabs homepage · **E** exedra
 
 Legend: **+** = set on this service · **·** = not used · **Kind:** **S** = secret · **C** = config
 
 ### HTTP & runtime
 
-| Variable | R | K | KH | Kind | Notes |
-| --- | --- | --- | --- | --- | --- |
-| `PORT` | + | + | + | C | Render sets automatically; override if needed. |
-| `NODE_ENV` | · | · | + | C | `production` for prod builds. |
+| Variable | R | K | KH | E | Kind | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| `PORT` | + | + | + | + | C | Render sets automatically; override if needed. |
+| `NODE_ENV` | · | · | + | + | C | `production` for prod builds. |
 
 ### URLs & CORS
 
-| Variable | R | K | KH | Kind | Notes |
-| --- | --- | --- | --- | --- | --- |
-| `REGISTRY_URL` | + | · | · | C | Public base URL for Better Auth (`BETTER_AUTH_URL` alias). |
-| `REGISTRY_COOKIE_DOMAIN` | + | · | · | C | Optional, e.g. `.khoralabs.com` for cross-subdomain cookies. |
-| `KHORA_REGISTRY_URL` | · | + | · | C | khora-server well-known + opt-in; CLI default. |
-| `BUN_PUBLIC_KHORA_REGISTRY_URL` | · | · | + | C | Registry URL for waitlist/contact OTP on khoralabs homepage (client + server). Set at build time on platforms that split build/runtime. |
-| `KHORA_HOST_SLUG` | · | + | · | C | Host slug for `/.well-known/khora` and registry opt-in. |
-| `KHORA_PUBLIC_BASE_URL` | · | + | · | C | Public base URL in well-known + register body (default loopback + `PORT`). |
-| `KHORA_REGISTRY_PARTICIPATE` | · | + | · | C | Legacy: `1`/`true` registers with registry on boot when slug set via env. Prefer `/admin/registry`. |
-| `KHORA_REGISTRY_TRUST_BASE_URL_ORIGIN` | · | + | · | C | When syncing, include `KHORA_PUBLIC_BASE_URL` origin in trusted origins. |
-| `REGISTRY_REGISTRATION_TRUST` | + | · | · | C | `manual` (default), `health`, or `open` — controls auto-activation policy for self-serve host registration. |
-| `REGISTRY_REGISTRATION_REQUIREMENTS` | + | · | · | C | Optional JSON override of registration requirement IDs (extensibility hook). |
-| `KHORA_HOST_DISPLAY_NAME` | · | + | · | C | Optional display name for registry register body. |
+| Variable | R | K | KH | E | Kind | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| `REGISTRY_URL` | + | · | · | + | C | Registry: public base URL for Better Auth (`BETTER_AUTH_URL` alias). Exedra: registry base for server-side `verifyRegistrySession` (forwards browser cookies). |
+| `REGISTRY_COOKIE_DOMAIN` | + | · | · | · | C | Optional, e.g. `.khoralabs.com` for cross-subdomain cookies (homepage + Exedra OTP on registry). |
+| `KHORA_REGISTRY_URL` | · | + | · | · | C | khora-server well-known + opt-in; CLI default. |
+| `BUN_PUBLIC_KHORA_REGISTRY_URL` | · | · | + | + | C | Registry URL for browser OTP (`EmailConfirm` / Better Auth client). Set at build time on platforms that split build/runtime. |
+| `KHORA_HOST_SLUG` | · | + | · | · | C | Host slug for `/.well-known/khora` and registry opt-in. |
+| `KHORA_PUBLIC_BASE_URL` | · | + | · | · | C | Public base URL in well-known + register body (default loopback + `PORT`). |
+| `KHORA_REGISTRY_PARTICIPATE` | · | + | · | · | C | Legacy: `1`/`true` registers with registry on boot when slug set via env. Prefer `/admin/registry`. |
+| `KHORA_REGISTRY_TRUST_BASE_URL_ORIGIN` | · | + | · | · | C | When syncing, include `KHORA_PUBLIC_BASE_URL` origin in trusted origins. |
+| `REGISTRY_REGISTRATION_TRUST` | + | · | · | · | C | `manual` (default), `health`, or `open` — controls auto-activation policy for self-serve host registration. |
+| `REGISTRY_REGISTRATION_REQUIREMENTS` | + | · | · | · | C | Optional JSON override of registration requirement IDs (extensibility hook). |
+| `KHORA_HOST_DISPLAY_NAME` | · | + | · | · | C | Optional display name for registry register body. |
 
 ### Khora CLI (developer machine, not a deployed service)
 
@@ -80,42 +82,42 @@ Host selection: `khora host use <slug>` writes `currentHost` and `hosts` to `cli
 
 ### Auth & secrets
 
-| Variable | R | K | KH | Kind | Notes |
-| --- | --- | --- | --- | --- | --- |
-| `BETTER_AUTH_SECRET` | + | · | · | S | ≥32 chars. Registry human auth (OTP). |
-| `KHORA_INVITE_PEPPER` | · | + | · | S | khora-server only; local invite mint + validation. |
-| `REGISTRY_CONSOLE_ROOT_TOKEN` | + | · | · | S | ≥16 chars enables `/admin` operator console. |
-| `KHORA_CONSOLE_ROOT_TOKEN` | · | + | · | S | ≥16 chars enables khora-server `/admin`. |
-| `REGISTRY_BOOTSTRAP_EMAILS` | + | · | · | C | Comma-separated emails granted `staff` role on first login. |
+| Variable | R | K | KH | E | Kind | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| `BETTER_AUTH_SECRET` | + | · | · | · | S | ≥32 chars. Registry human auth (OTP). |
+| `KHORA_INVITE_PEPPER` | · | + | · | · | S | khora-server only; local invite mint + validation. |
+| `REGISTRY_CONSOLE_ROOT_TOKEN` | + | · | · | · | S | ≥16 chars enables `/admin` operator console. |
+| `KHORA_CONSOLE_ROOT_TOKEN` | · | + | · | · | S | ≥16 chars enables khora-server `/admin`. |
+| `REGISTRY_BOOTSTRAP_EMAILS` | + | · | · | · | C | Comma-separated emails granted `staff` role on first login. |
 
 ### Email (AWS SES)
 
-| Variable | R | K | KH | Kind | Notes |
-| --- | --- | --- | --- | --- | --- |
-| `SES_FROM_ADDRESS` | + | · | · | C | Verified SES sender for OTP emails. |
-| `AWS_REGION` | + | + | · | C | SES + Litestream region. |
-| `AWS_ACCESS_KEY_ID` | + | + | · | S | See shared group. |
-| `AWS_SECRET_ACCESS_KEY` | + | + | · | S | See shared group. |
-| `REGISTRY_AUTH_OTP_LOG` | + | · | · | C | Dev only: log OTP to stdout instead of SES. |
+| Variable | R | K | KH | E | Kind | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| `SES_FROM_ADDRESS` | + | · | · | · | C | Verified SES sender for OTP emails. |
+| `AWS_REGION` | + | + | · | · | C | SES + Litestream region. |
+| `AWS_ACCESS_KEY_ID` | + | + | · | · | S | See shared group. |
+| `AWS_SECRET_ACCESS_KEY` | + | + | · | · | S | See shared group. |
+| `REGISTRY_AUTH_OTP_LOG` | + | · | · | · | C | Dev only: log OTP to stdout instead of SES. |
 
 ### Khora persistence
 
-| Variable | R | K | KH | Kind | Notes |
-| --- | --- | --- | --- | --- | --- |
-| `REGISTRY_DATABASE_PATH` | + | · | · | C | Default `./data/registry.sqlite`. Use Render disk mount path in prod. |
-| `KHORA_DATA_DIR` | · | + | · | C | Host persistence root (default `./data`). Derives catalog, frames, cells, memories paths. |
-| `KHORA_MEMORIES` | · | + | · | C | `1` / unset = search index on (default); `0` / `off` = disabled (`/v1/search` 503). |
-| `KHORA_CELL_POOL_COUNT` | · | + | · | C | Shard pool size (default 16). |
-| `KHORA_COLONNADE_CELL_WORKERS` | · | + | · | C | Bun Workers for cell SQLite (default on). |
-| `LOG_LEVEL` | · | + | + | C | Pino level (default `info`). |
+| Variable | R | K | KH | E | Kind | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| `REGISTRY_DATABASE_PATH` | + | · | · | · | C | Default `./data/registry.sqlite`. Use Render disk mount path in prod. |
+| `KHORA_DATA_DIR` | · | + | · | · | C | Host persistence root (default `./data`). Derives catalog, frames, cells, memories paths. |
+| `KHORA_MEMORIES` | · | + | · | · | C | `1` / unset = search index on (default); `0` / `off` = disabled (`/v1/search` 503). |
+| `KHORA_CELL_POOL_COUNT` | · | + | · | · | C | Shard pool size (default 16). |
+| `KHORA_COLONNADE_CELL_WORKERS` | · | + | · | · | C | Bun Workers for cell SQLite (default on). |
+| `LOG_LEVEL` | · | + | + | · | C | Pino level (default `info`). |
 
 ### Encryption at rest
 
-| Variable | R | K | KH | Kind | Notes |
-| --- | --- | --- | --- | --- | --- |
-| `KHORA_SQLCIPHER_KEY` | · | + | · | S | **Required.** SQLCipher key for catalog, frames, cells, memories SQLite (≥16 chars). Same key required for Litestream restore. |
-| `KHORA_OUTBOX_ENCRYPTION_KEY` | · | + | · | S | **Required.** AES-256-GCM field key for post `outbox.payload` (64-char hex or ≥32 UTF-8 bytes). Separate from SQLCipher. |
-| `REGISTRY_SQLCIPHER_KEY` | + | · | · | S | **Required.** SQLCipher key for `registry.sqlite`. |
+| Variable | R | K | KH | E | Kind | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| `KHORA_SQLCIPHER_KEY` | · | + | · | · | S | **Required.** SQLCipher key for catalog, frames, cells, memories SQLite (≥16 chars). Same key required for Litestream restore. |
+| `KHORA_OUTBOX_ENCRYPTION_KEY` | · | + | · | · | S | **Required.** AES-256-GCM field key for post `outbox.payload` (64-char hex or ≥32 UTF-8 bytes). Separate from SQLCipher. |
+| `REGISTRY_SQLCIPHER_KEY` | + | · | · | · | S | **Required.** SQLCipher key for `registry.sqlite`. |
 
 **Prod checklist (in addition to env vars):**
 
@@ -132,35 +134,47 @@ Host selection: `khora host use <slug>` writes `currentHost` and `hosts` to `cli
 
 ### Khora invites & registration
 
-| Variable | R | K | KH | Kind | Notes |
-| --- | --- | --- | --- | --- | --- |
-| `KHORA_INVITE_REQUIRED` | · | + | · | C | Set `1` to require invite token on registration. |
-| `KHORA_INVITES_PER_REGISTRATION` | · | + | · | C | Max invites per registration (default 10). |
-| `KHORA_INVITE_SEED_TOKENS` | · | + | · | S | Bootstrap plaintext tokens (hashed at startup). |
+| Variable | R | K | KH | E | Kind | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| `KHORA_INVITE_REQUIRED` | · | + | · | · | C | Set `1` to require invite token on registration. |
+| `KHORA_INVITES_PER_REGISTRATION` | · | + | · | · | C | Max invites per registration (default 10). |
+| `KHORA_INVITE_SEED_TOKENS` | · | + | · | · | S | Bootstrap plaintext tokens (hashed at startup). |
 
 ### Litestream → S3
 
-| Variable | R | K | KH | Kind | Notes |
-| --- | --- | --- | --- | --- | --- |
-| `REGISTRY_LITESTREAM` | + | · | · | C | `1` enables Litestream sidecar on registry. |
-| `KHORA_LITESTREAM` | · | + | · | C | `1` enables Litestream sidecar on khora-server. |
-| `LITESTREAM_S3_BUCKET` | + | + | · | C | Shared bucket name. |
-| `LITESTREAM_S3_REGION` | + | + | · | C | Bucket region. |
-| `LITESTREAM_S3_KEY_PREFIX` | + | + | · | C | **Different per service:** `registry/litestream` vs `khora/litestream`. |
-| `LITESTREAM_LOG_LEVEL` | + | + | · | C | `debug`, `info` (default), `warn`, or `error`. Use `error` in prod to reduce noise. |
-| `LITESTREAM_S3_ENDPOINT` | · | · | · | C | **Local MinIO only.** Omit in prod AWS. |
-| `LITESTREAM_ACCESS_KEY_ID` | · | · | · | S | MinIO dev only; prod uses `AWS_ACCESS_KEY_ID`. |
-| `LITESTREAM_SECRET_ACCESS_KEY` | · | · | · | S | MinIO dev only; prod uses `AWS_SECRET_ACCESS_KEY`. |
+| Variable | R | K | KH | E | Kind | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| `REGISTRY_LITESTREAM` | + | · | · | · | C | `1` enables Litestream sidecar on registry. |
+| `KHORA_LITESTREAM` | · | + | · | · | C | `1` enables Litestream sidecar on khora-server. |
+| `EXEDRA_LITESTREAM` | · | · | · | + | C | **Planned.** `1` enables Litestream sidecar on Exedra (`exedra.db` + `memories/`). |
+| `LITESTREAM_S3_BUCKET` | + | + | · | + | C | Shared bucket name. |
+| `LITESTREAM_S3_REGION` | + | + | · | + | C | Bucket region. |
+| `LITESTREAM_S3_KEY_PREFIX` | + | + | · | + | C | **Different per service:** `registry/litestream`, `khora/litestream`, `exedra/litestream`. |
+| `LITESTREAM_LOG_LEVEL` | + | + | · | + | C | `debug`, `info` (default), `warn`, or `error`. Use `error` in prod to reduce noise. |
+| `LITESTREAM_S3_ENDPOINT` | · | · | · | · | C | **Local MinIO only.** Omit in prod AWS. |
+| `LITESTREAM_ACCESS_KEY_ID` | · | · | · | · | S | MinIO dev only; prod uses `AWS_ACCESS_KEY_ID`. |
+| `LITESTREAM_SECRET_ACCESS_KEY` | · | · | · | · | S | MinIO dev only; prod uses `AWS_SECRET_ACCESS_KEY`. |
 
 ### Contact form & Slack (khoralabs homepage)
 
-| Variable | R | K | KH | Kind | Notes |
-| --- | --- | --- | --- | --- | --- |
-| `SLACK_BOT_TOKEN` | · | · | + | S | Slack app bot token (`xoxb-...`) with `chat:write`. Posts contact form submissions via `chat.postMessage`. |
-| `SLACK_CONTACT_CHANNEL_ID` | · | · | + | C | Target channel ID (e.g. `C0123456789`). Invite the bot to this channel. |
-| `CONTACT_QUEUE_TTL_SECONDS` | · | · | + | C | Seconds to wait for OTP before sending an **Unconfirmed** Slack message (default `300`; matches Better Auth `expiresIn` on registry). |
+| Variable | R | K | KH | E | Kind | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| `SLACK_BOT_TOKEN` | · | · | + | · | S | Slack app bot token (`xoxb-...`) with `chat:write`. Posts contact form submissions via `chat.postMessage`. |
+| `SLACK_CONTACT_CHANNEL_ID` | · | · | + | · | C | Target channel ID (e.g. `C0123456789`). Invite the bot to this channel. |
+| `CONTACT_QUEUE_TTL_SECONDS` | · | · | + | · | C | Seconds to wait for OTP before sending an **Unconfirmed** Slack message (default `300`; matches Better Auth `expiresIn` on registry). |
 
 Contact flow: submission is queued when the user reaches the OTP step; Slack sends **Verified** immediately on OTP confirm, or **Unconfirmed** when this TTL expires. Includes marketing opt-in status in the Slack payload. Server logs (`contact.queued`, `contact.slack_sent`) never include email or message body.
+
+### Exedra app
+
+| Variable | R | K | KH | E | Kind | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| `EXEDRA_DATA_DIR` | · | · | · | + | C | SQLite root (default `./data`; holds `exedra.db`, `memories/`). |
+| `INVITE_PEPPER` | · | · | · | + | S | **Required.** HMAC pepper for single-use session invite tokens. |
+| `EXEDRA_IDENTITY_KEY` | · | · | · | + | S | **Required.** 32-byte hex AES key for custodial `did:key` identity blobs in `users.identity_encrypted`. |
+| `AI_API_KEY` | · | · | · | + | S | OpenAI (or compatible) API key for interview agent. |
+| `AI_MODEL` | · | · | · | + | C | Model id (default `gpt-4o`). |
+| `AI_BASE_URL` | · | · | · | + | C | Optional OpenAI-compatible base URL. |
 
 ---
 
@@ -227,6 +241,24 @@ SLACK_CONTACT_CHANNEL_ID=C0123456789
 CONTACT_QUEUE_TTL_SECONDS=300
 ```
 
+**exedra**
+
+```
+PORT=3000
+NODE_ENV=production
+BUN_PUBLIC_KHORA_REGISTRY_URL=https://registry.example.com
+REGISTRY_URL=https://registry.example.com
+EXEDRA_DATA_DIR=/var/data/exedra
+INVITE_PEPPER=<openssl rand -hex 32>
+EXEDRA_IDENTITY_KEY=<openssl rand -hex 32>
+AI_API_KEY=sk-...
+AI_MODEL=gpt-4o
+# EXEDRA_LITESTREAM=1                    # planned
+# LITESTREAM_S3_KEY_PREFIX=exedra/litestream
+```
+
+Register Exedra's public origin (e.g. `https://exedra.example.com`) as a registry **trusted origin** so browser OTP and `/api/auth/session` cookie forwarding work cross-origin. Set `REGISTRY_COOKIE_DOMAIN=.example.com` on registry when Exedra and registry share a parent domain.
+
 Set `BUN_PUBLIC_*` at **build time** if the platform separates build from runtime (Render: set on the service before deploy). `SLACK_BOT_TOKEN` is server-only (never `BUN_PUBLIC_*`).
 
 ---
@@ -237,7 +269,7 @@ Set `BUN_PUBLIC_*` at **build time** if the platform separates build from runtim
 openssl rand -base64 32
 ```
 
-Use for `BETTER_AUTH_SECRET`, `KHORA_INVITE_PEPPER`, `*_CONSOLE_ROOT_TOKEN`.
+Use for `BETTER_AUTH_SECRET`, `KHORA_INVITE_PEPPER`, `INVITE_PEPPER`, `EXEDRA_IDENTITY_KEY`, `*_CONSOLE_ROOT_TOKEN`.
 
 ---
 
@@ -248,5 +280,6 @@ Use for `BETTER_AUTH_SECRET`, `KHORA_INVITE_PEPPER`, `*_CONSOLE_ROOT_TOKEN`.
 | Registry | `apps/khoralabs/registry/.env.example` |
 | Khora server | `apps/khora/server/.env.example` |
 | Khora Labs homepage | `apps/khoralabs/homepage/.env.example` |
+| Exedra | `apps/exedra/.env.example` |
 
 Litestream shared logic: `scripts/litestream-config.ts`. Local MinIO: `apps/s3/README.md`.

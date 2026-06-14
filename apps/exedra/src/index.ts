@@ -1,27 +1,34 @@
 import { serve } from "bun";
 import index from "./client/index.html";
+import { getDb } from "./server/db/index";
+import { apiRoutes } from "./server/routes";
+import { interviewWsHandlers, verifyInterviewWsUpgrade } from "./server/ws/interview";
+
+getDb();
 
 const server = serve({
   routes: {
+    ...apiRoutes,
     "/*": index,
-
-    "/api/health": {
-      GET: () => Response.json({ ok: true }),
-    },
   },
 
-  websocket: {
-    open(ws) {
-      console.log("ws open", ws.remoteAddress);
-    },
-    message(ws, data) {
-      // TODO: route by ws.data.kind: "interview" | "alignment"
-      console.log("ws message", data);
-    },
-    close(ws) {
-      console.log("ws close");
-    },
+  async fetch(req, bunServer) {
+    const url = new URL(req.url);
+    const wsMatch = /^\/ws\/interview\/([^/]+)\/?$/.exec(url.pathname);
+    if (wsMatch !== null && req.headers.get("upgrade")?.toLowerCase() === "websocket") {
+      const threadId = wsMatch[1] ?? "";
+      const verified = await verifyInterviewWsUpgrade(req, threadId);
+      if (!verified.ok) {
+        return new Response(verified.error, { status: verified.status });
+      }
+      const upgraded = bunServer.upgrade(req, { data: verified.data });
+      if (upgraded) return undefined as unknown as Response;
+      return new Response("WebSocket upgrade failed", { status: 500 });
+    }
+    return undefined as unknown as Response;
   },
+
+  websocket: interviewWsHandlers,
 
   development: process.env.NODE_ENV !== "production" && {
     hmr: true,

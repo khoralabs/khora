@@ -5,9 +5,9 @@ exedra/
 ├── src/
 │   ├── index.ts              # Bun.serve() entry point
 │   ├── server/               # API routes, WebSocket handlers, background jobs
-│   │   ├── routes/           # HTTP route handlers (/api/*)
-│   │   ├── ws/               # WebSocket upgrade + message handlers
-│   │   └── jobs/             # Background job runner + job definitions
+│   │   ├── auth/             # GET /api/auth/session (registry verify)
+│   │   ├── invites/          # Deep-link invite metadata + accept
+│   │   └── routes.ts         # Route table wired in src/index.ts
 │   ├── agents/               # Interview, synthesis, alignment agent logic
 │   │   ├── interview.ts      # Interview agent (Vercel AI SDK streamText)
 │   │   ├── synthesis.ts      # Synthesis agent (transcript → memories)
@@ -16,12 +16,13 @@ exedra/
 │   │   ├── schema.ts         # Table definitions (threads, messages, sessions, etc.)
 │   │   └── queries/          # Typed query helpers per domain
 │   └── client/               # React pages + components (browser bundle)
-│       ├── routes/           # Per-page index.html + client.tsx pairs
-│       └── components/       # Shared UI components
+│       ├── components/auth/  # SignIn, InviteGate (EmailConfirm + registry OTP)
+│       ├── lib/              # registry-url, registry-email-confirm-api, auth-session
+│       └── components/ui/    # shadcn primitives
 ├── package.json
 ├── tsconfig.json
 ├── bunfig.toml               # Tailwind plugin, BUN_PUBLIC_* vars
-└── .spec/                    # This spec
+└── .brain/product/exedra/    # Product spec (keep in sync with implementation)
 ```
 
 ## Entry Point (`src/index.ts`)
@@ -70,28 +71,8 @@ serve({
 - `tailwindcss` + `bun-plugin-tailwind` — CSS
 - `@radix-ui/*` — accessible UI primitives
 
-## Vendor / Submodule
+## Dependencies
 
-`vendor/memories/` is a git submodule pointing to `git@github.com:khoralabs/memories.git`.
-
-All memories packages are declared as Bun workspaces in `package.json` so they're importable as `@khoralabs/memories-*` without publishing:
-
-```json
-"workspaces": [
-  "vendor/memories/packages/core",
-  "vendor/memories/packages/ontologies",
-  "vendor/memories/packages/persistence/sqlite",
-  "vendor/memories/packages/agents/integrator",
-  ...
-]
-```
-
-To update memories to latest: `git submodule update --remote vendor/memories`
-
-## Dependencies to Add
-
-- `ai` — Vercel AI SDK
-- `@ai-sdk/openai` — OpenAI provider
-- `@khoralabs/memories-core` + `@khoralabs/memories-sqlite`
-- `@khoralabs/registry-auth` + `@khoralabs/registry-accounts`
-- `@khoralabs/sourcemaps`
+- `@khoralabs/registry-auth` + `@khoralabs/registry-accounts-react` — OTP auth (homepage pattern)
+- `@khoralabs/memories-*` — knowledge graph (via khora monorepo workspaces)
+- `input-otp` — OTP input UI

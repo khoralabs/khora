@@ -22,11 +22,13 @@
 | `contentions` | Auto-detected + facilitator-curated list of contention items |
 | `status` | `pending → open → closed` |
 
-## Invite Identities
+## Invite Delivery
 
-Invites can target any of:
-- Email address (magic link, no account required)
-- Khora DID (`did:key:…`) — native Khora network delivery via inbox
-- Registry username — resolved to DID via registry catalog
+Facilitators send **deep links** (e.g. `https://exedra.example/invite/{token}`), not standalone magic-auth URLs.
 
-This keeps the door open for Khora-native participants while remaining accessible to anyone via email.
+Flow:
+1. Invitee opens deep link → Exedra loads invite metadata (`GET /api/invites/{token}`)
+2. If no registry session → same OTP sign-in flow as homepage (`EmailConfirm` + registry)
+3. After auth → `POST /api/invites/{token}/accept` → redirect to session interview
+
+Invite identities can still target email (pre-seeded in invite record), Khora DID, or registry username for future delivery channels.

@@ -12,9 +12,14 @@
       "!apps/memories/src/components/ui",
       "!apps/khoralabs/homepage/src/components/ui",
       "!apps/khora/homepage/src/components/ui",
+      "!apps/exedra/src/client/components/ui",
+      "!apps/exedra/src/client/components/ai-elements",
       "!!packages/memories",
       "!!packages/obp",
-      "!!packages/relay"
+      "!!packages/relay",
+      "!!vendor/memories",
+      "!!vendor/obp",
+      "!!vendor/relay"
     ]
   },
   "formatter": {
