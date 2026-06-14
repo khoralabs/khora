@@ -1,9 +1,9 @@
-[submodule "packages/memories"]
-	path = packages/memories
+[submodule "vendor/memories"]
+	path = vendor/memories
 	url = git@github.com:khoralabs/memories.git
-[submodule "packages/obp"]
-	path = packages/obp
+[submodule "vendor/obp"]
+	path = vendor/obp
 	url = git@github.com:khoralabs/open-binding-protocol.git
-[submodule "packages/relay"]
-	path = packages/relay
+[submodule "vendor/relay"]
+	path = vendor/relay
 	url = git@github.com:khoralabs/relay.git

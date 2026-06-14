@@ -31,6 +31,7 @@ describe("parseFrontmatter", () => {
       tags: [],
       description: undefined,
       cover: undefined,
+      draft: false,
     });
   });
 
