@@ -57,6 +57,16 @@ export function ensureExedraSchema(db: Database): void {
     CREATE INDEX IF NOT EXISTS idx_session_invites_session
       ON session_invites(session_id);
 
+    CREATE TABLE IF NOT EXISTS session_participants (
+      session_id TEXT NOT NULL REFERENCES sessions(id),
+      user_id TEXT NOT NULL REFERENCES users(id),
+      created_at_ms INTEGER NOT NULL,
+      PRIMARY KEY (session_id, user_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_session_participants_user
+      ON session_participants(user_id);
+
     CREATE TABLE IF NOT EXISTS threads (
       id TEXT PRIMARY KEY NOT NULL,
       kind TEXT NOT NULL CHECK(kind IN ('interview', 'alignment')),

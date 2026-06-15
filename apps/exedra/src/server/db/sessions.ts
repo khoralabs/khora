@@ -143,3 +143,82 @@ export function getThread(db: Database, threadId: string) {
     )
     .get(threadId);
 }
+
+export type SessionListItem = SessionRecord & {
+  role: "facilitator" | "participant";
+};
+
+type SessionListRow = SessionRow & {
+  role: "facilitator" | "participant";
+};
+
+export function addSessionParticipants(
+  db: Database,
+  sessionId: string,
+  userIds: readonly string[],
+): void {
+  const now = Date.now();
+  const insert = db.prepare(
+    `INSERT OR IGNORE INTO session_participants (session_id, user_id, created_at_ms)
+     VALUES (?, ?, ?)`,
+  );
+  for (const userId of userIds) {
+    insert.run(sessionId, userId, now);
+  }
+}
+
+export function userHasSessionAccess(db: Database, sessionId: string, userId: string): boolean {
+  const session = getSession(db, sessionId);
+  if (session === null) return false;
+  if (session.facilitatorId === userId) return true;
+
+  const participant = db
+    .query<{ c: number }, [string, string]>(
+      `SELECT COUNT(1) AS c FROM session_participants WHERE session_id = ? AND user_id = ?`,
+    )
+    .get(sessionId, userId);
+  if (participant !== null && participant.c > 0) return true;
+
+  const invite = db
+    .query<{ c: number }, [string, string]>(
+      `SELECT COUNT(1) AS c FROM session_invites
+       WHERE session_id = ? AND consumed_by_user_id = ? AND consumed_at_ms IS NOT NULL`,
+    )
+    .get(sessionId, userId);
+  return invite !== null && invite.c > 0;
+}
+
+export function listSessionsForUser(
+  db: Database,
+  userId: string,
+  teamId?: string,
+): SessionListItem[] {
+  const rows = db
+    .query<SessionListRow, [string, string, string | null]>(
+      `SELECT s.id, s.team_id, s.display_name, s.topic, s.prompt, s.deadline_ms,
+              s.facilitator_id, s.status, s.created_at_ms,
+              CASE WHEN s.facilitator_id = ?1 THEN 'facilitator' ELSE 'participant' END AS role
+       FROM sessions s
+       WHERE (?2 IS NULL OR s.team_id = ?2)
+         AND (
+           s.facilitator_id = ?1
+           OR EXISTS (
+             SELECT 1 FROM session_participants sp
+             WHERE sp.session_id = s.id AND sp.user_id = ?1
+           )
+           OR EXISTS (
+             SELECT 1 FROM session_invites si
+             WHERE si.session_id = s.id
+               AND si.consumed_by_user_id = ?1
+               AND si.consumed_at_ms IS NOT NULL
+           )
+         )
+       ORDER BY s.created_at_ms DESC`,
+    )
+    .all(userId, teamId ?? null);
+
+  return rows.map((row) => ({
+    ...mapSession(row),
+    role: row.role,
+  }));
+}

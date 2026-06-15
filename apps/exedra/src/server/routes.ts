@@ -2,7 +2,13 @@ import { handleGetSession } from "./auth/session";
 import { handleAcceptInvite, handleGetInvite, handleMintInvite } from "./invites/routes";
 import { handleGetMe, handlePostOnboarding } from "./onboarding/routes";
 import { stubRegistryAuthRoutes } from "./registry-stub/routes";
-import { handleCreateSession, handleGetInterview, handleGetSessionById } from "./sessions/routes";
+import {
+  handleCreateSession,
+  handleGetInterview,
+  handleGetSessionById,
+  handleListSessions,
+  handleListTeamMembers,
+} from "./sessions/routes";
 import { handleAcceptJoinTeam, handleGetJoinTeam, handleMintTeamInvite } from "./teams/routes";
 
 export const apiRoutes = {
@@ -24,6 +30,7 @@ export const apiRoutes = {
   },
 
   "/api/sessions": {
+    GET: handleListSessions,
     POST: handleCreateSession,
   },
 
@@ -51,6 +58,11 @@ export const apiRoutes = {
   "/api/teams/:teamId/invites": {
     POST: (req: Request & { params: { teamId: string } }) =>
       handleMintTeamInvite(req, req.params.teamId),
+  },
+
+  "/api/teams/:teamId/members": {
+    GET: (req: Request & { params: { teamId: string } }) =>
+      handleListTeamMembers(req, req.params.teamId),
   },
 
   "/api/join-team/:token": {

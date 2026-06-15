@@ -8,7 +8,7 @@ import {
   listInvitesForSession,
   mintSessionInvite,
 } from "../db/invites";
-import { getSession } from "../db/sessions";
+import { addSessionParticipants, getSession } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
 import { getRegistryUrl } from "../registry-url";
 
@@ -60,10 +60,12 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
     return Response.json({ error: "Invite is no longer available" }, { status: 409 });
   }
 
+  addSessionParticipants(db, consumed.sessionId, [user.id]);
+
   return Response.json({
     invite,
     userId: user.id,
-    redirectTo: `/sessions/${consumed.sessionId}`,
+    redirectTo: "/",
   });
 }
 

@@ -1,12 +1,15 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { InviteGate } from "@/components/auth/invite-gate";
 import { JoinTeamGate } from "@/components/auth/join-team-gate";
 import { SignIn } from "@/components/auth/sign-in";
+import { Dashboard } from "@/components/dashboard/dashboard";
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { SessionDetailView } from "@/components/sessions/session-detail";
+import { SessionWizard } from "@/components/sessions/session-wizard";
+import { Spinner } from "@/components/ui/spinner";
 import { type AuthSessionResponse, fetchAuthSession } from "@/lib/auth-session";
-import { fetchMe, type MeResponse, type MeTeam } from "@/lib/me-api";
+import { fetchMe, type MeResponse } from "@/lib/me-api";
 
 import "./index.css";
 
@@ -20,14 +23,33 @@ function parseJoinTeamToken(pathname: string): string | null {
   return match?.[1] ?? null;
 }
 
-function Home({
+function isNewSessionPath(pathname: string): boolean {
+  return /^\/sessions\/new\/?$/.test(pathname);
+}
+
+function parseSessionId(pathname: string): string | null {
+  const match = /^\/sessions\/([^/]+)\/?$/.exec(pathname);
+  if (match?.[1] === undefined || match[1] === "new") return null;
+  return match[1];
+}
+
+function navigate(path: string) {
+  window.history.pushState(null, "", path);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+}
+
+function AppShell({
   session,
   me,
+  pathname,
+  onNavigate,
   onOnboardingComplete,
 }: {
   session: AuthSessionResponse | null;
   me: MeResponse | null;
-  onOnboardingComplete: (team: MeTeam) => void;
+  pathname: string;
+  onNavigate: (path: string) => void;
+  onOnboardingComplete: () => void;
 }) {
   if (session?.authenticated !== true) {
     return (
@@ -40,38 +62,65 @@ function Home({
   }
 
   if (me === null) {
-    return <p className="text-sm text-muted-foreground">Loading profile…</p>;
+    return (
+      <div className="flex justify-center py-16">
+        <Spinner className="size-6" />
+      </div>
+    );
   }
 
   if (me.onboardingRequired) {
     return <OnboardingWizard onComplete={onOnboardingComplete} />;
   }
 
-  const primaryTeam = me.teams[0];
+  const team = me.teams[0];
+  if (team === undefined) {
+    return <p className="text-sm text-muted-foreground">No team found.</p>;
+  }
+
+  if (isNewSessionPath(pathname)) {
+    return (
+      <SessionWizard
+        team={team}
+        onCancel={() => onNavigate("/")}
+        onCreated={(sessionId) => onNavigate(`/sessions/${sessionId}`)}
+      />
+    );
+  }
+
+  const sessionId = parseSessionId(pathname);
+  if (sessionId !== null) {
+    return <SessionDetailView sessionId={sessionId} onBack={() => onNavigate("/")} />;
+  }
+
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle>Exedra</CardTitle>
-        <CardDescription>
-          {primaryTeam !== undefined ? `${primaryTeam.orgName} · ${primaryTeam.name}` : "Signed in"}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground">
-          Structured stakeholder alignment — session tooling comes next.
-        </p>
-      </CardContent>
-    </Card>
+    <Dashboard
+      team={team}
+      onCreateSession={() => onNavigate("/sessions/new")}
+      onSelectSession={(id) => onNavigate(`/sessions/${id}`)}
+    />
   );
 }
 
 export function App() {
-  const inviteToken = parseInviteToken(window.location.pathname);
-  const joinTeamToken = parseJoinTeamToken(window.location.pathname);
+  const [pathname, setPathname] = useState(window.location.pathname);
+  const inviteToken = parseInviteToken(pathname);
+  const joinTeamToken = parseJoinTeamToken(pathname);
   const deepLinkToken = inviteToken ?? joinTeamToken;
   const [session, setSession] = useState<AuthSessionResponse | null>(null);
   const [me, setMe] = useState<MeResponse | null>(null);
   const [loading, setLoading] = useState(deepLinkToken === null);
+
+  const handleNavigate = useCallback((path: string) => {
+    navigate(path);
+    setPathname(path);
+  }, []);
+
+  useEffect(() => {
+    const onPopState = () => setPathname(window.location.pathname);
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   useEffect(() => {
     if (deepLinkToken !== null) return;
@@ -92,24 +141,45 @@ export function App() {
     };
   }, [deepLinkToken]);
 
-  function handleOnboardingComplete(team: MeTeam) {
-    setMe({
-      user: me?.user ?? { id: "", registryUserId: "" },
-      teams: [team],
-      onboardingRequired: false,
+  function handleOnboardingComplete() {
+    handleNavigate("/");
+    void fetchMe().then((profile) => {
+      if (profile !== null) setMe(profile);
     });
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-6">
+    <div className="min-h-screen p-6">
       {inviteToken !== null ? (
-        <InviteGate token={inviteToken} />
+        <div className="flex min-h-[calc(100vh-3rem)] items-center justify-center">
+          <InviteGate token={inviteToken} />
+        </div>
       ) : joinTeamToken !== null ? (
-        <JoinTeamGate token={joinTeamToken} />
+        <div className="flex min-h-[calc(100vh-3rem)] items-center justify-center">
+          <JoinTeamGate token={joinTeamToken} />
+        </div>
       ) : loading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+        <div className="flex min-h-[calc(100vh-3rem)] items-center justify-center">
+          <Spinner className="size-6" />
+        </div>
+      ) : me?.onboardingRequired === true ? (
+        <div className="flex min-h-[calc(100vh-3rem)] items-center justify-center">
+          <AppShell
+            session={session}
+            me={me}
+            pathname={pathname}
+            onNavigate={handleNavigate}
+            onOnboardingComplete={handleOnboardingComplete}
+          />
+        </div>
       ) : (
-        <Home session={session} me={me} onOnboardingComplete={handleOnboardingComplete} />
+        <AppShell
+          session={session}
+          me={me}
+          pathname={pathname}
+          onNavigate={handleNavigate}
+          onOnboardingComplete={handleOnboardingComplete}
+        />
       )}
     </div>
   );

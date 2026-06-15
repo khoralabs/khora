@@ -1,11 +1,20 @@
 import { requireRegistrySessionResponse } from "../auth/require-session";
 import { getDb } from "../db/index";
-import { listInvitesForSession, userAcceptedSessionInvite } from "../db/invites";
+import { listInvitesForSession } from "../db/invites";
+import { listTeamMembers } from "../db/membership";
 import {
+  formatDaysToDeadline,
+  listSessionParticipantDetails,
+  sessionPhaseFromStatus,
+} from "../db/session-detail";
+import {
+  addSessionParticipants,
   createSession,
   getOrCreateInterviewThread,
   getSession,
   isTeamMember,
+  listSessionsForUser,
+  userHasSessionAccess,
 } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
 
@@ -15,7 +24,26 @@ type CreateSessionBody = {
   topic?: string;
   prompt?: string;
   deadlineMs?: number;
+  memberUserIds?: string[];
 };
+
+export async function handleListSessions(req: Request): Promise<Response> {
+  const auth = await requireRegistrySessionResponse(req);
+  if (auth.response !== null) return auth.response;
+
+  const url = new URL(req.url);
+  const teamId = url.searchParams.get("teamId")?.trim() ?? undefined;
+
+  const db = getDb();
+  const user = await getOrCreateUser(db, auth.session.user.id);
+
+  if (teamId !== undefined && teamId.length > 0 && !isTeamMember(db, teamId, user.id)) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const sessions = listSessionsForUser(db, user.id, teamId);
+  return Response.json({ sessions });
+}
 
 export async function handleCreateSession(req: Request): Promise<Response> {
   const auth = await requireRegistrySessionResponse(req);
@@ -49,6 +77,16 @@ export async function handleCreateSession(req: Request): Promise<Response> {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const memberUserIds = (body.memberUserIds ?? []).filter(
+    (id) => typeof id === "string" && id.trim().length > 0 && id !== user.id,
+  );
+
+  for (const memberId of memberUserIds) {
+    if (!isTeamMember(db, teamId, memberId)) {
+      return Response.json({ error: "All members must belong to the team" }, { status: 400 });
+    }
+  }
+
   const session = createSession(db, {
     teamId,
     displayName,
@@ -58,7 +96,19 @@ export async function handleCreateSession(req: Request): Promise<Response> {
     deadlineMs: body.deadlineMs,
   });
 
-  return Response.json({ session }, { status: 201 });
+  if (memberUserIds.length > 0) {
+    addSessionParticipants(db, session.id, memberUserIds);
+  }
+
+  return Response.json(
+    {
+      session: {
+        ...session,
+        role: "facilitator" as const,
+      },
+    },
+    { status: 201 },
+  );
 }
 
 export async function handleGetSessionById(req: Request, sessionId: string): Promise<Response> {
@@ -72,12 +122,32 @@ export async function handleGetSessionById(req: Request, sessionId: string): Pro
   }
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (session.facilitatorId !== user.id) {
+  if (!userHasSessionAccess(db, sessionId, user.id)) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const invites = listInvitesForSession(db, sessionId);
-  return Response.json({ session, invites });
+  const role = session.facilitatorId === user.id ? "facilitator" : "participant";
+  const phase = sessionPhaseFromStatus(session.status);
+  const daysToDeadline = formatDaysToDeadline(session.deadlineMs);
+  const participants = listSessionParticipantDetails(db, sessionId, session.facilitatorId).map(
+    (participant) => ({
+      ...participant,
+      isCurrentUser: participant.userId === user.id,
+    }),
+  );
+
+  return Response.json({
+    session: {
+      ...session,
+      role,
+      phase,
+      daysToDeadline,
+    },
+    participants,
+    canManage: session.facilitatorId === user.id,
+    invites,
+  });
 }
 
 export async function handleGetInterview(req: Request, sessionId: string): Promise<Response> {
@@ -91,8 +161,8 @@ export async function handleGetInterview(req: Request, sessionId: string): Promi
   }
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (!userAcceptedSessionInvite(db, sessionId, user.id)) {
-    return Response.json({ error: "Invite not accepted" }, { status: 403 });
+  if (!userHasSessionAccess(db, sessionId, user.id)) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const threadId = getOrCreateInterviewThread(db, { sessionId, userId: user.id });
@@ -107,4 +177,22 @@ export async function handleGetInterview(req: Request, sessionId: string): Promi
     threadId,
     wsUrl: `/ws/interview/${threadId}`,
   });
+}
+
+export async function handleListTeamMembers(req: Request, teamId: string): Promise<Response> {
+  const auth = await requireRegistrySessionResponse(req);
+  if (auth.response !== null) return auth.response;
+
+  const db = getDb();
+  const user = await getOrCreateUser(db, auth.session.user.id);
+  if (!isTeamMember(db, teamId, user.id)) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const members = listTeamMembers(db, teamId).map((member) => ({
+    ...member,
+    isCurrentUser: member.userId === user.id,
+  }));
+
+  return Response.json({ members });
 }

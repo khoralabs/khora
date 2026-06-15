@@ -1,13 +1,16 @@
+import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { copyTextToClipboard } from "@/lib/copy-text";
+import { INVITE_LINK_SINGLE_USE_NOTE } from "@/lib/invite-copy";
 import { type MeTeam, mintTeamInvite, postOnboarding } from "@/lib/me-api";
 
 type OnboardingWizardProps = {
-  onComplete: (team: MeTeam) => void;
+  onComplete: () => void;
 };
 
 type WizardStep = 1 | 2 | 3;
@@ -21,6 +24,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [mintingInvite, setMintingInvite] = useState(false);
 
   useEffect(() => {
     if (step !== 3 || team === null || inviteUrl !== null) return;
@@ -69,14 +73,32 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
   async function handleCopyLink() {
     if (inviteUrl === null) return;
-    await navigator.clipboard.writeText(inviteUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await copyTextToClipboard(inviteUrl);
+      setCopied(true);
+    } catch {
+      setError("Could not copy automatically. Select the link and copy manually.");
+    }
+  }
+
+  async function handleNewInviteLink() {
+    if (team === null) return;
+    setMintingInvite(true);
+    setCopied(false);
+    setError(null);
+    try {
+      const invite = await mintTeamInvite(team.id);
+      setInviteUrl(new URL(invite.url, window.location.origin).href);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Could not create invite link");
+    } finally {
+      setMintingInvite(false);
+    }
   }
 
   function handleFinish() {
     if (team === null) return;
-    onComplete(team);
+    onComplete();
   }
 
   return (
@@ -141,17 +163,25 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         {step === 3 && team !== null ? (
           <>
             <p className="text-sm text-muted-foreground">
-              Share this link with colleagues so they can join {team.name} on Exedra.
+              Share this link with colleagues so they can join {team.name} on Exedra.{" "}
+              {INVITE_LINK_SINGLE_USE_NOTE}
             </p>
-            <Input readOnly value={inviteUrl ?? "Generating invite link…"} />
+            <Input readOnly disabled={copied} value={inviteUrl ?? "Generating invite link…"} />
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 className="flex-1"
-                disabled={inviteUrl === null}
-                onClick={() => void handleCopyLink()}
+                disabled={inviteUrl === null || mintingInvite}
+                onClick={() => void (copied ? handleNewInviteLink() : handleCopyLink())}
               >
-                {copied ? "Copied" : "Copy link"}
+                {copied ? (
+                  <>
+                    <Plus />
+                    New link
+                  </>
+                ) : (
+                  "Copy link"
+                )}
               </Button>
               <Button className="flex-1" onClick={handleFinish}>
                 Skip for now

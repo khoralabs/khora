@@ -92,6 +92,32 @@ export function listTeamsForUser(db: Database, userId: string): UserTeamRecord[]
   }));
 }
 
+export type TeamMemberRecord = {
+  userId: string;
+  registryUserId: string;
+};
+
+type TeamMemberRow = {
+  user_id: string;
+  registry_user_id: string;
+};
+
+export function listTeamMembers(db: Database, teamId: string): TeamMemberRecord[] {
+  const rows = db
+    .query<TeamMemberRow, [string]>(
+      `SELECT u.id AS user_id, u.registry_user_id
+       FROM team_members tm
+       JOIN users u ON u.id = tm.user_id
+       WHERE tm.team_id = ?
+       ORDER BY tm.created_at_ms ASC`,
+    )
+    .all(teamId);
+  return rows.map((row) => ({
+    userId: row.user_id,
+    registryUserId: row.registry_user_id,
+  }));
+}
+
 export function userHasAnyTeam(db: Database, userId: string): boolean {
   const row = db
     .query<{ c: number }, [string]>(`SELECT COUNT(1) AS c FROM team_members WHERE user_id = ?`)
