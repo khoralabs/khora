@@ -1,133 +1,215 @@
 import { EmailConfirm } from "@khoralabs/registry-accounts-react";
 import type { EmailConfirmSession } from "@khoralabs/registry-auth/client";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
 import { registryEmailConfirmApi } from "@/lib/registry-email-confirm-api";
+import { cn } from "@/lib/utils";
 
 const OTP_LENGTH = 6;
 const SIGN_IN_STORAGE_KEY = "exedra-sign-in";
+const MARKETING_LIST_SLUG = "khoralabs-updates";
 
-const DEFAULT_SIGN_IN_DESCRIPTION =
+const DEFAULT_TITLE = "Welcome back";
+const DEFAULT_DESCRIPTION = "Sign in to Exedra with a one-time code sent to your email.";
+
+const STUB_HINT =
   process.env.BUN_PUBLIC_EXEDRA_STUB_REGISTRY === "1"
     ? "Local stub registry — use any email and OTP 000000 (or EXEDRA_STUB_REGISTRY_OTP)."
-    : "Enter your email to receive a one-time code from the Khora registry.";
+    : null;
 
 type SignInProps = {
   title?: string;
   description?: string;
   storageKey?: string;
+  className?: string;
   onSuccess: (session: EmailConfirmSession) => void;
 };
 
+function SignInPanel() {
+  return (
+    <div className="relative hidden bg-muted md:block">
+      <div className="absolute inset-0 bg-linear-to-br from-primary/15 via-muted to-background" />
+      <div className="relative flex h-full min-h-[32rem] flex-col justify-between p-8">
+        <p className="text-sm font-medium tracking-wide text-muted-foreground uppercase">Exedra</p>
+        <div className="space-y-2">
+          <p className="text-2xl font-semibold tracking-tight">Align before you decide.</p>
+          <p className="max-w-sm text-sm text-muted-foreground">
+            Structured interviews that surface what your team actually believes — one question at a
+            time.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function SignIn({
-  title = "Sign in to Exedra",
-  description = DEFAULT_SIGN_IN_DESCRIPTION,
+  title = DEFAULT_TITLE,
+  description = DEFAULT_DESCRIPTION,
   storageKey = SIGN_IN_STORAGE_KEY,
+  className,
   onSuccess,
 }: SignInProps) {
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <EmailConfirm.Root
-          api={registryEmailConfirmApi}
-          purpose="sign-in"
-          otpLength={OTP_LENGTH}
-          storageKey={storageKey}
-          onSuccess={onSuccess}
-        >
-          <EmailConfirm.EmailStep>
-            {(props) => (
-              <form
-                className="space-y-4"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void props.sendOtp();
-                }}
-              >
-                <div className="space-y-2">
-                  <Label htmlFor="exedra-sign-in-email">Email</Label>
-                  <Input
-                    id="exedra-sign-in-email"
-                    type="email"
-                    autoComplete="email"
-                    autoFocus
-                    value={props.email}
-                    onChange={(e) => props.setEmail(e.target.value)}
-                    disabled={props.loading}
-                    placeholder="you@company.com"
-                  />
-                </div>
-                {props.error !== null ? (
-                  <p className="text-sm text-destructive">{props.error}</p>
-                ) : null}
-                <Button type="submit" className="w-full" disabled={props.loading}>
-                  {props.loading ? (
-                    <>
-                      <Loader2 className="animate-spin" />
-                      Sending code…
-                    </>
-                  ) : (
-                    "Continue"
-                  )}
-                </Button>
-              </form>
-            )}
-          </EmailConfirm.EmailStep>
-          <EmailConfirm.OtpStep>
-            {(props) => (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={props.goBack}
-                    disabled={props.loading}
-                  >
-                    <ArrowLeft />
-                  </Button>
-                  <p className="truncate text-sm text-muted-foreground">{props.email}</p>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Enter the code we sent to your email.
-                </p>
-                <InputOTP
-                  maxLength={OTP_LENGTH}
-                  pattern={REGEXP_ONLY_DIGITS}
-                  autoComplete="one-time-code"
-                  autoFocus
-                  value={props.otp}
-                  onChange={props.setOtp}
-                  onComplete={(code) => void props.verifyOtp(code)}
-                  disabled={props.loading}
+    <div className={cn("flex w-full max-w-4xl flex-col gap-6", className)}>
+      <Card className="overflow-hidden p-0">
+        <CardContent className="grid p-0 md:grid-cols-2">
+          <EmailConfirm.Root
+            api={registryEmailConfirmApi}
+            purpose="sign-in"
+            otpLength={OTP_LENGTH}
+            storageKey={storageKey}
+            marketing={{ listSlug: MARKETING_LIST_SLUG, sourceApp: "exedra" }}
+            onSuccess={onSuccess}
+          >
+            <EmailConfirm.EmailStep>
+              {(props) => (
+                <form
+                  className="p-6 md:p-8"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void props.sendOtp();
+                  }}
+                  aria-busy={props.loading}
                 >
-                  <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                    <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
-                  </InputOTPGroup>
-                </InputOTP>
-                {props.error !== null ? (
-                  <p className="text-sm text-destructive">{props.error}</p>
-                ) : null}
-              </div>
-            )}
-          </EmailConfirm.OtpStep>
-        </EmailConfirm.Root>
-      </CardContent>
-    </Card>
+                  <FieldGroup>
+                    <div className="flex flex-col items-center gap-2 text-center">
+                      <h1 className="text-2xl font-bold">{title}</h1>
+                      <p className="text-balance text-muted-foreground">{description}</p>
+                    </div>
+                    <Field>
+                      <Label htmlFor="exedra-sign-in-email" className="sr-only">
+                        Email
+                      </Label>
+                      <InputGroup
+                        className="h-11"
+                        {...(props.loading ? { "data-disabled": true as const } : {})}
+                      >
+                        <InputGroupInput
+                          id="exedra-sign-in-email"
+                          type="email"
+                          autoComplete="email"
+                          autoFocus
+                          value={props.email}
+                          onChange={(e) => props.setEmail(e.target.value)}
+                          disabled={props.loading}
+                          placeholder="you@company.com"
+                          required
+                        />
+                        <InputGroupAddon align="inline-end">
+                          <InputGroupButton
+                            type="submit"
+                            disabled={props.loading}
+                            size="icon-sm"
+                            aria-label={props.loading ? "Sending code" : "Continue"}
+                          >
+                            {props.loading ? (
+                              <Spinner className="size-4" aria-hidden />
+                            ) : (
+                              <ArrowRight className="size-4" aria-hidden />
+                            )}
+                          </InputGroupButton>
+                        </InputGroupAddon>
+                      </InputGroup>
+                      {STUB_HINT !== null ? <FieldDescription>{STUB_HINT}</FieldDescription> : null}
+                    </Field>
+                    {props.showMarketingConsent ? (
+                      <Field orientation="horizontal">
+                        <Checkbox
+                          id="exedra-sign-in-marketing"
+                          checked={props.marketingConsent}
+                          onCheckedChange={(checked) => props.setMarketingConsent(checked === true)}
+                          disabled={props.loading}
+                        />
+                        <FieldLabel htmlFor="exedra-sign-in-marketing" className="font-normal">
+                          Keep me updated about Khora news and product updates.
+                        </FieldLabel>
+                      </Field>
+                    ) : null}
+                    {props.error !== null ? <FieldError>{props.error}</FieldError> : null}
+                  </FieldGroup>
+                </form>
+              )}
+            </EmailConfirm.EmailStep>
+            <EmailConfirm.OtpStep>
+              {(props) => (
+                <div className="p-6 md:p-8">
+                  <FieldGroup>
+                    <div className="flex flex-col items-center gap-2 text-center">
+                      <h1 className="text-2xl font-bold">Check your email</h1>
+                      <p className="text-balance text-muted-foreground">
+                        Enter the {OTP_LENGTH}-digit code we sent to{" "}
+                        <span className="font-medium text-foreground">{props.email}</span>.
+                      </p>
+                    </div>
+                    <Field>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={props.goBack}
+                          disabled={props.loading}
+                          aria-label="Use a different email"
+                        >
+                          <ArrowLeft />
+                        </Button>
+                        <FieldDescription className="truncate">{props.email}</FieldDescription>
+                      </div>
+                      <div className="flex justify-center pt-2">
+                        <InputOTP
+                          maxLength={OTP_LENGTH}
+                          pattern={REGEXP_ONLY_DIGITS}
+                          autoComplete="one-time-code"
+                          autoFocus
+                          value={props.otp}
+                          onChange={props.setOtp}
+                          onComplete={(code) => void props.verifyOtp(code)}
+                          disabled={props.loading}
+                        >
+                          <InputOTPGroup>
+                            <InputOTPSlot index={0} />
+                            <InputOTPSlot index={1} />
+                            <InputOTPSlot index={2} />
+                            <InputOTPSlot index={3} />
+                            <InputOTPSlot index={4} />
+                            <InputOTPSlot index={5} />
+                          </InputOTPGroup>
+                        </InputOTP>
+                      </div>
+                      {props.loading ? (
+                        <FieldDescription className="text-center">
+                          <Spinner className="mr-1 inline size-3" aria-hidden />
+                          Verifying…
+                        </FieldDescription>
+                      ) : null}
+                    </Field>
+                    {props.error !== null ? <FieldError>{props.error}</FieldError> : null}
+                  </FieldGroup>
+                </div>
+              )}
+            </EmailConfirm.OtpStep>
+          </EmailConfirm.Root>
+          <SignInPanel />
+        </CardContent>
+      </Card>
+      <FieldDescription className="px-6 text-center">
+        By continuing, you agree to sign in through the Khora registry for this workspace.
+      </FieldDescription>
+    </div>
   );
 }

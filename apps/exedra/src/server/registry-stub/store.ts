@@ -94,6 +94,10 @@ export function getStubUserById(userId: string): StubRegistryUser | null {
   return null;
 }
 
+export function revokeStubSession(token: string): void {
+  sessionsByToken.delete(token);
+}
+
 export function resetStubRegistryStore(): void {
   otps.clear();
   sessionsByToken.clear();

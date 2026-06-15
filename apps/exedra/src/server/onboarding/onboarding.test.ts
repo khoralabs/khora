@@ -70,6 +70,40 @@ test("GET /api/me reports onboardingRequired until user joins a team", async () 
   expect(afterBody.teams[0]?.orgName).toBe("Acme");
 });
 
+test("PATCH /api/me updates profile fields", async () => {
+  const { mock } = await import("bun:test");
+  mock.module("../auth/require-session", () => ({
+    requireRegistrySessionResponse: async () => ({
+      session: { user: { id: "registry-me-profile" } },
+      response: null,
+    }),
+  }));
+
+  const { handleGetMe, handlePatchMe } = await import("./routes");
+  await handleGetMe(new Request("http://localhost/api/me"));
+
+  const patched = await handlePatchMe(
+    new Request("http://localhost/api/me", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fullName: "Alex Morgan", jobFunction: "Product manager" }),
+    }),
+  );
+  expect(patched.status).toBe(200);
+  const patchedBody = (await patched.json()) as {
+    user: { fullName: string | null; jobFunction: string | null };
+  };
+  expect(patchedBody.user.fullName).toBe("Alex Morgan");
+  expect(patchedBody.user.jobFunction).toBe("Product manager");
+
+  const after = await handleGetMe(new Request("http://localhost/api/me"));
+  const afterBody = (await after.json()) as {
+    user: { fullName: string | null; jobFunction: string | null };
+  };
+  expect(afterBody.user.fullName).toBe("Alex Morgan");
+  expect(afterBody.user.jobFunction).toBe("Product manager");
+});
+
 test("POST /api/onboarding rejects duplicate team membership", async () => {
   const { mock } = await import("bun:test");
   mock.module("../auth/require-session", () => ({

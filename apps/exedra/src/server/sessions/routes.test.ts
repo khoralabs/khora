@@ -8,6 +8,7 @@ import { closeDb } from "../db/index";
 import { ensureExedraSchema } from "../db/schema";
 import { createOrg, createTeam } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
+import { resetMemoriesStoreForTests } from "../memories/store";
 
 let dataDir: string;
 
@@ -17,15 +18,19 @@ beforeEach(() => {
   process.env.INVITE_PEPPER = "test-pepper-for-sessions";
   process.env.EXEDRA_IDENTITY_KEY =
     "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+  process.env.EXEDRA_MEMORIES_SQLCIPHER_KEY = "test-memories-key";
   closeDb();
+  resetMemoriesStoreForTests();
 });
 
 afterEach(() => {
   closeDb();
+  resetMemoriesStoreForTests();
   rmSync(dataDir, { recursive: true, force: true });
   delete process.env.EXEDRA_DATA_DIR;
   delete process.env.INVITE_PEPPER;
   delete process.env.EXEDRA_IDENTITY_KEY;
+  delete process.env.EXEDRA_MEMORIES_SQLCIPHER_KEY;
 });
 
 test("POST /api/sessions requires teamId", async () => {
@@ -43,9 +48,7 @@ test("POST /api/sessions requires teamId", async () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        displayName: "Review",
-        topic: "Topic",
-        prompt: "Prompt",
+        topic: "Review",
       }),
     }),
   );
@@ -78,9 +81,7 @@ test("POST /api/sessions creates session when teamId is provided", async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         teamId,
-        displayName: "Review",
-        topic: "Topic",
-        prompt: "Prompt",
+        topic: "Review",
       }),
     }),
   );

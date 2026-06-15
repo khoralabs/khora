@@ -29,6 +29,23 @@ A user belongs to an org, which contains teams, which run sessions. Org-level gr
 | `_global_/org/{orgId}/team/{teamId}` | Team-wide shared ground truth — promoted `fact` memories |
 | `_global_/org/{orgId}/team/{teamId}/session/{sessionId}` | Session namespace — contentions, alignment chat, session facts |
 
+## Implementation notes
+
+Memories paths are capped at **6 segments** (`@khoralabs/memories-core`). `_global_` is the root **scope** linked in the chain, not repeated as the first segment of every stored path.
+
+| Logical namespace | Stored scope path |
+|---|---|
+| Org | `org/{orgId}` |
+| Team | `org/{orgId}/team/{teamId}` |
+| Session (org) | `org/{orgId}/team/{teamId}/session/{sessionId}` |
+| User | `{userId}` (base64url-encoded DID) |
+| User team | `{userId}/org/{orgId}/team/{teamId}` |
+| User session | `{userId}/org/{orgId}/team/{teamId}/{sessionId}` |
+
+User session paths use `{sessionId}` as the leaf segment under team (no literal `session` segment) to stay within the depth limit.
+
+Session scopes are bootstrapped when a session is created, when a participant accepts an invite, and when a user opens an interview.
+
 ## Multi-namespace Membership
 
 A single memory can be indexed into multiple namespaces simultaneously. For example:

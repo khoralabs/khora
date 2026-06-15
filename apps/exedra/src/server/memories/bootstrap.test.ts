@@ -8,8 +8,16 @@ import { closeDb } from "../db/index";
 import { ensureExedraSchema } from "../db/schema";
 import { createOrg, createTeam } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
-import { bootstrapOrgTeamMemories } from "./bootstrap";
-import { orgScope, orgTeamScope, userScope, userTeamScope } from "./namespaces";
+import { bootstrapOrgTeamMemories, bootstrapSessionMemories } from "./bootstrap";
+import {
+  orgScope,
+  orgSessionScope,
+  orgTeamScope,
+  userScope,
+  userSessionScope,
+  userTeamScope,
+} from "./namespaces";
+import { resolveOrgMemoriesDbPath, resolveUserMemoriesDbPath } from "./paths";
 import { resetMemoriesStoreForTests } from "./store";
 
 let dataDir: string;
@@ -66,6 +74,56 @@ test("bootstrapOrgTeamMemories creates org and user scope chains", async () => {
     "_global_",
     userScope(user.id),
     userTeamScope(user.id, orgId, teamId),
+  ]);
+
+  appDb.close();
+});
+
+test("bootstrapSessionMemories creates org and user session scope chains under team", async () => {
+  const appDb = new Database(":memory:");
+  ensureExedraSchema(appDb);
+  const user = await getOrCreateUser(appDb, "registry-session-bootstrap");
+  const orgId = createOrg(appDb, { name: "Org", ownerId: user.id });
+  const teamId = createTeam(appDb, { orgId, name: "Team", ownerId: user.id });
+  const sessionId = crypto.randomUUID();
+
+  bootstrapOrgTeamMemories({ orgId, teamId, userId: user.id });
+  bootstrapSessionMemories({
+    orgId,
+    teamId,
+    sessionId,
+    userIds: [user.id],
+  });
+
+  const orgDbPath = resolveOrgMemoriesDbPath(orgId);
+  const userDbPath = resolveUserMemoriesDbPath(user.id);
+
+  const orgDb = new Database(orgDbPath);
+  const orgScopes = orgDb
+    .query<{ _id: string }, []>(`SELECT _id FROM scopes ORDER BY _id ASC`)
+    .all()
+    .map((row) => row._id);
+  orgDb.close();
+
+  expect(orgScopes).toEqual([
+    "_global_",
+    orgScope(orgId),
+    orgTeamScope(orgId, teamId),
+    orgSessionScope(orgId, teamId, sessionId),
+  ]);
+
+  const userDb = new Database(userDbPath);
+  const userScopes = userDb
+    .query<{ _id: string }, []>(`SELECT _id FROM scopes ORDER BY _id ASC`)
+    .all()
+    .map((row) => row._id);
+  userDb.close();
+
+  expect(userScopes).toEqual([
+    "_global_",
+    userScope(user.id),
+    userTeamScope(user.id, orgId, teamId),
+    userSessionScope(user.id, orgId, teamId, sessionId),
   ]);
 
   appDb.close();

@@ -19,7 +19,11 @@ if (isExedraStubRegistryEnabled()) {
 const server = serve({
   routes: {
     ...apiRoutes,
-    "/*": index,
+    // GET-only so POST /api/* misses this route and reaches fetch dispatch below.
+    "/*": {
+      // @ts-expect-error Bun HTMLBundle handler
+      GET: index,
+    },
   },
 
   async fetch(req, bunServer) {
@@ -35,6 +39,14 @@ const server = serve({
       if (upgraded) return undefined as unknown as Response;
       return new Response("WebSocket upgrade failed", { status: 500 });
     }
+
+    if (url.pathname.startsWith("/api/")) {
+      const { dispatchApiRoute } = await import("./server/dispatch-api");
+      const apiResponse = await dispatchApiRoute(req);
+      if (apiResponse !== null) return apiResponse;
+      return Response.json({ error: "Not found" }, { status: 404 });
+    }
+
     return undefined as unknown as Response;
   },
 

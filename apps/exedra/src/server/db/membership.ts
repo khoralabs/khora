@@ -125,6 +125,24 @@ export function userHasAnyTeam(db: Database, userId: string): boolean {
   return row !== null && row.c > 0;
 }
 
+export function userBelongsToOrg(db: Database, orgId: string, userId: string): boolean {
+  const row = db
+    .query<{ c: number }, [string, string]>(
+      `SELECT COUNT(1) AS c
+       FROM team_members tm
+       JOIN teams t ON t.id = tm.team_id
+       WHERE t.org_id = ? AND tm.user_id = ?`,
+    )
+    .get(orgId, userId);
+  return row !== null && row.c > 0;
+}
+
+/** Undo a failed team creation (membership + team only). */
+export function rollbackTeamCreation(db: Database, teamId: string): void {
+  db.prepare(`DELETE FROM team_members WHERE team_id = ?`).run(teamId);
+  db.prepare(`DELETE FROM teams WHERE id = ?`).run(teamId);
+}
+
 /** Undo a failed onboarding attempt (org + team + membership only). */
 export function rollbackOnboarding(db: Database, params: { orgId: string; teamId: string }): void {
   db.prepare(`DELETE FROM team_members WHERE team_id = ?`).run(params.teamId);

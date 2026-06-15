@@ -1,6 +1,7 @@
 import { handleGetSession } from "./auth/session";
+import { handleSignOut } from "./auth/sign-out";
 import { handleAcceptInvite, handleGetInvite, handleMintInvite } from "./invites/routes";
-import { handleGetMe, handlePostOnboarding } from "./onboarding/routes";
+import { handleGetMe, handlePatchMe, handlePostOnboarding } from "./onboarding/routes";
 import { stubRegistryAuthRoutes } from "./registry-stub/routes";
 import {
   handleCreateSession,
@@ -9,7 +10,12 @@ import {
   handleListSessions,
   handleListTeamMembers,
 } from "./sessions/routes";
-import { handleAcceptJoinTeam, handleGetJoinTeam, handleMintTeamInvite } from "./teams/routes";
+import {
+  handleAcceptJoinTeam,
+  handleCreateTeamInOrg,
+  handleGetJoinTeam,
+  handleMintTeamInvite,
+} from "./teams/routes";
 
 export const apiRoutes = {
   ...stubRegistryAuthRoutes,
@@ -21,12 +27,22 @@ export const apiRoutes = {
     GET: handleGetSession,
   },
 
+  "/api/auth/sign-out": {
+    POST: handleSignOut,
+  },
+
   "/api/me": {
     GET: handleGetMe,
+    PATCH: handlePatchMe,
   },
 
   "/api/onboarding": {
     POST: handlePostOnboarding,
+  },
+
+  "/api/orgs/:orgId/teams": {
+    POST: (req: Request & { params: { orgId: string } }) =>
+      handleCreateTeamInOrg(req, req.params.orgId),
   },
 
   "/api/sessions": {

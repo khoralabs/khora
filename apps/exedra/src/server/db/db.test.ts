@@ -29,9 +29,7 @@ test("session invite is single-use", async () => {
   const teamId = createTeam(db, { orgId, name: "Team", ownerId: user.id });
   const session = createSession(db, {
     teamId,
-    displayName: "Review",
-    topic: "Topic",
-    prompt: "Prompt",
+    topic: "Review",
     facilitatorId: user.id,
   });
 
@@ -55,9 +53,7 @@ test("messages round-trip as UIMessage JSONB", async () => {
   const teamId = createTeam(db, { orgId, name: "Team2", ownerId: user.id });
   const session = createSession(db, {
     teamId,
-    displayName: "Review",
-    topic: "Topic",
-    prompt: "Prompt",
+    topic: "Review",
     facilitatorId: user.id,
   });
 

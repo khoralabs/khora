@@ -32,9 +32,7 @@ test("getInterviewStatus tracks thread and messages", async () => {
   const teamId = createTeam(db, { orgId, name: "Team", ownerId: user.id });
   const session = createSession(db, {
     teamId,
-    displayName: "Review",
-    topic: "Topic",
-    prompt: "Prompt",
+    topic: "Review",
     facilitatorId: user.id,
   });
 

@@ -5,6 +5,7 @@ import {
   getStubSessionByToken,
   getStubUserById,
   normalizeStubEmail,
+  revokeStubSession,
   type StubRegistrySession,
   type StubRegistryUser,
   setStubOtp,
@@ -66,6 +67,20 @@ function withSessionCookie(res: Response, token: string): Response {
     `${SESSION_COOKIE}=${encodeURIComponent(token)}; Max-Age=${SESSION_MAX_AGE_SEC}; Path=/; HttpOnly; SameSite=Lax`,
   );
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
+
+function withClearedSessionCookie(res: Response): Response {
+  const headers = new Headers(res.headers);
+  headers.append("Set-Cookie", `${SESSION_COOKIE}=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax`);
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
+
+export async function handleStubSignOut(req: Request): Promise<Response> {
+  const token = sessionTokenFromRequest(req);
+  if (token !== null) {
+    revokeStubSession(token);
+  }
+  return withClearedSessionCookie(Response.json({ success: true }));
 }
 
 export async function handleStubSendVerificationOtp(req: Request): Promise<Response> {

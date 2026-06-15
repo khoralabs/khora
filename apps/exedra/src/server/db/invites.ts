@@ -18,14 +18,12 @@ export function generateInvitePlaintext(): string {
 
 export type SessionInvitePublic = {
   token: string;
-  displayName: string;
   topic: string;
   status: "pending" | "accepted" | "expired";
 };
 
 type InviteRow = {
   session_id: string;
-  display_name: string;
   topic: string;
   consumed_at_ms: number | null;
 };
@@ -34,7 +32,7 @@ export function getInvitePublicInfo(db: Database, plaintext: string): SessionInv
   const tokenHash = hashInviteToken(plaintext);
   const row = db
     .query<InviteRow, [string]>(
-      `SELECT si.session_id, s.display_name, s.topic, si.consumed_at_ms
+      `SELECT si.session_id, s.topic, si.consumed_at_ms
        FROM session_invites si
        JOIN sessions s ON s.id = si.session_id
        WHERE si.token_hash = ?
@@ -49,7 +47,6 @@ export function getInvitePublicInfo(db: Database, plaintext: string): SessionInv
 
   return {
     token: plaintext,
-    displayName: row.display_name,
     topic: row.topic,
     status,
   };

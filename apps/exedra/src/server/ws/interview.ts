@@ -1,13 +1,9 @@
 import { verifyRegistrySession } from "@khoralabs/registry-auth";
-import type { UIMessage } from "ai";
 import { nanoid } from "nanoid";
-
-import { createModel, getAgentRegistry, runInterviewTurn } from "../../agents/index";
 import { getDb } from "../db/index";
-import { userAcceptedSessionInvite } from "../db/invites";
-import { insertMessage, loadThreadMessages, nextMessageIndex } from "../db/messages";
-import { getSession, getThread } from "../db/sessions";
+import { getSession, getThread, userHasSessionAccess } from "../db/sessions";
 import { findUserByRegistryId } from "../identity/users";
+import { ensureInterviewKickoff, runInterviewUserTurn } from "../interview/turn";
 import { getRegistryUrl } from "../registry-url";
 
 export type InterviewWsData = {
@@ -49,8 +45,8 @@ export async function verifyInterviewWsUpgrade(
   if (sessionRecord === null) {
     return { ok: false, status: 404, error: "Session not found" };
   }
-  if (!userAcceptedSessionInvite(db, thread.session_id, user.id)) {
-    return { ok: false, status: 403, error: "Invite not accepted" };
+  if (!userHasSessionAccess(db, thread.session_id, user.id)) {
+    return { ok: false, status: 403, error: "Forbidden" };
   }
 
   return { ok: true, data: { threadId, userId: user.id } };
@@ -92,75 +88,20 @@ export async function handleInterviewWsMessage(
   const sessionRecord = getSession(db, thread.session_id);
   if (sessionRecord === null) return;
 
-  const userMessageId = nanoid();
-  const userIndex = nextMessageIndex(db, data.threadId);
-  const userParts: UIMessage["parts"] = [{ type: "text", text }];
-  insertMessage(db, {
-    id: userMessageId,
+  await runInterviewUserTurn({
+    db,
+    ws,
     threadId: data.threadId,
-    role: "user",
-    parts: userParts,
-    messageIndex: userIndex,
+    session: sessionRecord,
+    text,
+    userMessageId: nanoid(),
   });
-
-  ws.send(
-    JSON.stringify({
-      type: "user_message_saved",
-      message: { id: userMessageId, role: "user", parts: userParts },
-    }),
-  );
-
-  const history = loadThreadMessages(db, data.threadId);
-  const assistantId = nanoid();
-
-  try {
-    const { assistantParts, beliefFlags } = await runInterviewTurn({
-      registry: getAgentRegistry(),
-      model: createModel(),
-      sessionId: sessionRecord.id,
-      sessionMeta: {
-        displayName: sessionRecord.displayName,
-        topic: sessionRecord.topic,
-        prompt: sessionRecord.prompt,
-      },
-      threadId: data.threadId,
-      userMessageId,
-      history,
-      onTextDelta: (delta) => ws.send(JSON.stringify({ type: "text_delta", delta })),
-      onBeliefFlag: (belief, sourceMessageId) =>
-        ws.send(JSON.stringify({ type: "belief_flag", belief, sourceMessageId })),
-    });
-
-    const assistantIndex = nextMessageIndex(db, data.threadId);
-    insertMessage(db, {
-      id: assistantId,
-      threadId: data.threadId,
-      role: "assistant",
-      parts: assistantParts.length > 0 ? assistantParts : [{ type: "text", text: "" }],
-      messageIndex: assistantIndex,
-      metadata: beliefFlags.length > 0 ? { beliefFlags } : undefined,
-    });
-
-    ws.send(
-      JSON.stringify({
-        type: "assistant_message",
-        message: {
-          id: assistantId,
-          role: "assistant",
-          parts: assistantParts,
-          ...(beliefFlags.length > 0 ? { metadata: { beliefFlags } } : {}),
-        },
-      }),
-    );
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Interview agent failed";
-    ws.send(JSON.stringify({ type: "error", error: msg }));
-  }
 }
 
 export const interviewWsHandlers = {
   open(ws: InterviewWs) {
     ws.send(JSON.stringify({ type: "ready", threadId: ws.data.threadId }));
+    void ensureInterviewKickoff(getDb(), ws, ws.data.threadId);
   },
   message(ws: InterviewWs, raw: string | Buffer) {
     void handleInterviewWsMessage(ws, ws.data, raw);

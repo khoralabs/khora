@@ -8,8 +8,17 @@ import {
   userHasAnyTeam,
 } from "../db/membership";
 import { createOrg, createTeam } from "../db/sessions";
-import { getOrCreateUser } from "../identity/users";
+import { type ExedraUser, getOrCreateUser, updateUserProfile } from "../identity/users";
 import { bootstrapOrgTeamMemories } from "../memories/bootstrap";
+
+function serializeMeUser(user: ExedraUser) {
+  return {
+    id: user.id,
+    registryUserId: user.registryUserId,
+    fullName: user.fullName,
+    jobFunction: user.jobFunction,
+  };
+}
 
 export async function handleGetMe(req: Request): Promise<Response> {
   const auth = await requireRegistrySessionResponse(req);
@@ -20,10 +29,43 @@ export async function handleGetMe(req: Request): Promise<Response> {
   const teams = listTeamsForUser(db, user.id);
 
   return Response.json({
-    user: { id: user.id, registryUserId: user.registryUserId },
+    user: serializeMeUser(user),
     teams,
     onboardingRequired: !userHasAnyTeam(db, user.id),
   });
+}
+
+type PatchMeBody = {
+  fullName?: string;
+  jobFunction?: string;
+};
+
+export async function handlePatchMe(req: Request): Promise<Response> {
+  const auth = await requireRegistrySessionResponse(req);
+  if (auth.response !== null) return auth.response;
+
+  let body: PatchMeBody;
+  try {
+    body = (await req.json()) as PatchMeBody;
+  } catch {
+    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  if (body.fullName === undefined && body.jobFunction === undefined) {
+    return Response.json({ error: "fullName or jobFunction is required" }, { status: 400 });
+  }
+
+  const db = getDb();
+  const user = await getOrCreateUser(db, auth.session.user.id);
+  const updated = updateUserProfile(db, user.id, {
+    fullName: body.fullName,
+    jobFunction: body.jobFunction,
+  });
+  if (updated === null) {
+    return Response.json({ error: "User not found" }, { status: 404 });
+  }
+
+  return Response.json({ user: serializeMeUser(updated) });
 }
 
 type OnboardingBody = {

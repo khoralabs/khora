@@ -1,9 +1,7 @@
 export type SessionSummary = {
   id: string;
   teamId: string;
-  displayName: string;
   topic: string;
-  prompt: string;
   deadlineMs: number | null;
   facilitatorId: string;
   status: string;
@@ -40,9 +38,7 @@ export type TeamMember = {
 
 export type CreateSessionInput = {
   teamId: string;
-  displayName: string;
   topic: string;
-  prompt: string;
   deadlineMs?: number;
   memberUserIds: string[];
 };

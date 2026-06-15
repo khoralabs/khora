@@ -2,6 +2,7 @@ import { requireRegistrySessionResponse } from "../auth/require-session";
 import { getDb } from "../db/index";
 import { listInvitesForSession } from "../db/invites";
 import { listTeamMembers } from "../db/membership";
+import { loadThreadMessages } from "../db/messages";
 import {
   formatDaysToDeadline,
   listSessionParticipantDetails,
@@ -17,12 +18,11 @@ import {
   userHasSessionAccess,
 } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
+import { bootstrapSessionMemoriesForTeamSession } from "../memories/bootstrap-session";
 
 type CreateSessionBody = {
   teamId?: string;
-  displayName?: string;
   topic?: string;
-  prompt?: string;
   deadlineMs?: number;
   memberUserIds?: string[];
 };
@@ -56,11 +56,9 @@ export async function handleCreateSession(req: Request): Promise<Response> {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const displayName = body.displayName?.trim() ?? "";
   const topic = body.topic?.trim() ?? "";
-  const prompt = body.prompt?.trim() ?? "";
-  if (displayName.length === 0 || topic.length === 0 || prompt.length === 0) {
-    return Response.json({ error: "displayName, topic, and prompt are required" }, { status: 400 });
+  if (topic.length === 0) {
+    return Response.json({ error: "topic is required" }, { status: 400 });
   }
 
   const db = getDb();
@@ -89,15 +87,28 @@ export async function handleCreateSession(req: Request): Promise<Response> {
 
   const session = createSession(db, {
     teamId,
-    displayName,
     topic,
-    prompt,
     facilitatorId: user.id,
     deadlineMs: body.deadlineMs,
   });
 
   if (memberUserIds.length > 0) {
     addSessionParticipants(db, session.id, memberUserIds);
+  }
+
+  try {
+    bootstrapSessionMemoriesForTeamSession(db, {
+      teamId,
+      sessionId: session.id,
+      userIds: [user.id, ...memberUserIds],
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to bootstrap session memories";
+    console.error("[exedra] session memories bootstrap failed:", message);
+    return Response.json(
+      { error: "Could not set up session memories. Try again." },
+      { status: 500 },
+    );
   }
 
   return Response.json(
@@ -165,17 +176,32 @@ export async function handleGetInterview(req: Request, sessionId: string): Promi
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  try {
+    bootstrapSessionMemoriesForTeamSession(db, {
+      teamId: session.teamId,
+      sessionId: session.id,
+      userIds: [user.id],
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to bootstrap session memories";
+    console.error("[exedra] interview session memories bootstrap failed:", message);
+    return Response.json(
+      { error: "Could not set up session memories. Try again." },
+      { status: 500 },
+    );
+  }
+
   const threadId = getOrCreateInterviewThread(db, { sessionId, userId: user.id });
+  const messages = loadThreadMessages(db, threadId);
   return Response.json({
     session: {
       id: session.id,
-      displayName: session.displayName,
       topic: session.topic,
-      prompt: session.prompt,
       status: session.status,
     },
     threadId,
     wsUrl: `/ws/interview/${threadId}`,
+    messages,
   });
 }
 

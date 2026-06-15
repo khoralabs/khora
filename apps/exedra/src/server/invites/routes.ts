@@ -10,11 +10,11 @@ import {
 } from "../db/invites";
 import { addSessionParticipants, getSession } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
+import { bootstrapSessionMemoriesForTeamSession } from "../memories/bootstrap-session";
 import { getRegistryUrl } from "../registry-url";
 
 export type InvitePublicInfo = {
   token: string;
-  displayName: string;
   topic: string;
   status: "pending" | "accepted" | "expired";
 };
@@ -40,8 +40,8 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
     return Response.json({ error: "Invite token required" }, { status: 400 });
   }
 
-  const session = await verifyRegistrySession(req, { registryUrl: getRegistryUrl() });
-  if (session === null) {
+  const authSession = await verifyRegistrySession(req, { registryUrl: getRegistryUrl() });
+  if (authSession === null) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -54,13 +54,31 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
     return Response.json({ error: "Invite is no longer available" }, { status: 409 });
   }
 
-  const user = await getOrCreateUser(db, session.user.id);
+  const user = await getOrCreateUser(db, authSession.user.id);
   const consumed = consumeSessionInvite(db, token, user.id);
   if (consumed === null) {
     return Response.json({ error: "Invite is no longer available" }, { status: 409 });
   }
 
   addSessionParticipants(db, consumed.sessionId, [user.id]);
+
+  const sessionRecord = getSession(db, consumed.sessionId);
+  if (sessionRecord !== null) {
+    try {
+      bootstrapSessionMemoriesForTeamSession(db, {
+        teamId: sessionRecord.teamId,
+        sessionId: sessionRecord.id,
+        userIds: [user.id],
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to bootstrap session memories";
+      console.error("[exedra] invite session memories bootstrap failed:", message);
+      return Response.json(
+        { error: "Could not set up session memories. Try again." },
+        { status: 500 },
+      );
+    }
+  }
 
   return Response.json({
     invite,

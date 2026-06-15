@@ -16,3 +16,7 @@ export async function fetchAuthSession(): Promise<AuthSessionResponse | null> {
   }
   return (await res.json()) as AuthSessionResponse;
 }
+
+export async function signOutAuthSession(): Promise<void> {
+  await fetch("/api/auth/sign-out", { method: "POST", credentials: "include" });
+}

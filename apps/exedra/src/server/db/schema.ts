@@ -37,9 +37,7 @@ export function ensureExedraSchema(db: Database): void {
     CREATE TABLE IF NOT EXISTS sessions (
       id TEXT PRIMARY KEY NOT NULL,
       team_id TEXT NOT NULL REFERENCES teams(id),
-      display_name TEXT NOT NULL,
       topic TEXT NOT NULL,
-      prompt TEXT NOT NULL,
       deadline_ms INTEGER,
       facilitator_id TEXT NOT NULL REFERENCES users(id),
       status TEXT NOT NULL CHECK(status IN ('draft', 'active', 'synthesis', 'alignment', 'closed')),
@@ -113,4 +111,34 @@ export function ensureExedraSchema(db: Database): void {
       error TEXT
     );
   `);
+
+  migrateUsersAddProfileFields(db);
+  migrateSessionsDropDisplayName(db);
+  migrateSessionsDropPrompt(db);
+}
+
+function migrateUsersAddProfileFields(db: Database): void {
+  const columns = db.query<{ name: string }, []>("PRAGMA table_info(users)").all();
+  if (!columns.some((column) => column.name === "full_name")) {
+    db.run(`ALTER TABLE users ADD COLUMN full_name TEXT`);
+  }
+  if (!columns.some((column) => column.name === "job_function")) {
+    db.run(`ALTER TABLE users ADD COLUMN job_function TEXT`);
+  }
+}
+
+function migrateSessionsDropDisplayName(db: Database): void {
+  const columns = db.query<{ name: string }, []>("PRAGMA table_info(sessions)").all();
+  if (!columns.some((column) => column.name === "display_name")) return;
+
+  db.run(
+    `UPDATE sessions SET topic = display_name WHERE length(trim(coalesce(display_name, ''))) > 0`,
+  );
+  db.run(`ALTER TABLE sessions DROP COLUMN display_name`);
+}
+
+function migrateSessionsDropPrompt(db: Database): void {
+  const columns = db.query<{ name: string }, []>("PRAGMA table_info(sessions)").all();
+  if (!columns.some((column) => column.name === "prompt")) return;
+  db.run(`ALTER TABLE sessions DROP COLUMN prompt`);
 }

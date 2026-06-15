@@ -63,7 +63,7 @@ const matchJsxTag = (code: string) => {
   }
 
   return {
-    attributes: attributes.trim(),
+    attributes: (attributes ?? "").trim(),
     endIndex: match.index + fullMatch.length,
     startIndex: match.index,
     tag: fullMatch,
@@ -105,7 +105,7 @@ const completeJsxTag = (code: string) => {
     // Include any text content before this tag
     result += code.slice(currentPosition, currentPosition + endIndex);
 
-    if (type === "opening") {
+    if (type === "opening" && tagName !== undefined) {
       stack.push(tagName);
     } else if (type === "closing") {
       stack.pop();

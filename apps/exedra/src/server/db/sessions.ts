@@ -3,9 +3,7 @@ import type { Database } from "bun:sqlite";
 export type SessionRecord = {
   id: string;
   teamId: string;
-  displayName: string;
   topic: string;
-  prompt: string;
   deadlineMs: number | null;
   facilitatorId: string;
   status: string;
@@ -15,9 +13,7 @@ export type SessionRecord = {
 type SessionRow = {
   id: string;
   team_id: string;
-  display_name: string;
   topic: string;
-  prompt: string;
   deadline_ms: number | null;
   facilitator_id: string;
   status: string;
@@ -28,9 +24,7 @@ function mapSession(row: SessionRow): SessionRecord {
   return {
     id: row.id,
     teamId: row.team_id,
-    displayName: row.display_name,
     topic: row.topic,
-    prompt: row.prompt,
     deadlineMs: row.deadline_ms,
     facilitatorId: row.facilitator_id,
     status: row.status,
@@ -79,9 +73,7 @@ export function createSession(
   db: Database,
   params: {
     teamId: string;
-    displayName: string;
     topic: string;
-    prompt: string;
     facilitatorId: string;
     deadlineMs?: number;
   },
@@ -90,18 +82,9 @@ export function createSession(
   const now = Date.now();
   db.prepare(
     `INSERT INTO sessions (
-       id, team_id, display_name, topic, prompt, deadline_ms, facilitator_id, status, created_at_ms
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?)`,
-  ).run(
-    id,
-    params.teamId,
-    params.displayName,
-    params.topic,
-    params.prompt,
-    params.deadlineMs ?? null,
-    params.facilitatorId,
-    now,
-  );
+       id, team_id, topic, deadline_ms, facilitator_id, status, created_at_ms
+     ) VALUES (?, ?, ?, ?, ?, 'active', ?)`,
+  ).run(id, params.teamId, params.topic, params.deadlineMs ?? null, params.facilitatorId, now);
   const row = db.query<SessionRow, [string]>(`SELECT * FROM sessions WHERE id = ? LIMIT 1`).get(id);
   if (row === null) throw new Error("session insert failed");
   return mapSession(row);
@@ -194,8 +177,8 @@ export function listSessionsForUser(
   teamId?: string,
 ): SessionListItem[] {
   const rows = db
-    .query<SessionListRow, [string, string, string | null]>(
-      `SELECT s.id, s.team_id, s.display_name, s.topic, s.prompt, s.deadline_ms,
+    .query<SessionListRow, [string, string | null]>(
+      `SELECT s.id, s.team_id, s.topic, s.deadline_ms,
               s.facilitator_id, s.status, s.created_at_ms,
               CASE WHEN s.facilitator_id = ?1 THEN 'facilitator' ELSE 'participant' END AS role
        FROM sessions s

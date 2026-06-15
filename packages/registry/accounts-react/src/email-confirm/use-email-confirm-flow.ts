@@ -51,8 +51,7 @@ function useStepPersistence(
 export function useEmailConfirmFlow(options: UseEmailConfirmFlowOptions): EmailConfirmFlowState {
   const { api, purpose, otpLength = 6, storageKey, marketing, onSuccess } = options;
 
-  const showMarketingConsent =
-    purpose === "sign-up" && marketing !== undefined && api.subscribeMarketing !== undefined;
+  const showMarketingConsent = marketing !== undefined && api.subscribeMarketing !== undefined;
 
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");

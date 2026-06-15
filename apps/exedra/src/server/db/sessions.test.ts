@@ -50,17 +50,13 @@ test("listSessionsForUser returns facilitator and participant sessions", async (
 
   const facilitated = createSession(db, {
     teamId,
-    displayName: "Facilitated",
-    topic: "Topic",
-    prompt: "Prompt",
+    topic: "Facilitated",
     facilitatorId: facilitator.id,
   });
 
   const participating = createSession(db, {
     teamId,
-    displayName: "Participating",
-    topic: "Topic 2",
-    prompt: "Prompt 2",
+    topic: "Participating",
     facilitatorId: participant.id,
   });
   addSessionParticipants(db, participating.id, [facilitator.id]);

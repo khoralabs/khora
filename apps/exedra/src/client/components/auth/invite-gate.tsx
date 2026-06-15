@@ -7,7 +7,6 @@ import { fetchAuthSession } from "@/lib/auth-session";
 
 type InviteInfo = {
   token: string;
-  displayName: string;
   topic: string;
   status: "pending" | "accepted" | "expired";
 };
@@ -117,7 +116,7 @@ export function InviteGate({ token }: InviteGateProps) {
 
   return (
     <SignIn
-      title={`Join ${invite.displayName}`}
+      title={`Join ${invite.topic}`}
       description={`Sign in with the email your facilitator invited to review “${invite.topic}”.`}
       storageKey={`exedra-invite-${token}`}
       onSuccess={handleSignedIn}

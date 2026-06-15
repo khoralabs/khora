@@ -7,6 +7,7 @@ import {
   handleStubGetSession,
   handleStubSendVerificationOtp,
   handleStubSignInEmailOtp,
+  handleStubSignOut,
 } from "./handlers.js";
 import { resetStubRegistryStore } from "./store.js";
 
@@ -39,7 +40,7 @@ describe("exedra stub registry", () => {
   beforeEach(() => {
     resetStubRegistryStore();
     delete process.env.EXEDRA_STUB_REGISTRY_OTP;
-    globalThis.fetch = stubFetch as typeof fetch;
+    globalThis.fetch = stubFetch as unknown as typeof fetch;
   });
 
   afterEach(() => {
@@ -90,10 +91,47 @@ describe("exedra stub registry", () => {
 
     const session = await verifyRegistrySession(
       new Request(`${BASE}/api/auth/get-session`, { headers: { cookie: cookie ?? "" } }),
-      { registryUrl: BASE, fetchImpl: stubFetch },
+      { registryUrl: BASE, fetchImpl: stubFetch as typeof fetch },
     );
     expect(session).not.toBeNull();
     expect(session?.user.id.length).toBeGreaterThan(0);
     expect(session?.session.id.length).toBeGreaterThan(0);
+  });
+
+  test("sign-out clears stub session cookie", async () => {
+    const email = "logout@exedra.test";
+    await handleStubSendVerificationOtp(
+      new Request(`${BASE}/api/auth/email-otp/send-verification-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, type: "sign-in" }),
+      }),
+    );
+
+    const signIn = await handleStubSignInEmailOtp(
+      new Request(`${BASE}/api/auth/sign-in/email-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp: getStubRegistryOtp() }),
+      }),
+    );
+    const cookie = signIn.headers.getSetCookie?.()[0]?.split(";")[0];
+    expect(cookie?.startsWith("better-auth.session_token=")).toBe(true);
+
+    const signOut = await handleStubSignOut(
+      new Request(`${BASE}/api/auth/sign-out`, {
+        method: "POST",
+        headers: { cookie: cookie ?? "" },
+      }),
+    );
+    expect(signOut.status).toBe(200);
+    const clearedCookie = signOut.headers.getSetCookie?.()[0] ?? "";
+    expect(clearedCookie).toContain("Max-Age=0");
+
+    const session = await verifyRegistrySession(
+      new Request(`${BASE}/api/auth/get-session`, { headers: { cookie: cookie ?? "" } }),
+      { registryUrl: BASE, fetchImpl: stubFetch as typeof fetch },
+    );
+    expect(session).toBeNull();
   });
 });
