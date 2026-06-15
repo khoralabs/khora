@@ -78,6 +78,38 @@ async function runInterviewAssistantTurn(args: {
       onTextDelta: (delta) => ws.send(JSON.stringify({ type: "text_delta", delta })),
       onBeliefFlag: (belief, sourceMessageId) =>
         ws.send(JSON.stringify({ type: "belief_flag", belief, sourceMessageId })),
+      onToolEvent: (event) => {
+        if (event.type === "call") {
+          ws.send(
+            JSON.stringify({
+              type: "tool_call",
+              toolCallId: event.toolCallId,
+              toolName: event.toolName,
+              input: event.input,
+            }),
+          );
+          return;
+        }
+        if (event.type === "result") {
+          ws.send(
+            JSON.stringify({
+              type: "tool_result",
+              toolCallId: event.toolCallId,
+              toolName: event.toolName,
+              output: event.output,
+            }),
+          );
+          return;
+        }
+        ws.send(
+          JSON.stringify({
+            type: "tool_error",
+            toolCallId: event.toolCallId,
+            toolName: event.toolName,
+            errorText: event.errorText,
+          }),
+        );
+      },
     });
 
     const assistantIndex = nextMessageIndex(db, threadId);

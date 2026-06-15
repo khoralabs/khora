@@ -7,10 +7,12 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { ItemGroup } from "@/components/ui/item";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { BeliefFlag } from "@/lib/interview-api";
+import type { BeliefFeedback, BeliefFlag } from "@/lib/interview-api";
 import type { SessionDetail } from "@/lib/sessions-api";
 
+import { BeliefItem } from "./belief-item";
 import { SessionParticipantsPanel } from "./session-participants-panel";
 
 type InterviewCanvasProps = {
@@ -18,6 +20,8 @@ type InterviewCanvasProps = {
   beliefs: BeliefFlag[];
   sessionDetail: SessionDetail | null;
   onRefreshDetail: () => void;
+  onBeliefUpdate: (id: string, update: { feedback?: BeliefFeedback; correction?: string }) => void;
+  onBeliefSourceClick: (sourceMessageId: string) => void;
 };
 
 export function InterviewCanvas({
@@ -25,6 +29,8 @@ export function InterviewCanvas({
   beliefs,
   sessionDetail,
   onRefreshDetail,
+  onBeliefUpdate,
+  onBeliefSourceClick,
 }: InterviewCanvasProps) {
   return (
     <div className="flex w-80 shrink-0 flex-col border-l bg-muted/20 xl:w-96">
@@ -63,16 +69,16 @@ export function InterviewCanvas({
               </EmptyHeader>
             </Empty>
           ) : (
-            <ul className="space-y-3">
+            <ItemGroup className="gap-3">
               {beliefs.map((belief) => (
-                <li
+                <BeliefItem
+                  belief={belief}
                   key={belief.id}
-                  className="rounded-lg border bg-background px-4 py-3 text-sm leading-relaxed"
-                >
-                  {belief.belief}
-                </li>
+                  onSourceClick={onBeliefSourceClick}
+                  onUpdate={onBeliefUpdate}
+                />
               ))}
-            </ul>
+            </ItemGroup>
           )}
         </TabsContent>
       </Tabs>

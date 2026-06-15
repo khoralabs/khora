@@ -1,4 +1,4 @@
-import type { ChatStatus } from "ai";
+import type { ChatStatus, UIMessage } from "ai";
 import { nanoid } from "nanoid";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -14,6 +14,13 @@ import {
   PromptInputSubmit,
   PromptInputTextarea,
 } from "@/components/ai-elements/prompt-input";
+import {
+  Tool,
+  ToolContent,
+  ToolHeader,
+  ToolInput,
+  ToolOutput,
+} from "@/components/ai-elements/tool";
 import { Spinner } from "@/components/ui/spinner";
 import {
   type BeliefFlag,
@@ -22,6 +29,7 @@ import {
   fetchInterview,
   type InterviewBootstrap,
   interviewWsUrl,
+  type ToolCallDisplay,
   uiMessagesToChatMessages,
 } from "@/lib/interview-api";
 
@@ -30,6 +38,8 @@ type InterviewChatProps = {
   onBootstrap: (bootstrap: InterviewBootstrap) => void;
   onBeliefsChange: (beliefs: BeliefFlag[]) => void;
   onError: (error: string | null) => void;
+  scrollToMessageId?: string | null;
+  onScrollToMessageComplete?: () => void;
 };
 
 type WsServerMessage =
@@ -46,17 +56,73 @@ type WsServerMessage =
   | { type: "text_delta"; delta: string }
   | {
       type: "assistant_message";
-      message: { id: string; role: "assistant"; parts: { type: "text"; text: string }[] };
+      message: {
+        id: string;
+        role: "assistant";
+        parts: UIMessage["parts"];
+        metadata?: { beliefFlags?: { belief: string; messageId: string }[] };
+      };
     }
+  | { type: "tool_call"; toolCallId: string; toolName: string; input: unknown }
+  | { type: "tool_result"; toolCallId: string; toolName: string; output: unknown }
+  | { type: "tool_error"; toolCallId: string; toolName: string; errorText: string }
   | { type: "belief_flag"; belief: string; sourceMessageId: string }
   | { type: "error"; error: string }
   | { type: "pong" };
+
+function upsertMessageToolCall(message: ChatMessage, toolCall: ToolCallDisplay): ChatMessage {
+  const existing = message.toolCalls ?? [];
+  const index = existing.findIndex((call) => call.id === toolCall.id);
+  if (index >= 0) {
+    const next = [...existing];
+    next[index] = { ...next[index], ...toolCall };
+    return { ...message, toolCalls: next };
+  }
+  return { ...message, toolCalls: [...existing, toolCall] };
+}
+
+function upsertStreamingToolCall(
+  messages: ChatMessage[],
+  streamingId: string,
+  toolCall: ToolCallDisplay,
+): ChatMessage[] {
+  const existing = messages.find((message) => message.id === streamingId);
+  if (existing !== undefined) {
+    return messages.map((message) =>
+      message.id === streamingId ? upsertMessageToolCall(message, toolCall) : message,
+    );
+  }
+  return [...messages, { id: streamingId, role: "assistant", content: "", toolCalls: [toolCall] }];
+}
+
+function toolStateForDisplay(state: ToolCallDisplay["state"]) {
+  if (state === "completed") return "output-available" as const;
+  if (state === "error") return "output-error" as const;
+  return "input-available" as const;
+}
+
+function InterviewToolCall({ toolCall }: { toolCall: ToolCallDisplay }) {
+  const toolType = `tool-${toolCall.toolName}` as `tool-${string}`;
+  const title = toolCall.toolName === "flagBelief" ? "Flag belief" : toolCall.toolName;
+
+  return (
+    <Tool defaultOpen={process.env.NODE_ENV !== "production"}>
+      <ToolHeader state={toolStateForDisplay(toolCall.state)} title={title} type={toolType} />
+      <ToolContent>
+        {toolCall.input !== undefined ? <ToolInput input={toolCall.input} /> : null}
+        <ToolOutput errorText={toolCall.errorText} output={toolCall.output} />
+      </ToolContent>
+    </Tool>
+  );
+}
 
 export function InterviewChat({
   sessionId,
   onBootstrap,
   onBeliefsChange,
   onError,
+  scrollToMessageId,
+  onScrollToMessageComplete,
 }: InterviewChatProps) {
   const [bootstrap, setBootstrap] = useState<InterviewBootstrap | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -69,6 +135,38 @@ export function InterviewChat({
   const wsRef = useRef<WebSocket | null>(null);
   const streamingIdRef = useRef<string | null>(null);
   const beliefsRef = useRef<BeliefFlag[]>([]);
+  const highlightedMessageRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (scrollToMessageId === null || scrollToMessageId === undefined) return;
+
+    const element = document.querySelector<HTMLElement>(
+      `[data-message-id="${CSS.escape(scrollToMessageId)}"]`,
+    );
+    if (element === null) {
+      onScrollToMessageComplete?.();
+      return;
+    }
+
+    element.scrollIntoView({ behavior: "smooth", block: "center" });
+    element.classList.add("ring-2", "ring-primary/40", "rounded-xl", "transition-shadow");
+
+    if (highlightedMessageRef.current !== null) {
+      const previous = document.querySelector<HTMLElement>(
+        `[data-message-id="${CSS.escape(highlightedMessageRef.current)}"]`,
+      );
+      previous?.classList.remove("ring-2", "ring-primary/40", "rounded-xl", "transition-shadow");
+    }
+    highlightedMessageRef.current = scrollToMessageId;
+
+    const timeout = window.setTimeout(() => {
+      element.classList.remove("ring-2", "ring-primary/40", "rounded-xl", "transition-shadow");
+      highlightedMessageRef.current = null;
+      onScrollToMessageComplete?.();
+    }, 1800);
+
+    return () => window.clearTimeout(timeout);
+  }, [scrollToMessageId, onScrollToMessageComplete]);
 
   useEffect(() => {
     let cancelled = false;
@@ -161,16 +259,96 @@ export function InterviewChat({
         return;
       }
 
+      if (parsed.type === "tool_call") {
+        setAwaitingOpening(false);
+        const streamingId = streamingIdRef.current ?? nanoid();
+        streamingIdRef.current = streamingId;
+        setMessages((current) =>
+          upsertStreamingToolCall(current, streamingId, {
+            id: parsed.toolCallId,
+            toolName: parsed.toolName,
+            input: parsed.input,
+            state: "running",
+          }),
+        );
+        setStatus("streaming");
+        return;
+      }
+
+      if (parsed.type === "tool_result") {
+        const streamingId = streamingIdRef.current;
+        if (streamingId === null) return;
+        setMessages((current) =>
+          upsertStreamingToolCall(current, streamingId, {
+            id: parsed.toolCallId,
+            toolName: parsed.toolName,
+            output: parsed.output,
+            state: "completed",
+          }),
+        );
+        return;
+      }
+
+      if (parsed.type === "tool_error") {
+        const streamingId = streamingIdRef.current;
+        if (streamingId === null) return;
+        setMessages((current) =>
+          upsertStreamingToolCall(current, streamingId, {
+            id: parsed.toolCallId,
+            toolName: parsed.toolName,
+            errorText: parsed.errorText,
+            state: "error",
+          }),
+        );
+        return;
+      }
+
       if (parsed.type === "assistant_message") {
         setAwaitingOpening(false);
-        const text = parsed.message.parts.map((part) => part.text).join("");
+        const text = parsed.message.parts
+          .filter((part): part is { type: "text"; text: string } => part.type === "text")
+          .map((part) => part.text)
+          .join("");
+        const toolCalls = parsed.message.parts
+          .filter((part) => typeof part.type === "string" && part.type.startsWith("tool-"))
+          .map((part, index) => {
+            const toolPart = part as {
+              toolCallId?: string;
+              state?: string;
+              input?: unknown;
+              output?: unknown;
+              errorText?: string;
+            };
+            const toolName = part.type.slice("tool-".length);
+            return {
+              id: toolPart.toolCallId ?? `${toolName}-${index}`,
+              toolName,
+              input: toolPart.input,
+              output: toolPart.output,
+              errorText: toolPart.errorText,
+              state:
+                toolPart.state === "output-available"
+                  ? ("completed" as const)
+                  : toolPart.state === "output-error"
+                    ? ("error" as const)
+                    : ("running" as const),
+            };
+          });
         const streamingId = streamingIdRef.current;
         streamingIdRef.current = null;
         setMessages((current) => {
           const withoutStreaming = streamingId
             ? current.filter((message) => message.id !== streamingId)
             : current;
-          return [...withoutStreaming, { id: parsed.message.id, role: "assistant", content: text }];
+          return [
+            ...withoutStreaming,
+            {
+              id: parsed.message.id,
+              role: "assistant",
+              content: text,
+              ...(toolCalls.length > 0 ? { toolCalls } : {}),
+            },
+          ];
         });
         setStatus("ready");
         return;
@@ -252,12 +430,15 @@ export function InterviewChat({
         <ConversationContent>
           {messages.map((message) => (
             <Message from={message.role} key={message.id}>
-              <MessageContent>
-                {message.role === "assistant" ? (
+              <MessageContent data-message-id={message.id}>
+                {(message.toolCalls ?? []).map((toolCall) => (
+                  <InterviewToolCall key={toolCall.id} toolCall={toolCall} />
+                ))}
+                {message.role === "assistant" && message.content.length > 0 ? (
                   <MessageResponse>{message.content}</MessageResponse>
-                ) : (
+                ) : message.role === "user" ? (
                   message.content
-                )}
+                ) : null}
               </MessageContent>
             </Message>
           ))}

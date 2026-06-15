@@ -17,7 +17,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import type { BeliefFlag, InterviewBootstrap } from "@/lib/interview-api";
+import type { BeliefFeedback, BeliefFlag, InterviewBootstrap } from "@/lib/interview-api";
 import { type MeResponse, type MeTeam, ONBOARDING_PLACEHOLDER_TEAM } from "@/lib/me-api";
 import {
   fetchSessionDetail,
@@ -66,6 +66,7 @@ export function ExedraShell({
   const [sessions, setSessions] = useState<SessionSummary[] | null>(null);
   const [sessionDetail, setSessionDetail] = useState<SessionDetail | null>(null);
   const [beliefs, setBeliefs] = useState<BeliefFlag[]>([]);
+  const [scrollToMessageId, setScrollToMessageId] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [chatError, setChatError] = useState<string | null>(null);
@@ -117,7 +118,31 @@ export function ExedraShell({
   }, []);
 
   const handleBeliefsChange = useCallback((next: BeliefFlag[]) => {
-    setBeliefs(next);
+    setBeliefs((current) => {
+      const preserved = new Map(
+        current.map((belief) => [
+          belief.id,
+          { feedback: belief.feedback, correction: belief.correction },
+        ]),
+      );
+      return next.map((belief) => ({
+        ...belief,
+        ...preserved.get(belief.id),
+      }));
+    });
+  }, []);
+
+  const handleBeliefUpdate = useCallback(
+    (id: string, update: { feedback?: BeliefFeedback; correction?: string }) => {
+      setBeliefs((current) =>
+        current.map((belief) => (belief.id === id ? { ...belief, ...update } : belief)),
+      );
+    },
+    [],
+  );
+
+  const handleBeliefSourceClick = useCallback((sourceMessageId: string) => {
+    setScrollToMessageId(sourceMessageId);
   }, []);
 
   const handleChatError = useCallback((error: string | null) => {
@@ -180,6 +205,8 @@ export function ExedraShell({
             onBootstrap={handleBootstrap}
             onBeliefsChange={handleBeliefsChange}
             onError={handleChatError}
+            onScrollToMessageComplete={() => setScrollToMessageId(null)}
+            scrollToMessageId={scrollToMessageId}
           />
           {chatError !== null ? (
             <div className="sr-only" aria-live="polite">
@@ -213,6 +240,8 @@ export function ExedraShell({
         sessionId={activeSessionId}
         beliefs={beliefs}
         sessionDetail={sessionDetail}
+        onBeliefSourceClick={handleBeliefSourceClick}
+        onBeliefUpdate={handleBeliefUpdate}
         onRefreshDetail={() => {
           if (activeSessionId !== null) loadSessionDetail(activeSessionId);
           loadSessions();

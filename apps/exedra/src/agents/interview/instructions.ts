@@ -8,7 +8,7 @@ Ask one question at a time.`;
 
 export const interviewBaseInstruction = `${interviewGrillMeInstruction}
 
-When you identify a belief worth capturing, call flagBelief.`;
+When the stakeholder states or implies something testable — a preference, assumption, constraint, or decision — call flagBelief with that belief in the same turn as your reply. After they share substantive content, you should usually flag at least one belief before asking your next question.`;
 
 export function buildInterviewSessionInstruction(meta: InterviewSessionMeta): string {
   return `Session topic: "${meta.topic}". Your first response must be a single opening question about this topic — do not preamble or summarize the topic first.`;

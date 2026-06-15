@@ -8,7 +8,8 @@ export type InterviewEnv = {
 
 const flagBeliefTool = tool<"flagBelief", { belief: string }, { queued: true }, InterviewEnv>({
   name: "flagBelief",
-  description: "Flag a belief or observation worth confirming with the stakeholder",
+  description:
+    "Record a testable belief, preference, assumption, constraint, or decision inferred from the stakeholder's message. Call this whenever they share substantive content you may want to confirm later.",
   inputSchema: z.object({
     belief: z.string().describe("The belief text to confirm"),
   }),

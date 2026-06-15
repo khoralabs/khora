@@ -6,10 +6,14 @@ export type InterviewSession = {
   status: string;
 };
 
+export type BeliefFeedback = "confirmed" | "corrected";
+
 export type BeliefFlag = {
   id: string;
   belief: string;
   sourceMessageId: string;
+  feedback?: BeliefFeedback;
+  correction?: string;
 };
 
 export type InterviewBootstrap = {
@@ -19,10 +23,20 @@ export type InterviewBootstrap = {
   messages: UIMessage[];
 };
 
+export type ToolCallDisplay = {
+  id: string;
+  toolName: string;
+  input?: unknown;
+  output?: unknown;
+  errorText?: string;
+  state: "running" | "completed" | "error";
+};
+
 export type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  toolCalls?: ToolCallDisplay[];
 };
 
 export function extractTextFromParts(parts: UIMessage["parts"]): string {
@@ -49,6 +63,35 @@ export function extractBeliefsFromMessages(messages: UIMessage[]): BeliefFlag[] 
   return beliefs;
 }
 
+export function extractToolCallsFromParts(parts: UIMessage["parts"]): ToolCallDisplay[] {
+  const toolCalls: ToolCallDisplay[] = [];
+  for (const part of parts) {
+    if (typeof part.type !== "string" || !part.type.startsWith("tool-")) continue;
+    const toolPart = part as {
+      toolCallId?: string;
+      state?: string;
+      input?: unknown;
+      output?: unknown;
+      errorText?: string;
+    };
+    const toolName = part.type.slice("tool-".length);
+    toolCalls.push({
+      id: toolPart.toolCallId ?? `${toolName}-${toolCalls.length}`,
+      toolName,
+      input: toolPart.input,
+      output: toolPart.output,
+      errorText: toolPart.errorText,
+      state:
+        toolPart.state === "output-available"
+          ? "completed"
+          : toolPart.state === "output-error"
+            ? "error"
+            : "running",
+    });
+  }
+  return toolCalls;
+}
+
 export function uiMessagesToChatMessages(messages: UIMessage[]): ChatMessage[] {
   return messages
     .filter((message) => {
@@ -60,8 +103,9 @@ export function uiMessagesToChatMessages(messages: UIMessage[]): ChatMessage[] {
       id: message.id,
       role: message.role as "user" | "assistant",
       content: extractTextFromParts(message.parts),
+      toolCalls: extractToolCallsFromParts(message.parts),
     }))
-    .filter((message) => message.content.length > 0);
+    .filter((message) => message.content.length > 0 || (message.toolCalls?.length ?? 0) > 0);
 }
 
 export async function fetchInterview(sessionId: string): Promise<InterviewBootstrap> {
