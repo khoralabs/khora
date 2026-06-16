@@ -1,7 +1,15 @@
 import type { ChatStatus, UIMessage } from "ai";
+import { FilePlusIcon } from "lucide-react";
 import { nanoid } from "nanoid";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 
+import {
+  Attachment,
+  type AttachmentData,
+  AttachmentPreview,
+  AttachmentRemove,
+  Attachments,
+} from "@/components/ai-elements/attachments";
 import {
   Conversation,
   ConversationContent,
@@ -11,8 +19,16 @@ import { Message, MessageContent, MessageResponse } from "@/components/ai-elemen
 import type { PromptInputMessage } from "@/components/ai-elements/prompt-input";
 import {
   PromptInput,
+  PromptInputActionAddAttachments,
+  PromptInputActionMenu,
+  PromptInputActionMenuContent,
+  PromptInputActionMenuTrigger,
+  PromptInputFooter,
+  PromptInputHeader,
   PromptInputSubmit,
   PromptInputTextarea,
+  PromptInputTools,
+  usePromptInputAttachments,
 } from "@/components/ai-elements/prompt-input";
 import {
   Tool,
@@ -21,10 +37,14 @@ import {
   ToolInput,
   ToolOutput,
 } from "@/components/ai-elements/tool";
+import { SessionViewToggle } from "@/components/exedra/session-view-toggle";
 import { Spinner } from "@/components/ui/spinner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { sessionDocumentDownloadUrl, uploadSessionDocument } from "@/lib/documents-api";
 import {
   type BeliefFlag,
   type ChatMessage,
+  type ChatMessageAttachment,
   extractBeliefsFromMessages,
   fetchInterview,
   type InterviewBootstrap,
@@ -32,12 +52,15 @@ import {
   type ToolCallDisplay,
   uiMessagesToChatMessages,
 } from "@/lib/interview-api";
+import { cn } from "@/lib/utils";
 
 type InterviewChatProps = {
   sessionId: string;
   onBootstrap: (bootstrap: InterviewBootstrap) => void;
   onBeliefsChange: (beliefs: BeliefFlag[]) => void;
   onError: (error: string | null) => void;
+  onNavigate: (path: string) => void;
+  onOnboardingComplete?: () => void;
   scrollToMessageId?: string | null;
   onScrollToMessageComplete?: () => void;
 };
@@ -50,7 +73,10 @@ type WsServerMessage =
         id: string;
         role: "user";
         parts: { type: "text"; text: string }[];
-        metadata?: { kickoff?: boolean };
+        metadata?: {
+          kickoff?: boolean;
+          documents?: { id: string; fileName: string }[];
+        };
       };
     }
   | { type: "text_delta"; delta: string }
@@ -62,11 +88,13 @@ type WsServerMessage =
         parts: UIMessage["parts"];
         metadata?: { beliefFlags?: { belief: string; messageId: string }[] };
       };
+      onboardingCompleted?: boolean;
     }
   | { type: "tool_call"; toolCallId: string; toolName: string; input: unknown }
   | { type: "tool_result"; toolCallId: string; toolName: string; output: unknown }
   | { type: "tool_error"; toolCallId: string; toolName: string; errorText: string }
   | { type: "belief_flag"; belief: string; sourceMessageId: string }
+  | { type: "onboarding_complete"; summary: string }
   | { type: "error"; error: string }
   | { type: "pong" };
 
@@ -101,9 +129,167 @@ function toolStateForDisplay(state: ToolCallDisplay["state"]) {
   return "input-available" as const;
 }
 
+function guessMimeType(fileName: string): string {
+  const extension = fileName.split(".").pop()?.toLowerCase();
+  switch (extension) {
+    case "jpg":
+    case "jpeg":
+      return "image/jpeg";
+    case "png":
+      return "image/png";
+    case "gif":
+      return "image/gif";
+    case "webp":
+      return "image/webp";
+    case "pdf":
+      return "application/pdf";
+    case "txt":
+      return "text/plain";
+    case "md":
+      return "text/markdown";
+    case "json":
+      return "application/json";
+    case "mp4":
+      return "video/mp4";
+    case "mp3":
+      return "audio/mpeg";
+    default:
+      return "application/octet-stream";
+  }
+}
+
+function toMessageAttachmentData(
+  attachment: ChatMessageAttachment,
+  sessionId: string,
+): AttachmentData {
+  return {
+    type: "file",
+    id: attachment.id,
+    filename: attachment.fileName,
+    mediaType: attachment.mediaType ?? guessMimeType(attachment.fileName),
+    url: attachment.url ?? sessionDocumentDownloadUrl(sessionId, attachment.id),
+  };
+}
+
+type PromptAttachmentItemProps = {
+  attachment: AttachmentData;
+  onRemove: (id: string) => void;
+};
+
+const PromptAttachmentItem = memo(({ attachment, onRemove }: PromptAttachmentItemProps) => {
+  const handleRemove = useCallback(() => onRemove(attachment.id), [onRemove, attachment.id]);
+
+  return (
+    <Attachment data={attachment} onRemove={handleRemove}>
+      <AttachmentPreview />
+      <AttachmentRemove />
+    </Attachment>
+  );
+});
+
+PromptAttachmentItem.displayName = "PromptAttachmentItem";
+
+function InterviewPromptAttachments() {
+  const attachments = usePromptInputAttachments();
+  const handleRemove = useCallback(
+    (id: string) => {
+      attachments.remove(id);
+    },
+    [attachments],
+  );
+
+  if (attachments.files.length === 0) return null;
+
+  return (
+    <PromptInputHeader>
+      <Attachments className="w-full" variant="grid">
+        {attachments.files.map((file) => (
+          <PromptAttachmentItem attachment={file} key={file.id} onRemove={handleRemove} />
+        ))}
+      </Attachments>
+    </PromptInputHeader>
+  );
+}
+
+type MessageAttachmentItemProps = {
+  attachment: AttachmentData;
+};
+
+const MessageAttachmentItem = memo(({ attachment }: MessageAttachmentItemProps) => (
+  <a
+    className="block"
+    href={attachment.type === "file" ? attachment.url : undefined}
+    rel="noreferrer"
+    target="_blank"
+  >
+    <Attachment data={attachment}>
+      <AttachmentPreview />
+    </Attachment>
+  </a>
+));
+
+MessageAttachmentItem.displayName = "MessageAttachmentItem";
+
+function PromptInputAttachmentBridge({
+  onAddReady,
+}: {
+  onAddReady: (add: (files: File[] | FileList) => void) => void;
+}) {
+  const attachments = usePromptInputAttachments();
+
+  useEffect(() => {
+    onAddReady(attachments.add);
+  }, [attachments.add, onAddReady]);
+
+  return null;
+}
+
+function InterviewChatDropOverlay({ active }: { active: boolean }) {
+  if (!active) return null;
+
+  return (
+    <div
+      aria-hidden={!active}
+      className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-md"
+    >
+      <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-primary/40 bg-background/80 px-8 py-6 shadow-lg">
+        <FilePlusIcon className="size-8 text-primary" />
+        <p className="font-medium text-foreground">Drop files to attach</p>
+        <p className="text-sm text-muted-foreground">Release to add to your message</p>
+      </div>
+    </div>
+  );
+}
+
+function UserMessageAttachments({
+  attachments,
+  sessionId,
+}: {
+  attachments: ChatMessageAttachment[];
+  sessionId: string;
+}) {
+  if (attachments.length === 0) return null;
+
+  return (
+    <Attachments className="mb-2" variant="grid">
+      {attachments.map((attachment) => (
+        <MessageAttachmentItem
+          attachment={toMessageAttachmentData(attachment, sessionId)}
+          key={attachment.id}
+        />
+      ))}
+    </Attachments>
+  );
+}
+
 function InterviewToolCall({ toolCall }: { toolCall: ToolCallDisplay }) {
   const toolType = `tool-${toolCall.toolName}` as `tool-${string}`;
-  const title = toolCall.toolName === "flagBelief" ? "Flag belief" : toolCall.toolName;
+  const title =
+    toolCall.toolName === "flagBelief"
+      ? "Flag belief"
+      : toolCall.toolName === "completeOnboardingInterview"
+        ? "Complete onboarding"
+        : toolCall.toolName;
 
   return (
     <Tool defaultOpen={process.env.NODE_ENV !== "production"}>
@@ -121,6 +307,8 @@ export function InterviewChat({
   onBootstrap,
   onBeliefsChange,
   onError,
+  onNavigate,
+  onOnboardingComplete,
   scrollToMessageId,
   onScrollToMessageComplete,
 }: InterviewChatProps) {
@@ -136,6 +324,80 @@ export function InterviewChat({
   const streamingIdRef = useRef<string | null>(null);
   const beliefsRef = useRef<BeliefFlag[]>([]);
   const highlightedMessageRef = useRef<string | null>(null);
+  const chatRootRef = useRef<HTMLDivElement | null>(null);
+  const addAttachmentFilesRef = useRef<(files: File[] | FileList) => void>(() => {});
+  const dragDepthRef = useRef(0);
+  const [isDragActive, setIsDragActive] = useState(false);
+
+  const handleAttachmentAddReady = useCallback((add: (files: File[] | FileList) => void) => {
+    addAttachmentFilesRef.current = add;
+  }, []);
+
+  const canAcceptFiles = status === "ready" && connected;
+
+  useEffect(() => {
+    const root = chatRootRef.current;
+    if (root === null || !canAcceptFiles) {
+      dragDepthRef.current = 0;
+      setIsDragActive(false);
+      return;
+    }
+
+    const hasFiles = (event: DragEvent) => event.dataTransfer?.types.includes("Files") ?? false;
+
+    const onDragEnter = (event: DragEvent) => {
+      if (!hasFiles(event)) return;
+      event.preventDefault();
+      dragDepthRef.current += 1;
+      setIsDragActive(true);
+    };
+
+    const onDragLeave = (event: DragEvent) => {
+      if (!hasFiles(event)) return;
+      event.preventDefault();
+      dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+      if (dragDepthRef.current === 0) {
+        setIsDragActive(false);
+      }
+    };
+
+    const onDragOver = (event: DragEvent) => {
+      if (!hasFiles(event)) return;
+      event.preventDefault();
+      if (event.dataTransfer !== null) {
+        event.dataTransfer.dropEffect = "copy";
+      }
+    };
+
+    const onDrop = (event: DragEvent) => {
+      if (!hasFiles(event)) return;
+      event.preventDefault();
+      dragDepthRef.current = 0;
+      setIsDragActive(false);
+      if (event.dataTransfer?.files !== undefined && event.dataTransfer.files.length > 0) {
+        addAttachmentFilesRef.current(event.dataTransfer.files);
+      }
+    };
+
+    root.addEventListener("dragenter", onDragEnter);
+    root.addEventListener("dragleave", onDragLeave);
+    root.addEventListener("dragover", onDragOver);
+    root.addEventListener("drop", onDrop);
+
+    const onDragEnd = () => {
+      dragDepthRef.current = 0;
+      setIsDragActive(false);
+    };
+    window.addEventListener("dragend", onDragEnd);
+
+    return () => {
+      root.removeEventListener("dragenter", onDragEnter);
+      root.removeEventListener("dragleave", onDragLeave);
+      root.removeEventListener("dragover", onDragOver);
+      root.removeEventListener("drop", onDrop);
+      window.removeEventListener("dragend", onDragEnd);
+    };
+  }, [canAcceptFiles]);
 
   useEffect(() => {
     if (scrollToMessageId === null || scrollToMessageId === undefined) return;
@@ -232,7 +494,12 @@ export function InterviewChat({
           return current.map((message) => {
             if (!replaced && message.id.startsWith("temp-") && message.role === "user") {
               replaced = true;
-              return { id: parsed.message.id, role: "user", content: text };
+              return {
+                id: parsed.message.id,
+                role: "user",
+                content: text,
+                attachments: parsed.message.metadata?.documents,
+              };
             }
             return message;
           });
@@ -351,6 +618,14 @@ export function InterviewChat({
           ];
         });
         setStatus("ready");
+        if ("onboardingCompleted" in parsed && parsed.onboardingCompleted === true) {
+          onOnboardingComplete?.();
+        }
+        return;
+      }
+
+      if (parsed.type === "onboarding_complete") {
+        onOnboardingComplete?.();
         return;
       }
 
@@ -379,27 +654,61 @@ export function InterviewChat({
       ws.close();
       wsRef.current = null;
     };
-  }, [bootstrap, onBeliefsChange]);
+  }, [bootstrap, onBeliefsChange, onOnboardingComplete]);
 
   const handleSendMessage = useCallback(
     async (promptMessage: PromptInputMessage) => {
       const text = promptMessage.text.trim();
-      if (text.length === 0 || status !== "ready") return;
+      const files = promptMessage.files;
+      if ((text.length === 0 && files.length === 0) || status !== "ready") return;
       if (wsRef.current === null || wsRef.current.readyState !== WebSocket.OPEN) {
         setChatError("Not connected. Refresh to reconnect.");
         return;
       }
 
-      setInput("");
       setChatError(null);
       setStatus("submitted");
       setMessages((current) => [
         ...current,
-        { id: `temp-${nanoid()}`, role: "user", content: text },
+        {
+          id: `temp-${nanoid()}`,
+          role: "user",
+          content: text,
+          attachments: files.map((file, index) => ({
+            id: (file as AttachmentData).id ?? file.filename ?? `pending-${index}`,
+            fileName: file.filename ?? "Attachment",
+            mediaType: file.mediaType,
+            url: file.url,
+          })),
+        },
       ]);
-      wsRef.current.send(JSON.stringify({ type: "user_message", text }));
+
+      try {
+        const documentIds: string[] = [];
+        for (const filePart of files) {
+          const blob = await fetch(filePart.url).then((response) => response.blob());
+          const file = new File([blob], filePart.filename ?? "upload", {
+            type: filePart.mediaType ?? blob.type,
+          });
+          const uploaded = await uploadSessionDocument(sessionId, file);
+          documentIds.push(uploaded.id);
+        }
+
+        wsRef.current.send(
+          JSON.stringify({
+            type: "user_message",
+            text,
+            ...(documentIds.length > 0 ? { documentIds } : {}),
+          }),
+        );
+      } catch (err: unknown) {
+        streamingIdRef.current = null;
+        setMessages((current) => current.filter((message) => !message.id.startsWith("temp-")));
+        setChatError(err instanceof Error ? err.message : "Failed to upload documents");
+        setStatus("ready");
+      }
     },
-    [status],
+    [sessionId, status],
   );
 
   const handleTextChange = useCallback((event: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -418,11 +727,16 @@ export function InterviewChat({
     (awaitingOpening && messages.length === 0) || status === "submitted" || status === "streaming";
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col">
+    <div
+      className={cn("relative flex min-w-0 flex-1 flex-col", isDragActive && "select-none")}
+      ref={chatRootRef}
+    >
+      <InterviewChatDropOverlay active={isDragActive} />
       <div className="flex items-center gap-3 border-b px-4 py-3">
         <div className="min-w-0 flex-1">
           <p className="truncate font-medium">{bootstrap.session.topic}</p>
         </div>
+        <SessionViewToggle activeView="chat" onNavigate={onNavigate} sessionId={sessionId} />
         {!connected ? <span className="text-xs text-muted-foreground">Connecting…</span> : null}
       </div>
 
@@ -437,7 +751,15 @@ export function InterviewChat({
                 {message.role === "assistant" && message.content.length > 0 ? (
                   <MessageResponse>{message.content}</MessageResponse>
                 ) : message.role === "user" ? (
-                  message.content
+                  <>
+                    {message.attachments !== undefined ? (
+                      <UserMessageAttachments
+                        attachments={message.attachments}
+                        sessionId={sessionId}
+                      />
+                    ) : null}
+                    {message.content.length > 0 ? message.content : null}
+                  </>
                 ) : null}
               </MessageContent>
             </Message>
@@ -458,19 +780,35 @@ export function InterviewChat({
 
       <div className="border-t p-4">
         {chatError !== null ? <p className="mb-3 text-sm text-destructive">{chatError}</p> : null}
-        <PromptInput className="relative mx-auto w-full max-w-2xl" onSubmit={handleSendMessage}>
+        <PromptInput
+          className="relative mx-auto w-full max-w-2xl"
+          maxFileSize={25 * 1024 * 1024}
+          multiple
+          onError={(error) => setChatError(error.message)}
+          onSubmit={handleSendMessage}
+        >
+          <PromptInputAttachmentBridge onAddReady={handleAttachmentAddReady} />
+          <InterviewPromptAttachments />
           <PromptInputTextarea
-            className="min-h-[60px] pr-12"
+            className="min-h-[60px]"
             disabled={status !== "ready" || !connected}
             onChange={handleTextChange}
             placeholder="Share your thoughts…"
             value={input}
           />
-          <PromptInputSubmit
-            className="absolute right-1 bottom-1"
-            disabled={input.trim().length === 0 || !connected || status !== "ready"}
-            status={status}
-          />
+          <PromptInputFooter>
+            <TooltipProvider>
+              <PromptInputTools>
+                <PromptInputActionMenu>
+                  <PromptInputActionMenuTrigger tooltip="Add attachments" />
+                  <PromptInputActionMenuContent>
+                    <PromptInputActionAddAttachments label="Upload file" />
+                  </PromptInputActionMenuContent>
+                </PromptInputActionMenu>
+              </PromptInputTools>
+            </TooltipProvider>
+            <PromptInputSubmit disabled={!connected || status !== "ready"} status={status} />
+          </PromptInputFooter>
         </PromptInput>
       </div>
     </div>

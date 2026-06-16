@@ -2,14 +2,17 @@ import { requireRegistrySessionResponse } from "../auth/require-session";
 import { getDb } from "../db/index";
 import {
   getOrg,
+  getPendingOnboardingInterview,
   getTeam,
   listTeamsForUser,
   rollbackOnboarding,
   userHasAnyTeam,
+  userNeedsOnboardingInterview,
 } from "../db/membership";
 import { createOrg, createTeam } from "../db/sessions";
 import { type ExedraUser, getOrCreateUser, updateUserProfile } from "../identity/users";
 import { bootstrapOrgTeamMemories } from "../memories/bootstrap";
+import { createOnboardingInterviewForMember } from "./interview";
 
 function serializeMeUser(user: ExedraUser) {
   return {
@@ -27,11 +30,14 @@ export async function handleGetMe(req: Request): Promise<Response> {
   const db = getDb();
   const user = await getOrCreateUser(db, auth.session.user.id);
   const teams = listTeamsForUser(db, user.id);
+  const pendingOnboarding = getPendingOnboardingInterview(db, user.id);
 
   return Response.json({
     user: serializeMeUser(user),
     teams,
     onboardingRequired: !userHasAnyTeam(db, user.id),
+    onboardingInterviewRequired: userNeedsOnboardingInterview(db, user.id),
+    onboardingSessionId: pendingOnboarding?.sessionId ?? null,
   });
 }
 
@@ -116,11 +122,31 @@ export async function handlePostOnboarding(req: Request): Promise<Response> {
     return Response.json({ error: "Failed to create org or team" }, { status: 500 });
   }
 
+  let onboardingSessionId: string;
+  try {
+    const onboarding = createOnboardingInterviewForMember(db, {
+      teamId,
+      userId: user.id,
+      orgName: org.name,
+      teamName: team.name,
+    });
+    onboardingSessionId = onboarding.sessionId;
+  } catch (err) {
+    rollbackOnboarding(db, { orgId, teamId });
+    const message = err instanceof Error ? err.message : "Failed to create onboarding interview";
+    console.error("[exedra] onboarding interview setup failed:", message);
+    return Response.json(
+      { error: "Could not start onboarding interview. Try again." },
+      { status: 500 },
+    );
+  }
+
   return Response.json(
     {
       org: { id: org.id, name: org.name },
       team: { id: team.id, name: team.name, orgId: team.orgId },
       memories,
+      onboardingSessionId,
     },
     { status: 201 },
   );

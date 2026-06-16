@@ -32,10 +32,18 @@ export type ToolCallDisplay = {
   state: "running" | "completed" | "error";
 };
 
+export type ChatMessageAttachment = {
+  id: string;
+  fileName: string;
+  mediaType?: string;
+  url?: string;
+};
+
 export type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  attachments?: ChatMessageAttachment[];
   toolCalls?: ToolCallDisplay[];
 };
 
@@ -99,13 +107,31 @@ export function uiMessagesToChatMessages(messages: UIMessage[]): ChatMessage[] {
       const metadata = message.metadata as { kickoff?: boolean } | undefined;
       return metadata?.kickoff !== true;
     })
-    .map((message) => ({
-      id: message.id,
-      role: message.role as "user" | "assistant",
-      content: extractTextFromParts(message.parts),
-      toolCalls: extractToolCallsFromParts(message.parts),
-    }))
-    .filter((message) => message.content.length > 0 || (message.toolCalls?.length ?? 0) > 0);
+    .map((message) => {
+      const metadata = message.metadata as
+        | {
+            displayText?: string;
+            documents?: ChatMessageAttachment[];
+          }
+        | undefined;
+      const content =
+        typeof metadata?.displayText === "string"
+          ? metadata.displayText
+          : extractTextFromParts(message.parts);
+      return {
+        id: message.id,
+        role: message.role as "user" | "assistant",
+        content,
+        attachments: metadata?.documents,
+        toolCalls: extractToolCallsFromParts(message.parts),
+      };
+    })
+    .filter(
+      (message) =>
+        message.content.length > 0 ||
+        (message.attachments?.length ?? 0) > 0 ||
+        (message.toolCalls?.length ?? 0) > 0,
+    );
 }
 
 export async function fetchInterview(sessionId: string): Promise<InterviewBootstrap> {

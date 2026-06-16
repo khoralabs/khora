@@ -1,4 +1,11 @@
-import { CalendarPlus, PanelLeftClose, PanelLeftOpen, Settings } from "lucide-react";
+import {
+  CalendarPlus,
+  Network,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Settings,
+  UserRound,
+} from "lucide-react";
 
 import { SidebarTeamSwitcher } from "@/components/exedra/sidebar-team-switcher";
 import { formatSidebarUser, SidebarUserMenu } from "@/components/exedra/sidebar-user-menu";
@@ -14,6 +21,7 @@ type SessionSidebarProps = {
   activeTeam: MeTeam;
   sessions: SessionSummary[] | null;
   activeSessionId: string | null;
+  pathname: string;
   collapsed: boolean;
   onboardingRequired?: boolean;
   onToggleCollapsed: () => void;
@@ -21,6 +29,8 @@ type SessionSidebarProps = {
   onCreateSession: () => void;
   onCreateTeam?: () => void;
   onSelectSession: (sessionId: string) => void;
+  onOpenTeamGraph: () => void;
+  onOpenPersonalGraph: () => void;
   onOpenAccountSettings?: () => void;
   onSignOut?: () => void;
 };
@@ -31,6 +41,7 @@ export function SessionSidebar({
   activeTeam,
   sessions,
   activeSessionId,
+  pathname,
   collapsed,
   onboardingRequired = false,
   onToggleCollapsed,
@@ -38,10 +49,14 @@ export function SessionSidebar({
   onCreateSession,
   onCreateTeam,
   onSelectSession,
+  onOpenTeamGraph,
+  onOpenPersonalGraph,
   onOpenAccountSettings,
   onSignOut,
 }: SessionSidebarProps) {
   const user = formatSidebarUser(me.user);
+  const teamGraphActive = /^\/teams\/([^/]+)\/graph\/?$/.test(pathname);
+  const personalGraphActive = /^\/me\/graph\/?$/.test(pathname);
 
   return (
     <aside
@@ -128,6 +143,44 @@ export function SessionSidebar({
             })}
           </ul>
         )}
+      </div>
+
+      <div className={cn("border-b p-2", collapsed && "flex flex-col items-center gap-1")}>
+        {!collapsed ? (
+          <p className="px-2 pb-2 text-xs font-medium text-muted-foreground">Memories</p>
+        ) : null}
+        <ul className="space-y-1">
+          <li>
+            <button
+              type="button"
+              className={cn(
+                "w-full rounded-md text-left transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                teamGraphActive && "bg-sidebar-accent text-sidebar-accent-foreground",
+                collapsed ? "flex justify-center px-2 py-2" : "flex items-center gap-2 px-3 py-2",
+              )}
+              onClick={onOpenTeamGraph}
+              title={collapsed ? "Team memories" : undefined}
+            >
+              <Network className="size-4 shrink-0" />
+              {!collapsed ? <span className="text-sm font-medium">Team memories</span> : null}
+            </button>
+          </li>
+          <li>
+            <button
+              type="button"
+              className={cn(
+                "w-full rounded-md text-left transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                personalGraphActive && "bg-sidebar-accent text-sidebar-accent-foreground",
+                collapsed ? "flex justify-center px-2 py-2" : "flex items-center gap-2 px-3 py-2",
+              )}
+              onClick={onOpenPersonalGraph}
+              title={collapsed ? "Personal memories" : undefined}
+            >
+              <UserRound className="size-4 shrink-0" />
+              {!collapsed ? <span className="text-sm font-medium">Personal memories</span> : null}
+            </button>
+          </li>
+        </ul>
       </div>
 
       <div className="mt-auto border-t p-2">

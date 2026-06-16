@@ -2,8 +2,10 @@ import { createRegisteredAgent, type RegisteredAgent } from "@khoralabs/agent-ca
 
 import {
   buildInterviewSessionInstruction,
+  buildOnboardingInterviewInstruction,
   type InterviewSessionMeta,
   interviewBaseInstruction,
+  type OnboardingInterviewMeta,
 } from "./instructions.js";
 import { interviewToolkit } from "./toolkit.js";
 
@@ -15,6 +17,7 @@ export function buildInterviewAgentId(sessionId: string): string {
 
 export type DefineInterviewIdentityOptions = {
   identityContext?: Record<string, unknown>;
+  onboarding?: OnboardingInterviewMeta;
 };
 
 export async function defineInterviewAgentIdentity(
@@ -22,12 +25,17 @@ export async function defineInterviewAgentIdentity(
   meta: InterviewSessionMeta,
   options?: DefineInterviewIdentityOptions,
 ): Promise<{ staticHash: string; identity: RegisteredAgent }> {
+  const sessionInstruction =
+    options?.onboarding !== undefined
+      ? buildOnboardingInterviewInstruction(options.onboarding)
+      : buildInterviewSessionInstruction(meta);
+
   const { staticHash, agent } = await createRegisteredAgent({
     agentId: buildInterviewAgentId(sessionId),
     name: "Interview Agent",
-    instructions: [interviewBaseInstruction, buildInterviewSessionInstruction(meta)],
+    instructions: [interviewBaseInstruction, sessionInstruction],
     context: {
-      role: "exedra-interview",
+      role: options?.onboarding !== undefined ? "exedra-onboarding-interview" : "exedra-interview",
       sessionId,
       ...(options?.identityContext ?? {}),
     },

@@ -16,7 +16,9 @@ type InterviewWs = {
   data: InterviewWsData;
 };
 
-type ClientMessage = { type: "user_message"; text: string } | { type: "ping" };
+type ClientMessage =
+  | { type: "user_message"; text: string; documentIds?: string[] }
+  | { type: "ping" };
 
 export async function verifyInterviewWsUpgrade(
   req: Request,
@@ -76,7 +78,10 @@ export async function handleInterviewWsMessage(
   }
 
   const text = parsed.text.trim();
-  if (text.length === 0) {
+  const documentIds = (parsed.documentIds ?? []).filter(
+    (id) => typeof id === "string" && id.trim().length > 0,
+  );
+  if (text.length === 0 && documentIds.length === 0) {
     ws.send(JSON.stringify({ type: "error", error: "Empty message" }));
     return;
   }
@@ -88,14 +93,19 @@ export async function handleInterviewWsMessage(
   const sessionRecord = getSession(db, thread.session_id);
   if (sessionRecord === null) return;
 
-  await runInterviewUserTurn({
+  const result = await runInterviewUserTurn({
     db,
     ws,
     threadId: data.threadId,
     session: sessionRecord,
     text,
     userMessageId: nanoid(),
+    documentIds,
   });
+
+  if (!result.ok) {
+    ws.send(JSON.stringify({ type: "error", error: result.error }));
+  }
 }
 
 export const interviewWsHandlers = {

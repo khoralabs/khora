@@ -110,11 +110,30 @@ export function ensureExedraSchema(db: Database): void {
       updated_at_ms INTEGER NOT NULL,
       error TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS session_documents (
+      id TEXT PRIMARY KEY NOT NULL,
+      session_id TEXT NOT NULL REFERENCES sessions(id),
+      uploaded_by_user_id TEXT NOT NULL REFERENCES users(id),
+      file_name TEXT NOT NULL,
+      mime_type TEXT NOT NULL,
+      byte_size INTEGER NOT NULL,
+      content_hash TEXT NOT NULL,
+      s3_key TEXT NOT NULL,
+      memory_key TEXT NOT NULL,
+      summary TEXT NOT NULL,
+      created_at_ms INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_session_documents_session
+      ON session_documents(session_id, created_at_ms DESC);
   `);
 
   migrateUsersAddProfileFields(db);
   migrateSessionsDropDisplayName(db);
   migrateSessionsDropPrompt(db);
+  migrateSessionsAddKind(db);
+  migrateTeamMembersAddOnboardingFields(db);
 }
 
 function migrateUsersAddProfileFields(db: Database): void {
@@ -141,4 +160,24 @@ function migrateSessionsDropPrompt(db: Database): void {
   const columns = db.query<{ name: string }, []>("PRAGMA table_info(sessions)").all();
   if (!columns.some((column) => column.name === "prompt")) return;
   db.run(`ALTER TABLE sessions DROP COLUMN prompt`);
+}
+
+function migrateSessionsAddKind(db: Database): void {
+  const columns = db.query<{ name: string }, []>("PRAGMA table_info(sessions)").all();
+  if (columns.some((column) => column.name === "kind")) return;
+  db.run(`ALTER TABLE sessions ADD COLUMN kind TEXT NOT NULL DEFAULT 'standard'`);
+}
+
+function migrateTeamMembersAddOnboardingFields(db: Database): void {
+  const columns = db.query<{ name: string }, []>("PRAGMA table_info(team_members)").all();
+  if (!columns.some((column) => column.name === "onboarding_interview_complete")) {
+    db.run(
+      `ALTER TABLE team_members ADD COLUMN onboarding_interview_complete INTEGER NOT NULL DEFAULT 0`,
+    );
+  }
+  if (!columns.some((column) => column.name === "onboarding_session_id")) {
+    db.run(
+      `ALTER TABLE team_members ADD COLUMN onboarding_session_id TEXT REFERENCES sessions(id)`,
+    );
+  }
 }

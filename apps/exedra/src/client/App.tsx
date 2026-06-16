@@ -46,7 +46,7 @@ function AppShell({
   me: MeResponse | null;
   pathname: string;
   onNavigate: (path: string) => void;
-  onOnboardingComplete: () => void;
+  onOnboardingComplete: (sessionId: string) => void;
   onProfileRefresh: () => void;
   onSignOut: () => void;
 }) {
@@ -135,9 +135,9 @@ export function App() {
     });
   }
 
-  function handleOnboardingComplete() {
-    handleNavigate("/");
+  function handleOnboardingComplete(sessionId: string) {
     handleProfileRefresh();
+    handleNavigate(`/sessions/${sessionId}/interview`);
   }
 
   async function handleSignOut() {

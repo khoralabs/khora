@@ -11,6 +11,7 @@ import { createTeam, isTeamMember } from "../db/sessions";
 import { getTeamIdForInvite, getTeamInvitePublicInfo, mintTeamInvite } from "../db/team-invites";
 import { getOrCreateUser } from "../identity/users";
 import { bootstrapOrgTeamMemories } from "../memories/bootstrap";
+import { createOnboardingInterviewForMember } from "../onboarding/interview";
 
 type CreateTeamBody = {
   name?: string;
@@ -57,6 +58,23 @@ export async function handleCreateTeamInOrg(req: Request, orgId: string): Promis
   const team = getTeam(db, teamId);
   if (team === null) {
     return Response.json({ error: "Failed to create team" }, { status: 500 });
+  }
+
+  try {
+    createOnboardingInterviewForMember(db, {
+      teamId,
+      userId: user.id,
+      orgName: org.name,
+      teamName: team.name,
+    });
+  } catch (err) {
+    rollbackTeamCreation(db, teamId);
+    const message = err instanceof Error ? err.message : "Failed to create onboarding interview";
+    console.error("[exedra] create team onboarding interview failed:", message);
+    return Response.json(
+      { error: "Could not start onboarding interview. Try again." },
+      { status: 500 },
+    );
   }
 
   return Response.json(
@@ -140,6 +158,22 @@ export async function handleAcceptJoinTeam(req: Request, token: string): Promise
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to bootstrap memories";
       console.error("[exedra] join team memories bootstrap failed:", message);
+    }
+
+    const org = getOrg(db, team.orgId);
+    if (org !== null) {
+      try {
+        createOnboardingInterviewForMember(db, {
+          teamId,
+          userId: user.id,
+          orgName: org.name,
+          teamName: team.name,
+        });
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Failed to create onboarding interview";
+        console.error("[exedra] join team onboarding interview failed:", message);
+      }
     }
   }
 

@@ -164,3 +164,71 @@ export function addTeamMember(db: Database, teamId: string, userId: string): voi
     Date.now(),
   );
 }
+
+export type PendingOnboardingInterview = {
+  teamId: string;
+  sessionId: string;
+};
+
+export function getPendingOnboardingInterview(
+  db: Database,
+  userId: string,
+): PendingOnboardingInterview | null {
+  const row = db
+    .query<{ team_id: string; onboarding_session_id: string }, [string]>(
+      `SELECT tm.team_id, tm.onboarding_session_id
+       FROM team_members tm
+       JOIN teams t ON t.id = tm.team_id
+       WHERE tm.user_id = ?
+         AND tm.onboarding_interview_complete = 0
+         AND tm.onboarding_session_id IS NOT NULL
+       ORDER BY t.created_at_ms ASC
+       LIMIT 1`,
+    )
+    .get(userId);
+  if (row === null || row.onboarding_session_id.length === 0) return null;
+  return { teamId: row.team_id, sessionId: row.onboarding_session_id };
+}
+
+export function userNeedsOnboardingInterview(db: Database, userId: string): boolean {
+  return getPendingOnboardingInterview(db, userId) !== null;
+}
+
+export function userNeedsOnboardingInterviewForTeam(
+  db: Database,
+  teamId: string,
+  userId: string,
+): boolean {
+  const row = db
+    .query<{ c: number }, [string, string]>(
+      `SELECT COUNT(1) AS c
+       FROM team_members
+       WHERE team_id = ? AND user_id = ?
+         AND onboarding_interview_complete = 0
+         AND onboarding_session_id IS NOT NULL`,
+    )
+    .get(teamId, userId);
+  return row !== null && row.c > 0;
+}
+
+export function setTeamMemberOnboardingSession(
+  db: Database,
+  params: { teamId: string; userId: string; sessionId: string },
+): void {
+  db.prepare(
+    `UPDATE team_members
+     SET onboarding_session_id = ?, onboarding_interview_complete = 0
+     WHERE team_id = ? AND user_id = ?`,
+  ).run(params.sessionId, params.teamId, params.userId);
+}
+
+export function completeTeamMemberOnboardingInterview(
+  db: Database,
+  params: { teamId: string; userId: string },
+): void {
+  db.prepare(
+    `UPDATE team_members
+     SET onboarding_interview_complete = 1
+     WHERE team_id = ? AND user_id = ?`,
+  ).run(params.teamId, params.userId);
+}

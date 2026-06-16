@@ -63,9 +63,13 @@ test("GET /api/me reports onboardingRequired until user joins a team", async () 
   const after = await handleGetMe(new Request("http://localhost/api/me"));
   const afterBody = (await after.json()) as {
     onboardingRequired: boolean;
+    onboardingInterviewRequired: boolean;
+    onboardingSessionId: string | null;
     teams: { name: string; orgName: string }[];
   };
   expect(afterBody.onboardingRequired).toBe(false);
+  expect(afterBody.onboardingInterviewRequired).toBe(true);
+  expect(afterBody.onboardingSessionId).toMatch(/^[0-9a-f-]{36}$/i);
   expect(afterBody.teams[0]?.name).toBe("Leadership");
   expect(afterBody.teams[0]?.orgName).toBe("Acme");
 });

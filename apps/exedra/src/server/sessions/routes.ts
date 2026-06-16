@@ -1,7 +1,12 @@
 import { requireRegistrySessionResponse } from "../auth/require-session";
 import { getDb } from "../db/index";
 import { listInvitesForSession } from "../db/invites";
-import { listTeamMembers } from "../db/membership";
+import {
+  getOrg,
+  getTeam,
+  listTeamMembers,
+  userNeedsOnboardingInterviewForTeam,
+} from "../db/membership";
 import { loadThreadMessages } from "../db/messages";
 import {
   formatDaysToDeadline,
@@ -73,6 +78,16 @@ export async function handleCreateSession(req: Request): Promise<Response> {
   }
   if (!isTeamMember(db, teamId, user.id)) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (userNeedsOnboardingInterviewForTeam(db, teamId, user.id)) {
+    return Response.json(
+      {
+        error: "Complete your onboarding interview before creating sessions",
+        onboardingInterviewRequired: true,
+      },
+      { status: 403 },
+    );
   }
 
   const memberUserIds = (body.memberUserIds ?? []).filter(
@@ -193,15 +208,21 @@ export async function handleGetInterview(req: Request, sessionId: string): Promi
 
   const threadId = getOrCreateInterviewThread(db, { sessionId, userId: user.id });
   const messages = loadThreadMessages(db, threadId);
+  const team = getTeam(db, session.teamId);
+  const org = team === null ? null : getOrg(db, team.orgId);
   return Response.json({
     session: {
       id: session.id,
       topic: session.topic,
       status: session.status,
+      kind: session.kind,
     },
     threadId,
     wsUrl: `/ws/interview/${threadId}`,
     messages,
+    ...(session.kind === "onboarding" && team !== null && org !== null
+      ? { onboarding: { orgName: org.name, teamName: team.name } }
+      : {}),
   });
 }
 

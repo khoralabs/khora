@@ -18,6 +18,12 @@ import {
 type InterviewToolSet = Record<string, Tool<unknown, unknown>> & ToolSet;
 
 import type { InterviewSessionMeta } from "./instructions.js";
+import {
+  countNonKickoffUserTurns,
+  isKickoffUserMessage,
+  ONBOARDING_MIN_USER_TURNS,
+  type OnboardingInterviewMeta,
+} from "./instructions.js";
 import { ensureInterviewAgentRegistered } from "./session.js";
 import type { InterviewEnv } from "./toolkit.js";
 
@@ -63,44 +69,78 @@ function upsertToolPart(
   parts.push(nextPart);
 }
 
+/** Tool UI parts are for display only — strip them before sending history to the model. */
+function historyForModel(messages: UIMessage[]): UIMessage[] {
+  return messages
+    .map((message) => ({
+      ...message,
+      parts: message.parts.filter((part) => part.type === "text"),
+    }))
+    .filter((message) => message.parts.length > 0);
+}
+
+function allowBeliefFlagForTurn(history: UIMessage[], userMessageId: string): boolean {
+  const triggering = history.find((message) => message.id === userMessageId);
+  if (triggering === undefined || triggering.role !== "user") return false;
+  return !isKickoffUserMessage(triggering);
+}
+
 export async function runInterviewTurn(args: {
   registry: AgentRegistry;
   model: LanguageModel;
   sessionId: string;
   sessionMeta: InterviewSessionMeta;
+  onboardingMeta?: OnboardingInterviewMeta;
   threadId: string;
   userMessageId: string;
   history: UIMessage[];
   onTextDelta: (delta: string) => void;
   onBeliefFlag: (belief: string, sourceMessageId: string) => void;
+  onCompleteOnboarding?: (summary: string) => void;
   onToolEvent?: (event: InterviewToolEvent) => void;
 }): Promise<{
   assistantParts: UIMessage["parts"];
   beliefFlags: { belief: string; messageId: string }[];
+  onboardingCompleted: boolean;
 }> {
   const {
     registry,
     model,
     sessionId,
     sessionMeta,
+    onboardingMeta,
     threadId,
     userMessageId,
     history,
     onTextDelta,
     onBeliefFlag,
+    onCompleteOnboarding,
     onToolEvent,
   } = args;
+
+  const isOnboarding = onboardingMeta !== undefined;
+  const userTurnCount = countNonKickoffUserTurns(history);
+  let onboardingCompleted = false;
 
   const beliefFlags: { belief: string; messageId: string }[] = [];
   const env: InterviewEnv = {
     sourceMessageId: userMessageId,
+    allowBeliefFlag: allowBeliefFlagForTurn(history, userMessageId),
+    isOnboarding,
+    allowCompleteOnboarding: isOnboarding && userTurnCount >= ONBOARDING_MIN_USER_TURNS,
     onBeliefFlag: (belief, sourceMessageId) => {
       beliefFlags.push({ belief, messageId: sourceMessageId });
       onBeliefFlag(belief, sourceMessageId);
     },
+    onCompleteOnboarding: (summary) => {
+      onboardingCompleted = true;
+      onCompleteOnboarding?.(summary);
+    },
   };
 
-  const { identity } = await ensureInterviewAgentRegistered(registry, sessionId, sessionMeta);
+  const { identity } = await ensureInterviewAgentRegistered(registry, sessionId, sessionMeta, {
+    onboarding: onboardingMeta,
+  });
   const agentId = identity.agentId;
 
   const toolkitCtx = {
@@ -127,10 +167,11 @@ export async function runInterviewTurn(args: {
   }
 
   let modelMessages: ModelMessage[];
+  const modelHistory = historyForModel(history);
   try {
-    modelMessages = await convertToModelMessages(history);
+    modelMessages = await convertToModelMessages(modelHistory);
   } catch {
-    modelMessages = history.map((m) => ({
+    modelMessages = modelHistory.map((m) => ({
       role: m.role,
       content: m.parts
         .filter((p) => p.type === "text")
@@ -214,5 +255,5 @@ export async function runInterviewTurn(args: {
     });
   }
 
-  return { assistantParts, beliefFlags };
+  return { assistantParts, beliefFlags, onboardingCompleted };
 }

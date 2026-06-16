@@ -14,6 +14,8 @@ export type MeResponse = {
   };
   teams: MeTeam[];
   onboardingRequired: boolean;
+  onboardingInterviewRequired: boolean;
+  onboardingSessionId: string | null;
 };
 
 export const ONBOARDING_PLACEHOLDER_TEAM: MeTeam = {
@@ -26,6 +28,7 @@ export const ONBOARDING_PLACEHOLDER_TEAM: MeTeam = {
 export type OnboardingResponse = {
   org: { id: string; name: string };
   team: { id: string; name: string; orgId: string };
+  onboardingSessionId: string;
 };
 
 export type CreateTeamResponse = {

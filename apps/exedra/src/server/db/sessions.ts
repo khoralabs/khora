@@ -1,5 +1,7 @@
 import type { Database } from "bun:sqlite";
 
+export type SessionKind = "standard" | "onboarding";
+
 export type SessionRecord = {
   id: string;
   teamId: string;
@@ -7,6 +9,7 @@ export type SessionRecord = {
   deadlineMs: number | null;
   facilitatorId: string;
   status: string;
+  kind: SessionKind;
   createdAtMs: number;
 };
 
@@ -17,6 +20,7 @@ type SessionRow = {
   deadline_ms: number | null;
   facilitator_id: string;
   status: string;
+  kind: string;
   created_at_ms: number;
 };
 
@@ -28,8 +32,13 @@ function mapSession(row: SessionRow): SessionRecord {
     deadlineMs: row.deadline_ms,
     facilitatorId: row.facilitator_id,
     status: row.status,
+    kind: row.kind === "onboarding" ? "onboarding" : "standard",
     createdAtMs: row.created_at_ms,
   };
+}
+
+export function buildOnboardingSessionTopic(orgName: string, teamName: string): string {
+  return `Getting to know ${orgName} and ${teamName}`;
 }
 
 export function createOrg(db: Database, params: { name: string; ownerId: string }): string {
@@ -76,18 +85,49 @@ export function createSession(
     topic: string;
     facilitatorId: string;
     deadlineMs?: number;
+    kind?: SessionKind;
   },
 ): SessionRecord {
   const id = crypto.randomUUID();
   const now = Date.now();
+  const kind = params.kind ?? "standard";
   db.prepare(
     `INSERT INTO sessions (
-       id, team_id, topic, deadline_ms, facilitator_id, status, created_at_ms
-     ) VALUES (?, ?, ?, ?, ?, 'active', ?)`,
-  ).run(id, params.teamId, params.topic, params.deadlineMs ?? null, params.facilitatorId, now);
+       id, team_id, topic, deadline_ms, facilitator_id, status, kind, created_at_ms
+     ) VALUES (?, ?, ?, ?, ?, 'active', ?, ?)`,
+  ).run(
+    id,
+    params.teamId,
+    params.topic,
+    params.deadlineMs ?? null,
+    params.facilitatorId,
+    kind,
+    now,
+  );
   const row = db.query<SessionRow, [string]>(`SELECT * FROM sessions WHERE id = ? LIMIT 1`).get(id);
   if (row === null) throw new Error("session insert failed");
   return mapSession(row);
+}
+
+export function createOnboardingSession(
+  db: Database,
+  params: {
+    teamId: string;
+    facilitatorId: string;
+    orgName: string;
+    teamName: string;
+  },
+): SessionRecord {
+  return createSession(db, {
+    teamId: params.teamId,
+    topic: buildOnboardingSessionTopic(params.orgName, params.teamName),
+    facilitatorId: params.facilitatorId,
+    kind: "onboarding",
+  });
+}
+
+export function closeSession(db: Database, sessionId: string): void {
+  db.prepare(`UPDATE sessions SET status = 'closed' WHERE id = ?`).run(sessionId);
 }
 
 export function getSession(db: Database, sessionId: string): SessionRecord | null {
@@ -179,7 +219,7 @@ export function listSessionsForUser(
   const rows = db
     .query<SessionListRow, [string, string | null]>(
       `SELECT s.id, s.team_id, s.topic, s.deadline_ms,
-              s.facilitator_id, s.status, s.created_at_ms,
+              s.facilitator_id, s.status, s.kind, s.created_at_ms,
               CASE WHEN s.facilitator_id = ?1 THEN 'facilitator' ELSE 'participant' END AS role
        FROM sessions s
        WHERE (?2 IS NULL OR s.team_id = ?2)

@@ -3,7 +3,9 @@ import { useCallback, useEffect, useState } from "react";
 
 import { AccountEditorDialog } from "@/components/account/account-editor-dialog";
 import { InterviewCanvas } from "@/components/exedra/interview-canvas";
+import { MemoriesGraphView } from "@/components/exedra/memories-graph-view";
 import { SessionSidebar } from "@/components/exedra/session-sidebar";
+import { SessionViewToggle } from "@/components/exedra/session-view-toggle";
 import { InterviewChat } from "@/components/interview/interview-chat";
 import { OnboardingDialog } from "@/components/onboarding/onboarding-dialog";
 import { SessionWizard } from "@/components/sessions/session-wizard";
@@ -20,6 +22,13 @@ import {
 import type { BeliefFeedback, BeliefFlag, InterviewBootstrap } from "@/lib/interview-api";
 import { type MeResponse, type MeTeam, ONBOARDING_PLACEHOLDER_TEAM } from "@/lib/me-api";
 import {
+  meMemoriesApiBase,
+  orgMemoriesApiBase,
+  orgSessionNamespace,
+  orgTeamNamespace,
+  userNamespace,
+} from "@/lib/memories-api";
+import {
   fetchSessionDetail,
   fetchSessions,
   type SessionDetail,
@@ -31,7 +40,7 @@ type ExedraShellProps = {
   pathname: string;
   onNavigate: (path: string) => void;
   onSignOut: () => void;
-  onOnboardingComplete: () => void;
+  onOnboardingComplete: (sessionId: string) => void;
   onProfileRefresh: () => void;
 };
 
@@ -39,10 +48,30 @@ function parseActiveSessionId(pathname: string): string | null {
   const interviewMatch = /^\/sessions\/([^/]+)\/interview\/?$/.exec(pathname);
   if (interviewMatch?.[1] !== undefined) return interviewMatch[1];
 
+  const graphMatch = /^\/sessions\/([^/]+)\/graph\/?$/.exec(pathname);
+  if (graphMatch?.[1] !== undefined) return graphMatch[1];
+
   const sessionMatch = /^\/sessions\/([^/]+)\/?$/.exec(pathname);
   if (sessionMatch?.[1] !== undefined && sessionMatch[1] !== "new") return sessionMatch[1];
 
   return null;
+}
+
+function isSessionInterviewPath(pathname: string): boolean {
+  return /^\/sessions\/([^/]+)\/interview\/?$/.test(pathname);
+}
+
+function isSessionGraphPath(pathname: string): boolean {
+  return /^\/sessions\/([^/]+)\/graph\/?$/.test(pathname);
+}
+
+function parseActiveTeamGraphId(pathname: string): string | null {
+  const match = /^\/teams\/([^/]+)\/graph\/?$/.exec(pathname);
+  return match?.[1] ?? null;
+}
+
+function isPersonalGraphPath(pathname: string): boolean {
+  return /^\/me\/graph\/?$/.test(pathname);
 }
 
 function isNewSessionPath(pathname: string): boolean {
@@ -58,6 +87,8 @@ export function ExedraShell({
   onProfileRefresh,
 }: ExedraShellProps) {
   const onboardingRequired = me.onboardingRequired;
+  const onboardingInterviewRequired = me.onboardingInterviewRequired;
+  const onboardingSessionId = me.onboardingSessionId;
   const [createTeamOpen, setCreateTeamOpen] = useState(false);
   const [accountEditorOpen, setAccountEditorOpen] = useState(false);
   const [activeTeam, setActiveTeam] = useState<MeTeam>(
@@ -73,6 +104,11 @@ export function ExedraShell({
 
   const activeSessionId = parseActiveSessionId(pathname);
   const creatingSession = isNewSessionPath(pathname);
+  const isSessionInterview = isSessionInterviewPath(pathname);
+  const isSessionGraph = isSessionGraphPath(pathname);
+  const activeTeamGraphId = parseActiveTeamGraphId(pathname);
+  const isPersonalGraph = isPersonalGraphPath(pathname);
+  const showInterviewCanvas = isSessionInterview && activeSessionId !== null;
 
   const loadSessions = useCallback(() => {
     if (activeTeam.id.length === 0) return;
@@ -92,6 +128,21 @@ export function ExedraShell({
   useEffect(() => {
     loadSessions();
   }, [loadSessions]);
+
+  useEffect(() => {
+    if (onboardingRequired || !onboardingInterviewRequired || onboardingSessionId === null) return;
+    const onOnboardingInterview = activeSessionId === onboardingSessionId && isSessionInterview;
+    if (onOnboardingInterview || creatingSession) return;
+    onNavigate(`/sessions/${onboardingSessionId}/interview`);
+  }, [
+    onboardingRequired,
+    onboardingInterviewRequired,
+    onboardingSessionId,
+    activeSessionId,
+    isSessionInterview,
+    creatingSession,
+    onNavigate,
+  ]);
 
   useEffect(() => {
     if (me.teams.length === 0) {
@@ -166,19 +217,22 @@ export function ExedraShell({
         activeTeam={activeTeam}
         sessions={sessions}
         activeSessionId={activeSessionId}
+        pathname={pathname}
         collapsed={sidebarCollapsed}
-        onboardingRequired={onboardingRequired}
+        onboardingRequired={onboardingRequired || onboardingInterviewRequired}
         onToggleCollapsed={() => setSidebarCollapsed((value) => !value)}
         onTeamChange={(team) => {
           setActiveTeam(team);
           onNavigate("/");
         }}
         onCreateSession={() => {
-          if (onboardingRequired) return;
+          if (onboardingRequired || onboardingInterviewRequired) return;
           onNavigate("/sessions/new");
         }}
         onCreateTeam={() => setCreateTeamOpen(true)}
         onSelectSession={handleSelectSession}
+        onOpenTeamGraph={() => onNavigate(`/teams/${activeTeam.id}/graph`)}
+        onOpenPersonalGraph={() => onNavigate("/me/graph")}
         onOpenAccountSettings={() => setAccountEditorOpen(true)}
         onSignOut={onSignOut}
       />
@@ -197,7 +251,24 @@ export function ExedraShell({
             onCreated={handleSessionCreated}
           />
         </div>
-      ) : activeSessionId !== null ? (
+      ) : isSessionGraph && activeSessionId !== null ? (
+        <MemoriesGraphView
+          apiBase={orgMemoriesApiBase(activeTeam.orgId)}
+          namespace={orgSessionNamespace(
+            activeTeam.orgId,
+            sessionDetail?.session.teamId ?? activeTeam.id,
+            activeSessionId,
+          )}
+          title={sessionDetail?.session.topic ?? "Session memories"}
+          headerExtra={
+            <SessionViewToggle
+              activeView="graph"
+              onNavigate={onNavigate}
+              sessionId={activeSessionId}
+            />
+          }
+        />
+      ) : isSessionInterview && activeSessionId !== null ? (
         <>
           <InterviewChat
             key={activeSessionId}
@@ -205,6 +276,8 @@ export function ExedraShell({
             onBootstrap={handleBootstrap}
             onBeliefsChange={handleBeliefsChange}
             onError={handleChatError}
+            onNavigate={onNavigate}
+            onOnboardingComplete={onProfileRefresh}
             onScrollToMessageComplete={() => setScrollToMessageId(null)}
             scrollToMessageId={scrollToMessageId}
           />
@@ -214,6 +287,18 @@ export function ExedraShell({
             </div>
           ) : null}
         </>
+      ) : activeTeamGraphId !== null ? (
+        <MemoriesGraphView
+          apiBase={orgMemoriesApiBase(activeTeam.orgId)}
+          namespace={orgTeamNamespace(activeTeam.orgId, activeTeamGraphId)}
+          title={`${activeTeam.name} memories`}
+        />
+      ) : isPersonalGraph ? (
+        <MemoriesGraphView
+          apiBase={meMemoriesApiBase}
+          namespace={userNamespace(me.user.id)}
+          title="Personal memories"
+        />
       ) : (
         <div className="flex min-w-0 flex-1 items-center justify-center p-6">
           <Empty className="max-w-md border">
@@ -227,7 +312,10 @@ export function ExedraShell({
               </EmptyDescription>
             </EmptyHeader>
             <EmptyContent>
-              <Button disabled={onboardingRequired} onClick={() => onNavigate("/sessions/new")}>
+              <Button
+                disabled={onboardingRequired || onboardingInterviewRequired}
+                onClick={() => onNavigate("/sessions/new")}
+              >
                 <CalendarPlus />
                 New session
               </Button>
@@ -236,23 +324,28 @@ export function ExedraShell({
         </div>
       )}
 
-      <InterviewCanvas
-        sessionId={activeSessionId}
-        beliefs={beliefs}
-        sessionDetail={sessionDetail}
-        onBeliefSourceClick={handleBeliefSourceClick}
-        onBeliefUpdate={handleBeliefUpdate}
-        onRefreshDetail={() => {
-          if (activeSessionId !== null) loadSessionDetail(activeSessionId);
-          loadSessions();
-        }}
-      />
+      {showInterviewCanvas ? (
+        <InterviewCanvas
+          sessionId={activeSessionId}
+          beliefs={beliefs}
+          sessionDetail={sessionDetail}
+          onBeliefSourceClick={handleBeliefSourceClick}
+          onBeliefUpdate={handleBeliefUpdate}
+          onRefreshDetail={() => {
+            if (activeSessionId !== null) loadSessionDetail(activeSessionId);
+            loadSessions();
+          }}
+        />
+      ) : null}
 
       {loadError !== null ? (
         <p className="absolute bottom-4 left-4 text-sm text-destructive">{loadError}</p>
       ) : null}
 
-      <OnboardingDialog open={onboardingRequired} onComplete={onOnboardingComplete} />
+      <OnboardingDialog
+        open={onboardingRequired}
+        onComplete={(sessionId) => onOnboardingComplete(sessionId)}
+      />
 
       <CreateTeamDialog
         open={createTeamOpen}

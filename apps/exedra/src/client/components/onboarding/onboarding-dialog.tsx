@@ -24,7 +24,7 @@ import { type MeTeam, mintTeamInvite, postOnboarding } from "@/lib/me-api";
 
 type OnboardingDialogProps = {
   open: boolean;
-  onComplete: () => void;
+  onComplete: (sessionId: string) => void;
 };
 
 type WizardStep = 1 | 2 | 3;
@@ -34,6 +34,7 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
   const [orgName, setOrgName] = useState("");
   const [teamName, setTeamName] = useState("");
   const [team, setTeam] = useState<MeTeam | null>(null);
+  const [onboardingSessionId, setOnboardingSessionId] = useState<string | null>(null);
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -46,6 +47,7 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
     setOrgName("");
     setTeamName("");
     setTeam(null);
+    setOnboardingSessionId(null);
     setInviteUrl(null);
     setError(null);
     setSubmitting(false);
@@ -90,6 +92,7 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
         orgId: result.org.id,
         orgName: result.org.name,
       });
+      setOnboardingSessionId(result.onboardingSessionId);
       setStep(3);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create team");
@@ -124,8 +127,8 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
   }
 
   function handleFinish() {
-    if (team === null) return;
-    onComplete();
+    if (onboardingSessionId === null) return;
+    onComplete(onboardingSessionId);
   }
 
   function handleBack() {
@@ -265,8 +268,12 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
                     "Copy link"
                   )}
                 </Button>
-                <Button className="flex-1" onClick={handleFinish}>
-                  Skip for now
+                <Button
+                  className="flex-1"
+                  onClick={handleFinish}
+                  disabled={onboardingSessionId === null}
+                >
+                  Start interview
                 </Button>
               </div>
             </>

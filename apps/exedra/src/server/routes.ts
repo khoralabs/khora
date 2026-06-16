@@ -1,6 +1,25 @@
 import { handleGetSession } from "./auth/session";
 import { handleSignOut } from "./auth/sign-out";
+import {
+  handleGetSessionDocument,
+  handleListSessionDocuments,
+  handleUploadSessionDocument,
+} from "./documents/routes";
 import { handleAcceptInvite, handleGetInvite, handleMintInvite } from "./invites/routes";
+import {
+  handleMeMemoriesEdgePreview,
+  handleMeMemoriesGraph,
+  handleMeMemoriesInvestigate,
+  handleMeMemoriesNamespaces,
+  handleMeMemoriesSearch,
+} from "./memories/me-routes";
+import {
+  handleOrgMemoriesEdgePreview,
+  handleOrgMemoriesGraph,
+  handleOrgMemoriesInvestigate,
+  handleOrgMemoriesNamespaces,
+  handleOrgMemoriesSearch,
+} from "./memories/org-routes";
 import { handleGetMe, handlePatchMe, handlePostOnboarding } from "./onboarding/routes";
 import { stubRegistryAuthRoutes } from "./registry-stub/routes";
 import {
@@ -58,6 +77,18 @@ export const apiRoutes = {
     GET: (req: Request & { params: { id: string } }) => handleGetInterview(req, req.params.id),
   },
 
+  "/api/sessions/:sessionId/documents": {
+    GET: (req: Request & { params: { sessionId: string } }) =>
+      handleListSessionDocuments(req, req.params.sessionId),
+    POST: (req: Request & { params: { sessionId: string } }) =>
+      handleUploadSessionDocument(req, req.params.sessionId),
+  },
+
+  "/api/sessions/:sessionId/documents/:documentId": {
+    GET: (req: Request & { params: { sessionId: string; documentId: string } }) =>
+      handleGetSessionDocument(req, req.params.sessionId, req.params.documentId),
+  },
+
   "/api/sessions/:id/invites": {
     POST: (req: Request & { params: { id: string } }) => handleMintInvite(req, req.params.id),
   },
@@ -88,5 +119,50 @@ export const apiRoutes = {
   "/api/join-team/:token/accept": {
     POST: (req: Request & { params: { token: string } }) =>
       handleAcceptJoinTeam(req, req.params.token),
+  },
+
+  "/api/memories/org/:orgId/namespaces": {
+    GET: (req: Request & { params: { orgId: string } }) =>
+      handleOrgMemoriesNamespaces(req, req.params.orgId),
+  },
+
+  "/api/memories/org/:orgId/graph": {
+    GET: (req: Request & { params: { orgId: string } }) =>
+      handleOrgMemoriesGraph(req, req.params.orgId),
+  },
+
+  "/api/memories/org/:orgId/edge-preview": {
+    GET: (req: Request & { params: { orgId: string } }) =>
+      handleOrgMemoriesEdgePreview(req, req.params.orgId),
+  },
+
+  "/api/memories/org/:orgId/search": {
+    POST: (req: Request & { params: { orgId: string } }) =>
+      handleOrgMemoriesSearch(req, req.params.orgId),
+  },
+
+  "/api/memories/org/:orgId/investigate": {
+    POST: (req: Request & { params: { orgId: string } }) =>
+      handleOrgMemoriesInvestigate(req, req.params.orgId),
+  },
+
+  "/api/memories/me/namespaces": {
+    GET: handleMeMemoriesNamespaces,
+  },
+
+  "/api/memories/me/graph": {
+    GET: handleMeMemoriesGraph,
+  },
+
+  "/api/memories/me/edge-preview": {
+    GET: handleMeMemoriesEdgePreview,
+  },
+
+  "/api/memories/me/search": {
+    POST: handleMeMemoriesSearch,
+  },
+
+  "/api/memories/me/investigate": {
+    POST: handleMeMemoriesInvestigate,
   },
 } as const;
