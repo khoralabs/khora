@@ -47,7 +47,7 @@ const server = serve({
       return Response.json({ error: "Not found" }, { status: 404 });
     }
 
-    return undefined as unknown as Response;
+    return new Response("Not found", { status: 404 });
   },
 
   websocket: interviewWsHandlers,
