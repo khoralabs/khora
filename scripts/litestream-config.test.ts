@@ -66,6 +66,30 @@ describe("buildLitestreamYaml", () => {
     }
   });
 
+  test("exedra layout replicates app db and watched memories dir", () => {
+    const yaml = buildLitestreamYaml({
+      bucket: "khora-backups-prod",
+      keyPrefix: "exedra/litestream",
+      region: "us-east-1",
+      dbs: [
+        { kind: "file", path: "/data/exedra.db", replicaSuffix: "exedra.sqlite" },
+        {
+          kind: "dir",
+          dir: "/data/memories",
+          pattern: "*.db",
+          watch: true,
+          replicaSuffix: "memories",
+        },
+      ],
+    });
+    expect(yaml).toContain('path: "/data/exedra.db"');
+    expect(yaml).toContain('url: "s3://khora-backups-prod/exedra/litestream/exedra.sqlite"');
+    expect(yaml).toContain('dir: "/data/memories"');
+    expect(yaml).toContain('pattern: "*.db"');
+    expect(yaml).toContain("watch: true");
+    expect(yaml).toContain('url: "s3://khora-backups-prod/exedra/litestream/memories"');
+  });
+
   test("readLitestreamLogLevel reads LITESTREAM_LOG_LEVEL", () => {
     const prev = process.env.LITESTREAM_LOG_LEVEL;
     process.env.LITESTREAM_LOG_LEVEL = "warn";

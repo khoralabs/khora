@@ -7,11 +7,11 @@ Reference for deploying the four Khora web services (Render or similar). Per-app
 | Service | Package | Default port | Start command (prod) | Persistent disk |
 | --- | --- | --- | --- | --- |
 | Khora Labs homepage | `@khoralabs/khoralabs-homepage` | 3000 | `bun run start` | No |
-| Exedra | `@khoralabs/exedra` | 3000 | `bun run start` | Yes (`exedra.db`, `memories/`) — planned |
+| Exedra | `@khoralabs/exedra` | 3000 | `bun run start` | Yes (`exedra.db`, `memories/`) |
 | Khora registry | `@khoralabs/khora-registry` | 4000 | `bun run start` | Yes (`registry.sqlite`) |
 | Khora server | `@khoralabs/khora-server` | 8788 | `bun run start` | Yes (catalog, frames, cells) |
 
-Use `bun run start` (not bare `src/index.ts`) on **registry** and **khora-server** so Litestream sidecars run when enabled.
+Use `bun run start` (not bare `src/index.ts`) on **registry**, **khora-server**, and **exedra** so Litestream sidecars run when enabled.
 
 ---
 
@@ -22,11 +22,11 @@ Put these in a Render **Environment Group** (or password manager) and link to ev
 | Variable | Services | Notes |
 | --- | --- | --- |
 | `KHORA_INVITE_PEPPER` | khora-server | Host-only. Used to hash minted invite tokens locally; registry never sees plaintext or pepper. |
-| `AWS_REGION` | registry, khora-server | e.g. `us-east-1` |
-| `AWS_ACCESS_KEY_ID` | registry, khora-server | Render has no IAM roles; use one IAM user for Litestream (+ SES on registry). |
-| `AWS_SECRET_ACCESS_KEY` | registry, khora-server | Pair with access key above. |
-| `LITESTREAM_S3_BUCKET` | registry, khora-server | e.g. `khora-backups-prod`. One bucket, different prefixes per service. |
-| `LITESTREAM_S3_REGION` | registry, khora-server | Match bucket region. Omit `LITESTREAM_S3_ENDPOINT` for real AWS S3. |
+| `AWS_REGION` | registry, khora-server, exedra | e.g. `us-east-1` |
+| `AWS_ACCESS_KEY_ID` | registry, khora-server, exedra | Render has no IAM roles; use one IAM user for Litestream (+ SES on registry, document uploads on Exedra). |
+| `AWS_SECRET_ACCESS_KEY` | registry, khora-server, exedra | Pair with access key above. |
+| `LITESTREAM_S3_BUCKET` | registry, khora-server, exedra | e.g. `khora-backups-prod`. One bucket, different prefixes per service. |
+| `LITESTREAM_S3_REGION` | registry, khora-server, exedra | Match bucket region. Omit `LITESTREAM_S3_ENDPOINT` for real AWS S3. |
 
 ### URL consistency
 
@@ -146,7 +146,7 @@ Host selection: `khora host use <slug>` writes `currentHost` and `hosts` to `cli
 | --- | --- | --- | --- | --- | --- | --- |
 | `REGISTRY_LITESTREAM` | + | · | · | · | C | `1` enables Litestream sidecar on registry. |
 | `KHORA_LITESTREAM` | · | + | · | · | C | `1` enables Litestream sidecar on khora-server. |
-| `EXEDRA_LITESTREAM` | · | · | · | + | C | **Planned.** `1` enables Litestream sidecar on Exedra (`exedra.db` + `memories/`). |
+| `EXEDRA_LITESTREAM` | · | · | · | + | C | `1` enables Litestream sidecar on Exedra (`exedra.db` + `memories/`). |
 | `LITESTREAM_S3_BUCKET` | + | + | · | + | C | Shared bucket name. |
 | `LITESTREAM_S3_REGION` | + | + | · | + | C | Bucket region. |
 | `LITESTREAM_S3_KEY_PREFIX` | + | + | · | + | C | **Different per service:** `registry/litestream`, `khora/litestream`, `exedra/litestream`. |
@@ -180,6 +180,9 @@ Contact flow: submission is queued when the user reaches the OTP step; Slack sen
 | `EXEDRA_STUB_REGISTRY` | · | · | · | + | C | `1` mounts in-process Better Auth–compatible stub at `/api/auth/*` (local dev only). |
 | `BUN_PUBLIC_EXEDRA_STUB_REGISTRY` | · | · | · | + | C | `1` — browser uses same origin for OTP (pair with `EXEDRA_STUB_REGISTRY`). |
 | `EXEDRA_STUB_REGISTRY_OTP` | · | · | · | + | C | Fixed OTP for stub sign-in (default `000000`). |
+| `EXEDRA_DOCUMENTS_S3_BUCKET` | · | · | · | + | C | S3 bucket for session document uploads (canonical bytes). |
+| `EXEDRA_DOCUMENTS_S3_PREFIX` | · | · | · | + | C | Object key prefix (default `exedra/documents`). |
+| `EXEDRA_DOCUMENTS_S3_ENDPOINT` | · | · | · | + | C | MinIO endpoint for local dev; omit for AWS S3. |
 
 ---
 
@@ -187,7 +190,7 @@ Contact flow: submission is queued when the user reaches the OTP step; Slack sen
 
 ### `khora-prod-shared` (secrets + AWS)
 
-Link to **khora-server** (and registry for AWS/Litestream only).
+Link to **khora-server**, **registry**, and **exedra** (for AWS/Litestream; Exedra also uses AWS keys for document uploads).
 
 ```
 AWS_REGION=us-east-1
@@ -271,8 +274,10 @@ EXEDRA_IDENTITY_KEY=<openssl rand -hex 32>
 EXEDRA_MEMORIES_SQLCIPHER_KEY=<openssl rand -base64 32>
 AI_API_KEY=sk-...
 AI_MODEL=gpt-4o
-# EXEDRA_LITESTREAM=1                    # planned
-# LITESTREAM_S3_KEY_PREFIX=exedra/litestream
+EXEDRA_LITESTREAM=1
+LITESTREAM_S3_KEY_PREFIX=exedra/litestream
+# EXEDRA_DOCUMENTS_S3_BUCKET=khora-backups-prod
+# EXEDRA_DOCUMENTS_S3_PREFIX=exedra/documents
 ```
 
 Register Exedra's public origin (e.g. `https://exedra.example.com`) as a registry **trusted origin** so browser OTP and `/api/auth/session` cookie forwarding work cross-origin. Set `REGISTRY_COOKIE_DOMAIN=.example.com` on registry when Exedra and registry share a parent domain.
