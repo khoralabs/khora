@@ -10,8 +10,12 @@ import {
 } from "@/lib/memories-api";
 import type { SessionDetail } from "@/lib/sessions-api";
 
-import { AppChrome } from "../shell/app-chrome";
-import { isPersonalGraphPath, parseActiveTeamGraphId, parseSessionGraphId } from "../shell/routes";
+import { AppChrome } from "../../shell/app-chrome";
+import {
+  isPersonalGraphPath,
+  parseActiveTeamGraphId,
+  parseSessionGraphId,
+} from "../../shell/routes";
 
 import "../index.css";
 

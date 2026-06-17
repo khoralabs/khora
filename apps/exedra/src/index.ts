@@ -1,8 +1,8 @@
 import { ensureCustomSqliteForExtensions } from "@khoralabs/memories-sqlite";
 import { serve } from "bun";
-import graphPage from "./client/graph/index.html";
-import index from "./client/index.html";
-import interviewPage from "./client/interview/index.html";
+import graphPage from "./client/routes/graph/index.html";
+import index from "./client/routes/index.html";
+import interviewPage from "./client/routes/interview/index.html";
 import { getDb } from "./server/db/index";
 import { getStubRegistryOtp, isExedraStubRegistryEnabled } from "./server/registry-stub/config";
 import { apiRoutes } from "./server/routes";

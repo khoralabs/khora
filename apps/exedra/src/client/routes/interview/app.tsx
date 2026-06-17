@@ -5,8 +5,8 @@ import { InterviewChat } from "@/components/interview/interview-chat";
 import type { BeliefFeedback, BeliefFlag, InterviewBootstrap } from "@/lib/interview-api";
 import type { SessionDetail } from "@/lib/sessions-api";
 
-import { AppChrome } from "../shell/app-chrome";
-import { parseInterviewSessionId } from "../shell/routes";
+import { AppChrome } from "../../shell/app-chrome";
+import { parseInterviewSessionId } from "../../shell/routes";
 
 import "../index.css";
 

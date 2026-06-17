@@ -3,10 +3,10 @@ import { useEffect } from "react";
 import { InviteGate } from "@/components/auth/invite-gate";
 import { JoinTeamGate } from "@/components/auth/join-team-gate";
 
-import { AppChrome } from "./shell/app-chrome";
-import { MainContent } from "./shell/main-content";
+import { AppChrome } from "../shell/app-chrome";
+import { MainContent } from "../shell/main-content";
 
-import "./index.css";
+import "../styles/index.css";
 
 function parseInviteToken(pathname: string): string | null {
   const match = /^\/invite\/([^/]+)\/?$/.exec(pathname);
