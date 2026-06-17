@@ -1,5 +1,4 @@
 import { Network, Settings, UserRound } from "lucide-react";
-import { ExedraBrand } from "@/components/brand/khora-logo";
 import { NewSessionButton } from "@/components/exedra/new-session-button";
 import { SidebarTeamSwitcher } from "@/components/exedra/sidebar-team-switcher";
 import { formatSidebarUser, SidebarUserMenu } from "@/components/exedra/sidebar-user-menu";
@@ -86,20 +85,6 @@ export function SessionSidebar({
       )}
     >
       <TooltipProvider delayDuration={0}>
-        <div className={cn("border-b", collapsed ? "flex justify-center px-2 py-3" : "px-3 py-3")}>
-          <ExedraBrand
-            collapsed={collapsed}
-            onNavigate={
-              onNavigate !== undefined
-                ? () => {
-                    onNavigate("/");
-                    onDismiss?.();
-                  }
-                : undefined
-            }
-          />
-        </div>
-
         <div
           className={appSectionHeaderClassName(
             collapsed ? "justify-center px-2" : "px-3",
