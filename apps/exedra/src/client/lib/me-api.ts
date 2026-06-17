@@ -3,6 +3,8 @@ export type MeTeam = {
   name: string;
   orgId: string;
   orgName: string;
+  avatarUrl: string | null;
+  orgAvatarUrl: string | null;
 };
 
 export type MeResponse = {
@@ -11,6 +13,7 @@ export type MeResponse = {
     registryUserId: string;
     fullName: string | null;
     jobFunction: string | null;
+    avatarUrl: string | null;
   };
   teams: MeTeam[];
   onboardingRequired: boolean;
@@ -23,6 +26,8 @@ export const ONBOARDING_PLACEHOLDER_TEAM: MeTeam = {
   name: "Your team",
   orgId: "",
   orgName: "Your organization",
+  avatarUrl: null,
+  orgAvatarUrl: null,
 };
 
 export type OnboardingResponse = {

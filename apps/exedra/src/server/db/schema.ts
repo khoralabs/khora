@@ -134,6 +134,16 @@ export function ensureExedraSchema(db: Database): void {
   migrateSessionsDropPrompt(db);
   migrateSessionsAddKind(db);
   migrateTeamMembersAddOnboardingFields(db);
+  migrateAvatarS3KeyColumns(db);
+}
+
+function migrateAvatarS3KeyColumns(db: Database): void {
+  for (const table of ["users", "orgs", "teams"] as const) {
+    const columns = db.query<{ name: string }, []>(`PRAGMA table_info(${table})`).all();
+    if (!columns.some((column) => column.name === "avatar_s3_key")) {
+      db.run(`ALTER TABLE ${table} ADD COLUMN avatar_s3_key TEXT`);
+    }
+  }
 }
 
 function migrateUsersAddProfileFields(db: Database): void {

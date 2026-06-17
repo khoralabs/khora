@@ -1,5 +1,4 @@
 import { type ReactNode, useCallback, useEffect, useState } from "react";
-import { AccountEditorDialog } from "@/components/account/account-editor-dialog";
 import { SignIn } from "@/components/auth/sign-in";
 import { SessionSidebar } from "@/components/exedra/session-sidebar";
 import { OnboardingDialog } from "@/components/onboarding/onboarding-dialog";
@@ -15,7 +14,7 @@ import {
 } from "@/lib/sessions-api";
 
 import { type ExedraEntrypoint, entrypointForPath, navigateExedra } from "./navigation";
-import { isSessionInterviewPath, parseActiveSessionId } from "./routes";
+import { isSessionInterviewPath, isSettingsPath, parseActiveSessionId } from "./routes";
 
 export type AppChromeContext = {
   me: MeResponse;
@@ -40,7 +39,6 @@ export function AppChrome({ entrypoint, children }: AppChromeProps) {
   const [me, setMe] = useState<MeResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [createTeamOpen, setCreateTeamOpen] = useState(false);
-  const [accountEditorOpen, setAccountEditorOpen] = useState(false);
   const [activeTeam, setActiveTeam] = useState<MeTeam>(ONBOARDING_PLACEHOLDER_TEAM);
   const [sessions, setSessions] = useState<SessionSummary[] | null>(null);
   const [sessionDetail, setSessionDetail] = useState<SessionDetail | null>(null);
@@ -51,6 +49,7 @@ export function AppChrome({ entrypoint, children }: AppChromeProps) {
   const onboardingInterviewRequired = me?.onboardingInterviewRequired ?? false;
   const onboardingSessionId = me?.onboardingSessionId ?? null;
   const activeSessionId = parseActiveSessionId(pathname);
+  const settingsMode = isSettingsPath(pathname);
 
   const onNavigate = useCallback(
     (path: string) => {
@@ -216,8 +215,10 @@ export function AppChrome({ entrypoint, children }: AppChromeProps) {
         onSelectSession={handleSelectSession}
         onOpenTeamGraph={() => onNavigate(`/teams/${activeTeam.id}/graph`)}
         onOpenPersonalGraph={() => onNavigate("/me/graph")}
-        onOpenAccountSettings={() => setAccountEditorOpen(true)}
+        onOpenSettings={() => onNavigate("/settings/account")}
         onSignOut={() => void onSignOut()}
+        settingsMode={settingsMode}
+        onNavigate={onNavigate}
       />
 
       {children({
@@ -247,13 +248,6 @@ export function AppChrome({ entrypoint, children }: AppChromeProps) {
           setActiveTeam(team);
           onNavigate("/");
         }}
-      />
-
-      <AccountEditorDialog
-        open={accountEditorOpen}
-        user={me.user}
-        onOpenChange={setAccountEditorOpen}
-        onSaved={() => onProfileRefresh()}
       />
     </div>
   );

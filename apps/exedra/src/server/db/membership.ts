@@ -4,6 +4,7 @@ export type OrgRecord = {
   id: string;
   name: string;
   ownerId: string;
+  avatarS3Key: string | null;
   createdAtMs: number;
 };
 
@@ -12,6 +13,7 @@ export type TeamRecord = {
   orgId: string;
   name: string;
   ownerId: string;
+  avatarS3Key: string | null;
   createdAtMs: number;
 };
 
@@ -20,12 +22,15 @@ export type UserTeamRecord = {
   name: string;
   orgId: string;
   orgName: string;
+  teamAvatarS3Key: string | null;
+  orgAvatarS3Key: string | null;
 };
 
 type OrgRow = {
   id: string;
   name: string;
   owner_id: string;
+  avatar_s3_key: string | null;
   created_at_ms: number;
 };
 
@@ -34,6 +39,7 @@ type TeamRow = {
   org_id: string;
   name: string;
   owner_id: string;
+  avatar_s3_key: string | null;
   created_at_ms: number;
 };
 
@@ -42,41 +48,84 @@ type UserTeamRow = {
   name: string;
   org_id: string;
   org_name: string;
+  team_avatar_s3_key: string | null;
+  org_avatar_s3_key: string | null;
 };
 
-export function getOrg(db: Database, orgId: string): OrgRecord | null {
-  const row = db
-    .query<OrgRow, [string]>(`SELECT id, name, owner_id, created_at_ms FROM orgs WHERE id = ?`)
-    .get(orgId);
-  if (row === null) return null;
+function mapOrg(row: OrgRow): OrgRecord {
   return {
     id: row.id,
     name: row.name,
     ownerId: row.owner_id,
+    avatarS3Key: row.avatar_s3_key,
     createdAtMs: row.created_at_ms,
   };
 }
 
-export function getTeam(db: Database, teamId: string): TeamRecord | null {
-  const row = db
-    .query<TeamRow, [string]>(
-      `SELECT id, org_id, name, owner_id, created_at_ms FROM teams WHERE id = ?`,
-    )
-    .get(teamId);
-  if (row === null) return null;
+function mapTeam(row: TeamRow): TeamRecord {
   return {
     id: row.id,
     orgId: row.org_id,
     name: row.name,
     ownerId: row.owner_id,
+    avatarS3Key: row.avatar_s3_key,
     createdAtMs: row.created_at_ms,
   };
+}
+
+export function getOrg(db: Database, orgId: string): OrgRecord | null {
+  const row = db
+    .query<OrgRow, [string]>(
+      `SELECT id, name, owner_id, avatar_s3_key, created_at_ms FROM orgs WHERE id = ?`,
+    )
+    .get(orgId);
+  if (row === null) return null;
+  return mapOrg(row);
+}
+
+export function getTeam(db: Database, teamId: string): TeamRecord | null {
+  const row = db
+    .query<TeamRow, [string]>(
+      `SELECT id, org_id, name, owner_id, avatar_s3_key, created_at_ms FROM teams WHERE id = ?`,
+    )
+    .get(teamId);
+  if (row === null) return null;
+  return mapTeam(row);
+}
+
+export function updateOrgName(db: Database, orgId: string, name: string): OrgRecord | null {
+  db.prepare(`UPDATE orgs SET name = ? WHERE id = ?`).run(name, orgId);
+  return getOrg(db, orgId);
+}
+
+export function updateTeamName(db: Database, teamId: string, name: string): TeamRecord | null {
+  db.prepare(`UPDATE teams SET name = ? WHERE id = ?`).run(name, teamId);
+  return getTeam(db, teamId);
+}
+
+export function updateOrgAvatarS3Key(
+  db: Database,
+  orgId: string,
+  avatarS3Key: string | null,
+): OrgRecord | null {
+  db.prepare(`UPDATE orgs SET avatar_s3_key = ? WHERE id = ?`).run(avatarS3Key, orgId);
+  return getOrg(db, orgId);
+}
+
+export function updateTeamAvatarS3Key(
+  db: Database,
+  teamId: string,
+  avatarS3Key: string | null,
+): TeamRecord | null {
+  db.prepare(`UPDATE teams SET avatar_s3_key = ? WHERE id = ?`).run(avatarS3Key, teamId);
+  return getTeam(db, teamId);
 }
 
 export function listTeamsForUser(db: Database, userId: string): UserTeamRecord[] {
   const rows = db
     .query<UserTeamRow, [string]>(
-      `SELECT t.id, t.name, t.org_id, o.name AS org_name
+      `SELECT t.id, t.name, t.org_id, o.name AS org_name,
+              t.avatar_s3_key AS team_avatar_s3_key, o.avatar_s3_key AS org_avatar_s3_key
        FROM team_members tm
        JOIN teams t ON t.id = tm.team_id
        JOIN orgs o ON o.id = t.org_id
@@ -89,6 +138,8 @@ export function listTeamsForUser(db: Database, userId: string): UserTeamRecord[]
     name: row.name,
     orgId: row.org_id,
     orgName: row.org_name,
+    teamAvatarS3Key: row.team_avatar_s3_key,
+    orgAvatarS3Key: row.org_avatar_s3_key,
   }));
 }
 

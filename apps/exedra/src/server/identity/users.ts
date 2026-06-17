@@ -9,6 +9,7 @@ export type ExedraUser = {
   registryUserId: string;
   fullName: string | null;
   jobFunction: string | null;
+  avatarS3Key: string | null;
   createdAtMs: number;
 };
 
@@ -17,6 +18,7 @@ type UserRow = {
   registry_user_id: string;
   full_name: string | null;
   job_function: string | null;
+  avatar_s3_key: string | null;
   created_at_ms: number;
 };
 
@@ -26,11 +28,12 @@ function mapUser(row: UserRow): ExedraUser {
     registryUserId: row.registry_user_id,
     fullName: row.full_name,
     jobFunction: row.job_function,
+    avatarS3Key: row.avatar_s3_key,
     createdAtMs: row.created_at_ms,
   };
 }
 
-const USER_SELECT = `SELECT id, registry_user_id, full_name, job_function, created_at_ms FROM users`;
+const USER_SELECT = `SELECT id, registry_user_id, full_name, job_function, avatar_s3_key, created_at_ms FROM users`;
 
 export function findUserByRegistryId(db: Database, registryUserId: string): ExedraUser | null {
   const row = db
@@ -78,6 +81,15 @@ export function updateUserProfile(
   return findUserById(db, userId);
 }
 
+export function updateUserAvatarS3Key(
+  db: Database,
+  userId: string,
+  avatarS3Key: string | null,
+): ExedraUser | null {
+  db.prepare(`UPDATE users SET avatar_s3_key = ? WHERE id = ?`).run(avatarS3Key, userId);
+  return findUserById(db, userId);
+}
+
 /** Provision a custodial DID for a registry user on first sign-in / invite accept. */
 export async function getOrCreateUser(db: Database, registryUserId: string): Promise<ExedraUser> {
   const existing = findUserByRegistryId(db, registryUserId);
@@ -98,6 +110,7 @@ export async function getOrCreateUser(db: Database, registryUserId: string): Pro
     registryUserId,
     fullName: null,
     jobFunction: null,
+    avatarS3Key: null,
     createdAtMs: now,
   };
 }

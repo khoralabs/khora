@@ -1,6 +1,6 @@
 import { ChevronsUpDown, LogOut } from "lucide-react";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { EntityAvatar } from "@/components/entity-avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,12 +16,14 @@ export type SidebarUser = {
   subtitle: string;
   email: string;
   initials: string;
+  avatarUrl: string | null;
 };
 
 export function formatSidebarUser(user: {
   registryUserId: string;
   fullName?: string | null;
   jobFunction?: string | null;
+  avatarUrl?: string | null;
 }): SidebarUser {
   const email = user.registryUserId;
   const trimmedFullName = user.fullName?.trim() ?? "";
@@ -39,6 +41,7 @@ export function formatSidebarUser(user: {
       subtitle,
       email,
       initials: initials.length > 0 ? initials : trimmedFullName.slice(0, 2).toUpperCase(),
+      avatarUrl: user.avatarUrl ?? null,
     };
   }
 
@@ -51,6 +54,7 @@ export function formatSidebarUser(user: {
       subtitle,
       email,
       initials: name.slice(0, 2).toUpperCase(),
+      avatarUrl: user.avatarUrl ?? null,
     };
   }
 
@@ -60,6 +64,7 @@ export function formatSidebarUser(user: {
     subtitle,
     email,
     initials: shortId.slice(0, 2).toUpperCase(),
+    avatarUrl: user.avatarUrl ?? null,
   };
 }
 
@@ -81,9 +86,11 @@ export function SidebarUserMenu({ user, collapsed, onSignOut }: SidebarUserMenuP
           )}
           title={collapsed ? `${user.name} · ${user.subtitle}` : undefined}
         >
-          <Avatar className="size-8 rounded-lg">
-            <AvatarFallback className="rounded-lg text-xs">{user.initials}</AvatarFallback>
-          </Avatar>
+          <EntityAvatar
+            name={user.name}
+            avatarUrl={user.avatarUrl}
+            className="size-8 rounded-lg [&_[data-slot=avatar-fallback]]:rounded-lg"
+          />
           {!collapsed ? (
             <>
               <div className="grid min-w-0 flex-1 text-left leading-tight">
@@ -103,9 +110,11 @@ export function SidebarUserMenu({ user, collapsed, onSignOut }: SidebarUserMenuP
       >
         <DropdownMenuLabel className="p-0 font-normal">
           <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-            <Avatar className="size-8 rounded-lg">
-              <AvatarFallback className="rounded-lg text-xs">{user.initials}</AvatarFallback>
-            </Avatar>
+            <EntityAvatar
+              name={user.name}
+              avatarUrl={user.avatarUrl}
+              className="size-8 rounded-lg [&_[data-slot=avatar-fallback]]:rounded-lg"
+            />
             <div className="grid min-w-0 flex-1 leading-tight">
               <span className="truncate font-medium">{user.name}</span>
               <span className="truncate text-xs text-muted-foreground">{user.subtitle}</span>

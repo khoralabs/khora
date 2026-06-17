@@ -1,4 +1,7 @@
 import { requireRegistrySessionResponse } from "../auth/require-session";
+import { buildUserAvatarS3Key } from "../avatars/keys";
+import { clearAvatarFromS3, parseAvatarUpload, replaceAvatarInS3 } from "../avatars/upload";
+import { avatarUrlFromS3Key } from "../avatars/urls";
 import { getDb } from "../db/index";
 import {
   getOrg,
@@ -6,11 +9,17 @@ import {
   getTeam,
   listTeamsForUser,
   rollbackOnboarding,
+  userBelongsToOrg,
   userHasAnyTeam,
   userNeedsOnboardingInterview,
 } from "../db/membership";
 import { createOrg, createTeam } from "../db/sessions";
-import { type ExedraUser, getOrCreateUser, updateUserProfile } from "../identity/users";
+import {
+  type ExedraUser,
+  getOrCreateUser,
+  updateUserAvatarS3Key,
+  updateUserProfile,
+} from "../identity/users";
 import { bootstrapOrgTeamMemories } from "../memories/bootstrap";
 import { createOnboardingInterviewForMember } from "./interview";
 
@@ -20,6 +29,18 @@ function serializeMeUser(user: ExedraUser) {
     registryUserId: user.registryUserId,
     fullName: user.fullName,
     jobFunction: user.jobFunction,
+    avatarUrl: avatarUrlFromS3Key("user", user.id, user.avatarS3Key),
+  };
+}
+
+function serializeMeTeam(team: ReturnType<typeof listTeamsForUser>[number]) {
+  return {
+    id: team.id,
+    name: team.name,
+    orgId: team.orgId,
+    orgName: team.orgName,
+    avatarUrl: avatarUrlFromS3Key("team", team.id, team.teamAvatarS3Key),
+    orgAvatarUrl: avatarUrlFromS3Key("org", team.orgId, team.orgAvatarS3Key),
   };
 }
 
@@ -34,7 +55,7 @@ export async function handleGetMe(req: Request): Promise<Response> {
 
   return Response.json({
     user: serializeMeUser(user),
-    teams,
+    teams: teams.map(serializeMeTeam),
     onboardingRequired: !userHasAnyTeam(db, user.id),
     onboardingInterviewRequired: userNeedsOnboardingInterview(db, user.id),
     onboardingSessionId: pendingOnboarding?.sessionId ?? null,
@@ -67,6 +88,66 @@ export async function handlePatchMe(req: Request): Promise<Response> {
     fullName: body.fullName,
     jobFunction: body.jobFunction,
   });
+  if (updated === null) {
+    return Response.json({ error: "User not found" }, { status: 404 });
+  }
+
+  return Response.json({ user: serializeMeUser(updated) });
+}
+
+export async function handleUploadMeAvatar(req: Request): Promise<Response> {
+  const auth = await requireRegistrySessionResponse(req);
+  if (auth.response !== null) return auth.response;
+
+  const parsed = await parseAvatarUpload(req);
+  if (!parsed.ok) return parsed.response;
+
+  if (parsed.orgId === null) {
+    return Response.json({ error: "orgId is required" }, { status: 400 });
+  }
+
+  const db = getDb();
+  const user = await getOrCreateUser(db, auth.session.user.id);
+  if (!userBelongsToOrg(db, parsed.orgId, user.id)) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const s3Key = buildUserAvatarS3Key(parsed.orgId, user.id, parsed.ext);
+  try {
+    await replaceAvatarInS3({
+      previousS3Key: user.avatarS3Key,
+      nextS3Key: s3Key,
+      mimeType: parsed.mimeType,
+      bytes: parsed.bytes,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Avatar upload failed";
+    return Response.json({ error: message }, { status: 500 });
+  }
+
+  const updated = updateUserAvatarS3Key(db, user.id, s3Key);
+  if (updated === null) {
+    return Response.json({ error: "User not found" }, { status: 404 });
+  }
+
+  return Response.json({ user: serializeMeUser(updated) });
+}
+
+export async function handleDeleteMeAvatar(req: Request): Promise<Response> {
+  const auth = await requireRegistrySessionResponse(req);
+  if (auth.response !== null) return auth.response;
+
+  const db = getDb();
+  const user = await getOrCreateUser(db, auth.session.user.id);
+
+  try {
+    await clearAvatarFromS3(user.avatarS3Key);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Avatar delete failed";
+    return Response.json({ error: message }, { status: 500 });
+  }
+
+  const updated = updateUserAvatarS3Key(db, user.id, null);
   if (updated === null) {
     return Response.json({ error: "User not found" }, { status: 404 });
   }

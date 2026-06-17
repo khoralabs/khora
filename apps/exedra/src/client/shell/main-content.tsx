@@ -10,9 +10,10 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { SettingsContent } from "@/settings/settings-content";
 
 import type { AppChromeContext } from "./app-chrome";
-import { isNewSessionPath } from "./routes";
+import { isNewSessionPath, isSettingsPath } from "./routes";
 
 type MainContentProps = AppChromeContext;
 
@@ -23,6 +24,7 @@ export function MainContent({
   activeTeam,
   sessions,
   loadSessions,
+  onProfileRefresh,
 }: MainContentProps) {
   const onboardingRequired = me.onboardingRequired;
   const onboardingInterviewRequired = me.onboardingInterviewRequired;
@@ -31,6 +33,18 @@ export function MainContent({
   function handleSessionCreated(sessionId: string) {
     loadSessions();
     window.location.href = `/sessions/${sessionId}/interview`;
+  }
+
+  if (isSettingsPath(pathname)) {
+    return (
+      <SettingsContent
+        me={me}
+        pathname={pathname}
+        onNavigate={onNavigate}
+        activeTeam={activeTeam}
+        onProfileRefresh={onProfileRefresh}
+      />
+    );
   }
 
   if (creatingSession) {

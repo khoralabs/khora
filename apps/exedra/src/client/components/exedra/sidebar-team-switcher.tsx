@@ -1,5 +1,6 @@
-import { Building2, ChevronsUpDown, Plus, Users } from "lucide-react";
+import { ChevronsUpDown, Plus } from "lucide-react";
 
+import { EntityAvatar } from "@/components/entity-avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,9 +31,11 @@ function TeamSwitcherDisplay({
 }) {
   return (
     <>
-      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-        <Building2 className="size-4" />
-      </div>
+      <EntityAvatar
+        name={team.orgName}
+        avatarUrl={team.orgAvatarUrl}
+        className="size-8 rounded-lg [&_[data-slot=avatar-fallback]]:rounded-lg"
+      />
       {!collapsed ? (
         <>
           <div className="grid min-w-0 flex-1 leading-tight">
@@ -99,9 +102,7 @@ export function SidebarTeamSwitcher({
         <DropdownMenuLabel className="text-xs text-muted-foreground">Teams</DropdownMenuLabel>
         {teams.map((team) => (
           <DropdownMenuItem key={team.id} className="gap-2 p-2" onClick={() => onTeamChange(team)}>
-            <div className="flex size-6 items-center justify-center rounded-md border">
-              <Users className="size-3.5 shrink-0" />
-            </div>
+            <EntityAvatar name={team.name} avatarUrl={team.avatarUrl} size="sm" />
             <span className="truncate font-medium">{team.name}</span>
           </DropdownMenuItem>
         ))}

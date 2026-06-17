@@ -1,10 +1,15 @@
 import { requireRegistrySessionResponse } from "../auth/require-session";
+import { buildTeamAvatarS3Key } from "../avatars/keys";
+import { clearAvatarFromS3, parseAvatarUpload, replaceAvatarInS3 } from "../avatars/upload";
+import { avatarUrlFromS3Key } from "../avatars/urls";
 import { getDb } from "../db/index";
 import {
   addTeamMember,
   getOrg,
   getTeam,
   rollbackTeamCreation,
+  updateTeamAvatarS3Key,
+  updateTeamName,
   userBelongsToOrg,
 } from "../db/membership";
 import { createTeam, isTeamMember } from "../db/sessions";
@@ -84,6 +89,8 @@ export async function handleCreateTeamInOrg(req: Request, orgId: string): Promis
         name: team.name,
         orgId: team.orgId,
         orgName: org.name,
+        avatarUrl: avatarUrlFromS3Key("team", team.id, team.avatarS3Key),
+        orgAvatarUrl: avatarUrlFromS3Key("org", org.id, org.avatarS3Key),
       },
     },
     { status: 201 },
@@ -181,4 +188,144 @@ export async function handleAcceptJoinTeam(req: Request, token: string): Promise
     teamId,
     redirectTo: "/",
   });
+}
+
+function jsonResponse(data: unknown, status = 200): Response {
+  return Response.json(data, { status });
+}
+
+function serializeTeamSettings(team: NonNullable<ReturnType<typeof getTeam>>, userId: string) {
+  return {
+    id: team.id,
+    name: team.name,
+    orgId: team.orgId,
+    avatarUrl: avatarUrlFromS3Key("team", team.id, team.avatarS3Key),
+    canEdit: team.ownerId === userId,
+  };
+}
+
+export async function handleGetTeamSettings(req: Request, teamId: string): Promise<Response> {
+  const auth = await requireRegistrySessionResponse(req);
+  if (auth.response !== null) return auth.response;
+
+  const db = getDb();
+  const team = getTeam(db, teamId);
+  if (team === null) {
+    return jsonResponse({ error: "Team not found" }, 404);
+  }
+
+  const user = await getOrCreateUser(db, auth.session.user.id);
+  if (!isTeamMember(db, teamId, user.id)) {
+    return jsonResponse({ error: "Forbidden" }, 403);
+  }
+
+  return jsonResponse(serializeTeamSettings(team, user.id));
+}
+
+type PatchTeamBody = {
+  name?: string;
+};
+
+export async function handlePatchTeam(req: Request, teamId: string): Promise<Response> {
+  const auth = await requireRegistrySessionResponse(req);
+  if (auth.response !== null) return auth.response;
+
+  let body: PatchTeamBody;
+  try {
+    body = (await req.json()) as PatchTeamBody;
+  } catch {
+    return jsonResponse({ error: "Invalid JSON body" }, 400);
+  }
+
+  const name = body.name?.trim() ?? "";
+  if (name.length === 0) {
+    return jsonResponse({ error: "name is required" }, 400);
+  }
+
+  const db = getDb();
+  const team = getTeam(db, teamId);
+  if (team === null) {
+    return jsonResponse({ error: "Team not found" }, 404);
+  }
+
+  const user = await getOrCreateUser(db, auth.session.user.id);
+  if (team.ownerId !== user.id) {
+    return jsonResponse({ error: "Forbidden" }, 403);
+  }
+
+  const updated = updateTeamName(db, teamId, name);
+  if (updated === null) {
+    return jsonResponse({ error: "Team not found" }, 404);
+  }
+
+  return jsonResponse(serializeTeamSettings(updated, user.id));
+}
+
+export async function handleUploadTeamAvatar(req: Request, teamId: string): Promise<Response> {
+  const auth = await requireRegistrySessionResponse(req);
+  if (auth.response !== null) return auth.response;
+
+  const db = getDb();
+  const team = getTeam(db, teamId);
+  if (team === null) {
+    return jsonResponse({ error: "Team not found" }, 404);
+  }
+
+  const user = await getOrCreateUser(db, auth.session.user.id);
+  if (team.ownerId !== user.id) {
+    return jsonResponse({ error: "Forbidden" }, 403);
+  }
+
+  const parsed = await parseAvatarUpload(req);
+  if (!parsed.ok) return parsed.response;
+
+  const s3Key = buildTeamAvatarS3Key(team.orgId, teamId, parsed.ext);
+  try {
+    await replaceAvatarInS3({
+      previousS3Key: team.avatarS3Key,
+      nextS3Key: s3Key,
+      mimeType: parsed.mimeType,
+      bytes: parsed.bytes,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Avatar upload failed";
+    return jsonResponse({ error: message }, 500);
+  }
+
+  const updated = updateTeamAvatarS3Key(db, teamId, s3Key);
+  if (updated === null) {
+    return jsonResponse({ error: "Team not found" }, 404);
+  }
+
+  return jsonResponse(serializeTeamSettings(updated, user.id));
+}
+
+export async function handleDeleteTeamAvatar(req: Request, teamId: string): Promise<Response> {
+  const auth = await requireRegistrySessionResponse(req);
+  if (auth.response !== null) return auth.response;
+
+  const db = getDb();
+  const team = getTeam(db, teamId);
+  if (team === null) {
+    return jsonResponse({ error: "Team not found" }, 404);
+  }
+
+  const user = await getOrCreateUser(db, auth.session.user.id);
+  if (team.ownerId !== user.id) {
+    return jsonResponse({ error: "Forbidden" }, 403);
+  }
+
+  try {
+    await clearAvatarFromS3(team.avatarS3Key);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Avatar delete failed";
+    return jsonResponse({ error: message }, 500);
+  }
+
+  const updated = updateTeamAvatarS3Key(db, teamId, null);
+  if (updated === null) {
+    return jsonResponse({ error: "Team not found" }, 404);
+  }
+
+  return jsonResponse(serializeTeamSettings(updated, user.id));
 }

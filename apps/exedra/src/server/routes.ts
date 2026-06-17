@@ -1,5 +1,6 @@
 import { handleGetSession } from "./auth/session";
 import { handleSignOut } from "./auth/sign-out";
+import { handleServeAvatar } from "./avatars/routes";
 import {
   handleGetSessionDocument,
   handleListSessionDocuments,
@@ -20,7 +21,19 @@ import {
   handleOrgMemoriesNamespaces,
   handleOrgMemoriesSearch,
 } from "./memories/org-routes";
-import { handleGetMe, handlePatchMe, handlePostOnboarding } from "./onboarding/routes";
+import {
+  handleDeleteMeAvatar,
+  handleGetMe,
+  handlePatchMe,
+  handlePostOnboarding,
+  handleUploadMeAvatar,
+} from "./onboarding/routes";
+import {
+  handleDeleteOrgAvatar,
+  handleGetOrgSettings,
+  handlePatchOrg,
+  handleUploadOrgAvatar,
+} from "./orgs/routes";
 import { stubRegistryAuthRoutes } from "./registry-stub/routes";
 import {
   handleCreateSession,
@@ -32,8 +45,12 @@ import {
 import {
   handleAcceptJoinTeam,
   handleCreateTeamInOrg,
+  handleDeleteTeamAvatar,
   handleGetJoinTeam,
+  handleGetTeamSettings,
   handleMintTeamInvite,
+  handlePatchTeam,
+  handleUploadTeamAvatar,
 } from "./teams/routes";
 
 export const apiRoutes = {
@@ -55,8 +72,29 @@ export const apiRoutes = {
     PATCH: handlePatchMe,
   },
 
+  "/api/me/avatar": {
+    POST: handleUploadMeAvatar,
+    DELETE: handleDeleteMeAvatar,
+  },
+
   "/api/onboarding": {
     POST: handlePostOnboarding,
+  },
+
+  "/api/orgs/:orgId": {
+    PATCH: (req: Request & { params: { orgId: string } }) => handlePatchOrg(req, req.params.orgId),
+  },
+
+  "/api/orgs/:orgId/settings": {
+    GET: (req: Request & { params: { orgId: string } }) =>
+      handleGetOrgSettings(req, req.params.orgId),
+  },
+
+  "/api/orgs/:orgId/avatar": {
+    POST: (req: Request & { params: { orgId: string } }) =>
+      handleUploadOrgAvatar(req, req.params.orgId),
+    DELETE: (req: Request & { params: { orgId: string } }) =>
+      handleDeleteOrgAvatar(req, req.params.orgId),
   },
 
   "/api/orgs/:orgId/teams": {
@@ -105,6 +143,23 @@ export const apiRoutes = {
   "/api/teams/:teamId/invites": {
     POST: (req: Request & { params: { teamId: string } }) =>
       handleMintTeamInvite(req, req.params.teamId),
+  },
+
+  "/api/teams/:teamId/settings": {
+    GET: (req: Request & { params: { teamId: string } }) =>
+      handleGetTeamSettings(req, req.params.teamId),
+  },
+
+  "/api/teams/:teamId": {
+    PATCH: (req: Request & { params: { teamId: string } }) =>
+      handlePatchTeam(req, req.params.teamId),
+  },
+
+  "/api/teams/:teamId/avatar": {
+    POST: (req: Request & { params: { teamId: string } }) =>
+      handleUploadTeamAvatar(req, req.params.teamId),
+    DELETE: (req: Request & { params: { teamId: string } }) =>
+      handleDeleteTeamAvatar(req, req.params.teamId),
   },
 
   "/api/teams/:teamId/members": {
@@ -164,5 +219,10 @@ export const apiRoutes = {
 
   "/api/memories/me/investigate": {
     POST: handleMeMemoriesInvestigate,
+  },
+
+  "/api/avatars/:kind/:id": {
+    GET: (req: Request & { params: { kind: string; id: string } }) =>
+      handleServeAvatar(req, req.params.kind, req.params.id),
   },
 } as const;

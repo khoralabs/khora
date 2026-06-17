@@ -37,3 +37,21 @@ export function isNewSessionPath(pathname: string): boolean {
 export function isSessionInterviewPath(pathname: string): boolean {
   return /^\/sessions\/([^/]+)\/interview\/?$/.test(pathname);
 }
+
+export type SettingsSection = "organization" | "team" | "account";
+
+export function isSettingsPath(pathname: string): boolean {
+  return /^\/settings(\/|$)/.test(pathname);
+}
+
+export function parseSettingsSection(pathname: string): SettingsSection {
+  if (/^\/settings\/organization\/?$/.test(pathname)) return "organization";
+  if (/^\/settings\/team\/?$/.test(pathname)) return "team";
+  return "account";
+}
+
+export function settingsPathForSection(section: SettingsSection): string {
+  if (section === "organization") return "/settings/organization";
+  if (section === "team") return "/settings/team";
+  return "/settings/account";
+}
