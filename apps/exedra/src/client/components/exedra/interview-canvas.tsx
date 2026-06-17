@@ -34,17 +34,17 @@ export function InterviewCanvas({
 }: InterviewCanvasProps) {
   return (
     <div className="flex w-80 shrink-0 flex-col border-l bg-muted/20 xl:w-96">
-      <Tabs defaultValue="context" className="flex h-full flex-col gap-0">
+      <Tabs defaultValue="beliefs" className="flex h-full flex-col gap-0">
         <div className="border-b px-4 py-3">
           <TabsList variant="line">
-            <TabsTrigger value="context">Context</TabsTrigger>
             <TabsTrigger value="beliefs">Beliefs</TabsTrigger>
+            <TabsTrigger value="info">Interview Info</TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value="context" className="min-h-0 flex-1 overflow-y-auto p-4">
+        <TabsContent value="info" className="min-h-0 flex-1 overflow-y-auto p-4">
           {sessionId === null ? (
-            <p className="text-sm text-muted-foreground">Select a session to view context.</p>
+            <p className="text-sm text-muted-foreground">Select a session to view details.</p>
           ) : (
             <SessionParticipantsPanel
               detail={sessionDetail}
