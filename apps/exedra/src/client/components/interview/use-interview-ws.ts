@@ -2,6 +2,7 @@ import { type RefObject, useCallback, useEffect, useRef, useState } from "react"
 
 import type { BeliefFlag, InterviewBootstrap } from "@/lib/interview-api";
 import { interviewWsUrl } from "@/lib/interview-api";
+import { getBrowserTimeZone } from "@/lib/user-timezone";
 
 import { closeWebSocket, waitForWebSocketOpen } from "./interview-ws-connection";
 import {
@@ -86,6 +87,7 @@ export function useInterviewWs({
     ws.onopen = () => {
       setConnected(true);
       setChatError(null);
+      ws.send(JSON.stringify({ type: "client_context", timeZone: getBrowserTimeZone() }));
     };
     ws.onclose = () => setConnected(false);
     ws.onmessage = handleWsMessage;

@@ -13,6 +13,7 @@ import type { AttachmentData } from "@/components/ai-elements/attachments";
 import type { PromptInputMessage } from "@/components/ai-elements/prompt-input";
 import { uploadSessionDocument } from "@/lib/documents-api";
 import type { ChatMessage } from "@/lib/interview-api";
+import { getBrowserTimeZone } from "@/lib/user-timezone";
 
 type PromptAttachmentControls = {
   add: (files: File[] | FileList) => void;
@@ -133,6 +134,7 @@ export function useInterviewSendMessage({
             JSON.stringify({
               type: "user_message",
               text,
+              timeZone: getBrowserTimeZone(),
               ...(documentIds.length > 0 ? { documentIds } : {}),
             }),
           );

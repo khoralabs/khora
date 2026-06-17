@@ -1,5 +1,7 @@
 import { verifyRegistrySession } from "@khoralabs/registry-auth";
 import { nanoid } from "nanoid";
+
+import { isValidIanaTimeZone } from "../../agents/turn-context/user-local-datetime";
 import { getDb } from "../db/index";
 import { getSession, getThread, userHasSessionAccess } from "../db/sessions";
 import { findUserByRegistryId } from "../identity/users";
@@ -9,6 +11,7 @@ import { getRegistryUrl } from "../registry-url";
 export type InterviewWsData = {
   threadId: string;
   userId: string;
+  timeZone?: string;
 };
 
 type InterviewWs = {
@@ -17,8 +20,16 @@ type InterviewWs = {
 };
 
 type ClientMessage =
-  | { type: "user_message"; text: string; documentIds?: string[] }
+  | { type: "user_message"; text: string; documentIds?: string[]; timeZone?: string }
+  | { type: "client_context"; timeZone?: string }
   | { type: "ping" };
+
+function applyClientTimeZone(data: InterviewWsData, timeZone: unknown): void {
+  if (typeof timeZone !== "string") return;
+  const trimmed = timeZone.trim();
+  if (trimmed.length === 0 || !isValidIanaTimeZone(trimmed)) return;
+  data.timeZone = trimmed;
+}
 
 export async function verifyInterviewWsUpgrade(
   req: Request,
@@ -55,10 +66,10 @@ export async function verifyInterviewWsUpgrade(
 }
 
 export async function handleInterviewWsMessage(
-  ws: { send: (data: string) => void },
-  data: InterviewWsData,
+  ws: InterviewWs,
   raw: string | Buffer,
 ): Promise<void> {
+  const { data } = ws;
   let parsed: ClientMessage;
   try {
     parsed = JSON.parse(typeof raw === "string" ? raw : raw.toString()) as ClientMessage;
@@ -72,10 +83,18 @@ export async function handleInterviewWsMessage(
     return;
   }
 
+  if (parsed.type === "client_context") {
+    applyClientTimeZone(data, parsed.timeZone);
+    await ensureInterviewKickoff(getDb(), ws, data.threadId, data.timeZone);
+    return;
+  }
+
   if (parsed.type !== "user_message") {
     ws.send(JSON.stringify({ type: "error", error: "Unknown message type" }));
     return;
   }
+
+  applyClientTimeZone(data, parsed.timeZone);
 
   const text = parsed.text.trim();
   const documentIds = (parsed.documentIds ?? []).filter(
@@ -101,6 +120,7 @@ export async function handleInterviewWsMessage(
     text,
     userMessageId: nanoid(),
     documentIds,
+    userTimeZone: data.timeZone,
   });
 
   if (!result.ok) {
@@ -111,9 +131,8 @@ export async function handleInterviewWsMessage(
 export const interviewWsHandlers = {
   open(ws: InterviewWs) {
     ws.send(JSON.stringify({ type: "ready", threadId: ws.data.threadId }));
-    void ensureInterviewKickoff(getDb(), ws, ws.data.threadId);
   },
   message(ws: InterviewWs, raw: string | Buffer) {
-    void handleInterviewWsMessage(ws, ws.data, raw);
+    void handleInterviewWsMessage(ws, raw);
   },
 };

@@ -32,8 +32,10 @@ export async function runInterviewUserTurn(args: {
   userMessageId: string;
   documentIds?: readonly string[];
   metadata?: UIMessage["metadata"];
+  userTimeZone?: string;
 }): Promise<RunInterviewUserTurnResult> {
-  const { db, ws, threadId, session, text, userMessageId, documentIds, metadata } = args;
+  const { db, ws, threadId, session, text, userMessageId, documentIds, metadata, userTimeZone } =
+    args;
 
   const thread = getThread(db, threadId);
   if (thread?.user_id === null || thread?.user_id === undefined) {
@@ -124,6 +126,7 @@ export async function runInterviewUserTurn(args: {
     threadId,
     session,
     userMessageId,
+    userTimeZone,
   });
 
   return { ok: true };
@@ -135,8 +138,9 @@ async function runInterviewAssistantTurn(args: {
   threadId: string;
   session: SessionRecord;
   userMessageId: string;
+  userTimeZone?: string;
 }): Promise<void> {
-  const { db, ws, threadId, session, userMessageId } = args;
+  const { db, ws, threadId, session, userMessageId, userTimeZone } = args;
   const history = loadThreadMessages(db, threadId, 50);
   const assistantId = nanoid();
   const sessionMeta: InterviewSessionMeta = {
@@ -160,6 +164,7 @@ async function runInterviewAssistantTurn(args: {
       threadId,
       userMessageId,
       history,
+      userTimeZone,
       onTextDelta: (delta) => ws.send(JSON.stringify({ type: "text_delta", delta })),
       onBeliefFlag: (belief, sourceMessageId) =>
         ws.send(JSON.stringify({ type: "belief_flag", belief, sourceMessageId })),
@@ -243,6 +248,7 @@ export async function ensureInterviewKickoff(
   db: Database,
   ws: InterviewWsSender,
   threadId: string,
+  userTimeZone?: string,
 ): Promise<void> {
   const thread = getThread(db, threadId);
   if (thread === null) return;
@@ -265,5 +271,6 @@ export async function ensureInterviewKickoff(
     text: kickoffText,
     userMessageId: interviewKickoffMessageId(threadId),
     metadata: { kickoff: true },
+    userTimeZone,
   });
 }

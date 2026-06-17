@@ -17,6 +17,10 @@ import {
 
 type InterviewToolSet = Record<string, Tool<unknown, unknown>> & ToolSet;
 
+import {
+  buildUserLocalDateTimeContext,
+  formatUserLocalDateTimeTurnInstruction,
+} from "../turn-context/user-local-datetime.js";
 import type { InterviewSessionMeta } from "./instructions.js";
 import {
   countNonKickoffUserTurns,
@@ -94,6 +98,7 @@ export async function runInterviewTurn(args: {
   threadId: string;
   userMessageId: string;
   history: UIMessage[];
+  userTimeZone?: string;
   onTextDelta: (delta: string) => void;
   onBeliefFlag: (belief: string, sourceMessageId: string) => void;
   onCompleteOnboarding?: (summary: string) => void;
@@ -112,6 +117,7 @@ export async function runInterviewTurn(args: {
     threadId,
     userMessageId,
     history,
+    userTimeZone,
     onTextDelta,
     onBeliefFlag,
     onCompleteOnboarding,
@@ -149,10 +155,14 @@ export async function runInterviewTurn(args: {
     agentName: identity.name,
   };
 
+  const userLocalDateTime = buildUserLocalDateTimeContext(userTimeZone);
+  const userLocalDateTimeInstruction = formatUserLocalDateTimeTurnInstruction(userLocalDateTime);
+
   const capture = await captureAgentSnapshotEnvelope({
     agent: identity,
     ctx: toolkitCtx,
-    invocationContext: { threadId, userMessageId },
+    invocationContext: { threadId, userMessageId, userLocalDateTime },
+    sessionContext: { userLocalDateTime },
   });
 
   const resolvedPolicies: PolicyResultMap = new Map();
@@ -183,7 +193,7 @@ export async function runInterviewTurn(args: {
   const assistantParts: UIMessage["parts"] = [];
   const result = streamText({
     model,
-    system: capture.instructions,
+    system: [capture.instructions, userLocalDateTimeInstruction].filter(Boolean).join("\n\n"),
     messages: modelMessages,
     tools: aiTools,
     stopWhen: stepCountIs(5),
