@@ -43,9 +43,13 @@ export function BeliefItem({ belief, onSourceClick, onUpdate }: BeliefItemProps)
     }
   }, [mode, belief.correction]);
 
-  const handleSourceClick = useCallback(() => {
-    onSourceClick(belief.sourceMessageId);
-  }, [belief.sourceMessageId, onSourceClick]);
+  const handleSourceClick = useCallback(
+    (event: MouseEvent<HTMLButtonElement>) => {
+      event.stopPropagation();
+      onSourceClick(belief.sourceMessageId);
+    },
+    [belief.sourceMessageId, onSourceClick],
+  );
 
   const handleThumbUp = useCallback(
     (event: MouseEvent<HTMLButtonElement>) => {
@@ -80,10 +84,7 @@ export function BeliefItem({ belief, onSourceClick, onUpdate }: BeliefItemProps)
 
   return (
     <Item className="flex-col flex-nowrap items-stretch gap-0 p-0" size="sm" variant="outline">
-      <ItemHeader
-        className="cursor-pointer gap-3 px-3 py-3 hover:bg-accent/40"
-        onClick={handleSourceClick}
-      >
+      <ItemHeader className="gap-3 px-3 py-3">
         <ItemContent className="min-w-0 gap-1">
           <ItemDescription
             className={cn(
@@ -100,14 +101,18 @@ export function BeliefItem({ belief, onSourceClick, onUpdate }: BeliefItemProps)
               Confirmed
             </p>
           ) : (
-            <p className="text-xs text-muted-foreground underline-offset-2 hover:underline">
+            <button
+              className="w-fit text-left text-xs text-muted-foreground underline-offset-2 hover:underline"
+              onClick={handleSourceClick}
+              type="button"
+            >
               View source message
-            </p>
+            </button>
           )}
         </ItemContent>
 
         {showActions ? (
-          <ItemActions className="shrink-0 opacity-0 transition-opacity group-hover/item:opacity-100">
+          <ItemActions className="shrink-0 opacity-100 lg:opacity-0 lg:transition-opacity lg:group-hover/item:opacity-100">
             <Button
               aria-label="Confirm belief"
               className="text-muted-foreground hover:text-green-600 dark:hover:text-green-500"

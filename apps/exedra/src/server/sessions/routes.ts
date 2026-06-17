@@ -1,4 +1,5 @@
 import { requireRegistrySessionResponse } from "../auth/require-session";
+import { loadBeliefFeedback, upsertBeliefFeedback } from "../db/beliefs";
 import { getDb } from "../db/index";
 import { listInvitesForSession } from "../db/invites";
 import {
@@ -208,6 +209,7 @@ export async function handleGetInterview(req: Request, sessionId: string): Promi
 
   const threadId = getOrCreateInterviewThread(db, { sessionId, userId: user.id });
   const messages = loadThreadMessages(db, threadId);
+  const beliefFeedback = loadBeliefFeedback(db, threadId);
   const team = getTeam(db, session.teamId);
   const org = team === null ? null : getOrg(db, team.orgId);
   return Response.json({
@@ -220,9 +222,83 @@ export async function handleGetInterview(req: Request, sessionId: string): Promi
     threadId,
     wsUrl: `/ws/interview/${threadId}`,
     messages,
+    beliefFeedback,
     ...(session.kind === "onboarding" && team !== null && org !== null
       ? { onboarding: { orgName: org.name, teamName: team.name } }
       : {}),
+  });
+}
+
+type PatchBeliefFeedbackBody = {
+  sourceMessageId?: string;
+  feedback?: "confirmed" | "corrected";
+  correction?: string;
+};
+
+export async function handlePatchBeliefFeedback(
+  req: Request,
+  sessionId: string,
+  beliefId: string,
+): Promise<Response> {
+  const auth = await requireRegistrySessionResponse(req);
+  if (auth.response !== null) return auth.response;
+
+  let body: PatchBeliefFeedbackBody;
+  try {
+    body = (await req.json()) as PatchBeliefFeedbackBody;
+  } catch {
+    return Response.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const feedback = body.feedback;
+  if (feedback !== "confirmed" && feedback !== "corrected") {
+    return Response.json({ error: "feedback must be confirmed or corrected" }, { status: 400 });
+  }
+
+  const sourceMessageId = body.sourceMessageId?.trim() ?? "";
+  if (sourceMessageId.length === 0) {
+    return Response.json({ error: "sourceMessageId is required" }, { status: 400 });
+  }
+
+  if (feedback === "corrected") {
+    const correction = body.correction?.trim() ?? "";
+    if (correction.length === 0) {
+      return Response.json(
+        { error: "correction is required when feedback is corrected" },
+        {
+          status: 400,
+        },
+      );
+    }
+  }
+
+  const db = getDb();
+  const session = getSession(db, sessionId);
+  if (session === null) {
+    return Response.json({ error: "Session not found" }, { status: 404 });
+  }
+
+  const user = await getOrCreateUser(db, auth.session.user.id);
+  if (!userHasSessionAccess(db, sessionId, user.id)) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const threadId = getOrCreateInterviewThread(db, { sessionId, userId: user.id });
+  const record = upsertBeliefFeedback(db, {
+    threadId,
+    beliefId,
+    sourceMessageId,
+    feedback,
+    correction: body.correction,
+  });
+
+  return Response.json({
+    beliefFeedback: {
+      id: record.id,
+      sourceMessageId: record.sourceMessageId,
+      feedback: record.feedback,
+      correction: record.correction ?? undefined,
+    },
   });
 }
 

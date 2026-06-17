@@ -127,6 +127,16 @@ export function ensureExedraSchema(db: Database): void {
 
     CREATE INDEX IF NOT EXISTS idx_session_documents_session
       ON session_documents(session_id, created_at_ms DESC);
+
+    CREATE TABLE IF NOT EXISTS belief_feedback (
+      thread_id TEXT NOT NULL REFERENCES threads(id),
+      belief_id TEXT NOT NULL,
+      source_message_id TEXT NOT NULL,
+      feedback TEXT NOT NULL CHECK(feedback IN ('confirmed', 'corrected')),
+      correction TEXT,
+      updated_at_ms INTEGER NOT NULL,
+      PRIMARY KEY (thread_id, belief_id)
+    );
   `);
 
   migrateUsersAddProfileFields(db);

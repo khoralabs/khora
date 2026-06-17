@@ -8,6 +8,13 @@ export type InterviewSession = {
 
 export type BeliefFeedback = "confirmed" | "corrected";
 
+export type BeliefFeedbackRecord = {
+  id: string;
+  sourceMessageId: string;
+  feedback: BeliefFeedback;
+  correction?: string;
+};
+
 export type BeliefFlag = {
   id: string;
   belief: string;
@@ -21,6 +28,7 @@ export type InterviewBootstrap = {
   threadId: string;
   wsUrl: string;
   messages: UIMessage[];
+  beliefFeedback?: BeliefFeedbackRecord[];
 };
 
 export type ToolCallDisplay = {
@@ -54,21 +62,46 @@ export function extractTextFromParts(parts: UIMessage["parts"]): string {
     .join("");
 }
 
-export function extractBeliefsFromMessages(messages: UIMessage[]): BeliefFlag[] {
+export function extractBeliefsFromMessages(
+  messages: UIMessage[],
+  feedbackRecords: readonly BeliefFeedbackRecord[] = [],
+): BeliefFlag[] {
+  const feedbackById = new Map(feedbackRecords.map((record) => [record.id, record]));
   const beliefs: BeliefFlag[] = [];
   for (const message of messages) {
     const metadata = message.metadata as
       | { beliefFlags?: { belief: string; messageId: string }[] }
       | undefined;
     for (const flag of metadata?.beliefFlags ?? []) {
+      const id = `${message.id}:${beliefs.length}`;
+      const saved = feedbackById.get(id);
       beliefs.push({
-        id: `${message.id}:${beliefs.length}`,
+        id,
         belief: flag.belief,
         sourceMessageId: flag.messageId,
+        ...(saved?.feedback !== undefined ? { feedback: saved.feedback } : {}),
+        ...(saved?.correction !== undefined ? { correction: saved.correction } : {}),
       });
     }
   }
   return beliefs;
+}
+
+export function mergeBeliefFeedback(
+  beliefs: BeliefFlag[],
+  feedbackRecords: readonly BeliefFeedbackRecord[],
+): BeliefFlag[] {
+  if (feedbackRecords.length === 0) return beliefs;
+  const feedbackById = new Map(feedbackRecords.map((record) => [record.id, record]));
+  return beliefs.map((belief) => {
+    const saved = feedbackById.get(belief.id);
+    if (saved === undefined) return belief;
+    return {
+      ...belief,
+      feedback: saved.feedback,
+      ...(saved.correction !== undefined ? { correction: saved.correction } : {}),
+    };
+  });
 }
 
 export function extractToolCallsFromParts(parts: UIMessage["parts"]): ToolCallDisplay[] {
@@ -143,6 +176,39 @@ export async function fetchInterview(sessionId: string): Promise<InterviewBootst
     throw new Error(data?.error ?? "Failed to load interview");
   }
   return (await res.json()) as InterviewBootstrap;
+}
+
+export async function patchBeliefFeedback(
+  sessionId: string,
+  beliefId: string,
+  body: {
+    sourceMessageId: string;
+    feedback: BeliefFeedback;
+    correction?: string;
+  },
+): Promise<BeliefFeedbackRecord> {
+  const res = await fetch(
+    `/api/sessions/${encodeURIComponent(sessionId)}/interview/beliefs/${encodeURIComponent(beliefId)}`,
+    {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+  );
+  const text = await res.text();
+  if (!res.ok) {
+    let message = `Could not save belief feedback (${res.status})`;
+    try {
+      const data = JSON.parse(text) as { error?: string };
+      if (data.error !== undefined && data.error.length > 0) message = data.error;
+    } catch {
+      // keep generic message
+    }
+    throw new Error(message);
+  }
+  const data = JSON.parse(text) as { beliefFeedback: BeliefFeedbackRecord };
+  return data.beliefFeedback;
 }
 
 export function interviewWsUrl(path: string): string {

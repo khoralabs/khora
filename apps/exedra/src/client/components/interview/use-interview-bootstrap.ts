@@ -40,7 +40,7 @@ export function useInterviewBootstrap({
       .then((data) => {
         if (cancelled) return;
         const chatMessages = uiMessagesToChatMessages(data.messages);
-        const initialBeliefs = extractBeliefsFromMessages(data.messages);
+        const initialBeliefs = extractBeliefsFromMessages(data.messages, data.beliefFeedback ?? []);
         beliefsRef.current = initialBeliefs;
         setBootstrap(data);
         onBootstrap(data);

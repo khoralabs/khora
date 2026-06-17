@@ -4,6 +4,7 @@ import { InterviewCanvas } from "@/components/exedra/interview-canvas";
 import { InterviewChat } from "@/components/interview/interview-chat";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import type { BeliefFeedback, BeliefFlag, InterviewBootstrap } from "@/lib/interview-api";
+import { patchBeliefFeedback } from "@/lib/interview-api";
 import type { SessionDetail } from "@/lib/sessions-api";
 
 import { AppChrome } from "../../shell/app-chrome";
@@ -53,11 +54,22 @@ function InterviewContent({
 
   const handleBeliefUpdate = useCallback(
     (id: string, update: { feedback?: BeliefFeedback; correction?: string }) => {
-      setBeliefs((current) =>
-        current.map((belief) => (belief.id === id ? { ...belief, ...update } : belief)),
-      );
+      setBeliefs((current) => {
+        const belief = current.find((entry) => entry.id === id);
+        if (belief === undefined || update.feedback === undefined) return current;
+
+        void patchBeliefFeedback(sessionId, id, {
+          sourceMessageId: belief.sourceMessageId,
+          feedback: update.feedback,
+          ...(update.correction !== undefined ? { correction: update.correction } : {}),
+        }).catch(() => {
+          // optimistic UI; reload restores server truth
+        });
+
+        return current.map((entry) => (entry.id === id ? { ...entry, ...update } : entry));
+      });
     },
-    [],
+    [sessionId],
   );
 
   const handleBeliefSourceClick = useCallback(

@@ -41,6 +41,7 @@ import {
   handleGetSessionById,
   handleListSessions,
   handleListTeamMembers,
+  handlePatchBeliefFeedback,
 } from "./sessions/routes";
 import {
   handleAcceptJoinTeam,
@@ -113,6 +114,11 @@ export const apiRoutes = {
 
   "/api/sessions/:id/interview": {
     GET: (req: Request & { params: { id: string } }) => handleGetInterview(req, req.params.id),
+  },
+
+  "/api/sessions/:sessionId/interview/beliefs/:beliefId": {
+    PATCH: (req: Request & { params: { sessionId: string; beliefId: string } }) =>
+      handlePatchBeliefFeedback(req, req.params.sessionId, req.params.beliefId),
   },
 
   "/api/sessions/:sessionId/documents": {
