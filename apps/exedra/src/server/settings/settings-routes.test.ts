@@ -78,6 +78,44 @@ test("PATCH /api/orgs/:orgId requires org owner", async () => {
   expect(res.status).toBe(403);
 });
 
+test("GET /api/orgs/:orgId/members lists org members for members", async () => {
+  await mockSession("member@example.com");
+  const { handleListOrgMembers } = await import("../orgs/routes");
+  const res = await handleListOrgMembers(new Request("http://localhost"), orgId);
+  expect(res.status).toBe(200);
+  const body = (await res.json()) as {
+    members: { userId: string; isCurrentUser: boolean; teamNames: string[] }[];
+  };
+  expect(body.members).toHaveLength(2);
+  expect(body.members.some((member) => member.isCurrentUser)).toBe(true);
+  expect(body.members.every((member) => member.teamNames.includes("Product"))).toBe(true);
+});
+
+test("GET /api/orgs/:orgId/teams lists org teams for members", async () => {
+  await mockSession("owner@example.com");
+  const { handleListOrgTeams } = await import("../orgs/routes");
+  const res = await handleListOrgTeams(new Request("http://localhost"), orgId);
+  expect(res.status).toBe(200);
+  const body = (await res.json()) as {
+    teams: { id: string; name: string; memberCount: number }[];
+  };
+  expect(body.teams).toHaveLength(1);
+  expect(body.teams[0]?.id).toBe(teamId);
+  expect(body.teams[0]?.memberCount).toBe(2);
+});
+
+test("GET /api/teams/:teamId/members lists team members", async () => {
+  await mockSession("member@example.com");
+  const { handleListTeamMembers } = await import("../sessions/routes");
+  const res = await handleListTeamMembers(new Request("http://localhost"), teamId);
+  expect(res.status).toBe(200);
+  const body = (await res.json()) as {
+    members: { userId: string; isCurrentUser: boolean; fullName: string | null }[];
+  };
+  expect(body.members).toHaveLength(2);
+  expect(body.members.some((member) => member.isCurrentUser)).toBe(true);
+});
+
 test("PATCH /api/orgs/:orgId updates name for owner", async () => {
   await mockSession("owner@example.com");
   const { handlePatchOrg } = await import("../orgs/routes");

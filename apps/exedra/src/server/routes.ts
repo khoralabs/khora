@@ -31,6 +31,8 @@ import {
 import {
   handleDeleteOrgAvatar,
   handleGetOrgSettings,
+  handleListOrgMembers,
+  handleListOrgTeams,
   handlePatchOrg,
   handleUploadOrgAvatar,
 } from "./orgs/routes";
@@ -91,16 +93,23 @@ export const apiRoutes = {
       handleGetOrgSettings(req, req.params.orgId),
   },
 
+  "/api/orgs/:orgId/members": {
+    GET: (req: Request & { params: { orgId: string } }) =>
+      handleListOrgMembers(req, req.params.orgId),
+  },
+
+  "/api/orgs/:orgId/teams": {
+    GET: (req: Request & { params: { orgId: string } }) =>
+      handleListOrgTeams(req, req.params.orgId),
+    POST: (req: Request & { params: { orgId: string } }) =>
+      handleCreateTeamInOrg(req, req.params.orgId),
+  },
+
   "/api/orgs/:orgId/avatar": {
     POST: (req: Request & { params: { orgId: string } }) =>
       handleUploadOrgAvatar(req, req.params.orgId),
     DELETE: (req: Request & { params: { orgId: string } }) =>
       handleDeleteOrgAvatar(req, req.params.orgId),
-  },
-
-  "/api/orgs/:orgId/teams": {
-    POST: (req: Request & { params: { orgId: string } }) =>
-      handleCreateTeamInOrg(req, req.params.orgId),
   },
 
   "/api/sessions": {

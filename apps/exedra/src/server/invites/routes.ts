@@ -9,8 +9,10 @@ import {
   listInvitesForSession,
   mintSessionInvite,
 } from "../db/invites";
+import { addTeamMember, getTeam } from "../db/membership";
 import { addSessionParticipants, getSession, userHasSessionAccess } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
+import { bootstrapOrgTeamMemories } from "../memories/bootstrap";
 import { bootstrapSessionMemoriesForTeamSession } from "../memories/bootstrap-session";
 import { getRegistryUrl } from "../registry-url";
 
@@ -25,6 +27,30 @@ export type InvitePublicInfo = {
 
 function sessionInviteRedirect(sessionId: string): string {
   return `/sessions/${sessionId}/interview`;
+}
+
+function ensureSessionInviteTeamMembership(
+  db: ReturnType<typeof getDb>,
+  params: { sessionId: string; userId: string },
+): void {
+  const sessionRecord = getSession(db, params.sessionId);
+  if (sessionRecord === null) return;
+
+  addTeamMember(db, sessionRecord.teamId, params.userId);
+
+  const team = getTeam(db, sessionRecord.teamId);
+  if (team === null) return;
+
+  try {
+    bootstrapOrgTeamMemories({
+      orgId: team.orgId,
+      teamId: team.id,
+      userId: params.userId,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to bootstrap team memories";
+    console.error("[exedra] invite team memories bootstrap failed:", message);
+  }
 }
 
 /** Public metadata for an invite deep link (no auth required). */
@@ -92,6 +118,7 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
   }
 
   addSessionParticipants(db, consumed.sessionId, [user.id]);
+  ensureSessionInviteTeamMembership(db, { sessionId: consumed.sessionId, userId: user.id });
 
   const sessionRecord = getSession(db, consumed.sessionId);
   if (sessionRecord !== null) {
@@ -114,7 +141,7 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
   return Response.json({
     invite,
     userId: user.id,
-    redirectTo: "/",
+    redirectTo: sessionInviteRedirect(consumed.sessionId),
   });
 }
 

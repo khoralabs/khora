@@ -9,7 +9,9 @@ import {
 } from "../shell/routes";
 
 import { AccountSettingsForm } from "./account-settings-form";
+import { OrganizationMembersSettings } from "./organization-members-settings";
 import { OrganizationSettingsForm } from "./organization-settings-form";
+import { OrganizationTeamsSettings } from "./organization-teams-settings";
 import { TeamSettingsForm } from "./team-settings-form";
 
 type SettingsContentProps = Pick<
@@ -19,6 +21,8 @@ type SettingsContentProps = Pick<
 
 const SECTION_TITLES: Record<SettingsSection, string> = {
   organization: "Organization",
+  "organization-members": "Members",
+  "organization-teams": "Teams",
   team: "Team",
   account: "Account",
 };
@@ -44,6 +48,10 @@ export function SettingsContent({
       <div className="min-h-0 flex-1 overflow-y-auto p-6">
         {section === "organization" ? (
           <OrganizationSettingsForm activeTeam={activeTeam} onSaved={onProfileRefresh} />
+        ) : section === "organization-members" ? (
+          <OrganizationMembersSettings activeTeam={activeTeam} />
+        ) : section === "organization-teams" ? (
+          <OrganizationTeamsSettings activeTeam={activeTeam} />
         ) : section === "team" ? (
           <TeamSettingsForm activeTeam={activeTeam} onSaved={onProfileRefresh} />
         ) : (

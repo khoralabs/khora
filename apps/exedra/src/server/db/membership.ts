@@ -146,17 +146,51 @@ export function listTeamsForUser(db: Database, userId: string): UserTeamRecord[]
 export type TeamMemberRecord = {
   userId: string;
   registryUserId: string;
+  fullName: string | null;
+};
+
+export type OrgMemberRecord = {
+  userId: string;
+  registryUserId: string;
+  fullName: string | null;
+  teamIds: string[];
+  teamNames: string[];
+};
+
+export type OrgTeamRecord = {
+  id: string;
+  name: string;
+  ownerId: string;
+  memberCount: number;
+  createdAtMs: number;
 };
 
 type TeamMemberRow = {
   user_id: string;
   registry_user_id: string;
+  full_name: string | null;
+};
+
+type OrgMemberRow = {
+  user_id: string;
+  registry_user_id: string;
+  full_name: string | null;
+  team_ids: string;
+  team_names: string;
+};
+
+type OrgTeamRow = {
+  id: string;
+  name: string;
+  owner_id: string;
+  member_count: number;
+  created_at_ms: number;
 };
 
 export function listTeamMembers(db: Database, teamId: string): TeamMemberRecord[] {
   const rows = db
     .query<TeamMemberRow, [string]>(
-      `SELECT u.id AS user_id, u.registry_user_id
+      `SELECT u.id AS user_id, u.registry_user_id, u.full_name
        FROM team_members tm
        JOIN users u ON u.id = tm.user_id
        WHERE tm.team_id = ?
@@ -166,6 +200,51 @@ export function listTeamMembers(db: Database, teamId: string): TeamMemberRecord[
   return rows.map((row) => ({
     userId: row.user_id,
     registryUserId: row.registry_user_id,
+    fullName: row.full_name,
+  }));
+}
+
+export function listOrgMembers(db: Database, orgId: string): OrgMemberRecord[] {
+  const rows = db
+    .query<OrgMemberRow, [string]>(
+      `SELECT u.id AS user_id, u.registry_user_id, u.full_name,
+              GROUP_CONCAT(t.id) AS team_ids,
+              GROUP_CONCAT(t.name) AS team_names
+       FROM team_members tm
+       JOIN teams t ON t.id = tm.team_id
+       JOIN users u ON u.id = tm.user_id
+       WHERE t.org_id = ?
+       GROUP BY u.id
+       ORDER BY MIN(tm.created_at_ms) ASC`,
+    )
+    .all(orgId);
+
+  return rows.map((row) => ({
+    userId: row.user_id,
+    registryUserId: row.registry_user_id,
+    fullName: row.full_name,
+    teamIds: row.team_ids.length > 0 ? row.team_ids.split(",") : [],
+    teamNames: row.team_names.length > 0 ? row.team_names.split(",") : [],
+  }));
+}
+
+export function listTeamsForOrg(db: Database, orgId: string): OrgTeamRecord[] {
+  const rows = db
+    .query<OrgTeamRow, [string]>(
+      `SELECT t.id, t.name, t.owner_id, t.created_at_ms,
+              (SELECT COUNT(1) FROM team_members WHERE team_id = t.id) AS member_count
+       FROM teams t
+       WHERE t.org_id = ?
+       ORDER BY t.created_at_ms ASC`,
+    )
+    .all(orgId);
+
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    ownerId: row.owner_id,
+    memberCount: row.member_count,
+    createdAtMs: row.created_at_ms,
   }));
 }
 

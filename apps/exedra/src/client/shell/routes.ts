@@ -38,13 +38,20 @@ export function isSessionInterviewPath(pathname: string): boolean {
   return /^\/sessions\/([^/]+)\/interview\/?$/.test(pathname);
 }
 
-export type SettingsSection = "organization" | "team" | "account";
+export type SettingsSection =
+  | "organization"
+  | "organization-members"
+  | "organization-teams"
+  | "team"
+  | "account";
 
 export function isSettingsPath(pathname: string): boolean {
   return /^\/settings(\/|$)/.test(pathname);
 }
 
 export function parseSettingsSection(pathname: string): SettingsSection {
+  if (/^\/settings\/organization\/members\/?$/.test(pathname)) return "organization-members";
+  if (/^\/settings\/organization\/teams\/?$/.test(pathname)) return "organization-teams";
   if (/^\/settings\/organization\/?$/.test(pathname)) return "organization";
   if (/^\/settings\/team\/?$/.test(pathname)) return "team";
   return "account";
@@ -52,8 +59,18 @@ export function parseSettingsSection(pathname: string): SettingsSection {
 
 export function settingsPathForSection(section: SettingsSection): string {
   if (section === "organization") return "/settings/organization";
+  if (section === "organization-members") return "/settings/organization/members";
+  if (section === "organization-teams") return "/settings/organization/teams";
   if (section === "team") return "/settings/team";
   return "/settings/account";
+}
+
+export function isOrganizationSettingsSection(section: SettingsSection): boolean {
+  return (
+    section === "organization" ||
+    section === "organization-members" ||
+    section === "organization-teams"
+  );
 }
 
 export function onboardingInterviewPath(sessionId: string): string {

@@ -5,6 +5,29 @@ export type EntitySettings = {
   canEdit: boolean;
 };
 
+export type MemberSummary = {
+  userId: string;
+  registryUserId: string;
+  fullName: string | null;
+  isCurrentUser: boolean;
+};
+
+export type OrgMemberSummary = MemberSummary & {
+  isOwner: boolean;
+  teamIds: string[];
+  teamNames: string[];
+};
+
+export type OrgTeamSummary = {
+  id: string;
+  name: string;
+  ownerId: string;
+  memberCount: number;
+  createdAtMs: number;
+};
+
+export type TeamMemberSummary = MemberSummary;
+
 export type TeamSettings = EntitySettings & {
   orgId: string;
 };
@@ -18,6 +41,39 @@ async function readErrorMessage(res: Response, fallback: string): Promise<string
     // keep fallback
   }
   return fallback;
+}
+
+export async function fetchOrgMembers(orgId: string): Promise<OrgMemberSummary[]> {
+  const res = await fetch(`/api/orgs/${encodeURIComponent(orgId)}/members`, {
+    credentials: "include",
+  });
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res, "Failed to load organization members"));
+  }
+  const data = (await res.json()) as { members: OrgMemberSummary[] };
+  return data.members;
+}
+
+export async function fetchOrgTeams(orgId: string): Promise<OrgTeamSummary[]> {
+  const res = await fetch(`/api/orgs/${encodeURIComponent(orgId)}/teams`, {
+    credentials: "include",
+  });
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res, "Failed to load organization teams"));
+  }
+  const data = (await res.json()) as { teams: OrgTeamSummary[] };
+  return data.teams;
+}
+
+export async function fetchTeamMembers(teamId: string): Promise<TeamMemberSummary[]> {
+  const res = await fetch(`/api/teams/${encodeURIComponent(teamId)}/members`, {
+    credentials: "include",
+  });
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res, "Failed to load team members"));
+  }
+  const data = (await res.json()) as { members: TeamMemberSummary[] };
+  return data.members;
 }
 
 export async function fetchOrgSettings(orgId: string): Promise<EntitySettings> {

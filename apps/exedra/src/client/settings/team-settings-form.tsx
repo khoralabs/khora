@@ -18,13 +18,16 @@ import { INVITE_LINK_SINGLE_USE_NOTE } from "@/lib/invite-copy";
 import { type MeTeam, mintTeamInvite } from "@/lib/me-api";
 import {
   deleteTeamAvatar,
+  fetchTeamMembers,
   fetchTeamSettings,
   patchTeamSettings,
+  type TeamMemberSummary,
   type TeamSettings,
   uploadTeamAvatar,
 } from "@/lib/settings-api";
 
 import { AvatarUploadField, useAvatarPendingFile } from "./avatar-upload-field";
+import { MembersTable } from "./members-table";
 
 type TeamSettingsFormProps = {
   activeTeam: MeTeam;
@@ -41,6 +44,8 @@ export function TeamSettingsForm({ activeTeam, onSaved }: TeamSettingsFormProps)
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [mintingInvite, setMintingInvite] = useState(false);
   const [inviteCopied, setInviteCopied] = useState(false);
+  const [members, setMembers] = useState<TeamMemberSummary[]>([]);
+  const [membersLoading, setMembersLoading] = useState(true);
   const { pendingFile, removeRequested, selectFile, resetPending } = useAvatarPendingFile();
 
   useEffect(() => {
@@ -65,6 +70,25 @@ export function TeamSettingsForm({ activeTeam, onSaved }: TeamSettingsFormProps)
       cancelled = true;
     };
   }, [activeTeam.id, resetPending]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setMembersLoading(true);
+    void fetchTeamMembers(activeTeam.id)
+      .then((data) => {
+        if (cancelled) return;
+        setMembers(data);
+        setMembersLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setMembers([]);
+        setMembersLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTeam.id]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -190,6 +214,20 @@ export function TeamSettingsForm({ activeTeam, onSaved }: TeamSettingsFormProps)
           </Button>
         </div>
       ) : null}
+
+      <div className="mt-10 border-t pt-8">
+        <h2 className="text-lg font-semibold tracking-tight">Members</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Everyone with access to this team.</p>
+        <div className="mt-4">
+          {membersLoading ? (
+            <div className="flex justify-center py-8">
+              <Spinner className="size-4" />
+            </div>
+          ) : (
+            <MembersTable members={members} />
+          )}
+        </div>
+      </div>
     </form>
   );
 }

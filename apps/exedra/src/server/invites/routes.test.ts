@@ -5,8 +5,10 @@ import path from "node:path";
 import { verifyRegistrySession } from "@khoralabs/registry-auth";
 import { closeDb, getDb } from "../db/index";
 import { mintSessionInvite } from "../db/invites";
+import { listTeamsForUser } from "../db/membership";
 import { addSessionParticipants, createOrg, createSession, createTeam } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
+import { resetMemoriesStoreForTests } from "../memories/store";
 import { getStubRegistryOtp } from "../registry-stub/config";
 import {
   handleStubGetSession,
@@ -27,18 +29,22 @@ beforeEach(async () => {
   process.env.INVITE_PEPPER = "test-pepper-invite-routes";
   process.env.EXEDRA_IDENTITY_KEY =
     "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+  process.env.EXEDRA_MEMORIES_SQLCIPHER_KEY = "test-memories-key-invites";
   process.env.BUN_PUBLIC_EXEDRA_REGISTRY_URL = BASE;
   process.env.EXEDRA_STUB_REGISTRY = "1";
   resetStubRegistryStore();
+  resetMemoriesStoreForTests();
   closeDb();
 });
 
 afterEach(() => {
   closeDb();
+  resetMemoriesStoreForTests();
   rmSync(dataDir, { recursive: true, force: true });
   delete process.env.EXEDRA_DATA_DIR;
   delete process.env.INVITE_PEPPER;
   delete process.env.EXEDRA_IDENTITY_KEY;
+  delete process.env.EXEDRA_MEMORIES_SQLCIPHER_KEY;
   delete process.env.BUN_PUBLIC_EXEDRA_REGISTRY_URL;
   delete process.env.EXEDRA_STUB_REGISTRY;
   resetStubRegistryStore();
@@ -115,6 +121,40 @@ test("accept invite redirects when user already joined session", async () => {
   const body = (await res.json()) as { alreadyJoined?: boolean; redirectTo: string };
   expect(body.alreadyJoined).toBe(true);
   expect(body.redirectTo).toBe(`/sessions/${session.id}/interview`);
+  const teams = listTeamsForUser(db, participant.id);
+  expect(teams.some((team) => team.id === teamId)).toBe(true);
+});
+
+test("accept invite adds invitee to session team and redirects to interview", async () => {
+  const db = getDb();
+  const facilitator = await getOrCreateUser(db, "registry-fac-accept");
+  const orgId = createOrg(db, { name: "OrgAccept", ownerId: facilitator.id });
+  const teamId = createTeam(db, { orgId, name: "TeamAccept", ownerId: facilitator.id });
+  const session = createSession(db, {
+    teamId,
+    topic: "Quarterly review",
+    facilitatorId: facilitator.id,
+  });
+  const token = mintSessionInvite(db, session.id);
+
+  const { cookie, registryUserId } = await signInCookie("new-invitee@exedra.test");
+  const invitee = await getOrCreateUser(db, registryUserId);
+  expect(listTeamsForUser(db, invitee.id)).toHaveLength(0);
+
+  const res = await handleAcceptInvite(
+    new Request(`${BASE}/api/invites/${token}/accept`, {
+      method: "POST",
+      headers: { cookie },
+    }),
+    token,
+  );
+
+  expect(res.status).toBe(200);
+  const body = (await res.json()) as { redirectTo: string };
+  expect(body.redirectTo).toBe(`/sessions/${session.id}/interview`);
+  expect(listTeamsForUser(db, invitee.id).some((team) => team.id === teamId)).toBe(true);
+  expect(session.facilitatorId).toBe(facilitator.id);
+  expect(session.facilitatorId).not.toBe(invitee.id);
 });
 
 test("get invite marks already joined for authenticated participant", async () => {

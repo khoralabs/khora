@@ -3,7 +3,14 @@ import { buildOrgAvatarS3Key } from "../avatars/keys.js";
 import { clearAvatarFromS3, parseAvatarUpload, replaceAvatarInS3 } from "../avatars/upload.js";
 import { avatarUrlFromS3Key } from "../avatars/urls.js";
 import { getDb } from "../db/index.js";
-import { getOrg, updateOrgAvatarS3Key, updateOrgName, userBelongsToOrg } from "../db/membership.js";
+import {
+  getOrg,
+  listOrgMembers,
+  listTeamsForOrg,
+  updateOrgAvatarS3Key,
+  updateOrgName,
+  userBelongsToOrg,
+} from "../db/membership.js";
 import { getOrCreateUser } from "../identity/users.js";
 
 function jsonResponse(data: unknown, status = 200): Response {
@@ -17,6 +24,48 @@ function serializeOrgSettings(org: NonNullable<ReturnType<typeof getOrg>>, userI
     avatarUrl: avatarUrlFromS3Key("org", org.id, org.avatarS3Key),
     canEdit: org.ownerId === userId,
   };
+}
+
+export async function handleListOrgMembers(req: Request, orgId: string): Promise<Response> {
+  const auth = await requireRegistrySessionResponse(req);
+  if (auth.response !== null) return auth.response;
+
+  const db = getDb();
+  const org = getOrg(db, orgId);
+  if (org === null) {
+    return jsonResponse({ error: "Organization not found" }, 404);
+  }
+
+  const user = await getOrCreateUser(db, auth.session.user.id);
+  if (!userBelongsToOrg(db, orgId, user.id)) {
+    return jsonResponse({ error: "Forbidden" }, 403);
+  }
+
+  const members = listOrgMembers(db, orgId).map((member) => ({
+    ...member,
+    isCurrentUser: member.userId === user.id,
+    isOwner: member.userId === org.ownerId,
+  }));
+
+  return jsonResponse({ members });
+}
+
+export async function handleListOrgTeams(req: Request, orgId: string): Promise<Response> {
+  const auth = await requireRegistrySessionResponse(req);
+  if (auth.response !== null) return auth.response;
+
+  const db = getDb();
+  const org = getOrg(db, orgId);
+  if (org === null) {
+    return jsonResponse({ error: "Organization not found" }, 404);
+  }
+
+  const user = await getOrCreateUser(db, auth.session.user.id);
+  if (!userBelongsToOrg(db, orgId, user.id)) {
+    return jsonResponse({ error: "Forbidden" }, 403);
+  }
+
+  return jsonResponse({ teams: listTeamsForOrg(db, orgId) });
 }
 
 export async function handleGetOrgSettings(req: Request, orgId: string): Promise<Response> {

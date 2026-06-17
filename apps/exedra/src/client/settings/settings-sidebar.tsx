@@ -3,6 +3,7 @@ import { SidebarCollapsedTooltip } from "@/components/exedra/sidebar-collapsed-t
 import type { MeTeam } from "@/lib/me-api";
 import { cn } from "@/lib/utils";
 import {
+  isOrganizationSettingsSection,
   parseSettingsSection,
   type SettingsSection,
   settingsPathForSection,
@@ -15,11 +16,28 @@ type SettingsSidebarProps = {
   onNavigate: (path: string) => void;
 };
 
-const NAV_ITEMS: { section: SettingsSection; label: string; icon: typeof Building2 }[] = [
-  { section: "organization", label: "Organization", icon: Building2 },
+const ORG_NAV_ITEMS: { section: SettingsSection; label: string }[] = [
+  { section: "organization", label: "General" },
+  { section: "organization-members", label: "Members" },
+  { section: "organization-teams", label: "Teams" },
+];
+
+const OTHER_NAV_ITEMS: {
+  section: SettingsSection;
+  label: string;
+  icon: typeof Building2;
+}[] = [
   { section: "team", label: "Team", icon: Users },
   { section: "account", label: "Account", icon: UserRound },
 ];
+
+function navButtonClassName(collapsed: boolean, active: boolean): string {
+  return cn(
+    "w-full rounded-md text-left transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+    active && "bg-sidebar-accent text-sidebar-accent-foreground",
+    collapsed ? "flex justify-center px-2 py-2" : "flex items-center gap-2 px-3 py-2",
+  );
+}
 
 export function SettingsSidebar({
   pathname,
@@ -28,6 +46,7 @@ export function SettingsSidebar({
   onNavigate,
 }: SettingsSidebarProps) {
   const activeSection = parseSettingsSection(pathname);
+  const orgSectionActive = isOrganizationSettingsSection(activeSection);
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto p-2">
@@ -39,10 +58,7 @@ export function SettingsSidebar({
           <SidebarCollapsedTooltip collapsed={collapsed} label="Back to app">
             <button
               type="button"
-              className={cn(
-                "w-full rounded-md text-left transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                collapsed ? "flex justify-center px-2 py-2" : "flex items-center gap-2 px-3 py-2",
-              )}
+              className={navButtonClassName(collapsed, false)}
               onClick={() => onNavigate("/")}
               aria-label="Back to app"
             >
@@ -51,7 +67,48 @@ export function SettingsSidebar({
             </button>
           </SidebarCollapsedTooltip>
         </li>
-        {NAV_ITEMS.map(({ section, label, icon: Icon }) => {
+
+        {!collapsed ? (
+          <li className="px-3 pt-2 pb-1">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Organization
+            </p>
+          </li>
+        ) : (
+          <li>
+            <SidebarCollapsedTooltip collapsed={collapsed} label="Organization">
+              <button
+                type="button"
+                className={navButtonClassName(collapsed, orgSectionActive)}
+                onClick={() => onNavigate(settingsPathForSection("organization"))}
+                aria-label="Organization"
+              >
+                <Building2 className="size-4 shrink-0" />
+              </button>
+            </SidebarCollapsedTooltip>
+          </li>
+        )}
+
+        {ORG_NAV_ITEMS.map(({ section, label }) => {
+          const active = activeSection === section;
+          if (collapsed) {
+            if (section !== "organization") return null;
+            return null;
+          }
+          return (
+            <li key={section}>
+              <button
+                type="button"
+                className={cn(navButtonClassName(false, active), "pl-6")}
+                onClick={() => onNavigate(settingsPathForSection(section))}
+              >
+                <span className="text-sm font-medium">{label}</span>
+              </button>
+            </li>
+          );
+        })}
+
+        {OTHER_NAV_ITEMS.map(({ section, label, icon: Icon }) => {
           const active = activeSection === section;
           const subtitle = section === "team" && !collapsed ? activeTeam.name : undefined;
           const tooltipLabel =
@@ -61,13 +118,7 @@ export function SettingsSidebar({
               <SidebarCollapsedTooltip collapsed={collapsed} label={tooltipLabel}>
                 <button
                   type="button"
-                  className={cn(
-                    "w-full rounded-md text-left transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                    active && "bg-sidebar-accent text-sidebar-accent-foreground",
-                    collapsed
-                      ? "flex justify-center px-2 py-2"
-                      : "flex items-center gap-2 px-3 py-2",
-                  )}
+                  className={navButtonClassName(collapsed, active)}
                   onClick={() => onNavigate(settingsPathForSection(section))}
                   aria-label={tooltipLabel}
                 >

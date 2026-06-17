@@ -313,7 +313,9 @@ export async function handleListTeamMembers(req: Request, teamId: string): Promi
   }
 
   const members = listTeamMembers(db, teamId).map((member) => ({
-    ...member,
+    userId: member.userId,
+    registryUserId: member.registryUserId,
+    fullName: member.fullName,
     isCurrentUser: member.userId === user.id,
   }));
 
