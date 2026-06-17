@@ -1,11 +1,10 @@
 import { verifyRegistrySession } from "@khoralabs/registry-auth";
-import { nanoid } from "nanoid";
 
 import { isValidIanaTimeZone } from "../../agents/turn-context/user-local-datetime";
 import { getDb } from "../db/index";
 import { getSession, getThread, userHasSessionAccess } from "../db/sessions";
 import { findUserByRegistryId } from "../identity/users";
-import { ensureInterviewKickoff, runInterviewUserTurn } from "../interview/turn";
+import { getDefaultTurnEngine } from "../interview/turn-engine";
 import { getRegistryUrl } from "../registry-url";
 
 export type InterviewWsData = {
@@ -17,10 +16,18 @@ export type InterviewWsData = {
 type InterviewWs = {
   send: (data: string) => void;
   data: InterviewWsData;
+  close?: () => void;
 };
 
 type ClientMessage =
-  | { type: "user_message"; text: string; documentIds?: string[]; timeZone?: string }
+  | {
+      type: "user_message";
+      turnId: string;
+      text: string;
+      documentIds?: string[];
+      timeZone?: string;
+    }
+  | { type: "abort_turn"; turnId: string }
   | { type: "client_context"; timeZone?: string }
   | { type: "ping" };
 
@@ -29,6 +36,10 @@ function applyClientTimeZone(data: InterviewWsData, timeZone: unknown): void {
   const trimmed = timeZone.trim();
   if (trimmed.length === 0 || !isValidIanaTimeZone(trimmed)) return;
   data.timeZone = trimmed;
+}
+
+function emit(ws: InterviewWs, event: unknown): void {
+  ws.send(JSON.stringify(event));
 }
 
 export async function verifyInterviewWsUpgrade(
@@ -70,69 +81,64 @@ export async function handleInterviewWsMessage(
   raw: string | Buffer,
 ): Promise<void> {
   const { data } = ws;
+  const engine = getDefaultTurnEngine();
   let parsed: ClientMessage;
   try {
     parsed = JSON.parse(typeof raw === "string" ? raw : raw.toString()) as ClientMessage;
   } catch {
-    ws.send(JSON.stringify({ type: "error", error: "Invalid JSON" }));
+    emit(ws, { type: "error", error: "Invalid JSON" });
     return;
   }
 
   if (parsed.type === "ping") {
-    ws.send(JSON.stringify({ type: "pong" }));
+    emit(ws, { type: "pong" });
     return;
   }
 
   if (parsed.type === "client_context") {
     applyClientTimeZone(data, parsed.timeZone);
-    await ensureInterviewKickoff(getDb(), ws, data.threadId, data.timeZone);
+    await engine.runKickoffTurn({
+      threadId: data.threadId,
+      userTimeZone: data.timeZone,
+      emit: (event) => emit(ws, event),
+    });
+    return;
+  }
+
+  if (parsed.type === "abort_turn") {
+    engine.abortTurn({ threadId: data.threadId, turnId: parsed.turnId });
     return;
   }
 
   if (parsed.type !== "user_message") {
-    ws.send(JSON.stringify({ type: "error", error: "Unknown message type" }));
+    emit(ws, { type: "error", error: "Unknown message type" });
     return;
   }
 
   applyClientTimeZone(data, parsed.timeZone);
 
-  const text = parsed.text.trim();
-  const documentIds = (parsed.documentIds ?? []).filter(
-    (id) => typeof id === "string" && id.trim().length > 0,
-  );
-  if (text.length === 0 && documentIds.length === 0) {
-    ws.send(JSON.stringify({ type: "error", error: "Empty message" }));
-    return;
-  }
-
-  const db = getDb();
-  const thread = getThread(db, data.threadId);
-  if (thread === null) return;
-
-  const sessionRecord = getSession(db, thread.session_id);
-  if (sessionRecord === null) return;
-
-  const result = await runInterviewUserTurn({
-    db,
-    ws,
+  const result = engine.submitTurn({
     threadId: data.threadId,
-    session: sessionRecord,
-    text,
-    userMessageId: nanoid(),
-    documentIds,
+    turnId: parsed.turnId,
+    text: parsed.text,
+    documentIds: parsed.documentIds,
     userTimeZone: data.timeZone,
+    emit: (event) => emit(ws, event),
   });
 
   if (!result.ok) {
-    ws.send(JSON.stringify({ type: "error", error: result.error }));
+    emit(ws, { type: "error", error: result.error });
   }
 }
 
 export const interviewWsHandlers = {
   open(ws: InterviewWs) {
-    ws.send(JSON.stringify({ type: "ready", threadId: ws.data.threadId }));
+    emit(ws, { type: "ready", threadId: ws.data.threadId });
   },
   message(ws: InterviewWs, raw: string | Buffer) {
     void handleInterviewWsMessage(ws, raw);
+  },
+  close(ws: InterviewWs) {
+    getDefaultTurnEngine().releaseThread(ws.data.threadId);
   },
 };

@@ -18,6 +18,7 @@ export type InterviewWsHandlerContext = {
   onOnboardingComplete?: () => void;
   shouldAcceptStreamUpdates?: () => boolean;
   onTurnComplete?: () => void;
+  onTurnAborted?: (turnId: string) => void;
 };
 
 function ignoreStreamUpdate(ctx: InterviewWsHandlerContext): boolean {
@@ -32,6 +33,7 @@ type ToolError = Extract<WsServerMessage, { type: "tool_error" }>;
 type AssistantMessage = Extract<WsServerMessage, { type: "assistant_message" }>;
 type BeliefFlagMessage = Extract<WsServerMessage, { type: "belief_flag" }>;
 type ErrorMessage = Extract<WsServerMessage, { type: "error" }>;
+type TurnAbortedMessage = Extract<WsServerMessage, { type: "turn_aborted" }>;
 
 export function handleUserMessageSaved(message: UserMessageSaved, ctx: InterviewWsHandlerContext) {
   if (ignoreStreamUpdate(ctx)) return;
@@ -39,19 +41,29 @@ export function handleUserMessageSaved(message: UserMessageSaved, ctx: Interview
 
   const text = message.message.parts.map((part) => part.text).join("");
   ctx.setMessages((current) => {
-    let replaced = false;
-    return current.map((entry) => {
-      if (!replaced && entry.id.startsWith("temp-") && entry.role === "user") {
-        replaced = true;
-        return {
-          id: message.message.id,
-          role: "user",
-          content: text,
-          attachments: message.message.metadata?.documents,
-        };
-      }
-      return entry;
-    });
+    const existing = current.find(
+      (entry) => entry.id === message.message.id && entry.role === "user",
+    );
+    if (existing !== undefined) {
+      return current.map((entry) =>
+        entry.id === message.message.id
+          ? {
+              ...entry,
+              content: text,
+              attachments: message.message.metadata?.documents,
+            }
+          : entry,
+      );
+    }
+    return [
+      ...current,
+      {
+        id: message.message.id,
+        role: "user",
+        content: text,
+        attachments: message.message.metadata?.documents,
+      },
+    ];
   });
 }
 
@@ -189,6 +201,14 @@ export function handleBeliefFlag(message: BeliefFlagMessage, ctx: InterviewWsHan
   ctx.onBeliefsChange(ctx.beliefsRef.current);
 }
 
+export function handleTurnAborted(message: TurnAbortedMessage, ctx: InterviewWsHandlerContext) {
+  ctx.streamingIdRef.current = null;
+  ctx.setAwaitingOpening(false);
+  ctx.setStatus("ready");
+  ctx.onTurnComplete?.();
+  ctx.onTurnAborted?.(message.turnId);
+}
+
 export function handleWsError(message: ErrorMessage, ctx: InterviewWsHandlerContext) {
   if (ignoreStreamUpdate(ctx)) return;
   ctx.streamingIdRef.current = null;
@@ -226,6 +246,9 @@ export function dispatchWsMessage(parsed: WsServerMessage, ctx: InterviewWsHandl
       return;
     case "belief_flag":
       handleBeliefFlag(parsed, ctx);
+      return;
+    case "turn_aborted":
+      handleTurnAborted(parsed, ctx);
       return;
     case "error":
       handleWsError(parsed, ctx);

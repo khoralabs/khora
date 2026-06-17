@@ -42,6 +42,7 @@ export type WsServerMessage =
   | { type: "tool_result"; toolCallId: string; toolName: string; output: unknown }
   | { type: "tool_error"; toolCallId: string; toolName: string; errorText: string }
   | { type: "belief_flag"; belief: string; sourceMessageId: string }
+  | { type: "turn_aborted"; turnId: string }
   | { type: "onboarding_complete"; summary: string }
   | { type: "error"; error: string }
   | { type: "pong" };

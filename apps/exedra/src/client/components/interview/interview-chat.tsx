@@ -10,7 +10,7 @@ import { InterviewChatMessages, interviewShowThinking } from "./interview-chat-m
 import type { InterviewChatProps } from "./interview-chat-types";
 import { useInterviewBootstrap } from "./use-interview-bootstrap";
 import { useInterviewDragDrop } from "./use-interview-drag-drop";
-import { useInterviewSendMessage } from "./use-interview-send-message";
+import { useInterviewTurn } from "./use-interview-turn";
 import { useInterviewWs } from "./use-interview-ws";
 import { useScrollToMessage } from "./use-scroll-to-message";
 
@@ -44,17 +44,18 @@ export function InterviewChat({
   const { chatRootRef, isDragActive, attachmentControlsRef, handleAttachmentControlsReady } =
     useInterviewDragDrop(status === "ready");
 
-  const { input, handleSendMessage, handleStop, handleTextChange, generationRefs } =
-    useInterviewSendMessage({
-      sessionId,
-      status,
-      setStatus,
-      setMessages,
-      setChatError: (error) => setChatErrorRef.current(error),
-      streamingIdRef,
-      ensureWebSocketOpen: () => ensureWebSocketOpenRef.current(),
-      attachmentControlsRef,
-    });
+  const { input, submitTurn, stopTurn, handleTextChange, sessionRefs } = useInterviewTurn({
+    sessionId,
+    status,
+    setStatus,
+    setMessages,
+    setChatError: (error) => setChatErrorRef.current(error),
+    streamingIdRef,
+    ensureWebSocketOpen: () => ensureWebSocketOpenRef.current(),
+    attachmentControlsRef,
+    beliefsRef,
+    onBeliefsChange,
+  });
 
   const { connected, chatError, setChatError, ensureWebSocketOpen } = useInterviewWs({
     bootstrap,
@@ -64,7 +65,7 @@ export function InterviewChat({
     setMessages,
     setStatus,
     setAwaitingOpening,
-    generationRefs,
+    sessionRefs,
     streamingIdRef,
   });
 
@@ -104,8 +105,8 @@ export function InterviewChat({
         input={input}
         onAttachmentControlsReady={handleAttachmentControlsReady}
         onError={setChatError}
-        onStop={handleStop}
-        onSubmit={handleSendMessage}
+        onStop={stopTurn}
+        onSubmit={submitTurn}
         onTextChange={handleTextChange}
         status={status}
       />

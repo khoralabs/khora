@@ -17,6 +17,7 @@ import {
 
 type InterviewToolSet = Record<string, Tool<unknown, unknown>> & ToolSet;
 
+import { TurnAbortedError } from "../errors.js";
 import {
   buildUserLocalDateTimeContext,
   formatUserLocalDateTimeTurnInstruction,
@@ -99,6 +100,7 @@ export async function runInterviewTurn(args: {
   userMessageId: string;
   history: UIMessage[];
   userTimeZone?: string;
+  abortSignal?: AbortSignal;
   onTextDelta: (delta: string) => void;
   onBeliefFlag: (belief: string, sourceMessageId: string) => void;
   onCompleteOnboarding?: (summary: string) => void;
@@ -118,6 +120,7 @@ export async function runInterviewTurn(args: {
     userMessageId,
     history,
     userTimeZone,
+    abortSignal,
     onTextDelta,
     onBeliefFlag,
     onCompleteOnboarding,
@@ -129,16 +132,20 @@ export async function runInterviewTurn(args: {
   let onboardingCompleted = false;
 
   const beliefFlags: { belief: string; messageId: string }[] = [];
+  const isAborted = () => abortSignal?.aborted === true;
+
   const env: InterviewEnv = {
     sourceMessageId: userMessageId,
     allowBeliefFlag: allowBeliefFlagForTurn(history, userMessageId),
     isOnboarding,
     allowCompleteOnboarding: isOnboarding && userTurnCount >= ONBOARDING_MIN_USER_TURNS,
     onBeliefFlag: (belief, sourceMessageId) => {
+      if (isAborted()) return;
       beliefFlags.push({ belief, messageId: sourceMessageId });
       onBeliefFlag(belief, sourceMessageId);
     },
     onCompleteOnboarding: (summary) => {
+      if (isAborted()) return;
       onboardingCompleted = true;
       onCompleteOnboarding?.(summary);
     },
@@ -190,6 +197,10 @@ export async function runInterviewTurn(args: {
     }));
   }
 
+  if (isAborted()) {
+    throw new TurnAbortedError();
+  }
+
   const assistantParts: UIMessage["parts"] = [];
   const result = streamText({
     model,
@@ -197,10 +208,15 @@ export async function runInterviewTurn(args: {
     messages: modelMessages,
     tools: aiTools,
     stopWhen: stepCountIs(5),
+    abortSignal,
   });
 
   for await (const part of result.fullStream) {
+    if (isAborted()) {
+      throw new TurnAbortedError();
+    }
     if (part.type === "text-delta") {
+      if (isAborted()) throw new TurnAbortedError();
       const delta = part.text;
       if (delta.length === 0) continue;
       const last = assistantParts.at(-1);
@@ -254,6 +270,10 @@ export async function runInterviewTurn(args: {
         errorText,
       });
     }
+  }
+
+  if (isAborted()) {
+    throw new TurnAbortedError();
   }
 
   if (process.env.NODE_ENV !== "production") {

@@ -1,4 +1,5 @@
 import type { ChatStatus } from "ai";
+import { SquareIcon } from "lucide-react";
 
 import type { PromptInputMessage } from "@/components/ai-elements/prompt-input";
 import {
@@ -12,6 +13,7 @@ import {
   PromptInputTextarea,
   PromptInputTools,
 } from "@/components/ai-elements/prompt-input";
+import { InputGroupButton } from "@/components/ui/input-group";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import {
@@ -75,13 +77,40 @@ export function InterviewChatInput({
               </PromptInputActionMenu>
             </PromptInputTools>
           </TooltipProvider>
-          <PromptInputSubmit
-            disabled={status === "ready" && !connected}
-            onStop={onStop}
-            status={status}
-          />
+          <InterviewPromptSubmit connected={connected} onStop={onStop} status={status} />
         </PromptInputFooter>
       </PromptInput>
     </div>
   );
+}
+
+function InterviewPromptSubmit({
+  connected,
+  status,
+  onStop,
+}: {
+  connected: boolean;
+  status: ChatStatus;
+  onStop: () => void;
+}) {
+  const isGenerating = status === "submitted" || status === "streaming";
+
+  if (isGenerating) {
+    return (
+      <InputGroupButton
+        aria-label="Stop"
+        size="icon-sm"
+        type="button"
+        variant="default"
+        onClick={(event) => {
+          event.preventDefault();
+          onStop();
+        }}
+      >
+        <SquareIcon className="size-4" />
+      </InputGroupButton>
+    );
+  }
+
+  return <PromptInputSubmit disabled={!connected} status={status} />;
 }
