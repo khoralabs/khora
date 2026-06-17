@@ -47,7 +47,7 @@ export function InterviewCanvas({
         <div className={appSectionHeaderClassName("px-4")}>
           <TabsList variant="line">
             <TabsTrigger value="beliefs">Beliefs</TabsTrigger>
-            <TabsTrigger value="info">Interview Info</TabsTrigger>
+            <TabsTrigger value="info">Session Info</TabsTrigger>
           </TabsList>
         </div>
 
