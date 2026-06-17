@@ -2,13 +2,19 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 export function useInterviewDragDrop(canAcceptFiles: boolean) {
   const chatRootRef = useRef<HTMLDivElement | null>(null);
-  const addAttachmentFilesRef = useRef<(files: File[] | FileList) => void>(() => {});
+  const attachmentControlsRef = useRef<{
+    add: (files: File[] | FileList) => void;
+    clear: () => void;
+  } | null>(null);
   const dragDepthRef = useRef(0);
   const [isDragActive, setIsDragActive] = useState(false);
 
-  const handleAttachmentAddReady = useCallback((add: (files: File[] | FileList) => void) => {
-    addAttachmentFilesRef.current = add;
-  }, []);
+  const handleAttachmentControlsReady = useCallback(
+    (controls: { add: (files: File[] | FileList) => void; clear: () => void }) => {
+      attachmentControlsRef.current = controls;
+    },
+    [],
+  );
 
   useEffect(() => {
     const root = chatRootRef.current;
@@ -50,7 +56,7 @@ export function useInterviewDragDrop(canAcceptFiles: boolean) {
       dragDepthRef.current = 0;
       setIsDragActive(false);
       if (event.dataTransfer?.files !== undefined && event.dataTransfer.files.length > 0) {
-        addAttachmentFilesRef.current(event.dataTransfer.files);
+        attachmentControlsRef.current?.add(event.dataTransfer.files);
       }
     };
 
@@ -74,5 +80,5 @@ export function useInterviewDragDrop(canAcceptFiles: boolean) {
     };
   }, [canAcceptFiles]);
 
-  return { chatRootRef, isDragActive, handleAttachmentAddReady };
+  return { chatRootRef, isDragActive, attachmentControlsRef, handleAttachmentControlsReady };
 }

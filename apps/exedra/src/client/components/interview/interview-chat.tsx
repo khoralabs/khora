@@ -1,3 +1,5 @@
+import { useRef } from "react";
+
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 
@@ -33,32 +35,43 @@ export function InterviewChat({
     beliefsRef,
   } = useInterviewBootstrap({ sessionId, onBootstrap, onBeliefsChange, onError });
 
-  const { connected, chatError, setChatError, streamingIdRef, ensureWebSocketOpen } =
-    useInterviewWs({
-      bootstrap,
-      beliefsRef,
-      onBeliefsChange,
-      onOnboardingComplete,
-      setMessages,
+  const streamingIdRef = useRef<string | null>(null);
+  const ensureWebSocketOpenRef = useRef<() => Promise<WebSocket>>(() =>
+    Promise.reject(new Error("Not connected")),
+  );
+  const setChatErrorRef = useRef<(error: string | null) => void>(() => {});
+
+  const { chatRootRef, isDragActive, attachmentControlsRef, handleAttachmentControlsReady } =
+    useInterviewDragDrop(status === "ready");
+
+  const { input, handleSendMessage, handleStop, handleTextChange, generationRefs } =
+    useInterviewSendMessage({
+      sessionId,
+      status,
       setStatus,
-      setAwaitingOpening,
+      setMessages,
+      setChatError: (error) => setChatErrorRef.current(error),
+      streamingIdRef,
+      ensureWebSocketOpen: () => ensureWebSocketOpenRef.current(),
+      attachmentControlsRef,
     });
 
-  const canAcceptFiles = status === "ready" && connected;
-  const { chatRootRef, isDragActive, handleAttachmentAddReady } =
-    useInterviewDragDrop(canAcceptFiles);
+  const { connected, chatError, setChatError, ensureWebSocketOpen } = useInterviewWs({
+    bootstrap,
+    beliefsRef,
+    onBeliefsChange,
+    onOnboardingComplete,
+    setMessages,
+    setStatus,
+    setAwaitingOpening,
+    generationRefs,
+    streamingIdRef,
+  });
+
+  ensureWebSocketOpenRef.current = ensureWebSocketOpen;
+  setChatErrorRef.current = setChatError;
 
   useScrollToMessage(scrollToMessageId, onScrollToMessageComplete);
-
-  const { input, handleSendMessage, handleTextChange } = useInterviewSendMessage({
-    sessionId,
-    status,
-    setStatus,
-    setMessages,
-    setChatError,
-    streamingIdRef,
-    ensureWebSocketOpen,
-  });
 
   if (bootstrap === null) {
     return (
@@ -89,8 +102,9 @@ export function InterviewChat({
         chatError={chatError}
         connected={connected}
         input={input}
-        onAttachmentAddReady={handleAttachmentAddReady}
+        onAttachmentControlsReady={handleAttachmentControlsReady}
         onError={setChatError}
+        onStop={handleStop}
         onSubmit={handleSendMessage}
         onTextChange={handleTextChange}
         status={status}

@@ -10,6 +10,8 @@ import {
   parseWsMessage,
 } from "./interview-ws-handlers";
 
+import type { InterviewSendGenerationRefs } from "./use-interview-send-message";
+
 type UseInterviewWsArgs = {
   bootstrap: InterviewBootstrap | null;
   beliefsRef: RefObject<BeliefFlag[]>;
@@ -18,6 +20,8 @@ type UseInterviewWsArgs = {
   setMessages: InterviewWsHandlerContext["setMessages"];
   setStatus: InterviewWsHandlerContext["setStatus"];
   setAwaitingOpening: InterviewWsHandlerContext["setAwaitingOpening"];
+  generationRefs: InterviewSendGenerationRefs;
+  streamingIdRef: RefObject<string | null>;
 };
 
 export function useInterviewWs({
@@ -28,6 +32,8 @@ export function useInterviewWs({
   setMessages,
   setStatus,
   setAwaitingOpening,
+  generationRefs,
+  streamingIdRef,
 }: UseInterviewWsArgs) {
   const [connected, setConnected] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
@@ -35,7 +41,6 @@ export function useInterviewWs({
   const wsRef = useRef<WebSocket | null>(null);
   const bootstrapRef = useRef<InterviewBootstrap | null>(null);
   bootstrapRef.current = bootstrap;
-  const streamingIdRef = useRef<string | null>(null);
 
   const onBeliefsChangeRef = useRef(onBeliefsChange);
   onBeliefsChangeRef.current = onBeliefsChange;
@@ -51,6 +56,9 @@ export function useInterviewWs({
     beliefsRef,
     onBeliefsChange: (beliefs) => onBeliefsChangeRef.current(beliefs),
     onOnboardingComplete: () => onOnboardingCompleteRef.current?.(),
+    shouldAcceptStreamUpdates: () =>
+      generationRefs.abortedGenerationRef.current !== generationRefs.sendGenerationRef.current,
+    onTurnComplete: () => generationRefs.clearPendingDraft(),
   });
   wsHandlerContext.current.setMessages = setMessages;
   wsHandlerContext.current.setStatus = setStatus;
@@ -58,6 +66,9 @@ export function useInterviewWs({
   wsHandlerContext.current.setChatError = setChatError;
   wsHandlerContext.current.streamingIdRef = streamingIdRef;
   wsHandlerContext.current.beliefsRef = beliefsRef;
+  wsHandlerContext.current.shouldAcceptStreamUpdates = () =>
+    generationRefs.abortedGenerationRef.current !== generationRefs.sendGenerationRef.current;
+  wsHandlerContext.current.onTurnComplete = () => generationRefs.clearPendingDraft();
 
   const handleWsMessage = useCallback((event: MessageEvent) => {
     const parsed = parseWsMessage(String(event.data));

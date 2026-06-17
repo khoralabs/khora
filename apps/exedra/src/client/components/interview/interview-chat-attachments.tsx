@@ -137,15 +137,18 @@ export function UserMessageAttachments({
 }
 
 export function PromptInputAttachmentBridge({
-  onAddReady,
+  onControlsReady,
 }: {
-  onAddReady: (add: (files: File[] | FileList) => void) => void;
+  onControlsReady: (controls: {
+    add: (files: File[] | FileList) => void;
+    clear: () => void;
+  }) => void;
 }) {
   const attachments = usePromptInputAttachments();
 
   useEffect(() => {
-    onAddReady(attachments.add);
-  }, [attachments.add, onAddReady]);
+    onControlsReady({ add: attachments.add, clear: attachments.clear });
+  }, [attachments.add, attachments.clear, onControlsReady]);
 
   return null;
 }

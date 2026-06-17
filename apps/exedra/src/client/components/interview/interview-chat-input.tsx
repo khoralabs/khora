@@ -24,8 +24,12 @@ type InterviewChatInputProps = {
   status: ChatStatus;
   input: string;
   chatError: string | null;
-  onAttachmentAddReady: (add: (files: File[] | FileList) => void) => void;
+  onAttachmentControlsReady: (controls: {
+    add: (files: File[] | FileList) => void;
+    clear: () => void;
+  }) => void;
   onSubmit: (message: PromptInputMessage) => void;
+  onStop: () => void;
   onTextChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   onError: (error: string) => void;
 };
@@ -35,8 +39,9 @@ export function InterviewChatInput({
   status,
   input,
   chatError,
-  onAttachmentAddReady,
+  onAttachmentControlsReady,
   onSubmit,
+  onStop,
   onTextChange,
   onError,
 }: InterviewChatInputProps) {
@@ -50,11 +55,11 @@ export function InterviewChatInput({
         onError={(error) => onError(error.message)}
         onSubmit={onSubmit}
       >
-        <PromptInputAttachmentBridge onAddReady={onAttachmentAddReady} />
+        <PromptInputAttachmentBridge onControlsReady={onAttachmentControlsReady} />
         <InterviewPromptAttachments />
         <PromptInputTextarea
           className="min-h-[60px]"
-          disabled={status !== "ready" || !connected}
+          disabled={status !== "ready"}
           onChange={onTextChange}
           placeholder="Share your thoughts…"
           value={input}
@@ -70,7 +75,11 @@ export function InterviewChatInput({
               </PromptInputActionMenu>
             </PromptInputTools>
           </TooltipProvider>
-          <PromptInputSubmit disabled={!connected || status !== "ready"} status={status} />
+          <PromptInputSubmit
+            disabled={status === "ready" && !connected}
+            onStop={onStop}
+            status={status}
+          />
         </PromptInputFooter>
       </PromptInput>
     </div>

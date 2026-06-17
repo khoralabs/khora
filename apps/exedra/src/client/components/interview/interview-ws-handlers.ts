@@ -16,7 +16,13 @@ export type InterviewWsHandlerContext = {
   beliefsRef: RefObject<BeliefFlag[]>;
   onBeliefsChange: (beliefs: BeliefFlag[]) => void;
   onOnboardingComplete?: () => void;
+  shouldAcceptStreamUpdates?: () => boolean;
+  onTurnComplete?: () => void;
 };
+
+function ignoreStreamUpdate(ctx: InterviewWsHandlerContext): boolean {
+  return ctx.shouldAcceptStreamUpdates?.() === false;
+}
 
 type UserMessageSaved = Extract<WsServerMessage, { type: "user_message_saved" }>;
 type TextDelta = Extract<WsServerMessage, { type: "text_delta" }>;
@@ -28,6 +34,7 @@ type BeliefFlagMessage = Extract<WsServerMessage, { type: "belief_flag" }>;
 type ErrorMessage = Extract<WsServerMessage, { type: "error" }>;
 
 export function handleUserMessageSaved(message: UserMessageSaved, ctx: InterviewWsHandlerContext) {
+  if (ignoreStreamUpdate(ctx)) return;
   if (message.message.metadata?.kickoff === true) return;
 
   const text = message.message.parts.map((part) => part.text).join("");
@@ -49,6 +56,7 @@ export function handleUserMessageSaved(message: UserMessageSaved, ctx: Interview
 }
 
 export function handleTextDelta(message: TextDelta, ctx: InterviewWsHandlerContext) {
+  if (ignoreStreamUpdate(ctx)) return;
   ctx.setAwaitingOpening(false);
   const streamingId = ctx.streamingIdRef.current ?? nanoid();
   ctx.streamingIdRef.current = streamingId;
@@ -65,6 +73,7 @@ export function handleTextDelta(message: TextDelta, ctx: InterviewWsHandlerConte
 }
 
 export function handleToolCall(message: ToolCall, ctx: InterviewWsHandlerContext) {
+  if (ignoreStreamUpdate(ctx)) return;
   ctx.setAwaitingOpening(false);
   const streamingId = ctx.streamingIdRef.current ?? nanoid();
   ctx.streamingIdRef.current = streamingId;
@@ -80,6 +89,7 @@ export function handleToolCall(message: ToolCall, ctx: InterviewWsHandlerContext
 }
 
 export function handleToolResult(message: ToolResult, ctx: InterviewWsHandlerContext) {
+  if (ignoreStreamUpdate(ctx)) return;
   const streamingId = ctx.streamingIdRef.current;
   if (streamingId === null) return;
   ctx.setMessages((current) =>
@@ -93,6 +103,7 @@ export function handleToolResult(message: ToolResult, ctx: InterviewWsHandlerCon
 }
 
 export function handleToolError(message: ToolError, ctx: InterviewWsHandlerContext) {
+  if (ignoreStreamUpdate(ctx)) return;
   const streamingId = ctx.streamingIdRef.current;
   if (streamingId === null) return;
   ctx.setMessages((current) =>
@@ -106,6 +117,7 @@ export function handleToolError(message: ToolError, ctx: InterviewWsHandlerConte
 }
 
 export function handleAssistantMessage(message: AssistantMessage, ctx: InterviewWsHandlerContext) {
+  if (ignoreStreamUpdate(ctx)) return;
   ctx.setAwaitingOpening(false);
   const text = message.message.parts
     .filter((part): part is { type: "text"; text: string } => part.type === "text")
@@ -153,16 +165,19 @@ export function handleAssistantMessage(message: AssistantMessage, ctx: Interview
     ];
   });
   ctx.setStatus("ready");
+  ctx.onTurnComplete?.();
   if (message.onboardingCompleted === true) {
     ctx.onOnboardingComplete?.();
   }
 }
 
 export function handleOnboardingComplete(ctx: InterviewWsHandlerContext) {
+  if (ignoreStreamUpdate(ctx)) return;
   ctx.onOnboardingComplete?.();
 }
 
 export function handleBeliefFlag(message: BeliefFlagMessage, ctx: InterviewWsHandlerContext) {
+  if (ignoreStreamUpdate(ctx)) return;
   ctx.beliefsRef.current = [
     ...ctx.beliefsRef.current,
     {
@@ -175,10 +190,12 @@ export function handleBeliefFlag(message: BeliefFlagMessage, ctx: InterviewWsHan
 }
 
 export function handleWsError(message: ErrorMessage, ctx: InterviewWsHandlerContext) {
+  if (ignoreStreamUpdate(ctx)) return;
   ctx.streamingIdRef.current = null;
   ctx.setAwaitingOpening(false);
   ctx.setChatError(message.error);
   ctx.setStatus("ready");
+  ctx.onTurnComplete?.();
 }
 
 export function dispatchWsMessage(parsed: WsServerMessage, ctx: InterviewWsHandlerContext): void {
