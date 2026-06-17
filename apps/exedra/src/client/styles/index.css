@@ -8,4 +8,10 @@
   body {
     @apply min-w-[320px] min-h-screen m-0 bg-background text-foreground;
   }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-serif;
+  }
 }

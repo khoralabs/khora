@@ -6,6 +6,7 @@ import interviewPage from "./client/routes/interview/index.html";
 import { getDb } from "./server/db/index";
 import { getStubRegistryOtp, isExedraStubRegistryEnabled } from "./server/registry-stub/config";
 import { apiRoutes } from "./server/routes";
+import { serveAssets } from "./server/serve-assets";
 import { interviewWsHandlers, verifyInterviewWsUpgrade } from "./server/ws/interview";
 
 // Must run before any bun:sqlite Database (including exedra.db) so sqlite-vec can load.
@@ -21,6 +22,7 @@ if (isExedraStubRegistryEnabled()) {
 const server = serve({
   routes: {
     ...apiRoutes,
+    "/assets/*": { GET: serveAssets },
     "/sessions/:id/interview": {
       // @ts-expect-error Bun HTMLBundle handler
       GET: interviewPage,

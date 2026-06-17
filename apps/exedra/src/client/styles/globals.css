@@ -3,7 +3,24 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@font-face {
+  font-family: "Stratford";
+  src: url("../../assets/fonts/Stratford-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Stratford";
+  src: url("../../assets/fonts/Stratford-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme inline {
+  --font-serif: "Stratford", "Times New Roman", serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-sidebar-ring: var(--sidebar-ring);
