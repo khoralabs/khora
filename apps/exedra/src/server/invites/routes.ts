@@ -5,10 +5,11 @@ import { getDb } from "../db/index";
 import {
   consumeSessionInvite,
   getInvitePublicInfo,
+  getInviteSessionId,
   listInvitesForSession,
   mintSessionInvite,
 } from "../db/invites";
-import { addSessionParticipants, getSession } from "../db/sessions";
+import { addSessionParticipants, getSession, userHasSessionAccess } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
 import { bootstrapSessionMemoriesForTeamSession } from "../memories/bootstrap-session";
 import { getRegistryUrl } from "../registry-url";
@@ -17,10 +18,17 @@ export type InvitePublicInfo = {
   token: string;
   topic: string;
   status: "pending" | "accepted" | "expired";
+  sessionId?: string;
+  alreadyJoined?: boolean;
+  redirectTo?: string;
 };
 
+function sessionInviteRedirect(sessionId: string): string {
+  return `/sessions/${sessionId}/interview`;
+}
+
 /** Public metadata for an invite deep link (no auth required). */
-export function handleGetInvite(_req: Request, token: string): Response {
+export async function handleGetInvite(req: Request, token: string): Promise<Response> {
   if (token.length === 0) {
     return Response.json({ error: "Invite token required" }, { status: 400 });
   }
@@ -31,7 +39,19 @@ export function handleGetInvite(_req: Request, token: string): Response {
     return Response.json({ error: "Invite not found" }, { status: 404 });
   }
 
-  return Response.json(invite satisfies InvitePublicInfo);
+  const sessionId = getInviteSessionId(db, token);
+  const payload: InvitePublicInfo = sessionId === null ? invite : { ...invite, sessionId };
+
+  const authSession = await verifyRegistrySession(req, { registryUrl: getRegistryUrl() });
+  if (authSession !== null && sessionId !== null) {
+    const user = await getOrCreateUser(db, authSession.user.id);
+    if (userHasSessionAccess(db, sessionId, user.id)) {
+      payload.alreadyJoined = true;
+      payload.redirectTo = sessionInviteRedirect(sessionId);
+    }
+  }
+
+  return Response.json(payload satisfies InvitePublicInfo);
 }
 
 /** Accept an invite after registry OTP auth. */
@@ -50,11 +70,22 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
   if (invite === null) {
     return Response.json({ error: "Invite not found" }, { status: 404 });
   }
+
+  const user = await getOrCreateUser(db, authSession.user.id);
+  const sessionId = getInviteSessionId(db, token);
+  if (sessionId !== null && userHasSessionAccess(db, sessionId, user.id)) {
+    return Response.json({
+      invite,
+      userId: user.id,
+      alreadyJoined: true,
+      redirectTo: sessionInviteRedirect(sessionId),
+    });
+  }
+
   if (invite.status !== "pending") {
     return Response.json({ error: "Invite is no longer available" }, { status: 409 });
   }
 
-  const user = await getOrCreateUser(db, authSession.user.id);
   const consumed = consumeSessionInvite(db, token, user.id);
   if (consumed === null) {
     return Response.json({ error: "Invite is no longer available" }, { status: 409 });

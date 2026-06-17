@@ -9,11 +9,18 @@ type InviteInfo = {
   token: string;
   topic: string;
   status: "pending" | "accepted" | "expired";
+  sessionId?: string;
+  alreadyJoined?: boolean;
+  redirectTo?: string;
 };
 
 type InviteGateProps = {
   token: string;
 };
+
+function redirectToInviteTarget(path: string) {
+  window.location.assign(path);
+}
 
 export function InviteGate({ token }: InviteGateProps) {
   const [invite, setInvite] = useState<InviteInfo | null>(null);
@@ -38,7 +45,7 @@ export function InviteGate({ token }: InviteGateProps) {
     }
 
     const body = (await res.json()) as { redirectTo: string };
-    window.location.assign(body.redirectTo);
+    redirectToInviteTarget(body.redirectTo);
   }, [token]);
 
   useEffect(() => {
@@ -50,7 +57,7 @@ export function InviteGate({ token }: InviteGateProps) {
 
       const [sessionRes, inviteRes] = await Promise.all([
         fetchAuthSession(),
-        fetch(`/api/invites/${encodeURIComponent(token)}`),
+        fetch(`/api/invites/${encodeURIComponent(token)}`, { credentials: "include" }),
       ]);
 
       if (cancelled) return;
@@ -62,10 +69,24 @@ export function InviteGate({ token }: InviteGateProps) {
       }
 
       const inviteData = (await inviteRes.json()) as InviteInfo;
+
+      if (inviteData.alreadyJoined === true && inviteData.redirectTo !== undefined) {
+        redirectToInviteTarget(inviteData.redirectTo);
+        return;
+      }
+
+      const authenticated = sessionRes?.authenticated === true;
+
+      if (authenticated && inviteData.status !== "pending") {
+        setError("This invite link has already been used.");
+        setLoading(false);
+        return;
+      }
+
       setInvite(inviteData);
       setLoading(false);
 
-      if (sessionRes?.authenticated === true) {
+      if (authenticated && inviteData.status === "pending") {
         void acceptInvite();
       }
     }

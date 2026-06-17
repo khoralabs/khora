@@ -28,6 +28,16 @@ type InviteRow = {
   consumed_at_ms: number | null;
 };
 
+export function getInviteSessionId(db: Database, plaintext: string): string | null {
+  const tokenHash = hashInviteToken(plaintext);
+  const row = db
+    .query<{ session_id: string }, [string]>(
+      `SELECT session_id FROM session_invites WHERE token_hash = ? LIMIT 1`,
+    )
+    .get(tokenHash);
+  return row?.session_id ?? null;
+}
+
 export function getInvitePublicInfo(db: Database, plaintext: string): SessionInvitePublic | null {
   const tokenHash = hashInviteToken(plaintext);
   const row = db
