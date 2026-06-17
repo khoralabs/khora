@@ -1,3 +1,11 @@
+export const RECONNECT_BASE_MS = 1_000;
+export const RECONNECT_MAX_MS = 30_000;
+
+export function reconnectDelay(attempt: number): number {
+  const exponential = RECONNECT_BASE_MS * 2 ** attempt;
+  return Math.min(exponential, RECONNECT_MAX_MS);
+}
+
 export function closeWebSocket(ws: WebSocket | null): void {
   if (ws === null) return;
   ws.onopen = null;

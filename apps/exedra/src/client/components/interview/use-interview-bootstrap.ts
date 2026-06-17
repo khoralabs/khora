@@ -1,5 +1,5 @@
 import type { ChatStatus } from "ai";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { BeliefFlag, ChatMessage, InterviewBootstrap } from "@/lib/interview-api";
 import {
@@ -61,6 +61,22 @@ export function useInterviewBootstrap({
     };
   }, [sessionId, onBootstrap, onBeliefsChange, onError]);
 
+  const resyncFromServer = useCallback(async () => {
+    try {
+      const data = await fetchInterview(sessionId);
+      const chatMessages = uiMessagesToChatMessages(data.messages);
+      const initialBeliefs = extractBeliefsFromMessages(data.messages, data.beliefFeedback ?? []);
+      beliefsRef.current = initialBeliefs;
+      setBootstrap(data);
+      setMessages(chatMessages);
+      onBeliefsChange(initialBeliefs);
+      setAwaitingOpening(chatMessages.length === 0);
+      setStatus("ready");
+    } catch {
+      // Keep existing UI if resync fails; reconnect loop will retry.
+    }
+  }, [sessionId, onBeliefsChange]);
+
   return {
     bootstrap,
     messages,
@@ -70,5 +86,6 @@ export function useInterviewBootstrap({
     awaitingOpening,
     setAwaitingOpening,
     beliefsRef,
+    resyncFromServer,
   };
 }

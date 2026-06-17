@@ -33,6 +33,7 @@ export function InterviewChat({
     awaitingOpening,
     setAwaitingOpening,
     beliefsRef,
+    resyncFromServer,
   } = useInterviewBootstrap({ sessionId, onBootstrap, onBeliefsChange, onError });
 
   const streamingIdRef = useRef<string | null>(null);
@@ -62,6 +63,7 @@ export function InterviewChat({
     beliefsRef,
     onBeliefsChange,
     onOnboardingComplete,
+    onResync: resyncFromServer,
     setMessages,
     setStatus,
     setAwaitingOpening,
