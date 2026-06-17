@@ -65,15 +65,23 @@ export function insertMessage(
   );
 }
 
-export function loadThreadMessages(db: Database, threadId: string): UIMessage[] {
+export function loadThreadMessages(db: Database, threadId: string, limit?: number): UIMessage[] {
   const rows = db
     .query<MessageRow, [string]>(
-      `SELECT id, role, json(parts) AS parts, json(metadata) AS metadata, message_index
-       FROM messages
-       WHERE thread_id = ?
-       ORDER BY message_index ASC`,
+      limit !== undefined
+        ? `SELECT id, role, json(parts) AS parts, json(metadata) AS metadata, message_index
+           FROM messages
+           WHERE thread_id = ?
+           ORDER BY message_index DESC
+           LIMIT ${limit}`
+        : `SELECT id, role, json(parts) AS parts, json(metadata) AS metadata, message_index
+           FROM messages
+           WHERE thread_id = ?
+           ORDER BY message_index ASC`,
     )
     .all(threadId);
+
+  if (limit !== undefined) rows.reverse();
 
   return rows.map((row) => {
     const parts = parseJsonColumn<UIMessage["parts"]>(row.parts);

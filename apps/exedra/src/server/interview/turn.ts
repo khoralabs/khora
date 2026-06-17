@@ -137,7 +137,7 @@ async function runInterviewAssistantTurn(args: {
   userMessageId: string;
 }): Promise<void> {
   const { db, ws, threadId, session, userMessageId } = args;
-  const history = loadThreadMessages(db, threadId);
+  const history = loadThreadMessages(db, threadId, 50);
   const assistantId = nanoid();
   const sessionMeta: InterviewSessionMeta = {
     topic: session.topic,

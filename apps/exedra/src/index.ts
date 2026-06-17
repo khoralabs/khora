@@ -1,6 +1,8 @@
 import { ensureCustomSqliteForExtensions } from "@khoralabs/memories-sqlite";
 import { serve } from "bun";
+import graphPage from "./client/graph/index.html";
 import index from "./client/index.html";
+import interviewPage from "./client/interview/index.html";
 import { getDb } from "./server/db/index";
 import { getStubRegistryOtp, isExedraStubRegistryEnabled } from "./server/registry-stub/config";
 import { apiRoutes } from "./server/routes";
@@ -19,6 +21,38 @@ if (isExedraStubRegistryEnabled()) {
 const server = serve({
   routes: {
     ...apiRoutes,
+    "/sessions/:id/interview": {
+      // @ts-expect-error Bun HTMLBundle handler
+      GET: interviewPage,
+    },
+    "/sessions/:id/interview/": {
+      // @ts-expect-error Bun HTMLBundle handler
+      GET: interviewPage,
+    },
+    "/sessions/:id/graph": {
+      // @ts-expect-error Bun HTMLBundle handler
+      GET: graphPage,
+    },
+    "/sessions/:id/graph/": {
+      // @ts-expect-error Bun HTMLBundle handler
+      GET: graphPage,
+    },
+    "/teams/:teamId/graph": {
+      // @ts-expect-error Bun HTMLBundle handler
+      GET: graphPage,
+    },
+    "/teams/:teamId/graph/": {
+      // @ts-expect-error Bun HTMLBundle handler
+      GET: graphPage,
+    },
+    "/me/graph": {
+      // @ts-expect-error Bun HTMLBundle handler
+      GET: graphPage,
+    },
+    "/me/graph/": {
+      // @ts-expect-error Bun HTMLBundle handler
+      GET: graphPage,
+    },
     // GET-only so POST /api/* misses this route and reaches fetch dispatch below.
     "/*": {
       // @ts-expect-error Bun HTMLBundle handler
