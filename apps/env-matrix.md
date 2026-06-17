@@ -61,7 +61,8 @@ Legend: **+** = set on this service · **·** = not used · **Kind:** **S** = se
 | Variable | R | K | KH | E | Kind | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | `REGISTRY_URL` | + | · | · | + | C | Registry: public base URL for Better Auth (`BETTER_AUTH_URL` alias). Exedra: registry base for server-side `verifyRegistrySession` (forwards browser cookies). |
-| `REGISTRY_COOKIE_DOMAIN` | + | · | · | · | C | Optional, e.g. `.khoralabs.com` for cross-subdomain cookies (homepage + Exedra OTP on registry). |
+| `REGISTRY_COOKIE_DOMAIN` | + | · | · | · | C | Optional explicit cross-subdomain cookie domain (e.g. `.khoralabs.com`). |
+| `REGISTRY_COOKIE_PARENT_DOMAIN` | + | · | · | · | C | When cookie domain unset, derive `.<parent>` if `REGISTRY_URL` is on that parent (e.g. `khoralabs.com`). |
 | `KHORA_REGISTRY_URL` | · | + | · | · | C | khora-server well-known + opt-in; CLI default. |
 | `BUN_PUBLIC_KHORA_REGISTRY_URL` | · | · | + | + | C | Registry URL for browser OTP (`EmailConfirm` / Better Auth client). Set at build time on platforms that split build/runtime. |
 | `KHORA_HOST_SLUG` | · | + | · | · | C | Host slug for `/.well-known/khora` and registry opt-in. |

@@ -1,4 +1,4 @@
-import { withCors } from "@khoralabs/registry-host";
+import { handleOptions, withCors } from "@khoralabs/registry-host";
 import { serve } from "bun";
 import { handleMarketingSubscribe, handleMarketingUnsubscribe } from "./api/marketing";
 import { bootstrapRegistryHost } from "./bootstrap-registry";
@@ -33,6 +33,9 @@ const server = serve({
   port: Number.isFinite(port) ? port : 4000,
   routes: htmlRoutes,
   async fetch(req) {
+    const options = handleOptions(req);
+    if (options !== null) return options;
+
     const url = new URL(req.url);
     const path = url.pathname;
 

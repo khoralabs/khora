@@ -15,6 +15,29 @@ function readRegistryPort(): string {
   return process.env.PORT?.trim() ?? "4000";
 }
 
+/** Parent-domain cookies when REGISTRY_COOKIE_DOMAIN is unset (e.g. parent `khoralabs.com` → cookie domain `.khoralabs.com`). */
+function resolveRegistryCookieDomain(
+  baseURL: string,
+  explicitCookieDomain: string | undefined,
+  parentDomain: string | undefined,
+): string | undefined {
+  const fromEnv = explicitCookieDomain?.trim();
+  if (fromEnv !== undefined && fromEnv.length > 0) return fromEnv;
+
+  const parent = parentDomain?.trim().replace(/^\./, "");
+  if (parent === undefined || parent.length === 0) return undefined;
+
+  try {
+    const { hostname } = new URL(baseURL);
+    if (hostname === parent || hostname.endsWith(`.${parent}`)) {
+      return `.${parent}`;
+    }
+  } catch {
+    /* ignore invalid baseURL */
+  }
+  return undefined;
+}
+
 function readAuthEnv(opts: RegistryAuthOptions = {}): {
   baseURL: string;
   secret: string;
@@ -36,7 +59,11 @@ function readAuthEnv(opts: RegistryAuthOptions = {}): {
     );
   }
 
-  const cookieDomain = process.env.REGISTRY_COOKIE_DOMAIN?.trim() || undefined;
+  const cookieDomain = resolveRegistryCookieDomain(
+    baseURL,
+    process.env.REGISTRY_COOKIE_DOMAIN,
+    process.env.REGISTRY_COOKIE_PARENT_DOMAIN,
+  );
   return {
     baseURL,
     secret: secret ?? "dev-only-insecure-secret-replace-me-32chars",

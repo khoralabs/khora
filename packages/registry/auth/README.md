@@ -110,7 +110,8 @@ const session = await verifyRegistrySession(req, {
 | `BETTER_AUTH_SECRET` | Session signing secret (≥32 chars in production) |
 | `REGISTRY_URL` / `BETTER_AUTH_URL` | Public base URL for auth callbacks |
 | Host CORS trust (DB) | Per-host API + client app origins via admin; `resolveTrustedOrigins` in `createRegistryAuth` |
-| `REGISTRY_COOKIE_DOMAIN` | Optional cross-subdomain cookie domain |
+| `REGISTRY_COOKIE_DOMAIN` | Optional explicit cross-subdomain cookie domain (e.g. `.example.com`) |
+| `REGISTRY_COOKIE_PARENT_DOMAIN` | When `REGISTRY_COOKIE_DOMAIN` unset, derive `.<parent>` if `REGISTRY_URL` hostname is on this parent (e.g. `khoralabs.com`) |
 | `SES_FROM_ADDRESS` | OTP sender address |
 | `AWS_REGION` | SES region |
 | `REGISTRY_AUTH_OTP_LOG=1` | Log OTP to console instead of sending email (dev) |
