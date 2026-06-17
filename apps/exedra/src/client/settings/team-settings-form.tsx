@@ -1,5 +1,6 @@
 import { Link2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -83,6 +84,7 @@ export function TeamSettingsForm({ activeTeam, onSaved }: TeamSettingsFormProps)
       setAvatarUrl(next.avatarUrl);
       resetPending();
       onSaved();
+      toast.success("Team settings saved");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save team settings");
     } finally {

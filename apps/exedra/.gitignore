@@ -1,3 +1,6 @@
+# database files
+data/
+
 # dependencies (bun install)
 node_modules
 

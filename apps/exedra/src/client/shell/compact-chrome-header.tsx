@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 
-import { cn } from "@/lib/utils";
-
+import { appSectionHeaderClassName } from "./app-section-header";
 import { useMobileChromeLayoutOptional } from "./mobile-chrome-layout";
+import { SidebarCollapseTrigger } from "./sidebar-collapse-trigger";
 import { SidebarSheetTrigger } from "./sidebar-sheet-trigger";
 
 type CompactChromeHeaderProps = {
@@ -21,16 +21,26 @@ export function CompactChromeHeader({
   className,
 }: CompactChromeHeaderProps) {
   const mobileLayout = useMobileChromeLayoutOptional();
-  if (compactOnly && mobileLayout?.isCompactChrome !== true) return null;
+  const isCompact = mobileLayout?.isCompactChrome === true;
+
+  if (compactOnly && !isCompact) {
+    return (
+      <div
+        className={appSectionHeaderClassName(
+          "hidden gap-2 px-3 lg:flex lg:gap-3 lg:px-4",
+          className,
+        )}
+      >
+        <SidebarCollapseTrigger />
+        <div className="min-w-0 flex-1" />
+      </div>
+    );
+  }
 
   return (
-    <div
-      className={cn(
-        "flex shrink-0 items-center gap-2 border-b px-3 py-3 lg:gap-3 lg:px-4",
-        className,
-      )}
-    >
+    <div className={appSectionHeaderClassName("gap-2 px-3 lg:gap-3 lg:px-4", className)}>
       <SidebarSheetTrigger />
+      <SidebarCollapseTrigger />
       {leading}
       {title !== undefined ? (
         <p className="min-w-0 flex-1 truncate font-medium">{title}</p>

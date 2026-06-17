@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { BeliefFeedback, BeliefFlag } from "@/lib/interview-api";
 import type { SessionDetail } from "@/lib/sessions-api";
 import { cn } from "@/lib/utils";
+import { appSectionHeaderClassName } from "@/shell/app-section-header";
 
 import { BeliefItem } from "./belief-item";
 import { SessionParticipantsPanel } from "./session-participants-panel";
@@ -43,7 +44,7 @@ export function InterviewCanvas({
       )}
     >
       <Tabs defaultValue="beliefs" className="flex h-full flex-col gap-0">
-        <div className="border-b px-4 py-3">
+        <div className={appSectionHeaderClassName("px-4")}>
           <TabsList variant="line">
             <TabsTrigger value="beliefs">Beliefs</TabsTrigger>
             <TabsTrigger value="info">Interview Info</TabsTrigger>

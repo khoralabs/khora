@@ -10,11 +10,19 @@ import {
   GraphProjectionProvider,
   GraphScene,
   GraphSearch,
+  useMemoriesGraphChrome,
 } from "@khoralabs/memories-react-graph";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Network } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { CompactChromeHeader } from "@/shell/compact-chrome-header";
 
 type MemoriesGraphViewProps = {
@@ -23,7 +31,26 @@ type MemoriesGraphViewProps = {
   title?: string;
   onBack?: () => void;
   headerExtra?: ReactNode;
+  emptyDescription?: string;
 };
+
+function MemoriesGraphEmpty({ description }: { description: string }) {
+  const { graphLoading, graphError, graphSummary } = useMemoriesGraphChrome();
+  if (graphLoading || graphError !== null) return null;
+  if (!graphSummary.startsWith("0 nodes")) return null;
+
+  return (
+    <Empty className="max-w-md border border-solid bg-background/95 backdrop-blur-sm">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <Network />
+        </EmptyMedia>
+        <EmptyTitle>No memories yet</EmptyTitle>
+        <EmptyDescription>{description}</EmptyDescription>
+      </EmptyHeader>
+    </Empty>
+  );
+}
 
 export function MemoriesGraphView({
   apiBase,
@@ -31,6 +58,7 @@ export function MemoriesGraphView({
   title,
   onBack,
   headerExtra,
+  emptyDescription = "Memories from interviews will appear here as they're captured.",
 }: MemoriesGraphViewProps) {
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-background">
@@ -78,6 +106,7 @@ export function MemoriesGraphView({
               </GraphScene.TopLeft>
               <GraphScene.Center>
                 <GraphLoading />
+                <MemoriesGraphEmpty description={emptyDescription} />
               </GraphScene.Center>
               <GraphScene.TopRight>
                 <div className="flex items-center justify-end gap-2">

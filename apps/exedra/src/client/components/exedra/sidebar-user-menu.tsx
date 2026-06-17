@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
+import { SidebarCollapsedTooltip } from "./sidebar-collapsed-tooltip";
+
 export type SidebarUser = {
   name: string;
   subtitle: string;
@@ -75,33 +77,37 @@ type SidebarUserMenuProps = {
 };
 
 export function SidebarUserMenu({ user, collapsed, onSignOut }: SidebarUserMenuProps) {
+  const accountLabel = `${user.name} · ${user.subtitle}`;
+
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            "flex w-full items-center gap-2 rounded-md p-2 text-left text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground",
-            collapsed ? "justify-center px-2" : "px-2",
-          )}
-          title={collapsed ? `${user.name} · ${user.subtitle}` : undefined}
-        >
-          <EntityAvatar
-            name={user.name}
-            avatarUrl={user.avatarUrl}
-            className="size-8 rounded-lg [&_[data-slot=avatar-fallback]]:rounded-lg"
-          />
-          {!collapsed ? (
-            <>
-              <div className="grid min-w-0 flex-1 text-left leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
-                <span className="truncate text-xs text-muted-foreground">{user.subtitle}</span>
-              </div>
-              <ChevronsUpDown className="ml-auto size-4 shrink-0 opacity-50" />
-            </>
-          ) : null}
-        </button>
-      </DropdownMenuTrigger>
+      <SidebarCollapsedTooltip collapsed={collapsed} label="Your account">
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className={cn(
+              "flex w-full items-center gap-2 rounded-md p-2 text-left text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground",
+              collapsed ? "justify-center px-2" : "px-2",
+            )}
+            aria-label={accountLabel}
+          >
+            <EntityAvatar
+              name={user.name}
+              avatarUrl={user.avatarUrl}
+              className="size-8 rounded-lg [&_[data-slot=avatar-fallback]]:rounded-lg"
+            />
+            {!collapsed ? (
+              <>
+                <div className="grid min-w-0 flex-1 text-left leading-tight">
+                  <span className="truncate font-medium">{user.name}</span>
+                  <span className="truncate text-xs text-muted-foreground">{user.subtitle}</span>
+                </div>
+                <ChevronsUpDown className="ml-auto size-4 shrink-0 opacity-50" />
+              </>
+            ) : null}
+          </button>
+        </DropdownMenuTrigger>
+      </SidebarCollapsedTooltip>
       <DropdownMenuContent
         className="min-w-56 rounded-lg"
         side={collapsed ? "right" : "top"}

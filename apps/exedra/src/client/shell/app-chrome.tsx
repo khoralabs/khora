@@ -2,6 +2,7 @@ import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { SignIn } from "@/components/auth/sign-in";
 import { OnboardingDialog } from "@/components/onboarding/onboarding-dialog";
 import { CreateTeamDialog } from "@/components/teams/create-team-dialog";
+import { Toaster } from "@/components/ui/sonner";
 import { Spinner } from "@/components/ui/spinner";
 import { type AuthSessionResponse, fetchAuthSession, signOutAuthSession } from "@/lib/auth-session";
 import { fetchMe, type MeResponse, type MeTeam, ONBOARDING_PLACEHOLDER_TEAM } from "@/lib/me-api";
@@ -16,6 +17,7 @@ import { AppSidebar } from "./app-sidebar";
 import { MobileChromeLayoutProvider } from "./mobile-chrome-layout";
 import { type ExedraEntrypoint, entrypointForPath, navigateExedra } from "./navigation";
 import { isSettingsPath, onboardingInterviewPath, parseActiveSessionId } from "./routes";
+import { SidebarChromeProvider } from "./sidebar-chrome-context";
 
 export type AppChromeContext = {
   me: MeResponse;
@@ -198,7 +200,6 @@ function AppChromeInner({ entrypoint, children }: AppChromeProps) {
     pathname,
     collapsed: sidebarCollapsed,
     createSessionDisabled,
-    onToggleCollapsed: () => setSidebarCollapsed((value) => !value),
     onTeamChange: (team: MeTeam) => {
       setActiveTeam(team);
       onNavigate("/");
@@ -218,37 +219,44 @@ function AppChromeInner({ entrypoint, children }: AppChromeProps) {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <AppSidebar {...sidebarProps} />
+    <SidebarChromeProvider
+      collapsed={sidebarCollapsed}
+      onToggleCollapsed={() => setSidebarCollapsed((value) => !value)}
+    >
+      <div className="flex h-screen overflow-hidden">
+        <AppSidebar {...sidebarProps} />
 
-      {children({
-        me,
-        pathname,
-        onNavigate,
-        activeTeam,
-        sessions,
-        sessionDetail,
-        loadSessions,
-        loadSessionDetail,
-        onProfileRefresh,
-      })}
+        {children({
+          me,
+          pathname,
+          onNavigate,
+          activeTeam,
+          sessions,
+          sessionDetail,
+          loadSessions,
+          loadSessionDetail,
+          onProfileRefresh,
+        })}
 
-      {loadError !== null ? (
-        <p className="absolute bottom-4 left-4 text-sm text-destructive">{loadError}</p>
-      ) : null}
+        {loadError !== null ? (
+          <p className="absolute bottom-4 left-4 text-sm text-destructive">{loadError}</p>
+        ) : null}
 
-      <OnboardingDialog open={onboardingRequired} onComplete={onOnboardingComplete} />
+        <OnboardingDialog open={onboardingRequired} onComplete={onOnboardingComplete} />
 
-      <CreateTeamDialog
-        open={createTeamOpen}
-        org={activeTeam}
-        onOpenChange={setCreateTeamOpen}
-        onCreated={(team) => {
-          onProfileRefresh();
-          setActiveTeam(team);
-          onNavigate("/");
-        }}
-      />
-    </div>
+        <CreateTeamDialog
+          open={createTeamOpen}
+          org={activeTeam}
+          onOpenChange={setCreateTeamOpen}
+          onCreated={(team) => {
+            onProfileRefresh();
+            setActiveTeam(team);
+            onNavigate("/");
+          }}
+        />
+
+        <Toaster />
+      </div>
+    </SidebarChromeProvider>
   );
 }

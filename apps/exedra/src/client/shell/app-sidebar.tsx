@@ -14,7 +14,6 @@ export type AppSidebarProps = {
   pathname: string;
   collapsed: boolean;
   createSessionDisabled?: boolean;
-  onToggleCollapsed: () => void;
   onTeamChange: (team: MeTeam) => void;
   onCreateSession: () => void;
   onCreateTeam?: () => void;

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel, FieldSet } from "@/components/ui/field";
@@ -70,6 +71,7 @@ export function OrganizationSettingsForm({ activeTeam, onSaved }: OrganizationSe
       setAvatarUrl(next.avatarUrl);
       resetPending();
       onSaved();
+      toast.success("Organization settings saved");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save organization settings");
     } finally {

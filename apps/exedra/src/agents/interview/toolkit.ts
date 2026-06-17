@@ -18,7 +18,12 @@ const afterMinOnboardingTurns = policy("after-min-onboarding-turns", async (env:
   Promise.resolve(env.isOnboarding && env.allowCompleteOnboarding),
 );
 
-const flagBeliefTool = tool<"flagBelief", { belief: string }, { queued: true }, InterviewEnv>({
+const flagBeliefTool = tool<
+  "flagBelief",
+  { belief: string },
+  { belief: string; addedToBeliefsPanel: true },
+  InterviewEnv
+>({
   name: "flagBelief",
   description:
     "Record a testable belief, preference, assumption, constraint, or decision inferred from the stakeholder's message. Call this whenever they share substantive content you may want to confirm later.",
@@ -27,8 +32,12 @@ const flagBeliefTool = tool<"flagBelief", { belief: string }, { queued: true }, 
   }),
   policies: [afterFirstUserMessage],
   handler: async (ctx, input) => {
-    ctx.env.onBeliefFlag(input.belief, ctx.env.sourceMessageId);
-    return { queued: true };
+    const belief = input.belief.trim();
+    ctx.env.onBeliefFlag(belief, ctx.env.sourceMessageId);
+    return {
+      belief,
+      addedToBeliefsPanel: true,
+    };
   },
 });
 

@@ -1,5 +1,6 @@
-import { CalendarPlus, MessageSquare } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 
+import { NewSessionButton } from "@/components/exedra/new-session-button";
 import { SessionWizard } from "@/components/sessions/session-wizard";
 import { Button } from "@/components/ui/button";
 import {
@@ -120,10 +121,12 @@ export function MainContent({
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <Button disabled={createSessionDisabled} onClick={() => onNavigate("/sessions/new")}>
-              <CalendarPlus />
-              New session
-            </Button>
+            <NewSessionButton
+              disabled={createSessionDisabled}
+              onboardingInterviewRequired={me.onboardingInterviewRequired}
+              onboardingSessionId={me.onboardingSessionId}
+              onClick={() => onNavigate("/sessions/new")}
+            />
           </EmptyContent>
         </Empty>
       </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel, FieldSet } from "@/components/ui/field";
@@ -45,6 +46,7 @@ export function AccountSettingsForm({ user, activeTeam, onSaved }: AccountSettin
       }
       resetPending();
       onSaved();
+      toast.success("Account settings saved");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save account settings");
     } finally {

@@ -46,6 +46,7 @@ function GraphContent({
           sessionGraphId,
         )}
         title={sessionDetail?.session.topic ?? "Session memories"}
+        emptyDescription="This session doesn't have any memories yet. They'll appear here as the interview captures them."
         headerExtra={
           <SessionViewToggle
             activeView="graph"
@@ -63,6 +64,7 @@ function GraphContent({
         apiBase={orgMemoriesApiBase(activeTeam.orgId)}
         namespace={orgTeamNamespace(activeTeam.orgId, teamGraphId)}
         title={`${activeTeam.name} memories`}
+        emptyDescription={`${activeTeam.name} doesn't have any shared memories yet.`}
       />
     );
   }
@@ -73,6 +75,7 @@ function GraphContent({
         apiBase={meMemoriesApiBase}
         namespace={userNamespace(me.user.id)}
         title="Personal memories"
+        emptyDescription="You don't have any personal memories yet."
       />
     );
   }

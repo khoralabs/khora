@@ -12,6 +12,8 @@ import {
 import { type MeTeam, ONBOARDING_PLACEHOLDER_TEAM } from "@/lib/me-api";
 import { cn } from "@/lib/utils";
 
+import { SidebarCollapsedTooltip } from "./sidebar-collapsed-tooltip";
+
 type SidebarTeamSwitcherProps = {
   teams: MeTeam[];
   activeTeam: MeTeam;
@@ -67,61 +69,70 @@ export function SidebarTeamSwitcher({
 
   if (teams.length === 0) {
     return (
-      <div
-        className={cn(
-          "flex items-center gap-2 rounded-md p-2 text-left text-sm",
-          collapsed ? "justify-center px-2" : "min-w-0 flex-1",
-        )}
-        title={collapsed ? `${displayTeam.orgName} · ${displayTeam.name}` : undefined}
-      >
-        <TeamSwitcherDisplay team={displayTeam} collapsed={collapsed} showChevron={false} />
-      </div>
+      <SidebarCollapsedTooltip collapsed={collapsed} label="Select a team">
+        <div
+          className={cn(
+            "flex items-center gap-2 rounded-md p-2 text-left text-sm",
+            collapsed ? "justify-center px-2" : "min-w-0 w-full",
+          )}
+        >
+          <TeamSwitcherDisplay team={displayTeam} collapsed={collapsed} showChevron={false} />
+        </div>
+      </SidebarCollapsedTooltip>
     );
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            "flex items-center gap-2 rounded-md p-2 text-left text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground",
-            collapsed ? "justify-center px-2" : "min-w-0 flex-1",
-          )}
-          title={collapsed ? `${activeTeam.orgName} · ${activeTeam.name}` : undefined}
-        >
-          <TeamSwitcherDisplay team={activeTeam} collapsed={collapsed} showChevron />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        className="min-w-56 rounded-lg"
-        side={collapsed ? "right" : "bottom"}
-        align="start"
-        sideOffset={4}
-      >
-        <DropdownMenuLabel className="text-xs text-muted-foreground">Teams</DropdownMenuLabel>
-        {teams.map((team) => (
-          <DropdownMenuItem key={team.id} className="gap-2 p-2" onClick={() => onTeamChange(team)}>
-            <EntityAvatar name={team.name} avatarUrl={team.avatarUrl} size="sm" />
-            <span className="truncate font-medium">{team.name}</span>
-          </DropdownMenuItem>
-        ))}
-        {onCreateTeam ? (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="gap-2 p-2"
-              onSelect={(event) => {
-                event.preventDefault();
-                onCreateTeam();
-              }}
+    <div className={cn(!collapsed && "w-full min-w-0")}>
+      <DropdownMenu>
+        <SidebarCollapsedTooltip collapsed={collapsed} label="Select a team">
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className={cn(
+                "flex items-center gap-2 rounded-md p-2 text-left text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground",
+                collapsed ? "justify-center px-2" : "min-w-0 w-full",
+              )}
+              aria-label={`${activeTeam.orgName}, ${activeTeam.name}`}
             >
-              <Plus className="size-4 shrink-0" />
-              Team
+              <TeamSwitcherDisplay team={activeTeam} collapsed={collapsed} showChevron />
+            </button>
+          </DropdownMenuTrigger>
+        </SidebarCollapsedTooltip>
+        <DropdownMenuContent
+          className="min-w-56 rounded-lg"
+          side={collapsed ? "right" : "bottom"}
+          align="start"
+          sideOffset={4}
+        >
+          <DropdownMenuLabel className="text-xs text-muted-foreground">Teams</DropdownMenuLabel>
+          {teams.map((team) => (
+            <DropdownMenuItem
+              key={team.id}
+              className="gap-2 p-2"
+              onClick={() => onTeamChange(team)}
+            >
+              <EntityAvatar name={team.name} avatarUrl={team.avatarUrl} size="sm" />
+              <span className="truncate font-medium">{team.name}</span>
             </DropdownMenuItem>
-          </>
-        ) : null}
-      </DropdownMenuContent>
-    </DropdownMenu>
+          ))}
+          {onCreateTeam ? (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="gap-2 p-2"
+                onSelect={(event) => {
+                  event.preventDefault();
+                  onCreateTeam();
+                }}
+              >
+                <Plus className="size-4 shrink-0" />
+                Team
+              </DropdownMenuItem>
+            </>
+          ) : null}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }
