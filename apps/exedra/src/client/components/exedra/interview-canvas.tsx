@@ -11,6 +11,7 @@ import { ItemGroup } from "@/components/ui/item";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { BeliefFeedback, BeliefFlag } from "@/lib/interview-api";
 import type { SessionDetail } from "@/lib/sessions-api";
+import { cn } from "@/lib/utils";
 
 import { BeliefItem } from "./belief-item";
 import { SessionParticipantsPanel } from "./session-participants-panel";
@@ -22,6 +23,7 @@ type InterviewCanvasProps = {
   onRefreshDetail: () => void;
   onBeliefUpdate: (id: string, update: { feedback?: BeliefFeedback; correction?: string }) => void;
   onBeliefSourceClick: (sourceMessageId: string) => void;
+  sheetMode?: boolean;
 };
 
 export function InterviewCanvas({
@@ -31,9 +33,15 @@ export function InterviewCanvas({
   onRefreshDetail,
   onBeliefUpdate,
   onBeliefSourceClick,
+  sheetMode = false,
 }: InterviewCanvasProps) {
   return (
-    <div className="flex w-80 shrink-0 flex-col border-l bg-muted/20 xl:w-96">
+    <div
+      className={cn(
+        "flex shrink-0 flex-col bg-muted/20",
+        sheetMode ? "h-full min-h-0" : "hidden w-80 border-l lg:flex xl:w-96",
+      )}
+    >
       <Tabs defaultValue="beliefs" className="flex h-full flex-col gap-0">
         <div className="border-b px-4 py-3">
           <TabsList variant="line">

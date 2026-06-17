@@ -1,6 +1,5 @@
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { SignIn } from "@/components/auth/sign-in";
-import { SessionSidebar } from "@/components/exedra/session-sidebar";
 import { OnboardingDialog } from "@/components/onboarding/onboarding-dialog";
 import { CreateTeamDialog } from "@/components/teams/create-team-dialog";
 import { Spinner } from "@/components/ui/spinner";
@@ -13,8 +12,10 @@ import {
   type SessionSummary,
 } from "@/lib/sessions-api";
 
+import { AppSidebar } from "./app-sidebar";
+import { MobileChromeLayoutProvider } from "./mobile-chrome-layout";
 import { type ExedraEntrypoint, entrypointForPath, navigateExedra } from "./navigation";
-import { isSessionInterviewPath, isSettingsPath, parseActiveSessionId } from "./routes";
+import { isSettingsPath, onboardingInterviewPath, parseActiveSessionId } from "./routes";
 
 export type AppChromeContext = {
   me: MeResponse;
@@ -34,6 +35,14 @@ type AppChromeProps = {
 };
 
 export function AppChrome({ entrypoint, children }: AppChromeProps) {
+  return (
+    <MobileChromeLayoutProvider>
+      <AppChromeInner entrypoint={entrypoint}>{children}</AppChromeInner>
+    </MobileChromeLayoutProvider>
+  );
+}
+
+function AppChromeInner({ entrypoint, children }: AppChromeProps) {
   const [pathname, setPathname] = useState(() => window.location.pathname);
   const [session, setSession] = useState<AuthSessionResponse | null>(null);
   const [me, setMe] = useState<MeResponse | null>(null);
@@ -48,6 +57,7 @@ export function AppChrome({ entrypoint, children }: AppChromeProps) {
   const onboardingRequired = me?.onboardingRequired ?? false;
   const onboardingInterviewRequired = me?.onboardingInterviewRequired ?? false;
   const onboardingSessionId = me?.onboardingSessionId ?? null;
+  const createSessionDisabled = onboardingRequired || onboardingInterviewRequired;
   const activeSessionId = parseActiveSessionId(pathname);
   const settingsMode = isSettingsPath(pathname);
 
@@ -82,13 +92,9 @@ export function AppChrome({ entrypoint, children }: AppChromeProps) {
     });
   }, []);
 
-  const onOnboardingComplete = useCallback(
-    (sessionId: string) => {
-      onProfileRefresh();
-      window.location.href = `/sessions/${sessionId}/interview`;
-    },
-    [onProfileRefresh],
-  );
+  const onOnboardingComplete = useCallback((sessionId: string) => {
+    window.location.href = onboardingInterviewPath(sessionId);
+  }, []);
 
   const onSignOut = useCallback(async () => {
     await signOutAuthSession();
@@ -157,19 +163,11 @@ export function AppChrome({ entrypoint, children }: AppChromeProps) {
 
   useEffect(() => {
     if (me === null) return;
-    if (onboardingRequired || !onboardingInterviewRequired || onboardingSessionId === null) return;
-    const onOnboardingInterview =
-      activeSessionId === onboardingSessionId && isSessionInterviewPath(pathname);
-    if (onOnboardingInterview) return;
-    window.location.href = `/sessions/${onboardingSessionId}/interview`;
-  }, [
-    me,
-    onboardingRequired,
-    onboardingInterviewRequired,
-    onboardingSessionId,
-    activeSessionId,
-    pathname,
-  ]);
+    if (onboardingRequired) return;
+    if (!onboardingInterviewRequired || onboardingSessionId === null) return;
+    if (pathname !== "/") return;
+    window.location.href = onboardingInterviewPath(onboardingSessionId);
+  }, [me, onboardingRequired, onboardingInterviewRequired, onboardingSessionId, pathname]);
 
   if (loading) {
     return (
@@ -191,35 +189,37 @@ export function AppChrome({ entrypoint, children }: AppChromeProps) {
     onNavigate(`/sessions/${sessionId}/interview`);
   }
 
+  const sidebarProps = {
+    me,
+    teams: me.teams,
+    activeTeam,
+    sessions,
+    activeSessionId,
+    pathname,
+    collapsed: sidebarCollapsed,
+    createSessionDisabled,
+    onToggleCollapsed: () => setSidebarCollapsed((value) => !value),
+    onTeamChange: (team: MeTeam) => {
+      setActiveTeam(team);
+      onNavigate("/");
+    },
+    onCreateSession: () => {
+      if (createSessionDisabled) return;
+      onNavigate("/sessions/new");
+    },
+    onCreateTeam: () => setCreateTeamOpen(true),
+    onSelectSession: handleSelectSession,
+    onOpenTeamGraph: () => onNavigate(`/teams/${activeTeam.id}/graph`),
+    onOpenPersonalGraph: () => onNavigate("/me/graph"),
+    onOpenSettings: () => onNavigate("/settings/account"),
+    onSignOut: () => void onSignOut(),
+    settingsMode,
+    onNavigate,
+  };
+
   return (
     <div className="flex h-screen overflow-hidden">
-      <SessionSidebar
-        me={me}
-        teams={me.teams}
-        activeTeam={activeTeam}
-        sessions={sessions}
-        activeSessionId={activeSessionId}
-        pathname={pathname}
-        collapsed={sidebarCollapsed}
-        onboardingRequired={onboardingRequired || onboardingInterviewRequired}
-        onToggleCollapsed={() => setSidebarCollapsed((value) => !value)}
-        onTeamChange={(team) => {
-          setActiveTeam(team);
-          onNavigate("/");
-        }}
-        onCreateSession={() => {
-          if (onboardingRequired || onboardingInterviewRequired) return;
-          onNavigate("/sessions/new");
-        }}
-        onCreateTeam={() => setCreateTeamOpen(true)}
-        onSelectSession={handleSelectSession}
-        onOpenTeamGraph={() => onNavigate(`/teams/${activeTeam.id}/graph`)}
-        onOpenPersonalGraph={() => onNavigate("/me/graph")}
-        onOpenSettings={() => onNavigate("/settings/account")}
-        onSignOut={() => void onSignOut()}
-        settingsMode={settingsMode}
-        onNavigate={onNavigate}
-      />
+      <AppSidebar {...sidebarProps} />
 
       {children({
         me,

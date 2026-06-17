@@ -55,3 +55,7 @@ export function settingsPathForSection(section: SettingsSection): string {
   if (section === "team") return "/settings/team";
   return "/settings/account";
 }
+
+export function onboardingInterviewPath(sessionId: string): string {
+  return `/sessions/${sessionId}/interview`;
+}

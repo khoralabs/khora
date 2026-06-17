@@ -23,7 +23,7 @@ type SessionSidebarProps = {
   activeSessionId: string | null;
   pathname: string;
   collapsed: boolean;
-  onboardingRequired?: boolean;
+  createSessionDisabled?: boolean;
   onToggleCollapsed: () => void;
   onTeamChange: (team: MeTeam) => void;
   onCreateSession: () => void;
@@ -35,6 +35,9 @@ type SessionSidebarProps = {
   onSignOut?: () => void;
   settingsMode?: boolean;
   onNavigate?: (path: string) => void;
+  className?: string;
+  sheetMode?: boolean;
+  onDismiss?: () => void;
 };
 
 export function SessionSidebar({
@@ -44,8 +47,8 @@ export function SessionSidebar({
   sessions,
   activeSessionId,
   pathname,
-  collapsed,
-  onboardingRequired = false,
+  collapsed: collapsedProp,
+  createSessionDisabled = false,
   onToggleCollapsed,
   onTeamChange,
   onCreateSession,
@@ -57,16 +60,32 @@ export function SessionSidebar({
   onSignOut,
   settingsMode = false,
   onNavigate,
+  className,
+  sheetMode = false,
+  onDismiss,
 }: SessionSidebarProps) {
   const user = formatSidebarUser(me.user);
   const teamGraphActive = /^\/teams\/([^/]+)\/graph\/?$/.test(pathname);
   const personalGraphActive = /^\/me\/graph\/?$/.test(pathname);
+  const collapsed = sheetMode ? false : collapsedProp;
+
+  function dismissAfter(action: () => void) {
+    return () => {
+      action();
+      onDismiss?.();
+    };
+  }
+
+  const Root = sheetMode ? "div" : "aside";
 
   return (
-    <aside
+    <Root
       className={cn(
-        "flex shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground transition-[width] duration-200",
-        collapsed ? "w-14" : "w-64",
+        "flex shrink-0 flex-col bg-sidebar text-sidebar-foreground",
+        !sheetMode && "border-r transition-[width] duration-200",
+        !sheetMode && (collapsed ? "w-14" : "w-64"),
+        sheetMode && "h-full min-h-0",
+        className,
       )}
     >
       <div className={cn("border-b p-2", collapsed ? "px-2" : "px-3")}>
@@ -75,18 +94,23 @@ export function SessionSidebar({
             teams={teams}
             activeTeam={activeTeam}
             collapsed={collapsed}
-            onTeamChange={onTeamChange}
+            onTeamChange={(team) => {
+              onTeamChange(team);
+              onDismiss?.();
+            }}
             onCreateTeam={onCreateTeam}
           />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            onClick={onToggleCollapsed}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
-          </Button>
+          {!sheetMode ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={onToggleCollapsed}
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -96,8 +120,8 @@ export function SessionSidebar({
             type="button"
             className={cn(!collapsed && "w-full")}
             size={collapsed ? "icon-sm" : "sm"}
-            onClick={onCreateSession}
-            disabled={onboardingRequired}
+            onClick={dismissAfter(onCreateSession)}
+            disabled={createSessionDisabled}
             aria-label="New session"
           >
             <CalendarPlus />
@@ -111,7 +135,10 @@ export function SessionSidebar({
           pathname={pathname}
           activeTeam={activeTeam}
           collapsed={collapsed}
-          onNavigate={onNavigate}
+          onNavigate={(path) => {
+            onNavigate(path);
+            onDismiss?.();
+          }}
         />
       ) : (
         <>
@@ -142,7 +169,7 @@ export function SessionSidebar({
                           active && "bg-sidebar-accent text-sidebar-accent-foreground",
                           collapsed ? "flex justify-center px-2 py-2" : "px-3 py-2",
                         )}
-                        onClick={() => onSelectSession(session.id)}
+                        onClick={dismissAfter(() => onSelectSession(session.id))}
                         title={collapsed ? session.topic : undefined}
                       >
                         {collapsed ? (
@@ -177,7 +204,7 @@ export function SessionSidebar({
                       ? "flex justify-center px-2 py-2"
                       : "flex items-center gap-2 px-3 py-2",
                   )}
-                  onClick={onOpenTeamGraph}
+                  onClick={dismissAfter(onOpenTeamGraph)}
                   title={collapsed ? "Team memories" : undefined}
                 >
                   <Network className="size-4 shrink-0" />
@@ -194,7 +221,7 @@ export function SessionSidebar({
                       ? "flex justify-center px-2 py-2"
                       : "flex items-center gap-2 px-3 py-2",
                   )}
-                  onClick={onOpenPersonalGraph}
+                  onClick={dismissAfter(onOpenPersonalGraph)}
                   title={collapsed ? "Personal memories" : undefined}
                 >
                   <UserRound className="size-4 shrink-0" />
@@ -218,7 +245,7 @@ export function SessionSidebar({
               type="button"
               variant="ghost"
               size="icon-sm"
-              onClick={onOpenSettings}
+              onClick={onOpenSettings ? dismissAfter(onOpenSettings) : undefined}
               aria-label="Settings"
               aria-current={settingsMode ? "page" : undefined}
               className={
@@ -230,6 +257,6 @@ export function SessionSidebar({
           ) : null}
         </div>
       </div>
-    </aside>
+    </Root>
   );
 }

@@ -2,10 +2,12 @@ import { useCallback, useState } from "react";
 
 import { InterviewCanvas } from "@/components/exedra/interview-canvas";
 import { InterviewChat } from "@/components/interview/interview-chat";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import type { BeliefFeedback, BeliefFlag, InterviewBootstrap } from "@/lib/interview-api";
 import type { SessionDetail } from "@/lib/sessions-api";
 
 import { AppChrome } from "../../shell/app-chrome";
+import { useMobileChromeLayout } from "../../shell/mobile-chrome-layout";
 import { parseInterviewSessionId } from "../../shell/routes";
 
 import "../../styles/index.css";
@@ -28,6 +30,7 @@ function InterviewContent({
   const [beliefs, setBeliefs] = useState<BeliefFlag[]>([]);
   const [scrollToMessageId, setScrollToMessageId] = useState<string | null>(null);
   const [chatError, setChatError] = useState<string | null>(null);
+  const { canvasOpen, setCanvasOpen, isCompactChrome } = useMobileChromeLayout();
 
   const handleBootstrap = useCallback((_bootstrap: InterviewBootstrap) => {
     setChatError(null);
@@ -57,16 +60,32 @@ function InterviewContent({
     [],
   );
 
-  const handleBeliefSourceClick = useCallback((sourceMessageId: string) => {
-    setScrollToMessageId(sourceMessageId);
-  }, []);
+  const handleBeliefSourceClick = useCallback(
+    (sourceMessageId: string) => {
+      setScrollToMessageId(sourceMessageId);
+      setCanvasOpen(false);
+    },
+    [setCanvasOpen],
+  );
 
   const handleChatError = useCallback((error: string | null) => {
     setChatError(error);
   }, []);
 
+  const canvasProps = {
+    sessionId,
+    beliefs,
+    sessionDetail,
+    onBeliefSourceClick: handleBeliefSourceClick,
+    onBeliefUpdate: handleBeliefUpdate,
+    onRefreshDetail: () => {
+      loadSessionDetail(sessionId);
+      loadSessions();
+    },
+  };
+
   return (
-    <>
+    <div className="flex min-w-0 flex-1 overflow-hidden">
       <InterviewChat
         key={sessionId}
         sessionId={sessionId}
@@ -83,18 +102,13 @@ function InterviewContent({
           {chatError}
         </div>
       ) : null}
-      <InterviewCanvas
-        sessionId={sessionId}
-        beliefs={beliefs}
-        sessionDetail={sessionDetail}
-        onBeliefSourceClick={handleBeliefSourceClick}
-        onBeliefUpdate={handleBeliefUpdate}
-        onRefreshDetail={() => {
-          loadSessionDetail(sessionId);
-          loadSessions();
-        }}
-      />
-    </>
+      <InterviewCanvas {...canvasProps} />
+      <Sheet open={canvasOpen && isCompactChrome} onOpenChange={setCanvasOpen}>
+        <SheetContent side="right" className="w-[min(100%,24rem)] gap-0 p-0 sm:max-w-none">
+          <InterviewCanvas {...canvasProps} sheetMode />
+        </SheetContent>
+      </Sheet>
+    </div>
   );
 }
 

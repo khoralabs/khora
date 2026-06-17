@@ -6,6 +6,7 @@ import { getDb } from "../db/index";
 import {
   addTeamMember,
   getOrg,
+  getPendingOnboardingInterview,
   getTeam,
   rollbackTeamCreation,
   updateTeamAvatarS3Key,
@@ -158,6 +159,7 @@ export async function handleAcceptJoinTeam(req: Request, token: string): Promise
   const user = await getOrCreateUser(db, auth.session.user.id);
   addTeamMember(db, teamId, user.id);
 
+  let onboardingSessionId: string | null = null;
   const team = getTeam(db, teamId);
   if (team !== null) {
     try {
@@ -170,12 +172,13 @@ export async function handleAcceptJoinTeam(req: Request, token: string): Promise
     const org = getOrg(db, team.orgId);
     if (org !== null) {
       try {
-        createOnboardingInterviewForMember(db, {
+        const onboarding = createOnboardingInterviewForMember(db, {
           teamId,
           userId: user.id,
           orgName: org.name,
           teamName: team.name,
         });
+        onboardingSessionId = onboarding.sessionId;
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Failed to create onboarding interview";
@@ -184,9 +187,17 @@ export async function handleAcceptJoinTeam(req: Request, token: string): Promise
     }
   }
 
+  const pendingOnboarding = getPendingOnboardingInterview(db, user.id);
+  const redirectTo =
+    pendingOnboarding !== null
+      ? `/sessions/${pendingOnboarding.sessionId}/interview`
+      : onboardingSessionId !== null
+        ? `/sessions/${onboardingSessionId}/interview`
+        : "/";
+
   return Response.json({
     teamId,
-    redirectTo: "/",
+    redirectTo,
   });
 }
 

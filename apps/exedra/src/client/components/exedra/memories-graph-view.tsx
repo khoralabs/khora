@@ -15,6 +15,7 @@ import { ArrowLeft } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+import { CompactChromeHeader } from "@/shell/compact-chrome-header";
 
 type MemoriesGraphViewProps = {
   apiBase: string;
@@ -34,17 +35,24 @@ export function MemoriesGraphView({
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-background">
       {title !== undefined || onBack !== undefined || headerExtra !== undefined ? (
-        <div className="flex shrink-0 items-center gap-3 border-b px-4 py-3">
-          {onBack !== undefined ? (
-            <Button aria-label="Back" onClick={onBack} size="icon-sm" type="button" variant="ghost">
-              <ArrowLeft />
-            </Button>
-          ) : null}
-          {title !== undefined ? (
-            <p className="min-w-0 flex-1 truncate font-medium">{title}</p>
-          ) : null}
+        <CompactChromeHeader
+          title={title}
+          leading={
+            onBack !== undefined ? (
+              <Button
+                aria-label="Back"
+                onClick={onBack}
+                size="icon-sm"
+                type="button"
+                variant="ghost"
+              >
+                <ArrowLeft />
+              </Button>
+            ) : undefined
+          }
+        >
           {headerExtra}
-        </div>
+        </CompactChromeHeader>
       ) : null}
 
       <div className="relative min-h-0 flex-1">
