@@ -8,5 +8,11 @@ export function getRegistryUrl(): string {
   if (fromEnv !== undefined && fromEnv.length > 0) {
     return fromEnv.replace(/\/$/, "");
   }
+  if (typeof window !== "undefined") {
+    const { protocol, hostname } = window.location;
+    if (hostname === "khoralabs.com" || hostname.endsWith(".khoralabs.com")) {
+      return `${protocol}//registry.khoralabs.com`;
+    }
+  }
   return "http://localhost:4000";
 }

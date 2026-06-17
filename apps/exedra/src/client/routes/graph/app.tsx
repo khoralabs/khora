@@ -17,7 +17,7 @@ import {
   parseSessionGraphId,
 } from "../../shell/routes";
 
-import "../index.css";
+import "../../styles/index.css";
 
 function GraphContent({
   pathname,

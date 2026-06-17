@@ -8,7 +8,7 @@ import type { SessionDetail } from "@/lib/sessions-api";
 import { AppChrome } from "../../shell/app-chrome";
 import { parseInterviewSessionId } from "../../shell/routes";
 
-import "../index.css";
+import "../../styles/index.css";
 
 function InterviewContent({
   sessionId,

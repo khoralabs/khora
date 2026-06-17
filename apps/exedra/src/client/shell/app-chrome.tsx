@@ -104,18 +104,28 @@ export function AppChrome({ entrypoint, children }: AppChromeProps) {
 
   useEffect(() => {
     let cancelled = false;
-    void fetchAuthSession().then(async (authSession) => {
-      if (cancelled) return;
-      setSession(authSession);
-      if (authSession?.authenticated === true) {
-        const profile = await fetchMe();
-        if (!cancelled && profile !== null) {
-          setMe(profile);
-          setActiveTeam(profile.teams[0] ?? ONBOARDING_PLACEHOLDER_TEAM);
+    void (async () => {
+      try {
+        const authSession = await fetchAuthSession();
+        if (cancelled) return;
+        setSession(authSession);
+        if (authSession?.authenticated === true) {
+          try {
+            const profile = await fetchMe();
+            if (!cancelled && profile !== null) {
+              setMe(profile);
+              setActiveTeam(profile.teams[0] ?? ONBOARDING_PLACEHOLDER_TEAM);
+            }
+          } catch {
+            // Profile load failed — fall through to sign-in.
+          }
         }
+      } catch {
+        // Session check failed — fall through to sign-in.
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      if (!cancelled) setLoading(false);
-    });
+    })();
     return () => {
       cancelled = true;
     };
