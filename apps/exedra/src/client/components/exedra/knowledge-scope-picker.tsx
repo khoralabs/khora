@@ -70,7 +70,7 @@ export function KnowledgeScopePicker({
           type="button"
           className={cn(
             "flex items-center gap-2 rounded-md text-left text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground",
-            collapsed ? "justify-center px-2 py-2" : "w-full px-3 py-2",
+            collapsed ? "justify-center px-2 py-2" : "w-full px-2 py-2",
           )}
           aria-label="Switch knowledge scope"
         >

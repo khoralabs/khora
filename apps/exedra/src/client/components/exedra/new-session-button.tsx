@@ -1,4 +1,4 @@
-import { CalendarPlus } from "lucide-react";
+import { CalendarPlus, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +20,8 @@ type NewSessionButtonProps = {
   onboardingSessionId: string | null;
   onClick: () => void;
   collapsed?: boolean;
+  /** Render a compact ghost plus icon (e.g. at the end of a group header row). */
+  iconOnly?: boolean;
   className?: string;
 };
 
@@ -29,27 +31,49 @@ export function NewSessionButton({
   onboardingSessionId,
   onClick,
   collapsed = false,
+  iconOnly = false,
   className,
 }: NewSessionButtonProps) {
   const showInterviewPopover = disabled && onboardingInterviewRequired;
 
+  const trigger = iconOnly ? (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-sm"
+      className={cn("shrink-0", showInterviewPopover && "cursor-default opacity-50", className)}
+      disabled={disabled && !showInterviewPopover}
+      aria-disabled={showInterviewPopover || undefined}
+      aria-label="New session"
+      onClick={showInterviewPopover ? undefined : onClick}
+    >
+      <Plus />
+    </Button>
+  ) : (
+    <Button
+      type="button"
+      className={cn(
+        !collapsed && "w-full",
+        showInterviewPopover && "cursor-default opacity-50",
+        className,
+      )}
+      size={collapsed ? "icon-sm" : "sm"}
+      disabled={disabled && !showInterviewPopover}
+      aria-disabled={showInterviewPopover || undefined}
+      aria-label="New session"
+      onClick={showInterviewPopover ? undefined : onClick}
+    >
+      <CalendarPlus />
+      {!collapsed ? "New session" : null}
+    </Button>
+  );
+
   if (showInterviewPopover) {
     return (
       <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            type="button"
-            className={cn(!collapsed && "w-full", "cursor-default opacity-50", className)}
-            size={collapsed ? "icon-sm" : "sm"}
-            aria-disabled
-            aria-label="New session"
-          >
-            <CalendarPlus />
-            {!collapsed ? "New session" : null}
-          </Button>
-        </PopoverTrigger>
+        <PopoverTrigger asChild>{trigger}</PopoverTrigger>
         <PopoverContent
-          align={collapsed ? "center" : "start"}
+          align={collapsed ? "center" : iconOnly ? "end" : "start"}
           className="w-72"
           side={collapsed ? "right" : "bottom"}
         >
@@ -77,27 +101,13 @@ export function NewSessionButton({
     );
   }
 
-  const button = (
-    <Button
-      type="button"
-      className={cn(!collapsed && "w-full", className)}
-      size={collapsed ? "icon-sm" : "sm"}
-      disabled={disabled}
-      aria-label="New session"
-      onClick={onClick}
-    >
-      <CalendarPlus />
-      {!collapsed ? "New session" : null}
-    </Button>
-  );
-
-  if (collapsed) {
+  if (collapsed && !iconOnly) {
     return (
       <SidebarCollapsedTooltip collapsed label="New session">
-        {button}
+        {trigger}
       </SidebarCollapsedTooltip>
     );
   }
 
-  return button;
+  return trigger;
 }

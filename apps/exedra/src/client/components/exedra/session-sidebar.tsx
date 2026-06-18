@@ -89,7 +89,7 @@ export function SessionSidebar({
       <TooltipProvider delayDuration={0}>
         <div
           className={appSectionHeaderClassName(
-            collapsed ? "justify-center px-2" : "px-3",
+            collapsed ? "justify-center px-2" : "px-2",
             sheetMode && "pr-12",
           )}
         >
@@ -108,10 +108,10 @@ export function SessionSidebar({
           </div>
         </div>
 
-        {!settingsMode ? (
-          <div className={cn("border-b p-2", collapsed && "flex justify-center")}>
+        {!settingsMode && collapsed ? (
+          <div className="flex justify-center border-b p-2">
             <NewSessionButton
-              collapsed={collapsed}
+              collapsed
               disabled={createSessionDisabled}
               onboardingInterviewRequired={me.onboardingInterviewRequired}
               onboardingSessionId={me.onboardingSessionId}
@@ -133,7 +133,16 @@ export function SessionSidebar({
           <>
             <div className="min-h-0 flex-1 overflow-y-auto p-2">
               {!collapsed ? (
-                <p className="px-2 pb-2 text-xs font-medium text-muted-foreground">Sessions</p>
+                <div className="flex items-center justify-between gap-2 pb-2">
+                  <p className="px-2 text-xs font-medium text-muted-foreground">Sessions</p>
+                  <NewSessionButton
+                    iconOnly
+                    disabled={createSessionDisabled}
+                    onboardingInterviewRequired={me.onboardingInterviewRequired}
+                    onboardingSessionId={me.onboardingSessionId}
+                    onClick={dismissAfter(onCreateSession)}
+                  />
+                </div>
               ) : null}
               {sessions === null ? (
                 <div className="flex justify-center py-8">
@@ -157,7 +166,7 @@ export function SessionSidebar({
                             className={cn(
                               "w-full rounded-md text-left transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                               active && "bg-sidebar-accent text-sidebar-accent-foreground",
-                              collapsed ? "flex justify-center px-2 py-2" : "px-3 py-2",
+                              collapsed ? "flex justify-center px-2 py-2" : "px-2 py-2",
                             )}
                             onClick={dismissAfter(() => onSelectSession(session.id))}
                             aria-label={session.topic}
