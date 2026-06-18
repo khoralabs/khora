@@ -18,7 +18,12 @@ import {
   isTeamMember,
   setTeamMemberOnboardingSession,
 } from "../db/membership";
-import { getSession, getSessionLinkAccess, userHasSessionAccess } from "../db/sessions";
+import {
+  getActiveOnboardingSessionForTeam,
+  getSession,
+  getSessionLinkAccess,
+  userHasSessionAccess,
+} from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
 import { bootstrapOrgTeamMemories } from "../memories/bootstrap";
 import { bootstrapSessionMemoriesForTeamSession } from "../memories/bootstrap-session";
@@ -221,7 +226,11 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
       }
 
       const org = getOrg(db, team.orgId);
-      if (org !== null) {
+      // Only create a personal onboarding session if the team has no active one already.
+      // If an intake session is already in progress, the new member should either be
+      // explicitly added to it (and see it in the sidebar) or create their own standard session.
+      const existingOnboardingSessionId = getActiveOnboardingSessionForTeam(db, teamId);
+      if (org !== null && existingOnboardingSessionId === null) {
         try {
           const onboarding = createOnboardingInterviewForMember(db, {
             teamId,

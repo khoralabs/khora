@@ -238,6 +238,21 @@ export function listSessionsForUser(
   }));
 }
 
+/**
+ * Returns the session ID of the active (non-closed) onboarding session for a team, or null if none.
+ * Used to avoid auto-creating a second onboarding session when new members join mid-onboarding.
+ */
+export function getActiveOnboardingSessionForTeam(db: Database, teamId: string): string | null {
+  const row = db
+    .query<{ id: string }, [string]>(
+      `SELECT id FROM sessions
+       WHERE team_id = ? AND kind = 'onboarding' AND status != 'closed'
+       LIMIT 1`,
+    )
+    .get(teamId);
+  return row?.id ?? null;
+}
+
 export function getSessionLinkAccess(db: Database, sessionId: string): SessionLinkAccess {
   const row = db
     .query<{ link_access: string }, [string]>(
