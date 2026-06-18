@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Field, FieldGroup, FieldLabel, FieldSet } from "@/components/ui/field";
@@ -27,6 +27,12 @@ export function UserAccountSettings({
     null,
   );
 
+  // Keep latest callbacks in refs so the effect doesn't re-fire when they change identity.
+  const onNavigateToOwnAccountRef = useRef(onNavigateToOwnAccount);
+  onNavigateToOwnAccountRef.current = onNavigateToOwnAccount;
+  const onTitleResolvedRef = useRef(onTitleResolved);
+  onTitleResolvedRef.current = onTitleResolved;
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -35,7 +41,7 @@ export function UserAccountSettings({
       .then((data) => {
         if (cancelled) return;
         if (data.isCurrentUser) {
-          onNavigateToOwnAccount();
+          onNavigateToOwnAccountRef.current();
           return;
         }
         setProfile(data);
@@ -43,7 +49,7 @@ export function UserAccountSettings({
           data.user.fullName !== null && data.user.fullName.trim().length > 0
             ? data.user.fullName
             : data.user.registryUserId;
-        onTitleResolved?.(name);
+        onTitleResolvedRef.current?.(name);
         setLoading(false);
       })
       .catch((err: unknown) => {
@@ -54,7 +60,7 @@ export function UserAccountSettings({
     return () => {
       cancelled = true;
     };
-  }, [orgId, userId, onNavigateToOwnAccount, onTitleResolved]);
+  }, [orgId, userId]);
 
   if (loading) {
     return (
