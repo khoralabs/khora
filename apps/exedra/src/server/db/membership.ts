@@ -178,6 +178,7 @@ export type OrgMemberRecord = {
 export type OrgTeamRecord = {
   id: string;
   name: string;
+  avatarS3Key: string | null;
   memberCount: number;
   createdAtMs: number;
 };
@@ -257,15 +258,17 @@ export function listTeamsForOrg(db: Database, orgId: string): OrgTeamRecord[] {
   return teamIds
     .map((teamId) => {
       const row = db
-        .query<{ id: string; name: string; created_at_ms: number }, [string]>(
-          `SELECT id, name, created_at_ms FROM teams WHERE id = ?`,
-        )
+        .query<
+          { id: string; name: string; avatar_s3_key: string | null; created_at_ms: number },
+          [string]
+        >(`SELECT id, name, avatar_s3_key, created_at_ms FROM teams WHERE id = ?`)
         .get(teamId);
       if (row === null) return null;
       const memberCount = listAccountIdsForTeam(db, teamId, "member", nowMs).length;
       return {
         id: row.id,
         name: row.name,
+        avatarS3Key: row.avatar_s3_key,
         memberCount,
         createdAtMs: row.created_at_ms,
       };

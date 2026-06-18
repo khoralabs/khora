@@ -4,6 +4,7 @@ import type {
   OrgMemberContext,
   TeamMemberContext,
 } from "@shared/accounts/row";
+import type { OrgTeamContext, TeamRow } from "@shared/teams/row";
 
 export type EntitySettings = {
   id: string;
@@ -24,12 +25,7 @@ export type OrgMemberProfile = {
   teamNames: string[];
 };
 
-export type OrgTeamSummary = {
-  id: string;
-  name: string;
-  memberCount: number;
-  createdAtMs: number;
-};
+export type OrgTeamSummary = TeamRow<OrgTeamContext>;
 
 export type TeamMemberSummary = TeamMemberRow;
 

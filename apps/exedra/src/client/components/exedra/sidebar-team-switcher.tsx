@@ -2,6 +2,12 @@ import { ChevronsUpDown, Plus } from "lucide-react";
 
 import { EntityAvatar } from "@/components/entity-avatar";
 import {
+  TeamItem,
+  TeamItemContent,
+  TeamItemMedia,
+  TeamItemTitle,
+} from "@/components/team/team-item";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -107,13 +113,13 @@ export function SidebarTeamSwitcher({
         >
           <DropdownMenuLabel className="text-xs text-muted-foreground">Teams</DropdownMenuLabel>
           {teams.map((team) => (
-            <DropdownMenuItem
-              key={team.id}
-              className="gap-2 p-2"
-              onClick={() => onTeamChange(team)}
-            >
-              <EntityAvatar name={team.name} avatarUrl={team.avatarUrl} size="sm" />
-              <span className="truncate font-medium">{team.name}</span>
+            <DropdownMenuItem key={team.id} className="p-0" onClick={() => onTeamChange(team)}>
+              <TeamItem team={team} size="sm" className="w-full border-none">
+                <TeamItemMedia />
+                <TeamItemContent>
+                  <TeamItemTitle />
+                </TeamItemContent>
+              </TeamItem>
             </DropdownMenuItem>
           ))}
           {onCreateTeam ? (

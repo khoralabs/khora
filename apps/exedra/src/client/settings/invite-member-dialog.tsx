@@ -68,7 +68,7 @@ export function InviteMemberDialog(props: InviteMemberDialogProps) {
         if (cancelled) return;
         setTeams(data);
         if (data.length === 1) {
-          setSelectedTeamId(data[0]?.id ?? null);
+          setSelectedTeamId(data[0]?.team.id ?? null);
         }
         setTeamsLoading(false);
       })
@@ -136,7 +136,7 @@ export function InviteMemberDialog(props: InviteMemberDialogProps) {
   }
 
   const targetTeamName =
-    teamName ?? teams.find((team) => team.id === selectedTeamId)?.name ?? "the team";
+    teamName ?? teams.find((team) => team.team.id === selectedTeamId)?.team.name ?? "the team";
 
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
@@ -170,8 +170,8 @@ export function InviteMemberDialog(props: InviteMemberDialogProps) {
                   </SelectTrigger>
                   <SelectContent>
                     {teams.map((team) => (
-                      <SelectItem key={team.id} value={team.id}>
-                        {team.name}
+                      <SelectItem key={team.team.id} value={team.team.id}>
+                        {team.team.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

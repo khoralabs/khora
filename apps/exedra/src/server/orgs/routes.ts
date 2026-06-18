@@ -6,14 +6,9 @@ import { buildOrgAvatarS3Key } from "../avatars/keys.js";
 import { clearAvatarFromS3, parseAvatarUpload, replaceAvatarInS3 } from "../avatars/upload.js";
 import { avatarUrlFromS3Key } from "../avatars/urls.js";
 import { getDb } from "../db/index.js";
-import {
-  getOrg,
-  listOrgMembers,
-  listTeamsForOrg,
-  updateOrgAvatarS3Key,
-  updateOrgName,
-} from "../db/membership.js";
+import { getOrg, listOrgMembers, updateOrgAvatarS3Key, updateOrgName } from "../db/membership.js";
 import { findUserById, getOrCreateUser } from "../identity/users.js";
+import { listTeamRowsForOrg } from "../teams/resolve-rows.js";
 
 function jsonResponse(data: unknown, status = 200): Response {
   return Response.json(data, { status });
@@ -112,7 +107,7 @@ export async function handleListOrgTeams(req: Request, orgId: string): Promise<R
     return jsonResponse({ error: "Forbidden" }, 403);
   }
 
-  return jsonResponse({ teams: listTeamsForOrg(db, orgId) });
+  return jsonResponse({ teams: listTeamRowsForOrg(db, orgId) });
 }
 
 export async function handleGetOrgSettings(req: Request, orgId: string): Promise<Response> {

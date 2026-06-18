@@ -1,13 +1,7 @@
 import type { AccountProfile } from "@shared/accounts/row";
+import type { TeamProfile } from "@shared/teams/row";
 
-export type MeTeam = {
-  id: string;
-  name: string;
-  orgId: string;
-  orgName: string;
-  avatarUrl: string | null;
-  orgAvatarUrl: string | null;
-};
+export type MeTeam = TeamProfile;
 
 export type MeResponse = {
   user: AccountProfile;

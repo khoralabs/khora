@@ -115,11 +115,11 @@ test("GET /api/orgs/:orgId/teams lists org teams for members", async () => {
   const res = await handleListOrgTeams(new Request("http://localhost"), orgId);
   expect(res.status).toBe(200);
   const body = (await res.json()) as {
-    teams: { id: string; name: string; memberCount: number }[];
+    teams: { team: { id: string; name: string }; context: { memberCount: number } }[];
   };
   expect(body.teams).toHaveLength(1);
-  expect(body.teams[0]?.id).toBe(teamId);
-  expect(body.teams[0]?.memberCount).toBe(2);
+  expect(body.teams[0]?.team.id).toBe(teamId);
+  expect(body.teams[0]?.context.memberCount).toBe(2);
 });
 
 test("GET /api/teams/:teamId/members lists team members", async () => {

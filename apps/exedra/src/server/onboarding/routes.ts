@@ -24,6 +24,7 @@ import {
   updateUserProfile,
 } from "../identity/users";
 import { bootstrapOrgTeamMemories } from "../memories/bootstrap";
+import { resolveTeamProfile } from "../teams/resolve-rows";
 import { createOnboardingInterviewForMember } from "./interview";
 
 function serializeMeUser(db: ReturnType<typeof getDb>, user: ExedraUser): AccountProfile {
@@ -36,17 +37,6 @@ function serializeMeUser(db: ReturnType<typeof getDb>, user: ExedraUser): Accoun
       jobFunction: user.jobFunction,
     }
   );
-}
-
-function serializeMeTeam(team: ReturnType<typeof listTeamsForUser>[number]) {
-  return {
-    id: team.id,
-    name: team.name,
-    orgId: team.orgId,
-    orgName: team.orgName,
-    avatarUrl: avatarUrlFromS3Key("team", team.id, team.teamAvatarS3Key),
-    orgAvatarUrl: avatarUrlFromS3Key("org", team.orgId, team.orgAvatarS3Key),
-  };
 }
 
 export async function handleGetMe(req: Request): Promise<Response> {
@@ -62,7 +52,7 @@ export async function handleGetMe(req: Request): Promise<Response> {
 
   return Response.json({
     user: serializeMeUser(db, user),
-    teams: teams.map(serializeMeTeam),
+    teams: teams.map(resolveTeamProfile),
     onboardingRequired: !hasTeam && !hasSessionAccessOnly,
     onboardingInterviewRequired: userNeedsOnboardingInterview(db, user.id),
     onboardingSessionId: pendingOnboarding?.sessionId ?? null,

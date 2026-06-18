@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
-
-import { Badge } from "@/components/ui/badge";
+import {
+  TeamItem,
+  TeamItemBadges,
+  TeamItemContent,
+  TeamItemMedia,
+  TeamItemTitle,
+} from "@/components/team/team-item";
 import { Spinner } from "@/components/ui/spinner";
 import type { MeTeam } from "@/lib/me-api";
 import { fetchOrgTeams, type OrgTeamSummary } from "@/lib/settings-api";
@@ -62,22 +67,31 @@ export function OrganizationTeamsSettings({
         <p className="text-sm text-muted-foreground">No teams yet.</p>
       ) : (
         <ul className="space-y-2">
-          {teams.map((team) => (
-            <li key={team.id}>
-              <button
-                type="button"
-                className="w-full rounded-md border bg-background px-3 py-2 text-left text-sm transition-colors hover:bg-accent"
-                onClick={() => onNavigate(settingsTeamPath(team.id))}
+          {teams.map((row) => (
+            <li key={row.team.id}>
+              <TeamItem
+                team={row.team}
+                isCurrentTeam={row.team.id === activeTeam.id}
+                variant="outline"
+                size="sm"
+                asChild
               >
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-medium">{team.name}</p>
-                  {team.id === activeTeam.id ? <Badge variant="secondary">Current</Badge> : null}
-                  <Badge variant="outline">
-                    {team.memberCount} member{team.memberCount === 1 ? "" : "s"}
-                  </Badge>
-                </div>
-                <p className="mt-1 font-mono text-xs text-muted-foreground">{team.id}</p>
-              </button>
+                <button
+                  type="button"
+                  className="w-full cursor-pointer hover:bg-accent"
+                  onClick={() => onNavigate(settingsTeamPath(row.team.id))}
+                >
+                  <TeamItemMedia />
+                  <TeamItemContent>
+                    <TeamItemTitle />
+                    <TeamItemBadges
+                      badges={[
+                        `${row.context.memberCount} member${row.context.memberCount === 1 ? "" : "s"}`,
+                      ]}
+                    />
+                  </TeamItemContent>
+                </button>
+              </TeamItem>
             </li>
           ))}
         </ul>
