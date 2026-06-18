@@ -271,8 +271,6 @@ function AppChromeInner({ entrypoint, children }: AppChromeProps) {
     onCreateTeam: () => setCreateTeamOpen(true),
     onManageTeams: () => onNavigate(settingsOrgPath("teams")),
     onSelectSession: handleSelectSession,
-    onOpenTeamGraph: () => onNavigate(`/teams/${activeTeam.id}/graph`),
-    onOpenPersonalGraph: () => onNavigate("/me/graph"),
     onOpenOrgSettings: () => onNavigate(settingsOrgPath("general")),
     onOpenProfileSettings: () => onNavigate(settingsAccountPath()),
     onSignOut: () => void onSignOut(),

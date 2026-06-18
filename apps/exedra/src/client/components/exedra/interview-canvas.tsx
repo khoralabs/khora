@@ -24,6 +24,7 @@ type InterviewCanvasProps = {
   onRefreshDetail: () => void;
   onBeliefUpdate: (id: string, update: { feedback?: BeliefFeedback; correction?: string }) => void;
   onBeliefSourceClick: (sourceMessageId: string) => void;
+  onNavigate: (path: string) => void;
   sheetMode?: boolean;
 };
 
@@ -34,6 +35,7 @@ export function InterviewCanvas({
   onRefreshDetail,
   onBeliefUpdate,
   onBeliefSourceClick,
+  onNavigate,
   sheetMode = false,
 }: InterviewCanvasProps) {
   return (
@@ -47,7 +49,7 @@ export function InterviewCanvas({
         <div className={appSectionHeaderClassName("px-4")}>
           <TabsList variant="line">
             <TabsTrigger value="beliefs">Beliefs</TabsTrigger>
-            <TabsTrigger value="info">Session Info</TabsTrigger>
+            <TabsTrigger value="info">Details</TabsTrigger>
           </TabsList>
         </div>
 
@@ -59,6 +61,7 @@ export function InterviewCanvas({
               detail={sessionDetail}
               sessionId={sessionId}
               onRefresh={onRefreshDetail}
+              onNavigate={onNavigate}
             />
           )}
         </TabsContent>

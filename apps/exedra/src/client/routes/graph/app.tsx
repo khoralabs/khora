@@ -1,6 +1,7 @@
 import { Share2 } from "lucide-react";
 import { useState } from "react";
 
+import { KnowledgeScopePicker } from "@/components/exedra/knowledge-scope-picker";
 import { MemoriesGraphView } from "@/components/exedra/memories-graph-view";
 import { SessionViewToggle } from "@/components/exedra/session-view-toggle";
 import { ShareSessionDialog } from "@/components/sessions/share-session-dialog";
@@ -13,7 +14,7 @@ import {
   orgTeamNamespace,
   userNamespace,
 } from "@/lib/memories-api";
-import type { SessionDetail } from "@/lib/sessions-api";
+import type { SessionDetail, SessionSummary } from "@/lib/sessions-api";
 
 import { AppChrome } from "../../shell/app-chrome";
 import {
@@ -29,18 +30,30 @@ function GraphContent({
   onNavigate,
   me,
   activeTeam,
+  sessions,
   sessionDetail,
 }: {
   pathname: string;
   onNavigate: (path: string) => void;
   me: MeResponse;
   activeTeam: MeTeam;
+  sessions: SessionSummary[] | null;
   sessionDetail: SessionDetail | null;
 }) {
   const sessionGraphId = parseSessionGraphId(pathname);
   const teamGraphId = parseActiveTeamGraphId(pathname);
   const personalGraph = isPersonalGraphPath(pathname);
   const [shareOpen, setShareOpen] = useState(false);
+
+  const scopePicker = (
+    <KnowledgeScopePicker
+      me={me}
+      activeTeam={activeTeam}
+      sessions={sessions}
+      pathname={pathname}
+      onNavigate={onNavigate}
+    />
+  );
 
   if (sessionGraphId !== null) {
     return (
@@ -52,8 +65,8 @@ function GraphContent({
             sessionDetail?.session.teamId ?? activeTeam.id,
             sessionGraphId,
           )}
-          title={sessionDetail?.session.topic ?? "Session memories"}
-          emptyDescription="This session doesn't have any memories yet. They'll appear here as the interview captures them."
+          title={sessionDetail?.session.topic ?? "Session knowledge"}
+          emptyDescription="No knowledge captured yet. It will appear here as the interview captures it."
           headerExtra={
             <>
               {sessionDetail?.canManage ? (
@@ -67,6 +80,7 @@ function GraphContent({
                   Share
                 </Button>
               ) : null}
+              {scopePicker}
               <SessionViewToggle
                 activeView="graph"
                 onNavigate={onNavigate}
@@ -85,12 +99,14 @@ function GraphContent({
   }
 
   if (teamGraphId !== null) {
+    const team = me.teams.find((t) => t.id === teamGraphId) ?? activeTeam;
     return (
       <MemoriesGraphView
         apiBase={orgMemoriesApiBase(activeTeam.orgId)}
         namespace={orgTeamNamespace(activeTeam.orgId, teamGraphId)}
-        title={`${activeTeam.name} memories`}
-        emptyDescription={`${activeTeam.name} doesn't have any shared memories yet.`}
+        title={`${team.name} knowledge`}
+        emptyDescription="No knowledge captured yet."
+        headerExtra={scopePicker}
       />
     );
   }
@@ -100,8 +116,9 @@ function GraphContent({
       <MemoriesGraphView
         apiBase={meMemoriesApiBase}
         namespace={userNamespace(me.user.userId)}
-        title="Personal memories"
-        emptyDescription="You don't have any personal memories yet."
+        title="Personal knowledge"
+        emptyDescription="No knowledge captured yet."
+        headerExtra={scopePicker}
       />
     );
   }

@@ -127,6 +127,10 @@ export function InterviewChatHeader({
         onSaved={onTopicChange}
       />
 
+      {!connected ? (
+        <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">Connecting…</span>
+      ) : null}
+
       {mobileLayout?.isCompactChrome ? (
         <Button
           type="button"
@@ -150,9 +154,6 @@ export function InterviewChatHeader({
       <div className="shrink-0">
         <SessionViewToggle activeView="chat" onNavigate={onNavigate} sessionId={sessionId} />
       </div>
-      {!connected ? (
-        <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">Connecting…</span>
-      ) : null}
     </div>
   );
 }

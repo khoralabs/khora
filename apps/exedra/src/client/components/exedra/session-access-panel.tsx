@@ -1,4 +1,4 @@
-import { Share2 } from "lucide-react";
+import { Network, Share2 } from "lucide-react";
 import { useState } from "react";
 
 import { SessionAccessList } from "@/components/sessions/session-access-list";
@@ -12,9 +12,15 @@ type SessionAccessPanelProps = {
   detail: SessionDetail | null;
   sessionId: string;
   onRefresh: () => void;
+  onNavigate: (path: string) => void;
 };
 
-export function SessionAccessPanel({ detail, sessionId, onRefresh }: SessionAccessPanelProps) {
+export function SessionAccessPanel({
+  detail,
+  sessionId,
+  onRefresh,
+  onNavigate,
+}: SessionAccessPanelProps) {
   const [shareOpen, setShareOpen] = useState(false);
   const [listRefreshKey, setListRefreshKey] = useState(0);
 
@@ -35,23 +41,28 @@ export function SessionAccessPanel({ detail, sessionId, onRefresh }: SessionAcce
             <Badge variant="outline">{detail.session.daysToDeadline}</Badge>
           ) : null}
           <Badge variant="outline">{detail.session.status}</Badge>
+          <span className="text-xs text-muted-foreground">
+            Created {formatSessionDate(detail.session.createdAtMs)}
+          </span>
         </div>
 
-        <div className="space-y-3 rounded-lg border bg-background p-4 text-sm">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Session topic
-            </p>
-            <p className="mt-1">{detail.session.topic}</p>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Created {formatSessionDate(detail.session.createdAtMs)}
-          </p>
+        <div className="space-y-3">
+          <p className="text-sm font-medium">Knowledge</p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full justify-start"
+            onClick={() => onNavigate(`/sessions/${sessionId}/graph`)}
+          >
+            <Network />
+            Open session knowledge graph
+          </Button>
         </div>
 
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-medium">Access</p>
+            <p className="text-sm font-medium">People with access</p>
             {detail.canManage ? (
               <Button type="button" variant="outline" size="sm" onClick={() => setShareOpen(true)}>
                 <Share2 />

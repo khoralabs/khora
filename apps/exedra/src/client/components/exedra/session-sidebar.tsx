@@ -1,4 +1,4 @@
-import { Network, UserRound } from "lucide-react";
+import { KnowledgeScopePicker } from "@/components/exedra/knowledge-scope-picker";
 import { NewSessionButton } from "@/components/exedra/new-session-button";
 import { SidebarTeamSwitcher } from "@/components/exedra/sidebar-team-switcher";
 import { SidebarUserMenu } from "@/components/exedra/sidebar-user-menu";
@@ -29,8 +29,6 @@ type SessionSidebarProps = {
   onCreateTeam?: () => void;
   onManageTeams?: () => void;
   onSelectSession: (sessionId: string) => void;
-  onOpenTeamGraph: () => void;
-  onOpenPersonalGraph: () => void;
   onOpenOrgSettings?: () => void;
   onOpenProfileSettings?: () => void;
   onSignOut?: () => void;
@@ -58,8 +56,6 @@ export function SessionSidebar({
   onCreateTeam,
   onManageTeams,
   onSelectSession,
-  onOpenTeamGraph,
-  onOpenPersonalGraph,
   onOpenOrgSettings,
   onOpenProfileSettings,
   onSignOut,
@@ -69,8 +65,6 @@ export function SessionSidebar({
   sheetMode = false,
   onDismiss,
 }: SessionSidebarProps) {
-  const teamGraphActive = /^\/teams\/([^/]+)\/graph\/?$/.test(pathname);
-  const personalGraphActive = /^\/me\/graph\/?$/.test(pathname);
   const collapsed = sheetMode ? false : collapsedProp;
 
   function dismissAfter(action: () => void) {
@@ -188,52 +182,22 @@ export function SessionSidebar({
 
             <div className={cn("border-b p-2", collapsed && "flex flex-col items-center gap-1")}>
               {!collapsed ? (
-                <p className="px-2 pb-2 text-xs font-medium text-muted-foreground">Memories</p>
+                <p className="px-2 pb-2 text-xs font-medium text-muted-foreground">Knowledge</p>
               ) : null}
-              <ul className="space-y-1">
-                <li>
-                  <SidebarCollapsedTooltip collapsed={collapsed} label="Team memories">
-                    <button
-                      type="button"
-                      className={cn(
-                        "w-full rounded-md text-left transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                        teamGraphActive && "bg-sidebar-accent text-sidebar-accent-foreground",
-                        collapsed
-                          ? "flex justify-center px-2 py-2"
-                          : "flex items-center gap-2 px-3 py-2",
-                      )}
-                      onClick={dismissAfter(onOpenTeamGraph)}
-                      aria-label="Team memories"
-                    >
-                      <Network className="size-4 shrink-0" />
-                      {!collapsed ? (
-                        <span className="text-sm font-medium">Team memories</span>
-                      ) : null}
-                    </button>
-                  </SidebarCollapsedTooltip>
-                </li>
-                <li>
-                  <SidebarCollapsedTooltip collapsed={collapsed} label="Personal memories">
-                    <button
-                      type="button"
-                      className={cn(
-                        "w-full rounded-md text-left transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                        personalGraphActive && "bg-sidebar-accent text-sidebar-accent-foreground",
-                        collapsed
-                          ? "flex justify-center px-2 py-2"
-                          : "flex items-center gap-2 px-3 py-2",
-                      )}
-                      onClick={dismissAfter(onOpenPersonalGraph)}
-                      aria-label="Personal memories"
-                    >
-                      <UserRound className="size-4 shrink-0" />
-                      {!collapsed ? (
-                        <span className="text-sm font-medium">Personal memories</span>
-                      ) : null}
-                    </button>
-                  </SidebarCollapsedTooltip>
-                </li>
-              </ul>
+              {onNavigate !== undefined ? (
+                <KnowledgeScopePicker
+                  me={me}
+                  activeTeam={activeTeam}
+                  sessions={sessions}
+                  pathname={pathname}
+                  onNavigate={(path) => {
+                    onNavigate(path);
+                    onDismiss?.();
+                  }}
+                  variant="sidebar"
+                  collapsed={collapsed}
+                />
+              ) : null}
             </div>
           </>
         )}

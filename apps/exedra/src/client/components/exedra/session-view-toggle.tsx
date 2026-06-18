@@ -14,23 +14,25 @@ export function SessionViewToggle({ sessionId, activeView, onNavigate }: Session
     <div className="flex items-center gap-1 rounded-md border p-0.5">
       <Button
         aria-label="Chat view"
-        className={cn(activeView === "chat" && "bg-muted")}
+        className={cn("gap-1.5", activeView === "chat" && "bg-muted")}
         onClick={() => onNavigate(`/sessions/${sessionId}/interview`)}
-        size="icon-sm"
+        size="sm"
         type="button"
         variant="ghost"
       >
         <MessageSquare />
+        <span className="hidden sm:inline">Chat</span>
       </Button>
       <Button
-        aria-label="Graph view"
-        className={cn(activeView === "graph" && "bg-muted")}
+        aria-label="Knowledge view"
+        className={cn("gap-1.5", activeView === "graph" && "bg-muted")}
         onClick={() => onNavigate(`/sessions/${sessionId}/graph`)}
-        size="icon-sm"
+        size="sm"
         type="button"
         variant="ghost"
       >
         <Network />
+        <span className="hidden sm:inline">Knowledge</span>
       </Button>
     </div>
   );

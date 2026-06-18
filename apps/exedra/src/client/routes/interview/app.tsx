@@ -92,6 +92,7 @@ function InterviewContent({
     sessionDetail,
     onBeliefSourceClick: handleBeliefSourceClick,
     onBeliefUpdate: handleBeliefUpdate,
+    onNavigate,
     onRefreshDetail: () => {
       loadSessionDetail(sessionId);
       loadSessions();
