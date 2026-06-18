@@ -73,7 +73,7 @@ function GraphContent({
     return (
       <MemoriesGraphView
         apiBase={meMemoriesApiBase}
-        namespace={userNamespace(me.user.id)}
+        namespace={userNamespace(me.user.userId)}
         title="Personal memories"
         emptyDescription="You don't have any personal memories yet."
       />

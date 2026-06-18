@@ -1,6 +1,14 @@
+import type { AccountProfile } from "@shared/accounts/row";
 import { ChevronsUpDown, LogOut } from "lucide-react";
 
-import { EntityAvatar } from "@/components/entity-avatar";
+import {
+  AccountItem,
+  AccountItemActions,
+  AccountItemContent,
+  AccountItemDescription,
+  AccountItemMedia,
+  AccountItemTitle,
+} from "@/components/account/account-item";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,75 +17,52 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { accountDescriptionSubtitle } from "@/lib/account-display";
 import { cn } from "@/lib/utils";
 
 import { SidebarCollapsedTooltip } from "./sidebar-collapsed-tooltip";
 
-export type SidebarUser = {
-  name: string;
-  subtitle: string;
-  email: string;
-  initials: string;
-  avatarUrl: string | null;
-};
-
-export function formatSidebarUser(user: {
-  registryUserId: string;
-  fullName?: string | null;
-  jobFunction?: string | null;
-  avatarUrl?: string | null;
-}): SidebarUser {
-  const email = user.registryUserId;
-  const trimmedFullName = user.fullName?.trim() ?? "";
-  const trimmedJobFunction = user.jobFunction?.trim() ?? "";
-  const subtitle = trimmedJobFunction.length > 0 ? trimmedJobFunction : email;
-
-  if (trimmedFullName.length > 0) {
-    const parts = trimmedFullName.split(/\s+/).filter(Boolean);
-    const initials =
-      parts.length >= 2
-        ? `${parts[0]?.[0] ?? ""}${parts[1]?.[0] ?? ""}`.toUpperCase()
-        : trimmedFullName.slice(0, 2).toUpperCase();
-    return {
-      name: trimmedFullName,
-      subtitle,
-      email,
-      initials: initials.length > 0 ? initials : trimmedFullName.slice(0, 2).toUpperCase(),
-      avatarUrl: user.avatarUrl ?? null,
-    };
-  }
-
-  const atIndex = email.indexOf("@");
-  if (atIndex !== -1) {
-    const localPart = email.slice(0, atIndex);
-    const name = localPart.length > 0 ? localPart : email;
-    return {
-      name,
-      subtitle,
-      email,
-      initials: name.slice(0, 2).toUpperCase(),
-      avatarUrl: user.avatarUrl ?? null,
-    };
-  }
-
-  const shortId = email.slice(0, 8);
-  return {
-    name: shortId,
-    subtitle,
-    email,
-    initials: shortId.slice(0, 2).toUpperCase(),
-    avatarUrl: user.avatarUrl ?? null,
-  };
-}
-
 type SidebarUserMenuProps = {
-  user: SidebarUser;
+  account: AccountProfile;
   collapsed: boolean;
   onSignOut?: () => void;
 };
 
-export function SidebarUserMenu({ user, collapsed, onSignOut }: SidebarUserMenuProps) {
-  const accountLabel = `${user.name} · ${user.subtitle}`;
+function SidebarAccountSummary({
+  account,
+  showChevron,
+  className,
+}: {
+  account: AccountProfile;
+  showChevron?: boolean;
+  className?: string;
+}) {
+  const subtitle = accountDescriptionSubtitle(account);
+  return (
+    <AccountItem
+      account={account}
+      isCurrentUser
+      variant="default"
+      size="sm"
+      className={cn("border-0 p-0", className)}
+    >
+      <AccountItemMedia className="size-8 rounded-lg [&_[data-slot=avatar-fallback]]:rounded-lg" />
+      <AccountItemContent>
+        <AccountItemTitle />
+        <AccountItemDescription>{subtitle}</AccountItemDescription>
+      </AccountItemContent>
+      {showChevron ? (
+        <AccountItemActions>
+          <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
+        </AccountItemActions>
+      ) : null}
+    </AccountItem>
+  );
+}
+
+export function SidebarUserMenu({ account, collapsed, onSignOut }: SidebarUserMenuProps) {
+  const subtitle = accountDescriptionSubtitle(account);
+  const accountLabel = `${account.fullName?.trim() || account.registryUserId} · ${subtitle}`;
 
   return (
     <DropdownMenu>
@@ -86,25 +71,24 @@ export function SidebarUserMenu({ user, collapsed, onSignOut }: SidebarUserMenuP
           <button
             type="button"
             className={cn(
-              "flex w-full items-center gap-2 rounded-md p-2 text-left text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground",
+              "flex w-full min-w-0 items-center gap-2 rounded-md p-2 text-left text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground",
               collapsed ? "justify-center px-2" : "px-2",
             )}
             aria-label={accountLabel}
           >
-            <EntityAvatar
-              name={user.name}
-              avatarUrl={user.avatarUrl}
-              className="size-8 rounded-lg [&_[data-slot=avatar-fallback]]:rounded-lg"
-            />
-            {!collapsed ? (
-              <>
-                <div className="grid min-w-0 flex-1 text-left leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
-                  <span className="truncate text-xs text-muted-foreground">{user.subtitle}</span>
-                </div>
-                <ChevronsUpDown className="ml-auto size-4 shrink-0 opacity-50" />
-              </>
-            ) : null}
+            {collapsed ? (
+              <AccountItem
+                account={account}
+                isCurrentUser
+                variant="default"
+                size="sm"
+                className="border-0 p-0"
+              >
+                <AccountItemMedia className="size-8 rounded-lg [&_[data-slot=avatar-fallback]]:rounded-lg" />
+              </AccountItem>
+            ) : (
+              <SidebarAccountSummary account={account} showChevron className="w-full" />
+            )}
           </button>
         </DropdownMenuTrigger>
       </SidebarCollapsedTooltip>
@@ -115,16 +99,8 @@ export function SidebarUserMenu({ user, collapsed, onSignOut }: SidebarUserMenuP
         sideOffset={4}
       >
         <DropdownMenuLabel className="p-0 font-normal">
-          <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-            <EntityAvatar
-              name={user.name}
-              avatarUrl={user.avatarUrl}
-              className="size-8 rounded-lg [&_[data-slot=avatar-fallback]]:rounded-lg"
-            />
-            <div className="grid min-w-0 flex-1 leading-tight">
-              <span className="truncate font-medium">{user.name}</span>
-              <span className="truncate text-xs text-muted-foreground">{user.subtitle}</span>
-            </div>
+          <div className="px-1 py-1.5">
+            <SidebarAccountSummary account={account} />
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />

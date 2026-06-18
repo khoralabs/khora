@@ -1,6 +1,14 @@
 import { Link2, Plus, UserPlus } from "lucide-react";
 import { useState } from "react";
 
+import {
+  AccountItem,
+  AccountItemActions,
+  AccountItemContent,
+  AccountItemDescription,
+  AccountItemMedia,
+  AccountItemTitle,
+} from "@/components/account/account-item";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,21 +20,22 @@ import {
   FieldSet,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { ItemGroup } from "@/components/ui/item";
 import { Spinner } from "@/components/ui/spinner";
 import { copyTextToClipboard } from "@/lib/copy-text";
 import { INVITE_LINK_SINGLE_USE_NOTE } from "@/lib/invite-copy";
 import {
   formatInterviewStatus,
-  formatParticipantLabel,
   formatPhaseLabel,
   formatSessionDate,
+  type InterviewStatus,
   manageSessionScopes,
   mintSessionInvite,
   type SessionDetail,
-  type SessionParticipant,
+  type SessionParticipantRow,
 } from "@/lib/sessions-api";
 
-function InterviewStatusBadge({ status }: { status: SessionParticipant["interviewStatus"] }) {
+function InterviewStatusBadge({ status }: { status: InterviewStatus }) {
   const variant =
     status === "complete" ? "secondary" : status === "started" ? "default" : "outline";
   return <Badge variant={variant}>{formatInterviewStatus(status)}</Badge>;
@@ -138,37 +147,41 @@ export function SessionParticipantsPanel({
         {detail.participants.length === 0 ? (
           <p className="text-sm text-muted-foreground">No participants yet.</p>
         ) : (
-          <ul className="space-y-2">
-            {detail.participants.map((participant) => (
-              <li
-                key={participant.userId}
-                className="flex items-center justify-between gap-3 rounded-md border bg-background px-3 py-2"
+          <ItemGroup className="gap-2">
+            {detail.participants.map((participant: SessionParticipantRow) => (
+              <AccountItem
+                key={participant.account.userId}
+                account={participant.account}
+                isCurrentUser={participant.isCurrentUser}
+                variant="outline"
+                size="sm"
               >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">{formatParticipantLabel(participant)}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {participant.role === "facilitator" ? "Facilitator" : "Participant"}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <InterviewStatusBadge status={participant.interviewStatus} />
+                <AccountItemMedia />
+                <AccountItemContent>
+                  <AccountItemTitle />
+                  <AccountItemDescription>
+                    {participant.context.role === "facilitator" ? "Facilitator" : "Participant"}
+                  </AccountItemDescription>
+                </AccountItemContent>
+                <AccountItemActions>
+                  <InterviewStatusBadge status={participant.context.interviewStatus} />
                   {detail.canManage &&
-                  participant.role !== "facilitator" &&
+                  participant.context.role !== "facilitator" &&
                   !participant.isCurrentUser ? (
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      disabled={removingUserId === participant.userId}
-                      onClick={() => void handleRemoveParticipant(participant.userId)}
+                      disabled={removingUserId === participant.account.userId}
+                      onClick={() => void handleRemoveParticipant(participant.account.userId)}
                     >
-                      {removingUserId === participant.userId ? "Removing…" : "Remove"}
+                      {removingUserId === participant.account.userId ? "Removing…" : "Remove"}
                     </Button>
                   ) : null}
-                </div>
-              </li>
+                </AccountItemActions>
+              </AccountItem>
             ))}
-          </ul>
+          </ItemGroup>
         )}
 
         {inviteUrl !== null && detail.canManage ? (

@@ -1,3 +1,5 @@
+import type { AccountProfile } from "@shared/accounts/row";
+
 export type MeTeam = {
   id: string;
   name: string;
@@ -8,13 +10,7 @@ export type MeTeam = {
 };
 
 export type MeResponse = {
-  user: {
-    id: string;
-    registryUserId: string;
-    fullName: string | null;
-    jobFunction: string | null;
-    avatarUrl: string | null;
-  };
+  user: AccountProfile;
   teams: MeTeam[];
   onboardingRequired: boolean;
   onboardingInterviewRequired: boolean;
@@ -56,7 +52,7 @@ export async function fetchMe(): Promise<MeResponse | null> {
 export async function patchMeProfile(body: {
   fullName?: string;
   jobFunction?: string;
-}): Promise<MeResponse["user"]> {
+}): Promise<AccountProfile> {
   const res = await fetch("/api/me", {
     method: "PATCH",
     credentials: "include",
@@ -74,7 +70,7 @@ export async function patchMeProfile(body: {
     }
     throw new Error(message);
   }
-  const data = JSON.parse(text) as { user: MeResponse["user"] };
+  const data = JSON.parse(text) as { user: AccountProfile };
   return data.user;
 }
 

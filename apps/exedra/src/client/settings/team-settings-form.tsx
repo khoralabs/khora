@@ -245,10 +245,7 @@ export function TeamSettingsForm({
                 </div>
               ) : (
                 <MembersTable
-                  members={members.map((member) => ({
-                    ...member,
-                    badges: member.isAdmin ? ["Admin"] : [],
-                  }))}
+                  members={members}
                   onMemberClick={(memberId) => onNavigate(settingsMemberPath(memberId))}
                 />
               )}

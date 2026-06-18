@@ -76,14 +76,9 @@ export function OrganizationMembersSettings({
       {error !== null ? <p className="text-sm text-destructive">{error}</p> : null}
 
       <MembersTable
-        members={members.map((member) => ({
-          ...member,
-          badges: member.isAdmin ? ["Admin"] : [],
-          subtitle:
-            member.teamNames.length > 0 ? `Teams: ${member.teamNames.join(", ")}` : undefined,
-        }))}
+        members={members}
         onMemberClick={(userId) => {
-          const member = members.find((row) => row.userId === userId);
+          const member = members.find((row) => row.account.userId === userId);
           onNavigate(member?.isCurrentUser ? settingsAccountPath() : settingsMemberPath(userId));
         }}
       />

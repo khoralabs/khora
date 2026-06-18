@@ -1,3 +1,6 @@
+import type { AccountProfile } from "@shared/accounts/row";
+
+import { resolveAccountProfile } from "../accounts/resolve-rows";
 import { requireRegistrySessionResponse } from "../auth/require-session";
 import { enforce, ResourceType } from "../authz/policy";
 import { buildUserAvatarS3Key } from "../avatars/keys";
@@ -23,14 +26,16 @@ import {
 import { bootstrapOrgTeamMemories } from "../memories/bootstrap";
 import { createOnboardingInterviewForMember } from "./interview";
 
-function serializeMeUser(user: ExedraUser) {
-  return {
-    id: user.id,
-    registryUserId: user.registryUserId,
-    fullName: user.fullName,
-    jobFunction: user.jobFunction,
-    avatarUrl: avatarUrlFromS3Key("user", user.id, user.avatarS3Key),
-  };
+function serializeMeUser(db: ReturnType<typeof getDb>, user: ExedraUser): AccountProfile {
+  return (
+    resolveAccountProfile(db, user.id) ?? {
+      userId: user.id,
+      registryUserId: user.registryUserId,
+      fullName: user.fullName,
+      avatarUrl: avatarUrlFromS3Key("user", user.id, user.avatarS3Key),
+      jobFunction: user.jobFunction,
+    }
+  );
 }
 
 function serializeMeTeam(team: ReturnType<typeof listTeamsForUser>[number]) {
@@ -56,7 +61,7 @@ export async function handleGetMe(req: Request): Promise<Response> {
   const hasSessionAccessOnly = !hasTeam && userHasAnyAccessibleSession(db, user.id);
 
   return Response.json({
-    user: serializeMeUser(user),
+    user: serializeMeUser(db, user),
     teams: teams.map(serializeMeTeam),
     onboardingRequired: !hasTeam && !hasSessionAccessOnly,
     onboardingInterviewRequired: userNeedsOnboardingInterview(db, user.id),
@@ -95,7 +100,7 @@ export async function handlePatchMe(req: Request): Promise<Response> {
     return Response.json({ error: "User not found" }, { status: 404 });
   }
 
-  return Response.json({ user: serializeMeUser(updated) });
+  return Response.json({ user: serializeMeUser(db, updated) });
 }
 
 export async function handleUploadMeAvatar(req: Request): Promise<Response> {
@@ -133,7 +138,7 @@ export async function handleUploadMeAvatar(req: Request): Promise<Response> {
     return Response.json({ error: "User not found" }, { status: 404 });
   }
 
-  return Response.json({ user: serializeMeUser(updated) });
+  return Response.json({ user: serializeMeUser(db, updated) });
 }
 
 export async function handleDeleteMeAvatar(req: Request): Promise<Response> {
@@ -155,7 +160,7 @@ export async function handleDeleteMeAvatar(req: Request): Promise<Response> {
     return Response.json({ error: "User not found" }, { status: 404 });
   }
 
-  return Response.json({ user: serializeMeUser(updated) });
+  return Response.json({ user: serializeMeUser(db, updated) });
 }
 
 type OnboardingBody = {

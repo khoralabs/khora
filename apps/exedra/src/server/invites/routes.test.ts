@@ -3,11 +3,11 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { verifyRegistrySession } from "@khoralabs/registry-auth";
+import { listAccountRowsForSession } from "../accounts/resolve-rows";
 import { grantSessionCreatorAccess, hasGrant } from "../authz";
 import { closeDb, getDb } from "../db/index";
 import { mintSessionParticipantInvite } from "../db/invites";
 import { getPendingOnboardingInterview, listTeamsForUser } from "../db/membership";
-import { listSessionParticipantDetails } from "../db/session-detail";
 import { createOrg, createSession, createTeam, userHasSessionAccess } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
 import { resetMemoriesStoreForTests } from "../memories/store";
@@ -174,8 +174,8 @@ test("accept invite grants session access and team membership", async () => {
     ),
   ).toBe(true);
 
-  const participants = listSessionParticipantDetails(db, session.id);
-  expect(participants.some((p) => p.userId === invitee.id)).toBe(true);
+  const participants = listAccountRowsForSession(db, session.id, facilitator.id);
+  expect(participants.some((p) => p.account.userId === invitee.id)).toBe(true);
 });
 
 test("accept onboarding session invite joins facilitator session", async () => {
@@ -213,9 +213,9 @@ test("accept onboarding session invite joins facilitator session", async () => {
   expect(userHasSessionAccess(db, onboarding.sessionId, invitee.id)).toBe(true);
   expect(getPendingOnboardingInterview(db, invitee.id)?.sessionId).toBe(onboarding.sessionId);
 
-  const participants = listSessionParticipantDetails(db, onboarding.sessionId);
-  expect(participants.some((p) => p.userId === facilitator.id)).toBe(true);
-  expect(participants.some((p) => p.userId === invitee.id)).toBe(true);
+  const participants = listAccountRowsForSession(db, onboarding.sessionId, facilitator.id);
+  expect(participants.some((p) => p.account.userId === facilitator.id)).toBe(true);
+  expect(participants.some((p) => p.account.userId === invitee.id)).toBe(true);
 });
 
 test("get invite marks already joined for authenticated participant", async () => {

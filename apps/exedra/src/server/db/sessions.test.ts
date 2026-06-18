@@ -3,6 +3,7 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { listAccountRowsForSession } from "../accounts/resolve-rows";
 import {
   grantSessionCreatorAccess,
   grantSessionParticipant,
@@ -12,7 +13,6 @@ import { closeDb } from "../db/index";
 import { getOrCreateUser } from "../identity/users";
 import { addTeamMember } from "./membership";
 import { ensureExedraSchema } from "./schema";
-import { listSessionParticipantDetails } from "./session-detail";
 import { createOrg, createSession, createTeam, listSessionsForUser } from "./sessions";
 
 let dataDir: string;
@@ -77,11 +77,15 @@ test("team-scoped grant lists all team members as participants", async () => {
   grantSessionCreatorAccess(db, facilitator.id, session.id);
   grantTeamSessionParticipant(db, teamId, session.id);
 
-  const participants = listSessionParticipantDetails(db, session.id);
-  expect(participants.some((p) => p.userId === facilitator.id && p.role === "facilitator")).toBe(
-    true,
-  );
-  expect(participants.some((p) => p.userId === member.id && p.role === "participant")).toBe(true);
+  const participants = listAccountRowsForSession(db, session.id, facilitator.id);
+  expect(
+    participants.some(
+      (p) => p.account.userId === facilitator.id && p.context.role === "facilitator",
+    ),
+  ).toBe(true);
+  expect(
+    participants.some((p) => p.account.userId === member.id && p.context.role === "participant"),
+  ).toBe(true);
 
   db.close();
 });

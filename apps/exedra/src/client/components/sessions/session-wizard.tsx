@@ -1,5 +1,11 @@
 import { ArrowLeft, Link2, Plus, UserPlus } from "lucide-react";
 import { useEffect, useState } from "react";
+import {
+  AccountItem,
+  AccountItemContent,
+  AccountItemMedia,
+  AccountItemTitle,
+} from "@/components/account/account-item";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -27,12 +33,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { copyTextToClipboard } from "@/lib/copy-text";
 import { INVITE_LINK_SINGLE_USE_NOTE } from "@/lib/invite-copy";
 import { type MeTeam, mintTeamInvite } from "@/lib/me-api";
-import {
-  createSession,
-  fetchTeamMembers,
-  formatMemberLabel,
-  type TeamMember,
-} from "@/lib/sessions-api";
+import { createSession, fetchTeamMembers, type TeamMemberRow } from "@/lib/sessions-api";
 
 type SessionWizardProps = {
   team: MeTeam;
@@ -46,7 +47,7 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
   const [step, setStep] = useState<WizardStep>(1);
   const [topic, setTopic] = useState("");
   const [deadline, setDeadline] = useState<Date | undefined>();
-  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [members, setMembers] = useState<TeamMemberRow[]>([]);
   const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(new Set());
   const [shareWholeTeam, setShareWholeTeam] = useState(true);
   const [createInvite, setCreateInvite] = useState(false);
@@ -347,19 +348,31 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
               ) : (
                 <FieldGroup data-slot="checkbox-group">
                   {members.map((member) => {
-                    const checked = selectedMemberIds.has(member.userId);
+                    const userId = member.account.userId;
+                    const checked = selectedMemberIds.has(userId);
                     return (
-                      <Field key={member.userId} orientation="horizontal">
+                      <Field key={userId} orientation="horizontal">
                         <input
-                          id={`member-${member.userId}`}
+                          id={`member-${userId}`}
                           type="checkbox"
                           className="size-4 rounded border border-input"
                           checked={checked}
-                          onChange={() => toggleMember(member.userId)}
+                          onChange={() => toggleMember(userId)}
                         />
                         <FieldContent>
-                          <FieldLabel htmlFor={`member-${member.userId}`}>
-                            {formatMemberLabel(member)}
+                          <FieldLabel htmlFor={`member-${userId}`} className="w-full">
+                            <AccountItem
+                              account={member.account}
+                              isCurrentUser={member.isCurrentUser}
+                              variant="default"
+                              size="sm"
+                              className="border-0 p-0"
+                            >
+                              <AccountItemMedia />
+                              <AccountItemContent>
+                                <AccountItemTitle />
+                              </AccountItemContent>
+                            </AccountItem>
                           </FieldLabel>
                         </FieldContent>
                       </Field>

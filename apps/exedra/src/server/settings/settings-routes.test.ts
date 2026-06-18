@@ -81,11 +81,15 @@ test("GET /api/orgs/:orgId/members lists org members for members", async () => {
   const res = await handleListOrgMembers(new Request("http://localhost"), orgId);
   expect(res.status).toBe(200);
   const body = (await res.json()) as {
-    members: { userId: string; isCurrentUser: boolean; teamNames: string[] }[];
+    members: {
+      account: { userId: string };
+      isCurrentUser: boolean;
+      context: { kind: string; teamNames: string[] };
+    }[];
   };
   expect(body.members).toHaveLength(2);
   expect(body.members.some((member) => member.isCurrentUser)).toBe(true);
-  expect(body.members.every((member) => member.teamNames.includes("Product"))).toBe(true);
+  expect(body.members.every((member) => member.context.teamNames.includes("Product"))).toBe(true);
 });
 
 test("GET /api/orgs/:orgId/members/:userId returns member profile for org members", async () => {

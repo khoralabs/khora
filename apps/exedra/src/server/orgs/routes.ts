@@ -1,3 +1,4 @@
+import { listAccountRowsForOrg } from "../accounts/resolve-rows.js";
 import { requireRegistrySessionResponse } from "../auth/require-session.js";
 import { canEditOrg, enforce, hasOrgAdminGrant, ResourceType } from "../authz/policy.js";
 import { serializeOrgPermissionsForAccount } from "../authz/routes.js";
@@ -47,11 +48,7 @@ export async function handleListOrgMembers(req: Request, orgId: string): Promise
     return jsonResponse({ error: "Forbidden" }, 403);
   }
 
-  const members = listOrgMembers(db, orgId).map((member) => ({
-    ...member,
-    isCurrentUser: member.userId === user.id,
-    isAdmin: hasOrgAdminGrant(db, member.userId, orgId),
-  }));
+  const members = listAccountRowsForOrg(db, orgId, user.id);
 
   return jsonResponse({ members });
 }

@@ -1,3 +1,10 @@
+import type {
+  AccountProfile,
+  AccountRow,
+  OrgMemberContext,
+  TeamMemberContext,
+} from "@shared/accounts/row";
+
 export type EntitySettings = {
   id: string;
   name: string;
@@ -6,27 +13,11 @@ export type EntitySettings = {
   permissions?: Record<string, boolean>;
 };
 
-export type MemberSummary = {
-  userId: string;
-  registryUserId: string;
-  fullName: string | null;
-  isCurrentUser: boolean;
-};
-
-export type OrgMemberSummary = MemberSummary & {
-  isAdmin: boolean;
-  teamIds: string[];
-  teamNames: string[];
-};
+export type OrgMemberRow = AccountRow<OrgMemberContext>;
+export type TeamMemberRow = AccountRow<TeamMemberContext>;
 
 export type OrgMemberProfile = {
-  user: {
-    id: string;
-    registryUserId: string;
-    fullName: string | null;
-    jobFunction: string | null;
-    avatarUrl: string | null;
-  };
+  user: AccountProfile & { id: string };
   isCurrentUser: boolean;
   isAdmin: boolean;
   teamIds: string[];
@@ -40,9 +31,9 @@ export type OrgTeamSummary = {
   createdAtMs: number;
 };
 
-export type TeamMemberSummary = MemberSummary & {
-  isAdmin: boolean;
-};
+export type TeamMemberSummary = TeamMemberRow;
+
+export type OrgMemberSummary = OrgMemberRow;
 
 export type TeamSettings = EntitySettings & {
   orgId: string;

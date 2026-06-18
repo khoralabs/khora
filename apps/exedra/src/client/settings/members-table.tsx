@@ -1,23 +1,19 @@
-import { Badge } from "@/components/ui/badge";
+import type { AccountRow, OrgMemberContext, TeamMemberContext } from "@shared/accounts/row";
+
+import {
+  AccountItem,
+  AccountItemBadges,
+  AccountItemContent,
+  AccountItemDescription,
+  AccountItemMedia,
+  AccountItemTitle,
+} from "@/components/account/account-item";
+import { ItemGroup } from "@/components/ui/item";
 
 type MembersTableProps = {
-  members: {
-    userId: string;
-    registryUserId: string;
-    fullName: string | null;
-    isCurrentUser: boolean;
-    badges?: string[];
-    subtitle?: string;
-  }[];
+  members: AccountRow<TeamMemberContext | OrgMemberContext>[];
   onMemberClick?: (userId: string) => void;
 };
-
-function memberLabel(member: MembersTableProps["members"][number]): string {
-  if (member.fullName !== null && member.fullName.trim().length > 0) {
-    return member.fullName;
-  }
-  return member.registryUserId;
-}
 
 export function MembersTable({ members, onMemberClick }: MembersTableProps) {
   if (members.length === 0) {
@@ -25,46 +21,60 @@ export function MembersTable({ members, onMemberClick }: MembersTableProps) {
   }
 
   return (
-    <ul className="space-y-2">
-      {members.map((member) => {
+    <ItemGroup className="gap-2">
+      {members.map((row) => {
+        const adminBadges = row.context.isAdmin ? (["Admin"] as const) : [];
+        const teamsDescription =
+          row.context.kind === "org_member" && row.context.teamNames.length > 0
+            ? `Teams: ${row.context.teamNames.join(", ")}`
+            : null;
+
         const content = (
           <>
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="font-medium">{memberLabel(member)}</p>
-              {member.isCurrentUser ? <Badge variant="secondary">You</Badge> : null}
-              {member.badges?.map((badge) => (
-                <Badge key={badge} variant="outline">
-                  {badge}
-                </Badge>
-              ))}
-            </div>
-            {member.subtitle !== undefined ? (
-              <p className="mt-1 text-xs text-muted-foreground">{member.subtitle}</p>
-            ) : null}
-            <p className="mt-1 font-mono text-xs text-muted-foreground">{member.userId}</p>
+            <AccountItemMedia />
+            <AccountItemContent>
+              <AccountItemTitle />
+              {adminBadges.length > 0 ? <AccountItemBadges badges={adminBadges} /> : null}
+              {teamsDescription !== null ? (
+                <AccountItemDescription>{teamsDescription}</AccountItemDescription>
+              ) : null}
+            </AccountItemContent>
           </>
         );
 
         if (onMemberClick === undefined) {
           return (
-            <li key={member.userId} className="rounded-md border bg-background px-3 py-2 text-sm">
+            <AccountItem
+              key={row.account.userId}
+              account={row.account}
+              isCurrentUser={row.isCurrentUser}
+              variant="outline"
+              size="sm"
+            >
               {content}
-            </li>
+            </AccountItem>
           );
         }
 
         return (
-          <li key={member.userId}>
+          <AccountItem
+            key={row.account.userId}
+            account={row.account}
+            isCurrentUser={row.isCurrentUser}
+            variant="outline"
+            size="sm"
+            asChild
+          >
             <button
               type="button"
-              className="w-full rounded-md border bg-background px-3 py-2 text-left text-sm transition-colors hover:bg-accent"
-              onClick={() => onMemberClick(member.userId)}
+              className="w-full min-w-0 text-left transition-colors hover:bg-accent"
+              onClick={() => onMemberClick(row.account.userId)}
             >
               {content}
             </button>
-          </li>
+          </AccountItem>
         );
       })}
-    </ul>
+    </ItemGroup>
   );
 }

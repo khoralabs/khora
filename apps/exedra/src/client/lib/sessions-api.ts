@@ -1,3 +1,10 @@
+import type {
+  AccountRow,
+  InterviewStatus,
+  SessionParticipantContext,
+  TeamMemberContext,
+} from "@shared/accounts/row";
+
 export type SessionSummary = {
   id: string;
   teamId: string;
@@ -10,29 +17,18 @@ export type SessionSummary = {
 
 export type SessionPhase = "individual" | "synthesis" | "alignment" | "closed";
 
-export type InterviewStatus = "not_started" | "started" | "complete";
+export type { InterviewStatus };
 
-export type SessionParticipant = {
-  userId: string;
-  registryUserId: string;
-  role: "facilitator" | "participant";
-  interviewStatus: InterviewStatus;
-  isCurrentUser: boolean;
-};
+export type SessionParticipantRow = AccountRow<SessionParticipantContext>;
+export type TeamMemberRow = AccountRow<TeamMemberContext>;
 
 export type SessionDetail = {
   session: SessionSummary & {
     phase: SessionPhase;
     daysToDeadline: string | null;
   };
-  participants: SessionParticipant[];
+  participants: SessionParticipantRow[];
   canManage: boolean;
-};
-
-export type TeamMember = {
-  userId: string;
-  registryUserId: string;
-  isCurrentUser: boolean;
 };
 
 export type CreateSessionInput = {
@@ -104,7 +100,7 @@ export async function patchSession(
 export async function manageSessionScopes(
   sessionId: string,
   input: ManageSessionScopesInput,
-): Promise<SessionParticipant[]> {
+): Promise<SessionParticipantRow[]> {
   const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/scopes`, {
     method: "POST",
     credentials: "include",
@@ -115,22 +111,17 @@ export async function manageSessionScopes(
     const data = (await res.json().catch(() => null)) as { error?: string } | null;
     throw new Error(data?.error ?? "Failed to update session access");
   }
-  const body = (await res.json()) as { participants: SessionParticipant[] };
+  const body = (await res.json()) as { participants: SessionParticipantRow[] };
   return body.participants;
 }
 
-export async function fetchTeamMembers(teamId: string): Promise<TeamMember[]> {
+export async function fetchTeamMembers(teamId: string): Promise<TeamMemberRow[]> {
   const res = await fetch(`/api/teams/${encodeURIComponent(teamId)}/members`, {
     credentials: "include",
   });
   if (!res.ok) throw new Error("Failed to load team members");
-  const body = (await res.json()) as { members: TeamMember[] };
+  const body = (await res.json()) as { members: TeamMemberRow[] };
   return body.members;
-}
-
-export function formatMemberLabel(member: TeamMember): string {
-  if (member.isCurrentUser) return "You";
-  return member.registryUserId.slice(0, 8);
 }
 
 export function formatSessionDate(ms: number): string {
@@ -162,11 +153,6 @@ export function formatInterviewStatus(status: InterviewStatus): string {
     case "complete":
       return "Complete";
   }
-}
-
-export function formatParticipantLabel(participant: SessionParticipant): string {
-  if (participant.isCurrentUser) return "You";
-  return participant.registryUserId.slice(0, 8);
 }
 
 export async function fetchSessionDetail(sessionId: string): Promise<SessionDetail> {

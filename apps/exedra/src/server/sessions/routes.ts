@@ -1,3 +1,4 @@
+import { listAccountRowsForSession, listAccountRowsForTeam } from "../accounts/resolve-rows";
 import { requireRegistrySessionResponse } from "../auth/require-session";
 import {
   canManageSession,
@@ -8,7 +9,7 @@ import {
   revokeSessionParticipant,
   revokeTeamSessionParticipant,
 } from "../authz";
-import { enforce, hasTeamAdminGrant, ResourceType } from "../authz/policy";
+import { enforce, ResourceType } from "../authz/policy";
 import { loadBeliefFeedback, upsertBeliefFeedback } from "../db/beliefs";
 import { getDb } from "../db/index";
 import { listInvitesForSession, mintSessionInvite } from "../db/invites";
@@ -19,11 +20,7 @@ import {
   userNeedsOnboardingInterviewForTeam,
 } from "../db/membership";
 import { loadThreadMessages } from "../db/messages";
-import {
-  formatDaysToDeadline,
-  listSessionParticipantDetails,
-  sessionPhaseFromStatus,
-} from "../db/session-detail";
+import { formatDaysToDeadline, sessionPhaseFromStatus } from "../db/session-detail";
 import {
   createSession,
   getOrCreateInterviewThread,
@@ -212,10 +209,7 @@ export async function handleGetSessionById(req: Request, sessionId: string): Pro
   const role = sessionRoleForUser(db, sessionId, user.id);
   const phase = sessionPhaseFromStatus(session.status);
   const daysToDeadline = formatDaysToDeadline(session.deadlineMs);
-  const participants = listSessionParticipantDetails(db, sessionId).map((participant) => ({
-    ...participant,
-    isCurrentUser: participant.userId === user.id,
-  }));
+  const participants = listAccountRowsForSession(db, sessionId, user.id);
 
   return Response.json({
     session: {
@@ -330,10 +324,7 @@ export async function handleManageSessionScopes(
     revokeTeamSessionParticipant(db, sharedTeamId, sessionId);
   }
 
-  const participants = listSessionParticipantDetails(db, sessionId).map((participant) => ({
-    ...participant,
-    isCurrentUser: participant.userId === user.id,
-  }));
+  const participants = listAccountRowsForSession(db, sessionId, user.id);
 
   return Response.json({ participants });
 }
@@ -471,13 +462,7 @@ export async function handleListTeamMembers(req: Request, teamId: string): Promi
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const members = listTeamMembers(db, teamId).map((member) => ({
-    userId: member.userId,
-    registryUserId: member.registryUserId,
-    fullName: member.fullName,
-    isCurrentUser: member.userId === user.id,
-    isAdmin: hasTeamAdminGrant(db, member.userId, teamId),
-  }));
+  const members = listAccountRowsForTeam(db, teamId, user.id);
 
   return Response.json({ members });
 }

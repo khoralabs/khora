@@ -1,7 +1,7 @@
 import { Network, Settings, UserRound } from "lucide-react";
 import { NewSessionButton } from "@/components/exedra/new-session-button";
 import { SidebarTeamSwitcher } from "@/components/exedra/sidebar-team-switcher";
-import { formatSidebarUser, SidebarUserMenu } from "@/components/exedra/sidebar-user-menu";
+import { SidebarUserMenu } from "@/components/exedra/sidebar-user-menu";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -60,7 +60,6 @@ export function SessionSidebar({
   sheetMode = false,
   onDismiss,
 }: SessionSidebarProps) {
-  const user = formatSidebarUser(me.user);
   const teamGraphActive = /^\/teams\/([^/]+)\/graph\/?$/.test(pathname);
   const personalGraphActive = /^\/me\/graph\/?$/.test(pathname);
   const collapsed = sheetMode ? false : collapsedProp;
@@ -232,7 +231,7 @@ export function SessionSidebar({
         <div className="mt-auto border-t p-2">
           <div className={cn("flex items-center gap-1", collapsed && "flex-col")}>
             <div className={cn("min-w-0", !collapsed && "flex-1")}>
-              <SidebarUserMenu user={user} collapsed={collapsed} onSignOut={onSignOut} />
+              <SidebarUserMenu account={me.user} collapsed={collapsed} onSignOut={onSignOut} />
             </div>
             {onOpenSettings ? (
               <SidebarCollapsedTooltip collapsed={collapsed} label="Settings">
