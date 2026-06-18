@@ -25,6 +25,7 @@ export function InterviewChat({
   onScrollToMessageComplete,
   canManage,
   onShare,
+  onTopicChange,
 }: InterviewChatProps) {
   const {
     bootstrap,
@@ -99,6 +100,7 @@ export function InterviewChat({
         sessionId={sessionId}
         canManage={canManage}
         onShare={onShare}
+        onTopicChange={onTopicChange}
       />
       <InterviewChatMessages
         messages={messages}

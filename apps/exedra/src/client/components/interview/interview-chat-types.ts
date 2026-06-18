@@ -13,6 +13,7 @@ export type InterviewChatProps = {
   onScrollToMessageComplete?: () => void;
   canManage?: boolean;
   onShare?: () => void;
+  onTopicChange?: (topic: string) => void;
 };
 
 export type WsServerMessage =

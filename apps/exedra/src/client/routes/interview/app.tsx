@@ -112,6 +112,7 @@ function InterviewContent({
         scrollToMessageId={scrollToMessageId}
         canManage={sessionDetail?.canManage}
         onShare={() => setShareOpen(true)}
+        onTopicChange={loadSessions}
       />
       {chatError !== null ? (
         <div className="sr-only" aria-live="polite">
