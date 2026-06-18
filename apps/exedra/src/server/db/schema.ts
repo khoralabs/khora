@@ -135,6 +135,8 @@ export function ensureExedraSchema(db: Database): void {
   migrateSessionsAddKind(db);
   migrateSessionsDropFacilitator(db);
   migrateAvatarS3KeyColumns(db);
+  migrateSessionsAddLinkAccess(db);
+  migrateInvitesAddReusableColumns(db);
   ensureAuthzSchema(db);
 }
 
@@ -183,4 +185,23 @@ function migrateSessionsAddKind(db: Database): void {
   const columns = db.query<{ name: string }, []>("PRAGMA table_info(sessions)").all();
   if (columns.some((column) => column.name === "kind")) return;
   db.run(`ALTER TABLE sessions ADD COLUMN kind TEXT NOT NULL DEFAULT 'standard'`);
+}
+
+function migrateSessionsAddLinkAccess(db: Database): void {
+  const columns = db.query<{ name: string }, []>("PRAGMA table_info(sessions)").all();
+  if (columns.some((column) => column.name === "link_access")) return;
+  db.run(`ALTER TABLE sessions ADD COLUMN link_access TEXT NOT NULL DEFAULT 'restricted'`);
+}
+
+function migrateInvitesAddReusableColumns(db: Database): void {
+  const columns = db.query<{ name: string }, []>("PRAGMA table_info(invites)").all();
+  if (!columns.some((column) => column.name === "reusable")) {
+    db.run(`ALTER TABLE invites ADD COLUMN reusable INTEGER NOT NULL DEFAULT 0`);
+  }
+  if (!columns.some((column) => column.name === "revoked_at_ms")) {
+    db.run(`ALTER TABLE invites ADD COLUMN revoked_at_ms INTEGER`);
+  }
+  if (!columns.some((column) => column.name === "link_plaintext")) {
+    db.run(`ALTER TABLE invites ADD COLUMN link_plaintext TEXT`);
+  }
 }

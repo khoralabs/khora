@@ -1,4 +1,4 @@
-import { Lightbulb } from "lucide-react";
+import { Lightbulb, Share2 } from "lucide-react";
 
 import { SessionViewToggle } from "@/components/exedra/session-view-toggle";
 import { Button } from "@/components/ui/button";
@@ -12,14 +12,18 @@ type InterviewChatHeaderProps = {
   bootstrap: InterviewBootstrap;
   sessionId: string;
   connected: boolean;
+  canManage?: boolean;
   onNavigate: (path: string) => void;
+  onShare?: () => void;
 };
 
 export function InterviewChatHeader({
   bootstrap,
   sessionId,
   connected,
+  canManage,
   onNavigate,
+  onShare,
 }: InterviewChatHeaderProps) {
   const mobileLayout = useMobileChromeLayoutOptional();
 
@@ -42,6 +46,13 @@ export function InterviewChatHeader({
           onClick={() => mobileLayout.setCanvasOpen(true)}
         >
           <Lightbulb />
+        </Button>
+      ) : null}
+
+      {canManage && onShare !== undefined ? (
+        <Button type="button" variant="outline" size="sm" onClick={onShare}>
+          <Share2 />
+          Share
         </Button>
       ) : null}
 

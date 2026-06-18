@@ -11,6 +11,8 @@ export type InterviewChatProps = {
   onOnboardingComplete?: () => void;
   scrollToMessageId?: string | null;
   onScrollToMessageComplete?: () => void;
+  canManage?: boolean;
+  onShare?: () => void;
 };
 
 export type WsServerMessage =

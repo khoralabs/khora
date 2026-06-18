@@ -18,7 +18,7 @@ import {
   isTeamMember,
   setTeamMemberOnboardingSession,
 } from "../db/membership";
-import { getSession, userHasSessionAccess } from "../db/sessions";
+import { getSession, getSessionLinkAccess, userHasSessionAccess } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
 import { bootstrapOrgTeamMemories } from "../memories/bootstrap";
 import { bootstrapSessionMemoriesForTeamSession } from "../memories/bootstrap-session";
@@ -30,6 +30,7 @@ export type InvitePublicInfo = {
   token: string;
   kind: "team" | "session";
   status: "pending" | "accepted";
+  reusable: boolean;
   teamName?: string;
   orgName?: string;
   orgAvatarUrl?: string | null;
@@ -130,8 +131,16 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
     }
   }
 
-  if (invite.status !== "pending") {
+  if (!invite.reusable && invite.status !== "pending") {
     return Response.json({ error: "Invite is no longer available" }, { status: 409 });
+  }
+
+  // For reusable share links, verify that link sharing is still enabled for the session.
+  if (invite.reusable && invite.sessionId !== undefined) {
+    const linkAccess = getSessionLinkAccess(db, invite.sessionId);
+    if (linkAccess !== "anyone") {
+      return Response.json({ error: "Link sharing is off for this session" }, { status: 409 });
+    }
   }
 
   const effects = consumeInvite(db, token, user.id);

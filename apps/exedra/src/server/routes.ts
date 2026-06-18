@@ -47,12 +47,14 @@ import { stubRegistryAuthRoutes } from "./registry-stub/routes";
 import {
   handleCreateSession,
   handleGetInterview,
+  handleGetSessionAccess,
   handleGetSessionById,
   handleListSessions,
   handleListTeamMembers,
   handleManageSessionScopes,
   handlePatchBeliefFeedback,
   handlePatchSession,
+  handlePatchSessionAccess,
 } from "./sessions/routes";
 import {
   handleCreateTeamInOrg,
@@ -139,6 +141,12 @@ export const apiRoutes = {
   "/api/sessions/:id": {
     GET: (req: Request & { params: { id: string } }) => handleGetSessionById(req, req.params.id),
     PATCH: (req: Request & { params: { id: string } }) => handlePatchSession(req, req.params.id),
+  },
+
+  "/api/sessions/:id/access": {
+    GET: (req: Request & { params: { id: string } }) => handleGetSessionAccess(req, req.params.id),
+    PATCH: (req: Request & { params: { id: string } }) =>
+      handlePatchSessionAccess(req, req.params.id),
   },
 
   "/api/sessions/:id/scopes": {

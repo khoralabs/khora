@@ -4,6 +4,9 @@ import type {
   SessionParticipantContext,
   TeamMemberContext,
 } from "@shared/accounts/row";
+import type { SessionAccess, SessionLinkAccess } from "@shared/sessions/access";
+
+export type { SessionAccess, SessionLinkAccess };
 
 export type SessionSummary = {
   id: string;
@@ -164,6 +167,34 @@ export async function fetchSessionDetail(sessionId: string): Promise<SessionDeta
     throw new Error(data?.error ?? "Failed to load session");
   }
   return (await res.json()) as SessionDetail;
+}
+
+export async function fetchSessionAccess(sessionId: string): Promise<SessionAccess> {
+  const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/access`, {
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const data = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error ?? "Failed to load session access");
+  }
+  return (await res.json()) as SessionAccess;
+}
+
+export async function setSessionLinkAccess(
+  sessionId: string,
+  linkAccess: SessionLinkAccess,
+): Promise<SessionAccess> {
+  const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/access`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ linkAccess }),
+  });
+  if (!res.ok) {
+    const data = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error ?? "Failed to update session access");
+  }
+  return (await res.json()) as SessionAccess;
 }
 
 export async function mintSessionInvite(

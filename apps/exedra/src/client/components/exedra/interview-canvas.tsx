@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { appSectionHeaderClassName } from "@/shell/app-section-header";
 
 import { BeliefItem } from "./belief-item";
-import { SessionParticipantsPanel } from "./session-participants-panel";
+import { SessionAccessPanel } from "./session-access-panel";
 
 type InterviewCanvasProps = {
   sessionId: string | null;
@@ -55,7 +55,7 @@ export function InterviewCanvas({
           {sessionId === null ? (
             <p className="text-sm text-muted-foreground">Select a session to view details.</p>
           ) : (
-            <SessionParticipantsPanel
+            <SessionAccessPanel
               detail={sessionDetail}
               sessionId={sessionId}
               onRefresh={onRefreshDetail}

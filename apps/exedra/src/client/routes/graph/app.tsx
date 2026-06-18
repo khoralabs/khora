@@ -1,5 +1,10 @@
+import { Share2 } from "lucide-react";
+import { useState } from "react";
+
 import { MemoriesGraphView } from "@/components/exedra/memories-graph-view";
 import { SessionViewToggle } from "@/components/exedra/session-view-toggle";
+import { ShareSessionDialog } from "@/components/sessions/share-session-dialog";
+import { Button } from "@/components/ui/button";
 import type { MeResponse, MeTeam } from "@/lib/me-api";
 import {
   meMemoriesApiBase,
@@ -35,26 +40,47 @@ function GraphContent({
   const sessionGraphId = parseSessionGraphId(pathname);
   const teamGraphId = parseActiveTeamGraphId(pathname);
   const personalGraph = isPersonalGraphPath(pathname);
+  const [shareOpen, setShareOpen] = useState(false);
 
   if (sessionGraphId !== null) {
     return (
-      <MemoriesGraphView
-        apiBase={orgMemoriesApiBase(activeTeam.orgId)}
-        namespace={orgSessionNamespace(
-          activeTeam.orgId,
-          sessionDetail?.session.teamId ?? activeTeam.id,
-          sessionGraphId,
-        )}
-        title={sessionDetail?.session.topic ?? "Session memories"}
-        emptyDescription="This session doesn't have any memories yet. They'll appear here as the interview captures them."
-        headerExtra={
-          <SessionViewToggle
-            activeView="graph"
-            onNavigate={onNavigate}
-            sessionId={sessionGraphId}
-          />
-        }
-      />
+      <>
+        <MemoriesGraphView
+          apiBase={orgMemoriesApiBase(activeTeam.orgId)}
+          namespace={orgSessionNamespace(
+            activeTeam.orgId,
+            sessionDetail?.session.teamId ?? activeTeam.id,
+            sessionGraphId,
+          )}
+          title={sessionDetail?.session.topic ?? "Session memories"}
+          emptyDescription="This session doesn't have any memories yet. They'll appear here as the interview captures them."
+          headerExtra={
+            <>
+              {sessionDetail?.canManage ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShareOpen(true)}
+                >
+                  <Share2 />
+                  Share
+                </Button>
+              ) : null}
+              <SessionViewToggle
+                activeView="graph"
+                onNavigate={onNavigate}
+                sessionId={sessionGraphId}
+              />
+            </>
+          }
+        />
+        <ShareSessionDialog
+          sessionId={sessionGraphId}
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+        />
+      </>
     );
   }
 

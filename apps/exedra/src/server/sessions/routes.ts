@@ -12,7 +12,11 @@ import {
 import { enforce, ResourceType } from "../authz/policy";
 import { loadBeliefFeedback, upsertBeliefFeedback } from "../db/beliefs";
 import { getDb } from "../db/index";
-import { listInvitesForSession, mintSessionInvite } from "../db/invites";
+import {
+  getOrCreateSessionLinkInvite,
+  listInvitesForSession,
+  mintSessionInvite,
+} from "../db/invites";
 import {
   getOrg,
   getTeam,
@@ -28,10 +32,12 @@ import {
   listSessionsForUser,
   patchSession,
   sessionRoleForUser,
+  setSessionLinkAccess,
   userHasSessionAccess,
 } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
 import { bootstrapSessionMemoriesForTeamSession } from "../memories/bootstrap-session";
+import { buildSessionAccess } from "./resolve-access";
 
 type CreateSessionBody = {
   teamId?: string;
@@ -450,6 +456,67 @@ export async function handlePatchBeliefFeedback(
       correction: record.correction ?? undefined,
     },
   });
+}
+
+export async function handleGetSessionAccess(req: Request, sessionId: string): Promise<Response> {
+  const auth = await requireRegistrySessionResponse(req);
+  if (auth.response !== null) return auth.response;
+
+  const db = getDb();
+  const session = getSession(db, sessionId);
+  if (session === null) {
+    return Response.json({ error: "Session not found" }, { status: 404 });
+  }
+
+  const user = await getOrCreateUser(db, auth.session.user.id);
+  if (!userHasSessionAccess(db, sessionId, user.id)) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const canManage = canManageSession(db, user.id, sessionId);
+  const access = buildSessionAccess(db, sessionId, user.id, canManage);
+
+  return Response.json(access);
+}
+
+type PatchSessionAccessBody = {
+  linkAccess?: "restricted" | "anyone";
+};
+
+export async function handlePatchSessionAccess(req: Request, sessionId: string): Promise<Response> {
+  const auth = await requireRegistrySessionResponse(req);
+  if (auth.response !== null) return auth.response;
+
+  let body: PatchSessionAccessBody;
+  try {
+    body = (await req.json()) as PatchSessionAccessBody;
+  } catch {
+    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const db = getDb();
+  const session = getSession(db, sessionId);
+  if (session === null) {
+    return Response.json({ error: "Session not found" }, { status: 404 });
+  }
+
+  const user = await getOrCreateUser(db, auth.session.user.id);
+  if (!canManageSession(db, user.id, sessionId)) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (body.linkAccess !== undefined) {
+    if (body.linkAccess !== "restricted" && body.linkAccess !== "anyone") {
+      return Response.json({ error: "linkAccess must be restricted or anyone" }, { status: 400 });
+    }
+    setSessionLinkAccess(db, sessionId, body.linkAccess);
+    if (body.linkAccess === "anyone") {
+      getOrCreateSessionLinkInvite(db, sessionId, user.id);
+    }
+  }
+
+  const access = buildSessionAccess(db, sessionId, user.id, true);
+  return Response.json(access);
 }
 
 export async function handleListTeamMembers(req: Request, teamId: string): Promise<Response> {

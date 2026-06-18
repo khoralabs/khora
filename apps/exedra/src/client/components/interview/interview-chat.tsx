@@ -23,6 +23,8 @@ export function InterviewChat({
   onOnboardingComplete,
   scrollToMessageId,
   onScrollToMessageComplete,
+  canManage,
+  onShare,
 }: InterviewChatProps) {
   const {
     bootstrap,
@@ -95,6 +97,8 @@ export function InterviewChat({
         connected={connected}
         onNavigate={onNavigate}
         sessionId={sessionId}
+        canManage={canManage}
+        onShare={onShare}
       />
       <InterviewChatMessages
         messages={messages}

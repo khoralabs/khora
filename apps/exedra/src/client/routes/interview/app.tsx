@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 
 import { InterviewCanvas } from "@/components/exedra/interview-canvas";
 import { InterviewChat } from "@/components/interview/interview-chat";
+import { ShareSessionDialog } from "@/components/sessions/share-session-dialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import type { BeliefFeedback, BeliefFlag, InterviewBootstrap } from "@/lib/interview-api";
 import { patchBeliefFeedback } from "@/lib/interview-api";
@@ -31,6 +32,7 @@ function InterviewContent({
   const [beliefs, setBeliefs] = useState<BeliefFlag[]>([]);
   const [scrollToMessageId, setScrollToMessageId] = useState<string | null>(null);
   const [chatError, setChatError] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
   const { canvasOpen, setCanvasOpen, isCompactChrome } = useMobileChromeLayout();
 
   const handleBootstrap = useCallback((_bootstrap: InterviewBootstrap) => {
@@ -108,6 +110,8 @@ function InterviewContent({
         onOnboardingComplete={onProfileRefresh}
         onScrollToMessageComplete={() => setScrollToMessageId(null)}
         scrollToMessageId={scrollToMessageId}
+        canManage={sessionDetail?.canManage}
+        onShare={() => setShareOpen(true)}
       />
       {chatError !== null ? (
         <div className="sr-only" aria-live="polite">
@@ -120,6 +124,7 @@ function InterviewContent({
           <InterviewCanvas {...canvasProps} sheetMode />
         </SheetContent>
       </Sheet>
+      <ShareSessionDialog sessionId={sessionId} open={shareOpen} onOpenChange={setShareOpen} />
     </div>
   );
 }

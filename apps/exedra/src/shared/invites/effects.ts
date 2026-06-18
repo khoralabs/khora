@@ -22,6 +22,21 @@ export function teamMemberInviteEffects(teamId: string): InviteEffects {
   };
 }
 
+/** Grants session:participant only — does NOT add the accepter to a team. Used for reusable share links. */
+export function sessionParticipantOnlyInviteEffects(sessionId: string): InviteEffects {
+  return {
+    grants: [
+      {
+        type: "grant",
+        resourceType: "session",
+        resourceId: sessionId,
+        feature: "participant",
+      },
+    ],
+    entitlements: [],
+  };
+}
+
 export function sessionParticipantInviteEffects(sessionId: string, teamId: string): InviteEffects {
   return {
     grants: [

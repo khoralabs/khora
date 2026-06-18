@@ -7,6 +7,7 @@ import {
   parseInviteEffects,
   sessionIdFromEffects,
   sessionParticipantInviteEffects,
+  sessionParticipantOnlyInviteEffects,
   teamIdFromEffects,
   teamMemberInviteEffects,
 } from "@shared/invites/effects";
@@ -30,6 +31,7 @@ export type InvitePublic = {
   token: string;
   kind: "team" | "session";
   status: "pending" | "accepted";
+  reusable: boolean;
   teamName?: string;
   orgName?: string;
   orgAvatarUrl?: string | null;
@@ -40,6 +42,9 @@ export type InvitePublic = {
 type InviteRow = {
   effects: string;
   consumed_at_ms: number | null;
+  reusable: number;
+  revoked_at_ms: number | null;
+  link_plaintext: string | null;
 };
 
 function serializeEffects(effects: InviteEffects): string {
@@ -50,7 +55,8 @@ function loadInviteRow(db: Database, plaintext: string): InviteRow | null {
   const tokenHash = hashInviteToken(plaintext);
   return db
     .query<InviteRow, [string]>(
-      `SELECT effects, consumed_at_ms FROM invites WHERE token_hash = ? LIMIT 1`,
+      `SELECT effects, consumed_at_ms, reusable, revoked_at_ms, link_plaintext
+       FROM invites WHERE token_hash = ? LIMIT 1`,
     )
     .get(tokenHash);
 }
@@ -63,14 +69,23 @@ export function getInviteEffects(db: Database, plaintext: string): InviteEffects
 
 export function mintInvite(
   db: Database,
-  params: { createdByUserId: string | null; effects: InviteEffects },
+  params: { createdByUserId: string | null; effects: InviteEffects; reusable?: boolean },
 ): string {
   const plaintext = generateInvitePlaintext();
   const tokenHash = hashInviteToken(plaintext);
+  const reusable = params.reusable === true ? 1 : 0;
+  const linkPlaintext = params.reusable === true ? plaintext : null;
   db.prepare(
-    `INSERT INTO invites (token_hash, created_by_user_id, created_at_ms, consumed_at_ms, consumed_by_user_id, effects)
-     VALUES (?, ?, ?, NULL, NULL, ?)`,
-  ).run(tokenHash, params.createdByUserId, Date.now(), serializeEffects(params.effects));
+    `INSERT INTO invites (token_hash, created_by_user_id, created_at_ms, consumed_at_ms, consumed_by_user_id, effects, reusable, link_plaintext)
+     VALUES (?, ?, ?, NULL, NULL, ?, ?, ?)`,
+  ).run(
+    tokenHash,
+    params.createdByUserId,
+    Date.now(),
+    serializeEffects(params.effects),
+    reusable,
+    linkPlaintext,
+  );
   return plaintext;
 }
 
@@ -136,9 +151,13 @@ export function getInvitePublicInfo(db: Database, plaintext: string): InvitePubl
   const kind = inviteKind(effects);
   if (kind === "unknown") return null;
 
-  const status: InvitePublic["status"] = row.consumed_at_ms !== null ? "accepted" : "pending";
+  const isReusable = row.reusable === 1;
+  const isRevoked = row.revoked_at_ms !== null;
+  // Reusable invites are always "pending" unless revoked.
+  const status: InvitePublic["status"] =
+    isReusable && !isRevoked ? "pending" : row.consumed_at_ms !== null ? "accepted" : "pending";
 
-  const base: InvitePublic = { token: plaintext, kind, status };
+  const base: InvitePublic = { token: plaintext, kind, status, reusable: isReusable };
 
   if (kind === "team") {
     const teamId = teamIdFromEffects(effects);
@@ -151,12 +170,16 @@ export function getInvitePublicInfo(db: Database, plaintext: string): InvitePubl
   const sessionId = sessionIdFromEffects(effects);
   if (sessionId === null) return null;
   const sessionRow = db
-    .query<{ topic: string }, [string]>(`SELECT topic FROM sessions WHERE id = ? LIMIT 1`)
+    .query<{ topic: string; team_id: string }, [string]>(
+      `SELECT topic, team_id FROM sessions WHERE id = ? LIMIT 1`,
+    )
     .get(sessionId);
   if (sessionRow === null) return null;
 
-  const teamId = teamIdFromEffects(effects);
-  const orgDetails = teamId === null ? null : loadTeamOrgPublicDetails(db, teamId);
+  // For session invites, prefer teamId from effects; fall back to session's team_id.
+  // Session-only effects (reusable share link) have no team grant, so we use the session's team.
+  const teamId = teamIdFromEffects(effects) ?? sessionRow.team_id;
+  const orgDetails = loadTeamOrgPublicDetails(db, teamId);
 
   return {
     ...base,
@@ -173,6 +196,22 @@ export function consumeInvite(
 ): InviteEffects | null {
   const tokenHash = hashInviteToken(plaintext);
   const now = Date.now();
+
+  const existing = db
+    .query<{ effects: string; reusable: number; revoked_at_ms: number | null }, [string]>(
+      `SELECT effects, reusable, revoked_at_ms FROM invites WHERE token_hash = ? LIMIT 1`,
+    )
+    .get(tokenHash);
+
+  if (existing === null) return null;
+
+  // Reusable invites: return effects without consuming (idempotent). Revoked = unavailable.
+  if (existing.reusable === 1) {
+    if (existing.revoked_at_ms !== null) return null;
+    return parseInviteEffects(existing.effects);
+  }
+
+  // Single-use: consume atomically.
   const result = db
     .prepare(
       `UPDATE invites
@@ -182,15 +221,7 @@ export function consumeInvite(
     .run(now, userId, tokenHash);
 
   if (result.changes !== 1) return null;
-
-  const row = db
-    .query<{ effects: string }, [string]>(
-      `SELECT effects FROM invites WHERE token_hash = ? LIMIT 1`,
-    )
-    .get(tokenHash);
-
-  if (row === null) return null;
-  return parseInviteEffects(row.effects);
+  return parseInviteEffects(existing.effects);
 }
 
 export function getInviteSessionId(db: Database, plaintext: string): string | null {
@@ -234,6 +265,40 @@ export function listInvitesForSession(
       consumed: row.consumed_at_ms !== null,
       createdAtMs: row.created_at_ms,
     }));
+}
+
+/** Returns the link_plaintext for the active reusable share link for a session, or null if none. */
+export function getSessionLinkInvite(db: Database, sessionId: string): string | null {
+  const rows = db
+    .query<{ link_plaintext: string; effects: string }, []>(
+      `SELECT link_plaintext, effects FROM invites
+       WHERE reusable = 1 AND revoked_at_ms IS NULL AND link_plaintext IS NOT NULL`,
+    )
+    .all();
+
+  for (const row of rows) {
+    const effects = parseInviteEffects(row.effects);
+    if (sessionIdFromEffects(effects) === sessionId) {
+      return row.link_plaintext;
+    }
+  }
+  return null;
+}
+
+/** Gets the active reusable link plaintext, creating one if it doesn't exist. */
+export function getOrCreateSessionLinkInvite(
+  db: Database,
+  sessionId: string,
+  createdByUserId: string | null,
+): string {
+  const existing = getSessionLinkInvite(db, sessionId);
+  if (existing !== null) return existing;
+
+  return mintInvite(db, {
+    createdByUserId,
+    effects: sessionParticipantOnlyInviteEffects(sessionId),
+    reusable: true,
+  });
 }
 
 export function userAcceptedSessionInvite(

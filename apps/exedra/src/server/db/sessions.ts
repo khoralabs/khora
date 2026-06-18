@@ -7,6 +7,7 @@ import { createOrgWithAdmin, createTeamWithGrants } from "./membership";
 export { isTeamMember } from "./membership";
 
 export type SessionKind = "standard" | "onboarding";
+export type SessionLinkAccess = "restricted" | "anyone";
 
 export type SessionRecord = {
   id: string;
@@ -235,6 +236,23 @@ export function listSessionsForUser(
     ...mapSession(row),
     role: sessionRoleForUser(db, row.id, userId),
   }));
+}
+
+export function getSessionLinkAccess(db: Database, sessionId: string): SessionLinkAccess {
+  const row = db
+    .query<{ link_access: string }, [string]>(
+      `SELECT link_access FROM sessions WHERE id = ? LIMIT 1`,
+    )
+    .get(sessionId);
+  return row?.link_access === "anyone" ? "anyone" : "restricted";
+}
+
+export function setSessionLinkAccess(
+  db: Database,
+  sessionId: string,
+  access: SessionLinkAccess,
+): void {
+  db.prepare(`UPDATE sessions SET link_access = ? WHERE id = ?`).run(access, sessionId);
 }
 
 export function sessionRoleForUser(
