@@ -18,7 +18,7 @@ export type OrgMemberRow = AccountRow<OrgMemberContext>;
 export type TeamMemberRow = AccountRow<TeamMemberContext>;
 
 export type OrgMemberProfile = {
-  user: AccountProfile & { id: string };
+  user: AccountProfile;
   isCurrentUser: boolean;
   isAdmin: boolean;
   teamIds: string[];

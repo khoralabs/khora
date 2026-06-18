@@ -79,8 +79,8 @@ export async function handleGetOrgMember(
 
   return jsonResponse({
     user: {
-      id: profile.id,
-      registryUserId: profile.registryUserId,
+      userId: profile.id,
+      email: profile.email,
       fullName: profile.fullName,
       jobFunction: profile.jobFunction,
       avatarUrl: avatarUrlFromS3Key("user", profile.id, profile.avatarS3Key),

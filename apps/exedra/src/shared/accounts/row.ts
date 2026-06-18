@@ -1,9 +1,9 @@
 export type InterviewStatus = "not_started" | "started" | "complete";
 
-/** Identity fields — same in every context */
+/** Identity fields — same in every context. `userId` is the user's DID (a public identifier). */
 export type AccountProfile = {
   userId: string;
-  registryUserId: string;
+  email: string | null;
   fullName: string | null;
   avatarUrl: string | null;
   jobFunction: string | null;

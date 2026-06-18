@@ -31,7 +31,7 @@ function serializeMeUser(db: ReturnType<typeof getDb>, user: ExedraUser): Accoun
   return (
     resolveAccountProfile(db, user.id) ?? {
       userId: user.id,
-      registryUserId: user.registryUserId,
+      email: user.email,
       fullName: user.fullName,
       avatarUrl: avatarUrlFromS3Key("user", user.id, user.avatarS3Key),
       jobFunction: user.jobFunction,
@@ -44,7 +44,7 @@ export async function handleGetMe(req: Request): Promise<Response> {
   if (auth.response !== null) return auth.response;
 
   const db = getDb();
-  const user = await getOrCreateUser(db, auth.session.user.id);
+  const user = await getOrCreateUser(db, auth.session.user.id, auth.session.user.email);
   const teams = listTeamsForUser(db, user.id);
   const pendingOnboarding = getPendingOnboardingInterview(db, user.id);
   const hasTeam = userHasAnyTeam(db, user.id);

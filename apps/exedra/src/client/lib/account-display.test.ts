@@ -6,7 +6,7 @@ import { accountDescriptionSubtitle, formatAccountDisplayName } from "@/lib/acco
 
 const profile = (overrides: Partial<AccountProfile>): AccountProfile => ({
   userId: "user-1",
-  registryUserId: "alex@example.com",
+  email: "alex@example.com",
   fullName: null,
   avatarUrl: null,
   jobFunction: null,
@@ -18,19 +18,17 @@ test("formatAccountDisplayName prefers full name", () => {
 });
 
 test("formatAccountDisplayName falls back to email local part", () => {
-  expect(formatAccountDisplayName(profile({ registryUserId: "alex@example.com" }))).toBe("alex");
+  expect(formatAccountDisplayName(profile({ email: "alex@example.com" }))).toBe("alex");
 });
 
 test("accountDescriptionSubtitle prefers job function", () => {
   expect(
-    accountDescriptionSubtitle(
-      profile({ jobFunction: "Product manager", registryUserId: "a@b.c" }),
-    ),
+    accountDescriptionSubtitle(profile({ jobFunction: "Product manager", email: "a@b.c" })),
   ).toBe("Product manager");
 });
 
 test("accountDescriptionSubtitle falls back to email", () => {
-  expect(accountDescriptionSubtitle(profile({ registryUserId: "alex@example.com" }))).toBe(
+  expect(accountDescriptionSubtitle(profile({ email: "alex@example.com" }))).toBe(
     "alex@example.com",
   );
 });

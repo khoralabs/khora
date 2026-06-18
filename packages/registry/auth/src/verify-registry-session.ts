@@ -15,14 +15,14 @@ export async function verifyRegistrySession(
   if (!res.ok) return null;
 
   const data = (await res.json()) as {
-    user?: { id?: string };
+    user?: { id?: string; email?: string | null };
     session?: { id?: string; expiresAt?: Date };
   } | null;
   if (data === null || data.user?.id === undefined || data.session?.id === undefined) {
     return null;
   }
   return {
-    user: { id: data.user.id },
+    user: { id: data.user.id, email: data.user.email ?? null },
     session: {
       id: data.session.id,
       expiresAt: data.session.expiresAt ?? new Date(0),

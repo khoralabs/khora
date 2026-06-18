@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Field, FieldGroup, FieldLabel, FieldSet } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import { formatAccountDisplayName } from "@/lib/account-display";
 import { fetchOrgMemberProfile } from "@/lib/settings-api";
 
+import { AccountIdentityFields } from "./account-identity-fields";
 import { AvatarUploadField } from "./avatar-upload-field";
 
 type UserAccountSettingsProps = {
@@ -45,11 +46,7 @@ export function UserAccountSettings({
           return;
         }
         setProfile(data);
-        const name =
-          data.user.fullName !== null && data.user.fullName.trim().length > 0
-            ? data.user.fullName
-            : data.user.registryUserId;
-        onTitleResolvedRef.current?.(name);
+        onTitleResolvedRef.current?.(formatAccountDisplayName(data.user));
         setLoading(false);
       })
       .catch((err: unknown) => {
@@ -74,10 +71,7 @@ export function UserAccountSettings({
     return <p className="text-sm text-destructive">{error ?? "Member not found"}</p>;
   }
 
-  const displayName =
-    profile.user.fullName !== null && profile.user.fullName.trim().length > 0
-      ? profile.user.fullName
-      : profile.user.registryUserId;
+  const displayName = formatAccountDisplayName(profile.user);
 
   return (
     <div className="mx-auto w-full max-w-lg">
@@ -101,31 +95,20 @@ export function UserAccountSettings({
             disabled
             onFileSelected={() => undefined}
           />
+          <AccountIdentityFields email={profile.user.email} did={profile.user.userId} />
           <Field>
-            <FieldLabel htmlFor="member-email">Email</FieldLabel>
-            <Input id="member-email" value={profile.user.registryUserId} disabled readOnly />
+            <FieldLabel>Full name</FieldLabel>
+            <p className="text-sm text-foreground break-all">{profile.user.fullName ?? "—"}</p>
           </Field>
           <Field>
-            <FieldLabel htmlFor="member-full-name">Full name</FieldLabel>
-            <Input id="member-full-name" value={profile.user.fullName ?? ""} disabled readOnly />
+            <FieldLabel>Job function</FieldLabel>
+            <p className="text-sm text-foreground break-all">{profile.user.jobFunction ?? "—"}</p>
           </Field>
           <Field>
-            <FieldLabel htmlFor="member-job-function">Job function</FieldLabel>
-            <Input
-              id="member-job-function"
-              value={profile.user.jobFunction ?? ""}
-              disabled
-              readOnly
-            />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="member-teams">Teams</FieldLabel>
-            <Input
-              id="member-teams"
-              value={profile.teamNames.length > 0 ? profile.teamNames.join(", ") : "—"}
-              disabled
-              readOnly
-            />
+            <FieldLabel>Teams</FieldLabel>
+            <p className="text-sm text-foreground break-all">
+              {profile.teamNames.length > 0 ? profile.teamNames.join(", ") : "—"}
+            </p>
           </Field>
         </FieldGroup>
       </FieldSet>

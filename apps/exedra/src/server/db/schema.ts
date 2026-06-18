@@ -10,6 +10,7 @@ export function ensureExedraSchema(db: Database): void {
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY NOT NULL,
       registry_user_id TEXT NOT NULL UNIQUE,
+      email TEXT,
       identity_encrypted BLOB,
       created_at_ms INTEGER NOT NULL
     );
@@ -130,6 +131,7 @@ export function ensureExedraSchema(db: Database): void {
   `);
 
   migrateUsersAddProfileFields(db);
+  migrateUsersAddEmail(db);
   migrateSessionsDropDisplayName(db);
   migrateSessionsDropPrompt(db);
   migrateSessionsAddKind(db);
@@ -162,6 +164,13 @@ function migrateUsersAddProfileFields(db: Database): void {
   }
   if (!columns.some((column) => column.name === "job_function")) {
     db.run(`ALTER TABLE users ADD COLUMN job_function TEXT`);
+  }
+}
+
+function migrateUsersAddEmail(db: Database): void {
+  const columns = db.query<{ name: string }, []>("PRAGMA table_info(users)").all();
+  if (!columns.some((column) => column.name === "email")) {
+    db.run(`ALTER TABLE users ADD COLUMN email TEXT`);
   }
 }
 

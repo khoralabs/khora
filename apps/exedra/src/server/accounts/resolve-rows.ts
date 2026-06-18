@@ -18,7 +18,7 @@ import { findUserById } from "../identity/users";
 
 type UserProfileRow = {
   id: string;
-  registry_user_id: string;
+  email: string | null;
   full_name: string | null;
   job_function: string | null;
   avatar_s3_key: string | null;
@@ -27,7 +27,7 @@ type UserProfileRow = {
 function mapProfile(row: UserProfileRow): AccountProfile {
   return {
     userId: row.id,
-    registryUserId: row.registry_user_id,
+    email: row.email,
     fullName: row.full_name,
     avatarUrl: avatarUrlFromS3Key("user", row.id, row.avatar_s3_key),
     jobFunction: row.job_function,
@@ -39,7 +39,7 @@ export function resolveAccountProfile(db: Database, userId: string): AccountProf
   if (user === null) return null;
   return {
     userId: user.id,
-    registryUserId: user.registryUserId,
+    email: user.email,
     fullName: user.fullName,
     avatarUrl: avatarUrlFromS3Key("user", user.id, user.avatarS3Key),
     jobFunction: user.jobFunction,
@@ -55,7 +55,7 @@ export function resolveAccountProfiles(
   const placeholders = userIds.map(() => "?").join(", ");
   const rows = db
     .query<UserProfileRow, string[]>(
-      `SELECT id, registry_user_id, full_name, job_function, avatar_s3_key
+      `SELECT id, email, full_name, job_function, avatar_s3_key
        FROM users WHERE id IN (${placeholders})`,
     )
     .all(...userIds);
@@ -141,7 +141,7 @@ export function listAccountRowsForSession(
     if (a.context.role !== b.context.role) {
       return a.context.role === "facilitator" ? -1 : 1;
     }
-    return a.account.registryUserId.localeCompare(b.account.registryUserId);
+    return (a.account.email ?? "").localeCompare(b.account.email ?? "");
   });
 
   return rows;

@@ -30,18 +30,18 @@ afterAll(() => {
 });
 
 test("resolveAccountProfile returns full account profile", async () => {
-  const user = await getOrCreateUser(db, "profile-user@example.com");
+  const user = await getOrCreateUser(db, "profile-user-id", "profile-user@example.com");
   const profile = resolveAccountProfile(db, user.id);
   expect(profile).not.toBeNull();
   expect(profile?.userId).toBe(user.id);
-  expect(profile?.registryUserId).toBe("profile-user@example.com");
+  expect(profile?.email).toBe("profile-user@example.com");
   expect(profile?.fullName).toBeNull();
   expect(profile?.avatarUrl).toBeNull();
   expect(profile?.jobFunction).toBeNull();
 });
 
 test("listAccountRowsForSession resolves participant context from grants", async () => {
-  const facilitator = await getOrCreateUser(db, "fac@example.com");
+  const facilitator = await getOrCreateUser(db, "fac-id", "fac@example.com");
   const participant = await getOrCreateUser(db, "part@example.com");
   const orgId = createOrg(db, { name: "Org", ownerId: facilitator.id });
   const teamId = createTeam(db, { orgId, name: "Team", ownerId: facilitator.id });
@@ -59,7 +59,7 @@ test("listAccountRowsForSession resolves participant context from grants", async
   expect(facilitatorRow?.context.kind).toBe("session_participant");
   expect(facilitatorRow?.context.role).toBe("facilitator");
   expect(facilitatorRow?.isCurrentUser).toBe(true);
-  expect(facilitatorRow?.account.registryUserId).toBe("fac@example.com");
+  expect(facilitatorRow?.account.email).toBe("fac@example.com");
 
   expect(participantRow?.context.role).toBe("participant");
   expect(participantRow?.isCurrentUser).toBe(false);

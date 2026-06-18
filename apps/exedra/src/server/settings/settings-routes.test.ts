@@ -23,8 +23,8 @@ beforeEach(async () => {
   closeDb();
 
   const db = getDb();
-  const owner = await getOrCreateUser(db, "owner@example.com");
-  const member = await getOrCreateUser(db, "member@example.com");
+  const owner = await getOrCreateUser(db, "owner@example.com", "owner@example.com");
+  const member = await getOrCreateUser(db, "member@example.com", "member@example.com");
   ownerId = owner.id;
   memberId = member.id;
   orgId = createOrg(db, { name: "Acme", ownerId });
@@ -45,7 +45,7 @@ async function mockSession(registryUserId: string) {
   const { mock } = await import("bun:test");
   mock.module("../auth/require-session", () => ({
     requireRegistrySessionResponse: async () => ({
-      session: { user: { id: registryUserId } },
+      session: { user: { id: registryUserId, email: registryUserId } },
       response: null,
     }),
   }));
@@ -98,12 +98,12 @@ test("GET /api/orgs/:orgId/members/:userId returns member profile for org member
   const res = await handleGetOrgMember(new Request("http://localhost"), orgId, ownerId);
   expect(res.status).toBe(200);
   const body = (await res.json()) as {
-    user: { registryUserId: string };
+    user: { email: string | null };
     isCurrentUser: boolean;
     isAdmin: boolean;
     teamNames: string[];
   };
-  expect(body.user.registryUserId).toBe("owner@example.com");
+  expect(body.user.email).toBe("owner@example.com");
   expect(body.isCurrentUser).toBe(false);
   expect(body.isAdmin).toBe(true);
   expect(body.teamNames).toContain("Product");

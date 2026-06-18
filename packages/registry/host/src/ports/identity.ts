@@ -1,6 +1,6 @@
-/** Minimal IdP session for federation — subject id only; profile lives in accounts / adapter. */
+/** Minimal IdP session for federation — subject id + email; richer profile lives in accounts / adapter. */
 export type RegistrySession = {
-  user: { id: string };
+  user: { id: string; email: string | null };
   session: { id: string; expiresAt: Date };
 };
 

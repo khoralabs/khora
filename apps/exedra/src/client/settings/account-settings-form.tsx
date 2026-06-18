@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel, FieldSet } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import { formatAccountDisplayName } from "@/lib/account-display";
 import { type MeResponse, type MeTeam, patchMeProfile } from "@/lib/me-api";
 import { deleteMeAvatar, uploadMeAvatar } from "@/lib/settings-api";
 
+import { AccountIdentityFields } from "./account-identity-fields";
 import { AvatarUploadField, useAvatarPendingFile } from "./avatar-upload-field";
 
 type AccountSettingsFormProps = {
@@ -54,7 +56,7 @@ export function AccountSettingsForm({ user, activeTeam, onSaved }: AccountSettin
     }
   }
 
-  const displayName = fullName.trim().length > 0 ? fullName : user.registryUserId;
+  const displayName = fullName.trim().length > 0 ? fullName : formatAccountDisplayName(user);
 
   return (
     <form onSubmit={(event) => void handleSubmit(event)} className="mx-auto w-full max-w-lg">
@@ -66,10 +68,7 @@ export function AccountSettingsForm({ user, activeTeam, onSaved }: AccountSettin
       <FieldSet>
         <FieldGroup>
           <AvatarUploadField name={displayName} avatarUrl={avatarUrl} onFileSelected={selectFile} />
-          <Field>
-            <FieldLabel htmlFor="account-email">Email</FieldLabel>
-            <Input id="account-email" value={user.registryUserId} disabled readOnly />
-          </Field>
+          <AccountIdentityFields email={user.email} did={user.userId} />
           <Field>
             <FieldLabel htmlFor="account-full-name">Full name</FieldLabel>
             <Input
