@@ -57,6 +57,7 @@ function AppChromeInner({ entrypoint, children }: AppChromeProps) {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const onboardingRequired = me?.onboardingRequired ?? false;
+  const hasSessionAccessOnly = me?.hasSessionAccessOnly ?? false;
   const onboardingInterviewRequired = me?.onboardingInterviewRequired ?? false;
   const onboardingSessionId = me?.onboardingSessionId ?? null;
   const createSessionDisabled = onboardingRequired || onboardingInterviewRequired;
@@ -74,13 +75,14 @@ function AppChromeInner({ entrypoint, children }: AppChromeProps) {
   );
 
   const loadSessions = useCallback(() => {
-    if (activeTeam.id.length === 0) return;
-    void fetchSessions(activeTeam.id)
+    if (activeTeam.id.length === 0 && !hasSessionAccessOnly) return;
+    const teamId = activeTeam.id.length > 0 ? activeTeam.id : undefined;
+    void fetchSessions(teamId)
       .then(setSessions)
       .catch((err: unknown) => {
         setLoadError(err instanceof Error ? err.message : "Failed to load sessions");
       });
-  }, [activeTeam.id]);
+  }, [activeTeam.id, hasSessionAccessOnly]);
 
   const loadSessionDetail = useCallback((sessionId: string) => {
     void fetchSessionDetail(sessionId)
@@ -242,7 +244,10 @@ function AppChromeInner({ entrypoint, children }: AppChromeProps) {
           <p className="absolute bottom-4 left-4 text-sm text-destructive">{loadError}</p>
         ) : null}
 
-        <OnboardingDialog open={onboardingRequired} onComplete={onOnboardingComplete} />
+        <OnboardingDialog
+          open={onboardingRequired && !hasSessionAccessOnly}
+          onComplete={onOnboardingComplete}
+        />
 
         <CreateTeamDialog
           open={createTeamOpen}

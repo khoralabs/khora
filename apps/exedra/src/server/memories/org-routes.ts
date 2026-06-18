@@ -1,6 +1,6 @@
 import { requireRegistrySessionResponse } from "../auth/require-session";
+import { enforce, ResourceType } from "../authz/policy";
 import { getDb } from "../db/index";
-import { userBelongsToOrg } from "../db/membership";
 import { getOrCreateUser } from "../identity/users";
 import {
   handleMemoriesEdgePreview,
@@ -22,7 +22,7 @@ async function resolveOrgMemoriesAccess(
 
   const db = getDb();
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (!userBelongsToOrg(db, orgId, user.id)) {
+  if (!enforce(db, user.id, "org:member", { type: ResourceType.Organization, id: orgId })) {
     return { response: Response.json({ error: "Forbidden" }, { status: 403 }) };
   }
 

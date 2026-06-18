@@ -55,7 +55,7 @@ const server = serve({
       // @ts-expect-error Bun HTMLBundle handler
       GET: graphPage,
     },
-    // GET-only so POST /api/* misses this route and reaches fetch dispatch below.
+    // GET-only so POST /api/* falls through to fetch dispatch below.
     "/*": {
       // @ts-expect-error Bun HTMLBundle handler
       GET: index,

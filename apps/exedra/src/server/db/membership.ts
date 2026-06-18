@@ -1,9 +1,27 @@
 import type { Database } from "bun:sqlite";
+import {
+  ACTIVE_GRANT_SQL,
+  getOrgIdForTeam,
+  hasGrant,
+  listAccountIdsForTeam,
+  listTeamIdsForOrg,
+  revokeAllGrantsForTeamScope,
+  revokeAllGrantsReferencingOrg,
+  revokeAllGrantsReferencingTeam,
+  userHasAnyTeamMemberGrant,
+} from "../authz";
+import { grantAllOrgPermissions, grantAllTeamPermissions } from "../authz/grant-templates";
+import {
+  accountScope,
+  Feature,
+  grantTeamMember,
+  grantTeamOrgMembership,
+  ResourceType,
+} from "../authz/policy";
 
 export type OrgRecord = {
   id: string;
   name: string;
-  ownerId: string;
   avatarS3Key: string | null;
   createdAtMs: number;
 };
@@ -12,7 +30,6 @@ export type TeamRecord = {
   id: string;
   orgId: string;
   name: string;
-  ownerId: string;
   avatarS3Key: string | null;
   createdAtMs: number;
 };
@@ -29,16 +46,13 @@ export type UserTeamRecord = {
 type OrgRow = {
   id: string;
   name: string;
-  owner_id: string;
   avatar_s3_key: string | null;
   created_at_ms: number;
 };
 
 type TeamRow = {
   id: string;
-  org_id: string;
   name: string;
-  owner_id: string;
   avatar_s3_key: string | null;
   created_at_ms: number;
 };
@@ -56,18 +70,6 @@ function mapOrg(row: OrgRow): OrgRecord {
   return {
     id: row.id,
     name: row.name,
-    ownerId: row.owner_id,
-    avatarS3Key: row.avatar_s3_key,
-    createdAtMs: row.created_at_ms,
-  };
-}
-
-function mapTeam(row: TeamRow): TeamRecord {
-  return {
-    id: row.id,
-    orgId: row.org_id,
-    name: row.name,
-    ownerId: row.owner_id,
     avatarS3Key: row.avatar_s3_key,
     createdAtMs: row.created_at_ms,
   };
@@ -75,9 +77,7 @@ function mapTeam(row: TeamRow): TeamRecord {
 
 export function getOrg(db: Database, orgId: string): OrgRecord | null {
   const row = db
-    .query<OrgRow, [string]>(
-      `SELECT id, name, owner_id, avatar_s3_key, created_at_ms FROM orgs WHERE id = ?`,
-    )
+    .query<OrgRow, [string]>(`SELECT id, name, avatar_s3_key, created_at_ms FROM orgs WHERE id = ?`)
     .get(orgId);
   if (row === null) return null;
   return mapOrg(row);
@@ -86,11 +86,21 @@ export function getOrg(db: Database, orgId: string): OrgRecord | null {
 export function getTeam(db: Database, teamId: string): TeamRecord | null {
   const row = db
     .query<TeamRow, [string]>(
-      `SELECT id, org_id, name, owner_id, avatar_s3_key, created_at_ms FROM teams WHERE id = ?`,
+      `SELECT id, name, avatar_s3_key, created_at_ms FROM teams WHERE id = ?`,
     )
     .get(teamId);
   if (row === null) return null;
-  return mapTeam(row);
+
+  const orgId = getOrgIdForTeam(db, teamId);
+  if (orgId === null) return null;
+
+  return {
+    id: row.id,
+    orgId,
+    name: row.name,
+    avatarS3Key: row.avatar_s3_key,
+    createdAtMs: row.created_at_ms,
+  };
 }
 
 export function updateOrgName(db: Database, orgId: string, name: string): OrgRecord | null {
@@ -122,17 +132,25 @@ export function updateTeamAvatarS3Key(
 }
 
 export function listTeamsForUser(db: Database, userId: string): UserTeamRecord[] {
+  const nowMs = Date.now();
   const rows = db
-    .query<UserTeamRow, [string]>(
-      `SELECT t.id, t.name, t.org_id, o.name AS org_name,
+    .query<UserTeamRow, [string, number]>(
+      `SELECT t.id, t.name, g_org.resource_id AS org_id, o.name AS org_name,
               t.avatar_s3_key AS team_avatar_s3_key, o.avatar_s3_key AS org_avatar_s3_key
-       FROM team_members tm
-       JOIN teams t ON t.id = tm.team_id
-       JOIN orgs o ON o.id = t.org_id
-       WHERE tm.user_id = ?
+       FROM authz_grants g_team
+       JOIN teams t ON t.id = g_team.resource_id
+       JOIN authz_grants g_org ON g_org.scope_type = 'team' AND g_org.scope_id = t.id
+         AND g_org.resource_type = 'org' AND g_org.feature = 'member'
+         AND g_org.revoked_at_ms IS NULL
+         AND (g_org.expired_at_ms IS NULL OR g_org.expired_at_ms > ?2)
+       JOIN orgs o ON o.id = g_org.resource_id
+       WHERE g_team.scope_type = 'account' AND g_team.scope_id = ?1
+         AND g_team.resource_type = 'team' AND g_team.feature = 'member'
+         AND g_team.revoked_at_ms IS NULL
+         AND (g_team.expired_at_ms IS NULL OR g_team.expired_at_ms > ?2)
        ORDER BY t.created_at_ms ASC`,
     )
-    .all(userId);
+    .all(userId, nowMs);
   return rows.map((row) => ({
     id: row.id,
     name: row.name,
@@ -160,7 +178,6 @@ export type OrgMemberRecord = {
 export type OrgTeamRecord = {
   id: string;
   name: string;
-  ownerId: string;
   memberCount: number;
   createdAtMs: number;
 };
@@ -179,24 +196,19 @@ type OrgMemberRow = {
   team_names: string;
 };
 
-type OrgTeamRow = {
-  id: string;
-  name: string;
-  owner_id: string;
-  member_count: number;
-  created_at_ms: number;
-};
-
 export function listTeamMembers(db: Database, teamId: string): TeamMemberRecord[] {
+  const accountIds = listAccountIdsForTeam(db, teamId);
+  if (accountIds.length === 0) return [];
+
+  const placeholders = accountIds.map(() => "?").join(", ");
   const rows = db
-    .query<TeamMemberRow, [string]>(
+    .query<TeamMemberRow, string[]>(
       `SELECT u.id AS user_id, u.registry_user_id, u.full_name
-       FROM team_members tm
-       JOIN users u ON u.id = tm.user_id
-       WHERE tm.team_id = ?
-       ORDER BY tm.created_at_ms ASC`,
+       FROM users u
+       WHERE u.id IN (${placeholders})
+       ORDER BY u.created_at_ms ASC`,
     )
-    .all(teamId);
+    .all(...accountIds);
   return rows.map((row) => ({
     userId: row.user_id,
     registryUserId: row.registry_user_id,
@@ -205,19 +217,28 @@ export function listTeamMembers(db: Database, teamId: string): TeamMemberRecord[
 }
 
 export function listOrgMembers(db: Database, orgId: string): OrgMemberRecord[] {
+  const teamIds = listTeamIdsForOrg(db, orgId);
+  if (teamIds.length === 0) return [];
+
+  const nowMs = Date.now();
+  const teamPlaceholders = teamIds.map(() => "?").join(", ");
   const rows = db
-    .query<OrgMemberRow, [string]>(
+    .query<OrgMemberRow, [...string[], number]>(
       `SELECT u.id AS user_id, u.registry_user_id, u.full_name,
               GROUP_CONCAT(t.id) AS team_ids,
               GROUP_CONCAT(t.name) AS team_names
-       FROM team_members tm
-       JOIN teams t ON t.id = tm.team_id
-       JOIN users u ON u.id = tm.user_id
-       WHERE t.org_id = ?
+       FROM authz_grants g
+       JOIN teams t ON t.id = g.resource_id
+       JOIN users u ON u.id = g.scope_id
+       WHERE g.scope_type = 'account'
+         AND g.resource_type = 'team'
+         AND g.feature = 'member'
+         AND g.resource_id IN (${teamPlaceholders})
+         AND ${ACTIVE_GRANT_SQL}
        GROUP BY u.id
-       ORDER BY MIN(tm.created_at_ms) ASC`,
+       ORDER BY MIN(g.created_at_ms) ASC`,
     )
-    .all(orgId);
+    .all(...teamIds, nowMs);
 
   return rows.map((row) => ({
     userId: row.user_id,
@@ -229,70 +250,92 @@ export function listOrgMembers(db: Database, orgId: string): OrgMemberRecord[] {
 }
 
 export function listTeamsForOrg(db: Database, orgId: string): OrgTeamRecord[] {
-  const rows = db
-    .query<OrgTeamRow, [string]>(
-      `SELECT t.id, t.name, t.owner_id, t.created_at_ms,
-              (SELECT COUNT(1) FROM team_members WHERE team_id = t.id) AS member_count
-       FROM teams t
-       WHERE t.org_id = ?
-       ORDER BY t.created_at_ms ASC`,
-    )
-    .all(orgId);
+  const teamIds = listTeamIdsForOrg(db, orgId);
+  if (teamIds.length === 0) return [];
 
-  return rows.map((row) => ({
-    id: row.id,
-    name: row.name,
-    ownerId: row.owner_id,
-    memberCount: row.member_count,
-    createdAtMs: row.created_at_ms,
-  }));
+  const nowMs = Date.now();
+  return teamIds
+    .map((teamId) => {
+      const row = db
+        .query<{ id: string; name: string; created_at_ms: number }, [string]>(
+          `SELECT id, name, created_at_ms FROM teams WHERE id = ?`,
+        )
+        .get(teamId);
+      if (row === null) return null;
+      const memberCount = listAccountIdsForTeam(db, teamId, "member", nowMs).length;
+      return {
+        id: row.id,
+        name: row.name,
+        memberCount,
+        createdAtMs: row.created_at_ms,
+      };
+    })
+    .filter((row): row is OrgTeamRecord => row !== null)
+    .sort((a, b) => a.createdAtMs - b.createdAtMs);
 }
 
 export function userHasAnyTeam(db: Database, userId: string): boolean {
-  const row = db
-    .query<{ c: number }, [string]>(`SELECT COUNT(1) AS c FROM team_members WHERE user_id = ?`)
-    .get(userId);
-  return row !== null && row.c > 0;
+  return userHasAnyTeamMemberGrant(db, userId);
 }
 
-export function userBelongsToOrg(db: Database, orgId: string, userId: string): boolean {
-  const row = db
-    .query<{ c: number }, [string, string]>(
-      `SELECT COUNT(1) AS c
-       FROM team_members tm
-       JOIN teams t ON t.id = tm.team_id
-       WHERE t.org_id = ? AND tm.user_id = ?`,
-    )
-    .get(orgId, userId);
-  return row !== null && row.c > 0;
+export { userBelongsToOrg } from "../authz/policy";
+
+export function isTeamMember(db: Database, teamId: string, userId: string): boolean {
+  return hasGrant(
+    db,
+    accountScope(userId),
+    { type: ResourceType.Team, id: teamId },
+    Feature.Member,
+  );
 }
 
-/** Undo a failed team creation (membership + team only). */
+/** Undo a failed team creation (grants + team + onboarding). */
 export function rollbackTeamCreation(db: Database, teamId: string): void {
-  db.prepare(`DELETE FROM team_members WHERE team_id = ?`).run(teamId);
+  revokeAllGrantsForTeamScope(db, teamId);
+  revokeAllGrantsReferencingTeam(db, teamId);
+  db.prepare(`DELETE FROM team_account_onboarding WHERE team_id = ?`).run(teamId);
   db.prepare(`DELETE FROM teams WHERE id = ?`).run(teamId);
 }
 
-/** Undo a failed onboarding attempt (org + team + membership only). */
+/** Undo a failed onboarding attempt (org + team + grants). */
 export function rollbackOnboarding(db: Database, params: { orgId: string; teamId: string }): void {
-  db.prepare(`DELETE FROM team_members WHERE team_id = ?`).run(params.teamId);
-  db.prepare(`DELETE FROM teams WHERE id = ?`).run(params.teamId);
+  rollbackTeamCreation(db, params.teamId);
+  revokeAllGrantsReferencingOrg(db, params.orgId);
   db.prepare(`DELETE FROM orgs WHERE id = ?`).run(params.orgId);
 }
 
 export function addTeamMember(db: Database, teamId: string, userId: string): void {
-  const existing = db
-    .query<{ c: number }, [string, string]>(
-      `SELECT COUNT(1) AS c FROM team_members WHERE team_id = ? AND user_id = ?`,
-    )
-    .get(teamId, userId);
-  if (existing !== null && existing.c > 0) return;
+  grantTeamMember(db, userId, teamId);
+}
 
-  db.prepare(`INSERT INTO team_members (team_id, user_id, created_at_ms) VALUES (?, ?, ?)`).run(
-    teamId,
-    userId,
+export function createOrgWithAdmin(
+  db: Database,
+  params: { name: string; creatorId: string },
+): string {
+  const id = crypto.randomUUID();
+  db.prepare(`INSERT INTO orgs (id, name, created_at_ms) VALUES (?, ?, ?)`).run(
+    id,
+    params.name,
     Date.now(),
   );
+  grantAllOrgPermissions(db, params.creatorId, id);
+  return id;
+}
+
+export function createTeamWithGrants(
+  db: Database,
+  params: { orgId: string; name: string; creatorId: string },
+): string {
+  const id = crypto.randomUUID();
+  const now = Date.now();
+  db.prepare(`INSERT INTO teams (id, name, created_at_ms) VALUES (?, ?, ?)`).run(
+    id,
+    params.name,
+    now,
+  );
+  grantTeamOrgMembership(db, id, params.orgId);
+  grantAllTeamPermissions(db, params.creatorId, id);
+  return id;
 }
 
 export type PendingOnboardingInterview = {
@@ -306,12 +349,12 @@ export function getPendingOnboardingInterview(
 ): PendingOnboardingInterview | null {
   const row = db
     .query<{ team_id: string; onboarding_session_id: string }, [string]>(
-      `SELECT tm.team_id, tm.onboarding_session_id
-       FROM team_members tm
-       JOIN teams t ON t.id = tm.team_id
-       WHERE tm.user_id = ?
-         AND tm.onboarding_interview_complete = 0
-         AND tm.onboarding_session_id IS NOT NULL
+      `SELECT o.team_id, o.onboarding_session_id
+       FROM team_account_onboarding o
+       JOIN teams t ON t.id = o.team_id
+       WHERE o.account_id = ?
+         AND o.onboarding_interview_complete = 0
+         AND o.onboarding_session_id IS NOT NULL
        ORDER BY t.created_at_ms ASC
        LIMIT 1`,
     )
@@ -332,8 +375,8 @@ export function userNeedsOnboardingInterviewForTeam(
   const row = db
     .query<{ c: number }, [string, string]>(
       `SELECT COUNT(1) AS c
-       FROM team_members
-       WHERE team_id = ? AND user_id = ?
+       FROM team_account_onboarding
+       WHERE team_id = ? AND account_id = ?
          AND onboarding_interview_complete = 0
          AND onboarding_session_id IS NOT NULL`,
     )
@@ -345,11 +388,14 @@ export function setTeamMemberOnboardingSession(
   db: Database,
   params: { teamId: string; userId: string; sessionId: string },
 ): void {
+  const now = Date.now();
   db.prepare(
-    `UPDATE team_members
-     SET onboarding_session_id = ?, onboarding_interview_complete = 0
-     WHERE team_id = ? AND user_id = ?`,
-  ).run(params.sessionId, params.teamId, params.userId);
+    `INSERT INTO team_account_onboarding (team_id, account_id, onboarding_session_id, onboarding_interview_complete, created_at_ms)
+     VALUES (?, ?, ?, 0, ?)
+     ON CONFLICT(team_id, account_id) DO UPDATE SET
+       onboarding_session_id = excluded.onboarding_session_id,
+       onboarding_interview_complete = 0`,
+  ).run(params.teamId, params.userId, params.sessionId, now);
 }
 
 export function completeTeamMemberOnboardingInterview(
@@ -357,8 +403,8 @@ export function completeTeamMemberOnboardingInterview(
   params: { teamId: string; userId: string },
 ): void {
   db.prepare(
-    `UPDATE team_members
+    `UPDATE team_account_onboarding
      SET onboarding_interview_complete = 1
-     WHERE team_id = ? AND user_id = ?`,
+     WHERE team_id = ? AND account_id = ?`,
   ).run(params.teamId, params.userId);
 }

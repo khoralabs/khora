@@ -33,7 +33,6 @@ test("getInterviewStatus tracks thread and messages", async () => {
   const session = createSession(db, {
     teamId,
     topic: "Review",
-    facilitatorId: user.id,
   });
 
   expect(getInterviewStatus(db, session.id, user.id)).toBe("not_started");

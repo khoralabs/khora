@@ -3,17 +3,17 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-
-import { closeDb } from "../db/index";
-import { ensureExedraSchema } from "../db/schema";
 import {
-  addSessionParticipants,
-  createOrg,
-  createSession,
-  createTeam,
-  listSessionsForUser,
-} from "../db/sessions";
+  grantSessionCreatorAccess,
+  grantSessionParticipant,
+  grantTeamSessionParticipant,
+} from "../authz";
+import { closeDb } from "../db/index";
 import { getOrCreateUser } from "../identity/users";
+import { addTeamMember } from "./membership";
+import { ensureExedraSchema } from "./schema";
+import { listSessionParticipantDetails } from "./session-detail";
+import { createOrg, createSession, createTeam, listSessionsForUser } from "./sessions";
 
 let dataDir: string;
 
@@ -42,24 +42,14 @@ test("listSessionsForUser returns facilitator and participant sessions", async (
   const participant = await getOrCreateUser(db, "registry-participant");
   const orgId = createOrg(db, { name: "Org", ownerId: facilitator.id });
   const teamId = createTeam(db, { orgId, name: "Team", ownerId: facilitator.id });
-  db.prepare(`INSERT INTO team_members (team_id, user_id, created_at_ms) VALUES (?, ?, ?)`).run(
-    teamId,
-    participant.id,
-    Date.now(),
-  );
+  addTeamMember(db, teamId, participant.id);
 
-  const facilitated = createSession(db, {
-    teamId,
-    topic: "Facilitated",
-    facilitatorId: facilitator.id,
-  });
+  const facilitated = createSession(db, { teamId, topic: "Facilitated" });
+  grantSessionCreatorAccess(db, facilitator.id, facilitated.id);
 
-  const participating = createSession(db, {
-    teamId,
-    topic: "Participating",
-    facilitatorId: participant.id,
-  });
-  addSessionParticipants(db, participating.id, [facilitator.id]);
+  const participating = createSession(db, { teamId, topic: "Participating" });
+  grantSessionCreatorAccess(db, participant.id, participating.id);
+  grantSessionParticipant(db, facilitator.id, participating.id);
 
   const facilitatorSessions = listSessionsForUser(db, facilitator.id);
   expect(facilitatorSessions).toHaveLength(2);
@@ -69,6 +59,29 @@ test("listSessionsForUser returns facilitator and participant sessions", async (
   expect(
     facilitatorSessions.some((s) => s.id === participating.id && s.role === "participant"),
   ).toBe(true);
+
+  db.close();
+});
+
+test("team-scoped grant lists all team members as participants", async () => {
+  const db = new Database(":memory:");
+  ensureExedraSchema(db);
+
+  const facilitator = await getOrCreateUser(db, "registry-fac-team");
+  const member = await getOrCreateUser(db, "registry-member-team");
+  const orgId = createOrg(db, { name: "Org", ownerId: facilitator.id });
+  const teamId = createTeam(db, { orgId, name: "Team", ownerId: facilitator.id });
+  addTeamMember(db, teamId, member.id);
+
+  const session = createSession(db, { teamId, topic: "Shared" });
+  grantSessionCreatorAccess(db, facilitator.id, session.id);
+  grantTeamSessionParticipant(db, teamId, session.id);
+
+  const participants = listSessionParticipantDetails(db, session.id);
+  expect(participants.some((p) => p.userId === facilitator.id && p.role === "facilitator")).toBe(
+    true,
+  );
+  expect(participants.some((p) => p.userId === member.id && p.role === "participant")).toBe(true);
 
   db.close();
 });

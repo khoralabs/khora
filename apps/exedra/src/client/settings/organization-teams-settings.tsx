@@ -4,12 +4,17 @@ import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import type { MeTeam } from "@/lib/me-api";
 import { fetchOrgTeams, type OrgTeamSummary } from "@/lib/settings-api";
+import { settingsTeamPath } from "../shell/routes";
 
 type OrganizationTeamsSettingsProps = {
   activeTeam: MeTeam;
+  onNavigate: (path: string) => void;
 };
 
-export function OrganizationTeamsSettings({ activeTeam }: OrganizationTeamsSettingsProps) {
+export function OrganizationTeamsSettings({
+  activeTeam,
+  onNavigate,
+}: OrganizationTeamsSettingsProps) {
   const [teams, setTeams] = useState<OrgTeamSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,15 +63,21 @@ export function OrganizationTeamsSettings({ activeTeam }: OrganizationTeamsSetti
       ) : (
         <ul className="space-y-2">
           {teams.map((team) => (
-            <li key={team.id} className="rounded-md border bg-background px-3 py-2 text-sm">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="font-medium">{team.name}</p>
-                {team.id === activeTeam.id ? <Badge variant="secondary">Current</Badge> : null}
-                <Badge variant="outline">
-                  {team.memberCount} member{team.memberCount === 1 ? "" : "s"}
-                </Badge>
-              </div>
-              <p className="mt-1 font-mono text-xs text-muted-foreground">{team.id}</p>
+            <li key={team.id}>
+              <button
+                type="button"
+                className="w-full rounded-md border bg-background px-3 py-2 text-left text-sm transition-colors hover:bg-accent"
+                onClick={() => onNavigate(settingsTeamPath(team.id))}
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-medium">{team.name}</p>
+                  {team.id === activeTeam.id ? <Badge variant="secondary">Current</Badge> : null}
+                  <Badge variant="outline">
+                    {team.memberCount} member{team.memberCount === 1 ? "" : "s"}
+                  </Badge>
+                </div>
+                <p className="mt-1 font-mono text-xs text-muted-foreground">{team.id}</p>
+              </button>
             </li>
           ))}
         </ul>

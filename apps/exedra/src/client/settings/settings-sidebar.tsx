@@ -1,34 +1,46 @@
-import { ArrowLeft, Building2, UserRound, Users } from "lucide-react";
+import {
+  ArrowLeft,
+  BarChart3,
+  Boxes,
+  Building2,
+  CreditCard,
+  type LucideIcon,
+  ShieldCheck,
+  UserRound,
+  Users,
+  UsersRound,
+} from "lucide-react";
 import { SidebarCollapsedTooltip } from "@/components/exedra/sidebar-collapsed-tooltip";
-import type { MeTeam } from "@/lib/me-api";
 import { cn } from "@/lib/utils";
 import {
-  isOrganizationSettingsSection,
-  parseSettingsSection,
-  type SettingsSection,
-  settingsPathForSection,
+  type AccountArea,
+  type OrgArea,
+  parseSettingsRoute,
+  settingsAccountPath,
+  settingsOrgPath,
 } from "../shell/routes";
 
 type SettingsSidebarProps = {
   pathname: string;
-  activeTeam: MeTeam;
   collapsed: boolean;
   onNavigate: (path: string) => void;
 };
 
-const ORG_NAV_ITEMS: { section: SettingsSection; label: string }[] = [
-  { section: "organization", label: "General" },
-  { section: "organization-members", label: "Members" },
-  { section: "organization-teams", label: "Teams" },
+type OrgNavItem = { area: OrgArea; label: string; icon: LucideIcon };
+type AccountNavItem = { area: AccountArea; label: string; icon: LucideIcon };
+
+const ORG_NAV_ITEMS: OrgNavItem[] = [
+  { area: "general", label: "General", icon: Building2 },
+  { area: "members", label: "Members", icon: Users },
+  { area: "teams", label: "Teams", icon: UsersRound },
+  { area: "access", label: "Access", icon: ShieldCheck },
+  { area: "billing", label: "Billing", icon: CreditCard },
+  { area: "usage", label: "Usage", icon: BarChart3 },
+  { area: "models", label: "Models", icon: Boxes },
 ];
 
-const OTHER_NAV_ITEMS: {
-  section: SettingsSection;
-  label: string;
-  icon: typeof Building2;
-}[] = [
-  { section: "team", label: "Team", icon: Users },
-  { section: "account", label: "Account", icon: UserRound },
+const ACCOUNT_NAV_ITEMS: AccountNavItem[] = [
+  { area: "profile", label: "Profile", icon: UserRound },
 ];
 
 function navButtonClassName(collapsed: boolean, active: boolean): string {
@@ -39,14 +51,33 @@ function navButtonClassName(collapsed: boolean, active: boolean): string {
   );
 }
 
-export function SettingsSidebar({
-  pathname,
-  activeTeam,
-  collapsed,
-  onNavigate,
-}: SettingsSidebarProps) {
-  const activeSection = parseSettingsSection(pathname);
-  const orgSectionActive = isOrganizationSettingsSection(activeSection);
+export function SettingsSidebar({ pathname, collapsed, onNavigate }: SettingsSidebarProps) {
+  const route = parseSettingsRoute(pathname);
+
+  function renderItem(args: {
+    key: string;
+    label: string;
+    icon: LucideIcon;
+    active: boolean;
+    path: string;
+  }) {
+    const { key, label, icon: Icon, active, path } = args;
+    return (
+      <li key={key}>
+        <SidebarCollapsedTooltip collapsed={collapsed} label={label}>
+          <button
+            type="button"
+            className={navButtonClassName(collapsed, active)}
+            onClick={() => onNavigate(path)}
+            aria-label={label}
+          >
+            <Icon className="size-4 shrink-0" />
+            {!collapsed ? <span className="text-sm font-medium">{label}</span> : null}
+          </button>
+        </SidebarCollapsedTooltip>
+      </li>
+    );
+  }
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto p-2">
@@ -69,73 +100,40 @@ export function SettingsSidebar({
         </li>
 
         {!collapsed ? (
-          <li className="px-3 pt-2 pb-1">
+          <li className="px-3 pt-3 pb-1">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Organization
             </p>
           </li>
-        ) : (
-          <li>
-            <SidebarCollapsedTooltip collapsed={collapsed} label="Organization">
-              <button
-                type="button"
-                className={navButtonClassName(collapsed, orgSectionActive)}
-                onClick={() => onNavigate(settingsPathForSection("organization"))}
-                aria-label="Organization"
-              >
-                <Building2 className="size-4 shrink-0" />
-              </button>
-            </SidebarCollapsedTooltip>
-          </li>
+        ) : null}
+
+        {ORG_NAV_ITEMS.map((item) =>
+          renderItem({
+            key: `org-${item.area}`,
+            label: item.label,
+            icon: item.icon,
+            active: route.scope === "organization" && route.area === item.area,
+            path: settingsOrgPath(item.area),
+          }),
         )}
 
-        {ORG_NAV_ITEMS.map(({ section, label }) => {
-          const active = activeSection === section;
-          if (collapsed) {
-            if (section !== "organization") return null;
-            return null;
-          }
-          return (
-            <li key={section}>
-              <button
-                type="button"
-                className={cn(navButtonClassName(false, active), "pl-6")}
-                onClick={() => onNavigate(settingsPathForSection(section))}
-              >
-                <span className="text-sm font-medium">{label}</span>
-              </button>
-            </li>
-          );
-        })}
+        {!collapsed ? (
+          <li className="px-3 pt-3 pb-1">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Account
+            </p>
+          </li>
+        ) : null}
 
-        {OTHER_NAV_ITEMS.map(({ section, label, icon: Icon }) => {
-          const active = activeSection === section;
-          const subtitle = section === "team" && !collapsed ? activeTeam.name : undefined;
-          const tooltipLabel =
-            section === "team" && collapsed ? `${label} · ${activeTeam.name}` : label;
-          return (
-            <li key={section}>
-              <SidebarCollapsedTooltip collapsed={collapsed} label={tooltipLabel}>
-                <button
-                  type="button"
-                  className={navButtonClassName(collapsed, active)}
-                  onClick={() => onNavigate(settingsPathForSection(section))}
-                  aria-label={tooltipLabel}
-                >
-                  <Icon className="size-4 shrink-0" />
-                  {!collapsed ? (
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{label}</p>
-                      {subtitle ? (
-                        <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </button>
-              </SidebarCollapsedTooltip>
-            </li>
-          );
-        })}
+        {ACCOUNT_NAV_ITEMS.map((item) =>
+          renderItem({
+            key: `account-${item.area}`,
+            label: item.label,
+            icon: item.icon,
+            active: route.scope === "account" && route.area === item.area,
+            path: settingsAccountPath(item.area),
+          }),
+        )}
       </ul>
     </div>
   );

@@ -1,23 +1,20 @@
-import { Link2 } from "lucide-react";
+import { OrgPermission, TeamPermission } from "@shared/authz/permissions";
+import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { EntitlementGate } from "@/components/authz/entitlement-gate";
+import { PermissionsProvider } from "@/components/authz/permissions-context";
+import { PermissionsManagement } from "@/components/authz/permissions-management";
 import { Button } from "@/components/ui/button";
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-  FieldSet,
-} from "@/components/ui/field";
+import { Field, FieldError, FieldGroup, FieldLabel, FieldSet } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import { copyTextToClipboard } from "@/lib/copy-text";
-import { INVITE_LINK_SINGLE_USE_NOTE } from "@/lib/invite-copy";
-import { type MeTeam, mintTeamInvite } from "@/lib/me-api";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { fetchTeamPermissions, type TeamGrantsSnapshot } from "@/lib/permissions-api";
 import {
   deleteTeamAvatar,
+  fetchOrgSettings,
   fetchTeamMembers,
   fetchTeamSettings,
   patchTeamSettings,
@@ -26,40 +23,64 @@ import {
   uploadTeamAvatar,
 } from "@/lib/settings-api";
 
+import { settingsMemberPath, settingsTeamPath, type TeamSubArea } from "../shell/routes";
 import { AvatarUploadField, useAvatarPendingFile } from "./avatar-upload-field";
+import { InviteMemberDialog } from "./invite-member-dialog";
 import { MembersTable } from "./members-table";
 
 type TeamSettingsFormProps = {
-  activeTeam: MeTeam;
+  teamId: string;
+  subArea: TeamSubArea;
   onSaved: () => void;
+  onNavigate: (path: string) => void;
+  onTitleResolved?: (title: string) => void;
 };
 
-export function TeamSettingsForm({ activeTeam, onSaved }: TeamSettingsFormProps) {
+export function TeamSettingsForm({
+  teamId,
+  subArea,
+  onSaved,
+  onNavigate,
+  onTitleResolved,
+}: TeamSettingsFormProps) {
   const [settings, setSettings] = useState<TeamSettings | null>(null);
   const [name, setName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
-  const [mintingInvite, setMintingInvite] = useState(false);
-  const [inviteCopied, setInviteCopied] = useState(false);
   const [members, setMembers] = useState<TeamMemberSummary[]>([]);
   const [membersLoading, setMembersLoading] = useState(true);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [viewerOrgPermissions, setViewerOrgPermissions] = useState<
+    Record<string, boolean> | undefined
+  >(undefined);
+  const [teamGrants, setTeamGrants] = useState<TeamGrantsSnapshot | null>(null);
+  const [teamGrantsLoading, setTeamGrantsLoading] = useState(true);
+  const [teamGrantsError, setTeamGrantsError] = useState<string | null>(null);
   const { pendingFile, removeRequested, selectFile, resetPending } = useAvatarPendingFile();
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    void fetchTeamSettings(activeTeam.id)
+    void fetchTeamSettings(teamId)
       .then((data) => {
         if (cancelled) return;
         setSettings(data);
         setName(data.name);
         setAvatarUrl(data.avatarUrl);
+        onTitleResolved?.(data.name);
         resetPending();
         setLoading(false);
+        if (data.orgId.length > 0) {
+          void fetchOrgSettings(data.orgId)
+            .then((orgSettings) => {
+              if (cancelled) return;
+              setViewerOrgPermissions(orgSettings.permissions);
+            })
+            .catch(() => undefined);
+        }
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -69,12 +90,12 @@ export function TeamSettingsForm({ activeTeam, onSaved }: TeamSettingsFormProps)
     return () => {
       cancelled = true;
     };
-  }, [activeTeam.id, resetPending]);
+  }, [teamId, resetPending, onTitleResolved]);
 
   useEffect(() => {
     let cancelled = false;
     setMembersLoading(true);
-    void fetchTeamMembers(activeTeam.id)
+    void fetchTeamMembers(teamId)
       .then((data) => {
         if (cancelled) return;
         setMembers(data);
@@ -88,7 +109,28 @@ export function TeamSettingsForm({ activeTeam, onSaved }: TeamSettingsFormProps)
     return () => {
       cancelled = true;
     };
-  }, [activeTeam.id]);
+  }, [teamId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setTeamGrantsLoading(true);
+    setTeamGrantsError(null);
+    void fetchTeamPermissions(teamId)
+      .then((data) => {
+        if (cancelled) return;
+        setTeamGrants(data);
+        setTeamGrantsLoading(false);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setTeamGrants(null);
+        setTeamGrantsError(err instanceof Error ? err.message : "Failed to load team permissions");
+        setTeamGrantsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [teamId]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -96,12 +138,12 @@ export function TeamSettingsForm({ activeTeam, onSaved }: TeamSettingsFormProps)
     setSubmitting(true);
     setError(null);
     try {
-      const updated = await patchTeamSettings(activeTeam.id, { name });
+      const updated = await patchTeamSettings(teamId, { name });
       let next = updated;
       if (removeRequested && avatarUrl !== null) {
-        next = await deleteTeamAvatar(activeTeam.id);
+        next = await deleteTeamAvatar(teamId);
       } else if (pendingFile !== null) {
-        next = await uploadTeamAvatar(activeTeam.id, pendingFile);
+        next = await uploadTeamAvatar(teamId, pendingFile);
       }
       setSettings(next);
       setName(next.name);
@@ -116,27 +158,6 @@ export function TeamSettingsForm({ activeTeam, onSaved }: TeamSettingsFormProps)
     }
   }
 
-  async function handleMintInvite() {
-    setMintingInvite(true);
-    setError(null);
-    try {
-      const result = await mintTeamInvite(activeTeam.id);
-      const url = `${window.location.origin}${result.url}`;
-      setInviteUrl(url);
-      setInviteCopied(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create invite link");
-    } finally {
-      setMintingInvite(false);
-    }
-  }
-
-  async function handleCopyInvite() {
-    if (inviteUrl === null) return;
-    await copyTextToClipboard(inviteUrl);
-    setInviteCopied(true);
-  }
-
   if (loading) {
     return (
       <div className="flex justify-center py-16">
@@ -146,88 +167,138 @@ export function TeamSettingsForm({ activeTeam, onSaved }: TeamSettingsFormProps)
   }
 
   const canEdit = settings?.canEdit ?? false;
+  const canInvite = settings?.permissions?.[TeamPermission.MemberManage] === true;
 
   return (
-    <form onSubmit={(event) => void handleSubmit(event)} className="mx-auto w-full max-w-lg">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight">Team</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Settings for <span className="font-medium text-foreground">{activeTeam.name}</span>.
-        </p>
-      </div>
+    <PermissionsProvider value={{ org: viewerOrgPermissions, team: settings?.permissions }}>
+      <div className="mx-auto w-full max-w-lg">
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold tracking-tight">{settings?.name ?? teamId}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Team settings.</p>
+        </div>
 
-      <FieldSet>
-        <FieldGroup>
-          <AvatarUploadField
-            name={name}
-            avatarUrl={avatarUrl}
-            disabled={!canEdit || submitting}
-            onFileSelected={selectFile}
-          />
-          <Field>
-            <FieldLabel htmlFor="team-name">Name</FieldLabel>
-            <Input
-              id="team-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              disabled={!canEdit || submitting}
-            />
-          </Field>
-          <Field>
-            <FieldLabel>Invite link</FieldLabel>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={mintingInvite}
-                onClick={() => void handleMintInvite()}
-              >
-                {mintingInvite ? <Spinner className="size-4" aria-hidden /> : <Link2 />}
-                Create invite link
-              </Button>
-              {inviteUrl !== null ? (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => void handleCopyInvite()}
-                >
-                  {inviteCopied ? "Copied" : "Copy link"}
+        <Tabs
+          value={subArea}
+          onValueChange={(value) => onNavigate(settingsTeamPath(teamId, value as TeamSubArea))}
+        >
+          <TabsList>
+            <TabsTrigger value="general">General</TabsTrigger>
+            <TabsTrigger value="members">Members</TabsTrigger>
+            <EntitlementGate scope="org" permission={OrgPermission.PermissionsManage}>
+              <TabsTrigger value="permissions">Permissions</TabsTrigger>
+            </EntitlementGate>
+          </TabsList>
+
+          <TabsContent value="general" className="mt-6">
+            <form onSubmit={(event) => void handleSubmit(event)}>
+              <FieldSet>
+                <FieldGroup>
+                  <AvatarUploadField
+                    name={name}
+                    avatarUrl={avatarUrl}
+                    disabled={!canEdit || submitting}
+                    onFileSelected={selectFile}
+                  />
+                  <Field>
+                    <FieldLabel htmlFor="team-name">Name</FieldLabel>
+                    <Input
+                      id="team-name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      disabled={!canEdit || submitting}
+                    />
+                  </Field>
+                </FieldGroup>
+              </FieldSet>
+
+              {error !== null ? <FieldError className="mt-4">{error}</FieldError> : null}
+
+              {canEdit ? (
+                <div className="mt-6 flex justify-end">
+                  <Button type="submit" disabled={submitting}>
+                    {submitting ? <Spinner className="size-4" aria-hidden /> : "Save changes"}
+                  </Button>
+                </div>
+              ) : null}
+            </form>
+          </TabsContent>
+
+          <TabsContent value="members" className="mt-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-semibold tracking-tight">Members</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Everyone with access to this team.
+                </p>
+              </div>
+              {canInvite ? (
+                <Button size="sm" onClick={() => setInviteOpen(true)}>
+                  <Plus />
+                  Member
                 </Button>
               ) : null}
             </div>
-            {inviteUrl !== null ? (
-              <FieldDescription className="truncate">{inviteUrl}</FieldDescription>
-            ) : null}
-            <FieldDescription>{INVITE_LINK_SINGLE_USE_NOTE}</FieldDescription>
-          </Field>
-        </FieldGroup>
-      </FieldSet>
-
-      {error !== null ? <FieldError className="mt-4">{error}</FieldError> : null}
-
-      {canEdit ? (
-        <div className="mt-6 flex justify-end">
-          <Button type="submit" disabled={submitting}>
-            {submitting ? <Spinner className="size-4" aria-hidden /> : "Save changes"}
-          </Button>
-        </div>
-      ) : null}
-
-      <div className="mt-10 border-t pt-8">
-        <h2 className="text-lg font-semibold tracking-tight">Members</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Everyone with access to this team.</p>
-        <div className="mt-4">
-          {membersLoading ? (
-            <div className="flex justify-center py-8">
-              <Spinner className="size-4" />
+            <div className="mt-4">
+              {membersLoading ? (
+                <div className="flex justify-center py-8">
+                  <Spinner className="size-4" />
+                </div>
+              ) : (
+                <MembersTable
+                  members={members.map((member) => ({
+                    ...member,
+                    badges: member.isAdmin ? ["Admin"] : [],
+                  }))}
+                  onMemberClick={(memberId) => onNavigate(settingsMemberPath(memberId))}
+                />
+              )}
             </div>
-          ) : (
-            <MembersTable members={members} />
-          )}
-        </div>
+          </TabsContent>
+
+          <TabsContent value="permissions" className="mt-6">
+            <EntitlementGate
+              scope="org"
+              permission={OrgPermission.PermissionsManage}
+              fallback={
+                <p className="text-sm text-muted-foreground">
+                  You don't have access to manage permissions for this team.
+                </p>
+              }
+            >
+              <div className="space-y-10">
+                <PermissionsManagement
+                  teamId={teamId}
+                  grantScope="org"
+                  teamName={settings?.name}
+                  grants={teamGrants}
+                  grantsLoading={teamGrantsLoading}
+                  grantsError={teamGrantsError}
+                  onGrantsUpdated={setTeamGrants}
+                />
+                <PermissionsManagement
+                  teamId={teamId}
+                  grantScope="team"
+                  teamName={settings?.name}
+                  grants={teamGrants}
+                  grantsLoading={teamGrantsLoading}
+                  grantsError={teamGrantsError}
+                  onGrantsUpdated={setTeamGrants}
+                />
+              </div>
+            </EntitlementGate>
+          </TabsContent>
+        </Tabs>
+
+        {settings !== null ? (
+          <InviteMemberDialog
+            open={inviteOpen}
+            onOpenChange={setInviteOpen}
+            variant="team"
+            teamId={teamId}
+            teamName={settings.name}
+          />
+        ) : null}
       </div>
-    </form>
+    </PermissionsProvider>
   );
 }

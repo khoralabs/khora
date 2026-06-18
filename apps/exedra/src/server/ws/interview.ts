@@ -1,6 +1,7 @@
 import { verifyRegistrySession } from "@khoralabs/registry-auth";
 
 import { isValidIanaTimeZone } from "../../agents/turn-context/user-local-datetime";
+import { canReadThread } from "../authz";
 import { getDb } from "../db/index";
 import { getSession, getThread, userHasSessionAccess } from "../db/sessions";
 import { findUserByRegistryId } from "../identity/users";
@@ -61,7 +62,7 @@ export async function verifyInterviewWsUpgrade(
   if (thread === null) {
     return { ok: false, status: 404, error: "Thread not found" };
   }
-  if (thread.kind !== "interview" || thread.user_id !== user.id) {
+  if (thread.kind !== "interview" || !canReadThread(db, user.id, threadId)) {
     return { ok: false, status: 403, error: "Forbidden" };
   }
 

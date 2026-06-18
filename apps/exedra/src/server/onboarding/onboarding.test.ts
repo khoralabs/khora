@@ -5,10 +5,10 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { closeDb } from "../db/index";
+import { getInviteTeamId, mintTeamMemberInvite } from "../db/invites";
 import { addTeamMember, listTeamsForUser, userHasAnyTeam } from "../db/membership";
 import { ensureExedraSchema } from "../db/schema";
 import { createOrg, createTeam } from "../db/sessions";
-import { getTeamIdForInvite, mintTeamInvite } from "../db/team-invites";
 import { getOrCreateUser } from "../identity/users";
 import { resetMemoriesStoreForTests } from "../memories/store";
 
@@ -146,8 +146,8 @@ test("team invite mint and accept add membership", async () => {
   const orgId = createOrg(db, { name: "Org", ownerId: owner.id });
   const teamId = createTeam(db, { orgId, name: "Team", ownerId: owner.id });
 
-  const token = mintTeamInvite(db, { teamId, createdByUserId: owner.id });
-  expect(getTeamIdForInvite(db, token)).toBe(teamId);
+  const token = mintTeamMemberInvite(db, { teamId, createdByUserId: owner.id });
+  expect(getInviteTeamId(db, token)).toBe(teamId);
 
   addTeamMember(db, teamId, joiner.id);
   expect(userHasAnyTeam(db, joiner.id)).toBe(true);

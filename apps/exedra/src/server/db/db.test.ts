@@ -1,7 +1,8 @@
 import { Database } from "bun:sqlite";
 import { afterAll, beforeAll, expect, test } from "bun:test";
+import { grantSessionCreatorAccess } from "../authz";
 import { getOrCreateUser } from "../identity/users";
-import { consumeSessionInvite, getInvitePublicInfo, mintSessionInvite } from "./invites";
+import { consumeInvite, getInvitePublicInfo, mintSessionParticipantInvite } from "./invites";
 import { insertMessage, loadThreadMessages } from "./messages";
 import { ensureExedraSchema } from "./schema";
 import { createOrg, createSession, createTeam } from "./sessions";
@@ -30,20 +31,24 @@ test("session invite is single-use", async () => {
   const session = createSession(db, {
     teamId,
     topic: "Review",
-    facilitatorId: user.id,
   });
+  grantSessionCreatorAccess(db, user.id, session.id);
 
-  const token = mintSessionInvite(db, session.id);
+  const token = mintSessionParticipantInvite(db, {
+    sessionId: session.id,
+    teamId,
+    createdByUserId: user.id,
+  });
   const info = getInvitePublicInfo(db, token);
   expect(info?.status).toBe("pending");
 
-  const consumed = consumeSessionInvite(db, token, user.id);
-  expect(consumed?.sessionId).toBe(session.id);
+  const effects = consumeInvite(db, token, user.id);
+  expect(effects).not.toBeNull();
 
   const infoAfter = getInvitePublicInfo(db, token);
   expect(infoAfter?.status).toBe("accepted");
 
-  const second = consumeSessionInvite(db, token, user.id);
+  const second = consumeInvite(db, token, user.id);
   expect(second).toBeNull();
 });
 
@@ -54,8 +59,8 @@ test("messages round-trip as UIMessage JSONB", async () => {
   const session = createSession(db, {
     teamId,
     topic: "Review",
-    facilitatorId: user.id,
   });
+  grantSessionCreatorAccess(db, user.id, session.id);
 
   const threadId = crypto.randomUUID();
   db.run(

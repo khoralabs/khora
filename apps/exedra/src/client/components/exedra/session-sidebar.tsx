@@ -120,7 +120,6 @@ export function SessionSidebar({
         {settingsMode && onNavigate !== undefined ? (
           <SettingsSidebar
             pathname={pathname}
-            activeTeam={activeTeam}
             collapsed={collapsed}
             onNavigate={(path) => {
               onNavigate(path);

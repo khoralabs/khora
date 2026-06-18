@@ -1,4 +1,6 @@
 import { requireRegistrySessionResponse } from "../auth/require-session.js";
+import { canEditOrg, enforce, hasOrgAdminGrant, ResourceType } from "../authz/policy.js";
+import { serializeOrgPermissionsForAccount } from "../authz/routes.js";
 import { buildOrgAvatarS3Key } from "../avatars/keys.js";
 import { clearAvatarFromS3, parseAvatarUpload, replaceAvatarInS3 } from "../avatars/upload.js";
 import { avatarUrlFromS3Key } from "../avatars/urls.js";
@@ -9,20 +11,24 @@ import {
   listTeamsForOrg,
   updateOrgAvatarS3Key,
   updateOrgName,
-  userBelongsToOrg,
 } from "../db/membership.js";
-import { getOrCreateUser } from "../identity/users.js";
+import { findUserById, getOrCreateUser } from "../identity/users.js";
 
 function jsonResponse(data: unknown, status = 200): Response {
   return Response.json(data, { status });
 }
 
-function serializeOrgSettings(org: NonNullable<ReturnType<typeof getOrg>>, userId: string) {
+function serializeOrgSettings(
+  org: NonNullable<ReturnType<typeof getOrg>>,
+  userId: string,
+  db: ReturnType<typeof getDb>,
+) {
   return {
     id: org.id,
     name: org.name,
     avatarUrl: avatarUrlFromS3Key("org", org.id, org.avatarS3Key),
-    canEdit: org.ownerId === userId,
+    canEdit: canEditOrg(db, userId, org.id),
+    permissions: serializeOrgPermissionsForAccount(db, userId, org.id).permissions,
   };
 }
 
@@ -37,17 +43,61 @@ export async function handleListOrgMembers(req: Request, orgId: string): Promise
   }
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (!userBelongsToOrg(db, orgId, user.id)) {
+  if (!enforce(db, user.id, "org:read", { type: ResourceType.Organization, id: orgId })) {
     return jsonResponse({ error: "Forbidden" }, 403);
   }
 
   const members = listOrgMembers(db, orgId).map((member) => ({
     ...member,
     isCurrentUser: member.userId === user.id,
-    isOwner: member.userId === org.ownerId,
+    isAdmin: hasOrgAdminGrant(db, member.userId, orgId),
   }));
 
   return jsonResponse({ members });
+}
+
+export async function handleGetOrgMember(
+  req: Request,
+  orgId: string,
+  memberUserId: string,
+): Promise<Response> {
+  const auth = await requireRegistrySessionResponse(req);
+  if (auth.response !== null) return auth.response;
+
+  const db = getDb();
+  const org = getOrg(db, orgId);
+  if (org === null) {
+    return jsonResponse({ error: "Organization not found" }, 404);
+  }
+
+  const user = await getOrCreateUser(db, auth.session.user.id);
+  if (!enforce(db, user.id, "org:read", { type: ResourceType.Organization, id: orgId })) {
+    return jsonResponse({ error: "Forbidden" }, 403);
+  }
+
+  const member = listOrgMembers(db, orgId).find((row) => row.userId === memberUserId);
+  if (member === null || member === undefined) {
+    return jsonResponse({ error: "Member not found" }, 404);
+  }
+
+  const profile = findUserById(db, memberUserId);
+  if (profile === null) {
+    return jsonResponse({ error: "Member not found" }, 404);
+  }
+
+  return jsonResponse({
+    user: {
+      id: profile.id,
+      registryUserId: profile.registryUserId,
+      fullName: profile.fullName,
+      jobFunction: profile.jobFunction,
+      avatarUrl: avatarUrlFromS3Key("user", profile.id, profile.avatarS3Key),
+    },
+    isCurrentUser: memberUserId === user.id,
+    isAdmin: hasOrgAdminGrant(db, memberUserId, orgId),
+    teamIds: member.teamIds,
+    teamNames: member.teamNames,
+  });
 }
 
 export async function handleListOrgTeams(req: Request, orgId: string): Promise<Response> {
@@ -61,7 +111,7 @@ export async function handleListOrgTeams(req: Request, orgId: string): Promise<R
   }
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (!userBelongsToOrg(db, orgId, user.id)) {
+  if (!enforce(db, user.id, "org:read", { type: ResourceType.Organization, id: orgId })) {
     return jsonResponse({ error: "Forbidden" }, 403);
   }
 
@@ -79,11 +129,11 @@ export async function handleGetOrgSettings(req: Request, orgId: string): Promise
   }
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (!userBelongsToOrg(db, orgId, user.id)) {
+  if (!enforce(db, user.id, "org:read", { type: ResourceType.Organization, id: orgId })) {
     return jsonResponse({ error: "Forbidden" }, 403);
   }
 
-  return jsonResponse(serializeOrgSettings(org, user.id));
+  return jsonResponse(serializeOrgSettings(org, user.id, db));
 }
 
 type PatchOrgBody = {
@@ -113,7 +163,7 @@ export async function handlePatchOrg(req: Request, orgId: string): Promise<Respo
   }
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (org.ownerId !== user.id) {
+  if (!enforce(db, user.id, "org:write", { type: ResourceType.Organization, id: orgId })) {
     return jsonResponse({ error: "Forbidden" }, 403);
   }
 
@@ -122,7 +172,7 @@ export async function handlePatchOrg(req: Request, orgId: string): Promise<Respo
     return jsonResponse({ error: "Organization not found" }, 404);
   }
 
-  return jsonResponse(serializeOrgSettings(updated, user.id));
+  return jsonResponse(serializeOrgSettings(updated, user.id, db));
 }
 
 export async function handleUploadOrgAvatar(req: Request, orgId: string): Promise<Response> {
@@ -136,7 +186,7 @@ export async function handleUploadOrgAvatar(req: Request, orgId: string): Promis
   }
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (org.ownerId !== user.id) {
+  if (!enforce(db, user.id, "org:write", { type: ResourceType.Organization, id: orgId })) {
     return jsonResponse({ error: "Forbidden" }, 403);
   }
 
@@ -161,7 +211,7 @@ export async function handleUploadOrgAvatar(req: Request, orgId: string): Promis
     return jsonResponse({ error: "Organization not found" }, 404);
   }
 
-  return jsonResponse(serializeOrgSettings(updated, user.id));
+  return jsonResponse(serializeOrgSettings(updated, user.id, db));
 }
 
 export async function handleDeleteOrgAvatar(req: Request, orgId: string): Promise<Response> {
@@ -175,7 +225,7 @@ export async function handleDeleteOrgAvatar(req: Request, orgId: string): Promis
   }
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (org.ownerId !== user.id) {
+  if (!enforce(db, user.id, "org:write", { type: ResourceType.Organization, id: orgId })) {
     return jsonResponse({ error: "Forbidden" }, 403);
   }
 
@@ -191,5 +241,5 @@ export async function handleDeleteOrgAvatar(req: Request, orgId: string): Promis
     return jsonResponse({ error: "Organization not found" }, 404);
   }
 
-  return jsonResponse(serializeOrgSettings(updated, user.id));
+  return jsonResponse(serializeOrgSettings(updated, user.id, db));
 }

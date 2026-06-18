@@ -3,7 +3,6 @@ export type SessionSummary = {
   teamId: string;
   topic: string;
   deadlineMs: number | null;
-  facilitatorId: string;
   status: string;
   createdAtMs: number;
   role: "facilitator" | "participant";
@@ -40,7 +39,19 @@ export type CreateSessionInput = {
   teamId: string;
   topic: string;
   deadlineMs?: number;
-  memberUserIds: string[];
+  memberUserIds?: string[];
+  teamIds?: string[];
+  createInvite?: boolean;
+};
+
+export type CreateSessionResult = {
+  session: SessionSummary;
+  inviteUrl?: string;
+};
+
+export type ManageSessionScopesInput = {
+  add?: { accountIds?: string[]; teamIds?: string[] };
+  remove?: { accountIds?: string[]; teamIds?: string[] };
 };
 
 export async function fetchSessions(teamId?: string): Promise<SessionSummary[]> {
@@ -51,7 +62,7 @@ export async function fetchSessions(teamId?: string): Promise<SessionSummary[]> 
   return body.sessions;
 }
 
-export async function createSession(input: CreateSessionInput): Promise<SessionSummary> {
+export async function createSession(input: CreateSessionInput): Promise<CreateSessionResult> {
   const res = await fetch("/api/sessions", {
     method: "POST",
     credentials: "include",
@@ -62,8 +73,50 @@ export async function createSession(input: CreateSessionInput): Promise<SessionS
     const data = (await res.json().catch(() => null)) as { error?: string } | null;
     throw new Error(data?.error ?? "Failed to create session");
   }
+  const body = (await res.json()) as CreateSessionResult;
+  return {
+    session: body.session,
+    inviteUrl:
+      body.inviteUrl !== undefined
+        ? new URL(body.inviteUrl, window.location.origin).href
+        : undefined,
+  };
+}
+
+export async function patchSession(
+  sessionId: string,
+  input: { topic?: string; deadlineMs?: number | null },
+): Promise<SessionSummary> {
+  const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const data = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error ?? "Failed to update session");
+  }
   const body = (await res.json()) as { session: SessionSummary };
   return body.session;
+}
+
+export async function manageSessionScopes(
+  sessionId: string,
+  input: ManageSessionScopesInput,
+): Promise<SessionParticipant[]> {
+  const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/scopes`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const data = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error ?? "Failed to update session access");
+  }
+  const body = (await res.json()) as { participants: SessionParticipant[] };
+  return body.participants;
 }
 
 export async function fetchTeamMembers(teamId: string): Promise<TeamMember[]> {

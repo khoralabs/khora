@@ -4,6 +4,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+import { grantSessionCreatorAccess } from "../authz/index.js";
 import { closeDb } from "../db/index.js";
 import { ensureExedraSchema } from "../db/schema.js";
 import { createOrg, createSession, createTeam } from "../db/sessions.js";
@@ -108,8 +109,8 @@ test("ingestSessionDocument indexes text file with summary and chunked content",
   const session = createSession(db, {
     teamId,
     topic: "Docs",
-    facilitatorId: user.id,
   });
+  grantSessionCreatorAccess(db, user.id, session.id);
 
   const { ingestSessionDocument } = await import("./ingest.js");
   const text = "Paragraph one.\n\nParagraph two.\n\nParagraph three.";
@@ -169,8 +170,8 @@ test("ingestSessionDocument indexes binary file with summary text and vector chu
   const session = createSession(db, {
     teamId,
     topic: "Docs",
-    facilitatorId: user.id,
   });
+  grantSessionCreatorAccess(db, user.id, session.id);
 
   const { ingestSessionDocument } = await import("./ingest.js");
   const bytes = new Uint8Array([0x25, 0x50, 0x44, 0x46]);

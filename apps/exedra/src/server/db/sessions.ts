@@ -1,5 +1,11 @@
 import type { Database } from "bun:sqlite";
 
+import { ACTIVE_GRANT_SQL } from "../authz/active";
+import { grantThreadAccess, hasSessionAccess, isSessionFacilitator } from "../authz/policy";
+import { createOrgWithAdmin, createTeamWithGrants } from "./membership";
+
+export { isTeamMember } from "./membership";
+
 export type SessionKind = "standard" | "onboarding";
 
 export type SessionRecord = {
@@ -7,7 +13,6 @@ export type SessionRecord = {
   teamId: string;
   topic: string;
   deadlineMs: number | null;
-  facilitatorId: string;
   status: string;
   kind: SessionKind;
   createdAtMs: number;
@@ -18,7 +23,6 @@ type SessionRow = {
   team_id: string;
   topic: string;
   deadline_ms: number | null;
-  facilitator_id: string;
   status: string;
   kind: string;
   created_at_ms: number;
@@ -30,7 +34,6 @@ function mapSession(row: SessionRow): SessionRecord {
     teamId: row.team_id,
     topic: row.topic,
     deadlineMs: row.deadline_ms,
-    facilitatorId: row.facilitator_id,
     status: row.status,
     kind: row.kind === "onboarding" ? "onboarding" : "standard",
     createdAtMs: row.created_at_ms,
@@ -42,40 +45,18 @@ export function buildOnboardingSessionTopic(orgName: string, teamName: string): 
 }
 
 export function createOrg(db: Database, params: { name: string; ownerId: string }): string {
-  const id = crypto.randomUUID();
-  db.prepare(`INSERT INTO orgs (id, name, owner_id, created_at_ms) VALUES (?, ?, ?, ?)`).run(
-    id,
-    params.name,
-    params.ownerId,
-    Date.now(),
-  );
-  return id;
+  return createOrgWithAdmin(db, { name: params.name, creatorId: params.ownerId });
 }
 
 export function createTeam(
   db: Database,
   params: { orgId: string; name: string; ownerId: string },
 ): string {
-  const id = crypto.randomUUID();
-  const now = Date.now();
-  db.prepare(
-    `INSERT INTO teams (id, org_id, name, owner_id, created_at_ms) VALUES (?, ?, ?, ?, ?)`,
-  ).run(id, params.orgId, params.name, params.ownerId, now);
-  db.prepare(`INSERT INTO team_members (team_id, user_id, created_at_ms) VALUES (?, ?, ?)`).run(
-    id,
-    params.ownerId,
-    now,
-  );
-  return id;
-}
-
-export function isTeamMember(db: Database, teamId: string, userId: string): boolean {
-  const row = db
-    .query<{ c: number }, [string, string]>(
-      `SELECT COUNT(1) AS c FROM team_members WHERE team_id = ? AND user_id = ?`,
-    )
-    .get(teamId, userId);
-  return row !== null && row.c > 0;
+  return createTeamWithGrants(db, {
+    orgId: params.orgId,
+    name: params.name,
+    creatorId: params.ownerId,
+  });
 }
 
 export function createSession(
@@ -83,7 +64,6 @@ export function createSession(
   params: {
     teamId: string;
     topic: string;
-    facilitatorId: string;
     deadlineMs?: number;
     kind?: SessionKind;
   },
@@ -93,17 +73,9 @@ export function createSession(
   const kind = params.kind ?? "standard";
   db.prepare(
     `INSERT INTO sessions (
-       id, team_id, topic, deadline_ms, facilitator_id, status, kind, created_at_ms
-     ) VALUES (?, ?, ?, ?, ?, 'active', ?, ?)`,
-  ).run(
-    id,
-    params.teamId,
-    params.topic,
-    params.deadlineMs ?? null,
-    params.facilitatorId,
-    kind,
-    now,
-  );
+       id, team_id, topic, deadline_ms, status, kind, created_at_ms
+     ) VALUES (?, ?, ?, ?, 'active', ?, ?)`,
+  ).run(id, params.teamId, params.topic, params.deadlineMs ?? null, kind, now);
   const row = db.query<SessionRow, [string]>(`SELECT * FROM sessions WHERE id = ? LIMIT 1`).get(id);
   if (row === null) throw new Error("session insert failed");
   return mapSession(row);
@@ -113,7 +85,6 @@ export function createOnboardingSession(
   db: Database,
   params: {
     teamId: string;
-    facilitatorId: string;
     orgName: string;
     teamName: string;
   },
@@ -121,13 +92,29 @@ export function createOnboardingSession(
   return createSession(db, {
     teamId: params.teamId,
     topic: buildOnboardingSessionTopic(params.orgName, params.teamName),
-    facilitatorId: params.facilitatorId,
     kind: "onboarding",
   });
 }
 
 export function closeSession(db: Database, sessionId: string): void {
   db.prepare(`UPDATE sessions SET status = 'closed' WHERE id = ?`).run(sessionId);
+}
+
+export function patchSession(
+  db: Database,
+  sessionId: string,
+  params: { topic?: string; deadlineMs?: number | null },
+): SessionRecord | null {
+  const existing = getSession(db, sessionId);
+  if (existing === null) return null;
+  const topic = params.topic !== undefined ? params.topic : existing.topic;
+  const deadlineMs = params.deadlineMs !== undefined ? params.deadlineMs : existing.deadlineMs;
+  db.prepare(`UPDATE sessions SET topic = ?, deadline_ms = ? WHERE id = ?`).run(
+    topic,
+    deadlineMs,
+    sessionId,
+  );
+  return getSession(db, sessionId);
 }
 
 export function getSession(db: Database, sessionId: string): SessionRecord | null {
@@ -156,6 +143,7 @@ export function getOrCreateInterviewThread(
     `INSERT INTO threads (id, kind, session_id, user_id, created_at_ms, closed_at_ms)
      VALUES (?, 'interview', ?, ?, ?, NULL)`,
   ).run(id, params.sessionId, params.userId, Date.now());
+  grantThreadAccess(db, params.userId, id);
   return id;
 }
 
@@ -171,44 +159,38 @@ export type SessionListItem = SessionRecord & {
   role: "facilitator" | "participant";
 };
 
-type SessionListRow = SessionRow & {
-  role: "facilitator" | "participant";
-};
-
-export function addSessionParticipants(
-  db: Database,
-  sessionId: string,
-  userIds: readonly string[],
-): void {
-  const now = Date.now();
-  const insert = db.prepare(
-    `INSERT OR IGNORE INTO session_participants (session_id, user_id, created_at_ms)
-     VALUES (?, ?, ?)`,
-  );
-  for (const userId of userIds) {
-    insert.run(sessionId, userId, now);
-  }
-}
+type SessionListRow = SessionRow;
 
 export function userHasSessionAccess(db: Database, sessionId: string, userId: string): boolean {
-  const session = getSession(db, sessionId);
-  if (session === null) return false;
-  if (session.facilitatorId === userId) return true;
+  return hasSessionAccess(db, userId, sessionId);
+}
 
-  const participant = db
-    .query<{ c: number }, [string, string]>(
-      `SELECT COUNT(1) AS c FROM session_participants WHERE session_id = ? AND user_id = ?`,
+export function userHasAnyAccessibleSession(db: Database, userId: string): boolean {
+  const nowMs = Date.now();
+  const row = db
+    .query<{ c: number }, [string, number]>(
+      `SELECT COUNT(1) AS c FROM authz_grants ag
+       WHERE ag.resource_type = 'session'
+         AND ag.feature IN ('admin', 'participant')
+         AND ag.revoked_at_ms IS NULL
+         AND (ag.expired_at_ms IS NULL OR ag.expired_at_ms > ?2)
+         AND (
+           (ag.scope_type = 'account' AND ag.scope_id = ?1)
+           OR (
+             ag.scope_type = 'team'
+             AND EXISTS (
+               SELECT 1 FROM authz_grants tm
+               WHERE tm.scope_type = 'account' AND tm.scope_id = ?1
+                 AND tm.resource_type = 'team' AND tm.resource_id = ag.scope_id
+                 AND tm.feature = 'member'
+                 AND tm.revoked_at_ms IS NULL
+                 AND (tm.expired_at_ms IS NULL OR tm.expired_at_ms > ?2)
+             )
+           )
+         )`,
     )
-    .get(sessionId, userId);
-  if (participant !== null && participant.c > 0) return true;
-
-  const invite = db
-    .query<{ c: number }, [string, string]>(
-      `SELECT COUNT(1) AS c FROM session_invites
-       WHERE session_id = ? AND consumed_by_user_id = ? AND consumed_at_ms IS NOT NULL`,
-    )
-    .get(sessionId, userId);
-  return invite !== null && invite.c > 0;
+    .get(userId, nowMs);
+  return row !== null && row.c > 0;
 }
 
 export function listSessionsForUser(
@@ -216,32 +198,49 @@ export function listSessionsForUser(
   userId: string,
   teamId?: string,
 ): SessionListItem[] {
+  const nowMs = Date.now();
   const rows = db
-    .query<SessionListRow, [string, string | null]>(
-      `SELECT s.id, s.team_id, s.topic, s.deadline_ms,
-              s.facilitator_id, s.status, s.kind, s.created_at_ms,
-              CASE WHEN s.facilitator_id = ?1 THEN 'facilitator' ELSE 'participant' END AS role
+    .query<SessionListRow, [string, string | null, number]>(
+      `SELECT DISTINCT s.id, s.team_id, s.topic, s.deadline_ms,
+              s.status, s.kind, s.created_at_ms
        FROM sessions s
        WHERE (?2 IS NULL OR s.team_id = ?2)
          AND (
-           s.facilitator_id = ?1
-           OR EXISTS (
-             SELECT 1 FROM session_participants sp
-             WHERE sp.session_id = s.id AND sp.user_id = ?1
-           )
-           OR EXISTS (
-             SELECT 1 FROM session_invites si
-             WHERE si.session_id = s.id
-               AND si.consumed_by_user_id = ?1
-               AND si.consumed_at_ms IS NOT NULL
+           EXISTS (
+             SELECT 1 FROM authz_grants ag
+             WHERE ag.resource_type = 'session' AND ag.resource_id = s.id
+               AND ag.feature IN ('admin', 'participant')
+               AND ${ACTIVE_GRANT_SQL}
+               AND (
+                 (ag.scope_type = 'account' AND ag.scope_id = ?1)
+                 OR (
+                   ag.scope_type = 'team'
+                   AND EXISTS (
+                     SELECT 1 FROM authz_grants tm
+                     WHERE tm.scope_type = 'account' AND tm.scope_id = ?1
+                       AND tm.resource_type = 'team' AND tm.resource_id = ag.scope_id
+                       AND tm.feature = 'member'
+                       AND tm.revoked_at_ms IS NULL
+                       AND (tm.expired_at_ms IS NULL OR tm.expired_at_ms > ?3)
+                   )
+                 )
+               )
            )
          )
        ORDER BY s.created_at_ms DESC`,
     )
-    .all(userId, teamId ?? null);
+    .all(userId, teamId ?? null, nowMs);
 
   return rows.map((row) => ({
     ...mapSession(row),
-    role: row.role,
+    role: sessionRoleForUser(db, row.id, userId),
   }));
+}
+
+export function sessionRoleForUser(
+  db: Database,
+  sessionId: string,
+  userId: string,
+): "facilitator" | "participant" {
+  return isSessionFacilitator(db, userId, sessionId) ? "facilitator" : "participant";
 }

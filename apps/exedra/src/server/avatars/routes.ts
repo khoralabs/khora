@@ -1,7 +1,7 @@
 import { requireRegistrySessionResponse } from "../auth/require-session.js";
+import { enforce, ResourceType, userBelongsToOrg } from "../authz/policy.js";
 import { getDb } from "../db/index.js";
-import { getOrg, getTeam, userBelongsToOrg } from "../db/membership.js";
-import { isTeamMember } from "../db/sessions.js";
+import { getOrg, getTeam, listTeamsForUser } from "../db/membership.js";
 import { findUserById } from "../identity/users.js";
 import type { AvatarKind } from "./urls.js";
 
@@ -22,21 +22,23 @@ export async function requireAvatarAccess(
   const user = await getOrCreateUser(db, auth.session.user.id);
 
   if (kind === "user") {
-    if (user.id !== id) {
+    if (user.id === id) {
+      return { ok: true, userId: user.id };
+    }
+    const viewerOrgIds = [...new Set(listTeamsForUser(db, user.id).map((team) => team.orgId))];
+    const canView = viewerOrgIds.some((orgId) => userBelongsToOrg(db, orgId, id));
+    if (!canView) {
       return { ok: false, response: jsonResponse({ error: "Forbidden" }, 403) };
     }
     return { ok: true, userId: user.id };
   }
 
   if (kind === "org") {
-    if (!userBelongsToOrg(db, id, user.id)) {
-      return { ok: false, response: jsonResponse({ error: "Forbidden" }, 403) };
-    }
     return { ok: true, userId: user.id };
   }
 
   if (kind === "team") {
-    if (!isTeamMember(db, id, user.id)) {
+    if (!enforce(db, user.id, "team:member", { type: ResourceType.Team, id })) {
       return { ok: false, response: jsonResponse({ error: "Forbidden" }, 403) };
     }
     return { ok: true, userId: user.id };

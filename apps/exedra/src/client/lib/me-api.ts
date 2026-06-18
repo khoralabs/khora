@@ -19,6 +19,7 @@ export type MeResponse = {
   onboardingRequired: boolean;
   onboardingInterviewRequired: boolean;
   onboardingSessionId: string | null;
+  hasSessionAccessOnly: boolean;
 };
 
 export const ONBOARDING_PLACEHOLDER_TEAM: MeTeam = {

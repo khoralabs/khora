@@ -3,6 +3,7 @@ export type EntitySettings = {
   name: string;
   avatarUrl: string | null;
   canEdit: boolean;
+  permissions?: Record<string, boolean>;
 };
 
 export type MemberSummary = {
@@ -13,7 +14,21 @@ export type MemberSummary = {
 };
 
 export type OrgMemberSummary = MemberSummary & {
-  isOwner: boolean;
+  isAdmin: boolean;
+  teamIds: string[];
+  teamNames: string[];
+};
+
+export type OrgMemberProfile = {
+  user: {
+    id: string;
+    registryUserId: string;
+    fullName: string | null;
+    jobFunction: string | null;
+    avatarUrl: string | null;
+  };
+  isCurrentUser: boolean;
+  isAdmin: boolean;
   teamIds: string[];
   teamNames: string[];
 };
@@ -21,12 +36,13 @@ export type OrgMemberSummary = MemberSummary & {
 export type OrgTeamSummary = {
   id: string;
   name: string;
-  ownerId: string;
   memberCount: number;
   createdAtMs: number;
 };
 
-export type TeamMemberSummary = MemberSummary;
+export type TeamMemberSummary = MemberSummary & {
+  isAdmin: boolean;
+};
 
 export type TeamSettings = EntitySettings & {
   orgId: string;
@@ -52,6 +68,20 @@ export async function fetchOrgMembers(orgId: string): Promise<OrgMemberSummary[]
   }
   const data = (await res.json()) as { members: OrgMemberSummary[] };
   return data.members;
+}
+
+export async function fetchOrgMemberProfile(
+  orgId: string,
+  userId: string,
+): Promise<OrgMemberProfile> {
+  const res = await fetch(
+    `/api/orgs/${encodeURIComponent(orgId)}/members/${encodeURIComponent(userId)}`,
+    { credentials: "include" },
+  );
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res, "Failed to load member profile"));
+  }
+  return (await res.json()) as OrgMemberProfile;
 }
 
 export async function fetchOrgTeams(orgId: string): Promise<OrgTeamSummary[]> {

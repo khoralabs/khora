@@ -1,8 +1,8 @@
 import { ArrowLeft, Link2, Plus, UserPlus } from "lucide-react";
 import { useEffect, useState } from "react";
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
   Empty,
@@ -48,6 +48,8 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
   const [deadline, setDeadline] = useState<Date | undefined>();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(new Set());
+  const [shareWholeTeam, setShareWholeTeam] = useState(true);
+  const [createInvite, setCreateInvite] = useState(false);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [membersLoaded, setMembersLoaded] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -152,13 +154,22 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
     setSubmitting(true);
     setError(null);
     try {
-      const created = await createSession({
+      const result = await createSession({
         teamId: team.id,
         topic: trimmedTopic,
         deadlineMs,
         memberUserIds: [...selectedMemberIds],
+        teamIds: shareWholeTeam ? [team.id] : undefined,
+        createInvite,
       });
-      onCreated(created.id);
+      if (result.inviteUrl !== undefined) {
+        try {
+          await copyTextToClipboard(result.inviteUrl);
+        } catch {
+          // session was created; invite copy is best-effort
+        }
+      }
+      onCreated(result.session.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create session");
       setSubmitting(false);
@@ -228,7 +239,42 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
         {step === 2 ? (
           <form onSubmit={(event) => void handleSubmit(event)} className="space-y-8">
             <FieldSet>
-              <FieldLegend>Team members</FieldLegend>
+              <FieldLegend>Access</FieldLegend>
+              <FieldDescription>
+                Choose who can access this session. You will be the facilitator.
+              </FieldDescription>
+              <FieldGroup data-slot="checkbox-group">
+                <Field orientation="horizontal">
+                  <Checkbox
+                    id="share-whole-team"
+                    checked={shareWholeTeam}
+                    onCheckedChange={(checked) => setShareWholeTeam(checked === true)}
+                  />
+                  <FieldContent>
+                    <FieldLabel htmlFor="share-whole-team">Give the whole team access</FieldLabel>
+                    <FieldDescription>
+                      Every member of {team.name} can join this session.
+                    </FieldDescription>
+                  </FieldContent>
+                </Field>
+                <Field orientation="horizontal">
+                  <Checkbox
+                    id="create-invite"
+                    checked={createInvite}
+                    onCheckedChange={(checked) => setCreateInvite(checked === true)}
+                  />
+                  <FieldContent>
+                    <FieldLabel htmlFor="create-invite">Create invite link</FieldLabel>
+                    <FieldDescription>
+                      Generate a single-use link to share after creating the session.
+                    </FieldDescription>
+                  </FieldContent>
+                </Field>
+              </FieldGroup>
+            </FieldSet>
+
+            <FieldSet>
+              <FieldLegend>Individual members</FieldLegend>
               <FieldDescription>
                 Choose colleagues from your team to include in this session.
               </FieldDescription>

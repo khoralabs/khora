@@ -2,13 +2,30 @@ import type { EmailConfirmSession } from "@khoralabs/registry-auth/client";
 import { useCallback, useEffect, useState } from "react";
 
 import { SignIn } from "@/components/auth/sign-in";
+import { EntityAvatar } from "@/components/entity-avatar";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Spinner } from "@/components/ui/spinner";
 import { fetchAuthSession } from "@/lib/auth-session";
 
 type InviteInfo = {
   token: string;
-  topic: string;
-  status: "pending" | "accepted" | "expired";
+  kind: "team" | "session";
+  status: "pending" | "accepted";
+  teamName?: string;
+  orgName?: string;
+  orgAvatarUrl?: string | null;
+  topic?: string;
   sessionId?: string;
   alreadyJoined?: boolean;
   redirectTo?: string;
@@ -27,6 +44,8 @@ export function InviteGate({ token }: InviteGateProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [accepting, setAccepting] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const acceptInvite = useCallback(async () => {
     setAccepting(true);
@@ -41,6 +60,7 @@ export function InviteGate({ token }: InviteGateProps) {
       const body = (await res.json().catch(() => null)) as { error?: string } | null;
       setError(body?.error ?? "Could not accept this invite.");
       setAccepting(false);
+      setConfirmOpen(false);
       return;
     }
 
@@ -75,9 +95,10 @@ export function InviteGate({ token }: InviteGateProps) {
         return;
       }
 
-      const authenticated = sessionRes?.authenticated === true;
+      const isAuthenticated = sessionRes?.authenticated === true;
+      setAuthenticated(isAuthenticated);
 
-      if (authenticated && inviteData.status !== "pending") {
+      if (isAuthenticated && inviteData.status !== "pending") {
         setError("This invite link has already been used.");
         setLoading(false);
         return;
@@ -86,8 +107,8 @@ export function InviteGate({ token }: InviteGateProps) {
       setInvite(inviteData);
       setLoading(false);
 
-      if (authenticated && inviteData.status === "pending") {
-        void acceptInvite();
+      if (isAuthenticated && inviteData.status === "pending") {
+        setConfirmOpen(true);
       }
     }
 
@@ -95,10 +116,11 @@ export function InviteGate({ token }: InviteGateProps) {
     return () => {
       cancelled = true;
     };
-  }, [token, acceptInvite]);
+  }, [token]);
 
   function handleSignedIn(_session: EmailConfirmSession) {
-    void acceptInvite();
+    setAuthenticated(true);
+    setConfirmOpen(true);
   }
 
   if (loading) {
@@ -120,27 +142,83 @@ export function InviteGate({ token }: InviteGateProps) {
     return null;
   }
 
-  if (accepting) {
-    return <p className="text-sm text-muted-foreground">Accepting invite…</p>;
-  }
-
-  if (error !== null) {
-    return (
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Could not join session</CardTitle>
-          <CardDescription>{error}</CardDescription>
-        </CardHeader>
-      </Card>
+  const confirmTitle = invite.kind === "team" ? "Join team?" : "Join session?";
+  const confirmDescription =
+    invite.kind === "team" && invite.teamName !== undefined && invite.orgName !== undefined ? (
+      <>
+        Are you sure you want to join <strong>{invite.orgName}</strong>'s{" "}
+        <strong>{invite.teamName}</strong> team?
+      </>
+    ) : invite.kind === "session" && invite.topic !== undefined ? (
+      <>Are you sure you want to join the session for &ldquo;{invite.topic}&rdquo;?</>
+    ) : (
+      "Are you sure you want to accept this invite?"
     );
-  }
+
+  const signInTitle =
+    invite.kind === "team" && invite.teamName !== undefined
+      ? `Join ${invite.teamName}`
+      : invite.topic !== undefined
+        ? `Join ${invite.topic}`
+        : "Accept invite";
+
+  const signInDescription =
+    invite.kind === "team" && invite.teamName !== undefined && invite.orgName !== undefined
+      ? `Sign in to join ${invite.teamName} at ${invite.orgName} on Exedra.`
+      : invite.topic !== undefined
+        ? `Sign in with the email your facilitator invited to review “${invite.topic}”.`
+        : "Sign in to accept this invite on Exedra.";
 
   return (
-    <SignIn
-      title={`Join ${invite.topic}`}
-      description={`Sign in with the email your facilitator invited to review “${invite.topic}”.`}
-      storageKey={`exedra-invite-${token}`}
-      onSuccess={handleSignedIn}
-    />
+    <>
+      {!authenticated ? (
+        <SignIn
+          title={signInTitle}
+          description={signInDescription}
+          storageKey={`exedra-invite-${token}`}
+          onSuccess={handleSignedIn}
+        />
+      ) : accepting ? (
+        <p className="text-sm text-muted-foreground">Accepting invite…</p>
+      ) : error !== null ? (
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Could not accept invite</CardTitle>
+            <CardDescription>{error}</CardDescription>
+          </CardHeader>
+        </Card>
+      ) : null}
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            {invite.orgName !== undefined ? (
+              <AlertDialogMedia>
+                <EntityAvatar
+                  name={invite.orgName}
+                  avatarUrl={invite.orgAvatarUrl}
+                  size="lg"
+                  className="size-16"
+                />
+              </AlertDialogMedia>
+            ) : null}
+            <AlertDialogTitle>{confirmTitle}</AlertDialogTitle>
+            <AlertDialogDescription>{confirmDescription}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={accepting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={accepting}
+              onClick={(event) => {
+                event.preventDefault();
+                void acceptInvite();
+              }}
+            >
+              {accepting ? <Spinner className="size-4" aria-hidden /> : "Join"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

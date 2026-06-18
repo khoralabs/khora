@@ -4,6 +4,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+import { grantSessionCreatorAccess } from "../authz/index.js";
 import { closeDb } from "../db/index.js";
 import { ensureExedraSchema } from "../db/schema.js";
 import { createOrg, createSession, createTeam } from "../db/sessions.js";
@@ -63,8 +64,8 @@ test("POST /api/sessions/:sessionId/documents rejects users without session acce
   const session = createSession(db, {
     teamId,
     topic: "Private",
-    facilitatorId: owner.id,
   });
+  grantSessionCreatorAccess(db, owner.id, session.id);
   db.close();
 
   process.env.EXEDRA_DOCUMENTS_S3_BUCKET = "test-bucket";
@@ -100,8 +101,8 @@ test("POST /api/sessions/:sessionId/documents returns 503 when S3 is not configu
   const session = createSession(db, {
     teamId,
     topic: "Docs",
-    facilitatorId: user.id,
   });
+  grantSessionCreatorAccess(db, user.id, session.id);
   db.close();
 
   const { mock: bunMock } = await import("bun:test");
@@ -136,8 +137,8 @@ test("POST /api/sessions/:sessionId/documents stores metadata on happy path", as
   const session = createSession(db, {
     teamId,
     topic: "Docs",
-    facilitatorId: user.id,
   });
+  grantSessionCreatorAccess(db, user.id, session.id);
   db.close();
 
   process.env.EXEDRA_DOCUMENTS_S3_BUCKET = "test-bucket";

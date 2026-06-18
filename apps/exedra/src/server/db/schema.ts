@@ -1,5 +1,7 @@
 import type { Database } from "bun:sqlite";
 
+import { ensureAuthzSchema } from "../authz/schema";
+
 export function ensureExedraSchema(db: Database): void {
   db.run("PRAGMA foreign_keys = ON");
   db.run("PRAGMA journal_mode = WAL");
@@ -15,23 +17,13 @@ export function ensureExedraSchema(db: Database): void {
     CREATE TABLE IF NOT EXISTS orgs (
       id TEXT PRIMARY KEY NOT NULL,
       name TEXT NOT NULL,
-      owner_id TEXT NOT NULL REFERENCES users(id),
       created_at_ms INTEGER NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS teams (
       id TEXT PRIMARY KEY NOT NULL,
-      org_id TEXT NOT NULL REFERENCES orgs(id),
       name TEXT NOT NULL,
-      owner_id TEXT NOT NULL REFERENCES users(id),
       created_at_ms INTEGER NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS team_members (
-      team_id TEXT NOT NULL REFERENCES teams(id),
-      user_id TEXT NOT NULL REFERENCES users(id),
-      created_at_ms INTEGER NOT NULL,
-      PRIMARY KEY (team_id, user_id)
     );
 
     CREATE TABLE IF NOT EXISTS sessions (
@@ -39,21 +31,30 @@ export function ensureExedraSchema(db: Database): void {
       team_id TEXT NOT NULL REFERENCES teams(id),
       topic TEXT NOT NULL,
       deadline_ms INTEGER,
-      facilitator_id TEXT NOT NULL REFERENCES users(id),
       status TEXT NOT NULL CHECK(status IN ('draft', 'active', 'synthesis', 'alignment', 'closed')),
       created_at_ms INTEGER NOT NULL
     );
 
-    CREATE TABLE IF NOT EXISTS session_invites (
+    CREATE TABLE IF NOT EXISTS invites (
       token_hash TEXT PRIMARY KEY NOT NULL,
-      session_id TEXT NOT NULL REFERENCES sessions(id),
+      created_by_user_id TEXT REFERENCES users(id),
       created_at_ms INTEGER NOT NULL,
       consumed_at_ms INTEGER,
-      consumed_by_user_id TEXT REFERENCES users(id)
+      consumed_by_user_id TEXT REFERENCES users(id),
+      effects BLOB NOT NULL
     );
 
-    CREATE INDEX IF NOT EXISTS idx_session_invites_session
-      ON session_invites(session_id);
+    CREATE INDEX IF NOT EXISTS idx_invites_created_by
+      ON invites(created_by_user_id);
+
+    CREATE TABLE IF NOT EXISTS team_account_onboarding (
+      team_id TEXT NOT NULL REFERENCES teams(id),
+      account_id TEXT NOT NULL REFERENCES users(id),
+      onboarding_session_id TEXT REFERENCES sessions(id),
+      onboarding_interview_complete INTEGER NOT NULL DEFAULT 0,
+      created_at_ms INTEGER NOT NULL,
+      PRIMARY KEY (team_id, account_id)
+    );
 
     CREATE TABLE IF NOT EXISTS session_participants (
       session_id TEXT NOT NULL REFERENCES sessions(id),
@@ -89,17 +90,6 @@ export function ensureExedraSchema(db: Database): void {
 
     CREATE INDEX IF NOT EXISTS idx_messages_thread
       ON messages(thread_id, message_index);
-
-    CREATE TABLE IF NOT EXISTS team_invites (
-      token_hash TEXT PRIMARY KEY NOT NULL,
-      team_id TEXT NOT NULL REFERENCES teams(id),
-      created_by_user_id TEXT NOT NULL REFERENCES users(id),
-      created_at_ms INTEGER NOT NULL,
-      revoked_at_ms INTEGER
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_team_invites_team
-      ON team_invites(team_id);
 
     CREATE TABLE IF NOT EXISTS jobs (
       id TEXT PRIMARY KEY NOT NULL,
@@ -143,8 +133,15 @@ export function ensureExedraSchema(db: Database): void {
   migrateSessionsDropDisplayName(db);
   migrateSessionsDropPrompt(db);
   migrateSessionsAddKind(db);
-  migrateTeamMembersAddOnboardingFields(db);
+  migrateSessionsDropFacilitator(db);
   migrateAvatarS3KeyColumns(db);
+  ensureAuthzSchema(db);
+}
+
+function migrateSessionsDropFacilitator(db: Database): void {
+  const columns = db.query<{ name: string }, []>("PRAGMA table_info(sessions)").all();
+  if (!columns.some((column) => column.name === "facilitator_id")) return;
+  db.run(`ALTER TABLE sessions DROP COLUMN facilitator_id`);
 }
 
 function migrateAvatarS3KeyColumns(db: Database): void {
@@ -186,18 +183,4 @@ function migrateSessionsAddKind(db: Database): void {
   const columns = db.query<{ name: string }, []>("PRAGMA table_info(sessions)").all();
   if (columns.some((column) => column.name === "kind")) return;
   db.run(`ALTER TABLE sessions ADD COLUMN kind TEXT NOT NULL DEFAULT 'standard'`);
-}
-
-function migrateTeamMembersAddOnboardingFields(db: Database): void {
-  const columns = db.query<{ name: string }, []>("PRAGMA table_info(team_members)").all();
-  if (!columns.some((column) => column.name === "onboarding_interview_complete")) {
-    db.run(
-      `ALTER TABLE team_members ADD COLUMN onboarding_interview_complete INTEGER NOT NULL DEFAULT 0`,
-    );
-  }
-  if (!columns.some((column) => column.name === "onboarding_session_id")) {
-    db.run(
-      `ALTER TABLE team_members ADD COLUMN onboarding_session_id TEXT REFERENCES sessions(id)`,
-    );
-  }
 }

@@ -29,11 +29,8 @@ beforeEach(async () => {
   memberId = member.id;
   orgId = createOrg(db, { name: "Acme", ownerId });
   teamId = createTeam(db, { orgId, name: "Product", ownerId });
-  db.prepare(`INSERT INTO team_members (team_id, user_id, created_at_ms) VALUES (?, ?, ?)`).run(
-    teamId,
-    memberId,
-    Date.now(),
-  );
+  const { addTeamMember } = await import("../db/membership");
+  addTeamMember(db, teamId, memberId);
 });
 
 afterEach(() => {
@@ -89,6 +86,23 @@ test("GET /api/orgs/:orgId/members lists org members for members", async () => {
   expect(body.members).toHaveLength(2);
   expect(body.members.some((member) => member.isCurrentUser)).toBe(true);
   expect(body.members.every((member) => member.teamNames.includes("Product"))).toBe(true);
+});
+
+test("GET /api/orgs/:orgId/members/:userId returns member profile for org members", async () => {
+  await mockSession("member@example.com");
+  const { handleGetOrgMember } = await import("../orgs/routes");
+  const res = await handleGetOrgMember(new Request("http://localhost"), orgId, ownerId);
+  expect(res.status).toBe(200);
+  const body = (await res.json()) as {
+    user: { registryUserId: string };
+    isCurrentUser: boolean;
+    isAdmin: boolean;
+    teamNames: string[];
+  };
+  expect(body.user.registryUserId).toBe("owner@example.com");
+  expect(body.isCurrentUser).toBe(false);
+  expect(body.isAdmin).toBe(true);
+  expect(body.teamNames).toContain("Product");
 });
 
 test("GET /api/orgs/:orgId/teams lists org teams for members", async () => {
@@ -173,6 +187,23 @@ test("PATCH /api/teams/:teamId updates name for owner", async () => {
   const body = (await res.json()) as { name: string };
   expect(body.name).toBe("Product Team");
   expect(getTeam(getDb(), teamId)?.name).toBe("Product Team");
+});
+
+test("POST /api/teams/:teamId/invites allows org member managers", async () => {
+  const db = getDb();
+  const { grantOrgPermission } = await import("../authz/grant-templates");
+  const { OrgPermission } = await import("../../shared/authz/permissions");
+  grantOrgPermission(db, memberId, orgId, OrgPermission.MemberManage);
+
+  await mockSession("member@example.com");
+  const { handleMintTeamInvite } = await import("../teams/routes");
+  const res = await handleMintTeamInvite(
+    new Request("http://localhost", { method: "POST" }),
+    teamId,
+  );
+  expect(res.status).toBe(200);
+  const body = (await res.json()) as { url: string };
+  expect(body.url.startsWith("/invite/")).toBe(true);
 });
 
 test("POST avatar upload returns 503 when S3 is not configured", async () => {

@@ -1,7 +1,17 @@
 import { requireRegistrySessionResponse } from "../auth/require-session";
+import {
+  canManageSession,
+  grantSessionCreatorAccess,
+  grantSessionParticipant,
+  grantTeamSessionParticipant,
+  isSessionFacilitator,
+  revokeSessionParticipant,
+  revokeTeamSessionParticipant,
+} from "../authz";
+import { enforce, hasTeamAdminGrant, ResourceType } from "../authz/policy";
 import { loadBeliefFeedback, upsertBeliefFeedback } from "../db/beliefs";
 import { getDb } from "../db/index";
-import { listInvitesForSession } from "../db/invites";
+import { listInvitesForSession, mintSessionInvite } from "../db/invites";
 import {
   getOrg,
   getTeam,
@@ -15,12 +25,12 @@ import {
   sessionPhaseFromStatus,
 } from "../db/session-detail";
 import {
-  addSessionParticipants,
   createSession,
   getOrCreateInterviewThread,
   getSession,
-  isTeamMember,
   listSessionsForUser,
+  patchSession,
+  sessionRoleForUser,
   userHasSessionAccess,
 } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
@@ -31,7 +41,24 @@ type CreateSessionBody = {
   topic?: string;
   deadlineMs?: number;
   memberUserIds?: string[];
+  teamIds?: string[];
+  createInvite?: boolean;
 };
+
+type PatchSessionBody = {
+  topic?: string;
+  deadlineMs?: number | null;
+};
+
+type ManageSessionScopesBody = {
+  add?: { accountIds?: string[]; teamIds?: string[] };
+  remove?: { accountIds?: string[]; teamIds?: string[] };
+};
+
+function uniqueIds(ids: string[] | undefined): string[] {
+  if (ids === undefined) return [];
+  return [...new Set(ids.filter((id) => typeof id === "string" && id.trim().length > 0))];
+}
 
 export async function handleListSessions(req: Request): Promise<Response> {
   const auth = await requireRegistrySessionResponse(req);
@@ -43,7 +70,11 @@ export async function handleListSessions(req: Request): Promise<Response> {
   const db = getDb();
   const user = await getOrCreateUser(db, auth.session.user.id);
 
-  if (teamId !== undefined && teamId.length > 0 && !isTeamMember(db, teamId, user.id)) {
+  if (
+    teamId !== undefined &&
+    teamId.length > 0 &&
+    !enforce(db, user.id, "team:member", { type: ResourceType.Team, id: teamId })
+  ) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -77,7 +108,7 @@ export async function handleCreateSession(req: Request): Promise<Response> {
       { status: 400 },
     );
   }
-  if (!isTeamMember(db, teamId, user.id)) {
+  if (!enforce(db, user.id, "team:member", { type: ResourceType.Team, id: teamId })) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -91,32 +122,49 @@ export async function handleCreateSession(req: Request): Promise<Response> {
     );
   }
 
-  const memberUserIds = (body.memberUserIds ?? []).filter(
-    (id) => typeof id === "string" && id.trim().length > 0 && id !== user.id,
-  );
+  const memberUserIds = uniqueIds(body.memberUserIds).filter((id) => id !== user.id);
+  const teamIds = uniqueIds(body.teamIds);
 
   for (const memberId of memberUserIds) {
-    if (!isTeamMember(db, teamId, memberId)) {
+    if (!enforce(db, memberId, "team:member", { type: ResourceType.Team, id: teamId })) {
       return Response.json({ error: "All members must belong to the team" }, { status: 400 });
+    }
+  }
+
+  for (const sharedTeamId of teamIds) {
+    if (!enforce(db, user.id, "team:member", { type: ResourceType.Team, id: sharedTeamId })) {
+      return Response.json({ error: "You must belong to every shared team" }, { status: 403 });
     }
   }
 
   const session = createSession(db, {
     teamId,
     topic,
-    facilitatorId: user.id,
     deadlineMs: body.deadlineMs,
   });
 
-  if (memberUserIds.length > 0) {
-    addSessionParticipants(db, session.id, memberUserIds);
+  grantSessionCreatorAccess(db, user.id, session.id);
+
+  for (const sharedTeamId of teamIds) {
+    grantTeamSessionParticipant(db, sharedTeamId, session.id);
+  }
+
+  for (const memberId of memberUserIds) {
+    grantSessionParticipant(db, memberId, session.id);
+  }
+
+  const bootstrapUserIds = new Set<string>([user.id, ...memberUserIds]);
+  for (const sharedTeamId of teamIds) {
+    for (const member of listTeamMembers(db, sharedTeamId)) {
+      bootstrapUserIds.add(member.userId);
+    }
   }
 
   try {
     bootstrapSessionMemoriesForTeamSession(db, {
       teamId,
       sessionId: session.id,
-      userIds: [user.id, ...memberUserIds],
+      userIds: [...bootstrapUserIds],
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to bootstrap session memories";
@@ -127,12 +175,19 @@ export async function handleCreateSession(req: Request): Promise<Response> {
     );
   }
 
+  let inviteUrl: string | undefined;
+  if (body.createInvite === true) {
+    const token = mintSessionInvite(db, session.id, teamId);
+    inviteUrl = `/invite/${token}`;
+  }
+
   return Response.json(
     {
       session: {
         ...session,
         role: "facilitator" as const,
       },
+      ...(inviteUrl !== undefined ? { inviteUrl } : {}),
     },
     { status: 201 },
   );
@@ -154,15 +209,13 @@ export async function handleGetSessionById(req: Request, sessionId: string): Pro
   }
 
   const invites = listInvitesForSession(db, sessionId);
-  const role = session.facilitatorId === user.id ? "facilitator" : "participant";
+  const role = sessionRoleForUser(db, sessionId, user.id);
   const phase = sessionPhaseFromStatus(session.status);
   const daysToDeadline = formatDaysToDeadline(session.deadlineMs);
-  const participants = listSessionParticipantDetails(db, sessionId, session.facilitatorId).map(
-    (participant) => ({
-      ...participant,
-      isCurrentUser: participant.userId === user.id,
-    }),
-  );
+  const participants = listSessionParticipantDetails(db, sessionId).map((participant) => ({
+    ...participant,
+    isCurrentUser: participant.userId === user.id,
+  }));
 
   return Response.json({
     session: {
@@ -172,9 +225,117 @@ export async function handleGetSessionById(req: Request, sessionId: string): Pro
       daysToDeadline,
     },
     participants,
-    canManage: session.facilitatorId === user.id,
+    canManage: canManageSession(db, user.id, sessionId),
     invites,
   });
+}
+
+export async function handlePatchSession(req: Request, sessionId: string): Promise<Response> {
+  const auth = await requireRegistrySessionResponse(req);
+  if (auth.response !== null) return auth.response;
+
+  let body: PatchSessionBody;
+  try {
+    body = (await req.json()) as PatchSessionBody;
+  } catch {
+    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const db = getDb();
+  const session = getSession(db, sessionId);
+  if (session === null) {
+    return Response.json({ error: "Session not found" }, { status: 404 });
+  }
+
+  const user = await getOrCreateUser(db, auth.session.user.id);
+  if (!canManageSession(db, user.id, sessionId)) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const topic = body.topic?.trim();
+  if (topic !== undefined && topic.length === 0) {
+    return Response.json({ error: "topic cannot be empty" }, { status: 400 });
+  }
+
+  const updated = patchSession(db, sessionId, {
+    topic,
+    deadlineMs: body.deadlineMs,
+  });
+  if (updated === null) {
+    return Response.json({ error: "Session not found" }, { status: 404 });
+  }
+
+  return Response.json({
+    session: {
+      ...updated,
+      role: sessionRoleForUser(db, sessionId, user.id),
+      phase: sessionPhaseFromStatus(updated.status),
+      daysToDeadline: formatDaysToDeadline(updated.deadlineMs),
+    },
+  });
+}
+
+export async function handleManageSessionScopes(
+  req: Request,
+  sessionId: string,
+): Promise<Response> {
+  const auth = await requireRegistrySessionResponse(req);
+  if (auth.response !== null) return auth.response;
+
+  let body: ManageSessionScopesBody;
+  try {
+    body = (await req.json()) as ManageSessionScopesBody;
+  } catch {
+    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const db = getDb();
+  const session = getSession(db, sessionId);
+  if (session === null) {
+    return Response.json({ error: "Session not found" }, { status: 404 });
+  }
+
+  const user = await getOrCreateUser(db, auth.session.user.id);
+  if (!canManageSession(db, user.id, sessionId)) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const addAccountIds = uniqueIds(body.add?.accountIds);
+  const addTeamIds = uniqueIds(body.add?.teamIds);
+  const removeAccountIds = uniqueIds(body.remove?.accountIds);
+  const removeTeamIds = uniqueIds(body.remove?.teamIds);
+
+  for (const accountId of addAccountIds) {
+    if (!enforce(db, accountId, "team:member", { type: ResourceType.Team, id: session.teamId })) {
+      return Response.json({ error: "Account must belong to the session team" }, { status: 400 });
+    }
+    grantSessionParticipant(db, accountId, sessionId);
+  }
+
+  for (const sharedTeamId of addTeamIds) {
+    if (!enforce(db, user.id, "team:member", { type: ResourceType.Team, id: sharedTeamId })) {
+      return Response.json({ error: "You must belong to every shared team" }, { status: 403 });
+    }
+    grantTeamSessionParticipant(db, sharedTeamId, sessionId);
+  }
+
+  for (const accountId of removeAccountIds) {
+    if (isSessionFacilitator(db, accountId, sessionId)) {
+      return Response.json({ error: "Cannot remove a session facilitator" }, { status: 400 });
+    }
+    revokeSessionParticipant(db, accountId, sessionId);
+  }
+
+  for (const sharedTeamId of removeTeamIds) {
+    revokeTeamSessionParticipant(db, sharedTeamId, sessionId);
+  }
+
+  const participants = listSessionParticipantDetails(db, sessionId).map((participant) => ({
+    ...participant,
+    isCurrentUser: participant.userId === user.id,
+  }));
+
+  return Response.json({ participants });
 }
 
 export async function handleGetInterview(req: Request, sessionId: string): Promise<Response> {
@@ -265,9 +426,7 @@ export async function handlePatchBeliefFeedback(
     if (correction.length === 0) {
       return Response.json(
         { error: "correction is required when feedback is corrected" },
-        {
-          status: 400,
-        },
+        { status: 400 },
       );
     }
   }
@@ -308,7 +467,7 @@ export async function handleListTeamMembers(req: Request, teamId: string): Promi
 
   const db = getDb();
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (!isTeamMember(db, teamId, user.id)) {
+  if (!enforce(db, user.id, "team:member", { type: ResourceType.Team, id: teamId })) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -317,6 +476,7 @@ export async function handleListTeamMembers(req: Request, teamId: string): Promi
     registryUserId: member.registryUserId,
     fullName: member.fullName,
     isCurrentUser: member.userId === user.id,
+    isAdmin: hasTeamAdminGrant(db, member.userId, teamId),
   }));
 
   return Response.json({ members });

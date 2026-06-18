@@ -20,6 +20,7 @@ import {
   formatParticipantLabel,
   formatPhaseLabel,
   formatSessionDate,
+  manageSessionScopes,
   mintSessionInvite,
   type SessionDetail,
   type SessionParticipant,
@@ -45,6 +46,7 @@ export function SessionParticipantsPanel({
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [addingParticipant, setAddingParticipant] = useState(false);
+  const [removingUserId, setRemovingUserId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function handleAddParticipant() {
@@ -70,6 +72,19 @@ export function SessionParticipantsPanel({
       setCopied(true);
     } catch {
       setError("Could not copy automatically. Select the link below and copy manually.");
+    }
+  }
+
+  async function handleRemoveParticipant(userId: string) {
+    setRemovingUserId(userId);
+    setError(null);
+    try {
+      await manageSessionScopes(sessionId, { remove: { accountIds: [userId] } });
+      onRefresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to remove participant");
+    } finally {
+      setRemovingUserId(null);
     }
   }
 
@@ -135,7 +150,22 @@ export function SessionParticipantsPanel({
                     {participant.role === "facilitator" ? "Facilitator" : "Participant"}
                   </p>
                 </div>
-                <InterviewStatusBadge status={participant.interviewStatus} />
+                <div className="flex items-center gap-2">
+                  <InterviewStatusBadge status={participant.interviewStatus} />
+                  {detail.canManage &&
+                  participant.role !== "facilitator" &&
+                  !participant.isCurrentUser ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={removingUserId === participant.userId}
+                      onClick={() => void handleRemoveParticipant(participant.userId)}
+                    >
+                      {removingUserId === participant.userId ? "Removing…" : "Remove"}
+                    </Button>
+                  ) : null}
+                </div>
               </li>
             ))}
           </ul>

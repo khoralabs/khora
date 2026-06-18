@@ -3,6 +3,7 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 
 import { TurnAbortedError } from "../../../agents/errors";
 import type { runInterviewTurn } from "../../../agents/index";
+import { grantSessionCreatorAccess } from "../../authz";
 import { loadThreadMessages } from "../../db/messages";
 import { ensureExedraSchema } from "../../db/schema";
 import {
@@ -55,8 +56,8 @@ beforeEach(async () => {
   const session = createSession(db, {
     teamId,
     topic: "Test topic",
-    facilitatorId: userId,
   });
+  grantSessionCreatorAccess(db, userId, session.id);
   sessionId = session.id;
   threadId = getOrCreateInterviewThread(db, { sessionId, userId });
 });
@@ -200,6 +201,8 @@ test("abortTurn deletes attached session documents", async () => {
 
 test("deferred onboarding is not applied when turn aborts after tool request", async () => {
   db.prepare(`UPDATE sessions SET kind = 'onboarding' WHERE id = ?`).run(sessionId);
+  const { setTeamMemberOnboardingSession } = await import("../../db/membership");
+  setTeamMemberOnboardingSession(db, { teamId, userId, sessionId });
 
   const mockRunInterviewTurn: RunInterviewTurnFn = async (args) => {
     args.onCompleteOnboarding?.("summary should not commit");
@@ -218,7 +221,7 @@ test("deferred onboarding is not applied when turn aborts after tool request", a
 
   const member = db
     .query<{ onboarding_interview_complete: number }, [string, string]>(
-      `SELECT onboarding_interview_complete FROM team_members WHERE team_id = ? AND user_id = ?`,
+      `SELECT onboarding_interview_complete FROM team_account_onboarding WHERE team_id = ? AND account_id = ?`,
     )
     .get(teamId, userId);
   expect(member?.onboarding_interview_complete).toBe(0);

@@ -20,7 +20,8 @@ import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { copyTextToClipboard } from "@/lib/copy-text";
 import { INVITE_LINK_SINGLE_USE_NOTE } from "@/lib/invite-copy";
-import { type MeTeam, mintTeamInvite, postOnboarding } from "@/lib/me-api";
+import { type MeTeam, postOnboarding } from "@/lib/me-api";
+import { mintSessionInvite } from "@/lib/sessions-api";
 
 type OnboardingDialogProps = {
   open: boolean;
@@ -56,13 +57,13 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
   }, [open]);
 
   useEffect(() => {
-    if (step !== 3 || team === null || inviteUrl !== null) return;
+    if (step !== 3 || team === null || onboardingSessionId === null || inviteUrl !== null) return;
 
     let cancelled = false;
-    void mintTeamInvite(team.id)
+    void mintSessionInvite(onboardingSessionId)
       .then((invite) => {
         if (cancelled) return;
-        setInviteUrl(new URL(invite.url, window.location.origin).href);
+        setInviteUrl(invite.url);
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -72,7 +73,7 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
     return () => {
       cancelled = true;
     };
-  }, [step, team, inviteUrl]);
+  }, [step, team, onboardingSessionId, inviteUrl]);
 
   async function handleCreateTeam() {
     const trimmedOrg = orgName.trim();
@@ -91,6 +92,8 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
         name: result.team.name,
         orgId: result.org.id,
         orgName: result.org.name,
+        avatarUrl: null,
+        orgAvatarUrl: null,
       });
       setOnboardingSessionId(result.onboardingSessionId);
       setStep(3);
@@ -112,13 +115,13 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
   }
 
   async function handleNewInviteLink() {
-    if (team === null) return;
+    if (onboardingSessionId === null) return;
     setMintingInvite(true);
     setCopied(false);
     setError(null);
     try {
-      const invite = await mintTeamInvite(team.id);
-      setInviteUrl(new URL(invite.url, window.location.origin).href);
+      const invite = await mintSessionInvite(onboardingSessionId);
+      setInviteUrl(invite.url);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Could not create invite link");
     } finally {
@@ -145,8 +148,8 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
         onEscapeKeyDown={(event) => event.preventDefault()}
       >
         <DialogHeader className="text-left">
-          {step > 1 ? (
-            <div className="mb-1 flex items-center gap-2">
+          <div className="mb-1 flex items-center gap-2">
+            {step > 1 ? (
               <Button
                 type="button"
                 variant="ghost"
@@ -157,12 +160,10 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
               >
                 <ArrowLeft />
               </Button>
-              {step === 2 ? (
-                <p className="truncate text-sm text-muted-foreground">{orgName}</p>
-              ) : null}
-            </div>
-          ) : null}
-          <DialogTitle>Set up Exedra</DialogTitle>
+            ) : null}
+            <DialogTitle>Set up Exedra</DialogTitle>
+          </div>
+
           <DialogDescription>Step {step} of 3</DialogDescription>
         </DialogHeader>
 

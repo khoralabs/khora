@@ -1,5 +1,11 @@
 import { handleGetSession } from "./auth/session";
 import { handleSignOut } from "./auth/sign-out";
+import {
+  handleGetOrgMemberPermissions,
+  handleGetTeamPermissions,
+  handlePatchOrgMemberPermissions,
+  handlePatchTeamPermissions,
+} from "./authz/routes";
 import { handleServeAvatar } from "./avatars/routes";
 import {
   handleGetSessionDocument,
@@ -30,6 +36,7 @@ import {
 } from "./onboarding/routes";
 import {
   handleDeleteOrgAvatar,
+  handleGetOrgMember,
   handleGetOrgSettings,
   handleListOrgMembers,
   handleListOrgTeams,
@@ -43,13 +50,13 @@ import {
   handleGetSessionById,
   handleListSessions,
   handleListTeamMembers,
+  handleManageSessionScopes,
   handlePatchBeliefFeedback,
+  handlePatchSession,
 } from "./sessions/routes";
 import {
-  handleAcceptJoinTeam,
   handleCreateTeamInOrg,
   handleDeleteTeamAvatar,
-  handleGetJoinTeam,
   handleGetTeamSettings,
   handleMintTeamInvite,
   handlePatchTeam,
@@ -98,6 +105,18 @@ export const apiRoutes = {
       handleListOrgMembers(req, req.params.orgId),
   },
 
+  "/api/orgs/:orgId/members/:userId": {
+    GET: (req: Request & { params: { orgId: string; userId: string } }) =>
+      handleGetOrgMember(req, req.params.orgId, req.params.userId),
+  },
+
+  "/api/orgs/:orgId/members/:userId/permissions": {
+    GET: (req: Request & { params: { orgId: string; userId: string } }) =>
+      handleGetOrgMemberPermissions(req, req.params.orgId, req.params.userId),
+    PATCH: (req: Request & { params: { orgId: string; userId: string } }) =>
+      handlePatchOrgMemberPermissions(req, req.params.orgId, req.params.userId),
+  },
+
   "/api/orgs/:orgId/teams": {
     GET: (req: Request & { params: { orgId: string } }) =>
       handleListOrgTeams(req, req.params.orgId),
@@ -119,6 +138,12 @@ export const apiRoutes = {
 
   "/api/sessions/:id": {
     GET: (req: Request & { params: { id: string } }) => handleGetSessionById(req, req.params.id),
+    PATCH: (req: Request & { params: { id: string } }) => handlePatchSession(req, req.params.id),
+  },
+
+  "/api/sessions/:id/scopes": {
+    POST: (req: Request & { params: { id: string } }) =>
+      handleManageSessionScopes(req, req.params.id),
   },
 
   "/api/sessions/:id/interview": {
@@ -182,13 +207,11 @@ export const apiRoutes = {
       handleListTeamMembers(req, req.params.teamId),
   },
 
-  "/api/join-team/:token": {
-    GET: (req: Request & { params: { token: string } }) => handleGetJoinTeam(req, req.params.token),
-  },
-
-  "/api/join-team/:token/accept": {
-    POST: (req: Request & { params: { token: string } }) =>
-      handleAcceptJoinTeam(req, req.params.token),
+  "/api/teams/:teamId/permissions": {
+    GET: (req: Request & { params: { teamId: string } }) =>
+      handleGetTeamPermissions(req, req.params.teamId),
+    PATCH: (req: Request & { params: { teamId: string } }) =>
+      handlePatchTeamPermissions(req, req.params.teamId),
   },
 
   "/api/memories/org/:orgId/namespaces": {

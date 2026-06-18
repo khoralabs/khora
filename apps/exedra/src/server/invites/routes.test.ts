@@ -3,12 +3,15 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { verifyRegistrySession } from "@khoralabs/registry-auth";
+import { grantSessionCreatorAccess, hasGrant } from "../authz";
 import { closeDb, getDb } from "../db/index";
-import { mintSessionInvite } from "../db/invites";
-import { listTeamsForUser } from "../db/membership";
-import { addSessionParticipants, createOrg, createSession, createTeam } from "../db/sessions";
+import { mintSessionParticipantInvite } from "../db/invites";
+import { getPendingOnboardingInterview, listTeamsForUser } from "../db/membership";
+import { listSessionParticipantDetails } from "../db/session-detail";
+import { createOrg, createSession, createTeam, userHasSessionAccess } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
 import { resetMemoriesStoreForTests } from "../memories/store";
+import { createOnboardingInterviewForMember } from "../onboarding/interview";
 import { getStubRegistryOtp } from "../registry-stub/config";
 import {
   handleStubGetSession,
@@ -102,13 +105,18 @@ test("accept invite redirects when user already joined session", async () => {
   const session = createSession(db, {
     teamId,
     topic: "Review",
-    facilitatorId: facilitator.id,
   });
-  const token = mintSessionInvite(db, session.id);
+  grantSessionCreatorAccess(db, facilitator.id, session.id);
+  const token = mintSessionParticipantInvite(db, {
+    sessionId: session.id,
+    teamId,
+    createdByUserId: facilitator.id,
+  });
 
   const { cookie, registryUserId } = await signInCookie("participant@exedra.test");
   const participant = await getOrCreateUser(db, registryUserId);
-  addSessionParticipants(db, session.id, [participant.id]);
+  const { grantSessionParticipant } = await import("../authz");
+  grantSessionParticipant(db, participant.id, session.id);
 
   const res = await handleAcceptInvite(
     new Request(`${BASE}/api/invites/${token}/accept`, {
@@ -121,11 +129,9 @@ test("accept invite redirects when user already joined session", async () => {
   const body = (await res.json()) as { alreadyJoined?: boolean; redirectTo: string };
   expect(body.alreadyJoined).toBe(true);
   expect(body.redirectTo).toBe(`/sessions/${session.id}/interview`);
-  const teams = listTeamsForUser(db, participant.id);
-  expect(teams.some((team) => team.id === teamId)).toBe(true);
 });
 
-test("accept invite adds invitee to session team and redirects to interview", async () => {
+test("accept invite grants session access and team membership", async () => {
   const db = getDb();
   const facilitator = await getOrCreateUser(db, "registry-fac-accept");
   const orgId = createOrg(db, { name: "OrgAccept", ownerId: facilitator.id });
@@ -133,9 +139,13 @@ test("accept invite adds invitee to session team and redirects to interview", as
   const session = createSession(db, {
     teamId,
     topic: "Quarterly review",
-    facilitatorId: facilitator.id,
   });
-  const token = mintSessionInvite(db, session.id);
+  grantSessionCreatorAccess(db, facilitator.id, session.id);
+  const token = mintSessionParticipantInvite(db, {
+    sessionId: session.id,
+    teamId,
+    createdByUserId: facilitator.id,
+  });
 
   const { cookie, registryUserId } = await signInCookie("new-invitee@exedra.test");
   const invitee = await getOrCreateUser(db, registryUserId);
@@ -152,9 +162,60 @@ test("accept invite adds invitee to session team and redirects to interview", as
   expect(res.status).toBe(200);
   const body = (await res.json()) as { redirectTo: string };
   expect(body.redirectTo).toBe(`/sessions/${session.id}/interview`);
-  expect(listTeamsForUser(db, invitee.id).some((team) => team.id === teamId)).toBe(true);
-  expect(session.facilitatorId).toBe(facilitator.id);
-  expect(session.facilitatorId).not.toBe(invitee.id);
+  expect(listTeamsForUser(db, invitee.id)).toHaveLength(1);
+  expect(listTeamsForUser(db, invitee.id)[0]?.id).toBe(teamId);
+  expect(userHasSessionAccess(db, session.id, invitee.id)).toBe(true);
+  expect(
+    hasGrant(
+      db,
+      { type: "account", id: invitee.id },
+      { type: "session", id: session.id },
+      "participant",
+    ),
+  ).toBe(true);
+
+  const participants = listSessionParticipantDetails(db, session.id);
+  expect(participants.some((p) => p.userId === invitee.id)).toBe(true);
+});
+
+test("accept onboarding session invite joins facilitator session", async () => {
+  const db = getDb();
+  const facilitator = await getOrCreateUser(db, "registry-fac-onboard");
+  const orgId = createOrg(db, { name: "Onboard Org", ownerId: facilitator.id });
+  const teamId = createTeam(db, { orgId, name: "Onboard Team", ownerId: facilitator.id });
+  const onboarding = createOnboardingInterviewForMember(db, {
+    teamId,
+    userId: facilitator.id,
+    orgName: "Onboard Org",
+    teamName: "Onboard Team",
+  });
+
+  const token = mintSessionParticipantInvite(db, {
+    sessionId: onboarding.sessionId,
+    teamId,
+    createdByUserId: facilitator.id,
+  });
+
+  const { cookie, registryUserId } = await signInCookie("onboard-invitee@exedra.test");
+  const invitee = await getOrCreateUser(db, registryUserId);
+
+  const res = await handleAcceptInvite(
+    new Request(`${BASE}/api/invites/${token}/accept`, {
+      method: "POST",
+      headers: { cookie },
+    }),
+    token,
+  );
+
+  expect(res.status).toBe(200);
+  const body = (await res.json()) as { redirectTo: string };
+  expect(body.redirectTo).toBe(`/sessions/${onboarding.sessionId}/interview`);
+  expect(userHasSessionAccess(db, onboarding.sessionId, invitee.id)).toBe(true);
+  expect(getPendingOnboardingInterview(db, invitee.id)?.sessionId).toBe(onboarding.sessionId);
+
+  const participants = listSessionParticipantDetails(db, onboarding.sessionId);
+  expect(participants.some((p) => p.userId === facilitator.id)).toBe(true);
+  expect(participants.some((p) => p.userId === invitee.id)).toBe(true);
 });
 
 test("get invite marks already joined for authenticated participant", async () => {
@@ -165,13 +226,18 @@ test("get invite marks already joined for authenticated participant", async () =
   const session = createSession(db, {
     teamId,
     topic: "Sync",
-    facilitatorId: facilitator.id,
   });
-  const token = mintSessionInvite(db, session.id);
+  grantSessionCreatorAccess(db, facilitator.id, session.id);
+  const token = mintSessionParticipantInvite(db, {
+    sessionId: session.id,
+    teamId,
+    createdByUserId: facilitator.id,
+  });
 
   const { cookie, registryUserId } = await signInCookie("participant-get@exedra.test");
   const participant = await getOrCreateUser(db, registryUserId);
-  addSessionParticipants(db, session.id, [participant.id]);
+  const { grantSessionParticipant } = await import("../authz");
+  grantSessionParticipant(db, participant.id, session.id);
 
   const res = await handleGetInvite(
     new Request(`${BASE}/api/invites/${token}`, { headers: { cookie } }),
@@ -182,4 +248,42 @@ test("get invite marks already joined for authenticated participant", async () =
   const body = (await res.json()) as { alreadyJoined?: boolean; redirectTo?: string };
   expect(body.alreadyJoined).toBe(true);
   expect(body.redirectTo).toBe(`/sessions/${session.id}/interview`);
+});
+
+test("accept team invite grants membership", async () => {
+  const db = getDb();
+  const owner = await getOrCreateUser(db, "registry-team-owner");
+  const orgId = createOrg(db, { name: "OrgJoin", ownerId: owner.id });
+  const teamId = createTeam(db, { orgId, name: "JoinTeam", ownerId: owner.id });
+  const { mintTeamMemberInvite } = await import("../db/invites");
+  const token = mintTeamMemberInvite(db, { teamId, createdByUserId: owner.id });
+
+  const { cookie, registryUserId } = await signInCookie("team-joiner@exedra.test");
+  const joiner = await getOrCreateUser(db, registryUserId);
+  expect(listTeamsForUser(db, joiner.id)).toHaveLength(0);
+
+  const res = await handleAcceptInvite(
+    new Request(`${BASE}/api/invites/${token}/accept`, {
+      method: "POST",
+      headers: { cookie },
+    }),
+    token,
+  );
+
+  expect(res.status).toBe(200);
+  const body = (await res.json()) as { redirectTo: string; invite: { kind: string } };
+  expect(body.invite.kind).toBe("team");
+  expect(listTeamsForUser(db, joiner.id)).toHaveLength(1);
+  expect(listTeamsForUser(db, joiner.id)[0]?.name).toBe("JoinTeam");
+
+  const second = await handleAcceptInvite(
+    new Request(`${BASE}/api/invites/${token}/accept`, {
+      method: "POST",
+      headers: { cookie },
+    }),
+    token,
+  );
+  expect(second.status).toBe(200);
+  const secondBody = (await second.json()) as { alreadyJoined?: boolean };
+  expect(secondBody.alreadyJoined).toBe(true);
 });

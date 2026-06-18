@@ -1,20 +1,19 @@
 import { requireRegistrySessionResponse } from "../auth/require-session";
+import { canEditTeam, enforce, ResourceType } from "../authz/policy";
+import { serializeTeamPermissionsForAccount } from "../authz/routes";
 import { buildTeamAvatarS3Key } from "../avatars/keys";
 import { clearAvatarFromS3, parseAvatarUpload, replaceAvatarInS3 } from "../avatars/upload";
 import { avatarUrlFromS3Key } from "../avatars/urls";
 import { getDb } from "../db/index";
+import { mintTeamMemberInvite } from "../db/invites";
 import {
-  addTeamMember,
   getOrg,
-  getPendingOnboardingInterview,
   getTeam,
   rollbackTeamCreation,
   updateTeamAvatarS3Key,
   updateTeamName,
-  userBelongsToOrg,
 } from "../db/membership";
-import { createTeam, isTeamMember } from "../db/sessions";
-import { getTeamIdForInvite, getTeamInvitePublicInfo, mintTeamInvite } from "../db/team-invites";
+import { createTeam } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
 import { bootstrapOrgTeamMemories } from "../memories/bootstrap";
 import { createOnboardingInterviewForMember } from "../onboarding/interview";
@@ -46,7 +45,7 @@ export async function handleCreateTeamInOrg(req: Request, orgId: string): Promis
   }
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (!userBelongsToOrg(db, orgId, user.id)) {
+  if (!enforce(db, user.id, "org:team_manage", { type: ResourceType.Organization, id: orgId })) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -109,95 +108,20 @@ export async function handleMintTeamInvite(req: Request, teamId: string): Promis
   }
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (!isTeamMember(db, teamId, user.id)) {
+  const canMint =
+    enforce(db, user.id, "team:member_manage", { type: ResourceType.Team, id: teamId }) ||
+    enforce(db, user.id, "org:member_manage", {
+      type: ResourceType.Organization,
+      id: team.orgId,
+    });
+  if (!canMint) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const token = mintTeamInvite(db, { teamId, createdByUserId: user.id });
+  const token = mintTeamMemberInvite(db, { teamId, createdByUserId: user.id });
   return Response.json({
     token,
-    url: `/join-team/${token}`,
-  });
-}
-
-export function handleGetJoinTeam(_req: Request, token: string): Response {
-  if (token.length === 0) {
-    return Response.json({ error: "Invite token required" }, { status: 400 });
-  }
-
-  const db = getDb();
-  const invite = getTeamInvitePublicInfo(db, token);
-  if (invite === null) {
-    return Response.json({ error: "Invite not found" }, { status: 404 });
-  }
-
-  return Response.json(invite);
-}
-
-export async function handleAcceptJoinTeam(req: Request, token: string): Promise<Response> {
-  if (token.length === 0) {
-    return Response.json({ error: "Invite token required" }, { status: 400 });
-  }
-
-  const auth = await requireRegistrySessionResponse(req);
-  if (auth.response !== null) return auth.response;
-
-  const db = getDb();
-  const invite = getTeamInvitePublicInfo(db, token);
-  if (invite === null) {
-    return Response.json({ error: "Invite not found" }, { status: 404 });
-  }
-  if (invite.status !== "pending") {
-    return Response.json({ error: "Invite is no longer available" }, { status: 409 });
-  }
-
-  const teamId = getTeamIdForInvite(db, token);
-  if (teamId === null) {
-    return Response.json({ error: "Invite is no longer available" }, { status: 409 });
-  }
-
-  const user = await getOrCreateUser(db, auth.session.user.id);
-  addTeamMember(db, teamId, user.id);
-
-  let onboardingSessionId: string | null = null;
-  const team = getTeam(db, teamId);
-  if (team !== null) {
-    try {
-      bootstrapOrgTeamMemories({ orgId: team.orgId, teamId, userId: user.id });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to bootstrap memories";
-      console.error("[exedra] join team memories bootstrap failed:", message);
-    }
-
-    const org = getOrg(db, team.orgId);
-    if (org !== null) {
-      try {
-        const onboarding = createOnboardingInterviewForMember(db, {
-          teamId,
-          userId: user.id,
-          orgName: org.name,
-          teamName: team.name,
-        });
-        onboardingSessionId = onboarding.sessionId;
-      } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Failed to create onboarding interview";
-        console.error("[exedra] join team onboarding interview failed:", message);
-      }
-    }
-  }
-
-  const pendingOnboarding = getPendingOnboardingInterview(db, user.id);
-  const redirectTo =
-    pendingOnboarding !== null
-      ? `/sessions/${pendingOnboarding.sessionId}/interview`
-      : onboardingSessionId !== null
-        ? `/sessions/${onboardingSessionId}/interview`
-        : "/";
-
-  return Response.json({
-    teamId,
-    redirectTo,
+    url: `/invite/${token}`,
   });
 }
 
@@ -205,13 +129,18 @@ function jsonResponse(data: unknown, status = 200): Response {
   return Response.json(data, { status });
 }
 
-function serializeTeamSettings(team: NonNullable<ReturnType<typeof getTeam>>, userId: string) {
+function serializeTeamSettings(
+  team: NonNullable<ReturnType<typeof getTeam>>,
+  userId: string,
+  db: ReturnType<typeof getDb>,
+) {
   return {
     id: team.id,
     name: team.name,
     orgId: team.orgId,
     avatarUrl: avatarUrlFromS3Key("team", team.id, team.avatarS3Key),
-    canEdit: team.ownerId === userId,
+    canEdit: canEditTeam(db, userId, team.id),
+    permissions: serializeTeamPermissionsForAccount(db, userId, team.id).permissions,
   };
 }
 
@@ -226,11 +155,11 @@ export async function handleGetTeamSettings(req: Request, teamId: string): Promi
   }
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (!isTeamMember(db, teamId, user.id)) {
+  if (!enforce(db, user.id, "team:read", { type: ResourceType.Team, id: teamId })) {
     return jsonResponse({ error: "Forbidden" }, 403);
   }
 
-  return jsonResponse(serializeTeamSettings(team, user.id));
+  return jsonResponse(serializeTeamSettings(team, user.id, db));
 }
 
 type PatchTeamBody = {
@@ -260,7 +189,7 @@ export async function handlePatchTeam(req: Request, teamId: string): Promise<Res
   }
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (team.ownerId !== user.id) {
+  if (!enforce(db, user.id, "team:write", { type: ResourceType.Team, id: teamId })) {
     return jsonResponse({ error: "Forbidden" }, 403);
   }
 
@@ -269,7 +198,7 @@ export async function handlePatchTeam(req: Request, teamId: string): Promise<Res
     return jsonResponse({ error: "Team not found" }, 404);
   }
 
-  return jsonResponse(serializeTeamSettings(updated, user.id));
+  return jsonResponse(serializeTeamSettings(updated, user.id, db));
 }
 
 export async function handleUploadTeamAvatar(req: Request, teamId: string): Promise<Response> {
@@ -283,7 +212,7 @@ export async function handleUploadTeamAvatar(req: Request, teamId: string): Prom
   }
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (team.ownerId !== user.id) {
+  if (!enforce(db, user.id, "team:write", { type: ResourceType.Team, id: teamId })) {
     return jsonResponse({ error: "Forbidden" }, 403);
   }
 
@@ -308,7 +237,7 @@ export async function handleUploadTeamAvatar(req: Request, teamId: string): Prom
     return jsonResponse({ error: "Team not found" }, 404);
   }
 
-  return jsonResponse(serializeTeamSettings(updated, user.id));
+  return jsonResponse(serializeTeamSettings(updated, user.id, db));
 }
 
 export async function handleDeleteTeamAvatar(req: Request, teamId: string): Promise<Response> {
@@ -322,7 +251,7 @@ export async function handleDeleteTeamAvatar(req: Request, teamId: string): Prom
   }
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (team.ownerId !== user.id) {
+  if (!enforce(db, user.id, "team:write", { type: ResourceType.Team, id: teamId })) {
     return jsonResponse({ error: "Forbidden" }, 403);
   }
 
@@ -338,5 +267,5 @@ export async function handleDeleteTeamAvatar(req: Request, teamId: string): Prom
     return jsonResponse({ error: "Team not found" }, 404);
   }
 
-  return jsonResponse(serializeTeamSettings(updated, user.id));
+  return jsonResponse(serializeTeamSettings(updated, user.id, db));
 }

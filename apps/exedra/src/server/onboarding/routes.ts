@@ -1,4 +1,5 @@
 import { requireRegistrySessionResponse } from "../auth/require-session";
+import { enforce, ResourceType } from "../authz/policy";
 import { buildUserAvatarS3Key } from "../avatars/keys";
 import { clearAvatarFromS3, parseAvatarUpload, replaceAvatarInS3 } from "../avatars/upload";
 import { avatarUrlFromS3Key } from "../avatars/urls";
@@ -9,11 +10,10 @@ import {
   getTeam,
   listTeamsForUser,
   rollbackOnboarding,
-  userBelongsToOrg,
   userHasAnyTeam,
   userNeedsOnboardingInterview,
 } from "../db/membership";
-import { createOrg, createTeam } from "../db/sessions";
+import { createOrg, createTeam, userHasAnyAccessibleSession } from "../db/sessions";
 import {
   type ExedraUser,
   getOrCreateUser,
@@ -52,13 +52,16 @@ export async function handleGetMe(req: Request): Promise<Response> {
   const user = await getOrCreateUser(db, auth.session.user.id);
   const teams = listTeamsForUser(db, user.id);
   const pendingOnboarding = getPendingOnboardingInterview(db, user.id);
+  const hasTeam = userHasAnyTeam(db, user.id);
+  const hasSessionAccessOnly = !hasTeam && userHasAnyAccessibleSession(db, user.id);
 
   return Response.json({
     user: serializeMeUser(user),
     teams: teams.map(serializeMeTeam),
-    onboardingRequired: !userHasAnyTeam(db, user.id),
+    onboardingRequired: !hasTeam && !hasSessionAccessOnly,
     onboardingInterviewRequired: userNeedsOnboardingInterview(db, user.id),
     onboardingSessionId: pendingOnboarding?.sessionId ?? null,
+    hasSessionAccessOnly,
   });
 }
 
@@ -108,7 +111,7 @@ export async function handleUploadMeAvatar(req: Request): Promise<Response> {
 
   const db = getDb();
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (!userBelongsToOrg(db, parsed.orgId, user.id)) {
+  if (!enforce(db, user.id, "org:member", { type: ResourceType.Organization, id: parsed.orgId })) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 

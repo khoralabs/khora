@@ -1,15 +1,8 @@
 erDiagram
-    users ||--o{ orgs : "owns"
-    users ||--o{ teams : "owns"
-    users ||--o{ team_members : "member of"
-    teams ||--o{ team_members : "has"
-    orgs ||--o{ teams : "contains"
-
+    users ||--o{ team_account_onboarding : "onboarding state"
+    teams ||--o{ team_account_onboarding : "tracks"
     teams ||--o{ sessions : "hosts"
     users ||--o{ sessions : "facilitates"
-
-    sessions ||--o{ session_participants : "includes"
-    users ||--o{ session_participants : "participates in"
 
     sessions ||--o{ session_invites : "minted for"
     users ||--o{ session_invites : "consumed by"
@@ -25,7 +18,27 @@ erDiagram
     sessions ||--o{ session_documents : "has"
     users ||--o{ session_documents : "uploaded by"
 
-    team_members }o--o| sessions : "onboarding_session_id"
+    authz_grants {
+        text id PK
+        text scope_type "org|team|account|session"
+        text scope_id "polymorphic, no FK"
+        text resource_type "org|team|session|thread"
+        text resource_id "polymorphic, no FK"
+        text feature "member|admin|participant|read|permissions_manage|write|team_manage|member_manage"
+        int created_at_ms
+        int expired_at_ms "nullable"
+        int revoked_at_ms "nullable"
+    }
+
+    authz_entitlements {
+        text id PK
+        text scope_type "org|team|account|session"
+        text scope_id "polymorphic, no FK"
+        text feature "app-level, no resource row"
+        int created_at_ms
+        int expired_at_ms "nullable"
+        int revoked_at_ms "nullable"
+    }
 
     users {
         text id PK
@@ -40,23 +53,20 @@ erDiagram
     orgs {
         text id PK
         text name
-        text owner_id FK
         text avatar_s3_key
         int created_at_ms
     }
 
     teams {
         text id PK
-        text org_id FK
         text name
-        text owner_id FK
         text avatar_s3_key
         int created_at_ms
     }
 
-    team_members {
+    team_account_onboarding {
         text team_id PK_FK
-        text user_id PK_FK
+        text account_id PK_FK
         int onboarding_interview_complete
         text onboarding_session_id FK
         int created_at_ms
@@ -70,12 +80,6 @@ erDiagram
         text status
         text kind "standard | onboarding"
         int deadline_ms
-        int created_at_ms
-    }
-
-    session_participants {
-        text session_id PK_FK
-        text user_id PK_FK
         int created_at_ms
     }
 
@@ -141,3 +145,29 @@ erDiagram
         blob payload
         int created_at_ms
     }
+
+```
+
+## Access control notes
+
+- **Auth sessions** (registry OTP) are not stored in Exedra SQLite; the `session` scope type is reserved for future use.
+- **Invariants:** at most one active grant per `(Scope, Resource, Feature)`; at most one active entitlement per `(Scope, Feature)` (enforced via partial unique indexes and upsert in `grant()` / `entitle()`).
+- **Session participation:** `scope=account:U`, `resource=session:S`, `feature=participant`.
+- **Team membership:** `scope=account:U`, `resource=team:T`, `feature=member`.
+- **Team/org admin:** `scope=account:U`, `resource=team:T|org:O`, `feature=admin`.
+- **Team → org containment:** `scope=team:T`, `resource=org:O`, `feature=member` (one org per team).
+- **Org membership (derived):** account is org member iff member of any team that belongs to the org.
+- **Thread read access:** thread owner (`threads.user_id`) or grant `scope=account:U`, `resource=thread:T`, `feature=read`.
+
+### Grant mappings
+
+| Relationship | Grant |
+|---|---|
+| Account → team membership | scope=account, resource=team, feature=member |
+| Account → team admin | scope=account, resource=team, feature=admin |
+| Account → org admin | scope=account, resource=org, feature=admin (legacy; implies all org permissions) |
+| Account → org permissions | scope=account, resource=org, feature=permissions_manage \| write \| read \| team_manage \| member_manage |
+| Account → team permissions | scope=account, resource=team, feature=write \| read \| member_manage |
+| Team → org membership | scope=team, resource=org, feature=member |
+| Account → session participation | scope=account, resource=session, feature=participant |
+| Account → thread read | scope=account, resource=thread, feature=read |
