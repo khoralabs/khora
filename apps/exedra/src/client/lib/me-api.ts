@@ -3,6 +3,36 @@ import type { TeamProfile } from "@shared/teams/row";
 
 export type MeTeam = TeamProfile;
 
+export type OrgSummary = {
+  id: string;
+  name: string;
+  avatarUrl: string | null;
+};
+
+export const ONBOARDING_PLACEHOLDER_ORG: OrgSummary = {
+  id: "",
+  name: "Your organization",
+  avatarUrl: null,
+};
+
+/** Derives unique orgs from a team list, preserving first-seen order. */
+export function listOrgsFromTeams(teams: MeTeam[]): OrgSummary[] {
+  const seen = new Set<string>();
+  const orgs: OrgSummary[] = [];
+  for (const team of teams) {
+    if (!seen.has(team.orgId)) {
+      seen.add(team.orgId);
+      orgs.push({ id: team.orgId, name: team.orgName, avatarUrl: team.orgAvatarUrl });
+    }
+  }
+  return orgs;
+}
+
+/** Returns teams belonging to a specific org. */
+export function teamsForOrg(teams: MeTeam[], orgId: string): MeTeam[] {
+  return teams.filter((t) => t.orgId === orgId);
+}
+
 export type MeResponse = {
   user: AccountProfile;
   teams: MeTeam[];

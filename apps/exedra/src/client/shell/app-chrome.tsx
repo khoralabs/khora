@@ -5,18 +5,34 @@ import { CreateTeamDialog } from "@/components/teams/create-team-dialog";
 import { Toaster } from "@/components/ui/sonner";
 import { Spinner } from "@/components/ui/spinner";
 import { type AuthSessionResponse, fetchAuthSession, signOutAuthSession } from "@/lib/auth-session";
-import { fetchMe, type MeResponse, type MeTeam, ONBOARDING_PLACEHOLDER_TEAM } from "@/lib/me-api";
+import {
+  fetchMe,
+  listOrgsFromTeams,
+  type MeResponse,
+  type MeTeam,
+  ONBOARDING_PLACEHOLDER_ORG,
+  ONBOARDING_PLACEHOLDER_TEAM,
+  type OrgSummary,
+  teamsForOrg,
+} from "@/lib/me-api";
 import {
   fetchSessionDetail,
   fetchSessions,
   type SessionDetail,
   type SessionSummary,
 } from "@/lib/sessions-api";
+import { readActiveSelection, writeActiveSelection } from "./active-selection";
 
 import { AppSidebar } from "./app-sidebar";
 import { MobileChromeLayoutProvider } from "./mobile-chrome-layout";
 import { type ExedraEntrypoint, entrypointForPath, navigateExedra } from "./navigation";
-import { isSettingsPath, onboardingInterviewPath, parseActiveSessionId } from "./routes";
+import {
+  isSettingsPath,
+  onboardingInterviewPath,
+  parseActiveSessionId,
+  settingsAccountPath,
+  settingsOrgPath,
+} from "./routes";
 import { SidebarChromeProvider } from "./sidebar-chrome-context";
 
 export type AppChromeContext = {
@@ -24,6 +40,8 @@ export type AppChromeContext = {
   pathname: string;
   onNavigate: (path: string) => void;
   activeTeam: MeTeam;
+  activeOrg: OrgSummary;
+  orgs: OrgSummary[];
   sessions: SessionSummary[] | null;
   sessionDetail: SessionDetail | null;
   loadSessions: () => void;
@@ -51,6 +69,7 @@ function AppChromeInner({ entrypoint, children }: AppChromeProps) {
   const [loading, setLoading] = useState(true);
   const [createTeamOpen, setCreateTeamOpen] = useState(false);
   const [activeTeam, setActiveTeam] = useState<MeTeam>(ONBOARDING_PLACEHOLDER_TEAM);
+  const [activeOrg, setActiveOrg] = useState<OrgSummary>(ONBOARDING_PLACEHOLDER_ORG);
   const [sessions, setSessions] = useState<SessionSummary[] | null>(null);
   const [sessionDetail, setSessionDetail] = useState<SessionDetail | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -90,11 +109,30 @@ function AppChromeInner({ entrypoint, children }: AppChromeProps) {
       .catch(() => setSessionDetail(null));
   }, []);
 
+  const applyProfileSelection = useCallback((profile: MeResponse) => {
+    if (profile.teams.length === 0) return;
+    const orgs = listOrgsFromTeams(profile.teams);
+    const saved = readActiveSelection();
+
+    const restoredOrg = orgs.find((o) => o.id === saved.orgId) ?? orgs[0];
+    if (restoredOrg === undefined) return;
+
+    const orgTeams = teamsForOrg(profile.teams, restoredOrg.id);
+    const restoredTeam = orgTeams.find((t) => t.id === saved.teamId) ?? orgTeams[0];
+    if (restoredTeam === undefined) return;
+
+    setActiveOrg(restoredOrg);
+    setActiveTeam(restoredTeam);
+  }, []);
+
   const onProfileRefresh = useCallback(() => {
     void fetchMe().then((profile) => {
-      if (profile !== null) setMe(profile);
+      if (profile !== null) {
+        setMe(profile);
+        applyProfileSelection(profile);
+      }
     });
-  }, []);
+  }, [applyProfileSelection]);
 
   const onOnboardingComplete = useCallback((sessionId: string) => {
     window.location.href = onboardingInterviewPath(sessionId);
@@ -123,7 +161,7 @@ function AppChromeInner({ entrypoint, children }: AppChromeProps) {
             const profile = await fetchMe();
             if (!cancelled && profile !== null) {
               setMe(profile);
-              setActiveTeam(profile.teams[0] ?? ONBOARDING_PLACEHOLDER_TEAM);
+              applyProfileSelection(profile);
             }
           } catch {
             // Profile load failed — fall through to sign-in.
@@ -138,7 +176,7 @@ function AppChromeInner({ entrypoint, children }: AppChromeProps) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [applyProfileSelection]);
 
   useEffect(() => {
     if (me === null) return;
@@ -149,13 +187,15 @@ function AppChromeInner({ entrypoint, children }: AppChromeProps) {
     if (me === null) return;
     if (me.teams.length === 0) {
       setActiveTeam(ONBOARDING_PLACEHOLDER_TEAM);
+      setActiveOrg(ONBOARDING_PLACEHOLDER_ORG);
       return;
     }
     const stillMember = me.teams.some((team) => team.id === activeTeam.id);
-    if (!stillMember && me.teams[0] !== undefined) {
-      setActiveTeam(me.teams[0]);
+    if (!stillMember) {
+      const fallback = teamsForOrg(me.teams, activeOrg.id)[0] ?? me.teams[0];
+      if (fallback !== undefined) setActiveTeam(fallback);
     }
-  }, [me, activeTeam.id]);
+  }, [me, activeTeam.id, activeOrg.id]);
 
   useEffect(() => {
     if (activeSessionId === null) {
@@ -193,10 +233,25 @@ function AppChromeInner({ entrypoint, children }: AppChromeProps) {
     onNavigate(`/sessions/${sessionId}/interview`);
   }
 
+  const orgs = listOrgsFromTeams(me.teams);
+  const teamsForActiveOrg = teamsForOrg(me.teams, activeOrg.id);
+
+  const onOrgChange = (org: OrgSummary) => {
+    const firstTeam = teamsForOrg(me.teams, org.id)[0];
+    setActiveOrg(org);
+    if (firstTeam !== undefined) {
+      setActiveTeam(firstTeam);
+      writeActiveSelection(org.id, firstTeam.id);
+    }
+    onNavigate("/");
+  };
+
   const sidebarProps = {
     me,
-    teams: me.teams,
+    teams: teamsForActiveOrg,
     activeTeam,
+    activeOrg,
+    orgs,
     sessions,
     activeSessionId,
     pathname,
@@ -204,17 +259,22 @@ function AppChromeInner({ entrypoint, children }: AppChromeProps) {
     createSessionDisabled,
     onTeamChange: (team: MeTeam) => {
       setActiveTeam(team);
+      setActiveOrg({ id: team.orgId, name: team.orgName, avatarUrl: team.orgAvatarUrl });
+      writeActiveSelection(team.orgId, team.id);
       onNavigate("/");
     },
+    onOrgChange,
     onCreateSession: () => {
       if (createSessionDisabled) return;
       onNavigate("/sessions/new");
     },
     onCreateTeam: () => setCreateTeamOpen(true),
+    onManageTeams: () => onNavigate(settingsOrgPath("teams")),
     onSelectSession: handleSelectSession,
     onOpenTeamGraph: () => onNavigate(`/teams/${activeTeam.id}/graph`),
     onOpenPersonalGraph: () => onNavigate("/me/graph"),
-    onOpenSettings: () => onNavigate("/settings/account"),
+    onOpenOrgSettings: () => onNavigate(settingsOrgPath("general")),
+    onOpenProfileSettings: () => onNavigate(settingsAccountPath()),
     onSignOut: () => void onSignOut(),
     settingsMode,
     onNavigate,
@@ -233,6 +293,8 @@ function AppChromeInner({ entrypoint, children }: AppChromeProps) {
           pathname,
           onNavigate,
           activeTeam,
+          activeOrg,
+          orgs,
           sessions,
           sessionDetail,
           loadSessions,

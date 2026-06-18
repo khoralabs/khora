@@ -199,13 +199,9 @@ export function ShareSessionDialog({
                       <SelectContent>
                         <SelectItem value="restricted">
                           <span className="font-medium">Restricted</span>
-                          <span className="ml-1 text-muted-foreground">
-                            — only people added explicitly
-                          </span>
                         </SelectItem>
                         <SelectItem value="anyone">
                           <span className="font-medium">Anyone with the link</span>
-                          <span className="ml-1 text-muted-foreground">— sign-in required</span>
                         </SelectItem>
                       </SelectContent>
                     </Select>

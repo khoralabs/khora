@@ -1,11 +1,10 @@
-import { Network, Settings, UserRound } from "lucide-react";
+import { Network, UserRound } from "lucide-react";
 import { NewSessionButton } from "@/components/exedra/new-session-button";
 import { SidebarTeamSwitcher } from "@/components/exedra/sidebar-team-switcher";
 import { SidebarUserMenu } from "@/components/exedra/sidebar-user-menu";
-import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import type { MeResponse, MeTeam } from "@/lib/me-api";
+import type { MeResponse, MeTeam, OrgSummary } from "@/lib/me-api";
 import type { SessionSummary } from "@/lib/sessions-api";
 import { cn } from "@/lib/utils";
 import { SettingsSidebar } from "@/settings/settings-sidebar";
@@ -17,18 +16,23 @@ type SessionSidebarProps = {
   me: MeResponse;
   teams: MeTeam[];
   activeTeam: MeTeam;
+  activeOrg: OrgSummary;
+  orgs: OrgSummary[];
   sessions: SessionSummary[] | null;
   activeSessionId: string | null;
   pathname: string;
   collapsed: boolean;
   createSessionDisabled?: boolean;
   onTeamChange: (team: MeTeam) => void;
+  onOrgChange?: (org: OrgSummary) => void;
   onCreateSession: () => void;
   onCreateTeam?: () => void;
+  onManageTeams?: () => void;
   onSelectSession: (sessionId: string) => void;
   onOpenTeamGraph: () => void;
   onOpenPersonalGraph: () => void;
-  onOpenSettings?: () => void;
+  onOpenOrgSettings?: () => void;
+  onOpenProfileSettings?: () => void;
   onSignOut?: () => void;
   settingsMode?: boolean;
   onNavigate?: (path: string) => void;
@@ -41,18 +45,23 @@ export function SessionSidebar({
   me,
   teams,
   activeTeam,
+  activeOrg,
+  orgs,
   sessions,
   activeSessionId,
   pathname,
   collapsed: collapsedProp,
   createSessionDisabled = false,
   onTeamChange,
+  onOrgChange,
   onCreateSession,
   onCreateTeam,
+  onManageTeams,
   onSelectSession,
   onOpenTeamGraph,
   onOpenPersonalGraph,
-  onOpenSettings,
+  onOpenOrgSettings,
+  onOpenProfileSettings,
   onSignOut,
   settingsMode = false,
   onNavigate,
@@ -100,6 +109,7 @@ export function SessionSidebar({
                 onDismiss?.();
               }}
               onCreateTeam={onCreateTeam}
+              onManageTeams={onManageTeams}
             />
           </div>
         </div>
@@ -229,28 +239,33 @@ export function SessionSidebar({
         )}
 
         <div className="mt-auto border-t p-2">
-          <div className={cn("flex items-center gap-1", collapsed && "flex-col")}>
-            <div className={cn("min-w-0", !collapsed && "flex-1")}>
-              <SidebarUserMenu account={me.user} collapsed={collapsed} onSignOut={onSignOut} />
-            </div>
-            {onOpenSettings ? (
-              <SidebarCollapsedTooltip collapsed={collapsed} label="Settings">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={onOpenSettings ? dismissAfter(onOpenSettings) : undefined}
-                  aria-label="Settings"
-                  aria-current={settingsMode ? "page" : undefined}
-                  className={
-                    settingsMode ? "bg-sidebar-accent text-sidebar-accent-foreground" : undefined
+          <SidebarUserMenu
+            account={me.user}
+            org={activeOrg}
+            orgs={orgs}
+            collapsed={collapsed}
+            onOrgChange={(org) => {
+              onOrgChange?.(org);
+              onDismiss?.();
+            }}
+            onOpenOrgSettings={
+              onOpenOrgSettings
+                ? () => {
+                    onOpenOrgSettings();
+                    onDismiss?.();
                   }
-                >
-                  <Settings />
-                </Button>
-              </SidebarCollapsedTooltip>
-            ) : null}
-          </div>
+                : undefined
+            }
+            onOpenProfileSettings={
+              onOpenProfileSettings
+                ? () => {
+                    onOpenProfileSettings();
+                    onDismiss?.();
+                  }
+                : undefined
+            }
+            onSignOut={onSignOut}
+          />
         </div>
       </TooltipProvider>
     </Root>
