@@ -50,6 +50,7 @@ export function InviteGate({ token }: InviteGateProps) {
   const [authenticated, setAuthenticated] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [sessionConsentAccepted, setSessionConsentAccepted] = useState(false);
 
   const acceptInvite = useCallback(async () => {
     setAccepting(true);
@@ -79,6 +80,8 @@ export function InviteGate({ token }: InviteGateProps) {
     const body = (await res.json()) as { redirectTo: string };
     redirectToInviteTarget(body.redirectTo);
   }, [token, termsAccepted]);
+
+  const canJoin = termsAccepted && (invite?.kind !== "session" || sessionConsentAccepted);
 
   useEffect(() => {
     let cancelled = false;
@@ -237,13 +240,27 @@ export function InviteGate({ token }: InviteGateProps) {
                     .
                   </FieldLabel>
                 </Field>
+                {invite.kind === "session" && (
+                  <Field orientation="horizontal">
+                    <Checkbox
+                      id="exedra-invite-session-consent"
+                      checked={sessionConsentAccepted}
+                      onCheckedChange={(checked) => setSessionConsentAccepted(checked === true)}
+                      disabled={accepting}
+                    />
+                    <FieldLabel htmlFor="exedra-invite-session-consent" className="font-normal">
+                      I understand that my responses will be reviewed by the session organizer,
+                      processed by AI tools, and stored.
+                    </FieldLabel>
+                  </Field>
+                )}
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={accepting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              disabled={accepting || !termsAccepted}
+              disabled={accepting || !canJoin}
               onClick={(event) => {
                 event.preventDefault();
                 void acceptInvite();

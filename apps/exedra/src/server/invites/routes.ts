@@ -24,7 +24,7 @@ import {
   getSessionLinkAccess,
   userHasSessionAccess,
 } from "../db/sessions";
-import { getOrCreateUser } from "../identity/users";
+import { getOrCreateUser, setUserSessionConsentAccepted } from "../identity/users";
 import { bootstrapOrgTeamMemories } from "../memories/bootstrap";
 import { bootstrapSessionMemoriesForTeamSession } from "../memories/bootstrap-session";
 import { createOnboardingInterviewForMember } from "../onboarding/interview";
@@ -157,6 +157,7 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
 
   const kind = inviteKind(effects);
   if (kind === "session") {
+    setUserSessionConsentAccepted(db, user.id);
     const sessionId = sessionIdFromEffects(effects);
     if (sessionId === null) {
       return Response.json({ error: "Invalid invite" }, { status: 500 });

@@ -230,6 +230,9 @@ function migrateUsersAddTermsColumns(db: Database): void {
   if (!columns.some((column) => column.name === "network_opted_in_at_ms")) {
     db.run(`ALTER TABLE users ADD COLUMN network_opted_in_at_ms INTEGER`);
   }
+  if (!columns.some((column) => column.name === "session_consent_accepted_at_ms")) {
+    db.run(`ALTER TABLE users ADD COLUMN session_consent_accepted_at_ms INTEGER`);
+  }
 }
 
 function migrateOrgsAddNetworkOptIn(db: Database): void {
