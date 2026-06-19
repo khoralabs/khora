@@ -1,5 +1,7 @@
 import { verifyRegistrySession } from "@khoralabs/registry-auth";
 
+import { getDb } from "../db/index";
+import { getOrCreateUserForAuth } from "../identity/users";
 import { getRegistryUrl } from "../registry-url";
 
 export async function handleGetSession(req: Request): Promise<Response> {
@@ -7,6 +9,8 @@ export async function handleGetSession(req: Request): Promise<Response> {
   if (session === null) {
     return Response.json({ authenticated: false }, { status: 401 });
   }
+
+  await getOrCreateUserForAuth(getDb(), req, session);
 
   return Response.json({
     authenticated: true,

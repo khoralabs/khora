@@ -30,3 +30,18 @@ export async function getOrCreateOrgIdentity(
 
   return { did: identity.did };
 }
+
+export function getOrgIdentityEncrypted(db: Database, orgId: string): Buffer | null {
+  const row = db
+    .query<{ identity_encrypted: Buffer | null }, [string]>(
+      `SELECT identity_encrypted FROM orgs WHERE id = ? LIMIT 1`,
+    )
+    .get(orgId);
+  return row?.identity_encrypted ?? null;
+}
+
+export function setOrgNetworkOptedIn(db: Database, orgId: string): number {
+  const now = Date.now();
+  db.prepare(`UPDATE orgs SET network_opted_in_at_ms = ? WHERE id = ?`).run(now, orgId);
+  return now;
+}

@@ -32,3 +32,15 @@ export function getAiBaseUrl(): string | undefined {
   const url = process.env.AI_BASE_URL?.trim();
   return url !== undefined && url.length > 0 ? url : undefined;
 }
+
+export function getKhoraHostUrl(): string | null {
+  const url = process.env.KHORA_HOST_URL?.trim();
+  if (url === undefined || url.length === 0) return null;
+  return url.replace(/\/$/, "");
+}
+
+export function getKhoraHostSlug(): string | null {
+  const slug = process.env.KHORA_HOST_SLUG?.trim();
+  if (slug === undefined || slug.length === 0) return null;
+  return slug;
+}

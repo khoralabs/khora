@@ -143,6 +143,8 @@ export function ensureExedraSchema(db: Database): void {
   migrateSessionsAddLinkAccess(db);
   migrateInvitesAddReusableColumns(db);
   migrateOrgsAddIdentity(db);
+  migrateUsersAddTermsColumns(db);
+  migrateOrgsAddNetworkOptIn(db);
   ensureAuthzSchema(db);
 }
 
@@ -213,6 +215,23 @@ function migrateOrgsAddIdentity(db: Database): void {
   }
   if (!columns.some((column) => column.name === "identity_encrypted")) {
     db.run(`ALTER TABLE orgs ADD COLUMN identity_encrypted BLOB`);
+  }
+}
+
+function migrateUsersAddTermsColumns(db: Database): void {
+  const columns = db.query<{ name: string }, []>("PRAGMA table_info(users)").all();
+  if (!columns.some((column) => column.name === "terms_accepted_at_ms")) {
+    db.run(`ALTER TABLE users ADD COLUMN terms_accepted_at_ms INTEGER`);
+  }
+  if (!columns.some((column) => column.name === "network_opted_in_at_ms")) {
+    db.run(`ALTER TABLE users ADD COLUMN network_opted_in_at_ms INTEGER`);
+  }
+}
+
+function migrateOrgsAddNetworkOptIn(db: Database): void {
+  const columns = db.query<{ name: string }, []>("PRAGMA table_info(orgs)").all();
+  if (!columns.some((column) => column.name === "network_opted_in_at_ms")) {
+    db.run(`ALTER TABLE orgs ADD COLUMN network_opted_in_at_ms INTEGER`);
   }
 }
 

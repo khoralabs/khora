@@ -40,6 +40,9 @@ export type MeResponse = {
   onboardingInterviewRequired: boolean;
   onboardingSessionId: string | null;
   hasSessionAccessOnly: boolean;
+  termsAcceptedAtMs: number | null;
+  networkOptedInAtMs: number | null;
+  networkJoinAvailable: boolean;
 };
 
 export const ONBOARDING_PLACEHOLDER_TEAM: MeTeam = {
@@ -152,4 +155,27 @@ export async function mintTeamInvite(teamId: string): Promise<TeamInviteResponse
     throw new Error(data?.error ?? "Could not create invite link");
   }
   return (await res.json()) as TeamInviteResponse;
+}
+
+export async function acceptTerms(): Promise<{ termsAcceptedAtMs: number }> {
+  const res = await fetch("/api/me/terms-accept", {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    throw new Error(await res.text().catch(() => "Could not accept terms"));
+  }
+  return (await res.json()) as { termsAcceptedAtMs: number };
+}
+
+export async function joinMyNetwork(): Promise<{ networkOptedInAtMs: number }> {
+  const res = await fetch("/api/me/join-network", {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const data = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error ?? "Could not join Khora network");
+  }
+  return (await res.json()) as { networkOptedInAtMs: number };
 }

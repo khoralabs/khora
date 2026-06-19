@@ -25,6 +25,7 @@ export type OrgRecord = {
   did: string | null;
   avatarS3Key: string | null;
   createdAtMs: number;
+  networkOptedInAtMs: number | null;
 };
 
 export type TeamRecord = {
@@ -50,6 +51,7 @@ type OrgRow = {
   did: string | null;
   avatar_s3_key: string | null;
   created_at_ms: number;
+  network_opted_in_at_ms: number | null;
 };
 
 type TeamRow = {
@@ -75,13 +77,14 @@ function mapOrg(row: OrgRow): OrgRecord {
     did: row.did,
     avatarS3Key: row.avatar_s3_key,
     createdAtMs: row.created_at_ms,
+    networkOptedInAtMs: row.network_opted_in_at_ms,
   };
 }
 
 export function getOrg(db: Database, orgId: string): OrgRecord | null {
   const row = db
     .query<OrgRow, [string]>(
-      `SELECT id, name, did, avatar_s3_key, created_at_ms FROM orgs WHERE id = ?`,
+      `SELECT id, name, did, avatar_s3_key, created_at_ms, network_opted_in_at_ms FROM orgs WHERE id = ?`,
     )
     .get(orgId);
   if (row === null) return null;

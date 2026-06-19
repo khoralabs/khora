@@ -3,6 +3,8 @@ import { serve } from "bun";
 import graphPage from "./client/routes/graph/index.html";
 import index from "./client/routes/index.html";
 import interviewPage from "./client/routes/interview/index.html";
+import privacyPage from "./client/routes/privacy/index.html";
+import termsPage from "./client/routes/terms/index.html";
 import { getDb } from "./server/db/index";
 import { getStubRegistryOtp, isExedraStubRegistryEnabled } from "./server/registry-stub/config";
 import { apiRoutes } from "./server/routes";
@@ -54,6 +56,22 @@ const server = serve({
     "/me/graph/": {
       // @ts-expect-error Bun HTMLBundle handler
       GET: graphPage,
+    },
+    "/terms": {
+      // @ts-expect-error Bun HTMLBundle handler
+      GET: termsPage,
+    },
+    "/terms/": {
+      // @ts-expect-error Bun HTMLBundle handler
+      GET: termsPage,
+    },
+    "/privacy": {
+      // @ts-expect-error Bun HTMLBundle handler
+      GET: privacyPage,
+    },
+    "/privacy/": {
+      // @ts-expect-error Bun HTMLBundle handler
+      GET: privacyPage,
     },
     // GET-only so POST /api/* falls through to fetch dispatch below.
     "/*": {

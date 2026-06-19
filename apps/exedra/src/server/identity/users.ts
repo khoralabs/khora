@@ -12,6 +12,8 @@ export type ExedraUser = {
   jobFunction: string | null;
   avatarS3Key: string | null;
   createdAtMs: number;
+  termsAcceptedAtMs: number | null;
+  networkOptedInAtMs: number | null;
 };
 
 type UserRow = {
@@ -22,6 +24,8 @@ type UserRow = {
   job_function: string | null;
   avatar_s3_key: string | null;
   created_at_ms: number;
+  terms_accepted_at_ms: number | null;
+  network_opted_in_at_ms: number | null;
 };
 
 function mapUser(row: UserRow): ExedraUser {
@@ -33,10 +37,12 @@ function mapUser(row: UserRow): ExedraUser {
     jobFunction: row.job_function,
     avatarS3Key: row.avatar_s3_key,
     createdAtMs: row.created_at_ms,
+    termsAcceptedAtMs: row.terms_accepted_at_ms,
+    networkOptedInAtMs: row.network_opted_in_at_ms,
   };
 }
 
-const USER_SELECT = `SELECT id, registry_user_id, email, full_name, job_function, avatar_s3_key, created_at_ms FROM users`;
+const USER_SELECT = `SELECT id, registry_user_id, email, full_name, job_function, avatar_s3_key, created_at_ms, terms_accepted_at_ms, network_opted_in_at_ms FROM users`;
 
 export function findUserByRegistryId(db: Database, registryUserId: string): ExedraUser | null {
   const row = db
@@ -48,6 +54,27 @@ export function findUserByRegistryId(db: Database, registryUserId: string): Exed
 export function findUserById(db: Database, userId: string): ExedraUser | null {
   const row = db.query<UserRow, [string]>(`${USER_SELECT} WHERE id = ? LIMIT 1`).get(userId);
   return row === null ? null : mapUser(row);
+}
+
+export function getUserIdentityEncrypted(db: Database, userId: string): Buffer | null {
+  const row = db
+    .query<{ identity_encrypted: Buffer | null }, [string]>(
+      `SELECT identity_encrypted FROM users WHERE id = ? LIMIT 1`,
+    )
+    .get(userId);
+  return row?.identity_encrypted ?? null;
+}
+
+export function acceptUserTerms(db: Database, userId: string): number {
+  const now = Date.now();
+  db.prepare(`UPDATE users SET terms_accepted_at_ms = ? WHERE id = ?`).run(now, userId);
+  return now;
+}
+
+export function setUserNetworkOptedIn(db: Database, userId: string): number {
+  const now = Date.now();
+  db.prepare(`UPDATE users SET network_opted_in_at_ms = ? WHERE id = ?`).run(now, userId);
+  return now;
 }
 
 function normalizeOptionalText(value: string | undefined): string | null {
@@ -126,5 +153,15 @@ export async function getOrCreateUser(
     jobFunction: null,
     avatarS3Key: null,
     createdAtMs: now,
+    termsAcceptedAtMs: null,
+    networkOptedInAtMs: null,
   };
+}
+
+export async function getOrCreateUserForAuth(
+  db: Database,
+  _req: Request,
+  session: { user: { id: string; email?: string | null } },
+): Promise<ExedraUser> {
+  return getOrCreateUser(db, session.user.id, session.user.email ?? null);
 }

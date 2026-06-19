@@ -72,7 +72,14 @@ export function SettingsContent({
   function renderBody() {
     if (route.scope === "account") {
       return (
-        <AccountSettingsForm user={me.user} activeTeam={activeTeam} onSaved={onProfileRefresh} />
+        <AccountSettingsForm
+          user={me.user}
+          activeTeam={activeTeam}
+          networkOptedInAtMs={me.networkOptedInAtMs}
+          networkJoinAvailable={me.networkJoinAvailable}
+          onSaved={onProfileRefresh}
+          onNetworkJoined={() => onProfileRefresh()}
+        />
       );
     }
 

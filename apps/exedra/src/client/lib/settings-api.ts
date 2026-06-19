@@ -13,6 +13,8 @@ export type EntitySettings = {
   did: string | null;
   canEdit: boolean;
   permissions?: Record<string, boolean>;
+  networkOptedInAtMs?: number | null;
+  networkJoinAvailable?: boolean;
 };
 
 export type OrgMemberRow = AccountRow<OrgMemberContext>;
@@ -143,6 +145,17 @@ export async function deleteOrgAvatar(orgId: string): Promise<EntitySettings> {
     throw new Error(await readErrorMessage(res, "Could not remove avatar"));
   }
   return (await res.json()) as EntitySettings;
+}
+
+export async function joinOrgNetwork(orgId: string): Promise<{ networkOptedInAtMs: number }> {
+  const res = await fetch(`/api/orgs/${encodeURIComponent(orgId)}/join-network`, {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res, "Could not join Khora network"));
+  }
+  return (await res.json()) as { networkOptedInAtMs: number };
 }
 
 export async function fetchTeamSettings(teamId: string): Promise<TeamSettings> {

@@ -15,8 +15,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { Spinner } from "@/components/ui/spinner";
 import { fetchAuthSession } from "@/lib/auth-session";
+import { acceptTerms } from "@/lib/me-api";
 
 type InviteInfo = {
   token: string;
@@ -46,6 +49,7 @@ export function InviteGate({ token }: InviteGateProps) {
   const [accepting, setAccepting] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const acceptInvite = useCallback(async () => {
     setAccepting(true);
@@ -64,9 +68,17 @@ export function InviteGate({ token }: InviteGateProps) {
       return;
     }
 
+    if (termsAccepted) {
+      try {
+        await acceptTerms();
+      } catch {
+        // Non-blocking after invite accept.
+      }
+    }
+
     const body = (await res.json()) as { redirectTo: string };
     redirectToInviteTarget(body.redirectTo);
-  }, [token]);
+  }, [token, termsAccepted]);
 
   useEffect(() => {
     let cancelled = false;
@@ -203,12 +215,35 @@ export function InviteGate({ token }: InviteGateProps) {
               </AlertDialogMedia>
             ) : null}
             <AlertDialogTitle>{confirmTitle}</AlertDialogTitle>
-            <AlertDialogDescription>{confirmDescription}</AlertDialogDescription>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4 text-sm text-muted-foreground">
+                <div>{confirmDescription}</div>
+                <Field orientation="horizontal">
+                  <Checkbox
+                    id="exedra-invite-terms"
+                    checked={termsAccepted}
+                    onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                    disabled={accepting}
+                  />
+                  <FieldLabel htmlFor="exedra-invite-terms" className="font-normal">
+                    I agree to the{" "}
+                    <a href="/terms" target="_blank" rel="noreferrer" className="underline">
+                      Terms of Service
+                    </a>{" "}
+                    and{" "}
+                    <a href="/privacy" target="_blank" rel="noreferrer" className="underline">
+                      Privacy Policy
+                    </a>
+                    .
+                  </FieldLabel>
+                </Field>
+              </div>
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={accepting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              disabled={accepting}
+              disabled={accepting || !termsAccepted}
               onClick={(event) => {
                 event.preventDefault();
                 void acceptInvite();

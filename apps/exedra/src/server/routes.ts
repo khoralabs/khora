@@ -56,6 +56,8 @@ import {
   handlePatchSession,
   handlePatchSessionAccess,
 } from "./sessions/routes";
+import { handleJoinNetwork, handleJoinOrgNetwork } from "./settings/network-routes";
+import { handleAcceptTerms } from "./settings/terms-routes";
 import {
   handleCreateTeamInOrg,
   handleDeleteTeamAvatar,
@@ -87,6 +89,14 @@ export const apiRoutes = {
   "/api/me/avatar": {
     POST: handleUploadMeAvatar,
     DELETE: handleDeleteMeAvatar,
+  },
+
+  "/api/me/terms-accept": {
+    POST: handleAcceptTerms,
+  },
+
+  "/api/me/join-network": {
+    POST: handleJoinNetwork,
   },
 
   "/api/onboarding": {
@@ -131,6 +141,11 @@ export const apiRoutes = {
       handleUploadOrgAvatar(req, req.params.orgId),
     DELETE: (req: Request & { params: { orgId: string } }) =>
       handleDeleteOrgAvatar(req, req.params.orgId),
+  },
+
+  "/api/orgs/:orgId/join-network": {
+    POST: (req: Request & { params: { orgId: string } }) =>
+      handleJoinOrgNetwork(req, req.params.orgId),
   },
 
   "/api/sessions": {

@@ -6,19 +6,30 @@ import { Field, FieldError, FieldGroup, FieldLabel, FieldSet } from "@/component
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { formatAccountDisplayName } from "@/lib/account-display";
-import { type MeResponse, type MeTeam, patchMeProfile } from "@/lib/me-api";
+import { joinMyNetwork, type MeResponse, type MeTeam, patchMeProfile } from "@/lib/me-api";
 import { deleteMeAvatar, uploadMeAvatar } from "@/lib/settings-api";
 
 import { AccountIdentityFields } from "./account-identity-fields";
 import { AvatarUploadField, useAvatarPendingFile } from "./avatar-upload-field";
+import { KhoraNetworkSection } from "./khora-network-section";
 
 type AccountSettingsFormProps = {
   user: MeResponse["user"];
   activeTeam: MeTeam;
+  networkOptedInAtMs: number | null;
+  networkJoinAvailable: boolean;
   onSaved: () => void;
+  onNetworkJoined: (networkOptedInAtMs: number) => void;
 };
 
-export function AccountSettingsForm({ user, activeTeam, onSaved }: AccountSettingsFormProps) {
+export function AccountSettingsForm({
+  user,
+  activeTeam,
+  networkOptedInAtMs,
+  networkJoinAvailable,
+  onSaved,
+  onNetworkJoined,
+}: AccountSettingsFormProps) {
   const [fullName, setFullName] = useState(user.fullName ?? "");
   const [jobFunction, setJobFunction] = useState(user.jobFunction ?? "");
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl);
@@ -91,6 +102,15 @@ export function AccountSettingsForm({ user, activeTeam, onSaved }: AccountSettin
           </Field>
         </FieldGroup>
       </FieldSet>
+
+      <KhoraNetworkSection
+        title="Khora network"
+        description="Optionally publish your agent identity on the Khora network and link it to your registry account."
+        networkOptedInAtMs={networkOptedInAtMs}
+        networkJoinAvailable={networkJoinAvailable}
+        onJoin={joinMyNetwork}
+        onJoined={onNetworkJoined}
+      />
 
       {error !== null ? <FieldError className="mt-4">{error}</FieldError> : null}
 

@@ -1,6 +1,13 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import type { PersistableRelaySigner } from "@khoralabs/agent-persisted-signer";
+import { EdDSASigner } from "iso-signatures/signers/eddsa.js";
 
 const ALGO = "aes-256-gcm";
+
+type StoredIdentity = {
+  did: string;
+  encoded: string;
+};
 
 export function encryptIdentityPayload(plaintext: string, key: Buffer): Buffer {
   const iv = randomBytes(12);
@@ -17,4 +24,19 @@ export function decryptIdentityPayload(payload: Buffer, key: Buffer): string {
   const decipher = createDecipheriv(ALGO, key, iv);
   decipher.setAuthTag(tag);
   return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
+}
+
+export async function loadSignerFromEncryptedBlob(
+  payload: Buffer,
+  key: Buffer,
+): Promise<PersistableRelaySigner> {
+  const parsed = JSON.parse(decryptIdentityPayload(payload, key)) as StoredIdentity;
+  if (typeof parsed.encoded !== "string" || parsed.encoded.length === 0) {
+    throw new Error("identity blob missing encoded key");
+  }
+  const signer = await EdDSASigner.import(parsed.encoded);
+  if (typeof parsed.did === "string" && parsed.did.length > 0 && parsed.did !== signer.did) {
+    throw new Error("identity blob did mismatch");
+  }
+  return signer;
 }

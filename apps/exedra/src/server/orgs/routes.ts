@@ -7,6 +7,7 @@ import { clearAvatarFromS3, parseAvatarUpload, replaceAvatarInS3 } from "../avat
 import { avatarUrlFromS3Key } from "../avatars/urls.js";
 import { getDb } from "../db/index.js";
 import { getOrg, listOrgMembers, updateOrgAvatarS3Key, updateOrgName } from "../db/membership.js";
+import { getKhoraHostUrl } from "../env.js";
 import { getOrCreateOrgIdentity } from "../identity/orgs.js";
 import { findUserById, getOrCreateUser } from "../identity/users.js";
 import { listTeamRowsForOrg } from "../teams/resolve-rows.js";
@@ -28,6 +29,8 @@ function serializeOrgSettings(
     did,
     canEdit: canEditOrg(db, userId, org.id),
     permissions: serializeOrgPermissionsForAccount(db, userId, org.id).permissions,
+    networkOptedInAtMs: org.networkOptedInAtMs,
+    networkJoinAvailable: getKhoraHostUrl() !== null,
   };
 }
 

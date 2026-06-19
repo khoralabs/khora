@@ -10,11 +10,13 @@ import {
   deleteOrgAvatar,
   type EntitySettings,
   fetchOrgSettings,
+  joinOrgNetwork,
   patchOrgSettings,
   uploadOrgAvatar,
 } from "@/lib/settings-api";
 
 import { AvatarUploadField, useAvatarPendingFile } from "./avatar-upload-field";
+import { KhoraNetworkSection } from "./khora-network-section";
 import { OrgAgentIdentityField } from "./org-agent-identity-field";
 
 type OrganizationSettingsFormProps = {
@@ -119,6 +121,21 @@ export function OrganizationSettingsForm({ activeTeam, onSaved }: OrganizationSe
           <OrgAgentIdentityField did={settings?.did ?? null} />
         </FieldGroup>
       </FieldSet>
+
+      {settings !== null ? (
+        <KhoraNetworkSection
+          title="Khora network"
+          description="Optionally publish your organization's agent identity on the Khora network."
+          networkOptedInAtMs={settings.networkOptedInAtMs ?? null}
+          networkJoinAvailable={settings.networkJoinAvailable ?? false}
+          onJoin={() => joinOrgNetwork(activeTeam.orgId)}
+          onJoined={(networkOptedInAtMs) =>
+            setSettings((current) =>
+              current === null ? current : { ...current, networkOptedInAtMs },
+            )
+          }
+        />
+      ) : null}
 
       {error !== null ? <FieldError className="mt-4">{error}</FieldError> : null}
 

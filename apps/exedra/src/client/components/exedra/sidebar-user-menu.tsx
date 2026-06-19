@@ -1,5 +1,13 @@
 import type { AccountProfile } from "@shared/accounts/row";
-import { Building2, Check, ChevronsUpDown, LogOut, UserRound } from "lucide-react";
+import {
+  Building2,
+  Check,
+  ChevronsUpDown,
+  LogOut,
+  ScrollText,
+  ShieldCheck,
+  UserRound,
+} from "lucide-react";
 
 import {
   AccountItem,
@@ -154,9 +162,16 @@ export function SidebarUserMenu({
             Profile settings
           </DropdownMenuItem>
         ) : null}
-        {(onOpenOrgSettings || onOpenProfileSettings) && onSignOut ? (
-          <DropdownMenuSeparator />
-        ) : null}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => window.open("/terms", "_blank")}>
+          <ScrollText />
+          Terms of Service
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => window.open("/privacy", "_blank")}>
+          <ShieldCheck />
+          Privacy Policy
+        </DropdownMenuItem>
+        {onSignOut ? <DropdownMenuSeparator /> : null}
         {onSignOut ? (
           <DropdownMenuItem
             onSelect={(event) => {

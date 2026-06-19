@@ -17,10 +17,12 @@ import {
   userNeedsOnboardingInterview,
 } from "../db/membership";
 import { createOrg, createTeam, userHasAnyAccessibleSession } from "../db/sessions";
+import { getKhoraHostUrl } from "../env";
 import { getOrCreateOrgIdentity } from "../identity/orgs";
 import {
   type ExedraUser,
   getOrCreateUser,
+  getOrCreateUserForAuth,
   updateUserAvatarS3Key,
   updateUserProfile,
 } from "../identity/users";
@@ -45,7 +47,7 @@ export async function handleGetMe(req: Request): Promise<Response> {
   if (auth.response !== null) return auth.response;
 
   const db = getDb();
-  const user = await getOrCreateUser(db, auth.session.user.id, auth.session.user.email);
+  const user = await getOrCreateUserForAuth(db, req, auth.session);
   const teams = listTeamsForUser(db, user.id);
   const pendingOnboarding = getPendingOnboardingInterview(db, user.id);
   const hasTeam = userHasAnyTeam(db, user.id);
@@ -58,6 +60,9 @@ export async function handleGetMe(req: Request): Promise<Response> {
     onboardingInterviewRequired: userNeedsOnboardingInterview(db, user.id),
     onboardingSessionId: pendingOnboarding?.sessionId ?? null,
     hasSessionAccessOnly,
+    termsAcceptedAtMs: user.termsAcceptedAtMs,
+    networkOptedInAtMs: user.networkOptedInAtMs,
+    networkJoinAvailable: getKhoraHostUrl() !== null,
   });
 }
 
@@ -177,7 +182,7 @@ export async function handlePostOnboarding(req: Request): Promise<Response> {
   }
 
   const db = getDb();
-  const user = await getOrCreateUser(db, auth.session.user.id);
+  const user = await getOrCreateUserForAuth(db, req, auth.session);
 
   if (userHasAnyTeam(db, user.id)) {
     return Response.json({ error: "User already belongs to a team" }, { status: 409 });
