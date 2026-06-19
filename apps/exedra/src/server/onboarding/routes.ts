@@ -61,6 +61,7 @@ export async function handleGetMe(req: Request): Promise<Response> {
     hasSessionAccessOnly,
     termsAcceptedAtMs: user.termsAcceptedAtMs,
     networkOptedInAtMs: user.networkOptedInAtMs,
+    marketingOptedInAtMs: user.marketingOptedInAtMs,
     networkJoinAvailable: getKhoraHostUrl() !== null,
   });
 }

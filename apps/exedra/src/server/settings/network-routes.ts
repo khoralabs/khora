@@ -12,8 +12,12 @@ import { getOrgIdentityEncrypted, setOrgNetworkOptedIn } from "../identity/orgs"
 import {
   getOrCreateUserForAuth,
   getUserIdentityEncrypted,
+  setUserMarketingOptedIn,
   setUserNetworkOptedIn,
 } from "../identity/users";
+import { getRegistryUrl } from "../registry-url";
+
+const MARKETING_LIST_SLUG = "khoralabs-updates";
 
 export async function handleJoinNetwork(req: Request): Promise<Response> {
   const auth = await requireRegistrySessionResponse(req);
@@ -70,4 +74,37 @@ export async function handleJoinOrgNetwork(req: Request, orgId: string): Promise
 
   const networkOptedInAtMs = setOrgNetworkOptedIn(db, orgId);
   return Response.json({ ok: true, networkOptedInAtMs });
+}
+
+export async function handleMarketingOptIn(req: Request): Promise<Response> {
+  const auth = await requireRegistrySessionResponse(req);
+  if (auth.response !== null) return auth.response;
+
+  const db = getDb();
+  const user = await getOrCreateUserForAuth(db, req, auth.session);
+  if (user.marketingOptedInAtMs !== null) {
+    return Response.json({ ok: true, marketingOptedInAtMs: user.marketingOptedInAtMs });
+  }
+
+  const email = user.email ?? auth.session.user.email ?? null;
+  if (email !== null) {
+    const registryUrl = getRegistryUrl().replace(/\/$/, "");
+    try {
+      await fetch(`${registryUrl}/v1/marketing/subscribe`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          listSlug: MARKETING_LIST_SLUG,
+          sourceApp: "exedra",
+        }),
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "marketing subscribe failed";
+      console.warn("[exedra] marketing subscribe failed:", message);
+    }
+  }
+
+  const marketingOptedInAtMs = setUserMarketingOptedIn(db, user.id);
+  return Response.json({ ok: true, marketingOptedInAtMs });
 }

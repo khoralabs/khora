@@ -2,13 +2,11 @@ import { EmailConfirm } from "@khoralabs/registry-accounts-react";
 import type { EmailConfirmSession } from "@khoralabs/registry-auth/client";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { useCallback, useState } from "react";
 
 import { ExedraBrand, KhoraWordmark } from "@/components/brand/khora-logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Field, FieldDescription, FieldError, FieldGroup } from "@/components/ui/field";
 import {
   InputGroup,
   InputGroupAddon,
@@ -19,13 +17,11 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { ASSETS } from "@/lib/asset-urls";
-import { acceptTerms } from "@/lib/me-api";
 import { registryEmailConfirmApi } from "@/lib/registry-email-confirm-api";
 import { cn } from "@/lib/utils";
 
 const OTP_LENGTH = 6;
 const SIGN_IN_STORAGE_KEY = "exedra-sign-in";
-const MARKETING_LIST_SLUG = "khoralabs-updates";
 
 const DEFAULT_TITLE = "Welcome back";
 const DEFAULT_DESCRIPTION = "Sign in to Exedra with a one-time code sent to your email.";
@@ -81,22 +77,6 @@ export function SignIn({
   className,
   onSuccess,
 }: SignInProps) {
-  const [termsAccepted, setTermsAccepted] = useState(false);
-
-  const handleSuccess = useCallback(
-    async (session: EmailConfirmSession) => {
-      if (termsAccepted) {
-        try {
-          await acceptTerms();
-        } catch {
-          // Non-blocking; user can re-accept from settings if needed.
-        }
-      }
-      onSuccess(session);
-    },
-    [onSuccess, termsAccepted],
-  );
-
   return (
     <div className={cn("flex w-full max-w-4xl flex-col gap-6", className)}>
       <Card className="overflow-hidden p-0">
@@ -106,8 +86,7 @@ export function SignIn({
             purpose="sign-in"
             otpLength={OTP_LENGTH}
             storageKey={storageKey}
-            marketing={{ listSlug: MARKETING_LIST_SLUG, sourceApp: "exedra" }}
-            onSuccess={handleSuccess}
+            onSuccess={onSuccess}
           >
             <EmailConfirm.EmailStep>
               {(props) => (
@@ -149,7 +128,7 @@ export function SignIn({
                         <InputGroupAddon align="inline-end">
                           <InputGroupButton
                             type="submit"
-                            disabled={props.loading || !termsAccepted}
+                            disabled={props.loading}
                             size="icon-sm"
                             aria-label={props.loading ? "Sending code" : "Continue"}
                           >
@@ -162,39 +141,15 @@ export function SignIn({
                         </InputGroupAddon>
                       </InputGroup>
                       {STUB_HINT !== null ? <FieldDescription>{STUB_HINT}</FieldDescription> : null}
-                    </Field>
-                    <Field orientation="horizontal">
-                      <Checkbox
-                        id="exedra-sign-in-terms"
-                        checked={termsAccepted}
-                        onCheckedChange={(checked) => setTermsAccepted(checked === true)}
-                        disabled={props.loading}
-                      />
-                      <FieldLabel htmlFor="exedra-sign-in-terms" className="font-normal">
-                        I agree to the{" "}
-                        <a href="/terms" target="_blank" rel="noreferrer" className="underline">
-                          Terms of Service
-                        </a>{" "}
-                        and{" "}
+                      <FieldDescription>
+                        By requesting a sign-in code, you agree to share your email with Exedra. See
+                        our{" "}
                         <a href="/privacy" target="_blank" rel="noreferrer" className="underline">
                           Privacy Policy
                         </a>
                         .
-                      </FieldLabel>
+                      </FieldDescription>
                     </Field>
-                    {props.showMarketingConsent ? (
-                      <Field orientation="horizontal">
-                        <Checkbox
-                          id="exedra-sign-in-marketing"
-                          checked={props.marketingConsent}
-                          onCheckedChange={(checked) => props.setMarketingConsent(checked === true)}
-                          disabled={props.loading}
-                        />
-                        <FieldLabel htmlFor="exedra-sign-in-marketing" className="font-normal">
-                          Keep me updated about Khora news and product updates.
-                        </FieldLabel>
-                      </Field>
-                    ) : null}
                     {props.error !== null ? <FieldError>{props.error}</FieldError> : null}
                   </FieldGroup>
                 </form>

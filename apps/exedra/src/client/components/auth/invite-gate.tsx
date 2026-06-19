@@ -1,6 +1,7 @@
 import type { EmailConfirmSession } from "@khoralabs/registry-auth/client";
 import { useCallback, useEffect, useState } from "react";
 
+import { ConsentDialog } from "@/components/auth/consent-dialog";
 import { SignIn } from "@/components/auth/sign-in";
 import { EntityAvatar } from "@/components/entity-avatar";
 import {
@@ -19,7 +20,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Spinner } from "@/components/ui/spinner";
 import { fetchAuthSession } from "@/lib/auth-session";
-import { acceptTerms } from "@/lib/me-api";
+import { fetchMe, submitConsent } from "@/lib/me-api";
 
 type InviteInfo = {
   token: string;
@@ -48,9 +49,20 @@ export function InviteGate({ token }: InviteGateProps) {
   const [error, setError] = useState<string | null>(null);
   const [accepting, setAccepting] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
+  const [consentOpen, setConsentOpen] = useState(false);
+  const [consentSubmitting, setConsentSubmitting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [termsAccepted, setTermsAccepted] = useState(false);
   const [sessionConsentAccepted, setSessionConsentAccepted] = useState(false);
+
+  const openPostAuthStep = useCallback(async () => {
+    const me = await fetchMe();
+    if (me === null) return;
+    if (me.termsAcceptedAtMs === null) {
+      setConsentOpen(true);
+      return;
+    }
+    setConfirmOpen(true);
+  }, []);
 
   const acceptInvite = useCallback(async () => {
     setAccepting(true);
@@ -69,19 +81,11 @@ export function InviteGate({ token }: InviteGateProps) {
       return;
     }
 
-    if (termsAccepted) {
-      try {
-        await acceptTerms();
-      } catch {
-        // Non-blocking after invite accept.
-      }
-    }
-
     const body = (await res.json()) as { redirectTo: string };
     redirectToInviteTarget(body.redirectTo);
-  }, [token, termsAccepted]);
+  }, [token]);
 
-  const canJoin = termsAccepted && (invite?.kind !== "session" || sessionConsentAccepted);
+  const canJoin = invite?.kind !== "session" || sessionConsentAccepted;
 
   useEffect(() => {
     let cancelled = false;
@@ -123,7 +127,7 @@ export function InviteGate({ token }: InviteGateProps) {
       setLoading(false);
 
       if (isAuthenticated && inviteData.status === "pending") {
-        setConfirmOpen(true);
+        void openPostAuthStep();
       }
     }
 
@@ -131,11 +135,24 @@ export function InviteGate({ token }: InviteGateProps) {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, openPostAuthStep]);
 
-  function handleSignedIn(_session: EmailConfirmSession) {
+  async function handleSignedIn(_session: EmailConfirmSession) {
     setAuthenticated(true);
-    setConfirmOpen(true);
+    await openPostAuthStep();
+  }
+
+  async function handleConsentAccept(opts: { marketing: boolean }) {
+    setConsentSubmitting(true);
+    try {
+      await submitConsent(opts);
+      setConsentOpen(false);
+      setConfirmOpen(true);
+    } catch {
+      setError("Could not save your consent. Try again.");
+    } finally {
+      setConsentSubmitting(false);
+    }
   }
 
   if (loading) {
@@ -191,7 +208,7 @@ export function InviteGate({ token }: InviteGateProps) {
           title={signInTitle}
           description={signInDescription}
           storageKey={`exedra-invite-${token}`}
-          onSuccess={handleSignedIn}
+          onSuccess={(session) => void handleSignedIn(session)}
         />
       ) : accepting ? (
         <p className="text-sm text-muted-foreground">Accepting invite…</p>
@@ -203,6 +220,12 @@ export function InviteGate({ token }: InviteGateProps) {
           </CardHeader>
         </Card>
       ) : null}
+
+      <ConsentDialog
+        open={consentOpen}
+        submitting={consentSubmitting}
+        onAccept={handleConsentAccept}
+      />
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
@@ -221,25 +244,6 @@ export function InviteGate({ token }: InviteGateProps) {
             <AlertDialogDescription asChild>
               <div className="space-y-4 text-sm text-muted-foreground">
                 <div>{confirmDescription}</div>
-                <Field orientation="horizontal">
-                  <Checkbox
-                    id="exedra-invite-terms"
-                    checked={termsAccepted}
-                    onCheckedChange={(checked) => setTermsAccepted(checked === true)}
-                    disabled={accepting}
-                  />
-                  <FieldLabel htmlFor="exedra-invite-terms" className="font-normal">
-                    I agree to the{" "}
-                    <a href="/terms" target="_blank" rel="noreferrer" className="underline">
-                      Terms of Service
-                    </a>{" "}
-                    and{" "}
-                    <a href="/privacy" target="_blank" rel="noreferrer" className="underline">
-                      Privacy Policy
-                    </a>
-                    .
-                  </FieldLabel>
-                </Field>
                 {invite.kind === "session" && (
                   <Field orientation="horizontal">
                     <Checkbox

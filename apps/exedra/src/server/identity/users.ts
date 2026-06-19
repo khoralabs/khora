@@ -15,6 +15,7 @@ export type ExedraUser = {
   termsAcceptedAtMs: number | null;
   networkOptedInAtMs: number | null;
   sessionConsentAcceptedAtMs: number | null;
+  marketingOptedInAtMs: number | null;
 };
 
 type UserRow = {
@@ -28,6 +29,7 @@ type UserRow = {
   terms_accepted_at_ms: number | null;
   network_opted_in_at_ms: number | null;
   session_consent_accepted_at_ms: number | null;
+  marketing_opted_in_at_ms: number | null;
 };
 
 function mapUser(row: UserRow): ExedraUser {
@@ -42,10 +44,11 @@ function mapUser(row: UserRow): ExedraUser {
     termsAcceptedAtMs: row.terms_accepted_at_ms,
     networkOptedInAtMs: row.network_opted_in_at_ms,
     sessionConsentAcceptedAtMs: row.session_consent_accepted_at_ms,
+    marketingOptedInAtMs: row.marketing_opted_in_at_ms,
   };
 }
 
-const USER_SELECT = `SELECT id, registry_user_id, email, full_name, job_function, avatar_s3_key, created_at_ms, terms_accepted_at_ms, network_opted_in_at_ms, session_consent_accepted_at_ms FROM users`;
+const USER_SELECT = `SELECT id, registry_user_id, email, full_name, job_function, avatar_s3_key, created_at_ms, terms_accepted_at_ms, network_opted_in_at_ms, session_consent_accepted_at_ms, marketing_opted_in_at_ms FROM users`;
 
 export function findUserByRegistryId(db: Database, registryUserId: string): ExedraUser | null {
   const row = db
@@ -83,6 +86,12 @@ export function setUserNetworkOptedIn(db: Database, userId: string): number {
 export function setUserSessionConsentAccepted(db: Database, userId: string): number {
   const now = Date.now();
   db.prepare(`UPDATE users SET session_consent_accepted_at_ms = ? WHERE id = ?`).run(now, userId);
+  return now;
+}
+
+export function setUserMarketingOptedIn(db: Database, userId: string): number {
+  const now = Date.now();
+  db.prepare(`UPDATE users SET marketing_opted_in_at_ms = ? WHERE id = ?`).run(now, userId);
   return now;
 }
 
@@ -165,6 +174,7 @@ export async function getOrCreateUser(
     termsAcceptedAtMs: null,
     networkOptedInAtMs: null,
     sessionConsentAcceptedAtMs: null,
+    marketingOptedInAtMs: null,
   };
 }
 

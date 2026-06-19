@@ -1,4 +1,5 @@
 import { type ReactNode, useCallback, useEffect, useState } from "react";
+import { ConsentDialog } from "@/components/auth/consent-dialog";
 import { SignIn } from "@/components/auth/sign-in";
 import { OnboardingDialog } from "@/components/onboarding/onboarding-dialog";
 import { CreateTeamDialog } from "@/components/teams/create-team-dialog";
@@ -13,6 +14,7 @@ import {
   ONBOARDING_PLACEHOLDER_ORG,
   ONBOARDING_PLACEHOLDER_TEAM,
   type OrgSummary,
+  submitConsent,
   teamsForOrg,
 } from "@/lib/me-api";
 import {
@@ -74,6 +76,7 @@ function AppChromeInner({ entrypoint, children }: AppChromeProps) {
   const [sessionDetail, setSessionDetail] = useState<SessionDetail | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [consentSubmitting, setConsentSubmitting] = useState(false);
 
   const onboardingRequired = me?.onboardingRequired ?? false;
   const hasSessionAccessOnly = me?.hasSessionAccessOnly ?? false;
@@ -142,6 +145,24 @@ function AppChromeInner({ entrypoint, children }: AppChromeProps) {
     await signOutAuthSession();
     window.location.href = "/";
   }, []);
+
+  const handleConsentAccept = useCallback(
+    async (opts: { marketing: boolean }) => {
+      if (me === null) return;
+      setConsentSubmitting(true);
+      try {
+        const result = await submitConsent(opts);
+        setMe({
+          ...me,
+          termsAcceptedAtMs: result.termsAcceptedAtMs,
+          marketingOptedInAtMs: result.marketingOptedInAtMs ?? me.marketingOptedInAtMs,
+        });
+      } finally {
+        setConsentSubmitting(false);
+      }
+    },
+    [me],
+  );
 
   useEffect(() => {
     const onPopState = () => setPathname(window.location.pathname);
@@ -235,6 +256,7 @@ function AppChromeInner({ entrypoint, children }: AppChromeProps) {
 
   const orgs = listOrgsFromTeams(me.teams);
   const teamsForActiveOrg = teamsForOrg(me.teams, activeOrg.id);
+  const consentRequired = me.termsAcceptedAtMs === null;
 
   const onOrgChange = (org: OrgSummary) => {
     const firstTeam = teamsForOrg(me.teams, org.id)[0];
@@ -318,6 +340,12 @@ function AppChromeInner({ entrypoint, children }: AppChromeProps) {
             setActiveTeam(team);
             onNavigate("/");
           }}
+        />
+
+        <ConsentDialog
+          open={consentRequired}
+          submitting={consentSubmitting}
+          onAccept={handleConsentAccept}
         />
 
         <Toaster />

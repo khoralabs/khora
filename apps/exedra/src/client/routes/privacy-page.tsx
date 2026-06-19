@@ -19,7 +19,10 @@ export function PrivacyPage() {
         <li>Email address and registry account identifier (for sign-in)</li>
         <li>Profile fields you provide (name, job function, avatar)</li>
         <li>Custodial agent DID and encrypted signing material stored by Exedra</li>
-        <li>Terms acceptance timestamp and optional Khora network opt-in timestamp</li>
+        <li>
+          Terms acceptance timestamp, optional marketing opt-in timestamp, and optional Khora
+          network opt-in timestamp
+        </li>
       </ul>
       <h3>Interview and session data</h3>
       <ul>
@@ -28,6 +31,10 @@ export function PrivacyPage() {
         <li>Organization, team, and membership structure</li>
         <li>Memory graph data scoped to your organization and personal namespaces</li>
       </ul>
+      <p>
+        When you join a session, your responses may be reviewed by the session facilitator,
+        processed by AI tools to support the interview, and stored as part of the session record.
+      </p>
       <h3>Service data</h3>
       <ul>
         <li>IP address and request metadata for security and rate limiting</li>

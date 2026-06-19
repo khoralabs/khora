@@ -42,6 +42,7 @@ export type MeResponse = {
   hasSessionAccessOnly: boolean;
   termsAcceptedAtMs: number | null;
   networkOptedInAtMs: number | null;
+  marketingOptedInAtMs: number | null;
   networkJoinAvailable: boolean;
 };
 
@@ -178,4 +179,28 @@ export async function joinMyNetwork(): Promise<{ networkOptedInAtMs: number }> {
     throw new Error(data?.error ?? "Could not join Khora network");
   }
   return (await res.json()) as { networkOptedInAtMs: number };
+}
+
+export async function marketingOptIn(): Promise<{ marketingOptedInAtMs: number }> {
+  const res = await fetch("/api/me/marketing-opt-in", {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    throw new Error(await res.text().catch(() => "Could not opt in to marketing"));
+  }
+  return (await res.json()) as { marketingOptedInAtMs: number };
+}
+
+export async function submitConsent(opts: { marketing: boolean }): Promise<{
+  termsAcceptedAtMs: number;
+  marketingOptedInAtMs: number | null;
+}> {
+  const { termsAcceptedAtMs } = await acceptTerms();
+  let marketingOptedInAtMs: number | null = null;
+  if (opts.marketing) {
+    const result = await marketingOptIn();
+    marketingOptedInAtMs = result.marketingOptedInAtMs;
+  }
+  return { termsAcceptedAtMs, marketingOptedInAtMs };
 }

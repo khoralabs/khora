@@ -56,7 +56,11 @@ import {
   handlePatchSession,
   handlePatchSessionAccess,
 } from "./sessions/routes";
-import { handleJoinNetwork, handleJoinOrgNetwork } from "./settings/network-routes";
+import {
+  handleJoinNetwork,
+  handleJoinOrgNetwork,
+  handleMarketingOptIn,
+} from "./settings/network-routes";
 import { handleAcceptTerms } from "./settings/terms-routes";
 import {
   handleCreateTeamInOrg,
@@ -97,6 +101,10 @@ export const apiRoutes = {
 
   "/api/me/join-network": {
     POST: handleJoinNetwork,
+  },
+
+  "/api/me/marketing-opt-in": {
+    POST: handleMarketingOptIn,
   },
 
   "/api/onboarding": {
