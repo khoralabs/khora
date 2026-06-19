@@ -1,5 +1,6 @@
 import { type ReactNode, useCallback, useEffect, useState } from "react";
-import { ConsentDialog } from "@/components/auth/consent-dialog";
+import { AuthPageShell } from "@/components/auth/auth-page-shell";
+import { ConsentForm } from "@/components/auth/consent-form";
 import { SignIn } from "@/components/auth/sign-in";
 import { OnboardingDialog } from "@/components/onboarding/onboarding-dialog";
 import { CreateTeamDialog } from "@/components/teams/create-team-dialog";
@@ -243,20 +244,23 @@ function AppChromeInner({ entrypoint, children }: AppChromeProps) {
   }
 
   if (session?.authenticated !== true || me === null) {
-    return (
-      <div className="flex min-h-screen items-center justify-center p-6">
-        <SignIn onSuccess={() => window.location.reload()} />
-      </div>
-    );
+    return <SignIn onSuccess={() => window.location.reload()} />;
   }
 
   function handleSelectSession(sessionId: string) {
     onNavigate(`/sessions/${sessionId}/interview`);
   }
 
+  if (me.termsAcceptedAtMs === null) {
+    return (
+      <AuthPageShell>
+        <ConsentForm onAccept={handleConsentAccept} submitting={consentSubmitting} />
+      </AuthPageShell>
+    );
+  }
+
   const orgs = listOrgsFromTeams(me.teams);
   const teamsForActiveOrg = teamsForOrg(me.teams, activeOrg.id);
-  const consentRequired = me.termsAcceptedAtMs === null;
 
   const onOrgChange = (org: OrgSummary) => {
     const firstTeam = teamsForOrg(me.teams, org.id)[0];
@@ -340,12 +344,6 @@ function AppChromeInner({ entrypoint, children }: AppChromeProps) {
             setActiveTeam(team);
             onNavigate("/");
           }}
-        />
-
-        <ConsentDialog
-          open={consentRequired}
-          submitting={consentSubmitting}
-          onAccept={handleConsentAccept}
         />
 
         <Toaster />

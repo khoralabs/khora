@@ -1,7 +1,8 @@
 import type { EmailConfirmSession } from "@khoralabs/registry-auth/client";
 import { useCallback, useEffect, useState } from "react";
 
-import { ConsentDialog } from "@/components/auth/consent-dialog";
+import { AuthPageShell } from "@/components/auth/auth-page-shell";
+import { ConsentForm } from "@/components/auth/consent-form";
 import { SignIn } from "@/components/auth/sign-in";
 import { EntityAvatar } from "@/components/entity-avatar";
 import {
@@ -15,7 +16,6 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Spinner } from "@/components/ui/spinner";
@@ -49,7 +49,7 @@ export function InviteGate({ token }: InviteGateProps) {
   const [error, setError] = useState<string | null>(null);
   const [accepting, setAccepting] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
-  const [consentOpen, setConsentOpen] = useState(false);
+  const [consentNeeded, setConsentNeeded] = useState(false);
   const [consentSubmitting, setConsentSubmitting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [sessionConsentAccepted, setSessionConsentAccepted] = useState(false);
@@ -58,7 +58,7 @@ export function InviteGate({ token }: InviteGateProps) {
     const me = await fetchMe();
     if (me === null) return;
     if (me.termsAcceptedAtMs === null) {
-      setConsentOpen(true);
+      setConsentNeeded(true);
       return;
     }
     setConfirmOpen(true);
@@ -146,7 +146,7 @@ export function InviteGate({ token }: InviteGateProps) {
     setConsentSubmitting(true);
     try {
       await submitConsent(opts);
-      setConsentOpen(false);
+      setConsentNeeded(false);
       setConfirmOpen(true);
     } catch {
       setError("Could not save your consent. Try again.");
@@ -156,17 +156,21 @@ export function InviteGate({ token }: InviteGateProps) {
   }
 
   if (loading) {
-    return <p className="text-sm text-muted-foreground">Loading invite…</p>;
+    return (
+      <AuthPageShell>
+        <p className="text-sm text-muted-foreground">Loading invite…</p>
+      </AuthPageShell>
+    );
   }
 
   if (error !== null && invite === null) {
     return (
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Invite unavailable</CardTitle>
-          <CardDescription>{error}</CardDescription>
-        </CardHeader>
-      </Card>
+      <AuthPageShell>
+        <div className="space-y-2">
+          <h1 className="font-serif text-3xl font-semibold tracking-tight">Invite unavailable</h1>
+          <p className="text-sm text-muted-foreground">{error}</p>
+        </div>
+      </AuthPageShell>
     );
   }
 
@@ -196,10 +200,10 @@ export function InviteGate({ token }: InviteGateProps) {
 
   const signInDescription =
     invite.kind === "team" && invite.teamName !== undefined && invite.orgName !== undefined
-      ? `Sign in to join ${invite.teamName} at ${invite.orgName} on Exedra.`
+      ? `Sign in to join ${invite.teamName} at ${invite.orgName}.`
       : invite.topic !== undefined
-        ? `Sign in with the email your facilitator invited to review “${invite.topic}”.`
-        : "Sign in to accept this invite on Exedra.";
+        ? `Sign in with the email your facilitator invited for “${invite.topic}”.`
+        : "Sign in to accept this invite.";
 
   return (
     <>
@@ -210,22 +214,24 @@ export function InviteGate({ token }: InviteGateProps) {
           storageKey={`exedra-invite-${token}`}
           onSuccess={(session) => void handleSignedIn(session)}
         />
+      ) : consentNeeded ? (
+        <AuthPageShell>
+          <ConsentForm onAccept={handleConsentAccept} submitting={consentSubmitting} />
+        </AuthPageShell>
       ) : accepting ? (
-        <p className="text-sm text-muted-foreground">Accepting invite…</p>
+        <AuthPageShell>
+          <p className="text-sm text-muted-foreground">Accepting invite…</p>
+        </AuthPageShell>
       ) : error !== null ? (
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Could not accept invite</CardTitle>
-            <CardDescription>{error}</CardDescription>
-          </CardHeader>
-        </Card>
+        <AuthPageShell>
+          <div className="space-y-2">
+            <h1 className="font-serif text-3xl font-semibold tracking-tight">
+              Could not accept invite
+            </h1>
+            <p className="text-sm text-muted-foreground">{error}</p>
+          </div>
+        </AuthPageShell>
       ) : null}
-
-      <ConsentDialog
-        open={consentOpen}
-        submitting={consentSubmitting}
-        onAccept={handleConsentAccept}
-      />
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>

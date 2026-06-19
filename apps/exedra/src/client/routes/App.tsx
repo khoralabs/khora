@@ -28,13 +28,7 @@ export function App() {
   }, []);
 
   if (inviteToken !== null) {
-    return (
-      <div className="min-h-screen p-6">
-        <div className="flex min-h-[calc(100vh-3rem)] items-center justify-center">
-          <InviteGate token={inviteToken} />
-        </div>
-      </div>
-    );
+    return <InviteGate token={inviteToken} />;
   }
 
   return <AppChrome entrypoint="main">{(ctx) => <MainContent {...ctx} />}</AppChrome>;
