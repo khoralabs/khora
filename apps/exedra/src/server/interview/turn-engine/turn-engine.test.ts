@@ -50,7 +50,7 @@ beforeEach(async () => {
 
   const user = await getOrCreateUser(db, "registry-turn-engine");
   userId = user.id;
-  const orgId = createOrg(db, { name: "Org", ownerId: userId });
+  const orgId = await createOrg(db, { name: "Org", ownerId: userId });
   teamId = createTeam(db, { orgId, name: "Team", ownerId: userId });
 
   const session = createSession(db, {

@@ -63,7 +63,7 @@ test("POST /api/sessions creates session when teamId is provided", async () => {
   const db = new Database(path.join(dataDir, "exedra.db"), { create: true });
   ensureExedraSchema(db);
   const user = await getOrCreateUser(db, "registry-session-2");
-  const orgId = createOrg(db, { name: "Org", ownerId: user.id });
+  const orgId = await createOrg(db, { name: "Org", ownerId: user.id });
   const teamId = createTeam(db, { orgId, name: "Team", ownerId: user.id });
   db.close();
 

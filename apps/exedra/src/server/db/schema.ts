@@ -18,7 +18,6 @@ export function ensureExedraSchema(db: Database): void {
     CREATE TABLE IF NOT EXISTS orgs (
       id TEXT PRIMARY KEY NOT NULL,
       name TEXT NOT NULL,
-      did TEXT,
       identity_encrypted BLOB,
       created_at_ms INTEGER NOT NULL
     );
@@ -142,7 +141,8 @@ export function ensureExedraSchema(db: Database): void {
   migrateAvatarS3KeyColumns(db);
   migrateSessionsAddLinkAccess(db);
   migrateInvitesAddReusableColumns(db);
-  migrateOrgsAddIdentity(db);
+  migrateOrgsAddIdentityEncrypted(db);
+  migrateOrgsDropDidColumn(db);
   migrateUsersAddTermsColumns(db);
   migrateOrgsAddNetworkOptIn(db);
   ensureAuthzSchema(db);
@@ -208,13 +208,17 @@ function migrateSessionsAddLinkAccess(db: Database): void {
   db.run(`ALTER TABLE sessions ADD COLUMN link_access TEXT NOT NULL DEFAULT 'restricted'`);
 }
 
-function migrateOrgsAddIdentity(db: Database): void {
+function migrateOrgsAddIdentityEncrypted(db: Database): void {
   const columns = db.query<{ name: string }, []>("PRAGMA table_info(orgs)").all();
-  if (!columns.some((column) => column.name === "did")) {
-    db.run(`ALTER TABLE orgs ADD COLUMN did TEXT`);
-  }
   if (!columns.some((column) => column.name === "identity_encrypted")) {
     db.run(`ALTER TABLE orgs ADD COLUMN identity_encrypted BLOB`);
+  }
+}
+
+function migrateOrgsDropDidColumn(db: Database): void {
+  const columns = db.query<{ name: string }, []>("PRAGMA table_info(orgs)").all();
+  if (columns.some((column) => column.name === "did")) {
+    db.run(`ALTER TABLE orgs DROP COLUMN did`);
   }
 }
 

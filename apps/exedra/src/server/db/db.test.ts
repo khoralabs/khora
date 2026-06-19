@@ -26,7 +26,7 @@ afterAll(() => {
 
 test("session invite is single-use", async () => {
   const user = await getOrCreateUser(db, "registry-user-1");
-  const orgId = createOrg(db, { name: "Org", ownerId: user.id });
+  const orgId = await createOrg(db, { name: "Org", ownerId: user.id });
   const teamId = createTeam(db, { orgId, name: "Team", ownerId: user.id });
   const session = createSession(db, {
     teamId,
@@ -54,7 +54,7 @@ test("session invite is single-use", async () => {
 
 test("messages round-trip as UIMessage JSONB", async () => {
   const user = await getOrCreateUser(db, "registry-user-2");
-  const orgId = createOrg(db, { name: "Org2", ownerId: user.id });
+  const orgId = await createOrg(db, { name: "Org2", ownerId: user.id });
   const teamId = createTeam(db, { orgId, name: "Team2", ownerId: user.id });
   const session = createSession(db, {
     teamId,

@@ -35,7 +35,6 @@ import {
   setSessionLinkAccess,
   userHasSessionAccess,
 } from "../db/sessions";
-import { getOrCreateOrgIdentity } from "../identity/orgs";
 import { getOrCreateUser } from "../identity/users";
 import { bootstrapSessionMemoriesForTeamSession } from "../memories/bootstrap-session";
 import { resolveOrgAgentAuthorForOrg, resolveViewerAuthor } from "../messages/resolve-author";
@@ -376,10 +375,9 @@ export async function handleGetInterview(req: Request, sessionId: string): Promi
   if (team === null || org === null) {
     return Response.json({ error: "Organization not found for session" }, { status: 500 });
   }
-  const orgDid = (await getOrCreateOrgIdentity(db, org.id)).did;
-  const messages = serializeThreadMessages(db, rawMessages, { org, orgDid });
+  const messages = serializeThreadMessages(db, rawMessages, { org });
   const viewer = resolveViewerAuthor(db, user.id);
-  const agent = resolveOrgAgentAuthorForOrg(org, orgDid);
+  const agent = resolveOrgAgentAuthorForOrg(org);
 
   return Response.json({
     session: {

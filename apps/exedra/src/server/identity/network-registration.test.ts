@@ -28,9 +28,7 @@ describe("usernameFromEmail", () => {
 
 describe("usernameForOrg", () => {
   test("derives org agent username from org name", () => {
-    expect(usernameForOrg("11111111-2222-3333-4444-555555555555", "Acme Corp")).toBe(
-      "acme-corp-agent",
-    );
+    expect(usernameForOrg("did:key:z6MkorgExample123456789", "Acme Corp")).toBe("acme-corp-agent");
   });
 });
 
@@ -60,7 +58,7 @@ describe("registerUserDidOnNetwork", () => {
 
     const calls: { url: string; method: string; cookie?: string }[] = [];
     const originalFetch = globalThis.fetch;
-    globalThis.fetch = async (input, init) => {
+    globalThis.fetch = (async (input, init) => {
       const url = String(input);
       const method = init?.method ?? "GET";
       const cookie = new Headers(init?.headers).get("cookie") ?? undefined;
@@ -83,7 +81,7 @@ describe("registerUserDidOnNetwork", () => {
         return new Response(JSON.stringify({ ok: true }), { status: 200 });
       }
       return new Response("not found", { status: 404 });
-    };
+    }) as typeof fetch;
 
     try {
       await registerUserDidOnNetwork({
@@ -114,10 +112,10 @@ describe("registerUserDidOnNetwork", () => {
 
     const originalFetch = globalThis.fetch;
     let called = false;
-    globalThis.fetch = async () => {
+    globalThis.fetch = (async () => {
       called = true;
       return new Response("unexpected", { status: 500 });
-    };
+    }) as typeof fetch;
 
     try {
       await registerUserDidOnNetwork({

@@ -3,7 +3,8 @@ import { resolveMemoriesDir } from "./config.js";
 import { encodePrincipalIdForMemories } from "./encode-principal-id.js";
 
 export function resolveOrgMemoriesDbPath(orgId: string): string {
-  return path.join(resolveMemoriesDir(), `${orgId}.db`);
+  const encoded = encodePrincipalIdForMemories(orgId);
+  return path.join(resolveMemoriesDir(), `${encoded}.db`);
 }
 
 export function resolveUserMemoriesDbPath(userId: string): string {

@@ -27,7 +27,7 @@ beforeEach(async () => {
   const member = await getOrCreateUser(db, "member@example.com", "member@example.com");
   ownerId = owner.id;
   memberId = member.id;
-  orgId = createOrg(db, { name: "Acme", ownerId });
+  orgId = await createOrg(db, { name: "Acme", ownerId });
   teamId = createTeam(db, { orgId, name: "Product", ownerId });
   const { addTeamMember } = await import("../db/membership");
   addTeamMember(db, teamId, memberId);
@@ -98,15 +98,14 @@ test("GET /api/orgs/:orgId/members/:userId returns member profile for org member
   const res = await handleGetOrgMember(new Request("http://localhost"), orgId, ownerId);
   expect(res.status).toBe(200);
   const body = (await res.json()) as {
-    user: { email: string | null };
+    account: { email: string | null };
     isCurrentUser: boolean;
-    isAdmin: boolean;
-    teamNames: string[];
+    context: { isAdmin: boolean; teamNames: string[] };
   };
-  expect(body.user.email).toBe("owner@example.com");
+  expect(body.account.email).toBe("owner@example.com");
   expect(body.isCurrentUser).toBe(false);
-  expect(body.isAdmin).toBe(true);
-  expect(body.teamNames).toContain("Product");
+  expect(body.context.isAdmin).toBe(true);
+  expect(body.context.teamNames).toContain("Product");
 });
 
 test("GET /api/orgs/:orgId/teams lists org teams for members", async () => {
@@ -128,7 +127,7 @@ test("GET /api/teams/:teamId/members lists team members", async () => {
   const res = await handleListTeamMembers(new Request("http://localhost"), teamId);
   expect(res.status).toBe(200);
   const body = (await res.json()) as {
-    members: { userId: string; isCurrentUser: boolean; fullName: string | null }[];
+    members: { account: { userId: string }; isCurrentUser: boolean }[];
   };
   expect(body.members).toHaveLength(2);
   expect(body.members.some((member) => member.isCurrentUser)).toBe(true);

@@ -28,7 +28,7 @@ test("getInterviewStatus tracks thread and messages", async () => {
   const db = new Database(":memory:");
   ensureExedraSchema(db);
   const user = await getOrCreateUser(db, "registry-interview-status");
-  const orgId = createOrg(db, { name: "Org", ownerId: user.id });
+  const orgId = await createOrg(db, { name: "Org", ownerId: user.id });
   const teamId = createTeam(db, { orgId, name: "Team", ownerId: user.id });
   const session = createSession(db, {
     teamId,

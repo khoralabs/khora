@@ -43,7 +43,7 @@ test("resolveAccountProfile returns full account profile", async () => {
 test("listAccountRowsForSession resolves participant context from grants", async () => {
   const facilitator = await getOrCreateUser(db, "fac-id", "fac@example.com");
   const participant = await getOrCreateUser(db, "part@example.com");
-  const orgId = createOrg(db, { name: "Org", ownerId: facilitator.id });
+  const orgId = await createOrg(db, { name: "Org", ownerId: facilitator.id });
   const teamId = createTeam(db, { orgId, name: "Team", ownerId: facilitator.id });
   const session = createSession(db, { teamId, topic: "Review" });
 
@@ -68,7 +68,7 @@ test("listAccountRowsForSession resolves participant context from grants", async
 test("listAccountRowsForSession expands team-scoped participant grants", async () => {
   const facilitator = await getOrCreateUser(db, "fac-team@example.com");
   const participant = await getOrCreateUser(db, "part-team@example.com");
-  const orgId = createOrg(db, { name: "Org2", ownerId: facilitator.id });
+  const orgId = await createOrg(db, { name: "Org2", ownerId: facilitator.id });
   const teamId = createTeam(db, { orgId, name: "Team2", ownerId: facilitator.id });
   const session = createSession(db, { teamId, topic: "Sync" });
 
@@ -84,7 +84,7 @@ test("listAccountRowsForSession expands team-scoped participant grants", async (
 test("listAccountRowsForTeam includes admin context", async () => {
   const owner = await getOrCreateUser(db, "owner@example.com");
   const member = await getOrCreateUser(db, "member@example.com");
-  const orgId = createOrg(db, { name: "Org3", ownerId: owner.id });
+  const orgId = await createOrg(db, { name: "Org3", ownerId: owner.id });
   const teamId = createTeam(db, { orgId, name: "Team3", ownerId: owner.id });
   const { addTeamMember } = await import("../db/membership");
   addTeamMember(db, teamId, member.id);
@@ -104,7 +104,7 @@ test("listAccountRowsForTeam includes admin context", async () => {
 test("listAccountRowsForOrg aggregates team membership", async () => {
   const owner = await getOrCreateUser(db, "org-owner@example.com");
   const member = await getOrCreateUser(db, "org-member@example.com");
-  const orgId = createOrg(db, { name: "Org4", ownerId: owner.id });
+  const orgId = await createOrg(db, { name: "Org4", ownerId: owner.id });
   const teamId = createTeam(db, { orgId, name: "Team4", ownerId: owner.id });
   const { addTeamMember } = await import("../db/membership");
   addTeamMember(db, teamId, member.id);

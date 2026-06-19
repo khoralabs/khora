@@ -118,7 +118,7 @@ export function OrganizationSettingsForm({ activeTeam, onSaved }: OrganizationSe
               disabled={!canEdit || submitting}
             />
           </Field>
-          <OrgAgentIdentityField did={settings?.did ?? null} />
+          <OrgAgentIdentityField orgId={settings?.id ?? null} />
         </FieldGroup>
       </FieldSet>
 

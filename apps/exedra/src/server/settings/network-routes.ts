@@ -8,11 +8,7 @@ import {
   registerOrgDidOnNetwork,
   registerUserDidOnNetwork,
 } from "../identity/network-registration";
-import {
-  getOrCreateOrgIdentity,
-  getOrgIdentityEncrypted,
-  setOrgNetworkOptedIn,
-} from "../identity/orgs";
+import { getOrgIdentityEncrypted, setOrgNetworkOptedIn } from "../identity/orgs";
 import {
   getOrCreateUserForAuth,
   getUserIdentityEncrypted,
@@ -61,12 +57,6 @@ export async function handleJoinOrgNetwork(req: Request, orgId: string): Promise
     return Response.json({ ok: true, networkOptedInAtMs: org.networkOptedInAtMs });
   }
 
-  await getOrCreateOrgIdentity(db, orgId);
-  const refreshedOrg = getOrg(db, orgId);
-  if (refreshedOrg === null) {
-    return Response.json({ error: "Organization not found" }, { status: 404 });
-  }
-
   const identityEncrypted = getOrgIdentityEncrypted(db, orgId);
   if (identityEncrypted === null) {
     return Response.json({ error: "Organization identity not found" }, { status: 500 });
@@ -75,7 +65,7 @@ export async function handleJoinOrgNetwork(req: Request, orgId: string): Promise
   await registerOrgDidOnNetwork({
     identityEncrypted,
     orgId,
-    orgName: refreshedOrg.name,
+    orgName: org.name,
   });
 
   const networkOptedInAtMs = setOrgNetworkOptedIn(db, orgId);

@@ -45,7 +45,10 @@ export function buildOnboardingSessionTopic(orgName: string, teamName: string): 
   return `Getting to know ${orgName} and ${teamName}`;
 }
 
-export function createOrg(db: Database, params: { name: string; ownerId: string }): string {
+export async function createOrg(
+  db: Database,
+  params: { name: string; ownerId: string },
+): Promise<string> {
   return createOrgWithAdmin(db, { name: params.name, creatorId: params.ownerId });
 }
 

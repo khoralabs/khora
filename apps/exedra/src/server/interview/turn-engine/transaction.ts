@@ -9,7 +9,6 @@ import {
   formatDocumentContextForModel,
   resolveUserMessageDocuments,
 } from "../../documents/message-context";
-import { getOrCreateOrgIdentity } from "../../identity/orgs";
 import { resolveOrgAgentAuthorForOrg, resolveViewerAuthor } from "../../messages/resolve-author";
 import { finishOnboardingInterview } from "../../onboarding/interview";
 import { rollbackTurnDocuments } from "./rollback";
@@ -98,7 +97,6 @@ export async function executeTurn(deps: TurnEngineDeps, args: ExecuteTurnInput):
     emit({ type: "error", error: "Organization not found for session" });
     return;
   }
-  const orgDid = (await getOrCreateOrgIdentity(db, org.id)).did;
   const onboardingMeta =
     session.kind === "onboarding" ? { orgName: org.name, teamName: team.name } : undefined;
 
@@ -224,10 +222,10 @@ export async function executeTurn(deps: TurnEngineDeps, args: ExecuteTurnInput):
       parts: assistantParts.length > 0 ? assistantParts : [{ type: "text", text: "" }],
       messageIndex: assistantIndex,
       metadata: beliefFlags.length > 0 ? { beliefFlags } : undefined,
-      authorDid: orgDid,
+      authorDid: org.id,
     });
 
-    const agentAuthor = resolveOrgAgentAuthorForOrg(org, orgDid);
+    const agentAuthor = resolveOrgAgentAuthorForOrg(org);
 
     db.run("COMMIT");
 

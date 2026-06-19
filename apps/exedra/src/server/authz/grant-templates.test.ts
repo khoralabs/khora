@@ -31,7 +31,7 @@ afterEach(() => {
 
 test("grantAllOrgPermissions grants every organization permission", async () => {
   const creator = await getOrCreateUser(db, "creator@example.com");
-  const orgId = createOrg(db, { name: "Acme", ownerId: creator.id });
+  const orgId = await createOrg(db, { name: "Acme", ownerId: creator.id });
   const granted = listOrgPermissionsForAccount(db, creator.id, orgId);
   expect(granted).toContain(OrgPermission.PermissionsManage);
   expect(granted).toContain(OrgPermission.Write);
@@ -42,7 +42,7 @@ test("grantAllOrgPermissions grants every organization permission", async () => 
 
 test("grantAllTeamPermissions grants every team permission", async () => {
   const creator = await getOrCreateUser(db, "team-creator@example.com");
-  const orgId = createOrg(db, { name: "Org", ownerId: creator.id });
+  const orgId = await createOrg(db, { name: "Org", ownerId: creator.id });
   const teamId = createTeam(db, { orgId, name: "Team", ownerId: creator.id });
   const granted = listTeamPermissionsForAccount(db, creator.id, teamId);
   expect(granted.sort()).toEqual([...TEAM_PERMISSIONS].sort());
@@ -51,7 +51,7 @@ test("grantAllTeamPermissions grants every team permission", async () => {
 test("setOrgPermissionsForAccount replaces active org permission grants", async () => {
   const creator = await getOrCreateUser(db, "setter@example.com");
   const joiner = await getOrCreateUser(db, "joiner@example.com");
-  const orgId = createOrg(db, { name: "Org", ownerId: creator.id });
+  const orgId = await createOrg(db, { name: "Org", ownerId: creator.id });
   grantAllOrgPermissions(db, joiner.id, orgId);
   setOrgPermissionsForAccount(db, joiner.id, orgId, [OrgPermission.Read]);
   const granted = listOrgPermissionsForAccount(db, joiner.id, orgId);
@@ -61,7 +61,7 @@ test("setOrgPermissionsForAccount replaces active org permission grants", async 
 test("team scope permissions apply to every team member", async () => {
   const creator = await getOrCreateUser(db, "team-admin@example.com");
   const member = await getOrCreateUser(db, "team-member@example.com");
-  const orgId = createOrg(db, { name: "Org", ownerId: creator.id });
+  const orgId = await createOrg(db, { name: "Org", ownerId: creator.id });
   const teamId = createTeam(db, { orgId, name: "Team", ownerId: creator.id });
   grantTeamMember(db, member.id, teamId);
   setTeamScopePermissions(db, teamId, [TeamPermission.Write]);
@@ -75,7 +75,7 @@ test("team scope permissions apply to every team member", async () => {
 test("team scope org permissions apply to every team member", async () => {
   const creator = await getOrCreateUser(db, "org-admin@example.com");
   const member = await getOrCreateUser(db, "org-member@example.com");
-  const orgId = createOrg(db, { name: "Org", ownerId: creator.id });
+  const orgId = await createOrg(db, { name: "Org", ownerId: creator.id });
   const teamId = createTeam(db, { orgId, name: "Team", ownerId: creator.id });
   grantTeamMember(db, member.id, teamId);
   setTeamScopeOrgPermissions(db, teamId, orgId, [OrgPermission.TeamManage]);

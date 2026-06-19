@@ -42,7 +42,7 @@ test("session invite effects classify as session when team grant included", () =
 
 test("session invite public info includes org details", async () => {
   const user = await getOrCreateUser(db, "registry-user-invite-session-org");
-  const orgId = createOrg(db, { name: "Acme Corp", ownerId: user.id });
+  const orgId = await createOrg(db, { name: "Acme Corp", ownerId: user.id });
   const teamId = createTeam(db, { orgId, name: "Leadership", ownerId: user.id });
   const session = createSession(db, {
     teamId,
@@ -64,7 +64,7 @@ test("session invite public info includes org details", async () => {
 
 test("getInviteSessionId resolves session for token", async () => {
   const user = await getOrCreateUser(db, "registry-user-invite-session");
-  const orgId = createOrg(db, { name: "Org", ownerId: user.id });
+  const orgId = await createOrg(db, { name: "Org", ownerId: user.id });
   const teamId = createTeam(db, { orgId, name: "Team", ownerId: user.id });
   const session = createSession(db, {
     teamId,
@@ -83,7 +83,7 @@ test("getInviteSessionId resolves session for token", async () => {
 test("team invite is single-use and grants membership on accept", async () => {
   const owner = await getOrCreateUser(db, "registry-team-invite-owner");
   const joiner = await getOrCreateUser(db, "registry-team-invite-joiner");
-  const orgId = createOrg(db, { name: "OrgTeam", ownerId: owner.id });
+  const orgId = await createOrg(db, { name: "OrgTeam", ownerId: owner.id });
   const teamId = createTeam(db, { orgId, name: "TeamInvite", ownerId: owner.id });
 
   const token = mintTeamMemberInvite(db, { teamId, createdByUserId: owner.id });
@@ -108,7 +108,7 @@ test("team invite is single-use and grants membership on accept", async () => {
 test("user with session access is treated as already joined", async () => {
   const facilitator = await getOrCreateUser(db, "registry-facilitator");
   const participant = await getOrCreateUser(db, "registry-participant");
-  const orgId = createOrg(db, { name: "Org2", ownerId: facilitator.id });
+  const orgId = await createOrg(db, { name: "Org2", ownerId: facilitator.id });
   const teamId = createTeam(db, { orgId, name: "Team2", ownerId: facilitator.id });
   const session = createSession(db, {
     teamId,

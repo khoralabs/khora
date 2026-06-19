@@ -21,9 +21,9 @@ function formatUserDisplayName(profile: { fullName: string | null; email: string
   return "Unknown user";
 }
 
-function resolveOrgAgentAuthor(org: OrgRecord, orgDid: string): MessageAuthor {
+function resolveOrgAgentAuthor(org: OrgRecord): MessageAuthor {
   return {
-    did: orgDid,
+    did: org.id,
     kind: "org_agent",
     name: orgAgentDisplayName(org.name),
     email: null,
@@ -48,18 +48,17 @@ export function resolveMessageAuthor(
   params: {
     authorDid: string;
     org: OrgRecord;
-    orgDid: string;
   },
 ): MessageAuthor | null {
-  const { authorDid, org, orgDid } = params;
-  if (authorDid === orgDid) {
-    return resolveOrgAgentAuthor(org, orgDid);
+  const { authorDid, org } = params;
+  if (authorDid === org.id) {
+    return resolveOrgAgentAuthor(org);
   }
   return resolveUserAuthor(db, authorDid);
 }
 
-export function resolveOrgAgentAuthorForOrg(org: OrgRecord, orgDid: string): MessageAuthor {
-  return resolveOrgAgentAuthor(org, orgDid);
+export function resolveOrgAgentAuthorForOrg(org: OrgRecord): MessageAuthor {
+  return resolveOrgAgentAuthor(org);
 }
 
 export function resolveViewerAuthor(db: Database, userId: string): MessageAuthor | null {

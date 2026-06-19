@@ -30,7 +30,7 @@ afterEach(() => {
 
 test("hasSessionAccess allows facilitator with admin grant", async () => {
   const facilitator = await getOrCreateUser(db, "fac-1");
-  const orgId = createOrg(db, { name: "Org", ownerId: facilitator.id });
+  const orgId = await createOrg(db, { name: "Org", ownerId: facilitator.id });
   const teamId = createTeam(db, { orgId, name: "Team", ownerId: facilitator.id });
   const session = createSession(db, { teamId, topic: "Review" });
   grantSessionCreatorAccess(db, facilitator.id, session.id);
@@ -42,7 +42,7 @@ test("hasSessionAccess allows facilitator with admin grant", async () => {
 test("hasSessionAccess allows participant with grant", async () => {
   const facilitator = await getOrCreateUser(db, "fac-2");
   const participant = await getOrCreateUser(db, "part-2");
-  const orgId = createOrg(db, { name: "Org2", ownerId: facilitator.id });
+  const orgId = await createOrg(db, { name: "Org2", ownerId: facilitator.id });
   const teamId = createTeam(db, { orgId, name: "Team2", ownerId: facilitator.id });
   const session = createSession(db, { teamId, topic: "Sync" });
   grantSessionCreatorAccess(db, facilitator.id, session.id);
@@ -55,7 +55,7 @@ test("hasSessionAccess allows participant with grant", async () => {
 test("team-scoped participant grant gives all team members access", async () => {
   const facilitator = await getOrCreateUser(db, "fac-3");
   const member = await getOrCreateUser(db, "member-3");
-  const orgId = createOrg(db, { name: "Org3", ownerId: facilitator.id });
+  const orgId = await createOrg(db, { name: "Org3", ownerId: facilitator.id });
   const teamId = createTeam(db, { orgId, name: "Team3", ownerId: facilitator.id });
   addTeamMember(db, teamId, member.id);
 
@@ -68,7 +68,7 @@ test("team-scoped participant grant gives all team members access", async () => 
 
 test("canReadThread allows thread owner via grants", async () => {
   const user = await getOrCreateUser(db, "thread-owner");
-  const orgId = createOrg(db, { name: "Org3", ownerId: user.id });
+  const orgId = await createOrg(db, { name: "Org3", ownerId: user.id });
   const teamId = createTeam(db, { orgId, name: "Team3", ownerId: user.id });
   const session = createSession(db, { teamId, topic: "Thread test" });
   grantSessionCreatorAccess(db, user.id, session.id);
@@ -80,7 +80,7 @@ test("canReadThread allows thread owner via grants", async () => {
 test("canReadThread allows explicit read grant holder", async () => {
   const owner = await getOrCreateUser(db, "owner-4");
   const reader = await getOrCreateUser(db, "reader-4");
-  const orgId = createOrg(db, { name: "Org4", ownerId: owner.id });
+  const orgId = await createOrg(db, { name: "Org4", ownerId: owner.id });
   const teamId = createTeam(db, { orgId, name: "Team4", ownerId: owner.id });
   const session = createSession(db, { teamId, topic: "Shared thread" });
   grantSessionCreatorAccess(db, owner.id, session.id);

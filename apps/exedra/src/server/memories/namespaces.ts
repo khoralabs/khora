@@ -7,17 +7,20 @@ const GLOBAL_ROOT = "_global_" as NamespacePath;
 
 /** Org namespace under company: org/{orgId} */
 export function orgScope(orgId: string): NamespacePath {
-  return namespaceFromSegments(["org", orgId]);
+  const encoded = encodePrincipalIdForMemories(orgId);
+  return namespaceFromSegments(["org", encoded]);
 }
 
 /** Team namespace under org: org/{orgId}/team/{teamId} */
 export function orgTeamScope(orgId: string, teamId: string): NamespacePath {
-  return namespaceFromSegments(["org", orgId, "team", teamId]);
+  const encoded = encodePrincipalIdForMemories(orgId);
+  return namespaceFromSegments(["org", encoded, "team", teamId]);
 }
 
 /** Session namespace under team: org/{orgId}/team/{teamId}/session/{sessionId} */
 export function orgSessionScope(orgId: string, teamId: string, sessionId: string): NamespacePath {
-  return namespaceFromSegments(["org", orgId, "team", teamId, "session", sessionId]);
+  const encoded = encodePrincipalIdForMemories(orgId);
+  return namespaceFromSegments(["org", encoded, "team", teamId, "session", sessionId]);
 }
 
 /** User global namespace: {userId} */
@@ -28,8 +31,9 @@ export function userScope(userId: string): NamespacePath {
 
 /** User team namespace: {userId}/org/{orgId}/team/{teamId} */
 export function userTeamScope(userId: string, orgId: string, teamId: string): NamespacePath {
-  const encoded = encodePrincipalIdForMemories(userId);
-  return namespaceFromSegments([encoded, "org", orgId, "team", teamId]);
+  const encodedUser = encodePrincipalIdForMemories(userId);
+  const encodedOrg = encodePrincipalIdForMemories(orgId);
+  return namespaceFromSegments([encodedUser, "org", encodedOrg, "team", teamId]);
 }
 
 /**
@@ -42,8 +46,9 @@ export function userSessionScope(
   teamId: string,
   sessionId: string,
 ): NamespacePath {
-  const encoded = encodePrincipalIdForMemories(userId);
-  return namespaceFromSegments([encoded, "org", orgId, "team", teamId, sessionId]);
+  const encodedUser = encodePrincipalIdForMemories(userId);
+  const encodedOrg = encodePrincipalIdForMemories(orgId);
+  return namespaceFromSegments([encodedUser, "org", encodedOrg, "team", teamId, sessionId]);
 }
 
 export function ensureScopeChain(

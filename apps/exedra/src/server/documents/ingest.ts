@@ -73,7 +73,9 @@ export async function ingestSessionDocument(params: IngestSessionDocumentParams)
     plaintext: summary,
     files: [
       {
-        blob: new Blob([params.bytes], { type: params.mimeType }),
+        blob: new Blob([params.bytes as unknown as Uint8Array<ArrayBuffer>], {
+          type: params.mimeType,
+        }),
         mimeType: params.mimeType,
         fileName: params.fileName,
         title: params.fileName,

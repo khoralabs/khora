@@ -100,7 +100,7 @@ async function signInCookie(email: string): Promise<{ cookie: string; registryUs
 test("accept invite redirects when user already joined session", async () => {
   const db = getDb();
   const facilitator = await getOrCreateUser(db, "registry-fac-route");
-  const orgId = createOrg(db, { name: "Org", ownerId: facilitator.id });
+  const orgId = await createOrg(db, { name: "Org", ownerId: facilitator.id });
   const teamId = createTeam(db, { orgId, name: "Team", ownerId: facilitator.id });
   const session = createSession(db, {
     teamId,
@@ -134,7 +134,7 @@ test("accept invite redirects when user already joined session", async () => {
 test("accept invite grants session access and team membership", async () => {
   const db = getDb();
   const facilitator = await getOrCreateUser(db, "registry-fac-accept");
-  const orgId = createOrg(db, { name: "OrgAccept", ownerId: facilitator.id });
+  const orgId = await createOrg(db, { name: "OrgAccept", ownerId: facilitator.id });
   const teamId = createTeam(db, { orgId, name: "TeamAccept", ownerId: facilitator.id });
   const session = createSession(db, {
     teamId,
@@ -181,7 +181,7 @@ test("accept invite grants session access and team membership", async () => {
 test("accept onboarding session invite joins facilitator session", async () => {
   const db = getDb();
   const facilitator = await getOrCreateUser(db, "registry-fac-onboard");
-  const orgId = createOrg(db, { name: "Onboard Org", ownerId: facilitator.id });
+  const orgId = await createOrg(db, { name: "Onboard Org", ownerId: facilitator.id });
   const teamId = createTeam(db, { orgId, name: "Onboard Team", ownerId: facilitator.id });
   const onboarding = createOnboardingInterviewForMember(db, {
     teamId,
@@ -221,7 +221,7 @@ test("accept onboarding session invite joins facilitator session", async () => {
 test("get invite marks already joined for authenticated participant", async () => {
   const db = getDb();
   const facilitator = await getOrCreateUser(db, "registry-fac-get");
-  const orgId = createOrg(db, { name: "Org2", ownerId: facilitator.id });
+  const orgId = await createOrg(db, { name: "Org2", ownerId: facilitator.id });
   const teamId = createTeam(db, { orgId, name: "Team2", ownerId: facilitator.id });
   const session = createSession(db, {
     teamId,
@@ -253,7 +253,7 @@ test("get invite marks already joined for authenticated participant", async () =
 test("accept team invite grants membership", async () => {
   const db = getDb();
   const owner = await getOrCreateUser(db, "registry-team-owner");
-  const orgId = createOrg(db, { name: "OrgJoin", ownerId: owner.id });
+  const orgId = await createOrg(db, { name: "OrgJoin", ownerId: owner.id });
   const teamId = createTeam(db, { orgId, name: "JoinTeam", ownerId: owner.id });
   const { mintTeamMemberInvite } = await import("../db/invites");
   const token = mintTeamMemberInvite(db, { teamId, createdByUserId: owner.id });

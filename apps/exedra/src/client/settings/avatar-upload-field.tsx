@@ -15,7 +15,9 @@ type AvatarUploadFieldProps = {
 function hasImageFiles(dataTransfer: DataTransfer | null): boolean {
   if (dataTransfer === null) return false;
   if (
-    [...dataTransfer.items].some((item) => item.kind === "file" && item.type.startsWith("image/"))
+    [...(dataTransfer.items as unknown as DataTransferItem[])].some(
+      (item) => item.kind === "file" && item.type.startsWith("image/"),
+    )
   ) {
     return true;
   }
@@ -24,7 +26,9 @@ function hasImageFiles(dataTransfer: DataTransfer | null): boolean {
 
 function firstImageFile(dataTransfer: DataTransfer | null): File | null {
   if (dataTransfer === null) return null;
-  const file = [...dataTransfer.files].find((item) => item.type.startsWith("image/"));
+  const file = [...(dataTransfer.files as unknown as File[])].find((item) =>
+    item.type.startsWith("image/"),
+  );
   return file ?? null;
 }
 

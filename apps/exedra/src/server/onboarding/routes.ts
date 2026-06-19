@@ -18,7 +18,6 @@ import {
 } from "../db/membership";
 import { createOrg, createTeam, userHasAnyAccessibleSession } from "../db/sessions";
 import { getKhoraHostUrl } from "../env";
-import { getOrCreateOrgIdentity } from "../identity/orgs";
 import {
   type ExedraUser,
   getOrCreateUser,
@@ -188,13 +187,12 @@ export async function handlePostOnboarding(req: Request): Promise<Response> {
     return Response.json({ error: "User already belongs to a team" }, { status: 409 });
   }
 
-  const orgId = createOrg(db, { name: orgName, ownerId: user.id });
-  await getOrCreateOrgIdentity(db, orgId);
+  const orgId = await createOrg(db, { name: orgName, ownerId: user.id });
   const teamId = createTeam(db, { orgId, name: teamName, ownerId: user.id });
 
-  let memories: { orgDbPath: string; userDbPath: string };
+  let _memories: { orgDbPath: string; userDbPath: string };
   try {
-    memories = bootstrapOrgTeamMemories({ orgId, teamId, userId: user.id });
+    _memories = bootstrapOrgTeamMemories({ orgId, teamId, userId: user.id });
   } catch (err) {
     rollbackOnboarding(db, { orgId, teamId });
     const message = err instanceof Error ? err.message : "Failed to bootstrap memories";
@@ -231,7 +229,6 @@ export async function handlePostOnboarding(req: Request): Promise<Response> {
     {
       org: { id: org.id, name: org.name },
       team: { id: team.id, name: team.name, orgId: team.orgId },
-      memories,
       onboardingSessionId,
     },
     { status: 201 },

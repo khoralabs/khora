@@ -40,7 +40,7 @@ test("listSessionsForUser returns facilitator and participant sessions", async (
 
   const facilitator = await getOrCreateUser(db, "registry-facilitator");
   const participant = await getOrCreateUser(db, "registry-participant");
-  const orgId = createOrg(db, { name: "Org", ownerId: facilitator.id });
+  const orgId = await createOrg(db, { name: "Org", ownerId: facilitator.id });
   const teamId = createTeam(db, { orgId, name: "Team", ownerId: facilitator.id });
   addTeamMember(db, teamId, participant.id);
 
@@ -69,7 +69,7 @@ test("team-scoped grant lists all team members as participants", async () => {
 
   const facilitator = await getOrCreateUser(db, "registry-fac-team");
   const member = await getOrCreateUser(db, "registry-member-team");
-  const orgId = createOrg(db, { name: "Org", ownerId: facilitator.id });
+  const orgId = await createOrg(db, { name: "Org", ownerId: facilitator.id });
   const teamId = createTeam(db, { orgId, name: "Team", ownerId: facilitator.id });
   addTeamMember(db, teamId, member.id);
 

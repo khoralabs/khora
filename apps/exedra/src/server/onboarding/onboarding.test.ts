@@ -143,7 +143,7 @@ test("team invite mint and accept add membership", async () => {
 
   const owner = await getOrCreateUser(db, "registry-owner");
   const joiner = await getOrCreateUser(db, "registry-joiner");
-  const orgId = createOrg(db, { name: "Org", ownerId: owner.id });
+  const orgId = await createOrg(db, { name: "Org", ownerId: owner.id });
   const teamId = createTeam(db, { orgId, name: "Team", ownerId: owner.id });
 
   const token = mintTeamMemberInvite(db, { teamId, createdByUserId: owner.id });

@@ -20,7 +20,6 @@ export function serializeThreadMessages(
   messages: StoredMessage[],
   params: {
     org: OrgRecord;
-    orgDid: string;
   },
 ): SerializedMessage[] {
   return messages.map((message) => ({
@@ -31,7 +30,6 @@ export function serializeThreadMessages(
     author: resolveMessageAuthor(db, {
       authorDid: message.authorDid,
       org: params.org,
-      orgDid: params.orgDid,
     }),
     ...(message.metadata !== undefined ? { metadata: message.metadata } : {}),
   }));

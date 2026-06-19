@@ -42,7 +42,7 @@ test("POST /api/orgs/:orgId/teams creates a second team in an existing org", asy
   }));
 
   const user = await getOrCreateUser(getDb(), "registry-create-team-1");
-  const orgId = createOrg(getDb(), { name: "Acme", ownerId: user.id });
+  const orgId = await createOrg(getDb(), { name: "Acme", ownerId: user.id });
   createTeam(getDb(), { orgId, name: "Leadership", ownerId: user.id });
 
   const { handleCreateTeamInOrg } = await import("./routes");

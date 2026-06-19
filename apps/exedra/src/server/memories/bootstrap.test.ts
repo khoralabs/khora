@@ -45,7 +45,7 @@ test("bootstrapOrgTeamMemories creates org and user scope chains", async () => {
   const appDb = new Database(":memory:");
   ensureExedraSchema(appDb);
   const user = await getOrCreateUser(appDb, "registry-bootstrap");
-  const orgId = createOrg(appDb, { name: "Org", ownerId: user.id });
+  const orgId = await createOrg(appDb, { name: "Org", ownerId: user.id });
   const teamId = createTeam(appDb, { orgId, name: "Team", ownerId: user.id });
 
   const first = bootstrapOrgTeamMemories({ orgId, teamId, userId: user.id });
@@ -83,7 +83,7 @@ test("bootstrapSessionMemories creates org and user session scope chains under t
   const appDb = new Database(":memory:");
   ensureExedraSchema(appDb);
   const user = await getOrCreateUser(appDb, "registry-session-bootstrap");
-  const orgId = createOrg(appDb, { name: "Org", ownerId: user.id });
+  const orgId = await createOrg(appDb, { name: "Org", ownerId: user.id });
   const teamId = createTeam(appDb, { orgId, name: "Team", ownerId: user.id });
   const sessionId = crypto.randomUUID();
 

@@ -4,6 +4,7 @@ import { KhoraClient, KhoraClientError } from "@khoralabs/khora-client";
 import { normalizeUsername } from "@khoralabs/khora-contracts";
 
 import { getIdentityKey, getKhoraHostSlug, getKhoraHostUrl } from "../env";
+import { encodePrincipalIdForMemories } from "../memories/encode-principal-id";
 import { getRegistryUrl } from "../registry-url";
 import { loadSignerFromEncryptedBlob } from "./crypto";
 
@@ -48,10 +49,11 @@ export function usernameForOrg(orgId: string, orgName: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+  const encoded = encodePrincipalIdForMemories(orgId);
   const candidates = [
     fromName.length > 0 ? `${fromName}-agent` : null,
-    `org-${orgId.replace(/-/g, "").slice(0, 12)}`,
-    `org-${orgId.slice(0, 8)}`,
+    `org-${encoded.slice(0, 12)}`,
+    `org-${encoded.slice(0, 8)}`,
   ].filter((value): value is string => value !== null);
 
   for (const candidate of candidates) {
@@ -59,7 +61,7 @@ export function usernameForOrg(orgId: string, orgName: string): string {
     if (normalized !== null) return normalized;
   }
 
-  return normalizeUsername(`org${orgId.replace(/\D/g, "").slice(0, 20)}`);
+  return normalizeUsername(`org${encoded.slice(0, 20)}`);
 }
 
 async function registryFetch(

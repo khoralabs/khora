@@ -19,7 +19,7 @@ afterEach(() => {
 
 test("createTeam grants org membership and admin for creator", async () => {
   const creator = await getOrCreateUser(db, "creator-1");
-  const orgId = createOrg(db, { name: "Org", ownerId: creator.id });
+  const orgId = await createOrg(db, { name: "Org", ownerId: creator.id });
   const teamId = createTeam(db, { orgId, name: "Team", ownerId: creator.id });
 
   expect(userBelongsToOrg(db, orgId, creator.id)).toBe(true);
@@ -29,8 +29,8 @@ test("createTeam grants org membership and admin for creator", async () => {
 
 test("grantTeamOrgMembership replaces prior org grant for team", async () => {
   const creator = await getOrCreateUser(db, "creator-2");
-  const orgA = createOrg(db, { name: "Org A", ownerId: creator.id });
-  const orgB = createOrg(db, { name: "Org B", ownerId: creator.id });
+  const orgA = await createOrg(db, { name: "Org A", ownerId: creator.id });
+  const orgB = await createOrg(db, { name: "Org B", ownerId: creator.id });
   const teamId = createTeam(db, { orgId: orgA, name: "Team", ownerId: creator.id });
 
   grantTeamOrgMembership(db, teamId, orgB);
@@ -42,7 +42,7 @@ test("grantTeamOrgMembership replaces prior org grant for team", async () => {
 test("joiner gets member but not admin", async () => {
   const owner = await getOrCreateUser(db, "owner-3");
   const joiner = await getOrCreateUser(db, "joiner-3");
-  const orgId = createOrg(db, { name: "Org3", ownerId: owner.id });
+  const orgId = await createOrg(db, { name: "Org3", ownerId: owner.id });
   const teamId = createTeam(db, { orgId, name: "Team3", ownerId: owner.id });
 
   const { addTeamMember } = await import("../db/membership");

@@ -1,15 +1,14 @@
 import { listAccountRowsForOrg } from "../accounts/resolve-rows.js";
 import { requireRegistrySessionResponse } from "../auth/require-session.js";
-import { canEditOrg, enforce, hasOrgAdminGrant, ResourceType } from "../authz/policy.js";
+import { canEditOrg, enforce, ResourceType } from "../authz/policy.js";
 import { serializeOrgPermissionsForAccount } from "../authz/routes.js";
 import { buildOrgAvatarS3Key } from "../avatars/keys.js";
 import { clearAvatarFromS3, parseAvatarUpload, replaceAvatarInS3 } from "../avatars/upload.js";
 import { avatarUrlFromS3Key } from "../avatars/urls.js";
 import { getDb } from "../db/index.js";
-import { getOrg, listOrgMembers, updateOrgAvatarS3Key, updateOrgName } from "../db/membership.js";
+import { getOrg, updateOrgAvatarS3Key, updateOrgName } from "../db/membership.js";
 import { getKhoraHostUrl } from "../env.js";
-import { getOrCreateOrgIdentity } from "../identity/orgs.js";
-import { findUserById, getOrCreateUser } from "../identity/users.js";
+import { getOrCreateUser } from "../identity/users.js";
 import { listTeamRowsForOrg } from "../teams/resolve-rows.js";
 
 function jsonResponse(data: unknown, status = 200): Response {
@@ -20,13 +19,11 @@ function serializeOrgSettings(
   org: NonNullable<ReturnType<typeof getOrg>>,
   userId: string,
   db: ReturnType<typeof getDb>,
-  did: string | null,
 ) {
   return {
     id: org.id,
     name: org.name,
     avatarUrl: avatarUrlFromS3Key("org", org.id, org.avatarS3Key),
-    did,
     canEdit: canEditOrg(db, userId, org.id),
     permissions: serializeOrgPermissionsForAccount(db, userId, org.id).permissions,
     networkOptedInAtMs: org.networkOptedInAtMs,
@@ -73,29 +70,13 @@ export async function handleGetOrgMember(
     return jsonResponse({ error: "Forbidden" }, 403);
   }
 
-  const member = listOrgMembers(db, orgId).find((row) => row.userId === memberUserId);
-  if (member === null || member === undefined) {
+  const members = listAccountRowsForOrg(db, orgId, user.id);
+  const member = members.find((row) => row.account.userId === memberUserId);
+  if (member === undefined) {
     return jsonResponse({ error: "Member not found" }, 404);
   }
 
-  const profile = findUserById(db, memberUserId);
-  if (profile === null) {
-    return jsonResponse({ error: "Member not found" }, 404);
-  }
-
-  return jsonResponse({
-    user: {
-      userId: profile.id,
-      email: profile.email,
-      fullName: profile.fullName,
-      jobFunction: profile.jobFunction,
-      avatarUrl: avatarUrlFromS3Key("user", profile.id, profile.avatarS3Key),
-    },
-    isCurrentUser: memberUserId === user.id,
-    isAdmin: hasOrgAdminGrant(db, memberUserId, orgId),
-    teamIds: member.teamIds,
-    teamNames: member.teamNames,
-  });
+  return jsonResponse(member);
 }
 
 export async function handleListOrgTeams(req: Request, orgId: string): Promise<Response> {
@@ -116,13 +97,12 @@ export async function handleListOrgTeams(req: Request, orgId: string): Promise<R
   return jsonResponse({ teams: listTeamRowsForOrg(db, orgId) });
 }
 
-async function buildOrgSettingsResponse(
+function buildOrgSettingsResponse(
   db: ReturnType<typeof getDb>,
   org: NonNullable<ReturnType<typeof getOrg>>,
   userId: string,
-): Promise<ReturnType<typeof serializeOrgSettings>> {
-  const { did } = await getOrCreateOrgIdentity(db, org.id);
-  return serializeOrgSettings(org, userId, db, did);
+): ReturnType<typeof serializeOrgSettings> {
+  return serializeOrgSettings(org, userId, db);
 }
 
 export async function handleGetOrgSettings(req: Request, orgId: string): Promise<Response> {
@@ -140,7 +120,7 @@ export async function handleGetOrgSettings(req: Request, orgId: string): Promise
     return jsonResponse({ error: "Forbidden" }, 403);
   }
 
-  return jsonResponse(await buildOrgSettingsResponse(db, org, user.id));
+  return jsonResponse(buildOrgSettingsResponse(db, org, user.id));
 }
 
 type PatchOrgBody = {
@@ -179,7 +159,7 @@ export async function handlePatchOrg(req: Request, orgId: string): Promise<Respo
     return jsonResponse({ error: "Organization not found" }, 404);
   }
 
-  return jsonResponse(await buildOrgSettingsResponse(db, updated, user.id));
+  return jsonResponse(buildOrgSettingsResponse(db, updated, user.id));
 }
 
 export async function handleUploadOrgAvatar(req: Request, orgId: string): Promise<Response> {
@@ -218,7 +198,7 @@ export async function handleUploadOrgAvatar(req: Request, orgId: string): Promis
     return jsonResponse({ error: "Organization not found" }, 404);
   }
 
-  return jsonResponse(await buildOrgSettingsResponse(db, updated, user.id));
+  return jsonResponse(buildOrgSettingsResponse(db, updated, user.id));
 }
 
 export async function handleDeleteOrgAvatar(req: Request, orgId: string): Promise<Response> {
@@ -248,5 +228,5 @@ export async function handleDeleteOrgAvatar(req: Request, orgId: string): Promis
     return jsonResponse({ error: "Organization not found" }, 404);
   }
 
-  return jsonResponse(await buildOrgSettingsResponse(db, updated, user.id));
+  return jsonResponse(buildOrgSettingsResponse(db, updated, user.id));
 }

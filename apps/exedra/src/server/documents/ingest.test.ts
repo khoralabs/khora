@@ -42,6 +42,10 @@ class MemoryDocumentStore {
     return { ref, s3Key };
   }
 
+  async deleteByRef(_ref: ExedraDocumentRef): Promise<void> {
+    // no-op in tests
+  }
+
   async resolve(ref: ExedraDocumentRef) {
     const s3Key = buildDocumentS3Key({
       orgId: ref.org_id,
@@ -53,7 +57,7 @@ class MemoryDocumentStore {
     if (bytes === undefined) throw new Error("missing object");
     const contentHash = await sha256Hex(bytes);
     if (contentHash !== ref.content_hash) throw new Error("hash mismatch");
-    return { kind: "blob" as const, blob: new Blob([bytes]) };
+    return { kind: "blob" as const, blob: new Blob([bytes as unknown as Uint8Array<ArrayBuffer>]) };
   }
 }
 
@@ -104,7 +108,7 @@ test("ingestSessionDocument indexes text file with summary and chunked content",
   const db = new Database(path.join(dataDir, "exedra.db"), { create: true });
   ensureExedraSchema(db);
   const user = await getOrCreateUser(db, "registry-doc-ingest");
-  const orgId = createOrg(db, { name: "Org", ownerId: user.id });
+  const orgId = await createOrg(db, { name: "Org", ownerId: user.id });
   const teamId = createTeam(db, { orgId, name: "Team", ownerId: user.id });
   const session = createSession(db, {
     teamId,
@@ -165,7 +169,7 @@ test("ingestSessionDocument indexes binary file with summary text and vector chu
   const db = new Database(path.join(dataDir, "exedra.db"), { create: true });
   ensureExedraSchema(db);
   const user = await getOrCreateUser(db, "registry-doc-binary");
-  const orgId = createOrg(db, { name: "Org", ownerId: user.id });
+  const orgId = await createOrg(db, { name: "Org", ownerId: user.id });
   const teamId = createTeam(db, { orgId, name: "Team", ownerId: user.id });
   const session = createSession(db, {
     teamId,

@@ -4,11 +4,11 @@ import { Field, FieldLabel } from "@/components/ui/field";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type OrgAgentIdentityFieldProps = {
-  did: string | null;
+  orgId: string | null;
 };
 
 /** Read-only org agent DID for organization settings. */
-export function OrgAgentIdentityField({ did }: OrgAgentIdentityFieldProps) {
+export function OrgAgentIdentityField({ orgId }: OrgAgentIdentityFieldProps) {
   return (
     <Field>
       <FieldLabel className="items-center gap-1.5">
@@ -31,7 +31,7 @@ export function OrgAgentIdentityField({ did }: OrgAgentIdentityFieldProps) {
           </Tooltip>
         </TooltipProvider>
       </FieldLabel>
-      <p className="font-mono text-sm text-muted-foreground break-all">{did ?? "—"}</p>
+      <p className="font-mono text-sm text-muted-foreground break-all">{orgId ?? "—"}</p>
     </Field>
   );
 }

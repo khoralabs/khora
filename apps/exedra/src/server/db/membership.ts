@@ -18,11 +18,11 @@ import {
   grantTeamOrgMembership,
   ResourceType,
 } from "../authz/policy";
+import { provisionOrgIdentity } from "../identity/orgs";
 
 export type OrgRecord = {
   id: string;
   name: string;
-  did: string | null;
   avatarS3Key: string | null;
   createdAtMs: number;
   networkOptedInAtMs: number | null;
@@ -48,7 +48,6 @@ export type UserTeamRecord = {
 type OrgRow = {
   id: string;
   name: string;
-  did: string | null;
   avatar_s3_key: string | null;
   created_at_ms: number;
   network_opted_in_at_ms: number | null;
@@ -74,7 +73,6 @@ function mapOrg(row: OrgRow): OrgRecord {
   return {
     id: row.id,
     name: row.name,
-    did: row.did,
     avatarS3Key: row.avatar_s3_key,
     createdAtMs: row.created_at_ms,
     networkOptedInAtMs: row.network_opted_in_at_ms,
@@ -84,7 +82,7 @@ function mapOrg(row: OrgRow): OrgRecord {
 export function getOrg(db: Database, orgId: string): OrgRecord | null {
   const row = db
     .query<OrgRow, [string]>(
-      `SELECT id, name, did, avatar_s3_key, created_at_ms, network_opted_in_at_ms FROM orgs WHERE id = ?`,
+      `SELECT id, name, avatar_s3_key, created_at_ms, network_opted_in_at_ms FROM orgs WHERE id = ?`,
     )
     .get(orgId);
   if (row === null) return null;
@@ -171,13 +169,11 @@ export function listTeamsForUser(db: Database, userId: string): UserTeamRecord[]
 
 export type TeamMemberRecord = {
   userId: string;
-  registryUserId: string;
   fullName: string | null;
 };
 
 export type OrgMemberRecord = {
   userId: string;
-  registryUserId: string;
   fullName: string | null;
   teamIds: string[];
   teamNames: string[];
@@ -193,13 +189,11 @@ export type OrgTeamRecord = {
 
 type TeamMemberRow = {
   user_id: string;
-  registry_user_id: string;
   full_name: string | null;
 };
 
 type OrgMemberRow = {
   user_id: string;
-  registry_user_id: string;
   full_name: string | null;
   team_ids: string;
   team_names: string;
@@ -212,7 +206,7 @@ export function listTeamMembers(db: Database, teamId: string): TeamMemberRecord[
   const placeholders = accountIds.map(() => "?").join(", ");
   const rows = db
     .query<TeamMemberRow, string[]>(
-      `SELECT u.id AS user_id, u.registry_user_id, u.full_name
+      `SELECT u.id AS user_id, u.full_name
        FROM users u
        WHERE u.id IN (${placeholders})
        ORDER BY u.created_at_ms ASC`,
@@ -220,7 +214,6 @@ export function listTeamMembers(db: Database, teamId: string): TeamMemberRecord[
     .all(...accountIds);
   return rows.map((row) => ({
     userId: row.user_id,
-    registryUserId: row.registry_user_id,
     fullName: row.full_name,
   }));
 }
@@ -233,7 +226,7 @@ export function listOrgMembers(db: Database, orgId: string): OrgMemberRecord[] {
   const teamPlaceholders = teamIds.map(() => "?").join(", ");
   const rows = db
     .query<OrgMemberRow, [...string[], number]>(
-      `SELECT u.id AS user_id, u.registry_user_id, u.full_name,
+      `SELECT u.id AS user_id, u.full_name,
               GROUP_CONCAT(t.id) AS team_ids,
               GROUP_CONCAT(t.name) AS team_names
        FROM authz_grants g
@@ -251,7 +244,6 @@ export function listOrgMembers(db: Database, orgId: string): OrgMemberRecord[] {
 
   return rows.map((row) => ({
     userId: row.user_id,
-    registryUserId: row.registry_user_id,
     fullName: row.full_name,
     teamIds: row.team_ids.length > 0 ? row.team_ids.split(",") : [],
     teamNames: row.team_names.length > 0 ? row.team_names.split(",") : [],
@@ -319,18 +311,17 @@ export function addTeamMember(db: Database, teamId: string, userId: string): voi
   grantTeamMember(db, userId, teamId);
 }
 
-export function createOrgWithAdmin(
+export async function createOrgWithAdmin(
   db: Database,
   params: { name: string; creatorId: string },
-): string {
-  const id = crypto.randomUUID();
-  db.prepare(`INSERT INTO orgs (id, name, created_at_ms) VALUES (?, ?, ?)`).run(
-    id,
-    params.name,
-    Date.now(),
-  );
-  grantAllOrgPermissions(db, params.creatorId, id);
-  return id;
+): Promise<string> {
+  const { did, identityEncrypted } = await provisionOrgIdentity();
+  const now = Date.now();
+  db.prepare(
+    `INSERT INTO orgs (id, name, identity_encrypted, created_at_ms) VALUES (?, ?, ?, ?)`,
+  ).run(did, params.name, identityEncrypted, now);
+  grantAllOrgPermissions(db, params.creatorId, did);
+  return did;
 }
 
 export function createTeamWithGrants(

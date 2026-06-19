@@ -10,7 +10,6 @@ export type EntitySettings = {
   id: string;
   name: string;
   avatarUrl: string | null;
-  did: string | null;
   canEdit: boolean;
   permissions?: Record<string, boolean>;
   networkOptedInAtMs?: number | null;

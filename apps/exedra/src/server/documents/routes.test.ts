@@ -59,7 +59,7 @@ test("POST /api/sessions/:sessionId/documents rejects users without session acce
   ensureExedraSchema(db);
   const owner = await getOrCreateUser(db, "registry-doc-owner");
   const _outsider = await getOrCreateUser(db, "registry-doc-outsider");
-  const orgId = createOrg(db, { name: "Org", ownerId: owner.id });
+  const orgId = await createOrg(db, { name: "Org", ownerId: owner.id });
   const teamId = createTeam(db, { orgId, name: "Team", ownerId: owner.id });
   const session = createSession(db, {
     teamId,
@@ -96,7 +96,7 @@ test("POST /api/sessions/:sessionId/documents returns 503 when S3 is not configu
   const db = new Database(path.join(dataDir, "exedra.db"), { create: true });
   ensureExedraSchema(db);
   const user = await getOrCreateUser(db, "registry-doc-no-s3");
-  const orgId = createOrg(db, { name: "Org", ownerId: user.id });
+  const orgId = await createOrg(db, { name: "Org", ownerId: user.id });
   const teamId = createTeam(db, { orgId, name: "Team", ownerId: user.id });
   const session = createSession(db, {
     teamId,
@@ -132,7 +132,7 @@ test("POST /api/sessions/:sessionId/documents stores metadata on happy path", as
   const db = new Database(path.join(dataDir, "exedra.db"), { create: true });
   ensureExedraSchema(db);
   const user = await getOrCreateUser(db, "registry-doc-upload");
-  const orgId = createOrg(db, { name: "Org", ownerId: user.id });
+  const orgId = await createOrg(db, { name: "Org", ownerId: user.id });
   const teamId = createTeam(db, { orgId, name: "Team", ownerId: user.id });
   const session = createSession(db, {
     teamId,
