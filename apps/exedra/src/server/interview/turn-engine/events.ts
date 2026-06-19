@@ -1,3 +1,4 @@
+import type { MessageAuthor } from "@shared/messages/author";
 import type { UIMessage } from "ai";
 
 export type TurnEvent =
@@ -12,6 +13,8 @@ export type TurnEvent =
           documents?: { id: string; fileName: string }[];
         };
       };
+      createdAtMs: number;
+      author: MessageAuthor | null;
     }
   | { type: "text_delta"; delta: string }
   | { type: "tool_call"; toolCallId: string; toolName: string; input: unknown }
@@ -26,6 +29,8 @@ export type TurnEvent =
         parts: UIMessage["parts"];
         metadata?: { beliefFlags?: { belief: string; messageId: string }[] };
       };
+      createdAtMs: number;
+      author: MessageAuthor | null;
       onboardingCompleted?: boolean;
     }
   | { type: "turn_aborted"; turnId: string }

@@ -67,6 +67,7 @@ export function useInterviewWs({
     setChatError,
     streamingIdRef,
     beliefsRef,
+    agentAuthor: bootstrap?.agent ?? null,
     onBeliefsChange: (beliefs) => onBeliefsChangeRef.current(beliefs),
     onOnboardingComplete: () => onOnboardingCompleteRef.current?.(),
     shouldAcceptStreamUpdates: () =>
@@ -80,6 +81,7 @@ export function useInterviewWs({
   wsHandlerContext.current.setChatError = setChatError;
   wsHandlerContext.current.streamingIdRef = streamingIdRef;
   wsHandlerContext.current.beliefsRef = beliefsRef;
+  wsHandlerContext.current.agentAuthor = bootstrap?.agent ?? null;
   wsHandlerContext.current.shouldAcceptStreamUpdates = () =>
     sessionRefs.abortedGenerationRef.current !== sessionRefs.sendGenerationRef.current;
   wsHandlerContext.current.onTurnComplete = () => sessionRefs.clearPendingDraft();

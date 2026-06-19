@@ -35,8 +35,11 @@ import {
   setSessionLinkAccess,
   userHasSessionAccess,
 } from "../db/sessions";
+import { getOrCreateOrgIdentity } from "../identity/orgs";
 import { getOrCreateUser } from "../identity/users";
 import { bootstrapSessionMemoriesForTeamSession } from "../memories/bootstrap-session";
+import { resolveOrgAgentAuthorForOrg, resolveViewerAuthor } from "../messages/resolve-author";
+import { serializeThreadMessages } from "../messages/serialize";
 import { buildSessionAccess } from "./resolve-access";
 
 type CreateSessionBody = {
@@ -366,10 +369,18 @@ export async function handleGetInterview(req: Request, sessionId: string): Promi
   }
 
   const threadId = getOrCreateInterviewThread(db, { sessionId, userId: user.id });
-  const messages = loadThreadMessages(db, threadId);
+  const rawMessages = loadThreadMessages(db, threadId);
   const beliefFeedback = loadBeliefFeedback(db, threadId);
   const team = getTeam(db, session.teamId);
   const org = team === null ? null : getOrg(db, team.orgId);
+  if (team === null || org === null) {
+    return Response.json({ error: "Organization not found for session" }, { status: 500 });
+  }
+  const orgDid = (await getOrCreateOrgIdentity(db, org.id)).did;
+  const messages = serializeThreadMessages(db, rawMessages, { org, orgDid });
+  const viewer = resolveViewerAuthor(db, user.id);
+  const agent = resolveOrgAgentAuthorForOrg(org, orgDid);
+
   return Response.json({
     session: {
       id: session.id,
@@ -380,8 +391,10 @@ export async function handleGetInterview(req: Request, sessionId: string): Promi
     threadId,
     wsUrl: `/ws/interview/${threadId}`,
     messages,
+    agent,
+    viewer,
     beliefFeedback,
-    ...(session.kind === "onboarding" && team !== null && org !== null
+    ...(session.kind === "onboarding"
       ? { onboarding: { orgName: org.name, teamName: team.name } }
       : {}),
   });

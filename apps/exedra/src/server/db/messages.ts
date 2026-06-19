@@ -3,12 +3,19 @@ import type { UIMessage } from "ai";
 
 import { jsonbParam, parseJsonColumn } from "./jsonb";
 
+export type StoredMessage = UIMessage & {
+  createdAtMs: number;
+  authorDid: string;
+};
+
 type MessageRow = {
   id: string;
   role: UIMessage["role"];
+  author_did: string;
   parts: string;
   metadata: string | null;
   message_index: number;
+  created_at_ms: number;
 };
 
 export function nextMessageIndex(db: Database, threadId: string): number {
@@ -30,51 +37,59 @@ export function insertMessage(
     parts: UIMessage["parts"];
     metadata?: UIMessage["metadata"];
     messageIndex: number;
+    authorDid: string;
     createdAtMs?: number;
   },
-): void {
+): number {
   const createdAtMs = params.createdAtMs ?? Date.now();
   const metadataJson = params.metadata !== undefined ? jsonbParam(params.metadata) : null;
 
   if (metadataJson === null) {
     db.prepare(
-      `INSERT INTO messages (id, thread_id, role, parts, metadata, message_index, created_at_ms)
-       VALUES (?, ?, ?, jsonb(?), NULL, ?, ?)`,
+      `INSERT INTO messages (id, thread_id, role, author_did, parts, metadata, message_index, created_at_ms)
+       VALUES (?, ?, ?, ?, jsonb(?), NULL, ?, ?)`,
     ).run(
       params.id,
       params.threadId,
       params.role,
+      params.authorDid,
       jsonbParam(params.parts),
       params.messageIndex,
       createdAtMs,
     );
-    return;
+    return createdAtMs;
   }
 
   db.prepare(
-    `INSERT INTO messages (id, thread_id, role, parts, metadata, message_index, created_at_ms)
-     VALUES (?, ?, ?, jsonb(?), jsonb(?), ?, ?)`,
+    `INSERT INTO messages (id, thread_id, role, author_did, parts, metadata, message_index, created_at_ms)
+     VALUES (?, ?, ?, ?, jsonb(?), jsonb(?), ?, ?)`,
   ).run(
     params.id,
     params.threadId,
     params.role,
+    params.authorDid,
     jsonbParam(params.parts),
     metadataJson,
     params.messageIndex,
     createdAtMs,
   );
+  return createdAtMs;
 }
 
-export function loadThreadMessages(db: Database, threadId: string, limit?: number): UIMessage[] {
+export function loadThreadMessages(
+  db: Database,
+  threadId: string,
+  limit?: number,
+): StoredMessage[] {
   const rows = db
     .query<MessageRow, [string]>(
       limit !== undefined
-        ? `SELECT id, role, json(parts) AS parts, json(metadata) AS metadata, message_index
+        ? `SELECT id, role, author_did, json(parts) AS parts, json(metadata) AS metadata, message_index, created_at_ms
            FROM messages
            WHERE thread_id = ?
            ORDER BY message_index DESC
            LIMIT ${limit}`
-        : `SELECT id, role, json(parts) AS parts, json(metadata) AS metadata, message_index
+        : `SELECT id, role, author_did, json(parts) AS parts, json(metadata) AS metadata, message_index, created_at_ms
            FROM messages
            WHERE thread_id = ?
            ORDER BY message_index ASC`,
@@ -93,6 +108,8 @@ export function loadThreadMessages(db: Database, threadId: string, limit?: numbe
       id: row.id,
       role: row.role,
       parts,
+      createdAtMs: row.created_at_ms,
+      authorDid: row.author_did,
       ...(metadata !== undefined ? { metadata } : {}),
     };
   });

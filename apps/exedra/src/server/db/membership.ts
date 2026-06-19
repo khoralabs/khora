@@ -22,6 +22,7 @@ import {
 export type OrgRecord = {
   id: string;
   name: string;
+  did: string | null;
   avatarS3Key: string | null;
   createdAtMs: number;
 };
@@ -46,6 +47,7 @@ export type UserTeamRecord = {
 type OrgRow = {
   id: string;
   name: string;
+  did: string | null;
   avatar_s3_key: string | null;
   created_at_ms: number;
 };
@@ -70,6 +72,7 @@ function mapOrg(row: OrgRow): OrgRecord {
   return {
     id: row.id,
     name: row.name,
+    did: row.did,
     avatarS3Key: row.avatar_s3_key,
     createdAtMs: row.created_at_ms,
   };
@@ -77,7 +80,9 @@ function mapOrg(row: OrgRow): OrgRecord {
 
 export function getOrg(db: Database, orgId: string): OrgRecord | null {
   const row = db
-    .query<OrgRow, [string]>(`SELECT id, name, avatar_s3_key, created_at_ms FROM orgs WHERE id = ?`)
+    .query<OrgRow, [string]>(
+      `SELECT id, name, did, avatar_s3_key, created_at_ms FROM orgs WHERE id = ?`,
+    )
     .get(orgId);
   if (row === null) return null;
   return mapOrg(row);

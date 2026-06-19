@@ -17,6 +17,7 @@ import {
   userNeedsOnboardingInterview,
 } from "../db/membership";
 import { createOrg, createTeam, userHasAnyAccessibleSession } from "../db/sessions";
+import { getOrCreateOrgIdentity } from "../identity/orgs";
 import {
   type ExedraUser,
   getOrCreateUser,
@@ -183,6 +184,7 @@ export async function handlePostOnboarding(req: Request): Promise<Response> {
   }
 
   const orgId = createOrg(db, { name: orgName, ownerId: user.id });
+  await getOrCreateOrgIdentity(db, orgId);
   const teamId = createTeam(db, { orgId, name: teamName, ownerId: user.id });
 
   let memories: { orgDbPath: string; userDbPath: string };

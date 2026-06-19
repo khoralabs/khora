@@ -1,3 +1,4 @@
+import type { MessageAuthor } from "@shared/messages/author";
 import type { ChatMessage, ToolCallDisplay } from "@/lib/interview-api";
 
 export function upsertMessageToolCall(
@@ -18,6 +19,7 @@ export function upsertStreamingToolCall(
   messages: ChatMessage[],
   streamingId: string,
   toolCall: ToolCallDisplay,
+  agentAuthor: MessageAuthor | null,
 ): ChatMessage[] {
   const existing = messages.find((message) => message.id === streamingId);
   if (existing !== undefined) {
@@ -25,7 +27,17 @@ export function upsertStreamingToolCall(
       message.id === streamingId ? upsertMessageToolCall(message, toolCall) : message,
     );
   }
-  return [...messages, { id: streamingId, role: "assistant", content: "", toolCalls: [toolCall] }];
+  return [
+    ...messages,
+    {
+      id: streamingId,
+      role: "assistant",
+      content: "",
+      createdAtMs: Date.now(),
+      author: agentAuthor,
+      toolCalls: [toolCall],
+    },
+  ];
 }
 
 export function toolStateForDisplay(state: ToolCallDisplay["state"]) {

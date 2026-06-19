@@ -1,13 +1,20 @@
+import type { MessageAuthor } from "@shared/messages/author";
 import type { ChatStatus } from "ai";
-
 import {
   Conversation,
   ConversationContent,
   ConversationScrollButton,
 } from "@/components/ai-elements/conversation";
-import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
+import {
+  Message,
+  MessageContent,
+  MessageHeader,
+  MessageResponse,
+  MessageTimestamp,
+} from "@/components/ai-elements/message";
 import { Spinner } from "@/components/ui/spinner";
 import type { ChatMessage } from "@/lib/interview-api";
+import { formatMessageTimestamp } from "@/lib/interview-api";
 
 import { UserMessageAttachments } from "./interview-chat-attachments";
 import { InterviewToolCall } from "./interview-tool-call";
@@ -16,18 +23,21 @@ type InterviewChatMessagesProps = {
   sessionId: string;
   messages: ChatMessage[];
   showThinking: boolean;
+  agentAuthor: MessageAuthor | null;
 };
 
 export function InterviewChatMessages({
   sessionId,
   messages,
   showThinking,
+  agentAuthor,
 }: InterviewChatMessagesProps) {
   return (
     <Conversation className="flex-1">
       <ConversationContent>
         {messages.map((message) => (
           <Message from={message.role} key={message.id}>
+            <MessageHeader author={message.author} from={message.role} />
             <MessageContent data-message-id={message.id}>
               {(message.toolCalls ?? []).map((toolCall) => (
                 <InterviewToolCall key={toolCall.id} toolCall={toolCall} />
@@ -46,10 +56,15 @@ export function InterviewChatMessages({
                 </>
               ) : null}
             </MessageContent>
+            <MessageTimestamp
+              from={message.role}
+              label={formatMessageTimestamp(message.createdAtMs)}
+            />
           </Message>
         ))}
         {showThinking && messages.every((message) => message.role !== "assistant") ? (
           <Message from="assistant">
+            <MessageHeader author={agentAuthor} from="assistant" />
             <MessageContent>
               <p className="flex items-center gap-2 text-muted-foreground">
                 <Spinner />

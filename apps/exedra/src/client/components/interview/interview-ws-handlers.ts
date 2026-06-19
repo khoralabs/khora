@@ -1,7 +1,7 @@
+import type { MessageAuthor } from "@shared/messages/author";
 import type { ChatStatus } from "ai";
 import { nanoid } from "nanoid";
 import type { Dispatch, RefObject, SetStateAction } from "react";
-
 import type { BeliefFlag, ChatMessage } from "@/lib/interview-api";
 
 import { upsertStreamingToolCall } from "./interview-chat-tool-utils";
@@ -14,6 +14,7 @@ export type InterviewWsHandlerContext = {
   setChatError: Dispatch<SetStateAction<string | null>>;
   streamingIdRef: RefObject<string | null>;
   beliefsRef: RefObject<BeliefFlag[]>;
+  agentAuthor: MessageAuthor | null;
   onBeliefsChange: (beliefs: BeliefFlag[]) => void;
   onOnboardingComplete?: () => void;
   shouldAcceptStreamUpdates?: () => boolean;
@@ -50,6 +51,8 @@ export function handleUserMessageSaved(message: UserMessageSaved, ctx: Interview
           ? {
               ...entry,
               content: text,
+              createdAtMs: message.createdAtMs,
+              author: message.author ?? entry.author,
               attachments: message.message.metadata?.documents,
             }
           : entry,
@@ -61,6 +64,8 @@ export function handleUserMessageSaved(message: UserMessageSaved, ctx: Interview
         id: message.message.id,
         role: "user",
         content: text,
+        createdAtMs: message.createdAtMs,
+        author: message.author,
         attachments: message.message.metadata?.documents,
       },
     ];
@@ -79,7 +84,16 @@ export function handleTextDelta(message: TextDelta, ctx: InterviewWsHandlerConte
         entry.id === streamingId ? { ...entry, content: entry.content + message.delta } : entry,
       );
     }
-    return [...current, { id: streamingId, role: "assistant", content: message.delta }];
+    return [
+      ...current,
+      {
+        id: streamingId,
+        role: "assistant",
+        content: message.delta,
+        createdAtMs: Date.now(),
+        author: ctx.agentAuthor,
+      },
+    ];
   });
   ctx.setStatus("streaming");
 }
@@ -90,12 +104,17 @@ export function handleToolCall(message: ToolCall, ctx: InterviewWsHandlerContext
   const streamingId = ctx.streamingIdRef.current ?? nanoid();
   ctx.streamingIdRef.current = streamingId;
   ctx.setMessages((current) =>
-    upsertStreamingToolCall(current, streamingId, {
-      id: message.toolCallId,
-      toolName: message.toolName,
-      input: message.input,
-      state: "running",
-    }),
+    upsertStreamingToolCall(
+      current,
+      streamingId,
+      {
+        id: message.toolCallId,
+        toolName: message.toolName,
+        input: message.input,
+        state: "running",
+      },
+      ctx.agentAuthor,
+    ),
   );
   ctx.setStatus("streaming");
 }
@@ -105,12 +124,17 @@ export function handleToolResult(message: ToolResult, ctx: InterviewWsHandlerCon
   const streamingId = ctx.streamingIdRef.current;
   if (streamingId === null) return;
   ctx.setMessages((current) =>
-    upsertStreamingToolCall(current, streamingId, {
-      id: message.toolCallId,
-      toolName: message.toolName,
-      output: message.output,
-      state: "completed",
-    }),
+    upsertStreamingToolCall(
+      current,
+      streamingId,
+      {
+        id: message.toolCallId,
+        toolName: message.toolName,
+        output: message.output,
+        state: "completed",
+      },
+      ctx.agentAuthor,
+    ),
   );
 }
 
@@ -119,12 +143,17 @@ export function handleToolError(message: ToolError, ctx: InterviewWsHandlerConte
   const streamingId = ctx.streamingIdRef.current;
   if (streamingId === null) return;
   ctx.setMessages((current) =>
-    upsertStreamingToolCall(current, streamingId, {
-      id: message.toolCallId,
-      toolName: message.toolName,
-      errorText: message.errorText,
-      state: "error",
-    }),
+    upsertStreamingToolCall(
+      current,
+      streamingId,
+      {
+        id: message.toolCallId,
+        toolName: message.toolName,
+        errorText: message.errorText,
+        state: "error",
+      },
+      ctx.agentAuthor,
+    ),
   );
 }
 
@@ -172,6 +201,8 @@ export function handleAssistantMessage(message: AssistantMessage, ctx: Interview
         id: message.message.id,
         role: "assistant",
         content: text,
+        createdAtMs: message.createdAtMs,
+        author: message.author ?? ctx.agentAuthor,
         ...(toolCalls.length > 0 ? { toolCalls } : {}),
       },
     ];

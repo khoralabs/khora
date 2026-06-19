@@ -1,3 +1,4 @@
+import type { MessageAuthor } from "@shared/messages/author";
 import type { ChatStatus } from "ai";
 import { nanoid } from "nanoid";
 import {
@@ -8,7 +9,6 @@ import {
   useRef,
   useState,
 } from "react";
-
 import type { AttachmentData } from "@/components/ai-elements/attachments";
 import type { PromptInputMessage } from "@/components/ai-elements/prompt-input";
 import { uploadSessionDocument } from "@/lib/documents-api";
@@ -35,6 +35,7 @@ export type InterviewTurnSessionRefs = {
 type UseInterviewTurnArgs = {
   sessionId: string;
   status: ChatStatus;
+  viewerAuthor: MessageAuthor | null;
   setStatus: Dispatch<SetStateAction<ChatStatus>>;
   setMessages: Dispatch<SetStateAction<ChatMessage[]>>;
   setChatError: (error: string | null) => void;
@@ -93,6 +94,7 @@ function rollbackTurnUi(args: {
 export function useInterviewTurn({
   sessionId,
   status,
+  viewerAuthor,
   setStatus,
   setMessages,
   setChatError,
@@ -184,6 +186,8 @@ export function useInterviewTurn({
           id: turnId,
           role: "user",
           content: text,
+          createdAtMs: Date.now(),
+          author: viewerAuthor,
           attachments: files.map((file, index) => ({
             id: (file as AttachmentData).id ?? file.filename ?? `pending-${index}`,
             fileName: file.filename ?? "Attachment",
@@ -231,6 +235,7 @@ export function useInterviewTurn({
     [
       sessionId,
       status,
+      viewerAuthor,
       setStatus,
       setMessages,
       setChatError,

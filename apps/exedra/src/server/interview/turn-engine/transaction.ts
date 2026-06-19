@@ -9,6 +9,8 @@ import {
   formatDocumentContextForModel,
   resolveUserMessageDocuments,
 } from "../../documents/message-context";
+import { getOrCreateOrgIdentity } from "../../identity/orgs";
+import { resolveOrgAgentAuthorForOrg, resolveViewerAuthor } from "../../messages/resolve-author";
 import { finishOnboardingInterview } from "../../onboarding/interview";
 import { rollbackTurnDocuments } from "./rollback";
 import type { ExecuteTurnInput, TurnEngineDeps } from "./types";
@@ -92,10 +94,13 @@ export async function executeTurn(deps: TurnEngineDeps, args: ExecuteTurnInput):
   const sessionMeta: InterviewSessionMeta = { topic: session.topic };
   const team = getTeam(db, session.teamId);
   const org = team === null ? null : getOrg(db, team.orgId);
+  if (team === null || org === null) {
+    emit({ type: "error", error: "Organization not found for session" });
+    return;
+  }
+  const orgDid = (await getOrCreateOrgIdentity(db, org.id)).did;
   const onboardingMeta =
-    session.kind === "onboarding" && team !== null && org !== null
-      ? { orgName: org.name, teamName: team.name }
-      : undefined;
+    session.kind === "onboarding" ? { orgName: org.name, teamName: team.name } : undefined;
 
   const assistantId = nanoid();
   let deferredOnboardingSummary: string | null = null;
@@ -107,14 +112,17 @@ export async function executeTurn(deps: TurnEngineDeps, args: ExecuteTurnInput):
     assertNotAborted(signal);
 
     const userIndex = nextMessageIndex(db, threadId);
-    insertMessage(db, {
+    const userCreatedAtMs = insertMessage(db, {
       id: turnId,
       threadId,
       role: "user",
       parts: userParts,
       messageIndex: userIndex,
       metadata: messageMetadata,
+      authorDid: userId,
     });
+
+    const userAuthor = resolveViewerAuthor(db, userId);
 
     const kickoff = (metadata as { kickoff?: boolean } | undefined)?.kickoff === true;
     const savedMetadata =
@@ -140,6 +148,8 @@ export async function executeTurn(deps: TurnEngineDeps, args: ExecuteTurnInput):
         parts: [{ type: "text", text }],
         ...(savedMetadata !== undefined ? { metadata: savedMetadata } : {}),
       },
+      createdAtMs: userCreatedAtMs,
+      author: userAuthor,
     });
 
     assertNotAborted(signal);
@@ -207,14 +217,17 @@ export async function executeTurn(deps: TurnEngineDeps, args: ExecuteTurnInput):
     assertNotAborted(signal);
 
     const assistantIndex = nextMessageIndex(db, threadId);
-    insertMessage(db, {
+    const assistantCreatedAtMs = insertMessage(db, {
       id: assistantId,
       threadId,
       role: "assistant",
       parts: assistantParts.length > 0 ? assistantParts : [{ type: "text", text: "" }],
       messageIndex: assistantIndex,
       metadata: beliefFlags.length > 0 ? { beliefFlags } : undefined,
+      authorDid: orgDid,
     });
+
+    const agentAuthor = resolveOrgAgentAuthorForOrg(org, orgDid);
 
     db.run("COMMIT");
 
@@ -242,6 +255,8 @@ export async function executeTurn(deps: TurnEngineDeps, args: ExecuteTurnInput):
         parts: assistantParts,
         ...(beliefFlags.length > 0 ? { metadata: { beliefFlags } } : {}),
       },
+      createdAtMs: assistantCreatedAtMs,
+      author: agentAuthor,
       ...(onboardingCompleted ? { onboardingCompleted: true } : {}),
     });
   } catch (err: unknown) {

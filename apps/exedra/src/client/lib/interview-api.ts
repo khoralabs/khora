@@ -1,3 +1,4 @@
+import type { MessageAuthor } from "@shared/messages/author";
 import type { UIMessage } from "ai";
 
 export type InterviewSession = {
@@ -23,11 +24,22 @@ export type BeliefFlag = {
   correction?: string;
 };
 
+export type SerializedMessage = {
+  id: string;
+  role: UIMessage["role"];
+  parts: UIMessage["parts"];
+  metadata?: UIMessage["metadata"];
+  createdAtMs: number;
+  author: MessageAuthor | null;
+};
+
 export type InterviewBootstrap = {
   session: InterviewSession;
   threadId: string;
   wsUrl: string;
-  messages: UIMessage[];
+  messages: SerializedMessage[];
+  agent: MessageAuthor | null;
+  viewer: MessageAuthor | null;
   beliefFeedback?: BeliefFeedbackRecord[];
 };
 
@@ -51,9 +63,18 @@ export type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  createdAtMs: number;
+  author: MessageAuthor | null;
   attachments?: ChatMessageAttachment[];
   toolCalls?: ToolCallDisplay[];
 };
+
+export function formatMessageTimestamp(ms: number): string {
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(ms));
+}
 
 export function extractTextFromParts(parts: UIMessage["parts"]): string {
   return parts
@@ -133,7 +154,7 @@ export function extractToolCallsFromParts(parts: UIMessage["parts"]): ToolCallDi
   return toolCalls;
 }
 
-export function uiMessagesToChatMessages(messages: UIMessage[]): ChatMessage[] {
+export function uiMessagesToChatMessages(messages: SerializedMessage[]): ChatMessage[] {
   return messages
     .filter((message) => {
       if (message.role !== "user" && message.role !== "assistant") return false;
@@ -155,6 +176,8 @@ export function uiMessagesToChatMessages(messages: UIMessage[]): ChatMessage[] {
         id: message.id,
         role: message.role as "user" | "assistant",
         content,
+        createdAtMs: message.createdAtMs,
+        author: message.author,
         attachments: metadata?.documents,
         toolCalls: extractToolCallsFromParts(message.parts),
       };

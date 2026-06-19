@@ -74,6 +74,7 @@ test("messages round-trip as UIMessage JSONB", async () => {
     role: "user",
     parts: [{ type: "text", text: "hello" }],
     messageIndex: 0,
+    authorDid: user.id,
   });
 
   const messages = loadThreadMessages(db, threadId);

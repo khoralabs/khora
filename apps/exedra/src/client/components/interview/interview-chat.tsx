@@ -51,6 +51,7 @@ export function InterviewChat({
   const { input, submitTurn, stopTurn, handleTextChange, sessionRefs } = useInterviewTurn({
     sessionId,
     status,
+    viewerAuthor: bootstrap?.viewer ?? null,
     setStatus,
     setMessages,
     setChatError: (error) => setChatErrorRef.current(error),
@@ -106,6 +107,7 @@ export function InterviewChat({
         messages={messages}
         sessionId={sessionId}
         showThinking={interviewShowThinking(awaitingOpening, messages, status)}
+        agentAuthor={bootstrap.agent}
       />
       <InterviewChatInput
         chatError={chatError}

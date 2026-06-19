@@ -19,6 +19,9 @@ import {
 import { cn } from "src/client/lib/utils";
 import { Streamdown } from "streamdown";
 
+import { EntityAvatar } from "@/components/entity-avatar";
+import type { MessageAuthor } from "@shared/messages/author";
+
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
   from: UIMessage["role"];
 };
@@ -290,6 +293,53 @@ export const MessageResponse = memo(
 );
 
 MessageResponse.displayName = "MessageResponse";
+
+export type MessageHeaderProps = HTMLAttributes<HTMLDivElement> & {
+  author: MessageAuthor | null;
+  from: UIMessage["role"];
+};
+
+export function MessageHeader({ author, from, className, ...props }: MessageHeaderProps) {
+  if (author === null) return null;
+
+  const isUser = from === "user";
+
+  return (
+    <div
+      className={cn(
+        "mb-1 flex items-center gap-2",
+        isUser ? "ml-auto flex-row-reverse" : "flex-row",
+        className,
+      )}
+      {...props}
+    >
+      <EntityAvatar name={author.name} avatarUrl={author.avatarUrl} size="sm" />
+      <span className="max-w-[12rem] truncate text-xs font-medium text-foreground">
+        {author.name}
+      </span>
+    </div>
+  );
+}
+
+export type MessageTimestampProps = HTMLAttributes<HTMLParagraphElement> & {
+  label: string;
+  from: UIMessage["role"];
+};
+
+export function MessageTimestamp({ label, from, className, ...props }: MessageTimestampProps) {
+  return (
+    <p
+      className={cn(
+        "mt-1 text-xs text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100",
+        from === "user" ? "text-right" : "text-left",
+        className,
+      )}
+      {...props}
+    >
+      {label}
+    </p>
+  );
+}
 
 export type MessageToolbarProps = ComponentProps<"div">;
 

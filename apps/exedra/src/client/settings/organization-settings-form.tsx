@@ -15,6 +15,7 @@ import {
 } from "@/lib/settings-api";
 
 import { AvatarUploadField, useAvatarPendingFile } from "./avatar-upload-field";
+import { OrgAgentIdentityField } from "./org-agent-identity-field";
 
 type OrganizationSettingsFormProps = {
   activeTeam: MeTeam;
@@ -115,6 +116,7 @@ export function OrganizationSettingsForm({ activeTeam, onSaved }: OrganizationSe
               disabled={!canEdit || submitting}
             />
           </Field>
+          <OrgAgentIdentityField did={settings?.did ?? null} />
         </FieldGroup>
       </FieldSet>
 

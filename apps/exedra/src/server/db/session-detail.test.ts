@@ -51,6 +51,7 @@ test("getInterviewStatus tracks thread and messages", async () => {
     role: "user",
     parts: [{ type: "text", text: "hello" }],
     messageIndex: 0,
+    authorDid: user.id,
   });
 
   expect(getInterviewStatus(db, session.id, user.id)).toBe("started");
