@@ -120,18 +120,18 @@ Host selection: `khora host use <slug>` writes `currentHost` and `hosts` to `cli
 | `KHORA_MEMORIES` | · | + | · | · | C | `1` / unset = search index on (default); `0` / `off` = disabled (`/v1/search` 503). |
 | `KHORA_CELL_POOL_COUNT` | · | + | · | · | C | Shard pool size (default 16). |
 | `KHORA_COLONNADE_CELL_WORKERS` | · | + | · | · | C | Bun Workers for cell SQLite (default on). |
-| `LOG_LEVEL` | · | + | + | + | C | Pino level (default `info`). Exedra: `apps/exedra/src/server/logger.ts`. |
+| `LOG_LEVEL` | + | + | + | + | C | Pino level (default `info`). Registry: `packages/registry/host`, `packages/registry/auth`. Exedra: `apps/exedra/src/server/logger.ts`. |
 
 ### OpenTelemetry (apps → collector → Grafana Cloud)
 
-Apps export OTLP HTTP to the collector. Exedra is instrumented today; registry and khora-server will use the same env pattern when OTel is added. **`bun run start` on Exedra** applies defaults via `scripts/start-exedra.ts` (`OTEL_SERVICE_NAME`, `service.namespace`).
+Apps export OTLP HTTP to the collector. Exedra and registry are instrumented; khora-server will use the same env pattern when OTel is added. **`bun run start` on Exedra and registry** applies defaults via their respective start scripts (`OTEL_SERVICE_NAME`, `service.namespace`).
 
 | Variable | R | K | KH | E | Kind | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | · | · | · | + | C | OTLP HTTP base URL (no path). Local: `http://127.0.0.1:4318`. Prod: collector private URL (e.g. `http://khora-otel-collector:4318`). When unset, Exedra SDK runs with no-op exporters (spans/metrics still created locally). |
-| `OTEL_SERVICE_NAME` | · | · | · | + | C | Resource `service.name`. Exedra default `exedra`; set `khora-registry`, `khora-server`, etc. on other services. `start-exedra.ts` sets when unset. |
-| `OTEL_SERVICE_VERSION` | · | · | · | + | C | Resource `service.version` (default `0.1.0`). |
-| `OTEL_RESOURCE_ATTRIBUTES` | · | · | · | + | C | Comma-separated `key=value` pairs merged into the OTel resource. Exedra defaults `service.namespace=khoralabs` when unset (`start-exedra.ts` + `otel-config.ts`). Example: `deployment.environment=production`. |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | + | · | · | + | C | OTLP HTTP base URL (no path). Local: `http://127.0.0.1:4318`. Prod: collector private URL (e.g. `http://khora-otel-collector:4318`). When unset, SDK runs with no-op exporters (spans/metrics still created locally). |
+| `OTEL_SERVICE_NAME` | + | · | · | + | C | Resource `service.name`. Registry default `khora-registry`; Exedra default `exedra`. Start scripts set when unset. |
+| `OTEL_SERVICE_VERSION` | + | · | · | + | C | Resource `service.version` (default `0.1.0`). |
+| `OTEL_RESOURCE_ATTRIBUTES` | + | · | · | + | C | Comma-separated `key=value` pairs merged into the OTel resource. Start scripts default `service.namespace=khoralabs` when unset. Example: `deployment.environment=production`. |
 
 **Do not** set Grafana Cloud credentials on app services — only on the collector (below).
 
@@ -266,6 +266,10 @@ REGISTRY_LITESTREAM=1
 LITESTREAM_S3_KEY_PREFIX=registry/litestream
 REGISTRY_SQLCIPHER_KEY=...
 REGISTRY_CONSOLE_ROOT_TOKEN=...
+LOG_LEVEL=info
+OTEL_EXPORTER_OTLP_ENDPOINT=http://khora-otel-collector:4318
+OTEL_SERVICE_NAME=khora-registry
+OTEL_RESOURCE_ATTRIBUTES=deployment.environment=production
 ```
 
 **khora-server**

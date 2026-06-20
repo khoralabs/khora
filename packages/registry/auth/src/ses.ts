@@ -1,4 +1,7 @@
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
+import { createLogger } from "@khoralabs/observability/logger";
+
+const logger = createLogger({ name: "registry-auth" });
 
 function sesFromAddress(): string {
   const addr = process.env.SES_FROM_ADDRESS?.trim();
@@ -15,8 +18,9 @@ function otpLogOnly(): boolean {
 
 export async function sendOtpEmail(params: { email: string; otp: string }): Promise<void> {
   if (otpLogOnly()) {
-    console.log(
-      `[registry-auth] OTP for ${params.email}: ${params.otp} (REGISTRY_AUTH_OTP_LOG — not sent via SES)`,
+    logger.info(
+      { email: params.email },
+      `OTP dev log (REGISTRY_AUTH_OTP_LOG): ${params.otp} — not sent via SES`,
     );
     return;
   }

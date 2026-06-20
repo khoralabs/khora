@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.1050.0",
+    "@khoralabs/observability": "workspace:*",
     "@khoralabs/registry-catalog": "workspace:*",
     "@khoralabs/registry-accounts": "workspace:*",
     "@khoralabs/registry-host": "workspace:*",

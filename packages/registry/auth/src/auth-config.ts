@@ -1,9 +1,12 @@
+import { createLogger } from "@khoralabs/observability/logger";
 import { findBlockedEmail, linkBetterAuthUser } from "@khoralabs/registry-accounts";
 import { betterAuth } from "better-auth";
 import { emailOTP } from "better-auth/plugins";
 import { isBootstrapStaffEmail, normalizeEmail } from "./bootstrap";
 import { getRegistryDatabase } from "./db";
 import { sendOtpEmail } from "./ses";
+
+const logger = createLogger({ name: "registry-auth" });
 
 export type RegistryAuthOptions = {
   baseURL?: string;
@@ -53,9 +56,8 @@ function readAuthEnv(opts: RegistryAuthOptions = {}): {
 
   const secret = process.env.BETTER_AUTH_SECRET?.trim();
   if (secret === undefined || secret.length < 32) {
-    console.warn(
-      "[registry-auth] BETTER_AUTH_SECRET missing or too short (<32 chars). " +
-        "Set it in the registry app environment.",
+    logger.warn(
+      "BETTER_AUTH_SECRET missing or too short (<32 chars). Set it in the registry app environment.",
     );
   }
 
@@ -136,7 +138,7 @@ export function createRegistryAuth(opts: RegistryAuthOptions = {}) {
         async sendVerificationOTP({ email, otp, type }) {
           if (type !== "sign-in") return;
           void sendOtpEmail({ email: normalizeEmail(email), otp }).catch((err: unknown) => {
-            console.error("[registry-auth] failed to send OTP email:", err);
+            logger.error({ err }, "Failed to send OTP email");
           });
         },
       }),
