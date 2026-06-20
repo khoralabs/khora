@@ -13,6 +13,14 @@ Reference for deploying the four Khora web services (Render or similar). Per-app
 
 Use `bun run start` (not bare `src/index.ts`) on **registry**, **khora-server**, and **exedra** so Litestream sidecars run when enabled.
 
+### Infrastructure (not a Bun web service)
+
+| Component | Path | Default ports | Notes |
+| --- | --- | --- | --- |
+| OTel Collector | `apps/otel/` | 4318 (OTLP HTTP), 4317 (gRPC), 13133 (health) | Receives OTLP from apps; forwards to Grafana Cloud when `GRAFANA_CLOUD_*` is set. Local dev: `debug` exporter. See `apps/otel/README.md`. |
+| MinIO (local S3) | `apps/s3/` | 9000, 9001 | Litestream / document dev only. |
+| Valkey (Redis) | `apps/redis/` | 6379 | Homepage waitlist KV (local/private). |
+
 ---
 
 ## Shared values (must match)
@@ -27,6 +35,8 @@ Put these in a Render **Environment Group** (or password manager) and link to ev
 | `AWS_SECRET_ACCESS_KEY` | registry, khora-server, exedra | Pair with access key above. |
 | `LITESTREAM_S3_BUCKET` | registry, khora-server, exedra | e.g. `khora-backups-prod`. One bucket, different prefixes per service. |
 | `LITESTREAM_S3_REGION` | registry, khora-server, exedra | Match bucket region. Omit `LITESTREAM_S3_ENDPOINT` for real AWS S3. |
+
+**Telemetry wiring (prod):** Deploy the OTel collector as a **Private Service** (or run locally via Docker). App services export OTLP to the collector’s internal URL — **not** directly to Grafana. Grafana API credentials live on the collector only (`apps/otel/.env.example`).
 
 ### URL consistency
 
@@ -110,7 +120,35 @@ Host selection: `khora host use <slug>` writes `currentHost` and `hosts` to `cli
 | `KHORA_MEMORIES` | · | + | · | · | C | `1` / unset = search index on (default); `0` / `off` = disabled (`/v1/search` 503). |
 | `KHORA_CELL_POOL_COUNT` | · | + | · | · | C | Shard pool size (default 16). |
 | `KHORA_COLONNADE_CELL_WORKERS` | · | + | · | · | C | Bun Workers for cell SQLite (default on). |
-| `LOG_LEVEL` | · | + | + | · | C | Pino level (default `info`). |
+| `LOG_LEVEL` | · | + | + | + | C | Pino level (default `info`). Exedra: `apps/exedra/src/server/logger.ts`. |
+
+### OpenTelemetry (apps → collector → Grafana Cloud)
+
+Apps export OTLP HTTP to the collector. Exedra is instrumented today; registry and khora-server will use the same env pattern when OTel is added. **`bun run start` on Exedra** applies defaults via `scripts/start-exedra.ts` (`OTEL_SERVICE_NAME`, `service.namespace`).
+
+| Variable | R | K | KH | E | Kind | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | · | · | · | + | C | OTLP HTTP base URL (no path). Local: `http://127.0.0.1:4318`. Prod: collector private URL (e.g. `http://khora-otel-collector:4318`). When unset, Exedra SDK runs with no-op exporters (spans/metrics still created locally). |
+| `OTEL_SERVICE_NAME` | · | · | · | + | C | Resource `service.name`. Exedra default `exedra`; set `khora-registry`, `khora-server`, etc. on other services. `start-exedra.ts` sets when unset. |
+| `OTEL_SERVICE_VERSION` | · | · | · | + | C | Resource `service.version` (default `0.1.0`). |
+| `OTEL_RESOURCE_ATTRIBUTES` | · | · | · | + | C | Comma-separated `key=value` pairs merged into the OTel resource. Exedra defaults `service.namespace=khoralabs` when unset (`start-exedra.ts` + `otel-config.ts`). Example: `deployment.environment=production`. |
+
+**Do not** set Grafana Cloud credentials on app services — only on the collector (below).
+
+### OpenTelemetry Collector (`apps/otel/`)
+
+Separate deployable (Docker / Render Private Service). Not linked to the R/K/KH/E columns.
+
+| Variable | Kind | Notes |
+| --- | --- | --- |
+| `GRAFANA_CLOUD_OTLP_ENDPOINT` | C | Grafana OTLP gateway base URL (e.g. `https://otlp-gateway-prod-us-east-2.grafana.net/otlp`). |
+| `GRAFANA_CLOUD_INSTANCE_ID` | C | Grafana Cloud instance ID (basic auth username). |
+| `GRAFANA_CLOUD_API_KEY` | S | Grafana access policy token (basic auth password). **Collector only.** |
+| `HOSTNAME` | C | Optional collector host label (default `khora-otel-collector`). |
+
+`GRAFANA_CLOUD_BASIC_AUTH_HEADER` is computed at container start by `apps/otel/entrypoint.sh` — do not set manually.
+
+Local: `docker build -t khora-otel-collector -f apps/otel/Dockerfile .` then `docker run --env-file apps/otel/.env -p 4318:4318 khora-otel-collector`. Without `GRAFANA_CLOUD_*`, collector uses the `debug` exporter (stdout).
 
 ### Encryption at rest
 
@@ -205,6 +243,14 @@ KHORA_OUTBOX_ENCRYPTION_KEY=...
 REGISTRY_SQLCIPHER_KEY=...
 ```
 
+### `khora-prod-otel` (secrets — collector Private Service only)
+
+```
+GRAFANA_CLOUD_OTLP_ENDPOINT=https://otlp-gateway-prod-....grafana.net/otlp
+GRAFANA_CLOUD_INSTANCE_ID=...
+GRAFANA_CLOUD_API_KEY=...
+```
+
 ### Per-service overrides
 
 **registry**
@@ -260,6 +306,9 @@ INVITE_PEPPER=<openssl rand -hex 32>
 EXEDRA_IDENTITY_KEY=<openssl rand -hex 32>
 EXEDRA_MEMORIES_SQLCIPHER_KEY=<openssl rand -base64 32>
 AI_API_KEY=sk-...
+# Optional — local collector + Grafana (see apps/otel/README.md):
+# OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318
+# LOG_LEVEL=info
 ```
 
 **exedra (production — separate registry)**
@@ -277,9 +326,26 @@ AI_API_KEY=sk-...
 AI_MODEL=gpt-4o
 EXEDRA_LITESTREAM=1
 LITESTREAM_S3_KEY_PREFIX=exedra/litestream
+LOG_LEVEL=info
+OTEL_EXPORTER_OTLP_ENDPOINT=http://khora-otel-collector:4318
+OTEL_SERVICE_NAME=exedra
+OTEL_RESOURCE_ATTRIBUTES=deployment.environment=production
+# OTEL_SERVICE_VERSION=0.1.0
 # EXEDRA_DOCUMENTS_S3_BUCKET=khora-backups-prod
 # EXEDRA_DOCUMENTS_S3_PREFIX=exedra/documents
 ```
+
+**otel-collector (Render Private Service or local Docker)**
+
+```
+# apps/otel/.env — never commit; see apps/otel/.env.example
+GRAFANA_CLOUD_OTLP_ENDPOINT=https://otlp-gateway-prod-....grafana.net/otlp
+GRAFANA_CLOUD_INSTANCE_ID=...
+GRAFANA_CLOUD_API_KEY=...
+# HOSTNAME=khora-otel-collector
+```
+
+App services point `OTEL_EXPORTER_OTLP_ENDPOINT` at this collector’s internal hostname. Filter telemetry in Grafana by `service.name` (`exedra`, `khora-registry`, `khora-server`, …) and `service.namespace` (`khoralabs`).
 
 Register Exedra's public origin (e.g. `https://exedra.example.com`) as a registry **trusted origin** so browser OTP and `/api/auth/session` cookie forwarding work cross-origin. Set `REGISTRY_COOKIE_DOMAIN=.example.com` on registry when Exedra and registry share a parent domain.
 
@@ -305,5 +371,6 @@ Use for `BETTER_AUTH_SECRET`, `KHORA_INVITE_PEPPER`, `INVITE_PEPPER`, `EXEDRA_ID
 | Khora server | `apps/khora/server/.env.example` |
 | Khora Labs homepage | `apps/khoralabs/homepage/.env.example` |
 | Exedra | `apps/exedra/.env.example` |
+| OTel Collector | `apps/otel/.env.example` |
 
-Litestream shared logic: `scripts/litestream-config.ts`. Local MinIO: `apps/s3/README.md`.
+Litestream shared logic: `scripts/litestream-config.ts`. Local MinIO: `apps/s3/README.md`. Local/prod OTel collector: `apps/otel/README.md`.

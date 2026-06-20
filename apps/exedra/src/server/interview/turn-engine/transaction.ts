@@ -11,6 +11,12 @@ import {
 } from "../../documents/message-context";
 import { resolveOrgAgentAuthorForOrg, resolveViewerAuthor } from "../../messages/resolve-author";
 import { finishOnboardingInterview } from "../../onboarding/interview";
+import { withSpan } from "../../telemetry/spans";
+import {
+  recordTurnCompleted,
+  recordTurnStarted,
+  type TurnCompletionStatus,
+} from "../../telemetry/turn-metrics";
 import { rollbackTurnDocuments } from "./rollback";
 import type { ExecuteTurnInput, TurnEngineDeps } from "./types";
 
@@ -21,6 +27,39 @@ function assertNotAborted(signal: AbortSignal): void {
 }
 
 export async function executeTurn(deps: TurnEngineDeps, args: ExecuteTurnInput): Promise<void> {
+  const turnStart = performance.now();
+  recordTurnStarted();
+  let status: TurnCompletionStatus = "success";
+
+  try {
+    await withSpan(
+      "interview.turn",
+      {
+        "turn.id": args.turnId,
+        "thread.id": args.threadId,
+        "session.id": args.session.id,
+        "session.kind": args.session.kind,
+      },
+      async (span) => {
+        await executeTurnBody(deps, args, (next) => {
+          status = next;
+        });
+        span.setAttribute("turn.status", status);
+      },
+    );
+  } catch (err) {
+    status = "error";
+    throw err;
+  } finally {
+    recordTurnCompleted(status, Math.round(performance.now() - turnStart));
+  }
+}
+
+async function executeTurnBody(
+  deps: TurnEngineDeps,
+  args: ExecuteTurnInput,
+  setStatus: (status: TurnCompletionStatus) => void,
+): Promise<void> {
   const {
     db,
     threadId,
@@ -36,6 +75,7 @@ export async function executeTurn(deps: TurnEngineDeps, args: ExecuteTurnInput):
 
   const thread = getThread(db, threadId);
   if (thread?.user_id === null || thread?.user_id === undefined) {
+    setStatus("error");
     emit({ type: "error", error: "Thread user not found" });
     return;
   }
@@ -51,6 +91,7 @@ export async function executeTurn(deps: TurnEngineDeps, args: ExecuteTurnInput):
       documentIds,
     });
     if ("error" in resolved) {
+      setStatus("error");
       emit({ type: "error", error: resolved.error });
       return;
     }
@@ -94,6 +135,7 @@ export async function executeTurn(deps: TurnEngineDeps, args: ExecuteTurnInput):
   const team = getTeam(db, session.teamId);
   const org = team === null ? null : getOrg(db, team.orgId);
   if (team === null || org === null) {
+    setStatus("error");
     emit({ type: "error", error: "Organization not found for session" });
     return;
   }
@@ -272,10 +314,12 @@ export async function executeTurn(deps: TurnEngineDeps, args: ExecuteTurnInput):
         userId,
         documentIds,
       });
+      setStatus("aborted");
       emit({ type: "turn_aborted", turnId });
       return;
     }
 
+    setStatus("error");
     const msg = err instanceof Error ? err.message : "Interview agent failed";
     emit({ type: "error", error: msg });
   }

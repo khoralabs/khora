@@ -14,15 +14,17 @@ import {
 } from "../../../scripts/litestream-config";
 import { resolveExedraDataDir, resolveExedraDbPath } from "../src/server/db/index";
 import { resolveMemoriesDir } from "../src/server/memories/config";
+import { buildOtelServerEnv } from "../src/server/otel-config";
 
 const exedraRoot = path.resolve(path.dirname(import.meta.path), "..");
 const indexEntry = path.join(exedraRoot, "src", "index.ts");
+const serverEnv = buildOtelServerEnv();
 
 async function runServerOnly(): Promise<never> {
   const proc = Bun.spawn(["bun", indexEntry], {
     cwd: exedraRoot,
     stdio: ["inherit", "inherit", "inherit"],
-    env: process.env,
+    env: serverEnv,
   });
   await proc.exited;
   process.exit(proc.exitCode === 0 ? 0 : (proc.exitCode ?? 1));
@@ -65,7 +67,7 @@ async function runWithLitestream(): Promise<void> {
   const srvProc = Bun.spawn(["bun", indexEntry], {
     cwd: exedraRoot,
     stdio: ["inherit", "inherit", "inherit"],
-    env: process.env,
+    env: serverEnv,
   });
 
   for (const sig of ["SIGINT", "SIGTERM"] as const) {

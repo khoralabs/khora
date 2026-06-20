@@ -70,11 +70,21 @@ import {
   handlePatchTeam,
   handleUploadTeamAvatar,
 } from "./teams/routes";
+import { handlePostClientEvent } from "./telemetry/events-route";
+import { handleHealth, handleReady } from "./telemetry/health";
 
 export const apiRoutes = {
   ...stubRegistryAuthRoutes,
   "/api/health": {
-    GET: () => Response.json({ ok: true }),
+    GET: handleHealth,
+  },
+
+  "/api/health/ready": {
+    GET: handleReady,
+  },
+
+  "/api/events": {
+    POST: handlePostClientEvent,
   },
 
   "/api/auth/session": {

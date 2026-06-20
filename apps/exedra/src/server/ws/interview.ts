@@ -6,7 +6,9 @@ import { getDb } from "../db/index";
 import { getSession, getThread, userHasSessionAccess } from "../db/sessions";
 import { findUserByRegistryId } from "../identity/users";
 import { getDefaultTurnEngine } from "../interview/turn-engine";
+import { logger } from "../logger";
 import { getRegistryUrl } from "../registry-url";
+import { withSpan } from "../telemetry/spans";
 
 export type InterviewWsData = {
   threadId: string;
@@ -47,34 +49,56 @@ export async function verifyInterviewWsUpgrade(
   req: Request,
   threadId: string,
 ): Promise<{ ok: true; data: InterviewWsData } | { ok: false; status: number; error: string }> {
-  const session = await verifyRegistrySession(req, { registryUrl: getRegistryUrl() });
-  if (session === null) {
-    return { ok: false, status: 401, error: "Unauthorized" };
-  }
+  return withSpan("ws.interview.upgrade", { "thread.id": threadId }, async (span) => {
+    const session = await verifyRegistrySession(req, { registryUrl: getRegistryUrl() });
+    if (session === null) {
+      span.setAttribute("ws.upgrade.denied", "unauthorized");
+      logger.warn({ threadId, reason: "unauthorized" }, "interview ws upgrade denied");
+      return { ok: false as const, status: 401, error: "Unauthorized" };
+    }
 
-  const db = getDb();
-  const user = findUserByRegistryId(db, session.user.id);
-  if (user === null) {
-    return { ok: false, status: 403, error: "User not provisioned" };
-  }
+    const db = getDb();
+    const user = findUserByRegistryId(db, session.user.id);
+    if (user === null) {
+      span.setAttribute("ws.upgrade.denied", "user_not_provisioned");
+      logger.warn({ threadId, reason: "user_not_provisioned" }, "interview ws upgrade denied");
+      return { ok: false as const, status: 403, error: "User not provisioned" };
+    }
 
-  const thread = getThread(db, threadId);
-  if (thread === null) {
-    return { ok: false, status: 404, error: "Thread not found" };
-  }
-  if (thread.kind !== "interview" || !canReadThread(db, user.id, threadId)) {
-    return { ok: false, status: 403, error: "Forbidden" };
-  }
+    const thread = getThread(db, threadId);
+    if (thread === null) {
+      span.setAttribute("ws.upgrade.denied", "thread_not_found");
+      logger.warn({ threadId, reason: "thread_not_found" }, "interview ws upgrade denied");
+      return { ok: false as const, status: 404, error: "Thread not found" };
+    }
+    if (thread.kind !== "interview" || !canReadThread(db, user.id, threadId)) {
+      span.setAttribute("ws.upgrade.denied", "forbidden");
+      logger.warn(
+        { threadId, userId: user.id, reason: "forbidden" },
+        "interview ws upgrade denied",
+      );
+      return { ok: false as const, status: 403, error: "Forbidden" };
+    }
 
-  const sessionRecord = getSession(db, thread.session_id);
-  if (sessionRecord === null) {
-    return { ok: false, status: 404, error: "Session not found" };
-  }
-  if (!userHasSessionAccess(db, thread.session_id, user.id)) {
-    return { ok: false, status: 403, error: "Forbidden" };
-  }
+    const sessionRecord = getSession(db, thread.session_id);
+    if (sessionRecord === null) {
+      span.setAttribute("ws.upgrade.denied", "session_not_found");
+      logger.warn({ threadId, reason: "session_not_found" }, "interview ws upgrade denied");
+      return { ok: false as const, status: 404, error: "Session not found" };
+    }
+    if (!userHasSessionAccess(db, thread.session_id, user.id)) {
+      span.setAttribute("ws.upgrade.denied", "session_forbidden");
+      logger.warn(
+        { threadId, userId: user.id, reason: "session_forbidden" },
+        "interview ws upgrade denied",
+      );
+      return { ok: false as const, status: 403, error: "Forbidden" };
+    }
 
-  return { ok: true, data: { threadId, userId: user.id } };
+    span.setAttribute("user.id", user.id);
+    logger.info({ threadId, userId: user.id }, "interview ws connected");
+    return { ok: true as const, data: { threadId, userId: user.id } };
+  });
 }
 
 export async function handleInterviewWsMessage(
@@ -90,6 +114,8 @@ export async function handleInterviewWsMessage(
     emit(ws, { type: "error", error: "Invalid JSON" });
     return;
   }
+
+  logger.debug({ threadId: data.threadId, messageType: parsed.type }, "interview ws message");
 
   if (parsed.type === "ping") {
     emit(ws, { type: "pong" });
@@ -140,6 +166,10 @@ export const interviewWsHandlers = {
     void handleInterviewWsMessage(ws, raw);
   },
   close(ws: InterviewWs) {
+    logger.info(
+      { threadId: ws.data.threadId, userId: ws.data.userId },
+      "interview ws disconnected",
+    );
     getDefaultTurnEngine().releaseThread(ws.data.threadId);
   },
 };

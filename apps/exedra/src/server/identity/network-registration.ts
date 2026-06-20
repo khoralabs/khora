@@ -4,6 +4,7 @@ import { KhoraClient, KhoraClientError } from "@khoralabs/khora-client";
 import { normalizeUsername } from "@khoralabs/khora-contracts";
 
 import { getIdentityKey, getKhoraHostSlug, getKhoraHostUrl } from "../env";
+import { logger } from "../logger";
 import { encodePrincipalIdForMemories } from "../memories/encode-principal-id";
 import { getRegistryUrl } from "../registry-url";
 import { loadSignerFromEncryptedBlob } from "./crypto";
@@ -198,7 +199,7 @@ export function scheduleUserNetworkRegistration(params: {
 }): void {
   void registerUserDidOnNetwork(params).catch((err: unknown) => {
     const message = err instanceof Error ? err.message : String(err);
-    console.error("[exedra] user network registration failed:", message);
+    logger.error({ err: message }, "user network registration failed");
   });
 }
 
@@ -209,6 +210,6 @@ export function scheduleOrgNetworkRegistration(params: {
 }): void {
   void registerOrgDidOnNetwork(params).catch((err: unknown) => {
     const message = err instanceof Error ? err.message : String(err);
-    console.error("[exedra] org network registration failed:", message);
+    logger.error({ err: message }, "org network registration failed");
   });
 }

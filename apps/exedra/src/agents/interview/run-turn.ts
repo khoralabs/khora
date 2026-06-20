@@ -17,6 +17,7 @@ import {
 
 type InterviewToolSet = Record<string, Tool<unknown, unknown>> & ToolSet;
 
+import { logger } from "../../server/logger.js";
 import { TurnAbortedError } from "../errors.js";
 import {
   buildUserLocalDateTimeContext,
@@ -179,9 +180,7 @@ export async function runInterviewTurn(args: {
   };
   const aiTools = toolMapToAiTools(capture.evaluatedTools, runtime) as InterviewToolSet;
   const registeredToolNames = Object.keys(aiTools);
-  if (process.env.NODE_ENV !== "production") {
-    console.log("[interview-turn] registered tools:", registeredToolNames);
-  }
+  logger.debug({ registeredToolNames }, "interview turn registered tools");
 
   let modelMessages: ModelMessage[];
   const modelHistory = historyForModel(history);
@@ -209,6 +208,14 @@ export async function runInterviewTurn(args: {
     tools: aiTools,
     stopWhen: stepCountIs(5),
     abortSignal,
+    experimental_telemetry: {
+      isEnabled: true,
+      functionId: "interview-turn",
+      metadata: {
+        threadId: args.threadId,
+        sessionId: args.sessionId,
+      },
+    },
   });
 
   for await (const part of result.fullStream) {
@@ -276,14 +283,12 @@ export async function runInterviewTurn(args: {
     throw new TurnAbortedError();
   }
 
-  if (process.env.NODE_ENV !== "production") {
-    const finishReason = await result.finishReason;
-    const toolPartCount = assistantParts.filter((part) => part.type.startsWith("tool-")).length;
-    console.log("[interview-turn] finish:", finishReason, {
-      beliefFlags: beliefFlags.length,
-      toolParts: toolPartCount,
-    });
-  }
+  const finishReason = await result.finishReason;
+  const toolPartCount = assistantParts.filter((part) => part.type.startsWith("tool-")).length;
+  logger.debug(
+    { finishReason, beliefFlags: beliefFlags.length, toolParts: toolPartCount },
+    "interview turn finished",
+  );
 
   return { assistantParts, beliefFlags, onboardingCompleted };
 }

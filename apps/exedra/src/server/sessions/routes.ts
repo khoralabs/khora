@@ -36,6 +36,7 @@ import {
   userHasSessionAccess,
 } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
+import { logger } from "../logger";
 import { bootstrapSessionMemoriesForTeamSession } from "../memories/bootstrap-session";
 import { integrateBelief } from "../memories/integrate-belief";
 import { resolveOrgAgentAuthorForOrg, resolveViewerAuthor } from "../messages/resolve-author";
@@ -174,7 +175,7 @@ export async function handleCreateSession(req: Request): Promise<Response> {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to bootstrap session memories";
-    console.error("[exedra] session memories bootstrap failed:", message);
+    logger.error({ err: message }, "session memories bootstrap failed");
     return Response.json(
       { error: "Could not set up session memories. Try again." },
       { status: 500 },
@@ -361,7 +362,7 @@ export async function handleGetInterview(req: Request, sessionId: string): Promi
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to bootstrap session memories";
-    console.error("[exedra] interview session memories bootstrap failed:", message);
+    logger.error({ err: message }, "interview session memories bootstrap failed");
     return Response.json(
       { error: "Could not set up session memories. Try again." },
       { status: 500 },

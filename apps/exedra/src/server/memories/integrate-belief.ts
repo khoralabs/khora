@@ -10,6 +10,7 @@ import { processLogicalMemoryWithIntegrator } from "@khoralabs/memories-integrat
 import { canonicalOntology } from "@khoralabs/memories-ontologies";
 
 import { loadThreadMessages } from "../db/messages.js";
+import { withSpan } from "../telemetry/spans.js";
 import { createExedraMemoriesEmbeddingModel, resolveGeminiApiKey } from "./embedding.js";
 import { ensureScopeChain, userScope } from "./namespaces.js";
 import { openUserMemories } from "./store.js";
@@ -81,45 +82,59 @@ export async function integrateBelief(params: IntegrateBeliefParams): Promise<vo
   const models = createBeliefIntegrationModels();
   if (models === null) return;
 
-  const namespace = userScope(params.userId);
-  const defaultKey = resolveBeliefMemoryKey(params.sessionId, params.beliefId);
-  const persistence = openUserMemories(params.userId);
-  ensureScopeChain(persistence, [GLOBAL_ROOT, namespace]);
-
-  const registry: AgentRegistry = createAgentRegistry();
-  const client = new MemoriesClient(persistence, canonicalOntology);
-  const { chatModel, embeddingModel } = models;
-
-  const adapter = new MemoryAdapterClient({
-    registry,
-    namespace,
-    model: chatModel,
-    client,
-    embeddingModel,
-    identityContext: { app: "exedra" },
-  });
-
-  const { draft } = await adapter.expand({
-    ingest: {
-      sourceApp: "exedra",
-      userId: params.userId,
-      correlationId: params.beliefId,
+  await withSpan(
+    "belief.integrate",
+    {
+      "belief.id": params.beliefId,
+      "session.id": params.sessionId,
+      "belief.feedback": params.feedback,
     },
-    domainPayload: {
-      belief: text,
-      feedback: params.feedback,
-      sessionId: params.sessionId,
-      beliefId: params.beliefId,
+    async () => {
+      const namespace = userScope(params.userId);
+      const defaultKey = resolveBeliefMemoryKey(params.sessionId, params.beliefId);
+      const persistence = openUserMemories(params.userId);
+      ensureScopeChain(persistence, [GLOBAL_ROOT, namespace]);
+
+      const registry: AgentRegistry = createAgentRegistry();
+      const client = new MemoriesClient(persistence, canonicalOntology);
+      const { chatModel, embeddingModel } = models;
+
+      const adapter = new MemoryAdapterClient({
+        registry,
+        namespace,
+        model: chatModel,
+        client,
+        embeddingModel,
+        identityContext: { app: "exedra" },
+      });
+
+      const { draft } = await withSpan("belief.adapter_expand", {}, async () =>
+        adapter.expand({
+          ingest: {
+            sourceApp: "exedra",
+            userId: params.userId,
+            correlationId: params.beliefId,
+          },
+          domainPayload: {
+            belief: text,
+            feedback: params.feedback,
+            sessionId: params.sessionId,
+            beliefId: params.beliefId,
+          },
+        }),
+      );
+
+      const logicalMemory = expandedDraftToLogicalMemoryInput(draft, namespace, defaultKey);
+
+      await withSpan("belief.integrator_merge", {}, async () =>
+        processLogicalMemoryWithIntegrator({
+          client,
+          logicalMemory,
+          chatModel,
+          embeddingModel,
+          registry,
+        }),
+      );
     },
-  });
-
-  const logicalMemory = expandedDraftToLogicalMemoryInput(draft, namespace, defaultKey);
-
-  await processLogicalMemoryWithIntegrator({
-    client,
-    logicalMemory,
-    chatModel,
-    embeddingModel,
-    registry,
-  });
+  );
 }

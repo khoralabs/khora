@@ -25,6 +25,8 @@ import {
 } from "@khoralabs/sqlite-graph-projections";
 import { embedMany } from "ai";
 
+import { withSpan } from "../telemetry/spans.js";
+
 const NAMESPACE_ROOT = "_global_";
 const EMBEDDING_DIM_BY_PRESET = { L: 768, M: 1536, H: 3072 } as const;
 
@@ -206,101 +208,103 @@ export async function handleMemoriesSearch(
       : undefined;
 
   try {
-    const apiKey = resolveGeminiApiKey();
-    let content: { text: string; vector?: number[] };
-    let arms: { lexical: number; vector: number };
+    return await withSpan("memories.search", { "memories.namespace": namespace }, async () => {
+      const apiKey = resolveGeminiApiKey();
+      let content: { text: string; vector?: number[] };
+      let arms: { lexical: number; vector: number };
 
-    if (apiKey) {
-      const resolution = resolveSearchEmbeddingPreset(access.persistence, body.resolution);
-      const google = createGoogleGenerativeAI({ apiKey });
-      try {
-        const { embeddings } = await embedMany({
-          model: google.embedding("gemini-embedding-2-preview"),
-          values: [query],
-          providerOptions: providerOptionsForSearchPreset(resolution),
-        });
-        const vector = embeddings[0];
-        if (vector && vector.length > 0) {
-          content = { text: query, vector };
-          arms = { lexical: 1, vector: 1 };
-        } else {
+      if (apiKey) {
+        const resolution = resolveSearchEmbeddingPreset(access.persistence, body.resolution);
+        const google = createGoogleGenerativeAI({ apiKey });
+        try {
+          const { embeddings } = await embedMany({
+            model: google.embedding("gemini-embedding-2-preview"),
+            values: [query],
+            providerOptions: providerOptionsForSearchPreset(resolution),
+          });
+          const vector = embeddings[0];
+          if (vector && vector.length > 0) {
+            content = { text: query, vector };
+            arms = { lexical: 1, vector: 1 };
+          } else {
+            content = { text: query };
+            arms = { lexical: 1, vector: 0 };
+          }
+        } catch {
           content = { text: query };
           arms = { lexical: 1, vector: 0 };
         }
-      } catch {
+      } else {
         content = { text: query };
         arms = { lexical: 1, vector: 0 };
+        if (!didWarnLexicalOnlySearch) didWarnLexicalOnlySearch = true;
       }
-    } else {
-      content = { text: query };
-      arms = { lexical: 1, vector: 0 };
-      if (!didWarnLexicalOnlySearch) didWarnLexicalOnlySearch = true;
-    }
 
-    const hits = await searchAsync(
-      { persistence: wrapSyncMemoriesPersistenceAsAsync(access.persistence) },
-      {
-        namespace,
-        content,
-        options: {
-          topK,
-          neighbors: true,
-          maxNeighbors,
-          arms,
-          ...(maxVectorDistance !== undefined ? { maxVectorDistance } : {}),
-        },
-      },
-    );
-
-    const hitKeys = hits.map((hit: SearchHit) =>
-      qualifySearchKey(hit.memory.namespace, hit.memory.key, scope),
-    );
-    const neighborKeys: string[] = [];
-    const edgeEndpointKeys: string[] = [];
-    const SEARCH_HIT_SNIPPET_MAX = 2400;
-
-    for (const hit of hits) {
-      for (const neighbor of hit.neighbors ?? []) {
-        neighborKeys.push(qualifySearchKey(neighbor.namespace, neighbor.key, scope));
-      }
-      if (hit.graph.kind === "edge") {
-        edgeEndpointKeys.push(
-          qualifySearchKey(hit.memory.namespace, hit.graph.edge.fromKey, scope),
-          qualifySearchKey(hit.memory.namespace, hit.graph.edge.toKey, scope),
-        );
-      }
-    }
-
-    const keys = [...new Set([...hitKeys, ...neighborKeys, ...edgeEndpointKeys])];
-    const hitSnippets = hits.map((hit: SearchHit) => {
-      const sourceMapId = (hit as SearchHit & { _id: string })._id;
-      return {
-        key: qualifySearchKey(hit.memory.namespace, hit.memory.key, scope),
-        sourceKey: hit.source_key,
-        text: loadSourceMapTextPreview(access.db, sourceMapId, SEARCH_HIT_SNIPPET_MAX),
-      };
-    });
-
-    const edgeHitSnippets = hits.flatMap((hit: SearchHit) => {
-      if (hit.graph.kind !== "edge") return [];
-      const sourceMapId = (hit as SearchHit & { _id: string })._id;
-      return [
+      const hits = await searchAsync(
+        { persistence: wrapSyncMemoriesPersistenceAsAsync(access.persistence) },
         {
-          edgeId: hit.graph.edge.edgeId,
-          fromKey: qualifySearchKey(hit.memory.namespace, hit.graph.edge.fromKey, scope),
-          toKey: qualifySearchKey(hit.memory.namespace, hit.graph.edge.toKey, scope),
-          text: loadSourceMapTextPreview(access.db, sourceMapId, SEARCH_HIT_SNIPPET_MAX),
+          namespace,
+          content,
+          options: {
+            topK,
+            neighbors: true,
+            maxNeighbors,
+            arms,
+            ...(maxVectorDistance !== undefined ? { maxVectorDistance } : {}),
+          },
         },
-      ];
-    });
+      );
 
-    return jsonResponse({
-      hitCount: hits.length,
-      hitKeys,
-      neighborKeys: [...new Set(neighborKeys)],
-      keys,
-      hitSnippets,
-      edgeHitSnippets,
+      const hitKeys = hits.map((hit: SearchHit) =>
+        qualifySearchKey(hit.memory.namespace, hit.memory.key, scope),
+      );
+      const neighborKeys: string[] = [];
+      const edgeEndpointKeys: string[] = [];
+      const SEARCH_HIT_SNIPPET_MAX = 2400;
+
+      for (const hit of hits) {
+        for (const neighbor of hit.neighbors ?? []) {
+          neighborKeys.push(qualifySearchKey(neighbor.namespace, neighbor.key, scope));
+        }
+        if (hit.graph.kind === "edge") {
+          edgeEndpointKeys.push(
+            qualifySearchKey(hit.memory.namespace, hit.graph.edge.fromKey, scope),
+            qualifySearchKey(hit.memory.namespace, hit.graph.edge.toKey, scope),
+          );
+        }
+      }
+
+      const keys = [...new Set([...hitKeys, ...neighborKeys, ...edgeEndpointKeys])];
+      const hitSnippets = hits.map((hit: SearchHit) => {
+        const sourceMapId = (hit as SearchHit & { _id: string })._id;
+        return {
+          key: qualifySearchKey(hit.memory.namespace, hit.memory.key, scope),
+          sourceKey: hit.source_key,
+          text: loadSourceMapTextPreview(access.db, sourceMapId, SEARCH_HIT_SNIPPET_MAX),
+        };
+      });
+
+      const edgeHitSnippets = hits.flatMap((hit: SearchHit) => {
+        if (hit.graph.kind !== "edge") return [];
+        const sourceMapId = (hit as SearchHit & { _id: string })._id;
+        return [
+          {
+            edgeId: hit.graph.edge.edgeId,
+            fromKey: qualifySearchKey(hit.memory.namespace, hit.graph.edge.fromKey, scope),
+            toKey: qualifySearchKey(hit.memory.namespace, hit.graph.edge.toKey, scope),
+            text: loadSourceMapTextPreview(access.db, sourceMapId, SEARCH_HIT_SNIPPET_MAX),
+          },
+        ];
+      });
+
+      return jsonResponse({
+        hitCount: hits.length,
+        hitKeys,
+        neighborKeys: [...new Set(neighborKeys)],
+        keys,
+        hitSnippets,
+        edgeHitSnippets,
+      });
     });
   } catch (err) {
     return jsonResponse({ error: String(err) }, 500);
@@ -333,33 +337,35 @@ export async function handleMemoriesInvestigate(
     Number.isFinite(rawSteps) && rawSteps > 0 ? Math.min(50, Math.floor(rawSteps)) : 12;
 
   try {
-    const apiKey = resolveGeminiApiKey();
-    if (apiKey === undefined) {
-      return jsonResponse(
-        { error: "Memory investigation requires a Google API key for embeddings" },
-        503,
-      );
-    }
+    return await withSpan("memories.investigate", { "memories.namespace": namespace }, async () => {
+      const apiKey = resolveGeminiApiKey();
+      if (apiKey === undefined) {
+        return jsonResponse(
+          { error: "Memory investigation requires a Google API key for embeddings" },
+          503,
+        );
+      }
 
-    const resolution = resolveSearchEmbeddingPreset(access.persistence, body.resolution);
-    const google = createGoogleGenerativeAI({ apiKey });
-    const embeddingModel = createMemoriesEmbeddingModel({
-      model: google.embedding("gemini-embedding-2-preview"),
-      providerOptions: mergeResolutionAndProviderOptions(resolution),
-    });
-    const modelId = process.env.MEMORIES_INVESTIGATOR_MODEL?.trim() || "gemini-flash-latest";
-    const model = google.languageModel(modelId);
+      const resolution = resolveSearchEmbeddingPreset(access.persistence, body.resolution);
+      const google = createGoogleGenerativeAI({ apiKey });
+      const embeddingModel = createMemoriesEmbeddingModel({
+        model: google.embedding("gemini-embedding-2-preview"),
+        providerOptions: mergeResolutionAndProviderOptions(resolution),
+      });
+      const modelId = process.env.MEMORIES_INVESTIGATOR_MODEL?.trim() || "gemini-flash-latest";
+      const model = google.languageModel(modelId);
 
-    const client = new MemoriesClient(access.persistence, canonicalOntology);
-    const investigator = new MemoryInvestigatorClient({
-      registry: getInvestigatorRegistry(),
-      namespace,
-      model,
-      client,
-      embeddingModel,
+      const client = new MemoriesClient(access.persistence, canonicalOntology);
+      const investigator = new MemoryInvestigatorClient({
+        registry: getInvestigatorRegistry(),
+        namespace,
+        model,
+        client,
+        embeddingModel,
+      });
+      const { answer } = await investigator.investigate({ question, maxSteps });
+      return jsonResponse(answer);
     });
-    const { answer } = await investigator.investigate({ question, maxSteps });
-    return jsonResponse(answer);
   } catch (err) {
     return jsonResponse({ error: String(err) }, 500);
   }

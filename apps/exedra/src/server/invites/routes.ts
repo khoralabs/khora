@@ -25,6 +25,7 @@ import {
   userHasSessionAccess,
 } from "../db/sessions";
 import { getOrCreateUser, setUserSessionConsentAccepted } from "../identity/users";
+import { logger } from "../logger";
 import { bootstrapOrgTeamMemories } from "../memories/bootstrap";
 import { bootstrapSessionMemoriesForTeamSession } from "../memories/bootstrap-session";
 import { createOnboardingInterviewForMember } from "../onboarding/interview";
@@ -175,7 +176,7 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
           });
         } catch (err) {
           const message = err instanceof Error ? err.message : "Failed to bootstrap memories";
-          console.error("[exedra] invite session org memories bootstrap failed:", message);
+          logger.error({ err: message }, "invite session org memories bootstrap failed");
         }
       }
 
@@ -187,7 +188,7 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to bootstrap session memories";
-        console.error("[exedra] invite session memories bootstrap failed:", message);
+        logger.error({ err: message }, "invite session memories bootstrap failed");
         return Response.json(
           { error: "Could not set up session memories. Try again." },
           { status: 500 },
@@ -223,7 +224,7 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
         bootstrapOrgTeamMemories({ orgId: team.orgId, teamId, userId: user.id });
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to bootstrap memories";
-        console.error("[exedra] invite team memories bootstrap failed:", message);
+        logger.error({ err: message }, "invite team memories bootstrap failed");
       }
 
       const org = getOrg(db, team.orgId);
@@ -243,7 +244,7 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
         } catch (err) {
           const message =
             err instanceof Error ? err.message : "Failed to create onboarding interview";
-          console.error("[exedra] invite team onboarding interview failed:", message);
+          logger.error({ err: message }, "invite team onboarding interview failed");
         }
       }
     }

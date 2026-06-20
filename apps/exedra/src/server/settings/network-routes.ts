@@ -15,6 +15,7 @@ import {
   setUserMarketingOptedIn,
   setUserNetworkOptedIn,
 } from "../identity/users";
+import { logger } from "../logger";
 import { getRegistryUrl } from "../registry-url";
 
 const MARKETING_LIST_SLUG = "khoralabs-updates";
@@ -101,7 +102,7 @@ export async function handleMarketingOptIn(req: Request): Promise<Response> {
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "marketing subscribe failed";
-      console.warn("[exedra] marketing subscribe failed:", message);
+      logger.warn({ err: message }, "marketing subscribe failed");
     }
   }
 

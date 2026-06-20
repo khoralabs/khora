@@ -1,3 +1,4 @@
+import { logger } from "../logger.js";
 import { getStubRegistryOtp } from "./config.js";
 import {
   createStubSession,
@@ -92,9 +93,7 @@ export async function handleStubSendVerificationOtp(req: Request): Promise<Respo
 
   const otp = getStubRegistryOtp();
   setStubOtp(email, otp);
-  console.log(
-    `[exedra stub registry] OTP for ${email}: ${otp} (fixed stub code — not sent via SES)`,
-  );
+  logger.info({ email, otp }, "stub registry OTP issued");
 
   return Response.json({ success: true });
 }

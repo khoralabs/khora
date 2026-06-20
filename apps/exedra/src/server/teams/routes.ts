@@ -15,6 +15,7 @@ import {
 } from "../db/membership";
 import { createTeam } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
+import { logger } from "../logger";
 import { bootstrapOrgTeamMemories } from "../memories/bootstrap";
 import { createOnboardingInterviewForMember } from "../onboarding/interview";
 
@@ -56,7 +57,7 @@ export async function handleCreateTeamInOrg(req: Request, orgId: string): Promis
   } catch (err) {
     rollbackTeamCreation(db, teamId);
     const message = err instanceof Error ? err.message : "Failed to bootstrap memories";
-    console.error("[exedra] create team memories bootstrap failed:", message);
+    logger.error({ err: message }, "create team memories bootstrap failed");
     return Response.json({ error: "Could not set up team memories. Try again." }, { status: 500 });
   }
 
@@ -75,7 +76,7 @@ export async function handleCreateTeamInOrg(req: Request, orgId: string): Promis
   } catch (err) {
     rollbackTeamCreation(db, teamId);
     const message = err instanceof Error ? err.message : "Failed to create onboarding interview";
-    console.error("[exedra] create team onboarding interview failed:", message);
+    logger.error({ err: message }, "create team onboarding interview failed");
     return Response.json(
       { error: "Could not start onboarding interview. Try again." },
       { status: 500 },

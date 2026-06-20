@@ -25,6 +25,7 @@ import {
   updateUserAvatarS3Key,
   updateUserProfile,
 } from "../identity/users";
+import { logger } from "../logger";
 import { bootstrapOrgTeamMemories } from "../memories/bootstrap";
 import { resolveTeamProfile } from "../teams/resolve-rows";
 import { createOnboardingInterviewForMember } from "./interview";
@@ -197,7 +198,7 @@ export async function handlePostOnboarding(req: Request): Promise<Response> {
   } catch (err) {
     rollbackOnboarding(db, { orgId, teamId });
     const message = err instanceof Error ? err.message : "Failed to bootstrap memories";
-    console.error("[exedra] onboarding memories bootstrap failed:", message);
+    logger.error({ err: message }, "onboarding memories bootstrap failed");
     return Response.json({ error: "Could not set up team memories. Try again." }, { status: 500 });
   }
 
@@ -219,7 +220,7 @@ export async function handlePostOnboarding(req: Request): Promise<Response> {
   } catch (err) {
     rollbackOnboarding(db, { orgId, teamId });
     const message = err instanceof Error ? err.message : "Failed to create onboarding interview";
-    console.error("[exedra] onboarding interview setup failed:", message);
+    logger.error({ err: message }, "onboarding interview setup failed");
     return Response.json(
       { error: "Could not start onboarding interview. Try again." },
       { status: 500 },
