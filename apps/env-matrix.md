@@ -144,11 +144,9 @@ Separate deployable (Docker / Render Private Service). Not linked to the R/K/KH/
 | `GRAFANA_CLOUD_OTLP_ENDPOINT` | C | Grafana OTLP gateway base URL (e.g. `https://otlp-gateway-prod-us-east-2.grafana.net/otlp`). |
 | `GRAFANA_CLOUD_INSTANCE_ID` | C | Grafana Cloud instance ID (basic auth username). |
 | `GRAFANA_CLOUD_API_KEY` | S | Grafana access policy token (basic auth password). **Collector only.** |
-| `HOSTNAME` | C | Optional collector host label (default `khora-otel-collector`). |
+| `HOSTNAME` | C | Optional collector host label. |
 
-`GRAFANA_CLOUD_BASIC_AUTH_HEADER` is computed at container start by `apps/otel/entrypoint.sh` — do not set manually.
-
-Local: `docker build -t khora-otel-collector -f apps/otel/Dockerfile .` then `docker run --env-file apps/otel/.env -p 4318:4318 khora-otel-collector`. Without `GRAFANA_CLOUD_*`, collector uses the `debug` exporter (stdout).
+Local: `docker build -t khora-otel-collector -f apps/otel/Dockerfile .` then `docker run --env-file apps/otel/.env -p 4318:4318 khora-otel-collector`. Local stdout debug: override CMD with `--config=/etc/otelcol-contrib/config.yaml` (see `apps/otel/README.md`).
 
 ### Encryption at rest
 

@@ -1,9 +1,8 @@
 # OpenTelemetry Collector for Khora services
 
-Receives OTLP from Exedra, registry, khora-server, etc. and either:
+Receives OTLP from Exedra, registry, khora-server, etc. and forwards to **Grafana Cloud** (default Docker CMD). For local stdout debugging, override the config path (see below).
 
-- **Local dev** — prints telemetry to container stdout (`debug` exporter)
-- **Grafana Cloud** — forwards when `GRAFANA_CLOUD_*` env vars are set
+The upstream image is **distroless** (no shell) — the Dockerfile only copies configs and sets `CMD`; no `RUN` or shell entrypoint.
 
 ## Grafana Cloud credentials
 
@@ -18,18 +17,16 @@ cp apps/otel/.env.example apps/otel/.env
 
 | Variable | Where it goes |
 | --- | --- |
-| `GRAFANA_CLOUD_OTLP_ENDPOINT` | `apps/otel/.env` (collector only) |
-| `GRAFANA_CLOUD_INSTANCE_ID` | `apps/otel/.env` (collector only) |
-| `GRAFANA_CLOUD_API_KEY` | `apps/otel/.env` (collector only) |
+| `GRAFANA_CLOUD_OTLP_ENDPOINT` | Collector service only (Render secrets or `apps/otel/.env`) |
+| `GRAFANA_CLOUD_INSTANCE_ID` | Collector service only |
+| `GRAFANA_CLOUD_API_KEY` | Collector service only |
 
-**Do not** put the Grafana API key in Exedra, registry, or khora-server env. Apps only need:
+**Do not** put the Grafana API key on Exedra, registry, or khora-server. Apps only need:
 
 ```env
 OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318
 OTEL_SERVICE_NAME=exedra
 ```
-
-The collector adds Grafana auth on export. `entrypoint.sh` computes `GRAFANA_CLOUD_BASIC_AUTH_HEADER` for collector self-telemetry (same as Grafana’s Linux onboarding guide).
 
 ## Build
 
@@ -39,7 +36,7 @@ Use the **repository root** as the build context (same as `apps/redis` and `apps
 docker build -t khora-otel-collector -f apps/otel/Dockerfile .
 ```
 
-## Run (Grafana Cloud)
+## Run (Grafana Cloud — default)
 
 ```sh
 docker run -d --name khora-otel-collector \
@@ -50,14 +47,17 @@ docker run -d --name khora-otel-collector \
   khora-otel-collector
 ```
 
+Default `CMD` is `--config=/etc/otelcol-contrib/config.grafana.yaml`.
+
 ## Run (local debug only)
 
-Omit Grafana env vars — collector uses the `debug` exporter:
+Override the config to use the `debug` exporter (no Grafana credentials):
 
 ```sh
 docker run -d --name khora-otel-collector \
   -p 4318:4318 \
-  khora-otel-collector
+  khora-otel-collector \
+  --config=/etc/otelcol-contrib/config.yaml
 ```
 
 View debug output: `docker logs -f khora-otel-collector`
@@ -82,4 +82,17 @@ In Grafana Cloud, filter by `service.name` (`exedra`, `khora-registry`, `khora-s
 
 ## Render (production)
 
-Run the collector as a **Private Service**. Put `GRAFANA_CLOUD_*` in a Render secret env group on the collector service only. Other services set `OTEL_EXPORTER_OTLP_ENDPOINT` to the collector’s internal URL.
+Deploy as a **Private Service** from the **repo root**:
+
+| Setting | Value |
+| --- | --- |
+| Root Directory | *(empty)* |
+| Dockerfile Path | `apps/otel/Dockerfile` |
+
+Set `GRAFANA_CLOUD_*` in a secret env group on the collector service only. Other services use the collector’s internal URL:
+
+```env
+OTEL_EXPORTER_OTLP_ENDPOINT=http://<collector-service-name>:4318
+```
+
+Health check (optional): `http://<host>:13133`

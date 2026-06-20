@@ -47,27 +47,3 @@ service:
       receivers: [otlp]
       processors: [memory_limiter, resourcedetection, batch]
       exporters: [otlphttp/grafana_cloud]
-  telemetry:
-    resource:
-      service.name: khora-otel-collector
-      host.name: "${env:HOSTNAME}"
-    metrics:
-      readers:
-        - periodic:
-            exporter:
-              otlp:
-                protocol: http/protobuf
-                endpoint: "${env:GRAFANA_CLOUD_OTLP_ENDPOINT}/v1/metrics"
-                headers:
-                  - name: authorization
-                    value: "${env:GRAFANA_CLOUD_BASIC_AUTH_HEADER}"
-    logs:
-      processors:
-        - batch:
-            exporter:
-              otlp:
-                protocol: http/protobuf
-                endpoint: "${env:GRAFANA_CLOUD_OTLP_ENDPOINT}/v1/logs"
-                headers:
-                  - name: authorization
-                    value: "${env:GRAFANA_CLOUD_BASIC_AUTH_HEADER}"
