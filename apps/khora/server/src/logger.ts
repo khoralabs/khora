@@ -1,6 +1,3 @@
-import pino from "pino";
+import { createLogger } from "@khoralabs/observability/logger";
 
-export const logger = pino(
-  { level: process.env.LOG_LEVEL ?? "info", name: "khora-server" },
-  pino.destination(2),
-);
+export const logger = createLogger({ name: "khora-server" });

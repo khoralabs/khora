@@ -1,3 +1,5 @@
+import "./otel.js";
+
 import { mkdirSync, unlinkSync } from "node:fs";
 import path from "node:path";
 
@@ -6,6 +8,7 @@ const { dirname } = path;
 import { createConsoleAuthFromEnv } from "@khoralabs/khora-console";
 import type { KhoraHostContext } from "@khoralabs/khora-host";
 import type { KhoraWsData } from "@khoralabs/khora-transport";
+import { context, SpanStatusCode, trace } from "@opentelemetry/api";
 import { bootstrapKhoraHost } from "./bootstrap-khora";
 import { bootstrapKhoraEncryption } from "./encryption-bootstrap";
 import {
@@ -23,6 +26,7 @@ import type { HostRouteDeps } from "./http/deps";
 import { route } from "./http/router";
 import { logger } from "./logger";
 import { envMemoriesBootstrapConfig } from "./memories-env";
+import { tracer } from "./otel";
 import { createV2HostRateLimiters } from "./rate-limit-buckets";
 import { maybeRegistryOptInOnStartup } from "./registry-opt-in";
 import adminPage from "./routes/admin/index.html";
@@ -96,14 +100,33 @@ const server = Bun.serve<KhoraWsData>({
   port: envPort(),
   routes: htmlRoutes,
   async fetch(req) {
+    const startMs = Date.now();
     const url = new URL(req.url);
-    try {
-      const res = await route(req, url, server, deps);
-      return res ?? new Response("Not found", { status: 404 });
-    } catch (err) {
-      logger.error({ err }, "unhandled fetch error");
-      return new Response("Internal server error", { status: 500 });
-    }
+    const span = tracer.startSpan(`HTTP ${req.method}`, {
+      attributes: { "http.method": req.method, "http.target": url.pathname },
+    });
+    return context.with(trace.setSpan(context.active(), span), async () => {
+      let status = 200;
+      try {
+        const res = await route(req, url, server, deps);
+        status = res?.status ?? 404;
+        return res ?? new Response("Not found", { status: 404 });
+      } catch (err) {
+        status = 500;
+        span.recordException(err instanceof Error ? err : new Error(String(err)));
+        span.setStatus({ code: SpanStatusCode.ERROR });
+        logger.error({ err }, "unhandled fetch error");
+        return new Response("Internal server error", { status: 500 });
+      } finally {
+        span.setAttribute("http.status_code", status);
+        span.setStatus({ code: status >= 500 ? SpanStatusCode.ERROR : SpanStatusCode.OK });
+        span.end();
+        logger.info(
+          { method: req.method, path: url.pathname, status, durationMs: Date.now() - startMs },
+          "request",
+        );
+      }
+    });
   },
   development: process.env.NODE_ENV !== "production" && {
     hmr: true,

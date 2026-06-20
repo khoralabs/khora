@@ -124,14 +124,14 @@ Host selection: `khora host use <slug>` writes `currentHost` and `hosts` to `cli
 
 ### OpenTelemetry (apps → collector → Grafana Cloud)
 
-Apps export OTLP HTTP to the collector. Exedra and registry are instrumented; khora-server will use the same env pattern when OTel is added. **`bun run start` on Exedra and registry** applies defaults via their respective start scripts (`OTEL_SERVICE_NAME`, `service.namespace`).
+Apps export OTLP HTTP to the collector. Exedra, registry, and khora-server are instrumented. **`bun run start`** on all three services applies defaults via their respective start scripts (`OTEL_SERVICE_NAME`, `service.namespace`).
 
 | Variable | R | K | KH | E | Kind | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | + | · | · | + | C | OTLP HTTP base URL (no path). Local: `http://127.0.0.1:4318`. Prod: collector private URL (e.g. `http://khora-otel-collector:4318`). When unset, SDK runs with no-op exporters (spans/metrics still created locally). |
-| `OTEL_SERVICE_NAME` | + | · | · | + | C | Resource `service.name`. Registry default `khora-registry`; Exedra default `exedra`. Start scripts set when unset. |
-| `OTEL_SERVICE_VERSION` | + | · | · | + | C | Resource `service.version` (default `0.1.0`). |
-| `OTEL_RESOURCE_ATTRIBUTES` | + | · | · | + | C | Comma-separated `key=value` pairs merged into the OTel resource. Start scripts default `service.namespace=khoralabs` when unset. Example: `deployment.environment=production`. |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | + | + | · | + | C | OTLP HTTP base URL (no path). Local: `http://127.0.0.1:4318`. Prod: collector private URL (e.g. `http://khora-otel-collector:4318`). When unset, SDK runs with no-op exporters (spans/metrics still created locally). |
+| `OTEL_SERVICE_NAME` | + | + | · | + | C | Resource `service.name`. Registry default `khora-registry`; khora-server default `khora-server`; Exedra default `exedra`. Start scripts set when unset. |
+| `OTEL_SERVICE_VERSION` | + | + | · | + | C | Resource `service.version` (default `0.1.0`). |
+| `OTEL_RESOURCE_ATTRIBUTES` | + | + | · | + | C | Comma-separated `key=value` pairs merged into the OTel resource. Start scripts default `service.namespace=khoralabs` when unset. Example: `deployment.environment=production`. |
 
 **Do not** set Grafana Cloud credentials on app services — only on the collector (below).
 
@@ -284,6 +284,10 @@ LITESTREAM_S3_KEY_PREFIX=khora/litestream
 KHORA_SQLCIPHER_KEY=...
 KHORA_OUTBOX_ENCRYPTION_KEY=...
 KHORA_CONSOLE_ROOT_TOKEN=...
+LOG_LEVEL=info
+OTEL_EXPORTER_OTLP_ENDPOINT=http://khora-otel-collector:4318
+OTEL_SERVICE_NAME=khora-server
+OTEL_RESOURCE_ATTRIBUTES=deployment.environment=production
 ```
 
 **khoralabs homepage**

@@ -5,6 +5,7 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { buildOtelServerEnv } from "@khoralabs/observability/otel-env";
 import {
   assertLitestreamCredentials,
   buildLitestreamYaml,
@@ -17,12 +18,13 @@ import { envMemoriesBootstrapConfig, envMemoriesEnabled } from "../src/memories-
 
 const serverRoot = path.resolve(path.dirname(import.meta.path), "..");
 const indexEntry = path.join(serverRoot, "src", "index.ts");
+const serverEnv = buildOtelServerEnv({ defaultServiceName: "khora-server" });
 
 async function runServerOnly(): Promise<never> {
   const proc = Bun.spawn(["bun", "run", indexEntry], {
     cwd: serverRoot,
     stdio: ["inherit", "inherit", "inherit"],
-    env: process.env,
+    env: serverEnv,
   });
   await proc.exited;
   process.exit(proc.exitCode === 0 ? 0 : (proc.exitCode ?? 1));
@@ -72,7 +74,7 @@ async function runWithLitestream(): Promise<void> {
   const srvProc = Bun.spawn(["bun", "run", indexEntry], {
     cwd: serverRoot,
     stdio: ["inherit", "inherit", "inherit"],
-    env: process.env,
+    env: serverEnv,
   });
 
   for (const sig of ["SIGINT", "SIGTERM"] as const) {

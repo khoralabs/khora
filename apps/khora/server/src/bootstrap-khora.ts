@@ -33,6 +33,7 @@ import {
   createRelayPrincipalLifecycle,
 } from "@khoralabs/relay-colonnade";
 import type { KhoraEncryptionContext } from "./encryption-context";
+import { logger } from "./logger";
 import type { KhoraMemoriesBootstrapConfig } from "./memories-env";
 import { createKhoraAdminStatsPort } from "./ops/admin-stats-port";
 import { createKhoraHostHealthPort } from "./ops/health-port";
@@ -123,7 +124,7 @@ export async function bootstrapKhoraHost(opts: BootstrapKhoraHostOpts): Promise<
     repo.insertSeedInviteTokens(seedTokens);
     const rootPlain = repo.ensureRootInviteIfAbsent();
     if (rootPlain !== undefined) {
-      console.error("[khora-host] new root invite plaintext — store securely:", rootPlain);
+      logger.error({ rootPlain }, "new root invite plaintext — store securely");
     }
     invitesRepoValue = repo;
   }
