@@ -37,6 +37,7 @@ import {
 } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
 import { bootstrapSessionMemoriesForTeamSession } from "../memories/bootstrap-session";
+import { integrateBelief } from "../memories/integrate-belief";
 import { resolveOrgAgentAuthorForOrg, resolveViewerAuthor } from "../messages/resolve-author";
 import { serializeThreadMessages } from "../messages/serialize";
 import { buildSessionAccess } from "./resolve-access";
@@ -457,6 +458,18 @@ export async function handlePatchBeliefFeedback(
     sourceMessageId,
     feedback,
     correction: body.correction,
+  });
+
+  void integrateBelief({
+    db,
+    userId: user.id,
+    threadId,
+    sessionId,
+    beliefId,
+    feedback,
+    correction: body.correction,
+  }).catch(() => {
+    // non-fatal: must not affect the HTTP response
   });
 
   return Response.json({

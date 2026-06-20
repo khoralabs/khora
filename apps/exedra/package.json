@@ -21,6 +21,7 @@
     "@khoralabs/khora-client": "workspace:*",
     "@khoralabs/khora-contracts": "workspace:*",
     "@khoralabs/memories-autolink": "workspace:*",
+    "@khoralabs/memories-adapter": "workspace:*",
     "@khoralabs/memories-core": "workspace:*",
     "@khoralabs/memories-integrator": "workspace:*",
     "@khoralabs/memories-investigator": "workspace:*",
