@@ -1,4 +1,3 @@
-import { expandedDraftToLogicalMemoryInput } from "@khoralabs/memories-adapter";
 import { task } from "@renderinc/sdk/workflows";
 import {
   type BeliefIntegrationParams,
@@ -51,21 +50,22 @@ const mergeMemory = task(
     namespace: string,
     draft: Awaited<ReturnType<typeof expandBeliefTask>>,
     mode: "bootstrap" | "plan",
-    plan?: Awaited<ReturnType<typeof planIntegrationTask>>,
+    planResult?: Awaited<ReturnType<typeof planIntegrationTask>>,
   ) {
-    const defaultKey = resolveBeliefMemoryKey(params.sessionId, params.beliefId);
-    const logicalMemory = expandedDraftToLogicalMemoryInput(draft, namespace, defaultKey);
+    const memoryKey = resolveBeliefMemoryKey(params.sessionId, params.beliefId);
 
     return postInternalMemoriesMerge({
       userId: params.userId,
       logicalMemory: {
-        key: logicalMemory.key,
-        namespace: logicalMemory.namespace,
-        plaintext: logicalMemory.plaintext ?? draft.plaintext,
+        key: memoryKey,
+        namespace,
+        plaintext: draft.plaintext,
       },
       mode,
       ...(mode === "bootstrap" ? { draft } : {}),
-      ...(mode === "plan" && plan !== undefined ? { plan } : {}),
+      ...(mode === "plan" && planResult !== undefined
+        ? { plan: planResult.plan, allowedPeerKeys: planResult.allowedPeerKeys }
+        : {}),
     });
   },
 );
@@ -95,7 +95,7 @@ task(
       return mergeMemory(params, search.namespace, draft, "bootstrap");
     }
 
-    const plan = await planIntegrationTask(draft.plaintext, params.userId, search.namespace);
-    return mergeMemory(params, search.namespace, draft, "plan", plan);
+    const planResult = await planIntegrationTask(draft.plaintext, params.userId, search.namespace);
+    return mergeMemory(params, search.namespace, draft, "plan", planResult);
   },
 );

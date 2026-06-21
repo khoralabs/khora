@@ -21,21 +21,14 @@ export const exedraLabelPropsSearchFormatter: LabelPropsSearchFormatter = (
   props: Record<string, unknown>,
 ): string => {
   if (kind === "memory" && role === "node") {
-    const parts: string[] = ["Memory node."];
-    if (typeof props.source === "string" && props.source.length > 0) {
-      parts.push(`Source: ${props.source}.`);
-    }
     const features = formatFeatures(props.features);
-    if (features.length > 0) parts.push(features);
-    return parts.join("\n");
+    if (features.length > 0) return features;
+    return "Memory node.";
   }
   if (kind === "related" && role === "edge") {
     const parts: string[] = [];
     if (typeof props.context === "string" && props.context.length > 0) {
       parts.push(`Related: ${props.context}`);
-    }
-    if (typeof props.confidence === "string") {
-      parts.push(`Confidence: ${props.confidence}`);
     }
     const features = formatFeatures(props.features);
     if (features.length > 0) parts.push(features);

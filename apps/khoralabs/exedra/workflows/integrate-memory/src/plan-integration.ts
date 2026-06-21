@@ -10,11 +10,16 @@ import {
 } from "./agent-runtime.ts";
 import { createWorkflowMemoriesAgentTelemetry } from "./agent-telemetry.ts";
 
+export type PlanIntegrationResult = {
+  plan: IntegratorPlanWireJson;
+  allowedPeerKeys: string[];
+};
+
 export async function planIntegration(args: {
   content: string;
   userId: string;
   namespace: string;
-}): Promise<IntegratorPlanWireJson> {
+}): Promise<PlanIntegrationResult> {
   const client = createRemoteMemoriesClient(args.userId);
   const integrator = new MemoryIntegratorClient({
     registry: getAgentRegistry(),
@@ -26,15 +31,18 @@ export async function planIntegration(args: {
   });
   const telemetry = await createWorkflowMemoriesAgentTelemetry(client);
 
-  const { plan } = await integrator.integrate({
+  const { plan, discoveredMemoryKeys } = await integrator.integrate({
     content: args.content,
     maxSteps: resolveIntegratorMaxSteps(),
     telemetry,
   });
 
   return {
-    nodeLabels: plan.nodeLabels ?? {},
-    edges: (plan.edges ?? []) as Record<string, unknown>[],
-    ...(plan.properties !== undefined ? { properties: plan.properties } : {}),
+    plan: {
+      nodeLabels: plan.nodeLabels ?? {},
+      edges: (plan.edges ?? []) as Record<string, unknown>[],
+      ...(plan.properties !== undefined ? { properties: plan.properties } : {}),
+    },
+    allowedPeerKeys: discoveredMemoryKeys,
   };
 }

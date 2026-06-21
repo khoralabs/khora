@@ -47,20 +47,40 @@ import { withSpan } from "../telemetry/spans.js";
 import { requireInternalToken } from "./require-internal-token.js";
 import { serializeSearchHit } from "./search-hit-serialize.js";
 
-type PersistenceWithFindKey = {
+type PersistenceWithPeerLookup = {
   findMemoryIdByKey(
     namespace: string,
     key: string,
   ): string | undefined | Promise<string | undefined>;
+  loadMemoryNamespaceKey(
+    memoryId: string,
+  ):
+    | { namespace: string; key: string }
+    | undefined
+    | Promise<{ namespace: string; key: string } | undefined>;
 };
 
 async function resolveFindMemoryIdByKey(
-  persistence: PersistenceWithFindKey,
+  persistence: PersistenceWithPeerLookup,
   namespace: string,
   key: string,
 ): Promise<string | undefined> {
   const result = persistence.findMemoryIdByKey(namespace, key);
   return result instanceof Promise ? await result : result;
+}
+
+/** Resolve integrator/autolink memory keys to persistence memory ids for mergeMemory. */
+async function resolvePeerMemoryId(
+  persistence: PersistenceWithPeerLookup,
+  namespace: string,
+  peerRef: string,
+): Promise<string | undefined> {
+  const loaded = persistence.loadMemoryNamespaceKey(peerRef);
+  const byId = loaded instanceof Promise ? await loaded : loaded;
+  if (byId !== undefined && byId.namespace === namespace) {
+    return peerRef;
+  }
+  return resolveFindMemoryIdByKey(persistence, namespace, peerRef);
 }
 
 async function filterMergeSliceEdgesToExistingMemories(
@@ -73,10 +93,17 @@ async function filterMergeSliceEdgesToExistingMemories(
   }
   const kept: NonNullable<MergeMemoryParamsNode["edges"]> = [];
   for (const edge of slice.edges) {
-    const id = await resolveFindMemoryIdByKey(client.persistence, namespace, edge.peer_memory_id);
-    if (id !== undefined) kept.push(edge);
+    const memoryId = await resolvePeerMemoryId(client.persistence, namespace, edge.peer_memory_id);
+    if (memoryId !== undefined) {
+      kept.push({ ...edge, peer_memory_id: memoryId });
+    }
   }
-  if (kept.length === slice.edges.length) return slice;
+  if (kept.length === slice.edges.length) {
+    const unchanged = kept.every(
+      (edge, index) => edge.peer_memory_id === slice.edges?.[index]?.peer_memory_id,
+    );
+    if (unchanged) return slice;
+  }
   return { ...slice, edges: kept.length > 0 ? kept : undefined };
 }
 
@@ -128,10 +155,12 @@ function memoryLabelFromDraft(
 ): Record<string, unknown> {
   const memory = draft?.nodeLabelHints?.memory;
   if (memory !== undefined && typeof memory === "object" && !Array.isArray(memory)) {
-    return memory as Record<string, unknown>;
+    const features = (memory as { features?: unknown }).features;
+    if (Array.isArray(features) && features.length > 0) {
+      return { features };
+    }
   }
   return {
-    source: "exedra.belief",
     features: [{ aspect: "claim", statement: plaintext.slice(0, 500) }],
   };
 }
@@ -429,7 +458,10 @@ export async function handleInternalMemoriesMerge(req: Request): Promise<Respons
             ? bootstrapMergeSliceFromDraft(body.draft, plaintext)
             : integratorWireToMergeSlice(
                 exedraMemoriesOntology,
-                parseIntegratorPlanWire(body.plan),
+                filterPlanEdgesToAllowedPeerKeys(
+                  parseIntegratorPlanWire(body.plan),
+                  body.allowedPeerKeys,
+                ),
               );
 
         const sliceWithAutolink = await applyAutolinkToSlice(
@@ -460,6 +492,20 @@ export async function handleInternalMemoriesMerge(req: Request): Promise<Respons
     logger.error({ err, userId, mode: body.mode }, "internal memories merge failed");
     return Response.json({ error: String(err) }, { status: 500 });
   }
+}
+
+function filterPlanEdgesToAllowedPeerKeys(
+  plan: IntegratorPlanWire,
+  allowedPeerKeys: string[] | undefined,
+): IntegratorPlanWire {
+  if (allowedPeerKeys === undefined) return plan;
+  const allowed = new Set(allowedPeerKeys);
+  const kept = plan.edges.filter((edge) => {
+    if (allowed.has(edge.memory)) return true;
+    logger.warn({ peerKey: edge.memory }, "merge: dropped integrator edge not in allowedPeerKeys");
+    return false;
+  });
+  return { ...plan, edges: kept };
 }
 
 function parseIntegratorPlanWire(plan: InternalMemoriesMergeRequest["plan"]): IntegratorPlanWire {

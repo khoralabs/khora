@@ -51,6 +51,8 @@ export type InternalMemoriesMergeRequest = {
   mode: "bootstrap" | "plan";
   draft?: ExpandedMemoryDraftWire;
   plan?: IntegratorPlanWireJson;
+  /** Neighbor memory keys discovered during integrator search; filters semantic edges on merge. */
+  allowedPeerKeys?: string[];
 };
 
 export type InternalMemoriesMergeResponse = {

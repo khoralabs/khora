@@ -47,9 +47,6 @@ export async function expandBelief(args: {
 
   return {
     plaintext: draft.plaintext,
-    ...(draft.memoryKeySuggestion !== undefined
-      ? { memoryKeySuggestion: draft.memoryKeySuggestion }
-      : {}),
     ...(draft.nodeLabelHints !== undefined ? { nodeLabelHints: draft.nodeLabelHints } : {}),
     ...(draft.edgeLabelHints !== undefined ? { edgeLabelHints: draft.edgeLabelHints } : {}),
   };

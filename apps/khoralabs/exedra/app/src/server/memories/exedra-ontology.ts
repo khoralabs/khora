@@ -28,10 +28,6 @@ export type ExedraFeature = z.infer<typeof zFeature>;
 export const exedraOntology = defineOntology({
   nodeLabels: {
     memory: z.object({
-      source: z
-        .string()
-        .optional()
-        .describe('Provenance tag, e.g. "exedra.belief", "exedra.document".'),
       features: z
         .array(zFeature)
         .max(12)
@@ -44,7 +40,6 @@ export const exedraOntology = defineOntology({
       context: z
         .string()
         .describe("Natural-language description of why these memories are linked."),
-      confidence: z.enum(["low", "medium", "high"]).optional(),
       features: z
         .array(zFeature)
         .max(6)
