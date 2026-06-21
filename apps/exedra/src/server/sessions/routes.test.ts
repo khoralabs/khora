@@ -5,7 +5,6 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { closeDb } from "../db/index";
-import { completeTeamMemberOnboardingInterview } from "../db/membership";
 import { ensureExedraSchema } from "../db/schema";
 import { createOrg, createTeam } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
@@ -92,7 +91,7 @@ test("POST /api/sessions creates session when teamId is provided", async () => {
   expect(body.session.teamId).toBe(teamId);
 });
 
-test("POST /api/sessions rejects create while onboarding interview is pending", async () => {
+test("POST /api/sessions allows create while onboarding interview is pending", async () => {
   const { mock } = await import("bun:test");
   mock.module("../auth/require-session", () => ({
     requireRegistrySessionResponse: async () => ({
@@ -116,31 +115,6 @@ test("POST /api/sessions rejects create while onboarding interview is pending", 
   };
 
   const { handleCreateSession: createSessionHandler } = await import("./routes");
-  const blocked = await createSessionHandler(
-    new Request("http://localhost/api/sessions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        teamId: createdBody.team.id,
-        topic: "Review",
-      }),
-    }),
-  );
-  expect(blocked.status).toBe(403);
-  const blockedBody = (await blocked.json()) as { onboardingInterviewRequired?: boolean };
-  expect(blockedBody.onboardingInterviewRequired).toBe(true);
-
-  const db = new Database(path.join(dataDir, "exedra.db"));
-  const user = db
-    .query<{ id: string }, [string]>(`SELECT id FROM users WHERE registry_user_id = ?`)
-    .get("registry-session-3");
-  if (user === null) throw new Error("user not found");
-  completeTeamMemberOnboardingInterview(db, {
-    teamId: createdBody.team.id,
-    userId: user.id,
-  });
-  db.close();
-
   const allowed = await createSessionHandler(
     new Request("http://localhost/api/sessions", {
       method: "POST",

@@ -20,12 +20,13 @@ export function InterviewChat({
   onBeliefsChange,
   onError,
   onNavigate,
-  onOnboardingComplete,
+  onSessionComplete,
   scrollToMessageId,
   onScrollToMessageComplete,
   canManage,
   onShare,
   onTopicChange,
+  sessionComplete = false,
 }: InterviewChatProps) {
   const {
     bootstrap,
@@ -66,7 +67,7 @@ export function InterviewChat({
     bootstrap,
     beliefsRef,
     onBeliefsChange,
-    onOnboardingComplete,
+    onSessionComplete,
     onResync: resyncFromServer,
     setMessages,
     setStatus,
@@ -118,6 +119,9 @@ export function InterviewChat({
         onStop={stopTurn}
         onSubmit={submitTurn}
         onTextChange={handleTextChange}
+        placeholder={
+          sessionComplete ? "Review beliefs or ask a follow-up…" : "Share your thoughts…"
+        }
         status={status}
       />
     </div>

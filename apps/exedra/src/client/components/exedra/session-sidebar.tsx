@@ -115,8 +115,6 @@ export function SessionSidebar({
               collapsed={collapsed}
               variant="outline"
               disabled={createSessionDisabled}
-              onboardingInterviewRequired={me.onboardingInterviewRequired}
-              onboardingSessionId={me.onboardingSessionId}
               onClick={dismissAfter(onCreateSession)}
             />
           </SidebarCtas>

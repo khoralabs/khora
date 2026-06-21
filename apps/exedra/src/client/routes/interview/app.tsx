@@ -2,11 +2,22 @@ import { useCallback, useState } from "react";
 
 import { InterviewCanvas } from "@/components/exedra/interview-canvas";
 import { InterviewChat } from "@/components/interview/interview-chat";
+import type { SessionCompletePayload } from "@/components/interview/interview-chat-types";
 import { ShareSessionDialog } from "@/components/sessions/share-session-dialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { AnalyticsProvider, useAnalytics } from "@/lib/analytics";
-import type { BeliefFeedback, BeliefFlag, InterviewBootstrap } from "@/lib/interview-api";
-import { patchBeliefFeedback } from "@/lib/interview-api";
+import type {
+  BeliefFeedback,
+  BeliefFlag,
+  InterviewBootstrap,
+  InterviewCompletion,
+} from "@/lib/interview-api";
+import {
+  extractCompletionFromMessages,
+  normalizeInterviewCompletion,
+  normalizeNextSessionOptions,
+  patchBeliefFeedback,
+} from "@/lib/interview-api";
 import type { SessionDetail } from "@/lib/sessions-api";
 
 import { AppChrome } from "../../shell/app-chrome";
@@ -20,6 +31,7 @@ function InterviewContent({
   onNavigate,
   onProfileRefresh,
   sessionDetail,
+  activeTeam,
   loadSessions,
   loadSessionDetail,
 }: {
@@ -27,18 +39,24 @@ function InterviewContent({
   onNavigate: (path: string) => void;
   onProfileRefresh: () => void;
   sessionDetail: SessionDetail | null;
+  activeTeam: { id: string };
   loadSessions: () => void;
   loadSessionDetail: (sessionId: string) => void;
 }) {
   const track = useAnalytics();
   const [beliefs, setBeliefs] = useState<BeliefFlag[]>([]);
+  const [completion, setCompletion] = useState<InterviewCompletion | null>(null);
   const [scrollToMessageId, setScrollToMessageId] = useState<string | null>(null);
   const [chatError, setChatError] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const { canvasOpen, setCanvasOpen, isCompactChrome } = useMobileChromeLayout();
 
-  const handleBootstrap = useCallback((_bootstrap: InterviewBootstrap) => {
+  const handleBootstrap = useCallback((bootstrap: InterviewBootstrap) => {
     setChatError(null);
+    setCompletion(
+      normalizeInterviewCompletion(bootstrap.completion) ??
+        extractCompletionFromMessages(bootstrap.messages),
+    );
   }, []);
 
   const handleBeliefsChange = useCallback((next: BeliefFlag[]) => {
@@ -82,10 +100,21 @@ function InterviewContent({
     [sessionId, track],
   );
 
-  const handleOnboardingComplete = useCallback(() => {
-    track("onboarding_interview_completed");
-    onProfileRefresh();
-  }, [onProfileRefresh, track]);
+  const handleSessionComplete = useCallback(
+    (payload: SessionCompletePayload) => {
+      setCompletion({
+        completedAtMs: Date.now(),
+        summary: payload.summary,
+        nextSessionOptions: normalizeNextSessionOptions(payload.nextSessionOptions),
+      });
+      if (payload.sessionKind === "onboarding") {
+        track("onboarding_interview_completed");
+        onProfileRefresh();
+      }
+      loadSessions();
+    },
+    [loadSessions, onProfileRefresh, track],
+  );
 
   const handleBeliefSourceClick = useCallback(
     (sourceMessageId: string) => {
@@ -101,7 +130,9 @@ function InterviewContent({
 
   const canvasProps = {
     sessionId,
+    teamId: activeTeam.id.length > 0 ? activeTeam.id : (sessionDetail?.session.teamId ?? null),
     beliefs,
+    completion,
     sessionDetail,
     onBeliefSourceClick: handleBeliefSourceClick,
     onBeliefUpdate: handleBeliefUpdate,
@@ -121,12 +152,13 @@ function InterviewContent({
         onBeliefsChange={handleBeliefsChange}
         onError={handleChatError}
         onNavigate={onNavigate}
-        onOnboardingComplete={handleOnboardingComplete}
+        onSessionComplete={handleSessionComplete}
         onScrollToMessageComplete={() => setScrollToMessageId(null)}
         scrollToMessageId={scrollToMessageId}
         canManage={sessionDetail?.canManage}
         onShare={() => setShareOpen(true)}
         onTopicChange={loadSessions}
+        sessionComplete={completion !== null}
       />
       {chatError !== null ? (
         <div className="sr-only" aria-live="polite">

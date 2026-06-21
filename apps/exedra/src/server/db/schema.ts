@@ -140,6 +140,7 @@ export function ensureExedraSchema(db: Database): void {
   migrateSessionsDropFacilitator(db);
   migrateAvatarS3KeyColumns(db);
   migrateSessionsAddLinkAccess(db);
+  migrateSessionsAddInterviewCompletion(db);
   migrateInvitesAddReusableColumns(db);
   migrateOrgsAddIdentityEncrypted(db);
   migrateOrgsDropDidColumn(db);
@@ -200,6 +201,19 @@ function migrateSessionsAddKind(db: Database): void {
   const columns = db.query<{ name: string }, []>("PRAGMA table_info(sessions)").all();
   if (columns.some((column) => column.name === "kind")) return;
   db.run(`ALTER TABLE sessions ADD COLUMN kind TEXT NOT NULL DEFAULT 'standard'`);
+}
+
+function migrateSessionsAddInterviewCompletion(db: Database): void {
+  const columns = db.query<{ name: string }, []>("PRAGMA table_info(sessions)").all();
+  if (!columns.some((column) => column.name === "interview_summary")) {
+    db.run(`ALTER TABLE sessions ADD COLUMN interview_summary TEXT`);
+  }
+  if (!columns.some((column) => column.name === "next_session_options")) {
+    db.run(`ALTER TABLE sessions ADD COLUMN next_session_options BLOB`);
+  }
+  if (!columns.some((column) => column.name === "interview_completed_at_ms")) {
+    db.run(`ALTER TABLE sessions ADD COLUMN interview_completed_at_ms INTEGER`);
+  }
 }
 
 function migrateSessionsAddLinkAccess(db: Database): void {

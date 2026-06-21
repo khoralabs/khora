@@ -3,7 +3,7 @@ import { type RefObject, useCallback, useEffect, useRef, useState } from "react"
 import type { BeliefFlag, InterviewBootstrap } from "@/lib/interview-api";
 import { interviewWsUrl } from "@/lib/interview-api";
 import { getBrowserTimeZone } from "@/lib/user-timezone";
-
+import type { SessionCompletePayload } from "./interview-chat-types";
 import { closeWebSocket, reconnectDelay, waitForWebSocketOpen } from "./interview-ws-connection";
 import {
   dispatchWsMessage,
@@ -17,7 +17,7 @@ type UseInterviewWsArgs = {
   bootstrap: InterviewBootstrap | null;
   beliefsRef: RefObject<BeliefFlag[]>;
   onBeliefsChange: (beliefs: BeliefFlag[]) => void;
-  onOnboardingComplete?: () => void;
+  onSessionComplete?: (payload: SessionCompletePayload) => void;
   onResync?: () => void | Promise<void>;
   setMessages: InterviewWsHandlerContext["setMessages"];
   setStatus: InterviewWsHandlerContext["setStatus"];
@@ -30,7 +30,7 @@ export function useInterviewWs({
   bootstrap,
   beliefsRef,
   onBeliefsChange,
-  onOnboardingComplete,
+  onSessionComplete,
   onResync,
   setMessages,
   setStatus,
@@ -55,8 +55,8 @@ export function useInterviewWs({
 
   const onBeliefsChangeRef = useRef(onBeliefsChange);
   onBeliefsChangeRef.current = onBeliefsChange;
-  const onOnboardingCompleteRef = useRef(onOnboardingComplete);
-  onOnboardingCompleteRef.current = onOnboardingComplete;
+  const onSessionCompleteRef = useRef(onSessionComplete);
+  onSessionCompleteRef.current = onSessionComplete;
   const onResyncRef = useRef(onResync);
   onResyncRef.current = onResync;
 
@@ -69,7 +69,7 @@ export function useInterviewWs({
     beliefsRef,
     agentAuthor: bootstrap?.agent ?? null,
     onBeliefsChange: (beliefs) => onBeliefsChangeRef.current(beliefs),
-    onOnboardingComplete: () => onOnboardingCompleteRef.current?.(),
+    onSessionComplete: (payload) => onSessionCompleteRef.current?.(payload),
     shouldAcceptStreamUpdates: () =>
       sessionRefs.abortedGenerationRef.current !== sessionRefs.sendGenerationRef.current,
     onTurnComplete: () => sessionRefs.clearPendingDraft(),

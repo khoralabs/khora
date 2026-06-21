@@ -8,7 +8,7 @@ import {
   setTeamMemberOnboardingSession,
 } from "../db/membership";
 import { loadThreadMessages } from "../db/messages";
-import { closeSession, createOnboardingSession, getOrCreateInterviewThread } from "../db/sessions";
+import { createOnboardingSession, getOrCreateInterviewThread } from "../db/sessions";
 import { bootstrapSessionMemoriesForTeamSession } from "../memories/bootstrap-session";
 import { seedOnboardingMemories } from "../memories/seed-onboarding";
 
@@ -63,15 +63,14 @@ function collectBeliefsFromThread(messages: UIMessage[]): string[] {
   return beliefs;
 }
 
-export function finishOnboardingInterview(args: {
+export function applyOnboardingCompletionSideEffects(args: {
   db: Database;
   threadId: string;
-  sessionId: string;
   teamId: string;
   userId: string;
   summary: string;
 }): void {
-  const { db, threadId, sessionId, teamId, userId, summary } = args;
+  const { db, threadId, teamId, userId, summary } = args;
   const team = getTeam(db, teamId);
   const org = team === null ? null : getOrg(db, team.orgId);
   if (team === null || org === null) {
@@ -90,5 +89,4 @@ export function finishOnboardingInterview(args: {
   });
 
   completeTeamMemberOnboardingInterview(db, { teamId, userId });
-  closeSession(db, sessionId);
 }

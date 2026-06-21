@@ -4,13 +4,14 @@ import { isAbortError, TurnAbortedError } from "../../../agents/errors";
 import type { InterviewSessionMeta } from "../../../agents/interview/instructions";
 import { getOrg, getTeam } from "../../db/membership";
 import { insertMessage, loadThreadMessages, nextMessageIndex } from "../../db/messages";
-import { getThread } from "../../db/sessions";
+import { getThread, markSessionInterviewComplete } from "../../db/sessions";
 import {
   formatDocumentContextForModel,
   resolveUserMessageDocuments,
 } from "../../documents/message-context";
+import { logger } from "../../logger";
 import { resolveOrgAgentAuthorForOrg, resolveViewerAuthor } from "../../messages/resolve-author";
-import { finishOnboardingInterview } from "../../onboarding/interview";
+import { applyOnboardingCompletionSideEffects } from "../../onboarding/interview";
 import { withSpan } from "../../telemetry/spans";
 import {
   recordTurnCompleted,
@@ -143,8 +144,7 @@ async function executeTurnBody(
     session.kind === "onboarding" ? { orgName: org.name, teamName: team.name } : undefined;
 
   const assistantId = nanoid();
-  let deferredOnboardingSummary: string | null = null;
-  let onboardingCompleted = false;
+  let sessionCompleted = false;
 
   db.run("BEGIN IMMEDIATE");
 
@@ -199,13 +199,15 @@ async function executeTurnBody(
     const {
       assistantParts,
       beliefFlags,
-      onboardingCompleted: completed,
+      sessionCompleted: completed,
+      sessionCompletion,
     } = await deps.runInterviewTurn({
       registry: deps.getAgentRegistry(),
       model: deps.createModel(),
       sessionId: session.id,
       sessionMeta,
       onboardingMeta,
+      sessionInterviewComplete: session.interviewCompletedAtMs !== null,
       threadId,
       userMessageId: turnId,
       history,
@@ -218,11 +220,6 @@ async function executeTurnBody(
       onBeliefFlag: (belief, sourceMessageId) => {
         if (signal.aborted) return;
         emit({ type: "belief_flag", belief, sourceMessageId });
-      },
-      onCompleteOnboarding: (summary) => {
-        if (signal.aborted) return;
-        deferredOnboardingSummary = summary;
-        onboardingCompleted = true;
       },
       onToolEvent: (event) => {
         if (signal.aborted) return;
@@ -253,7 +250,7 @@ async function executeTurnBody(
       },
     });
 
-    onboardingCompleted = completed;
+    sessionCompleted = completed;
     assertNotAborted(signal);
 
     const assistantIndex = nextMessageIndex(db, threadId);
@@ -271,20 +268,35 @@ async function executeTurnBody(
 
     db.run("COMMIT");
 
-    if (
-      deferredOnboardingSummary !== null &&
-      onboardingMeta !== undefined &&
-      thread.user_id != null
-    ) {
-      finishOnboardingInterview({
-        db,
-        threadId,
-        sessionId: session.id,
-        teamId: session.teamId,
-        userId: thread.user_id,
-        summary: deferredOnboardingSummary,
+    if (sessionCompletion != null) {
+      markSessionInterviewComplete(db, session.id, sessionCompletion);
+
+      if (onboardingMeta !== undefined && thread.user_id != null) {
+        try {
+          applyOnboardingCompletionSideEffects({
+            db,
+            threadId,
+            teamId: session.teamId,
+            userId: thread.user_id,
+            summary: sessionCompletion.summary,
+          });
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Onboarding completion failed";
+          logger.error(
+            { err: message, sessionId: session.id },
+            "onboarding completion side effects failed",
+          );
+        }
+      }
+
+      emit({
+        type: "session_complete",
+        completion: {
+          summary: sessionCompletion.summary,
+          nextSessionOptions: sessionCompletion.nextSessionOptions,
+          sessionKind: session.kind,
+        },
       });
-      emit({ type: "onboarding_complete", summary: deferredOnboardingSummary });
     }
 
     emit({
@@ -297,7 +309,7 @@ async function executeTurnBody(
       },
       createdAtMs: assistantCreatedAtMs,
       author: agentAuthor,
-      ...(onboardingCompleted ? { onboardingCompleted: true } : {}),
+      ...(sessionCompleted ? { sessionCompleted: true } : {}),
     });
   } catch (err: unknown) {
     try {

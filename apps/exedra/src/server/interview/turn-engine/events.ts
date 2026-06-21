@@ -1,6 +1,14 @@
 import type { MessageAuthor } from "@shared/messages/author";
 import type { UIMessage } from "ai";
 
+import type { SessionKind } from "../../db/sessions";
+
+export type SessionCompletionEvent = {
+  summary: string;
+  nextSessionOptions: string[];
+  sessionKind: SessionKind;
+};
+
 export type TurnEvent =
   | {
       type: "user_message_saved";
@@ -31,10 +39,10 @@ export type TurnEvent =
       };
       createdAtMs: number;
       author: MessageAuthor | null;
-      onboardingCompleted?: boolean;
+      sessionCompleted?: boolean;
     }
   | { type: "turn_aborted"; turnId: string }
-  | { type: "onboarding_complete"; summary: string }
+  | { type: "session_complete"; completion: SessionCompletionEvent }
   | { type: "error"; error: string };
 
 export type TurnEmitter = (event: TurnEvent) => void;

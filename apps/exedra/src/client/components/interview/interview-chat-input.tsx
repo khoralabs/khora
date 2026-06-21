@@ -31,6 +31,7 @@ type InterviewChatInputProps = {
   onStop: () => void;
   onTextChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   onError: (error: string) => void;
+  placeholder?: string;
 };
 
 export function InterviewChatInput({
@@ -43,6 +44,7 @@ export function InterviewChatInput({
   onStop,
   onTextChange,
   onError,
+  placeholder = "Share your thoughts…",
 }: InterviewChatInputProps) {
   return (
     <div className="border-t p-4">
@@ -60,7 +62,7 @@ export function InterviewChatInput({
           className="min-h-[60px]"
           disabled={status !== "ready"}
           onChange={onTextChange}
-          placeholder="Share your thoughts…"
+          placeholder={placeholder}
           value={input}
         />
         <PromptInputFooter>

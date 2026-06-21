@@ -8,13 +8,14 @@ const baseEnv: InterviewEnv = {
   sourceMessageId: "msg-1",
   allowBeliefFlag: false,
   isOnboarding: false,
-  allowCompleteOnboarding: false,
+  allowCompleteSession: true,
+  allowCompleteSessionByTurnCount: true,
   onBeliefFlag: (belief: string, sourceMessageId: string) => {
     void belief;
     void sourceMessageId;
   },
-  onCompleteOnboarding: (summary: string) => {
-    void summary;
+  onCompleteSession: (payload) => {
+    void payload;
   },
 };
 
@@ -92,49 +93,79 @@ test("flagBelief is excluded before the user's first real message", async () => 
   expect(Object.keys(tools)).not.toContain("flagBelief");
 });
 
-test("completeOnboardingInterview is excluded until min turns on onboarding sessions", async () => {
+test("completeSession is excluded until min turns on onboarding sessions", async () => {
   const { tools } = await evaluateComposable(interviewToolkit, {
     env: env({
       isOnboarding: true,
-      allowCompleteOnboarding: false,
+      allowCompleteSession: true,
+      allowCompleteSessionByTurnCount: false,
     }),
   });
-  expect(Object.keys(tools)).not.toContain("completeOnboardingInterview");
+  expect(Object.keys(tools)).not.toContain("completeSession");
 });
 
-test("completeOnboardingInterview invokes host callback when allowed", async () => {
-  const completed = { summary: "" };
+test("completeSession is excluded until min turns on standard sessions", async () => {
+  const { tools } = await evaluateComposable(interviewToolkit, {
+    env: env({
+      isOnboarding: false,
+      allowCompleteSession: true,
+      allowCompleteSessionByTurnCount: false,
+    }),
+  });
+  expect(Object.keys(tools)).not.toContain("completeSession");
+});
+
+test("completeSession is available on standard sessions after min turns", async () => {
+  const { tools } = await evaluateComposable(interviewToolkit, {
+    env: env({
+      isOnboarding: false,
+      allowCompleteSession: true,
+      allowCompleteSessionByTurnCount: true,
+    }),
+  });
+  expect(Object.keys(tools)).toContain("completeSession");
+});
+
+test("completeSession invokes host callback with summary and next session options", async () => {
+  const completed = { summary: "", nextSessionOptions: [] as string[] };
   const runtimeEnv = env({
     isOnboarding: true,
-    allowCompleteOnboarding: true,
-    onCompleteOnboarding: (summary: string) => {
-      completed.summary = summary;
+    allowCompleteSession: true,
+    allowCompleteSessionByTurnCount: true,
+    onCompleteSession: (payload) => {
+      completed.summary = payload.summary;
+      completed.nextSessionOptions = payload.nextSessionOptions;
     },
   });
 
   const { tools } = await evaluateComposable(interviewToolkit, { env: runtimeEnv });
-  expect(Object.keys(tools)).toContain("completeOnboardingInterview");
-
   const aiTools = toolMapToAiTools(tools, { env: runtimeEnv, resolvedPolicies: new Map() });
-  const complete = aiTools.completeOnboardingInterview;
+  const complete = aiTools.completeSession;
   if (complete === undefined || typeof complete.execute !== "function") {
-    throw new Error("expected completeOnboardingInterview AI tool");
+    throw new Error("expected completeSession AI tool");
   }
 
-  await complete.execute({ summary: "Acme builds widgets for enterprise teams." }, {
-    toolCallId: "complete-onboarding-test",
-    messages: [],
-  } as never);
+  await complete.execute(
+    {
+      summary: "Acme builds widgets for enterprise teams.",
+      nextSessionOptions: ["Roadmap priorities", "Release cadence"],
+    },
+    {
+      toolCallId: "complete-session-test",
+      messages: [],
+    } as never,
+  );
 
   expect(completed.summary).toBe("Acme builds widgets for enterprise teams.");
+  expect(completed.nextSessionOptions).toEqual(["Roadmap priorities", "Release cadence"]);
 });
 
-test("completeOnboardingInterview is excluded on standard sessions", async () => {
+test("completeSession is excluded when session is already complete", async () => {
   const { tools } = await evaluateComposable(interviewToolkit, {
     env: env({
-      isOnboarding: false,
-      allowCompleteOnboarding: true,
+      allowCompleteSession: false,
+      allowCompleteSessionByTurnCount: true,
     }),
   });
-  expect(Object.keys(tools)).not.toContain("completeOnboardingInterview");
+  expect(Object.keys(tools)).not.toContain("completeSession");
 });

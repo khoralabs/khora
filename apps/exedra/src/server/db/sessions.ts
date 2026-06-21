@@ -17,6 +17,9 @@ export type SessionRecord = {
   status: string;
   kind: SessionKind;
   createdAtMs: number;
+  interviewSummary: string | null;
+  nextSessionOptions: string[] | null;
+  interviewCompletedAtMs: number | null;
 };
 
 type SessionRow = {
@@ -27,7 +30,21 @@ type SessionRow = {
   status: string;
   kind: string;
   created_at_ms: number;
+  interview_summary: string | null;
+  next_session_options: string | null;
+  interview_completed_at_ms: number | null;
 };
+
+function parseNextSessionOptions(raw: string | null): string[] | null {
+  if (raw === null || raw.trim().length === 0) return null;
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return null;
+    return parsed.filter((item): item is string => typeof item === "string");
+  } catch {
+    return null;
+  }
+}
 
 function mapSession(row: SessionRow): SessionRecord {
   return {
@@ -38,6 +55,9 @@ function mapSession(row: SessionRow): SessionRecord {
     status: row.status,
     kind: row.kind === "onboarding" ? "onboarding" : "standard",
     createdAtMs: row.created_at_ms,
+    interviewSummary: row.interview_summary ?? null,
+    nextSessionOptions: parseNextSessionOptions(row.next_session_options ?? null),
+    interviewCompletedAtMs: row.interview_completed_at_ms ?? null,
   };
 }
 
@@ -102,6 +122,23 @@ export function createOnboardingSession(
 
 export function closeSession(db: Database, sessionId: string): void {
   db.prepare(`UPDATE sessions SET status = 'closed' WHERE id = ?`).run(sessionId);
+}
+
+export function markSessionInterviewComplete(
+  db: Database,
+  sessionId: string,
+  params: { summary: string; nextSessionOptions: string[] },
+): SessionRecord | null {
+  const completedAtMs = Date.now();
+  db.prepare(
+    `UPDATE sessions
+     SET status = 'alignment',
+         interview_summary = ?,
+         next_session_options = ?,
+         interview_completed_at_ms = ?
+     WHERE id = ?`,
+  ).run(params.summary.trim(), JSON.stringify(params.nextSessionOptions), completedAtMs, sessionId);
+  return getSession(db, sessionId);
 }
 
 export function patchSession(

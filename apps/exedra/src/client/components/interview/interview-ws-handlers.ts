@@ -5,7 +5,7 @@ import type { Dispatch, RefObject, SetStateAction } from "react";
 import type { BeliefFlag, ChatMessage } from "@/lib/interview-api";
 
 import { upsertStreamingToolCall } from "./interview-chat-tool-utils";
-import type { WsServerMessage } from "./interview-chat-types";
+import type { SessionCompletePayload, WsServerMessage } from "./interview-chat-types";
 
 export type InterviewWsHandlerContext = {
   setMessages: Dispatch<SetStateAction<ChatMessage[]>>;
@@ -16,7 +16,7 @@ export type InterviewWsHandlerContext = {
   beliefsRef: RefObject<BeliefFlag[]>;
   agentAuthor: MessageAuthor | null;
   onBeliefsChange: (beliefs: BeliefFlag[]) => void;
-  onOnboardingComplete?: () => void;
+  onSessionComplete?: (payload: SessionCompletePayload) => void;
   shouldAcceptStreamUpdates?: () => boolean;
   onTurnComplete?: () => void;
   onTurnAborted?: (turnId: string) => void;
@@ -209,14 +209,25 @@ export function handleAssistantMessage(message: AssistantMessage, ctx: Interview
   });
   ctx.setStatus("ready");
   ctx.onTurnComplete?.();
-  if (message.onboardingCompleted === true) {
-    ctx.onOnboardingComplete?.();
-  }
 }
 
-export function handleOnboardingComplete(ctx: InterviewWsHandlerContext) {
+export function handleSessionComplete(
+  message: Extract<WsServerMessage, { type: "session_complete" }>,
+  ctx: InterviewWsHandlerContext,
+) {
   if (ignoreStreamUpdate(ctx)) return;
-  ctx.onOnboardingComplete?.();
+  ctx.onSessionComplete?.(message.completion);
+}
+
+export function handleLegacyOnboardingComplete(
+  message: Extract<WsServerMessage, { type: "onboarding_complete" }>,
+  ctx: InterviewWsHandlerContext,
+) {
+  if (ignoreStreamUpdate(ctx)) return;
+  ctx.onSessionComplete?.({
+    summary: message.summary,
+    sessionKind: "onboarding",
+  });
 }
 
 export function handleBeliefFlag(message: BeliefFlagMessage, ctx: InterviewWsHandlerContext) {
@@ -272,8 +283,11 @@ export function dispatchWsMessage(parsed: WsServerMessage, ctx: InterviewWsHandl
     case "assistant_message":
       handleAssistantMessage(parsed, ctx);
       return;
+    case "session_complete":
+      handleSessionComplete(parsed, ctx);
+      return;
     case "onboarding_complete":
-      handleOnboardingComplete(ctx);
+      handleLegacyOnboardingComplete(parsed, ctx);
       return;
     case "belief_flag":
       handleBeliefFlag(parsed, ctx);

@@ -33,6 +33,64 @@ export type SerializedMessage = {
   author: MessageAuthor | null;
 };
 
+export type InterviewCompletion = {
+  completedAtMs: number;
+  summary: string;
+  nextSessionOptions: string[];
+};
+
+export function normalizeNextSessionOptions(value: unknown): string[] {
+  if (value == null || !Array.isArray(value)) return [];
+  return value
+    .filter((option): option is string => typeof option === "string")
+    .map((option) => option.trim())
+    .filter((option) => option.length > 0);
+}
+
+export function normalizeInterviewCompletion(
+  completion: InterviewCompletion | null | undefined,
+): InterviewCompletion | null {
+  if (completion == null) return null;
+  return {
+    ...completion,
+    nextSessionOptions: normalizeNextSessionOptions(completion.nextSessionOptions),
+  };
+}
+
+function isSessionCompletionToolName(toolName: string): boolean {
+  return toolName === "completeSession" || toolName === "completeOnboardingInterview";
+}
+
+export function extractCompletionFromMessages(
+  messages: SerializedMessage[],
+): InterviewCompletion | null {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message?.role !== "assistant") continue;
+
+    for (const part of message.parts) {
+      if (typeof part.type !== "string" || !part.type.startsWith("tool-")) continue;
+      const toolName = part.type.slice("tool-".length);
+      if (!isSessionCompletionToolName(toolName)) continue;
+
+      const input = (part as { input?: unknown }).input;
+      if (input === null || typeof input !== "object") continue;
+
+      const record = input as { summary?: unknown; nextSessionOptions?: unknown };
+      const summary = typeof record.summary === "string" ? record.summary.trim() : "";
+      if (summary.length === 0) continue;
+
+      return {
+        completedAtMs: message.createdAtMs,
+        summary,
+        nextSessionOptions: normalizeNextSessionOptions(record.nextSessionOptions),
+      };
+    }
+  }
+
+  return null;
+}
+
 export type InterviewBootstrap = {
   session: InterviewSession;
   threadId: string;
@@ -41,6 +99,7 @@ export type InterviewBootstrap = {
   agent: MessageAuthor | null;
   viewer: MessageAuthor | null;
   beliefFeedback?: BeliefFeedbackRecord[];
+  completion?: InterviewCompletion;
 };
 
 export type ToolCallDisplay = {
@@ -198,7 +257,14 @@ export async function fetchInterview(sessionId: string): Promise<InterviewBootst
     const data = (await res.json().catch(() => null)) as { error?: string } | null;
     throw new Error(data?.error ?? "Failed to load interview");
   }
-  return (await res.json()) as InterviewBootstrap;
+  const body = (await res.json()) as InterviewBootstrap;
+  return {
+    ...body,
+    completion:
+      normalizeInterviewCompletion(body.completion) ??
+      extractCompletionFromMessages(body.messages) ??
+      undefined,
+  };
 }
 
 export async function patchBeliefFeedback(

@@ -1,5 +1,7 @@
-import { Lightbulb } from "lucide-react";
+import { Lightbulb, Sparkles } from "lucide-react";
+import { useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import {
   Empty,
   EmptyDescription,
@@ -9,8 +11,8 @@ import {
 } from "@/components/ui/empty";
 import { ItemGroup } from "@/components/ui/item";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { BeliefFeedback, BeliefFlag } from "@/lib/interview-api";
-import type { SessionDetail } from "@/lib/sessions-api";
+import type { BeliefFeedback, BeliefFlag, InterviewCompletion } from "@/lib/interview-api";
+import { createSession, type SessionDetail } from "@/lib/sessions-api";
 import { cn } from "@/lib/utils";
 import { appSectionHeaderClassName } from "@/shell/app-section-header";
 
@@ -19,7 +21,9 @@ import { SessionAccessPanel } from "./session-access-panel";
 
 type InterviewCanvasProps = {
   sessionId: string | null;
+  teamId: string | null;
   beliefs: BeliefFlag[];
+  completion: InterviewCompletion | null;
   sessionDetail: SessionDetail | null;
   onRefreshDetail: () => void;
   onBeliefUpdate: (id: string, update: { feedback?: BeliefFeedback; correction?: string }) => void;
@@ -30,7 +34,9 @@ type InterviewCanvasProps = {
 
 export function InterviewCanvas({
   sessionId,
+  teamId,
   beliefs,
+  completion,
   sessionDetail,
   onRefreshDetail,
   onBeliefUpdate,
@@ -38,6 +44,21 @@ export function InterviewCanvas({
   onNavigate,
   sheetMode = false,
 }: InterviewCanvasProps) {
+  const [creatingTopic, setCreatingTopic] = useState<string | null>(null);
+  const resolvedTeamId = teamId ?? sessionDetail?.session.teamId ?? null;
+  const followUpOptions = completion?.nextSessionOptions ?? [];
+
+  async function handleFollowUpSession(topic: string) {
+    if (resolvedTeamId === null || creatingTopic !== null) return;
+    setCreatingTopic(topic);
+    try {
+      const result = await createSession({ teamId: resolvedTeamId, topic });
+      window.location.href = `/sessions/${result.session.id}/interview`;
+    } catch {
+      setCreatingTopic(null);
+    }
+  }
+
   return (
     <div
       className={cn(
@@ -67,6 +88,30 @@ export function InterviewCanvas({
         </TabsContent>
 
         <TabsContent value="beliefs" className="min-h-0 flex-1 overflow-y-auto p-4">
+          {followUpOptions.length > 0 ? (
+            <div className="mb-4 space-y-2 rounded-lg border bg-background/80 p-3">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Sparkles className="size-4 text-muted-foreground" />
+                Suggested follow-up sessions
+              </div>
+              <div className="flex flex-col gap-2">
+                {followUpOptions.map((topic) => (
+                  <Button
+                    key={topic}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-auto justify-start whitespace-normal py-2 text-left"
+                    disabled={resolvedTeamId === null || creatingTopic !== null}
+                    onClick={() => void handleFollowUpSession(topic)}
+                  >
+                    {creatingTopic === topic ? "Creating…" : topic}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
           {beliefs.length === 0 ? (
             <Empty className="border border-dashed bg-background/50">
               <EmptyHeader>

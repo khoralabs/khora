@@ -1,21 +1,30 @@
 import { policy, tool, toolkit } from "@khoralabs/agent-capabilities";
 import { z } from "zod";
 
+import type { SessionCompletionPayload } from "./session-closing.js";
+
+export type { SessionCompletionPayload };
+
 export type InterviewEnv = {
   sourceMessageId: string;
   allowBeliefFlag: boolean;
   isOnboarding: boolean;
-  allowCompleteOnboarding: boolean;
+  allowCompleteSession: boolean;
+  allowCompleteSessionByTurnCount: boolean;
   onBeliefFlag: (belief: string, sourceMessageId: string) => void;
-  onCompleteOnboarding: (summary: string) => void;
+  onCompleteSession: (payload: SessionCompletionPayload) => void;
 };
 
 const afterFirstUserMessage = policy("after-first-user-message", async (env: InterviewEnv) =>
   Promise.resolve(env.allowBeliefFlag),
 );
 
-const afterMinOnboardingTurns = policy("after-min-onboarding-turns", async (env: InterviewEnv) =>
-  Promise.resolve(env.isOnboarding && env.allowCompleteOnboarding),
+const sessionNotComplete = policy("session-not-complete", async (env: InterviewEnv) =>
+  Promise.resolve(env.allowCompleteSession),
+);
+
+const minUserTurnsForComplete = policy("min-user-turns-for-complete", async (env: InterviewEnv) =>
+  Promise.resolve(env.allowCompleteSessionByTurnCount),
 );
 
 const flagBeliefTool = tool<
@@ -48,25 +57,34 @@ const flagBeliefTool = tool<
   },
 });
 
-const completeOnboardingInterviewTool = tool<
-  "completeOnboardingInterview",
-  { summary: string },
+const completeSessionTool = tool<
+  "completeSession",
+  SessionCompletionPayload,
   { completed: true },
   InterviewEnv
 >({
-  name: "completeOnboardingInterview",
+  name: "completeSession",
   description:
-    "Mark the onboarding interview complete once you have a solid shared understanding of the organization and team. Provide a concise summary of the context gathered — this seeds team and personal memory namespaces.",
+    "Mark this interview session complete once you have a solid shared understanding. Provide a concise summary and 2–4 suggested follow-up session topics to explore deeper. Call this before any user-visible reply on the completion turn — do not ask another interview question.",
   inputSchema: z.object({
-    summary: z.string().describe("Concise summary of org and team context gathered"),
+    summary: z.string().describe("Concise summary of what was learned in this session"),
+    nextSessionOptions: z
+      .array(z.string())
+      .min(2)
+      .max(4)
+      .describe("2–4 specific follow-up session topics to go deeper"),
   }),
-  policies: [afterMinOnboardingTurns],
+  policies: [sessionNotComplete, minUserTurnsForComplete],
   handler: async (ctx, input) => {
-    ctx.env.onCompleteOnboarding(input.summary);
+    const summary = input.summary.trim();
+    const nextSessionOptions = input.nextSessionOptions
+      .map((option) => option.trim())
+      .filter((option) => option.length > 0);
+    ctx.env.onCompleteSession({ summary, nextSessionOptions });
     return { completed: true };
   },
 });
 
-export const interviewToolkit = toolkit([flagBeliefTool, completeOnboardingInterviewTool], {
+export const interviewToolkit = toolkit([flagBeliefTool, completeSessionTool], {
   name: "exedra-interview",
 });

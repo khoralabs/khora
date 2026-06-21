@@ -17,12 +17,7 @@ import {
   listInvitesForSession,
   mintSessionInvite,
 } from "../db/invites";
-import {
-  getOrg,
-  getTeam,
-  listTeamMembers,
-  userNeedsOnboardingInterviewForTeam,
-} from "../db/membership";
+import { getOrg, getTeam, listTeamMembers } from "../db/membership";
 import { loadThreadMessages } from "../db/messages";
 import { formatDaysToDeadline, sessionPhaseFromStatus } from "../db/session-detail";
 import {
@@ -117,16 +112,6 @@ export async function handleCreateSession(req: Request): Promise<Response> {
   }
   if (!enforce(db, user.id, "team:member", { type: ResourceType.Team, id: teamId })) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  if (userNeedsOnboardingInterviewForTeam(db, teamId, user.id)) {
-    return Response.json(
-      {
-        error: "Complete your onboarding interview before creating sessions",
-        onboardingInterviewRequired: true,
-      },
-      { status: 403 },
-    );
   }
 
   const memberUserIds = uniqueIds(body.memberUserIds).filter((id) => id !== user.id);
@@ -396,6 +381,15 @@ export async function handleGetInterview(req: Request, sessionId: string): Promi
     beliefFeedback,
     ...(session.kind === "onboarding"
       ? { onboarding: { orgName: org.name, teamName: team.name } }
+      : {}),
+    ...(session.interviewCompletedAtMs !== null
+      ? {
+          completion: {
+            completedAtMs: session.interviewCompletedAtMs,
+            summary: session.interviewSummary ?? "",
+            nextSessionOptions: session.nextSessionOptions ?? [],
+          },
+        }
       : {}),
   });
 }

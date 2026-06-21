@@ -83,9 +83,7 @@ function AppChromeInner({ entrypoint, children }: AppChromeProps) {
 
   const onboardingRequired = me?.onboardingRequired ?? false;
   const hasSessionAccessOnly = me?.hasSessionAccessOnly ?? false;
-  const onboardingInterviewRequired = me?.onboardingInterviewRequired ?? false;
-  const onboardingSessionId = me?.onboardingSessionId ?? null;
-  const createSessionDisabled = onboardingRequired || onboardingInterviewRequired;
+  const createSessionDisabled = onboardingRequired;
   const activeSessionId = parseActiveSessionId(pathname);
   const settingsMode = isSettingsPath(pathname);
 
@@ -232,14 +230,6 @@ function AppChromeInner({ entrypoint, children }: AppChromeProps) {
     }
     loadSessionDetail(activeSessionId);
   }, [activeSessionId, loadSessionDetail]);
-
-  useEffect(() => {
-    if (me === null) return;
-    if (onboardingRequired) return;
-    if (!onboardingInterviewRequired || onboardingSessionId === null) return;
-    if (pathname !== "/") return;
-    window.location.href = onboardingInterviewPath(onboardingSessionId);
-  }, [me, onboardingRequired, onboardingInterviewRequired, onboardingSessionId, pathname]);
 
   if (loading) {
     return (

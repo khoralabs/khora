@@ -2,7 +2,6 @@ import { MessageSquare } from "lucide-react";
 
 import { NewSessionButton } from "@/components/exedra/new-session-button";
 import { SessionWizard } from "@/components/sessions/session-wizard";
-import { Button } from "@/components/ui/button";
 import {
   Empty,
   EmptyContent,
@@ -15,7 +14,7 @@ import { SettingsContent } from "@/settings/settings-content";
 
 import type { AppChromeContext } from "./app-chrome";
 import { CompactChromeHeader } from "./compact-chrome-header";
-import { isNewSessionPath, isSettingsPath, onboardingInterviewPath } from "./routes";
+import { isNewSessionPath, isSettingsPath } from "./routes";
 
 type MainContentProps = AppChromeContext;
 
@@ -28,7 +27,7 @@ export function MainContent({
   loadSessions,
   onProfileRefresh,
 }: MainContentProps) {
-  const createSessionDisabled = me.onboardingRequired || me.onboardingInterviewRequired;
+  const createSessionDisabled = me.onboardingRequired;
   const creatingSession = isNewSessionPath(pathname);
 
   function handleSessionCreated(sessionId: string) {
@@ -49,7 +48,6 @@ export function MainContent({
   }
 
   if (creatingSession && createSessionDisabled) {
-    const onboardingSessionId = me.onboardingSessionId;
     return (
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <CompactChromeHeader compactOnly title="New session" />
@@ -59,25 +57,13 @@ export function MainContent({
               <EmptyMedia variant="icon">
                 <MessageSquare />
               </EmptyMedia>
-              <EmptyTitle>Finish your onboarding interview first</EmptyTitle>
+              <EmptyTitle>Finish organization setup first</EmptyTitle>
               <EmptyDescription>
-                You can browse settings and memories while onboarding is in progress. New sessions
-                unlock after your first interview is complete.
+                Complete onboarding to create your organization and team before starting sessions.
               </EmptyDescription>
             </EmptyHeader>
-            <EmptyContent className="flex flex-col gap-2 sm:flex-row">
-              {onboardingSessionId !== null ? (
-                <Button
-                  onClick={() => {
-                    window.location.href = onboardingInterviewPath(onboardingSessionId);
-                  }}
-                >
-                  Continue onboarding interview
-                </Button>
-              ) : null}
-              <Button variant="outline" onClick={() => onNavigate("/")}>
-                Back to home
-              </Button>
+            <EmptyContent>
+              <NewSessionButton disabled onClick={() => undefined} />
             </EmptyContent>
           </Empty>
         </div>
@@ -123,8 +109,6 @@ export function MainContent({
           <EmptyContent>
             <NewSessionButton
               disabled={createSessionDisabled}
-              onboardingInterviewRequired={me.onboardingInterviewRequired}
-              onboardingSessionId={me.onboardingSessionId}
               onClick={() => onNavigate("/sessions/new")}
             />
           </EmptyContent>

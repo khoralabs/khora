@@ -34,9 +34,13 @@ import {
   isKickoffUserMessage,
   ONBOARDING_MIN_USER_TURNS,
   type OnboardingInterviewMeta,
+  postInterviewInstruction,
 } from "./instructions.js";
 import { ensureInterviewAgentRegistered } from "./session.js";
+import { buildSessionClosingMessage, type SessionCompletionPayload } from "./session-closing.js";
 import type { InterviewEnv } from "./toolkit.js";
+
+export type { SessionCompletionPayload };
 
 export type InterviewToolEvent =
   | { type: "call"; toolCallId: string; toolName: string; input: unknown }
@@ -50,16 +54,18 @@ export type InterviewTurnInput = {
   history: UIMessage[];
   userTimeZone?: string;
   onboardingMeta?: OnboardingInterviewMeta;
+  sessionInterviewComplete: boolean;
   onTextDelta: (delta: string) => void;
   onBeliefFlag: (belief: string, sourceMessageId: string) => void;
-  onCompleteOnboarding?: (summary: string) => void;
+  onCompleteSession?: (payload: SessionCompletionPayload) => void;
   onToolEvent?: (event: InterviewToolEvent) => void;
 };
 
 export type InterviewTurnOutput = {
   assistantParts: UIMessage["parts"];
   beliefFlags: { belief: string; messageId: string }[];
-  onboardingCompleted: boolean;
+  sessionCompleted: boolean;
+  sessionCompletion: SessionCompletionPayload | null;
 };
 
 function upsertToolPart(
@@ -99,6 +105,13 @@ function upsertToolPart(
   parts.push(nextPart);
 }
 
+function replaceTextParts(parts: UIMessage["parts"], text: string): void {
+  const nonText = parts.filter((part) => part.type !== "text");
+  const next: UIMessage["parts"] = [...nonText, { type: "text", text }];
+  parts.length = 0;
+  parts.push(...next);
+}
+
 /** Tool UI parts are for display only — strip them before sending history to the model. */
 function historyForModel(messages: UIMessage[]): UIMessage[] {
   return messages
@@ -135,9 +148,10 @@ async function runInterviewTurnSession(args: {
     history,
     userTimeZone,
     onboardingMeta,
+    sessionInterviewComplete,
     onTextDelta,
     onBeliefFlag,
-    onCompleteOnboarding,
+    onCompleteSession,
     onToolEvent,
   } = input;
 
@@ -146,7 +160,13 @@ async function runInterviewTurnSession(args: {
 
   const isOnboarding = onboardingMeta !== undefined;
   const userTurnCount = countNonKickoffUserTurns(history);
-  let onboardingCompleted = false;
+  let sessionCompleted = false;
+  let sessionCompletion: SessionCompletionPayload | null = null;
+  let suppressTextAfterComplete = false;
+
+  const minTurnsForComplete = isOnboarding ? ONBOARDING_MIN_USER_TURNS : 1;
+  const allowCompleteSession = !sessionInterviewComplete;
+  const allowCompleteSessionByTurnCount = userTurnCount >= minTurnsForComplete;
 
   const beliefFlags: { belief: string; messageId: string }[] = [];
 
@@ -154,16 +174,19 @@ async function runInterviewTurnSession(args: {
     sourceMessageId: userMessageId,
     allowBeliefFlag: allowBeliefFlagForTurn(history, userMessageId),
     isOnboarding,
-    allowCompleteOnboarding: isOnboarding && userTurnCount >= ONBOARDING_MIN_USER_TURNS,
+    allowCompleteSession,
+    allowCompleteSessionByTurnCount,
     onBeliefFlag: (belief, sourceMessageId) => {
       if (isAborted()) return;
       beliefFlags.push({ belief, messageId: sourceMessageId });
       onBeliefFlag(belief, sourceMessageId);
     },
-    onCompleteOnboarding: (summary) => {
+    onCompleteSession: (payload) => {
       if (isAborted()) return;
-      onboardingCompleted = true;
-      onCompleteOnboarding?.(summary);
+      sessionCompleted = true;
+      sessionCompletion = payload;
+      suppressTextAfterComplete = true;
+      onCompleteSession?.(payload);
     },
   };
 
@@ -217,10 +240,18 @@ async function runInterviewTurnSession(args: {
     }));
   }
 
+  const systemInstruction = [
+    capture.instructions,
+    userLocalDateTimeInstruction,
+    sessionInterviewComplete ? postInterviewInstruction : null,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+
   const assistantParts: UIMessage["parts"] = [];
   const result = streamText({
     model,
-    system: [capture.instructions, userLocalDateTimeInstruction].filter(Boolean).join("\n\n"),
+    system: systemInstruction,
     messages: modelMessages,
     tools: aiTools,
     stopWhen: stepCountIs(5),
@@ -238,6 +269,7 @@ async function runInterviewTurnSession(args: {
   for await (const part of result.fullStream) {
     if (isAborted()) break;
     if (part.type === "text-delta") {
+      if (suppressTextAfterComplete) continue;
       const delta = part.text;
       if (delta.length === 0) continue;
       const last = assistantParts.at(-1);
@@ -297,6 +329,10 @@ async function runInterviewTurnSession(args: {
     throw new AgentSessionAbortedError();
   }
 
+  if (sessionCompletion !== null) {
+    replaceTextParts(assistantParts, buildSessionClosingMessage(sessionCompletion));
+  }
+
   const finishReason = await result.finishReason;
   const toolPartCount = assistantParts.filter((part) => part.type.startsWith("tool-")).length;
   logger.debug(
@@ -304,7 +340,7 @@ async function runInterviewTurnSession(args: {
     "interview turn finished",
   );
 
-  return { assistantParts, beliefFlags, onboardingCompleted };
+  return { assistantParts, beliefFlags, sessionCompleted, sessionCompletion };
 }
 
 export async function runInterviewTurn(args: {
@@ -313,6 +349,7 @@ export async function runInterviewTurn(args: {
   sessionId: string;
   sessionMeta: InterviewSessionMeta;
   onboardingMeta?: OnboardingInterviewMeta;
+  sessionInterviewComplete: boolean;
   threadId: string;
   userMessageId: string;
   history: UIMessage[];
@@ -320,7 +357,7 @@ export async function runInterviewTurn(args: {
   abortSignal?: AbortSignal;
   onTextDelta: (delta: string) => void;
   onBeliefFlag: (belief: string, sourceMessageId: string) => void;
-  onCompleteOnboarding?: (summary: string) => void;
+  onCompleteSession?: (payload: SessionCompletionPayload) => void;
   onToolEvent?: (event: InterviewToolEvent) => void;
 }): Promise<InterviewTurnOutput> {
   const { identity } = await ensureInterviewAgentRegistered(
@@ -335,13 +372,12 @@ export async function runInterviewTurn(args: {
     threadId: args.threadId,
     userMessageId: args.userMessageId,
     history: args.history,
+    sessionInterviewComplete: args.sessionInterviewComplete,
     ...(args.userTimeZone !== undefined ? { userTimeZone: args.userTimeZone } : {}),
     ...(args.onboardingMeta !== undefined ? { onboardingMeta: args.onboardingMeta } : {}),
     onTextDelta: args.onTextDelta,
     onBeliefFlag: args.onBeliefFlag,
-    ...(args.onCompleteOnboarding !== undefined
-      ? { onCompleteOnboarding: args.onCompleteOnboarding }
-      : {}),
+    ...(args.onCompleteSession !== undefined ? { onCompleteSession: args.onCompleteSession } : {}),
     ...(args.onToolEvent !== undefined ? { onToolEvent: args.onToolEvent } : {}),
   };
 

@@ -26,6 +26,7 @@ test("runInterviewTurn throws TurnAbortedError when abortSignal is already abort
       } as never,
       sessionId: "session-test",
       sessionMeta: { topic: "Topic" },
+      sessionInterviewComplete: false,
       threadId: "thread-test",
       userMessageId: "user-1",
       history: [

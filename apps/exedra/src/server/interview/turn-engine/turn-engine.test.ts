@@ -71,7 +71,8 @@ test("submitTurn commits user and assistant messages on success", async () => {
   const mockRunInterviewTurn: RunInterviewTurnFn = async () => ({
     assistantParts: [{ type: "text", text: "Reply" }],
     beliefFlags: [],
-    onboardingCompleted: false,
+    sessionCompleted: false,
+    sessionCompletion: null,
   });
 
   const engine = buildTestEngine({ db, runInterviewTurn: mockRunInterviewTurn });
@@ -106,7 +107,8 @@ test("abortTurn rolls back persisted user message", async () => {
     return {
       assistantParts: [{ type: "text", text: "Should not persist" }],
       beliefFlags: [],
-      onboardingCompleted: false,
+      sessionCompleted: false,
+      sessionCompletion: null,
     };
   };
 
@@ -135,7 +137,8 @@ test("submitTurn rejects concurrent turns on the same thread", async () => {
     return {
       assistantParts: [{ type: "text", text: "Reply" }],
       beliefFlags: [],
-      onboardingCompleted: false,
+      sessionCompleted: false,
+      sessionCompletion: null,
     };
   };
 
@@ -205,7 +208,10 @@ test("deferred onboarding is not applied when turn aborts after tool request", a
   setTeamMemberOnboardingSession(db, { teamId, userId, sessionId });
 
   const mockRunInterviewTurn: RunInterviewTurnFn = async (args) => {
-    args.onCompleteOnboarding?.("summary should not commit");
+    args.onCompleteSession?.({
+      summary: "summary should not commit",
+      nextSessionOptions: ["Topic A", "Topic B"],
+    });
     throw new TurnAbortedError();
   };
 
@@ -226,4 +232,92 @@ test("deferred onboarding is not applied when turn aborts after tool request", a
     .get(teamId, userId);
   expect(member?.onboarding_interview_complete).toBe(0);
   expect(loadThreadMessages(db, threadId)).toHaveLength(0);
+});
+
+test("submitTurn persists session completion without closing session", async () => {
+  const { getSession } = await import("../../db/sessions");
+  const { buildSessionClosingMessage } = await import("../../../agents/interview/session-closing");
+
+  const completion = {
+    summary: "We covered roadmap priorities.",
+    nextSessionOptions: ["Release cadence", "Quality bar"],
+  };
+
+  const mockRunInterviewTurn: RunInterviewTurnFn = async (args) => {
+    args.onCompleteSession?.(completion);
+    return {
+      assistantParts: [{ type: "text", text: buildSessionClosingMessage(completion) }],
+      beliefFlags: [],
+      sessionCompleted: true,
+      sessionCompletion: completion,
+    };
+  };
+
+  const engine = buildTestEngine({ db, runInterviewTurn: mockRunInterviewTurn });
+  const events: unknown[] = [];
+
+  const accepted = engine.submitTurn({
+    threadId,
+    turnId: "turn-complete",
+    text: "Wrap up",
+    emit: (event) => events.push(event),
+  });
+
+  expect(accepted).toEqual({ ok: true });
+  await waitForThreadIdle();
+
+  const session = getSession(db, sessionId);
+  expect(session?.status).toBe("alignment");
+  expect(session?.interviewSummary).toBe(completion.summary);
+  expect(session?.nextSessionOptions).toEqual(completion.nextSessionOptions);
+  expect(session?.interviewCompletedAtMs).not.toBeNull();
+  expect(events.some((event) => (event as { type: string }).type === "session_complete")).toBe(
+    true,
+  );
+});
+
+test("submitTurn emits session_complete with onboarding kind for onboarding sessions", async () => {
+  db.prepare(`UPDATE sessions SET kind = 'onboarding' WHERE id = ?`).run(sessionId);
+  const { setTeamMemberOnboardingSession } = await import("../../db/membership");
+  setTeamMemberOnboardingSession(db, { teamId, userId, sessionId });
+
+  const completion = {
+    summary: "Onboarding summary",
+    nextSessionOptions: ["Team rituals", "Decision making"],
+  };
+
+  const mockRunInterviewTurn: RunInterviewTurnFn = async (args) => {
+    args.onCompleteSession?.(completion);
+    return {
+      assistantParts: [{ type: "text", text: "Done" }],
+      beliefFlags: [],
+      sessionCompleted: true,
+      sessionCompletion: completion,
+    };
+  };
+
+  const engine = buildTestEngine({ db, runInterviewTurn: mockRunInterviewTurn });
+  const events: unknown[] = [];
+  engine.submitTurn({
+    threadId,
+    turnId: "turn-onboarding-complete",
+    text: "Finish",
+    emit: (event) => events.push(event),
+  });
+
+  await waitForThreadIdle();
+
+  const completionEvent = events.find(
+    (event) => (event as { type: string }).type === "session_complete",
+  ) as
+    | {
+        completion: { sessionKind: string; summary: string; nextSessionOptions: string[] };
+      }
+    | undefined;
+  expect(completionEvent?.completion.sessionKind).toBe("onboarding");
+  expect(completionEvent?.completion.summary).toBe("Onboarding summary");
+  expect(completionEvent?.completion.nextSessionOptions).toEqual([
+    "Team rituals",
+    "Decision making",
+  ]);
 });
