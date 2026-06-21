@@ -20,22 +20,29 @@ const afterMinOnboardingTurns = policy("after-min-onboarding-turns", async (env:
 
 const flagBeliefTool = tool<
   "flagBelief",
-  { belief: string },
-  { belief: string; addedToBeliefsPanel: true },
+  { beliefs: string[] },
+  { beliefs: string[]; addedToBeliefsPanel: true },
   InterviewEnv
 >({
   name: "flagBelief",
   description:
-    "Record a testable belief, preference, assumption, constraint, or decision inferred from the stakeholder's message. Call this whenever they share substantive content you may want to confirm later.",
+    "Record all testable beliefs, preferences, assumptions, constraints, or decisions inferred from the stakeholder's message. Pass every distinct belief in one call — do not stop at a single belief when their message supports more.",
   inputSchema: z.object({
-    belief: z.string().describe("The belief text to confirm"),
+    beliefs: z
+      .array(z.string())
+      .min(1)
+      .describe("Each distinct testable belief inferred from the message"),
   }),
   policies: [afterFirstUserMessage],
   handler: async (ctx, input) => {
-    const belief = input.belief.trim();
-    ctx.env.onBeliefFlag(belief, ctx.env.sourceMessageId);
+    const beliefs = input.beliefs
+      .map((belief) => belief.trim())
+      .filter((belief) => belief.length > 0);
+    for (const belief of beliefs) {
+      ctx.env.onBeliefFlag(belief, ctx.env.sourceMessageId);
+    }
     return {
-      belief,
+      beliefs,
       addedToBeliefsPanel: true,
     };
   },

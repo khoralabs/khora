@@ -14,7 +14,7 @@ function FlagBeliefToolCall({ toolCall }: { toolCall: ToolCallDisplay }) {
 
   return (
     <Tool defaultOpen={process.env.NODE_ENV !== "production"}>
-      <ToolHeader state={displayState} title="Belief flagged" type="tool-flagBelief" />
+      <ToolHeader state={displayState} title="Beliefs flagged" type="tool-flagBelief" />
       <ToolContent>
         {toolCall.input !== undefined ? <ToolInput input={toolCall.input} /> : null}
         <ToolOutput errorText={toolCall.errorText} output={toolCall.output} />

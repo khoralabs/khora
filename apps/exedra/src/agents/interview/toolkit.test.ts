@@ -40,12 +40,49 @@ test("flagBelief invokes host callback when allowed", async () => {
     throw new Error("expected flagBelief AI tool");
   }
 
-  await flagBelief.execute({ belief: "Users prefer async workflows" }, {
+  await flagBelief.execute({ beliefs: ["Users prefer async workflows"] }, {
     toolCallId: "flag-belief-test",
     messages: [],
   } as never);
 
   expect(flags).toEqual(["Users prefer async workflows:msg-1"]);
+});
+
+test("flagBelief invokes host callback for each belief", async () => {
+  const flags: string[] = [];
+  const runtimeEnv = env({
+    allowBeliefFlag: true,
+    onBeliefFlag: (belief: string, sourceMessageId: string) => {
+      flags.push(`${belief}:${sourceMessageId}`);
+    },
+  });
+
+  const { tools } = await evaluateComposable(interviewToolkit, { env: runtimeEnv });
+  const aiTools = toolMapToAiTools(tools, { env: runtimeEnv, resolvedPolicies: new Map() });
+  const flagBelief = aiTools.flagBelief;
+  if (flagBelief === undefined || typeof flagBelief.execute !== "function") {
+    throw new Error("expected flagBelief AI tool");
+  }
+
+  await flagBelief.execute(
+    {
+      beliefs: [
+        "The team ships weekly",
+        "Quality is prioritized over speed",
+        "Design reviews happen async",
+      ],
+    },
+    {
+      toolCallId: "flag-belief-multi-test",
+      messages: [],
+    } as never,
+  );
+
+  expect(flags).toEqual([
+    "The team ships weekly:msg-1",
+    "Quality is prioritized over speed:msg-1",
+    "Design reviews happen async:msg-1",
+  ]);
 });
 
 test("flagBelief is excluded before the user's first real message", async () => {
