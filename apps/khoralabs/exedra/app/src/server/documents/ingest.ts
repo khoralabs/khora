@@ -4,11 +4,10 @@ import {
   decomposeLogicalMemoryToContent,
   mergeLogicalMemoryWithMergeSlice,
 } from "@khoralabs/memories-core/helpers";
-import { exedraMemoriesOntology } from "../../../../shared/exedra-ontology.js";
-
 import { getTeam } from "../db/membership.js";
 import { bootstrapSessionMemoriesForTeamSession } from "../memories/bootstrap-session.js";
 import { createExedraMemoriesEmbeddingModel } from "../memories/embedding.js";
+import { exedraMemoriesOntology } from "../memories/exedra-ontology.js";
 import { orgSessionScope } from "../memories/namespaces.js";
 import { openOrgMemories } from "../memories/store.js";
 import { withSpan } from "../telemetry/spans.js";

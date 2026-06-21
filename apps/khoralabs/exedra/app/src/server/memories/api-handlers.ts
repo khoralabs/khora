@@ -23,9 +23,9 @@ import {
   qualifyMemoryKey,
 } from "@khoralabs/sqlite-graph-projections";
 import { embedMany } from "ai";
-import { exedraMemoriesOntology } from "../../../../shared/exedra-ontology.js";
 import { createExedraMemoriesAgentTelemetry } from "../telemetry/agent-telemetry.js";
 import { withSpan } from "../telemetry/spans.js";
+import { exedraMemoriesOntology } from "./exedra-ontology.js";
 
 const NAMESPACE_ROOT = "_global_";
 const EMBEDDING_DIM_BY_PRESET = { L: 768, M: 1536, H: 3072 } as const;

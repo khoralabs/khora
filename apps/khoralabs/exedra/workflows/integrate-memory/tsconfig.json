@@ -27,6 +27,6 @@
     "../../shared/belief-integration.ts",
     "../../shared/belief-agent-instructions.ts",
     "../../shared/search-hit-wire.ts",
-    "../../shared/exedra-ontology.ts"
+    "../../app/src/server/memories/exedra-ontology.ts"
   ]
 }

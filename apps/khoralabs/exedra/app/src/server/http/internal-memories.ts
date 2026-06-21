@@ -27,7 +27,6 @@ import type {
   InternalMemoriesSearchRequest,
   SearchHitSummary,
 } from "../../../../shared/belief-integration.js";
-import { exedraMemoriesOntology } from "../../../../shared/exedra-ontology.js";
 import type {
   InternalMemoriesAgentSearchRequest,
   SearchHitWire,
@@ -41,6 +40,7 @@ import {
   resolveDocumentEmbeddingPreset,
   resolveGeminiApiKey,
 } from "../memories/embedding.js";
+import { exedraMemoriesOntology } from "../memories/exedra-ontology.js";
 import { ensureScopeChain, userScope } from "../memories/namespaces.js";
 import { openUserMemories } from "../memories/store.js";
 import { withSpan } from "../telemetry/spans.js";
