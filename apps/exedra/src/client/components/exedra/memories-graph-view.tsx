@@ -10,10 +10,12 @@ import {
   GraphProjectionProvider,
   GraphScene,
   GraphSearch,
+  useGraphInvestigator,
   useMemoriesGraphChrome,
 } from "@khoralabs/memories-react-graph";
 import { ArrowLeft, Network } from "lucide-react";
 import type { ReactNode } from "react";
+import { useEffect, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -32,7 +34,22 @@ type MemoriesGraphViewProps = {
   onBack?: () => void;
   headerExtra?: ReactNode;
   emptyDescription?: string;
+  onInvestigated?: () => void;
 };
+
+function GraphInvestigatorTracker({ onInvestigated }: { onInvestigated?: () => void }) {
+  const { loading } = useGraphInvestigator();
+  const wasLoadingRef = useRef(false);
+
+  useEffect(() => {
+    if (loading && !wasLoadingRef.current) {
+      onInvestigated?.();
+    }
+    wasLoadingRef.current = loading;
+  }, [loading, onInvestigated]);
+
+  return null;
+}
 
 function MemoriesGraphEmpty({ description }: { description: string }) {
   const { graphLoading, graphError, graphSummary } = useMemoriesGraphChrome();
@@ -59,6 +76,7 @@ export function MemoriesGraphView({
   onBack,
   headerExtra,
   emptyDescription = "Memories from interviews will appear here as they're captured.",
+  onInvestigated,
 }: MemoriesGraphViewProps) {
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-background">
@@ -91,6 +109,7 @@ export function MemoriesGraphView({
           scope="subtree"
         >
           <GraphInvestigatorProvider>
+            <GraphInvestigatorTracker onInvestigated={onInvestigated} />
             <GraphScene
               edgeRenderMode="activeOnly"
               overlay={{ nodeLabelsVisible: true, edgeLabelsVisible: false }}

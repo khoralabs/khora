@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import { useAnalytics } from "@/lib/analytics";
 import { copyTextToClipboard } from "@/lib/copy-text";
 import { INVITE_LINK_SINGLE_USE_NOTE } from "@/lib/invite-copy";
 import { type MeTeam, mintTeamInvite } from "@/lib/me-api";
@@ -44,6 +45,7 @@ type SessionWizardProps = {
 type WizardStep = 1 | 2;
 
 export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps) {
+  const track = useAnalytics();
   const [step, setStep] = useState<WizardStep>(1);
   const [topic, setTopic] = useState("");
   const [deadline, setDeadline] = useState<Date | undefined>();
@@ -130,6 +132,7 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
     try {
       await copyTextToClipboard(teamInviteUrl);
       setTeamInviteCopied(true);
+      track("invite_link_copied", { source: "session_wizard" });
     } catch {
       setError("Could not copy automatically. Select the link below and copy manually.");
     }
@@ -166,10 +169,16 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
       if (result.inviteUrl !== undefined) {
         try {
           await copyTextToClipboard(result.inviteUrl);
+          track("invite_link_copied", { source: "session_wizard" });
         } catch {
           // session was created; invite copy is best-effort
         }
       }
+      track("session_created", {
+        hasInviteLink: createInvite,
+        hasTeamAccess: shareWholeTeam,
+        memberCount: selectedMemberIds.size,
+      });
       onCreated(result.session.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create session");

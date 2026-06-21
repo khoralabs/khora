@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
+import { useAnalytics } from "@/lib/analytics";
 import { copyTextToClipboard } from "@/lib/copy-text";
 import { INVITE_LINK_SINGLE_USE_NOTE } from "@/lib/invite-copy";
 import { type MeTeam, postOnboarding } from "@/lib/me-api";
@@ -31,6 +32,7 @@ type OnboardingDialogProps = {
 type WizardStep = 1 | 2 | 3;
 
 export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
+  const track = useAnalytics();
   const [step, setStep] = useState<WizardStep>(1);
   const [orgName, setOrgName] = useState("");
   const [teamName, setTeamName] = useState("");
@@ -96,6 +98,7 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
         orgAvatarUrl: null,
       });
       setOnboardingSessionId(result.onboardingSessionId);
+      track("onboarding_completed", { sessionId: result.onboardingSessionId });
       setStep(3);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create team");
@@ -109,6 +112,7 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
     try {
       await copyTextToClipboard(inviteUrl);
       setCopied(true);
+      track("invite_link_copied", { source: "onboarding" });
     } catch {
       setError("Could not copy automatically. Select the link and copy manually.");
     }

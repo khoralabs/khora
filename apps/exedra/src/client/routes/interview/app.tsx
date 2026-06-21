@@ -4,6 +4,7 @@ import { InterviewCanvas } from "@/components/exedra/interview-canvas";
 import { InterviewChat } from "@/components/interview/interview-chat";
 import { ShareSessionDialog } from "@/components/sessions/share-session-dialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { AnalyticsProvider, useAnalytics } from "@/lib/analytics";
 import type { BeliefFeedback, BeliefFlag, InterviewBootstrap } from "@/lib/interview-api";
 import { patchBeliefFeedback } from "@/lib/interview-api";
 import type { SessionDetail } from "@/lib/sessions-api";
@@ -29,6 +30,7 @@ function InterviewContent({
   loadSessions: () => void;
   loadSessionDetail: (sessionId: string) => void;
 }) {
+  const track = useAnalytics();
   const [beliefs, setBeliefs] = useState<BeliefFlag[]>([]);
   const [scrollToMessageId, setScrollToMessageId] = useState<string | null>(null);
   const [chatError, setChatError] = useState<string | null>(null);
@@ -60,6 +62,12 @@ function InterviewContent({
         const belief = current.find((entry) => entry.id === id);
         if (belief === undefined || update.feedback === undefined) return current;
 
+        if (update.feedback === "confirmed") {
+          track("belief_confirmed", { feedback: "confirmed" });
+        } else if (update.feedback === "corrected") {
+          track("belief_corrected", { feedback: "corrected" });
+        }
+
         void patchBeliefFeedback(sessionId, id, {
           sourceMessageId: belief.sourceMessageId,
           feedback: update.feedback,
@@ -71,8 +79,13 @@ function InterviewContent({
         return current.map((entry) => (entry.id === id ? { ...entry, ...update } : entry));
       });
     },
-    [sessionId],
+    [sessionId, track],
   );
+
+  const handleOnboardingComplete = useCallback(() => {
+    track("onboarding_interview_completed");
+    onProfileRefresh();
+  }, [onProfileRefresh, track]);
 
   const handleBeliefSourceClick = useCallback(
     (sourceMessageId: string) => {
@@ -108,7 +121,7 @@ function InterviewContent({
         onBeliefsChange={handleBeliefsChange}
         onError={handleChatError}
         onNavigate={onNavigate}
-        onOnboardingComplete={onProfileRefresh}
+        onOnboardingComplete={handleOnboardingComplete}
         onScrollToMessageComplete={() => setScrollToMessageId(null)}
         scrollToMessageId={scrollToMessageId}
         canManage={sessionDetail?.canManage}
@@ -141,7 +154,11 @@ function InterviewApp() {
 
   return (
     <AppChrome entrypoint="interview">
-      {(ctx) => <InterviewContent sessionId={sessionId} {...ctx} />}
+      {(ctx) => (
+        <AnalyticsProvider sessionId={sessionId}>
+          <InterviewContent sessionId={sessionId} {...ctx} />
+        </AnalyticsProvider>
+      )}
     </AppChrome>
   );
 }

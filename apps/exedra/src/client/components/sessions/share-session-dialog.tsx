@@ -24,6 +24,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
 import { formatAccountDisplayName } from "@/lib/account-display";
+import { useAnalytics } from "@/lib/analytics";
 import { copyTextToClipboard } from "@/lib/copy-text";
 import {
   fetchSessionAccess,
@@ -57,6 +58,7 @@ export function ShareSessionDialog({
   onOpenChange,
   onChanged,
 }: ShareSessionDialogProps) {
+  const track = useAnalytics();
   // Visibility / link / candidate state — owned by the dialog
   const [access, setAccess] = useState<SessionAccess | null>(null);
   const [loading, setLoading] = useState(false);
@@ -126,6 +128,7 @@ export function ShareSessionDialog({
     try {
       await copyTextToClipboard(url);
       setLinkCopied(true);
+      track("invite_link_copied", { source: "session_share" });
     } catch {
       setError("Could not copy automatically. Select the link and copy manually.");
     }

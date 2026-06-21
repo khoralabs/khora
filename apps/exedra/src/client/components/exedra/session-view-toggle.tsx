@@ -1,6 +1,7 @@
 import { MessageSquare, Network } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { useAnalytics } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
 type SessionViewToggleProps = {
@@ -10,6 +11,8 @@ type SessionViewToggleProps = {
 };
 
 export function SessionViewToggle({ sessionId, activeView, onNavigate }: SessionViewToggleProps) {
+  const track = useAnalytics();
+
   return (
     <div className="flex items-center gap-1 rounded-md border p-0.5">
       <Button
@@ -26,7 +29,10 @@ export function SessionViewToggle({ sessionId, activeView, onNavigate }: Session
       <Button
         aria-label="Knowledge view"
         className={cn("gap-1.5", activeView === "graph" && "bg-muted")}
-        onClick={() => onNavigate(`/sessions/${sessionId}/graph`)}
+        onClick={() => {
+          track("graph_opened", { scope: "session", sessionId });
+          onNavigate(`/sessions/${sessionId}/graph`);
+        }}
         size="sm"
         type="button"
         variant="ghost"

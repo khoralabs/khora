@@ -1,11 +1,12 @@
 import { Share2 } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 import { KnowledgeScopePicker } from "@/components/exedra/knowledge-scope-picker";
 import { MemoriesGraphView } from "@/components/exedra/memories-graph-view";
 import { SessionViewToggle } from "@/components/exedra/session-view-toggle";
 import { ShareSessionDialog } from "@/components/sessions/share-session-dialog";
 import { Button } from "@/components/ui/button";
+import { AnalyticsProvider, useAnalytics } from "@/lib/analytics";
 import type { MeResponse, MeTeam } from "@/lib/me-api";
 import {
   meMemoriesApiBase,
@@ -40,10 +41,18 @@ function GraphContent({
   sessions: SessionSummary[] | null;
   sessionDetail: SessionDetail | null;
 }) {
+  const track = useAnalytics();
   const sessionGraphId = parseSessionGraphId(pathname);
   const teamGraphId = parseActiveTeamGraphId(pathname);
   const personalGraph = isPersonalGraphPath(pathname);
   const [shareOpen, setShareOpen] = useState(false);
+
+  const trackInvestigated = useCallback(
+    (scope: "session" | "team" | "personal") => {
+      track("graph_investigated", { scope });
+    },
+    [track],
+  );
 
   const scopePicker = (
     <KnowledgeScopePicker
@@ -67,6 +76,7 @@ function GraphContent({
           )}
           title={sessionDetail?.session.topic ?? "Session knowledge"}
           emptyDescription="No knowledge captured yet. It will appear here as the interview captures it."
+          onInvestigated={() => trackInvestigated("session")}
           headerExtra={
             <>
               {sessionDetail?.canManage ? (
@@ -106,6 +116,7 @@ function GraphContent({
         namespace={orgTeamNamespace(activeTeam.orgId, teamGraphId)}
         title={`${team.name} knowledge`}
         emptyDescription="No knowledge captured yet."
+        onInvestigated={() => trackInvestigated("team")}
         headerExtra={scopePicker}
       />
     );
@@ -118,6 +129,7 @@ function GraphContent({
         namespace={userNamespace(me.user.userId)}
         title="Personal knowledge"
         emptyDescription="No knowledge captured yet."
+        onInvestigated={() => trackInvestigated("personal")}
         headerExtra={scopePicker}
       />
     );
@@ -128,7 +140,18 @@ function GraphContent({
 }
 
 function GraphApp() {
-  return <AppChrome entrypoint="graph">{(ctx) => <GraphContent {...ctx} />}</AppChrome>;
+  return (
+    <AppChrome entrypoint="graph">
+      {(ctx) => {
+        const sessionGraphId = parseSessionGraphId(ctx.pathname);
+        return (
+          <AnalyticsProvider sessionId={sessionGraphId ?? undefined}>
+            <GraphContent {...ctx} />
+          </AnalyticsProvider>
+        );
+      }}
+    </AppChrome>
+  );
 }
 
 export default GraphApp;

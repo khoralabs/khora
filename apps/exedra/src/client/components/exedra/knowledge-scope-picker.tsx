@@ -8,6 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAnalytics } from "@/lib/analytics";
 import type { MeResponse, MeTeam } from "@/lib/me-api";
 import type { SessionSummary } from "@/lib/sessions-api";
 import { cn } from "@/lib/utils";
@@ -57,6 +58,7 @@ export function KnowledgeScopePicker({
   variant = "header",
   collapsed = false,
 }: KnowledgeScopePickerProps) {
+  const track = useAnalytics();
   const personalActive = isPersonalGraphPath(pathname);
   const teamGraphId = parseActiveTeamGraphId(pathname);
   const sessionGraphId = parseSessionGraphId(pathname);
@@ -111,12 +113,22 @@ export function KnowledgeScopePicker({
         side={isSidebar && collapsed ? "right" : "bottom"}
         sideOffset={4}
       >
-        <DropdownMenuItem onClick={() => onNavigate("/me/graph")}>
+        <DropdownMenuItem
+          onClick={() => {
+            track("graph_opened", { scope: "personal" });
+            onNavigate("/me/graph");
+          }}
+        >
           <UserRound className="size-4 shrink-0" />
           <span className="min-w-0 flex-1 truncate">Personal knowledge</span>
           {personalActive ? <Check className="ml-auto size-4 shrink-0 text-primary" /> : null}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onNavigate(`/teams/${activeTeam.id}/graph`)}>
+        <DropdownMenuItem
+          onClick={() => {
+            track("graph_opened", { scope: "team" });
+            onNavigate(`/teams/${activeTeam.id}/graph`);
+          }}
+        >
           <Network className="size-4 shrink-0" />
           <span className="min-w-0 flex-1 truncate">{activeTeam.name} knowledge</span>
           {teamGraphId === activeTeam.id ? (
@@ -133,7 +145,10 @@ export function KnowledgeScopePicker({
             {sessions.map((session) => (
               <DropdownMenuItem
                 key={session.id}
-                onClick={() => onNavigate(`/sessions/${session.id}/graph`)}
+                onClick={() => {
+                  track("graph_opened", { scope: "session", sessionId: session.id });
+                  onNavigate(`/sessions/${session.id}/graph`);
+                }}
               >
                 <MessageSquare className="size-4 shrink-0" />
                 <span className="min-w-0 flex-1 truncate">{session.topic}</span>

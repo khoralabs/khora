@@ -11,6 +11,7 @@ import {
 } from "react";
 import type { AttachmentData } from "@/components/ai-elements/attachments";
 import type { PromptInputMessage } from "@/components/ai-elements/prompt-input";
+import { useAnalytics } from "@/lib/analytics";
 import { uploadSessionDocument } from "@/lib/documents-api";
 import type { BeliefFlag, ChatMessage } from "@/lib/interview-api";
 import { getBrowserTimeZone } from "@/lib/user-timezone";
@@ -104,6 +105,7 @@ export function useInterviewTurn({
   beliefsRef,
   onBeliefsChange,
 }: UseInterviewTurnArgs) {
+  const track = useAnalytics();
   const [input, setInput] = useState("");
 
   const pendingDraftRef = useRef<PendingDraft | null>(null);
@@ -224,6 +226,7 @@ export function useInterviewTurn({
               ...(documentIds.length > 0 ? { documentIds } : {}),
             }),
           );
+          track("turn_sent", { hasAttachments: documentIds.length > 0 });
         } catch (err: unknown) {
           if (abortedGenerationRef.current === generation) return;
 
@@ -242,6 +245,7 @@ export function useInterviewTurn({
       ensureWebSocketOpen,
       beliefsRef,
       revertTurn,
+      track,
     ],
   );
 

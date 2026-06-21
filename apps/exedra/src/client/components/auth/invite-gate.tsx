@@ -19,6 +19,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Spinner } from "@/components/ui/spinner";
+import { useAnalytics } from "@/lib/analytics";
 import { fetchAuthSession } from "@/lib/auth-session";
 import { fetchMe, submitConsent } from "@/lib/me-api";
 
@@ -44,6 +45,7 @@ function redirectToInviteTarget(path: string) {
 }
 
 export function InviteGate({ token }: InviteGateProps) {
+  const track = useAnalytics();
   const [invite, setInvite] = useState<InviteInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -82,8 +84,11 @@ export function InviteGate({ token }: InviteGateProps) {
     }
 
     const body = (await res.json()) as { redirectTo: string };
+    track("invite_accepted", {
+      ...(invite?.sessionId !== undefined ? { sessionId: invite.sessionId } : {}),
+    });
     redirectToInviteTarget(body.redirectTo);
-  }, [token]);
+  }, [invite?.sessionId, token, track]);
 
   const canJoin = invite?.kind !== "session" || sessionConsentAccepted;
 
@@ -255,7 +260,9 @@ export function InviteGate({ token }: InviteGateProps) {
                     <Checkbox
                       id="exedra-invite-session-consent"
                       checked={sessionConsentAccepted}
-                      onCheckedChange={(checked) => setSessionConsentAccepted(checked === true)}
+                      onCheckedChange={(checked: boolean | "indeterminate") =>
+                        setSessionConsentAccepted(checked === true)
+                      }
                       disabled={accepting}
                     />
                     <FieldLabel htmlFor="exedra-invite-session-consent" className="font-normal">
@@ -271,7 +278,7 @@ export function InviteGate({ token }: InviteGateProps) {
             <AlertDialogCancel disabled={accepting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               disabled={accepting || !canJoin}
-              onClick={(event) => {
+              onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
                 event.preventDefault();
                 void acceptInvite();
               }}

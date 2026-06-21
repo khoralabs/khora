@@ -6,6 +6,7 @@ import { OnboardingDialog } from "@/components/onboarding/onboarding-dialog";
 import { CreateTeamDialog } from "@/components/teams/create-team-dialog";
 import { Toaster } from "@/components/ui/sonner";
 import { Spinner } from "@/components/ui/spinner";
+import { AnalyticsProvider } from "@/lib/analytics";
 import { type AuthSessionResponse, fetchAuthSession, signOutAuthSession } from "@/lib/auth-session";
 import {
   fetchMe,
@@ -24,8 +25,9 @@ import {
   type SessionDetail,
   type SessionSummary,
 } from "@/lib/sessions-api";
-import { readActiveSelection, writeActiveSelection } from "./active-selection";
+import { track } from "@/lib/telemetry";
 
+import { readActiveSelection, writeActiveSelection } from "./active-selection";
 import { AppSidebar } from "./app-sidebar";
 import { MobileChromeLayoutProvider } from "./mobile-chrome-layout";
 import { type ExedraEntrypoint, entrypointForPath, navigateExedra } from "./navigation";
@@ -158,11 +160,15 @@ function AppChromeInner({ entrypoint, children }: AppChromeProps) {
           termsAcceptedAtMs: result.termsAcceptedAtMs,
           marketingOptedInAtMs: result.marketingOptedInAtMs ?? me.marketingOptedInAtMs,
         });
+        track("terms_accepted", {
+          orgId: activeOrg.id.length > 0 ? activeOrg.id : undefined,
+          marketingOptIn: opts.marketing,
+        });
       } finally {
         setConsentSubmitting(false);
       }
     },
-    [me],
+    [me, activeOrg.id],
   );
 
   useEffect(() => {
@@ -305,49 +311,51 @@ function AppChromeInner({ entrypoint, children }: AppChromeProps) {
   };
 
   return (
-    <SidebarChromeProvider
-      collapsed={sidebarCollapsed}
-      onToggleCollapsed={() => setSidebarCollapsed((value) => !value)}
-    >
-      <div className="flex h-screen overflow-hidden">
-        <AppSidebar {...sidebarProps} />
+    <AnalyticsProvider orgId={activeOrg.id.length > 0 ? activeOrg.id : undefined}>
+      <SidebarChromeProvider
+        collapsed={sidebarCollapsed}
+        onToggleCollapsed={() => setSidebarCollapsed((value) => !value)}
+      >
+        <div className="flex h-screen overflow-hidden">
+          <AppSidebar {...sidebarProps} />
 
-        {children({
-          me,
-          pathname,
-          onNavigate,
-          activeTeam,
-          activeOrg,
-          orgs,
-          sessions,
-          sessionDetail,
-          loadSessions,
-          loadSessionDetail,
-          onProfileRefresh,
-        })}
+          {children({
+            me,
+            pathname,
+            onNavigate,
+            activeTeam,
+            activeOrg,
+            orgs,
+            sessions,
+            sessionDetail,
+            loadSessions,
+            loadSessionDetail,
+            onProfileRefresh,
+          })}
 
-        {loadError !== null ? (
-          <p className="absolute bottom-4 left-4 text-sm text-destructive">{loadError}</p>
-        ) : null}
+          {loadError !== null ? (
+            <p className="absolute bottom-4 left-4 text-sm text-destructive">{loadError}</p>
+          ) : null}
 
-        <OnboardingDialog
-          open={onboardingRequired && !hasSessionAccessOnly}
-          onComplete={onOnboardingComplete}
-        />
+          <OnboardingDialog
+            open={onboardingRequired && !hasSessionAccessOnly}
+            onComplete={onOnboardingComplete}
+          />
 
-        <CreateTeamDialog
-          open={createTeamOpen}
-          org={activeTeam}
-          onOpenChange={setCreateTeamOpen}
-          onCreated={(team) => {
-            onProfileRefresh();
-            setActiveTeam(team);
-            onNavigate("/");
-          }}
-        />
+          <CreateTeamDialog
+            open={createTeamOpen}
+            org={activeTeam}
+            onOpenChange={setCreateTeamOpen}
+            onCreated={(team) => {
+              onProfileRefresh();
+              setActiveTeam(team);
+              onNavigate("/");
+            }}
+          />
 
-        <Toaster />
-      </div>
-    </SidebarChromeProvider>
+          <Toaster />
+        </div>
+      </SidebarChromeProvider>
+    </AnalyticsProvider>
   );
 }
