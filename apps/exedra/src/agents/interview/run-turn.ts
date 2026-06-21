@@ -105,6 +105,21 @@ function upsertToolPart(
   parts.push(nextPart);
 }
 
+function formatToolError(error: unknown): string {
+  if (!(error instanceof Error)) return String(error);
+  const trimmed = error.message.trim();
+  if (!trimmed.startsWith("[")) return error.message;
+  try {
+    const issues = JSON.parse(trimmed) as Array<{ message?: string }>;
+    if (issues.length === 1 && typeof issues[0]?.message === "string") {
+      return issues[0].message;
+    }
+  } catch {
+    // fall through
+  }
+  return error.message;
+}
+
 function replaceTextParts(parts: UIMessage["parts"], text: string): void {
   const nonText = parts.filter((part) => part.type !== "text");
   const next: UIMessage["parts"] = [...nonText, { type: "text", text }];
@@ -311,7 +326,7 @@ async function runInterviewTurnSession(args: {
     }
 
     if (part.type === "tool-error") {
-      const errorText = part.error instanceof Error ? part.error.message : String(part.error);
+      const errorText = formatToolError(part.error);
       upsertToolPart(assistantParts, part.toolCallId, part.toolName, {
         state: "output-error",
         errorText,

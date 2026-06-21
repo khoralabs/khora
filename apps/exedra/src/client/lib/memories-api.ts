@@ -1,16 +1,23 @@
+import { createHash } from "node:crypto";
+
+const MEMORY_PRINCIPAL_SEGMENT_LENGTH = 22;
+
 export function encodePrincipalIdForMemories(principalId: string): string {
-  const bytes = new TextEncoder().encode(principalId);
-  let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "").toLowerCase();
+  return createHash("sha256")
+    .update(principalId, "utf8")
+    .digest("base64url")
+    .slice(0, MEMORY_PRINCIPAL_SEGMENT_LENGTH)
+    .toLowerCase();
 }
 
 export function orgTeamNamespace(orgId: string, teamId: string): string {
-  return `org/${orgId}/team/${teamId}`;
+  const encodedOrg = encodePrincipalIdForMemories(orgId);
+  return `org/${encodedOrg}/team/${teamId}`;
 }
 
 export function orgSessionNamespace(orgId: string, teamId: string, sessionId: string): string {
-  return `org/${orgId}/team/${teamId}/session/${sessionId}`;
+  const encodedOrg = encodePrincipalIdForMemories(orgId);
+  return `org/${encodedOrg}/team/${teamId}/session/${sessionId}`;
 }
 
 export function userNamespace(userId: string): string {

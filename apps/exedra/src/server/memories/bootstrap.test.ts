@@ -61,7 +61,9 @@ test("bootstrapOrgTeamMemories creates org and user scope chains", async () => {
     .map((row) => row._id);
   orgDb.close();
 
-  expect(orgScopes).toEqual(["_global_", orgScope(orgId), orgTeamScope(orgId, teamId)]);
+  expect(orgScopes.sort((a, b) => a.localeCompare(b))).toEqual(
+    ["_global_", orgScope(orgId), orgTeamScope(orgId, teamId)].sort((a, b) => a.localeCompare(b)),
+  );
 
   const userDb = new Database(first.userDbPath);
   const userScopes = userDb
@@ -70,11 +72,11 @@ test("bootstrapOrgTeamMemories creates org and user scope chains", async () => {
     .map((row) => row._id);
   userDb.close();
 
-  expect(userScopes).toEqual([
-    "_global_",
-    userScope(user.id),
-    userTeamScope(user.id, orgId, teamId),
-  ]);
+  expect(userScopes.sort((a, b) => a.localeCompare(b))).toEqual(
+    ["_global_", userScope(user.id), userTeamScope(user.id, orgId, teamId)].sort((a, b) =>
+      a.localeCompare(b),
+    ),
+  );
 
   appDb.close();
 });
@@ -105,12 +107,14 @@ test("bootstrapSessionMemories creates org and user session scope chains under t
     .map((row) => row._id);
   orgDb.close();
 
-  expect(orgScopes).toEqual([
-    "_global_",
-    orgScope(orgId),
-    orgTeamScope(orgId, teamId),
-    orgSessionScope(orgId, teamId, sessionId),
-  ]);
+  expect(orgScopes.sort((a, b) => a.localeCompare(b))).toEqual(
+    [
+      "_global_",
+      orgScope(orgId),
+      orgTeamScope(orgId, teamId),
+      orgSessionScope(orgId, teamId, sessionId),
+    ].sort((a, b) => a.localeCompare(b)),
+  );
 
   const userDb = new Database(userDbPath);
   const userScopes = userDb
@@ -119,12 +123,14 @@ test("bootstrapSessionMemories creates org and user session scope chains under t
     .map((row) => row._id);
   userDb.close();
 
-  expect(userScopes).toEqual([
-    "_global_",
-    userScope(user.id),
-    userTeamScope(user.id, orgId, teamId),
-    userSessionScope(user.id, orgId, teamId, sessionId),
-  ]);
+  expect(userScopes.sort((a, b) => a.localeCompare(b))).toEqual(
+    [
+      "_global_",
+      userScope(user.id),
+      userTeamScope(user.id, orgId, teamId),
+      userSessionScope(user.id, orgId, teamId, sessionId),
+    ].sort((a, b) => a.localeCompare(b)),
+  );
 
   appDb.close();
 });

@@ -16,7 +16,17 @@ function otpLogOnly(): boolean {
   return v === "1" || v === "true" || v === "yes";
 }
 
+/** Test-only hook for capturing OTPs without parsing logger output. */
+let captureOtpForTests: ((params: { email: string; otp: string }) => void) | undefined;
+
+export function setCaptureOtpForTests(
+  capture: ((params: { email: string; otp: string }) => void) | undefined,
+): void {
+  captureOtpForTests = capture;
+}
+
 export async function sendOtpEmail(params: { email: string; otp: string }): Promise<void> {
+  captureOtpForTests?.(params);
   if (otpLogOnly()) {
     logger.info(
       { email: params.email },

@@ -6,7 +6,9 @@ import {
   openMemoriesDatabase,
 } from "@khoralabs/memories-sqlite";
 
+import { getDb } from "../db/index.js";
 import { getMemoriesSqlCipherKey, resolveMemoriesDir } from "./config.js";
+import { migrateMemoriesStore } from "./migrate-memories-store.js";
 import { resolveOrgMemoriesDbPath, resolveUserMemoriesDbPath } from "./paths.js";
 
 const MAX_CACHED_DBS = 64;
@@ -20,6 +22,7 @@ function ensureMemoriesExtensions(): void {
   if (extensionsReady) return;
   ensureCustomSqliteForExtensions();
   mkdirSync(resolveMemoriesDir(), { recursive: true });
+  migrateMemoriesStore(getDb());
   extensionsReady = true;
 }
 

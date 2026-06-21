@@ -15,14 +15,7 @@ import {
   handleOAuthAuthorizationServerMetadata,
   handleOAuthProtectedResourceMetadata,
 } from "./routes/agent-auth";
-
-function parseOtpFromLogs(logs: string[], email: string): string {
-  const line = logs.find((l) => l.includes(`OTP for ${email}:`));
-  if (line === undefined) throw new Error("OTP log line not found");
-  const match = line.match(/OTP for [^:]+: (\d{6})/);
-  if (match?.[1] === undefined) throw new Error("OTP not parsed");
-  return match[1];
-}
+import { setCaptureOtpForTests } from "./ses";
 
 function agentAuthDeps(db: ReturnType<typeof getRegistryDatabase>): AgentAuthRouteDeps {
   return {
@@ -44,8 +37,7 @@ function agentAuthDeps(db: ReturnType<typeof getRegistryDatabase>): AgentAuthRou
 
 describe("registry agent auth", () => {
   const prevOtpLog = process.env.REGISTRY_AUTH_OTP_LOG;
-  let logLines: string[] = [];
-  const origLog = console.log;
+  const capturedOtps = new Map<string, string>();
   let deps: AgentAuthRouteDeps;
 
   beforeEach(async () => {
@@ -61,15 +53,14 @@ describe("registry agent auth", () => {
     const db = getRegistryDatabase();
     deps = agentAuthDeps(db);
     seedDefaultHost(db, { slug: "khora-local", baseUrl: "http://localhost:8788" });
-    logLines = [];
-    console.log = (...args: unknown[]) => {
-      logLines.push(args.map(String).join(" "));
-      origLog(...args);
-    };
+    capturedOtps.clear();
+    setCaptureOtpForTests(({ email, otp }) => {
+      capturedOtps.set(email, otp);
+    });
   });
 
   afterEach(() => {
-    console.log = origLog;
+    setCaptureOtpForTests(undefined);
     delete process.env.REGISTRY_DATABASE_PATH;
     delete process.env.BETTER_AUTH_SECRET;
     if (prevOtpLog === undefined) delete process.env.REGISTRY_AUTH_OTP_LOG;
@@ -77,6 +68,15 @@ describe("registry agent auth", () => {
     resetRegistryDatabase();
     reloadRegistryAuth();
   });
+
+  async function waitForOtp(email: string): Promise<string> {
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      const otp = capturedOtps.get(email);
+      if (otp !== undefined) return otp;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    throw new Error(`OTP not captured for ${email}`);
+  }
 
   test("PRM and AS metadata expose agent_auth register and claim URIs", async () => {
     const prm = handleOAuthProtectedResourceMetadata(deps);
@@ -119,7 +119,7 @@ describe("registry agent auth", () => {
     expect(registerJson.status).toBe("pending_claim");
     expect(registerJson.claim_token.startsWith("clm_")).toBe(true);
 
-    const otp = parseOtpFromLogs(logLines, email);
+    const otp = await waitForOtp(email);
 
     const completeRes = await handleAgentAuthClaimComplete(
       new Request("http://localhost/agent/auth/claim/complete", {
@@ -156,7 +156,7 @@ describe("registry agent auth", () => {
       }),
       deps,
     );
-    const otp = parseOtpFromLogs(logLines, email);
+    const otp = await waitForOtp(email);
 
     const completeRes = await handleAgentAuthClaimComplete(
       new Request("http://localhost/agent/auth/claim/complete", {
