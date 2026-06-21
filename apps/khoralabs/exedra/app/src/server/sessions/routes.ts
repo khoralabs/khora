@@ -396,6 +396,7 @@ export async function handleGetInterview(req: Request, sessionId: string): Promi
 
 type PatchBeliefFeedbackBody = {
   sourceMessageId?: string;
+  belief?: string;
   feedback?: "confirmed" | "corrected";
   correction?: string;
 };
@@ -461,10 +462,11 @@ export async function handlePatchBeliefFeedback(
     threadId,
     sessionId,
     beliefId,
+    belief: body.belief,
     feedback,
     correction: body.correction,
-  }).catch(() => {
-    // non-fatal: must not affect the HTTP response
+  }).catch((err: unknown) => {
+    logger.warn({ err, beliefId }, "belief integration failed");
   });
 
   return Response.json({

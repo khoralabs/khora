@@ -272,6 +272,7 @@ export async function patchBeliefFeedback(
   beliefId: string,
   body: {
     sourceMessageId: string;
+    belief: string;
     feedback: BeliefFeedback;
     correction?: string;
   },

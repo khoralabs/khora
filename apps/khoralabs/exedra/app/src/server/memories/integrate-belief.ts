@@ -10,6 +10,7 @@ import { processLogicalMemoryWithIntegrator } from "@khoralabs/memories-integrat
 import { canonicalOntology } from "@khoralabs/memories-ontologies";
 
 import { loadThreadMessages } from "../db/messages.js";
+import { logger } from "../logger.js";
 import { createExedraMemoriesAgentTelemetry } from "../telemetry/agent-telemetry.js";
 import { withSpan } from "../telemetry/spans.js";
 import { createExedraMemoriesEmbeddingModel, resolveGeminiApiKey } from "./embedding.js";
@@ -28,6 +29,7 @@ export type IntegrateBeliefParams = {
   threadId: string;
   sessionId: string;
   beliefId: string;
+  belief?: string;
   feedback: "confirmed" | "corrected";
   correction?: string;
 };
@@ -77,11 +79,16 @@ export async function integrateBelief(params: IntegrateBeliefParams): Promise<vo
   const text =
     params.feedback === "corrected"
       ? (params.correction?.trim() ?? "")
-      : (resolveBeliefText(params.db, params.threadId, params.beliefId) ?? "");
+      : params.belief?.trim() ||
+        resolveBeliefText(params.db, params.threadId, params.beliefId) ||
+        "";
   if (text.length === 0) return;
 
   const models = createBeliefIntegrationModels();
-  if (models === null) return;
+  if (models === null) {
+    logger.warn("belief integration skipped: no Gemini API key configured");
+    return;
+  }
 
   await withSpan(
     "belief.integrate",

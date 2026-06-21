@@ -88,6 +88,7 @@ function InterviewContent({
 
         void patchBeliefFeedback(sessionId, id, {
           sourceMessageId: belief.sourceMessageId,
+          belief: belief.belief,
           feedback: update.feedback,
           ...(update.correction !== undefined ? { correction: update.correction } : {}),
         }).catch(() => {
