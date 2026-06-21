@@ -1,13 +1,11 @@
-import { createHash } from "node:crypto";
+import { sha256 } from "@noble/hashes/sha2.js";
+import { base64urlnopad } from "@scure/base";
 
 const MEMORY_PRINCIPAL_SEGMENT_LENGTH = 22;
 
 export function encodePrincipalIdForMemories(principalId: string): string {
-  return createHash("sha256")
-    .update(principalId, "utf8")
-    .digest("base64url")
-    .slice(0, MEMORY_PRINCIPAL_SEGMENT_LENGTH)
-    .toLowerCase();
+  const hash = sha256(new TextEncoder().encode(principalId));
+  return base64urlnopad.encode(hash).slice(0, MEMORY_PRINCIPAL_SEGMENT_LENGTH).toLowerCase();
 }
 
 export function orgTeamNamespace(orgId: string, teamId: string): string {
