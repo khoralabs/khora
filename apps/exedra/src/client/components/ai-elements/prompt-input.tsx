@@ -1,7 +1,7 @@
 "use client";
 
 import type { ChatStatus, FileUIPart, SourceDocumentUIPart } from "ai";
-import { CornerDownLeftIcon, ImageIcon, Monitor, PlusIcon, SquareIcon, XIcon } from "lucide-react";
+import { CornerDownLeftIcon, ImageIcon, Monitor, PaperclipIcon, PlusIcon, SquareIcon, XIcon } from "lucide-react";
 import { nanoid } from "nanoid";
 import type {
   ChangeEvent,
@@ -1073,6 +1073,28 @@ export const PromptInputButton = ({
         {shortcut && <span className="ml-2 text-muted-foreground">{shortcut}</span>}
       </TooltipContent>
     </Tooltip>
+  );
+};
+
+export type PromptInputAttachButtonProps = Omit<PromptInputButtonProps, "onClick">;
+
+export const PromptInputAttachButton = ({
+  tooltip = "Upload file",
+  children,
+  ...props
+}: PromptInputAttachButtonProps) => {
+  const attachments = usePromptInputAttachments();
+  const ariaLabel = typeof tooltip === "string" ? tooltip : "Upload file";
+
+  return (
+    <PromptInputButton
+      aria-label={ariaLabel}
+      tooltip={tooltip}
+      onClick={() => attachments.openFileDialog()}
+      {...props}
+    >
+      {children ?? <PaperclipIcon className="size-4" />}
+    </PromptInputButton>
   );
 };
 

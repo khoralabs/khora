@@ -4,10 +4,7 @@ import { SquareIcon } from "lucide-react";
 import type { PromptInputMessage } from "@/components/ai-elements/prompt-input";
 import {
   PromptInput,
-  PromptInputActionAddAttachments,
-  PromptInputActionMenu,
-  PromptInputActionMenuContent,
-  PromptInputActionMenuTrigger,
+  PromptInputAttachButton,
   PromptInputFooter,
   PromptInputSubmit,
   PromptInputTextarea,
@@ -69,12 +66,7 @@ export function InterviewChatInput({
         <PromptInputFooter>
           <TooltipProvider>
             <PromptInputTools>
-              <PromptInputActionMenu>
-                <PromptInputActionMenuTrigger tooltip="Add attachments" />
-                <PromptInputActionMenuContent>
-                  <PromptInputActionAddAttachments label="Upload file" />
-                </PromptInputActionMenuContent>
-              </PromptInputActionMenu>
+              <PromptInputAttachButton />
             </PromptInputTools>
           </TooltipProvider>
           <InterviewPromptSubmit connected={connected} onStop={onStop} status={status} />
