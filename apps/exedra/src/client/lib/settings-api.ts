@@ -1,9 +1,4 @@
-import type {
-  AccountProfile,
-  AccountRow,
-  OrgMemberContext,
-  TeamMemberContext,
-} from "@shared/accounts/row";
+import type { AccountRow, OrgMemberContext, TeamMemberContext } from "@shared/accounts/row";
 import type { OrgTeamContext, TeamRow } from "@shared/teams/row";
 
 export type EntitySettings = {
@@ -19,13 +14,7 @@ export type EntitySettings = {
 export type OrgMemberRow = AccountRow<OrgMemberContext>;
 export type TeamMemberRow = AccountRow<TeamMemberContext>;
 
-export type OrgMemberProfile = {
-  user: AccountProfile;
-  isCurrentUser: boolean;
-  isAdmin: boolean;
-  teamIds: string[];
-  teamNames: string[];
-};
+export type OrgMemberProfile = OrgMemberRow;
 
 export type OrgTeamSummary = TeamRow<OrgTeamContext>;
 

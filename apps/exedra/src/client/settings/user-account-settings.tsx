@@ -46,7 +46,7 @@ export function UserAccountSettings({
           return;
         }
         setProfile(data);
-        onTitleResolvedRef.current?.(formatAccountDisplayName(data.user));
+        onTitleResolvedRef.current?.(formatAccountDisplayName(data.account));
         setLoading(false);
       })
       .catch((err: unknown) => {
@@ -71,7 +71,7 @@ export function UserAccountSettings({
     return <p className="text-sm text-destructive">{error ?? "Member not found"}</p>;
   }
 
-  const displayName = formatAccountDisplayName(profile.user);
+  const displayName = formatAccountDisplayName(profile.account);
 
   return (
     <div className="mx-auto w-full max-w-lg">
@@ -80,7 +80,7 @@ export function UserAccountSettings({
         <p className="mt-1 text-sm text-muted-foreground">
           Profile for <span className="font-medium text-foreground">{displayName}</span>.
         </p>
-        {profile.isAdmin ? (
+        {profile.context.isAdmin ? (
           <div className="mt-2">
             <Badge variant="outline">Admin</Badge>
           </div>
@@ -91,23 +91,25 @@ export function UserAccountSettings({
         <FieldGroup>
           <AvatarUploadField
             name={displayName}
-            avatarUrl={profile.user.avatarUrl}
+            avatarUrl={profile.account.avatarUrl}
             disabled
             onFileSelected={() => undefined}
           />
-          <AccountIdentityFields email={profile.user.email} did={profile.user.userId} />
+          <AccountIdentityFields email={profile.account.email} did={profile.account.userId} />
           <Field>
             <FieldLabel>Full name</FieldLabel>
-            <p className="text-sm text-foreground break-all">{profile.user.fullName ?? "—"}</p>
+            <p className="text-sm text-foreground break-all">{profile.account.fullName ?? "—"}</p>
           </Field>
           <Field>
             <FieldLabel>Job function</FieldLabel>
-            <p className="text-sm text-foreground break-all">{profile.user.jobFunction ?? "—"}</p>
+            <p className="text-sm text-foreground break-all">
+              {profile.account.jobFunction ?? "—"}
+            </p>
           </Field>
           <Field>
             <FieldLabel>Teams</FieldLabel>
             <p className="text-sm text-foreground break-all">
-              {profile.teamNames.length > 0 ? profile.teamNames.join(", ") : "—"}
+              {profile.context.teamNames.length > 0 ? profile.context.teamNames.join(", ") : "—"}
             </p>
           </Field>
         </FieldGroup>
