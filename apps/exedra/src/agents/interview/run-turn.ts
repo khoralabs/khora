@@ -2,8 +2,10 @@ import {
   type AgentRegistry,
   captureAgentSnapshotEnvelope,
   type PolicyResultMap,
+  type RegisteredAgent,
 } from "@khoralabs/agent-capabilities";
 import { toolMapToAiTools } from "@khoralabs/agent-capabilities-ai-sdk";
+import type { AgentTelemetry } from "@khoralabs/agent-capabilities-otel";
 import {
   convertToModelMessages,
   type LanguageModel,
@@ -18,6 +20,7 @@ import {
 type InterviewToolSet = Record<string, Tool<unknown, unknown>> & ToolSet;
 
 import { logger } from "../../server/logger.js";
+import { createExedraAgentTelemetry } from "../../server/telemetry/agent-telemetry.js";
 import { TurnAbortedError } from "../errors.js";
 import {
   buildUserLocalDateTimeContext,
@@ -37,6 +40,26 @@ export type InterviewToolEvent =
   | { type: "call"; toolCallId: string; toolName: string; input: unknown }
   | { type: "result"; toolCallId: string; toolName: string; output: unknown }
   | { type: "error"; toolCallId: string; toolName: string; errorText: string };
+
+export type InterviewTurnInput = {
+  model: LanguageModel;
+  threadId: string;
+  userMessageId: string;
+  history: UIMessage[];
+  userTimeZone?: string;
+  abortSignal?: AbortSignal;
+  onboardingMeta?: OnboardingInterviewMeta;
+  onTextDelta: (delta: string) => void;
+  onBeliefFlag: (belief: string, sourceMessageId: string) => void;
+  onCompleteOnboarding?: (summary: string) => void;
+  onToolEvent?: (event: InterviewToolEvent) => void;
+};
+
+export type InterviewTurnOutput = {
+  assistantParts: UIMessage["parts"];
+  beliefFlags: { belief: string; messageId: string }[];
+  onboardingCompleted: boolean;
+};
 
 function upsertToolPart(
   parts: UIMessage["parts"],
@@ -91,42 +114,26 @@ function allowBeliefFlagForTurn(history: UIMessage[], userMessageId: string): bo
   return !isKickoffUserMessage(triggering);
 }
 
-export async function runInterviewTurn(args: {
-  registry: AgentRegistry;
-  model: LanguageModel;
+async function runInterviewTurnSession(args: {
+  agent: RegisteredAgent;
+  input: InterviewTurnInput;
   sessionId: string;
-  sessionMeta: InterviewSessionMeta;
-  onboardingMeta?: OnboardingInterviewMeta;
-  threadId: string;
-  userMessageId: string;
-  history: UIMessage[];
-  userTimeZone?: string;
-  abortSignal?: AbortSignal;
-  onTextDelta: (delta: string) => void;
-  onBeliefFlag: (belief: string, sourceMessageId: string) => void;
-  onCompleteOnboarding?: (summary: string) => void;
-  onToolEvent?: (event: InterviewToolEvent) => void;
-}): Promise<{
-  assistantParts: UIMessage["parts"];
-  beliefFlags: { belief: string; messageId: string }[];
-  onboardingCompleted: boolean;
-}> {
+  tel: AgentTelemetry;
+}): Promise<InterviewTurnOutput> {
+  const { agent, input, sessionId, tel } = args;
   const {
-    registry,
     model,
-    sessionId,
-    sessionMeta,
-    onboardingMeta,
     threadId,
     userMessageId,
     history,
     userTimeZone,
     abortSignal,
+    onboardingMeta,
     onTextDelta,
     onBeliefFlag,
     onCompleteOnboarding,
     onToolEvent,
-  } = args;
+  } = input;
 
   const isOnboarding = onboardingMeta !== undefined;
   const userTurnCount = countNonKickoffUserTurns(history);
@@ -152,31 +159,36 @@ export async function runInterviewTurn(args: {
     },
   };
 
-  const { identity } = await ensureInterviewAgentRegistered(registry, sessionId, sessionMeta, {
-    onboarding: onboardingMeta,
-  });
-  const agentId = identity.agentId;
-
   const toolkitCtx = {
     env,
-    agentId,
-    agentName: identity.name,
+    agentId: agent.agentId,
+    agentName: agent.name,
   };
 
   const userLocalDateTime = buildUserLocalDateTimeContext(userTimeZone);
   const userLocalDateTimeInstruction = formatUserLocalDateTimeTurnInstruction(userLocalDateTime);
 
-  const capture = await captureAgentSnapshotEnvelope({
-    agent: identity,
-    ctx: toolkitCtx,
+  const capture = await tel.traceAffordanceEvaluation(() =>
+    captureAgentSnapshotEnvelope({
+      agent,
+      ctx: { ...toolkitCtx, pipelineHooks: tel.pipelineHooks },
+      invocationContext: { threadId, userMessageId, userLocalDateTime },
+      sessionContext: { userLocalDateTime },
+    }),
+  );
+
+  tel.linkCapture({
+    link: capture.link,
+    toolRefs: capture.toolRefs,
     invocationContext: { threadId, userMessageId, userLocalDateTime },
-    sessionContext: { userLocalDateTime },
+    sessionContext: capture.envelope.context,
   });
 
   const resolvedPolicies: PolicyResultMap = new Map();
   const runtime = {
     ...toolkitCtx,
     resolvedPolicies,
+    pipelineHooks: tel.pipelineHooks,
   };
   const aiTools = toolMapToAiTools(capture.evaluatedTools, runtime) as InterviewToolSet;
   const registeredToolNames = Object.keys(aiTools);
@@ -212,8 +224,8 @@ export async function runInterviewTurn(args: {
       isEnabled: true,
       functionId: "interview-turn",
       metadata: {
-        threadId: args.threadId,
-        sessionId: args.sessionId,
+        threadId,
+        sessionId,
       },
     },
   });
@@ -291,4 +303,60 @@ export async function runInterviewTurn(args: {
   );
 
   return { assistantParts, beliefFlags, onboardingCompleted };
+}
+
+export async function runInterviewTurn(args: {
+  registry: AgentRegistry;
+  model: LanguageModel;
+  sessionId: string;
+  sessionMeta: InterviewSessionMeta;
+  onboardingMeta?: OnboardingInterviewMeta;
+  threadId: string;
+  userMessageId: string;
+  history: UIMessage[];
+  userTimeZone?: string;
+  abortSignal?: AbortSignal;
+  onTextDelta: (delta: string) => void;
+  onBeliefFlag: (belief: string, sourceMessageId: string) => void;
+  onCompleteOnboarding?: (summary: string) => void;
+  onToolEvent?: (event: InterviewToolEvent) => void;
+}): Promise<InterviewTurnOutput> {
+  const { identity } = await ensureInterviewAgentRegistered(
+    args.registry,
+    args.sessionId,
+    args.sessionMeta,
+    { onboarding: args.onboardingMeta },
+  );
+
+  const turnInput: InterviewTurnInput = {
+    model: args.model,
+    threadId: args.threadId,
+    userMessageId: args.userMessageId,
+    history: args.history,
+    ...(args.userTimeZone !== undefined ? { userTimeZone: args.userTimeZone } : {}),
+    ...(args.abortSignal !== undefined ? { abortSignal: args.abortSignal } : {}),
+    ...(args.onboardingMeta !== undefined ? { onboardingMeta: args.onboardingMeta } : {}),
+    onTextDelta: args.onTextDelta,
+    onBeliefFlag: args.onBeliefFlag,
+    ...(args.onCompleteOnboarding !== undefined
+      ? { onCompleteOnboarding: args.onCompleteOnboarding }
+      : {}),
+    ...(args.onToolEvent !== undefined ? { onToolEvent: args.onToolEvent } : {}),
+  };
+
+  const tel = createExedraAgentTelemetry();
+
+  const session = args.registry.createSession(identity.agentId, {
+    sessionId: args.sessionId,
+    hooks: tel.sessionHooks,
+    run: async ({ agent, input }) =>
+      runInterviewTurnSession({
+        agent,
+        input: input as InterviewTurnInput,
+        sessionId: args.sessionId,
+        tel,
+      }),
+  });
+
+  return session.start<InterviewTurnInput, InterviewTurnOutput>(turnInput);
 }

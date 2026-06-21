@@ -10,6 +10,7 @@ import { processLogicalMemoryWithIntegrator } from "@khoralabs/memories-integrat
 import { canonicalOntology } from "@khoralabs/memories-ontologies";
 
 import { loadThreadMessages } from "../db/messages.js";
+import { createExedraMemoriesAgentTelemetry } from "../telemetry/agent-telemetry.js";
 import { withSpan } from "../telemetry/spans.js";
 import { createExedraMemoriesEmbeddingModel, resolveGeminiApiKey } from "./embedding.js";
 import { ensureScopeChain, userScope } from "./namespaces.js";
@@ -108,33 +109,33 @@ export async function integrateBelief(params: IntegrateBeliefParams): Promise<vo
         identityContext: { app: "exedra" },
       });
 
-      const { draft } = await withSpan("belief.adapter_expand", {}, async () =>
-        adapter.expand({
-          ingest: {
-            sourceApp: "exedra",
-            userId: params.userId,
-            correlationId: params.beliefId,
-          },
-          domainPayload: {
-            belief: text,
-            feedback: params.feedback,
-            sessionId: params.sessionId,
-            beliefId: params.beliefId,
-          },
-        }),
-      );
+      const adapterTel = await createExedraMemoriesAgentTelemetry(client);
+      const { draft } = await adapter.expand({
+        ingest: {
+          sourceApp: "exedra",
+          userId: params.userId,
+          correlationId: params.beliefId,
+        },
+        domainPayload: {
+          belief: text,
+          feedback: params.feedback,
+          sessionId: params.sessionId,
+          beliefId: params.beliefId,
+        },
+        telemetry: adapterTel,
+      });
 
       const logicalMemory = expandedDraftToLogicalMemoryInput(draft, namespace, defaultKey);
 
-      await withSpan("belief.integrator_merge", {}, async () =>
-        processLogicalMemoryWithIntegrator({
-          client,
-          logicalMemory,
-          chatModel,
-          embeddingModel,
-          registry,
-        }),
-      );
+      const integratorTel = await createExedraMemoriesAgentTelemetry(client);
+      await processLogicalMemoryWithIntegrator({
+        client,
+        logicalMemory,
+        chatModel,
+        embeddingModel,
+        registry,
+        telemetry: integratorTel,
+      });
     },
   );
 }

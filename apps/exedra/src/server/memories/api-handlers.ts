@@ -24,7 +24,7 @@ import {
   qualifyMemoryKey,
 } from "@khoralabs/sqlite-graph-projections";
 import { embedMany } from "ai";
-
+import { createExedraMemoriesAgentTelemetry } from "../telemetry/agent-telemetry.js";
 import { withSpan } from "../telemetry/spans.js";
 
 const NAMESPACE_ROOT = "_global_";
@@ -363,7 +363,8 @@ export async function handleMemoriesInvestigate(
         client,
         embeddingModel,
       });
-      const { answer } = await investigator.investigate({ question, maxSteps });
+      const tel = await createExedraMemoriesAgentTelemetry(client);
+      const { answer } = await investigator.investigate({ question, maxSteps, telemetry: tel });
       return jsonResponse(answer);
     });
   } catch (err) {
