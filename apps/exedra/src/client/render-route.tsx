@@ -1,7 +1,10 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
+import { initUmamiScript } from "./lib/umami-script";
+
 export function renderRoute(Component: React.ComponentType) {
+  initUmamiScript();
   const elem = document.getElementById("root");
   if (elem === null) throw new Error("Root element not found");
   const app = (
