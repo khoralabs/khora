@@ -1,5 +1,6 @@
 import { KnowledgeScopePicker } from "@/components/exedra/knowledge-scope-picker";
 import { NewSessionButton } from "@/components/exedra/new-session-button";
+import { SidebarCtas } from "@/components/exedra/sidebar-ctas";
 import { SidebarTeamSwitcher } from "@/components/exedra/sidebar-team-switcher";
 import { SidebarUserMenu } from "@/components/exedra/sidebar-user-menu";
 import { Spinner } from "@/components/ui/spinner";
@@ -108,16 +109,17 @@ export function SessionSidebar({
           </div>
         </div>
 
-        {!settingsMode && collapsed ? (
-          <div className="flex justify-center border-b p-2">
+        {!settingsMode ? (
+          <SidebarCtas collapsed={collapsed}>
             <NewSessionButton
-              collapsed
+              collapsed={collapsed}
+              variant="outline"
               disabled={createSessionDisabled}
               onboardingInterviewRequired={me.onboardingInterviewRequired}
               onboardingSessionId={me.onboardingSessionId}
               onClick={dismissAfter(onCreateSession)}
             />
-          </div>
+          </SidebarCtas>
         ) : null}
 
         {settingsMode && onNavigate !== undefined ? (
@@ -133,16 +135,7 @@ export function SessionSidebar({
           <>
             <div className="min-h-0 flex-1 overflow-y-auto p-2">
               {!collapsed ? (
-                <div className="flex items-center justify-between gap-2 pb-2">
-                  <p className="px-2 text-xs font-medium text-muted-foreground">Sessions</p>
-                  <NewSessionButton
-                    iconOnly
-                    disabled={createSessionDisabled}
-                    onboardingInterviewRequired={me.onboardingInterviewRequired}
-                    onboardingSessionId={me.onboardingSessionId}
-                    onClick={dismissAfter(onCreateSession)}
-                  />
-                </div>
+                <p className="px-2 pb-2 text-xs font-medium text-muted-foreground">Sessions</p>
               ) : null}
               {sessions === null ? (
                 <div className="flex justify-center py-8">

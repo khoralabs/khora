@@ -1,6 +1,7 @@
+import type { VariantProps } from "class-variance-authority";
 import { CalendarPlus, Plus } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button, type buttonVariants } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
@@ -22,6 +23,7 @@ type NewSessionButtonProps = {
   collapsed?: boolean;
   /** Render a compact ghost plus icon (e.g. at the end of a group header row). */
   iconOnly?: boolean;
+  variant?: VariantProps<typeof buttonVariants>["variant"];
   className?: string;
 };
 
@@ -32,6 +34,7 @@ export function NewSessionButton({
   onClick,
   collapsed = false,
   iconOnly = false,
+  variant = "default",
   className,
 }: NewSessionButtonProps) {
   const showInterviewPopover = disabled && onboardingInterviewRequired;
@@ -52,6 +55,7 @@ export function NewSessionButton({
   ) : (
     <Button
       type="button"
+      variant={variant}
       className={cn(
         !collapsed && "w-full",
         showInterviewPopover && "cursor-default opacity-50",
