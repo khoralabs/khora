@@ -1,6 +1,6 @@
 import { nanoid } from "nanoid";
 
-import { isTurnAbortedError, TurnAbortedError } from "../../../agents/errors";
+import { isAbortError, TurnAbortedError } from "../../../agents/errors";
 import type { InterviewSessionMeta } from "../../../agents/interview/instructions";
 import { getOrg, getTeam } from "../../db/membership";
 import { insertMessage, loadThreadMessages, nextMessageIndex } from "../../db/messages";
@@ -306,7 +306,7 @@ async function executeTurnBody(
       // ignore nested rollback failures
     }
 
-    if (isTurnAbortedError(err) || signal.aborted) {
+    if (isAbortError(err) || signal.aborted) {
       await rollbackTurnDocuments({
         db,
         sessionId: session.id,

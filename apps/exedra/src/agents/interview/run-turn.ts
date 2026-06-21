@@ -1,8 +1,10 @@
 import {
   type AgentRegistry,
+  AgentSessionAbortedError,
   captureAgentSnapshotEnvelope,
   type PolicyResultMap,
   type RegisteredAgent,
+  type SessionContext,
 } from "@khoralabs/agent-capabilities";
 import { toolMapToAiTools } from "@khoralabs/agent-capabilities-ai-sdk";
 import type { AgentTelemetry } from "@khoralabs/agent-capabilities-otel";
@@ -21,7 +23,7 @@ type InterviewToolSet = Record<string, Tool<unknown, unknown>> & ToolSet;
 
 import { logger } from "../../server/logger.js";
 import { createExedraAgentTelemetry } from "../../server/telemetry/agent-telemetry.js";
-import { TurnAbortedError } from "../errors.js";
+import { isAbortError, TurnAbortedError } from "../errors.js";
 import {
   buildUserLocalDateTimeContext,
   formatUserLocalDateTimeTurnInstruction,
@@ -47,7 +49,6 @@ export type InterviewTurnInput = {
   userMessageId: string;
   history: UIMessage[];
   userTimeZone?: string;
-  abortSignal?: AbortSignal;
   onboardingMeta?: OnboardingInterviewMeta;
   onTextDelta: (delta: string) => void;
   onBeliefFlag: (belief: string, sourceMessageId: string) => void;
@@ -114,20 +115,25 @@ function allowBeliefFlagForTurn(history: UIMessage[], userMessageId: string): bo
   return !isKickoffUserMessage(triggering);
 }
 
+function sessionAbortSignal(context: SessionContext): AbortSignal | undefined {
+  const signal = context.abortSignal;
+  return signal instanceof AbortSignal ? signal : undefined;
+}
+
 async function runInterviewTurnSession(args: {
   agent: RegisteredAgent;
   input: InterviewTurnInput;
+  context: SessionContext;
   sessionId: string;
   tel: AgentTelemetry;
 }): Promise<InterviewTurnOutput> {
-  const { agent, input, sessionId, tel } = args;
+  const { agent, input, context, sessionId, tel } = args;
   const {
     model,
     threadId,
     userMessageId,
     history,
     userTimeZone,
-    abortSignal,
     onboardingMeta,
     onTextDelta,
     onBeliefFlag,
@@ -135,12 +141,14 @@ async function runInterviewTurnSession(args: {
     onToolEvent,
   } = input;
 
+  const abortSignal = sessionAbortSignal(context);
+  const isAborted = () => abortSignal?.aborted === true;
+
   const isOnboarding = onboardingMeta !== undefined;
   const userTurnCount = countNonKickoffUserTurns(history);
   let onboardingCompleted = false;
 
   const beliefFlags: { belief: string; messageId: string }[] = [];
-  const isAborted = () => abortSignal?.aborted === true;
 
   const env: InterviewEnv = {
     sourceMessageId: userMessageId,
@@ -163,6 +171,7 @@ async function runInterviewTurnSession(args: {
     env,
     agentId: agent.agentId,
     agentName: agent.name,
+    ...(abortSignal !== undefined ? { abortSignal } : {}),
   };
 
   const userLocalDateTime = buildUserLocalDateTimeContext(userTimeZone);
@@ -208,10 +217,6 @@ async function runInterviewTurnSession(args: {
     }));
   }
 
-  if (isAborted()) {
-    throw new TurnAbortedError();
-  }
-
   const assistantParts: UIMessage["parts"] = [];
   const result = streamText({
     model,
@@ -219,7 +224,7 @@ async function runInterviewTurnSession(args: {
     messages: modelMessages,
     tools: aiTools,
     stopWhen: stepCountIs(5),
-    abortSignal,
+    ...(abortSignal !== undefined ? { abortSignal } : {}),
     experimental_telemetry: {
       isEnabled: true,
       functionId: "interview-turn",
@@ -231,11 +236,8 @@ async function runInterviewTurnSession(args: {
   });
 
   for await (const part of result.fullStream) {
-    if (isAborted()) {
-      throw new TurnAbortedError();
-    }
+    if (isAborted()) break;
     if (part.type === "text-delta") {
-      if (isAborted()) throw new TurnAbortedError();
       const delta = part.text;
       if (delta.length === 0) continue;
       const last = assistantParts.at(-1);
@@ -292,7 +294,7 @@ async function runInterviewTurnSession(args: {
   }
 
   if (isAborted()) {
-    throw new TurnAbortedError();
+    throw new AgentSessionAbortedError();
   }
 
   const finishReason = await result.finishReason;
@@ -334,7 +336,6 @@ export async function runInterviewTurn(args: {
     userMessageId: args.userMessageId,
     history: args.history,
     ...(args.userTimeZone !== undefined ? { userTimeZone: args.userTimeZone } : {}),
-    ...(args.abortSignal !== undefined ? { abortSignal: args.abortSignal } : {}),
     ...(args.onboardingMeta !== undefined ? { onboardingMeta: args.onboardingMeta } : {}),
     onTextDelta: args.onTextDelta,
     onBeliefFlag: args.onBeliefFlag,
@@ -349,14 +350,23 @@ export async function runInterviewTurn(args: {
   const session = args.registry.createSession(identity.agentId, {
     sessionId: args.sessionId,
     hooks: tel.sessionHooks,
-    run: async ({ agent, input }) =>
+    ...(args.abortSignal !== undefined ? { signal: args.abortSignal } : {}),
+    run: async ({ agent, input, context }) =>
       runInterviewTurnSession({
         agent,
         input: input as InterviewTurnInput,
+        context,
         sessionId: args.sessionId,
         tel,
       }),
   });
 
-  return session.start<InterviewTurnInput, InterviewTurnOutput>(turnInput);
+  try {
+    return await session.start<InterviewTurnInput, InterviewTurnOutput>(turnInput);
+  } catch (err) {
+    if (isAbortError(err)) {
+      throw new TurnAbortedError();
+    }
+    throw err;
+  }
 }
