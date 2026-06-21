@@ -119,11 +119,19 @@ export function SidebarUserMenu({
         align="end"
         sideOffset={4}
       >
-        <DropdownMenuLabel className="p-0 font-normal">
-          <div className="px-1 py-1.5">
-            <SidebarAccountSummary account={account} />
-          </div>
-        </DropdownMenuLabel>
+        {onOpenProfileSettings ? (
+          <DropdownMenuItem className="rounded-sm p-0" onSelect={onOpenProfileSettings}>
+            <div className="px-1 py-1.5">
+              <SidebarAccountSummary account={account} />
+            </div>
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuLabel className="p-0 font-normal">
+            <div className="px-1 py-1.5">
+              <SidebarAccountSummary account={account} />
+            </div>
+          </DropdownMenuLabel>
+        )}
         <DropdownMenuSeparator />
 
         {orgs.length > 1 && onOrgChange ? (
