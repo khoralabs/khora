@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "preinstall": "bun ../../scripts/install-litestream.ts --output .bin/litestream",
+    "preinstall": "bun ../../../../scripts/install-litestream.ts --output .bin/litestream",
     "dev": "bun --hot src/index.ts",
     "start": "NODE_ENV=production bun scripts/start-exedra.ts",
     "start:server": "NODE_ENV=production bun src/index.ts",

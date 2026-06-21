@@ -48,7 +48,7 @@ function BlogEmptyState() {
         </Button>
       </EmptyContent>
       <Button variant="shell-link" asChild size="sm">
-        <a href="/contact">
+        <a href="/contact" aria-label="Learn more about Khora">
           Learn more <ArrowUpRight />
         </a>
       </Button>

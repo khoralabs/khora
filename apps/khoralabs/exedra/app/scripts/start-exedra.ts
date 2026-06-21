@@ -11,7 +11,7 @@ import {
   isTruthyEnv,
   readLitestreamS3Env,
   resolveLitestreamBin,
-} from "../../../scripts/litestream-config";
+} from "../../../../../scripts/litestream-config";
 import { resolveExedraDataDir, resolveExedraDbPath } from "../src/server/db/index";
 import { resolveMemoriesDir } from "../src/server/memories/config";
 import { buildOtelServerEnv } from "../src/server/otel-config";
