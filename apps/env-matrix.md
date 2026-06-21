@@ -220,8 +220,28 @@ Contact flow: submission is queued when the user reaches the OTP step; Slack sen
 | `EXEDRA_DOCUMENTS_S3_BUCKET` | · | · | · | + | C | S3 bucket for session document uploads (canonical bytes). |
 | `EXEDRA_DOCUMENTS_S3_PREFIX` | · | · | · | + | C | Object key prefix (default `exedra/documents`). |
 | `EXEDRA_DOCUMENTS_S3_ENDPOINT` | · | · | · | + | C | MinIO endpoint for local dev; omit for AWS S3. |
+| `EXEDRA_INTERNAL_TOKEN` | · | · | · | + | S | Bearer token for `/internal/memories/*` (shared with integrate-memory workflow). |
+| `RENDER_API_KEY` | · | · | · | + | S | Dispatches belief integration tasks to Render Workflows. |
+| `RENDER_WORKFLOW_SLUG` | · | · | · | + | C | Workflow slug prefix (default `integrate-memory` → task `integrate-memory/integrateBelief`). |
+| `MEMORIES_INTEGRATOR_MODEL` | · | · | · | + | C | Belief workflow LLM (default `gemini-2.0-flash`; set on workflow service too). |
+| `EXEDRA_AUTOLINK_TOP_K` | · | · | · | + | C | Max `retrieval_autolink` edges per belief merge (default `10`). |
+| `EXEDRA_AUTOLINK_MIN_SCORE` | · | · | · | + | C | Optional minimum hybrid search score for autolink neighbors. |
 
----
+### Exedra integrate-memory workflow
+
+| Variable | Kind | Notes |
+| --- | --- | --- |
+| `RENDER_API_KEY` | S | Task server registration (Render Workflows). |
+| `EXEDRA_INTERNAL_URL` | C | Exedra base URL reachable from workflow service (internal hostname in prod). |
+| `EXEDRA_INTERNAL_TOKEN` | S | Same value as Exedra app — `Authorization: Bearer` on internal API calls. |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | S | LLM + query embeddings for adapter/integrator agents in workflow. |
+| `MEMORIES_INTEGRATOR_MODEL` | C | Default `gemini-2.0-flash`. |
+| `MEMORIES_SEARCH_EMBEDDING_PRESET` | C | `L` / `M` / `H` for hybrid search embeddings (default `M`). |
+| `MEMORIES_BELIEF_ADAPTER_MAX_STEPS` | C | Adapter tool-loop max steps (default `4`). |
+| `MEMORIES_BELIEF_INTEGRATOR_MAX_STEPS` | C | Integrator tool-loop max steps (default `4`). |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | C | Optional OTLP collector URL for workflow agent spans. |
+| `OTEL_SERVICE_NAME` | C | Default `exedra-integrate-memory`. |
+
 
 ## Suggested Render environment groups
 

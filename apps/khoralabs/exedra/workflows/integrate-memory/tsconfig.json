@@ -4,25 +4,12 @@
     "target": "ESNext",
     "module": "Preserve",
     "moduleDetection": "force",
-    "jsx": "react-jsx",
-    "allowJs": true,
-    "types": ["bun"],
-
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
     "noEmit": true,
-
-    "strict": true,
-    "skipLibCheck": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
-    "noImplicitOverride": true,
-
+    "rootDir": "../..",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/client/*"],
-      "@shared/*": ["./src/shared/*"],
       "@khoralabs/memories-core": ["node_modules/@khoralabs/memories-core/src/index.ts"],
       "@khoralabs/memories-core/helpers": [
         "node_modules/@khoralabs/memories-core/src/helpers/index.ts"
@@ -30,12 +17,16 @@
       "@khoralabs/memories-autolink": ["node_modules/@khoralabs/memories-autolink/src/index.ts"],
       "zod": ["node_modules/zod/index.d.ts"]
     },
-
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noPropertyAccessFromIndexSignature": false
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "types": ["bun"]
   },
-
-  "include": ["./src/**/*", "./bun-env.d.ts", "./build.ts"],
-  "exclude": ["dist", "node_modules"]
+  "include": [
+    "src/**/*",
+    "../../shared/belief-integration.ts",
+    "../../shared/belief-agent-instructions.ts",
+    "../../shared/search-hit-wire.ts",
+    "../../shared/exedra-ontology.ts"
+  ]
 }

@@ -4,7 +4,7 @@ import {
   decomposeLogicalMemoryToContent,
   mergeLogicalMemoryWithMergeSlice,
 } from "@khoralabs/memories-core/helpers";
-import { canonicalOntology } from "@khoralabs/memories-ontologies";
+import { exedraMemoriesOntology } from "../../../../shared/exedra-ontology.js";
 
 import { getTeam } from "../db/membership.js";
 import { bootstrapSessionMemoriesForTeamSession } from "../memories/bootstrap-session.js";
@@ -106,7 +106,7 @@ export async function ingestSessionDocument(params: IngestSessionDocumentParams)
       );
 
       const persistence = openOrgMemories(params.orgId);
-      const client = new MemoriesClient(persistence, canonicalOntology);
+      const client = new MemoriesClient(persistence, exedraMemoriesOntology);
       await withSpan("document.memories_merge", {}, async () =>
         mergeLogicalMemoryWithMergeSlice(
           client,

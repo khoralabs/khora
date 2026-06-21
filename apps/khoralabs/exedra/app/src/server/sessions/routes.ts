@@ -33,7 +33,8 @@ import {
 import { getOrCreateUser } from "../identity/users";
 import { logger } from "../logger";
 import { bootstrapSessionMemoriesForTeamSession } from "../memories/bootstrap-session";
-import { integrateBelief } from "../memories/integrate-belief";
+import { dispatchBeliefIntegration } from "../memories/dispatch-belief-integration";
+import { resolveBeliefTextForIntegration } from "../memories/integrate-belief";
 import { resolveOrgAgentAuthorForOrg, resolveViewerAuthor } from "../messages/resolve-author";
 import { serializeThreadMessages } from "../messages/serialize";
 import { buildSessionAccess } from "./resolve-access";
@@ -456,7 +457,7 @@ export async function handlePatchBeliefFeedback(
     correction: body.correction,
   });
 
-  void integrateBelief({
+  const beliefText = resolveBeliefTextForIntegration({
     db,
     userId: user.id,
     threadId,
@@ -465,8 +466,17 @@ export async function handlePatchBeliefFeedback(
     belief: body.belief,
     feedback,
     correction: body.correction,
+  });
+
+  void dispatchBeliefIntegration({
+    userId: user.id,
+    sessionId,
+    beliefId,
+    beliefText,
+    feedback,
+    ...(body.correction !== undefined ? { correction: body.correction } : {}),
   }).catch((err: unknown) => {
-    logger.warn({ err, beliefId }, "belief integration failed");
+    logger.warn({ err, beliefId }, "belief integration dispatch failed");
   });
 
   return Response.json({

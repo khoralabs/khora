@@ -7,7 +7,7 @@
 import { closeDb, getDb } from "../src/server/db/index";
 import { loadThreadMessages } from "../src/server/db/messages";
 import { logger } from "../src/server/logger";
-import { integrateBelief } from "../src/server/memories/integrate-belief";
+import { dispatchBeliefIntegration } from "../src/server/memories/dispatch-belief-integration";
 
 type BeliefFlagMetadata = {
   beliefFlags?: { belief: string; messageId: string }[];
@@ -22,6 +22,10 @@ type AffectedRow = {
   session_id: string;
   user_id: string | null;
 };
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function resolveBeliefTextsBySourceMessage(threadId: string, sourceMessageId: string): string[] {
   const db = getDb();
@@ -54,11 +58,15 @@ async function backfillBeliefs(): Promise<void> {
 
   logger.info({ count: affected.length }, "backfill: found affected belief_feedback rows");
 
-  let integrated = 0;
+  let dispatched = 0;
   let skipped = 0;
   let failed = 0;
 
-  for (const row of affected) {
+  for (const [index, row] of affected.entries()) {
+    if (index > 0) {
+      await sleep(1000);
+    }
+
     if (row.user_id === null) {
       logger.warn(
         { beliefId: row.belief_id, threadId: row.thread_id },
@@ -80,16 +88,15 @@ async function backfillBeliefs(): Promise<void> {
           continue;
         }
 
-        await integrateBelief({
-          db,
+        await dispatchBeliefIntegration({
           userId: row.user_id,
-          threadId: row.thread_id,
           sessionId: row.session_id,
           beliefId: row.belief_id,
+          beliefText: correction,
           feedback: "corrected",
           correction,
         });
-        integrated++;
+        dispatched++;
         continue;
       }
 
@@ -103,25 +110,23 @@ async function backfillBeliefs(): Promise<void> {
         continue;
       }
 
-      for (const belief of beliefs) {
-        await integrateBelief({
-          db,
+      for (const beliefText of beliefs) {
+        await dispatchBeliefIntegration({
           userId: row.user_id,
-          threadId: row.thread_id,
           sessionId: row.session_id,
           beliefId: row.belief_id,
-          belief,
+          beliefText,
           feedback: "confirmed",
         });
       }
-      integrated++;
+      dispatched++;
     } catch (err) {
       failed++;
-      logger.error({ err, beliefId: row.belief_id }, "backfill: integration failed");
+      logger.error({ err, beliefId: row.belief_id }, "backfill: dispatch failed");
     }
   }
 
-  logger.info({ integrated, skipped, failed }, "backfill: complete");
+  logger.info({ dispatched, skipped, failed }, "backfill: complete");
 }
 
 try {

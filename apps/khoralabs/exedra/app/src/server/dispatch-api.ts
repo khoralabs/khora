@@ -23,20 +23,24 @@ function matchPath(pattern: string, pathname: string): Record<string, string> | 
   return params;
 }
 
-/** Fallback dispatch for /api/* when Bun.serve's startup route table is stale under --hot. */
+/** Fallback dispatch for /api/* and /internal/* when Bun.serve's startup route table is stale under --hot. */
 export async function dispatchApiRoute(req: Request): Promise<Response | null> {
   const url = new URL(req.url);
-  const { apiRoutes } = await import("./routes.js");
-  const routes = apiRoutes as unknown as RouteTable;
+  const { apiRoutes, internalRoutes } = await import("./routes.js");
+  const routeTables = url.pathname.startsWith("/internal/")
+    ? [internalRoutes as unknown as RouteTable]
+    : [apiRoutes as unknown as RouteTable];
 
-  for (const [pattern, methods] of Object.entries(routes)) {
-    const params = matchPath(pattern, url.pathname);
-    if (params === null) continue;
+  for (const routes of routeTables) {
+    for (const [pattern, methods] of Object.entries(routes)) {
+      const params = matchPath(pattern, url.pathname);
+      if (params === null) continue;
 
-    const handler = methods[req.method];
-    if (handler === undefined) continue;
+      const handler = methods[req.method];
+      if (handler === undefined) continue;
 
-    return handler(Object.assign(req, { params }));
+      return handler(Object.assign(req, { params }));
+    }
   }
 
   return null;

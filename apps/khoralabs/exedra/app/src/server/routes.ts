@@ -12,6 +12,12 @@ import {
   handleListSessionDocuments,
   handleUploadSessionDocument,
 } from "./documents/routes";
+import {
+  handleInternalMemoriesAgentSearch,
+  handleInternalMemoriesMerge,
+  handleInternalMemoriesProvenanceHead,
+  handleInternalMemoriesSearch,
+} from "./http/internal-memories";
 import { handleAcceptInvite, handleGetInvite, handleMintInvite } from "./invites/routes";
 import {
   handleMeMemoriesEdgePreview,
@@ -303,5 +309,23 @@ export const apiRoutes = {
   "/api/avatars/:kind/:id": {
     GET: (req: Request & { params: { kind: string; id: string } }) =>
       handleServeAvatar(req, req.params.kind, req.params.id),
+  },
+} as const;
+
+export const internalRoutes = {
+  "/internal/memories/search": {
+    POST: handleInternalMemoriesSearch,
+  },
+
+  "/internal/memories/agent-search": {
+    POST: handleInternalMemoriesAgentSearch,
+  },
+
+  "/internal/memories/provenance-head": {
+    GET: handleInternalMemoriesProvenanceHead,
+  },
+
+  "/internal/memories/merge": {
+    POST: handleInternalMemoriesMerge,
   },
 } as const;

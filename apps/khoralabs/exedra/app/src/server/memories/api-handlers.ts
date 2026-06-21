@@ -14,7 +14,6 @@ import {
 } from "@khoralabs/memories-core/helpers";
 import type { MemoriesPersistence } from "@khoralabs/memories-core/persistence";
 import { MemoryInvestigatorClient } from "@khoralabs/memories-investigator";
-import { canonicalOntology } from "@khoralabs/memories-ontologies";
 import { getMemoriesSqliteDatabase, listMemoryNamespaces } from "@khoralabs/memories-sqlite";
 import {
   buildNamespaceGraphLayout,
@@ -24,6 +23,7 @@ import {
   qualifyMemoryKey,
 } from "@khoralabs/sqlite-graph-projections";
 import { embedMany } from "ai";
+import { exedraMemoriesOntology } from "../../../../shared/exedra-ontology.js";
 import { createExedraMemoriesAgentTelemetry } from "../telemetry/agent-telemetry.js";
 import { withSpan } from "../telemetry/spans.js";
 
@@ -355,7 +355,7 @@ export async function handleMemoriesInvestigate(
       const modelId = process.env.MEMORIES_INVESTIGATOR_MODEL?.trim() || "gemini-flash-latest";
       const model = google.languageModel(modelId);
 
-      const client = new MemoriesClient(access.persistence, canonicalOntology);
+      const client = new MemoriesClient(access.persistence, exedraMemoriesOntology);
       const investigator = new MemoryInvestigatorClient({
         registry: getInvestigatorRegistry(),
         namespace,

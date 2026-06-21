@@ -12,7 +12,7 @@ import { getDb } from "./server/db/index";
 import { logger } from "./server/logger";
 import { tracer } from "./server/otel";
 import { getStubRegistryOtp, isExedraStubRegistryEnabled } from "./server/registry-stub/config";
-import { apiRoutes } from "./server/routes";
+import { apiRoutes, internalRoutes } from "./server/routes";
 import { serveAssets } from "./server/serve-assets";
 import { interviewWsHandlers, verifyInterviewWsUpgrade } from "./server/ws/interview";
 
@@ -27,6 +27,7 @@ if (isExedraStubRegistryEnabled()) {
 const server = serve({
   routes: {
     ...apiRoutes,
+    ...internalRoutes,
     "/assets/*": { GET: serveAssets },
     "/sessions/:id/interview": {
       // @ts-expect-error Bun HTMLBundle handler
@@ -98,7 +99,7 @@ const server = serve({
       return new Response("WebSocket upgrade failed", { status: 500 });
     }
 
-    if (url.pathname.startsWith("/api/")) {
+    if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/internal/")) {
       const span = tracer.startSpan(`HTTP ${req.method}`, {
         attributes: {
           "http.method": req.method,
