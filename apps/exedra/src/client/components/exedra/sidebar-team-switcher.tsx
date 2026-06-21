@@ -115,15 +115,17 @@ export function SidebarTeamSwitcher({
           </DropdownMenuLabel>
           {teams.map((team) => (
             <DropdownMenuItem key={team.id} className="p-0" onClick={() => onTeamChange(team)}>
-              <TeamItem team={team} size="sm" className="w-full border-none">
-                <TeamItemMedia />
-                <TeamItemContent>
-                  <TeamItemTitle />
-                </TeamItemContent>
-              </TeamItem>
-              {team.id === activeTeam.id ? (
-                <Check className="ml-auto mr-2 size-4 shrink-0 text-primary" />
-              ) : null}
+              <div className="flex w-full min-w-0 items-center gap-2 px-1 py-1.5">
+                <TeamItem team={team} size="sm" className="min-w-0 flex-1 border-none p-0">
+                  <TeamItemMedia />
+                  <TeamItemContent>
+                    <TeamItemTitle />
+                  </TeamItemContent>
+                </TeamItem>
+                {team.id === activeTeam.id ? (
+                  <Check className="size-4 shrink-0 text-primary" />
+                ) : null}
+              </div>
             </DropdownMenuItem>
           ))}
           <DropdownMenuSeparator />
