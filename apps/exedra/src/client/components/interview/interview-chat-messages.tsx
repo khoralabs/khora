@@ -52,7 +52,9 @@ export function InterviewChatMessages({
                       sessionId={sessionId}
                     />
                   ) : null}
-                  {message.content.length > 0 ? message.content : null}
+                  {message.content.length > 0 ? (
+                    <MessageResponse>{message.content}</MessageResponse>
+                  ) : null}
                 </>
               ) : null}
             </MessageContent>
