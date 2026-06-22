@@ -89,13 +89,13 @@ async function executeTurnBody(
   } = args;
 
   const thread = getThread(db, threadId);
-  if (thread?.user_id === null || thread?.user_id === undefined) {
+  if (thread?.userId === null || thread?.userId === undefined) {
     setStatus("error");
     emit({ type: "error", error: "Thread user not found" });
     return;
   }
 
-  const userId = thread.user_id;
+  const userId = thread.userId;
 
   let documentsMetadata: ReturnType<typeof resolveUserMessageDocuments> | undefined;
   let documentAttachments: Awaited<ReturnType<typeof loadTurnDocumentAttachments>> = [];
@@ -335,7 +335,10 @@ async function executeTurnBody(
       participantUserId: userId,
       memoryContext,
       memorySearch,
-      sessionInterviewComplete: session.interviewCompletedAtMs !== null,
+      threadInterviewComplete: (() => {
+        const t = getThread(db, threadId);
+        return t?.interviewCompletedAtMs !== null && t?.interviewCompletedAtMs !== undefined;
+      })(),
       threadId,
       userMessageId: turnId,
       history,

@@ -41,7 +41,7 @@ import {
 } from "@/lib/settings-api";
 
 type Candidate =
-  | { kind: "account"; member: TeamMemberSummary }
+  | { kind: "account"; member: TeamMemberSummary; role: "participant" | "facilitation" }
   | { kind: "team"; team: OrgTeamSummary };
 
 type ShareSessionDialogProps = {
@@ -66,6 +66,7 @@ export function ShareSessionDialog({
   const [adding, setAdding] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [addRole, setAddRole] = useState<"participant" | "facilitation">("participant");
   const [listRefreshKey, setListRefreshKey] = useState(0);
 
   // Candidate pools
@@ -102,7 +103,7 @@ export function ShareSessionDialog({
     return [
       ...teamMembers
         .filter((m) => !existingAccountIds.has(m.account.userId))
-        .map<Candidate>((m) => ({ kind: "account", member: m })),
+        .map<Candidate>((m) => ({ kind: "account", member: m, role: "participant" })),
       ...orgTeams
         .filter((t) => !existingTeamIds.has(t.team.id))
         .map<Candidate>((t) => ({ kind: "team", team: t })),
@@ -141,7 +142,10 @@ export function ShareSessionDialog({
     try {
       if (candidate.kind === "account") {
         await manageSessionScopes(sessionId, {
-          add: { accountIds: [candidate.member.account.userId] },
+          add:
+            addRole === "facilitation"
+              ? { facilitationAccountIds: [candidate.member.account.userId] }
+              : { accountIds: [candidate.member.account.userId] },
         });
       } else {
         await manageSessionScopes(sessionId, { add: { teamIds: [candidate.team.team.id] } });
@@ -232,75 +236,91 @@ export function ShareSessionDialog({
                 </div>
 
                 {/* Add people / teams combobox */}
-                <div className="flex items-center gap-2">
-                  <Popover open={addOpen} onOpenChange={setAddOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="w-full justify-start text-muted-foreground"
-                        disabled={adding || candidates.length === 0}
-                      >
-                        <Plus className="size-4" />
-                        {candidates.length === 0
-                          ? "Everyone is already added"
-                          : "Add people or teams…"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-72 p-0" align="start">
-                      <Command>
-                        <CommandInput placeholder="Search…" />
-                        <CommandList>
-                          <CommandEmpty>No matches found.</CommandEmpty>
-                          {candidates.some((c) => c.kind === "account") ? (
-                            <CommandGroup heading="People">
-                              {candidates
-                                .filter(
-                                  (c): c is Extract<Candidate, { kind: "account" }> =>
-                                    c.kind === "account",
-                                )
-                                .map((c) => (
-                                  <CommandItem
-                                    key={c.member.account.userId}
-                                    value={formatAccountDisplayName(c.member.account)}
-                                    onSelect={() => void handleAdd(c)}
-                                  >
-                                    <span className="truncate">
-                                      {formatAccountDisplayName(c.member.account)}
-                                    </span>
-                                    {c.member.account.jobFunction ? (
-                                      <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-                                        {c.member.account.jobFunction}
+                <div className="space-y-2">
+                  <Select
+                    value={addRole}
+                    onValueChange={(value) =>
+                      setAddRole(value === "facilitation" ? "facilitation" : "participant")
+                    }
+                  >
+                    <SelectTrigger size="sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="participant">Add as participant</SelectItem>
+                      <SelectItem value="facilitation">Add facilitation access</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <div className="flex items-center gap-2">
+                    <Popover open={addOpen} onOpenChange={setAddOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="w-full justify-start text-muted-foreground"
+                          disabled={adding || candidates.length === 0}
+                        >
+                          <Plus className="size-4" />
+                          {candidates.length === 0
+                            ? "Everyone is already added"
+                            : "Add people or teams…"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-72 p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Search…" />
+                          <CommandList>
+                            <CommandEmpty>No matches found.</CommandEmpty>
+                            {candidates.some((c) => c.kind === "account") ? (
+                              <CommandGroup heading="People">
+                                {candidates
+                                  .filter(
+                                    (c): c is Extract<Candidate, { kind: "account" }> =>
+                                      c.kind === "account",
+                                  )
+                                  .map((c) => (
+                                    <CommandItem
+                                      key={c.member.account.userId}
+                                      value={formatAccountDisplayName(c.member.account)}
+                                      onSelect={() => void handleAdd(c)}
+                                    >
+                                      <span className="truncate">
+                                        {formatAccountDisplayName(c.member.account)}
                                       </span>
-                                    ) : null}
-                                  </CommandItem>
-                                ))}
-                            </CommandGroup>
-                          ) : null}
-                          {candidates.some((c) => c.kind === "team") ? (
-                            <CommandGroup heading="Teams">
-                              {candidates
-                                .filter(
-                                  (c): c is Extract<Candidate, { kind: "team" }> =>
-                                    c.kind === "team",
-                                )
-                                .map((c) => (
-                                  <CommandItem
-                                    key={c.team.team.id}
-                                    value={c.team.team.name}
-                                    onSelect={() => void handleAdd(c)}
-                                  >
-                                    <span className="truncate">{c.team.team.name}</span>
-                                  </CommandItem>
-                                ))}
-                            </CommandGroup>
-                          ) : null}
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                  {adding ? <Spinner className="size-4 shrink-0" /> : null}
+                                      {c.member.account.jobFunction ? (
+                                        <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                                          {c.member.account.jobFunction}
+                                        </span>
+                                      ) : null}
+                                    </CommandItem>
+                                  ))}
+                              </CommandGroup>
+                            ) : null}
+                            {candidates.some((c) => c.kind === "team") ? (
+                              <CommandGroup heading="Teams">
+                                {candidates
+                                  .filter(
+                                    (c): c is Extract<Candidate, { kind: "team" }> =>
+                                      c.kind === "team",
+                                  )
+                                  .map((c) => (
+                                    <CommandItem
+                                      key={c.team.team.id}
+                                      value={c.team.team.name}
+                                      onSelect={() => void handleAdd(c)}
+                                    >
+                                      <span className="truncate">{c.team.team.name}</span>
+                                    </CommandItem>
+                                  ))}
+                              </CommandGroup>
+                            ) : null}
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    {adding ? <Spinner className="size-4 shrink-0" /> : null}
+                  </div>
                 </div>
               </>
             ) : null}

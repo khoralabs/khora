@@ -82,11 +82,18 @@ export function SessionAccessList({
     load();
   });
 
-  async function handleRemoveAccount(userId: string) {
+  async function handleRemoveAccount(
+    userId: string,
+    role: "facilitator" | "facilitation" | "participant",
+  ) {
     setRemovingId(userId);
     setError(null);
     try {
-      await manageSessionScopes(sessionId, { remove: { accountIds: [userId] } });
+      if (role === "facilitation") {
+        await manageSessionScopes(sessionId, { remove: { facilitationAccountIds: [userId] } });
+      } else {
+        await manageSessionScopes(sessionId, { remove: { accountIds: [userId] } });
+      }
       const updated = await fetchSessionAccess(sessionId);
       setEntries(updated.entries);
       onRemoved?.();
@@ -231,7 +238,11 @@ export function SessionAccessList({
                 <AccountItemContent>
                   <AccountItemTitle />
                   <AccountItemDescription>
-                    {entry.context.role === "facilitator" ? "Facilitator" : "Participant"}
+                    {entry.context.role === "facilitator"
+                      ? "Facilitator"
+                      : entry.context.role === "facilitation"
+                        ? "Facilitation"
+                        : "Participant"}
                   </AccountItemDescription>
                 </AccountItemContent>
                 {canManage && entry.context.role !== "facilitator" && !entry.isCurrentUser ? (
@@ -243,7 +254,7 @@ export function SessionAccessList({
                       disabled={removingId === entry.account.userId}
                       onClick={(event) => {
                         event.stopPropagation();
-                        void handleRemoveAccount(entry.account.userId);
+                        void handleRemoveAccount(entry.account.userId, entry.context.role);
                       }}
                     >
                       {removingId === entry.account.userId ? "Removing…" : "Remove"}

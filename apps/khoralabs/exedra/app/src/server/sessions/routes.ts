@@ -6,10 +6,16 @@ import {
 import { requireRegistrySessionResponse } from "../auth/require-session";
 import {
   canManageSession,
+  canWriteFacilitationThread,
+  Feature,
   grantSessionCreatorAccess,
+  grantSessionFacilitation,
   grantSessionParticipant,
   grantTeamSessionParticipant,
+  hasDirectSessionGrant,
+  hasFacilitationAccess,
   isSessionFacilitator,
+  revokeSessionFacilitation,
   revokeSessionParticipant,
   revokeTeamSessionParticipant,
 } from "../authz";
@@ -34,12 +40,15 @@ import { formatDaysToDeadline, sessionPhaseFromStatus } from "../db/session-deta
 import {
   createSession,
   getInterviewThreadId,
+  getOrCreateFacilitationThread,
   getOrCreateInterviewThread,
   getSession,
+  getThread,
   listSessionsForUser,
   patchSession,
   sessionRoleForUser,
   setSessionLinkAccess,
+  syncFacilitationThreadGrants,
   userHasSessionAccess,
 } from "../db/sessions";
 import { resolveSessionOrgId } from "../documents/accept";
@@ -69,8 +78,8 @@ type PatchSessionBody = {
 };
 
 type ManageSessionScopesBody = {
-  add?: { accountIds?: string[]; teamIds?: string[] };
-  remove?: { accountIds?: string[]; teamIds?: string[] };
+  add?: { accountIds?: string[]; teamIds?: string[]; facilitationAccountIds?: string[] };
+  remove?: { accountIds?: string[]; teamIds?: string[]; facilitationAccountIds?: string[] };
 };
 
 function uniqueIds(ids: string[] | undefined): string[] {
@@ -224,7 +233,11 @@ export async function handleGetSessionById(req: Request, sessionId: string): Pro
   }
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (!userHasSessionAccess(db, sessionId, user.id) && !canReadSessionKg(db, user.id, sessionId)) {
+  if (
+    !userHasSessionAccess(db, sessionId, user.id) &&
+    !canReadSessionKg(db, user.id, sessionId) &&
+    !hasFacilitationAccess(db, user.id, sessionId)
+  ) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -247,6 +260,8 @@ export async function handleGetSessionById(req: Request, sessionId: string): Pro
     },
     participants,
     canManage: canManageSession(db, user.id, sessionId),
+    canFacilitate: hasFacilitationAccess(db, user.id, sessionId),
+    canParticipate: hasDirectSessionGrant(db, user.id, sessionId, Feature.Participant),
     invites,
   });
 }
@@ -326,6 +341,9 @@ export async function handleManageSessionScopes(
   const removeAccountIds = uniqueIds(body.remove?.accountIds);
   const removeTeamIds = uniqueIds(body.remove?.teamIds);
 
+  const addFacilitationAccountIds = uniqueIds(body.add?.facilitationAccountIds);
+  const removeFacilitationAccountIds = uniqueIds(body.remove?.facilitationAccountIds);
+
   for (const accountId of addAccountIds) {
     if (!enforce(db, accountId, "team:member", { type: ResourceType.Team, id: session.teamId })) {
       return Response.json({ error: "Account must belong to the session team" }, { status: 400 });
@@ -352,6 +370,27 @@ export async function handleManageSessionScopes(
     revokeTeamSessionParticipant(db, sharedTeamId, sessionId);
   }
 
+  for (const accountId of addFacilitationAccountIds) {
+    if (isSessionFacilitator(db, accountId, sessionId)) continue;
+    if (!enforce(db, accountId, "team:member", { type: ResourceType.Team, id: session.teamId })) {
+      return Response.json({ error: "Account must belong to the session team" }, { status: 400 });
+    }
+    grantSessionFacilitation(db, accountId, sessionId);
+    getOrCreateFacilitationThread(db, sessionId);
+    syncFacilitationThreadGrants(db, sessionId);
+  }
+
+  for (const accountId of removeFacilitationAccountIds) {
+    if (isSessionFacilitator(db, accountId, sessionId)) {
+      return Response.json(
+        { error: "Cannot remove facilitation from session admin" },
+        { status: 400 },
+      );
+    }
+    revokeSessionFacilitation(db, accountId, sessionId);
+    syncFacilitationThreadGrants(db, sessionId);
+  }
+
   const participants = listAccountRowsForSession(db, sessionId, user.id);
 
   return Response.json({ participants });
@@ -365,6 +404,7 @@ function buildInterviewPayload(
 ) {
   const rawMessages = loadThreadMessages(db, threadId);
   const beliefFeedback = loadBeliefFeedback(db, threadId);
+  const thread = getThread(db, threadId);
   const team = getTeam(db, session.teamId);
   const org = team === null ? null : getOrg(db, team.orgId);
   if (team === null || org === null) {
@@ -373,6 +413,13 @@ function buildInterviewPayload(
   const messages = serializeThreadMessages(db, rawMessages, { org });
   const viewer = resolveViewerAuthor(db, participantUserId);
   const agent = resolveOrgAgentAuthorForOrg(org);
+
+  const completionSource =
+    thread?.interviewCompletedAtMs != null
+      ? thread
+      : session.interviewCompletedAtMs !== null
+        ? session
+        : null;
 
   return {
     session: {
@@ -389,12 +436,12 @@ function buildInterviewPayload(
     ...(session.kind === "onboarding"
       ? { onboarding: { orgName: org.name, teamName: team.name } }
       : {}),
-    ...(session.interviewCompletedAtMs !== null
+    ...(completionSource?.interviewCompletedAtMs != null
       ? {
           completion: {
-            completedAtMs: session.interviewCompletedAtMs,
-            summary: session.interviewSummary ?? "",
-            nextSessionOptions: session.nextSessionOptions ?? [],
+            completedAtMs: completionSource.interviewCompletedAtMs,
+            summary: completionSource.interviewSummary ?? "",
+            nextSessionOptions: completionSource.nextSessionOptions ?? [],
           },
         }
       : {}),
@@ -412,8 +459,40 @@ export async function handleGetInterview(req: Request, sessionId: string): Promi
   }
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (!userHasSessionAccess(db, sessionId, user.id)) {
+  const canParticipate = hasDirectSessionGrant(db, user.id, sessionId, Feature.Participant);
+  if (
+    !userHasSessionAccess(db, sessionId, user.id) &&
+    !hasFacilitationAccess(db, user.id, sessionId)
+  ) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (!canParticipate && !hasFacilitationAccess(db, user.id, sessionId)) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (!canParticipate) {
+    const team = getTeam(db, session.teamId);
+    const org = team === null ? null : getOrg(db, team.orgId);
+    if (team === null || org === null) {
+      return Response.json({ error: "Organization not found for session" }, { status: 500 });
+    }
+    return Response.json({
+      session: {
+        id: session.id,
+        topic: session.topic,
+        status: session.status,
+        kind: session.kind,
+      },
+      threadId: null,
+      messages: [],
+      agent: resolveOrgAgentAuthorForOrg(org),
+      viewer: resolveViewerAuthor(db, user.id),
+      beliefFeedback: [],
+      canFacilitate: hasFacilitationAccess(db, user.id, sessionId),
+      canParticipate: false,
+      canWriteInterview: false,
+    });
   }
 
   try {
@@ -437,6 +516,9 @@ export async function handleGetInterview(req: Request, sessionId: string): Promi
     return Response.json({
       ...buildInterviewPayload(db, session, threadId, user.id),
       wsUrl: `/ws/interview/${threadId}`,
+      canFacilitate: hasFacilitationAccess(db, user.id, sessionId),
+      canParticipate: hasDirectSessionGrant(db, user.id, sessionId, Feature.Participant),
+      canWriteInterview: hasDirectSessionGrant(db, user.id, sessionId, Feature.Participant),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to load interview";
@@ -629,7 +711,10 @@ export async function handleGetSessionAccess(req: Request, sessionId: string): P
   }
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (!userHasSessionAccess(db, sessionId, user.id)) {
+  if (
+    !userHasSessionAccess(db, sessionId, user.id) &&
+    !hasFacilitationAccess(db, user.id, sessionId)
+  ) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -677,6 +762,72 @@ export async function handlePatchSessionAccess(req: Request, sessionId: string):
 
   const access = buildSessionAccess(db, sessionId, user.id, true);
   return Response.json(access);
+}
+
+export async function handleInterviewOptIn(req: Request, sessionId: string): Promise<Response> {
+  const auth = await requireRegistrySessionResponse(req);
+  if (auth.response !== null) return auth.response;
+
+  const db = getDb();
+  const session = getSession(db, sessionId);
+  if (session === null) {
+    return Response.json({ error: "Session not found" }, { status: 404 });
+  }
+
+  const user = await getOrCreateUser(db, auth.session.user.id);
+  if (!canManageSession(db, user.id, sessionId) && !hasFacilitationAccess(db, user.id, sessionId)) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  grantSessionParticipant(db, user.id, sessionId);
+  const threadId = getOrCreateInterviewThread(db, { sessionId, userId: user.id });
+
+  return Response.json({ ok: true, threadId });
+}
+
+export async function handleGetFacilitation(req: Request, sessionId: string): Promise<Response> {
+  const auth = await requireRegistrySessionResponse(req);
+  if (auth.response !== null) return auth.response;
+
+  const db = getDb();
+  const session = getSession(db, sessionId);
+  if (session === null) {
+    return Response.json({ error: "Session not found" }, { status: 404 });
+  }
+
+  const user = await getOrCreateUser(db, auth.session.user.id);
+  if (!hasFacilitationAccess(db, user.id, sessionId)) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const threadId = getOrCreateFacilitationThread(db, sessionId);
+  const team = getTeam(db, session.teamId);
+  const org = team === null ? null : getOrg(db, team.orgId);
+  if (team === null || org === null) {
+    return Response.json({ error: "Organization not found for session" }, { status: 500 });
+  }
+
+  const rawMessages = loadThreadMessages(db, threadId);
+  const messages = serializeThreadMessages(db, rawMessages, { org });
+  const viewer = resolveViewerAuthor(db, user.id);
+  const agent = resolveOrgAgentAuthorForOrg(org);
+
+  return Response.json({
+    session: {
+      id: session.id,
+      topic: session.topic,
+      status: session.status,
+      kind: session.kind,
+    },
+    threadId,
+    messages,
+    agent,
+    viewer,
+    canWrite: canWriteFacilitationThread(db, user.id, threadId),
+    canFacilitate: true,
+    canParticipate: hasDirectSessionGrant(db, user.id, sessionId, Feature.Participant),
+    wsUrl: `/ws/interview/${threadId}`,
+  });
 }
 
 export async function handleListTeamMembers(req: Request, teamId: string): Promise<Response> {

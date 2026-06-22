@@ -1,0 +1,19 @@
+{
+  "name": "@khoralabs/exedra-workflows-facilitation-agent",
+  "version": "1.0.0",
+  "description": "Facilitation agent - Render Workflows",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "bun src/main.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/google": "^3.0.0",
+    "@khoralabs/exedra-facilitation-agent": "workspace:*",
+    "@renderinc/sdk": "^0.6.0",
+    "nanoid": "^5.1.5"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

@@ -59,7 +59,7 @@ export async function runInterviewTurnWorkflow(params: InterviewTurnWorkflowPara
       participantUserId: params.userId,
       memoryContext,
       memorySearch,
-      sessionInterviewComplete: context.sessionInterviewComplete,
+      threadInterviewComplete: context.threadInterviewComplete,
       threadId: params.threadId,
       userMessageId: params.turnId,
       history: context.history,

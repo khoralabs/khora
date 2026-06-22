@@ -12,7 +12,7 @@ export type AccountProfile = {
 export type SessionParticipantContext = {
   kind: "session_participant";
   sessionId: string;
-  role: "facilitator" | "participant";
+  role: "facilitator" | "facilitation" | "participant";
   interviewStatus: InterviewStatus;
 };
 

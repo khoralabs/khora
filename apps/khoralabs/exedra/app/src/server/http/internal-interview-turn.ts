@@ -38,7 +38,7 @@ function getTurnSessionContext(turnId: string): {
   const thread = getThread(db, threadId);
   if (thread === null) return null;
 
-  const session = getSession(db, thread.session_id);
+  const session = getSession(db, thread.sessionId);
   if (session === null) return null;
 
   return { threadId, session, thread };
@@ -66,11 +66,11 @@ export async function handleInternalGetInterviewTurnContext(
   };
 
   const thread = getThread(db, payload.threadId);
-  if (thread?.user_id === null || thread?.user_id === undefined) {
+  if (thread?.userId === null || thread?.userId === undefined) {
     return Response.json({ error: "Thread user not found" }, { status: 404 });
   }
 
-  const session = getSession(db, thread.session_id);
+  const session = getSession(db, thread.sessionId);
   if (session === null) return Response.json({ error: "Session not found" }, { status: 404 });
 
   const team = getTeam(db, session.teamId);
@@ -89,7 +89,8 @@ export async function handleInternalGetInterviewTurnContext(
     sessionKind: session.kind,
     sessionTopic: session.topic,
     sessionInterviewComplete: session.interviewCompletedAtMs !== null,
-    userId: thread.user_id,
+    threadInterviewComplete: thread.interviewCompletedAtMs !== null,
+    userId: thread.userId,
     orgId: org.id,
     teamId: session.teamId,
     ...(payload.userTimeZone !== undefined ? { userTimeZone: payload.userTimeZone } : {}),
@@ -102,7 +103,7 @@ export async function handleInternalGetInterviewTurnContext(
       orgId: org.id,
       teamId: session.teamId,
       sessionId: session.id,
-      participantUserId: thread.user_id,
+      participantUserId: thread.userId,
     }),
     documentIds: payload.documentIds ?? [],
   };
@@ -244,7 +245,7 @@ export async function handleInternalFailInterviewTurn(
   const db = getDb();
   const job = getJob(db, turnId);
   const payload = job?.payload as { documentIds?: string[] } | null;
-  if (ctx.thread.user_id === null || ctx.thread.user_id === undefined) {
+  if (ctx.thread.userId === null || ctx.thread.userId === undefined) {
     return Response.json({ error: "Thread user not found" }, { status: 404 });
   }
 
@@ -254,7 +255,7 @@ export async function handleInternalFailInterviewTurn(
     threadId: ctx.threadId,
     sessionId: ctx.session.id,
     teamId: ctx.session.teamId,
-    userId: ctx.thread.user_id,
+    userId: ctx.thread.userId,
     documentIds: payload?.documentIds ?? [],
     error: body.error,
   });

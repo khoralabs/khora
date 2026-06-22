@@ -1,15 +1,17 @@
 import { verifyRegistrySession } from "@khoralabs/registry-auth";
+import { nanoid } from "nanoid";
 
-import { isValidIanaTimeZone } from "../../agents/turn-context/user-local-datetime";
-import { canReadThread } from "../authz";
+import { canReadThread, canWriteFacilitationThread, hasFacilitationAccess } from "../authz";
 import { getDb } from "../db/index";
 import { getSession, getThread, userHasSessionAccess } from "../db/sessions";
+import { appendFacilitationUserMessage } from "../facilitation/messages";
 import { findUserByRegistryId } from "../identity/users";
 import { isInterviewTurnWorkflowConfigured } from "../interview/dispatch-interview-turn";
 import { getDefaultTurnEngine } from "../interview/turn-engine";
 import type { TurnEvent } from "../interview/turn-engine/events";
 import { registerTurnRelay, relayTurnEvent } from "../interview/turn-relay";
 import { logger } from "../logger";
+import { resolveViewerAuthor } from "../messages/resolve-author";
 import { getRegistryUrl } from "../registry-url";
 import { withSpan } from "../telemetry/spans";
 
@@ -42,7 +44,7 @@ const relayCleanupByWs = new WeakMap<InterviewWs, () => void>();
 function applyClientTimeZone(data: InterviewWsData, timeZone: unknown): void {
   if (typeof timeZone !== "string") return;
   const trimmed = timeZone.trim();
-  if (trimmed.length === 0 || !isValidIanaTimeZone(trimmed)) return;
+  if (trimmed.length === 0) return;
   data.timeZone = trimmed;
 }
 
@@ -82,7 +84,8 @@ export async function verifyInterviewWsUpgrade(
       logger.warn({ threadId, reason: "thread_not_found" }, "interview ws upgrade denied");
       return { ok: false as const, status: 404, error: "Thread not found" };
     }
-    if (thread.kind !== "interview" || !canReadThread(db, user.id, threadId)) {
+
+    if (!canReadThread(db, user.id, threadId)) {
       span.setAttribute("ws.upgrade.denied", "forbidden");
       logger.warn(
         { threadId, userId: user.id, reason: "forbidden" },
@@ -91,13 +94,22 @@ export async function verifyInterviewWsUpgrade(
       return { ok: false as const, status: 403, error: "Forbidden" };
     }
 
-    const sessionRecord = getSession(db, thread.session_id);
+    const sessionRecord = getSession(db, thread.sessionId);
     if (sessionRecord === null) {
       span.setAttribute("ws.upgrade.denied", "session_not_found");
       logger.warn({ threadId, reason: "session_not_found" }, "interview ws upgrade denied");
       return { ok: false as const, status: 404, error: "Session not found" };
     }
-    if (!userHasSessionAccess(db, thread.session_id, user.id)) {
+
+    if (thread.kind === "facilitation") {
+      if (!hasFacilitationAccess(db, user.id, thread.sessionId)) {
+        span.setAttribute("ws.upgrade.denied", "session_forbidden");
+        return { ok: false as const, status: 403, error: "Forbidden" };
+      }
+    } else if (
+      thread.kind !== "interview" ||
+      !userHasSessionAccess(db, thread.sessionId, user.id)
+    ) {
       span.setAttribute("ws.upgrade.denied", "session_forbidden");
       logger.warn(
         { threadId, userId: user.id, reason: "session_forbidden" },
@@ -112,12 +124,51 @@ export async function verifyInterviewWsUpgrade(
   });
 }
 
+async function handleFacilitationUserMessage(
+  ws: InterviewWs,
+  parsed: Extract<ClientMessage, { type: "user_message" }>,
+): Promise<void> {
+  const db = getDb();
+  const { threadId, userId } = ws.data;
+  if (!canWriteFacilitationThread(db, userId, threadId)) {
+    emit(ws, { type: "error", error: "Forbidden" });
+    return;
+  }
+
+  const text = parsed.text.trim();
+  if (text.length === 0) {
+    emit(ws, { type: "error", error: "Message cannot be empty" });
+    return;
+  }
+
+  const viewer = resolveViewerAuthor(db, userId);
+  const messageId = parsed.turnId.trim().length > 0 ? parsed.turnId : nanoid();
+  const createdAtMs = appendFacilitationUserMessage(db, {
+    facilitationThreadId: threadId,
+    messageId,
+    authorDid: viewer.did,
+    text,
+  });
+
+  relayTurnEvent(threadId, {
+    type: "user_message_saved",
+    message: {
+      id: messageId,
+      role: "user",
+      parts: [{ type: "text", text }],
+    },
+    createdAtMs,
+    author: viewer,
+  });
+}
+
 export async function handleInterviewWsMessage(
   ws: InterviewWs,
   raw: string | Buffer,
 ): Promise<void> {
   const { data } = ws;
-  const engine = getDefaultTurnEngine();
+  const db = getDb();
+  const thread = getThread(db, data.threadId);
   let parsed: ClientMessage;
   try {
     parsed = JSON.parse(typeof raw === "string" ? raw : raw.toString()) as ClientMessage;
@@ -128,12 +179,29 @@ export async function handleInterviewWsMessage(
 
   logger.debug({ threadId: data.threadId, messageType: parsed.type }, "interview ws message");
 
-  const threadEmit = createThreadEmitter(data.threadId);
-
   if (parsed.type === "ping") {
     emit(ws, { type: "pong" });
     return;
   }
+
+  if (thread?.kind === "facilitation") {
+    if (parsed.type === "ping") {
+      emit(ws, { type: "pong" });
+      return;
+    }
+    if (parsed.type === "client_context") {
+      return;
+    }
+    if (parsed.type === "user_message") {
+      await handleFacilitationUserMessage(ws, parsed);
+      return;
+    }
+    emit(ws, { type: "error", error: "Unsupported message type for facilitation thread" });
+    return;
+  }
+
+  const engine = getDefaultTurnEngine();
+  const threadEmit = createThreadEmitter(data.threadId);
 
   if (parsed.type === "client_context") {
     applyClientTimeZone(data, parsed.timeZone);
@@ -188,6 +256,9 @@ export const interviewWsHandlers = {
       "interview ws disconnected",
     );
     relayCleanupByWs.get(ws)?.();
+    const db = getDb();
+    const thread = getThread(db, ws.data.threadId);
+    if (thread?.kind === "facilitation") return;
     if (!isInterviewTurnWorkflowConfigured()) {
       getDefaultTurnEngine().releaseThread(ws.data.threadId);
     }

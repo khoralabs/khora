@@ -35,6 +35,7 @@ export const Feature = {
   Member: "member",
   Admin: "admin",
   Participant: "participant",
+  Facilitation: "facilitation",
   Read: "read",
   Write: "write",
   Contributor: "contributor",
@@ -287,15 +288,11 @@ export function canManageTeamPermissions(
   return canManageOrgPermissions(db, accountId, orgId);
 }
 
-export function canViewSession(db: Database, accountId: string, sessionId: string): boolean {
-  return hasSessionAccess(db, accountId, sessionId);
-}
-
 function sessionResource(sessionId: string) {
   return { type: ResourceType.Session, id: sessionId };
 }
 
-function threadResource(threadId: string) {
+export function threadResource(threadId: string) {
   return { type: ResourceType.Thread, id: threadId };
 }
 
@@ -399,9 +396,42 @@ export function canManageSession(db: Database, accountId: string, sessionId: str
   return hasInheritedTeamSessionGrant(db, accountId, sessionId, Feature.Admin);
 }
 
+export function hasFacilitationAccess(db: Database, accountId: string, sessionId: string): boolean {
+  if (hasAccountSessionGrant(db, accountId, sessionId, Feature.Admin)) return true;
+  if (hasAccountSessionGrant(db, accountId, sessionId, Feature.Facilitation)) return true;
+  if (hasInheritedTeamSessionGrant(db, accountId, sessionId, Feature.Admin)) return true;
+  return hasInheritedTeamSessionGrant(db, accountId, sessionId, Feature.Facilitation);
+}
+
+export function canViewSession(db: Database, accountId: string, sessionId: string): boolean {
+  return (
+    hasSessionAccess(db, accountId, sessionId) || hasFacilitationAccess(db, accountId, sessionId)
+  );
+}
+
+export function canWriteFacilitationThread(
+  db: Database,
+  accountId: string,
+  threadId: string,
+): boolean {
+  const row = db
+    .query<{ session_id: string; kind: string }, [string]>(
+      `SELECT session_id, kind FROM threads WHERE id = ? LIMIT 1`,
+    )
+    .get(threadId);
+  if (row === null || row.kind !== "facilitation") return false;
+  if (!hasFacilitationAccess(db, accountId, row.session_id)) return false;
+  return (
+    hasGrant(db, accountScope(accountId), threadResource(threadId), Feature.Write) ||
+    canManageSession(db, accountId, row.session_id)
+  );
+}
+
 export function canReadThread(db: Database, accountId: string, threadId: string): boolean {
   const row = db
-    .query<{ session_id: string }, [string]>(`SELECT session_id FROM threads WHERE id = ? LIMIT 1`)
+    .query<{ session_id: string; kind: string }, [string]>(
+      `SELECT session_id, kind FROM threads WHERE id = ? LIMIT 1`,
+    )
     .get(threadId);
   if (row === null) return false;
   if (
@@ -409,6 +439,9 @@ export function canReadThread(db: Database, accountId: string, threadId: string)
     hasGrant(db, accountScope(accountId), threadResource(threadId), Feature.Write)
   ) {
     return true;
+  }
+  if (row.kind === "facilitation") {
+    return hasFacilitationAccess(db, accountId, row.session_id);
   }
   return canManageSession(db, accountId, row.session_id);
 }
@@ -600,19 +633,41 @@ export function revokeTeamSessionParticipant(
   revokeGrant(db, teamScope(teamId), sessionResource(sessionId), Feature.Participant);
 }
 
+export function grantSessionFacilitation(
+  db: Database,
+  accountId: string,
+  sessionId: string,
+  expiresAtMs?: number | null,
+): string {
+  return createGrant(
+    db,
+    accountScope(accountId),
+    sessionResource(sessionId),
+    Feature.Facilitation,
+    expiresAtMs,
+  );
+}
+
+export function revokeSessionFacilitation(
+  db: Database,
+  accountId: string,
+  sessionId: string,
+): void {
+  revokeGrant(db, accountScope(accountId), sessionResource(sessionId), Feature.Facilitation);
+}
+
 export function grantThreadAccess(db: Database, accountId: string, threadId: string): void {
   createGrant(db, accountScope(accountId), threadResource(threadId), Feature.Read);
   createGrant(db, accountScope(accountId), threadResource(threadId), Feature.Write);
 }
 
-/** Issue facilitator + participant grants for a session creator. */
+/** Issue facilitator (admin) grant for a session creator. */
 export function grantSessionCreatorAccess(
   db: Database,
   accountId: string,
   sessionId: string,
 ): void {
   grantSessionAdmin(db, accountId, sessionId);
-  grantSessionParticipant(db, accountId, sessionId);
 }
 
 export { getOrgIdForTeam };

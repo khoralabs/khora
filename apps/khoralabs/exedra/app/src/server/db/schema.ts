@@ -173,6 +173,8 @@ export function ensureExedraSchema(db: Database): void {
   migrateDefaultSessionCreatePermissions(db);
   migrateSessionParticipantsPersonalMemoryConsent(db);
   migrateJobsExtend(db);
+  migrateThreadsAddFacilitationKind(db);
+  migrateThreadsAddInterviewCompletion(db);
 }
 
 function migrateJobsExtend(db: Database): void {
@@ -634,4 +636,52 @@ function migrateDefaultSessionCreatePermissions(db: Database): void {
     "session_create_default_grants",
     Date.now(),
   ]);
+}
+
+function migrateThreadsAddFacilitationKind(db: Database): void {
+  const applied = db
+    .query<{ patch_id: string }, [string]>(
+      `SELECT patch_id FROM exedra_schema_patches WHERE patch_id = ? LIMIT 1`,
+    )
+    .get("threads_facilitation_kind");
+  if (applied !== null) return;
+
+  db.run(`
+    CREATE TABLE threads_new (
+      id TEXT PRIMARY KEY NOT NULL,
+      kind TEXT NOT NULL CHECK(kind IN ('interview', 'alignment', 'facilitation')),
+      session_id TEXT NOT NULL REFERENCES sessions(id),
+      user_id TEXT REFERENCES users(id),
+      created_at_ms INTEGER NOT NULL,
+      closed_at_ms INTEGER
+    )
+  `);
+  db.run(`
+    INSERT INTO threads_new (id, kind, session_id, user_id, created_at_ms, closed_at_ms)
+    SELECT id, kind, session_id, user_id, created_at_ms, closed_at_ms FROM threads
+  `);
+  db.run(`DROP TABLE threads`);
+  db.run(`ALTER TABLE threads_new RENAME TO threads`);
+  db.run(`
+    CREATE INDEX IF NOT EXISTS idx_threads_session_user
+      ON threads(session_id, user_id)
+  `);
+
+  db.run(`INSERT INTO exedra_schema_patches (patch_id, applied_at_ms) VALUES (?, ?)`, [
+    "threads_facilitation_kind",
+    Date.now(),
+  ]);
+}
+
+function migrateThreadsAddInterviewCompletion(db: Database): void {
+  const columns = db.query<{ name: string }, []>("PRAGMA table_info(threads)").all();
+  if (!columns.some((column) => column.name === "interview_summary")) {
+    db.run(`ALTER TABLE threads ADD COLUMN interview_summary TEXT`);
+  }
+  if (!columns.some((column) => column.name === "next_session_options")) {
+    db.run(`ALTER TABLE threads ADD COLUMN next_session_options BLOB`);
+  }
+  if (!columns.some((column) => column.name === "interview_completed_at_ms")) {
+    db.run(`ALTER TABLE threads ADD COLUMN interview_completed_at_ms INTEGER`);
+  }
 }

@@ -267,17 +267,23 @@ test("GET /api/sessions/:sessionId/documents/:documentId uses stored s3Key after
           blob: new Blob(["hello"], { type: params.mimeType ?? "text/plain" }),
         };
       }
+
+      async deleteByS3Key(_s3Key: string): Promise<void> {}
     },
   }));
 
-  const { handleGetSessionDocument } = await import("./routes.js");
-  const res = await handleGetSessionDocument(
-    new Request(`http://localhost/api/sessions/${session.id}/documents/${documentId}`),
-    session.id,
-    documentId,
-  );
+  try {
+    const { handleGetSessionDocument } = await import("./routes.js");
+    const res = await handleGetSessionDocument(
+      new Request(`http://localhost/api/sessions/${session.id}/documents/${documentId}`),
+      session.id,
+      documentId,
+    );
 
-  expect(res.status).toBe(200);
-  expect(requestedS3Key).toBe(s3Key);
-  expect(await res.text()).toBe("hello");
+    expect(res.status).toBe(200);
+    expect(requestedS3Key).toBe(s3Key);
+    expect(await res.text()).toBe("hello");
+  } finally {
+    bunMock.restore();
+  }
 });

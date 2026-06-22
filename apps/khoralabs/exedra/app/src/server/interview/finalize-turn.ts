@@ -4,12 +4,18 @@ import type { TurnEventWire } from "../../../../shared/jobs.js";
 import type { SessionCompletionPayload } from "../../agents/interview/session-closing.js";
 import { getOrg, getTeam } from "../db/membership.js";
 import { insertMessage, nextMessageIndex } from "../db/messages.js";
-import { getThread, markSessionInterviewComplete, type SessionRecord } from "../db/sessions.js";
+import {
+  getThread,
+  markSessionInterviewComplete,
+  markThreadInterviewComplete,
+  type SessionRecord,
+} from "../db/sessions.js";
 import { appendJobEvents, getJob, setJobStatus } from "../jobs/db.js";
 import { logger } from "../logger.js";
-import { releasePersonalMemoryAccessForSession } from "../memories/personal-memory-access.js";
+import { releasePersonalMemoryAccessForParticipant } from "../memories/personal-memory-access.js";
 import { resolveOrgAgentAuthorForOrg } from "../messages/resolve-author.js";
 import { applyOnboardingCompletionSideEffects } from "../onboarding/interview.js";
+import { dispatchFacilitationEvent } from "./dispatch-facilitation-event.js";
 import type { TurnEvent } from "./turn-engine/events.js";
 import { relayTurnEvent } from "./turn-relay.js";
 
@@ -61,16 +67,23 @@ export function finalizeInterviewTurn(args: {
   const events: TurnEvent[] = [];
 
   if (sessionCompletion !== null) {
-    markSessionInterviewComplete(db, session.id, sessionCompletion);
-    releasePersonalMemoryAccessForSession(db, session.id);
+    if (session.kind === "onboarding") {
+      markSessionInterviewComplete(db, session.id, sessionCompletion);
+    } else {
+      markThreadInterviewComplete(db, threadId, sessionCompletion);
+    }
 
-    if (onboardingMeta !== undefined && thread?.user_id != null) {
+    if (thread?.userId != null) {
+      releasePersonalMemoryAccessForParticipant(db, session.id, thread.userId);
+    }
+
+    if (onboardingMeta !== undefined && thread?.userId != null) {
       try {
         applyOnboardingCompletionSideEffects({
           db,
           threadId,
           teamId: session.teamId,
-          userId: thread.user_id,
+          userId: thread.userId,
           summary: sessionCompletion.summary,
         });
       } catch (err) {
@@ -80,6 +93,16 @@ export function finalizeInterviewTurn(args: {
           "onboarding completion side effects failed",
         );
       }
+    } else if (thread?.userId != null && session.kind !== "onboarding") {
+      void dispatchFacilitationEvent({
+        db,
+        sessionId: session.id,
+        participantUserId: thread.userId,
+        threadId,
+      }).catch((err) => {
+        const message = err instanceof Error ? err.message : "Facilitation dispatch failed";
+        logger.error({ err: message, sessionId: session.id }, "facilitation dispatch failed");
+      });
     }
 
     events.push({

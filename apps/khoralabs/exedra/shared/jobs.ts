@@ -1,5 +1,5 @@
 /** Job kinds tracked in exedra.db `jobs` table. */
-export type JobKind = "memory_investigation" | "interview_turn";
+export type JobKind = "memory_investigation" | "interview_turn" | "facilitation_event";
 
 export type JobStatus = "pending" | "running" | "done" | "failed" | "cancelled";
 

@@ -29,7 +29,7 @@ test("runInterviewTurn throws TurnAbortedError when abortSignal is already abort
       orgId: "org-test",
       teamId: "team-test",
       participantUserId: "user-test",
-      sessionInterviewComplete: false,
+      threadInterviewComplete: false,
       threadId: "thread-test",
       userMessageId: "user-1",
       history: [

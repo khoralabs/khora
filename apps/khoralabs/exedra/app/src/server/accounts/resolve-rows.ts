@@ -67,25 +67,38 @@ export function resolveAccountProfiles(
   return profiles;
 }
 
-function listSessionParticipantRoles(db: Database, sessionId: string): Map<string, boolean> {
+function listSessionParticipantRoles(
+  db: Database,
+  sessionId: string,
+): Map<string, "facilitator" | "facilitation" | "participant"> {
   const nowMs = Date.now();
-  const roles = new Map<string, boolean>();
+  const roles = new Map<string, "facilitator" | "facilitation" | "participant">();
 
   const accountRows = db
     .query<{ scope_id: string; feature: string }, [string, string, number]>(
       `SELECT scope_id, feature FROM authz_grants
        WHERE resource_type = ? AND resource_id = ?
          AND scope_type = 'account'
-         AND feature IN ('admin', 'participant')
+         AND feature IN ('admin', 'participant', 'facilitation')
          AND ${ACTIVE_GRANT_SQL}`,
     )
     .all(ResourceType.Session, sessionId, nowMs);
 
   for (const row of accountRows) {
-    const isFacilitator = row.feature === Feature.Admin;
+    const role =
+      row.feature === Feature.Admin
+        ? "facilitator"
+        : row.feature === Feature.Facilitation
+          ? "facilitation"
+          : "participant";
     const existing = roles.get(row.scope_id);
-    if (existing === true) continue;
-    roles.set(row.scope_id, isFacilitator);
+    if (existing === "facilitator") continue;
+    if (existing === "facilitation" && role === "participant") continue;
+    if (existing === "participant" && role === "facilitation") {
+      roles.set(row.scope_id, "facilitation");
+      continue;
+    }
+    roles.set(row.scope_id, role);
   }
 
   const teamRows = db
@@ -93,18 +106,29 @@ function listSessionParticipantRoles(db: Database, sessionId: string): Map<strin
       `SELECT scope_id, feature FROM authz_grants
        WHERE resource_type = ? AND resource_id = ?
          AND scope_type = 'team'
-         AND feature IN ('admin', 'participant')
+         AND feature IN ('admin', 'participant', 'facilitation')
          AND ${ACTIVE_GRANT_SQL}`,
     )
     .all(ResourceType.Session, sessionId, nowMs);
 
   for (const teamRow of teamRows) {
-    const isFacilitator = teamRow.feature === Feature.Admin;
+    const role =
+      teamRow.feature === Feature.Admin
+        ? "facilitator"
+        : teamRow.feature === Feature.Facilitation
+          ? "facilitation"
+          : "participant";
     for (const accountId of listAccountIdsForTeam(db, teamRow.scope_id, Feature.Member, nowMs)) {
       const existing = roles.get(accountId);
-      if (existing === true) continue;
-      if (existing === false && !isFacilitator) continue;
-      roles.set(accountId, isFacilitator);
+      if (existing === "facilitator") continue;
+      if (existing === "facilitation" && role === "participant") continue;
+      if (existing === "participant" && role === "facilitation") {
+        roles.set(accountId, "facilitation");
+        continue;
+      }
+      if (existing === undefined || role === "facilitator") {
+        roles.set(accountId, role);
+      }
     }
   }
 
@@ -122,7 +146,7 @@ export function listAccountRowsForSession(
   const profiles = resolveAccountProfiles(db, [...participantRoles.keys()]);
   const rows: AccountRow<SessionParticipantContext>[] = [];
 
-  for (const [userId, isFacilitator] of participantRoles) {
+  for (const [userId, role] of participantRoles) {
     const account = profiles.get(userId);
     if (account === undefined) continue;
     rows.push({
@@ -131,15 +155,16 @@ export function listAccountRowsForSession(
       context: {
         kind: "session_participant",
         sessionId,
-        role: isFacilitator ? "facilitator" : "participant",
+        role,
         interviewStatus: getInterviewStatus(db, sessionId, userId),
       },
     });
   }
 
   rows.sort((a, b) => {
+    const roleOrder = { facilitator: 0, facilitation: 1, participant: 2 } as const;
     if (a.context.role !== b.context.role) {
-      return a.context.role === "facilitator" ? -1 : 1;
+      return roleOrder[a.context.role] - roleOrder[b.context.role];
     }
     return (a.account.email ?? "").localeCompare(b.account.email ?? "");
   });

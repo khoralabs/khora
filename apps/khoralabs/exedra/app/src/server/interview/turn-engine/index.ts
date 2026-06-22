@@ -40,7 +40,7 @@ function resolveSubmitContext(
   const thread = getThread(db, threadId);
   if (thread === null) return { ok: false, error: "Thread not found" };
 
-  const session = getSession(db, thread.session_id);
+  const session = getSession(db, thread.sessionId);
   if (session === null) return { ok: false, error: "Session not found" };
 
   return { ok: true, session };
@@ -113,7 +113,7 @@ export function createTurnEngine(deps: TurnEngineDeps): TurnEngine {
       const existing = loadThreadMessages(db, threadId);
       if (existing.length > 0) return;
 
-      const session = getSession(db, thread.session_id);
+      const session = getSession(db, thread.sessionId);
       if (session === null) return;
 
       const turnId = interviewKickoffMessageId(threadId);

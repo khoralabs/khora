@@ -70,7 +70,7 @@ export type InterviewTurnInput = {
   history: UIMessage[];
   userTimeZone?: string;
   onboardingMeta?: OnboardingInterviewMeta;
-  sessionInterviewComplete: boolean;
+  threadInterviewComplete: boolean;
   memoryContext?: string | null;
   memorySearch?: InterviewMemorySearchOverride;
   documentAttachments?: readonly TurnDocumentAttachment[];
@@ -245,7 +245,7 @@ async function runInterviewTurnSession(args: {
     history,
     userTimeZone,
     onboardingMeta,
-    sessionInterviewComplete,
+    threadInterviewComplete,
     memoryContext,
     memorySearch,
     onTextDelta,
@@ -265,7 +265,7 @@ async function runInterviewTurnSession(args: {
   let suppressTextAfterComplete = false;
 
   const minTurnsForComplete = isOnboarding ? ONBOARDING_MIN_USER_TURNS : 1;
-  const allowCompleteSession = !sessionInterviewComplete;
+  const allowCompleteSession = !threadInterviewComplete;
   const allowCompleteSessionByTurnCount = userTurnCount >= minTurnsForComplete;
 
   const beliefFlags: { belief: string; messageId: string }[] = [];
@@ -357,7 +357,7 @@ async function runInterviewTurnSession(args: {
     capture.instructions,
     userLocalDateTimeInstruction,
     memoryContext ?? null,
-    sessionInterviewComplete ? postInterviewInstruction : null,
+    threadInterviewComplete ? postInterviewInstruction : null,
   ]
     .filter(Boolean)
     .join("\n\n");
@@ -461,7 +461,7 @@ export async function runInterviewTurn(args: {
   sessionId: string;
   sessionMeta: InterviewSessionMeta;
   onboardingMeta?: OnboardingInterviewMeta;
-  sessionInterviewComplete: boolean;
+  threadInterviewComplete: boolean;
   orgId: string;
   teamId: string;
   participantUserId: string;
@@ -491,7 +491,7 @@ export async function runInterviewTurn(args: {
     threadId: args.threadId,
     userMessageId: args.userMessageId,
     history: args.history,
-    sessionInterviewComplete: args.sessionInterviewComplete,
+    threadInterviewComplete: args.threadInterviewComplete,
     memoryContext: args.memoryContext,
     ...(args.memorySearch !== undefined ? { memorySearch: args.memorySearch } : {}),
     ...(args.userTimeZone !== undefined ? { userTimeZone: args.userTimeZone } : {}),

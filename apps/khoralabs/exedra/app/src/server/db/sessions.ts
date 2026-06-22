@@ -1,7 +1,17 @@
 import type { Database } from "bun:sqlite";
 
 import { ACTIVE_GRANT_SQL } from "../authz/active";
-import { grantThreadAccess, hasSessionAccess, isSessionFacilitator } from "../authz/policy";
+import { listGrantScopeIdsForResource, revokeGrant } from "../authz/grants";
+import {
+  accountScope,
+  Feature,
+  grantThreadAccess,
+  hasSessionAccess,
+  isSessionFacilitator,
+  ResourceType,
+  ScopeType,
+  threadResource,
+} from "../authz/policy";
 import { createOrgWithAdmin, createTeamWithGrants } from "./membership";
 
 export { isTeamMember } from "./membership";
@@ -124,6 +134,28 @@ export function closeSession(db: Database, sessionId: string): void {
   db.prepare(`UPDATE sessions SET status = 'closed' WHERE id = ?`).run(sessionId);
 }
 
+export function markThreadInterviewComplete(
+  db: Database,
+  threadId: string,
+  params: { summary: string; nextSessionOptions: string[] },
+): void {
+  const completedAtMs = Date.now();
+  db.prepare(
+    `UPDATE threads
+     SET interview_summary = ?,
+         next_session_options = ?,
+         interview_completed_at_ms = ?,
+         closed_at_ms = ?
+     WHERE id = ?`,
+  ).run(
+    params.summary.trim(),
+    JSON.stringify(params.nextSessionOptions),
+    completedAtMs,
+    completedAtMs,
+    threadId,
+  );
+}
+
 export function markSessionInterviewComplete(
   db: Database,
   sessionId: string,
@@ -202,12 +234,147 @@ export function getOrCreateInterviewThread(
   return id;
 }
 
-export function getThread(db: Database, threadId: string) {
-  return db
-    .query<{ id: string; kind: string; session_id: string; user_id: string | null }, [string]>(
-      `SELECT id, kind, session_id, user_id FROM threads WHERE id = ? LIMIT 1`,
+export type ThreadRecord = {
+  id: string;
+  kind: string;
+  sessionId: string;
+  userId: string | null;
+  closedAtMs: number | null;
+  interviewSummary: string | null;
+  nextSessionOptions: string[] | null;
+  interviewCompletedAtMs: number | null;
+};
+
+type ThreadRow = {
+  id: string;
+  kind: string;
+  session_id: string;
+  user_id: string | null;
+  closed_at_ms: number | null;
+  interview_summary: string | null;
+  next_session_options: string | null;
+  interview_completed_at_ms: number | null;
+};
+
+function mapThread(row: ThreadRow): ThreadRecord {
+  return {
+    id: row.id,
+    kind: row.kind,
+    sessionId: row.session_id,
+    userId: row.user_id,
+    closedAtMs: row.closed_at_ms,
+    interviewSummary: row.interview_summary ?? null,
+    nextSessionOptions: parseNextSessionOptions(row.next_session_options ?? null),
+    interviewCompletedAtMs: row.interview_completed_at_ms ?? null,
+  };
+}
+
+function sessionResource(sessionId: string) {
+  return { type: ResourceType.Session, id: sessionId };
+}
+
+function listFacilitationAccountIds(db: Database, sessionId: string): string[] {
+  const nowMs = Date.now();
+  const resource = sessionResource(sessionId);
+  const accountIds = new Set<string>();
+
+  for (const feature of [Feature.Admin, Feature.Facilitation] as const) {
+    for (const accountId of listGrantScopeIdsForResource(
+      db,
+      resource,
+      feature,
+      ScopeType.Account,
+      nowMs,
+    )) {
+      accountIds.add(accountId);
+    }
+    for (const teamId of listGrantScopeIdsForResource(
+      db,
+      resource,
+      feature,
+      ScopeType.Team,
+      nowMs,
+    )) {
+      for (const accountId of db
+        .query<{ scope_id: string }, [string, number]>(
+          `SELECT scope_id FROM authz_grants
+           WHERE scope_type = 'account'
+             AND resource_type = 'team'
+             AND resource_id = ?
+             AND feature = 'member'
+             AND revoked_at_ms IS NULL
+             AND (expired_at_ms IS NULL OR expired_at_ms > ?)`,
+        )
+        .all(teamId, nowMs)
+        .map((row) => row.scope_id)) {
+        accountIds.add(accountId);
+      }
+    }
+  }
+
+  return [...accountIds];
+}
+
+export function syncFacilitationThreadGrants(db: Database, sessionId: string): void {
+  const threadId = getFacilitationThreadId(db, sessionId);
+  if (threadId === null) return;
+
+  const holders = new Set(listFacilitationAccountIds(db, sessionId));
+  const nowMs = Date.now();
+  const currentGrantees = db
+    .query<{ scope_id: string }, [string, number]>(
+      `SELECT scope_id FROM authz_grants
+       WHERE resource_type = 'thread'
+         AND resource_id = ?
+         AND scope_type = 'account'
+         AND feature IN ('read', 'write')
+         AND revoked_at_ms IS NULL
+         AND (expired_at_ms IS NULL OR expired_at_ms > ?)`,
     )
+    .all(threadId, nowMs)
+    .map((row) => row.scope_id);
+
+  for (const accountId of currentGrantees) {
+    if (!holders.has(accountId)) {
+      revokeGrant(db, accountScope(accountId), threadResource(threadId), Feature.Read);
+      revokeGrant(db, accountScope(accountId), threadResource(threadId), Feature.Write);
+    }
+  }
+
+  for (const accountId of holders) {
+    grantThreadAccess(db, accountId, threadId);
+  }
+}
+
+export function getFacilitationThreadId(db: Database, sessionId: string): string | null {
+  const row = db
+    .query<{ id: string }, [string]>(
+      `SELECT id FROM threads
+       WHERE session_id = ? AND kind = 'facilitation'
+       LIMIT 1`,
+    )
+    .get(sessionId);
+  return row?.id ?? null;
+}
+
+export function getOrCreateFacilitationThread(db: Database, sessionId: string): string {
+  const existing = getFacilitationThreadId(db, sessionId);
+  if (existing !== null) return existing;
+
+  const id = crypto.randomUUID();
+  db.prepare(
+    `INSERT INTO threads (id, kind, session_id, user_id, created_at_ms, closed_at_ms)
+     VALUES (?, 'facilitation', ?, NULL, ?, NULL)`,
+  ).run(id, sessionId, Date.now());
+  syncFacilitationThreadGrants(db, sessionId);
+  return id;
+}
+
+export function getThread(db: Database, threadId: string): ThreadRecord | null {
+  const row = db
+    .query<ThreadRow, [string]>(`SELECT * FROM threads WHERE id = ? LIMIT 1`)
     .get(threadId);
+  return row === null ? null : mapThread(row);
 }
 
 export type SessionListItem = SessionRecord & {
@@ -264,7 +431,7 @@ export function listSessionsForUser(
            EXISTS (
              SELECT 1 FROM authz_grants ag
              WHERE ag.resource_type = 'session' AND ag.resource_id = s.id
-               AND ag.feature IN ('admin', 'participant')
+               AND ag.feature IN ('admin', 'participant', 'facilitation')
                AND ${ACTIVE_GRANT_SQL}
                AND (
                  (ag.scope_type = 'account' AND ag.scope_id = ?1)

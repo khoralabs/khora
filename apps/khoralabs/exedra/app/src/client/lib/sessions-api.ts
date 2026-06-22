@@ -35,6 +35,8 @@ export type SessionDetail = {
   };
   participants: SessionParticipantRow[];
   canManage: boolean;
+  canFacilitate?: boolean;
+  canParticipate?: boolean;
 };
 
 export type CreateSessionInput = {
@@ -52,8 +54,8 @@ export type CreateSessionResult = {
 };
 
 export type ManageSessionScopesInput = {
-  add?: { accountIds?: string[]; teamIds?: string[] };
-  remove?: { accountIds?: string[]; teamIds?: string[] };
+  add?: { accountIds?: string[]; teamIds?: string[]; facilitationAccountIds?: string[] };
+  remove?: { accountIds?: string[]; teamIds?: string[]; facilitationAccountIds?: string[] };
 };
 
 export async function fetchSessions(teamId?: string): Promise<SessionSummary[]> {

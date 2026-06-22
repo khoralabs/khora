@@ -30,7 +30,7 @@ export async function runInterviewTurn(args: {
   sessionId: string;
   sessionMeta: InterviewSessionMeta;
   onboardingMeta?: OnboardingInterviewMeta;
-  sessionInterviewComplete: boolean;
+  threadInterviewComplete: boolean;
   orgId: string;
   teamId: string;
   participantUserId: string;

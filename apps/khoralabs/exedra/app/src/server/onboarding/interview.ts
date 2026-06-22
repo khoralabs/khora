@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import type { UIMessage } from "ai";
-import { grantSessionCreatorAccess } from "../authz";
+import { grantSessionCreatorAccess, grantSessionParticipant } from "../authz";
 import {
   completeTeamMemberOnboardingInterview,
   getOrg,
@@ -28,6 +28,7 @@ export function createOnboardingInterviewForMember(
   });
 
   grantSessionCreatorAccess(db, params.userId, session.id);
+  grantSessionParticipant(db, params.userId, session.id);
 
   bootstrapSessionMemoriesForTeamSession(db, {
     teamId: params.teamId,

@@ -21,6 +21,11 @@ import {
   handleInternalPatchDocument,
 } from "./http/internal-documents";
 import {
+  handleInternalAppendFacilitationMessage,
+  handleInternalGetFacilitationParticipantContext,
+  handleInternalGetFacilitationThread,
+} from "./http/internal-facilitation";
+import {
   handleInternalAppendInterviewTurnEvents,
   handleInternalCompleteInterviewTurn,
   handleInternalFailInterviewTurn,
@@ -85,10 +90,12 @@ import {
 import { stubRegistryAuthRoutes } from "./registry-stub/routes";
 import {
   handleCreateSession,
+  handleGetFacilitation,
   handleGetInterview,
   handleGetParticipantInterview,
   handleGetSessionAccess,
   handleGetSessionById,
+  handleInterviewOptIn,
   handleListSessions,
   handleListTeamMembers,
   handleManageSessionScopes,
@@ -229,6 +236,14 @@ export const apiRoutes = {
 
   "/api/sessions/:id/interview": {
     GET: (req: Request & { params: { id: string } }) => handleGetInterview(req, req.params.id),
+  },
+
+  "/api/sessions/:id/interview/opt-in": {
+    POST: (req: Request & { params: { id: string } }) => handleInterviewOptIn(req, req.params.id),
+  },
+
+  "/api/sessions/:id/facilitation": {
+    GET: (req: Request & { params: { id: string } }) => handleGetFacilitation(req, req.params.id),
   },
 
   "/api/sessions/:sessionId/participants/:userId/interview": {
@@ -484,5 +499,20 @@ export const internalRoutes = {
 
   "/internal/interview/memory/search-personal": {
     POST: handleInternalInterviewSearchPersonal,
+  },
+
+  "/internal/facilitation/sessions/:sessionId/thread": {
+    GET: (req: Request & { params: { sessionId: string } }) =>
+      handleInternalGetFacilitationThread(req, req.params.sessionId),
+  },
+
+  "/internal/facilitation/sessions/:sessionId/participants/:userId/context": {
+    GET: (req: Request & { params: { sessionId: string; userId: string } }) =>
+      handleInternalGetFacilitationParticipantContext(req, req.params.sessionId, req.params.userId),
+  },
+
+  "/internal/facilitation/threads/:threadId/messages": {
+    POST: (req: Request & { params: { threadId: string } }) =>
+      handleInternalAppendFacilitationMessage(req, req.params.threadId),
   },
 } as const;

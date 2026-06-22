@@ -29,6 +29,7 @@ Implementation lives in [`app/src/server/authz/`](../app/src/server/authz/). Whe
 | `member` | account → team; team → org | Team membership; org membership via team | `team:member`, org membership |
 | `admin` | account → org/team; account/team → session | Org/team admin; session facilitator | Org/team admin shortcuts; session management |
 | `participant` | account → session; team → session | Session interview participant | Interview, session routes, WS (`hasSessionAccess`) |
+| `facilitation` | account → session | Facilitation thread access (collaborator) | Shared facilitation chat (`hasFacilitationAccess`) |
 | `read` | account → thread/session/account | Read-only access | Thread read; session KG read; shared personal KG read |
 | `write` | account → thread | Thread write | Interview thread messages |
 | `contributor` | account → team | KG contribute without team membership | Team knowledge graph contribute |
@@ -66,6 +67,7 @@ Session creation requires **both** org and team `session_create` permission (via
 | Helper | Team-inherited? | Used for |
 |--------|-----------------|----------|
 | `hasSessionAccess` | Yes | Interview, session detail, WebSocket |
+| `hasFacilitationAccess` | Admin + facilitation (team-inherited for both) | Facilitation thread bootstrap and WS |
 | `canManageSession` / `isSessionFacilitator` | Admin only | Session management, sharing |
 | `canReadSessionKg` | **No** (direct account grants only) | Session knowledge graph read |
 | `canContributeToSessionKg` | **No** (direct participant or admin) | KG contribute, session document upload |
@@ -77,6 +79,7 @@ Session creation requires **both** org and team `session_create` permission (via
 | `read` | Yes | No | No (unless also participant) |
 | `participant` | Yes | Yes | Yes |
 | `admin` | Yes | Yes | Yes (facilitator) |
+| `facilitation` | No | No | Facilitation thread only (via `hasFacilitationAccess`) |
 
 Team-scoped session grants (`team` → session) still expand to all team members for **interview** access, but **not** for KG read/contribute checks.
 

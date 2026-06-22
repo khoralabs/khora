@@ -163,6 +163,7 @@
         "@khoralabs/agent-capabilities-ai-sdk": "^0.1.1",
         "@khoralabs/agent-capabilities-otel": "^0.1.1",
         "@khoralabs/agent-persisted-signer": "workspace:*",
+        "@khoralabs/exedra-facilitation-agent": "workspace:*",
         "@khoralabs/exedra-interview-agent": "workspace:*",
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/khora-client": "workspace:*",
@@ -235,6 +236,19 @@
         "tailwindcss": "^4.1.11",
       },
     },
+    "apps/khoralabs/exedra/packages/facilitation-agent": {
+      "name": "@khoralabs/exedra-facilitation-agent",
+      "version": "1.0.0",
+      "dependencies": {
+        "@khoralabs/agent-capabilities": "^0.1.1",
+        "@khoralabs/agent-capabilities-otel": "^0.1.1",
+        "ai": "^6.0.205",
+        "nanoid": "^5.1.5",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+    },
     "apps/khoralabs/exedra/packages/interview-agent": {
       "name": "@khoralabs/exedra-interview-agent",
       "version": "1.0.0",
@@ -244,6 +258,19 @@
         "@khoralabs/agent-capabilities-otel": "^0.1.1",
         "ai": "^6.0.205",
         "zod": "^4.1.5",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+    },
+    "apps/khoralabs/exedra/workflows/facilitation-agent": {
+      "name": "@khoralabs/exedra-workflows-facilitation-agent",
+      "version": "1.0.0",
+      "dependencies": {
+        "@ai-sdk/google": "^3.0.0",
+        "@khoralabs/exedra-facilitation-agent": "workspace:*",
+        "@renderinc/sdk": "^0.6.0",
+        "nanoid": "^5.1.5",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -1735,7 +1762,11 @@
 
     "@khoralabs/exedra": ["@khoralabs/exedra@workspace:apps/khoralabs/exedra/app"],
 
+    "@khoralabs/exedra-facilitation-agent": ["@khoralabs/exedra-facilitation-agent@workspace:apps/khoralabs/exedra/packages/facilitation-agent"],
+
     "@khoralabs/exedra-interview-agent": ["@khoralabs/exedra-interview-agent@workspace:apps/khoralabs/exedra/packages/interview-agent"],
+
+    "@khoralabs/exedra-workflows-facilitation-agent": ["@khoralabs/exedra-workflows-facilitation-agent@workspace:apps/khoralabs/exedra/workflows/facilitation-agent"],
 
     "@khoralabs/exedra-workflows-integrate-memory": ["@khoralabs/exedra-workflows-integrate-memory@workspace:apps/khoralabs/exedra/workflows/integrate-memory"],
 

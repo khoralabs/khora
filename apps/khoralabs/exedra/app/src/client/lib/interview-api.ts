@@ -96,13 +96,28 @@ export function extractCompletionFromMessages(
 
 export type InterviewBootstrap = {
   session: InterviewSession;
-  threadId: string;
-  wsUrl: string;
+  threadId: string | null;
+  wsUrl?: string;
   messages: SerializedMessage[];
   agent: MessageAuthor | null;
   viewer: MessageAuthor | null;
   beliefFeedback?: BeliefFeedbackRecord[];
   completion?: InterviewCompletion;
+  canFacilitate?: boolean;
+  canParticipate?: boolean;
+  canWriteInterview?: boolean;
+};
+
+export type FacilitationBootstrap = {
+  session: InterviewSession;
+  threadId: string;
+  wsUrl: string;
+  messages: SerializedMessage[];
+  agent: MessageAuthor | null;
+  viewer: MessageAuthor | null;
+  canWrite: boolean;
+  canFacilitate: boolean;
+  canParticipate: boolean;
 };
 
 export type ParticipantInterviewView = Omit<InterviewBootstrap, "wsUrl"> & {
@@ -331,6 +346,29 @@ export async function fetchParticipantInterview(
       extractCompletionFromMessages(body.messages) ??
       undefined,
   };
+}
+
+export async function fetchFacilitation(sessionId: string): Promise<FacilitationBootstrap> {
+  const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/facilitation`, {
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const data = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error ?? "Failed to load facilitation");
+  }
+  return (await res.json()) as FacilitationBootstrap;
+}
+
+export async function optInInterview(sessionId: string): Promise<{ threadId: string }> {
+  const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/interview/opt-in`, {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const data = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error ?? "Failed to opt in to interview");
+  }
+  return (await res.json()) as { threadId: string };
 }
 
 export async function fetchInterview(sessionId: string): Promise<InterviewBootstrap> {

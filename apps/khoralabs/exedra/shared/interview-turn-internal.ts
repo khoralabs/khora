@@ -26,6 +26,7 @@ export type InterviewTurnContextWire = {
   sessionKind: string;
   sessionTopic: string;
   sessionInterviewComplete: boolean;
+  threadInterviewComplete: boolean;
   userId: string;
   orgId: string;
   teamId: string;

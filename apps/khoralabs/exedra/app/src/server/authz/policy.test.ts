@@ -17,10 +17,12 @@ import {
   Feature,
   grantPersonalKgReader,
   grantSessionCreatorAccess,
+  grantSessionFacilitation,
   grantSessionParticipant,
   grantSessionReader,
   grantTeamContributor,
   grantTeamSessionParticipant,
+  hasFacilitationAccess,
   hasSessionAccess,
   hasTeamContributorGrant,
   isSessionFacilitator,
@@ -39,6 +41,32 @@ beforeEach(async () => {
 afterEach(() => {
   db.close();
   delete process.env.EXEDRA_IDENTITY_KEY;
+});
+
+test("grantSessionCreatorAccess grants admin only", async () => {
+  const facilitator = await getOrCreateUser(db, "fac-creator");
+  const orgId = await createOrg(db, { name: "OrgCreator", ownerId: facilitator.id });
+  const teamId = createTeam(db, { orgId, name: "TeamCreator", ownerId: facilitator.id });
+  const session = createSession(db, { teamId, topic: "Creator" });
+  grantSessionCreatorAccess(db, facilitator.id, session.id);
+
+  expect(isSessionFacilitator(db, facilitator.id, session.id)).toBe(true);
+  expect(hasSessionAccess(db, facilitator.id, session.id)).toBe(true);
+  expect(hasFacilitationAccess(db, facilitator.id, session.id)).toBe(true);
+});
+
+test("hasFacilitationAccess allows facilitation collaborator", async () => {
+  const facilitator = await getOrCreateUser(db, "fac-4");
+  const collaborator = await getOrCreateUser(db, "collab-4");
+  const orgId = await createOrg(db, { name: "Org4", ownerId: facilitator.id });
+  const teamId = createTeam(db, { orgId, name: "Team4", ownerId: facilitator.id });
+  addTeamMember(db, teamId, collaborator.id);
+  const session = createSession(db, { teamId, topic: "Facilitation" });
+  grantSessionCreatorAccess(db, facilitator.id, session.id);
+  grantSessionFacilitation(db, collaborator.id, session.id);
+
+  expect(hasFacilitationAccess(db, collaborator.id, session.id)).toBe(true);
+  expect(hasSessionAccess(db, collaborator.id, session.id)).toBe(false);
 });
 
 test("hasSessionAccess allows facilitator with admin grant", async () => {

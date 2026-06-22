@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, mock, test } from "bun:test";
 
 import { TurnAbortedError } from "../../../agents/errors";
 import type { runInterviewTurn } from "../../../agents/index";
-import { grantSessionCreatorAccess } from "../../authz";
+import { grantSessionCreatorAccess, grantSessionParticipant } from "../../authz";
 import { loadThreadMessages } from "../../db/messages";
 import { ensureExedraSchema } from "../../db/schema";
 import {
@@ -61,6 +61,7 @@ beforeEach(async () => {
     topic: "Test topic",
   });
   grantSessionCreatorAccess(db, userId, session.id);
+  grantSessionParticipant(db, userId, session.id);
   sessionId = session.id;
   threadId = getOrCreateInterviewThread(db, { sessionId, userId });
 });
@@ -254,8 +255,8 @@ test("deferred onboarding is not applied when turn aborts after tool request", a
   expect(loadThreadMessages(db, threadId)).toHaveLength(0);
 });
 
-test("submitTurn persists session completion without closing session", async () => {
-  const { getSession } = await import("../../db/sessions");
+test("submitTurn persists thread completion without advancing session phase", async () => {
+  const { getSession, getThread } = await import("../../db/sessions");
   const { buildSessionClosingMessage } = await import("../../../agents/interview/session-closing");
 
   const completion = {
@@ -287,10 +288,12 @@ test("submitTurn persists session completion without closing session", async () 
   await waitForThreadIdle();
 
   const session = getSession(db, sessionId);
-  expect(session?.status).toBe("alignment");
-  expect(session?.interviewSummary).toBe(completion.summary);
-  expect(session?.nextSessionOptions).toEqual(completion.nextSessionOptions);
-  expect(session?.interviewCompletedAtMs).not.toBeNull();
+  expect(session?.status).toBe("active");
+  const thread = getThread(db, threadId);
+  expect(thread?.interviewSummary).toBe(completion.summary);
+  expect(thread?.nextSessionOptions).toEqual(completion.nextSessionOptions);
+  expect(thread?.interviewCompletedAtMs).not.toBeNull();
+  expect(thread?.closedAtMs).not.toBeNull();
   expect(events.some((event) => (event as { type: string }).type === "session_complete")).toBe(
     true,
   );
