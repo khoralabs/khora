@@ -39,6 +39,7 @@ import {
 import { handleAcceptInvite, handleGetInvite, handleMintInvite } from "./invites/routes";
 import {
   handleDeleteJob,
+  handleGetJob,
   handleGetJobStream,
   handleInternalAppendJobEvents,
   handleInternalCompleteJob,
@@ -389,6 +390,7 @@ export const apiRoutes = {
   },
 
   "/api/jobs/:jobId": {
+    GET: (req: Request & { params: { jobId: string } }) => handleGetJob(req, req.params.jobId),
     DELETE: (req: Request & { params: { jobId: string } }) =>
       handleDeleteJob(req, req.params.jobId),
   },

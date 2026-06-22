@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 
-import type { JobEvent, JobStatus } from "../../../shared/jobs.js";
+import type { JobEvent, JobStatus } from "../../../../shared/jobs.js";
 
 import { getJob, getJobEventsSince } from "./db.js";
 import { waitForJobEvent } from "./notify.js";
@@ -53,6 +53,11 @@ export function createJobEventStream(
 
         const job = getJob(db, jobId);
         if (job !== null && TERMINAL_STATUSES.has(job.status)) {
+          const trailing = getJobEventsSince(db, jobId, cursor);
+          for (const record of trailing) {
+            controller.enqueue(encoder.encode(encodeSseEvent(record.seq, record.event)));
+            cursor = record.seq;
+          }
           close();
         }
       };

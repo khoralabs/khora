@@ -43,6 +43,24 @@ function requireJobOwner(
   return null;
 }
 
+export async function handleGetJob(req: Request, jobId: string): Promise<Response> {
+  const auth = await resolveAuthedUserId(req);
+  if (!auth.ok) return auth.response;
+
+  const db = getDb();
+  const job = getJob(db, jobId);
+  if (job === null) return Response.json({ error: "Job not found" }, { status: 404 });
+
+  const ownerError = requireJobOwner(job, auth.userId);
+  if (ownerError !== null) return ownerError;
+
+  return Response.json({
+    status: job.status,
+    result: job.result,
+    error: job.error,
+  });
+}
+
 export async function handleGetJobStream(req: Request, jobId: string): Promise<Response> {
   const auth = await resolveAuthedUserId(req);
   if (!auth.ok) return auth.response;

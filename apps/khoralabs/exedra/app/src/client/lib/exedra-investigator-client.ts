@@ -29,6 +29,47 @@ function parseExedraInvestigationJobEvent(data: string): JobStreamInvestigationE
   }
 }
 
+function normalizeInvestigatorAnswer(result: unknown): InvestigatorAnswer | null {
+  if (result === null || typeof result !== "object") return null;
+  const answer = (result as InvestigatorAnswer).answer;
+  if (typeof answer !== "string") return null;
+  const normalized: InvestigatorAnswer = { answer };
+  const citations = (result as InvestigatorAnswer).citations;
+  if (citations !== undefined) normalized.citations = citations;
+  const followUp = (result as InvestigatorAnswer).follow_up_queries;
+  if (followUp !== undefined) normalized.follow_up_queries = followUp;
+  return normalized;
+}
+
+async function fetchInvestigationResult(jobId: string): Promise<InvestigatorAnswer | null> {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const res = await fetch(`${JOBS_API_BASE}/${encodeURIComponent(jobId)}`, {
+      credentials: "include",
+    });
+    if (!res.ok) return null;
+
+    const json = (await res.json()) as {
+      status?: string;
+      result?: unknown;
+      error?: string;
+    };
+
+    if (json.status === "failed" && json.error !== undefined && json.error.length > 0) {
+      throw new Error(json.error);
+    }
+
+    if (json.status === "done") {
+      const answer = normalizeInvestigatorAnswer(json.result);
+      if (answer !== null) return answer;
+    }
+
+    if (attempt < 2) {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    }
+  }
+  return null;
+}
+
 export function createExedraInvestigatorClient(apiBase: string): GraphInvestigatorClient {
   return createJobStreamInvestigatorClient({
     startJob: async ({ namespace, question }) => {
@@ -48,6 +89,7 @@ export function createExedraInvestigatorClient(apiBase: string): GraphInvestigat
       return { jobId: json.jobId };
     },
     streamUrl: (jobId) => `${JOBS_API_BASE}/${encodeURIComponent(jobId)}/stream`,
+    fetchCompleteAnswer: fetchInvestigationResult,
     cancelJob: (jobId) => {
       void fetch(`${JOBS_API_BASE}/${encodeURIComponent(jobId)}`, {
         method: "DELETE",
