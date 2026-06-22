@@ -168,6 +168,7 @@ function InterviewContent({
     canViewParticipantChats: sessionDetail?.canManage === true,
     viewingParticipantUserId: viewingParticipant?.userId ?? null,
     onViewParticipantChat: handleViewParticipantChat,
+    onReturnToOwnInterview: handleBackFromParticipantChat,
     beliefsReadOnly: viewingParticipant !== null,
   };
 

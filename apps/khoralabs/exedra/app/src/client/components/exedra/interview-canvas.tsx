@@ -65,6 +65,7 @@ type InterviewCanvasProps = {
   canViewParticipantChats?: boolean;
   viewingParticipantUserId?: string | null;
   onViewParticipantChat?: (participant: AccountProfile) => void;
+  onReturnToOwnInterview?: () => void;
   beliefsReadOnly?: boolean;
 };
 
@@ -82,6 +83,7 @@ export function InterviewCanvas({
   canViewParticipantChats = false,
   viewingParticipantUserId = null,
   onViewParticipantChat,
+  onReturnToOwnInterview,
   beliefsReadOnly = false,
 }: InterviewCanvasProps) {
   const [creatingTopic, setCreatingTopic] = useState<string | null>(null);
@@ -128,6 +130,7 @@ export function InterviewCanvas({
               canViewParticipantChats={canViewParticipantChats}
               viewingParticipantUserId={viewingParticipantUserId}
               onViewParticipantChat={onViewParticipantChat}
+              onReturnToOwnInterview={onReturnToOwnInterview}
             />
           )}
         </TabsContent>

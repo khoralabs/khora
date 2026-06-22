@@ -16,6 +16,7 @@ type SessionAccessPanelProps = {
   canViewParticipantChats?: boolean;
   viewingParticipantUserId?: string | null;
   onViewParticipantChat?: (participant: AccountProfile) => void;
+  onReturnToOwnInterview?: () => void;
 };
 
 export function SessionAccessPanel({
@@ -26,6 +27,7 @@ export function SessionAccessPanel({
   canViewParticipantChats = false,
   viewingParticipantUserId = null,
   onViewParticipantChat,
+  onReturnToOwnInterview,
 }: SessionAccessPanelProps) {
   const [shareOpen, setShareOpen] = useState(false);
   const [listRefreshKey, setListRefreshKey] = useState(0);
@@ -84,6 +86,7 @@ export function SessionAccessPanel({
             canViewParticipantChats={canViewParticipantChats}
             viewingParticipantUserId={viewingParticipantUserId}
             onViewParticipantChat={onViewParticipantChat}
+            onReturnToOwnInterview={onReturnToOwnInterview}
             onRemoved={() => {
               setListRefreshKey((k) => k + 1);
               onRefresh();

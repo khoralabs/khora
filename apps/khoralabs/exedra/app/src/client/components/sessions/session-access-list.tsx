@@ -1,5 +1,6 @@
 import type { AccountProfile } from "@shared/accounts/row";
 import type { SessionAccessEntry, SessionTeamEntry } from "@shared/sessions/access";
+import { Info } from "lucide-react";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 
 import {
@@ -21,6 +22,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ItemGroup } from "@/components/ui/item";
 import { Spinner } from "@/components/ui/spinner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { fetchSessionAccess, manageSessionScopes } from "@/lib/sessions-api";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +39,7 @@ type SessionAccessListProps = {
   canViewParticipantChats?: boolean;
   viewingParticipantUserId?: string | null;
   onViewParticipantChat?: (participant: AccountProfile) => void;
+  onReturnToOwnInterview?: () => void;
 };
 
 export function SessionAccessList({
@@ -46,6 +49,7 @@ export function SessionAccessList({
   canViewParticipantChats = false,
   viewingParticipantUserId = null,
   onViewParticipantChat,
+  onReturnToOwnInterview,
 }: SessionAccessListProps) {
   const [entries, setEntries] = useState<SessionAccessEntry[]>([]);
   const [canManage, setCanManage] = useState(false);
@@ -122,92 +126,135 @@ export function SessionAccessList({
 
   return (
     <div className="space-y-2">
-      <ItemGroup className="gap-2">
-        {entries.map((entry) => {
-          if (isTeamEntry(entry)) {
+      <TooltipProvider>
+        <ItemGroup className="gap-2">
+          {entries.map((entry) => {
+            if (isTeamEntry(entry)) {
+              return (
+                <TeamItem key={entry.team.id} team={entry.team} variant="outline" size="sm">
+                  <TeamItemMedia />
+                  <TeamItemContent>
+                    <TeamItemTitle />
+                    <TeamItemDescription>
+                      {entry.role === "facilitator" ? "Facilitator team" : "Participant team"}
+                    </TeamItemDescription>
+                  </TeamItemContent>
+                  {canManage && entry.role !== "facilitator" ? (
+                    <TeamItemActions>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={removingId === entry.team.id}
+                        onClick={() => void handleRemoveTeam(entry.team.id)}
+                      >
+                        {removingId === entry.team.id ? "Removing…" : "Remove"}
+                      </Button>
+                    </TeamItemActions>
+                  ) : null}
+                </TeamItem>
+              );
+            }
+
+            const viewingAnotherParticipant =
+              viewingParticipantUserId !== null &&
+              viewingParticipantUserId !== entry.account.userId;
+            const canViewOtherChat =
+              canViewParticipantChats &&
+              !entry.isCurrentUser &&
+              onViewParticipantChat !== undefined;
+            const canReturnToOwnChat =
+              canViewParticipantChats &&
+              entry.isCurrentUser &&
+              viewingAnotherParticipant &&
+              onReturnToOwnInterview !== undefined;
+            const isChatInteractive = canViewOtherChat || canReturnToOwnChat;
+            const isViewingThisParticipant = viewingParticipantUserId === entry.account.userId;
+            const interviewTooltip = entry.isCurrentUser
+              ? "Return to your interview chat"
+              : "View this person's interview chat";
+
             return (
-              <TeamItem key={entry.team.id} team={entry.team} variant="outline" size="sm">
-                <TeamItemMedia />
-                <TeamItemContent>
-                  <TeamItemTitle />
-                  <TeamItemDescription>
-                    {entry.role === "facilitator" ? "Facilitator team" : "Participant team"}
-                  </TeamItemDescription>
-                </TeamItemContent>
-                {canManage && entry.role !== "facilitator" ? (
-                  <TeamItemActions>
+              <AccountItem
+                key={entry.account.userId}
+                account={entry.account}
+                isCurrentUser={entry.isCurrentUser}
+                variant="outline"
+                size="sm"
+                className={cn(
+                  isChatInteractive && "cursor-pointer transition-colors hover:bg-accent/50",
+                  isViewingThisParticipant && "border-primary bg-accent/40",
+                  canReturnToOwnChat && "border-primary/60 bg-accent/20",
+                )}
+                {...(isChatInteractive
+                  ? {
+                      role: "button" as const,
+                      tabIndex: 0,
+                      onClick: () => {
+                        if (entry.isCurrentUser) {
+                          onReturnToOwnInterview?.();
+                          return;
+                        }
+                        onViewParticipantChat?.(entry.account);
+                      },
+                      onKeyDown: (event: KeyboardEvent) => {
+                        if (event.key !== "Enter" && event.key !== " ") return;
+                        event.preventDefault();
+                        if (entry.isCurrentUser) {
+                          onReturnToOwnInterview?.();
+                          return;
+                        }
+                        onViewParticipantChat?.(entry.account);
+                      },
+                    }
+                  : {})}
+              >
+                {canViewParticipantChats && isChatInteractive ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-6 shrink-0 text-muted-foreground"
+                        onClick={(event) => event.stopPropagation()}
+                        onKeyDown={(event) => event.stopPropagation()}
+                        aria-label={interviewTooltip}
+                      >
+                        <Info className="size-3.5" aria-hidden />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">{interviewTooltip}</TooltipContent>
+                  </Tooltip>
+                ) : null}
+                <AccountItemMedia />
+                <AccountItemContent>
+                  <AccountItemTitle />
+                  <AccountItemDescription>
+                    {entry.context.role === "facilitator" ? "Facilitator" : "Participant"}
+                  </AccountItemDescription>
+                </AccountItemContent>
+                {canManage && entry.context.role !== "facilitator" && !entry.isCurrentUser ? (
+                  <AccountItemActions>
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      disabled={removingId === entry.team.id}
-                      onClick={() => void handleRemoveTeam(entry.team.id)}
+                      disabled={removingId === entry.account.userId}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void handleRemoveAccount(entry.account.userId);
+                      }}
                     >
-                      {removingId === entry.team.id ? "Removing…" : "Remove"}
+                      {removingId === entry.account.userId ? "Removing…" : "Remove"}
                     </Button>
-                  </TeamItemActions>
+                  </AccountItemActions>
                 ) : null}
-              </TeamItem>
+              </AccountItem>
             );
-          }
-          return (
-            <AccountItem
-              key={entry.account.userId}
-              account={entry.account}
-              isCurrentUser={entry.isCurrentUser}
-              variant="outline"
-              size="sm"
-              className={cn(
-                canViewParticipantChats &&
-                  !entry.isCurrentUser &&
-                  onViewParticipantChat !== undefined &&
-                  "cursor-pointer transition-colors hover:bg-accent/50",
-                viewingParticipantUserId === entry.account.userId && "border-primary bg-accent/40",
-              )}
-              {...(canViewParticipantChats &&
-              !entry.isCurrentUser &&
-              onViewParticipantChat !== undefined
-                ? {
-                    role: "button" as const,
-                    tabIndex: 0,
-                    onClick: () => onViewParticipantChat(entry.account),
-                    onKeyDown: (event: KeyboardEvent) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        onViewParticipantChat(entry.account);
-                      }
-                    },
-                  }
-                : {})}
-            >
-              <AccountItemMedia />
-              <AccountItemContent>
-                <AccountItemTitle />
-                <AccountItemDescription>
-                  {entry.context.role === "facilitator" ? "Facilitator" : "Participant"}
-                  {canViewParticipantChats && !entry.isCurrentUser ? " · View interview" : null}
-                </AccountItemDescription>
-              </AccountItemContent>
-              {canManage && entry.context.role !== "facilitator" && !entry.isCurrentUser ? (
-                <AccountItemActions>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    disabled={removingId === entry.account.userId}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      void handleRemoveAccount(entry.account.userId);
-                    }}
-                  >
-                    {removingId === entry.account.userId ? "Removing…" : "Remove"}
-                  </Button>
-                </AccountItemActions>
-              ) : null}
-            </AccountItem>
-          );
-        })}
-      </ItemGroup>
+          })}
+        </ItemGroup>
+      </TooltipProvider>
       {error !== null ? <p className="text-sm text-destructive">{error}</p> : null}
     </div>
   );
