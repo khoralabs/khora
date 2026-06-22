@@ -104,7 +104,14 @@ export async function loadDocumentAttachment(
     { headers: authHeaders() },
   );
   if (!bytesRes.ok) {
-    throw new Error(`Failed to load document bytes (${bytesRes.status})`);
+    let detail = `HTTP ${bytesRes.status}`;
+    try {
+      const data = (await bytesRes.clone().json()) as { error?: string };
+      if (data.error !== undefined && data.error.length > 0) detail = data.error;
+    } catch {
+      // ignore
+    }
+    throw new Error(`Failed to load document bytes (${detail})`);
   }
   const bytes = new Uint8Array(await bytesRes.arrayBuffer());
   return {

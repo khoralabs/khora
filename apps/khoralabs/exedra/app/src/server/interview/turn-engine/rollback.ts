@@ -6,7 +6,7 @@ import { getTeam } from "../../db/membership";
 import { deleteMessage } from "../../db/messages";
 import { deleteDocument, getDocumentsForUser } from "../../documents/db";
 import { cancelDocumentProcessingTaskRun } from "../../documents/dispatch-batch-integration";
-import { buildExedraDocumentRef, ExedraDocumentStore } from "../../documents/s3-store";
+import { ExedraDocumentStore } from "../../documents/s3-store";
 import { exedraMemoriesOntology } from "../../memories/exedra-ontology.js";
 import { openUserMemories } from "../../memories/store.js";
 
@@ -56,14 +56,7 @@ export async function rollbackTurnDocuments(args: {
       client.deleteMemory({ namespace, key });
     }
 
-    const ref = buildExedraDocumentRef({
-      orgId: team.orgId,
-      batchId: record.batchId,
-      documentId: record.id,
-      fileName: record.fileName,
-      contentHash: record.contentHash,
-    });
-    await store.deleteByRef(ref).catch(() => undefined);
+    await store.deleteByS3Key(record.s3Key).catch(() => undefined);
     deleteDocument(db, record.id);
   }
 }

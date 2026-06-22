@@ -91,22 +91,32 @@ export class ExedraDocumentStore implements ContentAddressedStore<ExedraDocument
   }
 
   async resolve(ref: ExedraDocumentRef): Promise<{ kind: "blob"; blob: Blob }> {
-    const bucket = getDocumentsS3Bucket();
-    if (bucket === undefined) {
-      throw new Error("EXEDRA_DOCUMENTS_S3_BUCKET is not configured");
-    }
-
     const s3Key = buildDocumentS3Key({
       orgId: ref.org_id,
       batchId: ref.batch_id,
       documentId: ref.document_id,
       fileName: ref.file_name,
     });
+    return this.getByS3Key({
+      s3Key,
+      contentHash: ref.content_hash,
+    });
+  }
+
+  async getByS3Key(params: {
+    s3Key: string;
+    contentHash: string;
+    mimeType?: string;
+  }): Promise<{ kind: "blob"; blob: Blob }> {
+    const bucket = getDocumentsS3Bucket();
+    if (bucket === undefined) {
+      throw new Error("EXEDRA_DOCUMENTS_S3_BUCKET is not configured");
+    }
 
     const response = await getS3Client().send(
       new GetObjectCommand({
         Bucket: bucket,
-        Key: s3Key,
+        Key: params.s3Key,
       }),
     );
 
@@ -117,16 +127,28 @@ export class ExedraDocumentStore implements ContentAddressedStore<ExedraDocument
 
     const bytes = new Uint8Array(await body.transformToByteArray());
     const contentHash = await sha256Hex(bytes);
-    if (contentHash !== ref.content_hash) {
+    if (contentHash !== params.contentHash) {
       throw new Error("Document content hash mismatch");
     }
 
     return {
       kind: "blob",
       blob: new Blob([bytes], {
-        type: response.ContentType ?? "application/octet-stream",
+        type: params.mimeType ?? response.ContentType ?? "application/octet-stream",
       }),
     };
+  }
+
+  async deleteByS3Key(s3Key: string): Promise<void> {
+    const bucket = getDocumentsS3Bucket();
+    if (bucket === undefined) return;
+
+    await getS3Client().send(
+      new DeleteObjectCommand({
+        Bucket: bucket,
+        Key: s3Key,
+      }),
+    );
   }
 
   async deleteByRef(ref: ExedraDocumentRef): Promise<void> {

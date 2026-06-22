@@ -13,7 +13,7 @@ import { getDb } from "../db/index.js";
 import { readContextTextFromBatch } from "../documents/batch-contribute.js";
 import { getDocumentById, listDocumentsByBatch, patchDocument } from "../documents/db.js";
 import { resolveDocumentOrgId } from "../documents/grant-scope.js";
-import { buildExedraDocumentRef, ExedraDocumentStore } from "../documents/s3-store.js";
+import { ExedraDocumentStore } from "../documents/s3-store.js";
 import type { DocumentRecord } from "../documents/types.js";
 import { logger } from "../logger.js";
 import { exedraMemoriesOntology } from "../memories/exedra-ontology.js";
@@ -114,20 +114,13 @@ export async function handleInternalGetDocumentBytes(
     return Response.json({ error: "Org not found" }, { status: 404 });
   }
 
-  const ref = buildExedraDocumentRef({
-    orgId,
-    batchId: record.batchId,
-    documentId: record.id,
-    fileName: record.fileName,
-    contentHash: record.contentHash,
-  });
-
   try {
     const store = new ExedraDocumentStore();
-    const resolved = await store.resolve(ref);
-    if (resolved.kind !== "blob") {
-      return Response.json({ error: "Document bytes unavailable" }, { status: 500 });
-    }
+    const resolved = await store.getByS3Key({
+      s3Key: record.s3Key,
+      contentHash: record.contentHash,
+      mimeType: record.mimeType,
+    });
     const bytes = new Uint8Array(await resolved.blob.arrayBuffer());
     return new Response(bytes, {
       status: 200,

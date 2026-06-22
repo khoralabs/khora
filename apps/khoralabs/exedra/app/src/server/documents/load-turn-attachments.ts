@@ -2,7 +2,7 @@ import type { Database } from "bun:sqlite";
 
 import { getTeam } from "../db/membership.js";
 import { getDocumentsForUser } from "./db.js";
-import { buildExedraDocumentRef, ExedraDocumentStore } from "./s3-store.js";
+import { ExedraDocumentStore } from "./s3-store.js";
 import type { DocumentRecord } from "./types.js";
 
 export type TurnDocumentAttachment = {
@@ -47,7 +47,7 @@ export async function loadTurnDocumentAttachments(args: {
   for (const documentId of args.documentIds) {
     const record = byId.get(documentId);
     if (record === undefined) continue;
-    attachments.push(await loadSingleAttachment(store, team.orgId, record));
+    attachments.push(await loadSingleAttachment(store, record));
   }
 
   return attachments;
@@ -55,20 +55,13 @@ export async function loadTurnDocumentAttachments(args: {
 
 async function loadSingleAttachment(
   store: ExedraDocumentStore,
-  orgId: string,
   record: DocumentRecord,
 ): Promise<TurnDocumentAttachment> {
-  const ref = buildExedraDocumentRef({
-    orgId,
-    batchId: record.batchId,
-    documentId: record.id,
-    fileName: record.fileName,
+  const resolved = await store.getByS3Key({
+    s3Key: record.s3Key,
     contentHash: record.contentHash,
+    mimeType: record.mimeType,
   });
-  const resolved = await store.resolve(ref);
-  if (resolved.kind !== "blob") {
-    throw new Error(`Document bytes unavailable: ${record.fileName}`);
-  }
   const bytes = new Uint8Array(await resolved.blob.arrayBuffer());
   return {
     documentId: record.id,
