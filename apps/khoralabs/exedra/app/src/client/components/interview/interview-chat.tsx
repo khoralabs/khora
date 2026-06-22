@@ -22,7 +22,7 @@ export function InterviewChat({
   onError,
   onNavigate,
   onSessionComplete,
-  scrollToMessageId,
+  scrollToTarget,
   onScrollToMessageComplete,
   canManage,
   onShare,
@@ -81,7 +81,7 @@ export function InterviewChat({
   ensureWebSocketOpenRef.current = ensureWebSocketOpen;
   setChatErrorRef.current = setChatError;
 
-  useScrollToMessage(scrollToMessageId, onScrollToMessageComplete, bootstrap !== null);
+  useScrollToMessage(scrollToTarget, onScrollToMessageComplete, bootstrap !== null);
 
   useEffect(() => {
     onChatDocumentsChange?.(extractChatDocuments(messages));

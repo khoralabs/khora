@@ -74,7 +74,7 @@ type InterviewCanvasProps = {
   onReturnToOwnInterview?: () => void;
   beliefsReadOnly?: boolean;
   chatDocuments?: ChatDocument[];
-  onDocumentClick?: (messageId: string) => void;
+  onDocumentClick?: (messageId: string, documentId: string) => void;
 };
 
 export function InterviewCanvas({

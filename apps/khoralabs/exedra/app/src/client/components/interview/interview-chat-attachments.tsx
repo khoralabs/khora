@@ -108,7 +108,8 @@ type MessageAttachmentItemProps = {
 const MessageAttachmentItem = memo(({ attachment, metadata }: MessageAttachmentItemProps) => (
   <DocumentMetadataHoverCard metadata={metadata} side="top">
     <a
-      className="block shrink-0"
+      className="block shrink-0 rounded-lg"
+      data-attachment-id={attachment.id}
       href={attachment.type === "file" ? attachment.url : undefined}
       rel="noreferrer"
       target="_blank"

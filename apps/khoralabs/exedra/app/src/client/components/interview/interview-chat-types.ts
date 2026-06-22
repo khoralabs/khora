@@ -3,6 +3,8 @@ import type { UIMessage } from "ai";
 import type { DocumentProcessingStatus } from "@/lib/documents-api";
 import type { BeliefFlag, ChatDocument, InterviewBootstrap } from "@/lib/interview-api";
 
+import type { InterviewScrollTarget } from "./use-scroll-to-message";
+
 export type SessionCompletePayload = {
   summary: string;
   nextSessionOptions?: string[] | null;
@@ -16,7 +18,7 @@ export type InterviewChatProps = {
   onError: (error: string | null) => void;
   onNavigate: (path: string) => void;
   onSessionComplete?: (payload: SessionCompletePayload) => void;
-  scrollToMessageId?: string | null;
+  scrollToTarget?: InterviewScrollTarget | null;
   onScrollToMessageComplete?: () => void;
   canManage?: boolean;
   onShare?: () => void;

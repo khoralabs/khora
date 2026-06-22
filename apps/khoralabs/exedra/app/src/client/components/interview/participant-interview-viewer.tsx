@@ -26,12 +26,14 @@ import { SidebarSheetTrigger } from "@/shell/sidebar-sheet-trigger";
 import { InterviewChatMessages } from "./interview-chat-messages";
 import { useScrollToMessage } from "./use-scroll-to-message";
 
+import type { InterviewScrollTarget } from "./use-scroll-to-message";
+
 type ParticipantInterviewViewerProps = {
   sessionId: string;
   participant: AccountProfile;
   onBack: () => void;
   onNavigate: (path: string) => void;
-  scrollToMessageId?: string | null;
+  scrollToTarget?: InterviewScrollTarget | null;
   onScrollToMessageComplete?: () => void;
   onLoaded: (data: {
     beliefs: BeliefFlag[];
@@ -45,7 +47,7 @@ export function ParticipantInterviewViewer({
   participant,
   onBack,
   onNavigate,
-  scrollToMessageId,
+  scrollToTarget,
   onScrollToMessageComplete,
   onLoaded,
   onChatDocumentsChange,
@@ -55,7 +57,7 @@ export function ParticipantInterviewViewer({
   const [error, setError] = useState<string | null>(null);
   const participantName = formatAccountDisplayName(participant);
 
-  useScrollToMessage(scrollToMessageId, onScrollToMessageComplete, messages !== null);
+  useScrollToMessage(scrollToTarget, onScrollToMessageComplete, messages !== null);
 
   useEffect(() => {
     if (messages === null) {

@@ -5,6 +5,7 @@ import { InterviewCanvas } from "@/components/exedra/interview-canvas";
 import { InterviewChat } from "@/components/interview/interview-chat";
 import type { SessionCompletePayload } from "@/components/interview/interview-chat-types";
 import { ParticipantInterviewViewer } from "@/components/interview/participant-interview-viewer";
+import type { InterviewScrollTarget } from "@/components/interview/use-scroll-to-message";
 import { ShareSessionDialog } from "@/components/sessions/share-session-dialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { AnalyticsProvider, useAnalytics } from "@/lib/analytics";
@@ -49,7 +50,7 @@ function InterviewContent({
   const track = useAnalytics();
   const [beliefs, setBeliefs] = useState<BeliefFlag[]>([]);
   const [completion, setCompletion] = useState<InterviewCompletion | null>(null);
-  const [scrollToMessageId, setScrollToMessageId] = useState<string | null>(null);
+  const [scrollToTarget, setScrollToTarget] = useState<InterviewScrollTarget | null>(null);
   const [chatDocuments, setChatDocuments] = useState<ChatDocument[]>([]);
   const [chatError, setChatError] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
@@ -124,15 +125,15 @@ function InterviewContent({
 
   const handleBeliefSourceClick = useCallback(
     (sourceMessageId: string) => {
-      setScrollToMessageId(sourceMessageId);
+      setScrollToTarget({ messageId: sourceMessageId });
       setCanvasOpen(false);
     },
     [setCanvasOpen],
   );
 
   const handleDocumentClick = useCallback(
-    (messageId: string) => {
-      setScrollToMessageId(messageId);
+    (messageId: string, documentId: string) => {
+      setScrollToTarget({ messageId, attachmentId: documentId });
       setCanvasOpen(false);
     },
     [setCanvasOpen],
@@ -198,8 +199,8 @@ function InterviewContent({
           participant={viewingParticipant}
           onBack={handleBackFromParticipantChat}
           onNavigate={onNavigate}
-          scrollToMessageId={scrollToMessageId}
-          onScrollToMessageComplete={() => setScrollToMessageId(null)}
+          scrollToTarget={scrollToTarget}
+          onScrollToMessageComplete={() => setScrollToTarget(null)}
           onLoaded={handleParticipantLoaded}
           onChatDocumentsChange={handleChatDocumentsChange}
         />
@@ -212,8 +213,8 @@ function InterviewContent({
           onError={handleChatError}
           onNavigate={onNavigate}
           onSessionComplete={handleSessionComplete}
-          onScrollToMessageComplete={() => setScrollToMessageId(null)}
-          scrollToMessageId={scrollToMessageId}
+          onScrollToMessageComplete={() => setScrollToTarget(null)}
+          scrollToTarget={scrollToTarget}
           canManage={sessionDetail?.canManage}
           onShare={() => setShareOpen(true)}
           onTopicChange={loadSessions}

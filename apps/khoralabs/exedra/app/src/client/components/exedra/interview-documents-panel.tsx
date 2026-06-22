@@ -29,7 +29,7 @@ function toDocumentMetadata(document: ChatDocument): DocumentMetadataInfo {
 type DocumentThumbnailProps = {
   document: ChatDocument;
   sessionId: string;
-  onClick: (messageId: string) => void;
+  onClick: (messageId: string, documentId: string) => void;
 };
 
 const DocumentThumbnail = memo(({ document, sessionId, onClick }: DocumentThumbnailProps) => {
@@ -49,7 +49,7 @@ const DocumentThumbnail = memo(({ document, sessionId, onClick }: DocumentThumbn
       <button
         type="button"
         className="block shrink-0 cursor-pointer rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        onClick={() => onClick(document.messageId)}
+        onClick={() => onClick(document.messageId, document.id)}
       >
         <Attachment data={attachmentData}>
           <AttachmentPreview />
@@ -64,7 +64,7 @@ DocumentThumbnail.displayName = "DocumentThumbnail";
 type InterviewDocumentsPanelProps = {
   documents: ChatDocument[];
   sessionId: string;
-  onDocumentClick: (messageId: string) => void;
+  onDocumentClick: (messageId: string, documentId: string) => void;
 };
 
 export function InterviewDocumentsPanel({
