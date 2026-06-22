@@ -6,6 +6,7 @@ import type { BeliefFlag, ChatMessage } from "@/lib/interview-api";
 
 import { upsertStreamingToolCall } from "./interview-chat-tool-utils";
 import type { SessionCompletePayload, WsServerMessage } from "./interview-chat-types";
+import { assistantStreamId } from "./interview-turn-ids";
 
 export type InterviewWsHandlerContext = {
   setMessages: Dispatch<SetStateAction<ChatMessage[]>>;
@@ -20,6 +21,7 @@ export type InterviewWsHandlerContext = {
   shouldAcceptStreamUpdates?: () => boolean;
   onTurnComplete?: () => void;
   onTurnAborted?: (turnId: string) => void;
+  onTurnFailed?: (turnId: string, error: string) => void;
 };
 
 function ignoreStreamUpdate(ctx: InterviewWsHandlerContext): boolean {
@@ -34,6 +36,21 @@ type ToolError = Extract<WsServerMessage, { type: "tool_error" }>;
 type AssistantMessage = Extract<WsServerMessage, { type: "assistant_message" }>;
 type BeliefFlagMessage = Extract<WsServerMessage, { type: "belief_flag" }>;
 type ErrorMessage = Extract<WsServerMessage, { type: "error" }>;
+type TurnFailedMessage = Extract<WsServerMessage, { type: "turn_failed" }>;
+
+function resolveStreamingId(turnId: string | undefined, ctx: InterviewWsHandlerContext): string {
+  if (turnId !== undefined) {
+    const streamId = assistantStreamId(turnId);
+    ctx.streamingIdRef.current = streamId;
+    return streamId;
+  }
+  const existing = ctx.streamingIdRef.current;
+  if (existing !== null) return existing;
+  const streamId = nanoid();
+  ctx.streamingIdRef.current = streamId;
+  return streamId;
+}
+
 type TurnAbortedMessage = Extract<WsServerMessage, { type: "turn_aborted" }>;
 
 export function handleUserMessageSaved(message: UserMessageSaved, ctx: InterviewWsHandlerContext) {
@@ -75,8 +92,7 @@ export function handleUserMessageSaved(message: UserMessageSaved, ctx: Interview
 export function handleTextDelta(message: TextDelta, ctx: InterviewWsHandlerContext) {
   if (ignoreStreamUpdate(ctx)) return;
   ctx.setAwaitingOpening(false);
-  const streamingId = ctx.streamingIdRef.current ?? nanoid();
-  ctx.streamingIdRef.current = streamingId;
+  const streamingId = resolveStreamingId(message.turnId, ctx);
   ctx.setMessages((current) => {
     const existing = current.find((entry) => entry.id === streamingId);
     if (existing !== undefined) {
@@ -101,8 +117,7 @@ export function handleTextDelta(message: TextDelta, ctx: InterviewWsHandlerConte
 export function handleToolCall(message: ToolCall, ctx: InterviewWsHandlerContext) {
   if (ignoreStreamUpdate(ctx)) return;
   ctx.setAwaitingOpening(false);
-  const streamingId = ctx.streamingIdRef.current ?? nanoid();
-  ctx.streamingIdRef.current = streamingId;
+  const streamingId = resolveStreamingId(message.turnId, ctx);
   ctx.setMessages((current) =>
     upsertStreamingToolCall(
       current,
@@ -121,8 +136,7 @@ export function handleToolCall(message: ToolCall, ctx: InterviewWsHandlerContext
 
 export function handleToolResult(message: ToolResult, ctx: InterviewWsHandlerContext) {
   if (ignoreStreamUpdate(ctx)) return;
-  const streamingId = ctx.streamingIdRef.current;
-  if (streamingId === null) return;
+  const streamingId = resolveStreamingId(message.turnId, ctx);
   ctx.setMessages((current) =>
     upsertStreamingToolCall(
       current,
@@ -140,8 +154,7 @@ export function handleToolResult(message: ToolResult, ctx: InterviewWsHandlerCon
 
 export function handleToolError(message: ToolError, ctx: InterviewWsHandlerContext) {
   if (ignoreStreamUpdate(ctx)) return;
-  const streamingId = ctx.streamingIdRef.current;
-  if (streamingId === null) return;
+  const streamingId = resolveStreamingId(message.turnId, ctx);
   ctx.setMessages((current) =>
     upsertStreamingToolCall(
       current,
@@ -251,6 +264,15 @@ export function handleTurnAborted(message: TurnAbortedMessage, ctx: InterviewWsH
   ctx.onTurnAborted?.(message.turnId);
 }
 
+export function handleTurnFailed(message: TurnFailedMessage, ctx: InterviewWsHandlerContext) {
+  ctx.streamingIdRef.current = null;
+  ctx.setAwaitingOpening(false);
+  ctx.setStatus("ready");
+  ctx.setChatError(null);
+  ctx.onTurnComplete?.();
+  ctx.onTurnFailed?.(message.turnId, message.error);
+}
+
 export function handleWsError(message: ErrorMessage, ctx: InterviewWsHandlerContext) {
   if (ignoreStreamUpdate(ctx)) return;
   ctx.streamingIdRef.current = null;
@@ -294,6 +316,9 @@ export function dispatchWsMessage(parsed: WsServerMessage, ctx: InterviewWsHandl
       return;
     case "turn_aborted":
       handleTurnAborted(parsed, ctx);
+      return;
+    case "turn_failed":
+      handleTurnFailed(parsed, ctx);
       return;
     case "error":
       handleWsError(parsed, ctx);

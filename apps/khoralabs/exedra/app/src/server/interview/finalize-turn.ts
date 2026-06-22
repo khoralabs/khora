@@ -126,10 +126,11 @@ export function finalizeInterviewTurn(args: {
 function turnEventToWire(event: TurnEvent): TurnEventWire {
   switch (event.type) {
     case "text_delta":
-      return { type: "text_delta", delta: event.delta };
+      return { type: "text_delta", turnId: event.turnId, delta: event.delta };
     case "tool_call":
       return {
         type: "tool_call",
+        turnId: event.turnId,
         toolCallId: event.toolCallId,
         toolName: event.toolName,
         input: event.input,
@@ -137,6 +138,7 @@ function turnEventToWire(event: TurnEvent): TurnEventWire {
     case "tool_result":
       return {
         type: "tool_result",
+        turnId: event.turnId,
         toolCallId: event.toolCallId,
         toolName: event.toolName,
         output: event.output,
@@ -144,6 +146,7 @@ function turnEventToWire(event: TurnEvent): TurnEventWire {
     case "tool_error":
       return {
         type: "tool_error",
+        turnId: event.turnId,
         toolCallId: event.toolCallId,
         toolName: event.toolName,
         errorText: event.errorText,
@@ -151,11 +154,14 @@ function turnEventToWire(event: TurnEvent): TurnEventWire {
     case "belief_flag":
       return {
         type: "belief_flag",
+        turnId: event.turnId,
         belief: event.belief,
         sourceMessageId: event.sourceMessageId,
       };
     case "turn_aborted":
       return { type: "turn_aborted", turnId: event.turnId };
+    case "turn_failed":
+      return { type: "turn_failed", turnId: event.turnId, error: event.error };
     case "error":
       return { type: "error", error: event.error };
     default:
@@ -173,13 +179,15 @@ export function relayTurnEventsFromWire(
   }
 }
 
-export function turnWireToEvent(_turnId: string, wire: TurnEventWire): TurnEvent {
+export function turnWireToEvent(fallbackTurnId: string, wire: TurnEventWire): TurnEvent {
+  const turnId = "turnId" in wire ? wire.turnId : fallbackTurnId;
   switch (wire.type) {
     case "text_delta":
-      return { type: "text_delta", delta: wire.delta };
+      return { type: "text_delta", turnId, delta: wire.delta };
     case "tool_call":
       return {
         type: "tool_call",
+        turnId,
         toolCallId: wire.toolCallId,
         toolName: wire.toolName,
         input: wire.input,
@@ -187,6 +195,7 @@ export function turnWireToEvent(_turnId: string, wire: TurnEventWire): TurnEvent
     case "tool_result":
       return {
         type: "tool_result",
+        turnId,
         toolCallId: wire.toolCallId,
         toolName: wire.toolName,
         output: wire.output,
@@ -194,6 +203,7 @@ export function turnWireToEvent(_turnId: string, wire: TurnEventWire): TurnEvent
     case "tool_error":
       return {
         type: "tool_error",
+        turnId,
         toolCallId: wire.toolCallId,
         toolName: wire.toolName,
         errorText: wire.errorText,
@@ -201,11 +211,14 @@ export function turnWireToEvent(_turnId: string, wire: TurnEventWire): TurnEvent
     case "belief_flag":
       return {
         type: "belief_flag",
+        turnId,
         belief: wire.belief,
         sourceMessageId: wire.sourceMessageId,
       };
     case "turn_aborted":
       return { type: "turn_aborted", turnId: wire.turnId };
+    case "turn_failed":
+      return { type: "turn_failed", turnId: wire.turnId, error: wire.error };
     case "error":
       return { type: "error", error: wire.error };
   }

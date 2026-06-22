@@ -24,11 +24,29 @@ export type TurnEvent =
       createdAtMs: number;
       author: MessageAuthor | null;
     }
-  | { type: "text_delta"; delta: string }
-  | { type: "tool_call"; toolCallId: string; toolName: string; input: unknown }
-  | { type: "tool_result"; toolCallId: string; toolName: string; output: unknown }
-  | { type: "tool_error"; toolCallId: string; toolName: string; errorText: string }
-  | { type: "belief_flag"; belief: string; sourceMessageId: string }
+  | { type: "text_delta"; turnId: string; delta: string }
+  | {
+      type: "tool_call";
+      turnId: string;
+      toolCallId: string;
+      toolName: string;
+      input: unknown;
+    }
+  | {
+      type: "tool_result";
+      turnId: string;
+      toolCallId: string;
+      toolName: string;
+      output: unknown;
+    }
+  | {
+      type: "tool_error";
+      turnId: string;
+      toolCallId: string;
+      toolName: string;
+      errorText: string;
+    }
+  | { type: "belief_flag"; turnId: string; belief: string; sourceMessageId: string }
   | {
       type: "assistant_message";
       message: {
@@ -42,6 +60,7 @@ export type TurnEvent =
       sessionCompleted?: boolean;
     }
   | { type: "turn_aborted"; turnId: string }
+  | { type: "turn_failed"; turnId: string; error: string }
   | { type: "session_complete"; completion: SessionCompletionEvent }
   | { type: "error"; error: string };
 

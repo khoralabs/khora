@@ -10,7 +10,7 @@ import { getDocumentById, patchDocumentsBatchId } from "../../documents/db";
 import { dispatchBatchIntegrationForDocuments } from "../../documents/dispatch-batch-integration";
 import { loadTurnDocumentAttachments } from "../../documents/load-turn-attachments";
 import { resolveUserMessageDocuments } from "../../documents/message-context";
-import { createJob, setJobStatus } from "../../jobs/db.js";
+import { createJob } from "../../jobs/db.js";
 import { resolveViewerAuthor } from "../../messages/resolve-author";
 import { withSpan } from "../../telemetry/spans";
 import {
@@ -22,6 +22,7 @@ import {
   dispatchInterviewTurn,
   isInterviewTurnWorkflowConfigured,
 } from "../dispatch-interview-turn.js";
+import { failInterviewTurn } from "../fail-interview-turn.js";
 import { finalizeInterviewTurn } from "../finalize-turn.js";
 import {
   buildInterviewMemorySearch,
@@ -283,9 +284,18 @@ async function executeTurnBody(
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to dispatch interview turn";
-      setJobStatus(db, turnId, "failed", { error: message });
+      await failInterviewTurn({
+        db,
+        turnId,
+        threadId,
+        sessionId: session.id,
+        teamId: session.teamId,
+        userId,
+        documentIds,
+        error: message,
+        emit,
+      });
       setStatus("error");
-      emit({ type: "error", error: message });
     }
     return;
   }
@@ -334,17 +344,18 @@ async function executeTurnBody(
       documentAttachments,
       onTextDelta: (delta) => {
         if (signal.aborted) return;
-        emit({ type: "text_delta", delta });
+        emit({ type: "text_delta", turnId, delta });
       },
       onBeliefFlag: (belief, sourceMessageId) => {
         if (signal.aborted) return;
-        emit({ type: "belief_flag", belief, sourceMessageId });
+        emit({ type: "belief_flag", turnId, belief, sourceMessageId });
       },
       onToolEvent: (event) => {
         if (signal.aborted) return;
         if (event.type === "call") {
           emit({
             type: "tool_call",
+            turnId,
             toolCallId: event.toolCallId,
             toolName: event.toolName,
             input: event.input,
@@ -354,6 +365,7 @@ async function executeTurnBody(
         if (event.type === "result") {
           emit({
             type: "tool_result",
+            turnId,
             toolCallId: event.toolCallId,
             toolName: event.toolName,
             output: event.output,
@@ -362,6 +374,7 @@ async function executeTurnBody(
         }
         emit({
           type: "tool_error",
+          turnId,
           toolCallId: event.toolCallId,
           toolName: event.toolName,
           errorText: event.errorText,
@@ -402,6 +415,16 @@ async function executeTurnBody(
 
     setStatus("error");
     const msg = err instanceof Error ? err.message : "Interview agent failed";
-    emit({ type: "error", error: msg });
+    await failInterviewTurn({
+      db,
+      turnId,
+      threadId,
+      sessionId: session.id,
+      teamId: session.teamId,
+      userId,
+      documentIds,
+      error: msg,
+      emit,
+    });
   }
 }

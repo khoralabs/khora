@@ -74,6 +74,7 @@ export function useInterviewWs({
       sessionRefs.abortedGenerationRef.current !== sessionRefs.sendGenerationRef.current,
     onTurnComplete: () => sessionRefs.clearPendingDraft(),
     onTurnAborted: (turnId) => sessionRefs.onTurnAborted(turnId),
+    onTurnFailed: (turnId, error) => sessionRefs.onTurnFailed(turnId, error),
   });
   wsHandlerContext.current.setMessages = setMessages;
   wsHandlerContext.current.setStatus = setStatus;
@@ -86,6 +87,8 @@ export function useInterviewWs({
     sessionRefs.abortedGenerationRef.current !== sessionRefs.sendGenerationRef.current;
   wsHandlerContext.current.onTurnComplete = () => sessionRefs.clearPendingDraft();
   wsHandlerContext.current.onTurnAborted = (turnId) => sessionRefs.onTurnAborted(turnId);
+  wsHandlerContext.current.onTurnFailed = (turnId, error) =>
+    sessionRefs.onTurnFailed(turnId, error);
 
   const clearReconnectTimer = useCallback(() => {
     if (reconnectTimerRef.current !== null) {

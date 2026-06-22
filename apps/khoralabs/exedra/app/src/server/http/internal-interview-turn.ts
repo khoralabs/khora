@@ -11,6 +11,7 @@ import { getDb } from "../db/index.js";
 import { getOrg, getTeam } from "../db/membership.js";
 import { loadThreadMessages } from "../db/messages.js";
 import { getSession, getThread } from "../db/sessions.js";
+import { failInterviewTurn } from "../interview/fail-interview-turn.js";
 import { finalizeInterviewTurn, relayTurnEventsFromWire } from "../interview/finalize-turn.js";
 import {
   buildInterviewMemorySearchContext,
@@ -18,9 +19,7 @@ import {
   searchOrgMemoriesForInterview,
   searchPersonalMemoriesForInterview,
 } from "../interview/memory-retrieval.js";
-import type { TurnEvent } from "../interview/turn-engine/events.js";
-import { relayTurnEvent } from "../interview/turn-relay.js";
-import { appendJobEvents, getJob, setJobStatus } from "../jobs/db.js";
+import { appendJobEvents, getJob } from "../jobs/db.js";
 import { requireInternalToken } from "./require-internal-token.js";
 
 function getTurnSessionContext(turnId: string): {
@@ -243,11 +242,22 @@ export async function handleInternalFailInterviewTurn(
   if (ctx === null) return Response.json({ error: "Turn not found" }, { status: 404 });
 
   const db = getDb();
-  const errorEvent: TurnEvent = { type: "error", error: body.error };
-  appendJobEvents(db, turnId, [
-    { type: "turn_event", event: { type: "error", error: body.error } },
-  ]);
-  setJobStatus(db, turnId, "failed", { error: body.error });
-  relayTurnEvent(ctx.threadId, errorEvent);
+  const job = getJob(db, turnId);
+  const payload = job?.payload as { documentIds?: string[] } | null;
+  if (ctx.thread.user_id === null || ctx.thread.user_id === undefined) {
+    return Response.json({ error: "Thread user not found" }, { status: 404 });
+  }
+
+  await failInterviewTurn({
+    db,
+    turnId,
+    threadId: ctx.threadId,
+    sessionId: ctx.session.id,
+    teamId: ctx.session.teamId,
+    userId: ctx.thread.user_id,
+    documentIds: payload?.documentIds ?? [],
+    error: body.error,
+  });
+
   return Response.json({ ok: true });
 }

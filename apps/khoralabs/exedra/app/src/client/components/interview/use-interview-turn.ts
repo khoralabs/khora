@@ -9,12 +9,15 @@ import {
   useRef,
   useState,
 } from "react";
+import { toast } from "sonner";
 import type { AttachmentData } from "@/components/ai-elements/attachments";
 import type { PromptInputMessage } from "@/components/ai-elements/prompt-input";
 import { useAnalytics } from "@/lib/analytics";
 import { uploadSessionDocument } from "@/lib/documents-api";
 import type { BeliefFlag, ChatMessage } from "@/lib/interview-api";
 import { getBrowserTimeZone } from "@/lib/user-timezone";
+
+import { assistantStreamId } from "./interview-turn-ids";
 
 type PromptAttachmentControls = {
   add: (files: File[] | FileList) => void;
@@ -31,6 +34,7 @@ export type InterviewTurnSessionRefs = {
   abortedGenerationRef: RefObject<number | null>;
   clearPendingDraft: () => void;
   onTurnAborted: (turnId: string) => void;
+  onTurnFailed: (turnId: string, error: string) => void;
 };
 
 type UseInterviewTurnArgs = {
@@ -75,15 +79,11 @@ function rollbackTurnUi(args: {
   beliefsRef: RefObject<BeliefFlag[]>;
   onBeliefsChange: (beliefs: BeliefFlag[]) => void;
 }): void {
-  const streamingId = args.streamingIdRef.current;
   args.streamingIdRef.current = null;
 
   args.setMessages((current) => {
-    let next = current.filter((message) => message.id !== args.turnId);
-    if (streamingId !== null) {
-      next = next.filter((message) => message.id !== streamingId);
-    }
-    return next;
+    const streamId = assistantStreamId(args.turnId);
+    return current.filter((message) => message.id !== args.turnId && message.id !== streamId);
   });
 
   if (args.beliefsSnapshot !== null) {
@@ -159,6 +159,15 @@ export function useInterviewTurn({
     (turnId: string) => {
       if (activeTurnIdRef.current !== turnId) return;
       revertTurn(turnId, true);
+    },
+    [revertTurn],
+  );
+
+  const onTurnFailed = useCallback(
+    (turnId: string, error: string) => {
+      if (activeTurnIdRef.current !== turnId) return;
+      revertTurn(turnId, false);
+      toast.error(error);
     },
     [revertTurn],
   );
@@ -278,6 +287,7 @@ export function useInterviewTurn({
     abortedGenerationRef,
     clearPendingDraft,
     onTurnAborted,
+    onTurnFailed,
   };
 
   return { input, submitTurn, stopTurn, handleTextChange, sessionRefs };

@@ -167,7 +167,7 @@ export async function handleInterviewWsMessage(
   });
 
   if (!result.ok) {
-    emit(ws, { type: "error", error: result.error });
+    emit(ws, { type: "turn_failed", turnId: parsed.turnId, error: result.error });
   }
 }
 

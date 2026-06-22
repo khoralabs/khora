@@ -165,6 +165,13 @@ export async function failTurn(turnId: string, error: string): Promise<void> {
 const BATCH_MS = 50;
 const BATCH_CHAR_LIMIT = 256;
 
+type TurnEventWireInput =
+  | { type: "text_delta"; delta: string }
+  | { type: "tool_call"; toolCallId: string; toolName: string; input: unknown }
+  | { type: "tool_result"; toolCallId: string; toolName: string; output: unknown }
+  | { type: "tool_error"; toolCallId: string; toolName: string; errorText: string }
+  | { type: "belief_flag"; belief: string; sourceMessageId: string };
+
 export class TurnEventBatcher {
   private turnId: string;
   private deltaBuffer = "";
@@ -176,7 +183,11 @@ export class TurnEventBatcher {
     this.turnId = turnId;
   }
 
-  push(event: TurnEventWire): void {
+  private withTurnId(event: TurnEventWireInput): TurnEventWire {
+    return { ...event, turnId: this.turnId };
+  }
+
+  push(event: TurnEventWireInput): void {
     if (event.type === "text_delta") {
       this.deltaBuffer += event.delta;
       if (this.deltaBuffer.length >= BATCH_CHAR_LIMIT) {
@@ -187,7 +198,7 @@ export class TurnEventBatcher {
       return;
     }
     void this.flush().then(() => {
-      this.pending.push(event);
+      this.pending.push(this.withTurnId(event));
       return this.flushNow();
     });
   }
@@ -207,7 +218,7 @@ export class TurnEventBatcher {
         this.timer = null;
       }
       if (this.deltaBuffer.length > 0) {
-        this.pending.push({ type: "text_delta", delta: this.deltaBuffer });
+        this.pending.push(this.withTurnId({ type: "text_delta", delta: this.deltaBuffer }));
         this.deltaBuffer = "";
       }
       await this.flushNow();
