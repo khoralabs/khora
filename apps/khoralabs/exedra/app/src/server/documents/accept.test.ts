@@ -9,7 +9,7 @@ import { closeDb } from "../db/index.js";
 import { ensureExedraSchema } from "../db/schema.js";
 import { createOrg, createSession, createTeam } from "../db/sessions.js";
 import { getOrCreateUser } from "../identity/users.js";
-import { getSessionDocument } from "./db.js";
+import { getDocumentById } from "./db.js";
 import { sha256Hex } from "./hash.js";
 import { buildDocumentS3Key } from "./s3-store.js";
 import type { ExedraDocumentRef } from "./types.js";
@@ -21,7 +21,7 @@ class MemoryDocumentStore {
 
   async put(params: {
     orgId: string;
-    sessionId: string;
+    batchId: string;
     documentId: string;
     fileName: string;
     mimeType: string;
@@ -33,7 +33,7 @@ class MemoryDocumentStore {
     const ref: ExedraDocumentRef = {
       domain: "exedra_document",
       org_id: params.orgId,
-      session_id: params.sessionId,
+      batch_id: params.batchId,
       document_id: params.documentId,
       file_name: params.fileName,
       content_hash: contentHash,
@@ -59,7 +59,7 @@ afterEach(() => {
   delete process.env.EXEDRA_DOCUMENTS_S3_BUCKET;
 });
 
-test("acceptSessionDocument stores S3 object and accepted row without summary", async () => {
+test("acceptDocument stores S3 object and accepted row without summary", async () => {
   const db = new Database(path.join(dataDir, "exedra.db"), { create: true });
   ensureExedraSchema(db);
   const user = await getOrCreateUser(db, "registry-doc-accept");
@@ -71,14 +71,19 @@ test("acceptSessionDocument stores S3 object and accepted row without summary", 
   });
   grantSessionCreatorAccess(db, user.id, session.id);
 
-  const { acceptSessionDocument } = await import("./ingest.js");
+  const { acceptDocument, resolveSessionTargetNamespace } = await import("./accept.js");
+  const batchId = crypto.randomUUID();
+  const grantResource = { type: "session", id: session.id };
   const text = "Paragraph one.\n\nParagraph two.";
   const bytes = new TextEncoder().encode(text);
 
-  const result = await acceptSessionDocument({
+  const result = await acceptDocument({
     db,
     orgId,
-    sessionId: session.id,
+    batchId,
+    targetNamespace: resolveSessionTargetNamespace(user.id, orgId, teamId, session.id),
+    grantResource,
+    teamId,
     userId: user.id,
     fileName: "notes.txt",
     mimeType: "text/plain",
@@ -88,10 +93,12 @@ test("acceptSessionDocument stores S3 object and accepted row without summary", 
 
   expect(result.document.status).toBe("accepted");
   expect(result.document.summary).toBe("");
-  expect(result.document.memoryKey).toBe(`documents/${session.id}/${result.document.id}`);
+  expect(result.document.memoryKey).toBe(`documents/${batchId}/${result.document.id}`);
 
-  const row = getSessionDocument(db, session.id, result.document.id);
-  expect(row?.s3Key).toContain(session.id);
+  const row = getDocumentById(db, result.document.id);
+  expect(row?.grantResourceType).toBe("session");
+  expect(row?.grantResourceId).toBe(session.id);
+  expect(row?.s3Key).toContain(batchId);
   expect(row?.contentHash).toHaveLength(64);
   db.close();
 });

@@ -16,6 +16,28 @@ import {
 } from "./exedra-client.js";
 import { summarizeDocumentBytes } from "./summarize-document.js";
 
+function mergeChunkParams(
+  params: ProcessDocumentParams,
+  chunk: {
+    memoryKey: string;
+    plaintext: string;
+    content: Array<{ key: string; text?: string; vector: number[] }>;
+    properties: Record<string, unknown>;
+  },
+) {
+  return {
+    userId: params.userId,
+    memoryKey: chunk.memoryKey,
+    plaintext: chunk.plaintext,
+    content: chunk.content,
+    properties: chunk.properties,
+    ...(params.namespace !== undefined && params.namespace.length > 0
+      ? { namespace: params.namespace }
+      : {}),
+    ...(params.orgId !== undefined && params.orgId.length > 0 ? { orgId: params.orgId } : {}),
+  };
+}
+
 function resolveGeminiApiKey(): string {
   const apiKey =
     process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim() ||
@@ -51,7 +73,7 @@ export async function processDocument(params: ProcessDocumentParams): Promise<vo
   const blob = new Blob([new Uint8Array(bytes)], { type: document.mimeType });
   const sourceProperties = {
     sourceApp: "exedra",
-    sessionId: params.sessionId,
+    batchId: params.batchId,
     documentId: params.documentId,
     fileName: document.fileName,
     mimeType: document.mimeType,
@@ -70,15 +92,16 @@ export async function processDocument(params: ProcessDocumentParams): Promise<vo
     for (let index = 0; index < embedded.content.length; index++) {
       const chunk = embedded.content[index];
       if (chunk === undefined) continue;
-      const memoryKey = resolveDocumentMemoryKey(params.sessionId, params.documentId, index);
+      const memoryKey = resolveDocumentMemoryKey(params.batchId, params.documentId, index);
       const chunkText = chunk.text ?? embedded.retrievalText;
-      await postMergeDocumentChunk({
-        userId: params.userId,
-        memoryKey,
-        plaintext: chunkText,
-        content: [{ key: chunk.key, text: chunk.text, vector: chunk.vector ?? [] }],
-        properties: sourceProperties,
-      });
+      await postMergeDocumentChunk(
+        mergeChunkParams(params, {
+          memoryKey,
+          plaintext: chunkText,
+          content: [{ key: chunk.key, text: chunk.text, vector: chunk.vector ?? [] }],
+          properties: sourceProperties,
+        }),
+      );
     }
   } else {
     const embedded = await fileToContent({
@@ -91,18 +114,19 @@ export async function processDocument(params: ProcessDocumentParams): Promise<vo
       multimodal: true,
       keyPrefix: "binary",
     });
-    const memoryKey = resolveDocumentMemoryKey(params.sessionId, params.documentId);
-    await postMergeDocumentChunk({
-      userId: params.userId,
-      memoryKey,
-      plaintext: embedded.retrievalText,
-      content: embedded.content.map((item) => ({
-        key: item.key,
-        ...(item.text !== undefined ? { text: item.text } : {}),
-        vector: item.vector ?? [],
-      })),
-      properties: sourceProperties,
-    });
+    const memoryKey = resolveDocumentMemoryKey(params.batchId, params.documentId);
+    await postMergeDocumentChunk(
+      mergeChunkParams(params, {
+        memoryKey,
+        plaintext: embedded.retrievalText,
+        content: embedded.content.map((item) => ({
+          key: item.key,
+          ...(item.text !== undefined ? { text: item.text } : {}),
+          vector: item.vector ?? [],
+        })),
+        properties: sourceProperties,
+      }),
+    );
   }
 
   await patchDocument(params.documentId, {

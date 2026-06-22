@@ -12,8 +12,9 @@ import {
   createTeam,
   getOrCreateInterviewThread,
 } from "../../db/sessions";
-import { insertSessionDocument } from "../../documents/db";
+import { insertDocument } from "../../documents/db";
 import { getOrCreateUser } from "../../identity/users";
+import { userSessionScope } from "../../memories/namespaces";
 import { createTurnEngine } from "./index";
 
 type RunInterviewTurnFn = typeof runInterviewTurn;
@@ -40,6 +41,7 @@ let db: Database;
 let threadId: string;
 let userId: string;
 let sessionId: string;
+let orgId: string;
 let teamId: string;
 
 beforeEach(async () => {
@@ -51,7 +53,7 @@ beforeEach(async () => {
 
   const user = await getOrCreateUser(db, "registry-turn-engine");
   userId = user.id;
-  const orgId = await createOrg(db, { name: "Org", ownerId: userId });
+  orgId = await createOrg(db, { name: "Org", ownerId: userId });
   teamId = createTeam(db, { orgId, name: "Team", ownerId: userId });
 
   const session = createSession(db, {
@@ -168,9 +170,13 @@ test("submitTurn rejects concurrent turns on the same thread", async () => {
 
 test("abortTurn deletes attached session documents", async () => {
   const documentId = "doc-abort-1";
-  insertSessionDocument(db, {
+  insertDocument(db, {
     id: documentId,
+    batchId: crypto.randomUUID(),
     sessionId,
+    targetNamespace: userSessionScope(userId, orgId, teamId, sessionId),
+    grantResource: { type: "session", id: sessionId },
+    teamId,
     uploadedByUserId: userId,
     fileName: "notes.txt",
     mimeType: "text/plain",
@@ -211,7 +217,7 @@ test("abortTurn deletes attached session documents", async () => {
   await waitForThreadIdle();
 
   const row = db
-    .query<{ id: string }, [string]>(`SELECT id FROM session_documents WHERE id = ?`)
+    .query<{ id: string }, [string]>(`SELECT id FROM documents WHERE id = ?`)
     .get(documentId);
   expect(row).toBeNull();
 });

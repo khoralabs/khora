@@ -8,8 +8,12 @@ import {
 import { expandBelief } from "./expand-belief.ts";
 import { expandDocument } from "./expand-document.ts";
 import "./otel.ts";
-import type { DocumentIntegrationParams } from "../../../shared/document-processing.ts";
+import type {
+  BatchIntegrationParams,
+  DocumentIntegrationParams,
+} from "../../../shared/document-processing.ts";
 import { resolveDocumentMemoryKey } from "../../../shared/document-processing.ts";
+import { integrateBatch } from "./integrate-batch.ts";
 import { planDocumentIntegration } from "./plan-document-integration.ts";
 import { planIntegration } from "./plan-integration.ts";
 
@@ -98,7 +102,7 @@ const mergeDocumentMemory = task(
     planResult?: Awaited<ReturnType<typeof planDocumentIntegrationTask>>,
   ) {
     const memoryKey = resolveDocumentMemoryKey(
-      params.sessionId,
+      params.batchId,
       params.documentId,
       params.chunkIndex,
     );
@@ -180,5 +184,20 @@ task(
       search.namespace,
     );
     return mergeDocumentMemory(params, search.namespace, draft, "plan", planResult);
+  },
+);
+
+task(
+  {
+    name: "integrateBatch",
+    retry: {
+      maxRetries: 2,
+      waitDurationMs: 3000,
+      backoffScaling: 2.0,
+    },
+    timeoutSeconds: 600,
+  },
+  async function integrateBatchTask(params: BatchIntegrationParams) {
+    return integrateBatch(params);
   },
 );

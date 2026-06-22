@@ -5,8 +5,9 @@ import type { InterviewSessionMeta } from "../../../agents/interview/instruction
 import { getOrg, getTeam } from "../../db/membership";
 import { insertMessage, loadThreadMessages, nextMessageIndex } from "../../db/messages";
 import { getThread, markSessionInterviewComplete } from "../../db/sessions";
-import { dispatchDocumentProcessingForTurn } from "../../documents/dispatch-document-processing";
-import { resolveSessionOrgId } from "../../documents/ingest";
+import { resolveSessionOrgId, resolveSessionTargetNamespace } from "../../documents/accept";
+import { getDocumentById, patchDocumentsBatchId } from "../../documents/db";
+import { dispatchBatchIntegrationForDocuments } from "../../documents/dispatch-batch-integration";
 import { loadTurnDocumentAttachments } from "../../documents/load-turn-attachments";
 import { resolveUserMessageDocuments } from "../../documents/message-context";
 import { logger } from "../../logger";
@@ -199,15 +200,22 @@ async function executeTurnBody(
 
     if (documentIds.length > 0) {
       const orgId = resolveSessionOrgId(db, session.teamId);
-      void dispatchDocumentProcessingForTurn({
+      patchDocumentsBatchId(db, documentIds, turnId);
+      const firstDocument = getDocumentById(db, documentIds[0] ?? "");
+      const namespace =
+        firstDocument?.targetNamespace ??
+        resolveSessionTargetNamespace(userId, orgId, session.teamId, session.id);
+      void dispatchBatchIntegrationForDocuments({
         db,
-        documents: documentIds.map((documentId) => ({ documentId })),
+        batchId: turnId,
         params: {
+          batchId: turnId,
           userId,
-          sessionId: session.id,
-          teamId: session.teamId,
+          namespace,
           orgId,
-          turnId,
+          teamId: session.teamId,
+          sessionId: session.id,
+          contextText: text.trim(),
         },
       });
     }

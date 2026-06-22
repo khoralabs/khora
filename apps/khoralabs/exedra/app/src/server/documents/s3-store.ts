@@ -39,19 +39,19 @@ export function resetDocumentsS3ClientForTests(): void {
 
 export function buildDocumentS3Key(params: {
   orgId: string;
-  sessionId: string;
+  batchId: string;
   documentId: string;
   fileName: string;
 }): string {
   const prefix = getDocumentsS3Prefix().replace(/\/+$/, "");
   const safeName = sanitizeDocumentFileName(params.fileName);
-  return `${prefix}/org/${params.orgId}/session/${params.sessionId}/${params.documentId}/${safeName}`;
+  return `${prefix}/org/${params.orgId}/batch/${params.batchId}/${params.documentId}/${safeName}`;
 }
 
 export class ExedraDocumentStore implements ContentAddressedStore<ExedraDocumentRef> {
   async put(params: {
     orgId: string;
-    sessionId: string;
+    batchId: string;
     documentId: string;
     fileName: string;
     mimeType: string;
@@ -67,7 +67,7 @@ export class ExedraDocumentStore implements ContentAddressedStore<ExedraDocument
     const ref: ExedraDocumentRef = {
       domain: "exedra_document",
       org_id: params.orgId,
-      session_id: params.sessionId,
+      batch_id: params.batchId,
       document_id: params.documentId,
       file_name: sanitizeDocumentFileName(params.fileName),
       content_hash: contentHash,
@@ -82,7 +82,7 @@ export class ExedraDocumentStore implements ContentAddressedStore<ExedraDocument
         Metadata: {
           content_hash: contentHash,
           document_id: params.documentId,
-          session_id: params.sessionId,
+          batch_id: params.batchId,
         },
       }),
     );
@@ -98,7 +98,7 @@ export class ExedraDocumentStore implements ContentAddressedStore<ExedraDocument
 
     const s3Key = buildDocumentS3Key({
       orgId: ref.org_id,
-      sessionId: ref.session_id,
+      batchId: ref.batch_id,
       documentId: ref.document_id,
       fileName: ref.file_name,
     });
@@ -135,7 +135,7 @@ export class ExedraDocumentStore implements ContentAddressedStore<ExedraDocument
 
     const s3Key = buildDocumentS3Key({
       orgId: ref.org_id,
-      sessionId: ref.session_id,
+      batchId: ref.batch_id,
       documentId: ref.document_id,
       fileName: ref.file_name,
     });
@@ -151,7 +151,7 @@ export class ExedraDocumentStore implements ContentAddressedStore<ExedraDocument
 
 export function buildExedraDocumentRef(params: {
   orgId: string;
-  sessionId: string;
+  batchId: string;
   documentId: string;
   fileName: string;
   contentHash: string;
@@ -159,7 +159,7 @@ export function buildExedraDocumentRef(params: {
   return {
     domain: "exedra_document",
     org_id: params.orgId,
-    session_id: params.sessionId,
+    batch_id: params.batchId,
     document_id: params.documentId,
     file_name: sanitizeDocumentFileName(params.fileName),
     content_hash: params.contentHash,

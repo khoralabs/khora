@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
 
 import { getTeam } from "../db/membership.js";
-import { getSessionDocumentsForUser } from "./db.js";
+import { getDocumentsForUser } from "./db.js";
 import { buildExedraDocumentRef } from "./s3-store.js";
 import type { ExedraDocumentRef, SessionDocumentWireRef } from "./types.js";
 
@@ -24,7 +24,7 @@ export function resolveUserMessageDocuments(
   const uniqueIds = [...new Set(params.documentIds.filter((id) => id.trim().length > 0))];
   if (uniqueIds.length === 0) return [];
 
-  const records = getSessionDocumentsForUser(db, params.sessionId, params.userId, uniqueIds);
+  const records = getDocumentsForUser(db, params.sessionId, params.userId, uniqueIds);
   if (records.length !== uniqueIds.length) {
     return { error: "One or more documents are invalid or not owned by you" };
   }
@@ -46,7 +46,7 @@ export function resolveUserMessageDocuments(
     memoryKey: record.memoryKey,
     sourceRef: buildExedraDocumentRef({
       orgId: team.orgId,
-      sessionId: params.sessionId,
+      batchId: record.batchId,
       documentId: record.id,
       fileName: record.fileName,
       contentHash: record.contentHash,

@@ -74,6 +74,9 @@ function GraphContent({
             sessionDetail?.session.teamId ?? activeTeam.id,
             sessionGraphId,
           )}
+          orgId={activeTeam.orgId}
+          teamId={sessionDetail?.session.teamId ?? activeTeam.id}
+          sessionId={sessionGraphId}
           title={sessionDetail?.session.topic ?? "Session knowledge"}
           emptyDescription="No knowledge captured yet. It will appear here as the interview captures it."
           onInvestigated={() => trackInvestigated("session")}
@@ -114,6 +117,8 @@ function GraphContent({
       <MemoriesGraphView
         apiBase={orgMemoriesApiBase(activeTeam.orgId)}
         namespace={orgTeamNamespace(activeTeam.orgId, teamGraphId)}
+        orgId={activeTeam.orgId}
+        teamId={teamGraphId}
         title={`${team.name} knowledge`}
         emptyDescription="No knowledge captured yet."
         onInvestigated={() => trackInvestigated("team")}

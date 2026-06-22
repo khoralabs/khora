@@ -2,17 +2,20 @@
 export type ProcessDocumentParams = {
   documentId: string;
   userId: string;
-  sessionId: string;
+  batchId: string;
   teamId: string;
   orgId: string;
-  turnId: string;
+  namespace: string;
 };
 
 export type DocumentProcessingStatus = "accepted" | "processing" | "ready" | "failed";
 
 export type InternalDocumentWire = {
   id: string;
-  sessionId: string;
+  batchId: string;
+  targetNamespace: string;
+  grantResourceType: string;
+  grantResourceId: string;
   uploadedByUserId: string;
   fileName: string;
   mimeType: string;
@@ -24,7 +27,6 @@ export type InternalDocumentWire = {
   status: DocumentProcessingStatus;
   errorMessage: string | null;
   taskRunId: string | null;
-  turnId: string | null;
   processedAtMs: number | null;
   createdAtMs: number;
 };
@@ -34,27 +36,54 @@ export type InternalDocumentPatchRequest = {
   summary?: string | null;
   errorMessage?: string | null;
   taskRunId?: string | null;
-  turnId?: string | null;
   processedAtMs?: number | null;
+};
+
+export type InternalDocumentBatchWire = {
+  batchId: string;
+  targetNamespace: string;
+  grantResourceType: string;
+  grantResourceId: string;
+  orgId: string | null;
+  teamId: string | null;
+  uploadedByUserId: string;
+  contextText: string;
+  status: DocumentProcessingStatus;
+  documents: InternalDocumentWire[];
 };
 
 /** Params for integrateDocument workflow task (one text chunk or whole binary doc). */
 export type DocumentIntegrationParams = {
   userId: string;
-  sessionId: string;
+  batchId: string;
   documentId: string;
   fileName: string;
   mimeType: string;
   chunkText: string;
+  namespace: string;
+  orgId?: string;
+  contextText?: string;
+  siblingSummaries?: Array<{ documentId: string; fileName: string; excerpt: string }>;
   /** Omitted for binary whole-document integration. */
   chunkIndex?: number;
+};
+
+export type BatchIntegrationParams = {
+  batchId: string;
+  userId: string;
+  namespace: string;
+  orgId?: string;
+  teamId?: string;
+  sessionId?: string | null;
+  /** User message or contribution context text. */
+  contextText?: string;
 };
 
 export type InternalMemoriesMergeDocumentChunkRequest = {
   userId: string;
   memoryKey: string;
-  /** Optional; derived from userId when omitted. */
   namespace?: string;
+  orgId?: string;
   plaintext: string;
   content: Array<{ key: string; text?: string; vector: number[] }>;
   properties?: Record<string, unknown>;
@@ -65,13 +94,29 @@ export type InternalMemoriesMergeDocumentChunkResponse = {
   namespace: string;
 };
 
+export const CONTEXT_DOCUMENT_FILE_NAME = "context.txt";
+
+export function isContextDocument(fileName: string, mimeType: string): boolean {
+  return fileName === CONTEXT_DOCUMENT_FILE_NAME && mimeType.startsWith("text/");
+}
+
 export function resolveDocumentMemoryKey(
-  sessionId: string,
+  batchId: string,
   documentId: string,
   chunkIndex?: number,
 ): string {
   if (chunkIndex === undefined) {
-    return `documents/${sessionId}/${documentId}`;
+    return `documents/${batchId}/${documentId}`;
   }
-  return `documents/${sessionId}/${documentId}/chunk/${chunkIndex}`;
+  return `documents/${batchId}/${documentId}/chunk/${chunkIndex}`;
+}
+
+export function deriveBatchStatus(
+  documents: readonly { status: DocumentProcessingStatus }[],
+): DocumentProcessingStatus {
+  if (documents.length === 0) return "accepted";
+  if (documents.some((document) => document.status === "failed")) return "failed";
+  if (documents.every((document) => document.status === "ready")) return "ready";
+  if (documents.some((document) => document.status === "processing")) return "processing";
+  return "accepted";
 }

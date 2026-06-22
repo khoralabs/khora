@@ -3,6 +3,7 @@ import { Check, ChevronsUpDown, MessageSquare, Network, UserRound } from "lucide
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -28,7 +29,6 @@ type KnowledgeScopePickerProps = {
 
 function activeLabel(
   pathname: string,
-  me: MeResponse,
   activeTeam: MeTeam,
   sessions: SessionSummary[] | null,
 ): string {
@@ -36,21 +36,27 @@ function activeLabel(
 
   const teamGraphId = parseActiveTeamGraphId(pathname);
   if (teamGraphId !== null) {
-    const team = me.teams.find((t) => t.id === teamGraphId) ?? activeTeam;
-    return `${team.name} knowledge`;
+    return `${activeTeam.name} · Team knowledge`;
   }
 
   const sessionGraphId = parseSessionGraphId(pathname);
   if (sessionGraphId !== null) {
     const session = sessions?.find((s) => s.id === sessionGraphId);
-    return session?.topic ?? "Session knowledge";
+    const topic = session?.topic ?? "Session";
+    return `${activeTeam.name} · ${topic}`;
   }
 
   return "Knowledge";
 }
 
+function triggerIcon(pathname: string) {
+  if (isPersonalGraphPath(pathname)) return UserRound;
+  if (parseSessionGraphId(pathname) !== null) return MessageSquare;
+  return Network;
+}
+
 export function KnowledgeScopePicker({
-  me,
+  me: _me,
   activeTeam,
   sessions,
   pathname,
@@ -62,8 +68,10 @@ export function KnowledgeScopePicker({
   const personalActive = isPersonalGraphPath(pathname);
   const teamGraphId = parseActiveTeamGraphId(pathname);
   const sessionGraphId = parseSessionGraphId(pathname);
-  const label = activeLabel(pathname, me, activeTeam, sessions);
+  const label = activeLabel(pathname, activeTeam, sessions);
   const isSidebar = variant === "sidebar";
+  const TriggerIcon = triggerIcon(pathname);
+  const teamSessions = sessions ?? [];
 
   const trigger = (
     <DropdownMenuTrigger asChild>
@@ -76,7 +84,7 @@ export function KnowledgeScopePicker({
           )}
           aria-label="Switch knowledge scope"
         >
-          <Network className="size-4 shrink-0" />
+          <TriggerIcon className="size-4 shrink-0" />
           {!collapsed ? (
             <>
               <span className="min-w-0 flex-1 truncate font-medium">{label}</span>
@@ -87,10 +95,10 @@ export function KnowledgeScopePicker({
       ) : (
         <button
           type="button"
-          className="flex max-w-56 items-center gap-2 rounded-md border px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-muted data-[state=open]:bg-muted"
+          className="flex max-w-64 items-center gap-2 rounded-md border px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-muted data-[state=open]:bg-muted"
           aria-label="Switch knowledge scope"
         >
-          <Network className="size-4 shrink-0 opacity-70" />
+          <TriggerIcon className="size-4 shrink-0 opacity-70" />
           <span className="min-w-0 flex-1 truncate font-medium">{label}</span>
           <ChevronsUpDown className="ml-auto size-4 shrink-0 opacity-50" />
         </button>
@@ -108,57 +116,70 @@ export function KnowledgeScopePicker({
         trigger
       )}
       <DropdownMenuContent
-        className="min-w-56 rounded-lg"
+        className="min-w-64 rounded-lg"
         align={isSidebar ? "start" : "end"}
         side={isSidebar && collapsed ? "right" : "bottom"}
         sideOffset={4}
       >
-        <DropdownMenuItem
-          onClick={() => {
-            track("graph_opened", { scope: "personal" });
-            onNavigate("/me/graph");
-          }}
-        >
-          <UserRound className="size-4 shrink-0" />
-          <span className="min-w-0 flex-1 truncate">Personal knowledge</span>
-          {personalActive ? <Check className="ml-auto size-4 shrink-0 text-primary" /> : null}
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => {
-            track("graph_opened", { scope: "team" });
-            onNavigate(`/teams/${activeTeam.id}/graph`);
-          }}
-        >
-          <Network className="size-4 shrink-0" />
-          <span className="min-w-0 flex-1 truncate">{activeTeam.name} knowledge</span>
-          {teamGraphId === activeTeam.id ? (
-            <Check className="ml-auto size-4 shrink-0 text-primary" />
-          ) : null}
-        </DropdownMenuItem>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
+            Personal
+          </DropdownMenuLabel>
+          <DropdownMenuItem
+            onClick={() => {
+              track("graph_opened", { scope: "personal" });
+              onNavigate("/me/graph");
+            }}
+          >
+            <UserRound className="size-4 shrink-0" />
+            <span className="min-w-0 flex-1 truncate">Personal knowledge</span>
+            {personalActive ? <Check className="ml-auto size-4 shrink-0 text-primary" /> : null}
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
 
-        {sessions !== null && sessions.length > 0 ? (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel className="text-xs uppercase tracking-wider text-muted-foreground">
-              Sessions
-            </DropdownMenuLabel>
-            {sessions.map((session) => (
-              <DropdownMenuItem
-                key={session.id}
-                onClick={() => {
-                  track("graph_opened", { scope: "session", sessionId: session.id });
-                  onNavigate(`/sessions/${session.id}/graph`);
-                }}
-              >
-                <MessageSquare className="size-4 shrink-0" />
-                <span className="min-w-0 flex-1 truncate">{session.topic}</span>
-                {session.id === sessionGraphId ? (
-                  <Check className="ml-auto size-4 shrink-0 text-primary" />
-                ) : null}
-              </DropdownMenuItem>
-            ))}
-          </>
-        ) : null}
+        <DropdownMenuSeparator />
+
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
+            {activeTeam.name}
+          </DropdownMenuLabel>
+          <DropdownMenuItem
+            onClick={() => {
+              track("graph_opened", { scope: "team" });
+              onNavigate(`/teams/${activeTeam.id}/graph`);
+            }}
+          >
+            <Network className="size-4 shrink-0" />
+            <span className="min-w-0 flex-1 truncate">Team knowledge</span>
+            {teamGraphId === activeTeam.id ? (
+              <Check className="ml-auto size-4 shrink-0 text-primary" />
+            ) : null}
+          </DropdownMenuItem>
+
+          {teamSessions.length > 0 ? (
+            <>
+              <DropdownMenuLabel className="pl-6 text-[11px] font-normal uppercase tracking-wider text-muted-foreground/80">
+                Sessions
+              </DropdownMenuLabel>
+              {teamSessions.map((session) => (
+                <DropdownMenuItem
+                  key={session.id}
+                  className="pl-6"
+                  onClick={() => {
+                    track("graph_opened", { scope: "session", sessionId: session.id });
+                    onNavigate(`/sessions/${session.id}/graph`);
+                  }}
+                >
+                  <MessageSquare className="size-4 shrink-0" />
+                  <span className="min-w-0 flex-1 truncate">{session.topic}</span>
+                  {session.id === sessionGraphId ? (
+                    <Check className="ml-auto size-4 shrink-0 text-primary" />
+                  ) : null}
+                </DropdownMenuItem>
+              ))}
+            </>
+          ) : null}
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   );

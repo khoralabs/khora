@@ -1,40 +1,68 @@
 import { MemoriesClient } from "@khoralabs/memories-core";
 import type {
+  InternalDocumentBatchWire,
   InternalDocumentPatchRequest,
   InternalDocumentWire,
 } from "../../../../shared/document-processing.js";
-import { resolveDocumentMemoryKey } from "../../../../shared/document-processing.js";
+import {
+  deriveBatchStatus,
+  isContextDocument,
+  resolveDocumentMemoryKey,
+} from "../../../../shared/document-processing.js";
 import { getDb } from "../db/index.js";
-import { getTeam } from "../db/membership.js";
-import { getSessionDocumentById, patchSessionDocument } from "../documents/db.js";
+import { readContextTextFromBatch } from "../documents/batch-contribute.js";
+import { getDocumentById, listDocumentsByBatch, patchDocument } from "../documents/db.js";
+import { resolveDocumentOrgId } from "../documents/grant-scope.js";
 import { buildExedraDocumentRef, ExedraDocumentStore } from "../documents/s3-store.js";
+import type { DocumentRecord } from "../documents/types.js";
 import { logger } from "../logger.js";
 import { exedraMemoriesOntology } from "../memories/exedra-ontology.js";
-import { userScope } from "../memories/namespaces.js";
-import { openUserMemories } from "../memories/store.js";
+import { openOrgMemories, openUserMemories } from "../memories/store.js";
 import { withSpan } from "../telemetry/spans.js";
 import { requireInternalToken } from "./require-internal-token.js";
 
-function toInternalDocumentWire(
-  record: NonNullable<ReturnType<typeof getSessionDocumentById>>,
-): InternalDocumentWire {
+function toInternalDocumentWire(document: DocumentRecord): InternalDocumentWire {
   return {
-    id: record.id,
-    sessionId: record.sessionId,
-    uploadedByUserId: record.uploadedByUserId,
-    fileName: record.fileName,
-    mimeType: record.mimeType,
-    byteSize: record.byteSize,
-    contentHash: record.contentHash,
-    s3Key: record.s3Key,
-    memoryKey: record.memoryKey,
-    summary: record.summary,
-    status: record.status,
-    errorMessage: record.errorMessage,
-    taskRunId: record.taskRunId,
-    turnId: record.turnId,
-    processedAtMs: record.processedAtMs,
-    createdAtMs: record.createdAtMs,
+    id: document.id,
+    batchId: document.batchId,
+    targetNamespace: document.targetNamespace,
+    grantResourceType: document.grantResourceType,
+    grantResourceId: document.grantResourceId,
+    uploadedByUserId: document.uploadedByUserId,
+    fileName: document.fileName,
+    mimeType: document.mimeType,
+    byteSize: document.byteSize,
+    contentHash: document.contentHash,
+    s3Key: document.s3Key,
+    memoryKey: document.memoryKey,
+    summary: document.summary,
+    status: document.status,
+    errorMessage: document.errorMessage,
+    taskRunId: document.taskRunId,
+    processedAtMs: document.processedAtMs,
+    createdAtMs: document.createdAtMs,
+  };
+}
+
+function toInternalBatchWire(
+  db: ReturnType<typeof getDb>,
+  batchId: string,
+): InternalDocumentBatchWire | null {
+  const documents = listDocumentsByBatch(db, batchId);
+  if (documents.length === 0) return null;
+  const first = documents[0];
+  if (first === undefined) return null;
+  return {
+    batchId,
+    targetNamespace: first.targetNamespace,
+    grantResourceType: first.grantResourceType,
+    grantResourceId: first.grantResourceId,
+    orgId: first.orgId,
+    teamId: first.teamId,
+    uploadedByUserId: first.uploadedByUserId,
+    contextText: readContextTextFromBatch(documents),
+    status: deriveBatchStatus(documents),
+    documents: documents.map(toInternalDocumentWire),
   };
 }
 
@@ -45,12 +73,27 @@ export async function handleInternalGetDocument(
   const authError = requireInternalToken(req);
   if (authError !== null) return authError;
 
-  const record = getSessionDocumentById(getDb(), documentId);
+  const record = getDocumentById(getDb(), documentId);
   if (record === null) {
     return Response.json({ error: "Document not found" }, { status: 404 });
   }
 
   return Response.json({ document: toInternalDocumentWire(record) });
+}
+
+export async function handleInternalGetDocumentBatch(
+  req: Request,
+  batchId: string,
+): Promise<Response> {
+  const authError = requireInternalToken(req);
+  if (authError !== null) return authError;
+
+  const batch = toInternalBatchWire(getDb(), batchId);
+  if (batch === null) {
+    return Response.json({ error: "Batch not found" }, { status: 404 });
+  }
+
+  return Response.json({ batch });
 }
 
 export async function handleInternalGetDocumentBytes(
@@ -61,25 +104,19 @@ export async function handleInternalGetDocumentBytes(
   if (authError !== null) return authError;
 
   const db = getDb();
-  const record = getSessionDocumentById(db, documentId);
+  const record = getDocumentById(db, documentId);
   if (record === null) {
     return Response.json({ error: "Document not found" }, { status: 404 });
   }
 
-  const sessionRow = db
-    .query<{ team_id: string }, [string]>(`SELECT team_id FROM sessions WHERE id = ? LIMIT 1`)
-    .get(record.sessionId);
-  if (sessionRow === null) {
-    return Response.json({ error: "Session not found" }, { status: 404 });
-  }
-  const teamRecord = getTeam(db, sessionRow.team_id);
-  if (teamRecord === null) {
-    return Response.json({ error: "Team not found" }, { status: 404 });
+  const orgId = resolveDocumentOrgId(db, record);
+  if (orgId === null) {
+    return Response.json({ error: "Org not found" }, { status: 404 });
   }
 
   const ref = buildExedraDocumentRef({
-    orgId: teamRecord.orgId,
-    sessionId: record.sessionId,
+    orgId,
+    batchId: record.batchId,
     documentId: record.id,
     fileName: record.fileName,
     contentHash: record.contentHash,
@@ -119,12 +156,11 @@ export async function handleInternalPatchDocument(
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const updated = patchSessionDocument(getDb(), documentId, {
+  const updated = patchDocument(getDb(), documentId, {
     ...(body.status !== undefined ? { status: body.status } : {}),
     ...(body.summary !== undefined ? { summary: body.summary } : {}),
     ...(body.errorMessage !== undefined ? { errorMessage: body.errorMessage } : {}),
     ...(body.taskRunId !== undefined ? { taskRunId: body.taskRunId } : {}),
-    ...(body.turnId !== undefined ? { turnId: body.turnId } : {}),
     ...(body.processedAtMs !== undefined ? { processedAtMs: body.processedAtMs } : {}),
   });
 
@@ -142,7 +178,7 @@ export async function handleInternalDeleteDocumentMemories(
   const authError = requireInternalToken(req);
   if (authError !== null) return authError;
 
-  let body: { userId?: string; sessionId?: string; chunkCount?: number };
+  let body: { userId?: string; batchId?: string; chunkCount?: number; orgId?: string };
   try {
     body = (await req.json()) as typeof body;
   } catch {
@@ -150,24 +186,32 @@ export async function handleInternalDeleteDocumentMemories(
   }
 
   const userId = body.userId?.trim() ?? "";
-  const sessionId = body.sessionId?.trim() ?? "";
-  if (userId.length === 0 || sessionId.length === 0) {
-    return Response.json({ error: "userId and sessionId are required" }, { status: 400 });
+  const batchId = body.batchId?.trim() ?? "";
+  if (userId.length === 0 || batchId.length === 0) {
+    return Response.json({ error: "userId and batchId are required" }, { status: 400 });
   }
+
+  const db = getDb();
+  const document = getDocumentById(db, documentId);
+  const orgId =
+    body.orgId?.trim() || (document !== null ? resolveDocumentOrgId(getDb(), document) : null);
 
   try {
     await withSpan(
       "internal.documents.delete_memories",
       { "document.id": documentId },
       async () => {
-        const client = new MemoriesClient(openUserMemories(userId), exedraMemoriesOntology);
-        const namespace = userScope(userId);
-        const keys = [resolveDocumentMemoryKey(sessionId, documentId)];
+        const persistence =
+          orgId !== null && orgId.length > 0 ? openOrgMemories(orgId) : openUserMemories(userId);
+        const client = new MemoriesClient(persistence, exedraMemoriesOntology);
+        const namespace = document?.targetNamespace ?? "";
+        const keys = [resolveDocumentMemoryKey(batchId, documentId)];
         const chunkCount = body.chunkCount ?? 0;
         for (let index = 0; index < chunkCount; index++) {
-          keys.push(resolveDocumentMemoryKey(sessionId, documentId, index));
+          keys.push(resolveDocumentMemoryKey(batchId, documentId, index));
         }
         for (const key of keys) {
+          if (namespace.length === 0) continue;
           client.deleteMemory({ namespace, key });
         }
       },
@@ -178,3 +222,5 @@ export async function handleInternalDeleteDocumentMemories(
     return Response.json({ error: String(err) }, { status: 500 });
   }
 }
+
+export { isContextDocument };

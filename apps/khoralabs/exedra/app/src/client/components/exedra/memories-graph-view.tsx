@@ -15,8 +15,9 @@ import {
 } from "@khoralabs/memories-react-graph";
 import { ArrowLeft, Network } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
+import { ContributeKnowledgeOverlayButton } from "@/components/exedra/contribute-knowledge-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -30,6 +31,9 @@ import { CompactChromeHeader } from "@/shell/compact-chrome-header";
 type MemoriesGraphViewProps = {
   apiBase: string;
   namespace: string;
+  orgId?: string;
+  teamId?: string;
+  sessionId?: string;
   title?: string;
   onBack?: () => void;
   headerExtra?: ReactNode;
@@ -57,7 +61,7 @@ function MemoriesGraphEmpty({ description }: { description: string }) {
   if (!graphSummary.startsWith("0 nodes")) return null;
 
   return (
-    <Empty className="max-w-md border border-solid bg-background/95 backdrop-blur-sm">
+    <Empty className="max-w-md">
       <EmptyHeader>
         <EmptyMedia variant="icon">
           <Network />
@@ -72,12 +76,17 @@ function MemoriesGraphEmpty({ description }: { description: string }) {
 export function MemoriesGraphView({
   apiBase,
   namespace,
+  orgId,
+  teamId,
+  sessionId,
   title,
   onBack,
   headerExtra,
   emptyDescription = "Memories from interviews will appear here as they're captured.",
   onInvestigated,
 }: MemoriesGraphViewProps) {
+  const [graphRefreshKey, setGraphRefreshKey] = useState(0);
+
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-background">
       {title !== undefined || onBack !== undefined || headerExtra !== undefined ? (
@@ -103,6 +112,7 @@ export function MemoriesGraphView({
 
       <div className="relative min-h-0 flex-1">
         <GraphProjectionProvider
+          key={graphRefreshKey}
           apiBase={apiBase}
           focusDelay={200}
           namespace={namespace}
@@ -119,6 +129,15 @@ export function MemoriesGraphView({
                   <GraphOverlayContainer>
                     <GraphSearch />
                     <GraphFetchError />
+                  </GraphOverlayContainer>
+                  <GraphOverlayContainer>
+                    <ContributeKnowledgeOverlayButton
+                      namespace={namespace}
+                      orgId={orgId}
+                      teamId={teamId}
+                      sessionId={sessionId}
+                      onContributed={() => setGraphRefreshKey((key) => key + 1)}
+                    />
                   </GraphOverlayContainer>
                   <GraphInvestigatorAnswerOverlay className="max-h-72 overflow-y-auto" />
                 </div>

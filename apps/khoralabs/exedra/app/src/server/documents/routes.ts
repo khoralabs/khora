@@ -2,14 +2,19 @@ import { requireRegistrySessionResponse } from "../auth/require-session.js";
 import { getDb } from "../db/index.js";
 import { getSession, userHasSessionAccess } from "../db/sessions.js";
 import { getOrCreateUser } from "../identity/users.js";
+import { acceptDocument, resolveSessionOrgId, resolveSessionTargetNamespace } from "./accept.js";
 import {
   getDocumentsS3Bucket,
   isAllowedDocumentMimeType,
   MAX_DOCUMENT_BYTE_SIZE,
   sanitizeDocumentFileName,
 } from "./config.js";
-import { getSessionDocument, listSessionDocuments } from "./db.js";
-import { acceptSessionDocument, resolveSessionOrgId } from "./ingest.js";
+import { getDocumentById, listDocumentsBySession } from "./db.js";
+import {
+  documentMatchesGrantResource,
+  resolveDocumentOrgId,
+  resolveSessionUploadGrantResource,
+} from "./grant-scope.js";
 import { buildExedraDocumentRef, ExedraDocumentStore } from "./s3-store.js";
 
 function jsonResponse(data: unknown, status = 200): Response {
@@ -83,12 +88,22 @@ export async function handleUploadSessionDocument(
   const bytes = new Uint8Array(await file.arrayBuffer());
   const db = getDb();
   const orgId = resolveSessionOrgId(db, access.session.teamId);
+  const batchId = crypto.randomUUID();
+  const targetNamespace = resolveSessionTargetNamespace(
+    access.userId,
+    orgId,
+    access.session.teamId,
+    sessionId,
+  );
 
   try {
-    const result = await acceptSessionDocument({
+    const result = await acceptDocument({
       db,
       orgId,
-      sessionId,
+      batchId,
+      targetNamespace,
+      grantResource: resolveSessionUploadGrantResource(sessionId),
+      teamId: access.session.teamId,
       userId: access.userId,
       fileName,
       mimeType,
@@ -105,6 +120,7 @@ export async function handleUploadSessionDocument(
           status: result.document.status,
           summary: result.document.summary,
           contentHash: result.document.contentHash,
+          batchId: result.document.batchId,
           sourceRef: result.sourceRef,
         },
       },
@@ -123,7 +139,7 @@ export async function handleListSessionDocuments(
   const access = await requireSessionDocumentAccess(req, sessionId);
   if (!access.ok) return access.response;
 
-  const documents = listSessionDocuments(getDb(), sessionId).map((document) => ({
+  const documents = listDocumentsBySession(getDb(), sessionId).map((document) => ({
     id: document.id,
     fileName: document.fileName,
     mimeType: document.mimeType,
@@ -131,6 +147,7 @@ export async function handleListSessionDocuments(
     status: document.status,
     summary: document.summary,
     contentHash: document.contentHash,
+    batchId: document.batchId,
     uploadedByUserId: document.uploadedByUserId,
     createdAtMs: document.createdAtMs,
   }));
@@ -150,15 +167,17 @@ export async function handleGetSessionDocument(
   const access = await requireSessionDocumentAccess(req, sessionId);
   if (!access.ok) return access.response;
 
-  const document = getSessionDocument(getDb(), sessionId, documentId);
-  if (document === null) {
+  const document = getDocumentById(getDb(), documentId);
+  const sessionGrant = resolveSessionUploadGrantResource(sessionId);
+  if (document === null || !documentMatchesGrantResource(document, sessionGrant)) {
     return jsonResponse({ error: "Document not found" }, 404);
   }
 
-  const orgId = resolveSessionOrgId(getDb(), access.session.teamId);
+  const orgId =
+    resolveDocumentOrgId(getDb(), document) ?? resolveSessionOrgId(getDb(), access.session.teamId);
   const ref = buildExedraDocumentRef({
     orgId,
-    sessionId,
+    batchId: document.batchId,
     documentId: document.id,
     fileName: document.fileName,
     contentHash: document.contentHash,

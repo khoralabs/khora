@@ -1,6 +1,6 @@
 import { MemoryAdapterClient } from "@khoralabs/memories-adapter";
 import type { ExpandedMemoryDraftWire } from "../../../shared/belief-integration.ts";
-import { exedraDocumentAdapterInstructions } from "../../../shared/document-agent-instructions.ts";
+import { exedraBatchDocumentAdapterInstructions } from "../../../shared/document-agent-instructions.ts";
 import type { DocumentIntegrationParams } from "../../../shared/document-processing.ts";
 import {
   createRemoteMemoriesClient,
@@ -11,7 +11,7 @@ import {
 } from "./agent-runtime.ts";
 import { createWorkflowMemoriesAgentTelemetry } from "./agent-telemetry.ts";
 
-export async function expandDocument(
+export async function expandBatchDocument(
   args: DocumentIntegrationParams & { namespace: string },
 ): Promise<ExpandedMemoryDraftWire> {
   const client = createRemoteMemoriesClient(args.userId);
@@ -21,7 +21,7 @@ export async function expandDocument(
     model: resolveChatModel(),
     client,
     embeddingModel: resolveEmbeddingModel(),
-    instructions: exedraDocumentAdapterInstructions,
+    instructions: exedraBatchDocumentAdapterInstructions,
   });
   const telemetry = await createWorkflowMemoriesAgentTelemetry(client);
 
@@ -37,6 +37,8 @@ export async function expandDocument(
       mimeType: args.mimeType,
       batchId: args.batchId,
       documentId: args.documentId,
+      contextText: args.contextText ?? "",
+      siblingDocuments: args.siblingSummaries ?? [],
       ...(args.chunkIndex !== undefined ? { chunkIndex: args.chunkIndex } : {}),
     },
     maxSteps: resolveAdapterMaxSteps(),

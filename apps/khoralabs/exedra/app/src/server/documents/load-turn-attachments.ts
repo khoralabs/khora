@@ -1,9 +1,9 @@
 import type { Database } from "bun:sqlite";
 
 import { getTeam } from "../db/membership.js";
-import { getSessionDocumentsForUser } from "./db.js";
+import { getDocumentsForUser } from "./db.js";
 import { buildExedraDocumentRef, ExedraDocumentStore } from "./s3-store.js";
-import type { SessionDocumentRecord } from "./types.js";
+import type { DocumentRecord } from "./types.js";
 
 export type TurnDocumentAttachment = {
   documentId: string;
@@ -22,12 +22,7 @@ export async function loadTurnDocumentAttachments(args: {
 }): Promise<TurnDocumentAttachment[]> {
   if (args.documentIds.length === 0) return [];
 
-  const records = getSessionDocumentsForUser(
-    args.db,
-    args.sessionId,
-    args.userId,
-    args.documentIds,
-  );
+  const records = getDocumentsForUser(args.db, args.sessionId, args.userId, args.documentIds);
   if (records.length !== args.documentIds.length) {
     throw new Error("One or more documents are invalid or not owned by you");
   }
@@ -52,7 +47,7 @@ export async function loadTurnDocumentAttachments(args: {
   for (const documentId of args.documentIds) {
     const record = byId.get(documentId);
     if (record === undefined) continue;
-    attachments.push(await loadSingleAttachment(store, team.orgId, args.sessionId, record));
+    attachments.push(await loadSingleAttachment(store, team.orgId, record));
   }
 
   return attachments;
@@ -61,12 +56,11 @@ export async function loadTurnDocumentAttachments(args: {
 async function loadSingleAttachment(
   store: ExedraDocumentStore,
   orgId: string,
-  sessionId: string,
-  record: SessionDocumentRecord,
+  record: DocumentRecord,
 ): Promise<TurnDocumentAttachment> {
   const ref = buildExedraDocumentRef({
     orgId,
-    sessionId,
+    batchId: record.batchId,
     documentId: record.id,
     fileName: record.fileName,
     contentHash: record.contentHash,

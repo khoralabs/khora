@@ -117,3 +117,19 @@ export function ensureUserSessionScopes(
     userSessionScope(userId, orgId, teamId, sessionId),
   ]);
 }
+
+/** Ensure scope chain from global root to the given namespace path. */
+export function ensureNamespaceScopeChain(
+  persistence: MemoriesPersistence,
+  targetNamespace: NamespacePath,
+): void {
+  const segments = targetNamespace.split("/").filter((segment) => segment.length > 0);
+  if (segments.length === 0) return;
+  const paths: NamespacePath[] = [GLOBAL_ROOT];
+  let built = "";
+  for (const segment of segments) {
+    built = built.length > 0 ? `${built}/${segment}` : segment;
+    paths.push(built as NamespacePath);
+  }
+  ensureScopeChain(persistence, paths);
+}

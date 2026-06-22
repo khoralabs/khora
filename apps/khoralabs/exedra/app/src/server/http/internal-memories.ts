@@ -42,7 +42,7 @@ import {
   resolveGeminiApiKey,
 } from "../memories/embedding.js";
 import { exedraMemoriesOntology } from "../memories/exedra-ontology.js";
-import { ensureScopeChain, userScope } from "../memories/namespaces.js";
+import { ensureNamespaceScopeChain, ensureScopeChain, userScope } from "../memories/namespaces.js";
 import { openOrgMemories, openUserMemories } from "../memories/store.js";
 import { withSpan } from "../telemetry/spans.js";
 import { requireInternalToken } from "./require-internal-token.js";
@@ -258,9 +258,11 @@ async function runInternalSearch(
   userId: string,
   query: string,
   topK: number,
+  namespaceOverride?: string,
+  orgId?: string,
 ): Promise<{ hits: SearchHitSummary[]; namespace: string }> {
-  const namespace = userScope(userId);
-  const access = openMemoriesAccess(openUserMemories(userId));
+  const namespace = namespaceOverride?.trim() || userScope(userId);
+  const access = openScopedMemoriesAccess({ userId, orgId });
   const { content, arms } = await buildHybridSearchContent(query);
 
   const rawHits = await searchAsync(
@@ -416,12 +418,20 @@ export async function handleInternalMemoriesSearch(req: Request): Promise<Respon
   }
 
   const topK = Math.min(50, Math.max(1, Number(body.topK) || 10));
+  const namespace = body.namespace?.trim();
+  const orgId = body.orgId?.trim();
 
   try {
     const result = await withSpan(
       "internal.memories.search",
-      { "memories.user_id": userId },
-      async () => runInternalSearch(userId, query, topK),
+      {
+        "memories.user_id": userId,
+        ...(namespace !== undefined && namespace.length > 0
+          ? { "memories.namespace": namespace }
+          : {}),
+        ...(orgId !== undefined && orgId.length > 0 ? { "memories.org_id": orgId } : {}),
+      },
+      async () => runInternalSearch(userId, query, topK, namespace, orgId),
     );
     return Response.json(result);
   } catch (err) {
@@ -456,12 +466,18 @@ export async function handleInternalMemoriesMerge(req: Request): Promise<Respons
     return Response.json({ error: "logicalMemory.plaintext is required" }, { status: 400 });
   }
 
+  const orgId = body.orgId?.trim();
+
   try {
     return await withSpan(
       "internal.memories.merge",
-      { "memories.user_id": userId, "memories.mode": body.mode },
+      {
+        "memories.user_id": userId,
+        "memories.mode": body.mode,
+        ...(orgId !== undefined && orgId.length > 0 ? { "memories.org_id": orgId } : {}),
+      },
       async () => {
-        const client = openUserMemoriesClient(userId);
+        const client = openScopedMemoriesClient({ userId, orgId });
         const embeddingModel = createExedraMemoriesEmbeddingModel();
 
         const input: LogicalMemoryInput = {
@@ -469,6 +485,12 @@ export async function handleInternalMemoriesMerge(req: Request): Promise<Respons
           namespace: logicalMemory.namespace.trim(),
           plaintext,
         };
+
+        if (orgId !== undefined && orgId.length > 0) {
+          ensureNamespaceScopeChain(client.persistence, input.namespace);
+        } else {
+          ensureScopeChain(client.persistence, [GLOBAL_ROOT, input.namespace]);
+        }
 
         const processedContent = await decomposeLogicalMemoryToContent({
           ...input,
@@ -566,14 +588,20 @@ export async function handleInternalMemoriesMergeDocumentChunk(req: Request): Pr
     return Response.json({ error: "content is required" }, { status: 400 });
   }
 
-  const namespace = userScope(userId);
+  const namespace = body.namespace?.trim() || userScope(userId);
+  const orgId = body.orgId?.trim();
 
   try {
     return await withSpan(
       "internal.memories.merge_document_chunk",
-      { "memories.user_id": userId, "memories.key": memoryKey },
+      { "memories.user_id": userId, "memories.key": memoryKey, "memories.namespace": namespace },
       async () => {
-        const client = openUserMemoriesClient(userId);
+        const client = openScopedMemoriesClient({ userId, orgId });
+        if (orgId !== undefined && orgId.length > 0) {
+          ensureNamespaceScopeChain(client.persistence, namespace);
+        } else {
+          ensureScopeChain(client.persistence, [GLOBAL_ROOT, namespace]);
+        }
         const embeddingModel = createExedraMemoriesEmbeddingModel();
         const processed: ProcessedLogicalMemory = {
           key: memoryKey,

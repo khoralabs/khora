@@ -7,6 +7,7 @@ import {
   handlePatchTeamPermissions,
 } from "./authz/routes";
 import { handleServeAvatar } from "./avatars/routes";
+import { handleContributeDocuments, handleGetDocumentBatch } from "./documents/contribute-routes";
 import {
   handleGetSessionDocument,
   handleListSessionDocuments,
@@ -15,6 +16,7 @@ import {
 import {
   handleInternalDeleteDocumentMemories,
   handleInternalGetDocument,
+  handleInternalGetDocumentBatch,
   handleInternalGetDocumentBytes,
   handleInternalPatchDocument,
 } from "./http/internal-documents";
@@ -221,6 +223,15 @@ export const apiRoutes = {
       handleGetSessionDocument(req, req.params.sessionId, req.params.documentId),
   },
 
+  "/api/documents/contribute": {
+    POST: (req: Request) => handleContributeDocuments(req),
+  },
+
+  "/api/documents/batches/:batchId": {
+    GET: (req: Request & { params: { batchId: string } }) =>
+      handleGetDocumentBatch(req, req.params.batchId),
+  },
+
   "/api/sessions/:id/invites": {
     POST: (req: Request & { params: { id: string } }) => handleMintInvite(req, req.params.id),
   },
@@ -338,6 +349,11 @@ export const internalRoutes = {
 
   "/internal/memories/merge-document-chunk": {
     POST: handleInternalMemoriesMergeDocumentChunk,
+  },
+
+  "/internal/documents/batches/:batchId": {
+    GET: (req: Request & { params: { batchId: string } }) =>
+      handleInternalGetDocumentBatch(req, req.params.batchId),
   },
 
   "/internal/documents/:documentId": {

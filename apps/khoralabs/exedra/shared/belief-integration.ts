@@ -19,6 +19,8 @@ export type InternalMemoriesSearchRequest = {
   userId: string;
   query: string;
   topK?: number;
+  namespace?: string;
+  orgId?: string;
 };
 
 export type InternalMemoriesSearchResponse = {
@@ -53,6 +55,7 @@ export type InternalMemoriesMergeRequest = {
   plan?: IntegratorPlanWireJson;
   /** Neighbor memory keys discovered during integrator search; filters semantic edges on merge. */
   allowedPeerKeys?: string[];
+  orgId?: string;
 };
 
 export type InternalMemoriesMergeResponse = {

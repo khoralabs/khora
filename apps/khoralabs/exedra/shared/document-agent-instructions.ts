@@ -8,6 +8,15 @@ export const exedraDocumentAdapterInstructions = [
   "Never invent neighbor memory keys.",
 ];
 
+/** Exedra batch document adapter: prose expansion with sibling and user context awareness. */
+export const exedraBatchDocumentAdapterInstructions = [
+  ...exedraDocumentAdapterInstructions,
+  "You may receive contextText describing how documents relate to each other and siblingDocuments with excerpts from other files in the same batch.",
+  "Use contextText and sibling excerpts to describe each document's role in the batch and any cross-document relationships in plaintext.",
+  "When contextText assigns topics to specific files, reflect that in the document memory prose.",
+  "You may emit edgeLabelHints referencing sibling document memory keys when context or content clearly links documents.",
+];
+
 /** Exedra document integrator: semantic related edges grounded in search. */
 export const exedraDocumentIntegratorInstructions = [
   "You are linking a new document memory chunk into the user's existing Exedra memory graph.",

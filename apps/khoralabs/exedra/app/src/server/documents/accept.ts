@@ -1,16 +1,20 @@
 import type { Database } from "bun:sqlite";
-
 import { resolveDocumentMemoryKey } from "../../../../shared/document-processing.js";
+import { ResourceType } from "../authz/policy.js";
 import { getTeam } from "../db/membership.js";
+import { userSessionScope } from "../memories/namespaces.js";
 import { withSpan } from "../telemetry/spans.js";
-import { insertSessionDocument } from "./db.js";
+import { insertDocument } from "./db.js";
 import { ExedraDocumentStore } from "./s3-store.js";
-import type { SessionDocumentRecord } from "./types.js";
+import type { DocumentGrantResource, DocumentRecord, ExedraDocumentRef } from "./types.js";
 
-export type AcceptSessionDocumentParams = {
+export type AcceptDocumentParams = {
   db: Database;
   orgId: string;
-  sessionId: string;
+  batchId: string;
+  targetNamespace: string;
+  grantResource: DocumentGrantResource;
+  teamId?: string | null;
   userId: string;
   fileName: string;
   mimeType: string;
@@ -18,35 +22,28 @@ export type AcceptSessionDocumentParams = {
   store?: ExedraDocumentStore;
 };
 
-export async function acceptSessionDocument(params: AcceptSessionDocumentParams): Promise<{
-  document: SessionDocumentRecord;
-  sourceRef: {
-    domain: "exedra_document";
-    org_id: string;
-    session_id: string;
-    document_id: string;
-    file_name: string;
-    content_hash: string;
-  };
+export async function acceptDocument(params: AcceptDocumentParams): Promise<{
+  document: DocumentRecord;
+  sourceRef: ExedraDocumentRef;
 }> {
   const documentId = crypto.randomUUID();
 
   return withSpan(
     "document.accept",
     {
-      "session.id": params.sessionId,
       "document.id": documentId,
+      "document.batch_id": params.batchId,
       "file.name": params.fileName,
       "file.mime_type": params.mimeType,
     },
     async () => {
-      const memoryKey = resolveDocumentMemoryKey(params.sessionId, documentId);
+      const memoryKey = resolveDocumentMemoryKey(params.batchId, documentId);
       const store = params.store ?? new ExedraDocumentStore();
 
       const { ref, s3Key } = await withSpan("document.s3_put", {}, async () =>
         store.put({
           orgId: params.orgId,
-          sessionId: params.sessionId,
+          batchId: params.batchId,
           documentId,
           fileName: params.fileName,
           mimeType: params.mimeType,
@@ -54,9 +51,16 @@ export async function acceptSessionDocument(params: AcceptSessionDocumentParams)
         }),
       );
 
-      const record = insertSessionDocument(params.db, {
+      const record = insertDocument(params.db, {
         id: documentId,
-        sessionId: params.sessionId,
+        batchId: params.batchId,
+        targetNamespace: params.targetNamespace,
+        grantResource: params.grantResource,
+        orgId: params.grantResource.type === ResourceType.Session ? null : params.orgId,
+        teamId:
+          params.grantResource.type === ResourceType.Team
+            ? params.grantResource.id
+            : (params.teamId ?? null),
         uploadedByUserId: params.userId,
         fileName: params.fileName,
         mimeType: params.mimeType,
@@ -67,10 +71,7 @@ export async function acceptSessionDocument(params: AcceptSessionDocumentParams)
         status: "accepted",
       });
 
-      return {
-        document: record,
-        sourceRef: ref,
-      };
+      return { document: record, sourceRef: ref };
     },
   );
 }
@@ -79,4 +80,13 @@ export function resolveSessionOrgId(db: Database, teamId: string): string {
   const team = getTeam(db, teamId);
   if (team === null) throw new Error("Team not found");
   return team.orgId;
+}
+
+export function resolveSessionTargetNamespace(
+  userId: string,
+  orgId: string,
+  teamId: string,
+  sessionId: string,
+): string {
+  return userSessionScope(userId, orgId, teamId, sessionId);
 }

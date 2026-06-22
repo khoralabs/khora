@@ -151,11 +151,16 @@ test("POST /api/sessions/:sessionId/documents stores metadata on happy path", as
   }));
 
   const documentId = crypto.randomUUID();
-  bunMock.module("./ingest.js", () => ({
-    acceptSessionDocument: async () => ({
+  bunMock.module("./accept.js", () => ({
+    acceptDocument: async () => ({
       document: {
         id: documentId,
-        sessionId: session.id,
+        batchId: crypto.randomUUID(),
+        targetNamespace: "test-namespace",
+        grantResourceType: "session",
+        grantResourceId: session.id,
+        orgId: null,
+        teamId,
         uploadedByUserId: user.id,
         fileName: "notes.txt",
         mimeType: "text/plain",
@@ -167,20 +172,20 @@ test("POST /api/sessions/:sessionId/documents stores metadata on happy path", as
         status: "accepted",
         errorMessage: null,
         taskRunId: null,
-        turnId: null,
         processedAtMs: null,
         createdAtMs: Date.now(),
       },
       sourceRef: {
         domain: "exedra_document",
         org_id: orgId,
-        session_id: session.id,
+        batch_id: session.id,
         document_id: documentId,
         file_name: "notes.txt",
         content_hash: "abc123",
       },
     }),
     resolveSessionOrgId: () => orgId,
+    resolveSessionTargetNamespace: () => "test-namespace",
   }));
 
   const { handleUploadSessionDocument } = await import("./routes.js");
