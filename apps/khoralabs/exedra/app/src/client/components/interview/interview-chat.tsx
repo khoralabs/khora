@@ -2,11 +2,11 @@ import { useRef } from "react";
 
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
-
+import { interviewShowAgentLoading } from "./interview-agent-loading";
 import { InterviewChatDropOverlay } from "./interview-chat-drop-overlay";
 import { InterviewChatHeader } from "./interview-chat-header";
 import { InterviewChatInput } from "./interview-chat-input";
-import { InterviewChatMessages, interviewShowThinking } from "./interview-chat-messages";
+import { InterviewChatMessages } from "./interview-chat-messages";
 import type { InterviewChatProps } from "./interview-chat-types";
 import { useInterviewBootstrap } from "./use-interview-bootstrap";
 import { useInterviewDragDrop } from "./use-interview-drag-drop";
@@ -107,7 +107,8 @@ export function InterviewChat({
       <InterviewChatMessages
         messages={messages}
         sessionId={sessionId}
-        showThinking={interviewShowThinking(awaitingOpening, messages, status)}
+        status={status}
+        showAgentLoading={interviewShowAgentLoading(awaitingOpening, messages, status)}
         agentAuthor={bootstrap.agent}
       />
       <InterviewChatInput

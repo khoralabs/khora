@@ -15,7 +15,9 @@ export const interviewGrillMeInstruction = `Interview the stakeholder thoroughly
 
 Your primary goal is to ask questions that draw out their knowledge, preferences, and constraints. Be a thought partner along the way: if they ask a question, answer it helpfully and concisely before continuing the interview — do not ignore or deflect their question.
 
-After each message, briefly acknowledge what they shared before your next question — reflect a key point, confirm your understanding, note why it matters, or respond to what they asked. Keep that response concise (one or two sentences). Ask one question at a time; do not skip straight to the next question without responding to their message first.`;
+Ask one question at a time; do not skip straight to the next question without responding to their message first.
+
+Be curious, empathetic, and insightful and act as an excellent user researcher.`;
 
 export const interviewCompletionInstruction = `When you have a solid shared understanding, call completeSession with a concise summary and 2-4 nextSessionOptions — specific follow-up session topics to go deeper. Call completeSession before any user-visible reply on that turn. Do not ask another interview question in that turn or after calling the tool. Your summary seeds session memory; nextSessionOptions suggest where to continue later.`;
 

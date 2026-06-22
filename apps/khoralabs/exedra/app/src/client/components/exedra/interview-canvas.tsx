@@ -3,6 +3,7 @@ import { Lightbulb, Sparkles } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { CollapsibleItemGroup } from "@/components/ui/collapsible-item-group";
 import {
   Empty,
   EmptyDescription,
@@ -10,15 +11,45 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { ItemGroup } from "@/components/ui/item";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { BeliefFeedback, BeliefFlag, InterviewCompletion } from "@/lib/interview-api";
 import { createSession, type SessionDetail } from "@/lib/sessions-api";
 import { cn } from "@/lib/utils";
 import { appSectionHeaderClassName } from "@/shell/app-section-header";
-
 import { BeliefItem } from "./belief-item";
 import { SessionAccessPanel } from "./session-access-panel";
+
+function isReviewedBelief(belief: BeliefFlag): boolean {
+  return belief.feedback === "confirmed" || belief.feedback === "corrected";
+}
+
+type BeliefListProps = {
+  beliefs: BeliefFlag[];
+  beliefsReadOnly: boolean;
+  onBeliefSourceClick: (sourceMessageId: string) => void;
+  onBeliefUpdate: (id: string, update: { feedback?: BeliefFeedback; correction?: string }) => void;
+};
+
+function BeliefList({
+  beliefs,
+  beliefsReadOnly,
+  onBeliefSourceClick,
+  onBeliefUpdate,
+}: BeliefListProps) {
+  return (
+    <CollapsibleItemGroup.ItemGroup className="gap-3">
+      {beliefs.map((belief) => (
+        <BeliefItem
+          belief={belief}
+          key={belief.id}
+          readOnly={beliefsReadOnly}
+          onSourceClick={onBeliefSourceClick}
+          onUpdate={onBeliefUpdate}
+        />
+      ))}
+    </CollapsibleItemGroup.ItemGroup>
+  );
+}
 
 type InterviewCanvasProps = {
   sessionId: string | null;
@@ -56,6 +87,8 @@ export function InterviewCanvas({
   const [creatingTopic, setCreatingTopic] = useState<string | null>(null);
   const resolvedTeamId = teamId ?? sessionDetail?.session.teamId ?? null;
   const followUpOptions = completion?.nextSessionOptions ?? [];
+  const unconfirmedBeliefs = beliefs.filter((belief) => !isReviewedBelief(belief));
+  const confirmedBeliefs = beliefs.filter(isReviewedBelief);
 
   async function handleFollowUpSession(topic: string) {
     if (resolvedTeamId === null || creatingTopic !== null) return;
@@ -138,17 +171,34 @@ export function InterviewCanvas({
               </EmptyHeader>
             </Empty>
           ) : (
-            <ItemGroup className="gap-3">
-              {beliefs.map((belief) => (
-                <BeliefItem
-                  belief={belief}
-                  key={belief.id}
-                  readOnly={beliefsReadOnly}
-                  onSourceClick={onBeliefSourceClick}
-                  onUpdate={onBeliefUpdate}
-                />
-              ))}
-            </ItemGroup>
+            <div className="flex flex-col gap-4">
+              {unconfirmedBeliefs.length > 0 ? (
+                <CollapsibleItemGroup defaultOpen itemCount={unconfirmedBeliefs.length}>
+                  <CollapsibleItemGroup.Title>Unconfirmed</CollapsibleItemGroup.Title>
+                  <CollapsibleItemGroup.Content>
+                    <BeliefList
+                      beliefs={unconfirmedBeliefs}
+                      beliefsReadOnly={beliefsReadOnly}
+                      onBeliefSourceClick={onBeliefSourceClick}
+                      onBeliefUpdate={onBeliefUpdate}
+                    />
+                  </CollapsibleItemGroup.Content>
+                </CollapsibleItemGroup>
+              ) : null}
+              {confirmedBeliefs.length > 0 ? (
+                <CollapsibleItemGroup defaultOpen={false} itemCount={confirmedBeliefs.length}>
+                  <CollapsibleItemGroup.Title>Confirmed</CollapsibleItemGroup.Title>
+                  <CollapsibleItemGroup.Content>
+                    <BeliefList
+                      beliefs={confirmedBeliefs}
+                      beliefsReadOnly={beliefsReadOnly}
+                      onBeliefSourceClick={onBeliefSourceClick}
+                      onBeliefUpdate={onBeliefUpdate}
+                    />
+                  </CollapsibleItemGroup.Content>
+                </CollapsibleItemGroup>
+              ) : null}
+            </div>
           )}
         </TabsContent>
       </Tabs>

@@ -90,7 +90,7 @@ const flagBeliefTool = tool<
 >({
   name: "flagBelief",
   description:
-    "Record all testable beliefs, preferences, assumptions, constraints, or decisions inferred from the stakeholder's message. Pass every distinct belief in one call — do not stop at a single belief when their message supports more.",
+    "Record all testable beliefs, preferences, assumptions, constraints, or decisions inferred from the stakeholder's message. Pass every distinct belief in one call — do not stop at a single belief when their message supports more. Do not store redundant beliefs. Every belief should be completely self contained and not rely on other beliefs to be understood.",
   inputSchema: z.object({
     beliefs: z
       .array(z.string())

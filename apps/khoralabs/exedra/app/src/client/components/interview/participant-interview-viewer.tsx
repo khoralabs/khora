@@ -106,7 +106,8 @@ export function ParticipantInterviewViewer({
         <InterviewChatMessages
           messages={messages}
           sessionId={sessionId}
-          showThinking={false}
+          status="ready"
+          showAgentLoading={false}
           agentAuthor={agentAuthor}
         />
       )}

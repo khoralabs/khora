@@ -20,6 +20,7 @@ import { cn } from "src/client/lib/utils";
 import { Streamdown } from "streamdown";
 
 import { EntityAvatar } from "@/components/entity-avatar";
+import { Shimmer } from "@/components/ai-elements/shimmer";
 import type { MessageAuthor } from "@shared/messages/author";
 
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
@@ -297,9 +298,10 @@ MessageResponse.displayName = "MessageResponse";
 export type MessageHeaderProps = HTMLAttributes<HTMLDivElement> & {
   author: MessageAuthor | null;
   from: UIMessage["role"];
+  shimmer?: boolean;
 };
 
-export function MessageHeader({ author, from, className, ...props }: MessageHeaderProps) {
+export function MessageHeader({ author, from, className, shimmer = false, ...props }: MessageHeaderProps) {
   if (author === null) return null;
 
   const isUser = from === "user";
@@ -313,10 +315,18 @@ export function MessageHeader({ author, from, className, ...props }: MessageHead
       )}
       {...props}
     >
-      <EntityAvatar name={author.name} avatarUrl={author.avatarUrl} size="sm" />
-      <span className="max-w-[12rem] truncate text-xs font-medium text-foreground">
-        {author.name}
-      </span>
+      <div className={cn(shimmer && "animate-pulse opacity-70")}>
+        <EntityAvatar name={author.name} avatarUrl={author.avatarUrl} size="sm" />
+      </div>
+      {shimmer ? (
+        <Shimmer as="span" className="max-w-[12rem] truncate text-xs font-medium">
+          {author.name}
+        </Shimmer>
+      ) : (
+        <span className="max-w-[12rem] truncate text-xs font-medium text-foreground">
+          {author.name}
+        </span>
+      )}
     </div>
   );
 }
