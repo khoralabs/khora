@@ -17,6 +17,7 @@ import type { ChatMessage } from "@/lib/interview-api";
 import { formatMessageTimestamp } from "@/lib/interview-api";
 import { interviewShowAgentLoading } from "./interview-agent-loading";
 import { UserMessageAttachments } from "./interview-chat-attachments";
+import { interviewChatColumnClassName } from "./interview-chat-layout";
 import { interviewScrollAnchorMessageId, useInterviewScrollPad } from "./interview-scroll-pad";
 import { InterviewToolCall } from "./interview-tool-call";
 
@@ -106,7 +107,7 @@ export function InterviewChatMessages({
 }: InterviewChatMessagesProps) {
   return (
     <Conversation className="flex-1">
-      <ConversationContent>
+      <ConversationContent className={interviewChatColumnClassName}>
         <InterviewConversationBody
           sessionId={sessionId}
           messages={messages}

@@ -12,11 +12,13 @@ import {
 } from "@/components/ai-elements/prompt-input";
 import { InputGroupButton } from "@/components/ui/input-group";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 import {
   InterviewPromptAttachments,
   PromptInputAttachmentBridge,
 } from "./interview-chat-attachments";
+import { interviewChatColumnClassName } from "./interview-chat-layout";
 
 type InterviewChatInputProps = {
   connected: boolean;
@@ -48,9 +50,13 @@ export function InterviewChatInput({
 }: InterviewChatInputProps) {
   return (
     <div className="border-t p-4">
-      {chatError !== null ? <p className="mb-3 text-sm text-destructive">{chatError}</p> : null}
+      {chatError !== null ? (
+        <p className={cn("mb-3 text-sm text-destructive", interviewChatColumnClassName)}>
+          {chatError}
+        </p>
+      ) : null}
       <PromptInput
-        className="relative mx-auto w-full max-w-2xl"
+        className={cn("relative", interviewChatColumnClassName)}
         maxFileSize={25 * 1024 * 1024}
         multiple
         onError={(error) => onError(error.message)}
