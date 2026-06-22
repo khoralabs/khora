@@ -11,10 +11,14 @@ import {
   PromptInputHeader,
   usePromptInputAttachments,
 } from "@/components/ai-elements/prompt-input";
+import {
+  DocumentMetadataHoverCard,
+  type DocumentMetadataInfo,
+} from "@/components/exedra/document-metadata-hover-card";
 import { sessionDocumentDownloadUrl } from "@/lib/documents-api";
 import type { ChatMessageAttachment } from "@/lib/interview-api";
 
-function guessMimeType(fileName: string): string {
+export function guessAttachmentMimeType(fileName: string): string {
   const extension = fileName.split(".").pop()?.toLowerCase();
   switch (extension) {
     case "jpg":
@@ -43,7 +47,7 @@ function guessMimeType(fileName: string): string {
   }
 }
 
-function toMessageAttachmentData(
+export function toMessageAttachmentData(
   attachment: ChatMessageAttachment,
   sessionId: string,
 ): AttachmentData {
@@ -51,7 +55,7 @@ function toMessageAttachmentData(
     type: "file",
     id: attachment.id,
     filename: attachment.fileName,
-    mediaType: attachment.mediaType ?? guessMimeType(attachment.fileName),
+    mediaType: attachment.mediaType ?? guessAttachmentMimeType(attachment.fileName),
     url: attachment.url ?? sessionDocumentDownloadUrl(sessionId, attachment.id),
   };
 }
@@ -98,19 +102,22 @@ export function InterviewPromptAttachments() {
 
 type MessageAttachmentItemProps = {
   attachment: AttachmentData;
+  metadata: DocumentMetadataInfo;
 };
 
-const MessageAttachmentItem = memo(({ attachment }: MessageAttachmentItemProps) => (
-  <a
-    className="block shrink-0"
-    href={attachment.type === "file" ? attachment.url : undefined}
-    rel="noreferrer"
-    target="_blank"
-  >
-    <Attachment data={attachment}>
-      <AttachmentPreview />
-    </Attachment>
-  </a>
+const MessageAttachmentItem = memo(({ attachment, metadata }: MessageAttachmentItemProps) => (
+  <DocumentMetadataHoverCard metadata={metadata} side="top">
+    <a
+      className="block shrink-0"
+      href={attachment.type === "file" ? attachment.url : undefined}
+      rel="noreferrer"
+      target="_blank"
+    >
+      <Attachment data={attachment}>
+        <AttachmentPreview />
+      </Attachment>
+    </a>
+  </DocumentMetadataHoverCard>
 ));
 
 MessageAttachmentItem.displayName = "MessageAttachmentItem";
@@ -118,9 +125,11 @@ MessageAttachmentItem.displayName = "MessageAttachmentItem";
 export function UserMessageAttachments({
   attachments,
   sessionId,
+  ownerName,
 }: {
   attachments: ChatMessageAttachment[];
   sessionId: string;
+  ownerName?: string;
 }) {
   if (attachments.length === 0) return null;
 
@@ -130,6 +139,13 @@ export function UserMessageAttachments({
         <MessageAttachmentItem
           attachment={toMessageAttachmentData(attachment, sessionId)}
           key={attachment.id}
+          metadata={{
+            fileName: attachment.fileName,
+            mediaType: attachment.mediaType,
+            byteSize: attachment.byteSize,
+            status: attachment.status,
+            ownerName,
+          }}
         />
       ))}
     </Attachments>

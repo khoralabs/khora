@@ -11,6 +11,7 @@ import { AnalyticsProvider, useAnalytics } from "@/lib/analytics";
 import type {
   BeliefFeedback,
   BeliefFlag,
+  ChatDocument,
   InterviewBootstrap,
   InterviewCompletion,
 } from "@/lib/interview-api";
@@ -49,6 +50,7 @@ function InterviewContent({
   const [beliefs, setBeliefs] = useState<BeliefFlag[]>([]);
   const [completion, setCompletion] = useState<InterviewCompletion | null>(null);
   const [scrollToMessageId, setScrollToMessageId] = useState<string | null>(null);
+  const [chatDocuments, setChatDocuments] = useState<ChatDocument[]>([]);
   const [chatError, setChatError] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [viewingParticipant, setViewingParticipant] = useState<AccountProfile | null>(null);
@@ -128,6 +130,18 @@ function InterviewContent({
     [setCanvasOpen],
   );
 
+  const handleDocumentClick = useCallback(
+    (messageId: string) => {
+      setScrollToMessageId(messageId);
+      setCanvasOpen(false);
+    },
+    [setCanvasOpen],
+  );
+
+  const handleChatDocumentsChange = useCallback((documents: ChatDocument[]) => {
+    setChatDocuments(documents);
+  }, []);
+
   const handleChatError = useCallback((error: string | null) => {
     setChatError(error);
   }, []);
@@ -144,12 +158,14 @@ function InterviewContent({
 
   const handleViewParticipantChat = useCallback((participant: AccountProfile) => {
     setViewingParticipant(participant);
+    setChatDocuments([]);
   }, []);
 
   const handleBackFromParticipantChat = useCallback(() => {
     setViewingParticipant(null);
     setBeliefs([]);
     setCompletion(null);
+    setChatDocuments([]);
   }, []);
 
   const canvasProps = {
@@ -170,6 +186,8 @@ function InterviewContent({
     onViewParticipantChat: handleViewParticipantChat,
     onReturnToOwnInterview: handleBackFromParticipantChat,
     beliefsReadOnly: viewingParticipant !== null,
+    chatDocuments,
+    onDocumentClick: handleDocumentClick,
   };
 
   return (
@@ -183,6 +201,7 @@ function InterviewContent({
           scrollToMessageId={scrollToMessageId}
           onScrollToMessageComplete={() => setScrollToMessageId(null)}
           onLoaded={handleParticipantLoaded}
+          onChatDocumentsChange={handleChatDocumentsChange}
         />
       ) : (
         <InterviewChat
@@ -199,6 +218,7 @@ function InterviewContent({
           onShare={() => setShareOpen(true)}
           onTopicChange={loadSessions}
           sessionComplete={completion !== null}
+          onChatDocumentsChange={handleChatDocumentsChange}
         />
       )}
       {chatError !== null ? (

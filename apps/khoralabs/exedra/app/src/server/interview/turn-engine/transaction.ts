@@ -9,7 +9,10 @@ import { resolveSessionOrgId, resolveSessionTargetNamespace } from "../../docume
 import { getDocumentById, patchDocumentsBatchId } from "../../documents/db";
 import { dispatchBatchIntegrationForDocuments } from "../../documents/dispatch-batch-integration";
 import { loadTurnDocumentAttachments } from "../../documents/load-turn-attachments";
-import { resolveUserMessageDocuments } from "../../documents/message-context";
+import {
+  resolveUserMessageDocuments,
+  toClientMessageDocuments,
+} from "../../documents/message-context";
 import { createJob } from "../../jobs/db.js";
 import { resolveViewerAuthor } from "../../messages/resolve-author";
 import { withSpan } from "../../telemetry/spans";
@@ -208,10 +211,7 @@ async function executeTurnBody(
           ...(kickoff ? { kickoff: true as const } : {}),
           ...(Array.isArray(documentsMetadata) && documentsMetadata.length > 0
             ? {
-                documents: documentsMetadata.map((document) => ({
-                  id: document.id,
-                  fileName: document.fileName,
-                })),
+                documents: toClientMessageDocuments(documentsMetadata),
               }
             : {}),
         }

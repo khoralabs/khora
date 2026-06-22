@@ -1,5 +1,6 @@
 import type { Database } from "bun:sqlite";
 
+import type { DocumentProcessingStatus } from "../../../../shared/document-processing.js";
 import { getTeam } from "../db/membership.js";
 import { getDocumentsForUser } from "./db.js";
 import { buildExedraDocumentRef } from "./s3-store.js";
@@ -8,9 +9,32 @@ import type { ExedraDocumentRef, SessionDocumentWireRef } from "./types.js";
 export type UserMessageDocumentMetadata = {
   id: string;
   fileName: string;
+  mimeType: string;
+  byteSize: number;
+  status: DocumentProcessingStatus;
   memoryKey: string;
   sourceRef: ExedraDocumentRef;
 };
+
+export type ClientMessageDocumentWire = {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  byteSize: number;
+  status: DocumentProcessingStatus;
+};
+
+export function toClientMessageDocuments(
+  documents: readonly UserMessageDocumentMetadata[],
+): ClientMessageDocumentWire[] {
+  return documents.map((document) => ({
+    id: document.id,
+    fileName: document.fileName,
+    mimeType: document.mimeType,
+    byteSize: document.byteSize,
+    status: document.status,
+  }));
+}
 
 export function resolveUserMessageDocuments(
   db: Database,
@@ -43,6 +67,9 @@ export function resolveUserMessageDocuments(
   return records.map((record) => ({
     id: record.id,
     fileName: record.fileName,
+    mimeType: record.mimeType,
+    byteSize: record.byteSize,
+    status: record.status,
     memoryKey: record.memoryKey,
     sourceRef: buildExedraDocumentRef({
       orgId: team.orgId,

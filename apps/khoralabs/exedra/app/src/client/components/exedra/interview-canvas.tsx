@@ -12,11 +12,17 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { BeliefFeedback, BeliefFlag, InterviewCompletion } from "@/lib/interview-api";
+import type {
+  BeliefFeedback,
+  BeliefFlag,
+  ChatDocument,
+  InterviewCompletion,
+} from "@/lib/interview-api";
 import { createSession, type SessionDetail } from "@/lib/sessions-api";
 import { cn } from "@/lib/utils";
 import { appSectionHeaderClassName } from "@/shell/app-section-header";
 import { BeliefItem } from "./belief-item";
+import { InterviewDocumentsPanel } from "./interview-documents-panel";
 import { SessionAccessPanel } from "./session-access-panel";
 
 function isReviewedBelief(belief: BeliefFlag): boolean {
@@ -67,6 +73,8 @@ type InterviewCanvasProps = {
   onViewParticipantChat?: (participant: AccountProfile) => void;
   onReturnToOwnInterview?: () => void;
   beliefsReadOnly?: boolean;
+  chatDocuments?: ChatDocument[];
+  onDocumentClick?: (messageId: string) => void;
 };
 
 export function InterviewCanvas({
@@ -85,6 +93,8 @@ export function InterviewCanvas({
   onViewParticipantChat,
   onReturnToOwnInterview,
   beliefsReadOnly = false,
+  chatDocuments = [],
+  onDocumentClick,
 }: InterviewCanvasProps) {
   const [creatingTopic, setCreatingTopic] = useState<string | null>(null);
   const resolvedTeamId = teamId ?? sessionDetail?.session.teamId ?? null;
@@ -114,9 +124,24 @@ export function InterviewCanvas({
         <div className={appSectionHeaderClassName("px-4")}>
           <TabsList variant="line">
             <TabsTrigger value="beliefs">Beliefs</TabsTrigger>
+            <TabsTrigger value="documents">
+              Documents{chatDocuments.length > 0 ? ` (${chatDocuments.length})` : ""}
+            </TabsTrigger>
             <TabsTrigger value="info">Details</TabsTrigger>
           </TabsList>
         </div>
+
+        <TabsContent value="documents" className="min-h-0 flex-1 overflow-y-auto p-4">
+          {sessionId === null || onDocumentClick === undefined ? (
+            <p className="text-sm text-muted-foreground">Select a session to view documents.</p>
+          ) : (
+            <InterviewDocumentsPanel
+              documents={chatDocuments}
+              sessionId={sessionId}
+              onDocumentClick={onDocumentClick}
+            />
+          )}
+        </TabsContent>
 
         <TabsContent value="info" className="min-h-0 flex-1 overflow-y-auto p-4">
           {sessionId === null ? (

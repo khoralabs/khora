@@ -11,12 +11,8 @@ import {
   sanitizeDocumentFileName,
 } from "./config.js";
 import { getDocumentById, listDocumentsBySession } from "./db.js";
-import {
-  documentMatchesGrantResource,
-  resolveDocumentOrgId,
-  resolveSessionUploadGrantResource,
-} from "./grant-scope.js";
-import { buildExedraDocumentRef, ExedraDocumentStore } from "./s3-store.js";
+import { documentMatchesGrantResource, resolveSessionUploadGrantResource } from "./grant-scope.js";
+import { ExedraDocumentStore } from "./s3-store.js";
 
 function jsonResponse(data: unknown, status = 200): Response {
   return Response.json(data, { status });
@@ -198,19 +194,13 @@ export async function handleGetSessionDocument(
     return jsonResponse({ error: "Document not found" }, 404);
   }
 
-  const orgId =
-    resolveDocumentOrgId(getDb(), document) ?? resolveSessionOrgId(getDb(), access.session.teamId);
-  const ref = buildExedraDocumentRef({
-    orgId,
-    batchId: document.batchId,
-    documentId: document.id,
-    fileName: document.fileName,
-    contentHash: document.contentHash,
-  });
-
   try {
     const store = new ExedraDocumentStore();
-    const resolved = await store.resolve(ref);
+    const resolved = await store.getByS3Key({
+      s3Key: document.s3Key,
+      contentHash: document.contentHash,
+      mimeType: document.mimeType,
+    });
     if (resolved.kind !== "blob") {
       return jsonResponse({ error: "Document bytes unavailable" }, 500);
     }

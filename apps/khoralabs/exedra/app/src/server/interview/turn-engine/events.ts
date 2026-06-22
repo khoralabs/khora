@@ -1,5 +1,6 @@
 import type { MessageAuthor } from "@shared/messages/author";
 import type { UIMessage } from "ai";
+import type { DocumentProcessingStatus } from "../../../../shared/document-processing.js";
 
 import type { SessionKind } from "../../db/sessions";
 
@@ -18,7 +19,13 @@ export type TurnEvent =
         parts: { type: "text"; text: string }[];
         metadata?: {
           kickoff?: boolean;
-          documents?: { id: string; fileName: string }[];
+          documents?: {
+            id: string;
+            fileName: string;
+            mimeType: string;
+            byteSize: number;
+            status: DocumentProcessingStatus;
+          }[];
         };
       };
       createdAtMs: number;

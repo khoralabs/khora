@@ -1,6 +1,7 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 import { Spinner } from "@/components/ui/spinner";
+import { extractChatDocuments } from "@/lib/interview-api";
 import { cn } from "@/lib/utils";
 import { interviewShowAgentLoading } from "./interview-agent-loading";
 import { InterviewChatDropOverlay } from "./interview-chat-drop-overlay";
@@ -27,6 +28,7 @@ export function InterviewChat({
   onShare,
   onTopicChange,
   sessionComplete = false,
+  onChatDocumentsChange,
 }: InterviewChatProps) {
   const {
     bootstrap,
@@ -79,7 +81,11 @@ export function InterviewChat({
   ensureWebSocketOpenRef.current = ensureWebSocketOpen;
   setChatErrorRef.current = setChatError;
 
-  useScrollToMessage(scrollToMessageId, onScrollToMessageComplete);
+  useScrollToMessage(scrollToMessageId, onScrollToMessageComplete, bootstrap !== null);
+
+  useEffect(() => {
+    onChatDocumentsChange?.(extractChatDocuments(messages));
+  }, [messages, onChatDocumentsChange]);
 
   if (bootstrap === null) {
     return (

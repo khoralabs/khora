@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { grantSessionCreatorAccess } from "../authz/index.js";
+import { ResourceType } from "../authz/policy.js";
 import { closeDb } from "../db/index.js";
 import { ensureExedraSchema } from "../db/schema.js";
 import { createOrg, createSession, createTeam } from "../db/sessions.js";
@@ -208,4 +209,75 @@ test("POST /api/sessions/:sessionId/documents stores metadata on happy path", as
   expect(body.document.fileName).toBe("notes.txt");
   expect(body.document.summary).toBe("");
   expect(body.document.status).toBe("accepted");
+});
+
+test("GET /api/sessions/:sessionId/documents/:documentId uses stored s3Key after batch_id patch", async () => {
+  const db = new Database(path.join(dataDir, "exedra.db"), { create: true });
+  ensureExedraSchema(db);
+  const user = await getOrCreateUser(db, "registry-doc-download");
+  const orgId = await createOrg(db, { name: "Org", ownerId: user.id });
+  const teamId = createTeam(db, { orgId, name: "Team", ownerId: user.id });
+  const session = createSession(db, {
+    teamId,
+    topic: "Docs",
+  });
+  grantSessionCreatorAccess(db, user.id, session.id);
+
+  const uploadBatchId = crypto.randomUUID();
+  const turnId = crypto.randomUUID();
+  const documentId = crypto.randomUUID();
+  const s3Key = `exedra/documents/org/${orgId}/batch/${uploadBatchId}/${documentId}/notes.txt`;
+  const contentHash = "abc123hash";
+
+  const { insertDocument, patchDocumentsBatchId } = await import("./db.js");
+  insertDocument(db, {
+    id: documentId,
+    batchId: uploadBatchId,
+    targetNamespace: "test-namespace",
+    grantResource: { type: ResourceType.Session, id: session.id },
+    teamId,
+    uploadedByUserId: user.id,
+    fileName: "notes.txt",
+    mimeType: "text/plain",
+    byteSize: 5,
+    contentHash,
+    s3Key,
+    memoryKey: `documents/${uploadBatchId}/${documentId}`,
+    status: "accepted",
+  });
+  patchDocumentsBatchId(db, [documentId], turnId);
+  db.close();
+
+  process.env.EXEDRA_DOCUMENTS_S3_BUCKET = "test-bucket";
+  const { mock: bunMock } = await import("bun:test");
+  bunMock.module("../auth/require-session.js", () => ({
+    requireRegistrySessionResponse: async () => ({
+      session: { user: { id: "registry-doc-download" } },
+      response: null,
+    }),
+  }));
+
+  let requestedS3Key: string | undefined;
+  bunMock.module("./s3-store.js", () => ({
+    ExedraDocumentStore: class {
+      async getByS3Key(params: { s3Key: string; contentHash: string; mimeType?: string }) {
+        requestedS3Key = params.s3Key;
+        return {
+          kind: "blob" as const,
+          blob: new Blob(["hello"], { type: params.mimeType ?? "text/plain" }),
+        };
+      }
+    },
+  }));
+
+  const { handleGetSessionDocument } = await import("./routes.js");
+  const res = await handleGetSessionDocument(
+    new Request(`http://localhost/api/sessions/${session.id}/documents/${documentId}`),
+    session.id,
+    documentId,
+  );
+
+  expect(res.status).toBe(200);
+  expect(requestedS3Key).toBe(s3Key);
+  expect(await res.text()).toBe("hello");
 });

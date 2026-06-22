@@ -7,9 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Spinner } from "@/components/ui/spinner";
 import { formatAccountDisplayName } from "@/lib/account-display";
-import type { BeliefFlag, ChatMessage, InterviewBootstrap } from "@/lib/interview-api";
+import type {
+  BeliefFlag,
+  ChatDocument,
+  ChatMessage,
+  InterviewBootstrap,
+} from "@/lib/interview-api";
 import {
   extractBeliefsFromMessages,
+  extractChatDocuments,
   fetchParticipantInterview,
   uiMessagesToChatMessages,
 } from "@/lib/interview-api";
@@ -31,6 +37,7 @@ type ParticipantInterviewViewerProps = {
     beliefs: BeliefFlag[];
     completion: InterviewBootstrap["completion"] | null;
   }) => void;
+  onChatDocumentsChange?: (documents: ChatDocument[]) => void;
 };
 
 export function ParticipantInterviewViewer({
@@ -41,6 +48,7 @@ export function ParticipantInterviewViewer({
   scrollToMessageId,
   onScrollToMessageComplete,
   onLoaded,
+  onChatDocumentsChange,
 }: ParticipantInterviewViewerProps) {
   const [messages, setMessages] = useState<ChatMessage[] | null>(null);
   const [agentAuthor, setAgentAuthor] = useState<InterviewBootstrap["agent"]>(null);
@@ -48,6 +56,14 @@ export function ParticipantInterviewViewer({
   const participantName = formatAccountDisplayName(participant);
 
   useScrollToMessage(scrollToMessageId, onScrollToMessageComplete, messages !== null);
+
+  useEffect(() => {
+    if (messages === null) {
+      onChatDocumentsChange?.([]);
+      return;
+    }
+    onChatDocumentsChange?.(extractChatDocuments(messages));
+  }, [messages, onChatDocumentsChange]);
 
   useEffect(() => {
     let cancelled = false;

@@ -2,6 +2,8 @@ import type { AccountProfile } from "@shared/accounts/row";
 import type { MessageAuthor } from "@shared/messages/author";
 import type { UIMessage } from "ai";
 
+import type { DocumentProcessingStatus } from "@/lib/documents-api";
+
 export type InterviewSession = {
   id: string;
   topic: string;
@@ -123,8 +125,29 @@ export type ChatMessageAttachment = {
   id: string;
   fileName: string;
   mediaType?: string;
+  byteSize?: number;
+  status?: DocumentProcessingStatus;
   url?: string;
 };
+
+type MessageDocumentWire = {
+  id: string;
+  fileName: string;
+  mimeType?: string;
+  mediaType?: string;
+  byteSize?: number;
+  status?: DocumentProcessingStatus;
+};
+
+export function mapMessageDocumentWire(document: MessageDocumentWire): ChatMessageAttachment {
+  return {
+    id: document.id,
+    fileName: document.fileName,
+    mediaType: document.mimeType ?? document.mediaType,
+    byteSize: document.byteSize,
+    status: document.status,
+  };
+}
 
 export type ChatMessage = {
   id: string;
@@ -135,6 +158,37 @@ export type ChatMessage = {
   attachments?: ChatMessageAttachment[];
   toolCalls?: ToolCallDisplay[];
 };
+
+export type ChatDocument = {
+  id: string;
+  fileName: string;
+  mediaType?: string;
+  byteSize?: number;
+  status?: DocumentProcessingStatus;
+  messageId: string;
+  createdAtMs: number;
+  ownerName?: string;
+};
+
+export function extractChatDocuments(messages: readonly ChatMessage[]): ChatDocument[] {
+  const documents: ChatDocument[] = [];
+  for (const message of messages) {
+    if (message.role !== "user" || message.attachments === undefined) continue;
+    for (const attachment of message.attachments) {
+      documents.push({
+        id: attachment.id,
+        fileName: attachment.fileName,
+        mediaType: attachment.mediaType,
+        byteSize: attachment.byteSize,
+        status: attachment.status,
+        messageId: message.id,
+        createdAtMs: message.createdAtMs,
+        ownerName: message.author?.name,
+      });
+    }
+  }
+  return documents;
+}
 
 export function formatMessageTimestamp(ms: number): string {
   return new Intl.DateTimeFormat(undefined, {
@@ -232,7 +286,7 @@ export function uiMessagesToChatMessages(messages: SerializedMessage[]): ChatMes
       const metadata = message.metadata as
         | {
             displayText?: string;
-            documents?: ChatMessageAttachment[];
+            documents?: MessageDocumentWire[];
           }
         | undefined;
       const content =
@@ -245,7 +299,7 @@ export function uiMessagesToChatMessages(messages: SerializedMessage[]): ChatMes
         content,
         createdAtMs: message.createdAtMs,
         author: message.author,
-        attachments: metadata?.documents,
+        attachments: metadata?.documents?.map(mapMessageDocumentWire),
         toolCalls: extractToolCallsFromParts(message.parts),
       };
     })

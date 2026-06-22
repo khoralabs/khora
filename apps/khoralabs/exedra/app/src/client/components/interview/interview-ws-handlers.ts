@@ -3,6 +3,7 @@ import type { ChatStatus } from "ai";
 import { nanoid } from "nanoid";
 import type { Dispatch, RefObject, SetStateAction } from "react";
 import type { BeliefFlag, ChatMessage } from "@/lib/interview-api";
+import { mapMessageDocumentWire } from "@/lib/interview-api";
 
 import { upsertStreamingToolCall } from "./interview-chat-tool-utils";
 import type { SessionCompletePayload, WsServerMessage } from "./interview-chat-types";
@@ -82,6 +83,7 @@ export function handleUserMessageSaved(message: UserMessageSaved, ctx: Interview
   if (message.message.metadata?.kickoff === true) return;
 
   const text = message.message.parts.map((part) => part.text).join("");
+  const attachments = message.message.metadata?.documents?.map(mapMessageDocumentWire);
   ctx.setMessages((current) => {
     const existing = current.find(
       (entry) => entry.id === message.message.id && entry.role === "user",
@@ -94,7 +96,7 @@ export function handleUserMessageSaved(message: UserMessageSaved, ctx: Interview
               content: text,
               createdAtMs: message.createdAtMs,
               author: message.author ?? entry.author,
-              attachments: message.message.metadata?.documents,
+              attachments,
             }
           : entry,
       );
@@ -107,7 +109,7 @@ export function handleUserMessageSaved(message: UserMessageSaved, ctx: Interview
         content: text,
         createdAtMs: message.createdAtMs,
         author: message.author,
-        attachments: message.message.metadata?.documents,
+        attachments,
       },
     ];
   });

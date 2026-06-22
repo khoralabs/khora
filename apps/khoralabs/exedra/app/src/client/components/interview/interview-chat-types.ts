@@ -1,6 +1,7 @@
 import type { MessageAuthor } from "@shared/messages/author";
 import type { UIMessage } from "ai";
-import type { BeliefFlag, InterviewBootstrap } from "@/lib/interview-api";
+import type { DocumentProcessingStatus } from "@/lib/documents-api";
+import type { BeliefFlag, ChatDocument, InterviewBootstrap } from "@/lib/interview-api";
 
 export type SessionCompletePayload = {
   summary: string;
@@ -21,6 +22,7 @@ export type InterviewChatProps = {
   onShare?: () => void;
   onTopicChange?: (topic: string) => void;
   sessionComplete?: boolean;
+  onChatDocumentsChange?: (documents: ChatDocument[]) => void;
 };
 
 export type WsServerMessage =
@@ -33,7 +35,13 @@ export type WsServerMessage =
         parts: { type: "text"; text: string }[];
         metadata?: {
           kickoff?: boolean;
-          documents?: { id: string; fileName: string }[];
+          documents?: {
+            id: string;
+            fileName: string;
+            mimeType: string;
+            byteSize: number;
+            status: DocumentProcessingStatus;
+          }[];
         };
       };
       createdAtMs: number;

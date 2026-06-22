@@ -214,6 +214,7 @@ export function useInterviewTurn({
           if (abortedGenerationRef.current === generation) return;
 
           const documentIds: string[] = [];
+          const uploadedAttachments: ChatMessage["attachments"] = [];
           for (const filePart of files) {
             const blob = await fetch(filePart.url).then((response) => response.blob());
             const file = new File([blob], filePart.filename ?? "upload", {
@@ -221,9 +222,24 @@ export function useInterviewTurn({
             });
             const uploaded = await uploadSessionDocument(sessionId, file);
             documentIds.push(uploaded.id);
+            uploadedAttachments.push({
+              id: uploaded.id,
+              fileName: uploaded.fileName,
+              mediaType: uploaded.mimeType,
+              byteSize: blob.size,
+              status: uploaded.status,
+            });
           }
 
           if (abortedGenerationRef.current === generation) return;
+
+          if (uploadedAttachments.length > 0) {
+            setMessages((current) =>
+              current.map((entry) =>
+                entry.id === turnId ? { ...entry, attachments: uploadedAttachments } : entry,
+              ),
+            );
+          }
 
           serverBoundRef.current = true;
           ws.send(
