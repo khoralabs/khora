@@ -1,6 +1,6 @@
+import type { AccountProfile } from "@shared/accounts/row";
 import { Network, Share2 } from "lucide-react";
 import { useState } from "react";
-
 import { SessionAccessList } from "@/components/sessions/session-access-list";
 import { ShareSessionDialog } from "@/components/sessions/share-session-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,9 @@ type SessionAccessPanelProps = {
   sessionId: string;
   onRefresh: () => void;
   onNavigate: (path: string) => void;
+  canViewParticipantChats?: boolean;
+  viewingParticipantUserId?: string | null;
+  onViewParticipantChat?: (participant: AccountProfile) => void;
 };
 
 export function SessionAccessPanel({
@@ -20,6 +23,9 @@ export function SessionAccessPanel({
   sessionId,
   onRefresh,
   onNavigate,
+  canViewParticipantChats = false,
+  viewingParticipantUserId = null,
+  onViewParticipantChat,
 }: SessionAccessPanelProps) {
   const [shareOpen, setShareOpen] = useState(false);
   const [listRefreshKey, setListRefreshKey] = useState(0);
@@ -75,6 +81,9 @@ export function SessionAccessPanel({
           <SessionAccessList
             sessionId={sessionId}
             refreshKey={listRefreshKey}
+            canViewParticipantChats={canViewParticipantChats}
+            viewingParticipantUserId={viewingParticipantUserId}
+            onViewParticipantChat={onViewParticipantChat}
             onRemoved={() => {
               setListRefreshKey((k) => k + 1);
               onRefresh();

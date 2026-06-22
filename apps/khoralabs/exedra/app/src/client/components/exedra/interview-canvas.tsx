@@ -1,3 +1,4 @@
+import type { AccountProfile } from "@shared/accounts/row";
 import { Lightbulb, Sparkles } from "lucide-react";
 import { useState } from "react";
 
@@ -30,6 +31,10 @@ type InterviewCanvasProps = {
   onBeliefSourceClick: (sourceMessageId: string) => void;
   onNavigate: (path: string) => void;
   sheetMode?: boolean;
+  canViewParticipantChats?: boolean;
+  viewingParticipantUserId?: string | null;
+  onViewParticipantChat?: (participant: AccountProfile) => void;
+  beliefsReadOnly?: boolean;
 };
 
 export function InterviewCanvas({
@@ -43,6 +48,10 @@ export function InterviewCanvas({
   onBeliefSourceClick,
   onNavigate,
   sheetMode = false,
+  canViewParticipantChats = false,
+  viewingParticipantUserId = null,
+  onViewParticipantChat,
+  beliefsReadOnly = false,
 }: InterviewCanvasProps) {
   const [creatingTopic, setCreatingTopic] = useState<string | null>(null);
   const resolvedTeamId = teamId ?? sessionDetail?.session.teamId ?? null;
@@ -83,6 +92,9 @@ export function InterviewCanvas({
               sessionId={sessionId}
               onRefresh={onRefreshDetail}
               onNavigate={onNavigate}
+              canViewParticipantChats={canViewParticipantChats}
+              viewingParticipantUserId={viewingParticipantUserId}
+              onViewParticipantChat={onViewParticipantChat}
             />
           )}
         </TabsContent>
@@ -131,6 +143,7 @@ export function InterviewCanvas({
                 <BeliefItem
                   belief={belief}
                   key={belief.id}
+                  readOnly={beliefsReadOnly}
                   onSourceClick={onBeliefSourceClick}
                   onUpdate={onBeliefUpdate}
                 />

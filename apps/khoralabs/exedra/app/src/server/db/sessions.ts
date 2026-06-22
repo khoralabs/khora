@@ -165,6 +165,20 @@ export function getSession(db: Database, sessionId: string): SessionRecord | nul
   return row === null ? null : mapSession(row);
 }
 
+export function getInterviewThreadId(
+  db: Database,
+  params: { sessionId: string; userId: string },
+): string | null {
+  const row = db
+    .query<{ id: string }, [string, string]>(
+      `SELECT id FROM threads
+       WHERE session_id = ? AND user_id = ? AND kind = 'interview'
+       LIMIT 1`,
+    )
+    .get(params.sessionId, params.userId);
+  return row?.id ?? null;
+}
+
 export function getOrCreateInterviewThread(
   db: Database,
   params: { sessionId: string; userId: string },

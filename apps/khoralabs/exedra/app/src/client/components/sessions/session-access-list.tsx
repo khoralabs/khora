@@ -1,5 +1,6 @@
+import type { AccountProfile } from "@shared/accounts/row";
 import type { SessionAccessEntry, SessionTeamEntry } from "@shared/sessions/access";
-import { useEffect, useRef, useState } from "react";
+import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 
 import {
   AccountItem,
@@ -21,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { ItemGroup } from "@/components/ui/item";
 import { Spinner } from "@/components/ui/spinner";
 import { fetchSessionAccess, manageSessionScopes } from "@/lib/sessions-api";
+import { cn } from "@/lib/utils";
 
 function isTeamEntry(entry: SessionAccessEntry): entry is SessionTeamEntry {
   return entry.kind === "team";
@@ -32,12 +34,18 @@ type SessionAccessListProps = {
   refreshKey?: number;
   /** Called after a successful remove so parents can update their own state. */
   onRemoved?: () => void;
+  canViewParticipantChats?: boolean;
+  viewingParticipantUserId?: string | null;
+  onViewParticipantChat?: (participant: AccountProfile) => void;
 };
 
 export function SessionAccessList({
   sessionId,
   refreshKey = 0,
   onRemoved,
+  canViewParticipantChats = false,
+  viewingParticipantUserId = null,
+  onViewParticipantChat,
 }: SessionAccessListProps) {
   const [entries, setEntries] = useState<SessionAccessEntry[]>([]);
   const [canManage, setCanManage] = useState(false);
@@ -149,12 +157,35 @@ export function SessionAccessList({
               isCurrentUser={entry.isCurrentUser}
               variant="outline"
               size="sm"
+              className={cn(
+                canViewParticipantChats &&
+                  !entry.isCurrentUser &&
+                  onViewParticipantChat !== undefined &&
+                  "cursor-pointer transition-colors hover:bg-accent/50",
+                viewingParticipantUserId === entry.account.userId && "border-primary bg-accent/40",
+              )}
+              {...(canViewParticipantChats &&
+              !entry.isCurrentUser &&
+              onViewParticipantChat !== undefined
+                ? {
+                    role: "button" as const,
+                    tabIndex: 0,
+                    onClick: () => onViewParticipantChat(entry.account),
+                    onKeyDown: (event: KeyboardEvent) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onViewParticipantChat(entry.account);
+                      }
+                    },
+                  }
+                : {})}
             >
               <AccountItemMedia />
               <AccountItemContent>
                 <AccountItemTitle />
                 <AccountItemDescription>
                   {entry.context.role === "facilitator" ? "Facilitator" : "Participant"}
+                  {canViewParticipantChats && !entry.isCurrentUser ? " · View interview" : null}
                 </AccountItemDescription>
               </AccountItemContent>
               {canManage && entry.context.role !== "facilitator" && !entry.isCurrentUser ? (
@@ -164,7 +195,10 @@ export function SessionAccessList({
                     variant="ghost"
                     size="sm"
                     disabled={removingId === entry.account.userId}
-                    onClick={() => void handleRemoveAccount(entry.account.userId)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void handleRemoveAccount(entry.account.userId);
+                    }}
                   >
                     {removingId === entry.account.userId ? "Removing…" : "Remove"}
                   </Button>

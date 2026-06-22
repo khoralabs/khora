@@ -1,4 +1,8 @@
-import { listAccountRowsForSession, listAccountRowsForTeam } from "../accounts/resolve-rows";
+import {
+  listAccountRowsForSession,
+  listAccountRowsForTeam,
+  resolveAccountProfile,
+} from "../accounts/resolve-rows";
 import { requireRegistrySessionResponse } from "../auth/require-session";
 import {
   canManageSession,
@@ -13,6 +17,7 @@ import {
   canContributeToSessionKg,
   canCreateSession,
   canReadSessionKg,
+  canReadThread,
   enforce,
   ResourceType,
 } from "../authz/policy";
@@ -28,6 +33,7 @@ import { loadThreadMessages } from "../db/messages";
 import { formatDaysToDeadline, sessionPhaseFromStatus } from "../db/session-detail";
 import {
   createSession,
+  getInterviewThreadId,
   getOrCreateInterviewThread,
   getSession,
   listSessionsForUser,
@@ -345,6 +351,50 @@ export async function handleManageSessionScopes(
   return Response.json({ participants });
 }
 
+function buildInterviewPayload(
+  db: ReturnType<typeof getDb>,
+  session: NonNullable<ReturnType<typeof getSession>>,
+  threadId: string,
+  participantUserId: string,
+) {
+  const rawMessages = loadThreadMessages(db, threadId);
+  const beliefFeedback = loadBeliefFeedback(db, threadId);
+  const team = getTeam(db, session.teamId);
+  const org = team === null ? null : getOrg(db, team.orgId);
+  if (team === null || org === null) {
+    throw new Error("Organization not found for session");
+  }
+  const messages = serializeThreadMessages(db, rawMessages, { org });
+  const viewer = resolveViewerAuthor(db, participantUserId);
+  const agent = resolveOrgAgentAuthorForOrg(org);
+
+  return {
+    session: {
+      id: session.id,
+      topic: session.topic,
+      status: session.status,
+      kind: session.kind,
+    },
+    threadId,
+    messages,
+    agent,
+    viewer,
+    beliefFeedback,
+    ...(session.kind === "onboarding"
+      ? { onboarding: { orgName: org.name, teamName: team.name } }
+      : {}),
+    ...(session.interviewCompletedAtMs !== null
+      ? {
+          completion: {
+            completedAtMs: session.interviewCompletedAtMs,
+            summary: session.interviewSummary ?? "",
+            nextSessionOptions: session.nextSessionOptions ?? [],
+          },
+        }
+      : {}),
+  };
+}
+
 export async function handleGetInterview(req: Request, sessionId: string): Promise<Response> {
   const auth = await requireRegistrySessionResponse(req);
   if (auth.response !== null) return auth.response;
@@ -376,43 +426,88 @@ export async function handleGetInterview(req: Request, sessionId: string): Promi
   }
 
   const threadId = getOrCreateInterviewThread(db, { sessionId, userId: user.id });
-  const rawMessages = loadThreadMessages(db, threadId);
-  const beliefFeedback = loadBeliefFeedback(db, threadId);
-  const team = getTeam(db, session.teamId);
-  const org = team === null ? null : getOrg(db, team.orgId);
-  if (team === null || org === null) {
+
+  try {
+    return Response.json({
+      ...buildInterviewPayload(db, session, threadId, user.id),
+      wsUrl: `/ws/interview/${threadId}`,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to load interview";
+    logger.error({ err: message }, "interview load failed");
     return Response.json({ error: "Organization not found for session" }, { status: 500 });
   }
-  const messages = serializeThreadMessages(db, rawMessages, { org });
-  const viewer = resolveViewerAuthor(db, user.id);
-  const agent = resolveOrgAgentAuthorForOrg(org);
+}
 
-  return Response.json({
-    session: {
-      id: session.id,
-      topic: session.topic,
-      status: session.status,
-      kind: session.kind,
-    },
-    threadId,
-    wsUrl: `/ws/interview/${threadId}`,
-    messages,
-    agent,
-    viewer,
-    beliefFeedback,
-    ...(session.kind === "onboarding"
-      ? { onboarding: { orgName: org.name, teamName: team.name } }
-      : {}),
-    ...(session.interviewCompletedAtMs !== null
-      ? {
-          completion: {
-            completedAtMs: session.interviewCompletedAtMs,
-            summary: session.interviewSummary ?? "",
-            nextSessionOptions: session.nextSessionOptions ?? [],
-          },
-        }
-      : {}),
-  });
+export async function handleGetParticipantInterview(
+  req: Request,
+  sessionId: string,
+  participantUserId: string,
+): Promise<Response> {
+  const auth = await requireRegistrySessionResponse(req);
+  if (auth.response !== null) return auth.response;
+
+  const db = getDb();
+  const session = getSession(db, sessionId);
+  if (session === null) {
+    return Response.json({ error: "Session not found" }, { status: 404 });
+  }
+
+  const user = await getOrCreateUser(db, auth.session.user.id);
+  if (!canManageSession(db, user.id, sessionId)) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (participantUserId === user.id) {
+    return Response.json(
+      { error: "Use the interview endpoint for your own chat" },
+      { status: 400 },
+    );
+  }
+
+  if (!userHasSessionAccess(db, sessionId, participantUserId)) {
+    return Response.json({ error: "Participant not found" }, { status: 404 });
+  }
+
+  const participant = resolveAccountProfile(db, participantUserId);
+  if (participant === null) {
+    return Response.json({ error: "Participant not found" }, { status: 404 });
+  }
+
+  const threadId = getInterviewThreadId(db, { sessionId, userId: participantUserId });
+  if (threadId === null) {
+    return Response.json({
+      session: {
+        id: session.id,
+        topic: session.topic,
+        status: session.status,
+        kind: session.kind,
+      },
+      threadId: null,
+      messages: [],
+      agent: null,
+      viewer: resolveViewerAuthor(db, participantUserId),
+      beliefFeedback: [],
+      participant,
+      readOnly: true as const,
+    });
+  }
+
+  if (!canReadThread(db, user.id, threadId)) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  try {
+    return Response.json({
+      ...buildInterviewPayload(db, session, threadId, participantUserId),
+      participant,
+      readOnly: true as const,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to load interview";
+    logger.error({ err: message, participantUserId }, "participant interview load failed");
+    return Response.json({ error: "Organization not found for session" }, { status: 500 });
+  }
 }
 
 type PatchBeliefFeedbackBody = {

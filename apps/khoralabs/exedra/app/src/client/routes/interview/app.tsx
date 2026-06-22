@@ -1,8 +1,10 @@
+import type { AccountProfile } from "@shared/accounts/row";
 import { useCallback, useState } from "react";
 
 import { InterviewCanvas } from "@/components/exedra/interview-canvas";
 import { InterviewChat } from "@/components/interview/interview-chat";
 import type { SessionCompletePayload } from "@/components/interview/interview-chat-types";
+import { ParticipantInterviewViewer } from "@/components/interview/participant-interview-viewer";
 import { ShareSessionDialog } from "@/components/sessions/share-session-dialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { AnalyticsProvider, useAnalytics } from "@/lib/analytics";
@@ -49,6 +51,7 @@ function InterviewContent({
   const [scrollToMessageId, setScrollToMessageId] = useState<string | null>(null);
   const [chatError, setChatError] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
+  const [viewingParticipant, setViewingParticipant] = useState<AccountProfile | null>(null);
   const { canvasOpen, setCanvasOpen, isCompactChrome } = useMobileChromeLayout();
 
   const handleBootstrap = useCallback((bootstrap: InterviewBootstrap) => {
@@ -129,6 +132,26 @@ function InterviewContent({
     setChatError(error);
   }, []);
 
+  const handleParticipantLoaded = useCallback(
+    (data: { beliefs: BeliefFlag[]; completion: InterviewCompletion | null }) => {
+      setBeliefs(data.beliefs);
+      if (data.completion !== null) {
+        setCompletion(data.completion);
+      }
+    },
+    [],
+  );
+
+  const handleViewParticipantChat = useCallback((participant: AccountProfile) => {
+    setViewingParticipant(participant);
+  }, []);
+
+  const handleBackFromParticipantChat = useCallback(() => {
+    setViewingParticipant(null);
+    setBeliefs([]);
+    setCompletion(null);
+  }, []);
+
   const canvasProps = {
     sessionId,
     teamId: activeTeam.id.length > 0 ? activeTeam.id : (sessionDetail?.session.teamId ?? null),
@@ -142,25 +165,39 @@ function InterviewContent({
       loadSessionDetail(sessionId);
       loadSessions();
     },
+    canViewParticipantChats: sessionDetail?.canManage === true,
+    viewingParticipantUserId: viewingParticipant?.userId ?? null,
+    onViewParticipantChat: handleViewParticipantChat,
+    beliefsReadOnly: viewingParticipant !== null,
   };
 
   return (
     <div className="flex min-w-0 flex-1 overflow-hidden">
-      <InterviewChat
-        key={sessionId}
-        sessionId={sessionId}
-        onBootstrap={handleBootstrap}
-        onBeliefsChange={handleBeliefsChange}
-        onError={handleChatError}
-        onNavigate={onNavigate}
-        onSessionComplete={handleSessionComplete}
-        onScrollToMessageComplete={() => setScrollToMessageId(null)}
-        scrollToMessageId={scrollToMessageId}
-        canManage={sessionDetail?.canManage}
-        onShare={() => setShareOpen(true)}
-        onTopicChange={loadSessions}
-        sessionComplete={completion !== null}
-      />
+      {viewingParticipant !== null ? (
+        <ParticipantInterviewViewer
+          sessionId={sessionId}
+          participant={viewingParticipant}
+          onBack={handleBackFromParticipantChat}
+          onNavigate={onNavigate}
+          onLoaded={handleParticipantLoaded}
+        />
+      ) : (
+        <InterviewChat
+          key={sessionId}
+          sessionId={sessionId}
+          onBootstrap={handleBootstrap}
+          onBeliefsChange={handleBeliefsChange}
+          onError={handleChatError}
+          onNavigate={onNavigate}
+          onSessionComplete={handleSessionComplete}
+          onScrollToMessageComplete={() => setScrollToMessageId(null)}
+          scrollToMessageId={scrollToMessageId}
+          canManage={sessionDetail?.canManage}
+          onShare={() => setShareOpen(true)}
+          onTopicChange={loadSessions}
+          sessionComplete={completion !== null}
+        />
+      )}
       {chatError !== null ? (
         <div className="sr-only" aria-live="polite">
           {chatError}

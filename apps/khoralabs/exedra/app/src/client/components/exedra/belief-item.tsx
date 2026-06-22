@@ -23,9 +23,10 @@ type BeliefItemProps = {
   belief: BeliefFlag;
   onSourceClick: (sourceMessageId: string) => void;
   onUpdate: (id: string, update: { feedback?: BeliefFeedback; correction?: string }) => void;
+  readOnly?: boolean;
 };
 
-export function BeliefItem({ belief, onSourceClick, onUpdate }: BeliefItemProps) {
+export function BeliefItem({ belief, onSourceClick, onUpdate, readOnly = false }: BeliefItemProps) {
   const [mode, setMode] = useState<"idle" | "correcting" | "editing">("idle");
   const [draft, setDraft] = useState("");
 
@@ -35,7 +36,7 @@ export function BeliefItem({ belief, onSourceClick, onUpdate }: BeliefItemProps)
     belief.correction.length > 0;
   const isConfirmed = belief.feedback === "confirmed";
   const showCorrectionEditor = mode === "correcting" || mode === "editing";
-  const showActions = !isConfirmed && !hasCorrection && !showCorrectionEditor;
+  const showActions = !readOnly && !isConfirmed && !hasCorrection && !showCorrectionEditor;
 
   useEffect(() => {
     if (mode === "editing" && belief.correction !== undefined) {
@@ -165,16 +166,18 @@ export function BeliefItem({ belief, onSourceClick, onUpdate }: BeliefItemProps)
         <ItemFooter className="flex-col items-stretch gap-0 border-t px-3 py-3">
           <div className="flex items-start justify-between gap-2">
             <p className="min-w-0 flex-1 text-sm leading-relaxed">{belief.correction}</p>
-            <Button
-              aria-label="Edit correction"
-              className="shrink-0 text-muted-foreground"
-              onClick={handleEditCorrection}
-              size="icon-xs"
-              type="button"
-              variant="ghost"
-            >
-              <Pencil />
-            </Button>
+            {!readOnly ? (
+              <Button
+                aria-label="Edit correction"
+                className="shrink-0 text-muted-foreground"
+                onClick={handleEditCorrection}
+                size="icon-xs"
+                type="button"
+                variant="ghost"
+              >
+                <Pencil />
+              </Button>
+            ) : null}
           </div>
         </ItemFooter>
       ) : null}

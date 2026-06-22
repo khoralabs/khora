@@ -1,3 +1,4 @@
+import type { AccountProfile } from "@shared/accounts/row";
 import type { MessageAuthor } from "@shared/messages/author";
 import type { UIMessage } from "ai";
 
@@ -100,6 +101,13 @@ export type InterviewBootstrap = {
   viewer: MessageAuthor | null;
   beliefFeedback?: BeliefFeedbackRecord[];
   completion?: InterviewCompletion;
+};
+
+export type ParticipantInterviewView = Omit<InterviewBootstrap, "wsUrl"> & {
+  readOnly: true;
+  participant: AccountProfile;
+  threadId: string | null;
+  wsUrl?: undefined;
 };
 
 export type ToolCallDisplay = {
@@ -247,6 +255,28 @@ export function uiMessagesToChatMessages(messages: SerializedMessage[]): ChatMes
         (message.attachments?.length ?? 0) > 0 ||
         (message.toolCalls?.length ?? 0) > 0,
     );
+}
+
+export async function fetchParticipantInterview(
+  sessionId: string,
+  participantUserId: string,
+): Promise<ParticipantInterviewView> {
+  const res = await fetch(
+    `/api/sessions/${encodeURIComponent(sessionId)}/participants/${encodeURIComponent(participantUserId)}/interview`,
+    { credentials: "include" },
+  );
+  if (!res.ok) {
+    const data = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error ?? "Failed to load participant interview");
+  }
+  const body = (await res.json()) as ParticipantInterviewView;
+  return {
+    ...body,
+    completion:
+      normalizeInterviewCompletion(body.completion) ??
+      extractCompletionFromMessages(body.messages) ??
+      undefined,
+  };
 }
 
 export async function fetchInterview(sessionId: string): Promise<InterviewBootstrap> {

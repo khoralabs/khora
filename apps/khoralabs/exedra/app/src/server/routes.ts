@@ -69,6 +69,7 @@ import { stubRegistryAuthRoutes } from "./registry-stub/routes";
 import {
   handleCreateSession,
   handleGetInterview,
+  handleGetParticipantInterview,
   handleGetSessionAccess,
   handleGetSessionById,
   handleListSessions,
@@ -211,6 +212,11 @@ export const apiRoutes = {
 
   "/api/sessions/:id/interview": {
     GET: (req: Request & { params: { id: string } }) => handleGetInterview(req, req.params.id),
+  },
+
+  "/api/sessions/:sessionId/participants/:userId/interview": {
+    GET: (req: Request & { params: { sessionId: string; userId: string } }) =>
+      handleGetParticipantInterview(req, req.params.sessionId, req.params.userId),
   },
 
   "/api/sessions/:sessionId/interview/beliefs/:beliefId": {
