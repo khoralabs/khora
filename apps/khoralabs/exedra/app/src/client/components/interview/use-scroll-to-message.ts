@@ -6,7 +6,12 @@ export type InterviewScrollTarget = {
 };
 
 const MESSAGE_HIGHLIGHT = ["ring-2", "ring-primary/40", "rounded-xl", "transition-shadow"] as const;
-const ATTACHMENT_HIGHLIGHT = ["ring-2", "ring-primary/40", "rounded-lg", "transition-shadow"] as const;
+const ATTACHMENT_HIGHLIGHT = [
+  "ring-2",
+  "ring-primary/40",
+  "rounded-lg",
+  "transition-shadow",
+] as const;
 
 function clearHighlight(kind: "message" | "attachment", id: string): void {
   const selector =
@@ -43,9 +48,7 @@ export function useScrollToMessage(
       highlightId = attachmentId;
       highlightClasses = ATTACHMENT_HIGHLIGHT;
     } else {
-      element = document.querySelector<HTMLElement>(
-        `[data-message-id="${CSS.escape(messageId)}"]`,
-      );
+      element = document.querySelector<HTMLElement>(`[data-message-id="${CSS.escape(messageId)}"]`);
       highlightKind = "message";
       highlightId = messageId;
       highlightClasses = MESSAGE_HIGHLIGHT;

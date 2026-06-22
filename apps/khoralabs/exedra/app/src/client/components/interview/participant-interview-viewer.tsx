@@ -24,9 +24,8 @@ import { SidebarCollapseTrigger } from "@/shell/sidebar-collapse-trigger";
 import { SidebarSheetTrigger } from "@/shell/sidebar-sheet-trigger";
 
 import { InterviewChatMessages } from "./interview-chat-messages";
-import { useScrollToMessage } from "./use-scroll-to-message";
-
 import type { InterviewScrollTarget } from "./use-scroll-to-message";
+import { useScrollToMessage } from "./use-scroll-to-message";
 
 type ParticipantInterviewViewerProps = {
   sessionId: string;
