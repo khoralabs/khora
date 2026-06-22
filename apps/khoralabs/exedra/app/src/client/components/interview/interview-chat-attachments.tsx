@@ -102,7 +102,7 @@ type MessageAttachmentItemProps = {
 
 const MessageAttachmentItem = memo(({ attachment }: MessageAttachmentItemProps) => (
   <a
-    className="block"
+    className="block shrink-0"
     href={attachment.type === "file" ? attachment.url : undefined}
     rel="noreferrer"
     target="_blank"

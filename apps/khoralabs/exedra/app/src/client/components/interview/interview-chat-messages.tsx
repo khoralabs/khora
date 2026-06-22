@@ -62,21 +62,17 @@ function InterviewConversationBody({
       {messages.map((message) => (
         <Message from={message.role} key={message.id}>
           <MessageHeader author={message.author} from={message.role} />
+          {message.role === "user" && (message.attachments?.length ?? 0) > 0 ? (
+            <UserMessageAttachments attachments={message.attachments ?? []} sessionId={sessionId} />
+          ) : null}
           <MessageContent data-message-id={message.id}>
             {(message.toolCalls ?? []).map((toolCall) => (
               <InterviewToolCall key={toolCall.id} toolCall={toolCall} />
             ))}
             {message.role === "assistant" && message.content.length > 0 ? (
               <MessageResponse>{message.content}</MessageResponse>
-            ) : message.role === "user" ? (
-              <>
-                {message.attachments !== undefined ? (
-                  <UserMessageAttachments attachments={message.attachments} sessionId={sessionId} />
-                ) : null}
-                {message.content.length > 0 ? (
-                  <MessageResponse>{message.content}</MessageResponse>
-                ) : null}
-              </>
+            ) : message.role === "user" && message.content.length > 0 ? (
+              <MessageResponse>{message.content}</MessageResponse>
             ) : null}
           </MessageContent>
           <MessageTimestamp
