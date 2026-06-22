@@ -180,7 +180,7 @@ export function SessionSidebar({
               )}
             </div>
 
-            <div className={cn("border-b p-2", collapsed && "flex flex-col items-center gap-1")}>
+            <div className={cn("p-2", collapsed && "flex flex-col items-center gap-1")}>
               {!collapsed ? (
                 <p className="px-2 pb-2 text-xs font-medium text-muted-foreground">Knowledge</p>
               ) : null}
