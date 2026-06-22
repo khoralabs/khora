@@ -169,17 +169,21 @@ export function listReadableOrgNamespaces(db: Database, userId: string, orgId: s
   }
 
   const directSessions = db
-    .query<{ session_id: string; team_id: string }, [string]>(
+    .query<{ session_id: string; team_id: string }, [string, string]>(
       `SELECT g.resource_id AS session_id, s.team_id
        FROM authz_grants g
        INNER JOIN sessions s ON s.id = g.resource_id
-       INNER JOIN teams t ON t.id = s.team_id
        WHERE g.scope_type = 'account'
          AND g.scope_id = ?
          AND g.resource_type = 'session'
          AND g.feature IN ('read', 'participant', 'admin')
          AND g.revoked_at_ms IS NULL
-         AND t.org_id = ?`,
+         AND s.team_id IN (
+           SELECT scope_id FROM authz_grants
+           WHERE resource_type = 'org' AND resource_id = ?
+             AND feature = 'member' AND scope_type = 'team'
+             AND revoked_at_ms IS NULL
+         )`,
     )
     .all(userId, orgId);
   for (const row of directSessions) {
