@@ -4,16 +4,14 @@ import { isAbortError, TurnAbortedError } from "../../../agents/errors";
 import type { InterviewSessionMeta } from "../../../agents/interview/instructions";
 import { getOrg, getTeam } from "../../db/membership";
 import { insertMessage, loadThreadMessages, nextMessageIndex } from "../../db/messages";
-import { getThread, markSessionInterviewComplete } from "../../db/sessions";
+import { getThread } from "../../db/sessions";
 import { resolveSessionOrgId, resolveSessionTargetNamespace } from "../../documents/accept";
 import { getDocumentById, patchDocumentsBatchId } from "../../documents/db";
 import { dispatchBatchIntegrationForDocuments } from "../../documents/dispatch-batch-integration";
 import { loadTurnDocumentAttachments } from "../../documents/load-turn-attachments";
 import { resolveUserMessageDocuments } from "../../documents/message-context";
-import { logger } from "../../logger";
-import { releasePersonalMemoryAccessForSession } from "../../memories/personal-memory-access";
-import { resolveOrgAgentAuthorForOrg, resolveViewerAuthor } from "../../messages/resolve-author";
-import { applyOnboardingCompletionSideEffects } from "../../onboarding/interview";
+import { createJob, setJobStatus } from "../../jobs/db.js";
+import { resolveViewerAuthor } from "../../messages/resolve-author";
 import { withSpan } from "../../telemetry/spans";
 import {
   recordTurnCompleted,
@@ -21,10 +19,15 @@ import {
   type TurnCompletionStatus,
 } from "../../telemetry/turn-metrics";
 import {
+  dispatchInterviewTurn,
+  isInterviewTurnWorkflowConfigured,
+} from "../dispatch-interview-turn.js";
+import { finalizeInterviewTurn } from "../finalize-turn.js";
+import {
   buildInterviewMemorySearchContext,
   resolveInterviewMemoryContext,
 } from "../memory-retrieval";
-import { rollbackTurnDocuments } from "./rollback";
+import { rollbackAbortedTurn } from "./rollback";
 import type { ExecuteTurnInput, TurnEngineDeps } from "./types";
 
 function assertNotAborted(signal: AbortSignal): void {
@@ -153,15 +156,14 @@ async function executeTurnBody(
     session.kind === "onboarding" ? { orgName: org.name, teamName: team.name } : undefined;
 
   const assistantId = nanoid();
-  let sessionCompleted = false;
+  let userCreatedAtMs = 0;
 
   db.run("BEGIN IMMEDIATE");
-
   try {
     assertNotAborted(signal);
 
     const userIndex = nextMessageIndex(db, threadId);
-    const userCreatedAtMs = insertMessage(db, {
+    userCreatedAtMs = insertMessage(db, {
       id: turnId,
       threadId,
       role: "user",
@@ -171,78 +173,140 @@ async function executeTurnBody(
       authorDid: userId,
     });
 
-    const userAuthor = resolveViewerAuthor(db, userId);
-
-    const kickoff = (metadata as { kickoff?: boolean } | undefined)?.kickoff === true;
-    const savedMetadata =
-      kickoff || (Array.isArray(documentsMetadata) && documentsMetadata.length > 0)
-        ? {
-            ...(kickoff ? { kickoff: true as const } : {}),
-            ...(Array.isArray(documentsMetadata) && documentsMetadata.length > 0
-              ? {
-                  documents: documentsMetadata.map((document) => ({
-                    id: document.id,
-                    fileName: document.fileName,
-                  })),
-                }
-              : {}),
-          }
-        : undefined;
-
-    emit({
-      type: "user_message_saved",
-      message: {
-        id: turnId,
-        role: "user",
-        parts: [{ type: "text", text }],
-        ...(savedMetadata !== undefined ? { metadata: savedMetadata } : {}),
-      },
-      createdAtMs: userCreatedAtMs,
-      author: userAuthor,
-    });
-
-    assertNotAborted(signal);
-
-    if (documentIds.length > 0) {
-      const orgId = resolveSessionOrgId(db, session.teamId);
-      patchDocumentsBatchId(db, documentIds, turnId);
-      const firstDocument = getDocumentById(db, documentIds[0] ?? "");
-      const namespace =
-        firstDocument?.targetNamespace ??
-        resolveSessionTargetNamespace(userId, orgId, session.teamId, session.id);
-      void dispatchBatchIntegrationForDocuments({
-        db,
-        batchId: turnId,
-        params: {
-          batchId: turnId,
-          userId,
-          namespace,
-          orgId,
-          teamId: session.teamId,
-          sessionId: session.id,
-          contextText: text.trim(),
-        },
-      });
+    db.run("COMMIT");
+  } catch (err) {
+    try {
+      db.run("ROLLBACK");
+    } catch {
+      // ignore
     }
+    if (isAbortError(err) || signal.aborted) {
+      await rollbackAbortedTurn({
+        db,
+        turnId,
+        sessionId: session.id,
+        teamId: session.teamId,
+        userId,
+        documentIds,
+      });
+      setStatus("aborted");
+      emit({ type: "turn_aborted", turnId });
+      return;
+    }
+    setStatus("error");
+    emit({ type: "error", error: err instanceof Error ? err.message : "Failed to save message" });
+    return;
+  }
 
-    const history = loadThreadMessages(db, threadId, 50);
+  const userAuthor = resolveViewerAuthor(db, userId);
+  const kickoff = (metadata as { kickoff?: boolean } | undefined)?.kickoff === true;
+  const savedMetadata =
+    kickoff || (Array.isArray(documentsMetadata) && documentsMetadata.length > 0)
+      ? {
+          ...(kickoff ? { kickoff: true as const } : {}),
+          ...(Array.isArray(documentsMetadata) && documentsMetadata.length > 0
+            ? {
+                documents: documentsMetadata.map((document) => ({
+                  id: document.id,
+                  fileName: document.fileName,
+                })),
+              }
+            : {}),
+        }
+      : undefined;
 
-    const interviewMemoryContext = resolveInterviewMemoryContext(db, {
-      orgId: org.id,
-      teamId: session.teamId,
-      sessionId: session.id,
-      participantUserId: userId,
+  emit({
+    type: "user_message_saved",
+    message: {
+      id: turnId,
+      role: "user",
+      parts: [{ type: "text", text }],
+      ...(savedMetadata !== undefined ? { metadata: savedMetadata } : {}),
+    },
+    createdAtMs: userCreatedAtMs,
+    author: userAuthor,
+  });
+
+  assertNotAborted(signal);
+
+  if (documentIds.length > 0) {
+    const orgId = resolveSessionOrgId(db, session.teamId);
+    patchDocumentsBatchId(db, documentIds, turnId);
+    const firstDocument = getDocumentById(db, documentIds[0] ?? "");
+    const namespace =
+      firstDocument?.targetNamespace ??
+      resolveSessionTargetNamespace(userId, orgId, session.teamId, session.id);
+    void dispatchBatchIntegrationForDocuments({
+      db,
+      batchId: turnId,
+      params: {
+        batchId: turnId,
+        userId,
+        namespace,
+        orgId,
+        teamId: session.teamId,
+        sessionId: session.id,
+        contextText: text.trim(),
+      },
+    });
+  }
+
+  if (isInterviewTurnWorkflowConfigured()) {
+    createJob(db, {
+      id: turnId,
+      kind: "interview_turn",
+      ownerUserId: userId,
+      payload: {
+        threadId,
+        sessionId: session.id,
+        displayText: text,
+        userTimeZone,
+        kickoff,
+        documentIds,
+        onboardingMeta,
+      },
     });
 
-    const memoryContext = await buildInterviewMemorySearchContext(db, {
-      orgId: org.id,
-      teamId: session.teamId,
-      sessionId: session.id,
-      participantUserId: userId,
-      userMessageText: text,
-      sessionTopic: session.topic,
-    });
+    try {
+      await dispatchInterviewTurn({
+        jobId: turnId,
+        threadId,
+        turnId,
+        sessionId: session.id,
+        userId,
+        orgId: org.id,
+        teamId: session.teamId,
+        ...(userTimeZone !== undefined ? { userTimeZone } : {}),
+        ...(documentIds.length > 0 ? { documentIds: [...documentIds] } : {}),
+        ...(kickoff ? { kickoff: true } : {}),
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to dispatch interview turn";
+      setJobStatus(db, turnId, "failed", { error: message });
+      setStatus("error");
+      emit({ type: "error", error: message });
+    }
+    return;
+  }
 
+  const history = loadThreadMessages(db, threadId, 50);
+  const interviewMemoryContext = resolveInterviewMemoryContext(db, {
+    orgId: org.id,
+    teamId: session.teamId,
+    sessionId: session.id,
+    participantUserId: userId,
+  });
+
+  const memoryContext = await buildInterviewMemorySearchContext(db, {
+    orgId: org.id,
+    teamId: session.teamId,
+    sessionId: session.id,
+    participantUserId: userId,
+    userMessageText: text,
+    sessionTopic: session.topic,
+  });
+
+  try {
     const {
       assistantParts,
       beliefFlags,
@@ -303,78 +367,27 @@ async function executeTurnBody(
       },
     });
 
-    sessionCompleted = completed;
+    const sessionCompleted = completed;
     assertNotAborted(signal);
 
-    const assistantIndex = nextMessageIndex(db, threadId);
-    const assistantCreatedAtMs = insertMessage(db, {
-      id: assistantId,
+    finalizeInterviewTurn({
+      db,
       threadId,
-      role: "assistant",
-      parts: assistantParts.length > 0 ? assistantParts : [{ type: "text", text: "" }],
-      messageIndex: assistantIndex,
-      metadata: beliefFlags.length > 0 ? { beliefFlags } : undefined,
-      authorDid: org.id,
-    });
-
-    const agentAuthor = resolveOrgAgentAuthorForOrg(org);
-
-    db.run("COMMIT");
-
-    if (sessionCompletion != null) {
-      markSessionInterviewComplete(db, session.id, sessionCompletion);
-      releasePersonalMemoryAccessForSession(db, session.id);
-
-      if (onboardingMeta !== undefined && thread.user_id != null) {
-        try {
-          applyOnboardingCompletionSideEffects({
-            db,
-            threadId,
-            teamId: session.teamId,
-            userId: thread.user_id,
-            summary: sessionCompletion.summary,
-          });
-        } catch (err) {
-          const message = err instanceof Error ? err.message : "Onboarding completion failed";
-          logger.error(
-            { err: message, sessionId: session.id },
-            "onboarding completion side effects failed",
-          );
-        }
-      }
-
-      emit({
-        type: "session_complete",
-        completion: {
-          summary: sessionCompletion.summary,
-          nextSessionOptions: sessionCompletion.nextSessionOptions,
-          sessionKind: session.kind,
-        },
-      });
-    }
-
-    emit({
-      type: "assistant_message",
-      message: {
-        id: assistantId,
-        role: "assistant",
-        parts: assistantParts,
-        ...(beliefFlags.length > 0 ? { metadata: { beliefFlags } } : {}),
-      },
-      createdAtMs: assistantCreatedAtMs,
-      author: agentAuthor,
-      ...(sessionCompleted ? { sessionCompleted: true } : {}),
+      turnId,
+      session,
+      assistantId,
+      assistantParts,
+      beliefFlags,
+      sessionCompleted,
+      sessionCompletion,
+      onboardingMeta,
+      emit,
     });
   } catch (err: unknown) {
-    try {
-      db.run("ROLLBACK");
-    } catch {
-      // ignore nested rollback failures
-    }
-
     if (isAbortError(err) || signal.aborted) {
-      await rollbackTurnDocuments({
+      await rollbackAbortedTurn({
         db,
+        turnId,
         sessionId: session.id,
         teamId: session.teamId,
         userId,

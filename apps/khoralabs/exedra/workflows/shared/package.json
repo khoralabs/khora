@@ -6,7 +6,8 @@
   "private": true,
   "exports": {
     "./http-memories-client-async": "./src/http-memories-client-async.ts",
-    "./exedra-memories-ontology": "./src/exedra-memories-ontology.ts"
+    "./exedra-memories-ontology": "./src/exedra-memories-ontology.ts",
+    "./exedra-jobs-client": "./src/exedra-jobs-client.ts"
   },
   "dependencies": {
     "@khoralabs/memories-autolink": "workspace:*",

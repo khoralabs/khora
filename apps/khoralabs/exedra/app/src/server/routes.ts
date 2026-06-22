@@ -21,6 +21,15 @@ import {
   handleInternalPatchDocument,
 } from "./http/internal-documents";
 import {
+  handleInternalAppendInterviewTurnEvents,
+  handleInternalCompleteInterviewTurn,
+  handleInternalFailInterviewTurn,
+  handleInternalGetInterviewTurnContext,
+  handleInternalInterviewRagContext,
+  handleInternalInterviewSearchOrg,
+  handleInternalInterviewSearchPersonal,
+} from "./http/internal-interview-turn";
+import {
   handleInternalMemoriesAgentSearch,
   handleInternalMemoriesMerge,
   handleInternalMemoriesMergeDocumentChunk,
@@ -28,6 +37,13 @@ import {
   handleInternalMemoriesSearch,
 } from "./http/internal-memories";
 import { handleAcceptInvite, handleGetInvite, handleMintInvite } from "./invites/routes";
+import {
+  handleDeleteJob,
+  handleGetJobStream,
+  handleInternalAppendJobEvents,
+  handleInternalCompleteJob,
+  handleInternalFailJob,
+} from "./jobs/routes";
 import {
   handleMeMemoriesEdgePreview,
   handleMeMemoriesGraph,
@@ -366,6 +382,16 @@ export const apiRoutes = {
     GET: (req: Request & { params: { kind: string; id: string } }) =>
       handleServeAvatar(req, req.params.kind, req.params.id),
   },
+
+  "/api/jobs/:jobId/stream": {
+    GET: (req: Request & { params: { jobId: string } }) =>
+      handleGetJobStream(req, req.params.jobId),
+  },
+
+  "/api/jobs/:jobId": {
+    DELETE: (req: Request & { params: { jobId: string } }) =>
+      handleDeleteJob(req, req.params.jobId),
+  },
 } as const;
 
 export const internalRoutes = {
@@ -409,5 +435,52 @@ export const internalRoutes = {
   "/internal/documents/:documentId/memories": {
     DELETE: (req: Request & { params: { documentId: string } }) =>
       handleInternalDeleteDocumentMemories(req, req.params.documentId),
+  },
+
+  "/internal/jobs/:jobId/events": {
+    POST: (req: Request & { params: { jobId: string } }) =>
+      handleInternalAppendJobEvents(req, req.params.jobId),
+  },
+
+  "/internal/jobs/:jobId/complete": {
+    POST: (req: Request & { params: { jobId: string } }) =>
+      handleInternalCompleteJob(req, req.params.jobId),
+  },
+
+  "/internal/jobs/:jobId/fail": {
+    POST: (req: Request & { params: { jobId: string } }) =>
+      handleInternalFailJob(req, req.params.jobId),
+  },
+
+  "/internal/interview/turns/:turnId/context": {
+    GET: (req: Request & { params: { turnId: string } }) =>
+      handleInternalGetInterviewTurnContext(req, req.params.turnId),
+  },
+
+  "/internal/interview/turns/:turnId/events": {
+    POST: (req: Request & { params: { turnId: string } }) =>
+      handleInternalAppendInterviewTurnEvents(req, req.params.turnId),
+  },
+
+  "/internal/interview/turns/:turnId/complete": {
+    POST: (req: Request & { params: { turnId: string } }) =>
+      handleInternalCompleteInterviewTurn(req, req.params.turnId),
+  },
+
+  "/internal/interview/turns/:turnId/fail": {
+    POST: (req: Request & { params: { turnId: string } }) =>
+      handleInternalFailInterviewTurn(req, req.params.turnId),
+  },
+
+  "/internal/interview/memory/rag-context": {
+    POST: handleInternalInterviewRagContext,
+  },
+
+  "/internal/interview/memory/search-org": {
+    POST: handleInternalInterviewSearchOrg,
+  },
+
+  "/internal/interview/memory/search-personal": {
+    POST: handleInternalInterviewSearchPersonal,
   },
 } as const;

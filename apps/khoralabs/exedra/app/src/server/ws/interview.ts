@@ -5,7 +5,10 @@ import { canReadThread } from "../authz";
 import { getDb } from "../db/index";
 import { getSession, getThread, userHasSessionAccess } from "../db/sessions";
 import { findUserByRegistryId } from "../identity/users";
+import { isInterviewTurnWorkflowConfigured } from "../interview/dispatch-interview-turn";
 import { getDefaultTurnEngine } from "../interview/turn-engine";
+import type { TurnEvent } from "../interview/turn-engine/events";
+import { registerTurnRelay, relayTurnEvent } from "../interview/turn-relay";
 import { logger } from "../logger";
 import { getRegistryUrl } from "../registry-url";
 import { withSpan } from "../telemetry/spans";
@@ -34,6 +37,8 @@ type ClientMessage =
   | { type: "client_context"; timeZone?: string }
   | { type: "ping" };
 
+const relayCleanupByWs = new WeakMap<InterviewWs, () => void>();
+
 function applyClientTimeZone(data: InterviewWsData, timeZone: unknown): void {
   if (typeof timeZone !== "string") return;
   const trimmed = timeZone.trim();
@@ -43,6 +48,12 @@ function applyClientTimeZone(data: InterviewWsData, timeZone: unknown): void {
 
 function emit(ws: InterviewWs, event: unknown): void {
   ws.send(JSON.stringify(event));
+}
+
+function createThreadEmitter(threadId: string): (event: TurnEvent) => void {
+  return (event) => {
+    relayTurnEvent(threadId, event);
+  };
 }
 
 export async function verifyInterviewWsUpgrade(
@@ -117,6 +128,8 @@ export async function handleInterviewWsMessage(
 
   logger.debug({ threadId: data.threadId, messageType: parsed.type }, "interview ws message");
 
+  const threadEmit = createThreadEmitter(data.threadId);
+
   if (parsed.type === "ping") {
     emit(ws, { type: "pong" });
     return;
@@ -127,7 +140,7 @@ export async function handleInterviewWsMessage(
     await engine.runKickoffTurn({
       threadId: data.threadId,
       userTimeZone: data.timeZone,
-      emit: (event) => emit(ws, event),
+      emit: threadEmit,
     });
     return;
   }
@@ -150,7 +163,7 @@ export async function handleInterviewWsMessage(
     text: parsed.text,
     documentIds: parsed.documentIds,
     userTimeZone: data.timeZone,
-    emit: (event) => emit(ws, event),
+    emit: threadEmit,
   });
 
   if (!result.ok) {
@@ -160,6 +173,10 @@ export async function handleInterviewWsMessage(
 
 export const interviewWsHandlers = {
   open(ws: InterviewWs) {
+    const cleanup = registerTurnRelay(ws.data.threadId, (event) => {
+      emit(ws, event);
+    });
+    relayCleanupByWs.set(ws, cleanup);
     emit(ws, { type: "ready", threadId: ws.data.threadId });
   },
   message(ws: InterviewWs, raw: string | Buffer) {
@@ -170,6 +187,9 @@ export const interviewWsHandlers = {
       { threadId: ws.data.threadId, userId: ws.data.userId },
       "interview ws disconnected",
     );
-    getDefaultTurnEngine().releaseThread(ws.data.threadId);
+    relayCleanupByWs.get(ws)?.();
+    if (!isInterviewTurnWorkflowConfigured()) {
+      getDefaultTurnEngine().releaseThread(ws.data.threadId);
+    }
   },
 };

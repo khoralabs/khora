@@ -25,10 +25,10 @@ import {
   loadSourceMapTextPreview,
   qualifyMemoryKey,
 } from "@khoralabs/sqlite-graph-projections";
-import { AbortError, Render } from "@renderinc/sdk";
 import { embedMany } from "ai";
 import { createExedraMemoriesAgentTelemetry } from "../telemetry/agent-telemetry.js";
 import { withSpan } from "../telemetry/spans.js";
+import { dispatchMemoryInvestigation } from "./dispatch-memory-investigation.js";
 import { exedraMemoriesOntology } from "./exedra-ontology.js";
 
 const NAMESPACE_ROOT = "_global_";
@@ -327,7 +327,7 @@ export async function handleMemoriesSearch(
   }
 }
 
-async function runInProcessInvestigation(args: {
+export async function runInProcessInvestigation(args: {
   access: MemoriesAccess;
   namespace: string;
   question: string;
@@ -365,62 +365,6 @@ async function runInProcessInvestigation(args: {
   return answer;
 }
 
-async function runWorkflowInvestigation(args: {
-  scope: MemoriesInvestigateScope;
-  namespace: string;
-  question: string;
-  maxSteps: number;
-  signal?: AbortSignal;
-}): Promise<InvestigatorAnswerWire> {
-  const apiKey = process.env.RENDER_API_KEY?.trim();
-  const slug = process.env.RENDER_INVESTIGATION_WORKFLOW_SLUG?.trim();
-  if (apiKey === undefined || apiKey.length === 0 || slug === undefined || slug.length === 0) {
-    throw new Error("Memory investigation workflow is not configured");
-  }
-
-  const render = new Render({ token: apiKey });
-  const startedRun = await render.workflows.startTask(
-    `${slug}/investigateMemory`,
-    [
-      {
-        userId: args.scope.userId,
-        ...(args.scope.orgId !== undefined && args.scope.orgId.length > 0
-          ? { orgId: args.scope.orgId }
-          : {}),
-        namespace: args.namespace,
-        question: args.question,
-        maxSteps: args.maxSteps,
-      },
-    ],
-    args.signal,
-  );
-
-  args.signal?.addEventListener(
-    "abort",
-    () => {
-      void render.workflows.cancelTaskRun(startedRun.taskRunId).catch(() => {});
-    },
-    { once: true },
-  );
-
-  const finishedRun = await startedRun.get();
-  if (finishedRun.status !== "completed") {
-    throw new Error(finishedRun.error ?? "Investigation failed");
-  }
-
-  const answer = finishedRun.results[0] as InvestigatorAnswerWire | undefined;
-  if (answer === undefined || typeof answer.answer !== "string") {
-    throw new Error("Investigation returned an invalid result");
-  }
-  return answer;
-}
-
-function isWorkflowInvestigationConfigured(): boolean {
-  const apiKey = process.env.RENDER_API_KEY?.trim();
-  const slug = process.env.RENDER_INVESTIGATION_WORKFLOW_SLUG?.trim();
-  return apiKey !== undefined && apiKey.length > 0 && slug !== undefined && slug.length > 0;
-}
-
 export async function handleMemoriesInvestigate(
   req: Request,
   access: MemoriesAccess,
@@ -449,27 +393,18 @@ export async function handleMemoriesInvestigate(
 
   try {
     return await withSpan("memories.investigate", { "memories.namespace": namespace }, async () => {
-      const answer = isWorkflowInvestigationConfigured()
-        ? await runWorkflowInvestigation({
-            scope,
-            namespace,
-            question,
-            maxSteps,
-            signal: req.signal,
-          })
-        : await runInProcessInvestigation({
-            access,
-            namespace,
-            question,
-            maxSteps,
-            resolution: body.resolution,
-          });
-      return jsonResponse(answer);
+      const { jobId } = await dispatchMemoryInvestigation({
+        ownerUserId: scope.userId,
+        scope,
+        namespace,
+        question,
+        maxSteps,
+        resolution: body.resolution,
+        access,
+      });
+      return jsonResponse({ jobId }, 202);
     });
   } catch (err) {
-    if (err instanceof AbortError) {
-      return jsonResponse({ error: "Investigation canceled" }, 499);
-    }
     const message = err instanceof Error ? err.message : String(err);
     const status =
       message.includes("Google API key") || message.includes("not configured") ? 503 : 500;

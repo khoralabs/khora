@@ -15,7 +15,7 @@ import {
 } from "@khoralabs/memories-react-graph";
 import { ArrowLeft, Network } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ContributeKnowledgeOverlayButton } from "@/components/exedra/contribute-knowledge-dialog";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { createExedraInvestigatorClient } from "@/lib/exedra-investigator-client";
 import { CompactChromeHeader } from "@/shell/compact-chrome-header";
 
 type MemoriesGraphViewProps = {
@@ -88,6 +89,7 @@ export function MemoriesGraphView({
   canContribute = true,
 }: MemoriesGraphViewProps) {
   const [graphRefreshKey, setGraphRefreshKey] = useState(0);
+  const investigatorClient = useMemo(() => createExedraInvestigatorClient(apiBase), [apiBase]);
 
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-background">
@@ -120,7 +122,7 @@ export function MemoriesGraphView({
           namespace={namespace}
           scope="subtree"
         >
-          <GraphInvestigatorProvider>
+          <GraphInvestigatorProvider client={investigatorClient}>
             <GraphInvestigatorTracker onInvestigated={onInvestigated} />
             <GraphScene
               edgeRenderMode="activeOnly"

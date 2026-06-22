@@ -48,6 +48,17 @@ import type { InterviewEnv } from "./toolkit.js";
 
 export type { SessionCompletionPayload };
 
+export type InterviewMemorySearchOverride = {
+  searchOrgMemories: (query: string) => Promise<InterviewMemoryHit[]>;
+  searchPersonalMemories?: (query: string) => Promise<InterviewMemoryHit[]>;
+};
+
+export type InterviewMemoryHit = {
+  source: "org" | "personal";
+  key: string;
+  snippet: string;
+};
+
 export type InterviewToolEvent =
   | { type: "call"; toolCallId: string; toolName: string; input: unknown }
   | { type: "result"; toolCallId: string; toolName: string; output: unknown }
@@ -63,6 +74,7 @@ export type InterviewTurnInput = {
   sessionInterviewComplete: boolean;
   memoryContext?: string | null;
   interviewMemoryContext?: InterviewMemoryContext;
+  memorySearch?: InterviewMemorySearchOverride;
   documentAttachments?: readonly TurnDocumentAttachment[];
   onTextDelta: (delta: string) => void;
   onBeliefFlag: (belief: string, sourceMessageId: string) => void;
@@ -213,6 +225,7 @@ async function runInterviewTurnSession(args: {
     sessionInterviewComplete,
     memoryContext,
     interviewMemoryContext,
+    memorySearch,
     onTextDelta,
     onBeliefFlag,
     onCompleteSession,
@@ -253,9 +266,13 @@ async function runInterviewTurnSession(args: {
       suppressTextAfterComplete = true;
       onCompleteSession?.(payload);
     },
-    ...(interviewMemoryContext !== undefined
+    ...(interviewMemoryContext !== undefined || memorySearch !== undefined
       ? {
           searchOrgMemories: async (query: string) => {
+            if (memorySearch !== undefined) {
+              return memorySearch.searchOrgMemories(query);
+            }
+            if (interviewMemoryContext === undefined) return [];
             const hits = await searchOrgMemoriesForInterview(interviewMemoryContext, query);
             return hits.map((hit) => ({
               source: hit.source,
@@ -263,9 +280,14 @@ async function runInterviewTurnSession(args: {
               snippet: hit.snippet,
             }));
           },
-          ...(interviewMemoryContext.canSearchPersonal
+          ...(memorySearch?.searchPersonalMemories !== undefined ||
+          interviewMemoryContext?.canSearchPersonal === true
             ? {
                 searchPersonalMemories: async (query: string) => {
+                  if (memorySearch?.searchPersonalMemories !== undefined) {
+                    return memorySearch.searchPersonalMemories(query);
+                  }
+                  if (interviewMemoryContext === undefined) return [];
                   const hits = await searchPersonalMemoriesForInterview(
                     interviewMemoryContext,
                     query,
@@ -455,6 +477,7 @@ export async function runInterviewTurn(args: {
   participantUserId: string;
   memoryContext?: string | null;
   interviewMemoryContext?: InterviewMemoryContext;
+  memorySearch?: InterviewMemorySearchOverride;
   threadId: string;
   userMessageId: string;
   history: UIMessage[];
@@ -483,6 +506,7 @@ export async function runInterviewTurn(args: {
     ...(args.interviewMemoryContext !== undefined
       ? { interviewMemoryContext: args.interviewMemoryContext }
       : {}),
+    ...(args.memorySearch !== undefined ? { memorySearch: args.memorySearch } : {}),
     ...(args.userTimeZone !== undefined ? { userTimeZone: args.userTimeZone } : {}),
     ...(args.onboardingMeta !== undefined ? { onboardingMeta: args.onboardingMeta } : {}),
     ...(args.documentAttachments !== undefined

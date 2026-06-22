@@ -4,10 +4,10 @@ Render Workflow that runs the memory investigator agent for graph UI deep search
 
 ## Architecture
 
-- **Exedra app** dispatches `investigateMemory` tasks via Render SDK on `POST /investigate`
-- **This workflow** runs `MemoryInvestigatorClient` with `memory_search` tool loops
+- **Exedra app** creates a `memory_investigation` job and dispatches `investigateMemory` tasks via Render SDK on `POST /investigate`
+- **Client** receives `{ jobId }` (HTTP 202) and streams progress via SSE at `GET /api/jobs/:jobId/stream`
+- **This workflow** runs `MemoryInvestigatorClient` with `memory_search` tool loops and POSTs events to `/internal/jobs/:jobId/events`
 - **HTTP RPC client** (`ExedraHttpMemoriesClientAsync`) forwards search and provenance reads to Exedra internal API
-- **Exedra** awaits task completion via `startTask().get()` and returns the answer to the graph UI
 
 ## Local development
 
@@ -36,9 +36,9 @@ Render Workflow that runs the memory investigator agent for graph UI deep search
    render workflows dev -- bun src/main.ts
    ```
 
-5. Use deep search in the graph UI — investigation runs via workflow.
+5. Use deep search in the graph UI — investigation runs via workflow with SSE progress.
 
-If `RENDER_INVESTIGATION_WORKFLOW_SLUG` is not set, Exedra falls back to in-process investigation for local dev.
+If `RENDER_INVESTIGATION_WORKFLOW_SLUG` is not set, Exedra falls back to in-process investigation (same job + SSE API).
 
 ## Deploy (Render)
 

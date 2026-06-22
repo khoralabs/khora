@@ -6,6 +6,12 @@ import {
 import { getDb } from "../../db/index";
 import { loadThreadMessages } from "../../db/messages";
 import { getSession, getThread } from "../../db/sessions";
+import { getJob, setJobStatus } from "../../jobs/db.js";
+import {
+  cancelInterviewTurnTaskRun,
+  isInterviewTurnWorkflowConfigured,
+} from "../dispatch-interview-turn.js";
+import { relayTurnEvent } from "../turn-relay.js";
 import { createInFlightRegistry } from "./in-flight";
 import { executeTurn } from "./transaction";
 import type {
@@ -83,6 +89,14 @@ export function createTurnEngine(deps: TurnEngineDeps): TurnEngine {
 
     abortTurn({ threadId, turnId }) {
       inFlight.abort(threadId, turnId);
+      if (isInterviewTurnWorkflowConfigured()) {
+        const job = getJob(deps.db, turnId);
+        if (job?.kind === "interview_turn") {
+          void cancelInterviewTurnTaskRun(job.taskRunId);
+          setJobStatus(deps.db, turnId, "cancelled");
+          relayTurnEvent(threadId, { type: "turn_aborted", turnId });
+        }
+      }
     },
 
     releaseThread(threadId) {

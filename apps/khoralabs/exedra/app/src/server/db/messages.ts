@@ -76,6 +76,10 @@ export function insertMessage(
   return createdAtMs;
 }
 
+export function deleteMessage(db: Database, messageId: string): void {
+  db.prepare(`DELETE FROM messages WHERE id = ?`).run(messageId);
+}
+
 export function loadThreadMessages(
   db: Database,
   threadId: string,

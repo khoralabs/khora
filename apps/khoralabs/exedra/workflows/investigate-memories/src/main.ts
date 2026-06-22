@@ -3,6 +3,8 @@ import { task } from "@renderinc/sdk/workflows";
 import { type InvestigateMemoryParams, investigateMemory } from "./investigate.ts";
 import "./otel.ts";
 
+export type { InvestigateMemoryParams };
+
 const retry = {
   maxRetries: 2,
   waitDurationMs: 2000,

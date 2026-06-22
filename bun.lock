@@ -255,6 +255,24 @@
         "@types/bun": "latest",
       },
     },
+    "apps/khoralabs/exedra/workflows/interview-turn": {
+      "name": "@khoralabs/exedra-workflows-interview-turn",
+      "version": "1.0.0",
+      "dependencies": {
+        "@ai-sdk/google": "^3.0.0",
+        "@ai-sdk/openai": "^3.0.0",
+        "@khoralabs/agent-capabilities": "^0.1.1",
+        "@khoralabs/agent-capabilities-otel": "^0.1.1",
+        "@khoralabs/exedra-workflows-shared": "workspace:*",
+        "@khoralabs/observability": "workspace:*",
+        "@renderinc/sdk": "^0.6.0",
+        "ai": "^6.0.205",
+        "nanoid": "^5.1.5",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+    },
     "apps/khoralabs/exedra/workflows/investigate-memories": {
       "name": "@khoralabs/exedra-workflows-investigate-memories",
       "version": "1.0.0",
@@ -1702,6 +1720,8 @@
     "@khoralabs/exedra": ["@khoralabs/exedra@workspace:apps/khoralabs/exedra/app"],
 
     "@khoralabs/exedra-workflows-integrate-memory": ["@khoralabs/exedra-workflows-integrate-memory@workspace:apps/khoralabs/exedra/workflows/integrate-memory"],
+
+    "@khoralabs/exedra-workflows-interview-turn": ["@khoralabs/exedra-workflows-interview-turn@workspace:apps/khoralabs/exedra/workflows/interview-turn"],
 
     "@khoralabs/exedra-workflows-investigate-memories": ["@khoralabs/exedra-workflows-investigate-memories@workspace:apps/khoralabs/exedra/workflows/investigate-memories"],
 
@@ -3286,6 +3306,8 @@
     "@ai-sdk/openai/@ai-sdk/provider-utils": ["@ai-sdk/provider-utils@3.0.27", "", { "dependencies": { "@ai-sdk/provider": "2.0.3", "@standard-schema/spec": "^1.0.0", "eventsource-parser": "^3.0.6" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-JFhJK5ynprll2FR3e+sHagJJIwvIagsNA0FLbLPq2Os4yLUK2/eiaCU0jXsADik73/hhvcPPLmD+Uo8eu5kFaQ=="],
 
     "@khoralabs/agent-capabilities-otel/pino": ["pino@9.14.0", "", { "dependencies": { "@pinojs/redact": "^0.4.0", "atomic-sleep": "^1.0.0", "on-exit-leak-free": "^2.1.0", "pino-abstract-transport": "^2.0.0", "pino-std-serializers": "^7.0.0", "process-warning": "^5.0.0", "quick-format-unescaped": "^4.0.3", "real-require": "^0.2.0", "safe-stable-stringify": "^2.3.1", "sonic-boom": "^4.0.1", "thread-stream": "^3.0.0" }, "bin": { "pino": "bin.js" } }, "sha512-8OEwKp5juEvb/MjpIc4hjqfgCNysrS94RIOMXYvpYCdm/jglrKEiAYmiumbmGhCvs+IcInsphYDFwqrjr7398w=="],
+
+    "@khoralabs/exedra-workflows-interview-turn/@ai-sdk/openai": ["@ai-sdk/openai@3.0.73", "", { "dependencies": { "@ai-sdk/provider": "3.0.10", "@ai-sdk/provider-utils": "4.0.30" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-+3x9oxHv9Xp33Iv2L8D+e5hqmZi64jofBKig/9611JKyfV59NdkaDDajtwc0CxOEfARgCVq1BW7dP+526gKOKw=="],
 
     "@khoralabs/khora-registry/lucide-react": ["lucide-react@0.545.0", "", { "peerDependencies": { "react": "^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-7r1/yUuflQDSt4f1bpn5ZAocyIxcTyVyBBChSVtBKn5M+392cPmI5YJMWOJKk/HUWGm5wg83chlAZtCcGbEZtw=="],
 

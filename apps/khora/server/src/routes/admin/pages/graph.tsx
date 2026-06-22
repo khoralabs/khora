@@ -1,4 +1,5 @@
 import {
+  createSyncInvestigatorClient,
   GraphCameraReframeHint,
   GraphFetchError,
   GraphInvestigatorAnswerOverlay,
@@ -16,6 +17,10 @@ import { useCallback, useEffect, useState } from "react";
 
 const MEMORIES_API_BASE = "/admin/api/memories";
 const EMBEDDING_QUEUE_POLL_MS = 10_000;
+
+const investigatorClient = createSyncInvestigatorClient({
+  investigateUrl: `${MEMORIES_API_BASE}/investigate`,
+});
 
 type EmbeddingQueueStatus = {
   pending: number;
@@ -148,7 +153,7 @@ export function GraphPage() {
         scope="subtree"
         focusDelay={200}
       >
-        <GraphInvestigatorProvider>
+        <GraphInvestigatorProvider client={investigatorClient}>
           <GraphScene
             edgeRenderMode="activeOnly"
             overlay={{ nodeLabelsVisible: true, edgeLabelsVisible: false }}

@@ -3,11 +3,24 @@ import type { Database } from "bun:sqlite";
 import { MemoriesClient } from "@khoralabs/memories-core";
 import { resolveDocumentMemoryKey } from "../../../../../shared/document-processing.js";
 import { getTeam } from "../../db/membership";
+import { deleteMessage } from "../../db/messages";
 import { deleteDocument, getDocumentsForUser } from "../../documents/db";
 import { cancelDocumentProcessingTaskRun } from "../../documents/dispatch-batch-integration";
 import { buildExedraDocumentRef, ExedraDocumentStore } from "../../documents/s3-store";
 import { exedraMemoriesOntology } from "../../memories/exedra-ontology.js";
 import { openUserMemories } from "../../memories/store.js";
+
+export async function rollbackAbortedTurn(args: {
+  db: Database;
+  turnId: string;
+  sessionId: string;
+  teamId: string;
+  userId: string;
+  documentIds: readonly string[];
+}): Promise<void> {
+  deleteMessage(args.db, args.turnId);
+  await rollbackTurnDocuments(args);
+}
 
 export async function rollbackTurnDocuments(args: {
   db: Database;
