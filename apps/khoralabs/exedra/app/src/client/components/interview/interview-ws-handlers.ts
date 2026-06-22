@@ -28,6 +28,30 @@ function ignoreStreamUpdate(ctx: InterviewWsHandlerContext): boolean {
   return ctx.shouldAcceptStreamUpdates?.() === false;
 }
 
+function mergeBeliefFlagsIntoPanel(
+  ctx: InterviewWsHandlerContext,
+  flags: readonly { belief: string; messageId: string }[],
+  idPrefix: string,
+): void {
+  if (flags.length === 0) return;
+
+  const existing = new Set(
+    ctx.beliefsRef.current.map((belief) => `${belief.sourceMessageId}\0${belief.belief}`),
+  );
+  const added = flags
+    .filter((flag) => !existing.has(`${flag.messageId}\0${flag.belief}`))
+    .map((flag, index) => ({
+      id: `${idPrefix}:${index}`,
+      belief: flag.belief,
+      sourceMessageId: flag.messageId,
+    }));
+
+  if (added.length === 0) return;
+
+  ctx.beliefsRef.current = [...ctx.beliefsRef.current, ...added];
+  ctx.onBeliefsChange(ctx.beliefsRef.current);
+}
+
 type UserMessageSaved = Extract<WsServerMessage, { type: "user_message_saved" }>;
 type TextDelta = Extract<WsServerMessage, { type: "text_delta" }>;
 type ToolCall = Extract<WsServerMessage, { type: "tool_call" }>;
@@ -221,6 +245,7 @@ export function handleAssistantMessage(message: AssistantMessage, ctx: Interview
     ];
   });
   ctx.setStatus("ready");
+  mergeBeliefFlagsIntoPanel(ctx, message.message.metadata?.beliefFlags ?? [], message.message.id);
   ctx.onTurnComplete?.();
 }
 
@@ -245,15 +270,11 @@ export function handleLegacyOnboardingComplete(
 
 export function handleBeliefFlag(message: BeliefFlagMessage, ctx: InterviewWsHandlerContext) {
   if (ignoreStreamUpdate(ctx)) return;
-  ctx.beliefsRef.current = [
-    ...ctx.beliefsRef.current,
-    {
-      id: nanoid(),
-      belief: message.belief,
-      sourceMessageId: message.sourceMessageId,
-    },
-  ];
-  ctx.onBeliefsChange(ctx.beliefsRef.current);
+  mergeBeliefFlagsIntoPanel(
+    ctx,
+    [{ belief: message.belief, messageId: message.sourceMessageId }],
+    message.turnId,
+  );
 }
 
 export function handleTurnAborted(message: TurnAbortedMessage, ctx: InterviewWsHandlerContext) {

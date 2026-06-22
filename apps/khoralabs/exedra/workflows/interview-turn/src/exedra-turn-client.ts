@@ -178,6 +178,7 @@ export class TurnEventBatcher {
   private pending: TurnEventWire[] = [];
   private timer: ReturnType<typeof setTimeout> | null = null;
   private flushChain: Promise<void> = Promise.resolve();
+  private orderedPushChain: Promise<void> = Promise.resolve();
 
   constructor(turnId: string) {
     this.turnId = turnId;
@@ -185,6 +186,18 @@ export class TurnEventBatcher {
 
   private withTurnId(event: TurnEventWireInput): TurnEventWire {
     return { ...event, turnId: this.turnId };
+  }
+
+  private async flushDeltasNow(): Promise<void> {
+    if (this.timer !== null) {
+      clearTimeout(this.timer);
+      this.timer = null;
+    }
+    if (this.deltaBuffer.length > 0) {
+      this.pending.push(this.withTurnId({ type: "text_delta", delta: this.deltaBuffer }));
+      this.deltaBuffer = "";
+    }
+    await this.flushNow();
   }
 
   push(event: TurnEventWireInput): void {
@@ -197,9 +210,11 @@ export class TurnEventBatcher {
       this.scheduleFlush();
       return;
     }
-    void this.flush().then(() => {
+
+    this.orderedPushChain = this.orderedPushChain.then(async () => {
+      await this.flushDeltasNow();
       this.pending.push(this.withTurnId(event));
-      return this.flushNow();
+      await this.flushNow();
     });
   }
 
@@ -212,16 +227,9 @@ export class TurnEventBatcher {
   }
 
   async flush(): Promise<void> {
+    await this.orderedPushChain;
     this.flushChain = this.flushChain.then(async () => {
-      if (this.timer !== null) {
-        clearTimeout(this.timer);
-        this.timer = null;
-      }
-      if (this.deltaBuffer.length > 0) {
-        this.pending.push(this.withTurnId({ type: "text_delta", delta: this.deltaBuffer }));
-        this.deltaBuffer = "";
-      }
-      await this.flushNow();
+      await this.flushDeltasNow();
     });
     return this.flushChain;
   }
