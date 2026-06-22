@@ -4,7 +4,7 @@ import { runInterviewTurnWorkflow } from "./run-turn-workflow.ts";
 import "./otel.ts";
 
 const retry = {
-  maxRetries: 1,
+  maxRetries: 0,
   waitDurationMs: 2000,
   backoffScaling: 2.0,
 };

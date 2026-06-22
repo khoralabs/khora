@@ -156,6 +156,33 @@ function historyForModel(messages: UIMessage[]): UIMessage[] {
     .filter((message) => message.parts.length > 0);
 }
 
+function normalizeAttachmentMimeType(mimeType: string): string {
+  return mimeType.split(";")[0]?.trim().toLowerCase() ?? "";
+}
+
+function isModelFileAttachment(mimeType: string): boolean {
+  const normalized = normalizeAttachmentMimeType(mimeType);
+  return normalized === "application/pdf" || normalized.startsWith("image/");
+}
+
+function attachmentToModelContentParts(
+  attachment: TurnDocumentAttachment,
+): Array<{ type: "text"; text: string } | { type: "file"; data: Uint8Array; mediaType: string }> {
+  if (isModelFileAttachment(attachment.mimeType)) {
+    return [
+      {
+        type: "file" as const,
+        data: attachment.bytes,
+        mediaType: attachment.mimeType,
+      },
+    ];
+  }
+
+  const text = new TextDecoder().decode(attachment.bytes);
+  const label = attachment.fileName.trim().length > 0 ? attachment.fileName.trim() : "attachment";
+  return [{ type: "text" as const, text: `[Attached: ${label}]\n${text}` }];
+}
+
 function attachDocumentsToModelMessages(
   messages: ModelMessage[],
   userMessageId: string,
@@ -178,16 +205,14 @@ function attachDocumentsToModelMessages(
   const target = messages[modelUserIndex];
   if (target === undefined || target.role !== "user") return messages;
 
-  const fileParts = attachments.map((attachment) => ({
-    type: "file" as const,
-    data: attachment.bytes,
-    mediaType: attachment.mimeType,
-  }));
+  const attachmentParts = attachments.flatMap((attachment) =>
+    attachmentToModelContentParts(attachment),
+  );
 
   const existingContent = target.content;
   const nextContent = Array.isArray(existingContent)
-    ? [...existingContent, ...fileParts]
-    : [{ type: "text" as const, text: String(existingContent) }, ...fileParts];
+    ? [...existingContent, ...attachmentParts]
+    : [{ type: "text" as const, text: String(existingContent) }, ...attachmentParts];
 
   const next = [...messages];
   next[modelUserIndex] = { ...target, content: nextContent };

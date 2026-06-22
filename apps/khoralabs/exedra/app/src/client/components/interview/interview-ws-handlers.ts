@@ -260,8 +260,8 @@ export function handleTurnAborted(message: TurnAbortedMessage, ctx: InterviewWsH
   ctx.streamingIdRef.current = null;
   ctx.setAwaitingOpening(false);
   ctx.setStatus("ready");
-  ctx.onTurnComplete?.();
   ctx.onTurnAborted?.(message.turnId);
+  ctx.onTurnComplete?.();
 }
 
 export function handleTurnFailed(message: TurnFailedMessage, ctx: InterviewWsHandlerContext) {
@@ -269,8 +269,8 @@ export function handleTurnFailed(message: TurnFailedMessage, ctx: InterviewWsHan
   ctx.setAwaitingOpening(false);
   ctx.setStatus("ready");
   ctx.setChatError(null);
-  ctx.onTurnComplete?.();
   ctx.onTurnFailed?.(message.turnId, message.error);
+  ctx.onTurnComplete?.();
 }
 
 export function handleWsError(message: ErrorMessage, ctx: InterviewWsHandlerContext) {
