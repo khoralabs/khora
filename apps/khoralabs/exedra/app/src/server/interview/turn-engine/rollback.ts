@@ -1,8 +1,14 @@
 import type { Database } from "bun:sqlite";
 
+import { MemoriesClient } from "@khoralabs/memories-core";
+import { resolveDocumentMemoryKey } from "../../../../../shared/document-processing.js";
 import { getTeam } from "../../db/membership";
-import { getSessionDocumentsForUser } from "../../documents/db";
+import { deleteSessionDocument, getSessionDocumentsForUser } from "../../documents/db";
+import { cancelDocumentProcessingTaskRun } from "../../documents/dispatch-document-processing";
 import { buildExedraDocumentRef, ExedraDocumentStore } from "../../documents/s3-store";
+import { exedraMemoriesOntology } from "../../memories/exedra-ontology.js";
+import { userScope } from "../../memories/namespaces.js";
+import { openUserMemories } from "../../memories/store.js";
 
 export async function rollbackTurnDocuments(args: {
   db: Database;
@@ -20,8 +26,24 @@ export async function rollbackTurnDocuments(args: {
   const records = getSessionDocumentsForUser(db, sessionId, userId, documentIds);
   if (records.length === 0) return;
 
+  const client = new MemoriesClient(openUserMemories(userId), exedraMemoriesOntology);
+  const namespace = userScope(userId);
   const store = new ExedraDocumentStore();
+
   for (const record of records) {
+    await cancelDocumentProcessingTaskRun(record.taskRunId);
+
+    const keys = [resolveDocumentMemoryKey(sessionId, record.id)];
+    if (record.status === "ready" || record.status === "processing") {
+      for (let index = 0; index < 64; index++) {
+        keys.push(resolveDocumentMemoryKey(sessionId, record.id, index));
+      }
+    }
+
+    for (const key of keys) {
+      client.deleteMemory({ namespace, key });
+    }
+
     const ref = buildExedraDocumentRef({
       orgId: team.orgId,
       sessionId,
@@ -30,6 +52,6 @@ export async function rollbackTurnDocuments(args: {
       contentHash: record.contentHash,
     });
     await store.deleteByRef(ref).catch(() => undefined);
-    db.prepare(`DELETE FROM session_documents WHERE id = ?`).run(record.id);
+    deleteSessionDocument(db, record.id);
   }
 }

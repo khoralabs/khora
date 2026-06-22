@@ -282,6 +282,3 @@ export function useInterviewTurn({
 
   return { input, submitTurn, stopTurn, handleTextChange, sessionRefs };
 }
-
-/** @deprecated Use InterviewTurnSessionRefs */
-export type InterviewSendGenerationRefs = InterviewTurnSessionRefs;

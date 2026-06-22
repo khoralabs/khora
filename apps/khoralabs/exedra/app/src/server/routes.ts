@@ -13,8 +13,15 @@ import {
   handleUploadSessionDocument,
 } from "./documents/routes";
 import {
+  handleInternalDeleteDocumentMemories,
+  handleInternalGetDocument,
+  handleInternalGetDocumentBytes,
+  handleInternalPatchDocument,
+} from "./http/internal-documents";
+import {
   handleInternalMemoriesAgentSearch,
   handleInternalMemoriesMerge,
+  handleInternalMemoriesMergeDocumentChunk,
   handleInternalMemoriesProvenanceHead,
   handleInternalMemoriesSearch,
 } from "./http/internal-memories";
@@ -327,5 +334,26 @@ export const internalRoutes = {
 
   "/internal/memories/merge": {
     POST: handleInternalMemoriesMerge,
+  },
+
+  "/internal/memories/merge-document-chunk": {
+    POST: handleInternalMemoriesMergeDocumentChunk,
+  },
+
+  "/internal/documents/:documentId": {
+    GET: (req: Request & { params: { documentId: string } }) =>
+      handleInternalGetDocument(req, req.params.documentId),
+    PATCH: (req: Request & { params: { documentId: string } }) =>
+      handleInternalPatchDocument(req, req.params.documentId),
+  },
+
+  "/internal/documents/:documentId/bytes": {
+    GET: (req: Request & { params: { documentId: string } }) =>
+      handleInternalGetDocumentBytes(req, req.params.documentId),
+  },
+
+  "/internal/documents/:documentId/memories": {
+    DELETE: (req: Request & { params: { documentId: string } }) =>
+      handleInternalDeleteDocumentMemories(req, req.params.documentId),
   },
 } as const;

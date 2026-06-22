@@ -1,0 +1,21 @@
+{
+  "name": "@khoralabs/exedra-workflows-process-document",
+  "version": "1.0.0",
+  "description": "Process Document - Render Workflows (TypeScript)",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "bun src/main.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/google": "^3.0.0",
+    "@khoralabs/exedra-workflows-shared": "workspace:*",
+    "@khoralabs/memories-core": "workspace:*",
+    "@khoralabs/observability": "workspace:*",
+    "@renderinc/sdk": "^0.6.0",
+    "ai": "^6.0.205"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

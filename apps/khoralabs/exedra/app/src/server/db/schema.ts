@@ -146,7 +146,29 @@ export function ensureExedraSchema(db: Database): void {
   migrateOrgsDropDidColumn(db);
   migrateUsersAddTermsColumns(db);
   migrateOrgsAddNetworkOptIn(db);
+  migrateSessionDocumentsAddProcessingColumns(db);
   ensureAuthzSchema(db);
+}
+
+function migrateSessionDocumentsAddProcessingColumns(db: Database): void {
+  const columns = db.query<{ name: string }, []>("PRAGMA table_info(session_documents)").all();
+  if (!columns.some((column) => column.name === "status")) {
+    db.run(`ALTER TABLE session_documents ADD COLUMN status TEXT NOT NULL DEFAULT 'ready'`);
+    db.run(`UPDATE session_documents SET status = 'ready' WHERE summary != ''`);
+    db.run(`UPDATE session_documents SET status = 'accepted' WHERE summary = ''`);
+  }
+  if (!columns.some((column) => column.name === "error_message")) {
+    db.run(`ALTER TABLE session_documents ADD COLUMN error_message TEXT`);
+  }
+  if (!columns.some((column) => column.name === "task_run_id")) {
+    db.run(`ALTER TABLE session_documents ADD COLUMN task_run_id TEXT`);
+  }
+  if (!columns.some((column) => column.name === "turn_id")) {
+    db.run(`ALTER TABLE session_documents ADD COLUMN turn_id TEXT`);
+  }
+  if (!columns.some((column) => column.name === "processed_at_ms")) {
+    db.run(`ALTER TABLE session_documents ADD COLUMN processed_at_ms INTEGER`);
+  }
 }
 
 function migrateSessionsDropFacilitator(db: Database): void {

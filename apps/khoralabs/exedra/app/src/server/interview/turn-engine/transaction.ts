@@ -5,10 +5,10 @@ import type { InterviewSessionMeta } from "../../../agents/interview/instruction
 import { getOrg, getTeam } from "../../db/membership";
 import { insertMessage, loadThreadMessages, nextMessageIndex } from "../../db/messages";
 import { getThread, markSessionInterviewComplete } from "../../db/sessions";
-import {
-  formatDocumentContextForModel,
-  resolveUserMessageDocuments,
-} from "../../documents/message-context";
+import { dispatchDocumentProcessingForTurn } from "../../documents/dispatch-document-processing";
+import { resolveSessionOrgId } from "../../documents/ingest";
+import { loadTurnDocumentAttachments } from "../../documents/load-turn-attachments";
+import { resolveUserMessageDocuments } from "../../documents/message-context";
 import { logger } from "../../logger";
 import { resolveOrgAgentAuthorForOrg, resolveViewerAuthor } from "../../messages/resolve-author";
 import { applyOnboardingCompletionSideEffects } from "../../onboarding/interview";
@@ -84,6 +84,7 @@ async function executeTurnBody(
   const userId = thread.user_id;
 
   let documentsMetadata: ReturnType<typeof resolveUserMessageDocuments> | undefined;
+  let documentAttachments: Awaited<ReturnType<typeof loadTurnDocumentAttachments>> = [];
   if (documentIds.length > 0) {
     const resolved = resolveUserMessageDocuments(db, {
       sessionId: session.id,
@@ -97,29 +98,31 @@ async function executeTurnBody(
       return;
     }
     documentsMetadata = resolved;
-  }
 
-  const summariesById = new Map<string, string>();
-  if (Array.isArray(documentsMetadata)) {
-    for (const document of documentsMetadata) {
-      const record = db
-        .query<{ summary: string }, [string]>(
-          `SELECT summary FROM session_documents WHERE id = ? LIMIT 1`,
-        )
-        .get(document.id);
-      if (record !== null) summariesById.set(document.id, record.summary);
+    try {
+      documentAttachments = await loadTurnDocumentAttachments({
+        db,
+        sessionId: session.id,
+        teamId: session.teamId,
+        userId,
+        documentIds,
+      });
+    } catch (err) {
+      setStatus("error");
+      emit({ type: "error", error: err instanceof Error ? err.message : "Document load failed" });
+      return;
     }
   }
 
-  const attachmentContext =
+  const attachmentNames =
     Array.isArray(documentsMetadata) && documentsMetadata.length > 0
-      ? formatDocumentContextForModel(documentsMetadata, summariesById)
+      ? documentsMetadata.map((document) => document.fileName).join(", ")
       : "";
   const modelText =
-    attachmentContext.length > 0
+    attachmentNames.length > 0
       ? text.trim().length > 0
-        ? `${text.trim()}\n\n${attachmentContext}`
-        : attachmentContext
+        ? `${text.trim()}\n\nAttached: ${attachmentNames}`
+        : `Attached: ${attachmentNames}`
       : text;
 
   const userParts = [{ type: "text" as const, text: modelText }];
@@ -194,6 +197,21 @@ async function executeTurnBody(
 
     assertNotAborted(signal);
 
+    if (documentIds.length > 0) {
+      const orgId = resolveSessionOrgId(db, session.teamId);
+      void dispatchDocumentProcessingForTurn({
+        db,
+        documents: documentIds.map((documentId) => ({ documentId })),
+        params: {
+          userId,
+          sessionId: session.id,
+          teamId: session.teamId,
+          orgId,
+          turnId,
+        },
+      });
+    }
+
     const history = loadThreadMessages(db, threadId, 50);
 
     const {
@@ -213,6 +231,7 @@ async function executeTurnBody(
       history,
       userTimeZone,
       abortSignal: signal,
+      documentAttachments,
       onTextDelta: (delta) => {
         if (signal.aborted) return;
         emit({ type: "text_delta", delta });

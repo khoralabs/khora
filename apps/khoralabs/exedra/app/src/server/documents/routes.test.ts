@@ -152,7 +152,7 @@ test("POST /api/sessions/:sessionId/documents stores metadata on happy path", as
 
   const documentId = crypto.randomUUID();
   bunMock.module("./ingest.js", () => ({
-    ingestSessionDocument: async () => ({
+    acceptSessionDocument: async () => ({
       document: {
         id: documentId,
         sessionId: session.id,
@@ -162,8 +162,13 @@ test("POST /api/sessions/:sessionId/documents stores metadata on happy path", as
         byteSize: 5,
         contentHash: "abc123",
         s3Key: "exedra/documents/test",
-        memoryKey: `documents/${documentId}`,
-        summary: "Uploaded notes",
+        memoryKey: `documents/${session.id}/${documentId}`,
+        summary: "",
+        status: "accepted",
+        errorMessage: null,
+        taskRunId: null,
+        turnId: null,
+        processedAtMs: null,
         createdAtMs: Date.now(),
       },
       sourceRef: {
@@ -192,9 +197,10 @@ test("POST /api/sessions/:sessionId/documents stores metadata on happy path", as
 
   expect(res.status).toBe(201);
   const body = (await res.json()) as {
-    document: { id: string; fileName: string; summary: string };
+    document: { id: string; fileName: string; summary: string; status: string };
   };
   expect(body.document.id).toBe(documentId);
   expect(body.document.fileName).toBe("notes.txt");
-  expect(body.document.summary).toBe("Uploaded notes");
+  expect(body.document.summary).toBe("");
+  expect(body.document.status).toBe("accepted");
 });

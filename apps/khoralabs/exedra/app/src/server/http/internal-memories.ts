@@ -27,6 +27,7 @@ import type {
   InternalMemoriesSearchRequest,
   SearchHitSummary,
 } from "../../../../shared/belief-integration.js";
+import type { InternalMemoriesMergeDocumentChunkRequest } from "../../../../shared/document-processing.js";
 import type {
   InternalMemoriesAgentSearchRequest,
   SearchHitWire,
@@ -539,4 +540,82 @@ function parseIntegratorPlanWire(plan: InternalMemoriesMergeRequest["plan"]): In
     edges: (plan.edges ?? []) as IntegratorPlanWire["edges"],
     properties: plan.properties,
   };
+}
+
+export async function handleInternalMemoriesMergeDocumentChunk(req: Request): Promise<Response> {
+  const authError = requireInternalToken(req);
+  if (authError !== null) return authError;
+
+  let body: InternalMemoriesMergeDocumentChunkRequest;
+  try {
+    body = (await req.json()) as InternalMemoriesMergeDocumentChunkRequest;
+  } catch {
+    return Response.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const userId = body.userId?.trim() ?? "";
+  const memoryKey = body.memoryKey?.trim() ?? "";
+  const plaintext = body.plaintext?.trim() ?? "";
+  if (userId.length === 0) return Response.json({ error: "userId is required" }, { status: 400 });
+  if (memoryKey.length === 0)
+    return Response.json({ error: "memoryKey is required" }, { status: 400 });
+  if (plaintext.length === 0) {
+    return Response.json({ error: "plaintext is required" }, { status: 400 });
+  }
+  if (!Array.isArray(body.content) || body.content.length === 0) {
+    return Response.json({ error: "content is required" }, { status: 400 });
+  }
+
+  const namespace = userScope(userId);
+
+  try {
+    return await withSpan(
+      "internal.memories.merge_document_chunk",
+      { "memories.user_id": userId, "memories.key": memoryKey },
+      async () => {
+        const client = openUserMemoriesClient(userId);
+        const embeddingModel = createExedraMemoriesEmbeddingModel();
+        const processed: ProcessedLogicalMemory = {
+          key: memoryKey,
+          namespace,
+          plaintext,
+          content: body.content.map((item) => ({
+            key: item.key,
+            ...(item.text !== undefined ? { text: item.text } : {}),
+            vector: item.vector,
+          })),
+        };
+
+        const sliceWithAutolink = await applyAutolinkToSlice(
+          client,
+          namespace,
+          memoryKey,
+          plaintext,
+          {
+            properties: body.properties ?? {},
+            labels: [],
+            edges: [],
+          },
+        );
+
+        const filteredSlice = await filterMergeSliceEdgesToExistingMemories(
+          client,
+          namespace,
+          sliceWithAutolink,
+        );
+
+        await mergeLogicalMemoryWithMergeSlice(
+          client as unknown as Parameters<typeof mergeLogicalMemoryWithMergeSlice>[0],
+          processed,
+          filteredSlice,
+          embeddingModel,
+        );
+
+        return Response.json({ memoryKey, namespace });
+      },
+    );
+  } catch (err) {
+    logger.error({ err, userId, memoryKey }, "internal memories merge document chunk failed");
+    return Response.json({ error: String(err) }, { status: 500 });
+  }
 }

@@ -109,11 +109,6 @@ export function mintSessionParticipantInvite(
   });
 }
 
-/** @deprecated Use mintSessionParticipantInvite */
-export function mintSessionInvite(db: Database, sessionId: string, teamId: string): string {
-  return mintSessionParticipantInvite(db, { sessionId, teamId, createdByUserId: null });
-}
-
 function loadTeamOrgPublicDetails(
   db: Database,
   teamId: string,
@@ -234,19 +229,6 @@ export function getInviteTeamId(db: Database, plaintext: string): string | null 
   const effects = getInviteEffects(db, plaintext);
   if (effects === null) return null;
   return teamIdFromEffects(effects);
-}
-
-/** @deprecated Use consumeInvite */
-export function consumeSessionInvite(
-  db: Database,
-  plaintext: string,
-  userId: string,
-): { sessionId: string } | null {
-  const effects = consumeInvite(db, plaintext, userId);
-  if (effects === null) return null;
-  const sessionId = sessionIdFromEffects(effects);
-  if (sessionId === null) return null;
-  return { sessionId };
 }
 
 export function listInvitesForSession(

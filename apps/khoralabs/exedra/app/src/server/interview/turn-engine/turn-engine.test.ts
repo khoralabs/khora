@@ -1,5 +1,5 @@
 import { Database } from "bun:sqlite";
-import { afterEach, beforeEach, expect, test } from "bun:test";
+import { afterEach, beforeEach, expect, mock, test } from "bun:test";
 
 import { TurnAbortedError } from "../../../agents/errors";
 import type { runInterviewTurn } from "../../../agents/index";
@@ -45,6 +45,7 @@ let teamId: string;
 beforeEach(async () => {
   process.env.EXEDRA_IDENTITY_KEY =
     "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+  process.env.EXEDRA_MEMORIES_SQLCIPHER_KEY = "test-memories-key";
   db = new Database(":memory:");
   ensureExedraSchema(db);
 
@@ -65,6 +66,8 @@ beforeEach(async () => {
 afterEach(() => {
   db.close();
   delete process.env.EXEDRA_IDENTITY_KEY;
+  delete process.env.EXEDRA_MEMORIES_SQLCIPHER_KEY;
+  mock.restore();
 });
 
 test("submitTurn commits user and assistant messages on success", async () => {
@@ -175,8 +178,19 @@ test("abortTurn deletes attached session documents", async () => {
     contentHash: "abc",
     s3Key: "unused",
     memoryKey: "mem-key",
-    summary: "summary",
+    status: "accepted",
   });
+
+  mock.module("../../documents/load-turn-attachments.js", () => ({
+    loadTurnDocumentAttachments: async () => [
+      {
+        documentId,
+        fileName: "notes.txt",
+        mimeType: "text/plain",
+        bytes: new Uint8Array([1, 2, 3, 4]),
+      },
+    ],
+  }));
 
   const mockRunInterviewTurn: RunInterviewTurnFn = async () => {
     await sleep(20);

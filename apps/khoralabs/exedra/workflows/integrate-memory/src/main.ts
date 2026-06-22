@@ -6,7 +6,11 @@ import {
   resolveBeliefMemoryKey,
 } from "./exedra-client.ts";
 import { expandBelief } from "./expand-belief.ts";
+import { expandDocument } from "./expand-document.ts";
 import "./otel.ts";
+import type { DocumentIntegrationParams } from "../../../shared/document-processing.ts";
+import { resolveDocumentMemoryKey } from "../../../shared/document-processing.ts";
+import { planDocumentIntegration } from "./plan-document-integration.ts";
 import { planIntegration } from "./plan-integration.ts";
 
 const retry = {
@@ -36,6 +40,20 @@ const expandBeliefTask = task(
   },
 );
 
+const expandDocumentTask = task(
+  { name: "expandDocument", retry },
+  async function expandDocumentTask(params: DocumentIntegrationParams, namespace: string) {
+    return expandDocument({ ...params, namespace });
+  },
+);
+
+const planDocumentIntegrationTask = task(
+  { name: "planDocumentIntegration", retry },
+  async function planDocumentIntegrationTask(content: string, userId: string, namespace: string) {
+    return planDocumentIntegration({ content, userId, namespace });
+  },
+);
+
 const planIntegrationTask = task(
   { name: "planIntegration", retry },
   async function planIntegrationTask(content: string, userId: string, namespace: string) {
@@ -53,6 +71,37 @@ const mergeMemory = task(
     planResult?: Awaited<ReturnType<typeof planIntegrationTask>>,
   ) {
     const memoryKey = resolveBeliefMemoryKey(params.sessionId, params.beliefId);
+
+    return postInternalMemoriesMerge({
+      userId: params.userId,
+      logicalMemory: {
+        key: memoryKey,
+        namespace,
+        plaintext: draft.plaintext,
+      },
+      mode,
+      ...(mode === "bootstrap" ? { draft } : {}),
+      ...(mode === "plan" && planResult !== undefined
+        ? { plan: planResult.plan, allowedPeerKeys: planResult.allowedPeerKeys }
+        : {}),
+    });
+  },
+);
+
+const mergeDocumentMemory = task(
+  { name: "mergeDocumentMemory", retry },
+  async function mergeDocumentMemory(
+    params: DocumentIntegrationParams,
+    namespace: string,
+    draft: Awaited<ReturnType<typeof expandDocumentTask>>,
+    mode: "bootstrap" | "plan",
+    planResult?: Awaited<ReturnType<typeof planDocumentIntegrationTask>>,
+  ) {
+    const memoryKey = resolveDocumentMemoryKey(
+      params.sessionId,
+      params.documentId,
+      params.chunkIndex,
+    );
 
     return postInternalMemoriesMerge({
       userId: params.userId,
@@ -97,5 +146,39 @@ task(
 
     const planResult = await planIntegrationTask(draft.plaintext, params.userId, search.namespace);
     return mergeMemory(params, search.namespace, draft, "plan", planResult);
+  },
+);
+
+task(
+  {
+    name: "integrateDocument",
+    retry: {
+      maxRetries: 2,
+      waitDurationMs: 3000,
+      backoffScaling: 2.0,
+    },
+    timeoutSeconds: 300,
+  },
+  async function integrateDocument(params: DocumentIntegrationParams) {
+    const chunkText = params.chunkText.trim();
+    if (chunkText.length === 0) {
+      throw new Error("chunkText is required");
+    }
+
+    const search = await searchMemories(params.userId, chunkText);
+    const coldStart = search.hits.length === 0;
+
+    const draft = await expandDocumentTask(params, search.namespace);
+
+    if (coldStart) {
+      return mergeDocumentMemory(params, search.namespace, draft, "bootstrap");
+    }
+
+    const planResult = await planDocumentIntegrationTask(
+      draft.plaintext,
+      params.userId,
+      search.namespace,
+    );
+    return mergeDocumentMemory(params, search.namespace, draft, "plan", planResult);
   },
 );

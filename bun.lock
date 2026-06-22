@@ -178,6 +178,7 @@
         "@khoralabs/observability": "workspace:*",
         "@khoralabs/registry-accounts-react": "workspace:*",
         "@khoralabs/registry-auth": "workspace:*",
+        "@khoralabs/sourcemaps": "^0.1.0",
         "@khoralabs/sqlite-graph-projections": "workspace:*",
         "@noble/hashes": "^2.2.0",
         "@opentelemetry/api": "^1.9.1",
@@ -266,6 +267,21 @@
         "@khoralabs/memories-core": "workspace:*",
         "@khoralabs/memories-investigator": "workspace:*",
         "@khoralabs/memories-tools": "workspace:*",
+        "@khoralabs/observability": "workspace:*",
+        "@renderinc/sdk": "^0.6.0",
+        "ai": "^6.0.205",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+    },
+    "apps/khoralabs/exedra/workflows/process-document": {
+      "name": "@khoralabs/exedra-workflows-process-document",
+      "version": "1.0.0",
+      "dependencies": {
+        "@ai-sdk/google": "^3.0.0",
+        "@khoralabs/exedra-workflows-shared": "workspace:*",
+        "@khoralabs/memories-core": "workspace:*",
         "@khoralabs/observability": "workspace:*",
         "@renderinc/sdk": "^0.6.0",
         "ai": "^6.0.205",
@@ -1688,6 +1704,8 @@
     "@khoralabs/exedra-workflows-integrate-memory": ["@khoralabs/exedra-workflows-integrate-memory@workspace:apps/khoralabs/exedra/workflows/integrate-memory"],
 
     "@khoralabs/exedra-workflows-investigate-memories": ["@khoralabs/exedra-workflows-investigate-memories@workspace:apps/khoralabs/exedra/workflows/investigate-memories"],
+
+    "@khoralabs/exedra-workflows-process-document": ["@khoralabs/exedra-workflows-process-document@workspace:apps/khoralabs/exedra/workflows/process-document"],
 
     "@khoralabs/exedra-workflows-shared": ["@khoralabs/exedra-workflows-shared@workspace:apps/khoralabs/exedra/workflows/shared"],
 

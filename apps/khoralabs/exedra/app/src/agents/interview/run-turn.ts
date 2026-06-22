@@ -21,6 +21,7 @@ import {
 
 type InterviewToolSet = Record<string, Tool<unknown, unknown>> & ToolSet;
 
+import type { TurnDocumentAttachment } from "../../server/documents/load-turn-attachments.js";
 import { logger } from "../../server/logger.js";
 import { createExedraAgentTelemetry } from "../../server/telemetry/agent-telemetry.js";
 import { isAbortError, TurnAbortedError } from "../errors.js";
@@ -55,6 +56,7 @@ export type InterviewTurnInput = {
   userTimeZone?: string;
   onboardingMeta?: OnboardingInterviewMeta;
   sessionInterviewComplete: boolean;
+  documentAttachments?: readonly TurnDocumentAttachment[];
   onTextDelta: (delta: string) => void;
   onBeliefFlag: (belief: string, sourceMessageId: string) => void;
   onCompleteSession?: (payload: SessionCompletionPayload) => void;
@@ -137,6 +139,44 @@ function historyForModel(messages: UIMessage[]): UIMessage[] {
     .filter((message) => message.parts.length > 0);
 }
 
+function attachDocumentsToModelMessages(
+  messages: ModelMessage[],
+  userMessageId: string,
+  history: UIMessage[],
+  attachments: readonly TurnDocumentAttachment[],
+): ModelMessage[] {
+  if (attachments.length === 0) return messages;
+
+  const triggeringIndex = history.findIndex(
+    (message) => message.id === userMessageId && message.role === "user",
+  );
+  if (triggeringIndex < 0) return messages;
+
+  const userMessageIndices = history
+    .map((message, index) => (message.role === "user" ? index : -1))
+    .filter((index) => index >= 0);
+  const modelUserIndex = userMessageIndices.indexOf(triggeringIndex);
+  if (modelUserIndex < 0 || modelUserIndex >= messages.length) return messages;
+
+  const target = messages[modelUserIndex];
+  if (target === undefined || target.role !== "user") return messages;
+
+  const fileParts = attachments.map((attachment) => ({
+    type: "file" as const,
+    data: attachment.bytes,
+    mediaType: attachment.mimeType,
+  }));
+
+  const existingContent = target.content;
+  const nextContent = Array.isArray(existingContent)
+    ? [...existingContent, ...fileParts]
+    : [{ type: "text" as const, text: String(existingContent) }, ...fileParts];
+
+  const next = [...messages];
+  next[modelUserIndex] = { ...target, content: nextContent };
+  return next;
+}
+
 function allowBeliefFlagForTurn(history: UIMessage[], userMessageId: string): boolean {
   const triggering = history.find((message) => message.id === userMessageId);
   if (triggering === undefined || triggering.role !== "user") return false;
@@ -168,6 +208,7 @@ async function runInterviewTurnSession(args: {
     onBeliefFlag,
     onCompleteSession,
     onToolEvent,
+    documentAttachments = [],
   } = input;
 
   const abortSignal = sessionAbortSignal(context);
@@ -254,6 +295,13 @@ async function runInterviewTurnSession(args: {
         .join(""),
     }));
   }
+
+  modelMessages = attachDocumentsToModelMessages(
+    modelMessages,
+    userMessageId,
+    history,
+    documentAttachments,
+  );
 
   const systemInstruction = [
     capture.instructions,
@@ -370,6 +418,7 @@ export async function runInterviewTurn(args: {
   history: UIMessage[];
   userTimeZone?: string;
   abortSignal?: AbortSignal;
+  documentAttachments?: readonly TurnDocumentAttachment[];
   onTextDelta: (delta: string) => void;
   onBeliefFlag: (belief: string, sourceMessageId: string) => void;
   onCompleteSession?: (payload: SessionCompletionPayload) => void;
@@ -390,6 +439,9 @@ export async function runInterviewTurn(args: {
     sessionInterviewComplete: args.sessionInterviewComplete,
     ...(args.userTimeZone !== undefined ? { userTimeZone: args.userTimeZone } : {}),
     ...(args.onboardingMeta !== undefined ? { onboardingMeta: args.onboardingMeta } : {}),
+    ...(args.documentAttachments !== undefined
+      ? { documentAttachments: args.documentAttachments }
+      : {}),
     onTextDelta: args.onTextDelta,
     onBeliefFlag: args.onBeliefFlag,
     ...(args.onCompleteSession !== undefined ? { onCompleteSession: args.onCompleteSession } : {}),

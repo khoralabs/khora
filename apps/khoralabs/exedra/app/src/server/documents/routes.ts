@@ -9,7 +9,7 @@ import {
   sanitizeDocumentFileName,
 } from "./config.js";
 import { getSessionDocument, listSessionDocuments } from "./db.js";
-import { ingestSessionDocument, resolveSessionOrgId } from "./ingest.js";
+import { acceptSessionDocument, resolveSessionOrgId } from "./ingest.js";
 import { buildExedraDocumentRef, ExedraDocumentStore } from "./s3-store.js";
 
 function jsonResponse(data: unknown, status = 200): Response {
@@ -85,16 +85,14 @@ export async function handleUploadSessionDocument(
   const orgId = resolveSessionOrgId(db, access.session.teamId);
 
   try {
-    const result = await ingestSessionDocument({
+    const result = await acceptSessionDocument({
       db,
       orgId,
-      teamId: access.session.teamId,
       sessionId,
       userId: access.userId,
       fileName,
       mimeType,
       bytes,
-      bootstrapUserIds: [access.userId],
     });
 
     return jsonResponse(
@@ -104,6 +102,7 @@ export async function handleUploadSessionDocument(
           fileName: result.document.fileName,
           mimeType: result.document.mimeType,
           memoryKey: result.document.memoryKey,
+          status: result.document.status,
           summary: result.document.summary,
           contentHash: result.document.contentHash,
           sourceRef: result.sourceRef,
@@ -129,6 +128,7 @@ export async function handleListSessionDocuments(
     fileName: document.fileName,
     mimeType: document.mimeType,
     memoryKey: document.memoryKey,
+    status: document.status,
     summary: document.summary,
     contentHash: document.contentHash,
     uploadedByUserId: document.uploadedByUserId,

@@ -29,6 +29,12 @@ export function resolveUserMessageDocuments(
     return { error: "One or more documents are invalid or not owned by you" };
   }
 
+  for (const record of records) {
+    if (record.status !== "accepted") {
+      return { error: `Document ${record.fileName} is not ready to attach` };
+    }
+  }
+
   const team = getTeam(db, params.teamId);
   if (team === null) {
     return { error: "Team not found" };

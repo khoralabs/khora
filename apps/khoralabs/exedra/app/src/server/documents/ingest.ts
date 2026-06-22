@@ -1,35 +1,24 @@
 import type { Database } from "bun:sqlite";
-import { MemoriesClient } from "@khoralabs/memories-core";
-import {
-  decomposeLogicalMemoryToContent,
-  mergeLogicalMemoryWithMergeSlice,
-} from "@khoralabs/memories-core/helpers";
+
+import { resolveDocumentMemoryKey } from "../../../../shared/document-processing.js";
 import { getTeam } from "../db/membership.js";
-import { bootstrapSessionMemoriesForTeamSession } from "../memories/bootstrap-session.js";
-import { createExedraMemoriesEmbeddingModel } from "../memories/embedding.js";
-import { exedraMemoriesOntology } from "../memories/exedra-ontology.js";
-import { orgSessionScope } from "../memories/namespaces.js";
-import { openOrgMemories } from "../memories/store.js";
 import { withSpan } from "../telemetry/spans.js";
 import { insertSessionDocument } from "./db.js";
 import { ExedraDocumentStore } from "./s3-store.js";
-import { summarizeDocument } from "./summarize.js";
 import type { SessionDocumentRecord } from "./types.js";
 
-export type IngestSessionDocumentParams = {
+export type AcceptSessionDocumentParams = {
   db: Database;
   orgId: string;
-  teamId: string;
   sessionId: string;
   userId: string;
   fileName: string;
   mimeType: string;
   bytes: Uint8Array;
-  bootstrapUserIds?: readonly string[];
   store?: ExedraDocumentStore;
 };
 
-export async function ingestSessionDocument(params: IngestSessionDocumentParams): Promise<{
+export async function acceptSessionDocument(params: AcceptSessionDocumentParams): Promise<{
   document: SessionDocumentRecord;
   sourceRef: {
     domain: "exedra_document";
@@ -43,7 +32,7 @@ export async function ingestSessionDocument(params: IngestSessionDocumentParams)
   const documentId = crypto.randomUUID();
 
   return withSpan(
-    "document.ingest",
+    "document.accept",
     {
       "session.id": params.sessionId,
       "document.id": documentId,
@@ -51,22 +40,8 @@ export async function ingestSessionDocument(params: IngestSessionDocumentParams)
       "file.mime_type": params.mimeType,
     },
     async () => {
-      const memoryKey = `documents/${documentId}`;
+      const memoryKey = resolveDocumentMemoryKey(params.sessionId, documentId);
       const store = params.store ?? new ExedraDocumentStore();
-
-      bootstrapSessionMemoriesForTeamSession(params.db, {
-        teamId: params.teamId,
-        sessionId: params.sessionId,
-        userIds: params.bootstrapUserIds ?? [params.userId],
-      });
-
-      const summary = await withSpan("document.summarize", {}, async () =>
-        summarizeDocument({
-          fileName: params.fileName,
-          mimeType: params.mimeType,
-          bytes: params.bytes,
-        }),
-      );
 
       const { ref, s3Key } = await withSpan("document.s3_put", {}, async () =>
         store.put({
@@ -79,72 +54,18 @@ export async function ingestSessionDocument(params: IngestSessionDocumentParams)
         }),
       );
 
-      const embeddingModel = createExedraMemoriesEmbeddingModel();
-      const namespace = orgSessionScope(params.orgId, params.teamId, params.sessionId);
-      const content = await withSpan("document.embed", {}, async () =>
-        decomposeLogicalMemoryToContent({
-          key: memoryKey,
-          namespace,
-          plaintext: summary,
-          files: [
-            {
-              blob: new Blob([params.bytes as unknown as Uint8Array<ArrayBuffer>], {
-                type: params.mimeType,
-              }),
-              mimeType: params.mimeType,
-              fileName: params.fileName,
-              title: params.fileName,
-              fallbackText: summary,
-            },
-          ],
-          embedding: {
-            embeddingModel,
-            multimodal: true,
-          },
-        }),
-      );
-
-      const persistence = openOrgMemories(params.orgId);
-      const client = new MemoriesClient(persistence, exedraMemoriesOntology);
-      await withSpan("document.memories_merge", {}, async () =>
-        mergeLogicalMemoryWithMergeSlice(
-          client,
-          {
-            key: memoryKey,
-            namespace,
-            plaintext: summary,
-            content,
-          },
-          {
-            properties: {
-              sourceRef: ref,
-              fileName: params.fileName,
-              mimeType: params.mimeType,
-              summary,
-              uploadedByUserId: params.userId,
-              documentId,
-            },
-            labels: [],
-            edges: [],
-          },
-          embeddingModel,
-        ),
-      );
-
-      const record = await withSpan("document.db_insert", {}, async () =>
-        insertSessionDocument(params.db, {
-          id: documentId,
-          sessionId: params.sessionId,
-          uploadedByUserId: params.userId,
-          fileName: params.fileName,
-          mimeType: params.mimeType,
-          byteSize: params.bytes.byteLength,
-          contentHash: ref.content_hash,
-          s3Key,
-          memoryKey,
-          summary,
-        }),
-      );
+      const record = insertSessionDocument(params.db, {
+        id: documentId,
+        sessionId: params.sessionId,
+        uploadedByUserId: params.userId,
+        fileName: params.fileName,
+        mimeType: params.mimeType,
+        byteSize: params.bytes.byteLength,
+        contentHash: ref.content_hash,
+        s3Key,
+        memoryKey,
+        status: "accepted",
+      });
 
       return {
         document: record,

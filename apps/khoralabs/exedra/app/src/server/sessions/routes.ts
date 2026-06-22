@@ -15,7 +15,7 @@ import { getDb } from "../db/index";
 import {
   getOrCreateSessionLinkInvite,
   listInvitesForSession,
-  mintSessionInvite,
+  mintSessionParticipantInvite,
 } from "../db/invites";
 import { getOrg, getTeam, listTeamMembers } from "../db/membership";
 import { loadThreadMessages } from "../db/messages";
@@ -170,7 +170,11 @@ export async function handleCreateSession(req: Request): Promise<Response> {
 
   let inviteUrl: string | undefined;
   if (body.createInvite === true) {
-    const token = mintSessionInvite(db, session.id, teamId);
+    const token = mintSessionParticipantInvite(db, {
+      sessionId: session.id,
+      teamId,
+      createdByUserId: user.id,
+    });
     inviteUrl = `/invite/${token}`;
   }
 

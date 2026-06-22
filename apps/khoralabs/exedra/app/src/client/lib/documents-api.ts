@@ -3,6 +3,7 @@ export type UploadedSessionDocument = {
   fileName: string;
   mimeType: string;
   memoryKey: string;
+  status: "accepted" | "processing" | "ready" | "failed";
   summary: string;
   contentHash: string;
 };
