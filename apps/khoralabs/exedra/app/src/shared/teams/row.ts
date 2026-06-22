@@ -5,6 +5,7 @@ export type TeamProfile = {
   orgId: string;
   orgName: string;
   orgAvatarUrl: string | null;
+  canCreateSession?: boolean;
 };
 
 export type OrgTeamContext = {

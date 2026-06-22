@@ -9,12 +9,15 @@ import { canEditOrg, canEditTeam, grantTeamOrgMembership, userBelongsToOrg } fro
 let db: Database;
 
 beforeEach(async () => {
+  process.env.EXEDRA_IDENTITY_KEY =
+    "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
   db = new Database(":memory:");
   ensureExedraSchema(db);
 });
 
 afterEach(() => {
   db.close();
+  delete process.env.EXEDRA_IDENTITY_KEY;
 });
 
 test("createTeam grants org membership and admin for creator", async () => {

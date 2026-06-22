@@ -2,7 +2,7 @@ import type { AccountProfile } from "@shared/accounts/row";
 
 import { resolveAccountProfile } from "../accounts/resolve-rows";
 import { requireRegistrySessionResponse } from "../auth/require-session";
-import { enforce, ResourceType } from "../authz/policy";
+import { canCreateSession, enforce, ResourceType } from "../authz/policy";
 import { buildUserAvatarS3Key } from "../avatars/keys";
 import { clearAvatarFromS3, parseAvatarUpload, replaceAvatarInS3 } from "../avatars/upload";
 import { avatarUrlFromS3Key } from "../avatars/urls";
@@ -55,7 +55,10 @@ export async function handleGetMe(req: Request): Promise<Response> {
 
   return Response.json({
     user: serializeMeUser(db, user),
-    teams: teams.map(resolveTeamProfile),
+    teams: teams.map((record) => ({
+      ...resolveTeamProfile(record),
+      canCreateSession: canCreateSession(db, user.id, record.id),
+    })),
     onboardingRequired: !hasTeam && !hasSessionAccessOnly,
     onboardingInterviewRequired: userNeedsOnboardingInterview(db, user.id),
     onboardingSessionId: pendingOnboarding?.sessionId ?? null,

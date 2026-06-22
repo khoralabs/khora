@@ -1,5 +1,9 @@
 import type { Database } from "bun:sqlite";
 
+import { OrgPermission, TeamPermission } from "../../shared/authz/permissions";
+import { grantTeamScopeOrgPermission, grantTeamScopePermission } from "../authz/grant-templates";
+import { getOrgIdForTeam, hasGrant } from "../authz/grants";
+import { ResourceType, teamScope } from "../authz/policy";
 import { ensureAuthzSchema } from "../authz/schema";
 
 export function ensureExedraSchema(db: Database): void {
@@ -166,6 +170,7 @@ export function ensureExedraSchema(db: Database): void {
   migrateDocumentsAddGrantResourceColumns(db);
   migrateDocumentsDropSessionIdColumn(db);
   ensureAuthzSchema(db);
+  migrateDefaultSessionCreatePermissions(db);
 }
 
 function migrateUnifiedDocumentsTable(db: Database): void {
@@ -519,4 +524,50 @@ function migrateInvitesAddReusableColumns(db: Database): void {
   if (!columns.some((column) => column.name === "link_plaintext")) {
     db.run(`ALTER TABLE invites ADD COLUMN link_plaintext TEXT`);
   }
+}
+
+function migrateDefaultSessionCreatePermissions(db: Database): void {
+  db.run(`
+    CREATE TABLE IF NOT EXISTS exedra_schema_patches (
+      patch_id TEXT PRIMARY KEY NOT NULL,
+      applied_at_ms INTEGER NOT NULL
+    )
+  `);
+  const applied = db
+    .query<{ patch_id: string }, [string]>(
+      `SELECT patch_id FROM exedra_schema_patches WHERE patch_id = ? LIMIT 1`,
+    )
+    .get("session_create_default_grants");
+  if (applied !== null) return;
+
+  const teams = db.query<{ id: string }, []>(`SELECT id FROM teams`).all();
+  for (const { id: teamId } of teams) {
+    const orgId = getOrgIdForTeam(db, teamId);
+    if (orgId === null) continue;
+    if (
+      !hasGrant(
+        db,
+        teamScope(teamId),
+        { type: ResourceType.Team, id: teamId },
+        TeamPermission.SessionCreate,
+      )
+    ) {
+      grantTeamScopePermission(db, teamId, TeamPermission.SessionCreate);
+    }
+    if (
+      !hasGrant(
+        db,
+        teamScope(teamId),
+        { type: ResourceType.Organization, id: orgId },
+        OrgPermission.SessionCreate,
+      )
+    ) {
+      grantTeamScopeOrgPermission(db, teamId, orgId, OrgPermission.SessionCreate);
+    }
+  }
+
+  db.run(`INSERT INTO exedra_schema_patches (patch_id, applied_at_ms) VALUES (?, ?)`, [
+    "session_create_default_grants",
+    Date.now(),
+  ]);
 }

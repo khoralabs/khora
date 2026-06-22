@@ -4,6 +4,7 @@ export const OrgPermission = {
   Read: "read",
   TeamManage: "team_manage",
   MemberManage: "member_manage",
+  SessionCreate: "session_create",
 } as const;
 
 export type OrgPermission = (typeof OrgPermission)[keyof typeof OrgPermission];
@@ -14,12 +15,14 @@ export const ORG_PERMISSIONS = [
   OrgPermission.Read,
   OrgPermission.TeamManage,
   OrgPermission.MemberManage,
+  OrgPermission.SessionCreate,
 ] as const satisfies readonly OrgPermission[];
 
 export const TeamPermission = {
   Write: "write",
   Read: "read",
   MemberManage: "member_manage",
+  SessionCreate: "session_create",
 } as const;
 
 export type TeamPermission = (typeof TeamPermission)[keyof typeof TeamPermission];
@@ -28,6 +31,7 @@ export const TEAM_PERMISSIONS = [
   TeamPermission.Write,
   TeamPermission.Read,
   TeamPermission.MemberManage,
+  TeamPermission.SessionCreate,
 ] as const satisfies readonly TeamPermission[];
 
 export type OrgPermissionGrantTemplate = {
@@ -65,6 +69,10 @@ export const ORG_PERMISSION_META: Record<OrgPermission, { label: string; descrip
     label: "Member management",
     description: "Members of this team can add and remove organization members across teams",
   },
+  [OrgPermission.SessionCreate]: {
+    label: "Session creation",
+    description: "Members of this team can create new sessions in the organization",
+  },
 };
 
 export const TEAM_PERMISSION_META: Record<TeamPermission, { label: string; description: string }> =
@@ -80,6 +88,10 @@ export const TEAM_PERMISSION_META: Record<TeamPermission, { label: string; descr
     [TeamPermission.MemberManage]: {
       label: "Member management",
       description: "Members of this team can add and remove team members",
+    },
+    [TeamPermission.SessionCreate]: {
+      label: "Session creation",
+      description: "Members of this team can create new sessions in this team",
     },
   };
 
@@ -109,6 +121,7 @@ export function orgPermissionsSnapshot(
     [OrgPermission.Read]: set.has(OrgPermission.Read),
     [OrgPermission.TeamManage]: set.has(OrgPermission.TeamManage),
     [OrgPermission.MemberManage]: set.has(OrgPermission.MemberManage),
+    [OrgPermission.SessionCreate]: set.has(OrgPermission.SessionCreate),
   };
 }
 
@@ -120,5 +133,6 @@ export function teamPermissionsSnapshot(
     [TeamPermission.Write]: set.has(TeamPermission.Write),
     [TeamPermission.Read]: set.has(TeamPermission.Read),
     [TeamPermission.MemberManage]: set.has(TeamPermission.MemberManage),
+    [TeamPermission.SessionCreate]: set.has(TeamPermission.SessionCreate),
   };
 }

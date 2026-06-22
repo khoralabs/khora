@@ -44,6 +44,7 @@ export {
   accountScope,
   canContributeToSessionKg,
   canContributeToTeamKg,
+  canCreateSession,
   canEditOrg,
   canEditTeam,
   canManageOrgPermissions,

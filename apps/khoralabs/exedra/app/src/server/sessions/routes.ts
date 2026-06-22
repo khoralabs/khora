@@ -9,7 +9,13 @@ import {
   revokeSessionParticipant,
   revokeTeamSessionParticipant,
 } from "../authz";
-import { canContributeToSessionKg, canReadSessionKg, enforce, ResourceType } from "../authz/policy";
+import {
+  canContributeToSessionKg,
+  canCreateSession,
+  canReadSessionKg,
+  enforce,
+  ResourceType,
+} from "../authz/policy";
 import { loadBeliefFeedback, upsertBeliefFeedback } from "../db/beliefs";
 import { getDb } from "../db/index";
 import {
@@ -115,7 +121,7 @@ export async function handleCreateSession(req: Request): Promise<Response> {
       { status: 400 },
     );
   }
-  if (!enforce(db, user.id, "team:member", { type: ResourceType.Team, id: teamId })) {
+  if (!canCreateSession(db, user.id, teamId)) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 

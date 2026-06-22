@@ -27,7 +27,7 @@ export function MainContent({
   loadSessions,
   onProfileRefresh,
 }: MainContentProps) {
-  const createSessionDisabled = me.onboardingRequired;
+  const createSessionDisabled = me.onboardingRequired || activeTeam.canCreateSession === false;
   const creatingSession = isNewSessionPath(pathname);
 
   function handleSessionCreated(sessionId: string) {

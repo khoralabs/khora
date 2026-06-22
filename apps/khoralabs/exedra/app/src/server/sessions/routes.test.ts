@@ -128,3 +128,44 @@ test("POST /api/sessions allows create while onboarding interview is pending", a
   expect(allowed.status).toBe(201);
   void createdBody.onboardingSessionId;
 });
+
+test("POST /api/sessions returns 403 when session_create permission is revoked", async () => {
+  const db = new Database(path.join(dataDir, "exedra.db"), { create: true });
+  ensureExedraSchema(db);
+  const admin = await getOrCreateUser(db, "registry-session-4-admin");
+  const member = await getOrCreateUser(db, "registry-session-4-member");
+  const orgId = await createOrg(db, { name: "Org", ownerId: admin.id });
+  const teamId = createTeam(db, { orgId, name: "Team", ownerId: admin.id });
+  const { addTeamMember } = await import("../db/membership");
+  addTeamMember(db, teamId, member.id);
+  const { setTeamScopePermissions } = await import("../authz/grant-templates");
+  const { TeamPermission } = await import("../../shared/authz/permissions");
+  setTeamScopePermissions(db, teamId, [
+    TeamPermission.Read,
+    TeamPermission.Write,
+    TeamPermission.MemberManage,
+  ]);
+  db.close();
+
+  const { mock } = await import("bun:test");
+  mock.module("../auth/require-session", () => ({
+    requireRegistrySessionResponse: async () => ({
+      session: { user: { id: "registry-session-4-member" } },
+      response: null,
+    }),
+  }));
+
+  const { handleCreateSession: createSessionHandler } = await import("./routes");
+  const res = await createSessionHandler(
+    new Request("http://localhost/api/sessions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        teamId,
+        topic: "Review",
+      }),
+    }),
+  );
+
+  expect(res.status).toBe(403);
+});

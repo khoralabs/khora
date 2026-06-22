@@ -1,4 +1,5 @@
 import type { Database } from "bun:sqlite";
+import { OrgPermission, TeamPermission } from "../../shared/authz/permissions";
 import {
   ACTIVE_GRANT_SQL,
   getOrgIdForTeam,
@@ -10,7 +11,12 @@ import {
   revokeAllGrantsReferencingTeam,
   userHasAnyTeamMemberGrant,
 } from "../authz";
-import { grantAllOrgPermissions, grantAllTeamPermissions } from "../authz/grant-templates";
+import {
+  grantAllOrgPermissions,
+  grantAllTeamPermissions,
+  grantTeamScopeOrgPermission,
+  grantTeamScopePermission,
+} from "../authz/grant-templates";
 import {
   accountScope,
   Feature,
@@ -336,6 +342,8 @@ export function createTeamWithGrants(
     now,
   );
   grantTeamOrgMembership(db, id, params.orgId);
+  grantTeamScopePermission(db, id, TeamPermission.SessionCreate);
+  grantTeamScopeOrgPermission(db, id, params.orgId, OrgPermission.SessionCreate);
   grantAllTeamPermissions(db, params.creatorId, id);
   return id;
 }

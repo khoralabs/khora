@@ -1,14 +1,16 @@
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, expect, test } from "bun:test";
-
+import { OrgPermission, TeamPermission } from "../../shared/authz/permissions";
 import { addTeamMember } from "../db/membership";
 import { ensureExedraSchema } from "../db/schema";
 import { createOrg, createSession, createTeam, getOrCreateInterviewThread } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
+import { setTeamScopeOrgPermissions, setTeamScopePermissions } from "./grant-templates";
 import { grant } from "./grants";
 import {
   canContributeToSessionKg,
   canContributeToTeamKg,
+  canCreateSession,
   canReadPersonalKg,
   canReadSessionKg,
   canReadThread,
@@ -182,4 +184,51 @@ test("canReadPersonalKg allows owner and explicit reader grant", async () => {
   grantPersonalKgReader(db, reader.id, owner.id);
   expect(canReadPersonalKg(db, reader.id, owner.id)).toBe(true);
   expect(canReadPersonalKg(db, stranger.id, owner.id)).toBe(false);
+});
+
+test("canCreateSession allows team members when session_create is granted at org and team scope", async () => {
+  const admin = await getOrCreateUser(db, "session-create-admin");
+  const member = await getOrCreateUser(db, "session-create-member");
+  const orgId = await createOrg(db, { name: "OrgCreate", ownerId: admin.id });
+  const teamId = createTeam(db, { orgId, name: "TeamCreate", ownerId: admin.id });
+  addTeamMember(db, teamId, member.id);
+
+  expect(canCreateSession(db, admin.id, teamId)).toBe(true);
+  expect(canCreateSession(db, member.id, teamId)).toBe(true);
+});
+
+test("canCreateSession denies members when team session_create is revoked", async () => {
+  const admin = await getOrCreateUser(db, "session-create-admin-2");
+  const member = await getOrCreateUser(db, "session-create-member-2");
+  const orgId = await createOrg(db, { name: "OrgCreate2", ownerId: admin.id });
+  const teamId = createTeam(db, { orgId, name: "TeamCreate2", ownerId: admin.id });
+  addTeamMember(db, teamId, member.id);
+
+  setTeamScopePermissions(db, teamId, [
+    TeamPermission.Read,
+    TeamPermission.Write,
+    TeamPermission.MemberManage,
+  ]);
+
+  expect(canCreateSession(db, member.id, teamId)).toBe(false);
+  expect(canCreateSession(db, admin.id, teamId)).toBe(true);
+});
+
+test("canCreateSession denies members when org session_create is revoked", async () => {
+  const admin = await getOrCreateUser(db, "session-create-admin-3");
+  const member = await getOrCreateUser(db, "session-create-member-3");
+  const orgId = await createOrg(db, { name: "OrgCreate3", ownerId: admin.id });
+  const teamId = createTeam(db, { orgId, name: "TeamCreate3", ownerId: admin.id });
+  addTeamMember(db, teamId, member.id);
+
+  setTeamScopeOrgPermissions(db, teamId, orgId, [
+    OrgPermission.Read,
+    OrgPermission.Write,
+    OrgPermission.PermissionsManage,
+    OrgPermission.TeamManage,
+    OrgPermission.MemberManage,
+  ]);
+
+  expect(canCreateSession(db, member.id, teamId)).toBe(false);
+  expect(canCreateSession(db, admin.id, teamId)).toBe(true);
 });

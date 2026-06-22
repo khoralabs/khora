@@ -46,6 +46,7 @@ export type AuthAction =
   | "team:read"
   | "team:write"
   | "team:member_manage"
+  | "team:session_create"
   | "org:member"
   | "org:admin"
   | "org:read"
@@ -53,6 +54,7 @@ export type AuthAction =
   | "org:permissions_manage"
   | "org:team_manage"
   | "org:member_manage"
+  | "org:session_create"
   | "session:view"
   | "thread:read";
 
@@ -102,6 +104,10 @@ export function enforce(
       if (resource.type !== ResourceType.Team) return false;
       return hasTeamPermission(db, accountId, resource.id, TeamPermissionKey.MemberManage);
 
+    case "team:session_create":
+      if (resource.type !== ResourceType.Team) return false;
+      return canCreateSession(db, accountId, resource.id);
+
     case "org:member":
       if (resource.type !== ResourceType.Organization) return false;
       return userBelongsToOrg(db, resource.id, accountId);
@@ -129,6 +135,10 @@ export function enforce(
     case "org:member_manage":
       if (resource.type !== ResourceType.Organization) return false;
       return hasOrgPermission(db, accountId, resource.id, OrgPermissionKey.MemberManage);
+
+    case "org:session_create":
+      if (resource.type !== ResourceType.Organization) return false;
+      return hasOrgPermission(db, accountId, resource.id, OrgPermissionKey.SessionCreate);
 
     case "session:view":
       if (resource.type !== ResourceType.Session) return false;
@@ -247,6 +257,18 @@ export function canEditOrg(db: Database, accountId: string, orgId: string): bool
 
 export function canEditTeam(db: Database, accountId: string, teamId: string): boolean {
   return enforce(db, accountId, "team:write", { type: ResourceType.Team, id: teamId });
+}
+
+export function canCreateSession(db: Database, accountId: string, teamId: string): boolean {
+  if (!enforce(db, accountId, "team:member", { type: ResourceType.Team, id: teamId })) {
+    return false;
+  }
+  const orgId = getOrgIdForTeam(db, teamId);
+  if (orgId === null) return false;
+  return (
+    hasTeamPermission(db, accountId, teamId, TeamPermissionKey.SessionCreate) &&
+    hasOrgPermission(db, accountId, orgId, OrgPermissionKey.SessionCreate)
+  );
 }
 
 export function canManageOrgPermissions(db: Database, accountId: string, orgId: string): boolean {

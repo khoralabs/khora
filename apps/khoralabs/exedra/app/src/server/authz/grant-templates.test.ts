@@ -21,12 +21,15 @@ import { grantTeamMember, hasOrgPermission, hasTeamPermission } from "./policy";
 let db: Database;
 
 beforeEach(async () => {
+  process.env.EXEDRA_IDENTITY_KEY =
+    "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
   db = new Database(":memory:");
   ensureExedraSchema(db);
 });
 
 afterEach(() => {
   db.close();
+  delete process.env.EXEDRA_IDENTITY_KEY;
 });
 
 test("grantAllOrgPermissions grants every organization permission", async () => {
@@ -38,6 +41,7 @@ test("grantAllOrgPermissions grants every organization permission", async () => 
   expect(granted).toContain(OrgPermission.Read);
   expect(granted).toContain(OrgPermission.TeamManage);
   expect(granted).toContain(OrgPermission.MemberManage);
+  expect(granted).toContain(OrgPermission.SessionCreate);
 });
 
 test("grantAllTeamPermissions grants every team permission", async () => {

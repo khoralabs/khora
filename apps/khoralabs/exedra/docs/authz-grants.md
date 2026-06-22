@@ -44,6 +44,7 @@ Defined in [`shared/authz/permissions.ts`](../app/src/shared/authz/permissions.t
 | `permissions_manage` | Permissions management | `org:permissions_manage` | Manage org permission templates |
 | `team_manage` | Team management | `org:team_manage` | Create/delete teams |
 | `member_manage` | Member management | `org:member_manage` | Add/remove org members |
+| `session_create` | Session creation | `org:session_create` | Create sessions in org teams (with team permission) |
 
 Org admins (`Feature.Admin` on org) receive all org permissions. Any org member receives `read` by default.
 
@@ -54,8 +55,11 @@ Org admins (`Feature.Admin` on org) receive all org permissions. Any org member 
 | `read` | Team read | `team:read` | View team settings; **team KG read** |
 | `write` | Team write | `team:write` | Edit team settings |
 | `member_manage` | Member management | `team:member_manage` | Add/remove team members |
+| `session_create` | Session creation | `team:session_create` | Create new sessions in this team |
 
 Team admins receive all team permissions. Team **members** receive `read` by default without an explicit grant.
+
+Session creation requires **both** org and team `session_create` permission (via [`canCreateSession`](../app/src/server/authz/policy.ts)). New teams bootstrap team-scoped `session_create` grants for all members.
 
 ## Session grant patterns
 
@@ -112,6 +116,7 @@ Resolved by [`enforce()`](../app/src/server/authz/policy.ts):
 | `team:read` / `team:write` / `team:member_manage` | Team permission checks |
 | `org:member` | Member of any team in org |
 | `org:read` / `org:write` / … | Org permission checks |
+| `org:session_create` / `team:session_create` | Session creation permission checks |
 | `session:view` | `hasSessionAccess` (broad, includes inheritance) |
 | `thread:read` | `canReadThread` |
 
@@ -119,7 +124,7 @@ Resolved by [`enforce()`](../app/src/server/authz/policy.ts):
 
 | Feature | Status |
 |---------|--------|
-| `create_session` | Infrastructure + tests; reserved for future org gating |
+| `create_session` | **Superseded** by `OrgPermission.SessionCreate` / `TeamPermission.SessionCreate` |
 | `knowledge_graph` | **Deferred** — not enforced |
 
 Applied via invite effects ([`invites/apply-effects.ts`](../app/src/server/invites/apply-effects.ts)).
@@ -139,7 +144,7 @@ Applied via invite effects ([`invites/apply-effects.ts`](../app/src/server/invit
 | Event | Grants created |
 |-------|----------------|
 | Org creation | `grantAllOrgPermissions` + org `admin` for creator |
-| Team creation | `grantAllTeamPermissions` + team `member` + `admin` for creator; `grantTeamOrgMembership` |
+| Team creation | `grantAllTeamPermissions` + team `member` + `admin` for creator; team-scoped `session_create` (org + team); `grantTeamOrgMembership` |
 | Session creation | `grantSessionCreatorAccess` — session `admin` + `participant` for creator |
 | Interview thread | `grantThreadAccess` — thread `read` + `write` |
 | Team session share | Optional `grantTeamSessionParticipant` / `grantTeamSessionAdmin` |

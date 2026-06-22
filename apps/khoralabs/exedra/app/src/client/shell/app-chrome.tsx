@@ -83,7 +83,7 @@ function AppChromeInner({ entrypoint, children }: AppChromeProps) {
 
   const onboardingRequired = me?.onboardingRequired ?? false;
   const hasSessionAccessOnly = me?.hasSessionAccessOnly ?? false;
-  const createSessionDisabled = onboardingRequired;
+  const createSessionDisabled = onboardingRequired || activeTeam.canCreateSession === false;
   const activeSessionId = parseActiveSessionId(pathname);
   const settingsMode = isSettingsPath(pathname);
 
