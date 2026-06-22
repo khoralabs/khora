@@ -22,6 +22,11 @@ import {
 type InterviewToolSet = Record<string, Tool<unknown, unknown>> & ToolSet;
 
 import type { TurnDocumentAttachment } from "../../server/documents/load-turn-attachments.js";
+import type { InterviewMemoryContext } from "../../server/interview/memory-retrieval.js";
+import {
+  searchOrgMemoriesForInterview,
+  searchPersonalMemoriesForInterview,
+} from "../../server/interview/memory-retrieval.js";
 import { logger } from "../../server/logger.js";
 import { createExedraAgentTelemetry } from "../../server/telemetry/agent-telemetry.js";
 import { isAbortError, TurnAbortedError } from "../errors.js";
@@ -56,6 +61,8 @@ export type InterviewTurnInput = {
   userTimeZone?: string;
   onboardingMeta?: OnboardingInterviewMeta;
   sessionInterviewComplete: boolean;
+  memoryContext?: string | null;
+  interviewMemoryContext?: InterviewMemoryContext;
   documentAttachments?: readonly TurnDocumentAttachment[];
   onTextDelta: (delta: string) => void;
   onBeliefFlag: (belief: string, sourceMessageId: string) => void;
@@ -204,6 +211,8 @@ async function runInterviewTurnSession(args: {
     userTimeZone,
     onboardingMeta,
     sessionInterviewComplete,
+    memoryContext,
+    interviewMemoryContext,
     onTextDelta,
     onBeliefFlag,
     onCompleteSession,
@@ -244,6 +253,33 @@ async function runInterviewTurnSession(args: {
       suppressTextAfterComplete = true;
       onCompleteSession?.(payload);
     },
+    ...(interviewMemoryContext !== undefined
+      ? {
+          searchOrgMemories: async (query: string) => {
+            const hits = await searchOrgMemoriesForInterview(interviewMemoryContext, query);
+            return hits.map((hit) => ({
+              source: hit.source,
+              key: hit.key,
+              snippet: hit.snippet,
+            }));
+          },
+          ...(interviewMemoryContext.canSearchPersonal
+            ? {
+                searchPersonalMemories: async (query: string) => {
+                  const hits = await searchPersonalMemoriesForInterview(
+                    interviewMemoryContext,
+                    query,
+                  );
+                  return hits.map((hit) => ({
+                    source: hit.source,
+                    key: hit.key,
+                    snippet: hit.snippet,
+                  }));
+                },
+              }
+            : {}),
+        }
+      : {}),
   };
 
   const toolkitCtx = {
@@ -306,6 +342,7 @@ async function runInterviewTurnSession(args: {
   const systemInstruction = [
     capture.instructions,
     userLocalDateTimeInstruction,
+    memoryContext ?? null,
     sessionInterviewComplete ? postInterviewInstruction : null,
   ]
     .filter(Boolean)
@@ -317,7 +354,7 @@ async function runInterviewTurnSession(args: {
     system: systemInstruction,
     messages: modelMessages,
     tools: aiTools,
-    stopWhen: stepCountIs(5),
+    stopWhen: stepCountIs(8),
     ...(abortSignal !== undefined ? { abortSignal } : {}),
     experimental_telemetry: {
       isEnabled: true,
@@ -413,6 +450,11 @@ export async function runInterviewTurn(args: {
   sessionMeta: InterviewSessionMeta;
   onboardingMeta?: OnboardingInterviewMeta;
   sessionInterviewComplete: boolean;
+  orgId: string;
+  teamId: string;
+  participantUserId: string;
+  memoryContext?: string | null;
+  interviewMemoryContext?: InterviewMemoryContext;
   threadId: string;
   userMessageId: string;
   history: UIMessage[];
@@ -437,6 +479,10 @@ export async function runInterviewTurn(args: {
     userMessageId: args.userMessageId,
     history: args.history,
     sessionInterviewComplete: args.sessionInterviewComplete,
+    memoryContext: args.memoryContext,
+    ...(args.interviewMemoryContext !== undefined
+      ? { interviewMemoryContext: args.interviewMemoryContext }
+      : {}),
     ...(args.userTimeZone !== undefined ? { userTimeZone: args.userTimeZone } : {}),
     ...(args.onboardingMeta !== undefined ? { onboardingMeta: args.onboardingMeta } : {}),
     ...(args.documentAttachments !== undefined

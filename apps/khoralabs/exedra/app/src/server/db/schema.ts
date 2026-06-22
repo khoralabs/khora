@@ -171,6 +171,7 @@ export function ensureExedraSchema(db: Database): void {
   migrateDocumentsDropSessionIdColumn(db);
   ensureAuthzSchema(db);
   migrateDefaultSessionCreatePermissions(db);
+  migrateSessionParticipantsPersonalMemoryConsent(db);
 }
 
 function migrateUnifiedDocumentsTable(db: Database): void {
@@ -523,6 +524,13 @@ function migrateInvitesAddReusableColumns(db: Database): void {
   }
   if (!columns.some((column) => column.name === "link_plaintext")) {
     db.run(`ALTER TABLE invites ADD COLUMN link_plaintext TEXT`);
+  }
+}
+
+function migrateSessionParticipantsPersonalMemoryConsent(db: Database): void {
+  const columns = db.query<{ name: string }, []>("PRAGMA table_info(session_participants)").all();
+  if (!columns.some((column) => column.name === "personal_memory_consent_at_ms")) {
+    db.run(`ALTER TABLE session_participants ADD COLUMN personal_memory_consent_at_ms INTEGER`);
   }
 }
 

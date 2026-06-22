@@ -55,6 +55,7 @@ export function InviteGate({ token }: InviteGateProps) {
   const [consentSubmitting, setConsentSubmitting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [sessionConsentAccepted, setSessionConsentAccepted] = useState(false);
+  const [personalMemoryConsentAccepted, setPersonalMemoryConsentAccepted] = useState(false);
 
   const openPostAuthStep = useCallback(async () => {
     const me = await fetchMe();
@@ -73,6 +74,10 @@ export function InviteGate({ token }: InviteGateProps) {
     const res = await fetch(`/api/invites/${encodeURIComponent(token)}/accept`, {
       method: "POST",
       credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(
+        invite?.kind === "session" ? { personalMemoryConsent: personalMemoryConsentAccepted } : {},
+      ),
     });
 
     if (!res.ok) {
@@ -88,9 +93,10 @@ export function InviteGate({ token }: InviteGateProps) {
       ...(invite?.sessionId !== undefined ? { sessionId: invite.sessionId } : {}),
     });
     redirectToInviteTarget(body.redirectTo);
-  }, [invite?.sessionId, token, track]);
+  }, [invite?.kind, invite?.sessionId, personalMemoryConsentAccepted, token, track]);
 
-  const canJoin = invite?.kind !== "session" || sessionConsentAccepted;
+  const canJoin =
+    invite?.kind !== "session" || (sessionConsentAccepted && personalMemoryConsentAccepted);
 
   useEffect(() => {
     let cancelled = false;
@@ -256,20 +262,40 @@ export function InviteGate({ token }: InviteGateProps) {
               <div className="space-y-4 text-sm text-muted-foreground">
                 <div>{confirmDescription}</div>
                 {invite.kind === "session" && (
-                  <Field orientation="horizontal">
-                    <Checkbox
-                      id="exedra-invite-session-consent"
-                      checked={sessionConsentAccepted}
-                      onCheckedChange={(checked: boolean | "indeterminate") =>
-                        setSessionConsentAccepted(checked === true)
-                      }
-                      disabled={accepting}
-                    />
-                    <FieldLabel htmlFor="exedra-invite-session-consent" className="font-normal">
-                      I understand that my responses will be reviewed by the session organizer,
-                      processed by AI tools, and stored.
-                    </FieldLabel>
-                  </Field>
+                  <>
+                    <Field orientation="horizontal">
+                      <Checkbox
+                        id="exedra-invite-session-consent"
+                        checked={sessionConsentAccepted}
+                        onCheckedChange={(checked: boolean | "indeterminate") =>
+                          setSessionConsentAccepted(checked === true)
+                        }
+                        disabled={accepting}
+                      />
+                      <FieldLabel htmlFor="exedra-invite-session-consent" className="font-normal">
+                        I understand that my responses will be reviewed by the session organizer,
+                        processed by AI tools, and stored.
+                      </FieldLabel>
+                    </Field>
+                    <Field orientation="horizontal">
+                      <Checkbox
+                        id="exedra-invite-personal-memory-consent"
+                        checked={personalMemoryConsentAccepted}
+                        onCheckedChange={(checked: boolean | "indeterminate") =>
+                          setPersonalMemoryConsentAccepted(checked === true)
+                        }
+                        disabled={accepting}
+                      />
+                      <FieldLabel
+                        htmlFor="exedra-invite-personal-memory-consent"
+                        className="font-normal"
+                      >
+                        {invite.orgName !== undefined
+                          ? `${invite.orgName} may access your personal memories for this session so the interview agent can use relevant context. Access ends when the session ends.`
+                          : "The organization may access your personal memories for this session so the interview agent can use relevant context. Access ends when the session ends."}
+                      </FieldLabel>
+                    </Field>
+                  </>
                 )}
               </div>
             </AlertDialogDescription>

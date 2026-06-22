@@ -33,6 +33,7 @@ import type {
   SearchHitWire,
   SearchParamsWire,
 } from "../../../../shared/search-hit-wire.js";
+import { getDb } from "../db/index.js";
 import { logger } from "../logger.js";
 import { openMemoriesAccess } from "../memories/api-handlers.js";
 import {
@@ -43,6 +44,7 @@ import {
 } from "../memories/embedding.js";
 import { exedraMemoriesOntology } from "../memories/exedra-ontology.js";
 import { ensureNamespaceScopeChain, ensureScopeChain, userScope } from "../memories/namespaces.js";
+import { assertInternalPersonalMemorySearchAllowed } from "../memories/personal-memory-internal-auth.js";
 import { openOrgMemories, openUserMemories } from "../memories/store.js";
 import { withSpan } from "../telemetry/spans.js";
 import { requireInternalToken } from "./require-internal-token.js";
@@ -358,6 +360,13 @@ export async function handleInternalMemoriesAgentSearch(req: Request): Promise<R
     return Response.json({ error: "params is required" }, { status: 400 });
   }
   const orgId = body.orgId?.trim();
+  const namespace = body.params.namespace?.trim() ?? userScope(userId);
+  const personalAuthError = assertInternalPersonalMemorySearchAllowed(getDb(), {
+    userId,
+    namespace,
+    orgId,
+  });
+  if (personalAuthError !== null) return personalAuthError;
 
   try {
     const result = await withSpan(
@@ -418,8 +427,14 @@ export async function handleInternalMemoriesSearch(req: Request): Promise<Respon
   }
 
   const topK = Math.min(50, Math.max(1, Number(body.topK) || 10));
-  const namespace = body.namespace?.trim();
+  const namespace = body.namespace?.trim() ?? userScope(userId);
   const orgId = body.orgId?.trim();
+  const personalAuthError = assertInternalPersonalMemorySearchAllowed(getDb(), {
+    userId,
+    namespace,
+    orgId,
+  });
+  if (personalAuthError !== null) return personalAuthError;
 
   try {
     const result = await withSpan(

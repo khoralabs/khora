@@ -94,6 +94,17 @@ Team-scoped session grants (`team` → session) still expand to all team members
 
 Shared readers use `/api/memories/users/:ownerId/*`. Owners use `/api/memories/me/*`.
 
+### Session interview personal memory access
+
+When a participant joins a session via invite and consents, Exedra grants the **organization** read access to the participant's personal knowledge graph:
+
+- **Grant:** `grantPersonalKgReader(orgId, participantUserId)` — org agent identity as reader, participant as owner.
+- **Consent record:** `session_participants.personal_memory_consent_at_ms` for audit and ref-counting.
+- **Search scope:** interview retrieval searches **`userSessionScope` only** (not the full personal KG root), even though the grant is account-scoped.
+- **Revoke:** on session interview completion or participant removal, clear consent for that session; call `revokePersonalKgReader(orgId, userId)` only when no other session still has active consent for the same org–user pair.
+
+See [`personal-memory-access.ts`](../app/src/server/memories/personal-memory-access.ts) and [`session-participants.ts`](../app/src/server/db/session-participants.ts).
+
 ## Knowledge graph namespace access
 
 | Scope | Contribute | Read |

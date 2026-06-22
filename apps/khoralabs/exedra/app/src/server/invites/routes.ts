@@ -28,9 +28,14 @@ import { getOrCreateUser, setUserSessionConsentAccepted } from "../identity/user
 import { logger } from "../logger";
 import { bootstrapOrgTeamMemories } from "../memories/bootstrap";
 import { bootstrapSessionMemoriesForTeamSession } from "../memories/bootstrap-session";
+import { grantPersonalMemoryAccessForSession } from "../memories/personal-memory-access";
 import { createOnboardingInterviewForMember } from "../onboarding/interview";
 import { getRegistryUrl } from "../registry-url";
 import { applyInviteEffects } from "./apply-effects";
+
+type AcceptInviteBody = {
+  personalMemoryConsent?: boolean;
+};
 
 export type InvitePublicInfo = {
   token: string;
@@ -149,14 +154,29 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
     }
   }
 
+  if (invite.kind === "session") {
+    let body: AcceptInviteBody = {};
+    try {
+      body = (await req.json()) as AcceptInviteBody;
+    } catch {
+      body = {};
+    }
+    if (body.personalMemoryConsent !== true) {
+      return Response.json(
+        { error: "Personal memory consent is required to join this session" },
+        { status: 400 },
+      );
+    }
+  }
+
   const effects = consumeInvite(db, token, user.id);
   if (effects === null) {
     return Response.json({ error: "Invite is no longer available" }, { status: 409 });
   }
 
+  const kind = inviteKind(effects);
   applyInviteEffects(db, user.id, effects);
 
-  const kind = inviteKind(effects);
   if (kind === "session") {
     setUserSessionConsentAccepted(db, user.id);
     const sessionId = sessionIdFromEffects(effects);
@@ -168,6 +188,12 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
     if (sessionRecord !== null) {
       const team = getTeam(db, sessionRecord.teamId);
       if (team !== null) {
+        grantPersonalMemoryAccessForSession(db, {
+          orgId: team.orgId,
+          sessionId: sessionRecord.id,
+          userId: user.id,
+        });
+
         try {
           bootstrapOrgTeamMemories({
             orgId: team.orgId,

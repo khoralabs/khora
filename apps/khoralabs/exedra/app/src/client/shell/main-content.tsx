@@ -96,7 +96,7 @@ export function MainContent({
     <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
       <CompactChromeHeader compactOnly />
       <div className="flex min-h-0 flex-1 items-center justify-center p-6">
-        <Empty className="max-w-md border">
+        <Empty className="max-w-md">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <MessageSquare />

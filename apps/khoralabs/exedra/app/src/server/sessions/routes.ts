@@ -41,6 +41,7 @@ import { logger } from "../logger";
 import { bootstrapSessionMemoriesForTeamSession } from "../memories/bootstrap-session";
 import { dispatchBeliefIntegration } from "../memories/dispatch-belief-integration";
 import { resolveBeliefTextForIntegration } from "../memories/integrate-belief";
+import { releasePersonalMemoryAccessForParticipant } from "../memories/personal-memory-access";
 import { resolveOrgAgentAuthorForOrg, resolveViewerAuthor } from "../messages/resolve-author";
 import { serializeThreadMessages } from "../messages/serialize";
 import { buildSessionAccess } from "./resolve-access";
@@ -330,6 +331,7 @@ export async function handleManageSessionScopes(
       return Response.json({ error: "Cannot remove a session facilitator" }, { status: 400 });
     }
     revokeSessionParticipant(db, accountId, sessionId);
+    releasePersonalMemoryAccessForParticipant(db, sessionId, accountId);
   }
 
   for (const sharedTeamId of removeTeamIds) {

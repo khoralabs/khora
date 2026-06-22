@@ -4,10 +4,11 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { verifyRegistrySession } from "@khoralabs/registry-auth";
 import { listAccountRowsForSession } from "../accounts/resolve-rows";
-import { grantSessionCreatorAccess, hasGrant } from "../authz";
+import { canReadPersonalKg, grantSessionCreatorAccess, hasGrant } from "../authz";
 import { closeDb, getDb } from "../db/index";
 import { mintSessionParticipantInvite } from "../db/invites";
 import { getPendingOnboardingInterview, listTeamsForUser } from "../db/membership";
+import { hasPersonalMemoryConsent } from "../db/session-participants";
 import { createOrg, createSession, createTeam, userHasSessionAccess } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
 import { resetMemoriesStoreForTests } from "../memories/store";
@@ -20,6 +21,18 @@ import {
 } from "../registry-stub/handlers";
 import { resetStubRegistryStore } from "../registry-stub/store";
 import { handleAcceptInvite, handleGetInvite } from "./routes";
+
+function sessionAcceptRequest(
+  token: string,
+  cookie: string,
+  personalMemoryConsent: boolean,
+): Request {
+  return new Request(`${BASE}/api/invites/${token}/accept`, {
+    method: "POST",
+    headers: { cookie, "Content-Type": "application/json" },
+    body: JSON.stringify({ personalMemoryConsent }),
+  });
+}
 
 const BASE = "http://localhost:3000";
 
@@ -151,13 +164,7 @@ test("accept invite grants session access and team membership", async () => {
   const invitee = await getOrCreateUser(db, registryUserId);
   expect(listTeamsForUser(db, invitee.id)).toHaveLength(0);
 
-  const res = await handleAcceptInvite(
-    new Request(`${BASE}/api/invites/${token}/accept`, {
-      method: "POST",
-      headers: { cookie },
-    }),
-    token,
-  );
+  const res = await handleAcceptInvite(sessionAcceptRequest(token, cookie, true), token);
 
   expect(res.status).toBe(200);
   const body = (await res.json()) as { redirectTo: string };
@@ -176,6 +183,26 @@ test("accept invite grants session access and team membership", async () => {
 
   const participants = listAccountRowsForSession(db, session.id, facilitator.id);
   expect(participants.some((p) => p.account.userId === invitee.id)).toBe(true);
+  expect(canReadPersonalKg(db, orgId, invitee.id)).toBe(true);
+  expect(hasPersonalMemoryConsent(db, session.id, invitee.id)).toBe(true);
+});
+
+test("accept session invite requires personal memory consent", async () => {
+  const db = getDb();
+  const facilitator = await getOrCreateUser(db, "registry-fac-consent");
+  const orgId = await createOrg(db, { name: "OrgConsent", ownerId: facilitator.id });
+  const teamId = createTeam(db, { orgId, name: "TeamConsent", ownerId: facilitator.id });
+  const session = createSession(db, { teamId, topic: "Consent check" });
+  grantSessionCreatorAccess(db, facilitator.id, session.id);
+  const token = mintSessionParticipantInvite(db, {
+    sessionId: session.id,
+    teamId,
+    createdByUserId: facilitator.id,
+  });
+
+  const { cookie } = await signInCookie("consent-invitee@exedra.test");
+  const res = await handleAcceptInvite(sessionAcceptRequest(token, cookie, false), token);
+  expect(res.status).toBe(400);
 });
 
 test("accept onboarding session invite joins facilitator session", async () => {
@@ -199,13 +226,7 @@ test("accept onboarding session invite joins facilitator session", async () => {
   const { cookie, registryUserId } = await signInCookie("onboard-invitee@exedra.test");
   const invitee = await getOrCreateUser(db, registryUserId);
 
-  const res = await handleAcceptInvite(
-    new Request(`${BASE}/api/invites/${token}/accept`, {
-      method: "POST",
-      headers: { cookie },
-    }),
-    token,
-  );
+  const res = await handleAcceptInvite(sessionAcceptRequest(token, cookie, true), token);
 
   expect(res.status).toBe(200);
   const body = (await res.json()) as { redirectTo: string };

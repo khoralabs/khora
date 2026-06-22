@@ -11,6 +11,7 @@ import { dispatchBatchIntegrationForDocuments } from "../../documents/dispatch-b
 import { loadTurnDocumentAttachments } from "../../documents/load-turn-attachments";
 import { resolveUserMessageDocuments } from "../../documents/message-context";
 import { logger } from "../../logger";
+import { releasePersonalMemoryAccessForSession } from "../../memories/personal-memory-access";
 import { resolveOrgAgentAuthorForOrg, resolveViewerAuthor } from "../../messages/resolve-author";
 import { applyOnboardingCompletionSideEffects } from "../../onboarding/interview";
 import { withSpan } from "../../telemetry/spans";
@@ -19,6 +20,10 @@ import {
   recordTurnStarted,
   type TurnCompletionStatus,
 } from "../../telemetry/turn-metrics";
+import {
+  buildInterviewMemorySearchContext,
+  resolveInterviewMemoryContext,
+} from "../memory-retrieval";
 import { rollbackTurnDocuments } from "./rollback";
 import type { ExecuteTurnInput, TurnEngineDeps } from "./types";
 
@@ -222,6 +227,22 @@ async function executeTurnBody(
 
     const history = loadThreadMessages(db, threadId, 50);
 
+    const interviewMemoryContext = resolveInterviewMemoryContext(db, {
+      orgId: org.id,
+      teamId: session.teamId,
+      sessionId: session.id,
+      participantUserId: userId,
+    });
+
+    const memoryContext = await buildInterviewMemorySearchContext(db, {
+      orgId: org.id,
+      teamId: session.teamId,
+      sessionId: session.id,
+      participantUserId: userId,
+      userMessageText: text,
+      sessionTopic: session.topic,
+    });
+
     const {
       assistantParts,
       beliefFlags,
@@ -233,6 +254,11 @@ async function executeTurnBody(
       sessionId: session.id,
       sessionMeta,
       onboardingMeta,
+      orgId: org.id,
+      teamId: session.teamId,
+      participantUserId: userId,
+      memoryContext,
+      interviewMemoryContext,
       sessionInterviewComplete: session.interviewCompletedAtMs !== null,
       threadId,
       userMessageId: turnId,
@@ -297,6 +323,7 @@ async function executeTurnBody(
 
     if (sessionCompletion != null) {
       markSessionInterviewComplete(db, session.id, sessionCompletion);
+      releasePersonalMemoryAccessForSession(db, session.id);
 
       if (onboardingMeta !== undefined && thread.user_id != null) {
         try {

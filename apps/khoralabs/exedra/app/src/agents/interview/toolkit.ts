@@ -5,6 +5,12 @@ import type { SessionCompletionPayload } from "./session-closing.js";
 
 export type { SessionCompletionPayload };
 
+export type InterviewMemorySearchHit = {
+  source: "org" | "personal";
+  key: string;
+  snippet: string;
+};
+
 export type InterviewEnv = {
   sourceMessageId: string;
   allowBeliefFlag: boolean;
@@ -13,6 +19,8 @@ export type InterviewEnv = {
   allowCompleteSessionByTurnCount: boolean;
   onBeliefFlag: (belief: string, sourceMessageId: string) => void;
   onCompleteSession: (payload: SessionCompletionPayload) => void;
+  searchOrgMemories?: (query: string) => Promise<InterviewMemorySearchHit[]>;
+  searchPersonalMemories?: (query: string) => Promise<InterviewMemorySearchHit[]>;
 };
 
 const afterFirstUserMessage = policy("after-first-user-message", async (env: InterviewEnv) =>
@@ -26,6 +34,53 @@ const sessionNotComplete = policy("session-not-complete", async (env: InterviewE
 const minUserTurnsForComplete = policy("min-user-turns-for-complete", async (env: InterviewEnv) =>
   Promise.resolve(env.allowCompleteSessionByTurnCount),
 );
+
+const orgMemorySearchEnabled = policy("org-memory-search-enabled", async (env: InterviewEnv) =>
+  Promise.resolve(env.searchOrgMemories !== undefined),
+);
+
+const personalMemorySearchEnabled = policy(
+  "personal-memory-search-enabled",
+  async (env: InterviewEnv) => Promise.resolve(env.searchPersonalMemories !== undefined),
+);
+
+const searchOrgMemoriesTool = tool<
+  "searchOrgMemories",
+  { query: string },
+  { hits: InterviewMemorySearchHit[] },
+  InterviewEnv
+>({
+  name: "searchOrgMemories",
+  description:
+    "Search organization and team knowledge for this session. Use when you need prior org or team context not already in the conversation.",
+  inputSchema: z.object({
+    query: z.string().min(1).describe("Natural language search query"),
+  }),
+  policies: [orgMemorySearchEnabled],
+  handler: async (ctx, input) => {
+    const hits = (await ctx.env.searchOrgMemories?.(input.query.trim())) ?? [];
+    return { hits };
+  },
+});
+
+const searchSessionPersonalMemoriesTool = tool<
+  "searchSessionPersonalMemories",
+  { query: string },
+  { hits: InterviewMemorySearchHit[] },
+  InterviewEnv
+>({
+  name: "searchSessionPersonalMemories",
+  description:
+    "Search the participant's personal memories scoped to this session. Only available when the participant granted access.",
+  inputSchema: z.object({
+    query: z.string().min(1).describe("Natural language search query"),
+  }),
+  policies: [personalMemorySearchEnabled],
+  handler: async (ctx, input) => {
+    const hits = (await ctx.env.searchPersonalMemories?.(input.query.trim())) ?? [];
+    return { hits };
+  },
+});
 
 const flagBeliefTool = tool<
   "flagBelief",
@@ -85,6 +140,9 @@ const completeSessionTool = tool<
   },
 });
 
-export const interviewToolkit = toolkit([flagBeliefTool, completeSessionTool], {
-  name: "exedra-interview",
-});
+export const interviewToolkit = toolkit(
+  [flagBeliefTool, completeSessionTool, searchOrgMemoriesTool, searchSessionPersonalMemoriesTool],
+  {
+    name: "exedra-interview",
+  },
+);
