@@ -162,8 +162,7 @@ export function ContributeKnowledgeDialog({
         <DialogHeader>
           <DialogTitle>Contribute knowledge</DialogTitle>
           <DialogDescription>
-            Drop files, add attachments, and describe how they relate. Everything in one batch is
-            integrated together into the current scope.
+            Add files and text to contribute to the knowledge graph.
           </DialogDescription>
         </DialogHeader>
 
@@ -229,7 +228,7 @@ export function ContributeKnowledgeDialog({
 
             <Textarea
               disabled={busy}
-              placeholder="Describe how these files relate, or paste knowledge to add on its own..."
+              placeholder="Share anything..."
               rows={5}
               value={contextText}
               onChange={(event) => setContextText(event.target.value)}
