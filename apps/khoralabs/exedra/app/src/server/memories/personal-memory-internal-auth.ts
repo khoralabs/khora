@@ -32,6 +32,11 @@ export function assertInternalPersonalMemorySearchAllowed(
     );
   }
 
+  // Namespace owner (always params.userId here) may search without org reader grant.
+  if (canReadPersonalKg(db, params.userId, params.userId)) {
+    return null;
+  }
+
   if (!canReadPersonalKg(db, orgId, params.userId)) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }

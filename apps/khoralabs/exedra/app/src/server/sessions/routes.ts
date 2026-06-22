@@ -36,11 +36,13 @@ import {
   setSessionLinkAccess,
   userHasSessionAccess,
 } from "../db/sessions";
+import { resolveSessionOrgId } from "../documents/accept";
 import { getOrCreateUser } from "../identity/users";
 import { logger } from "../logger";
 import { bootstrapSessionMemoriesForTeamSession } from "../memories/bootstrap-session";
 import { dispatchBeliefIntegration } from "../memories/dispatch-belief-integration";
 import { resolveBeliefTextForIntegration } from "../memories/integrate-belief";
+import { orgSessionScope, userSessionScope } from "../memories/namespaces";
 import { releasePersonalMemoryAccessForParticipant } from "../memories/personal-memory-access";
 import { resolveOrgAgentAuthorForOrg, resolveViewerAuthor } from "../messages/resolve-author";
 import { serializeThreadMessages } from "../messages/serialize";
@@ -486,12 +488,20 @@ export async function handlePatchBeliefFeedback(
     correction: body.correction,
   });
 
+  const orgId = resolveSessionOrgId(db, session.teamId);
+  const namespace = orgSessionScope(orgId, session.teamId, sessionId);
+  const personalNamespace = userSessionScope(user.id, orgId, session.teamId, sessionId);
+
   void dispatchBeliefIntegration({
     userId: user.id,
     sessionId,
     beliefId,
     beliefText,
     feedback,
+    orgId,
+    teamId: session.teamId,
+    namespace,
+    personalNamespace,
     ...(body.correction !== undefined ? { correction: body.correction } : {}),
   }).catch((err: unknown) => {
     logger.warn({ err, beliefId }, "belief integration dispatch failed");

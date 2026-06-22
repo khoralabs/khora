@@ -75,6 +75,7 @@ const mergeMemory = task(
     planResult?: Awaited<ReturnType<typeof planIntegrationTask>>,
   ) {
     const memoryKey = resolveBeliefMemoryKey(params.sessionId, params.beliefId);
+    const mergeOrgId = namespace.startsWith("org/") ? params.orgId : undefined;
 
     return postInternalMemoriesMerge({
       userId: params.userId,
@@ -84,6 +85,7 @@ const mergeMemory = task(
         plaintext: draft.plaintext,
       },
       mode,
+      ...(mergeOrgId !== undefined ? { orgId: mergeOrgId } : {}),
       ...(mode === "bootstrap" ? { draft } : {}),
       ...(mode === "plan" && planResult !== undefined
         ? { plan: planResult.plan, allowedPeerKeys: planResult.allowedPeerKeys }
@@ -123,6 +125,30 @@ const mergeDocumentMemory = task(
   },
 );
 
+async function integrateBeliefIntoNamespace(
+  params: BeliefIntegrationParams,
+  namespace: string,
+): Promise<unknown> {
+  const beliefText = params.beliefText.trim();
+  const search = await postInternalMemoriesSearch({
+    userId: params.userId,
+    query: beliefText,
+    topK: 10,
+    namespace,
+    orgId: params.orgId,
+  });
+  const coldStart = search.hits.length === 0;
+
+  const draft = await expandBeliefTask(params, namespace);
+
+  if (coldStart) {
+    return mergeMemory(params, namespace, draft, "bootstrap");
+  }
+
+  const planResult = await planIntegrationTask(draft.plaintext, params.userId, namespace);
+  return mergeMemory(params, namespace, draft, "plan", planResult);
+}
+
 task(
   {
     name: "integrateBelief",
@@ -139,17 +165,14 @@ task(
       throw new Error("beliefText is required");
     }
 
-    const search = await searchMemories(params.userId, beliefText);
-    const coldStart = search.hits.length === 0;
-
-    const draft = await expandBeliefTask(params, search.namespace);
-
-    if (coldStart) {
-      return mergeMemory(params, search.namespace, draft, "bootstrap");
+    const sessionNamespace = params.namespace.trim();
+    const personalNamespace = params.personalNamespace.trim();
+    if (sessionNamespace.length === 0 || personalNamespace.length === 0) {
+      throw new Error("namespace and personalNamespace are required");
     }
 
-    const planResult = await planIntegrationTask(draft.plaintext, params.userId, search.namespace);
-    return mergeMemory(params, search.namespace, draft, "plan", planResult);
+    await integrateBeliefIntoNamespace(params, sessionNamespace);
+    await integrateBeliefIntoNamespace(params, personalNamespace);
   },
 );
 

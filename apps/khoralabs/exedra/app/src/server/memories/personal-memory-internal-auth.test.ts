@@ -36,12 +36,13 @@ test("assertInternalPersonalMemorySearchAllowed requires orgId for session perso
   });
   expect(missingOrg?.status).toBe(403);
 
-  const missingGrant = assertInternalPersonalMemorySearchAllowed(db, {
-    userId: participant.id,
-    namespace,
-    orgId,
-  });
-  expect(missingGrant?.status).toBe(403);
+  expect(
+    assertInternalPersonalMemorySearchAllowed(db, {
+      userId: participant.id,
+      namespace,
+      orgId,
+    }),
+  ).toBeNull();
 
   grantPersonalKgReader(db, orgId, participant.id);
   expect(

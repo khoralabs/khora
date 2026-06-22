@@ -6,6 +6,13 @@ export type BeliefIntegrationParams = {
   beliefText: string;
   feedback: "confirmed" | "corrected";
   correction?: string;
+  /** Org that owns the team session knowledge graph. */
+  orgId: string;
+  teamId: string;
+  /** Team session namespace (org/{orgId}/team/{teamId}/session/{sessionId}). */
+  namespace: string;
+  /** Participant session namespace in personal knowledge ({userId}/org/...). */
+  personalNamespace: string;
 };
 
 export type SearchHitSummary = {

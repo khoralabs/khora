@@ -248,10 +248,17 @@ function openScopedMemoriesClient(args: { userId: string; orgId?: string }) {
   return openUserMemoriesClient(args.userId);
 }
 
-function openScopedMemoriesAccess(args: { userId: string; orgId?: string }) {
-  const orgId = args.orgId?.trim();
-  if (orgId !== undefined && orgId.length > 0) {
-    return openMemoriesAccess(openOrgMemories(orgId));
+/** Org DB only for org-scoped namespaces; personal namespaces always use the user DB. */
+function resolveMemoriesStorageOrgId(namespace: string, orgId?: string): string | undefined {
+  if (!namespace.trim().startsWith("org/")) return undefined;
+  const trimmed = orgId?.trim();
+  return trimmed !== undefined && trimmed.length > 0 ? trimmed : undefined;
+}
+
+function openScopedMemoriesAccess(args: { userId: string; orgId?: string; namespace?: string }) {
+  const storageOrgId = resolveMemoriesStorageOrgId(args.namespace ?? "", args.orgId);
+  if (storageOrgId !== undefined) {
+    return openMemoriesAccess(openOrgMemories(storageOrgId));
   }
   return openMemoriesAccess(openUserMemories(args.userId));
 }
@@ -264,7 +271,8 @@ async function runInternalSearch(
   orgId?: string,
 ): Promise<{ hits: SearchHitSummary[]; namespace: string }> {
   const namespace = namespaceOverride?.trim() || userScope(userId);
-  const access = openScopedMemoriesAccess({ userId, orgId });
+  const storageOrgId = resolveMemoriesStorageOrgId(namespace, orgId);
+  const access = openScopedMemoriesAccess({ userId, orgId: storageOrgId, namespace });
   const { content, arms } = await buildHybridSearchContent(query);
 
   const rawHits = await searchAsync(
@@ -328,7 +336,9 @@ async function runInternalAgentSearch(
   paramsWire: SearchParamsWire,
   orgId?: string,
 ): Promise<{ hits: SearchHitWire[] }> {
-  const access = openScopedMemoriesAccess({ userId, orgId });
+  const namespace = paramsWire.namespace?.trim() ?? userScope(userId);
+  const storageOrgId = resolveMemoriesStorageOrgId(namespace, orgId);
+  const access = openScopedMemoriesAccess({ userId, orgId: storageOrgId, namespace });
   const content = await enrichSearchContentForAgent(paramsWire.content, paramsWire.options?.arms);
   const params = {
     ...paramsWire,
@@ -482,6 +492,8 @@ export async function handleInternalMemoriesMerge(req: Request): Promise<Respons
   }
 
   const orgId = body.orgId?.trim();
+  const namespace = logicalMemory.namespace.trim();
+  const storageOrgId = resolveMemoriesStorageOrgId(namespace, orgId);
 
   try {
     return await withSpan(
@@ -489,19 +501,19 @@ export async function handleInternalMemoriesMerge(req: Request): Promise<Respons
       {
         "memories.user_id": userId,
         "memories.mode": body.mode,
-        ...(orgId !== undefined && orgId.length > 0 ? { "memories.org_id": orgId } : {}),
+        ...(storageOrgId !== undefined ? { "memories.org_id": storageOrgId } : {}),
       },
       async () => {
-        const client = openScopedMemoriesClient({ userId, orgId });
+        const client = openScopedMemoriesClient({ userId, orgId: storageOrgId });
         const embeddingModel = createExedraMemoriesEmbeddingModel();
 
         const input: LogicalMemoryInput = {
           key: logicalMemory.key.trim(),
-          namespace: logicalMemory.namespace.trim(),
+          namespace,
           plaintext,
         };
 
-        if (orgId !== undefined && orgId.length > 0) {
+        if (storageOrgId !== undefined) {
           ensureNamespaceScopeChain(client.persistence, input.namespace);
         } else {
           ensureScopeChain(client.persistence, [GLOBAL_ROOT, input.namespace]);
@@ -605,14 +617,15 @@ export async function handleInternalMemoriesMergeDocumentChunk(req: Request): Pr
 
   const namespace = body.namespace?.trim() || userScope(userId);
   const orgId = body.orgId?.trim();
+  const storageOrgId = resolveMemoriesStorageOrgId(namespace, orgId);
 
   try {
     return await withSpan(
       "internal.memories.merge_document_chunk",
       { "memories.user_id": userId, "memories.key": memoryKey, "memories.namespace": namespace },
       async () => {
-        const client = openScopedMemoriesClient({ userId, orgId });
-        if (orgId !== undefined && orgId.length > 0) {
+        const client = openScopedMemoriesClient({ userId, orgId: storageOrgId });
+        if (storageOrgId !== undefined) {
           ensureNamespaceScopeChain(client.persistence, namespace);
         } else {
           ensureScopeChain(client.persistence, [GLOBAL_ROOT, namespace]);

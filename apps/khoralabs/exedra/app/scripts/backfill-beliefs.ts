@@ -6,8 +6,10 @@
  */
 import { closeDb, getDb } from "../src/server/db/index";
 import { loadThreadMessages } from "../src/server/db/messages";
+import { resolveSessionOrgId } from "../src/server/documents/accept";
 import { logger } from "../src/server/logger";
 import { dispatchBeliefIntegration } from "../src/server/memories/dispatch-belief-integration";
+import { orgSessionScope, userSessionScope } from "../src/server/memories/namespaces";
 
 type BeliefFlagMetadata = {
   beliefFlags?: { belief: string; messageId: string }[];
@@ -21,6 +23,7 @@ type AffectedRow = {
   correction: string | null;
   session_id: string;
   user_id: string | null;
+  team_id: string;
 };
 
 function sleep(ms: number): Promise<void> {
@@ -42,15 +45,30 @@ function resolveBeliefTextsBySourceMessage(threadId: string, sourceMessageId: st
   return texts;
 }
 
+function resolveBeliefIntegrationNamespaces(
+  db: ReturnType<typeof getDb>,
+  userId: string,
+  sessionId: string,
+  teamId: string,
+): { orgId: string; namespace: string; personalNamespace: string } {
+  const orgId = resolveSessionOrgId(db, teamId);
+  return {
+    orgId,
+    namespace: orgSessionScope(orgId, teamId, sessionId),
+    personalNamespace: userSessionScope(userId, orgId, teamId, sessionId),
+  };
+}
+
 async function backfillBeliefs(): Promise<void> {
   const db = getDb();
   const affected = db
     .query<AffectedRow, []>(
       `SELECT bf.thread_id, bf.belief_id, bf.source_message_id,
               bf.feedback, bf.correction,
-              t.session_id AS session_id, t.user_id
+              t.session_id AS session_id, t.user_id, s.team_id
        FROM belief_feedback bf
        JOIN threads t ON bf.thread_id = t.id
+       JOIN sessions s ON t.session_id = s.id
        WHERE bf.belief_id NOT LIKE '%:%'
        ORDER BY bf.updated_at_ms ASC`,
     )
@@ -77,6 +95,13 @@ async function backfillBeliefs(): Promise<void> {
     }
 
     try {
+      const scopes = resolveBeliefIntegrationNamespaces(
+        db,
+        row.user_id,
+        row.session_id,
+        row.team_id,
+      );
+
       if (row.feedback === "corrected") {
         const correction = row.correction?.trim() ?? "";
         if (correction.length === 0) {
@@ -95,6 +120,10 @@ async function backfillBeliefs(): Promise<void> {
           beliefText: correction,
           feedback: "corrected",
           correction,
+          orgId: scopes.orgId,
+          teamId: row.team_id,
+          namespace: scopes.namespace,
+          personalNamespace: scopes.personalNamespace,
         });
         dispatched++;
         continue;
@@ -117,6 +146,10 @@ async function backfillBeliefs(): Promise<void> {
           beliefId: row.belief_id,
           beliefText,
           feedback: "confirmed",
+          orgId: scopes.orgId,
+          teamId: row.team_id,
+          namespace: scopes.namespace,
+          personalNamespace: scopes.personalNamespace,
         });
       }
       dispatched++;
