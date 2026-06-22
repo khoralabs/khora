@@ -179,6 +179,8 @@ function InterviewContent({
           participant={viewingParticipant}
           onBack={handleBackFromParticipantChat}
           onNavigate={onNavigate}
+          scrollToMessageId={scrollToMessageId}
+          onScrollToMessageComplete={() => setScrollToMessageId(null)}
           onLoaded={handleParticipantLoaded}
         />
       ) : (

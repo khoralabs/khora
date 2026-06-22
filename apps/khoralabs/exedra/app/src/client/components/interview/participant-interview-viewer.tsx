@@ -18,12 +18,15 @@ import { SidebarCollapseTrigger } from "@/shell/sidebar-collapse-trigger";
 import { SidebarSheetTrigger } from "@/shell/sidebar-sheet-trigger";
 
 import { InterviewChatMessages } from "./interview-chat-messages";
+import { useScrollToMessage } from "./use-scroll-to-message";
 
 type ParticipantInterviewViewerProps = {
   sessionId: string;
   participant: AccountProfile;
   onBack: () => void;
   onNavigate: (path: string) => void;
+  scrollToMessageId?: string | null;
+  onScrollToMessageComplete?: () => void;
   onLoaded: (data: {
     beliefs: BeliefFlag[];
     completion: InterviewBootstrap["completion"] | null;
@@ -35,12 +38,16 @@ export function ParticipantInterviewViewer({
   participant,
   onBack,
   onNavigate,
+  scrollToMessageId,
+  onScrollToMessageComplete,
   onLoaded,
 }: ParticipantInterviewViewerProps) {
   const [messages, setMessages] = useState<ChatMessage[] | null>(null);
   const [agentAuthor, setAgentAuthor] = useState<InterviewBootstrap["agent"]>(null);
   const [error, setError] = useState<string | null>(null);
   const participantName = formatAccountDisplayName(participant);
+
+  useScrollToMessage(scrollToMessageId, onScrollToMessageComplete, messages !== null);
 
   useEffect(() => {
     let cancelled = false;

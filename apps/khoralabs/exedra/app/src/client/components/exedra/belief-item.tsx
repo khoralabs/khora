@@ -1,4 +1,4 @@
-import { Check, Pencil, ThumbsDown, ThumbsUp } from "lucide-react";
+import { Check, Link2, Pencil, ThumbsDown, ThumbsUp } from "lucide-react";
 import { type MouseEvent, useCallback, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -36,7 +36,7 @@ export function BeliefItem({ belief, onSourceClick, onUpdate, readOnly = false }
     belief.correction.length > 0;
   const isConfirmed = belief.feedback === "confirmed";
   const showCorrectionEditor = mode === "correcting" || mode === "editing";
-  const showActions = !readOnly && !isConfirmed && !hasCorrection && !showCorrectionEditor;
+  const showReviewActions = !readOnly && !isConfirmed && !hasCorrection && !showCorrectionEditor;
 
   useEffect(() => {
     if (mode === "editing" && belief.correction !== undefined) {
@@ -85,57 +85,60 @@ export function BeliefItem({ belief, onSourceClick, onUpdate, readOnly = false }
 
   return (
     <Item className="flex-col flex-nowrap items-stretch gap-0 p-0" size="sm" variant="outline">
-      <ItemHeader className="gap-3 px-3 py-3">
-        <ItemContent className="min-w-0 gap-1">
+      <ItemHeader className="items-start gap-2 px-3 py-3 sm:gap-3">
+        <ItemContent className="min-w-0 flex-1 gap-2">
           <ItemDescription
             className={cn(
               "line-clamp-none text-foreground",
               hasCorrection && "text-muted-foreground line-through",
-              isConfirmed && "text-foreground",
             )}
           >
             {belief.belief}
           </ItemDescription>
-          {isConfirmed ? (
-            <p className="flex items-center gap-1 text-xs text-green-600 dark:text-green-500">
-              <Check className="size-3" />
-              Confirmed
-            </p>
-          ) : (
-            <button
-              className="w-fit text-left text-xs text-muted-foreground underline-offset-2 hover:underline"
-              onClick={handleSourceClick}
-              type="button"
-            >
-              View source message
-            </button>
-          )}
+          <Button
+            className="h-auto w-fit gap-1 px-0 text-xs text-muted-foreground"
+            onClick={handleSourceClick}
+            type="button"
+            variant="link"
+          >
+            <Link2 className="size-3 shrink-0" aria-hidden />
+            <span className="sm:hidden">Source</span>
+            <span className="hidden sm:inline">View source message</span>
+          </Button>
         </ItemContent>
 
-        {showActions ? (
-          <ItemActions className="shrink-0 opacity-100 lg:opacity-0 lg:transition-opacity lg:group-hover/item:opacity-100">
-            <Button
-              aria-label="Confirm belief"
-              className="text-muted-foreground hover:text-green-600 dark:hover:text-green-500"
-              onClick={handleThumbUp}
-              size="icon-xs"
-              type="button"
-              variant="ghost"
-            >
-              <ThumbsUp />
-            </Button>
-            <Button
-              aria-label="Correct belief"
-              className="text-muted-foreground hover:text-destructive"
-              onClick={handleThumbDown}
-              size="icon-xs"
-              type="button"
-              variant="ghost"
-            >
-              <ThumbsDown />
-            </Button>
-          </ItemActions>
-        ) : null}
+        <ItemActions className="shrink-0 flex-col items-end gap-1 self-start">
+          {isConfirmed ? (
+            <p className="flex items-center gap-1 text-xs text-green-600 dark:text-green-500">
+              <Check className="size-3 shrink-0" aria-hidden />
+              Confirmed
+            </p>
+          ) : null}
+          {showReviewActions ? (
+            <div className="flex shrink-0 opacity-100 lg:opacity-0 lg:transition-opacity lg:group-hover/item:opacity-100">
+              <Button
+                aria-label="Confirm belief"
+                className="text-muted-foreground hover:text-green-600 dark:hover:text-green-500"
+                onClick={handleThumbUp}
+                size="icon-xs"
+                type="button"
+                variant="ghost"
+              >
+                <ThumbsUp />
+              </Button>
+              <Button
+                aria-label="Correct belief"
+                className="text-muted-foreground hover:text-destructive"
+                onClick={handleThumbDown}
+                size="icon-xs"
+                type="button"
+                variant="ghost"
+              >
+                <ThumbsDown />
+              </Button>
+            </div>
+          ) : null}
+        </ItemActions>
       </ItemHeader>
 
       {showCorrectionEditor ? (

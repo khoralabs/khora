@@ -3,19 +3,17 @@ import { useEffect, useRef } from "react";
 export function useScrollToMessage(
   scrollToMessageId: string | null | undefined,
   onScrollToMessageComplete?: () => void,
+  ready = true,
 ) {
   const highlightedMessageRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (scrollToMessageId === null || scrollToMessageId === undefined) return;
+    if (!ready || scrollToMessageId === null || scrollToMessageId === undefined) return;
 
     const element = document.querySelector<HTMLElement>(
       `[data-message-id="${CSS.escape(scrollToMessageId)}"]`,
     );
-    if (element === null) {
-      onScrollToMessageComplete?.();
-      return;
-    }
+    if (element === null) return;
 
     element.scrollIntoView({ behavior: "smooth", block: "center" });
     element.classList.add("ring-2", "ring-primary/40", "rounded-xl", "transition-shadow");
@@ -35,5 +33,5 @@ export function useScrollToMessage(
     }, 1800);
 
     return () => window.clearTimeout(timeout);
-  }, [scrollToMessageId, onScrollToMessageComplete]);
+  }, [ready, scrollToMessageId, onScrollToMessageComplete]);
 }
