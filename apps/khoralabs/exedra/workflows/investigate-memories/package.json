@@ -1,7 +1,7 @@
 {
-  "name": "@khoralabs/exedra-workflows-integrate-memory",
+  "name": "@khoralabs/exedra-workflows-investigate-memories",
   "version": "1.0.0",
-  "description": "Integrate Memory - Render Workflows (TypeScript)",
+  "description": "Investigate Memories - Render Workflows (TypeScript)",
   "type": "module",
   "private": true,
   "scripts": {
@@ -12,10 +12,9 @@
     "@khoralabs/agent-capabilities": "^0.1.1",
     "@khoralabs/agent-capabilities-otel": "^0.1.1",
     "@khoralabs/exedra-workflows-shared": "workspace:*",
-    "@khoralabs/memories-adapter": "workspace:*",
     "@khoralabs/memories-autolink": "workspace:*",
     "@khoralabs/memories-core": "workspace:*",
-    "@khoralabs/memories-integrator": "workspace:*",
+    "@khoralabs/memories-investigator": "workspace:*",
     "@khoralabs/memories-tools": "workspace:*",
     "@khoralabs/observability": "workspace:*",
     "@renderinc/sdk": "^0.6.0",

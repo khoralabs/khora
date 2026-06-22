@@ -240,6 +240,7 @@
         "@ai-sdk/google": "^3.0.0",
         "@khoralabs/agent-capabilities": "^0.1.1",
         "@khoralabs/agent-capabilities-otel": "^0.1.1",
+        "@khoralabs/exedra-workflows-shared": "workspace:*",
         "@khoralabs/memories-adapter": "workspace:*",
         "@khoralabs/memories-autolink": "workspace:*",
         "@khoralabs/memories-core": "workspace:*",
@@ -248,6 +249,37 @@
         "@khoralabs/observability": "workspace:*",
         "@renderinc/sdk": "^0.6.0",
         "ai": "^6.0.205",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+    },
+    "apps/khoralabs/exedra/workflows/investigate-memories": {
+      "name": "@khoralabs/exedra-workflows-investigate-memories",
+      "version": "1.0.0",
+      "dependencies": {
+        "@ai-sdk/google": "^3.0.0",
+        "@khoralabs/agent-capabilities": "^0.1.1",
+        "@khoralabs/agent-capabilities-otel": "^0.1.1",
+        "@khoralabs/exedra-workflows-shared": "workspace:*",
+        "@khoralabs/memories-autolink": "workspace:*",
+        "@khoralabs/memories-core": "workspace:*",
+        "@khoralabs/memories-investigator": "workspace:*",
+        "@khoralabs/memories-tools": "workspace:*",
+        "@khoralabs/observability": "workspace:*",
+        "@renderinc/sdk": "^0.6.0",
+        "ai": "^6.0.205",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+    },
+    "apps/khoralabs/exedra/workflows/shared": {
+      "name": "@khoralabs/exedra-workflows-shared",
+      "version": "1.0.0",
+      "dependencies": {
+        "@khoralabs/memories-autolink": "workspace:*",
+        "@khoralabs/memories-core": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -1654,6 +1686,10 @@
     "@khoralabs/exedra": ["@khoralabs/exedra@workspace:apps/khoralabs/exedra/app"],
 
     "@khoralabs/exedra-workflows-integrate-memory": ["@khoralabs/exedra-workflows-integrate-memory@workspace:apps/khoralabs/exedra/workflows/integrate-memory"],
+
+    "@khoralabs/exedra-workflows-investigate-memories": ["@khoralabs/exedra-workflows-investigate-memories@workspace:apps/khoralabs/exedra/workflows/investigate-memories"],
+
+    "@khoralabs/exedra-workflows-shared": ["@khoralabs/exedra-workflows-shared@workspace:apps/khoralabs/exedra/workflows/shared"],
 
     "@khoralabs/host-runtime": ["@khoralabs/host-runtime@workspace:packages/host-runtime"],
 

@@ -42,7 +42,7 @@ import {
 } from "../memories/embedding.js";
 import { exedraMemoriesOntology } from "../memories/exedra-ontology.js";
 import { ensureScopeChain, userScope } from "../memories/namespaces.js";
-import { openUserMemories } from "../memories/store.js";
+import { openOrgMemories, openUserMemories } from "../memories/store.js";
 import { withSpan } from "../telemetry/spans.js";
 import { requireInternalToken } from "./require-internal-token.js";
 import { serializeSearchHit } from "./search-hit-serialize.js";
@@ -237,6 +237,22 @@ function openUserMemoriesClient(userId: string) {
   return new MemoriesClient(persistence, exedraMemoriesOntology);
 }
 
+function openScopedMemoriesClient(args: { userId: string; orgId?: string }) {
+  const orgId = args.orgId?.trim();
+  if (orgId !== undefined && orgId.length > 0) {
+    return new MemoriesClient(openOrgMemories(orgId), exedraMemoriesOntology);
+  }
+  return openUserMemoriesClient(args.userId);
+}
+
+function openScopedMemoriesAccess(args: { userId: string; orgId?: string }) {
+  const orgId = args.orgId?.trim();
+  if (orgId !== undefined && orgId.length > 0) {
+    return openMemoriesAccess(openOrgMemories(orgId));
+  }
+  return openMemoriesAccess(openUserMemories(args.userId));
+}
+
 async function runInternalSearch(
   userId: string,
   query: string,
@@ -305,8 +321,9 @@ async function enrichSearchContentForAgent(
 async function runInternalAgentSearch(
   userId: string,
   paramsWire: SearchParamsWire,
+  orgId?: string,
 ): Promise<{ hits: SearchHitWire[] }> {
-  const access = openMemoriesAccess(openUserMemories(userId));
+  const access = openScopedMemoriesAccess({ userId, orgId });
   const content = await enrichSearchContentForAgent(paramsWire.content, paramsWire.options?.arms);
   const params = {
     ...paramsWire,
@@ -337,12 +354,16 @@ export async function handleInternalMemoriesAgentSearch(req: Request): Promise<R
   if (body.params === undefined) {
     return Response.json({ error: "params is required" }, { status: 400 });
   }
+  const orgId = body.orgId?.trim();
 
   try {
     const result = await withSpan(
       "internal.memories.agent-search",
-      { "memories.user_id": userId },
-      async () => runInternalAgentSearch(userId, body.params),
+      {
+        "memories.user_id": userId,
+        ...(orgId !== undefined && orgId.length > 0 ? { "memories.org_id": orgId } : {}),
+      },
+      async () => runInternalAgentSearch(userId, body.params, orgId),
     );
     return Response.json(result);
   } catch (err) {
@@ -358,9 +379,10 @@ export async function handleInternalMemoriesProvenanceHead(req: Request): Promis
   const url = new URL(req.url);
   const userId = url.searchParams.get("userId")?.trim() ?? "";
   if (userId.length === 0) return Response.json({ error: "userId is required" }, { status: 400 });
+  const orgId = url.searchParams.get("orgId")?.trim();
 
   try {
-    const client = openUserMemoriesClient(userId);
+    const client = openScopedMemoriesClient({ userId, orgId });
     const fn = client.persistence.getProvenanceHeadRootHex;
     if (fn === undefined) {
       return Response.json({ rootHex: "" });

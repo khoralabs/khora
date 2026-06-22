@@ -72,6 +72,7 @@ export type SearchParamsWire = {
 
 export type InternalMemoriesAgentSearchRequest = {
   userId: string;
+  orgId?: string;
   params: SearchParamsWire;
 };
 

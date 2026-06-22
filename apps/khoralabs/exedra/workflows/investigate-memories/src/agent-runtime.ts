@@ -40,9 +40,9 @@ export function getAgentRegistry(): AgentRegistry {
   return agentRegistry;
 }
 
-export function resolveChatModel(): LanguageModel {
+export function resolveInvestigatorModel(): LanguageModel {
   const google = createGoogleGenerativeAI({ apiKey: resolveGeminiApiKey() });
-  const modelId = process.env.MEMORIES_INTEGRATOR_MODEL?.trim() || "gemini-2.0-flash";
+  const modelId = process.env.MEMORIES_INVESTIGATOR_MODEL?.trim() || "gemini-flash-latest";
   return google.languageModel(modelId);
 }
 
@@ -55,19 +55,18 @@ export function resolveEmbeddingModel() {
   });
 }
 
-export function resolveAdapterMaxSteps(): number {
-  const raw = Number(process.env.MEMORIES_BELIEF_ADAPTER_MAX_STEPS);
-  return Number.isFinite(raw) && raw > 0 ? Math.min(50, Math.floor(raw)) : 4;
+export function resolveInvestigatorMaxSteps(): number {
+  const raw = Number(process.env.MEMORIES_INVESTIGATOR_MAX_STEPS);
+  return Number.isFinite(raw) && raw > 0 ? Math.min(50, Math.floor(raw)) : 12;
 }
 
-export function resolveIntegratorMaxSteps(): number {
-  const raw = Number(process.env.MEMORIES_BELIEF_INTEGRATOR_MAX_STEPS);
-  return Number.isFinite(raw) && raw > 0 ? Math.min(50, Math.floor(raw)) : 4;
-}
-
-export function createRemoteMemoriesClient(userId: string): ExedraHttpMemoriesClientAsync {
+export function createRemoteMemoriesClient(
+  userId: string,
+  orgId?: string,
+): ExedraHttpMemoriesClientAsync {
   return createExedraHttpMemoriesClientAsync({
     userId,
+    orgId,
     baseUrl: requireEnv("EXEDRA_INTERNAL_URL"),
     token: requireEnv("EXEDRA_INTERNAL_TOKEN"),
   });

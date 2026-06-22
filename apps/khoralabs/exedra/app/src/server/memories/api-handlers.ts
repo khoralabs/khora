@@ -13,7 +13,10 @@ import {
   mergeResolutionAndProviderOptions,
 } from "@khoralabs/memories-core/helpers";
 import type { MemoriesPersistence } from "@khoralabs/memories-core/persistence";
-import { MemoryInvestigatorClient } from "@khoralabs/memories-investigator";
+import {
+  type InvestigatorAnswerWire,
+  MemoryInvestigatorClient,
+} from "@khoralabs/memories-investigator";
 import { getMemoriesSqliteDatabase, listMemoryNamespaces } from "@khoralabs/memories-sqlite";
 import {
   buildNamespaceGraphLayout,
@@ -22,6 +25,7 @@ import {
   loadSourceMapTextPreview,
   qualifyMemoryKey,
 } from "@khoralabs/sqlite-graph-projections";
+import { AbortError, Render } from "@renderinc/sdk";
 import { embedMany } from "ai";
 import { createExedraMemoriesAgentTelemetry } from "../telemetry/agent-telemetry.js";
 import { withSpan } from "../telemetry/spans.js";
@@ -35,6 +39,11 @@ type GraphScope = "exact" | "subtree";
 export type MemoriesAccess = {
   persistence: MemoriesPersistence;
   db: Database;
+};
+
+export type MemoriesInvestigateScope = {
+  userId: string;
+  orgId?: string;
 };
 
 let didWarnLexicalOnlySearch = false;
@@ -311,9 +320,104 @@ export async function handleMemoriesSearch(
   }
 }
 
+async function runInProcessInvestigation(args: {
+  access: MemoriesAccess;
+  namespace: string;
+  question: string;
+  maxSteps: number;
+  resolution?: string;
+}): Promise<InvestigatorAnswerWire> {
+  const apiKey = resolveGeminiApiKey();
+  if (apiKey === undefined) {
+    throw new Error("Memory investigation requires a Google API key for embeddings");
+  }
+
+  const resolution = resolveSearchEmbeddingPreset(args.access.persistence, args.resolution);
+  const google = createGoogleGenerativeAI({ apiKey });
+  const embeddingModel = createMemoriesEmbeddingModel({
+    model: google.embedding("gemini-embedding-2-preview"),
+    providerOptions: mergeResolutionAndProviderOptions(resolution),
+  });
+  const modelId = process.env.MEMORIES_INVESTIGATOR_MODEL?.trim() || "gemini-flash-latest";
+  const model = google.languageModel(modelId);
+
+  const client = new MemoriesClient(args.access.persistence, exedraMemoriesOntology);
+  const investigator = new MemoryInvestigatorClient({
+    registry: getInvestigatorRegistry(),
+    namespace: args.namespace,
+    model,
+    client,
+    embeddingModel,
+  });
+  const tel = await createExedraMemoriesAgentTelemetry(client);
+  const { answer } = await investigator.investigate({
+    question: args.question,
+    maxSteps: args.maxSteps,
+    telemetry: tel,
+  });
+  return answer;
+}
+
+async function runWorkflowInvestigation(args: {
+  scope: MemoriesInvestigateScope;
+  namespace: string;
+  question: string;
+  maxSteps: number;
+  signal?: AbortSignal;
+}): Promise<InvestigatorAnswerWire> {
+  const apiKey = process.env.RENDER_API_KEY?.trim();
+  const slug = process.env.RENDER_INVESTIGATION_WORKFLOW_SLUG?.trim();
+  if (apiKey === undefined || apiKey.length === 0 || slug === undefined || slug.length === 0) {
+    throw new Error("Memory investigation workflow is not configured");
+  }
+
+  const render = new Render({ token: apiKey });
+  const startedRun = await render.workflows.startTask(
+    `${slug}/investigateMemory`,
+    [
+      {
+        userId: args.scope.userId,
+        ...(args.scope.orgId !== undefined && args.scope.orgId.length > 0
+          ? { orgId: args.scope.orgId }
+          : {}),
+        namespace: args.namespace,
+        question: args.question,
+        maxSteps: args.maxSteps,
+      },
+    ],
+    args.signal,
+  );
+
+  args.signal?.addEventListener(
+    "abort",
+    () => {
+      void render.workflows.cancelTaskRun(startedRun.taskRunId).catch(() => {});
+    },
+    { once: true },
+  );
+
+  const finishedRun = await startedRun.get();
+  if (finishedRun.status !== "completed") {
+    throw new Error(finishedRun.error ?? "Investigation failed");
+  }
+
+  const answer = finishedRun.results[0] as InvestigatorAnswerWire | undefined;
+  if (answer === undefined || typeof answer.answer !== "string") {
+    throw new Error("Investigation returned an invalid result");
+  }
+  return answer;
+}
+
+function isWorkflowInvestigationConfigured(): boolean {
+  const apiKey = process.env.RENDER_API_KEY?.trim();
+  const slug = process.env.RENDER_INVESTIGATION_WORKFLOW_SLUG?.trim();
+  return apiKey !== undefined && apiKey.length > 0 && slug !== undefined && slug.length > 0;
+}
+
 export async function handleMemoriesInvestigate(
   req: Request,
   access: MemoriesAccess,
+  scope: MemoriesInvestigateScope,
 ): Promise<Response> {
   let body: {
     namespace?: string;
@@ -338,36 +442,30 @@ export async function handleMemoriesInvestigate(
 
   try {
     return await withSpan("memories.investigate", { "memories.namespace": namespace }, async () => {
-      const apiKey = resolveGeminiApiKey();
-      if (apiKey === undefined) {
-        return jsonResponse(
-          { error: "Memory investigation requires a Google API key for embeddings" },
-          503,
-        );
-      }
-
-      const resolution = resolveSearchEmbeddingPreset(access.persistence, body.resolution);
-      const google = createGoogleGenerativeAI({ apiKey });
-      const embeddingModel = createMemoriesEmbeddingModel({
-        model: google.embedding("gemini-embedding-2-preview"),
-        providerOptions: mergeResolutionAndProviderOptions(resolution),
-      });
-      const modelId = process.env.MEMORIES_INVESTIGATOR_MODEL?.trim() || "gemini-flash-latest";
-      const model = google.languageModel(modelId);
-
-      const client = new MemoriesClient(access.persistence, exedraMemoriesOntology);
-      const investigator = new MemoryInvestigatorClient({
-        registry: getInvestigatorRegistry(),
-        namespace,
-        model,
-        client,
-        embeddingModel,
-      });
-      const tel = await createExedraMemoriesAgentTelemetry(client);
-      const { answer } = await investigator.investigate({ question, maxSteps, telemetry: tel });
+      const answer = isWorkflowInvestigationConfigured()
+        ? await runWorkflowInvestigation({
+            scope,
+            namespace,
+            question,
+            maxSteps,
+            signal: req.signal,
+          })
+        : await runInProcessInvestigation({
+            access,
+            namespace,
+            question,
+            maxSteps,
+            resolution: body.resolution,
+          });
       return jsonResponse(answer);
     });
   } catch (err) {
-    return jsonResponse({ error: String(err) }, 500);
+    if (err instanceof AbortError) {
+      return jsonResponse({ error: "Investigation canceled" }, 499);
+    }
+    const message = err instanceof Error ? err.message : String(err);
+    const status =
+      message.includes("Google API key") || message.includes("not configured") ? 503 : 500;
+    return jsonResponse({ error: message }, status);
   }
 }

@@ -16,7 +16,9 @@ import { openOrgMemories } from "./store.js";
 async function resolveOrgMemoriesAccess(
   req: Request,
   orgId: string,
-): Promise<{ access: ReturnType<typeof openMemoriesAccess> } | { response: Response }> {
+): Promise<
+  { access: ReturnType<typeof openMemoriesAccess>; userId: string } | { response: Response }
+> {
   const auth = await requireRegistrySessionResponse(req);
   if (auth.response !== null) return { response: auth.response };
 
@@ -28,7 +30,7 @@ async function resolveOrgMemoriesAccess(
 
   try {
     const persistence = openOrgMemories(orgId);
-    return { access: openMemoriesAccess(persistence) };
+    return { access: openMemoriesAccess(persistence), userId: user.id };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Memories unavailable";
     return { response: memoriesUnavailableResponse(message) };
@@ -62,5 +64,8 @@ export async function handleOrgMemoriesSearch(req: Request, orgId: string): Prom
 export async function handleOrgMemoriesInvestigate(req: Request, orgId: string): Promise<Response> {
   const resolved = await resolveOrgMemoriesAccess(req, orgId);
   if ("response" in resolved) return resolved.response;
-  return handleMemoriesInvestigate(req, resolved.access);
+  return handleMemoriesInvestigate(req, resolved.access, {
+    userId: resolved.userId,
+    orgId,
+  });
 }

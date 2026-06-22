@@ -222,7 +222,7 @@ Contact flow: submission is queued when the user reaches the OTP step; Slack sen
 | `EXEDRA_DOCUMENTS_S3_ENDPOINT` | · | · | · | + | C | MinIO endpoint for local dev; omit for AWS S3. |
 | `EXEDRA_INTERNAL_TOKEN` | · | · | · | + | S | Bearer token for `/internal/memories/*` (shared with integrate-memory workflow). |
 | `RENDER_API_KEY` | · | · | · | + | S | Dispatches belief integration tasks to Render Workflows. |
-| `RENDER_WORKFLOW_SLUG` | · | · | · | + | C | Workflow slug prefix (default `integrate-memory` → task `integrate-memory/integrateBelief`). |
+| `RENDER_INTEGRATION_WORKFLOW_SLUG` | · | · | · | + | C | Workflow slug prefix (default `integrate-memory` → task `integrate-memory/integrateBelief`). |
 | `MEMORIES_INTEGRATOR_MODEL` | · | · | · | + | C | Belief workflow LLM (default `gemini-2.0-flash`; set on workflow service too). |
 | `EXEDRA_AUTOLINK_TOP_K` | · | · | · | + | C | Max `retrieval_autolink` edges per belief merge (default `10`). |
 | `EXEDRA_AUTOLINK_MIN_SCORE` | · | · | · | + | C | Optional minimum hybrid search score for autolink neighbors. |

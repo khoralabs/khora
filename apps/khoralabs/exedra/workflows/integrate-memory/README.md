@@ -20,7 +20,7 @@ Render Workflow that integrates confirmed/corrected Exedra beliefs into the user
    ```
    EXEDRA_INTERNAL_TOKEN=dev-internal-token
    RENDER_API_KEY=...
-   RENDER_WORKFLOW_SLUG=integrate-memory
+   RENDER_INTEGRATION_WORKFLOW_SLUG=integrate-memory
    ```
 
 2. Set env on this workflow (`.env`):

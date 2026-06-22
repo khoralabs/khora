@@ -17,6 +17,7 @@ import { exedraMemoriesOntology } from "./exedra-memories-ontology.ts";
 
 export type ExedraHttpMemoriesClientConfig = {
   userId: string;
+  orgId?: string;
   baseUrl: string;
   token: string;
 };
@@ -53,6 +54,9 @@ function createStubPersistence(config: ExedraHttpMemoriesClientConfig): Memories
     getProvenanceHeadRootHex: async () => {
       const url = new URL(`${base}/internal/memories/provenance-head`);
       url.searchParams.set("userId", config.userId);
+      if (config.orgId !== undefined && config.orgId.length > 0) {
+        url.searchParams.set("orgId", config.orgId);
+      }
       const res = await fetch(url, { headers: { Authorization: headers.Authorization } });
       const data = await readJson<InternalMemoriesProvenanceHeadResponse>(res);
       return data.rootHex.length > 0 ? data.rootHex : undefined;
@@ -76,6 +80,9 @@ export class ExedraHttpMemoriesClientAsync extends MemoriesClientAsync<
     const base = this.#config.baseUrl.replace(/\/$/, "");
     const body: InternalMemoriesAgentSearchRequest = {
       userId: this.#config.userId,
+      ...(this.#config.orgId !== undefined && this.#config.orgId.length > 0
+        ? { orgId: this.#config.orgId }
+        : {}),
       params: params as unknown as SearchParamsWire,
     };
     const res = await fetch(`${base}/internal/memories/agent-search`, {
