@@ -16,6 +16,8 @@ export type SessionSummary = {
   status: string;
   createdAtMs: number;
   role: "facilitator" | "participant";
+  canReadKg?: boolean;
+  canContributeKg?: boolean;
 };
 
 export type SessionPhase = "individual" | "synthesis" | "alignment" | "closed";

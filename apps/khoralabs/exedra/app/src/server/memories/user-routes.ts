@@ -1,7 +1,8 @@
 import { requireRegistrySessionResponse } from "../auth/require-session";
+import { canReadPersonalKg } from "../authz/policy.js";
 import { getDb } from "../db/index";
 import { getOrCreateUser } from "../identity/users";
-import { authorizePersonalNamespaceRead, listReadablePersonalNamespaces } from "./access.js";
+import { authorizePersonalNamespaceRead } from "./access.js";
 import {
   handleMemoriesEdgePreview,
   handleMemoriesGraph,
@@ -11,12 +12,16 @@ import {
   memoriesUnavailableResponse,
   openMemoriesAccess,
 } from "./api-handlers.js";
+import { userScope } from "./namespaces.js";
 import { openUserMemories } from "./store.js";
 
-async function resolveMeMemoriesSession(req: Request): Promise<
+async function resolveUserMemoriesSession(
+  req: Request,
+  ownerId: string,
+): Promise<
   | {
       access: ReturnType<typeof openMemoriesAccess>;
-      userId: string;
+      viewerId: string;
       db: ReturnType<typeof getDb>;
     }
   | { response: Response }
@@ -25,49 +30,55 @@ async function resolveMeMemoriesSession(req: Request): Promise<
   if (auth.response !== null) return { response: auth.response };
 
   const db = getDb();
-  const user = await getOrCreateUser(db, auth.session.user.id);
+  const viewer = await getOrCreateUser(db, auth.session.user.id);
+
+  if (!canReadPersonalKg(db, viewer.id, ownerId)) {
+    return { response: Response.json({ error: "Forbidden" }, { status: 403 }) };
+  }
 
   try {
-    const persistence = openUserMemories(user.id);
-    return { access: openMemoriesAccess(persistence), userId: user.id, db };
+    const persistence = openUserMemories(ownerId);
+    return { access: openMemoriesAccess(persistence), viewerId: viewer.id, db };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Memories unavailable";
     return { response: memoriesUnavailableResponse(message) };
   }
 }
 
-function requireAuthorizedPersonalNamespace(
+function requireAuthorizedSharedPersonalNamespace(
   db: ReturnType<typeof getDb>,
-  userId: string,
+  viewerId: string,
   ownerId: string,
   namespace: string | undefined,
 ): Response | null {
   if (namespace === undefined || namespace.length === 0) {
     return Response.json({ error: "missing required query namespace" }, { status: 400 });
   }
-  if (!authorizePersonalNamespaceRead(db, userId, namespace, ownerId)) {
+  if (!authorizePersonalNamespaceRead(db, viewerId, namespace, ownerId)) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
   return null;
 }
 
-export async function handleMeMemoriesNamespaces(req: Request): Promise<Response> {
-  const resolved = await resolveMeMemoriesSession(req);
+export async function handleUserMemoriesNamespaces(
+  req: Request,
+  ownerId: string,
+): Promise<Response> {
+  const resolved = await resolveUserMemoriesSession(req, ownerId);
   if ("response" in resolved) return resolved.response;
 
-  const namespaces = listReadablePersonalNamespaces(resolved.db, resolved.userId);
-  return handleMemoriesNamespaces(resolved.access, namespaces);
+  return handleMemoriesNamespaces(resolved.access, [userScope(ownerId)]);
 }
 
-export async function handleMeMemoriesGraph(req: Request): Promise<Response> {
-  const resolved = await resolveMeMemoriesSession(req);
+export async function handleUserMemoriesGraph(req: Request, ownerId: string): Promise<Response> {
+  const resolved = await resolveUserMemoriesSession(req, ownerId);
   if ("response" in resolved) return resolved.response;
 
   const namespace = new URL(req.url).searchParams.get("namespace")?.trim();
-  const authError = requireAuthorizedPersonalNamespace(
+  const authError = requireAuthorizedSharedPersonalNamespace(
     resolved.db,
-    resolved.userId,
-    resolved.userId,
+    resolved.viewerId,
+    ownerId,
     namespace,
   );
   if (authError !== null) return authError;
@@ -75,15 +86,18 @@ export async function handleMeMemoriesGraph(req: Request): Promise<Response> {
   return handleMemoriesGraph(req, resolved.access);
 }
 
-export async function handleMeMemoriesEdgePreview(req: Request): Promise<Response> {
-  const resolved = await resolveMeMemoriesSession(req);
+export async function handleUserMemoriesEdgePreview(
+  req: Request,
+  ownerId: string,
+): Promise<Response> {
+  const resolved = await resolveUserMemoriesSession(req, ownerId);
   if ("response" in resolved) return resolved.response;
 
   const namespace = new URL(req.url).searchParams.get("namespace")?.trim();
-  const authError = requireAuthorizedPersonalNamespace(
+  const authError = requireAuthorizedSharedPersonalNamespace(
     resolved.db,
-    resolved.userId,
-    resolved.userId,
+    resolved.viewerId,
+    ownerId,
     namespace,
   );
   if (authError !== null) return authError;
@@ -91,16 +105,16 @@ export async function handleMeMemoriesEdgePreview(req: Request): Promise<Respons
   return handleMemoriesEdgePreview(req, resolved.access);
 }
 
-export async function handleMeMemoriesSearch(req: Request): Promise<Response> {
-  const resolved = await resolveMeMemoriesSession(req);
+export async function handleUserMemoriesSearch(req: Request, ownerId: string): Promise<Response> {
+  const resolved = await resolveUserMemoriesSession(req, ownerId);
   if ("response" in resolved) return resolved.response;
 
   const body = (await req.clone().json()) as { namespace?: string };
   const namespace = body.namespace?.trim();
-  const authError = requireAuthorizedPersonalNamespace(
+  const authError = requireAuthorizedSharedPersonalNamespace(
     resolved.db,
-    resolved.userId,
-    resolved.userId,
+    resolved.viewerId,
+    ownerId,
     namespace,
   );
   if (authError !== null) return authError;
@@ -108,19 +122,22 @@ export async function handleMeMemoriesSearch(req: Request): Promise<Response> {
   return handleMemoriesSearch(req, resolved.access);
 }
 
-export async function handleMeMemoriesInvestigate(req: Request): Promise<Response> {
-  const resolved = await resolveMeMemoriesSession(req);
+export async function handleUserMemoriesInvestigate(
+  req: Request,
+  ownerId: string,
+): Promise<Response> {
+  const resolved = await resolveUserMemoriesSession(req, ownerId);
   if ("response" in resolved) return resolved.response;
 
   const body = (await req.clone().json()) as { namespace?: string };
   const namespace = body.namespace?.trim();
-  const authError = requireAuthorizedPersonalNamespace(
+  const authError = requireAuthorizedSharedPersonalNamespace(
     resolved.db,
-    resolved.userId,
-    resolved.userId,
+    resolved.viewerId,
+    ownerId,
     namespace,
   );
   if (authError !== null) return authError;
 
-  return handleMemoriesInvestigate(req, resolved.access, { userId: resolved.userId });
+  return handleMemoriesInvestigate(req, resolved.access, { userId: ownerId });
 }

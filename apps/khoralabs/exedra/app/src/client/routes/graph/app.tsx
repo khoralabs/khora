@@ -80,6 +80,7 @@ function GraphContent({
           title={sessionDetail?.session.topic ?? "Session knowledge"}
           emptyDescription="No knowledge captured yet. It will appear here as the interview captures it."
           onInvestigated={() => trackInvestigated("session")}
+          canContribute={sessionDetail?.session.canContributeKg !== false}
           headerExtra={
             <>
               {sessionDetail?.canManage ? (

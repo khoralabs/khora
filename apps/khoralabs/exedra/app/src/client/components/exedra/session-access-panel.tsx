@@ -48,16 +48,18 @@ export function SessionAccessPanel({
 
         <div className="space-y-3">
           <p className="text-sm font-medium">Knowledge</p>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="w-full justify-start"
-            onClick={() => onNavigate(`/sessions/${sessionId}/graph`)}
-          >
-            <Network />
-            Open session knowledge graph
-          </Button>
+          {detail.session.canReadKg !== false ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full justify-start"
+              onClick={() => onNavigate(`/sessions/${sessionId}/graph`)}
+            >
+              <Network />
+              Open session knowledge graph
+            </Button>
+          ) : null}
         </div>
 
         <div className="space-y-3">

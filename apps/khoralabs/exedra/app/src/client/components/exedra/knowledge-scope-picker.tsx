@@ -71,7 +71,7 @@ export function KnowledgeScopePicker({
   const label = activeLabel(pathname, activeTeam, sessions);
   const isSidebar = variant === "sidebar";
   const TriggerIcon = triggerIcon(pathname);
-  const teamSessions = sessions ?? [];
+  const teamSessions = (sessions ?? []).filter((session) => session.canReadKg !== false);
 
   const trigger = (
     <DropdownMenuTrigger asChild>
@@ -143,18 +143,20 @@ export function KnowledgeScopePicker({
           <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
             {activeTeam.name}
           </DropdownMenuLabel>
-          <DropdownMenuItem
-            onClick={() => {
-              track("graph_opened", { scope: "team" });
-              onNavigate(`/teams/${activeTeam.id}/graph`);
-            }}
-          >
-            <Network className="size-4 shrink-0" />
-            <span className="min-w-0 flex-1 truncate">Team knowledge</span>
-            {teamGraphId === activeTeam.id ? (
-              <Check className="ml-auto size-4 shrink-0 text-primary" />
-            ) : null}
-          </DropdownMenuItem>
+          {activeTeam.id.length > 0 ? (
+            <DropdownMenuItem
+              onClick={() => {
+                track("graph_opened", { scope: "team" });
+                onNavigate(`/teams/${activeTeam.id}/graph`);
+              }}
+            >
+              <Network className="size-4 shrink-0" />
+              <span className="min-w-0 flex-1 truncate">Team knowledge</span>
+              {teamGraphId === activeTeam.id ? (
+                <Check className="ml-auto size-4 shrink-0 text-primary" />
+              ) : null}
+            </DropdownMenuItem>
+          ) : null}
 
           {teamSessions.length > 0 ? (
             <>

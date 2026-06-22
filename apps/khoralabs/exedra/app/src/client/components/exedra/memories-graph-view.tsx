@@ -39,6 +39,7 @@ type MemoriesGraphViewProps = {
   headerExtra?: ReactNode;
   emptyDescription?: string;
   onInvestigated?: () => void;
+  canContribute?: boolean;
 };
 
 function GraphInvestigatorTracker({ onInvestigated }: { onInvestigated?: () => void }) {
@@ -84,6 +85,7 @@ export function MemoriesGraphView({
   headerExtra,
   emptyDescription = "Memories from interviews will appear here as they're captured.",
   onInvestigated,
+  canContribute = true,
 }: MemoriesGraphViewProps) {
   const [graphRefreshKey, setGraphRefreshKey] = useState(0);
 
@@ -136,6 +138,7 @@ export function MemoriesGraphView({
                       orgId={orgId}
                       teamId={teamId}
                       sessionId={sessionId}
+                      canContribute={canContribute}
                       onContributed={() => setGraphRefreshKey((key) => key + 1)}
                     />
                   </GraphOverlayContainer>

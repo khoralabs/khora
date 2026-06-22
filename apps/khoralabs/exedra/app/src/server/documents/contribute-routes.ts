@@ -1,6 +1,7 @@
 import { requireRegistrySessionResponse } from "../auth/require-session.js";
 import { getDb } from "../db/index.js";
 import { getOrCreateUser } from "../identity/users.js";
+import { namespaceMatchesGrantResource } from "../memories/access.js";
 import {
   acceptContributionBatch,
   buildBatchWire,
@@ -75,6 +76,15 @@ export async function handleContributeDocuments(req: Request): Promise<Response>
 
   if (!userCanContributeViaGrant(db, user.id, grantResource)) {
     return jsonResponse({ error: "Forbidden" }, 403);
+  }
+
+  if (
+    !namespaceMatchesGrantResource(namespace, grantResource, {
+      orgId: orgId ?? undefined,
+      userId: user.id,
+    })
+  ) {
+    return jsonResponse({ error: "Namespace does not match knowledge scope" }, 400);
   }
 
   const batchId = crypto.randomUUID();

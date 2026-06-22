@@ -43,6 +43,13 @@ import {
   handleOrgMemoriesSearch,
 } from "./memories/org-routes";
 import {
+  handleUserMemoriesEdgePreview,
+  handleUserMemoriesGraph,
+  handleUserMemoriesInvestigate,
+  handleUserMemoriesNamespaces,
+  handleUserMemoriesSearch,
+} from "./memories/user-routes";
+import {
   handleDeleteMeAvatar,
   handleGetMe,
   handlePatchMe,
@@ -322,6 +329,31 @@ export const apiRoutes = {
 
   "/api/memories/me/investigate": {
     POST: handleMeMemoriesInvestigate,
+  },
+
+  "/api/memories/users/:ownerId/namespaces": {
+    GET: (req: Request & { params: { ownerId: string } }) =>
+      handleUserMemoriesNamespaces(req, req.params.ownerId),
+  },
+
+  "/api/memories/users/:ownerId/graph": {
+    GET: (req: Request & { params: { ownerId: string } }) =>
+      handleUserMemoriesGraph(req, req.params.ownerId),
+  },
+
+  "/api/memories/users/:ownerId/edge-preview": {
+    GET: (req: Request & { params: { ownerId: string } }) =>
+      handleUserMemoriesEdgePreview(req, req.params.ownerId),
+  },
+
+  "/api/memories/users/:ownerId/search": {
+    POST: (req: Request & { params: { ownerId: string } }) =>
+      handleUserMemoriesSearch(req, req.params.ownerId),
+  },
+
+  "/api/memories/users/:ownerId/investigate": {
+    POST: (req: Request & { params: { ownerId: string } }) =>
+      handleUserMemoriesInvestigate(req, req.params.ownerId),
   },
 
   "/api/avatars/:kind/:id": {

@@ -131,9 +131,16 @@ export function memoriesUnavailableResponse(message?: string): Response {
   return jsonResponse({ error: message ?? "Memories database is not configured" }, 503);
 }
 
-export function handleMemoriesNamespaces(access: MemoriesAccess): Response {
+export function handleMemoriesNamespaces(
+  access: MemoriesAccess,
+  allowedNamespaces?: readonly string[],
+): Response {
   try {
-    const namespaces = listMemoryNamespaces(access.db);
+    const allNamespaces = listMemoryNamespaces(access.db);
+    const namespaces =
+      allowedNamespaces === undefined
+        ? allNamespaces
+        : allNamespaces.filter((namespace) => allowedNamespaces.includes(namespace));
     return jsonResponse({ namespaces, profiles: [], namespaceRoot: NAMESPACE_ROOT });
   } catch (err) {
     return jsonResponse({ error: String(err) }, 500);

@@ -9,7 +9,7 @@ import {
   revokeSessionParticipant,
   revokeTeamSessionParticipant,
 } from "../authz";
-import { enforce, ResourceType } from "../authz/policy";
+import { canContributeToSessionKg, canReadSessionKg, enforce, ResourceType } from "../authz/policy";
 import { loadBeliefFeedback, upsertBeliefFeedback } from "../db/beliefs";
 import { getDb } from "../db/index";
 import {
@@ -81,7 +81,11 @@ export async function handleListSessions(req: Request): Promise<Response> {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const sessions = listSessionsForUser(db, user.id, teamId);
+  const sessions = listSessionsForUser(db, user.id, teamId).map((session) => ({
+    ...session,
+    canReadKg: canReadSessionKg(db, user.id, session.id),
+    canContributeKg: canContributeToSessionKg(db, user.id, session.id),
+  }));
   return Response.json({ sessions });
 }
 
@@ -201,7 +205,7 @@ export async function handleGetSessionById(req: Request, sessionId: string): Pro
   }
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (!userHasSessionAccess(db, sessionId, user.id)) {
+  if (!userHasSessionAccess(db, sessionId, user.id) && !canReadSessionKg(db, user.id, sessionId)) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -217,6 +221,8 @@ export async function handleGetSessionById(req: Request, sessionId: string): Pro
       role,
       phase,
       daysToDeadline,
+      canReadKg: canReadSessionKg(db, user.id, sessionId),
+      canContributeKg: canContributeToSessionKg(db, user.id, sessionId),
     },
     participants,
     canManage: canManageSession(db, user.id, sessionId),

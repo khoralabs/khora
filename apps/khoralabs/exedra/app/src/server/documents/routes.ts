@@ -1,6 +1,7 @@
 import { requireRegistrySessionResponse } from "../auth/require-session.js";
+import { canContributeToSessionKg, canReadSessionKg } from "../authz/policy.js";
 import { getDb } from "../db/index.js";
-import { getSession, userHasSessionAccess } from "../db/sessions.js";
+import { getSession } from "../db/sessions.js";
 import { getOrCreateUser } from "../identity/users.js";
 import { acceptDocument, resolveSessionOrgId, resolveSessionTargetNamespace } from "./accept.js";
 import {
@@ -25,7 +26,7 @@ function documentsUnavailableResponse(): Response {
   return jsonResponse({ error: "Document storage is not configured" }, 503);
 }
 
-async function requireSessionDocumentAccess(
+async function requireSessionDocumentReadAccess(
   req: Request,
   sessionId: string,
 ): Promise<
@@ -42,7 +43,31 @@ async function requireSessionDocumentAccess(
   }
 
   const user = await getOrCreateUser(db, auth.session.user.id);
-  if (!userHasSessionAccess(db, sessionId, user.id)) {
+  if (!canReadSessionKg(db, user.id, sessionId)) {
+    return { ok: false, response: jsonResponse({ error: "Forbidden" }, 403) };
+  }
+
+  return { ok: true, userId: user.id, session };
+}
+
+async function requireSessionDocumentContributeAccess(
+  req: Request,
+  sessionId: string,
+): Promise<
+  | { ok: false; response: Response }
+  | { ok: true; userId: string; session: NonNullable<ReturnType<typeof getSession>> }
+> {
+  const auth = await requireRegistrySessionResponse(req);
+  if (auth.response !== null) return { ok: false, response: auth.response };
+
+  const db = getDb();
+  const session = getSession(db, sessionId);
+  if (session === null) {
+    return { ok: false, response: jsonResponse({ error: "Session not found" }, 404) };
+  }
+
+  const user = await getOrCreateUser(db, auth.session.user.id);
+  if (!canContributeToSessionKg(db, user.id, sessionId)) {
     return { ok: false, response: jsonResponse({ error: "Forbidden" }, 403) };
   }
 
@@ -57,7 +82,7 @@ export async function handleUploadSessionDocument(
     return documentsUnavailableResponse();
   }
 
-  const access = await requireSessionDocumentAccess(req, sessionId);
+  const access = await requireSessionDocumentContributeAccess(req, sessionId);
   if (!access.ok) return access.response;
 
   let formData: FormData;
@@ -136,7 +161,7 @@ export async function handleListSessionDocuments(
   req: Request,
   sessionId: string,
 ): Promise<Response> {
-  const access = await requireSessionDocumentAccess(req, sessionId);
+  const access = await requireSessionDocumentReadAccess(req, sessionId);
   if (!access.ok) return access.response;
 
   const documents = listDocumentsBySession(getDb(), sessionId).map((document) => ({
@@ -164,7 +189,7 @@ export async function handleGetSessionDocument(
     return documentsUnavailableResponse();
   }
 
-  const access = await requireSessionDocumentAccess(req, sessionId);
+  const access = await requireSessionDocumentReadAccess(req, sessionId);
   if (!access.ok) return access.response;
 
   const document = getDocumentById(getDb(), documentId);

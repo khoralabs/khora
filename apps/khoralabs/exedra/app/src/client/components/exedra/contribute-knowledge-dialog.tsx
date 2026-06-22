@@ -282,6 +282,7 @@ type ContributeKnowledgeOverlayButtonProps = {
   teamId?: string;
   sessionId?: string;
   onContributed?: () => void;
+  canContribute?: boolean;
 };
 
 export function ContributeKnowledgeOverlayButton({
@@ -290,8 +291,11 @@ export function ContributeKnowledgeOverlayButton({
   teamId,
   sessionId,
   onContributed,
+  canContribute = true,
 }: ContributeKnowledgeOverlayButtonProps) {
   const [open, setOpen] = useState(false);
+
+  if (!canContribute) return null;
 
   return (
     <>

@@ -57,6 +57,36 @@ export function sessionParticipantInviteEffects(sessionId: string, teamId: strin
   };
 }
 
+/** Read-only session KG access without participant/contribute rights. */
+export function sessionReaderInviteEffects(sessionId: string): InviteEffects {
+  return {
+    grants: [
+      {
+        type: "grant",
+        resourceType: "session",
+        resourceId: sessionId,
+        feature: "read",
+      },
+    ],
+    entitlements: [],
+  };
+}
+
+/** Contribute to team KG without team membership. */
+export function teamContributorInviteEffects(teamId: string): InviteEffects {
+  return {
+    grants: [
+      {
+        type: "grant",
+        resourceType: "team",
+        resourceId: teamId,
+        feature: "contributor",
+      },
+    ],
+    entitlements: [],
+  };
+}
+
 export function parseInviteEffects(raw: string | Uint8Array): InviteEffects {
   const text = typeof raw === "string" ? raw : new TextDecoder().decode(raw);
   const parsed = JSON.parse(text) as Partial<InviteEffects>;

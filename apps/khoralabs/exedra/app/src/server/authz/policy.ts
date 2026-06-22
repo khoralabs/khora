@@ -1,3 +1,4 @@
+// Authz reference: apps/khoralabs/exedra/docs/authz-grants.md
 import type { Database } from "bun:sqlite";
 
 import type { OrgPermission, TeamPermission } from "../../shared/authz/permissions";
@@ -27,6 +28,7 @@ export const ResourceType = {
   Team: "team",
   Session: "session",
   Thread: "thread",
+  Account: "account",
 } as const;
 
 export const Feature = {
@@ -35,6 +37,7 @@ export const Feature = {
   Participant: "participant",
   Read: "read",
   Write: "write",
+  Contributor: "contributor",
 } as const;
 
 export type AuthAction =
@@ -274,6 +277,10 @@ function threadResource(threadId: string) {
   return { type: ResourceType.Thread, id: threadId };
 }
 
+function accountResource(accountId: string) {
+  return { type: ResourceType.Account, id: accountId };
+}
+
 function hasAccountSessionGrant(
   db: Database,
   accountId: string,
@@ -281,6 +288,55 @@ function hasAccountSessionGrant(
   feature: string,
 ): boolean {
   return hasGrant(db, accountScope(accountId), sessionResource(sessionId), feature);
+}
+
+export function hasDirectSessionGrant(
+  db: Database,
+  accountId: string,
+  sessionId: string,
+  feature: string,
+): boolean {
+  return hasAccountSessionGrant(db, accountId, sessionId, feature);
+}
+
+export function canContributeToSessionKg(
+  db: Database,
+  accountId: string,
+  sessionId: string,
+): boolean {
+  return (
+    hasDirectSessionGrant(db, accountId, sessionId, Feature.Participant) ||
+    hasDirectSessionGrant(db, accountId, sessionId, Feature.Admin)
+  );
+}
+
+export function canReadSessionKg(db: Database, accountId: string, sessionId: string): boolean {
+  return (
+    hasDirectSessionGrant(db, accountId, sessionId, Feature.Read) ||
+    hasDirectSessionGrant(db, accountId, sessionId, Feature.Participant) ||
+    hasDirectSessionGrant(db, accountId, sessionId, Feature.Admin)
+  );
+}
+
+export function hasTeamContributorGrant(db: Database, accountId: string, teamId: string): boolean {
+  return hasGrant(
+    db,
+    accountScope(accountId),
+    { type: ResourceType.Team, id: teamId },
+    Feature.Contributor,
+  );
+}
+
+export function canContributeToTeamKg(db: Database, accountId: string, teamId: string): boolean {
+  return (
+    enforce(db, accountId, "team:member", { type: ResourceType.Team, id: teamId }) ||
+    hasTeamContributorGrant(db, accountId, teamId)
+  );
+}
+
+export function canReadPersonalKg(db: Database, readerId: string, ownerId: string): boolean {
+  if (readerId === ownerId) return true;
+  return hasGrant(db, accountScope(readerId), accountResource(ownerId), Feature.Read);
 }
 
 function hasInheritedTeamSessionGrant(
@@ -392,6 +448,68 @@ export function revokeOrgAdmin(db: Database, accountId: string, orgId: string): 
     { type: ResourceType.Organization, id: orgId },
     Feature.Admin,
   );
+}
+
+export function grantSessionReader(
+  db: Database,
+  accountId: string,
+  sessionId: string,
+  expiresAtMs?: number | null,
+): string {
+  return createGrant(
+    db,
+    accountScope(accountId),
+    sessionResource(sessionId),
+    Feature.Read,
+    expiresAtMs,
+  );
+}
+
+export function revokeSessionReader(db: Database, accountId: string, sessionId: string): void {
+  revokeGrant(db, accountScope(accountId), sessionResource(sessionId), Feature.Read);
+}
+
+export function grantTeamContributor(
+  db: Database,
+  accountId: string,
+  teamId: string,
+  expiresAtMs?: number | null,
+): string {
+  return createGrant(
+    db,
+    accountScope(accountId),
+    { type: ResourceType.Team, id: teamId },
+    Feature.Contributor,
+    expiresAtMs,
+  );
+}
+
+export function revokeTeamContributor(db: Database, accountId: string, teamId: string): void {
+  revokeGrant(
+    db,
+    accountScope(accountId),
+    { type: ResourceType.Team, id: teamId },
+    Feature.Contributor,
+  );
+}
+
+export function grantPersonalKgReader(
+  db: Database,
+  readerId: string,
+  ownerId: string,
+  expiresAtMs?: number | null,
+): string {
+  return createGrant(
+    db,
+    accountScope(readerId),
+    accountResource(ownerId),
+    Feature.Read,
+    expiresAtMs,
+  );
+}
+
+export function revokePersonalKgReader(db: Database, readerId: string, ownerId: string): void {
+  revokeGrant(db, accountScope(readerId), accountResource(ownerId), Feature.Read);
 }
 
 export function grantSessionParticipant(

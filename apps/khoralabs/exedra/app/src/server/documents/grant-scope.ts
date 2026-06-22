@@ -1,6 +1,14 @@
 import type { Database } from "bun:sqlite";
 import { getOrgIdForTeam } from "../authz/grants.js";
-import { enforce, hasSessionAccess, ResourceType, ScopeType } from "../authz/policy.js";
+import {
+  canContributeToSessionKg,
+  canContributeToTeamKg,
+  canReadPersonalKg,
+  canReadSessionKg,
+  enforce,
+  ResourceType,
+  ScopeType,
+} from "../authz/policy.js";
 import { userScope } from "../memories/namespaces.js";
 import type { DocumentGrantResource, DocumentRecord } from "./types.js";
 
@@ -46,9 +54,9 @@ export function userCanContributeViaGrant(
         id: resource.id,
       });
     case ResourceType.Team:
-      return enforce(db, userId, "team:write", { type: ResourceType.Team, id: resource.id });
+      return canContributeToTeamKg(db, userId, resource.id);
     case ResourceType.Session:
-      return hasSessionAccess(db, userId, resource.id);
+      return canContributeToSessionKg(db, userId, resource.id);
     default:
       return false;
   }
@@ -59,10 +67,21 @@ export function userCanViewDocumentsForGrant(
   userId: string,
   resource: DocumentGrantResource,
 ): boolean {
-  if (resource.type === ScopeType.Account) {
-    return resource.id === userId;
+  switch (resource.type) {
+    case ScopeType.Account:
+      return canReadPersonalKg(db, userId, resource.id);
+    case ResourceType.Organization:
+      return enforce(db, userId, "org:read", {
+        type: ResourceType.Organization,
+        id: resource.id,
+      });
+    case ResourceType.Team:
+      return enforce(db, userId, "team:read", { type: ResourceType.Team, id: resource.id });
+    case ResourceType.Session:
+      return canReadSessionKg(db, userId, resource.id);
+    default:
+      return false;
   }
-  return userCanContributeViaGrant(db, userId, resource);
 }
 
 export function documentMatchesGrantResource(
