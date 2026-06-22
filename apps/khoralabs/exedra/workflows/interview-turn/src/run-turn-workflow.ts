@@ -1,8 +1,11 @@
+import { runInterviewTurn } from "@khoralabs/exedra-interview-agent";
 import { nanoid } from "nanoid";
-
-import { runInterviewTurn } from "../../../../app/src/agents/interview/run-turn.ts";
 import type { InterviewTurnWorkflowParams } from "../../../shared/interview-turn-workflow.ts";
-import { getAgentRegistry, resolveInterviewModel } from "./agent-runtime.ts";
+import {
+  createInterviewTelemetry,
+  getAgentRegistry,
+  resolveInterviewModel,
+} from "./agent-runtime.ts";
 import {
   completeTurn,
   failTurn,
@@ -47,6 +50,7 @@ export async function runInterviewTurnWorkflow(params: InterviewTurnWorkflowPara
     const output = await runInterviewTurn({
       registry: getAgentRegistry(),
       model: resolveInterviewModel(),
+      createTelemetry: createInterviewTelemetry,
       sessionId: params.sessionId,
       sessionMeta: context.sessionMeta,
       onboardingMeta: context.onboardingMeta,
@@ -54,7 +58,6 @@ export async function runInterviewTurnWorkflow(params: InterviewTurnWorkflowPara
       teamId: params.teamId,
       participantUserId: params.userId,
       memoryContext,
-      interviewMemoryContext: context.interviewMemoryContext,
       memorySearch,
       sessionInterviewComplete: context.sessionInterviewComplete,
       threadId: params.threadId,

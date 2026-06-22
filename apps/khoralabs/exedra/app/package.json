@@ -18,6 +18,7 @@
     "@khoralabs/agent-capabilities-ai-sdk": "^0.1.1",
     "@khoralabs/agent-capabilities-otel": "^0.1.1",
     "@khoralabs/agent-persisted-signer": "workspace:*",
+    "@khoralabs/exedra-interview-agent": "workspace:*",
     "@khoralabs/khora-auth": "workspace:*",
     "@khoralabs/khora-client": "workspace:*",
     "@khoralabs/khora-contracts": "workspace:*",

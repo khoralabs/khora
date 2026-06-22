@@ -1,8 +1,15 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { type AgentRegistry, createAgentRegistry } from "@khoralabs/agent-capabilities";
+import { type AgentTelemetry, createAgentTelemetry } from "@khoralabs/agent-capabilities-otel";
+import { createLogger } from "@khoralabs/observability/logger";
 import type { LanguageModel } from "ai";
 
+import { meter, tracer } from "./otel.ts";
+
 let agentRegistry: AgentRegistry | undefined;
+
+const logger = createLogger({ name: "exedra-interview-turn" });
+const otelDeps = { tracer, logger, meter };
 
 function requireEnv(name: string): string {
   const value = process.env[name]?.trim();
@@ -15,6 +22,10 @@ function requireEnv(name: string): string {
 export function getAgentRegistry(): AgentRegistry {
   if (agentRegistry === undefined) agentRegistry = createAgentRegistry();
   return agentRegistry;
+}
+
+export function createInterviewTelemetry(): AgentTelemetry {
+  return createAgentTelemetry(otelDeps);
 }
 
 export function resolveInterviewModel(): LanguageModel {

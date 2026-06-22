@@ -24,6 +24,7 @@ import {
 } from "../dispatch-interview-turn.js";
 import { finalizeInterviewTurn } from "../finalize-turn.js";
 import {
+  buildInterviewMemorySearch,
   buildInterviewMemorySearchContext,
   resolveInterviewMemoryContext,
 } from "../memory-retrieval";
@@ -305,6 +306,7 @@ async function executeTurnBody(
     userMessageText: text,
     sessionTopic: session.topic,
   });
+  const memorySearch = buildInterviewMemorySearch(interviewMemoryContext);
 
   try {
     const {
@@ -322,7 +324,7 @@ async function executeTurnBody(
       teamId: session.teamId,
       participantUserId: userId,
       memoryContext,
-      interviewMemoryContext,
+      memorySearch,
       sessionInterviewComplete: session.interviewCompletedAtMs !== null,
       threadId,
       userMessageId: turnId,

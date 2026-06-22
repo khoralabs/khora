@@ -1,5 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import type { InterviewMemorySearchOverride } from "@khoralabs/exedra-interview-agent";
 import {
   type SearchHit,
   searchAsync,
@@ -234,4 +235,31 @@ export async function searchPersonalMemoriesForInterview(
     topK,
     "personal",
   );
+}
+
+export function buildInterviewMemorySearch(
+  context: InterviewMemoryContext,
+): InterviewMemorySearchOverride {
+  return {
+    searchOrgMemories: async (query: string) => {
+      const hits = await searchOrgMemoriesForInterview(context, query);
+      return hits.map((hit) => ({
+        source: hit.source,
+        key: hit.key,
+        snippet: hit.snippet,
+      }));
+    },
+    ...(context.canSearchPersonal
+      ? {
+          searchPersonalMemories: async (query: string) => {
+            const hits = await searchPersonalMemoriesForInterview(context, query);
+            return hits.map((hit) => ({
+              source: hit.source,
+              key: hit.key,
+              snippet: hit.snippet,
+            }));
+          },
+        }
+      : {}),
+  };
 }

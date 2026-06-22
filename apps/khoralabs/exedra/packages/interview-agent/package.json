@@ -1,0 +1,20 @@
+{
+  "name": "@khoralabs/exedra-interview-agent",
+  "version": "1.0.0",
+  "description": "Exedra interview agent runtime (shared by app and Render workflows)",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@khoralabs/agent-capabilities": "^0.1.1",
+    "@khoralabs/agent-capabilities-ai-sdk": "^0.1.1",
+    "@khoralabs/agent-capabilities-otel": "^0.1.1",
+    "ai": "^6.0.205",
+    "zod": "^4.1.5"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

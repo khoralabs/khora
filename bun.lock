@@ -163,6 +163,7 @@
         "@khoralabs/agent-capabilities-ai-sdk": "^0.1.1",
         "@khoralabs/agent-capabilities-otel": "^0.1.1",
         "@khoralabs/agent-persisted-signer": "workspace:*",
+        "@khoralabs/exedra-interview-agent": "workspace:*",
         "@khoralabs/khora-auth": "workspace:*",
         "@khoralabs/khora-client": "workspace:*",
         "@khoralabs/khora-contracts": "workspace:*",
@@ -234,6 +235,20 @@
         "tailwindcss": "^4.1.11",
       },
     },
+    "apps/khoralabs/exedra/packages/interview-agent": {
+      "name": "@khoralabs/exedra-interview-agent",
+      "version": "1.0.0",
+      "dependencies": {
+        "@khoralabs/agent-capabilities": "^0.1.1",
+        "@khoralabs/agent-capabilities-ai-sdk": "^0.1.1",
+        "@khoralabs/agent-capabilities-otel": "^0.1.1",
+        "ai": "^6.0.205",
+        "zod": "^4.1.5",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+    },
     "apps/khoralabs/exedra/workflows/integrate-memory": {
       "name": "@khoralabs/exedra-workflows-integrate-memory",
       "version": "1.0.0",
@@ -263,6 +278,7 @@
         "@ai-sdk/openai": "^3.0.0",
         "@khoralabs/agent-capabilities": "^0.1.1",
         "@khoralabs/agent-capabilities-otel": "^0.1.1",
+        "@khoralabs/exedra-interview-agent": "workspace:*",
         "@khoralabs/exedra-workflows-shared": "workspace:*",
         "@khoralabs/observability": "workspace:*",
         "@renderinc/sdk": "^0.6.0",
@@ -1718,6 +1734,8 @@
     "@khoralabs/colonnade-persistence": ["@khoralabs/colonnade-persistence@workspace:packages/colonnade/impl/ts"],
 
     "@khoralabs/exedra": ["@khoralabs/exedra@workspace:apps/khoralabs/exedra/app"],
+
+    "@khoralabs/exedra-interview-agent": ["@khoralabs/exedra-interview-agent@workspace:apps/khoralabs/exedra/packages/interview-agent"],
 
     "@khoralabs/exedra-workflows-integrate-memory": ["@khoralabs/exedra-workflows-integrate-memory@workspace:apps/khoralabs/exedra/workflows/integrate-memory"],
 

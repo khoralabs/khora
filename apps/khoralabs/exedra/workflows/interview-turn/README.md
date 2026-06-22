@@ -6,7 +6,7 @@ Render Workflow that runs the interview agent turn (RAG prefetch, streaming LLM,
 
 - **Exedra app** persists the user message, creates an `interview_turn` job, and dispatches `runInterviewTurn` via Render SDK
 - **WebSocket** on the app relays turn events posted by the workflow through `/internal/interview/turns/:turnId/events`
-- **This workflow** fetches turn context and RAG via Exedra internal API, runs `runInterviewTurn`, and POSTs completion to `/internal/interview/turns/:turnId/complete`
+- **This workflow** fetches turn context and RAG via Exedra internal API, runs `@khoralabs/exedra-interview-agent`, and POSTs completion to `/internal/interview/turns/:turnId/complete`
 - Turns continue if the client disconnects; reconnect loads messages from REST bootstrap
 
 ## Local development
