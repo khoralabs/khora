@@ -11,6 +11,7 @@ export type { SessionAccess, SessionLinkAccess };
 export type SessionSummary = {
   id: string;
   teamId: string;
+  orgId?: string;
   topic: string;
   deadlineMs: number | null;
   status: string;

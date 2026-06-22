@@ -96,11 +96,15 @@ export async function handleListSessions(req: Request): Promise<Response> {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const sessions = listSessionsForUser(db, user.id, teamId).map((session) => ({
-    ...session,
-    canReadKg: canReadSessionKg(db, user.id, session.id),
-    canContributeKg: canContributeToSessionKg(db, user.id, session.id),
-  }));
+  const sessions = listSessionsForUser(db, user.id, teamId).map((session) => {
+    const team = getTeam(db, session.teamId);
+    return {
+      ...session,
+      orgId: team?.orgId ?? "",
+      canReadKg: canReadSessionKg(db, user.id, session.id),
+      canContributeKg: canContributeToSessionKg(db, user.id, session.id),
+    };
+  });
   return Response.json({ sessions });
 }
 
@@ -229,10 +233,12 @@ export async function handleGetSessionById(req: Request, sessionId: string): Pro
   const phase = sessionPhaseFromStatus(session.status);
   const daysToDeadline = formatDaysToDeadline(session.deadlineMs);
   const participants = listAccountRowsForSession(db, sessionId, user.id);
+  const team = getTeam(db, session.teamId);
 
   return Response.json({
     session: {
       ...session,
+      orgId: team?.orgId ?? "",
       role,
       phase,
       daysToDeadline,
