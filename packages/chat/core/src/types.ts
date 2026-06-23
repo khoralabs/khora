@@ -75,10 +75,27 @@ export type PostVersion = Omit<UIMessage, "id"> & {
   lineageHash: string;
   signature?: SignedEnvelope;
   mentions?: Mention[];
+  model?: PostModelMetadata;
+  usage?: PostUsage;
   createdAtMs: number;
 };
 
 export type PostStatus = "streaming" | "complete" | "aborted";
+
+export type PostModelMetadata = {
+  provider?: string;
+  model?: string;
+  gatewayModel?: string;
+  finishReason?: string;
+};
+
+export type PostUsage = {
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+  reasoningTokens?: number;
+  cachedInputTokens?: number;
+};
 
 export type PostStreamEventType =
   | "stream.started"
@@ -95,6 +112,8 @@ export type PostStreamEvent = {
   message?: UIMessage;
   delta?: JsonObject;
   mentions?: Mention[];
+  model?: PostModelMetadata;
+  usage?: PostUsage;
   idempotencyKey?: string;
   createdAtMs: number;
 };
@@ -103,6 +122,8 @@ export type PostBase = UIMessage & {
   threadId: string;
   author: ScopeRef;
   mentions?: Mention[];
+  model?: PostModelMetadata;
+  usage?: PostUsage;
   index: number;
   createdAtMs: number;
   updatedAtMs?: number | null;

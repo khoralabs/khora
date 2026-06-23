@@ -1,14 +1,25 @@
 import type { UIMessage } from "ai";
-import type { JsonObject, Mention, PostStreamEvent, StreamingPost } from "./types.ts";
+import type {
+  JsonObject,
+  Mention,
+  PostModelMetadata,
+  PostStreamEvent,
+  PostUsage,
+  StreamingPost,
+} from "./types.ts";
 
 export function rebuildStreamCacheFromEvents(events: PostStreamEvent[]): {
   message: UIMessage;
   mentions?: Mention[];
+  model?: PostModelMetadata;
+  usage?: PostUsage;
   revision: number;
 } {
   const sorted = [...events].sort((a, b) => a.revision - b.revision);
   let message: UIMessage | null = null;
   let mentions: Mention[] | undefined;
+  let model: PostModelMetadata | undefined;
+  let usage: PostUsage | undefined;
   let revision = 0;
 
   for (const event of sorted) {
@@ -18,6 +29,8 @@ export function rebuildStreamCacheFromEvents(events: PostStreamEvent[]): {
       }
       message = event.message;
       mentions = event.mentions;
+      model = event.model;
+      usage = event.usage;
       revision = event.revision;
       continue;
     }
@@ -27,6 +40,8 @@ export function rebuildStreamCacheFromEvents(events: PostStreamEvent[]): {
       }
       message = event.message;
       if (event.mentions !== undefined) mentions = event.mentions;
+      if (event.model !== undefined) model = event.model;
+      if (event.usage !== undefined) usage = event.usage;
       revision = event.revision;
       continue;
     }
@@ -39,7 +54,7 @@ export function rebuildStreamCacheFromEvents(events: PostStreamEvent[]): {
     throw new Error("stream events did not produce a message");
   }
 
-  return { message, mentions, revision };
+  return { message, mentions, model, usage, revision };
 }
 
 export function streamingPostFromCache(input: {
@@ -48,6 +63,8 @@ export function streamingPostFromCache(input: {
   author: { type: string; id: string };
   message: UIMessage;
   mentions?: Mention[];
+  model?: PostModelMetadata;
+  usage?: PostUsage;
   index: number;
   streamRevision: number;
   createdAtMs: number;
@@ -61,6 +78,8 @@ export function streamingPostFromCache(input: {
     threadId: input.threadId,
     author: input.author,
     mentions: input.mentions,
+    model: input.model,
+    usage: input.usage,
     index: input.index,
     streamRevision: input.streamRevision,
     createdAtMs: input.createdAtMs,

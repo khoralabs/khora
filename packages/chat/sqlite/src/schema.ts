@@ -25,6 +25,8 @@ CREATE TABLE IF NOT EXISTS chat_posts (
   status TEXT NOT NULL DEFAULT 'complete',
   stream_message TEXT,
   stream_mentions TEXT,
+  stream_model TEXT,
+  stream_usage TEXT,
   stream_author_scope_type TEXT,
   stream_author_scope_id TEXT,
   stream_revision INTEGER NOT NULL DEFAULT 0,
@@ -44,6 +46,8 @@ CREATE TABLE IF NOT EXISTS chat_post_stream_events (
   message TEXT,
   delta TEXT,
   mentions TEXT,
+  model TEXT,
+  usage TEXT,
   idempotency_key TEXT UNIQUE,
   created_at_ms INTEGER NOT NULL
 );
@@ -58,6 +62,8 @@ CREATE TABLE IF NOT EXISTS chat_post_versions (
   author_scope_id TEXT NOT NULL,
   message TEXT NOT NULL,
   mentions TEXT,
+  model TEXT,
+  usage TEXT,
   content_hash TEXT NOT NULL,
   lineage_hash TEXT NOT NULL,
   signature TEXT,
@@ -119,6 +125,21 @@ export function ensureChatSqliteSchema(db: DatabaseType, busyTimeoutMs = 5000): 
   db.run(`PRAGMA busy_timeout = ${busyTimeoutMs};`);
   db.run("PRAGMA foreign_keys = ON;");
   db.exec(SCHEMA);
+  for (const statement of [
+    "ALTER TABLE chat_posts ADD COLUMN stream_model TEXT",
+    "ALTER TABLE chat_posts ADD COLUMN stream_usage TEXT",
+    "ALTER TABLE chat_post_stream_events ADD COLUMN model TEXT",
+    "ALTER TABLE chat_post_stream_events ADD COLUMN usage TEXT",
+    "ALTER TABLE chat_post_versions ADD COLUMN model TEXT",
+    "ALTER TABLE chat_post_versions ADD COLUMN usage TEXT",
+  ]) {
+    try {
+      db.run(statement);
+    } catch (error) {
+      if (!(error instanceof Error) || !error.message.includes("duplicate column name"))
+        throw error;
+    }
+  }
 }
 
 export function createChatDatabase(path: ":memory:" | string = ":memory:"): DatabaseType {

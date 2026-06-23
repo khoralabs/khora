@@ -21,9 +21,11 @@ import type {
   ListThreadsInput,
   Mention,
   Post,
+  PostModelMetadata,
   PostPage,
   PostStatus,
   PostStreamEvent,
+  PostUsage,
   PostVersion,
   RemoveChannelMemberInput,
   RemoveThreadParticipantInput,
@@ -60,6 +62,8 @@ type PostRecord = {
   author: ScopeRef;
   message?: UIMessage;
   mentions?: Mention[];
+  model?: PostModelMetadata;
+  usage?: PostUsage;
   streamRevision: number;
   completedVersionId?: string | null;
   createdAtMs: number;
@@ -143,6 +147,8 @@ export class MemoryChatPersistence extends BaseChatPersistence implements ChatPe
         author: record.author,
         message: record.message,
         mentions: record.mentions,
+        model: record.model,
+        usage: record.usage,
         index: record.index,
         streamRevision: record.streamRevision,
         createdAtMs: record.createdAtMs,
@@ -159,6 +165,8 @@ export class MemoryChatPersistence extends BaseChatPersistence implements ChatPe
         threadId: record.threadId,
         author: record.author,
         mentions: record.mentions,
+        model: record.model,
+        usage: record.usage,
         index: record.index,
         streamRevision: record.streamRevision,
         createdAtMs: record.createdAtMs,
@@ -293,6 +301,8 @@ export class MemoryChatPersistence extends BaseChatPersistence implements ChatPe
       contentHash: prepared.contentHash,
       lineageHash: prepared.lineageHash,
       mentions: prepared.mentions,
+      model: prepared.model,
+      usage: prepared.usage,
       createdAtMs: prepared.createdAtMs,
     };
 
@@ -384,6 +394,8 @@ export class MemoryChatPersistence extends BaseChatPersistence implements ChatPe
       contentHash: prepared.contentHash,
       lineageHash: prepared.lineageHash,
       mentions: prepared.mentions,
+      model: prepared.model,
+      usage: prepared.usage,
       createdAtMs: prepared.createdAtMs,
     };
     this.versions.set(version.id, version);
@@ -651,6 +663,8 @@ export class MemoryChatPersistence extends BaseChatPersistence implements ChatPe
       revision,
       message,
       mentions: input.mentions,
+      model: input.model,
+      usage: input.usage,
       idempotencyKey: input.idempotencyKey,
       createdAtMs,
     };
@@ -662,6 +676,8 @@ export class MemoryChatPersistence extends BaseChatPersistence implements ChatPe
       author: input.author,
       message,
       mentions: input.mentions,
+      model: input.model,
+      usage: input.usage,
       streamRevision: revision,
       createdAtMs,
       updatedAtMs: null,
@@ -680,6 +696,8 @@ export class MemoryChatPersistence extends BaseChatPersistence implements ChatPe
       author: input.author,
       message,
       mentions: input.mentions,
+      model: input.model,
+      usage: input.usage,
       index: nextIndex,
       streamRevision: revision,
       createdAtMs,
@@ -723,6 +741,8 @@ export class MemoryChatPersistence extends BaseChatPersistence implements ChatPe
       message,
       delta: input.delta,
       mentions: input.mentions ?? record.mentions,
+      model: input.model ?? record.model,
+      usage: input.usage ?? record.usage,
       idempotencyKey: input.idempotencyKey,
       createdAtMs: updatedAtMs,
     };
@@ -731,6 +751,8 @@ export class MemoryChatPersistence extends BaseChatPersistence implements ChatPe
       ...record,
       message,
       mentions: input.mentions ?? record.mentions,
+      model: input.model ?? record.model,
+      usage: input.usage ?? record.usage,
       streamRevision: revision,
       updatedAtMs,
     });
@@ -747,6 +769,8 @@ export class MemoryChatPersistence extends BaseChatPersistence implements ChatPe
       author: record.author,
       message,
       mentions: input.mentions ?? record.mentions,
+      model: input.model ?? record.model,
+      usage: input.usage ?? record.usage,
       index: record.index,
       streamRevision: revision,
       createdAtMs: record.createdAtMs,
@@ -792,6 +816,8 @@ export class MemoryChatPersistence extends BaseChatPersistence implements ChatPe
       author: record.author,
       message: record.message,
       mentions: record.mentions,
+      model: record.model,
+      usage: record.usage,
       previousPostVersionId: previousVersion?.id ?? null,
       previousLineageHash: previousVersion?.lineageHash ?? null,
     });
@@ -807,6 +833,8 @@ export class MemoryChatPersistence extends BaseChatPersistence implements ChatPe
       contentHash: prepared.contentHash,
       lineageHash: prepared.lineageHash,
       mentions: prepared.mentions,
+      model: prepared.model,
+      usage: prepared.usage,
       createdAtMs: prepared.createdAtMs,
     };
     this.versions.set(version.id, version);
@@ -831,6 +859,8 @@ export class MemoryChatPersistence extends BaseChatPersistence implements ChatPe
       revision: completedRevision,
       message: record.message,
       mentions: record.mentions,
+      model: record.model,
+      usage: record.usage,
       createdAtMs: completedAtMs,
     });
     this.posts.set(input.postId, {
@@ -863,6 +893,8 @@ export class MemoryChatPersistence extends BaseChatPersistence implements ChatPe
       revision,
       message: record.message,
       mentions: record.mentions,
+      model: record.model,
+      usage: record.usage,
       createdAtMs: deletedAtMs,
     });
     this.posts.set(input.postId, {

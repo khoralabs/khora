@@ -27,6 +27,8 @@ export type CanonicalPostVersionPayload = {
   parts: unknown[];
   metadata?: unknown;
   mentions?: Mention[];
+  model?: unknown;
+  usage?: unknown;
   parentVersionId?: string | null;
   previousPostVersionId?: string | null;
 };
@@ -41,6 +43,8 @@ export function canonicalPostVersionPayload(input: CanonicalPostVersionPayload):
     parts: input.parts,
     metadata: input.metadata ?? null,
     mentions: input.mentions ?? null,
+    model: input.model ?? null,
+    usage: input.usage ?? null,
     parentVersionId: input.parentVersionId ?? null,
     previousPostVersionId: input.previousPostVersionId ?? null,
   });

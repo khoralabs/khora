@@ -280,6 +280,26 @@
         "@types/bun": "latest",
       },
     },
+    "apps/khoralabs/exedra/workflows/generate-response": {
+      "name": "@khoralabs/exedra-workflows-generate-response",
+      "version": "1.0.0",
+      "dependencies": {
+        "@khoralabs/agent-capabilities": "^0.1.1",
+        "@khoralabs/agent-capabilities-ai-sdk": "^0.1.1",
+        "@khoralabs/agent-capabilities-otel": "^0.1.1",
+        "@khoralabs/chat-core": "workspace:*",
+        "@khoralabs/chat-persistence": "workspace:*",
+        "@khoralabs/chat-persistence-sqlite": "workspace:*",
+        "@khoralabs/exedra-workflows-shared": "workspace:*",
+        "@khoralabs/observability": "workspace:*",
+        "@renderinc/sdk": "^0.6.0",
+        "ai": "^6.0.205",
+        "zod": "^4.2.1",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+    },
     "apps/khoralabs/exedra/workflows/integrate-memory": {
       "name": "@khoralabs/exedra-workflows-integrate-memory",
       "version": "1.0.0",
@@ -1971,6 +1991,8 @@
     "@khoralabs/exedra-interview-agent": ["@khoralabs/exedra-interview-agent@workspace:apps/khoralabs/exedra/packages/interview-agent"],
 
     "@khoralabs/exedra-workflows-facilitation-agent": ["@khoralabs/exedra-workflows-facilitation-agent@workspace:apps/khoralabs/exedra/workflows/facilitation-agent"],
+
+    "@khoralabs/exedra-workflows-generate-response": ["@khoralabs/exedra-workflows-generate-response@workspace:apps/khoralabs/exedra/workflows/generate-response"],
 
     "@khoralabs/exedra-workflows-integrate-memory": ["@khoralabs/exedra-workflows-integrate-memory@workspace:apps/khoralabs/exedra/workflows/integrate-memory"],
 

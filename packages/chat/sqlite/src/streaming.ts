@@ -8,8 +8,10 @@ import type {
   CompleteStreamedPostResult,
   Mention,
   Post,
+  PostModelMetadata,
   PostStatus,
   PostStreamEvent,
+  PostUsage,
   PostVersion,
   ScopeRef,
   StartStreamedPostInput,
@@ -37,6 +39,8 @@ export type PostRow = {
   status: PostStatus;
   stream_message: string | null;
   stream_mentions: string | null;
+  stream_model: string | null;
+  stream_usage: string | null;
   stream_author_scope_type: string | null;
   stream_author_scope_id: string | null;
   stream_revision: number;
@@ -75,6 +79,8 @@ export function postFromRow(
       author: scopeFromRow(row.stream_author_scope_type, row.stream_author_scope_id),
       message,
       mentions: parseJson(row.stream_mentions),
+      model: parseJson(row.stream_model),
+      usage: parseJson(row.stream_usage),
       index: row.post_index,
       streamRevision: row.stream_revision,
       createdAtMs: row.created_at_ms,
@@ -92,6 +98,8 @@ export function postFromRow(
       threadId: row.thread_id,
       author: scopeFromRow(row.stream_author_scope_type, row.stream_author_scope_id),
       mentions: parseJson(row.stream_mentions),
+      model: parseJson(row.stream_model),
+      usage: parseJson(row.stream_usage),
       index: row.post_index,
       streamRevision: row.stream_revision,
       createdAtMs: row.created_at_ms,
@@ -109,7 +117,7 @@ export function postFromRow(
 function getPostRow(db: Database, postId: string): PostRow | null {
   return db
     .prepare(
-      `SELECT id, thread_id, post_index, status, stream_message, stream_mentions,
+      `SELECT id, thread_id, post_index, status, stream_message, stream_mentions, stream_model, stream_usage,
               stream_author_scope_type, stream_author_scope_id, stream_revision,
               completed_version_id, created_at_ms, updated_at_ms, deleted_at_ms
        FROM chat_posts WHERE id = ?`,
@@ -123,8 +131,8 @@ function insertStreamEvent(
 ): void {
   db.prepare(
     `INSERT INTO chat_post_stream_events
-     (id, post_id, thread_id, event_type, revision, message, delta, mentions, idempotency_key, created_at_ms)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     (id, post_id, thread_id, event_type, revision, message, delta, mentions, model, usage, idempotency_key, created_at_ms)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     event.id,
     event.postId,
@@ -134,6 +142,8 @@ function insertStreamEvent(
     event.message ? JSON.stringify(event.message) : null,
     event.delta ? JSON.stringify(event.delta) : null,
     event.mentions ? JSON.stringify(event.mentions) : null,
+    event.model ? JSON.stringify(event.model) : null,
+    event.usage ? JSON.stringify(event.usage) : null,
     event.idempotencyKey ?? null,
     event.createdAtMs,
   );
@@ -154,7 +164,7 @@ function getStreamIdempotency(
 export function sqliteListPostStreamEvents(db: Database, postId: string): PostStreamEvent[] {
   const rows = db
     .prepare(
-      `SELECT id, post_id, thread_id, event_type, revision, message, delta, mentions, idempotency_key, created_at_ms
+      `SELECT id, post_id, thread_id, event_type, revision, message, delta, mentions, model, usage, idempotency_key, created_at_ms
        FROM chat_post_stream_events WHERE post_id = ? ORDER BY revision ASC`,
     )
     .all(postId) as Array<{
@@ -166,6 +176,8 @@ export function sqliteListPostStreamEvents(db: Database, postId: string): PostSt
     message: string | null;
     delta: string | null;
     mentions: string | null;
+    model: string | null;
+    usage: string | null;
     idempotency_key: string | null;
     created_at_ms: number;
   }>;
@@ -178,6 +190,8 @@ export function sqliteListPostStreamEvents(db: Database, postId: string): PostSt
     message: parseJson(row.message),
     delta: parseJson(row.delta),
     mentions: parseJson(row.mentions),
+    model: parseJson(row.model),
+    usage: parseJson(row.usage),
     idempotencyKey: row.idempotency_key ?? undefined,
     createdAtMs: row.created_at_ms,
   }));
@@ -220,16 +234,18 @@ export function sqliteStartStreamedPost(
 
     db.prepare(
       `INSERT INTO chat_posts
-       (id, thread_id, post_index, status, stream_message, stream_mentions,
+       (id, thread_id, post_index, status, stream_message, stream_mentions, stream_model, stream_usage,
         stream_author_scope_type, stream_author_scope_id, stream_revision,
         completed_version_id, created_at_ms, updated_at_ms, deleted_at_ms)
-       VALUES (?, ?, ?, 'streaming', ?, ?, ?, ?, ?, NULL, ?, NULL, NULL)`,
+       VALUES (?, ?, ?, 'streaming', ?, ?, ?, ?, ?, ?, ?, NULL, ?, NULL, NULL)`,
     ).run(
       postId,
       input.threadId,
       nextIndex,
       JSON.stringify(message),
       input.mentions ? JSON.stringify(input.mentions) : null,
+      input.model ? JSON.stringify(input.model) : null,
+      input.usage ? JSON.stringify(input.usage) : null,
       input.author.type,
       input.author.id,
       revision,
@@ -244,6 +260,8 @@ export function sqliteStartStreamedPost(
       revision,
       message,
       mentions: input.mentions,
+      model: input.model,
+      usage: input.usage,
       idempotencyKey: input.idempotencyKey,
       createdAtMs,
     });
@@ -254,6 +272,8 @@ export function sqliteStartStreamedPost(
       author: input.author,
       message,
       mentions: input.mentions,
+      model: input.model,
+      usage: input.usage,
       index: nextIndex,
       streamRevision: revision,
       createdAtMs,
@@ -297,14 +317,18 @@ export function sqliteApplyPostDelta(
     const updatedAtMs = Date.now();
     const message: UIMessage = { ...input.message, id: input.postId };
     const mentions = input.mentions ?? parseJson<Mention[]>(row.stream_mentions);
+    const model = input.model ?? parseJson<PostModelMetadata>(row.stream_model);
+    const usage = input.usage ?? parseJson<PostUsage>(row.stream_usage);
 
     db.prepare(
       `UPDATE chat_posts
-       SET stream_message = ?, stream_mentions = ?, stream_revision = ?, updated_at_ms = ?
+       SET stream_message = ?, stream_mentions = ?, stream_model = ?, stream_usage = ?, stream_revision = ?, updated_at_ms = ?
        WHERE id = ?`,
     ).run(
       JSON.stringify(message),
       mentions ? JSON.stringify(mentions) : null,
+      model ? JSON.stringify(model) : null,
+      usage ? JSON.stringify(usage) : null,
       revision,
       updatedAtMs,
       input.postId,
@@ -319,6 +343,8 @@ export function sqliteApplyPostDelta(
       message,
       delta: input.delta,
       mentions,
+      model,
+      usage,
       idempotencyKey: input.idempotencyKey,
       createdAtMs: updatedAtMs,
     });
@@ -329,6 +355,8 @@ export function sqliteApplyPostDelta(
       author: requireStreamAuthor(row),
       message,
       mentions,
+      model,
+      usage,
       index: row.post_index,
       streamRevision: revision,
       createdAtMs: row.created_at_ms,
@@ -357,6 +385,8 @@ export function sqliteCompleteStreamedPost(
     }
     const message = parseJson<UIMessage>(row.stream_message);
     if (!message) throw new ChatValidationError(`post ${input.postId} has no streamed message`);
+    const model = parseJson<PostModelMetadata>(row.stream_model);
+    const usage = parseJson<PostUsage>(row.stream_usage);
 
     const thread = db
       .prepare("SELECT id, default_head_id FROM chat_threads WHERE id = ?")
@@ -406,6 +436,8 @@ export function sqliteCompleteStreamedPost(
       author: requireStreamAuthor(row),
       message,
       mentions: parseJson(row.stream_mentions),
+      model,
+      usage,
       previousPostVersionId: previousVersion?.id ?? null,
       previousLineageHash: previousVersion?.lineage_hash ?? null,
     });
@@ -413,9 +445,9 @@ export function sqliteCompleteStreamedPost(
     db.prepare(
       `INSERT INTO chat_post_versions
        (id, post_id, thread_id, parent_version_id, previous_post_version_id,
-        author_scope_type, author_scope_id, message, mentions, content_hash, lineage_hash,
+        author_scope_type, author_scope_id, message, mentions, model, usage, content_hash, lineage_hash,
         signature, idempotency_key, created_at_ms)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).run(
       prepared.versionId,
       prepared.postId,
@@ -426,6 +458,8 @@ export function sqliteCompleteStreamedPost(
       prepared.author.id,
       JSON.stringify(prepared.message),
       prepared.mentions ? JSON.stringify(prepared.mentions) : null,
+      prepared.model ? JSON.stringify(prepared.model) : null,
+      prepared.usage ? JSON.stringify(prepared.usage) : null,
       prepared.contentHash,
       prepared.lineageHash,
       null,
@@ -475,12 +509,15 @@ export function sqliteCompleteStreamedPost(
       revision: completedRevision,
       message,
       mentions: parseJson(row.stream_mentions),
+      model,
+      usage,
       createdAtMs: completedAtMs,
     });
 
     db.prepare(
       `UPDATE chat_posts
        SET status = 'complete', stream_message = NULL, stream_mentions = NULL,
+           stream_model = NULL, stream_usage = NULL,
            stream_author_scope_type = NULL, stream_author_scope_id = NULL,
            stream_revision = ?, completed_version_id = ?, updated_at_ms = ?
        WHERE id = ?`,
@@ -497,6 +534,8 @@ export function sqliteCompleteStreamedPost(
       contentHash: prepared.contentHash,
       lineageHash: prepared.lineageHash,
       mentions: prepared.mentions,
+      model: prepared.model,
+      usage: prepared.usage,
       createdAtMs: prepared.createdAtMs,
     };
 
@@ -529,6 +568,8 @@ export function sqliteAbortStreamedPost(
       revision,
       message: parseJson(row.stream_message),
       mentions: parseJson(row.stream_mentions),
+      model: parseJson(row.stream_model),
+      usage: parseJson(row.stream_usage),
       createdAtMs: deletedAtMs,
     });
     db.prepare(
@@ -556,10 +597,12 @@ export function sqliteRebuildStreamedPostCache(
   const rebuilt = rebuildStreamCacheFromEvents(events);
   const updatedAtMs = Date.now();
   db.prepare(
-    `UPDATE chat_posts SET stream_message = ?, stream_mentions = ?, stream_revision = ?, updated_at_ms = ? WHERE id = ?`,
+    `UPDATE chat_posts SET stream_message = ?, stream_mentions = ?, stream_model = ?, stream_usage = ?, stream_revision = ?, updated_at_ms = ? WHERE id = ?`,
   ).run(
     JSON.stringify(rebuilt.message),
     rebuilt.mentions ? JSON.stringify(rebuilt.mentions) : null,
+    rebuilt.model ? JSON.stringify(rebuilt.model) : null,
+    rebuilt.usage ? JSON.stringify(rebuilt.usage) : null,
     rebuilt.revision,
     updatedAtMs,
     postId,
@@ -570,6 +613,8 @@ export function sqliteRebuildStreamedPostCache(
     author: requireStreamAuthor(row),
     message: rebuilt.message,
     mentions: rebuilt.mentions,
+    model: rebuilt.model,
+    usage: rebuilt.usage,
     index: row.post_index,
     streamRevision: rebuilt.revision,
     createdAtMs: row.created_at_ms,

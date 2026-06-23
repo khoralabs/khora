@@ -30,6 +30,8 @@ export type AppendPostInput = {
   author: ScopeRef;
   message: UIMessage;
   mentions?: Mention[];
+  model?: import("./types.ts").PostModelMetadata;
+  usage?: import("./types.ts").PostUsage;
   expectedHeadPostVersionId?: string | null;
   idempotencyKey?: string;
 };
@@ -40,6 +42,8 @@ export type EditPostInput = {
   author: ScopeRef;
   message: UIMessage;
   mentions?: Mention[];
+  model?: import("./types.ts").PostModelMetadata;
+  usage?: import("./types.ts").PostUsage;
   expectedHeadPostVersionId?: string | null;
   idempotencyKey?: string;
 };
@@ -111,6 +115,8 @@ export type StartStreamedPostInput = {
   author: ScopeRef;
   message: UIMessage;
   mentions?: Mention[];
+  model?: import("./types.ts").PostModelMetadata;
+  usage?: import("./types.ts").PostUsage;
   idempotencyKey?: string;
 };
 
@@ -118,6 +124,8 @@ export type ApplyPostDeltaInput = {
   postId: string;
   message: UIMessage;
   mentions?: Mention[];
+  model?: import("./types.ts").PostModelMetadata;
+  usage?: import("./types.ts").PostUsage;
   delta?: JsonObject;
   expectedRevision?: number;
   idempotencyKey?: string;
@@ -198,6 +206,8 @@ export type PreparedAppendPost = {
   author: ScopeRef;
   message: UIMessage;
   mentions?: Mention[];
+  model?: import("./types.ts").PostModelMetadata;
+  usage?: import("./types.ts").PostUsage;
   previousPostVersionId: string | null;
   previousLineageHash: string | null;
   parentVersionId?: string | null;

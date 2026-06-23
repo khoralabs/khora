@@ -197,6 +197,8 @@ function versionFromRow(row: {
   author_scope_id: string;
   message: string;
   mentions: string | null;
+  model: string | null;
+  usage: string | null;
   content_hash: string;
   lineage_hash: string;
   signature: string | null;
@@ -218,6 +220,8 @@ function versionFromRow(row: {
     lineageHash: row.lineage_hash,
     signature: parseSignature(row.signature),
     mentions: parseJson(row.mentions),
+    model: parseJson(row.model),
+    usage: parseJson(row.usage),
     createdAtMs: row.created_at_ms,
   };
 }
@@ -327,7 +331,7 @@ export class SqliteChatPersistence extends BaseChatPersistence implements ChatPe
   async getPost(id: string): Promise<Post | null> {
     const postRow = this.db
       .prepare(
-        `SELECT id, thread_id, post_index, status, stream_message, stream_mentions,
+        `SELECT id, thread_id, post_index, status, stream_message, stream_mentions, stream_model, stream_usage,
                 stream_author_scope_type, stream_author_scope_id, stream_revision,
                 completed_version_id, created_at_ms, updated_at_ms, deleted_at_ms
          FROM chat_posts WHERE id = ?`,
@@ -451,7 +455,7 @@ export class SqliteChatPersistence extends BaseChatPersistence implements ChatPe
 
     const activeRows = this.db
       .prepare(
-        `SELECT id, thread_id, post_index, status, stream_message, stream_mentions,
+        `SELECT id, thread_id, post_index, status, stream_message, stream_mentions, stream_model, stream_usage,
                 stream_author_scope_type, stream_author_scope_id, stream_revision,
                 completed_version_id, created_at_ms, updated_at_ms, deleted_at_ms
          FROM chat_posts
@@ -587,9 +591,9 @@ export class SqliteChatPersistence extends BaseChatPersistence implements ChatPe
         .prepare(
           `INSERT INTO chat_post_versions
            (id, post_id, thread_id, parent_version_id, previous_post_version_id,
-            author_scope_type, author_scope_id, message, mentions, content_hash, lineage_hash,
+            author_scope_type, author_scope_id, message, mentions, model, usage, content_hash, lineage_hash,
             signature, idempotency_key, created_at_ms)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           prepared.versionId,
@@ -601,6 +605,8 @@ export class SqliteChatPersistence extends BaseChatPersistence implements ChatPe
           prepared.author.id,
           JSON.stringify(prepared.message),
           prepared.mentions ? JSON.stringify(prepared.mentions) : null,
+          prepared.model ? JSON.stringify(prepared.model) : null,
+          prepared.usage ? JSON.stringify(prepared.usage) : null,
           prepared.contentHash,
           prepared.lineageHash,
           null,
@@ -762,9 +768,9 @@ export class SqliteChatPersistence extends BaseChatPersistence implements ChatPe
         .prepare(
           `INSERT INTO chat_post_versions
            (id, post_id, thread_id, parent_version_id, previous_post_version_id,
-            author_scope_type, author_scope_id, message, mentions, content_hash, lineage_hash,
+            author_scope_type, author_scope_id, message, mentions, model, usage, content_hash, lineage_hash,
             signature, idempotency_key, created_at_ms)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           prepared.versionId,
@@ -776,6 +782,8 @@ export class SqliteChatPersistence extends BaseChatPersistence implements ChatPe
           prepared.author.id,
           JSON.stringify(prepared.message),
           prepared.mentions ? JSON.stringify(prepared.mentions) : null,
+          prepared.model ? JSON.stringify(prepared.model) : null,
+          prepared.usage ? JSON.stringify(prepared.usage) : null,
           prepared.contentHash,
           prepared.lineageHash,
           null,
