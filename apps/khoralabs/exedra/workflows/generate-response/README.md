@@ -7,6 +7,15 @@ Generic Render workflow for generating an agent response for interview, facilita
 - `generateAgentResponse`: accepts `GenerateResponseWorkflowParams` and returns `GenerateResponseResult`.
 - The workflow builds an agent-capabilities identity, evaluates authz-backed policies, captures the enabled tools, streams through the AI SDK, and writes deltas to `@khoralabs/chat-core`.
 
+Callers should import the request/result contract from this package:
+
+```ts
+import type {
+  GenerateResponseResult,
+  GenerateResponseWorkflowParams,
+} from "@khoralabs/exedra-workflows-generate-response/generate-response-workflow";
+```
+
 ## Environment
 
 - `RENDER_API_KEY=`

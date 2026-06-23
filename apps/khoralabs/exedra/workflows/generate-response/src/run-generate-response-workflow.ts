@@ -13,8 +13,14 @@ import { type AuthzClient, createExedraAuthzClient } from "./authz-client.ts";
 import { createDefaultChatService, createGenerateResponseChatWriter } from "./chat-writer.ts";
 import { normalizeGenerateResponseContext } from "./context.ts";
 import { createExedraInternalClient, type ExedraInternalClient } from "./exedra-internal-client.ts";
-import { createExedraMemoryClient, type MemoryClient } from "./memory-toolkit.ts";
-import { evaluateGenerateResponsePolicies } from "./policies.ts";
+import { evaluateGenerateResponsePolicies } from "./policies/index.ts";
+import {
+  discoverBundledSkills,
+  formatSkillCatalog,
+  selectSkillsByName,
+} from "./skills/registry.ts";
+import { activateSkillByName } from "./tools/activate-skill.ts";
+import { createExedraMemoryClient, type MemoryClient } from "./tools/index.ts";
 import type { GenerateResponseResult, GenerateResponseWorkflowParams } from "./types.ts";
 
 export type RunGenerateResponseDependencies = {
@@ -76,14 +82,25 @@ export async function runGenerateResponseWorkflow(
   };
   const authzClient = deps.authzClient ?? createExedraAuthzClient(getExedraClient());
   const policyState = await evaluateGenerateResponsePolicies(params, authzClient);
+  const allSkills = await discoverBundledSkills();
+  const selectedSkills = selectSkillsByName(allSkills, policyState.skillNames);
   const context = await normalizeGenerateResponseContext(params, policyState);
 
   const registry = getAgentRegistry();
-  const { agent } = await registerGenerateResponseAgent(registry, params, context.instructions);
+  const { agent } = await registerGenerateResponseAgent(registry, allSkills);
   const memoryClient = deps.memoryClient ?? createExedraMemoryClient(getExedraClient());
+  const env = {
+    policyState,
+    memoryClient,
+    skills: selectedSkills,
+    activatedSkillNames: new Set<string>(),
+  };
+  const explicitSkillContents = policyState.skillNames
+    .map((name) => activateSkillByName(env, name).content)
+    .filter((content): content is string => content !== undefined);
   const { capture, aiTools, capabilities } = await captureGenerateResponseCapabilities({
     agent,
-    env: { policyState, memoryClient },
+    env,
     params,
   });
 
@@ -100,7 +117,14 @@ export async function runGenerateResponseWorkflow(
 
     const result = runStreamText({
       model: modelId,
-      system: capture.instructions,
+      system: [
+        capture.instructions,
+        formatSkillCatalog(selectedSkills),
+        ...explicitSkillContents,
+        ...context.instructions,
+      ]
+        .filter((part) => part.length > 0)
+        .join("\n\n"),
       messages: context.modelMessages,
       tools: aiTools,
       maxSteps: params.model.maxSteps,
@@ -146,7 +170,6 @@ export async function runGenerateResponseWorkflow(
 
     return {
       responseId: params.responseId,
-      kind: params.kind,
       chat: {
         threadId: params.output.chat.threadId,
         postId: writer.postId,
@@ -154,6 +177,7 @@ export async function runGenerateResponseWorkflow(
       },
       message,
       summary: params.output.mode === "summary" ? text : undefined,
+      structured: params.output.mode === "investigation" ? { answer: text } : undefined,
       capabilities,
     };
   } catch (error) {

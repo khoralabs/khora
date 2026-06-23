@@ -4,6 +4,13 @@
   "description": "Generic agent response generation - Render Workflows",
   "type": "module",
   "private": true,
+  "exports": {
+    "./generate-response-workflow": {
+      "types": "./src/generate-response-workflow.ts",
+      "import": "./src/generate-response-workflow.ts",
+      "default": "./src/generate-response-workflow.ts"
+    }
+  },
   "scripts": {
     "dev": "render workflows dev -- bun src/main.ts",
     "start": "bun src/main.ts",

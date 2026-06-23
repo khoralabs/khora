@@ -2,15 +2,16 @@ import {
   type AgentRegistry,
   captureAgentSnapshotEnvelope,
   createAgentRegistry,
-  createRegisteredAgent,
   type RegisteredAgent,
 } from "@khoralabs/agent-capabilities";
 import { toolMapToAiTools } from "@khoralabs/agent-capabilities-ai-sdk";
 import { type AgentTelemetry, createAgentTelemetry } from "@khoralabs/agent-capabilities-otel";
 import { createLogger } from "@khoralabs/observability/logger";
 
-import { type GenerateResponseToolkitEnv, memoryToolkit } from "./memory-toolkit.ts";
+import { defineGenerateResponseAgent } from "./agents/index.ts";
 import { meter, tracer } from "./otel.ts";
+import type { SkillRecord } from "./skills/registry.ts";
+import type { GenerateResponseToolkitEnv } from "./tools/types.ts";
 import type { GenerateResponseWorkflowParams } from "./types.ts";
 
 type CaptureEnvelope = Awaited<ReturnType<typeof captureAgentSnapshotEnvelope>>;
@@ -38,37 +39,16 @@ export function resolveGatewayModel(modelId: string): string {
   return id;
 }
 
-export async function defineGenerateResponseAgent(
-  params: GenerateResponseWorkflowParams,
-  instructions: string[],
-): Promise<{ staticHash: string; agent: RegisteredAgent }> {
-  const { staticHash, agent } = await createRegisteredAgent({
-    agentId: params.agent.id,
-    name: params.agent.name,
-    instructions,
-    context: {
-      kind: params.kind,
-      responseId: params.responseId,
-      sessionId: params.context.sessionId,
-      threadId: params.output.chat.threadId,
-      actingFor: params.agent.actingFor,
-    },
-    rootComposable: memoryToolkit,
-  });
-  return { staticHash, agent };
-}
-
 export async function registerGenerateResponseAgent(
   registry: AgentRegistry,
-  params: GenerateResponseWorkflowParams,
-  instructions: string[],
+  skills: SkillRecord[],
 ): Promise<{ staticHash: string; agent: RegisteredAgent }> {
-  if (registry.has(params.agent.id)) {
-    const entry = registry.get(params.agent.id);
-    if (entry === undefined) throw new Error(`registry inconsistency for ${params.agent.id}`);
+  const defined = await defineGenerateResponseAgent(skills);
+  if (registry.has(defined.agent.agentId)) {
+    const entry = registry.get(defined.agent.agentId);
+    if (entry === undefined) throw new Error(`registry inconsistency for ${defined.agent.agentId}`);
     return { staticHash: entry.agent.staticHash, agent: entry.agent };
   }
-  const defined = await defineGenerateResponseAgent(params, instructions);
   await registry.register(defined.agent);
   return defined;
 }
@@ -97,7 +77,7 @@ export async function captureGenerateResponseCapabilities(input: {
     },
     invocationContext: input.params.context.invocationContext ?? {
       responseId: input.params.responseId,
-      kind: input.params.kind,
+      skillNames: input.params.context.directives.skillNames,
     },
     sessionContext: input.params.context.sessionContext ?? {
       sessionId: input.params.context.sessionId,

@@ -1,5 +1,3 @@
-export type GenerateResponseKind = "interview" | "facilitation" | "thread_summary";
-
 export type GenerateResponseUIMessage = {
   id: string;
   role: string;
@@ -7,10 +5,15 @@ export type GenerateResponseUIMessage = {
   metadata?: unknown;
 };
 
+export type GenerateResponseDirectives = {
+  skillNames: string[];
+  instructions?: string[];
+  userTimeZone?: string;
+};
+
 export type GenerateResponseWorkflowParams = {
   jobId?: string;
   responseId: string;
-  kind: GenerateResponseKind;
   agent: {
     id: string;
     name: string;
@@ -28,7 +31,7 @@ export type GenerateResponseWorkflowParams = {
     orgId?: string;
     teamId?: string;
     messages: GenerateResponseUIMessage[];
-    instructions?: string[];
+    directives: GenerateResponseDirectives;
     invocationContext?: Record<string, unknown>;
     sessionContext?: Record<string, unknown>;
   };
@@ -59,7 +62,6 @@ export type GenerateResponseWorkflowParams = {
 
 export type GenerateResponseResult = {
   responseId: string;
-  kind: GenerateResponseKind;
   chat: {
     threadId: string;
     postId: string;

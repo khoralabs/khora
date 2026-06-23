@@ -1,5 +1,6 @@
 export type {
-  GenerateResponseKind,
+  GenerateResponseDirectives,
   GenerateResponseResult,
+  GenerateResponseUIMessage,
   GenerateResponseWorkflowParams,
-} from "../../../shared/generate-response-workflow.ts";
+} from "./generate-response-workflow.ts";

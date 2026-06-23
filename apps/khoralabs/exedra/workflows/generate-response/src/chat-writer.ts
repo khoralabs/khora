@@ -4,7 +4,7 @@ import { MemoryChatPersistence } from "@khoralabs/chat-persistence";
 import { createChatDatabase, SqliteChatPersistence } from "@khoralabs/chat-persistence-sqlite";
 import type { UIMessage } from "ai";
 
-import { type GenerateResponsePolicyState, requireChatWriteAccess } from "./policies.ts";
+import { type GenerateResponsePolicyState, requireChatWriteAccess } from "./policies/index.ts";
 import type { GenerateResponseWorkflowParams } from "./types.ts";
 
 export type GenerateResponseChatWriter = {
