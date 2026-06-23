@@ -1,0 +1,7 @@
+@import "@khoralabs/chat-react/styles/globals.css";
+
+@layer base {
+  body {
+    @apply m-0 min-w-[320px] min-h-screen bg-background text-foreground;
+  }
+}

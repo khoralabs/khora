@@ -15,6 +15,29 @@ import type {
   StartStreamedPostResult,
   ThreadPage,
 } from "@khoralabs/chat-core";
+import {
+  type PostToDisplayOptions,
+  postsToDisplayMessages,
+  postToDisplayMessage,
+} from "./adapters.ts";
+
+export type {
+  AbortStreamedPostInput,
+  AbortStreamedPostResult,
+  AppendPostInput,
+  ApplyPostDeltaInput,
+  ApplyPostDeltaResult,
+  Channel,
+  ChatEvent,
+  CompleteStreamedPostInput,
+  ListPostsInput,
+  ListThreadsInput,
+  Post,
+  PostPage,
+  StartStreamedPostInput,
+  StartStreamedPostResult,
+  ThreadPage,
+} from "@khoralabs/chat-core";
 
 export type ChatClient = {
   getChannel(id: string): Promise<Channel>;
@@ -35,6 +58,8 @@ export function postToUiMessage(post: Post): Post {
 export function postsToUiMessages(posts: Post[]): Post[] {
   return posts;
 }
+
+export { type PostToDisplayOptions, postsToDisplayMessages, postToDisplayMessage };
 
 export function mergePostIntoList(posts: Post[], post: Post): Post[] {
   const index = posts.findIndex((item) => item.id === post.id);

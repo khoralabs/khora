@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { ChatPersistence } from "@khoralabs/chat-core";
 import { lineageBetween } from "@khoralabs/chat-core";
-import { createMemoryChatPersistence } from "./memory-persistence.ts";
 
 export function runChatPersistenceContractTests(
   name: string,
@@ -359,5 +358,3 @@ export function runChatPersistenceContractTests(
     });
   });
 }
-
-runChatPersistenceContractTests("memory", () => createMemoryChatPersistence());

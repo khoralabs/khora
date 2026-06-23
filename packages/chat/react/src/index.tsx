@@ -11,6 +11,29 @@ import {
 import type { ChatClient } from "./client.ts";
 import { mergePostIntoList } from "./client.ts";
 
+export {
+  type DisplayAttachment,
+  type DisplayMessage,
+  type DisplayToolCall,
+  extractTextFromParts,
+  extractToolCallsFromParts,
+  formatPostTimestamp,
+  guessAttachmentMimeType,
+  toolStateForDisplay,
+} from "./adapters.ts";
+export type { ChatClient } from "./client.ts";
+export {
+  mergePostIntoList,
+  postsToDisplayMessages,
+  postsToUiMessages,
+  postToDisplayMessage,
+  postToUiMessage,
+} from "./client.ts";
+export { showAgentLoading, useAgentLoadingIndicator } from "./hooks/use-agent-loading.ts";
+export { useChatDragDrop } from "./hooks/use-chat-drag-drop.ts";
+export { type ScrollTarget, useScrollToPost } from "./hooks/use-scroll-to-post.ts";
+export { scrollAnchorPostId, useThreadScrollPad } from "./hooks/use-thread-scroll-pad.ts";
+
 type ChatContextValue = {
   client: ChatClient;
 };
