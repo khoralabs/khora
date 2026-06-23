@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import type { ChatClient } from "./client.ts";
+import { mergePostIntoList } from "./client.ts";
 
 type ChatContextValue = {
   client: ChatClient;
@@ -114,10 +115,19 @@ export function useThreadPosts(threadId: string) {
 
   useEffect(() => {
     const unsubscribe = client.subscribeToThread?.(threadId, (event) => {
+      if (event.type === "post.stream.started" || event.type === "post.stream.delta") {
+        setPosts((current) => mergePostIntoList(current, event.post));
+        return;
+      }
+      if (event.type === "post.stream.completed") {
+        setPosts((current) => mergePostIntoList(current, event.post));
+        return;
+      }
       if (
         event.type === "post.appended" ||
         event.type === "post.updated" ||
-        event.type === "post.deleted"
+        event.type === "post.deleted" ||
+        event.type === "post.stream.aborted"
       ) {
         void refresh();
       }

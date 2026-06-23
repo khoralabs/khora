@@ -78,21 +78,58 @@ export type PostVersion = Omit<UIMessage, "id"> & {
   createdAtMs: number;
 };
 
-export type Post = UIMessage & {
+export type PostStatus = "streaming" | "complete" | "aborted";
+
+export type PostStreamEventType =
+  | "stream.started"
+  | "stream.delta"
+  | "stream.completed"
+  | "stream.aborted";
+
+export type PostStreamEvent = {
+  id: string;
+  postId: string;
+  threadId: string;
+  eventType: PostStreamEventType;
+  revision: number;
+  message?: UIMessage;
+  delta?: JsonObject;
+  mentions?: Mention[];
+  idempotencyKey?: string;
+  createdAtMs: number;
+};
+
+export type PostBase = UIMessage & {
   threadId: string;
   author: ScopeRef;
-  versionId: string;
-  previousVersionId?: string | null;
-  previousPostVersionId?: string | null;
-  contentHash: string;
-  lineageHash: string;
-  signature?: SignedEnvelope;
   mentions?: Mention[];
   index: number;
   createdAtMs: number;
   updatedAtMs?: number | null;
   deletedAtMs?: number | null;
 };
+
+export type StreamingPost = PostBase & {
+  status: "streaming";
+  streamRevision: number;
+};
+
+export type CommittedPost = PostBase & {
+  status: "complete";
+  versionId: string;
+  previousVersionId?: string | null;
+  previousPostVersionId?: string | null;
+  contentHash: string;
+  lineageHash: string;
+  signature?: SignedEnvelope;
+};
+
+export type AbortedPost = PostBase & {
+  status: "aborted";
+  streamRevision: number;
+};
+
+export type Post = StreamingPost | CommittedPost | AbortedPost;
 
 export type ChannelMember = {
   channelId: string;

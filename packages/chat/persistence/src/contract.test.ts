@@ -115,7 +115,7 @@ export function runChatPersistenceContractTests(
         message: { id: "m1", role: "user", parts: [{ type: "text", text: "draft" }] },
       });
       expect(appended.ok).toBe(true);
-      if (!appended.ok) return;
+      if (!appended.ok || appended.post.status !== "complete") return;
 
       const edited = await persistence.editPost({
         postId: appended.post.id,
@@ -124,7 +124,7 @@ export function runChatPersistenceContractTests(
         message: { id: "m1", role: "user", parts: [{ type: "text", text: "final" }] },
       });
       expect(edited.ok).toBe(true);
-      if (!edited.ok) return;
+      if (!edited.ok || edited.post.status !== "complete") return;
 
       const posts = await persistence.listPosts({ threadId: thread.id });
       expect(posts.items).toHaveLength(1);
@@ -204,7 +204,13 @@ export function runChatPersistenceContractTests(
       const second = await persistence.appendPost(input);
       expect(first.ok).toBe(true);
       expect(second.ok).toBe(true);
-      if (!first.ok || !second.ok) return;
+      if (
+        !first.ok ||
+        !second.ok ||
+        first.post.status !== "complete" ||
+        second.post.status !== "complete"
+      )
+        return;
       expect(second.post.versionId).toBe(first.post.versionId);
       const posts = await persistence.listPosts({ threadId: thread.id });
       expect(posts.items).toHaveLength(1);
@@ -233,7 +239,9 @@ export function runChatPersistenceContractTests(
         expect(result.ok).toBe(true);
         if (!result.ok) return;
         headVersionId = result.head.headPostVersionId;
-        const version = await persistence.getPostVersion(result.post.versionId);
+        const version = await persistence.getPostVersion(
+          result.post.status === "complete" ? result.post.versionId : "",
+        );
         if (version) {
           versions.set(version.id, version);
         }
@@ -244,6 +252,110 @@ export function runChatPersistenceContractTests(
       if (!middle || !headVersionId) return;
       const slice = lineageBetween(headVersionId, middle.id, versions);
       expect(slice?.map((version) => version.postId)).toEqual(["m-b", "m-c"]);
+    });
+
+    test("streams post deltas until completion commits immutable version", async () => {
+      const persistence = await createPersistence();
+      const channel = await persistence.createChannel({});
+      const thread = await persistence.createThread({
+        root: { type: "channel", channelId: channel.id },
+      });
+      const author = { type: "agent", id: "a1" };
+
+      const started = await persistence.startStreamedPost({
+        threadId: thread.id,
+        author,
+        message: {
+          id: "stream-1",
+          role: "assistant",
+          parts: [{ type: "text", text: "hel", state: "streaming" }],
+        },
+      });
+      expect(started.post.status).toBe("streaming");
+      expect(started.revision).toBe(1);
+
+      const listed = await persistence.listPosts({ threadId: thread.id });
+      expect(listed.items).toHaveLength(1);
+      expect(listed.items[0]?.status).toBe("streaming");
+
+      const delta = await persistence.applyPostDelta({
+        postId: started.post.id,
+        message: {
+          id: started.post.id,
+          role: "assistant",
+          parts: [{ type: "text", text: "hello", state: "streaming" }],
+        },
+        expectedRevision: 1,
+      });
+      expect(delta.revision).toBe(2);
+
+      const retry = await persistence.applyPostDelta({
+        postId: started.post.id,
+        message: {
+          id: started.post.id,
+          role: "assistant",
+          parts: [{ type: "text", text: "hello", state: "streaming" }],
+        },
+        idempotencyKey: "delta-retry",
+        expectedRevision: 2,
+      });
+      const retryAgain = await persistence.applyPostDelta({
+        postId: started.post.id,
+        message: {
+          id: started.post.id,
+          role: "assistant",
+          parts: [{ type: "text", text: "hello", state: "streaming" }],
+        },
+        idempotencyKey: "delta-retry",
+        expectedRevision: 2,
+      });
+      expect(retryAgain.revision).toBe(retry.revision);
+
+      const completed = await persistence.completeStreamedPost({
+        postId: started.post.id,
+        expectedRevision: retry.revision,
+      });
+      expect(completed.ok).toBe(true);
+      if (!completed.ok) return;
+      expect(completed.post.status).toBe("complete");
+      expect(completed.post.parts[0]).toEqual({ type: "text", text: "hello", state: "streaming" });
+
+      const events = await persistence.listPostStreamEvents(started.post.id);
+      expect(events.length).toBeGreaterThanOrEqual(3);
+
+      await expect(
+        persistence.applyPostDelta({
+          postId: started.post.id,
+          message: {
+            id: started.post.id,
+            role: "assistant",
+            parts: [{ type: "text", text: "nope" }],
+          },
+        }),
+      ).rejects.toThrow();
+
+      const rebuilt = await persistence.rebuildStreamedPostCache(started.post.id).catch(() => null);
+      expect(rebuilt).toBeNull();
+    });
+
+    test("rebuilds cached stream state from append-only events", async () => {
+      const persistence = await createPersistence();
+      const channel = await persistence.createChannel({});
+      const thread = await persistence.createThread({
+        root: { type: "channel", channelId: channel.id },
+      });
+      const author = { type: "agent", id: "a1" };
+      const started = await persistence.startStreamedPost({
+        threadId: thread.id,
+        author,
+        message: { id: "stream-2", role: "assistant", parts: [{ type: "text", text: "a" }] },
+      });
+      await persistence.applyPostDelta({
+        postId: started.post.id,
+        message: { id: started.post.id, role: "assistant", parts: [{ type: "text", text: "ab" }] },
+      });
+      const rebuilt = await persistence.rebuildStreamedPostCache(started.post.id);
+      expect(rebuilt.parts[0]).toEqual({ type: "text", text: "ab" });
     });
   });
 }

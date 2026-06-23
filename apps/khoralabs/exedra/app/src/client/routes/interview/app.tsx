@@ -3,9 +3,10 @@ import type { ReactNode } from "react";
 import { useCallback, useState } from "react";
 
 import { InterviewCanvas } from "@/components/exedra/interview-canvas";
-import { SessionChat } from "@/components/interview/session-chat";
 import type { SessionCompletePayload } from "@/components/interview/interview-chat-types";
 import { ParticipantInterviewViewer } from "@/components/interview/participant-interview-viewer";
+import { SessionChat } from "@/components/interview/session-chat";
+import type { ThreadKind } from "@/components/interview/thread-chat-types";
 import type { InterviewScrollTarget } from "@/components/interview/use-scroll-to-message";
 import { ShareSessionDialog } from "@/components/sessions/share-session-dialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -25,8 +26,6 @@ import {
   patchBeliefFeedback,
 } from "@/lib/interview-api";
 import type { SessionDetail } from "@/lib/sessions-api";
-
-import type { ThreadKind } from "@/components/interview/thread-chat-types";
 
 import { AppChrome } from "../../shell/app-chrome";
 import { useMobileChromeLayout } from "../../shell/mobile-chrome-layout";

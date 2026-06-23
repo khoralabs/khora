@@ -22,9 +22,30 @@ CREATE TABLE IF NOT EXISTS chat_posts (
   id TEXT PRIMARY KEY,
   thread_id TEXT NOT NULL,
   post_index INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'complete',
+  stream_message TEXT,
+  stream_mentions TEXT,
+  stream_author_scope_type TEXT,
+  stream_author_scope_id TEXT,
+  stream_revision INTEGER NOT NULL DEFAULT 0,
+  completed_version_id TEXT,
   created_at_ms INTEGER NOT NULL,
+  updated_at_ms INTEGER,
   deleted_at_ms INTEGER,
   UNIQUE(thread_id, post_index)
+);
+
+CREATE TABLE IF NOT EXISTS chat_post_stream_events (
+  id TEXT PRIMARY KEY,
+  post_id TEXT NOT NULL,
+  thread_id TEXT NOT NULL,
+  event_type TEXT NOT NULL,
+  revision INTEGER NOT NULL,
+  message TEXT,
+  delta TEXT,
+  mentions TEXT,
+  idempotency_key TEXT UNIQUE,
+  created_at_ms INTEGER NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS chat_post_versions (
@@ -90,6 +111,7 @@ CREATE INDEX IF NOT EXISTS idx_chat_threads_root ON chat_threads(root_type, root
 CREATE INDEX IF NOT EXISTS idx_chat_post_versions_thread ON chat_post_versions(thread_id);
 CREATE INDEX IF NOT EXISTS idx_chat_post_versions_post ON chat_post_versions(post_id);
 CREATE INDEX IF NOT EXISTS idx_chat_posts_thread ON chat_posts(thread_id, post_index);
+CREATE INDEX IF NOT EXISTS idx_chat_post_stream_events_post ON chat_post_stream_events(post_id, revision);
 `;
 
 export function ensureChatSqliteSchema(db: DatabaseType, busyTimeoutMs = 5000): void {

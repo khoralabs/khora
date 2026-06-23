@@ -31,6 +31,7 @@ import {
   ChatNotFoundError,
   ChatValidationError,
   createId,
+  mergeThreadPostsForList,
   postFromVersion,
   walkLineageFromHead,
 } from "@khoralabs/chat-core";
@@ -40,6 +41,16 @@ import {
   prepareAppendPost,
   prepareEditPost,
 } from "@khoralabs/chat-persistence";
+import {
+  type PostRow,
+  postFromRow,
+  sqliteAbortStreamedPost,
+  sqliteApplyPostDelta,
+  sqliteCompleteStreamedPost,
+  sqliteListPostStreamEvents,
+  sqliteRebuildStreamedPostCache,
+  sqliteStartStreamedPost,
+} from "./streaming.ts";
 
 const DEFAULT_HEAD_NAME = "default";
 
@@ -216,6 +227,13 @@ export class SqliteChatPersistence extends BaseChatPersistence implements ChatPe
     super();
   }
 
+  private getPostVersionSync(id: string): PostVersion | null {
+    const row = this.db.prepare("SELECT * FROM chat_post_versions WHERE id = ?").get(id) as
+      | Parameters<typeof versionFromRow>[0]
+      | null;
+    return row ? versionFromRow(row) : null;
+  }
+
   async createChannel(input: CreateChannelInput): Promise<Channel> {
     const channel: Channel = {
       id: input.id ?? createId(),
@@ -309,27 +327,14 @@ export class SqliteChatPersistence extends BaseChatPersistence implements ChatPe
   async getPost(id: string): Promise<Post | null> {
     const postRow = this.db
       .prepare(
-        "SELECT id, thread_id, post_index, created_at_ms, deleted_at_ms FROM chat_posts WHERE id = ?",
+        `SELECT id, thread_id, post_index, status, stream_message, stream_mentions,
+                stream_author_scope_type, stream_author_scope_id, stream_revision,
+                completed_version_id, created_at_ms, updated_at_ms, deleted_at_ms
+         FROM chat_posts WHERE id = ?`,
       )
-      .get(id) as {
-      id: string;
-      thread_id: string;
-      post_index: number;
-      created_at_ms: number;
-      deleted_at_ms: number | null;
-    } | null;
+      .get(id) as PostRow | null;
     if (!postRow) return null;
-
-    const versionRow = this.db
-      .prepare(
-        `SELECT * FROM chat_post_versions
-         WHERE post_id = ?
-         ORDER BY created_at_ms DESC
-         LIMIT 1`,
-      )
-      .get(id) as Parameters<typeof versionFromRow>[0] | null;
-    if (!versionRow) return null;
-    return postFromVersion(versionFromRow(versionRow), postRow.post_index, postRow.deleted_at_ms);
+    return postFromRow(postRow, (versionId) => this.getPostVersionSync(versionId));
   }
 
   async getPostVersion(id: string): Promise<PostVersion | null> {
@@ -423,33 +428,52 @@ export class SqliteChatPersistence extends BaseChatPersistence implements ChatPe
           createdAtMs: 0,
         } satisfies ThreadHead)
       : await this.getThreadHead(input.threadId, input.headId ?? thread.defaultHeadId ?? undefined);
-    if (!head) return { items: [], nextCursor: null };
 
     const versionRows = this.db
       .prepare("SELECT * FROM chat_post_versions WHERE thread_id = ?")
       .all(input.threadId) as Array<Parameters<typeof versionFromRow>[0]>;
     const versionsById = new Map(versionRows.map((row) => [row.id, versionFromRow(row)]));
-    const lineage = walkLineageFromHead(head.headPostVersionId, versionsById);
+
+    const lineagePosts = head
+      ? walkLineageFromHead(head.headPostVersionId, versionsById).flatMap((version) => {
+          const postRow = this.db
+            .prepare("SELECT post_index, deleted_at_ms FROM chat_posts WHERE id = ?")
+            .get(version.postId) as { post_index: number; deleted_at_ms: number | null } | null;
+          if (!postRow) return [];
+          return [
+            {
+              index: postRow.post_index,
+              post: postFromVersion(version, postRow.post_index, postRow.deleted_at_ms),
+            },
+          ];
+        })
+      : [];
+
+    const activeRows = this.db
+      .prepare(
+        `SELECT id, thread_id, post_index, status, stream_message, stream_mentions,
+                stream_author_scope_type, stream_author_scope_id, stream_revision,
+                completed_version_id, created_at_ms, updated_at_ms, deleted_at_ms
+         FROM chat_posts
+         WHERE thread_id = ? AND status != 'complete'
+         ORDER BY post_index ASC`,
+      )
+      .all(input.threadId) as PostRow[];
+
+    const activePosts = activeRows
+      .map((row) => postFromRow(row, (versionId) => this.getPostVersionSync(versionId)))
+      .filter(
+        (post): post is Extract<Post, { status: "streaming" | "aborted" }> =>
+          post !== null && (post.status === "streaming" || post.status === "aborted"),
+      );
+
+    const merged = mergeThreadPostsForList(lineagePosts, activePosts);
     const limit = input.limit ?? 50;
     const start = input.cursor ? Number.parseInt(input.cursor, 10) : 0;
-    const slice = lineage.slice(start, start + limit);
-
-    const postIndexStmt = this.db.prepare(
-      "SELECT post_index, deleted_at_ms FROM chat_posts WHERE id = ?",
-    );
-
-    const items = slice.map((version) => {
-      const postRow = postIndexStmt.get(version.postId) as {
-        post_index: number;
-        deleted_at_ms: number | null;
-      } | null;
-      if (!postRow) throw new ChatNotFoundError("post", version.postId);
-      return postFromVersion(version, postRow.post_index, postRow.deleted_at_ms);
-    });
-
+    const items = merged.slice(start, start + limit);
     return {
       items,
-      nextCursor: start + limit < lineage.length ? String(start + limit) : null,
+      nextCursor: start + limit < merged.length ? String(start + limit) : null,
     };
   }
 
@@ -546,10 +570,18 @@ export class SqliteChatPersistence extends BaseChatPersistence implements ChatPe
 
       this.db
         .prepare(
-          `INSERT INTO chat_posts (id, thread_id, post_index, created_at_ms, deleted_at_ms)
-           VALUES (?, ?, ?, ?, ?)`,
+          `INSERT INTO chat_posts
+           (id, thread_id, post_index, status, stream_revision, completed_version_id,
+            created_at_ms, updated_at_ms, deleted_at_ms)
+           VALUES (?, ?, ?, 'complete', 0, ?, ?, NULL, NULL)`,
         )
-        .run(prepared.postId, prepared.threadId, nextIndex, prepared.createdAtMs, null);
+        .run(
+          prepared.postId,
+          prepared.threadId,
+          nextIndex,
+          prepared.versionId,
+          prepared.createdAtMs,
+        );
 
       this.db
         .prepare(
@@ -1061,6 +1093,36 @@ export class SqliteChatPersistence extends BaseChatPersistence implements ChatPe
         event.signature ? JSON.stringify(event.signature) : null,
         event.createdAtMs,
       );
+  }
+
+  async listPostStreamEvents(postId: string) {
+    return sqliteListPostStreamEvents(this.db, postId);
+  }
+
+  async startStreamedPost(input: import("@khoralabs/chat-core").StartStreamedPostInput) {
+    return sqliteStartStreamedPost(this.db, input, (versionId) =>
+      this.getPostVersionSync(versionId),
+    );
+  }
+
+  async applyPostDelta(input: import("@khoralabs/chat-core").ApplyPostDeltaInput) {
+    return sqliteApplyPostDelta(this.db, input, (versionId) => this.getPostVersionSync(versionId));
+  }
+
+  async completeStreamedPost(input: import("@khoralabs/chat-core").CompleteStreamedPostInput) {
+    return sqliteCompleteStreamedPost(this.db, input);
+  }
+
+  async abortStreamedPost(input: import("@khoralabs/chat-core").AbortStreamedPostInput) {
+    return sqliteAbortStreamedPost(this.db, input, (versionId) =>
+      this.getPostVersionSync(versionId),
+    );
+  }
+
+  async rebuildStreamedPostCache(postId: string) {
+    return sqliteRebuildStreamedPostCache(this.db, postId, (versionId) =>
+      this.getPostVersionSync(versionId),
+    );
   }
 }
 

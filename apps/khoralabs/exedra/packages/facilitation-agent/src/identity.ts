@@ -1,4 +1,8 @@
-import { createRegisteredAgent, type AgentRegistry, type RegisteredAgent } from "@khoralabs/agent-capabilities";
+import {
+  type AgentRegistry,
+  createRegisteredAgent,
+  type RegisteredAgent,
+} from "@khoralabs/agent-capabilities";
 
 import { facilitationBaseInstruction } from "./instructions.ts";
 import { facilitationToolkit } from "./toolkit.ts";

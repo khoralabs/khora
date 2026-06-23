@@ -4,10 +4,7 @@ import { Button } from "@/components/ui/button";
 
 import { InterviewChatHeader } from "./interview-chat-header";
 import type { InterviewChatProps } from "./interview-chat-types";
-import {
-  FacilitationThreadPanel,
-  InterviewThreadPanel,
-} from "./thread-chat-panel";
+import { FacilitationThreadPanel, InterviewThreadPanel } from "./thread-chat-panel";
 import type { ThreadKind } from "./thread-chat-types";
 
 type SessionChatProps = InterviewChatProps & {

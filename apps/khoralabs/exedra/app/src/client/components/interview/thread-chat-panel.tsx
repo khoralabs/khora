@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-
 import type { ChatStatus } from "ai";
+import { useEffect, useRef, useState } from "react";
 import { Spinner } from "@/components/ui/spinner";
 import { extractChatDocuments, type InterviewBootstrap } from "@/lib/interview-api";
 
@@ -126,9 +125,7 @@ export function InterviewThreadPanel({
       onStop={stopTurn}
       onSubmit={submitTurn}
       onTextChange={handleTextChange}
-      placeholder={
-        sessionComplete ? "Review beliefs or ask a follow-up…" : "Share your thoughts…"
-      }
+      placeholder={sessionComplete ? "Review beliefs or ask a follow-up…" : "Share your thoughts…"}
       readOnlyMessage="Read-only interview access"
       sessionId={sessionId}
       status={status}

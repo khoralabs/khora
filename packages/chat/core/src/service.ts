@@ -1,10 +1,17 @@
 import type {
+  AbortStreamedPostInput,
+  AbortStreamedPostResult,
+  ApplyPostDeltaInput,
+  ApplyPostDeltaResult,
   Channel,
   ChatAclEvent,
   ChatEvent,
+  CompleteStreamedPostInput,
   Post,
   PostPage,
   ScopeRef,
+  StartStreamedPostInput,
+  StartStreamedPostResult,
   Thread,
   ThreadHead,
   ThreadPage,
@@ -59,6 +66,10 @@ export type ChatService = {
   }): Promise<ThreadHead>;
   listChannelMembers(channelId: string): Promise<ScopeRef[]>;
   listThreadParticipants(threadId: string): Promise<ScopeRef[]>;
+  startStreamedPost(input: StartStreamedPostInput): Promise<StartStreamedPostResult>;
+  applyPostDelta(input: ApplyPostDeltaInput): Promise<ApplyPostDeltaResult>;
+  completeStreamedPost(input: CompleteStreamedPostInput): Promise<{ post: Post; head: ThreadHead }>;
+  abortStreamedPost(input: AbortStreamedPostInput): Promise<AbortStreamedPostResult["post"]>;
 };
 
 export function createChatService(
@@ -175,5 +186,65 @@ export function createChatService(
     createThreadHead: (input) => persistence.createThreadHead(input),
     listChannelMembers: (channelId) => persistence.listChannelMembers(channelId),
     listThreadParticipants: (threadId) => persistence.listThreadParticipants(threadId),
+
+    async startStreamedPost(input) {
+      const result = await persistence.startStreamedPost(input);
+      emit({
+        type: "post.stream.started",
+        threadId: input.threadId,
+        post: result.post,
+        revision: result.revision,
+      });
+      return result;
+    },
+
+    async applyPostDelta(input) {
+      const record = await persistence.getPost(input.postId);
+      if (!record) throw new ChatNotFoundError("post", input.postId);
+      const result = await persistence.applyPostDelta(input);
+      emit({
+        type: "post.stream.delta",
+        threadId: record.threadId,
+        post: result.post,
+        revision: result.revision,
+      });
+      return result;
+    },
+
+    async completeStreamedPost(input) {
+      const record = await persistence.getPost(input.postId);
+      if (!record) throw new ChatNotFoundError("post", input.postId);
+      const streamRevision =
+        record.status === "streaming" ? record.streamRevision : input.expectedRevision;
+      const result = await persistence.completeStreamedPost(input);
+      if (!result.ok) {
+        throw new ChatConflictError(
+          "head_conflict",
+          `head conflict during stream completion: current ${result.currentHead.headPostVersionId}`,
+        );
+      }
+      emit({
+        type: "post.stream.completed",
+        threadId: record.threadId,
+        post: result.post,
+        head: result.head,
+        revision: typeof streamRevision === "number" ? streamRevision + 1 : 0,
+      });
+      return { post: result.post, head: result.head };
+    },
+
+    async abortStreamedPost(input) {
+      const record = await persistence.getPost(input.postId);
+      if (!record) throw new ChatNotFoundError("post", input.postId);
+      const result = await persistence.abortStreamedPost(input);
+      emit({
+        type: "post.stream.aborted",
+        threadId: record.threadId,
+        postId: input.postId,
+        revision: result.post.streamRevision,
+        deletedAtMs: result.post.deletedAtMs ?? Date.now(),
+      });
+      return result.post;
+    },
   };
 }

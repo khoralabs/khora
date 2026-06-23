@@ -102,6 +102,53 @@ export type EditPostResult =
   | { ok: true; post: Post; head: ThreadHead }
   | { ok: false; reason: "head_conflict"; currentHead: ThreadHead };
 
+export type CompleteStreamedPostResult =
+  | { ok: true; post: import("./types.ts").CommittedPost; head: ThreadHead }
+  | { ok: false; reason: "head_conflict"; currentHead: ThreadHead };
+
+export type StartStreamedPostInput = {
+  threadId: string;
+  author: ScopeRef;
+  message: UIMessage;
+  mentions?: Mention[];
+  idempotencyKey?: string;
+};
+
+export type ApplyPostDeltaInput = {
+  postId: string;
+  message: UIMessage;
+  mentions?: Mention[];
+  delta?: JsonObject;
+  expectedRevision?: number;
+  idempotencyKey?: string;
+};
+
+export type CompleteStreamedPostInput = {
+  postId: string;
+  expectedRevision?: number;
+  expectedHeadPostVersionId?: string | null;
+  idempotencyKey?: string;
+};
+
+export type AbortStreamedPostInput = {
+  postId: string;
+  deletedAtMs?: number;
+};
+
+export type StartStreamedPostResult = {
+  post: import("./types.ts").StreamingPost;
+  revision: number;
+};
+
+export type ApplyPostDeltaResult = {
+  post: import("./types.ts").StreamingPost;
+  revision: number;
+};
+
+export type AbortStreamedPostResult = {
+  post: import("./types.ts").AbortedPost;
+};
+
 export type ChatReadPersistence = {
   getChannel(id: string): Promise<Channel | null>;
   getThread(id: string): Promise<Thread | null>;
@@ -117,6 +164,7 @@ export type ChatReadPersistence = {
     threadId?: string;
     limit?: number;
   }): Promise<ChatAclEvent[]>;
+  listPostStreamEvents(postId: string): Promise<import("./types.ts").PostStreamEvent[]>;
 };
 
 export type ChatWritePersistence = {
@@ -134,6 +182,11 @@ export type ChatWritePersistence = {
     name: string;
     headPostVersionId: string;
   }): Promise<ThreadHead>;
+  startStreamedPost(input: StartStreamedPostInput): Promise<StartStreamedPostResult>;
+  applyPostDelta(input: ApplyPostDeltaInput): Promise<ApplyPostDeltaResult>;
+  completeStreamedPost(input: CompleteStreamedPostInput): Promise<CompleteStreamedPostResult>;
+  abortStreamedPost(input: AbortStreamedPostInput): Promise<AbortStreamedPostResult>;
+  rebuildStreamedPostCache(postId: string): Promise<import("./types.ts").StreamingPost>;
 };
 
 export type ChatPersistence = ChatReadPersistence & ChatWritePersistence;

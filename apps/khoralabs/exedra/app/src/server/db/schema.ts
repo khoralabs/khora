@@ -539,9 +539,7 @@ function migrateSessionsAddLinkAccess(db: Database): void {
 function migrateSessionsAddLinkGrantRole(db: Database): void {
   const columns = db.query<{ name: string }, []>("PRAGMA table_info(sessions)").all();
   if (columns.some((column) => column.name === "link_grant_role")) return;
-  db.run(
-    `ALTER TABLE sessions ADD COLUMN link_grant_role TEXT NOT NULL DEFAULT 'participant'`,
-  );
+  db.run(`ALTER TABLE sessions ADD COLUMN link_grant_role TEXT NOT NULL DEFAULT 'participant'`);
 }
 
 function migrateOrgsAddIdentityEncrypted(db: Database): void {

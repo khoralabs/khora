@@ -1,4 +1,4 @@
-import type { Post, PostVersion } from "./types.ts";
+import type { CommittedPost, PostVersion } from "./types.ts";
 
 export function walkLineageFromHead<
   T extends Pick<PostVersion, "id" | "postId" | "previousPostVersionId">,
@@ -35,10 +35,11 @@ export function postFromVersion(
   version: PostVersion,
   index: number,
   deletedAtMs?: number | null,
-): Post {
+): CommittedPost {
   return {
     ...version,
     id: version.postId,
+    status: "complete",
     versionId: version.id,
     previousVersionId: version.parentVersionId ?? null,
     index,

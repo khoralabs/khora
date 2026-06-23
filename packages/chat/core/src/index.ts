@@ -5,5 +5,6 @@ export * from "./ids.ts";
 export * from "./lineage.ts";
 export * from "./persistence-port.ts";
 export * from "./service.ts";
+export * from "./stream.ts";
 export * from "./types.ts";
 export * from "./validation.ts";

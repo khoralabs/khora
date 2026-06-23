@@ -21,9 +21,12 @@ export class ChatNotFoundError extends ChatError {
 }
 
 export class ChatConflictError extends ChatError {
-  readonly reason: "head_conflict" | "idempotency_mismatch";
+  readonly reason: "head_conflict" | "idempotency_mismatch" | "stream_revision_conflict";
 
-  constructor(reason: "head_conflict" | "idempotency_mismatch", message: string) {
+  constructor(
+    reason: "head_conflict" | "idempotency_mismatch" | "stream_revision_conflict",
+    message: string,
+  ) {
     super("conflict", message);
     this.name = "ChatConflictError";
     this.reason = reason;

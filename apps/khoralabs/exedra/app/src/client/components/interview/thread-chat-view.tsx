@@ -1,8 +1,7 @@
+import type { MessageAuthor } from "@shared/messages/author";
 import type { ChatStatus } from "ai";
 import type { RefObject } from "react";
-
 import type { PromptInputMessage } from "@/components/ai-elements/prompt-input";
-import type { MessageAuthor } from "@shared/messages/author";
 
 import type { ChatMessage } from "@/lib/interview-api";
 import { cn } from "@/lib/utils";

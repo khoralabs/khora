@@ -1,11 +1,17 @@
 import type {
+  AbortStreamedPostInput,
+  AbortStreamedPostResult,
   AddChannelMemberInput,
   AddThreadParticipantInput,
   AppendPostInput,
   AppendPostResult,
+  ApplyPostDeltaInput,
+  ApplyPostDeltaResult,
   Channel,
   ChatAclEvent,
   ChatPersistence,
+  CompleteStreamedPostInput,
+  CompleteStreamedPostResult,
   CreateChannelInput,
   CreateThreadInput,
   DeletePostInput,
@@ -13,12 +19,17 @@ import type {
   EditPostResult,
   ListPostsInput,
   ListThreadsInput,
+  Mention,
   Post,
   PostPage,
+  PostStatus,
+  PostStreamEvent,
   PostVersion,
   RemoveChannelMemberInput,
   RemoveThreadParticipantInput,
   ScopeRef,
+  StartStreamedPostInput,
+  StartStreamedPostResult,
   Thread,
   ThreadHead,
   ThreadPage,
@@ -26,16 +37,35 @@ import type {
 import {
   ChatConflictError,
   ChatNotFoundError,
+  ChatValidationError,
   createId,
+  mergeThreadPostsForList,
   postFromVersion,
+  rebuildStreamCacheFromEvents,
   scopeKey,
   scopeRefFromKey,
+  streamingPostFromCache,
   walkLineageFromHead,
 } from "@khoralabs/chat-core";
+import type { UIMessage } from "ai";
 import { BaseChatPersistence } from "./base-persistence.ts";
 import { buildAclEventContentHash, prepareAppendPost, prepareEditPost } from "./helpers.ts";
 
 const DEFAULT_HEAD_NAME = "default";
+
+type PostRecord = {
+  threadId: string;
+  index: number;
+  status: PostStatus;
+  author: ScopeRef;
+  message?: UIMessage;
+  mentions?: Mention[];
+  streamRevision: number;
+  completedVersionId?: string | null;
+  createdAtMs: number;
+  updatedAtMs?: number | null;
+  deletedAtMs?: number | null;
+};
 
 type IdempotencyRecord = {
   kind: "append" | "edit";
@@ -46,8 +76,13 @@ type IdempotencyRecord = {
 export class MemoryChatPersistence extends BaseChatPersistence implements ChatPersistence {
   private readonly channels = new Map<string, Channel>();
   private readonly threads = new Map<string, Thread>();
-  private readonly posts = new Map<string, { index: number; deletedAtMs?: number | null }>();
+  private readonly posts = new Map<string, PostRecord>();
   private readonly versions = new Map<string, PostVersion>();
+  private readonly streamEvents: PostStreamEvent[] = [];
+  private readonly streamIdempotency = new Map<
+    string,
+    { postId: string; revision: number; eventId: string }
+  >();
   private readonly heads = new Map<string, ThreadHead>();
   private readonly channelMembers = new Map<
     string,
@@ -99,14 +134,51 @@ export class MemoryChatPersistence extends BaseChatPersistence implements ChatPe
     return this.threads.get(id) ?? null;
   }
 
+  private postFromRecord(postId: string, record: PostRecord): Post | null {
+    if (record.status === "streaming") {
+      if (!record.message) return null;
+      return streamingPostFromCache({
+        postId,
+        threadId: record.threadId,
+        author: record.author,
+        message: record.message,
+        mentions: record.mentions,
+        index: record.index,
+        streamRevision: record.streamRevision,
+        createdAtMs: record.createdAtMs,
+        updatedAtMs: record.updatedAtMs,
+        deletedAtMs: record.deletedAtMs,
+      });
+    }
+    if (record.status === "aborted") {
+      if (!record.message) return null;
+      return {
+        ...record.message,
+        id: postId,
+        status: "aborted",
+        threadId: record.threadId,
+        author: record.author,
+        mentions: record.mentions,
+        index: record.index,
+        streamRevision: record.streamRevision,
+        createdAtMs: record.createdAtMs,
+        updatedAtMs: record.updatedAtMs,
+        deletedAtMs: record.deletedAtMs,
+      };
+    }
+    const version = record.completedVersionId
+      ? this.versions.get(record.completedVersionId)
+      : [...this.versions.values()]
+          .filter((item) => item.postId === postId)
+          .sort((a, b) => b.createdAtMs - a.createdAtMs)[0];
+    if (!version) return null;
+    return postFromVersion(version, record.index, record.deletedAtMs);
+  }
+
   async getPost(id: string): Promise<Post | null> {
     const record = this.posts.get(id);
     if (!record) return null;
-    const latestVersion = [...this.versions.values()]
-      .filter((version) => version.postId === id)
-      .sort((a, b) => b.createdAtMs - a.createdAtMs)[0];
-    if (!latestVersion) return null;
-    return postFromVersion(latestVersion, record.index, record.deletedAtMs);
+    return this.postFromRecord(id, record);
   }
 
   async getPostVersion(id: string): Promise<PostVersion | null> {
@@ -152,18 +224,29 @@ export class MemoryChatPersistence extends BaseChatPersistence implements ChatPe
           createdAtMs: 0,
         } satisfies ThreadHead)
       : await this.getThreadHead(input.threadId, input.headId ?? thread.defaultHeadId ?? undefined);
-    if (!head) return { items: [], nextCursor: null };
 
-    const lineage = walkLineageFromHead(head.headPostVersionId, this.versions);
+    const lineagePosts = head
+      ? walkLineageFromHead(head.headPostVersionId, this.versions).flatMap((version) => {
+          const record = this.posts.get(version.postId);
+          if (!record) return [];
+          const post = postFromVersion(version, record.index, record.deletedAtMs);
+          return [{ index: record.index, post }];
+        })
+      : [];
+
+    const activePosts = [...this.posts.entries()]
+      .filter(([, record]) => record.threadId === input.threadId && record.status !== "complete")
+      .map(([postId, record]) => this.postFromRecord(postId, record))
+      .filter(
+        (post): post is Extract<Post, { status: "streaming" | "aborted" }> =>
+          post !== null && (post.status === "streaming" || post.status === "aborted"),
+      );
+
+    const merged = mergeThreadPostsForList(lineagePosts, activePosts);
     const limit = input.limit ?? 50;
     const start = input.cursor ? Number.parseInt(input.cursor, 10) : 0;
-    const slice = lineage.slice(start, start + limit);
-    const items = slice.map((version) => {
-      const record = this.posts.get(version.postId);
-      if (!record) throw new ChatNotFoundError("post", version.postId);
-      return postFromVersion(version, record.index, record.deletedAtMs);
-    });
-    const nextCursor = start + limit < lineage.length ? String(start + limit) : null;
+    const items = merged.slice(start, start + limit);
+    const nextCursor = start + limit < merged.length ? String(start + limit) : null;
     return { items, nextCursor };
   }
 
@@ -213,7 +296,17 @@ export class MemoryChatPersistence extends BaseChatPersistence implements ChatPe
       createdAtMs: prepared.createdAtMs,
     };
 
-    this.posts.set(prepared.postId, { index: nextIndex });
+    this.posts.set(prepared.postId, {
+      threadId: input.threadId,
+      index: nextIndex,
+      status: "complete",
+      author: prepared.author,
+      streamRevision: 0,
+      completedVersionId: version.id,
+      createdAtMs: prepared.createdAtMs,
+      updatedAtMs: null,
+      deletedAtMs: null,
+    });
     this.versions.set(version.id, version);
 
     const head: ThreadHead = {
@@ -332,11 +425,10 @@ export class MemoryChatPersistence extends BaseChatPersistence implements ChatPe
 
   async deletePost(input: DeletePostInput): Promise<Post> {
     const post = await this.requirePost(input.postId);
+    const record = this.posts.get(input.postId);
+    if (!record) throw new ChatNotFoundError("post", input.postId);
     const deletedAtMs = input.deletedAtMs ?? Date.now();
-    this.posts.set(input.postId, {
-      index: post.index,
-      deletedAtMs,
-    });
+    this.posts.set(input.postId, { ...record, deletedAtMs });
     return { ...post, deletedAtMs };
   }
 
@@ -524,6 +616,298 @@ export class MemoryChatPersistence extends BaseChatPersistence implements ChatPe
       );
     }
     return events.slice(0, input.limit ?? events.length);
+  }
+
+  async listPostStreamEvents(postId: string): Promise<PostStreamEvent[]> {
+    return this.streamEvents
+      .filter((event) => event.postId === postId)
+      .sort((a, b) => a.revision - b.revision);
+  }
+
+  async startStreamedPost(input: StartStreamedPostInput): Promise<StartStreamedPostResult> {
+    if (input.idempotencyKey) {
+      const existing = this.streamIdempotency.get(input.idempotencyKey);
+      if (existing) {
+        const post = await this.getPost(existing.postId);
+        if (post?.status !== "streaming") {
+          throw new ChatConflictError("idempotency_mismatch", "idempotency key reused");
+        }
+        return { post, revision: existing.revision };
+      }
+    }
+
+    await this.requireThread(input.threadId);
+    const postId = input.message.id || createId();
+    const nextIndex = (this.threadIndexes.get(input.threadId) ?? 0) + 1;
+    this.threadIndexes.set(input.threadId, nextIndex);
+    const createdAtMs = Date.now();
+    const message: UIMessage = { ...input.message, id: postId };
+    const revision = 1;
+    const event: PostStreamEvent = {
+      id: createId(),
+      postId,
+      threadId: input.threadId,
+      eventType: "stream.started",
+      revision,
+      message,
+      mentions: input.mentions,
+      idempotencyKey: input.idempotencyKey,
+      createdAtMs,
+    };
+    this.streamEvents.push(event);
+    this.posts.set(postId, {
+      threadId: input.threadId,
+      index: nextIndex,
+      status: "streaming",
+      author: input.author,
+      message,
+      mentions: input.mentions,
+      streamRevision: revision,
+      createdAtMs,
+      updatedAtMs: null,
+      deletedAtMs: null,
+    });
+    if (input.idempotencyKey) {
+      this.streamIdempotency.set(input.idempotencyKey, {
+        postId,
+        revision,
+        eventId: event.id,
+      });
+    }
+    const post = streamingPostFromCache({
+      postId,
+      threadId: input.threadId,
+      author: input.author,
+      message,
+      mentions: input.mentions,
+      index: nextIndex,
+      streamRevision: revision,
+      createdAtMs,
+    });
+    return { post, revision };
+  }
+
+  async applyPostDelta(input: ApplyPostDeltaInput): Promise<ApplyPostDeltaResult> {
+    if (input.idempotencyKey) {
+      const existing = this.streamIdempotency.get(input.idempotencyKey);
+      if (existing && existing.postId === input.postId) {
+        const post = await this.getPost(input.postId);
+        if (post?.status !== "streaming") {
+          throw new ChatConflictError("idempotency_mismatch", "idempotency key reused");
+        }
+        return { post, revision: existing.revision };
+      }
+    }
+
+    const record = this.posts.get(input.postId);
+    if (!record) throw new ChatNotFoundError("post", input.postId);
+    if (record.status !== "streaming") {
+      throw new ChatValidationError(`post ${input.postId} is not streaming`);
+    }
+    if (input.expectedRevision !== undefined && record.streamRevision !== input.expectedRevision) {
+      throw new ChatConflictError(
+        "stream_revision_conflict",
+        `expected revision ${input.expectedRevision}, current ${record.streamRevision}`,
+      );
+    }
+
+    const revision = record.streamRevision + 1;
+    const updatedAtMs = Date.now();
+    const message: UIMessage = { ...input.message, id: input.postId };
+    const event: PostStreamEvent = {
+      id: createId(),
+      postId: input.postId,
+      threadId: record.threadId,
+      eventType: "stream.delta",
+      revision,
+      message,
+      delta: input.delta,
+      mentions: input.mentions ?? record.mentions,
+      idempotencyKey: input.idempotencyKey,
+      createdAtMs: updatedAtMs,
+    };
+    this.streamEvents.push(event);
+    this.posts.set(input.postId, {
+      ...record,
+      message,
+      mentions: input.mentions ?? record.mentions,
+      streamRevision: revision,
+      updatedAtMs,
+    });
+    if (input.idempotencyKey) {
+      this.streamIdempotency.set(input.idempotencyKey, {
+        postId: input.postId,
+        revision,
+        eventId: event.id,
+      });
+    }
+    const post = streamingPostFromCache({
+      postId: input.postId,
+      threadId: record.threadId,
+      author: record.author,
+      message,
+      mentions: input.mentions ?? record.mentions,
+      index: record.index,
+      streamRevision: revision,
+      createdAtMs: record.createdAtMs,
+      updatedAtMs,
+      deletedAtMs: record.deletedAtMs,
+    });
+    return { post, revision };
+  }
+
+  async completeStreamedPost(
+    input: CompleteStreamedPostInput,
+  ): Promise<CompleteStreamedPostResult> {
+    const record = this.posts.get(input.postId);
+    if (!record) throw new ChatNotFoundError("post", input.postId);
+    if (record.status !== "streaming") {
+      throw new ChatValidationError(`post ${input.postId} is not streaming`);
+    }
+    if (input.expectedRevision !== undefined && record.streamRevision !== input.expectedRevision) {
+      throw new ChatConflictError(
+        "stream_revision_conflict",
+        `expected revision ${input.expectedRevision}, current ${record.streamRevision}`,
+      );
+    }
+    if (!record.message) {
+      throw new ChatValidationError(`post ${input.postId} has no streamed message`);
+    }
+
+    const thread = await this.requireThread(record.threadId);
+    const currentHead = thread.defaultHeadId ? this.heads.get(thread.defaultHeadId) : null;
+    if (
+      input.expectedHeadPostVersionId !== undefined &&
+      (currentHead?.headPostVersionId ?? null) !== (input.expectedHeadPostVersionId ?? null)
+    ) {
+      if (!currentHead) {
+        throw new ChatConflictError("head_conflict", "expected head but thread is empty");
+      }
+      return { ok: false, reason: "head_conflict", currentHead };
+    }
+
+    const previousVersion = currentHead ? this.versions.get(currentHead.headPostVersionId) : null;
+    const prepared = prepareAppendPost({
+      threadId: record.threadId,
+      author: record.author,
+      message: record.message,
+      mentions: record.mentions,
+      previousPostVersionId: previousVersion?.id ?? null,
+      previousLineageHash: previousVersion?.lineageHash ?? null,
+    });
+
+    const version: PostVersion = {
+      ...prepared.message,
+      id: prepared.versionId,
+      postId: prepared.postId,
+      threadId: prepared.threadId,
+      parentVersionId: null,
+      previousPostVersionId: prepared.previousPostVersionId,
+      author: prepared.author,
+      contentHash: prepared.contentHash,
+      lineageHash: prepared.lineageHash,
+      mentions: prepared.mentions,
+      createdAtMs: prepared.createdAtMs,
+    };
+    this.versions.set(version.id, version);
+
+    const head: ThreadHead = {
+      id: currentHead?.id ?? createId(),
+      threadId: record.threadId,
+      name: currentHead?.name ?? DEFAULT_HEAD_NAME,
+      headPostVersionId: version.id,
+      createdAtMs: currentHead?.createdAtMs ?? prepared.createdAtMs,
+    };
+    this.heads.set(head.id, head);
+    this.threads.set(record.threadId, { ...thread, defaultHeadId: head.id });
+
+    const completedRevision = record.streamRevision + 1;
+    const completedAtMs = Date.now();
+    this.streamEvents.push({
+      id: createId(),
+      postId: input.postId,
+      threadId: record.threadId,
+      eventType: "stream.completed",
+      revision: completedRevision,
+      message: record.message,
+      mentions: record.mentions,
+      createdAtMs: completedAtMs,
+    });
+    this.posts.set(input.postId, {
+      ...record,
+      status: "complete",
+      streamRevision: completedRevision,
+      completedVersionId: version.id,
+      updatedAtMs: completedAtMs,
+      message: undefined,
+      mentions: undefined,
+    });
+
+    const post = postFromVersion(version, record.index, record.deletedAtMs);
+    return { ok: true, post, head };
+  }
+
+  async abortStreamedPost(input: AbortStreamedPostInput): Promise<AbortStreamedPostResult> {
+    const record = this.posts.get(input.postId);
+    if (!record) throw new ChatNotFoundError("post", input.postId);
+    if (record.status !== "streaming") {
+      throw new ChatValidationError(`post ${input.postId} is not streaming`);
+    }
+    const deletedAtMs = input.deletedAtMs ?? Date.now();
+    const revision = record.streamRevision + 1;
+    this.streamEvents.push({
+      id: createId(),
+      postId: input.postId,
+      threadId: record.threadId,
+      eventType: "stream.aborted",
+      revision,
+      message: record.message,
+      mentions: record.mentions,
+      createdAtMs: deletedAtMs,
+    });
+    this.posts.set(input.postId, {
+      ...record,
+      status: "aborted",
+      streamRevision: revision,
+      deletedAtMs,
+      updatedAtMs: deletedAtMs,
+    });
+    const post = await this.getPost(input.postId);
+    if (post?.status !== "aborted") {
+      throw new ChatNotFoundError("post", input.postId);
+    }
+    return { post };
+  }
+
+  async rebuildStreamedPostCache(
+    postId: string,
+  ): Promise<import("@khoralabs/chat-core").StreamingPost> {
+    const record = this.posts.get(postId);
+    if (!record) throw new ChatNotFoundError("post", postId);
+    if (record.status !== "streaming") {
+      throw new ChatValidationError(`post ${postId} is not streaming`);
+    }
+    const events = await this.listPostStreamEvents(postId);
+    const rebuilt = rebuildStreamCacheFromEvents(events);
+    this.posts.set(postId, {
+      ...record,
+      message: rebuilt.message,
+      mentions: rebuilt.mentions,
+      streamRevision: rebuilt.revision,
+      updatedAtMs: Date.now(),
+    });
+    return streamingPostFromCache({
+      postId,
+      threadId: record.threadId,
+      author: record.author,
+      message: rebuilt.message,
+      mentions: rebuilt.mentions,
+      index: record.index,
+      streamRevision: rebuilt.revision,
+      createdAtMs: record.createdAtMs,
+      updatedAtMs: Date.now(),
+      deletedAtMs: record.deletedAtMs,
+    });
   }
 }
 

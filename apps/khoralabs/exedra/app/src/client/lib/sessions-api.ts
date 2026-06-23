@@ -4,7 +4,11 @@ import type {
   SessionParticipantContext,
   TeamMemberContext,
 } from "@shared/accounts/row";
-import type { SessionAccess, SessionLinkAccess, SessionLinkGrantRole } from "@shared/sessions/access";
+import type {
+  SessionAccess,
+  SessionLinkAccess,
+  SessionLinkGrantRole,
+} from "@shared/sessions/access";
 
 export type { SessionAccess, SessionLinkAccess, SessionLinkGrantRole };
 
