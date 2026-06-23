@@ -1,0 +1,106 @@
+import { Database, type Database as DatabaseType } from "bun:sqlite";
+
+const SCHEMA = `
+CREATE TABLE IF NOT EXISTS chat_channels (
+  id TEXT PRIMARY KEY,
+  metadata TEXT,
+  created_at_ms INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS chat_threads (
+  id TEXT PRIMARY KEY,
+  root_type TEXT NOT NULL,
+  root_id TEXT NOT NULL,
+  root_version_id TEXT,
+  default_head_id TEXT,
+  metadata TEXT,
+  created_at_ms INTEGER NOT NULL,
+  archived_at_ms INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS chat_posts (
+  id TEXT PRIMARY KEY,
+  thread_id TEXT NOT NULL,
+  post_index INTEGER NOT NULL,
+  created_at_ms INTEGER NOT NULL,
+  deleted_at_ms INTEGER,
+  UNIQUE(thread_id, post_index)
+);
+
+CREATE TABLE IF NOT EXISTS chat_post_versions (
+  id TEXT PRIMARY KEY,
+  post_id TEXT NOT NULL,
+  thread_id TEXT NOT NULL,
+  parent_version_id TEXT,
+  previous_post_version_id TEXT,
+  author_scope_type TEXT NOT NULL,
+  author_scope_id TEXT NOT NULL,
+  message TEXT NOT NULL,
+  mentions TEXT,
+  content_hash TEXT NOT NULL,
+  lineage_hash TEXT NOT NULL,
+  signature TEXT,
+  idempotency_key TEXT UNIQUE,
+  created_at_ms INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS chat_thread_heads (
+  id TEXT PRIMARY KEY,
+  thread_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  head_post_version_id TEXT NOT NULL,
+  created_at_ms INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS chat_acl_events (
+  id TEXT PRIMARY KEY,
+  target_type TEXT NOT NULL,
+  target_id TEXT NOT NULL,
+  event_type TEXT NOT NULL,
+  actor_scope_type TEXT NOT NULL,
+  actor_scope_id TEXT NOT NULL,
+  subject_scope_type TEXT,
+  subject_scope_id TEXT,
+  role TEXT,
+  previous_acl_event_id TEXT,
+  content_hash TEXT NOT NULL,
+  signature TEXT,
+  created_at_ms INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS chat_channel_members (
+  channel_id TEXT NOT NULL,
+  scope_type TEXT NOT NULL,
+  scope_id TEXT NOT NULL,
+  role TEXT NOT NULL,
+  created_at_ms INTEGER NOT NULL,
+  PRIMARY KEY (channel_id, scope_type, scope_id)
+);
+
+CREATE TABLE IF NOT EXISTS chat_thread_participants (
+  thread_id TEXT NOT NULL,
+  scope_type TEXT NOT NULL,
+  scope_id TEXT NOT NULL,
+  role TEXT NOT NULL,
+  created_at_ms INTEGER NOT NULL,
+  PRIMARY KEY (thread_id, scope_type, scope_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_threads_root ON chat_threads(root_type, root_id);
+CREATE INDEX IF NOT EXISTS idx_chat_post_versions_thread ON chat_post_versions(thread_id);
+CREATE INDEX IF NOT EXISTS idx_chat_post_versions_post ON chat_post_versions(post_id);
+CREATE INDEX IF NOT EXISTS idx_chat_posts_thread ON chat_posts(thread_id, post_index);
+`;
+
+export function ensureChatSqliteSchema(db: DatabaseType, busyTimeoutMs = 5000): void {
+  db.run("PRAGMA journal_mode = WAL;");
+  db.run(`PRAGMA busy_timeout = ${busyTimeoutMs};`);
+  db.run("PRAGMA foreign_keys = ON;");
+  db.exec(SCHEMA);
+}
+
+export function createChatDatabase(path: ":memory:" | string = ":memory:"): DatabaseType {
+  const db = new Database(path);
+  ensureChatSqliteSchema(db);
+  return db;
+}

@@ -450,8 +450,14 @@
     },
     "packages/chat/core": {
       "name": "@khoralabs/chat-core",
+      "version": "0.0.0",
+      "dependencies": {
+        "ai": "^6.0.205",
+      },
       "devDependencies": {
+        "@khoralabs/chat-persistence": "workspace:*",
         "@types/bun": "latest",
+        "typescript": "^5",
       },
       "peerDependencies": {
         "typescript": "^5",
@@ -459,8 +465,14 @@
     },
     "packages/chat/persistence": {
       "name": "@khoralabs/chat-persistence",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/chat-core": "workspace:*",
+        "ai": "^6.0.205",
+      },
       "devDependencies": {
         "@types/bun": "latest",
+        "typescript": "^5",
       },
       "peerDependencies": {
         "typescript": "^5",
@@ -468,8 +480,33 @@
     },
     "packages/chat/react": {
       "name": "@khoralabs/chat-react",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/chat-core": "workspace:*",
+        "ai": "^6.0.205",
+      },
       "devDependencies": {
         "@types/bun": "latest",
+        "@types/react": "^19",
+        "react": "^19",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "react": "^18 || ^19",
+        "typescript": "^5",
+      },
+    },
+    "packages/chat/sqlite": {
+      "name": "@khoralabs/chat-persistence-sqlite",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/chat-core": "workspace:*",
+        "@khoralabs/chat-persistence": "workspace:*",
+        "ai": "^6.0.205",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
       },
       "peerDependencies": {
         "typescript": "^5",
@@ -1786,6 +1823,8 @@
     "@khoralabs/chat-core": ["@khoralabs/chat-core@workspace:packages/chat/core"],
 
     "@khoralabs/chat-persistence": ["@khoralabs/chat-persistence@workspace:packages/chat/persistence"],
+
+    "@khoralabs/chat-persistence-sqlite": ["@khoralabs/chat-persistence-sqlite@workspace:packages/chat/sqlite"],
 
     "@khoralabs/chat-react": ["@khoralabs/chat-react@workspace:packages/chat/react"],
 
