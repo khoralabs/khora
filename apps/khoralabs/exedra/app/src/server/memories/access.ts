@@ -1,4 +1,5 @@
 import type { Database } from "bun:sqlite";
+import type { NamespacePath } from "@khoralabs/memories-core";
 
 import { listTeamIdsForOrg } from "../authz/grants.js";
 import {
@@ -10,7 +11,7 @@ import {
   ResourceType,
 } from "../authz/policy.js";
 import { encodePrincipalIdForMemories } from "./encode-principal-id.js";
-import { type NamespacePath, orgSessionScope, orgTeamScope, userScope } from "./namespaces.js";
+import { orgSessionScope, orgTeamScope, userScope } from "./namespaces.js";
 
 export type PersonalNamespaceScope = {
   kind: "personal";

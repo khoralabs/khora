@@ -128,6 +128,5 @@ For non-default local task server ports, start with `render workflows dev --port
 
 ## Non-Goals
 
-- Do not modify `interview-turn`, `facilitation-agent`, or `investigate-memories` callers yet.
 - Do not call legacy interview or facilitation writeback endpoints.
 - Do not add thread-query tools; callers provide messages and the agent reads authorized memories.

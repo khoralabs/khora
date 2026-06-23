@@ -8,7 +8,7 @@ import type {
   JobKind,
   JobRecord,
   JobStatus,
-} from "../../../shared/jobs.js";
+} from "../../../../shared/jobs.ts";
 
 import { notifyJobEvent } from "./notify.js";
 

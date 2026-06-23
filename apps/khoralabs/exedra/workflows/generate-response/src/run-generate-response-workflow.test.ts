@@ -122,13 +122,13 @@ function authz(overrides: Partial<AuthzClient> = {}): AuthzClient {
 test("uses one generic registered agent identity with skills in the static hash", async () => {
   const skills = await discoverBundledSkills();
   const generic = await defineGenerateResponseAgent(skills);
-  const withoutInvestigation = await defineGenerateResponseAgent(
-    skills.filter((skill) => skill.name !== "investigate-memories"),
+  const withoutSummary = await defineGenerateResponseAgent(
+    skills.filter((skill) => skill.name !== "summarize-thread"),
   );
 
   expect(generic.agent.agentId).toBe(CONVERSATIONAL_AGENT_ID);
-  expect(withoutInvestigation.agent.agentId).toBe(CONVERSATIONAL_AGENT_ID);
-  expect(generic.staticHash).not.toBe(withoutInvestigation.staticHash);
+  expect(withoutSummary.agent.agentId).toBe(CONVERSATIONAL_AGENT_ID);
+  expect(generic.staticHash).not.toBe(withoutSummary.staticHash);
 });
 
 test("streams an interview response into chat and returns capability hashes", async () => {
@@ -231,28 +231,6 @@ test("streams a thread summary fixture and returns summary text", async () => {
   );
 
   expect(result.summary).toBe("Thread summary ");
-});
-
-test("streams an investigation fixture and returns structured answer", async () => {
-  const { service } = await createThread();
-  const result = await runGenerateResponseWorkflow(
-    params({
-      responseId: "response-investigation",
-      skillNames: ["investigate-memories"],
-      mode: "investigation",
-    }),
-    {
-      authzClient: authz(),
-      chatService: service,
-      memoryClient: {
-        searchMemories: async () => [],
-        getMemoryProvenance: async () => null,
-      },
-      streamTextFn: streamTextMock("Investigation answer"),
-    },
-  );
-
-  expect(result.structured).toEqual({ answer: "Investigation answer " });
 });
 
 test("unknown skill directives fail clearly", async () => {

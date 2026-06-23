@@ -5,7 +5,6 @@ import { authorizeOrgNamespaceRead, listReadableOrgNamespaces } from "./access.j
 import {
   handleMemoriesEdgePreview,
   handleMemoriesGraph,
-  handleMemoriesInvestigate,
   handleMemoriesNamespaces,
   handleMemoriesSearch,
   memoriesUnavailableResponse,
@@ -98,19 +97,4 @@ export async function handleOrgMemoriesSearch(req: Request, orgId: string): Prom
   if (authError !== null) return authError;
 
   return handleMemoriesSearch(req, resolved.access);
-}
-
-export async function handleOrgMemoriesInvestigate(req: Request, orgId: string): Promise<Response> {
-  const resolved = await resolveOrgMemoriesSession(req, orgId);
-  if ("response" in resolved) return resolved.response;
-
-  const body = (await req.clone().json()) as { namespace?: string };
-  const namespace = body.namespace?.trim();
-  const authError = requireAuthorizedOrgNamespace(resolved.db, resolved.userId, orgId, namespace);
-  if (authError !== null) return authError;
-
-  return handleMemoriesInvestigate(req, resolved.access, {
-    userId: resolved.userId,
-    orgId,
-  });
 }

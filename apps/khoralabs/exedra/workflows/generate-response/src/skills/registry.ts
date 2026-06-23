@@ -18,7 +18,6 @@ const bundledSkillDirs = [
   "conduct-interview",
   "facilitate-conversation",
   "summarize-thread",
-  "investigate-memories",
 ] as const;
 
 let cachedSkills: SkillRecord[] | undefined;

@@ -1,21 +1,17 @@
 import {
   GraphCameraReframeHint,
   GraphFetchError,
-  GraphInvestigatorAnswerOverlay,
-  GraphInvestigatorProvider,
   GraphLoading,
   GraphOverlayContainer,
   GraphPinnedEscHint,
   GraphPreviewDock,
   GraphProjectionProvider,
   GraphScene,
-  GraphSearch,
-  useGraphInvestigator,
   useMemoriesGraphChrome,
 } from "@khoralabs/memories-react-graph";
 import { ArrowLeft, Network } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useState } from "react";
 
 import { ContributeKnowledgeOverlayButton } from "@/components/exedra/contribute-knowledge-dialog";
 import { Button } from "@/components/ui/button";
@@ -26,7 +22,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { createExedraInvestigatorClient } from "@/lib/exedra-investigator-client";
 import { CompactChromeHeader } from "@/shell/compact-chrome-header";
 
 type MemoriesGraphViewProps = {
@@ -39,23 +34,8 @@ type MemoriesGraphViewProps = {
   onBack?: () => void;
   headerExtra?: ReactNode;
   emptyDescription?: string;
-  onInvestigated?: () => void;
   canContribute?: boolean;
 };
-
-function GraphInvestigatorTracker({ onInvestigated }: { onInvestigated?: () => void }) {
-  const { loading } = useGraphInvestigator();
-  const wasLoadingRef = useRef(false);
-
-  useEffect(() => {
-    if (loading && !wasLoadingRef.current) {
-      onInvestigated?.();
-    }
-    wasLoadingRef.current = loading;
-  }, [loading, onInvestigated]);
-
-  return null;
-}
 
 function MemoriesGraphEmpty({ description }: { description: string }) {
   const { graphLoading, graphError, graphSummary } = useMemoriesGraphChrome();
@@ -85,11 +65,9 @@ export function MemoriesGraphView({
   onBack,
   headerExtra,
   emptyDescription = "Memories from interviews will appear here as they're captured.",
-  onInvestigated,
   canContribute = true,
 }: MemoriesGraphViewProps) {
   const [graphRefreshKey, setGraphRefreshKey] = useState(0);
-  const investigatorClient = useMemo(() => createExedraInvestigatorClient(apiBase), [apiBase]);
 
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-background">
@@ -122,46 +100,41 @@ export function MemoriesGraphView({
           namespace={namespace}
           scope="subtree"
         >
-          <GraphInvestigatorProvider client={investigatorClient}>
-            <GraphInvestigatorTracker onInvestigated={onInvestigated} />
-            <GraphScene
-              edgeRenderMode="activeOnly"
-              overlay={{ nodeLabelsVisible: true, edgeLabelsVisible: false }}
-            >
-              <GraphScene.TopLeft>
-                <div className="flex w-sm flex-col gap-4">
-                  <GraphOverlayContainer>
-                    <GraphSearch />
-                    <GraphFetchError />
-                  </GraphOverlayContainer>
-                  <GraphOverlayContainer>
-                    <ContributeKnowledgeOverlayButton
-                      namespace={namespace}
-                      orgId={orgId}
-                      teamId={teamId}
-                      sessionId={sessionId}
-                      canContribute={canContribute}
-                      onContributed={() => setGraphRefreshKey((key) => key + 1)}
-                    />
-                  </GraphOverlayContainer>
-                  <GraphInvestigatorAnswerOverlay className="max-h-72 overflow-y-auto" />
-                </div>
-              </GraphScene.TopLeft>
-              <GraphScene.Center>
-                <GraphLoading />
-                <MemoriesGraphEmpty description={emptyDescription} />
-              </GraphScene.Center>
-              <GraphScene.TopRight>
-                <div className="flex items-center justify-end gap-2">
-                  <GraphCameraReframeHint />
-                  <GraphPinnedEscHint />
-                </div>
-              </GraphScene.TopRight>
-              <GraphScene.BottomRight>
-                <GraphPreviewDock />
-              </GraphScene.BottomRight>
-            </GraphScene>
-          </GraphInvestigatorProvider>
+          <GraphScene
+            edgeRenderMode="activeOnly"
+            overlay={{ nodeLabelsVisible: true, edgeLabelsVisible: false }}
+          >
+            <GraphScene.TopLeft>
+              <div className="flex w-sm flex-col gap-4">
+                <GraphOverlayContainer>
+                  <GraphFetchError />
+                </GraphOverlayContainer>
+                <GraphOverlayContainer>
+                  <ContributeKnowledgeOverlayButton
+                    namespace={namespace}
+                    orgId={orgId}
+                    teamId={teamId}
+                    sessionId={sessionId}
+                    canContribute={canContribute}
+                    onContributed={() => setGraphRefreshKey((key) => key + 1)}
+                  />
+                </GraphOverlayContainer>
+              </div>
+            </GraphScene.TopLeft>
+            <GraphScene.Center>
+              <GraphLoading />
+              <MemoriesGraphEmpty description={emptyDescription} />
+            </GraphScene.Center>
+            <GraphScene.TopRight>
+              <div className="flex items-center justify-end gap-2">
+                <GraphCameraReframeHint />
+                <GraphPinnedEscHint />
+              </div>
+            </GraphScene.TopRight>
+            <GraphScene.BottomRight>
+              <GraphPreviewDock />
+            </GraphScene.BottomRight>
+          </GraphScene>
         </GraphProjectionProvider>
       </div>
     </div>

@@ -7,8 +7,8 @@ describe("jobs db", () => {
   test("creates job, appends ordered events, and updates status", () => {
     const db = getDb();
     const job = createJob(db, {
-      kind: "memory_investigation",
-      payload: { question: "test" },
+      kind: "workflow",
+      payload: { task: "test" },
       ownerUserId: "user-1",
     });
 
@@ -17,7 +17,7 @@ describe("jobs db", () => {
 
     appendJobEvents(db, job.id, [
       { type: "status", status: "running" },
-      { type: "investigation_step", step: 1, message: "Searching…" },
+      { type: "status", status: "done" },
     ]);
 
     const events = getJobEventsSince(db, job.id, 0);

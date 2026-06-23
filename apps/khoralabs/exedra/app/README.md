@@ -1,21 +1,37 @@
-# bun-react-tailwind-shadcn-template
+# Exedra App
 
-To install dependencies:
+Install dependencies from the repo root:
 
-```bash
+```sh
 bun install
 ```
 
-To start a development server:
+## Local Development
 
-```bash
-bun dev
+The interview and facilitator chat surfaces use `@khoralabs/chat-react`, the app chat API, a separate chat SQLite database, and the `generate-response` Render workflow.
+
+Start the local Render task server first:
+
+```sh
+cd apps/khoralabs/exedra/workflows/generate-response
+bun run dev
 ```
 
-To run for production:
+Then start the Exedra app:
 
-```bash
-bun start
+```sh
+cd apps/khoralabs/exedra/app
+bun run dev
 ```
 
-This project was created using `bun init` in bun v1.3.14. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+Recommended local env:
+
+```sh
+RENDER_USE_LOCAL_DEV=true
+RENDER_LOCAL_DEV_URL=http://localhost:8120
+RENDER_GENERATE_RESPONSE_WORKFLOW_SLUG=generate-response
+EXEDRA_CHAT_DB_PATH=./data/exedra-chat.db
+GENERATE_RESPONSE_CHAT_SQLITE_PATH=./data/exedra-chat.db
+```
+
+The task server is expected to be running when the dev server dispatches an assistant response. If it is down or the Render env is missing, chat dispatch fails clearly instead of falling back to legacy agents.

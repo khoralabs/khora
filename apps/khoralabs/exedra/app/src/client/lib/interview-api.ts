@@ -97,7 +97,6 @@ export function extractCompletionFromMessages(
 export type InterviewBootstrap = {
   session: InterviewSession;
   threadId: string | null;
-  wsUrl?: string;
   messages: SerializedMessage[];
   agent: MessageAuthor | null;
   viewer: MessageAuthor | null;
@@ -111,7 +110,6 @@ export type InterviewBootstrap = {
 export type FacilitationBootstrap = {
   session: InterviewSession;
   threadId: string;
-  wsUrl: string;
   messages: SerializedMessage[];
   agent: MessageAuthor | null;
   viewer: MessageAuthor | null;
@@ -120,11 +118,10 @@ export type FacilitationBootstrap = {
   canParticipate: boolean;
 };
 
-export type ParticipantInterviewView = Omit<InterviewBootstrap, "wsUrl"> & {
+export type ParticipantInterviewView = InterviewBootstrap & {
   readOnly: true;
   participant: AccountProfile;
   threadId: string | null;
-  wsUrl?: undefined;
 };
 
 export type ToolCallDisplay = {

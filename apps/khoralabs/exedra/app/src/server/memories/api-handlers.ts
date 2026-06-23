@@ -1,22 +1,12 @@
 import type { Database } from "bun:sqlite";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { type AgentRegistry, createAgentRegistry } from "@khoralabs/agent-capabilities";
 import {
-  MemoriesClient,
   type SearchHit,
   searchAsync,
   wrapSyncMemoriesPersistenceAsAsync,
 } from "@khoralabs/memories-core";
-import {
-  createMemoriesEmbeddingModel,
-  type EmbeddingResolutionPreset,
-  mergeResolutionAndProviderOptions,
-} from "@khoralabs/memories-core/helpers";
+import type { EmbeddingResolutionPreset } from "@khoralabs/memories-core/helpers";
 import type { MemoriesPersistence } from "@khoralabs/memories-core/persistence";
-import {
-  type InvestigatorAnswerWire,
-  MemoryInvestigatorClient,
-} from "@khoralabs/memories-investigator";
 import { getMemoriesSqliteDatabase, listMemoryNamespaces } from "@khoralabs/memories-sqlite";
 import {
   buildNamespaceGraphLayout,
@@ -26,10 +16,7 @@ import {
   qualifyMemoryKey,
 } from "@khoralabs/sqlite-graph-projections";
 import { embedMany } from "ai";
-import { createExedraMemoriesAgentTelemetry } from "../telemetry/agent-telemetry.js";
 import { withSpan } from "../telemetry/spans.js";
-import { dispatchMemoryInvestigation } from "./dispatch-memory-investigation.js";
-import { exedraMemoriesOntology } from "./exedra-ontology.js";
 
 const NAMESPACE_ROOT = "_global_";
 const EMBEDDING_DIM_BY_PRESET = { L: 768, M: 1536, H: 3072 } as const;
@@ -41,15 +28,9 @@ export type MemoriesAccess = {
   db: Database;
 };
 
-export type MemoriesInvestigateScope = {
-  userId: string;
-  orgId?: string;
-};
-
 let didWarnLexicalOnlySearch = false;
 let didWarnMultiVectorDim = false;
 let didLogInferredSearchPreset = false;
-let investigatorRegistry: AgentRegistry | undefined;
 
 function jsonResponse(data: unknown, status = 200): Response {
   return Response.json(data, { status });
@@ -60,12 +41,7 @@ function parseGraphScope(raw: string | null | undefined): GraphScope {
 }
 
 function resolveGeminiApiKey(): string | undefined {
-  return (
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim() ||
-    process.env.GOOGLE_API_KEY?.trim() ||
-    process.env.GEMINI_API_KEY?.trim() ||
-    undefined
-  );
+  return process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim() || undefined;
 }
 
 function dimToEmbeddingPreset(dim: number): EmbeddingResolutionPreset | null {
@@ -109,11 +85,6 @@ function resolveSearchEmbeddingPreset(
   }
   if (dims.length > 1 && !didWarnMultiVectorDim) didWarnMultiVectorDim = true;
   return "M";
-}
-
-function getInvestigatorRegistry(): AgentRegistry {
-  if (!investigatorRegistry) investigatorRegistry = createAgentRegistry();
-  return investigatorRegistry;
 }
 
 function qualifySearchKey(namespace: string, memoryKey: string, scope: GraphScope): string {
@@ -324,90 +295,5 @@ export async function handleMemoriesSearch(
     });
   } catch (err) {
     return jsonResponse({ error: String(err) }, 500);
-  }
-}
-
-export async function runInProcessInvestigation(args: {
-  access: MemoriesAccess;
-  namespace: string;
-  question: string;
-  maxSteps: number;
-  resolution?: string;
-}): Promise<InvestigatorAnswerWire> {
-  const apiKey = resolveGeminiApiKey();
-  if (apiKey === undefined) {
-    throw new Error("Memory investigation requires a Google API key for embeddings");
-  }
-
-  const resolution = resolveSearchEmbeddingPreset(args.access.persistence, args.resolution);
-  const google = createGoogleGenerativeAI({ apiKey });
-  const embeddingModel = createMemoriesEmbeddingModel({
-    model: google.embedding("gemini-embedding-2-preview"),
-    providerOptions: mergeResolutionAndProviderOptions(resolution),
-  });
-  const modelId = process.env.MEMORIES_INVESTIGATOR_MODEL?.trim() || "gemini-flash-latest";
-  const model = google.languageModel(modelId);
-
-  const client = new MemoriesClient(args.access.persistence, exedraMemoriesOntology);
-  const investigator = new MemoryInvestigatorClient({
-    registry: getInvestigatorRegistry(),
-    namespace: args.namespace,
-    model,
-    client,
-    embeddingModel,
-  });
-  const tel = await createExedraMemoriesAgentTelemetry(client);
-  const { answer } = await investigator.investigate({
-    question: args.question,
-    maxSteps: args.maxSteps,
-    telemetry: tel,
-  });
-  return answer;
-}
-
-export async function handleMemoriesInvestigate(
-  req: Request,
-  access: MemoriesAccess,
-  scope: MemoriesInvestigateScope,
-): Promise<Response> {
-  let body: {
-    namespace?: string;
-    question?: string;
-    maxSteps?: number;
-    resolution?: string;
-  };
-  try {
-    body = (await req.json()) as typeof body;
-  } catch {
-    return jsonResponse({ error: "invalid JSON body" }, 400);
-  }
-
-  const namespace = body.namespace?.trim();
-  const question = body.question?.trim();
-  if (!namespace) return jsonResponse({ error: "missing namespace" }, 400);
-  if (!question) return jsonResponse({ error: "missing question" }, 400);
-
-  const rawSteps = Number(body.maxSteps);
-  const maxSteps =
-    Number.isFinite(rawSteps) && rawSteps > 0 ? Math.min(50, Math.floor(rawSteps)) : 12;
-
-  try {
-    return await withSpan("memories.investigate", { "memories.namespace": namespace }, async () => {
-      const { jobId } = await dispatchMemoryInvestigation({
-        ownerUserId: scope.userId,
-        scope,
-        namespace,
-        question,
-        maxSteps,
-        resolution: body.resolution,
-        access,
-      });
-      return jsonResponse({ jobId }, 202);
-    });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    const status =
-      message.includes("Google API key") || message.includes("not configured") ? 503 : 500;
-    return jsonResponse({ error: message }, status);
   }
 }

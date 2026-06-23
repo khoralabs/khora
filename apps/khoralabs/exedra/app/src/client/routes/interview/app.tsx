@@ -156,9 +156,9 @@ function InterviewContent({
   }, []);
 
   const handleParticipantLoaded = useCallback(
-    (data: { beliefs: BeliefFlag[]; completion: InterviewCompletion | null }) => {
+    (data: { beliefs: BeliefFlag[]; completion?: InterviewCompletion | null }) => {
       setBeliefs(data.beliefs);
-      if (data.completion !== null) {
+      if (data.completion !== undefined && data.completion !== null) {
         setCompletion(data.completion);
       }
     },

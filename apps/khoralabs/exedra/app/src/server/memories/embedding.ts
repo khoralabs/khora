@@ -9,12 +9,7 @@ import {
 const EMBEDDING_DIM_BY_PRESET = { L: 768, M: 1536, H: 3072 } as const;
 
 export function resolveGeminiApiKey(): string | undefined {
-  return (
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim() ||
-    process.env.GOOGLE_API_KEY?.trim() ||
-    process.env.GEMINI_API_KEY?.trim() ||
-    undefined
-  );
+  return process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim() || undefined;
 }
 
 function parseExplicitEmbeddingPreset(value: string | undefined): EmbeddingResolutionPreset | null {

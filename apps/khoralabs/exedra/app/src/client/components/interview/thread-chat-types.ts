@@ -7,7 +7,6 @@ export type ThreadKind = "interview" | "facilitation";
 export type ThreadBootstrap = {
   session: InterviewSession;
   threadId: string | null;
-  wsUrl?: string;
   messages: SerializedMessage[];
   agent: MessageAuthor | null;
   viewer: MessageAuthor | null;

@@ -7,6 +7,14 @@ import {
   handlePatchTeamPermissions,
 } from "./authz/routes";
 import { handleServeAvatar } from "./avatars/routes";
+import {
+  handleAppendChatPost,
+  handleChatBootstrap,
+  handleChatThreadEvents,
+  handleGetChatChannel,
+  handleListChatPosts,
+  handleListChatThreads,
+} from "./chat/routes";
 import { handleContributeDocuments, handleGetDocumentBatch } from "./documents/contribute-routes";
 import {
   handleGetSessionDocument,
@@ -20,20 +28,6 @@ import {
   handleInternalGetDocumentBytes,
   handleInternalPatchDocument,
 } from "./http/internal-documents";
-import {
-  handleInternalAppendFacilitationMessage,
-  handleInternalGetFacilitationParticipantContext,
-  handleInternalGetFacilitationThread,
-} from "./http/internal-facilitation";
-import {
-  handleInternalAppendInterviewTurnEvents,
-  handleInternalCompleteInterviewTurn,
-  handleInternalFailInterviewTurn,
-  handleInternalGetInterviewTurnContext,
-  handleInternalInterviewRagContext,
-  handleInternalInterviewSearchOrg,
-  handleInternalInterviewSearchPersonal,
-} from "./http/internal-interview-turn";
 import {
   handleInternalMemoriesAgentSearch,
   handleInternalMemoriesMerge,
@@ -53,21 +47,18 @@ import {
 import {
   handleMeMemoriesEdgePreview,
   handleMeMemoriesGraph,
-  handleMeMemoriesInvestigate,
   handleMeMemoriesNamespaces,
   handleMeMemoriesSearch,
 } from "./memories/me-routes";
 import {
   handleOrgMemoriesEdgePreview,
   handleOrgMemoriesGraph,
-  handleOrgMemoriesInvestigate,
   handleOrgMemoriesNamespaces,
   handleOrgMemoriesSearch,
 } from "./memories/org-routes";
 import {
   handleUserMemoriesEdgePreview,
   handleUserMemoriesGraph,
-  handleUserMemoriesInvestigate,
   handleUserMemoriesNamespaces,
   handleUserMemoriesSearch,
 } from "./memories/user-routes";
@@ -238,6 +229,27 @@ export const apiRoutes = {
     GET: (req: Request & { params: { id: string } }) => handleGetInterview(req, req.params.id),
   },
 
+  "/api/sessions/:id/chat/bootstrap": {
+    GET: (req: Request & { params: { id: string } }) => handleChatBootstrap(req, req.params.id),
+  },
+
+  "/api/chat/threads/:id/posts": {
+    GET: (req: Request & { params: { id: string } }) => handleListChatPosts(req, req.params.id),
+    POST: (req: Request & { params: { id: string } }) => handleAppendChatPost(req, req.params.id),
+  },
+
+  "/api/chat/threads/:id/events": {
+    GET: (req: Request & { params: { id: string } }) => handleChatThreadEvents(req, req.params.id),
+  },
+
+  "/api/chat/channels/:id": {
+    GET: (req: Request & { params: { id: string } }) => handleGetChatChannel(req, req.params.id),
+  },
+
+  "/api/chat/channels/:id/threads": {
+    GET: (req: Request & { params: { id: string } }) => handleListChatThreads(req, req.params.id),
+  },
+
   "/api/sessions/:id/interview/opt-in": {
     POST: (req: Request & { params: { id: string } }) => handleInterviewOptIn(req, req.params.id),
   },
@@ -344,11 +356,6 @@ export const apiRoutes = {
       handleOrgMemoriesSearch(req, req.params.orgId),
   },
 
-  "/api/memories/org/:orgId/investigate": {
-    POST: (req: Request & { params: { orgId: string } }) =>
-      handleOrgMemoriesInvestigate(req, req.params.orgId),
-  },
-
   "/api/memories/me/namespaces": {
     GET: handleMeMemoriesNamespaces,
   },
@@ -363,10 +370,6 @@ export const apiRoutes = {
 
   "/api/memories/me/search": {
     POST: handleMeMemoriesSearch,
-  },
-
-  "/api/memories/me/investigate": {
-    POST: handleMeMemoriesInvestigate,
   },
 
   "/api/memories/users/:ownerId/namespaces": {
@@ -387,11 +390,6 @@ export const apiRoutes = {
   "/api/memories/users/:ownerId/search": {
     POST: (req: Request & { params: { ownerId: string } }) =>
       handleUserMemoriesSearch(req, req.params.ownerId),
-  },
-
-  "/api/memories/users/:ownerId/investigate": {
-    POST: (req: Request & { params: { ownerId: string } }) =>
-      handleUserMemoriesInvestigate(req, req.params.ownerId),
   },
 
   "/api/avatars/:kind/:id": {
@@ -467,52 +465,5 @@ export const internalRoutes = {
   "/internal/jobs/:jobId/fail": {
     POST: (req: Request & { params: { jobId: string } }) =>
       handleInternalFailJob(req, req.params.jobId),
-  },
-
-  "/internal/interview/turns/:turnId/context": {
-    GET: (req: Request & { params: { turnId: string } }) =>
-      handleInternalGetInterviewTurnContext(req, req.params.turnId),
-  },
-
-  "/internal/interview/turns/:turnId/events": {
-    POST: (req: Request & { params: { turnId: string } }) =>
-      handleInternalAppendInterviewTurnEvents(req, req.params.turnId),
-  },
-
-  "/internal/interview/turns/:turnId/complete": {
-    POST: (req: Request & { params: { turnId: string } }) =>
-      handleInternalCompleteInterviewTurn(req, req.params.turnId),
-  },
-
-  "/internal/interview/turns/:turnId/fail": {
-    POST: (req: Request & { params: { turnId: string } }) =>
-      handleInternalFailInterviewTurn(req, req.params.turnId),
-  },
-
-  "/internal/interview/memory/rag-context": {
-    POST: handleInternalInterviewRagContext,
-  },
-
-  "/internal/interview/memory/search-org": {
-    POST: handleInternalInterviewSearchOrg,
-  },
-
-  "/internal/interview/memory/search-personal": {
-    POST: handleInternalInterviewSearchPersonal,
-  },
-
-  "/internal/facilitation/sessions/:sessionId/thread": {
-    GET: (req: Request & { params: { sessionId: string } }) =>
-      handleInternalGetFacilitationThread(req, req.params.sessionId),
-  },
-
-  "/internal/facilitation/sessions/:sessionId/participants/:userId/context": {
-    GET: (req: Request & { params: { sessionId: string; userId: string } }) =>
-      handleInternalGetFacilitationParticipantContext(req, req.params.sessionId, req.params.userId),
-  },
-
-  "/internal/facilitation/threads/:threadId/messages": {
-    POST: (req: Request & { params: { threadId: string } }) =>
-      handleInternalAppendFacilitationMessage(req, req.params.threadId),
   },
 } as const;

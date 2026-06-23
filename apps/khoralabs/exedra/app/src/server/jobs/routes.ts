@@ -5,7 +5,7 @@ import type {
   CompleteJobRequest,
   FailJobRequest,
   JobEvent,
-} from "../../../shared/jobs.js";
+} from "../../../../shared/jobs.ts";
 import { requireRegistrySessionResponse } from "../auth/require-session.js";
 import { getDb } from "../db/index.js";
 import { requireInternalToken } from "../http/require-internal-token.js";

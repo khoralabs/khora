@@ -544,7 +544,6 @@ export async function handleGetInterview(req: Request, sessionId: string): Promi
   try {
     return Response.json({
       ...buildInterviewPayload(db, session, threadId, user.id),
-      wsUrl: `/ws/interview/${threadId}`,
       canFacilitate: hasFacilitationAccess(db, user.id, sessionId),
       canParticipate: hasDirectSessionGrant(db, user.id, sessionId, Feature.Participant),
       canWriteInterview: hasDirectSessionGrant(db, user.id, sessionId, Feature.Participant),
@@ -866,7 +865,6 @@ export async function handleGetFacilitation(req: Request, sessionId: string): Pr
     canWrite: canWriteFacilitationThread(db, user.id, threadId),
     canFacilitate: true,
     canParticipate: hasDirectSessionGrant(db, user.id, sessionId, Feature.Participant),
-    wsUrl: `/ws/interview/${threadId}`,
   });
 }
 

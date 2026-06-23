@@ -1,5 +1,5 @@
 import { Share2 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 
 import { KnowledgeScopePicker } from "@/components/exedra/knowledge-scope-picker";
 import { MemoriesGraphView } from "@/components/exedra/memories-graph-view";
@@ -8,7 +8,7 @@ import { ShareSessionDialog } from "@/components/sessions/share-session-dialog";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Spinner } from "@/components/ui/spinner";
-import { AnalyticsProvider, useAnalytics } from "@/lib/analytics";
+import { AnalyticsProvider } from "@/lib/analytics";
 import type { MeResponse, MeTeam } from "@/lib/me-api";
 import {
   meMemoriesApiBase,
@@ -74,18 +74,10 @@ function GraphContent({
   sessions: SessionSummary[] | null;
   sessionDetail: SessionDetail | null;
 }) {
-  const track = useAnalytics();
   const sessionGraphId = parseSessionGraphId(pathname);
   const teamGraphId = parseActiveTeamGraphId(pathname);
   const personalGraph = isPersonalGraphPath(pathname);
   const [shareOpen, setShareOpen] = useState(false);
-
-  const trackInvestigated = useCallback(
-    (scope: "session" | "team" | "personal") => {
-      track("graph_investigated", { scope });
-    },
-    [track],
-  );
 
   const scopePicker = (
     <KnowledgeScopePicker
@@ -136,7 +128,6 @@ function GraphContent({
           sessionId={sessionGraphId}
           title={sessionSummary?.topic ?? "Session knowledge"}
           emptyDescription="No knowledge captured yet. It will appear here as the interview captures it."
-          onInvestigated={() => trackInvestigated("session")}
           canContribute={sessionSummary?.canContributeKg !== false}
           headerExtra={
             <>
@@ -187,7 +178,6 @@ function GraphContent({
         teamId={teamGraphId}
         title={`${team.name} knowledge`}
         emptyDescription="No knowledge captured yet."
-        onInvestigated={() => trackInvestigated("team")}
         headerExtra={scopePicker}
       />
     );
@@ -201,7 +191,6 @@ function GraphContent({
         namespace={userNamespace(me.user.userId)}
         title="Personal knowledge"
         emptyDescription="No knowledge captured yet."
-        onInvestigated={() => trackInvestigated("personal")}
         headerExtra={scopePicker}
       />
     );

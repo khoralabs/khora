@@ -14,7 +14,6 @@ import { tracer } from "./server/otel";
 import { getStubRegistryOtp, isExedraStubRegistryEnabled } from "./server/registry-stub/config";
 import { apiRoutes, internalRoutes } from "./server/routes";
 import { serveAssets } from "./server/serve-assets";
-import { interviewWsHandlers, verifyInterviewWsUpgrade } from "./server/ws/interview";
 
 // Must run before any bun:sqlite Database (including exedra.db) so sqlite-vec can load.
 ensureCustomSqliteForExtensions();
@@ -84,21 +83,9 @@ const server = serve({
     },
   },
 
-  async fetch(req, bunServer) {
+  async fetch(req, _bunServer) {
     const start = performance.now();
     const url = new URL(req.url);
-    const wsMatch = /^\/ws\/interview\/([^/]+)\/?$/.exec(url.pathname);
-    if (wsMatch !== null && req.headers.get("upgrade")?.toLowerCase() === "websocket") {
-      const threadId = wsMatch[1] ?? "";
-      const verified = await verifyInterviewWsUpgrade(req, threadId);
-      if (!verified.ok) {
-        return new Response(verified.error, { status: verified.status });
-      }
-      const upgraded = bunServer.upgrade(req, { data: verified.data });
-      if (upgraded) return undefined as unknown as Response;
-      return new Response("WebSocket upgrade failed", { status: 500 });
-    }
-
     if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/internal/")) {
       const span = tracer.startSpan(`HTTP ${req.method}`, {
         attributes: {
@@ -143,8 +130,6 @@ const server = serve({
 
     return new Response("Not found", { status: 404 });
   },
-
-  websocket: interviewWsHandlers,
 
   development: process.env.NODE_ENV !== "production" && {
     hmr: true,

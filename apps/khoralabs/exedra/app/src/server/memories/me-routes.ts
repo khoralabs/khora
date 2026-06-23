@@ -5,7 +5,6 @@ import { authorizePersonalNamespaceRead, listReadablePersonalNamespaces } from "
 import {
   handleMemoriesEdgePreview,
   handleMemoriesGraph,
-  handleMemoriesInvestigate,
   handleMemoriesNamespaces,
   handleMemoriesSearch,
   memoriesUnavailableResponse,
@@ -106,21 +105,4 @@ export async function handleMeMemoriesSearch(req: Request): Promise<Response> {
   if (authError !== null) return authError;
 
   return handleMemoriesSearch(req, resolved.access);
-}
-
-export async function handleMeMemoriesInvestigate(req: Request): Promise<Response> {
-  const resolved = await resolveMeMemoriesSession(req);
-  if ("response" in resolved) return resolved.response;
-
-  const body = (await req.clone().json()) as { namespace?: string };
-  const namespace = body.namespace?.trim();
-  const authError = requireAuthorizedPersonalNamespace(
-    resolved.db,
-    resolved.userId,
-    resolved.userId,
-    namespace,
-  );
-  if (authError !== null) return authError;
-
-  return handleMemoriesInvestigate(req, resolved.access, { userId: resolved.userId });
 }

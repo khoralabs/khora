@@ -6,7 +6,6 @@ import { authorizePersonalNamespaceRead } from "./access.js";
 import {
   handleMemoriesEdgePreview,
   handleMemoriesGraph,
-  handleMemoriesInvestigate,
   handleMemoriesNamespaces,
   handleMemoriesSearch,
   memoriesUnavailableResponse,
@@ -120,24 +119,4 @@ export async function handleUserMemoriesSearch(req: Request, ownerId: string): P
   if (authError !== null) return authError;
 
   return handleMemoriesSearch(req, resolved.access);
-}
-
-export async function handleUserMemoriesInvestigate(
-  req: Request,
-  ownerId: string,
-): Promise<Response> {
-  const resolved = await resolveUserMemoriesSession(req, ownerId);
-  if ("response" in resolved) return resolved.response;
-
-  const body = (await req.clone().json()) as { namespace?: string };
-  const namespace = body.namespace?.trim();
-  const authError = requireAuthorizedSharedPersonalNamespace(
-    resolved.db,
-    resolved.viewerId,
-    ownerId,
-    namespace,
-  );
-  if (authError !== null) return authError;
-
-  return handleMemoriesInvestigate(req, resolved.access, { userId: ownerId });
 }
