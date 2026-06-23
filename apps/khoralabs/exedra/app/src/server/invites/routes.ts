@@ -3,6 +3,7 @@ import { inviteKind, sessionIdFromEffects, teamIdFromEffects } from "@shared/inv
 
 import { requireRegistrySessionResponse } from "../auth/require-session";
 import { canManageSession } from "../authz";
+import { grantSessionFacilitation, hasFacilitationAccess } from "../authz/policy";
 import { getDb } from "../db/index";
 import {
   consumeInvite,
@@ -20,8 +21,11 @@ import {
 } from "../db/membership";
 import {
   getActiveOnboardingSessionForTeam,
+  getOrCreateFacilitationThread,
   getSession,
   getSessionLinkAccess,
+  getSessionLinkGrantRole,
+  syncFacilitationThreadGrants,
   userHasSessionAccess,
 } from "../db/sessions";
 import { getOrCreateUser, setUserSessionConsentAccepted } from "../identity/users";
@@ -89,6 +93,9 @@ export async function handleGetInvite(req: Request, token: string): Promise<Resp
       if (userHasSessionAccess(db, invite.sessionId, user.id)) {
         payload.alreadyJoined = true;
         payload.redirectTo = sessionInviteRedirect(invite.sessionId);
+      } else if (hasFacilitationAccess(db, user.id, invite.sessionId)) {
+        payload.alreadyJoined = true;
+        payload.redirectTo = sessionInviteRedirect(invite.sessionId);
       }
     } else if (invite.kind === "team") {
       const teamId = getInviteTeamId(db, token);
@@ -130,6 +137,14 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
         redirectTo: sessionInviteRedirect(invite.sessionId),
       });
     }
+    if (hasFacilitationAccess(db, user.id, invite.sessionId)) {
+      return Response.json({
+        invite,
+        userId: user.id,
+        alreadyJoined: true,
+        redirectTo: sessionInviteRedirect(invite.sessionId),
+      });
+    }
   } else if (invite.kind === "team") {
     const teamId = getInviteTeamId(db, token);
     if (teamId !== null && isTeamMember(db, teamId, user.id)) {
@@ -155,17 +170,23 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
   }
 
   if (invite.kind === "session") {
-    let body: AcceptInviteBody = {};
-    try {
-      body = (await req.json()) as AcceptInviteBody;
-    } catch {
-      body = {};
-    }
-    if (body.personalMemoryConsent !== true) {
-      return Response.json(
-        { error: "Personal memory consent is required to join this session" },
-        { status: 400 },
-      );
+    const linkGrantRole =
+      invite.reusable && invite.sessionId !== undefined
+        ? getSessionLinkGrantRole(db, invite.sessionId)
+        : "participant";
+    if (linkGrantRole !== "facilitation") {
+      let body: AcceptInviteBody = {};
+      try {
+        body = (await req.json()) as AcceptInviteBody;
+      } catch {
+        body = {};
+      }
+      if (body.personalMemoryConsent !== true) {
+        return Response.json(
+          { error: "Personal memory consent is required to join this session" },
+          { status: 400 },
+        );
+      }
     }
   }
 
@@ -175,6 +196,22 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
   }
 
   const kind = inviteKind(effects);
+
+  if (
+    invite.reusable &&
+    invite.sessionId !== undefined &&
+    getSessionLinkGrantRole(db, invite.sessionId) === "facilitation"
+  ) {
+    grantSessionFacilitation(db, user.id, invite.sessionId);
+    getOrCreateFacilitationThread(db, invite.sessionId);
+    syncFacilitationThreadGrants(db, invite.sessionId);
+    return Response.json({
+      invite,
+      userId: user.id,
+      redirectTo: sessionInviteRedirect(invite.sessionId),
+    });
+  }
+
   applyInviteEffects(db, user.id, effects);
 
   if (kind === "session") {

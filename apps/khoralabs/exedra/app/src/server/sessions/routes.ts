@@ -11,12 +11,14 @@ import {
   grantSessionCreatorAccess,
   grantSessionFacilitation,
   grantSessionParticipant,
+  grantTeamSessionFacilitation,
   grantTeamSessionParticipant,
   hasDirectSessionGrant,
   hasFacilitationAccess,
   isSessionFacilitator,
   revokeSessionFacilitation,
   revokeSessionParticipant,
+  revokeTeamSessionFacilitation,
   revokeTeamSessionParticipant,
 } from "../authz";
 import {
@@ -48,6 +50,7 @@ import {
   patchSession,
   sessionRoleForUser,
   setSessionLinkAccess,
+  setSessionLinkGrantRole,
   syncFacilitationThreadGrants,
   userHasSessionAccess,
 } from "../db/sessions";
@@ -78,8 +81,18 @@ type PatchSessionBody = {
 };
 
 type ManageSessionScopesBody = {
-  add?: { accountIds?: string[]; teamIds?: string[]; facilitationAccountIds?: string[] };
-  remove?: { accountIds?: string[]; teamIds?: string[]; facilitationAccountIds?: string[] };
+  add?: {
+    accountIds?: string[];
+    teamIds?: string[];
+    facilitationAccountIds?: string[];
+    facilitationTeamIds?: string[];
+  };
+  remove?: {
+    accountIds?: string[];
+    teamIds?: string[];
+    facilitationAccountIds?: string[];
+    facilitationTeamIds?: string[];
+  };
 };
 
 function uniqueIds(ids: string[] | undefined): string[] {
@@ -342,7 +355,9 @@ export async function handleManageSessionScopes(
   const removeTeamIds = uniqueIds(body.remove?.teamIds);
 
   const addFacilitationAccountIds = uniqueIds(body.add?.facilitationAccountIds);
+  const addFacilitationTeamIds = uniqueIds(body.add?.facilitationTeamIds);
   const removeFacilitationAccountIds = uniqueIds(body.remove?.facilitationAccountIds);
+  const removeFacilitationTeamIds = uniqueIds(body.remove?.facilitationTeamIds);
 
   for (const accountId of addAccountIds) {
     if (!enforce(db, accountId, "team:member", { type: ResourceType.Team, id: session.teamId })) {
@@ -358,6 +373,15 @@ export async function handleManageSessionScopes(
     grantTeamSessionParticipant(db, sharedTeamId, sessionId);
   }
 
+  for (const sharedTeamId of addFacilitationTeamIds) {
+    if (!enforce(db, user.id, "team:member", { type: ResourceType.Team, id: sharedTeamId })) {
+      return Response.json({ error: "You must belong to every shared team" }, { status: 403 });
+    }
+    grantTeamSessionFacilitation(db, sharedTeamId, sessionId);
+    getOrCreateFacilitationThread(db, sessionId);
+    syncFacilitationThreadGrants(db, sessionId);
+  }
+
   for (const accountId of removeAccountIds) {
     if (isSessionFacilitator(db, accountId, sessionId)) {
       return Response.json({ error: "Cannot remove a session facilitator" }, { status: 400 });
@@ -368,6 +392,11 @@ export async function handleManageSessionScopes(
 
   for (const sharedTeamId of removeTeamIds) {
     revokeTeamSessionParticipant(db, sharedTeamId, sessionId);
+  }
+
+  for (const sharedTeamId of removeFacilitationTeamIds) {
+    revokeTeamSessionFacilitation(db, sharedTeamId, sessionId);
+    syncFacilitationThreadGrants(db, sessionId);
   }
 
   for (const accountId of addFacilitationAccountIds) {
@@ -726,6 +755,7 @@ export async function handleGetSessionAccess(req: Request, sessionId: string): P
 
 type PatchSessionAccessBody = {
   linkAccess?: "restricted" | "anyone";
+  linkGrantRole?: "participant" | "facilitation";
 };
 
 export async function handlePatchSessionAccess(req: Request, sessionId: string): Promise<Response> {
@@ -758,6 +788,16 @@ export async function handlePatchSessionAccess(req: Request, sessionId: string):
     if (body.linkAccess === "anyone") {
       getOrCreateSessionLinkInvite(db, sessionId, user.id);
     }
+  }
+
+  if (body.linkGrantRole !== undefined) {
+    if (body.linkGrantRole !== "participant" && body.linkGrantRole !== "facilitation") {
+      return Response.json(
+        { error: "linkGrantRole must be participant or facilitation" },
+        { status: 400 },
+      );
+    }
+    setSessionLinkGrantRole(db, sessionId, body.linkGrantRole);
   }
 
   const access = buildSessionAccess(db, sessionId, user.id, true);

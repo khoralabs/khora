@@ -38,6 +38,7 @@
     "apps/vellum/*/**",
     "packages/*",
     "packages/libs/*/**",
+    "packages/chat/*/**",
     "packages/khora/*/**",
     "packages/percolator/*/**",
     "packages/registry/*/**",

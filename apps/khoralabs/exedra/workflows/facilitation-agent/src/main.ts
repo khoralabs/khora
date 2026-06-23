@@ -1,6 +1,7 @@
 import { task } from "@renderinc/sdk/workflows";
 import type { FacilitationWorkflowParams } from "../../../shared/facilitation-workflow.ts";
 import { runFacilitationEventWorkflow } from "./run-facilitation-workflow.ts";
+import "./otel.ts";
 
 const retry = {
   maxRetries: 0,

@@ -9,8 +9,12 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.0",
+    "@khoralabs/agent-capabilities": "^0.1.1",
+    "@khoralabs/agent-capabilities-otel": "^0.1.1",
     "@khoralabs/exedra-facilitation-agent": "workspace:*",
+    "@khoralabs/observability": "workspace:*",
     "@renderinc/sdk": "^0.6.0",
+    "ai": "^6.0.205",
     "nanoid": "^5.1.5"
   },
   "devDependencies": {

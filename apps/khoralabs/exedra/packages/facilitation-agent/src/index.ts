@@ -4,6 +4,7 @@ import { generateText, type LanguageModel, type UIMessage } from "ai";
 import { nanoid } from "nanoid";
 
 import type { FacilitationEventKind } from "../../../shared/facilitation-workflow.ts";
+import { ensureFacilitationAgentRegistered } from "./identity.ts";
 
 export type FacilitationContext = {
   sessionTopic: string;
@@ -15,6 +16,15 @@ export type FacilitationContext = {
 export type FacilitationEventOutput = {
   assistantId: string;
   parts: UIMessage["parts"];
+};
+
+type FacilitationSessionInput = {
+  prompt: string;
+  event: FacilitationEventKind;
+};
+
+type FacilitationSessionContext = {
+  model: LanguageModel;
 };
 
 function formatTranscript(messages: UIMessage[]): string {
@@ -37,9 +47,7 @@ function buildParticipantCompletedPrompt(context: FacilitationContext): string {
       ? context.beliefs.map((belief) => `- ${belief}`).join("\n")
       : "- (none flagged)";
 
-  return `You are the facilitation agent for an Exedra alignment session.
-
-Session topic: ${context.sessionTopic}
+  return `Session topic: ${context.sessionTopic}
 Participant: ${context.participantName}
 
 The participant just completed their individual interview. Write a concise facilitation thread post for session facilitators.
@@ -54,14 +62,13 @@ Beliefs flagged during interview:
 ${beliefs}
 
 Interview transcript:
-${formatTranscript(context.messages)}
-
-Use markdown. Be factual and neutral. Do not invent details not supported by the transcript or beliefs.`;
+${formatTranscript(context.messages)}`;
 }
 
 export async function runFacilitationEvent(args: {
   registry: AgentRegistry;
   model: LanguageModel;
+  sessionId: string;
   createTelemetry?: () => AgentTelemetry;
   context: FacilitationContext;
   event: FacilitationEventKind;
@@ -70,21 +77,51 @@ export async function runFacilitationEvent(args: {
     throw new Error(`Unsupported facilitation event: ${args.event}`);
   }
 
+  const tel = (
+    args.createTelemetry ??
+    (() => {
+      throw new Error("runFacilitationEvent requires createTelemetry");
+    })
+  )();
+
+  const { identity } = await ensureFacilitationAgentRegistered(args.registry, args.sessionId);
   const prompt = buildParticipantCompletedPrompt(args.context);
-  const result = await generateText({
-    model: args.model,
-    prompt,
-    experimental_telemetry: {
-      isEnabled: true,
-      functionId: "facilitation-event",
+
+  const session = args.registry.createSession(identity.agentId, {
+    sessionId: args.sessionId,
+    hooks: tel.sessionHooks,
+    ctx: { model: args.model },
+    run: async ({ input, context }) => {
+      const { prompt: sessionPrompt, event } = input as FacilitationSessionInput;
+      const { model } = context as FacilitationSessionContext;
+      const result = await generateText({
+        model,
+        prompt: sessionPrompt,
+        experimental_telemetry: {
+          isEnabled: true,
+          functionId: "facilitation-event",
+          metadata: {
+            sessionId: args.sessionId,
+            event,
+          },
+        },
+      });
+
+      const text = result.text.trim();
+      return {
+        assistantId: nanoid(),
+        parts: [
+          { type: "text", text: text.length > 0 ? text : "Participant interview completed." },
+        ],
+      };
     },
   });
 
-  const text = result.text.trim();
-  return {
-    assistantId: nanoid(),
-    parts: [{ type: "text", text: text.length > 0 ? text : "Participant interview completed." }],
-  };
+  return session.start<FacilitationSessionInput, FacilitationEventOutput>({
+    prompt,
+    event: args.event,
+  });
 }
 
+export { ensureFacilitationAgentRegistered } from "./identity.ts";
 export { runFacilitationEvent as default };

@@ -4,9 +4,9 @@ import type {
   SessionParticipantContext,
   TeamMemberContext,
 } from "@shared/accounts/row";
-import type { SessionAccess, SessionLinkAccess } from "@shared/sessions/access";
+import type { SessionAccess, SessionLinkAccess, SessionLinkGrantRole } from "@shared/sessions/access";
 
-export type { SessionAccess, SessionLinkAccess };
+export type { SessionAccess, SessionLinkAccess, SessionLinkGrantRole };
 
 export type SessionSummary = {
   id: string;
@@ -54,8 +54,18 @@ export type CreateSessionResult = {
 };
 
 export type ManageSessionScopesInput = {
-  add?: { accountIds?: string[]; teamIds?: string[]; facilitationAccountIds?: string[] };
-  remove?: { accountIds?: string[]; teamIds?: string[]; facilitationAccountIds?: string[] };
+  add?: {
+    accountIds?: string[];
+    teamIds?: string[];
+    facilitationAccountIds?: string[];
+    facilitationTeamIds?: string[];
+  };
+  remove?: {
+    accountIds?: string[];
+    teamIds?: string[];
+    facilitationAccountIds?: string[];
+    facilitationTeamIds?: string[];
+  };
 };
 
 export async function fetchSessions(teamId?: string): Promise<SessionSummary[]> {
@@ -187,13 +197,16 @@ export async function fetchSessionAccess(sessionId: string): Promise<SessionAcce
 
 export async function setSessionLinkAccess(
   sessionId: string,
-  linkAccess: SessionLinkAccess,
+  patch: {
+    linkAccess?: SessionLinkAccess;
+    linkGrantRole?: SessionLinkGrantRole;
+  },
 ): Promise<SessionAccess> {
   const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/access`, {
     method: "PATCH",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ linkAccess }),
+    body: JSON.stringify(patch),
   });
   if (!res.ok) {
     const data = (await res.json().catch(() => null)) as { error?: string } | null;

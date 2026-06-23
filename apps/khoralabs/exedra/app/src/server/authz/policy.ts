@@ -621,6 +621,29 @@ export function grantTeamSessionAdmin(
   return createGrant(db, teamScope(teamId), sessionResource(sessionId), Feature.Admin, expiresAtMs);
 }
 
+export function grantTeamSessionFacilitation(
+  db: Database,
+  teamId: string,
+  sessionId: string,
+  expiresAtMs?: number | null,
+): string {
+  return createGrant(
+    db,
+    teamScope(teamId),
+    sessionResource(sessionId),
+    Feature.Facilitation,
+    expiresAtMs,
+  );
+}
+
+export function revokeTeamSessionFacilitation(
+  db: Database,
+  teamId: string,
+  sessionId: string,
+): void {
+  revokeGrant(db, teamScope(teamId), sessionResource(sessionId), Feature.Facilitation);
+}
+
 export function revokeSessionParticipant(db: Database, accountId: string, sessionId: string): void {
   revokeGrant(db, accountScope(accountId), sessionResource(sessionId), Feature.Participant);
 }

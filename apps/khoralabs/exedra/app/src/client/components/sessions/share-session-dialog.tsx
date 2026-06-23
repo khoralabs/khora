@@ -31,6 +31,7 @@ import {
   manageSessionScopes,
   type SessionAccess,
   type SessionLinkAccess,
+  type SessionLinkGrantRole,
   setSessionLinkAccess,
 } from "@/lib/sessions-api";
 import {
@@ -41,7 +42,7 @@ import {
 } from "@/lib/settings-api";
 
 type Candidate =
-  | { kind: "account"; member: TeamMemberSummary; role: "participant" | "facilitation" }
+  | { kind: "account"; member: TeamMemberSummary }
   | { kind: "team"; team: OrgTeamSummary };
 
 type ShareSessionDialogProps = {
@@ -66,7 +67,7 @@ export function ShareSessionDialog({
   const [adding, setAdding] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [addRole, setAddRole] = useState<"participant" | "facilitation">("participant");
+  const [accessRole, setAccessRole] = useState<SessionLinkGrantRole>("participant");
   const [listRefreshKey, setListRefreshKey] = useState(0);
 
   // Candidate pools
@@ -80,6 +81,7 @@ export function ShareSessionDialog({
     fetchSessionAccess(sessionId)
       .then((a) => {
         setAccess(a);
+        setAccessRole(a.linkGrantRole);
         void Promise.all([
           a.teamId ? fetchTeamMembers(a.teamId).then(setTeamMembers) : Promise.resolve(),
           a.orgId ? fetchOrgTeams(a.orgId).then(setOrgTeams) : Promise.resolve(),
@@ -103,7 +105,7 @@ export function ShareSessionDialog({
     return [
       ...teamMembers
         .filter((m) => !existingAccountIds.has(m.account.userId))
-        .map<Candidate>((m) => ({ kind: "account", member: m, role: "participant" })),
+        .map<Candidate>((m) => ({ kind: "account", member: m })),
       ...orgTeams
         .filter((t) => !existingTeamIds.has(t.team.id))
         .map<Candidate>((t) => ({ kind: "team", team: t })),
@@ -114,11 +116,23 @@ export function ShareSessionDialog({
     const linkAccess = value as SessionLinkAccess;
     setError(null);
     try {
-      const updated = await setSessionLinkAccess(sessionId, linkAccess);
+      const updated = await setSessionLinkAccess(sessionId, { linkAccess });
       setAccess(updated);
       setLinkCopied(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update visibility");
+    }
+  }
+
+  async function handleAccessRoleChange(value: string) {
+    const linkGrantRole = value === "facilitation" ? "facilitation" : "participant";
+    setError(null);
+    try {
+      const updated = await setSessionLinkAccess(sessionId, { linkGrantRole });
+      setAccess(updated);
+      setAccessRole(updated.linkGrantRole);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update access type");
     }
   }
 
@@ -143,12 +157,17 @@ export function ShareSessionDialog({
       if (candidate.kind === "account") {
         await manageSessionScopes(sessionId, {
           add:
-            addRole === "facilitation"
+            accessRole === "facilitation"
               ? { facilitationAccountIds: [candidate.member.account.userId] }
               : { accountIds: [candidate.member.account.userId] },
         });
       } else {
-        await manageSessionScopes(sessionId, { add: { teamIds: [candidate.team.team.id] } });
+        await manageSessionScopes(sessionId, {
+          add:
+            accessRole === "facilitation"
+              ? { facilitationTeamIds: [candidate.team.team.id] }
+              : { teamIds: [candidate.team.team.id] },
+        });
       }
       // Re-fetch access for updated candidate filtering, then refresh the list.
       const updated = await fetchSessionAccess(sessionId);
@@ -214,6 +233,16 @@ export function ShareSessionDialog({
                     </Select>
                   </div>
 
+                  <Select value={accessRole} onValueChange={(v) => void handleAccessRoleChange(v)}>
+                    <SelectTrigger size="sm" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="participant">Participant access</SelectItem>
+                      <SelectItem value="facilitation">Facilitation access</SelectItem>
+                    </SelectContent>
+                  </Select>
+
                   {access.linkAccess === "anyone" && linkUrl !== null ? (
                     <div className="flex gap-2">
                       <Input
@@ -237,20 +266,6 @@ export function ShareSessionDialog({
 
                 {/* Add people / teams combobox */}
                 <div className="space-y-2">
-                  <Select
-                    value={addRole}
-                    onValueChange={(value) =>
-                      setAddRole(value === "facilitation" ? "facilitation" : "participant")
-                    }
-                  >
-                    <SelectTrigger size="sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="participant">Add as participant</SelectItem>
-                      <SelectItem value="facilitation">Add facilitation access</SelectItem>
-                    </SelectContent>
-                  </Select>
                   <div className="flex items-center gap-2">
                     <Popover open={addOpen} onOpenChange={setAddOpen}>
                       <PopoverTrigger asChild>

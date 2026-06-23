@@ -8,7 +8,7 @@ import { Feature, ResourceType, ScopeType } from "../authz/policy";
 import { avatarUrlFromS3Key } from "../avatars/urls";
 import { getOrCreateSessionLinkInvite, getSessionLinkInvite } from "../db/invites";
 import { getOrg, getTeam } from "../db/membership";
-import { getSessionLinkAccess } from "../db/sessions";
+import { getSessionLinkAccess, getSessionLinkGrantRole } from "../db/sessions";
 
 export function listSessionAccessEntries(
   db: Database,
@@ -78,6 +78,7 @@ export function buildSessionAccess(
   canManage: boolean,
 ): SessionAccess {
   const linkAccess = getSessionLinkAccess(db, sessionId);
+  const linkGrantRole = getSessionLinkGrantRole(db, sessionId);
   let linkUrl: string | null = null;
 
   if (canManage) {
@@ -96,5 +97,5 @@ export function buildSessionAccess(
   const teamId = sessionRow?.team_id ?? "";
   const orgId = getOrgIdForTeam(db, teamId) ?? "";
 
-  return { linkAccess, linkUrl, canManage, teamId, orgId, entries };
+  return { linkAccess, linkGrantRole, linkUrl, canManage, teamId, orgId, entries };
 }

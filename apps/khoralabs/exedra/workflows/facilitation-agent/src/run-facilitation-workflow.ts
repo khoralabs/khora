@@ -2,7 +2,11 @@ import { runFacilitationEvent } from "@khoralabs/exedra-facilitation-agent";
 import { nanoid } from "nanoid";
 
 import type { FacilitationWorkflowParams } from "../../../shared/facilitation-workflow.ts";
-import { resolveFacilitationModel } from "./agent-runtime.ts";
+import {
+  createFacilitationTelemetry,
+  getAgentRegistry,
+  resolveFacilitationModel,
+} from "./agent-runtime.ts";
 import {
   appendFacilitationMessage,
   fetchParticipantContext,
@@ -14,8 +18,10 @@ export async function runFacilitationEventWorkflow(
 ): Promise<void> {
   const context = await fetchParticipantContext(params.sessionId, params.participantUserId);
   const output = await runFacilitationEvent({
-    registry: { register: async () => {}, get: async () => null } as never,
+    registry: getAgentRegistry(),
     model: resolveFacilitationModel(),
+    sessionId: params.sessionId,
+    createTelemetry: createFacilitationTelemetry,
     context: {
       sessionTopic: context.sessionTopic,
       participantName: context.participantName,

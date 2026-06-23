@@ -26,6 +26,7 @@ export async function runFacilitationEventInProcess(
   const output = await runFacilitationEvent({
     registry: getAgentRegistry(),
     model: createModel(),
+    sessionId: params.sessionId,
     createTelemetry: createExedraAgentTelemetry,
     context: {
       sessionTopic: context.sessionTopic,

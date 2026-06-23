@@ -19,6 +19,8 @@ export { isTeamMember } from "./membership";
 export type SessionKind = "standard" | "onboarding";
 export type SessionLinkAccess = "restricted" | "anyone";
 
+export type SessionLinkGrantRole = "participant" | "facilitation";
+
 export type SessionRecord = {
   id: string;
   teamId: string;
@@ -489,6 +491,23 @@ export function setSessionLinkAccess(
   access: SessionLinkAccess,
 ): void {
   db.prepare(`UPDATE sessions SET link_access = ? WHERE id = ?`).run(access, sessionId);
+}
+
+export function getSessionLinkGrantRole(db: Database, sessionId: string): SessionLinkGrantRole {
+  const row = db
+    .query<{ link_grant_role: string }, [string]>(
+      `SELECT link_grant_role FROM sessions WHERE id = ? LIMIT 1`,
+    )
+    .get(sessionId);
+  return row?.link_grant_role === "facilitation" ? "facilitation" : "participant";
+}
+
+export function setSessionLinkGrantRole(
+  db: Database,
+  sessionId: string,
+  role: SessionLinkGrantRole,
+): void {
+  db.prepare(`UPDATE sessions SET link_grant_role = ? WHERE id = ?`).run(role, sessionId);
 }
 
 export function sessionRoleForUser(

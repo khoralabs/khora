@@ -159,6 +159,7 @@ export function ensureExedraSchema(db: Database): void {
   migrateSessionsDropFacilitator(db);
   migrateAvatarS3KeyColumns(db);
   migrateSessionsAddLinkAccess(db);
+  migrateSessionsAddLinkGrantRole(db);
   migrateSessionsAddInterviewCompletion(db);
   migrateInvitesAddReusableColumns(db);
   migrateOrgsAddIdentityEncrypted(db);
@@ -533,6 +534,14 @@ function migrateSessionsAddLinkAccess(db: Database): void {
   const columns = db.query<{ name: string }, []>("PRAGMA table_info(sessions)").all();
   if (columns.some((column) => column.name === "link_access")) return;
   db.run(`ALTER TABLE sessions ADD COLUMN link_access TEXT NOT NULL DEFAULT 'restricted'`);
+}
+
+function migrateSessionsAddLinkGrantRole(db: Database): void {
+  const columns = db.query<{ name: string }, []>("PRAGMA table_info(sessions)").all();
+  if (columns.some((column) => column.name === "link_grant_role")) return;
+  db.run(
+    `ALTER TABLE sessions ADD COLUMN link_grant_role TEXT NOT NULL DEFAULT 'participant'`,
+  );
 }
 
 function migrateOrgsAddIdentityEncrypted(db: Database): void {

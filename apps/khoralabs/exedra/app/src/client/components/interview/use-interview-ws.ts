@@ -146,7 +146,7 @@ export function useInterviewWs({
 
   connectWebSocketRef.current = (): WebSocket => {
     const data = bootstrapRef.current;
-    if (data === null) throw new Error("Not connected");
+    if (data === null || data.wsUrl === undefined) throw new Error("Not connected");
 
     closeWebSocket(wsRef.current);
 

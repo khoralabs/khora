@@ -268,8 +268,12 @@
       "version": "1.0.0",
       "dependencies": {
         "@ai-sdk/google": "^3.0.0",
+        "@khoralabs/agent-capabilities": "^0.1.1",
+        "@khoralabs/agent-capabilities-otel": "^0.1.1",
         "@khoralabs/exedra-facilitation-agent": "workspace:*",
+        "@khoralabs/observability": "workspace:*",
         "@renderinc/sdk": "^0.6.0",
+        "ai": "^6.0.205",
         "nanoid": "^5.1.5",
       },
       "devDependencies": {
@@ -439,6 +443,33 @@
       "devDependencies": {
         "@types/bun": "latest",
         "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/chat/core": {
+      "name": "@khoralabs/chat-core",
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/chat/persistence": {
+      "name": "@khoralabs/chat-persistence",
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/chat/react": {
+      "name": "@khoralabs/chat-react",
+      "devDependencies": {
+        "@types/bun": "latest",
       },
       "peerDependencies": {
         "typescript": "^5",
@@ -1751,6 +1782,12 @@
     "@khoralabs/blog": ["@khoralabs/blog@workspace:packages/libs/blog"],
 
     "@khoralabs/bun-web": ["@khoralabs/bun-web@workspace:packages/libs/bun-web"],
+
+    "@khoralabs/chat-core": ["@khoralabs/chat-core@workspace:packages/chat/core"],
+
+    "@khoralabs/chat-persistence": ["@khoralabs/chat-persistence@workspace:packages/chat/persistence"],
+
+    "@khoralabs/chat-react": ["@khoralabs/chat-react@workspace:packages/chat/react"],
 
     "@khoralabs/cli-flow-nbc": ["@khoralabs/cli-flow-nbc@workspace:packages/cli/cli-flow-nbc"],
 

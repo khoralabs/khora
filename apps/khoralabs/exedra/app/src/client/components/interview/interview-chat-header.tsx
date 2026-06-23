@@ -3,21 +3,27 @@ import { useEffect, useRef, useState } from "react";
 
 import { SessionViewToggle } from "@/components/exedra/session-view-toggle";
 import { Button } from "@/components/ui/button";
-import type { InterviewBootstrap } from "@/lib/interview-api";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { patchSession } from "@/lib/sessions-api";
 import { appSectionHeaderClassName } from "@/shell/app-section-header";
 import { useMobileChromeLayoutOptional } from "@/shell/mobile-chrome-layout";
 import { SidebarCollapseTrigger } from "@/shell/sidebar-collapse-trigger";
 import { SidebarSheetTrigger } from "@/shell/sidebar-sheet-trigger";
 
+import type { ThreadKind } from "./thread-chat-types";
+
 type InterviewChatHeaderProps = {
-  bootstrap: InterviewBootstrap;
   sessionId: string;
+  sessionTopic: string;
   connected: boolean;
   canManage?: boolean;
   onNavigate: (path: string) => void;
   onShare?: () => void;
   onTopicChange?: (topic: string) => void;
+  activeThread?: ThreadKind;
+  onActiveThreadChange?: (thread: ThreadKind) => void;
+  showFacilitationTab?: boolean;
+  showInterviewTab?: boolean;
 };
 
 function SessionTitleEditor({
@@ -105,55 +111,82 @@ function SessionTitleEditor({
 }
 
 export function InterviewChatHeader({
-  bootstrap,
   sessionId,
+  sessionTopic,
   connected,
   canManage,
   onNavigate,
   onShare,
   onTopicChange,
+  activeThread,
+  onActiveThreadChange,
+  showFacilitationTab = false,
+  showInterviewTab = false,
 }: InterviewChatHeaderProps) {
   const mobileLayout = useMobileChromeLayoutOptional();
+  const showThreadTabs =
+    showFacilitationTab &&
+    showInterviewTab &&
+    activeThread !== undefined &&
+    onActiveThreadChange !== undefined;
 
   return (
-    <div className={appSectionHeaderClassName("gap-2 px-3 lg:gap-3 lg:px-4")}>
-      <SidebarSheetTrigger />
-      <SidebarCollapseTrigger />
+    <div className="border-b">
+      <div className={appSectionHeaderClassName("gap-2 px-3 lg:gap-3 lg:px-4")}>
+        <SidebarSheetTrigger />
+        <SidebarCollapseTrigger />
 
-      <SessionTitleEditor
-        sessionId={sessionId}
-        initialTopic={bootstrap.session.topic}
-        canEdit={canManage === true}
-        onSaved={onTopicChange}
-      />
+        <SessionTitleEditor
+          sessionId={sessionId}
+          initialTopic={sessionTopic}
+          canEdit={canManage === true}
+          onSaved={onTopicChange}
+        />
 
-      {!connected ? (
-        <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">Connecting…</span>
-      ) : null}
+        {!connected ? (
+          <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">
+            Connecting…
+          </span>
+        ) : null}
 
-      {mobileLayout?.isCompactChrome ? (
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          className="shrink-0 lg:hidden"
-          aria-label="Open beliefs panel"
-          onClick={() => mobileLayout.setCanvasOpen(true)}
-        >
-          <Lightbulb />
-        </Button>
-      ) : null}
+        {mobileLayout?.isCompactChrome ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="shrink-0 lg:hidden"
+            aria-label="Open beliefs panel"
+            onClick={() => mobileLayout.setCanvasOpen(true)}
+          >
+            <Lightbulb />
+          </Button>
+        ) : null}
 
-      {canManage && onShare !== undefined ? (
-        <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={onShare}>
-          <Share2 />
-          Share
-        </Button>
-      ) : null}
+        {canManage && onShare !== undefined ? (
+          <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={onShare}>
+            <Share2 />
+            Share
+          </Button>
+        ) : null}
 
-      <div className="shrink-0">
-        <SessionViewToggle activeView="chat" onNavigate={onNavigate} sessionId={sessionId} />
+        <div className="shrink-0">
+          <SessionViewToggle activeView="chat" onNavigate={onNavigate} sessionId={sessionId} />
+        </div>
       </div>
+
+      {showThreadTabs ? (
+        <div className="px-3 pb-2 lg:px-4">
+          <Tabs
+            value={activeThread}
+            onValueChange={(value) => onActiveThreadChange(value as ThreadKind)}
+          >
+            <TabsList variant="line">
+              <TabsTrigger value="facilitation">Facilitation</TabsTrigger>
+              <TabsTrigger value="interview">My interview</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+      ) : null}
     </div>
   );
 }
