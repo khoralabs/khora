@@ -1,27 +1,12 @@
-import { ArrowLeft, Link2, Plus, UserPlus } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import {
-  AccountItem,
-  AccountItemContent,
-  AccountItemMedia,
-  AccountItemTitle,
-} from "@/components/account/account-item";
 import { StagedFileDropZone } from "@/components/exedra/staged-file-drop-zone";
+import { ShareSessionContent } from "@/components/sessions/share-session-content";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import {
   Field,
-  FieldContent,
   FieldDescription,
   FieldError,
   FieldGroup,
@@ -32,12 +17,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { useAnalytics } from "@/lib/analytics";
-import { copyTextToClipboard } from "@/lib/copy-text";
 import { contributeKnowledge } from "@/lib/documents-api";
-import { INVITE_LINK_SINGLE_USE_NOTE } from "@/lib/invite-copy";
-import { type MeTeam, mintTeamInvite } from "@/lib/me-api";
+import type { MeTeam } from "@/lib/me-api";
 import { orgSessionNamespace } from "@/lib/memories-api";
-import { createSession, fetchTeamMembers, type TeamMemberRow } from "@/lib/sessions-api";
+import { createSession } from "@/lib/sessions-api";
 import { type PendingFile, revokeStagedAttachments } from "@/lib/staged-file-attachments";
 
 type SessionWizardProps = {
@@ -47,25 +30,17 @@ type SessionWizardProps = {
 };
 
 type WizardStep = 1 | 2 | 3;
-type SubmitPhase = "idle" | "creating" | "contributing";
+type PreparePhase = "idle" | "creating" | "contributing";
 
 export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps) {
   const track = useAnalytics();
   const [step, setStep] = useState<WizardStep>(1);
   const [topic, setTopic] = useState("");
   const [deadline, setDeadline] = useState<Date | undefined>();
-  const [members, setMembers] = useState<TeamMemberRow[]>([]);
-  const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(new Set());
-  const [shareWholeTeam, setShareWholeTeam] = useState(true);
-  const [createInvite, setCreateInvite] = useState(false);
-  const [loadingMembers, setLoadingMembers] = useState(false);
-  const [membersLoaded, setMembersLoaded] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitPhase, setSubmitPhase] = useState<SubmitPhase>("idle");
+  const [createdSessionId, setCreatedSessionId] = useState<string | null>(null);
+  const [preparingShare, setPreparingShare] = useState(false);
+  const [preparePhase, setPreparePhase] = useState<PreparePhase>("idle");
   const [stagedDocuments, setStagedDocuments] = useState<PendingFile[]>([]);
-  const [teamInviteUrl, setTeamInviteUrl] = useState<string | null>(null);
-  const [mintingTeamInvite, setMintingTeamInvite] = useState(false);
-  const [teamInviteCopied, setTeamInviteCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const stagedDocumentsRef = useRef(stagedDocuments);
   stagedDocumentsRef.current = stagedDocuments;
@@ -75,29 +50,6 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
       revokeStagedAttachments(stagedDocumentsRef.current);
     };
   }, []);
-
-  useEffect(() => {
-    if (step !== 3 || membersLoaded) return;
-
-    let cancelled = false;
-    setLoadingMembers(true);
-    void fetchTeamMembers(team.id)
-      .then((items) => {
-        if (cancelled) return;
-        setMembers(items.filter((member) => !member.isCurrentUser));
-        setMembersLoaded(true);
-        setLoadingMembers(false);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Failed to load team members");
-        setLoadingMembers(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [step, team.id, membersLoaded]);
 
   function handleBack() {
     if (step === 1) {
@@ -118,48 +70,12 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
     setStep(2);
   }
 
-  function handleNextFromContext() {
-    setError(null);
-    setStep(3);
-  }
-
-  function toggleMember(userId: string) {
-    setSelectedMemberIds((current) => {
-      const next = new Set(current);
-      if (next.has(userId)) next.delete(userId);
-      else next.add(userId);
-      return next;
-    });
-  }
-
-  async function handleAddTeamMember() {
-    setMintingTeamInvite(true);
-    setError(null);
-    setTeamInviteCopied(false);
-    try {
-      const invite = await mintTeamInvite(team.id);
-      setTeamInviteUrl(new URL(invite.url, window.location.origin).href);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create invite link");
-    } finally {
-      setMintingTeamInvite(false);
+  async function handleNextFromContext() {
+    if (createdSessionId !== null) {
+      setError(null);
+      setStep(3);
+      return;
     }
-  }
-
-  async function handleCopyTeamInvite() {
-    if (teamInviteUrl === null) return;
-    setError(null);
-    try {
-      await copyTextToClipboard(teamInviteUrl);
-      setTeamInviteCopied(true);
-      track("invite_link_copied", { source: "session_wizard" });
-    } catch {
-      setError("Could not copy automatically. Select the link below and copy manually.");
-    }
-  }
-
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
 
     const trimmedTopic = topic.trim();
     if (trimmedTopic.length === 0) {
@@ -175,21 +91,18 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
       deadlineMs = endOfDay.getTime();
     }
 
-    setSubmitting(true);
-    setSubmitPhase("creating");
+    setPreparingShare(true);
+    setPreparePhase("creating");
     setError(null);
     try {
       const result = await createSession({
         teamId: team.id,
         topic: trimmedTopic,
         deadlineMs,
-        memberUserIds: [...selectedMemberIds],
-        teamIds: shareWholeTeam ? [team.id] : undefined,
-        createInvite,
       });
 
       if (stagedDocuments.length > 0) {
-        setSubmitPhase("contributing");
+        setPreparePhase("contributing");
         await contributeKnowledge({
           files: stagedDocuments.map((attachment) => attachment.file),
           namespace: orgSessionNamespace(team.orgId, team.id, result.session.id),
@@ -199,36 +112,26 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
         });
       }
 
-      if (result.inviteUrl !== undefined) {
-        try {
-          await copyTextToClipboard(result.inviteUrl);
-          track("invite_link_copied", { source: "session_wizard" });
-        } catch {
-          // session was created; invite copy is best-effort
-        }
-      }
-      track("session_created", {
-        hasInviteLink: createInvite,
-        hasTeamAccess: shareWholeTeam,
-        memberCount: selectedMemberIds.size,
-        documentCount: stagedDocuments.length,
-      });
-      revokeStagedAttachments(stagedDocuments);
-      setStagedDocuments([]);
-      onCreated(result.session.id);
+      track("session_created", { documentCount: stagedDocuments.length });
+      setCreatedSessionId(result.session.id);
+      setStep(3);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create session");
-      setSubmitting(false);
-      setSubmitPhase("idle");
+    } finally {
+      setPreparingShare(false);
+      setPreparePhase("idle");
     }
   }
 
-  const submitLabel =
-    submitPhase === "contributing"
-      ? "Adding documents…"
-      : submitting
-        ? "Creating…"
-        : "Create session";
+  function handleFinish() {
+    if (createdSessionId === null) return;
+    revokeStagedAttachments(stagedDocuments);
+    setStagedDocuments([]);
+    onCreated(createdSessionId);
+  }
+
+  const contextNextLabel =
+    preparePhase === "contributing" ? "Adding documents…" : preparingShare ? "Creating…" : "Next";
 
   return (
     <Card className="mx-auto w-full max-w-2xl border-none shadow-none">
@@ -300,7 +203,7 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
               </FieldDescription>
               <StagedFileDropZone
                 attachments={stagedDocuments}
-                disabled={submitting}
+                disabled={preparingShare}
                 onAttachmentsChange={setStagedDocuments}
               />
             </FieldSet>
@@ -308,159 +211,35 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
             {error !== null ? <FieldError>{error}</FieldError> : null}
 
             <div className="flex gap-2">
-              <Button type="button" variant="outline" className="flex-1" onClick={() => setStep(1)}>
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                disabled={preparingShare}
+                onClick={() => setStep(1)}
+              >
                 Back
               </Button>
-              <Button type="button" className="flex-1" onClick={handleNextFromContext}>
-                Next
+              <Button
+                type="button"
+                className="flex-1"
+                disabled={preparingShare}
+                onClick={() => void handleNextFromContext()}
+              >
+                {contextNextLabel}
               </Button>
             </div>
           </div>
         ) : null}
 
-        {step === 3 ? (
-          <form onSubmit={(event) => void handleSubmit(event)} className="space-y-8">
+        {step === 3 && createdSessionId !== null ? (
+          <div className="space-y-8">
             <FieldSet>
-              <FieldLegend>Access</FieldLegend>
+              <FieldLegend>Share session</FieldLegend>
               <FieldDescription>
                 Choose who can access this session. You will be the facilitator.
               </FieldDescription>
-              <FieldGroup data-slot="checkbox-group">
-                <Field orientation="horizontal">
-                  <Checkbox
-                    id="share-whole-team"
-                    checked={shareWholeTeam}
-                    onCheckedChange={(checked) => setShareWholeTeam(checked === true)}
-                  />
-                  <FieldContent>
-                    <FieldLabel htmlFor="share-whole-team">Give the whole team access</FieldLabel>
-                    <FieldDescription>
-                      Every member of {team.name} can join this session.
-                    </FieldDescription>
-                  </FieldContent>
-                </Field>
-                <Field orientation="horizontal">
-                  <Checkbox
-                    id="create-invite"
-                    checked={createInvite}
-                    onCheckedChange={(checked) => setCreateInvite(checked === true)}
-                  />
-                  <FieldContent>
-                    <FieldLabel htmlFor="create-invite">Create invite link</FieldLabel>
-                    <FieldDescription>
-                      Generate a single-use link to share after creating the session.
-                    </FieldDescription>
-                  </FieldContent>
-                </Field>
-              </FieldGroup>
-            </FieldSet>
-
-            <FieldSet>
-              <FieldLegend>Individual members</FieldLegend>
-              <FieldDescription>
-                Choose colleagues from your team to include in this session.
-              </FieldDescription>
-              {loadingMembers ? (
-                <div className="flex justify-center py-8">
-                  <Spinner className="size-5" />
-                </div>
-              ) : members.length === 0 ? (
-                <Empty className="border">
-                  <EmptyHeader>
-                    <EmptyMedia variant="icon">
-                      <UserPlus />
-                    </EmptyMedia>
-                    <EmptyTitle>No other team members yet</EmptyTitle>
-                    <EmptyDescription>
-                      Invite a colleague to join {team.name} so you can include them in this
-                      session.
-                    </EmptyDescription>
-                  </EmptyHeader>
-                  <EmptyContent>
-                    {teamInviteUrl === null ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        disabled={mintingTeamInvite}
-                        onClick={() => void handleAddTeamMember()}
-                      >
-                        {mintingTeamInvite ? "Creating…" : "Add a team member"}
-                      </Button>
-                    ) : (
-                      <div className="flex w-full flex-col gap-2">
-                        <div className="flex w-full gap-2">
-                          <Input
-                            readOnly
-                            disabled={teamInviteCopied}
-                            value={teamInviteUrl}
-                            className="min-w-0 flex-1"
-                            onFocus={(event) => event.currentTarget.select()}
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            disabled={mintingTeamInvite}
-                            onClick={() =>
-                              void (teamInviteCopied
-                                ? handleAddTeamMember()
-                                : handleCopyTeamInvite())
-                            }
-                          >
-                            {teamInviteCopied ? (
-                              <>
-                                <Plus />
-                                New link
-                              </>
-                            ) : (
-                              <>
-                                <Link2 />
-                                Copy
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {INVITE_LINK_SINGLE_USE_NOTE}
-                        </p>
-                      </div>
-                    )}
-                  </EmptyContent>
-                </Empty>
-              ) : (
-                <FieldGroup data-slot="checkbox-group">
-                  {members.map((member) => {
-                    const userId = member.account.userId;
-                    const checked = selectedMemberIds.has(userId);
-                    return (
-                      <Field key={userId} orientation="horizontal">
-                        <input
-                          id={`member-${userId}`}
-                          type="checkbox"
-                          className="size-4 rounded border border-input"
-                          checked={checked}
-                          onChange={() => toggleMember(userId)}
-                        />
-                        <FieldContent>
-                          <FieldLabel htmlFor={`member-${userId}`} className="w-full">
-                            <AccountItem
-                              account={member.account}
-                              isCurrentUser={member.isCurrentUser}
-                              variant="default"
-                              size="sm"
-                              className="border-0 p-0"
-                            >
-                              <AccountItemMedia />
-                              <AccountItemContent>
-                                <AccountItemTitle />
-                              </AccountItemContent>
-                            </AccountItem>
-                          </FieldLabel>
-                        </FieldContent>
-                      </Field>
-                    );
-                  })}
-                </FieldGroup>
-              )}
+              <ShareSessionContent sessionId={createdSessionId} />
             </FieldSet>
 
             {error !== null ? <FieldError>{error}</FieldError> : null}
@@ -469,11 +248,15 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
               <Button type="button" variant="outline" className="flex-1" onClick={() => setStep(2)}>
                 Back
               </Button>
-              <Button type="submit" className="flex-1" disabled={submitting}>
-                {submitLabel}
+              <Button type="button" className="flex-1" onClick={handleFinish}>
+                Open session
               </Button>
             </div>
-          </form>
+          </div>
+        ) : step === 3 ? (
+          <div className="flex justify-center py-8">
+            <Spinner className="size-5" />
+          </div>
         ) : null}
       </CardContent>
     </Card>
