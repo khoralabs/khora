@@ -1,5 +1,5 @@
 import { Upload } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useId, useRef, useState } from "react";
 
 import {
   Attachment,
@@ -7,6 +7,7 @@ import {
   AttachmentRemove,
   Attachments,
 } from "@/components/ai-elements/attachments";
+import { Button } from "@/components/ui/button";
 import {
   addStagedFiles,
   MAX_STAGED_FILES,
@@ -21,6 +22,7 @@ type StagedFileDropZoneProps = {
   disabled?: boolean;
   description?: string;
   maxFiles?: number;
+  inputId?: string;
 };
 
 export function StagedFileDropZone({
@@ -29,8 +31,12 @@ export function StagedFileDropZone({
   disabled = false,
   description = "Add files the agent should use as session context.",
   maxFiles = MAX_STAGED_FILES,
+  inputId,
 }: StagedFileDropZoneProps) {
   const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const generatedInputId = useId();
+  const resolvedInputId = inputId ?? generatedInputId;
 
   const addFiles = useCallback(
     (files: FileList | File[]) => {
@@ -48,7 +54,8 @@ export function StagedFileDropZone({
 
   return (
     <div className="space-y-3">
-      <label
+      <fieldset
+        aria-label="Upload session documents"
         className={cn(
           "flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-6 text-center transition-colors",
           dragOver ? "border-primary bg-primary/5" : "border-muted-foreground/30",
@@ -67,26 +74,32 @@ export function StagedFileDropZone({
           addFiles(event.dataTransfer.files);
         }}
       >
-        <Upload className="size-8 text-muted-foreground" />
+        <Upload className="size-8 text-muted-foreground" aria-hidden />
         <p className="text-sm text-muted-foreground">{description}</p>
-        <p className="text-sm text-muted-foreground">
-          Drag files here or{" "}
-          <span className="cursor-pointer font-medium text-foreground underline-offset-4 hover:underline">
-            browse
-            <input
-              type="file"
-              multiple
-              className="sr-only"
-              disabled={disabled || attachments.length >= maxFiles}
-              onChange={(event) => {
-                if (event.target.files !== null) addFiles(event.target.files);
-                event.target.value = "";
-              }}
-            />
-          </span>
-        </p>
+        <p className="text-sm text-muted-foreground">Drag files here or browse to upload.</p>
+        <input
+          ref={fileInputRef}
+          id={resolvedInputId}
+          type="file"
+          multiple
+          className="sr-only"
+          disabled={disabled || attachments.length >= maxFiles}
+          onChange={(event) => {
+            if (event.target.files !== null) addFiles(event.target.files);
+            event.target.value = "";
+          }}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={disabled || attachments.length >= maxFiles}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          Browse files
+        </Button>
         <p className="text-xs text-muted-foreground">Up to {maxFiles} files</p>
-      </label>
+      </fieldset>
 
       {attachments.length > 0 ? (
         <Attachments className="w-full" variant="grid">

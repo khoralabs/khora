@@ -60,7 +60,8 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
     setStep((current) => (current === 3 ? 2 : 1));
   }
 
-  function handleNextFromDetails() {
+  function handleNextFromDetails(event: React.FormEvent) {
+    event.preventDefault();
     const trimmedTopic = topic.trim();
     if (trimmedTopic.length === 0) {
       setError("Session topic is required.");
@@ -70,7 +71,8 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
     setStep(2);
   }
 
-  async function handleNextFromContext() {
+  async function handleNextFromContext(event: React.FormEvent) {
+    event.preventDefault();
     if (createdSessionId !== null) {
       setError(null);
       setStep(3);
@@ -123,7 +125,8 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
     }
   }
 
-  function handleFinish() {
+  function handleFinish(event: React.FormEvent) {
+    event.preventDefault();
     if (createdSessionId === null) return;
     revokeStagedAttachments(stagedDocuments);
     setStagedDocuments([]);
@@ -150,7 +153,7 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
       </CardHeader>
       <CardContent>
         {step === 1 ? (
-          <div className="space-y-8">
+          <form className="space-y-8" onSubmit={handleNextFromDetails}>
             <FieldSet>
               <FieldLegend>Session details</FieldLegend>
               <FieldGroup>
@@ -162,6 +165,7 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
                     onChange={(e) => setTopic(e.target.value)}
                     placeholder="Q2 roadmap alignment"
                     autoFocus
+                    required
                   />
                   <FieldDescription>
                     The interview agent opens with a question about this topic.
@@ -186,15 +190,15 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
               <Button type="button" variant="outline" className="flex-1" onClick={onCancel}>
                 Cancel
               </Button>
-              <Button type="button" className="flex-1" onClick={handleNextFromDetails}>
+              <Button type="submit" className="flex-1">
                 Next
               </Button>
             </div>
-          </div>
+          </form>
         ) : null}
 
         {step === 2 ? (
-          <div className="space-y-8">
+          <form className="space-y-8" onSubmit={(event) => void handleNextFromContext(event)}>
             <FieldSet>
               <FieldLegend>Session context (optional)</FieldLegend>
               <FieldDescription>
@@ -204,6 +208,7 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
               <StagedFileDropZone
                 attachments={stagedDocuments}
                 disabled={preparingShare}
+                inputId="session-context-files"
                 onAttachmentsChange={setStagedDocuments}
               />
             </FieldSet>
@@ -220,20 +225,15 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
               >
                 Back
               </Button>
-              <Button
-                type="button"
-                className="flex-1"
-                disabled={preparingShare}
-                onClick={() => void handleNextFromContext()}
-              >
+              <Button type="submit" className="flex-1" disabled={preparingShare}>
                 {contextNextLabel}
               </Button>
             </div>
-          </div>
+          </form>
         ) : null}
 
         {step === 3 && createdSessionId !== null ? (
-          <div className="space-y-8">
+          <form className="space-y-8" onSubmit={handleFinish}>
             <FieldSet>
               <FieldLegend>Share session</FieldLegend>
               <FieldDescription>
@@ -248,11 +248,11 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
               <Button type="button" variant="outline" className="flex-1" onClick={() => setStep(2)}>
                 Back
               </Button>
-              <Button type="button" className="flex-1" onClick={handleFinish}>
+              <Button type="submit" className="flex-1">
                 Open session
               </Button>
             </div>
-          </div>
+          </form>
         ) : step === 3 ? (
           <div className="flex justify-center py-8">
             <Spinner className="size-5" />
