@@ -1,11 +1,12 @@
 import { ArrowLeft, Link2, Plus, UserPlus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AccountItem,
   AccountItemContent,
   AccountItemMedia,
   AccountItemTitle,
 } from "@/components/account/account-item";
+import { StagedFileDropZone } from "@/components/exedra/staged-file-drop-zone";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -32,9 +33,12 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { useAnalytics } from "@/lib/analytics";
 import { copyTextToClipboard } from "@/lib/copy-text";
+import { contributeKnowledge } from "@/lib/documents-api";
 import { INVITE_LINK_SINGLE_USE_NOTE } from "@/lib/invite-copy";
 import { type MeTeam, mintTeamInvite } from "@/lib/me-api";
+import { orgSessionNamespace } from "@/lib/memories-api";
 import { createSession, fetchTeamMembers, type TeamMemberRow } from "@/lib/sessions-api";
+import { type PendingFile, revokeStagedAttachments } from "@/lib/staged-file-attachments";
 
 type SessionWizardProps = {
   team: MeTeam;
@@ -42,7 +46,8 @@ type SessionWizardProps = {
   onCreated: (sessionId: string) => void;
 };
 
-type WizardStep = 1 | 2;
+type WizardStep = 1 | 2 | 3;
+type SubmitPhase = "idle" | "creating" | "contributing";
 
 export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps) {
   const track = useAnalytics();
@@ -56,13 +61,23 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [membersLoaded, setMembersLoaded] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitPhase, setSubmitPhase] = useState<SubmitPhase>("idle");
+  const [stagedDocuments, setStagedDocuments] = useState<PendingFile[]>([]);
   const [teamInviteUrl, setTeamInviteUrl] = useState<string | null>(null);
   const [mintingTeamInvite, setMintingTeamInvite] = useState(false);
   const [teamInviteCopied, setTeamInviteCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const stagedDocumentsRef = useRef(stagedDocuments);
+  stagedDocumentsRef.current = stagedDocuments;
 
   useEffect(() => {
-    if (step !== 2 || membersLoaded) return;
+    return () => {
+      revokeStagedAttachments(stagedDocumentsRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (step !== 3 || membersLoaded) return;
 
     let cancelled = false;
     setLoadingMembers(true);
@@ -90,10 +105,10 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
       return;
     }
     setError(null);
-    setStep(1);
+    setStep((current) => (current === 3 ? 2 : 1));
   }
 
-  function handleNext() {
+  function handleNextFromDetails() {
     const trimmedTopic = topic.trim();
     if (trimmedTopic.length === 0) {
       setError("Session topic is required.");
@@ -101,6 +116,11 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
     }
     setError(null);
     setStep(2);
+  }
+
+  function handleNextFromContext() {
+    setError(null);
+    setStep(3);
   }
 
   function toggleMember(userId: string) {
@@ -156,6 +176,7 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
     }
 
     setSubmitting(true);
+    setSubmitPhase("creating");
     setError(null);
     try {
       const result = await createSession({
@@ -166,6 +187,18 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
         teamIds: shareWholeTeam ? [team.id] : undefined,
         createInvite,
       });
+
+      if (stagedDocuments.length > 0) {
+        setSubmitPhase("contributing");
+        await contributeKnowledge({
+          files: stagedDocuments.map((attachment) => attachment.file),
+          namespace: orgSessionNamespace(team.orgId, team.id, result.session.id),
+          orgId: team.orgId,
+          teamId: team.id,
+          sessionId: result.session.id,
+        });
+      }
+
       if (result.inviteUrl !== undefined) {
         try {
           await copyTextToClipboard(result.inviteUrl);
@@ -178,13 +211,24 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
         hasInviteLink: createInvite,
         hasTeamAccess: shareWholeTeam,
         memberCount: selectedMemberIds.size,
+        documentCount: stagedDocuments.length,
       });
+      revokeStagedAttachments(stagedDocuments);
+      setStagedDocuments([]);
       onCreated(result.session.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create session");
       setSubmitting(false);
+      setSubmitPhase("idle");
     }
   }
+
+  const submitLabel =
+    submitPhase === "contributing"
+      ? "Adding documents…"
+      : submitting
+        ? "Creating…"
+        : "Create session";
 
   return (
     <Card className="mx-auto w-full max-w-2xl border-none shadow-none">
@@ -196,7 +240,7 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
           <div>
             <CardTitle>Create session</CardTitle>
             <CardDescription>
-              {team.orgName} · {team.name} · Step {step} of 2
+              {team.orgName} · {team.name} · Step {step} of 3
             </CardDescription>
           </div>
         </div>
@@ -239,7 +283,7 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
               <Button type="button" variant="outline" className="flex-1" onClick={onCancel}>
                 Cancel
               </Button>
-              <Button type="button" className="flex-1" onClick={handleNext}>
+              <Button type="button" className="flex-1" onClick={handleNextFromDetails}>
                 Next
               </Button>
             </div>
@@ -247,6 +291,34 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
         ) : null}
 
         {step === 2 ? (
+          <div className="space-y-8">
+            <FieldSet>
+              <FieldLegend>Session context (optional)</FieldLegend>
+              <FieldDescription>
+                Add documents the interview agent can reference during this session, or skip this
+                step.
+              </FieldDescription>
+              <StagedFileDropZone
+                attachments={stagedDocuments}
+                disabled={submitting}
+                onAttachmentsChange={setStagedDocuments}
+              />
+            </FieldSet>
+
+            {error !== null ? <FieldError>{error}</FieldError> : null}
+
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" className="flex-1" onClick={() => setStep(1)}>
+                Back
+              </Button>
+              <Button type="button" className="flex-1" onClick={handleNextFromContext}>
+                Next
+              </Button>
+            </div>
+          </div>
+        ) : null}
+
+        {step === 3 ? (
           <form onSubmit={(event) => void handleSubmit(event)} className="space-y-8">
             <FieldSet>
               <FieldLegend>Access</FieldLegend>
@@ -394,11 +466,11 @@ export function SessionWizard({ team, onCancel, onCreated }: SessionWizardProps)
             {error !== null ? <FieldError>{error}</FieldError> : null}
 
             <div className="flex gap-2">
-              <Button type="button" variant="outline" className="flex-1" onClick={() => setStep(1)}>
+              <Button type="button" variant="outline" className="flex-1" onClick={() => setStep(2)}>
                 Back
               </Button>
               <Button type="submit" className="flex-1" disabled={submitting}>
-                {submitting ? "Creating…" : "Create session"}
+                {submitLabel}
               </Button>
             </div>
           </form>

@@ -1,14 +1,6 @@
-import type { FileUIPart } from "ai";
-import { FileUp, Upload } from "lucide-react";
-import { nanoid } from "nanoid";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { FileUp } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
-import {
-  Attachment,
-  AttachmentPreview,
-  AttachmentRemove,
-  Attachments,
-} from "@/components/ai-elements/attachments";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,7 +13,8 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { contributeKnowledge, type DocumentBatch, fetchDocumentBatch } from "@/lib/documents-api";
-import { cn } from "@/lib/utils";
+import { type PendingFile, revokeStagedAttachments } from "@/lib/staged-file-attachments";
+import { StagedFileDropZone } from "./staged-file-drop-zone";
 
 type ContributeKnowledgeDialogProps = {
   open: boolean;
@@ -34,22 +27,6 @@ type ContributeKnowledgeDialogProps = {
 };
 
 type DialogPhase = "idle" | "uploading" | "processing" | "done" | "error";
-
-type PendingFile = FileUIPart & { id: string; file: File };
-
-const MAX_FILES = 10;
-
-function fileToAttachment(file: File): PendingFile {
-  const id = nanoid();
-  return {
-    type: "file",
-    id,
-    filename: file.name,
-    mediaType: file.type || "application/octet-stream",
-    url: URL.createObjectURL(file),
-    file,
-  };
-}
 
 function pollBatchUntilSettled(batchId: string): Promise<DocumentBatch> {
   return new Promise((resolve, reject) => {
@@ -87,40 +64,16 @@ export function ContributeKnowledgeDialog({
   const [contextText, setContextText] = useState("");
   const [phase, setPhase] = useState<DialogPhase>("idle");
   const [error, setError] = useState<string | null>(null);
-  const [dragOver, setDragOver] = useState(false);
-
   useEffect(() => {
     if (!open) return;
     setAttachments((current) => {
-      for (const attachment of current) {
-        if (attachment.url.startsWith("blob:")) URL.revokeObjectURL(attachment.url);
-      }
+      revokeStagedAttachments(current);
       return [];
     });
     setContextText("");
     setPhase("idle");
     setError(null);
-    setDragOver(false);
   }, [open]);
-
-  const addFiles = useCallback((files: FileList | File[]) => {
-    const incoming = Array.from(files);
-    if (incoming.length === 0) return;
-    setAttachments((current) => {
-      const remaining = MAX_FILES - current.length;
-      if (remaining <= 0) return current;
-      return [...current, ...incoming.slice(0, remaining).map(fileToAttachment)];
-    });
-  }, []);
-
-  const removeAttachment = useCallback((id: string) => {
-    setAttachments((current) => {
-      const next = current.filter((attachment) => attachment.id !== id);
-      const removed = current.find((attachment) => attachment.id === id);
-      if (removed?.url.startsWith("blob:")) URL.revokeObjectURL(removed.url);
-      return next;
-    });
-  }, []);
 
   const canSubmit = useMemo(
     () => attachments.length > 0 || contextText.trim().length > 0,
@@ -172,59 +125,12 @@ export function ContributeKnowledgeDialog({
           </p>
         ) : (
           <div className="space-y-4">
-            <label
-              className={cn(
-                "flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-6 text-center transition-colors",
-                dragOver ? "border-primary bg-primary/5" : "border-muted-foreground/30",
-                busy && "pointer-events-none opacity-60",
-              )}
-              onDragOver={(event) => {
-                event.preventDefault();
-                setDragOver(true);
-              }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={(event) => {
-                event.preventDefault();
-                setDragOver(false);
-                if (event.dataTransfer.files.length > 0) {
-                  addFiles(event.dataTransfer.files);
-                }
-              }}
-            >
-              <Upload className="size-8 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">
-                Drag files here or{" "}
-                <span className="cursor-pointer font-medium text-foreground underline-offset-4 hover:underline">
-                  browse
-                  <input
-                    type="file"
-                    multiple
-                    className="sr-only"
-                    disabled={busy || attachments.length >= MAX_FILES}
-                    onChange={(event) => {
-                      if (event.target.files !== null) addFiles(event.target.files);
-                      event.target.value = "";
-                    }}
-                  />
-                </span>
-              </p>
-              <p className="text-xs text-muted-foreground">Up to {MAX_FILES} files per batch</p>
-            </label>
-
-            {attachments.length > 0 ? (
-              <Attachments className="w-full" variant="grid">
-                {attachments.map((attachment) => (
-                  <Attachment
-                    data={attachment}
-                    key={attachment.id}
-                    onRemove={() => removeAttachment(attachment.id)}
-                  >
-                    <AttachmentPreview />
-                    <AttachmentRemove />
-                  </Attachment>
-                ))}
-              </Attachments>
-            ) : null}
+            <StagedFileDropZone
+              attachments={attachments}
+              disabled={busy}
+              description="Add files and text to contribute to the knowledge graph."
+              onAttachmentsChange={setAttachments}
+            />
 
             <Textarea
               disabled={busy}
