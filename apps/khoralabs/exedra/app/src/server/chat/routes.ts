@@ -4,19 +4,12 @@ import type { UIMessage } from "ai";
 import { requireRegistrySessionResponse } from "../auth/require-session";
 import { canReadThread, canWriteFacilitationThread } from "../authz";
 import { getDb } from "../db/index";
-import {
-  getOrCreateFacilitationThread,
-  getOrCreateInterviewThread,
-  userHasSessionAccess,
-} from "../db/sessions";
+import { userHasSessionAccess } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
 import { dispatchGenerateResponseForChat } from "./dispatch";
 import { getChatService, subscribeToChatThread } from "./service";
-import {
-  ensureFacilitationChatThread,
-  ensureInterviewChatThread,
-  sessionChannelId,
-} from "./session-chat";
+import { ensureFacilitationChatThread, ensureInterviewChatThread } from "./session-chat";
+import { parseSessionChatThreadId, sessionChannelId } from "./thread-ids";
 
 function json(value: unknown, init?: ResponseInit): Response {
   return Response.json(value, init);
@@ -34,23 +27,14 @@ async function requireUser(req: Request) {
 }
 
 async function canReadChatThread(
-  db: import("bun:sqlite").Database,
+  _db: import("bun:sqlite").Database,
   userId: string,
   chatThreadId: string,
 ): Promise<boolean> {
-  const parts = chatThreadId.split(":");
-  const sessionId = parts[1];
-  const kind = parts[2];
-  if (!sessionId || !kind) return false;
-  if (kind === "interview") {
-    const ownerUserId = parts.slice(3).join(":");
-    if (ownerUserId !== userId) return false;
-    return await canReadThread(userId, await getOrCreateInterviewThread(db, { sessionId, userId }));
-  }
-  if (kind === "facilitation") {
-    return await canReadThread(userId, await getOrCreateFacilitationThread(db, sessionId));
-  }
-  return false;
+  const parsed = parseSessionChatThreadId(chatThreadId);
+  if (parsed === null) return false;
+  if (parsed.kind === "interview" && parsed.userId !== userId) return false;
+  return canReadThread(userId, chatThreadId);
 }
 
 export async function handleChatBootstrap(req: Request, sessionId: string): Promise<Response> {
@@ -103,12 +87,9 @@ export async function handleAppendChatPost(req: Request, threadId: string): Prom
   if (!(await canReadChatThread(db, auth.userId, threadId)))
     return json({ error: "Forbidden" }, { status: 403 });
 
-  const parts = threadId.split(":");
-  const sessionId = parts[1];
-  const kind = parts[2];
-  if (sessionId && kind === "facilitation") {
-    const legacyThreadId = await getOrCreateFacilitationThread(db, sessionId);
-    if (!(await canWriteFacilitationThread(auth.userId, legacyThreadId))) {
+  const parsed = parseSessionChatThreadId(threadId);
+  if (parsed !== null && parsed.kind === "facilitation") {
+    if (!(await canWriteFacilitationThread(auth.userId, threadId))) {
       return json({ error: "Forbidden" }, { status: 403 });
     }
   }
@@ -128,10 +109,9 @@ export async function handleAppendChatPost(req: Request, threadId: string): Prom
   };
   const result = await getChatService().appendPost(input);
 
-  if (sessionId && kind === "interview") {
+  if (parsed !== null && parsed.kind === "interview") {
     try {
       await dispatchGenerateResponseForChat({
-        legacyThreadId: await getOrCreateInterviewThread(db, { sessionId, userId: auth.userId }),
         chatThreadId: threadId,
         userId: auth.userId,
         userTimeZone: body.userTimeZone,

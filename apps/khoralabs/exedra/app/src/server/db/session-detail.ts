@@ -1,4 +1,6 @@
 import type { Database } from "bun:sqlite";
+import { getChatService, isChatNotFound } from "../chat/service";
+import { interviewChatThreadId } from "../chat/thread-ids";
 
 export type InterviewStatus = "not_started" | "started" | "complete";
 
@@ -20,27 +22,23 @@ export function formatDaysToDeadline(deadlineMs: number | null, nowMs = Date.now
   return `${Math.ceil(days)} days`;
 }
 
-export function getInterviewStatus(
-  db: Database,
+export async function getInterviewStatus(
+  _db: Database,
   sessionId: string,
   userId: string,
-): InterviewStatus {
-  const thread = db
-    .query<{ id: string; closed_at_ms: number | null }, [string, string]>(
-      `SELECT id, closed_at_ms FROM threads
-       WHERE session_id = ? AND user_id = ? AND kind = 'interview'
-       LIMIT 1`,
-    )
-    .get(sessionId, userId);
+): Promise<InterviewStatus> {
+  const chat = getChatService();
+  const threadId = interviewChatThreadId(sessionId, userId);
+  try {
+    await chat.getThread(threadId);
+  } catch (error) {
+    if (isChatNotFound(error)) return "not_started";
+    throw error;
+  }
 
-  if (thread === null) return "not_started";
-  if (thread.closed_at_ms !== null) return "complete";
-
-  const row = db
-    .query<{ c: number }, [string]>(
-      `SELECT COUNT(1) AS c FROM messages WHERE thread_id = ? AND role = 'user'`,
-    )
-    .get(thread.id);
-
-  return row !== null && row.c > 0 ? "started" : "not_started";
+  const { items } = await chat.listPosts({ threadId, limit: 100 });
+  if (items.some((post) => post.role === "assistant" && post.metadata?.completion !== undefined)) {
+    return "complete";
+  }
+  return items.some((post) => post.role === "user") ? "started" : "not_started";
 }

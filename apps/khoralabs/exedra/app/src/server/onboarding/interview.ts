@@ -1,14 +1,15 @@
 import type { Database } from "bun:sqlite";
 import type { UIMessage } from "ai";
 import { grantSessionCreatorAccess, grantSessionParticipant } from "../authz";
+import { getChatService } from "../chat/service";
+import { ensureInterviewChatThread } from "../chat/session-chat";
 import {
   completeTeamMemberOnboardingInterview,
   getOrg,
   getTeam,
   setTeamMemberOnboardingSession,
 } from "../db/membership";
-import { loadThreadMessages } from "../db/messages";
-import { createOnboardingSession, getOrCreateInterviewThread } from "../db/sessions";
+import { createOnboardingSession } from "../db/sessions";
 import { bootstrapSessionMemoriesForTeamSession } from "../memories/bootstrap-session";
 import { seedOnboardingMemories } from "../memories/seed-onboarding";
 
@@ -42,12 +43,13 @@ export async function createOnboardingInterviewForMember(
     sessionId: session.id,
   });
 
-  const threadId = await getOrCreateInterviewThread(db, {
+  const { chatThread } = await ensureInterviewChatThread({
+    db,
     sessionId: session.id,
     userId: params.userId,
   });
 
-  return { sessionId: session.id, threadId };
+  return { sessionId: session.id, threadId: chatThread.id };
 }
 
 function collectBeliefsFromThread(messages: UIMessage[]): string[] {
@@ -78,7 +80,7 @@ export async function applyOnboardingCompletionSideEffects(args: {
     throw new Error("Team or organization not found");
   }
 
-  const messages = loadThreadMessages(db, threadId);
+  const { items: messages } = await getChatService().listPosts({ threadId, limit: 100 });
   const beliefs = collectBeliefsFromThread(messages);
 
   seedOnboardingMemories({

@@ -6,7 +6,6 @@ import {
 import { requireRegistrySessionResponse } from "../auth/require-session";
 import {
   canManageSession,
-  canWriteFacilitationThread,
   Feature,
   grantSessionCreatorAccess,
   grantSessionFacilitation,
@@ -25,7 +24,6 @@ import {
   canContributeToSessionKg,
   canCreateSession,
   canReadSessionKg,
-  canReadThread,
   enforce,
   ResourceType,
 } from "../authz/policy";
@@ -33,6 +31,9 @@ import {
   dispatchInitialInterviewResponseForParticipant,
   dispatchInitialInterviewResponsesForTeam,
 } from "../chat/initial-interview-response";
+import { getChatService, isChatNotFound } from "../chat/service";
+import { ensureFacilitationChatThread, ensureInterviewChatThread } from "../chat/session-chat";
+import { interviewChatThreadId } from "../chat/thread-ids";
 import { loadBeliefFeedback, upsertBeliefFeedback } from "../db/beliefs";
 import { getDb } from "../db/index";
 import {
@@ -41,15 +42,10 @@ import {
   mintSessionParticipantInvite,
 } from "../db/invites";
 import { getOrg, getTeam, listTeamMembers } from "../db/membership";
-import { loadThreadMessages } from "../db/messages";
 import { formatDaysToDeadline, sessionPhaseFromStatus } from "../db/session-detail";
 import {
   createSession,
-  getInterviewThreadId,
-  getOrCreateFacilitationThread,
-  getOrCreateInterviewThread,
   getSession,
-  getThread,
   listSessionsForUser,
   patchSession,
   sessionRoleForUser,
@@ -67,7 +63,6 @@ import { resolveBeliefTextForIntegration } from "../memories/integrate-belief";
 import { orgSessionScope, userSessionScope } from "../memories/namespaces";
 import { releasePersonalMemoryAccessForParticipant } from "../memories/personal-memory-access";
 import { resolveOrgAgentAuthorForOrg, resolveViewerAuthor } from "../messages/resolve-author";
-import { serializeThreadMessages } from "../messages/serialize";
 import { buildSessionAccess } from "./resolve-access";
 
 type CreateSessionBody = {
@@ -395,7 +390,7 @@ export async function handleManageSessionScopes(
       return Response.json({ error: "You must belong to every shared team" }, { status: 403 });
     }
     await grantTeamSessionFacilitation(sharedTeamId, sessionId);
-    await getOrCreateFacilitationThread(db, sessionId);
+    await ensureFacilitationChatThread({ db, sessionId });
     await syncFacilitationThreadGrants(db, sessionId);
   }
 
@@ -424,7 +419,7 @@ export async function handleManageSessionScopes(
       return Response.json({ error: "Account must belong to the session team" }, { status: 400 });
     }
     await grantSessionFacilitation(accountId, sessionId);
-    await getOrCreateFacilitationThread(db, sessionId);
+    await ensureFacilitationChatThread({ db, sessionId });
     await syncFacilitationThreadGrants(db, sessionId);
   }
 
@@ -447,27 +442,20 @@ export async function handleManageSessionScopes(
 async function buildInterviewPayload(
   db: ReturnType<typeof getDb>,
   session: NonNullable<ReturnType<typeof getSession>>,
-  threadId: string,
+  chatThreadId: string,
   participantUserId: string,
 ) {
-  const rawMessages = loadThreadMessages(db, threadId);
-  const beliefFeedback = loadBeliefFeedback(db, threadId);
-  const thread = getThread(db, threadId);
+  const chat = getChatService();
+  const thread = await chat.getThread(chatThreadId);
+  const posts = await chat.listPosts({ threadId: chatThreadId, limit: 100 });
+  const beliefFeedback = loadBeliefFeedback(db, chatThreadId);
   const team = await getTeam(db, session.teamId);
   const org = team === null ? null : getOrg(db, team.orgId);
   if (team === null || org === null) {
     throw new Error("Organization not found for session");
   }
-  const messages = serializeThreadMessages(db, rawMessages, { org });
   const viewer = resolveViewerAuthor(db, participantUserId);
   const agent = resolveOrgAgentAuthorForOrg(org);
-
-  const completionSource =
-    thread?.interviewCompletedAtMs != null
-      ? thread
-      : session.interviewCompletedAtMs !== null
-        ? session
-        : null;
 
   return {
     session: {
@@ -476,20 +464,20 @@ async function buildInterviewPayload(
       status: session.status,
       kind: session.kind,
     },
-    threadId,
-    messages,
+    thread,
+    posts,
     agent,
     viewer,
     beliefFeedback,
     ...(session.kind === "onboarding"
       ? { onboarding: { orgName: org.name, teamName: team.name } }
       : {}),
-    ...(completionSource?.interviewCompletedAtMs != null
+    ...(session.interviewCompletedAtMs != null
       ? {
           completion: {
-            completedAtMs: completionSource.interviewCompletedAtMs,
-            summary: completionSource.interviewSummary ?? "",
-            nextSessionOptions: completionSource.nextSessionOptions ?? [],
+            completedAtMs: session.interviewCompletedAtMs,
+            summary: session.interviewSummary ?? "",
+            nextSessionOptions: session.nextSessionOptions ?? [],
           },
         }
       : {}),
@@ -532,8 +520,8 @@ export async function handleGetInterview(req: Request, sessionId: string): Promi
         status: session.status,
         kind: session.kind,
       },
-      threadId: null,
-      messages: [],
+      thread: null,
+      posts: { items: [], nextCursor: null },
       agent: resolveOrgAgentAuthorForOrg(org),
       viewer: resolveViewerAuthor(db, user.id),
       beliefFeedback: [],
@@ -558,11 +546,11 @@ export async function handleGetInterview(req: Request, sessionId: string): Promi
     );
   }
 
-  const threadId = await getOrCreateInterviewThread(db, { sessionId, userId: user.id });
+  const { chatThread } = await ensureInterviewChatThread({ db, sessionId, userId: user.id });
 
   try {
     return Response.json({
-      ...(await buildInterviewPayload(db, session, threadId, user.id)),
+      ...(await buildInterviewPayload(db, session, chatThread.id, user.id)),
       canFacilitate: await hasFacilitationAccess(user.id, sessionId),
       canParticipate: await hasDirectSessionGrant(user.id, sessionId, Feature.Participant),
       canWriteInterview: await hasDirectSessionGrant(user.id, sessionId, Feature.Participant),
@@ -609,8 +597,11 @@ export async function handleGetParticipantInterview(
     return Response.json({ error: "Participant not found" }, { status: 404 });
   }
 
-  const threadId = getInterviewThreadId(db, { sessionId, userId: participantUserId });
-  if (threadId === null) {
+  const chatThreadId = interviewChatThreadId(sessionId, participantUserId);
+  try {
+    await getChatService().getThread(chatThreadId);
+  } catch (error) {
+    if (!isChatNotFound(error)) throw error;
     return Response.json({
       session: {
         id: session.id,
@@ -618,8 +609,8 @@ export async function handleGetParticipantInterview(
         status: session.status,
         kind: session.kind,
       },
-      threadId: null,
-      messages: [],
+      thread: null,
+      posts: { items: [], nextCursor: null },
       agent: null,
       viewer: resolveViewerAuthor(db, participantUserId),
       beliefFeedback: [],
@@ -628,13 +619,9 @@ export async function handleGetParticipantInterview(
     });
   }
 
-  if (!(await canReadThread(user.id, threadId))) {
-    return Response.json({ error: "Forbidden" }, { status: 403 });
-  }
-
   try {
     return Response.json({
-      ...(await buildInterviewPayload(db, session, threadId, participantUserId)),
+      ...(await buildInterviewPayload(db, session, chatThreadId, participantUserId)),
       participant,
       readOnly: true as const,
     });
@@ -698,7 +685,7 @@ export async function handlePatchBeliefFeedback(
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const threadId = await getOrCreateInterviewThread(db, { sessionId, userId: user.id });
+  const threadId = interviewChatThreadId(sessionId, user.id);
   const record = upsertBeliefFeedback(db, {
     threadId,
     beliefId,
@@ -707,8 +694,7 @@ export async function handlePatchBeliefFeedback(
     correction: body.correction,
   });
 
-  const beliefText = resolveBeliefTextForIntegration({
-    db,
+  const beliefText = await resolveBeliefTextForIntegration({
     userId: user.id,
     threadId,
     sessionId,
@@ -843,7 +829,7 @@ export async function handleInterviewOptIn(req: Request, sessionId: string): Pro
   await grantSessionParticipant(user.id, sessionId);
   const interview = await dispatchInitialInterviewResponseForParticipant(db, sessionId, user.id);
 
-  return Response.json({ ok: true, threadId: interview.legacyThreadId });
+  return Response.json({ ok: true, chatThreadId: interview.chatThreadId });
 }
 
 export async function handleGetFacilitation(req: Request, sessionId: string): Promise<Response> {
@@ -861,15 +847,14 @@ export async function handleGetFacilitation(req: Request, sessionId: string): Pr
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const threadId = await getOrCreateFacilitationThread(db, sessionId);
+  const { chatThread } = await ensureFacilitationChatThread({ db, sessionId });
   const team = await getTeam(db, session.teamId);
   const org = team === null ? null : getOrg(db, team.orgId);
   if (team === null || org === null) {
     return Response.json({ error: "Organization not found for session" }, { status: 500 });
   }
 
-  const rawMessages = loadThreadMessages(db, threadId);
-  const messages = serializeThreadMessages(db, rawMessages, { org });
+  const posts = await getChatService().listPosts({ threadId: chatThread.id, limit: 100 });
   const viewer = resolveViewerAuthor(db, user.id);
   const agent = resolveOrgAgentAuthorForOrg(org);
 
@@ -880,11 +865,11 @@ export async function handleGetFacilitation(req: Request, sessionId: string): Pr
       status: session.status,
       kind: session.kind,
     },
-    threadId,
-    messages,
+    thread: chatThread,
+    posts,
     agent,
     viewer,
-    canWrite: await canWriteFacilitationThread(user.id, threadId),
+    canWrite: await hasFacilitationAccess(user.id, sessionId),
     canFacilitate: true,
     canParticipate: await hasDirectSessionGrant(user.id, sessionId, Feature.Participant),
   });

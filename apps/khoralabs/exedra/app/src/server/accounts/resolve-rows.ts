@@ -146,7 +146,7 @@ export async function listAccountRowsForSession(
         kind: "session_participant",
         sessionId,
         role,
-        interviewStatus: getInterviewStatus(db, sessionId, userId),
+        interviewStatus: await getInterviewStatus(db, sessionId, userId),
       },
     });
   }

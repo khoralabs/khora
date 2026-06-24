@@ -4,7 +4,6 @@ import { grantSessionCreatorAccess } from "../authz";
 import { createIsolatedAuthzDatabase, installTestAuthzService } from "../authz/test-service";
 import { getOrCreateUser } from "../identity/users";
 import { consumeInvite, getInvitePublicInfo, mintSessionParticipantInvite } from "./invites";
-import { insertMessage, loadThreadMessages } from "./messages";
 import { ensureExedraSchema } from "./schema";
 import { createOrg, createSession, createTeam } from "./sessions";
 
@@ -56,34 +55,4 @@ test("session invite is single-use", async () => {
 
   const second = consumeInvite(db, token, user.id);
   expect(second).toBeNull();
-});
-
-test("messages round-trip as UIMessage JSONB", async () => {
-  const user = await getOrCreateUser(db, "registry-user-2");
-  const orgId = await createOrg(db, { name: "Org2", ownerId: user.id });
-  const teamId = await createTeam(db, { orgId, name: "Team2", ownerId: user.id });
-  const session = createSession(db, {
-    teamId,
-    topic: "Review",
-  });
-  await grantSessionCreatorAccess(user.id, session.id);
-
-  const threadId = crypto.randomUUID();
-  db.run(
-    `INSERT INTO threads (id, kind, session_id, user_id, created_at_ms) VALUES (?, 'interview', ?, ?, ?)`,
-    [threadId, session.id, user.id, Date.now()],
-  );
-
-  insertMessage(db, {
-    id: "msg-1",
-    threadId,
-    role: "user",
-    parts: [{ type: "text", text: "hello" }],
-    messageIndex: 0,
-    authorDid: user.id,
-  });
-
-  const messages = loadThreadMessages(db, threadId);
-  expect(messages).toHaveLength(1);
-  expect(messages[0]?.parts[0]).toEqual({ type: "text", text: "hello" });
 });

@@ -4,7 +4,8 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { closeChatDb, getChatService } from "../chat/service";
-import { interviewChatThreadId } from "../chat/session-chat";
+import { ensureInterviewChatThread } from "../chat/session-chat";
+import { interviewChatThreadId } from "../chat/thread-ids";
 import { closeDb } from "../db/index";
 import { ensureExedraSchema } from "../db/schema";
 import { createOrg, createTeam } from "../db/sessions";
@@ -226,12 +227,12 @@ test("GET participant interview allows facilitator and denies participant", asyn
   const participant = await getOrCreateUser(db, "registry-participant-chat");
   const orgId = await createOrg(db, { name: "Org", ownerId: facilitator.id });
   const teamId = await createTeam(db, { orgId, name: "Team", ownerId: facilitator.id });
-  const { createSession, getOrCreateInterviewThread } = await import("../db/sessions");
+  const { createSession } = await import("../db/sessions");
   const { grantSessionCreatorAccess, grantSessionParticipant } = await import("../authz/policy");
   const session = createSession(db, { teamId, topic: "Participant chat read" });
   await grantSessionCreatorAccess(facilitator.id, session.id);
   await grantSessionParticipant(participant.id, session.id);
-  await getOrCreateInterviewThread(db, { sessionId: session.id, userId: participant.id });
+  await ensureInterviewChatThread({ db, sessionId: session.id, userId: participant.id });
   db.close();
 
   const { mock } = await import("bun:test");
@@ -280,12 +281,12 @@ test("GET participant interview allows facilitator and denies participant", asyn
   const _outsider = await getOrCreateUser(db, "registry-outsider-chat");
   const orgId = await createOrg(db, { name: "Org", ownerId: facilitator.id });
   const teamId = await createTeam(db, { orgId, name: "Team", ownerId: facilitator.id });
-  const { createSession, getOrCreateInterviewThread } = await import("../db/sessions");
+  const { createSession } = await import("../db/sessions");
   const { grantSessionCreatorAccess, grantSessionParticipant } = await import("../authz/policy");
   const session = createSession(db, { teamId, topic: "Participant chat read" });
   await grantSessionCreatorAccess(facilitator.id, session.id);
   await grantSessionParticipant(participant.id, session.id);
-  await getOrCreateInterviewThread(db, { sessionId: session.id, userId: participant.id });
+  await ensureInterviewChatThread({ db, sessionId: session.id, userId: participant.id });
   db.close();
 
   const { mock } = await import("bun:test");

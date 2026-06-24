@@ -1,8 +1,12 @@
 import { Database } from "bun:sqlite";
-import { beforeAll, expect, test } from "bun:test";
+import { afterEach, beforeAll, expect, test } from "bun:test";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { createIsolatedAuthzDatabase, installTestAuthzService } from "../authz/test-service";
+import { closeChatDb, getChatService } from "../chat/service";
+import { interviewChatThreadId, sessionChannelId } from "../chat/thread-ids";
 import { getOrCreateUser } from "../identity/users";
-import { insertMessage } from "./messages";
 import { ensureExedraSchema } from "./schema";
 import { formatDaysToDeadline, getInterviewStatus, sessionPhaseFromStatus } from "./session-detail";
 import { createOrg, createSession, createTeam } from "./sessions";
@@ -10,6 +14,11 @@ import { createOrg, createSession, createTeam } from "./sessions";
 beforeAll(() => {
   process.env.EXEDRA_IDENTITY_KEY =
     "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+});
+
+afterEach(() => {
+  closeChatDb();
+  delete process.env.EXEDRA_DATA_DIR;
 });
 
 test("formatDaysToDeadline shows <1 day when under 24 hours remain", () => {
@@ -28,6 +37,7 @@ test("sessionPhaseFromStatus maps alignment and individual phases", () => {
 test("getInterviewStatus tracks thread and messages", async () => {
   const authzDb = createIsolatedAuthzDatabase();
   installTestAuthzService(authzDb);
+  process.env.EXEDRA_DATA_DIR = mkdtempSync(path.join(tmpdir(), "exedra-status-test-"));
   const db = new Database(":memory:");
   ensureExedraSchema(db);
   const user = await getOrCreateUser(db, "registry-interview-status");
@@ -38,29 +48,44 @@ test("getInterviewStatus tracks thread and messages", async () => {
     topic: "Review",
   });
 
-  expect(getInterviewStatus(db, session.id, user.id)).toBe("not_started");
+  expect(await getInterviewStatus(db, session.id, user.id)).toBe("not_started");
 
-  const threadId = crypto.randomUUID();
-  db.prepare(
-    `INSERT INTO threads (id, kind, session_id, user_id, created_at_ms, closed_at_ms)
-     VALUES (?, 'interview', ?, ?, ?, NULL)`,
-  ).run(threadId, session.id, user.id, Date.now());
-
-  expect(getInterviewStatus(db, session.id, user.id)).toBe("not_started");
-
-  insertMessage(db, {
-    id: "msg-1",
-    threadId,
-    role: "user",
-    parts: [{ type: "text", text: "hello" }],
-    messageIndex: 0,
-    authorDid: user.id,
+  const chat = getChatService();
+  await chat.createChannel({ id: sessionChannelId(session.id) });
+  const threadId = interviewChatThreadId(session.id, user.id);
+  await chat.createThread({
+    id: threadId,
+    root: { type: "channel", channelId: sessionChannelId(session.id) },
   });
 
-  expect(getInterviewStatus(db, session.id, user.id)).toBe("started");
+  expect(await getInterviewStatus(db, session.id, user.id)).toBe("not_started");
 
-  db.prepare(`UPDATE threads SET closed_at_ms = ? WHERE id = ?`).run(Date.now(), threadId);
-  expect(getInterviewStatus(db, session.id, user.id)).toBe("complete");
+  await chat.appendPost({
+    threadId,
+    author: { type: "account", id: user.id },
+    message: {
+      id: "msg-1",
+      role: "user",
+      parts: [{ type: "text", text: "hello" }],
+    },
+  });
 
+  expect(await getInterviewStatus(db, session.id, user.id)).toBe("started");
+
+  await chat.appendPost({
+    threadId,
+    author: { type: "agent", id: "agent" },
+    message: {
+      id: "msg-2",
+      role: "assistant",
+      parts: [{ type: "text", text: "done" }],
+      metadata: { completion: true },
+    },
+  });
+  expect(await getInterviewStatus(db, session.id, user.id)).toBe("complete");
+
+  const dataDir = process.env.EXEDRA_DATA_DIR;
   db.close();
+  authzDb.close();
+  if (dataDir !== undefined) rmSync(dataDir, { recursive: true, force: true });
 });

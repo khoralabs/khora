@@ -1,13 +1,10 @@
-import type { Database } from "bun:sqlite";
-
-import { loadThreadMessages } from "../db/messages.js";
+import { getChatService } from "../chat/service.js";
 
 type BeliefFlagMetadata = {
   beliefFlags?: { belief: string; messageId: string }[];
 };
 
 export type IntegrateBeliefParams = {
-  db: Database;
   userId: string;
   threadId: string;
   sessionId: string;
@@ -24,11 +21,14 @@ function parseBeliefGlobalIndex(beliefId: string): number | null {
   return Number.isFinite(index) ? index : null;
 }
 
-export function resolveBeliefText(db: Database, threadId: string, beliefId: string): string | null {
+export async function resolveBeliefText(
+  threadId: string,
+  beliefId: string,
+): Promise<string | null> {
   const globalIndex = parseBeliefGlobalIndex(beliefId);
   if (globalIndex === null) return null;
 
-  const messages = loadThreadMessages(db, threadId);
+  const { items: messages } = await getChatService().listPosts({ threadId, limit: 100 });
   let count = 0;
   for (const message of messages) {
     const metadata = message.metadata as BeliefFlagMetadata | undefined;
@@ -42,11 +42,11 @@ export function resolveBeliefText(db: Database, threadId: string, beliefId: stri
   return null;
 }
 
-export function resolveBeliefTextForIntegration(params: IntegrateBeliefParams): string {
+export async function resolveBeliefTextForIntegration(
+  params: IntegrateBeliefParams,
+): Promise<string> {
   if (params.feedback === "corrected") {
     return params.correction?.trim() ?? "";
   }
-  return (
-    params.belief?.trim() || resolveBeliefText(params.db, params.threadId, params.beliefId) || ""
-  );
+  return params.belief?.trim() || (await resolveBeliefText(params.threadId, params.beliefId)) || "";
 }

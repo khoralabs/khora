@@ -1,26 +1,10 @@
 import type { Channel, Thread } from "@khoralabs/chat-core";
+import { grantThreadAccess } from "../authz";
 import { publishChatThreadAuthzFacts } from "../authz/facts";
 import { getTeam } from "../db/membership";
-import {
-  getOrCreateFacilitationThread,
-  getOrCreateInterviewThread,
-  getSession,
-} from "../db/sessions";
+import { getSession, syncFacilitationThreadGrants } from "../db/sessions";
 import { getChatService, isChatNotFound } from "./service";
-
-export type ExedraChatThreadKind = "interview" | "facilitation";
-
-export function sessionChannelId(sessionId: string): string {
-  return `session:${sessionId}`;
-}
-
-export function interviewChatThreadId(sessionId: string, userId: string): string {
-  return `session:${sessionId}:interview:${userId}`;
-}
-
-export function facilitationChatThreadId(sessionId: string): string {
-  return `session:${sessionId}:facilitation`;
-}
+import { facilitationChatThreadId, interviewChatThreadId, sessionChannelId } from "./thread-ids";
 
 export async function ensureSessionChatChannel(sessionId: string): Promise<Channel> {
   const chat = getChatService();
@@ -40,16 +24,13 @@ export async function ensureInterviewChatThread(params: {
   db: import("bun:sqlite").Database;
   sessionId: string;
   userId: string;
-}): Promise<{ legacyThreadId: string; chatThread: Thread; created: boolean }> {
-  const legacyThreadId = await getOrCreateInterviewThread(params.db, {
-    sessionId: params.sessionId,
-    userId: params.userId,
-  });
+}): Promise<{ chatThread: Thread; created: boolean }> {
   await ensureSessionChatChannel(params.sessionId);
   const chat = getChatService();
   const threadId = interviewChatThreadId(params.sessionId, params.userId);
   try {
-    return { legacyThreadId, chatThread: await chat.getThread(threadId), created: false };
+    await grantThreadAccess(params.userId, threadId);
+    return { chatThread: await chat.getThread(threadId), created: false };
   } catch (error) {
     if (!isChatNotFound(error)) throw error;
     const chatThread = await chat.createThread({
@@ -59,9 +40,9 @@ export async function ensureInterviewChatThread(params: {
         kind: "interview",
         sessionId: params.sessionId,
         userId: params.userId,
-        legacyThreadId,
       },
     });
+    await grantThreadAccess(params.userId, threadId);
     const session = getSession(params.db, params.sessionId);
     if (session !== null) {
       const team = await getTeam(params.db, session.teamId);
@@ -74,7 +55,6 @@ export async function ensureInterviewChatThread(params: {
       }
     }
     return {
-      legacyThreadId,
       created: true,
       chatThread,
     };
@@ -84,13 +64,13 @@ export async function ensureInterviewChatThread(params: {
 export async function ensureFacilitationChatThread(params: {
   db: import("bun:sqlite").Database;
   sessionId: string;
-}): Promise<{ legacyThreadId: string; chatThread: Thread; created: boolean }> {
-  const legacyThreadId = await getOrCreateFacilitationThread(params.db, params.sessionId);
+}): Promise<{ chatThread: Thread; created: boolean }> {
   await ensureSessionChatChannel(params.sessionId);
   const chat = getChatService();
   const threadId = facilitationChatThreadId(params.sessionId);
   try {
-    return { legacyThreadId, chatThread: await chat.getThread(threadId), created: false };
+    await syncFacilitationThreadGrants(params.db, params.sessionId);
+    return { chatThread: await chat.getThread(threadId), created: false };
   } catch (error) {
     if (!isChatNotFound(error)) throw error;
     const chatThread = await chat.createThread({
@@ -99,9 +79,9 @@ export async function ensureFacilitationChatThread(params: {
       metadata: {
         kind: "facilitation",
         sessionId: params.sessionId,
-        legacyThreadId,
       },
     });
+    await syncFacilitationThreadGrants(params.db, params.sessionId);
     const session = getSession(params.db, params.sessionId);
     if (session !== null) {
       const team = await getTeam(params.db, session.teamId);
@@ -114,7 +94,6 @@ export async function ensureFacilitationChatThread(params: {
       }
     }
     return {
-      legacyThreadId,
       created: true,
       chatThread,
     };

@@ -1,13 +1,14 @@
+import type { PostPage, Thread } from "@khoralabs/chat-core";
 import type { MessageAuthor } from "@shared/messages/author";
 
-import type { InterviewSession, SerializedMessage } from "@/lib/interview-api";
+import type { InterviewSession } from "@/lib/interview-api";
 
 export type ThreadKind = "interview" | "facilitation";
 
 export type ThreadBootstrap = {
   session: InterviewSession;
-  threadId: string | null;
-  messages: SerializedMessage[];
+  thread: Thread | null;
+  posts: PostPage;
   agent: MessageAuthor | null;
   viewer: MessageAuthor | null;
   canWrite: boolean;

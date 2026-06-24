@@ -19,7 +19,7 @@ import type {
   InterviewCompletion,
 } from "@/lib/interview-api";
 import {
-  extractCompletionFromMessages,
+  extractCompletionFromPosts,
   normalizeInterviewCompletion,
   normalizeNextSessionOptions,
   optInInterview,
@@ -71,7 +71,7 @@ function InterviewContent({
     setChatError(null);
     setCompletion(
       normalizeInterviewCompletion(bootstrap.completion) ??
-        extractCompletionFromMessages(bootstrap.messages),
+        extractCompletionFromPosts(bootstrap.posts.items),
     );
   }, []);
 

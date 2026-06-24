@@ -3,9 +3,10 @@ import { Render } from "@renderinc/sdk";
 import { EXEDRA_CONVERSATIONAL_AGENT_ID } from "../authz/facts";
 import { getDb } from "../db/index";
 import { getTeam } from "../db/membership";
-import { getSession, getThread } from "../db/sessions";
+import { getSession } from "../db/sessions";
 import { orgSessionScope, userSessionScope } from "../memories/namespaces";
 import { getChatService } from "./service";
+import { parseSessionChatThreadId } from "./thread-ids";
 
 function requireWorkflowConfig(): {
   localDevUrl?: string;
@@ -27,21 +28,21 @@ function requireWorkflowConfig(): {
 }
 
 export async function dispatchGenerateResponseForChat(input: {
-  legacyThreadId: string;
   chatThreadId: string;
   userId: string;
   userTimeZone?: string;
 }): Promise<void> {
   const db = getDb();
-  const thread = getThread(db, input.legacyThreadId);
-  if (thread === null) throw new Error(`thread not found: ${input.legacyThreadId}`);
-  const session = getSession(db, thread.sessionId);
-  if (session === null) throw new Error(`session not found: ${thread.sessionId}`);
+  const parsedThread = parseSessionChatThreadId(input.chatThreadId);
+  if (parsedThread === null) throw new Error(`invalid chat thread id: ${input.chatThreadId}`);
+  const session = getSession(db, parsedThread.sessionId);
+  if (session === null) throw new Error(`session not found: ${parsedThread.sessionId}`);
   const team = await getTeam(db, session.teamId);
   if (team === null) throw new Error(`team not found: ${session.teamId}`);
 
   const posts = await getChatService().listPosts({ threadId: input.chatThreadId, limit: 100 });
-  const skillName = thread.kind === "interview" ? "conduct-interview" : "facilitate-conversation";
+  const skillName =
+    parsedThread.kind === "interview" ? "conduct-interview" : "facilitate-conversation";
   const responseId = crypto.randomUUID();
   const params: GenerateResponseWorkflowParams = {
     responseId,
@@ -67,8 +68,7 @@ export async function dispatchGenerateResponseForChat(input: {
         userTimeZone: input.userTimeZone,
       },
       invocationContext: {
-        legacyThreadId: input.legacyThreadId,
-        threadKind: thread.kind,
+        threadKind: parsedThread.kind,
       },
     },
     access: {
@@ -79,7 +79,7 @@ export async function dispatchGenerateResponseForChat(input: {
           resourceType: "session",
           resourceId: session.id,
         },
-        ...(thread.kind === "interview"
+        ...(parsedThread.kind === "interview"
           ? [
               {
                 namespace: userSessionScope(input.userId, team.orgId, team.id, session.id),

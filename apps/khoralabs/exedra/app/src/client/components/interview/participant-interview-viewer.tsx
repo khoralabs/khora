@@ -1,5 +1,6 @@
+import type { ScopeRef } from "@khoralabs/chat-core";
 import type { DisplayMessage } from "@khoralabs/chat-react";
-import { extractTextFromParts, extractToolCallsFromParts } from "@khoralabs/chat-react";
+import { postsToDisplayMessages } from "@khoralabs/chat-react";
 import { PostMessages } from "@khoralabs/chat-react/ui";
 import type { AccountProfile } from "@shared/accounts/row";
 import { ArrowLeft } from "lucide-react";
@@ -11,14 +12,9 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/u
 import { Spinner } from "@/components/ui/spinner";
 import { formatAccountDisplayName } from "@/lib/account-display";
 import { sessionDocumentDownloadUrl } from "@/lib/documents-api";
-import type {
-  BeliefFlag,
-  ChatDocument,
-  InterviewBootstrap,
-  SerializedMessage,
-} from "@/lib/interview-api";
+import type { BeliefFlag, ChatDocument, InterviewBootstrap } from "@/lib/interview-api";
 import {
-  extractBeliefsFromMessages,
+  extractBeliefsFromPosts,
   extractChatDocuments,
   fetchParticipantInterview,
 } from "@/lib/interview-api";
@@ -28,53 +24,6 @@ import { SidebarSheetTrigger } from "@/shell/sidebar-sheet-trigger";
 
 import type { InterviewScrollTarget } from "./use-scroll-to-message";
 import { useScrollToMessage } from "./use-scroll-to-message";
-
-function toDisplayMessages(messages: SerializedMessage[], sessionId: string): DisplayMessage[] {
-  return messages
-    .filter((message) => {
-      if (message.role !== "user" && message.role !== "assistant") return false;
-      const metadata = message.metadata as { kickoff?: boolean } | undefined;
-      return metadata?.kickoff !== true;
-    })
-    .map((message): DisplayMessage => {
-      const metadata = message.metadata as
-        | {
-            displayText?: string;
-            documents?: Array<{
-              id: string;
-              fileName: string;
-              mimeType?: string;
-              mediaType?: string;
-              byteSize?: number;
-            }>;
-          }
-        | undefined;
-      return {
-        id: message.id,
-        role: message.role as "user" | "assistant",
-        content:
-          typeof metadata?.displayText === "string"
-            ? metadata.displayText
-            : extractTextFromParts(message.parts),
-        createdAtMs: message.createdAtMs,
-        author: message.author,
-        attachments: metadata?.documents?.map((document) => ({
-          id: document.id,
-          fileName: document.fileName,
-          mediaType: document.mimeType ?? document.mediaType,
-          byteSize: document.byteSize,
-          url: sessionDocumentDownloadUrl(sessionId, document.id),
-        })),
-        toolCalls: extractToolCallsFromParts(message.parts),
-      };
-    })
-    .filter(
-      (message) =>
-        message.content.length > 0 ||
-        (message.attachments?.length ?? 0) > 0 ||
-        (message.toolCalls?.length ?? 0) > 0,
-    );
-}
 
 type ParticipantInterviewViewerProps = {
   sessionId: string;
@@ -123,8 +72,25 @@ export function ParticipantInterviewViewer({
     void fetchParticipantInterview(sessionId, participant.userId)
       .then((data) => {
         if (cancelled) return;
-        const beliefs = extractBeliefsFromMessages(data.messages, data.beliefFeedback ?? []);
-        setMessages(toDisplayMessages(data.messages, sessionId));
+        const beliefs = extractBeliefsFromPosts(data.posts.items, data.beliefFeedback ?? []);
+        const resolveAuthor = (author: ScopeRef) => {
+          if (author.type === "agent") return data.agent;
+          if (author.type === "account" && author.id === participant.userId) {
+            return {
+              name: formatAccountDisplayName(participant),
+              email: participant.email,
+              avatarUrl: participant.avatarUrl,
+            };
+          }
+          return null;
+        };
+        setMessages(
+          postsToDisplayMessages(data.posts.items, {
+            resolveAuthor,
+            resolveAttachmentUrl: (attachment) =>
+              sessionDocumentDownloadUrl(sessionId, attachment.id),
+          }),
+        );
         setAgentAuthor(data.agent);
         onLoaded({ beliefs, completion: data.completion ?? null });
       })
@@ -136,7 +102,7 @@ export function ParticipantInterviewViewer({
     return () => {
       cancelled = true;
     };
-  }, [sessionId, participant.userId, onLoaded]);
+  }, [sessionId, participant, onLoaded]);
 
   return (
     <div className="flex min-w-0 flex-1 flex-col">

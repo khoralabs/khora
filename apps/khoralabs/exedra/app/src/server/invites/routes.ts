@@ -5,6 +5,7 @@ import { requireRegistrySessionResponse } from "../auth/require-session";
 import { canManageSession } from "../authz";
 import { grantSessionFacilitation, hasFacilitationAccess } from "../authz/policy";
 import { dispatchInitialInterviewResponseForParticipant } from "../chat/initial-interview-response";
+import { ensureFacilitationChatThread } from "../chat/session-chat";
 import { getDb } from "../db/index";
 import {
   consumeInvite,
@@ -22,7 +23,6 @@ import {
 } from "../db/membership";
 import {
   getActiveOnboardingSessionForTeam,
-  getOrCreateFacilitationThread,
   getSession,
   getSessionLinkAccess,
   getSessionLinkGrantRole,
@@ -204,7 +204,7 @@ export async function handleAcceptInvite(req: Request, token: string): Promise<R
     getSessionLinkGrantRole(db, invite.sessionId) === "facilitation"
   ) {
     await grantSessionFacilitation(user.id, invite.sessionId);
-    await getOrCreateFacilitationThread(db, invite.sessionId);
+    await ensureFacilitationChatThread({ db, sessionId: invite.sessionId });
     await syncFacilitationThreadGrants(db, invite.sessionId);
     return Response.json({
       invite,

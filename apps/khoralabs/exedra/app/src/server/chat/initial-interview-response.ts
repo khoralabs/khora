@@ -9,15 +9,14 @@ export async function dispatchInitialInterviewResponseForParticipant(
   db: Database,
   sessionId: string,
   userId: string,
-): Promise<{ legacyThreadId: string; chatThreadId: string }> {
+): Promise<{ chatThreadId: string }> {
   const interview = await ensureInterviewChatThread({ db, sessionId, userId });
   if (!interview.created) {
-    return { legacyThreadId: interview.legacyThreadId, chatThreadId: interview.chatThread.id };
+    return { chatThreadId: interview.chatThread.id };
   }
 
   try {
     await dispatchGenerateResponseForChat({
-      legacyThreadId: interview.legacyThreadId,
       chatThreadId: interview.chatThread.id,
       userId,
     });
@@ -26,7 +25,7 @@ export async function dispatchInitialInterviewResponseForParticipant(
     logger.error({ err: message, sessionId, userId }, "initial interview response dispatch failed");
   }
 
-  return { legacyThreadId: interview.legacyThreadId, chatThreadId: interview.chatThread.id };
+  return { chatThreadId: interview.chatThread.id };
 }
 
 export async function dispatchInitialInterviewResponsesForTeam(

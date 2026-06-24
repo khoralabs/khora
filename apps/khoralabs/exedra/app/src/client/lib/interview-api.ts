@@ -1,6 +1,6 @@
+import type { Post, PostPage, Thread } from "@khoralabs/chat-core";
 import type { AccountProfile } from "@shared/accounts/row";
 import type { MessageAuthor } from "@shared/messages/author";
-import type { UIMessage } from "ai";
 
 import type { DocumentProcessingStatus } from "@/lib/documents-api";
 
@@ -25,15 +25,6 @@ export type BeliefFlag = {
   sourceMessageId: string;
   feedback?: BeliefFeedback;
   correction?: string;
-};
-
-export type SerializedMessage = {
-  id: string;
-  role: UIMessage["role"];
-  parts: UIMessage["parts"];
-  metadata?: UIMessage["metadata"];
-  createdAtMs: number;
-  author: MessageAuthor | null;
 };
 
 export type InterviewCompletion = {
@@ -64,14 +55,12 @@ function isSessionCompletionToolName(toolName: string): boolean {
   return toolName === "completeSession" || toolName === "completeOnboardingInterview";
 }
 
-export function extractCompletionFromMessages(
-  messages: SerializedMessage[],
-): InterviewCompletion | null {
-  for (let index = messages.length - 1; index >= 0; index -= 1) {
-    const message = messages[index];
-    if (message?.role !== "assistant") continue;
+export function extractCompletionFromPosts(posts: Post[]): InterviewCompletion | null {
+  for (let index = posts.length - 1; index >= 0; index -= 1) {
+    const post = posts[index];
+    if (post?.role !== "assistant") continue;
 
-    for (const part of message.parts) {
+    for (const part of post.parts) {
       if (typeof part.type !== "string" || !part.type.startsWith("tool-")) continue;
       const toolName = part.type.slice("tool-".length);
       if (!isSessionCompletionToolName(toolName)) continue;
@@ -84,7 +73,7 @@ export function extractCompletionFromMessages(
       if (summary.length === 0) continue;
 
       return {
-        completedAtMs: message.createdAtMs,
+        completedAtMs: post.createdAtMs,
         summary,
         nextSessionOptions: normalizeNextSessionOptions(record.nextSessionOptions),
       };
@@ -96,8 +85,8 @@ export function extractCompletionFromMessages(
 
 export type InterviewBootstrap = {
   session: InterviewSession;
-  threadId: string | null;
-  messages: SerializedMessage[];
+  thread: Thread | null;
+  posts: PostPage;
   agent: MessageAuthor | null;
   viewer: MessageAuthor | null;
   beliefFeedback?: BeliefFeedbackRecord[];
@@ -109,8 +98,8 @@ export type InterviewBootstrap = {
 
 export type FacilitationBootstrap = {
   session: InterviewSession;
-  threadId: string;
-  messages: SerializedMessage[];
+  thread: Thread;
+  posts: PostPage;
   agent: MessageAuthor | null;
   viewer: MessageAuthor | null;
   canWrite: boolean;
@@ -121,7 +110,6 @@ export type FacilitationBootstrap = {
 export type ParticipantInterviewView = InterviewBootstrap & {
   readOnly: true;
   participant: AccountProfile;
-  threadId: string | null;
 };
 
 export type ChatDocument = {
@@ -171,18 +159,18 @@ export function extractChatDocuments(
   return documents;
 }
 
-export function extractBeliefsFromMessages(
-  messages: UIMessage[],
+export function extractBeliefsFromPosts(
+  posts: Post[],
   feedbackRecords: readonly BeliefFeedbackRecord[] = [],
 ): BeliefFlag[] {
   const feedbackById = new Map(feedbackRecords.map((record) => [record.id, record]));
   const beliefs: BeliefFlag[] = [];
-  for (const message of messages) {
-    const metadata = message.metadata as
+  for (const post of posts) {
+    const metadata = post.metadata as
       | { beliefFlags?: { belief: string; messageId: string }[] }
       | undefined;
     for (const flag of metadata?.beliefFlags ?? []) {
-      const id = `${message.id}:${beliefs.length}`;
+      const id = `${post.id}:${beliefs.length}`;
       const saved = feedbackById.get(id);
       beliefs.push({
         id,
@@ -230,7 +218,7 @@ export async function fetchParticipantInterview(
     ...body,
     completion:
       normalizeInterviewCompletion(body.completion) ??
-      extractCompletionFromMessages(body.messages) ??
+      extractCompletionFromPosts(body.posts.items) ??
       undefined,
   };
 }
@@ -246,7 +234,7 @@ export async function fetchFacilitation(sessionId: string): Promise<Facilitation
   return (await res.json()) as FacilitationBootstrap;
 }
 
-export async function optInInterview(sessionId: string): Promise<{ threadId: string }> {
+export async function optInInterview(sessionId: string): Promise<{ chatThreadId: string }> {
   const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/interview/opt-in`, {
     method: "POST",
     credentials: "include",
@@ -255,7 +243,7 @@ export async function optInInterview(sessionId: string): Promise<{ threadId: str
     const data = (await res.json().catch(() => null)) as { error?: string } | null;
     throw new Error(data?.error ?? "Failed to opt in to interview");
   }
-  return (await res.json()) as { threadId: string };
+  return (await res.json()) as { chatThreadId: string };
 }
 
 export async function fetchInterview(sessionId: string): Promise<InterviewBootstrap> {
@@ -271,7 +259,7 @@ export async function fetchInterview(sessionId: string): Promise<InterviewBootst
     ...body,
     completion:
       normalizeInterviewCompletion(body.completion) ??
-      extractCompletionFromMessages(body.messages) ??
+      extractCompletionFromPosts(body.posts.items) ??
       undefined,
   };
 }

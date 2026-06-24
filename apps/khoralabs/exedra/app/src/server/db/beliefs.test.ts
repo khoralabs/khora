@@ -23,11 +23,6 @@ test("upsertBeliefFeedback persists and reloads feedback", async () => {
     `INSERT INTO sessions (id, team_id, topic, status, created_at_ms)
      VALUES ('s1', ?, 'Topic', 'active', ?)`,
   ).run(teamId, now);
-  db.prepare(
-    `INSERT INTO threads (id, kind, session_id, user_id, created_at_ms)
-     VALUES ('th1', 'interview', 's1', ?, ?)`,
-  ).run(user.id, now);
-
   upsertBeliefFeedback(db, {
     threadId: "th1",
     beliefId: "msg-1:0",

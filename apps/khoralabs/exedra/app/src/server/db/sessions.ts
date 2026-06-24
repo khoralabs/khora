@@ -1,9 +1,8 @@
 import type { Database } from "bun:sqlite";
-import { publishSessionBelongsToTeam, publishThreadBelongsToSession } from "../authz/facts";
+import { publishSessionBelongsToTeam } from "../authz/facts";
 import {
   accountScope,
   Feature,
-  grantThreadAccess,
   hasSessionAccess,
   isSessionFacilitator,
   listAccountIdsForTeam,
@@ -14,6 +13,7 @@ import {
   userHasAnySessionParticipantGrant,
 } from "../authz/policy";
 import { requireAuthzServiceClient } from "../authz/service-client";
+import { facilitationChatThreadId } from "../chat/thread-ids";
 import { createOrgWithAdmin, createTeamWithGrants } from "./membership";
 
 export { isTeamMember } from "./membership";
@@ -139,28 +139,6 @@ export function closeSession(db: Database, sessionId: string): void {
   db.prepare(`UPDATE sessions SET status = 'closed' WHERE id = ?`).run(sessionId);
 }
 
-export function markThreadInterviewComplete(
-  db: Database,
-  threadId: string,
-  params: { summary: string; nextSessionOptions: string[] },
-): void {
-  const completedAtMs = Date.now();
-  db.prepare(
-    `UPDATE threads
-     SET interview_summary = ?,
-         next_session_options = ?,
-         interview_completed_at_ms = ?,
-         closed_at_ms = ?
-     WHERE id = ?`,
-  ).run(
-    params.summary.trim(),
-    JSON.stringify(params.nextSessionOptions),
-    completedAtMs,
-    completedAtMs,
-    threadId,
-  );
-}
-
 export function markSessionInterviewComplete(
   db: Database,
   sessionId: string,
@@ -202,79 +180,6 @@ export function getSession(db: Database, sessionId: string): SessionRecord | nul
   return row === null ? null : mapSession(row);
 }
 
-export function getInterviewThreadId(
-  db: Database,
-  params: { sessionId: string; userId: string },
-): string | null {
-  const row = db
-    .query<{ id: string }, [string, string]>(
-      `SELECT id FROM threads
-       WHERE session_id = ? AND user_id = ? AND kind = 'interview'
-       LIMIT 1`,
-    )
-    .get(params.sessionId, params.userId);
-  return row?.id ?? null;
-}
-
-export async function getOrCreateInterviewThread(
-  db: Database,
-  params: { sessionId: string; userId: string },
-): Promise<string> {
-  const existing = db
-    .query<{ id: string }, [string, string]>(
-      `SELECT id FROM threads
-       WHERE session_id = ? AND user_id = ? AND kind = 'interview'
-       LIMIT 1`,
-    )
-    .get(params.sessionId, params.userId);
-
-  if (existing !== null) return existing.id;
-
-  const id = crypto.randomUUID();
-  db.prepare(
-    `INSERT INTO threads (id, kind, session_id, user_id, created_at_ms, closed_at_ms)
-     VALUES (?, 'interview', ?, ?, ?, NULL)`,
-  ).run(id, params.sessionId, params.userId, Date.now());
-  await publishThreadBelongsToSession(id, params.sessionId);
-  await grantThreadAccess(params.userId, id);
-  return id;
-}
-
-export type ThreadRecord = {
-  id: string;
-  kind: string;
-  sessionId: string;
-  userId: string | null;
-  closedAtMs: number | null;
-  interviewSummary: string | null;
-  nextSessionOptions: string[] | null;
-  interviewCompletedAtMs: number | null;
-};
-
-type ThreadRow = {
-  id: string;
-  kind: string;
-  session_id: string;
-  user_id: string | null;
-  closed_at_ms: number | null;
-  interview_summary: string | null;
-  next_session_options: string | null;
-  interview_completed_at_ms: number | null;
-};
-
-function mapThread(row: ThreadRow): ThreadRecord {
-  return {
-    id: row.id,
-    kind: row.kind,
-    sessionId: row.session_id,
-    userId: row.user_id,
-    closedAtMs: row.closed_at_ms,
-    interviewSummary: row.interview_summary ?? null,
-    nextSessionOptions: parseNextSessionOptions(row.next_session_options ?? null),
-    interviewCompletedAtMs: row.interview_completed_at_ms ?? null,
-  };
-}
-
 function sessionResource(sessionId: string) {
   return { type: ResourceType.Session, id: sessionId };
 }
@@ -301,9 +206,11 @@ async function listFacilitationAccountIds(sessionId: string): Promise<string[]> 
   return [...accountIds];
 }
 
-export async function syncFacilitationThreadGrants(db: Database, sessionId: string): Promise<void> {
-  const threadId = getFacilitationThreadId(db, sessionId);
-  if (threadId === null) return;
+export async function syncFacilitationThreadGrants(
+  _db: Database,
+  sessionId: string,
+): Promise<void> {
+  const threadId = facilitationChatThreadId(sessionId);
 
   const holders = new Set(await listFacilitationAccountIds(sessionId));
   const thread = threadResource(threadId);
@@ -330,43 +237,17 @@ export async function syncFacilitationThreadGrants(db: Database, sessionId: stri
   }
 
   for (const accountId of holders) {
-    await grantThreadAccess(accountId, threadId);
+    await client.grant({
+      scope: accountScope(accountId),
+      resource: thread,
+      feature: Feature.Read,
+    });
+    await client.grant({
+      scope: accountScope(accountId),
+      resource: thread,
+      feature: Feature.Write,
+    });
   }
-}
-
-export function getFacilitationThreadId(db: Database, sessionId: string): string | null {
-  const row = db
-    .query<{ id: string }, [string]>(
-      `SELECT id FROM threads
-       WHERE session_id = ? AND kind = 'facilitation'
-       LIMIT 1`,
-    )
-    .get(sessionId);
-  return row?.id ?? null;
-}
-
-export async function getOrCreateFacilitationThread(
-  db: Database,
-  sessionId: string,
-): Promise<string> {
-  const existing = getFacilitationThreadId(db, sessionId);
-  if (existing !== null) return existing;
-
-  const id = crypto.randomUUID();
-  db.prepare(
-    `INSERT INTO threads (id, kind, session_id, user_id, created_at_ms, closed_at_ms)
-     VALUES (?, 'facilitation', ?, NULL, ?, NULL)`,
-  ).run(id, sessionId, Date.now());
-  await publishThreadBelongsToSession(id, sessionId);
-  await syncFacilitationThreadGrants(db, sessionId);
-  return id;
-}
-
-export function getThread(db: Database, threadId: string): ThreadRecord | null {
-  const row = db
-    .query<ThreadRow, [string]>(`SELECT * FROM threads WHERE id = ? LIMIT 1`)
-    .get(threadId);
-  return row === null ? null : mapThread(row);
 }
 
 export type SessionListItem = SessionRecord & {

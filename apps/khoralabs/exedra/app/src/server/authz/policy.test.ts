@@ -1,9 +1,10 @@
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { OrgPermission, TeamPermission } from "../../shared/authz/permissions";
+import { interviewChatThreadId } from "../chat/thread-ids";
 import { addTeamMember } from "../db/membership";
 import { ensureExedraSchema } from "../db/schema";
-import { createOrg, createSession, createTeam, getOrCreateInterviewThread } from "../db/sessions";
+import { createOrg, createSession, createTeam } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
 import { setTeamScopeOrgPermissions, setTeamScopePermissions } from "./grant-templates";
 import {
@@ -22,6 +23,7 @@ import {
   grantSessionReader,
   grantTeamContributor,
   grantTeamSessionParticipant,
+  grantThreadAccess,
   hasFacilitationAccess,
   hasSessionAccess,
   hasTeamContributorGrant,
@@ -126,7 +128,8 @@ test("canReadThread allows thread owner via grants", async () => {
   const teamId = await createTeam(db, { orgId, name: "Team3", ownerId: user.id });
   const session = createSession(db, { teamId, topic: "Thread test" });
   await grantSessionCreatorAccess(user.id, session.id);
-  const threadId = await getOrCreateInterviewThread(db, { sessionId: session.id, userId: user.id });
+  const threadId = interviewChatThreadId(session.id, user.id);
+  await grantThreadAccess(user.id, threadId);
 
   expect(await canReadThread(user.id, threadId)).toBe(true);
 });
@@ -138,10 +141,7 @@ test("canReadThread allows explicit read grant holder", async () => {
   const teamId = await createTeam(db, { orgId, name: "Team4", ownerId: owner.id });
   const session = createSession(db, { teamId, topic: "Shared thread" });
   await grantSessionCreatorAccess(owner.id, session.id);
-  const threadId = await getOrCreateInterviewThread(db, {
-    sessionId: session.id,
-    userId: owner.id,
-  });
+  const threadId = interviewChatThreadId(session.id, owner.id);
 
   await requireAuthzServiceClient().grant({
     scope: accountScope(reader.id),
