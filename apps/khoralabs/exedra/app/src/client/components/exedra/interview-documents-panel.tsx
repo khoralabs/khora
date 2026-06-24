@@ -1,12 +1,15 @@
+import {
+  Attachment,
+  AttachmentPreview,
+  Attachments,
+  toAttachmentData,
+} from "@khoralabs/chat-react/ui";
 import { FileText } from "lucide-react";
 import { memo } from "react";
-
-import { Attachment, AttachmentPreview, Attachments } from "@/components/ai-elements/attachments";
 import {
   DocumentMetadataHoverCard,
   type DocumentMetadataInfo,
 } from "@/components/exedra/document-metadata-hover-card";
-import { toMessageAttachmentData } from "@/components/interview/interview-chat-attachments";
 import {
   Empty,
   EmptyDescription,
@@ -33,16 +36,13 @@ type DocumentThumbnailProps = {
 };
 
 const DocumentThumbnail = memo(({ document, sessionId, onClick }: DocumentThumbnailProps) => {
-  const attachmentData = toMessageAttachmentData(
-    {
-      id: document.id,
-      fileName: document.fileName,
-      mediaType: document.mediaType,
-      byteSize: document.byteSize,
-      status: document.status,
-    },
-    sessionId,
-  );
+  const attachmentData = toAttachmentData({
+    id: document.id,
+    fileName: document.fileName,
+    mediaType: document.mediaType,
+    byteSize: document.byteSize,
+    url: `/api/sessions/${encodeURIComponent(sessionId)}/documents/${encodeURIComponent(document.id)}`,
+  });
 
   return (
     <DocumentMetadataHoverCard metadata={toDocumentMetadata(document)} side="top">

@@ -1,18 +1,9 @@
 import { ChatFrameworkThreadPanel } from "./chat-framework-thread-panel";
-import type { InterviewChatProps } from "./interview-chat-types";
 
-type InterviewThreadPanelProps = Pick<
-  InterviewChatProps,
-  | "sessionId"
-  | "onBootstrap"
-  | "onBeliefsChange"
-  | "onError"
-  | "onSessionComplete"
-  | "scrollToTarget"
-  | "onScrollToMessageComplete"
-  | "sessionComplete"
-  | "onChatDocumentsChange"
-> & {
+type InterviewThreadPanelProps = {
+  sessionId: string;
+  onError: (error: string | null) => void;
+  sessionComplete?: boolean;
   onConnectedChange?: (connected: boolean) => void;
 };
 
@@ -21,7 +12,6 @@ export function InterviewThreadPanel({
   onError,
   sessionComplete = false,
   onConnectedChange,
-  ..._legacyCallbacks
 }: InterviewThreadPanelProps) {
   return (
     <ChatFrameworkThreadPanel

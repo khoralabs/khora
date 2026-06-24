@@ -1,3 +1,6 @@
+import type { DisplayMessage } from "@khoralabs/chat-react";
+import { extractTextFromParts, extractToolCallsFromParts } from "@khoralabs/chat-react";
+import { PostMessages } from "@khoralabs/chat-react/ui";
 import type { AccountProfile } from "@shared/accounts/row";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -7,25 +10,71 @@ import { Button } from "@/components/ui/button";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Spinner } from "@/components/ui/spinner";
 import { formatAccountDisplayName } from "@/lib/account-display";
+import { sessionDocumentDownloadUrl } from "@/lib/documents-api";
 import type {
   BeliefFlag,
   ChatDocument,
-  ChatMessage,
   InterviewBootstrap,
+  SerializedMessage,
 } from "@/lib/interview-api";
 import {
   extractBeliefsFromMessages,
   extractChatDocuments,
   fetchParticipantInterview,
-  uiMessagesToChatMessages,
 } from "@/lib/interview-api";
 import { appSectionHeaderClassName } from "@/shell/app-section-header";
 import { SidebarCollapseTrigger } from "@/shell/sidebar-collapse-trigger";
 import { SidebarSheetTrigger } from "@/shell/sidebar-sheet-trigger";
 
-import { InterviewChatMessages } from "./interview-chat-messages";
 import type { InterviewScrollTarget } from "./use-scroll-to-message";
 import { useScrollToMessage } from "./use-scroll-to-message";
+
+function toDisplayMessages(messages: SerializedMessage[], sessionId: string): DisplayMessage[] {
+  return messages
+    .filter((message) => {
+      if (message.role !== "user" && message.role !== "assistant") return false;
+      const metadata = message.metadata as { kickoff?: boolean } | undefined;
+      return metadata?.kickoff !== true;
+    })
+    .map((message): DisplayMessage => {
+      const metadata = message.metadata as
+        | {
+            displayText?: string;
+            documents?: Array<{
+              id: string;
+              fileName: string;
+              mimeType?: string;
+              mediaType?: string;
+              byteSize?: number;
+            }>;
+          }
+        | undefined;
+      return {
+        id: message.id,
+        role: message.role as "user" | "assistant",
+        content:
+          typeof metadata?.displayText === "string"
+            ? metadata.displayText
+            : extractTextFromParts(message.parts),
+        createdAtMs: message.createdAtMs,
+        author: message.author,
+        attachments: metadata?.documents?.map((document) => ({
+          id: document.id,
+          fileName: document.fileName,
+          mediaType: document.mimeType ?? document.mediaType,
+          byteSize: document.byteSize,
+          url: sessionDocumentDownloadUrl(sessionId, document.id),
+        })),
+        toolCalls: extractToolCallsFromParts(message.parts),
+      };
+    })
+    .filter(
+      (message) =>
+        message.content.length > 0 ||
+        (message.attachments?.length ?? 0) > 0 ||
+        (message.toolCalls?.length ?? 0) > 0,
+    );
+}
 
 type ParticipantInterviewViewerProps = {
   sessionId: string;
@@ -51,7 +100,7 @@ export function ParticipantInterviewViewer({
   onLoaded,
   onChatDocumentsChange,
 }: ParticipantInterviewViewerProps) {
-  const [messages, setMessages] = useState<ChatMessage[] | null>(null);
+  const [messages, setMessages] = useState<DisplayMessage[] | null>(null);
   const [agentAuthor, setAgentAuthor] = useState<InterviewBootstrap["agent"]>(null);
   const [error, setError] = useState<string | null>(null);
   const participantName = formatAccountDisplayName(participant);
@@ -74,9 +123,8 @@ export function ParticipantInterviewViewer({
     void fetchParticipantInterview(sessionId, participant.userId)
       .then((data) => {
         if (cancelled) return;
-        const chatMessages = uiMessagesToChatMessages(data.messages);
         const beliefs = extractBeliefsFromMessages(data.messages, data.beliefFeedback ?? []);
-        setMessages(chatMessages);
+        setMessages(toDisplayMessages(data.messages, sessionId));
         setAgentAuthor(data.agent);
         onLoaded({ beliefs, completion: data.completion ?? null });
       })
@@ -127,12 +175,11 @@ export function ParticipantInterviewViewer({
           </Empty>
         </div>
       ) : (
-        <InterviewChatMessages
+        <PostMessages
           messages={messages}
-          sessionId={sessionId}
           status="ready"
           showAgentLoading={false}
-          agentAuthor={agentAuthor}
+          loadingAuthor={agentAuthor}
         />
       )}
     </div>

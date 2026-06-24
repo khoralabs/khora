@@ -6,6 +6,7 @@ import type { DisplayMessage, DisplayToolCall } from "../adapters.ts";
 import { formatPostTimestamp } from "../adapters.ts";
 import { showAgentLoading } from "../hooks/use-agent-loading.ts";
 import { scrollAnchorPostId, useThreadScrollPad } from "../hooks/use-thread-scroll-pad.ts";
+import { Attachment, AttachmentPreview } from "./ai-elements/attachments.tsx";
 import {
   Conversation,
   ConversationContent,
@@ -19,6 +20,7 @@ import {
   MessageTimestamp,
 } from "./ai-elements/message.tsx";
 import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from "./ai-elements/tool.tsx";
+import { MessageAttachments } from "./attachments-bridge.tsx";
 import type { ChatAuthor } from "./author-avatar.tsx";
 import { chatColumnClassName } from "./layout.ts";
 
@@ -135,9 +137,25 @@ export function PostMessageHeader({ children }: { children?: ReactNode }) {
 
 export function PostMessageAttachments({ children }: { children?: ReactNode }) {
   const { message } = usePostMessageContext();
-  if (message.role !== "user" || (message.attachments?.length ?? 0) === 0) return null;
   if (children !== undefined) return <>{children}</>;
-  return null;
+  if (message.role !== "user" || (message.attachments?.length ?? 0) === 0) return null;
+  return (
+    <MessageAttachments attachments={message.attachments ?? []}>
+      {(attachment) => (
+        <a
+          className="block shrink-0 rounded-lg"
+          data-attachment-id={attachment.id}
+          href={attachment.type === "file" ? attachment.url : undefined}
+          rel="noreferrer"
+          target="_blank"
+        >
+          <Attachment data={attachment}>
+            <AttachmentPreview />
+          </Attachment>
+        </a>
+      )}
+    </MessageAttachments>
+  );
 }
 
 export function PostMessageTools({ children }: { children?: ReactNode }) {

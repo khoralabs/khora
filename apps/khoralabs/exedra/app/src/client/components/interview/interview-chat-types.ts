@@ -1,6 +1,3 @@
-import type { MessageAuthor } from "@shared/messages/author";
-import type { UIMessage } from "ai";
-import type { DocumentProcessingStatus } from "@/lib/documents-api";
 import type { BeliefFlag, ChatDocument, InterviewBootstrap } from "@/lib/interview-api";
 
 import type { InterviewScrollTarget } from "./use-scroll-to-message";
@@ -26,55 +23,3 @@ export type InterviewChatProps = {
   sessionComplete?: boolean;
   onChatDocumentsChange?: (documents: ChatDocument[]) => void;
 };
-
-export type WsServerMessage =
-  | { type: "ready"; threadId: string }
-  | {
-      type: "user_message_saved";
-      message: {
-        id: string;
-        role: "user";
-        parts: { type: "text"; text: string }[];
-        metadata?: {
-          kickoff?: boolean;
-          documents?: {
-            id: string;
-            fileName: string;
-            mimeType: string;
-            byteSize: number;
-            status: DocumentProcessingStatus;
-          }[];
-        };
-      };
-      createdAtMs: number;
-      author: MessageAuthor | null;
-    }
-  | { type: "text_delta"; turnId: string; delta: string }
-  | {
-      type: "assistant_message";
-      message: {
-        id: string;
-        role: "assistant";
-        parts: UIMessage["parts"];
-        metadata?: { beliefFlags?: { belief: string; messageId: string }[] };
-      };
-      createdAtMs: number;
-      author: MessageAuthor | null;
-      sessionCompleted?: boolean;
-    }
-  | { type: "tool_call"; turnId: string; toolCallId: string; toolName: string; input: unknown }
-  | { type: "tool_result"; turnId: string; toolCallId: string; toolName: string; output: unknown }
-  | {
-      type: "tool_error";
-      turnId: string;
-      toolCallId: string;
-      toolName: string;
-      errorText: string;
-    }
-  | { type: "belief_flag"; turnId: string; belief: string; sourceMessageId: string }
-  | { type: "turn_aborted"; turnId: string }
-  | { type: "turn_failed"; turnId: string; error: string }
-  | { type: "session_complete"; completion: SessionCompletePayload }
-  | { type: "onboarding_complete"; summary: string }
-  | { type: "error"; error: string }
-  | { type: "pong" };

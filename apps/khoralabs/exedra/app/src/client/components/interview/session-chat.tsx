@@ -26,18 +26,12 @@ export function SessionChat({
   onActiveThreadChange,
   optInLoading = false,
   onOptIn,
-  onBootstrap,
-  onBeliefsChange,
   onError,
   onNavigate,
-  onSessionComplete,
-  scrollToTarget,
-  onScrollToMessageComplete,
   canManage,
   onShare,
   onTopicChange,
   sessionComplete = false,
-  onChatDocumentsChange,
 }: SessionChatProps) {
   const showFacilitationTab = canFacilitate;
   const showInterviewTab = canFacilitate || canParticipate;
@@ -99,14 +93,8 @@ export function SessionChat({
           key={`interview-${sessionId}`}
           sessionComplete={sessionComplete}
           sessionId={sessionId}
-          onBeliefsChange={onBeliefsChange}
-          onBootstrap={onBootstrap}
-          onChatDocumentsChange={onChatDocumentsChange}
           onConnectedChange={setConnected}
           onError={onError}
-          onScrollToMessageComplete={onScrollToMessageComplete}
-          onSessionComplete={onSessionComplete}
-          scrollToTarget={scrollToTarget}
         />
       )}
     </div>
