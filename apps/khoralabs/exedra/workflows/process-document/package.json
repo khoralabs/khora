@@ -4,6 +4,18 @@
   "description": "Process Document - Render Workflows (TypeScript)",
   "type": "module",
   "private": true,
+  "exports": {
+    "./document-agent-instructions": {
+      "types": "./src/document-agent-instructions.ts",
+      "import": "./src/document-agent-instructions.ts",
+      "default": "./src/document-agent-instructions.ts"
+    },
+    "./document-processing": {
+      "types": "./src/document-processing.ts",
+      "import": "./src/document-processing.ts",
+      "default": "./src/document-processing.ts"
+    }
+  },
   "scripts": {
     "start": "bun src/main.ts"
   },

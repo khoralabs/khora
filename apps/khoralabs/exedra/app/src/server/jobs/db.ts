@@ -1,6 +1,4 @@
 import type { Database } from "bun:sqlite";
-import { nanoid } from "nanoid";
-
 import type {
   CreateJobInput,
   JobEvent,
@@ -8,7 +6,8 @@ import type {
   JobKind,
   JobRecord,
   JobStatus,
-} from "../../../../shared/jobs.ts";
+} from "@khoralabs/exedra-workflows-shared/jobs/jobs";
+import { nanoid } from "nanoid";
 
 import { notifyJobEvent } from "./notify.js";
 

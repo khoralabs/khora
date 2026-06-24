@@ -1,5 +1,5 @@
+import { exedraDocumentIntegratorInstructions } from "@khoralabs/exedra-workflows-process-document/document-agent-instructions";
 import { MemoryIntegratorClient } from "@khoralabs/memories-integrator";
-import { exedraDocumentIntegratorInstructions } from "../../../shared/document-agent-instructions.ts";
 import {
   createRemoteMemoriesClient,
   getAgentRegistry,

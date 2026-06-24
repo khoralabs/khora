@@ -5,6 +5,12 @@ import type {
   InternalMemoriesSearchRequest,
   SearchHitSummary,
 } from "@khoralabs/exedra-workflows-integrate-memory/belief-integration";
+import type { InternalMemoriesMergeDocumentChunkRequest } from "@khoralabs/exedra-workflows-process-document/document-processing";
+import type {
+  InternalMemoriesAgentSearchRequest,
+  SearchHitWire,
+  SearchParamsWire,
+} from "@khoralabs/exedra-workflows-shared/memories/search-hit-wire";
 import {
   computeLexicalLinkMergeSlice,
   type LexicalLinkMergePatch,
@@ -27,12 +33,6 @@ import type { IntegratorPlanWire } from "@khoralabs/memories-integrator";
 import { integratorWireToMergeSlice } from "@khoralabs/memories-integrator";
 import { loadSourceMapTextPreview } from "@khoralabs/sqlite-graph-projections";
 import { embedMany } from "ai";
-import type { InternalMemoriesMergeDocumentChunkRequest } from "../../../../shared/document-processing.js";
-import type {
-  InternalMemoriesAgentSearchRequest,
-  SearchHitWire,
-  SearchParamsWire,
-} from "../../../../shared/search-hit-wire.js";
 import { getDb } from "../db/index.js";
 import { logger } from "../logger.js";
 import { openMemoriesAccess } from "../memories/api-handlers.js";

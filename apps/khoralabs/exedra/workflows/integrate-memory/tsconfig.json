@@ -22,9 +22,5 @@
     "skipLibCheck": true,
     "types": ["bun"]
   },
-  "include": [
-    "src/**/*",
-    "../../shared/search-hit-wire.ts",
-    "../../app/src/server/memories/exedra-ontology.ts"
-  ]
+  "include": ["src/**/*", "../../app/src/server/memories/exedra-ontology.ts"]
 }

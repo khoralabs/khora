@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 
-import type { DocumentProcessingStatus } from "../../../../shared/document-processing.js";
+import type { DocumentProcessingStatus } from "@khoralabs/exedra-workflows-process-document/document-processing";
 import { getTeam } from "../db/membership.js";
 import { getDocumentsForUser } from "./db.js";
 import { buildExedraDocumentRef } from "./s3-store.js";

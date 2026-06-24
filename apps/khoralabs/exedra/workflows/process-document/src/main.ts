@@ -1,5 +1,5 @@
 import { task } from "@renderinc/sdk/workflows";
-import type { ProcessDocumentParams } from "../../../shared/document-processing.js";
+import type { ProcessDocumentParams } from "./document-processing.ts";
 import { patchDocument } from "./exedra-client.ts";
 import { processDocument } from "./process-document.ts";
 import "./otel.ts";

@@ -4,7 +4,7 @@ import type {
   CompleteJobRequest,
   FailJobRequest,
   JobEvent,
-} from "../../../shared/jobs.ts";
+} from "./jobs/jobs.ts";
 
 function requireEnv(name: string): string {
   const value = process.env[name]?.trim();

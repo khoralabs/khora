@@ -11,8 +11,8 @@ import "./otel.ts";
 import type {
   BatchIntegrationParams,
   DocumentIntegrationParams,
-} from "../../../shared/document-processing.ts";
-import { resolveDocumentMemoryKey } from "../../../shared/document-processing.ts";
+} from "@khoralabs/exedra-workflows-process-document/document-processing";
+import { resolveDocumentMemoryKey } from "@khoralabs/exedra-workflows-process-document/document-processing";
 import { integrateBatch } from "./integrate-batch.ts";
 import { planDocumentIntegration } from "./plan-document-integration.ts";
 import { planIntegration } from "./plan-integration.ts";

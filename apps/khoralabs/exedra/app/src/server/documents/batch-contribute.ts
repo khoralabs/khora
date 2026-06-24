@@ -3,7 +3,7 @@ import {
   CONTEXT_DOCUMENT_FILE_NAME,
   deriveBatchStatus,
   isContextDocument,
-} from "../../../../shared/document-processing.js";
+} from "@khoralabs/exedra-workflows-process-document/document-processing";
 import { ResourceType } from "../authz/policy.js";
 import { acceptDocument } from "./accept.js";
 import {

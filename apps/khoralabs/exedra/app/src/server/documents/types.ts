@@ -1,6 +1,5 @@
+import type { DocumentProcessingStatus } from "@khoralabs/exedra-workflows-process-document/document-processing";
 import type { ContentAddressedRef } from "@khoralabs/sourcemaps";
-
-import type { DocumentProcessingStatus } from "../../../../shared/document-processing.js";
 
 export type DocumentGrantResource = {
   type: string;

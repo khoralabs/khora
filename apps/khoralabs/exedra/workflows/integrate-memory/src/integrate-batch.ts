@@ -1,11 +1,11 @@
 import type {
   BatchIntegrationParams,
   DocumentIntegrationParams,
-} from "../../../shared/document-processing.ts";
+} from "@khoralabs/exedra-workflows-process-document/document-processing";
 import {
   isContextDocument,
   resolveDocumentMemoryKey,
-} from "../../../shared/document-processing.ts";
+} from "@khoralabs/exedra-workflows-process-document/document-processing";
 import { fetchDocumentBatch, fetchDocumentBytes, patchDocument } from "./document-client.ts";
 import { postInternalMemoriesMerge, postInternalMemoriesSearch } from "./exedra-client.ts";
 import { expandBatchDocument } from "./expand-batch-document.ts";

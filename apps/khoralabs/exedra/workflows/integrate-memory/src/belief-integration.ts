@@ -77,4 +77,4 @@ export type {
   SearchContentWire,
   SearchHitWire,
   SearchParamsWire,
-} from "../../../shared/search-hit-wire.ts";
+} from "@khoralabs/exedra-workflows-shared/memories/search-hit-wire";

@@ -1,11 +1,10 @@
-import { Render } from "@renderinc/sdk";
-
 import type {
   AppendJobEventsRequest,
   CompleteJobRequest,
   FailJobRequest,
   JobEvent,
-} from "../../../../shared/jobs.ts";
+} from "@khoralabs/exedra-workflows-shared/jobs/jobs";
+import { Render } from "@renderinc/sdk";
 import { requireRegistrySessionResponse } from "../auth/require-session.js";
 import { getDb } from "../db/index.js";
 import { requireInternalToken } from "../http/require-internal-token.js";

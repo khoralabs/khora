@@ -1,10 +1,9 @@
-import type { SearchHit } from "@khoralabs/memories-core";
-
 import type {
   OntologyLabelWire,
   SearchHitWire,
   SearchNeighborHitWire,
-} from "../../../../shared/search-hit-wire.js";
+} from "@khoralabs/exedra-workflows-shared/memories/search-hit-wire";
+import type { SearchHit } from "@khoralabs/memories-core";
 
 const MAX_NEIGHBORS_PER_HIT = 8;
 

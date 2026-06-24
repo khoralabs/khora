@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { DocumentProcessingStatus } from "../../../../shared/document-processing.js";
+import type { DocumentProcessingStatus } from "@khoralabs/exedra-workflows-process-document/document-processing";
 import { ResourceType } from "../authz/policy.js";
 import type { DocumentGrantResource, DocumentRecord } from "./types.js";
 

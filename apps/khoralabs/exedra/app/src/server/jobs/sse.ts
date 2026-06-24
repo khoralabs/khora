@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 
-import type { JobEvent, JobStatus } from "../../../../shared/jobs.js";
+import type { JobEvent, JobStatus } from "@khoralabs/exedra-workflows-shared/jobs/jobs";
 
 import { getJob, getJobEventsSince } from "./db.js";
 import { waitForJobEvent } from "./notify.js";

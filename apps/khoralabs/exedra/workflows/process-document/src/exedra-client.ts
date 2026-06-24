@@ -2,7 +2,7 @@ import type {
   InternalDocumentPatchRequest,
   InternalDocumentWire,
   InternalMemoriesMergeDocumentChunkRequest,
-} from "../../../shared/document-processing.ts";
+} from "./document-processing.ts";
 
 function requireEnv(name: string): string {
   const value = process.env[name]?.trim();

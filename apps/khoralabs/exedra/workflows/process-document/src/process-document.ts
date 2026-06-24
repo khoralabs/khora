@@ -6,8 +6,8 @@ import {
   mergeResolutionAndProviderOptions,
   textToContent,
 } from "@khoralabs/memories-core/helpers";
-import type { ProcessDocumentParams } from "../../../shared/document-processing.js";
-import { resolveDocumentMemoryKey } from "../../../shared/document-processing.js";
+import type { ProcessDocumentParams } from "./document-processing.ts";
+import { resolveDocumentMemoryKey } from "./document-processing.ts";
 import {
   fetchDocumentBytes,
   fetchDocumentMeta,

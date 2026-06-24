@@ -6,14 +6,14 @@ import {
 } from "@khoralabs/memories-core";
 import type { MemoriesPersistenceAsync } from "@khoralabs/memories-core/persistence";
 import { DEFAULT_MEMORIES_BACKEND_CAPABILITIES } from "@khoralabs/memories-core/persistence";
+import { exedraMemoriesOntology } from "./exedra-memories-ontology.ts";
 import {
   deserializeSearchHits,
   type InternalMemoriesAgentSearchRequest,
   type InternalMemoriesAgentSearchResponse,
   type InternalMemoriesProvenanceHeadResponse,
   type SearchParamsWire,
-} from "../../../shared/search-hit-wire.ts";
-import { exedraMemoriesOntology } from "./exedra-memories-ontology.ts";
+} from "./memories/search-hit-wire.ts";
 
 export type ExedraHttpMemoriesClientConfig = {
   userId: string;

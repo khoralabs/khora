@@ -1,6 +1,6 @@
+import { exedraDocumentAdapterInstructions } from "@khoralabs/exedra-workflows-process-document/document-agent-instructions";
+import type { DocumentIntegrationParams } from "@khoralabs/exedra-workflows-process-document/document-processing";
 import { MemoryAdapterClient } from "@khoralabs/memories-adapter";
-import { exedraDocumentAdapterInstructions } from "../../../shared/document-agent-instructions.ts";
-import type { DocumentIntegrationParams } from "../../../shared/document-processing.ts";
 import {
   createRemoteMemoriesClient,
   getAgentRegistry,

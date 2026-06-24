@@ -1,7 +1,6 @@
 import type { Database } from "bun:sqlite";
-
+import type { BatchIntegrationParams } from "@khoralabs/exedra-workflows-process-document/document-processing";
 import { Render } from "@renderinc/sdk";
-import type { BatchIntegrationParams } from "../../../../shared/document-processing.js";
 import { logger } from "../logger.js";
 import { listDocumentsByBatch, patchDocument } from "./db.js";
 

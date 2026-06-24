@@ -3,7 +3,7 @@ import type {
   InternalDocumentBatchWire,
   InternalDocumentPatchRequest,
   InternalDocumentWire,
-} from "../../../shared/document-processing.ts";
+} from "@khoralabs/exedra-workflows-process-document/document-processing";
 
 function requireEnv(name: string): string {
   const value = process.env[name]?.trim();

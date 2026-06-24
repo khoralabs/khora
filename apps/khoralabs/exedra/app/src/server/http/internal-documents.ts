@@ -1,14 +1,14 @@
-import { MemoriesClient } from "@khoralabs/memories-core";
 import type {
   InternalDocumentBatchWire,
   InternalDocumentPatchRequest,
   InternalDocumentWire,
-} from "../../../../shared/document-processing.js";
+} from "@khoralabs/exedra-workflows-process-document/document-processing";
 import {
   deriveBatchStatus,
   isContextDocument,
   resolveDocumentMemoryKey,
-} from "../../../../shared/document-processing.js";
+} from "@khoralabs/exedra-workflows-process-document/document-processing";
+import { MemoriesClient } from "@khoralabs/memories-core";
 import { getDb } from "../db/index.js";
 import { readContextTextFromBatch } from "../documents/batch-contribute.js";
 import { getDocumentById, listDocumentsByBatch, patchDocument } from "../documents/db.js";

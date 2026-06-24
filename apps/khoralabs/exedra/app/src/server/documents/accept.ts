@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import { resolveDocumentMemoryKey } from "../../../../shared/document-processing.js";
+import { resolveDocumentMemoryKey } from "@khoralabs/exedra-workflows-process-document/document-processing";
 import { ResourceType } from "../authz/policy.js";
 import { getTeam } from "../db/membership.js";
 import { userSessionScope } from "../memories/namespaces.js";

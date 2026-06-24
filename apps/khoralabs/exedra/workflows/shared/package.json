@@ -7,7 +7,9 @@
   "exports": {
     "./http-memories-client-async": "./src/http-memories-client-async.ts",
     "./exedra-memories-ontology": "./src/exedra-memories-ontology.ts",
-    "./exedra-jobs-client": "./src/exedra-jobs-client.ts"
+    "./exedra-jobs-client": "./src/exedra-jobs-client.ts",
+    "./jobs/jobs": "./src/jobs/jobs.ts",
+    "./memories/search-hit-wire": "./src/memories/search-hit-wire.ts"
   },
   "dependencies": {
     "@khoralabs/memories-autolink": "workspace:*",

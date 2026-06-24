@@ -18,6 +18,7 @@
     "@ai-sdk/google": "^3.0.0",
     "@khoralabs/agent-capabilities": "^0.1.1",
     "@khoralabs/agent-capabilities-otel": "^0.1.1",
+    "@khoralabs/exedra-workflows-process-document": "workspace:*",
     "@khoralabs/exedra-workflows-shared": "workspace:*",
     "@khoralabs/memories-adapter": "workspace:*",
     "@khoralabs/memories-autolink": "workspace:*",
