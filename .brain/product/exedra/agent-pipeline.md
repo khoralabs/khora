@@ -10,6 +10,8 @@ Runs during the active interview WebSocket session.
 - Asks follow-up questions based on stakeholder responses
 - Uses **tool calls** to flag beliefs/observations inline as they emerge
 
+When a participant interview thread is first created from a session grant, Exedra appends a hidden kickoff message (`metadata.kickoff = true`) before dispatching `generate-response`. The kickoff searches the organization namespace with the facilitator's session topic and injects the resulting memory context into the first model turn, so the agent can immediately ask an informed opening interview question without showing the seed prompt in the UI.
+
 **Belief flagging tool:**
 - When the agent identifies a belief worth capturing, it calls a tool that surfaces a **non-blocking confirmation card** in the UI — the conversation continues without waiting
 - Each flagged belief carries a **provenance link** to the source message(s) in the transcript (by message index/ID)

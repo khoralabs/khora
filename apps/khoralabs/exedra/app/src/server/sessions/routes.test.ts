@@ -86,6 +86,24 @@ test("manage scopes creates an interview chat thread for newly granted participa
     sessionId: session.id,
     userId: participant.id,
   });
+  const posts = await getChatServiceClient().listPosts({ threadId: thread.id, limit: 10 });
+  expect(posts.items).toHaveLength(1);
+  expect(posts.items[0]?.metadata).toMatchObject({
+    kickoff: true,
+    kind: "initial-interview-rag",
+    rag: {
+      prompt: "Grant interview",
+      hitCount: 0,
+    },
+  });
+  expect(posts.items[0]?.parts).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        type: "text",
+        text: expect.stringContaining("Session topic: Grant interview"),
+      }),
+    ]),
+  );
 });
 
 test("POST /api/sessions requires teamId", async () => {

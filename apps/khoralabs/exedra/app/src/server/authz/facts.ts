@@ -91,6 +91,7 @@ export async function publishChatThreadAuthzFacts(args: {
   await ensureOrgAgentRepresents(args.orgId);
   await publishThreadBelongsToSession(args.chatThreadId, args.sessionId);
   await grantAgentThreadWrite(args.chatThreadId);
+  await grantAgentResourceRead({ type: ResourceType.Organization, id: args.orgId });
   await grantAgentResourceRead({ type: ResourceType.Session, id: args.sessionId });
 }
 

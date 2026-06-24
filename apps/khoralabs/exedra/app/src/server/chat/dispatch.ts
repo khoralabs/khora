@@ -5,7 +5,7 @@ import { EXEDRA_CONVERSATIONAL_AGENT_ID } from "../authz/facts";
 import { getDb } from "../db/index";
 import { getTeam } from "../db/membership";
 import { getSession } from "../db/sessions";
-import { orgSessionScope, userSessionScope } from "../memories/namespaces";
+import { orgScope, orgSessionScope, userSessionScope } from "../memories/namespaces";
 import { getChatServiceClient } from "./service-client";
 
 function requireWorkflowConfig(): {
@@ -76,6 +76,12 @@ export async function dispatchGenerateResponseForChat(input: {
     },
     access: {
       memoryNamespaces: [
+        {
+          namespace: orgScope(team.orgId),
+          scope: "org",
+          resourceType: "org",
+          resourceId: team.orgId,
+        },
         {
           namespace: orgSessionScope(team.orgId, team.id, session.id),
           scope: "session",

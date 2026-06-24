@@ -263,7 +263,7 @@ function openScopedMemoriesAccess(args: { userId: string; orgId?: string; namesp
   return openMemoriesAccess(openUserMemories(args.userId));
 }
 
-async function runInternalSearch(
+export async function runInternalSearch(
   userId: string,
   query: string,
   topK: number,
