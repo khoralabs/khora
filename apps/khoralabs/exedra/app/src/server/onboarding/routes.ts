@@ -28,7 +28,6 @@ import {
 import { logger } from "../logger";
 import { bootstrapOrgTeamMemories } from "../memories/bootstrap";
 import { resolveTeamProfile } from "../teams/resolve-rows";
-import { createOnboardingInterviewForMember } from "./interview";
 
 function serializeMeUser(db: ReturnType<typeof getDb>, user: ExedraUser): AccountProfile {
   return (
@@ -218,30 +217,10 @@ export async function handlePostOnboarding(req: Request): Promise<Response> {
     return Response.json({ error: "Failed to create org or team" }, { status: 500 });
   }
 
-  let onboardingSessionId: string;
-  try {
-    const onboarding = await createOnboardingInterviewForMember(db, {
-      teamId,
-      userId: user.id,
-      orgName: org.name,
-      teamName: team.name,
-    });
-    onboardingSessionId = onboarding.sessionId;
-  } catch (err) {
-    await rollbackOnboarding(db, { orgId, teamId });
-    const message = err instanceof Error ? err.message : "Failed to create onboarding interview";
-    logger.error({ err: message }, "onboarding interview setup failed");
-    return Response.json(
-      { error: "Could not start onboarding interview. Try again." },
-      { status: 500 },
-    );
-  }
-
   return Response.json(
     {
       org: { id: org.id, name: org.name },
       team: { id: team.id, name: team.name, orgId: team.orgId },
-      onboardingSessionId,
     },
     { status: 201 },
   );

@@ -1,6 +1,6 @@
 # Facilitator Onboarding
 
-After registry OTP sign-in, facilitators with no `team_members` row enter a **three-step onboarding wizard** before using session tooling.
+After registry OTP sign-in, facilitators with no `team_members` row enter a **two-step onboarding wizard** before using Exedra.
 
 ## Flow
 
@@ -10,25 +10,24 @@ flowchart LR
   me -->|onboardingRequired| step1[Step1_OrgName]
   step1 --> step2[Step2_TeamName]
   step2 -->|POST_api_onboarding| bootstrap[Memories_bootstrap]
-  bootstrap --> step3[Step3_InviteTeam]
-  step3 -->|mint_or_skip| home[Home_dashboard]
-  me -->|has_team| home
+  bootstrap --> knowledge[Team_Knowledge_Page]
+  me -->|has_team| knowledge
 ```
 
 | Step | UI | Server action |
 |---|---|---|
 | 1 | Organization name | Client-only state |
 | 2 | Team name | `POST /api/onboarding` with `{ orgName, teamName }` |
-| 3 | Invite your team | `POST /api/teams/:teamId/invites` on mount; copy link or skip |
 
-Step 3 mints a shareable join link (`/join-team/{token}`). No email/SES in v1 — link-only, matching stub-registry local-dev posture.
+After team creation, the client redirects to `/teams/:teamId/graph`.
 
 ## Gate
 
 `GET /api/me` returns `{ user, teams[], onboardingRequired }`.
 
 - `onboardingRequired: true` when the user has no `team_members` rows
-- `App.tsx` renders `OnboardingWizard` until onboarding completes
+- `AppChrome` renders `OnboardingDialog` until onboarding completes
+- Completing onboarding writes the new team as the active selection and opens its knowledge page
 - `POST /api/sessions` requires `teamId`; missing team returns `400` with `{ onboardingRequired: true }`
 
 Silent org/team auto-create on session creation was removed.
@@ -68,7 +67,7 @@ Requires `EXEDRA_MEMORIES_SQLCIPHER_KEY`.
 ## Client
 
 - `client/lib/me-api.ts` — typed fetch wrappers
-- `client/components/onboarding/onboarding-wizard.tsx` — three-step wizard
+- `client/components/onboarding/onboarding-dialog.tsx` — two-step wizard
 - `client/components/auth/join-team-gate.tsx` — deep link accept flow (mirrors `invite-gate.tsx`)
 
 ## Related

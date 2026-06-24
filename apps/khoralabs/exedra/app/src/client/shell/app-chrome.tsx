@@ -33,7 +33,6 @@ import { MobileChromeLayoutProvider } from "./mobile-chrome-layout";
 import { type ExedraEntrypoint, entrypointForPath, navigateExedra } from "./navigation";
 import {
   isSettingsPath,
-  onboardingInterviewPath,
   parseActiveSessionId,
   settingsAccountPath,
   settingsOrgPath,
@@ -138,8 +137,9 @@ function AppChromeInner({ entrypoint, children }: AppChromeProps) {
     });
   }, [applyProfileSelection]);
 
-  const onOnboardingComplete = useCallback((sessionId: string) => {
-    window.location.href = onboardingInterviewPath(sessionId);
+  const onOnboardingComplete = useCallback((team: MeTeam) => {
+    writeActiveSelection(team.orgId, team.id);
+    window.location.href = `/teams/${encodeURIComponent(team.id)}/graph`;
   }, []);
 
   const onSignOut = useCallback(async () => {

@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, Plus } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import {
   InputGroup,
   InputGroupAddon,
@@ -19,63 +18,31 @@ import {
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { useAnalytics } from "@/lib/analytics";
-import { copyTextToClipboard } from "@/lib/copy-text";
-import { INVITE_LINK_SINGLE_USE_NOTE } from "@/lib/invite-copy";
 import { type MeTeam, postOnboarding } from "@/lib/me-api";
-import { mintSessionInvite } from "@/lib/sessions-api";
 
 type OnboardingDialogProps = {
   open: boolean;
-  onComplete: (sessionId: string) => void;
+  onComplete: (team: MeTeam) => void;
 };
 
-type WizardStep = 1 | 2 | 3;
+type WizardStep = 1 | 2;
 
 export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
   const track = useAnalytics();
   const [step, setStep] = useState<WizardStep>(1);
   const [orgName, setOrgName] = useState("");
   const [teamName, setTeamName] = useState("");
-  const [team, setTeam] = useState<MeTeam | null>(null);
-  const [onboardingSessionId, setOnboardingSessionId] = useState<string | null>(null);
-  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [mintingInvite, setMintingInvite] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setStep(1);
     setOrgName("");
     setTeamName("");
-    setTeam(null);
-    setOnboardingSessionId(null);
-    setInviteUrl(null);
     setError(null);
     setSubmitting(false);
-    setCopied(false);
-    setMintingInvite(false);
   }, [open]);
-
-  useEffect(() => {
-    if (step !== 3 || team === null || onboardingSessionId === null || inviteUrl !== null) return;
-
-    let cancelled = false;
-    void mintSessionInvite(onboardingSessionId)
-      .then((invite) => {
-        if (cancelled) return;
-        setInviteUrl(invite.url);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Could not create invite link");
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [step, team, onboardingSessionId, inviteUrl]);
 
   async function handleCreateTeam() {
     const trimmedOrg = orgName.trim();
@@ -89,53 +56,21 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
     setError(null);
     try {
       const result = await postOnboarding({ orgName: trimmedOrg, teamName: trimmedTeam });
-      setTeam({
+      const createdTeam: MeTeam = {
         id: result.team.id,
         name: result.team.name,
         orgId: result.org.id,
         orgName: result.org.name,
         avatarUrl: null,
         orgAvatarUrl: null,
-      });
-      setOnboardingSessionId(result.onboardingSessionId);
-      track("onboarding_completed", { sessionId: result.onboardingSessionId });
-      setStep(3);
+      };
+      track("onboarding_completed", { teamId: createdTeam.id, orgId: createdTeam.orgId });
+      onComplete(createdTeam);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create team");
     } finally {
       setSubmitting(false);
     }
-  }
-
-  async function handleCopyLink() {
-    if (inviteUrl === null) return;
-    try {
-      await copyTextToClipboard(inviteUrl);
-      setCopied(true);
-      track("invite_link_copied", { source: "onboarding" });
-    } catch {
-      setError("Could not copy automatically. Select the link and copy manually.");
-    }
-  }
-
-  async function handleNewInviteLink() {
-    if (onboardingSessionId === null) return;
-    setMintingInvite(true);
-    setCopied(false);
-    setError(null);
-    try {
-      const invite = await mintSessionInvite(onboardingSessionId);
-      setInviteUrl(invite.url);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Could not create invite link");
-    } finally {
-      setMintingInvite(false);
-    }
-  }
-
-  function handleFinish() {
-    if (onboardingSessionId === null) return;
-    onComplete(onboardingSessionId);
   }
 
   function handleBack() {
@@ -168,7 +103,7 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
             <DialogTitle>Set up Exedra</DialogTitle>
           </div>
 
-          <DialogDescription>Step {step} of 3</DialogDescription>
+          <DialogDescription>Step {step} of 2</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -248,40 +183,6 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
                 </InputGroupAddon>
               </InputGroup>
             </form>
-          ) : null}
-
-          {step === 3 && team !== null ? (
-            <>
-              <p className="text-sm text-muted-foreground">
-                Share this link with colleagues so they can join {team.name} on Exedra.{" "}
-                {INVITE_LINK_SINGLE_USE_NOTE}
-              </p>
-              <Input readOnly disabled={copied} value={inviteUrl ?? "Generating invite link…"} />
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  disabled={inviteUrl === null || mintingInvite}
-                  onClick={() => void (copied ? handleNewInviteLink() : handleCopyLink())}
-                >
-                  {copied ? (
-                    <>
-                      <Plus />
-                      New link
-                    </>
-                  ) : (
-                    "Copy link"
-                  )}
-                </Button>
-                <Button
-                  className="flex-1"
-                  onClick={handleFinish}
-                  disabled={onboardingSessionId === null}
-                >
-                  Start interview
-                </Button>
-              </div>
-            </>
           ) : null}
 
           {error !== null ? <p className="text-sm text-destructive">{error}</p> : null}

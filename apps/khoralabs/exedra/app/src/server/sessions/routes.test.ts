@@ -146,7 +146,7 @@ test("POST /api/sessions creates session when teamId is provided", async () => {
   expect(body.session.teamId).toBe(teamId);
 });
 
-test("POST /api/sessions allows create while onboarding interview is pending", async () => {
+test("POST /api/sessions allows create after onboarding creates first team", async () => {
   const { mock } = await import("bun:test");
   mock.module("../auth/require-session", () => ({
     requireRegistrySessionResponse: async () => ({
@@ -166,7 +166,6 @@ test("POST /api/sessions allows create while onboarding interview is pending", a
   expect(created.status).toBe(201);
   const createdBody = (await created.json()) as {
     team: { id: string };
-    onboardingSessionId: string;
   };
 
   const { handleCreateSession: createSessionHandler } = await import("./routes");
@@ -181,7 +180,6 @@ test("POST /api/sessions allows create while onboarding interview is pending", a
     }),
   );
   expect(allowed.status).toBe(201);
-  void createdBody.onboardingSessionId;
 });
 
 test("POST /api/sessions returns 403 when session_create permission is revoked", async () => {
