@@ -1,4 +1,5 @@
 import { serve } from "bun";
+import { createLocalSqliteDatabase } from "./local-sqlite";
 import { createAuthzRoutes, dispatchAuthzRoute } from "./routes";
 import { ensureAuthzServiceSchema } from "./schema";
 import { createTursoDatabase } from "./sql";
@@ -11,10 +12,14 @@ function requireEnv(name: string): string {
   return value;
 }
 
-const db = createTursoDatabase({
-  url: requireEnv("TURSO_DATABASE_URL"),
-  authToken: requireEnv("TURSO_AUTH_TOKEN"),
-});
+const sqlitePath = process.env.AUTHZ_SQLITE_PATH?.trim();
+const db =
+  sqlitePath !== undefined && sqlitePath.length > 0
+    ? createLocalSqliteDatabase(sqlitePath)
+    : createTursoDatabase({
+        url: requireEnv("TURSO_DATABASE_URL"),
+        authToken: requireEnv("TURSO_AUTH_TOKEN"),
+      });
 const token = requireEnv("AUTHZ_INTERNAL_TOKEN");
 await ensureAuthzServiceSchema(db);
 

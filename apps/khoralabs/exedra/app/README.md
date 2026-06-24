@@ -8,9 +8,18 @@ bun install
 
 ## Local Development
 
-The interview and facilitator chat surfaces use `@khoralabs/chat-react`, the app chat API, a separate chat SQLite database, and the `generate-response` Render workflow.
+The fastest way to run everything locally (app, authz, and all workflows):
 
-Start the local Render task server first:
+```sh
+cd apps/khoralabs/exedra
+bun run dev
+```
+
+See [../README.md](../README.md) for ports and env setup.
+
+### App + generate-response only
+
+If you only need chat, start the local Render task server first:
 
 ```sh
 cd apps/khoralabs/exedra/workflows/generate-response

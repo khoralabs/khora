@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
 import type { BatchIntegrationParams } from "@khoralabs/exedra-workflows-process-document/document-processing";
-import { Render } from "@renderinc/sdk";
 import { logger } from "../logger.js";
+import { createRenderWorkflowClient } from "../render-local.js";
 import { listDocumentsByBatch, patchDocument } from "./db.js";
 
 export type { BatchIntegrationParams };
@@ -9,16 +9,15 @@ export type { BatchIntegrationParams };
 export async function dispatchBatchIntegration(
   params: BatchIntegrationParams,
 ): Promise<string | null> {
-  const apiKey = process.env.RENDER_API_KEY?.trim();
   const slug = process.env.RENDER_INTEGRATION_WORKFLOW_SLUG?.trim();
-  if (apiKey === undefined || apiKey.length === 0 || slug === undefined || slug.length === 0) {
+  const render = createRenderWorkflowClient({ localDevUrlEnv: "RENDER_INTEGRATION_LOCAL_DEV_URL" });
+  if (slug === undefined || slug.length === 0 || render === null) {
     logger.warn(
-      "batch integration skipped: RENDER_API_KEY or RENDER_INTEGRATION_WORKFLOW_SLUG not set",
+      "batch integration skipped: RENDER_INTEGRATION_WORKFLOW_SLUG or workflow client not configured",
     );
     return null;
   }
 
-  const render = new Render({ token: apiKey });
   const startedRun = await render.workflows.startTask(`${slug}/integrateBatch`, [params]);
   return startedRun.taskRunId;
 }
@@ -47,9 +46,7 @@ export async function cancelDocumentProcessingTaskRun(
 ): Promise<void> {
   if (taskRunId === null || taskRunId === undefined || taskRunId.length === 0) return;
 
-  const apiKey = process.env.RENDER_API_KEY?.trim();
-  if (apiKey === undefined || apiKey.length === 0) return;
-
-  const render = new Render({ token: apiKey });
+  const render = createRenderWorkflowClient({ localDevUrlEnv: "RENDER_INTEGRATION_LOCAL_DEV_URL" });
+  if (render === null) return;
   await render.workflows.cancelTaskRun(taskRunId).catch(() => undefined);
 }

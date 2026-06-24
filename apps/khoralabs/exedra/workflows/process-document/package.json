@@ -17,6 +17,7 @@
     }
   },
   "scripts": {
+    "dev": "render workflows dev --port 8122 -- bun src/main.ts",
     "start": "bun src/main.ts"
   },
   "dependencies": {

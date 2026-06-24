@@ -1,19 +1,18 @@
 import type { BeliefIntegrationParams } from "@khoralabs/exedra-workflows-integrate-memory/belief-integration";
-import { Render } from "@renderinc/sdk";
 import { logger } from "../logger.js";
+import { createRenderWorkflowClient } from "../render-local.js";
 
 export type { BeliefIntegrationParams };
 
 export async function dispatchBeliefIntegration(params: BeliefIntegrationParams): Promise<void> {
-  const apiKey = process.env.RENDER_API_KEY?.trim();
   const slug = process.env.RENDER_INTEGRATION_WORKFLOW_SLUG?.trim();
-  if (apiKey === undefined || apiKey.length === 0 || slug === undefined || slug.length === 0) {
+  const render = createRenderWorkflowClient({ localDevUrlEnv: "RENDER_INTEGRATION_LOCAL_DEV_URL" });
+  if (slug === undefined || slug.length === 0 || render === null) {
     logger.warn(
-      "belief integration skipped: RENDER_API_KEY or RENDER_INTEGRATION_WORKFLOW_SLUG not set",
+      "belief integration skipped: RENDER_INTEGRATION_WORKFLOW_SLUG or workflow client not configured",
     );
     return;
   }
 
-  const render = new Render({ token: apiKey });
   await render.workflows.startTask(`${slug}/integrateBelief`, [params]);
 }
