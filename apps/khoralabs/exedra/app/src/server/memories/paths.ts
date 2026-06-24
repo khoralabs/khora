@@ -1,13 +1,18 @@
-import path from "node:path";
+import { localDatabasePath } from "../storage/paths.js";
 import { resolveMemoriesDir } from "./config.js";
-import { encodePrincipalIdForMemories } from "./encode-principal-id.js";
 
 export function resolveOrgMemoriesDbPath(orgId: string): string {
-  const encoded = encodePrincipalIdForMemories(orgId);
-  return path.join(resolveMemoriesDir(), `${encoded}.db`);
+  return localDatabasePath({
+    kind: "organization",
+    did: orgId,
+    memoriesDir: resolveMemoriesDir(),
+  });
 }
 
 export function resolveUserMemoriesDbPath(userId: string): string {
-  const encoded = encodePrincipalIdForMemories(userId);
-  return path.join(resolveMemoriesDir(), `${encoded}.db`);
+  return localDatabasePath({
+    kind: "account",
+    did: userId,
+    memoriesDir: resolveMemoriesDir(),
+  });
 }

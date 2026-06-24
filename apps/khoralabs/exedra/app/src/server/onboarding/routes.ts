@@ -127,7 +127,7 @@ export async function handleUploadMeAvatar(req: Request): Promise<Response> {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const s3Key = buildUserAvatarS3Key(parsed.orgId, user.id, parsed.ext);
+  const s3Key = buildUserAvatarS3Key(user.id, parsed.ext);
   try {
     await replaceAvatarInS3({
       previousS3Key: user.avatarS3Key,

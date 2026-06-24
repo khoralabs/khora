@@ -1,8 +1,4 @@
-import { getDocumentsS3Prefix } from "../documents/config.js";
-
-function prefixRoot(): string {
-  return getDocumentsS3Prefix().replace(/\/+$/, "");
-}
+import { fileObjectKey } from "../storage/paths.js";
 
 export function avatarExtensionForMimeType(mimeType: string): string {
   const normalized = mimeType.trim().toLowerCase();
@@ -15,13 +11,28 @@ export function avatarExtensionForMimeType(mimeType: string): string {
 }
 
 export function buildOrgAvatarS3Key(orgId: string, ext: string): string {
-  return `${prefixRoot()}/org/${orgId}/avatars/org/avatar.${ext}`;
+  return fileObjectKey({
+    kind: "organization",
+    did: orgId,
+    category: "avatars",
+    parts: ["org", `avatar.${ext}`],
+  });
 }
 
 export function buildTeamAvatarS3Key(orgId: string, teamId: string, ext: string): string {
-  return `${prefixRoot()}/org/${orgId}/avatars/team/${teamId}/avatar.${ext}`;
+  return fileObjectKey({
+    kind: "organization",
+    did: orgId,
+    category: "avatars",
+    parts: ["teams", teamId, `avatar.${ext}`],
+  });
 }
 
-export function buildUserAvatarS3Key(orgId: string, userId: string, ext: string): string {
-  return `${prefixRoot()}/org/${orgId}/avatars/user/${userId}/avatar.${ext}`;
+export function buildUserAvatarS3Key(userId: string, ext: string): string {
+  return fileObjectKey({
+    kind: "account",
+    did: userId,
+    category: "avatars",
+    parts: [`avatar.${ext}`],
+  });
 }

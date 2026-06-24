@@ -12,7 +12,7 @@ import { getDocumentById } from "./db.js";
 import { sha256Hex } from "./hash.js";
 import type { ExedraDocumentStore } from "./s3-store.js";
 import { buildDocumentS3Key } from "./s3-store.js";
-import type { ExedraDocumentRef } from "./types.js";
+import type { DocumentGrantResource, ExedraDocumentRef } from "./types.js";
 
 let dataDir: string;
 
@@ -20,7 +20,9 @@ class MemoryDocumentStore implements ExedraDocumentStore {
   private readonly objects = new Map<string, Uint8Array>();
 
   async put(params: {
+    grantResource: DocumentGrantResource;
     orgId: string;
+    userId: string;
     batchId: string;
     documentId: string;
     fileName: string;
@@ -41,19 +43,15 @@ class MemoryDocumentStore implements ExedraDocumentStore {
     return { ref, s3Key };
   }
 
-  async resolve(ref: ExedraDocumentRef) {
-    return this.getByS3Key({
-      s3Key: buildDocumentS3Key({
-        orgId: ref.org_id,
-        batchId: ref.batch_id,
-        documentId: ref.document_id,
-        fileName: ref.file_name,
-      }),
-      contentHash: ref.content_hash,
-    });
+  async resolve(_ref: ExedraDocumentRef): Promise<{ kind: "blob"; blob: Blob }> {
+    throw new Error("Use getByS3Key in tests");
   }
 
-  async getByS3Key(params: { s3Key: string; contentHash: string; mimeType?: string }) {
+  async getByS3Key(params: {
+    s3Key: string;
+    contentHash: string;
+    mimeType?: string;
+  }): Promise<{ kind: "blob"; blob: Blob }> {
     const bytes = this.objects.get(params.s3Key);
     if (bytes === undefined) throw new Error("Document object not found");
     const contentHash = await sha256Hex(bytes);
@@ -66,19 +64,12 @@ class MemoryDocumentStore implements ExedraDocumentStore {
     };
   }
 
-  async deleteByS3Key(s3Key: string) {
-    this.objects.delete(s3Key);
+  async deleteByS3Key(_s3Key: string): Promise<void> {
+    this.objects.delete(_s3Key);
   }
 
-  async deleteByRef(ref: ExedraDocumentRef) {
-    await this.deleteByS3Key(
-      buildDocumentS3Key({
-        orgId: ref.org_id,
-        batchId: ref.batch_id,
-        documentId: ref.document_id,
-        fileName: ref.file_name,
-      }),
-    );
+  async deleteByRef(_ref: ExedraDocumentRef): Promise<void> {
+    throw new Error("Use deleteByS3Key in tests");
   }
 }
 
@@ -138,7 +129,7 @@ test("acceptDocument stores S3 object and accepted row without summary", async (
   const row = getDocumentById(db, result.document.id);
   expect(row?.grantResourceType).toBe("session");
   expect(row?.grantResourceId).toBe(session.id);
-  expect(row?.s3Key).toContain(batchId);
+  expect(row?.s3Key).toContain(`organizations/${orgId}/files/documents/batches/${batchId}`);
   expect(row?.contentHash).toHaveLength(64);
   db.close();
 });

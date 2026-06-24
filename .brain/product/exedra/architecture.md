@@ -7,8 +7,8 @@ Three distinct SQLite databases, strictly separated:
 | Database | Contents | Owner |
 |---|---|---|
 | `exedra.db` | App state: orgs, teams, sessions, invites, auth tokens, group chat messages | Exedra server |
-| `memories/{encodedUserId}.db` | Personal memory namespace — user's beliefs, observations across all sessions | The individual user |
-| `memories/{orgId}.db` | Org/team shared namespace — promoted facts, contention reports | The organization |
+| `memories/organizations/{orgDid}/{orgDid}.db` | Org/team shared namespace — promoted facts, contention reports | The organization |
+| `memories/accounts/{accountDid}/{accountDid}.db` | Personal memory namespace — user's beliefs, observations across all sessions | The individual user |
 
 ### Why Separate
 
@@ -48,10 +48,21 @@ Separate SQLite files under `{EXEDRA_DATA_DIR}/memories/`:
 
 | File | Purpose |
 |---|---|
-| `{orgId}.db` | Shared org/team namespaces |
-| `{encodedUserId}.db` | Facilitator personal namespace |
+| `organizations/{orgDid}/{orgDid}.db` | Shared org/team namespaces |
+| `accounts/{accountDid}/{accountDid}.db` | Account personal namespace |
 
-User IDs stay as DIDs in app tables. For memories paths/filenames only, Exedra encodes principals with `encodePrincipalIdForMemories` (`Buffer.from(id, "utf8").toString("base64url").toLowerCase()`).
+User IDs stay as DIDs in app tables. For memories **namespace path segments** only, Exedra encodes principals with `encodePrincipalIdForMemories` (22-char SHA256 base64url).
+
+S3 object layout mirrors the same principal folders under `exedra/`:
+
+| Prefix | Purpose |
+|---|---|
+| `organizations/{orgDid}/{orgDid}.db*` | Litestream memory DB replicas |
+| `organizations/{orgDid}/files/...` | Org-owned uploads (avatars, documents, knowledge) |
+| `accounts/{accountDid}/{accountDid}.db*` | Litestream memory DB replicas |
+| `accounts/{accountDid}/files/...` | Account-owned uploads (avatars, knowledge) |
+
+Path builders live in `server/storage/`; documents and avatars delegate to that module.
 
 Opened via lazy `Map` cache in `store.ts`; requires `EXEDRA_MEMORIES_SQLCIPHER_KEY`. Optional `SQLITE_CUSTOM_LIB` for sqlite-vec (Homebrew sqlite).
 

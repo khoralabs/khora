@@ -1,106 +1,85 @@
-import {
-  DeleteObjectCommand,
-  GetObjectCommand,
-  PutObjectCommand,
-  S3Client,
-} from "@aws-sdk/client-s3";
 import type { ContentAddressedStore } from "@khoralabs/sourcemaps";
 
 import {
-  getDocumentsS3Bucket,
-  getDocumentsS3Endpoint,
-  getDocumentsS3Prefix,
-  getDocumentsS3Region,
-  sanitizeDocumentFileName,
-} from "./config.js";
+  buildDocumentFileObjectKey,
+  deleteObject,
+  getObject,
+  putObject,
+  resolveDocumentStorageOwner,
+} from "../storage/index.js";
+import { sanitizeDocumentFileName } from "./config.js";
 import { sha256Hex } from "./hash.js";
-import type { ExedraDocumentLocators, ExedraDocumentRef } from "./types.js";
-
-let s3Client: S3Client | undefined;
-
-function getS3Client(): S3Client {
-  if (s3Client !== undefined) return s3Client;
-  const endpoint = getDocumentsS3Endpoint();
-  s3Client = new S3Client({
-    region: getDocumentsS3Region(),
-    ...(endpoint !== undefined
-      ? {
-          endpoint,
-          forcePathStyle: true,
-        }
-      : {}),
-  });
-  return s3Client;
-}
-
-export function resetDocumentsS3ClientForTests(): void {
-  s3Client = undefined;
-}
+import type { DocumentGrantResource, ExedraDocumentLocators, ExedraDocumentRef } from "./types.js";
 
 export function buildDocumentS3Key(params: {
+  grantResource: DocumentGrantResource;
   orgId: string;
+  userId: string;
   batchId: string;
   documentId: string;
   fileName: string;
 }): string {
-  const prefix = getDocumentsS3Prefix().replace(/\/+$/, "");
-  const safeName = sanitizeDocumentFileName(params.fileName);
-  return `${prefix}/org/${params.orgId}/batch/${params.batchId}/${params.documentId}/${safeName}`;
+  const owner = resolveDocumentStorageOwner({
+    grantResource: params.grantResource,
+    orgId: params.orgId,
+    userId: params.userId,
+  });
+  return buildDocumentFileObjectKey({
+    owner,
+    batchId: params.batchId,
+    documentId: params.documentId,
+    fileName: sanitizeDocumentFileName(params.fileName),
+  });
 }
 
 export class ExedraDocumentStore implements ContentAddressedStore<ExedraDocumentRef> {
   async put(params: {
+    grantResource: DocumentGrantResource;
     orgId: string;
+    userId: string;
     batchId: string;
     documentId: string;
     fileName: string;
     mimeType: string;
     bytes: Uint8Array;
   }): Promise<{ ref: ExedraDocumentRef; s3Key: string }> {
-    const bucket = getDocumentsS3Bucket();
-    if (bucket === undefined) {
-      throw new Error("EXEDRA_DOCUMENTS_S3_BUCKET is not configured");
-    }
-
     const contentHash = await sha256Hex(params.bytes);
-    const s3Key = buildDocumentS3Key(params);
+    const safeFileName = sanitizeDocumentFileName(params.fileName);
+    const s3Key = buildDocumentS3Key({
+      grantResource: params.grantResource,
+      orgId: params.orgId,
+      userId: params.userId,
+      batchId: params.batchId,
+      documentId: params.documentId,
+      fileName: safeFileName,
+    });
     const ref: ExedraDocumentRef = {
       domain: "exedra_document",
       org_id: params.orgId,
       batch_id: params.batchId,
       document_id: params.documentId,
-      file_name: sanitizeDocumentFileName(params.fileName),
+      file_name: safeFileName,
       content_hash: contentHash,
     };
 
-    await getS3Client().send(
-      new PutObjectCommand({
-        Bucket: bucket,
-        Key: s3Key,
-        Body: params.bytes,
-        ContentType: params.mimeType,
-        Metadata: {
-          content_hash: contentHash,
-          document_id: params.documentId,
-          batch_id: params.batchId,
-        },
-      }),
-    );
+    await putObject({
+      key: s3Key,
+      bytes: params.bytes,
+      mimeType: params.mimeType,
+      metadata: {
+        content_hash: contentHash,
+        document_id: params.documentId,
+        batch_id: params.batchId,
+      },
+    });
 
     return { ref, s3Key };
   }
 
-  async resolve(ref: ExedraDocumentRef): Promise<{ kind: "blob"; blob: Blob }> {
-    const s3Key = buildDocumentS3Key({
-      orgId: ref.org_id,
-      batchId: ref.batch_id,
-      documentId: ref.document_id,
-      fileName: ref.file_name,
-    });
-    return this.getByS3Key({
-      s3Key,
-      contentHash: ref.content_hash,
-    });
+  async resolve(_ref: ExedraDocumentRef): Promise<{ kind: "blob"; blob: Blob }> {
+    throw new Error(
+      "Resolve document by stored s3_key; ExedraDocumentRef no longer encodes storage owner",
+    );
   }
 
   async getByS3Key(params: {
@@ -108,24 +87,7 @@ export class ExedraDocumentStore implements ContentAddressedStore<ExedraDocument
     contentHash: string;
     mimeType?: string;
   }): Promise<{ kind: "blob"; blob: Blob }> {
-    const bucket = getDocumentsS3Bucket();
-    if (bucket === undefined) {
-      throw new Error("EXEDRA_DOCUMENTS_S3_BUCKET is not configured");
-    }
-
-    const response = await getS3Client().send(
-      new GetObjectCommand({
-        Bucket: bucket,
-        Key: params.s3Key,
-      }),
-    );
-
-    const body = response.Body;
-    if (body === undefined) {
-      throw new Error("Document object not found in S3");
-    }
-
-    const bytes = new Uint8Array(await body.transformToByteArray());
+    const { bytes, contentType } = await getObject(params.s3Key);
     const contentHash = await sha256Hex(bytes);
     if (contentHash !== params.contentHash) {
       throw new Error("Document content hash mismatch");
@@ -134,40 +96,17 @@ export class ExedraDocumentStore implements ContentAddressedStore<ExedraDocument
     return {
       kind: "blob",
       blob: new Blob([bytes], {
-        type: params.mimeType ?? response.ContentType ?? "application/octet-stream",
+        type: params.mimeType ?? contentType,
       }),
     };
   }
 
   async deleteByS3Key(s3Key: string): Promise<void> {
-    const bucket = getDocumentsS3Bucket();
-    if (bucket === undefined) return;
-
-    await getS3Client().send(
-      new DeleteObjectCommand({
-        Bucket: bucket,
-        Key: s3Key,
-      }),
-    );
+    await deleteObject(s3Key);
   }
 
-  async deleteByRef(ref: ExedraDocumentRef): Promise<void> {
-    const bucket = getDocumentsS3Bucket();
-    if (bucket === undefined) return;
-
-    const s3Key = buildDocumentS3Key({
-      orgId: ref.org_id,
-      batchId: ref.batch_id,
-      documentId: ref.document_id,
-      fileName: ref.file_name,
-    });
-
-    await getS3Client().send(
-      new DeleteObjectCommand({
-        Bucket: bucket,
-        Key: s3Key,
-      }),
-    );
+  async deleteByRef(_ref: ExedraDocumentRef): Promise<void> {
+    throw new Error("Delete document by stored s3_key");
   }
 }
 
@@ -197,3 +136,5 @@ export function refFromLocators(
     content_hash: contentHash,
   };
 }
+
+export { resetStorageS3ClientForTests as resetDocumentsS3ClientForTests } from "../storage/s3.js";

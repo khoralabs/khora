@@ -43,7 +43,9 @@ export async function acceptDocument(params: AcceptDocumentParams): Promise<{
 
       const { ref, s3Key } = await withSpan("document.s3_put", {}, async () =>
         store.put({
+          grantResource: params.grantResource,
           orgId: params.orgId,
+          userId: params.userId,
           batchId: params.batchId,
           documentId,
           fileName: params.fileName,
