@@ -3,9 +3,12 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { closeChatDb, getChatService } from "../chat/service";
+import { closeChatDb } from "@khoralabs/exedra-chat";
+import { interviewChatThreadId } from "@khoralabs/exedra-chat/thread-ids";
+
+import { getChatServiceClient } from "../chat/service-client";
 import { ensureInterviewChatThread } from "../chat/session-chat";
-import { interviewChatThreadId } from "../chat/thread-ids";
+import { uninstallTestChatService } from "../chat/test-service";
 import { closeDb } from "../db/index";
 import { ensureExedraSchema } from "../db/schema";
 import { createOrg, createTeam } from "../db/sessions";
@@ -23,6 +26,7 @@ beforeEach(() => {
   process.env.EXEDRA_MEMORIES_SQLCIPHER_KEY = "test-memories-key";
   closeDb();
   closeChatDb();
+  uninstallTestChatService();
   resetMemoriesStoreForTests();
 });
 
@@ -30,6 +34,7 @@ afterEach(async () => {
   const { mock } = await import("bun:test");
   mock.restore();
   closeChatDb();
+  uninstallTestChatService();
   closeDb();
   resetMemoriesStoreForTests();
   rmSync(dataDir, { recursive: true, force: true });
@@ -73,7 +78,7 @@ test("manage scopes creates an interview chat thread for newly granted participa
   );
 
   expect(res.status).toBe(200);
-  const thread = await getChatService().getThread(
+  const thread = await getChatServiceClient().getThread(
     interviewChatThreadId(session.id, participant.id),
   );
   expect(thread.metadata).toMatchObject({

@@ -8,6 +8,7 @@ import index from "./client/routes/index.html";
 import interviewPage from "./client/routes/interview/index.html";
 import privacyPage from "./client/routes/privacy/index.html";
 import termsPage from "./client/routes/terms/index.html";
+import { chatWebSocketHandlers, handleChatThreadWebSocketUpgrade } from "./server/chat/websocket";
 import { getDb } from "./server/db/index";
 import { logger } from "./server/logger";
 import { tracer } from "./server/otel";
@@ -85,9 +86,14 @@ const server = serve({
     },
   },
 
-  async fetch(req, _bunServer) {
+  async fetch(req, bunServer) {
     const start = performance.now();
     const url = new URL(req.url);
+    if (url.pathname.startsWith("/ws/chat/threads/")) {
+      const wsResponse = await handleChatThreadWebSocketUpgrade(req, bunServer);
+      if (wsResponse !== undefined) return wsResponse;
+      return undefined;
+    }
     if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/internal/")) {
       const span = tracer.startSpan(`HTTP ${req.method}`, {
         attributes: {
@@ -132,6 +138,8 @@ const server = serve({
 
     return new Response("Not found", { status: 404 });
   },
+
+  websocket: chatWebSocketHandlers,
 
   development: process.env.NODE_ENV !== "production" && {
     hmr: true,

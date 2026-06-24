@@ -1,13 +1,19 @@
 import type { Channel, Thread } from "@khoralabs/chat-core";
+import { isChatNotFound } from "@khoralabs/exedra-chat";
+import {
+  facilitationChatThreadId,
+  interviewChatThreadId,
+  sessionChannelId,
+} from "@khoralabs/exedra-chat/thread-ids";
+
 import { grantThreadAccess } from "../authz";
 import { publishChatThreadAuthzFacts } from "../authz/facts";
 import { getTeam } from "../db/membership";
 import { getSession, syncFacilitationThreadGrants } from "../db/sessions";
-import { getChatService, isChatNotFound } from "./service";
-import { facilitationChatThreadId, interviewChatThreadId, sessionChannelId } from "./thread-ids";
+import { getChatServiceClient } from "./service-client";
 
 export async function ensureSessionChatChannel(sessionId: string): Promise<Channel> {
-  const chat = getChatService();
+  const chat = getChatServiceClient();
   const channelId = sessionChannelId(sessionId);
   try {
     return await chat.getChannel(channelId);
@@ -26,7 +32,7 @@ export async function ensureInterviewChatThread(params: {
   userId: string;
 }): Promise<{ chatThread: Thread; created: boolean }> {
   await ensureSessionChatChannel(params.sessionId);
-  const chat = getChatService();
+  const chat = getChatServiceClient();
   const threadId = interviewChatThreadId(params.sessionId, params.userId);
   try {
     await grantThreadAccess(params.userId, threadId);
@@ -66,7 +72,7 @@ export async function ensureFacilitationChatThread(params: {
   sessionId: string;
 }): Promise<{ chatThread: Thread; created: boolean }> {
   await ensureSessionChatChannel(params.sessionId);
-  const chat = getChatService();
+  const chat = getChatServiceClient();
   const threadId = facilitationChatThreadId(params.sessionId);
   try {
     await syncFacilitationThreadGrants(params.db, params.sessionId);

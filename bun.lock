@@ -152,6 +152,9 @@
         "typescript": "^5",
       },
     },
+    "apps/khoralabs/exedra": {
+      "name": "@khoralabs/exedra-stack",
+    },
     "apps/khoralabs/exedra/app": {
       "name": "@khoralabs/exedra",
       "version": "0.1.0",
@@ -167,6 +170,7 @@
         "@khoralabs/chat-persistence-sqlite": "workspace:*",
         "@khoralabs/chat-react": "workspace:*",
         "@khoralabs/exedra-authz": "workspace:*",
+        "@khoralabs/exedra-chat": "workspace:*",
         "@khoralabs/exedra-workflows-generate-response": "workspace:*",
         "@khoralabs/exedra-workflows-integrate-memory": "workspace:*",
         "@khoralabs/exedra-workflows-process-document": "workspace:*",
@@ -245,6 +249,20 @@
       "name": "@khoralabs/exedra-authz",
       "dependencies": {
         "@tursodatabase/serverless": "latest",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "apps/khoralabs/exedra/chat": {
+      "name": "@khoralabs/exedra-chat",
+      "dependencies": {
+        "@khoralabs/chat-core": "workspace:*",
+        "@khoralabs/chat-persistence-sqlite": "workspace:*",
+        "ai": "^5.0.0",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -495,6 +513,22 @@
     },
     "packages/chat/sqlite": {
       "name": "@khoralabs/chat-persistence-sqlite",
+      "version": "0.0.0",
+      "dependencies": {
+        "@khoralabs/chat-core": "workspace:*",
+        "@khoralabs/chat-persistence": "workspace:*",
+        "ai": "^6.0.205",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
+    "packages/chat/turso": {
+      "name": "@khoralabs/chat-persistence-turso",
       "version": "0.0.0",
       "dependencies": {
         "@khoralabs/chat-core": "workspace:*",
@@ -1909,6 +1943,8 @@
 
     "@khoralabs/chat-persistence-sqlite": ["@khoralabs/chat-persistence-sqlite@workspace:packages/chat/sqlite"],
 
+    "@khoralabs/chat-persistence-turso": ["@khoralabs/chat-persistence-turso@workspace:packages/chat/turso"],
+
     "@khoralabs/chat-react": ["@khoralabs/chat-react@workspace:packages/chat/react"],
 
     "@khoralabs/cli-flow-nbc": ["@khoralabs/cli-flow-nbc@workspace:packages/cli/cli-flow-nbc"],
@@ -1922,6 +1958,10 @@
     "@khoralabs/exedra": ["@khoralabs/exedra@workspace:apps/khoralabs/exedra/app"],
 
     "@khoralabs/exedra-authz": ["@khoralabs/exedra-authz@workspace:apps/khoralabs/exedra/authz"],
+
+    "@khoralabs/exedra-chat": ["@khoralabs/exedra-chat@workspace:apps/khoralabs/exedra/chat"],
+
+    "@khoralabs/exedra-stack": ["@khoralabs/exedra-stack@workspace:apps/khoralabs/exedra"],
 
     "@khoralabs/exedra-workflows-generate-response": ["@khoralabs/exedra-workflows-generate-response@workspace:apps/khoralabs/exedra/workflows/generate-response"],
 
@@ -3955,6 +3995,8 @@
 
     "@khoralabs/agent-capabilities-otel/pino": ["pino@9.14.0", "", { "dependencies": { "@pinojs/redact": "^0.4.0", "atomic-sleep": "^1.0.0", "on-exit-leak-free": "^2.1.0", "pino-abstract-transport": "^2.0.0", "pino-std-serializers": "^7.0.0", "process-warning": "^5.0.0", "quick-format-unescaped": "^4.0.3", "real-require": "^0.2.0", "safe-stable-stringify": "^2.3.1", "sonic-boom": "^4.0.1", "thread-stream": "^3.0.0" }, "bin": { "pino": "bin.js" } }, "sha512-8OEwKp5juEvb/MjpIc4hjqfgCNysrS94RIOMXYvpYCdm/jglrKEiAYmiumbmGhCvs+IcInsphYDFwqrjr7398w=="],
 
+    "@khoralabs/exedra-chat/ai": ["ai@5.0.205", "", { "dependencies": { "@ai-sdk/gateway": "2.0.104", "@ai-sdk/provider": "2.0.3", "@ai-sdk/provider-utils": "3.0.27", "@opentelemetry/api": "1.9.0" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-rS3nt4K2BXvQfeyJQI1DbNIY3C6CWFp5/+9w98hJEPWiJV9YzwVFwQ8VYGnYsht9o/JOY9CX+AKfXMG60lJlAg=="],
+
     "@khoralabs/khora-registry/lucide-react": ["lucide-react@0.545.0", "", { "peerDependencies": { "react": "^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-7r1/yUuflQDSt4f1bpn5ZAocyIxcTyVyBBChSVtBKn5M+392cPmI5YJMWOJKk/HUWGm5wg83chlAZtCcGbEZtw=="],
 
     "@khoralabs/khora-server/lucide-react": ["lucide-react@0.545.0", "", { "peerDependencies": { "react": "^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-7r1/yUuflQDSt4f1bpn5ZAocyIxcTyVyBBChSVtBKn5M+392cPmI5YJMWOJKk/HUWGm5wg83chlAZtCcGbEZtw=="],
@@ -4175,6 +4217,14 @@
 
     "@khoralabs/agent-capabilities-otel/pino/thread-stream": ["thread-stream@3.2.0", "", { "dependencies": { "real-require": "^0.2.0" } }, "sha512-zLBvqpwr4Esa0kRjcrzGU6zL25lePWaCLMx0RQFrmteozIfeNdaMLpG5U7PeHzvlFkAWaRKA9/KVW4F60iB+qw=="],
 
+    "@khoralabs/exedra-chat/ai/@ai-sdk/gateway": ["@ai-sdk/gateway@2.0.104", "", { "dependencies": { "@ai-sdk/provider": "2.0.3", "@ai-sdk/provider-utils": "3.0.27", "@vercel/oidc": "3.1.0" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-t5EjGuSDygzaxqizFNIdPBFD64soREeyMuwy0FHEp9NfAv4Dg2fpD4gqbPO8P07whegY5ROMr58yUeVUuS+rMg=="],
+
+    "@khoralabs/exedra-chat/ai/@ai-sdk/provider": ["@ai-sdk/provider@2.0.3", "", { "dependencies": { "json-schema": "^0.4.0" } }, "sha512-h88OPkavHTiN9tMn2l5awAznGB0lXzjcLhgR1/rvjB2zlLprsNxbM2tt6OJsHUxduLC3klq0/eqaSf6fX5XVww=="],
+
+    "@khoralabs/exedra-chat/ai/@ai-sdk/provider-utils": ["@ai-sdk/provider-utils@3.0.27", "", { "dependencies": { "@ai-sdk/provider": "2.0.3", "@standard-schema/spec": "^1.0.0", "eventsource-parser": "^3.0.6" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-JFhJK5ynprll2FR3e+sHagJJIwvIagsNA0FLbLPq2Os4yLUK2/eiaCU0jXsADik73/hhvcPPLmD+Uo8eu5kFaQ=="],
+
+    "@khoralabs/exedra-chat/ai/@opentelemetry/api": ["@opentelemetry/api@1.9.0", "", {}, "sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg=="],
+
     "@khoralabs/observability/pino/pino-abstract-transport": ["pino-abstract-transport@2.0.0", "", { "dependencies": { "split2": "^4.0.0" } }, "sha512-F63x5tizV6WCh4R6RHyi2Ml+M70DNRXt/+HANowMflpgGFMAym/VKm6G7ZOQRjqN7XbGxK1Lg9t6ZrtzOaivMw=="],
 
     "@khoralabs/observability/pino/thread-stream": ["thread-stream@3.2.0", "", { "dependencies": { "real-require": "^0.2.0" } }, "sha512-zLBvqpwr4Esa0kRjcrzGU6zL25lePWaCLMx0RQFrmteozIfeNdaMLpG5U7PeHzvlFkAWaRKA9/KVW4F60iB+qw=="],
@@ -4230,6 +4280,8 @@
     "yargs/string-width/emoji-regex": ["emoji-regex@8.0.0", "", {}, "sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A=="],
 
     "yargs/string-width/strip-ansi": ["strip-ansi@6.0.1", "", { "dependencies": { "ansi-regex": "^5.0.1" } }, "sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A=="],
+
+    "@khoralabs/exedra-chat/ai/@ai-sdk/gateway/@vercel/oidc": ["@vercel/oidc@3.1.0", "", {}, "sha512-Fw28YZpRnA3cAHHDlkt7xQHiJ0fcL+NRcIqsocZQUSmbzeIKRpwttJjik5ZGanXP+vlA4SbTg+AbA3bP363l+w=="],
 
     "yargs/string-width/strip-ansi/ansi-regex": ["ansi-regex@5.0.1", "", {}, "sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ=="],
   }

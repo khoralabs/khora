@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, expect, test } from "bun:test";
+import { interviewChatThreadId } from "@khoralabs/exedra-chat/thread-ids";
 import { OrgPermission, TeamPermission } from "../../shared/authz/permissions";
-import { interviewChatThreadId } from "../chat/thread-ids";
 import { addTeamMember } from "../db/membership";
 import { ensureExedraSchema } from "../db/schema";
 import { createOrg, createSession, createTeam } from "../db/sessions";

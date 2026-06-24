@@ -26,6 +26,7 @@
     "@khoralabs/exedra-workflows-process-document": "workspace:*",
     "@khoralabs/exedra-workflows-shared": "workspace:*",
     "@khoralabs/exedra-authz": "workspace:*",
+    "@khoralabs/exedra-chat": "workspace:*",
     "@khoralabs/khora-auth": "workspace:*",
     "@khoralabs/khora-client": "workspace:*",
     "@khoralabs/khora-contracts": "workspace:*",

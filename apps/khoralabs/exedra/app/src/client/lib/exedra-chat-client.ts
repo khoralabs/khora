@@ -62,8 +62,11 @@ export const exedraChatClient: ChatClient = {
     });
   },
   subscribeToThread(threadId, handler) {
-    const source = new EventSource(`/api/chat/threads/${encodeURIComponent(threadId)}/events`);
-    source.onmessage = (event) => handler(JSON.parse(event.data) as ChatEvent);
-    return () => source.close();
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const ws = new WebSocket(
+      `${protocol}//${window.location.host}/ws/chat/threads/${encodeURIComponent(threadId)}`,
+    );
+    ws.onmessage = (event) => handler(JSON.parse(String(event.data)) as ChatEvent);
+    return () => ws.close();
   },
 };

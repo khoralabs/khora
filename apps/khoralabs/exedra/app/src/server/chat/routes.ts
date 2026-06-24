@@ -1,15 +1,14 @@
 import type { AppendPostInput, ChatEvent } from "@khoralabs/chat-core";
+import { parseSessionChatThreadId, sessionChannelId } from "@khoralabs/exedra-chat/thread-ids";
 import type { UIMessage } from "ai";
-
 import { requireRegistrySessionResponse } from "../auth/require-session";
 import { canReadThread, canWriteFacilitationThread } from "../authz";
 import { getDb } from "../db/index";
 import { userHasSessionAccess } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
 import { dispatchGenerateResponseForChat } from "./dispatch";
-import { getChatService, subscribeToChatThread } from "./service";
+import { getChatServiceClient } from "./service-client";
 import { ensureFacilitationChatThread, ensureInterviewChatThread } from "./session-chat";
-import { parseSessionChatThreadId, sessionChannelId } from "./thread-ids";
 
 function json(value: unknown, init?: ResponseInit): Response {
   return Response.json(value, init);
@@ -55,7 +54,7 @@ export async function handleListChatPosts(req: Request, threadId: string): Promi
   if (!(await canReadChatThread(getDb(), auth.userId, threadId))) {
     return json({ error: "Forbidden" }, { status: 403 });
   }
-  return json(await getChatService().listPosts({ threadId }));
+  return json(await getChatServiceClient().listPosts({ threadId }));
 }
 
 export async function handleGetChatChannel(req: Request, channelId: string): Promise<Response> {
@@ -66,7 +65,7 @@ export async function handleGetChatChannel(req: Request, channelId: string): Pro
   if (sessionId.length === 0 || !(await userHasSessionAccess(db, sessionId, auth.userId))) {
     return json({ error: "Forbidden" }, { status: 403 });
   }
-  return json(await getChatService().getChannel(channelId));
+  return json(await getChatServiceClient().getChannel(channelId));
 }
 
 export async function handleListChatThreads(req: Request, channelId: string): Promise<Response> {
@@ -77,7 +76,7 @@ export async function handleListChatThreads(req: Request, channelId: string): Pr
   if (sessionId.length === 0 || !(await userHasSessionAccess(db, sessionId, auth.userId))) {
     return json({ error: "Forbidden" }, { status: 403 });
   }
-  return json(await getChatService().listThreads({ channelId: sessionChannelId(sessionId) }));
+  return json(await getChatServiceClient().listThreads({ channelId: sessionChannelId(sessionId) }));
 }
 
 export async function handleAppendChatPost(req: Request, threadId: string): Promise<Response> {
@@ -107,7 +106,7 @@ export async function handleAppendChatPost(req: Request, threadId: string): Prom
     author: { type: "account", id: auth.userId },
     message: body.message,
   };
-  const result = await getChatService().appendPost(input);
+  const result = await getChatServiceClient().appendPost(input);
 
   if (parsed !== null && parsed.kind === "interview") {
     try {
@@ -131,13 +130,14 @@ export async function handleChatThreadEvents(req: Request, threadId: string): Pr
   if (!(await canReadChatThread(getDb(), auth.userId, threadId)))
     return json({ error: "Forbidden" }, { status: 403 });
 
+  const chat = getChatServiceClient();
   const stream = new ReadableStream({
     start(controller) {
       const encoder = new TextEncoder();
       const send = (event: ChatEvent) => {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
       };
-      const unsubscribe = subscribeToChatThread(threadId, send);
+      const unsubscribe = chat.subscribeToThread(threadId, send);
       controller.enqueue(encoder.encode(": connected\n\n"));
       req.signal.addEventListener("abort", () => {
         unsubscribe();

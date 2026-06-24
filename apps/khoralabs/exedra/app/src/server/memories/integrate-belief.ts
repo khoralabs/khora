@@ -1,4 +1,4 @@
-import { getChatService } from "../chat/service.js";
+import { getChatServiceClient } from "../chat/service-client.js";
 
 type BeliefFlagMetadata = {
   beliefFlags?: { belief: string; messageId: string }[];
@@ -28,7 +28,7 @@ export async function resolveBeliefText(
   const globalIndex = parseBeliefGlobalIndex(beliefId);
   if (globalIndex === null) return null;
 
-  const { items: messages } = await getChatService().listPosts({ threadId, limit: 100 });
+  const { items: messages } = await getChatServiceClient().listPosts({ threadId, limit: 100 });
   let count = 0;
   for (const message of messages) {
     const metadata = message.metadata as BeliefFlagMetadata | undefined;

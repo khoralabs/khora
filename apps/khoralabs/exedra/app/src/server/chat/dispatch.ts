@@ -1,3 +1,4 @@
+import { parseSessionChatThreadId } from "@khoralabs/exedra-chat/thread-ids";
 import type { GenerateResponseWorkflowParams } from "@khoralabs/exedra-workflows-generate-response/generate-response-workflow";
 import { Render } from "@renderinc/sdk";
 import { EXEDRA_CONVERSATIONAL_AGENT_ID } from "../authz/facts";
@@ -5,8 +6,7 @@ import { getDb } from "../db/index";
 import { getTeam } from "../db/membership";
 import { getSession } from "../db/sessions";
 import { orgSessionScope, userSessionScope } from "../memories/namespaces";
-import { getChatService } from "./service";
-import { parseSessionChatThreadId } from "./thread-ids";
+import { getChatServiceClient } from "./service-client";
 
 function requireWorkflowConfig(): {
   localDevUrl?: string;
@@ -40,7 +40,10 @@ export async function dispatchGenerateResponseForChat(input: {
   const team = await getTeam(db, session.teamId);
   if (team === null) throw new Error(`team not found: ${session.teamId}`);
 
-  const posts = await getChatService().listPosts({ threadId: input.chatThreadId, limit: 100 });
+  const posts = await getChatServiceClient().listPosts({
+    threadId: input.chatThreadId,
+    limit: 100,
+  });
   const skillName =
     parsedThread.kind === "interview" ? "conduct-interview" : "facilitate-conversation";
   const responseId = crypto.randomUUID();

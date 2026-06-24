@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
 import type { UIMessage } from "ai";
 import { grantSessionCreatorAccess, grantSessionParticipant } from "../authz";
-import { getChatService } from "../chat/service";
+import { getChatServiceClient } from "../chat/service-client";
 import { ensureInterviewChatThread } from "../chat/session-chat";
 import {
   completeTeamMemberOnboardingInterview,
@@ -80,7 +80,7 @@ export async function applyOnboardingCompletionSideEffects(args: {
     throw new Error("Team or organization not found");
   }
 
-  const { items: messages } = await getChatService().listPosts({ threadId, limit: 100 });
+  const { items: messages } = await getChatServiceClient().listPosts({ threadId, limit: 100 });
   const beliefs = collectBeliefsFromThread(messages);
 
   seedOnboardingMemories({

@@ -1,3 +1,5 @@
+import { isChatNotFound } from "@khoralabs/exedra-chat";
+import { interviewChatThreadId } from "@khoralabs/exedra-chat/thread-ids";
 import {
   listAccountRowsForSession,
   listAccountRowsForTeam,
@@ -27,13 +29,13 @@ import {
   enforce,
   ResourceType,
 } from "../authz/policy";
+
 import {
   dispatchInitialInterviewResponseForParticipant,
   dispatchInitialInterviewResponsesForTeam,
 } from "../chat/initial-interview-response";
-import { getChatService, isChatNotFound } from "../chat/service";
+import { getChatServiceClient } from "../chat/service-client";
 import { ensureFacilitationChatThread, ensureInterviewChatThread } from "../chat/session-chat";
-import { interviewChatThreadId } from "../chat/thread-ids";
 import { loadBeliefFeedback, upsertBeliefFeedback } from "../db/beliefs";
 import { getDb } from "../db/index";
 import {
@@ -445,7 +447,7 @@ async function buildInterviewPayload(
   chatThreadId: string,
   participantUserId: string,
 ) {
-  const chat = getChatService();
+  const chat = getChatServiceClient();
   const thread = await chat.getThread(chatThreadId);
   const posts = await chat.listPosts({ threadId: chatThreadId, limit: 100 });
   const beliefFeedback = loadBeliefFeedback(db, chatThreadId);
@@ -599,7 +601,7 @@ export async function handleGetParticipantInterview(
 
   const chatThreadId = interviewChatThreadId(sessionId, participantUserId);
   try {
-    await getChatService().getThread(chatThreadId);
+    await getChatServiceClient().getThread(chatThreadId);
   } catch (error) {
     if (!isChatNotFound(error)) throw error;
     return Response.json({
@@ -854,7 +856,7 @@ export async function handleGetFacilitation(req: Request, sessionId: string): Pr
     return Response.json({ error: "Organization not found for session" }, { status: 500 });
   }
 
-  const posts = await getChatService().listPosts({ threadId: chatThread.id, limit: 100 });
+  const posts = await getChatServiceClient().listPosts({ threadId: chatThread.id, limit: 100 });
   const viewer = resolveViewerAuthor(db, user.id);
   const agent = resolveOrgAgentAuthorForOrg(org);
 

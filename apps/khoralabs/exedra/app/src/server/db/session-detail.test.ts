@@ -3,9 +3,12 @@ import { afterEach, beforeAll, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { closeChatDb } from "@khoralabs/exedra-chat";
+import { interviewChatThreadId, sessionChannelId } from "@khoralabs/exedra-chat/thread-ids";
 import { createIsolatedAuthzDatabase, installTestAuthzService } from "../authz/test-service";
-import { closeChatDb, getChatService } from "../chat/service";
-import { interviewChatThreadId, sessionChannelId } from "../chat/thread-ids";
+
+import { getChatServiceClient } from "../chat/service-client";
+import { uninstallTestChatService } from "../chat/test-service";
 import { getOrCreateUser } from "../identity/users";
 import { ensureExedraSchema } from "./schema";
 import { formatDaysToDeadline, getInterviewStatus, sessionPhaseFromStatus } from "./session-detail";
@@ -18,6 +21,7 @@ beforeAll(() => {
 
 afterEach(() => {
   closeChatDb();
+  uninstallTestChatService();
   delete process.env.EXEDRA_DATA_DIR;
 });
 
@@ -50,7 +54,7 @@ test("getInterviewStatus tracks thread and messages", async () => {
 
   expect(await getInterviewStatus(db, session.id, user.id)).toBe("not_started");
 
-  const chat = getChatService();
+  const chat = getChatServiceClient();
   await chat.createChannel({ id: sessionChannelId(session.id) });
   const threadId = interviewChatThreadId(session.id, user.id);
   await chat.createThread({

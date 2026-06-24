@@ -1,4 +1,5 @@
 import type { Database } from "bun:sqlite";
+import { facilitationChatThreadId } from "@khoralabs/exedra-chat/thread-ids";
 import { publishSessionBelongsToTeam } from "../authz/facts";
 import {
   accountScope,
@@ -13,7 +14,6 @@ import {
   userHasAnySessionParticipantGrant,
 } from "../authz/policy";
 import { requireAuthzServiceClient } from "../authz/service-client";
-import { facilitationChatThreadId } from "../chat/thread-ids";
 import { createOrgWithAdmin, createTeamWithGrants } from "./membership";
 
 export { isTeamMember } from "./membership";

@@ -2,7 +2,7 @@ import type { PostModelMetadata, PostUsage, ScopeRef } from "@khoralabs/chat-cor
 import type { UIMessage } from "ai";
 
 import { requireInternalToken } from "../http/require-internal-token";
-import { getChatService } from "./service";
+import { getChatServiceClient } from "./service-client";
 
 type StartStreamedPostBody = {
   author?: ScopeRef;
@@ -54,7 +54,7 @@ export async function handleInternalStartStreamedChatPost(
   }
 
   try {
-    const result = await getChatService().startStreamedPost({
+    const result = await getChatServiceClient().startStreamedPost({
       threadId,
       author: body.author,
       idempotencyKey: body.idempotencyKey,
@@ -79,7 +79,7 @@ export async function handleInternalApplyChatPostDelta(
   }
 
   try {
-    const result = await getChatService().applyPostDelta({
+    const result = await getChatServiceClient().applyPostDelta({
       postId,
       expectedRevision: body.expectedRevision,
       message: body.message,
@@ -101,7 +101,7 @@ export async function handleInternalCompleteChatPostStream(
 
   const body = await readJson<CompleteStreamedPostBody>(req);
   try {
-    const result = await getChatService().completeStreamedPost({
+    const result = await getChatServiceClient().completeStreamedPost({
       postId,
       expectedRevision: body?.expectedRevision,
       idempotencyKey: body?.idempotencyKey,
@@ -120,7 +120,7 @@ export async function handleInternalAbortChatPostStream(
   if (authError !== null) return authError;
 
   try {
-    const post = await getChatService().abortStreamedPost({ postId });
+    const post = await getChatServiceClient().abortStreamedPost({ postId });
     return json({ post });
   } catch (error) {
     return errorResponse(error);

@@ -1,6 +1,8 @@
 import type { Database } from "bun:sqlite";
-import { getChatService, isChatNotFound } from "../chat/service";
-import { interviewChatThreadId } from "../chat/thread-ids";
+import { isChatNotFound } from "@khoralabs/exedra-chat";
+import { interviewChatThreadId } from "@khoralabs/exedra-chat/thread-ids";
+
+import { getChatServiceClient } from "../chat/service-client";
 
 export type InterviewStatus = "not_started" | "started" | "complete";
 
@@ -36,7 +38,7 @@ export async function getInterviewStatus(
   sessionId: string,
   userId: string,
 ): Promise<InterviewStatus> {
-  const chat = getChatService();
+  const chat = getChatServiceClient();
   const threadId = interviewChatThreadId(sessionId, userId);
   try {
     await chat.getThread(threadId);

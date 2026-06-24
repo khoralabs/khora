@@ -8,18 +8,14 @@ import {
   ensureChatSqliteSchema,
 } from "@khoralabs/chat-persistence-sqlite";
 
-import { resolveExedraDataDir } from "../db/index";
+import { resolveExedraChatDbPath } from "./config";
 
 let chatDbSingleton: Database | undefined;
 let chatServiceSingleton: ChatService | undefined;
 
 const subscribers = new Map<string, Set<(event: ChatEvent) => void>>();
 
-export function resolveExedraChatDbPath(): string {
-  const raw = process.env.EXEDRA_CHAT_DB_PATH?.trim();
-  if (raw !== undefined && raw.length > 0) return raw;
-  return path.join(resolveExedraDataDir(), "exedra-chat.db");
-}
+export { resolveExedraChatDbPath };
 
 export function getChatDb(): Database {
   if (chatDbSingleton !== undefined) return chatDbSingleton;

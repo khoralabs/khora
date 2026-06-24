@@ -2,13 +2,14 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { closeChatDb, resolveExedraChatDbPath } from "@khoralabs/exedra-chat";
 import { grantSessionCreatorAccess, grantSessionParticipant } from "../authz";
 import { closeDb, getDb, resolveExedraDbPath } from "../db/index";
 import { createOrg, createSession, createTeam } from "../db/sessions";
 import { getOrCreateUser } from "../identity/users";
 import { handleAppendChatPost, handleListChatPosts } from "./routes";
-import { closeChatDb, resolveExedraChatDbPath } from "./service";
 import { ensureFacilitationChatThread, ensureInterviewChatThread } from "./session-chat";
+import { uninstallTestChatService } from "./test-service";
 
 let dataDir: string;
 
@@ -22,12 +23,15 @@ beforeEach(async () => {
     "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
   closeDb();
   closeChatDb();
+  uninstallTestChatService();
+  uninstallTestChatService();
 });
 
 afterEach(async () => {
   const { mock } = await import("bun:test");
   mock.restore();
   closeChatDb();
+  uninstallTestChatService();
   closeDb();
   rmSync(dataDir, { recursive: true, force: true });
   delete process.env.EXEDRA_DATA_DIR;

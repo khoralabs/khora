@@ -13,6 +13,7 @@ import path from "node:path";
 const exedraRoot = path.resolve(path.dirname(import.meta.path), "..");
 const appRoot = path.join(exedraRoot, "app");
 const authzRoot = path.join(exedraRoot, "authz");
+const chatRoot = path.join(exedraRoot, "chat");
 const workflowsRoot = path.join(exedraRoot, "workflows");
 const dataDir = path.join(appRoot, "data");
 
@@ -22,6 +23,7 @@ const DEV_INTERNAL_TOKEN = "dev-internal-token";
 const ports = {
   app: 3000,
   authz: 3001,
+  chat: 3002,
   generateResponse: 8120,
   integrateMemory: 8121,
   processDocument: 8122,
@@ -114,6 +116,7 @@ function pickEnv(...values: (string | undefined)[]): string | undefined {
 
 const appEnv = loadEnvFile(path.join(appRoot, ".env"));
 const authzEnv = loadEnvFile(path.join(authzRoot, ".env"));
+const chatEnv = loadEnvFile(path.join(chatRoot, ".env"));
 const workflowEnvFiles = [
   path.join(workflowsRoot, "generate-response", ".env"),
   path.join(workflowsRoot, "integrate-memory", ".env"),
@@ -137,10 +140,13 @@ const resolvedAuthzToken =
 const sharedEnv = {
   ...appEnv,
   ...authzEnv,
+  ...chatEnv,
   EXEDRA_INTERNAL_TOKEN: resolvedInternalToken,
   AUTHZ_INTERNAL_TOKEN: resolvedAuthzToken,
   AUTHZ_SERVICE_URL: `http://localhost:${ports.authz}`,
+  EXEDRA_CHAT_SERVICE_URL: `http://localhost:${ports.chat}`,
   AUTHZ_SQLITE_PATH: path.join(dataDir, "authz.db"),
+  EXEDRA_CHAT_DB_PATH: path.join(dataDir, "exedra-chat.db"),
   PORT: String(ports.app),
   RENDER_USE_LOCAL_DEV: "true",
   RENDER_LOCAL_DEV_URL: `http://localhost:${ports.generateResponse}`,
@@ -149,7 +155,6 @@ const sharedEnv = {
   RENDER_GENERATE_RESPONSE_WORKFLOW_SLUG: "generate-response",
   RENDER_INTEGRATION_WORKFLOW_SLUG: "integrate-memory",
   RENDER_DOCUMENT_WORKFLOW_SLUG: "process-document",
-  EXEDRA_CHAT_DB_PATH: path.join(dataDir, "exedra-chat.db"),
 };
 
 const workflowSharedEnv = {
@@ -167,6 +172,15 @@ const services: Service[] = [
     env: {
       ...sharedEnv,
       PORT: String(ports.authz),
+    },
+  },
+  {
+    name: "chat",
+    cwd: chatRoot,
+    command: ["bun", "run", "start"],
+    env: {
+      ...sharedEnv,
+      PORT: String(ports.chat),
     },
   },
   {
@@ -241,6 +255,7 @@ for (const service of services) {
 console.log("");
 console.log(`  App:               http://localhost:${ports.app}`);
 console.log(`  Authz:             http://localhost:${ports.authz}`);
+console.log(`  Chat:              http://localhost:${ports.chat}`);
 console.log(`  generate-response: http://localhost:${ports.generateResponse}`);
 console.log(`  integrate-memory:  http://localhost:${ports.integrateMemory}`);
 console.log(`  process-document:  http://localhost:${ports.processDocument}`);
